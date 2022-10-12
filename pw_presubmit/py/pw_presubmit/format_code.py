@@ -388,7 +388,7 @@ def presubmit_check(
             raise pw_presubmit.PresubmitFailure
 
     language = code_format.language.lower().replace('+', 'p').replace(' ', '_')
-    check_code_format.__name__ = f'{language}_format'
+    check_code_format.name = f'{language}_format'
 
     return check_code_format
 

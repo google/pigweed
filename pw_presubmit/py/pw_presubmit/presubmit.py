@@ -136,7 +136,15 @@ class Program(collections.abc.Sequence):
     """A sequence of presubmit checks; basically a tuple with a name."""
     def __init__(self, name: str, steps: Iterable[Callable]):
         self.name = name
-        self._steps = tuple({s: None for s in tools.flatten(steps)})
+
+        def ensure_check(step):
+            if isinstance(step, Check):
+                return step
+            return Check(step)
+
+        self._steps: tuple[Check, ...] = tuple(
+            {ensure_check(s): None
+             for s in tools.flatten(steps)})
 
     def __getitem__(self, i):
         return self._steps[i]
@@ -168,7 +176,7 @@ class Programs(collections.abc.Mapping):
         }
 
     def all_steps(self) -> Dict[str, Callable]:
-        return {c.__name__: c for c in itertools.chain(*self.values())}
+        return {c.name: c for c in itertools.chain(*self.values())}
 
     def __getitem__(self, item: str) -> Program:
         return self._programs[item]
@@ -627,15 +635,22 @@ class Check:
     def __init__(self,
                  check_function: Callable,
                  path_filter: FileFilter = FileFilter(),
-                 always_run: bool = True) -> None:
+                 always_run: bool = True,
+                 name: str = None) -> None:
         _ensure_is_valid_presubmit_check_function(check_function)
+
+        # Since Check wraps a presubmit function, adopt that function's name.
+        self.name: str
+        if name:
+            self.name = name
+        elif isinstance(check_function, Check):
+            self.name = check_function.name
+        else:
+            self.name = check_function.__name__
 
         self._check: Callable = check_function
         self.filter = path_filter
         self.always_run: bool = always_run
-
-        # Since Check wraps a presubmit function, adopt that function's name.
-        self.__name__ = self._check.__name__
 
     def with_filter(
         self,
@@ -650,10 +665,6 @@ class Check:
         clone = copy.copy(self)
         clone.filter = file_filter
         return clone
-
-    @property
-    def name(self):
-        return self.__name__
 
     def run(self, ctx: PresubmitContext, count: int, total: int) -> _Result:
         """Runs the presubmit check on the provided paths."""
