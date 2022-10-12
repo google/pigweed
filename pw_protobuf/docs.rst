@@ -1153,9 +1153,13 @@ is named for the message type.
 .. cpp:function:: Animal::StreamEncoder Owner::StreamEncoder::GetPetEncoder()
 
 A lower-level API method returns an untyped encoder, which only provides the
-lower-level API methods. This can be moved to a typed encoder later.
+lower-level API methods. This can be cast to a typed encoder if needed.
 
-.. cpp:function:: pw::protobuf::StreamEncoder pw::protobuf::StreamEncoder::GetNestedEncoder(uint32_t field_number)
+.. cpp:function:: pw::protobuf::StreamEncoder pw::protobuf::StreamEncoder::GetNestedEncoder(uint32_t field_number, EmptyEncoderBehavior empty_encoder_behavior = EmptyEncoderBehavior::kWriteFieldNumber)
+
+(The optional `empty_encoder_behavior` parameter allows the user to disable
+writing the tag number for the nested encoder, if no data was written to
+that nested decoder.)
 
 .. warning::
   When a nested submessage is created, any use of the parent encoder that

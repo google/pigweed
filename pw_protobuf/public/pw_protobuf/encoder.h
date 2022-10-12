@@ -160,6 +160,8 @@ class StreamEncoder {
     return writer_.ConservativeWriteLimit();
   }
 
+  enum class EmptyEncoderBehavior { kWriteFieldNumber, kWriteNothing };
+
   // Creates a nested encoder with the provided field number. Once this is
   // called, the parent encoder is locked and not available for use until the
   // nested encoder is finalized (either explicitly or through destruction).
@@ -168,8 +170,12 @@ class StreamEncoder {
   //
   // Postcondition: Until the nested child encoder has been destroyed, this
   //     encoder cannot be used.
-  StreamEncoder GetNestedEncoder(uint32_t field_number) {
-    return GetNestedEncoder(field_number, /*write_when_empty=*/true);
+  StreamEncoder GetNestedEncoder(uint32_t field_number,
+                                 EmptyEncoderBehavior empty_encoder_behavior =
+                                     EmptyEncoderBehavior::kWriteFieldNumber) {
+    return GetNestedEncoder(
+        field_number, /*write_when_empty=*/
+        empty_encoder_behavior == EmptyEncoderBehavior::kWriteFieldNumber);
   }
 
   // Returns the current encoder's status.
@@ -640,9 +646,8 @@ class StreamEncoder {
                span<const internal::MessageField> table);
 
   // Protected method to create a nested encoder, specifying whether the field
-  // should be written when no fields were added to the nested encoder. Not
-  // part of the public API since callers can simply not create a nested encoder
-  // in those situations.
+  // should be written when no fields were added to the nested encoder. Exposed
+  // using an enum in the public API, for better readability.
   StreamEncoder GetNestedEncoder(uint32_t field_number, bool write_when_empty);
 
  private:
