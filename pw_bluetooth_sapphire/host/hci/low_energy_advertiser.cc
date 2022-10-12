@@ -47,7 +47,7 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
   if (IsAdvertising(address)) {
     // Temporarily disable advertising so we can tweak the parameters
     std::unique_ptr<CommandPacket> packet =
-        BuildEnablePacket(address, hci_spec::GenericEnableParam::kDisable);
+        BuildEnablePacket(address, hci_spec::GenericEnableParam::DISABLE);
     if (!packet) {
       bt_log(WARN, "hci-le", "cannot build HCI disable packet for %s", bt_str(address));
       result_callback(ToResult(HostError::kCanceled));
@@ -127,7 +127,7 @@ bool LowEnergyAdvertiser::StartAdvertisingInternalStep2(const DeviceAddress& add
     return false;
   }
 
-  PacketPtr enable_packet = BuildEnablePacket(address, hci_spec::GenericEnableParam::kEnable);
+  PacketPtr enable_packet = BuildEnablePacket(address, hci_spec::GenericEnableParam::ENABLE);
   if (!enable_packet) {
     bt_log(WARN, "hci-le", "cannot build HCI enable packet for %s", bt_str(address));
     return false;
@@ -208,7 +208,7 @@ void LowEnergyAdvertiser::StopAdvertisingInternal(const DeviceAddress& address) 
 
 bool LowEnergyAdvertiser::EnqueueStopAdvertisingCommands(const DeviceAddress& address) {
   std::unique_ptr<CommandPacket> disable_packet =
-      BuildEnablePacket(address, hci_spec::GenericEnableParam::kDisable);
+      BuildEnablePacket(address, hci_spec::GenericEnableParam::DISABLE);
   if (!disable_packet) {
     bt_log(WARN, "hci-le", "cannot build HCI disable packet for %s", bt_str(address));
     return false;

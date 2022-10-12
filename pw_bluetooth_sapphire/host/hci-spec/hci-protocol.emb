@@ -1,0 +1,240 @@
+# Copyright 2022 The Fuchsia Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+[$default byte_order: "LittleEndian"]
+[(cpp) namespace: "bt::hci_spec"]
+
+# =========================== Constants =================================
+
+# Coding formats from assigned numbers.
+# (https://www.bluetooth.com/specifications/assigned-numbers/host-controller-interface)
+enum CodingFormat:
+  [maximum_bits: 8]
+  U_LAW = 0x00
+  A_LAW = 0x01
+  CVSD = 0x02
+  TRANSPARENT = 0x03
+  LINEAR_PCM = 0x04
+  MSBC = 0x05
+  LC3 = 0x06
+  G729A = 0x07
+  VENDOR_SPECIFIC = 0xFF
+
+# Binary values that can be generically passed to HCI commands that expect a
+# 1-octet boolean "enable"/"disable" parameter.
+enum GenericEnableParam:
+  [maximum_bits: 8]
+  DISABLE = 0x00
+  ENABLE = 0x01
+
+# General- and Device-specific Inquiry Access Codes (DIACs) for use in Inquiry
+# command LAP fields.
+# (https://www.bluetooth.com/specifications/assigned-numbers/baseband)
+enum InquiryAccessCode:
+  [maximum_bits: 24]
+  # General Inquiry Access Code
+  GIAC = 0x9E8B33
+
+  # Limited Dedicated Inquiry Access Code
+  LIAC = 0x9E8B00
+
+# PCM data formats from assigned numbers.
+# (https://www.bluetooth.com/specifications/assigned-numbers/host-controller-interface)
+enum PcmDataFormat:
+  [maximum_bits: 8]
+  NOT_APPLICABLE = 0x00
+  ONES_COMPLEMENT = 0x01
+  TWOS_COMPLEMENT = 0x02
+  SIGN_MAGNITUDE = 0x03
+  UNSIGNED = 0x04
+
+enum ScoDataPath:
+  [maximum_bits: 8]
+  HCI = 0x00
+  # 0x01 - 0xFE specify the logical channel number (vendor specific)
+  AUDIO_TEST_MODE = 0xFF
+
+# Bitmask of SCO packet types.
+bits ScoPacketType:
+  # SCO packet types
+  0     [+1] Flag hv1
+  $next [+1] Flag hv2
+  $next [+1] Flag hv3
+
+  # eSCO packet types
+  $next [+1] Flag ev3
+  $next [+1] Flag ev4
+  $next [+1] Flag ev5
+
+  $next [+1] Flag not_2_ev3
+  $next [+1] Flag not_3_ev3
+  $next [+1] Flag not_2_ev5
+  $next [+1] Flag not_3_ev5
+
+  $next [+6] UInt padding
+
+# ========================= HCI packet headers ==========================
+# Emboss currently lacks support for default field values and cross-type integral equality.
+# (https://github.com/google/emboss/issues/21)
+# (https://github.com/google/emboss/issues/23)
+# Upon the addition of these features, we will transition OpCodeBits to be a parameterized
+# field which defaults for each HCI packet type to its corresponding OpCode.
+bits OpCodeBits:
+  0     [+10] UInt ocf
+  $next [+6] UInt ogf
+
+# HCI Command packet header.
+struct EmbossCommandHeader:
+  0     [+2] OpCodeBits opcode
+  $next [+1] UInt parameter_total_size
+
+# ======================== HCI Command payloads =========================
+
+# ===============================
+# Inquiry Command (v1.1) (BR/EDR)
+
+struct InquiryCommand:
+  let hdr_size = EmbossCommandHeader.$size_in_bytes
+  0     [+hdr_size] EmbossCommandHeader header
+
+  # LAP (Lower Address Part)
+  # In the range 0x9E8B00 - 0x9E8B3F, defined by the Bluetooth SIG in
+  # Baseband Assigned Numbers.
+  $next [+3] InquiryAccessCode lap
+
+  # Time before the inquiry is halted. Defined in 1.28s units.
+  # Range: 0x01 to kInquiryLengthMax in hci_constants.h
+  $next [+1] UInt inquiry_length
+
+  # Maximum number of responses before inquiry is halted.
+  # Set to 0x00 for unlimited.
+  $next [+1] UInt num_responses
+
+# Note: NO Command Complete; Sends Inquiry Complete at the end of the
+# inquiry to indicate it's completion. No Inquiry Complete event is sent if
+# Inquiry is cancelled.
+
+# ======================================================
+# Enhanced Setup Synchronous Connection Command (CSA2) (BR/EDR)
+
+struct SynchronousConnectionParameters:
+  struct VendorCodingFormat:
+    0     [+1] CodingFormat coding_format
+
+    # See assigned numbers.
+    $next [+2] UInt company_id
+
+    # Shall be ignored if |coding_format| is not VENDOR_SPECIFIC.
+    $next [+2] UInt vendor_codec_id
+
+  enum ScoRetransmissionEffort:
+    [maximum_bits: 8]
+    # SCO or eSCO
+    NONE = 0x00
+
+    # eSCO only
+    POWER_OPTIMIZED  = 0x01
+
+    # eSCO only
+    QUALITY_OPTIMIZED  = 0x02
+
+    # SCO or eSCO
+    DONT_CARE = 0xFF
+
+  # Transmit bandwidth in octets per second.
+  0     [+4] UInt transmit_bandwidth
+
+  # Receive bandwidth in octets per second.
+  $next [+4] UInt receive_bandwidth
+
+  let vcf_size = VendorCodingFormat.$size_in_bytes
+  # Local Controller -> Remote Controller coding format.
+  $next [+vcf_size] VendorCodingFormat transmit_coding_format
+
+  # Remote Controller -> Local Controller coding format.
+  $next [+vcf_size] VendorCodingFormat receive_coding_format
+
+  $next [+2] UInt transmit_codec_frame_size_bytes
+
+  $next [+2] UInt receive_codec_frame_size_bytes
+
+  # Host->Controller data rate in octets per second.
+  $next [+4] UInt input_bandwidth
+
+  # Controller->Host data rate in octets per second.
+  $next [+4] UInt output_bandwidth
+
+  # Host->Controller coding format.
+  $next [+vcf_size] VendorCodingFormat input_coding_format
+
+  # Controller->Host coding format.
+  $next [+vcf_size] VendorCodingFormat output_coding_format
+
+  # Size, in bits, of the sample or framed data.
+  $next [+2] UInt input_coded_data_size_bits
+
+  # Size, in bits, of the sample or framed data.
+  $next [+2] UInt output_coded_data_size_bits
+
+  $next [+1] PcmDataFormat input_pcm_data_format
+  $next [+1] PcmDataFormat output_pcm_data_format
+
+  # The number of bit positions within an audio sample that the MSB of
+  # the sample is away from starting at the MSB of the data.
+  $next [+1] UInt input_pcm_sample_payload_msb_position
+
+  # The number of bit positions within an audio sample that the MSB of
+  # the sample is away from starting at the MSB of the data.
+  $next [+1] UInt output_pcm_sample_payload_msb_position
+
+  $next [+1] ScoDataPath input_data_path
+  $next [+1] ScoDataPath output_data_path
+
+  # The number of bits in each unit of data received from the Host over the audio data transport.
+  # 0 indicates "not applicable"  (implied by the choice of audio data transport).
+  $next [+1] UInt input_transport_unit_size_bits
+
+  # The number of bits in each unit of data sent to the Host over the audio data transport.
+  # 0 indicates "not applicable"  (implied by the choice of audio data transport).
+  $next [+1] UInt output_transport_unit_size_bits
+
+  # The value in milliseconds representing the upper limit of the sum of
+  # the synchronous interval, and the size of the eSCO window, where the
+  # eSCO window is the reserved slots plus the retransmission window.
+  # Minimum: 0x0004
+  # Don't care: 0xFFFF
+  $next [+2] UInt max_latency_ms
+
+  # Bitmask of allowed packet types.
+  $next [+2] ScoPacketType packet_types
+
+  $next [+1] ScoRetransmissionEffort retransmission_effort
+
+struct EnhancedSetupSynchronousConnectionCommand:
+  let hdr_size = EmbossCommandHeader.$size_in_bytes
+  0     [+hdr_size] EmbossCommandHeader header
+
+  # The connection handle of the associated ACL link if creating a new (e)SCO connection, or the
+  # handle of an existing eSCO link if updating connection parameters.
+  $next [+2] UInt connection_handle
+
+  let scp_size = SynchronousConnectionParameters.$size_in_bytes
+  $next [+scp_size] SynchronousConnectionParameters connection_parameters
+
+struct EnhancedAcceptSynchronousConnectionRequestCommand:
+  let hdr_size = EmbossCommandHeader.$size_in_bytes
+  0     [+hdr_size] EmbossCommandHeader header
+
+  # The 48-bit BD_ADDR of the remote device requesting the connection.
+  $next [+6] UInt bd_addr
+
+  let scp_size = SynchronousConnectionParameters.$size_in_bytes
+  $next [+scp_size] SynchronousConnectionParameters connection_parameters
+
+# ============================ Test packets =============================
+
+# Test HCI Command packet with single byte payload.
+struct TestCommandPacket:
+  let hdr_size = EmbossCommandHeader.$size_in_bytes
+  0     [+hdr_size] EmbossCommandHeader header
+  $next [+1] UInt payload

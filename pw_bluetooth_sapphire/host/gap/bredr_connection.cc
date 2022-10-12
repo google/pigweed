@@ -91,12 +91,12 @@ void BrEdrConnection::OpenL2capChannel(l2cap::PSM psm, l2cap::ChannelParameters 
 }
 
 BrEdrConnection::ScoRequestHandle BrEdrConnection::OpenScoConnection(
-    hci_spec::SynchronousConnectionParameters parameters,
+    bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> parameters,
     sco::ScoConnectionManager::OpenConnectionCallback callback) {
   return sco_manager_->OpenConnection(parameters, std::move(callback));
 }
 BrEdrConnection::ScoRequestHandle BrEdrConnection::AcceptScoConnection(
-    std::vector<hci_spec::SynchronousConnectionParameters> parameters,
+    std::vector<bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter>> parameters,
     sco::ScoConnectionManager::AcceptConnectionCallback callback) {
   return sco_manager_->AcceptConnection(std::move(parameters), std::move(callback));
 }

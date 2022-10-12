@@ -869,7 +869,7 @@ void FakeController::OnDisconnectCommandReceived(const hci_spec::DisconnectComma
 
 void FakeController::OnWriteLEHostSupportCommandReceived(
     const hci_spec::WriteLEHostSupportCommandParams& params) {
-  if (params.le_supported_host == hci_spec::GenericEnableParam::kEnable) {
+  if (params.le_supported_host == hci_spec::GenericEnableParam::ENABLE) {
     SetBit(&settings_.lmp_features_page1, hci_spec::LMPFeature::kLESupportedHost);
   } else {
     UnsetBit(&settings_.lmp_features_page1, hci_spec::LMPFeature::kLESupportedHost);
@@ -883,19 +883,22 @@ void FakeController::OnReset() {
   RespondWithCommandComplete(hci_spec::kReset, hci_spec::StatusCode::kSuccess);
 }
 
-void FakeController::OnInquiry(const hci_spec::InquiryCommandParams& params) {
-  if (params.lap != hci_spec::kGIAC && params.lap != hci_spec::kLIAC) {
+void FakeController::OnInquiry(hci_spec::InquiryCommandView params) {
+  // Confirm that LAP array is equal to either kGIAC or kLIAC.
+  if (params.lap().Read() != hci_spec::InquiryAccessCode::GIAC &&
+      params.lap().Read() != hci_spec::InquiryAccessCode::LIAC) {
     RespondWithCommandStatus(hci_spec::kInquiry, hci_spec::kInvalidHCICommandParameters);
     return;
   }
 
-  if (params.inquiry_length == 0x00 || params.inquiry_length > hci_spec::kInquiryLengthMax) {
+  if (params.inquiry_length().Read() == 0x00 ||
+      params.inquiry_length().Read() > hci_spec::kInquiryLengthMax) {
     RespondWithCommandStatus(hci_spec::kInquiry, hci_spec::kInvalidHCICommandParameters);
     return;
   }
 
-  inquiry_num_responses_left_ = params.num_responses;
-  if (params.num_responses == 0) {
+  inquiry_num_responses_left_ = params.num_responses().Read();
+  if (params.num_responses().Read() == 0) {
     inquiry_num_responses_left_ = -1;
   }
 
@@ -911,13 +914,13 @@ void FakeController::OnInquiry(const hci_spec::InquiryCommandParams& params) {
         output.status = hci_spec::kSuccess;
         SendEvent(hci_spec::kInquiryCompleteEventCode, BufferView(&output, sizeof(output)));
       },
-      zx::msec(static_cast<int64_t>(params.inquiry_length) * 1280));
+      zx::msec(static_cast<int64_t>(params.inquiry_length().Read()) * 1280));
 }
 
 void FakeController::OnLESetScanEnable(const hci_spec::LESetScanEnableCommandParams& params) {
-  le_scan_state_.enabled = (params.scanning_enabled == hci_spec::GenericEnableParam::kEnable);
+  le_scan_state_.enabled = (params.scanning_enabled == hci_spec::GenericEnableParam::ENABLE);
   le_scan_state_.filter_duplicates =
-      (params.filter_duplicates == hci_spec::GenericEnableParam::kEnable);
+      (params.filter_duplicates == hci_spec::GenericEnableParam::ENABLE);
 
   // Post the scan state update before scheduling the HCI Command Complete
   // event. This guarantees that single-threaded unit tests receive the scan
@@ -1055,7 +1058,7 @@ void FakeController::OnWriteSimplePairingMode(
     const hci_spec::WriteSimplePairingModeCommandParams& params) {
   // "A host shall not set the Simple Pairing Mode to 'disabled'"
   // Spec 5.0 Vol 2 Part E Sec 7.3.59
-  if (params.simple_pairing_mode != hci_spec::GenericEnableParam::kEnable) {
+  if (params.simple_pairing_mode != hci_spec::GenericEnableParam::ENABLE) {
     RespondWithCommandComplete(hci_spec::kWriteSimplePairingMode,
                                hci_spec::StatusCode::kInvalidHCICommandParameters);
     return;
@@ -1070,9 +1073,9 @@ void FakeController::OnReadSimplePairingMode() {
   params.status = hci_spec::StatusCode::kSuccess;
   if (CheckBit(settings_.lmp_features_page1,
                hci_spec::LMPFeature::kSecureSimplePairingHostSupport)) {
-    params.simple_pairing_mode = hci_spec::GenericEnableParam::kEnable;
+    params.simple_pairing_mode = hci_spec::GenericEnableParam::ENABLE;
   } else {
-    params.simple_pairing_mode = hci_spec::GenericEnableParam::kDisable;
+    params.simple_pairing_mode = hci_spec::GenericEnableParam::DISABLE;
   }
 
   RespondWithCommandComplete(hci_spec::kReadSimplePairingMode, BufferView(&params, sizeof(params)));
@@ -1207,7 +1210,7 @@ void FakeController::OnLESetAdvertisingEnable(
   // TODO(fxbug.dev/81444): if own address type is random, check that a random address is set
 
   legacy_advertising_state_.enabled =
-      params.advertising_enable == hci_spec::GenericEnableParam::kEnable;
+      params.advertising_enable == hci_spec::GenericEnableParam::ENABLE;
   RespondWithCommandComplete(hci_spec::kLESetAdvertisingEnable, hci_spec::StatusCode::kSuccess);
   NotifyAdvertisingState();
 }
@@ -1564,8 +1567,9 @@ void FakeController::OnReadEncryptionKeySizeCommand(
 }
 
 void FakeController::OnEnhancedAcceptSynchronousConnectionRequestCommand(
-    const hci_spec::EnhancedAcceptSynchronousConnectionRequestCommandParams& params) {
-  DeviceAddress peer_address(DeviceAddress::Type::kBREDR, params.bd_addr);
+    hci_spec::EnhancedAcceptSynchronousConnectionRequestCommandView params) {
+  DeviceAddress peer_address(DeviceAddress::Type::kBREDR,
+                             DeviceAddressBytes(params.bd_addr().Read()));
   FakePeer* peer = FindPeer(peer_address);
   if (!peer || !peer->last_connection_request_link_type().has_value()) {
     RespondWithCommandStatus(hci_spec::kEnhancedAcceptSynchronousConnectionRequest,
@@ -1588,14 +1592,15 @@ void FakeController::OnEnhancedAcceptSynchronousConnectionRequestCommand(
   response.retransmission_window = 2;
   response.rx_packet_length = 3;
   response.tx_packet_length = 4;
-  response.air_coding_format = params.connection_parameters.transmit_coding_format.coding_format;
+  response.air_coding_format = static_cast<hci_spec::CodingFormat>(
+      params.connection_parameters().transmit_coding_format().coding_format().Read());
   SendEvent(hci_spec::kSynchronousConnectionCompleteEventCode,
             BufferView(&response, sizeof(response)));
 }
 
 void FakeController::OnEnhancedSetupSynchronousConnectionCommand(
-    const hci_spec::EnhancedSetupSynchronousConnectionCommandParams& params) {
-  const hci_spec::ConnectionHandle acl_handle = letoh16(params.connection_handle);
+    hci_spec::EnhancedSetupSynchronousConnectionCommandView params) {
+  const hci_spec::ConnectionHandle acl_handle = params.connection_handle().Read();
   FakePeer* peer = FindByConnHandle(acl_handle);
   if (!peer) {
     RespondWithCommandStatus(hci_spec::kEnhancedSetupSynchronousConnection,
@@ -1618,7 +1623,8 @@ void FakeController::OnEnhancedSetupSynchronousConnectionCommand(
   response.retransmission_window = 2;
   response.rx_packet_length = 3;
   response.tx_packet_length = 4;
-  response.air_coding_format = params.connection_parameters.transmit_coding_format.coding_format;
+  response.air_coding_format = static_cast<hci_spec::CodingFormat>(
+      params.connection_parameters().transmit_coding_format().coding_format().Read());
   SendEvent(hci_spec::kSynchronousConnectionCompleteEventCode,
             BufferView(&response, sizeof(response)));
 }
@@ -2018,7 +2024,7 @@ void FakeController::OnLESetExtendedAdvertisingEnable(
     }
   }
 
-  if (params.enable == hci_spec::GenericEnableParam::kDisable) {
+  if (params.enable == hci_spec::GenericEnableParam::DISABLE) {
     if (params.number_of_sets == 0) {
       // if params.enable == kDisable and params.number_of_sets == 0, spec asks we disable all
       for (auto& element : extended_advertising_states_) {
@@ -2038,7 +2044,7 @@ void FakeController::OnLESetExtendedAdvertisingEnable(
   }
 
   // rest of the function deals with enabling advertising for a given set of advertising sets
-  BT_ASSERT(params.enable == hci_spec::GenericEnableParam::kEnable);
+  BT_ASSERT(params.enable == hci_spec::GenericEnableParam::ENABLE);
 
   if (params.number_of_sets == 0) {
     bt_log(INFO, "fake-hci", "cannot enable with an empty advertising set list");
@@ -2199,6 +2205,25 @@ void FakeController::OnCommandPacketReceived(
       });
 }
 
+void FakeController::OnCommandPacketReceived(hci::EmbossCommandPacket& command_packet) {
+  hci_spec::OpCode opcode = command_packet.opcode();
+
+  bt_log(TRACE, "fake-hci", "received command packet with opcode: %#.4x", opcode);
+  // We handle commands immediately unless a client has explicitly set a listener for `opcode`.
+  if (paused_opcode_listeners_.find(opcode) == paused_opcode_listeners_.end()) {
+    HandleReceivedCommandPacket(command_packet);
+    return;
+  }
+
+  bt_log(DEBUG, "fake-hci", "pausing response for opcode: %#.4x", opcode);
+  paused_opcode_listeners_[opcode](
+      [this, packet_data = DynamicByteBuffer(command_packet.data())]() {
+        PacketView<hci_spec::CommandHeader> command_packet(
+            &packet_data, packet_data.size() - sizeof(hci_spec::CommandHeader));
+        HandleReceivedCommandPacket(command_packet);
+      });
+}
+
 void FakeController::OnAndroidLEGetVendorCapabilities() {
   hci_android::LEGetVendorCapabilitiesReturnParams params;
   std::memcpy(&params, &settings_.android_extension_settings, sizeof(params));
@@ -2221,7 +2246,7 @@ void FakeController::OnAndroidStartA2dpOffload(
 
   // SCMS-T is not currently supported
   hci_android::A2dpScmsTEnable const scms_t_enable = params.scms_t_enable;
-  if (scms_t_enable.enabled == hci_spec::GenericEnableParam::kEnable) {
+  if (scms_t_enable.enabled == hci_spec::GenericEnableParam::ENABLE) {
     ret.status = hci_spec::StatusCode::kUnsupportedFeatureOrParameter;
     RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, BufferView(&ret, sizeof(ret)));
     return;
@@ -2623,7 +2648,7 @@ void FakeController::OnAndroidLEMultiAdvtEnable(
   }
 
   bool enabled = false;
-  if (params.enable == hci_spec::GenericEnableParam::kEnable) {
+  if (params.enable == hci_spec::GenericEnableParam::ENABLE) {
     enabled = true;
   }
 
@@ -2939,11 +2964,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnLESetScanEnable(params);
       break;
     }
-    case hci_spec::kInquiry: {
-      const auto& params = command_packet.payload<hci_spec::InquiryCommandParams>();
-      OnInquiry(params);
-      break;
-    }
     case hci_spec::kReset: {
       OnReset();
       break;
@@ -3019,19 +3039,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnReadEncryptionKeySizeCommand(params);
       break;
     }
-    case hci_spec::kEnhancedAcceptSynchronousConnectionRequest: {
-      const auto& params =
-          command_packet
-              .payload<hci_spec::EnhancedAcceptSynchronousConnectionRequestCommandParams>();
-      OnEnhancedAcceptSynchronousConnectionRequestCommand(params);
-      break;
-    }
-    case hci_spec::kEnhancedSetupSynchronousConnection: {
-      const auto& params =
-          command_packet.payload<hci_spec::EnhancedSetupSynchronousConnectionCommandParams>();
-      OnEnhancedSetupSynchronousConnectionCommand(params);
-      break;
-    }
     case hci_spec::kLEReadRemoteFeatures: {
       const auto& params = command_packet.payload<hci_spec::LEReadRemoteFeaturesCommandParams>();
       OnLEReadRemoteFeaturesCommand(params);
@@ -3052,8 +3059,70 @@ void FakeController::HandleReceivedCommandPacket(
       OnWriteSynchronousFlowControlEnableCommand(params);
       break;
     }
+    case hci_spec::kInquiry:
+    case hci_spec::kEnhancedAcceptSynchronousConnectionRequest:
+    case hci_spec::kEnhancedSetupSynchronousConnection: {
+      // This case is for packet types that have been migrated to the new Emboss architecture. Their
+      // old version can be still be assembled from the HciEmulator channel, so here we repackage
+      // and forward them as Emboss packets.
+      bt::hci::EmbossCommandPacket emboss_packet =
+          bt::hci::EmbossCommandPacket::New(opcode, command_packet.size());
+      bt::MutableBufferView dest = emboss_packet.mutable_data();
+      command_packet.data().view().Copy(&dest);
+      HandleReceivedCommandPacket(emboss_packet);
+      break;
+    }
     default: {
       bt_log(WARN, "fake-hci", "received unhandled command with opcode: %#.4x", opcode);
+      RespondWithCommandComplete(opcode, hci_spec::StatusCode::kUnknownCommand);
+      break;
+    }
+  }
+}
+
+void FakeController::HandleReceivedCommandPacket(hci::EmbossCommandPacket& command_packet) {
+  hci_spec::OpCode opcode = command_packet.opcode();
+
+  if (MaybeRespondWithDefaultCommandStatus(opcode)) {
+    return;
+  }
+
+  if (MaybeRespondWithDefaultStatus(opcode)) {
+    return;
+  }
+
+  auto ogf = command_packet.ogf();
+  if (ogf == hci_spec::kVendorOGF) {
+    bt_log(WARN, "fake-hci",
+           "vendor commands not yet migrated to Emboss, yet received Emboss vendor command with "
+           "opcode: %#.4x",
+           opcode);
+    RespondWithCommandComplete(opcode, hci_spec::StatusCode::kUnknownCommand);
+    return;
+  }
+
+  switch (opcode) {
+    case hci_spec::kInquiry: {
+      auto params = command_packet.view<hci_spec::InquiryCommandView>();
+      OnInquiry(params);
+      break;
+    }
+    case hci_spec::kEnhancedAcceptSynchronousConnectionRequest: {
+      auto params =
+          command_packet.view<hci_spec::EnhancedAcceptSynchronousConnectionRequestCommandView>();
+      OnEnhancedAcceptSynchronousConnectionRequestCommand(params);
+      break;
+    }
+    case hci_spec::kEnhancedSetupSynchronousConnection: {
+      auto params = command_packet.view<hci_spec::EnhancedSetupSynchronousConnectionCommandView>();
+      OnEnhancedSetupSynchronousConnectionCommand(params);
+      break;
+    }
+    default: {
+      bt_log(WARN, "fake-hci",
+             "received Emboss command either unimplemented or not yet migrated to Emboss, with "
+             "opcode: %#.4x",
+             opcode);
       RespondWithCommandComplete(opcode, hci_spec::StatusCode::kUnknownCommand);
       break;
     }

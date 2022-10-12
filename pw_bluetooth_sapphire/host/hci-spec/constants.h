@@ -846,13 +846,6 @@ enum class LEEventMask : uint64_t {
   kLEChannelSelectionAlgorithm          = (1 << 19),
 };
 
-// Binary values that can be generically passed to HCI commands that expect a
-// 1-octet boolean "enable"/"disable" parameter.
-enum class GenericEnableParam : uint8_t {
-  kDisable = 0x00,
-  kEnable = 0x01,
-};
-
 // Values that can be passed to the Type parameter in a
 // HCI_Read_Transmit_Power_Level command.
 enum class ReadTransmitPowerType : uint8_t {
@@ -1418,14 +1411,6 @@ enum class PageScanRepetitionMode : uint8_t {
   kR2 = 0x02, // <= 2.56s
 };
 
-// LAPs defined for use in Inquiry LAP fields by Bluetooth SIG
-// See: https://www.bluetooth.com/specifications/assigned-numbers/baseband
-// The General/Unlimited Inquiry Access Code
-constexpr std::array<uint8_t, 3> kGIAC {{ 0x33, 0x8B, 0x9E }};
-
-// The Limited Dedicated Inquiry Access Code (LIAC)
-constexpr std::array<uint8_t, 3> kLIAC {{ 0x00, 0x8B, 0x9E }};
-
 // Bitmask Values for the Scan_Enable parameter in a
 // HCI_(Read,Write)_Scan_Enable command.
 enum class ScanEnableBit : uint8_t {
@@ -1586,50 +1571,6 @@ using PacketTypeType = uint16_t;
 enum class RoleSwitchBits : uint8_t {
   kDisallowRoleSwitch = 0x0,
   kAllowRoleSwitch = 0x1
-};
-
-// Coding formats from assigned numbers.
-// (https://www.bluetooth.com/specifications/assigned-numbers/host-controller-interface)
-enum class CodingFormat : uint8_t {
-  kMuLaw = 0x0,
-  kALaw = 0x1,
-  kCvsd = 0x2,
-  kTransparent = 0x3,
-  kLinearPcm = 0x4,
-  kMSbc = 0x5,
-  kVendorSpecific = 0xFF,
-};
-
-// PCM data formats from assigned numbers.
-// (https://www.bluetooth.com/specifications/assigned-numbers/host-controller-interface)
-enum class PcmDataFormat : uint8_t {
-  kNotApplicable = 0x0,
-  k1sComplement = 0x1,
-  k2sComplement = 0x2,
-  kSignMagnitude = 0x3,
-  kUnsigned = 0x4,
-};
-
-enum class ScoDataPath : uint8_t {
-  kHci = 0x00,
-  // 0x01 - 0xFE specify the logical channel number (vendor specific)
-  kAudioTestMode = 0xFF,
-};
-
-// Bitmask values for allowed SCO packet types.
-enum class ScoPacketTypeBits : uint16_t {
-  // SCO packet types
-  kHv1 = (1 << 0),
-  kHv2 = (1 << 1),
-  kHv3 = (1 << 2),
-  // eSCO packet types
-  kEv3 = (1 << 3),
-  kEv4 = (1 << 4),
-  kEv5 = (1 << 5),
-  kNot2Ev3 = (1 << 6),
-  kNot3Ev3 = (1 << 7),
-  kNot2Ev5 = (1 << 8),
-  kNot3Ev5 = (1 << 9),
 };
 
 enum class ScoRetransmissionEffort : uint8_t {

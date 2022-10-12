@@ -98,7 +98,7 @@ class FakeController : public ControllerTestDoubleBase {
     hci_android::A2dpCodecType codec_type = hci_android::A2dpCodecType::kSbc;
     uint16_t max_latency = 0;
     hci_android::A2dpScmsTEnable scms_t_enable = {
-        hci_spec::GenericEnableParam::kDisable,
+        hci_spec::GenericEnableParam::DISABLE,
         0x0,
     };
     hci_android::A2dpSamplingFrequency sampling_frequency =
@@ -467,7 +467,7 @@ class FakeController : public ControllerTestDoubleBase {
   void OnReset();
 
   // Called when a HCI_Inquiry command is received.
-  void OnInquiry(const hci_spec::InquiryCommandParams& params);
+  void OnInquiry(hci_spec::InquiryCommandView params);
 
   // Called when a HCI_LE_Set_Scan_Enable command is received.
   void OnLESetScanEnable(const hci_spec::LESetScanEnableCommandParams& params);
@@ -657,11 +657,11 @@ class FakeController : public ControllerTestDoubleBase {
 
   // Called when a HCI_Enhanced_Accept_Synchronous_Connection_Request command is received.
   void OnEnhancedAcceptSynchronousConnectionRequestCommand(
-      const hci_spec::EnhancedAcceptSynchronousConnectionRequestCommandParams& params);
+      hci_spec::EnhancedAcceptSynchronousConnectionRequestCommandView params);
 
   // Called when a HCI_Enhanced_Setup_Synchronous_Connection command is received.
   void OnEnhancedSetupSynchronousConnectionCommand(
-      const hci_spec::EnhancedSetupSynchronousConnectionCommandParams& params);
+      hci_spec::EnhancedSetupSynchronousConnectionCommandView params);
 
   // Called when a HCI_LE_Read_Remote_Features_Command is received.
   void OnLEReadRemoteFeaturesCommand(const hci_spec::LEReadRemoteFeaturesCommandParams& params);
@@ -703,9 +703,11 @@ class FakeController : public ControllerTestDoubleBase {
   // Respond to a command packet. This may be done immediately upon reception or via a client-
   // triggered callback if pause_responses_for_opcode has been called for that command's opcode.
   void HandleReceivedCommandPacket(const PacketView<hci_spec::CommandHeader>& command_packet);
+  void HandleReceivedCommandPacket(hci::EmbossCommandPacket& command_packet);
 
   // ControllerTestDoubleBase overrides:
   void OnCommandPacketReceived(const PacketView<hci_spec::CommandHeader>& command_packet) override;
+  void OnCommandPacketReceived(hci::EmbossCommandPacket& command_packet) override;
   void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) override;
   void OnScoDataPacketReceived(const ByteBuffer& sco_data_packet) override;
 

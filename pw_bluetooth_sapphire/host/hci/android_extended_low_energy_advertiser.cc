@@ -164,7 +164,7 @@ std::unique_ptr<CommandPacket> AndroidExtendedLowEnergyAdvertiser::BuildRemoveAd
   packet->mutable_view()->mutable_payload_data().SetToZeros();
   auto payload = packet->mutable_payload<hci_android::LEMultiAdvtEnableCommandParams>();
   payload->opcode = hci_android::kLEMultiAdvtEnableSubopcode;
-  payload->enable = hci_spec::GenericEnableParam::kDisable;
+  payload->enable = hci_spec::GenericEnableParam::DISABLE;
   payload->adv_handle = handle.value();
   return packet;
 }

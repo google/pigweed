@@ -11,6 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/emboss_control_packets.h"
 
 namespace bt::testing {
 
@@ -49,10 +50,12 @@ DynamicByteBuffer EncryptionChangeEventPacket(hci_spec::StatusCode status_code,
                                               hci_spec::EncryptionStatus encryption_enabled);
 
 DynamicByteBuffer EnhancedAcceptSynchronousConnectionRequestPacket(
-    DeviceAddress peer_address, hci_spec::SynchronousConnectionParameters params);
+    DeviceAddress peer_address,
+    bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> params);
 
 DynamicByteBuffer EnhancedSetupSynchronousConnectionPacket(
-    hci_spec::ConnectionHandle conn, hci_spec::SynchronousConnectionParameters params);
+    hci_spec::ConnectionHandle conn,
+    bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> params);
 
 DynamicByteBuffer NumberOfCompletedPacketsPacket(hci_spec::ConnectionHandle conn,
                                                  uint16_t num_packets);

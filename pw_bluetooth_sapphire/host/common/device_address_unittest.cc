@@ -46,6 +46,22 @@ TEST(DeviceAddressBytesTest, CastFromBytes) {
   EXPECT_EQ("03:7F:FF:02:0F:01", test_payload->bdaddr.ToString());
 }
 
+TEST(DeviceAddressBytesTest, FromInt) {
+  DeviceAddressBytes addr = DeviceAddressBytes(0);
+  EXPECT_EQ(addr, DeviceAddressBytes({0, 0, 0, 0, 0, 0}));
+
+  addr = DeviceAddressBytes(0xfffffffffffelu);
+  EXPECT_EQ(addr, DeviceAddressBytes({0xfe, 0xff, 0xff, 0xff, 0xff, 0xff}));
+}
+
+TEST(DeviceAddressBytesTest, ToInt) {
+  DeviceAddressBytes addr = DeviceAddressBytes({0, 0, 0, 0, 0, 0});
+  EXPECT_EQ(addr.as_int(), 0u);
+
+  addr = DeviceAddressBytes({0xfe, 0xff, 0xff, 0xff, 0xff, 0xff});
+  EXPECT_EQ(addr.as_int(), 0xfffffffffffelu);
+}
+
 TEST(DeviceAddressBytesTest, Comparison) {
   DeviceAddressBytes bdaddr0, bdaddr1;
   EXPECT_EQ(bdaddr0, bdaddr1);

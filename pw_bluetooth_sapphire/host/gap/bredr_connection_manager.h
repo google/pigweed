@@ -101,10 +101,11 @@ class BrEdrConnectionManager final {
   // the peer does not exist, returns nullopt.
   using ScoRequestHandle = BrEdrConnection::ScoRequestHandle;
   std::optional<ScoRequestHandle> OpenScoConnection(
-      PeerId peer_id, hci_spec::SynchronousConnectionParameters parameters,
+      PeerId peer_id, bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> parameters,
       sco::ScoConnectionManager::OpenConnectionCallback callback);
   std::optional<ScoRequestHandle> AcceptScoConnection(
-      PeerId peer_id, std::vector<hci_spec::SynchronousConnectionParameters> parameters,
+      PeerId peer_id,
+      std::vector<bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter>> parameters,
       sco::ScoConnectionManager::AcceptConnectionCallback callback);
 
   // Add a service search to be performed on new connected remote peers.

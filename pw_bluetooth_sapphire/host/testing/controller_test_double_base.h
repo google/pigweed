@@ -15,6 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/emboss_control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/sco_data_packet.h"
 
 namespace bt::testing {
@@ -72,6 +73,7 @@ class ControllerTestDoubleBase {
 
   // Called by test fixtures to send packets:
   void HandleCommandPacket(std::unique_ptr<hci::CommandPacket> packet);
+  void HandleCommandPacket(hci::EmbossCommandPacket packet);
   void HandleACLPacket(std::unique_ptr<hci::ACLDataPacket> packet);
   void HandleScoPacket(std::unique_ptr<hci::ScoDataPacket> packet);
 
@@ -87,6 +89,8 @@ class ControllerTestDoubleBase {
   // Called when there is an outgoing command packet.
   virtual void OnCommandPacketReceived(
       const PacketView<hci_spec::CommandHeader>& command_packet) = 0;
+  // Same as above; Emboss version.
+  virtual void OnCommandPacketReceived(hci::EmbossCommandPacket& command_packet) = 0;
 
   // Called when there is an outgoing ACL data packet.
   virtual void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) = 0;

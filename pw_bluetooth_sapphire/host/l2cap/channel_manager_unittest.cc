@@ -244,7 +244,7 @@ auto OutboundDisconnectionRequest(CommandId id) {
 Channel::A2dpOffloadConfiguration BuildA2dpOffloadConfiguration(
     hci_android::A2dpCodecType codec = hci_android::A2dpCodecType::kSbc) {
   hci_android::A2dpScmsTEnable scms_t_enable;
-  scms_t_enable.enabled = hci_spec::GenericEnableParam::kDisable;
+  scms_t_enable.enabled = hci_spec::GenericEnableParam::DISABLE;
   scms_t_enable.header = 0x00;
 
   hci_android::A2dpOffloadCodecInformation codec_information;

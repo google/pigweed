@@ -227,16 +227,19 @@ class AdapterImpl final : public Adapter {
     }
 
     std::optional<ScoRequestHandle> OpenScoConnection(
-        PeerId peer_id, hci_spec::SynchronousConnectionParameters parameters,
+        PeerId peer_id,
+        const bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter>& parameters,
         sco::ScoConnectionManager::OpenConnectionCallback callback) override {
       return adapter_->bredr_connection_manager_->OpenScoConnection(peer_id, parameters,
                                                                     std::move(callback));
     }
     std::optional<ScoRequestHandle> AcceptScoConnection(
-        PeerId peer_id, std::vector<hci_spec::SynchronousConnectionParameters> parameters,
+        PeerId peer_id,
+        const std::vector<bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter>>
+            parameters,
         sco::ScoConnectionManager::AcceptConnectionCallback callback) override {
-      return adapter_->bredr_connection_manager_->AcceptScoConnection(peer_id, parameters,
-                                                                      std::move(callback));
+      return adapter_->bredr_connection_manager_->AcceptScoConnection(
+          peer_id, std::move(parameters), std::move(callback));
     }
 
    private:
@@ -795,7 +798,7 @@ void AdapterImpl::InitializeStep2() {
     auto write_ssp = hci::CommandPacket::New(hci_spec::kWriteSimplePairingMode,
                                              sizeof(hci_spec::WriteSimplePairingModeCommandParams));
     write_ssp->mutable_payload<hci_spec::WriteSimplePairingModeCommandParams>()
-        ->simple_pairing_mode = hci_spec::GenericEnableParam::kEnable;
+        ->simple_pairing_mode = hci_spec::GenericEnableParam::ENABLE;
     init_seq_runner_->QueueCommand(std::move(write_ssp), [](const auto& event) {
       // Warn if the command failed
       hci_is_error(event, WARN, "gap", "write simple pairing mode failed");
@@ -873,7 +876,7 @@ void AdapterImpl::InitializeStep3() {
                                 sizeof(hci_spec::WriteSynchronousFlowControlEnableParams));
     auto* flow_control_params =
         cmd_packet->mutable_payload<hci_spec::WriteSynchronousFlowControlEnableParams>();
-    flow_control_params->synchronous_flow_control_enable = hci_spec::GenericEnableParam::kEnable;
+    flow_control_params->synchronous_flow_control_enable = hci_spec::GenericEnableParam::ENABLE;
     init_seq_runner_->QueueCommand(std::move(cmd_packet), [this](const auto& event) {
       if (hci_is_error(event, ERROR, "gap",
                        "Write synchronous flow control enable failed, proceeding without HCI "
@@ -937,7 +940,7 @@ void AdapterImpl::InitializeStep3() {
     auto cmd_packet = hci::CommandPacket::New(hci_spec::kWriteLEHostSupport,
                                               sizeof(hci_spec::WriteLEHostSupportCommandParams));
     auto params = cmd_packet->mutable_payload<hci_spec::WriteLEHostSupportCommandParams>();
-    params->le_supported_host = hci_spec::GenericEnableParam::kEnable;
+    params->le_supported_host = hci_spec::GenericEnableParam::ENABLE;
     params->simultaneous_le_host = 0x00;  // note: ignored
     init_seq_runner_->QueueCommand(std::move(cmd_packet), [](const auto& event) {
       hci_is_error(event, WARN, "gap", "write LE host support failed");

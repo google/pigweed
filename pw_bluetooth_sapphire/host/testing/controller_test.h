@@ -140,6 +140,13 @@ class ControllerTest : public ::gtest::TestLoopFixture {
       }
       return ZX_ERR_IO_NOT_PRESENT;
     });
+    mock_hci_->set_send_emboss_command_cb([this](hci::EmbossCommandPacket packet) {
+      if (test_device_) {
+        test_device_->HandleCommandPacket(std::move(packet));
+        return ZX_OK;
+      }
+      return ZX_ERR_IO_NOT_PRESENT;
+    });
     test_device_->StartCmdChannel([this](std::unique_ptr<hci::EventPacket> packet) {
       // TODO(fxbug.dev/97629): Remove this PostTask and call ReceiveEvent() synchronously.
       async::PostTask(dispatcher(), [this, packet = std::move(packet)]() mutable {

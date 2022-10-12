@@ -20,63 +20,57 @@ constexpr hci_spec::ConnectionHandle kScoConnectionHandle = 0x41;
 const DeviceAddress kLocalAddress(DeviceAddress::Type::kBREDR,
                                   {0x00, 0x00, 0x00, 0x00, 0x00, 0x01});
 const DeviceAddress kPeerAddress(DeviceAddress::Type::kBREDR, {0x00, 0x00, 0x00, 0x00, 0x00, 0x02});
-constexpr hci_spec::SynchronousConnectionParameters kConnectionParams{
-    .transmit_bandwidth = 1,
-    .receive_bandwidth = 2,
-    .transmit_coding_format =
-        hci_spec::VendorCodingFormat{
-            .coding_format = hci_spec::CodingFormat::kMSbc,
-            .company_id = 3,
-            .vendor_codec_id = 4,
-        },
-    .receive_coding_format =
-        hci_spec::VendorCodingFormat{
-            .coding_format = hci_spec::CodingFormat::kCvsd,
-            .company_id = 5,
-            .vendor_codec_id = 6,
-        },
-    .transmit_codec_frame_size_bytes = 7,
-    .receive_codec_frame_size_bytes = 8,
-    .input_bandwidth = 9,
-    .output_bandwidth = 10,
-    .input_coding_format =
-        hci_spec::VendorCodingFormat{
-            .coding_format = hci_spec::CodingFormat::kALaw,
-            .company_id = 11,
-            .vendor_codec_id = 12,
-        },
-    .output_coding_format =
-        hci_spec::VendorCodingFormat{
-            .coding_format = hci_spec::CodingFormat::kLinearPcm,
-            .company_id = 13,
-            .vendor_codec_id = 14,
-        },
-    .input_coded_data_size_bits = 15,
-    .output_coded_data_size_bits = 16,
-    .input_pcm_data_format = hci_spec::PcmDataFormat::k1sComplement,
-    .output_pcm_data_format = hci_spec::PcmDataFormat::k2sComplement,
-    .input_pcm_sample_payload_msb_position = 17,
-    .output_pcm_sample_payload_msb_position = 18,
-    .input_data_path = hci_spec::ScoDataPath::kAudioTestMode,
-    .output_data_path = hci_spec::ScoDataPath::kHci,
-    .input_transport_unit_size_bits = 19,
-    .output_transport_unit_size_bits = 20,
-    .max_latency_ms = 21,
-    .packet_types = 0x003F,  // All packet types
-    .retransmission_effort = hci_spec::ScoRetransmissionEffort::kQualityOptimized,
-};
+bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> kConnectionParams;
 
-constexpr hci_spec::SynchronousConnectionParameters ScoConnectionParams() {
+bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> InitializeConnectionParams() {
+  bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> out;
+  auto view = out.view();
+  view.transmit_bandwidth().Write(1);
+  view.receive_bandwidth().Write(2);
+  view.transmit_coding_format().coding_format().Write(hci_spec::CodingFormat::MSBC);
+  view.transmit_coding_format().company_id().Write(3);
+  view.transmit_coding_format().vendor_codec_id().Write(4);
+  view.receive_coding_format().coding_format().Write(hci_spec::CodingFormat::CVSD);
+  view.receive_coding_format().company_id().Write(5);
+  view.receive_coding_format().vendor_codec_id().Write(6);
+  view.transmit_codec_frame_size_bytes().Write(7);
+  view.receive_codec_frame_size_bytes().Write(8);
+  view.input_bandwidth().Write(9);
+  view.output_bandwidth().Write(10);
+  view.input_coding_format().coding_format().Write(hci_spec::CodingFormat::A_LAW);
+  view.input_coding_format().company_id().Write(11);
+  view.input_coding_format().vendor_codec_id().Write(12);
+  view.output_coding_format().coding_format().Write(hci_spec::CodingFormat::LINEAR_PCM);
+  view.output_coding_format().company_id().Write(13);
+  view.output_coding_format().vendor_codec_id().Write(14);
+  view.input_coded_data_size_bits().Write(15);
+  view.output_coded_data_size_bits().Write(16);
+  view.input_pcm_data_format().Write(hci_spec::PcmDataFormat::ONES_COMPLEMENT);
+  view.output_pcm_data_format().Write(hci_spec::PcmDataFormat::TWOS_COMPLEMENT);
+  view.input_pcm_sample_payload_msb_position().Write(17);
+  view.output_pcm_sample_payload_msb_position().Write(18);
+  view.input_data_path().Write(hci_spec::ScoDataPath::AUDIO_TEST_MODE);
+  view.output_data_path().Write(hci_spec::ScoDataPath::HCI);
+  view.input_transport_unit_size_bits().Write(19);
+  view.output_transport_unit_size_bits().Write(20);
+  view.max_latency_ms().Write(21);
+  view.packet_types().BackingStorage().WriteUInt(0x003F);  // All packet types
+  view.retransmission_effort().Write(
+      hci_spec::SynchronousConnectionParameters::ScoRetransmissionEffort::QUALITY_OPTIMIZED);
+  return out;
+}
+
+bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> ScoConnectionParams() {
   auto params = kConnectionParams;
-  params.packet_types = params.packet_types =
-      static_cast<uint16_t>(hci_spec::ScoPacketTypeBits::kHv3);
+  params.view().packet_types().BackingStorage().WriteUInt(0);
+  params.view().packet_types().hv3().Write(true);
   return params;
 }
 
-constexpr hci_spec::SynchronousConnectionParameters EscoConnectionParams() {
+bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> EscoConnectionParams() {
   auto params = kConnectionParams;
-  params.packet_types = params.packet_types =
-      static_cast<uint16_t>(hci_spec::ScoPacketTypeBits::kEv3);
+  params.view().packet_types().BackingStorage().WriteUInt(0);
+  params.view().packet_types().ev3().Write(true);
   return params;
 }
 
@@ -103,6 +97,7 @@ class ScoConnectionManagerTest : public TestingBase {
 
     manager_ = std::make_unique<ScoConnectionManager>(PeerId(1), kAclConnectionHandle, kPeerAddress,
                                                       kLocalAddress, transport()->WeakPtr());
+    kConnectionParams = InitializeConnectionParams();
   }
 
   void TearDown() override {
@@ -578,7 +573,7 @@ TEST_F(ScoConnectionManagerTest, QueueTwoAcceptConnectionRequestsCancelsFirstReq
   auto req_handle_0 = manager()->AcceptConnection({kConnectionParams}, conn_cb);
 
   auto second_conn_params = kConnectionParams;
-  second_conn_params.transmit_bandwidth = 99;
+  second_conn_params.view().transmit_bandwidth().Write(99);
 
   std::optional<AcceptConnectionResult> conn_result_1;
   auto req_handle_1 = manager()->AcceptConnection(
@@ -624,7 +619,7 @@ TEST_F(
   req_handle_0 = manager()->AcceptConnection({kConnectionParams}, conn_cb);
 
   auto second_conn_params = kConnectionParams;
-  second_conn_params.transmit_bandwidth = 99;
+  second_conn_params.view().transmit_bandwidth().Write(99);
 
   std::optional<AcceptConnectionResult> conn_result_1;
   auto req_handle_1 = manager()->AcceptConnection(
@@ -1035,10 +1030,12 @@ TEST_F(ScoConnectionManagerTest,
 }
 
 TEST_F(ScoConnectionManagerTest, AcceptConnectionFirstParametersRejectedSecondParametersAccepted) {
-  hci_spec::SynchronousConnectionParameters esco_params_0 = kConnectionParams;
-  esco_params_0.packet_types = static_cast<uint16_t>(hci_spec::ScoPacketTypeBits::kEv3);
-  hci_spec::SynchronousConnectionParameters esco_params_1 = kConnectionParams;
-  esco_params_1.packet_types = static_cast<uint16_t>(hci_spec::ScoPacketTypeBits::kEv4);
+  bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> esco_params_0 =
+      kConnectionParams;
+  esco_params_0.view().packet_types().ev3().Write(true);
+  bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> esco_params_1 =
+      kConnectionParams;
+  esco_params_1.view().packet_types().ev4().Write(true);
 
   std::optional<AcceptConnectionResult> conn_result;
   auto conn_cb = [&conn_result](auto cb_conn) { conn_result = std::move(cb_conn); };
@@ -1123,9 +1120,8 @@ TEST_F(
   EXPECT_EQ(result_parameter_index, 1u);
 
   // Verify that the correct parameters were given to the ScoConnection.
-  EXPECT_EQ(conn_result->value().first->parameters().packet_types,
-            ScoConnectionParams().packet_types);
-
+  ASSERT_TRUE(conn_result->value().first->parameters().view().packet_types().Equals(
+      ScoConnectionParams().view().packet_types()));
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kScoConnectionHandle));
 }
 

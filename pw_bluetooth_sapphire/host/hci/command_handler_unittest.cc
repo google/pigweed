@@ -65,10 +65,10 @@ template <typename CompleteEventT>
 struct TestCommand {
   uint8_t test_param;
 
-  std::unique_ptr<CommandPacket> Encode() {
-    auto packet = CommandPacket::New(kOpCode, sizeof(test_param));
-    auto* payload = packet->mutable_payload<decltype(test_param)>();
-    *payload = kEncodedTestCommandParam;
+  EmbossCommandPacket Encode() {
+    auto packet = EmbossCommandPacket::New<hci_spec::TestCommandPacketWriter>(kOpCode);
+    auto view = packet.view<hci_spec::TestCommandPacketWriter>();
+    view.payload().Write(kEncodedTestCommandParam);
     return packet;
   }
 

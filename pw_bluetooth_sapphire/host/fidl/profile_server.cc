@@ -294,7 +294,7 @@ void ProfileServer::ScoConnectionServer::Activate(fit::callback<void()> on_close
 }
 
 void ProfileServer::ScoConnectionServer::Read(ReadCallback callback) {
-  if (connection_->parameters().input_data_path != bt::hci_spec::ScoDataPath::kHci) {
+  if (connection_->parameters().view().input_data_path().Read() != bt::hci_spec::ScoDataPath::HCI) {
     bt_log(WARN, "fidl", "%s called for an offloaded SCO connection", __func__);
     Close(ZX_ERR_IO_NOT_PRESENT);
     return;
@@ -310,7 +310,8 @@ void ProfileServer::ScoConnectionServer::Read(ReadCallback callback) {
 }
 
 void ProfileServer::ScoConnectionServer::Write(std::vector<uint8_t> data, WriteCallback callback) {
-  if (connection_->parameters().output_data_path != bt::hci_spec::ScoDataPath::kHci) {
+  if (connection_->parameters().view().output_data_path().Read() !=
+      bt::hci_spec::ScoDataPath::HCI) {
     bt_log(WARN, "fidl", "%s called for a non-HCI SCO connection", __func__);
     Close(ZX_ERR_IO_NOT_PRESENT);
     return;

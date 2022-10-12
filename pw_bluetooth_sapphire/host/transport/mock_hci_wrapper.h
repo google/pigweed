@@ -20,6 +20,7 @@ class MockHciWrapper : public HciWrapper {
   using SendAclPacketFunction = fit::function<zx_status_t(std::unique_ptr<ACLDataPacket>)>;
 
   using SendCommandPacketFunction = fit::function<zx_status_t(std::unique_ptr<CommandPacket>)>;
+  using SendEmbossCommandPacketFunction = fit::function<zx_status_t(EmbossCommandPacket)>;
 
   using SendScoPacketFunction = fit::function<zx_status_t(std::unique_ptr<ScoDataPacket>)>;
 
@@ -35,6 +36,9 @@ class MockHciWrapper : public HciWrapper {
   void set_send_acl_cb(SendAclPacketFunction cb) { send_acl_cb_ = std::move(cb); }
 
   void set_send_command_cb(SendCommandPacketFunction cb) { send_command_cb_ = std::move(cb); }
+  void set_send_emboss_command_cb(SendEmbossCommandPacketFunction cb) {
+    send_emboss_command_cb_ = std::move(cb);
+  }
 
   void set_send_sco_cb(SendScoPacketFunction cb) { send_sco_cb_ = std::move(cb); }
 
@@ -94,6 +98,9 @@ class MockHciWrapper : public HciWrapper {
   zx_status_t SendCommand(std::unique_ptr<CommandPacket> packet) override {
     return send_command_cb_ ? send_command_cb_(std::move(packet)) : ZX_OK;
   }
+  zx_status_t SendCommand(EmbossCommandPacket packet) override {
+    return send_emboss_command_cb_ ? send_emboss_command_cb_(std::move(packet)) : ZX_OK;
+  }
 
   void SetEventCallback(EventPacketFunction callback) override {
     event_packet_cb_ = std::move(callback);
@@ -151,6 +158,7 @@ class MockHciWrapper : public HciWrapper {
 
   SendScoPacketFunction send_sco_cb_;
   SendCommandPacketFunction send_command_cb_;
+  SendEmbossCommandPacketFunction send_emboss_command_cb_;
   SendAclPacketFunction send_acl_cb_;
 
   EventPacketFunction event_packet_cb_;

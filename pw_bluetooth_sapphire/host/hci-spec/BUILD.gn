@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
+import("//third_party/github.com/google/emboss/build_defs.gni")
 
 # Static library containing the HCI specification definitions
 static_library("hci-spec") {
@@ -19,7 +20,10 @@ static_library("hci-spec") {
     "util.h",
   ]
 
-  public_deps = [ "//src/connectivity/bluetooth/core/bt-host/common" ]
+  public_deps = [
+    ":hci-protocol",
+    "//src/connectivity/bluetooth/core/bt-host/common",
+  ]
 }
 
 source_set("tests") {
@@ -35,4 +39,8 @@ source_set("tests") {
 
 bt_gtest_package("bt-host-hci-spec-tests") {
   deps = [ ":tests" ]
+}
+
+emboss_cc_library("hci-protocol") {
+  source = "hci-protocol.emb"
 }

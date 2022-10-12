@@ -318,7 +318,8 @@ class Adapter {
     // nullopt.
     using ScoRequestHandle = BrEdrConnection::ScoRequestHandle;
     virtual std::optional<ScoRequestHandle> OpenScoConnection(
-        PeerId peer_id, hci_spec::SynchronousConnectionParameters parameters,
+        PeerId peer_id,
+        const bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter>& parameters,
         sco::ScoConnectionManager::OpenConnectionCallback callback) = 0;
 
     // Accept inbound connection requests using the parameters given in order. The parameters will
@@ -330,7 +331,8 @@ class Adapter {
     // Returns a handle that will cancel the request when destroyed (if connection establishment has
     // not started). If a BR/EDR connection with the peer does not exist, returns nullopt.
     virtual std::optional<ScoRequestHandle> AcceptScoConnection(
-        PeerId peer_id, std::vector<hci_spec::SynchronousConnectionParameters> parameters,
+        PeerId peer_id,
+        std::vector<bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter>> parameters,
         sco::ScoConnectionManager::AcceptConnectionCallback callback) = 0;
   };
 

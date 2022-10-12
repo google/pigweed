@@ -4,8 +4,11 @@
 
 #include "mock_controller.h"
 
+#include <endian.h>
 #include <lib/async/cpp/task.h>
 #include <zircon/status.h>
+
+#include <cstdint>
 
 #include <gtest/gtest.h>
 
@@ -148,11 +151,9 @@ void MockController::ClearTransactionCallback() {
   transaction_callback_ = nullptr;
 }
 
-void MockController::OnCommandPacketReceived(
-    const PacketView<hci_spec::CommandHeader>& command_packet) {
-  uint16_t opcode = le16toh(command_packet.header().opcode);
-  uint8_t ogf = hci_spec::GetOGF(opcode);
-  uint16_t ocf = hci_spec::GetOCF(opcode);
+void MockController::ProcessCommandPacket(uint16_t opcode, const BufferView& data) {
+  const uint8_t ogf = hci_spec::GetOGF(opcode);
+  const uint16_t ocf = hci_spec::GetOCF(opcode);
 
   // Note: we upcast ogf to uint16_t so that it does not get interpreted as a
   // char for printing
@@ -163,10 +164,10 @@ void MockController::OnCommandPacketReceived(
   auto& transaction = cmd_transactions_.front();
   const hci_spec::OpCode expected_opcode =
       le16toh(transaction.expected().data.To<hci_spec::OpCode>());
-  uint8_t expected_ogf = hci_spec::GetOGF(expected_opcode);
-  uint16_t expected_ocf = hci_spec::GetOCF(expected_opcode);
+  const uint8_t expected_ogf = hci_spec::GetOGF(expected_opcode);
+  const uint16_t expected_ocf = hci_spec::GetOCF(expected_opcode);
 
-  if (!transaction.Match(command_packet.data())) {
+  if (!transaction.Match(data)) {
     auto meta = transaction.expected().meta;
     GTEST_FAIL_AT(meta.file, meta.line)
         << " Expected command packet (" << meta.expectation << ") with OGF: 0x" << std::hex
@@ -184,10 +185,19 @@ void MockController::OnCommandPacketReceived(
   cmd_transactions_.pop();
 
   if (transaction_callback_) {
-    DynamicByteBuffer rx(command_packet.data());
+    DynamicByteBuffer rx(data);
     async::PostTask(transaction_dispatcher_,
                     [rx = std::move(rx), f = transaction_callback_.share()] { f(rx); });
   }
+}
+
+void MockController::OnCommandPacketReceived(
+    const PacketView<hci_spec::CommandHeader>& command_packet) {
+  ProcessCommandPacket(le16toh(command_packet.header().opcode), command_packet.data());
+}
+
+void MockController::OnCommandPacketReceived(hci::EmbossCommandPacket& command_packet) {
+  ProcessCommandPacket(command_packet.opcode(), command_packet.data());
 }
 
 void MockController::OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) {

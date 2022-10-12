@@ -22,20 +22,20 @@ class AndroidVendorCapabilitiesTest : public ::testing::Test {
 
     // select values other than the zero value to ensure the results of std::memset don't propagate
     params.max_advt_instances = 1;
-    params.offloaded_rpa = hci_spec::GenericEnableParam::kEnable;
+    params.offloaded_rpa = hci_spec::GenericEnableParam::ENABLE;
     params.total_scan_results_storage = 2;
     params.max_irk_list_size = 3;
-    params.filtering_support = hci_spec::GenericEnableParam::kEnable;
+    params.filtering_support = hci_spec::GenericEnableParam::ENABLE;
     params.max_filter = 4;
-    params.activity_energy_info_support = hci_spec::GenericEnableParam::kEnable;
+    params.activity_energy_info_support = hci_spec::GenericEnableParam::ENABLE;
     params.version_supported_minor = 5;
     params.version_supported_major = 6;
     params.total_num_of_advt_tracked = 7;
-    params.extended_scan_support = hci_spec::GenericEnableParam::kEnable;
-    params.debug_logging_supported = hci_spec::GenericEnableParam::kEnable;
-    params.le_address_generation_offloading_support = hci_spec::GenericEnableParam::kEnable;
+    params.extended_scan_support = hci_spec::GenericEnableParam::ENABLE;
+    params.debug_logging_supported = hci_spec::GenericEnableParam::ENABLE;
+    params.le_address_generation_offloading_support = hci_spec::GenericEnableParam::ENABLE;
     params.a2dp_source_offload_capability_mask = 8;
-    params.bluetooth_quality_report_support = hci_spec::GenericEnableParam::kEnable;
+    params.bluetooth_quality_report_support = hci_spec::GenericEnableParam::ENABLE;
     params.dynamic_audio_buffer_support = 9;
 
     vendor_capabilities_.Initialize(params);

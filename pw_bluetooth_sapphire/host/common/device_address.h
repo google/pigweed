@@ -25,6 +25,8 @@ class DeviceAddressBytes {
   // Initializes the contents from |bytes|.
   explicit DeviceAddressBytes(std::array<uint8_t, kDeviceAddressSize> bytes);
   explicit DeviceAddressBytes(const ByteBuffer& bytes);
+  // Initializes the contents from the 6 least significant bytes of |addr|.
+  explicit DeviceAddressBytes(uint64_t addr);
 
   // Returns a string representation of the device address. The bytes in
   // human-readable form will appear in big-endian byte order even though the
@@ -44,6 +46,8 @@ class DeviceAddressBytes {
   bool operator==(const DeviceAddressBytes& other) const { return bytes_ == other.bytes_; }
   bool operator!=(const DeviceAddressBytes& other) const { return !(*this == other); }
   bool operator<(const DeviceAddressBytes& other) const { return bytes_ < other.bytes_; }
+
+  uint64_t as_int() const;
 
   // Returns a hash of the contents of this address.
   std::size_t Hash() const;

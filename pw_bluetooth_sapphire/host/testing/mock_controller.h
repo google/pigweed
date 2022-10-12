@@ -185,8 +185,11 @@ class MockController : public ControllerTestDoubleBase {
  private:
   // ControllerTestDoubleBase overrides:
   void OnCommandPacketReceived(const PacketView<hci_spec::CommandHeader>& command_packet) override;
+  void OnCommandPacketReceived(hci::EmbossCommandPacket& command_packet) override;
   void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) override;
   void OnScoDataPacketReceived(const ByteBuffer& sco_data_packet) override;
+
+  void ProcessCommandPacket(uint16_t opcode, const BufferView& data);
 
   std::queue<CommandTransaction> cmd_transactions_;
   std::queue<DataTransaction> data_transactions_;

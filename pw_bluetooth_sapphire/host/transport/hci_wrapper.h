@@ -13,6 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/device_wrapper.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/emboss_control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/hci_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/sco_data_packet.h"
 
@@ -49,6 +50,9 @@ class HciWrapper {
 
   // Sends an HCI command packet and returns the status of the operation.
   [[nodiscard]] virtual zx_status_t SendCommand(std::unique_ptr<CommandPacket> packet) = 0;
+
+  // Same as above; Emboss version.
+  [[nodiscard]] virtual zx_status_t SendCommand(EmbossCommandPacket packet) = 0;
 
   // Sets a callback that will be called with inbound event packets.
   virtual void SetEventCallback(EventPacketFunction callback) = 0;

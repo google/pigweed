@@ -38,7 +38,7 @@ bool BrEdrConnection::StartEncryption() {
                                 sizeof(hci_spec::SetConnectionEncryptionCommandParams));
   auto* params = cmd->mutable_payload<hci_spec::SetConnectionEncryptionCommandParams>();
   params->connection_handle = htole16(handle());
-  params->encryption_enable = hci_spec::GenericEnableParam::kEnable;
+  params->encryption_enable = hci_spec::GenericEnableParam::ENABLE;
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto event_cb = [self, handle = handle()](auto id, const EventPacket& event) {

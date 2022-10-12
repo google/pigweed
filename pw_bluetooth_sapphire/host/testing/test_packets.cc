@@ -14,34 +14,6 @@ namespace bt::testing {
 
 namespace hci_android = bt::hci_spec::vendor::android;
 
-namespace {
-
-hci_spec::SynchronousConnectionParameters ConnectionParametersToLe(
-    hci_spec::SynchronousConnectionParameters params) {
-  params.transmit_bandwidth = htole32(params.transmit_bandwidth);
-  params.receive_bandwidth = htole32(params.receive_bandwidth);
-  params.transmit_coding_format.company_id = htole16(params.transmit_coding_format.company_id);
-  params.transmit_coding_format.vendor_codec_id =
-      htole16(params.transmit_coding_format.vendor_codec_id);
-  params.receive_coding_format.company_id = htole16(params.receive_coding_format.company_id);
-  params.receive_coding_format.vendor_codec_id =
-      htole16(params.receive_coding_format.vendor_codec_id);
-  params.transmit_codec_frame_size_bytes = htole16(params.transmit_codec_frame_size_bytes);
-  params.receive_codec_frame_size_bytes = htole16(params.receive_codec_frame_size_bytes);
-  params.input_bandwidth = htole32(params.input_bandwidth);
-  params.output_bandwidth = htole32(params.output_bandwidth);
-  params.input_coding_format.company_id = htole16(params.input_coding_format.company_id);
-  params.input_coding_format.vendor_codec_id = htole16(params.input_coding_format.vendor_codec_id);
-  params.output_coding_format.company_id = htole16(params.output_coding_format.company_id);
-  params.output_coding_format.vendor_codec_id =
-      htole16(params.output_coding_format.vendor_codec_id);
-  params.max_latency_ms = htole16(params.max_latency_ms);
-  params.packet_types = htole16(params.packet_types);
-  return params;
-}
-
-}  // namespace
-
 // clang-format off
 #define COMMAND_STATUS_RSP(opcode, statuscode)                       \
 StaticByteBuffer( hci_spec::kCommandStatusEventCode, 0x04,         \
@@ -174,41 +146,31 @@ DynamicByteBuffer EncryptionChangeEventPacket(hci_spec::StatusCode status_code,
 }
 
 DynamicByteBuffer EnhancedAcceptSynchronousConnectionRequestPacket(
-    DeviceAddress peer_address, hci_spec::SynchronousConnectionParameters params) {
-  StaticByteBuffer<sizeof(hci_spec::CommandHeader) +
-                   sizeof(hci_spec::EnhancedAcceptSynchronousConnectionRequestCommandParams)>
-      buffer;
-  auto& header = buffer.AsMutable<hci_spec::CommandHeader>();
-  header.opcode = htole16(hci_spec::kEnhancedAcceptSynchronousConnectionRequest);
-  header.parameter_total_size =
-      sizeof(hci_spec::EnhancedAcceptSynchronousConnectionRequestCommandParams);
+    DeviceAddress peer_address,
+    bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> params) {
+  hci::EmbossCommandPacket packet = hci::EmbossCommandPacket::New<
+      hci_spec::EnhancedAcceptSynchronousConnectionRequestCommandView>(
+      hci_spec::kEnhancedAcceptSynchronousConnectionRequest);
+  auto view = packet.view<hci_spec::EnhancedAcceptSynchronousConnectionRequestCommandWriter>();
 
-  buffer.mutable_view(sizeof(hci_spec::CommandHeader)).AsMutable<DeviceAddressBytes>() =
-      peer_address.value();
+  view.bd_addr().Write(peer_address.value().as_int());
+  view.connection_parameters().CopyFrom(params.view());
 
-  auto& payload = buffer.mutable_view(sizeof(hci_spec::CommandHeader) + sizeof(DeviceAddressBytes))
-                      .AsMutable<hci_spec::SynchronousConnectionParameters>();
-  payload = ConnectionParametersToLe(params);
-  return DynamicByteBuffer(buffer);
+  return DynamicByteBuffer(packet.data());
 }
 
 DynamicByteBuffer EnhancedSetupSynchronousConnectionPacket(
-    hci_spec::ConnectionHandle conn, hci_spec::SynchronousConnectionParameters params) {
-  StaticByteBuffer<sizeof(hci_spec::CommandHeader) +
-                   sizeof(hci_spec::EnhancedSetupSynchronousConnectionCommandParams)>
-      buffer;
-  auto& header = buffer.AsMutable<hci_spec::CommandHeader>();
-  header.opcode = htole16(hci_spec::kEnhancedSetupSynchronousConnection);
-  header.parameter_total_size = sizeof(hci_spec::EnhancedSetupSynchronousConnectionCommandParams);
+    hci_spec::ConnectionHandle conn,
+    bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> params) {
+  hci::EmbossCommandPacket packet =
+      hci::EmbossCommandPacket::New<hci_spec::EnhancedSetupSynchronousConnectionCommandView>(
+          hci_spec::kEnhancedSetupSynchronousConnection);
+  auto view = packet.view<hci_spec::EnhancedSetupSynchronousConnectionCommandWriter>();
 
-  buffer.mutable_view(sizeof(hci_spec::CommandHeader)).AsMutable<hci_spec::ConnectionHandle>() =
-      htole16(conn);
+  view.connection_handle().Write(conn);
+  view.connection_parameters().CopyFrom(params.view());
 
-  auto& payload =
-      buffer.mutable_view(sizeof(hci_spec::CommandHeader) + sizeof(hci_spec::ConnectionHandle))
-          .AsMutable<hci_spec::SynchronousConnectionParameters>();
-  payload = ConnectionParametersToLe(params);
-  return DynamicByteBuffer(buffer);
+  return DynamicByteBuffer(packet.data());
 }
 
 DynamicByteBuffer NumberOfCompletedPacketsPacket(hci_spec::ConnectionHandle conn,

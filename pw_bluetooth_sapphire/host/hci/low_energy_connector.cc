@@ -101,8 +101,8 @@ void LowEnergyConnector::CreateConnectionInternal(
   auto params = request->mutable_payload<hci_spec::LECreateConnectionCommandParams>();
   params->scan_interval = htole16(scan_interval);
   params->scan_window = htole16(scan_window);
-  params->initiator_filter_policy = use_accept_list ? hci_spec::GenericEnableParam::kEnable
-                                                    : hci_spec::GenericEnableParam::kDisable;
+  params->initiator_filter_policy = use_accept_list ? hci_spec::GenericEnableParam::ENABLE
+                                                    : hci_spec::GenericEnableParam::DISABLE;
 
   // TODO(armansito): Use the resolved address types for <5.0 LE Privacy.
   params->peer_address_type =

@@ -8,6 +8,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/hci-protocol.emb.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
@@ -151,12 +152,13 @@ TEST_F(CommandChannelTest, SingleAsynchronousRequest) {
     }
   };
 
-  constexpr size_t kPayloadSize = sizeof(hci_spec::InquiryCommandParams);
-  auto packet = CommandPacket::New(hci_spec::kInquiry, kPayloadSize);
-  auto params = packet->mutable_payload<hci_spec::InquiryCommandParams>();
-  params->lap = hci_spec::kGIAC;
-  params->inquiry_length = 1;
-  params->num_responses = 0;
+  hci::EmbossCommandPacket packet =
+      hci::EmbossCommandPacket::New<hci_spec::InquiryCommandView>(hci_spec::kInquiry);
+  auto view = packet.view<hci_spec::InquiryCommandWriter>();
+  view.lap().Write(hci_spec::InquiryAccessCode::GIAC);
+  view.inquiry_length().Write(1);
+  view.num_responses().Write(0);
+
   id = cmd_channel()->SendCommand(std::move(packet), cb, hci_spec::kInquiryCompleteEventCode);
   RunLoopUntilIdle();
   EXPECT_EQ(2, cb_count);
@@ -1207,7 +1209,9 @@ TEST_F(CommandChannelTest, AsyncEventHandlersAndLeMetaEventHandlersDoNotInterfer
     }
     async_cmd_cb_count++;
   };
-  auto packet = CommandPacket::New(hci_spec::kInquiry, 0);
+
+  auto packet = EmbossCommandPacket::New(hci_spec::kInquiry,
+                                         hci_spec::EmbossCommandHeader::IntrinsicSizeInBytes());
   cmd_channel()->SendCommand(std::move(packet), std::move(async_cmd_cb), kTestEventCode);
 
   // clang-format off

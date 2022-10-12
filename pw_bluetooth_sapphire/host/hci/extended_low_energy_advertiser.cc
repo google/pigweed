@@ -100,7 +100,7 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetAdvertisingP
   payload->own_address_type = own_address_type;
   payload->adv_filter_policy = hci_spec::LEAdvFilterPolicy::kAllowAll;
   payload->adv_tx_power = hci_spec::kLEExtendedAdvertisingTxPowerNoPreference;
-  payload->scan_request_notification_enable = hci_spec::GenericEnableParam::kDisable;
+  payload->scan_request_notification_enable = hci_spec::GenericEnableParam::DISABLE;
 
   // TODO(fxbug.dev/81470): using legacy PDUs requires advertisements on the LE 1M PHY.
   payload->primary_adv_phy = hci_spec::LEPHY::kLE1M;

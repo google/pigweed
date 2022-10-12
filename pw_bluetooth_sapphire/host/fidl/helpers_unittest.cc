@@ -1211,50 +1211,57 @@ TEST_F(HelpersAdapterTest, FidlToScoParameters) {
   params.set_path(fbredr::DataPath::OFFLOAD);
   ASSERT_TRUE(FidlToScoParameters(params).is_ok());
 
-  bt::hci_spec::SynchronousConnectionParameters out = FidlToScoParameters(params).take_value();
-  EXPECT_EQ(out.transmit_bandwidth, 8000u);
-  EXPECT_EQ(out.receive_bandwidth, 8000u);
+  bt::EmbossStruct<bt::hci_spec::SynchronousConnectionParametersWriter> out =
+      FidlToScoParameters(params).take_value();
+  auto view = out.view();
+  EXPECT_EQ(view.transmit_bandwidth().Read(), 8000u);
+  EXPECT_EQ(view.receive_bandwidth().Read(), 8000u);
 
-  EXPECT_EQ(out.transmit_coding_format.coding_format, bt::hci_spec::CodingFormat::kMSbc);
-  EXPECT_EQ(copy(out.transmit_coding_format.company_id), 0u);
-  EXPECT_EQ(copy(out.transmit_coding_format.vendor_codec_id), 0u);
+  EXPECT_EQ(view.transmit_coding_format().coding_format().Read(), bt::hci_spec::CodingFormat::MSBC);
+  EXPECT_EQ(view.transmit_coding_format().company_id().Read(), 0u);
+  EXPECT_EQ(view.transmit_coding_format().vendor_codec_id().Read(), 0u);
 
-  EXPECT_EQ(out.receive_coding_format.coding_format, bt::hci_spec::CodingFormat::kMSbc);
-  EXPECT_EQ(out.receive_coding_format.company_id, 0u);
-  EXPECT_EQ(out.receive_coding_format.vendor_codec_id, 0u);
+  EXPECT_EQ(view.receive_coding_format().coding_format().Read(), bt::hci_spec::CodingFormat::MSBC);
+  EXPECT_EQ(view.receive_coding_format().company_id().Read(), 0u);
+  EXPECT_EQ(view.receive_coding_format().vendor_codec_id().Read(), 0u);
 
-  EXPECT_EQ(out.transmit_codec_frame_size_bytes, 8u);
-  EXPECT_EQ(out.receive_codec_frame_size_bytes, 8u);
+  EXPECT_EQ(view.transmit_codec_frame_size_bytes().Read(), 8u);
+  EXPECT_EQ(view.receive_codec_frame_size_bytes().Read(), 8u);
 
-  EXPECT_EQ(copy(out.input_bandwidth), 32000u);
-  EXPECT_EQ(copy(out.output_bandwidth), 32000u);
+  EXPECT_EQ(view.input_bandwidth().Read(), 32000u);
+  EXPECT_EQ(view.output_bandwidth().Read(), 32000u);
 
-  EXPECT_EQ(out.input_coding_format.coding_format, bt::hci_spec::CodingFormat::kLinearPcm);
-  EXPECT_EQ(copy(out.input_coding_format.company_id), 0u);
-  EXPECT_EQ(copy(out.input_coding_format.vendor_codec_id), 0u);
+  EXPECT_EQ(view.input_coding_format().coding_format().Read(),
+            bt::hci_spec::CodingFormat::LINEAR_PCM);
+  EXPECT_EQ(view.input_coding_format().company_id().Read(), 0u);
+  EXPECT_EQ(view.input_coding_format().vendor_codec_id().Read(), 0u);
 
-  EXPECT_EQ(out.output_coding_format.coding_format, bt::hci_spec::CodingFormat::kLinearPcm);
-  EXPECT_EQ(copy(out.output_coding_format.company_id), 0u);
-  EXPECT_EQ(copy(out.output_coding_format.vendor_codec_id), 0u);
+  EXPECT_EQ(view.output_coding_format().coding_format().Read(),
+            bt::hci_spec::CodingFormat::LINEAR_PCM);
+  EXPECT_EQ(view.output_coding_format().company_id().Read(), 0u);
+  EXPECT_EQ(view.output_coding_format().vendor_codec_id().Read(), 0u);
 
-  EXPECT_EQ(out.input_coded_data_size_bits, 16u);
-  EXPECT_EQ(out.output_coded_data_size_bits, 16u);
+  EXPECT_EQ(view.input_coded_data_size_bits().Read(), 16u);
+  EXPECT_EQ(view.output_coded_data_size_bits().Read(), 16u);
 
-  EXPECT_EQ(out.input_pcm_data_format, bt::hci_spec::PcmDataFormat::k2sComplement);
-  EXPECT_EQ(out.output_pcm_data_format, bt::hci_spec::PcmDataFormat::k2sComplement);
+  EXPECT_EQ(view.input_pcm_data_format().Read(), bt::hci_spec::PcmDataFormat::TWOS_COMPLEMENT);
+  EXPECT_EQ(view.output_pcm_data_format().Read(), bt::hci_spec::PcmDataFormat::TWOS_COMPLEMENT);
 
-  EXPECT_EQ(out.input_pcm_sample_payload_msb_position, 3u);
-  EXPECT_EQ(out.output_pcm_sample_payload_msb_position, 3u);
+  EXPECT_EQ(view.input_pcm_sample_payload_msb_position().Read(), 3u);
+  EXPECT_EQ(view.output_pcm_sample_payload_msb_position().Read(), 3u);
 
-  EXPECT_EQ(out.input_data_path, static_cast<bt::hci_spec::ScoDataPath>(6));
-  EXPECT_EQ(out.output_data_path, static_cast<bt::hci_spec::ScoDataPath>(6));
+  EXPECT_EQ(view.input_data_path().Read(), static_cast<bt::hci_spec::ScoDataPath>(6));
+  EXPECT_EQ(view.output_data_path().Read(), static_cast<bt::hci_spec::ScoDataPath>(6));
 
-  EXPECT_EQ(out.input_transport_unit_size_bits, 0u);
-  EXPECT_EQ(out.output_transport_unit_size_bits, 0u);
+  EXPECT_EQ(view.input_transport_unit_size_bits().Read(), 0u);
+  EXPECT_EQ(view.output_transport_unit_size_bits().Read(), 0u);
 
-  EXPECT_EQ(out.max_latency_ms, bt::sco::kParameterSetMsbcT2.max_latency_ms);
-  EXPECT_EQ(out.packet_types, bt::sco::kParameterSetMsbcT2.packet_types);
-  EXPECT_EQ(out.retransmission_effort, bt::sco::kParameterSetMsbcT2.retransmission_effort);
+  EXPECT_EQ(view.max_latency_ms().Read(), bt::sco::kParameterSetMsbcT2.max_latency_ms);
+  EXPECT_EQ(view.packet_types().BackingStorage().ReadUInt(),
+            bt::sco::kParameterSetMsbcT2.packet_types);
+  EXPECT_EQ(view.retransmission_effort().Read(),
+            static_cast<bt::hci_spec::SynchronousConnectionParameters::ScoRetransmissionEffort>(
+                bt::sco::kParameterSetMsbcT2.retransmission_effort));
 
   // When the IO coding format is Linear PCM, the PCM data format is required.
   params.clear_io_pcm_data_format();
@@ -1268,8 +1275,8 @@ TEST_F(HelpersAdapterTest, FidlToScoParameters) {
   params.set_io_coding_format(fbredr::CodingFormat::TRANSPARENT);
   ASSERT_TRUE(FidlToScoParameters(params).is_ok());
   out = FidlToScoParameters(params).value();
-  EXPECT_EQ(out.input_pcm_data_format, bt::hci_spec::PcmDataFormat::kNotApplicable);
-  EXPECT_EQ(out.input_pcm_sample_payload_msb_position, 0u);
+  EXPECT_EQ(view.input_pcm_data_format().Read(), bt::hci_spec::PcmDataFormat::NOT_APPLICABLE);
+  EXPECT_EQ(view.input_pcm_sample_payload_msb_position().Read(), 0u);
 }
 
 TEST(HelpersTest, DiscoveryFilterFromEmptyFidlFilter) {

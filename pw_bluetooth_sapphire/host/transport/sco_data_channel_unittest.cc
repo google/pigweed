@@ -19,104 +19,91 @@ constexpr hci_spec::ConnectionHandle kConnectionHandle0 = 0x0000;
 constexpr hci_spec::ConnectionHandle kConnectionHandle1 = 0x0001;
 constexpr size_t kBufferMaxNumPackets = 2;
 
-constexpr hci_spec::SynchronousConnectionParameters kMsbcConnectionParameters{
-    .transmit_bandwidth = 0,
-    .receive_bandwidth = 0,
-    .transmit_coding_format =
-        hci_spec::VendorCodingFormat{
-            .coding_format = hci_spec::CodingFormat::kMSbc,
-            .company_id = 0,
-            .vendor_codec_id = 0,
-        },
-    .receive_coding_format =
-        hci_spec::VendorCodingFormat{
-            .coding_format = hci_spec::CodingFormat::kMSbc,
-            .company_id = 0,
-            .vendor_codec_id = 0,
-        },
-    .transmit_codec_frame_size_bytes = 0,
-    .receive_codec_frame_size_bytes = 0,
-    .input_bandwidth = 32000,
-    .output_bandwidth = 32000,
-    .input_coding_format =
-        hci_spec::VendorCodingFormat{
-            .coding_format = hci_spec::CodingFormat::kMSbc,
-            .company_id = 0,
-            .vendor_codec_id = 0,
-        },
-    .output_coding_format =
-        hci_spec::VendorCodingFormat{
-            .coding_format = hci_spec::CodingFormat::kMSbc,
-            .company_id = 0,
-            .vendor_codec_id = 0,
-        },
-    .input_coded_data_size_bits = 16,
-    .output_coded_data_size_bits = 16,
-    .input_pcm_data_format = hci_spec::PcmDataFormat::kUnsigned,
-    .output_pcm_data_format = hci_spec::PcmDataFormat::kUnsigned,
-    .input_pcm_sample_payload_msb_position = 0,
-    .output_pcm_sample_payload_msb_position = 0,
-    .input_data_path = hci_spec::ScoDataPath::kHci,
-    .output_data_path = hci_spec::ScoDataPath::kHci,
-    .input_transport_unit_size_bits = 0,
-    .output_transport_unit_size_bits = 0,
-    .max_latency_ms = 0,
-    .packet_types = 0,
-    .retransmission_effort = hci_spec::ScoRetransmissionEffort::kNone,
-};
+bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> MsbcConnectionParams() {
+  bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> out;
+  auto view = out.view();
+  view.transmit_bandwidth().Write(0);
+  view.receive_bandwidth().Write(0);
+  view.transmit_coding_format().coding_format().Write(hci_spec::CodingFormat::MSBC);
+  view.transmit_coding_format().company_id().Write(0);
+  view.transmit_coding_format().vendor_codec_id().Write(0);
+  view.receive_coding_format().coding_format().Write(hci_spec::CodingFormat::MSBC);
+  view.receive_coding_format().company_id().Write(0);
+  view.receive_coding_format().vendor_codec_id().Write(0);
+  view.transmit_codec_frame_size_bytes().Write(0);
+  view.receive_codec_frame_size_bytes().Write(0);
+  view.input_bandwidth().Write(32000);
+  view.output_bandwidth().Write(32000);
+  view.input_coding_format().coding_format().Write(hci_spec::CodingFormat::MSBC);
+  view.input_coding_format().company_id().Write(0);
+  view.input_coding_format().vendor_codec_id().Write(0);
+  view.output_coding_format().coding_format().Write(hci_spec::CodingFormat::MSBC);
+  view.output_coding_format().company_id().Write(0);
+  view.output_coding_format().vendor_codec_id().Write(0);
+  view.input_coded_data_size_bits().Write(16);
+  view.output_coded_data_size_bits().Write(16);
+  view.input_pcm_data_format().Write(hci_spec::PcmDataFormat::UNSIGNED);
+  view.output_pcm_data_format().Write(hci_spec::PcmDataFormat::UNSIGNED);
+  view.input_pcm_sample_payload_msb_position().Write(0);
+  view.output_pcm_sample_payload_msb_position().Write(0);
+  view.input_data_path().Write(hci_spec::ScoDataPath::HCI);
+  view.output_data_path().Write(hci_spec::ScoDataPath::HCI);
+  view.input_transport_unit_size_bits().Write(0);
+  view.output_transport_unit_size_bits().Write(0);
+  view.max_latency_ms().Write(0);
+  view.packet_types().BackingStorage().WriteUInt(0);
+  view.retransmission_effort().Write(
+      hci_spec::SynchronousConnectionParameters::ScoRetransmissionEffort::NONE);
+  return out;
+}
 
-constexpr hci_spec::SynchronousConnectionParameters kCvsdConnectionParameters{
-    .transmit_bandwidth = 0,
-    .receive_bandwidth = 0,
-    .transmit_coding_format =
-        hci_spec::VendorCodingFormat{
-            .coding_format = hci_spec::CodingFormat::kCvsd,
-            .company_id = 0,
-            .vendor_codec_id = 0,
-        },
-    .receive_coding_format =
-        hci_spec::VendorCodingFormat{
-            .coding_format = hci_spec::CodingFormat::kCvsd,
-            .company_id = 0,
-            .vendor_codec_id = 0,
-        },
-    .transmit_codec_frame_size_bytes = 0,
-    .receive_codec_frame_size_bytes = 0,
-    .input_bandwidth = 8000,
-    .output_bandwidth = 8000,
-    .input_coding_format =
-        hci_spec::VendorCodingFormat{
-            .coding_format = hci_spec::CodingFormat::kCvsd,
-            .company_id = 0,
-            .vendor_codec_id = 0,
-        },
-    .output_coding_format =
-        hci_spec::VendorCodingFormat{
-            .coding_format = hci_spec::CodingFormat::kCvsd,
-            .company_id = 0,
-            .vendor_codec_id = 0,
-        },
-    .input_coded_data_size_bits = 8,
-    .output_coded_data_size_bits = 8,
-    .input_pcm_data_format = hci_spec::PcmDataFormat::kUnsigned,
-    .output_pcm_data_format = hci_spec::PcmDataFormat::kUnsigned,
-    .input_pcm_sample_payload_msb_position = 0,
-    .output_pcm_sample_payload_msb_position = 0,
-    .input_data_path = hci_spec::ScoDataPath::kHci,
-    .output_data_path = hci_spec::ScoDataPath::kHci,
-    .input_transport_unit_size_bits = 0,
-    .output_transport_unit_size_bits = 0,
-    .max_latency_ms = 0,
-    .packet_types = 0,
-    .retransmission_effort = hci_spec::ScoRetransmissionEffort::kNone,
-};
-
+bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> cvsd_connection_params() {
+  bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> out;
+  auto view = out.view();
+  view.transmit_bandwidth().Write(0);
+  view.receive_bandwidth().Write(0);
+  view.transmit_coding_format().coding_format().Write(hci_spec::CodingFormat::CVSD);
+  view.transmit_coding_format().company_id().Write(0);
+  view.transmit_coding_format().vendor_codec_id().Write(0);
+  view.receive_coding_format().coding_format().Write(hci_spec::CodingFormat::CVSD);
+  view.receive_coding_format().company_id().Write(0);
+  view.receive_coding_format().vendor_codec_id().Write(0);
+  view.transmit_codec_frame_size_bytes().Write(0);
+  view.receive_codec_frame_size_bytes().Write(0);
+  view.input_bandwidth().Write(8000);
+  view.output_bandwidth().Write(8000);
+  view.input_coding_format().coding_format().Write(hci_spec::CodingFormat::CVSD);
+  view.input_coding_format().company_id().Write(0);
+  view.input_coding_format().vendor_codec_id().Write(0);
+  view.output_coding_format().coding_format().Write(hci_spec::CodingFormat::CVSD);
+  view.output_coding_format().company_id().Write(0);
+  view.output_coding_format().vendor_codec_id().Write(0);
+  view.input_coded_data_size_bits().Write(8);
+  view.output_coded_data_size_bits().Write(8);
+  view.input_pcm_data_format().Write(hci_spec::PcmDataFormat::UNSIGNED);
+  view.output_pcm_data_format().Write(hci_spec::PcmDataFormat::UNSIGNED);
+  view.input_pcm_sample_payload_msb_position().Write(0);
+  view.output_pcm_sample_payload_msb_position().Write(0);
+  view.input_data_path().Write(hci_spec::ScoDataPath::HCI);
+  view.output_data_path().Write(hci_spec::ScoDataPath::HCI);
+  view.input_transport_unit_size_bits().Write(0);
+  view.output_transport_unit_size_bits().Write(0);
+  view.max_latency_ms().Write(0);
+  view.packet_types().BackingStorage().WriteUInt(0);
+  view.retransmission_effort().Write(
+      hci_spec::SynchronousConnectionParameters::ScoRetransmissionEffort::NONE);
+  return out;
+}
 class FakeScoConnection : public ScoDataChannel::ConnectionInterface {
  public:
-  explicit FakeScoConnection(
-      ScoDataChannel* data_channel, hci_spec::ConnectionHandle handle = kConnectionHandle0,
-      hci_spec::SynchronousConnectionParameters params = kMsbcConnectionParameters)
-      : handle_(handle), params_(params), data_channel_(data_channel), weak_ptr_factory_(this) {}
+  explicit FakeScoConnection(ScoDataChannel* data_channel,
+                             hci_spec::ConnectionHandle handle = kConnectionHandle0,
+                             bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter>
+                                 params = MsbcConnectionParams())
+      : handle_(handle),
+        params_(std::move(params)),
+        data_channel_(data_channel),
+        weak_ptr_factory_(this) {}
 
   ~FakeScoConnection() override = default;
 
@@ -140,7 +127,9 @@ class FakeScoConnection : public ScoDataChannel::ConnectionInterface {
 
   hci_spec::ConnectionHandle handle() const override { return handle_; }
 
-  hci_spec::SynchronousConnectionParameters parameters() override { return params_; }
+  bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> parameters() override {
+    return params_;
+  }
 
   std::unique_ptr<ScoDataPacket> GetNextOutboundPacket() override {
     if (queued_packets_.empty()) {
@@ -159,7 +148,7 @@ class FakeScoConnection : public ScoDataChannel::ConnectionInterface {
 
  private:
   hci_spec::ConnectionHandle handle_;
-  hci_spec::SynchronousConnectionParameters params_;
+  bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> params_;
   std::queue<std::unique_ptr<ScoDataPacket>> queued_packets_;
   std::vector<std::unique_ptr<ScoDataPacket>> received_packets_;
   ScoDataChannel* data_channel_;
@@ -514,7 +503,7 @@ TEST_F(ScoDataChannelTest, CvsdConnectionEncodingBits8SampleRate8Khz) {
     callback(ZX_OK);
   });
 
-  FakeScoConnection connection_0(sco_data_channel(), kConnectionHandle0, kCvsdConnectionParameters);
+  FakeScoConnection connection_0(sco_data_channel(), kConnectionHandle0, cvsd_connection_params());
   sco_data_channel()->RegisterConnection(connection_0.GetWeakPtr());
   EXPECT_EQ(config_count, 1);
   EXPECT_EQ(reset_count, 0);
@@ -537,12 +526,14 @@ TEST_F(ScoDataChannelTest, CvsdConnectionEncodingBits16SampleRate8Khz) {
     callback(ZX_OK);
   });
 
-  hci_spec::SynchronousConnectionParameters params = kCvsdConnectionParameters;
-  params.input_coded_data_size_bits = 16;
-  params.output_coded_data_size_bits = 16;
+  bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> params =
+      cvsd_connection_params();
+  auto view = params.view();
+  view.input_coded_data_size_bits().Write(16);
+  view.output_coded_data_size_bits().Write(16);
   // Bandwidth = sample size (2 bytes/sample) * sample rate (8000 samples/sec) = 16000 bytes/sec
-  params.output_bandwidth = 16000;
-  params.input_bandwidth = 16000;
+  view.output_bandwidth().Write(16000);
+  view.input_bandwidth().Write(16000);
   FakeScoConnection connection(sco_data_channel(), kConnectionHandle0, params);
   sco_data_channel()->RegisterConnection(connection.GetWeakPtr());
   EXPECT_EQ(config_count, 1);
@@ -566,12 +557,14 @@ TEST_F(ScoDataChannelTest, CvsdConnectionEncodingBits16SampleRate16Khz) {
     callback(ZX_OK);
   });
 
-  hci_spec::SynchronousConnectionParameters params = kCvsdConnectionParameters;
-  params.input_coded_data_size_bits = 16;
-  params.output_coded_data_size_bits = 16;
+  bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> params =
+      cvsd_connection_params();
+  auto view = params.view();
+  view.input_coded_data_size_bits().Write(16);
+  view.output_coded_data_size_bits().Write(16);
   // Bandwidth = sample size (2 bytes/sample) * sample rate (16,000 samples/sec) = 32,000 bytes/sec
-  params.output_bandwidth = 32000;
-  params.input_bandwidth = 32000;
+  view.output_bandwidth().Write(32000);
+  view.input_bandwidth().Write(32000);
   FakeScoConnection connection(sco_data_channel(), kConnectionHandle0, params);
   sco_data_channel()->RegisterConnection(connection.GetWeakPtr());
   EXPECT_EQ(config_count, 1);
@@ -595,13 +588,15 @@ TEST_F(ScoDataChannelTest, CvsdConnectionInvalidSampleSizeAndRate) {
     callback(ZX_OK);
   });
 
-  hci_spec::SynchronousConnectionParameters params = kCvsdConnectionParameters;
+  bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> params =
+      cvsd_connection_params();
+  auto view = params.view();
   // Invalid sample size will be replaced with sample size of 16 bits.
-  params.input_coded_data_size_bits = 0u;
-  params.output_coded_data_size_bits = 0u;
-  // Invalid rate will be replaced with 16kHz
-  params.output_bandwidth = 1;
-  params.input_bandwidth = 1;
+  view.input_coded_data_size_bits().Write(0u);
+  view.output_coded_data_size_bits().Write(0u);
+  // Invalid rate will be replaced with 16kHz.
+  view.output_bandwidth().Write(1);
+  view.input_bandwidth().Write(1);
   FakeScoConnection connection(sco_data_channel(), kConnectionHandle0, params);
   sco_data_channel()->RegisterConnection(connection.GetWeakPtr());
   EXPECT_EQ(config_count, 1);
@@ -791,10 +786,11 @@ TEST_F(ScoDataChannelTest, UnsupportedCodingFormatTreatedAsCvsd) {
     callback(ZX_OK);
   });
 
-  hci_spec::SynchronousConnectionParameters params = kCvsdConnectionParameters;
-  params.output_coding_format.coding_format = hci_spec::CodingFormat::kMuLaw;
-  params.input_coding_format.coding_format = hci_spec::CodingFormat::kMuLaw;
-
+  bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> params =
+      cvsd_connection_params();
+  auto view = params.view();
+  view.output_coding_format().coding_format().Write(hci_spec::CodingFormat::U_LAW);
+  view.input_coding_format().coding_format().Write(hci_spec::CodingFormat::U_LAW);
   FakeScoConnection connection_0(sco_data_channel(), kConnectionHandle0, params);
   sco_data_channel()->RegisterConnection(connection_0.GetWeakPtr());
   EXPECT_EQ(config_count, 1);

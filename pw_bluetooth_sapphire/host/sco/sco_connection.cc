@@ -6,15 +6,15 @@
 
 namespace bt::sco {
 
-ScoConnection::ScoConnection(std::unique_ptr<hci::Connection> connection,
-                             fit::closure deactivated_cb,
-                             hci_spec::SynchronousConnectionParameters parameters,
-                             hci::ScoDataChannel* channel)
+ScoConnection::ScoConnection(
+    std::unique_ptr<hci::Connection> connection, fit::closure deactivated_cb,
+    bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> parameters,
+    hci::ScoDataChannel* channel)
     : active_(false),
       connection_(std::move(connection)),
       deactivated_cb_(std::move(deactivated_cb)),
       channel_(channel),
-      parameters_(parameters),
+      parameters_(std::move(parameters)),
       weak_ptr_factory_(this) {
   BT_ASSERT(connection_);
   BT_ASSERT(!channel_ ||
@@ -60,7 +60,7 @@ bool ScoConnection::Activate(fit::closure rx_callback, fit::closure closed_callb
   activator_closed_cb_ = std::move(closed_callback);
   rx_callback_ = std::move(rx_callback);
   active_ = true;
-  if (channel_ && parameters_.input_data_path == hci_spec::ScoDataPath::kHci) {
+  if (channel_ && parameters_.view().input_data_path().Read() == hci_spec::ScoDataPath::HCI) {
     channel_->RegisterConnection(weak_ptr_factory_.GetWeakPtr());
   }
   return true;
@@ -120,7 +120,9 @@ std::unique_ptr<hci::ScoDataPacket> ScoConnection::Read() {
   return packet;
 }
 
-hci_spec::SynchronousConnectionParameters ScoConnection::parameters() { return parameters_; }
+bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> ScoConnection::parameters() {
+  return parameters_;
+}
 
 std::unique_ptr<hci::ScoDataPacket> ScoConnection::GetNextOutboundPacket() {
   if (outbound_queue_.empty()) {
@@ -160,7 +162,8 @@ void ScoConnection::OnHciError() {
 }
 
 void ScoConnection::CleanUp() {
-  if (active_ && channel_ && parameters_.input_data_path == hci_spec::ScoDataPath::kHci) {
+  if (active_ && channel_ &&
+      parameters_.view().input_data_path().Read() == hci_spec::ScoDataPath::HCI) {
     channel_->UnregisterConnection(handle_);
   }
   active_ = false;

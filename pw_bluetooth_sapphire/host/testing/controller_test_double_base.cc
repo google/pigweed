@@ -167,6 +167,13 @@ void ControllerTestDoubleBase::HandleCommandPacket(std::unique_ptr<hci::CommandP
     OnCommandPacketReceived(packet->view());
   });
 }
+void ControllerTestDoubleBase::HandleCommandPacket(hci::EmbossCommandPacket packet) {
+  // Post the packet to simulate the async channel operations in production.
+  async::PostTask(async_get_default_dispatcher(), [this, packet = std::move(packet)]() mutable {
+    SendSnoopChannelPacket(packet.data(), BT_HCI_SNOOP_TYPE_CMD, /*is_received=*/false);
+    OnCommandPacketReceived(packet);
+  });
+}
 
 void ControllerTestDoubleBase::HandleACLPacket(std::unique_ptr<hci::ACLDataPacket> packet) {
   async::PostTask(async_get_default_dispatcher(), [this, packet = std::move(packet)]() {

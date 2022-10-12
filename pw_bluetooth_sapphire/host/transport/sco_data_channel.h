@@ -37,8 +37,8 @@ class ScoDataChannel {
 
     virtual hci_spec::ConnectionHandle handle() const = 0;
 
-    // These parameters must specify a data path of hci_spec::ScoDataPath::kHci.
-    virtual hci_spec::SynchronousConnectionParameters parameters() = 0;
+    // These parameters must specify a data path of hci_spec::ScoDataPath::HCI.
+    virtual bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> parameters() = 0;
 
     // ScoDataChannel will call this method to get the next packet to send to the controller.
     // If no packet is available, return nullptr.

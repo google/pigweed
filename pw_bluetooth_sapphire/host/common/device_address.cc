@@ -4,6 +4,8 @@
 
 #include "device_address.h"
 
+#include <climits>
+
 #include "pw_string/format.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 
@@ -38,6 +40,13 @@ DeviceAddressBytes::DeviceAddressBytes(const ByteBuffer& bytes) {
   std::copy(bytes.cbegin(), bytes.cend(), bytes_.begin());
 }
 
+DeviceAddressBytes::DeviceAddressBytes(uint64_t addr) {
+  for (uint8_t i = 0; i < kDeviceAddressSize; ++i) {
+    bytes_[i] = static_cast<uint8_t>(addr & 0xff);
+    addr >>= CHAR_BIT;
+  }
+}
+
 std::string DeviceAddressBytes::ToString() const {
   constexpr size_t out_size = sizeof("00:00:00:00:00:00");
   char out[out_size] = "";
@@ -50,6 +59,19 @@ std::string DeviceAddressBytes::ToString() const {
 }
 
 void DeviceAddressBytes::SetToZero() { bytes_.fill(0); }
+
+uint64_t DeviceAddressBytes::as_int() const {
+  uint64_t addr = 0;
+
+  for (int i = kDeviceAddressSize - 1; i >= 0; --i) {
+    addr |= bytes_[i];
+    if (i != 0) {
+      addr <<= CHAR_BIT;
+    }
+  }
+
+  return addr;
+}
 
 std::size_t DeviceAddressBytes::Hash() const {
   uint64_t bytes_as_int = 0;

@@ -183,9 +183,9 @@ ServiceDefinitionToServiceRecord(const fuchsia::bluetooth::bredr::ServiceDefinit
 bt::gap::BrEdrSecurityRequirements FidlToBrEdrSecurityRequirements(
     const fuchsia::bluetooth::bredr::ChannelParameters& fidl);
 
-fpromise::result<bt::hci_spec::SynchronousConnectionParameters> FidlToScoParameters(
-    const fuchsia::bluetooth::bredr::ScoConnectionParameters& params);
-fpromise::result<std::vector<bt::hci_spec::SynchronousConnectionParameters>>
+fpromise::result<bt::EmbossStruct<bt::hci_spec::SynchronousConnectionParametersWriter>>
+FidlToScoParameters(const fuchsia::bluetooth::bredr::ScoConnectionParameters& params);
+fpromise::result<std::vector<bt::EmbossStruct<bt::hci_spec::SynchronousConnectionParametersWriter>>>
 FidlToScoParametersVector(
     const std::vector<fuchsia::bluetooth::bredr::ScoConnectionParameters>& params);
 

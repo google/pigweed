@@ -14,6 +14,7 @@
 
 #include <list>
 #include <memory>
+#include <optional>
 #include <queue>
 #include <unordered_map>
 #include <unordered_set>
@@ -86,6 +87,11 @@ class CommandChannel final {
       std::unique_ptr<CommandPacket> command_packet, CommandCallback callback,
       hci_spec::EventCode complete_event_code = hci_spec::kCommandCompleteEventCode);
 
+  // Same as above; Emboss version.
+  TransactionId SendCommand(
+      EmbossCommandPacket command_packet, CommandCallback callback,
+      hci_spec::EventCode complete_event_code = hci_spec::kCommandCompleteEventCode);
+
   // As SendCommand, but the transaction completes on the LE Meta Event. |le_meta_subevent_code| is
   // a LE Meta Event subevent code as described in Core Spec v5.2, Vol 4, Part E, Sec 7.7.65.
   //
@@ -101,6 +107,12 @@ class CommandChannel final {
   // never run simultaneously.
   TransactionId SendExclusiveCommand(
       std::unique_ptr<CommandPacket> command_packet, CommandCallback callback,
+      hci_spec::EventCode complete_event_code = hci_spec::kCommandCompleteEventCode,
+      std::unordered_set<hci_spec::OpCode> exclusions = {});
+
+  // Same as above; Emboss version.
+  TransactionId SendExclusiveCommand(
+      EmbossCommandPacket command_packet, CommandCallback callback,
       hci_spec::EventCode complete_event_code = hci_spec::kCommandCompleteEventCode,
       std::unordered_set<hci_spec::OpCode> exclusions = {});
 
@@ -194,8 +206,15 @@ class CommandChannel final {
   fxl::WeakPtr<CommandChannel> AsWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
  private:
+  // One of |command_packet| or |emboss_command_packet| must be null.
+  //
+  // Currently, two versions of the HCI packet infrastructure coexist. The old, packed-struct
+  // approach, which is being obsoleted in favor of a new Emboss-based packet infrastructure. Until
+  // all old instances of `CommandPacket` are replaced by `EmbossCommandPacket`, command packet
+  // transmission will support both versions.
   TransactionId SendExclusiveCommandInternal(
-      std::unique_ptr<CommandPacket> command_packet, CommandCallback callback,
+      std::unique_ptr<CommandPacket> command_packet,
+      std::optional<EmbossCommandPacket> emboss_command_packet, CommandCallback callback,
       hci_spec::EventCode complete_event_code,
       std::optional<hci_spec::EventCode> le_meta_subevent_code = std::nullopt,
       std::unordered_set<hci_spec::OpCode> exclusions = {});
@@ -270,6 +289,7 @@ class CommandChannel final {
   // Represents a queued command packet.
   struct QueuedCommand {
     QueuedCommand(std::unique_ptr<CommandPacket> command_packet,
+                  std::optional<EmbossCommandPacket> emboss_command_packet,
                   std::unique_ptr<TransactionData> data);
     QueuedCommand() = default;
 
@@ -277,6 +297,7 @@ class CommandChannel final {
     QueuedCommand& operator=(QueuedCommand&& other) = default;
 
     std::unique_ptr<CommandPacket> packet;
+    std::optional<EmbossCommandPacket> emboss_packet;
     std::unique_ptr<TransactionData> data;
   };
 

@@ -165,12 +165,13 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
         });
   }
 
-  auto inquiry =
-      hci::CommandPacket::New(hci_spec::kInquiry, sizeof(hci_spec::InquiryCommandParams));
-  auto params = inquiry->mutable_payload<hci_spec::InquiryCommandParams>();
-  params->lap = hci_spec::kGIAC;
-  params->inquiry_length = kInquiryLengthDefault;
-  params->num_responses = 0;
+  hci::EmbossCommandPacket inquiry =
+      hci::EmbossCommandPacket::New<hci_spec::InquiryCommandView>(hci_spec::kInquiry);
+  auto view = inquiry.view<hci_spec::InquiryCommandWriter>();
+  view.lap().Write(hci_spec::InquiryAccessCode::GIAC);
+  view.inquiry_length().Write(kInquiryLengthDefault);
+  view.num_responses().Write(0);
+
   hci_->command_channel()->SendExclusiveCommand(
       std::move(inquiry),
       [self](auto, const auto& event) {

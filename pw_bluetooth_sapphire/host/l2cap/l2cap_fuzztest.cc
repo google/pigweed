@@ -35,6 +35,7 @@ class FuzzerController : public ControllerTestDoubleBase {
  private:
   void OnCommandPacketReceived(const PacketView<hci_spec::CommandHeader>& command_packet) override {
   }
+  void OnCommandPacketReceived(hci::EmbossCommandPacket& command_packet) override {}
   void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) override {}
   void OnScoDataPacketReceived(const ByteBuffer& acl_data_packet) override {}
 };

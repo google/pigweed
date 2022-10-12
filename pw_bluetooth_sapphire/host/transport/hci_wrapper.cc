@@ -44,6 +44,7 @@ class HciWrapperImpl final : public HciWrapper {
   bool Initialize(ErrorCallback error_callback) override;
 
   zx_status_t SendCommand(std::unique_ptr<CommandPacket> packet) override;
+  zx_status_t SendCommand(EmbossCommandPacket packet) override;
 
   void SetEventCallback(EventPacketFunction callback) override;
 
@@ -163,6 +164,11 @@ bool HciWrapperImpl::Initialize(ErrorCallback error_callback) {
 
 zx_status_t HciWrapperImpl::SendCommand(std::unique_ptr<CommandPacket> packet) {
   return command_channel_.write(/*flags=*/0, packet->view().data().data(), packet->view().size(),
+                                /*handles=*/nullptr, /*num_handles=*/0);
+}
+
+zx_status_t HciWrapperImpl::SendCommand(EmbossCommandPacket packet) {
+  return command_channel_.write(/*flags=*/0, packet.data().data(), packet.size(),
                                 /*handles=*/nullptr, /*num_handles=*/0);
 }
 

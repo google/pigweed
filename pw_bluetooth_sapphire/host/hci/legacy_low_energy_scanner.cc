@@ -145,10 +145,10 @@ void LegacyLowEnergyScanner::StartScanInternal(const DeviceAddress& local_addres
   command = CommandPacket::New(hci_spec::kLESetScanEnable,
                                sizeof(hci_spec::LESetScanEnableCommandParams));
   auto enable_params = command->mutable_payload<hci_spec::LESetScanEnableCommandParams>();
-  enable_params->scanning_enabled = hci_spec::GenericEnableParam::kEnable;
+  enable_params->scanning_enabled = hci_spec::GenericEnableParam::ENABLE;
   enable_params->filter_duplicates = options.filter_duplicates
-                                         ? hci_spec::GenericEnableParam::kEnable
-                                         : hci_spec::GenericEnableParam::kDisable;
+                                         ? hci_spec::GenericEnableParam::ENABLE
+                                         : hci_spec::GenericEnableParam::DISABLE;
 
   hci_cmd_runner()->QueueCommand(std::move(command));
   hci_cmd_runner()->RunCommands([this, period = options.period](Result<> status) {
@@ -229,8 +229,8 @@ void LegacyLowEnergyScanner::StopScanInternal(bool stopped) {
   auto command = CommandPacket::New(hci_spec::kLESetScanEnable,
                                     sizeof(hci_spec::LESetScanEnableCommandParams));
   auto enable_params = command->mutable_payload<hci_spec::LESetScanEnableCommandParams>();
-  enable_params->scanning_enabled = hci_spec::GenericEnableParam::kDisable;
-  enable_params->filter_duplicates = hci_spec::GenericEnableParam::kDisable;
+  enable_params->scanning_enabled = hci_spec::GenericEnableParam::DISABLE;
+  enable_params->filter_duplicates = hci_spec::GenericEnableParam::DISABLE;
 
   hci_cmd_runner()->QueueCommand(std::move(command));
   hci_cmd_runner()->RunCommands([this, stopped](Result<> status) {

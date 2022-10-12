@@ -100,7 +100,7 @@ std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildRemoveAdvertising
   constexpr size_t kPayloadSize = sizeof(hci_spec::LESetAdvertisingEnableCommandParams);
   auto packet = CommandPacket::New(hci_spec::kLESetAdvertisingEnable, kPayloadSize);
   auto params = packet->mutable_payload<hci_spec::LESetAdvertisingEnableCommandParams>();
-  params->advertising_enable = hci_spec::GenericEnableParam::kDisable;
+  params->advertising_enable = hci_spec::GenericEnableParam::DISABLE;
   return packet;
 }
 

@@ -114,7 +114,8 @@ ScoDataChannelImpl::~ScoDataChannelImpl() {
 }
 
 void ScoDataChannelImpl::RegisterConnection(fxl::WeakPtr<ConnectionInterface> connection) {
-  BT_ASSERT(connection->parameters().output_data_path == hci_spec::ScoDataPath::kHci);
+  BT_ASSERT(connection->parameters().view().output_data_path().Read() ==
+            hci_spec::ScoDataPath::HCI);
   ConnectionData conn_data{.connection = connection};
   auto [_, inserted] = connections_.emplace(connection->handle(), std::move(conn_data));
   BT_ASSERT_MSG(inserted, "connection with handle %#.4x already registered", connection->handle());
@@ -267,12 +268,14 @@ void ScoDataChannelImpl::ConfigureHci() {
     return;
   }
 
-  hci_spec::SynchronousConnectionParameters params = active_connection_->parameters();
+  bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> params =
+      active_connection_->parameters();
+  auto view = params.view();
 
   ScoCodingFormat coding_format;
-  if (params.output_coding_format.coding_format == hci_spec::CodingFormat::kMSbc) {
+  if (view.output_coding_format().coding_format().Read() == hci_spec::CodingFormat::MSBC) {
     coding_format = ScoCodingFormat::kMsbc;
-  } else if (params.output_coding_format.coding_format == hci_spec::CodingFormat::kCvsd) {
+  } else if (view.output_coding_format().coding_format().Read() == hci_spec::CodingFormat::CVSD) {
     coding_format = ScoCodingFormat::kCvsd;
   } else {
     bt_log(WARN, "hci", "SCO connection has unsupported coding format, treating as CVSD");
@@ -281,13 +284,13 @@ void ScoDataChannelImpl::ConfigureHci() {
 
   ScoSampleRate sample_rate;
   const uint16_t bits_per_byte = CHAR_BIT;
-  uint16_t bytes_per_sample = params.output_coded_data_size_bits / bits_per_byte;
+  uint16_t bytes_per_sample = view.output_coded_data_size_bits().Read() / bits_per_byte;
   if (bytes_per_sample == 0) {
     // Err on the side of reserving too much bandwidth in the transport drivers.
     bt_log(WARN, "hci", "SCO connection has unsupported encoding size, treating as 16-bit");
     bytes_per_sample = 2;
   }
-  const uint32_t bytes_per_second = params.output_bandwidth;
+  const uint32_t bytes_per_second = view.output_bandwidth().Read();
   const uint32_t samples_per_second = bytes_per_second / bytes_per_sample;
   if (samples_per_second == 8000) {
     sample_rate = ScoSampleRate::k8Khz;
@@ -300,9 +303,9 @@ void ScoDataChannelImpl::ConfigureHci() {
   }
 
   ScoEncoding encoding;
-  if (params.output_coded_data_size_bits == 8) {
+  if (view.output_coded_data_size_bits().Read() == 8) {
     encoding = ScoEncoding::k8Bits;
-  } else if (params.output_coded_data_size_bits == 16) {
+  } else if (view.output_coded_data_size_bits().Read() == 16) {
     encoding = ScoEncoding::k16Bits;
   } else {
     // Err on the side of reserving too much bandwidth in the transport drivers.
