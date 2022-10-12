@@ -20,6 +20,7 @@ cc_library_static {
     header_libs: [
         "pw_preprocessor_headers",
         "pw_polyfill_headers",
+        "pw_span_headers",
     ],
     srcs: ["varint.cc"],
 }

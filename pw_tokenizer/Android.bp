@@ -25,6 +25,7 @@ cc_library_static {
         "pw_bytes_headers",
         "pw_polyfill_headers",
         "pw_preprocessor_headers",
+        "pw_span_headers",
     ],
     static_libs: ["pw_varint"],
 }

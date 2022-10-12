@@ -19,6 +19,9 @@ cc_library {
     export_include_dirs: [
         "public",
     ],
+    header_libs: [
+        "pw_span_headers",
+    ],
 }
 
 android_library {
