@@ -41,6 +41,7 @@ from __future__ import annotations
 
 import collections
 import contextlib
+import copy
 import dataclasses
 import enum
 from inspect import Parameter, signature
@@ -306,6 +307,12 @@ class FileFilter:
 
     def apply_to_check(self, always_run: bool = False) -> Callable:
         def wrapper(func: Callable) -> Check:
+            if isinstance(func, Check):
+                clone = copy.copy(func)
+                clone.filter = self
+                clone.always_run = clone.always_run or always_run
+                return clone
+
             return Check(check_function=func,
                          path_filter=self,
                          always_run=always_run)
@@ -640,9 +647,9 @@ class Check:
             FileFilter(endswith=_make_str_tuple(endswith), exclude=exclude))
 
     def with_file_filter(self, file_filter: FileFilter) -> Check:
-        return Check(check_function=self._check,
-                     path_filter=file_filter,
-                     always_run=self.always_run)
+        clone = copy.copy(self)
+        clone.filter = file_filter
+        return clone
 
     @property
     def name(self):
