@@ -45,11 +45,13 @@ import dataclasses
 import enum
 from inspect import Parameter, signature
 import itertools
+import json
 import logging
 import os
 from pathlib import Path
 import re
 import subprocess
+import sys
 import time
 from typing import (Callable, Collection, Dict, Iterable, Iterator, List,
                     Optional, Pattern, Sequence, Set, Tuple, Union)
@@ -592,8 +594,11 @@ def run(  # pylint: disable=too-many-arguments
     )
 
     if only_list_steps:
+        steps = []
         for check, _ in presubmit.apply_filters(program):
-            print(check.name)
+            steps.append({'name': check.name})
+        json.dump(steps, sys.stdout, indent=2)
+        sys.stdout.write('\n')
         return True
 
     if not isinstance(program, Program):
