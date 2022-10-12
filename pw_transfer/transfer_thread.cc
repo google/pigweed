@@ -359,7 +359,7 @@ void TransferThread::HandleEvent(const internal::Event& event) {
     } else if (event.type == EventType::kNewServerTransfer) {
       // On the server, send a status chunk back to the client.
       SendStatusChunk(
-          {.session_id = event.new_transfer.session_id,
+          {.session_id = event.new_transfer.resource_id,
            .protocol_version = event.new_transfer.protocol_version,
            .status = Status::ResourceExhausted().code(),
            .stream = event.new_transfer.type == TransferType::kTransmit
