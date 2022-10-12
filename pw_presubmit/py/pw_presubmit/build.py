@@ -70,13 +70,9 @@ def bazel(ctx: PresubmitContext, cmd: str, *args: str) -> None:
          env=env_with_clang_vars())
 
 
-def install_package(root: Union[Path, PresubmitContext], name: str) -> None:
+def install_package(ctx: PresubmitContext, name: str) -> None:
     """Install package with given name in given path."""
-    # TODO(b/253011700) Only accept PresubmitContext as the initial argument.
-    if isinstance(root, PresubmitContext):
-        root = root.package_root
-    assert isinstance(root, Path)
-
+    root = ctx.package_root
     mgr = package_manager.PackageManager(root)
 
     if not mgr.list():
