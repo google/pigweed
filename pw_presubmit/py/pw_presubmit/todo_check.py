@@ -39,8 +39,9 @@ EXCLUDE: Sequence[str] = (
 )
 
 # todo-check: disable
-BUGS_ONLY = re.compile(r'\bTODO\(b/\d+\).*\w')
-BUGS_OR_USERNAMES = re.compile(r'\bTODO\((?:b/\d+|[a-z]+)\).*\w')
+BUGS_ONLY = re.compile(r'\bTODO\(b/\d+(?:, ?b/\d+)*\).*\w')
+BUGS_OR_USERNAMES = re.compile(
+    r'\bTODO\((?:b/\d+|[a-z]+)(?:, ?(?:b/\d+|[a-z]+))*\).*\w')
 _TODO = re.compile(r'\bTODO\b')
 # todo-check: enable
 
