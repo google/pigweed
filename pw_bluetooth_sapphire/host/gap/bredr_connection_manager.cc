@@ -317,7 +317,29 @@ BrEdrConnectionManager::SearchId BrEdrConnectionManager::AddServiceSearch(
     }
     client_cb(peer_id, attributes);
   };
-  return discoverer_.AddSearch(uuid, std::move(attributes), std::move(on_service_discovered));
+  SearchId new_id =
+      discoverer_.AddSearch(uuid, std::move(attributes), std::move(on_service_discovered));
+  for (auto& [handle, connection] : connections_) {
+    auto self = weak_ptr_factory_.GetWeakPtr();
+    connection.OpenL2capChannel(
+        l2cap::kSDP, l2cap::ChannelParameters(),
+        [self, peer_id = connection.peer_id(), search_id = new_id](auto channel) {
+          bt_log(ERROR, "gap", "connecting l2cap channel");
+          if (!self) {
+            return;
+          }
+          if (!channel) {
+            // Likely interrogation is not complete. Search will be done at end of interrogation.
+            bt_log(INFO, "gap", "no l2cap channel for new search (peer: %s)", bt_str(peer_id));
+            // Try anyway, maybe there's a channel open
+            self->discoverer_.SingleSearch(search_id, peer_id, nullptr);
+            return;
+          }
+          auto client = sdp::Client::Create(std::move(channel));
+          self->discoverer_.SingleSearch(search_id, peer_id, std::move(client));
+        });
+  }
+  return new_id;
 }
 
 bool BrEdrConnectionManager::RemoveServiceSearch(SearchId id) {
@@ -650,7 +672,6 @@ void BrEdrConnectionManager::CompleteConnectionSetup(Peer* peer,
                    bt_str(peer_id));
             return;
           }
-
           auto client = sdp::Client::Create(std::move(channel));
           self->discoverer_.StartServiceDiscovery(peer_id, std::move(client));
         });

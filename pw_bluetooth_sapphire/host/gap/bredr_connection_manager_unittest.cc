@@ -596,8 +596,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
 
     RunLoopUntilIdle();
 
-    test_device()->SetTransactionCallback([this] { transaction_count_++; },
-                                          async_get_default_dispatcher());
+    test_device()->SetTransactionCallback([this] { transaction_count_++; }, dispatcher());
   }
 
   void TearDown() override {
@@ -1531,6 +1530,10 @@ TEST_F(BrEdrConnectionManagerTest, InitializingPeerDoesNotTimeout) {
   EXPECT_EQ(kInvalidPeerId, connmgr()->GetPeerId(kConnectionHandle));
 }
 
+inline uint16_t tid_from_sdp_packet(const ByteBufferPtr& packet) {
+  return (*packet)[1] << CHAR_BIT | (*packet)[2];
+}
+
 TEST_F(BrEdrConnectionManagerTest, PeerServicesAddedBySearchAndRetainedIfNotSearchedFor) {
   constexpr UUID kServiceUuid1 = sdp::profile::kAudioSink;
   auto* const peer = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
@@ -1545,12 +1548,13 @@ TEST_F(BrEdrConnectionManagerTest, PeerServicesAddedBySearchAndRetainedIfNotSear
   fxl::WeakPtr<l2cap::testing::FakeChannel> sdp_chan;
   std::optional<uint32_t> sdp_request_tid;
 
-  l2cap()->set_channel_callback([&sdp_chan, &sdp_request_tid](auto new_chan) {
-    new_chan->SetSendCallback(
-        [&sdp_request_tid](auto packet) { sdp_request_tid = (*packet)[1] << 8 | (*packet)[2]; },
-        async_get_default_dispatcher());
-    sdp_chan = std::move(new_chan);
-  });
+  l2cap()->set_channel_callback(
+      [&sdp_chan, &sdp_request_tid, dispatcher = dispatcher()](auto new_chan) {
+        new_chan->SetSendCallback(
+            [&sdp_request_tid](auto packet) { sdp_request_tid = tid_from_sdp_packet(packet); },
+            dispatcher);
+        sdp_chan = std::move(new_chan);
+      });
 
   // No searches in this connection.
   QueueSuccessfulIncomingConn();
@@ -1594,12 +1598,13 @@ TEST_F(BrEdrConnectionManagerTest, PeerServiceNotErasedByEmptyResultsForSearchOf
   fxl::WeakPtr<l2cap::testing::FakeChannel> sdp_chan;
   std::optional<uint32_t> sdp_request_tid;
 
-  l2cap()->set_channel_callback([&sdp_chan, &sdp_request_tid](auto new_chan) {
-    new_chan->SetSendCallback(
-        [&sdp_request_tid](auto packet) { sdp_request_tid = (*packet)[1] << 8 | (*packet)[2]; },
-        async_get_default_dispatcher());
-    sdp_chan = std::move(new_chan);
-  });
+  l2cap()->set_channel_callback(
+      [&sdp_chan, &sdp_request_tid, dispatcher = dispatcher()](auto new_chan) {
+        new_chan->SetSendCallback(
+            [&sdp_request_tid](auto packet) { sdp_request_tid = tid_from_sdp_packet(packet); },
+            dispatcher);
+        sdp_chan = std::move(new_chan);
+      });
 
   QueueSuccessfulIncomingConn();
   l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, 0x40, 0x41, kChannelParams);
@@ -1627,6 +1632,29 @@ TEST_F(BrEdrConnectionManagerTest, PeerServiceNotErasedByEmptyResultsForSearchOf
   QueueDisconnection(kConnectionHandle);
 }
 
+l2cap::testing::FakeChannel::SendCallback MakeAudioSinkSearchExpected(
+    std::optional<uint16_t>* tid) {
+  return [tid](auto packet) {
+    const StaticByteBuffer kSearchExpectedParams(
+        // ServiceSearchPattern
+        0x35, 0x03,        // Sequence uint8 3 bytes
+        0x19, 0x11, 0x0B,  // UUID (kAudioSink)
+        0xFF, 0xFF,        // MaxAttributeByteCount (no max)
+        // Attribute ID list
+        0x35, 0x03,        // Sequence uint8 3 bytes
+        0x09, 0x00, 0x03,  // uint16_t (kServiceId)
+        0x00               // No continuation state
+    );
+    // First byte should be type.
+    ASSERT_LE(3u, packet->size());
+    ASSERT_EQ(sdp::kServiceSearchAttributeRequest, (*packet)[0]);
+    ASSERT_EQ(kSearchExpectedParams, packet->view(sizeof(bt::sdp::Header)));
+    if (tid != nullptr) {
+    }
+    *tid = tid_from_sdp_packet(packet);
+  };
+}
+
 TEST_F(BrEdrConnectionManagerTest, ServiceSearch) {
   size_t search_cb_count = 0;
   auto search_cb = [&](auto id, const auto& attributes) {
@@ -1641,30 +1669,13 @@ TEST_F(BrEdrConnectionManagerTest, ServiceSearch) {
       connmgr()->AddServiceSearch(sdp::profile::kAudioSink, {sdp::kServiceId}, search_cb);
 
   fxl::WeakPtr<l2cap::testing::FakeChannel> sdp_chan;
-  std::optional<uint32_t> sdp_request_tid;
+  std::optional<uint16_t> sdp_request_tid;
 
-  l2cap()->set_channel_callback([&sdp_chan, &sdp_request_tid](auto new_chan) {
-    new_chan->SetSendCallback(
-        [&sdp_request_tid](auto packet) {
-          const StaticByteBuffer kSearchExpectedParams(
-              // ServiceSearchPattern
-              0x35, 0x03,        // Sequence uint8 3 bytes
-              0x19, 0x11, 0x0B,  // UUID (kAudioSink)
-              0xFF, 0xFF,        // MaxAttributeByteCount (no max)
-              // Attribute ID list
-              0x35, 0x03,        // Sequence uint8 3 bytes
-              0x09, 0x00, 0x03,  // uint16_t (kServiceId)
-              0x00               // No continuation state
-          );
-          // First byte should be type.
-          ASSERT_LE(3u, packet->size());
-          ASSERT_EQ(sdp::kServiceSearchAttributeRequest, (*packet)[0]);
-          ASSERT_EQ(kSearchExpectedParams, packet->view(5));
-          sdp_request_tid = (*packet)[1] << 8 | (*packet)[2];
-        },
-        async_get_default_dispatcher());
-    sdp_chan = std::move(new_chan);
-  });
+  l2cap()->set_channel_callback(
+      [&sdp_chan, &sdp_request_tid, dispatcher = dispatcher()](auto new_chan) {
+        new_chan->SetSendCallback(MakeAudioSinkSearchExpected(&sdp_request_tid), dispatcher);
+        sdp_chan = std::move(new_chan);
+      });
 
   QueueSuccessfulIncomingConn();
   l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, 0x40, 0x41, kChannelParams);
@@ -1717,6 +1728,94 @@ TEST_F(BrEdrConnectionManagerTest, ServiceSearch) {
   QueueDisconnection(kConnectionHandle);
 }
 
+TEST_F(BrEdrConnectionManagerTest, SearchAfterConnected) {
+  // We have no services registered, so this will not start a SDP search.
+  QueueSuccessfulIncomingConn();
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+
+  RunLoopUntilIdle();
+
+  size_t search_cb_count = 0;
+  auto search_cb = [&](auto id, const auto& attributes) {
+    auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
+    ASSERT_TRUE(peer);
+    ASSERT_EQ(id, peer->identifier());
+    ASSERT_EQ(1u, attributes.count(sdp::kServiceId));
+    search_cb_count++;
+  };
+
+  fxl::WeakPtr<l2cap::testing::FakeChannel> sdp_chan;
+  std::optional<uint16_t> sdp_request_tid;
+
+  l2cap()->set_channel_callback(
+      [&sdp_chan, &sdp_request_tid, dispatcher = dispatcher()](auto new_chan) {
+        new_chan->SetSendCallback(MakeAudioSinkSearchExpected(&sdp_request_tid), dispatcher);
+        sdp_chan = std::move(new_chan);
+      });
+
+  l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, 0x40, 0x41, kChannelParams);
+
+  // When this gets added, the service search will immediately be done on the already-connected
+  // peer.
+  auto search_id =
+      connmgr()->AddServiceSearch(sdp::profile::kAudioSink, {sdp::kServiceId}, search_cb);
+
+  ASSERT_NE(sdp::ServiceDiscoverer::kInvalidSearchId, search_id);
+
+  RunLoopUntilIdle();
+
+  ASSERT_TRUE(sdp_chan);
+  ASSERT_TRUE(sdp_request_tid);
+  ASSERT_EQ(0u, search_cb_count);
+
+  sdp::ServiceSearchAttributeResponse rsp;
+  rsp.SetAttribute(0, sdp::kServiceId, sdp::DataElement(UUID()));
+  auto rsp_ptr =
+      rsp.GetPDU(0xFFFF /* max attribute bytes */, *sdp_request_tid, PDU_MAX, BufferView());
+
+  sdp_chan->Receive(*rsp_ptr);
+
+  RunLoopUntilIdle();
+
+  ASSERT_EQ(1u, search_cb_count);
+
+  // Remote end disconnects.
+  test_device()->SendCommandChannelPacket(kDisconnectionComplete);
+
+  RunLoopUntilIdle();
+
+  sdp_request_tid.reset();
+  sdp_chan.reset();
+
+  // Second connection is shortened because we have already interrogated,
+  // we repeat the search for SDP services.
+  EXPECT_CMD_PACKET_OUT(test_device(), kAcceptConnectionRequest, &kAcceptConnectionRequestRsp,
+                        &kConnectionComplete);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteExtended1, &kReadRemoteExtendedFeaturesRsp,
+                        &kReadRemoteExtended1Complete);
+  EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteExtended2, &kReadRemoteExtendedFeaturesRsp,
+                        &kReadRemoteExtended2Complete);
+
+  l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, 0x40, 0x41, kChannelParams);
+
+  test_device()->SendCommandChannelPacket(kConnectionRequest);
+  RunLoopUntilIdle();
+
+  ASSERT_TRUE(sdp_chan);
+  ASSERT_TRUE(sdp_request_tid);
+  ASSERT_EQ(1u, search_cb_count);
+
+  // Reusing the (empty) answer from before
+  rsp_ptr = rsp.GetPDU(0xFFFF /* max attribute bytes */, *sdp_request_tid, PDU_MAX, BufferView());
+
+  sdp_chan->Receive(*rsp_ptr);
+
+  // We should have another search callback.
+  ASSERT_EQ(2u, search_cb_count);
+
+  QueueDisconnection(kConnectionHandle);
+}
+
 TEST_F(BrEdrConnectionManagerTest, SearchOnReconnect) {
   size_t search_cb_count = 0;
   auto search_cb = [&](auto id, const auto& attributes) {
@@ -1730,30 +1829,13 @@ TEST_F(BrEdrConnectionManagerTest, SearchOnReconnect) {
   connmgr()->AddServiceSearch(sdp::profile::kAudioSink, {sdp::kServiceId}, search_cb);
 
   fxl::WeakPtr<l2cap::testing::FakeChannel> sdp_chan;
-  std::optional<uint32_t> sdp_request_tid;
+  std::optional<uint16_t> sdp_request_tid;
 
-  l2cap()->set_channel_callback([&sdp_chan, &sdp_request_tid](auto new_chan) {
-    new_chan->SetSendCallback(
-        [&sdp_request_tid](auto packet) {
-          const StaticByteBuffer kSearchExpectedParams(
-              // ServiceSearchPattern
-              0x35, 0x03,        // Sequence uint8 3 bytes
-              0x19, 0x11, 0x0B,  // UUID (kAudioSink)
-              0xFF, 0xFF,        // MaxAttributeByteCount (no max)
-              // Attribute ID list
-              0x35, 0x03,        // Sequence uint8 3 bytes
-              0x09, 0x00, 0x03,  // uint16_t (kServiceId)
-              0x00               // No continuation state
-          );
-          // First byte should be type.
-          ASSERT_LE(3u, packet->size());
-          ASSERT_EQ(sdp::kServiceSearchAttributeRequest, (*packet)[0]);
-          ASSERT_EQ(kSearchExpectedParams, packet->view(5));
-          sdp_request_tid = (*packet)[1] << 8 | (*packet)[2];
-        },
-        async_get_default_dispatcher());
-    sdp_chan = std::move(new_chan);
-  });
+  l2cap()->set_channel_callback(
+      [&sdp_chan, &sdp_request_tid, dispatcher = dispatcher()](auto new_chan) {
+        new_chan->SetSendCallback(MakeAudioSinkSearchExpected(&sdp_request_tid), dispatcher);
+        sdp_chan = std::move(new_chan);
+      });
 
   // This test uses a modified peer and interrogation which doesn't use
   // extended pages.
@@ -2399,28 +2481,29 @@ TEST_F(BrEdrConnectionManagerTest, AddServiceSearchAll) {
   fxl::WeakPtr<l2cap::testing::FakeChannel> sdp_chan;
   std::optional<uint32_t> sdp_request_tid;
 
-  l2cap()->set_channel_callback([&sdp_chan, &sdp_request_tid](auto new_chan) {
-    new_chan->SetSendCallback(
-        [&sdp_request_tid](auto packet) {
-          const StaticByteBuffer kSearchExpectedParams(
-              // ServiceSearchPattern
-              0x35, 0x03,        // Sequence uint8 3 bytes
-              0x19, 0x11, 0x0B,  // UUID (kAudioSink)
-              0xFF, 0xFF,        // MaxAttributeByteCount (none)
-              // Attribute ID list
-              0x35, 0x05,                    // Sequence uint8 5 bytes
-              0x0A, 0x00, 0x00, 0xFF, 0xFF,  // uint32_t (all attributes)
-              0x00                           // No continuation state
-          );
-          // First byte should be type.
-          ASSERT_LE(3u, packet->size());
-          ASSERT_EQ(sdp::kServiceSearchAttributeRequest, (*packet)[0]);
-          ASSERT_EQ(kSearchExpectedParams, packet->view(5));
-          sdp_request_tid = (*packet)[1] << 8 | (*packet)[2];
-        },
-        async_get_default_dispatcher());
-    sdp_chan = std::move(new_chan);
-  });
+  l2cap()->set_channel_callback(
+      [&sdp_chan, &sdp_request_tid, dispatcher = dispatcher()](auto new_chan) {
+        new_chan->SetSendCallback(
+            [&sdp_request_tid](auto packet) {
+              const StaticByteBuffer kSearchExpectedParams(
+                  // ServiceSearchPattern
+                  0x35, 0x03,        // Sequence uint8 3 bytes
+                  0x19, 0x11, 0x0B,  // UUID (kAudioSink)
+                  0xFF, 0xFF,        // MaxAttributeByteCount (none)
+                  // Attribute ID list
+                  0x35, 0x05,                    // Sequence uint8 5 bytes
+                  0x0A, 0x00, 0x00, 0xFF, 0xFF,  // uint32_t (all attributes)
+                  0x00                           // No continuation state
+              );
+              // First byte should be type.
+              ASSERT_LE(3u, packet->size());
+              ASSERT_EQ(sdp::kServiceSearchAttributeRequest, (*packet)[0]);
+              ASSERT_EQ(kSearchExpectedParams, packet->view(sizeof(bt::sdp::Header)));
+              sdp_request_tid = tid_from_sdp_packet(packet);
+            },
+            dispatcher);
+        sdp_chan = std::move(new_chan);
+      });
 
   QueueSuccessfulIncomingConn();
   l2cap()->ExpectOutboundL2capChannel(kConnectionHandle, l2cap::kSDP, 0x40, 0x41, kChannelParams);

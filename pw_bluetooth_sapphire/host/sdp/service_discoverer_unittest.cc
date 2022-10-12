@@ -288,6 +288,107 @@ TEST_F(ServiceDiscovererTest, SomeResults) {
   ASSERT_EQ(3u, clients_destroyed());
 }
 
+// Single search behavior when there is a discovery not running (2 clients simultaneously)
+TEST_F(ServiceDiscovererTest, SingleSearchDifferentPeers) {
+  ServiceDiscoverer discoverer;
+
+  size_t cb_count = 0;
+
+  auto result_cb = [&cb_count](auto, const auto &) { cb_count++; };
+
+  ServiceDiscoverer::SearchId search_id =
+      discoverer.AddSearch(profile::kSerialPort, {kServiceId}, std::move(result_cb));
+  ASSERT_NE(ServiceDiscoverer::kInvalidSearchId, search_id);
+  EXPECT_EQ(1u, discoverer.search_count());
+
+  auto client = GetFakeClient();
+  auto client2 = GetFakeClient();
+
+  std::vector<std::unordered_set<UUID>> searches;
+
+  auto search_attributes_cb = [cb_dispatcher = dispatcher(), &searches](
+                                  auto pattern, auto attributes, auto callback) {
+    searches.emplace_back(pattern);
+    if (pattern.count(profile::kSerialPort)) {
+      async::PostTask(cb_dispatcher, [cb = std::move(callback)]() {
+        ServiceSearchAttributeResponse rsp;
+        rsp.SetAttribute(0, kServiceId, DataElement(UUID(uint16_t{1})));
+        if (!cb(fit::ok(std::cref(rsp.attributes(0))))) {
+          return;
+        }
+        cb(fit::error(Error(HostError::kNotFound)));
+      });
+    } else {
+      std::cerr << "Searched for " << pattern.size() << std::endl;
+      for (auto it : pattern) {
+        std::cerr << it.ToString() << std::endl;
+      }
+      FAIL() << "Unexpected search called";
+    }
+  };
+
+  client->SetServiceSearchAttributesCallback(search_attributes_cb);
+  client2->SetServiceSearchAttributesCallback(search_attributes_cb);
+
+  discoverer.SingleSearch(search_id, PeerId(1), std::move(client));
+  discoverer.SingleSearch(search_id, PeerId(2), std::move(client2));
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  EXPECT_EQ(2u, searches.size());
+  ASSERT_EQ(2u, cb_count);
+  ASSERT_EQ(2u, clients_destroyed());
+}
+
+// Single search behavior when there is a discovery running (2 searches simultaneously)
+TEST_F(ServiceDiscovererTest, SingleSearchSamePeer) {
+  ServiceDiscoverer discoverer;
+
+  size_t cb_count = 0;
+
+  auto result_cb = [&cb_count](auto, const auto &) { cb_count++; };
+
+  ServiceDiscoverer::SearchId search_id =
+      discoverer.AddSearch(profile::kSerialPort, {kServiceId}, std::move(result_cb));
+  ASSERT_NE(ServiceDiscoverer::kInvalidSearchId, search_id);
+  EXPECT_EQ(1u, discoverer.search_count());
+
+  auto client = GetFakeClient();
+  std::vector<std::unordered_set<UUID>> searches;
+
+  auto search_attributes_cb = [cb_dispatcher = dispatcher(), &searches](
+                                  auto pattern, auto attributes, auto callback) {
+    searches.emplace_back(pattern);
+    if (pattern.count(profile::kSerialPort)) {
+      async::PostTask(cb_dispatcher, [cb = std::move(callback)]() {
+        ServiceSearchAttributeResponse rsp;
+        rsp.SetAttribute(0, kServiceId, DataElement(UUID(uint16_t{1})));
+        if (!cb(fit::ok(std::cref(rsp.attributes(0))))) {
+          return;
+        }
+        cb(fit::error(Error(HostError::kNotFound)));
+      });
+    } else {
+      std::cerr << "Searched for " << pattern.size() << std::endl;
+      for (auto it : pattern) {
+        std::cerr << it.ToString() << std::endl;
+      }
+      FAIL() << "Unexpected search called";
+    }
+  };
+
+  client->SetServiceSearchAttributesCallback(search_attributes_cb);
+
+  discoverer.SingleSearch(search_id, PeerId(1), std::move(client));
+  discoverer.SingleSearch(search_id, PeerId(1), nullptr);
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  EXPECT_EQ(2u, searches.size());
+  ASSERT_EQ(2u, cb_count);
+  ASSERT_EQ(1u, clients_destroyed());
+}
+
 // Disconnected on the other end before the discovery completes
 TEST_F(ServiceDiscovererTest, Disconnected) {
   ServiceDiscoverer discoverer;

@@ -55,7 +55,15 @@ class ServiceDiscoverer final {
   // This function is idempotent.
   bool RemoveSearch(SearchId id);
 
-  // Searches for all the registered services using a SDP |client|.
+  // Tries to add a single search using the SDP |client| connected to |peer_id|
+  // given for the search identified by |search_id|. Results from the search are
+  // delivered asynchronously via the ResultCallback registered via AddSearch.
+  // Does nothing if |search_id| is not currently registered.
+  // If |client| is nullptr, this search will only be performed if a client is
+  // already open to the peer.
+  void SingleSearch(SearchId search_id, PeerId peer_id, std::unique_ptr<Client> client);
+
+  // Searches for all the registered services using a SDP |client|
   // asynchronously.  The client is destroyed (disconnected) afterwards.
   // If a search is already being performed on the same |peer_id|, the client
   // is immediately dropped.
