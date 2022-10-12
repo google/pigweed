@@ -20,7 +20,7 @@
 diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/internal/function.h b/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/internal/function.h
 --- a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/internal/function.h
 +++ b/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/internal/function.h
-@@ -16,6 +16,8 @@
+@@ -18,6 +18,8 @@
  #include <utility>
 
  #include "../nullable.h"
@@ -29,7 +29,7 @@ diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/internal/funct
 
  namespace fit {
  namespace internal {
-@@ -85,7 +87,7 @@ inline const void* unshared_target_type_id(void* /*bits*/, const void* impl_ops)
+@@ -87,7 +89,7 @@ inline const void* unshared_target_type_id(void* /*bits*/, const void* impl_ops)
  // elsewhere in the header as an inline variable.
  template <typename Unused = void>
  struct null_target {
@@ -38,7 +38,7 @@ diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/internal/funct
 
    static const target_ops<void> ops;
 
-@@ -478,7 +480,8 @@ class function_base<inline_target_size, require_inline, Result(Args...)>
+@@ -493,7 +495,8 @@ class function_base<inline_target_size, require_inline, Result(Args...)>
    // Note that fit::callback will release the target immediately after
    // invoke() (also affecting any share()d copies).
    // Aborts if the function's target is empty.
@@ -48,7 +48,7 @@ diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/internal/funct
      // Down cast the ops to the derived type that this function was instantiated
      // with, which includes the invoke function.
      //
-@@ -508,7 +511,7 @@ class function_base<inline_target_size, require_inline, Result(Args...)>
+@@ -523,7 +526,7 @@ class function_base<inline_target_size, require_inline, Result(Args...)>
    template <typename SharedFunction>
    void copy_shared_target_to(SharedFunction& copy) {
      copy.destroy_target();
@@ -57,7 +57,7 @@ diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/internal/funct
      shared_target_type<SharedFunction>::copy_shared_ptr(base::bits(), copy.bits());
      copy.set_ops(base::ops());
    }
-@@ -538,7 +541,7 @@ class function_base<inline_target_size, require_inline, Result(Args...)>
+@@ -553,7 +556,7 @@ class function_base<inline_target_size, require_inline, Result(Args...)>
    void check_target_type() const {
      if (target_type<Callable>::ops.target_type_id(nullptr, &target_type<Callable>::ops) !=
          base::target_type_id()) {
@@ -111,3 +111,190 @@ diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/nullable.h b/t
      }
    }
 
+diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/result.h b/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/result.h
+--- a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/result.h
++++ b/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/result.h
+@@ -54,6 +54,8 @@
+ //                               // fit::result with a different "success" vluae type (or
+ //                               // fit::result<E>).
+
++#include "pw_assert/assert.h"
++
+ namespace fit {
+
+ // Convenience type to indicate failure without elaboration.
+@@ -248,7 +250,10 @@ class LIB_FIT_NODISCARD result<E, T> {
+
+   // Implicit conversion from fit::failed. This overload is only enabled when the error type E is
+   // fit::failed.
+-  constexpr result(failed_or_none) : storage_{::fit::internal::error_v, failed{}} {}
++  constexpr result(failed_or_none) : storage_ {
++    ::fit::internal::error_v, failed {}
++  }
++  {}
+
+   // Implicit conversion from success<U>, where T is constructible from U.
+   template <typename U, ::fit::internal::requires_conditions<std::is_constructible<T, U>> = true>
+@@ -279,25 +284,25 @@ class LIB_FIT_NODISCARD result<E, T> {
+     if (is_error()) {
+       return storage_.error_or_value.error;
+     }
+-    __builtin_abort();
++    PW_ASSERT(false);
+   }
+   constexpr const E& error_value() const& {
+     if (is_error()) {
+       return storage_.error_or_value.error;
+     }
+-    __builtin_abort();
++    PW_ASSERT(false);
+   }
+   constexpr E&& error_value() && {
+     if (is_error()) {
+       return std::move(storage_.error_or_value.error);
+     }
+-    __builtin_abort();
++    PW_ASSERT(false);
+   }
+   constexpr const E&& error_value() const&& {
+     if (is_error()) {
+       return std::move(storage_.error_or_value.error);
+     }
+-    __builtin_abort();
++    PW_ASSERT(false);
+   }
+
+   // Moves the underlying error and returns it as an instance of fit::error, simplifying
+@@ -308,7 +313,7 @@ class LIB_FIT_NODISCARD result<E, T> {
+     if (is_error()) {
+       return error<E>(std::move(storage_.error_or_value.error));
+     }
+-    __builtin_abort();
++    PW_ASSERT(false);
+   }
+
+   // Accessors for the underlying value.
+@@ -318,25 +323,25 @@ class LIB_FIT_NODISCARD result<E, T> {
+     if (is_ok()) {
+       return storage_.error_or_value.value;
+     }
+-    __builtin_abort();
++    PW_ASSERT(false);
+   }
+   constexpr const T& value() const& {
+     if (is_ok()) {
+       return storage_.error_or_value.value;
+     }
+-    __builtin_abort();
++    PW_ASSERT(false);
+   }
+   constexpr T&& value() && {
+     if (is_ok()) {
+       return std::move(storage_.error_or_value.value);
+     }
+-    __builtin_abort();
++    PW_ASSERT(false);
+   }
+   constexpr const T&& value() const&& {
+     if (is_ok()) {
+       return std::move(storage_.error_or_value.value);
+     }
+-    __builtin_abort();
++    PW_ASSERT(false);
+   }
+
+   // Moves the underlying value and returns it as an instance of fit::success, simplifying
+@@ -347,7 +352,7 @@ class LIB_FIT_NODISCARD result<E, T> {
+     if (is_ok()) {
+       return success<T>(std::move(storage_.error_or_value.value));
+     }
+-    __builtin_abort();
++    PW_ASSERT(false);
+   }
+
+   // Contingent accessors for the underlying value.
+@@ -376,13 +381,13 @@ class LIB_FIT_NODISCARD result<E, T> {
+     if (is_ok()) {
+       return ::fit::internal::arrow_operator<T>::forward(storage_.error_or_value.value);
+     }
+-    __builtin_abort();
++    PW_ASSERT(false);
+   }
+   constexpr decltype(auto) operator->() const {
+     if (is_ok()) {
+       return ::fit::internal::arrow_operator<T>::forward(storage_.error_or_value.value);
+     }
+-    __builtin_abort();
++    PW_ASSERT(false);
+   }
+
+   // Accessors for the underlying value. This is a syntax sugar for value().
+@@ -405,7 +410,7 @@ class LIB_FIT_NODISCARD result<E, T> {
+       storage_.error_or_value.error += std::move(error.value_);
+       return *this;
+     }
+-    __builtin_abort();
++    PW_ASSERT(false);
+   }
+
+   constexpr void swap(result& other) {
+@@ -453,7 +458,10 @@ class LIB_FIT_NODISCARD result<E> {
+
+   // Implicit conversion from fit::failure. This overload is only enabled when the error type E is
+   // fit::failed.
+-  constexpr result(failure_or_none) : storage_{::fit::internal::error_v, failed{}} {}
++  constexpr result(failure_or_none) : storage_ {
++    ::fit::internal::error_v, failed {}
++  }
++  {}
+
+   // Implicit conversion from fit::success<>.
+   constexpr result(success<>) : storage_{::fit::internal::value_v} {}
+@@ -478,25 +486,25 @@ class LIB_FIT_NODISCARD result<E> {
+     if (is_error()) {
+       return storage_.error_or_value.error;
+     }
+-    __builtin_abort();
++    PW_ASSERT(false);
+   }
+   constexpr const E& error_value() const& {
+     if (is_error()) {
+       return storage_.error_or_value.error;
+     }
+-    __builtin_abort();
++    PW_ASSERT(false);
+   }
+   constexpr E&& error_value() && {
+     if (is_error()) {
+       return std::move(storage_.error_or_value.error);
+     }
+-    __builtin_abort();
++    PW_ASSERT(false);
+   }
+   constexpr const E&& error_value() const&& {
+     if (is_error()) {
+       return std::move(storage_.error_or_value.error);
+     }
+-    __builtin_abort();
++    PW_ASSERT(false);
+   }
+
+   // Moves the underlying error and returns it as an instance of fit::error, simplifying
+@@ -507,7 +515,7 @@ class LIB_FIT_NODISCARD result<E> {
+     if (is_error()) {
+       return error<E>(std::move(storage_.error_or_value.error));
+     }
+-    __builtin_abort();
++    PW_ASSERT(false);
+   }
+
+   // Augments the error value of the result with the given value. The operator E::operator+=(F) must
+@@ -521,7 +529,7 @@ class LIB_FIT_NODISCARD result<E> {
+       storage_.error_or_value.error += std::move(error.value_);
+       return *this;
+     }
+-    __builtin_abort();
++    PW_ASSERT(false);
+   }
+
+   constexpr void swap(result& other) {
