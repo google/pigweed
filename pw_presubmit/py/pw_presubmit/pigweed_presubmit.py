@@ -221,7 +221,7 @@ def stm32f429i(ctx: PresubmitContext):
 
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_boringssl_build(ctx: PresubmitContext):
-    build.install_package(ctx.package_root, 'boringssl')
+    build.install_package(ctx, 'boringssl')
     build.gn_gen(ctx,
                  dir_pw_third_party_boringssl='"{}"'.format(ctx.package_root /
                                                             'boringssl'))
@@ -234,7 +234,7 @@ def gn_boringssl_build(ctx: PresubmitContext):
 
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_nanopb_build(ctx: PresubmitContext):
-    build.install_package(ctx.package_root, 'nanopb')
+    build.install_package(ctx, 'nanopb')
     build.gn_gen(ctx,
                  dir_pw_third_party_nanopb='"{}"'.format(ctx.package_root /
                                                          'nanopb'))
@@ -247,7 +247,7 @@ def gn_nanopb_build(ctx: PresubmitContext):
 
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_crypto_mbedtls_build(ctx: PresubmitContext):
-    build.install_package(ctx.package_root, 'mbedtls')
+    build.install_package(ctx, 'mbedtls')
     build.gn_gen(
         ctx,
         dir_pw_third_party_mbedtls='"{}"'.format(ctx.package_root / 'mbedtls'),
@@ -266,7 +266,7 @@ def gn_crypto_mbedtls_build(ctx: PresubmitContext):
 
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_crypto_boringssl_build(ctx: PresubmitContext):
-    build.install_package(ctx.package_root, 'boringssl')
+    build.install_package(ctx, 'boringssl')
     build.gn_gen(
         ctx,
         dir_pw_third_party_boringssl='"{}"'.format(ctx.package_root /
@@ -287,7 +287,7 @@ def gn_crypto_boringssl_build(ctx: PresubmitContext):
 
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_crypto_micro_ecc_build(ctx: PresubmitContext):
-    build.install_package(ctx.package_root, 'micro-ecc')
+    build.install_package(ctx, 'micro-ecc')
     build.gn_gen(
         ctx,
         dir_pw_third_party_micro_ecc='"{}"'.format(ctx.package_root /
@@ -306,7 +306,7 @@ def gn_crypto_micro_ecc_build(ctx: PresubmitContext):
 
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_teensy_build(ctx: PresubmitContext):
-    build.install_package(ctx.package_root, 'teensy')
+    build.install_package(ctx, 'teensy')
     build.gn_gen(ctx,
                  pw_arduino_build_CORE_PATH='"{}"'.format(str(
                      ctx.package_root)),
@@ -318,10 +318,10 @@ def gn_teensy_build(ctx: PresubmitContext):
 
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_software_update_build(ctx: PresubmitContext):
-    build.install_package(ctx.package_root, 'nanopb')
-    build.install_package(ctx.package_root, 'protobuf')
-    build.install_package(ctx.package_root, 'mbedtls')
-    build.install_package(ctx.package_root, 'micro-ecc')
+    build.install_package(ctx, 'nanopb')
+    build.install_package(ctx, 'protobuf')
+    build.install_package(ctx, 'mbedtls')
+    build.install_package(ctx, 'micro-ecc')
     build.gn_gen(
         ctx,
         dir_pw_third_party_protobuf='"{}"'.format(ctx.package_root /
@@ -342,9 +342,9 @@ def gn_software_update_build(ctx: PresubmitContext):
 
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_pw_system_demo_build(ctx: PresubmitContext):
-    build.install_package(ctx.package_root, 'freertos')
-    build.install_package(ctx.package_root, 'nanopb')
-    build.install_package(ctx.package_root, 'stm32cube_f4')
+    build.install_package(ctx, 'freertos')
+    build.install_package(ctx, 'nanopb')
+    build.install_package(ctx, 'stm32cube_f4')
     build.gn_gen(
         ctx,
         dir_pw_third_party_freertos='"{}"'.format(ctx.package_root /
@@ -385,7 +385,7 @@ def oss_fuzz_build(ctx: PresubmitContext):
 
 
 def _run_cmake(ctx: PresubmitContext, toolchain='host_clang') -> None:
-    build.install_package(ctx.package_root, 'nanopb')
+    build.install_package(ctx, 'nanopb')
 
     env = None
     if 'clang' in toolchain:
