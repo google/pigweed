@@ -32,7 +32,8 @@ _LOG: logging.Logger = logging.getLogger(__name__)
 # Ignore a whole section. Please do not change the order of these lines.
 _START = re.compile(r'keep-sorted: (begin|start)', re.IGNORECASE)
 _END = re.compile(r'keep-sorted: (stop|end)', re.IGNORECASE)
-_IGNORE_CASE = re.compile(r'ignore\W*case', re.IGNORECASE)
+_IGNORE_CASE = re.compile(r'ignore-case', re.IGNORECASE)
+_ALLOW_DUPES = re.compile(r'allow-dupes', re.IGNORECASE)
 
 # Only include these literals here so keep_sorted doesn't try to reorder later
 # test lines.
@@ -82,11 +83,18 @@ class _FileSorter:
         self.changed: bool = False
 
     def _process_block(self, start_line: str, lines: List[str], end_line: str,
-                       i: int, ignore_case: bool) -> Sequence[str]:
+                       i: int, ignore_case: bool,
+                       allow_dupes: bool) -> Sequence[str]:
+        lines_after_dupes: List[str] = []
+        if allow_dupes:
+            lines_after_dupes = lines
+        else:
+            lines_after_dupes = list({x: None for x in lines})
+
         sort_key = lambda x: x
         if ignore_case:
             sort_key = lambda x: (x.lower(), x)
-        sorted_lines = sorted(lines, key=sort_key)
+        sorted_lines = sorted(lines_after_dupes, key=sort_key)
 
         if lines != sorted_lines:
             self.changed = True
@@ -109,6 +117,7 @@ class _FileSorter:
     def _parse_file(self, ins):
         in_block: bool = False
         ignore_case: bool = False
+        allow_dupes: bool = False
         start_line: Optional[str] = None
         end_line: Optional[str] = None
         lines: List[str] = []
@@ -127,7 +136,7 @@ class _FileSorter:
                     assert start_line  # Implicitly cast from Optional.
                     self.all_lines.extend(
                         self._process_block(start_line, lines, end_line, i,
-                                            ignore_case))
+                                            ignore_case, allow_dupes))
                     start_line = end_line = None
                     self.all_lines.append(line)
                     lines = []
@@ -140,13 +149,16 @@ class _FileSorter:
                 _LOG.debug('Found start line %d %r', i, line)
                 ignore_case = bool(_IGNORE_CASE.search(line))
                 _LOG.debug('ignore_case: %s', ignore_case)
+                allow_dupes = bool(_ALLOW_DUPES.search(line))
+                _LOG.debug('allow_dupes: %s', allow_dupes)
                 start_line = line
                 in_block = True
                 self.all_lines.append(line)
 
                 remaining = line[start_match.end():].strip()
                 remaining = _IGNORE_CASE.sub('', remaining, count=1).strip()
-                if remaining:
+                remaining = _ALLOW_DUPES.sub('', remaining, count=1).strip()
+                if remaining.strip():
                     raise KeepSortedParsingError(
                         f'unrecognized directive on keep-sorted line: '
                         f'{remaining}', self.path, i)

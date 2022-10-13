@@ -118,6 +118,23 @@ class TestKeepSorted(unittest.TestCase):
         self.assertEqual(self.contents,
                          f'{START} ignore-case\na\nB\nc\nD\n{END}\n')
 
+    def test_remove_dupes(self) -> None:
+        self._run(f'{START}\n1\n2\n2\n1\n{END}\n')
+        self.ctx.fail.assert_called()
+        self.assertEqual(self.contents, f'{START}\n1\n2\n{END}\n')
+
+    def test_allow_dupes(self) -> None:
+        self._run(f'{START} allow-dupes\n1\n2\n2\n1\n{END}\n')
+        self.ctx.fail.assert_called()
+        self.assertEqual(self.contents,
+                         f'{START} allow-dupes\n1\n1\n2\n2\n{END}\n')
+
+    def test_case_insensitive_dupes(self) -> None:
+        self._run(f'{START} ignore-case\na\nB\nA\n{END}\n')
+        self.ctx.fail.assert_called()
+        self.assertEqual(self.contents,
+                         f'{START} ignore-case\nA\na\nB\n{END}\n')
+
 
 if __name__ == '__main__':
     unittest.main()

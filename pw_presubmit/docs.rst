@@ -167,6 +167,10 @@ This can be included by adding ``pw_presubmit.keep_sorted.keep_sorted`` to a
 presubmit program. Adding ``ignore-case`` to the start line will use
 case-insensitive sorting.
 
+By default, duplicates will be removed. Lines that are identical except in case
+are preserved, even with ``ignore-case``. To allow duplicates, add
+``allow-dupes`` to the start line.
+
 These will suggest fixes using ``pw keep-sorted --fix``.
 
 Future versions may support multiline list items.
