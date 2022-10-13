@@ -80,7 +80,7 @@ This results in the following generated structure:
 
   struct Customer::Message {
     int32_t age;
-    pw::Vector<char, 32> name;
+    pw::InlineString<32> name;
     Customer::Status status;
   };
 
@@ -605,8 +605,9 @@ Valid options are:
   instead of ``pw::Vector``.
 
 * ``max_size``:
-  Maximum size of `bytes` and `strings` fields. When set, these field types
-  will use the ``pw::Vector`` container type instead of a callback.
+  Maximum size of `bytes` or `string` fields. When set, `bytes` fields use
+  ``pw::Vector`` and `string` fields use ``pw::InlineString`` instead of a
+  callback.
 
 * ``fixed_size``:
   Specified with ``max_size`` to use a fixed length ``std::array`` container
@@ -971,7 +972,7 @@ the example below.
 .. code:: c++
 
   struct Function::Message_::Message {
-    pw::Vector<char, 128> content;
+    pw::InlineString<128> content;
   };
 
   enum class Function::Message_::Fields {
