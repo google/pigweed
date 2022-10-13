@@ -783,6 +783,8 @@ def call(*args, **kwargs) -> None:
     attributes, command = tools.format_command(args, kwargs)
     _LOG.debug('[RUN] %s\n%s', attributes, command)
 
+    tee = kwargs.pop('tee', None)
+
     env = pw_cli.env.pigweed_environment()
     kwargs['stdout'] = subprocess.PIPE
     kwargs['stderr'] = subprocess.STDOUT
@@ -796,8 +798,12 @@ def call(*args, **kwargs) -> None:
             if not line:
                 break
             _LOG.info(line.rstrip())
+            if tee:
+                tee.write(line)
 
     stdout, _ = process.communicate()
+    if tee:
+        tee.write(stdout.decode(errors='backslashreplace'))
 
     logfunc = _LOG.warning if process.returncode else _LOG.debug
     logfunc('[FINISHED]\n%s', command)
