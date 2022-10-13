@@ -18,8 +18,8 @@ from pathlib import Path
 import sys
 from typing import (Any, Callable, cast, Dict, Generic, NoReturn, Optional,
                     TypeVar, Union)
-from pw_ide.commands import (cmd_info, cmd_init, cmd_cpp, cmd_python,
-                             cmd_setup)
+
+from pw_ide.commands import cmd_cpp, cmd_python, cmd_setup
 
 # TODO(chadnorvell): Move this docstring-as-argparse-docs functionality
 # to pw_cli.
@@ -128,46 +128,6 @@ def _parse_args() -> argparse.Namespace:
         func=lambda *_args, **_kwargs: parser_root.print_help())
 
     subcommand_parser = parser_root.add_subparsers(help='Subcommands')
-
-    parser_info = subcommand_parser.add_parser(
-        'info',
-        description=_docstring_summary(cmd_info.__doc__),
-        help=_reflow_docstring(cmd_info.__doc__))
-    parser_info.add_argument('--working-dir',
-                             dest='working_dir',
-                             action='store_true',
-                             help='Report Pigweed IDE working directory.')
-    parser_info.add_argument('--available-compdbs',
-                             dest='available_compdbs',
-                             action='store_true',
-                             help='Report the compilation databases currently '
-                             'in the working directory.')
-    parser_info.add_argument('--available-targets',
-                             dest='available_targets',
-                             action='store_true',
-                             help='Report all available targets, which are '
-                             'targets that are defined in .pw_ide.yaml '
-                             'and have compilation databases in the '
-                             'working directory. This is equivalent to: '
-                             'pw ide cpp --list')
-    parser_info.add_argument('--defined-targets',
-                             dest='defined_targets',
-                             action='store_true',
-                             help='Report all defined targets, which are '
-                             'targets that are defined in .pw_ide.yaml.')
-    parser_info.add_argument('--compdb-targets',
-                             dest='compdb_file_for_targets',
-                             type=Path,
-                             metavar='COMPILATION_DATABASE',
-                             help='Report all of the targets found in the '
-                             'provided compilation database.')
-    parser_info.set_defaults(func=cmd_info)
-
-    parser_init = subcommand_parser.add_parser(
-        'init',
-        description=_docstring_summary(cmd_init.__doc__),
-        help=_reflow_docstring(cmd_init.__doc__))
-    parser_init.set_defaults(func=cmd_init)
 
     parser_cpp = subcommand_parser.add_parser(
         'cpp',

@@ -14,14 +14,12 @@
 """pw_ide CLI command implementations."""
 
 from pathlib import Path
-import platform
 import shlex
 import subprocess
 import sys
-from typing import Callable, Optional
+from typing import Optional
 
-from pw_ide.cpp import (aggregate_compilation_database_targets,
-                        CppCompilationDatabase, CppIdeFeaturesState)
+from pw_ide.cpp import CppCompilationDatabase, CppIdeFeaturesState
 
 from pw_ide.exceptions import (BadCompDbException, InvalidTargetException,
                                MissingCompDbException)
@@ -32,31 +30,9 @@ from pw_ide.settings import IdeSettings
 
 
 # TODO(b/246850113): Replace prints with pw_cli.logs
-def _print_working_dir(settings: IdeSettings) -> None:
-    print(f'Pigweed IDE working directory: {str(settings.working_dir)}\n')
-
-
 def _print_current_target(settings: IdeSettings) -> None:
     print('Current C/C++ language server analysis target: '
           f'{CppIdeFeaturesState(settings).current_target}\n')
-
-
-def _print_defined_targets(settings: IdeSettings) -> None:
-    print('C/C++ targets defined in .pw_ide.yaml:')
-
-    for target in settings.targets:
-        print(f'\t{target}')
-
-    print('')
-
-
-def _print_available_targets(settings: IdeSettings) -> None:
-    print('C/C++ targets available for language server analysis:')
-
-    for toolchain in sorted(CppIdeFeaturesState(settings).available_targets):
-        print(f'\t{toolchain}')
-
-    print('')
 
 
 def _print_enabled_available_targets(settings: IdeSettings) -> None:
@@ -69,85 +45,19 @@ def _print_enabled_available_targets(settings: IdeSettings) -> None:
     print('')
 
 
-def _print_available_compdbs(settings: IdeSettings) -> None:
-    print('C/C++ compilation databases in the working directory:')
-
-    for target in CppIdeFeaturesState(settings):
-        output = target.compdb_file_path.name
-
-        if target.compdb_cache_path is not None:
-            output += f'\n\t\tcache: {str(target.compdb_cache_path.name)}'
-
-        print(f'\t{output}')
-
-    print('')
-
-
-def _print_compdb_targets(compdb_file: Path) -> None:
-    print(f'Unique targets in {str(compdb_file)}:')
-
-    for target in sorted(aggregate_compilation_database_targets(compdb_file)):
-        print(f'\t{target}')
-
-    print('')
-
-
 def _print_python_venv_path() -> None:
     print('Python virtual environment path: ' f'{PythonPaths().interpreter}\n')
 
 
-def _print_unsupported_platform_error(msg: str = 'run') -> None:
-    system = platform.system()
-    system = 'None' if system == '' else system
-    print(f'Failed to {msg} on this unsupported platform: {system}\n')
-
-
-def cmd_info(available_compdbs: bool,
-             available_targets: bool,
-             defined_targets: bool,
-             working_dir: bool,
-             compdb_file_for_targets: Path = None,
-             settings: IdeSettings = IdeSettings()):
-    """Report diagnostic info about Pigweed IDE features."""
-    if working_dir:
-        _print_working_dir(settings)
-
-    if defined_targets:
-        _print_defined_targets(settings)
-
-    if available_compdbs:
-        _print_available_compdbs(settings)
-
-    if available_targets:
-        _print_available_targets(settings)
-
-    if compdb_file_for_targets is not None:
-        _print_compdb_targets(compdb_file_for_targets)
-
-
-def cmd_init(silent: bool = False,
-             settings: IdeSettings = IdeSettings()) -> None:
-    """Create IDE features working directory and supporting files.
-
-    When called without arguments, this creates the Pigweed IDE features working
-    directory defined in the settings file and ensures that further `pw_ide`
-    commands work as expected by creating all the other IDE infrastructure.
-
-    This command is idempotent, so it's safe to run it prophylactically or as a
-    precursor to other commands to ensure that the Pigweed IDE features are in a
-    working state.
-    """
-
-    maybe_print: Callable[[str], None] = print
-
-    if silent:
-        maybe_print = lambda _: None
-
+def _make_working_dir(settings: IdeSettings, quiet: bool = False) -> None:
     if not settings.working_dir.exists():
         settings.working_dir.mkdir()
-        maybe_print('Initialized the Pigweed IDE working directory.')
+        print('Initialized the Pigweed IDE working directory at '
+              f'{settings.working_dir}')
     else:
-        maybe_print('Pigweed IDE working directory already present.')
+        if not quiet:
+            print('Pigweed IDE working directory already present at '
+                  f'{settings.working_dir}')
 
 
 def cmd_cpp(
@@ -161,7 +71,7 @@ def cmd_cpp(
 
     Provides tools for processing C/C++ compilation databases and setting the
     particular target/toochain to use for code analysis."""
-    cmd_init(silent=True, settings=settings)
+    _make_working_dir(settings)
     default = True
 
     if should_list_targets:
@@ -225,7 +135,7 @@ def cmd_cpp(
 def cmd_python(
     should_get_venv_path: bool, settings: IdeSettings = IdeSettings()) -> None:
     """Configure Python IDE support for Pigweed projects."""
-    cmd_init(silent=True, settings=settings)
+    _make_working_dir(settings)
 
     if should_get_venv_path:
         _print_python_venv_path()
