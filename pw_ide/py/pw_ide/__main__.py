@@ -167,19 +167,6 @@ def _parse_args() -> argparse.Namespace:
         'init',
         description=_docstring_summary(cmd_init.__doc__),
         help=_reflow_docstring(cmd_init.__doc__))
-    parser_init.add_argument('--dir',
-                             dest='make_dir',
-                             action='store_true',
-                             help='Create the Pigweed IDE working directory.')
-    parser_init.add_argument('--clangd-wrapper',
-                             dest='make_clangd_wrapper',
-                             action='store_true',
-                             help='Create a wrapper script for clangd.')
-    parser_init.add_argument('--python-symlink',
-                             dest='make_python_symlink',
-                             action='store_true',
-                             help='Create a symlink to the Python virtual '
-                             'environment.')
     parser_init.set_defaults(func=cmd_init)
 
     parser_cpp = subcommand_parser.add_parser(

@@ -77,12 +77,30 @@ pointed at the same, stable ``compile_commands.json`` file). However,
 ``clangd`` may need to be restarted when the target changes.
 
 ``clangd`` must be run within the activated Pigweed environment in order for
-correct toolchain paths and sysroots to be detected. If you launch your editor
-from the terminal in an activated environment, then nothing special needs to be
-done (e.g. running ``vim`` from the terminal). But if you launch your editor
-outside of the activated environment (e.g. launching Visual Studio Code from
-your GUI shell's launcher), you will need to use the included wrapper
 ``clangd.sh`` instead of directly using the ``clangd`` binary.
+
+``clangd`` must be run with arguments that provide the Pigweed environment paths
+to the correct toolchains and sysroots. One way to do this is to launch your
+editor from the terminal in an activated environment (e.g. running ``vim`` from
+the terminal), in which case nothing special needs to be done as long as your
+toolchains are in the Pigweed environment or ``$PATH``. But if you launch your
+editor outside of the activated environment (e.g. launching Visual Studio Code
+from your GUI shell's launcher), you can generate the command that invokes
+``clangd`` with the right arguments with:
+
+.. code-block:: bash
+
+   pw ide cpp --clangd-command
+
+Python Code Intelligence
+------------------------
+Any Python language server should work well with Pigweed projects as long as
+it's configured to use the Pigweed virtual environment. You can output the path
+to the virtual environment on your system with:
+
+.. code-block:: bash
+
+  pw ide python --venv
 
 Design
 ======
@@ -118,7 +136,28 @@ editor-agnostic. Enabling code intelligence in your editor may be as simple as
 configuring its language server protocol client to use the ``clangd`` command
 that ``pw_ide`` can generate for you.
 
+When to provide additional configuration to support your use cases
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The default configuration for ``clangd`` in ``pw_ide`` should work without
+additional configuration as long as you're using only toolchains provided by
+Pigweed and your native host toolchain. If you're using other toolchains, keep
+reading.
+
+``clangd`` needs two pieces of information to use a toolchain:
+
+#. A path to the compiler, which will be taken from the compile command.
+
+#. The same compiler to be reflected in the
+   `query driver <https://releases.llvm.org/10.0.0/tools/clang/tools/extra/docs/clangd/Configuration.html>`_
+   argument provided when running ``clangd``.
+
+When using ``pw_ide`` with external toolchains, you only need to add a path to
+the compiler to ``clangd_additional_query_drivers`` in your project's
+``pw_ide.yaml`` file. When processing a compilation database, ``pw_ide`` will
+use the query driver globs to find your compiler and configure ``clangd`` to
+use it.
+
 Selected API Reference
 ======================
 .. automodule:: pw_ide.cpp
-   :members: CppCompileCommand, CppCompilationDatabase, CppCompilationDatabasesMap, CppIdeFeaturesState, path_to_executable, target_is_enabled, make_clangd_script
+   :members: CppCompileCommand, CppCompilationDatabase, CppCompilationDatabasesMap, CppIdeFeaturesState, path_to_executable, target_is_enabled, ClangdSettings

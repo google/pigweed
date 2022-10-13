@@ -20,17 +20,13 @@ import subprocess
 import sys
 from typing import Callable, Optional
 
-from pw_ide.cpp import (CLANGD_WRAPPER_FILE_NAME,
-                        aggregate_compilation_database_targets,
-                        CppCompilationDatabase, CppIdeFeaturesState,
-                        make_clangd_script, write_clangd_wrapper_script)
+from pw_ide.cpp import (aggregate_compilation_database_targets,
+                        CppCompilationDatabase, CppIdeFeaturesState)
 
 from pw_ide.exceptions import (BadCompDbException, InvalidTargetException,
-                               MissingCompDbException,
-                               UnsupportedPlatformException)
+                               MissingCompDbException)
 
-from pw_ide.python import (PYTHON_SYMLINK_NAME, create_python_symlink,
-                           get_python_venv_path)
+from pw_ide.python import PythonPaths
 
 from pw_ide.settings import IdeSettings
 
@@ -97,7 +93,7 @@ def _print_compdb_targets(compdb_file: Path) -> None:
 
 
 def _print_python_venv_path() -> None:
-    print('Python virtual environment path: ' f'{get_python_venv_path()}\n')
+    print('Python virtual environment path: ' f'{PythonPaths().interpreter}\n')
 
 
 def _print_unsupported_platform_error(msg: str = 'run') -> None:
@@ -129,12 +125,8 @@ def cmd_info(available_compdbs: bool,
         _print_compdb_targets(compdb_file_for_targets)
 
 
-def cmd_init(
-    make_dir: bool,
-    make_clangd_wrapper: bool,
-    make_python_symlink: bool,
-    silent: bool = False,
-    settings: IdeSettings = IdeSettings()) -> None:
+def cmd_init(silent: bool = False,
+             settings: IdeSettings = IdeSettings()) -> None:
     """Create IDE features working directory and supporting files.
 
     When called without arguments, this creates the Pigweed IDE features working
@@ -151,47 +143,11 @@ def cmd_init(
     if silent:
         maybe_print = lambda _: None
 
-    # If no flags were provided, do everything.
-    if not make_dir and not make_clangd_wrapper and not make_python_symlink:
-        make_dir = True
-        make_clangd_wrapper = True
-        make_python_symlink = True
-
-    if make_dir:
-        if not settings.working_dir.exists():
-            settings.working_dir.mkdir()
-            maybe_print('Initialized the Pigweed IDE working directory.')
-        else:
-            maybe_print('Pigweed IDE working directory already present.')
-
-    if make_clangd_wrapper:
-        clangd_wrapper_path = (settings.working_dir / CLANGD_WRAPPER_FILE_NAME)
-
-        if not clangd_wrapper_path.exists():
-            try:
-                write_clangd_wrapper_script(make_clangd_script(),
-                                            settings.working_dir)
-            except UnsupportedPlatformException:
-                _print_unsupported_platform_error('create clangd wrapper')
-                sys.exit(1)
-
-            maybe_print('Created a clangd wrapper script.')
-        else:
-            maybe_print('clangd wrapper script already present.')
-
-    if make_python_symlink:
-        python_symlink_path = settings.working_dir / PYTHON_SYMLINK_NAME
-
-        if not python_symlink_path.exists():
-            try:
-                create_python_symlink(settings.working_dir)
-            except UnsupportedPlatformException:
-                _print_unsupported_platform_error('create Python symlink')
-                sys.exit(1)
-
-            maybe_print('Created Python symlink.')
-        else:
-            maybe_print('Python symlink already present.')
+    if not settings.working_dir.exists():
+        settings.working_dir.mkdir()
+        maybe_print('Initialized the Pigweed IDE working directory.')
+    else:
+        maybe_print('Pigweed IDE working directory already present.')
 
 
 def cmd_cpp(
@@ -205,11 +161,7 @@ def cmd_cpp(
 
     Provides tools for processing C/C++ compilation databases and setting the
     particular target/toochain to use for code analysis."""
-    cmd_init(make_dir=True,
-             make_clangd_wrapper=True,
-             make_python_symlink=True,
-             silent=True,
-             settings=settings)
+    cmd_init(silent=True, settings=settings)
     default = True
 
     if should_list_targets:
@@ -273,18 +225,10 @@ def cmd_cpp(
 def cmd_python(
     should_get_venv_path: bool, settings: IdeSettings = IdeSettings()) -> None:
     """Configure Python IDE support for Pigweed projects."""
-    cmd_init(make_dir=True,
-             make_clangd_wrapper=True,
-             make_python_symlink=True,
-             silent=True,
-             settings=settings)
+    cmd_init(silent=True, settings=settings)
 
     if should_get_venv_path:
-        try:
-            _print_python_venv_path()
-        except UnsupportedPlatformException:
-            _print_unsupported_platform_error(
-                'find Python virtual environment')
+        _print_python_venv_path()
 
 
 def cmd_setup(settings: IdeSettings = IdeSettings()):

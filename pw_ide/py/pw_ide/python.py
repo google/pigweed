@@ -19,65 +19,31 @@ from pathlib import Path
 import platform
 from typing import Dict, NamedTuple
 
-from pw_ide.exceptions import UnsupportedPlatformException
-from pw_ide.symlinks import set_symlink
-
-PYTHON_SYMLINK_NAME = 'python'
-PYTHON_BIN_DIR_SYMLINK_NAME = 'python-bin'
-
-PYTHON_VENV_PATH = Path(
+_PYTHON_VENV_PATH = Path(
     os.path.expandvars('$_PW_ACTUAL_ENVIRONMENT_ROOT')) / 'pigweed-venv'
 
-PW_PROJECT_ROOT = Path(os.path.expandvars('$PW_PROJECT_ROOT'))
+
+class _PythonPathsForPlatform(NamedTuple):
+    bin_dir_name: str = 'bin'
+    interpreter_name: str = 'python3'
 
 
-class PythonPaths(NamedTuple):
-    """Holds the name of platform-specific Python env paths.
+# When given a platform (e.g. the output of platform.system()), this dict gives
+# the platform-specific virtualenv path names.
+_PYTHON_PATHS_FOR_PLATFORM: Dict[str, _PythonPathsForPlatform] = defaultdict(
+    _PythonPathsForPlatform)
+_PYTHON_PATHS_FOR_PLATFORM['Windows'] = _PythonPathsForPlatform(
+    bin_dir_name='Scripts', interpreter_name='pythonw.exe')
+
+
+class PythonPaths:
+    """Holds the platform-specific Python environment paths.
 
     The directory layout of Python virtual environments varies among
     platforms. This class holds the data needed to find the right paths
     for a specific platform.
     """
-    # Name of the binaries directory
-    bin_dir: str = 'bin'
-    # Name of the interpreter executable
-    interpreter: str = 'python3'
-
-
-# When given a platform (e.g. the output of platform.system()), this dict gives
-# the platform-specific virtualenv path names.
-PYTHON_PATHS: Dict[str, PythonPaths] = defaultdict(PythonPaths)
-PYTHON_PATHS['Windows'] = PythonPaths(bin_dir='Scripts',
-                                      interpreter='pythonw.exe')
-
-
-def get_python_venv_path(system: str = platform.system()) -> Path:
-    """Return the path to the Python virtual environment interpreter."""
-    if system == '':
-        raise UnsupportedPlatformException()
-
-    (bin_dir, interpreter) = PYTHON_PATHS[system]
-    abs_path = PYTHON_VENV_PATH / bin_dir / interpreter
-    return abs_path.relative_to(PW_PROJECT_ROOT)
-
-
-def create_python_symlink(
-    working_dir: Path, system: str = platform.system()) -> None:
-    """Create symlinks to the Python virtual environment.
-
-    The location of the virtual environment varies depending on platform and
-    environment directory. This provides a stable reference for IDE features.
-    """
-    if system == '':
-        raise UnsupportedPlatformException()
-
-    (bin_dir, interpreter) = PYTHON_PATHS[system]
-
-    python_venv_bin_path = PYTHON_VENV_PATH / bin_dir
-    python_venv_interpreter_path = python_venv_bin_path / interpreter
-
-    interpreter_symlink_path = working_dir / PYTHON_SYMLINK_NAME
-    set_symlink(python_venv_interpreter_path, interpreter_symlink_path)
-
-    bin_dir_symlink_path = working_dir / PYTHON_BIN_DIR_SYMLINK_NAME
-    set_symlink(python_venv_bin_path, bin_dir_symlink_path)
+    def __init__(self, system=platform.system()):
+        (bin_dir_name, interpreter_name) = _PYTHON_PATHS_FOR_PLATFORM[system]
+        self.bin_dir = _PYTHON_VENV_PATH / bin_dir_name
+        self.interpreter = self.bin_dir / interpreter_name
