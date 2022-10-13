@@ -42,9 +42,10 @@ if(NOT dir_pw_third_party_freertos)
     COMMAND
       "${CMAKE_COMMAND}" -E false
   )
-  add_library(pw_third_party.freertos INTERFACE)
-  add_dependencies(pw_third_party.freertos
-    pw_third_party.freertos._not_configured)
+  pw_add_module_library(pw_third_party.freertos
+    PUBLIC_DEPS
+      pw_third_party.freertos._not_configured
+  )
   return()
 else(dir_pw_third_party_freertos)
   if(NOT pw_third_party_freertos_PORT)
