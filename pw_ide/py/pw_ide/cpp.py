@@ -71,12 +71,86 @@ _COMPDB_FILE_EXTENSION = '.json'
 _COMPDB_CACHE_DIR_PREFIX = '.cache'
 _COMPDB_CACHE_DIR_SEPARATOR = '_'
 
-_SUPPORTED_TOOLCHAIN_EXECUTABLES = ('clang', 'gcc', 'g++')
-
 COMPDB_FILE_GLOB = f'{_COMPDB_FILE_PREFIX}*{_COMPDB_FILE_EXTENSION}'
 COMPDB_CACHE_DIR_GLOB = f'{_COMPDB_CACHE_DIR_PREFIX}*'
 
 CLANGD_WRAPPER_FILE_NAME = 'clangd'
+
+_SUPPORTED_TOOLCHAIN_EXECUTABLES = ('clang', 'gcc', 'g++')
+
+
+def compdb_generate_file_path(target: str = '') -> Path:
+    """Generate a compilation database file path."""
+
+    path = Path(f'{_COMPDB_FILE_PREFIX}{_COMPDB_FILE_EXTENSION}')
+
+    if target:
+        path = path.with_name(f'{_COMPDB_FILE_PREFIX}'
+                              f'{_COMPDB_FILE_SEPARATOR}{target}'
+                              f'{_COMPDB_FILE_EXTENSION}')
+
+    return path
+
+
+def compdb_generate_cache_path(target: str = '') -> Path:
+    """Generate a compilation database cache directory path."""
+
+    path = Path(f'{_COMPDB_CACHE_DIR_PREFIX}')
+
+    if target:
+        path = path.with_name(f'{_COMPDB_CACHE_DIR_PREFIX}'
+                              f'{_COMPDB_CACHE_DIR_SEPARATOR}{target}')
+
+    return path
+
+
+def compdb_target_from_path(filename: Path) -> Optional[str]:
+    """Get a target name from a compilation database path."""
+
+    # The length of the common compilation database file name prefix
+    prefix_length = len(_COMPDB_FILE_PREFIX) + len(_COMPDB_FILE_SEPARATOR)
+
+    if len(filename.stem) <= prefix_length:
+        # This will return None for the symlink filename, and any filename that
+        # is too short to be a compilation database.
+        return None
+
+    if filename.stem[:prefix_length] != (_COMPDB_FILE_PREFIX +
+                                         _COMPDB_FILE_SEPARATOR):
+        # This will return None for any files that don't have the common prefix.
+        return None
+
+    return filename.stem[prefix_length:]
+
+
+def _none_to_empty_str(value: Optional[str]) -> str:
+    return value if value is not None else ''
+
+
+def _none_if_not_exists(path: Path) -> Optional[Path]:
+    return path if path.exists() else None
+
+
+def compdb_cache_path_if_exists(working_dir: Path,
+                                target: Optional[str]) -> Optional[Path]:
+    return _none_if_not_exists(
+        working_dir / compdb_generate_cache_path(_none_to_empty_str(target)))
+
+
+def target_is_enabled(target: Optional[str], settings: IdeSettings) -> bool:
+    """Determine if a target is enabled.
+
+    By default, all targets are enabled. If specific targets are defined in a
+    settings file, only those targets will be enabled.
+    """
+
+    if target is None:
+        return False
+
+    if len(settings.targets) == 0:
+        return True
+
+    return target in settings.targets
 
 
 def path_to_executable(exe: str,
@@ -181,8 +255,7 @@ def path_to_executable(exe: str,
 
     if strict:
         raise UnresolvablePathException(
-            f'Cannot place {exe} in an unambiguous '
-            'path!')
+            f'Cannot place {exe} in an unambiguous path!')
 
     return maybe_path
 
@@ -401,81 +474,6 @@ class CppCompilationDatabase:
                 clean_compdbs[target].add(processed_compile_command)
 
         return clean_compdbs
-
-
-def compdb_generate_file_path(target: str = '') -> Path:
-    """Generate a compilation database file path."""
-
-    path = Path(f'{_COMPDB_FILE_PREFIX}{_COMPDB_FILE_EXTENSION}')
-
-    if target:
-        path = path.with_name(f'{_COMPDB_FILE_PREFIX}'
-                              f'{_COMPDB_FILE_SEPARATOR}{target}'
-                              f'{_COMPDB_FILE_EXTENSION}')
-
-    return path
-
-
-def compdb_generate_cache_path(target: str = '') -> Path:
-    """Generate a compilation database cache directory path."""
-
-    path = Path(f'{_COMPDB_CACHE_DIR_PREFIX}')
-
-    if target:
-        path = path.with_name(f'{_COMPDB_CACHE_DIR_PREFIX}'
-                              f'{_COMPDB_CACHE_DIR_SEPARATOR}{target}')
-
-    return path
-
-
-def compdb_target_from_path(filename: Path) -> Optional[str]:
-    """Given a path that contains a compilation database file name, return the
-    name of the database's compilation target."""
-
-    # The length of the common compilation database file name prefix
-    prefix_length = len(_COMPDB_FILE_PREFIX) + len(_COMPDB_FILE_SEPARATOR)
-
-    if len(filename.stem) <= prefix_length:
-        # This will return None for the symlink filename, and any filename that
-        # is too short to be a compilation database.
-        return None
-
-    if filename.stem[:prefix_length] != (_COMPDB_FILE_PREFIX +
-                                         _COMPDB_FILE_SEPARATOR):
-        # This will return None for any files that don't have the common prefix.
-        return None
-
-    return filename.stem[prefix_length:]
-
-
-def _none_to_empty_str(value: Optional[str]) -> str:
-    return value if value is not None else ''
-
-
-def _none_if_not_exists(path: Path) -> Optional[Path]:
-    return path if path.exists() else None
-
-
-def compdb_cache_path_if_exists(working_dir: Path,
-                                target: Optional[str]) -> Optional[Path]:
-    return _none_if_not_exists(
-        working_dir / compdb_generate_cache_path(_none_to_empty_str(target)))
-
-
-def target_is_enabled(target: Optional[str], settings: IdeSettings) -> bool:
-    """Determine if a target is enabled.
-
-    By default, all targets are enabled. If specific targets are defined in a
-    settings file, only those targets will be enabled.
-    """
-
-    if target is None:
-        return False
-
-    if len(settings.targets) == 0:
-        return True
-
-    return target in settings.targets
 
 
 class CppCompilationDatabasesMap:
