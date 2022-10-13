@@ -7,7 +7,7 @@
 #include "fake_channel_test.h"
 #include "lib/zx/time.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
 
 namespace bt::l2cap::internal {
 namespace {

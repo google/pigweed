@@ -22,11 +22,26 @@ source_set("testing") {
 
   public_deps = [
     ":fake_controller",
+    ":test_helpers",
     "//sdk/lib/inspect/testing/cpp",
-    "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
     "//src/connectivity/bluetooth/core/bt-host/transport",
     "//src/connectivity/bluetooth/core/bt-host/transport:testing",
     "//src/lib/testing/loop_fixture",
+  ]
+}
+
+source_set("test_helpers") {
+  testonly = true
+
+  sources = [
+    "test_helpers.cc",
+    "test_helpers.h",
+  ]
+
+  deps = [
+    "//src/connectivity/bluetooth/core/bt-host/common",
+    "//src/connectivity/bluetooth/lib/cpp-string",
+    "//third_party/googletest:gtest",
   ]
 }
 
@@ -41,7 +56,10 @@ source_set("tests") {
     "inspect_util_unittest.cc",
   ]
 
-  deps = [ ":testing" ]
+  deps = [
+    ":testing",
+    "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
+  ]
 }
 
 bt_gtest_package("bt-host-testing-tests") {
@@ -73,6 +91,7 @@ source_set("fake_controller") {
   ]
 
   public_deps = [
+    ":test_helpers",
     "//sdk/lib/fit",
     "//src/connectivity/bluetooth/core/bt-host/att:definitions",
     "//src/connectivity/bluetooth/core/bt-host/common",

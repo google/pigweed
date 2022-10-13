@@ -5,10 +5,10 @@
 #include "test_packets.h"
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/bredr_connection_request.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
 
 namespace bt::testing {
 

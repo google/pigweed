@@ -12,7 +12,6 @@
 #include "fuchsia/bluetooth/bredr/cpp/fidl.h"
 #include "lib/fidl/cpp/vector.h"
 #include "lib/zx/socket.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/adapter_test_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/fake_adapter_test_fixture.h"
@@ -22,6 +21,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/sdp/data_element.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 
 namespace bthost {

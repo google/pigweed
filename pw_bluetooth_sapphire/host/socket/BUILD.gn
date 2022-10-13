@@ -34,6 +34,7 @@ source_set("tests") {
     ":socket",
     "//src/connectivity/bluetooth/core/bt-host/gap",
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
+    "//src/connectivity/bluetooth/core/bt-host/testing",
     "//src/lib/testing/loop_fixture",
     "//third_party/googletest:gtest",
   ]

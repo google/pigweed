@@ -4,8 +4,8 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/att/bearer.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/mock_channel_test.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
 
 namespace bt::att {
 namespace {

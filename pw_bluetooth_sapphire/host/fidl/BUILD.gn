@@ -84,6 +84,7 @@ source_set("adapter_test_fixture") {
     "//sdk/fidl/fuchsia.io:fuchsia.io_hlcpp",
     "//src/connectivity/bluetooth/core/bt-host/gap",
     "//src/connectivity/bluetooth/core/bt-host/gatt:testing",
+    "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
     "//src/connectivity/bluetooth/core/bt-host/testing",
     "//src/connectivity/bluetooth/core/bt-host/testing:fake_controller",
     "//zircon/system/ulib/async:async-cpp",

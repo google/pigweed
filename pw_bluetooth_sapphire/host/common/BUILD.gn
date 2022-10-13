@@ -44,8 +44,6 @@ source_set("common") {
     "slab_buffer.h",
     "supplement_data.cc",
     "supplement_data.h",
-    "test_helpers.cc",
-    "test_helpers.h",
     "to_string.h",
     "trace.h",
     "uint128.h",

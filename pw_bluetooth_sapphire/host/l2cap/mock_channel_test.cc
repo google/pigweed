@@ -7,7 +7,7 @@
 #include <lib/async/cpp/task.h>
 #include <lib/async/default.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/test_helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
 
 namespace bt::l2cap::testing {
 
