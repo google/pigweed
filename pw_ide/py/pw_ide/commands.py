@@ -22,11 +22,8 @@ from typing import Callable, Optional
 
 from pw_ide.cpp import (CLANGD_WRAPPER_FILE_NAME,
                         aggregate_compilation_database_targets,
-                        get_available_compdbs, get_available_targets,
-                        get_defined_available_targets, get_target,
-                        make_clangd_script, process_compilation_database,
-                        set_target, write_compilation_databases,
-                        write_clangd_wrapper_script)
+                        CppCompilationDatabase, CppIdeFeaturesState,
+                        make_clangd_script, write_clangd_wrapper_script)
 
 from pw_ide.exceptions import (BadCompDbException, InvalidTargetException,
                                MissingCompDbException,
@@ -45,7 +42,7 @@ def _print_working_dir(settings: IdeSettings) -> None:
 
 def _print_current_target(settings: IdeSettings) -> None:
     print('Current C/C++ language server analysis target: '
-          f'{get_target(settings)}\n')
+          f'{CppIdeFeaturesState(settings).current_target}\n')
 
 
 def _print_defined_targets(settings: IdeSettings) -> None:
@@ -60,16 +57,17 @@ def _print_defined_targets(settings: IdeSettings) -> None:
 def _print_available_targets(settings: IdeSettings) -> None:
     print('C/C++ targets available for language server analysis:')
 
-    for toolchain in sorted(get_available_targets(settings)):
+    for toolchain in sorted(CppIdeFeaturesState(settings).available_targets):
         print(f'\t{toolchain}')
 
     print('')
 
 
-def _print_defined_available_targets(settings: IdeSettings) -> None:
+def _print_enabled_available_targets(settings: IdeSettings) -> None:
     print('C/C++ targets available for language server analysis:')
 
-    for toolchain in sorted(get_defined_available_targets(settings)):
+    for toolchain in sorted(
+            CppIdeFeaturesState(settings).enabled_available_targets):
         print(f'\t{toolchain}')
 
     print('')
@@ -78,11 +76,11 @@ def _print_defined_available_targets(settings: IdeSettings) -> None:
 def _print_available_compdbs(settings: IdeSettings) -> None:
     print('C/C++ compilation databases in the working directory:')
 
-    for compdb, cache in get_available_compdbs(settings):
-        output = compdb.name
+    for target in CppIdeFeaturesState(settings):
+        output = target.compdb_file_path.name
 
-        if cache is not None:
-            output += f'\n\t\tcache: {str(cache.name)}'
+        if target.compdb_cache_path is not None:
+            output += f'\n\t\tcache: {str(target.compdb_cache_path.name)}'
 
         print(f'\t{output}')
 
@@ -216,7 +214,7 @@ def cmd_cpp(
 
     if should_list_targets:
         default = False
-        _print_defined_available_targets(settings)
+        _print_enabled_available_targets(settings)
 
     # Order of operations matters here. It should be possible to process a
     # compilation database then set successfully set the target in a single
@@ -224,13 +222,12 @@ def cmd_cpp(
     if compdb_file_path is not None:
         default = False
         try:
-            write_compilation_databases(
-                process_compilation_database(
-                    compdb_file_path,
-                    settings,
-                ),
-                settings,
-            )
+            CppCompilationDatabase\
+                .load(compdb_file_path)\
+                .process(
+                    settings=settings,
+                    path_globs=settings.clangd_query_drivers(),
+                ).write()
 
             print(
                 f'Processed {str(compdb_file_path)} to {settings.working_dir}')
@@ -244,12 +241,13 @@ def cmd_cpp(
 
     if target_to_set is not None:
         default = False
-        should_set_target = get_target(settings) is None \
-            or override_current_target
+        should_set_target = (
+            CppIdeFeaturesState(settings).current_target is None
+            or override_current_target)
 
         if should_set_target:
             try:
-                set_target(target_to_set, settings)
+                CppIdeFeaturesState(settings).current_target = target_to_set
             except InvalidTargetException:
                 print(f'Invalid target! {target_to_set} not among the '
                       'available defined targets.\n\n'

@@ -28,3 +28,7 @@ class BadCompDbException(Exception):
 
 class MissingCompDbException(Exception):
     """Exception for missing compilation database files."""
+
+
+class UnresolvablePathException(Exception):
+    """Raised when an ambiguous path cannot be resolved."""

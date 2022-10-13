@@ -52,6 +52,13 @@ class TempDirTestCase(unittest.TestCase):
             file.seek(0)
             yield (file, path)
 
+    def touch_temp_file(self,
+                        filename: Union[Path, str],
+                        content: str = '') -> None:
+        """Create a temp file in the test case's temp dir, without context."""
+        with self.make_temp_file(filename, content):
+            pass
+
     @contextmanager
     def open_temp_file(
         self,
@@ -92,6 +99,12 @@ class TempDirTestCase(unittest.TestCase):
 
         for file in files:
             file.close()
+
+    def touch_temp_files(
+            self, files_data: List[Tuple[Union[Path, str], str]]) -> None:
+        """Create several temp files in the temp dir, without context."""
+        with self.make_temp_files(files_data):
+            pass
 
     @contextmanager
     def open_temp_files(

@@ -24,7 +24,13 @@ PW_IDE_DIR_NAME = '.pw_ide'
 _PW_IDE_DEFAULT_DIR = Path(
     os.path.expandvars('$PW_PROJECT_ROOT')) / PW_IDE_DIR_NAME
 
+PW_PIGWEED_CIPD_INSTALL_DIR = Path(
+    os.path.expandvars('$PW_PIGWEED_CIPD_INSTALL_DIR'))
+
+PW_ARM_CIPD_INSTALL_DIR = Path(os.path.expandvars('$PW_ARM_CIPD_INSTALL_DIR'))
+
 _DEFAULT_CONFIG = {
+    'clangd_additional_query_drivers': [],
     'setup': [],
     'targets': [],
     'working_dir': _PW_IDE_DEFAULT_DIR,
@@ -87,3 +93,24 @@ class IdeSettings(YamlConfigLoaderMixin):
         whenever they want without a care in the world.
         """
         return self._config.get('setup', list())
+
+    @property
+    def clangd_additional_query_drivers(self) -> List[str]:
+        """Additional query driver paths that clangd should use.
+
+        By default, ``pw_ide`` supplies driver paths for the toolchains included
+        in Pigweed. If you are using toolchains that are not supplied by
+        Pigweed, you should include path globs to your toolchains here. These
+        paths will be given higher priority than the Pigweed toolchain paths.
+        """
+        return self._config.get('clangd_additional_query_drivers', list())
+
+    def clangd_query_drivers(self) -> List[str]:
+        return [
+            *[str(Path(p)) for p in self.clangd_additional_query_drivers],
+            str(PW_PIGWEED_CIPD_INSTALL_DIR / 'bin' / '*'),
+            str(PW_ARM_CIPD_INSTALL_DIR / 'bin' / '*'),
+        ]
+
+    def clangd_query_driver_str(self) -> str:
+        return ','.join(self.clangd_query_drivers())
