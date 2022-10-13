@@ -3,6 +3,9 @@
 // found in the LICENSE file.
 
 #include <lib/fit/function.h>
+#include <lib/stdcompat/bit.h>
+
+#include <algorithm>
 
 #include "gtest/gtest.h"
 
@@ -889,6 +892,27 @@ TEST(FunctionTests, null_constructors_are_constexpr) {
   EXPECT_EQ(kNullptrConstructed, nullptr);
 }
 
+TEST(FunctionTests, function_with_callable_aligned_larger_than_inline_size) {
+  struct alignas(4 * alignof(void*)) LargeAlignedCallable {
+    void operator()() { calls += 1; }
+
+    char calls = 0;
+  };
+
+  static_assert(sizeof(LargeAlignedCallable) > sizeof(void*), "Should not fit inline in function");
+
+  fit::function<void(), sizeof(void*)> function = LargeAlignedCallable();
+
+  static_assert(alignof(LargeAlignedCallable) > alignof(decltype(function)), "");
+
+  // Verify that the allocated target is aligned correctly.
+  LargeAlignedCallable* callable_ptr = function.target<LargeAlignedCallable>();
+  EXPECT_EQ(cpp20::bit_cast<uintptr_t>(callable_ptr) % alignof(LargeAlignedCallable), 0u);
+
+  function();
+  EXPECT_EQ(callable_ptr->calls, 1);
+}
+
 // Test that function inline sizes round up to the nearest word.
 template <size_t bytes>
 using Function = fit::function<void(), bytes>;  // Use an alias for brevity
@@ -926,21 +950,35 @@ TEST(FunctionTests, rounding_function) {
   EXPECT_EQ(10, fit::internal::RoundUpToMultiple(10, 5));
 }
 
-// Test that the alignment of function and callback is always alignof(max_align_t).
-static_assert(alignof(fit::function<void(), 0>) == alignof(max_align_t), "");
-static_assert(alignof(fit::function<void(), 1>) == alignof(max_align_t), "");
-static_assert(alignof(fit::function<int(), 4>) == alignof(max_align_t), "");
-static_assert(alignof(fit::function<bool(), 8>) == alignof(max_align_t), "");
-static_assert(alignof(fit::function<float(int), 9>) == alignof(max_align_t), "");
-static_assert(alignof(fit::inline_function<void(), 1>) == alignof(max_align_t), "");
-static_assert(alignof(fit::inline_function<void(), 9>) == alignof(max_align_t), "");
-static_assert(alignof(fit::callback<void(), 0>) == alignof(max_align_t), "");
-static_assert(alignof(fit::callback<void(), 1>) == alignof(max_align_t), "");
-static_assert(alignof(fit::callback<int(), 4>) == alignof(max_align_t), "");
-static_assert(alignof(fit::callback<bool(), 8>) == alignof(max_align_t), "");
-static_assert(alignof(fit::callback<float(int), 9>) == alignof(max_align_t), "");
-static_assert(alignof(fit::inline_callback<void(), 1>) == alignof(max_align_t), "");
-static_assert(alignof(fit::inline_callback<void(), 9>) == alignof(max_align_t), "");
+// Test that the alignment of function and callback is always the minimum of alignof(max_align_t)
+// and largest possible alignment for the specified inline target size.
+constexpr size_t ExpectedAlignment(size_t alignment_32, size_t alignment_64) {
+  if (sizeof(void*) == 4) {
+    return std::min(alignment_32, alignof(max_align_t));
+  }
+  if (sizeof(void*) == 8) {
+    return std::min(alignment_64, alignof(max_align_t));
+  }
+  return 0;  // Word sizes other than 32/64 are not supported, will need to update test.
+}
+
+static_assert(alignof(fit::function<void(), 0>) == ExpectedAlignment(4, 8), "");
+static_assert(alignof(fit::function<void(), 1>) == ExpectedAlignment(4, 8), "");
+static_assert(alignof(fit::function<int(), 4>) == ExpectedAlignment(4, 8), "");
+static_assert(alignof(fit::function<bool(), 8>) == ExpectedAlignment(8, 8), "");
+static_assert(alignof(fit::function<float(int), 9>) == ExpectedAlignment(8, 16), "");
+static_assert(alignof(fit::function<float(int), 25>) == ExpectedAlignment(16, 16), "");
+static_assert(alignof(fit::inline_function<void(), 1>) == ExpectedAlignment(4, 8), "");
+static_assert(alignof(fit::inline_function<void(), 9>) == ExpectedAlignment(8, 16), "");
+static_assert(alignof(fit::callback<void(), 0>) == ExpectedAlignment(4, 8), "");
+static_assert(alignof(fit::callback<void(), 1>) == ExpectedAlignment(4, 8), "");
+static_assert(alignof(fit::callback<int(), 4>) == ExpectedAlignment(4, 8), "");
+static_assert(alignof(fit::callback<bool(), 8>) == ExpectedAlignment(8, 8), "");
+static_assert(alignof(fit::callback<float(int), 9>) == ExpectedAlignment(8, 16), "");
+static_assert(alignof(fit::callback<float(int), 25>) == ExpectedAlignment(16, 16), "");
+static_assert(alignof(fit::inline_callback<void(), 1>) == ExpectedAlignment(4, 8), "");
+static_assert(alignof(fit::inline_callback<void(), 9>) == ExpectedAlignment(8, 16), "");
+static_assert(alignof(fit::inline_callback<void(), 25>) == ExpectedAlignment(16, 16), "");
 
 namespace test_copy_move_constructions {
 

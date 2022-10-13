@@ -39,10 +39,13 @@ pw_source_set("fit") {
   public = [
     "repo/sdk/lib/fit/include/lib/fit/function.h",
     "repo/sdk/lib/fit/include/lib/fit/nullable.h",
+    "repo/sdk/lib/fit/include/lib/fit/result.h",
     "repo/sdk/lib/fit/include/lib/fit/traits.h",
   ]
   sources = [
+    "repo/sdk/lib/fit/include/lib/fit/internal/compiler.h",
     "repo/sdk/lib/fit/include/lib/fit/internal/function.h",
+    "repo/sdk/lib/fit/include/lib/fit/internal/result.h",
     "repo/sdk/lib/fit/include/lib/fit/internal/utility.h",
   ]
 }

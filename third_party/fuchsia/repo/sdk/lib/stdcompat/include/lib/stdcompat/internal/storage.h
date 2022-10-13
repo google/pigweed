@@ -5,6 +5,7 @@
 #ifndef LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_INTERNAL_STORAGE_H_
 #define LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_INTERNAL_STORAGE_H_
 
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <type_traits>
@@ -21,9 +22,9 @@ struct type_tag {
 };
 
 // Type tag to select overloads based on index Index.
-template <size_t Index>
+template <std::size_t Index>
 struct index_tag {
-  static constexpr size_t index = Index;
+  static constexpr std::size_t index = Index;
 };
 
 // Type tag to select trivial initialization.
@@ -36,7 +37,7 @@ enum default_init_t { default_init_v };
 enum maybe_init_t { maybe_init_v };
 
 // Represents the pair (T, Index) in the type system.
-template <typename T, size_t Index>
+template <typename T, std::size_t Index>
 struct type_index {};
 
 // Represents whether a type is trivially/non-trivially destructible.
@@ -73,7 +74,7 @@ struct empty_type {};
 
 // Index type used to track the active variant. Tracking uses zero-based
 // indices. Empty is denoted by the maximum representable value.
-using index_type = size_t;
+using index_type = std::size_t;
 
 // Index denoting that no user-specified variant is active. Take care not to
 // ODR-use this value.
@@ -110,14 +111,14 @@ union storage_base<destructor_class::non_trivial, type_index<empty_type, empty_i
   storage_base& operator=(const storage_base&) = default;
   storage_base& operator=(storage_base&&) = default;
 
-  void construct_at(size_t index, const storage_base&) {
+  void construct_at(std::size_t index, const storage_base&) {
     if (index == empty_index) {
       new (&empty) empty_type{};
     } else {
       LIB_STDCOMPAT_INTERNAL_UNREACHABLE_OR_ABORT();
     }
   }
-  void construct_at(size_t index, storage_base&&) {
+  void construct_at(std::size_t index, storage_base&&) {
     if (index == empty_index) {
       new (&empty) empty_type{};
     } else {
@@ -125,14 +126,14 @@ union storage_base<destructor_class::non_trivial, type_index<empty_type, empty_i
     }
   }
 
-  void assign_at(size_t index, const storage_base& other) {
+  void assign_at(std::size_t index, const storage_base& other) {
     if (index == empty_index) {
       empty = other.empty;
     } else {
       LIB_STDCOMPAT_INTERNAL_UNREACHABLE_OR_ABORT();
     }
   }
-  void assign_at(size_t index, storage_base&& other) {
+  void assign_at(std::size_t index, storage_base&& other) {
     if (index == empty_index) {
       empty = std::move(other.empty);
     } else {
@@ -140,7 +141,7 @@ union storage_base<destructor_class::non_trivial, type_index<empty_type, empty_i
     }
   }
 
-  void swap_at(size_t index, storage_base& other) {
+  void swap_at(std::size_t index, storage_base& other) {
     if (index == empty_index) {
       using std::swap;
       swap(empty, other.empty);
@@ -150,17 +151,17 @@ union storage_base<destructor_class::non_trivial, type_index<empty_type, empty_i
   }
 
   template <typename... Args>
-  size_t construct(type_tag<empty_type>, Args&&...) {
+  std::size_t construct(type_tag<empty_type>, Args&&...) {
     new (&empty) empty_type{};
     return empty_index;
   }
   template <typename... Args>
-  size_t construct(index_tag<empty_index>, Args&&...) {
+  std::size_t construct(index_tag<empty_index>, Args&&...) {
     new (&empty) empty_type{};
     return empty_index;
   }
 
-  void reset(size_t index) {
+  void reset(std::size_t index) {
     if (index == empty_index) {
       empty.empty_type::~empty_type();
     } else {
@@ -173,14 +174,14 @@ union storage_base<destructor_class::non_trivial, type_index<empty_type, empty_i
   empty_type& get(index_tag<empty_index>) { return empty; }
   const empty_type& get(index_tag<empty_index>) const { return empty; }
 
-  size_t index(type_tag<empty_type>) const { return empty_index; }
+  std::size_t index(type_tag<empty_type>) const { return empty_index; }
 
   template <typename V>
-  bool visit(size_t, V&&) {
+  bool visit(std::size_t, V&&) {
     return false;
   }
   template <typename V>
-  bool visit(size_t, V&&) const {
+  bool visit(std::size_t, V&&) const {
     return false;
   }
 
@@ -205,14 +206,14 @@ union storage_base<destructor_class::trivial, type_index<empty_type, empty_index
   constexpr storage_base& operator=(const storage_base&) = default;
   constexpr storage_base& operator=(storage_base&&) = default;
 
-  constexpr void construct_at(size_t index, const storage_base&) {
+  constexpr void construct_at(std::size_t index, const storage_base&) {
     if (index == empty_index) {
       new (&empty) empty_type{};
     } else {
       LIB_STDCOMPAT_INTERNAL_UNREACHABLE_OR_ABORT();
     }
   }
-  constexpr void construct_at(size_t index, storage_base&&) {
+  constexpr void construct_at(std::size_t index, storage_base&&) {
     if (index == empty_index) {
       new (&empty) empty_type{};
     } else {
@@ -220,14 +221,14 @@ union storage_base<destructor_class::trivial, type_index<empty_type, empty_index
     }
   }
 
-  constexpr void assign_at(size_t index, const storage_base& other) {
+  constexpr void assign_at(std::size_t index, const storage_base& other) {
     if (index == empty_index) {
       empty = other.empty;
     } else {
       LIB_STDCOMPAT_INTERNAL_UNREACHABLE_OR_ABORT();
     }
   }
-  constexpr void assign_at(size_t index, storage_base&& other) {
+  constexpr void assign_at(std::size_t index, storage_base&& other) {
     if (index == empty_index) {
       empty = std::move(other.empty);
     } else {
@@ -235,7 +236,7 @@ union storage_base<destructor_class::trivial, type_index<empty_type, empty_index
     }
   }
 
-  constexpr void swap_at(size_t index, storage_base& other) {
+  constexpr void swap_at(std::size_t index, storage_base& other) {
     if (index == empty_index) {
       using std::swap;
       swap(empty, other.empty);
@@ -245,17 +246,17 @@ union storage_base<destructor_class::trivial, type_index<empty_type, empty_index
   }
 
   template <typename... Args>
-  constexpr size_t construct(type_tag<empty_type>, Args&&...) {
+  constexpr std::size_t construct(type_tag<empty_type>, Args&&...) {
     new (&empty) empty_type{};
     return empty_index;
   }
   template <typename... Args>
-  constexpr size_t construct(index_tag<empty_index>, Args&&...) {
+  constexpr std::size_t construct(index_tag<empty_index>, Args&&...) {
     new (&empty) empty_type{};
     return empty_index;
   }
 
-  constexpr void reset(size_t index) {
+  constexpr void reset(std::size_t index) {
     if (index == empty_index) {
       empty.empty_type::~empty_type();
     } else {
@@ -268,21 +269,21 @@ union storage_base<destructor_class::trivial, type_index<empty_type, empty_index
   constexpr empty_type& get(index_tag<empty_index>) { return empty; }
   constexpr const empty_type& get(index_tag<empty_index>) const { return empty; }
 
-  constexpr size_t index(type_tag<empty_type>) const { return empty_index; }
+  constexpr std::size_t index(type_tag<empty_type>) const { return empty_index; }
 
   template <typename V>
-  constexpr bool visit(size_t, V&&) {
+  constexpr bool visit(std::size_t, V&&) {
     return false;
   }
   template <typename V>
-  constexpr bool visit(size_t, V&&) const {
+  constexpr bool visit(std::size_t, V&&) const {
     return false;
   }
 
   empty_type empty;
 };
 
-template <typename T, size_t Index, typename... Ts, size_t... Is>
+template <typename T, std::size_t Index, typename... Ts, std::size_t... Is>
 union storage_base<destructor_class::non_trivial, type_index<T, Index>, type_index<Ts, Is>...> {
   storage_base() : empty{} {}
 
@@ -293,7 +294,7 @@ union storage_base<destructor_class::non_trivial, type_index<T, Index>, type_ind
 
   template <typename U, typename... Args>
   storage_base(type_tag<U>, Args&&... args) : rest(type_tag<U>{}, std::forward<Args>(args)...) {}
-  template <size_t OtherIndex, typename... Args>
+  template <std::size_t OtherIndex, typename... Args>
   storage_base(index_tag<OtherIndex>, Args&&... args)
       : rest(index_tag<OtherIndex>{}, std::forward<Args>(args)...) {}
 
@@ -306,14 +307,14 @@ union storage_base<destructor_class::non_trivial, type_index<T, Index>, type_ind
   storage_base& operator=(const storage_base&) = default;
   storage_base& operator=(storage_base&&) = default;
 
-  void construct_at(size_t index, const storage_base& other) {
+  void construct_at(std::size_t index, const storage_base& other) {
     if (index == Index) {
       new (&value) T{other.value};
     } else {
       rest.construct_at(index, other.rest);
     }
   }
-  void construct_at(size_t index, storage_base&& other) {
+  void construct_at(std::size_t index, storage_base&& other) {
     if (index == Index) {
       new (&value) T{std::move(other.value)};
     } else {
@@ -321,14 +322,14 @@ union storage_base<destructor_class::non_trivial, type_index<T, Index>, type_ind
     }
   }
 
-  void assign_at(size_t index, const storage_base& other) {
+  void assign_at(std::size_t index, const storage_base& other) {
     if (index == Index) {
       value = other.value;
     } else {
       rest.assign_at(index, other.rest);
     }
   }
-  void assign_at(size_t index, storage_base&& other) {
+  void assign_at(std::size_t index, storage_base&& other) {
     if (index == Index) {
       value = std::move(other.value);
     } else {
@@ -336,7 +337,7 @@ union storage_base<destructor_class::non_trivial, type_index<T, Index>, type_ind
     }
   }
 
-  void swap_at(size_t index, storage_base& other) {
+  void swap_at(std::size_t index, storage_base& other) {
     if (index == Index) {
       using std::swap;
       swap(value, other.value);
@@ -346,25 +347,25 @@ union storage_base<destructor_class::non_trivial, type_index<T, Index>, type_ind
   }
 
   template <typename... Args>
-  size_t construct(type_tag<T>, Args&&... args) {
+  std::size_t construct(type_tag<T>, Args&&... args) {
     new (&value) T(std::forward<Args>(args)...);
     return Index;
   }
   template <typename U, typename... Args>
-  size_t construct(type_tag<U>, Args&&... args) {
+  std::size_t construct(type_tag<U>, Args&&... args) {
     return rest.construct(type_tag<U>{}, std::forward<Args>(args)...);
   }
   template <typename... Args>
-  size_t construct(index_tag<Index>, Args&&... args) {
+  std::size_t construct(index_tag<Index>, Args&&... args) {
     new (&value) T(std::forward<Args>(args)...);
     return Index;
   }
-  template <size_t OtherIndex, typename... Args>
-  size_t construct(index_tag<OtherIndex>, Args&&... args) {
+  template <std::size_t OtherIndex, typename... Args>
+  std::size_t construct(index_tag<OtherIndex>, Args&&... args) {
     return rest.construct(index_tag<OtherIndex>{}, std::forward<Args>(args)...);
   }
 
-  void reset(size_t index) {
+  void reset(std::size_t index) {
     if (index == Index) {
       value.~T();
     } else {
@@ -384,23 +385,23 @@ union storage_base<destructor_class::non_trivial, type_index<T, Index>, type_ind
   }
   T& get(index_tag<Index>) { return value; }
   const T& get(index_tag<Index>) const { return value; }
-  template <size_t OtherIndex>
+  template <std::size_t OtherIndex>
   auto& get(index_tag<OtherIndex>) {
     return rest.get(index_tag<OtherIndex>{});
   }
-  template <size_t OtherIndex>
+  template <std::size_t OtherIndex>
   const auto& get(index_tag<OtherIndex>) const {
     return rest.get(index_tag<OtherIndex>{});
   }
 
-  size_t index(type_tag<T>) const { return Index; }
+  std::size_t index(type_tag<T>) const { return Index; }
   template <typename U>
-  size_t index(type_tag<U>) const {
+  std::size_t index(type_tag<U>) const {
     return rest.index(type_tag<U>{});
   }
 
   template <typename V>
-  bool visit(size_t index, V&& visitor) {
+  bool visit(std::size_t index, V&& visitor) {
     if (index == Index) {
       std::forward<V>(visitor)(type_tag<T>{}, index_tag<Index>{}, this);
       return true;
@@ -409,7 +410,7 @@ union storage_base<destructor_class::non_trivial, type_index<T, Index>, type_ind
     }
   }
   template <typename V>
-  bool visit(size_t index, V&& visitor) const {
+  bool visit(std::size_t index, V&& visitor) const {
     if (index == Index) {
       std::forward<V>(visitor)(type_tag<T>{}, index_tag<Index>{}, this);
       return true;
@@ -423,7 +424,7 @@ union storage_base<destructor_class::non_trivial, type_index<T, Index>, type_ind
   storage_base<destructor_class::non_trivial, type_index<Ts, Is>...> rest;
 };
 
-template <typename T, size_t Index, typename... Ts, size_t... Is>
+template <typename T, std::size_t Index, typename... Ts, std::size_t... Is>
 union storage_base<destructor_class::trivial, type_index<T, Index>, type_index<Ts, Is>...> {
   constexpr storage_base() : empty{} {}
 
@@ -435,7 +436,7 @@ union storage_base<destructor_class::trivial, type_index<T, Index>, type_index<T
   template <typename U, typename... Args>
   constexpr storage_base(type_tag<U>, Args&&... args)
       : rest(type_tag<U>{}, std::forward<Args>(args)...) {}
-  template <size_t OtherIndex, typename... Args>
+  template <std::size_t OtherIndex, typename... Args>
   constexpr storage_base(index_tag<OtherIndex>, Args&&... args)
       : rest(index_tag<OtherIndex>{}, std::forward<Args>(args)...) {}
 
@@ -448,14 +449,14 @@ union storage_base<destructor_class::trivial, type_index<T, Index>, type_index<T
   constexpr storage_base& operator=(const storage_base&) = default;
   constexpr storage_base& operator=(storage_base&&) = default;
 
-  constexpr void construct_at(size_t index, const storage_base& other) {
+  constexpr void construct_at(std::size_t index, const storage_base& other) {
     if (index == Index) {
       new (&value) T{other.value};
     } else {
       rest.construct_at(index, other.rest);
     }
   }
-  constexpr void construct_at(size_t index, storage_base&& other) {
+  constexpr void construct_at(std::size_t index, storage_base&& other) {
     if (index == Index) {
       new (&value) T{std::move(other.value)};
     } else {
@@ -463,14 +464,14 @@ union storage_base<destructor_class::trivial, type_index<T, Index>, type_index<T
     }
   }
 
-  constexpr void assign_at(size_t index, const storage_base& other) {
+  constexpr void assign_at(std::size_t index, const storage_base& other) {
     if (index == Index) {
       value = other.value;
     } else {
       rest.assign_at(index, other.rest);
     }
   }
-  constexpr void assign_at(size_t index, storage_base&& other) {
+  constexpr void assign_at(std::size_t index, storage_base&& other) {
     if (index == Index) {
       value = std::move(other.value);
     } else {
@@ -478,7 +479,7 @@ union storage_base<destructor_class::trivial, type_index<T, Index>, type_index<T
     }
   }
 
-  constexpr void swap_at(size_t index, storage_base& other) {
+  constexpr void swap_at(std::size_t index, storage_base& other) {
     if (index == Index) {
       using std::swap;
       swap(value, other.value);
@@ -488,25 +489,25 @@ union storage_base<destructor_class::trivial, type_index<T, Index>, type_index<T
   }
 
   template <typename... Args>
-  constexpr size_t construct(type_tag<T>, Args&&... args) {
+  constexpr std::size_t construct(type_tag<T>, Args&&... args) {
     new (&value) T(std::forward<Args>(args)...);
     return Index;
   }
   template <typename U, typename... Args>
-  constexpr size_t construct(type_tag<U>, Args&&... args) {
+  constexpr std::size_t construct(type_tag<U>, Args&&... args) {
     return rest.construct(type_tag<U>{}, std::forward<Args>(args)...);
   }
   template <typename... Args>
-  constexpr size_t construct(index_tag<Index>, Args&&... args) {
+  constexpr std::size_t construct(index_tag<Index>, Args&&... args) {
     new (&value) T(std::forward<Args>(args)...);
     return Index;
   }
-  template <size_t OtherIndex, typename... Args>
-  constexpr size_t construct(index_tag<OtherIndex>, Args&&... args) {
+  template <std::size_t OtherIndex, typename... Args>
+  constexpr std::size_t construct(index_tag<OtherIndex>, Args&&... args) {
     return rest.construct(index_tag<OtherIndex>{}, std::forward<Args>(args)...);
   }
 
-  constexpr void reset(size_t) {}
+  constexpr void reset(std::size_t) {}
 
   constexpr T& get(type_tag<T>) { return value; }
   constexpr const T& get(type_tag<T>) const { return value; }
@@ -520,23 +521,23 @@ union storage_base<destructor_class::trivial, type_index<T, Index>, type_index<T
   }
   constexpr T& get(index_tag<Index>) { return value; }
   constexpr const T& get(index_tag<Index>) const { return value; }
-  template <size_t OtherIndex>
+  template <std::size_t OtherIndex>
   constexpr auto& get(index_tag<OtherIndex>) {
     return rest.get(index_tag<OtherIndex>{});
   }
-  template <size_t OtherIndex>
+  template <std::size_t OtherIndex>
   constexpr const auto& get(index_tag<OtherIndex>) const {
     return rest.get(index_tag<OtherIndex>{});
   }
 
-  constexpr size_t index(type_tag<T>) const { return Index; }
+  constexpr std::size_t index(type_tag<T>) const { return Index; }
   template <typename U>
-  constexpr size_t index(type_tag<U>) const {
+  constexpr std::size_t index(type_tag<U>) const {
     return rest.index(type_tag<U>{});
   }
 
   template <typename V>
-  constexpr bool visit(size_t index, V&& visitor) {
+  constexpr bool visit(std::size_t index, V&& visitor) {
     if (index == Index) {
       std::forward<V>(visitor)(type_tag<T>{}, index_tag<Index>{}, this);
       return true;
@@ -545,7 +546,7 @@ union storage_base<destructor_class::trivial, type_index<T, Index>, type_index<T
     }
   }
   template <typename V>
-  constexpr bool visit(size_t index, V&& visitor) const {
+  constexpr bool visit(std::size_t index, V&& visitor) const {
     if (index == Index) {
       std::forward<V>(visitor)(type_tag<T>{}, index_tag<Index>{}, this);
       return true;
@@ -564,7 +565,7 @@ union storage_base<destructor_class::trivial, type_index<T, Index>, type_index<T
 template <destructor_class, typename...>
 class indexed_storage;
 
-template <destructor_class DestructorClass, typename... Ts, size_t... Is>
+template <destructor_class DestructorClass, typename... Ts, std::size_t... Is>
 class indexed_storage<DestructorClass, type_index<Ts, Is>...> {
  private:
   using base_type =
@@ -595,7 +596,7 @@ class indexed_storage<DestructorClass, type_index<Ts, Is>...> {
       : base_(type_tag<T>{}, std::forward<Args>(args)...) {
     index_ = base_.index(type_tag<T>{});
   }
-  template <size_t Index, typename... Args>
+  template <std::size_t Index, typename... Args>
   constexpr indexed_storage(index_tag<Index>, Args&&... args)
       : index_{Index}, base_(index_tag<Index>{}, std::forward<Args>(args)...) {}
 
@@ -616,7 +617,7 @@ class indexed_storage<DestructorClass, type_index<Ts, Is>...> {
   constexpr bool has_value(type_tag<T>) const {
     return index() == base_.index(type_tag<T>{});
   }
-  template <size_t Index>
+  template <std::size_t Index>
   constexpr bool has_value(index_tag<Index>) const {
     return index() == Index;
   }
@@ -629,11 +630,11 @@ class indexed_storage<DestructorClass, type_index<Ts, Is>...> {
   constexpr const auto& get(type_tag<T>) const {
     return base_.get(type_tag<T>{});
   }
-  template <size_t Index>
+  template <std::size_t Index>
   constexpr auto& get(index_tag<Index>) {
     return base_.get(index_tag<Index>{});
   }
-  template <size_t Index>
+  template <std::size_t Index>
   constexpr const auto& get(index_tag<Index>) const {
     return base_.get(index_tag<Index>{});
   }
@@ -642,7 +643,7 @@ class indexed_storage<DestructorClass, type_index<Ts, Is>...> {
   constexpr void construct(type_tag<T>, Args&&... args) {
     index_ = base_.construct(type_tag<T>{}, std::forward<Args>(args)...);
   }
-  template <size_t Index, typename... Args>
+  template <std::size_t Index, typename... Args>
   constexpr void construct(index_tag<Index>, Args&&... args) {
     index_ = base_.construct(index_tag<Index>{}, std::forward<Args>(args)...);
   }
@@ -726,7 +727,7 @@ class indexed_storage<DestructorClass, type_index<Ts, Is>...> {
 template <typename StorageClass, typename... Ts>
 struct storage;
 
-template <typename... Ts, size_t... Is>
+template <typename... Ts, std::size_t... Is>
 struct storage<storage_class<destructor_class::trivial, copy_class::trivial, move_class::trivial>,
                type_index<Ts, Is>...>
     : indexed_storage<destructor_class::trivial, type_index<Ts, Is>...> {
@@ -735,7 +736,7 @@ struct storage<storage_class<destructor_class::trivial, copy_class::trivial, mov
   constexpr storage() = default;
 };
 
-template <typename... Ts, size_t... Is>
+template <typename... Ts, std::size_t... Is>
 struct storage<
     storage_class<destructor_class::trivial, copy_class::non_trivial, move_class::trivial>,
     type_index<Ts, Is>...> : indexed_storage<destructor_class::trivial, type_index<Ts, Is>...> {
@@ -756,7 +757,7 @@ struct storage<
   constexpr storage& operator=(storage&&) = default;
 };
 
-template <typename... Ts, size_t... Is>
+template <typename... Ts, std::size_t... Is>
 struct storage<
     storage_class<destructor_class::trivial, copy_class::trivial, move_class::non_trivial>,
     type_index<Ts, Is>...> : indexed_storage<destructor_class::trivial, type_index<Ts, Is>...> {
@@ -777,7 +778,7 @@ struct storage<
   }
 };
 
-template <typename... Ts, size_t... Is>
+template <typename... Ts, std::size_t... Is>
 struct storage<
     storage_class<destructor_class::trivial, copy_class::non_trivial, move_class::non_trivial>,
     type_index<Ts, Is>...> : indexed_storage<destructor_class::trivial, type_index<Ts, Is>...> {
@@ -805,7 +806,7 @@ struct storage<
 
 // Specialization for non-trivially movable/copyable types. Types with a non-
 // trivial destructor are always non-trivially movable/copyable.
-template <copy_class CopyClass, move_class MoveClass, typename... Ts, size_t... Is>
+template <copy_class CopyClass, move_class MoveClass, typename... Ts, std::size_t... Is>
 struct storage<storage_class<destructor_class::non_trivial, CopyClass, MoveClass>,
                type_index<Ts, Is>...>
     : indexed_storage<destructor_class::non_trivial, type_index<Ts, Is>...> {
@@ -832,7 +833,7 @@ struct storage<storage_class<destructor_class::non_trivial, CopyClass, MoveClass
   }
 };
 
-template <typename... Ts, size_t... Is>
+template <typename... Ts, std::size_t... Is>
 constexpr auto make_storage(std::index_sequence<Is...>) {
   return storage<make_storage_class<Ts...>, type_index<Ts, Is>...>{};
 }

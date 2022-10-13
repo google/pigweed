@@ -5,9 +5,11 @@
 #ifndef LIB_FIT_INCLUDE_LIB_FIT_INTERNAL_FUNCTION_H_
 #define LIB_FIT_INCLUDE_LIB_FIT_INTERNAL_FUNCTION_H_
 
+#include <lib/stdcompat/bit.h>
 #include <stddef.h>
 #include <stdlib.h>
 
+#include <algorithm>
 #include <cstring>
 #include <functional>
 #include <memory>
@@ -250,13 +252,25 @@ constexpr target_ops<Result, Args...> target<SharedFunction,
                                              /*is_shared=*/true, Result, Args...>::ops = {
     &target::target_type_id, &target::get, &target::move, &target::destroy, &target::invoke};
 
+// Calculates the alignment to use for a function of the provided
+// inline_target_size. Some platforms use a large alignment for max_align_t, so
+// use the minimum of max_align_t and the largest alignment for the inline
+// target size.
+//
+// Alignments must be powers of 2, and alignof(T) <= sizeof(T), so find the
+// largest power of 2 <= inline_target_size.
+constexpr size_t FunctionAlignment(size_t inline_target_size) {
+  return std::min(cpp20::bit_floor(inline_target_size), alignof(max_align_t));
+}
+
 // Function implementation details shared by all functions, regardless of
-// signature. This class is aligned as max_align_t so that the target storage
-// (bits_, the first class member) has maximum alignment.
+// signature. This class is aligned based on inline_target_size and max_align_t
+// so that the target storage (bits_, the first class member) has correct
+// alignment.
 //
 // See |fit::function| and |fit::callback| documentation for more information.
 template <size_t inline_target_size>
-class alignas(max_align_t) generic_function_base {
+class alignas(FunctionAlignment(inline_target_size)) generic_function_base {
  public:
   // The inline target size must be a non-zero multiple of sizeof(void*).  Uses
   // of |fit::function_impl| and |fit::callback_impl| may call
@@ -316,7 +330,7 @@ class alignas(max_align_t) generic_function_base {
 
     const base_target_ops* temp_ops = ops_;
     // temp_bits, which stores the target, must maintain the expected alignment.
-    alignas(max_align_t) uint8_t temp_bits[inline_target_size];
+    alignas(generic_function_base) uint8_t temp_bits[inline_target_size];
     ops_->move(bits_, temp_bits);
 
     ops_ = other.ops_;
@@ -356,11 +370,11 @@ class alignas(max_align_t) generic_function_base {
   struct empty {};
 
   union {
-    // Function context data. The bits_ field requires max_align_t alignment,
-    // but adding the alignas() at the field declaration increases the padding.
-    // Instead, the generic_function_base class is aligned as max_align_t, and
-    // bits_ is placed first in the class. Thus, bits_ MUST remain first in the
-    // class to ensure proper alignment.
+    // Function context data. The bits_ field requires special alignment, but
+    // adding the alignas() at the field declaration increases the padding.
+    // Instead, generic_function_base is aligned according to max_align_t and
+    // inline_target_size, and bits_ is placed first in the class. Thus, bits_
+    // MUST remain first in the class to ensure proper alignment.
     mutable uint8_t bits_[inline_target_size];
 
     // Empty struct used when initializing the storage in the constexpr
@@ -385,9 +399,10 @@ class function_base<inline_target_size, require_inline, Result(Args...)>
   using base = generic_function_base<inline_target_size>;
 
   // Check alignment and size of the base, which holds the bits_ and ops_ members.
-  static_assert(alignof(base) == alignof(max_align_t), "Must be aligned as max_align_t");
+  static_assert(alignof(base) == FunctionAlignment(inline_target_size),
+                "Must be aligned as min(alignof(max_align_t), inline_target_size)");
   static_assert(sizeof(base) == RoundUpToMultiple(inline_target_size + sizeof(base_target_ops*),
-                                                  alignof(max_align_t)),
+                                                  FunctionAlignment(inline_target_size)),
                 "generic_function_base has unexpected padding and is not minimal in size");
 
   template <typename Callable>
@@ -521,8 +536,8 @@ class function_base<inline_target_size, require_inline, Result(Args...)>
   void initialize_target(Callable&& target) {
     // Convert function or function references to function pointer.
     using DecayedCallable = std::decay_t<Callable>;
-    static_assert(alignof(DecayedCallable) <= alignof(max_align_t),
-                  "Alignment of Callable must be <= alignment of max_align_t.");
+    static_assert(!require_inline || alignof(DecayedCallable) <= alignof(base),
+                  "Alignment of Callable must be <= alignment of the function class.");
     static_assert(!require_inline || sizeof(DecayedCallable) <= inline_target_size,
                   "Callable too large to store inline as requested.");
     if (is_null(target)) {

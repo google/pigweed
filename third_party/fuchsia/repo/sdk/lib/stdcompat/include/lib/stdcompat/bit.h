@@ -5,6 +5,7 @@
 #ifndef LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_BIT_H_
 #define LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_BIT_H_
 
+#include <cstring>
 #include <limits>
 
 #include "internal/bit.h"
@@ -55,8 +56,8 @@ std::enable_if_t<sizeof(To) == sizeof(From) && std::is_trivially_copyable<To>::v
                  To>
 bit_cast(const From& from) {
   std::aligned_storage_t<sizeof(To)> uninitialized_to;
-  memcpy(static_cast<void*>(&uninitialized_to), static_cast<const void*>(cpp17::addressof(from)),
-         sizeof(To));
+  std::memcpy(static_cast<void*>(&uninitialized_to),
+              static_cast<const void*>(cpp17::addressof(from)), sizeof(To));
   return *reinterpret_cast<const To*>(&uninitialized_to);
 }
 

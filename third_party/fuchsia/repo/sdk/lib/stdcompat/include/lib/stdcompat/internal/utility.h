@@ -5,6 +5,7 @@
 #ifndef LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_INTERNAL_UTILITY_H_
 #define LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_INTERNAL_UTILITY_H_
 
+#include <cstddef>
 #include <utility>
 
 #include "../type_traits.h"
@@ -41,16 +42,16 @@ using first_t = typename first<Ts...>::type;
 
 // Utility to count the occurences of type T in the parameter pack Ts.
 template <typename T, typename... Ts>
-struct occurences_of : std::integral_constant<size_t, 0> {};
+struct occurences_of : std::integral_constant<std::size_t, 0> {};
 template <typename T, typename U>
-struct occurences_of<T, U> : std::integral_constant<size_t, std::is_same<T, U>::value> {};
+struct occurences_of<T, U> : std::integral_constant<std::size_t, std::is_same<T, U>::value> {};
 template <typename T, typename First, typename... Rest>
 struct occurences_of<T, First, Rest...>
-    : std::integral_constant<size_t,
+    : std::integral_constant<std::size_t,
                              occurences_of<T, First>::value + occurences_of<T, Rest...>::value> {};
 
 template <typename T, typename... Ts>
-constexpr size_t occurences_of_v = occurences_of<T, Ts...>::value;
+constexpr std::size_t occurences_of_v = occurences_of<T, Ts...>::value;
 
 // Evaluates to truth-like when type T matches type U with cv-reference removed.
 template <typename T, typename U>
@@ -88,7 +89,7 @@ using enable_relop_t =
     std::enable_if_t<(std::is_convertible<Op, bool>::value && conjunction_v<Conditions...>), bool>;
 
 // Returns true when T is a complete type or an unbounded array.
-template <typename T, size_t = sizeof(T)>
+template <typename T, std::size_t = sizeof(T)>
 constexpr bool is_complete_or_unbounded_array(::cpp20::type_identity<T>) {
   return true;
 }

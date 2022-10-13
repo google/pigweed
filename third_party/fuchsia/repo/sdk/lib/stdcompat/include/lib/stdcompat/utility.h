@@ -5,6 +5,7 @@
 #ifndef LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_UTILITY_H_
 #define LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_UTILITY_H_
 
+#include <cstddef>
 #include <type_traits>
 #include <utility>
 
@@ -38,7 +39,7 @@ struct in_place_type_t {
 };
 
 // Tag for requesting in-place initialization by index.
-template <size_t Index>
+template <std::size_t Index>
 struct in_place_index_t final {
   explicit constexpr in_place_index_t() = default;
 };
@@ -52,7 +53,7 @@ constexpr in_place_t in_place{};
 template <typename T>
 constexpr in_place_type_t<T> in_place_type{};
 
-template <size_t Index>
+template <std::size_t Index>
 constexpr in_place_index_t<Index> in_place_index{};
 
 #else  // Provide polyfill reference to provided variable storage.
@@ -64,7 +65,7 @@ template <typename T>
 static constexpr const in_place_type_t<T>& in_place_type =
     internal::instantiate_templated_tag<in_place_type_t<T>>::storage;
 
-template <size_t Index>
+template <std::size_t Index>
 static constexpr const in_place_index_t<Index>& in_place_index =
     internal::instantiate_templated_tag<in_place_index_t<Index>>::storage;
 

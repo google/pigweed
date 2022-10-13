@@ -5,6 +5,7 @@
 #ifndef LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_INTERNAL_CONSTRUCTORS_H_
 #define LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_INTERNAL_CONSTRUCTORS_H_
 
+#include <cstddef>
 #include <type_traits>
 #include <utility>
 
@@ -22,9 +23,9 @@ struct modulate_default_constructor<T, false> {
 
 // Mixin that implicitly deletes the subclass copy constructor when type T is
 // not copy constructible.
-template <size_t Index, typename T, bool = std::is_copy_constructible<T>::value>
+template <std::size_t Index, typename T, bool = std::is_copy_constructible<T>::value>
 struct modulate_copy_constructor {};
-template <size_t Index, typename T>
+template <std::size_t Index, typename T>
 struct modulate_copy_constructor<Index, T, false> {
   constexpr modulate_copy_constructor() = default;
   constexpr modulate_copy_constructor(const modulate_copy_constructor&) = delete;
@@ -35,9 +36,9 @@ struct modulate_copy_constructor<Index, T, false> {
 
 // Mixin that implicitly deletes the subclass copy assignment operator when type
 // T is not copy assignable.
-template <size_t Index, typename T, bool = std::is_copy_assignable<T>::value>
+template <std::size_t Index, typename T, bool = std::is_copy_assignable<T>::value>
 struct modulate_copy_assignment {};
-template <size_t Index, typename T>
+template <std::size_t Index, typename T>
 struct modulate_copy_assignment<Index, T, false> {
   constexpr modulate_copy_assignment() = default;
   constexpr modulate_copy_assignment(const modulate_copy_assignment&) = default;
@@ -48,9 +49,9 @@ struct modulate_copy_assignment<Index, T, false> {
 
 // Mixin that implicitly deletes the subclass move constructor when type T is
 // not move constructible.
-template <size_t Index, typename T, bool = std::is_move_constructible<T>::value>
+template <std::size_t Index, typename T, bool = std::is_move_constructible<T>::value>
 struct modulate_move_constructor {};
-template <size_t Index, typename T>
+template <std::size_t Index, typename T>
 struct modulate_move_constructor<Index, T, false> {
   constexpr modulate_move_constructor() = default;
   constexpr modulate_move_constructor(const modulate_move_constructor&) = default;
@@ -61,9 +62,9 @@ struct modulate_move_constructor<Index, T, false> {
 
 // Mixin that implicitly deletes the subclass move assignment operator when type
 // T is not move assignable.
-template <size_t Index, typename T, bool = std::is_move_assignable<T>::value>
+template <std::size_t Index, typename T, bool = std::is_move_assignable<T>::value>
 struct modulate_move_assignment {};
-template <size_t Index, typename T>
+template <std::size_t Index, typename T>
 struct modulate_move_assignment<Index, T, false> {
   constexpr modulate_move_assignment() = default;
   constexpr modulate_move_assignment(const modulate_move_assignment&) = default;
@@ -80,7 +81,7 @@ struct modulate_move_assignment<Index, T, false> {
 template <typename IndexSequence, typename... Ts>
 struct modulate_copy_and_move_index;
 
-template <size_t... Is, typename... Ts>
+template <std::size_t... Is, typename... Ts>
 struct modulate_copy_and_move_index<std::index_sequence<Is...>, Ts...>
     : modulate_copy_constructor<Is, Ts>...,
       modulate_copy_assignment<Is, Ts>...,

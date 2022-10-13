@@ -5,6 +5,7 @@
 #ifndef LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_TYPE_TRAITS_H_
 #define LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_TYPE_TRAITS_H_
 
+#include <cstddef>
 #include <tuple>
 #include <type_traits>
 
@@ -401,7 +402,7 @@ using std::is_unbounded_array_v;
 
 template <typename T>
 struct is_bounded_array : std::false_type {};
-template <typename T, size_t N>
+template <typename T, std::size_t N>
 struct is_bounded_array<T[N]> : std::true_type {};
 
 template <typename T>
