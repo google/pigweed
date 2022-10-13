@@ -11,11 +11,12 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""pw_ide configuration."""
+"""pw_ide settings."""
 
+from inspect import cleandoc
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, cast, Dict, List, Optional, Union
 
 from pw_console.yaml_config_loader_mixin import YamlConfigLoaderMixin
 
@@ -62,35 +63,45 @@ class IdeSettings(YamlConfigLoaderMixin):
 
     @property
     def working_dir(self) -> Path:
-        """Path to the pw_ide working directory.
+        """Path to the ``pw_ide`` working directory.
 
-        This should not be a directory that's regularly deleted or manipulated
-        by other processes (e.g. the GN `out` directory) nor should it be
-        committed to the code repo.
+        The working directory holds C++ compilation databases and caches, and
+        other supporting files. This should not be a directory that's regularly
+        deleted or manipulated by other processes (e.g. the GN ``out``
+        directory) nor should it be committed to source control.
         """
-        return Path(self._config.get('working_dir', ''))
+        return Path(self._config.get('working_dir', _PW_IDE_DEFAULT_DIR))
 
     @property
     def targets(self) -> List[str]:
-        """The list of targets that should be made available for code analysis.
+        """The list of targets that should be enabled for code analysis.
 
         In this case, "target" is analogous to a GN target, i.e., a particular
-        build configuration. Targets defined here will be used when processing
-        a compilation database.
+        build configuration. By default, all available targets are enabled. By
+        adding targets to this list, you can constrain the targets that are
+        enabled for code analysis to a subset of those that are available, which
+        may be useful if your project has many similar targets that are
+        redundant from a code analysis perspective.
+
+        Target names need to match the name of the directory that holds the
+        build system artifacts for the target. For example, GN outputs build
+        artifacts for the ``pw_strict_host_clang_debug`` target in a directory
+        with that name in its output directory. So that becomes the canonical
+        name for the target.
         """
         return self._config.get('targets', list())
 
     @property
     def setup(self) -> List[str]:
-        """`pw ide setup` should do everything necessary to get the project from
+        """A sequence of commands to automate IDE features setup.
+
+        ``pw ide setup`` should do everything necessary to get the project from
         a fresh checkout to a working default IDE experience. This defines the
-        list of commands that makes that happen.
-
-        Commands need to be formatted as lists in the way that Python's
-        subprocess.run expects, since that's exactly where they're going.
-
-        Note that this command must be idempotent, so that the user can run it
-        whenever they want without a care in the world.
+        list of commands that makes that happen, which will be executed
+        sequentially in subprocesses. These commands should be idempotent, so
+        that the user can run them at any time to update their IDE features
+        configuration without the risk of putting those features in a bad or
+        unexpected state.
         """
         return self._config.get('setup', list())
 
@@ -114,3 +125,43 @@ class IdeSettings(YamlConfigLoaderMixin):
 
     def clangd_query_driver_str(self) -> str:
         return ','.join(self.clangd_query_drivers())
+
+
+def _docstring_set_default(obj: Any,
+                           default: Any,
+                           literal: bool = False) -> None:
+    """Add a default value annotation to a docstring.
+
+    Formatting isn't allowed in docstrings, so by default we can't inject
+    variables that we would like to appear in the documentation, like the
+    default value of a property. But we can use this function to add it
+    separately.
+    """
+    if obj.__doc__ is not None:
+        default = str(default)
+
+        if literal:
+            lines = default.splitlines()
+
+            if len(lines) == 0:
+                return
+            if len(lines) == 1:
+                default = f'Default: ``{lines[0]}``'
+            else:
+                default = ('Default:\n\n.. code-block::\n\n  ' +
+                           '\n  '.join(lines))
+
+        doc = cast(str, obj.__doc__)
+        obj.__doc__ = f'{cleandoc(doc)}\n\n{default}'
+
+
+_docstring_set_default(IdeSettings.working_dir, PW_IDE_DIR_NAME, literal=True)
+_docstring_set_default(IdeSettings.targets,
+                       _DEFAULT_CONFIG['targets'],
+                       literal=True)
+_docstring_set_default(IdeSettings.setup,
+                       _DEFAULT_CONFIG['setup'],
+                       literal=True)
+_docstring_set_default(IdeSettings.clangd_additional_query_drivers,
+                       _DEFAULT_CONFIG['clangd_additional_query_drivers'],
+                       literal=True)

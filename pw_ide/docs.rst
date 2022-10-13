@@ -9,34 +9,26 @@ Pigweed projects.
 Usage
 =====
 
-Configuration
--------------
-Pigweed IDE settings are stored in the project root in ``.pw_ide.yaml``, in
-which these options can be configured:
-
-* ``working_dir``: The working directory for compilation databases and caches
-  (by default this is ``.pw_ide`` in the project root). This directory shouldn't
-  be committed to your repository or be a directory that is routinely deleted or
-  manipulated by other processes.
-
-* ``targets``: A list of build targets to use for code analysis, which is likely
-  to be a subset of the project's total targets. The target name needs to match
-  the name of the directory that holds the build system artifacts for the
-  target. For example, GN outputs build artifacts for the
-  ``pw_strict_host_clang_debug`` target in a directory with that name in the
-  ``out`` directory. So that becomes the canonical name for that target.
-
-* ``setup``: Projects can define a set of steps that automatically set up IDE
-  features with sensible defaults.
-
 Setup
 -----
 Most of the time, ``pw ide setup`` is all you need to get started.
 
-The working directory and other components can be created by running
-``pw ide init``, although it is rarely necessary to run this command manually;
-other subcommands will initialize if needed. You can also clear elements of the
-working directory with ``pw ide clean``.
+Configuration
+-------------
+``pw_ide`` has a built-in default configuration. You can create a configuration
+file if you need to override those defaults.
+
+A project configuration can be defined in ``.pw_ide.yaml`` in the project root.
+This configuration will be checked into source control and apply to all
+developers of the project. Each user can also create a ``.pw_ide.user.yaml``
+file that overrides both the default and project settings, is not checked into
+source control, and applies only to that checkout of the project. All of these
+files have the same schema, in which these options can be configured:
+
+.. autoproperty:: pw_ide.settings.IdeSettings.working_dir
+.. autoproperty:: pw_ide.settings.IdeSettings.targets
+.. autoproperty:: pw_ide.settings.IdeSettings.setup
+.. autoproperty:: pw_ide.settings.IdeSettings.clangd_additional_query_drivers
 
 C++ Code Intelligence
 ---------------------
@@ -101,6 +93,13 @@ to the virtual environment on your system with:
 .. code-block:: bash
 
   pw ide python --venv
+
+Command-Line Interface Reference
+================================
+.. argparse::
+   :module: pw_ide.cli
+   :func: _build_argument_parser
+   :prog: pw ide
 
 Design
 ======
