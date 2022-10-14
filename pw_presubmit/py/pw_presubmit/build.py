@@ -207,8 +207,6 @@ def ninja(ctx: PresubmitContext,
 
         raise exc
 
-    (ctx.output_dir / '.ninja_log').rename(ctx.output_dir / 'ninja.log')
-
 
 def get_gn_args(directory: Path) -> List[Dict[str, Dict[str, str]]]:
     """Dumps GN variables to JSON."""
