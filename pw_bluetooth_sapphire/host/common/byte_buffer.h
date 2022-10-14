@@ -18,6 +18,7 @@
 #include <type_traits>
 #include <vector>
 
+#include "pw_span/span.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/lib/cpp-type/member_pointer_traits.h"
@@ -69,6 +70,10 @@ class ByteBuffer {
   // valid. Care should be taken to ensure that a BufferView does not outlive
   // its backing buffer.
   BufferView view(size_t pos = 0, size_t size = std::numeric_limits<std::size_t>::max()) const;
+
+  // Same as view(), but returns a span instead of a BufferView.
+  pw::span<const std::byte> subspan(size_t pos = 0,
+                                    size_t size = std::numeric_limits<std::size_t>::max()) const;
 
   // Copies all bytes of this buffer into |out_buffer|. |out_buffer| must be large enough to
   // accommodate the result of this operation.
@@ -447,6 +452,7 @@ class BufferView final : public ByteBuffer {
                       size_t size = std::numeric_limits<std::size_t>::max());
   explicit BufferView(std::string_view string);
   explicit BufferView(const std::vector<uint8_t>& vec);
+  explicit BufferView(pw::span<const std::byte> bytes);
 
   // The default constructor initializes this to an empty buffer.
   BufferView();

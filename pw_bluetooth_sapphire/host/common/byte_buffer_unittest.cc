@@ -263,6 +263,33 @@ TEST(ByteBufferTest, View) {
   EXPECT_EQ("es", view.AsString());
 }
 
+TEST(ByteBufferTest, Span) {
+  StaticByteBuffer buffer('T', 'e', 's', 't');
+  BufferView empty_buffer;
+
+  pw::span span = empty_buffer.subspan();
+  EXPECT_EQ(0u, span.size());
+
+  span = empty_buffer.subspan(0, 200);
+  EXPECT_EQ(0u, span.size());
+
+  span = buffer.subspan();
+  EXPECT_THAT(span, ::testing::ElementsAreArray(
+                        {std::byte{'T'}, std::byte{'e'}, std::byte{'s'}, std::byte{'t'}}));
+
+  span = buffer.subspan(4);
+  EXPECT_EQ(0u, span.size());
+
+  span = buffer.subspan(1);
+  EXPECT_THAT(span, ::testing::ElementsAreArray({std::byte{'e'}, std::byte{'s'}, std::byte{'t'}}));
+
+  span = buffer.subspan(1, 1);
+  EXPECT_THAT(span, ::testing::ElementsAreArray({std::byte{'e'}}));
+
+  span = buffer.subspan(1, 2);
+  EXPECT_THAT(span, ::testing::ElementsAreArray({std::byte{'e'}, std::byte{'s'}}));
+}
+
 TEST(ByteBufferTest, MutableView) {
   StaticByteBuffer buffer('T', 'e', 's', 't');
   MutableBufferView empty_buffer;

@@ -45,6 +45,12 @@ BufferView ByteBuffer::view(size_t pos, size_t size) const {
   return BufferView(data() + pos, std::min(size, this->size() - pos));
 }
 
+pw::span<const std::byte> ByteBuffer::subspan(size_t pos, size_t size) const {
+  BT_ASSERT_MSG(pos <= this->size(), "offset past buffer (pos: %zu, size: %zu)", pos, this->size());
+  return pw::span(reinterpret_cast<const std::byte*>(data()) + pos,
+                  std::min(size, this->size() - pos));
+}
+
 std::string_view ByteBuffer::AsString() const {
   return std::string_view(reinterpret_cast<const char*>(data()), size());
 }
@@ -168,6 +174,8 @@ BufferView::BufferView(std::string_view string) {
 }
 
 BufferView::BufferView(const std::vector<uint8_t>& vec) : BufferView(vec.data(), vec.size()) {}
+
+BufferView::BufferView(pw::span<const std::byte> bytes) : BufferView(bytes.data(), bytes.size()) {}
 
 BufferView::BufferView(const void* bytes, size_t size)
     : size_(size), bytes_(static_cast<const uint8_t*>(bytes)) {
