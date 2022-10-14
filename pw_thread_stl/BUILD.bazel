@@ -29,14 +29,14 @@ licenses(["notice"])
 pw_cc_library(
     name = "id_headers",
     hdrs = [
+        "id_public_overrides/pw_thread_backend/id_inline.h",
+        "id_public_overrides/pw_thread_backend/id_native.h",
         "public/pw_thread_stl/id_inline.h",
         "public/pw_thread_stl/id_native.h",
-        "public_overrides/pw_thread_backend/id_inline.h",
-        "public_overrides/pw_thread_backend/id_native.h",
     ],
     includes = [
+        "id_public_overrides",
         "public",
-        "public_overrides",
     ],
     target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
 )
@@ -54,11 +54,11 @@ pw_cc_library(
     name = "sleep_headers",
     hdrs = [
         "public/pw_thread_stl/sleep_inline.h",
-        "public_overrides/pw_thread_backend/sleep_inline.h",
+        "sleep_public_overrides/pw_thread_backend/sleep_inline.h",
     ],
     includes = [
         "public",
-        "public_overrides",
+        "sleep_public_overrides",
     ],
     target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
     deps = [
@@ -82,12 +82,12 @@ pw_cc_library(
         "public/pw_thread_stl/options.h",
         "public/pw_thread_stl/thread_inline.h",
         "public/pw_thread_stl/thread_native.h",
-        "public_overrides/pw_thread_backend/thread_inline.h",
-        "public_overrides/pw_thread_backend/thread_native.h",
+        "thread_public_overrides/pw_thread_backend/thread_inline.h",
+        "thread_public_overrides/pw_thread_backend/thread_native.h",
     ],
     includes = [
         "public",
-        "public_overrides",
+        "thread_public_overrides",
     ],
     target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
 )
@@ -138,11 +138,11 @@ pw_cc_library(
     name = "yield_headers",
     hdrs = [
         "public/pw_thread_stl/yield_inline.h",
-        "public_overrides/pw_thread_backend/yield_inline.h",
+        "yield_public_overrides/pw_thread_backend/yield_inline.h",
     ],
     includes = [
         "public",
-        "public_overrides",
+        "yield_public_overrides",
     ],
     target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
 )

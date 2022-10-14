@@ -34,8 +34,8 @@ config("public_include_path") {
   visibility = [ ":*" ]
 }
 
-config("backend_config") {
-  include_dirs = [ "public_overrides" ]
+config("id_public_overrides") {
+  include_dirs = [ "id_public_overrides" ]
   visibility = [ ":*" ]
 }
 
@@ -52,7 +52,7 @@ pw_source_set("config") {
 pw_source_set("id") {
   public_configs = [
     ":public_include_path",
-    ":backend_config",
+    ":id_public_overrides",
   ]
   public_deps = [
     "$dir_pw_assert",
@@ -60,10 +60,10 @@ pw_source_set("id") {
     "$dir_pw_third_party/embos",
   ]
   public = [
+    "id_public_overrides/pw_thread_backend/id_inline.h",
+    "id_public_overrides/pw_thread_backend/id_native.h",
     "public/pw_thread_embos/id_inline.h",
     "public/pw_thread_embos/id_native.h",
-    "public_overrides/pw_thread_backend/id_inline.h",
-    "public_overrides/pw_thread_backend/id_native.h",
   ]
   deps = [ "$dir_pw_thread:id.facade" ]
 }
@@ -78,15 +78,20 @@ pw_build_assert("check_system_clock_backend") {
 }
 
 if (pw_chrono_SYSTEM_CLOCK_BACKEND != "" && pw_thread_SLEEP_BACKEND != "") {
+  config("sleep_public_overrides") {
+    include_dirs = [ "sleep_public_overrides" ]
+    visibility = [ ":*" ]
+  }
+
   # This target provides the backend for pw::thread::sleep_{for,until}.
   pw_source_set("sleep") {
     public_configs = [
       ":public_include_path",
-      ":backend_config",
+      ":sleep_public_overrides",
     ]
     public = [
       "public/pw_thread_embos/sleep_inline.h",
-      "public_overrides/pw_thread_backend/sleep_inline.h",
+      "sleep_public_overrides/pw_thread_backend/sleep_inline.h",
     ]
     public_deps = [ "$dir_pw_chrono:system_clock" ]
     sources = [ "sleep.cc" ]
@@ -101,12 +106,17 @@ if (pw_chrono_SYSTEM_CLOCK_BACKEND != "" && pw_thread_SLEEP_BACKEND != "") {
   }
 }
 
+config("thread_public_overrides") {
+  include_dirs = [ "thread_public_overrides" ]
+  visibility = [ ":*" ]
+}
+
 # This target provides the backend for pw::thread::Thread and the headers needed
 # for thread creation.
 pw_source_set("thread") {
   public_configs = [
     ":public_include_path",
-    ":backend_config",
+    ":thread_public_overrides",
   ]
   public_deps = [
     ":config",
@@ -122,22 +132,27 @@ pw_source_set("thread") {
     "public/pw_thread_embos/options.h",
     "public/pw_thread_embos/thread_inline.h",
     "public/pw_thread_embos/thread_native.h",
-    "public_overrides/pw_thread_backend/thread_inline.h",
-    "public_overrides/pw_thread_backend/thread_native.h",
+    "thread_public_overrides/pw_thread_backend/thread_inline.h",
+    "thread_public_overrides/pw_thread_backend/thread_native.h",
   ]
   allow_circular_includes_from = [ "$dir_pw_thread:thread.facade" ]
   sources = [ "thread.cc" ]
+}
+
+config("yield_public_overrides") {
+  include_dirs = [ "yield_public_overrides" ]
+  visibility = [ ":*" ]
 }
 
 # This target provides the backend for pw::thread::yield.
 pw_source_set("yield") {
   public_configs = [
     ":public_include_path",
-    ":backend_config",
+    ":yield_public_overrides",
   ]
   public = [
     "public/pw_thread_embos/yield_inline.h",
-    "public_overrides/pw_thread_backend/yield_inline.h",
+    "yield_public_overrides/pw_thread_backend/yield_inline.h",
   ]
   public_deps = [
     "$dir_pw_assert",

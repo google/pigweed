@@ -37,11 +37,6 @@ config("public_include_path") {
   visibility = [ ":*" ]
 }
 
-config("backend_config") {
-  include_dirs = [ "public_overrides" ]
-  visibility = [ ":*" ]
-}
-
 pw_source_set("config") {
   public = [ "public/pw_thread_freertos/config.h" ]
   public_configs = [ ":public_include_path" ]
@@ -51,11 +46,16 @@ pw_source_set("config") {
   ]
 }
 
+config("id_public_overrides") {
+  include_dirs = [ "id_public_overrides" ]
+  visibility = [ ":*" ]
+}
+
 # This target provides the backend for pw::thread::Id & pw::this_thread::get_id.
 pw_source_set("id") {
   public_configs = [
     ":public_include_path",
-    ":backend_config",
+    ":id_public_overrides",
   ]
   public_deps = [
     "$dir_pw_assert",
@@ -63,10 +63,10 @@ pw_source_set("id") {
     "$dir_pw_third_party/freertos",
   ]
   public = [
+    "id_public_overrides/pw_thread_backend/id_inline.h",
+    "id_public_overrides/pw_thread_backend/id_native.h",
     "public/pw_thread_freertos/id_inline.h",
     "public/pw_thread_freertos/id_native.h",
-    "public_overrides/pw_thread_backend/id_inline.h",
-    "public_overrides/pw_thread_backend/id_native.h",
   ]
   deps = [ "$dir_pw_thread:id.facade" ]
 }
@@ -82,15 +82,20 @@ pw_build_assert("check_system_clock_backend") {
   visibility = [ ":*" ]
 }
 
+config("sleep_public_overrides") {
+  include_dirs = [ "sleep_public_overrides" ]
+  visibility = [ ":*" ]
+}
+
 # This target provides the backend for pw::this_thread::sleep_{for,until}.
 pw_source_set("sleep") {
   public_configs = [
     ":public_include_path",
-    ":backend_config",
+    ":sleep_public_overrides",
   ]
   public = [
     "public/pw_thread_freertos/sleep_inline.h",
-    "public_overrides/pw_thread_backend/sleep_inline.h",
+    "sleep_public_overrides/pw_thread_backend/sleep_inline.h",
   ]
   public_deps = [ "$dir_pw_chrono:system_clock" ]
   sources = [ "sleep.cc" ]
@@ -104,12 +109,17 @@ pw_source_set("sleep") {
   ]
 }
 
+config("thread_public_overrides") {
+  include_dirs = [ "thread_public_overrides" ]
+  visibility = [ ":*" ]
+}
+
 # This target provides the backend for pw::thread::Thread and the headers needed
 # for thread creation.
 pw_source_set("thread") {
   public_configs = [
     ":public_include_path",
-    ":backend_config",
+    ":thread_public_overrides",
   ]
   public_deps = [
     ":config",
@@ -125,8 +135,8 @@ pw_source_set("thread") {
     "public/pw_thread_freertos/options.h",
     "public/pw_thread_freertos/thread_inline.h",
     "public/pw_thread_freertos/thread_native.h",
-    "public_overrides/pw_thread_backend/thread_inline.h",
-    "public_overrides/pw_thread_backend/thread_native.h",
+    "thread_public_overrides/pw_thread_backend/thread_inline.h",
+    "thread_public_overrides/pw_thread_backend/thread_native.h",
   ]
   allow_circular_includes_from = [ "$dir_pw_thread:thread.facade" ]
   sources = [ "thread.cc" ]
@@ -135,7 +145,7 @@ pw_source_set("thread") {
 # This target provides the backend for pw::thread::thread_iteration.
 if (pw_thread_freertos_FREERTOS_TSKTCB_BACKEND != "") {
   pw_source_set("thread_iteration") {
-    public_configs = [ ":backend_config" ]
+    public_configs = [ ":thread_public_overrides" ]
     deps = [
       ":freertos_tsktcb",
       "$dir_pw_third_party/freertos",
@@ -153,15 +163,20 @@ if (pw_thread_freertos_FREERTOS_TSKTCB_BACKEND != "") {
   }
 }
 
+config("yield_public_overrides") {
+  include_dirs = [ "yield_public_overrides" ]
+  visibility = [ ":*" ]
+}
+
 # This target provides the backend for pw::this_thread::yield.
 pw_source_set("yield") {
   public_configs = [
     ":public_include_path",
-    ":backend_config",
+    ":yield_public_overrides",
   ]
   public = [
     "public/pw_thread_freertos/yield_inline.h",
-    "public_overrides/pw_thread_backend/yield_inline.h",
+    "yield_public_overrides/pw_thread_backend/yield_inline.h",
   ]
   public_deps = [
     "$dir_pw_assert",

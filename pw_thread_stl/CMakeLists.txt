@@ -21,11 +21,11 @@ pw_add_module_library(pw_thread_stl.id
   HEADERS
     public/pw_thread_stl/id_inline.h
     public/pw_thread_stl/id_native.h
-    public_overrides/pw_thread_backend/id_inline.h
-    public_overrides/pw_thread_backend/id_native.h
+    id_public_overrides/pw_thread_backend/id_inline.h
+    id_public_overrides/pw_thread_backend/id_native.h
   PUBLIC_INCLUDES
     public
-    public_overrides
+    id_public_overrides
 )
 
 # This target provides the backend for pw::thread::Thread with joining
@@ -37,11 +37,11 @@ pw_add_module_library(pw_thread_stl.thread
     public/pw_thread_stl/options.h
     public/pw_thread_stl/thread_inline.h
     public/pw_thread_stl/thread_native.h
-    public_overrides/pw_thread_backend/thread_inline.h
-    public_overrides/pw_thread_backend/thread_native.h
+    thread_public_overrides/pw_thread_backend/thread_inline.h
+    thread_public_overrides/pw_thread_backend/thread_native.h
   PUBLIC_INCLUDES
     public
-    public_overrides
+    thread_public_overrides
 )
 
 
@@ -51,10 +51,10 @@ pw_add_module_library(pw_thread_stl.sleep
     pw_thread.sleep
   HEADERS
     public/pw_thread_stl/sleep_inline.h
-    public_overrides/pw_thread_backend/sleep_inline.h
+    sleep_public_overrides/pw_thread_backend/sleep_inline.h
   PUBLIC_INCLUDES
     public
-    public_overrides
+    sleep_public_overrides
   PUBLIC_DEPS
     pw_chrono.system_clock
 )
@@ -65,10 +65,10 @@ pw_add_module_library(pw_thread_stl.yield
     pw_thread.yield
   HEADERS
     public/pw_thread_stl/yield_inline.h
-    public_overrides/pw_thread_backend/yield_inline.h
+    yield_public_overrides/pw_thread_backend/yield_inline.h
   PUBLIC_INCLUDES
     public
-    public_overrides
+    yield_public_overrides
 )
 
 pw_add_module_library(pw_thread_stl.test_threads

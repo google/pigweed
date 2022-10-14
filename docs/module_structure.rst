@@ -386,6 +386,28 @@ The GN build system provides the
 :ref:`pw_facade template<module-pw_build-facade>` as a convenient way to declare
 facades.
 
+Multiple Facades
+~~~~~~~~~~~~~~~~
+A module may contain multiple facades. Each facade's public override headers
+must be contained in separate folders in the backend implementation, so that
+it's possible to use multiple backends for a module.
+
+.. code-block::
+
+  # pw_foo contains 2 facades, foo and bar
+  pw_foo/...
+    # Public headers
+    # public/pw_foo/foo.h #includes pw_foo_backend/foo.h
+    # public/pw_foo/bar.h #includes pw_foo_backend/bar.h
+    public/pw_foo/foo.h
+    public/pw_foo/bar.h
+
+  pw_foo_backend/...
+
+    # Public override headers for facade1 and facade2 go in separate folders
+    foo_public_overrides/pw_foo_backend/foo.h
+    bar_public_overrides/pw_foo_backend/bar.h
+
 Documentation
 -------------
 Documentation should go in the root module folder, typically in the

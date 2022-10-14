@@ -25,14 +25,14 @@ licenses(["notice"])
 pw_cc_library(
     name = "id_headers",
     hdrs = [
+        "id_public_overrides/pw_thread_backend/id_inline.h",
+        "id_public_overrides/pw_thread_backend/id_native.h",
         "public/pw_thread_threadx/id_inline.h",
         "public/pw_thread_threadx/id_native.h",
-        "public_overrides/pw_thread_backend/id_inline.h",
-        "public_overrides/pw_thread_backend/id_native.h",
     ],
     includes = [
+        "id_public_overrides",
         "public",
-        "public_overrides",
     ],
 )
 
@@ -55,12 +55,12 @@ pw_cc_library(
         "public/pw_thread_threadx/options.h",
         "public/pw_thread_threadx/thread_inline.h",
         "public/pw_thread_threadx/thread_native.h",
-        "public_overrides/pw_thread_backend/thread_inline.h",
-        "public_overrides/pw_thread_backend/thread_native.h",
+        "thread_public_overrides/pw_thread_backend/thread_inline.h",
+        "thread_public_overrides/pw_thread_backend/thread_native.h",
     ],
     includes = [
         "public",
-        "public_overrides",
+        "thread_public_overrides",
     ],
     deps = [
         ":id",
@@ -111,11 +111,11 @@ pw_cc_library(
     name = "sleep_headers",
     hdrs = [
         "public/pw_thread_threadx/sleep_inline.h",
-        "public_overrides/pw_thread_backend/sleep_inline.h",
+        "sleep_public_overrides/pw_thread_backend/sleep_inline.h",
     ],
     includes = [
         "public",
-        "public_overrides",
+        "sleep_public_overrides",
     ],
     deps = [
         "//pw_chrono:system_clock",
@@ -142,11 +142,11 @@ pw_cc_library(
     name = "yield_headers",
     hdrs = [
         "public/pw_thread_threadx/yield_inline.h",
-        "public_overrides/pw_thread_backend/yield_inline.h",
+        "yield_public_overrides/pw_thread_backend/yield_inline.h",
     ],
     includes = [
         "public",
-        "public_overrides",
+        "yield_public_overrides",
     ],
     # TODO(b/234876414): This should depend on ThreadX but our third parties
     # currently do not have Bazel support.
