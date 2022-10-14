@@ -16,7 +16,7 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
  public:
   explicit LegacyLowEnergyAdvertiser(fxl::WeakPtr<Transport> hci)
       : LowEnergyAdvertiser(std::move(hci)) {}
-  ~LegacyLowEnergyAdvertiser() override { StopAdvertising(); }
+  ~LegacyLowEnergyAdvertiser() override;
 
   // LowEnergyAdvertiser overrides:
   size_t MaxAdvertisements() const override { return 1; }

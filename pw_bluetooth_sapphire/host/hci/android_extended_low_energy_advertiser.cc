@@ -31,7 +31,14 @@ AndroidExtendedLowEnergyAdvertiser::AndroidExtendedLowEnergyAdvertiser(
 }
 
 AndroidExtendedLowEnergyAdvertiser::~AndroidExtendedLowEnergyAdvertiser() {
+  // This object is probably being destroyed because the stack is shutting down, in which case the
+  // HCI layer may have already been destroyed.
+  if (!hci() || !hci()->command_channel()) {
+    return;
+  }
   hci()->command_channel()->RemoveEventHandler(state_changed_event_handler_id_);
+  // TODO(fxbug.dev/112157): This will only cancel one advertisement, after which the
+  // SequentialCommandRunner will have been destroyed and no further commands will be sent.
   StopAdvertising();
 }
 

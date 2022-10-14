@@ -17,6 +17,15 @@
 
 namespace bt::hci {
 
+LegacyLowEnergyAdvertiser::~LegacyLowEnergyAdvertiser() {
+  // This object is probably being destroyed because the stack is shutting down, in which case the
+  // HCI layer may have already been destroyed.
+  if (!hci() || !hci()->command_channel()) {
+    return;
+  }
+  StopAdvertising();
+}
+
 std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildEnablePacket(
     const DeviceAddress& address, hci_spec::GenericEnableParam enable) {
   constexpr size_t kPayloadSize = sizeof(hci_spec::LESetAdvertisingEnableCommandParams);

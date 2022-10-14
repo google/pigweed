@@ -102,6 +102,8 @@ class LowEnergyAdvertiserTest : public TestingBase {
 
   LowEnergyAdvertiser* advertiser() const { return advertiser_.get(); }
 
+  void DestroyAdvertiser() { advertiser_.reset(); }
+
   ResultFunction<> MakeExpectSuccessCallback() {
     return [this](Result<> status) {
       last_status_ = status;
@@ -782,6 +784,11 @@ TYPED_TEST(LowEnergyAdvertiserTest, ScanResponseTooLongWithTxPower) {
   auto status = this->GetLastStatus();
   ASSERT_TRUE(status);
   EXPECT_EQ(ToResult(HostError::kScanResponseTooLong), *status);
+}
+
+TYPED_TEST(LowEnergyAdvertiserTest, DestroyingTransportBeforeAdvertiserDoesNotCrash) {
+  this->DeleteTransport();
+  this->DestroyAdvertiser();
 }
 
 }  // namespace
