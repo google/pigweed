@@ -30,6 +30,7 @@ import("$dir_pw_build/python.gni")
 #
 # Args:
 #   action_args: Forwarded to the action.
+#   action_outputs: Forwarded to the action.
 #   target_type: The type of underlying target that implements the HIL
 #     test. Currently "python" is the only supported value, producing a
 #     "py_python_script". Support for other languages will be added in the
@@ -42,6 +43,10 @@ template("pw_hil_test") {
   if (defined(invoker.action_args)) {
     _args += invoker.action_args
   }
+  _outputs = []
+  if (defined(invoker.action_outputs)) {
+    _outputs += invoker.action_outputs
+  }
 
   if (invoker.target_type == "python") {
     pw_python_script(target_name) {
@@ -49,6 +54,7 @@ template("pw_hil_test") {
         args = _args
         pool = "$dir_pw_build/pool:pw_hil_test($default_toolchain)"
         stamp = true
+        outputs = _outputs
 
         # We want the test stdout to be saved.
         capture_output = false
