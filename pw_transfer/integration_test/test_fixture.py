@@ -16,6 +16,7 @@
 
 import argparse
 import asyncio
+from dataclasses import dataclass
 import logging
 import pathlib
 from pathlib import Path
@@ -176,7 +177,8 @@ class TransferIntegrationTestHarness:
     # "SERVER OUT:".
     _PREFIX = "HARNESS:   "
 
-    class Config(NamedTuple):
+    @dataclass
+    class Config:
         server_port: int = 3300
         client_port: int = 3301
         java_client_binary: Optional[Path] = None
