@@ -34,6 +34,15 @@ TEST(Assert, DebugAssertTrue) {
   }
 }
 
+TEST(Assert, AssertOkEvaluatesExpressionAndDoesNotCrashOnOk) {
+  int evaluated = 1;
+  PW_ASSERT_OK(([&]() {
+    ++evaluated;
+    return pw::OkStatus();
+  })());
+  EXPECT_EQ(evaluated, 2);
+}
+
 // Unfortunately, we don't have the infrastructure to test failure handling
 // automatically, since the harness crashes in the process of running this
 // test. The unsatisfying alternative is to test the functionality manually,

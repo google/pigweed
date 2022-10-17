@@ -458,6 +458,13 @@ PW_ASSERT API Reference
   Same as ``PW_ASSERT()``, except that if ``PW_ASSERT_ENABLE_DEBUG == 0``, the
   assert is disabled and condition is not evaluated.
 
+.. cpp:function:: PW_ASSERT_OK(expression)
+
+  A header- and constexpr-safe version of ``PW_CHECK_OK()``.
+
+  If the given expression is not `OK`, crash the system. Otherwise, do nothing.
+  The condition is guarenteed to be evaluated.
+
 .. attention::
 
   Unlike the ``PW_CHECK_*()`` suite of macros, ``PW_ASSERT()`` and
