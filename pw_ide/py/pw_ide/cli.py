@@ -20,7 +20,10 @@ from pathlib import Path
 import re
 from typing import Any, Callable, Dict, List, Optional, Protocol
 
-from pw_ide.commands import cmd_cpp, cmd_python, cmd_reset, cmd_setup
+from pw_ide.commands import (cmd_clear, cmd_cpp, cmd_python, cmd_reset,
+                             cmd_setup, cmd_vscode)
+
+from pw_ide.vscode import VscSettingsType
 
 
 def _get_docstring(obj: Any) -> Optional[str]:
@@ -245,7 +248,12 @@ def _build_argument_parser() -> argparse.ArgumentParser:
     add_parser = _parser_adder(subcommand_parser)
 
     add_parser(cmd_setup, 'setup')
-    add_parser(cmd_reset, 'reset')
+
+    parser_reset = add_parser(cmd_reset, 'reset')
+    parser_reset.add_argument('--hard',
+                              action='store_true',
+                              help='completely remove the .pw_ide working '
+                              'dir and supported editor files')
 
     parser_cpp = add_parser(cmd_cpp, 'cpp')
     parser_cpp.add_argument('-l',
@@ -297,6 +305,40 @@ def _build_argument_parser() -> argparse.ArgumentParser:
                                action='store_true',
                                help='print the path to the Pigweed Python '
                                'virtual environment')
+
+    parser_vscode = add_parser(cmd_vscode, 'vscode')
+    parser_vscode.add_argument('--include',
+                               nargs='+',
+                               type=VscSettingsType,
+                               metavar='SETTINGS_TYPE',
+                               help='update only these settings types')
+    parser_vscode.add_argument('--exclude',
+                               nargs='+',
+                               type=VscSettingsType,
+                               metavar='SETTINGS_TYPE',
+                               help='do not update these settings types')
+    parser_vscode.add_argument('--no-override',
+                               action='store_true',
+                               help='don\'t overwrite existing active '
+                               'settings files')
+
+    parser_clear = add_parser(cmd_clear, 'clear')
+    parser_clear.add_argument('--compdb',
+                              action='store_true',
+                              help='delete all compilation database from '
+                              'the working directory')
+    parser_clear.add_argument('--cache',
+                              action='store_true',
+                              help='delete all compilation database caches '
+                              'from the working directory')
+    parser_clear.add_argument('--editor',
+                              metavar='EDITOR',
+                              help='delete the active settings file for '
+                              'the provided supported editor')
+    parser_clear.add_argument('--editor-backups',
+                              metavar='EDITOR',
+                              help='delete backup settings files for '
+                              'the provided supported editor')
 
     return parser_root
 

@@ -25,10 +25,11 @@ file that overrides both the default and project settings, is not checked into
 source control, and applies only to that checkout of the project. All of these
 files have the same schema, in which these options can be configured:
 
-.. autoproperty:: pw_ide.settings.IdeSettings.working_dir
-.. autoproperty:: pw_ide.settings.IdeSettings.targets
-.. autoproperty:: pw_ide.settings.IdeSettings.setup
-.. autoproperty:: pw_ide.settings.IdeSettings.clangd_additional_query_drivers
+.. autoproperty:: pw_ide.settings.PigweedIdeSettings.working_dir
+.. autoproperty:: pw_ide.settings.PigweedIdeSettings.targets
+.. autoproperty:: pw_ide.settings.PigweedIdeSettings.setup
+.. autoproperty:: pw_ide.settings.PigweedIdeSettings.clangd_additional_query_drivers
+.. autoproperty:: pw_ide.settings.PigweedIdeSettings.editors
 
 C++ Code Intelligence
 ---------------------
@@ -95,7 +96,7 @@ to the virtual environment on your system with:
   pw ide python --venv
 
 Command-Line Interface Reference
-================================
+--------------------------------
 .. argparse::
    :module: pw_ide.cli
    :func: _build_argument_parser
@@ -157,6 +158,21 @@ use the query driver globs to find your compiler and configure ``clangd`` to
 use it.
 
 Selected API Reference
-======================
+^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: pw_ide.cpp
    :members: CppCompileCommand, CppCompilationDatabase, CppCompilationDatabasesMap, CppIdeFeaturesState, path_to_executable, target_is_enabled, ClangdSettings
+
+Automated Support for Code Editors & IDEs
+-----------------------------------------
+``pw_ide`` provides a consistent framework for automatically applying settings
+for code editors, where default settings can be defined within ``pw_ide``,
+which can be overridden by project settings, which in turn can be overridden
+by individual user settings.
+
+Selected API Reference
+^^^^^^^^^^^^^^^^^^^^^^
+.. automodule:: pw_ide.editors
+   :members: EditorSettingsDefinition, EditorSettingsFile, EditorSettingsManager
+
+.. automodule:: pw_ide.vscode
+   :members: VscSettingsType, VscSettingsManager

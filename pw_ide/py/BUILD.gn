@@ -29,15 +29,19 @@ pw_python_package("py") {
     "pw_ide/cli.py",
     "pw_ide/commands.py",
     "pw_ide/cpp.py",
+    "pw_ide/editors.py",
     "pw_ide/exceptions.py",
     "pw_ide/python.py",
     "pw_ide/settings.py",
     "pw_ide/symlinks.py",
+    "pw_ide/vscode.py",
   ]
   tests = [
     "commands_test.py",
     "cpp_test.py",
+    "editors_test.py",
     "test_cases.py",
+    "vscode_test.py",
   ]
   python_deps = [ "$dir_pw_console/py" ]
   pylintrc = "$dir_pigweed/.pylintrc"

@@ -58,7 +58,7 @@ from pw_ide.exceptions import (BadCompDbException, InvalidTargetException,
                                MissingCompDbException,
                                UnresolvablePathException)
 
-from pw_ide.settings import IdeSettings, PW_PIGWEED_CIPD_INSTALL_DIR
+from pw_ide.settings import PigweedIdeSettings, PW_PIGWEED_CIPD_INSTALL_DIR
 from pw_ide.symlinks import set_symlink
 
 _COMPDB_FILE_PREFIX = 'compile_commands'
@@ -132,7 +132,8 @@ def compdb_cache_path_if_exists(working_dir: Path,
         working_dir / compdb_generate_cache_path(_none_to_empty_str(target)))
 
 
-def target_is_enabled(target: Optional[str], settings: IdeSettings) -> bool:
+def target_is_enabled(target: Optional[str],
+                      settings: PigweedIdeSettings) -> bool:
     """Determine if a target is enabled.
 
     By default, all targets are enabled. If specific targets are defined in a
@@ -442,7 +443,7 @@ class CppCompilationDatabase:
 
     def process(
         self,
-        settings: IdeSettings,
+        settings: PigweedIdeSettings,
         *,
         default_path: Optional[Path] = None,
         path_globs: Optional[List[str]] = None,
@@ -473,7 +474,7 @@ class CppCompilationDatabase:
 
 class CppCompilationDatabasesMap:
     """Container for a map of target name to compilation database."""
-    def __init__(self, settings: IdeSettings):
+    def __init__(self, settings: PigweedIdeSettings):
         self.settings = settings
         self._dbs: Dict[str, CppCompilationDatabase] = (
             defaultdict(CppCompilationDatabase))
@@ -518,7 +519,7 @@ class CppIdeFeaturesState:
     - **Valid**: Is both available and enabled.
     - **Current**: The one currently activated target that is exposed to clangd.
     """
-    def __init__(self, settings: IdeSettings) -> None:
+    def __init__(self, settings: PigweedIdeSettings) -> None:
         self.settings = settings
 
         # We filter out Nones below, so we can assume its a str
@@ -667,30 +668,38 @@ def aggregate_compilation_database_targets(
     return list(targets)
 
 
-def delete_compilation_databases(settings: IdeSettings) -> None:
+def delete_compilation_databases(settings: PigweedIdeSettings) -> None:
     """Delete all compilation databases in the working directory.
 
     This leaves cache directories in place.
     """
-    for path in settings.working_dir.iterdir():
-        if path.name.startswith(_COMPDB_FILE_PREFIX):
-            path.unlink()
+    if settings.working_dir.exists():
+        for path in settings.working_dir.iterdir():
+            if path.name.startswith(_COMPDB_FILE_PREFIX):
+                try:
+                    path.unlink()
+                except FileNotFoundError:
+                    pass
 
 
-def delete_compilation_database_caches(settings: IdeSettings) -> None:
+def delete_compilation_database_caches(settings: PigweedIdeSettings) -> None:
     """Delete all compilation database caches in the working directory.
 
     This leaves all compilation databases in place.
     """
-    for path in settings.working_dir.iterdir():
-        if path.name.startswith(_COMPDB_CACHE_DIR_PREFIX):
-            path.unlink()
+    if settings.working_dir.exists():
+        for path in settings.working_dir.iterdir():
+            if path.name.startswith(_COMPDB_CACHE_DIR_PREFIX):
+                try:
+                    path.unlink()
+                except FileNotFoundError:
+                    pass
 
 
 class ClangdSettings:
     """Makes system-specific settings for running ``clangd`` with Pigweed."""
-    def __init__(self, settings: IdeSettings):
-        self.compile_commands_dir: Path = IdeSettings().working_dir
+    def __init__(self, settings: PigweedIdeSettings):
+        self.compile_commands_dir: Path = PigweedIdeSettings().working_dir
         self.clangd_path: Path = Path(
             PW_PIGWEED_CIPD_INSTALL_DIR) / 'bin' / 'clangd'
 

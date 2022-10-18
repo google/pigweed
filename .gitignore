@@ -7,6 +7,11 @@ docs/_build
 
 # Editors
 .pw_ide/
+.vscode/settings.json
+.vscode/tasks.json
+.vscode/extensions.json
+.vscode/pw_user_*.json
+.vscode/*.bak.json
 .idea/
 .ijwb/
 .project

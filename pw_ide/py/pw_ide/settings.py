@@ -13,10 +13,12 @@
 # the License.
 """pw_ide settings."""
 
+import enum
 from inspect import cleandoc
 import os
 from pathlib import Path
-from typing import Any, cast, Dict, List, Optional, Union
+from typing import Any, cast, Dict, List, Literal, Optional, Union
+import yaml
 
 from pw_console.yaml_config_loader_mixin import YamlConfigLoaderMixin
 
@@ -30,8 +32,20 @@ PW_PIGWEED_CIPD_INSTALL_DIR = Path(
 
 PW_ARM_CIPD_INSTALL_DIR = Path(os.path.expandvars('$PW_ARM_CIPD_INSTALL_DIR'))
 
+SupportedEditorName = Literal['vscode']
+
+
+class SupportedEditor(enum.Enum):
+    VSCODE = 'vscode'
+
+
+_DEFAULT_SUPPORTED_EDITORS: Dict[SupportedEditorName, bool] = {
+    'vscode': True,
+}
+
 _DEFAULT_CONFIG = {
     'clangd_additional_query_drivers': [],
+    'editors': _DEFAULT_SUPPORTED_EDITORS,
     'setup': [],
     'targets': [],
     'working_dir': _PW_IDE_DEFAULT_DIR,
@@ -42,7 +56,7 @@ _DEFAULT_PROJECT_USER_FILE = Path('$PW_PROJECT_ROOT/.pw_ide.user.yaml')
 _DEFAULT_USER_FILE = Path('$HOME/.pw_ide.yaml')
 
 
-class IdeSettings(YamlConfigLoaderMixin):
+class PigweedIdeSettings(YamlConfigLoaderMixin):
     """Pigweed IDE features settings storage class."""
     def __init__(
         self,
@@ -126,6 +140,26 @@ class IdeSettings(YamlConfigLoaderMixin):
     def clangd_query_driver_str(self) -> str:
         return ','.join(self.clangd_query_drivers())
 
+    @property
+    def editors(self) -> Dict[str, bool]:
+        """Enable or disable automated support for editors.
+
+        Automatic support for some editors is provided by ``pw_ide``, which is
+        accomplished through generating configuration files in your project
+        directory. All supported editors are enabled by default, but you can
+        disable editors by adding an ``'<editor>': false`` entry.
+        """
+        return self._config.get('editors', _DEFAULT_SUPPORTED_EDITORS)
+
+    def editor_enabled(self, editor: SupportedEditorName) -> bool:
+        """True if the provided editor is enabled in settings.
+
+        This module will integrate the project with all supported editors by
+        default. If the project or user want to disable particular editors,
+        they can do so in the appropriate settings file.
+        """
+        return self._config.get('editors', {}).get(editor, False)
+
 
 def _docstring_set_default(obj: Any,
                            default: Any,
@@ -155,13 +189,18 @@ def _docstring_set_default(obj: Any,
         obj.__doc__ = f'{cleandoc(doc)}\n\n{default}'
 
 
-_docstring_set_default(IdeSettings.working_dir, PW_IDE_DIR_NAME, literal=True)
-_docstring_set_default(IdeSettings.targets,
+_docstring_set_default(PigweedIdeSettings.working_dir,
+                       PW_IDE_DIR_NAME,
+                       literal=True)
+_docstring_set_default(PigweedIdeSettings.targets,
                        _DEFAULT_CONFIG['targets'],
                        literal=True)
-_docstring_set_default(IdeSettings.setup,
+_docstring_set_default(PigweedIdeSettings.setup,
                        _DEFAULT_CONFIG['setup'],
                        literal=True)
-_docstring_set_default(IdeSettings.clangd_additional_query_drivers,
+_docstring_set_default(PigweedIdeSettings.clangd_additional_query_drivers,
                        _DEFAULT_CONFIG['clangd_additional_query_drivers'],
+                       literal=True)
+_docstring_set_default(PigweedIdeSettings.editors,
+                       yaml.dump(_DEFAULT_SUPPORTED_EDITORS),
                        literal=True)

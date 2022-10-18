@@ -19,18 +19,24 @@ import shlex
 import shutil
 import subprocess
 import sys
-from typing import Callable, List, Optional, Tuple, Union
+from typing import cast, Callable, List, Optional, Set, Tuple, Union
 
 from pw_cli.color import colors
 
 from pw_ide.cpp import (ClangdSettings, CppCompilationDatabase,
-                        CppIdeFeaturesState)
+                        CppIdeFeaturesState, delete_compilation_databases,
+                        delete_compilation_database_caches)
 
 from pw_ide.exceptions import (BadCompDbException, InvalidTargetException,
                                MissingCompDbException)
 
 from pw_ide.python import PythonPaths
-from pw_ide.settings import IdeSettings
+
+from pw_ide.settings import (PigweedIdeSettings, SupportedEditor,
+                             SupportedEditorName)
+
+from pw_ide import vscode
+from pw_ide.vscode import VscSettingsManager, VscSettingsType
 
 
 def _no_color(msg: str) -> str:
@@ -155,7 +161,7 @@ class LoggingStatusReporter(StatusReporter):
 
 
 def _make_working_dir(reporter: StatusReporter,
-                      settings: IdeSettings,
+                      settings: PigweedIdeSettings,
                       quiet: bool = False) -> None:
     if not settings.working_dir.exists():
         settings.working_dir.mkdir()
@@ -167,25 +173,103 @@ def _make_working_dir(reporter: StatusReporter,
                         f'{settings.working_dir}')
 
 
-def cmd_reset(reporter: StatusReporter = StatusReporter(),
-              settings: IdeSettings = IdeSettings()) -> None:
+def _report_unrecognized_editor(reporter: StatusReporter, editor: str) -> None:
+    supported_editors = ', '.join(sorted([ed.value for ed in SupportedEditor]))
+    reporter.wrn(f'Unrecognized editor: {editor}')
+    reporter.wrn('This may not be an automatically-supported editor.')
+    reporter.wrn(f'Automatically-supported editors: {supported_editors}')
+
+
+def cmd_clear(
+    compdb: bool,
+    cache: bool,
+    editor: Optional[SupportedEditorName],
+    editor_backups: Optional[SupportedEditorName],
+    silent: bool = False,
+    reporter: StatusReporter = StatusReporter(),
+    pw_ide_settings: PigweedIdeSettings = PigweedIdeSettings()
+) -> None:
+    """Clear components of the IDE features.
+
+    In contrast to the ``reset`` subcommand, ``clear`` allows you to specify
+    components to delete. You will not need this command under normal
+    circumstances.
+    """
+    if compdb:
+        delete_compilation_databases(pw_ide_settings)
+        reporter.wrn('Cleared compilation databases', silent)
+
+    if cache:
+        delete_compilation_database_caches(pw_ide_settings)
+        reporter.wrn('Cleared compilation database caches', silent)
+
+    if editor is not None:
+        try:
+            validated_editor = SupportedEditor(editor)
+        except ValueError:
+            _report_unrecognized_editor(reporter, cast(str, editor))
+            sys.exit(1)
+
+        if validated_editor == SupportedEditor.VSCODE:
+            vsc_settings_manager = VscSettingsManager(pw_ide_settings)
+            vsc_settings_manager.delete_all_active_settings()
+
+        reporter.wrn(f'Cleared active settings for {validated_editor.value}',
+                     silent)
+
+    if editor_backups is not None:
+        try:
+            validated_editor = SupportedEditor(editor_backups)
+        except ValueError:
+            _report_unrecognized_editor(reporter, cast(str, editor))
+            sys.exit(1)
+
+        if validated_editor == SupportedEditor.VSCODE:
+            vsc_settings_manager = VscSettingsManager(pw_ide_settings)
+            vsc_settings_manager.delete_all_backups()
+
+        reporter.wrn(f'Cleared backup settings for {validated_editor.value}',
+                     silent=silent)
+
+
+def cmd_reset(
+    hard: bool = False,
+    reporter: StatusReporter = StatusReporter(),
+    pw_ide_settings: PigweedIdeSettings = PigweedIdeSettings()
+) -> None:
     """Reset IDE settings.
 
-    This will remove your .pw_ide working directory and active settings for
+    This will clear your .pw_ide working directory and active settings for
     supported editors, restoring your repository to a pre-"pw ide setup" state.
-    This does not affect this project's pw_ide and editor settings or your own
-    pw_ide and editor override settings.
+    Any clangd caches in the working directory will not be removed, so that they
+    don't need to be generated again later. All backed up supported editor
+    settings will also be left in place.
+
+    Adding the --hard flag will completely delete the .pw_ide directory and all
+    supported editor backup settings, restoring your repository to a
+    pre-`pw ide setup` state.
+
+    This command does not affect this project's pw_ide and editor settings or
+    your own pw_ide and editor override settings.
     """
-    try:
-        shutil.rmtree(settings.working_dir)
-    except FileNotFoundError:
-        pass
+    delete_compilation_databases(pw_ide_settings)
+    vsc_settings_manager = VscSettingsManager(pw_ide_settings)
+    vsc_settings_manager.delete_all_active_settings()
+
+    if hard:
+        try:
+            shutil.rmtree(pw_ide_settings.working_dir)
+        except FileNotFoundError:
+            pass
+
+        vsc_settings_manager.delete_all_backups()
 
     reporter.wrn('Pigweed IDE settings were reset!')
 
 
 def cmd_setup(reporter: StatusReporter = StatusReporter(),
-              settings: IdeSettings = IdeSettings()) -> None:
+              pw_ide_settings: PigweedIdeSettings = PigweedIdeSettings()
+              ) -> None:
     """Set up or update your Pigweed project IDE features.
 
     This will automatically set up your development environment with all the
@@ -199,10 +283,116 @@ def cmd_setup(reporter: StatusReporter = StatusReporter(),
     your downstream project), you can re-run this command to set up the new
     features. It will not overwrite or break any of your existing configuration.
     """
-    _make_working_dir(reporter, settings)
+    _make_working_dir(reporter, pw_ide_settings)
 
-    for command in settings.setup:
+    if pw_ide_settings.editor_enabled('vscode'):
+        cmd_vscode(no_override=True)
+
+    for command in pw_ide_settings.setup:
         subprocess.run(shlex.split(command))
+
+
+def cmd_vscode(
+    include: Optional[List[VscSettingsType]] = None,
+    exclude: Optional[List[VscSettingsType]] = None,
+    no_override: bool = False,
+    reporter: StatusReporter = StatusReporter(),
+    pw_ide_settings: PigweedIdeSettings = PigweedIdeSettings()
+) -> None:
+    """Configure support for Visual Studio Code.
+
+    This will replace your current Visual Studio Code (VSC) settings for this
+    project (in ``.vscode/settings.json``, etc.) with the following sets of
+    settings, in order:
+
+    - The Pigweed default settings
+    - Your project's settings, if any (in ``.vscode/pw_project_settings.json``)
+    - Your personal settings, if any (in ``.vscode/pw_user_settings.json``)
+
+    In other words, settings files lower on the list can override settings
+    defined by those higher on the list. Settings defined in the sources above
+    are not active in VSC until they are merged and output to the current
+    settings file by running:
+
+    .. code-block:: bash
+
+       pw ide vscode
+
+    Refer to the Visual Studio Code documentation for more information about
+    these settings: https://code.visualstudio.com/docs/getstarted/settings
+
+    This command also manages VSC tasks (``.vscode/tasks.json``) and extensions
+    (``.vscode/extensions.json``). You can explicitly control which of these
+    settings types ("settings", "tasks", and "extensions") is modified by
+    this command by using the ``--include`` or ``--exclude`` options.
+
+    Your current VSC settings will never change unless you run ``pw ide``
+    commands. Since the current VSC settings are an artifact built from the
+    three settings files described above, you should avoid manually editing
+    that file; it will be replaced the next time you run ``pw ide vscode``. A
+    backup of your previous settings file will be made, and you can diff it
+    against the new file to see what changed.
+
+    These commands will never modify your VSC user settings, which are
+    stored outside of the project repository and apply globally to all VSC
+    instances.
+
+    The settings files are system-specific and shouldn't be checked into the
+    repository, except for the project settings (those with ``pw_project_``),
+    which can be used to define consistent settings for everyone working on the
+    project.
+
+    Note that support for VSC can be disabled at the project level or the user
+    level by adding the following to .pw_ide.yaml or .pw_ide.user.yaml
+    respectively:
+
+    .. code-block:: yaml
+
+        editors:
+          vscode: false
+
+    Likewise, it can be enabled by setting that value to true. It is enabled by
+    default.
+    """
+    if not pw_ide_settings.editor_enabled('vscode'):
+        reporter.wrn('Visual Studio Code support is disabled in settings!')
+        sys.exit(1)
+
+    if not vscode.DEFAULT_SETTINGS_PATH.exists():
+        vscode.DEFAULT_SETTINGS_PATH.mkdir()
+
+    vsc_manager = VscSettingsManager(pw_ide_settings)
+
+    if include is None:
+        include_set = set(VscSettingsType.all())
+    else:
+        include_set = set(include)
+
+    if exclude is None:
+        exclude_set: Set[VscSettingsType] = set()
+    else:
+        exclude_set = set(exclude)
+
+    types_to_update = cast(List[VscSettingsType],
+                           tuple(include_set - exclude_set))
+
+    for settings_type in types_to_update:
+        active_settings_existed = vsc_manager.active(
+            settings_type).is_present()
+
+        if no_override and active_settings_existed:
+            reporter.ok(f'Visual Studio Code active {settings_type.value} '
+                        'already present; will not overwrite')
+
+        else:
+            with vsc_manager.active(settings_type).modify() as active_settings:
+                vsc_manager.default(settings_type).sync_to(active_settings)
+                vsc_manager.project(settings_type).sync_to(active_settings)
+                vsc_manager.user(settings_type).sync_to(active_settings)
+
+            verb = 'Updated' if active_settings_existed else 'Created'
+            reporter.new(f'{verb} Visual Studio Code active '
+                         f'{settings_type.value}')
 
 
 def cmd_cpp(
@@ -214,7 +404,7 @@ def cmd_cpp(
         clangd_command: bool = False,
         clangd_command_system: Optional[str] = None,
         reporter: StatusReporter = StatusReporter(),
-        settings: IdeSettings = IdeSettings(),
+        pw_ide_settings: PigweedIdeSettings = PigweedIdeSettings(),
 ) -> None:
     """Configure C/C++ code intelligence support.
 
@@ -290,29 +480,29 @@ def cmd_cpp(
     # If true, no arguments were provided and we should do the default
     # behavior.
     default = True
-    _make_working_dir(reporter, settings, quiet=True)
+    _make_working_dir(reporter, pw_ide_settings, quiet=True)
 
     # Order of operations matters here. It should be possible to process a
     # compilation database then set successfully set the target in a single
     # command.
     if compdb_file_path is not None:
         default = False
-        prev_targets = len(CppIdeFeaturesState(settings))
+        prev_targets = len(CppIdeFeaturesState(pw_ide_settings))
 
         try:
             CppCompilationDatabase\
                 .load(compdb_file_path)\
                 .process(
-                    settings=settings,
-                    path_globs=settings.clangd_query_drivers(),
+                    settings=pw_ide_settings,
+                    path_globs=pw_ide_settings.clangd_query_drivers(),
                 ).write()
 
-            total_targets = len(CppIdeFeaturesState(settings))
+            total_targets = len(CppIdeFeaturesState(pw_ide_settings))
             new_targets = total_targets - prev_targets
 
             reporter.new([
                 f'Processed {str(compdb_file_path)} '
-                f'to {settings.working_dir}',
+                f'to {pw_ide_settings.working_dir}',
                 f'{total_targets} targets are now available '
                 f'({new_targets} are new)'
             ])
@@ -330,12 +520,13 @@ def cmd_cpp(
         # Always set the target if it's not already set, but if it is,
         # respect the --no-override flag.
         should_set_target = (
-            CppIdeFeaturesState(settings).current_target is None
+            CppIdeFeaturesState(pw_ide_settings).current_target is None
             or override_current_target)
 
         if should_set_target:
             try:
-                CppIdeFeaturesState(settings).current_target = target_to_set
+                CppIdeFeaturesState(
+                    pw_ide_settings).current_target = target_to_set
             except InvalidTargetException:
                 reporter.err([
                     f'Invalid target! {target_to_set} not among the '
@@ -355,14 +546,15 @@ def cmd_cpp(
             reporter.new('Set C/C++ language server analysis target to: '
                          f'{target_to_set}')
         else:
-            reporter.ok('Target already is set and will not be overridden: '
-                        f'{CppIdeFeaturesState(settings).current_target}')
+            reporter.ok(
+                'Target already is set and will not be overridden: '
+                f'{CppIdeFeaturesState(pw_ide_settings).current_target}')
 
     if clangd_command:
         default = False
         reporter.info([
             'Command to run clangd with Pigweed paths:',
-            ClangdSettings(settings).command()
+            ClangdSettings(pw_ide_settings).command()
         ])
 
     if clangd_command_system is not None:
@@ -370,7 +562,7 @@ def cmd_cpp(
         reporter.info([
             'Command to run clangd with Pigweed paths for '
             f'{clangd_command_system}:',
-            ClangdSettings(settings).command(clangd_command_system)
+            ClangdSettings(pw_ide_settings).command(clangd_command_system)
         ])
 
     if should_list_targets:
@@ -380,14 +572,15 @@ def cmd_cpp(
         ]
 
         for target in sorted(
-                CppIdeFeaturesState(settings).enabled_available_targets):
+                CppIdeFeaturesState(
+                    pw_ide_settings).enabled_available_targets):
             targets_list_status.append(f'\t{target}')
 
         reporter.info(targets_list_status)
 
     if should_get_target or default:
         reporter.info('Current C/C++ language server analysis target: '
-                      f'{CppIdeFeaturesState(settings).current_target}')
+                      f'{CppIdeFeaturesState(pw_ide_settings).current_target}')
 
 
 def cmd_python(

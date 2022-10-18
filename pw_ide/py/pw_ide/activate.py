@@ -200,27 +200,23 @@ class ShellModifier(ABC):
                    sanitize: bool = False) -> 'ShellModifier':
         """Modify the current shell state per the actions.json file provided."""
         json_file_options = {}
-        try:
-            with config_file_path.open('r') as json_file:
-                json_file_options = json.loads(json_file.read())
-        except (FileNotFoundError, json.JSONDecodeError):
-            sys.stderr.write('Unable to read file: {}\n'
-                             'Please run this in bash or zsh:\n'
-                             '  . ./bootstrap.sh\n'.format(
-                                 config_file_path.as_posix()))
+
+        with config_file_path.open('r') as json_file:
+            json_file_options = json.loads(json_file.read())
 
         root = self.project_root
         home = self.user_home
 
         # Set env vars
-        for var_name, value in json_file_options['set'].items():
+        for var_name, value in json_file_options.get('set', dict()).items():
             if value is not None:
                 value = _sanitize_path(value, root,
                                        home) if sanitize else value
                 self.set_variable(var_name, value)
 
         # Prepend & append env vars
-        for var_name, mode_changes in json_file_options['modify'].items():
+        for var_name, mode_changes in json_file_options.get('modify',
+                                                            dict()).items():
             for mode_name, values in mode_changes.items():
                 if mode_name in ['prepend', 'append']:
                     modify_variable = self.prepend_variable
@@ -362,9 +358,9 @@ def main() -> int:
     config_file_path = args.config_file
 
     if not config_file_path.exists():
-        print(f'File not found! {config_file_path}')
-        print('This must be run from a bootstrapped Pigweed '
-              'project directory.')
+        sys.stderr.write(f'File not found! {config_file_path}')
+        sys.stderr.write('This must be run from a bootstrapped Pigweed '
+                         'project directory.')
         sys.exit(1)
 
     # If we're executing a command in a subprocess, don't modify the current
@@ -375,12 +371,19 @@ def main() -> int:
     shell_modifier = BashShellModifier
 
     # TODO(chadnorvell): if args.shell_mode == 'zsh', 'ksh', 'fish'...
-    modified_env = shell_modifier(env=env,
-                                  env_only=env_only,
-                                  path_var=args.path_var,
-                                  project_root=args.project_root,
-                                  user_home=args.user_home).modify_env(
-                                      config_file_path, args.sanitize)
+    try:
+        modified_env = shell_modifier(env=env,
+                                      env_only=env_only,
+                                      path_var=args.path_var,
+                                      project_root=args.project_root,
+                                      user_home=args.user_home).modify_env(
+                                          config_file_path, args.sanitize)
+    except (FileNotFoundError, json.JSONDecodeError):
+        sys.stderr.write('Unable to read file: {}\n'
+                         'Please run this in bash or zsh:\n'
+                         '  . ./bootstrap.sh\n'.format(str(config_file_path)))
+
+        sys.exit(1)
 
     if args.out_all:
         print(json.dumps(modified_env.env, sort_keys=True, indent=2))

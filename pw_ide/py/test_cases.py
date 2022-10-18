@@ -20,7 +20,7 @@ import tempfile
 from typing import Generator, List, Optional, Tuple, Union
 import unittest
 
-from pw_ide.settings import IdeSettings
+from pw_ide.settings import PigweedIdeSettings
 
 
 class TempDirTestCase(unittest.TestCase):
@@ -150,9 +150,10 @@ class PwIdeTestCase(TempDirTestCase):
     Provides a temp dir for testing file system actions and access to IDE
     settings that wrap the temp dir.
     """
-    def make_ide_settings(self,
-                          working_dir: Optional[Union[str, Path]] = None,
-                          targets: Optional[List[str]] = None) -> IdeSettings:
+    def make_ide_settings(
+            self,
+            working_dir: Optional[Union[str, Path]] = None,
+            targets: Optional[List[str]] = None) -> PigweedIdeSettings:
         """Make settings that wrap provided paths in the temp path."""
 
         if working_dir is not None:
@@ -163,10 +164,10 @@ class PwIdeTestCase(TempDirTestCase):
         if targets is None:
             targets = []
 
-        return IdeSettings(False,
-                           False,
-                           False,
-                           default_config={
-                               'working_dir': str(working_dir_path),
-                               'targets': targets,
-                           })
+        return PigweedIdeSettings(False,
+                                  False,
+                                  False,
+                                  default_config={
+                                      'working_dir': str(working_dir_path),
+                                      'targets': targets,
+                                  })
