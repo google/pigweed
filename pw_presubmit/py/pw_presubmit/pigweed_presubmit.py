@@ -895,18 +895,13 @@ MISC = (
 
 SANITIZERS = (cpp_checks.all_sanitizers(), )
 
-# TODO(b/243380637) Merge into SECURITY.
-CRYPTO = (
+SECURITY = (
     # keep-sorted: start
     gn_crypto_boringssl_build,
     gn_crypto_mbedtls_build,
     gn_crypto_micro_ecc_build,
-    # keep-sorted: end
-)
-
-SECURITY = (
-    CRYPTO,
     gn_software_update_build,
+    # keep-sorted: end
 )
 
 # Avoid running all checks on specific paths.
@@ -968,7 +963,6 @@ FULL = (
 
 PROGRAMS = Programs(
     # keep-sorted: start
-    crypto=CRYPTO,
     full=FULL,
     lintformat=LINTFORMAT,
     misc=MISC,
