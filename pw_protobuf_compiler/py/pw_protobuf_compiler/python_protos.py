@@ -22,8 +22,8 @@ import subprocess
 import shlex
 import tempfile
 from types import ModuleType
-from typing import (Dict, Generic, Iterable, Iterator, List, NamedTuple, Set,
-                    Tuple, TypeVar, Union)
+from typing import (Dict, Generic, Iterable, Iterator, List, NamedTuple,
+                    Optional, Set, Tuple, TypeVar, Union)
 
 # Temporarily set the root logger level to critical while importing yapf.
 # This silences INFO level messages from
@@ -114,7 +114,7 @@ def import_modules(directory: PathOrStr) -> Iterator:
 
 def compile_and_import(proto_files: Iterable[PathOrStr],
                        includes: Iterable[PathOrStr] = (),
-                       output_dir: PathOrStr = None) -> Iterator:
+                       output_dir: Optional[PathOrStr] = None) -> Iterator:
     """Compiles protos and imports their modules; yields the proto modules.
 
     Args:
@@ -138,14 +138,15 @@ def compile_and_import(proto_files: Iterable[PathOrStr],
 
 def compile_and_import_file(proto_file: PathOrStr,
                             includes: Iterable[PathOrStr] = (),
-                            output_dir: PathOrStr = None):
+                            output_dir: Optional[PathOrStr] = None):
     """Compiles and imports the module for a single .proto file."""
     return next(iter(compile_and_import([proto_file], includes, output_dir)))
 
 
-def compile_and_import_strings(contents: Iterable[str],
-                               includes: Iterable[PathOrStr] = (),
-                               output_dir: PathOrStr = None) -> Iterator:
+def compile_and_import_strings(
+        contents: Iterable[str],
+        includes: Iterable[PathOrStr] = (),
+        output_dir: Optional[PathOrStr] = None) -> Iterator:
     """Compiles protos in one or more strings."""
 
     if isinstance(contents, str):
@@ -245,7 +246,7 @@ class Packages(NamedTuple):
 
 
 def as_packages(items: Iterable[Tuple[str, T]],
-                packages: Packages = None) -> Packages:
+                packages: Optional[Packages] = None) -> Packages:
     """Places items in a proto-style package structure navigable by attributes.
 
     Args:
@@ -316,7 +317,7 @@ class Library:
     def from_strings(cls,
                      contents: Iterable[str],
                      includes: Iterable[PathOrStr] = (),
-                     output_dir: PathOrStr = None) -> 'Library':
+                     output_dir: Optional[PathOrStr] = None) -> 'Library':
         """Creates a proto library from protos in the provided strings."""
         return cls(compile_and_import_strings(contents, includes, output_dir))
 
