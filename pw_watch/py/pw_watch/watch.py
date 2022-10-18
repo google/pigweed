@@ -550,6 +550,7 @@ _WATCH_PATTERNS = (
     '*.bloaty',
     '*.c',
     '*.cc',
+    '*.cfg',
     '*.css',
     '*.cpp',
     '*.cmake',
