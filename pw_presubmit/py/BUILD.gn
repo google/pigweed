@@ -46,6 +46,7 @@ pw_python_package("py") {
     "keep_sorted_test.py",
     "ninja_parser_test.py",
     "presubmit_test.py",
+    "todo_check_test.py",
     "tools_test.py",
   ]
   python_deps = [

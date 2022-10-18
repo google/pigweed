@@ -54,7 +54,7 @@ _ENABLE = 'todo-check: enable'
 
 
 def _process_file(ctx: PresubmitContext, todo_pattern: re.Pattern, path: Path):
-    with open(path) as ins:
+    with path.open() as ins:
         _LOG.debug('Evaluating path %s', path)
         enabled = True
         prev = ''
