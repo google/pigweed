@@ -29,7 +29,7 @@ def main() -> NoReturn:
 
     args = arguments.parse_args()
 
-    pw_cli.log.install(level=args.loglevel)
+    pw_cli.log.install(level=args.loglevel, debug_log=args.debug_log)
 
     # Start with the most critical part of the Pigweed command line tool.
     if not args.no_banner:

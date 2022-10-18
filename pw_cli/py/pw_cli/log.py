@@ -83,7 +83,8 @@ def install(level: Union[str, int] = logging.INFO,
             use_color: bool = None,
             hide_timestamp: bool = False,
             log_file: Union[str, Path] = None,
-            logger: Optional[logging.Logger] = None) -> None:
+            logger: Optional[logging.Logger] = None,
+            debug_log: Optional[Union[str, Path]] = None) -> None:
     """Configures the system logger for the default pw command log format.
 
     If you have Python loggers separate from the root logger you can use
@@ -107,9 +108,11 @@ def install(level: Union[str, int] = logging.INFO,
       use_color: When `True` include ANSI escape sequences to colorize log
           messages.
       hide_timestamp: When `True` omit timestamps from the log formatting.
-      log_file: File to save logs into.
+      log_file: File to send logs into instead of the terminal.
       logger: Python Logger instance to install Pigweed formatting into.
           Defaults to the Python root logger: `logging.getLogger()`.
+      debug_log: File to log to from all levels, regardless of chosen log level.
+          Logs will go here in addition to the terminal.
 
     """
     if not logger:
@@ -145,6 +148,12 @@ def install(level: Union[str, int] = logging.INFO,
                        formatter, level, logger)
         # Since we're using a file, filter logs out of the stderr handler.
         _STDERR_HANDLER.setLevel(logging.CRITICAL + 1)
+
+    if debug_log:
+        # Set utf-8 encoding for the log file. Encoding errors may come up on
+        # Windows if the default system encoding is set to cp1250.
+        _setup_handler(logging.FileHandler(debug_log, encoding='utf-8'),
+                       formatter, logging.DEBUG, logger)
 
     if env.PW_EMOJI:
         name_attr = 'emoji'

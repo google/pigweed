@@ -78,6 +78,10 @@ def _parser() -> argparse.ArgumentParser:
         type=argument_types.log_level,
         default=logging.INFO,
         help='Set the log level (debug, info, warning, error, critical)')
+    argparser.add_argument(
+        '--debug-log',
+        help=('Additional log with level set to debug, does not affect '
+              'terminal output'))
     argparser.add_argument('--no-banner',
                            action='store_true',
                            help='Do not print the Pigweed banner')
