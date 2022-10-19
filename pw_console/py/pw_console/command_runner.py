@@ -118,7 +118,7 @@ class CommandRunner:
     def __init__(
             self,
             application: ConsoleApp,
-            window_title: str = None,
+            window_title: Optional[str] = None,
             load_completions: Optional[Callable[[],
                                                 List[Tuple[str,
                                                            Callable]]]] = None,
@@ -298,7 +298,7 @@ class CommandRunner:
 
     def set_completions(
         self,
-        window_title: str = None,
+        window_title: Optional[str] = None,
         load_completions: Optional[Callable[[], List[Tuple[str,
                                                            Callable]]]] = None,
     ) -> None:

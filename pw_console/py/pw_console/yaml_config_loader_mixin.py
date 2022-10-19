@@ -50,9 +50,9 @@ class YamlConfigLoaderMixin:
     def config_init(
         self,
         config_section_title: str,
-        project_file: Union[Path, bool] = None,
-        project_user_file: Union[Path, bool] = None,
-        user_file: Union[Path, bool] = None,
+        project_file: Optional[Union[Path, bool]] = None,
+        project_user_file: Optional[Union[Path, bool]] = None,
+        user_file: Optional[Union[Path, bool]] = None,
         default_config: Optional[Dict[Any, Any]] = None,
         environment_var: Optional[str] = None,
     ) -> None:
