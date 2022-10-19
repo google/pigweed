@@ -23,7 +23,7 @@ in the resulting string with an error message.
 from datetime import datetime
 import re
 import struct
-from typing import Iterable, List, NamedTuple, Match, Sequence, Tuple
+from typing import Iterable, List, NamedTuple, Match, Optional, Sequence, Tuple
 
 
 def zigzag_decode(value: int) -> int:
@@ -293,7 +293,7 @@ class FormattedString(NamedTuple):
         """Arg data decoded successfully and all expected args were found."""
         return all(arg.ok() for arg in self.args) and not self.remaining
 
-    def score(self, date_removed: datetime = None) -> tuple:
+    def score(self, date_removed: Optional[datetime] = None) -> tuple:
         """Returns a key for sorting by how successful a decode was.
 
         Decoded strings are sorted by whether they
