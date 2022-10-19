@@ -857,6 +857,90 @@ def renode_check(ctx: PresubmitContext):
     _LOG.info('%s %s', ctx.root, ctx.output_dir)
 
 
+_EXCLUDE_FROM_TODO_CHECK = (
+    # keep-sorted: start
+    r'.bazelrc$',
+    r'.dockerignore$',
+    r'.gitignore$',
+    r'.pylintrc$',
+    r'\bdocs/build_system.rst$',
+    r'\bpw_allocator/block.cc$',
+    r'\bpw_allocator/freelist_heap.cc$',
+    r'\bpw_allocator/public/pw_allocator/freelist.h$',
+    r'\bpw_assert/assert_facade_test.cc$',
+    r'\bpw_assert_basic/basic_handler.cc$',
+    r'\bpw_assert_basic/public/pw_assert_basic/handler.h$',
+    r'\bpw_blob_store/blob_store.cc$',
+    r'\bpw_blob_store/blob_store_deferred_write_test.cc$',
+    r'\bpw_blob_store/blob_store_test.cc$',
+    r'\bpw_blob_store/public/pw_blob_store/blob_store.h$',
+    r'\bpw_blob_store/public/pw_blob_store/flat_file_system_entry.h$',
+    r'\bpw_build/linker_script.gni$',
+    r'\bpw_build/pigweed.cmake$',
+    r'\bpw_build/py/pw_build/copy_from_cipd.py$',
+    r'\bpw_checksum/size_report/BUILD.bazel$',
+    r'\bpw_chrono_freertos/BUILD.bazel$',
+    r'\bpw_chrono_threadx/BUILD.bazel$',
+    r'\bpw_cpu_exception/basic_handler.cc$',
+    r'\bpw_cpu_exception_cortex_m/entry.cc$',
+    r'\bpw_cpu_exception_cortex_m/exception_entry_test.cc$',
+    r'\bpw_doctor/py/pw_doctor/doctor.py$',
+    r'\bpw_env_setup/py/environment_test.py$',
+    r'\bpw_env_setup/py/pw_env_setup/cipd_setup/update.py$',
+    r'\bpw_env_setup/py/pw_env_setup/virtualenv_setup/install.py$',
+    r'\bpw_env_setup/util.sh$',
+    r'\bpw_file/flat_file_system_test.cc$',
+    r'\bpw_fuzzer/fuzzer.gni$',
+    r'\bpw_fuzzer/oss_fuzz.gni$',
+    r'\bpw_i2c/BUILD.gn$',
+    r'\bpw_i2c/public/pw_i2c/register_device.h$',
+    r'\bpw_kvs/entry_cache.cc$',
+    r'\bpw_kvs/flash_memory.cc$',
+    r'\bpw_kvs/flash_partition_test.cc$',
+    r'\bpw_kvs/key_value_store.cc$',
+    r'\bpw_kvs/key_value_store_fuzz_test.cc$',
+    r'\bpw_kvs/key_value_store_map_test.cc$',
+    r'\bpw_kvs/public/pw_kvs/alignment.h$',
+    r'\bpw_kvs/public/pw_kvs/flash_memory.h$',
+    r'\bpw_kvs/public/pw_kvs/internal/entry_cache.h$',
+    r'\bpw_kvs/public/pw_kvs/internal/key_descriptor.h$',
+    r'\bpw_kvs/public/pw_kvs/internal/sectors.h$',
+    r'\bpw_kvs/sectors.cc$',
+    r'\bpw_kvs/sectors_test.cc$',
+    r'\bpw_log_basic/log_basic.cc$',
+    r'\bpw_metric/metric_service_pwpb.cc$',
+    r'\bpw_module/py/pw_module/check.py$',
+    r'\bpw_package/py/pw_package/packages/chromium_verifier.py$',
+    r'\bpw_presubmit/py/todo_check_test.py$',
+    r'\bpw_protobuf/encoder.cc$',
+    r'\bpw_rpc/docs.rst$',
+    r'\bpw_rpc/py/pw_rpc/codegen.py$',
+    r'\bpw_software_update/bundled_update.proto$',
+    r'\bpw_software_update/bundled_update_service.cc$',
+    r'\bpw_software_update/bundled_update_service_pwpb.cc$',
+    r'\bpw_software_update/public/pw_software_update/bundled_update_.*$',
+    r'\bpw_software_update/tuf.proto$',
+    r'\bpw_stm32cube_build/py/pw_stm32cube_build/gen_file_list.py$',
+    r'\bpw_thread/BUILD.bazel$',
+    r'\bpw_tokenizer/docs.rst$',
+    r'\bpw_toolchain/host_clang/toolchain.cmake$',
+    r'\bpw_toolchain/host_gcc/toolchain.cmake$',
+    r'\bpw_toolchain/py/pw_toolchain/clang_tidy.py$',
+    r'\bpw_transfer/integration_test/proxy.py$',
+    r'\bpw_watch/py/pw_watch/watch.py$',
+    r'\btargets/mimxrt595_evk/BUILD.bazel$',
+    r'\btargets/stm32f429i_disc1/boot.cc$',
+    r'\bthird_party/chromium_verifier/BUILD.gn$',
+    r'\bthird_party/rules_proto_grpc/internal_proto.bzl$',
+    # keep-sorted: end
+)
+
+
+@filter_paths(exclude=_EXCLUDE_FROM_TODO_CHECK)
+def todo_check_with_exceptions(ctx: PresubmitContext):
+    todo_check.create(todo_check.BUGS_OR_USERNAMES)(ctx)
+
+
 #
 # Presubmit check programs
 #
@@ -920,6 +1004,7 @@ _LINTFORMAT = (
     source_is_in_build_files,
     shell_checks.shellcheck if shutil.which('shellcheck') else (),
     keep_sorted.keep_sorted,
+    todo_check_with_exceptions,
 )
 
 LINTFORMAT = (
