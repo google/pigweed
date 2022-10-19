@@ -102,8 +102,8 @@ class Manager:  # pylint: disable=too-many-instance-attributes
 
     def read(self,
              resource_id: int,
-             progress_callback: ProgressCallback = None,
-             protocol_version: ProtocolVersion = None) -> bytes:
+             progress_callback: Optional[ProgressCallback] = None,
+             protocol_version: Optional[ProtocolVersion] = None) -> bytes:
         """Receives ("downloads") data from the server.
 
         Args:
@@ -143,8 +143,8 @@ class Manager:  # pylint: disable=too-many-instance-attributes
     def write(self,
               resource_id: int,
               data: Union[bytes, str],
-              progress_callback: ProgressCallback = None,
-              protocol_version: ProtocolVersion = None) -> None:
+              progress_callback: Optional[ProgressCallback] = None,
+              protocol_version: Optional[ProtocolVersion] = None) -> None:
         """Transmits ("uploads") data to the server.
 
         Args:

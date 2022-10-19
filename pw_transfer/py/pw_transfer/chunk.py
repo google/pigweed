@@ -14,7 +14,7 @@
 """Protocol version-aware chunk message wrapper."""
 
 import enum
-from typing import Any
+from typing import Any, Optional
 
 from pw_status import Status
 
@@ -61,14 +61,14 @@ class Chunk:
                  protocol_version: ProtocolVersion,
                  chunk_type: Any,
                  session_id: int = 0,
-                 resource_id: int = None,
+                 resource_id: Optional[int] = None,
                  offset: int = 0,
                  window_end_offset: int = 0,
                  data: bytes = b'',
-                 remaining_bytes: int = None,
-                 max_chunk_size_bytes: int = None,
-                 min_delay_microseconds: int = None,
-                 status: Status = None):
+                 remaining_bytes: Optional[int] = None,
+                 max_chunk_size_bytes: Optional[int] = None,
+                 min_delay_microseconds: Optional[int] = None,
+                 status: Optional[Status] = None):
         self.protocol_version = protocol_version
         self.type = chunk_type
         self.session_id = session_id

@@ -57,7 +57,7 @@ class _Timer:
         self._callback = callback
         self._task: Optional[asyncio.Task[Any]] = None
 
-    def start(self, timeout_s: float = None) -> None:
+    def start(self, timeout_s: Optional[float] = None) -> None:
         """Starts a new timer.
 
         If a timer is already running, it is stopped and a new timer started.
@@ -125,7 +125,7 @@ class Transfer(abc.ABC):
                  initial_response_timeout_s: float,
                  max_retries: int,
                  protocol_version: ProtocolVersion,
-                 progress_callback: ProgressCallback = None):
+                 progress_callback: Optional[ProgressCallback] = None):
         self.status = Status.OK
         self.done = threading.Event()
 
@@ -384,7 +384,7 @@ class WriteTransfer(Transfer):
         initial_response_timeout_s: float,
         max_retries: int,
         protocol_version: ProtocolVersion,
-        progress_callback: ProgressCallback = None,
+        progress_callback: Optional[ProgressCallback] = None,
     ):
         super().__init__(resource_id, send_chunk, end_transfer,
                          response_timeout_s, initial_response_timeout_s,
@@ -433,7 +433,7 @@ class WriteTransfer(Transfer):
 
     async def _transmit_next_chunk(self,
                                    window_id: int,
-                                   timeout_us: int = None) -> None:
+                                   timeout_us: Optional[int] = None) -> None:
         """Transmits a single data chunk to the server.
 
         If the chunk completes the active window, returns to a WAITING state.
@@ -555,8 +555,8 @@ class ReadTransfer(Transfer):
             protocol_version: ProtocolVersion,
             max_bytes_to_receive: int = 8192,
             max_chunk_size: int = 1024,
-            chunk_delay_us: int = None,
-            progress_callback: ProgressCallback = None):
+            chunk_delay_us: Optional[int] = None,
+            progress_callback: Optional[ProgressCallback] = None):
         super().__init__(resource_id, send_chunk, end_transfer,
                          response_timeout_s, initial_response_timeout_s,
                          max_retries, protocol_version, progress_callback)
