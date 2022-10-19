@@ -19,7 +19,8 @@ from itertools import chain
 import inspect
 import textwrap
 import types
-from typing import Any, Collection, Dict, Iterable, Mapping, NamedTuple
+from typing import (Any, Collection, Dict, Iterable, Mapping, NamedTuple,
+                    Optional)
 
 import pw_status
 from pw_protobuf_compiler import python_protos
@@ -227,7 +228,7 @@ class Context:
 
     def set_target(self,
                    selected_client: object,
-                   channel_id: int = None) -> None:
+                   channel_id: Optional[int] = None) -> None:
         """Sets the default target for commands."""
         # Make sure the variable is one of the client variables.
         name = ''

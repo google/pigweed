@@ -24,7 +24,8 @@ TEMP_DIR_MARKER = '(pw_rpc:CREATE_TEMP_DIR)'
 
 
 def parse_test_server_args(
-        parser: argparse.ArgumentParser = None) -> argparse.Namespace:
+        parser: Optional[argparse.ArgumentParser] = None
+) -> argparse.Namespace:
     """Parses arguments for running a Python-based integration test."""
     if parser is None:
         parser = argparse.ArgumentParser(

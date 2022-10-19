@@ -179,8 +179,8 @@ class ClientImpl(abc.ABC):
     client.
     """
     def __init__(self):
-        self.client: 'Client' = None
-        self.rpcs: PendingRpcs = None
+        self.client: Optional['Client'] = None
+        self.rpcs: Optional[PendingRpcs] = None
 
     @abc.abstractmethod
     def method_client(self, channel: Channel, method: Method) -> Any:
@@ -193,7 +193,7 @@ class ClientImpl(abc.ABC):
                         payload: Any,
                         *,
                         args: tuple = (),
-                        kwargs: dict = None) -> Any:
+                        kwargs: Optional[dict] = None) -> Any:
         """Handles a response from the RPC server.
 
         Args:
@@ -210,7 +210,7 @@ class ClientImpl(abc.ABC):
                           status: Status,
                           *,
                           args: tuple = (),
-                          kwargs: dict = None) -> Any:
+                          kwargs: Optional[dict] = None) -> Any:
         """Handles the successful completion of an RPC.
 
         Args:
@@ -227,7 +227,7 @@ class ClientImpl(abc.ABC):
                      status: Status,
                      *,
                      args: tuple = (),
-                     kwargs: dict = None):
+                     kwargs: Optional[dict] = None):
         """Handles the abnormal termination of an RPC.
 
         args:
@@ -416,7 +416,7 @@ class Client:
         self.response_callback: Optional[Callable[
             [PendingRpc, Any, Optional[Status]], Any]] = None
 
-    def channel(self, channel_id: int = None) -> ChannelClient:
+    def channel(self, channel_id: Optional[int] = None) -> ChannelClient:
         """Returns a ChannelClient, which is used to call RPCs on a channel.
 
         If no channel is provided, the first channel is used.
@@ -513,6 +513,7 @@ class Client:
             self.response_callback(rpc, payload, status)  # pylint: disable=not-callable
 
         try:
+            assert self._impl.rpcs
             context = self._impl.rpcs.get_pending(rpc, status)
         except KeyError:
             _send_client_error(channel_client, packet,

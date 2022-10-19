@@ -156,7 +156,7 @@ class Call:
 
     def _get_responses(self,
                        *,
-                       count: int = None,
+                       count: Optional[int] = None,
                        timeout_s: OptionalTimeout) -> Iterator:
         """Returns an iterator of stream responses.
 
@@ -275,7 +275,7 @@ class ServerStreamingCall(Call):
     def get_responses(
             self,
             *,
-            count: int = None,
+            count: Optional[int] = None,
             timeout_s: OptionalTimeout = UseDefault.VALUE) -> Iterator:
         return self._get_responses(count=count, timeout_s=timeout_s)
 
@@ -292,7 +292,7 @@ class ClientStreamingCall(Call):
     # TODO(hepler): Use / to mark the first arg as positional-only
     #     when when Python 3.7 support is no longer required.
     def send(self,
-             _rpc_request_proto: Message = None,
+             _rpc_request_proto: Optional[Message] = None,
              **request_fields) -> None:
         """Sends client stream request to the server."""
         self._send_client_stream(_rpc_request_proto, request_fields)
@@ -316,7 +316,7 @@ class BidirectionalStreamingCall(Call):
     # TODO(hepler): Use / to mark the first arg as positional-only
     #     when when Python 3.7 support is no longer required.
     def send(self,
-             _rpc_request_proto: Message = None,
+             _rpc_request_proto: Optional[Message] = None,
              **request_fields) -> None:
         """Sends a message to the server in the client stream."""
         self._send_client_stream(_rpc_request_proto, request_fields)
@@ -333,7 +333,7 @@ class BidirectionalStreamingCall(Call):
     def get_responses(
             self,
             *,
-            count: int = None,
+            count: Optional[int] = None,
             timeout_s: OptionalTimeout = UseDefault.VALUE) -> Iterator:
         return self._get_responses(count=count, timeout_s=timeout_s)
 

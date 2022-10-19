@@ -84,7 +84,7 @@ class _CallbackClientImplTestBase(unittest.TestCase):
                           status: Status = Status.OK,
                           payload=b'',
                           *,
-                          ids: Tuple[int, int] = None,
+                          ids: Optional[Tuple[int, int]] = None,
                           process_status=Status.OK) -> None:
         if method:
             assert ids is None
