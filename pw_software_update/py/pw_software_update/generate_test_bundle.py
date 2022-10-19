@@ -16,7 +16,7 @@
 import argparse
 import subprocess
 import sys
-from typing import Dict
+from typing import Dict, Optional
 
 from pw_software_update import dev_sign, keys, metadata, root_metadata
 from pw_software_update.update_bundle_pb2 import Manifest, UpdateBundle
@@ -164,8 +164,9 @@ class Bundle:
             signed_root, private_key_private_pem_bytes(self._root_dev_key))
 
     def generate_prod_signed_root_metadata(
-            self,
-            root_metadata_proto: RootMetadata = None) -> SignedRootMetadata:
+        self,
+        root_metadata_proto: Optional[RootMetadata] = None
+    ) -> SignedRootMetadata:
         """Generates a root metadata signed by the prod key"""
         if not root_metadata_proto:
             root_metadata_proto = self.generate_prod_root_metadata()
@@ -184,9 +185,10 @@ class Bundle:
         return targets
 
     def generate_unsigned_bundle(
-            self,
-            targets_metadata: TargetsMetadata = None,
-            signed_root_metadata: SignedRootMetadata = None) -> UpdateBundle:
+        self,
+        targets_metadata: Optional[TargetsMetadata] = None,
+        signed_root_metadata: Optional[SignedRootMetadata] = None
+    ) -> UpdateBundle:
         """Generate an unsigned (targets metadata) update bundle"""
         bundle = UpdateBundle()
 
@@ -206,9 +208,10 @@ class Bundle:
         return bundle
 
     def generate_dev_signed_bundle(
-            self,
-            targets_metadata_override: TargetsMetadata = None,
-            signed_root_metadata: SignedRootMetadata = None) -> UpdateBundle:
+        self,
+        targets_metadata_override: Optional[TargetsMetadata] = None,
+        signed_root_metadata: Optional[SignedRootMetadata] = None
+    ) -> UpdateBundle:
         """Generate a dev signed update bundle"""
         return dev_sign.sign_update_bundle(
             self.generate_unsigned_bundle(targets_metadata_override,
@@ -216,9 +219,10 @@ class Bundle:
             private_key_private_pem_bytes(self._targets_dev_key))
 
     def generate_prod_signed_bundle(
-            self,
-            targets_metadata_override: TargetsMetadata = None,
-            signed_root_metadata: SignedRootMetadata = None) -> UpdateBundle:
+        self,
+        targets_metadata_override: Optional[TargetsMetadata] = None,
+        signed_root_metadata: Optional[SignedRootMetadata] = None
+    ) -> UpdateBundle:
         """Generate a prod signed update bundle"""
         # The targets metadata in a prod signed bundle can only be verified
         # by a prod signed root. Because it is signed by the prod targets key.

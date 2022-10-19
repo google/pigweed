@@ -79,7 +79,7 @@ def gen_unsigned_update_bundle(
         targets: Dict[Path, str],
         persist: Optional[Path] = None,
         targets_metadata_version: int = metadata.DEFAULT_METADATA_VERSION,
-        root_metadata: SignedRootMetadata = None) -> UpdateBundle:
+        root_metadata: Optional[SignedRootMetadata] = None) -> UpdateBundle:
     """Given a set of targets, generates an unsigned UpdateBundle.
 
     Args:
@@ -186,10 +186,10 @@ def parse_args() -> argparse.Namespace:
 
 def main(targets: Iterable[str],
          out: Path,
-         persist: Path = None,
+         persist: Optional[Path] = None,
          targets_metadata_version: int = metadata.DEFAULT_METADATA_VERSION,
-         targets_metadata_version_file: Path = None,
-         signed_root_metadata: Path = None) -> None:
+         targets_metadata_version_file: Optional[Path] = None,
+         signed_root_metadata: Optional[Path] = None) -> None:
     """Generates an UpdateBundle and serializes it to disk."""
     target_dict = {}
     for target_arg in targets:
