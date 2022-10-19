@@ -51,7 +51,9 @@ class _LabelMap:
     def __init__(self):
         self._label_map = defaultdict(lambda: defaultdict(LabelInfo))
 
-    def remove(self, parent_label: str, child_label: str = None) -> None:
+    def remove(self,
+               parent_label: str,
+               child_label: Optional[str] = None) -> None:
         """Delete entire parent label or the child label."""
         if child_label:
             del self._label_map[parent_label][child_label]

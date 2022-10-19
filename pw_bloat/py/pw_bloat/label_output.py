@@ -89,7 +89,7 @@ class BloatTableOutput:
                  charset: Union[Type[AsciiCharset],
                                 Type[LineCharset]] = AsciiCharset,
                  rst_output: bool = False,
-                 diff_label: str = None):
+                 diff_label: Optional[str] = None):
         self._data_source_map = ds_map
         self._cs = charset
         self._total_size = 0
