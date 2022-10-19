@@ -15,7 +15,7 @@
 """Contains the Python decoder tests and generates C++ decoder tests."""
 
 import queue
-from typing import Iterator, List, NamedTuple, Tuple, Union
+from typing import Iterator, List, NamedTuple, Optional, Tuple, Union
 import unittest
 
 from pw_build.generated_tests import Context, PyTest, TestGenerator, GroupOrTest
@@ -67,7 +67,7 @@ class TestCase(NamedTuple):
     raw_data: bytes
 
 
-def case(data: bytes, frames: list, raw: bytes = None) -> TestCase:
+def case(data: bytes, frames: list, raw: Optional[bytes] = None) -> TestCase:
     """Creates a TestCase, filling in the default value for the raw bytes."""
     if raw is not None:
         return TestCase(data, frames, raw)

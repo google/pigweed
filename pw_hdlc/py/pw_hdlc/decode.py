@@ -196,8 +196,8 @@ class FrameAndNonFrameDecoder:
     def __init__(self,
                  non_frame_data_handler: Callable[[bytes], Any],
                  *,
-                 mtu: int = None,
-                 timeout_s: float = None,
+                 mtu: Optional[int] = None,
+                 timeout_s: Optional[float] = None,
                  handle_shared_flags: bool = True) -> None:
         """Yields valid HDLC frames and passes non-frame data to callback.
 
@@ -235,7 +235,7 @@ class FrameAndNonFrameDecoder:
         with self._lock:
             self._flush_non_frame()
 
-    def _flush_non_frame(self, to_index: int = None):
+    def _flush_non_frame(self, to_index: Optional[int] = None):
         if self._raw_data:
             self._non_frame_data_handler(bytes(self._raw_data[:to_index]))
             del self._raw_data[:to_index]
