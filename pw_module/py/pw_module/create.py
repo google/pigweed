@@ -66,7 +66,7 @@ class _OutputFile:
 
     def indent(
         self,
-        width: int = None,
+        width: Optional[int] = None,
     ) -> '_OutputFile._IndentationContext':
         """Increases the indentation level of the output."""
         return self._IndentationContext(
