@@ -116,6 +116,8 @@ class Context {
         transfer_state_(TransferState::kInactive),
         retries_(0),
         max_retries_(0),
+        lifetime_retries_(0),
+        max_lifetime_retries_(0),
         stream_(nullptr),
         rpc_writer_(nullptr),
         offset_(0),
@@ -364,6 +366,8 @@ class Context {
   TransferState transfer_state_;
   uint8_t retries_;
   uint8_t max_retries_;
+  uint32_t lifetime_retries_;
+  uint32_t max_lifetime_retries_;
 
   // The stream from which to read or to which to write data.
   stream::Stream* stream_;

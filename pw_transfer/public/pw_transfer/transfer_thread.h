@@ -52,7 +52,8 @@ class TransferThread : public thread::ThreadCore {
                            const TransferParameters& max_parameters,
                            Function<void(Status)>&& on_completion,
                            chrono::SystemClock::duration timeout,
-                           uint8_t max_retries) {
+                           uint8_t max_retries,
+                           uint32_t max_lifetime_retries) {
     uint32_t session_id = version == ProtocolVersion::kLegacy
                               ? resource_id
                               : Context::kUnassignedSessionId;
@@ -65,7 +66,8 @@ class TransferThread : public thread::ThreadCore {
                   max_parameters,
                   std::move(on_completion),
                   timeout,
-                  max_retries);
+                  max_retries,
+                  max_lifetime_retries);
   }
 
   void StartServerTransfer(TransferType type,
@@ -75,7 +77,8 @@ class TransferThread : public thread::ThreadCore {
                            ConstByteSpan raw_chunk,
                            const TransferParameters& max_parameters,
                            chrono::SystemClock::duration timeout,
-                           uint8_t max_retries) {
+                           uint8_t max_retries,
+                           uint32_t max_lifetime_retries) {
     StartTransfer(type,
                   version,
                   session_id,
@@ -85,7 +88,8 @@ class TransferThread : public thread::ThreadCore {
                   max_parameters,
                   /*on_completion=*/nullptr,
                   timeout,
-                  max_retries);
+                  max_retries,
+                  max_lifetime_retries);
   }
 
   void ProcessClientChunk(ConstByteSpan chunk) {
@@ -235,7 +239,8 @@ class TransferThread : public thread::ThreadCore {
                      const TransferParameters& max_parameters,
                      Function<void(Status)>&& on_completion,
                      chrono::SystemClock::duration timeout,
-                     uint8_t max_retries);
+                     uint8_t max_retries,
+                     uint32_t max_lifetime_retries);
 
   void ProcessChunk(EventType type, ConstByteSpan chunk);
 

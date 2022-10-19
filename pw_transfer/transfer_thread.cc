@@ -107,7 +107,8 @@ void TransferThread::StartTransfer(TransferType type,
                                    const TransferParameters& max_parameters,
                                    Function<void(Status)>&& on_completion,
                                    chrono::SystemClock::duration timeout,
-                                   uint8_t max_retries) {
+                                   uint8_t max_retries,
+                                   uint32_t max_lifetime_retries) {
   // Block until the last event has been processed.
   next_event_ownership_.acquire();
 
@@ -128,6 +129,7 @@ void TransferThread::StartTransfer(TransferType type,
       .max_parameters = &max_parameters,
       .timeout = timeout,
       .max_retries = max_retries,
+      .max_lifetime_retries = max_lifetime_retries,
       .transfer_thread = this,
       .raw_chunk_data = chunk_buffer_.data(),
       .raw_chunk_size = raw_chunk.size(),

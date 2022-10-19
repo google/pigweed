@@ -52,6 +52,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
                  default_response_timeout_s: float = 2.0,
                  initial_response_timeout_s: float = 4.0,
                  max_retries: int = 3,
+                 max_lifetime_retries: int = 1500,
                  default_protocol_version=ProtocolVersion.LEGACY):
         """Initializes a Manager on top of a TransferService.
 
@@ -60,12 +61,15 @@ class Manager:  # pylint: disable=too-many-instance-attributes
           default_response_timeout_s: max time to wait between receiving packets
           initial_response_timeout_s: timeout for the first packet; may be
               longer to account for transfer handler initialization
-          max_retires: number of times to retry after a timeout
+          max_retires: number of times to retry a single package after a timeout
+          max_lifetime_retires: Cumulative maximum number of times to retry over
+              the course of the transfer before giving up.
         """
         self._service: Any = rpc_transfer_service
         self._default_response_timeout_s = default_response_timeout_s
         self._initial_response_timeout_s = initial_response_timeout_s
         self.max_retries = max_retries
+        self.max_lifetime_retries = max_lifetime_retries
         self._default_protocol_version = default_protocol_version
 
         # Ongoing transfers in the service by resource ID.
@@ -129,6 +133,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
                                 self._default_response_timeout_s,
                                 self._initial_response_timeout_s,
                                 self.max_retries,
+                                self.max_lifetime_retries,
                                 protocol_version,
                                 progress_callback=progress_callback)
         self._start_read_transfer(transfer)
@@ -175,6 +180,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
                                  self._default_response_timeout_s,
                                  self._initial_response_timeout_s,
                                  self.max_retries,
+                                 self.max_lifetime_retries,
                                  protocol_version,
                                  progress_callback=progress_callback)
         self._start_write_transfer(transfer)

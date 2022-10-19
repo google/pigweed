@@ -287,6 +287,37 @@ class TransferManagerTest(unittest.TestCase):
         self.assertTrue(self._sent_chunks[-1].HasField('status'))
         self.assertEqual(self._sent_chunks[-1].status, 0)
 
+    def test_read_transfer_lifetime_retries(self) -> None:
+        """Server doesn't respond several times during the transfer."""
+        manager = pw_transfer.Manager(
+            self._service,
+            default_response_timeout_s=DEFAULT_TIMEOUT_S,
+            max_retries=2**32 - 1,
+            max_lifetime_retries=4)
+
+        self._enqueue_server_responses(
+            _Method.READ,
+            (
+                (),  # Retry 1
+                (),  # Retry 2
+                (
+                    transfer_pb2.Chunk(  # Expected chunk.
+                        transfer_id=43,
+                        offset=0,
+                        data=b'xyz'), ),
+                # Don't send anything else. The maximum lifetime retry count
+                # should be hit.
+            ))
+
+        with self.assertRaises(pw_transfer.Error) as context:
+            manager.read(43)
+
+        self.assertEqual(len(self._sent_chunks), 5)
+
+        exception = context.exception
+        self.assertEqual(exception.resource_id, 43)
+        self.assertEqual(exception.status, Status.DEADLINE_EXCEEDED)
+
     def test_read_transfer_timeout(self) -> None:
         manager = pw_transfer.Manager(
             self._service, default_response_timeout_s=DEFAULT_TIMEOUT_S)

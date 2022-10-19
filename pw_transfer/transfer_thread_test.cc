@@ -112,7 +112,8 @@ TEST_F(TransferThreadTest, AddTransferHandler) {
                                        {},
                                        max_parameters_,
                                        std::chrono::seconds(2),
-                                       0);
+                                       3,
+                                       10);
 
   transfer_thread_.WaitUntilEventIsProcessed();
 
@@ -136,7 +137,8 @@ TEST_F(TransferThreadTest, RemoveTransferHandler) {
                                        {},
                                        max_parameters_,
                                        std::chrono::seconds(2),
-                                       0);
+                                       3,
+                                       10);
 
   transfer_thread_.WaitUntilEventIsProcessed();
 
@@ -172,7 +174,8 @@ TEST_F(TransferThreadTest, ProcessChunk_SendsWindow) {
                 .set_offset(0)),
         max_parameters_,
         std::chrono::seconds(2),
-        0);
+        3,
+        10);
   });
 
   ASSERT_EQ(ctx_.total_responses(), 2u);
@@ -218,7 +221,9 @@ TEST_F(TransferThreadTest, StartTransferExhausted_Server) {
               .set_offset(0)),
       max_parameters_,
       std::chrono::seconds(2),
-      0);
+      3,
+      10);
+  transfer_thread_.WaitUntilEventIsProcessed();
   transfer_thread_.WaitUntilEventIsProcessed();
 
   // First transfer starts correctly.
@@ -241,7 +246,8 @@ TEST_F(TransferThreadTest, StartTransferExhausted_Server) {
               .set_offset(0)),
       max_parameters_,
       std::chrono::seconds(2),
-      0);
+      3,
+      10);
   transfer_thread_.WaitUntilEventIsProcessed();
 
   EXPECT_FALSE(handler4.prepare_read_called);
@@ -275,7 +281,8 @@ TEST_F(TransferThreadTest, StartTransferExhausted_Client) {
       max_parameters_,
       [&status3](Status status) { status3 = status; },
       std::chrono::seconds(2),
-      0);
+      3,
+      10);
   transfer_thread_.WaitUntilEventIsProcessed();
 
   EXPECT_EQ(status3, Status::Unknown());
@@ -291,7 +298,8 @@ TEST_F(TransferThreadTest, StartTransferExhausted_Client) {
       max_parameters_,
       [&status4](Status status) { status4 = status; },
       std::chrono::seconds(2),
-      0);
+      3,
+      10);
   transfer_thread_.WaitUntilEventIsProcessed();
 
   EXPECT_EQ(status3, Status::Unknown());
@@ -316,7 +324,8 @@ TEST_F(TransferThreadTest, VersionTwo_NoHandler) {
                                        {},
                                        max_parameters_,
                                        std::chrono::seconds(2),
-                                       0);
+                                       3,
+                                       10);
 
   transfer_thread_.WaitUntilEventIsProcessed();
 

@@ -42,7 +42,8 @@ void TransferService::HandleChunk(ConstByteSpan message,
                                 message,
                                 max_parameters_,
                                 chunk_timeout_,
-                                max_retries_);
+                                max_retries_,
+                                max_lifetime_retries_);
   } else {
     thread_.ProcessServerChunk(message);
   }

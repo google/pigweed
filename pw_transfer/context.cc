@@ -261,6 +261,8 @@ void Context::Initialize(const NewTransferEvent& new_transfer) {
   transfer_state_ = TransferState::kWaiting;
   retries_ = 0;
   max_retries_ = new_transfer.max_retries;
+  lifetime_retries_ = 0;
+  max_lifetime_retries_ = new_transfer.max_lifetime_retries;
 
   if (desired_protocol_version_ == ProtocolVersion::kLegacy) {
     // In a legacy transfer, there is no protocol negotiation stage.
@@ -943,10 +945,12 @@ void Context::HandleTimeout() {
 }
 
 void Context::Retry() {
-  if (retries_ == max_retries_) {
-    PW_LOG_ERROR("Transfer %u failed to receive a chunk after %u retries.",
-                 static_cast<unsigned>(session_id_),
-                 static_cast<unsigned>(retries_));
+  if (retries_ == max_retries_ || lifetime_retries_ == max_lifetime_retries_) {
+    PW_LOG_ERROR(
+        "Transfer %u failed to receive a chunk after %u retries (lifetime %u).",
+        id_for_log(),
+        static_cast<unsigned>(retries_),
+        static_cast<unsigned>(lifetime_retries_));
     PW_LOG_ERROR("Canceling transfer.");
 
     if (transfer_state_ == TransferState::kTerminating) {
@@ -960,6 +964,7 @@ void Context::Retry() {
   }
 
   ++retries_;
+  ++lifetime_retries_;
 
   if (transfer_state_ == TransferState::kInitiating ||
       last_chunk_sent_ == Chunk::Type::kStartAckConfirmation) {

@@ -254,6 +254,15 @@ more details.
   The default maximum number of times a transfer should retry sending a chunk
   when no response is received. This can later be configured per-transfer.
 
+.. c:macro:: PW_TRANSFER_DEFAULT_MAX_LIFETIME_RETRIES
+
+  The default maximum number of times a transfer should retry sending any chunk
+  over the course of its entire lifetime.
+
+  This number should be high, particularly if long-running transfers are
+  expected. Its purpose is to prevent transfers from getting stuck in an
+  infinite loop.
+
 .. c:macro:: PW_TRANSFER_DEFAULT_TIMEOUT_MS
 
   The default amount of time, in milliseconds, to wait for a chunk to arrive

@@ -31,6 +31,21 @@ static_assert(PW_TRANSFER_DEFAULT_MAX_RETRIES > 0 &&
               PW_TRANSFER_DEFAULT_MAX_RETRIES <=
                   std::numeric_limits<uint8_t>::max());
 
+// The default maximum number of times a transfer should retry sending a chunk
+// over the course of its entire lifetime.
+// This number should be high, particularly if long-running transfers are
+// expected. Its purpose is to prevent transfers from getting stuck in an
+// infinite loop.
+#ifndef PW_TRANSFER_DEFAULT_MAX_LIFETIME_RETRIES
+#define PW_TRANSFER_DEFAULT_MAX_LIFETIME_RETRIES \
+  (static_cast<uint32_t>(PW_TRANSFER_DEFAULT_MAX_RETRIES) * 1000u)
+#endif  // PW_TRANSFER_DEFAULT_MAX_LIFETIME_RETRIES
+
+static_assert(PW_TRANSFER_DEFAULT_MAX_LIFETIME_RETRIES >
+                  PW_TRANSFER_DEFAULT_MAX_RETRIES &&
+              PW_TRANSFER_DEFAULT_MAX_LIFETIME_RETRIES <=
+                  std::numeric_limits<uint32_t>::max());
+
 // The default amount of time, in milliseconds, to wait for a chunk to arrive
 // before retrying. This can later be configured per-transfer.
 #ifndef PW_TRANSFER_DEFAULT_TIMEOUT_MS
@@ -55,8 +70,12 @@ static_assert(PW_TRANSFER_DEFAULT_EXTEND_WINDOW_DIVISOR > 1);
 namespace pw::transfer::cfg {
 
 inline constexpr uint8_t kDefaultMaxRetries = PW_TRANSFER_DEFAULT_MAX_RETRIES;
+inline constexpr uint16_t kDefaultMaxLifetimeRetries =
+    PW_TRANSFER_DEFAULT_MAX_LIFETIME_RETRIES;
+
 inline constexpr chrono::SystemClock::duration kDefaultChunkTimeout =
     std::chrono::milliseconds(PW_TRANSFER_DEFAULT_TIMEOUT_MS);
+
 inline constexpr uint32_t kDefaultExtendWindowDivisor =
     PW_TRANSFER_DEFAULT_EXTEND_WINDOW_DIVISOR;
 

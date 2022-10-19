@@ -2310,5 +2310,179 @@ TEST_F(WriteTransfer, Version2_InvalidResourceId) {
   EXPECT_EQ(chunk.status().value(), Status::NotFound());
 }
 
+class ReadTransferLowMaxRetries : public ::testing::Test {
+ protected:
+  static constexpr uint32_t kMaxRetries = 3;
+  static constexpr uint32_t kMaxLifetimeRetries = 4;
+
+  ReadTransferLowMaxRetries()
+      : handler_(9, kData),
+        transfer_thread_(data_buffer_, encode_buffer_),
+        ctx_(transfer_thread_,
+             64,
+             // Use a long timeout to avoid accidentally triggering timeouts.
+             std::chrono::minutes(1),
+             kMaxRetries,
+             cfg::kDefaultExtendWindowDivisor,
+             kMaxLifetimeRetries),
+        system_thread_(TransferThreadOptions(), transfer_thread_) {
+    ctx_.service().RegisterHandler(handler_);
+
+    PW_CHECK(!handler_.prepare_read_called);
+    PW_CHECK(!handler_.finalize_read_called);
+
+    ctx_.call();  // Open the read stream
+    transfer_thread_.WaitUntilEventIsProcessed();
+  }
+
+  ~ReadTransferLowMaxRetries() override {
+    transfer_thread_.Terminate();
+    system_thread_.join();
+  }
+
+  SimpleReadTransfer handler_;
+  Thread<1, 1> transfer_thread_;
+  PW_RAW_TEST_METHOD_CONTEXT(TransferService, Read, 10) ctx_;
+  thread::Thread system_thread_;
+  std::array<std::byte, 64> data_buffer_;
+  std::array<std::byte, 64> encode_buffer_;
+};
+
+TEST_F(ReadTransferLowMaxRetries, FailsAfterLifetimeRetryCount) {
+  ctx_.SendClientStream(
+      EncodeChunk(Chunk(ProtocolVersion::kLegacy, Chunk::Type::kStart)
+                      .set_session_id(9)
+                      .set_window_end_offset(16)
+                      .set_offset(0)));
+
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  EXPECT_TRUE(handler_.prepare_read_called);
+  EXPECT_FALSE(handler_.finalize_read_called);
+
+  ASSERT_EQ(ctx_.total_responses(), 1u);
+  Chunk chunk = DecodeChunk(ctx_.responses().back());
+
+  EXPECT_EQ(chunk.session_id(), 9u);
+  EXPECT_EQ(chunk.offset(), 0u);
+  ASSERT_EQ(chunk.payload().size(), 16u);
+  EXPECT_EQ(
+      std::memcmp(chunk.payload().data(), kData.data(), chunk.payload().size()),
+      0);
+
+  // Time out twice. Server should retry both times.
+  transfer_thread_.SimulateServerTimeout(9);
+  transfer_thread_.SimulateServerTimeout(9);
+  ASSERT_EQ(ctx_.total_responses(), 3u);
+  chunk = DecodeChunk(ctx_.responses().back());
+  EXPECT_EQ(chunk.session_id(), 9u);
+  EXPECT_EQ(chunk.offset(), 0u);
+  ASSERT_EQ(chunk.payload().size(), 16u);
+  EXPECT_EQ(
+      std::memcmp(chunk.payload().data(), kData.data(), chunk.payload().size()),
+      0);
+
+  ctx_.SendClientStream(EncodeChunk(
+      Chunk(ProtocolVersion::kLegacy, Chunk::Type::kParametersContinue)
+          .set_session_id(9)
+          .set_window_end_offset(32)
+          .set_offset(16)));
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  ASSERT_EQ(ctx_.total_responses(), 4u);
+  chunk = DecodeChunk(ctx_.responses().back());
+  EXPECT_EQ(chunk.session_id(), 9u);
+  EXPECT_EQ(chunk.offset(), 16u);
+  ASSERT_EQ(chunk.payload().size(), 16u);
+  EXPECT_EQ(
+      std::memcmp(
+          chunk.payload().data(), kData.data() + 16, chunk.payload().size()),
+      0);
+
+  // Time out three more times. The transfer should terminate.
+  transfer_thread_.SimulateServerTimeout(9);
+  ASSERT_EQ(ctx_.total_responses(), 5u);
+  chunk = DecodeChunk(ctx_.responses().back());
+  EXPECT_EQ(chunk.session_id(), 9u);
+  EXPECT_EQ(chunk.offset(), 16u);
+  ASSERT_EQ(chunk.payload().size(), 16u);
+  EXPECT_EQ(
+      std::memcmp(
+          chunk.payload().data(), kData.data() + 16, chunk.payload().size()),
+      0);
+
+  transfer_thread_.SimulateServerTimeout(9);
+  ASSERT_EQ(ctx_.total_responses(), 6u);
+  chunk = DecodeChunk(ctx_.responses().back());
+  EXPECT_EQ(chunk.session_id(), 9u);
+  EXPECT_EQ(chunk.offset(), 16u);
+  ASSERT_EQ(chunk.payload().size(), 16u);
+  EXPECT_EQ(
+      std::memcmp(
+          chunk.payload().data(), kData.data() + 16, chunk.payload().size()),
+      0);
+
+  transfer_thread_.SimulateServerTimeout(9);
+  ASSERT_EQ(ctx_.total_responses(), 7u);
+  chunk = DecodeChunk(ctx_.responses().back());
+  EXPECT_EQ(chunk.status(), Status::DeadlineExceeded());
+}
+
+TEST_F(ReadTransferLowMaxRetries, Version2_FailsAfterLifetimeRetryCount) {
+  ctx_.SendClientStream(
+      EncodeChunk(Chunk(ProtocolVersion::kVersionTwo, Chunk::Type::kStart)
+                      .set_resource_id(9)));
+
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  EXPECT_TRUE(handler_.prepare_read_called);
+  EXPECT_FALSE(handler_.finalize_read_called);
+
+  // First, the server responds with a START_ACK, assigning a session ID and
+  // confirming the protocol version.
+  ASSERT_EQ(ctx_.total_responses(), 1u);
+  Chunk chunk = DecodeChunk(ctx_.responses().back());
+  EXPECT_EQ(chunk.protocol_version(), ProtocolVersion::kVersionTwo);
+  EXPECT_EQ(chunk.type(), Chunk::Type::kStartAck);
+  EXPECT_EQ(chunk.session_id(), 1u);
+  EXPECT_EQ(chunk.resource_id(), 9u);
+
+  // Time out twice. Server should retry both times.
+  transfer_thread_.SimulateServerTimeout(1);
+  transfer_thread_.SimulateServerTimeout(1);
+  ASSERT_EQ(ctx_.total_responses(), 3u);
+  chunk = DecodeChunk(ctx_.responses().back());
+  EXPECT_EQ(chunk.type(), Chunk::Type::kStartAck);
+
+  // Complete the handshake, allowing the transfer to continue.
+  ctx_.SendClientStream(EncodeChunk(
+      Chunk(ProtocolVersion::kVersionTwo, Chunk::Type::kStartAckConfirmation)
+          .set_session_id(1)
+          .set_window_end_offset(16)
+          .set_offset(0)));
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  ASSERT_EQ(ctx_.total_responses(), 4u);
+  chunk = DecodeChunk(ctx_.responses().back());
+  EXPECT_EQ(chunk.type(), Chunk::Type::kData);
+
+  // Time out three more times. The transfer should terminate.
+  transfer_thread_.SimulateServerTimeout(1);
+  ASSERT_EQ(ctx_.total_responses(), 5u);
+  chunk = DecodeChunk(ctx_.responses().back());
+  EXPECT_EQ(chunk.type(), Chunk::Type::kData);
+
+  transfer_thread_.SimulateServerTimeout(1);
+  ASSERT_EQ(ctx_.total_responses(), 6u);
+  chunk = DecodeChunk(ctx_.responses().back());
+  EXPECT_EQ(chunk.type(), Chunk::Type::kData);
+
+  transfer_thread_.SimulateServerTimeout(1);
+  ASSERT_EQ(ctx_.total_responses(), 7u);
+  chunk = DecodeChunk(ctx_.responses().back());
+  EXPECT_EQ(chunk.type(), Chunk::Type::kCompletion);
+  EXPECT_EQ(chunk.status(), Status::DeadlineExceeded());
+}
+
 }  // namespace
 }  // namespace pw::transfer::test

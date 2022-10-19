@@ -79,6 +79,7 @@ struct NewTransferEvent {
   const TransferParameters* max_parameters;
   chrono::SystemClock::duration timeout;
   uint32_t max_retries;
+  uint32_t max_lifetime_retries;
   TransferThread* transfer_thread;
 
   union {
