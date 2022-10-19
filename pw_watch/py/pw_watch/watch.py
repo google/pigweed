@@ -547,14 +547,14 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
 
 _WATCH_PATTERN_DELIMITER = ','
 _WATCH_PATTERNS = (
+    # keep-sorted: start ignore-case
     '*.bloaty',
     '*.c',
     '*.cc',
     '*.cfg',
-    '*.css',
-    '*.cpp',
     '*.cmake',
-    'CMakeLists.txt',
+    '*.cpp',
+    '*.css',
     '*.dts',
     '*.dtsi',
     '*.gn',
@@ -569,9 +569,11 @@ _WATCH_PATTERNS = (
     '*.py',
     '*.rs',
     '*.rst',
-    '*.s',
     '*.S',
+    '*.s',
     '*.toml',
+    'CMakeLists.txt',
+    # keep-sorted: end
 )
 
 
