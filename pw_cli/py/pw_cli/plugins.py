@@ -100,7 +100,10 @@ class Plugin:
 
         return cls(name, member, source)
 
-    def __init__(self, name: str, target: Any, source: Path = None) -> None:
+    def __init__(self,
+                 name: str,
+                 target: Any,
+                 source: Optional[Path] = None) -> None:
         """Creates a plugin for the provided target."""
         self.name = name
         self._module = _get_module(target)
@@ -259,7 +262,7 @@ class Registry(collections.abc.Mapping):
                          name: str,
                          module_name: str,
                          member_name: str,
-                         source: Path = None) -> Optional[Plugin]:
+                         source: Optional[Path] = None) -> Optional[Plugin]:
         """Registers an object from its module and name as a plugin."""
         return self._register(
             Plugin.from_name(name, module_name, member_name, source))
@@ -308,7 +311,7 @@ class Registry(collections.abc.Mapping):
     def register_directory(self,
                            directory: Path,
                            file_name: str,
-                           restrict_to: Path = None) -> None:
+                           restrict_to: Optional[Path] = None) -> None:
         """Finds and registers plugins from plugins files in a directory.
 
         Args:
@@ -370,9 +373,9 @@ class Registry(collections.abc.Mapping):
             yield '  (none found)'
 
     def plugin(self,
-               function: Callable = None,
+               function: Optional[Callable] = None,
                *,
-               name: str = None) -> Callable[[Callable], Callable]:
+               name: Optional[str] = None) -> Callable[[Callable], Callable]:
         """Decorator that registers a function with this plugin registry."""
         def decorator(function: Callable) -> Callable:
             self.register(function.__name__ if name is None else name,

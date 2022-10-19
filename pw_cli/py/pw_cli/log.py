@@ -80,9 +80,9 @@ def _setup_handler(handler: logging.Handler, formatter: logging.Formatter,
 
 
 def install(level: Union[str, int] = logging.INFO,
-            use_color: bool = None,
+            use_color: Optional[bool] = None,
             hide_timestamp: bool = False,
-            log_file: Union[str, Path] = None,
+            log_file: Optional[Union[str, Path]] = None,
             logger: Optional[logging.Logger] = None,
             debug_log: Optional[Union[str, Path]] = None) -> None:
     """Configures the system logger for the default pw command log format.
