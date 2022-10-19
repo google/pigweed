@@ -187,7 +187,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         ignore_patterns: Sequence[str] = (),
         charset: WatchCharset = _ASCII_CHARSET,
         restart: bool = True,
-        jobs: int = None,
+        jobs: Optional[int] = None,
         fullscreen: bool = False,
         banners: bool = True,
         keep_going: bool = False,
