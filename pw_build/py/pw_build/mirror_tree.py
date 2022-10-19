@@ -17,7 +17,7 @@ import argparse
 import os
 from pathlib import Path
 import shutil
-from typing import Iterable, Iterator, List
+from typing import Iterable, Iterator, List, Optional
 
 
 def _parse_args() -> argparse.Namespace:
@@ -88,7 +88,7 @@ def _link_files_or_dirs(paths: Iterable[Path],
 def mirror_paths(source_root: Path,
                  sources: Iterable[Path],
                  directory: Path,
-                 path_file: Path = None) -> List[Path]:
+                 path_file: Optional[Path] = None) -> List[Path]:
     """Creates hard links in the provided directory for the provided sources.
 
     Args:
