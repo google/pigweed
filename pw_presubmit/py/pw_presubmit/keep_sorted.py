@@ -51,8 +51,8 @@ class KeepSortedContext:
 
     def fail(self,
              description: str = '',
-             path: Path = None,
-             line: int = None) -> None:
+             path: Optional[Path] = None,
+             line: Optional[int] = None) -> None:
         if not self.fix:
             self.failed = True
 
@@ -187,7 +187,7 @@ class _FileSorter:
             # File is not text, like a gif.
             _LOG.debug('File %s is not a text file', self.path)
 
-    def write(self, path: Path = None) -> None:
+    def write(self, path: Optional[Path] = None) -> None:
         if not self.changed:
             return
         if not path:

@@ -23,8 +23,8 @@ from pathlib import Path
 import re
 import subprocess
 from shutil import which
-from typing import (Collection, Container, Dict, Iterable, List, Mapping, Set,
-                    Tuple, Union)
+from typing import (Collection, Container, Dict, Iterable, List, Mapping,
+                    Optional, Set, Tuple, Union)
 
 from pw_package import package_manager
 from pw_presubmit import (
@@ -217,7 +217,7 @@ def get_gn_args(directory: Path) -> List[Dict[str, Dict[str, str]]]:
 
 def cmake(ctx: PresubmitContext,
           *args: str,
-          env: Mapping['str', 'str'] = None) -> None:
+          env: Optional[Mapping['str', 'str']] = None) -> None:
     """Runs CMake for Ninja on the given source and output directories."""
     call('cmake',
          '-B',

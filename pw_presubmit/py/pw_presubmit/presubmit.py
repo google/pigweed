@@ -103,8 +103,8 @@ class PresubmitFailure(Exception):
     """Optional exception to use for presubmit failures."""
     def __init__(self,
                  description: str = '',
-                 path: Path = None,
-                 line: int = None):
+                 path: Optional[Path] = None,
+                 line: Optional[int] = None):
         line_part: str = ''
         if line is not None:
             line_part = f'{line}:'
@@ -245,7 +245,10 @@ class PresubmitContext:
     def failed(self) -> bool:
         return self._failed
 
-    def fail(self, description: str, path: Path = None, line: int = None):
+    def fail(self,
+             description: str,
+             path: Optional[Path] = None,
+             line: Optional[int] = None):
         """Add a failure to this presubmit step.
 
         If this is called at least once the step fails, but not immediately—the
@@ -529,7 +532,7 @@ def run(  # pylint: disable=too-many-arguments
         paths: Sequence[str] = (),
         exclude: Sequence[Pattern] = (),
         output_directory: Optional[Path] = None,
-        package_root: Path = None,
+        package_root: Optional[Path] = None,
         only_list_steps: bool = False,
         override_gn_args: Sequence[Tuple[str, str]] = (),
         keep_going: bool = False,
@@ -636,7 +639,7 @@ class Check:
                  check_function: Callable,
                  path_filter: FileFilter = FileFilter(),
                  always_run: bool = True,
-                 name: str = None) -> None:
+                 name: Optional[str] = None) -> None:
         _ensure_is_valid_presubmit_check_function(check_function)
 
         # Since Check wraps a presubmit function, adopt that function's name.
@@ -744,7 +747,7 @@ def _ensure_is_valid_presubmit_check_function(check: Callable) -> None:
 def filter_paths(*,
                  endswith: Iterable[str] = (),
                  exclude: Iterable[Union[Pattern[str], str]] = (),
-                 file_filter: FileFilter = None,
+                 file_filter: Optional[FileFilter] = None,
                  always_run: bool = False) -> Callable[[Callable], Check]:
     """Decorator for filtering the paths list for a presubmit check function.
 

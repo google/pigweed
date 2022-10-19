@@ -182,7 +182,7 @@ def run(
     output_directory: Optional[Path],
     package_root: Path,
     clear: bool,
-    root: Path = None,
+    root: Optional[Path] = None,
     repositories: Collection[Path] = (),
     only_list_steps=False,
     **other_args,

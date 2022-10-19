@@ -65,7 +65,7 @@ def _diff_names(commit: str, pathspecs: Collection[PathOrStr],
             yield full_path
 
 
-def tracking_branch(repo_path: Path = None) -> Optional[str]:
+def tracking_branch(repo_path: Optional[Path] = None) -> Optional[str]:
     """Returns the tracking branch of the current branch.
 
     Since most callers of this function can safely handle a return value of
@@ -190,7 +190,7 @@ def describe_files(git_root: Path,
                    commit: Optional[str],
                    pathspecs: Collection[PathOrStr],
                    exclude: Collection[Pattern],
-                   project_root: Path = None) -> str:
+                   project_root: Optional[Path] = None) -> str:
     """Completes 'Doing something to ...' for a set of files in a Git repo."""
     constraints = list(
         _describe_constraints(git_root, repo_path, commit, pathspecs, exclude))

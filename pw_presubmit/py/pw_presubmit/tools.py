@@ -20,7 +20,8 @@ import os
 from pathlib import Path
 import shlex
 import subprocess
-from typing import Any, Dict, Iterable, Iterator, List, Sequence, Pattern, Tuple
+from typing import (Any, Dict, Iterable, Iterator, List, Optional, Sequence,
+                    Pattern, Tuple)
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -124,7 +125,7 @@ def relative_paths(paths: Iterable[Path], start: Path) -> Iterable[Path]:
 
 def exclude_paths(exclusions: Iterable[Pattern[str]],
                   paths: Iterable[Path],
-                  relative_to: Path = None) -> Iterable[Path]:
+                  relative_to: Optional[Path] = None) -> Iterable[Path]:
     """Excludes paths based on a series of regular expressions."""
     if relative_to:
         relpath = lambda path: Path(os.path.relpath(path, relative_to))
