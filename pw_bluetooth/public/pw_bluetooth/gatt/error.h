@@ -55,7 +55,7 @@ enum class Error : uint16_t {
   kInsufficientEncryptionKeySize = 0xC,
 
   /// Indicates that the value given in a write request would exceed the maximum
-  /// length allowed for the destionation characteristic or descriptor.
+  /// length allowed for the destination characteristic or descriptor.
   kInvalidAttributeValueLength = 0xD,
 
   /// A general error occurred that can not be classified as one of the more
