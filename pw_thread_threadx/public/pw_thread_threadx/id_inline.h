@@ -21,7 +21,7 @@
 
 namespace pw::this_thread {
 
-inline thread::Id get_id() {
+inline thread::Id get_id() noexcept {
   // When this value is 0, a thread is executing or the system is idle.
   // Other values indicate that interrupt or initialization processing is
   // active.
