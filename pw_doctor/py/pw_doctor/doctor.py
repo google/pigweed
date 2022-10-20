@@ -187,6 +187,12 @@ def pw_root(ctx: DoctorContext):
     except KeyError:
         ctx.fatal('PW_ROOT not set')
 
+    # If pigweed is intentionally vendored and not in a git repo or submodule,
+    # set PW_DISABLE_ROOT_GIT_REPO_CHECK=1 during bootstrap to suppress the
+    # following check.
+    if os.environ.get('PW_DISABLE_ROOT_GIT_REPO_CHECK', '0') == '1':
+        return
+
     git_root = pathlib.Path(
         call_stdout(['git', 'rev-parse', '--show-toplevel'], cwd=root).strip())
     git_root = git_root.resolve()

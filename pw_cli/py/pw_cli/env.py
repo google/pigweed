@@ -37,6 +37,9 @@ def pigweed_environment_parser() -> envparse.EnvironmentParser:
     parser.add_var('PW_PACKAGE_ROOT')
     parser.add_var('PW_PROJECT_ROOT')
     parser.add_var('PW_ROOT')
+    parser.add_var('PW_DISABLE_ROOT_GIT_REPO_CHECK',
+                   type=envparse.strict_bool,
+                   default=False)
     parser.add_var('PW_SKIP_BOOTSTRAP')
     parser.add_var('PW_SUBPROCESS', type=envparse.strict_bool, default=False)
     parser.add_var('PW_USE_COLOR', type=envparse.strict_bool, default=False)
