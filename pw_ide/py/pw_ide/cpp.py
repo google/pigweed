@@ -51,7 +51,7 @@ import json
 import os
 from pathlib import Path
 import platform
-from typing import (cast, Callable, Dict, Generator, List, Optional, Set,
+from typing import (Any, cast, Callable, Dict, Generator, List, Optional,
                     Tuple, TypedDict, Union)
 
 from pw_ide.exceptions import (BadCompDbException, InvalidTargetException,
@@ -70,6 +70,8 @@ _COMPDB_CACHE_DIR_SEPARATOR = '_'
 
 COMPDB_FILE_GLOB = f'{_COMPDB_FILE_PREFIX}*{_COMPDB_FILE_EXTENSION}'
 COMPDB_CACHE_DIR_GLOB = f'{_COMPDB_CACHE_DIR_PREFIX}*'
+
+MAX_COMMANDS_TARGET_FILENAME = 'max_commands_target'
 
 _SUPPORTED_TOOLCHAIN_EXECUTABLES = ('clang', 'gcc', 'g++')
 
@@ -209,9 +211,9 @@ def path_to_executable(exe: str,
     """
     maybe_path = Path(exe)
 
-    # We were give an empty string -- not a path.
+    # We were give an empty string, not a path. Not a valid command.
     if len(maybe_path.parts) == 0:
-        raise UnresolvablePathException('Invalid path provided!')
+        return None
 
     # Determine if the executable name matches supported drivers.
     is_supported_driver = False
@@ -256,36 +258,136 @@ def path_to_executable(exe: str,
     return maybe_path
 
 
-class CppCompileCommandDict(TypedDict):
+def command_parts(command: str) -> Tuple[str, List[str]]:
+    """Return the executable string and the rest of the command tokens."""
+    parts = command.split()
+    head = parts[0] if len(parts) > 0 else ''
+    tail = parts[1:] if len(parts) > 1 else []
+    return head, tail
+
+
+# This is a clumsy way to express optional keys, which is not directly
+# supported in TypedDicts right now.
+class BaseCppCompileCommandDict(TypedDict):
     file: str
     directory: str
+    output: Optional[str]
+
+
+class CppCompileCommandDictWithCommand(BaseCppCompileCommandDict):
     command: str
 
 
-@dataclass(frozen=True)
+class CppCompileCommandDictWithArguments(BaseCppCompileCommandDict):
+    arguments: List[str]
+
+
+CppCompileCommandDict = Union[CppCompileCommandDictWithCommand,
+                              CppCompileCommandDictWithArguments]
+
+
 class CppCompileCommand:
     """A representation of a clang compilation database compile command.
 
     See: https://clang.llvm.org/docs/JSONCompilationDatabase.html
     """
-    file: str
-    directory: str
-    command: str
-    target: Optional[str] = None
+    def __init__(self,
+                 file: str,
+                 directory: str,
+                 command: Optional[str] = None,
+                 arguments: Optional[List[str]] = None,
+                 output: Optional[str] = None) -> None:
+        # Per the spec, either one of these two must be present. clangd seems
+        # to prefer "arguments" when both are present.
+        if command is None and arguments is None:
+            raise TypeError('A compile command requires either \'command\' '
+                            'or \'arguments\'.')
+
+        if command is None:
+            raise TypeError('Compile commands without \'command\' '
+                            'are not supported yet.')
+
+        self._command = command
+        self._arguments = arguments
+        self._file = file
+        self._directory = directory
+
+        executable, tokens = command_parts(command)
+        self._executable_path = Path(executable)
+        self._inferred_output: Optional[str] = None
+
+        try:
+            # Find the output argument and grab its value.
+            output_flag_idx = tokens.index('-o')
+            self._inferred_output = tokens[output_flag_idx + 1]
+        except ValueError:
+            # No -o found, probably not a C/C++ compile command.
+            self._inferred_output = None
+        except IndexError:
+            # It has an -o but no argument after it.
+            raise TypeError(
+                'Failed to load compile command with no output argument!')
+
+        self._provided_output = output
+        self.target: Optional[str] = None
 
     @property
-    def command_parts(self) -> Tuple[str, List[str]]:
-        """Return the executable string and the rest of the command tokens."""
-        try:
-            parts = self.command.split(' ')
-            return parts[0], parts[1:]
-        except IndexError:
-            raise RuntimeError(
-                'Failed to load malformed compilation database!')
+    def file(self) -> str:
+        return self._file
+
+    @property
+    def directory(self) -> str:
+        return self._directory
+
+    @property
+    def command(self) -> Optional[str]:
+        return self._command
+
+    @property
+    def arguments(self) -> Optional[List[str]]:
+        return self._arguments
+
+    @property
+    def output(self) -> Optional[str]:
+        # We're ignoring provided output values for now.
+        return self._inferred_output
+
+    @property
+    def output_path(self) -> Optional[Path]:
+        if self.output is None:
+            return None
+
+        return Path(self.directory) / Path(self.output)
+
+    @property
+    def executable_path(self) -> Path:
+        return self._executable_path
 
     @property
     def executable_name(self) -> str:
-        return Path(self.command_parts[0]).name
+        return self.executable_path.name
+
+    @classmethod
+    def from_dict(cls, compile_command_dict: Dict[str,
+                                                  Any]) -> 'CppCompileCommand':
+        return cls(
+            # We want to let possible Nones through to raise at runtime.
+            file=cast(str, compile_command_dict.get('file')),
+            directory=cast(str, compile_command_dict.get('directory')),
+            command=compile_command_dict.get('command'),
+            arguments=compile_command_dict.get('arguments'),
+            output=compile_command_dict.get('output'),
+        )
+
+    @classmethod
+    def try_from_dict(
+            cls,
+            compile_command_dict: Dict[str,
+                                       Any]) -> Optional['CppCompileCommand']:
+        try:
+            return cls.from_dict(compile_command_dict)
+        except TypeError:
+            return None
 
     def process(
         self,
@@ -315,48 +417,92 @@ class CppCompileCommand:
           searched for in the query driver globs and be replaced with a path to
           the executable.
         """
-        executable_str, tokens = self.command_parts
+        if self.command is None:
+            raise NotImplementedError('Compile commands without \'command\' '
+                                      'are not supported yet.')
+
+        executable_str, tokens = command_parts(self.command)
         executable_path = path_to_executable(executable_str,
                                              default_path=default_path,
                                              path_globs=path_globs,
                                              strict=strict)
 
-        target: Optional[str] = None
-
-        if len(tokens) > 1:
-            for token in tokens:
-                # Skip all flags and whitespace until we find the first
-                # reference to the actual file in the command. The top level
-                # directory of the file is the target name.
-                # TODO(chadnorvell): This might be too specific to GN.
-                if not token.startswith('-') and not token.strip() == '':
-                    target = Path(token).parts[0]
-                    break
-
-        # The latter condition is indicative of Python wrapper commands, but is
-        # also an artifact of the unsophisticated way we extract the target.
-        if executable_path is None or target is None or target in ('.', '..'):
+        if executable_path is None or self.output is None:
             return None
 
+        # TODO(chadnorvell): Some commands include the executable multiple
+        # times. It's not clear if that affects clangd.
         new_command = f'{str(executable_path)} {" ".join(tokens)}'
 
         return self.__class__(
             file=self.file,
             directory=self.directory,
             command=new_command,
-            target=target,
+            arguments=None,
+            output=self.output,
         )
 
     def as_dict(self) -> CppCompileCommandDict:
-        return {
-            "file": self.file,
-            "directory": self.directory,
-            "command": self.command,
+        base_compile_command_dict: BaseCppCompileCommandDict = {
+            'file': self.file,
+            'directory': self.directory,
+            'output': self.output,
         }
 
+        # TODO(chadnorvell): Support "arguments". The spec requires that a
+        # We don't support "arguments" at all right now. When we do, we should
+        # preferentially include "arguments" only, and only include "command"
+        # when "arguments" is not present.
+        if self.command is not None:
+            compile_command_dict: CppCompileCommandDictWithCommand = {
+                'command': self.command,
+                # Unfortunately dict spreading doesn't work with mypy.
+                'file': base_compile_command_dict['file'],
+                'directory': base_compile_command_dict['directory'],
+                'output': base_compile_command_dict['output']
+            }
+        else:
+            raise NotImplementedError('Compile commands without \'command\' '
+                                      'are not supported yet.')
 
-LoadableToCppCompilationDatabase = Union[List[CppCompileCommandDict], str,
-                                         TextIOBase, Path]
+        return compile_command_dict
+
+
+def _infer_target_pos(target_glob: str) -> Optional[int]:
+    """Infer the position of the target in a compilation unit artifact path."""
+    tokens = Path(target_glob).parts
+
+    for pos, token in enumerate(tokens):
+        if token == '?':  # pylint: disable=no-else-return
+            return pos
+        elif token == '*':
+            pass
+        else:
+            raise ValueError(f'Invalid target inference token: {token}')
+
+    return None
+
+
+def infer_target(target_glob: str, root: Path,
+                 output_path: Path) -> Optional[str]:
+    """Infer a target from a compilation unit artifact path.
+
+    See the documentation for ``PigweedIdeSettings.target_inference``."""
+    target_pos = _infer_target_pos(target_glob)
+
+    if target_pos is None:
+        return None
+
+    # Depending on the build system and project configuration, the target name
+    # may be in the "directory" or the "output" of the compile command. So we
+    # need to construct the full path that combines both and use that to search
+    # for the target.
+    subpath = output_path.relative_to(root)
+    return subpath.parts[target_pos]
+
+
+LoadableToCppCompilationDatabase = Union[List[Dict[str, Any]], str, TextIOBase,
+                                         Path]
 
 
 class CppCompilationDatabase:
@@ -364,8 +510,14 @@ class CppCompilationDatabase:
 
     See: https://clang.llvm.org/docs/JSONCompilationDatabase.html
     """
-    def __init__(self) -> None:
+    def __init__(self, build_dir: Optional[Path] = None) -> None:
         self._db: List[CppCompileCommand] = []
+
+        # Only compilation databases that are loaded will have this, and it
+        # contains the root directory of the build that the compilation
+        # database is based on. Processed compilation databases will not have
+        # a value here.
+        self._build_dir = build_dir
 
     def __len__(self) -> int:
         return len(self._db)
@@ -376,10 +528,9 @@ class CppCompilationDatabase:
     def __iter__(self) -> Generator[CppCompileCommand, None, None]:
         return (compile_command for compile_command in self._db)
 
-    def add(self, command: CppCompileCommand):
-        """Add a compile command to the compilation database."""
-
-        self._db.append(command)
+    def add(self, *commands: CppCompileCommand):
+        """Add compile commands to the compilation database."""
+        self._db.extend(commands)
 
     def as_dicts(self) -> List[CppCompileCommandDict]:
         return [compile_command.as_dict() for compile_command in self._db]
@@ -396,16 +547,14 @@ class CppCompilationDatabase:
             json.dump(self.as_dicts(), file, indent=2, sort_keys=True)
 
     @classmethod
-    def load(
-        cls, compdb_to_load: LoadableToCppCompilationDatabase
-    ) -> 'CppCompilationDatabase':
+    def load(cls, compdb_to_load: LoadableToCppCompilationDatabase,
+             build_dir: Path) -> 'CppCompilationDatabase':
         """Load a compilation database.
 
         You can provide a JSON file handle or path, a JSON string, or a native
         Python data structure that matches the format (list of dicts).
         """
-
-        db_as_dicts: List[CppCompileCommandDict]
+        db_as_dicts: List[Dict[str, Any]]
 
         if isinstance(compdb_to_load, list):
             # The provided data is already in the format we want it to be in,
@@ -428,13 +577,14 @@ class CppCompilationDatabase:
 
             db_as_dicts = json.loads(compdb_data)
 
-        compdb = cls()
+        compdb = cls(build_dir=build_dir)
 
         try:
-            compdb._db = [
-                CppCompileCommand(**compile_command)
-                for compile_command in db_as_dicts
-            ]
+            compdb.add(*[
+                compile_command for compile_command_dict in db_as_dicts
+                if (compile_command := CppCompileCommand.try_from_dict(
+                    compile_command_dict)) is not None
+            ])
         except TypeError:
             # This will arise if db_as_dicts is not actually a list of dicts
             raise BadCompDbException()
@@ -455,19 +605,32 @@ class CppCompilationDatabase:
         valid or invalid targets/toolchains, keep only the valid compile
         commands and store them in target-specific compilation databases.
         """
+        if self._build_dir is None:
+            raise ValueError('Can only process a compilation database that '
+                             'contains a root build directory, usually '
+                             'specified when loading the file. Are you '
+                             'trying to process an already-processed '
+                             'compilation database?')
+
         clean_compdbs = CppCompilationDatabasesMap(settings)
 
         for compile_command in self:
-            processed_compile_command = compile_command.process(
+            processed_command = compile_command.process(
                 default_path=default_path,
                 path_globs=path_globs,
                 strict=strict)
 
-            if (processed_compile_command is not None and target_is_enabled(
-                    processed_compile_command.target, settings)):
-                # This invariant is satisfied by target_is_enabled
-                target = cast(str, processed_compile_command.target)
-                clean_compdbs[target].add(processed_compile_command)
+            if (processed_command is not None
+                    and processed_command.output_path is not None):
+                target = infer_target(settings.target_inference,
+                                      self._build_dir,
+                                      processed_command.output_path)
+
+                if target_is_enabled(target, settings):
+                    # This invariant is satisfied by target_is_enabled
+                    target = cast(str, target)
+                    processed_command.target = target
+                    clean_compdbs[target].add(processed_command)
 
         return clean_compdbs
 
@@ -475,7 +638,7 @@ class CppCompilationDatabase:
 class CppCompilationDatabasesMap:
     """Container for a map of target name to compilation database."""
     def __init__(self, settings: PigweedIdeSettings):
-        self.settings = settings
+        self._settings = settings
         self._dbs: Dict[str, CppCompilationDatabase] = (
             defaultdict(CppCompilationDatabase))
 
@@ -485,16 +648,41 @@ class CppCompilationDatabasesMap:
     def __setitem__(self, key: str, item: CppCompilationDatabase) -> None:
         self._dbs[key] = item
 
+    @property
+    def targets(self) -> List[str]:
+        return list(self._dbs.keys())
+
     def items(
             self) -> Generator[Tuple[str, CppCompilationDatabase], None, None]:
         return ((key, value) for (key, value) in self._dbs.items())
 
     def write(self) -> None:
         """Write compilation databases to target-specific JSON files."""
+        # This also writes out a file with the name of the target that has the
+        # largest number of commands, i.e., the target with the broadest
+        # compilation unit coverage. We can use this as a default target of
+        # last resort.
+        max_commands = 0
+        max_commands_target = None
 
         for target, compdb in self.items():
-            compdb.to_file(self.settings.working_dir /
+            if max_commands_target is None or len(compdb) > max_commands:
+                max_commands_target = target
+                max_commands = len(compdb)
+
+            compdb.to_file(self._settings.working_dir /
                            compdb_generate_file_path(target))
+
+        max_commands_target_path = (self._settings.working_dir /
+                                    MAX_COMMANDS_TARGET_FILENAME)
+
+        if max_commands_target_path.exists():
+            max_commands_target_path.unlink()
+
+        if max_commands_target is not None:
+            with open(max_commands_target_path,
+                      'x') as max_commands_target_file:
+                max_commands_target_file.write(max_commands_target)
 
 
 @dataclass(frozen=True)
@@ -554,6 +742,10 @@ class CppIdeFeaturesState:
         self.current_target_file_path: Optional[Path] = None
         self.current_target_exists: Optional[bool] = None
 
+        # Contains the name of the target that has the most compile commands,
+        # i.e., the target with the most file coverage in the project.
+        self._max_commands_target: Optional[str] = None
+
         try:
             src_file = Path(
                 os.readlink(
@@ -576,6 +768,16 @@ class CppIdeFeaturesState:
                 )
         except (FileNotFoundError, OSError):
             # If the symlink doesn't exist, there is no current target.
+            pass
+
+        try:
+            with open(
+                    settings.working_dir /
+                    MAX_COMMANDS_TARGET_FILENAME) as max_commands_target_file:
+                self._max_commands_target = max_commands_target_file.readline()
+        except FileNotFoundError:
+            # If the file doesn't exist, a compilation database probably
+            # hasn't been processed yet.
             pass
 
     def __len__(self) -> int:
@@ -631,6 +833,16 @@ class CppIdeFeaturesState:
         set_symlink(cache_target_path, cache_symlink_path)
 
     @property
+    def max_commands_target(self) -> Optional[str]:
+        """The target with the most compile commands.
+
+        The return value is the name of the target with the largest number of
+        compile commands (i.e., the largest coverage across the files in the
+        project). This can be a useful "default target of last resort".
+        """
+        return self._max_commands_target
+
+    @property
     def available_targets(self) -> List[str]:
         return list(self.targets.keys())
 
@@ -648,24 +860,16 @@ class CppIdeFeaturesState:
 
 def aggregate_compilation_database_targets(
         compdb_file: LoadableToCppCompilationDatabase,
+        settings: PigweedIdeSettings,
+        build_dir: Path,
         *,
         default_path: Optional[Path] = None,
         path_globs: Optional[List[str]] = None) -> List[str]:
     """Return all valid unique targets from a ``clang`` compilation database."""
+    compdbs_map = CppCompilationDatabase.load(compdb_file, build_dir).process(
+        settings, default_path=default_path, path_globs=path_globs)
 
-    compdb = CppCompilationDatabase.load(compdb_file)
-    targets: Set[str] = set()
-
-    for compile_command in compdb:
-        processed_compile_command = compile_command.process(
-            default_path=default_path, path_globs=path_globs)
-
-        if processed_compile_command is not None:
-            # Target is always present in a processed compile command.
-            target = cast(str, processed_compile_command.target)
-            targets.add(target)
-
-    return list(targets)
+    return compdbs_map.targets
 
 
 def delete_compilation_databases(settings: PigweedIdeSettings) -> None:

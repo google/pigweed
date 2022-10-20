@@ -221,9 +221,14 @@ class EditorSettingsDefinition:
         return self._data
 
     @contextmanager
-    def modify(self):
+    def modify(self, reinit: bool = False):
         """Modify a settings file via an ordered dict."""
-        yield self._data
+        if reinit:
+            new_data: OrderedDict[str, Any] = OrderedDict()
+            yield new_data
+            self._data = new_data
+        else:
+            yield self._data
 
     def sync_to(self, settings: EditorSettingsDict) -> None:
         """Merge this set of settings on top of the provided settings."""
@@ -289,7 +294,7 @@ class EditorSettingsFile(EditorSettingsDefinition):
         return settings
 
     @contextmanager
-    def modify(self):
+    def modify(self, reinit: bool = False):
         """Modify a settings file via an ordered dict.
 
         Get the dict when entering the context, then modify it like any
@@ -305,15 +310,26 @@ class EditorSettingsFile(EditorSettingsDefinition):
         be written. If the file already exists, a backup will be made. If a
         failure occurs while writing the new file, it will be deleted and the
         backup will be restored.
+
+        If the ``reinit`` argument is set, a new, empty file will be created
+        instead of modifying any existing file. If there is an existing file,
+        it will still be backed up.
         """
-        try:
+        if self._path.exists():
+            should_load_existing = True
+            should_backup = True
+        else:
+            should_load_existing = False
+            should_backup = False
+
+        if reinit:
+            should_load_existing = False
+
+        if should_load_existing:
             with self._path.open() as file:
                 settings: OrderedDict = self._format.load(file)
-                should_backup = True
-        except FileNotFoundError:
-            # The file doesn't exist on disk yet.
+        else:
             settings = OrderedDict()
-            should_backup = False
 
         prev_settings = settings.copy()
 
@@ -323,8 +339,9 @@ class EditorSettingsFile(EditorSettingsDefinition):
         yield settings
 
         # If the settings haven't changed, don't create a backup.
-        if settings == prev_settings:
-            should_backup = False
+        if should_load_existing:
+            if settings == prev_settings:
+                should_backup = False
 
         if should_backup:
             # Move the current file to a new backup file. This frees the main

@@ -274,6 +274,12 @@ def _build_argument_parser() -> argparse.ArgumentParser:
                             metavar='TARGET',
                             help='set the target to use for C/C++ language '
                             'server analysis')
+    parser_cpp.add_argument(
+        '--set-default',
+        dest='use_default_target',
+        action='store_true',
+        help='set the C/C++ analysis target to the default '
+        'defined in pw_ide settings')
     parser_cpp.add_argument('--no-override',
                             dest='override_current_target',
                             action='store_const',
@@ -281,6 +287,17 @@ def _build_argument_parser() -> argparse.ArgumentParser:
                             default=True,
                             help='if called with --set, don\'t override the '
                             'current target if one is already set')
+    parser_cpp.add_argument(
+        '--ninja',
+        dest='should_run_ninja',
+        action='store_true',
+        help='use Ninja to generate a compilation database')
+    parser_cpp.add_argument(
+        '--gn',
+        dest='should_run_gn',
+        action='store_true',
+        help='run gn gen {out} --export-compile-commands, '
+        'along with any other arguments defined in args.gn')
     parser_cpp.add_argument('-p',
                             '--process',
                             dest='compdb_file_path',
@@ -288,6 +305,10 @@ def _build_argument_parser() -> argparse.ArgumentParser:
                             metavar='COMPILATION_DATABASE_FILE',
                             help='process a file matching the clang '
                             'compilation database format')
+    parser_cpp.add_argument('--build-dir',
+                            type=Path,
+                            help='override the build directory defined in '
+                            'pw_ide settings')
     parser_cpp.add_argument('--clangd-command',
                             action='store_true',
                             help='print the command for your system that runs '

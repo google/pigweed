@@ -217,6 +217,12 @@ _DEFAULT_TASKS: EditorSettingsDict = OrderedDict({
         },
         {
             "type": "shell",
+            "label": "Pigweed IDE: Process C++ Compilation Database from GN",
+            "command": "${workspaceFolder}/.pw_ide/python ${workspaceFolder}/pw_ide/py/pw_ide/activate.py -x 'pw ide cpp --gn --process out/compile_commands.json'",
+            "problemMatcher": []
+        },
+        {
+            "type": "shell",
             "label": "Pigweed IDE: Setup",
             "command": "python3 ${workspaceFolder}/pw_ide/py/pw_ide/activate.py -x 'pw ide setup'",
             "problemMatcher": []

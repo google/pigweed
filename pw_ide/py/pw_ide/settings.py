@@ -23,14 +23,19 @@ import yaml
 from pw_console.yaml_config_loader_mixin import YamlConfigLoaderMixin
 
 PW_IDE_DIR_NAME = '.pw_ide'
-
-_PW_IDE_DEFAULT_DIR = Path(
+PW_IDE_DEFAULT_DIR = Path(
     os.path.expandvars('$PW_PROJECT_ROOT')) / PW_IDE_DIR_NAME
 
 PW_PIGWEED_CIPD_INSTALL_DIR = Path(
     os.path.expandvars('$PW_PIGWEED_CIPD_INSTALL_DIR'))
 
 PW_ARM_CIPD_INSTALL_DIR = Path(os.path.expandvars('$PW_ARM_CIPD_INSTALL_DIR'))
+
+_DEFAULT_BUILD_DIR_NAME = 'out'
+_DEFAULT_BUILD_DIR = (Path(os.path.expandvars('$PW_PROJECT_ROOT')) /
+                      _DEFAULT_BUILD_DIR_NAME)
+
+_DEFAULT_TARGET_INFERENCE = '?'
 
 SupportedEditorName = Literal['vscode']
 
@@ -43,12 +48,16 @@ _DEFAULT_SUPPORTED_EDITORS: Dict[SupportedEditorName, bool] = {
     'vscode': True,
 }
 
-_DEFAULT_CONFIG = {
+_DEFAULT_CONFIG: Dict[str, Any] = {
     'clangd_additional_query_drivers': [],
+    'build_dir': _DEFAULT_BUILD_DIR,
+    'default_target': None,
     'editors': _DEFAULT_SUPPORTED_EDITORS,
-    'setup': [],
+    'setup': ['pw --no-banner ide cpp --gn '
+              '--set-default --no-override'],
     'targets': [],
-    'working_dir': _PW_IDE_DEFAULT_DIR,
+    'target_inference': _DEFAULT_TARGET_INFERENCE,
+    'working_dir': PW_IDE_DEFAULT_DIR,
 }
 
 _DEFAULT_PROJECT_FILE = Path('$PW_PROJECT_ROOT/.pw_ide.yaml')
@@ -84,7 +93,19 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
         deleted or manipulated by other processes (e.g. the GN ``out``
         directory) nor should it be committed to source control.
         """
-        return Path(self._config.get('working_dir', _PW_IDE_DEFAULT_DIR))
+        return Path(self._config.get('working_dir', PW_IDE_DEFAULT_DIR))
+
+    @property
+    def build_dir(self) -> Path:
+        """The build system's root output directory.
+
+        We will use this as the output directory when automatically running
+        build system commands, and will use it to resolve target names using
+        target name inference when processing compilation databases. This can
+        be the same build directory used for general-purpose builds, but it
+        does not have to be.
+        """
+        return Path(self._config.get('build_dir', _DEFAULT_BUILD_DIR))
 
     @property
     def targets(self) -> List[str]:
@@ -104,6 +125,58 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
         name for the target.
         """
         return self._config.get('targets', list())
+
+    @property
+    def target_inference(self) -> str:
+        """A glob-like string for extracting a target name from an output path.
+
+        Build systems and projects have varying ways of organizing their build
+        directory structure. For a given compilation unit, we need to know how
+        to extract the build's target name from the build artifact path. A
+        simple example:
+
+        .. code-block:: none
+
+           clang++ hello.cc -o host/obj/hello.cc.o
+
+        The top-level directory ``host`` is the target name we want. The same
+        compilation unit might be used with another build target:
+
+        .. code-block:: none
+
+           gcc-arm-none-eabi hello.cc -o arm_dev_board/obj/hello.cc.o
+
+        In this case, this compile command is associated with the
+        ``arm_dev_board`` target.
+
+        When importing and processing a compilation database, we assume by
+        default that for each compile command, the corresponding target name is
+        the name of the top level directory within the build directory root
+        that contains the build artifact. This is the default behavior for most
+        build systems. However, if your project is structured differently, you
+        can provide a glob-like string that indicates how to extract the target
+        name from build artifact path.
+
+        A ``*`` indicates any directory, and ``?`` indicates the directory that
+        has the name of the target. The path is resolved from the build
+        directory root, and anything deeper than the target directory is
+        ignored. For example, a glob indicating that the directory two levels
+        down from the build directory root has the target name would be
+        expressed with ``*/*/?``.
+        """
+        return self._config.get('target_inference', _DEFAULT_TARGET_INFERENCE)
+
+    @property
+    def default_target(self) -> Optional[str]:
+        """The default target to use when calling ``--set-default``.
+
+        This target will be selected when ``pw ide cpp --set-default`` is
+        called. You can define an explicit default target here. If that command
+        is invoked without a default target definition, ``pw_ide`` will try to
+        infer the best choice of default target. Currently, it selects the
+        target with the broadest compilation unit coverage.
+        """
+        return self._config.get('default_target', None)
 
     @property
     def setup(self) -> List[str]:
@@ -192,8 +265,17 @@ def _docstring_set_default(obj: Any,
 _docstring_set_default(PigweedIdeSettings.working_dir,
                        PW_IDE_DIR_NAME,
                        literal=True)
+_docstring_set_default(PigweedIdeSettings.build_dir,
+                       _DEFAULT_BUILD_DIR_NAME,
+                       literal=True)
 _docstring_set_default(PigweedIdeSettings.targets,
                        _DEFAULT_CONFIG['targets'],
+                       literal=True)
+_docstring_set_default(PigweedIdeSettings.default_target,
+                       _DEFAULT_CONFIG['default_target'],
+                       literal=True)
+_docstring_set_default(PigweedIdeSettings.target_inference,
+                       _DEFAULT_CONFIG['target_inference'],
                        literal=True)
 _docstring_set_default(PigweedIdeSettings.setup,
                        _DEFAULT_CONFIG['setup'],

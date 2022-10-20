@@ -26,7 +26,10 @@ source control, and applies only to that checkout of the project. All of these
 files have the same schema, in which these options can be configured:
 
 .. autoproperty:: pw_ide.settings.PigweedIdeSettings.working_dir
+.. autoproperty:: pw_ide.settings.PigweedIdeSettings.build_dir
 .. autoproperty:: pw_ide.settings.PigweedIdeSettings.targets
+.. autoproperty:: pw_ide.settings.PigweedIdeSettings.target_inference
+.. autoproperty:: pw_ide.settings.PigweedIdeSettings.default_target
 .. autoproperty:: pw_ide.settings.PigweedIdeSettings.setup
 .. autoproperty:: pw_ide.settings.PigweedIdeSettings.clangd_additional_query_drivers
 .. autoproperty:: pw_ide.settings.PigweedIdeSettings.editors
@@ -50,7 +53,10 @@ Assuming you have a compilation database output from a build system, start with:
 
 The ``pw_ide`` working directory will now contain one or more compilation
 database files, each for a separate target among the targets defined in
-``.pw_ide.yaml``. List the available targets with:
+``.pw_ide.yaml``. If you're using GN, you can generate the initial compilation
+database and process it in a single command by adding the ``--gn`` flag.
+
+List the available targets with:
 
 .. code-block:: bash
 

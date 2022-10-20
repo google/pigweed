@@ -161,6 +161,32 @@ class TestEditorSettingsFile(PwIdeTestCase):
 
         self.assertEqual(settings_dict['hello'], 'world')
 
+    def test_open_existing_file_with_reinit_and_backup(self):
+        name = 'settings'
+        json_fmt = JsonFileFormat()
+        settings_file = EditorSettingsFile(self.temp_dir_path, name, json_fmt)
+
+        with settings_file.modify() as settings:
+            settings['hello'] = 'world'
+
+        with settings_file.modify(reinit=True) as settings:
+            settings['hello'] = 'mundo'
+
+        settings_dict = settings_file.get()
+        self.assertEqual(settings_dict['hello'], 'mundo')
+
+        backup_files = [
+            path for path in self.temp_dir_path.iterdir()
+            if path.name != f'{name}.{json_fmt.ext}'
+        ]
+
+        self.assertEqual(len(backup_files), 1)
+
+        with open(backup_files[0]) as file:
+            settings_dict = json_fmt.load(file)
+
+        self.assertEqual(settings_dict['hello'], 'world')
+
     def open_existing_file_no_change_no_backup(self):
         name = 'settings'
         json_fmt = JsonFileFormat()
