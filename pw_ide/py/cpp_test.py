@@ -32,6 +32,7 @@ from pw_ide.cpp import (
     compdb_generate_file_path,
     compdb_target_from_path,
     CppCompilationDatabase,
+    CppCompilationDatabasesMap,
     CppCompileCommand,
     CppCompileCommandDict,
     CppIdeFeaturesState,
@@ -197,11 +198,8 @@ class TestPathToExecutable(PwIdeTestCase):
 class TestInferTarget(unittest.TestCase):
     """Tests infer_target"""
     def test_infer_target_pos(self):
-        test_cases = [
-            ('?', 0),
-            ('*/?', 1),
-            ('*/*/?', 2),
-        ]
+        test_cases = [('?', [0]), ('*/?', [1]), ('*/*/?', [2]),
+                      ('*/?/?', [1, 2])]
 
         for glob, result in test_cases:
             self.assertEqual(_infer_target_pos(glob), result)
@@ -211,6 +209,7 @@ class TestInferTarget(unittest.TestCase):
             ('?', 'target/thing.o', 'target'),
             ('*/?', 'variants/target/foo/bar/thing.o', 'target'),
             ('*/*/*/*/?', 'foo/bar/baz/hi/target/obj/thing.o', 'target'),
+            ('*/?/?', 'variants/target/foo/bar/thing.o', 'target_foo')
         ]
 
         for glob, output_path, result in test_cases:
@@ -364,7 +363,81 @@ class TestCppCompilationDatabase(PwIdeTestCase):
             },
         ]
 
+        self.fixture_merge_1 = [
+            {
+                # pylint: disable=line-too-long
+                'command':
+                'g++ -MMD -MF  pw_strict_host_gcc_debug/obj/pw_allocator/block.block.cc.o.d  -Wno-psabi -Og -Wshadow -Wredundant-decls -Wswitch-enum -Wpedantic -Wno-c++20-designator -Wno-gnu-zero-variadic-macro-arguments -fdiagnostics-color -g -fno-common -fno-exceptions -ffunction-sections -fdata-sections -Wall -Wextra -Wimplicit-fallthrough -Wcast-qual -Wundef -Wpointer-arith -Werror -Wno-error=cpp -Wno-error=deprecated-declarations -ffile-prefix-map=/pigweed/pigweed/out=out -ffile-prefix-map=/pigweed/pigweed/= -ffile-prefix-map=../= -ffile-prefix-map=/pigweed/pigweed/out=out  -Wextra-semi -fno-rtti -Wnon-virtual-dtor -std=c++17 -Wno-register  -DPW_SPAN_ENABLE_ASSERTS=true -DPW_STATUS_CFG_CHECK_IF_USED=1  -I../pw_allocator/public -I../pw_assert/public -I../pw_assert/print_and_abort_assert_public_overrides -I../pw_preprocessor/public -I../pw_assert_basic/public_overrides -I../pw_assert_basic/public -I../pw_span/public -I../pw_polyfill/public -I../pw_polyfill/standard_library_public -I../pw_status/public -c ../pw_allocator/block.cc -o  pw_strict_host_gcc_debug/obj/pw_allocator/block.block.cc.o',
+                'directory':
+                '/pigweed/pigweed/out',
+                'file':
+                '../pw_allocator/block.cc',
+                'output':
+                'pw_strict_host_gcc_debug/obj/pw_allocator/block.block.cc.o',
+                # pylint: enable=line-too-long
+            },
+            {
+                # pylint: disable=line-too-long
+                'command':
+                'g++ -MMD -MF  pw_strict_host_gcc_debug/obj/pw_allocator/freelist.freelist.cc.o.d  -Wno-psabi -Og -Wshadow -Wredundant-decls -Wswitch-enum -Wpedantic -Wno-c++20-designator -Wno-gnu-zero-variadic-macro-arguments -fdiagnostics-color -g -fno-common -fno-exceptions -ffunction-sections -fdata-sections -Wall -Wextra -Wimplicit-fallthrough -Wcast-qual -Wundef -Wpointer-arith -Werror -Wno-error=cpp -Wno-error=deprecated-declarations -ffile-prefix-map=//pigweed/pigweed/out=out -ffile-prefix-map=/pigweed/pigweed/= -ffile-prefix-map=../= -ffile-prefix-map=/pigweed/pigweed/out=out  -Wextra-semi -fno-rtti -Wnon-virtual-dtor -std=c++17 -Wno-register  -DPW_SPAN_ENABLE_ASSERTS=true -DPW_STATUS_CFG_CHECK_IF_USED=1  -I../pw_allocator/public -I../pw_containers/public -I../pw_assert/public -I../pw_assert/print_and_abort_assert_public_overrides -I../pw_preprocessor/public -I../pw_assert_basic/public_overrides -I../pw_assert_basic/public -I../pw_polyfill/public -I../pw_polyfill/standard_library_public -I../pw_span/public -I../pw_status/public -c ../pw_allocator/freelist.cc -o  pw_strict_host_gcc_debug/obj/pw_allocator/freelist.freelist.cc.o',
+                'directory':
+                '/pigweed/pigweed/out',
+                'file':
+                '../pw_allocator/freelist.cc',
+                'output':
+                'pw_strict_host_gcc_debug/obj/pw_allocator/freelist.freelist.cc.o',
+                # pylint: enable=line-too-long
+            },
+        ]
+
+        self.fixture_merge_2 = [
+            {
+                # pylint: disable=line-too-long
+                'command':
+                'g++ -MMD -MF  pw_strict_host_gcc_debug/obj/pw_base64/pw_base64.base64.cc.o.d  -Wno-psabi -Og -Wshadow -Wredundant-decls -Wswitch-enum -Wpedantic -Wno-c++20-designator -Wno-gnu-zero-variadic-macro-arguments -fdiagnostics-color -g -fno-common -fno-exceptions -ffunction-sections -fdata-sections -Wall -Wextra -Wimplicit-fallthrough -Wcast-qual -Wundef -Wpointer-arith -Werror -Wno-error=cpp -Wno-error=deprecated-declarations -ffile-prefix-map=/pigweed/pigweed/out=out -ffile-prefix-map=/pigweed/pigweed/= -ffile-prefix-map=../= -ffile-prefix-map=/pigweed/pigweed/out=out  -Wextra-semi -fno-rtti -Wnon-virtual-dtor -std=c++17 -Wno-register  -DPW_SPAN_ENABLE_ASSERTS=true  -I../pw_base64/public -I../pw_string/public -I../pw_assert/public -I../pw_assert/print_and_abort_assert_public_overrides -I../pw_preprocessor/public -I../pw_assert_basic/public_overrides -I../pw_assert_basic/public -I../pw_polyfill/public -I../pw_polyfill/standard_library_public -I../pw_span/public -c ../pw_base64/base64.cc -o  pw_strict_host_gcc_debug/obj/pw_base64/pw_base64.base64.cc.o',
+                'directory':
+                '/pigweed/pigweed/out',
+                'file':
+                '../pw_base64/base64.cc',
+                'output':
+                'pw_strict_host_gcc_debug/obj/pw_base64/pw_base64.base64.cc.o',
+                # pylint: enable=line-too-long
+            },
+            {
+                # pylint: disable=line-too-long
+                'command':
+                'g++ -MMD -MF  pw_strict_host_gcc_debug/obj/pw_checksum/pw_checksum.crc32.cc.o.d  -Wno-psabi -Og -Wshadow -Wredundant-decls -Wswitch-enum -Wpedantic -Wno-c++20-designator -Wno-gnu-zero-variadic-macro-arguments -fdiagnostics-color -g -fno-common -fno-exceptions -ffunction-sections -fdata-sections -Wall -Wextra -Wimplicit-fallthrough -Wcast-qual -Wundef -Wpointer-arith -Werror -Wno-error=cpp -Wno-error=deprecated-declarations -ffile-prefix-map=/pigweed/pigweed/out=out -ffile-prefix-map=/pigweed/pigweed/= -ffile-prefix-map=../= -ffile-prefix-map=/pigweed/pigweed/out=out  -Wextra-semi -fno-rtti -Wnon-virtual-dtor -std=c++17 -Wno-register  -DPW_SPAN_ENABLE_ASSERTS=true -DPW_STATUS_CFG_CHECK_IF_USED=1  -I../pw_checksum/public -I../pw_bytes/public -I../pw_containers/public -I../pw_polyfill/public -I../pw_polyfill/standard_library_public -I../pw_preprocessor/public -I../pw_span/public -I../pw_assert/public -I../pw_assert/print_and_abort_assert_public_overrides -I../pw_status/public -c ../pw_checksum/crc32.cc -o  pw_strict_host_gcc_debug/obj/pw_checksum/pw_checksum.crc32.cc.o',
+                'directory':
+                'pigweed/pigweed/out',
+                'file':
+                '../pw_checksum/crc32.cc',
+                'output':
+                'pw_strict_host_gcc_debug/obj/pw_checksum/pw_checksum.crc32.cc.o',
+                # pylint: enable=line-too-long
+            },
+        ]
+
         return super().setUp()
+
+    def test_merge(self):
+        compdb1 = CppCompilationDatabase.load(self.fixture_merge_1,
+                                              self.build_dir)
+        compdb2 = CppCompilationDatabase.load(self.fixture_merge_2,
+                                              self.build_dir)
+        compdb1.merge(compdb2)
+        result = [compile_command.as_dict() for compile_command in compdb1]
+        expected = [*self.fixture_merge_1, *self.fixture_merge_2]
+        self.assertCountEqual(result, expected)
+
+    def test_merge_no_dupes(self):
+        compdb1 = CppCompilationDatabase.load(self.fixture_merge_1,
+                                              self.build_dir)
+        fixture_combo = [*self.fixture_merge_1, *self.fixture_merge_2]
+        compdb2 = CppCompilationDatabase.load(fixture_combo, self.build_dir)
+        compdb1.merge(compdb2)
+        result = [compile_command.as_dict() for compile_command in compdb1]
+        expected = [*self.fixture_merge_1, *self.fixture_merge_2]
+        self.assertCountEqual(result, expected)
 
     def test_load_from_dicts(self):
         compdb = CppCompilationDatabase.load(self.fixture, self.build_dir)
@@ -393,8 +466,7 @@ class TestCppCompilationDatabase(PwIdeTestCase):
         self.assertCountEqual(compdb.as_dicts(), self.expected)
 
     def test_process(self):
-        """Test compilation database processing against a typical sample of
-        raw output from GN."""
+        """Test processing against a typical sample of raw output from GN."""
 
         targets = [
             'pw_strict_host_clang_debug',
@@ -499,6 +571,90 @@ class TestCppCompilationDatabase(PwIdeTestCase):
         self.assertCountEqual(list(compdbs_as_dicts.keys()),
                               list(expected_compdbs.keys()))
         self.assertDictEqual(compdbs_as_dicts, expected_compdbs)
+
+
+class TestCppCompilationDatabasesMap(PwIdeTestCase):
+    """Tests CppCompilationDatabasesMap"""
+    def setUp(self):
+        self.fixture_1 = lambda target: [
+            CppCompileCommand(
+                **{
+                    # pylint: disable=line-too-long
+                    'command':
+                    f'g++ -MMD -MF  {target}/obj/pw_allocator/block.block.cc.o.d  -Wno-psabi -Og -Wshadow -Wredundant-decls -Wswitch-enum -Wpedantic -Wno-c++20-designator -Wno-gnu-zero-variadic-macro-arguments -fdiagnostics-color -g -fno-common -fno-exceptions -ffunction-sections -fdata-sections -Wall -Wextra -Wimplicit-fallthrough -Wcast-qual -Wundef -Wpointer-arith -Werror -Wno-error=cpp -Wno-error=deprecated-declarations -ffile-prefix-map=/pigweed/pigweed/out=out -ffile-prefix-map=/pigweed/pigweed/= -ffile-prefix-map=../= -ffile-prefix-map=/pigweed/pigweed/out=out  -Wextra-semi -fno-rtti -Wnon-virtual-dtor -std=c++17 -Wno-register  -DPW_SPAN_ENABLE_ASSERTS=true -DPW_STATUS_CFG_CHECK_IF_USED=1  -I../pw_allocator/public -I../pw_assert/public -I../pw_assert/print_and_abort_assert_public_overrides -I../pw_preprocessor/public -I../pw_assert_basic/public_overrides -I../pw_assert_basic/public -I../pw_span/public -I../pw_polyfill/public -I../pw_polyfill/standard_library_public -I../pw_status/public -c ../pw_allocator/block.cc -o  pw_strict_host_gcc_debug/obj/pw_allocator/block.block.cc.o',
+                    # pylint: enable=line-too-long
+                    'directory': '/pigweed/pigweed/out',
+                    'file': '../pw_allocator/block.cc'
+                }),
+            CppCompileCommand(
+                **{
+                    # pylint: disable=line-too-long
+                    'command':
+                    f'g++ -MMD -MF  {target}/obj/pw_allocator/freelist.freelist.cc.o.d  -Wno-psabi -Og -Wshadow -Wredundant-decls -Wswitch-enum -Wpedantic -Wno-c++20-designator -Wno-gnu-zero-variadic-macro-arguments -fdiagnostics-color -g -fno-common -fno-exceptions -ffunction-sections -fdata-sections -Wall -Wextra -Wimplicit-fallthrough -Wcast-qual -Wundef -Wpointer-arith -Werror -Wno-error=cpp -Wno-error=deprecated-declarations -ffile-prefix-map=//pigweed/pigweed/out=out -ffile-prefix-map=/pigweed/pigweed/= -ffile-prefix-map=../= -ffile-prefix-map=/pigweed/pigweed/out=out  -Wextra-semi -fno-rtti -Wnon-virtual-dtor -std=c++17 -Wno-register  -DPW_SPAN_ENABLE_ASSERTS=true -DPW_STATUS_CFG_CHECK_IF_USED=1  -I../pw_allocator/public -I../pw_containers/public -I../pw_assert/public -I../pw_assert/print_and_abort_assert_public_overrides -I../pw_preprocessor/public -I../pw_assert_basic/public_overrides -I../pw_assert_basic/public -I../pw_polyfill/public -I../pw_polyfill/standard_library_public -I../pw_span/public -I../pw_status/public -c ../pw_allocator/freelist.cc -o  pw_strict_host_gcc_debug/obj/pw_allocator/freelist.freelist.cc.o',
+                    # pylint: enable=line-too-long
+                    'directory': '/pigweed/pigweed/out',
+                    'file': '../pw_allocator/freelist.cc'
+                }),
+        ]
+
+        self.fixture_2 = lambda target: [
+            CppCompileCommand(
+                **{
+                    # pylint: disable=line-too-long
+                    'command':
+                    f'g++ -MMD -MF  {target}/obj/pw_base64/pw_base64.base64.cc.o.d  -Wno-psabi -Og -Wshadow -Wredundant-decls -Wswitch-enum -Wpedantic -Wno-c++20-designator -Wno-gnu-zero-variadic-macro-arguments -fdiagnostics-color -g -fno-common -fno-exceptions -ffunction-sections -fdata-sections -Wall -Wextra -Wimplicit-fallthrough -Wcast-qual -Wundef -Wpointer-arith -Werror -Wno-error=cpp -Wno-error=deprecated-declarations -ffile-prefix-map=/pigweed/pigweed/out=out -ffile-prefix-map=/pigweed/pigweed/= -ffile-prefix-map=../= -ffile-prefix-map=/pigweed/pigweed/out=out  -Wextra-semi -fno-rtti -Wnon-virtual-dtor -std=c++17 -Wno-register  -DPW_SPAN_ENABLE_ASSERTS=true  -I../pw_base64/public -I../pw_string/public -I../pw_assert/public -I../pw_assert/print_and_abort_assert_public_overrides -I../pw_preprocessor/public -I../pw_assert_basic/public_overrides -I../pw_assert_basic/public -I../pw_polyfill/public -I../pw_polyfill/standard_library_public -I../pw_span/public -c ../pw_base64/base64.cc -o  pw_strict_host_gcc_debug/obj/pw_base64/pw_base64.base64.cc.o',
+                    # pylint: enable=line-too-long
+                    'directory': '/pigweed/pigweed/out',
+                    'file': '../pw_base64/base64.cc'
+                }),
+            CppCompileCommand(
+                **{
+                    # pylint: disable=line-too-long
+                    'command':
+                    f'g++ -MMD -MF  {target}/obj/pw_checksum/pw_checksum.crc32.cc.o.d  -Wno-psabi -Og -Wshadow -Wredundant-decls -Wswitch-enum -Wpedantic -Wno-c++20-designator -Wno-gnu-zero-variadic-macro-arguments -fdiagnostics-color -g -fno-common -fno-exceptions -ffunction-sections -fdata-sections -Wall -Wextra -Wimplicit-fallthrough -Wcast-qual -Wundef -Wpointer-arith -Werror -Wno-error=cpp -Wno-error=deprecated-declarations -ffile-prefix-map=/pigweed/pigweed/out=out -ffile-prefix-map=/pigweed/pigweed/= -ffile-prefix-map=../= -ffile-prefix-map=/pigweed/pigweed/out=out  -Wextra-semi -fno-rtti -Wnon-virtual-dtor -std=c++17 -Wno-register  -DPW_SPAN_ENABLE_ASSERTS=true -DPW_STATUS_CFG_CHECK_IF_USED=1  -I../pw_checksum/public -I../pw_bytes/public -I../pw_containers/public -I../pw_polyfill/public -I../pw_polyfill/standard_library_public -I../pw_preprocessor/public -I../pw_span/public -I../pw_assert/public -I../pw_assert/print_and_abort_assert_public_overrides -I../pw_status/public -c ../pw_checksum/crc32.cc -o  pw_strict_host_gcc_debug/obj/pw_checksum/pw_checksum.crc32.cc.o',
+                    # pylint: enable=line-too-long
+                    'directory': 'pigweed/pigweed/out',
+                    'file': '../pw_checksum/crc32.cc'
+                }),
+        ]
+        super().setUp()
+
+    def test_merge_0_db_set(self):
+        with self.assertRaises(ValueError):
+            CppCompilationDatabasesMap.merge()
+
+    def test_merge_1_db_set(self):
+        settings = self.make_ide_settings()
+        target = 'test_target'
+        db_set = CppCompilationDatabasesMap(settings)
+        db_set[target] = self.fixture_1(target)
+        result = CppCompilationDatabasesMap.merge(db_set)
+        self.assertCountEqual(result._dbs, db_set._dbs)
+
+    def test_merge_2_db_sets_different_targets(self):
+        settings = self.make_ide_settings()
+        target1 = 'test_target_1'
+        target2 = 'test_target_2'
+        db_set1 = CppCompilationDatabasesMap(settings)
+        db_set1[target1] = self.fixture_1(target1)
+        db_set2 = CppCompilationDatabasesMap(settings)
+        db_set2[target2] = self.fixture_2(target2)
+        result = CppCompilationDatabasesMap.merge(db_set1, db_set2)
+        self.assertEqual(len(result), 2)
+        self.assertCountEqual(result._dbs, {**db_set1._dbs, **db_set2._dbs})
+
+    def test_merge_2_db_sets_duplicated_targets(self):
+        settings = self.make_ide_settings()
+        target1 = 'test_target_1'
+        target2 = 'test_target_2'
+        db_set1 = CppCompilationDatabasesMap(settings)
+        db_set1[target1] = self.fixture_1(target1)
+        db_set2 = CppCompilationDatabasesMap(settings)
+        db_set2[target2] = self.fixture_2(target2)
+        db_set_combo = CppCompilationDatabasesMap.merge(db_set1, db_set2)
+        result = CppCompilationDatabasesMap.merge(db_set1, db_set_combo)
+        self.assertEqual(len(result), 2)
+        self.assertCountEqual(result._dbs, {**db_set1._dbs, **db_set2._dbs})
 
 
 class TestCppIdeFeaturesState(PwIdeTestCase):

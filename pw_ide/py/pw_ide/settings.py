@@ -15,6 +15,7 @@
 
 import enum
 from inspect import cleandoc
+import glob
 import os
 from pathlib import Path
 from typing import Any, cast, Dict, List, Literal, Optional, Union
@@ -35,6 +36,7 @@ _DEFAULT_BUILD_DIR_NAME = 'out'
 _DEFAULT_BUILD_DIR = (Path(os.path.expandvars('$PW_PROJECT_ROOT')) /
                       _DEFAULT_BUILD_DIR_NAME)
 
+_DEFAULT_COMPDB_PATHS = [_DEFAULT_BUILD_DIR]
 _DEFAULT_TARGET_INFERENCE = '?'
 
 SupportedEditorName = Literal['vscode']
@@ -51,6 +53,7 @@ _DEFAULT_SUPPORTED_EDITORS: Dict[SupportedEditorName, bool] = {
 _DEFAULT_CONFIG: Dict[str, Any] = {
     'clangd_additional_query_drivers': [],
     'build_dir': _DEFAULT_BUILD_DIR,
+    'compdb_paths': _DEFAULT_BUILD_DIR_NAME,
     'default_target': None,
     'editors': _DEFAULT_SUPPORTED_EDITORS,
     'setup': ['pw --no-banner ide cpp --gn '
@@ -106,6 +109,20 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
         does not have to be.
         """
         return Path(self._config.get('build_dir', _DEFAULT_BUILD_DIR))
+
+    @property
+    def compdb_paths(self) -> str:
+        """A path glob to search for compilation databases.
+
+        These paths can be to files or to directories. Paths that are
+        directories will be appended with the default file name for
+        ``clangd`` compilation databases, ``compile_commands.json``.
+        """
+        return self._config.get('compdb_paths', _DEFAULT_BUILD_DIR_NAME)
+
+    @property
+    def compdb_paths_expanded(self) -> List[Path]:
+        return [Path(node) for node in glob.iglob(self.compdb_paths)]
 
     @property
     def targets(self) -> List[str]:
@@ -267,6 +284,9 @@ _docstring_set_default(PigweedIdeSettings.working_dir,
                        literal=True)
 _docstring_set_default(PigweedIdeSettings.build_dir,
                        _DEFAULT_BUILD_DIR_NAME,
+                       literal=True)
+_docstring_set_default(PigweedIdeSettings.compdb_paths,
+                       _DEFAULT_CONFIG['compdb_paths'],
                        literal=True)
 _docstring_set_default(PigweedIdeSettings.targets,
                        _DEFAULT_CONFIG['targets'],

@@ -300,11 +300,12 @@ def _build_argument_parser() -> argparse.ArgumentParser:
         'along with any other arguments defined in args.gn')
     parser_cpp.add_argument('-p',
                             '--process',
-                            dest='compdb_file_path',
+                            dest='compdb_file_paths',
+                            metavar='COMPILATION_DATABASE_FILES',
                             type=Path,
-                            metavar='COMPILATION_DATABASE_FILE',
-                            help='process a file matching the clang '
-                            'compilation database format')
+                            nargs='*',
+                            help='process a file or several files matching '
+                            'the clang compilation database format')
     parser_cpp.add_argument('--build-dir',
                             type=Path,
                             help='override the build directory defined in '

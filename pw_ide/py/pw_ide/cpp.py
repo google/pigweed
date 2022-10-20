@@ -468,19 +468,20 @@ class CppCompileCommand:
         return compile_command_dict
 
 
-def _infer_target_pos(target_glob: str) -> Optional[int]:
+def _infer_target_pos(target_glob: str) -> List[int]:
     """Infer the position of the target in a compilation unit artifact path."""
     tokens = Path(target_glob).parts
+    positions = []
 
     for pos, token in enumerate(tokens):
-        if token == '?':  # pylint: disable=no-else-return
-            return pos
+        if token == '?':
+            positions.append(pos)
         elif token == '*':
             pass
         else:
             raise ValueError(f'Invalid target inference token: {token}')
 
-    return None
+    return positions
 
 
 def infer_target(target_glob: str, root: Path,
@@ -490,7 +491,7 @@ def infer_target(target_glob: str, root: Path,
     See the documentation for ``PigweedIdeSettings.target_inference``."""
     target_pos = _infer_target_pos(target_glob)
 
-    if target_pos is None:
+    if len(target_pos) == 0:
         return None
 
     # Depending on the build system and project configuration, the target name
@@ -498,7 +499,7 @@ def infer_target(target_glob: str, root: Path,
     # need to construct the full path that combines both and use that to search
     # for the target.
     subpath = output_path.relative_to(root)
-    return subpath.parts[target_pos]
+    return '_'.join([subpath.parts[pos] for pos in target_pos])
 
 
 LoadableToCppCompilationDatabase = Union[List[Dict[str, Any]], str, TextIOBase,
@@ -531,6 +532,20 @@ class CppCompilationDatabase:
     def add(self, *commands: CppCompileCommand):
         """Add compile commands to the compilation database."""
         self._db.extend(commands)
+
+    def merge(self, other: 'CppCompilationDatabase') -> None:
+        """Merge values from another database into this one.
+
+        This will not overwrite a compile command that already exists for a
+        particular file.
+        """
+        self_dict = {c.file: c for c in self._db}
+
+        for compile_command in other:
+            if compile_command.file not in self_dict:
+                self_dict[compile_command.file] = compile_command
+
+        self._db = list(self_dict.values())
 
     def as_dicts(self) -> List[CppCompileCommandDict]:
         return [compile_command.as_dict() for compile_command in self._db]
@@ -638,9 +653,12 @@ class CppCompilationDatabase:
 class CppCompilationDatabasesMap:
     """Container for a map of target name to compilation database."""
     def __init__(self, settings: PigweedIdeSettings):
-        self._settings = settings
+        self.settings = settings
         self._dbs: Dict[str, CppCompilationDatabase] = (
             defaultdict(CppCompilationDatabase))
+
+    def __len__(self) -> int:
+        return len(self._dbs)
 
     def __getitem__(self, key: str) -> CppCompilationDatabase:
         return self._dbs[key]
@@ -670,19 +688,62 @@ class CppCompilationDatabasesMap:
                 max_commands_target = target
                 max_commands = len(compdb)
 
-            compdb.to_file(self._settings.working_dir /
+            compdb.to_file(self.settings.working_dir /
                            compdb_generate_file_path(target))
 
-        max_commands_target_path = (self._settings.working_dir /
+        max_commands_target_path = (self.settings.working_dir /
                                     MAX_COMMANDS_TARGET_FILENAME)
 
-        if max_commands_target_path.exists():
-            max_commands_target_path.unlink()
-
         if max_commands_target is not None:
+            if max_commands_target_path.exists():
+                max_commands_target_path.unlink()
+
             with open(max_commands_target_path,
                       'x') as max_commands_target_file:
                 max_commands_target_file.write(max_commands_target)
+
+    @classmethod
+    def merge(
+        cls, *db_sets: 'CppCompilationDatabasesMap'
+    ) -> 'CppCompilationDatabasesMap':
+        """Merge several sets of processed compilation databases.
+
+        If you process N compilation databases produced by a build system,
+        you'll end up with N sets of processed compilation databases,
+        containing databases for one or more targets each. This method
+        merges them into one set of databases with one database per target.
+
+        The expectation is that the vast majority of the time, each of the
+        raw compilation databases that are processed will contain distinct
+        targets, meaning that the keys of each ``CppCompilationDatabases``
+        object that's merged will be unique to each object, and this operation
+        is nothing more than a shallow merge.
+
+        However, this also supports the case where targets may overlap between
+        ``CppCompilationDatabases`` objects. In that case, we prioritize
+        correctness, ensuring that the resulting compilation databases will
+        work correctly with clangd. This means not including duplicate compile
+        commands for the same file in the same target's database. The choice
+        of which duplicate compile command ends up in the final database is
+        unspecified and subject to change. Note also that this method expects
+        the ``settings`` value to be the same between all of the provided
+        ``CppCompilationDatabases`` objects.
+        """
+        if len(db_sets) == 0:
+            raise ValueError('At least one set of compilation databases is '
+                             'required.')
+
+        # Shortcut for the most common case.
+        if len(db_sets) == 1:
+            return db_sets[0]
+
+        merged = cls(db_sets[0].settings)
+
+        for dbs in db_sets:
+            for target, db in dbs.items():
+                merged[target].merge(db)
+
+        return merged
 
 
 @dataclass(frozen=True)

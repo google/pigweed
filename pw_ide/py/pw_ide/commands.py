@@ -24,8 +24,8 @@ from typing import cast, Callable, List, Optional, Set, Tuple, Union
 from pw_cli.color import colors
 
 from pw_ide.cpp import (ClangdSettings, compdb_generate_file_path,
-                        CppCompilationDatabase, CppIdeFeaturesState,
-                        delete_compilation_databases,
+                        CppCompilationDatabase, CppCompilationDatabasesMap,
+                        CppIdeFeaturesState, delete_compilation_databases,
                         delete_compilation_database_caches,
                         MAX_COMMANDS_TARGET_FILENAME)
 
@@ -404,7 +404,7 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
         should_list_targets: bool,
         should_get_target: bool,
         target_to_set: Optional[str],
-        compdb_file_path: Optional[Path],
+        compdb_file_paths: Optional[List[Path]],
         build_dir: Optional[Path],
         use_default_target: bool = False,
         should_run_ninja: bool = False,
@@ -436,7 +436,7 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
 
     Refer to the Pigweed documentation or your build system's documentation to
     learn how to produce a clangd compilation database. Once you have one, run
-    this command to process it:
+    this command to process it (or provide a glob to process multiple):
 
     .. code-block:: bash
 
@@ -499,12 +499,24 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
 
         pw ide cpp --clangd-command-for json
     """
+    _make_working_dir(reporter, pw_ide_settings, quiet=True)
 
     # If true, no arguments were provided so we do the default behavior.
     default = True
-    _make_working_dir(reporter, pw_ide_settings, quiet=True)
+
     build_dir = (build_dir
                  if build_dir is not None else pw_ide_settings.build_dir)
+
+    if compdb_file_paths is not None:
+        should_process = True
+
+        if len(compdb_file_paths) == 0:
+            compdb_file_paths = pw_ide_settings.compdb_paths_expanded
+    else:
+        should_process = False
+        # This simplifies typing in the rest of this method. We rely on
+        # `should_process` instead of the status of this variable.
+        compdb_file_paths = []
 
     # Order of operations matters from here on. It should be possible to run
     # a build system command to generate a compilation database, then process
@@ -518,22 +530,23 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
         ninja_commands = ['ninja', '-t', 'compdb']
         reporter.info(f'Running Ninja: {" ".join(ninja_commands)}')
 
-        _compdb_file_path = (build_dir / compdb_generate_file_path())
+        output_compdb_file_path = (build_dir / compdb_generate_file_path())
 
         try:
-            with open(_compdb_file_path, 'w') as compdb_file:
+            # Ninja writes to STDOUT, so we capture to a file.
+            with open(output_compdb_file_path, 'w') as compdb_file:
                 result = subprocess.run(ninja_commands,
                                         cwd=build_dir,
                                         stdout=compdb_file,
                                         stderr=subprocess.PIPE)
         except FileNotFoundError:
-            reporter.err(f'Could not open path! {str(_compdb_file_path)}')
+            reporter.err(
+                f'Could not open path! {str(output_compdb_file_path)}')
 
         if result.returncode == 0:
             reporter.info('Ran Ninja successfully!')
-
-            if compdb_file_path is None:
-                compdb_file_path = (build_dir / compdb_generate_file_path())
+            should_process = True
+            compdb_file_paths.append(output_compdb_file_path)
         else:
             reporter.err('Something went wrong!')
             # Convert from bytes and remove trailing newline
@@ -578,9 +591,9 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
                 gn_status_lines.append(line)
 
             reporter.info(gn_status_lines)
-
-            if compdb_file_path is None:
-                compdb_file_path = (build_dir / compdb_generate_file_path())
+            should_process = True
+            output_compdb_file_path = (build_dir / compdb_generate_file_path())
+            compdb_file_paths.append(output_compdb_file_path)
         else:
             reporter.err('Something went wrong!')
             # Convert from bytes and remove trailing newline
@@ -591,35 +604,62 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
 
             sys.exit(1)
 
-    if compdb_file_path is not None:
+    if should_process:
         default = False
         prev_targets = len(CppIdeFeaturesState(pw_ide_settings))
+        compdb_databases: List[CppCompilationDatabasesMap] = []
+        last_processed_path = Path()
+
+        for compdb_file_path in compdb_file_paths:
+            # If the path is a dir, append the default compile commands
+            # file name.
+            if compdb_file_path.is_dir():
+                compdb_file_path /= compdb_generate_file_path()
+
+            try:
+                compdb_databases.append(
+                    CppCompilationDatabase\
+                        .load(Path(compdb_file_path), build_dir)\
+                        .process(
+                            settings=pw_ide_settings,
+                            path_globs=pw_ide_settings.clangd_query_drivers()))
+            except MissingCompDbException:
+                reporter.err(f'File not found: {str(compdb_file_path)}')
+
+                if '*' in str(compdb_file_path):
+                    reporter.wrn('It looks like you provided a glob that '
+                                 'did not match any files.')
+
+                sys.exit(1)
+            # TODO(chadnorvell): Recover more gracefully from errors.
+            except BadCompDbException:
+                reporter.err(
+                    'File does not match compilation database format: '
+                    f'{str(compdb_file_path)}')
+                sys.exit(1)
+
+            last_processed_path = compdb_file_path
+
+        if len(compdb_databases) == 0:
+            reporter.err('No compilation databases found in: '
+                         f'{str(compdb_file_paths)}')
+            sys.exit(1)
 
         try:
-            compdb = CppCompilationDatabase.load(compdb_file_path, build_dir)
-        except MissingCompDbException:
-            reporter.err(f'File not found: {str(compdb_file_path)}')
-            sys.exit(1)
-        except BadCompDbException:
-            reporter.err('File does not match compilation database format: '
-                         f'{str(compdb_file_path)}')
-            sys.exit(1)
-
-        compdbs_map = compdb.process(
-            settings=pw_ide_settings,
-            path_globs=pw_ide_settings.clangd_query_drivers())
-
-        try:
-            compdbs_map.write()
+            CppCompilationDatabasesMap.merge(*compdb_databases).write()
         except TypeError:
             reporter.err('Could not serialize file to JSON!')
-            sys.exit(1)
 
         total_targets = len(CppIdeFeaturesState(pw_ide_settings))
         new_targets = total_targets - prev_targets
 
+        if len(compdb_file_paths) == 1:
+            processed_text = str(last_processed_path)
+        else:
+            processed_text = f'{len(compdb_file_paths)} compilation databases'
+
         reporter.new([
-            f'Processed {str(compdb_file_path)} '
+            f'Processed {processed_text} '
             f'to {pw_ide_settings.working_dir}',
             f'{total_targets} targets are now available '
             f'({new_targets} are new)'

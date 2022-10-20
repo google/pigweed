@@ -27,6 +27,7 @@ files have the same schema, in which these options can be configured:
 
 .. autoproperty:: pw_ide.settings.PigweedIdeSettings.working_dir
 .. autoproperty:: pw_ide.settings.PigweedIdeSettings.build_dir
+.. autoproperty:: pw_ide.settings.PigweedIdeSettings.compdb_paths
 .. autoproperty:: pw_ide.settings.PigweedIdeSettings.targets
 .. autoproperty:: pw_ide.settings.PigweedIdeSettings.target_inference
 .. autoproperty:: pw_ide.settings.PigweedIdeSettings.default_target
@@ -49,7 +50,7 @@ Assuming you have a compilation database output from a build system, start with:
 
 .. code-block:: bash
 
-   pw ide cpp --process <path to your compile_commands.json>
+   pw ide cpp --process <path or glob to your compile_commands.json file(s)>
 
 The ``pw_ide`` working directory will now contain one or more compilation
 database files, each for a separate target among the targets defined in
