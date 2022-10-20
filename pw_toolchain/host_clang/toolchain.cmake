@@ -53,6 +53,9 @@ pw_set_backend(pw_rpc.system_server targets.host.system_rpc_server)
 pw_set_backend(pw_chrono.system_clock pw_chrono_stl.system_clock)
 pw_set_backend(pw_chrono.system_timer pw_chrono_stl.system_timer)
 
+# Configure backend for pw_perf_test's facade
+pw_set_backend(pw_perf_test.timer pw_perf_test.chrono_timer)
+
 # Configure backends for pw_thread's facades.
 pw_set_backend(pw_thread.id pw_thread_stl.id)
 pw_set_backend(pw_thread.yield pw_thread_stl.yield)

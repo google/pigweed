@@ -13,6 +13,23 @@
 # the License.
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
+
+pw_add_module_library(pw_perf_test.duration_unit
+  HEADERS
+    public/pw_perf_test/internal/duration_unit.h
+  PUBLIC_INCLUDES
+    public
+)
+
+pw_add_facade(pw_perf_test.timer
+  HEADERS
+    public/pw_perf_test/internal/timer.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_perf_test.duration_unit
+)
 
 pw_add_module_library(pw_perf_test
   SOURCES
@@ -23,8 +40,46 @@ pw_add_module_library(pw_perf_test
     public
 )
 
-pw_auto_add_module_tests(pw_perf_test
-  PRIVATE_DEPS
+pw_add_module_library(pw_perf_test.chrono_timer
+  IMPLEMENTS_FACADES
+    pw_perf_test.timer
+  HEADERS
+    chrono_public_overrides/pw_perf_test_timer_backend/timer.h
+    public/pw_perf_test/internal/chrono_timer_interface.h
+  PUBLIC_INCLUDES
+    chrono_public_overrides
+    public
+  PUBLIC_DEPS
+    pw_chrono.system_clock
+    pw_perf_test.duration_unit
 )
 
-# CMake does not yet support building docs.
+if(NOT "${pw_perf_test.TIMER_INTERFACE_BACKEND}"
+    STREQUAL "pw_perf_test.timer.NO_BACKEND_SET")
+  pw_add_test(pw_perf_test.timer_test
+    SOURCES
+      timer_test.cc
+    DEPS
+      pw_perf_test.timer
+      pw_thread.sleep
+      pw_chrono.system_clock
+    GROUPS
+      modules
+      pw_perf_test
+  )
+endif()
+
+if(NOT "${pw_perf_test.TIMER_INTERFACE_BACKEND}"
+    STREQUAL "pw_chrono.SYSTEM_CLOCK_BACKEND")
+  pw_add_test(pw_perf_test.chrono_timer_test
+    SOURCES
+      chrono_test.cc
+    DEPS
+      pw_perf_test.timer
+      pw_thread.sleep
+      pw_chrono.system_clock
+    GROUPS
+      modules
+      pw_perf_test
+  )
+endif()

@@ -18,3 +18,10 @@ In order to provide meaningful performance timings for given functions, events,
 etc a timing interface must be implemented from scratch to be able to provide
 for the testing needs. The timing API meets these needs by implementing
 either clock cycle record keeping or second based recordings.
+
+Time-Based Measurement
+======================
+In order to achieve time-based measurements, pw_perf_test depends on
+:ref:'module-pw_chrono' for its timing needs. At the moment, the interface will
+only measure performance in terms of nanoseconds. To see more information about
+how pw_chrono works, see the module documentation.

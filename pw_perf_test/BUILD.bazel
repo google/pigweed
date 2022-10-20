@@ -14,8 +14,13 @@
 
 load(
     "//pw_build:pigweed.bzl",
+    "pw_cc_facade",
     "pw_cc_library",
     "pw_cc_test",
+)
+load(
+    "//pw_build:selects.bzl",
+    "TARGET_COMPATIBLE_WITH_HOST_SELECT",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -23,10 +28,50 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 pw_cc_library(
+    name = "duration_unit",
+    hdrs = [
+        "public/pw_perf_test/internal/duration_unit.h",
+    ],
+    includes = ["public"],
+    visibility = ["//visibility:private"],
+)
+
+pw_cc_facade(
+    name = "timer_interface_facade",
+    hdrs = [
+        "public/pw_perf_test/internal/timer.h",
+    ],
+    includes = ["public"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":duration_unit",
+    ],
+)
+
+pw_cc_library(
+    name = "timer",
+    deps = [
+        ":timer_interface_facade",
+        "@pigweed_config//:pw_perf_test_timer_backend",
+    ],
+)
+
+pw_cc_library(
+    name = "timer_multiplexer",
+    visibility = ["@pigweed_config//:__pkg__"],
+    deps = select({
+        "//conditions:default": [":chrono_timer"],
+    }),
+)
+
+pw_cc_library(
     name = "pw_perf_test",
     srcs = ["perf_test.cc"],
     hdrs = ["public/pw_perf_test/perf_test.h"],
     includes = ["public"],
+    deps = [
+        ":timer",
+    ],
 )
 
 pw_cc_test(
@@ -35,8 +80,55 @@ pw_cc_test(
     deps = [":pw_perf_test"],
 )
 
+pw_cc_test(
+    name = "timer_test",
+    srcs = ["timer_test.cc"],
+    deps = [
+        ":timer",
+        "//pw_chrono:system_clock",
+        "//pw_thread:sleep",
+    ],
+)
+
+pw_cc_test(
+    name = "chrono_timer_test",
+    srcs = ["chrono_test.cc"],
+    deps = [
+        ":chrono_timer",
+        "//pw_chrono:system_clock",
+        "//pw_thread:sleep",
+    ],
+)
+
 # Bazel does not yet support building docs.
 filegroup(
     name = "docs",
     srcs = ["docs.rst"],
+)
+
+# Chrono Implementation
+
+pw_cc_library(
+    name = "chrono_timer_headers",
+    hdrs = [
+        "chrono_public_overrides/pw_perf_test_timer_backend/timer.h",
+        "public/pw_perf_test/internal/chrono_timer_interface.h",
+    ],
+    includes = [
+        "chrono_public_overrides",
+        "public",
+    ],
+    deps = [
+        ":duration_unit",
+        "//pw_chrono:system_clock",
+    ],
+)
+
+pw_cc_library(
+    name = "chrono_timer",
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    deps = [
+        ":chrono_timer_headers",
+        ":timer_interface_facade",
+    ],
 )
