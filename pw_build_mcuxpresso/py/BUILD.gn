@@ -29,4 +29,5 @@ pw_python_package("py") {
   ]
   tests = [ "tests/components_test.py" ]
   pylintrc = "$dir_pigweed/.pylintrc"
+  mypy_ini = "$dir_pigweed/.mypy.ini"
 }

@@ -58,6 +58,7 @@ pw_python_package("py") {
   ]
 
   pylintrc = "$dir_pigweed/.pylintrc"
+  mypy_ini = "$dir_pigweed/.mypy.ini"
 
   proto_library = "..:protos"
 }

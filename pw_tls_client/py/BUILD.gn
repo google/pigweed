@@ -26,4 +26,5 @@ pw_python_package("py") {
     "pw_tls_client/generate_test_data.py",
   ]
   pylintrc = "$dir_pigweed/.pylintrc"
+  mypy_ini = "$dir_pigweed/.mypy.ini"
 }

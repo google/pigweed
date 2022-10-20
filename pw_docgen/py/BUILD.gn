@@ -29,4 +29,5 @@ pw_python_package("py") {
     "pw_docgen/sphinx/google_analytics.py",
   ]
   pylintrc = "$dir_pigweed/.pylintrc"
+  mypy_ini = "$dir_pigweed/.mypy.ini"
 }

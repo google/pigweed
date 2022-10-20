@@ -36,4 +36,5 @@ pw_python_package("py") {
     "..:codegen_protos.python",
   ]
   pylintrc = "$dir_pigweed/.pylintrc"
+  mypy_ini = "$dir_pigweed/.mypy.ini"
 }

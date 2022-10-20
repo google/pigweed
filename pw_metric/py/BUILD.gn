@@ -34,4 +34,5 @@ pw_python_package("py") {
   ]
   python_test_deps = [ "$dir_pw_metric:metric_service_proto.python" ]
   pylintrc = "$dir_pigweed/.pylintrc"
+  mypy_ini = "$dir_pigweed/.mypy.ini"
 }

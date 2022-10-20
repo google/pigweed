@@ -47,4 +47,5 @@ pw_python_script("example_script") {
     "$dir_pw_tokenizer/py:test_proto.python",
   ]
   pylintrc = "$dir_pigweed/.pylintrc"
+  mypy_ini = "$dir_pigweed/.mypy.ini"
 }

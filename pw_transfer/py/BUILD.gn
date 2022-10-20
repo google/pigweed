@@ -38,6 +38,7 @@ pw_python_package("py") {
   ]
   python_test_deps = [ "$dir_pw_build/py" ]
   pylintrc = "$dir_pigweed/.pylintrc"
+  mypy_ini = "$dir_pigweed/.mypy.ini"
   proto_library = "..:proto"
 }
 
@@ -55,6 +56,7 @@ pw_python_script("python_cpp_transfer_test") {
     "..:test_server_proto.python",
   ]
   pylintrc = "$dir_pigweed/.pylintrc"
+  mypy_ini = "$dir_pigweed/.mypy.ini"
 
   action = {
     args = [

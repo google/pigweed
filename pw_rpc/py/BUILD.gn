@@ -75,6 +75,7 @@ pw_python_package("py") {
     "$dir_pw_tokenizer/py:test_proto.python",
   ]
   pylintrc = "$dir_pigweed/.pylintrc"
+  mypy_ini = "$dir_pigweed/.mypy.ini"
   proto_library = "..:protos"
 }
 
@@ -95,6 +96,7 @@ pw_python_script("python_client_cpp_server_test") {
   ]
 
   pylintrc = "$dir_pigweed/.pylintrc"
+  mypy_ini = "$dir_pigweed/.mypy.ini"
 
   action = {
     args = [

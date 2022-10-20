@@ -59,6 +59,7 @@ if (dir_pw_third_party_nanopb != "") {
   pw_python_script("generate_nanopb_proto") {
     sources = [ "generate_nanopb_proto.py" ]
     pylintrc = "$dir_pigweed/.pylintrc"
+    mypy_ini = "$dir_pigweed/.mypy.ini"
     action = {
       args = [ rebase_path(dir_pw_third_party_nanopb, root_build_dir) ]
       stamp = true
