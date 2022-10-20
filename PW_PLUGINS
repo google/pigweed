@@ -19,4 +19,5 @@ package pw_package.pigweed_packages main
 presubmit pw_presubmit.pigweed_presubmit main
 requires pw_cli.requires main
 rpc pw_hdlc.rpc_console main
+update pw_software_update.cli main
 # keep-sorted: end

@@ -36,6 +36,7 @@ pw_python_package("py") {
 
   sources = [
     "pw_software_update/__init__.py",
+    "pw_software_update/cli.py",
     "pw_software_update/dev_sign.py",
     "pw_software_update/generate_test_bundle.py",
     "pw_software_update/keys.py",
