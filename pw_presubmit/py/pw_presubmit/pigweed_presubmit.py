@@ -852,11 +852,6 @@ def static_analysis(ctx: PresubmitContext):
     build.ninja(ctx, 'python.lint', 'static_analysis')
 
 
-def renode_check(ctx: PresubmitContext):
-    """Placeholder for future check."""
-    _LOG.info('%s %s', ctx.root, ctx.output_dir)
-
-
 _EXCLUDE_FROM_TODO_CHECK = (
     # keep-sorted: start
     r'.bazelrc$',
@@ -960,7 +955,6 @@ OTHER_CHECKS = (
     npm_presubmit.npm_test,
     oss_fuzz_build,  # Attempts to duplicate OSS-Fuzz. Currently failing.
     pw_transfer_integration_test,
-    renode_check,
     static_analysis,
     stm32f429i,
     todo_check.create(todo_check.BUGS_OR_USERNAMES),
