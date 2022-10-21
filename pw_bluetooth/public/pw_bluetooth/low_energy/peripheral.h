@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <memory>
 
+#include "pw_bluetooth/internal/raii_ptr.h"
 #include "pw_bluetooth/low_energy/advertising_data.h"
 #include "pw_bluetooth/low_energy/connection.h"
 #include "pw_bluetooth/result.h"
@@ -28,12 +29,11 @@ namespace pw::bluetooth::low_energy {
 // `AdvertisedPeripheral` instances are valid for the duration of advertising.
 class AdvertisedPeripheral {
  public:
-  // Destroying an instance will stop advertising.
   virtual ~AdvertisedPeripheral() = default;
 
   // Set a callback that will be called when an error occurs and advertising
-  // has been stopped (invalidating this object). It is OK to destroy this
-  // object from within `callback`.
+  // has been stopped (invalidating this object). It is OK to destroy the
+  // `AdvertisedPeripheral::Ptr` object from within `callback`.
   virtual void SetErrorCallback(Closure callback) = 0;
 
   // For connectable advertisements, this callback will be called when an LE
@@ -50,9 +50,21 @@ class AdvertisedPeripheral {
   //
   // If advertising is not stopped, this callback may be called with multiple
   // connections over the lifetime of an advertisement. It is OK to destroy
-  // this object from within `callback` in order to stop advertising.
+  // the `AdvertisedPeripheral::Ptr` object from within `callback` in order to
+  // stop advertising.
   virtual void SetConnectionCallback(
-      Function<void(std::unique_ptr<Connection>)>&& callback) = 0;
+      Function<void(Connection::Ptr)>&& callback) = 0;
+
+ private:
+  // Stop advertising. This method is called by the ~AdvertisedPeripheral::Ptr()
+  // when it goes out of scope, the API client should never call this method.
+  virtual void StopAdvertising() = 0;
+
+ public:
+  // Movable AdvertisedPeripheral smart pointer. The peripheral will continue
+  // advertising until the returned AdvertisedPeripheral::Ptr is destroyed.
+  using Ptr = internal::RaiiPtr<AdvertisedPeripheral,
+                                &AdvertisedPeripheral::StopAdvertising>;
 };
 
 // Represents the LE Peripheral role, which advertises and is connected to.
@@ -117,15 +129,15 @@ class Peripheral {
     kFailed = 6,
   };
 
-  using AdvertiseCallback = Function<void(
-      Result<AdvertiseError, std::unique_ptr<AdvertisedPeripheral>>)>;
+  using AdvertiseCallback =
+      Function<void(Result<AdvertiseError, AdvertisedPeripheral::Ptr>)>;
 
   virtual ~Peripheral() = default;
 
   // Start advertising continuously as a LE peripheral. If advertising cannot
   // be initiated then `result_callback` will be called with an error. Once
   // started, advertising can be stopped by destroying the returned
-  // `AdvertisedPeripheral`.
+  // `AdvertisedPeripheral::Ptr`.
   //
   // If the system supports multiple advertising, this may be called as many
   // times as there are advertising slots. To reconfigure an advertisement,

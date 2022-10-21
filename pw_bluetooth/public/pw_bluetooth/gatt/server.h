@@ -18,6 +18,7 @@
 
 #include "pw_bluetooth/gatt/error.h"
 #include "pw_bluetooth/gatt/types.h"
+#include "pw_bluetooth/internal/raii_ptr.h"
 #include "pw_bluetooth/result.h"
 #include "pw_bluetooth/types.h"
 #include "pw_containers/vector.h"
@@ -55,8 +56,8 @@ class LocalServiceDelegate {
   // Called when there is a fatal error related to this service that forces the
   // service to close. LocalServiceDelegate methods will no longer be called.
   // This invalidates the associated LocalService. It is OK to destroy both
-  // LocalServiceDelegate and the associated LocalService from within this
-  // method.
+  // `LocalServiceDelegate` and the associated `LocalService::Ptr` from within
+  // this method.
   virtual void OnError(Error error) = 0;
 
   // This notifies the current configuration of a particular
@@ -124,6 +125,7 @@ class LocalServiceDelegate {
   virtual void MtuUpdate(PeerId peer_id, uint16_t mtu) = 0;
 };
 
+// Interface provided by the backend to interact with a published service.
 // LocalService is valid for the lifetime of a published GATT service. It is
 // used to control the service and send notifications/indications.
 class LocalService {
@@ -183,6 +185,17 @@ class LocalService {
   //     this callback is called.
   virtual void IndicateValue(const ValueChangedParameters& parameters,
                              Function<void(Result<Error>)>&& confirmation) = 0;
+
+ private:
+  // Unpublish the local service. This method is called by the
+  // ~LocalService::Ptr() when it goes out of scope, the API client should never
+  // call this method.
+  virtual void UnpublishService() = 0;
+
+ public:
+  // Movable LocalService smart pointer. When the LocalService::Ptr object is
+  // destroyed the service will be unpublished.
+  using Ptr = internal::RaiiPtr<LocalService, &LocalService::UnpublishService>;
 };
 
 // Interface for a GATT server that serves many GATT services.
@@ -204,6 +217,9 @@ class Server {
     kInvalidIncludes = 4,
   };
 
+  // The Result passed by PublishService.
+  using PublishServiceResult = Result<PublishServiceError, LocalService::Ptr>;
+
   virtual ~Server() = default;
 
   // Publishes the service defined by `info` and implemented by `delegate` so
@@ -211,15 +227,13 @@ class Server {
   //
   // The caller must assign distinct handles to the characteristics and
   // descriptors listed in `info`. These identifiers will be used in requests
-  // sent to `delegate`. On success, a `LocalService` is returned. When the
-  // `LocalService` is destroyed or an error occurs
+  // sent to `delegate`. On success, a `LocalService::Ptr` is returned. When the
+  // `LocalService::Ptr` is destroyed or an error occurs
   // (LocalServiceDelegate.OnError), the service will be unpublished.
   virtual void PublishService(
       const LocalServiceInfo& info,
       LocalServiceDelegate* delegate,
-      Function<
-          void(Result<PublishServiceError, std::unique_ptr<LocalService>>)>&&
-          result_callback) = 0;
+      Function<void(PublishServiceResult)>&& result_callback) = 0;
 };
 
 }  // namespace pw::bluetooth::gatt

@@ -35,6 +35,7 @@ pw_cc_library(
         "public/pw_bluetooth/hci.h",
         "public/pw_bluetooth/host.h",
         "public/pw_bluetooth/internal/hex.h",
+        "public/pw_bluetooth/internal/raii_ptr.h",
         "public/pw_bluetooth/low_energy/advertising_data.h",
         "public/pw_bluetooth/low_energy/bond_data.h",
         "public/pw_bluetooth/low_energy/central.h",

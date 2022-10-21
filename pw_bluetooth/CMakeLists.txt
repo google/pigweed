@@ -23,6 +23,7 @@ pw_add_module_library(pw_bluetooth
     public/pw_bluetooth/gatt/server.h
     public/pw_bluetooth/gatt/types.h
     public/pw_bluetooth/internal/hex.h
+    public/pw_bluetooth/internal/raii_ptr.h
     public/pw_bluetooth/low_energy/advertising_data.h
     public/pw_bluetooth/low_energy/bond_data.h
     public/pw_bluetooth/low_energy/central.h

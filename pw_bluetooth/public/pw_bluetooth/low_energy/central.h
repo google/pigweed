@@ -16,6 +16,7 @@
 #include <memory>
 #include <optional>
 
+#include "pw_bluetooth/internal/raii_ptr.h"
 #include "pw_bluetooth/low_energy/advertising_data.h"
 #include "pw_bluetooth/low_energy/connection.h"
 #include "pw_bluetooth/result.h"
@@ -39,6 +40,16 @@ class Central {
     // Set a callback that will be called if the scan is stopped due to an error
     // in the BLE stack.
     virtual void SetErrorCallback(Function<void(ScanError)>&& callback) = 0;
+
+   private:
+    // Stop the current scan. This method is called by the ~Scan::Ptr() when it
+    // goes out of scope, the API client should never call this method.
+    virtual void StopScan() = 0;
+
+   public:
+    // Movable Scan smart pointer. The controller will continue scanning until
+    // the returned Scan::Ptr is destroyed.
+    using Ptr = internal::RaiiPtr<Scan, &Scan::StopScan>;
   };
 
   // Filter parameters for use during a scan. A discovered peer only matches the
@@ -195,6 +206,9 @@ class Central {
     kInternal,
   };
 
+  // The Result type returned by Connect() via the passed callback.
+  using ConnectResult = Result<ConnectError, Connection::Ptr>;
+
   virtual ~Central() = default;
 
   // Connect to the peer with the given identifier.
@@ -213,16 +227,14 @@ class Central {
   //     error occurs.
   //
   // Possible errors are documented in `ConnectError`.
-  virtual void Connect(
-      PeerId peer_id,
-      ConnectionOptions options,
-      Function<void(Result<ConnectError, std::unique_ptr<Connection>>)>&&
-          callback) = 0;
+  virtual void Connect(PeerId peer_id,
+                       ConnectionOptions options,
+                       Function<void(ConnectResult)>&& callback) = 0;
 
   // Scans for nearby LE peripherals and broadcasters. The lifetime of the scan
   // session is tied to the returned `Scan` object. Once a scan is started,
   // `scan_result_callback` will be called with scan results. Only 1 scan may be
-  // active at a time. It is OK to destroy the `Scan` object in
+  // active at a time. It is OK to destroy the `Scan::Ptr` object in
   // `scan_result_callback` to stop scanning (no more results will be returned).
   //
   // Parameters:
@@ -234,11 +246,10 @@ class Central {
   //     call.
   // `scan_started_callback` - Called with a `Scan` object if the
   //     scan successfully starts, or a `ScanError` otherwise.
-  virtual void Scan(
-      ScanOptions options,
-      Function<void(ScanResult)>&& scan_result_callback,
-      Function<void(Result<StartScanError, std::unique_ptr<Scan>>)>&&
-          scan_started_callback) = 0;
+  virtual void Scan(ScanOptions options,
+                    Function<void(ScanResult)>&& scan_result_callback,
+                    Function<void(Result<StartScanError, Scan::Ptr>)>&&
+                        scan_started_callback) = 0;
 };
 
 }  // namespace pw::bluetooth::low_energy

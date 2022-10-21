@@ -18,6 +18,7 @@
 #include "pw_bluetooth/gatt/constants.h"
 #include "pw_bluetooth/gatt/error.h"
 #include "pw_bluetooth/gatt/types.h"
+#include "pw_bluetooth/internal/raii_ptr.h"
 #include "pw_bluetooth/result.h"
 #include "pw_bluetooth/types.h"
 #include "pw_containers/vector.h"
@@ -236,6 +237,17 @@ class RemoteService {
 
   // Stops notifications for the characteristic with the given `handle`.
   void StopNotifications(Handle handle);
+
+ private:
+  // Disconnect from the remote service. This method is called by the
+  // ~RemoteService::Ptr() when it goes out of scope, the API client should
+  // never call this method.
+  void Disconnect();
+
+ public:
+  // Movable RemoteService smart pointer. The remote server will remain
+  // connected until the returned RemoteService::Ptr is destroyed.
+  using Ptr = internal::RaiiPtr<RemoteService, &RemoteService::Disconnect>;
 };
 
 // Represents a GATT client that interacts with services on a GATT server.
@@ -278,8 +290,7 @@ class Client {
   //
   // This may fail with the following errors:
   // kInvalidParameters - `handle` does not correspond to a known service.
-  virtual Result<Error, std::unique_ptr<RemoteService>> ConnectToService(
-      Handle handle) = 0;
+  virtual Result<Error, RemoteService::Ptr> ConnectToService(Handle handle) = 0;
 };
 
 }  // namespace pw::bluetooth::gatt

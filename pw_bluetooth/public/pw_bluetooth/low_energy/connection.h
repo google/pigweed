@@ -14,6 +14,7 @@
 #pragma once
 
 #include "pw_bluetooth/gatt/client.h"
+#include "pw_bluetooth/internal/raii_ptr.h"
 #include "pw_bluetooth/types.h"
 
 namespace pw::bluetooth::low_energy {
@@ -156,6 +157,17 @@ class Connection {
   virtual void RequestConnectionParameterUpdate(
       RequestedConnectionParameters parameters,
       Function<void(Result<ConnectionParameterUpdateError>)>&& callback) = 0;
+
+ private:
+  // Request to disconnect this connection. This method is called by the
+  // ~Connection::Ptr() when it goes out of scope, the API client should never
+  // call this method.
+  virtual void Disconnect() = 0;
+
+ public:
+  // Movable Connection smart pointer. When Connection::Ptr is destroyed the
+  // Connection will disconnect automatically.
+  using Ptr = internal::RaiiPtr<Connection, &Connection::Disconnect>;
 };
 
 }  // namespace pw::bluetooth::low_energy
