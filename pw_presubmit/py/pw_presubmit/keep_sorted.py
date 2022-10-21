@@ -21,7 +21,8 @@ import os
 from pathlib import Path
 import re
 import sys
-from typing import Collection, List, Optional, Pattern, Sequence, Union
+from typing import (Callable, Collection, List, Optional, Pattern, Sequence,
+                    Tuple, Union)
 
 import pw_cli
 from . import cli, git_repo, presubmit, tools
@@ -34,6 +35,7 @@ _START = re.compile(r'keep-sorted: (begin|start)', re.IGNORECASE)
 _END = re.compile(r'keep-sorted: (stop|end)', re.IGNORECASE)
 _IGNORE_CASE = re.compile(r'ignore-case', re.IGNORECASE)
 _ALLOW_DUPES = re.compile(r'allow-dupes', re.IGNORECASE)
+_IGNORE_PREFIX = re.compile(r'ignore-prefix=(\S+)', re.IGNORECASE)
 
 # Only include these literals here so keep_sorted doesn't try to reorder later
 # test lines.
@@ -83,17 +85,41 @@ class _FileSorter:
         self.changed: bool = False
 
     def _process_block(self, start_line: str, lines: List[str], end_line: str,
-                       i: int, ignore_case: bool,
-                       allow_dupes: bool) -> Sequence[str]:
+                       i: int, ignore_case: bool, allow_dupes: bool,
+                       ignored_prefixes: Sequence[str]) -> Sequence[str]:
         lines_after_dupes: List[str] = []
         if allow_dupes:
             lines_after_dupes = lines
         else:
             lines_after_dupes = list({x: None for x in lines})
 
-        sort_key = lambda x: x
+        sort_key_funcs: List[Callable[[Tuple[str, ...]], Tuple[str, ...]]] = []
+
+        if ignored_prefixes:
+
+            def strip_ignored_prefixes(val):
+                """Remove one ignored prefix from val, if present."""
+                wo_white = val[0].lstrip()
+                white = val[0][0:-len(wo_white)]
+                for prefix in ignored_prefixes:
+                    if wo_white.startswith(prefix):
+                        return (f'{white}{wo_white[len(prefix):]}', val[1])
+                return (val[0], val[1])
+
+            sort_key_funcs.append(strip_ignored_prefixes)
+
         if ignore_case:
-            sort_key = lambda x: (x.lower(), x)
+            sort_key_funcs.append(lambda val: (val[0].lower(), val[1]))
+
+        def sort_key(val):
+            vals = (val, val)
+            for sort_key_func in sort_key_funcs:
+                vals = sort_key_func(vals)
+            return vals
+
+        for val in lines_after_dupes:
+            _LOG.debug('For sorting: %r => %r', val, sort_key(val))
+
         sorted_lines = sorted(lines_after_dupes, key=sort_key)
 
         if lines != sorted_lines:
@@ -118,6 +144,7 @@ class _FileSorter:
         in_block: bool = False
         ignore_case: bool = False
         allow_dupes: bool = False
+        ignored_prefixes: Sequence[str] = []
         start_line: Optional[str] = None
         end_line: Optional[str] = None
         lines: List[str] = []
@@ -135,8 +162,13 @@ class _FileSorter:
                     in_block = False
                     assert start_line  # Implicitly cast from Optional.
                     self.all_lines.extend(
-                        self._process_block(start_line, lines, end_line, i,
-                                            ignore_case, allow_dupes))
+                        self._process_block(start_line=start_line,
+                                            lines=lines,
+                                            end_line=end_line,
+                                            i=i,
+                                            ignore_case=ignore_case,
+                                            allow_dupes=allow_dupes,
+                                            ignored_prefixes=ignored_prefixes))
                     start_line = end_line = None
                     self.all_lines.append(line)
                     lines = []
@@ -147,10 +179,23 @@ class _FileSorter:
 
             elif start_match := _START.search(line):
                 _LOG.debug('Found start line %d %r', i, line)
+
                 ignore_case = bool(_IGNORE_CASE.search(line))
                 _LOG.debug('ignore_case: %s', ignore_case)
+
                 allow_dupes = bool(_ALLOW_DUPES.search(line))
                 _LOG.debug('allow_dupes: %s', allow_dupes)
+
+                ignored_prefixes = []
+                match = _IGNORE_PREFIX.search(line)
+                if match:
+                    ignored_prefixes = match.group(1).split(',')
+
+                    # We want to check the longest prefixes first, in case one
+                    # prefix is a prefix of another prefix.
+                    ignored_prefixes.sort(key=lambda x: (-len(x), x))
+                _LOG.debug('ignored_prefixes: %r', ignored_prefixes)
+
                 start_line = line
                 in_block = True
                 self.all_lines.append(line)
@@ -158,6 +203,7 @@ class _FileSorter:
                 remaining = line[start_match.end():].strip()
                 remaining = _IGNORE_CASE.sub('', remaining, count=1).strip()
                 remaining = _ALLOW_DUPES.sub('', remaining, count=1).strip()
+                remaining = _IGNORE_PREFIX.sub('', remaining, count=1).strip()
                 if remaining.strip():
                     raise KeepSortedParsingError(
                         f'unrecognized directive on keep-sorted line: '

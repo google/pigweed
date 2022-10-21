@@ -171,7 +171,17 @@ By default, duplicates will be removed. Lines that are identical except in case
 are preserved, even with ``ignore-case``. To allow duplicates, add
 ``allow-dupes`` to the start line.
 
-These will suggest fixes using ``pw keep-sorted --fix``.
+Prefixes can be ignored by adding ``ignore-prefix=`` followed by a
+comma-separated list of prefixes. The list below will be kept in this order.
+Neither commas nor whitespace are supported in prefixes.
+
+  # keep-sorted: start ignore-prefix=',"
+  'bar',
+  "baz",
+  'foo',
+  # keep-sorted: end
+
+The presubmit check will suggest fixes using ``pw keep-sorted --fix``.
 
 Future versions may support multiline list items.
 

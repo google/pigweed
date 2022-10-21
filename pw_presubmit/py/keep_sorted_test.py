@@ -135,6 +135,24 @@ class TestKeepSorted(unittest.TestCase):
         self.assertEqual(self.contents,
                          f'{START} ignore-case\nA\na\nB\n{END}\n')
 
+    def test_ignored_prefixes(self) -> None:
+        self._run(f'{START} ignore-prefix=foo,bar\na\nb\nfoob\nbarc\n{END}\n')
+        self.ctx.fail.assert_not_called()
+
+    def test_ignored_longest_prefixes(self) -> None:
+        self._run(f'{START} ignore-prefix=1,123\na\n123b\nb\n1c\n{END}\n')
+        self.ctx.fail.assert_not_called()
+
+    def test_ignored_prefixes_whitespace(self) -> None:
+        self._run(f'{START} ignore-prefix=foo,bar\n'
+                  f' a\n b\n foob\n barc\n{END}\n')
+        self.ctx.fail.assert_not_called()
+
+    def test_ignored_prefixes_insensitive(self) -> None:
+        self._run(f'{START} ignore-prefix=foo,bar ignore-case\n'
+                  f'a\nB\nfooB\nbarc\n{END}\n')
+        self.ctx.fail.assert_not_called()
+
 
 if __name__ == '__main__':
     unittest.main()
