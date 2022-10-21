@@ -39,6 +39,7 @@ pw_source_set("pw_bluetooth") {
     "public/pw_bluetooth/gatt/types.h",
     "public/pw_bluetooth/hci.h",
     "public/pw_bluetooth/host.h",
+    "public/pw_bluetooth/internal/hex.h",
     "public/pw_bluetooth/low_energy/advertising_data.h",
     "public/pw_bluetooth/low_energy/bond_data.h",
     "public/pw_bluetooth/low_energy/central.h",
@@ -49,9 +50,11 @@ pw_source_set("pw_bluetooth") {
     "public/pw_bluetooth/peer.h",
     "public/pw_bluetooth/result.h",
     "public/pw_bluetooth/types.h",
+    "public/pw_bluetooth/uuid.h",
   ]
   public_deps = [
     "$dir_pw_chrono:system_clock",
+    "$dir_pw_string:string",
     dir_pw_containers,
     dir_pw_function,
     dir_pw_span,
@@ -64,6 +67,7 @@ pw_test_group("tests") {
   tests = [
     ":api_test",
     ":result_test",
+    ":uuid_test",
   ]
 }
 
@@ -74,5 +78,10 @@ pw_test("api_test") {
 
 pw_test("result_test") {
   sources = [ "result_test.cc" ]
+  deps = [ ":pw_bluetooth" ]
+}
+
+pw_test("uuid_test") {
+  sources = [ "uuid_test.cc" ]
   deps = [ ":pw_bluetooth" ]
 }

@@ -21,6 +21,7 @@ pw_add_module_library(pw_bluetooth
     public/pw_bluetooth/gatt/error.h
     public/pw_bluetooth/gatt/server.h
     public/pw_bluetooth/gatt/types.h
+    public/pw_bluetooth/internal/hex.h
     public/pw_bluetooth/low_energy/advertising_data.h
     public/pw_bluetooth/low_energy/bond_data.h
     public/pw_bluetooth/low_energy/central.h
@@ -34,12 +35,14 @@ pw_add_module_library(pw_bluetooth
     public/pw_bluetooth/peer.h
     public/pw_bluetooth/result.h
     public/pw_bluetooth/types.h
+    public/pw_bluetooth/uuid.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
     pw_containers
     pw_function
     pw_status
+    pw_string.string
     pw_chrono.system_clock
 )
 
@@ -55,6 +58,15 @@ pw_add_test(pw_bluetooth.api_test
 pw_add_test(pw_bluetooth.result_test
   SOURCES
     result_test.cc
+  DEPS
+    pw_bluetooth
+  GROUPS
+    pw_bluetooth
+)
+
+pw_add_test(pw_bluetooth.uuid_test
+  SOURCES
+    uuid_test.cc
   DEPS
     pw_bluetooth
   GROUPS

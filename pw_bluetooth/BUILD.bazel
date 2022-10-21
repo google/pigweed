@@ -33,6 +33,7 @@ pw_cc_library(
         "public/pw_bluetooth/gatt/types.h",
         "public/pw_bluetooth/hci.h",
         "public/pw_bluetooth/host.h",
+        "public/pw_bluetooth/internal/hex.h",
         "public/pw_bluetooth/low_energy/advertising_data.h",
         "public/pw_bluetooth/low_energy/bond_data.h",
         "public/pw_bluetooth/low_energy/central.h",
@@ -43,6 +44,7 @@ pw_cc_library(
         "public/pw_bluetooth/peer.h",
         "public/pw_bluetooth/result.h",
         "public/pw_bluetooth/types.h",
+        "public/pw_bluetooth/uuid.h",
     ],
     includes = ["public"],
     deps = [
@@ -50,6 +52,7 @@ pw_cc_library(
         "//pw_containers",
         "//pw_function",
         "//pw_status",
+        "//pw_string:string",
     ],
 )
 
@@ -67,6 +70,16 @@ pw_cc_test(
     name = "result_test",
     srcs = [
         "result_test.cc",
+    ],
+    deps = [
+        "pw_bluetooth",
+    ],
+)
+
+pw_cc_test(
+    name = "uuid_test",
+    srcs = [
+        "uuid_test.cc",
     ],
     deps = [
         "pw_bluetooth",

@@ -17,6 +17,8 @@
 #include <cstdint>
 #include <string_view>
 
+#include "pw_bluetooth/uuid.h"
+
 namespace pw::bluetooth {
 
 // 64-bit unique value used by the system to identify peer devices.
@@ -26,8 +28,6 @@ using PeerId = uint64_t;
 using Address = std::array<uint8_t, 6>;
 
 using DeviceName = std::string_view;
-
-using Uuid = std::array<uint8_t, 16>;
 
 // A 128-bit secret key.
 using Key = std::array<uint8_t, 16>;
