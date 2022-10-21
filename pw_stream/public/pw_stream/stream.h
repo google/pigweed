@@ -15,6 +15,7 @@
 
 #include <array>
 #include <cstddef>
+#include <limits>
 
 #include "pw_assert/assert.h"
 #include "pw_bytes/span.h"
