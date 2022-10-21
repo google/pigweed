@@ -62,6 +62,19 @@ pw_proto_library("metric_service_proto") {
 # TODO(keir): Consider moving the nanopb service into the nanopb/ directory
 # instead of having it directly inside pw_metric/.
 
+# Common MetricWalker/MetricWriter used by RPC service.
+pw_source_set("metric_walker") {
+  visibility = [ ":*" ]
+  public = [ "pw_metric_private/metric_walker.h" ]
+  deps = [
+    ":pw_metric",
+    "$dir_pw_assert:assert",
+    "$dir_pw_containers",
+    "$dir_pw_status",
+    "$dir_pw_tokenizer",
+  ]
+}
+
 if (dir_pw_third_party_nanopb != "") {
   pw_source_set("metric_service_nanopb") {
     public_configs = [ ":default_config" ]
@@ -73,6 +86,7 @@ if (dir_pw_third_party_nanopb != "") {
     public = [ "public/pw_metric/metric_service_nanopb.h" ]
     deps = [
       ":metric_service_proto.nanopb_rpc",
+      ":metric_walker",
       "$dir_pw_containers:vector",
       dir_pw_tokenizer,
     ]
@@ -94,6 +108,7 @@ pw_source_set("metric_service_pwpb") {
   public_deps = [
     ":metric_service_proto.pwpb_rpc",
     ":metric_service_proto.raw_rpc",
+    ":metric_walker",
     ":pw_metric",
     "$dir_pw_bytes",
     "$dir_pw_containers",

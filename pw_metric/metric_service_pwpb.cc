@@ -19,6 +19,7 @@
 #include "pw_assert/check.h"
 #include "pw_containers/vector.h"
 #include "pw_metric/metric.h"
+#include "pw_metric_private/metric_walker.h"
 #include "pw_metric_proto/metric_service.pwpb.h"
 #include "pw_preprocessor/util.h"
 #include "pw_rpc/raw/server_reader_writer.h"
@@ -33,9 +34,10 @@ constexpr size_t kMaxNumPackedEntries = 3;
 
 namespace {
 
-class MetricWriter {
+class PwpbMetricWriter : public virtual internal::MetricWriter {
  public:
-  MetricWriter(span<std::byte> response, rpc::RawServerWriter& response_writer)
+  PwpbMetricWriter(span<std::byte> response,
+                   rpc::RawServerWriter& response_writer)
       : response_(response),
         response_writer_(response_writer),
         encoder_(response) {}
@@ -43,7 +45,7 @@ class MetricWriter {
   // TODO(keir): Figure out a pw_rpc mechanism to fill a streaming packet based
   // on transport MTU, rather than having this as a static knob. For example,
   // some transports may be able to fit 30 metrics; others, only 5.
-  Status Write(const Metric& metric, const Vector<Token>& path) {
+  Status Write(const Metric& metric, const Vector<Token>& path) override {
     {  // Scope to control proto_encoder lifetime.
 
       // Grab the next available Metric slot to write to in the response.
@@ -86,54 +88,6 @@ class MetricWriter {
   proto::MetricRequest::MemoryEncoder encoder_;
   size_t metrics_count = 0;
 };
-
-// Walk a metric tree recursively; passing metrics with their path (names) to a
-// metric writer which can consume them.
-//
-// TODO(keir): Generalize this to support a generic visitor.
-class MetricWalker {
- public:
-  MetricWalker(MetricWriter& writer) : writer_(writer) {}
-
-  Status Walk(const IntrusiveList<Metric>& metrics) {
-    for (const auto& m : metrics) {
-      ScopedName scoped_name(m.name(), *this);
-      PW_TRY(writer_.Write(m, path_));
-    }
-    return OkStatus();
-  }
-
-  Status Walk(const IntrusiveList<Group>& groups) {
-    for (const auto& g : groups) {
-      PW_TRY(Walk(g));
-    }
-    return OkStatus();
-  }
-
-  Status Walk(const Group& group) {
-    ScopedName scoped_name(group.name(), *this);
-    PW_TRY(Walk(group.children()));
-    PW_TRY(Walk(group.metrics()));
-    return OkStatus();
-  }
-
- private:
-  // Exists to safely push/pop parent groups from the explicit stack.
-  struct ScopedName {
-    ScopedName(Token name, MetricWalker& rhs) : walker(rhs) {
-      PW_CHECK_INT_LT(walker.path_.size(),
-                      walker.path_.capacity(),
-                      "Metrics are too deep; bump path_ capacity");
-      walker.path_.push_back(name);
-    }
-    ~ScopedName() { walker.path_.pop_back(); }
-    MetricWalker& walker;
-  };
-
-  Vector<Token, 4 /* max depth */> path_;
-  MetricWriter& writer_;
-};
-
 }  // namespace
 
 void MetricService::Get(ConstByteSpan /*request*/,
@@ -147,8 +101,8 @@ void MetricService::Get(ConstByteSpan /*request*/,
 
   std::array<std::byte, kEncodeBufferSize> encode_buffer;
 
-  MetricWriter writer(encode_buffer, raw_response);
-  MetricWalker walker(writer);
+  PwpbMetricWriter writer(encode_buffer, raw_response);
+  internal::MetricWalker walker(writer);
 
   // This will stream all the metrics in the span of this Get() method call.
   // This will have the effect of blocking the RPC thread until all the metrics
@@ -159,7 +113,7 @@ void MetricService::Get(ConstByteSpan /*request*/,
   // that puts the application in control of when the response batches are sent.
 
   // Propagate status through walker.
-  auto status = OkStatus();
+  Status status;
   status.Update(walker.Walk(metrics_));
   status.Update(walker.Walk(groups_));
   status.Update(writer.Flush());

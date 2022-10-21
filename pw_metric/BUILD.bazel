@@ -50,26 +50,38 @@ pw_cc_library(
     ],
 )
 
+# Common MetricWalker/MetricWriter used by RPC service.
+pw_cc_library(
+    name = "metric_walker",
+    hdrs = ["pw_metric_private/metric_walker.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":pw_metric",
+        "//pw_assert:assert",
+        "//pw_containers",
+        "//pw_status",
+        "//pw_tokenizer",
+    ],
+)
+
 pw_cc_library(
     name = "metric_service_nanopb",
     srcs = ["metric_service_nanopb.cc"],
-    hdrs = [
-        "public/pw_metric/metric_service_nanopb.h",
-    ],
+    hdrs = ["public/pw_metric/metric_service_nanopb.h"],
     deps = [
         ":metric",
+        ":metric_walker",
     ],
 )
 
 pw_cc_library(
     name = "metric_service_pwpb",
     srcs = ["metric_service_pwpb.cc"],
-    hdrs = [
-        "public/pw_metric/metric_service_pwpb.h",
-    ],
+    hdrs = ["public/pw_metric/metric_service_pwpb.h"],
     deps = [
         ":metric",
         ":metric_proto_cc",
+        ":metric_walker",
         "//pw_assert",
         "//pw_bytes",
         "//pw_containers",
