@@ -28,7 +28,7 @@ from typing import Iterable, Optional
 import pw_cli.log
 
 from pw_bloat.bloaty_config import generate_bloaty_config
-from pw_bloat.label import from_bloaty_tsv
+from pw_bloat.label import DataSourceMap
 from pw_bloat.label_output import (BloatTableOutput, LineCharset, RstOutput,
                                    AsciiCharset)
 
@@ -106,7 +106,7 @@ def memory_regions_size_report(
         elf: Path,
         additional_data_sources: Iterable[str] = (),
         extra_args: Iterable[str] = (),
-) -> str:
+) -> Iterable[str]:
     """Runs a size report on an ELF file using pw_bloat memory region symbols.
 
     Arguments:
@@ -137,7 +137,7 @@ def memory_regions_size_report(
             bloaty_config.name,
             data_sources=('memoryregions', *additional_data_sources),
             extra_args=extra_args,
-        ).decode('utf-8')
+        ).decode('utf-8').splitlines()
 
 
 def write_file(filename: str, contents: str, out_dir_file: str) -> None:
@@ -162,11 +162,12 @@ def single_target_output(target: str, bloaty_config: str, target_out_file: str,
         return 1
 
     single_tsv = single_output.decode().splitlines()
-    single_report = BloatTableOutput(from_bloaty_tsv(single_tsv),
+    single_report = BloatTableOutput(DataSourceMap.from_bloaty_tsv(single_tsv),
                                      MAX_COL_WIDTH, LineCharset)
 
-    rst_single_report = BloatTableOutput(from_bloaty_tsv(single_tsv),
-                                         MAX_COL_WIDTH, AsciiCharset, True)
+    rst_single_report = BloatTableOutput(
+        DataSourceMap.from_bloaty_tsv(single_tsv), MAX_COL_WIDTH, AsciiCharset,
+        True)
 
     single_report_table = single_report.create_table()
 
@@ -242,8 +243,9 @@ def main() -> int:
         if not single_output_target or not single_output_base:
             continue
 
-        base_dsm = from_bloaty_tsv(single_output_base.decode().splitlines())
-        target_dsm = from_bloaty_tsv(
+        base_dsm = DataSourceMap.from_bloaty_tsv(
+            single_output_base.decode().splitlines())
+        target_dsm = DataSourceMap.from_bloaty_tsv(
             single_output_target.decode().splitlines())
         diff_dsm = target_dsm.diff(base_dsm)
 

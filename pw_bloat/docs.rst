@@ -12,10 +12,48 @@ Bloat report cards allow tracking the memory usage of a system over time as code
 changes are made and provide a breakdown of which parts of the code have the
 largest size impact.
 
+``pw bloat`` CLI command
+========================
+``pw_bloat`` includes a plugin for the Pigweed command line capable of running
+size reports on ELF binaries.
+
+.. note::
+
+   The bloat CLI plugin is still experimental and only supports a small subset
+   of ``pw_bloat``'s capabilities. Notably, it currently only runs on binaries
+   which define memory region symbols; refer to the
+   :ref:`memoryregions documentation <module-pw_bloat-memoryregions>`
+   for details.
+
+Basic usage
+^^^^^^^^^^^
+
+**Running a size report on a single executable**
+
+.. code-block:: sh
+
+   $ pw bloat out/docs/obj/pw_result/size_report/bin/ladder_and_then.elf
+
+   ▒█████▄   █▓  ▄███▒  ▒█    ▒█ ░▓████▒ ░▓████▒ ▒▓████▄
+    ▒█░  █░ ░█▒ ██▒ ▀█▒ ▒█░ █ ▒█  ▒█   ▀  ▒█   ▀  ▒█  ▀█▌
+    ▒█▄▄▄█░ ░█▒ █▓░ ▄▄░ ▒█░ █ ▒█  ▒███    ▒███    ░█   █▌
+    ▒█▀     ░█░ ▓█   █▓ ░█░ █ ▒█  ▒█   ▄  ▒█   ▄  ░█  ▄█▌
+    ▒█      ░█░ ░▓███▀   ▒█▓▀▓█░ ░▓████▒ ░▓████▒ ▒▓████▀
+
+   +----------------------+---------+
+   |     memoryregions    |  sizes  |
+   +======================+=========+
+   |FLASH                 |1,048,064|
+   |RAM                   |  196,608|
+   |VECTOR_TABLE          |      512|
+   +======================+=========+
+   |Total                 |1,245,184|
+   +----------------------+---------+
+
 .. _bloat-howto:
 
-Defining size reports
-=====================
+Defining size reports in GN
+===========================
 
 Diff Size Reports
 ^^^^^^^^^^^^^^^^^
@@ -364,6 +402,7 @@ Note that linker scripts are not natively supported by GN and can't be provided
 through ``deps``, the ``bloat_macros.ld`` must be passed in the ``includes``
 list.
 
+.. _module-pw_bloat-memoryregions:
 
 ``memoryregions`` data source
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

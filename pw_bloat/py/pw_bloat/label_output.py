@@ -77,6 +77,7 @@ class BloatTableOutput:
     """ASCII Table generator from DataSourceMap."""
 
     _RST_PADDING_WIDTH = 6
+    _DEFAULT_MAX_WIDTH = 80
 
     class _LabelContent(NamedTuple):
         name: str
@@ -85,7 +86,7 @@ class BloatTableOutput:
 
     def __init__(self,
                  ds_map: Union[DiffDataSourceMap, DataSourceMap],
-                 col_max_width: int,
+                 col_max_width: int = _DEFAULT_MAX_WIDTH,
                  charset: Union[Type[AsciiCharset],
                                 Type[LineCharset]] = AsciiCharset,
                  rst_output: bool = False,

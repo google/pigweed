@@ -18,7 +18,7 @@ import unittest
 import os
 import logging
 import sys
-from pw_bloat.label import from_bloaty_tsv, DataSourceMap, Label
+from pw_bloat.label import DataSourceMap, Label
 
 LIST_LABELS = [
     Label(name='main()', size=30, parents=tuple(['FLASH', '.code'])),
@@ -35,7 +35,7 @@ def get_test_map():
     pw_root = os.environ.get("PW ROOT")
     filename = f"{pw_root}/pigweed/pw_bloat/test_label.csv"
     with open(filename, 'r') as csvfile:
-        ds_map = from_bloaty_tsv(csvfile)
+        ds_map = DataSourceMap.from_bloaty_tsv(csvfile)
         capacity_patterns = [("^__TEXT$", 459), ("^_", 920834)]
         for cap_pattern, cap_size in capacity_patterns:
             ds_map.add_capacity(cap_pattern, cap_size)

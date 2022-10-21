@@ -29,14 +29,15 @@ def _register_builtin_plugins(registry: plugins.Registry) -> None:
     """Registers the commands that are included with pw by default."""
 
     # Register these by name to avoid circular dependencies.
+    registry.register_by_name('bloat', 'pw_bloat.__main__', 'main')
     registry.register_by_name('doctor', 'pw_doctor.doctor', 'main')
-    registry.register_by_name('python-packages',
-                              'pw_env_setup.python_packages', 'main')
     registry.register_by_name('format', 'pw_presubmit.format_code', 'main')
     registry.register_by_name('keep-sorted', 'pw_presubmit.keep_sorted',
                               'main')
     registry.register_by_name('logdemo', 'pw_cli.log', 'main')
     registry.register_by_name('module', 'pw_module.__main__', 'main')
+    registry.register_by_name('python-packages',
+                              'pw_env_setup.python_packages', 'main')
     registry.register_by_name('test', 'pw_unit_test.test_runner', 'main')
     registry.register_by_name('watch', 'pw_watch.watch', 'main')
 
