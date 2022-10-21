@@ -31,6 +31,7 @@ pw_doc_group("docs") {
 pw_source_set("pw_bluetooth") {
   public_configs = [ ":public_include_path" ]
   public = [
+    "public/pw_bluetooth/address.h",
     "public/pw_bluetooth/constants.h",
     "public/pw_bluetooth/gatt/client.h",
     "public/pw_bluetooth/gatt/constants.h",
@@ -65,10 +66,16 @@ pw_source_set("pw_bluetooth") {
 pw_test_group("tests") {
   enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
   tests = [
+    ":address_test",
     ":api_test",
     ":result_test",
     ":uuid_test",
   ]
+}
+
+pw_test("address_test") {
+  sources = [ "address_test.cc" ]
+  deps = [ ":pw_bluetooth" ]
 }
 
 pw_test("api_test") {

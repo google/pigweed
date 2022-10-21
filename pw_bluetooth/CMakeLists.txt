@@ -16,6 +16,7 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 pw_add_module_library(pw_bluetooth
   HEADERS
+    public/pw_bluetooth/address.h
     public/pw_bluetooth/gatt/client.h
     public/pw_bluetooth/gatt/constants.h
     public/pw_bluetooth/gatt/error.h
@@ -44,6 +45,15 @@ pw_add_module_library(pw_bluetooth
     pw_status
     pw_string.string
     pw_chrono.system_clock
+)
+
+pw_add_test(pw_bluetooth.address_test
+  SOURCES
+    address_test.cc
+  DEPS
+    pw_bluetooth
+  GROUPS
+    pw_bluetooth
 )
 
 pw_add_test(pw_bluetooth.api_test

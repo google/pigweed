@@ -17,15 +17,13 @@
 #include <cstdint>
 #include <string_view>
 
+#include "pw_bluetooth/address.h"
 #include "pw_bluetooth/uuid.h"
 
 namespace pw::bluetooth {
 
 // 64-bit unique value used by the system to identify peer devices.
 using PeerId = uint64_t;
-
-// The device address bytes in little-endian order.
-using Address = std::array<uint8_t, 6>;
 
 using DeviceName = std::string_view;
 

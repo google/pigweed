@@ -25,6 +25,7 @@ licenses(["notice"])
 pw_cc_library(
     name = "pw_bluetooth",
     hdrs = [
+        "public/pw_bluetooth/address.h",
         "public/pw_bluetooth/constants.h",
         "public/pw_bluetooth/gatt/client.h",
         "public/pw_bluetooth/gatt/constants.h",
@@ -53,6 +54,16 @@ pw_cc_library(
         "//pw_function",
         "//pw_status",
         "//pw_string:string",
+    ],
+)
+
+pw_cc_test(
+    name = "address_test",
+    srcs = [
+        "address_test.cc",
+    ],
+    deps = [
+        ":pw_bluetooth",
     ],
 )
 
