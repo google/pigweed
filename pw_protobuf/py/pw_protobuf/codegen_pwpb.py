@@ -2046,7 +2046,7 @@ def forward_declare(node: ProtoMessage, root: ProtoNode,
     output.write_line(f'namespace {namespace} {{')
 
     # Define an enum defining each of the message's fields and their numbers.
-    output.write_line('enum class Fields {')
+    output.write_line('enum class Fields : uint32_t {')
     with output.indent():
         for field in node.fields():
             output.write_line(f'{field.enum_name()} = {field.number()},')
