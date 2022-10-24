@@ -48,6 +48,7 @@ pw_ide
 pw_interrupt
 pw_interrupt_cortex_m
 pw_interrupt_zephyr
+pw_intrusive_ptr
 pw_kvs
 pw_libc
 pw_log
