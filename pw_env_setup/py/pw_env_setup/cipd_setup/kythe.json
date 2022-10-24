@@ -1,5 +1,5 @@
 {
-  'packages': [
+  "packages": [
     {
       "path": "fuchsia/third_party/kythe",
       "platforms": [

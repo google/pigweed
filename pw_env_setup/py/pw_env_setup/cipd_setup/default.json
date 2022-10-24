@@ -4,6 +4,7 @@
     "arm.json",
     "python.json",
     "bazel.json",
+    "kythe.json",
     "luci.json"
   ]
 }
