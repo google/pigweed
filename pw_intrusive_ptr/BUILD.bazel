@@ -15,6 +15,7 @@
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_library",
+    "pw_cc_test",
 )
 
 package(default_visibility = ["//visibility:public"])
@@ -23,7 +24,17 @@ licenses(["notice"])
 
 pw_cc_library(
     name = "pw_intrusive_ptr",
-    hdrs = ["public/pw_intrusive_ptr/intrusive_ptr.h"],
+    srcs = ["ref_counted_base.cc"],
+    hdrs = [
+        "public/pw_intrusive_ptr/internal/ref_counted_base.h",
+        "public/pw_intrusive_ptr/intrusive_ptr.h",
+    ],
     includes = ["public"],
-    deps = [],
+    deps = ["//pw_assert"],
+)
+
+pw_cc_test(
+    name = "intrusive_ptr_test",
+    srcs = ["intrusive_ptr_test.cc"],
+    deps = [":pw_intrusive_ptr"],
 )

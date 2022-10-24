@@ -16,7 +16,22 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 pw_add_module_library(pw_intrusive_ptr
   HEADERS
+    public/pw_intrusive_ptr/internal/ref_counted_base.h
     public/pw_intrusive_ptr/intrusive_ptr.h
+  SOURCES
+    ref_counted_base.cc
   PUBLIC_INCLUDES
     public
+  PUBLIC_DEPS
+    pw_assert
+)
+
+pw_add_test(pw_intrusive_ptr.intrusive_ptr_test
+  SOURCES
+    intrusive_ptr_test.cc
+  DEPS
+    pw_intrusive_ptr
+  GROUPS
+    modules
+    pw_intrusive_ptr
 )
