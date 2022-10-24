@@ -71,6 +71,28 @@
 #define PW_RPC_DYNAMIC_ALLOCATION 0
 #endif  // PW_RPC_DYNAMIC_ALLOCATION
 
+// If PW_RPC_DYNAMIC_ALLOCATION is enabled, this macro must expand to a
+// container capable of storing objects of the provided type. This container
+// will be used internally be pw_rpc. Defaults to std::vector<type>, but may be
+// set to any type that supports the following std::vector operations:
+//
+//   - Construction from iterators
+//   - emplace_back()
+//   - pop_back()
+//   - Range-based for loop iteration
+//
+#ifndef PW_RPC_DYNAMIC_CONTAINER
+#define PW_RPC_DYNAMIC_CONTAINER(type) std::vector<type>
+#endif  // PW_RPC_DYNAMIC_CHANNEL_CONTAINER
+
+// If PW_RPC_DYNAMIC_ALLOCATION is enabled, this header file is included in
+// files that use PW_RPC_DYNAMIC_CONTAINER. Defaults to <vector>, but may be set
+// in conjunction with PW_RPC_DYNAMIC_CONTAINER to use a different container
+// type for dynamic allocations in pw_rpc.
+#ifndef PW_RPC_DYNAMIC_CONTAINER_INCLUDE
+#define PW_RPC_DYNAMIC_CONTAINER_INCLUDE <vector>
+#endif  // PW_RPC_DYNAMIC_CHANNEL_CONTAINER
+
 #if PW_RPC_DYNAMIC_ALLOCATION && defined(PW_RPC_ENCODING_BUFFER_SIZE_BYTES)
 static_assert(false,
               "PW_RPC_ENCODING_BUFFER_SIZE_BYTES cannot be set if "

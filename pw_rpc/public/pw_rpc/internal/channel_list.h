@@ -13,11 +13,13 @@
 // the License.
 #pragma once
 
-#include <vector>
-
 #include "pw_rpc/internal/channel.h"
 #include "pw_rpc/internal/config.h"
 #include "pw_span/span.h"
+
+#if PW_RPC_DYNAMIC_ALLOCATION
+#include PW_RPC_DYNAMIC_CONTAINER_INCLUDE
+#endif  // PW_RPC_DYNAMIC_ALLOCATION
 
 namespace pw::rpc::internal {
 
@@ -29,7 +31,8 @@ namespace pw::rpc::internal {
 
 class ChannelList {
  public:
-  _PW_RPC_CONSTEXPR ChannelList(span<Channel> channels) : channels_(channels) {}
+  _PW_RPC_CONSTEXPR ChannelList(span<Channel> channels)
+      : channels_(channels.begin(), channels.end()) {}
 
   // Returns the first channel with the matching ID or nullptr if none match.
   // Except for Channel::kUnassignedChannelId, there should be no duplicate
@@ -59,7 +62,7 @@ class ChannelList {
   Status Remove(uint32_t channel_id);
 
 #if PW_RPC_DYNAMIC_ALLOCATION
-  std::vector<Channel> channels_;
+  PW_RPC_DYNAMIC_CONTAINER(Channel) channels_;
 #else
   span<Channel> channels_;
 #endif  // PW_RPC_DYNAMIC_ALLOCATION

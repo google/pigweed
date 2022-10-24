@@ -1357,11 +1357,31 @@ more details.
 
   If dynamic allocation is enabled, an span of channels may be passed to the
   endpoint at construction, but these channels are only used to initialize its
-  internal std::vector of channels. External channel objects are NOT used by
+  internal ``std::vector`` of channels. External channel objects are NOT used by
   the endpoint cannot be updated if dynamic allocation is enabled. No
   unassigned channels should be passed to the endpoint; they will be ignored.
   Any number of channels may be added to the endpoint, without closing existing
   channels, but adding channels will use more memory.
+
+.. c:macro:: PW_RPC_DYNAMIC_CONTAINER(type)
+
+  If :c:macro:`PW_RPC_DYNAMIC_ALLOCATION` is enabled, this macro must expand to
+  a container capable of storing objects of the provided type. This container
+  will be used internally be pw_rpc. Defaults to ``std::vector<type>``, but may
+  be set to any type that supports the following ``std::vector`` operations:
+
+  - Construction from iterators
+  - ``emplace_back()``
+  - ``pop_back()``
+  - Range-based for loop iteration
+
+.. c:macro:: PW_RPC_DYNAMIC_CONTAINER_INCLUDE
+
+  If :c:macro:`PW_RPC_DYNAMIC_ALLOCATION` is enabled, this header file is
+  included in files that use :c:macro:`PW_RPC_DYNAMIC_CONTAINER`. Defaults to
+  ``<vector>``, but may be set in conjunction with
+  :c:macro:`PW_RPC_DYNAMIC_CONTAINER` to use a different container type for
+  dynamic allocations in pw_rpc.
 
 .. c:macro:: PW_RPC_CONFIG_LOG_LEVEL
 
