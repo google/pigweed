@@ -435,6 +435,7 @@ template("_pw_python_proto_library") {
 # Args:
 #   sources: List of input .proto files.
 #   deps: List of other pw_proto_library dependencies.
+#   other_deps: List of other non-proto dependencies.
 #   inputs: Other files on which the protos depend (e.g. nanopb .options files).
 #   prefix: A prefix to add to the source protos prior to compilation. For
 #       example, a source called "foo.proto" with prefix = "nested" will be
@@ -560,6 +561,9 @@ template("pw_proto_library") {
     pw_mirror_tree("$target_name._sources") {
       source_root = _source_root
       sources = invoker.sources
+      if (defined(invoker.other_deps)) {
+        deps = invoker.other_deps
+      }
 
       if (defined(invoker.inputs)) {
         sources += invoker.inputs
@@ -568,7 +572,11 @@ template("pw_proto_library") {
       directory = "${_common.compile_dir}/$_prefix"
     }
   } else {
-    not_needed(invoker, [ "inputs" ])
+    not_needed(invoker,
+               [
+                 "inputs",
+                 "other_deps",
+               ])
   }
 
   # Enumerate all of the protobuf generator targets.
