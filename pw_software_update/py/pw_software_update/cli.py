@@ -11,15 +11,55 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Software update CLI."""
+"""
+Software update related operations.
 
+Learn more at: pigweed.dev/pw_software_update
+
+"""
+
+import argparse
 import sys
+from pathlib import Path
+
+
+def generate_key_handler(arg) -> None:
+    # TODO(b/254524996): Currently only prints path,
+    # eventually will handle key generation
+    print(arg.pathname)
+
+
+def _create_generate_key_parser(subparsers) -> None:
+    """Parser to handle key generation subcommand."""
+
+    generate_key_parser = subparsers.add_parser(
+        'generate-key',
+        description=
+        'Generates an ecdsa-sha2-nistp256 signing key pair (private + public)',
+        help='')
+    generate_key_parser.set_defaults(func=generate_key_handler)
+    generate_key_parser.add_argument('pathname',
+                                     type=Path,
+                                     help='Path to generated key pair')
+
+
+def _build_argument_parser() -> None:
+    parser_root = argparse.ArgumentParser(
+        description='Software update related operations.',
+        epilog='Learn more at: pigweed.dev/pw_software_update')
+    parser_root.set_defaults(
+        func=lambda *_args, **_kwargs: parser_root.print_help())
+
+    subparsers = parser_root.add_subparsers()
+    _create_generate_key_parser(subparsers)
+
+    args = parser_root.parse_args()
+    args.func(args)
 
 
 def main() -> int:
     """Software update command-line interface(WIP)."""
-    print("This is the Software Update CLI!")
-    print("Coming soon...")
+    _build_argument_parser()
     return 0
 
 
