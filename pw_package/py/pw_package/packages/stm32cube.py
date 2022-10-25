@@ -20,66 +20,70 @@ import pw_stm32cube_build.gen_file_list
 import pw_package.git_repo
 import pw_package.package_manager
 
-# Compatible versions are listed on the README.md of each hal_driver repo
+# Compatible versions are listed in either of:
+# - For older releases, the README.md of each hal_driver, e.g.:
+# https://github.com/STMicroelectronics/stm32f4xx_hal_driver/blob/v1.8.0/README.md
+# - For newer releases, the Release_Notes.html file in STM32Cube release, e.g.:
+# https://github.com/STMicroelectronics/STM32CubeF4/blob/v1.27.1/Release_Notes.html
 _STM32CUBE_VERSIONS = {
     "f0": {
-        "hal_driver_tag": "v1.7.5",
-        "cmsis_device_tag": "v2.3.5",
+        "hal_driver_tag": "v1.7.6",
+        "cmsis_device_tag": "v2.3.6",
         "cmsis_core_tag": "v5.4.0_cm0",
     },
     "f1": {
-        "hal_driver_tag": "v1.1.7",
-        "cmsis_device_tag": "v4.3.2",
+        "hal_driver_tag": "v1.1.8",
+        "cmsis_device_tag": "v4.3.3",
         "cmsis_core_tag": "v5.4.0_cm3",
     },
     "f2": {
-        "hal_driver_tag": "v1.2.6",
-        "cmsis_device_tag": "v2.2.4",
+        "hal_driver_tag": "v1.2.7",
+        "cmsis_device_tag": "v2.2.5",
         "cmsis_core_tag": "v5.4.0_cm3",
     },
     "f3": {
-        "hal_driver_tag": "v1.5.5",
-        "cmsis_device_tag": "v2.3.5",
+        "hal_driver_tag": "v1.5.6",
+        "cmsis_device_tag": "v2.3.6",
         "cmsis_core_tag": "v5.4.0_cm4",
     },
     "f4": {
-        "hal_driver_tag": "v1.7.12",
-        "cmsis_device_tag": "v2.6.6",
+        "hal_driver_tag": "v1.8.0",
+        "cmsis_device_tag": "v2.6.8",
         "cmsis_core_tag": "v5.4.0_cm4",
     },
     "f7": {
-        "hal_driver_tag": "v1.2.9",
-        "cmsis_device_tag": "v1.2.6",
+        "hal_driver_tag": "v1.3.0",
+        "cmsis_device_tag": "v1.2.8",
         "cmsis_core_tag": "v5.4.0_cm7",
     },
     "g0": {
-        "hal_driver_tag": "v1.4.1",
-        "cmsis_device_tag": "v1.4.0",
+        "hal_driver_tag": "v1.4.5",
+        "cmsis_device_tag": "v1.4.3",
         "cmsis_core_tag": "v5.6.0_cm0",
     },
     "g4": {
-        "hal_driver_tag": "v1.2.1",
-        "cmsis_device_tag": "v1.2.1",
+        "hal_driver_tag": "v1.2.2",
+        "cmsis_device_tag": "v1.2.2",
         "cmsis_core_tag": "v5.6.0_cm4",
     },
     "h7": {
-        "hal_driver_tag": "v1.10.0",
-        "cmsis_device_tag": "v1.10.0",
+        "hal_driver_tag": "v1.11.0",
+        "cmsis_device_tag": "v1.10.2",
         "cmsis_core_tag": "v5.6.0",
     },
     "l0": {
-        "hal_driver_tag": "v1.10.4",
-        "cmsis_device_tag": "v1.9.1",
-        "cmsis_core_tag": "v4.5_cm0",
+        "hal_driver_tag": "v1.10.5",
+        "cmsis_device_tag": "v1.9.2",
+        "cmsis_core_tag": "v5.4.0_cm0",
     },
     "l1": {
-        "hal_driver_tag": "v1.4.3",
-        "cmsis_device_tag": "v2.3.1",
+        "hal_driver_tag": "v1.4.4",
+        "cmsis_device_tag": "v2.3.2",
         "cmsis_core_tag": "v5.4.0_cm3",
     },
     "l4": {
-        "hal_driver_tag": "v1.13.0",
-        "cmsis_device_tag": "v1.7.1",
+        "hal_driver_tag": "v1.13.3",
+        "cmsis_device_tag": "v1.7.2",
         "cmsis_core_tag": "v5.6.0_cm4",
     },
     "l5": {
@@ -88,13 +92,13 @@ _STM32CUBE_VERSIONS = {
         "cmsis_core_tag": "v5.6.0_cm33",
     },
     "wb": {
-        "hal_driver_tag": "v1.8.0",
-        "cmsis_device_tag": "v1.8.0",
-        "cmsis_core_tag": "v5.4.0_cm4",
+        "hal_driver_tag": "v1.11.0",
+        "cmsis_device_tag": "v1.11.0",
+        "cmsis_core_tag": "v5.6.0_cm4",
     },
     "wl": {
-        "hal_driver_tag": "v1.0.0",
-        "cmsis_device_tag": "v1.0.0",
+        "hal_driver_tag": "v1.1.0",
+        "cmsis_device_tag": "v1.1.0",
         "cmsis_core_tag": "v5.6.0_cm4",
     },
 }
