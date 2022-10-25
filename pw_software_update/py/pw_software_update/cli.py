@@ -21,12 +21,22 @@ Learn more at: pigweed.dev/pw_software_update
 import argparse
 import sys
 from pathlib import Path
+from pw_software_update import keys
 
 
 def generate_key_handler(arg) -> None:
-    # TODO(b/254524996): Currently only prints path,
-    # eventually will handle key generation
-    print(arg.pathname)
+    """ Handler function for key generation"""
+
+    print('Generating an ecdsa-sha2-nistp256 key pair…', end=' ')
+    try:
+        keys.gen_ecdsa_keypair(arg.pathname)
+        print('done.\n')
+        print('Private key: ' + str(arg.pathname))
+        print('Public key: ' + str(arg.pathname) + '.pub')
+
+    except IOError as error:
+        print('failed.\n')
+        print(error)
 
 
 def _create_generate_key_parser(subparsers) -> None:
