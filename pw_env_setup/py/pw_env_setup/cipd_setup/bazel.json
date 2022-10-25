@@ -1,4 +1,7 @@
 {
+  "included_files": [
+    "buildifier.json"
+  ],
   "packages": [
     {
       "path": "pigweed/third_party/bazel/${platform}",
@@ -11,19 +14,6 @@
         "version:5.0.0.1"
       ],
       "version_file": ".versions/bazel.cipd_version"
-    },
-    {
-      "path": "infra/3pp/tools/buildifier/${platform}",
-      "platforms": [
-        "linux-amd64",
-        "linux-arm64",
-        "mac-amd64",
-        "mac-arm64",
-        "windows-amd64"
-      ],
-      "tags": [
-        "version:2@5.1.0"
-      ]
     }
   ]
 }
