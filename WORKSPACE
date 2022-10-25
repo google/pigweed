@@ -321,3 +321,13 @@ new_git_repository(
     commit = "b335ee812bfcca4cd3fb0e2a436aab39553a555a",
     remote = "https://github.com/kmackay/micro-ecc.git",
 )
+
+git_repository(
+    name = "boringssl",
+    commit = "b9232f9e27e5668bc0414879dcdedb2a59ea75f2",
+    # Requires patching as pw_polyfill uses c++14, whereas boringssl uses c++11.
+    # This results in a scenario where std::conditional_t is disabled in the
+    # polyfill implementation.
+    patches = ["//third_party/boringssl:cc_version.patch"],
+    remote = "https://boringssl.googlesource.com/boringssl",
+)
