@@ -23,7 +23,6 @@
 #include "pw_bluetooth/types.h"
 #include "pw_containers/vector.h"
 #include "pw_function/function.h"
-#include "pw_result/result.h"
 #include "pw_span/span.h"
 
 namespace pw::bluetooth::gatt {
