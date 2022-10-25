@@ -1,7 +1,6 @@
 {
   "included_files": [
     "arm.json",
-    "bazel.json",
     "pigweed.json",
     "python.json"
   ]
