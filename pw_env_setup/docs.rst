@@ -335,6 +335,11 @@ An example of a config file is below.
     "rosetta": "allow"
   }
 
+Only the packages necessary for almost all projects based on Pigweed are
+included in the ``pigweed.json`` file. A number of other files are present in
+that directory for projects that need more than the minimum. Internal-Google
+projects using LUCI should at least include ``luci.json``.
+
 In case the CIPD packages need to be referenced from other scripts, variables
 like ``PW_${BASENAME}_CIPD_INSTALL_DIR`` point to the CIPD install directories,
 where ``${BASENAME}`` is "PIGWEED" for

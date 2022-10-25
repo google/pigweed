@@ -1,10 +1,8 @@
 {
   "included_files": [
-    "pigweed.json",
     "arm.json",
-    "python.json",
     "bazel.json",
-    "kythe.json",
-    "luci.json"
+    "pigweed.json",
+    "python.json"
   ]
 }
