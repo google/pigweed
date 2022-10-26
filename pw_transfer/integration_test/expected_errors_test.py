@@ -45,8 +45,8 @@ from test_fixture import TransferIntegrationTestHarness
 class ErrorTransferIntegrationTest(test_fixture.TransferIntegrationTest):
     # Each set of transfer tests uses a different client/server port pair to
     # allow tests to be run in parallel.
-    HARNESS_CONFIG = TransferIntegrationTestHarness.Config(server_port=3310,
-                                                           client_port=3311)
+    HARNESS_CONFIG = TransferIntegrationTestHarness.Config(server_port=3312,
+                                                           client_port=3313)
 
     @parameterized.expand([
         ("cpp"),

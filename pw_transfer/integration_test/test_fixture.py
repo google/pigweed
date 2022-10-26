@@ -358,8 +358,14 @@ class TransferIntegrationTest(unittest.TestCase):
                     { data_dropper: {rate: 0.01, seed: 1649963713563718436} }
             ]""", config_pb2.ProxyConfig()))
 
-    def do_single_write(self, client_type: str, config: TransferConfig,
-                        resource_id: int, data: bytes) -> None:
+    def do_single_write(
+        self,
+        client_type: str,
+        config: TransferConfig,
+        resource_id: int,
+        data: bytes,
+        protocol_version=config_pb2.TransferAction.ProtocolVersion.LATEST
+    ) -> None:
         """Performs a single client-to-server write of the provided data."""
         with tempfile.NamedTemporaryFile(
         ) as f_payload, tempfile.NamedTemporaryFile() as f_server_output:
@@ -370,7 +376,9 @@ class TransferIntegrationTest(unittest.TestCase):
                     resource_id=resource_id,
                     file_path=f_payload.name,
                     transfer_type=config_pb2.TransferAction.TransferType.
-                    WRITE_TO_SERVER))
+                    WRITE_TO_SERVER,
+                    protocol_version=protocol_version,
+                ))
 
             f_payload.write(data)
             f_payload.flush()  # Ensure contents are there to read!
@@ -382,8 +390,14 @@ class TransferIntegrationTest(unittest.TestCase):
             self.assertEqual(exit_codes.server, 0)
             self.assertEqual(f_server_output.read(), data)
 
-    def do_single_read(self, client_type: str, config: TransferConfig,
-                       resource_id: int, data: bytes) -> None:
+    def do_single_read(
+        self,
+        client_type: str,
+        config: TransferConfig,
+        resource_id: int,
+        data: bytes,
+        protocol_version=config_pb2.TransferAction.ProtocolVersion.LATEST
+    ) -> None:
         """Performs a single server-to-client read of the provided data."""
         with tempfile.NamedTemporaryFile(
         ) as f_payload, tempfile.NamedTemporaryFile() as f_client_output:
@@ -394,7 +408,9 @@ class TransferIntegrationTest(unittest.TestCase):
                     resource_id=resource_id,
                     file_path=f_client_output.name,
                     transfer_type=config_pb2.TransferAction.TransferType.
-                    READ_FROM_SERVER))
+                    READ_FROM_SERVER,
+                    protocol_version=protocol_version,
+                ))
 
             f_payload.write(data)
             f_payload.flush()  # Ensure contents are there to read!

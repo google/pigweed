@@ -71,11 +71,18 @@ def _main() -> int:
         default_response_timeout_s=config.chunk_timeout_ms / 1000,
         initial_response_timeout_s=config.initial_chunk_timeout_ms / 1000,
         max_retries=config.max_retries,
-        default_protocol_version=pw_transfer.ProtocolVersion.VERSION_TWO,
+        default_protocol_version=pw_transfer.ProtocolVersion.LATEST,
     )
 
     # Perform the requested transfer actions.
     for action in config.transfer_actions:
+        protocol_version = pw_transfer.ProtocolVersion(
+            int(action.protocol_version))
+
+        # Default to the latest protocol version if none is specified.
+        if protocol_version == pw_transfer.ProtocolVersion.UNKNOWN:
+            protocol_version = pw_transfer.ProtocolVersion.LATEST
+
         if (action.transfer_type ==
                 config_pb2.TransferAction.TransferType.WRITE_TO_SERVER):
             try:
@@ -87,7 +94,9 @@ def _main() -> int:
                 return 1
 
             try:
-                transfer_manager.write(action.resource_id, data)
+                transfer_manager.write(action.resource_id,
+                                       data,
+                                       protocol_version=protocol_version)
             except pw_transfer.client.Error as e:
                 if e.status != Status(action.expected_status):
                     _LOG.exception(
@@ -99,7 +108,8 @@ def _main() -> int:
         elif (action.transfer_type ==
               config_pb2.TransferAction.TransferType.READ_FROM_SERVER):
             try:
-                data = transfer_manager.read(action.resource_id)
+                data = transfer_manager.read(action.resource_id,
+                                             protocol_version=protocol_version)
             except pw_transfer.client.Error as e:
                 if e.status != Status(action.expected_status):
                     _LOG.exception(

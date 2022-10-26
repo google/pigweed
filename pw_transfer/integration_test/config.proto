@@ -19,6 +19,14 @@ option java_package = "pw.transfer";
 option java_outer_classname = "ConfigProtos";
 
 message TransferAction {
+  enum ProtocolVersion {
+    option allow_alias = true;
+    UNKNOWN_VERSION = 0;
+    V1 = 1;
+    V2 = 2;
+    LATEST = 2;
+  }
+
   // As transfers are always client initiated, TransferType is from the client's
   // perspective.
   enum TransferType {
@@ -44,6 +52,9 @@ message TransferAction {
   // TODO(b/241456982): This should be a pw.protobuf.StatusCode, but importing
   // other Pigweed protos doesn't work in Bazel.
   uint32 expected_status = 4;
+
+  // Protocol version to initiate the transfer with.
+  ProtocolVersion protocol_version = 5;
 }
 
 // Configuration for the integration test client.

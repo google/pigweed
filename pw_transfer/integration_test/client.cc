@@ -91,6 +91,14 @@ pw::Status PerformTransferActions(const pw::transfer::ClientConfig& config) {
   Status status = pw::OkStatus();
   for (const pw::transfer::TransferAction& action : config.transfer_actions()) {
     TransferResult result;
+    // If no protocol version is specified, default to the latest version.
+    pw::transfer::ProtocolVersion protocol_version =
+        action.protocol_version() ==
+                pw::transfer::TransferAction::ProtocolVersion::
+                    TransferAction_ProtocolVersion_UNKNOWN_VERSION
+            ? pw::transfer::ProtocolVersion::kLatest
+            : static_cast<pw::transfer::ProtocolVersion>(
+                  action.protocol_version());
     if (action.transfer_type() ==
         pw::transfer::TransferAction::TransferType::
             TransferAction_TransferType_WRITE_TO_SERVER) {
@@ -103,7 +111,7 @@ pw::Status PerformTransferActions(const pw::transfer::ClientConfig& config) {
             result.completed.release();
           },
           pw::transfer::cfg::kDefaultChunkTimeout,
-          pw::transfer::ProtocolVersion::kVersionTwo);
+          protocol_version);
       // Wait for the transfer to complete. We need to do this here so that the
       // StdFileReader doesn't go out of scope.
       result.completed.acquire();
@@ -120,7 +128,7 @@ pw::Status PerformTransferActions(const pw::transfer::ClientConfig& config) {
             result.completed.release();
           },
           pw::transfer::cfg::kDefaultChunkTimeout,
-          pw::transfer::ProtocolVersion::kVersionTwo);
+          protocol_version);
       // Wait for the transfer to complete.
       result.completed.acquire();
     } else {

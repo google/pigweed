@@ -145,10 +145,12 @@ py_test(
 # Uses ports 3304 and 3305.
 py_test(
     name = "cross_language_medium_test",
+    timeout = "long",
     srcs = [
         "cross_language_medium_test.py",
     ],
     deps = [
+        ":config_pb2",
         ":integration_test_fixture",
     ],
 )
@@ -156,10 +158,12 @@ py_test(
 # Uses ports 3302 and 3303.
 py_test(
     name = "cross_language_small_test",
+    timeout = "moderate",
     srcs = [
         "cross_language_small_test.py",
     ],
     deps = [
+        ":config_pb2",
         ":integration_test_fixture",
     ],
 )
@@ -167,6 +171,7 @@ py_test(
 # Uses ports 3308 and 3309.
 py_test(
     name = "multi_transfer_test",
+    timeout = "moderate",
     srcs = [
         "multi_transfer_test.py",
     ],
@@ -176,8 +181,10 @@ py_test(
     ],
 )
 
+# Uses ports 33012 and 33013.
 py_test(
     name = "expected_errors_test",
+    timeout = "short",
     srcs = ["expected_errors_test.py"],
     deps = [
         ":config_pb2",
