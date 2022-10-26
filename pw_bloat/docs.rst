@@ -50,6 +50,55 @@ Basic usage
    |Total                 |1,245,184|
    +----------------------+---------+
 
+**Running a size report diff**
+
+.. code-block:: sh
+
+
+   $ pw bloat out/docs/obj/pw_metric/size_report/bin/one_metric.elf \
+         --diff out/docs/obj/pw_metric/size_report/bin/base.elf \
+         -d symbols
+
+   ▒█████▄   █▓  ▄███▒  ▒█    ▒█ ░▓████▒ ░▓████▒ ▒▓████▄
+    ▒█░  █░ ░█▒ ██▒ ▀█▒ ▒█░ █ ▒█  ▒█   ▀  ▒█   ▀  ▒█  ▀█▌
+    ▒█▄▄▄█░ ░█▒ █▓░ ▄▄░ ▒█░ █ ▒█  ▒███    ▒███    ░█   █▌
+    ▒█▀     ░█░ ▓█   █▓ ░█░ █ ▒█  ▒█   ▄  ▒█   ▄  ░█  ▄█▌
+    ▒█      ░█░ ░▓███▀   ▒█▓▀▓█░ ░▓████▒ ░▓████▒ ▒▓████▀
+
+   +-----------------------------------------------------------------------------------+
+   |                                                                                   |
+   +-----------------------------------------------------------------------------------+
+   | diff|     memoryregions    |                    symbols                    | sizes|
+   +=====+======================+===============================================+======+
+   |     |FLASH                 |                                               |    -4|
+   |     |                      |[section .FLASH.unused_space]                  |  -408|
+   |     |                      |main                                           |   +60|
+   |     |                      |__sf_fake_stdout                               |    +4|
+   |     |                      |pw_boot_PreStaticMemoryInit                    |    -2|
+   |     |                      |_isatty                                        |    -2|
+   |  NEW|                      |_GLOBAL__sub_I_group_foo                       |   +84|
+   |  NEW|                      |pw::metric::Group::~Group()                    |   +34|
+   |  NEW|                      |pw::intrusive_list_impl::List::insert_after()  |   +32|
+   |  NEW|                      |pw::metric::Metric::Increment()                |   +32|
+   |  NEW|                      |__cxa_atexit                                   |   +28|
+   |  NEW|                      |pw::metric::Metric::Metric()                   |   +28|
+   |  NEW|                      |pw::metric::Metric::as_int()                   |   +28|
+   |  NEW|                      |pw::intrusive_list_impl::List::Item::unlist()  |   +20|
+   |  NEW|                      |pw::metric::Group::Group()                     |   +18|
+   |  NEW|                      |pw::intrusive_list_impl::List::Item::previous()|   +14|
+   |  NEW|                      |pw::metric::TypedMetric<>::~TypedMetric()      |   +14|
+   |  NEW|                      |__aeabi_atexit                                 |   +12|
+   +-----+----------------------+-----------------------------------------------+------+
+   |     |RAM                   |                                               |     0|
+   |     |                      |[section .stack]                               |   -32|
+   |  NEW|                      |group_foo                                      |   +16|
+   |  NEW|                      |metric_x                                       |   +12|
+   |  NEW|                      |[section .static_init_ram]                     |    +4|
+   +=====+======================+===============================================+======+
+   |Total|                      |                                               |    -4|
+   +-----+----------------------+-----------------------------------------------+------+
+
+
 .. _bloat-howto:
 
 Defining size reports in GN

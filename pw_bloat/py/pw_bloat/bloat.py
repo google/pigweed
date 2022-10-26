@@ -100,6 +100,9 @@ def run_bloaty(
 
 class NoMemoryRegions(Exception):
     """Exception raised if an ELF does not define any memory region symbols."""
+    def __init__(self, elf: Path):
+        super().__init__(f'ELF {elf} does not define memory region symbols')
+        self.elf = elf
 
 
 def memory_regions_size_report(
@@ -130,7 +133,7 @@ def memory_regions_size_report(
                                             out_file=outfile)
 
             if not result.has_memoryregions:
-                raise NoMemoryRegions(elf.name)
+                raise NoMemoryRegions(elf)
 
         return run_bloaty(
             str(elf.resolve()),
