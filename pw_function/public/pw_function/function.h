@@ -68,4 +68,27 @@ using InlineFunction = fit::inline_function<Callable, inline_target_size>;
 
 using Closure = Function<void()>;
 
+// pw::Callback is identical to pw::Function except:
+//
+// 1) On the first call to invoke a `pw::Callback`, the target function held
+//    by the `pw::Callback` cannot be called again.
+// 2) When a `pw::Callback` is invoked for the first time, the target function
+//    is released and destructed, along with any resources owned by that
+//    function (typically the objects captured by a lambda).
+
+// A `pw::Callback` in the "already called" state has the same state as a
+// `pw::Callback` that has been assigned to `nullptr`.
+template <typename Callable,
+          size_t inline_target_size =
+              function_internal::config::kInlineCallableSize>
+using Callback = fit::callback_impl<
+    inline_target_size,
+    /*require_inline=*/!function_internal::config::kEnableDynamicAllocation,
+    Callable>;
+
+template <typename Callable,
+          size_t inline_target_size =
+              function_internal::config::kInlineCallableSize>
+using InlineCallback = fit::inline_callback<Callable, inline_target_size>;
+
 }  // namespace pw

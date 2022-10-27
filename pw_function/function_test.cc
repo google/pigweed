@@ -341,6 +341,52 @@ TEST(Function, MoveOnlyType) {
   EXPECT_TRUE(function(std::move(move_only)));
 }
 
+TEST(Function, CallbackCanOnlyBeCalledOnce) {
+  Callback<void()> cb([]() {});
+  cb();
+  EXPECT_FALSE(cb);
+  EXPECT_EQ(cb, nullptr);
+}
+
+TEST(Function, CallbackDestroysTargetAfterBeingCalled) {
+  class MoveOnlyDestructionCounter {
+   public:
+    MoveOnlyDestructionCounter(int* destroyed_count)
+        : destroyed_(destroyed_count) {}
+
+    MoveOnlyDestructionCounter(const MoveOnlyDestructionCounter& other) =
+        delete;
+    MoveOnlyDestructionCounter& operator=(
+        const MoveOnlyDestructionCounter& other) = delete;
+
+    MoveOnlyDestructionCounter(MoveOnlyDestructionCounter&& t) {
+      *this = std::move(t);
+    }
+    MoveOnlyDestructionCounter& operator=(MoveOnlyDestructionCounter&& t) {
+      destroyed_ = t.destroyed_;
+      t.destroyed_ = nullptr;
+      return *this;
+    }
+
+    ~MoveOnlyDestructionCounter() {
+      if (destroyed_) {
+        (*destroyed_)++;
+      }
+    }
+
+   private:
+    int* destroyed_;
+  };
+
+  int destroyed_count = 0;
+  MoveOnlyDestructionCounter destruction_counter(&destroyed_count);
+  Callback<void()> cb = [destruction_counter =
+                             std::move(destruction_counter)]() {};
+  EXPECT_EQ(destroyed_count, 0);
+  cb();
+  EXPECT_EQ(destroyed_count, 1);
+}
+
 }  // namespace
 }  // namespace pw
 

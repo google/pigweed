@@ -214,6 +214,13 @@ call site.
   // Takes ownership of the pw::Function.
   void StoreTheCallback(std::move(my_function));
 
+Use ``pw::Callback`` for one-shot functions
+-------------------------------------------
+``pw::Callback`` is a specialization of ``pw::Function`` that can only be called
+once. After a ``pw::Callback`` is called, the target function is destroyed. A
+``pw::Callback`` in the "already called" state has the same state as a
+``pw::Callback`` that has been assigned to nullptr.
+
 Size reports
 ============
 
@@ -235,6 +242,11 @@ Design
 ======
 ``pw::Function`` is an alias of
 `fit::function <https://cs.opensource.google/fuchsia/fuchsia/+/main:sdk/lib/fit/include/lib/fit/function.h;drc=f66f54fca0c11a1168d790bcc3d8a5a3d940218d>`_
+.
+
+
+``pw::Callback`` is an alias of
+`fit::callback <https://cs.opensource.google/fuchsia/fuchsia/+/main:sdk/lib/fit/include/lib/fit/function.h;drc=f66f54fca0c11a1168d790bcc3d8a5a3d940218d>`_
 .
 
 Zephyr
