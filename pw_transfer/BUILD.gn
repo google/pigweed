@@ -197,6 +197,7 @@ pw_test("atomic_file_transfer_handler_test") {
 }
 
 pw_test("transfer_test") {
+  enable_if = pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread"
   sources = [ "transfer_test.cc" ]
   deps = [
     ":proto.pwpb",
@@ -211,6 +212,7 @@ pw_test("transfer_test") {
 }
 
 pw_test("transfer_thread_test") {
+  enable_if = pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread"
   sources = [ "transfer_thread_test.cc" ]
   deps = [
     ":core",
@@ -225,6 +227,7 @@ pw_test("transfer_thread_test") {
 }
 
 pw_test("client_test") {
+  enable_if = pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread"
   sources = [ "client_test.cc" ]
   deps = [
     ":client",
