@@ -27,12 +27,12 @@ pw_cc_library(
     hdrs = [
         "public/pw_bluetooth/address.h",
         "public/pw_bluetooth/constants.h",
+        "public/pw_bluetooth/controller.h",
         "public/pw_bluetooth/gatt/client.h",
         "public/pw_bluetooth/gatt/constants.h",
         "public/pw_bluetooth/gatt/error.h",
         "public/pw_bluetooth/gatt/server.h",
         "public/pw_bluetooth/gatt/types.h",
-        "public/pw_bluetooth/hci.h",
         "public/pw_bluetooth/host.h",
         "public/pw_bluetooth/internal/hex.h",
         "public/pw_bluetooth/internal/raii_ptr.h",
@@ -47,6 +47,7 @@ pw_cc_library(
         "public/pw_bluetooth/result.h",
         "public/pw_bluetooth/types.h",
         "public/pw_bluetooth/uuid.h",
+        "public/pw_bluetooth/vendor.h",
     ],
     includes = ["public"],
     deps = [

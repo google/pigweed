@@ -33,12 +33,12 @@ pw_source_set("pw_bluetooth") {
   public = [
     "public/pw_bluetooth/address.h",
     "public/pw_bluetooth/constants.h",
+    "public/pw_bluetooth/controller.h",
     "public/pw_bluetooth/gatt/client.h",
     "public/pw_bluetooth/gatt/constants.h",
     "public/pw_bluetooth/gatt/error.h",
     "public/pw_bluetooth/gatt/server.h",
     "public/pw_bluetooth/gatt/types.h",
-    "public/pw_bluetooth/hci.h",
     "public/pw_bluetooth/host.h",
     "public/pw_bluetooth/internal/hex.h",
     "public/pw_bluetooth/internal/raii_ptr.h",
@@ -53,12 +53,14 @@ pw_source_set("pw_bluetooth") {
     "public/pw_bluetooth/result.h",
     "public/pw_bluetooth/types.h",
     "public/pw_bluetooth/uuid.h",
+    "public/pw_bluetooth/vendor.h",
   ]
   public_deps = [
     "$dir_pw_chrono:system_clock",
     "$dir_pw_string:string",
     dir_pw_containers,
     dir_pw_function,
+    dir_pw_result,
     dir_pw_span,
     dir_pw_status,
   ]

@@ -31,13 +31,14 @@ pw_add_module_library(pw_bluetooth
     public/pw_bluetooth/low_energy/peripheral.h
     public/pw_bluetooth/low_energy/security_mode.h
     public/pw_bluetooth/constants.h
-    public/pw_bluetooth/hci.h
+    public/pw_bluetooth/controller.h
     public/pw_bluetooth/host.h
     public/pw_bluetooth/pairing_delegate.h
     public/pw_bluetooth/peer.h
     public/pw_bluetooth/result.h
     public/pw_bluetooth/types.h
     public/pw_bluetooth/uuid.h
+    public/pw_bluetooth/vendor.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
