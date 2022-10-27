@@ -17,46 +17,13 @@
 #include <cstring>
 #include <vector>
 
+#include "fuzz.h"
 #include "pw_fuzzer/asan_interface.h"
 #include "pw_fuzzer/fuzzed_data_provider.h"
 #include "pw_protobuf/encoder.h"
 #include "pw_span/span.h"
 
 namespace {
-
-// Encodable values. The fuzzer will iteratively choose different field types to
-// generate and encode.
-enum FieldType : uint8_t {
-  kUint32 = 0,
-  kPackedUint32,
-  kUint64,
-  kPackedUint64,
-  kInt32,
-  kPackedInt32,
-  kInt64,
-  kPackedInt64,
-  kSint32,
-  kPackedSint32,
-  kSint64,
-  kPackedSint64,
-  kBool,
-  kFixed32,
-  kPackedFixed32,
-  kFixed64,
-  kPackedFixed64,
-  kSfixed32,
-  kPackedSfixed32,
-  kSfixed64,
-  kPackedSfixed64,
-  kFloat,
-  kPackedFloat,
-  kDouble,
-  kPackedDouble,
-  kBytes,
-  kString,
-  kPush,
-  kMaxValue = kPush,
-};
 
 // TODO(b/235289495): Move this to pw_fuzzer/fuzzed_data_provider.h
 

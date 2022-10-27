@@ -1,4 +1,4 @@
-# Copyright 2021 The Pigweed Authors
+# Copyright 2022 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -107,7 +107,23 @@ pw_cc_test(
 
 pw_cc_fuzz_test(
     name = "encoder_fuzz_test",
-    srcs = ["encoder_fuzzer.cc"],
+    srcs = [
+        "encoder_fuzzer.cc",
+        "fuzz.h",
+    ],
+    deps = [
+        "//pw_fuzzer",
+        "//pw_protobuf",
+        "//pw_span",
+    ],
+)
+
+pw_cc_fuzz_test(
+    name = "decoder_fuzz_test",
+    srcs = [
+        "decoder_fuzzer.cc",
+        "fuzz.h",
+    ],
     deps = [
         "//pw_fuzzer",
         "//pw_protobuf",
