@@ -46,6 +46,7 @@ DEFAULT_KEY_BINDINGS: Dict[str, List[str]] = {
     'log-pane.remove-duplicated-log-pane': ['delete'],
     'log-pane.clear-history': ['C'],
     'log-pane.toggle-follow': ['f'],
+    'log-pane.toggle-web-browser': ['O'],
     'log-pane.move-cursor-up': ['up', 'k'],
     'log-pane.move-cursor-down': ['down', 'j'],
     'log-pane.visual-select-up': ['s-up'],

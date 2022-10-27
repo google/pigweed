@@ -16,6 +16,7 @@
 import functools
 import logging
 import re
+import time
 from typing import (
     Any,
     Callable,
@@ -41,10 +42,14 @@ from prompt_toolkit.layout import (
     ConditionalContainer,
     Float,
     FloatContainer,
+    FormattedTextControl,
+    HSplit,
     UIContent,
     UIControl,
     VerticalAlign,
+    VSplit,
     Window,
+    WindowAlign,
 )
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType, MouseButton
 
@@ -143,6 +148,11 @@ class LogContentControl(UIControl):
         def _toggle_follow(_event: KeyPressEvent) -> None:
             """Toggle log line following."""
             self.log_pane.toggle_follow()
+
+        @register('log-pane.toggle-web-browser', key_bindings)
+        def _toggle_browser(_event: KeyPressEvent) -> None:
+            """View logs in browser."""
+            self.log_pane.toggle_websocket_server()
 
         @register('log-pane.move-cursor-up', key_bindings)
         def _up(_event: KeyPressEvent) -> None:
@@ -325,6 +335,150 @@ class LogContentControl(UIControl):
         return NotImplemented
 
 
+class LogPaneWebsocketDialog(ConditionalContainer):
+    """Dialog box for showing the websocket URL."""
+    # Height of the dialog box contens in lines of text.
+    DIALOG_HEIGHT = 2
+
+    def __init__(self, log_pane: 'LogPane'):
+        self.log_pane = log_pane
+
+        self._last_action_message: str = ''
+        self._last_action_time: float = 0
+
+        info_bar_control = FormattedTextControl(self.get_info_fragments)
+        info_bar_window = Window(content=info_bar_control,
+                                 height=1,
+                                 align=WindowAlign.LEFT,
+                                 dont_extend_width=False)
+
+        message_bar_control = FormattedTextControl(self.get_message_fragments)
+        message_bar_window = Window(content=message_bar_control,
+                                    height=1,
+                                    align=WindowAlign.RIGHT,
+                                    dont_extend_width=False)
+
+        action_bar_control = FormattedTextControl(self.get_action_fragments)
+        action_bar_window = Window(content=action_bar_control,
+                                   height=1,
+                                   align=WindowAlign.RIGHT,
+                                   dont_extend_width=True)
+
+        super().__init__(
+            pw_console.widgets.border.create_border(
+                HSplit(
+                    [
+                        info_bar_window,
+                        VSplit([message_bar_window, action_bar_window]),
+                    ],
+                    height=LogPaneWebsocketDialog.DIALOG_HEIGHT,
+                    style='class:saveas-dialog',
+                ),
+                content_height=LogPaneWebsocketDialog.DIALOG_HEIGHT,
+                title='Websocket Log Server',
+                border_style='class:saveas-dialog-border',
+                left_margin_columns=1,
+            ),
+            filter=Condition(lambda: self.log_pane.websocket_dialog_active),
+        )
+
+    def focus_self(self) -> None:
+        # Nothing in this dialog can be focused, focus on the parent log_pane
+        # instead.
+        self.log_pane.application.focus_on_container(self.log_pane)
+
+    def close_dialog(self) -> None:
+        """Close this dialog."""
+        self.log_pane.toggle_websocket_server()
+        self.log_pane.websocket_dialog_active = False
+        self.log_pane.application.focus_on_container(self.log_pane)
+        self.log_pane.redraw_ui()
+
+    def _set_action_message(self, text: str) -> None:
+        self._last_action_time = time.time()
+        self._last_action_message = text
+
+    def copy_url_to_clipboard(self) -> None:
+        self.log_pane.application.application.clipboard.set_text(
+            self.log_pane.log_view.get_web_socket_url())
+        self._set_action_message('Copied!')
+
+    def get_message_fragments(self):
+        """Return FormattedText with the last action message."""
+        # Mouse handlers
+        focus = functools.partial(pw_console.widgets.mouse_handlers.on_click,
+                                  self.focus_self)
+        # Separator should have the focus mouse handler so clicking on any
+        # whitespace focuses the input field.
+        separator_text = ('', '  ', focus)
+
+        if self._last_action_time + 10 > time.time():
+            return [
+                ('class:theme-fg-yellow', self._last_action_message, focus),
+                separator_text,
+            ]
+        return [separator_text]
+
+    def get_info_fragments(self):
+        """Return FormattedText with current URL info."""
+        # Mouse handlers
+        focus = functools.partial(pw_console.widgets.mouse_handlers.on_click,
+                                  self.focus_self)
+        # Separator should have the focus mouse handler so clicking on any
+        # whitespace focuses the input field.
+        separator_text = ('', '  ', focus)
+
+        fragments = [
+            ('class:saveas-dialog-setting', 'URL:  ', focus),
+            ('class:saveas-dialog-title',
+             self.log_pane.log_view.get_web_socket_url(), focus),
+            separator_text,
+        ]
+        return fragments
+
+    def get_action_fragments(self):
+        """Return FormattedText with the action buttons."""
+        # Mouse handlers
+        focus = functools.partial(pw_console.widgets.mouse_handlers.on_click,
+                                  self.focus_self)
+        cancel = functools.partial(pw_console.widgets.mouse_handlers.on_click,
+                                   self.close_dialog)
+        copy = functools.partial(pw_console.widgets.mouse_handlers.on_click,
+                                 self.copy_url_to_clipboard)
+
+        # Separator should have the focus mouse handler so clicking on any
+        # whitespace focuses the input field.
+        separator_text = ('', '  ', focus)
+
+        # Default button style
+        button_style = 'class:toolbar-button-inactive'
+
+        fragments = []
+
+        # Action buttons
+        fragments.extend(
+            pw_console.widgets.checkbox.to_keybind_indicator(
+                key=None,
+                description='Stop',
+                mouse_handler=cancel,
+                base_style=button_style,
+            ))
+
+        fragments.append(separator_text)
+        fragments.extend(
+            pw_console.widgets.checkbox.to_keybind_indicator(
+                key=None,
+                description='Copy to Clipboard',
+                mouse_handler=copy,
+                base_style=button_style,
+            ))
+
+        # One space separator
+        fragments.append(('', ' ', focus))
+
+        return fragments
+
+
 class LogPane(WindowPane):
     """LogPane class."""
 
@@ -364,6 +518,9 @@ class LogPane(WindowPane):
         self.saveas_dialog_active = False
         self.visual_selection_dialog = LogPaneSelectionDialog(self)
 
+        self.websocket_dialog = LogPaneWebsocketDialog(self)
+        self.websocket_dialog_active = False
+
         # Table header bar, only shown if table view is active.
         self.table_header_toolbar = TableToolbar(self)
 
@@ -393,6 +550,13 @@ class LogPane(WindowPane):
                           checked=lambda: self.wrap_lines))
         self.bottom_toolbar.add_button(
             ToolbarButton('C', 'Clear', self.clear_history))
+
+        self.bottom_toolbar.add_button(
+            ToolbarButton('Shift-o',
+                          'Open in browser',
+                          self.toggle_websocket_server,
+                          is_checkbox=True,
+                          checked=lambda: self.log_view.websocket_running))
 
         self.log_content_control = LogContentControl(self)
 
@@ -448,11 +612,18 @@ class LogPane(WindowPane):
                           right=2,
                           height=LogPaneSaveAsDialog.DIALOG_HEIGHT + 2,
                           content=self.saveas_dialog),
+                    Float(top=1,
+                          left=2,
+                          right=2,
+                          height=LogPaneWebsocketDialog.DIALOG_HEIGHT + 2,
+                          content=self.websocket_dialog),
                 ]),
             filter=Condition(lambda: self.show_pane))
 
     @property
     def table_view(self):
+        if self.log_view.websocket_running:
+            return False
         return self._table_view
 
     @table_view.setter
@@ -491,6 +662,8 @@ class LogPane(WindowPane):
 
     def start_search(self):
         """Show the search bar to begin a search."""
+        if self.log_view.websocket_running:
+            return
         # Show the search bar
         self.search_bar_active = True
         # Focus on the search bar
@@ -551,6 +724,18 @@ class LogPane(WindowPane):
         self.log_view.clear_scrollback()
         self.redraw_ui()
 
+    def toggle_websocket_server(self):
+        """Start or stop websocket server to send logs."""
+        if self.log_view.websocket_running:
+            self.log_view.stop_websocket_thread()
+            self.websocket_dialog_active = False
+        else:
+            self.search_toolbar.close_search_bar()
+            self.log_view.start_websocket_thread()
+            self.application.start_http_server()
+            self.saveas_dialog_active = False
+            self.websocket_dialog_active = True
+
     def get_all_key_bindings(self) -> List:
         """Return all keybinds for this pane."""
         # Return log content control keybindings
@@ -585,6 +770,12 @@ class LogPane(WindowPane):
                     check=pw_console.widgets.checkbox.to_checkbox_text(
                         self.log_view.follow, end='')),
                 self.toggle_follow,
+            ),
+            (
+                '{check} Open in web browser'.format(
+                    check=pw_console.widgets.checkbox.to_checkbox_text(
+                        self.log_view.websocket_running, end='')),
+                self.toggle_websocket_server,
             ),
             # Menu separator
             ('-', None),

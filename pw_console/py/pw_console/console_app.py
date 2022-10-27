@@ -16,6 +16,7 @@
 import asyncio
 import builtins
 import functools
+import socketserver
 import importlib.resources
 import logging
 import os
@@ -57,6 +58,10 @@ from ptpython.key_bindings import (  # type: ignore
 )
 
 from pw_console.command_runner import CommandRunner
+from pw_console.console_log_server import (
+    ConsoleLogHTTPRequestHandler,
+    pw_console_http_server,
+)
 from pw_console.console_prefs import ConsolePrefs
 from pw_console.help_window import HelpWindow
 import pw_console.key_bindings
@@ -146,6 +151,9 @@ class ConsoleApp:
         # log lines.
         self.log_ui_update_frequency = 0.1  # 10 FPS
         self._last_ui_update_time = time.time()
+
+        self.http_server: Optional[socketserver.TCPServer] = None
+        self.html_files: Dict[str, str] = {}
 
         # Create a default global and local symbol table. Values are the same
         # structure as what is returned by globals():
@@ -505,6 +513,28 @@ class ConsoleApp:
             load_completions=self._create_snippet_completions)
         if not self.command_runner_is_open():
             self.command_runner.open_dialog()
+
+    def _http_server_entry(self) -> None:
+        handler = functools.partial(ConsoleLogHTTPRequestHandler,
+                                    self.html_files)
+        pw_console_http_server(3000, handler)
+
+    def start_http_server(self):
+        if self.http_server is not None:
+            return
+
+        html_package_path = 'pw_console.html'
+        self.html_files = {
+            '/{}'.format(t):
+            importlib.resources.read_text(html_package_path, t)
+            for t in importlib.resources.contents(html_package_path)
+            if Path(t).suffix in ['.css', '.html', '.js']
+        }
+
+        server_thread = Thread(target=self._http_server_entry,
+                               args=(),
+                               daemon=True)
+        server_thread.start()
 
     def _create_snippet_completions(self) -> List[Tuple[str, Callable]]:
         completions: List[Tuple[str, Callable]] = [(

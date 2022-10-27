@@ -20,7 +20,7 @@ from typing import Dict, Callable, List, Tuple, Union
 from prompt_toolkit.key_binding import KeyBindings
 import yaml
 
-from pw_console.style import get_theme_colors
+from pw_console.style import get_theme_colors, generate_styles
 from pw_console.key_bindings import DEFAULT_KEY_BINDINGS
 from pw_console.yaml_config_loader_mixin import YamlConfigLoaderMixin
 
@@ -213,6 +213,16 @@ class ConsolePrefs(YamlConfigLoaderMixin):
             column_style = column_colors[column_name].get(
                 column_value, column_style)
         return column_style
+
+    def pw_console_color_config(self) -> Dict[str, Dict]:
+        column_colors = self._config.get('column_colors', {})
+        theme_styles = generate_styles(self.ui_theme)
+        style_classes = dict(theme_styles.style_rules)
+
+        color_config = {}
+        color_config['classes'] = style_classes
+        color_config['column_values'] = column_colors
+        return {'__pw_console_colors': color_config}
 
     @property
     def window_column_split_method(self) -> str:

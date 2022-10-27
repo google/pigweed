@@ -958,9 +958,12 @@ class WindowManager:
                     # Add the new pane
                     self.window_lists[column_index].add_pane_no_checks(
                         new_pane)
-                    # Apply log filters
+                    # Apply log pane options
                     if isinstance(new_pane, LogPane):
                         new_pane.apply_filters_from_config(window_options)
+                        # Auto-start the websocket log server if requested.
+                        if window_options.get('view_in_web', False):
+                            new_pane.toggle_websocket_server()
 
         # Update column display modes.
         self._set_window_list_display_modes(prefs)

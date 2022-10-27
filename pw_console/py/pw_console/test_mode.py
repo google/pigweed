@@ -67,7 +67,7 @@ async def log_forever(fake_log_messages: List[Tuple[str, Dict]]):
     module_names = ['APP', 'RADIO', 'BAT', 'USB', 'CPU']
     while True:
         if message_count > 32 or message_count < 2:
-            await asyncio.sleep(.1)
+            await asyncio.sleep(0.1)
         fake_log = random.choice(fake_log_messages)
 
         module_name = module_names[message_count % len(module_names)]

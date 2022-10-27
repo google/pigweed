@@ -27,12 +27,14 @@ pw_python_package("py") {
     "pw_console/__main__.py",
     "pw_console/command_runner.py",
     "pw_console/console_app.py",
+    "pw_console/console_log_server.py",
     "pw_console/console_prefs.py",
     "pw_console/docs/__init__.py",
     "pw_console/embed.py",
     "pw_console/filter_toolbar.py",
     "pw_console/get_pw_console_app.py",
     "pw_console/help_window.py",
+    "pw_console/html/__init__.py",
     "pw_console/key_bindings.py",
     "pw_console/log_filter.py",
     "pw_console/log_line.py",
@@ -99,6 +101,9 @@ pw_python_package("py") {
     "pw_console/docs/user_guide.rst",
     "pw_console/templates/keybind_list.jinja",
     "pw_console/templates/repl_output.jinja",
+    "pw_console/html/index.html",
+    "pw_console/html/main.js",
+    "pw_console/html/style.css",
   ]
 
   pylintrc = "$dir_pigweed/.pylintrc"

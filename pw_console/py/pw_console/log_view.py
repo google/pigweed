@@ -19,14 +19,17 @@ import collections
 import copy
 from enum import Enum
 import itertools
+import json
 import logging
 import operator
 from pathlib import Path
 import re
+from threading import Thread
 from typing import Callable, Dict, List, Optional, Tuple, TYPE_CHECKING
 
 from prompt_toolkit.data_structures import Point
 from prompt_toolkit.formatted_text import StyleAndTextTuples
+import websockets
 
 from pw_console.log_filter import (
     DEFAULT_SEARCH_MATCHER,
@@ -37,6 +40,7 @@ from pw_console.log_filter import (
 )
 from pw_console.log_screen import ScreenLine, LogScreen
 from pw_console.log_store import LogStore
+from pw_console.python_logging import log_record_to_json
 from pw_console.text_formatting import remove_formatting
 
 if TYPE_CHECKING:
@@ -129,6 +133,8 @@ class LogView:
 
         self._last_log_store_index = 0
         self._new_logs_since_last_render = True
+        self._new_logs_since_last_websocket_serve = True
+        self._last_served_websocket_index = -1
 
         # Should new log lines be tailed?
         self.follow: bool = True
@@ -138,8 +144,71 @@ class LogView:
         # Cache of formatted text tuples used in the last UI render.
         self._line_fragment_cache: List[StyleAndTextTuples] = []
 
+        # websocket server variables
+        self.websocket_running: bool = False
+        self.websocket_server = None
+        self.websocket_port = None
+        self.websocket_loop = asyncio.new_event_loop()
+
         # Check if any logs are already in the log_store and update the view.
         self.new_logs_arrived()
+
+    def _websocket_thread_entry(self):
+        """Entry point for the user code thread."""
+        asyncio.set_event_loop(self.websocket_loop)
+        self.websocket_server = websockets.serve(  # type: ignore # pylint: disable=no-member
+            self._send_logs_over_websockets, '127.0.0.1')
+        self.websocket_loop.run_until_complete(self.websocket_server)
+        self.websocket_port = self.websocket_server.ws_server.sockets[
+            0].getsockname()[1]
+        self.log_pane.application.application.clipboard.set_text(
+            self.get_web_socket_url())
+        self.websocket_running = True
+        self.websocket_loop.run_forever()
+
+    def start_websocket_thread(self):
+        """Create a thread for running user code so the UI isn't blocked."""
+        thread = Thread(target=self._websocket_thread_entry,
+                        args=(),
+                        daemon=True)
+        thread.start()
+
+    def stop_websocket_thread(self):
+        """Stop websocket server."""
+        if self.websocket_running:
+            self.websocket_loop.call_soon_threadsafe(self.websocket_loop.stop)
+            self.websocket_server = None
+            self.websocket_port = None
+            self.websocket_running = False
+            if self.filtering_on:
+                self._restart_filtering()
+
+    async def _send_logs_over_websockets(self, websocket, _path) -> None:
+        formatter: Callable[[LogLine],
+                            str] = operator.attrgetter('ansi_stripped_log')
+        formatter = lambda log: log_record_to_json(log.record)
+
+        theme_colors = json.dumps(
+            self.log_pane.application.prefs.pw_console_color_config())
+        # Send colors
+        await websocket.send(theme_colors)
+
+        while True:
+            # Wait for new logs
+            if not self._new_logs_since_last_websocket_serve:
+                await asyncio.sleep(.5)
+
+            _start_log_index, log_source = self._get_log_lines()
+            log_index_range = range(self._last_served_websocket_index + 1,
+                                    self.get_total_count())
+
+            for i in log_index_range:
+                log_text = formatter(log_source[i])
+                await websocket.send(log_text)
+                self._last_served_websocket_index = i
+
+            # Flag that all logs have been served.
+            self._new_logs_since_last_websocket_serve = False
 
     def view_mode_changed(self) -> None:
         self._reset_log_screen_on_next_render = True
@@ -337,6 +406,8 @@ class LogView:
 
     def apply_filter(self):
         """Set new filter and schedule historical log filter asyncio task."""
+        if self.websocket_running:
+            return
         self.install_new_filter()
         self._restart_filtering()
 
@@ -529,10 +600,15 @@ class LogView:
 
         self._last_log_store_index = latest_total
         self._new_logs_since_last_render = True
+        self._new_logs_since_last_websocket_serve = True
 
         if self.follow:
             # Set the follow event flag for the next render_content call.
             self.follow_event = FollowEvent.STICKY_FOLLOW
+
+        if self.websocket_running:
+            # No terminal screen redraws are required.
+            return
 
         # Trigger a UI update if the log window is visible.
         if self.log_pane.show_pane:
@@ -723,6 +799,9 @@ class LogView:
         """Get pre-formatted table header."""
         return self.log_store.render_table_header()
 
+    def get_web_socket_url(self):
+        return f'http://127.0.0.1:3000/#ws={self.websocket_port}'
+
     def render_content(self) -> List:
         """Return logs to display on screen as a list of FormattedText tuples.
 
@@ -732,6 +811,10 @@ class LogView:
         no updates are required.
         """
         screen_update_needed = False
+
+        # Disable rendering if user is viewing logs on web
+        if self.websocket_running:
+            return []
 
         # Check window size
         if self.log_pane.pane_resized():
