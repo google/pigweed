@@ -26,7 +26,7 @@ class ScoConnection final : public hci::ScoDataChannel::ConnectionInterface {
   // |deactivated_cb| will be called when the connection has been Deactivated and should be
   // destroyed.
   ScoConnection(std::unique_ptr<hci::Connection> connection, fit::closure deactivated_cb,
-                bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> parameters,
+                bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> parameters,
                 hci::ScoDataChannel* channel);
 
   // Destroying this object will disconnect the underlying HCI connection.
@@ -68,7 +68,7 @@ class ScoConnection final : public hci::ScoDataChannel::ConnectionInterface {
   fxl::WeakPtr<ScoConnection> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
   // ScoDataChannel overrides:
-  bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> parameters() override;
+  bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> parameters() override;
   std::unique_ptr<hci::ScoDataPacket> GetNextOutboundPacket() override;
   void ReceiveInboundPacket(std::unique_ptr<hci::ScoDataPacket> packet) override;
   void OnHciError() override;
@@ -103,7 +103,7 @@ class ScoConnection final : public hci::ScoDataChannel::ConnectionInterface {
   // This will be null if HCI SCO is not supported.
   hci::ScoDataChannel* channel_ = nullptr;
 
-  bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> parameters_;
+  bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> parameters_;
 
   fxl::WeakPtrFactory<ScoConnection> weak_ptr_factory_;
 

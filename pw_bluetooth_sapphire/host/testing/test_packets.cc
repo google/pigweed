@@ -147,7 +147,7 @@ DynamicByteBuffer EncryptionChangeEventPacket(hci_spec::StatusCode status_code,
 
 DynamicByteBuffer EnhancedAcceptSynchronousConnectionRequestPacket(
     DeviceAddress peer_address,
-    bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> params) {
+    bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> params) {
   hci::EmbossCommandPacket packet = hci::EmbossCommandPacket::New<
       hci_spec::EnhancedAcceptSynchronousConnectionRequestCommandView>(
       hci_spec::kEnhancedAcceptSynchronousConnectionRequest);
@@ -161,7 +161,7 @@ DynamicByteBuffer EnhancedAcceptSynchronousConnectionRequestPacket(
 
 DynamicByteBuffer EnhancedSetupSynchronousConnectionPacket(
     hci_spec::ConnectionHandle conn,
-    bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> params) {
+    bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> params) {
   hci::EmbossCommandPacket packet =
       hci::EmbossCommandPacket::New<hci_spec::EnhancedSetupSynchronousConnectionCommandView>(
           hci_spec::kEnhancedSetupSynchronousConnection);

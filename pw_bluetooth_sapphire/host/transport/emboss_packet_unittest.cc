@@ -12,8 +12,8 @@
 namespace bt::hci {
 namespace {
 
-TEST(EmbossStructTest, EmbossStructBasic) {
-  EmbossStruct<hci_spec::TestCommandPacketWriter> packet;
+TEST(StaticPacketTest, StaticPacketBasic) {
+  StaticPacket<hci_spec::TestCommandPacketWriter> packet;
   packet.view().header().opcode().BackingStorage().WriteUInt(1234);
   packet.view().header().parameter_total_size().Write(1);
   packet.view().payload().Write(13);

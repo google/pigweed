@@ -8,7 +8,7 @@ namespace bt::sco {
 
 ScoConnection::ScoConnection(
     std::unique_ptr<hci::Connection> connection, fit::closure deactivated_cb,
-    bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> parameters,
+    bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> parameters,
     hci::ScoDataChannel* channel)
     : active_(false),
       connection_(std::move(connection)),
@@ -120,7 +120,7 @@ std::unique_ptr<hci::ScoDataPacket> ScoConnection::Read() {
   return packet;
 }
 
-bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> ScoConnection::parameters() {
+bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> ScoConnection::parameters() {
   return parameters_;
 }
 

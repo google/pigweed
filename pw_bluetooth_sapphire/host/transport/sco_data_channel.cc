@@ -268,7 +268,7 @@ void ScoDataChannelImpl::ConfigureHci() {
     return;
   }
 
-  bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> params =
+  bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> params =
       active_connection_->parameters();
   auto view = params.view();
 

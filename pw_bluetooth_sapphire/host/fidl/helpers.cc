@@ -1252,9 +1252,9 @@ bt::sco::ParameterSet FidlToScoParameterSet(const fbredr::HfpParameterSet param_
   }
 }
 
-bt::EmbossStruct<bt::hci_spec::SynchronousConnectionParameters::VendorCodingFormatWriter>
+bt::StaticPacket<bt::hci_spec::SynchronousConnectionParameters::VendorCodingFormatWriter>
 FidlToScoCodingFormat(const fbredr::CodingFormat format) {
-  bt::EmbossStruct<bt::hci_spec::SynchronousConnectionParameters::VendorCodingFormatWriter> out;
+  bt::StaticPacket<bt::hci_spec::SynchronousConnectionParameters::VendorCodingFormatWriter> out;
   auto view = out.view();
   // Set to 0 since vendor specific coding formats are not supported.
   view.company_id().Write(0);
@@ -1309,9 +1309,9 @@ bt::hci_spec::ScoDataPath FidlToScoDataPath(const fbredr::DataPath& path) {
   }
 }
 
-fpromise::result<bt::EmbossStruct<bt::hci_spec::SynchronousConnectionParametersWriter>>
+fpromise::result<bt::StaticPacket<bt::hci_spec::SynchronousConnectionParametersWriter>>
 FidlToScoParameters(const fbredr::ScoConnectionParameters& params) {
-  bt::EmbossStruct<bt::hci_spec::SynchronousConnectionParametersWriter> out;
+  bt::StaticPacket<bt::hci_spec::SynchronousConnectionParametersWriter> out;
   auto view = out.view();
 
   if (!params.has_parameter_set()) {
@@ -1413,12 +1413,12 @@ FidlToScoParameters(const fbredr::ScoConnectionParameters& params) {
   return fpromise::ok(out);
 }
 
-fpromise::result<std::vector<bt::EmbossStruct<bt::hci_spec::SynchronousConnectionParametersWriter>>>
+fpromise::result<std::vector<bt::StaticPacket<bt::hci_spec::SynchronousConnectionParametersWriter>>>
 FidlToScoParametersVector(const std::vector<fbredr::ScoConnectionParameters>& params) {
-  std::vector<bt::EmbossStruct<bt::hci_spec::SynchronousConnectionParametersWriter>> out;
+  std::vector<bt::StaticPacket<bt::hci_spec::SynchronousConnectionParametersWriter>> out;
   out.reserve(params.size());
   for (const fbredr::ScoConnectionParameters& param : params) {
-    fpromise::result<bt::EmbossStruct<bt::hci_spec::SynchronousConnectionParametersWriter>> result =
+    fpromise::result<bt::StaticPacket<bt::hci_spec::SynchronousConnectionParametersWriter>> result =
         FidlToScoParameters(param);
     if (result.is_error()) {
       return fpromise::error();

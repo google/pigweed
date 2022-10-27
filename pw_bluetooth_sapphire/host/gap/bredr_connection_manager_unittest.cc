@@ -3617,7 +3617,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenScoConnectionWithoutExistingBrEdrConnecti
   std::optional<sco::ScoConnectionManager::OpenConnectionResult> conn_result;
   auto conn_cb = [&conn_result](auto result) { conn_result = std::move(result); };
   auto handle = connmgr()->OpenScoConnection(
-      PeerId(1), {bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter>{}},
+      PeerId(1), {bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>{}},
       std::move(conn_cb));
   EXPECT_FALSE(handle.has_value());
   ASSERT_TRUE(conn_result.has_value());
@@ -3632,7 +3632,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenScoConnectionInitiator) {
   auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
 
-  bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> kScoConnection;
+  bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> kScoConnection;
   kScoConnection.SetToZeros();
   constexpr hci_spec::ConnectionHandle kScoConnectionHandle = 0x41;
   auto setup_status_packet = testing::CommandStatusPacket(
@@ -3673,7 +3673,7 @@ TEST_P(ScoLinkTypesTest, OpenScoConnectionResponder) {
   auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
 
-  bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> sco_conn_params;
+  bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> sco_conn_params;
   if (GetParam() == hci_spec::LinkType::kSCO) {
     sco_conn_params.view().packet_types().hv3().Write(true);
   } else {

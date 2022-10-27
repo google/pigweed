@@ -12,8 +12,8 @@
 
 namespace bt::hci {
 
-// EmbossCommandPacket is the HCI Command packet specialization of EmbossPacket.
-class EmbossCommandPacket : public EmbossPacket {
+// EmbossCommandPacket is the HCI Command packet specialization of DynamicPacket.
+class EmbossCommandPacket : public DynamicPacket {
  public:
   // Construct an HCI Command packet from an Emboss view T and initialize its header with the
   // |opcode| and size.
@@ -34,7 +34,7 @@ class EmbossCommandPacket : public EmbossPacket {
   uint16_t ocf() { return opcode() & 0x3FF; }
 
  private:
-  explicit EmbossCommandPacket(size_t packet_size) : EmbossPacket(packet_size) {}
+  explicit EmbossCommandPacket(size_t packet_size) : DynamicPacket(packet_size) {}
 };
 
 }  // namespace bt::hci

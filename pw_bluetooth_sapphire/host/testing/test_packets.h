@@ -51,11 +51,11 @@ DynamicByteBuffer EncryptionChangeEventPacket(hci_spec::StatusCode status_code,
 
 DynamicByteBuffer EnhancedAcceptSynchronousConnectionRequestPacket(
     DeviceAddress peer_address,
-    bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> params);
+    bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> params);
 
 DynamicByteBuffer EnhancedSetupSynchronousConnectionPacket(
     hci_spec::ConnectionHandle conn,
-    bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> params);
+    bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> params);
 
 DynamicByteBuffer NumberOfCompletedPacketsPacket(hci_spec::ConnectionHandle conn,
                                                  uint16_t num_packets);

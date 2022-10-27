@@ -13,13 +13,13 @@ namespace bt::sco {
 namespace {
 
 bool ConnectionParametersSupportScoTransport(
-    bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter>& params) {
+    bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>& params) {
   return params.view().packet_types().hv1().Read() || params.view().packet_types().hv2().Read() ||
          params.view().packet_types().hv3().Read();
 }
 
 bool ConnectionParametersSupportEscoTransport(
-    bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter>& params) {
+    bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>& params) {
   return params.view().packet_types().ev3().Read() || params.view().packet_types().ev4().Read() ||
          params.view().packet_types().ev5().Read();
 }
@@ -78,7 +78,7 @@ ScoConnectionManager::~ScoConnectionManager() {
 }
 
 ScoConnectionManager::RequestHandle ScoConnectionManager::OpenConnection(
-    bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> parameters,
+    bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> parameters,
     OpenConnectionCallback callback) {
   return QueueRequest(/*initiator=*/true, {std::move(parameters)},
                       [cb = std::move(callback)](ConnectionResult result) mutable {
@@ -92,7 +92,7 @@ ScoConnectionManager::RequestHandle ScoConnectionManager::OpenConnection(
 }
 
 ScoConnectionManager::RequestHandle ScoConnectionManager::AcceptConnection(
-    std::vector<bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter>> parameters,
+    std::vector<bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>> parameters,
     AcceptConnectionCallback callback) {
   return QueueRequest(/*initiator=*/false, std::move(parameters), std::move(callback));
 }
@@ -154,7 +154,7 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnSynchronousConn
   fit::closure deactivated_cb = [this, connection_handle] {
     BT_ASSERT(connections_.erase(connection_handle));
   };
-  bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> conn_params =
+  bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> conn_params =
       in_progress_request_->parameters[in_progress_request_->current_param_index];
   auto conn = std::make_unique<ScoConnection>(std::move(link), std::move(deactivated_cb),
                                               conn_params, transport_->sco_data_channel());
@@ -243,7 +243,7 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnConnectionReque
 bool ScoConnectionManager::FindNextParametersThatSupportSco() {
   BT_ASSERT(in_progress_request_);
   while (in_progress_request_->current_param_index < in_progress_request_->parameters.size()) {
-    bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter>& params =
+    bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>& params =
         in_progress_request_->parameters[in_progress_request_->current_param_index];
     if (ConnectionParametersSupportScoTransport(params)) {
       return true;
@@ -256,7 +256,7 @@ bool ScoConnectionManager::FindNextParametersThatSupportSco() {
 bool ScoConnectionManager::FindNextParametersThatSupportEsco() {
   BT_ASSERT(in_progress_request_);
   while (in_progress_request_->current_param_index < in_progress_request_->parameters.size()) {
-    bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter>& params =
+    bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>& params =
         in_progress_request_->parameters[in_progress_request_->current_param_index];
     if (ConnectionParametersSupportEscoTransport(params)) {
       return true;
@@ -268,7 +268,7 @@ bool ScoConnectionManager::FindNextParametersThatSupportEsco() {
 
 ScoConnectionManager::RequestHandle ScoConnectionManager::QueueRequest(
     bool initiator,
-    std::vector<bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter>> params,
+    std::vector<bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>> params,
     ConnectionCallback cb) {
   BT_ASSERT(cb);
 

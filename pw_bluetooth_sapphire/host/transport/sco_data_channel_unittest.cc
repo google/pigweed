@@ -19,8 +19,8 @@ constexpr hci_spec::ConnectionHandle kConnectionHandle0 = 0x0000;
 constexpr hci_spec::ConnectionHandle kConnectionHandle1 = 0x0001;
 constexpr size_t kBufferMaxNumPackets = 2;
 
-bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> MsbcConnectionParams() {
-  bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> out;
+bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> MsbcConnectionParams() {
+  bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> out;
   auto view = out.view();
   view.transmit_bandwidth().Write(0);
   view.receive_bandwidth().Write(0);
@@ -57,8 +57,8 @@ bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> MsbcConnection
   return out;
 }
 
-bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> cvsd_connection_params() {
-  bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> out;
+bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> cvsd_connection_params() {
+  bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> out;
   auto view = out.view();
   view.transmit_bandwidth().Write(0);
   view.receive_bandwidth().Write(0);
@@ -98,7 +98,7 @@ class FakeScoConnection : public ScoDataChannel::ConnectionInterface {
  public:
   explicit FakeScoConnection(ScoDataChannel* data_channel,
                              hci_spec::ConnectionHandle handle = kConnectionHandle0,
-                             bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter>
+                             bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>
                                  params = MsbcConnectionParams())
       : handle_(handle),
         params_(std::move(params)),
@@ -127,7 +127,7 @@ class FakeScoConnection : public ScoDataChannel::ConnectionInterface {
 
   hci_spec::ConnectionHandle handle() const override { return handle_; }
 
-  bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> parameters() override {
+  bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> parameters() override {
     return params_;
   }
 
@@ -148,7 +148,7 @@ class FakeScoConnection : public ScoDataChannel::ConnectionInterface {
 
  private:
   hci_spec::ConnectionHandle handle_;
-  bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> params_;
+  bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> params_;
   std::queue<std::unique_ptr<ScoDataPacket>> queued_packets_;
   std::vector<std::unique_ptr<ScoDataPacket>> received_packets_;
   ScoDataChannel* data_channel_;
@@ -526,7 +526,7 @@ TEST_F(ScoDataChannelTest, CvsdConnectionEncodingBits16SampleRate8Khz) {
     callback(ZX_OK);
   });
 
-  bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> params =
+  bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> params =
       cvsd_connection_params();
   auto view = params.view();
   view.input_coded_data_size_bits().Write(16);
@@ -557,7 +557,7 @@ TEST_F(ScoDataChannelTest, CvsdConnectionEncodingBits16SampleRate16Khz) {
     callback(ZX_OK);
   });
 
-  bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> params =
+  bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> params =
       cvsd_connection_params();
   auto view = params.view();
   view.input_coded_data_size_bits().Write(16);
@@ -588,7 +588,7 @@ TEST_F(ScoDataChannelTest, CvsdConnectionInvalidSampleSizeAndRate) {
     callback(ZX_OK);
   });
 
-  bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> params =
+  bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> params =
       cvsd_connection_params();
   auto view = params.view();
   // Invalid sample size will be replaced with sample size of 16 bits.
@@ -786,7 +786,7 @@ TEST_F(ScoDataChannelTest, UnsupportedCodingFormatTreatedAsCvsd) {
     callback(ZX_OK);
   });
 
-  bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> params =
+  bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> params =
       cvsd_connection_params();
   auto view = params.view();
   view.output_coding_format().coding_format().Write(hci_spec::CodingFormat::U_LAW);

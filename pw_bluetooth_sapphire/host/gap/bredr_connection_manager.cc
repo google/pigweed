@@ -347,7 +347,7 @@ bool BrEdrConnectionManager::RemoveServiceSearch(SearchId id) {
 }
 
 std::optional<BrEdrConnectionManager::ScoRequestHandle> BrEdrConnectionManager::OpenScoConnection(
-    PeerId peer_id, bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> parameters,
+    PeerId peer_id, bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> parameters,
     sco::ScoConnectionManager::OpenConnectionCallback callback) {
   auto conn_pair = FindConnectionById(peer_id);
   if (!conn_pair) {
@@ -361,7 +361,7 @@ std::optional<BrEdrConnectionManager::ScoRequestHandle> BrEdrConnectionManager::
 
 std::optional<BrEdrConnectionManager::ScoRequestHandle> BrEdrConnectionManager::AcceptScoConnection(
     PeerId peer_id,
-    std::vector<bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter>> parameters,
+    std::vector<bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>> parameters,
     sco::ScoConnectionManager::AcceptConnectionCallback callback) {
   auto conn_pair = FindConnectionById(peer_id);
   if (!conn_pair) {

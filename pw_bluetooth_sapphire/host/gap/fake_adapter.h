@@ -192,14 +192,14 @@ class FakeAdapter final : public Adapter {
 
     std::optional<ScoRequestHandle> OpenScoConnection(
         PeerId peer_id,
-        const bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter>& parameters,
+        const bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>& parameters,
         sco::ScoConnectionManager::OpenConnectionCallback callback) override {
       return std::nullopt;
     }
 
     std::optional<ScoRequestHandle> AcceptScoConnection(
         PeerId peer_id,
-        std::vector<bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter>> parameters,
+        std::vector<bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>> parameters,
         sco::ScoConnectionManager::AcceptConnectionCallback callback) override {
       return std::nullopt;
     }

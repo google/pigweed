@@ -53,7 +53,7 @@ class ScoConnectionManager final {
   using OpenConnectionResult = fit::result<HostError, fxl::WeakPtr<ScoConnection>>;
   using OpenConnectionCallback = fit::callback<void(OpenConnectionResult)>;
   RequestHandle OpenConnection(
-      bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> parameters,
+      bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> parameters,
       OpenConnectionCallback callback);
 
   // Accept inbound connection requests using the parameters given in order. The parameters will be
@@ -68,7 +68,7 @@ class ScoConnectionManager final {
                   std::pair<fxl::WeakPtr<ScoConnection>, size_t /*index of parameters used*/>>;
   using AcceptConnectionCallback = fit::callback<void(AcceptConnectionResult)>;
   RequestHandle AcceptConnection(
-      std::vector<bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter>> parameters,
+      std::vector<bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>> parameters,
       AcceptConnectionCallback callback);
 
  private:
@@ -81,7 +81,7 @@ class ScoConnectionManager final {
   class ConnectionRequest final {
    public:
     ConnectionRequest(ScoRequestId id_arg, bool initiator_arg, bool received_request_arg,
-                      std::vector<bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter>>
+                      std::vector<bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>>
                           parameters_arg,
                       ConnectionCallback callback_arg)
         : id(id_arg),
@@ -102,7 +102,7 @@ class ScoConnectionManager final {
     bool initiator;
     bool received_request;
     size_t current_param_index = 0;
-    std::vector<bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter>> parameters;
+    std::vector<bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>> parameters;
     ConnectionCallback callback;
   };
 
@@ -122,7 +122,7 @@ class ScoConnectionManager final {
 
   ScoConnectionManager::RequestHandle QueueRequest(
       bool initiator,
-      std::vector<bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter>>,
+      std::vector<bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>>,
       ConnectionCallback);
 
   void TryCreateNextConnection();

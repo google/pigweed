@@ -16,8 +16,8 @@ namespace bt {
 // are specified in Emboss source files such as hci-protocol.emb, which implements the HCI protocol
 // packet definitions.
 //
-// This file defines two classes: EmbossStruct, which provides an Emboss view over a statically
-// allocated buffer, and EmbossPacket, which is part of a class hierarchy that provides Emboss
+// This file defines two classes: StaticPacket, which provides an Emboss view over a statically
+// allocated buffer, and DynamicPacket, which is part of a class hierarchy that provides Emboss
 // views over dynamic memory.
 //
 // EXAMPLE:
@@ -38,17 +38,17 @@ namespace bt {
 //
 // The Emboss compiler generates two types of view for each struct. In the case of InquiryCommand,
 // it generates InquiryCommandView (read-only) and InquiryCommandWriter (read & writable). We can
-// parameterize EmbossStruct over one of these views to read and/or write an Inquiry packet:
+// parameterize StaticPacket over one of these views to read and/or write an Inquiry packet:
 //
-//  bt::EmbossStruct<bt::hci_spec::InquiryCommandWriter> packet;
+//  bt::StaticPacket<bt::hci_spec::InquiryCommandWriter> packet;
 //  auto view = packet.view();
 //  view.inquiry_length().Write(100);
 //  view.lap().Write(bt::hci_spec::InquiryAccessCode::GIAC);
 //  cout << "inquiry_length = " << view.inquiry_length().Read();
 //
-// EmbossStruct does not currently support packets with variable length.
+// StaticPacket does not currently support packets with variable length.
 template <typename T>
-class EmbossStruct {
+class StaticPacket {
  public:
   // Returns an Emboss view over the buffer. Emboss views consist of two pointers and a length, so
   // they are cheap to construct on-demand.
@@ -68,23 +68,23 @@ class EmbossStruct {
   StaticByteBuffer<T::IntrinsicSizeInBytes().Read()> buffer_;
 };
 
-// EmbossPacket is the parent class of a two-level class hierarchy that implements
+// DynamicPacket is the parent class of a two-level class hierarchy that implements
 // dynamically-allocated HCI packets to which reading/writing is mediated by Emboss.
 //
-// EmbossPacket contains data and methods that are universal across packet type. Its children are
+// DynamicPacket contains data and methods that are universal across packet type. Its children are
 // packet type specializations, i.e. Command, Event, ACL, and Sco packets. These classes provide
 // header-type-specific functionality.
 //
-// Instances of EmbossPacket should not be constructed directly. Instead, packet type specialization
-// classes should provide static factory functions.
+// Instances of DynamicPacket should not be constructed directly. Instead, packet type
+// specialization classes should provide static factory functions.
 //
 // See EmbossCommandPacket in emboss_control_packets.h for an example of a packet type
 // specialization.
-class EmbossPacket {
+class DynamicPacket {
  public:
-  // Returns an Emboss view over the buffer. Unlike EmbossStruct, which ensures type security as a
-  // struct parameterized over a particular Emboss view type, EmbossPacket is a generic type for all
-  // packets, so view() is to be parameterized over an Emboss view type on each call.
+  // Returns an Emboss view over the buffer. Unlike StaticPacket, which ensures type security as a
+  // struct parameterized over a particular Emboss view type, DynamicPacket is a generic type for
+  // all packets, so view() is to be parameterized over an Emboss view type on each call.
   template <typename T>
   T view() {
     T view(buffer_.mutable_data(), size());
@@ -100,7 +100,7 @@ class EmbossPacket {
 
  protected:
   // Construct the buffer to hold |packet_size| bytes (payload + header).
-  explicit EmbossPacket(size_t packet_size) : buffer_(packet_size) {}
+  explicit DynamicPacket(size_t packet_size) : buffer_(packet_size) {}
 
  private:
   DynamicByteBuffer buffer_;

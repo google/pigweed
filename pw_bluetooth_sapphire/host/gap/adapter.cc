@@ -239,14 +239,14 @@ class AdapterImpl final : public Adapter {
 
     std::optional<ScoRequestHandle> OpenScoConnection(
         PeerId peer_id,
-        const bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter>& parameters,
+        const bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>& parameters,
         sco::ScoConnectionManager::OpenConnectionCallback callback) override {
       return adapter_->bredr_connection_manager_->OpenScoConnection(peer_id, parameters,
                                                                     std::move(callback));
     }
     std::optional<ScoRequestHandle> AcceptScoConnection(
         PeerId peer_id,
-        const std::vector<bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter>>
+        const std::vector<bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>>
             parameters,
         sco::ScoConnectionManager::AcceptConnectionCallback callback) override {
       return adapter_->bredr_connection_manager_->AcceptScoConnection(

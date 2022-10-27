@@ -20,10 +20,10 @@ constexpr hci_spec::ConnectionHandle kScoConnectionHandle = 0x41;
 const DeviceAddress kLocalAddress(DeviceAddress::Type::kBREDR,
                                   {0x00, 0x00, 0x00, 0x00, 0x00, 0x01});
 const DeviceAddress kPeerAddress(DeviceAddress::Type::kBREDR, {0x00, 0x00, 0x00, 0x00, 0x00, 0x02});
-bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> kConnectionParams;
+bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> kConnectionParams;
 
-bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> InitializeConnectionParams() {
-  bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> out;
+bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> InitializeConnectionParams() {
+  bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> out;
   auto view = out.view();
   view.transmit_bandwidth().Write(1);
   view.receive_bandwidth().Write(2);
@@ -60,14 +60,14 @@ bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> InitializeConn
   return out;
 }
 
-bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> ScoConnectionParams() {
+bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> ScoConnectionParams() {
   auto params = kConnectionParams;
   params.view().packet_types().BackingStorage().WriteUInt(0);
   params.view().packet_types().hv3().Write(true);
   return params;
 }
 
-bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> EscoConnectionParams() {
+bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> EscoConnectionParams() {
   auto params = kConnectionParams;
   params.view().packet_types().BackingStorage().WriteUInt(0);
   params.view().packet_types().ev3().Write(true);
@@ -1030,10 +1030,10 @@ TEST_F(ScoConnectionManagerTest,
 }
 
 TEST_F(ScoConnectionManagerTest, AcceptConnectionFirstParametersRejectedSecondParametersAccepted) {
-  bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> esco_params_0 =
+  bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> esco_params_0 =
       kConnectionParams;
   esco_params_0.view().packet_types().ev3().Write(true);
-  bt::EmbossStruct<hci_spec::SynchronousConnectionParametersWriter> esco_params_1 =
+  bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> esco_params_1 =
       kConnectionParams;
   esco_params_1.view().packet_types().ev4().Write(true);
 

@@ -1192,7 +1192,7 @@ TEST_F(HelpersAdapterTest, FidlToScoParameters) {
   params.set_path(fbredr::DataPath::OFFLOAD);
   ASSERT_TRUE(FidlToScoParameters(params).is_ok());
 
-  bt::EmbossStruct<bt::hci_spec::SynchronousConnectionParametersWriter> out =
+  bt::StaticPacket<bt::hci_spec::SynchronousConnectionParametersWriter> out =
       FidlToScoParameters(params).take_value();
   auto view = out.view();
   EXPECT_EQ(view.transmit_bandwidth().Read(), 8000u);
