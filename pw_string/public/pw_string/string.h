@@ -400,6 +400,9 @@ class InlineBasicString<T, string_impl::kGeneric> {
   }
 
  private:
+  // Allow StringBuilder to directly set length_ when doing string operations.
+  friend class StringBuilder;
+
   // Provide this constant for static_assert checks. If the capacity is unknown,
   // use the maximum value so that compile-time capacity checks pass. If
   // overflow occurs, the operation triggers a PW_ASSERT at runtime.

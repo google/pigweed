@@ -25,6 +25,7 @@
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 #include "pw_status/status_with_size.h"
+#include "pw_string/string.h"
 #include "pw_string/to_string.h"
 
 namespace pw {
@@ -73,12 +74,19 @@ namespace pw {
 class StringBuilder {
  public:
   // Creates an empty StringBuilder.
-  constexpr StringBuilder(span<char> buffer) : buffer_(buffer), size_(0) {
+  explicit constexpr StringBuilder(span<char> buffer)
+      : buffer_(buffer), size_(&inline_size_), inline_size_(0) {
     NullTerminate();
   }
-  StringBuilder(span<std::byte> buffer)
+
+  explicit StringBuilder(span<std::byte> buffer)
       : StringBuilder(
             {reinterpret_cast<char*>(buffer.data()), buffer.size_bytes()}) {}
+
+  explicit constexpr StringBuilder(InlineString<>& string)
+      : buffer_(string.data(), string.max_size() + 1),
+        size_(&string.length_),
+        inline_size_(0) {}
 
   // Disallow copy/assign to avoid confusion about where the string is actually
   // stored. StringBuffers may be copied into one another.
@@ -100,7 +108,7 @@ class StringBuilder {
 
   // Returns a span<const std::byte> representation of this StringBuffer.
   span<const std::byte> as_bytes() const {
-    return span(reinterpret_cast<const std::byte*>(buffer_.data()), size_);
+    return span(reinterpret_cast<const std::byte*>(buffer_.data()), size());
   }
 
   // Returns the StringBuilder's status, which reflects the most recent error
@@ -112,24 +120,24 @@ class StringBuilder {
   //     INVALID_ARGUMENT if printf-style formatting failed
   //     OUT_OF_RANGE if an operation outside the buffer was attempted
   //
-  Status status() const { return status_; }
+  Status status() const { return static_cast<Status::Code>(status_); }
 
   // Returns status() and size() as a StatusWithSize.
   StatusWithSize status_with_size() const {
-    return StatusWithSize(status_, size_);
+    return StatusWithSize(status(), size());
   }
 
   // The status from the last operation. May be OK while status() is not OK.
-  Status last_status() const { return last_status_; }
+  Status last_status() const { return static_cast<Status::Code>(last_status_); }
 
   // True if status() is OkStatus().
-  bool ok() const { return status_.ok(); }
+  bool ok() const { return status().ok(); }
 
   // True if the string is empty.
   bool empty() const { return size() == 0u; }
 
   // Returns the current length of the string, excluding the null terminator.
-  size_t size() const { return size_; }
+  size_t size() const { return *size_; }
 
   // Returns the maximum length of the string, excluding the null terminator.
   size_t max_size() const { return buffer_.empty() ? 0u : buffer_.size() - 1; }
@@ -139,8 +147,8 @@ class StringBuilder {
 
   // Sets the statuses to OkStatus();
   void clear_status() {
-    status_ = OkStatus();
-    last_status_ = OkStatus();
+    status_ = static_cast<unsigned char>(OkStatus().code());
+    last_status_ = static_cast<unsigned char>(OkStatus().code());
   }
 
   // Appends a single character. Stets the status to RESOURCE_EXHAUSTED if the
@@ -193,7 +201,7 @@ class StringBuilder {
     } else if constexpr (std::is_convertible_v<T, span<const std::byte>>) {
       WriteBytes(value);
     } else {
-      HandleStatusWithSize(ToString(value, buffer_.subspan(size_)));
+      HandleStatusWithSize(ToString(value, buffer_.subspan(size())));
     }
     return *this;
   }
@@ -237,13 +245,19 @@ class StringBuilder {
   // Functions to support StringBuffer copies.
   constexpr StringBuilder(span<char> buffer, const StringBuilder& other)
       : buffer_(buffer),
-        size_(other.size_),
+        size_(&inline_size_),
+        inline_size_(*other.size_),
         status_(other.status_),
         last_status_(other.last_status_) {}
 
   void CopySizeAndStatus(const StringBuilder& other);
 
  private:
+  // Statuses are stored as an unsigned char so they pack into a single word.
+  static constexpr unsigned char StatusCode(Status status) {
+    return static_cast<unsigned char>(status.code());
+  }
+
   void WriteBytes(span<const std::byte> data);
 
   size_t ResizeAndTerminate(size_t chars_to_append);
@@ -252,7 +266,7 @@ class StringBuilder {
 
   constexpr void NullTerminate() {
     if (!buffer_.empty()) {
-      buffer_[size_] = '\0';
+      buffer_[size()] = '\0';
     }
   }
 
@@ -260,9 +274,14 @@ class StringBuilder {
 
   const span<char> buffer_;
 
-  size_t size_;
-  Status status_;
-  Status last_status_;
+  InlineString<>::size_type* size_;
+
+  // Place the inline_size_, status_, and last_status_ members together and use
+  // unsigned char for the status codes so these members can be packed into a
+  // single word.
+  InlineString<>::size_type inline_size_;
+  unsigned char status_ = StatusCode(OkStatus());
+  unsigned char last_status_ = StatusCode(OkStatus());
 };
 
 // StringBuffers declare a buffer along with a StringBuilder. StringBuffer can

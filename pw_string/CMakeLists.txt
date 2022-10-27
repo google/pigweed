@@ -40,6 +40,7 @@ pw_add_module_library(pw_string.builder
     public
   PUBLIC_DEPS
     pw_string.format
+    pw_string.string
     pw_string.to_string
     pw_string.util
     pw_preprocessor

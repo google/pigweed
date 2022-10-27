@@ -476,6 +476,31 @@ TEST(StringBuilder, Object) {
   EXPECT_EQ(std::strlen(CustomType::kToString), sb.size());
 }
 
+TEST(StringBuilder, UseStringAsBuffer) {
+  InlineString<32> string;
+  StringBuilder sb(string);
+
+  sb << 123 << "456";
+
+  EXPECT_EQ(sb.data(), string.data());
+  EXPECT_EQ(sb.size(), string.size());
+  EXPECT_EQ(6u, string.size());
+
+  EXPECT_STREQ(sb.c_str(), "123456");
+  EXPECT_STREQ(string.c_str(), "123456");
+}
+
+TEST(StringBuilder, OverflowStringAsBuffer) {
+  InlineString<5> string;
+  StringBuilder sb(string);
+
+  sb << 123 << "456";
+
+  EXPECT_EQ(sb.status(), Status::ResourceExhausted());
+  EXPECT_EQ(string.size(), 5u);
+  EXPECT_STREQ(string.c_str(), "12345");
+}
+
 TEST(MakeString, Object) {
   CustomType custom;
   const auto sb = MakeString<64>(custom);

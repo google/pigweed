@@ -45,6 +45,7 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         ":format",
+        ":string",
         ":to_string",
         ":util",
         "//pw_preprocessor",

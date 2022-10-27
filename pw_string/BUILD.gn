@@ -59,6 +59,7 @@ pw_source_set("builder") {
   sources = [ "string_builder.cc" ]
   public_deps = [
     ":format",
+    ":string",
     ":to_string",
     ":util",
     dir_pw_preprocessor,

@@ -188,6 +188,11 @@ failing an assert when the capacity would be exceeded.
    Appends ``view`` to ``string``. Truncates and returns ``RESOURCE_EXHAUSTED``
    if ``view`` does not fit within the remaining capacity of ``string``.
 
+Use with :cpp:class:`pw::StringBuilder`
+---------------------------------------
+:cpp:class:`pw::StringBuilder` may be used to build a string in a
+:cpp:type:`pw::String`.
+
 pw::string::Format
 ==================
 The ``pw::string::Format`` and ``pw::string::FormatVaList`` functions provide
@@ -277,9 +282,17 @@ converting any non-printable characters to a ``.`` char.
 
 pw::StringBuilder
 =================
-``pw::StringBuilder`` facilitates building formatted strings in a fixed-size
-buffer. It is designed to give the flexibility of ``std::string`` and
-``std::ostringstream``, but with a small footprint.
+.. cpp:class:: pw::StringBuilder
+
+  ``pw::StringBuilder`` facilitates creating formatted strings in a fixed-sized
+  buffer or ``pw::String``. It is designed to give the flexibility of
+  ``std::ostringstream``, but with a small footprint.
+
+  ``pw::StringBuilder`` supports C++ ``<<``-style output, printf formatting, and
+  a few ``std::string`` functions (``append()``, ``push_back()``,
+  ``pop_back()``.
+
+The following shows basic use of a :cpp:class:`pw::StringBuilder`.
 
 .. code-block:: cpp
 
@@ -288,6 +301,7 @@ buffer. It is designed to give the flexibility of ``std::string`` and
 
   pw::Status LogProducedData(std::string_view func_name,
                              span<const std::byte> data) {
+    // pw::StringBuffer allocates a pw::StringBuilder with a built-in buffer.
     pw::StringBuffer<42> sb;
 
     // Append a std::string_view to the buffer.
