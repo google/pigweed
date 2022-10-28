@@ -12,8 +12,13 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+package {
+    default_applicable_licenses: ["external_pigweed_license"],
+}
+
 cc_library_headers {
     name: "pw_polyfill_headers",
     vendor_available: true,
     export_include_dirs: ["public"],
+    host_supported: true,
 }

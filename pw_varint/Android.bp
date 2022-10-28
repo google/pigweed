@@ -12,6 +12,10 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+package {
+    default_applicable_licenses: ["external_pigweed_license"],
+}
+
 cc_library_static {
     name: "pw_varint",
     cpp_std: "c++2a",
@@ -23,4 +27,5 @@ cc_library_static {
         "pw_span_headers",
     ],
     srcs: ["varint.cc"],
+    host_supported: true,
 }

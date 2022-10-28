@@ -17,21 +17,18 @@ package {
 }
 
 cc_library_static {
-    name: "pw_detokenizer",
+    name: "pw_rpc_raw",
     cpp_std: "c++2a",
     vendor_available: true,
-    export_include_dirs: ["public"],
-    srcs: [
-        "detokenize.cc",
-        "decode.cc",
-    ],
-    header_libs: [
-        "pw_polyfill_headers",
-        "pw_preprocessor_headers",
-        "pw_span_headers",
+    export_include_dirs: [
+        "public",
     ],
     static_libs: [
-        "pw_bytes",
-        "pw_varint"
+        "pw_rpc",
     ],
+    srcs: [
+        "method.cc",
+    ],
+    cflags: ["-DPW_RPC_USE_GLOBAL_MUTEX=0"],
+    host_supported: true,
 }

@@ -17,21 +17,19 @@ package {
 }
 
 cc_library_static {
-    name: "pw_detokenizer",
+    name: "pw_containers",
     cpp_std: "c++2a",
     vendor_available: true,
     export_include_dirs: ["public"],
-    srcs: [
-        "detokenize.cc",
-        "decode.cc",
-    ],
     header_libs: [
-        "pw_polyfill_headers",
+        "pw_assert_headers",
+        "pw_assert_log_headers",
+        "pw_log_headers",
+        "pw_log_null_headers",
         "pw_preprocessor_headers",
-        "pw_span_headers",
     ],
-    static_libs: [
-        "pw_bytes",
-        "pw_varint"
+    host_supported: true,
+    srcs: [
+        "intrusive_list.cc",
     ],
 }

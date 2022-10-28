@@ -17,21 +17,11 @@ package {
 }
 
 cc_library_static {
-    name: "pw_detokenizer",
-    cpp_std: "c++2a",
+    name: "pw_status",
     vendor_available: true,
     export_include_dirs: ["public"],
+    host_supported: true,
     srcs: [
-        "detokenize.cc",
-        "decode.cc",
-    ],
-    header_libs: [
-        "pw_polyfill_headers",
-        "pw_preprocessor_headers",
-        "pw_span_headers",
-    ],
-    static_libs: [
-        "pw_bytes",
-        "pw_varint"
+        "status.cc",
     ],
 }

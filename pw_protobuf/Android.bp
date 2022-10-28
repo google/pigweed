@@ -17,21 +17,37 @@ package {
 }
 
 cc_library_static {
-    name: "pw_detokenizer",
-    cpp_std: "c++2a",
+    name: "pw_protobuf",
     vendor_available: true,
     export_include_dirs: ["public"],
-    srcs: [
-        "detokenize.cc",
-        "decode.cc",
-    ],
     header_libs: [
+        "fuschia_sdk_lib_fit",
+        "fuschia_sdk_lib_stdcompat",
+        "pw_assert_headers",
+        "pw_assert_log_headers",
+        "pw_function_headers",
+        "pw_log_headers",
+        "pw_log_null_headers",
         "pw_polyfill_headers",
         "pw_preprocessor_headers",
+        "pw_result_headers",
         "pw_span_headers",
+    ],
+    host_supported: true,
+    srcs: [
+        "decoder.cc",
+        "encoder.cc",
+        "find.cc",
+        "map_utils.cc",
+        "message.cc",
+        "stream_decoder.cc",
     ],
     static_libs: [
         "pw_bytes",
-        "pw_varint"
+        "pw_containers",
+        "pw_status",
+        "pw_stream",
+        "pw_string",
+        "pw_varint",
     ],
 }

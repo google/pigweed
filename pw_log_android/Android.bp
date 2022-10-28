@@ -12,6 +12,10 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+package {
+    default_applicable_licenses: ["external_pigweed_license"],
+}
+
 cc_library {
     name: "libpw_log_android",
     vendor_available: true,
@@ -20,10 +24,10 @@ cc_library {
         "public",
         "public_overrides",
     ],
-    export_static_lib_headers: [
-        "libpw_log",
+    export_header_lib_headers: [
+        "pw_log_headers",
     ],
-    static_libs: [
-        "libpw_log",
+    header_libs: [
+        "pw_log_headers",
     ],
 }

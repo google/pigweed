@@ -16,22 +16,9 @@ package {
     default_applicable_licenses: ["external_pigweed_license"],
 }
 
-cc_library_static {
-    name: "pw_detokenizer",
-    cpp_std: "c++2a",
+cc_library_headers {
+    name: "pw_sync_headers",
     vendor_available: true,
     export_include_dirs: ["public"],
-    srcs: [
-        "detokenize.cc",
-        "decode.cc",
-    ],
-    header_libs: [
-        "pw_polyfill_headers",
-        "pw_preprocessor_headers",
-        "pw_span_headers",
-    ],
-    static_libs: [
-        "pw_bytes",
-        "pw_varint"
-    ],
+    host_supported: true,
 }
