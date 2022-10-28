@@ -362,7 +362,7 @@ class _AppendPrependTestMixin(object):
         if not self.run_shell_tests:
             return
 
-        if self.windows:  # TODO(pwbug/231) Re-enable for Windows.
+        if self.windows:
             return
 
         self.env.set(self.var_not_set,
@@ -386,7 +386,7 @@ class _AppendPrependTestMixin(object):
         if not self.run_shell_tests:
             return
 
-        if self.windows:  # TODO(pwbug/231) Re-enable for Windows.
+        if self.windows:
             return
 
         self.env.set(self.var_not_set,

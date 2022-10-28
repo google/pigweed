@@ -340,7 +340,6 @@ def update(  # pylint: disable=too-many-locals
     if not check_auth(cipd, package_files, cipd_service_account, spin):
         return False
 
-    # TODO(pwbug/135) Use function from common utility module.
     log = os.path.join(root_install_dir, 'packages.log')
     try:
         with open(log, 'w') as outs:

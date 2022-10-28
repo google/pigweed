@@ -76,7 +76,6 @@ def _required_packages(requirements):
     return packages
 
 
-# TODO(pwbug/135) Move to common utility module.
 def _check_call(args, **kwargs):
     stdout = kwargs.get('stdout', sys.stdout)
 
@@ -110,7 +109,6 @@ def _find_files_by_name(roots, name, allow_nesting=False):
 
 
 def _check_venv(python, version, venv_path, pyvenv_cfg):
-    # TODO(pwbug/400) Re-enable this check on Windows.
     if platform.system().lower() == 'windows':
         return
 
