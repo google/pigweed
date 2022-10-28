@@ -906,7 +906,6 @@ _EXCLUDE_FROM_TODO_CHECK = (
     r'\bpw_metric/metric_service_pwpb.cc$',
     r'\bpw_module/py/pw_module/check.py$',
     r'\bpw_package/py/pw_package/packages/chromium_verifier.py$',
-    r'\bpw_presubmit/py/todo_check_test.py$',
     r'\bpw_protobuf/encoder.cc$',
     r'\bpw_rpc/docs.rst$',
     r'\bpw_rpc/py/pw_rpc/codegen.py$',

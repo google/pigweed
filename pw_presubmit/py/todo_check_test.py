@@ -22,6 +22,7 @@ from unittest.mock import MagicMock, mock_open, patch
 from pw_presubmit import todo_check
 
 # pylint: disable=attribute-defined-outside-init
+# todo-check: disable
 
 
 class TestTodoCheck(unittest.TestCase):
@@ -150,3 +151,5 @@ class TestTodoCheck(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+# todo-check: enable
