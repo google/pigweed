@@ -23,6 +23,7 @@ namespace {
 
 // We'll test the template just for L2CAP channels.
 using RelayT = SocketChannelRelay<l2cap::Channel>;
+constexpr size_t kDefaultSocketWriteQueueLimitFrames = 2;
 
 class SocketChannelRelayTest : public ::testing::Test {
  public:
@@ -257,7 +258,8 @@ TEST_F(SocketChannelRelayLifetimeTest, DeactivationClosesSocket) {
 class SocketChannelRelayDataPathTest : public SocketChannelRelayTest {
  public:
   SocketChannelRelayDataPathTest()
-      : relay_(ConsumeLocalSocket(), channel()->GetWeakPtr(), /*deactivation_cb=*/nullptr) {
+      : relay_(ConsumeLocalSocket(), channel()->GetWeakPtr(), /*deactivation_cb=*/nullptr,
+               kDefaultSocketWriteQueueLimitFrames) {
     channel()->SetSendCallback([&](auto data) { sent_to_channel_.push_back(std::move(data)); },
                                dispatcher());
   }
@@ -653,6 +655,52 @@ TEST_F(SocketChannelRelayTxTest, NewSocketDataAfterChannelClosureIsNotSentToChan
       << ": " << zx_status_get_string(write_res);
   RunLoopUntilIdle();
   EXPECT_TRUE(sent_to_channel().empty());
+}
+
+TEST_F(SocketChannelRelayRxTest, DrainWriteQueueWhileSocketWritableWaitIsPending) {
+  ASSERT_EQ(kDefaultSocketWriteQueueLimitFrames, 2u);
+  const StaticByteBuffer kSentMessage0(0);
+  const StaticByteBuffer kSentMessage1(1, 1, 1);
+  const StaticByteBuffer kSentMessage2(2);
+  const StaticByteBuffer kSentMessage3(3);
+
+  // Make the first 2 datagrams 1 byte each so that we can discard exactly 2 bytes after stuffing
+  // the socket.
+  size_t n_bytes_written = 0;
+  zx_status_t write_res = local_socket_unowned()->write(0, kSentMessage0.data(),
+                                                        kSentMessage0.size(), &n_bytes_written);
+  ASSERT_EQ(write_res, ZX_OK);
+  ASSERT_EQ(n_bytes_written, 1u);
+  write_res = local_socket_unowned()->write(0, kSentMessage0.data(), kSentMessage0.size(),
+                                            &n_bytes_written);
+  ASSERT_EQ(write_res, ZX_OK);
+  ASSERT_EQ(n_bytes_written, 1u);
+
+  size_t n_junk_bytes = StuffSocket();
+  ASSERT_TRUE(n_junk_bytes);
+
+  ASSERT_TRUE(relay()->Activate());
+
+  // Drain enough space for kSentMessage2 and kSentMessage3, but not kSentMessage1!
+  ASSERT_TRUE(DiscardFromSocket(2 * kSentMessage0.size()));
+
+  // The kSentMessage1 is too big to write to the almost-stuffed socket. The packet will be queued,
+  // and the "socket writable" signal wait will start.
+  channel()->Receive(kSentMessage1);
+  // The second 1-byte packet that will fit into the socket is also queued.
+  channel()->Receive(kSentMessage2);
+  // When the third 1-byte packet is queued, kSentMessage1 will be dropped from the queue, allowing
+  // kSentMessage2 and kSendMessage3 to be written to the socket. The queue will be emptied.
+  channel()->Receive(kSentMessage3);
+
+  // Allow any signals to be processed.
+  RunLoopUntilIdle();
+
+  // Verify that kSentMessage2 and kSentMessage3 were actually written to the socket.
+  ASSERT_TRUE(DiscardFromSocket(n_junk_bytes));
+  RunLoopUntilIdle();
+  EXPECT_TRUE(ContainersEqual(kSentMessage2, ReadDatagramFromSocket(kSentMessage2.size())));
+  EXPECT_TRUE(ContainersEqual(kSentMessage3, ReadDatagramFromSocket(kSentMessage3.size())));
 }
 
 }  // namespace

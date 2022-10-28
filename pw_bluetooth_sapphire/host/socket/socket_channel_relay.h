@@ -295,7 +295,13 @@ void SocketChannelRelay<ChannelT>::OnSocketReadable(zx_status_t status) {
 template <typename ChannelT>
 void SocketChannelRelay<ChannelT>::OnSocketWritable(zx_status_t status) {
   BT_ASSERT(state_ == RelayState::kActivated);
-  BT_ASSERT(!socket_write_queue_.empty());
+  if (socket_write_queue_.empty()) {
+    // The write queue may be emptied before this signal handler is called if the first packet in
+    // the write queue gets dropped and the subsequent smaller packets all fit into the socket.
+    // If canceling the wait fails, this handler may be called.
+    bt_log(WARN, "l2cap", "socket_write_queue_ is empty in SocketChannelRelay::OnSocketWritable");
+    return;
+  }
   ServiceSocketWriteQueue();
 }
 
@@ -333,6 +339,13 @@ void SocketChannelRelay<ChannelT>::OnChannelDataReceived(ByteBufferPtr rx_data) 
   if (socket_write_queue_.size() == socket_write_queue_max_frames_) {
     // TODO(fxbug.dev/1325): Add a metric for number of dropped frames.
     socket_write_queue_.pop_front();
+    // Cancel the threshold wait, as the packet it corresponds to has been dropped.
+    // ServiceSocketWriteQueue() will start a new wait if necessary.
+    zx_status_t cancel_status = sock_write_waiter_.Cancel();
+    if (cancel_status != ZX_OK) {
+      bt_log(WARN, "l2cap", "failed to cancel sock_write_waiter_ with status: %s",
+             zx_status_get_string(cancel_status));
+    }
   }
 
   channel_rx_packet_count_++;
