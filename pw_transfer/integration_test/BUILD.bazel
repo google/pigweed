@@ -110,7 +110,7 @@ py_library(
     ],
 )
 
-# Uses ports 33010 and 33011.
+# Uses ports 3310 and 3311.
 py_test(
     name = "cross_language_large_write_test",
     # Actually 1 hour, see
@@ -181,7 +181,7 @@ py_test(
     ],
 )
 
-# Uses ports 33012 and 33013.
+# Uses ports 3312 and 3313.
 py_test(
     name = "expected_errors_test",
     timeout = "short",

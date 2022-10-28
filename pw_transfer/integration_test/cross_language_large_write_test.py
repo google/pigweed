@@ -44,8 +44,8 @@ from pigweed.pw_transfer.integration_test import config_pb2
 class LargeWriteTransferIntegrationTest(TransferIntegrationTest):
     # Each set of transfer tests uses a different client/server port pair to
     # allow tests to be run in parallel.
-    HARNESS_CONFIG = TransferIntegrationTestHarness.Config(server_port=33010,
-                                                           client_port=33011)
+    HARNESS_CONFIG = TransferIntegrationTestHarness.Config(server_port=3310,
+                                                           client_port=3311)
 
     @parameterized.expand([
         ("cpp"),
