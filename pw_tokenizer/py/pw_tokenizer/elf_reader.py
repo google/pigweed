@@ -24,12 +24,13 @@ archive are read as one unit.
 """
 
 import argparse
+import collections
 from pathlib import Path
 import re
 import struct
 import sys
-from typing import BinaryIO, Dict, Iterable, NamedTuple, Optional
-from typing import Pattern, Tuple, Union
+from typing import (BinaryIO, Iterable, Mapping, NamedTuple, Optional, Pattern,
+                    Tuple, Union)
 
 ARCHIVE_MAGIC = b'!<arch>\n'
 ELF_MAGIC = b'\x7fELF'
@@ -195,7 +196,7 @@ class FieldReader:
         else:
             raise FileDecodeError('Unknown size {!r}'.format(size_field))
 
-    def _determine_integer_format(self) -> Dict[int, struct.Struct]:
+    def _determine_integer_format(self) -> Mapping[int, struct.Struct]:
         """Returns a dict of structs used for converting bytes to integers."""
         endianness_byte = self._elf.read(1)  # e_ident[EI_DATA] (endianness)
         if endianness_byte == b'\x01':
@@ -305,20 +306,31 @@ class Elf:
         return self._elf.read(size)
 
     def dump_sections(self, name: Union[str,
-                                        Pattern[str]]) -> Dict[str, bytes]:
-        """Dumps a binary string containing the sections matching the regex."""
+                                        Pattern[str]]) -> Mapping[str, bytes]:
+        """Returns a mapping of section names to section contents.
+
+        If processing an archive with multiple object files, the contents of
+        sections with duplicate names are concatenated in the order they appear
+        in the archive.
+        """
         name_regex = re.compile(name)
 
-        sections: Dict[str, bytes] = {}
+        sections: Mapping[str, bytearray] = collections.defaultdict(bytearray)
         for section in self.sections:
             if name_regex.match(section.name):
                 self._elf.seek(section.file_offset + section.offset)
-                sections[section.name] = self._elf.read(section.size)
+                sections[section.name].extend(self._elf.read(section.size))
 
         return sections
 
     def dump_section_contents(
             self, name: Union[str, Pattern[str]]) -> Optional[bytes]:
+        """Dumps a binary string containing the sections matching the regex.
+
+        If processing an archive with multiple object files, the contents of
+        sections with duplicate names are concatenated in the order they appear
+        in the archive.
+        """
         sections = self.dump_sections(name)
         return b''.join(sections.values()) if sections else None
 
