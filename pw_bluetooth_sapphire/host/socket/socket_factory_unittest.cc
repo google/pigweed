@@ -117,5 +117,26 @@ TEST_F(SocketFactoryTest, SameChannelIdDifferentHandles) {
   another_channel->Close();
 }
 
+TEST_F(SocketFactoryTest, ClosedCallbackCalledOnChannelClosure) {
+  FactoryT socket_factory;
+  int closed_cb_count = 0;
+  auto closed_cb = [&]() { closed_cb_count++; };
+  zx::socket sock = socket_factory.MakeSocketForChannel(channel(), std::move(closed_cb));
+  EXPECT_TRUE(sock);
+  channel()->Close();
+  EXPECT_EQ(closed_cb_count, 1);
+}
+
+TEST_F(SocketFactoryTest, ClosedCallbackCalledOnSocketClosure) {
+  FactoryT socket_factory;
+  int closed_cb_count = 0;
+  auto closed_cb = [&]() { closed_cb_count++; };
+  zx::socket sock = socket_factory.MakeSocketForChannel(channel(), std::move(closed_cb));
+  EXPECT_TRUE(sock);
+  sock.reset();
+  RunLoopUntilIdle();
+  EXPECT_EQ(closed_cb_count, 1);
+}
+
 }  // namespace
 }  // namespace bt::socket

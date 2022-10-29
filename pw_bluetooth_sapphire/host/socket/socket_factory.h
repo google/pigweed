@@ -44,6 +44,9 @@ class SocketFactory final {
   // |channel| will automatically be Deactivated() when the zx::socket is
   // closed, or the creation thread's dispatcher shuts down.
   //
+  // |closed_callback| will be called when the channel or socket is closed. This
+  // callback may be nullptr to ignore closures.
+  //
   // Similarly, the local end corresponding to the returned zx::socket will
   // automatically be closed when |channel| is closed, or the creation thread's
   // dispatcher  shuts down.
@@ -53,7 +56,8 @@ class SocketFactory final {
   //
   // Returns the new socket on success, and an invalid socket otherwise
   // (including if |channel| is nullptr).
-  zx::socket MakeSocketForChannel(fxl::WeakPtr<ChannelT> channel);
+  zx::socket MakeSocketForChannel(fxl::WeakPtr<ChannelT> channel,
+                                  fit::callback<void()> closed_callback = nullptr);
 
  private:
   using RelayT = SocketChannelRelay<ChannelT>;
@@ -75,7 +79,8 @@ template <typename ChannelT>
 SocketFactory<ChannelT>::~SocketFactory() {}
 
 template <typename ChannelT>
-zx::socket SocketFactory<ChannelT>::MakeSocketForChannel(fxl::WeakPtr<ChannelT> channel) {
+zx::socket SocketFactory<ChannelT>::MakeSocketForChannel(fxl::WeakPtr<ChannelT> channel,
+                                                         fit::callback<void()> closed_callback) {
   if (!channel) {
     return zx::socket();
   }
@@ -96,12 +101,16 @@ zx::socket SocketFactory<ChannelT>::MakeSocketForChannel(fxl::WeakPtr<ChannelT> 
 
   auto relay = std::make_unique<RelayT>(
       std::move(local_socket), channel,
-      typename RelayT::DeactivationCallback(
-          [self = weak_ptr_factory_.GetWeakPtr(), id = unique_id]() mutable {
-            BT_DEBUG_ASSERT_MSG(self, "(unique_id=%u)", id);
-            size_t n_erased = self->channel_to_relay_.erase(id);
-            BT_DEBUG_ASSERT_MSG(n_erased == 1, "(n_erased=%zu, unique_id=%u)", n_erased, id);
-          }));
+      typename RelayT::DeactivationCallback([self = weak_ptr_factory_.GetWeakPtr(), id = unique_id,
+                                             closed_cb = std::move(closed_callback)]() mutable {
+        BT_DEBUG_ASSERT_MSG(self, "(unique_id=%u)", id);
+        size_t n_erased = self->channel_to_relay_.erase(id);
+        BT_DEBUG_ASSERT_MSG(n_erased == 1, "(n_erased=%zu, unique_id=%u)", n_erased, id);
+
+        if (closed_cb) {
+          closed_cb();
+        }
+      }));
 
   // Note: Activate() may abort, if |channel| has been Activated() without
   // going through this SocketFactory.
