@@ -16,6 +16,7 @@
 # pigweed.dev Sphinx themes
 furo==2022.6.21
 sphinx-design==0.2.0
+myst-parser==0.18.1
 # Renode requirements
 psutil==5.9.1
 robotframework==5.0.1
