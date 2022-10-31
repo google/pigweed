@@ -37,11 +37,17 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
     L2capParametersExt(
         fidl::InterfaceRequest<fuchsia::bluetooth::bredr::L2capParametersExt> request,
         fxl::WeakPtr<bt::l2cap::Channel> channel)
-        : ServerBase(this, std::move(request)), channel_(std::move(channel)) {}
+        : ServerBase(this, std::move(request)),
+          unique_id_(channel->unique_id()),
+          channel_(std::move(channel)) {}
+
+    bt::l2cap::Channel::UniqueId unique_id() const { return unique_id_; }
+
     void RequestParameters(fuchsia::bluetooth::bredr::ChannelParameters requested,
                            RequestParametersCallback callback) override;
 
    private:
+    bt::l2cap::Channel::UniqueId unique_id_;
     fxl::WeakPtr<bt::l2cap::Channel> channel_;
   };
 
@@ -196,7 +202,7 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
   std::unordered_map<AudioDirectionExt*, std::unique_ptr<AudioDirectionExt>>
       audio_direction_ext_servers_;
 
-  std::unordered_map<L2capParametersExt*, std::unique_ptr<L2capParametersExt>>
+  std::unordered_map<bt::l2cap::Channel::UniqueId, std::unique_ptr<L2capParametersExt>>
       l2cap_parameters_ext_servers_;
 
   std::unordered_map<AudioOffloadExt*, std::unique_ptr<AudioOffloadExt>> audio_offload_ext_servers_;

@@ -739,7 +739,7 @@ fidl::InterfaceHandle<fidlbredr::AudioDirectionExt> ProfileServer::BindAudioDire
 void ProfileServer::OnL2capParametersExtError(L2capParametersExt* ext_server, zx_status_t status) {
   bt_log(DEBUG, "fidl", "fidl parameters ext server closed (reason: %s)",
          zx_status_get_string(status));
-  auto handle = l2cap_parameters_ext_servers_.extract(ext_server);
+  auto handle = l2cap_parameters_ext_servers_.extract(ext_server->unique_id());
   if (handle.empty()) {
     bt_log(WARN, "fidl", "could not find ext server in l2cap parameters ext error callback");
   }
@@ -749,6 +749,8 @@ fidl::InterfaceHandle<fidlbredr::L2capParametersExt> ProfileServer::BindL2capPar
     fxl::WeakPtr<bt::l2cap::Channel> channel) {
   fidl::InterfaceHandle<fidlbredr::L2capParametersExt> client;
 
+  bt::l2cap::Channel::UniqueId unique_id = channel->unique_id();
+
   auto l2cap_parameters_ext_server =
       std::make_unique<L2capParametersExt>(client.NewRequest(), std::move(channel));
   L2capParametersExt* server_ptr = l2cap_parameters_ext_server.get();
@@ -756,7 +758,7 @@ fidl::InterfaceHandle<fidlbredr::L2capParametersExt> ProfileServer::BindL2capPar
   l2cap_parameters_ext_server->set_error_handler(
       [this, server_ptr](zx_status_t status) { OnL2capParametersExtError(server_ptr, status); });
 
-  l2cap_parameters_ext_servers_[server_ptr] = std::move(l2cap_parameters_ext_server);
+  l2cap_parameters_ext_servers_[unique_id] = std::move(l2cap_parameters_ext_server);
   return client;
 }
 
@@ -793,8 +795,6 @@ fuchsia::bluetooth::bredr::Channel ProfileServer::ChannelToFidl(
   if (channel->info().flush_timeout) {
     fidl_chan.set_flush_timeout(channel->info().flush_timeout->get());
   }
-  auto sock = l2cap_socket_factory_.MakeSocketForChannel(channel);
-  fidl_chan.set_socket(std::move(sock));
 
   if (adapter()->state().IsVendorFeatureSupported(
           bt::hci::VendorFeaturesBits::kSetAclPriorityCommand)) {
@@ -807,7 +807,15 @@ fuchsia::bluetooth::bredr::Channel ProfileServer::ChannelToFidl(
     fidl_chan.set_ext_audio_offload(BindAudioOffloadExtServer(channel));
   }
 
-  fidl_chan.set_ext_l2cap(BindL2capParametersExtServer(std::move(channel)));
+  fidl_chan.set_ext_l2cap(BindL2capParametersExtServer(channel));
+
+  auto closed_cb = [this, unique_id = channel->unique_id()]() {
+    l2cap_parameters_ext_servers_.erase(unique_id);
+    // TODO(fxbug.dev/113355): Erase other channel extension servers.
+  };
+
+  auto sock = l2cap_socket_factory_.MakeSocketForChannel(std::move(channel), std::move(closed_cb));
+  fidl_chan.set_socket(std::move(sock));
   return fidl_chan;
 }
 

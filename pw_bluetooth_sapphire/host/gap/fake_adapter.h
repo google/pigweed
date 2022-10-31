@@ -144,6 +144,10 @@ class FakeAdapter final : public Adapter {
     using ChannelCallback = fit::function<void(fxl::WeakPtr<l2cap::testing::FakeChannel>)>;
     void set_l2cap_channel_callback(ChannelCallback cb) { channel_cb_ = std::move(cb); }
 
+    // Destroys the channel, invaliding all weak pointers. Returns true if the channel was
+    // successfully destroyed.
+    bool DestroyChannel(l2cap::ChannelId channel_id) { return channels_.erase(channel_id); }
+
     // Notifies all registered searches associated with the provided |uuid| with the peer's
     // service |attributes|.
     void TriggerServiceFound(PeerId peer_id, UUID uuid,

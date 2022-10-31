@@ -1277,6 +1277,51 @@ TEST_F(ProfileServerTestFakeAdapter, L2capParametersExtRequestParametersFails) {
   RunLoopUntilIdle();
 }
 
+TEST_F(ProfileServerTestFakeAdapter, L2capParametersExtRequestParametersClosedOnChannelClosed) {
+  const bt::PeerId kPeerId;
+  const fuchsia::bluetooth::PeerId kFidlPeerId{kPeerId.value()};
+
+  fxl::WeakPtr<FakeChannel> last_channel;
+  adapter()->fake_bredr()->set_l2cap_channel_callback([&](auto chan) { last_channel = chan; });
+
+  fidlbredr::L2capParameters l2cap_params;
+  l2cap_params.set_psm(fidlbredr::PSM_AVDTP);
+  fidlbredr::ConnectParameters conn_params;
+  conn_params.set_l2cap(std::move(l2cap_params));
+
+  std::optional<fidlbredr::Channel> response_channel;
+  client()->Connect(kFidlPeerId, std::move(conn_params),
+                    [&](fidlbredr::Profile_Connect_Result result) {
+                      ASSERT_TRUE(result.is_response());
+                      response_channel = std::move(result.response().channel);
+                    });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(last_channel);
+  ASSERT_TRUE(response_channel.has_value());
+
+  fidlbredr::L2capParametersExtPtr l2cap_client = response_channel->mutable_ext_l2cap()->Bind();
+  bool l2cap_client_closed = false;
+  l2cap_client.set_error_handler([&](zx_status_t /*status*/) { l2cap_client_closed = true; });
+
+  // Closing the channel should close l2cap_client (after running the loop).
+  last_channel->Close();
+  // Destroy the channel (like the real LogicalLink would) to verify that ProfileServer doesn't try
+  // to use channel pointers.
+  EXPECT_TRUE(adapter()->fake_bredr()->DestroyChannel(last_channel->id()));
+
+  // Any request for the closed channel should be ignored.
+  fidlbredr::ChannelParameters request_chan_params;
+  std::optional<fidlbredr::ChannelParameters> result_chan_params;
+  l2cap_client->RequestParameters(
+      std::move(request_chan_params),
+      [&](fidlbredr::ChannelParameters new_params) { result_chan_params = std::move(new_params); });
+  RunLoopUntilIdle();
+  EXPECT_TRUE(l2cap_client_closed);
+  EXPECT_FALSE(result_chan_params.has_value());
+  l2cap_client.Unbind();
+  RunLoopUntilIdle();
+}
+
 class AndroidSupportedFeaturesTest
     : public ProfileServerTestFakeAdapter,
       public ::testing::WithParamInterface<
