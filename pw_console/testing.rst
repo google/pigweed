@@ -760,6 +760,43 @@ Python Repl & Output
        | ``activate.sh``
      - |checkbox|
 
+Web Log Viewer
+^^^^^^^^^^^^^^
+
+.. list-table::
+   :widths: 5 45 45 5
+   :header-rows: 1
+
+   * - #
+     - Test Action
+     - Expected Result
+     - ✅
+
+   * - 1
+     - | Start the pw console test mode by
+       | running ``pw console --test-mode``
+     - | Console starts up showing an ``Fake Device`` window.
+     - |checkbox|
+
+   * - 2
+     - | Focus on ``Fake Device`` panel and press :kbd:`Shift-o` to enable web log viewer
+     - | This should hide log stream in the console and automatically copy the
+       | URL to log viewer to the clipboard
+     - |checkbox|
+   * - 3
+     - | Focus on the ``Fake Keys`` panel with a filter applied. Then press
+       | :kbd:`Shift-o` to enable another web log viewer for that new pane. Open the
+       | new URL in Chrome
+     - | This log viewer should have filters pre-applied
+     - |checkbox|
+   * - 4
+     - | Press :kbd:`Shift-o` again on both log panes to disable web log view
+     - | This should re-enable log stream in console and stop streaming logs to
+       | web view
+     - |checkbox|
+
+
+
 Early Startup
 ^^^^^^^^^^^^^
 
