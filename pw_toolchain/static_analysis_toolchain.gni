@@ -232,6 +232,10 @@ template("pw_static_analysis_toolchain") {
 
       # Disable compilation testing for static analysis toolchains.
       pw_compilation_testing_NEGATIVE_COMPILATION_ENABLED = false
+
+      # Always disable coverage generation since we will not actually run the
+      # instrumented binaries to produce a profraw file.
+      pw_toolchain_COVERAGE_ENABLED = false
     }
   }
 }
