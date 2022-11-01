@@ -23,15 +23,14 @@ namespace pw::perf_test::internal::backend {
 namespace {
 
 constexpr chrono::SystemClock::duration kArbitraryDuration =
-    chrono::SystemClock::for_at_least(std::chrono::milliseconds(2));
+    chrono::SystemClock::for_at_least(std::chrono::milliseconds(1));
 
 TEST(ChronoTest, DurationIsReasonable) {
   Timestamp start = GetCurrentTimestamp();
   this_thread::sleep_for(kArbitraryDuration);
   Timestamp end = GetCurrentTimestamp();
   uint64_t duration = GetDuration(start, end);
-  EXPECT_GE(duration, 2000000u);
-  EXPECT_LE(duration, 20000000u);
+  EXPECT_GE(duration, 1000000u);
 }
 
 }  // namespace
