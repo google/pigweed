@@ -21,25 +21,76 @@ Learn more at: pigweed.dev/pw_software_update
 import argparse
 import sys
 from pathlib import Path
-from pw_software_update import keys
+from pw_software_update import keys, root_metadata
+
+
+def create_root_metadata_handler(arg) -> None:
+    """Handler function for creation of root metadata."""
+    try:
+        root_metadata.main(arg.out, arg.append_root_key,
+                           arg.append_targets_key, arg.version)
+
+        # TODO(eashansingh): Print message that allows user
+        # to visualize root metadata with
+        # `pw update inspect-root-metadata` command
+
+    except IOError as error:
+        print(error)
+
+
+def _add_create_root_metadata_parser(subparsers) -> None:
+    """Parser to handle create-root-metadata subcommand."""
+
+    formatter_class = lambda prog: argparse.HelpFormatter(
+        prog, max_help_position=100, width=200)
+    create_root_metadata_parser = subparsers.add_parser(
+        'create-root-metadata',
+        description='Creation of root metadata',
+        formatter_class=formatter_class,
+        help='',
+    )
+    create_root_metadata_parser.set_defaults(func=create_root_metadata_handler)
+    create_root_metadata_parser.add_argument(
+        '--version',
+        help='Canonical version number for rollback checks; Defaults to 1',
+        type=int,
+        default=1,
+        required=False)
+
+    required_arguments = create_root_metadata_parser.add_argument_group(
+        'required arguments')
+    required_arguments.add_argument('--append-root-key',
+                                    help='Path to root key',
+                                    metavar='ROOT_KEY',
+                                    required=True,
+                                    action='append',
+                                    type=Path)
+    required_arguments.add_argument('--append-targets-key',
+                                    help='Path to targets key',
+                                    metavar='TARGETS_KEY',
+                                    required=True,
+                                    action='append',
+                                    type=Path)
+    required_arguments.add_argument('-o',
+                                    '--out',
+                                    help='Path to output file',
+                                    required=True,
+                                    type=Path)
 
 
 def generate_key_handler(arg) -> None:
     """ Handler function for key generation"""
 
-    print('Generating an ecdsa-sha2-nistp256 key pair…', end=' ')
     try:
         keys.gen_ecdsa_keypair(arg.pathname)
-        print('done.\n')
         print('Private key: ' + str(arg.pathname))
         print('Public key: ' + str(arg.pathname) + '.pub')
 
     except IOError as error:
-        print('failed.\n')
         print(error)
 
 
-def _create_generate_key_parser(subparsers) -> None:
+def _add_generate_key_parser(subparsers) -> None:
     """Parser to handle key generation subcommand."""
 
     generate_key_parser = subparsers.add_parser(
@@ -53,7 +104,7 @@ def _create_generate_key_parser(subparsers) -> None:
                                      help='Path to generated key pair')
 
 
-def _build_argument_parser() -> None:
+def _parse_args() -> argparse.Namespace:
     parser_root = argparse.ArgumentParser(
         description='Software update related operations.',
         epilog='Learn more at: pigweed.dev/pw_software_update')
@@ -61,15 +112,19 @@ def _build_argument_parser() -> None:
         func=lambda *_args, **_kwargs: parser_root.print_help())
 
     subparsers = parser_root.add_subparsers()
-    _create_generate_key_parser(subparsers)
+    _add_generate_key_parser(subparsers)
+    _add_create_root_metadata_parser(subparsers)
 
-    args = parser_root.parse_args()
+    return parser_root.parse_args()
+
+
+def _dispatch_command(args) -> None:
     args.func(args)
 
 
 def main() -> int:
     """Software update command-line interface(WIP)."""
-    _build_argument_parser()
+    _dispatch_command(_parse_args())
     return 0
 
 
