@@ -40,6 +40,8 @@ py_binary(
     deps = [
         ":config_pb2",
         "//pw_hdlc/py:pw_hdlc",
+        "//pw_transfer:transfer_proto_pb2",
+        "//pw_transfer/py:pw_transfer",
     ],
 )
 
@@ -52,6 +54,8 @@ py_test(
     main = "proxy_test.py",
     deps = [
         ":config_pb2",
+        "//pw_transfer:transfer_proto_pb2",
+        "//pw_transfer/py:pw_transfer",
     ],
 )
 

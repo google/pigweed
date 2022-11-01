@@ -16,6 +16,7 @@
 
 import abc
 import asyncio
+from struct import pack
 import time
 from typing import List
 import unittest
@@ -82,6 +83,38 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
         await asyncio.sleep(0.5)
 
         self.assertEqual(sent_packets, [b'aaaaaaaaaa', b'bbbbbbbbbb'])
+
+    async def test_server_failure(self):
+        sent_packets: List[bytes] = []
+
+        # Async helper so DataTransposer can await on it.
+        async def append(list: List[bytes], data: bytes):
+            list.append(data)
+
+        packets_before_failure = [1, 2, 3]
+        server_failure = proxy.ServerFailure(
+            lambda data: append(sent_packets, data),
+            name="test",
+            packets_before_failure_list=packets_before_failure.copy())
+
+        # After passing the list to ServerFailure, add a test for no
+        # packets dropped
+        packets_before_failure.append(5)
+
+        packets = [
+            b'1',
+            b'2',
+            b'3',
+            b'4',
+            b'5',
+        ]
+
+        for num_packets in packets_before_failure:
+            sent_packets.clear()
+            for packet in packets:
+                await server_failure.process(packet)
+            self.assertEqual(len(sent_packets), num_packets)
+            server_failure.handle_event(proxy.Event.TRANSFER_START)
 
 
 if __name__ == '__main__':

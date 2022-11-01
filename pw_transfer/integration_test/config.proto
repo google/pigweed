@@ -148,6 +148,15 @@ message DataTransposerConfig {
   int64 seed = 3;
 }
 
+// Configuration for the ServerFailure proxy filter.
+message ServerFailureConfig {
+  // A list of numbers of packets to send before dropping all subsequent
+  // packets until a TRANSFER_START packet is seen.  This process is
+  // repeated for each element in packets_before_failure.  After that list
+  // is exhausted, ServerFailure will send all packets.
+  repeated uint32 packets_before_failure = 1;
+}
+
 // Configuration for a single stage in the proxy filter stack.
 message FilterConfig {
   oneof filter {
@@ -155,6 +164,7 @@ message FilterConfig {
     DataDropperConfig data_dropper = 2;
     RateLimiterConfig rate_limiter = 3;
     DataTransposerConfig data_transposer = 4;
+    ServerFailureConfig server_failure = 5;
   }
 }
 
