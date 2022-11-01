@@ -37,6 +37,18 @@ pw_cc_library(
     srcs = [
         "freelist_malloc.cc",
     ],
+    linkopts = [
+        # Link options that replace dynamic memory operations in standard
+        # library with the pigweed malloc.
+        "-Wl,--wrap=malloc",
+        "-Wl,--wrap=free",
+        "-Wl,--wrap=realloc",
+        "-Wl,--wrap=calloc",
+        "-Wl,--wrap=_malloc_r",
+        "-Wl,--wrap=_realloc_r",
+        "-Wl,--wrap=_free_r",
+        "-Wl,--wrap=_calloc_r",
+    ],
     deps = [
         ":headers",
         "//pw_allocator:block",
