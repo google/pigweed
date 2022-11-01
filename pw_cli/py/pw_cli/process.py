@@ -18,7 +18,7 @@ import logging
 import os
 import shlex
 import tempfile
-from typing import IO, Tuple, Union, Optional
+from typing import Dict, IO, Tuple, Union, Optional
 
 import pw_cli.color
 import pw_cli.log
@@ -78,6 +78,7 @@ async def _run_and_log(program: str, args: Tuple[str, ...], env: dict):
 
 async def run_async(program: str,
                     *args: str,
+                    env: Optional[Dict[str, str]] = None,
                     log_output: bool = False,
                     timeout: Optional[float] = None) -> CompletedProcess:
     """Runs a command, capturing and optionally logging its output.
@@ -88,12 +89,15 @@ async def run_async(program: str,
     _LOG.debug('Running `%s`',
                ' '.join(shlex.quote(arg) for arg in [program, *args]))
 
-    env = os.environ.copy()
-    env[PW_SUBPROCESS_ENV] = '1'
+    hydrated_env = os.environ.copy()
+    if env is not None:
+        for key, value in env.items():
+            hydrated_env[key] = value
+    hydrated_env[PW_SUBPROCESS_ENV] = '1'
     output: Union[bytes, IO[bytes]]
 
     if log_output:
-        process, output = await _run_and_log(program, args, env)
+        process, output = await _run_and_log(program, args, hydrated_env)
     else:
         output = tempfile.TemporaryFile()
         process = await asyncio.create_subprocess_exec(
@@ -101,7 +105,7 @@ async def run_async(program: str,
             *args,
             stdout=output,
             stderr=asyncio.subprocess.STDOUT,
-            env=env)
+            env=hydrated_env)
 
     try:
         await asyncio.wait_for(process.wait(), timeout)
