@@ -346,3 +346,8 @@ pw_python_script("multi_transfer_test") {
 pw_python_script("expected_errors_test") {
   sources = [ "integration_test/expected_errors_test.py" ]
 }
+
+# TODO(b/228516801): Make this actually work; this is just a placeholder.
+pw_python_script("legacy_binaries_test") {
+  sources = [ "integration_test/legacy_binaries_test.py" ]
+}

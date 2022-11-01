@@ -19,7 +19,12 @@ workspace(
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository", "new_git_repository")
-load("//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl", "pigweed_deps")
+load(
+    "//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl",
+    "cipd_client_repository",
+    "cipd_repository",
+    "pigweed_deps",
+)
 
 # Setup CIPD client and packages.
 # Required by: pigweed.
@@ -29,6 +34,14 @@ pigweed_deps()
 load("@cipd_deps//:cipd_init.bzl", "cipd_init")
 
 cipd_init()
+
+cipd_client_repository()
+
+cipd_repository(
+    name = "pw_transfer_test_binaries",
+    path = "pigweed/pw_transfer_test_binaries/${os=linux}-${arch=amd64}",
+    tag = "version:pw_transfer_test_binaries_528098d588f307881af83f769207b8e6e1b57520-linux-amd64-cipd.cipd",
+)
 
 # Set up Python support.
 # Required by: rules_fuzzing, com_github_nanopb_nanopb.

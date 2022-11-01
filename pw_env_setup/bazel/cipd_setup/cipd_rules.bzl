@@ -83,6 +83,9 @@ _pigweed_deps = repository_rule(
         "_python_packages_json": attr.label(
             default = "@pigweed//pw_env_setup:py/pw_env_setup/cipd_setup/python.json",
         ),
+        "_upstream_testing_packages_json": attr.label(
+            default = "@pigweed//pw_env_setup:py/pw_env_setup/cipd_setup/testing.json",
+        ),
     },
 )
 

@@ -193,6 +193,22 @@ py_test(
     ],
 )
 
+# Uses ports 3314 and 3315.
+py_test(
+    name = "legacy_binaries_test",
+    timeout = "moderate",
+    srcs = ["legacy_binaries_test.py"],
+    data = [
+        "@pw_transfer_test_binaries//:all",
+    ],
+    deps = [
+        ":config_pb2",
+        ":integration_test_fixture",
+        "//pw_protobuf:status_proto_pb2",
+        "@rules_python//python/runfiles",
+    ],
+)
+
 java_binary(
     name = "java_client",
     srcs = ["JavaClient.java"],
