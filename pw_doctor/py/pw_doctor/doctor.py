@@ -382,6 +382,8 @@ def cipd_versions(ctx: DoctorContext):
                 ctx.debug('CIPD package %s in %s is current',
                           installed['package_name'], install_path)
 
+    deduped_packages = cipd_update.deduplicate_packages(
+        cipd_update.all_packages(json_paths))
     for json_path in json_paths:
         ctx.debug(f'Checking packages in {json_path}')
         if not json_path.exists():
@@ -393,6 +395,10 @@ def cipd_versions(ctx: DoctorContext):
         install_path = pathlib.Path(
             cipd_update.package_installation_path(cipd_dir, json_path))
         for package in json.loads(json_path.read_text()).get('packages', ()):
+            if package not in deduped_packages:
+                ctx.debug(f'Skipping overridden package {package["path"]} '
+                          f'with tag(s) {package["tags"]}')
+                continue
             ctx.submit(check_cipd, package, install_path)
 
 
