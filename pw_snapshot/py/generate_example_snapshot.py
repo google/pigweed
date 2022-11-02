@@ -39,6 +39,7 @@ def _add_threads(snapshot: snapshot_pb2.Snapshot) -> snapshot_pb2.Snapshot:
     thread.stack_start_pointer = 0x2001b000
     thread.stack_pointer = 0x2001ae20
     thread.state = thread_pb2.ThreadState.Enum.INTERRUPT_HANDLER
+    thread.raw_stack = b'\x00\xCA\xAD\xDE'
     snapshot.threads.append(thread)
 
     return snapshot

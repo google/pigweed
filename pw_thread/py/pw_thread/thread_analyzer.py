@@ -13,6 +13,7 @@
 # the License.
 """Library to analyze and dump Thread protos and Thread snapshots into text."""
 
+import binascii
 from typing import Optional, List, Mapping
 import pw_tokenizer
 from pw_symbolizer import LlvmSymbolizer, Symbolizer
@@ -247,6 +248,11 @@ class ThreadSnapshotAnalyzer:
             if thread.raw_backtrace:
                 output.append(
                     self._symbolizer.dump_stack_trace(thread.raw_backtrace))
+            if thread.raw_stack:
+                output.append('Raw Stack')
+                output.append(
+                    binascii.hexlify(thread.raw_stack, b'\n',
+                                     32).decode('utf-8'))
             # Blank line between threads for nicer formatting.
             output.append('')
 

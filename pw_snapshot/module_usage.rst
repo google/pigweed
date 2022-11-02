@@ -135,6 +135,9 @@ optionally be passed to the tool to detokenize applicable fields.
   Stack info
     Stack used:   0x2001b000 - 0x2001ae20 (480 bytes)
     Stack limits: 0x2001b000 - 0x???????? (size unknown)
+  Raw Stack
+  00caadde
+
 
   Thread (RUNNING): Idle
   Est CPU usage: unknown
