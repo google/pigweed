@@ -19,7 +19,7 @@ import os
 from pathlib import Path
 import re
 import shutil
-from typing import Callable, Collection, Optional, Sequence
+from typing import Collection, Optional, Sequence
 
 from pw_presubmit import git_repo, presubmit
 
@@ -85,6 +85,13 @@ def _add_programs_arguments(parser: argparse.ArgumentParser,
                         type=presubmit_program,
                         default=default,
                         help='Which presubmit program to run')
+
+    parser.add_argument(
+        '--list-steps-file',
+        dest='list_steps_file',
+        type=Path,
+        help=argparse.SUPPRESS,
+    )
 
     all_steps = programs.all_steps()
 
@@ -178,7 +185,7 @@ def add_arguments(parser: argparse.ArgumentParser,
 
 
 def run(
-    program: Sequence[Callable],
+    program: Sequence[presubmit.Check],
     output_directory: Optional[Path],
     package_root: Path,
     clear: bool,

@@ -175,7 +175,7 @@ class Programs(collections.abc.Mapping):
             for name, checks in programs.items()
         }
 
-    def all_steps(self) -> Dict[str, Callable]:
+    def all_steps(self) -> Dict[str, Check]:
         return {c.name: c for c in itertools.chain(*self.values())}
 
     def __getitem__(self, item: str) -> Program:
@@ -352,7 +352,11 @@ class Presubmit:
         self._override_gn_args = override_gn_args
         self._continue_after_build_error = continue_after_build_error
 
-    def run(self, program: Program, keep_going: bool = False) -> bool:
+    def run(
+        self,
+        program: Program,
+        keep_going: bool = False,
+    ) -> bool:
         """Executes a series of presubmit checks on the paths."""
 
         checks = self.apply_filters(program)
@@ -524,8 +528,8 @@ def _process_pathspecs(repos: Iterable[Path],
     return pathspecs_by_repo
 
 
-def run(  # pylint: disable=too-many-arguments
-        program: Sequence[Callable],
+def run(  # pylint: disable=too-many-arguments,too-many-locals
+        program: Sequence[Check],
         root: Path,
         repos: Collection[Path] = (),
         base: Optional[str] = None,
@@ -537,7 +541,8 @@ def run(  # pylint: disable=too-many-arguments
         override_gn_args: Sequence[Tuple[str, str]] = (),
         keep_going: bool = False,
         continue_after_build_error: bool = False,
-        presubmit_class: type = Presubmit) -> bool:
+        presubmit_class: type = Presubmit,
+        list_steps_file: Optional[Path] = None) -> bool:
     """Lists files in the current Git repo and runs a Presubmit with them.
 
     This changes the directory to the root of the Git repository after listing
@@ -566,6 +571,8 @@ def run(  # pylint: disable=too-many-arguments
         continue_after_build_error: continue building if a build step fails
         presubmit_class: class to use to run Presubmits, should inherit from
             Presubmit class above
+        list_steps_file: File created by --only-list-steps, used to keep from
+            recalculating affected files.
 
     Returns:
         True if all presubmit checks succeeded
@@ -585,15 +592,25 @@ def run(  # pylint: disable=too-many-arguments
     pathspecs_by_repo = _process_pathspecs(repos, paths)
 
     files: List[Path] = []
+    list_steps_data: List = []
 
-    for repo, pathspecs in pathspecs_by_repo.items():
-        files += tools.exclude_paths(
-            exclude, git_repo.list_files(base, pathspecs, repo), root)
+    if list_steps_file:
+        with list_steps_file.open() as ins:
+            list_steps_data = json.load(ins)
+        for step in list_steps_data:
+            files.extend(step.get("paths", ()))
+        files = sorted(set(files))
+        _LOG.info('Loaded %d paths from file %s', len(files), list_steps_file)
 
-        _LOG.info(
-            'Checking %s',
-            git_repo.describe_files(repo, repo, base, pathspecs, exclude,
-                                    root))
+    else:
+        for repo, pathspecs in pathspecs_by_repo.items():
+            files += tools.exclude_paths(
+                exclude, git_repo.list_files(base, pathspecs, repo), root)
+
+            _LOG.info(
+                'Checking %s',
+                git_repo.describe_files(repo, repo, base, pathspecs, exclude,
+                                        root))
 
     if output_directory is None:
         output_directory = root / '.presubmit'
@@ -613,8 +630,11 @@ def run(  # pylint: disable=too-many-arguments
 
     if only_list_steps:
         steps = []
-        for check, _ in presubmit.apply_filters(program):
-            steps.append({'name': check.name})
+        for check, filtered_paths in presubmit.apply_filters(program):
+            steps.append({
+                'name': check.name,
+                'paths': [str(x) for x in filtered_paths],
+            })
         json.dump(steps, sys.stdout, indent=2)
         sys.stdout.write('\n')
         return True
