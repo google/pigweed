@@ -15,7 +15,6 @@
 package dev.pigweed.pw_transfer;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import dev.pigweed.pw_log.Logger;
 import dev.pigweed.pw_rpc.MethodClient;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;

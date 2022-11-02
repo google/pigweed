@@ -74,8 +74,20 @@ class ReadTransfer extends Transfer<byte[]> {
   }
 
   @Override
-  Chunk getChunkForRetry() {
-    return prepareTransferParameters(/*extend=*/false).build();
+  VersionedChunk getInitialChunk(ProtocolVersion desiredProcotolVersion) {
+    return setTransferParameters(
+        VersionedChunk.createInitialChunk(desiredProcotolVersion, getResourceId()))
+        .build();
+  }
+
+  @Override
+  VersionedChunk getChunkForRetry() {
+    VersionedChunk chunk = getLastChunkSent();
+    // Always send RETRANSMIT packets instead of CONTINUE packets on retries.
+    if (chunk.type() == Chunk.Type.PARAMETERS_CONTINUE) {
+      return chunk.withType(Chunk.Type.PARAMETERS_RETRANSMIT);
+    }
+    return chunk;
   }
 
   class ReceivingData extends State {
@@ -85,13 +97,13 @@ class ReadTransfer extends Transfer<byte[]> {
     }
 
     @Override
-    void handleDataChunk(Chunk chunk) {
-      if (chunk.getOffset() != offset) {
+    void handleDataChunk(VersionedChunk chunk) {
+      if (chunk.offset() != offset) {
         logger.atFine().log(
             "Transfer %d expected offset %d, received %d; resending transfer parameters",
-            getSessionId(),
+            getId(),
             offset,
-            chunk.getOffset());
+            chunk.offset());
 
         // For now, only in-order transfers are supported. If data is received out of order,
         // discard this data and retransmit from the last received offset.
@@ -101,23 +113,21 @@ class ReadTransfer extends Transfer<byte[]> {
       }
 
       // Add the underlying array(s) to a list to avoid making copies of the data.
-      dataChunks.addAll(chunk.getData().asReadOnlyByteBufferList());
-      totalDataSize += chunk.getData().size();
+      dataChunks.addAll(chunk.data().asReadOnlyByteBufferList());
+      totalDataSize += chunk.data().size();
 
-      offset += chunk.getData().size();
+      offset += chunk.data().size();
 
-      if (chunk.hasRemainingBytes()) {
-        if (chunk.getRemainingBytes() == 0) {
-          sendFinalChunk(Status.OK);
-          setState(new Completed());
+      if (chunk.remainingBytes().isPresent()) {
+        if (chunk.remainingBytes().getAsLong() == 0) {
+          setStateCompletedAndSendFinalChunk(Status.OK);
           return;
         }
 
-        remainingTransferSize = chunk.getRemainingBytes();
+        remainingTransferSize = chunk.remainingBytes().getAsLong();
       } else if (remainingTransferSize != UNKNOWN_TRANSFER_SIZE) {
-        // If the remaining size was not specified, update based on the most recent estimate, if
-        // any.
-        remainingTransferSize = max(remainingTransferSize - chunk.getData().size(), 0);
+        // If remaining size was not specified, update based on the most recent estimate, if any.
+        remainingTransferSize = max(remainingTransferSize - chunk.data().size(), 0);
       }
 
       if (remainingTransferSize == UNKNOWN_TRANSFER_SIZE || remainingTransferSize == 0) {
@@ -132,8 +142,7 @@ class ReadTransfer extends Transfer<byte[]> {
 
       if (remainingWindowSize == 0) {
         logger.atFiner().log(
-            "Transfer %d received all pending bytes; sending transfer parameters update",
-            getSessionId());
+            "Transfer %d received all pending bytes; sending transfer parameters update", getId());
         sendChunk(prepareTransferParameters(/*extend=*/false));
       } else if (extendWindow) {
         sendChunk(prepareTransferParameters(/*extend=*/true));
@@ -151,20 +160,21 @@ class ReadTransfer extends Transfer<byte[]> {
     getFuture().set(result.array());
   }
 
-  private Chunk.Builder prepareTransferParameters(boolean extend) {
+  private VersionedChunk prepareTransferParameters(boolean extend) {
     windowEndOffset = offset + parameters.maxPendingBytes();
 
     Chunk.Type type = extend ? Chunk.Type.PARAMETERS_CONTINUE : Chunk.Type.PARAMETERS_RETRANSMIT;
+    return setTransferParameters(newChunk(type)).build();
+  }
 
-    Chunk.Builder chunk = newChunk(type)
-                              .setPendingBytes(parameters.maxPendingBytes())
-                              .setMaxChunkSizeBytes(parameters.maxChunkSizeBytes())
-                              .setOffset(offset)
-                              .setWindowEndOffset(windowEndOffset);
+  private VersionedChunk.Builder setTransferParameters(VersionedChunk.Builder chunk) {
+    chunk.setWindowEndOffset(offset + parameters.maxPendingBytes())
+        .setMaxChunkSizeBytes(parameters.maxChunkSizeBytes())
+        .setOffset(offset)
+        .setWindowEndOffset(windowEndOffset);
     if (parameters.chunkDelayMicroseconds() > 0) {
       chunk.setMinDelayMicroseconds(parameters.chunkDelayMicroseconds());
     }
-
     return chunk;
   }
 }

@@ -242,16 +242,17 @@ class TransferEventHandler {
   /** Handles responses on the pw_transfer RPCs. */
   private abstract class ChunkHandler implements StreamObserver<Chunk> {
     @Override
-    public final void onNext(Chunk chunk) {
+    public final void onNext(Chunk chunkProto) {
+      VersionedChunk chunk = VersionedChunk.fromMessage(chunkProto);
+
       enqueueEvent(() -> {
-        Transfer<?> transfer = transfers.get(chunk.getTransferId());
+        Transfer<?> transfer = transfers.get(chunk.sessionId());
         if (transfer != null) {
           logger.atFinest().log(
-              "Transfer %d received chunk: %s", transfer.getSessionId(), chunkToString(chunk));
+              "Transfer %d received chunk: %s", transfer.getId(), chunkToString(chunkProto));
           transfer.handleChunk(chunk);
         } else {
-          logger.atWarning().log(
-              "Ignoring unrecognized transfer session ID %d", chunk.getTransferId());
+          logger.atWarning().log("Ignoring unrecognized transfer session ID %d", chunk.sessionId());
         }
       });
     }
@@ -288,6 +289,8 @@ class TransferEventHandler {
   private static String chunkToString(Chunk chunk) {
     StringBuilder str = new StringBuilder();
     str.append("transferId:").append(chunk.getTransferId()).append(" ");
+    str.append("sessionId:").append(chunk.getSessionId()).append(" ");
+    str.append("resourceId:").append(chunk.getResourceId()).append(" ");
     str.append("windowEndOffset:").append(chunk.getWindowEndOffset()).append(" ");
     str.append("offset:").append(chunk.getOffset()).append(" ");
     // Don't include the actual data; it's too much.

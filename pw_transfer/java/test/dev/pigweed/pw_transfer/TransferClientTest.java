@@ -92,21 +92,11 @@ public final class TransferClientTest {
   public void read_failedPreconditionError_retriesInitialPacket() throws Exception {
     ListenableFuture<byte[]> future = transferClient.read(1, TRANSFER_PARAMETERS);
 
-    assertThat(lastChunks())
-        .containsExactly(newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, 1)
-                             .setPendingBytes(TRANSFER_PARAMETERS.maxPendingBytes())
-                             .setWindowEndOffset(TRANSFER_PARAMETERS.maxPendingBytes())
-                             .setMaxChunkSizeBytes(TRANSFER_PARAMETERS.maxChunkSizeBytes())
-                             .build());
+    assertThat(lastChunks()).containsExactly(initialReadChunk(1));
 
     receiveReadServerError(Status.FAILED_PRECONDITION);
 
-    assertThat(lastChunks())
-        .containsExactly(newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, 1)
-                             .setPendingBytes(TRANSFER_PARAMETERS.maxPendingBytes())
-                             .setWindowEndOffset(TRANSFER_PARAMETERS.maxPendingBytes())
-                             .setMaxChunkSizeBytes(TRANSFER_PARAMETERS.maxChunkSizeBytes())
-                             .build());
+    assertThat(lastChunks()).containsExactly(initialReadChunk(1));
 
     receiveReadChunks(
         newChunk(Chunk.Type.DATA, 1).setOffset(0).setData(TEST_DATA_SHORT).setRemainingBytes(0));
@@ -116,14 +106,10 @@ public final class TransferClientTest {
 
   @Test
   public void read_failedPreconditionError_abortsAfterInitialPacket() {
-    ListenableFuture<byte[]> future = transferClient.read(1, TransferParameters.create(50, 50, 0));
+    TransferParameters params = TransferParameters.create(50, 50, 0);
+    ListenableFuture<byte[]> future = transferClient.read(1, params);
 
-    assertThat(lastChunks())
-        .containsExactly(newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, 1)
-                             .setPendingBytes(50)
-                             .setWindowEndOffset(50)
-                             .setMaxChunkSizeBytes(50)
-                             .build());
+    assertThat(lastChunks()).containsExactly(initialReadChunk(1, params));
 
     receiveReadChunks(dataChunk(1, TEST_DATA_100B, 0, 50));
 
@@ -150,11 +136,7 @@ public final class TransferClientTest {
       receiveReadServerError(Status.FAILED_PRECONDITION);
     }
 
-    Chunk initialChunk = newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, 1)
-                             .setPendingBytes(TRANSFER_PARAMETERS.maxPendingBytes())
-                             .setWindowEndOffset(TRANSFER_PARAMETERS.maxPendingBytes())
-                             .setMaxChunkSizeBytes(TRANSFER_PARAMETERS.maxChunkSizeBytes())
-                             .build();
+    Chunk initialChunk = initialReadChunk(1);
     assertThat(lastChunks())
         .containsExactlyElementsIn(Collections.nCopies(1 + MAX_RETRIES, initialChunk));
 
@@ -201,16 +183,10 @@ public final class TransferClientTest {
 
   @Test
   public void read_sendsTransferParametersFirst() {
-    ListenableFuture<byte[]> future = transferClient.read(99, TransferParameters.create(3, 2, 1));
+    TransferParameters params = TransferParameters.create(3, 2, 1);
+    ListenableFuture<byte[]> future = transferClient.read(99, params);
 
-    assertThat(lastChunks())
-        .containsExactly(newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, 99)
-                             .setPendingBytes(3)
-                             .setWindowEndOffset(3)
-                             .setMaxChunkSizeBytes(2)
-                             .setMinDelayMicroseconds(1)
-                             .setOffset(0)
-                             .build());
+    assertThat(lastChunks()).containsExactly(initialReadChunk(99, params));
     assertThat(future.cancel(true)).isTrue();
   }
 
@@ -218,13 +194,7 @@ public final class TransferClientTest {
   public void read_severalChunks() throws Exception {
     ListenableFuture<byte[]> future = transferClient.read(ID, TRANSFER_PARAMETERS);
 
-    assertThat(lastChunks())
-        .containsExactly(newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, ID)
-                             .setPendingBytes(50)
-                             .setWindowEndOffset(50)
-                             .setMaxChunkSizeBytes(30)
-                             .setOffset(0)
-                             .build());
+    assertThat(lastChunks()).containsExactly(initialReadChunk(ID));
 
     receiveReadChunks(
         newChunk(Chunk.Type.DATA, ID).setOffset(0).setData(range(0, 20)).setRemainingBytes(70),
@@ -284,13 +254,7 @@ public final class TransferClientTest {
   public void read_rewindWhenPacketsSkipped() throws Exception {
     ListenableFuture<byte[]> future = transferClient.read(ID, TRANSFER_PARAMETERS);
 
-    assertThat(lastChunks())
-        .containsExactly(newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, ID)
-                             .setPendingBytes(50)
-                             .setWindowEndOffset(50)
-                             .setMaxChunkSizeBytes(30)
-                             .setOffset(0)
-                             .build());
+    assertThat(lastChunks()).containsExactly(initialReadChunk(ID));
 
     receiveReadChunks(newChunk(Chunk.Type.DATA, ID).setOffset(50).setData(range(30, 50)));
 
@@ -423,6 +387,18 @@ public final class TransferClientTest {
   }
 
   @Test
+  public void read_unknownVersion_invalidArgument() {
+    ListenableFuture<byte[]> future = transferClient.read(2, TRANSFER_PARAMETERS);
+
+    receiveReadChunks(newChunk(Chunk.Type.DATA, 2).setProtocolVersion(3));
+
+    ExecutionException exception = assertThrows(ExecutionException.class, future::get);
+    assertThat(((TransferError) exception.getCause()).status()).isEqualTo(Status.INVALID_ARGUMENT);
+
+    assertThat(lastChunks())
+        .containsExactly(initialReadChunk(2), finalChunk(2, Status.INVALID_ARGUMENT));
+  }
+  @Test
   public void read_timeout() {
     transferClient = createTransferClient(1, 1); // Create a manager with a very short timeout.
     ListenableFuture<byte[]> future = transferClient.read(ID, TRANSFER_PARAMETERS);
@@ -433,24 +409,9 @@ public final class TransferClientTest {
 
     // read should have retried sending the transfer parameters 2 times, for a total of 3
     assertThat(lastChunks())
-        .containsExactly(newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, ID)
-                             .setPendingBytes(50)
-                             .setWindowEndOffset(50)
-                             .setMaxChunkSizeBytes(30)
-                             .setOffset(0)
-                             .build(),
-            newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, ID)
-                .setPendingBytes(50)
-                .setWindowEndOffset(50)
-                .setMaxChunkSizeBytes(30)
-                .setOffset(0)
-                .build(),
-            newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, ID)
-                .setPendingBytes(50)
-                .setWindowEndOffset(50)
-                .setMaxChunkSizeBytes(30)
-                .setOffset(0)
-                .build(),
+        .containsExactly(initialReadChunk(ID),
+            initialReadChunk(ID),
+            initialReadChunk(ID),
             finalChunk(ID, Status.DEADLINE_EXCEEDED));
   }
 
@@ -489,11 +450,11 @@ public final class TransferClientTest {
   public void write_failedPreconditionError_retriesInitialPacket() throws Exception {
     ListenableFuture<Void> future = transferClient.write(2, TEST_DATA_SHORT.toByteArray());
 
-    assertThat(lastChunks()).containsExactly(initialWriteChunk(2, 2, TEST_DATA_SHORT.size()));
+    assertThat(lastChunks()).containsExactly(initialWriteChunk(2, TEST_DATA_SHORT.size()));
 
     receiveWriteServerError(Status.FAILED_PRECONDITION);
 
-    assertThat(lastChunks()).containsExactly(initialWriteChunk(2, 2, TEST_DATA_SHORT.size()));
+    assertThat(lastChunks()).containsExactly(initialWriteChunk(2, TEST_DATA_SHORT.size()));
 
     receiveWriteChunks(newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, 2)
                            .setOffset(0)
@@ -515,7 +476,7 @@ public final class TransferClientTest {
 
     assertThat(lastChunks())
         .containsExactly(
-            initialWriteChunk(2, 2, TEST_DATA_100B.size()), dataChunk(2, TEST_DATA_100B, 0, 50));
+            initialWriteChunk(2, TEST_DATA_100B.size()), dataChunk(2, TEST_DATA_100B, 0, 50));
 
     receiveWriteServerError(Status.FAILED_PRECONDITION);
 
@@ -532,7 +493,7 @@ public final class TransferClientTest {
       receiveWriteServerError(Status.FAILED_PRECONDITION);
     }
 
-    Chunk initialChunk = initialWriteChunk(2, 2, TEST_DATA_SHORT.size());
+    Chunk initialChunk = initialWriteChunk(2, TEST_DATA_SHORT.size());
     assertThat(lastChunks())
         .containsExactlyElementsIn(Collections.nCopies(1 + MAX_RETRIES, initialChunk));
 
@@ -552,7 +513,7 @@ public final class TransferClientTest {
 
     receiveWriteChunks(finalChunk(2, Status.OK));
 
-    assertThat(lastChunks()).containsExactly(initialWriteChunk(2, 2, 0));
+    assertThat(lastChunks()).containsExactly(initialWriteChunk(2, 0));
 
     assertThat(future.get()).isNull(); // Ensure that no exceptions are thrown.
   }
@@ -561,7 +522,7 @@ public final class TransferClientTest {
   public void write_severalChunks() throws Exception {
     ListenableFuture<Void> future = transferClient.write(ID, TEST_DATA_100B.toByteArray());
 
-    assertThat(lastChunks()).containsExactly(initialWriteChunk(ID, ID, TEST_DATA_100B.size()));
+    assertThat(lastChunks()).containsExactly(initialWriteChunk(ID, TEST_DATA_100B.size()));
 
     receiveWriteChunks(newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, ID)
                            .setOffset(0)
@@ -603,7 +564,7 @@ public final class TransferClientTest {
   public void write_parametersContinue() throws Exception {
     ListenableFuture<Void> future = transferClient.write(ID, TEST_DATA_100B.toByteArray());
 
-    assertThat(lastChunks()).containsExactly(initialWriteChunk(ID, ID, TEST_DATA_100B.size()));
+    assertThat(lastChunks()).containsExactly(initialWriteChunk(ID, TEST_DATA_100B.size()));
 
     receiveWriteChunks(newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, ID)
                            .setOffset(0)
@@ -649,7 +610,7 @@ public final class TransferClientTest {
   public void write_continuePacketWithWindowEndBeforeOffsetIsIgnored() throws Exception {
     ListenableFuture<Void> future = transferClient.write(ID, TEST_DATA_100B.toByteArray());
 
-    assertThat(lastChunks()).containsExactly(initialWriteChunk(ID, ID, TEST_DATA_100B.size()));
+    assertThat(lastChunks()).containsExactly(initialWriteChunk(ID, TEST_DATA_100B.size()));
 
     receiveWriteChunks(newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, ID)
                            .setOffset(0)
@@ -715,7 +676,7 @@ public final class TransferClientTest {
                            .setMaxChunkSizeBytes(25));
 
     assertThat(lastChunks())
-        .containsExactly(initialWriteChunk(ID, ID, TEST_DATA_100B.size()),
+        .containsExactly(initialWriteChunk(ID, TEST_DATA_100B.size()),
             newChunk(Chunk.Type.DATA, ID).setOffset(100).setRemainingBytes(0).build());
     assertThat(future.isDone()).isFalse();
   }
@@ -777,7 +738,7 @@ public final class TransferClientTest {
 
     assertThat(lastChunks())
         .containsExactly(
-            initialWriteChunk(ID, ID, TEST_DATA_100B.size()), finalChunk(ID, Status.OUT_OF_RANGE));
+            initialWriteChunk(ID, TEST_DATA_100B.size()), finalChunk(ID, Status.OUT_OF_RANGE));
 
     ExecutionException thrown = assertThrows(ExecutionException.class, future::get);
     assertThat(((TransferError) thrown.getCause()).status()).isEqualTo(Status.OUT_OF_RANGE);
@@ -836,6 +797,20 @@ public final class TransferClientTest {
   }
 
   @Test
+  public void write_unknownVersion_invalidArgument() {
+    ListenableFuture<Void> future = transferClient.write(2, TEST_DATA_SHORT.toByteArray());
+
+    receiveWriteChunks(newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, 2).setProtocolVersion(3));
+
+    ExecutionException exception = assertThrows(ExecutionException.class, future::get);
+    assertThat(((TransferError) exception.getCause()).status()).isEqualTo(Status.INVALID_ARGUMENT);
+
+    assertThat(lastChunks())
+        .containsExactly(
+            initialWriteChunk(2, TEST_DATA_SHORT.size()), finalChunk(2, Status.INVALID_ARGUMENT));
+  }
+
+  @Test
   public void write_timeoutAfterInitialChunk() {
     transferClient = createTransferClient(1, 1); // Create a manager with a very short timeout.
     ListenableFuture<Void> future = transferClient.write(ID, TEST_DATA_SHORT.toByteArray());
@@ -846,9 +821,9 @@ public final class TransferClientTest {
 
     // Client should have resent the last chunk (the initial chunk in this case) for each timeout.
     assertThat(lastChunks())
-        .containsExactly(initialWriteChunk(ID, ID, TEST_DATA_SHORT.size()), // initial
-            initialWriteChunk(ID, ID, TEST_DATA_SHORT.size()), // retry 1
-            initialWriteChunk(ID, ID, TEST_DATA_SHORT.size()), // retry 2
+        .containsExactly(initialWriteChunk(ID, TEST_DATA_SHORT.size()), // initial
+            initialWriteChunk(ID, TEST_DATA_SHORT.size()), // retry 1
+            initialWriteChunk(ID, TEST_DATA_SHORT.size()), // retry 2
             finalChunk(ID, Status.DEADLINE_EXCEEDED)); // abort
   }
 
@@ -874,7 +849,7 @@ public final class TransferClientTest {
                      .setRemainingBytes(0)
                      .build();
     assertThat(lastChunks())
-        .containsExactly(initialWriteChunk(ID, ID, TEST_DATA_SHORT.size()), // initial
+        .containsExactly(initialWriteChunk(ID, TEST_DATA_SHORT.size()), // initial
             data, // data chunk
             data, // retry 1
             data, // retry 2
@@ -917,9 +892,9 @@ public final class TransferClientTest {
 
     assertThat(lastChunks())
         .containsExactly(
-            initialWriteChunk(
-                ID, ID, TEST_DATA_100B.size()), // initial
-                                                // after 2, receive parameters: 40 from 0 by 20
+            // initial
+            initialWriteChunk(ID, TEST_DATA_100B.size()),
+            // after 2, receive parameters: 40 from 0 by 20
             dataChunk(ID, TEST_DATA_100B, 0, 20), // data 0-20
             dataChunk(ID, TEST_DATA_100B, 20, 40), // data 20-40
             dataChunk(ID, TEST_DATA_100B, 20, 40), // retry 1
@@ -951,8 +926,26 @@ public final class TransferClientTest {
     return Chunk.newBuilder().setType(type).setTransferId(resourceId);
   }
 
-  private static Chunk initialWriteChunk(int sessionId, int resourceId, int size) {
-    return newChunk(Chunk.Type.START, sessionId)
+  private static Chunk initialReadChunk(int resourceId) {
+    return initialReadChunk(resourceId, TRANSFER_PARAMETERS);
+  }
+
+  private static Chunk initialReadChunk(int resourceId, TransferParameters params) {
+    Chunk.Builder chunk = newChunk(Chunk.Type.START, resourceId)
+                              .setResourceId(resourceId)
+                              .setPendingBytes(params.maxPendingBytes())
+                              .setWindowEndOffset(params.maxPendingBytes())
+                              .setMaxChunkSizeBytes(params.maxChunkSizeBytes())
+                              .setOffset(0);
+
+    if (params.chunkDelayMicroseconds() > 0) {
+      chunk.setMinDelayMicroseconds(params.chunkDelayMicroseconds());
+    }
+    return chunk.build();
+  }
+
+  private static Chunk initialWriteChunk(int resourceId, int size) {
+    return newChunk(Chunk.Type.START, resourceId)
         .setResourceId(resourceId)
         .setRemainingBytes(size)
         .build();

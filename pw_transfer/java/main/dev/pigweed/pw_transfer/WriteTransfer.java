@@ -34,7 +34,6 @@ class WriteTransfer extends Transfer<Void> {
   private int minChunkDelayMicros = 0;
   private int sentOffset;
   private long totalDroppedBytes;
-  private Chunk lastChunk;
 
   private final byte[] data;
 
@@ -54,10 +53,13 @@ class WriteTransfer extends Transfer<Void> {
         progressCallback,
         shouldAbortCallback);
     this.data = data;
-    this.lastChunk = newChunk(Chunk.Type.START)
-                         .setResourceId(getSessionId())
-                         .setRemainingBytes(data.length)
-                         .build();
+  }
+
+  @Override
+  VersionedChunk getInitialChunk(ProtocolVersion desiredProcotolVersion) {
+    return VersionedChunk.createInitialChunk(desiredProcotolVersion, getResourceId())
+        .setRemainingBytes(data.length)
+        .build();
   }
 
   @Override
@@ -74,7 +76,7 @@ class WriteTransfer extends Transfer<Void> {
     }
 
     @Override
-    void handleDataChunk(Chunk chunk) {
+    void handleDataChunk(VersionedChunk chunk) {
       updateTransferParameters(chunk);
     }
   }
@@ -90,7 +92,7 @@ class WriteTransfer extends Transfer<Void> {
     }
 
     @Override
-    void handleDataChunk(Chunk chunk) {
+    void handleDataChunk(VersionedChunk chunk) {
       updateTransferParameters(chunk);
     }
 
@@ -100,18 +102,13 @@ class WriteTransfer extends Transfer<Void> {
           data, sentOffset, min(windowEndOffset - sentOffset, maxChunkSizeBytes));
 
       logger.atFiner().log("Transfer %d: sending bytes %d-%d (%d B chunk, max size %d B)",
-          getSessionId(),
+          getId(),
           sentOffset,
           sentOffset + chunkData.size() - 1,
           chunkData.size(),
           maxChunkSizeBytes);
 
-      Chunk chunkToSend = buildDataChunk(chunkData);
-
-      // If there's a timeout, resending this will trigger a transfer parameters update.
-      lastChunk = chunkToSend;
-
-      if (!sendChunk(chunkToSend)) {
+      if (!sendChunk(buildDataChunk(chunkData))) {
         setState(new Completed());
         return;
       }
@@ -129,11 +126,11 @@ class WriteTransfer extends Transfer<Void> {
   }
 
   @Override
-  Chunk getChunkForRetry() {
+  VersionedChunk getChunkForRetry() {
     // The service should resend transfer parameters if there was a timeout. In case the service
     // doesn't support timeouts and to avoid unnecessary waits, resend the last chunk. If there
     // were drops, this will trigger a transfer parameters update.
-    return lastChunk;
+    return getLastChunkSent();
   }
 
   @Override
@@ -142,88 +139,66 @@ class WriteTransfer extends Transfer<Void> {
     getFuture().set(null);
   }
 
-  private void updateTransferParameters(Chunk chunk) {
+  private void updateTransferParameters(VersionedChunk chunk) {
     logger.atFiner().log("Transfer %d received new chunk (type=%s, offset=%d, windowEndOffset=%d)",
-        getSessionId(),
-        chunk.getType(),
-        chunk.getOffset(),
-        chunk.getWindowEndOffset());
+        getId(),
+        chunk.type(),
+        chunk.offset(),
+        chunk.windowEndOffset());
 
-    if (chunk.getOffset() > data.length) {
-      sendFinalChunk(Status.OUT_OF_RANGE);
-      setState(new Completed());
+    if (chunk.offset() > data.length) {
+      setStateCompletedAndSendFinalChunk(Status.OUT_OF_RANGE);
       return;
     }
 
-    int windowEndOffset = getWindowEndOffset(chunk, data.length);
-    if (isRetransmit(chunk)) {
-      long droppedBytes = sentOffset - chunk.getOffset();
+    int windowEndOffset = min(chunk.windowEndOffset(), data.length);
+    if (chunk.requestsTransmissionFromOffset()) {
+      long droppedBytes = sentOffset - chunk.offset();
       if (droppedBytes > 0) {
         totalDroppedBytes += droppedBytes;
         logger.atFine().log("Transfer %d retransmitting %d B (%d retransmitted of %d sent)",
-            getSessionId(),
+            getId(),
             droppedBytes,
             totalDroppedBytes,
             sentOffset);
       }
-      sentOffset = (int) chunk.getOffset();
+      sentOffset = chunk.offset();
     } else if (windowEndOffset <= sentOffset) {
-      logger.atFiner().log("Transfer %d: ignoring old rolling window packet", getSessionId());
+      logger.atFiner().log("Transfer %d: ignoring old rolling window packet", getId());
       setNextChunkTimeout();
       return; // Received an old rolling window packet, ignore it.
     }
 
     // Update transfer parameters if they're set.
-    if (chunk.hasMaxChunkSizeBytes()) {
-      maxChunkSizeBytes = chunk.getMaxChunkSizeBytes();
-    }
-    if (chunk.hasMinDelayMicroseconds()) {
-      if (chunk.getMinDelayMicroseconds() > MIN_CHUNK_DELAY_TO_SLEEP_MICROS) {
-        minChunkDelayMicros = chunk.getMinDelayMicroseconds();
+    chunk.maxChunkSizeBytes().ifPresent(size -> maxChunkSizeBytes = size);
+    chunk.minDelayMicroseconds().ifPresent(delay -> {
+      if (delay > MIN_CHUNK_DELAY_TO_SLEEP_MICROS) {
+        minChunkDelayMicros = delay;
       }
-    }
+    });
 
     if (maxChunkSizeBytes == 0) {
       if (windowEndOffset == sentOffset) {
-        logger.atWarning().log(
-            "Server requested 0 bytes in write transfer %d; aborting", getSessionId());
-        sendFinalChunk(Status.INVALID_ARGUMENT);
-        setState(new Completed());
+        logger.atWarning().log("Server requested 0 bytes in write transfer %d; aborting", getId());
+        setStateCompletedAndSendFinalChunk(Status.INVALID_ARGUMENT);
         return;
       }
       // Default to sending the entire window if the max chunk size is not specified (or is 0).
       maxChunkSizeBytes = windowEndOffset - sentOffset;
     }
 
-    Transmitting transmittingState = new Transmitting((int) chunk.getOffset(), windowEndOffset);
+    Transmitting transmittingState = new Transmitting(chunk.offset(), windowEndOffset);
     setState(transmittingState);
     transmittingState.handleTimeout(); // Immediately send the first packet
   }
 
-  private static boolean isRetransmit(Chunk chunk) {
-    // Retransmit is the default behavior for older versions of the transfer protocol, which don't
-    // have a type field.
-    return !chunk.hasType()
-        || (chunk.getType().equals(Chunk.Type.PARAMETERS_RETRANSMIT)
-            || chunk.getType().equals(Chunk.Type.START));
-  }
-
-  private static int getWindowEndOffset(Chunk chunk, int dataLength) {
-    if (isRetransmit(chunk)) {
-      // A retransmit chunk may use an older version of the transfer protocol, in which the
-      // window_end_offset field is not guaranteed to exist.
-      return min((int) chunk.getOffset() + chunk.getPendingBytes(), dataLength);
-    }
-    return min(chunk.getWindowEndOffset(), dataLength);
-  }
-
-  private Chunk buildDataChunk(ByteString chunkData) {
-    Chunk.Builder chunk = newChunk(Chunk.Type.DATA).setOffset(sentOffset).setData(chunkData);
+  private VersionedChunk buildDataChunk(ByteString chunkData) {
+    VersionedChunk.Builder chunk =
+        newChunk(Chunk.Type.DATA).setOffset(sentOffset).setData(chunkData);
 
     // If this is the last data chunk, setRemainingBytes to 0.
     if (sentOffset + chunkData.size() == data.length) {
-      logger.atFiner().log(
-          "Transfer %d sending final chunk with %d B", getSessionId(), chunkData.size());
+      logger.atFiner().log("Transfer %d sending final chunk with %d B", getId(), chunkData.size());
       chunk.setRemainingBytes(0);
     }
     return chunk.build();

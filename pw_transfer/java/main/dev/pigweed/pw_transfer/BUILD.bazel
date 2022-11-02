@@ -18,6 +18,7 @@
 java_library(
     name = "client",
     srcs = [
+        "ProtocolVersion.java",
         "ReadTransfer.java",
         "Transfer.java",
         "TransferClient.java",
@@ -26,6 +27,7 @@ java_library(
         "TransferParameters.java",
         "TransferProgress.java",
         "TransferService.java",
+        "VersionedChunk.java",
         "WriteTransfer.java",
     ],
     visibility = ["//visibility:public"],
