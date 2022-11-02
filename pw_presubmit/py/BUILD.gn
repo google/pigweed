@@ -29,6 +29,7 @@ pw_python_package("py") {
     "pw_presubmit/cpp_checks.py",
     "pw_presubmit/format_code.py",
     "pw_presubmit/git_repo.py",
+    "pw_presubmit/gitmodules.py",
     "pw_presubmit/inclusive_language.py",
     "pw_presubmit/install_hook.py",
     "pw_presubmit/keep_sorted.py",
@@ -43,6 +44,7 @@ pw_python_package("py") {
   ]
   tests = [
     "git_repo_test.py",
+    "gitmodules_test.py",
     "keep_sorted_test.py",
     "ninja_parser_test.py",
     "presubmit_test.py",

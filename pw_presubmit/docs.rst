@@ -185,6 +185,31 @@ The presubmit check will suggest fixes using ``pw keep-sorted --fix``.
 
 Future versions may support multiline list items.
 
+.gitmodules
+^^^^^^^^^^^
+Various rules can be applied to .gitmodules files. This check can be included
+by adding ``pw_presubmit.gitmodules.create()`` to a presubmit program. This
+function takes an optional argument of type ``pw_presubmit.gitmodules.Config``.
+``Config`` objects have several properties.
+
+* ``allow_non_googlesource_hosts: bool = False`` — If false, all submodules URLs
+  must be on a Google-managed Gerrit server.
+* ``allowed_googlesource_hosts: Sequence[str] = ()`` — If set, any
+  Google-managed Gerrit URLs for submodules most be in this list. Entries
+  should be like ``pigweed`` for ``pigweed-review.googlesource.com``.
+* ``require_relative_urls: bool = False`` — If true, all submodules must be
+  relative to the superproject remote.
+* ``allow_sso: bool = True`` — If false, ``sso://`` and ``rpc://`` submodule
+  URLs are prohibited.
+* ``allow_git_corp_google_com: bool = True`` — If false, ``git.corp.google.com``
+  submodule URLs are prohibited.
+* ``require_branch: bool = False`` — If True, all submodules must reference a
+  branch.
+* ``validator: Callable[[PresubmitContext, Path, str, Dict[str, str]], None] = None``
+  — A function that can be used for arbitrary submodule validation. It's called
+  with the ``PresubmitContext``, the path to the ``.gitmodules`` file, the name
+  of the current submodule, and the properties of the current submodule.
+
 #pragma once
 ^^^^^^^^^^^^
 There's a ``pragma_once`` check that confirms the first non-comment line of
