@@ -17,6 +17,7 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/python_action.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_compilation_testing/negative_compilation_test.gni")
+import("$dir_pw_toolchain/host_clang/toolchains.gni")
 
 declare_args() {
   # The GoogleTest implementation to use for Pigweed unit tests. This library
@@ -185,6 +186,12 @@ template("pw_test") {
   _test_target_name = target_name
 
   _test_is_enabled = !defined(invoker.enable_if) || invoker.enable_if
+  _is_coverage_run =
+      pw_toolchain_COVERAGE_ENABLED &&
+      filter_include(pw_toolchain_SANITIZERS, [ "coverage" ]) == [ "coverage" ]
+  if (_is_coverage_run) {
+    _profraw_path = "$target_out_dir/test/$_test_target_name.profraw"
+  }
 
   # Always set the output_dir as pigweed is not compatible with shared
   # bin directories for tests.
@@ -231,6 +238,18 @@ template("pw_test") {
           test_directory = rebase_path(_test_output_dir, root_build_dir)
         },
       ]
+
+      # N.B.: This is placed here instead of in $_test_target_name._run because
+      # pw_test_group only forwards the metadata from _test_target_name and not
+      # _test_target_name._run or _test_target_name.run.
+      if (_is_coverage_run) {
+        profraws = [
+          {
+            type = "profraw"
+            path = rebase_path(_profraw_path, root_build_dir)
+          },
+        ]
+      }
     }
 
     deps = [ ":$_test_target_name.lib" ]
@@ -299,8 +318,19 @@ template("pw_test") {
           pw_unit_test_AUTOMATIC_RUNNER_TIMEOUT,
         ]
       }
+      if (_is_coverage_run) {
+        args += [
+          "--coverage-profraw",
+          rebase_path(_profraw_path, root_build_dir),
+        ]
+      }
       if (pw_unit_test_AUTOMATIC_RUNNER_ARGS != []) {
         args += [ "--" ] + pw_unit_test_AUTOMATIC_RUNNER_ARGS
+      }
+
+      outputs = []
+      if (_is_coverage_run) {
+        outputs += [ _profraw_path ]
       }
       stamp = true
     }
