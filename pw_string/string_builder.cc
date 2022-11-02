@@ -77,7 +77,7 @@ size_t StringBuilder::ResizeAndTerminate(size_t chars_to_append) {
 
 void StringBuilder::resize(size_t new_size) {
   if (new_size <= size()) {
-    *size_ = new_size;
+    *size_ = static_cast<InlineString<>::size_type>(new_size);
     NullTerminate();
     last_status_ = StatusCode(OkStatus());
   } else {
@@ -111,7 +111,7 @@ void StringBuilder::WriteBytes(span<const std::byte> data) {
 }
 
 void StringBuilder::CopySizeAndStatus(const StringBuilder& other) {
-  *size_ = other.size();
+  *size_ = static_cast<InlineString<>::size_type>(other.size());
   status_ = other.status_;
   last_status_ = other.last_status_;
 }
