@@ -80,6 +80,7 @@
         "linux-arm64",
         "mac-amd64"
       ],
+      "subdir": "rust",
       "tags": [
         "git_revision:33b530e04099465a8029ef581202d52f4075558e"
       ],
