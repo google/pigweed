@@ -21,7 +21,47 @@ Learn more at: pigweed.dev/pw_software_update
 import argparse
 import sys
 from pathlib import Path
-from pw_software_update import keys, root_metadata
+from pw_software_update import dev_sign, keys, root_metadata
+from pw_software_update.tuf_pb2 import SignedRootMetadata
+
+
+def sign_root_metadata_handler(arg) -> None:
+    """Handler for signing of root metadata"""
+    try:
+        signed_root_metadata = dev_sign.sign_root_metadata(
+            SignedRootMetadata.FromString(arg.root_metadata.read_bytes()),
+            arg.root_key.read_bytes())
+        arg.root_metadata.write_bytes(signed_root_metadata.SerializeToString())
+
+    except IOError as error:
+        print(error)
+
+
+def _add_sign_root_metadata_parser(subparsers) -> None:
+    """Parser to handle sign-root-metadata subcommand"""
+
+    formatter_class = lambda prog: argparse.HelpFormatter(
+        prog, max_help_position=100, width=200)
+    sign_root_metadata_parser = subparsers.add_parser(
+        'sign-root-metadata',
+        description='Signing of root metadata',
+        formatter_class=formatter_class,
+        help="",
+    )
+
+    sign_root_metadata_parser.set_defaults(func=sign_root_metadata_handler)
+    required_arguments = sign_root_metadata_parser.add_argument_group(
+        'required arguments')
+    required_arguments.add_argument('--root-metadata',
+                                    help='Root metadata to be signed',
+                                    metavar='ROOT_METADATA',
+                                    required=True,
+                                    type=Path)
+    required_arguments.add_argument('--root-key',
+                                    help='Root signing key',
+                                    metavar='ROOT_KEY',
+                                    required=True,
+                                    type=Path)
 
 
 def create_root_metadata_handler(arg) -> None:
@@ -114,6 +154,7 @@ def _parse_args() -> argparse.Namespace:
     subparsers = parser_root.add_subparsers()
     _add_generate_key_parser(subparsers)
     _add_create_root_metadata_parser(subparsers)
+    _add_sign_root_metadata_parser(subparsers)
 
     return parser_root.parse_args()
 
