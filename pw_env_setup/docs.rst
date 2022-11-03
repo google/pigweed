@@ -10,7 +10,7 @@ of tools is needed for non-trivial production embedded projects. For example:
  - A C++ compiler for your target device, and also for your host
  - A build system or three; for example, GN, Ninja, CMake, Bazel
  - A code formatting program like clang-format
- - A debugger like OpenOCD to flash and debug your embedded device
+ - A debugger like OpenOCD to flash and debug your embedded device (OpenOCD support removed for Windows)
  - A known Python version with known modules installed for scripting
  - A Go compiler for the Go-based command line tools
 
