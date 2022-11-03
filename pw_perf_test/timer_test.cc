@@ -24,8 +24,8 @@ TEST(TimerTest, DurationIsPositive) {
   for (volatile int i = 0; i < 1000; i = i + 1) {
   }
   Timestamp end = GetCurrentTimestamp();
-  uint64_t duration = GetDuration(start, end);
-  EXPECT_GT(duration, 0u);
+  int64_t duration = GetDuration(start, end);
+  EXPECT_GT(duration, 0);
 }
 
 }  // namespace

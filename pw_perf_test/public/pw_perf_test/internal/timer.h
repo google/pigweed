@@ -32,11 +32,11 @@ inline Timestamp GetCurrentTimestamp() {
 }
 
 // Obtains the testing unit from the backend.
-inline constexpr DurationUnit DurationUnit =
+inline constexpr DurationUnit kDurationUnit =
     backend::kDurationUnit;  // <cycles, ns, etc.>
 
 // Returns the duration in the specified unit.
-uint64_t GetDuration(Timestamp begin, Timestamp end) {
+inline int64_t GetDuration(Timestamp begin, Timestamp end) {
   return backend::GetDuration(begin, end);
 }
 

@@ -31,7 +31,7 @@ void TimerCleanup();
 
 inline Timestamp GetCurrentTimestamp() { return chrono::SystemClock::now(); }
 
-inline uint64_t GetDuration(Timestamp begin, Timestamp end) {
+inline int64_t GetDuration(Timestamp begin, Timestamp end) {
   return std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin)
       .count();
 }
