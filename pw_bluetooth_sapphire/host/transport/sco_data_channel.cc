@@ -188,13 +188,24 @@ CommandChannel::EventCallbackResult ScoDataChannelImpl::OnNumberOfCompletedPacke
       continue;
     }
 
-    const uint16_t comp_packets = le16toh(data->hc_num_of_completed_packets);
+    uint16_t comp_packets = le16toh(data->hc_num_of_completed_packets);
 
-    BT_ASSERT(iter->second != 0u);
-    BT_ASSERT_MSG(
-        iter->second >= comp_packets,
-        "pending/completed packet count mismatch! (handle: %#.4x, pending: %zu, completed : %u)",
-        le16toh(data->connection_handle), iter->second, comp_packets);
+    if (iter->second < comp_packets) {
+      // TODO(fxbug.dev/2795): This can be caused by the controller reusing the connection handle
+      // of a connection that just disconnected. We should somehow avoid sending the controller
+      // packets for a connection that has disconnected. ScoDataChannel already dequeues such
+      // packets, but this is insufficient: packets can be queued in the channel to the transport
+      // driver, and possibly in the transport driver or USB/UART drivers.
+      bt_log(ERROR, "hci",
+             "SCO packet tx count mismatch! (handle: %#.4x, expected: %zu, actual : %u)",
+             le16toh(data->connection_handle), iter->second, comp_packets);
+      // This should eventually result in convergence with the correct pending packet count. If it
+      // undercounts the true number of pending packets, this branch will be reached again when
+      // the controller sends an updated Number of Completed Packets event. However, ScoDataChannel
+      // may overflow the controller's buffer in the meantime!
+      comp_packets = iter->second;
+    }
+
     iter->second -= comp_packets;
     if (iter->second == 0u) {
       pending_packet_counts_.erase(iter);

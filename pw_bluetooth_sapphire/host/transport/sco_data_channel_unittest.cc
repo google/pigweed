@@ -797,5 +797,35 @@ TEST_F(ScoDataChannelTest, UnsupportedCodingFormatTreatedAsCvsd) {
   EXPECT_EQ(reset_count, 0);
 }
 
+TEST_F(ScoDataChannelSingleConnectionTest, NumberOfCompletedPacketsExceedsPendingPackets) {
+  // Queue 1 more than than the max number of packets (1 packet will remain queued).
+  for (size_t i = 0; i <= kBufferMaxNumPackets; i++) {
+    std::unique_ptr<ScoDataPacket> packet =
+        ScoDataPacket::New(kConnectionHandle0, /*payload_size=*/1);
+    packet->mutable_view()->mutable_payload_data()[0] = static_cast<uint8_t>(i);
+
+    // The last packet should remain queued.
+    if (i < kBufferMaxNumPackets) {
+      EXPECT_SCO_PACKET_OUT(test_device(), StaticByteBuffer(LowerBits(kConnectionHandle0),
+                                                            UpperBits(kConnectionHandle0),
+                                                            0x01,  // payload length
+                                                            static_cast<uint8_t>(i)));
+    }
+    connection()->QueuePacket(std::move(packet));
+    RunLoopUntilIdle();
+  }
+
+  EXPECT_TRUE(test_device()->AllExpectedScoPacketsSent());
+
+  EXPECT_SCO_PACKET_OUT(
+      test_device(), StaticByteBuffer(LowerBits(kConnectionHandle0), UpperBits(kConnectionHandle0),
+                                      0x01,  // payload length
+                                      static_cast<uint8_t>(kBufferMaxNumPackets)));
+  test_device()->SendCommandChannelPacket(
+      bt::testing::NumberOfCompletedPacketsPacket(kConnectionHandle0, kBufferMaxNumPackets + 1));
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedScoPacketsSent());
+}
+
 }  // namespace
 }  // namespace bt::hci

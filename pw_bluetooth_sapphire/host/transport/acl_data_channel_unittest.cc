@@ -1479,6 +1479,36 @@ TEST_F(ACLDataChannelTest, QueuedAclAndLePacketsAreSentUsingSeparateBufferCounts
   EXPECT_EQ(2u, packet_count);
 }
 
+TEST_F(ACLDataChannelTest, NumberOfCompletedPacketsExceedsPendingPackets) {
+  constexpr size_t kMaxMtu = 4;
+  constexpr size_t kMaxNumPackets = 2;
+  constexpr hci_spec::ConnectionHandle kHandle0 = 0x0001;
+
+  InitializeACLDataChannel(DataBufferInfo(kMaxMtu, kMaxNumPackets),
+                           DataBufferInfo(kMaxMtu, kMaxNumPackets));
+
+  acl_data_channel()->RegisterLink(kHandle0, bt::LinkType::kACL);
+
+  size_t packet_count = 0;
+  test_device()->SetDataCallback([&](auto&) { packet_count++; }, dispatcher());
+
+  // Fill up both controller buffer, leaving one additional packet in the queue.
+  for (size_t i = 0; i < kMaxNumPackets + 1; ++i) {
+    auto packet = ACLDataPacket::New(kHandle0, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                                     hci_spec::ACLBroadcastFlag::kPointToPoint, kMaxMtu);
+    EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kFirstDynamicChannelId,
+                                               AclDataChannel::PacketPriority::kLow));
+  }
+  RunLoopUntilIdle();
+  EXPECT_EQ(packet_count, kMaxNumPackets);
+
+  test_device()->SendCommandChannelPacket(
+      bt::testing::NumberOfCompletedPacketsPacket(kHandle0, kMaxNumPackets + 1));
+  RunLoopUntilIdle();
+  // The pending packet count should have been cleared, and the queued packet should have been sent.
+  EXPECT_EQ(packet_count, kMaxNumPackets + 1);
+}
+
 #ifndef NINSPECT
 TEST_F(ACLDataChannelTest, InspectHierarchyContainsOutboundQueueState) {
   constexpr size_t kMaxMtu = 4;
