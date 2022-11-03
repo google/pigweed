@@ -62,11 +62,13 @@ pw_cc_library(
         "public",
         "thread_public_overrides",
     ],
+    # TODO(b/257321712): This target doesn't build.
+    tags = ["manual"],
     deps = [
         ":id",
         "//pw_assert",
         "//pw_string",
-        "//pw_thread:thread_headers",
+        "//pw_thread:thread_facade",
     ],
     # TODO(b/234876414): This should depend on ThreadX but our third parties
     # currently do not have Bazel support.
@@ -77,13 +79,13 @@ pw_cc_library(
     srcs = [
         "thread.cc",
     ],
+    # TODO(b/257321712): This target doesn't build.
+    tags = ["manual"],
     deps = [
         ":id",
         ":thread_headers",
         "//pw_assert",
     ],
-    # TODO(b/234876414): This should depend on ThreadX but our third parties
-    # currently do not have Bazel support.
 )
 
 pw_cc_library(
@@ -91,6 +93,8 @@ pw_cc_library(
     srcs = [
         "test_threads.cc",
     ],
+    # TODO(b/257321712): This target doesn't build.
+    tags = ["manual"],
     deps = [
         "//pw_chrono:system_clock",
         "//pw_thread:sleep",
@@ -101,6 +105,8 @@ pw_cc_library(
 
 pw_cc_test(
     name = "thread_backend_test",
+    # TODO(b/257321712): This target doesn't build.
+    tags = ["manual"],
     deps = [
         ":test_threads",
         "//pw_thread:thread_facade_test",
@@ -127,6 +133,8 @@ pw_cc_library(
     srcs = [
         "sleep.cc",
     ],
+    # TODO(b/257321712): This target doesn't build.
+    tags = ["manual"],
     deps = [
         ":sleep_headers",
         "//pw_assert",
@@ -134,8 +142,6 @@ pw_cc_library(
         "//pw_chrono_threadx:system_clock_headers",
         "//pw_thread:sleep_facade",
     ],
-    # TODO(b/234876414): This should depend on ThreadX but our third parties
-    # currently do not have Bazel support.
 )
 
 pw_cc_library(
@@ -148,8 +154,8 @@ pw_cc_library(
         "public",
         "yield_public_overrides",
     ],
-    # TODO(b/234876414): This should depend on ThreadX but our third parties
-    # currently do not have Bazel support.
+    # TODO(b/257321712): This target doesn't build.
+    tags = ["manual"],
 )
 
 pw_cc_library(
@@ -168,12 +174,13 @@ pw_cc_library(
     hdrs = [
         "public/pw_thread_threadx/util.h",
     ],
+    includes = ["public"],
+    # TODO(b/257321712): This target doesn't build.
+    tags = ["manual"],
     deps = [
         "//pw_function",
         "//pw_status",
     ],
-    # TODO(b/234876414): This should depend on ThreadX but our third parties
-    # currently do not have Bazel support.
 )
 
 pw_cc_library(
@@ -184,6 +191,8 @@ pw_cc_library(
     hdrs = [
         "public/pw_thread_threadx/snapshot.h",
     ],
+    # TODO(b/257321712): This target doesn't build.
+    tags = ["manual"],
     deps = [
         ":util",
         "//pw_bytes",
@@ -191,8 +200,6 @@ pw_cc_library(
         "//pw_log",
         "//pw_protobuf",
         "//pw_status",
-        "//pw_thread:protos",
+        "//pw_thread:thread_cc.pwpb",
     ],
-    # TODO(b/234876414): This should depend on ThreadX but our third parties
-    # currently do not have Bazel support.
 )

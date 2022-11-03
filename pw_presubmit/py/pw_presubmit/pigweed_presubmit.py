@@ -462,7 +462,6 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     '-//pw_thread:thread_snapshot_service_py_pb2_genproto',
     '-//pw_thread_embos/...:all',
     '-//pw_thread_freertos/...:all',
-    '-//pw_thread_threadx/...:all',
     '-//pw_tls_client/...:all',
     '-//pw_tls_client_boringssl/...:all',
     '-//pw_tls_client_mbedtls/...:all',
