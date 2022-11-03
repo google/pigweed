@@ -565,6 +565,6 @@ TEST_F(AssertPassTest, DCheckFunction_Err) {
 TEST_F(AssertPassTest, DCheckEnum_Err) { PW_DCHECK_OK(PW_STATUS_UNKNOWN); }
 #endif  // PW_ASSERT_ENABLE_DEBUG
 
-// TODO: Figure out how to run some of these tests is C.
+// TODO(keir): Figure out how to run some of these tests is C.
 
 }  // namespace

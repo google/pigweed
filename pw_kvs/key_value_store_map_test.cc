@@ -133,10 +133,10 @@ class KvsTester {
         std::string key;
 
         // Either add a new key or replace an existing one.
-        // TODO: Using %2 (or any less than 16) fails with redundancy due to KVS
-        // filling up and not being able to write the second redundant entry,
-        // returning error. After re-init() the new key is picked up, resulting
-        // in a mis-match between KVS and the test map.
+        // TODO(davidrogers): Using %2 (or any less than 16) fails with
+        // redundancy due to KVS filling up and not being able to write the
+        // second redundant entry, returning error. After re-init() the new key
+        // is picked up, resulting in a mis-match between KVS and the test map.
         if (empty() || random_int() % 16 == 0) {
           key = random_string(random_int() %
                               (internal::Entry::kMaxKeyLength + 1));

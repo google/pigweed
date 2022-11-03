@@ -470,7 +470,7 @@ Arguments are encoded as follows:
   The top bit of the length whether the string was truncated or not. The
   remaining 7 bits encode the string length, with a maximum of 127 bytes.
 
-.. TODO: insert diagram here!
+.. TODO(hepler): insert diagram here!
 
 .. tip::
    ``%s`` arguments can quickly fill a tokenization buffer. Keep ``%s``

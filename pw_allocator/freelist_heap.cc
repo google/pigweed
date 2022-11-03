@@ -147,7 +147,7 @@ void* FreeListHeap::Realloc(void* ptr, size_t size) {
 
   // Do nothing and return ptr if the required memory size is smaller than
   // the current size.
-  // TODO: Currently do not support shrink of memory chunk.
+  // TODO(keir): Currently do not support shrink of memory chunk.
   if (old_size >= size) {
     return ptr;
   }
@@ -192,8 +192,8 @@ void FreeListHeap::LogHeapStats() {
   PW_LOG_INFO(" ");
 }
 
-// TODO: Add stack tracing to locate which call to the heap operation caused
-// the corruption.
+// TODO(keir): Add stack tracing to locate which call to the heap operation
+// caused the corruption.
 void FreeListHeap::InvalidFreeCrash() {
   PW_DCHECK(false, "You tried to free an invalid pointer!");
 }

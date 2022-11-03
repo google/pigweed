@@ -92,7 +92,7 @@ class DeferredWriteTest : public ::testing::Test {
                    static_cast<unsigned>(source.size_bytes()));
 
       ASSERT_EQ(OkStatus(), writer.Write(source.first(write_size)));
-      // TODO: Add check that the write did not go to flash yet.
+      // TODO(davidrogers): Add check that the write did not go to flash yet.
 
       source = source.subspan(write_size);
       bytes_since_flush += write_size;

@@ -59,9 +59,9 @@ class BundledUpdateBackend {
   // Perform any product-specific abort tasks before marking the update as
   // aborted in bundled updater.  This should set any downstream state to a
   // default no-update-pending state.
-  // TODO: Revisit invariants; should this instead be "Abort()"? This is called
-  // for all error paths in the service and needs to reset. Furthermore, should
-  // this be async?
+  // TODO(keir): Revisit invariants; should this instead be "Abort()"? This is
+  // called for all error paths in the service and needs to reset. Furthermore,
+  // should this be async?
   virtual Status BeforeUpdateAbort() { return OkStatus(); }
 
   // Perform any product-specific tasks needed before starting verification.

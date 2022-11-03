@@ -27,7 +27,7 @@ struct KeyDescriptor {
   uint32_t key_hash;
   uint32_t transaction_id;
 
-  EntryState state;  // TODO: Pack into transaction ID? or something?
+  EntryState state;  // TODO(hepler): Pack into transaction ID? or something?
 };
 
 }  // namespace internal

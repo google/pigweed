@@ -160,8 +160,8 @@ class BlobStoreTest : public ::testing::Test {
 };
 
 TEST_F(BlobStoreTest, Init_Ok) {
-  // TODO: Do init test with flash/kvs explicitly in the different possible
-  // entry states.
+  // TODO(davidrogers): Do init test with flash/kvs explicitly in the different
+  // possible entry states.
   constexpr size_t kBufferSize = 256;
   BlobStoreBuffer<kBufferSize> blob(
       "Blob_OK", partition_, nullptr, kvs::TestKvs(), kBufferSize);
@@ -569,7 +569,7 @@ TEST_F(BlobStoreTest, Discard) {
 
   kvs::ChecksumCrc16 checksum;
 
-  // TODO: Do this test with flash/kvs in the different entry state
+  // TODO(davidrogers): Do this test with flash/kvs in the different entry state
   // combinations.
 
   constexpr size_t kBufferSize = 256;

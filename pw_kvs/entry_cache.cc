@@ -152,10 +152,10 @@ EntryCache::iterator EntryCache::RemoveEntry(iterator& entry_it) {
   return {this, descriptors_.data() + index_to_remove};
 }
 
-// TODO: This method is the trigger of the O(valid_entries * all_entries) time
-// complexity for reading. At some cost to memory, this could be optimized by
-// using a hash table instead of scanning, but in practice this should be fine
-// for a small number of keys
+// TODO(hepler): This method is the trigger of the O(valid_entries *
+// all_entries) time complexity for reading. At some cost to memory, this could
+// be optimized by using a hash table instead of scanning, but in practice this
+// should be fine for a small number of keys
 Status EntryCache::AddNewOrUpdateExisting(const KeyDescriptor& descriptor,
                                           Address address,
                                           size_t sector_size_bytes) const {

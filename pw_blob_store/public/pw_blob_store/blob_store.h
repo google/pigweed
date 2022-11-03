@@ -559,7 +559,7 @@ class BlobStore {
   //
   // Internal state for Blob store
   //
-  // TODO: Consolidate blob state to a single struct
+  // TODO(davidrogers): Consolidate blob state to a single struct
 
   // Initialization has been done.
   bool initialized_;

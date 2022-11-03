@@ -21,8 +21,8 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-# TODO: Figure out why sharing deps doesn't work. Switching the hardcoded deps
-# to this shared variable breaks with a confusing error message;
+# TODO(keir): Figure out why sharing deps doesn't work. Switching the hardcoded
+# deps to this shared variable breaks with a confusing error message;
 #
 #   ERROR: /Users/keir/wrk/pigweed/pw_checksum/size_report/BUILD.bazel:46:13:
 #     Label '//pw_assert:pw_assert' is duplicated in the 'deps'

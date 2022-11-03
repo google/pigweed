@@ -151,7 +151,7 @@ Status BundledUpdateService::SetTransferred(const pw_protobuf_Empty&,
   return OkStatus();
 }
 
-// TODO: Check for "ABORTING" state and bail if it's set.
+// TODO(keir): Check for "ABORTING" state and bail if it's set.
 void BundledUpdateService::DoVerify() {
   std::lock_guard guard(mutex_);
   const BundledUpdateState state = status_.acquire()->state;
@@ -216,7 +216,7 @@ Status BundledUpdateService::Verify(const pw_protobuf_Empty&,
     return OkStatus();
   }
 
-  // TODO: Remove the transferring permitted state here ASAP.
+  // TODO(keir): Remove the transferring permitted state here ASAP.
   // Ensure we're in the right state.
   if ((state != pw_software_update_BundledUpdateState_Enum_TRANSFERRING) &&
       (state != pw_software_update_BundledUpdateState_Enum_TRANSFERRED)) {
@@ -227,7 +227,7 @@ Status BundledUpdateService::Verify(const pw_protobuf_Empty&,
     return Status::FailedPrecondition();
   }
 
-  // TODO: We should probably make this mode idempotent.
+  // TODO(keir): We should probably make this mode idempotent.
   // Already doing what was asked? Bail.
   if (work_enqueued_) {
     PW_LOG_DEBUG("Verification is already active");
@@ -281,7 +281,7 @@ Status BundledUpdateService::Apply(const pw_protobuf_Empty&,
     return Status::FailedPrecondition();
   }
 
-  // TODO: We should probably make these all idempotent properly.
+  // TODO(keir): We should probably make these all idempotent properly.
   if (work_enqueued_) {
     PW_LOG_DEBUG("Apply is already active");
     return OkStatus();
@@ -433,7 +433,8 @@ Status BundledUpdateService::Abort(const pw_protobuf_Empty&,
               "Tried to abort when already INACTIVE or FINISHED");
     return Status::FailedPrecondition();
   }
-  // TODO: Switch abort to async; this state change isn't externally visible.
+  // TODO(keir): Switch abort to async; this state change isn't externally
+  // visible.
   status_.acquire()->state =
       pw_software_update_BundledUpdateState_Enum_ABORTING;
 
@@ -468,7 +469,7 @@ Status BundledUpdateService::Reset(const pw_protobuf_Empty&,
 
   // Reset the bundle.
   if (bundle_open_) {
-    // TODO: Revisit whether this is recoverable; maybe eliminate CHECK.
+    // TODO(keir): Revisit whether this is recoverable; maybe eliminate CHECK.
     PW_CHECK_OK(bundle_.Close());
     bundle_open_ = false;
   }
@@ -523,7 +524,7 @@ void BundledUpdateService::Finish(
 
   // Close out any open bundles.
   if (bundle_open_) {
-    // TODO: Revisit this check; may be able to recover.
+    // TODO(keir): Revisit this check; may be able to recover.
     PW_CHECK_OK(bundle_.Close());
     bundle_open_ = false;
   }

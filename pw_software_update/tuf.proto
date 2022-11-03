@@ -181,8 +181,8 @@ message TargetsMetadata {
   // the file lives relative to the base directory of the repository, e.g.
   // "path/to/amber_tools/0".
 
-  // TODO: When it is time to support delegation, add delegation information
-  // here.
+  // TODO(davidrogers): When it is time to support delegation, add delegation
+  // information here.
 
   // This is NOT a part of the TUF Specification.
   reserved 9 to 31;  // Reserved for TUF Specification changes.

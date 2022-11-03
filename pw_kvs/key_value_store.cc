@@ -79,7 +79,8 @@ Status KeyValueStore::Init() {
 
   const size_t sector_size_bytes = partition_.sector_size_bytes();
 
-  // TODO: investigate doing this as a static assert/compile-time check.
+  // TODO(davidrogers): investigate doing this as a static assert/compile-time
+  // check.
   if (sector_size_bytes > SectorDescriptor::max_sector_size()) {
     ERR("KVS init failed: sector_size_bytes (=%u) is greater than maximum "
         "allowed sector size (=%u)",
@@ -462,7 +463,7 @@ Status KeyValueStore::PutBytes(Key key, span<const byte> value) {
   Status status = FindEntry(key, &metadata);
 
   if (status.ok()) {
-    // TODO: figure out logging how to support multiple addresses.
+    // TODO(davidrogers): figure out logging how to support multiple addresses.
     DBG("Overwriting entry for key 0x%08x in %u sectors including %u",
         unsigned(metadata.hash()),
         unsigned(metadata.addresses().size()),
@@ -483,7 +484,7 @@ Status KeyValueStore::Delete(Key key) {
   EntryMetadata metadata;
   PW_TRY(FindExisting(key, &metadata));
 
-  // TODO: figure out logging how to support multiple addresses.
+  // TODO(davidrogers): figure out logging how to support multiple addresses.
   DBG("Writing tombstone for key 0x%08x in %u sectors including %u",
       unsigned(metadata.hash()),
       unsigned(metadata.addresses().size()),
@@ -876,7 +877,8 @@ StatusWithSize KeyValueStore::CopyEntryToSector(Entry& entry,
     PW_TRY_WITH_SIZE(MarkSectorCorruptIfNotOk(
         Entry::Read(partition_, new_address, formats_, &new_entry),
         new_sector));
-    // TODO: add test that catches doing the verify on the old entry.
+    // TODO(davidrogers): add test that catches doing the verify on the old
+    // entry.
     PW_TRY_WITH_SIZE(MarkSectorCorruptIfNotOk(new_entry.VerifyChecksumInFlash(),
                                               new_sector));
   }
@@ -950,7 +952,7 @@ Status KeyValueStore::FullMaintenanceHelper(MaintenanceType maintenance_type) {
   bool force_gc = heavy || over_usage_threshold || (update_status.size() > 0);
 
   auto do_garbage_collect_pass = [&]() {
-    // TODO: look in to making an iterator method for cycling through
+    // TODO(drempel): look in to making an iterator method for cycling through
     // sectors starting from last_new_sector_.
     Status gc_status;
     for (size_t j = 0; j < sectors_.size(); j++) {
@@ -1355,7 +1357,7 @@ void KeyValueStore::LogDebugInfo() const {
   }
   DBG(" ");
 
-  // TODO: This should stop logging after some threshold.
+  // TODO(keir): This should stop logging after some threshold.
   // size_t dumped_bytes = 0;
   DBG("Sector raw data:");
   for (size_t sector_id = 0; sector_id < sectors_.size(); ++sector_id) {
@@ -1380,7 +1382,7 @@ void KeyValueStore::LogDebugInfo() const {
           static_cast<unsigned int>(raw_sector_data[i + 6]),
           static_cast<unsigned int>(raw_sector_data[i + 7]));
 
-      // TODO: Fix exit condition.
+      // TODO(keir): Fix exit condition.
       if (i > 128) {
         break;
       }

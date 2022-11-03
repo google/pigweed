@@ -19,7 +19,7 @@ clang-tidy:
   - add option `--source-exclude` to exclude matching sources from the
     clang-tidy analysis.
   - inputs the full compile command, with the cc binary name
-  - TODO: infer platform options from the full compile command
+  - TODO(henrichataing): infer platform options from the full compile command
 """
 
 import argparse

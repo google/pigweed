@@ -88,7 +88,7 @@ class FreeList {
   friend class FreeListBuffer;
 
   struct FreeListNode {
-    // TODO: Double-link this? It'll make removal easier/quicker.
+    // TODO(jgarside): Double-link this? It'll make removal easier/quicker.
     FreeListNode* next;
     size_t size;
   };

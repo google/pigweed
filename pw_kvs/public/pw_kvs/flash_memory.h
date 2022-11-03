@@ -280,7 +280,7 @@ class FlashPartition {
   // TIMEOUT - on timeout.
   // INVALID_ARGUMENT - address or length is invalid.
   // UNKNOWN - HAL error
-  // TODO: Result<bool>
+  // TODO(hepler): Result<bool>
   virtual Status IsRegionErased(Address source_flash_address,
                                 size_t length,
                                 bool* is_erased);

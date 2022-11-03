@@ -121,7 +121,7 @@ void ComparePathToEntry(ConstByteSpan serialized_path,
 
       default:
         // unexpected result.
-        // TODO something here.
+        // TODO(amontanez) something here.
         break;
     }
   }

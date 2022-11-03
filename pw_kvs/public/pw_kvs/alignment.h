@@ -118,8 +118,8 @@ template <size_t kBufferSize>
 StatusWithSize AlignedWrite(Output& output,
                             size_t alignment_bytes,
                             span<const span<const std::byte>> data) {
-  // TODO: This should convert to PW_CHECK once that is available for use in
-  // host tests.
+  // TODO(davidrogers): This should convert to PW_CHECK once that is available
+  // for use in host tests.
   if (alignment_bytes > kBufferSize) {
     return StatusWithSize::Internal();
   }

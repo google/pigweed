@@ -136,8 +136,9 @@ message StartRequest {
 
 // TODO(b/235273688): Add documentation and details of the API contract.
 service BundledUpdate {
-  // TODO: Offer GetCurrentManifest & GetStagedManifest() methods that leverage
-  // pw_transfer to upload the manifest off the device, to enable host logic.
+  // TODO(keir): Offer GetCurrentManifest & GetStagedManifest() methods that
+  // leverage pw_transfer to upload the manifest off the device, to enable host
+  // logic.
 
   // Get current status of software update.
   rpc GetStatus(pw.protobuf.Empty) returns (BundledUpdateStatus);

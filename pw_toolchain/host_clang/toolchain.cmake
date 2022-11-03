@@ -62,7 +62,7 @@ pw_set_backend(pw_thread.yield pw_thread_stl.yield)
 pw_set_backend(pw_thread.sleep pw_thread_stl.sleep)
 pw_set_backend(pw_thread.thread pw_thread_stl.thread)
 
-# TODO: Migrate this to match GN's tokenized trace setup.
+# TODO(ewout): Migrate this to match GN's tokenized trace setup.
 pw_set_backend(pw_trace pw_trace.null)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")

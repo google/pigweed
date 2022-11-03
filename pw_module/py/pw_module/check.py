@@ -178,8 +178,8 @@ def check_has_rst_docs(directory):
 @checker('PWCK006', 'If C++, have <mod>/public/<mod>/*.h or '
          '<mod>/public_override/*.h')
 def check_has_public_or_override_headers(directory):
-    # TODO: Should likely have a decorator to check for C++ in a checker, or
-    # other more useful and cachable mechanisms.
+    # TODO(keir): Should likely have a decorator to check for C++ in a checker,
+    # or other more useful and cachable mechanisms.
     if (not glob.glob(f'{directory}/**/*.cc', recursive=True)
             and not glob.glob(f'{directory}/**/*.h', recursive=True)):
         # No C++ files.

@@ -206,7 +206,7 @@ TEST(FlashPartitionTest, AlignmentCheck) {
 
 #define TESTING_CHECK_FAILURES_IS_SUPPORTED 0
 #if TESTING_CHECK_FAILURES_IS_SUPPORTED
-// TODO: Ensure that this test triggers an assert.
+// TODO(davidrogers): Ensure that this test triggers an assert.
 TEST(FlashPartitionTest, BadWriteAddressAlignment) {
   FlashPartition& test_partition = FlashTestPartition();
 
@@ -219,7 +219,7 @@ TEST(FlashPartitionTest, BadWriteAddressAlignment) {
   test_partition.Write(1, source_data);
 }
 
-// TODO: Ensure that this test triggers an assert.
+// TODO(davidrogers): Ensure that this test triggers an assert.
 TEST(FlashPartitionTest, BadWriteSizeAlignment) {
   FlashPartition& test_partition = FlashTestPartition();
 
@@ -232,7 +232,7 @@ TEST(FlashPartitionTest, BadWriteSizeAlignment) {
   test_partition.Write(0, source_data);
 }
 
-// TODO: Ensure that this test triggers an assert.
+// TODO(davidrogers): Ensure that this test triggers an assert.
 TEST(FlashPartitionTest, BadEraseAddressAlignment) {
   FlashPartition& test_partition = FlashTestPartition();
 

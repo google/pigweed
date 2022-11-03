@@ -140,7 +140,7 @@ PLUGIN_INFO = {
         "compiler": nanopb_compile,
         "deps": ["@com_github_nanopb_nanopb//:nanopb"],
         "has_srcs": True,
-        # TODO: Find a way to get Nanopb to generate nested structs.
+        # TODO(tpudlik): Find a way to get Nanopb to generate nested structs.
         # Otherwise add the manual tag to the resulting library,
         # preventing it from being built unless directly depended on.
         # e.g. The 'Pigweed' message in

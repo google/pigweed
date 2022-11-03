@@ -24,7 +24,8 @@ namespace pw::kvs::internal {
 namespace {
 
 // Returns true if the container conatins the value.
-// TODO: At some point move this to pw_containers, along with adding tests.
+// TODO(hepler): At some point move this to pw_containers, along with adding
+// tests.
 template <typename Container, typename T>
 bool Contains(const Container& container, const T& value) {
   return std::find(std::begin(container), std::end(container), value) !=
@@ -162,7 +163,7 @@ SectorDescriptor& Sectors::WearLeveledSectorFromIndex(size_t idx) const {
   return descriptors_[(Index(last_new_) + 1 + idx) % descriptors_.size()];
 }
 
-// TODO: Consider breaking this function into smaller sub-chunks.
+// TODO(hepler): Consider breaking this function into smaller sub-chunks.
 SectorDescriptor* Sectors::FindSectorToGarbageCollect(
     span<const Address> reserved_addresses) const {
   const size_t sector_size_bytes = partition_.sector_size_bytes();

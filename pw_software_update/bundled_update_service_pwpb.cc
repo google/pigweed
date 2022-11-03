@@ -141,7 +141,7 @@ Status BundledUpdateService::SetTransferred(
   return OkStatus();
 }
 
-// TODO: Check for "ABORTING" state and bail if it's set.
+// TODO(elipsitz): Check for "ABORTING" state and bail if it's set.
 void BundledUpdateService::DoVerify() {
   std::lock_guard guard(mutex_);
   const BundledUpdateState::Enum state = status_.acquire()->state;
@@ -204,7 +204,7 @@ Status BundledUpdateService::Verify(const pw::protobuf::Empty::Message&,
     return OkStatus();
   }
 
-  // TODO: Remove the transferring permitted state here ASAP.
+  // TODO(elipsitz): Remove the transferring permitted state here ASAP.
   // Ensure we're in the right state.
   if ((state != BundledUpdateState::Enum::kTransferring) &&
       (state != BundledUpdateState::Enum::kTransferred)) {
@@ -215,7 +215,7 @@ Status BundledUpdateService::Verify(const pw::protobuf::Empty::Message&,
     return Status::FailedPrecondition();
   }
 
-  // TODO: We should probably make this mode idempotent.
+  // TODO(elipsitz): We should probably make this mode idempotent.
   // Already doing what was asked? Bail.
   if (work_enqueued_) {
     PW_LOG_DEBUG("Verification is already active");
@@ -269,7 +269,7 @@ Status BundledUpdateService::Apply(const pw::protobuf::Empty::Message&,
     return Status::FailedPrecondition();
   }
 
-  // TODO: We should probably make these all idempotent properly.
+  // TODO(elipsitz): We should probably make these all idempotent properly.
   if (work_enqueued_) {
     PW_LOG_DEBUG("Apply is already active");
     return OkStatus();
@@ -419,7 +419,8 @@ Status BundledUpdateService::Abort(const pw::protobuf::Empty::Message&,
               "Tried to abort when already INACTIVE or FINISHED");
     return Status::FailedPrecondition();
   }
-  // TODO: Switch abort to async; this state change isn't externally visible.
+  // TODO(elipsitz): Switch abort to async; this state change isn't externally
+  // visible.
   status_.acquire()->state = BundledUpdateState::Enum::kAborting;
 
   SET_ERROR(BundledUpdateResult::Enum::kAborted, "Update abort requested");
@@ -453,7 +454,8 @@ Status BundledUpdateService::Reset(const pw::protobuf::Empty::Message&,
 
   // Reset the bundle.
   if (bundle_open_) {
-    // TODO: Revisit whether this is recoverable; maybe eliminate CHECK.
+    // TODO(elipsitz): Revisit whether this is recoverable; maybe eliminate
+    // CHECK.
     PW_CHECK_OK(bundle_.Close());
     bundle_open_ = false;
   }
@@ -505,7 +507,7 @@ void BundledUpdateService::Finish(BundledUpdateResult::Enum result) {
 
   // Close out any open bundles.
   if (bundle_open_) {
-    // TODO: Revisit this check; may be able to recover.
+    // TODO(elipsitz): Revisit this check; may be able to recover.
     PW_CHECK_OK(bundle_.Close());
     bundle_open_ = false;
   }

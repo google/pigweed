@@ -29,7 +29,7 @@
 
 namespace pw::metric {
 
-// TODO: Make this follow the metric_service.options configuration.
+// TODO(amontanez): Make this follow the metric_service.options configuration.
 constexpr size_t kMaxNumPackedEntries = 3;
 
 namespace {
@@ -93,7 +93,7 @@ class PwpbMetricWriter : public virtual internal::MetricWriter {
 void MetricService::Get(ConstByteSpan /*request*/,
                         rpc::RawServerWriter& raw_response) {
   // For now, ignore the request and just stream all the metrics back.
-  // TODO: Make this follow the metric_service.options configuration.
+  // TODO(amontanez): Make this follow the metric_service.options configuration.
   constexpr size_t kSizeOfOneMetric =
       pw::metric::proto::MetricResponse::kMaxEncodedSizeBytes +
       pw::metric::proto::Metric::kMaxEncodedSizeBytes;

@@ -79,7 +79,7 @@ TEST_F(SectorsTest, NextWritableAddress_PartiallyWrittenSector) {
   EXPECT_EQ(123u, sectors_.NextWritableAddress(*sectors_.begin()));
 }
 
-// TODO: Add tests for FindSpace, FindSpaceDuringGarbageCollection, and
+// TODO(hepler): Add tests for FindSpace, FindSpaceDuringGarbageCollection, and
 // FindSectorToGarbageCollect.
 
 }  // namespace

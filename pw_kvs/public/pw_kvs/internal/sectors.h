@@ -50,7 +50,7 @@ class SectorDescriptor {
   // Removes valid bytes without updating the writable bytes.
   void RemoveValidBytes(uint16_t bytes) {
     if (bytes > valid_bytes()) {
-      // TODO: use a DCHECK instead -- this is a programming error
+      // TODO(hepler): use a DCHECK instead -- this is a programming error
       valid_bytes_ = 0;
     } else {
       valid_bytes_ -= bytes;
@@ -60,7 +60,7 @@ class SectorDescriptor {
   // Removes writable bytes without updating the valid bytes.
   void RemoveWritableBytes(uint16_t bytes) {
     if (bytes > writable_bytes()) {
-      // TODO: use a DCHECK instead -- this is a programming error
+      // TODO(hepler): use a DCHECK instead -- this is a programming error
       tail_free_bytes_ = 0;
     } else {
       tail_free_bytes_ -= bytes;
@@ -146,7 +146,7 @@ class Sectors {
   }
 
   SectorDescriptor& FromAddress(Address address) const {
-    // TODO: Add boundary checking once asserts are supported.
+    // TODO(hepler): Add boundary checking once asserts are supported.
     // DCHECK_LT(index, sector_map_size_);`
     return descriptors_[address / partition_.sector_size_bytes()];
   }

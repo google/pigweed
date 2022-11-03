@@ -51,7 +51,7 @@ class EntryMetadata {
 
   // True if the KeyDesctiptor's transaction ID is newer than the specified ID.
   bool IsNewerThan(uint32_t other_transaction_id) const {
-    // TODO: Consider handling rollover.
+    // TODO(hepler): Consider handling rollover.
     return transaction_id() > other_transaction_id;
   }
 

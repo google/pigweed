@@ -190,8 +190,8 @@ pw_cc_library(
         ":thread_iteration",
         ":thread_snapshot_service_cc.pwpb",
         ":thread_snapshot_service_cc.raw_rpc",
-        # TODO: This should depend on FreeRTOS but our third parties currently
-        # do not have Bazel support.
+        # TODO(amontanez): This should depend on FreeRTOS but our third parties
+        # currently do not have Bazel support.
     ],
 )
 

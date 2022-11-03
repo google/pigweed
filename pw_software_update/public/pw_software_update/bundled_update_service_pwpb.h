@@ -64,7 +64,7 @@ class BundledUpdateService
                BundledUpdateStatus::Message& response);
 
   // Currently sync, should be async.
-  // TODO: Make this async to support aborting verify/apply.
+  // TODO(elipsitz): Make this async to support aborting verify/apply.
   Status Abort(const pw::protobuf::Empty::Message& request,
                BundledUpdateStatus::Message& response);
 
@@ -83,9 +83,8 @@ class BundledUpdateService
   // TODO(davidrogers) Add a MaybeFinishApply() method that is called after
   // reboot to finish any need apply and verify work.
 
-  // TODO:
-  // VerifyProgress - to update % complete.
-  // ApplyProgress - to update % complete.
+  // TODO(elipsitz): VerifyProgress - to update % complete.
+  // TODO(elipsitz): ApplyProgress - to update % complete.
 
  private:
   // Top-level lock for OTA state coherency. May be held for extended periods.

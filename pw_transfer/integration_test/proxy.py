@@ -338,7 +338,7 @@ async def _handle_connection(server_port: int, config: config_pb2.ProxyConfig,
 
     # Open a new connection to the server for each client connection.
     #
-    # TODO: catch exception and close client writer
+    # TODO(konkers): catch exception and close client writer
     server_reader, server_writer = await asyncio.open_connection(
         'localhost', server_port)
     _LOG.info(f'New connection opened to server')

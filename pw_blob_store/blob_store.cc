@@ -433,7 +433,7 @@ Result<ConstByteSpan> BlobStore::GetMemoryMappedBlob() const {
 }
 
 size_t BlobStore::ReadableDataBytes() const {
-  // TODO: clean up state related to readable bytes.
+  // TODO(davidrogers): clean up state related to readable bytes.
   return flash_address_;
 }
 
