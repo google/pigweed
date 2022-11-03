@@ -107,6 +107,25 @@ pw_cc_test(
     ],
 )
 
+pw_cc_test(
+    name = "trace_zero_facade_test",
+    srcs = [
+        "pw_trace_zero/public_overrides/pw_trace_backend/trace_backend.h",
+        "trace_backend_compile_test.cc",
+        "trace_backend_compile_test_c.c",
+    ],
+    includes = [
+        "pw_trace_zero",
+        "pw_trace_zero/public_overrides",
+    ],
+    deps = [
+        ":facade",
+        ":pw_trace",
+        "//pw_preprocessor",
+        "//pw_unit_test",
+    ],
+)
+
 pw_cc_library(
     name = "trace_null_test",
     srcs = [
@@ -127,7 +146,10 @@ pw_cc_library(
     srcs = ["example/sample_app.cc"],
     hdrs = ["example/public/pw_trace/example/sample_app.h"],
     includes = ["example/public"],
-    deps = ["//pw_trace"],
+    deps = [
+        "//pw_ring_buffer",
+        "//pw_trace",
+    ],
 )
 
 pw_cc_binary(

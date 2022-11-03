@@ -49,9 +49,12 @@
 
 // Default: behaviour for unimplemented trace event types
 #ifndef _PW_TRACE_DISABLED
-#define _PW_TRACE_DISABLED(...) \
-  do {                          \
-  } while (0)
+static inline void _pw_trace_disabled(int x, ...) { (void)x; }
+// `_PW_TRACE_DISABLED` must be called with at least one arg.
+#define _PW_TRACE_DISABLED(...)           \
+  do {                                    \
+    _pw_trace_disabled(0, ##__VA_ARGS__); \
+  } while (false)
 #endif  // _PW_TRACE_DISABLED
 
 // Default: label used for PW_TRACE_FUNCTION trace events
@@ -270,6 +273,11 @@
   _PW_TRACE_SCOPE_ARGS2(PW_TRACE_FLAGS, PW_TRACE_FUNCTION_LABEL)
 #define _PW_TRACE_FUNCTION_FLAGS_ARGS1(flag) \
   _PW_TRACE_SCOPE_ARGS2(flag, PW_TRACE_FUNCTION_LABEL)
+#else  // PW_TRACE_TYPE_DURATION_GROUP_END
+#define _PW_TRACE_SCOPE_ARGS2(...) _PW_TRACE_DISABLED(__VA_ARGS__)
+#define _PW_TRACE_FUNCTION_ARGS0()  // No need to/can't call _PW_TRACE_DISABLED
+                                    // with zero args.
+#define _PW_TRACE_FUNCTION_FLAGS_ARGS1(...) _PW_TRACE_DISABLED(__VA_ARGS__)
 #endif  // defined(PW_TRACE_TYPE_DURATION_START) &&
         // defined(PW_TRACE_TYPE_DURATION_END)
 
@@ -296,6 +304,10 @@
   _PW_TRACE_SCOPE_ARGS3(PW_TRACE_FLAGS, PW_TRACE_FUNCTION_LABEL, group)
 #define _PW_TRACE_FUNCTION_FLAGS_ARGS2(flag, group) \
   _PW_TRACE_SCOPE_ARGS3(flag, PW_TRACE_FUNCTION_LABEL, group)
+#else  // PW_TRACE_TYPE_DURATION_GROUP_END
+#define _PW_TRACE_SCOPE_ARGS3(...) _PW_TRACE_DISABLED(__VA_ARGS__)
+#define _PW_TRACE_FUNCTION_ARGS1(...) _PW_TRACE_DISABLED(__VA_ARGS__)
+#define _PW_TRACE_FUNCTION_FLAGS_ARGS2(...) _PW_TRACE_DISABLED(__VA_ARGS__)
 #endif  // defined(PW_TRACE_TYPE_DURATION_GROUP_START) &&
         // defined(PW_TRACE_TYPE_DURATION_GROUP_END)
 
@@ -322,6 +334,10 @@
       PW_TRACE_FLAGS, PW_TRACE_FUNCTION_LABEL, group, trace_id)
 #define _PW_TRACE_FUNCTION_FLAGS_ARGS3(flag, group, trace_id) \
   _PW_TRACE_SCOPE_ARGS4(flag, PW_TRACE_FUNCTION_LABEL, group, trace_id)
+#else  // PW_TRACE_TYPE_DURATION_GROUP_END
+#define _PW_TRACE_SCOPE_ARGS4(...) _PW_TRACE_DISABLED(__VA_ARGS__)
+#define _PW_TRACE_FUNCTION_ARGS2(...) _PW_TRACE_DISABLED(__VA_ARGS__)
+#define _PW_TRACE_FUNCTION_FLAGS_ARGS3(...) _PW_TRACE_DISABLED(__VA_ARGS__)
 #endif  // defined(PW_TRACE_TYPE_ASYNC_START) &&
         // defined(PW_TRACE_TYPE_ASYNC_END)
 

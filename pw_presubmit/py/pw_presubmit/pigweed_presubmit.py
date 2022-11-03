@@ -468,7 +468,10 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     '-//pw_tls_client_mbedtls/...:all',
     '-//pw_tokenizer:tokenizer_proto_py_pb2',  # TODO(b/241456982) Fix
     '-//pw_tokenizer:tokenizer_proto_py_pb2_genproto',
-    '-//pw_trace/...:all',
+    '-//pw_trace:pw_trace_sample_app',
+    '-//pw_trace:trace_backend_compile_test',
+    '-//pw_trace:trace_backend_compile_test_c',
+    '-//pw_trace:trace_example_basic',
     '-//pw_trace_tokenized/...:all',
     '-//pw_work_queue/...:all',
     '-//targets/arduino/...:all',

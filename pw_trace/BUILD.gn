@@ -16,6 +16,7 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/facade.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_unit_test/facade_test.gni")
 import("$dir_pw_unit_test/test.gni")
 import("backend.gni")
 
@@ -53,6 +54,7 @@ pw_test_group("tests") {
   tests = [
     ":trace_facade_test",
     ":trace_null_test",
+    ":trace_zero_backend_test",
   ]
   if (pw_trace_BACKEND != "") {
     tests += [ ":trace_backend_compile_test" ]
@@ -81,6 +83,32 @@ pw_test("trace_backend_compile_test") {
     ":pw_trace",
     pw_trace_BACKEND,
   ]
+
+  sources = [
+    "trace_backend_compile_test.cc",
+    "trace_backend_compile_test_c.c",
+  ]
+}
+
+config("zero_config") {
+  include_dirs = [ "pw_trace_zero/public_overrides" ]
+  visibility = [ ":*" ]
+}
+
+pw_source_set("zero") {
+  public_configs = [
+    ":default_config",
+    ":zero_config",
+  ]
+  public = [ "pw_trace_zero/public_overrides/pw_trace_backend/trace_backend.h" ]
+}
+
+pw_facade_test("trace_zero_backend_test") {
+  build_args = {
+    pw_trace_BACKEND = ":zero"
+  }
+
+  deps = [ ":pw_trace" ]
 
   sources = [
     "trace_backend_compile_test.cc",
