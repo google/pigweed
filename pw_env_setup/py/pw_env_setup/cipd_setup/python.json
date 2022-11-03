@@ -1,7 +1,6 @@
 {
   "packages": [
     {
-      "_comment": "When bumping the minor version (e.g., to 3.9.x) also update env_setup/virtualenv/init.py to check for the new version.",
       "path": "infra/3pp/tools/cpython3/${platform}",
       "platforms": [
         "linux-amd64",
@@ -11,7 +10,7 @@
         "windows-amd64"
       ],
       "tags": [
-        "version:2@3.9.5.chromium.19"
+        "version:2@3.10.8.chromium.23"
       ],
       "version_file": ".versions/cpython3.cipd_version"
     }
