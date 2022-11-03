@@ -23,40 +23,80 @@
 #endif  // __cplusplus
 
 void BasicTraceTestPlainC(void) {
-  PW_TRACE_INSTANT("Test");
-
-  PW_TRACE_START("Test");
-  PW_TRACE_END("Test");
-
-  PW_TRACE_START("Parent", "group");
-  PW_TRACE_START("Child", "group");
-  PW_TRACE_END("Child", "group");
-  PW_TRACE_INSTANT("Test", "group");
-  PW_TRACE_START("Other Child", "group");
-  PW_TRACE_END("Other Child", "group");
-  PW_TRACE_END("Parent", "group");
-
-  PW_TRACE_START("label for start", "group", 1);
-  PW_TRACE_INSTANT("label for step", "group", 1);
-  PW_TRACE_END("label for end", "group", 1);
-
+  const uint32_t trace_id = 1;
   const char kSomeData[] = "SOME DATA";
+
+  PW_TRACE_INSTANT("Test");
+  PW_TRACE_INSTANT("Test", "Group");
+  PW_TRACE_INSTANT("Test", "Group", trace_id);
+
+  PW_TRACE_INSTANT_FLAG(PW_TRACE_FLAGS, "Test");
+  PW_TRACE_INSTANT_FLAG(PW_TRACE_FLAGS, "Test", "Group");
+  PW_TRACE_INSTANT_FLAG(PW_TRACE_FLAGS, "Test", "Group", trace_id);
+
   PW_TRACE_INSTANT_DATA("Test", "s", kSomeData, sizeof(kSomeData));
-
-  PW_TRACE_START_DATA("Parent", "group", "s", kSomeData, sizeof(kSomeData));
-  PW_TRACE_START_DATA("Child", "group", "s", kSomeData, sizeof(kSomeData));
-  PW_TRACE_END_DATA("child", "group", "s", kSomeData, sizeof(kSomeData));
-  PW_TRACE_INSTANT_DATA("Test", "group", "s", kSomeData, sizeof(kSomeData));
-  PW_TRACE_START_DATA(
-      "Other Child", "group", "s", kSomeData, sizeof(kSomeData));
-  PW_TRACE_END_DATA("Other Child", "group", "s", kSomeData, sizeof(kSomeData));
-  PW_TRACE_END_DATA("Parent", "group", "s", kSomeData, sizeof(kSomeData));
-
-  uint32_t trace_id = 1;
-  PW_TRACE_START_DATA(
-      "label for start", "group", trace_id, "s", kSomeData, sizeof(kSomeData));
+  PW_TRACE_INSTANT_DATA("Test", "Group", "s", kSomeData, sizeof(kSomeData));
   PW_TRACE_INSTANT_DATA(
-      "label for step", "group", trace_id, "s", kSomeData, sizeof(kSomeData));
+      "Test", "Group", trace_id, "s", kSomeData, sizeof(kSomeData));
+
+  PW_TRACE_INSTANT_DATA_FLAG(
+      PW_TRACE_FLAGS, "Test", "s", kSomeData, sizeof(kSomeData));
+  PW_TRACE_INSTANT_DATA_FLAG(
+      PW_TRACE_FLAGS, "Test", "Group", "s", kSomeData, sizeof(kSomeData));
+  PW_TRACE_INSTANT_DATA_FLAG(PW_TRACE_FLAGS,
+                             "Test",
+                             "Group",
+                             trace_id,
+                             "s",
+                             kSomeData,
+                             sizeof(kSomeData));
+  PW_TRACE_START("Test");
+  PW_TRACE_START("Test", "Group");
+  PW_TRACE_START("Test", "Group", trace_id);
+
+  PW_TRACE_START_FLAG(PW_TRACE_FLAGS, "Test");
+  PW_TRACE_START_FLAG(PW_TRACE_FLAGS, "Test", "Group");
+  PW_TRACE_START_FLAG(PW_TRACE_FLAGS, "Test", "Group", trace_id);
+
+  PW_TRACE_START_DATA("Test", "s", kSomeData, sizeof(kSomeData));
+  PW_TRACE_START_DATA("Test", "Group", "s", kSomeData, sizeof(kSomeData));
+  PW_TRACE_START_DATA(
+      "Test", "Group", trace_id, "s", kSomeData, sizeof(kSomeData));
+
+  PW_TRACE_START_DATA_FLAG(
+      PW_TRACE_FLAGS, "Test", "s", kSomeData, sizeof(kSomeData));
+  PW_TRACE_START_DATA_FLAG(
+      PW_TRACE_FLAGS, "Test", "Group", "s", kSomeData, sizeof(kSomeData));
+  PW_TRACE_START_DATA_FLAG(PW_TRACE_FLAGS,
+                           "Test",
+                           "Group",
+                           trace_id,
+                           "s",
+                           kSomeData,
+                           sizeof(kSomeData));
+
+  PW_TRACE_END("Test");
+  PW_TRACE_END("Test", "Group");
+  PW_TRACE_END("Test", "Group", trace_id);
+
+  PW_TRACE_END_FLAG(PW_TRACE_FLAGS, "Test");
+  PW_TRACE_END_FLAG(PW_TRACE_FLAGS, "Test", "Group");
+  PW_TRACE_END_FLAG(PW_TRACE_FLAGS, "Test", "Group", trace_id);
+
+  PW_TRACE_END_DATA("Test", "s", kSomeData, sizeof(kSomeData));
+  PW_TRACE_END_DATA("Test", "Group", "s", kSomeData, sizeof(kSomeData));
   PW_TRACE_END_DATA(
-      "label for end", "group", trace_id, "s", kSomeData, sizeof(kSomeData));
+      "Test", "Group", trace_id, "s", kSomeData, sizeof(kSomeData));
+
+  PW_TRACE_END_DATA_FLAG(
+      PW_TRACE_FLAGS, "Test", "s", kSomeData, sizeof(kSomeData));
+  PW_TRACE_END_DATA_FLAG(
+      PW_TRACE_FLAGS, "Test", "Group", "s", kSomeData, sizeof(kSomeData));
+  PW_TRACE_END_DATA_FLAG(PW_TRACE_FLAGS,
+                         "Test",
+                         "Group",
+                         trace_id,
+                         "s",
+                         kSomeData,
+                         sizeof(kSomeData));
 }

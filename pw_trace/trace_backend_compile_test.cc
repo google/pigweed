@@ -22,76 +22,166 @@ namespace {
 
 void TraceFunction() { PW_TRACE_FUNCTION(); }
 void TraceFunctionGroup() { PW_TRACE_FUNCTION("FunctionGroup"); }
+void TraceFunctionGroupId() {
+  const uint32_t trace_id = 1;
+  PW_TRACE_FUNCTION("FunctionGroup", trace_id);
+}
+void TraceFunctionFlag() { PW_TRACE_FUNCTION_FLAG(PW_TRACE_FLAGS); }
+void TraceFunctionFlagGroup() {
+  PW_TRACE_FUNCTION_FLAG(PW_TRACE_FLAGS, "FunctionGroup");
+}
+void TraceFunctionFlagGroupId() {
+  const uint32_t trace_id = 1;
+  PW_TRACE_FUNCTION_FLAG(PW_TRACE_FLAGS, "FunctionGroup", trace_id);
+}
 
 const char kSomeData[] = "SOME DATA";
 
 }  // namespace
 
-TEST(BasicTrace, Instant) { PW_TRACE_INSTANT("Test"); }
-
-TEST(BasicTrace, InstantGroup) { PW_TRACE_INSTANT("Test", "group"); }
-
-TEST(BasicTrace, Duration) {
-  PW_TRACE_START("Test");
-  PW_TRACE_END("Test");
+TEST(BasicTrace, Instant) {
+  const uint32_t trace_id = 1;
+  PW_TRACE_INSTANT("Test");
+  PW_TRACE_INSTANT("Test", "Group");
+  PW_TRACE_INSTANT("Test", "Group", trace_id);
 }
 
-TEST(BasicTrace, DurationGroup) {
-  PW_TRACE_START("Parent", "group");
-  PW_TRACE_START("Child", "group");
-  PW_TRACE_END("child", "group");
-  PW_TRACE_START("Other Child", "group");
-  PW_TRACE_END("Other Child", "group");
-  PW_TRACE_END("Parent", "group");
+TEST(BasicTrace, InstantFlag) {
+  const uint32_t trace_id = 1;
+  PW_TRACE_INSTANT_FLAG(PW_TRACE_FLAGS, "Test");
+  PW_TRACE_INSTANT_FLAG(PW_TRACE_FLAGS, "Test", "Group");
+  PW_TRACE_INSTANT_FLAG(PW_TRACE_FLAGS, "Test", "Group", trace_id);
 }
-
-TEST(BasicTrace, Async) {
-  uint32_t trace_id = 1;
-  PW_TRACE_START("label for start", "group", trace_id);
-  PW_TRACE_INSTANT("label for step", "group", trace_id);
-  PW_TRACE_END("label for end", "group", trace_id);
-}
-
-TEST(BasicTrace, Scope) { PW_TRACE_SCOPE("scoped trace"); }
-
-TEST(BasicTrace, ScopeGroup) {
-  PW_TRACE_SCOPE("scoped group trace", "group");
-  { PW_TRACE_SCOPE("sub scoped group trace", "group"); }
-}
-
-TEST(BasicTrace, Function) { TraceFunction(); }
-
-TEST(BasicTrace, FunctionGroup) { TraceFunctionGroup(); }
 
 TEST(BasicTrace, InstantData) {
+  const uint32_t trace_id = 1;
   PW_TRACE_INSTANT_DATA("Test", "s", kSomeData, sizeof(kSomeData));
-}
-
-TEST(BasicTrace, InstantGroupData) {
   PW_TRACE_INSTANT_DATA("Test", "Group", "s", kSomeData, sizeof(kSomeData));
-}
-
-TEST(BasicTrace, DurationData) {
-  PW_TRACE_START_DATA("Test", "s", kSomeData, sizeof(kSomeData));
-  PW_TRACE_END_DATA("Test", "s", kSomeData, sizeof(kSomeData));
-}
-
-TEST(BasicTrace, DurationGroupData) {
-  PW_TRACE_START_DATA("Parent", "group", "s", kSomeData, sizeof(kSomeData));
-  PW_TRACE_START_DATA("Child", "group", "s", kSomeData, sizeof(kSomeData));
-  PW_TRACE_END_DATA("child", "group", "s", kSomeData, sizeof(kSomeData));
-  PW_TRACE_START_DATA(
-      "Other Child", "group", "s", kSomeData, sizeof(kSomeData));
-  PW_TRACE_END_DATA("Other Child", "group", "s", kSomeData, sizeof(kSomeData));
-  PW_TRACE_END_DATA("Parent", "group", "s", kSomeData, sizeof(kSomeData));
-}
-
-TEST(BasicTrace, AsyncData) {
-  uint32_t trace_id = 1;
-  PW_TRACE_START_DATA(
-      "label for start", "group", trace_id, "s", kSomeData, sizeof(kSomeData));
   PW_TRACE_INSTANT_DATA(
-      "label for step", "group", trace_id, "s", kSomeData, sizeof(kSomeData));
+      "Test", "Group", trace_id, "s", kSomeData, sizeof(kSomeData));
+}
+
+TEST(BasicTrace, InstantDataFlag) {
+  const uint32_t trace_id = 1;
+  PW_TRACE_INSTANT_DATA_FLAG(
+      PW_TRACE_FLAGS, "Test", "s", kSomeData, sizeof(kSomeData));
+  PW_TRACE_INSTANT_DATA_FLAG(
+      PW_TRACE_FLAGS, "Test", "Group", "s", kSomeData, sizeof(kSomeData));
+  PW_TRACE_INSTANT_DATA_FLAG(PW_TRACE_FLAGS,
+                             "Test",
+                             "Group",
+                             trace_id,
+                             "s",
+                             kSomeData,
+                             sizeof(kSomeData));
+}
+
+TEST(BasicTrace, Start) {
+  const uint32_t trace_id = 1;
+  PW_TRACE_START("Test");
+  PW_TRACE_START("Test", "Group");
+  PW_TRACE_START("Test", "Group", trace_id);
+}
+
+TEST(BasicTrace, StartFlag) {
+  const uint32_t trace_id = 1;
+  PW_TRACE_START_FLAG(PW_TRACE_FLAGS, "Test");
+  PW_TRACE_START_FLAG(PW_TRACE_FLAGS, "Test", "Group");
+  PW_TRACE_START_FLAG(PW_TRACE_FLAGS, "Test", "Group", trace_id);
+}
+
+TEST(BasicTrace, StartData) {
+  const uint32_t trace_id = 1;
+  PW_TRACE_START_DATA("Test", "s", kSomeData, sizeof(kSomeData));
+  PW_TRACE_START_DATA("Test", "Group", "s", kSomeData, sizeof(kSomeData));
+  PW_TRACE_START_DATA(
+      "Test", "Group", trace_id, "s", kSomeData, sizeof(kSomeData));
+}
+
+TEST(BasicTrace, StartDataFlag) {
+  const uint32_t trace_id = 1;
+  PW_TRACE_START_DATA_FLAG(
+      PW_TRACE_FLAGS, "Test", "s", kSomeData, sizeof(kSomeData));
+  PW_TRACE_START_DATA_FLAG(
+      PW_TRACE_FLAGS, "Test", "Group", "s", kSomeData, sizeof(kSomeData));
+  PW_TRACE_START_DATA_FLAG(PW_TRACE_FLAGS,
+                           "Test",
+                           "Group",
+                           trace_id,
+                           "s",
+                           kSomeData,
+                           sizeof(kSomeData));
+}
+
+TEST(BasicTrace, End) {
+  const uint32_t trace_id = 1;
+  PW_TRACE_END("Test");
+  PW_TRACE_END("Test", "Group");
+  PW_TRACE_END("Test", "Group", trace_id);
+}
+
+TEST(BasicTrace, EndFlag) {
+  const uint32_t trace_id = 1;
+  PW_TRACE_END_FLAG(PW_TRACE_FLAGS, "Test");
+  PW_TRACE_END_FLAG(PW_TRACE_FLAGS, "Test", "Group");
+  PW_TRACE_END_FLAG(PW_TRACE_FLAGS, "Test", "Group", trace_id);
+}
+
+TEST(BasicTrace, EndData) {
+  const uint32_t trace_id = 1;
+  PW_TRACE_END_DATA("Test", "s", kSomeData, sizeof(kSomeData));
+  PW_TRACE_END_DATA("Test", "Group", "s", kSomeData, sizeof(kSomeData));
   PW_TRACE_END_DATA(
-      "label for end", "group", trace_id, "s", kSomeData, sizeof(kSomeData));
+      "Test", "Group", trace_id, "s", kSomeData, sizeof(kSomeData));
+}
+
+TEST(BasicTrace, EndDataFlag) {
+  const uint32_t trace_id = 1;
+  PW_TRACE_END_DATA_FLAG(
+      PW_TRACE_FLAGS, "Test", "s", kSomeData, sizeof(kSomeData));
+  PW_TRACE_END_DATA_FLAG(
+      PW_TRACE_FLAGS, "Test", "Group", "s", kSomeData, sizeof(kSomeData));
+  PW_TRACE_END_DATA_FLAG(PW_TRACE_FLAGS,
+                         "Test",
+                         "Group",
+                         trace_id,
+                         "s",
+                         kSomeData,
+                         sizeof(kSomeData));
+}
+
+TEST(BasicTrace, Scope) {
+  const uint32_t trace_id = 1;
+  PW_TRACE_SCOPE("scoped trace");
+  PW_TRACE_SCOPE("scoped trace", "Group");
+  PW_TRACE_SCOPE("scoped trace", "Group", trace_id);
+  {
+    PW_TRACE_SCOPE("sub scoped trace");
+    PW_TRACE_SCOPE("sub scoped trace", "Group");
+    PW_TRACE_SCOPE("sub scoped trace", "Group", trace_id);
+  }
+}
+
+TEST(BasicTrace, ScopeFlag) {
+  const uint32_t trace_id = 1;
+  PW_TRACE_SCOPE_FLAG(PW_TRACE_FLAGS, "scoped trace");
+  PW_TRACE_SCOPE_FLAG(PW_TRACE_FLAGS, "scoped trace", "Group");
+  PW_TRACE_SCOPE_FLAG(PW_TRACE_FLAGS, "scoped trace", "Group", trace_id);
+  {
+    PW_TRACE_SCOPE_FLAG(PW_TRACE_FLAGS, "sub scoped trace");
+    PW_TRACE_SCOPE_FLAG(PW_TRACE_FLAGS, "sub scoped trace", "Group");
+    PW_TRACE_SCOPE_FLAG(PW_TRACE_FLAGS, "sub scoped trace", "Group", trace_id);
+  }
+}
+
+TEST(BasicTrace, Function) {
+  TraceFunction();
+  TraceFunctionGroup();
+  TraceFunctionGroupId();
+}
+
+TEST(BasicTrace, FunctionFlag) {
+  TraceFunctionFlag();
+  TraceFunctionFlagGroup();
+  TraceFunctionFlagGroupId();
 }
