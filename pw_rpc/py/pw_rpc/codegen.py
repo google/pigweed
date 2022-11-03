@@ -27,6 +27,7 @@ PLUGIN_VERSION = '0.3.0'
 
 RPC_NAMESPACE = '::pw::rpc'
 
+# todo-check: disable
 STUB_REQUEST_TODO = (
     '// TODO: Read the request as appropriate for your application')
 STUB_RESPONSE_TODO = (
@@ -40,6 +41,7 @@ STUB_READER_TODO = (
 STUB_READER_WRITER_TODO = (
     '// TODO: Set the client stream callback and send responses as '
     'appropriate for your application')
+# todo-check: enable
 
 
 def get_id(item: Union[ProtoService, ProtoServiceMethod]) -> str:

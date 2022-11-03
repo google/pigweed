@@ -909,7 +909,6 @@ _EXCLUDE_FROM_TODO_CHECK = (
     r'\bpw_package/py/pw_package/packages/chromium_verifier.py$',
     r'\bpw_protobuf/encoder.cc$',
     r'\bpw_rpc/docs.rst$',
-    r'\bpw_rpc/py/pw_rpc/codegen.py$',
     r'\bpw_software_update/bundled_update.proto$',
     r'\bpw_software_update/bundled_update_service.cc$',
     r'\bpw_software_update/bundled_update_service_pwpb.cc$',
