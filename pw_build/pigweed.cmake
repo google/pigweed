@@ -691,8 +691,6 @@ set(pw_unit_test_AUTOMATIC_RUNNER_ARGS "" CACHE STRING
 #   PRIVATE_LINK_OPTIONS - private target_link_options arguments
 #
 #  TODO(ewout, hepler): Deprecate the following legacy arguments
-#   DEPS - alias to PRIVATE_DEPS
-#   DEFINES - alias to PRIVATE_DEFINES
 #   GROUPS - groups to which to add this test; if none are specified, the test is
 #       added to the 'default' and 'all' groups
 #
@@ -703,7 +701,7 @@ function(pw_add_test NAME)
   set(multi_value_args SOURCES HEADERS PRIVATE_DEPS PRIVATE_INCLUDES
                        PRIVATE_DEFINES PRIVATE_COMPILE_OPTIONS
                        PRIVATE_LINK_OPTIONS
-                       DEPS DEFINES GROUPS)
+                       GROUPS)
   pw_parse_arguments_strict(
       pw_add_test "${num_positional_args}" "${option_args}" "${one_value_args}"
       "${multi_value_args}")
@@ -720,12 +718,10 @@ function(pw_add_test NAME)
     PRIVATE_DEPS
       pw_unit_test
       ${pw_unit_test_MAIN}
-      ${arg_DEPS}
       ${arg_PRIVATE_DEPS}
     PRIVATE_INCLUDES
       ${arg_PRIVATE_INCLUDES}
     PRIVATE_DEFINES
-      ${arg_DEFINES}
       ${arg_PRIVATE_DEFINES}
     PRIVATE_COMPILE_OPTIONS
       ${arg_PRIVATE_COMPILE_OPTIONS}
