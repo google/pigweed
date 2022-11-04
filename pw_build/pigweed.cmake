@@ -174,12 +174,17 @@ function(pw_auto_add_module_tests MODULE)
       SOURCES
         "${test}"
         ${c_test}
-      DEPS
-        "$<TARGET_NAME_IF_EXISTS:${MODULE}>"
+      PRIVATE_DEPS
         ${arg_PRIVATE_DEPS}
       GROUPS
         "${MODULE}"
         ${arg_GROUPS}
+    )
+    # Generator expressions are not targets, ergo cannot be passed via the
+    # public pw_add_test API.
+    target_link_libraries("${MODULE}.${test_name}.lib"
+      PRIVATE
+        "$<TARGET_NAME_IF_EXISTS:${MODULE}>"
     )
   endforeach()
 endfunction(pw_auto_add_module_tests)
@@ -715,6 +720,7 @@ function(pw_add_test NAME)
     PRIVATE_DEPS
       pw_unit_test
       ${pw_unit_test_MAIN}
+      ${arg_DEPS}
       ${arg_PRIVATE_DEPS}
     PRIVATE_INCLUDES
       ${arg_PRIVATE_INCLUDES}
@@ -726,9 +732,6 @@ function(pw_add_test NAME)
     PRIVATE_LINK_OPTIONS
       ${arg_PRIVATE_LINK_OPTIONS}
   )
-  # TODO(ewout, hepler): Move this above once pw_auto_add_module_tests has
-  # been deprecated which relies on generator expressions (i.e. aren't targets).
-  target_link_libraries("${NAME}.lib" PRIVATE ${arg_DEPS})
 
   # TODO(ewout, hepler): Enable the use of pw_unit_test_EXECUTABLE_TARGET_TYPE &
   # pw_unit_test_EXECUTABLE_TARGET_TYPE_FILE for stamping out unit test
