@@ -691,8 +691,7 @@ set(pw_unit_test_AUTOMATIC_RUNNER_ARGS "" CACHE STRING
 #   PRIVATE_LINK_OPTIONS - private target_link_options arguments
 #
 #  TODO(ewout, hepler): Deprecate the following legacy arguments
-#   GROUPS - groups to which to add this test; if none are specified, the test is
-#       added to the 'default' and 'all' groups
+#   GROUPS - groups to which to add this test.
 #
 function(pw_add_test NAME)
   set(num_positional_args 1)
@@ -775,17 +774,93 @@ function(pw_add_test NAME)
     add_dependencies("${NAME}" "${NAME}.run")
   endif()
 
-  # Always add tests to the "all" group. If no groups are provided, add the
-  # test to the "default" group.
   if(arg_GROUPS)
-    set(groups all ${arg_GROUPS})
-  else()
-    set(groups all default)
+    pw_add_test_to_groups("${NAME}" ${arg_GROUPS})
+  endif()
+endfunction(pw_add_test)
+
+# pw_add_test_group: Creates a library and an executable target for unit tests.
+#
+# Creates the following targets:
+#
+#   {NAME} depends on ${NAME}.run if pw_unit_test_AUTOMATIC_RUNNER is set, else
+#          it depends on ${NAME}.bin
+#   {NAME}.bundle depends on ${NAME}.bundle.run if pw_unit_test_AUTOMATIC_RUNNER
+#                 is set, else it depends on ${NAME}.bundle.bin
+#   {NAME}.lib depends on ${NAME}.bundle.lib.
+#   {NAME}.bin depends on the provided TESTS's <test_dep>.bin targets.
+#   {NAME}.bundle.lib contains the provided tests bundled as a library target,
+#                     which can then be linked into a test executable.
+#   {NAME}.bundle.bin standalone executable which contains the bundled tests.
+#
+# In addition if the pw_unit_test_AUTOMATIC_RUNNER is set, this also creates:
+#   {NAME}.run depends on the provided TESTS's <test_dep>.run targets.
+#   {NAME}.bundle.run runs the {NAME}.bundle.bin test bundle executable after
+#                     building it.
+#
+# Required Args:
+#
+#   NAME - The name of the executable target to be created.
+#   TESTS - pw_add_test targets and pw_add_test_group bundles to be included in
+#           this test bundle
+#
+function(pw_add_test_group NAME)
+  set(num_positional_args 1)
+  set(option_args)
+  set(one_value_args)
+  set(multi_value_args TESTS)
+  pw_parse_arguments_strict(
+      pw_add_test_group "${num_positional_args}" "${option_args}"
+      "${one_value_args}" "${multi_value_args}")
+  if(NOT arg_TESTS)
+    message(FATAL_ERROR "No TESTS specified for pw_add_test_group: ${NAME}")
   endif()
 
-  list(REMOVE_DUPLICATES groups)
-  pw_add_test_to_groups("${NAME}" ${groups})
-endfunction(pw_add_test)
+  set(test_lib_targets "")
+  set(test_bin_targets "")
+  set(test_run_targets "")
+  foreach(test IN LISTS arg_TESTS)
+    list(APPEND test_lib_targets "${test}.lib")
+    list(APPEND test_bin_targets "${test}.bin")
+    list(APPEND test_run_targets "${test}.run")
+  endforeach()
+
+  # This produces ${NAME}.bundle, ${NAME}.bundle.lib, ${NAME}.bundle.bin, and
+  # ${NAME}.bundle.run.
+  pw_add_test("${NAME}.bundle"
+    PRIVATE_DEPS
+      ${test_lib_targets}
+  )
+
+  # Produce ${NAME}.lib.
+  pw_add_library("${NAME}.lib" INTERFACE
+    PUBLIC_DEPS
+      ${NAME}.bundle.lib
+  )
+
+  # Produce ${NAME}.bin.
+  add_custom_target("${NAME}.bin")
+  add_dependencies("${NAME}.bin" ${test_bin_targets})
+
+  # Produce ${NAME} and ${NAME}.run.
+  add_custom_target("${NAME}")
+  if("${pw_unit_test_AUTOMATIC_RUNNER}" STREQUAL "")
+    # Test runner is not provided, only build the executable.
+    add_dependencies("${NAME}" "${NAME}.bin")
+
+    pw_add_error_target("${NAME}.run"
+      MESSAGE
+        "Attempted to build ${NAME}.run which is not available because "
+        "pw_unit_test_AUTOMATIC_RUNNER has not been configured. "
+        "See https://pigweed.dev/pw_unit_test."
+    )
+  else()  # pw_unit_test_AUTOMATIC_RUNNER is provided, build and run the test.
+    add_custom_target("${NAME}.run")
+    add_dependencies("${NAME}.run" ${test_run_targets})
+
+    add_dependencies("${NAME}" "${NAME}.run")
+  endif()
+endfunction(pw_add_test_group)
 
 # Adds a test target to the specified test groups. Test groups can be built with
 # the pw_tests_GROUP_NAME target or executed with the pw_run_tests_GROUP_NAME

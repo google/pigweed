@@ -829,6 +829,7 @@ CMake convenience functions are defined in ``pw_build/pigweed.cmake``.
   automatically declare the library and its tests. This has been deprecated,
   please use ``pw_add_module_library`` instead.
 * ``pw_add_test`` -- Declare a test target.
+* ``pw_add_test_group`` -- Declare a target to group and bundle test targets.
 * ``pw_target_link_targets`` -- Helper wrapper around ``target_link_libraries``
   which only supports CMake targets and detects when the target does not exist.
   Note that generator expressions are not supported.
