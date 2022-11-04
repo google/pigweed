@@ -79,6 +79,12 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "flash_test_partition",
+    hdrs = ["public/pw_kvs/flash_test_partition.h"],
+    deps = [":pw_kvs"],
+)
+
+pw_cc_library(
     name = "fake_flash",
     srcs = [
         "fake_flash_memory.cc",
@@ -112,6 +118,22 @@ pw_cc_library(
     ],
     deps = [
         ":fake_flash",
+        ":pw_kvs",
+    ],
+)
+
+pw_cc_library(
+    name = "fake_flash_12_byte_partition",
+    srcs = ["fake_flash_test_partition.cc"],
+    hdrs = ["public/pw_kvs/flash_test_partition.h"],
+    defines = [
+        "PW_FLASH_TEST_SECTORS=3",
+        "PW_FLASH_TEST_SECTOR_SIZE=4",
+        "PW_FLASH_TEST_ALIGNMENT=4",
+    ],
+    deps = [
+        ":fake_flash",
+        ":flash_test_partition",
         ":pw_kvs",
     ],
 )
