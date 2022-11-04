@@ -33,18 +33,11 @@ pw_add_module_library(pw_third_party.freertos.disable_warnings
 # If FreeRTOS is not configured, a script that displays an error message is used
 # instead. If the build rule is used in the build it fails with this error.
 if(NOT dir_pw_third_party_freertos)
-  add_custom_target(pw_third_party.freertos._not_configured
-    COMMAND
-      "${CMAKE_COMMAND}" -E echo
-        "ERROR: Attempted to build the pw_third_party.freertos without"
-        "configuring it via dir_pw_third_party_freertos."
-        "See https://pigweed.dev/third_party/freertos."
-    COMMAND
-      "${CMAKE_COMMAND}" -E false
-  )
-  pw_add_module_library(pw_third_party.freertos
-    PUBLIC_DEPS
-      pw_third_party.freertos._not_configured
+  pw_add_error_target(pw_third_party.freertos
+    MESSAGE
+      "Attempted to build the pw_third_party.freertos without configuring it "
+      "via dir_pw_third_party_freertos. "
+      "See https://pigweed.dev/third_party/freertos."
   )
   return()
 else(dir_pw_third_party_freertos)

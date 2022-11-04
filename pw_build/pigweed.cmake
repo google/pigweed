@@ -540,17 +540,12 @@ function(pw_add_facade NAME)
 
   # If no backend is set, a script that displays an error message is used
   # instead. If the facade is used in the build, it fails with this error.
-  add_custom_target("${NAME}._no_backend_set_message"
-    COMMAND
-      "${CMAKE_COMMAND}" -E echo
-        "ERROR: Attempted to build the ${NAME} facade with no backend."
-        "Configure the ${NAME} backend using pw_set_backend or remove all dependencies on it."
-        "See https://pigweed.dev/pw_build."
-    COMMAND
-      "${CMAKE_COMMAND}" -E false
+  pw_add_error_target("${NAME}.NO_BACKEND_SET"
+    MESSAGE
+      "ERROR: Attempted to build the ${NAME} facade with no backend."
+      "Configure the ${NAME} backend using pw_set_backend or remove all "
+      "dependencies on it. See https://pigweed.dev/pw_build."
   )
-  add_library("${NAME}.NO_BACKEND_SET" INTERFACE)
-  add_dependencies("${NAME}.NO_BACKEND_SET" "${NAME}._no_backend_set_message")
 
   # Set the default backend to the error message if no default is specified.
   if("${arg_DEFAULT_BACKEND}" STREQUAL "")
