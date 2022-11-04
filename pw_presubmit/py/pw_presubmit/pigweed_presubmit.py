@@ -486,8 +486,7 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
 
 # TODO(b/235882003): Slowly remove targets from here that work with bazel until
 # none remain.
-_TARGETS_THAT_DO_NOT_TEST_WITH_BAZEL = _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL + (
-    '-//pw_malloc_freelist/...:all', )
+_TARGETS_THAT_DO_NOT_TEST_WITH_BAZEL = _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL
 
 
 @filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.bazel', '.bzl',
