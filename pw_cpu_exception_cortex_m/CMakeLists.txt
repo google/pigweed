@@ -145,7 +145,7 @@ if("${pw_cpu_exception.entry_BACKEND}" STREQUAL
       pw_cpu_exception.entry
       pw_cpu_exception.handler
       pw_cpu_exception.support
-      pw_cpu_exception_cortex_m.cortex_m_constants
+      pw_cpu_exception_cortex_m.constants
       pw_cpu_exception_cortex_m.cpu_exception
       pw_cpu_exception_cortex_m.cpu_state
       pw_span
