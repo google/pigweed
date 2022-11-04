@@ -22,11 +22,50 @@ import argparse
 import sys
 from pathlib import Path
 from pw_software_update import dev_sign, keys, root_metadata
-from pw_software_update.tuf_pb2 import SignedRootMetadata
+from pw_software_update.tuf_pb2 import (RootMetadata, SignedRootMetadata)
+
+
+def inspect_root_metadata_handler(arg) -> None:
+    """Prints root metadata contents as defined by "RootMetadata" message
+    structure in tuf.proto as well as the number of identified signatures.
+    """
+
+    try:
+        signed_root_metadata = SignedRootMetadata.FromString(
+            arg.pathname.read_bytes())
+
+        deserialized_root_metadata = RootMetadata.FromString(
+            signed_root_metadata.serialized_root_metadata)
+        print(deserialized_root_metadata)
+
+        print('Number of signatures found:',
+              len(signed_root_metadata.signatures))
+
+    except IOError as error:
+        print(error)
+
+
+def _add_inspect_root_metadata_parser(subparsers) -> None:
+    """Parser to handle inspect-root-metadata subcommand"""
+
+    formatter_class = lambda prog: argparse.HelpFormatter(
+        prog, max_help_position=100, width=200)
+    inspect_root_metadata_parser = subparsers.add_parser(
+        'inspect-root-metadata',
+        description='Outputs contents of root metadata',
+        formatter_class=formatter_class,
+        help="")
+
+    inspect_root_metadata_parser.set_defaults(
+        func=inspect_root_metadata_handler)
+    inspect_root_metadata_parser.add_argument('pathname',
+                                              type=Path,
+                                              help='Path to root metadata')
 
 
 def sign_root_metadata_handler(arg) -> None:
     """Handler for signing of root metadata"""
+
     try:
         signed_root_metadata = dev_sign.sign_root_metadata(
             SignedRootMetadata.FromString(arg.root_metadata.read_bytes()),
@@ -66,6 +105,7 @@ def _add_sign_root_metadata_parser(subparsers) -> None:
 
 def create_root_metadata_handler(arg) -> None:
     """Handler function for creation of root metadata."""
+
     try:
         root_metadata.main(arg.out, arg.append_root_key,
                            arg.append_targets_key, arg.version)
@@ -153,8 +193,10 @@ def _parse_args() -> argparse.Namespace:
 
     subparsers = parser_root.add_subparsers()
     _add_generate_key_parser(subparsers)
+
     _add_create_root_metadata_parser(subparsers)
     _add_sign_root_metadata_parser(subparsers)
+    _add_inspect_root_metadata_parser(subparsers)
 
     return parser_root.parse_args()
 

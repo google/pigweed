@@ -92,6 +92,7 @@ def main(out: Path, root_key: Iterable[Path], targets_key: Iterable[Path],
         TargetsKeys([k.read_bytes() for k in targets_key]), version)
     signed = SignedRootMetadata(
         serialized_root_metadata=root_metadata.SerializeToString())
+
     out.write_bytes(signed.SerializeToString())
 
 
