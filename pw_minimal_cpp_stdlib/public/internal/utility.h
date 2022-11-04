@@ -31,4 +31,26 @@ struct tuple_element;
 template <typename>
 struct tuple_size;
 
+template <typename T, T... kSequence>
+class integer_sequence;
+
+template <size_t... kSequence>
+using index_sequence = integer_sequence<decltype(sizeof(int)), kSequence...>;
+
+template <typename T, T kEnd>
+#if __has_builtin(__make_integer_seq)
+using make_integer_sequence = __make_integer_seq<integer_sequence, T, kEnd>;
+#elif __has_builtin(__integer_pack)
+using make_integer_sequence = integer_sequence<T, __integer_pack(kEnd)...>;
+#endif  // make_integer_sequence
+
+template <size_t kEnd>
+using make_index_sequence = make_integer_sequence<size_t, kEnd>;
+
+struct in_place_t {
+  explicit constexpr in_place_t() = default;
+};
+
+inline constexpr in_place_t in_place{};
+
 _PW_POLYFILL_END_NAMESPACE_STD

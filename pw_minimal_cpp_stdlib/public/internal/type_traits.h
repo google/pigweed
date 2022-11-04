@@ -19,7 +19,6 @@ _PW_POLYFILL_BEGIN_NAMESPACE_STD
 
 #define __cpp_lib_transformation_trait_aliases 201304L
 #define __cpp_lib_type_trait_variable_templates 201510L
-#define __cpp_lib_logical_traits 201510L
 
 template <decltype(sizeof(0)) kLength,
           decltype(sizeof(0)) kAlignment>  // no default
@@ -209,12 +208,6 @@ struct is_void : is_same<void, typename remove_cv<T>::type> {};
 template <typename T>
 inline constexpr bool is_void_v = is_void<T>::value;
 
-template <typename T>
-struct negation : bool_constant<!bool(T::value)> {};
-
-template <typename T>
-inline constexpr bool negation_v = negation<T>::value;
-
 template <bool kBool, typename TrueType, typename FalseType>
 struct conditional {
   using type = TrueType;
@@ -227,6 +220,46 @@ struct conditional<false, TrueType, FalseType> {
 
 template <bool kBool, typename TrueType, typename FalseType>
 using conditional_t = typename conditional<kBool, TrueType, FalseType>::type;
+
+#define __cpp_lib_logical_traits 201510L
+
+template <typename...>
+struct conjunction;
+
+template <>
+struct conjunction<> : true_type {};
+
+template <typename T>
+struct conjunction<T> : T {};
+
+template <typename First, typename... Others>
+struct conjunction<First, Others...>
+    : conditional_t<bool(First::value), conjunction<Others...>, First> {};
+
+template <typename... Types>
+inline constexpr bool conjunction_v = conjunction<Types...>::value;
+
+template <typename...>
+struct disjunction;
+
+template <>
+struct disjunction<> : false_type {};
+
+template <typename T>
+struct disjunction<T> : T {};
+
+template <typename First, typename... Others>
+struct disjunction<First, Others...>
+    : conditional_t<bool(First::value), First, disjunction<Others...>> {};
+
+template <typename... Types>
+inline constexpr bool disjunction_v = disjunction<Types...>::value;
+
+template <typename T>
+struct negation : bool_constant<!bool(T::value)> {};
+
+template <typename T>
+inline constexpr bool negation_v = negation<T>::value;
 
 template <bool kEnable, typename T = void>
 struct enable_if {
@@ -397,6 +430,48 @@ using add_rvalue_reference_t = typename add_rvalue_reference<T>::type;
 
 template <typename T>
 add_rvalue_reference_t<T> declval() noexcept;
+
+template <typename T>
+struct make_signed;
+
+template <typename T>
+struct make_unsigned;
+
+#define _PW_MAKE_SIGNED_SPECIALIZATION(base, signed_type, unsigned_type) \
+  template <>                                                            \
+  struct make_signed<base> {                                             \
+    using type = signed_type;                                            \
+  };                                                                     \
+  template <>                                                            \
+  struct make_unsigned<base> {                                           \
+    using type = unsigned_type;                                          \
+  }
+
+_PW_MAKE_SIGNED_SPECIALIZATION(char, signed char, unsigned char);
+_PW_MAKE_SIGNED_SPECIALIZATION(signed char, signed char, unsigned char);
+_PW_MAKE_SIGNED_SPECIALIZATION(unsigned char, signed char, unsigned char);
+
+_PW_MAKE_SIGNED_SPECIALIZATION(short, signed short, unsigned short);
+_PW_MAKE_SIGNED_SPECIALIZATION(unsigned short, signed short, unsigned short);
+
+_PW_MAKE_SIGNED_SPECIALIZATION(int, signed int, unsigned int);
+_PW_MAKE_SIGNED_SPECIALIZATION(unsigned int, signed int, unsigned int);
+
+_PW_MAKE_SIGNED_SPECIALIZATION(long, signed long, unsigned long);
+_PW_MAKE_SIGNED_SPECIALIZATION(unsigned long, signed long, unsigned long);
+
+_PW_MAKE_SIGNED_SPECIALIZATION(long long, signed short, unsigned short);
+_PW_MAKE_SIGNED_SPECIALIZATION(unsigned long long,
+                               signed short,
+                               unsigned short);
+
+// Skip specializations for char8_t, etc.
+
+template <typename T>
+using make_signed_t = typename make_signed<T>::type;
+
+template <typename T>
+using make_unsigned_t = typename make_unsigned<T>::type;
 
 namespace impl {
 

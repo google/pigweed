@@ -18,16 +18,24 @@ import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
-config("include_dirs") {
+config("public_include_path") {
   include_dirs = [ "public" ]
+  visibility = [ ":*" ]
 }
 
 config("no_cpp_includes") {
   cflags = [ "-nostdinc++" ]
 }
 
+config("use_minimal_cpp_stdlib") {
+  configs = [
+    ":public_include_path",
+    ":no_cpp_includes",
+  ]
+}
+
 pw_source_set("pw_minimal_cpp_stdlib") {
-  public_configs = [ ":include_dirs" ]
+  public_configs = [ ":public_include_path" ]
   configs = [ ":no_cpp_includes" ]
   public = [
     "public/algorithm",

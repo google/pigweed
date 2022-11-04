@@ -298,6 +298,25 @@ TEST(TypeTraits, Basic) {
   static_assert(!std::is_same_v<char, unsigned char>);
 }
 
+TEST(TypeTraits, LogicalTraits) {
+  static_assert(std::conjunction_v<>);
+  static_assert(!std::conjunction_v<std::false_type>);
+  static_assert(std::conjunction_v<std::true_type>);
+  static_assert(!std::conjunction_v<std::false_type, std::true_type>);
+  static_assert(std::conjunction_v<std::true_type, std::true_type>);
+  static_assert(!std::conjunction_v<std::false_type, std::false_type>);
+
+  static_assert(!std::disjunction_v<>);
+  static_assert(!std::disjunction_v<std::false_type>);
+  static_assert(std::disjunction_v<std::true_type>);
+  static_assert(std::disjunction_v<std::false_type, std::true_type>);
+  static_assert(std::disjunction_v<std::true_type, std::true_type>);
+  static_assert(!std::disjunction_v<std::false_type, std::false_type>);
+
+  static_assert(std::negation_v<std::false_type>);
+  static_assert(!std::negation_v<std::true_type>);
+}
+
 struct MoveTester {
   MoveTester(int value) : magic_value(value), moved(false) {}
 
@@ -323,6 +342,22 @@ TEST(Utility, Move) {
   // NOLINTNEXTLINE(bugprone-use-after-move)
   EXPECT_EQ(0xffff, copied.magic_value);
   EXPECT_TRUE(moved.moved);
+}
+
+TEST(Utility, MakeIntegerSequence) {
+  static_assert(std::is_same_v<std::make_integer_sequence<int, 0>,
+                               std::integer_sequence<int>>);
+  static_assert(std::is_same_v<std::make_integer_sequence<int, 1>,
+                               std::integer_sequence<int, 0>>);
+  static_assert(std::is_same_v<std::make_integer_sequence<int, 3>,
+                               std::integer_sequence<int, 0, 1, 2>>);
+
+  static_assert(std::is_same_v<std::make_index_sequence<0>,
+                               std::integer_sequence<size_t>>);
+  static_assert(std::is_same_v<std::make_index_sequence<1>,
+                               std::integer_sequence<size_t, 0>>);
+  static_assert(std::is_same_v<std::make_index_sequence<3>,
+                               std::integer_sequence<size_t, 0, 1, 2>>);
 }
 
 }  // namespace
