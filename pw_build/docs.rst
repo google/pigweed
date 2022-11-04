@@ -836,6 +836,10 @@ CMake convenience functions are defined in ``pw_build/pigweed.cmake``.
   targets in the build. This should only be used to add essential compilation
   options, such as those that affect the ABI. Use ``pw_add_library`` or
   ``target_compile_options`` to apply other compile options.
+* ``pw_add_error_target`` -- Declares target which reports a message and causes
+  a build failure only when compiled. This is useful when ``FATAL_ERROR``
+  messages cannot be used to catch problems during the CMake configuration
+  phase.
 
 See ``pw_build/pigweed.cmake`` for the complete documentation of these
 functions.

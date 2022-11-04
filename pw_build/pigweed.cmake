@@ -770,3 +770,47 @@ function(pw_add_global_compile_options)
     endforeach()
   endforeach()
 endfunction(pw_add_global_compile_options)
+
+# pw_add_error_target: Creates a CMake target which fails to build and prints a
+#                      message
+#
+# This function prints a message and causes a build failure only if you attempt
+# to build the target. This is useful when FATAL_ERROR messages cannot be used
+# to catch problems during the CMake configuration phase.
+#
+# Args:
+#
+#   NAME: name to use for the target
+#   MESSAGE: The message to print, prefixed with "ERROR: ". The message may be
+#            composed of multiple pieces by passing multiple strings.
+#
+function(pw_add_error_target NAME)
+  set(num_positional_args 1)
+  set(option_args)
+  set(one_value_args)
+  set(multi_value_args MESSAGE)
+  pw_parse_arguments_strict(
+      pw_add_error_target "${num_positional_args}" "${option_args}"
+      "${one_value_args}" "${multi_value_args}")
+
+  # In case the message is comprised of multiple strings, stitch them together.
+  set(message "ERROR: ")
+  foreach(line IN LISTS arg_MESSAGE)
+    string(APPEND message "${line}")
+  endforeach()
+
+  add_custom_target("${NAME}._error_message"
+    COMMAND
+      "${CMAKE_COMMAND}" -E echo "${message}"
+    COMMAND
+      "${CMAKE_COMMAND}" -E false
+  )
+
+  # A static library is provided, in case this rule nominally provides a
+  # compiled output, e.g. to enable $<TARGET_FILE:"${NAME}">.
+  pw_add_library("${NAME}" STATIC
+    SOURCES
+      $<TARGET_PROPERTY:pw_build.empty,SOURCES>
+  )
+  add_dependencies("${NAME}" "${NAME}._error_message")
+endfunction(pw_add_error_target)
