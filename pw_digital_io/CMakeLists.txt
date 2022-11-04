@@ -35,7 +35,7 @@ endif()
 pw_add_test(pw_digital_io.stream_test
   SOURCES
     digital_io_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_digital_io
   GROUPS
     modules

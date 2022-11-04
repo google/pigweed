@@ -29,7 +29,7 @@ pw_add_module_library(pw_intrusive_ptr
 pw_add_test(pw_intrusive_ptr.intrusive_ptr_test
   SOURCES
     intrusive_ptr_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_intrusive_ptr
   GROUPS
     modules

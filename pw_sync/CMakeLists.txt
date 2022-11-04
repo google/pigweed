@@ -198,7 +198,7 @@ pw_add_facade(pw_sync.condition_variable
 pw_add_test(pw_sync.borrow_test
   SOURCES
     borrow_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_assert
     pw_sync.borrow
     pw_sync.virtual_basic_lockable
@@ -210,7 +210,7 @@ pw_add_test(pw_sync.borrow_test
 pw_add_test(pw_sync.inline_borrowable_test
   SOURCES
     inline_borrowable_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_sync.inline_borrowable
     pw_sync.interrupt_spin_lock
     pw_sync.lock_annotations
@@ -226,7 +226,7 @@ if(NOT "${pw_sync.binary_semaphore_BACKEND}" STREQUAL
     SOURCES
       binary_semaphore_facade_test.cc
       binary_semaphore_facade_test_c.c
-    DEPS
+    PRIVATE_DEPS
       pw_preprocessor
       pw_sync.binary_semaphore
     GROUPS
@@ -241,7 +241,7 @@ if(NOT "${pw_sync.counting_semaphore_BACKEND}" STREQUAL
     SOURCES
       counting_semaphore_facade_test.cc
       counting_semaphore_facade_test_c.c
-    DEPS
+    PRIVATE_DEPS
       pw_preprocessor
       pw_sync.counting_semaphore
     GROUPS
@@ -255,7 +255,7 @@ if(NOT "${pw_sync.mutex_BACKEND}" STREQUAL "pw_sync.mutex.NO_BACKEND_SET")
     SOURCES
       mutex_facade_test.cc
       mutex_facade_test_c.c
-    DEPS
+    PRIVATE_DEPS
       pw_preprocessor
       pw_sync.mutex
     GROUPS
@@ -270,7 +270,7 @@ if(NOT "${pw_sync.timed_mutex_BACKEND}" STREQUAL
     SOURCES
       timed_mutex_facade_test.cc
       timed_mutex_facade_test_c.c
-    DEPS
+    PRIVATE_DEPS
       pw_preprocessor
       pw_sync.timed_mutex
     GROUPS
@@ -285,7 +285,7 @@ if(NOT "${pw_sync.interrupt_spin_lock_BACKEND}" STREQUAL
     SOURCES
       interrupt_spin_lock_facade_test.cc
       interrupt_spin_lock_facade_test_c.c
-    DEPS
+    PRIVATE_DEPS
       pw_preprocessor
       pw_sync.interrupt_spin_lock
     GROUPS
@@ -299,7 +299,7 @@ if(NOT "${pw_sync.thread_notification_BACKEND}" STREQUAL
   pw_add_test(pw_sync.thread_notification_facade_test
     SOURCES
       thread_notification_facade_test.cc
-    DEPS
+    PRIVATE_DEPS
       pw_sync.thread_notification
     GROUPS
       modules
@@ -312,7 +312,7 @@ if(NOT "${pw_sync.timed_thread_notification_BACKEND}" STREQUAL
   pw_add_test(pw_sync.timed_thread_notification_facade_test
     SOURCES
       timed_thread_notification_facade_test.cc
-    DEPS
+    PRIVATE_DEPS
       pw_sync.timed_thread_notification
     GROUPS
       modules

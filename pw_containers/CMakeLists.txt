@@ -96,7 +96,7 @@ pw_add_module_library(pw_containers.intrusive_list
 pw_add_test(pw_containers.algorithm_test
   SOURCES
     algorithm_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_containers.algorithm
     pw_containers.intrusive_list
     pw_containers.vector
@@ -109,7 +109,7 @@ pw_add_test(pw_containers.algorithm_test
 pw_add_test(pw_containers.filtered_view_test
   SOURCES
     filtered_view_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_containers.filtered_view
     pw_containers.intrusive_list
     pw_span
@@ -121,7 +121,7 @@ pw_add_test(pw_containers.filtered_view_test
 pw_add_test(pw_containers.flat_map_test
   SOURCES
     flat_map_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_containers.flat_map
   GROUPS
     modules
@@ -131,7 +131,7 @@ pw_add_test(pw_containers.flat_map_test
 pw_add_test(pw_containers.to_array_test
   SOURCES
     to_array_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_containers.to_array
   GROUPS
     modules
@@ -141,7 +141,7 @@ pw_add_test(pw_containers.to_array_test
 pw_add_test(pw_containers.vector_test
   SOURCES
     vector_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_containers.vector
   GROUPS
     modules
@@ -151,7 +151,7 @@ pw_add_test(pw_containers.vector_test
 pw_add_test(pw_containers.wrapped_iterator_test
   SOURCES
     wrapped_iterator_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_containers.wrapped_iterator
   GROUPS
     modules
@@ -161,7 +161,7 @@ pw_add_test(pw_containers.wrapped_iterator_test
 pw_add_test(pw_containers.intrusive_list_test
   SOURCES
     intrusive_list_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_compilation_testing._pigweed_only_negative_compilation
     pw_containers.intrusive_list
     pw_preprocessor

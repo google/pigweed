@@ -159,7 +159,7 @@ pw_add_test(pw_tokenizer.argument_types_test
   SOURCES
     argument_types_test_c.c
     argument_types_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_tokenizer
   GROUPS
     modules
@@ -169,7 +169,7 @@ pw_add_test(pw_tokenizer.argument_types_test
 pw_add_test(pw_tokenizer.base64_test
   SOURCES
     base64_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_tokenizer.base64
   GROUPS
     modules
@@ -179,7 +179,7 @@ pw_add_test(pw_tokenizer.base64_test
 pw_add_test(pw_tokenizer.decode_test
   SOURCES
     decode_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_varint
     pw_tokenizer.decoder
   GROUPS
@@ -190,7 +190,7 @@ pw_add_test(pw_tokenizer.decode_test
 pw_add_test(pw_tokenizer.detokenize_test
   SOURCES
     detokenize_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_tokenizer.decoder
   GROUPS
     modules
@@ -201,7 +201,7 @@ pw_add_test(pw_tokenizer.global_handlers_test
   SOURCES
     global_handlers_test_c.c
     global_handlers_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_tokenizer.global_handler
     pw_tokenizer.global_handler_with_payload
   GROUPS
@@ -212,7 +212,7 @@ pw_add_test(pw_tokenizer.global_handlers_test
 pw_add_test(pw_tokenizer.hash_test
   SOURCES
     hash_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_tokenizer
   GROUPS
     modules
@@ -222,7 +222,7 @@ pw_add_test(pw_tokenizer.hash_test
 pw_add_test(pw_tokenizer.token_database_test
   SOURCES
     token_database_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_tokenizer.decoder
   GROUPS
     modules
@@ -233,7 +233,7 @@ pw_add_test(pw_tokenizer.tokenize_test
   SOURCES
     tokenize_test_c.c
     tokenize_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_varint
     pw_tokenizer
   GROUPS

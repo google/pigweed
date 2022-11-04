@@ -35,7 +35,7 @@ pw_add_test(pw_checksum.crc16_ccitt_test
   SOURCES
     crc16_ccitt_test.cc
     crc16_ccitt_test_c.c
-  DEPS
+  PRIVATE_DEPS
     pw_checksum
     pw_random
   GROUPS
@@ -47,7 +47,7 @@ pw_add_test(pw_checksum.crc32_test
   SOURCES
     crc32_test.cc
     crc32_test_c.c
-  DEPS
+  PRIVATE_DEPS
     pw_checksum
     pw_random
   GROUPS

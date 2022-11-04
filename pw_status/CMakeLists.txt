@@ -51,7 +51,7 @@ pw_add_test(pw_status.status_test
   SOURCES
     status_test.cc
     status_test_c.c
-  DEPS
+  PRIVATE_DEPS
     pw_status
   GROUPS
     modules
@@ -61,7 +61,7 @@ pw_add_test(pw_status.status_test
 pw_add_test(pw_status.status_with_size_test
   SOURCES
     status_with_size_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_status
   GROUPS
     modules
@@ -71,7 +71,7 @@ pw_add_test(pw_status.status_with_size_test
 pw_add_test(pw_status.try_test
   SOURCES
     try_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_status
   GROUPS
     modules

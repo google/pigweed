@@ -75,7 +75,7 @@ pw_add_test(pw_log_tokenized.log_tokenized_test
     log_tokenized_test.cc
     log_tokenized_test_c.c
     pw_log_tokenized_private/test_utils.h
-  DEPS
+  PRIVATE_DEPS
     pw_log_tokenized
     pw_preprocessor
   GROUPS
@@ -86,7 +86,7 @@ pw_add_test(pw_log_tokenized.log_tokenized_test
 pw_add_test(pw_log_tokenized.metadata_test
   SOURCES
     metadata_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_log_tokenized.metadata
   GROUPS
     modules

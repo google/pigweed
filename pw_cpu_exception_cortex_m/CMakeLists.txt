@@ -141,7 +141,7 @@ if("${pw_cpu_exception.entry_BACKEND}" STREQUAL
   pw_add_test(pw_cpu_exception_cortex_m.cpu_exception_entry_test
     SOURCES
       exception_entry_test.cc
-    DEPS
+    PRIVATE_DEPS
       pw_cpu_exception.entry
       pw_cpu_exception.handler
       pw_cpu_exception.support
@@ -157,7 +157,7 @@ if("${pw_cpu_exception.entry_BACKEND}" STREQUAL
   pw_add_test(pw_cpu_exception_cortex_m.util_test
     SOURCES
       util_test.cc
-    DEPS
+    PRIVATE_DEPS
       pw_cpu_exception_cortex_m.cpu_state
       pw_cpu_exception_cortex_m.util
     GROUPS

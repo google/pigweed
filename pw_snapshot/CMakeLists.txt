@@ -61,7 +61,7 @@ pw_proto_library(pw_snapshot.snapshot_proto
 pw_add_test(pw_snapshot.cpp_compile_test
   SOURCES
     cpp_compile_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_protobuf
     pw_snapshot.snapshot_proto.pwpb
   GROUPS
@@ -72,7 +72,7 @@ pw_add_test(pw_snapshot.cpp_compile_test
 pw_add_test(pw_snapshot.uuid_test
   SOURCES
     uuid_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_bytes
     pw_span
     pw_protobuf

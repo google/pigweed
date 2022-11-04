@@ -104,7 +104,7 @@ if(NOT "${pw_thread.id_BACKEND}" STREQUAL "pw_thread.id.NO_BACKEND_SET")
   pw_add_test(pw_thread.id_facade_test
     SOURCES
       id_facade_test.cc
-    DEPS
+    PRIVATE_DEPS
       pw_thread.id
     GROUPS
       modules
@@ -118,7 +118,7 @@ if((NOT "${pw_thread.id_BACKEND}" STREQUAL "pw_thread.id.NO_BACKEND_SET") AND
     SOURCES
       sleep_facade_test.cc
       sleep_facade_test_c.c
-    DEPS
+    PRIVATE_DEPS
       pw_chrono.system_clock
       pw_thread.id
       pw_thread.sleep
@@ -159,7 +159,7 @@ if((NOT "${pw_thread.id_BACKEND}" STREQUAL "pw_thread.id.NO_BACKEND_SET") AND
     SOURCES
       yield_facade_test.cc
       yield_facade_test_c.c
-    DEPS
+    PRIVATE_DEPS
       pw_thread.id
       pw_thread.yield
     GROUPS

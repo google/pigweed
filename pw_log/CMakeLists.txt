@@ -89,7 +89,7 @@ if(NOT "${pw_log_BACKEND}" STREQUAL "pw_log.NO_BACKEND_SET")
     SOURCES
       basic_log_test.cc
       basic_log_test_plain_c.c
-    DEPS
+    PRIVATE_DEPS
       pw_log
       pw_preprocessor
     GROUPS
@@ -100,7 +100,7 @@ if(NOT "${pw_log_BACKEND}" STREQUAL "pw_log.NO_BACKEND_SET")
   pw_add_test(pw_log.glog_adapter_test
     SOURCES
       glog_adapter_test.cc
-    DEPS
+    PRIVATE_DEPS
       pw_log.glog_adapter
     GROUPS
       modules
@@ -110,7 +110,7 @@ if(NOT "${pw_log_BACKEND}" STREQUAL "pw_log.NO_BACKEND_SET")
   pw_add_test(pw_log.proto_utils_test
     SOURCES
       proto_utils_test.cc
-    DEPS
+    PRIVATE_DEPS
       pw_log
       pw_log.proto_utils
       pw_log.protos.pwpb

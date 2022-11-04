@@ -34,7 +34,7 @@ pw_add_module_library(pw_ring_buffer
 pw_add_test(pw_ring_buffer.prefixed_entry_ring_buffer_test
   SOURCES
     prefixed_entry_ring_buffer_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_ring_buffer
     pw_assert
   GROUPS

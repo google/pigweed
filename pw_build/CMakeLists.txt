@@ -134,7 +134,7 @@ add_library(pw_build.empty OBJECT "${CMAKE_CURRENT_BINARY_DIR}/empty_file.c" "")
 pw_add_test(pw_build.cc_blob_library_test
   SOURCES
     cc_blob_library_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_build.test_blob
   GROUPS
     modules

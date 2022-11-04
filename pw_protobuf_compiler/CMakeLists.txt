@@ -25,7 +25,7 @@ pw_proto_library(pw_protobuf_compiler.pwpb_test_protos
 pw_add_test(pw_protobuf_compiler.pwpb_test
   SOURCES
     pwpb_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_protobuf_compiler.pwpb_test_protos.pwpb
   GROUPS
     pw_protobuf_compiler
@@ -42,7 +42,7 @@ if(NOT "${dir_pw_third_party_nanopb}" STREQUAL "")
   pw_add_test(pw_protobuf_compiler.nanopb_test
     SOURCES
       nanopb_test.cc
-    DEPS
+    PRIVATE_DEPS
       pw_protobuf_compiler.nanopb_test_protos.nanopb
     GROUPS
       pw_protobuf_compiler

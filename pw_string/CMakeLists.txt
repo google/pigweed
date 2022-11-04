@@ -106,7 +106,7 @@ pw_add_module_library(pw_string.util
 pw_add_test(pw_string.format_test
   SOURCES
     format_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_string
   GROUPS
     modules
@@ -116,7 +116,7 @@ pw_add_test(pw_string.format_test
 pw_add_test(pw_string.string_builder_test
   SOURCES
     string_builder_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_string
   GROUPS
     modules
@@ -126,7 +126,7 @@ pw_add_test(pw_string.string_builder_test
 pw_add_test(pw_string.string_test
   SOURCES
     string_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_compilation_testing._pigweed_only_negative_compilation
     pw_string.string
   GROUPS
@@ -137,7 +137,7 @@ pw_add_test(pw_string.string_test
 pw_add_test(pw_string.to_string_test
   SOURCES
     to_string_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_string
     pw_string.config
   GROUPS
@@ -148,7 +148,7 @@ pw_add_test(pw_string.to_string_test
 pw_add_test(pw_string.type_to_string_test
   SOURCES
     type_to_string_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_string
   GROUPS
     modules
@@ -158,7 +158,7 @@ pw_add_test(pw_string.type_to_string_test
 pw_add_test(pw_string.util_test
   SOURCES
     util_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_string
   GROUPS
     modules

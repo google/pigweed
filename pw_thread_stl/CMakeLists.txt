@@ -83,7 +83,7 @@ pw_add_module_library(pw_thread_stl.test_threads
 if(("${pw_thread.thread_BACKEND}" STREQUAL "pw_thread_stl.thread") AND
    (NOT "${pw_thread.sleep_BACKEND}" STREQUAL "pw_thread.sleep.NO_BACKEND_SET"))
   pw_add_test(pw_thread_stl.thread_backend_test
-    DEPS
+    PRIVATE_DEPS
       pw_thread_stl.test_threads
       pw_thread.thread_facade_test
     GROUPS

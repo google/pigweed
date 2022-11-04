@@ -86,7 +86,7 @@ pw_add_module_library(pw_stream.interval_reader
 pw_add_test(pw_stream.memory_stream_test
   SOURCES
     memory_stream_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_stream
   GROUPS
     modules
@@ -96,7 +96,7 @@ pw_add_test(pw_stream.memory_stream_test
 pw_add_test(pw_stream.seek_test
   SOURCES
     seek_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_stream
   GROUPS
     modules
@@ -106,7 +106,7 @@ pw_add_test(pw_stream.seek_test
 pw_add_test(pw_stream.stream_test
   SOURCES
     stream_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_stream
   GROUPS
     modules
@@ -116,7 +116,7 @@ pw_add_test(pw_stream.stream_test
 pw_add_test(pw_stream.interval_reader_test
   SOURCES
     interval_reader_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_stream.interval_reader
   GROUPS
     modules

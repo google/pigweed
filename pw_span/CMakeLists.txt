@@ -31,7 +31,7 @@ pw_add_module_library(pw_span
 pw_add_test(pw_span.pw_span_test
   SOURCES
     span_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_span
   GROUPS
     modules

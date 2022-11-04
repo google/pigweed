@@ -52,7 +52,7 @@ pw_add_module_library(pw_bluetooth
 pw_add_test(pw_bluetooth.address_test
   SOURCES
     address_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_bluetooth
   GROUPS
     pw_bluetooth
@@ -61,7 +61,7 @@ pw_add_test(pw_bluetooth.address_test
 pw_add_test(pw_bluetooth.api_test
   SOURCES
     api_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_bluetooth
   GROUPS
     pw_bluetooth
@@ -70,7 +70,7 @@ pw_add_test(pw_bluetooth.api_test
 pw_add_test(pw_bluetooth.result_test
   SOURCES
     result_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_bluetooth
   GROUPS
     pw_bluetooth
@@ -79,7 +79,7 @@ pw_add_test(pw_bluetooth.result_test
 pw_add_test(pw_bluetooth.uuid_test
   SOURCES
     uuid_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_bluetooth
   GROUPS
     pw_bluetooth

@@ -31,7 +31,7 @@ endif()
 pw_add_test(pw_result.result_test
   SOURCES
     result_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_result
     pw_status
   GROUPS

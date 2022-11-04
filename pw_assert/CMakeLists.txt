@@ -120,7 +120,7 @@ pw_add_test(pw_assert.assert_facade_test
     fake_backend.cc
     public/pw_assert/internal/check_impl.h
     pw_assert_test/fake_backend.h
-  DEPS
+  PRIVATE_DEPS
     pw_assert
     pw_compilation_testing._pigweed_only_negative_compilation
     pw_status
@@ -138,7 +138,7 @@ if((NOT "${pw_assert.assert_BACKEND}" STREQUAL
     SOURCES
       assert_backend_compile_test.cc
       assert_backend_compile_test_c.c
-    DEPS
+    PRIVATE_DEPS
       pw_assert
       pw_status
     GROUPS

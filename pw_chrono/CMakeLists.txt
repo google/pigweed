@@ -73,7 +73,7 @@ pw_proto_library(pw_chrono.protos
 #   pw_add_test(pw_chrono.simulated_system_clock_test
 #     SOURCES
 #       simulated_system_clock_test.cc
-#     DEPS
+#     PRIVATE_DEPS
 #       pw_chrono.simulated_system_clock
 #     GROUPS
 #       modules
@@ -87,7 +87,7 @@ if(NOT "${pw_chrono.system_clock_BACKEND}"
     SOURCES
       system_clock_facade_test.cc
       system_clock_facade_test_c.c
-    DEPS
+    PRIVATE_DEPS
       pw_chrono.system_clock
       pw_preprocessor
     GROUPS
@@ -101,7 +101,7 @@ if(NOT "${pw_chrono.system_timer_BACKEND}"
   pw_add_test(pw_chrono.system_timer_facade_test
     SOURCES
       system_timer_facade_test.cc
-    DEPS
+    PRIVATE_DEPS
       pw_chrono.system_timer
       pw_sync.thread_notification
     GROUPS

@@ -138,7 +138,7 @@ endif()
 pw_add_test(pw_hdlc.decoder_test
   SOURCES
     decoder_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_bytes
     pw_hdlc
   GROUPS
@@ -149,7 +149,7 @@ pw_add_test(pw_hdlc.decoder_test
 pw_add_test(pw_hdlc.rpc_channel_test
   SOURCES
     rpc_channel_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_hdlc
     pw_hdlc.rpc_channel_output
   GROUPS
@@ -160,7 +160,7 @@ pw_add_test(pw_hdlc.rpc_channel_test
 pw_add_test(pw_hdlc.wire_packet_parser_test
   SOURCES
     wire_packet_parser_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_bytes
     pw_hdlc.packet_parser
   GROUPS

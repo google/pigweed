@@ -47,7 +47,7 @@ pw_add_test(pw_varint.varint_test
   SOURCES
     varint_test.cc
     varint_test_c.c
-  DEPS
+  PRIVATE_DEPS
     pw_varint
   GROUPS
     modules
@@ -57,7 +57,7 @@ pw_add_test(pw_varint.varint_test
 pw_add_test(pw_varint.stream_test
   SOURCES
     stream_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_stream
     pw_varint.stream
   GROUPS

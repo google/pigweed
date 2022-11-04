@@ -52,7 +52,7 @@ pw_add_module_library(pw_blob_store.flat_file_system_entry
 pw_add_test(pw_blob_store.blob_store_chunk_write_test
   SOURCES
     blob_store_chunk_write_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_blob_store
   GROUPS
     pw_blob_store
@@ -61,7 +61,7 @@ pw_add_test(pw_blob_store.blob_store_chunk_write_test
 pw_add_test(pw_blob_store.blob_store_deferred_write_test
   SOURCES
     blob_store_deferred_write_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_blob_store
   GROUPS
     pw_blob_store
@@ -70,7 +70,7 @@ pw_add_test(pw_blob_store.blob_store_deferred_write_test
 pw_add_test(pw_blob_store.flat_file_system_entry_test
   SOURCES
     flat_file_system_entry_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_blob_store
     pw_blob_store.flat_file_system_entry
   GROUPS

@@ -59,7 +59,7 @@ if(NOT "${pw_perf_test.TIMER_INTERFACE_BACKEND}"
   pw_add_test(pw_perf_test.timer_test
     SOURCES
       timer_test.cc
-    DEPS
+    PRIVATE_DEPS
       pw_perf_test.timer
       pw_thread.sleep
       pw_chrono.system_clock
@@ -74,7 +74,7 @@ if(NOT "${pw_perf_test.TIMER_INTERFACE_BACKEND}"
   pw_add_test(pw_perf_test.chrono_timer_test
     SOURCES
       chrono_test.cc
-    DEPS
+    PRIVATE_DEPS
       pw_perf_test.timer
       pw_thread.sleep
       pw_chrono.system_clock

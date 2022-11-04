@@ -79,7 +79,7 @@ pw_add_module_library(pw_rpc.pwpb.client_server_testing_threaded
 pw_add_test(pw_rpc.pwpb.client_call_test
   SOURCES
     client_call_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_rpc.pwpb.client_testing
   GROUPS
     modules
@@ -89,7 +89,7 @@ pw_add_test(pw_rpc.pwpb.client_call_test
 pw_add_test(pw_rpc.pwpb.client_reader_writer_test
   SOURCES
     client_reader_writer_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_rpc.pwpb.client_testing
   GROUPS
     modules
@@ -99,7 +99,7 @@ pw_add_test(pw_rpc.pwpb.client_reader_writer_test
 pw_add_test(pw_rpc.pwpb.client_server_context_test
   SOURCES
     client_server_context_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_rpc.pwpb.client_server_testing
   GROUPS
     modules
@@ -114,7 +114,7 @@ if(("${pw_thread.thread_BACKEND}" STREQUAL "pw_thread_stl.thread") AND
   pw_add_test(pw_rpc.pwpb.client_server_context_threaded_test
     SOURCES
       client_server_context_threaded_test.cc
-    DEPS
+    PRIVATE_DEPS
       pw_rpc.pwpb.client_server_testing_threaded
       pw_sync.binary_semaphore
       pw_thread.test_threads
@@ -129,7 +129,7 @@ endif()
 pw_add_test(pw_rpc.pwpb.codegen_test
   SOURCES
     codegen_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_rpc.pwpb.client_testing
   GROUPS
     modules
@@ -139,7 +139,7 @@ pw_add_test(pw_rpc.pwpb.codegen_test
 pw_add_test(pw_rpc.pwpb.fake_channel_output_test
   SOURCES
     fake_channel_output_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_rpc.pwpb.client_testing
   GROUPS
     modules
@@ -149,7 +149,7 @@ pw_add_test(pw_rpc.pwpb.fake_channel_output_test
 pw_add_test(pw_rpc.pwpb.method_test
   SOURCES
     method_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_rpc.pwpb.client_testing
   GROUPS
     modules
@@ -159,7 +159,7 @@ pw_add_test(pw_rpc.pwpb.method_test
 pw_add_test(pw_rpc.pwpb.method_info_test
   SOURCES
     method_info_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_rpc.pwpb.client_testing
   GROUPS
     modules
@@ -169,7 +169,7 @@ pw_add_test(pw_rpc.pwpb.method_info_test
 pw_add_test(pw_rpc.pwpb.method_lookup_test
   SOURCES
     method_lookup_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_rpc.pwpb.client_testing
   GROUPS
     modules
@@ -179,7 +179,7 @@ pw_add_test(pw_rpc.pwpb.method_lookup_test
 pw_add_test(pw_rpc.pwpb.method_union_test
   SOURCES
     method_union_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_rpc.pwpb.client_testing
   GROUPS
     modules
@@ -189,7 +189,7 @@ pw_add_test(pw_rpc.pwpb.method_union_test
 pw_add_test(pw_rpc.pwpb.echo_service_test
   SOURCES
     echo_service_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_rpc.pwpb.client_testing
   GROUPS
     modules
@@ -199,7 +199,7 @@ pw_add_test(pw_rpc.pwpb.echo_service_test
 pw_add_test(pw_rpc.pwpb.serde_test
   SOURCES
     serde_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_rpc.pwpb.client_testing
   GROUPS
     modules
@@ -209,7 +209,7 @@ pw_add_test(pw_rpc.pwpb.serde_test
 pw_add_test(pw_rpc.pwpb.server_callback_test
   SOURCES
     server_callback_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_rpc.pwpb.client_testing
   GROUPS
     modules
@@ -219,7 +219,7 @@ pw_add_test(pw_rpc.pwpb.server_callback_test
 pw_add_test(pw_rpc.pwpb.server_reader_writer_test
   SOURCES
     server_reader_writer_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_rpc.pwpb.client_testing
   GROUPS
     modules
@@ -229,7 +229,7 @@ pw_add_test(pw_rpc.pwpb.server_reader_writer_test
 pw_add_test(pw_rpc.pwpb.stub_generation_test
   SOURCES
     stub_generation_test.cc
-  DEPS
+  PRIVATE_DEPS
     pw_rpc.pwpb.client_testing
   GROUPS
     modules
@@ -244,7 +244,7 @@ if((TARGET pw_work_queue.pw_work_queue) AND
   pw_add_test(pw_rpc.pwpb.synchronous_call_test
     SOURCES
       synchronous_call_test.cc
-    DEPS
+    PRIVATE_DEPS
       pw_rpc.pwpb.client_testing
       pw_rpc.synchronous_client_api
       pw_thread.thread

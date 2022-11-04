@@ -41,7 +41,7 @@ pw_add_test(pw_trace.pw_trace_null_test
   SOURCES
     trace_null_test.cc
     trace_null_test_c.c
-  DEPS
+  PRIVATE_DEPS
     pw_trace.null
   GROUPS
     modules
@@ -53,7 +53,7 @@ if(NOT "${pw_trace_BACKEND}" STREQUAL "pw_trace.NO_BACKEND_SET")
    SOURCES
     trace_backend_compile_test.cc
     trace_backend_compile_test_c.c
-   DEPS
+   PRIVATE_DEPS
     pw_trace
   GROUPS
     modules

@@ -67,7 +67,7 @@ pw_add_module_library(pw_work_queue.stl_test_thread
 
 if("${pw_thread.thread_BACKEND}" STREQUAL "pw_thread_stl.thread")
   pw_add_test(pw_work_queue.stl_work_queue_test
-    DEPS
+    PRIVATE_DEPS
       pw_work_queue.stl_test_thread
       pw_work_queue.work_queue_test
     GROUPS
