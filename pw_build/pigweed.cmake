@@ -644,59 +644,130 @@ set(pw_unit_test_GOOGLETEST_BACKEND pw_unit_test.light CACHE STRING
      is used. You could, for example, point this at pw_third_party.googletest \
      if using upstream GoogleTest directly on your host for GoogleMock.")
 
-# Declares a unit test. Creates two targets:
+# TODO(ewout): Remove the default to match GN and support Windows.
+set(pw_unit_test_AUTOMATIC_RUNNER "$ENV{PW_ROOT}/targets/host/run_test" CACHE
+    STRING
+    "Path to a test runner to automatically run unit tests after they are \
+     built. \
+     If set, a pw_add_test's {NAME}.run action will invoke the test runner \
+     specified by this variable, passing the path to the unit test to run. If \
+     set to an empty string, the {NAME}.run step will fail to build.")
+
+set(pw_unit_test_AUTOMATIC_RUNNER_TIMEOUT_SECONDS "" CACHE STRING
+    "Optional timeout to apply when running tests via the automatic runner. \
+     Timeout is in seconds. Defaults to empty which means no timeout.")
+
+set(pw_unit_test_AUTOMATIC_RUNNER_ARGS "" CACHE STRING
+    "Optional arguments to forward to the automatic runner")
+
+# Using pw_add_test, it creates the following targets:
 #
-#  * <TEST_NAME> - the test executable
-#  * <TEST_NAME>.run - builds and runs the test
+#   {NAME}.lib contains the provided test sources as a library target, which can
+#              then be linked into a test executable.
+#   {NAME} is a standalone executable which contains only the test sources
+#          specified in the pw_unit_test_template.
+#   {NAME}.run which runs the unit test executable after building it if
+#              pw_unit_test_AUTOMATIC_RUNNER is set, else it fails to build.
 #
-# Args:
+# Required Args:
 #
-#   NAME: name to use for the target
-#   SOURCES: source files for this test
-#   DEPS: libraries on which this test depends
-#   DEFINES: defines to set for the source files in this test
-#   GROUPS: groups to which to add this test; if none are specified, the test is
+#   NAME: name to use for the produced test targets specified above
+#
+# Optional Args:
+#
+#   SOURCES - source files for this library
+#   HEADERS - header files for this library
+#   PRIVATE_DEPS - private pw_target_link_targets arguments
+#   PRIVATE_INCLUDES - public target_include_directories argument
+#   PRIVATE_DEFINES - private target_compile_definitions arguments
+#   PRIVATE_COMPILE_OPTIONS - private target_compile_options arguments
+#   PRIVATE_LINK_OPTIONS - private target_link_options arguments
+#
+#  TODO(ewout, hepler): Deprecate the following legacy arguments
+#   DEPS - alias to PRIVATE_DEPS
+#   DEFINES - alias to PRIVATE_DEFINES
+#   GROUPS - groups to which to add this test; if none are specified, the test is
 #       added to the 'default' and 'all' groups
 #
 function(pw_add_test NAME)
-  pw_parse_arguments_strict(pw_add_test 1 "" "" "SOURCES;DEPS;DEFINES;GROUPS")
+  set(num_positional_args 1)
+  set(option_args)
+  set(one_value_args)
+  set(multi_value_args SOURCES HEADERS PRIVATE_DEPS PRIVATE_INCLUDES
+                       PRIVATE_DEFINES PRIVATE_COMPILE_OPTIONS
+                       PRIVATE_LINK_OPTIONS
+                       DEPS DEFINES GROUPS)
+  pw_parse_arguments_strict(
+      pw_add_test "${num_positional_args}" "${option_args}" "${one_value_args}"
+      "${multi_value_args}")
 
-  add_executable("${NAME}" EXCLUDE_FROM_ALL ${arg_SOURCES})
-  # TODO(ewout, hepler): Consider changing this to pw_target_link_targets once
-  # pw_auto_add_module_tests has been deprecated which relies on generator
-  # expressions.
-  target_link_libraries("${NAME}"
-    PRIVATE
+  # OBJECT libraries require at least one source file.
+  if(NOT arg_SOURCES)
+    set(arg_SOURCES $<TARGET_PROPERTY:pw_build.empty,SOURCES>)
+  endif()
+  pw_add_library("${NAME}.lib" OBJECT
+    SOURCES
+      ${arg_SOURCES}
+    HEADERS
+      ${arg_HEADERS}
+    PRIVATE_DEPS
       pw_unit_test
       ${pw_unit_test_MAIN}
-      ${arg_DEPS}
-  )
-  target_compile_definitions("${NAME}"
-    PRIVATE
+      ${arg_PRIVATE_DEPS}
+    PRIVATE_INCLUDES
+      ${arg_PRIVATE_INCLUDES}
+    PRIVATE_DEFINES
       ${arg_DEFINES}
+      ${arg_PRIVATE_DEFINES}
+    PRIVATE_COMPILE_OPTIONS
+      ${arg_PRIVATE_COMPILE_OPTIONS}
+    PRIVATE_LINK_OPTIONS
+      ${arg_PRIVATE_LINK_OPTIONS}
   )
+  # TODO(ewout, hepler): Move this above once pw_auto_add_module_tests has
+  # been deprecated which relies on generator expressions (i.e. aren't targets).
+  target_link_libraries("${NAME}.lib" PRIVATE ${arg_DEPS})
 
-  # Tests require at least one source file.
-  if(NOT arg_SOURCES)
-    target_sources("${NAME}" PRIVATE $<TARGET_PROPERTY:pw_build.empty,SOURCES>)
+  # TODO(ewout, hepler): Enable the use of pw_unit_test_EXECUTABLE_TARGET_TYPE &
+  # pw_unit_test_EXECUTABLE_TARGET_TYPE_FILE for stamping out unit test
+  # executables where we only pass the name and the lib target as args.
+  add_executable("${NAME}" EXCLUDE_FROM_ALL)
+  target_link_libraries("${NAME}" PRIVATE "${NAME}.lib")
+
+  if("${pw_unit_test_AUTOMATIC_RUNNER}" STREQUAL "")
+    pw_add_error_target("${NAME}.run"
+      MESSAGE
+        "Attempted to build ${NAME}.run which is not available because "
+        "pw_unit_test_AUTOMATIC_RUNNER has not been configured. "
+        "See https://pigweed.dev/pw_unit_test."
+    )
+  else()
+    # Define a target for running the test. The target creates a stamp file to
+    # indicate successful test completion. This allows running tests in parallel
+    # with Ninja's full dependency resolution.
+    if(NOT "${pw_unit_test_AUTOMATIC_RUNNER_TIMEOUT_SECONDS}" STREQUAL "")
+      set(optional_timeout_arg
+          "--timeout ${pw_unit_test_AUTOMATIC_RUNNER_TIMEOUT_SECONDS}")
+    endif()
+    if(NOT "${pw_unit_test_AUTOMATIC_RUNNER_ARGS}" STREQUAL "")
+      set(optional_runner_args "-- ${pw_unit_test_AUTOMATIC_RUNNER_ARGS}")
+    endif()
+    add_custom_command(
+      COMMAND
+        python3 -m pw_unit_test.test_runner
+        --runner "${pw_unit_test_AUTOMATIC_RUNNER}"
+        --test "$<TARGET_FILE:${NAME}>"
+        ${optional_timeout_arg}
+        ${optional_runner_args}
+      COMMAND
+        "${CMAKE_COMMAND}" -E touch "${NAME}.stamp"
+      DEPENDS
+        "${NAME}"
+      OUTPUT
+        "${NAME}.stamp"
+    )
+    add_custom_target("${NAME}.run" DEPENDS "${NAME}.stamp")
   endif()
-
-  # Define a target for running the test. The target creates a stamp file to
-  # indicate successful test completion. This allows running tests in parallel
-  # with Ninja's full dependency resolution.
-  add_custom_command(
-    COMMAND
-      # TODO(hepler): This only runs local test binaries. Execute a test runner
-      #     instead to support device test runs.
-      "$<TARGET_FILE:${NAME}>"
-    COMMAND
-      "${CMAKE_COMMAND}" -E touch "${NAME}.stamp"
-    DEPENDS
-      "${NAME}"
-    OUTPUT
-      "${NAME}.stamp"
-  )
-  add_custom_target("${NAME}.run" DEPENDS "${NAME}.stamp")
 
   # Always add tests to the "all" group. If no groups are provided, add the
   # test to the "default" group.
