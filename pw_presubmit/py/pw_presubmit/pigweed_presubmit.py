@@ -866,7 +866,6 @@ _EXCLUDE_FROM_TODO_CHECK = (
     r'\bpw_assert_basic/public/pw_assert_basic/handler.h',
     r'\bpw_blob_store/public/pw_blob_store/flat_file_system_entry.h',
     r'\bpw_build/linker_script.gni',
-    r'\bpw_build/pigweed.cmake',
     r'\bpw_build/py/pw_build/copy_from_cipd.py',
     r'\bpw_cpu_exception/basic_handler.cc',
     r'\bpw_cpu_exception_cortex_m/entry.cc',

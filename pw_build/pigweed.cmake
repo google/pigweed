@@ -662,7 +662,7 @@ function(pw_add_test NAME)
   pw_parse_arguments_strict(pw_add_test 1 "" "" "SOURCES;DEPS;DEFINES;GROUPS")
 
   add_executable("${NAME}" EXCLUDE_FROM_ALL ${arg_SOURCES})
-  # TODO(ewout/hepler): Consider changing this to pw_target_link_targets once
+  # TODO(ewout, hepler): Consider changing this to pw_target_link_targets once
   # pw_auto_add_module_tests has been deprecated which relies on generator
   # expressions.
   target_link_libraries("${NAME}"
