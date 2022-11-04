@@ -662,9 +662,11 @@ set(pw_unit_test_AUTOMATIC_RUNNER_ARGS "" CACHE STRING
 
 # Using pw_add_test, it creates the following targets:
 #
+#   {NAME} depends on ${NAME}.run if pw_unit_test_AUTOMATIC_RUNNER is set, else
+#          it depends on ${NAME}.bin
 #   {NAME}.lib contains the provided test sources as a library target, which can
 #              then be linked into a test executable.
-#   {NAME} is a standalone executable which contains only the test sources
+#   {NAME}.bin is a standalone executable which contains only the test sources
 #          specified in the pw_unit_test_template.
 #   {NAME}.run which runs the unit test executable after building it if
 #              pw_unit_test_AUTOMATIC_RUNNER is set, else it fails to build.
@@ -731,17 +733,21 @@ function(pw_add_test NAME)
   # TODO(ewout, hepler): Enable the use of pw_unit_test_EXECUTABLE_TARGET_TYPE &
   # pw_unit_test_EXECUTABLE_TARGET_TYPE_FILE for stamping out unit test
   # executables where we only pass the name and the lib target as args.
-  add_executable("${NAME}" EXCLUDE_FROM_ALL)
-  target_link_libraries("${NAME}" PRIVATE "${NAME}.lib")
+  add_executable("${NAME}.bin" EXCLUDE_FROM_ALL)
+  target_link_libraries("${NAME}.bin" PRIVATE "${NAME}.lib")
 
+  add_custom_target("${NAME}")
   if("${pw_unit_test_AUTOMATIC_RUNNER}" STREQUAL "")
+    # Test runner is not provided, only build the executable.
+    add_dependencies("${NAME}" "${NAME}.bin")
+
     pw_add_error_target("${NAME}.run"
       MESSAGE
         "Attempted to build ${NAME}.run which is not available because "
         "pw_unit_test_AUTOMATIC_RUNNER has not been configured. "
         "See https://pigweed.dev/pw_unit_test."
     )
-  else()
+  else()  # pw_unit_test_AUTOMATIC_RUNNER is provided.
     # Define a target for running the test. The target creates a stamp file to
     # indicate successful test completion. This allows running tests in parallel
     # with Ninja's full dependency resolution.
@@ -756,17 +762,18 @@ function(pw_add_test NAME)
       COMMAND
         python3 -m pw_unit_test.test_runner
         --runner "${pw_unit_test_AUTOMATIC_RUNNER}"
-        --test "$<TARGET_FILE:${NAME}>"
+        --test "$<TARGET_FILE:${NAME}.bin>"
         ${optional_timeout_arg}
         ${optional_runner_args}
       COMMAND
         "${CMAKE_COMMAND}" -E touch "${NAME}.stamp"
       DEPENDS
-        "${NAME}"
+        "${NAME}.bin"
       OUTPUT
         "${NAME}.stamp"
     )
     add_custom_target("${NAME}.run" DEPENDS "${NAME}.stamp")
+    add_dependencies("${NAME}" "${NAME}.run")
   endif()
 
   # Always add tests to the "all" group. If no groups are provided, add the
@@ -791,7 +798,7 @@ function(pw_add_test_to_groups TEST_NAME)
       add_custom_target("pw_run_tests.${group}")
     endif()
 
-    add_dependencies("pw_tests.${group}" "${TEST_NAME}")
+    add_dependencies("pw_tests.${group}" "${TEST_NAME}.bin")
     add_dependencies("pw_run_tests.${group}" "${TEST_NAME}.run")
   endforeach()
 endfunction(pw_add_test_to_groups)
