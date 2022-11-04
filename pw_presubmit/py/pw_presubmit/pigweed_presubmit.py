@@ -433,7 +433,6 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     '-//pw_log:log_proto_py_pb2_genproto',
     '-//pw_log_string/...:all',
     '-//pw_metric/...:all',
-    '-//pw_minimal_cpp_stdlib/...:all',
     '-//pw_persistent_ram/...:all',
     '-//pw_snapshot/py/...:all',
     '-//pw_snapshot:metadata_proto_py_pb2',

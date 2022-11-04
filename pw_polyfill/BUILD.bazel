@@ -69,7 +69,10 @@ pw_cc_library(
         "standard_library_public/pw_polyfill/standard_library/namespace.h",
     ],
     includes = ["standard_library_public"],
-    visibility = ["//pw_span:__pkg__"],
+    visibility = [
+        "//pw_minimal_cpp_stdlib:__pkg__",
+        "//pw_span:__pkg__",
+    ],
 )
 
 pw_cc_test(
