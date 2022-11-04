@@ -432,7 +432,6 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     '-//pw_kvs/...:all',
     '-//pw_log:log_proto_py_pb2',  # TODO(b/241456982) Remove when passing.
     '-//pw_log:log_proto_py_pb2_genproto',
-    '-//pw_log_null/...:all',
     '-//pw_log_string/...:all',
     '-//pw_metric/...:all',
     '-//pw_minimal_cpp_stdlib/...:all',
