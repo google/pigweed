@@ -8,7 +8,7 @@
         "windows-amd64"
       ],
       "tags": [
-        "git_revision:444aeaff9f38092255d50c865d86b609c769be32"
+        "git_revision:8ffcb922252c51bb2ae6164fce23cdc605f226a0"
       ],
       "version_file": ".versions/host_tools.cipd_version"
     }
