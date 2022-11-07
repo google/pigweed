@@ -13,6 +13,8 @@
 # the License.
 include_guard(GLOBAL)
 
+include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+
 # Declares a protocol buffers library. This function creates a library for each
 # supported protocol buffer implementation:
 #
@@ -36,8 +38,13 @@ include_guard(GLOBAL)
 #       .options files)
 #
 function(pw_proto_library NAME)
-  cmake_parse_arguments(PARSE_ARGV 1 arg "" "STRIP_PREFIX;PREFIX"
-      "SOURCES;INPUTS;DEPS")
+  set(num_positional_args 1)
+  set(option_args)
+  set(one_value_args STRIP_PREFIX PREFIX)
+  set(multi_value_args SOURCES INPUTS DEPS)
+  pw_parse_arguments_strict(
+      pw_proto_library "${num_positional_args}" "${option_args}"
+      "${one_value_args}" "${multi_value_args}")
 
   if("${arg_SOURCES}" STREQUAL "")
     message(FATAL_ERROR
