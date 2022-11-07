@@ -31,7 +31,7 @@ file:../OWNERS
 file:../OWNERS
 test1@example.com
 #Test 2 comment
-test2@example.com    
+test2@example.com
 """
 
 bad_duplicate_user = """\
@@ -220,7 +220,7 @@ per-file *.txt=file:foo_owners
 per-file *.md=example.google.com
 """
 
-good1 = """
+good1 = """\
 # Checks should fine this formatted correctly
 set noparent
 
@@ -249,7 +249,6 @@ test1@example.com
 
 bar_owners = """\
 test1@example.com
-
 """
 
 BAD_TEST_FILES = (
@@ -289,8 +288,9 @@ class TestOwnersChecks(unittest.TestCase):
         temp_dir: str, file_list: Sequence[Tuple[str, str]]
     ) -> Sequence[Tuple[str, pathlib.Path]]:
         real_files = []
+        temp_dir_path = pathlib.Path(temp_dir)
         for name, contents in file_list:
-            file_path = pathlib.Path(temp_dir) / name
+            file_path = temp_dir_path / name
             file_path.write_text(contents)
             real_files.append((name, file_path))
         return real_files
@@ -315,7 +315,9 @@ class TestOwnersChecks(unittest.TestCase):
                          for file_name in test_files]
                 real_files = self._create_temp_files(temp_dir=temp_dir,
                                                      file_list=files)
-                owners_checks.run_owners_checks(real_files[0][1])
+                self.assertDictEqual({},
+                                     owners_checks.run_owners_checks(
+                                         real_files[0][1]))
 
     def test_style_proposals(self):
         for unstyled_file, styled_file in STYLING_CHECKS:
@@ -335,10 +337,9 @@ class TestOwnersChecks(unittest.TestCase):
         for file_under_test, expected_deps in DEPENDENCY_TEST_CASES:
             # During test make the test file directory the "git root"
             with tempfile.TemporaryDirectory() as temp_dir:
-                temp_dir_path = pathlib.Path(temp_dir)
                 with self.subTest(i=file_under_test), mock.patch(
                         "pw_presubmit.owners_checks.git_repo.root",
-                        return_value=temp_dir_path):
+                        return_value=pathlib.Path(temp_dir)):
                     primary_file = (file_under_test,
                                     globals()[file_under_test])
                     deps_files = tuple(
@@ -351,7 +352,7 @@ class TestOwnersChecks(unittest.TestCase):
 
                     owners_file = owners_checks.OwnersFile(primary_files[0][1])
                     found_deps = owners_file.get_dependencies()
-                    expected_deps_path = [path for name, path in dep_files]
+                    expected_deps_path = [path for _, path in dep_files]
                     expected_deps_path.sort()
                     found_deps.sort()
                     self.assertListEqual(expected_deps_path, found_deps)
