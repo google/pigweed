@@ -16,7 +16,7 @@ scenarios, for example:
 
 Negative compilation tests are only supported in GN currently. Negative
 compilation tests are not currently supported in GN on Windows due to
-`b/241565082 <https://bugs.pigweed.dev/241565082>`_.
+`b/241565082 <https://issues.pigweed.dev/241565082>`_.
 
 .. warning::
 

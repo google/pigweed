@@ -445,7 +445,7 @@ def run_doctor(strict=False, checks=None):
             "Your environment setup has completed, but something isn't right "
             'and some things may not work correctly. You may continue with '
             'development, but please seek support at '
-            'https://bugs.pigweed.dev/new or by reaching out to your team.')
+            'https://issues.pigweed.dev/new or by reaching out to your team.')
     else:
         doctor.log.info('Environment passes all checks!')
     return len(doctor.failures)

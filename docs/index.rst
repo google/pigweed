@@ -1,6 +1,8 @@
 .. _docs-root:
 .. highlight:: sh
 
+.. TODO(b/256680603) Remove query string from issue tracker link.
+
 .. toctree::
   :maxdepth: 1
   :hidden:
@@ -13,7 +15,7 @@
   Code Reviews <https://pigweed-review.googlesource.com>
   Mailing List <https://groups.google.com/forum/#!forum/pigweed>
   Chat Room <https://discord.gg/M9NSeTA>
-  Issue Tracker <https://bugs.pigweed.dev/>
+  Issue Tracker <https://issues.pigweed.dev/issues?q=status:open>
   docs/contributing
   docs/code_of_conduct
   docs/embedded_cpp_guide

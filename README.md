@@ -10,10 +10,12 @@ For more information please see our website: https://pigweed.dev/.
 
 ## Links
 
+<!-- TODO(b/256680603) Remove query string from issue tracker link. -->
+
 - [Documentation](https://pigweed.dev/)
 - [Source Code](https://cs.pigweed.dev/pigweed)
 - [Code Reviews](https://pigweed-review.googlesource.com)
 - [Mailing List](https://groups.google.com/forum/#!forum/pigweed)
 - [Chat Room](https://discord.gg/M9NSeTA)
-- [Issue Tracker](https://bugs.pigweed.dev/)
+- [Issue Tracker](https://issues.pigweed.dev/issues?q=status:open)
 
