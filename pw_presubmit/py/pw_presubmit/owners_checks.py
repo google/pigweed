@@ -273,23 +273,24 @@ class OwnersFile:
             raise OwnersProhibitedError(
                 "'include' cannot be used with 'per-file'.")
 
-    def __complete_path(self, owners_file_path) -> pathlib.Path:
+    def __complete_path(self, sub_owners_file_path) -> pathlib.Path:
         """Always return absolute path."""
-        if owners_file_path.startswith("/"):
+        # Absolute paths start with the git/project root
+        if sub_owners_file_path.startswith("/"):
             root = git_repo.root(self.path)
-            full_path = root / owners_file_path[1:]
+            full_path = root / sub_owners_file_path[1:]
         else:
-            full_path = self.path.parent / owners_file_path
+            # Relative paths start with owners file dir
+            full_path = self.path.parent / sub_owners_file_path
         return full_path.resolve()
 
     def get_dependencies(self) -> List[pathlib.Path]:
         """Finds owners files this file includes."""
         dependencies = []
-        owners_dir = self.path.parent
         # All the includes
         for include in self.sections.get(LineType.INCLUDE, []):
             file_str = include.content[len("include "):]
-            dependencies.append(owners_dir / file_str)
+            dependencies.append(self.__complete_path(file_str))
 
         # all file: rules:
         for file_rule in self.sections.get(LineType.FILE_RULE, []):

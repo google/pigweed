@@ -220,6 +220,30 @@ per-file *.txt=file:foo_owners
 per-file *.md=example.google.com
 """
 
+dependencies_paths_relative = """\
+set noparent
+
+include foo/bar/../include_owners
+
+file:foo/bar/../file_owners
+
+*
+
+per-file *.txt=file:foo/bar/../perfile_owners
+"""
+
+dependencies_paths_absolute = """\
+set noparent
+
+include /test/include_owners
+
+file:/test/file_owners
+
+*
+
+per-file *.txt=file:/test/perfile_owners
+"""
+
 good1 = """\
 # Checks should fine this formatted correctly
 set noparent
@@ -272,6 +296,11 @@ DEPENDENCY_TEST_CASES: Iterable[Tuple[str, Iterable[str]]] = (
     ("has_dependencies_file", ("foo_owners", "bar_owners")),
     ("has_dependencies_perfile", ("foo_owners", )),
     ("has_dependencies_include", ("foo_owners", )),
+)
+
+DEPENDENCY_PATH_TEST_CASES: Iterable[str] = (
+    "dependencies_paths_relative",
+    "dependencies_paths_absolute",
 )
 
 GOOD_TEST_CASES = (("good1", "good1_include", "good1_file"), )
@@ -353,6 +382,38 @@ class TestOwnersChecks(unittest.TestCase):
                     owners_file = owners_checks.OwnersFile(primary_files[0][1])
                     found_deps = owners_file.get_dependencies()
                     expected_deps_path = [path for _, path in dep_files]
+                    expected_deps_path.sort()
+                    found_deps.sort()
+                    self.assertListEqual(expected_deps_path, found_deps)
+
+    def test_dependency_path_creation(self):
+        """Confirm paths care constructed for absolute and relative paths."""
+        for file_under_test in DEPENDENCY_PATH_TEST_CASES:
+            # During test make the test file directory the "git root"
+            with tempfile.TemporaryDirectory() as temp_dir:
+                temp_dir_path = pathlib.Path(temp_dir)
+                with self.subTest(i=file_under_test), mock.patch(
+                        "pw_presubmit.owners_checks.git_repo.root",
+                        return_value=temp_dir_path):
+                    owners_file_path = (temp_dir_path / "owners" /
+                                        file_under_test)
+                    owners_file_path.parent.mkdir(parents=True)
+                    owners_file_path.write_text(globals()[file_under_test])
+                    owners_file = owners_checks.OwnersFile(owners_file_path)
+                    found_deps = owners_file.get_dependencies()
+
+                    if "absolute" in file_under_test:
+                        # Absolute paths start with the git/project root
+                        expected_prefix = temp_dir_path / "test"
+                    else:
+                        # Relative paths start with owners file dir
+                        expected_prefix = owners_file_path.parent / "foo"
+
+                    expected_deps_path = [
+                        (expected_prefix / filename).absolute()
+                        for filename in ("include_owners", "file_owners",
+                                         "perfile_owners")
+                    ]
                     expected_deps_path.sort()
                     found_deps.sort()
                     self.assertListEqual(expected_deps_path, found_deps)
