@@ -831,6 +831,28 @@ interacting with a POSIX API in intentionally non-portable code. Never use
 POSIX functions with suitable standard or Pigweed alternatives, such as
 ``strnlen`` (use ``pw::string::NullTerminatedLength`` instead).
 
+--------------------
+Code Owners (OWNERS)
+--------------------
+If you use Gerrit for source code hosting and have the
+`code-owners <https://android-review.googlesource.com/plugins/code-owners/Documentation/backend-find-owners.html>`__
+plug-in enabled Pigweed can help you enforce consistent styling on those files
+and also detects some errors.
+
+The styling follows these rules.
+#. Content is grouped by type of line (Access grant, include, etc).
+#. Each grouping is sorted alphabetically.
+#. Groups are placed the following order with a blank line separating each
+grouping.
+
+    * "set noparent" line
+    * "include" lines
+    * "file:" lines
+    * user grants (some examples: "*", "foo@example.com")
+    * "per-file:" lines
+
+This plugin will, by default, act upon any file named "OWNERS".
+
 ------------
 Python style
 ------------

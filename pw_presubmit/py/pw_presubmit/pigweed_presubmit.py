@@ -49,6 +49,7 @@ from pw_presubmit import (
     inclusive_language,
     keep_sorted,
     npm_presubmit,
+    owners_checks,
     plural,
     presubmit,
     PresubmitContext,
@@ -617,6 +618,10 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     r'\.diff$',
     r'\.patch$',
     # keep-sorted: end
+    # Test data
+    # keep-sorted: start
+    r'\bpw_presubmit/py/test/owners_checks/',
+    # keep-sorted: end
 )
 
 # Regular expression for the copyright comment. "\1" refers to the comment
@@ -890,6 +895,12 @@ def todo_check_with_exceptions(ctx: PresubmitContext):
     todo_check.create(todo_check.BUGS_OR_USERNAMES)(ctx)
 
 
+@format_code.OWNERS_CODE_FORMAT.filter.apply_to_check()
+def owners_lint_checks(ctx: PresubmitContext):
+    """Runs OWNERS linter."""
+    owners_checks.presubmit_check(ctx.paths)
+
+
 #
 # Presubmit check programs
 #
@@ -950,6 +961,7 @@ _LINTFORMAT = (
     )),
     cpp_checks.pragma_once,
     build.bazel_lint,
+    owners_lint_checks,
     source_is_in_build_files,
     shell_checks.shellcheck if shutil.which('shellcheck') else (),
     keep_sorted.keep_sorted,

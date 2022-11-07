@@ -35,6 +35,7 @@ pw_python_package("py") {
     "pw_presubmit/keep_sorted.py",
     "pw_presubmit/ninja_parser.py",
     "pw_presubmit/npm_presubmit.py",
+    "pw_presubmit/owners_checks.py",
     "pw_presubmit/pigweed_presubmit.py",
     "pw_presubmit/presubmit.py",
     "pw_presubmit/python_checks.py",
@@ -48,9 +49,11 @@ pw_python_package("py") {
     "keep_sorted_test.py",
     "ninja_parser_test.py",
     "presubmit_test.py",
+    "owners_checks_test.py",
     "todo_check_test.py",
     "tools_test.py",
   ]
+
   python_deps = [
     "$dir_pw_cli/py",
     "$dir_pw_env_setup/py",
