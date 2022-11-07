@@ -123,7 +123,4 @@ information.
 
 Python
 ------
-We currently officially support Python 3.7.7, 3.8, and 3.9.
-
-.. note::
-   Python 3.10 is not yet supported (https://bugs.pigweed.dev/234874769).
+We currently officially support Python 3.8, 3.9, and 3.10.
