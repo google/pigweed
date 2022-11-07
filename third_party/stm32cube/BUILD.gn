@@ -127,12 +127,14 @@ if (dir_pw_third_party_stm32cube == "") {
       "-Wno-switch-enum",
     ]
     if (pw_toolchain_SCOPE.cc == "clang") {
+      cflags += [ "-Wno-deprecated-volatile" ]
       cflags_c += [ "-Wno-parentheses-equality" ]
     } else {
       cflags_c += [
         "-Wno-old-style-declaration",
         "-Wno-maybe-uninitialized",
       ]
+      cflags_cc = [ "-Wno-volatile" ]
     }
 
     defines = [
