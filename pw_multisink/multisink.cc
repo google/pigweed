@@ -66,8 +66,12 @@ Status MultiSink::PopEntry(Drain& drain, const Drain::PeekedEntry& entry) {
     // still held, there shouldn't be any modifications to the multisink in
     // between peeking and popping.
     PW_CHECK_OK(drain.reader_.PopFront());
-    drain.last_handled_sequence_id_ = next_entry_sequence_id;
   }
+  // If the entry's sequence id is not the next one it means that the
+  // multisink advanced since PeekEntry() was called. Advance the last handled
+  // sequence id to the passed entry anyway to mark the fact that the dropped
+  // messages reported on PeekEntry() are handled.
+  drain.last_handled_sequence_id_ = entry.sequence_id();
   return OkStatus();
 }
 

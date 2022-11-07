@@ -428,6 +428,7 @@ TEST_F(MultiSinkTest, PeekReportsSlowDrainDropCount) {
   std::array<std::byte, message_size> message;
   std::memset(message.data(), 'a', message.size());
   for (size_t i = 0; i < max_multisink_messages; ++i) {
+    message[0] = static_cast<std::byte>(i);
     multisink_.HandleEntry(message);
   }
 
@@ -436,15 +437,43 @@ TEST_F(MultiSinkTest, PeekReportsSlowDrainDropCount) {
   // Account for that offset.
   const size_t expected_drops = 5;
   for (size_t i = 1; i < expected_drops; ++i) {
+    message[0] = static_cast<std::byte>(200 + i);
     multisink_.HandleEntry(message);
   }
 
   uint32_t drop_count = 0;
   uint32_t ingress_drop_count = 0;
+
   auto peek_result =
       drains_[0].PeekEntry(entry_buffer_, drop_count, ingress_drop_count);
+  // The message peeked is the 6th message added.
+  message[0] = static_cast<std::byte>(5);
   VerifyPeekResult(
       peek_result, drop_count, ingress_drop_count, message, expected_drops, 0);
+
+  // Add 3 more messages since we peeked the multisink, generating 2 more drops.
+  const size_t expected_drops2 = 2;
+  for (size_t i = 0; i < expected_drops2 + 1; ++i) {
+    message[0] = static_cast<std::byte>(220 + i);
+    multisink_.HandleEntry(message);
+  }
+
+  // Pop the 6th message now, even though it was already dropped.
+  EXPECT_EQ(drains_[0].PopEntry(peek_result.value()), OkStatus());
+
+  // A new peek would get the 9th message because two more messages were
+  // dropped. Given that PopEntry() was called with peek_result, all the dropped
+  // messages before peek_result should be considered handled and only the two
+  // new drops should be reported here.
+  auto peek_result2 =
+      drains_[0].PeekEntry(entry_buffer_, drop_count, ingress_drop_count);
+  message[0] = static_cast<std::byte>(8);  // 9th message
+  VerifyPeekResult(peek_result2,
+                   drop_count,
+                   ingress_drop_count,
+                   message,
+                   expected_drops2,
+                   0);
 }
 
 TEST_F(MultiSinkTest, IngressDropCountOverflow) {
