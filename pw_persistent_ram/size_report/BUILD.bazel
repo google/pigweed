@@ -25,11 +25,31 @@ pw_cc_binary(
     name = "persistent",
     srcs = [
         "persistent.cc",
+    ],
+    deps = [
+        "//pw_bloat:bloat_this_binary",
+        "//pw_persistent_ram",
+    ],
+)
+
+pw_cc_binary(
+    name = "persistent_base",
+    srcs = [
         "persistent_base.cc",
+    ],
+    deps = [
+        "//pw_bloat:bloat_this_binary",
+        "//pw_persistent_ram",
+    ],
+)
+
+pw_cc_binary(
+    name = "persistent_base_with_crc16",
+    srcs = [
         "persistent_base_with_crc16.cc",
     ],
     deps = [
         "//pw_bloat:bloat_this_binary",
-        "//pw_persistent_ram:persistent",
+        "//pw_persistent_ram",
     ],
 )
