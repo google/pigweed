@@ -41,30 +41,3 @@ pw_python_package("py") {
   mypy_ini = "$dir_pigweed/.mypy.ini"
   proto_library = "..:proto"
 }
-
-# TODO(b/234875234): This test is deprecated and will be removed.
-pw_python_script("python_cpp_transfer_test") {
-  sources = [ "tests/python_cpp_transfer_test.py" ]
-  python_deps = [
-    ":py",
-    "$dir_pw_build/py",
-    "$dir_pw_hdlc/py",
-    "$dir_pw_log:protos.python",
-    "$dir_pw_rpc/py",
-    "$dir_pw_status/py",
-    "$dir_pw_tokenizer/py:test_proto.python",
-    "..:test_server_proto.python",
-  ]
-  pylintrc = "$dir_pigweed/.pylintrc"
-  mypy_ini = "$dir_pigweed/.mypy.ini"
-
-  action = {
-    args = [
-      "--port=$pw_transfer_PYTHON_CPP_TRANSFER_TEST_PORT",
-      "--test-server-command",
-      "<TARGET_FILE(..:test_rpc_server)>",
-    ]
-    deps = [ "..:test_rpc_server" ]
-    stamp = true
-  }
-}

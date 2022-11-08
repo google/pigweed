@@ -28,7 +28,7 @@ import random
 import socket
 import sys
 import time
-from typing import (Any, Awaitable, Callable, List, Optional)
+from typing import (Any, Awaitable, Callable, Iterable, List, Optional)
 
 from google.protobuf import text_format
 
@@ -124,6 +124,59 @@ class DataDropper(Filter):
             _LOG.info(f'{self._name} dropped {len(data)} bytes of data')
         else:
             await self.send_data(data)
+
+
+class KeepDropQueue(Filter):
+    """A filter which alternates between sending packets and dropping packets.
+
+    A KeepDropQueue filter will alternate between keeping packets and dropping
+    chunks of data based on a keep/drop queue provided during its creation. The
+    queue is looped over unless a negative element is found. A negative number
+    is effectively the same as a value of infinity.
+
+     This filter is typically most pratical when used with a packetizer so data
+     can be dropped as distinct packets.
+
+    Examples:
+
+      keep_drop_queue = [3, 2]:
+        Keeps 3 packets,
+        Drops 2 packets,
+        Keeps 3 packets,
+        Drops 2 packets,
+        ... [loops indefinitely]
+
+      keep_drop_queue = [5, 99, 1, -1]:
+        Keeps 5 packets,
+        Drops 99 packets,
+        Keeps 1 packet,
+        Drops all further packets.
+    """
+    def __init__(self, send_data: Callable[[bytes], Awaitable[None]],
+                 name: str, keep_drop_queue: Iterable[int]):
+        super().__init__(send_data)
+        self._keep_drop_queue = list(keep_drop_queue)
+        self._loop_idx = 0
+        self._current_count = self._keep_drop_queue[0]
+        self._keep = True
+        self._name = name
+
+    async def process(self, data: bytes) -> None:
+        # Move forward through the queue if neeeded.
+        while self._current_count == 0:
+            self._loop_idx += 1
+            self._current_count = self._keep_drop_queue[self._loop_idx % len(
+                self._keep_drop_queue)]
+            self._keep = not self._keep
+
+        if self._current_count > 0:
+            self._current_count -= 1
+
+        if self._keep:
+            await self.send_data(data)
+            _LOG.info(f'{self._name} forwarded {len(data)} bytes of data')
+        else:
+            _LOG.info(f'{self._name} dropped {len(data)} bytes of data')
 
 
 class RateLimiter(Filter):
@@ -310,6 +363,10 @@ async def _handle_simplex_connection(
             filter_stack = ServerFailure(filter_stack, name,
                                          server_failure.packets_before_failure)
             event_handlers.append(filter_stack.handle_event)
+        elif filter_name == "keep_drop_queue":
+            keep_drop_queue = config.keep_drop_queue
+            filter_stack = KeepDropQueue(filter_stack, name,
+                                         keep_drop_queue.keep_drop_queue)
         else:
             sys.exit(f'Unknown filter {filter_name}')
 

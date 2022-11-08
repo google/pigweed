@@ -127,6 +127,33 @@ message DataDropperConfig {
   int64 seed = 2;
 }
 
+// Configuration for the KeepDropQueue proxy filter.
+message KeepDropQueueConfig {
+  // A KeepDropQueue filter will alternate between keeping packets and dropping
+  // chunks of data based on a keep/drop queue provided during its creation. The
+  // queue is looped over unless a negative element is found. A negative number
+  // is effectively the same as a value of infinity.
+  //
+  // This filter is typically most pratical when used with a packetizer so data
+  // can be dropped as distinct packets.
+  //
+  // Examples:
+  //
+  //   keep_drop_queue = [3, 2]:
+  //     Keeps 3 packets,
+  //     Drops 2 packets,
+  //     Keeps 3 packets,
+  //     Drops 2 packets,
+  //     ... [loops indefinitely]
+  //
+  //   keep_drop_queue = [5, 99, 1, -1]:
+  //     Keeps 5 packets,
+  //     Drops 99 packets,
+  //     Keeps 1 packet,
+  //     Drops all further packets.
+  repeated int32 keep_drop_queue = 1;
+}
+
 // Configuration for the RateLimiter proxy filter.
 message RateLimiterConfig {
   // Rate limit, in bytes/sec.
@@ -165,6 +192,7 @@ message FilterConfig {
     RateLimiterConfig rate_limiter = 3;
     DataTransposerConfig data_transposer = 4;
     ServerFailureConfig server_failure = 5;
+    KeepDropQueueConfig keep_drop_queue = 6;
   }
 }
 

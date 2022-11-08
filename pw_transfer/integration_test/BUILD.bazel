@@ -42,6 +42,7 @@ py_binary(
         "//pw_hdlc/py:pw_hdlc",
         "//pw_transfer:transfer_proto_pb2",
         "//pw_transfer/py:pw_transfer",
+        "@com_google_protobuf//:protobuf_python",
     ],
 )
 
@@ -110,6 +111,8 @@ py_library(
     ],
     deps = [
         ":config_pb2",
+        "//pw_protobuf:status_proto_pb2",
+        "@com_google_protobuf//:protobuf_python",
         "@rules_python//python/runfiles",
     ],
 )
@@ -156,6 +159,7 @@ py_test(
     deps = [
         ":config_pb2",
         ":integration_test_fixture",
+        "@com_google_protobuf//:protobuf_python",
     ],
 )
 
@@ -188,12 +192,13 @@ py_test(
 # Uses ports 3312 and 3313.
 py_test(
     name = "expected_errors_test",
-    timeout = "short",
+    timeout = "moderate",
     srcs = ["expected_errors_test.py"],
     deps = [
         ":config_pb2",
         ":integration_test_fixture",
         "//pw_protobuf:status_proto_pb2",
+        "@com_google_protobuf//:protobuf_python",
     ],
 )
 
@@ -238,5 +243,6 @@ py_binary(
         "//pw_rpc/py:pw_rpc",
         "//pw_transfer:transfer_proto_pb2",
         "//pw_transfer/py:pw_transfer",
+        "@com_google_protobuf//:protobuf_python",
     ],
 )

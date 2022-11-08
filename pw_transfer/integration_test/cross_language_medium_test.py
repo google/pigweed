@@ -34,9 +34,11 @@ import itertools
 from parameterized import parameterized
 import random
 
+from google.protobuf import text_format
+
 from pigweed.pw_transfer.integration_test import config_pb2
 import test_fixture
-from test_fixture import TransferIntegrationTestHarness
+from test_fixture import TransferIntegrationTestHarness, TransferConfig
 
 
 class MediumTransferIntegrationTest(test_fixture.TransferIntegrationTest):
@@ -72,6 +74,63 @@ class MediumTransferIntegrationTest(test_fixture.TransferIntegrationTest):
         itertools.product(("cpp", "java", "python"),
                           (config_pb2.TransferAction.ProtocolVersion.V1,
                            config_pb2.TransferAction.ProtocolVersion.V2)))
+    def test_pattern_drop_client_write(self, client_type, protocol_version):
+        """Drops packets with an alternating pattern."""
+        payload = random.Random(67336391945).randbytes(1234)
+        config = TransferConfig(
+            self.default_server_config(), self.default_client_config(),
+            text_format.Parse(
+                """
+                client_filter_stack: [
+                    { hdlc_packetizer: {} },
+                    { keep_drop_queue: {keep_drop_queue: [5, 1]} }
+                ]
+
+                server_filter_stack: [
+                    { hdlc_packetizer: {} },
+                    { keep_drop_queue: {keep_drop_queue: [3, 1]} }
+            ]""", config_pb2.ProxyConfig()))
+        resource_id = 1337
+
+        # This test deliberately causes flakes during the opening handshake of
+        # a transfer, so allow the resource_id of this transfer to be reused
+        # multiple times.
+        max_attempts = self.default_client_config().max_retries + 1
+        self.do_single_write(client_type,
+                             config,
+                             resource_id,
+                             payload,
+                             protocol_version,
+                             max_attempts=max_attempts)
+
+    @parameterized.expand(
+        itertools.product(("cpp", "java", "python"),
+                          (config_pb2.TransferAction.ProtocolVersion.V1,
+                           config_pb2.TransferAction.ProtocolVersion.V2)))
+    def test_parameter_drop_client_write(self, client_type, protocol_version):
+        """Drops the first few transfer initialization packets."""
+        payload = random.Random(67336391945).randbytes(1234)
+        config = TransferConfig(
+            self.default_server_config(), self.default_client_config(),
+            text_format.Parse(
+                """
+                client_filter_stack: [
+                    { hdlc_packetizer: {} },
+                    { keep_drop_queue: {keep_drop_queue: [2, 1, -1]} }
+                ]
+
+                server_filter_stack: [
+                    { hdlc_packetizer: {} },
+                    { keep_drop_queue: {keep_drop_queue: [1, 2, -1]} }
+            ]""", config_pb2.ProxyConfig()))
+        resource_id = 1337
+        self.do_single_write(client_type, config, resource_id, payload,
+                             protocol_version)
+
+    @parameterized.expand(
+        itertools.product(("cpp", "java", "python"),
+                          (config_pb2.TransferAction.ProtocolVersion.V1,
+                           config_pb2.TransferAction.ProtocolVersion.V2)))
     def test_medium_client_read(self, client_type, protocol_version):
         payload = random.Random(67336391945).randbytes(512)
         config = self.default_config()
@@ -90,6 +149,77 @@ class MediumTransferIntegrationTest(test_fixture.TransferIntegrationTest):
         resource_id = 5
         self.do_single_read(client_type, config, resource_id, payload,
                             protocol_version)
+
+    @parameterized.expand(
+        itertools.product(("cpp", "java", "python"),
+                          (config_pb2.TransferAction.ProtocolVersion.V1,
+                           config_pb2.TransferAction.ProtocolVersion.V2)))
+    def test_pattern_drop_client_read(self, client_type, protocol_version):
+        """Drops packets with an alternating pattern."""
+        payload = random.Random(67336391945).randbytes(1234)
+        config = TransferConfig(
+            self.default_server_config(), self.default_client_config(),
+            text_format.Parse(
+                """
+                client_filter_stack: [
+                    { hdlc_packetizer: {} },
+                    { keep_drop_queue: {keep_drop_queue: [5, 1]} }
+                ]
+
+                server_filter_stack: [
+                    { hdlc_packetizer: {} },
+                    { keep_drop_queue: {keep_drop_queue: [3, 1]} }
+            ]""", config_pb2.ProxyConfig()))
+        resource_id = 1337
+
+        # This test causes flakes during the opening handshake of a transfer, so
+        # allow the resource_id of this transfer to be reused multiple times.
+        max_attempts = self.default_client_config().max_retries + 1
+        self.do_single_read(client_type,
+                            config,
+                            resource_id,
+                            payload,
+                            protocol_version,
+                            max_attempts=max_attempts)
+
+    @parameterized.expand(
+        itertools.product(("cpp", "java", "python"),
+                          (config_pb2.TransferAction.ProtocolVersion.V1,
+                           config_pb2.TransferAction.ProtocolVersion.V2)))
+    def test_parameter_drop_client_read(self, client_type, protocol_version):
+        """Drops the first few transfer initialization packets."""
+        # TODO(b/257308150): Python v2 breaks and the transfer fails on this
+        # test.
+        if (client_type == "python" and protocol_version
+                == config_pb2.TransferAction.ProtocolVersion.V2):
+            self.skipTest(
+                "This test fails when using v2 protocol with a Python client")
+        payload = random.Random(67336391945).randbytes(1234)
+        config = TransferConfig(
+            self.default_server_config(), self.default_client_config(),
+            text_format.Parse(
+                """
+                client_filter_stack: [
+                    { hdlc_packetizer: {} },
+                    { keep_drop_queue: {keep_drop_queue: [2, 1, -1]} }
+                ]
+
+                server_filter_stack: [
+                    { hdlc_packetizer: {} },
+                    { keep_drop_queue: {keep_drop_queue: [1, 2, -1]} }
+            ]""", config_pb2.ProxyConfig()))
+        resource_id = 1337
+
+        # This test deliberately causes flakes during the opening handshake of
+        # a transfer, so allow the resource_id of this transfer to be reused
+        # multiple times.
+        max_attempts = self.default_client_config().max_retries + 1
+        self.do_single_read(client_type,
+                            config,
+                            resource_id,
+                            payload,
+                            protocol_version,
+                            max_attempts=max_attempts)
 
 
 if __name__ == '__main__':

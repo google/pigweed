@@ -116,6 +116,75 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(len(sent_packets), num_packets)
             server_failure.handle_event(proxy.Event.TRANSFER_START)
 
+    async def test_keep_drop_queue_loop(self):
+        sent_packets: List[bytes] = []
+
+        # Async helper so DataTransposer can await on it.
+        async def append(list: List[bytes], data: bytes):
+            list.append(data)
+
+        keep_drop_queue = proxy.KeepDropQueue(
+            lambda data: append(sent_packets, data),
+            name="test",
+            keep_drop_queue=[2, 1, 3])
+
+        expected_sequence = [
+            b'1',
+            b'2',
+            b'4',
+            b'5',
+            b'6',
+            b'9',
+        ]
+        input_packets = [
+            b'1',
+            b'2',
+            b'3',
+            b'4',
+            b'5',
+            b'6',
+            b'7',
+            b'8',
+            b'9',
+        ]
+
+        for packet in input_packets:
+            await keep_drop_queue.process(packet)
+        self.assertEqual(sent_packets, expected_sequence)
+
+    async def test_keep_drop_queue(self):
+        sent_packets: List[bytes] = []
+
+        # Async helper so DataTransposer can await on it.
+        async def append(list: List[bytes], data: bytes):
+            list.append(data)
+
+        keep_drop_queue = proxy.KeepDropQueue(
+            lambda data: append(sent_packets, data),
+            name="test",
+            keep_drop_queue=[2, 1, 1, -1])
+
+        expected_sequence = [
+            b'1',
+            b'2',
+            b'4',
+        ]
+        input_packets = [
+            b'1',
+            b'2',
+            b'3',
+            b'4',
+            b'5',
+            b'6',
+            b'7',
+            b'8',
+            b'9',
+        ]
+
+        for packet in input_packets:
+            await keep_drop_queue.process(packet)
+        self.assertEqual(sent_packets, expected_sequence)
+
 
 if __name__ == '__main__':
     unittest.main()

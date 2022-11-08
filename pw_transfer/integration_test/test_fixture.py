@@ -27,6 +27,7 @@ import unittest
 
 from google.protobuf import text_format
 
+from pigweed.pw_protobuf.pw_protobuf_protos import status_pb2
 from pigweed.pw_transfer.integration_test import config_pb2
 from rules_python.python.runfiles import runfiles
 
@@ -331,23 +332,27 @@ class TransferIntegrationTest(unittest.TestCase):
         cls.harness = TransferIntegrationTestHarness(cls.HARNESS_CONFIG)
 
     @staticmethod
-    def default_config() -> TransferConfig:
-        """Returns a new transfer config with default options."""
-        return TransferConfig(
-            config_pb2.ServerConfig(
-                chunk_size_bytes=216,
-                pending_bytes=32 * 1024,
-                chunk_timeout_seconds=5,
-                transfer_service_retries=4,
-                extend_window_divisor=32,
-            ),
-            config_pb2.ClientConfig(
-                max_retries=5,
-                initial_chunk_timeout_ms=4000,
-                chunk_timeout_ms=4000,
-            ),
-            text_format.Parse(
-                """
+    def default_server_config() -> config_pb2.ServerConfig:
+        return config_pb2.ServerConfig(
+            chunk_size_bytes=216,
+            pending_bytes=32 * 1024,
+            chunk_timeout_seconds=5,
+            transfer_service_retries=4,
+            extend_window_divisor=32,
+        )
+
+    @staticmethod
+    def default_client_config() -> config_pb2.ClientConfig:
+        return config_pb2.ClientConfig(
+            max_retries=5,
+            initial_chunk_timeout_ms=4000,
+            chunk_timeout_ms=4000,
+        )
+
+    @staticmethod
+    def default_proxy_config() -> config_pb2.ProxyConfig:
+        return text_format.Parse(
+            """
                 client_filter_stack: [
                     { hdlc_packetizer: {} },
                     { data_dropper: {rate: 0.01, seed: 1649963713563718435} }
@@ -356,7 +361,14 @@ class TransferIntegrationTest(unittest.TestCase):
                 server_filter_stack: [
                     { hdlc_packetizer: {} },
                     { data_dropper: {rate: 0.01, seed: 1649963713563718436} }
-            ]""", config_pb2.ProxyConfig()))
+            ]""", config_pb2.ProxyConfig())
+
+    @staticmethod
+    def default_config() -> TransferConfig:
+        """Returns a new transfer config with default options."""
+        return TransferConfig(TransferIntegrationTest.default_server_config(),
+                              TransferIntegrationTest.default_client_config(),
+                              TransferIntegrationTest.default_proxy_config())
 
     def do_single_write(
         self,
@@ -364,13 +376,28 @@ class TransferIntegrationTest(unittest.TestCase):
         config: TransferConfig,
         resource_id: int,
         data: bytes,
-        protocol_version=config_pb2.TransferAction.ProtocolVersion.LATEST
+        protocol_version=config_pb2.TransferAction.ProtocolVersion.LATEST,
+        max_attempts=1,
+        expected_status=status_pb2.StatusCode.OK,
     ) -> None:
         """Performs a single client-to-server write of the provided data."""
         with tempfile.NamedTemporaryFile(
         ) as f_payload, tempfile.NamedTemporaryFile() as f_server_output:
-            config.server.resources[resource_id].destination_paths.append(
-                f_server_output.name)
+            # Add the destination path once for each allowed retry. These are
+            # consumed each time a transfer on this resource ID is initiated,
+            # which means not all retry flows will trigger consumption of one
+            # attempt. This is mostly to address cases where the initial
+            # transfer handshake involves dropped packets, which can cause the
+            # resource to be closed and consumed due to the design of the test
+            # harness. When the client retries in those cases, it will need a
+            # new resource at this ID to succeed.
+            #
+            # Matching max_attempts to max_retries + 1 should ensure that
+            # the resource is available at least as many times as the client
+            # will attempt to initiate a transfer.
+            paths = [f_server_output.name for _ in range(max_attempts)]
+            config.server.resources[resource_id].destination_paths.extend(
+                paths)
             config.client.transfer_actions.append(
                 config_pb2.TransferAction(
                     resource_id=resource_id,
@@ -378,6 +405,7 @@ class TransferIntegrationTest(unittest.TestCase):
                     transfer_type=config_pb2.TransferAction.TransferType.
                     WRITE_TO_SERVER,
                     protocol_version=protocol_version,
+                    expected_status=int(expected_status),
                 ))
 
             f_payload.write(data)
@@ -388,7 +416,8 @@ class TransferIntegrationTest(unittest.TestCase):
 
             self.assertEqual(exit_codes.client, 0)
             self.assertEqual(exit_codes.server, 0)
-            self.assertEqual(f_server_output.read(), data)
+            if expected_status == status_pb2.StatusCode.OK:
+                self.assertEqual(f_server_output.read(), data)
 
     def do_single_read(
         self,
@@ -396,13 +425,27 @@ class TransferIntegrationTest(unittest.TestCase):
         config: TransferConfig,
         resource_id: int,
         data: bytes,
-        protocol_version=config_pb2.TransferAction.ProtocolVersion.LATEST
+        protocol_version=config_pb2.TransferAction.ProtocolVersion.LATEST,
+        max_attempts=1,
+        expected_status=status_pb2.StatusCode.OK,
     ) -> None:
         """Performs a single server-to-client read of the provided data."""
         with tempfile.NamedTemporaryFile(
         ) as f_payload, tempfile.NamedTemporaryFile() as f_client_output:
-            config.server.resources[resource_id].source_paths.append(
-                f_payload.name)
+            # Add the source path once for each allowed attempt. These are
+            # consumed each time a transfer on this resource ID is initiated,
+            # which means not all retry flows will trigger consumption of one
+            # attempt. This is mostly to address cases where the initial
+            # transfer handshake involves dropped packets, which can cause the
+            # resource to be closed and consumed due to the design of the test
+            # harness. When the client retries in those cases, it will need a
+            # new resource at this ID to succeed.
+            #
+            # Matching max_attempts to max_retries + 1 should ensure that
+            # the resource is available at least as many times as the client
+            # will attempt to initiate a transfer.
+            paths = [f_payload.name for _ in range(max_attempts)]
+            config.server.resources[resource_id].source_paths.extend(paths)
             config.client.transfer_actions.append(
                 config_pb2.TransferAction(
                     resource_id=resource_id,
@@ -410,6 +453,7 @@ class TransferIntegrationTest(unittest.TestCase):
                     transfer_type=config_pb2.TransferAction.TransferType.
                     READ_FROM_SERVER,
                     protocol_version=protocol_version,
+                    expected_status=int(expected_status),
                 ))
 
             f_payload.write(data)
@@ -419,7 +463,8 @@ class TransferIntegrationTest(unittest.TestCase):
                                                config.client, config.proxy))
             self.assertEqual(exit_codes.client, 0)
             self.assertEqual(exit_codes.server, 0)
-            self.assertEqual(f_client_output.read(), data)
+            if expected_status == status_pb2.StatusCode.OK:
+                self.assertEqual(f_client_output.read(), data)
 
     def do_basic_transfer_sequence(self, client_type: str,
                                    config: TransferConfig,
