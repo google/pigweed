@@ -15,6 +15,7 @@
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_binary",
+    "pw_cc_facade",
     "pw_cc_library",
     "pw_cc_test",
 )
@@ -23,9 +24,7 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-# TODO(b/242183150): Need to add support for facades/backends to Bazel.
-
-pw_cc_library(
+pw_cc_facade(
     name = "facade",
     hdrs = [
         "public/pw_trace/internal/trace_internal.h",
@@ -41,11 +40,18 @@ pw_cc_library(
     name = "pw_trace",
     deps = [
         ":facade",
+        "@pigweed_config//:pw_trace_backend",
     ],
 )
 
 pw_cc_library(
-    name = "null_headers",
+    name = "backend_multiplexer",
+    visibility = ["@pigweed_config//:__pkg__"],
+    deps = ["//pw_trace:null"],
+)
+
+pw_cc_library(
+    name = "null",
     hdrs = [
         "public/pw_trace/internal/null.h",
         "public_overrides/pw_trace_backend/trace_backend.h",
@@ -56,20 +62,8 @@ pw_cc_library(
     ],
     deps = [
         "//pw_preprocessor",
-    ],
-)
-
-pw_cc_library(
-    name = "null",
-    deps = [
         "//pw_trace:facade",
-        "//pw_trace:null_headers",
     ],
-)
-
-pw_cc_library(
-    name = "backend",
-    deps = [],
 )
 
 pw_cc_test(
@@ -79,8 +73,6 @@ pw_cc_test(
         "trace_backend_compile_test_c.c",
     ],
     deps = [
-        ":backend",
-        ":facade",
         ":pw_trace",
         "//pw_preprocessor",
         "//pw_unit_test",
@@ -99,8 +91,6 @@ pw_cc_test(
         "pw_trace_test/public_overrides",
     ],
     deps = [
-        ":backend",
-        ":facade",
         ":pw_trace",
         "//pw_preprocessor",
         "//pw_unit_test",
@@ -120,7 +110,6 @@ pw_cc_test(
     ],
     deps = [
         ":facade",
-        ":pw_trace",
         "//pw_preprocessor",
         "//pw_unit_test",
     ],
@@ -133,8 +122,6 @@ pw_cc_library(
         "trace_null_test_c.c",
     ],
     deps = [
-        ":facade",
-        ":null",
         ":pw_trace",
         "//pw_preprocessor",
         "//pw_unit_test",
@@ -146,6 +133,8 @@ pw_cc_library(
     srcs = ["example/sample_app.cc"],
     hdrs = ["example/public/pw_trace/example/sample_app.h"],
     includes = ["example/public"],
+    # TODO(b/258071921): Fix puzzling compiler errors
+    tags = ["manual"],
     deps = [
         "//pw_ring_buffer",
         "//pw_trace",
@@ -155,6 +144,8 @@ pw_cc_library(
 pw_cc_binary(
     name = "trace_example_basic",
     srcs = ["example/basic.cc"],
+    # TODO(b/258071921): Fix puzzling compiler errors
+    tags = ["manual"],
     deps = [
         ":pw_trace_sample_app",
         "//pw_log",
