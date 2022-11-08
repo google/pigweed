@@ -330,7 +330,7 @@ maven_install(
 
 new_git_repository(
     name = "micro_ecc",
-    build_file = "//:third_party/micro_ecc/BUILD.bazel",
+    build_file = "//:third_party/micro_ecc/BUILD.micro_ecc",
     commit = "b335ee812bfcca4cd3fb0e2a436aab39553a555a",
     remote = "https://github.com/kmackay/micro-ecc.git",
 )

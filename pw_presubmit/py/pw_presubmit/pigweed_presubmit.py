@@ -475,7 +475,6 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     '-//targets/stm32f429i_disc1/...:all',
     '-//targets/stm32f429i_disc1_stm32cube/...:all',
     '-//third_party/boringssl/...:all',
-    '-//third_party/micro_ecc/...:all',
     # keep-sorted: end
 )
 
