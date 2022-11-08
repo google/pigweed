@@ -391,7 +391,7 @@ class TestOwnersChecks(unittest.TestCase):
         for file_under_test in DEPENDENCY_PATH_TEST_CASES:
             # During test make the test file directory the "git root"
             with tempfile.TemporaryDirectory() as temp_dir:
-                temp_dir_path = pathlib.Path(temp_dir)
+                temp_dir_path = pathlib.Path(temp_dir).resolve()
                 with self.subTest(i=file_under_test), mock.patch(
                         "pw_presubmit.owners_checks.git_repo.root",
                         return_value=temp_dir_path):
