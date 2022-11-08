@@ -629,7 +629,7 @@ def run(  # pylint: disable=too-many-arguments,too-many-locals
     )
 
     if only_list_steps:
-        steps = []
+        steps: List[Dict] = []
         for check, filtered_paths in presubmit.apply_filters(program):
             steps.append({
                 'name': check.name,

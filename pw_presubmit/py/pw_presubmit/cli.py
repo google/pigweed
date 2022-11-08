@@ -19,7 +19,7 @@ import os
 from pathlib import Path
 import re
 import shutil
-from typing import Collection, Optional, Sequence
+from typing import Collection, List, Optional, Sequence
 
 from pw_presubmit import git_repo, presubmit
 
@@ -79,11 +79,18 @@ def _add_programs_arguments(parser: argparse.ArgumentParser,
 
         return programs[arg]
 
+    # This argument is used to copy the default program into the argparse
+    # namespace argument. It's not intended to be set by users.
+    parser.add_argument('--default-program',
+                        default=[presubmit_program(default)],
+                        help=argparse.SUPPRESS)
+
     parser.add_argument('-p',
                         '--program',
                         choices=programs.values(),
                         type=presubmit_program,
-                        default=default,
+                        action='append',
+                        default=[],
                         help='Which presubmit program to run')
 
     parser.add_argument(
@@ -95,26 +102,18 @@ def _add_programs_arguments(parser: argparse.ArgumentParser,
 
     all_steps = programs.all_steps()
 
-    # The step argument appends steps to a program. No "step" argument is
-    # created on the resulting argparse.Namespace.
-    class AddToCustomProgram(argparse.Action):
-        def __call__(self, parser, namespace, values, unused_option=None):
-            if not isinstance(namespace.program, list):
-                namespace.program = []
-
-            if values not in all_steps:
-                raise parser.error(
-                    f'argument --step: {values} is not the name of a '
-                    'presubmit check\n\nValid values for --step:\n'
-                    f'{{{",".join(sorted(all_steps))}}}')
-
-            namespace.program.append(all_steps[values])
+    def presubmit_step(arg: str) -> presubmit.Check:
+        if arg not in all_steps:
+            raise argparse.ArgumentTypeError(
+                f'{arg} is not the name of a presubmit step')
+        return all_steps[arg]
 
     parser.add_argument(
         '--step',
-        action=AddToCustomProgram,
-        default=argparse.SUPPRESS,  # Don't create a "step" argument.
+        action='append',
+        default=[],
         help='Provide explicit steps instead of running a predefined program.',
+        type=presubmit_step,
     )
 
     def gn_arg(argument):
@@ -185,7 +184,9 @@ def add_arguments(parser: argparse.ArgumentParser,
 
 
 def run(
-    program: Sequence[presubmit.Check],
+    default_program: Optional[presubmit.Program],
+    program: Sequence[presubmit.Program],
+    step: Sequence[presubmit.Check],
     output_directory: Optional[Path],
     package_root: Path,
     clear: bool,
@@ -197,7 +198,9 @@ def run(
     """Processes arguments from add_arguments and runs the presubmit.
 
     Args:
+      default_program: program to use if neither --program nor --step is used
       program: from the --program option
+      step: from the --step option
       output_directory: from --output-directory option
       package_root: from --package-root option
       clear: from the --clear option
@@ -239,7 +242,20 @@ def run(
 
         return 0
 
-    if presubmit.run(program,
+    final_program: Optional[presubmit.Program] = None
+    if not program and not step:
+        assert default_program  # Cast away Optional[].
+        final_program = default_program
+    elif len(program) == 1 and not step:
+        final_program = program[0]
+    else:
+        steps: List[presubmit.Check] = []
+        for prog in program:
+            steps.extend(prog)
+        steps.extend(step)
+        final_program = presubmit.Program('', steps)
+
+    if presubmit.run(final_program,
                      root,
                      repositories,
                      only_list_steps=only_list_steps,
