@@ -43,6 +43,8 @@ pw_cc_test(
     srcs = [
         "tls_client_boringssl_test.cc",
     ],
+    #TODO(b/257529537): Get this to build.
+    tags = ["manual"],
     deps = [
         ":pw_tls_client_boringssl",
     ],
