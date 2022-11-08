@@ -43,6 +43,8 @@ source_set("test_helpers") {
     "//src/connectivity/bluetooth/lib/cpp-string",
     "//third_party/googletest:gtest",
   ]
+
+  public_deps = [ "//third_party/googletest:gmock" ]
 }
 
 source_set("tests") {

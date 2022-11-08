@@ -123,14 +123,13 @@ bool ChannelImpl::Activate(RxCallback rx_callback, ClosedCallback closed_callbac
 
   // Route the buffered packets.
   if (!pending_rx_sdus_.empty()) {
-    // Add reference to |rx_cb_| in case channel is destroyed as a result of handling an SDU.
-    auto rx_cb = rx_cb_.share();
-    auto pending = std::move(pending_rx_sdus_);
-    BT_ASSERT(pending_rx_sdus_.empty());
     TRACE_DURATION("bluetooth", "ChannelImpl::Activate pending drain");
-    while (!pending.empty()) {
+    // Channel may be destroyed in rx_cb_, so we need to check self after calling rx_cb_.
+    auto self = weak_ptr_factory_.GetWeakPtr();
+    auto pending = std::move(pending_rx_sdus_);
+    while (self && !pending.empty()) {
       TRACE_FLOW_END("bluetooth", "ChannelImpl::HandleRxPdu queued", pending.size());
-      rx_cb(std::move(pending.front()));
+      rx_cb_(std::move(pending.front()));
       pending.pop();
     }
   }

@@ -3206,5 +3206,54 @@ TEST_F(ChannelManagerTest, StartA2dpOffloadChannelDisconnected) {
   EXPECT_FALSE(result_.has_value());
 }
 
+TEST_F(ChannelManagerTest, SignalLinkErrorStopsDeliveryOfBufferedRxPackets) {
+  // LE-U link
+  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::kCentral);
+
+  // Queue 2 packets to be delivers on channel activation.
+  StaticByteBuffer payload_0(0x00);
+  ReceiveAclDataPacket(StaticByteBuffer(
+      // ACL data header (starting fragment)
+      0x01, 0x00,  // connection handle + flags
+      0x05, 0x00,  // Length
+      // L2CAP B-frame
+      0x01, 0x00,  // Length
+      LowerBits(kATTChannelId), UpperBits(kATTChannelId),
+      // Payload
+      payload_0[0]));
+  ReceiveAclDataPacket(StaticByteBuffer(
+      // ACL data header (starting fragment)
+      0x01, 0x00,  // connection handle + flags
+      0x05, 0x00,  // Length
+      // L2CAP B-frame
+      0x01, 0x00,  // Length
+      LowerBits(kATTChannelId), UpperBits(kATTChannelId),
+      // Payload
+      0x01));
+  RunLoopUntilIdle();
+
+  bool closed_called = false;
+  auto closed_cb = [&closed_called] { closed_called = true; };
+
+  int rx_count = 0;
+  auto rx_callback = [&](ByteBufferPtr payload) {
+    rx_count++;
+    if (rx_count == 1) {
+      EXPECT_THAT(*payload, BufferEq(payload_0));
+      // This should stop delivery of the second packet.
+      fixed_channels.att->SignalLinkError();
+      return;
+    }
+  };
+  ASSERT_TRUE(fixed_channels.att->Activate(std::move(rx_callback), closed_cb));
+  RunLoopUntilIdle();
+  EXPECT_EQ(rx_count, 1);
+  EXPECT_TRUE(closed_called);
+
+  // Ensure the link is removed.
+  chanmgr()->RemoveConnection(kTestHandle1);
+  RunLoopUntilIdle();
+}
+
 }  // namespace
 }  // namespace bt::l2cap
