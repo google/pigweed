@@ -428,7 +428,6 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     '-//pw_cpu_exception_cortex_m/...:all',
     '-//pw_crypto/...:all',  # TODO(b/236321905) Remove when passing.
     '-//pw_file/...:all',
-    '-//pw_hdlc/rpc_example',  # TODO(b/241575924) Remove when passing.
     '-//pw_i2c_mcuxpresso/...:all',
     '-//pw_log:log_proto_py_pb2',  # TODO(b/241456982) Remove when passing.
     '-//pw_log:log_proto_py_pb2_genproto',

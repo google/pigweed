@@ -14,6 +14,7 @@
 
 load("//pw_build:pigweed.bzl", "pw_cc_library", "pw_cc_test")
 load("//pw_protobuf_compiler:proto.bzl", "pw_proto_library")
+load("//pw_protobuf_compiler:pw_proto_library.bzl", "pw_proto_filegroup")
 load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_proto_grpc//:defs.bzl", "proto_plugin")
@@ -427,11 +428,15 @@ proto_plugin(
     visibility = ["//visibility:public"],
 )
 
+pw_proto_filegroup(
+    name = "echo_proto_and_options",
+    srcs = ["echo.proto"],
+    options_files = ["echo.options"],
+)
+
 proto_library(
     name = "echo_proto",
-    srcs = [
-        "echo.proto",
-    ],
+    srcs = [":echo_proto_and_options"],
 )
 
 py_proto_library(
