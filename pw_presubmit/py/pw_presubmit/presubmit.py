@@ -598,7 +598,7 @@ def run(  # pylint: disable=too-many-arguments,too-many-locals
         with list_steps_file.open() as ins:
             list_steps_data = json.load(ins)
         for step in list_steps_data:
-            files.extend(step.get("paths", ()))
+            files.extend(Path(x) for x in step.get("paths", ()))
         files = sorted(set(files))
         _LOG.info('Loaded %d paths from file %s', len(files), list_steps_file)
 
