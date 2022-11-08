@@ -410,7 +410,7 @@ class TestOwnersChecks(unittest.TestCase):
                         expected_prefix = owners_file_path.parent / "foo"
 
                     expected_deps_path = [
-                        (expected_prefix / filename).absolute()
+                        (expected_prefix / filename).resolve()
                         for filename in ("include_owners", "file_owners",
                                          "perfile_owners")
                     ]
