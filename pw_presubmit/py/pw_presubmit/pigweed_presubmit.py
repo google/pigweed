@@ -429,11 +429,6 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     '-//pw_i2c_mcuxpresso/...:all',
     '-//pw_log:log_proto_py_pb2',  # TODO(b/241456982) Remove when passing.
     '-//pw_log:log_proto_py_pb2_genproto',
-    '-//pw_snapshot/py/...:all',
-    '-//pw_snapshot:metadata_proto_py_pb2',
-    '-//pw_snapshot:metadata_proto_py_pb2_genproto',
-    '-//pw_snapshot:snapshot_proto_py_pb2',
-    '-//pw_snapshot:snapshot_proto_py_pb2_genproto',
     '-//pw_software_update:bundled_update_py_pb2',  # TODO(b/232427554): Fix
     '-//pw_software_update:bundled_update_py_pb2_genproto',
     '-//pw_software_update:bundled_update_service',

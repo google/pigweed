@@ -22,6 +22,7 @@ py_library(
         "pw_snapshot/__init__.py",
         "pw_snapshot/processor.py",
     ],
+    tags = ["manual"],
     deps = [
         ":pw_snapshot_metadata",
         "//pw_build_info/py:pw_build_info",
@@ -42,6 +43,7 @@ py_library(
         "pw_snapshot_metadata/__init__.py",
         "pw_snapshot_metadata/metadata.py",
     ],
+    tags = ["manual"],
     deps = [
         "//pw_log_tokenized/py:pw_log_tokenized",
         "//pw_snapshot:metadata_proto_py_pb2",
@@ -54,6 +56,7 @@ py_library(
 py_test(
     name = "metadata_test",
     srcs = ["metadata_test.py"],
+    tags = ["manual"],
     deps = [
         ":pw_snapshot_metadata",
         "//pw_snapshot:snapshot_proto_py_pb2",
