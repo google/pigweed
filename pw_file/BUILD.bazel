@@ -17,6 +17,7 @@ load(
     "pw_cc_library",
     "pw_cc_test",
 )
+load("//pw_protobuf_compiler:proto.bzl", "pw_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -30,6 +31,14 @@ proto_library(
     ],
 )
 
+pw_proto_library(
+    name = "file_cc_proto",
+    deps = [
+        ":file_proto",
+        "//pw_protobuf:common_proto",
+    ],
+)
+
 pw_cc_library(
     name = "flat_file_system",
     srcs = [
@@ -38,11 +47,13 @@ pw_cc_library(
     hdrs = [
         "public/pw_file/flat_file_system.h",
     ],
+    includes = ["public"],
     deps = [
-        ":file_proto",
+        ":file_cc_proto.pwpb",
+        ":file_cc_proto.raw_rpc",
         "//pw_bytes",
         "//pw_result",
-        "//pw_rpc/raw:method",
+        "//pw_rpc/raw:server_api",
         "//pw_status",
     ],
 )
@@ -53,7 +64,7 @@ pw_cc_test(
         "flat_file_system_test.cc",
     ],
     deps = [
-        ":file_proto",
+        ":file_cc_proto.pwpb",
         ":flat_file_system",
         "//pw_bytes",
         "//pw_protobuf",
