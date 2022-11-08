@@ -14,7 +14,6 @@
 """Crate a venv."""
 
 import argparse
-import os
 import venv
 from pathlib import Path
 
@@ -30,8 +29,7 @@ def _parse_args() -> argparse.Namespace:
 
 def main(destination_dir: Path) -> None:
     if not destination_dir.is_dir():
-        use_symlinks = not os.name == 'nt'
-        venv.create(destination_dir, symlinks=use_symlinks, with_pip=True)
+        venv.create(destination_dir, symlinks=True, with_pip=True)
 
 
 if __name__ == '__main__':
