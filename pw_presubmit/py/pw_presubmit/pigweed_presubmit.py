@@ -459,8 +459,6 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     '-//pw_thread:thread_snapshot_service_py_pb2_genproto',
     '-//pw_thread_embos/...:all',
     '-//pw_thread_freertos/...:all',
-    '-//pw_tokenizer:tokenizer_proto_py_pb2',  # TODO(b/241456982) Fix
-    '-//pw_tokenizer:tokenizer_proto_py_pb2_genproto',
     '-//pw_trace:pw_trace_sample_app',
     '-//pw_trace:trace_backend_compile_test',
     '-//pw_trace:trace_backend_compile_test_c',
