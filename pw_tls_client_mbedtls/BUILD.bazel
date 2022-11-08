@@ -22,8 +22,6 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-# TODO(b/235289501): The recipe is under construction.
-
 pw_cc_library(
     name = "pw_tls_client_mbedtls",
     srcs = ["tls_client_mbedtls.cc"],
@@ -35,7 +33,11 @@ pw_cc_library(
         "public",
         "public_overrides",
     ],
+    # TODO(b/258068735): Get this target to build. Requires adding mbedtls
+    # build targets.
+    tags = ["manual"],
     deps = [
+        "//pw_log",
         "//pw_tls_client:pw_tls_client_facade",
     ],
 )
@@ -45,6 +47,9 @@ pw_cc_test(
     srcs = [
         "tls_client_mbedtls_test.cc",
     ],
+    # TODO(b/258068735): Get this target to build. Requires adding mbedtls
+    # build targets.
+    tags = ["manual"],
     deps = [
         ":pw_tls_client_mbedtls",
     ],
