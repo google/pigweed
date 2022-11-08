@@ -17,6 +17,7 @@ load(
     "pw_cc_library",
     "pw_cc_test",
 )
+load("//pw_protobuf_compiler:proto.bzl", "pw_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -56,8 +57,8 @@ pw_cc_library(
     hdrs = ["pw_metric_private/metric_walker.h"],
     visibility = ["//visibility:private"],
     deps = [
-        ":pw_metric",
-        "//pw_assert:assert",
+        ":metric",
+        "//pw_assert",
         "//pw_containers",
         "//pw_status",
         "//pw_tokenizer",
@@ -68,8 +69,11 @@ pw_cc_library(
     name = "metric_service_nanopb",
     srcs = ["metric_service_nanopb.cc"],
     hdrs = ["public/pw_metric/metric_service_nanopb.h"],
+    # TODO(b/258078909): Get this target to build.
+    tags = ["manual"],
     deps = [
         ":metric",
+        ":metric_proto_cc.nanopb_rpc",
         ":metric_walker",
     ],
 )
@@ -78,9 +82,15 @@ pw_cc_library(
     name = "metric_service_pwpb",
     srcs = ["metric_service_pwpb.cc"],
     hdrs = ["public/pw_metric/metric_service_pwpb.h"],
+    includes = [
+        "metric_proto_cc_pb.pwpb/pw_metric",
+        "metric_proto_cc_pb.raw_rpc/pw_metric",
+    ],
     deps = [
         ":metric",
-        ":metric_proto_cc",
+        ":metric_proto_cc.pwpb",
+        ":metric_proto_cc.pwpb_rpc",
+        ":metric_proto_cc.raw_rpc",
         ":metric_walker",
         "//pw_assert",
         "//pw_bytes",
@@ -95,11 +105,11 @@ pw_cc_library(
 proto_library(
     name = "metric_proto",
     srcs = [
-        "pw_metric_proto/log.proto",
+        "pw_metric_proto/metric_service.proto",
     ],
 )
 
-cc_proto_library(
+pw_proto_library(
     name = "metric_proto_cc",
     deps = [":metric_proto"],
 )
@@ -129,6 +139,8 @@ pw_cc_test(
     srcs = [
         "metric_service_nanopb_test.cc",
     ],
+    # TODO(b/258078909): Get this target to build.
+    tags = ["manual"],
     deps = [
         ":metric_service_nanopb",
     ],
@@ -141,5 +153,7 @@ pw_cc_test(
     ],
     deps = [
         ":metric_service_pwpb",
+        "//pw_rpc/pwpb:test_method_context",
+        "//pw_rpc/raw:test_method_context",
     ],
 )
