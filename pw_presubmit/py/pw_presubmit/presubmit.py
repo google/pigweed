@@ -710,6 +710,11 @@ class Check:
         self.filter = path_filter
         self.always_run: bool = always_run
 
+    def __repr__(self):
+        # This returns just the name so it's easy to show the entire list of
+        # steps with '--help'.
+        return self.name
+
     def with_filter(
         self,
         *,

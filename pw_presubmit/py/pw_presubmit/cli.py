@@ -111,8 +111,9 @@ def _add_programs_arguments(parser: argparse.ArgumentParser,
     parser.add_argument(
         '--step',
         action='append',
+        choices=all_steps.values(),
         default=[],
-        help='Provide explicit steps instead of running a predefined program.',
+        help='Run specific steps instead of running a full program.',
         type=presubmit_step,
     )
 
