@@ -156,7 +156,6 @@ pw_source_set("logging_main") {
   deps = [
     ":logging_event_handler",
     ":pw_unit_test",
-    "$dir_pw_sys_io",
   ]
   sources = [ "logging_main.cc" ]
 }

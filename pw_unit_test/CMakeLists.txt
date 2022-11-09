@@ -77,3 +77,23 @@ pw_add_module_library(pw_unit_test.simple_printing_main
     pw_string
     pw_sys_io
 )
+
+pw_add_module_library(pw_unit_test.logging_event_handler
+  HEADERS
+    public/pw_unit_test/logging_event_handler.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_log
+    pw_unit_test.googletest_style_event_handler
+  SOURCES
+    logging_event_handler.cc
+)
+
+pw_add_module_library(pw_unit_test.logging_main
+  SOURCES
+    logging_main.cc
+  PRIVATE_DEPS
+    pw_unit_test.logging_event_handler
+    pw_unit_test
+)
