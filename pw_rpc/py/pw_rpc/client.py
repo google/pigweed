@@ -16,8 +16,16 @@
 import abc
 from dataclasses import dataclass
 import logging
-from typing import (Any, Callable, Collection, Dict, Iterable, Iterator,
-                    NamedTuple, Optional)
+from typing import (
+    Any,
+    Callable,
+    Collection,
+    Dict,
+    Iterable,
+    Iterator,
+    NamedTuple,
+    Optional,
+)
 
 from google.protobuf.message import DecodeError, Message
 from pw_status import Status

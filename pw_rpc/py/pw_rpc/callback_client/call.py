@@ -17,8 +17,17 @@ import enum
 import logging
 import math
 import queue
-from typing import (Any, Callable, Iterable, Iterator, NamedTuple, Union,
-                    Optional, Sequence, TypeVar)
+from typing import (
+    Any,
+    Callable,
+    Iterable,
+    Iterator,
+    NamedTuple,
+    Union,
+    Optional,
+    Sequence,
+    TypeVar,
+)
 
 from pw_protobuf_compiler.python_protos import proto_repr
 from pw_status import Status

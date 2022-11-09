@@ -22,8 +22,18 @@ import threading
 import time
 import socket
 import subprocess
-from typing import (Any, BinaryIO, Callable, Dict, Iterable, List, NoReturn,
-                    Optional, Sequence, Union)
+from typing import (
+    Any,
+    BinaryIO,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    NoReturn,
+    Optional,
+    Sequence,
+    Union,
+)
 
 from pw_protobuf_compiler import python_protos
 import pw_rpc

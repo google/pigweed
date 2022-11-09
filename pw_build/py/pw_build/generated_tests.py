@@ -19,8 +19,19 @@ from datetime import datetime
 from collections import defaultdict
 import unittest
 
-from typing import (Any, Callable, Dict, Generic, Iterable, Iterator, List,
-                    Sequence, TextIO, TypeVar, Union)
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    Iterable,
+    Iterator,
+    List,
+    Sequence,
+    TextIO,
+    TypeVar,
+    Union,
+)
 
 _COPYRIGHT = f"""\
 // Copyright {datetime.now().year} The Pigweed Authors

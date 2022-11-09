@@ -28,7 +28,7 @@ import random
 import socket
 import sys
 import time
-from typing import (Any, Awaitable, Callable, Iterable, List, Optional)
+from typing import Any, Awaitable, Callable, Iterable, List, Optional
 
 from google.protobuf import text_format
 

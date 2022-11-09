@@ -20,8 +20,17 @@ import os
 from pathlib import Path
 import shlex
 import subprocess
-from typing import (Any, Dict, Iterable, Iterator, List, Optional, Sequence,
-                    Pattern, Tuple)
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Pattern,
+    Tuple,
+)
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

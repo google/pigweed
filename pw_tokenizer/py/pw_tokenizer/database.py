@@ -29,8 +29,20 @@ from pathlib import Path
 import re
 import struct
 import sys
-from typing import (Any, Callable, Dict, Iterable, Iterator, List, Optional,
-                    Pattern, Set, TextIO, Tuple, Union)
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Pattern,
+    Set,
+    TextIO,
+    Tuple,
+    Union,
+)
 
 try:
     from pw_tokenizer import elf_reader, tokens

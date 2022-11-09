@@ -51,8 +51,18 @@ import json
 import os
 from pathlib import Path
 import platform
-from typing import (Any, cast, Callable, Dict, Generator, List, Optional,
-                    Tuple, TypedDict, Union)
+from typing import (
+    Any,
+    cast,
+    Callable,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    Tuple,
+    TypedDict,
+    Union,
+)
 
 from pw_ide.exceptions import (BadCompDbException, InvalidTargetException,
                                MissingCompDbException,

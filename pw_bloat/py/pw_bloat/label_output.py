@@ -14,8 +14,16 @@
 """Module for size report ASCII tables from DataSourceMaps."""
 
 import enum
-from typing import (Iterable, Tuple, Union, Type, List, Optional, NamedTuple,
-                    cast)
+from typing import (
+    Iterable,
+    Tuple,
+    Union,
+    Type,
+    List,
+    Optional,
+    NamedTuple,
+    cast,
+)
 
 from pw_bloat.label import DataSourceMap, DiffDataSourceMap, Label
 

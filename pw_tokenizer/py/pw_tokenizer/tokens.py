@@ -24,9 +24,21 @@ from pathlib import Path
 import re
 import struct
 import subprocess
-from typing import (BinaryIO, Callable, Dict, Iterable, Iterator, List,
-                    NamedTuple, Optional, Pattern, TextIO, Tuple, Union,
-                    ValuesView)
+from typing import (
+    BinaryIO,
+    Callable,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    NamedTuple,
+    Optional,
+    Pattern,
+    TextIO,
+    Tuple,
+    Union,
+    ValuesView,
+)
 from uuid import uuid4
 
 DATE_FORMAT = '%Y-%m-%d'

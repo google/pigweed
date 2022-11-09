@@ -22,8 +22,19 @@ import subprocess
 import shlex
 import tempfile
 from types import ModuleType
-from typing import (Dict, Generic, Iterable, Iterator, List, NamedTuple,
-                    Optional, Set, Tuple, TypeVar, Union)
+from typing import (
+    Dict,
+    Generic,
+    Iterable,
+    Iterator,
+    List,
+    NamedTuple,
+    Optional,
+    Set,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 # Temporarily set the root logger level to critical while importing yapf.
 # This silences INFO level messages from

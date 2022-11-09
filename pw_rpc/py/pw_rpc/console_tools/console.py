@@ -19,8 +19,15 @@ from itertools import chain
 import inspect
 import textwrap
 import types
-from typing import (Any, Collection, Dict, Iterable, Mapping, NamedTuple,
-                    Optional)
+from typing import (
+    Any,
+    Collection,
+    Dict,
+    Iterable,
+    Mapping,
+    NamedTuple,
+    Optional,
+)
 
 import pw_status
 from pw_protobuf_compiler import python_protos

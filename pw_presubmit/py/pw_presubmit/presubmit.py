@@ -55,8 +55,20 @@ import subprocess
 import sys
 import time
 import types
-from typing import (Callable, Collection, Dict, Iterable, Iterator, List,
-                    Optional, Pattern, Sequence, Set, Tuple, Union)
+from typing import (
+    Callable,
+    Collection,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Pattern,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+)
 
 import pw_cli.color
 import pw_cli.env

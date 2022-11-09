@@ -17,8 +17,19 @@ import abc
 from dataclasses import dataclass
 import enum
 from inspect import Parameter
-from typing import (Any, Callable, Collection, Dict, Generic, Iterable,
-                    Iterator, Optional, Tuple, TypeVar, Union)
+from typing import (
+    Any,
+    Callable,
+    Collection,
+    Dict,
+    Generic,
+    Iterable,
+    Iterator,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 from google.protobuf import descriptor_pb2, message_factory
 from google.protobuf.descriptor import (FieldDescriptor, MethodDescriptor,

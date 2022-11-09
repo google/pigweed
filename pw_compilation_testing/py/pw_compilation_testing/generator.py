@@ -30,8 +30,18 @@ from pathlib import Path
 import pickle
 import re
 import sys
-from typing import (Iterable, Iterator, List, NamedTuple, NoReturn, Optional,
-                    Pattern, Sequence, Set, Tuple)
+from typing import (
+    Iterable,
+    Iterator,
+    List,
+    NamedTuple,
+    NoReturn,
+    Optional,
+    Pattern,
+    Sequence,
+    Set,
+    Tuple,
+)
 
 # Matches the #if or #elif statement that starts a compile fail test.
 _TEST_START = re.compile(r'^[ \t]*#[ \t]*(?:el)?if[ \t]+PW_NC_TEST\([ \t]*')

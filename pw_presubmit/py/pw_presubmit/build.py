@@ -23,8 +23,18 @@ from pathlib import Path
 import re
 import subprocess
 from shutil import which
-from typing import (Collection, Container, Dict, Iterable, List, Mapping,
-                    Optional, Set, Tuple, Union)
+from typing import (
+    Collection,
+    Container,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+)
 
 from pw_package import package_manager
 from pw_presubmit import (

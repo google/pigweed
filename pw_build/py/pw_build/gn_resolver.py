@@ -21,8 +21,16 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import (Callable, Dict, List, Iterable, Iterator, NamedTuple,
-                    Optional, Tuple)
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Iterable,
+    Iterator,
+    NamedTuple,
+    Optional,
+    Tuple,
+)
 
 _LOG = logging.getLogger(__name__)
 

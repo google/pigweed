@@ -43,9 +43,22 @@ import string
 import struct
 import sys
 import time
-from typing import (AnyStr, BinaryIO, Callable, Dict, List, Iterable, IO,
-                    Iterator, Match, NamedTuple, Optional, Pattern, Tuple,
-                    Union)
+from typing import (
+    AnyStr,
+    BinaryIO,
+    Callable,
+    Dict,
+    List,
+    Iterable,
+    IO,
+    Iterator,
+    Match,
+    NamedTuple,
+    Optional,
+    Pattern,
+    Tuple,
+    Union,
+)
 
 try:
     from pw_tokenizer import database, decode, encode, tokens

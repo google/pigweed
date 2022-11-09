@@ -29,8 +29,16 @@ from pathlib import Path
 import re
 import struct
 import sys
-from typing import (BinaryIO, Iterable, Mapping, NamedTuple, Optional, Pattern,
-                    Tuple, Union)
+from typing import (
+    BinaryIO,
+    Iterable,
+    Mapping,
+    NamedTuple,
+    Optional,
+    Pattern,
+    Tuple,
+    Union,
+)
 
 ARCHIVE_MAGIC = b'!<arch>\n'
 ELF_MAGIC = b'\x7fELF'

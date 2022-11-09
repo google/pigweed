@@ -21,8 +21,16 @@ import os
 from pathlib import Path
 import re
 import sys
-from typing import (Callable, Collection, List, Optional, Pattern, Sequence,
-                    Tuple, Union)
+from typing import (
+    Callable,
+    Collection,
+    List,
+    Optional,
+    Pattern,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 import pw_cli
 from . import cli, git_repo, presubmit, tools

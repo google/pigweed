@@ -24,8 +24,17 @@ import logging
 import pathlib
 import re
 import sys
-from typing import (Callable, Collection, DefaultDict, Dict, Iterable, List,
-                    OrderedDict, Set, Union)
+from typing import (
+    Callable,
+    Collection,
+    DefaultDict,
+    Dict,
+    Iterable,
+    List,
+    OrderedDict,
+    Set,
+    Union,
+)
 from pw_presubmit import git_repo
 from pw_presubmit.presubmit import PresubmitFailure
 

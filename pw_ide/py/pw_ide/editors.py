@@ -48,8 +48,17 @@ import enum
 import json
 from pathlib import Path
 import time
-from typing import (Any, Callable, Dict, Generator, Generic, Literal, Optional,
-                    OrderedDict, TypeVar)
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generator,
+    Generic,
+    Literal,
+    Optional,
+    OrderedDict,
+    TypeVar,
+)
 
 import json5  # type: ignore
 
