@@ -2108,6 +2108,8 @@ def generate_struct_for_message(message: ProtoMessage, root: ProtoNode,
                 output.write_line('static_cast<void>(other);')
                 output.write_line('return true;')
         output.write_line('}')
+        output.write_line('bool operator!=(const Message& other) const '
+                          '{ return !(*this == other); }')
 
     output.write_line('};')
 
