@@ -62,15 +62,6 @@ pw_env_setup/py/oxidizer/build
 environment
 .environment
 build_overrides/pigweed_environment.gni
-# TODO(pwbug/216) Remove following lines in this section.
-# Maybe find a way to delete these files before these lines are removed.
-python*-env/
-.python*-env/
-pw_env_setup/.env_setup.sh
-pw_env_setup/.env_setup.bat
-.cipd
-.cargo
-.bootstrap/
 
 # Web Tools
 node_modules
