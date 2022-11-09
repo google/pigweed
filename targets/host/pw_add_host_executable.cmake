@@ -35,7 +35,7 @@ function(pw_add_host_executable NAME TEST_DEP)
   add_executable(${NAME} EXCLUDE_FROM_ALL)
   pw_target_link_targets(${NAME}
     PRIVATE
-      pw_unit_test.simple_printing_main
+      pw_unit_test.logging_main
       ${TEST_DEP}
   )
 endfunction(pw_add_host_executable)
