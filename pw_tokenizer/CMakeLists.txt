@@ -102,7 +102,7 @@ pw_add_module_library(pw_tokenizer.decoder
     pw_varint
 )
 
-pw_add_facade(pw_tokenizer.global_handler
+pw_add_module_facade(pw_tokenizer.global_handler
   DEFAULT_BACKEND
     pw_build.empty  # Default to an empty backend so the tests can run.
   HEADERS
@@ -116,7 +116,7 @@ pw_add_facade(pw_tokenizer.global_handler
     tokenize_to_global_handler.cc
 )
 
-pw_add_facade(pw_tokenizer.global_handler_with_payload
+pw_add_module_facade(pw_tokenizer.global_handler_with_payload
   DEFAULT_BACKEND
     pw_build.empty  # Default to an empty backend so the tests can run.
   HEADERS

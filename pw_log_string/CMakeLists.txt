@@ -28,7 +28,7 @@ pw_add_module_library(pw_log_string
     pw_log_string.handler
 )
 
-pw_add_facade(pw_log_string.handler
+pw_add_module_facade(pw_log_string.handler
   HEADERS
     public/pw_log_string/handler.h
   PUBLIC_INCLUDES

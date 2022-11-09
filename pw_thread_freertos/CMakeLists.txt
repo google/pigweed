@@ -145,7 +145,7 @@ pw_add_module_library(pw_thread_freertos.snapshot
     pw_log
 )
 
-pw_add_facade(pw_thread_freertos.freertos_tsktcb
+pw_add_module_facade(pw_thread_freertos.freertos_tsktcb
   HEADERS
     public/pw_thread_freertos/freertos_tsktcb.h
   PUBLIC_INCLUDES

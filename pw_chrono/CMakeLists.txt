@@ -22,7 +22,7 @@ pw_add_module_library(pw_chrono.epoch
     public
 )
 
-pw_add_facade(pw_chrono.system_clock
+pw_add_module_facade(pw_chrono.system_clock
   HEADERS
     public/pw_chrono/internal/system_clock_macros.h
     public/pw_chrono/system_clock.h
@@ -35,7 +35,7 @@ pw_add_facade(pw_chrono.system_clock
     system_clock.cc
 )
 
-pw_add_facade(pw_chrono.system_timer
+pw_add_module_facade(pw_chrono.system_timer
   HEADERS
     public/pw_chrono/system_timer.h
   PUBLIC_INCLUDES

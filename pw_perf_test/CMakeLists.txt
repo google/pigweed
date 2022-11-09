@@ -22,7 +22,7 @@ pw_add_module_library(pw_perf_test.duration_unit
     public
 )
 
-pw_add_facade(pw_perf_test.timer
+pw_add_module_facade(pw_perf_test.timer
   HEADERS
     public/pw_perf_test/internal/timer.h
   PUBLIC_INCLUDES

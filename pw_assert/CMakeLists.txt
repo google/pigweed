@@ -48,7 +48,7 @@ if(DEFINED pw_assert_BACKEND)
   )
 endif()
 
-pw_add_facade(pw_assert.assert
+pw_add_module_facade(pw_assert.assert
   HEADERS
     public/pw_assert/assert.h
   PUBLIC_INCLUDES
@@ -57,7 +57,7 @@ pw_add_facade(pw_assert.assert
     pw_assert.config
 )
 
-pw_add_facade(pw_assert.check
+pw_add_module_facade(pw_assert.check
   HEADERS
     public/pw_assert/check.h
     public/pw_assert/internal/check_impl.h

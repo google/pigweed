@@ -14,7 +14,7 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_facade(pw_sync.binary_semaphore
+pw_add_module_facade(pw_sync.binary_semaphore
   HEADERS
     public/pw_sync/binary_semaphore.h
   PUBLIC_INCLUDES
@@ -26,7 +26,7 @@ pw_add_facade(pw_sync.binary_semaphore
     binary_semaphore.cc
 )
 
-pw_add_facade(pw_sync.counting_semaphore
+pw_add_module_facade(pw_sync.counting_semaphore
   HEADERS
     public/pw_sync/counting_semaphore.h
   PUBLIC_INCLUDES
@@ -80,7 +80,7 @@ pw_add_module_library(pw_sync.virtual_basic_lockable
     pw_sync.lock_annotations
 )
 
-pw_add_facade(pw_sync.mutex
+pw_add_module_facade(pw_sync.mutex
   HEADERS
     public/pw_sync/mutex.h
   PUBLIC_INCLUDES
@@ -93,7 +93,7 @@ pw_add_facade(pw_sync.mutex
     mutex.cc
 )
 
-pw_add_facade(pw_sync.timed_mutex
+pw_add_module_facade(pw_sync.timed_mutex
   HEADERS
     public/pw_sync/timed_mutex.h
   PUBLIC_INCLUDES
@@ -107,7 +107,7 @@ pw_add_facade(pw_sync.timed_mutex
     timed_mutex.cc
 )
 
-pw_add_facade(pw_sync.recursive_mutex
+pw_add_module_facade(pw_sync.recursive_mutex
   HEADERS
     public/pw_sync/recursive_mutex.h
   PUBLIC_INCLUDES
@@ -119,7 +119,7 @@ pw_add_facade(pw_sync.recursive_mutex
     recursive_mutex.cc
 )
 
-pw_add_facade(pw_sync.interrupt_spin_lock
+pw_add_module_facade(pw_sync.interrupt_spin_lock
   HEADERS
     public/pw_sync/interrupt_spin_lock.h
   PUBLIC_INCLUDES
@@ -132,14 +132,14 @@ pw_add_facade(pw_sync.interrupt_spin_lock
     interrupt_spin_lock.cc
 )
 
-pw_add_facade(pw_sync.thread_notification
+pw_add_module_facade(pw_sync.thread_notification
   HEADERS
     public/pw_sync/thread_notification.h
   PUBLIC_INCLUDES
     public
 )
 
-pw_add_facade(pw_sync.timed_thread_notification
+pw_add_module_facade(pw_sync.timed_thread_notification
   HEADERS
     public/pw_sync/timed_thread_notification.h
   PUBLIC_INCLUDES
@@ -185,7 +185,7 @@ pw_add_module_library(pw_sync.yield_core
     public
 )
 
-pw_add_facade(pw_sync.condition_variable
+pw_add_module_facade(pw_sync.condition_variable
   HEADERS
     public/pw_sync/condition_variable.h
   PUBLIC_INCLUDES

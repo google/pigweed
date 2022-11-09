@@ -85,8 +85,8 @@ endmacro()
 #
 # Modules that do not meet these requirements may not use
 # pw_auto_add_simple_module. Instead, define the module's libraries and tests
-# with pw_add_module_library, pw_add_facade, pw_add_test, and the standard CMake
-# functions, such as add_library, target_link_libraries, etc.
+# with pw_add_module_library, pw_add_module_facade, pw_add_test, and the
+# standard CMake functions, such as add_library, target_link_libraries, etc.
 #
 # This function does the following:
 #
@@ -534,14 +534,15 @@ endfunction(pw_add_module_library)
 # module that implements the facade depends on a library named
 # MODULE_NAME.facade.
 #
-# pw_add_facade accepts the same arguments as pw_add_module_library, except for
-# IMPLEMENTS_FACADES. It also accepts the following argument:
+# pw_add_module_facade accepts the same arguments as pw_add_module_library,
+# except for IMPLEMENTS_FACADES. It also accepts the following argument:
 #
 #  DEFAULT_BACKEND - which backend to use by default
 #
-function(pw_add_facade NAME)
+function(pw_add_module_facade NAME)
   _pw_add_library_multi_value_args(list_args)
-  pw_parse_arguments_strict(pw_add_facade 1 "" "DEFAULT_BACKEND" "${list_args}")
+  pw_parse_arguments_strict(pw_add_module_facade 1 "" "DEFAULT_BACKEND"
+                            "${list_args}")
 
   # If no backend is set, a script that displays an error message is used
   # instead. If the facade is used in the build, it fails with this error.
@@ -586,7 +587,7 @@ function(pw_add_facade NAME)
       "${NAME}.facade"
       "${${NAME}_BACKEND}"
   )
-endfunction(pw_add_facade)
+endfunction(pw_add_module_facade)
 
 # Sets which backend to use for the given facade.
 function(pw_set_backend FACADE BACKEND)

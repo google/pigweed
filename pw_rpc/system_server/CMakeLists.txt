@@ -14,7 +14,7 @@
 
 include("$ENV{PW_ROOT}/pw_build/pigweed.cmake")
 
-pw_add_facade(pw_rpc.system_server
+pw_add_module_facade(pw_rpc.system_server
   PUBLIC_DEPS
     pw_rpc.server
     pw_stream

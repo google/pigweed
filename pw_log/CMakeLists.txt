@@ -28,7 +28,7 @@ pw_add_module_library(pw_log.config
     ${pw_log_CONFIG}
 )
 
-pw_add_facade(pw_log
+pw_add_module_facade(pw_log
   HEADERS
     public/pw_log/levels.h
     public/pw_log/log.h

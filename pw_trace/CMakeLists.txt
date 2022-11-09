@@ -14,7 +14,7 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_facade(pw_trace
+pw_add_module_facade(pw_trace
   HEADERS
     public/pw_trace/internal/trace_internal.h
     public/pw_trace/trace.h

@@ -25,14 +25,14 @@ pw_add_module_library(pw_thread.config
     ${pw_thread_CONFIG}
 )
 
-pw_add_facade(pw_thread.id
+pw_add_module_facade(pw_thread.id
   HEADERS
     public/pw_thread/id.h
   PUBLIC_INCLUDES
     public
 )
 
-pw_add_facade(pw_thread.sleep
+pw_add_module_facade(pw_thread.sleep
   HEADERS
     public/pw_thread/sleep.h
   PUBLIC_INCLUDES
@@ -44,7 +44,7 @@ pw_add_facade(pw_thread.sleep
     sleep.cc
 )
 
-pw_add_facade(pw_thread.thread
+pw_add_module_facade(pw_thread.thread
   HEADERS
     public/pw_thread/detached_thread.h
     public/pw_thread/thread.h
@@ -64,7 +64,7 @@ pw_add_module_library(pw_thread.thread_core
     public
 )
 
-pw_add_facade(pw_thread.yield
+pw_add_module_facade(pw_thread.yield
   HEADERS
     public/pw_thread/yield.h
   PUBLIC_INCLUDES

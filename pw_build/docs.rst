@@ -821,9 +821,9 @@ CMake convenience functions are defined in ``pw_build/pigweed.cmake``.
 
 * ``pw_add_library`` -- The base helper used to instantiate CMake libraries.
   This is meant for use in downstream projects as upstream Pigweed modules are
-  expected to use ``pw_add_module_library`` and ``pw_add_facade``.
+  expected to use ``pw_add_module_library`` and ``pw_add_module_facade``.
 * ``pw_add_module_library`` -- Add an upstream Pigweed library.
-* ``pw_add_facade`` -- Declare a module facade.
+* ``pw_add_module_facade`` -- Declare an upstream Pigweed facade.
 * ``pw_set_backend`` -- Set the backend library to use for a facade.
 * ``pw_auto_add_simple_module`` -- For modules with only one library,
   automatically declare the library and its tests. This has been deprecated,
@@ -856,7 +856,7 @@ similar to GN's build args set with ``gn args``. Unlike GN, CMake does not
 support multi-toolchain builds, so these variables have a single global value
 per build directory.
 
-The ``pw_add_facade`` function declares a cache variable named
+The ``pw_add_module_facade`` function declares a cache variable named
 ``<module_name>_BACKEND`` for each facade. Cache variables can be awkward to
 work with, since their values only change when they're assigned, but then
 persist accross CMake invocations. These variables should be set in one of the
