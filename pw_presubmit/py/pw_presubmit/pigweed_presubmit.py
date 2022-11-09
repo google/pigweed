@@ -429,14 +429,6 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     '-//pw_i2c_mcuxpresso/...:all',
     '-//pw_log:log_proto_py_pb2',  # TODO(b/241456982) Remove when passing.
     '-//pw_log:log_proto_py_pb2_genproto',
-    '-//pw_software_update:bundled_update_py_pb2',  # TODO(b/232427554): Fix
-    '-//pw_software_update:bundled_update_py_pb2_genproto',
-    '-//pw_software_update:bundled_update_service',
-    '-//pw_software_update:bundled_update_service_pwpb',
-    '-//pw_software_update:bundled_update_service_pwpb_test',
-    '-//pw_software_update:bundled_update_service_test',
-    '-//pw_software_update:update_bundle',
-    '-//pw_software_update:update_bundle_test',
     '-//pw_spi/...:all',
     '-//pw_sys_io_arduino/...:all',
     '-//pw_sys_io_mcuxpresso/...:all',

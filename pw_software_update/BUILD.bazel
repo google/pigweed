@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
+load("//pw_build/bazel_internal:py_proto_library.bzl", "py_proto_library")
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load(
     "//pw_build:pigweed.bzl",
@@ -66,12 +66,17 @@ proto_library(
 py_proto_library(
     name = "bundled_update_py_pb2",
     srcs = ["bundled_update.proto"],
+    tags = ["manual"],
 )
 
-pw_proto_library(
-    name = "bundled_update_proto_cc",
-    deps = [":bundled_update_proto"],
-)
+# TODO(b/258074401): Depends on the `any` proto, which doesn't build under
+# nanopb.
+# pw_proto_library(
+#     name = "bundled_update_proto_cc",
+#     # TODO(b/258074760): Adding this tag breaks the pw_proto_library rule.
+#     tags = ["manual"],
+#     deps = [":bundled_update_proto"],
+# )
 
 pw_cc_library(
     name = "openable_reader",
@@ -106,11 +111,14 @@ pw_cc_library(
         "public/pw_software_update/update_bundle_accessor.h",
     ],
     includes = ["public"],
+    tags = ["manual"],  # TODO(b/236321905): Depends on pw_crypto.
     deps = [
         ":blob_store_openable_reader",
         ":openable_reader",
         ":update_bundle_proto_cc.pwpb",
         "//pw_blob_store",
+        "//pw_crypto:ecdsa_facade",
+        "//pw_crypto:sha256_facade",
         "//pw_kvs",
         "//pw_log",
         "//pw_protobuf",
@@ -120,17 +128,20 @@ pw_cc_library(
     ],
 )
 
+# TODO(b/258074401): Depends on bundled_update_proto_cc.nanopb_rpc, which
+# doesn't build yet.
 pw_cc_library(
     name = "bundled_update_service",
     srcs = ["bundled_update_service.cc"],
     hdrs = ["public/pw_software_update/bundled_update_service.h"],
     includes = ["public"],
+    tags = ["manual"],
     deps = [
-        ":bundled_update_proto_cc.nanopb_rpc",
-        ":bundled_update_proto_cc.pwpb",
+        # ":bundled_update_proto_cc.nanopb_rpc",
+        # ":bundled_update_proto_cc.pwpb",
         ":update_bundle",
-        ":update_bundle_proto_cc.nanopb_rpc",
-        ":update_bundle_proto_cc.pwpb",
+        # ":update_bundle_proto_cc.nanopb_rpc",
+        # ":update_bundle_proto_cc.pwpb",
         "//pw_log",
         "//pw_result",
         "//pw_status",
@@ -142,17 +153,20 @@ pw_cc_library(
     ],
 )
 
+# TODO(b/258074401): Depends on bundled_update_proto_cc.nanopb_rpc, which
+# doesn't build yet.
 pw_cc_library(
     name = "bundled_update_service_pwpb",
     srcs = ["bundled_update_service_pwpb.cc"],
     hdrs = ["public/pw_software_update/bundled_update_service_pwpb.h"],
     includes = ["public"],
+    tags = ["manual"],
     deps = [
-        ":bundled_update_proto_cc.pwpb",
-        ":bundled_update_proto_cc.pwpb_rpc",
+        # ":bundled_update_proto_cc.pwpb",
+        # ":bundled_update_proto_cc.pwpb_rpc",
         ":update_bundle",
-        ":update_bundle_proto_cc.pwpb",
-        ":update_bundle_proto_cc.pwpb_rpc",
+        # ":update_bundle_proto_cc.pwpb",
+        # ":update_bundle_proto_cc.pwpb_rpc",
         "//pw_log",
         "//pw_result",
         "//pw_status",
@@ -165,10 +179,25 @@ pw_cc_library(
     ],
 )
 
+# TODO(b/258222107): pw_python_action doesn't exist yet.
+# pw_python_action(
+#     name = "generate_test_bundle",
+#     outputs = ["$target_gen_dir/generate_test_bundle/test_bundles.h"],
+#     script = "py/pw_software_update/generate_test_bundle.py",
+#     deps = [
+#         ":bundled_update_py_pb2",
+#         "py",
+#     ],
+#     args = [ "$target_gen_dir/generate_test_bundle/test_bundles.h" ],
+# )
+
 pw_cc_test(
     name = "update_bundle_test",
     srcs = ["update_bundle_test.cc"],
+    tags = ["manual"],
     deps = [
+        # This dependency is needed, but doesn't exist yet.
+        # "generate_test_bundle",
         ":update_bundle",
         "//pw_kvs:fake_flash_test_key_value_store",
         "//pw_unit_test",
@@ -178,6 +207,7 @@ pw_cc_test(
 pw_cc_test(
     name = "bundled_update_service_test",
     srcs = ["bundled_update_service_test.cc"],
+    tags = ["manual"],  # bundled_update_service doesn't work yet.
     deps = [
         ":bundled_update_service",
         "//pw_unit_test",
@@ -187,6 +217,7 @@ pw_cc_test(
 pw_cc_test(
     name = "bundled_update_service_pwpb_test",
     srcs = ["bundled_update_service_pwpb_test.cc"],
+    tags = ["manual"],  # bundled_update_service_pwpb doesn't work yet.
     deps = [
         ":bundled_update_service_pwpb",
         "//pw_unit_test",
