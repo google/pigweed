@@ -275,14 +275,18 @@ def _process_files(
     return changed_paths
 
 
-@presubmit.Check
-def keep_sorted(ctx: presubmit.PresubmitContext) -> None:
+@presubmit.check(name='keep_sorted')
+def presubmit_check(ctx: presubmit.PresubmitContext) -> None:
     """Presubmit check that ensures specified lists remain sorted."""
 
     changed_paths = _process_files(ctx)
 
     if changed_paths:
         _print_howto_fix(changed_paths)
+
+
+# TODO(b/251659424) Remove.
+keep_sorted = presubmit_check
 
 
 def parse_args() -> argparse.Namespace:

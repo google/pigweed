@@ -935,7 +935,7 @@ _LINTFORMAT = (
     commit_message_format,
     copyright_notice,
     format_code.presubmit_checks(),
-    inclusive_language.inclusive_language.with_filter(exclude=(
+    inclusive_language.presubmit_check.with_filter(exclude=(
         r'\byarn.lock$',
         r'\bpackage-lock.json$',
     )),
@@ -944,7 +944,7 @@ _LINTFORMAT = (
     owners_lint_checks,
     source_is_in_build_files,
     shell_checks.shellcheck if shutil.which('shellcheck') else (),
-    keep_sorted.keep_sorted,
+    keep_sorted.presubmit_check,
     todo_check_with_exceptions,
 )
 

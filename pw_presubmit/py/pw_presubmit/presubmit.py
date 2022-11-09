@@ -54,6 +54,7 @@ import re
 import subprocess
 import sys
 import time
+import types
 from typing import (Callable, Collection, Dict, Iterable, Iterator, List,
                     Optional, Pattern, Sequence, Set, Tuple, Union)
 
@@ -391,8 +392,8 @@ class Presubmit:
         filter_to_checks: Dict[FileFilter,
                                List[Check]] = collections.defaultdict(list)
 
-        for check in checks:
-            filter_to_checks[check.filter].append(check)
+        for chk in checks:
+            filter_to_checks[chk.filter].append(chk)
 
         check_to_paths = self._map_checks_to_paths(filter_to_checks)
         return [(c, check_to_paths[c]) for c in checks if c in check_to_paths]
@@ -409,11 +410,11 @@ class Presubmit:
                 path for path, filter_path in zip(self._paths, posix_paths)
                 if filt.matches(filter_path))
 
-            for check in checks:
-                if filtered_paths or check.always_run:
-                    checks_to_paths[check] = filtered_paths
+            for chk in checks:
+                if filtered_paths or chk.always_run:
+                    checks_to_paths[chk] = filtered_paths
                 else:
-                    _LOG.debug('Skipping "%s": no relevant files', check.name)
+                    _LOG.debug('Skipping "%s": no relevant files', chk.name)
 
         return checks_to_paths
 
@@ -481,9 +482,9 @@ class Presubmit:
         """Runs presubmit checks; returns (passed, failed, skipped) lists."""
         passed = failed = 0
 
-        for i, (check, paths) in enumerate(program, 1):
-            with self._context(check.name, paths) as ctx:
-                result = check.run(ctx, i, len(program))
+        for i, (chk, paths) in enumerate(program, 1):
+            with self._context(chk.name, paths) as ctx:
+                result = chk.run(ctx, i, len(program))
 
             if result is _Result.PASS:
                 passed += 1
@@ -630,9 +631,9 @@ def run(  # pylint: disable=too-many-arguments,too-many-locals
 
     if only_list_steps:
         steps: List[Dict] = []
-        for check, filtered_paths in presubmit.apply_filters(program):
+        for chk, filtered_paths in presubmit.apply_filters(program):
             steps.append({
-                'name': check.name,
+                'name': chk.name,
                 'paths': [str(x) for x in filtered_paths],
             })
         json.dump(steps, sys.stdout, indent=2)
@@ -647,6 +648,40 @@ def run(  # pylint: disable=too-many-arguments,too-many-locals
 
 def _make_str_tuple(value: Union[Iterable[str], str]) -> Tuple[str, ...]:
     return tuple([value] if isinstance(value, str) else value)
+
+
+def check(*args, **kwargs):
+    """Turn a function into a presubmit check.
+
+    Args:
+        *args: Passed through to function.
+        *kwargs: Passed through to function.
+
+    If only one argument is provided and it's a function, this function acts
+    as a decorator and creates a Check from the function. Example of this kind
+    of usage:
+
+    @check
+    def pragma_once(ctx: PresubmitContext):
+        pass
+
+    Otherwise, save the arguments, and return a decorator that turns a function
+    into a Check, but with the arguments added onto the Check constructor.
+    Example of this kind of usage:
+
+    @check(name='pragma_twice')
+    def pragma_once(ctx: PresubmitContext):
+        pass
+    """
+    if (len(args) == 1 and isinstance(args[0], types.FunctionType)
+            and not kwargs):
+        # Called as a regular decorator.
+        return Check(args[0])
+
+    def decorator(check_function):
+        return Check(check_function, *args, **kwargs)
+
+    return decorator
 
 
 class Check:
@@ -747,19 +782,19 @@ def _required_args(function: Callable) -> Iterable[Parameter]:
             yield param
 
 
-def _ensure_is_valid_presubmit_check_function(check: Callable) -> None:
+def _ensure_is_valid_presubmit_check_function(chk: Callable) -> None:
     """Checks if a Callable can be used as a presubmit check."""
     try:
-        required_args = tuple(_required_args(check))
+        required_args = tuple(_required_args(chk))
     except (TypeError, ValueError):
         raise TypeError('Presubmit checks must be callable, but '
-                        f'{check!r} is a {type(check).__name__}')
+                        f'{chk!r} is a {type(chk).__name__}')
 
     if len(required_args) != 1:
         raise TypeError(
             f'Presubmit check functions must have exactly one required '
             f'positional argument (the PresubmitContext), but '
-            f'{check.__name__} has {len(required_args)} required arguments' +
+            f'{chk.__name__} has {len(required_args)} required arguments' +
             (f' ({", ".join(a.name for a in required_args)})'
              if required_args else ''))
 
