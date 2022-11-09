@@ -36,6 +36,7 @@ _END = re.compile(r'keep-sorted: (stop|end)', re.IGNORECASE)
 _IGNORE_CASE = re.compile(r'ignore-case', re.IGNORECASE)
 _ALLOW_DUPES = re.compile(r'allow-dupes', re.IGNORECASE)
 _IGNORE_PREFIX = re.compile(r'ignore-prefix=(\S+)', re.IGNORECASE)
+_STICKY_COMMENTS = re.compile(r'sticky-comments=(\S+)', re.IGNORECASE)
 
 # Only include these literals here so keep_sorted doesn't try to reorder later
 # test lines.
@@ -77,10 +78,28 @@ class KeepSortedParsingError(presubmit.PresubmitFailure):
 
 
 @dataclasses.dataclass
+class _Line:
+    value: str = ''
+    sticky_comments: Sequence[str] = ()
+
+    @property
+    def full(self):
+        return ''.join((*self.sticky_comments, self.value))
+
+    def __lt__(self, other):
+        if not isinstance(other, _Line):
+            return NotImplemented
+        if self.value != other.value:
+            return self.value < other.value
+        return self.sticky_comments < other.sticky_comments
+
+
+@dataclasses.dataclass
 class _Block:
     ignore_case: bool = False
     allow_dupes: bool = False
     ignored_prefixes: Sequence[str] = dataclasses.field(default_factory=list)
+    sticky_comments: Tuple[str, ...] = ()
     start_line_number: int = -1
     start_line: str = ''
     end_line: str = ''
@@ -96,13 +115,34 @@ class _FileSorter:
         self.changed: bool = False
 
     def _process_block(self, block: _Block) -> Sequence[str]:
-        lines_after_dupes: List[str] = []
-        if block.allow_dupes:
-            lines_after_dupes = block.lines
-        else:
-            lines_after_dupes = list({x: None for x in block.lines})
+        raw_lines: List[str] = block.lines
+        lines: List[_Line] = []
 
-        sort_key_funcs: List[Callable[[Tuple[str, ...]], Tuple[str, ...]]] = []
+        if block.sticky_comments:
+            comments: List[str] = []
+            for raw_line in raw_lines:
+                if raw_line.lstrip().startswith(block.sticky_comments):
+                    _LOG.debug('found sticky %s', raw_line.strip())
+                    comments.append(raw_line)
+                else:
+                    _LOG.debug('non-sticky %s', raw_line.strip())
+                    line = _Line(raw_line, tuple(comments))
+                    _LOG.debug('line %s', line)
+                    lines.append(line)
+                    comments = []
+            if comments:
+                self.ctx.fail(
+                    f'sticky comment at end of block: {comments[0].strip()}',
+                    self.path, block.start_line_number)
+
+        else:
+            lines = [_Line(x) for x in block.lines]
+
+        if not block.allow_dupes:
+            lines = list({x.full: x for x in lines}.values())
+
+        StrLinePair = Tuple[str, _Line]
+        sort_key_funcs: List[Callable[[StrLinePair], StrLinePair]] = []
 
         if block.ignored_prefixes:
 
@@ -120,18 +160,22 @@ class _FileSorter:
         if block.ignore_case:
             sort_key_funcs.append(lambda val: (val[0].lower(), val[1]))
 
-        def sort_key(val):
-            vals = (val, val)
+        def sort_key(line):
+            vals = (line.value, line)
             for sort_key_func in sort_key_funcs:
                 vals = sort_key_func(vals)
             return vals
 
-        for val in lines_after_dupes:
+        for val in lines:
             _LOG.debug('For sorting: %r => %r', val, sort_key(val))
 
-        sorted_lines = sorted(lines_after_dupes, key=sort_key)
+        sorted_lines = sorted(lines, key=sort_key)
+        raw_sorted_lines: List[str] = []
+        for line in sorted_lines:
+            raw_sorted_lines.extend(line.sticky_comments)
+            raw_sorted_lines.append(line.value)
 
-        if block.lines != sorted_lines:
+        if block.lines != raw_sorted_lines:
             self.changed = True
             self.ctx.fail('keep-sorted block is not sorted', self.path,
                           block.start_line_number)
@@ -139,7 +183,7 @@ class _FileSorter:
             diff = difflib.Differ()
             for dline in diff.compare(
                 [x.rstrip() for x in block.lines],
-                [x.rstrip() for x in sorted_lines],
+                [x.rstrip() for x in raw_sorted_lines],
             ):
                 if dline.startswith('-'):
                     dline = _COLOR.red(dline)
@@ -148,7 +192,7 @@ class _FileSorter:
                 _LOG.info(dline)
             _LOG.info('  %s', block.end_line.rstrip())
 
-        return sorted_lines
+        return raw_sorted_lines
 
     def _parse_file(self, ins):
         block: Optional[_Block] = None
@@ -191,6 +235,19 @@ class _FileSorter:
                     block.ignored_prefixes.sort(key=lambda x: (-len(x), x))
                 _LOG.debug('ignored_prefixes: %r', block.ignored_prefixes)
 
+                match = _STICKY_COMMENTS.search(line)
+                if match:
+                    if match.group(1) == 'no':
+                        block.sticky_comments = ()
+                    else:
+                        block.sticky_comments = tuple(
+                            match.group(1).split(','))
+                else:
+                    prefix = line[:start_match.start()].strip()
+                    if prefix and len(prefix) <= 3:
+                        block.sticky_comments = (prefix, )
+                _LOG.debug('sticky_comments: %s', block.sticky_comments)
+
                 block.start_line = line
                 block.start_line_number = i
                 self.all_lines.append(line)
@@ -199,6 +256,8 @@ class _FileSorter:
                 remaining = _IGNORE_CASE.sub('', remaining, count=1).strip()
                 remaining = _ALLOW_DUPES.sub('', remaining, count=1).strip()
                 remaining = _IGNORE_PREFIX.sub('', remaining, count=1).strip()
+                remaining = _STICKY_COMMENTS.sub('', remaining,
+                                                 count=1).strip()
                 if remaining.strip():
                     raise KeepSortedParsingError(
                         f'unrecognized directive on keep-sorted line: '

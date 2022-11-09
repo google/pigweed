@@ -879,7 +879,8 @@ def owners_lint_checks(ctx: PresubmitContext):
 
 OTHER_CHECKS = (
     # keep-sorted: start
-    bazel_test,  # TODO(b/235277910): Enable all Bazel tests when they're fixed.
+    # TODO(b/235277910): Enable all Bazel tests when they're fixed.
+    bazel_test,
     build.gn_gen_check,
     cmake_clang,
     cmake_gcc,
@@ -891,7 +892,8 @@ OTHER_CHECKS = (
     gn_full_qemu_check,
     gn_gcc_build,
     npm_presubmit.npm_test,
-    oss_fuzz_build,  # Attempts to duplicate OSS-Fuzz. Currently failing.
+    # Attempts to duplicate OSS-Fuzz. Currently failing.
+    oss_fuzz_build,
     pw_transfer_integration_test,
     static_analysis,
     stm32f429i,

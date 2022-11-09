@@ -175,15 +175,38 @@ Prefixes can be ignored by adding ``ignore-prefix=`` followed by a
 comma-separated list of prefixes. The list below will be kept in this order.
 Neither commas nor whitespace are supported in prefixes.
 
+.. code-block::
+
   # keep-sorted: start ignore-prefix=',"
   'bar',
   "baz",
   'foo',
   # keep-sorted: end
 
+Inline comments are assumed to be associated with the following line. For
+example, the following is already sorted. This can be disabled with
+``sticky-comments=no``.
+
+.. todo-check: disable
+
+.. code-block::
+
+  # keep-sorted: start
+  # TODO(b/1234) Fix this.
+  bar,
+  # TODO(b/5678) Also fix this.
+  foo,
+  # keep-sorted: end
+
+.. todo-check: enable
+
+By default, the prefix of the keep-sorted line is assumed to be the comment
+marker used by any inline comments. This can be overridden by adding lines like
+``sticky-comments=%,#`` to the start line.
+
 The presubmit check will suggest fixes using ``pw keep-sorted --fix``.
 
-Future versions may support multiline list items.
+Future versions may support additional multiline list items.
 
 .gitmodules
 ^^^^^^^^^^^
