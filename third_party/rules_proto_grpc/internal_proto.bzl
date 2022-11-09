@@ -258,5 +258,9 @@ def pw_proto_library(name, **kwargs):  # buildifier: disable=function-docstring
             for plugin_name in PLUGIN_INFO.keys()
         ],
         tags = kwargs.get("tags", []) + additional_tags,
-        **{k: v for k, v in kwargs.items() if k not in ["deps", "protos"]}
+        **{
+            k: v
+            for k, v in kwargs.items()
+            if k not in ["deps", "protos", "tags"]
+        }
     )
