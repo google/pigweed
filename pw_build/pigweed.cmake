@@ -641,13 +641,21 @@ function(pw_set_module_config NAME LIBRARY)
   set("${NAME}" "${LIBRARY}" CACHE STRING "Config for ${NAME}" FORCE)
 endfunction(pw_set_module_config)
 
-set(pw_unit_test_MAIN pw_unit_test.simple_printing_main CACHE STRING
-    "Implementation of a main function for ``pw_test`` unit test binaries.")
-
 set(pw_unit_test_GOOGLETEST_BACKEND pw_unit_test.light CACHE STRING
     "CMake target which implements GoogleTest, by default pw_unit_test.light \
      is used. You could, for example, point this at pw_third_party.googletest \
      if using upstream GoogleTest directly on your host for GoogleMock.")
+
+# TODO(ewout): Remove the default.
+set(pw_unit_test_ADD_EXECUTABLE_FUNCTION "pw_add_host_executable" CACHE STRING
+    "The name of the CMake function used to instantiate pw_unit_test \
+     executables")
+
+# TODO(ewout): Remove the default.
+set(pw_unit_test_ADD_EXECUTABLE_FUNCTION_FILE
+    "$ENV{PW_ROOT}/targets/host/pw_add_host_executable.cmake" CACHE STRING
+    "The path to the .cmake file that defines \
+     pw_unit_test_ADD_EXECUTABLE_FUNCTION.")
 
 # TODO(ewout): Remove the default to match GN and support Windows.
 set(pw_unit_test_AUTOMATIC_RUNNER "$ENV{PW_ROOT}/targets/host/run_test" CACHE
@@ -665,22 +673,22 @@ set(pw_unit_test_AUTOMATIC_RUNNER_TIMEOUT_SECONDS "" CACHE STRING
 set(pw_unit_test_AUTOMATIC_RUNNER_ARGS "" CACHE STRING
     "Optional arguments to forward to the automatic runner")
 
-# Using pw_add_test, it creates the following targets:
+# pw_add_test: Declares a single unit test suite.
 #
 #   {NAME} depends on ${NAME}.run if pw_unit_test_AUTOMATIC_RUNNER is set, else
 #          it depends on ${NAME}.bin
 #   {NAME}.lib contains the provided test sources as a library target, which can
 #              then be linked into a test executable.
 #   {NAME}.bin is a standalone executable which contains only the test sources
-#          specified in the pw_unit_test_template.
+#              specified in the pw_unit_test_template.
 #   {NAME}.run which runs the unit test executable after building it if
 #              pw_unit_test_AUTOMATIC_RUNNER is set, else it fails to build.
 #
-# Required Args:
+# Required Arguments:
 #
 #   NAME: name to use for the produced test targets specified above
 #
-# Optional Args:
+# Optional Arguments:
 #
 #   SOURCES - source files for this library
 #   HEADERS - header files for this library
@@ -705,6 +713,7 @@ function(pw_add_test NAME)
       pw_add_test "${num_positional_args}" "${option_args}" "${one_value_args}"
       "${multi_value_args}")
 
+  # Add the library target under "${NAME}.lib".
   # OBJECT libraries require at least one source file.
   if(NOT arg_SOURCES)
     set(arg_SOURCES $<TARGET_PROPERTY:pw_build.empty,SOURCES>)
@@ -716,7 +725,6 @@ function(pw_add_test NAME)
       ${arg_HEADERS}
     PRIVATE_DEPS
       pw_unit_test
-      ${pw_unit_test_MAIN}
       ${arg_PRIVATE_DEPS}
     PRIVATE_INCLUDES
       ${arg_PRIVATE_INCLUDES}
@@ -728,12 +736,23 @@ function(pw_add_test NAME)
       ${arg_PRIVATE_LINK_OPTIONS}
   )
 
-  # TODO(ewout, hepler): Enable the use of pw_unit_test_EXECUTABLE_TARGET_TYPE &
-  # pw_unit_test_EXECUTABLE_TARGET_TYPE_FILE for stamping out unit test
-  # executables where we only pass the name and the lib target as args.
-  add_executable("${NAME}.bin" EXCLUDE_FROM_ALL)
-  target_link_libraries("${NAME}.bin" PRIVATE "${NAME}.lib")
+  # Add the executable target under "${NAME}.bin".
+  if(("${pw_unit_test_ADD_EXECUTABLE_FUNCTION}" STREQUAL "") OR
+     ("${pw_unit_test_ADD_EXECUTABLE_FUNCTION_FILE}" STREQUAL ""))
+    pw_add_error_target("${NAME}.bin"
+      MESSAGE
+        "Attempted to build the ${NAME}.bin without enabling the unit "
+        "test executable function via pw_unit_test_ADD_EXECUTABLE_FUNCTION "
+        "and pw_unit_test_ADD_EXECUTABLE_FUNCTION_FILE. "
+        "See https://pigweed.dev/pw_unit_test for more details."
+    )
+  else()
+    include("${pw_unit_test_ADD_EXECUTABLE_FUNCTION_FILE}")
+    cmake_language(CALL "${pw_unit_test_ADD_EXECUTABLE_FUNCTION}"
+                   "${NAME}.bin" "${NAME}.lib")
+  endif()
 
+  # Add the ${NAME} target and optionally the run target under ${NAME}.run.
   add_custom_target("${NAME}")
   if("${pw_unit_test_AUTOMATIC_RUNNER}" STREQUAL "")
     # Test runner is not provided, only build the executable.
@@ -779,7 +798,7 @@ function(pw_add_test NAME)
   endif()
 endfunction(pw_add_test)
 
-# pw_add_test_group: Creates a library and an executable target for unit tests.
+# pw_add_test_group: Defines a collection of tests or other test groups.
 #
 # Creates the following targets:
 #
@@ -789,16 +808,16 @@ endfunction(pw_add_test)
 #                 is set, else it depends on ${NAME}.bundle.bin
 #   {NAME}.lib depends on ${NAME}.bundle.lib.
 #   {NAME}.bin depends on the provided TESTS's <test_dep>.bin targets.
+#   {NAME}.run depends on the provided TESTS's <test_dep>.run targets if
+#              pw_unit_test_AUTOMATIC_RUNNER is set, else it fails to build.
 #   {NAME}.bundle.lib contains the provided tests bundled as a library target,
 #                     which can then be linked into a test executable.
 #   {NAME}.bundle.bin standalone executable which contains the bundled tests.
-#
-# In addition if the pw_unit_test_AUTOMATIC_RUNNER is set, this also creates:
-#   {NAME}.run depends on the provided TESTS's <test_dep>.run targets.
 #   {NAME}.bundle.run runs the {NAME}.bundle.bin test bundle executable after
-#                     building it.
+#                     building it if pw_unit_test_AUTOMATIC_RUNNER is set, else
+#                     it fails to build.
 #
-# Required Args:
+# Required Arguments:
 #
 #   NAME - The name of the executable target to be created.
 #   TESTS - pw_add_test targets and pw_add_test_group bundles to be included in

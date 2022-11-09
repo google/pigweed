@@ -182,18 +182,7 @@ The following example shows how to write a main function that runs
 
 Build system integration
 ========================
-``pw_unit_test`` integrates directly into Pigweed's GN build system. To define
-simple unit tests, set the ``pw_unit_test_MAIN`` build variable to a target
-which configures the test framework as described in the :ref:`running-tests`
-section, and use the ``pw_test`` template to register your test code.
-
-.. code-block::
-
-  import("$dir_pw_unit_test/test.gni")
-
-  pw_test("foo_test") {
-    sources = [ "foo_test.cc" ]
-  }
+``pw_unit_test`` integrates directly into Pigweed's GN and CMake build systems.
 
 The ``pw_unit_test`` module provides a few optional libraries to simplify setup:
 
@@ -206,8 +195,24 @@ The ``pw_unit_test`` module provides a few optional libraries to simplify setup:
  - ``logging_main``: Implements a ``main()`` function that simply runs tests
    using the ``logging_event_handler``.
 
+
+GN
+--
+To define simple unit tests, set the ``pw_unit_test_MAIN`` build variable to a
+target which configures the test framework as described in the
+:ref:`running-tests` section, and use the ``pw_test`` template to register your
+test code.
+
+.. code-block::
+
+  import("$dir_pw_unit_test/test.gni")
+
+  pw_test("foo_test") {
+    sources = [ "foo_test.cc" ]
+  }
+
 pw_test template
-----------------
+````````````````
 ``pw_test`` defines a single unit test suite. It creates several sub-targets.
 
 * ``<target_name>``: The test suite within a single binary. The test code is
@@ -238,7 +243,7 @@ pw_test template
   }
 
 pw_test_group template
-----------------------
+``````````````````````
 ``pw_test_group`` defines a collection of tests or other test groups. It creates
 several sub-targets:
 
@@ -282,7 +287,7 @@ several sub-targets:
   }
 
 pw_facade_test template
------------------------
+```````````````````````
 Pigweed facade test templates allow individual unit tests to build under the
 current device target configuration while overriding specific build arguments.
 This allows these tests to replace a facade's backend for the purpose of testing
@@ -299,7 +304,7 @@ the facade layer.
    facade being tested.
 
 Build arguments
----------------
+```````````````
 .. option:: pw_unit_test_GOOGLETEST_BACKEND <source_set>
 
   The GoogleTest implementation to use for Pigweed unit tests. This library
@@ -390,6 +395,153 @@ Build arguments
 
   Type: string (path to a .gni file)
   Usage: toolchain-controlled only
+
+CMake
+-----
+pw_add_test function
+````````````````````
+``pw_add_test`` declares a single unit test suite. It creates several
+sub-targets.
+
+* ``{NAME}`` depends on ``${NAME}.run`` if ``pw_unit_test_AUTOMATIC_RUNNER`` is
+  set, else it depends on ``${NAME}.bin``
+* ``{NAME}.lib`` contains the provided test sources as a library target, which
+  can then be linked into a test executable.
+* ``{NAME}.bin`` is a standalone executable which contains only the test sources
+  specified in the pw_unit_test_template.
+* ``{NAME}.run`` which runs the unit test executable after building it if
+  ``pw_unit_test_AUTOMATIC_RUNNER`` is set, else it fails to build.
+
+**Required Arguments**
+
+* ``NAME``: name to use for the produced test targets specified above
+
+**Optional Arguments**
+
+* ``SOURCES`` - source files for this library
+* ``HEADERS``- header files for this library
+* ``PRIVATE_DEPS``- private pw_target_link_targets arguments
+* ``PRIVATE_INCLUDES``- public target_include_directories argument
+* ``PRIVATE_DEFINES``- private target_compile_definitions arguments
+* ``PRIVATE_COMPILE_OPTIONS``- private target_compile_options arguments
+* ``PRIVATE_LINK_OPTIONS``- private target_link_options arguments
+
+**Example**
+
+.. code::
+
+  include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+
+  pw_add_test(my_module.foo_test
+    SOURCES
+      foo_test.cc
+    PRIVATE_DEPS
+      my_module.foo
+  )
+
+pw_add_test_group function
+``````````````````````````
+``pw_add_test_group`` defines a collection of tests or other test groups. It
+creates several sub-targets:
+
+* ``{NAME}`` depends on ``${NAME}.run`` if ``pw_unit_test_AUTOMATIC_RUNNER`` is
+  set, else  it depends on ``${NAME}.bin``.
+* ``{NAME}.bundle`` depends on ``${NAME}.bundle.run`` if
+  ``pw_unit_test_AUTOMATIC_RUNNER`` is set, else it depends on
+  ``${NAME}.bundle.bin``.
+* ``{NAME}.lib`` depends on ``${NAME}.bundle.lib``.
+* ``{NAME}.bin`` depends on the provided ``TESTS``'s ``<test_dep>.bin`` targets.
+* ``{NAME}.run`` depends on the provided ``TESTS``'s ``<test_dep>.run`` targets
+  if ``pw_unit_test_AUTOMATIC_RUNNER`` is set, else it fails to build.
+* ``{NAME}.bundle.lib`` contains the provided tests bundled as a library target,
+  which can then be linked into a test executable.
+* ``{NAME}.bundle.bin`` standalone executable which contains the bundled tests.
+* ``{NAME}.bundle.run`` runs the ``{NAME}.bundle.bin`` test bundle executable
+  after building it if ``pw_unit_test_AUTOMATIC_RUNNER`` is set, else it fails
+  to build.
+
+**Required Arguments**
+
+* ``NAME`` - The name of the executable target to be created.
+* ``TESTS`` - ``pw_add_test`` targets and ``pw_add_test_group`` bundles to be
+  included in this test bundle
+
+**Example**
+
+.. code::
+
+  include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+
+  pw_add_test_group(tests
+    TESTS
+      bar_test
+      foo_test
+  )
+
+  pw_add_test(foo_test
+    # ...
+  )
+
+  pw_add_test(bar_test
+    # ...
+  )
+
+Build arguments
+```````````````
+.. option:: pw_unit_test_GOOGLETEST_BACKEND <target>
+
+  The GoogleTest implementation to use for Pigweed unit tests. This library
+  provides "gtest/gtest.h" and related headers. Defaults to pw_unit_test.light,
+  which implements a subset of GoogleTest.
+
+  Type: string (CMake target name)
+  Usage: toolchain-controlled only
+
+.. option:: pw_unit_test_AUTOMATIC_RUNNER <executable>
+
+  Path to a test runner to automatically run unit tests after they are built.
+
+  If set, a ``pw_test`` target's ``${NAME}`` and ``${NAME}.run`` targets will
+  invoke the test runner specified by this argument, passing the path to the
+  unit test to run. If this is unset, the ``pw_test`` target's ``${NAME}`` will
+  only build the unit test(s) and ``${NAME}.run`` will fail to build.
+
+  Type: string (name of an executable on the PATH, or path to an executable)
+  Usage: toolchain-controlled only
+
+.. option:: pw_unit_test_AUTOMATIC_RUNNER_ARGS <args>
+
+  An optional list of strings to pass as args to the test runner specified
+  by pw_unit_test_AUTOMATIC_RUNNER.
+
+  Type: list of strings (args to pass to pw_unit_test_AUTOMATIC_RUNNER)
+  Usage: toolchain-controlled only
+
+.. option:: pw_unit_test_AUTOMATIC_RUNNER_TIMEOUT_SECONDS <timeout_seconds>
+
+  An optional timeout to apply when running the automatic runner. Timeout is
+  in seconds. Defaults to empty which means no timeout.
+
+  Type: string (number of seconds to wait before killing test runner)
+  Usage: toolchain-controlled only
+
+.. option:: pw_unit_test_ADD_EXECUTABLE_FUNCTION <function name>
+
+  The name of the CMake function used to build pw_unit_test executables. The
+  provided function must take a ``NAME`` and a ``TEST_LIB`` argument which are
+  the expected name of the executable target and the target which provides the
+  unit test(s).
+
+  Type: string (name of a CMake function)
+  Usage: toolchain-controlled only
+
+.. option:: pw_unit_test_ADD_EXECUTABLE_FUNCTION_FILE <cmake file path>
+
+  The path to the .cmake file that defines pw_unit_test_ADD_EXECUTABLE_FUNCTION.
+
+  Type: string (path to a .cmake file)
+  Usage: toolchain-controlled only
+
 
 RPC service
 ===========
