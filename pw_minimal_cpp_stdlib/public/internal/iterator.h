@@ -15,6 +15,7 @@
 
 #include <cstddef>
 
+#include "pw_polyfill/standard.h"
 #include "pw_polyfill/standard_library/namespace.h"
 
 _PW_POLYFILL_BEGIN_NAMESPACE_STD
@@ -69,6 +70,15 @@ constexpr decltype(sizeof(int)) size(const T (&)[kSize]) noexcept {
 // NOT IMPLEMENTED: iterator_traits does not work
 template <typename>
 struct iterator_traits {};
+
+struct input_iterator_tag {};
+struct output_iterator_tag {};
+struct forward_iterator_tag : public input_iterator_tag {};
+struct bidirectional_iterator_tag : public forward_iterator_tag {};
+struct random_access_iterator_tag : public bidirectional_iterator_tag {};
+#if PW_CXX_STANDARD_IS_SUPPORTED(20)
+struct contiguous_iterator_tag : public random_access_iterator_tag {};
+#endif  // PW_CXX_STANDARD_IS_SUPPORTED(20)
 
 // NOT IMPLEMENTED: Reverse iterators are not implemented.
 template <typename>

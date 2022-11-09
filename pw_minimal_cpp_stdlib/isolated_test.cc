@@ -30,6 +30,7 @@
 #include <type_traits>
 #include <utility>
 
+#include "pw_polyfill/standard.h"
 #include "pw_preprocessor/compiler.h"
 
 namespace {
@@ -358,6 +359,34 @@ TEST(Utility, MakeIntegerSequence) {
                                std::integer_sequence<size_t, 0>>);
   static_assert(std::is_same_v<std::make_index_sequence<3>,
                                std::integer_sequence<size_t, 0, 1, 2>>);
+}
+
+TEST(Iterator, Tags) {
+  static_assert(std::is_convertible_v<std::forward_iterator_tag,
+                                      std::input_iterator_tag>);
+
+  static_assert(std::is_convertible_v<std::bidirectional_iterator_tag,
+                                      std::input_iterator_tag>);
+  static_assert(std::is_convertible_v<std::bidirectional_iterator_tag,
+                                      std::forward_iterator_tag>);
+
+  static_assert(std::is_convertible_v<std::random_access_iterator_tag,
+                                      std::input_iterator_tag>);
+  static_assert(std::is_convertible_v<std::random_access_iterator_tag,
+                                      std::forward_iterator_tag>);
+  static_assert(std::is_convertible_v<std::random_access_iterator_tag,
+                                      std::bidirectional_iterator_tag>);
+
+#if PW_CXX_STANDARD_IS_SUPPORTED(20)
+  static_assert(std::is_convertible_v<std::contiguous_iterator_tag,
+                                      std::input_iterator_tag>);
+  static_assert(std::is_convertible_v<std::contiguous_iterator_tag,
+                                      std::forward_iterator_tag>);
+  static_assert(std::is_convertible_v<std::contiguous_iterator_tag,
+                                      std::bidirectional_iterator_tag>);
+  static_assert(std::is_convertible_v<std::contiguous_iterator_tag,
+                                      std::random_access_iterator_tag>);
+#endif  // PW_CXX_STANDARD_IS_SUPPORTED(20)
 }
 
 }  // namespace
