@@ -82,8 +82,6 @@ public class Decoder {
         if (b == Protocol.FLAG) {
           if (checkFrame()) {
             ByteBuffer message = ByteBuffer.wrap(buffer, 0, currentFrameSize);
-            logger.atInfo().log(
-                "Raw message %s", BaseEncoding.base16().encode(buffer, 0, currentFrameSize));
             Frame frame = Frame.parse(message);
             if (frame != null) {
               listener.onCompleteFrame(frame);
@@ -119,7 +117,6 @@ public class Decoder {
   }
 
   private void reset() {
-    logger.atConfig().log("reset");
     currentFrameSize = 0;
   }
 
