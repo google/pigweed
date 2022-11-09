@@ -76,6 +76,17 @@ class KeepSortedParsingError(presubmit.PresubmitFailure):
     pass
 
 
+@dataclasses.dataclass
+class _Block:
+    ignore_case: bool = False
+    allow_dupes: bool = False
+    ignored_prefixes: Sequence[str] = dataclasses.field(default_factory=list)
+    start_line_number: int = -1
+    start_line: str = ''
+    end_line: str = ''
+    lines: List[str] = dataclasses.field(default_factory=list)
+
+
 class _FileSorter:
     def __init__(self, ctx: Union[presubmit.PresubmitContext,
                                   KeepSortedContext], path: Path):
@@ -84,31 +95,29 @@ class _FileSorter:
         self.all_lines: List[str] = []
         self.changed: bool = False
 
-    def _process_block(self, start_line: str, lines: List[str], end_line: str,
-                       i: int, ignore_case: bool, allow_dupes: bool,
-                       ignored_prefixes: Sequence[str]) -> Sequence[str]:
+    def _process_block(self, block: _Block) -> Sequence[str]:
         lines_after_dupes: List[str] = []
-        if allow_dupes:
-            lines_after_dupes = lines
+        if block.allow_dupes:
+            lines_after_dupes = block.lines
         else:
-            lines_after_dupes = list({x: None for x in lines})
+            lines_after_dupes = list({x: None for x in block.lines})
 
         sort_key_funcs: List[Callable[[Tuple[str, ...]], Tuple[str, ...]]] = []
 
-        if ignored_prefixes:
+        if block.ignored_prefixes:
 
             def strip_ignored_prefixes(val):
                 """Remove one ignored prefix from val, if present."""
                 wo_white = val[0].lstrip()
                 white = val[0][0:-len(wo_white)]
-                for prefix in ignored_prefixes:
+                for prefix in block.ignored_prefixes:
                     if wo_white.startswith(prefix):
                         return (f'{white}{wo_white[len(prefix):]}', val[1])
                 return (val[0], val[1])
 
             sort_key_funcs.append(strip_ignored_prefixes)
 
-        if ignore_case:
+        if block.ignore_case:
             sort_key_funcs.append(lambda val: (val[0].lower(), val[1]))
 
         def sort_key(val):
@@ -122,13 +131,14 @@ class _FileSorter:
 
         sorted_lines = sorted(lines_after_dupes, key=sort_key)
 
-        if lines != sorted_lines:
+        if block.lines != sorted_lines:
             self.changed = True
-            self.ctx.fail('keep-sorted block is not sorted', self.path, i)
-            _LOG.info('  %s', start_line.rstrip())
+            self.ctx.fail('keep-sorted block is not sorted', self.path,
+                          block.start_line_number)
+            _LOG.info('  %s', block.start_line.rstrip())
             diff = difflib.Differ()
             for dline in diff.compare(
-                [x.rstrip() for x in lines],
+                [x.rstrip() for x in block.lines],
                 [x.rstrip() for x in sorted_lines],
             ):
                 if dline.startswith('-'):
@@ -136,21 +146,15 @@ class _FileSorter:
                 elif dline.startswith('+'):
                     dline = _COLOR.green(dline)
                 _LOG.info(dline)
-            _LOG.info('  %s', end_line.rstrip())
+            _LOG.info('  %s', block.end_line.rstrip())
 
         return sorted_lines
 
     def _parse_file(self, ins):
-        in_block: bool = False
-        ignore_case: bool = False
-        allow_dupes: bool = False
-        ignored_prefixes: Sequence[str] = []
-        start_line: Optional[str] = None
-        end_line: Optional[str] = None
-        lines: List[str] = []
+        block: Optional[_Block] = None
 
         for i, line in enumerate(ins, start=1):
-            if in_block:
+            if block:
                 if _START.search(line):
                     raise KeepSortedParsingError(
                         f'found {line.strip()!r} inside keep-sorted block',
@@ -158,46 +162,37 @@ class _FileSorter:
 
                 if _END.search(line):
                     _LOG.debug('Found end line %d %r', i, line)
-                    end_line = line
-                    in_block = False
-                    assert start_line  # Implicitly cast from Optional.
-                    self.all_lines.extend(
-                        self._process_block(start_line=start_line,
-                                            lines=lines,
-                                            end_line=end_line,
-                                            i=i,
-                                            ignore_case=ignore_case,
-                                            allow_dupes=allow_dupes,
-                                            ignored_prefixes=ignored_prefixes))
-                    start_line = end_line = None
+                    block.end_line = line
+                    self.all_lines.extend(self._process_block(block))
+                    block = None
                     self.all_lines.append(line)
-                    lines = []
 
                 else:
                     _LOG.debug('Adding to block line %d %r', i, line)
-                    lines.append(line)
+                    block.lines.append(line)
 
             elif start_match := _START.search(line):
                 _LOG.debug('Found start line %d %r', i, line)
 
-                ignore_case = bool(_IGNORE_CASE.search(line))
-                _LOG.debug('ignore_case: %s', ignore_case)
+                block = _Block()
 
-                allow_dupes = bool(_ALLOW_DUPES.search(line))
-                _LOG.debug('allow_dupes: %s', allow_dupes)
+                block.ignore_case = bool(_IGNORE_CASE.search(line))
+                _LOG.debug('ignore_case: %s', block.ignore_case)
 
-                ignored_prefixes = []
+                block.allow_dupes = bool(_ALLOW_DUPES.search(line))
+                _LOG.debug('allow_dupes: %s', block.allow_dupes)
+
                 match = _IGNORE_PREFIX.search(line)
                 if match:
-                    ignored_prefixes = match.group(1).split(',')
+                    block.ignored_prefixes = match.group(1).split(',')
 
                     # We want to check the longest prefixes first, in case one
                     # prefix is a prefix of another prefix.
-                    ignored_prefixes.sort(key=lambda x: (-len(x), x))
-                _LOG.debug('ignored_prefixes: %r', ignored_prefixes)
+                    block.ignored_prefixes.sort(key=lambda x: (-len(x), x))
+                _LOG.debug('ignored_prefixes: %r', block.ignored_prefixes)
 
-                start_line = line
-                in_block = True
+                block.start_line = line
+                block.start_line_number = i
                 self.all_lines.append(line)
 
                 remaining = line[start_match.end():].strip()
@@ -217,7 +212,7 @@ class _FileSorter:
             else:
                 self.all_lines.append(line)
 
-        if in_block:
+        if block:
             raise KeepSortedParsingError(
                 f'found EOF while looking for "{END}"', self.path)
 
