@@ -18,7 +18,22 @@ include($ENV{PW_ROOT}/pw_rpc/system_server/backend.cmake)
 pw_add_module_facade(pw_rpc.system_server
   BACKEND
     pw_rpc.system_server_BACKEND
+  HEADERS
+    public/pw_rpc_system_server/rpc_server.h
+  PUBLIC_INCLUDES
+    public
   PUBLIC_DEPS
     pw_rpc.server
     pw_stream
+    pw_function
+    pw_result
+)
+
+pw_add_module_library(pw_rpc.system_server.socket
+  HEADERS
+    public/pw_rpc_system_server/socket.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_rpc.system_server
 )
