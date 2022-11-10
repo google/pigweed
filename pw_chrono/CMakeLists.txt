@@ -14,6 +14,7 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 include($ENV{PW_ROOT}/pw_chrono/backend.cmake)
+include($ENV{PW_ROOT}/pw_sync/backend.cmake)
 include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
 
 pw_add_module_library(pw_chrono.epoch
@@ -68,21 +69,18 @@ pw_proto_library(pw_chrono.protos
     pw_chrono_protos
 )
 
-# TODO(ewout): Renable this once we've resolved the backend variable definition
-# ordering issue, likely by mirroring GN's definition of variables in external
-# files which can be imported where needed.
-# if((NOT "${pw_chrono.system_clock_BACKEND}" STREQUAL "") AND
-#    (NOT "${pw_sync.interrupt_spin_lock_BACKEND}" STREQUAL ""))
-#   pw_add_test(pw_chrono.simulated_system_clock_test
-#     SOURCES
-#       simulated_system_clock_test.cc
-#     PRIVATE_DEPS
-#       pw_chrono.simulated_system_clock
-#     GROUPS
-#       modules
-#       pw_chrono
-#   )
-# endif()
+if((NOT "${pw_chrono.system_clock_BACKEND}" STREQUAL "") AND
+   (NOT "${pw_sync.interrupt_spin_lock_BACKEND}" STREQUAL ""))
+  pw_add_test(pw_chrono.simulated_system_clock_test
+    SOURCES
+      simulated_system_clock_test.cc
+    PRIVATE_DEPS
+      pw_chrono.simulated_system_clock
+    GROUPS
+      modules
+      pw_chrono
+  )
+endif()
 
 if(NOT "${pw_chrono.system_clock_BACKEND}" STREQUAL "")
   pw_add_test(pw_chrono.system_clock_facade_test
