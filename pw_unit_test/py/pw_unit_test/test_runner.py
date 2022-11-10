@@ -181,7 +181,8 @@ class TestRunner:
             # but the Windows test runner needs '\\'.
             command = [
                 str(Path(self._executable)),
-                str(Path(test.file_path)), *self._args
+                *self._args,
+                str(Path(test.file_path)),
             ]
 
             if self._executable.endswith('.py'):
