@@ -438,7 +438,7 @@ sub-targets.
 
 .. code::
 
-  include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+  include($ENV{PW_ROOT}/pw_unit_test/test.cmake)
 
   pw_add_test(my_module.foo_test
     SOURCES
@@ -478,7 +478,7 @@ creates several sub-targets:
 
 .. code::
 
-  include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+  include($ENV{PW_ROOT}/pw_unit_test/test.cmake)
 
   pw_add_test_group(tests
     TESTS
