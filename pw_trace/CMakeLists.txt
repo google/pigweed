@@ -13,8 +13,11 @@
 # the License.
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+include($ENV{PW_ROOT}/pw_trace/backend.cmake)
 
 pw_add_module_facade(pw_trace
+  BACKEND
+    pw_trace_BACKEND
   HEADERS
     public/pw_trace/internal/trace_internal.h
     public/pw_trace/trace.h

@@ -13,6 +13,7 @@
 # the License.
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+include($ENV{PW_ROOT}/pw_log_string/backend.cmake)
 
 pw_add_module_library(pw_log_string
   IMPLEMENTS_FACADES
@@ -29,6 +30,8 @@ pw_add_module_library(pw_log_string
 )
 
 pw_add_module_facade(pw_log_string.handler
+  BACKEND
+    pw_log_string.handler_BACKEND
   HEADERS
     public/pw_log_string/handler.h
   PUBLIC_INCLUDES

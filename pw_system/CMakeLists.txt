@@ -13,6 +13,7 @@
 # the License.
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+include($ENV{PW_ROOT}/pw_system/backend.cmake)
 
 # WARNING: Many of the dependencies in this file are missing and need to be
 # added/updated. This is provided as a starting point, but currently does not
@@ -63,6 +64,8 @@ pw_add_module_library(pw_system.log_backend
 )
 
 pw_add_module_facade(pw_system.rpc_server
+  BACKEND
+    pw_system.rpc_server_BACKEND
   PUBLIC_DEPS
     pw_system.config
     pw_thread.thread_core

@@ -13,6 +13,7 @@
 # the License.
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+include($ENV{PW_ROOT}/pw_thread_freertos/backend.cmake)
 
 pw_add_module_config(pw_thread_freertos_CONFIG)
 
@@ -146,6 +147,8 @@ pw_add_module_library(pw_thread_freertos.snapshot
 )
 
 pw_add_module_facade(pw_thread_freertos.freertos_tsktcb
+  BACKEND
+    pw_thread_freertos.freertos_tsktcb_BACKEND
   HEADERS
     public/pw_thread_freertos/freertos_tsktcb.h
   PUBLIC_INCLUDES

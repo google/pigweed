@@ -13,6 +13,7 @@
 # the License.
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+include($ENV{PW_ROOT}/pw_chrono/backend.cmake)
 include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
 
 pw_add_module_library(pw_chrono.epoch
@@ -23,6 +24,8 @@ pw_add_module_library(pw_chrono.epoch
 )
 
 pw_add_module_facade(pw_chrono.system_clock
+  BACKEND
+    pw_chrono.system_clock_BACKEND
   HEADERS
     public/pw_chrono/internal/system_clock_macros.h
     public/pw_chrono/system_clock.h
@@ -36,6 +39,8 @@ pw_add_module_facade(pw_chrono.system_clock
 )
 
 pw_add_module_facade(pw_chrono.system_timer
+  BACKEND
+    pw_chrono.system_timer_BACKEND
   HEADERS
     public/pw_chrono/system_timer.h
   PUBLIC_INCLUDES

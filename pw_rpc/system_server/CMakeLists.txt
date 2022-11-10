@@ -13,8 +13,11 @@
 # the License.
 
 include("$ENV{PW_ROOT}/pw_build/pigweed.cmake")
+include($ENV{PW_ROOT}/pw_rpc/system_server/backend.cmake)
 
 pw_add_module_facade(pw_rpc.system_server
+  BACKEND
+    pw_rpc.system_server_BACKEND
   PUBLIC_DEPS
     pw_rpc.server
     pw_stream

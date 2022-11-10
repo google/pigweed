@@ -13,6 +13,6 @@
 # the License.
 
 declare_args() {
-  # Backend for the pw_interrupt module.
+  # Backends for the pw_interrupt module.
   pw_interrupt_CONTEXT_BACKEND = ""
 }

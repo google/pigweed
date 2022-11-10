@@ -14,6 +14,7 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
+include($ENV{PW_ROOT}/pw_tokenizer/backend.cmake)
 
 pw_add_module_config(pw_tokenizer_CONFIG)
 
@@ -103,8 +104,8 @@ pw_add_module_library(pw_tokenizer.decoder
 )
 
 pw_add_module_facade(pw_tokenizer.global_handler
-  DEFAULT_BACKEND
-    pw_build.empty  # Default to an empty backend so the tests can run.
+  BACKEND
+    pw_tokenizer.global_handler_BACKEND
   HEADERS
     public/pw_tokenizer/tokenize_to_global_handler.h
   PUBLIC_INCLUDES
@@ -117,8 +118,8 @@ pw_add_module_facade(pw_tokenizer.global_handler
 )
 
 pw_add_module_facade(pw_tokenizer.global_handler_with_payload
-  DEFAULT_BACKEND
-    pw_build.empty  # Default to an empty backend so the tests can run.
+  BACKEND
+    pw_tokenizer.global_handler_with_payload_BACKEND
   HEADERS
     public/pw_tokenizer/tokenize_to_global_handler_with_payload.h
   PUBLIC_INCLUDES

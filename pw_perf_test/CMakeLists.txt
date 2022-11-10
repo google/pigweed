@@ -13,6 +13,7 @@
 # the License.
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+include($ENV{PW_ROOT}/pw_perf_test/backend.cmake)
 include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
 
 pw_add_module_library(pw_perf_test.duration_unit
@@ -23,6 +24,8 @@ pw_add_module_library(pw_perf_test.duration_unit
 )
 
 pw_add_module_facade(pw_perf_test.timer
+  BACKEND
+    pw_perf_test.timer_BACKEND
   HEADERS
     public/pw_perf_test/internal/timer.h
   PUBLIC_INCLUDES

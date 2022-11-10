@@ -13,6 +13,7 @@
 # the License.
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+include($ENV{PW_ROOT}/pw_assert/backend.cmake)
 
 pw_add_module_config(pw_assert_CONFIG)
 
@@ -49,6 +50,8 @@ if(DEFINED pw_assert_BACKEND)
 endif()
 
 pw_add_module_facade(pw_assert.assert
+  BACKEND
+    pw_assert.assert_BACKEND
   HEADERS
     public/pw_assert/assert.h
   PUBLIC_INCLUDES
@@ -58,6 +61,8 @@ pw_add_module_facade(pw_assert.assert
 )
 
 pw_add_module_facade(pw_assert.check
+  BACKEND
+    pw_assert.check_BACKEND
   HEADERS
     public/pw_assert/check.h
     public/pw_assert/internal/check_impl.h

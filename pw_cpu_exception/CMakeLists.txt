@@ -13,8 +13,11 @@
 # the License.
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+include($ENV{PW_ROOT}/pw_cpu_exception/backend.cmake)
 
 pw_add_module_facade(pw_cpu_exception.entry
+  BACKEND
+    pw_cpu_exception.entry_BACKEND
   HEADERS
     public/pw_cpu_exception/entry.h
     public/pw_cpu_exception/state.h
@@ -25,6 +28,8 @@ pw_add_module_facade(pw_cpu_exception.entry
 )
 
 pw_add_module_facade(pw_cpu_exception.handler
+  BACKEND
+    pw_cpu_exception.handler_BACKEND
   HEADERS
     public/pw_cpu_exception/handler.h
   PUBLIC_INCLUDES
@@ -37,6 +42,8 @@ pw_add_module_facade(pw_cpu_exception.handler
 )
 
 pw_add_module_facade(pw_cpu_exception.support
+  BACKEND
+    pw_cpu_exception.support_BACKEND
   HEADERS
     public/pw_cpu_exception/support.h
   PUBLIC_INCLUDES

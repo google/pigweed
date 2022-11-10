@@ -13,6 +13,7 @@
 # the License.
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+include($ENV{PW_ROOT}/pw_thread/backend.cmake)
 
 pw_add_module_config(pw_thread_CONFIG)
 
@@ -26,6 +27,8 @@ pw_add_module_library(pw_thread.config
 )
 
 pw_add_module_facade(pw_thread.id
+  BACKEND
+    pw_thread.id_BACKEND
   HEADERS
     public/pw_thread/id.h
   PUBLIC_INCLUDES
@@ -33,6 +36,8 @@ pw_add_module_facade(pw_thread.id
 )
 
 pw_add_module_facade(pw_thread.sleep
+  BACKEND
+    pw_thread.sleep_BACKEND
   HEADERS
     public/pw_thread/sleep.h
   PUBLIC_INCLUDES
@@ -45,6 +50,8 @@ pw_add_module_facade(pw_thread.sleep
 )
 
 pw_add_module_facade(pw_thread.thread
+  BACKEND
+    pw_thread.thread_BACKEND
   HEADERS
     public/pw_thread/detached_thread.h
     public/pw_thread/thread.h
@@ -65,6 +72,8 @@ pw_add_module_library(pw_thread.thread_core
 )
 
 pw_add_module_facade(pw_thread.yield
+  BACKEND
+    pw_thread.yield_BACKEND
   HEADERS
     public/pw_thread/yield.h
   PUBLIC_INCLUDES

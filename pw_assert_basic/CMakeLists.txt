@@ -13,8 +13,11 @@
 # the License.
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+include($ENV{PW_ROOT}/pw_assert_basic/backend.cmake)
 
 pw_add_module_facade(pw_assert_basic.handler
+  BACKEND
+    pw_assert_basic.handler_BACKEND
   HEADERS
     public/pw_assert_basic/handler.h
   PUBLIC_INCLUDES

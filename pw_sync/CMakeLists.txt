@@ -13,8 +13,11 @@
 # the License.
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+include($ENV{PW_ROOT}/pw_sync/backend.cmake)
 
 pw_add_module_facade(pw_sync.binary_semaphore
+  BACKEND
+    pw_sync.binary_semaphore_BACKEND
   HEADERS
     public/pw_sync/binary_semaphore.h
   PUBLIC_INCLUDES
@@ -27,6 +30,8 @@ pw_add_module_facade(pw_sync.binary_semaphore
 )
 
 pw_add_module_facade(pw_sync.counting_semaphore
+  BACKEND
+    pw_sync.counting_semaphore_BACKEND
   HEADERS
     public/pw_sync/counting_semaphore.h
   PUBLIC_INCLUDES
@@ -81,6 +86,8 @@ pw_add_module_library(pw_sync.virtual_basic_lockable
 )
 
 pw_add_module_facade(pw_sync.mutex
+  BACKEND
+    pw_sync.mutex_BACKEND
   HEADERS
     public/pw_sync/mutex.h
   PUBLIC_INCLUDES
@@ -94,6 +101,8 @@ pw_add_module_facade(pw_sync.mutex
 )
 
 pw_add_module_facade(pw_sync.timed_mutex
+  BACKEND
+    pw_sync.timed_mutex_BACKEND
   HEADERS
     public/pw_sync/timed_mutex.h
   PUBLIC_INCLUDES
@@ -108,6 +117,8 @@ pw_add_module_facade(pw_sync.timed_mutex
 )
 
 pw_add_module_facade(pw_sync.recursive_mutex
+  BACKEND
+    pw_sync.recursive_mutex_BACKEND
   HEADERS
     public/pw_sync/recursive_mutex.h
   PUBLIC_INCLUDES
@@ -120,6 +131,8 @@ pw_add_module_facade(pw_sync.recursive_mutex
 )
 
 pw_add_module_facade(pw_sync.interrupt_spin_lock
+  BACKEND
+    pw_sync.interrupt_spin_lock_BACKEND
   HEADERS
     public/pw_sync/interrupt_spin_lock.h
   PUBLIC_INCLUDES
@@ -133,6 +146,8 @@ pw_add_module_facade(pw_sync.interrupt_spin_lock
 )
 
 pw_add_module_facade(pw_sync.thread_notification
+  BACKEND
+    pw_sync.thread_notification_BACKEND
   HEADERS
     public/pw_sync/thread_notification.h
   PUBLIC_INCLUDES
@@ -140,6 +155,8 @@ pw_add_module_facade(pw_sync.thread_notification
 )
 
 pw_add_module_facade(pw_sync.timed_thread_notification
+  BACKEND
+    pw_sync.timed_thread_notification_BACKEND
   HEADERS
     public/pw_sync/timed_thread_notification.h
   PUBLIC_INCLUDES
@@ -186,6 +203,8 @@ pw_add_module_library(pw_sync.yield_core
 )
 
 pw_add_module_facade(pw_sync.condition_variable
+  BACKEND
+    pw_sync.condition_variable_BACKEND
   HEADERS
     public/pw_sync/condition_variable.h
   PUBLIC_INCLUDES
