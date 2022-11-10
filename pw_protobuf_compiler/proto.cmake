@@ -311,6 +311,7 @@ function(_pw_pwpb_rpc_library NAME)
       ${arg_INPUTS}
     DEPENDS
       ${arg_DEPS}
+      "$ENV{PW_ROOT}/pw_rpc/py/pw_rpc/plugin.py"
   )
 
   # Create the library with the generated source files.
@@ -358,6 +359,7 @@ function(_pw_raw_rpc_library NAME)
       ${arg_INPUTS}
     DEPENDS
       ${arg_DEPS}
+      "$ENV{PW_ROOT}/pw_rpc/py/pw_rpc/plugin.py"
   )
 
   # Create the library with the generated source files.
@@ -476,6 +478,7 @@ function(_pw_nanopb_rpc_library NAME)
       ${arg_INPUTS}
     DEPENDS
       ${arg_DEPS}
+      "$ENV{PW_ROOT}/pw_rpc/py/pw_rpc/plugin.py"
   )
 
   # Create the library with the generated source files.
