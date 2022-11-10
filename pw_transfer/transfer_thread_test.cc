@@ -337,6 +337,7 @@ TEST_F(TransferThreadTest, VersionTwo_NoHandler) {
   EXPECT_EQ(id.value(), 7u);
   auto chunk = DecodeChunk(ctx_.response());
   EXPECT_EQ(chunk.session_id(), 7u);
+  EXPECT_EQ(chunk.resource_id(), 7u);
   ASSERT_TRUE(chunk.status().has_value());
   EXPECT_EQ(chunk.status().value(), Status::NotFound());
 
