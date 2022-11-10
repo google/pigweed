@@ -14,28 +14,39 @@
 include_guard(GLOBAL)
 
 include("$ENV{PW_ROOT}/pw_build/pigweed.cmake")
+include("$ENV{PW_ROOT}/pw_unit_test/test.cmake")
 
-# Used by pw_add_test to instantiate unit test executables.
+# Used by pw_add_test to instantiate unit test executables for the host.
 #
 # Required Args:
 #
 #   NAME: name for the desired executable
 #   TEST_DEP: the target which provides the tests for this executable
 #
-function(pw_add_host_executable NAME TEST_DEP)
+function(pw_add_test_executable NAME TEST_DEP)
   set(num_positional_args 2)
-  set(option_args)
   set(option_args)
   set(one_value_args)
   set(multi_value_args)
   pw_parse_arguments_strict(
-      pw_add_host_executable "${num_positional_args}" "${option_args}"
+      pw_add_test_executable "${num_positional_args}" "${option_args}"
       "${one_value_args}" "${multi_value_args}")
 
   add_executable(${NAME} EXCLUDE_FROM_ALL)
-  pw_target_link_targets(${NAME}
+
+  set(test_backend "${pw_unit_test_GOOGLETEST_BACKEND}")
+  if("${test_backend}" STREQUAL "pw_unit_test.light")
+    set(main pw_unit_test.logging_main)
+  elseif("${test_backend}" STREQUAL "pw_third_party.googletest")
+    set(main pw_third_party.googletest.gmock_main)
+  else()
+    message(FATAL_ERROR
+            "Unsupported test backend selected for host test executables")
+  endif()
+
+  pw_target_link_targets("${NAME}"
     PRIVATE
-      pw_unit_test.logging_main
-      ${TEST_DEP}
+      "${main}"
+      "${TEST_DEP}"
   )
-endfunction(pw_add_host_executable)
+endfunction(pw_add_test_executable)

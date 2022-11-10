@@ -21,13 +21,13 @@ set(pw_unit_test_GOOGLETEST_BACKEND pw_unit_test.light CACHE STRING
      if using upstream GoogleTest directly on your host for GoogleMock.")
 
 # TODO(ewout): Remove the default.
-set(pw_unit_test_ADD_EXECUTABLE_FUNCTION "pw_add_host_executable" CACHE STRING
+set(pw_unit_test_ADD_EXECUTABLE_FUNCTION "pw_add_test_executable" CACHE STRING
     "The name of the CMake function used to instantiate pw_unit_test \
      executables")
 
 # TODO(ewout): Remove the default.
 set(pw_unit_test_ADD_EXECUTABLE_FUNCTION_FILE
-    "$ENV{PW_ROOT}/targets/host/pw_add_host_executable.cmake" CACHE STRING
+    "$ENV{PW_ROOT}/targets/host/pw_add_test_executable.cmake" CACHE STRING
     "The path to the .cmake file that defines \
      pw_unit_test_ADD_EXECUTABLE_FUNCTION.")
 
