@@ -125,10 +125,8 @@ pw_add_test(pw_rpc.nanopb.client_server_context_test
 )
 
 if(("${pw_thread.thread_BACKEND}" STREQUAL "pw_thread_stl.thread") AND
-   (NOT "${pw_sync.binary_semaphore_BACKEND}" STREQUAL
-   "pw_sync.binary_semaphore.NO_BACKEND_SET") AND
-   (NOT "${pw_sync.mutex_BACKEND}" STREQUAL
-   "pw_sync.binary_semaphore.NO_BACKEND_SET"))
+   (NOT "${pw_sync.binary_semaphore_BACKEND}" STREQUAL "") AND
+   (NOT "${pw_sync.mutex_BACKEND}" STREQUAL ""))
   pw_add_test(pw_rpc.nanopb.client_server_context_threaded_test
     SOURCES
       client_server_context_threaded_test.cc
@@ -257,8 +255,7 @@ pw_add_test(pw_rpc.nanopb.stub_generation_test
 # TODO(b/231950909) Test disabled as pw_work_queue lacks CMakeLists.txt
 if((TARGET pw_work_queue.pw_work_queue) AND
    ("${pw_thread.thread_BACKEND}" STREQUAL "pw_thread_stl.thread") AND
-   (NOT "${pw_sync.timed_thread_notification_BACKEND}" STREQUAL
-   "pw_sync.timed_thread_notification.NO_BACKEND_SET"))
+   (NOT "${pw_sync.timed_thread_notification_BACKEND}" STREQUAL ""))
   pw_add_test(pw_rpc.nanopb.synchronous_call_test
     SOURCES
       synchronous_call_test.cc

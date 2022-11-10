@@ -48,7 +48,7 @@ pw_add_test(pw_trace.pw_trace_null_test
     pw_trace
 )
 
-if(NOT "${pw_trace_BACKEND}" STREQUAL "pw_trace.NO_BACKEND_SET")
+if(NOT "${pw_trace_BACKEND}" STREQUAL "")
   pw_add_test(pw_trace.trace_backend_compile_test
    SOURCES
     trace_backend_compile_test.cc

@@ -66,10 +66,8 @@ pw_proto_library(pw_chrono.protos
 # TODO(ewout): Renable this once we've resolved the backend variable definition
 # ordering issue, likely by mirroring GN's definition of variables in external
 # files which can be imported where needed.
-# if((NOT "${pw_chrono.system_clock_BACKEND}"
-#     STREQUAL "pw_chrono.system_clock.NO_BACKEND_SET") AND
-#    (NOT "${pw_sync.interrupt_spin_lock_BACKEND}"
-#     STREQUAL "pw_sync.interrupt_spin_lock.NO_BACKEND_SET"))
+# if((NOT "${pw_chrono.system_clock_BACKEND}" STREQUAL "") AND
+#    (NOT "${pw_sync.interrupt_spin_lock_BACKEND}" STREQUAL ""))
 #   pw_add_test(pw_chrono.simulated_system_clock_test
 #     SOURCES
 #       simulated_system_clock_test.cc
@@ -81,8 +79,7 @@ pw_proto_library(pw_chrono.protos
 #   )
 # endif()
 
-if(NOT "${pw_chrono.system_clock_BACKEND}"
-   STREQUAL "pw_chrono.system_clock.NO_BACKEND_SET")
+if(NOT "${pw_chrono.system_clock_BACKEND}" STREQUAL "")
   pw_add_test(pw_chrono.system_clock_facade_test
     SOURCES
       system_clock_facade_test.cc
@@ -96,8 +93,7 @@ if(NOT "${pw_chrono.system_clock_BACKEND}"
   )
 endif()
 
-if(NOT "${pw_chrono.system_timer_BACKEND}"
-   STREQUAL "pw_chrono.system_timer.NO_BACKEND_SET")
+if(NOT "${pw_chrono.system_timer_BACKEND}" STREQUAL "")
   pw_add_test(pw_chrono.system_timer_facade_test
     SOURCES
       system_timer_facade_test.cc

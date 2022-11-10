@@ -130,10 +130,8 @@ pw_add_test(pw_assert.assert_facade_test
     pw_assert
 )
 
-if((NOT "${pw_assert.assert_BACKEND}" STREQUAL
-    "pw_assert.assert.NO_BACKEND_SET") AND
-   (NOT "${pw_assert.check_BACKEND}" STREQUAL
-    "pw_assert.check.NO_BACKEND_SET"))
+if((NOT "${pw_assert.assert_BACKEND}" STREQUAL "") AND
+   (NOT "${pw_assert.check_BACKEND}" STREQUAL ""))
   pw_add_test(pw_assert.assert_backend_compile_test
     SOURCES
       assert_backend_compile_test.cc

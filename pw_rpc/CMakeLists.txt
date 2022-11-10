@@ -114,8 +114,7 @@ if(Zephyr_FOUND AND CONFIG_PIGWEED_RPC_COMMON)
   zephyr_link_libraries(pw_rpc.common)
 endif()
 
-if (NOT "${pw_sync.mutex_BACKEND}" STREQUAL "pw_sync.mutex.NO_BACKEND_SET" AND
-    NOT "${pw_sync.mutex_BACKEND}" STREQUAL "")
+if (NOT "${pw_sync.mutex_BACKEND}" STREQUAL "")
   target_link_libraries(pw_rpc.common PUBLIC pw_sync.mutex)
 endif()
 

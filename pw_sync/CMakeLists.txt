@@ -220,8 +220,7 @@ pw_add_test(pw_sync.inline_borrowable_test
     pw_sync
 )
 
-if(NOT "${pw_sync.binary_semaphore_BACKEND}" STREQUAL
-   "pw_sync.binary_semaphore.NO_BACKEND_SET")
+if(NOT "${pw_sync.binary_semaphore_BACKEND}" STREQUAL "")
   pw_add_test(pw_sync.binary_semaphore_facade_test
     SOURCES
       binary_semaphore_facade_test.cc
@@ -235,8 +234,7 @@ if(NOT "${pw_sync.binary_semaphore_BACKEND}" STREQUAL
   )
 endif()
 
-if(NOT "${pw_sync.counting_semaphore_BACKEND}" STREQUAL
-   "pw_sync.counting_semaphore.NO_BACKEND_SET")
+if(NOT "${pw_sync.counting_semaphore_BACKEND}" STREQUAL "")
   pw_add_test(pw_sync.counting_semaphore_facade_test
     SOURCES
       counting_semaphore_facade_test.cc
@@ -250,7 +248,7 @@ if(NOT "${pw_sync.counting_semaphore_BACKEND}" STREQUAL
   )
 endif()
 
-if(NOT "${pw_sync.mutex_BACKEND}" STREQUAL "pw_sync.mutex.NO_BACKEND_SET")
+if(NOT "${pw_sync.mutex_BACKEND}" STREQUAL "")
   pw_add_test(pw_sync.mutex_facade_test
     SOURCES
       mutex_facade_test.cc
@@ -264,8 +262,7 @@ if(NOT "${pw_sync.mutex_BACKEND}" STREQUAL "pw_sync.mutex.NO_BACKEND_SET")
   )
 endif()
 
-if(NOT "${pw_sync.timed_mutex_BACKEND}" STREQUAL
-   "pw_sync.timed_mutex.NO_BACKEND_SET")
+if(NOT "${pw_sync.timed_mutex_BACKEND}" STREQUAL "")
   pw_add_test(pw_sync.timed_mutex_facade_test
     SOURCES
       timed_mutex_facade_test.cc
@@ -279,8 +276,7 @@ if(NOT "${pw_sync.timed_mutex_BACKEND}" STREQUAL
   )
 endif()
 
-if(NOT "${pw_sync.interrupt_spin_lock_BACKEND}" STREQUAL
-   "pw_sync.interrupt_spin_lock.NO_BACKEND_SET")
+if(NOT "${pw_sync.interrupt_spin_lock_BACKEND}" STREQUAL "")
   pw_add_test(pw_sync.interrupt_spin_lock_facade_test
     SOURCES
       interrupt_spin_lock_facade_test.cc
@@ -294,8 +290,7 @@ if(NOT "${pw_sync.interrupt_spin_lock_BACKEND}" STREQUAL
   )
 endif()
 
-if(NOT "${pw_sync.thread_notification_BACKEND}" STREQUAL
-   "pw_sync.thread_notification.NO_BACKEND_SET")
+if(NOT "${pw_sync.thread_notification_BACKEND}" STREQUAL "")
   pw_add_test(pw_sync.thread_notification_facade_test
     SOURCES
       thread_notification_facade_test.cc
@@ -307,8 +302,7 @@ if(NOT "${pw_sync.thread_notification_BACKEND}" STREQUAL
   )
 endif()
 
-if(NOT "${pw_sync.timed_thread_notification_BACKEND}" STREQUAL
-   "pw_sync.timed_thread_notification.NO_BACKEND_SET")
+if(NOT "${pw_sync.timed_thread_notification_BACKEND}" STREQUAL "")
   pw_add_test(pw_sync.timed_thread_notification_facade_test
     SOURCES
       timed_thread_notification_facade_test.cc

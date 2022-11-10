@@ -107,10 +107,8 @@ pw_add_test(pw_rpc.pwpb.client_server_context_test
 )
 
 if(("${pw_thread.thread_BACKEND}" STREQUAL "pw_thread_stl.thread") AND
-   (NOT "${pw_sync.binary_semaphore_BACKEND}" STREQUAL
-   "pw_sync.binary_semaphore.NO_BACKEND_SET") AND
-   (NOT "${pw_sync.mutex_BACKEND}" STREQUAL
-   "pw_sync.binary_semaphore.NO_BACKEND_SET"))
+   (NOT "${pw_sync.binary_semaphore_BACKEND}" STREQUAL "") AND
+   (NOT "${pw_sync.mutex_BACKEND}" STREQUAL ""))
   pw_add_test(pw_rpc.pwpb.client_server_context_threaded_test
     SOURCES
       client_server_context_threaded_test.cc

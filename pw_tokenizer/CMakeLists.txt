@@ -197,17 +197,20 @@ pw_add_test(pw_tokenizer.detokenize_test
     pw_tokenizer
 )
 
-pw_add_test(pw_tokenizer.global_handlers_test
-  SOURCES
-    global_handlers_test_c.c
-    global_handlers_test.cc
-  PRIVATE_DEPS
-    pw_tokenizer.global_handler
-    pw_tokenizer.global_handler_with_payload
-  GROUPS
-    modules
-    pw_tokenizer
-)
+if((NOT "${pw_tokenizer.global_handler_with_payload_BACKEND}" STREQUAL "") AND
+   (NOT "${pw_tokenizer.global_handler_BACKEND}" STREQUAL ""))
+  pw_add_test(pw_tokenizer.global_handlers_test
+    SOURCES
+      global_handlers_test_c.c
+      global_handlers_test.cc
+    PRIVATE_DEPS
+      pw_tokenizer.global_handler
+      pw_tokenizer.global_handler_with_payload
+    GROUPS
+      modules
+      pw_tokenizer
+  )
+endif()
 
 pw_add_test(pw_tokenizer.hash_test
   SOURCES

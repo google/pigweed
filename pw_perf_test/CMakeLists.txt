@@ -54,8 +54,7 @@ pw_add_module_library(pw_perf_test.chrono_timer
     pw_perf_test.duration_unit
 )
 
-if(NOT "${pw_perf_test.TIMER_INTERFACE_BACKEND}"
-    STREQUAL "pw_perf_test.timer.NO_BACKEND_SET")
+if(NOT "${pw_perf_test.TIMER_INTERFACE_BACKEND}" STREQUAL "")
   pw_add_test(pw_perf_test.timer_test
     SOURCES
       timer_test.cc

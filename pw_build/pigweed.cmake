@@ -537,44 +537,57 @@ endfunction(pw_add_module_library)
 # pw_add_module_facade accepts the same arguments as pw_add_module_library,
 # except for IMPLEMENTS_FACADES. It also accepts the following argument:
 #
-#  DEFAULT_BACKEND - which backend to use by default
+#  BACKEND - The name of the facade's backend variable.
+#  DEFAULT_BACKEND - which backend to use by default, ignored if BACKEND is
+#                    specified.
 #
+# TODO(ewout, hepler): Deprecate DEFAULT_BACKEND and make BACKEND required.
 function(pw_add_module_facade NAME)
   _pw_add_library_multi_value_args(list_args)
-  pw_parse_arguments_strict(pw_add_module_facade 1 "" "DEFAULT_BACKEND"
+  pw_parse_arguments_strict(pw_add_module_facade 1 ""
+                            "DEFAULT_BACKEND;BACKEND"
                             "${list_args}")
 
-  # If no backend is set, a script that displays an error message is used
-  # instead. If the facade is used in the build, it fails with this error.
-  pw_add_error_target("${NAME}.NO_BACKEND_SET"
-    MESSAGE
-      "ERROR: Attempted to build the ${NAME} facade with no backend."
-      "Configure the ${NAME} backend using pw_set_backend or remove all "
-      "dependencies on it. See https://pigweed.dev/pw_build."
-  )
+  # TODO(ewout, hepler): Remove this conditional block and instead require
+  # BACKEND and assert that it is DEFINED.
+  if(NOT "${arg_BACKEND}" STREQUAL "")
+    string(REGEX MATCH ".+_BACKEND" backend_ends_in_backend "${arg_BACKEND}")
+    if(NOT backend_ends_in_backend)
+      message(FATAL_ERROR "The ${NAME} pw_add_module_facade's BACKEND argument "
+              "(${arg_BACKEND}) must end in _BACKEND (${name_ends_in_backend})")
+    endif()
 
-  # Set the default backend to the error message if no default is specified.
-  if("${arg_DEFAULT_BACKEND}" STREQUAL "")
-    set(arg_DEFAULT_BACKEND "${NAME}.NO_BACKEND_SET")
+
+    if(NOT "${arg_DEFAULT_BACKEND}" STREQUAL "")
+      message(FATAL_ERROR
+              "${NAME}'s DEFAULT_BACKEND is ignored as BACKEND was provided")
+    endif()
+  else()
+    set(arg_BACKEND "${NAME}_BACKEND")
+    # Declare the backend variable for this facade.
+    set("${NAME}_BACKEND" "${arg_DEFAULT_BACKEND}" CACHE STRING
+        "Backend for ${NAME}")
   endif()
-
-  # Declare the backend variable for this facade.
-  set("${NAME}_BACKEND" "${arg_DEFAULT_BACKEND}" CACHE STRING
-      "Backend for ${NAME}")
-
-  # This target is never used; it simply tests that the specified backend
-  # actually exists in the build. The generator expression will fail to evaluate
-  # if the target is not defined.
-  add_custom_target(_pw_check_that_backend_for_${NAME}_is_defined
-    COMMAND
-      ${CMAKE_COMMAND} -E echo "$<TARGET_PROPERTY:${${NAME}_BACKEND},TYPE>"
-  )
 
   # Define the facade library, which is used by the backend to avoid circular
   # dependencies.
   add_library("${NAME}.facade" INTERFACE)
   target_include_directories("${NAME}.facade" INTERFACE public)
   pw_target_link_targets("${NAME}.facade" INTERFACE ${arg_PUBLIC_DEPS})
+
+  set(backend_target "${${arg_BACKEND}}")
+  if ("${backend_target}" STREQUAL "")
+    # If no backend is set, a script that displays an error message is used
+    # instead. If the facade is used in the build, it fails with this error.
+    pw_add_error_target("${NAME}.NO_BACKEND_SET"
+      MESSAGE
+        "Attempted to build the ${NAME} facade with no backend. "
+        "Configure the ${NAME} backend using pw_set_backend or remove all "
+        "dependencies on it. See https://pigweed.dev/pw_build."
+    )
+
+    set(backend_target "${NAME}.NO_BACKEND_SET")
+  endif()
 
   # Define the public-facing library for this facade, which depends on the
   # header files in .facade target and exposes the dependency on the backend.
@@ -585,13 +598,48 @@ function(pw_add_module_facade NAME)
       ${arg_HEADERS}
     PUBLIC_DEPS
       "${NAME}.facade"
-      "${${NAME}_BACKEND}"
+      "${backend_target}"
   )
 endfunction(pw_add_module_facade)
 
-# Sets which backend to use for the given facade.
-function(pw_set_backend FACADE BACKEND)
-  set("${FACADE}_BACKEND" "${BACKEND}" CACHE STRING "Backend for ${FACADE}" FORCE)
+# Declare a facade's backend variables which can be overriden later by using
+# pw_set_backend.
+#
+# Required Arguments:
+#   NAME - Name of the facade's backend variable.
+#
+# Optional Arguments:
+#   DEFAULT_BACKEND - Optional default backend selection for the facade.
+#
+function(pw_add_backend_variable NAME)
+  set(num_positional_args 1)
+  set(option_args)
+  set(one_value_args DEFAULT_BACKEND)
+  set(multi_value_args)
+  pw_parse_arguments_strict(
+      pw_add_backend_variable "${num_positional_args}" "${option_args}"
+      "${one_value_args}" "${multi_value_args}")
+
+  string(REGEX MATCH ".+_BACKEND" name_ends_in_backend "${NAME}")
+  if(NOT name_ends_in_backend)
+    message(FATAL_ERROR "The ${NAME} pw_add_backend_variable's NAME argument "
+            "must end in _BACKEND")
+  endif()
+  set("${NAME}" "${OPTIONAL_DEFAULT_BACKEND}" CACHE STRING
+      "${NAME} backend variable for a facade")
+endfunction()
+
+# Sets which backend to use for the given facade's backend variable.
+function(pw_set_backend NAME BACKEND)
+  # TODO(ewout, hepler): Deprecate this temporarily support which permits the
+  # direct facade name directly, instead of the facade's backend variable name.
+  # Also update this to later assert the variable is DEFINED to catch typos.
+  string(REGEX MATCH ".+_BACKEND" name_ends_in_backend "${NAME}")
+  if(NOT name_ends_in_backend)
+    set(NAME "${NAME}_BACKEND")
+  endif()
+
+  set("${NAME}" "${BACKEND}" CACHE STRING "backend variable for a facade" FORCE)
 endfunction(pw_set_backend)
 
 # Zephyr specific wrapper for pw_set_backend, selects the default zephyr backend based on a Kconfig while

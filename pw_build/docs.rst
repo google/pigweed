@@ -883,12 +883,13 @@ error message like the following:
 
 .. code-block::
 
-  CMake Error at pw_build/pigweed.cmake:244 (add_custom_target):
-  Error evaluating generator expression:
+  CMake Error at pw_build/pigweed.cmake:257 (message):
+    my_module.my_facade's INTERFACE dep "my_nonexistent_backend" is not
+    a target.
+  Call Stack (most recent call first):
+    pw_build/pigweed.cmake:238:EVAL:1 (_pw_target_link_targets_deferred_check)
+    CMakeLists.txt:DEFERRED
 
-    $<TARGET_PROPERTY:my_backend_that_does_not_exist,TYPE>
-
-  Target "my_backend_that_does_not_exist" not found.
 
 Toolchain setup
 ---------------

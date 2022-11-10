@@ -100,7 +100,7 @@ pw_proto_library(pw_thread.protos
     pw_tokenizer.proto
 )
 
-if(NOT "${pw_thread.id_BACKEND}" STREQUAL "pw_thread.id.NO_BACKEND_SET")
+if(NOT "${pw_thread.id_BACKEND}" STREQUAL "")
   pw_add_test(pw_thread.id_facade_test
     SOURCES
       id_facade_test.cc
@@ -112,8 +112,8 @@ if(NOT "${pw_thread.id_BACKEND}" STREQUAL "pw_thread.id.NO_BACKEND_SET")
   )
 endif()
 
-if((NOT "${pw_thread.id_BACKEND}" STREQUAL "pw_thread.id.NO_BACKEND_SET") AND
-   (NOT "${pw_thread.sleep_BACKEND}" STREQUAL "pw_thread.sleep.NO_BACKEND_SET"))
+if((NOT "${pw_thread.id_BACKEND}" STREQUAL "") AND
+   (NOT "${pw_thread.sleep_BACKEND}" STREQUAL ""))
   pw_add_test(pw_thread.sleep_facade_test
     SOURCES
       sleep_facade_test.cc
@@ -153,8 +153,8 @@ pw_add_module_library(pw_thread.thread_facade_test
     pw_unit_test
 )
 
-if((NOT "${pw_thread.id_BACKEND}" STREQUAL "pw_thread.id.NO_BACKEND_SET") AND
-   (NOT "${pw_thread.yield_BACKEND}" STREQUAL "pw_thread.yield.NO_BACKEND_SET"))
+if((NOT "${pw_thread.id_BACKEND}" STREQUAL "") AND
+   (NOT "${pw_thread.yield_BACKEND}" STREQUAL ""))
   pw_add_test(pw_thread.yield_facade_test
     SOURCES
       yield_facade_test.cc

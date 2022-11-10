@@ -84,7 +84,7 @@ pw_proto_library(pw_log.protos
     pw_tokenizer.proto
 )
 
-if(NOT "${pw_log_BACKEND}" STREQUAL "pw_log.NO_BACKEND_SET")
+if(NOT "${pw_log_BACKEND}" STREQUAL "")
   pw_add_test(pw_log.basic_log_test
     SOURCES
       basic_log_test.cc
