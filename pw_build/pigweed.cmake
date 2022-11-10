@@ -540,38 +540,28 @@ endfunction(pw_add_module_library)
 # MODULE_NAME.facade.
 #
 # pw_add_module_facade accepts the same arguments as pw_add_module_library,
-# except for IMPLEMENTS_FACADES. It also accepts the following argument:
+# except for IMPLEMENTS_FACADES. It also requires the following argument:
 #
 #  BACKEND - The name of the facade's backend variable.
-#  DEFAULT_BACKEND - which backend to use by default, ignored if BACKEND is
-#                    specified.
-#
-# TODO(ewout, hepler): Deprecate DEFAULT_BACKEND and make BACKEND required.
 function(pw_add_module_facade NAME)
   _pw_add_library_multi_value_args(list_args)
   pw_parse_arguments_strict(pw_add_module_facade 1 ""
                             "DEFAULT_BACKEND;BACKEND"
                             "${list_args}")
 
-  # TODO(ewout, hepler): Remove this conditional block and instead require
-  # BACKEND and assert that it is DEFINED.
-  if(NOT "${arg_BACKEND}" STREQUAL "")
-    string(REGEX MATCH ".+_BACKEND" backend_ends_in_backend "${arg_BACKEND}")
-    if(NOT backend_ends_in_backend)
-      message(FATAL_ERROR "The ${NAME} pw_add_module_facade's BACKEND argument "
-              "(${arg_BACKEND}) must end in _BACKEND (${name_ends_in_backend})")
-    endif()
-
-
-    if(NOT "${arg_DEFAULT_BACKEND}" STREQUAL "")
-      message(FATAL_ERROR
-              "${NAME}'s DEFAULT_BACKEND is ignored as BACKEND was provided")
-    endif()
-  else()
-    set(arg_BACKEND "${NAME}_BACKEND")
-    # Declare the backend variable for this facade.
-    set("${NAME}_BACKEND" "${arg_DEFAULT_BACKEND}" CACHE STRING
-        "Backend for ${NAME}")
+  if("${arg_BACKEND}" STREQUAL "")
+    message(FATAL_ERROR "The ${NAME} pw_add_module_facade is missing the "
+            "BACKEND variable")
+  endif()
+  if(NOT DEFINED "${arg_BACKEND}")
+    message(FATAL_ERROR "${NAME}'s backend variable ${arg_BACKEND} has not "
+            "been defined, you may be missing a pw_add_backend_variable or "
+            "the *.cmake import to that file.")
+  endif()
+  string(REGEX MATCH ".+_BACKEND" backend_ends_in_backend "${arg_BACKEND}")
+  if(NOT backend_ends_in_backend)
+    message(FATAL_ERROR "The ${NAME} pw_add_module_facade's BACKEND argument "
+            "(${arg_BACKEND}) must end in _BACKEND (${name_ends_in_backend})")
   endif()
 
   # Define the facade library, which is used by the backend to avoid circular
@@ -630,6 +620,7 @@ function(pw_add_backend_variable NAME)
     message(FATAL_ERROR "The ${NAME} pw_add_backend_variable's NAME argument "
             "must end in _BACKEND")
   endif()
+
   set("${NAME}" "${OPTIONAL_DEFAULT_BACKEND}" CACHE STRING
       "${NAME} backend variable for a facade")
 endfunction()
@@ -642,6 +633,11 @@ function(pw_set_backend NAME BACKEND)
   string(REGEX MATCH ".+_BACKEND" name_ends_in_backend "${NAME}")
   if(NOT name_ends_in_backend)
     set(NAME "${NAME}_BACKEND")
+  endif()
+  if(NOT DEFINED "${NAME}")
+    message(WARNING "${NAME} was not defined when pw_set_backend was invoked, "
+            "you may be missing a pw_add_backend_variable or the *.cmake "
+            "import to that file.")
   endif()
 
   set("${NAME}" "${BACKEND}" CACHE STRING "backend variable for a facade" FORCE)
