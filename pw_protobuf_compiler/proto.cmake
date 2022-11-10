@@ -83,9 +83,11 @@ function(pw_proto_library NAME)
 
   # Mirror the sources to the output directory with the specified prefix.
   _pw_rebase_paths(
-      sources "${out_dir}/sources/${arg_PREFIX}" "${arg_STRIP_PREFIX}" "${arg_SOURCES}" "")
+      sources "${out_dir}/sources/${arg_PREFIX}" "${arg_STRIP_PREFIX}"
+      "${arg_SOURCES}" "")
   _pw_rebase_paths(
-      inputs "${out_dir}/sources/${arg_PREFIX}" "${arg_STRIP_PREFIX}" "${arg_INPUTS}" "")
+      inputs "${out_dir}/sources/${arg_PREFIX}" "${arg_STRIP_PREFIX}"
+      "${arg_INPUTS}" "")
 
   add_custom_command(
     COMMAND
@@ -110,16 +112,66 @@ function(pw_proto_library NAME)
   endif()
 
   # Create a protobuf target for each supported protobuf library.
-  _pw_pwpb_library(
-      "${NAME}" "${sources}" "${inputs}" "${arg_DEPS}" "${include_file}" "${out_dir}")
-  _pw_pwpb_rpc_library(
-      "${NAME}" "${sources}" "${inputs}" "${arg_DEPS}" "${include_file}" "${out_dir}")
-  _pw_raw_rpc_library(
-      "${NAME}" "${sources}" "${inputs}" "${arg_DEPS}" "${include_file}" "${out_dir}")
-  _pw_nanopb_library(
-      "${NAME}" "${sources}" "${inputs}" "${arg_DEPS}" "${include_file}" "${out_dir}")
-  _pw_nanopb_rpc_library(
-      "${NAME}" "${sources}" "${inputs}" "${arg_DEPS}" "${include_file}" "${out_dir}")
+  _pw_pwpb_library("${NAME}"
+    SOURCES
+      ${sources}
+    INPUTS
+      ${inputs}
+    DEPS
+      ${arg_DEPS}
+    INCLUDE_FILE
+      "${include_file}"
+    OUT_DIR
+      "${out_dir}"
+  )
+  _pw_pwpb_rpc_library("${NAME}"
+    SOURCES
+      ${sources}
+    INPUTS
+      ${inputs}
+    DEPS
+      ${arg_DEPS}
+    INCLUDE_FILE
+      "${include_file}"
+    OUT_DIR
+      "${out_dir}"
+  )
+  _pw_raw_rpc_library("${NAME}"
+    SOURCES
+      ${sources}
+    INPUTS
+      ${inputs}
+    DEPS
+      ${arg_DEPS}
+    INCLUDE_FILE
+      "${include_file}"
+    OUT_DIR
+      "${out_dir}"
+  )
+  _pw_nanopb_library("${NAME}"
+    SOURCES
+      ${sources}
+    INPUTS
+      ${inputs}
+    DEPS
+      ${arg_DEPS}
+    INCLUDE_FILE
+      "${include_file}"
+    OUT_DIR
+      "${out_dir}"
+  )
+  _pw_nanopb_rpc_library("${NAME}"
+    SOURCES
+      ${sources}
+    INPUTS
+      ${inputs}
+    DEPS
+      ${arg_DEPS}
+    INCLUDE_FILE
+      "${include_file}"
+    OUT_DIR
+      "${out_dir}"
+  )
 endfunction(pw_proto_library)
 
 function(_pw_rebase_paths VAR OUT_DIR ROOT FILES EXTENSIONS)
@@ -181,55 +233,71 @@ function(_pw_generate_protos
 endfunction(_pw_generate_protos)
 
 # Internal function that creates a pwpb proto library.
-function(_pw_pwpb_library NAME SOURCES INPUTS DEPS INCLUDE_FILE OUT_DIR)
-  list(TRANSFORM DEPS APPEND .pwpb)
+function(_pw_pwpb_library NAME)
+  set(num_positional_args 1)
+  set(option_args)
+  set(one_value_args INCLUDE_FILE OUT_DIR)
+  set(multi_value_args SOURCES INPUTS DEPS)
+  pw_parse_arguments_strict(
+      _pw_pwpb_library "${num_positional_args}" "${option_args}"
+      "${one_value_args}" "${multi_value_args}")
+
+  list(TRANSFORM arg_DEPS APPEND .pwpb)
 
   _pw_generate_protos("${NAME}"
       pwpb
       "$ENV{PW_ROOT}/pw_protobuf/py/pw_protobuf/plugin.py"
       ".pwpb.h"
-      "${INCLUDE_FILE}"
-      "${OUT_DIR}"
-      "${SOURCES}"
-      "${INPUTS}"
-      "${DEPS}"
+      "${arg_INCLUDE_FILE}"
+      "${arg_OUT_DIR}"
+      "${arg_SOURCES}"
+      "${arg_INPUTS}"
+      "${arg_DEPS}"
   )
 
   # Create the library with the generated source files.
   add_library("${NAME}.pwpb" INTERFACE)
-  target_include_directories("${NAME}.pwpb" INTERFACE "${OUT_DIR}/pwpb")
+  target_include_directories("${NAME}.pwpb" INTERFACE "${arg_OUT_DIR}/pwpb")
   target_link_libraries("${NAME}.pwpb"
     INTERFACE
       pw_build
       pw_protobuf
       pw_span
       pw_string.string
-      ${DEPS}
+      ${arg_DEPS}
   )
   add_dependencies("${NAME}.pwpb" "${NAME}._generate.pwpb")
 endfunction(_pw_pwpb_library)
 
 # Internal function that creates a pwpb_rpc library.
-function(_pw_pwpb_rpc_library NAME SOURCES INPUTS DEPS INCLUDE_FILE OUT_DIR)
+function(_pw_pwpb_rpc_library NAME)
+  set(num_positional_args 1)
+  set(option_args)
+  set(one_value_args INCLUDE_FILE OUT_DIR)
+  set(multi_value_args SOURCES INPUTS DEPS)
+  pw_parse_arguments_strict(
+      _pw_pwpb_rpc_library "${num_positional_args}" "${option_args}"
+      "${one_value_args}" "${multi_value_args}")
+
   # Determine the names of the output files.
-  list(TRANSFORM DEPS APPEND .pwpb_rpc)
+  list(TRANSFORM arg_DEPS APPEND .pwpb_rpc)
 
   _pw_generate_protos("${NAME}"
       pwpb_rpc
       "$ENV{PW_ROOT}/pw_rpc/py/pw_rpc/plugin_pwpb.py"
       ".rpc.pwpb.h"
-      "${INCLUDE_FILE}"
-      "${OUT_DIR}"
-      "${SOURCES}"
-      "${INPUTS}"
-      "${DEPS}"
+      "${arg_INCLUDE_FILE}"
+      "${arg_OUT_DIR}"
+      "${arg_SOURCES}"
+      "${arg_INPUTS}"
+      "${arg_DEPS}"
   )
 
   # Create the library with the generated source files.
   add_library("${NAME}.pwpb_rpc" INTERFACE)
   target_include_directories("${NAME}.pwpb_rpc"
     INTERFACE
-      "${OUT_DIR}/pwpb_rpc"
+      "${arg_OUT_DIR}/pwpb_rpc"
   )
   target_link_libraries("${NAME}.pwpb_rpc"
     INTERFACE
@@ -238,42 +306,59 @@ function(_pw_pwpb_rpc_library NAME SOURCES INPUTS DEPS INCLUDE_FILE OUT_DIR)
       pw_rpc.pwpb.client
       pw_rpc.pwpb.method_union
       pw_rpc.server
-      ${DEPS}
+      ${arg_DEPS}
   )
   add_dependencies("${NAME}.pwpb_rpc" "${NAME}._generate.pwpb_rpc")
 endfunction(_pw_pwpb_rpc_library)
 
 # Internal function that creates a raw_rpc proto library.
-function(_pw_raw_rpc_library NAME SOURCES INPUTS DEPS INCLUDE_FILE OUT_DIR)
-  list(TRANSFORM DEPS APPEND .raw_rpc)
+function(_pw_raw_rpc_library NAME)
+  set(num_positional_args 1)
+  set(option_args)
+  set(one_value_args INCLUDE_FILE OUT_DIR)
+  set(multi_value_args SOURCES INPUTS DEPS)
+  pw_parse_arguments_strict(
+      _pw_raw_rpc_library "${num_positional_args}" "${option_args}"
+      "${one_value_args}" "${multi_value_args}")
+
+  list(TRANSFORM arg_DEPS APPEND .raw_rpc)
 
   _pw_generate_protos("${NAME}"
       raw_rpc
       "$ENV{PW_ROOT}/pw_rpc/py/pw_rpc/plugin_raw.py"
       ".raw_rpc.pb.h"
-      "${INCLUDE_FILE}"
-      "${OUT_DIR}"
-      "${SOURCES}"
-      "${INPUTS}"
-      "${DEPS}"
+      "${arg_INCLUDE_FILE}"
+      "${arg_OUT_DIR}"
+      "${arg_SOURCES}"
+      "${arg_INPUTS}"
+      "${arg_DEPS}"
   )
 
   # Create the library with the generated source files.
   add_library("${NAME}.raw_rpc" INTERFACE)
-  target_include_directories("${NAME}.raw_rpc" INTERFACE "${OUT_DIR}/raw_rpc")
+  target_include_directories("${NAME}.raw_rpc" INTERFACE
+                             "${arg_OUT_DIR}/raw_rpc")
   target_link_libraries("${NAME}.raw_rpc"
     INTERFACE
       pw_build
       pw_rpc.raw
       pw_rpc.server
-      ${DEPS}
+      ${arg_DEPS}
   )
   add_dependencies("${NAME}.raw_rpc" "${NAME}._generate.raw_rpc")
 endfunction(_pw_raw_rpc_library)
 
 # Internal function that creates a nanopb proto library.
-function(_pw_nanopb_library NAME SOURCES INPUTS DEPS INCLUDE_FILE OUT_DIR)
-  list(TRANSFORM DEPS APPEND .nanopb)
+function(_pw_nanopb_library NAME)
+  set(num_positional_args 1)
+  set(option_args)
+  set(one_value_args INCLUDE_FILE OUT_DIR)
+  set(multi_value_args SOURCES INPUTS DEPS)
+  pw_parse_arguments_strict(
+      _pw_nanopb_library "${num_positional_args}" "${option_args}"
+      "${one_value_args}" "${multi_value_args}")
+
+  list(TRANSFORM arg_DEPS APPEND .nanopb)
 
   if("${dir_pw_third_party_nanopb}" STREQUAL "")
     add_custom_target("${NAME}._generate.nanopb"
@@ -284,39 +369,41 @@ function(_pw_nanopb_library NAME SOURCES INPUTS DEPS INCLUDE_FILE OUT_DIR)
       COMMAND
         "${CMAKE_COMMAND}" -E false
       DEPENDS
-        ${DEPS}
+        ${arg_DEPS}
       SOURCES
-        ${SOURCES}
+        ${arg_SOURCES}
     )
     set(generated_outputs $<TARGET_PROPERTY:pw_build.empty,SOURCES>)
   else()
     # When compiling with the Nanopb plugin, the nanopb.proto file is already
     # compiled internally, so skip recompiling it with protoc.
-    if("${SOURCES}" MATCHES "nanopb\\.proto")
+    if("${arg_SOURCES}" MATCHES "nanopb\\.proto")
       add_custom_target("${NAME}._generate.nanopb")  # Nothing to do
       add_library("${NAME}.nanopb" INTERFACE)
       target_link_libraries("${NAME}.nanopb"
         INTERFACE
           pw_build
           pw_third_party.nanopb
-          ${DEPS}
+          ${arg_DEPS}
       )
     else()
       _pw_generate_protos("${NAME}"
           nanopb
           "${dir_pw_third_party_nanopb}/generator/protoc-gen-nanopb"
           ".pb.h;.pb.c"
-          "${INCLUDE_FILE}"
-          "${OUT_DIR}"
-          "${SOURCES}"
-          "${INPUTS}"
-          "${DEPS}"
+          "${arg_INCLUDE_FILE}"
+          "${arg_OUT_DIR}"
+          "${arg_SOURCES}"
+          "${arg_INPUTS}"
+          "${arg_DEPS}"
       )
 
       # Create the library with the generated source files.
       add_library("${NAME}.nanopb" EXCLUDE_FROM_ALL ${generated_outputs})
-      target_include_directories("${NAME}.nanopb" PUBLIC "${OUT_DIR}/nanopb")
-      target_link_libraries("${NAME}.nanopb" PUBLIC pw_build pw_third_party.nanopb ${DEPS})
+      target_include_directories("${NAME}.nanopb"
+                                 PUBLIC "${arg_OUT_DIR}/nanopb")
+      target_link_libraries("${NAME}.nanopb" PUBLIC pw_build
+                            pw_third_party.nanopb ${arg_DEPS})
     endif()
 
     add_dependencies("${NAME}.nanopb" "${NAME}._generate.nanopb")
@@ -329,26 +416,34 @@ function(_pw_nanopb_library NAME SOURCES INPUTS DEPS INCLUDE_FILE OUT_DIR)
 endfunction(_pw_nanopb_library)
 
 # Internal function that creates a nanopb_rpc library.
-function(_pw_nanopb_rpc_library NAME SOURCES INPUTS DEPS INCLUDE_FILE OUT_DIR)
+function(_pw_nanopb_rpc_library NAME)
+  set(num_positional_args 1)
+  set(option_args)
+  set(one_value_args INCLUDE_FILE OUT_DIR)
+  set(multi_value_args SOURCES INPUTS DEPS)
+  pw_parse_arguments_strict(
+      _pw_nanopb_rpc_library "${num_positional_args}" "${option_args}"
+      "${one_value_args}" "${multi_value_args}")
+
   # Determine the names of the output files.
-  list(TRANSFORM DEPS APPEND .nanopb_rpc)
+  list(TRANSFORM arg_DEPS APPEND .nanopb_rpc)
 
   _pw_generate_protos("${NAME}"
       nanopb_rpc
       "$ENV{PW_ROOT}/pw_rpc/py/pw_rpc/plugin_nanopb.py"
       ".rpc.pb.h"
-      "${INCLUDE_FILE}"
-      "${OUT_DIR}"
-      "${SOURCES}"
-      "${INPUTS}"
-      "${DEPS}"
+      "${arg_INCLUDE_FILE}"
+      "${arg_OUT_DIR}"
+      "${arg_SOURCES}"
+      "${arg_INPUTS}"
+      "${arg_DEPS}"
   )
 
   # Create the library with the generated source files.
   add_library("${NAME}.nanopb_rpc" INTERFACE)
   target_include_directories("${NAME}.nanopb_rpc"
     INTERFACE
-      "${OUT_DIR}/nanopb_rpc"
+      "${arg_OUT_DIR}/nanopb_rpc"
   )
   target_link_libraries("${NAME}.nanopb_rpc"
     INTERFACE
@@ -357,7 +452,7 @@ function(_pw_nanopb_rpc_library NAME SOURCES INPUTS DEPS INCLUDE_FILE OUT_DIR)
       pw_rpc.nanopb.client
       pw_rpc.nanopb.method_union
       pw_rpc.server
-      ${DEPS}
+      ${arg_DEPS}
   )
   add_dependencies("${NAME}.nanopb_rpc" "${NAME}._generate.nanopb_rpc")
 endfunction(_pw_nanopb_rpc_library)
