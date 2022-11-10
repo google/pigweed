@@ -7,17 +7,13 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
 
 namespace bt {
 
 using testing::FakeController;
-using testing::FakePeer;
 
 namespace hci {
 
@@ -81,7 +77,7 @@ class LegacyLowEnergyAdvertiserTest : public TestingBase {
   }
 
   // Retrieves the last status, and resets the last status to empty.
-  std::optional<Result<>> MoveLastStatus() { return std::move(last_status_); }
+  std::optional<Result<>> MoveLastStatus() { return last_status_; }
 
   // Makes some fake advertising data.
   // |include_flags| signals whether to include flag encoding size in the data calculation.
