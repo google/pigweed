@@ -74,8 +74,10 @@ def _add_programs_arguments(parser: argparse.ArgumentParser,
                             programs: presubmit.Programs, default: str):
     def presubmit_program(arg: str) -> presubmit.Program:
         if arg not in programs:
+            all_program_names = ', '.join(sorted(programs.keys()))
             raise argparse.ArgumentTypeError(
-                f'{arg} is not the name of a presubmit program')
+                f'{arg} is not the name of a presubmit program\n\n'
+                f'Valid Programs:\n{all_program_names}')
 
         return programs[arg]
 
@@ -104,8 +106,10 @@ def _add_programs_arguments(parser: argparse.ArgumentParser,
 
     def presubmit_step(arg: str) -> presubmit.Check:
         if arg not in all_steps:
+            all_step_names = ', '.join(sorted(all_steps.keys()))
             raise argparse.ArgumentTypeError(
-                f'{arg} is not the name of a presubmit step')
+                f'{arg} is not the name of a presubmit step\n\n'
+                f'Valid Steps:\n{all_step_names}')
         return all_steps[arg]
 
     parser.add_argument(
