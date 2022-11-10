@@ -154,7 +154,7 @@ def gn_full_build_check(ctx: PresubmitContext) -> None:
     if sys.platform.startswith('linux'):
         build_targets.append('integration_tests')
 
-    build.gn_gen(ctx)
+    build.gn_gen(ctx, pw_unit_test_FACADE_TESTS_ENABLED=True)
     build.ninja(ctx, *build_targets)
 
 

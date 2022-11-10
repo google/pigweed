@@ -19,6 +19,10 @@ import("$dir_pw_toolchain/subtoolchain.gni")
 import("$dir_pw_unit_test/test.gni")
 
 declare_args() {
+  # Controls whether to build and run facade tests. Facade tests add
+  # considerably to build time, so they are disabled by default.
+  pw_unit_test_FACADE_TESTS_ENABLED = false
+
   # Pigweed uses this internally to manage toolchain generation for facade
   # tests. This should NEVER be set manually, or depended on as stable API.
   pw_unit_test_FACADE_TEST_NAME = ""
@@ -55,7 +59,7 @@ template("pw_facade_test") {
   # Only try to generate a facade test for toolchains created by
   # generate_toolchain. Checking if pw_toolchain_SCOPE has the "name" member
   # is a reliable way to do this since it's only ever set by generate_toolchain.
-  if (defined(pw_toolchain_SCOPE.name)) {
+  if (pw_unit_test_FACADE_TESTS_ENABLED && defined(pw_toolchain_SCOPE.name)) {
     if (defined(invoker.toolchain_suffix)) {
       _subtoolchain_suffix = invoker.toolchain_suffix
     } else {

@@ -293,6 +293,9 @@ current device target configuration while overriding specific build arguments.
 This allows these tests to replace a facade's backend for the purpose of testing
 the facade layer.
 
+Facade tests are disabled by default. To build and run facade tests, set the GN
+arg :option:`pw_unit_test_FACADE_TESTS_ENABLED` to ``true``.
+
 .. warning::
    Facade tests are costly because each facade test will trigger a re-build of
    every dependency of the test. While this sounds excessive, it's the only
@@ -395,6 +398,11 @@ Build arguments
 
   Type: string (path to a .gni file)
   Usage: toolchain-controlled only
+
+.. option:: pw_unit_test_FACADE_TESTS_ENABLED <boolean>
+
+  Controls whether to build and run facade tests. Facade tests add considerably
+  to build time, so they are disabled by default.
 
 CMake
 -----
