@@ -33,22 +33,6 @@ pw_add_module_library(pw_assert.config
     ${pw_assert_CONFIG}
 )
 
-# Deprecate this once all users have been migrated off pw_assert_BACKEND to
-# instead set pw_assert.assert_BACKEND and pw_assert.check_BACKEND and use the
-# separate assert and check facades directly.
-if(DEFINED pw_assert_BACKEND)
-  message(DEPRECATION "pw_set_backend(pw_assert ...) (AKA pw_assert_BACKEND) "
-                      "has been deprecated and replaced with the "
-                      "pw_assert.check and pw_assert.assert facades.")
-  pw_set_backend(pw_assert.check "${pw_assert_BACKEND}")
-  pw_set_backend(pw_assert.assert pw_assert.assert_compatibility_backend)
-
-  pw_add_module_library(pw_assert.facade
-    PUBLIC_DEPS
-      pw_assert.check.facade
-  )
-endif()
-
 pw_add_module_facade(pw_assert.assert
   BACKEND
     pw_assert.assert_BACKEND
