@@ -18,11 +18,12 @@ if(NOT CONFIG_PIGWEED_SYS_IO)
   return()
 endif()
 
-pw_auto_add_simple_module(pw_sys_io_zephyr
-  IMPLEMENTS_FACADE
-    pw_sys_io
-  PUBLIC_DEPS
+pw_add_module_library(pw_sys_io_zephyr
+  SOURCES
+    sys_io.cc
+  PRIVATE_DEPS
     pw_sys_io.default_putget_bytes
+    pw_sys_io.facade
     zephyr_interface
 )
 zephyr_link_libraries(pw_sys_io_zephyr)
