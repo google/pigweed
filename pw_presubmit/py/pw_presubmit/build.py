@@ -95,6 +95,22 @@ def install_package(ctx: PresubmitContext, name: str) -> None:
         mgr.install(name)
 
 
+def _gn_value(value) -> str:
+    if isinstance(value, bool):
+        return str(value).lower()
+
+    if (isinstance(value, str) and '"' not in value
+            and not value.startswith("{") and not value.startswith("[")):
+        return f'"{value}"'
+
+    if isinstance(value, (list, tuple)):
+        return f'[{", ".join(_gn_value(a) for a in value)}]'
+
+    # Fall-back case handles integers as well as strings that already
+    # contain double quotation marks, or look like scopes or lists.
+    return str(value)
+
+
 def gn_args(**kwargs) -> str:
     """Builds a string to use for the --args argument to gn gen.
 
@@ -105,16 +121,8 @@ def gn_args(**kwargs) -> str:
     """
     transformed_args = []
     for arg, val in kwargs.items():
-        if isinstance(val, bool):
-            transformed_args.append(f'{arg}={str(val).lower()}')
-            continue
-        if (isinstance(val, str) and '"' not in val and not val.startswith("{")
-                and not val.startswith("[")):
-            transformed_args.append(f'{arg}="{val}"')
-            continue
-        # Fall-back case handles integers as well as strings that already
-        # contain double quotation marks, or look like scopes or lists.
-        transformed_args.append(f'{arg}={val}')
+        transformed_args.append(f'{arg}={_gn_value(val)}')
+
     # Use ccache if available for faster repeat presubmit runs.
     if which('ccache'):
         transformed_args.append('pw_command_launcher="ccache"')

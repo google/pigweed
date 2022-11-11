@@ -69,9 +69,11 @@ pw_package.pigweed_packages.initialize()
 _BUILD_FILE_FILTER = presubmit.FileFilter(
     suffix=(*format_code.C_FORMAT.extensions, '.py', '.rst', '.gn', '.gni'))
 
+_OPTIMIZATION_LEVELS = 'debug', 'size_optimized', 'speed_optimized'
+
 
 def _at_all_optimization_levels(target):
-    for level in ('debug', 'size_optimized', 'speed_optimized'):
+    for level in _OPTIMIZATION_LEVELS:
         yield f'{target}_{level}'
 
 
@@ -109,13 +111,13 @@ def gn_clang_build(ctx: PresubmitContext):
     if sys.platform.startswith('linux'):
         build_targets.append('integration_tests')
 
-    build.gn_gen(ctx)
+    build.gn_gen(ctx, pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS)
     build.ninja(ctx, *build_targets)
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_gcc_build(ctx: PresubmitContext):
-    build.gn_gen(ctx)
+    build.gn_gen(ctx, pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS)
     build.ninja(ctx, *_at_all_optimization_levels('host_gcc'))
 
 
@@ -123,7 +125,7 @@ _HOST_COMPILER = 'gcc' if sys.platform == 'win32' else 'clang'
 
 
 def gn_host_build(ctx: PresubmitContext):
-    build.gn_gen(ctx)
+    build.gn_gen(ctx, pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS)
     build.ninja(ctx, *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'))
 
 
@@ -154,13 +156,15 @@ def gn_full_build_check(ctx: PresubmitContext) -> None:
     if sys.platform.startswith('linux'):
         build_targets.append('integration_tests')
 
-    build.gn_gen(ctx, pw_unit_test_FACADE_TESTS_ENABLED=True)
+    build.gn_gen(ctx,
+                 pw_unit_test_FACADE_TESTS_ENABLED=True,
+                 pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS)
     build.ninja(ctx, *build_targets)
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_full_qemu_check(ctx: PresubmitContext):
-    build.gn_gen(ctx)
+    build.gn_gen(ctx, pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS)
     build.ninja(
         ctx,
         *_at_all_optimization_levels('qemu_gcc'),
@@ -204,19 +208,21 @@ def gn_combined_build_check(ctx: PresubmitContext) -> None:
     if sys.platform.startswith('linux'):
         build_targets.append('integration_tests')
 
-    build.gn_gen(ctx)
+    build.gn_gen(ctx, pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS)
     build.ninja(ctx, *build_targets)
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_arm_build(ctx: PresubmitContext):
-    build.gn_gen(ctx)
+    build.gn_gen(ctx, pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS)
     build.ninja(ctx, *_at_all_optimization_levels('stm32f429i'))
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
 def stm32f429i(ctx: PresubmitContext):
-    build.gn_gen(ctx, pw_use_test_server=True)
+    build.gn_gen(ctx,
+                 pw_use_test_server=True,
+                 pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS)
     with build.test_server('stm32f429i_disc1_test_server', ctx.output_dir):
         build.ninja(ctx, *_at_all_optimization_levels('stm32f429i'))
 
@@ -224,9 +230,12 @@ def stm32f429i(ctx: PresubmitContext):
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_boringssl_build(ctx: PresubmitContext):
     build.install_package(ctx, 'boringssl')
-    build.gn_gen(ctx,
-                 dir_pw_third_party_boringssl='"{}"'.format(ctx.package_root /
-                                                            'boringssl'))
+    build.gn_gen(
+        ctx,
+        dir_pw_third_party_boringssl='"{}"'.format(ctx.package_root /
+                                                   'boringssl'),
+        pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
+    )
     build.ninja(
         ctx,
         *_at_all_optimization_levels('stm32f429i'),
@@ -237,9 +246,11 @@ def gn_boringssl_build(ctx: PresubmitContext):
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_nanopb_build(ctx: PresubmitContext):
     build.install_package(ctx, 'nanopb')
-    build.gn_gen(ctx,
-                 dir_pw_third_party_nanopb='"{}"'.format(ctx.package_root /
-                                                         'nanopb'))
+    build.gn_gen(
+        ctx,
+        dir_pw_third_party_nanopb='"{}"'.format(ctx.package_root / 'nanopb'),
+        pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
+    )
     build.ninja(
         ctx,
         *_at_all_optimization_levels('stm32f429i'),
@@ -256,7 +267,9 @@ def gn_crypto_mbedtls_build(ctx: PresubmitContext):
         pw_crypto_SHA256_BACKEND='"{}"'.format(ctx.root /
                                                'pw_crypto:sha256_mbedtls'),
         pw_crypto_ECDSA_BACKEND='"{}"'.format(ctx.root /
-                                              'pw_crypto:ecdsa_mbedtls'))
+                                              'pw_crypto:ecdsa_mbedtls'),
+        pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
+    )
     build_targets = [*_at_all_optimization_levels(f'host_{_HOST_COMPILER}')]
 
     # TODO(b/240982565): SocketStream currently requires Linux.
@@ -277,6 +290,7 @@ def gn_crypto_boringssl_build(ctx: PresubmitContext):
                                                'pw_crypto:sha256_boringssl'),
         pw_crypto_ECDSA_BACKEND='"{}"'.format(ctx.root /
                                               'pw_crypto:ecdsa_boringssl'),
+        pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
     )
     build_targets = [*_at_all_optimization_levels(f'host_{_HOST_COMPILER}')]
 
@@ -296,6 +310,7 @@ def gn_crypto_micro_ecc_build(ctx: PresubmitContext):
                                                    'micro-ecc'),
         pw_crypto_ECDSA_BACKEND='"{}"'.format(ctx.root /
                                               'pw_crypto:ecdsa_uecc'),
+        pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
     )
     build_targets = [*_at_all_optimization_levels(f'host_{_HOST_COMPILER}')]
 
@@ -309,12 +324,14 @@ def gn_crypto_micro_ecc_build(ctx: PresubmitContext):
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_teensy_build(ctx: PresubmitContext):
     build.install_package(ctx, 'teensy')
-    build.gn_gen(ctx,
-                 pw_arduino_build_CORE_PATH='"{}"'.format(str(
-                     ctx.package_root)),
-                 pw_arduino_build_CORE_NAME='teensy',
-                 pw_arduino_build_PACKAGE_NAME='teensy/avr',
-                 pw_arduino_build_BOARD='teensy40')
+    build.gn_gen(
+        ctx,
+        pw_arduino_build_CORE_PATH='"{}"'.format(str(ctx.package_root)),
+        pw_arduino_build_CORE_NAME='teensy',
+        pw_arduino_build_PACKAGE_NAME='teensy/avr',
+        pw_arduino_build_BOARD='teensy40',
+        pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
+    )
     build.ninja(ctx, *_at_all_optimization_levels('arduino'))
 
 
@@ -335,7 +352,9 @@ def gn_software_update_build(ctx: PresubmitContext):
                                               'pw_crypto:ecdsa_uecc'),
         dir_pw_third_party_mbedtls='"{}"'.format(ctx.package_root / 'mbedtls'),
         pw_crypto_SHA256_BACKEND='"{}"'.format(ctx.root /
-                                               'pw_crypto:sha256_mbedtls'))
+                                               'pw_crypto:sha256_mbedtls'),
+        pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
+    )
     build.ninja(
         ctx,
         *_at_all_optimization_levels('host_clang'),
@@ -360,13 +379,13 @@ def gn_pw_system_demo_build(ctx: PresubmitContext):
 
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_qemu_build(ctx: PresubmitContext):
-    build.gn_gen(ctx)
+    build.gn_gen(ctx, pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS)
     build.ninja(ctx, *_at_all_optimization_levels('qemu_gcc'))
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_qemu_clang_build(ctx: PresubmitContext):
-    build.gn_gen(ctx)
+    build.gn_gen(ctx, pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS)
     build.ninja(ctx, *_at_all_optimization_levels('qemu_clang'))
 
 

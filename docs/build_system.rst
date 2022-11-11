@@ -306,10 +306,10 @@ present, Ninja will build this group when invoked without arguments.
 
 Optimization levels
 ^^^^^^^^^^^^^^^^^^^
-Pigweed's ``//BUILD.gn`` defines the ``pw_default_optimization_level`` build
+Pigweed's ``//BUILD.gn`` defines the ``pw_DEFAULT_C_OPTIMIZATION_LEVEL`` build
 arg, which specifies the optimization level to use for the default groups
 (``host``, ``stm32f429i``, etc.). The supported values for
-``pw_default_optimization_level`` are:
+``pw_DEFAULT_C_OPTIMIZATION_LEVEL`` are:
 
 * ``debug`` -- create debugging-friendly binaries (``-Og``)
 * ``size_optimized`` -- optimize for size (``-Os``)
@@ -317,10 +317,11 @@ arg, which specifies the optimization level to use for the default groups
   (``-O2``)
 
 Pigweed defines versions of its groups in ``//BUILD.gn`` for each optimization
-level. Rather than relying on ``pw_default_optimization_level``, you may
-directly build a group at the desired optimization level:
-``<group>_<optimization>``. Examples include ``host_clang_debug``,
-``host_gcc_size_optimized``, and ``stm32f429i_speed_optimized``.
+level specified in the ``pw_C_OPTIMIZATION_LEVELS`` list. Rather than relying
+on ``pw_DEFAULT_C_OPTIMIZATION_LEVEL``, you may directly build a group at the
+desired optimization level: ``<group>_<optimization>``. Examples include
+``host_clang_debug``, ``host_gcc_size_optimized``, and
+``stm32f429i_speed_optimized``.
 
 Upstream GN target groups
 ^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -22,23 +22,54 @@ import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_rpc/config.gni")
 import("$dir_pw_rust/rust.gni")
 import("$dir_pw_third_party/mcuxpresso/mcuxpresso.gni")
+import("$dir_pw_toolchain/c_optimization.gni")
 import("$dir_pw_toolchain/generate_toolchain.gni")
 import("$dir_pw_unit_test/test.gni")
 
 # Main build file for upstream Pigweed.
 
 declare_args() {
-  # The default optimization level for building upstream Pigweed targets.
+  # The default C++ optimization level for building upstream Pigweed targets.
   #
-  # Choices:
-  #   debug
-  #   size_optimized
-  #   speed_optimized
-  pw_default_optimization_level = "debug"
+  # Must be one of "debug", "size_optimized", or "speed_optimized".
+  pw_DEFAULT_C_OPTIMIZATION_LEVEL = "debug"
+
+  # The C++ optimization levels for which to generate targets.
+  #
+  # Supported levels are "debug", "size_optimized", or "speed_optimized".
+  pw_C_OPTIMIZATION_LEVELS = [
+    "debug",
+    "size_optimized",
+  ]
 
   # List of application image GN targets specific to the Pigweed target.
   pw_TARGET_APPLICATIONS = []
 }
+
+# List any optimization levels in pw_C_OPTIMIZATION_LEVELS that are not in
+# pw_toolchain_SUPPORTED_C_OPTIMIZATION_LEVELS. This is accomplished by adding
+# all supported levels to the selected levels, then removing all supported
+# levels. The remaining list contains only the unsupported levels.
+_unknown_optimization_levels =
+    pw_C_OPTIMIZATION_LEVELS + pw_toolchain_SUPPORTED_C_OPTIMIZATION_LEVELS -
+    pw_toolchain_SUPPORTED_C_OPTIMIZATION_LEVELS
+
+assert(_unknown_optimization_levels == [],
+       "pw_C_OPTIMIZATION_LEVELS includes unsupported optimization levels: " +
+           "$_unknown_optimization_levels")
+
+# Assert that the selected pw_DEFAULT_C_OPTIMIZATION_LEVEL is in the
+# pw_toolchain_SUPPORTED_C_OPTIMIZATION_LEVELS list. This is done by adding then
+# removing all instances of the selected levels from the supported levels list.
+# If the resulting list did not change, then no supported levels were removed,
+# indicating that pw_DEFAULT_C_OPTIMIZATION_LEVEL is not a supported value.
+assert(pw_toolchain_SUPPORTED_C_OPTIMIZATION_LEVELS +
+           [ pw_DEFAULT_C_OPTIMIZATION_LEVEL ] -
+           [ pw_DEFAULT_C_OPTIMIZATION_LEVEL ] !=
+           pw_toolchain_SUPPORTED_C_OPTIMIZATION_LEVELS,
+       "pw_DEFAULT_C_OPTIMIZATION_LEVEL (\"$pw_DEFAULT_C_OPTIMIZATION_LEVEL" +
+           "\") must be one of the supported values: " +
+           "$pw_toolchain_SUPPORTED_C_OPTIMIZATION_LEVELS")
 
 # Enumerate all of the different targets that upstream Pigweed will build by
 # default. Downstream projects should not depend on this target; this target is
@@ -112,16 +143,11 @@ template("_build_pigweed_default_at_all_optimization_levels") {
 
   group(target_name) {
     deps = [
-      ":pigweed_default(${_toolchain_prefix}$pw_default_optimization_level)",
+      ":pigweed_default(${_toolchain_prefix}$pw_DEFAULT_C_OPTIMIZATION_LEVEL)",
     ]
   }
 
-  foreach(optimization,
-          [
-            "debug",
-            "size_optimized",
-            "speed_optimized",
-          ]) {
+  foreach(optimization, pw_C_OPTIMIZATION_LEVELS) {
     group(target_name + "_$optimization") {
       deps = [ ":pigweed_default($_toolchain_prefix$optimization)" ]
     }
@@ -196,7 +222,7 @@ group("docs") {
 
 # Tests larger than unit tests, typically run in a specific configuration.
 group("integration_tests") {
-  _default_tc = _default_toolchain_prefix + pw_default_optimization_level
+  _default_tc = _default_toolchain_prefix + pw_DEFAULT_C_OPTIMIZATION_LEVEL
   deps = [
     "$dir_pw_rpc:cpp_client_server_integration_test($_default_tc)",
     "$dir_pw_rpc/py:python_client_cpp_server_test.action($_default_tc)",
