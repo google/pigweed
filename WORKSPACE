@@ -26,6 +26,15 @@ load(
     "pigweed_deps",
 )
 
+# Set up Bazel platforms.
+# Required by: pigweed.
+# Used in modules: //pw_build, (Assorted modules via select statements).
+git_repository(
+    name = "platforms",
+    commit = "d4c9d7f51a7c403814b60f66d20eeb425fbaaacb",
+    remote = "https://github.com/bazelbuild/platforms.git",
+)
+
 # Setup CIPD client and packages.
 # Required by: pigweed.
 # Used by modules: all.
@@ -165,15 +174,6 @@ nanopb_python_deps()
 load("@com_github_nanopb_nanopb//:nanopb_workspace.bzl", "nanopb_workspace")
 
 nanopb_workspace()
-
-# Set up Bazel platforms.
-# Required by: pigweed.
-# Used in modules: //pw_build, (Assorted modules via select statements).
-git_repository(
-    name = "platforms",
-    commit = "d4c9d7f51a7c403814b60f66d20eeb425fbaaacb",
-    remote = "https://github.com/bazelbuild/platforms.git",
-)
 
 # Set up NodeJs rules.
 # Required by: pigweed.
