@@ -15,10 +15,7 @@
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
 
-if(NOT "${dir_pw_third_party_nanopb}" STREQUAL "")
-  add_subdirectory(nanopb)
-endif()
-
+add_subdirectory(nanopb)
 add_subdirectory(pwpb)
 add_subdirectory(raw)
 add_subdirectory(system_server)

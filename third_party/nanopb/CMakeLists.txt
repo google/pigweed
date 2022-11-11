@@ -20,6 +20,11 @@ option(pw_third_party_nanopb_ADD_SUBDIRECTORY
     "Whether to add the dir_pw_third_party_nanopb subdirectory" OFF)
 
 if("${dir_pw_third_party_nanopb}" STREQUAL "")
+  pw_add_error_target(pw_third_party.nanopb
+    MESSAGE
+      "Attempted to use nanopb without configuring it, see "
+      "pigweed.dev/third_party/nanopb/"
+  )
   return()
 elseif(pw_third_party_nanopb_ADD_SUBDIRECTORY)
   add_subdirectory("${dir_pw_third_party_nanopb}" third_party/nanopb)
