@@ -31,7 +31,7 @@ load(
 # Used in modules: //pw_build, (Assorted modules via select statements).
 git_repository(
     name = "platforms",
-    commit = "d4c9d7f51a7c403814b60f66d20eeb425fbaaacb",
+    commit = "380c85cc2c7b126c6e354f517dc16d89fe760c9f",
     remote = "https://github.com/bazelbuild/platforms.git",
 )
 
