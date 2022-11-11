@@ -69,6 +69,12 @@ By default, ``pw watch`` automatically restarts an ongoing build when files
 change. This can be disabled with the ``--no-restart`` option. While running
 ``pw watch``, you may also press enter to immediately restart a build.
 
+When using ``--serve-docs``, by default the docs will be rebuilt when changed,
+just like code files. However, you will need to manually reload the page in
+your browser to see changes. If you install the ``httpwatcher`` Python package
+into your Pigweed environment (``pip install httpwatcher``), docs pages will
+automatically reload when changed.
+
 See ``pw watch -h`` for the full list of command line arguments.
 
 Unit Test Integration

@@ -38,6 +38,7 @@ Usage examples:
 import argparse
 from dataclasses import dataclass
 import errno
+import http.server
 from itertools import zip_longest
 import logging
 import os
@@ -45,10 +46,12 @@ from pathlib import Path
 import re
 import shlex
 import subprocess
+import socketserver
 import sys
 import threading
 from threading import Thread
 from typing import (
+    Callable,
     Iterable,
     List,
     NamedTuple,
@@ -632,8 +635,7 @@ def add_parser_arguments(parser: argparse.ArgumentParser) -> None:
         default=False,
         help=('Start a webserver for docs on localhost. The port for this '
               'webserver can be set with the --serve-docs-port option. '
-              'Defaults to http://127.0.0.1:8000. This option requires '
-              'the httpwatcher package to be installed.'))
+              'Defaults to http://127.0.0.1:8000.'))
     parser.add_argument(
         '--serve-docs-port',
         dest='serve_docs_port',
@@ -812,24 +814,53 @@ def get_common_excludes() -> List[Path]:
     return exclude_list
 
 
-def _serve_docs(build_dir: Path, serve_docs_port: int,
-                serve_docs_path: Path) -> None:
-    if httpwatcher is None:
-        _LOG.warning(
-            '--serve-docs was specified, but httpwatcher is not available')
-        _LOG.info('Install httpwatcher to use --serve-docs')
-        return
+def _simple_docs_server(address: str, port: int,
+                        path: Path) -> Callable[[], None]:
+    class Handler(http.server.SimpleHTTPRequestHandler):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, directory=path, **kwargs)
 
+        # Disable logs to stdout
+        def log_message(self, format: str, *args) -> None:  # pylint: disable=redefined-builtin
+            return
+
+    def simple_http_server_thread():
+        with socketserver.TCPServer((address, port), Handler) as httpd:
+            httpd.serve_forever()
+
+    return simple_http_server_thread
+
+
+def _httpwatcher_docs_server(address: str, port: int,
+                             path: Path) -> Callable[[], None]:
     def httpwatcher_thread():
         # Disable logs from httpwatcher and deps
         logging.getLogger('httpwatcher').setLevel(logging.CRITICAL)
         logging.getLogger('tornado').setLevel(logging.CRITICAL)
 
-        docs_path = build_dir.joinpath(serve_docs_path.joinpath('html'))
-        httpwatcher.watch(docs_path, host='127.0.0.1', port=serve_docs_port)
+        httpwatcher.watch(path, host=address, port=port)
 
-    # Spin up an httpwatcher in a new thread since it blocks
-    threading.Thread(None, httpwatcher_thread, 'httpwatcher').start()
+    return httpwatcher_thread
+
+
+def _serve_docs(build_dir: Path,
+                docs_path: Path,
+                address: str = '127.0.0.1',
+                port: int = 8000) -> None:
+    address = '127.0.0.1'
+    docs_path = build_dir.joinpath(docs_path.joinpath('html'))
+
+    if httpwatcher is not None:
+        _LOG.info('Using httpwatcher. Docs will reload when changed.')
+        server_thread = _httpwatcher_docs_server(address, port, docs_path)
+    else:
+        _LOG.info(
+            'Using simple HTTP server. Docs will not reload when changed.')
+        _LOG.info('Install httpwatcher and restart for automatic docs reload.')
+        server_thread = _simple_docs_server(address, port, docs_path)
+
+    # Spin up server in a new thread since it blocks
+    threading.Thread(None, server_thread, 'pw_docs_server').start()
 
 
 def watch_setup(
@@ -890,8 +921,9 @@ def watch_setup(
     _LOG.debug('Patterns: %s', patterns)
 
     if serve_docs:
-        _serve_docs(build_commands[0].build_dir, serve_docs_port,
-                    serve_docs_path)
+        _serve_docs(build_commands[0].build_dir,
+                    serve_docs_path,
+                    port=serve_docs_port)
 
     # Try to make a short display path for the watched directory that has
     # "$HOME" instead of the full home directory. This is nice for users
