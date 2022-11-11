@@ -18,9 +18,11 @@ calling ``pw::log_basic::SetOutput``.
   Set the log output function, which defaults ``pw_sys_io::WriteLine``. This
   function is called with each formatted log message.
 
-This module employs an internal buffer for formatting log strings, and currently
-has a fixed size of 150 bytes. Any final log statements that are larger than
-149 bytes (one byte used for a null terminator) will be truncated.
+This module employs an internal buffer for formatting log strings, whose size
+can be configured via the ``PW_LOG_BASIC_ENTRY_SIZE`` macro which defaults to
+150 bytes. Any final log statements that are larger than
+``PW_LOG_BASIC_ENTRY_SIZE - 1`` bytes (one byte used for a null terminator) will
+be truncated.
 
 .. note::
   The documentation for this module is currently incomplete.

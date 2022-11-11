@@ -67,3 +67,10 @@
   do {                                  \
   } while (0)
 #endif  // PW_LOG_APPEND_TIMESTAMP
+
+// Maximum size of the encoded log message. Log messages that would result in a
+// larger entry are truncated to this size. The message buffer is allocated on
+// the stack on every log call.
+#ifndef PW_LOG_BASIC_ENTRY_SIZE
+#define PW_LOG_BASIC_ENTRY_SIZE 150
+#endif  // PW_LOG_BASIC_ENTRY_SIZE
