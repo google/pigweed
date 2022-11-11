@@ -163,7 +163,7 @@ the following:
   foo
   # keep-sorted: end
 
-This can be included by adding ``pw_presubmit.keep_sorted.keep_sorted`` to a
+This can be included by adding ``pw_presubmit.keep_sorted.presubmit_check`` to a
 presubmit program. Adding ``ignore-case`` to the start line will use
 case-insensitive sorting.
 
@@ -395,7 +395,7 @@ See ``pigweed_presubmit.py`` for a more complex presubmit check script example.
       # Use the upstream formatting checks, with custom path filters applied.
       format_code.presubmit_checks(exclude=PATH_EXCLUSIONS),
       # Include the upstream inclusive language check.
-      inclusive_language.inclusive_language,
+      inclusive_language.presubmit_check,
       # Include just the lint-related Python checks.
       python_checks.gn_pylint.with_filter(exclude=PATH_EXCLUSIONS),
   )

@@ -352,10 +352,6 @@ def presubmit_check(ctx: presubmit.PresubmitContext) -> None:
         _print_howto_fix(changed_paths)
 
 
-# TODO(b/251659424) Remove.
-keep_sorted = presubmit_check
-
-
 def parse_args() -> argparse.Namespace:
     """Creates an argument parser and parses arguments."""
 

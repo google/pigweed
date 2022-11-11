@@ -167,10 +167,6 @@ ignored with "inclusive-language: disable" and reenabled with
         raise presubmit.PresubmitFailure
 
 
-# TODO(b/251659424) Remove.
-inclusive_language = presubmit_check
-
-
 def inclusive_language_checker(*words):
     """Create banned words checker for the given list of banned words."""
 
