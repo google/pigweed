@@ -28,8 +28,6 @@ pw_add_module_facade(pw_trace
 )
 
 pw_add_module_library(pw_trace.null
-  IMPLEMENTS_FACADES
-    pw_trace
   HEADERS
     public/pw_trace/internal/null.h
     public_overrides/pw_trace_backend/trace_backend.h

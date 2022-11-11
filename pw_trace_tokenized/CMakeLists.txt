@@ -15,19 +15,39 @@
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
 
+pw_add_module_config(pw_trace_tokenized_CONFIG)
+
+pw_add_module_library(pw_trace_tokenized.config
+  HEADERS
+    public/pw_trace_tokenized/config.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    ${pw_trace_CONFIG}
+)
+
 pw_add_module_library(pw_trace_tokenized
-  IMPLEMENTS_FACADES
-    pw_trace
+  HEADERS
+    public/pw_trace_tokenized/internal/trace_tokenized_internal.h
+    public/pw_trace_tokenized/trace_callback.h
+    public/pw_trace_tokenized/trace_tokenized.h
+    public_overrides/pw_trace_backend/trace_backend.h
+  PUBLIC_INCLUDES
+    public
+    public_overrides
+  PUBLIC_DEPS
+    pw_span
+    pw_status
+    pw_tokenizer
+    pw_trace_tokenized.config
   SOURCES
     trace.cc
   PRIVATE_DEPS
     pw_assert
     pw_log
     pw_ring_buffer
+    pw_trace.facade
     pw_varint
-  PUBLIC_DEPS
-    pw_status
-    pw_tokenizer
 )
 
 pw_add_module_library(pw_trace_tokenized.trace_buffer
@@ -42,6 +62,7 @@ pw_add_module_library(pw_trace_tokenized.trace_buffer
     pw_status
     pw_tokenizer
     pw_trace_tokenized
+    pw_trace_tokenized.config
     pw_varint
 )
 

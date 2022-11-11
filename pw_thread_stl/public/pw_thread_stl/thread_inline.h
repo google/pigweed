@@ -15,6 +15,8 @@
 
 #include <thread>
 
+#include "pw_thread/thread.h"
+
 namespace pw::thread {
 
 inline Thread::Thread() : native_type_() {}

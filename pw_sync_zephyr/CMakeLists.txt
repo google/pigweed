@@ -16,8 +16,16 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 if(CONFIG_PIGWEED_SYNC_MUTEX)
   pw_add_module_library(pw_sync_zephyr.mutex_backend
-    IMPLEMENTS_FACADES
-      pw_sync.mutex
+    HEADERS
+      public/pw_sync_zephyr/mutex_inline.h
+      public/pw_sync_zephyr/mutex_native.h
+      public_overrides/pw_sync_backend/mutex_inline.h
+      public_overrides/pw_sync_backend/mutex_native.h
+    PUBLIC_INCLUDES
+      public
+      public_overrides
+    PUBLIC_DEPS
+      pw_sync.mutex.facade
   )
   zephyr_link_libraries(pw_sync_zephyr.mutex_backend)
   zephyr_link_interface(pw_sync_zephyr.mutex_backend)
@@ -25,8 +33,17 @@ endif()
 
 if(CONFIG_PIGWEED_SYNC_BINARY_SEMAPHORE)
   pw_add_module_library(pw_sync_zephyr.binary_semaphore_backend
-    IMPLEMENTS_FACADES
-      pw_sync.binary_semaphore
+    HEADERS
+      public/pw_sync_zephyr/binary_semaphore_native.h
+      public/pw_sync_zephyr/binary_semaphore_inline.h
+      public_overrides/pw_sync_backend/binary_semaphore_native.h
+      public_overrides/pw_sync_backend/binary_semaphore_inline.h
+    PUBLIC_INCLUDES
+      public
+      public_overrides
+    PUBLIC_DEPS
+      pw_chrono.system_clock
+      pw_sync.binary_semaphore.facade
     SOURCES
       binary_semaphore.cc
   )

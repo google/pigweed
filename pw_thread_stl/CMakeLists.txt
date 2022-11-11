@@ -16,8 +16,6 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 # This target provides the backend for pw::thread::Id & pw::this_thread::get_id.
 pw_add_module_library(pw_thread_stl.id
-  IMPLEMENTS_FACADES
-    pw_thread.id
   HEADERS
     public/pw_thread_stl/id_inline.h
     public/pw_thread_stl/id_native.h
@@ -26,13 +24,13 @@ pw_add_module_library(pw_thread_stl.id
   PUBLIC_INCLUDES
     public
     id_public_overrides
+  PUBLIC_DEPS
+    pw_thread.id.facade
 )
 
 # This target provides the backend for pw::thread::Thread with joining
 # joining capability.
 pw_add_module_library(pw_thread_stl.thread
-  IMPLEMENTS_FACADES
-    pw_thread.thread
   HEADERS
     public/pw_thread_stl/options.h
     public/pw_thread_stl/thread_inline.h
@@ -42,13 +40,13 @@ pw_add_module_library(pw_thread_stl.thread
   PUBLIC_INCLUDES
     public
     thread_public_overrides
+  PUBLIC_DEPS
+    pw_thread.thread.facade
 )
 
 
 # This target provides the backend for pw::this_thread::sleep_{for,until}.
 pw_add_module_library(pw_thread_stl.sleep
-  IMPLEMENTS_FACADES
-    pw_thread.sleep
   HEADERS
     public/pw_thread_stl/sleep_inline.h
     sleep_public_overrides/pw_thread_backend/sleep_inline.h
@@ -57,18 +55,19 @@ pw_add_module_library(pw_thread_stl.sleep
     sleep_public_overrides
   PUBLIC_DEPS
     pw_chrono.system_clock
+    pw_thread.sleep.facade
 )
 
 # This target provides the backend for pw::this_thread::yield.
 pw_add_module_library(pw_thread_stl.yield
-  IMPLEMENTS_FACADES
-    pw_thread.yield
   HEADERS
     public/pw_thread_stl/yield_inline.h
     yield_public_overrides/pw_thread_backend/yield_inline.h
   PUBLIC_INCLUDES
     public
     yield_public_overrides
+  PUBLIC_DEPS
+    pw_thread.yield.facade
 )
 
 pw_add_module_library(pw_thread_stl.test_threads

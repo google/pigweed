@@ -14,6 +14,7 @@
 #pragma once
 
 #include "pw_chrono/system_clock.h"
+#include "pw_thread/sleep.h"
 
 namespace pw::this_thread {
 

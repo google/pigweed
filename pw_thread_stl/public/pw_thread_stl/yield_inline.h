@@ -15,6 +15,8 @@
 
 #include <thread>
 
+#include "pw_thread/yield.h"
+
 namespace pw::this_thread {
 
 inline void yield() noexcept { std::this_thread::yield(); }

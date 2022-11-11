@@ -44,8 +44,6 @@ pw_add_module_library(pw_perf_test
 )
 
 pw_add_module_library(pw_perf_test.chrono_timer
-  IMPLEMENTS_FACADES
-    pw_perf_test.timer
   HEADERS
     chrono_public_overrides/pw_perf_test_timer_backend/timer.h
     public/pw_perf_test/internal/chrono_timer_interface.h

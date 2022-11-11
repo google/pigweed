@@ -15,6 +15,8 @@
 
 #include <zephyr/sys/__assert.h>
 
+#include "pw_preprocessor/compiler.h"
+
 #define PW_HANDLE_CRASH(...)        \
   {                                 \
     __ASSERT_LOC("PW_CRASH()");     \

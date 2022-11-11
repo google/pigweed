@@ -35,8 +35,6 @@ pw_add_module_library(pw_cpu_exception_cortex_m.cpu_state
 )
 
 pw_add_module_library(pw_cpu_exception_cortex_m.cpu_exception
-  IMPLEMENTS_FACADES
-    pw_cpu_exception.entry
   HEADERS
     public_overrides/pw_cpu_exception_backend/state.h
   PUBLIC_INCLUDES
@@ -71,8 +69,6 @@ pw_add_module_library(pw_cpu_exception_cortex_m.util
 )
 
 pw_add_module_library(pw_cpu_exception_cortex_m.support
-  IMPLEMENTS_FACADES
-    pw_cpu_exception.support
   PRIVATE_DEPS
     pw_cpu_exception_cortex_m.config
     pw_cpu_exception_cortex_m.constants

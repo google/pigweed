@@ -15,8 +15,6 @@
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 pw_add_module_library(pw_sync_baremetal.recursive_mutex
-  IMPLEMENTS_FACADES
-    pw_sync.recursive_mutex
   HEADERS
     public/pw_sync_baremetal/recursive_mutex_inline.h
     public/pw_sync_baremetal/recursive_mutex_native.h
@@ -27,4 +25,5 @@ pw_add_module_library(pw_sync_baremetal.recursive_mutex
     public_overrides
   PUBLIC_DEPS
     pw_assert
+    pw_sync.recursive_mutex.facade
 )

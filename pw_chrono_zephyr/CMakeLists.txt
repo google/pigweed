@@ -16,10 +16,19 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 if(CONFIG_PIGWEED_CHRONO_SYSTEM_CLOCK)
   pw_add_module_library(pw_chrono_zephyr.system_clock
-    IMPLEMENTS_FACADES
-      pw_chrono.system_clock
+    HEADERS
+      public/pw_chrono_zephyr/system_clock_constants.h
+      public/pw_chrono_zephyr/system_clock_config.h
+      public/pw_chrono_zephyr/system_clock_inline.h
+      public_overrides/pw_chrono_backend/system_clock_config.h
+      public_overrides/pw_chrono_backend/system_clock_inline.h
+    PUBLIC_INCLUDES
+      public
+      public_overrides
     PUBLIC_DEPS
       pw_function
+      pw_chrono.epoch
+      pw_chrono.system_clock.facade
   )
   zephyr_link_interface(pw_chrono_zephyr.system_clock)
   zephyr_link_libraries(pw_chrono_zephyr.system_clock)

@@ -29,8 +29,6 @@ pw_add_module_library(pw_thread_freertos.config
 
 # This target provides the backend for pw::thread::Id & pw::this_thread::get_id.
 pw_add_module_library(pw_thread_freertos.id
-  IMPLEMENTS_FACADES
-    pw_thread.id
   HEADERS
     public/pw_thread_freertos/id_inline.h
     public/pw_thread_freertos/id_native.h
@@ -43,12 +41,11 @@ pw_add_module_library(pw_thread_freertos.id
     pw_assert
     pw_interrupt.context
     pw_third_party.freertos
+    pw_thread.id.facade
 )
 
 # This target provides the backend for pw::this_thread::sleep_{for,until}.
 pw_add_module_library(pw_thread_freertos.sleep
-  IMPLEMENTS_FACADES
-    pw_thread.sleep
   HEADERS
     public/pw_thread_freertos/sleep_inline.h
     sleep_public_overrides/pw_thread_backend/sleep_inline.h
@@ -57,6 +54,7 @@ pw_add_module_library(pw_thread_freertos.sleep
     sleep_public_overrides
   PUBLIC_DEPS
     pw_chrono.system_clock
+    pw_thread.sleep.facade
   SOURCES
     sleep.cc
   PRIVATE_DEPS
@@ -69,8 +67,6 @@ pw_add_module_library(pw_thread_freertos.sleep
 # This target provides the backend for pw::thread::Thread and the headers needed
 # for thread creation.
 pw_add_module_library(pw_thread_freertos.thread
-  IMPLEMENTS_FACADES
-    pw_thread.thread
   HEADERS
     public/pw_thread_freertos/context.h
     public/pw_thread_freertos/options.h
@@ -87,6 +83,7 @@ pw_add_module_library(pw_thread_freertos.thread
     pw_string
     pw_third_party.freertos
     pw_thread.id
+    pw_thread.thread.facade
     pw_thread_freertos.config
   SOURCES
     thread.cc
@@ -94,8 +91,6 @@ pw_add_module_library(pw_thread_freertos.thread
 
 # This target provides the backend for pw::this_thread::yield.
 pw_add_module_library(pw_thread_freertos.yield
-  IMPLEMENTS_FACADES
-    pw_thread.yield
   HEADERS
     public/pw_thread_freertos/yield_inline.h
     yield_public_overrides/pw_thread_backend/yield_inline.h
@@ -106,6 +101,7 @@ pw_add_module_library(pw_thread_freertos.yield
     pw_assert
     pw_third_party.freertos
     pw_thread.id
+    pw_thread.yield.facade
 )
 
 pw_add_module_library(pw_thread_freertos.util

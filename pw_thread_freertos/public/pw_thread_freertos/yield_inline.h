@@ -18,6 +18,7 @@
 #include "FreeRTOS.h"
 #include "pw_assert/assert.h"
 #include "pw_thread/id.h"
+#include "pw_thread/yield.h"
 #include "task.h"
 
 namespace pw::this_thread {

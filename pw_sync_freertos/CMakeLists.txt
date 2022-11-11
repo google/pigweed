@@ -30,8 +30,6 @@ pw_add_module_library(pw_sync_freertos.config
 
 # This target provides the backend for pw::sync::BinarySemaphore.
 pw_add_module_library(pw_sync_freertos.binary_semaphore
-  IMPLEMENTS_FACADES
-    pw_sync.binary_semaphore
   HEADERS
     public/pw_sync_freertos/binary_semaphore_inline.h
     public/pw_sync_freertos/binary_semaphore_native.h
@@ -45,6 +43,7 @@ pw_add_module_library(pw_sync_freertos.binary_semaphore
     pw_chrono.system_clock
     pw_chrono_freertos.system_clock
     pw_interrupt.context
+    pw_sync.binary_semaphore.facade
     pw_third_party.freertos
   SOURCES
     binary_semaphore.cc
@@ -52,8 +51,6 @@ pw_add_module_library(pw_sync_freertos.binary_semaphore
 
 # This target provides the backend for pw::sync::CountingSemaphore.
 pw_add_module_library(pw_sync_freertos.counting_semaphore
-  IMPLEMENTS_FACADES
-    pw_sync.counting_semaphore
   HEADERS
     public/pw_sync_freertos/counting_semaphore_inline.h
     public/pw_sync_freertos/counting_semaphore_native.h
@@ -67,6 +64,7 @@ pw_add_module_library(pw_sync_freertos.counting_semaphore
     pw_chrono.system_clock
     pw_chrono_freertos.system_clock
     pw_interrupt.context
+    pw_sync.counting_semaphore.facade
     pw_third_party.freertos
   SOURCES
     counting_semaphore.cc
@@ -74,8 +72,6 @@ pw_add_module_library(pw_sync_freertos.counting_semaphore
 
 # This target provides the backend for pw::sync::Mutex.
 pw_add_module_library(pw_sync_freertos.mutex
-  IMPLEMENTS_FACADES
-    pw_sync.mutex
   HEADERS
     public/pw_sync_freertos/mutex_inline.h
     public/pw_sync_freertos/mutex_native.h
@@ -87,13 +83,12 @@ pw_add_module_library(pw_sync_freertos.mutex
   PUBLIC_DEPS
     pw_assert
     pw_interrupt.context
+    pw_sync.mutex.facade
     pw_third_party.freertos
 )
 
 # This target provides the backend for pw::sync::TimedMutex.
 pw_add_module_library(pw_sync_freertos.timed_mutex
-  IMPLEMENTS_FACADES
-    pw_sync.timed_mutex
   HEADERS
     public/pw_sync_freertos/timed_mutex_inline.h
     public_overrides/pw_sync_backend/timed_mutex_inline.h
@@ -102,6 +97,7 @@ pw_add_module_library(pw_sync_freertos.timed_mutex
     public_overrides
   PUBLIC_DEPS
     pw_chrono.system_clock
+    pw_sync.timed_mutex.facade
   SOURCES
     timed_mutex.cc
   PRIVATE_DEPS
@@ -113,8 +109,6 @@ pw_add_module_library(pw_sync_freertos.timed_mutex
 
 # This target provides the backend for pw::sync::ThreadNotification.
 pw_add_module_library(pw_sync_freertos.thread_notification
-  IMPLEMENTS_FACADES
-    pw_sync.thread_notification
   HEADERS
     public/pw_sync_freertos/thread_notification_inline.h
     public/pw_sync_freertos/thread_notification_native.h
@@ -126,6 +120,7 @@ pw_add_module_library(pw_sync_freertos.thread_notification
   PUBLIC_DEPS
     pw_assert
     pw_interrupt.context
+    pw_sync.thread_notification.facade
     pw_third_party.freertos
   SOURCES
     thread_notification.cc
@@ -135,8 +130,6 @@ pw_add_module_library(pw_sync_freertos.thread_notification
 
 # This target provides the backend for pw::sync::TimedThreadNotification.
 pw_add_module_library(pw_sync_freertos.timed_thread_notification
-  IMPLEMENTS_FACADES
-    pw_sync.timed_thread_notification
   HEADERS
     public/pw_sync_freertos/timed_thread_notification_inline.h
     public_overrides/timed_thread_notification/pw_sync_backend/timed_thread_notification_inline.h
@@ -145,6 +138,7 @@ pw_add_module_library(pw_sync_freertos.timed_thread_notification
     public_overrides/timed_thread_notification
   PUBLIC_DEPS
     pw_chrono.system_clock
+    pw_sync.timed_thread_notification.facade
   SOURCES
     timed_thread_notification.cc
   PRIVATE_DEPS
@@ -157,8 +151,6 @@ pw_add_module_library(pw_sync_freertos.timed_thread_notification
 
 # This target provides the backend for pw::sync::InterruptSpinLock.
 pw_add_module_library(pw_sync_freertos.interrupt_spin_lock
-  IMPLEMENTS_FACADES
-    pw_sync.interrupt_spin_lock
   HEADERS
     public/pw_sync_freertos/interrupt_spin_lock_inline.h
     public/pw_sync_freertos/interrupt_spin_lock_native.h
@@ -168,6 +160,7 @@ pw_add_module_library(pw_sync_freertos.interrupt_spin_lock
     public
     public_overrides
   PUBLIC_DEPS
+    pw_sync.interrupt_spin_lock.facade
     pw_third_party.freertos
   SOURCES
     interrupt_spin_lock.cc
