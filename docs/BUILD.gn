@@ -17,6 +17,14 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/python.gni")
 import("$dir_pw_docgen/docs.gni")
 
+pw_doc_group("static_assets") {
+  inputs = [
+    "_static/css/pigweed.css",
+    "_static/pw_logo.ico",
+    "_static/pw_logo.svg",
+  ]
+}
+
 # Note: These may be useful for downstream projects, which is why they are
 # split out from the overall docgen target below.
 pw_doc_group("core_docs") {
@@ -27,12 +35,6 @@ pw_doc_group("core_docs") {
     "images/pw_watch_on_device_demo.gif",
     "images/pw_watch_test_demo.gif",
     "images/stm32f429i-disc1_connected.jpg",
-
-    # TODO(b/235348007): This should be in the pw_doc_gen target instead of
-    # here.
-    "_static/css/pigweed.css",
-    "_static/pw_logo.ico",
-    "_static/pw_logo.svg",
   ]
   sources = [
     "code_of_conduct.rst",
@@ -105,6 +107,7 @@ pw_doc_gen("docs") {
     ":core_docs",
     ":module_docs",
     ":release_notes",
+    ":static_assets",
     ":target_docs",
     ":third_party_docs",
     "$dir_pw_env_setup:python.install",

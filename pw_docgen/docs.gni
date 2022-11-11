@@ -34,13 +34,20 @@ declare_args() {
 #   report_deps: Report card targets on which documentation depends.
 #   other_deps: Dependencies on any other types of targets.
 template("pw_doc_group") {
-  assert(defined(invoker.sources), "pw_doc_group requires a list of sources")
+  if (defined(invoker.sources)) {
+    _sources = invoker.sources
+  } else {
+    _sources = []
+  }
 
   if (defined(invoker.inputs)) {
     _inputs = invoker.inputs
   } else {
     _inputs = []
   }
+
+  assert(defined(invoker.sources) || defined(invoker.inputs),
+         "pw_doc_group requires at least one of sources or inputs")
 
   _all_deps = []
   if (defined(invoker.group_deps)) {
@@ -57,11 +64,11 @@ template("pw_doc_group") {
   # rebuilt on file modifications.
   pw_input_group(target_name) {
     metadata = {
-      pw_doc_sources = rebase_path(invoker.sources, root_build_dir)
+      pw_doc_sources = rebase_path(_sources, root_build_dir)
       pw_doc_inputs = rebase_path(_inputs, root_build_dir)
     }
     deps = _all_deps
-    inputs = invoker.sources + _inputs
+    inputs = _sources + _inputs
   }
 }
 
