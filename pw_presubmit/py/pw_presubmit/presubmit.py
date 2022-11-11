@@ -727,18 +727,50 @@ class Check:
         # steps with '--help'.
         return self.name
 
+    def unfiltered(self) -> Check:
+        """Create a new check identical to this one, but without the filter."""
+        clone = copy.copy(self)
+        clone.filter = FileFilter()
+        return clone
+
     def with_filter(
         self,
         *,
         endswith: Iterable[str] = (),
         exclude: Iterable[Union[Pattern[str], str]] = ()
     ) -> Check:
+        """Create a new check identical to this one, but with extra filters.
+
+        Add to the existing filter, perhaps to exclude an additional directory.
+
+        Args:
+            endswith: Passed through to FileFilter.
+            exclude: Passed through to FileFilter.
+
+        Returns a new check.
+        """
         return self.with_file_filter(
             FileFilter(endswith=_make_str_tuple(endswith), exclude=exclude))
 
     def with_file_filter(self, file_filter: FileFilter) -> Check:
+        """Create a new check identical to this one, but with extra filters.
+
+        Add to the existing filter, perhaps to exclude an additional directory.
+
+        Args:
+            file_filter: Additional filter rules.
+
+        Returns a new check.
+        """
         clone = copy.copy(self)
-        clone.filter = file_filter
+        if clone.filter:
+            clone.filter.exclude = clone.filter.exclude + file_filter.exclude
+            clone.filter.endswith = (clone.filter.endswith +
+                                     file_filter.endswith)
+            clone.filter.name = file_filter.name or clone.filter.name
+            clone.filter.suffix = clone.filter.suffix + file_filter.suffix
+        else:
+            clone.filter = file_filter
         return clone
 
     def run(self, ctx: PresubmitContext, count: int, total: int) -> _Result:
