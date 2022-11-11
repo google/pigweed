@@ -546,7 +546,7 @@ endfunction(pw_add_module_library)
 function(pw_add_module_facade NAME)
   _pw_add_library_multi_value_args(list_args)
   pw_parse_arguments_strict(pw_add_module_facade 1 ""
-                            "DEFAULT_BACKEND;BACKEND"
+                            "BACKEND"
                             "${list_args}")
 
   if("${arg_BACKEND}" STREQUAL "")
@@ -564,12 +564,6 @@ function(pw_add_module_facade NAME)
             "(${arg_BACKEND}) must end in _BACKEND (${name_ends_in_backend})")
   endif()
 
-  # Define the facade library, which is used by the backend to avoid circular
-  # dependencies.
-  add_library("${NAME}.facade" INTERFACE)
-  target_include_directories("${NAME}.facade" INTERFACE public)
-  pw_target_link_targets("${NAME}.facade" INTERFACE ${arg_PUBLIC_DEPS})
-
   set(backend_target "${${arg_BACKEND}}")
   if ("${backend_target}" STREQUAL "")
     # If no backend is set, a script that displays an error message is used
@@ -584,16 +578,43 @@ function(pw_add_module_facade NAME)
     set(backend_target "${NAME}.NO_BACKEND_SET")
   endif()
 
-  # Define the public-facing library for this facade, which depends on the
-  # header files in .facade target and exposes the dependency on the backend.
-  pw_add_module_library("${NAME}"
-    SOURCES
-      ${arg_SOURCES}
+  # Define the facade library, which is used by the backend to avoid circular
+  # dependencies.
+  pw_add_module_library("${NAME}.facade"
     HEADERS
       ${arg_HEADERS}
+    PUBLIC_INCLUDES
+      ${arg_PUBLIC_INCLUDES}
+    PUBLIC_DEPS
+      ${arg_PUBLIC_DEPS}
+    PUBLIC_DEFINES
+      ${arg_PUBLIC_DEFINES}
+    PUBLIC_COMPILE_OPTIONS
+      ${arg_PUBLIC_COMPILE_OPTIONS}
+    PUBLIC_LINK_OPTIONS
+      ${arg_PUBLIC_LINK_OPTIONS}
+  )
+
+  # Define the public-facing library for this facade, which depends on the
+  # header files and public interface aspects from the .facade target and
+  # exposes the dependency on the backend along with the private library
+  # target components.
+  pw_add_module_library("${NAME}"
     PUBLIC_DEPS
       "${NAME}.facade"
       "${backend_target}"
+    SOURCES
+      ${arg_SOURCES}
+    PRIVATE_INCLUDES
+      ${arg_PRIVATE_INCLUDES}
+    PRIVATE_DEPS
+      ${arg_PRIVATE_DEPS}
+    PRIVATE_DEFINES
+      ${arg_PRIVATE_DEFINES}
+    PRIVATE_COMPILE_OPTIONS
+      ${arg_PRIVATE_COMPILE_OPTIONS}
+    PRIVATE_LINK_OPTIONS
+      ${arg_PRIVATE_LINK_OPTIONS}
   )
 endfunction(pw_add_module_facade)
 
