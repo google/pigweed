@@ -76,6 +76,9 @@ macro(pw_require_args FUNCTION_NAME ARG_PREFIX)
   endforeach()
 endmacro()
 
+# This method is deprecated, please use pw_add_module_library, pw_add_facade,
+# and pw_add_test.
+#
 # Automatically creates a library and test targets for the files in a module.
 # This function is only suitable for simple modules that meet the following
 # requirements:
@@ -86,7 +89,7 @@ endmacro()
 #    - exactly one source .cc file,
 #    - optionally, one .c source with the same base name as the .cc file,
 #    - only a dependency on the main module library.
-#  - The module is not a facade.
+#  - The module is not a facade and does not implement facades.
 #
 # Modules that do not meet these requirements may not use
 # pw_auto_add_simple_module. Instead, define the module's libraries and tests
@@ -102,14 +105,13 @@ endmacro()
 #
 # Args:
 #
-#   IMPLEMENTS_FACADE - this module implements the specified facade
 #   PUBLIC_DEPS - public pw_target_link_targets arguments
 #   PRIVATE_DEPS - private pw_target_link_targets arguments
 #
 function(pw_auto_add_simple_module MODULE)
   pw_parse_arguments_strict(pw_auto_add_simple_module 1
       ""
-      "IMPLEMENTS_FACADE"
+      ""
       "PUBLIC_DEPS;PRIVATE_DEPS;TEST_DEPS"
   )
 
@@ -123,15 +125,7 @@ function(pw_auto_add_simple_module MODULE)
 
   file(GLOB_RECURSE headers *.h)
 
-  if(arg_IMPLEMENTS_FACADE)
-    set(groups backends)
-  else()
-    set(groups modules "${MODULE}")
-  endif()
-
   pw_add_module_library("${MODULE}"
-    IMPLEMENTS_FACADES
-      ${arg_IMPLEMENTS_FACADE}
     PUBLIC_DEPS
       ${arg_PUBLIC_DEPS}
     PRIVATE_DEPS
@@ -148,7 +142,8 @@ function(pw_auto_add_simple_module MODULE)
       ${arg_PRIVATE_DEPS}
       ${arg_TEST_DEPS}
     GROUPS
-      ${groups}
+      modules
+      "${MODULE}"
   )
 endfunction(pw_auto_add_simple_module)
 
@@ -449,7 +444,6 @@ endfunction(_pw_check_name_is_relative_to_root)
 #
 # Optional Args:
 #
-#   IMPLEMENTS_FACADES - which facades this module library implements
 #   SOURCES - source files for this library
 #   HEADERS - header files for this library
 #   PUBLIC_DEPS - public pw_target_link_targets arguments
@@ -464,7 +458,7 @@ endfunction(_pw_check_name_is_relative_to_root)
 #   PRIVATE_LINK_OPTIONS - private target_link_options arguments
 #
 function(pw_add_module_library NAME)
-  _pw_add_library_multi_value_args(multi_value_args IMPLEMENTS_FACADES)
+  _pw_add_library_multi_value_args(multi_value_args)
   pw_parse_arguments_strict(pw_add_module_library 1 "" "" "${multi_value_args}")
 
   _pw_check_name_is_relative_to_root("${NAME}" "$ENV{PW_ROOT}"
@@ -518,18 +512,6 @@ function(pw_add_module_library NAME)
   if("${arg_PUBLIC_INCLUDES}" STREQUAL "")
     target_include_directories("${NAME}" ${public_or_interface} public)
   endif("${arg_PUBLIC_INCLUDES}" STREQUAL "")
-
-  if(NOT "${arg_IMPLEMENTS_FACADES}" STREQUAL "")
-    # TODO(b/235273746): Deprecate this legacy implicit PUBLIC_INCLUDES.
-    if("${arg_PUBLIC_INCLUDES}" STREQUAL "")
-      target_include_directories(
-        "${NAME}" ${public_or_interface} public_overrides)
-    endif("${arg_PUBLIC_INCLUDES}" STREQUAL "")
-
-    set(facades ${arg_IMPLEMENTS_FACADES})
-    list(TRANSFORM facades APPEND ".facade")
-    pw_target_link_targets("${NAME}" ${public_or_interface} ${facades})
-  endif(NOT "${arg_IMPLEMENTS_FACADES}" STREQUAL "")
 endfunction(pw_add_module_library)
 
 # Declares a module as a facade.
@@ -539,8 +521,8 @@ endfunction(pw_add_module_library)
 # module that implements the facade depends on a library named
 # MODULE_NAME.facade.
 #
-# pw_add_module_facade accepts the same arguments as pw_add_module_library,
-# except for IMPLEMENTS_FACADES. It also requires the following argument:
+# pw_add_module_facade accepts the same arguments as pw_add_module_library.
+# It also accepts the following argument:
 #
 #  BACKEND - The name of the facade's backend variable.
 function(pw_add_module_facade NAME)
