@@ -59,9 +59,12 @@ function(pw_proto_library NAME)
   set(include_deps "${arg_DEPS}")
   list(TRANSFORM include_deps APPEND ._includes)
 
-  add_library("${NAME}._includes" INTERFACE)
-  target_include_directories("${NAME}._includes" INTERFACE "${out_dir}/sources")
-  target_link_libraries("${NAME}._includes" INTERFACE ${include_deps})
+  pw_add_library("${NAME}._includes" INTERFACE
+    PUBLIC_INCLUDES
+      "${out_dir}/sources"
+    PUBLIC_DEPS
+      ${include_deps}
+  )
 
   # Generate a file with all include paths needed by protoc. Use the include
   # directory paths and replace ; with \n.
@@ -270,10 +273,10 @@ function(_pw_pwpb_library NAME)
   )
 
   # Create the library with the generated source files.
-  add_library("${NAME}.pwpb" INTERFACE)
-  target_include_directories("${NAME}.pwpb" INTERFACE "${arg_OUT_DIR}/pwpb")
-  target_link_libraries("${NAME}.pwpb"
-    INTERFACE
+  pw_add_library("${NAME}.pwpb" INTERFACE
+    PUBLIC_INCLUDES
+      "${arg_OUT_DIR}/pwpb"
+    PUBLIC_DEPS
       pw_build
       pw_protobuf
       pw_span
@@ -315,13 +318,10 @@ function(_pw_pwpb_rpc_library NAME)
   )
 
   # Create the library with the generated source files.
-  add_library("${NAME}.pwpb_rpc" INTERFACE)
-  target_include_directories("${NAME}.pwpb_rpc"
-    INTERFACE
+  pw_add_library("${NAME}.pwpb_rpc" INTERFACE
+    PUBLIC_INCLUDES
       "${arg_OUT_DIR}/pwpb_rpc"
-  )
-  target_link_libraries("${NAME}.pwpb_rpc"
-    INTERFACE
+    PUBLIC_DEPS
       "${NAME}.pwpb"
       pw_build
       pw_rpc.pwpb.client
@@ -363,11 +363,10 @@ function(_pw_raw_rpc_library NAME)
   )
 
   # Create the library with the generated source files.
-  add_library("${NAME}.raw_rpc" INTERFACE)
-  target_include_directories("${NAME}.raw_rpc" INTERFACE
-                             "${arg_OUT_DIR}/raw_rpc")
-  target_link_libraries("${NAME}.raw_rpc"
-    INTERFACE
+  pw_add_library("${NAME}.raw_rpc" INTERFACE
+    PUBLIC_INCLUDES
+      "${arg_OUT_DIR}/raw_rpc"
+    PUBLIC_DEPS
       pw_build
       pw_rpc.raw
       pw_rpc.server
@@ -389,27 +388,20 @@ function(_pw_nanopb_library NAME)
   list(TRANSFORM arg_DEPS APPEND .nanopb)
 
   if("${dir_pw_third_party_nanopb}" STREQUAL "")
-    add_custom_target("${NAME}._generate.nanopb"
-        "${CMAKE_COMMAND}" -E echo
-            ERROR: Attempting to use pw_proto_library, but
-            dir_pw_third_party_nanopb is not set. Set dir_pw_third_party_nanopb
-            to the path to the Nanopb repository.
-      COMMAND
-        "${CMAKE_COMMAND}" -E false
-      DEPENDS
-        ${arg_DEPS}
-      SOURCES
-        ${arg_SOURCES}
+    add_custom_target("${NAME}._generate.nanopb")  # Nothing to do
+    pw_add_error_target("${NAME}.nanopb"
+      MESSAGE
+        "Attempting to use pw_proto_library, but dir_pw_third_party_nanopb is "
+        "not set. Set dir_pw_third_party_nanopb to the path to the Nanopb "
+        "repository."
     )
-    set(generated_outputs $<TARGET_PROPERTY:pw_build.empty,SOURCES>)
   else()
     # When compiling with the Nanopb plugin, the nanopb.proto file is already
     # compiled internally, so skip recompiling it with protoc.
     if("${arg_SOURCES}" MATCHES "nanopb\\.proto")
       add_custom_target("${NAME}._generate.nanopb")  # Nothing to do
-      add_library("${NAME}.nanopb" INTERFACE)
-      target_link_libraries("${NAME}.nanopb"
-        INTERFACE
+      pw_add_library("${NAME}.nanopb" INTERFACE
+        PUBLIC_DEPS
           pw_build
           pw_third_party.nanopb
           ${arg_DEPS}
@@ -434,11 +426,16 @@ function(_pw_nanopb_library NAME)
       )
 
       # Create the library with the generated source files.
-      add_library("${NAME}.nanopb" EXCLUDE_FROM_ALL ${generated_outputs})
-      target_include_directories("${NAME}.nanopb"
-                                 PUBLIC "${arg_OUT_DIR}/nanopb")
-      target_link_libraries("${NAME}.nanopb" PUBLIC pw_build
-                            pw_third_party.nanopb ${arg_DEPS})
+      pw_add_library("${NAME}.nanopb" STATIC
+        SOURCES
+          ${generated_outputs}
+        PUBLIC_INCLUDES
+          "${arg_OUT_DIR}/nanopb"
+        PUBLIC_DEPS
+          pw_build
+          pw_third_party.nanopb
+          ${arg_DEPS}
+      )
     endif()
 
     add_dependencies("${NAME}.nanopb" "${NAME}._generate.nanopb")
@@ -482,13 +479,10 @@ function(_pw_nanopb_rpc_library NAME)
   )
 
   # Create the library with the generated source files.
-  add_library("${NAME}.nanopb_rpc" INTERFACE)
-  target_include_directories("${NAME}.nanopb_rpc"
-    INTERFACE
+  pw_add_library("${NAME}.nanopb_rpc" INTERFACE
+    PUBLIC_INCLUDES
       "${arg_OUT_DIR}/nanopb_rpc"
-  )
-  target_link_libraries("${NAME}.nanopb_rpc"
-    INTERFACE
+    PUBLIC_DEPS
       "${NAME}.nanopb"
       pw_build
       pw_rpc.nanopb.client
