@@ -30,6 +30,52 @@ endif()
 include("$ENV{PW_ROOT}/pw_unit_test/test.cmake")
 
 # Wrapper around cmake_parse_arguments that fails with an error if any arguments
+# remained unparsed or a required argument was not provided.
+#
+# All parsed arguments are prefixed with "arg_". This helper can only be used
+# by functions, not macros.
+#
+# Required Arguments:
+#
+#   NUM_POSITIONAL_ARGS - PARSE_ARGV <N> arguments for
+#                              cmake_parse_arguments
+#
+# Optional Args:
+#
+#   OPTION_ARGS - <option> arguments for cmake_parse_arguments
+#   ONE_VALUE_ARGS - <one_value_keywords> arguments for cmake_parse_arguments
+#   MULTI_VALUE_ARGS - <multi_value_keywords> arguments for
+#                           cmake_parse_arguments
+#   REQUIRED_ARGS - required arguments which must be set, these may any
+#                        argument type (<option>, <one_value_keywords>, and/or
+#                        <multi_value_keywords>)
+#
+macro(pw_parse_arguments)
+  # First parse the arguments to this macro.
+  cmake_parse_arguments(
+    pw_parse_arg "" "NUM_POSITIONAL_ARGS"
+    "OPTION_ARGS;ONE_VALUE_ARGS;MULTI_VALUE_ARGS;REQUIRED_ARGS"
+    ${ARGN}
+  )
+  pw_require_args("pw_parse_arguments" "pw_parse_arg_" NUM_POSITIONAL_ARGS)
+  if(NOT "${pw_parse_arg_UNPARSED_ARGUMENTS}" STREQUAL "")
+    message(FATAL_ERROR "Unexpected arguments to pw_parse_arguments: "
+            "${pw_parse_arg_UNPARSED_ARGUMENTS}")
+  endif()
+
+  # Now that we have the macro's arguments, process the caller's arguments.
+  pw_parse_arguments_strict("${CMAKE_CURRENT_FUNCTION}"
+    "${pw_parse_arg_NUM_POSITIONAL_ARGS}"
+    "${pw_parse_arg_OPTION_ARGS}"
+    "${pw_parse_arg_ONE_VALUE_ARGS}"
+    "${pw_parse_arg_MULTI_VALUE_ARGS}"
+  )
+  pw_require_args("${CMAKE_CURRENT_FUNCTION}" "arg_"
+                  ${pw_parse_arg_REQUIRED_ARGS})
+endmacro()
+
+# TODO(ewout, hepler): Deprecate this function in favor of pw_parse_arguments.
+# Wrapper around cmake_parse_arguments that fails with an error if any arguments
 # remained unparsed.
 macro(pw_parse_arguments_strict function start_arg options one multi)
   cmake_parse_arguments(PARSE_ARGV
@@ -109,10 +155,13 @@ endmacro()
 #   PRIVATE_DEPS - private pw_target_link_targets arguments
 #
 function(pw_auto_add_simple_module MODULE)
-  pw_parse_arguments_strict(pw_auto_add_simple_module 1
-      ""
-      ""
-      "PUBLIC_DEPS;PRIVATE_DEPS;TEST_DEPS"
+  pw_parse_arguments(
+    NUM_POSITIONAL_ARGS
+      1
+    MULTI_VALUE_ARGS
+      PUBLIC_DEPS
+      PRIVATE_DEPS
+      TEST_DEPS
   )
 
   file(GLOB all_sources *.cc *.c)
@@ -156,10 +205,12 @@ endfunction(pw_auto_add_simple_module)
 #  GROUPS - groups in addition to MODULE to which to add these tests
 #
 function(pw_auto_add_module_tests MODULE)
-  pw_parse_arguments_strict(pw_auto_add_module_tests 1
-      ""
-      ""
-      "PRIVATE_DEPS;GROUPS"
+  pw_parse_arguments(
+    NUM_POSITIONAL_ARGS
+      1
+    MULTI_VALUE_ARGS
+      PRIVATE_DEPS
+      GROUPS
   )
 
   file(GLOB cc_tests *_test.cc)
@@ -211,13 +262,12 @@ endfunction(pw_auto_add_module_tests)
 #   PRIVATE - private target_link_libraries arguments which are all TARGETs.
 function(pw_target_link_targets NAME)
   set(types INTERFACE PUBLIC PRIVATE )
-  set(num_positional_args 1)
-  set(option_args)
-  set(one_value_args)
-  set(multi_value_args ${types})
-  pw_parse_arguments_strict(
-      pw_target_link_targets "${num_positional_args}" "${option_args}"
-      "${one_value_args}" "${multi_value_args}")
+  pw_parse_arguments(
+    NUM_POSITIONAL_ARGS
+      1
+    MULTI_VALUE_ARGS
+      ${types}
+  )
 
   if(NOT TARGET "${NAME}")
     message(FATAL_ERROR "\"${NAME}\" must be a TARGET library")
@@ -298,13 +348,13 @@ function(pw_add_library NAME TYPE)
           "Must be INTERFACE, OBJECT, STATIC, SHARED, or MODULE.")
   endif()
 
-  set(num_positional_args 2)
-  set(option_args)
-  set(one_value_args)
   _pw_add_library_multi_value_args(multi_value_args)
-  pw_parse_arguments_strict(
-      pw_add_library "${num_positional_args}" "${option_args}"
-      "${one_value_args}" "${multi_value_args}")
+  pw_parse_arguments(
+    NUM_POSITIONAL_ARGS
+      2
+    MULTI_VALUE_ARGS
+      ${multi_value_args}
+  )
 
   add_library("${NAME}" "${TYPE}" EXCLUDE_FROM_ALL)
 
@@ -406,8 +456,12 @@ endfunction(pw_add_library)
 #   REMAP_PREFIXES - support remapping a prefix for checks
 #
 function(_pw_check_name_is_relative_to_root NAME ROOT)
-  pw_parse_arguments_strict(_pw_check_name_is_relative_to_root
-      2 "" "" "REMAP_PREFIXES")
+  pw_parse_arguments(
+    NUM_POSITIONAL_ARGS
+      2
+    MULTI_VALUE_ARGS
+      REMAP_PREFIXES
+  )
 
   file(RELATIVE_PATH rel_path "${ROOT}" "${CMAKE_CURRENT_SOURCE_DIR}")
   if("${rel_path}" MATCHES "^\\.\\.")
@@ -459,7 +513,12 @@ endfunction(_pw_check_name_is_relative_to_root)
 #
 function(pw_add_module_library NAME)
   _pw_add_library_multi_value_args(multi_value_args)
-  pw_parse_arguments_strict(pw_add_module_library 1 "" "" "${multi_value_args}")
+  pw_parse_arguments(
+    NUM_POSITIONAL_ARGS
+      1
+    MULTI_VALUE_ARGS
+      ${multi_value_args}
+  )
 
   _pw_check_name_is_relative_to_root("${NAME}" "$ENV{PW_ROOT}"
     REMAP_PREFIXES
@@ -526,10 +585,15 @@ endfunction(pw_add_module_library)
 #
 #  BACKEND - The name of the facade's backend variable.
 function(pw_add_module_facade NAME)
-  _pw_add_library_multi_value_args(list_args)
-  pw_parse_arguments_strict(pw_add_module_facade 1 ""
-                            "BACKEND"
-                            "${list_args}")
+  _pw_add_library_multi_value_args(multi_value_args)
+  pw_parse_arguments(
+    NUM_POSITIONAL_ARGS
+      1
+    ONE_VALUE_ARGS
+      BACKEND
+    MULTI_VALUE_ARGS
+      ${multi_value_args}
+  )
 
   if("${arg_BACKEND}" STREQUAL "")
     message(FATAL_ERROR "The ${NAME} pw_add_module_facade is missing the "
@@ -610,13 +674,12 @@ endfunction(pw_add_module_facade)
 #   DEFAULT_BACKEND - Optional default backend selection for the facade.
 #
 function(pw_add_backend_variable NAME)
-  set(num_positional_args 1)
-  set(option_args)
-  set(one_value_args DEFAULT_BACKEND)
-  set(multi_value_args)
-  pw_parse_arguments_strict(
-      pw_add_backend_variable "${num_positional_args}" "${option_args}"
-      "${one_value_args}" "${multi_value_args}")
+  pw_parse_arguments(
+    NUM_POSITIONAL_ARGS
+      1
+    ONE_VALUE_ARGS
+      DEFAULT_BACKEND
+  )
 
   string(REGEX MATCH ".+_BACKEND" name_ends_in_backend "${NAME}")
   if(NOT name_ends_in_backend)
@@ -624,7 +687,7 @@ function(pw_add_backend_variable NAME)
             "must end in _BACKEND")
   endif()
 
-  set("${NAME}" "${OPTIONAL_DEFAULT_BACKEND}" CACHE STRING
+  set("${NAME}" "${arg_DEFAULT_BACKEND}" CACHE STRING
       "${NAME} backend variable for a facade")
 endfunction()
 
@@ -673,7 +736,7 @@ set("pw_build_DEFAULT_MODULE_CONFIG" pw_build.empty CACHE STRING
 #
 #   NAME: name to use for the target which can be depended on for the config.
 function(pw_add_module_config NAME)
-  pw_parse_arguments_strict(pw_add_module_config 1 "" "" "")
+  pw_parse_arguments(NUM_POSITIONAL_ARGS 1)
 
   # Declare the module configuration variable for this module.
   set("${NAME}" "${pw_build_DEFAULT_MODULE_CONFIG}"
@@ -688,7 +751,7 @@ endfunction(pw_add_module_config)
 #   pw_set_module_config(pw_build_DEFAULT_MODULE_CONFIG my_config)
 #   pw_set_module_config(pw_foo_CONFIG my_foo_config)
 function(pw_set_module_config NAME LIBRARY)
-  pw_parse_arguments_strict(pw_set_module_config 2 "" "" "")
+  pw_parse_arguments(NUM_POSITIONAL_ARGS 2)
 
   # Update the module configuration variable.
   set("${NAME}" "${LIBRARY}" CACHE STRING "Config for ${NAME}" FORCE)
@@ -749,13 +812,12 @@ endfunction(pw_add_global_compile_options)
 #            composed of multiple pieces by passing multiple strings.
 #
 function(pw_add_error_target NAME)
-  set(num_positional_args 1)
-  set(option_args)
-  set(one_value_args)
-  set(multi_value_args MESSAGE)
-  pw_parse_arguments_strict(
-      pw_add_error_target "${num_positional_args}" "${option_args}"
-      "${one_value_args}" "${multi_value_args}")
+  pw_parse_arguments(
+    NUM_POSITIONAL_ARGS
+      1
+    MULTI_VALUE_ARGS
+      MESSAGE
+  )
 
   # In case the message is comprised of multiple strings, stitch them together.
   set(message "ERROR: ")

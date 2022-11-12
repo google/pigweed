@@ -841,6 +841,7 @@ CMake convenience functions are defined in ``pw_build/pigweed.cmake``.
   a build failure only when compiled. This is useful when ``FATAL_ERROR``
   messages cannot be used to catch problems during the CMake configuration
   phase.
+* ``pw_parse_arguments`` -- Helper to parse CMake function arguments.
 
 See ``pw_build/pigweed.cmake`` for the complete documentation of these
 functions.

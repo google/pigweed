@@ -76,16 +76,14 @@ set(pw_unit_test_AUTOMATIC_RUNNER_ARGS "" CACHE STRING
 #   GROUPS - groups to which to add this test.
 #
 function(pw_add_test NAME)
-  set(num_positional_args 1)
-  set(option_args)
-  set(one_value_args)
-  set(multi_value_args SOURCES HEADERS PRIVATE_DEPS PRIVATE_INCLUDES
-                       PRIVATE_DEFINES PRIVATE_COMPILE_OPTIONS
-                       PRIVATE_LINK_OPTIONS
-                       GROUPS)
-  pw_parse_arguments_strict(
-      pw_add_test "${num_positional_args}" "${option_args}" "${one_value_args}"
-      "${multi_value_args}")
+  pw_parse_arguments(
+    NUM_POSITIONAL_ARGS
+      1
+    MULTI_VALUE_ARGS
+      SOURCES HEADERS PRIVATE_DEPS PRIVATE_INCLUDES
+      PRIVATE_DEFINES PRIVATE_COMPILE_OPTIONS
+      PRIVATE_LINK_OPTIONS GROUPS
+  )
 
   # Add the library target under "${NAME}.lib".
   # OBJECT libraries require at least one source file.
@@ -198,16 +196,14 @@ endfunction(pw_add_test)
 #           this test bundle
 #
 function(pw_add_test_group NAME)
-  set(num_positional_args 1)
-  set(option_args)
-  set(one_value_args)
-  set(multi_value_args TESTS)
-  pw_parse_arguments_strict(
-      pw_add_test_group "${num_positional_args}" "${option_args}"
-      "${one_value_args}" "${multi_value_args}")
-  if(NOT arg_TESTS)
-    message(FATAL_ERROR "No TESTS specified for pw_add_test_group: ${NAME}")
-  endif()
+  pw_parse_arguments(
+    NUM_POSITIONAL_ARGMENTS
+      1
+    MULTI_VALUE_ARGS
+      TESTS
+    REQUIRED_ARGS
+      TESTS
+  )
 
   set(test_lib_targets "")
   set(test_bin_targets "")

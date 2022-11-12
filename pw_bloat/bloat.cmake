@@ -27,25 +27,16 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 #   ELF_FILE - The input ELF file to process using pw_bloat.bloaty_config
 #   OUTPUT - The output Bloaty McBloatface configuration file
 function(pw_bloaty_config NAME)
-  set(option_args)
-  set(one_value_args ELF_FILE OUTPUT)
-  set(multi_value_args)
-  pw_parse_arguments_strict(pw_bloaty_config
-      1 "${option_args}" "${one_value_args}" "${multi_value_args}"
+  pw_parse_arguments(
+    NUM_POSITIONAL_ARGS
+      1
+    ONE_VALUE_ARGS
+      ELF_FILE
+      OUTPUT
+    REQUIRED_ARGS
+      ELF_FILE
+      OUTPUT
   )
-
-  if("${arg_ELF_FILE}" STREQUAL "")
-    message(FATAL_ERROR
-      "pw_bloaty_config requires an input ELF file in ELF_FILE. "
-      "No ELF_FILE was listed for ${NAME}")
-  endif()
-
-  if("${arg_OUTPUT}" STREQUAL "")
-    message(FATAL_ERROR
-      "pw_bloaty_config requires an output config file in OUTPUT. "
-      "No OUTPUT was listed for ${NAME}")
-  endif()
-
   add_library(${NAME} INTERFACE)
   add_dependencies(${NAME} INTERFACE ${NAME}_generated_config)
 

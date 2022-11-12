@@ -38,19 +38,19 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 #       .options files)
 #
 function(pw_proto_library NAME)
-  set(num_positional_args 1)
-  set(option_args)
-  set(one_value_args STRIP_PREFIX PREFIX)
-  set(multi_value_args SOURCES INPUTS DEPS)
-  pw_parse_arguments_strict(
-      pw_proto_library "${num_positional_args}" "${option_args}"
-      "${one_value_args}" "${multi_value_args}")
-
-  if("${arg_SOURCES}" STREQUAL "")
-    message(FATAL_ERROR
-        "pw_proto_library requires at least one .proto file in SOURCES. No "
-        "SOURCES were listed for ${NAME}.")
-  endif()
+  pw_parse_arguments(
+    NUM_POSITIONAL_ARGS
+      1
+    ONE_VALUE_ARGS
+      STRIP_PREFIX
+      PREFIX
+    MULTI_VALUE_ARGS
+      SOURCES
+      INPUTS
+      DEPS
+    REQUIRED_ARGS
+      SOURCES
+  )
 
   set(out_dir "${CMAKE_CURRENT_BINARY_DIR}/${NAME}")
 
@@ -198,13 +198,19 @@ endfunction(_pw_rebase_paths)
 
 # Internal function that invokes protoc through generate_protos.py.
 function(_pw_generate_protos TARGET LANGUAGE)
-  set(num_positional_args 2)
-  set(option_args)
-  set(one_value_args PLUGIN INCLUDE_FILE OUT_DIR)
-  set(multi_value_args OUTPUT_EXTS SOURCES INPUTS DEPENDS)
-  pw_parse_arguments_strict(
-      _pw_generate_protos "${num_positional_args}" "${option_args}"
-      "${one_value_args}" "${multi_value_args}")
+  pw_parse_arguments(
+    NUM_POSITIONAL_ARGS
+      2
+    ONE_VALUE_ARGS
+      PLUGIN
+      INCLUDE_FILE
+      OUT_DIR
+    MULTI_VALUE_ARGS
+      OUTPUT_EXTS
+      SOURCES
+      INPUTS
+      DEPENDS
+  )
 
   # Determine the names of the compiled output files.
   _pw_rebase_paths(outputs
@@ -245,13 +251,17 @@ endfunction(_pw_generate_protos)
 
 # Internal function that creates a pwpb proto library.
 function(_pw_pwpb_library NAME)
-  set(num_positional_args 1)
-  set(option_args)
-  set(one_value_args INCLUDE_FILE OUT_DIR)
-  set(multi_value_args SOURCES INPUTS DEPS)
-  pw_parse_arguments_strict(
-      _pw_pwpb_library "${num_positional_args}" "${option_args}"
-      "${one_value_args}" "${multi_value_args}")
+  pw_parse_arguments(
+    NUM_POSITIONAL_ARGS
+      1
+    ONE_VALUE_ARGS
+      INCLUDE_FILE
+      OUT_DIR
+    MULTI_VALUE_ARGS
+      SOURCES
+      INPUTS
+      DEPS
+  )
 
   list(TRANSFORM arg_DEPS APPEND .pwpb)
 
@@ -288,13 +298,17 @@ endfunction(_pw_pwpb_library)
 
 # Internal function that creates a pwpb_rpc library.
 function(_pw_pwpb_rpc_library NAME)
-  set(num_positional_args 1)
-  set(option_args)
-  set(one_value_args INCLUDE_FILE OUT_DIR)
-  set(multi_value_args SOURCES INPUTS DEPS)
-  pw_parse_arguments_strict(
-      _pw_pwpb_rpc_library "${num_positional_args}" "${option_args}"
-      "${one_value_args}" "${multi_value_args}")
+  pw_parse_arguments(
+    NUM_POSITIONAL_ARGS
+      1
+    ONE_VALUE_ARGS
+      INCLUDE_FILE
+      OUT_DIR
+    MULTI_VALUE_ARGS
+      SOURCES
+      INPUTS
+      DEPS
+  )
 
   # Determine the names of the output files.
   list(TRANSFORM arg_DEPS APPEND .pwpb_rpc)
@@ -334,13 +348,17 @@ endfunction(_pw_pwpb_rpc_library)
 
 # Internal function that creates a raw_rpc proto library.
 function(_pw_raw_rpc_library NAME)
-  set(num_positional_args 1)
-  set(option_args)
-  set(one_value_args INCLUDE_FILE OUT_DIR)
-  set(multi_value_args SOURCES INPUTS DEPS)
-  pw_parse_arguments_strict(
-      _pw_raw_rpc_library "${num_positional_args}" "${option_args}"
-      "${one_value_args}" "${multi_value_args}")
+  pw_parse_arguments(
+    NUM_POSITIONAL_ARGS
+      1
+    ONE_VALUE_ARGS
+      INCLUDE_FILE
+      OUT_DIR
+    MULTI_VALUE_ARGS
+      SOURCES
+      INPUTS
+      DEPS
+  )
 
   list(TRANSFORM arg_DEPS APPEND .raw_rpc)
 
@@ -377,13 +395,17 @@ endfunction(_pw_raw_rpc_library)
 
 # Internal function that creates a nanopb proto library.
 function(_pw_nanopb_library NAME)
-  set(num_positional_args 1)
-  set(option_args)
-  set(one_value_args INCLUDE_FILE OUT_DIR)
-  set(multi_value_args SOURCES INPUTS DEPS)
-  pw_parse_arguments_strict(
-      _pw_nanopb_library "${num_positional_args}" "${option_args}"
-      "${one_value_args}" "${multi_value_args}")
+  pw_parse_arguments(
+    NUM_POSITIONAL_ARGS
+      1
+    ONE_VALUE_ARGS
+      INCLUDE_FILE
+      OUT_DIR
+    MULTI_VALUE_ARGS
+      SOURCES
+      INPUTS
+      DEPS
+  )
 
   list(TRANSFORM arg_DEPS APPEND .nanopb)
 
@@ -449,13 +471,17 @@ endfunction(_pw_nanopb_library)
 
 # Internal function that creates a nanopb_rpc library.
 function(_pw_nanopb_rpc_library NAME)
-  set(num_positional_args 1)
-  set(option_args)
-  set(one_value_args INCLUDE_FILE OUT_DIR)
-  set(multi_value_args SOURCES INPUTS DEPS)
-  pw_parse_arguments_strict(
-      _pw_nanopb_rpc_library "${num_positional_args}" "${option_args}"
-      "${one_value_args}" "${multi_value_args}")
+  pw_parse_arguments(
+    NUM_POSITIONAL_ARGS
+      1
+    ONE_VALUE_ARGS
+      INCLUDE_FILE
+      OUT_DIR
+    MULTI_VALUE_ARGS
+      SOURCES
+      INPUTS
+      DEPS
+  )
 
   # Determine the names of the output files.
   list(TRANSFORM arg_DEPS APPEND .nanopb_rpc)
