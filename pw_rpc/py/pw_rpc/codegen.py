@@ -154,8 +154,8 @@ def generate_package(file_descriptor_proto, proto_package: ProtoNode,
 
     gen.line()
 
-    if proto_package.cpp_namespace():
-        file_namespace = proto_package.cpp_namespace()
+    if proto_package.cpp_namespace(codegen_subnamespace=None):
+        file_namespace = proto_package.cpp_namespace(codegen_subnamespace=None)
         if file_namespace.startswith('::'):
             file_namespace = file_namespace[2:]
 
@@ -458,8 +458,8 @@ _STUBS_COMMENT = r'''
 def package_stubs(proto_package: ProtoNode, gen: CodeGenerator,
                   stub_generator: StubGenerator) -> None:
     """Generates the RPC stubs for a package."""
-    if proto_package.cpp_namespace():
-        file_ns = proto_package.cpp_namespace()
+    if proto_package.cpp_namespace(codegen_subnamespace=None):
+        file_ns = proto_package.cpp_namespace(codegen_subnamespace=None)
         if file_ns.startswith('::'):
             file_ns = file_ns[2:]
 

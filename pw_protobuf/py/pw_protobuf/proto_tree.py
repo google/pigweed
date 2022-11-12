@@ -16,6 +16,7 @@
 import abc
 import collections
 import enum
+import itertools
 
 from typing import Callable, Dict, Iterator, List, Optional, Tuple, TypeVar
 from typing import cast
@@ -26,6 +27,18 @@ from pw_protobuf import options, symbol_name_mapping
 from pw_protobuf_codegen_protos.options_pb2 import Options
 
 T = TypeVar('T')  # pylint: disable=invalid-name
+
+# Currently, protoc does not do a traversal to look up the package name of all
+# messages that are referenced in the file. For such "external" message names,
+# we are unable to find where the "::pwpb" subnamespace would be inserted by our
+# codegen. This namespace provides us with an alternative, more verbose
+# namespace that the codegen can use as a fallback in these cases. For example,
+# for the symbol name `my.external.package.ProtoMsg.SubMsg`, we would use
+# `::pw::pwpb_codegen_detail::my::external::package:ProtoMsg::SubMsg` to refer
+# to the pw_protobuf generated code, when package name info is not available.
+#
+# TODO(b/258832150) Explore removing this if possible
+EXTERNAL_SYMBOL_WORKAROUND_NAMESPACE = 'pw::pwpb_codegen_detail'
 
 
 class ProtoNode(abc.ABC):
@@ -61,6 +74,9 @@ class ProtoNode(abc.ABC):
     def children(self) -> List['ProtoNode']:
         return list(self._children.values())
 
+    def parent(self) -> Optional['ProtoNode']:
+        return self._parent
+
     def name(self) -> str:
         return self._name
 
@@ -69,10 +85,104 @@ class ProtoNode(abc.ABC):
         return symbol_name_mapping.fix_cc_identifier(self._name).replace(
             '.', '::')
 
-    def cpp_namespace(self, root: Optional['ProtoNode'] = None) -> str:
-        """C++ namespace of the node, up to the specified root."""
-        return '::'.join(name for name in self._attr_hierarchy(
-            lambda node: node.cpp_name(), root) if name)
+    def _package_or_external(self) -> 'ProtoNode':
+        """Returns this node's deepest package or external ancestor node.
+
+        This method may need to return an external node, as a fallback for
+        external names that are referenced, but not processed into a more
+        regular proto tree. This is because there is no way to find the package
+        name of a node referring to an external symbol.
+        """
+        node: Optional['ProtoNode'] = self
+        while (node and node.type() != ProtoNode.Type.PACKAGE
+               and node.type() != ProtoNode.Type.EXTERNAL):
+            node = node.parent()
+
+        assert node, 'proto tree was built without a root'
+        return node
+
+    def cpp_namespace(self,
+                      root: Optional['ProtoNode'] = None,
+                      codegen_subnamespace: Optional[str] = 'pwpb') -> str:
+        """C++ namespace of the node, up to the specified root.
+
+        Args:
+          root: Namespace from which this ProtoNode is referred. If this
+            ProtoNode has `root` as an ancestor namespace, then the ancestor
+            namespace scopes above `root` are omitted.
+
+          codegen_subnamespace: A subnamespace that is appended to the package
+            declared in the .proto file. It is appended to the declared package,
+            but before any namespaces that are needed for messages etc. This
+            feature can be used to allow different codegen tools to output
+            different, non-conflicting symbols for the same protos.
+
+            By default, this is "pwpb", which reflects the default behaviour
+            of the pwpb codegen.
+        """
+        self_pkg_or_ext = self._package_or_external()
+        root_pkg_or_ext = (
+            root._package_or_external()  # pylint: disable=protected-access
+            if root is not None else None)
+        if root_pkg_or_ext:
+            assert root_pkg_or_ext.type() != ProtoNode.Type.EXTERNAL
+
+        def compute_hierarchy() -> Iterator[str]:
+            same_package = True
+
+            if self_pkg_or_ext.type() == ProtoNode.Type.EXTERNAL:
+                # Can't figure out where the namespace cutoff is. Punt to using
+                # the external symbol workaround.
+                #
+                # TODO(b/250945489) Investigate removing this limitation / hack
+                return itertools.chain([EXTERNAL_SYMBOL_WORKAROUND_NAMESPACE],
+                                       self._attr_hierarchy(ProtoNode.cpp_name,
+                                                            root=None))
+
+            if root is None or root_pkg_or_ext is None:  # extra check for mypy
+                # TODO(b/250945489): maybe elide "::{codegen_subnamespace}"
+                # here, if this node doesn't have any package?
+                same_package = False
+            else:
+                paired_hierarchy = itertools.zip_longest(
+                    self_pkg_or_ext._attr_hierarchy(  # pylint: disable=protected-access
+                        ProtoNode.cpp_name,
+                        root=None),
+                    root_pkg_or_ext._attr_hierarchy(  # pylint: disable=protected-access
+                        ProtoNode.cpp_name,
+                        root=None))
+                for str_a, str_b in paired_hierarchy:
+                    if str_a != str_b:
+                        same_package = False
+                        break
+
+            if same_package:
+                # This ProtoNode and the requested root are in the same package,
+                # so the `codegen_subnamespace` should be omitted.
+                hierarchy = self._attr_hierarchy(ProtoNode.cpp_name, root)
+                return hierarchy
+
+            # The given root is either effectively nonexistent (common ancestor
+            # is ""), or is only a partial match for the package of this node.
+            # Either way, we will have to insert `codegen_subnamespace` after
+            # the relevant package string.
+            package_hierarchy = (
+                self_pkg_or_ext._attr_hierarchy(  # pylint: disable=protected-access
+                    ProtoNode.cpp_name, root))
+            maybe_subnamespace = ([codegen_subnamespace]
+                                  if codegen_subnamespace else [])
+            inside_hierarchy = self._attr_hierarchy(ProtoNode.cpp_name,
+                                                    self_pkg_or_ext)
+
+            hierarchy = itertools.chain(package_hierarchy, maybe_subnamespace,
+                                        inside_hierarchy)
+            return hierarchy
+
+        joined_namespace = '::'.join(name for name in compute_hierarchy()
+                                     if name)
+
+        return ('' if joined_namespace == codegen_subnamespace else
+                joined_namespace)
 
     def proto_path(self) -> str:
         """Fully-qualified package path of the node."""
@@ -177,9 +287,6 @@ class ProtoNode(abc.ABC):
         # pylint: enable=protected-access
 
         return node
-
-    def parent(self) -> Optional['ProtoNode']:
-        return self._parent
 
     def __iter__(self) -> Iterator['ProtoNode']:
         """Iterates depth-first through all nodes in this node's subtree."""

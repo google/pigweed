@@ -29,6 +29,7 @@ from pw_protobuf.output_file import OutputFile
 from pw_protobuf.proto_tree import ProtoEnum, ProtoMessage, ProtoMessageField
 from pw_protobuf.proto_tree import ProtoNode
 from pw_protobuf.proto_tree import build_node_tree
+from pw_protobuf.proto_tree import EXTERNAL_SYMBOL_WORKAROUND_NAMESPACE
 
 PLUGIN_NAME = 'pw_protobuf'
 PLUGIN_VERSION = '0.1.0'
@@ -125,6 +126,7 @@ class ProtoMember(abc.ABC):
 
         ancestor = scope.common_ancestor(type_node)
         namespace = type_node.cpp_namespace(ancestor)
+
         assert namespace
         return namespace
 
@@ -1854,7 +1856,7 @@ def generate_class_for_message(message: ProtoMessage, root: ProtoNode,
     # and use its constructor.
     base_class = f'{PROTOBUF_NAMESPACE}::{base_class_name}'
     output.write_line(
-        f'class {message.cpp_namespace(root)}::{class_name} ' \
+        f'class {message.cpp_namespace(root=root)}::{class_name} ' \
         f': public {base_class} {{'
     )
     output.write_line(' public:')
@@ -1956,7 +1958,7 @@ def define_not_in_class_methods(message: ProtoMessage, root: ProtoNode,
                 continue
 
             output.write_line()
-            class_name = (f'{message.cpp_namespace(root)}::'
+            class_name = (f'{message.cpp_namespace(root=root)}::'
                           f'{class_type.codegen_class_name()}')
             method_signature = (
                 f'inline {method.return_type(from_root=True)} '
@@ -2006,7 +2008,7 @@ def generate_code_for_enum(proto_enum: ProtoEnum, root: ProtoNode,
     assert proto_enum.type() == ProtoNode.Type.ENUM
 
     common_prefix = _common_value_prefix(proto_enum)
-    output.write_line(f'enum class {proto_enum.cpp_namespace(root)} '
+    output.write_line(f'enum class {proto_enum.cpp_namespace(root=root)} '
                       f': uint32_t {{')
     with output.indent():
         for name, number in proto_enum.values():
@@ -2025,7 +2027,7 @@ def generate_function_for_enum(proto_enum: ProtoEnum, root: ProtoNode,
     """Creates a C++ validation function for for a proto enum."""
     assert proto_enum.type() == ProtoNode.Type.ENUM
 
-    enum_name = proto_enum.cpp_namespace(root)
+    enum_name = proto_enum.cpp_namespace(root=root)
     output.write_line(
         f'constexpr bool IsValid{enum_name}({enum_name} value) {{')
     with output.indent():
@@ -2041,7 +2043,7 @@ def generate_function_for_enum(proto_enum: ProtoEnum, root: ProtoNode,
 def forward_declare(node: ProtoMessage, root: ProtoNode,
                     output: OutputFile) -> None:
     """Generates code forward-declaring entities in a message's namespace."""
-    namespace = node.cpp_namespace(root)
+    namespace = node.cpp_namespace(root=root)
     output.write_line()
     output.write_line(f'namespace {namespace} {{')
 
@@ -2081,7 +2083,7 @@ def generate_struct_for_message(message: ProtoMessage, root: ProtoNode,
     """Creates a C++ struct to hold a protobuf message values."""
     assert message.type() == ProtoNode.Type.MESSAGE
 
-    output.write_line(f'struct {message.cpp_namespace(root)}::Message {{')
+    output.write_line(f'struct {message.cpp_namespace(root=root)}::Message {{')
 
     # Generate members for each of the message's fields.
     with output.indent():
@@ -2119,7 +2121,7 @@ def generate_table_for_message(message: ProtoMessage, root: ProtoNode,
     """Creates a C++ array to hold a protobuf message description."""
     assert message.type() == ProtoNode.Type.MESSAGE
 
-    namespace = message.cpp_namespace(root)
+    namespace = message.cpp_namespace(root=root)
     output.write_line(f'namespace {namespace} {{')
 
     properties = []
@@ -2180,7 +2182,7 @@ def generate_sizes_for_message(message: ProtoMessage, root: ProtoNode,
     """Creates C++ constants for the encoded sizes of a protobuf message."""
     assert message.type() == ProtoNode.Type.MESSAGE
 
-    namespace = message.cpp_namespace(root)
+    namespace = message.cpp_namespace(root=root)
     output.write_line(f'namespace {namespace} {{')
 
     property_sizes: List[str] = []
@@ -2255,7 +2257,8 @@ def dependency_sorted_messages(package: ProtoNode):
 
 
 def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
-                              output: OutputFile) -> None:
+                              output: OutputFile,
+                              suppress_legacy_namespace: bool) -> None:
     """Generates code for a single .pb.h file corresponding to a .proto file."""
 
     assert package.type() == ProtoNode.Type.PACKAGE
@@ -2338,8 +2341,37 @@ def generate_code_for_package(file_descriptor_proto, package: ProtoNode,
     if package.cpp_namespace():
         output.write_line(f'\n}}  // namespace {package.cpp_namespace()}')
 
+        # Aliasing namespaces aren't needed if `package.cpp_namespace()` is
+        # empty (since everyone can see the global namespace). It shouldn't
+        # ever be empty, though.
 
-def process_proto_file(proto_file, proto_options) -> Iterable[OutputFile]:
+        if not suppress_legacy_namespace:
+            output.write_line()
+            output.write_line('// Aliases for legacy pwpb codegen interface. '
+                              'Please use the')
+            output.write_line('// `::pwpb`-suffixed names in new code.')
+            legacy_namespace = package.cpp_namespace(codegen_subnamespace=None)
+            output.write_line(f'namespace {legacy_namespace} {{')
+            output.write_line(f'using namespace ::{package.cpp_namespace()};')
+            output.write_line(f'}}  // namespace {legacy_namespace}')
+
+        # TODO(b/250945489) Remove this if possible
+        output.write_line()
+        output.write_line(
+            '// Codegen implementation detail; do not use this namespace!')
+
+        external_lookup_namespace = "{}::{}".format(
+            EXTERNAL_SYMBOL_WORKAROUND_NAMESPACE,
+            package.cpp_namespace(codegen_subnamespace=None))
+
+        output.write_line(f'namespace {external_lookup_namespace} {{')
+        output.write_line(f'using namespace ::{package.cpp_namespace()};')
+        output.write_line(f'}}  // namespace {external_lookup_namespace}')
+
+
+def process_proto_file(
+        proto_file, proto_options,
+        suppress_legacy_namespace: bool) -> Iterable[OutputFile]:
     """Generates code for a single .proto file."""
 
     # Two passes are made through the file. The first builds the tree of all
@@ -2350,6 +2382,7 @@ def process_proto_file(proto_file, proto_options) -> Iterable[OutputFile]:
 
     output_filename = _proto_filename_to_generated_header(proto_file.name)
     output_file = OutputFile(output_filename)
-    generate_code_for_package(proto_file, package_root, output_file)
+    generate_code_for_package(proto_file, package_root, output_file,
+                              suppress_legacy_namespace)
 
     return [output_file]
