@@ -82,7 +82,7 @@
       ],
       "subdir": "rust",
       "tags": [
-        "git_revision:33b530e04099465a8029ef581202d52f4075558e"
+        "git_revision:b7b7f2716ee1655a696d3d64c3e12638d0dd19c0"
       ],
       "version_file": ".versions/rust.cipd_version"
     },
