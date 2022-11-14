@@ -49,10 +49,7 @@ class LargeReadTransferIntegrationTest(TransferIntegrationTest):
 
     @parameterized.expand([
         ("cpp"),
-        # TODO(b/250976246): This test runs indefinitely (>24 hrs) when using
-        # the java client, so it is disabled for now until the issue is
-        # diagnosed.
-        # ("java"),
+        ("java"),
         ("python"),
     ])
     def test_1mb_read_dropped_data(self, client_type):

@@ -47,7 +47,9 @@ class ReadTransfer extends Transfer<byte[]> {
   private long remainingTransferSize = UNKNOWN_TRANSFER_SIZE;
 
   private int offset = 0;
-  private int windowEndOffset;
+  private int windowEndOffset = 0;
+
+  private int lastReceivedOffset = 0;
 
   ReadTransfer(int resourceId,
       ProtocolVersion desiredProtocolVersion,
@@ -83,16 +85,20 @@ class ReadTransfer extends Transfer<byte[]> {
   @Override
   VersionedChunk getChunkForRetry() {
     VersionedChunk chunk = getLastChunkSent();
-    // Always send RETRANSMIT packets instead of CONTINUE packets on retries.
-    if (chunk.type() == Chunk.Type.PARAMETERS_CONTINUE) {
-      return chunk.withType(Chunk.Type.PARAMETERS_RETRANSMIT);
+    // If the last chunk sent was transfer parameters, send an updated RETRANSMIT chunk.
+    if (chunk.type() == Chunk.Type.PARAMETERS_CONTINUE
+        || chunk.type() == Chunk.Type.PARAMETERS_RETRANSMIT) {
+      return prepareTransferParameters(/*extend=*/false);
     }
     return chunk;
   }
 
-  class ReceivingData extends ActiveState {
+  private class ReceivingData extends ActiveState {
     @Override
     public void handleDataChunk(VersionedChunk chunk) throws TransferAbortedException {
+      // Track the last seen offset so the DropRecovery state can detect retried packets.
+      lastReceivedOffset = chunk.offset();
+
       if (chunk.offset() != offset) {
         logger.atFine().log("%s expected offset %d, received %d; resending transfer parameters",
             ReadTransfer.this,
@@ -102,6 +108,7 @@ class ReadTransfer extends Transfer<byte[]> {
         // For now, only in-order transfers are supported. If data is received out of order,
         // discard this data and retransmit from the last received offset.
         sendChunk(prepareTransferParameters(/*extend=*/false));
+        changeState(new DropRecovery());
         setNextChunkTimeout();
         return;
       }
@@ -140,6 +147,35 @@ class ReadTransfer extends Transfer<byte[]> {
         sendChunk(prepareTransferParameters(/*extend=*/false));
       } else if (extendWindow) {
         sendChunk(prepareTransferParameters(/*extend=*/true));
+      }
+      setNextChunkTimeout();
+    }
+  }
+
+  /** State for recovering from dropped packets. */
+  private class DropRecovery extends ActiveState {
+    @Override
+    public void handleDataChunk(VersionedChunk chunk) throws TransferAbortedException {
+      if (chunk.offset() == offset) {
+        logger.atFine().log(
+            "%s received expected offset %d, resuming transfer", ReadTransfer.this, offset);
+        changeState(new ReceivingData()).handleDataChunk(chunk);
+        return;
+      }
+
+      // To avoid a flood of identical parameters packets, only send one if a retry is detected.
+      if (chunk.offset() == lastReceivedOffset) {
+        logger.atFiner().log(
+            "%s received repeated offset %d: retry detected, resending transfer parameters",
+            ReadTransfer.this,
+            lastReceivedOffset);
+        sendChunk(prepareTransferParameters(/*extend=*/false));
+      } else {
+        lastReceivedOffset = chunk.offset();
+        logger.atFiner().log("%s expecting offset %d, ignoring received offset %d",
+            ReadTransfer.this,
+            offset,
+            chunk.offset());
       }
       setNextChunkTimeout();
     }

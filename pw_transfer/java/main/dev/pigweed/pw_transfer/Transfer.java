@@ -371,7 +371,7 @@ abstract class Transfer<T> {
     /** Enters the recovery state and returns to this state if recovery succeeds. */
     @Override
     public void handleTimeout() throws TransferAbortedException {
-      changeState(new Recovery(this)).handleTimeout();
+      changeState(new TimeoutRecovery(this)).handleTimeout();
     }
 
     @Override
@@ -434,11 +434,11 @@ abstract class Transfer<T> {
   }
 
   /** Recovering from an expired timeout. */
-  class Recovery extends ActiveState {
+  class TimeoutRecovery extends ActiveState {
     private final State nextState;
     private int retries;
 
-    Recovery(State nextState) {
+    TimeoutRecovery(State nextState) {
       this.nextState = nextState;
     }
 

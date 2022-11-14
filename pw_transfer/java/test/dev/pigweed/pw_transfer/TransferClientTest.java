@@ -1188,6 +1188,120 @@ public final class TransferClientTest {
   }
 
   @Test
+  public void read_onlySendsOneUpdateAfterDrops() throws Exception {
+    createTransferClientThatMayTimeOut(ProtocolVersion.VERSION_TWO);
+    TransferParameters params = TransferParameters.create(50, 10, 0);
+
+    // Handshake
+    enqueueReadChunks(2, // Wait for read RPC open & START packet
+        newChunk(Chunk.Type.START_ACK, 99)
+            .setResourceId(7)
+            .setProtocolVersion(ProtocolVersion.VERSION_TWO.ordinal()));
+    enqueueReadChunks(1, // Ignore the first START_ACK_CONFIRMATION
+        newChunk(Chunk.Type.START_ACK, 99)
+            .setResourceId(7)
+            .setProtocolVersion(ProtocolVersion.VERSION_TWO.ordinal()));
+
+    // Window 1: server waits for START_ACK_CONFIRMATION, drops 2nd packet
+    enqueueReadChunks(1,
+        newChunk(Chunk.Type.DATA, 99).setOffset(0).setData(range(0, 10)),
+        newChunk(Chunk.Type.DATA, 99).setOffset(20).setData(range(20, 30)),
+        newChunk(Chunk.Type.DATA, 99).setOffset(30).setData(range(30, 40)),
+        newChunk(Chunk.Type.DATA, 99).setOffset(40).setData(range(40, 50)));
+
+    // Window 2: server waits for retransmit, drops 1st packet
+    enqueueReadChunks(1,
+        newChunk(Chunk.Type.DATA, 99).setOffset(20).setData(range(20, 30)),
+        newChunk(Chunk.Type.DATA, 99).setOffset(30).setData(range(30, 40)),
+        newChunk(Chunk.Type.DATA, 99).setOffset(40).setData(range(40, 50)),
+        newChunk(Chunk.Type.DATA, 99).setOffset(50).setData(range(50, 60)));
+
+    // Window 3: server waits for retransmit, drops last packet
+    enqueueReadChunks(1,
+        newChunk(Chunk.Type.DATA, 99).setOffset(10).setData(range(10, 20)),
+        newChunk(Chunk.Type.DATA, 99).setOffset(20).setData(range(20, 30)),
+        newChunk(Chunk.Type.DATA, 99).setOffset(30).setData(range(30, 40)),
+        newChunk(Chunk.Type.DATA, 99).setOffset(40).setData(range(40, 50)));
+
+    // Window 4: server waits for continue and retransmit, normal window.
+    enqueueReadChunks(2,
+        newChunk(Chunk.Type.DATA, 99).setOffset(50).setData(range(50, 60)),
+        newChunk(Chunk.Type.DATA, 99).setOffset(60).setData(range(60, 70)),
+        newChunk(Chunk.Type.DATA, 99).setOffset(70).setData(range(70, 80)),
+        newChunk(Chunk.Type.DATA, 99).setOffset(80).setData(range(80, 90)),
+        newChunk(Chunk.Type.DATA, 99).setOffset(90).setData(range(90, 100)));
+    enqueueReadChunks(2, // Ignore continue and retransmit chunks, retry last packet in window
+        newChunk(Chunk.Type.DATA, 99).setOffset(90).setData(range(90, 100)),
+        newChunk(Chunk.Type.DATA, 99).setOffset(90).setData(range(90, 100)));
+
+    // Window 5: Final packet
+    enqueueReadChunks(2, // Receive two retries, then send final packet
+        newChunk(Chunk.Type.DATA, 99).setOffset(100).setData(range(100, 110)).setRemainingBytes(0));
+    enqueueReadChunks(1, // Ignore first COMPLETION packet
+        newChunk(Chunk.Type.DATA, 99).setOffset(100).setData(range(100, 110)).setRemainingBytes(0));
+    enqueueReadChunks(1, newChunk(Chunk.Type.COMPLETION_ACK, 99));
+
+    ListenableFuture<byte[]> future = transferClient.read(7, params);
+    // assertThat(future.get()).isEqualTo(range(0, 110).toByteArray());
+    while (!future.isDone()) {
+    }
+
+    assertThat(lastChunks())
+        .containsExactly(
+            // Handshake
+            initialReadChunk(7, ProtocolVersion.VERSION_TWO, params),
+            readStartAckConfirmation(99, params),
+            readStartAckConfirmation(99, params),
+            // Window 1: send one transfer parameters update after the drop
+            newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, 99)
+                .setOffset(10)
+                .setWindowEndOffset(60)
+                .setMaxChunkSizeBytes(10)
+                .build(),
+            // Window 2: send one transfer parameters update after the drop
+            newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, 99)
+                .setOffset(10)
+                .setWindowEndOffset(60)
+                .setMaxChunkSizeBytes(10)
+                .build(),
+            // Window 3: send one transfer parameters update after the drop, then continue packet
+            newChunk(Chunk.Type.PARAMETERS_CONTINUE, 99) // Not seen by server
+                .setOffset(40)
+                .setWindowEndOffset(90)
+                .setMaxChunkSizeBytes(10)
+                .build(),
+            newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, 99) // Sent after timeout
+                .setOffset(50)
+                .setWindowEndOffset(100)
+                .setMaxChunkSizeBytes(10)
+                .build(),
+            // Window 4: send one transfer parameters update after the drop, then continue packet
+            newChunk(Chunk.Type.PARAMETERS_CONTINUE, 99) // Ignored by server
+                .setOffset(80)
+                .setWindowEndOffset(130)
+                .setMaxChunkSizeBytes(10)
+                .build(),
+            newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, 99) // Sent after last packet
+                .setOffset(100)
+                .setWindowEndOffset(150)
+                .setMaxChunkSizeBytes(10)
+                .build(),
+            newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, 99) // Sent due to repeated packet
+                .setOffset(100)
+                .setWindowEndOffset(150)
+                .setMaxChunkSizeBytes(10)
+                .build(),
+            newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, 99) // Sent due to repeated packet
+                .setOffset(100)
+                .setWindowEndOffset(150)
+                .setMaxChunkSizeBytes(10)
+                .build(),
+            // Window 5: final packet and closing handshake
+            newChunk(Chunk.Type.COMPLETION, 99).setStatus(Status.OK.ordinal()).build(),
+            newChunk(Chunk.Type.COMPLETION, 99).setStatus(Status.OK.ordinal()).build());
+  }
+
+  @Test
   public void read_progressCallbackIsCalled() {
     createTransferClientForTransferThatWillNotTimeOut(ProtocolVersion.VERSION_TWO);
     ListenableFuture<byte[]> future =
@@ -2290,7 +2404,13 @@ public final class TransferClientTest {
                              .build());
   }
 
-  /** Receive these chunks after a chunk is sent. */
+  /** Receive these read chunks after a chunk is sent. */
+  private void enqueueReadChunks(int afterPackets, Chunk.Builder... chunks) {
+    syncWithTransferThread(
+        () -> rpcClient.enqueueServerStream(SERVICE, "Read", afterPackets, chunks));
+  }
+
+  /** Receive these write chunks after a chunk is sent. */
   private void enqueueWriteChunks(int afterPackets, Chunk.Builder... chunks) {
     syncWithTransferThread(
         () -> rpcClient.enqueueServerStream(SERVICE, "Write", afterPackets, chunks));

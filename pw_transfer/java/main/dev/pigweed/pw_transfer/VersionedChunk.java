@@ -88,8 +88,6 @@ abstract class VersionedChunk {
     public abstract VersionedChunk build();
   }
 
-  abstract Builder toBuilder();
-
   public static VersionedChunk fromMessage(Chunk chunk) {
     Builder builder = builder();
 
@@ -158,10 +156,6 @@ abstract class VersionedChunk {
   public static VersionedChunk.Builder createInitialChunk(
       ProtocolVersion desiredVersion, int resourceId) {
     return builder().setVersion(desiredVersion).setType(Chunk.Type.START).setResourceId(resourceId);
-  }
-
-  public final VersionedChunk withType(Chunk.Type type) {
-    return toBuilder().setType(type).build();
   }
 
   public Chunk toMessage() {
