@@ -657,7 +657,7 @@ TEST(IntrusiveList, SizeScoped) {
 // Test that a list of items derived from a different Item class can be created.
 class DerivedTestItem : public TestItem {};
 
-TEST(InstrusiveList, AddItemsOfDerivedClassToList) {
+TEST(IntrusiveList, AddItemsOfDerivedClassToList) {
   IntrusiveList<TestItem> list;
 
   DerivedTestItem item1;
@@ -669,7 +669,7 @@ TEST(InstrusiveList, AddItemsOfDerivedClassToList) {
   EXPECT_EQ(2u, list.size());
 }
 
-TEST(InstrusiveList, ListOfDerivedClassItems) {
+TEST(IntrusiveList, ListOfDerivedClassItems) {
   IntrusiveList<DerivedTestItem> derived_from_compatible_item_type;
 
   DerivedTestItem item1;
