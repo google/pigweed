@@ -22,9 +22,9 @@ import dev.pigweed.pw_rpc.Channel;
 import dev.pigweed.pw_rpc.ChannelOutputException;
 import dev.pigweed.pw_rpc.Client;
 import dev.pigweed.pw_rpc.Status;
+import dev.pigweed.pw_transfer.ProtocolVersion;
 import dev.pigweed.pw_transfer.TransferClient;
 import dev.pigweed.pw_transfer.TransferError;
-import dev.pigweed.pw_transfer.TransferParameters;
 import dev.pigweed.pw_transfer.TransferService;
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,9 +37,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import pw.transfer.ConfigProtos;
+import pw.transfer.ConfigProtos.TransferAction;
 
 public class JavaClient {
   private static final String SERVICE = "pw.transfer.Transfer";
@@ -262,6 +261,12 @@ public class JavaClient {
     for (ConfigProtos.TransferAction action : config.getTransferActionsList()) {
       int resourceId = action.getResourceId();
       Path fileName = Paths.get(action.getFilePath());
+
+      if (action.getProtocolVersion() != TransferAction.ProtocolVersion.UNKNOWN_VERSION) {
+        client.setProtocolVersion(ProtocolVersion.values()[action.getProtocolVersionValue()]);
+      } else {
+        client.setProtocolVersion(ProtocolVersion.latest());
+      }
 
       if (action.getTransferType() == ConfigProtos.TransferAction.TransferType.WRITE_TO_SERVER) {
         WriteToServer(resourceId, fileName, client, Status.fromCode(action.getExpectedStatus()));

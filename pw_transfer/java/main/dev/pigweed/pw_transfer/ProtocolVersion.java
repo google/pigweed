@@ -14,7 +14,7 @@
 
 package dev.pigweed.pw_transfer;
 
-enum ProtocolVersion {
+public enum ProtocolVersion {
   // Protocol version not known or not set.
   UNKNOWN,
 
@@ -28,7 +28,7 @@ enum ProtocolVersion {
   VERSION_TWO;
 
   /** Returns to the most up-to-date version of the transfer protocol. */
-  static ProtocolVersion latest() {
+  public static ProtocolVersion latest() {
     return VERSION_TWO;
   }
 }
