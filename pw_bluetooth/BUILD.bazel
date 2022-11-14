@@ -26,6 +26,7 @@ pw_cc_library(
     name = "pw_bluetooth",
     hdrs = [
         "public/pw_bluetooth/address.h",
+        "public/pw_bluetooth/assigned_uuids.h",
         "public/pw_bluetooth/constants.h",
         "public/pw_bluetooth/controller.h",
         "public/pw_bluetooth/gatt/client.h",

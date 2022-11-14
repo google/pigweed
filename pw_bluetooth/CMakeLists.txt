@@ -17,6 +17,7 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 pw_add_module_library(pw_bluetooth
   HEADERS
     public/pw_bluetooth/address.h
+    public/pw_bluetooth/assigned_uuids.h
     public/pw_bluetooth/gatt/client.h
     public/pw_bluetooth/gatt/constants.h
     public/pw_bluetooth/gatt/error.h

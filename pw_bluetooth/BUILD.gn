@@ -32,6 +32,7 @@ pw_source_set("pw_bluetooth") {
   public_configs = [ ":public_include_path" ]
   public = [
     "public/pw_bluetooth/address.h",
+    "public/pw_bluetooth/assigned_uuids.h",
     "public/pw_bluetooth/constants.h",
     "public/pw_bluetooth/controller.h",
     "public/pw_bluetooth/gatt/client.h",
