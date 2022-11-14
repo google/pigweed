@@ -311,7 +311,6 @@ Python
 
 Typescript
 ==========
-
 Provides a simple interface for transferring bulk data over pw_rpc.
 
 **Example**
@@ -338,6 +337,36 @@ Provides a simple interface for transferring bulk data over pw_rpc.
      .catch(error => {
        console.log(`Failed to read: ${error.status}`);
      });
+
+Java
+====
+pw_transfer provides a Java client. The transfer client returns a
+`ListenableFuture <https://guava.dev/releases/21.0/api/docs/com/google/common/util/concurrent/ListenableFuture>`_
+to represent the results of a read or write transfer.
+
+.. code-block:: java
+
+  import dev.pigweed.pw_transfer.TransferClient;
+
+  // Create a new transfer client.
+  TransferClient client = new TransferClient(
+      transferReadMethodClient,
+      transferWriteMethodClient,
+      transferTimeoutMillis,
+      initialTransferTimeoutMillis,
+      maxRetries);
+
+  // Start a read transfer.
+  ListenableFuture<byte[]> readTransfer = client.read(123);
+
+  // Start a write transfer.
+  ListenableFuture<Void> writeTransfer = client.write(123, dataToWrite);
+
+  // Get the data from the read transfer.
+  byte[] readData = readTransfer.get();
+
+  // Wait for the write transfer to complete.
+  writeTransfer.get();
 
 --------
 Protocol

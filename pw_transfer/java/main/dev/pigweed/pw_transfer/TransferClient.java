@@ -37,6 +37,8 @@ public class TransferClient {
   private final TransferEventHandler transferEventHandler;
   private final Thread transferEventHandlerThread;
 
+  private ProtocolVersion desiredProtocolVersion = ProtocolVersion.LEGACY;
+
   /**
    * Creates a new transfer client for sending and receiving data with pw_transfer.
    *
@@ -47,6 +49,25 @@ public class TransferClient {
    * @param initialTransferTimeoutMillis How long to wait for the initial communication from the
    *     server. If the server delays longer than this, retry up to maxRetries times.
    * @param maxRetries How many times to retry if a communication times out.
+   */
+  public TransferClient(MethodClient readMethod,
+      MethodClient writeMethod,
+      int transferTimeoutMillis,
+      int initialTransferTimeoutMillis,
+      int maxRetries) {
+    this(readMethod,
+        writeMethod,
+        transferTimeoutMillis,
+        initialTransferTimeoutMillis,
+        maxRetries,
+        ()
+            -> false, // Never abort
+        TransferEventHandler::run);
+  }
+
+  /**
+   * Creates a new transfer client with a callback that can be used to terminate transfers.
+   *
    * @param shouldAbortCallback BooleanSupplier that returns true if a transfer should be aborted.
    */
   public TransferClient(MethodClient readMethod,
@@ -55,13 +76,30 @@ public class TransferClient {
       int initialTransferTimeoutMillis,
       int maxRetries,
       BooleanSupplier shouldAbortCallback) {
+    this(readMethod,
+        writeMethod,
+        transferTimeoutMillis,
+        initialTransferTimeoutMillis,
+        maxRetries,
+        shouldAbortCallback,
+        TransferEventHandler::run);
+  }
+
+  /** Constructor exposed to package for test use only. */
+  TransferClient(MethodClient readMethod,
+      MethodClient writeMethod,
+      int transferTimeoutMillis,
+      int initialTransferTimeoutMillis,
+      int maxRetries,
+      BooleanSupplier shouldAbortCallback,
+      Consumer<TransferEventHandler> runFunction) {
     this.transferTimeoutMillis = transferTimeoutMillis;
     this.initialTransferTimeoutMillis = initialTransferTimeoutMillis;
     this.maxRetries = maxRetries;
     this.shouldAbortCallback = shouldAbortCallback;
 
     transferEventHandler = new TransferEventHandler(readMethod, writeMethod);
-    transferEventHandlerThread = new Thread(transferEventHandler::run);
+    transferEventHandlerThread = new Thread(() -> runFunction.accept(transferEventHandler));
     transferEventHandlerThread.start();
   }
 
@@ -81,6 +119,7 @@ public class TransferClient {
   public ListenableFuture<Void> write(
       int resourceId, byte[] data, Consumer<TransferProgress> progressCallback) {
     return transferEventHandler.startWriteTransferAsClient(resourceId,
+        desiredProtocolVersion,
         transferTimeoutMillis,
         initialTransferTimeoutMillis,
         maxRetries,
@@ -111,12 +150,27 @@ public class TransferClient {
   public ListenableFuture<byte[]> read(
       int resourceId, TransferParameters parameters, Consumer<TransferProgress> progressCallback) {
     return transferEventHandler.startReadTransferAsClient(resourceId,
+        desiredProtocolVersion,
         transferTimeoutMillis,
         initialTransferTimeoutMillis,
         maxRetries,
         parameters,
         progressCallback,
         shouldAbortCallback);
+  }
+
+  /**
+   * Sets the protocol version to request for future transfers
+   *
+   * Does not affect ongoing transfers. Version cannot be set to UNKNOWN!
+   *
+   * @throws IllegalArgumentException if the protocol version is UNKNOWN
+   */
+  public void setProtocolVersion(ProtocolVersion version) {
+    if (version == ProtocolVersion.UNKNOWN) {
+      throw new IllegalArgumentException("Cannot set protocol version to UNKNOWN!");
+    }
+    desiredProtocolVersion = version;
   }
 
   /** Stops the background thread and waits until it terminates. */

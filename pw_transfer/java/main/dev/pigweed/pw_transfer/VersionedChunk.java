@@ -119,13 +119,18 @@ abstract class VersionedChunk {
       builder.setType(Chunk.Type.PARAMETERS_RETRANSMIT);
     }
 
-    if (version == ProtocolVersion.LEGACY && chunk.hasStatus()) {
-      builder.setType(Chunk.Type.COMPLETION);
+    // For legacy chunks, use the transfer ID as both the resource and session IDs.
+    if (version == ProtocolVersion.LEGACY) {
+      builder.setSessionId(chunk.getTransferId());
+      builder.setResourceId(chunk.getTransferId());
+      if (chunk.hasStatus()) {
+        builder.setType(Chunk.Type.COMPLETION);
+      }
+    } else {
+      builder.setSessionId(chunk.getSessionId());
     }
 
-    builder.setSessionId(chunk.hasSessionId() ? chunk.getSessionId() : chunk.getTransferId())
-        .setOffset((int) chunk.getOffset())
-        .setData(chunk.getData());
+    builder.setOffset((int) chunk.getOffset()).setData(chunk.getData());
 
     if (chunk.hasResourceId()) {
       builder.setResourceId(chunk.getResourceId());
@@ -162,7 +167,6 @@ abstract class VersionedChunk {
   public Chunk toMessage() {
     Chunk.Builder chunk = Chunk.newBuilder()
                               .setType(type())
-                              .setSessionId(sessionId())
                               .setOffset(offset())
                               .setWindowEndOffset(windowEndOffset())
                               .setData(data());
@@ -173,17 +177,17 @@ abstract class VersionedChunk {
     minDelayMicroseconds().ifPresent(chunk::setMinDelayMicroseconds);
     status().ifPresent(chunk::setStatus);
 
+    // session_id did not exist in the legacy protocol, so don't send it.
+    if (version() != ProtocolVersion.LEGACY && sessionId() != UNASSIGNED_SESSION_ID) {
+      chunk.setSessionId(sessionId());
+    }
+
     if (shouldEncodeLegacyFields()) {
-      chunk.setTransferId(resourceId().orElse(chunk.getSessionId()));
+      chunk.setTransferId(resourceId().orElse(sessionId()));
 
       if (chunk.getWindowEndOffset() != 0) {
         chunk.setPendingBytes(chunk.getWindowEndOffset() - offset());
       }
-    }
-
-    if (version() == ProtocolVersion.LEGACY) {
-      // session_id did not exist in the legacy protocol, so don't send it.
-      chunk.clearSessionId();
     }
 
     if (isInitialHandshakeChunk()) {

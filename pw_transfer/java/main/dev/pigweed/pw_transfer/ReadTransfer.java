@@ -50,6 +50,7 @@ class ReadTransfer extends Transfer<byte[]> {
   private int windowEndOffset;
 
   ReadTransfer(int resourceId,
+      ProtocolVersion desiredProtocolVersion,
       TransferInterface transferManager,
       int timeoutMillis,
       int initialTimeoutMillis,
@@ -58,6 +59,7 @@ class ReadTransfer extends Transfer<byte[]> {
       Consumer<TransferProgress> progressCallback,
       BooleanSupplier shouldAbortCallback) {
     super(resourceId,
+        desiredProtocolVersion,
         transferManager,
         timeoutMillis,
         initialTimeoutMillis,
@@ -74,10 +76,8 @@ class ReadTransfer extends Transfer<byte[]> {
   }
 
   @Override
-  VersionedChunk getInitialChunk(ProtocolVersion desiredProcotolVersion) {
-    return setTransferParameters(
-        VersionedChunk.createInitialChunk(desiredProcotolVersion, getResourceId()))
-        .build();
+  void prepareInitialChunk(VersionedChunk.Builder chunk) {
+    setTransferParameters(chunk);
   }
 
   @Override
@@ -90,18 +90,12 @@ class ReadTransfer extends Transfer<byte[]> {
     return chunk;
   }
 
-  class ReceivingData extends State {
+  class ReceivingData extends ActiveState {
     @Override
-    void handleTimeout() {
-      setState(new Recovery());
-    }
-
-    @Override
-    void handleDataChunk(VersionedChunk chunk) {
+    public void handleDataChunk(VersionedChunk chunk) throws TransferAbortedException {
       if (chunk.offset() != offset) {
-        logger.atFine().log(
-            "Transfer %d expected offset %d, received %d; resending transfer parameters",
-            getId(),
+        logger.atFine().log("%s expected offset %d, received %d; resending transfer parameters",
+            ReadTransfer.this,
             offset,
             chunk.offset());
 
@@ -120,7 +114,7 @@ class ReadTransfer extends Transfer<byte[]> {
 
       if (chunk.remainingBytes().isPresent()) {
         if (chunk.remainingBytes().getAsLong() == 0) {
-          setStateCompletedAndSendFinalChunk(Status.OK);
+          setStateTerminatingAndSendFinalChunk(Status.OK);
           return;
         }
 
@@ -142,7 +136,7 @@ class ReadTransfer extends Transfer<byte[]> {
 
       if (remainingWindowSize == 0) {
         logger.atFiner().log(
-            "Transfer %d received all pending bytes; sending transfer parameters update", getId());
+            "%s received all pending bytes; sending transfer parameters update", ReadTransfer.this);
         sendChunk(prepareTransferParameters(/*extend=*/false));
       } else if (extendWindow) {
         sendChunk(prepareTransferParameters(/*extend=*/true));

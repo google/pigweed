@@ -20,8 +20,10 @@ import static dev.pigweed.pw_transfer.TransferProgress.UNKNOWN_TRANSFER_SIZE;
 import com.google.common.util.concurrent.SettableFuture;
 import dev.pigweed.pw_log.Logger;
 import dev.pigweed.pw_rpc.Status;
+import dev.pigweed.pw_transfer.TransferEventHandler.TransferInterface;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Locale;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
@@ -31,9 +33,6 @@ abstract class Transfer<T> {
 
   // Largest nanosecond instant. Used to block indefinitely when no transfers are pending.
   static final Instant NO_TIMEOUT = Instant.ofEpochSecond(0, Long.MAX_VALUE);
-
-  // TODO(hepler): Make this configurable
-  private static final ProtocolVersion DESIRED_PROTOCOL_VERSION = ProtocolVersion.LEGACY;
 
   private final int resourceId;
   private final ProtocolVersion desiredProtocolVersion;
@@ -48,9 +47,8 @@ abstract class Transfer<T> {
 
   private int sessionId = VersionedChunk.UNASSIGNED_SESSION_ID;
   private ProtocolVersion configuredProtocolVersion = ProtocolVersion.UNKNOWN;
-  private State state = new Inactive();
   private Instant deadline = NO_TIMEOUT;
-  private boolean isCleanedUp = false;
+  private State state;
   private VersionedChunk lastChunkSent;
 
   // The number of times this transfer has retried due to an RPC disconnection. Limit this to
@@ -60,8 +58,8 @@ abstract class Transfer<T> {
 
   /**
    * Creates a new read or write transfer.
-   *
    * @param resourceId The resource ID of the transfer
+   * @param desiredProtocolVersion protocol version to request
    * @param eventHandler Interface to use to send a chunk.
    * @param timeoutMillis Maximum time to wait for a chunk from the server.
    * @param initialTimeoutMillis Maximum time to wait for the first chunk from the server.
@@ -70,14 +68,15 @@ abstract class Transfer<T> {
    * @param shouldAbortCallback BooleanSupplier that returns true if a transfer should be aborted.
    */
   Transfer(int resourceId,
-      TransferEventHandler.TransferInterface eventHandler,
+      ProtocolVersion desiredProtocolVersion,
+      TransferInterface eventHandler,
       int timeoutMillis,
       int initialTimeoutMillis,
       int maxRetries,
       Consumer<TransferProgress> progressCallback,
       BooleanSupplier shouldAbortCallback) {
     this.resourceId = resourceId;
-    this.desiredProtocolVersion = DESIRED_PROTOCOL_VERSION;
+    this.desiredProtocolVersion = desiredProtocolVersion;
     this.eventHandler = eventHandler;
 
     this.future = SettableFuture.create();
@@ -94,16 +93,44 @@ abstract class Transfer<T> {
       }
     }, directExecutor());
 
+    if (desiredProtocolVersion == ProtocolVersion.LEGACY) {
+      // Legacy transfers skip protocol negotiation stage and use the resource ID as the session ID.
+      configuredProtocolVersion = ProtocolVersion.LEGACY;
+      assignSessionId(resourceId);
+      state = getWaitingForDataState();
+    } else {
+      state = new Initiating();
+    }
+
     startTime = Instant.now();
   }
 
-  final int getResourceId() {
+  @Override
+  public String toString() {
+    return String.format(Locale.ENGLISH,
+        "%s(%d:%d)[%s]",
+        this.getClass().getSimpleName(),
+        resourceId,
+        sessionId,
+        state.getClass().getSimpleName());
+  }
+
+  public final int getResourceId() {
     return resourceId;
   }
 
-  /** Returns the current ID for this transfer, which may be the session or resource ID. */
-  final int getId() {
-    return sessionId != VersionedChunk.UNASSIGNED_SESSION_ID ? sessionId : resourceId;
+  public final int getSessionId() {
+    return sessionId;
+  }
+
+  private void assignSessionId(int newSessionId) {
+    sessionId = newSessionId;
+    eventHandler.assignSessionId(this);
+  }
+
+  /** Terminates the transfer without sending any packets. */
+  public final void terminate(TransferError error) {
+    changeState(new Completed(error));
   }
 
   final Instant getDeadline() {
@@ -127,26 +154,19 @@ abstract class Transfer<T> {
   }
 
   final void start() {
-    logger.atFine().log(
-        "Transfer %d for resource %d starting with parameters: default timeout %d ms, initial timeout %d ms, %d max retires",
-        getId(),
-        getResourceId(),
+    logger.atInfo().log(
+        "%s starting with parameters: default timeout %d ms, initial timeout %d ms, %d max retires",
+        this,
         timeoutMillis,
         initialTimeoutMillis,
         maxRetries);
-    if (!sendChunk(getInitialChunk(desiredProtocolVersion))) {
+    VersionedChunk.Builder chunk =
+        VersionedChunk.createInitialChunk(desiredProtocolVersion, resourceId);
+    prepareInitialChunk(chunk);
+    try {
+      sendChunk(chunk.build());
+    } catch (TransferAbortedException e) {
       return; // Sending failed, transfer is cancelled
-    }
-
-    if (desiredProtocolVersion == ProtocolVersion.LEGACY) {
-      // Legacy transfers skip the protocol negotiation stage and use the resource ID as the session
-      // ID.
-      configuredProtocolVersion = ProtocolVersion.LEGACY;
-      sessionId = resourceId;
-      setState(getWaitingForDataState());
-    } else {
-      setState(new Initiating());
-      throw new AssertionError("Cannot set desired protocol to v2; not implemented yet!");
     }
     setInitialTimeout();
   }
@@ -156,29 +176,28 @@ abstract class Transfer<T> {
     // Since a packet has been received, don't allow retries on disconnection; abort instead.
     disconnectionRetries = Integer.MAX_VALUE;
 
-    if (chunk.version() == ProtocolVersion.UNKNOWN) {
-      logger.atWarning().log(
-          "Cannot handle packet from unsupported session ID %d", chunk.sessionId());
-      setStateCompletedAndSendFinalChunk(Status.INVALID_ARGUMENT);
-      return;
-    }
-
-    if (chunk.type() == Chunk.Type.COMPLETION) {
-      logger.atFinest().log("Event: handle final chunk");
-      state.handleFinalChunk(chunk.status().orElseGet(() -> {
-        logger.atWarning().log("Received terminating chunk with no status set; using INTERNAL");
-        return Status.INTERNAL.code();
-      }));
-    } else {
-      logger.atFinest().log("Event: handle data chunk");
-      state.handleDataChunk(chunk);
+    try {
+      if (chunk.type() == Chunk.Type.COMPLETION) {
+        state.handleFinalChunk(chunk.status().orElseGet(() -> {
+          logger.atWarning().log("Received terminating chunk with no status set; using INTERNAL");
+          return Status.INTERNAL.code();
+        }));
+      } else {
+        state.handleDataChunk(chunk);
+      }
+    } catch (TransferAbortedException e) {
+      // Transfer was aborted; nothing else to do.
     }
   }
 
   final void handleTimeoutIfDeadlineExceeded() {
     if (Instant.now().isAfter(deadline)) {
-      logger.atFinest().log("Event: handleTimeout since %s is after %s", Instant.now(), deadline);
-      state.handleTimeout();
+      logger.atFinest().log("%s timed out since the deadline %s has passed", this, deadline);
+      try {
+        state.handleTimeout();
+      } catch (TransferAbortedException e) {
+        // Transfer was aborted; nothing else to do.
+      }
     }
   }
 
@@ -195,24 +214,27 @@ abstract class Transfer<T> {
     // disconnectionRetries is set to Int.MAX_VALUE when a packet is received to prevent retries
     // after the initial packet.
     if (disconnectionRetries++ < maxRetries) {
-      logger.atFine().log("Restarting the pw_transfer RPC for transfer %d (attempt %d/%d)",
-          sessionId,
+      logger.atFine().log("Restarting the pw_transfer RPC for %s (attempt %d/%d)",
+          this,
           disconnectionRetries,
           maxRetries);
-      if (sendChunk(getChunkForRetry())) {
-        setInitialTimeout();
+      try {
+        sendChunk(getChunkForRetry());
+      } catch (TransferAbortedException e) {
+        return; // Transfer is aborted; nothing else to do.
       }
+      setInitialTimeout();
     } else {
-      cleanUp(new TransferError(
+      changeState(new Completed(new TransferError(
           "Transfer " + sessionId + " restarted " + maxRetries + " times, aborting",
-          Status.INTERNAL));
+          Status.INTERNAL)));
     }
   }
 
   /** Returns the State to enter immediately after sending the first packet. */
   abstract State getWaitingForDataState();
 
-  abstract VersionedChunk getInitialChunk(ProtocolVersion desiredProtocolVersion);
+  abstract void prepareInitialChunk(VersionedChunk.Builder chunk);
 
   /**
    * Returns the chunk to send for a retry. Returns the initial chunk if no chunks have been sent.
@@ -224,78 +246,61 @@ abstract class Transfer<T> {
 
   final VersionedChunk.Builder newChunk(Chunk.Type type) {
     return VersionedChunk.builder()
-        .setVersion(configuredProtocolVersion)
+        .setVersion(configuredProtocolVersion != ProtocolVersion.UNKNOWN ? configuredProtocolVersion
+                                                                         : desiredProtocolVersion)
         .setType(type)
-        .setSessionId(getId());
+        .setSessionId(sessionId);
   }
 
   final VersionedChunk getLastChunkSent() {
     return lastChunkSent;
   }
 
-  final void setState(State newState) {
+  final State changeState(State newState) {
     if (newState != state) {
-      logger.atFinest().log(
-          "Transfer %d state %s -> %s", getId(), state.getName(), newState.getName());
+      logger.atFinest().log("%s state %s -> %s",
+          this,
+          state.getClass().getSimpleName(),
+          newState.getClass().getSimpleName());
     }
     state = newState;
+    return state;
   }
 
-  /** Sends a chunk. Returns true if sent, false if sending failed and the transfer was aborted. */
-  final boolean sendChunk(VersionedChunk chunk) {
+  /** Exception thrown when the transfer is aborted. */
+  static class TransferAbortedException extends Exception {}
+
+  /**
+   * Sends a chunk.
+   *
+   * If sending fails, the transfer cannot proceed. sendChunk() sets the state to completed and
+   * throws a TransferAbortedException.
+   */
+  final void sendChunk(VersionedChunk chunk) throws TransferAbortedException {
     lastChunkSent = chunk;
     if (shouldAbortCallback.getAsBoolean()) {
       logger.atWarning().log("Abort signal received.");
-      cleanUp(new TransferError(sessionId, Status.ABORTED));
-      return false;
+      changeState(new Completed(new TransferError(this, Status.ABORTED)));
+      throw new TransferAbortedException();
     }
 
     try {
+      logger.atFinest().log("%s sending %s", this, chunk);
       eventHandler.sendChunk(chunk.toMessage());
     } catch (TransferError transferError) {
-      cleanUp(transferError);
-      return false;
+      changeState(new Completed(transferError));
+      throw new TransferAbortedException();
     }
-    return true;
-  }
-
-  /** Performs final cleanup of a completed transfer. No packets are sent to the server. */
-  private void cleanUp(Status status) {
-    eventHandler.unregisterTransfer(sessionId);
-
-    logger.atInfo().log("Transfer %d completed with status %s", sessionId, status);
-    if (status.ok()) {
-      setFutureResult();
-    } else {
-      future.setException(new TransferError(sessionId, status));
-    }
-    isCleanedUp = true;
-  }
-
-  /** Finishes the transfer due to an exception. No packets are sent to the server. */
-  final void cleanUp(TransferError exception) {
-    eventHandler.unregisterTransfer(sessionId);
-
-    logger.atWarning().withCause(exception).log("Transfer %d terminated with exception", sessionId);
-    future.setException(exception);
-    isCleanedUp = true;
   }
 
   /** Sends a status chunk to the server and finishes the transfer. */
-  final void setStateCompletedAndSendFinalChunk(Status status) {
-    setState(new Completed());
-
-    logger.atFine().log("Sending final chunk for transfer %d with status %s", sessionId, status);
-    // If the transfer was completed due to concurrently handling chunks, don't send.
-    if (isCleanedUp) {
-      logger.atFine().log("Skipping sending final chunk on already-completed transfer");
-      return;
-    }
-
-    // Only call finish() if the sendChunk was successful. If it wasn't, the exception would have
-    // already terminated the transfer.
-    if (sendChunk(newChunk(Chunk.Type.COMPLETION).setStatus(status).build())) {
-      cleanUp(status);
+  final void setStateTerminatingAndSendFinalChunk(Status status) throws TransferAbortedException {
+    logger.atFine().log("%s sending final chunk with status %s", this, status);
+    sendChunk(newChunk(Chunk.Type.COMPLETION).setStatus(status).build());
+    if (configuredProtocolVersion == ProtocolVersion.VERSION_TWO) {
+      changeState(new Terminating(status));
+    } else {
+      changeState(new Completed(status));
     }
   }
 
@@ -308,9 +313,9 @@ abstract class Transfer<T> {
     long durationNanos = Duration.between(startTime, Instant.now()).toNanos();
     long totalRate = durationNanos == 0 ? 0 : (bytesSent * 1_000_000_000 / durationNanos);
 
-    logger.atFine().log("Transfer %d progress: "
+    logger.atFine().log("%s progress: "
             + "%5.1f%% (%d B sent, %d B confirmed received of %s B total) at %d B/s",
-        sessionId,
+        this,
         progress.percentReceived(),
         bytesSent,
         bytesConfirmedReceived,
@@ -318,67 +323,135 @@ abstract class Transfer<T> {
         totalRate);
   }
 
-  /** Represents a state in the transfer state machine. */
-  abstract class State {
-    private String getName() {
-      return getClass().getSimpleName();
-    }
+  interface State {
+    /**
+     * Called to handle a non-final chunk for this transfer.
+     */
+    void handleDataChunk(VersionedChunk chunk) throws TransferAbortedException;
 
-    /** Called to handle a non-final chunk for this transfer. */
-    void handleDataChunk(VersionedChunk chunk) {
-      logger.atFine().log(
-          "Transfer %d [%s state]: Received unexpected data chunk", getId(), getName());
-    }
+    /**
+     * Called to handle the final chunk for this transfer.
+     */
+    void handleFinalChunk(int statusCode) throws TransferAbortedException;
 
-    /** Called to handle the final chunk for this transfer. */
-    void handleFinalChunk(int statusCode) {
+    /**
+     * Called when this transfer's deadline expires.
+     */
+    void handleTimeout() throws TransferAbortedException;
+
+    /**
+     * Called if the transfer is cancelled by the user.
+     */
+    void handleCancellation();
+
+    /**
+     * Called when the transfer thread is shutting down.
+     */
+    void handleTermination();
+  }
+
+  /** Represents an active state in the transfer state machine. */
+  abstract class ActiveState implements State {
+    @Override
+    public final void handleFinalChunk(int statusCode) throws TransferAbortedException {
       Status status = Status.fromCode(statusCode);
-      if (status != null) {
-        cleanUp(status);
-        setState(new Completed());
-      } else {
-        logger.atWarning().log("Received invalid status value %d", statusCode);
-        setStateCompletedAndSendFinalChunk(Status.INVALID_ARGUMENT);
+      if (status == null) {
+        logger.atWarning().log("Received invalid status value %d, using INTERNAL", statusCode);
+        status = Status.INTERNAL;
+      }
+
+      // If this is not version 2, immediately clean up. If it is, send the COMPLETION_ACK first and
+      // clean up if that succeeded.
+      if (configuredProtocolVersion == ProtocolVersion.VERSION_TWO) {
+        sendChunk(newChunk(Chunk.Type.COMPLETION_ACK).build());
+      }
+      changeState(new Completed(status));
+    }
+
+    /** Enters the recovery state and returns to this state if recovery succeeds. */
+    @Override
+    public void handleTimeout() throws TransferAbortedException {
+      changeState(new Recovery(this)).handleTimeout();
+    }
+
+    @Override
+    public final void handleCancellation() {
+      try {
+        setStateTerminatingAndSendFinalChunk(Status.CANCELLED);
+      } catch (TransferAbortedException e) {
+        // Transfer was aborted; nothing to do.
       }
     }
 
-    /** Called when this transfer's deadline expires. */
-    void handleTimeout() {
-      logger.atFine().log("Transfer %d [%s state]: Ignoring timeout", getId(), getName());
-    }
-
-    /** Called if the transfer is cancelled by the user. */
-    void handleCancellation() {
-      setStateCompletedAndSendFinalChunk(Status.CANCELLED);
-    }
-
-    /** Called when the transfer thread is shutting down. */
-    void handleTermination() {
-      setStateCompletedAndSendFinalChunk(Status.ABORTED);
+    @Override
+    public final void handleTermination() {
+      try {
+        setStateTerminatingAndSendFinalChunk(Status.ABORTED);
+      } catch (TransferAbortedException e) {
+        // Transfer was aborted; nothing to do.
+      }
     }
   }
 
-  private class Inactive extends State {}
+  private class Initiating extends ActiveState {
+    @Override
+    public void handleDataChunk(VersionedChunk chunk) throws TransferAbortedException {
+      assignSessionId(chunk.sessionId());
 
-  private class Initiating extends State {
-    // TODO(hepler): Implement the starting handshake
+      if (chunk.version() == ProtocolVersion.UNKNOWN) {
+        logger.atWarning().log(
+            "%s aborting due to unsupported protocol version: %s", Transfer.this, chunk);
+        setStateTerminatingAndSendFinalChunk(Status.INVALID_ARGUMENT);
+        return;
+      }
+
+      changeState(getWaitingForDataState());
+
+      if (chunk.type() != Chunk.Type.START_ACK) {
+        logger.atFine().log(
+            "%s got non-handshake chunk; reverting to legacy protocol", Transfer.this);
+        configuredProtocolVersion = ProtocolVersion.LEGACY;
+        state.handleDataChunk(chunk);
+        return;
+      }
+
+      if (chunk.version().compareTo(desiredProtocolVersion) <= 0) {
+        configuredProtocolVersion = chunk.version();
+      } else {
+        configuredProtocolVersion = desiredProtocolVersion;
+      }
+
+      logger.atFine().log("%s negotiated protocol %s (ours=%s, theirs=%s)",
+          Transfer.this,
+          configuredProtocolVersion,
+          desiredProtocolVersion,
+          chunk.version());
+
+      VersionedChunk.Builder startAckConfirmation = newChunk(Chunk.Type.START_ACK_CONFIRMATION);
+      prepareInitialChunk(startAckConfirmation);
+      sendChunk(startAckConfirmation.build());
+    }
   }
 
   /** Recovering from an expired timeout. */
-  class Recovery extends State {
+  class Recovery extends ActiveState {
+    private final State nextState;
     private int retries;
 
-    @Override
-    void handleDataChunk(VersionedChunk chunk) {
-      setState(getWaitingForDataState());
-      state.handleDataChunk(chunk);
+    Recovery(State nextState) {
+      this.nextState = nextState;
     }
 
     @Override
-    void handleTimeout() {
+    public void handleDataChunk(VersionedChunk chunk) throws TransferAbortedException {
+      changeState(nextState).handleDataChunk(chunk);
+    }
+
+    @Override
+    public void handleTimeout() throws TransferAbortedException {
       if (retries < maxRetries) {
-        logger.atFiner().log("Transfer %d received no chunks for %d ms; retrying %d/%d",
-            getId(),
+        logger.atFiner().log("%s received no chunks for %d ms; retrying %d/%d",
+            Transfer.this,
             timeoutMillis,
             retries,
             maxRetries);
@@ -388,20 +461,68 @@ abstract class Transfer<T> {
         return;
       }
 
-      setStateCompletedAndSendFinalChunk(Status.DEADLINE_EXCEEDED);
+      // If the transfer timed out, skip to the completed state. Don't send any more packets.
+      changeState(new Completed(Status.DEADLINE_EXCEEDED));
     }
   }
 
   /** Transfer completed. Do nothing if the transfer is terminated or cancelled. */
-  class Completed extends State {
-    Completed() {
-      deadline = NO_TIMEOUT;
+  class Terminating extends ActiveState {
+    private final Status status;
+
+    Terminating(Status status) {
+      this.status = status;
     }
 
     @Override
-    void handleTermination() {}
+    public void handleDataChunk(VersionedChunk chunk) {
+      if (chunk.type() == Chunk.Type.COMPLETION_ACK) {
+        changeState(new Completed(status));
+      }
+    }
+  }
+
+  class Completed implements State {
+    /** Performs final cleanup of a completed transfer. No packets are sent to the server. */
+    Completed(Status status) {
+      cleanUp();
+      logger.atInfo().log("%s completed with status %s", Transfer.this, status);
+      if (status.ok()) {
+        setFutureResult();
+      } else {
+        future.setException(new TransferError(Transfer.this, status));
+      }
+    }
+
+    /** Finishes the transfer due to an exception. No packets are sent to the server. */
+    Completed(TransferError exception) {
+      cleanUp();
+      logger.atWarning().withCause(exception).log("%s terminated with exception", Transfer.this);
+      future.setException(exception);
+    }
+
+    private void cleanUp() {
+      deadline = NO_TIMEOUT;
+      eventHandler.unregisterTransfer(Transfer.this);
+    }
 
     @Override
-    void handleCancellation() {}
+    public void handleDataChunk(VersionedChunk chunk) {
+      logger.atFiner().log("%s [Completed state]: Received unexpected data chunk", Transfer.this);
+    }
+
+    @Override
+    public void handleFinalChunk(int statusCode) {
+      logger.atFiner().log("%s [Completed state]: Received unexpected data chunk", Transfer.this);
+    }
+
+    @Override
+    public void handleTimeout() {}
+
+    @Override
+    public void handleTermination() {}
+
+    @Override
+    public void handleCancellation() {}
   }
 }

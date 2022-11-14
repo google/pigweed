@@ -26,9 +26,8 @@ public class TransferError extends Exception {
     error = Status.UNKNOWN;
   }
 
-  TransferError(int id, Status error) {
-    this(String.format(Locale.ENGLISH, "Transfer %d failed with status %s", id, error.name()),
-        error);
+  TransferError(Transfer<?> transfer, Status error) {
+    this(String.format(Locale.ENGLISH, "%s failed with status %s", transfer, error.name()), error);
   }
 
   TransferError(String msg, Status error) {

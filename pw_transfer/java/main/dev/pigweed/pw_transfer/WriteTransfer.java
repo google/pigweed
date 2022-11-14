@@ -38,6 +38,7 @@ class WriteTransfer extends Transfer<Void> {
   private final byte[] data;
 
   protected WriteTransfer(int resourceId,
+      ProtocolVersion desiredProtocolVersion,
       TransferInterface transferManager,
       int timeoutMillis,
       int initialTimeoutMillis,
@@ -46,6 +47,7 @@ class WriteTransfer extends Transfer<Void> {
       Consumer<TransferProgress> progressCallback,
       BooleanSupplier shouldAbortCallback) {
     super(resourceId,
+        desiredProtocolVersion,
         transferManager,
         timeoutMillis,
         initialTimeoutMillis,
@@ -56,10 +58,8 @@ class WriteTransfer extends Transfer<Void> {
   }
 
   @Override
-  VersionedChunk getInitialChunk(ProtocolVersion desiredProcotolVersion) {
-    return VersionedChunk.createInitialChunk(desiredProcotolVersion, getResourceId())
-        .setRemainingBytes(data.length)
-        .build();
+  void prepareInitialChunk(VersionedChunk.Builder chunk) {
+    chunk.setRemainingBytes(data.length);
   }
 
   @Override
@@ -67,22 +67,15 @@ class WriteTransfer extends Transfer<Void> {
     return new WaitingForTransferParameters();
   }
 
-  private class WaitingForTransferParameters extends State {
+  private class WaitingForTransferParameters extends ActiveState {
     @Override
-    void handleTimeout() {
-      Recovery recoveryState = new Recovery();
-      setState(recoveryState);
-      recoveryState.handleTimeout();
-    }
-
-    @Override
-    void handleDataChunk(VersionedChunk chunk) {
+    public void handleDataChunk(VersionedChunk chunk) throws TransferAbortedException {
       updateTransferParameters(chunk);
     }
   }
 
   /** Transmitting a transfer window. */
-  private class Transmitting extends State {
+  private class Transmitting extends ActiveState {
     private final int windowStartOffset;
     private final int windowEndOffset;
 
@@ -92,26 +85,23 @@ class WriteTransfer extends Transfer<Void> {
     }
 
     @Override
-    void handleDataChunk(VersionedChunk chunk) {
+    public void handleDataChunk(VersionedChunk chunk) throws TransferAbortedException {
       updateTransferParameters(chunk);
     }
 
     @Override
-    void handleTimeout() {
+    public void handleTimeout() throws TransferAbortedException {
       ByteString chunkData = ByteString.copyFrom(
           data, sentOffset, min(windowEndOffset - sentOffset, maxChunkSizeBytes));
 
-      logger.atFiner().log("Transfer %d: sending bytes %d-%d (%d B chunk, max size %d B)",
-          getId(),
+      logger.atFiner().log("%s sending bytes %d-%d (%d B chunk, max size %d B)",
+          WriteTransfer.this,
           sentOffset,
           sentOffset + chunkData.size() - 1,
           chunkData.size(),
           maxChunkSizeBytes);
 
-      if (!sendChunk(buildDataChunk(chunkData))) {
-        setState(new Completed());
-        return;
-      }
+      sendChunk(buildDataChunk(chunkData));
 
       sentOffset += chunkData.size();
       updateProgress(sentOffset, windowStartOffset, data.length);
@@ -121,7 +111,7 @@ class WriteTransfer extends Transfer<Void> {
         return; // Keep transmitting packets
       }
       setNextChunkTimeout();
-      setState(new WaitingForTransferParameters());
+      changeState(new WaitingForTransferParameters());
     }
   }
 
@@ -139,15 +129,11 @@ class WriteTransfer extends Transfer<Void> {
     getFuture().set(null);
   }
 
-  private void updateTransferParameters(VersionedChunk chunk) {
-    logger.atFiner().log("Transfer %d received new chunk (type=%s, offset=%d, windowEndOffset=%d)",
-        getId(),
-        chunk.type(),
-        chunk.offset(),
-        chunk.windowEndOffset());
+  private void updateTransferParameters(VersionedChunk chunk) throws TransferAbortedException {
+    logger.atFiner().log("%s received new chunk %s", this, chunk);
 
     if (chunk.offset() > data.length) {
-      setStateCompletedAndSendFinalChunk(Status.OUT_OF_RANGE);
+      setStateTerminatingAndSendFinalChunk(Status.OUT_OF_RANGE);
       return;
     }
 
@@ -156,15 +142,15 @@ class WriteTransfer extends Transfer<Void> {
       long droppedBytes = sentOffset - chunk.offset();
       if (droppedBytes > 0) {
         totalDroppedBytes += droppedBytes;
-        logger.atFine().log("Transfer %d retransmitting %d B (%d retransmitted of %d sent)",
-            getId(),
+        logger.atFine().log("%s retransmitting %d B (%d retransmitted of %d sent)",
+            this,
             droppedBytes,
             totalDroppedBytes,
             sentOffset);
       }
       sentOffset = chunk.offset();
     } else if (windowEndOffset <= sentOffset) {
-      logger.atFiner().log("Transfer %d: ignoring old rolling window packet", getId());
+      logger.atFiner().log("%s ignoring old rolling window packet", this);
       setNextChunkTimeout();
       return; // Received an old rolling window packet, ignore it.
     }
@@ -179,17 +165,16 @@ class WriteTransfer extends Transfer<Void> {
 
     if (maxChunkSizeBytes == 0) {
       if (windowEndOffset == sentOffset) {
-        logger.atWarning().log("Server requested 0 bytes in write transfer %d; aborting", getId());
-        setStateCompletedAndSendFinalChunk(Status.INVALID_ARGUMENT);
+        logger.atWarning().log("%s server requested 0 bytes; aborting", this);
+        setStateTerminatingAndSendFinalChunk(Status.INVALID_ARGUMENT);
         return;
       }
       // Default to sending the entire window if the max chunk size is not specified (or is 0).
       maxChunkSizeBytes = windowEndOffset - sentOffset;
     }
 
-    Transmitting transmittingState = new Transmitting(chunk.offset(), windowEndOffset);
-    setState(transmittingState);
-    transmittingState.handleTimeout(); // Immediately send the first packet
+    // Enter the transmitting state and immediately send the first packet
+    changeState(new Transmitting(chunk.offset(), windowEndOffset)).handleTimeout();
   }
 
   private VersionedChunk buildDataChunk(ByteString chunkData) {
@@ -198,7 +183,7 @@ class WriteTransfer extends Transfer<Void> {
 
     // If this is the last data chunk, setRemainingBytes to 0.
     if (sentOffset + chunkData.size() == data.length) {
-      logger.atFiner().log("Transfer %d sending final chunk with %d B", getId(), chunkData.size());
+      logger.atFiner().log("%s sending final chunk with %d B", this, chunkData.size());
       chunk.setRemainingBytes(0);
     }
     return chunk.build();
