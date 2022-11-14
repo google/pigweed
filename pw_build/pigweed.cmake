@@ -232,7 +232,7 @@ function(pw_auto_add_module_tests MODULE)
         ${arg_GROUPS}
     )
     # Generator expressions are not targets, ergo cannot be passed via the
-    # public pw_add_test API.
+    # public pw_add_test_generic API.
     target_link_libraries("${MODULE}.${test_name}.lib"
       PRIVATE
         "$<TARGET_NAME_IF_EXISTS:${MODULE}>"
@@ -319,7 +319,13 @@ macro(_pw_add_library_multi_value_args variable)
                     PUBLIC_LINK_OPTIONS PRIVATE_LINK_OPTIONS "${ARGN}")
 endmacro()
 
-# pw_add_library: Creates a CMake library target.
+function(pw_add_library NAME TYPE)
+  message(DEPRECATION
+          "pw_add_library is being transitioned to pw_add_library_generic")
+  pw_add_library_generic("${NAME}" "${TYPE}" ${ARGN})
+endfunction()
+
+# pw_add_library_generic: Creates a CMake library target.
 #
 # Required Args:
 #
@@ -341,7 +347,7 @@ endmacro()
 #   PRIVATE_COMPILE_OPTIONS - private target_compile_options arguments
 #   PUBLIC_LINK_OPTIONS - public target_link_options arguments
 #   PRIVATE_LINK_OPTIONS - private target_link_options arguments
-function(pw_add_library NAME TYPE)
+function(pw_add_library_generic NAME TYPE)
   set(supported_library_types INTERFACE OBJECT STATIC SHARED MODULE)
   if(NOT "${TYPE}" IN_LIST supported_library_types)
     message(FATAL_ERROR "\"${TYPE}\" is not a valid library type for ${NAME}. "
@@ -445,7 +451,7 @@ function(pw_add_library NAME TYPE)
     target_link_options(
         "${NAME}._public_config" INTERFACE ${arg_PUBLIC_LINK_OPTIONS})
   endif(NOT "${arg_PUBLIC_LINK_OPTIONS}" STREQUAL "")
-endfunction(pw_add_library)
+endfunction(pw_add_library_generic)
 
 # Checks that the library's name is prefixed by the relative path with dot
 # separators instead of forward slashes. Ignores paths not under the root
@@ -536,7 +542,7 @@ function(pw_add_module_library NAME)
     set(public_or_interface INTERFACE)
   endif(NOT "${arg_SOURCES}" STREQUAL "")
 
-  pw_add_library(${NAME} ${type}
+  pw_add_library_generic(${NAME} ${type}
     SOURCES
       ${arg_SOURCES}
     HEADERS
@@ -595,10 +601,102 @@ function(pw_add_module_facade NAME)
       ${multi_value_args}
   )
 
-  if("${arg_BACKEND}" STREQUAL "")
-    message(FATAL_ERROR "The ${NAME} pw_add_module_facade is missing the "
-            "BACKEND variable")
+  _pw_check_name_is_relative_to_root("${NAME}" "$ENV{PW_ROOT}"
+    REMAP_PREFIXES
+      third_party pw_third_party
+  )
+
+  # Use STATIC libraries if sources are provided, else instantiate an INTERFACE
+  # library. Also conditionally select PUBLIC vs INTERFACE depending on this
+  # selection.
+  if(NOT "${arg_SOURCES}" STREQUAL "")
+    set(type STATIC)
+  else()
+    set(type INTERFACE)
   endif()
+
+  pw_add_facade_generic("${NAME}" "${type}"
+    BACKEND
+      ${arg_BACKEND}
+    SOURCES
+      ${arg_SOURCES}
+    HEADERS
+      ${arg_HEADERS}
+    PUBLIC_DEPS
+      # TODO(b/232141950): Apply compilation options that affect ABI
+      # globally in the CMake build instead of injecting them into libraries.
+      pw_build
+      ${arg_PUBLIC_DEPS}
+    PRIVATE_DEPS
+      pw_build.warnings
+      ${arg_PRIVATE_DEPS}
+    PUBLIC_INCLUDES
+      ${arg_PUBLIC_INCLUDES}
+    PRIVATE_INCLUDES
+      ${arg_PRIVATE_INCLUDES}
+    PUBLIC_DEFINES
+      ${arg_PUBLIC_DEFINES}
+    PRIVATE_DEFINES
+      ${arg_PRIVATE_DEFINES}
+    PUBLIC_COMPILE_OPTIONS
+      ${arg_PUBLIC_COMPILE_OPTIONS}
+    PRIVATE_COMPILE_OPTIONS
+      ${arg_PRIVATE_COMPILE_OPTIONS}
+    PUBLIC_LINK_OPTIONS
+      ${arg_PUBLIC_LINK_OPTIONS}
+    PRIVATE_LINK_OPTIONS
+      ${arg_PRIVATE_LINK_OPTIONS}
+  )
+endfunction(pw_add_module_facade)
+
+# pw_add_facade_generic: Creates a CMake facade library target.
+#
+# Facades are declared as two libraries to avoid circular dependencies.
+# Libraries that use the facade depend on the <name> of this target. The
+# libraries that implement this facade have to depend on an internal library
+# named <name>.facade.
+#
+# Required Args:
+#
+#   <name> - The name for the public facade target (<name>) for all users and
+#            the suffixed facade target for backend implementers (<name.facade).
+#   <type> - The library type which must be INTERFACE, OBJECT, STATIC, SHARED,
+#            or MODULE.
+#   BACKEND - The name of the facade's backend variable.
+#
+# Optional Args:
+#
+#   SOURCES - source files for this library
+#   HEADERS - header files for this library
+#   PUBLIC_DEPS - public pw_target_link_targets arguments
+#   PRIVATE_DEPS - private pw_target_link_targets arguments
+#   PUBLIC_INCLUDES - public target_include_directories argument
+#   PRIVATE_INCLUDES - public target_include_directories argument
+#   PUBLIC_DEFINES - public target_compile_definitions arguments
+#   PRIVATE_DEFINES - private target_compile_definitions arguments
+#   PUBLIC_COMPILE_OPTIONS - public target_compile_options arguments
+#   PRIVATE_COMPILE_OPTIONS - private target_compile_options arguments
+#   PUBLIC_LINK_OPTIONS - public target_link_options arguments
+#   PRIVATE_LINK_OPTIONS - private target_link_options arguments
+function(pw_add_facade_generic NAME TYPE)
+  set(supported_library_types INTERFACE OBJECT STATIC SHARED MODULE)
+  if(NOT "${TYPE}" IN_LIST supported_library_types)
+    message(FATAL_ERROR "\"${TYPE}\" is not a valid library type for ${NAME}. "
+          "Must be INTERFACE, OBJECT, STATIC, SHARED, or MODULE.")
+  endif()
+
+  _pw_add_library_multi_value_args(multi_value_args)
+  pw_parse_arguments(
+    NUM_POSITIONAL_ARGS
+      2
+    ONE_VALUE_ARGS
+      BACKEND
+    MULTI_VALUE_ARGS
+      ${multi_value_args}
+    REQUIRED_ARGS
+      BACKEND
+  )
+
   if(NOT DEFINED "${arg_BACKEND}")
     message(FATAL_ERROR "${NAME}'s backend variable ${arg_BACKEND} has not "
             "been defined, you may be missing a pw_add_backend_variable or "
@@ -606,7 +704,7 @@ function(pw_add_module_facade NAME)
   endif()
   string(REGEX MATCH ".+_BACKEND" backend_ends_in_backend "${arg_BACKEND}")
   if(NOT backend_ends_in_backend)
-    message(FATAL_ERROR "The ${NAME} pw_add_module_facade's BACKEND argument "
+    message(FATAL_ERROR "The ${NAME} pw_add_generic_facade's BACKEND argument "
             "(${arg_BACKEND}) must end in _BACKEND (${name_ends_in_backend})")
   endif()
 
@@ -616,7 +714,7 @@ function(pw_add_module_facade NAME)
     # instead. If the facade is used in the build, it fails with this error.
     pw_add_error_target("${NAME}.NO_BACKEND_SET"
       MESSAGE
-        "Attempted to build the ${NAME} facade with no backend. "
+        "Attempted to build the ${NAME} facade with no backend set. "
         "Configure the ${NAME} backend using pw_set_backend or remove all "
         "dependencies on it. See https://pigweed.dev/pw_build."
     )
@@ -626,7 +724,7 @@ function(pw_add_module_facade NAME)
 
   # Define the facade library, which is used by the backend to avoid circular
   # dependencies.
-  pw_add_module_library("${NAME}.facade"
+  pw_add_library_generic("${NAME}.facade" INTERFACE
     HEADERS
       ${arg_HEADERS}
     PUBLIC_INCLUDES
@@ -645,7 +743,7 @@ function(pw_add_module_facade NAME)
   # header files and public interface aspects from the .facade target and
   # exposes the dependency on the backend along with the private library
   # target components.
-  pw_add_module_library("${NAME}"
+  pw_add_library_generic("${NAME}" "${TYPE}"
     PUBLIC_DEPS
       "${NAME}.facade"
       "${backend_target}"
@@ -662,7 +760,7 @@ function(pw_add_module_facade NAME)
     PRIVATE_LINK_OPTIONS
       ${arg_PRIVATE_LINK_OPTIONS}
   )
-endfunction(pw_add_module_facade)
+endfunction(pw_add_facade_generic)
 
 # Declare a facade's backend variables which can be overriden later by using
 # pw_set_backend.
@@ -834,7 +932,7 @@ function(pw_add_error_target NAME)
 
   # A static library is provided, in case this rule nominally provides a
   # compiled output, e.g. to enable $<TARGET_FILE:"${NAME}">.
-  pw_add_library("${NAME}" STATIC
+  pw_add_library_generic("${NAME}" STATIC
     SOURCES
       $<TARGET_PROPERTY:pw_build.empty,SOURCES>
   )

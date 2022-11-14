@@ -19,7 +19,7 @@ include("$ENV{PW_ROOT}/pw_build/cc_blob_library.cmake")
 include("$ENV{PW_ROOT}/pw_build/pigweed.cmake")
 
 # Target that specifies the standard Pigweed build options.
-pw_add_library(pw_build INTERFACE
+pw_add_library_generic(pw_build INTERFACE
   PUBLIC_COMPILE_OPTIONS
     -g
     # Force the compiler use colorized output. This is required for Ninja.
@@ -41,7 +41,7 @@ add_custom_target(pw_tests DEPENDS pw_tests.default)
 add_custom_target(pw_run_tests DEPENDS pw_run_tests.default)
 
 # Define the standard Pigweed compile options.
-pw_add_library(pw_build.reduced_size INTERFACE
+pw_add_library_generic(pw_build.reduced_size INTERFACE
   PUBLIC_COMPILE_OPTIONS
     "-fno-common"
     "-fno-exceptions"
@@ -62,7 +62,7 @@ pw_add_library(pw_build.reduced_size INTERFACE
 set(pw_build_WARNINGS pw_build.strict_warnings
     CACHE STRING "Warnings libraries to use for Pigweed upstream code")
 
-pw_add_library(pw_build.warnings INTERFACE
+pw_add_library_generic(pw_build.warnings INTERFACE
   PUBLIC_DEPS
     ${pw_build_WARNINGS}
 )
@@ -78,7 +78,7 @@ else()
   set(strict_warnings_cond "-Wundef")
 endif()
 
-pw_add_library(pw_build.strict_warnings INTERFACE
+pw_add_library_generic(pw_build.strict_warnings INTERFACE
   PUBLIC_COMPILE_OPTIONS
     "-Wall"
     "-Wextra"
@@ -99,14 +99,14 @@ if(NOT ZEPHYR_PIGWEED_MODULE_DIR)
   set(extra_strict_warnings_cond "-Wredundant-decls")
 endif()
 
-pw_add_library(pw_build.extra_strict_warnings INTERFACE
+pw_add_library_generic(pw_build.extra_strict_warnings INTERFACE
   PUBLIC_COMPILE_OPTIONS
     "-Wshadow"
     ${extra_strict_warnings_cond}
     $<$<COMPILE_LANGUAGE:C>:-Wstrict-prototypes>
 )
 
-pw_add_library(pw_build.pedantic_warnings INTERFACE
+pw_add_library_generic(pw_build.pedantic_warnings INTERFACE
   PUBLIC_COMPILE_OPTIONS
     # Enable -Wpedantic, but disable a few warnings.
     "-Wpedantic"
@@ -120,7 +120,7 @@ pw_add_library(pw_build.pedantic_warnings INTERFACE
     "-Wno-gnu-zero-variadic-macro-arguments"
 )
 
-pw_add_library(pw_build.cpp17 INTERFACE
+pw_add_library_generic(pw_build.cpp17 INTERFACE
   PUBLIC_COMPILE_OPTIONS
     $<$<COMPILE_LANGUAGE:CXX>:-std=c++17>
     # Allow uses of the register keyword, which may appear in C headers.

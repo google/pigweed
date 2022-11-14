@@ -819,16 +819,22 @@ CMake functions
 ---------------
 CMake convenience functions are defined in ``pw_build/pigweed.cmake``.
 
-* ``pw_add_library`` -- The base helper used to instantiate CMake libraries.
-  This is meant for use in downstream projects as upstream Pigweed modules are
-  expected to use ``pw_add_module_library`` and ``pw_add_module_facade``.
+* ``pw_add_library_generic`` -- The base helper used to instantiate CMake
+  libraries. This is meant for use in downstream projects as upstream Pigweed
+  modules are expected to use ``pw_add_module_library``.
 * ``pw_add_module_library`` -- Add an upstream Pigweed library.
+* ``pw_add_facade_generic`` -- The base helper used to instantiate facade
+  libraries. This is meant for use in downstream projects as upstream Pigweed
+  modules are expected to use ``pw_add_module_facade``.
 * ``pw_add_module_facade`` -- Declare an upstream Pigweed facade.
 * ``pw_set_backend`` -- Set the backend library to use for a facade.
 * ``pw_auto_add_simple_module`` -- For modules with only one library,
   automatically declare the library and its tests. This has been deprecated,
   please use ``pw_add_module_library`` instead.
-* ``pw_add_test`` -- Declare a test target.
+* ``pw_add_test_generic`` -- The base helper used to instantiate test targets.
+  This is meant for use in downstrema projects as upstream Pigweed modules are
+  expected to use ``pw_add_test``.
+* ``pw_add_test`` -- Declare an upstream Pigweed test target.
 * ``pw_add_test_group`` -- Declare a target to group and bundle test targets.
 * ``pw_target_link_targets`` -- Helper wrapper around ``target_link_libraries``
   which only supports CMake targets and detects when the target does not exist.

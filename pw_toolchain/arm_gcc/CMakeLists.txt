@@ -14,7 +14,7 @@
 
 include("$ENV{PW_ROOT}/pw_build/pigweed.cmake")
 
-pw_add_library(pw_toolchain.arm_gcc.newlib_os_interface_stubs STATIC
+pw_add_library_generic(pw_toolchain.arm_gcc.newlib_os_interface_stubs STATIC
   SOURCES
     newlib_os_interface_stubs.cc
   PUBLIC_DEPS
@@ -26,7 +26,7 @@ pw_add_library(pw_toolchain.arm_gcc.newlib_os_interface_stubs STATIC
     "-Wl,--wrap=__sclose"
 )
 
-pw_add_library(pw_toolchain.arm_gcc.arm_none_eabi_gcc_support INTERFACE
+pw_add_library_generic(pw_toolchain.arm_gcc.arm_none_eabi_gcc_support INTERFACE
   PUBLIC_DEPS
     pw_toolchain.arm_gcc.newlib_os_interface_stubs
     pw_toolchain.wrap_abort

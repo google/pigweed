@@ -47,7 +47,10 @@ set(pw_unit_test_AUTOMATIC_RUNNER_TIMEOUT_SECONDS "" CACHE STRING
 set(pw_unit_test_AUTOMATIC_RUNNER_ARGS "" CACHE STRING
     "Optional arguments to forward to the automatic runner")
 
-# pw_add_test: Declares a single unit test suite.
+# TODO(ewout, hepler): Actually add the Pigweed rules once downstream users
+# have been moved to pw_add_test_generic.
+# pw_add_test: Declares a single unit test suite with Pigweed naming rules and
+#              compiler warning options.
 #
 #   {NAME} depends on ${NAME}.run if pw_unit_test_AUTOMATIC_RUNNER is set, else
 #          it depends on ${NAME}.bin
@@ -76,6 +79,38 @@ set(pw_unit_test_AUTOMATIC_RUNNER_ARGS "" CACHE STRING
 #   GROUPS - groups to which to add this test.
 #
 function(pw_add_test NAME)
+  pw_add_test_generic("${NAME}" ${ARGN})
+endfunction()
+
+# pw_add_test_generic: Declares a single unit test suite.
+#
+#   {NAME} depends on ${NAME}.run if pw_unit_test_AUTOMATIC_RUNNER is set, else
+#          it depends on ${NAME}.bin
+#   {NAME}.lib contains the provided test sources as a library target, which can
+#              then be linked into a test executable.
+#   {NAME}.bin is a standalone executable which contains only the test sources
+#              specified in the pw_unit_test_template.
+#   {NAME}.run which runs the unit test executable after building it if
+#              pw_unit_test_AUTOMATIC_RUNNER is set, else it fails to build.
+#
+# Required Arguments:
+#
+#   NAME: name to use for the produced test targets specified above
+#
+# Optional Arguments:
+#
+#   SOURCES - source files for this library
+#   HEADERS - header files for this library
+#   PRIVATE_DEPS - private pw_target_link_targets arguments
+#   PRIVATE_INCLUDES - public target_include_directories argument
+#   PRIVATE_DEFINES - private target_compile_definitions arguments
+#   PRIVATE_COMPILE_OPTIONS - private target_compile_options arguments
+#   PRIVATE_LINK_OPTIONS - private target_link_options arguments
+#
+#  TODO(ewout, hepler): Deprecate the following legacy arguments
+#   GROUPS - groups to which to add this test.
+#
+function(pw_add_test_generic NAME)
   pw_parse_arguments(
     NUM_POSITIONAL_ARGS
       1
@@ -90,7 +125,7 @@ function(pw_add_test NAME)
   if(NOT arg_SOURCES)
     set(arg_SOURCES $<TARGET_PROPERTY:pw_build.empty,SOURCES>)
   endif()
-  pw_add_library("${NAME}.lib" OBJECT
+  pw_add_library_generic("${NAME}.lib" OBJECT
     SOURCES
       ${arg_SOURCES}
     HEADERS
@@ -168,7 +203,7 @@ function(pw_add_test NAME)
   if(arg_GROUPS)
     pw_add_test_to_groups("${NAME}" ${arg_GROUPS})
   endif()
-endfunction(pw_add_test)
+endfunction(pw_add_test_generic)
 
 # pw_add_test_group: Defines a collection of tests or other test groups.
 #
@@ -222,7 +257,7 @@ function(pw_add_test_group NAME)
   )
 
   # Produce ${NAME}.lib.
-  pw_add_library("${NAME}.lib" INTERFACE
+  pw_add_library_generic("${NAME}.lib" INTERFACE
     PUBLIC_DEPS
       ${NAME}.bundle.lib
   )

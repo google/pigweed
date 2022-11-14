@@ -153,7 +153,7 @@ function(pw_cc_blob_library NAME)
       "${generated_source}"
   )
 
-  pw_add_library("${NAME}" STATIC
+  pw_add_library_generic("${NAME}" STATIC
     SOURCES
       "${generated_source}"
     PUBLIC_INCLUDES

@@ -59,7 +59,7 @@ function(pw_proto_library NAME)
   set(include_deps "${arg_DEPS}")
   list(TRANSFORM include_deps APPEND ._includes)
 
-  pw_add_library("${NAME}._includes" INTERFACE
+  pw_add_library_generic("${NAME}._includes" INTERFACE
     PUBLIC_INCLUDES
       "${out_dir}/sources"
     PUBLIC_DEPS
@@ -283,7 +283,7 @@ function(_pw_pwpb_library NAME)
   )
 
   # Create the library with the generated source files.
-  pw_add_library("${NAME}.pwpb" INTERFACE
+  pw_add_library_generic("${NAME}.pwpb" INTERFACE
     PUBLIC_INCLUDES
       "${arg_OUT_DIR}/pwpb"
     PUBLIC_DEPS
@@ -332,7 +332,7 @@ function(_pw_pwpb_rpc_library NAME)
   )
 
   # Create the library with the generated source files.
-  pw_add_library("${NAME}.pwpb_rpc" INTERFACE
+  pw_add_library_generic("${NAME}.pwpb_rpc" INTERFACE
     PUBLIC_INCLUDES
       "${arg_OUT_DIR}/pwpb_rpc"
     PUBLIC_DEPS
@@ -381,7 +381,7 @@ function(_pw_raw_rpc_library NAME)
   )
 
   # Create the library with the generated source files.
-  pw_add_library("${NAME}.raw_rpc" INTERFACE
+  pw_add_library_generic("${NAME}.raw_rpc" INTERFACE
     PUBLIC_INCLUDES
       "${arg_OUT_DIR}/raw_rpc"
     PUBLIC_DEPS
@@ -422,7 +422,7 @@ function(_pw_nanopb_library NAME)
     # compiled internally, so skip recompiling it with protoc.
     if("${arg_SOURCES}" MATCHES "nanopb\\.proto")
       add_custom_target("${NAME}._generate.nanopb")  # Nothing to do
-      pw_add_library("${NAME}.nanopb" INTERFACE
+      pw_add_library_generic("${NAME}.nanopb" INTERFACE
         PUBLIC_DEPS
           pw_build
           pw_third_party.nanopb
@@ -448,7 +448,7 @@ function(_pw_nanopb_library NAME)
       )
 
       # Create the library with the generated source files.
-      pw_add_library("${NAME}.nanopb" STATIC
+      pw_add_library_generic("${NAME}.nanopb" STATIC
         SOURCES
           ${generated_outputs}
         PUBLIC_INCLUDES
@@ -505,7 +505,7 @@ function(_pw_nanopb_rpc_library NAME)
   )
 
   # Create the library with the generated source files.
-  pw_add_library("${NAME}.nanopb_rpc" INTERFACE
+  pw_add_library_generic("${NAME}.nanopb_rpc" INTERFACE
     PUBLIC_INCLUDES
       "${arg_OUT_DIR}/nanopb_rpc"
     PUBLIC_DEPS
