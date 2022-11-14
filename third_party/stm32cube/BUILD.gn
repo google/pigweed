@@ -126,7 +126,7 @@ if (dir_pw_third_party_stm32cube == "") {
       "-Wno-implicit-function-declaration",
       "-Wno-switch-enum",
     ]
-    if (pw_toolchain_SCOPE.cc == "clang") {
+    if (get_path_info(pw_toolchain_SCOPE.cc, "file") == "clang") {
       cflags += [ "-Wno-deprecated-volatile" ]
       cflags_c += [ "-Wno-parentheses-equality" ]
     } else {
