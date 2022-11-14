@@ -52,12 +52,14 @@ def add_path_arguments(parser) -> None:
         default=git_repo.TRACKING_BRANCH_ALIAS,
         help=('Git revision against which to diff for changed files. '
               'Default is the tracking branch of the current branch.'))
+
     base.add_argument(
+        '--all',
         '--full',
         dest='base',
         action='store_const',
         const=None,
-        help='Run presubmit on all files, not just changed files.')
+        help='Run actions for all files, not just changed files.')
 
     parser.add_argument(
         '-e',
