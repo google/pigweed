@@ -389,6 +389,12 @@ TEST(Iterator, Tags) {
 #endif  // PW_CXX_STANDARD_IS_SUPPORTED(20)
 }
 
+TEST(TypeTrait, Basic) {
+  static_assert(std::is_same_v<const int, std::add_const_t<int>>);
+  static_assert(std::is_same_v<const int, std::add_const_t<const int>>);
+  static_assert(!std::is_same_v<int, std::add_const_t<int>>);
+}
+
 }  // namespace
 
 namespace pw::minimal_cpp_stdlib {

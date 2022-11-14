@@ -431,6 +431,18 @@ using add_rvalue_reference_t = typename add_rvalue_reference<T>::type;
 template <typename T>
 add_rvalue_reference_t<T> declval() noexcept;
 
+namespace impl {
+
+template <class T>
+struct add_const {
+  typedef const T type;
+};
+
+}  // namespace impl
+
+template <class T>
+using add_const_t = typename impl::add_const<T>::type;
+
 template <typename T>
 struct make_signed;
 
