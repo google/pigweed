@@ -75,6 +75,31 @@ def targets_from_directory(
     return targets
 
 
+def gen_empty_update_bundle(
+    targets_metadata_version: int = metadata.DEFAULT_METADATA_VERSION
+) -> UpdateBundle:
+    """Generates an empty bundle
+
+    Given an optional target metadata version, generates an empty bundle.
+
+    Args:
+      targets_metadata_version: default set to 1
+
+    Returns:
+      UpdateBundle: empty bundle
+    """
+
+    targets_metadata = metadata.gen_targets_metadata(
+        target_payloads={}, version=targets_metadata_version)
+    unsigned_targets_metadata = SignedTargetsMetadata(
+        serialized_targets_metadata=targets_metadata.SerializeToString())
+
+    return UpdateBundle(
+        root_metadata=None,
+        targets_metadata=dict(targets=unsigned_targets_metadata),
+        target_payloads=None)
+
+
 def gen_unsigned_update_bundle(
         targets: Dict[Path, str],
         persist: Optional[Path] = None,

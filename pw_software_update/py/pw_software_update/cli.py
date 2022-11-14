@@ -21,8 +21,37 @@ Learn more at: pigweed.dev/pw_software_update
 import argparse
 import sys
 from pathlib import Path
-from pw_software_update import dev_sign, keys, root_metadata
+from pw_software_update import dev_sign, keys, root_metadata, update_bundle
 from pw_software_update.tuf_pb2 import (RootMetadata, SignedRootMetadata)
+
+
+def create_empty_bundle_handler(arg) -> None:
+    """Handles the creation of an empty bundle and writes it to disc."""
+
+    bundle = update_bundle.gen_empty_update_bundle(arg.target_metadata_version)
+    arg.pathname.write_bytes(bundle.SerializeToString())
+
+
+def _add_create_empty_bundle_parser(subparsers) -> None:
+    """Parser for creation of an empty bundle."""
+
+    formatter_class = lambda prog: argparse.HelpFormatter(
+        prog, max_help_position=100, width=200)
+    create_empty_bundle_parser = subparsers.add_parser(
+        'create-empty-bundle',
+        description='Creation of an empty bundle',
+        formatter_class=formatter_class,
+        help="")
+    create_empty_bundle_parser.set_defaults(func=create_empty_bundle_handler)
+    create_empty_bundle_parser.add_argument(
+        'pathname', type=Path, help='Path to newly created empty bundle')
+    create_empty_bundle_parser.add_argument(
+        '--target-metadata-version',
+        help='Version number for targets metadata; Defaults to 1',
+        metavar='VERSION',
+        type=int,
+        default=1,
+        required=False)
 
 
 def inspect_root_metadata_handler(arg) -> None:
@@ -192,11 +221,17 @@ def _parse_args() -> argparse.Namespace:
         func=lambda *_args, **_kwargs: parser_root.print_help())
 
     subparsers = parser_root.add_subparsers()
+
+    # Key generation related parsers
     _add_generate_key_parser(subparsers)
 
+    # Root metadata related parsers
     _add_create_root_metadata_parser(subparsers)
     _add_sign_root_metadata_parser(subparsers)
     _add_inspect_root_metadata_parser(subparsers)
+
+    # Bundle related parsers
+    _add_create_empty_bundle_parser(subparsers)
 
     return parser_root.parse_args()
 
