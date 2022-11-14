@@ -35,8 +35,6 @@ pw_add_module_library(pw_transfer
   PRIVATE_DEPS
     pw_log
     pw_transfer.proto.pwpb
-  TEST_DEPS
-    pw_rpc.test_utils
 )
 
 pw_add_module_library(pw_transfer.client
@@ -50,8 +48,6 @@ pw_add_module_library(pw_transfer.client
   PRIVATE_DEPS
     pw_log
     pw_transfer.proto.pwpb
-  TEST_DEPS
-    pw_rpc.test_utils
 )
 
 pw_add_module_library(pw_transfer.core
