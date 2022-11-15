@@ -29,8 +29,18 @@ import re
 import subprocess
 import sys
 import tempfile
-from typing import Callable, Collection, Dict, Iterable, List, NamedTuple
-from typing import Optional, Pattern, Tuple, Union
+from typing import (
+    Callable,
+    Collection,
+    Dict,
+    Iterable,
+    List,
+    NamedTuple,
+    Optional,
+    Pattern,
+    Tuple,
+    Union,
+)
 
 try:
     import pw_presubmit

@@ -18,8 +18,16 @@ import collections
 import enum
 import itertools
 
-from typing import Callable, Dict, Iterator, List, Optional, Tuple, TypeVar
-from typing import cast
+from typing import (
+    Callable,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+    TypeVar,
+    cast,
+)
 
 from google.protobuf import descriptor_pb2
 

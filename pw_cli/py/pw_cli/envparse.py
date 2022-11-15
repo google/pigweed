@@ -16,8 +16,17 @@
 import argparse
 from dataclasses import dataclass
 import os
-from typing import Callable, Dict, Generic, IO, List, Mapping, Optional, TypeVar
-from typing import Union
+from typing import (
+    Callable,
+    Dict,
+    Generic,
+    IO,
+    List,
+    Mapping,
+    Optional,
+    TypeVar,
+    Union,
+)
 
 
 class EnvNamespace(argparse.Namespace):  # pylint: disable=too-few-public-methods
