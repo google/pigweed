@@ -25,6 +25,8 @@ pw_cc_library(
     name = "pw_arduino_build",
     srcs = ["arduino_main_wrapper.cc"],
     hdrs = ["public/pw_arduino_build/init.h"],
+    # pw_arduino_build/arduino_main_wrapper.cc can't find 'Arduino.h'
+    tags = ["manual"],
     deps = [
         "//pw_sys_io",
     ],

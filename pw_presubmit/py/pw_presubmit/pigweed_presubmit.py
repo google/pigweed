@@ -439,7 +439,6 @@ def cmake_gcc(ctx: PresubmitContext):
 # none remain.
 _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     # keep-sorted: start
-    '-//pw_arduino_build',
     '-//pw_boot/...:all',
     '-//pw_chrono/py/...:all',
     '-//pw_chrono:chrono_proto_pb2',
