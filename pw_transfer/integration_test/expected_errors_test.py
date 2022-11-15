@@ -107,13 +107,12 @@ class ErrorTransferIntegrationTest(test_fixture.TransferIntegrationTest):
         # This test deliberately tries to time out the transfer, so because of
         # the retry process the resource ID might be re-initialized multiple
         # times.
-        max_attempts = self.default_client_config().max_retries + 1
         self.do_single_write(
             client_type,
             config,
             resource_id,
             payload,
-            max_attempts=max_attempts,
+            permanent_resource_id=True,
             expected_status=status_pb2.StatusCode.DEADLINE_EXCEEDED)
 
     @parameterized.expand([
@@ -140,13 +139,12 @@ class ErrorTransferIntegrationTest(test_fixture.TransferIntegrationTest):
         # This test deliberately tries to time out the transfer, so because of
         # the retry process the resource ID might be re-initialized multiple
         # times.
-        max_attempts = self.default_client_config().max_retries + 1
         self.do_single_write(
             client_type,
             config,
             resource_id,
             payload,
-            max_attempts=max_attempts,
+            permanent_resource_id=True,
             expected_status=status_pb2.StatusCode.DEADLINE_EXCEEDED)
 
     @parameterized.expand([
@@ -205,13 +203,12 @@ class ErrorTransferIntegrationTest(test_fixture.TransferIntegrationTest):
         # This test deliberately tries to time out the transfer, so because of
         # the retry process the resource ID might be re-initialized multiple
         # times.
-        max_attempts = self.default_client_config().max_retries + 1
         self.do_single_read(
             client_type,
             config,
             resource_id,
             payload,
-            max_attempts=max_attempts,
+            permanent_resource_id=True,
             expected_status=status_pb2.StatusCode.DEADLINE_EXCEEDED)
 
     @parameterized.expand([
@@ -238,13 +235,12 @@ class ErrorTransferIntegrationTest(test_fixture.TransferIntegrationTest):
         # This test deliberately tries to time out the transfer, so because of
         # the retry process the resource ID might be re-initialized multiple
         # times.
-        max_attempts = self.default_client_config().max_retries + 1
         self.do_single_read(
             client_type,
             config,
             resource_id,
             payload,
-            max_attempts=max_attempts,
+            permanent_resource_id=True,
             expected_status=status_pb2.StatusCode.DEADLINE_EXCEEDED)
 
 

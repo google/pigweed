@@ -48,16 +48,20 @@ class SmallTransferIntegrationTest(test_fixture.TransferIntegrationTest):
                           (config_pb2.TransferAction.ProtocolVersion.V1,
                            config_pb2.TransferAction.ProtocolVersion.V2)))
     def test_empty_client_write(self, client_type, protocol_version):
-        # TODO(b/255757882): empty client writes fail on v1 protocol with C++
-        # and Python clients.
-        if (protocol_version == config_pb2.TransferAction.ProtocolVersion.V1
-                and client_type in ("cpp", "python")):
-            self.skipTest("")
         payload = b""
         config = self.default_config()
         resource_id = 5
-        self.do_single_write(client_type, config, resource_id, payload,
-                             protocol_version)
+
+        # Packet drops can cause the resource ID for this to be opened/closed
+        # multiple times due to the zero-size transfer. Use a
+        # permanent_resource_id so the retry process can succeed and the harness
+        # won't flake.
+        self.do_single_write(client_type,
+                             config,
+                             resource_id,
+                             payload,
+                             protocol_version,
+                             permanent_resource_id=True)
 
     @parameterized.expand(
         itertools.product(("cpp", "java", "python"),

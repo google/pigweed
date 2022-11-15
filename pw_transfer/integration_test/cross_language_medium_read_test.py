@@ -93,20 +93,19 @@ class MediumTransferReadIntegrationTest(test_fixture.TransferIntegrationTest):
 
                 server_filter_stack: [
                     { hdlc_packetizer: {} },
-                    { keep_drop_queue: {keep_drop_queue: [3, 1]} }
+                    { keep_drop_queue: {keep_drop_queue: [5, 1]} }
             ]""", config_pb2.ProxyConfig()))
         # Resource ID is arbitrary, but deliberately set to be >1 byte.
         resource_id = 1337
 
         # This test causes flakes during the opening handshake of a transfer, so
         # allow the resource_id of this transfer to be reused multiple times.
-        max_attempts = self.default_client_config().max_retries + 1
         self.do_single_read(client_type,
                             config,
                             resource_id,
                             payload,
                             protocol_version,
-                            max_attempts=max_attempts)
+                            permanent_resource_id=True)
 
     @parameterized.expand(
         itertools.product(("cpp", "java", "python"),
@@ -140,13 +139,12 @@ class MediumTransferReadIntegrationTest(test_fixture.TransferIntegrationTest):
         # This test deliberately causes flakes during the opening handshake of
         # a transfer, so allow the resource_id of this transfer to be reused
         # multiple times.
-        max_attempts = self.default_client_config().max_retries + 1
         self.do_single_read(client_type,
                             config,
                             resource_id,
                             payload,
                             protocol_version,
-                            max_attempts=max_attempts)
+                            permanent_resource_id=True)
 
 
 if __name__ == '__main__':

@@ -95,6 +95,14 @@ message ServerResourceLocations {
   // When a client writes to this server, this stack is used to determine which
   // file path to write data to.
   repeated string destination_paths = 4;
+
+  // If source_paths is exhausted or empty, this source path can be reused
+  // as a fallback indefinitely.
+  string default_source_path = 5;
+
+  // If destination_paths is exhausted or empty, this destination path can be
+  // reused as a fallback indefinitely.
+  string default_destination_path = 6;
 }
 
 // Configuration for the integration test server.

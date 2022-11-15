@@ -377,27 +377,18 @@ class TransferIntegrationTest(unittest.TestCase):
         resource_id: int,
         data: bytes,
         protocol_version=config_pb2.TransferAction.ProtocolVersion.LATEST,
-        max_attempts=1,
+        permanent_resource_id=False,
         expected_status=status_pb2.StatusCode.OK,
     ) -> None:
         """Performs a single client-to-server write of the provided data."""
         with tempfile.NamedTemporaryFile(
         ) as f_payload, tempfile.NamedTemporaryFile() as f_server_output:
-            # Add the destination path once for each allowed retry. These are
-            # consumed each time a transfer on this resource ID is initiated,
-            # which means not all retry flows will trigger consumption of one
-            # attempt. This is mostly to address cases where the initial
-            # transfer handshake involves dropped packets, which can cause the
-            # resource to be closed and consumed due to the design of the test
-            # harness. When the client retries in those cases, it will need a
-            # new resource at this ID to succeed.
-            #
-            # Matching max_attempts to max_retries + 1 should ensure that
-            # the resource is available at least as many times as the client
-            # will attempt to initiate a transfer.
-            paths = [f_server_output.name for _ in range(max_attempts)]
-            config.server.resources[resource_id].destination_paths.extend(
-                paths)
+            if permanent_resource_id:
+                config.server.resources[
+                    resource_id].default_destination_path = f_server_output.name
+            else:
+                config.server.resources[resource_id].destination_paths.append(
+                    f_server_output.name)
             config.client.transfer_actions.append(
                 config_pb2.TransferAction(
                     resource_id=resource_id,
@@ -426,26 +417,18 @@ class TransferIntegrationTest(unittest.TestCase):
         resource_id: int,
         data: bytes,
         protocol_version=config_pb2.TransferAction.ProtocolVersion.LATEST,
-        max_attempts=1,
+        permanent_resource_id=False,
         expected_status=status_pb2.StatusCode.OK,
     ) -> None:
         """Performs a single server-to-client read of the provided data."""
         with tempfile.NamedTemporaryFile(
         ) as f_payload, tempfile.NamedTemporaryFile() as f_client_output:
-            # Add the source path once for each allowed attempt. These are
-            # consumed each time a transfer on this resource ID is initiated,
-            # which means not all retry flows will trigger consumption of one
-            # attempt. This is mostly to address cases where the initial
-            # transfer handshake involves dropped packets, which can cause the
-            # resource to be closed and consumed due to the design of the test
-            # harness. When the client retries in those cases, it will need a
-            # new resource at this ID to succeed.
-            #
-            # Matching max_attempts to max_retries + 1 should ensure that
-            # the resource is available at least as many times as the client
-            # will attempt to initiate a transfer.
-            paths = [f_payload.name for _ in range(max_attempts)]
-            config.server.resources[resource_id].source_paths.extend(paths)
+            if permanent_resource_id:
+                config.server.resources[
+                    resource_id].default_source_path = f_payload.name
+            else:
+                config.server.resources[resource_id].source_paths.append(
+                    f_payload.name)
             config.client.transfer_actions.append(
                 config_pb2.TransferAction(
                     resource_id=resource_id,

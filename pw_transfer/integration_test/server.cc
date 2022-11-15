@@ -71,24 +71,33 @@ class FileTransferHandler final : public ReadWriteHandler {
  public:
   FileTransferHandler(uint32_t resource_id,
                       std::deque<std::string>&& sources,
-                      std::deque<std::string>&& destinations)
+                      std::deque<std::string>&& destinations,
+                      std::string default_source_path,
+                      std::string default_destination_path)
       : ReadWriteHandler(resource_id),
         sources_(sources),
-        destinations_(destinations) {}
+        destinations_(destinations),
+        default_source_path_(default_source_path),
+        default_destination_path_(default_destination_path) {}
 
   ~FileTransferHandler() = default;
 
   Status PrepareRead() final {
-    if (sources_.empty()) {
+    if (sources_.empty() && default_source_path_.length() == 0) {
       PW_LOG_ERROR("Source paths exhausted");
       return Status::ResourceExhausted();
     }
 
-    auto path = sources_.front();
+    std::string path;
+    if (!sources_.empty()) {
+      path = sources_.front();
+      sources_.pop_front();
+    } else {
+      path = default_source_path_;
+    }
+
     PW_LOG_DEBUG("Preparing read for file %s", path.c_str());
     set_reader(stream_.emplace<stream::StdFileReader>(path.c_str()));
-
-    sources_.pop_front();
     return OkStatus();
   }
 
@@ -97,16 +106,21 @@ class FileTransferHandler final : public ReadWriteHandler {
   }
 
   Status PrepareWrite() final {
-    if (destinations_.empty()) {
+    if (destinations_.empty() && default_destination_path_.length() == 0) {
       PW_LOG_ERROR("Destination paths exhausted");
       return Status::ResourceExhausted();
     }
 
-    auto path = destinations_.front();
+    std::string path;
+    if (!destinations_.empty()) {
+      path = destinations_.front();
+      destinations_.pop_front();
+    } else {
+      path = default_destination_path_;
+    }
+
     PW_LOG_DEBUG("Preparing write for file %s", path.c_str());
     set_writer(stream_.emplace<stream::StdFileWriter>(path.c_str()));
-
-    destinations_.pop_front();
     return OkStatus();
   }
 
@@ -118,6 +132,8 @@ class FileTransferHandler final : public ReadWriteHandler {
  private:
   std::deque<std::string> sources_;
   std::deque<std::string> destinations_;
+  std::string default_source_path_;
+  std::string default_destination_path_;
   std::variant<std::monostate, stream::StdFileReader, stream::StdFileWriter>
       stream_;
 };
@@ -163,7 +179,11 @@ void RunServer(int socket_port, ServerConfig config) {
         resource.second.destination_paths().end());
 
     auto handler = std::make_unique<FileTransferHandler>(
-        id, std::move(source_paths), std::move(destination_paths));
+        id,
+        std::move(source_paths),
+        std::move(destination_paths),
+        resource.second.default_source_path(),
+        resource.second.default_destination_path());
 
     transfer_service.RegisterHandler(*handler);
     handlers.push_back(std::move(handler));
