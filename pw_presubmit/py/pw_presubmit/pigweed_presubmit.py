@@ -496,7 +496,8 @@ def pw_transfer_integration_test(ctx: PresubmitContext) -> None:
     build.bazel(
         ctx, 'test',
         '//pw_transfer/integration_test:cross_language_small_test',
-        '//pw_transfer/integration_test:cross_language_medium_test',
+        '//pw_transfer/integration_test:cross_language_medium_read_test',
+        '//pw_transfer/integration_test:cross_language_medium_write_test',
         '//pw_transfer/integration_test:cross_language_large_read_test',
         '//pw_transfer/integration_test:cross_language_large_write_test',
         '//pw_transfer/integration_test:multi_transfer_test',

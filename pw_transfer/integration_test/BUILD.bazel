@@ -151,10 +151,24 @@ py_test(
 
 # Uses ports 3304 and 3305.
 py_test(
-    name = "cross_language_medium_test",
+    name = "cross_language_medium_read_test",
     timeout = "long",
     srcs = [
-        "cross_language_medium_test.py",
+        "cross_language_medium_read_test.py",
+    ],
+    deps = [
+        ":config_pb2",
+        ":integration_test_fixture",
+        "@com_google_protobuf//:protobuf_python",
+    ],
+)
+
+# Uses ports 3316 and 3317.
+py_test(
+    name = "cross_language_medium_write_test",
+    timeout = "long",
+    srcs = [
+        "cross_language_medium_write_test.py",
     ],
     deps = [
         ":config_pb2",
