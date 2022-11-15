@@ -33,7 +33,7 @@ pw_add_library(pw_assert.config INTERFACE
     ${pw_assert_CONFIG}
 )
 
-pw_add_module_facade(pw_assert.assert
+pw_add_facade(pw_assert.assert INTERFACE
   BACKEND
     pw_assert.assert_BACKEND
   HEADERS
@@ -44,7 +44,7 @@ pw_add_module_facade(pw_assert.assert
     pw_assert.config
 )
 
-pw_add_module_facade(pw_assert.check
+pw_add_facade(pw_assert.check INTERFACE
   BACKEND
     pw_assert.check_BACKEND
   HEADERS

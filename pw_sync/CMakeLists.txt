@@ -15,7 +15,7 @@
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 include($ENV{PW_ROOT}/pw_sync/backend.cmake)
 
-pw_add_module_facade(pw_sync.binary_semaphore
+pw_add_facade(pw_sync.binary_semaphore STATIC
   BACKEND
     pw_sync.binary_semaphore_BACKEND
   HEADERS
@@ -29,7 +29,7 @@ pw_add_module_facade(pw_sync.binary_semaphore
     binary_semaphore.cc
 )
 
-pw_add_module_facade(pw_sync.counting_semaphore
+pw_add_facade(pw_sync.counting_semaphore STATIC
   BACKEND
     pw_sync.counting_semaphore_BACKEND
   HEADERS
@@ -85,7 +85,7 @@ pw_add_library(pw_sync.virtual_basic_lockable INTERFACE
     pw_sync.lock_annotations
 )
 
-pw_add_module_facade(pw_sync.mutex
+pw_add_facade(pw_sync.mutex STATIC
   BACKEND
     pw_sync.mutex_BACKEND
   HEADERS
@@ -100,7 +100,7 @@ pw_add_module_facade(pw_sync.mutex
     mutex.cc
 )
 
-pw_add_module_facade(pw_sync.timed_mutex
+pw_add_facade(pw_sync.timed_mutex STATIC
   BACKEND
     pw_sync.timed_mutex_BACKEND
   HEADERS
@@ -116,7 +116,7 @@ pw_add_module_facade(pw_sync.timed_mutex
     timed_mutex.cc
 )
 
-pw_add_module_facade(pw_sync.recursive_mutex
+pw_add_facade(pw_sync.recursive_mutex STATIC
   BACKEND
     pw_sync.recursive_mutex_BACKEND
   HEADERS
@@ -130,7 +130,7 @@ pw_add_module_facade(pw_sync.recursive_mutex
     recursive_mutex.cc
 )
 
-pw_add_module_facade(pw_sync.interrupt_spin_lock
+pw_add_facade(pw_sync.interrupt_spin_lock STATIC
   BACKEND
     pw_sync.interrupt_spin_lock_BACKEND
   HEADERS
@@ -145,7 +145,7 @@ pw_add_module_facade(pw_sync.interrupt_spin_lock
     interrupt_spin_lock.cc
 )
 
-pw_add_module_facade(pw_sync.thread_notification
+pw_add_facade(pw_sync.thread_notification INTERFACE
   BACKEND
     pw_sync.thread_notification_BACKEND
   HEADERS
@@ -154,7 +154,7 @@ pw_add_module_facade(pw_sync.thread_notification
     public
 )
 
-pw_add_module_facade(pw_sync.timed_thread_notification
+pw_add_facade(pw_sync.timed_thread_notification INTERFACE
   BACKEND
     pw_sync.timed_thread_notification_BACKEND
   HEADERS
@@ -202,7 +202,7 @@ pw_add_library(pw_sync.yield_core INTERFACE
     public
 )
 
-pw_add_module_facade(pw_sync.condition_variable
+pw_add_facade(pw_sync.condition_variable INTERFACE
   BACKEND
     pw_sync.condition_variable_BACKEND
   HEADERS

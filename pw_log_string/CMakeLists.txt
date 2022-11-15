@@ -27,7 +27,7 @@ pw_add_library(pw_log_string INTERFACE
     pw_log_string.handler
 )
 
-pw_add_module_facade(pw_log_string.handler
+pw_add_facade(pw_log_string.handler STATIC
   BACKEND
     pw_log_string.handler_BACKEND
   HEADERS

@@ -825,8 +825,8 @@ CMake convenience functions are defined in ``pw_build/pigweed.cmake``.
 * ``pw_add_library`` -- Add an upstream Pigweed library.
 * ``pw_add_facade_generic`` -- The base helper used to instantiate facade
   libraries. This is meant for use in downstream projects as upstream Pigweed
-  modules are expected to use ``pw_add_module_facade``.
-* ``pw_add_module_facade`` -- Declare an upstream Pigweed facade.
+  modules are expected to use ``pw_add_facade``.
+* ``pw_add_facade`` -- Declare an upstream Pigweed facade.
 * ``pw_set_backend`` -- Set the backend library to use for a facade.
 * ``pw_auto_add_simple_module`` -- For modules with only one library,
   automatically declare the library and its tests. This has been deprecated,

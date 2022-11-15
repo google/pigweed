@@ -15,7 +15,7 @@
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 include($ENV{PW_ROOT}/pw_assert_basic/backend.cmake)
 
-pw_add_module_facade(pw_assert_basic.handler
+pw_add_facade(pw_assert_basic.handler INTERFACE
   BACKEND
     pw_assert_basic.handler_BACKEND
   HEADERS

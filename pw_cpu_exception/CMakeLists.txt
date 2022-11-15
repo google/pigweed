@@ -15,7 +15,7 @@
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 include($ENV{PW_ROOT}/pw_cpu_exception/backend.cmake)
 
-pw_add_module_facade(pw_cpu_exception.entry
+pw_add_facade(pw_cpu_exception.entry INTERFACE
   BACKEND
     pw_cpu_exception.entry_BACKEND
   HEADERS
@@ -27,7 +27,7 @@ pw_add_module_facade(pw_cpu_exception.entry
     pw_preprocessor
 )
 
-pw_add_module_facade(pw_cpu_exception.handler
+pw_add_facade(pw_cpu_exception.handler STATIC
   BACKEND
     pw_cpu_exception.handler_BACKEND
   HEADERS
@@ -41,7 +41,7 @@ pw_add_module_facade(pw_cpu_exception.handler
     start_exception_handler.cc
 )
 
-pw_add_module_facade(pw_cpu_exception.support
+pw_add_facade(pw_cpu_exception.support INTERFACE
   BACKEND
     pw_cpu_exception.support_BACKEND
   HEADERS

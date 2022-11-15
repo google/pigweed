@@ -24,7 +24,7 @@ pw_add_library(pw_chrono.epoch INTERFACE
     public
 )
 
-pw_add_module_facade(pw_chrono.system_clock
+pw_add_facade(pw_chrono.system_clock STATIC
   BACKEND
     pw_chrono.system_clock_BACKEND
   HEADERS
@@ -39,7 +39,7 @@ pw_add_module_facade(pw_chrono.system_clock
     system_clock.cc
 )
 
-pw_add_module_facade(pw_chrono.system_timer
+pw_add_facade(pw_chrono.system_timer INTERFACE
   BACKEND
     pw_chrono.system_timer_BACKEND
   HEADERS

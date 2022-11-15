@@ -142,7 +142,7 @@ pw_add_library(pw_thread_freertos.snapshot STATIC
     pw_log
 )
 
-pw_add_module_facade(pw_thread_freertos.freertos_tsktcb
+pw_add_facade(pw_thread_freertos.freertos_tsktcb INTERFACE
   BACKEND
     pw_thread_freertos.freertos_tsktcb_BACKEND
   HEADERS

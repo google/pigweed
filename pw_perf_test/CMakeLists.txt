@@ -23,7 +23,7 @@ pw_add_library(pw_perf_test.duration_unit INTERFACE
     public
 )
 
-pw_add_module_facade(pw_perf_test.timer
+pw_add_facade(pw_perf_test.timer INTERFACE
   BACKEND
     pw_perf_test.timer_BACKEND
   HEADERS

@@ -15,7 +15,7 @@
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 include($ENV{PW_ROOT}/pw_trace/backend.cmake)
 
-pw_add_module_facade(pw_trace
+pw_add_facade(pw_trace INTERFACE
   BACKEND
     pw_trace_BACKEND
   HEADERS

@@ -29,7 +29,7 @@ pw_add_library(pw_log.config INTERFACE
     ${pw_log_CONFIG}
 )
 
-pw_add_module_facade(pw_log
+pw_add_facade(pw_log INTERFACE
   BACKEND
     pw_log_BACKEND
   HEADERS

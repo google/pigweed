@@ -63,7 +63,7 @@ pw_add_library(pw_system.log_backend STATIC
     log_backend.cc
 )
 
-pw_add_module_facade(pw_system.rpc_server
+pw_add_facade(pw_system.rpc_server INTERFACE
   BACKEND
     pw_system.rpc_server_BACKEND
   PUBLIC_DEPS

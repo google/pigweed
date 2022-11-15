@@ -103,7 +103,7 @@ pw_add_library(pw_tokenizer.decoder STATIC
     pw_varint
 )
 
-pw_add_module_facade(pw_tokenizer.global_handler
+pw_add_facade(pw_tokenizer.global_handler STATIC
   BACKEND
     pw_tokenizer.global_handler_BACKEND
   HEADERS
@@ -117,7 +117,7 @@ pw_add_module_facade(pw_tokenizer.global_handler
     tokenize_to_global_handler.cc
 )
 
-pw_add_module_facade(pw_tokenizer.global_handler_with_payload
+pw_add_facade(pw_tokenizer.global_handler_with_payload STATIC
   BACKEND
     pw_tokenizer.global_handler_with_payload_BACKEND
   HEADERS

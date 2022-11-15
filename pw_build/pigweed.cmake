@@ -139,7 +139,7 @@ endmacro()
 #
 # Modules that do not meet these requirements may not use
 # pw_auto_add_simple_module. Instead, define the module's libraries and tests
-# with pw_add_library, pw_add_module_facade, pw_add_test, and the
+# with pw_add_library, pw_add_facade, pw_add_test, and the
 # standard CMake functions, such as add_library, target_link_libraries, etc.
 #
 # This function does the following:
@@ -578,15 +578,15 @@ endfunction(pw_add_library)
 # module that implements the facade depends on a library named
 # MODULE_NAME.facade.
 #
-# pw_add_module_facade accepts the same arguments as pw_add_library.
+# pw_add_facade accepts the same arguments as pw_add_library.
 # It also accepts the following argument:
 #
 #  BACKEND - The name of the facade's backend variable.
-function(pw_add_module_facade NAME)
+function(pw_add_facade NAME TYPE)
   _pw_add_library_multi_value_args(multi_value_args)
   pw_parse_arguments(
     NUM_POSITIONAL_ARGS
-      1
+      2
     ONE_VALUE_ARGS
       BACKEND
     MULTI_VALUE_ARGS
@@ -598,16 +598,7 @@ function(pw_add_module_facade NAME)
       third_party pw_third_party
   )
 
-  # Use STATIC libraries if sources are provided, else instantiate an INTERFACE
-  # library. Also conditionally select PUBLIC vs INTERFACE depending on this
-  # selection.
-  if(NOT "${arg_SOURCES}" STREQUAL "")
-    set(type STATIC)
-  else()
-    set(type INTERFACE)
-  endif()
-
-  pw_add_facade_generic("${NAME}" "${type}"
+  pw_add_facade_generic("${NAME}" "${TYPE}"
     BACKEND
       ${arg_BACKEND}
     SOURCES
@@ -639,7 +630,7 @@ function(pw_add_module_facade NAME)
     PRIVATE_LINK_OPTIONS
       ${arg_PRIVATE_LINK_OPTIONS}
   )
-endfunction(pw_add_module_facade)
+endfunction(pw_add_facade)
 
 # pw_add_facade_generic: Creates a CMake facade library target.
 #

@@ -15,7 +15,7 @@
 include("$ENV{PW_ROOT}/pw_build/pigweed.cmake")
 include($ENV{PW_ROOT}/pw_rpc/system_server/backend.cmake)
 
-pw_add_module_facade(pw_rpc.system_server
+pw_add_facade(pw_rpc.system_server INTERFACE
   BACKEND
     pw_rpc.system_server_BACKEND
   HEADERS

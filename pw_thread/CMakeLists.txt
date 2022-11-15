@@ -26,7 +26,7 @@ pw_add_library(pw_thread.config INTERFACE
     ${pw_thread_CONFIG}
 )
 
-pw_add_module_facade(pw_thread.id
+pw_add_facade(pw_thread.id INTERFACE
   BACKEND
     pw_thread.id_BACKEND
   HEADERS
@@ -35,7 +35,7 @@ pw_add_module_facade(pw_thread.id
     public
 )
 
-pw_add_module_facade(pw_thread.sleep
+pw_add_facade(pw_thread.sleep STATIC
   BACKEND
     pw_thread.sleep_BACKEND
   HEADERS
@@ -49,7 +49,7 @@ pw_add_module_facade(pw_thread.sleep
     sleep.cc
 )
 
-pw_add_module_facade(pw_thread.thread
+pw_add_facade(pw_thread.thread STATIC
   BACKEND
     pw_thread.thread_BACKEND
   HEADERS
@@ -71,7 +71,7 @@ pw_add_library(pw_thread.thread_core INTERFACE
     public
 )
 
-pw_add_module_facade(pw_thread.yield
+pw_add_facade(pw_thread.yield STATIC
   BACKEND
     pw_thread.yield_BACKEND
   HEADERS
