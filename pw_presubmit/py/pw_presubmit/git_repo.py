@@ -16,8 +16,7 @@
 import logging
 from pathlib import Path
 import subprocess
-from typing import Collection, Iterable, Iterator, List, NamedTuple, Optional
-from typing import Pattern, Set, Tuple, Union
+from typing import Collection, Iterable, List, Optional, Pattern, Union
 
 from pw_presubmit.tools import log_run, plural
 
@@ -245,75 +244,6 @@ def path(repo_path: PathOrStr,
          repo: PathOrStr = '.') -> Path:
     """Returns a path relative to a Git repository's root."""
     return root(repo).joinpath(repo_path, *additional_repo_paths)
-
-
-class PythonPackage(NamedTuple):
-    root: Path  # Path to the file containing the setup.py
-    package: Path  # Path to the main package directory
-    packaged_files: Tuple[Path, ...]  # All sources in the main package dir
-    other_files: Tuple[Path, ...]  # Other Python files under root
-
-    def all_files(self) -> Tuple[Path, ...]:
-        return self.packaged_files + self.other_files
-
-
-def all_python_packages(repo: PathOrStr = '.') -> Iterator[PythonPackage]:
-    """Finds all Python packages in the repo based on setup.py locations."""
-    root_py_dirs = [
-        file.parent
-        for file in _ls_files(['setup.py', '*/setup.py'], Path(repo))
-    ]
-
-    for py_dir in root_py_dirs:
-        all_packaged_files = _ls_files([py_dir / '*' / '*.py'], repo=py_dir)
-        common_dir: Optional[str] = None
-
-        # Make there is only one package directory with Python files in it.
-        for file in all_packaged_files:
-            package_dir = file.relative_to(py_dir).parts[0]
-
-            if common_dir is None:
-                common_dir = package_dir
-            elif common_dir != package_dir:
-                _LOG.warning(
-                    'There are multiple Python package directories in %s: %s '
-                    'and %s. This is not supported by pw presubmit. Each '
-                    'setup.py should correspond with a single Python package',
-                    py_dir, common_dir, package_dir)
-                break
-
-        if common_dir is not None:
-            packaged_files = tuple(_ls_files(['*/*.py'], repo=py_dir))
-            other_files = tuple(
-                f for f in _ls_files(['*.py'], repo=py_dir)
-                if f.name != 'setup.py' and f not in packaged_files)
-
-            yield PythonPackage(py_dir, py_dir / common_dir, packaged_files,
-                                other_files)
-
-
-def python_packages_containing(
-        python_paths: Iterable[Path],
-        repo: PathOrStr = '.') -> Tuple[List[PythonPackage], List[Path]]:
-    """Finds all Python packages containing the provided Python paths.
-
-    Returns:
-      ([packages], [files_not_in_packages])
-    """
-    all_packages = list(all_python_packages(repo))
-
-    packages: Set[PythonPackage] = set()
-    files_not_in_packages: List[Path] = []
-
-    for python_path in python_paths:
-        for package in all_packages:
-            if package.root in python_path.parents:
-                packages.add(package)
-                break
-        else:
-            files_not_in_packages.append(python_path)
-
-    return list(packages), files_not_in_packages
 
 
 def commit_message(commit: str = 'HEAD', repo: PathOrStr = '.') -> str:
