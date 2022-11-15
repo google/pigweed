@@ -203,5 +203,7 @@ pw_python_distribution("generate_hdlc_proto_rpc_tokenizer_distribution") {
   ]
 }
 
-pw_test_group("tests") {
+if (current_toolchain != default_toolchain) {
+  pw_test_group("tests") {
+  }
 }
