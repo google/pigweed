@@ -338,8 +338,8 @@ function(_pw_pwpb_rpc_library NAME)
     PUBLIC_DEPS
       "${NAME}.pwpb"
       pw_build
-      pw_rpc.pwpb.client
-      pw_rpc.pwpb.method_union
+      pw_rpc.pwpb.client_api
+      pw_rpc.pwpb.server_api
       pw_rpc.server
       ${arg_DEPS}
   )
@@ -386,7 +386,8 @@ function(_pw_raw_rpc_library NAME)
       "${arg_OUT_DIR}/raw_rpc"
     PUBLIC_DEPS
       pw_build
-      pw_rpc.raw
+      pw_rpc.raw.server_api
+      pw_rpc.raw.client_api
       pw_rpc.server
       ${arg_DEPS}
   )
@@ -511,8 +512,8 @@ function(_pw_nanopb_rpc_library NAME)
     PUBLIC_DEPS
       "${NAME}.nanopb"
       pw_build
-      pw_rpc.nanopb.client
-      pw_rpc.nanopb.method_union
+      pw_rpc.nanopb.client_api
+      pw_rpc.nanopb.server_api
       pw_rpc.server
       ${arg_DEPS}
   )

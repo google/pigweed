@@ -247,7 +247,6 @@ pw_test("method_test") {
   deps = [
     ":internal_test_utils",
     ":server_api",
-    ":server_api",
     "$dir_pw_containers",
     "..:test_protos.pwpb",
     "..:test_utils",
