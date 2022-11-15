@@ -47,8 +47,6 @@ set(pw_unit_test_AUTOMATIC_RUNNER_TIMEOUT_SECONDS "" CACHE STRING
 set(pw_unit_test_AUTOMATIC_RUNNER_ARGS "" CACHE STRING
     "Optional arguments to forward to the automatic runner")
 
-# TODO(ewout, hepler): Actually add the Pigweed rules once downstream users
-# have been moved to pw_add_test_generic.
 # pw_add_test: Declares a single unit test suite with Pigweed naming rules and
 #              compiler warning options.
 #
@@ -79,7 +77,42 @@ set(pw_unit_test_AUTOMATIC_RUNNER_ARGS "" CACHE STRING
 #   GROUPS - groups to which to add this test.
 #
 function(pw_add_test NAME)
-  pw_add_test_generic("${NAME}" ${ARGN})
+  pw_parse_arguments(
+    NUM_POSITIONAL_ARGS
+      1
+    MULTI_VALUE_ARGS
+      SOURCES HEADERS PRIVATE_DEPS PRIVATE_INCLUDES
+      PRIVATE_DEFINES PRIVATE_COMPILE_OPTIONS
+      PRIVATE_LINK_OPTIONS GROUPS
+  )
+
+  _pw_check_name_is_relative_to_root("${NAME}" "$ENV{PW_ROOT}"
+    REMAP_PREFIXES
+      third_party pw_third_party
+  )
+
+  pw_add_test_generic(${NAME}
+    SOURCES
+      ${arg_SOURCES}
+    HEADERS
+      ${arg_HEADERS}
+    PRIVATE_DEPS
+      # TODO(b/232141950): Apply compilation options that affect ABI
+      # globally in the CMake build instead of injecting them into libraries.
+      pw_build
+      pw_build.warnings
+      ${arg_PRIVATE_DEPS}
+    PRIVATE_INCLUDES
+      ${arg_PRIVATE_INCLUDES}
+    PRIVATE_DEFINES
+      ${arg_PRIVATE_DEFINES}
+    PRIVATE_COMPILE_OPTIONS
+      ${arg_PRIVATE_COMPILE_OPTIONS}
+    PRIVATE_LINK_OPTIONS
+      ${arg_PRIVATE_LINK_OPTIONS}
+    GROUPS
+      ${arg_GROUPS}
+  )
 endfunction()
 
 # pw_add_test_generic: Declares a single unit test suite.
@@ -122,10 +155,12 @@ function(pw_add_test_generic NAME)
 
   # Add the library target under "${NAME}.lib".
   # OBJECT libraries require at least one source file.
-  if(NOT arg_SOURCES)
-    set(arg_SOURCES $<TARGET_PROPERTY:pw_build.empty,SOURCES>)
+  if("${arg_SOURCES}" STREQUAL "")
+    set(lib_type "INTERFACE")
+  else()
+    set(lib_type "OBJECT")
   endif()
-  pw_add_library_generic("${NAME}.lib" OBJECT
+  pw_add_library_generic("${NAME}.lib" ${lib_type}
     SOURCES
       ${arg_SOURCES}
     HEADERS
