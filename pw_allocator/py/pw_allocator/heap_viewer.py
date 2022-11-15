@@ -18,7 +18,7 @@ import sys
 import math
 import logging
 from typing import Optional
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import coloredlogs  # type: ignore
 
 
@@ -33,7 +33,9 @@ class HeapBlock:
 @dataclass
 class HeapUsage:
     """Contains a linked list of allocated HeapBlocks."""
-    begin: HeapBlock = HeapBlock(0, 0)
+    # Use a default_factory to avoid mutable default value. See
+    # https://docs.python.org/3/library/dataclasses.html#mutable-default-values
+    begin: HeapBlock = field(default_factory=lambda: HeapBlock(0, 0))
 
     def add_block(self, block):
         cur_block = self.begin.next
