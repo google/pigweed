@@ -22,6 +22,7 @@
 #include "pw_spi/initiator.h"
 #include "pw_status/status.h"
 #include "pw_sync/borrow.h"
+#include "pw_sync/mutex.h"
 
 namespace pw::spi {
 namespace {
