@@ -90,8 +90,10 @@ constexpr uint32_t kTxRegisterEmpty = 0x1u << 7;
 // to reasonable values and we don't need to change them.
 constexpr uint32_t kReceiveEnable = 0x1 << 2;
 constexpr uint32_t kTransmitEnable = 0x1 << 3;
-constexpr uint32_t kReadDataReady = 0x1u << 5;
 constexpr uint32_t kEnableUsart = 0x1 << 13;
+
+// USART configuration flags for status register.
+constexpr uint32_t kReadDataReady = 0x1u << 5;
 
 // Layout of memory mapped registers for USART blocks.
 PW_PACKED(struct) UsartBlock {
