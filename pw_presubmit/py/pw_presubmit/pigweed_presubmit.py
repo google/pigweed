@@ -447,9 +447,6 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     '-//pw_i2c_mcuxpresso/...:all',
     '-//pw_log:log_proto_py_pb2',  # TODO(b/241456982) Remove when passing.
     '-//pw_log:log_proto_py_pb2_genproto',
-    '-//pw_sys_io_arduino/...:all',
-    '-//pw_sys_io_mcuxpresso/...:all',
-    '-//pw_sys_io_stm32cube/...:all',
     '-//pw_system/...:all',
     '-//pw_thread/py/...:all',
     '-//pw_thread:thread_proto_py_pb2',
