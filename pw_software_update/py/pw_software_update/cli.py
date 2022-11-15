@@ -23,16 +23,61 @@ import sys
 from pathlib import Path
 from pw_software_update import dev_sign, keys, root_metadata, update_bundle
 from pw_software_update.tuf_pb2 import (RootMetadata, SignedRootMetadata)
+from pw_software_update.update_bundle_pb2 import UpdateBundle
+
+
+def add_root_metadata_to_bundle_handler(arg) -> None:
+    """Handles appending of root metadata to a bundle"""
+
+    try:
+        bundle = UpdateBundle().FromString(arg.bundle.read_bytes())
+        bundle.root_metadata.CopyFrom(SignedRootMetadata().FromString(
+            arg.append_root_metadata.read_bytes()))
+        arg.bundle.write_bytes(bundle.SerializeToString())
+
+    except IOError as error:
+        print(error)
+
+
+def _new_add_root_metadata_to_bundle_parser(subparsers) -> None:
+    """Parser for subcommand adding root metadata to bundle"""
+
+    formatter_class = lambda prog: argparse.HelpFormatter(
+        prog, max_help_position=100, width=200)
+    add_root_metadata_to_bundle_parser = subparsers.add_parser(
+        'add-root-metadata-to-bundle',
+        description='Add root metadata to a bundle',
+        formatter_class=formatter_class,
+        help="")
+    add_root_metadata_to_bundle_parser.set_defaults(
+        func=add_root_metadata_to_bundle_handler)
+    required_arguments = add_root_metadata_to_bundle_parser.add_argument_group(
+        'required arguments')
+    required_arguments.add_argument('--append-root-metadata',
+                                    help='Path to root metadata',
+                                    metavar='ROOT_METADATA',
+                                    required=True,
+                                    type=Path)
+    required_arguments.add_argument('--bundle',
+                                    help='Path to bundle',
+                                    metavar='BUNDLE',
+                                    required=True,
+                                    type=Path)
 
 
 def create_empty_bundle_handler(arg) -> None:
     """Handles the creation of an empty bundle and writes it to disc."""
 
-    bundle = update_bundle.gen_empty_update_bundle(arg.target_metadata_version)
-    arg.pathname.write_bytes(bundle.SerializeToString())
+    try:
+        bundle = update_bundle.gen_empty_update_bundle(
+            arg.target_metadata_version)
+        arg.pathname.write_bytes(bundle.SerializeToString())
+
+    except IOError as error:
+        print(error)
 
 
-def _add_create_empty_bundle_parser(subparsers) -> None:
+def _new_create_empty_bundle_parser(subparsers) -> None:
     """Parser for creation of an empty bundle."""
 
     formatter_class = lambda prog: argparse.HelpFormatter(
@@ -74,7 +119,7 @@ def inspect_root_metadata_handler(arg) -> None:
         print(error)
 
 
-def _add_inspect_root_metadata_parser(subparsers) -> None:
+def _new_inspect_root_metadata_parser(subparsers) -> None:
     """Parser to handle inspect-root-metadata subcommand"""
 
     formatter_class = lambda prog: argparse.HelpFormatter(
@@ -105,7 +150,7 @@ def sign_root_metadata_handler(arg) -> None:
         print(error)
 
 
-def _add_sign_root_metadata_parser(subparsers) -> None:
+def _new_sign_root_metadata_parser(subparsers) -> None:
     """Parser to handle sign-root-metadata subcommand"""
 
     formatter_class = lambda prog: argparse.HelpFormatter(
@@ -147,7 +192,7 @@ def create_root_metadata_handler(arg) -> None:
         print(error)
 
 
-def _add_create_root_metadata_parser(subparsers) -> None:
+def _new_create_root_metadata_parser(subparsers) -> None:
     """Parser to handle create-root-metadata subcommand."""
 
     formatter_class = lambda prog: argparse.HelpFormatter(
@@ -199,7 +244,7 @@ def generate_key_handler(arg) -> None:
         print(error)
 
 
-def _add_generate_key_parser(subparsers) -> None:
+def _new_generate_key_parser(subparsers) -> None:
     """Parser to handle key generation subcommand."""
 
     generate_key_parser = subparsers.add_parser(
@@ -223,15 +268,16 @@ def _parse_args() -> argparse.Namespace:
     subparsers = parser_root.add_subparsers()
 
     # Key generation related parsers
-    _add_generate_key_parser(subparsers)
+    _new_generate_key_parser(subparsers)
 
     # Root metadata related parsers
-    _add_create_root_metadata_parser(subparsers)
-    _add_sign_root_metadata_parser(subparsers)
-    _add_inspect_root_metadata_parser(subparsers)
+    _new_create_root_metadata_parser(subparsers)
+    _new_sign_root_metadata_parser(subparsers)
+    _new_inspect_root_metadata_parser(subparsers)
 
     # Bundle related parsers
-    _add_create_empty_bundle_parser(subparsers)
+    _new_create_empty_bundle_parser(subparsers)
+    _new_add_root_metadata_to_bundle_parser(subparsers)
 
     return parser_root.parse_args()
 
