@@ -14,7 +14,7 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_module_library(pw_varint
+pw_add_library(pw_varint STATIC
   HEADERS
     public/pw_varint/varint.h
   PUBLIC_INCLUDES
@@ -29,7 +29,7 @@ if(Zephyr_FOUND AND CONFIG_PIGWEED_VARINT)
   zephyr_link_libraries(pw_varint)
 endif()
 
-pw_add_module_library(pw_varint.stream
+pw_add_library(pw_varint.stream STATIC
   HEADERS
     public/pw_varint/stream.h
   PUBLIC_INCLUDES

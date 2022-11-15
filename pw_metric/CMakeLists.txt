@@ -14,7 +14,7 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_module_library(pw_metric
+pw_add_library(pw_metric STATIC
   HEADERS
     public/pw_metric/metric.h
   PUBLIC_INCLUDES
@@ -31,7 +31,7 @@ pw_add_module_library(pw_metric
     pw_span
 )
 
-pw_add_module_library(pw_metric.global
+pw_add_library(pw_metric.global STATIC
   HEADERS
     public/pw_metric/global.h
   PUBLIC_INCLUDES

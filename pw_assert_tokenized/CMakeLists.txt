@@ -14,7 +14,7 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_module_library(pw_assert_tokenized.handler
+pw_add_library(pw_assert_tokenized.handler STATIC
   HEADERS
     public/pw_assert_tokenized/handler.h
   PUBLIC_INCLUDES
@@ -31,7 +31,7 @@ pw_add_module_library(pw_assert_tokenized.handler
     pw_log_tokenized
 )
 
-pw_add_module_library(pw_assert_tokenized.assert_backend
+pw_add_library(pw_assert_tokenized.assert_backend INTERFACE
   HEADERS
     assert_public_overrides/pw_assert_backend/assert_backend.h
     public/pw_assert_tokenized/assert_tokenized.h
@@ -43,7 +43,7 @@ pw_add_module_library(pw_assert_tokenized.assert_backend
     pw_tokenizer
 )
 
-pw_add_module_library(pw_assert_tokenized.check_backend
+pw_add_library(pw_assert_tokenized.check_backend INTERFACE
   HEADERS
     check_public_overrides/pw_assert_backend/check_backend.h
     public/pw_assert_tokenized/check_tokenized.h

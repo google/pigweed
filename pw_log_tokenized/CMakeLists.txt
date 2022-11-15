@@ -17,7 +17,7 @@ include($ENV{PW_ROOT}/pw_tokenizer/backend.cmake)
 
 pw_add_module_config(pw_log_tokenized_CONFIG)
 
-pw_add_module_library(pw_log_tokenized.config
+pw_add_library(pw_log_tokenized.config INTERFACE
   HEADERS
     public/pw_log_tokenized/config.h
   PUBLIC_INCLUDES
@@ -27,7 +27,7 @@ pw_add_module_library(pw_log_tokenized.config
     ${pw_log_tokenized_CONFIG}
 )
 
-pw_add_module_library(pw_log_tokenized
+pw_add_library(pw_log_tokenized INTERFACE
   HEADERS
     public/pw_log_tokenized/log_tokenized.h
     public_overrides/pw_log_backend/log_backend.h
@@ -41,7 +41,7 @@ pw_add_module_library(pw_log_tokenized
     pw_tokenizer.global_handler_with_payload
 )
 
-pw_add_module_library(pw_log_tokenized.metadata
+pw_add_library(pw_log_tokenized.metadata INTERFACE
   HEADERS
     public/pw_log_tokenized/metadata.h
   PUBLIC_INCLUDES
@@ -52,7 +52,7 @@ pw_add_module_library(pw_log_tokenized.metadata
 
 # This target provides a backend for pw_tokenizer that encodes tokenized logs as
 # Base64, encodes them into HDLC frames, and writes them over sys_io.
-pw_add_module_library(pw_log_tokenized.base64_over_hdlc
+pw_add_library(pw_log_tokenized.base64_over_hdlc STATIC
   HEADERS
     public/pw_log_tokenized/base64_over_hdlc.h
   PUBLIC_INCLUDES

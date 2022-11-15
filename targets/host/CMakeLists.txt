@@ -14,7 +14,7 @@
 
 include("$ENV{PW_ROOT}/pw_build/pigweed.cmake")
 
-pw_add_module_library(targets.host.system_rpc_server
+pw_add_library(targets.host.system_rpc_server STATIC
   SOURCES
     system_rpc_server.cc
   PRIVATE_DEPS

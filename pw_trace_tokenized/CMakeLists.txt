@@ -17,7 +17,7 @@ include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
 
 pw_add_module_config(pw_trace_tokenized_CONFIG)
 
-pw_add_module_library(pw_trace_tokenized.config
+pw_add_library(pw_trace_tokenized.config INTERFACE
   HEADERS
     public/pw_trace_tokenized/config.h
   PUBLIC_INCLUDES
@@ -26,7 +26,7 @@ pw_add_module_library(pw_trace_tokenized.config
     ${pw_trace_CONFIG}
 )
 
-pw_add_module_library(pw_trace_tokenized
+pw_add_library(pw_trace_tokenized STATIC
   HEADERS
     public/pw_trace_tokenized/internal/trace_tokenized_internal.h
     public/pw_trace_tokenized/trace_callback.h
@@ -50,7 +50,7 @@ pw_add_module_library(pw_trace_tokenized
     pw_varint
 )
 
-pw_add_module_library(pw_trace_tokenized.trace_buffer
+pw_add_library(pw_trace_tokenized.trace_buffer STATIC
   SOURCES
     trace_buffer.cc
   PRIVATE_DEPS
@@ -73,7 +73,7 @@ pw_proto_library(pw_trace_tokenized.protos
     pw_trace_protos/trace_rpc.options
 )
 
-pw_add_module_library(pw_trace_tokenized.rpc_service
+pw_add_library(pw_trace_tokenized.rpc_service STATIC
   SOURCES
     trace_rpc_service_nanopb.cc
   PRIVATE_DEPS

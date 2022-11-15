@@ -14,7 +14,7 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_module_library(pw_digital_io
+pw_add_library(pw_digital_io STATIC
   HEADERS
     public/pw_digital_io/digital_io.h
     public/pw_digital_io/internal/conversions.h

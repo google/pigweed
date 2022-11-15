@@ -18,7 +18,7 @@ include($ENV{PW_ROOT}/pw_tokenizer/backend.cmake)
 
 pw_add_module_config(pw_tokenizer_CONFIG)
 
-pw_add_module_library(pw_tokenizer.config
+pw_add_library(pw_tokenizer.config INTERFACE
   HEADERS
     public/pw_tokenizer/config.h
   PUBLIC_INCLUDES
@@ -27,7 +27,7 @@ pw_add_module_library(pw_tokenizer.config
     ${pw_tokenizer_CONFIG}
 )
 
-pw_add_module_library(pw_tokenizer
+pw_add_library(pw_tokenizer STATIC
   HEADERS
     public/pw_tokenizer/encode_args.h
     public/pw_tokenizer/hash.h
@@ -68,7 +68,7 @@ elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux" OR Zephyr_FOUND)
   )
 endif()
 
-pw_add_module_library(pw_tokenizer.base64
+pw_add_library(pw_tokenizer.base64 STATIC
   HEADERS
     public/pw_tokenizer/base64.h
   PUBLIC_INCLUDES
@@ -83,7 +83,7 @@ pw_add_module_library(pw_tokenizer.base64
     base64.cc
 )
 
-pw_add_module_library(pw_tokenizer.decoder
+pw_add_library(pw_tokenizer.decoder STATIC
   HEADERS
     public/pw_tokenizer/detokenize.h
     public/pw_tokenizer/token_database.h

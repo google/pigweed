@@ -14,7 +14,7 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_module_library(pw_stream
+pw_add_library(pw_stream STATIC
   HEADERS
     public/pw_stream/memory_stream.h
     public/pw_stream/null_stream.h
@@ -36,7 +36,7 @@ if(Zephyr_FOUND AND CONFIG_PIGWEED_STREAM)
   zephyr_link_libraries(pw_stream)
 endif()
 
-pw_add_module_library(pw_stream.socket_stream
+pw_add_library(pw_stream.socket_stream STATIC
   HEADERS
     public/pw_stream/socket_stream.h
   PUBLIC_INCLUDES
@@ -49,7 +49,7 @@ pw_add_module_library(pw_stream.socket_stream
     pw_log
 )
 
-pw_add_module_library(pw_stream.sys_io_stream
+pw_add_library(pw_stream.sys_io_stream INTERFACE
   HEADERS
     public/pw_stream/sys_io_stream.h
   PUBLIC_INCLUDES
@@ -59,7 +59,7 @@ pw_add_module_library(pw_stream.sys_io_stream
     pw_sys_io
 )
 
-pw_add_module_library(pw_stream.std_file_stream
+pw_add_library(pw_stream.std_file_stream STATIC
   HEADERS
     public/pw_stream/std_file_stream.h
   PUBLIC_INCLUDES
@@ -70,7 +70,7 @@ pw_add_module_library(pw_stream.std_file_stream
     std_file_stream.cc
 )
 
-pw_add_module_library(pw_stream.interval_reader
+pw_add_library(pw_stream.interval_reader STATIC
   HEADERS
     public/pw_stream/interval_reader.h
   PUBLIC_INCLUDES

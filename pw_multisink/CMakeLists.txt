@@ -16,7 +16,7 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 pw_add_module_config(pw_multisink_CONFIG)
 
-pw_add_module_library(pw_multisink.config
+pw_add_library(pw_multisink.config INTERFACE
   HEADERS
     public/pw_multisink/config.h
   PUBLIC_INCLUDES
@@ -25,7 +25,7 @@ pw_add_module_library(pw_multisink.config
     ${pw_multisink_CONFIG}
 )
 
-pw_add_module_library(pw_multisink
+pw_add_library(pw_multisink STATIC
   HEADERS
     public/pw_multisink/multisink.h
   PUBLIC_INCLUDES
@@ -49,7 +49,7 @@ pw_add_module_library(pw_multisink
     pw_varint
 )
 
-pw_add_module_library(pw_multisink.util
+pw_add_library(pw_multisink.util STATIC
   HEADERS
     public/pw_multisink/util.h
   PUBLIC_INCLUDES
@@ -65,7 +65,7 @@ pw_add_module_library(pw_multisink.util
     pw_function
 )
 
-pw_add_module_library(pw_multisink.test_thread
+pw_add_library(pw_multisink.test_thread INTERFACE
   HEADERS
     public/pw_multisink/test_thread.h
   PUBLIC_INCLUDES
@@ -79,7 +79,7 @@ pw_add_module_library(pw_multisink.test_thread
 # target that depends on this pw_add_module_library and a pw_add_module_library
 # that provides the implementaiton of pw_multisink.test_thread. See
 # pw_multisink.stl_multisink_test as an example.
-pw_add_module_library(pw_multisink.multisink_threaded_test
+pw_add_library(pw_multisink.multisink_threaded_test STATIC
   SOURCES
     multisink_threaded_test.cc
   PRIVATE_DEPS
@@ -104,7 +104,7 @@ pw_add_test(pw_multisink.multisink_test
     pw_multisink
 )
 
-pw_add_module_library(pw_multisink.stl_test_thread
+pw_add_library(pw_multisink.stl_test_thread STATIC
   SOURCES
     stl_test_thread.cc
   PRIVATE_DEPS

@@ -14,7 +14,7 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_module_library(pw_log_null
+pw_add_library(pw_log_null INTERFACE
   HEADERS
     public/pw_log_null/log_null.h
     public_overrides/pw_log_backend/log_backend.h

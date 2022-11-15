@@ -14,7 +14,7 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_module_library(pw_sync_baremetal.recursive_mutex
+pw_add_library(pw_sync_baremetal.recursive_mutex INTERFACE
   HEADERS
     public/pw_sync_baremetal/recursive_mutex_inline.h
     public/pw_sync_baremetal/recursive_mutex_native.h

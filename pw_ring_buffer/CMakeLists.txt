@@ -14,7 +14,7 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_module_library(pw_ring_buffer
+pw_add_library(pw_ring_buffer STATIC
   HEADERS
     public/pw_ring_buffer/prefixed_entry_ring_buffer.h
   PUBLIC_INCLUDES

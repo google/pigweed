@@ -18,7 +18,7 @@ if(NOT CONFIG_PIGWEED_SYS_IO)
   return()
 endif()
 
-pw_add_module_library(pw_sys_io_zephyr
+pw_add_library(pw_sys_io_zephyr STATIC
   SOURCES
     sys_io.cc
   PRIVATE_DEPS

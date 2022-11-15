@@ -29,7 +29,7 @@ pw_add_module_facade(pw_rpc.system_server
     pw_result
 )
 
-pw_add_module_library(pw_rpc.system_server.socket
+pw_add_library(pw_rpc.system_server.socket INTERFACE
   HEADERS
     public/pw_rpc_system_server/socket.h
   PUBLIC_INCLUDES

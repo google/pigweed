@@ -15,7 +15,7 @@
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 # Negative compilation testing is not yet supported in CMake.
-pw_add_module_library(pw_compilation_testing._pigweed_only_negative_compilation
+pw_add_library(pw_compilation_testing._pigweed_only_negative_compilation INTERFACE
   HEADERS
     public/pw_compilation_testing/negative_compilation.h
   PUBLIC_INCLUDES

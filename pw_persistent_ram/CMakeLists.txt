@@ -14,7 +14,7 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_module_library(pw_persistent_ram
+pw_add_library(pw_persistent_ram STATIC
   HEADERS
     public/pw_persistent_ram/persistent.h
     public/pw_persistent_ram/persistent_buffer.h

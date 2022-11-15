@@ -17,7 +17,7 @@ include($ENV{PW_ROOT}/pw_thread/backend.cmake)
 
 pw_add_module_config(pw_thread_CONFIG)
 
-pw_add_module_library(pw_thread.config
+pw_add_library(pw_thread.config INTERFACE
   HEADERS
     public/pw_thread/config.h
   PUBLIC_INCLUDES
@@ -64,7 +64,7 @@ pw_add_module_facade(pw_thread.thread
     thread.cc
 )
 
-pw_add_module_library(pw_thread.thread_core
+pw_add_library(pw_thread.thread_core INTERFACE
   HEADERS
     public/pw_thread/thread_core.h
   PUBLIC_INCLUDES
@@ -84,7 +84,7 @@ pw_add_module_facade(pw_thread.yield
     yield.cc
 )
 
-pw_add_module_library(pw_thread.snapshot
+pw_add_library(pw_thread.snapshot STATIC
   HEADERS
     public/pw_thread/snapshot.h
   PUBLIC_INCLUDES
@@ -137,7 +137,7 @@ if((NOT "${pw_thread.id_BACKEND}" STREQUAL "") AND
   )
 endif()
 
-pw_add_module_library(pw_thread.test_threads
+pw_add_library(pw_thread.test_threads INTERFACE
   HEADERS
     public/pw_thread/test_threads.h
   PUBLIC_INCLUDES
@@ -150,7 +150,7 @@ pw_add_module_library(pw_thread.test_threads
 # test_threads you can create a pw_add_test target which depends on this
 # target and a target which provides the implementation of
 # test_threads. See pw_thread_stl.thread_backend_test as an example.
-pw_add_module_library(pw_thread.thread_facade_test
+pw_add_library(pw_thread.thread_facade_test STATIC
   SOURCES
     thread_facade_test.cc
   PRIVATE_DEPS

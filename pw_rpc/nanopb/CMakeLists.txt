@@ -14,7 +14,7 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_module_library(pw_rpc.nanopb.method
+pw_add_library(pw_rpc.nanopb.method STATIC
   SOURCES
     method.cc
     server_reader_writer.cc
@@ -28,7 +28,7 @@ if(Zephyr_FOUND AND CONFIG_PIGWEED_RPC_NANOPB_METHOD)
   zephyr_link_libraries(pw_rpc.nanopb.method)
 endif()
 
-pw_add_module_library(pw_rpc.nanopb.method_union
+pw_add_library(pw_rpc.nanopb.method_union INTERFACE
   PUBLIC_DEPS
     pw_rpc.nanopb.method
     pw_rpc.raw
@@ -40,7 +40,7 @@ if(Zephyr_FOUND AND CONFIG_PIGWEED_RPC_NANOPB_METHOD_UNION)
   zephyr_link_libraries(pw_rpc.nanopb.method_union)
 endif()
 
-pw_add_module_library(pw_rpc.nanopb.client
+pw_add_library(pw_rpc.nanopb.client INTERFACE
   PUBLIC_DEPS
     pw_function
     pw_rpc.nanopb.common
@@ -50,7 +50,7 @@ if(Zephyr_FOUND AND CONFIG_PIGWEED_RPC_NANOPB_CLIENT)
   zephyr_link_libraries(pw_rpc.nanopb.client)
 endif()
 
-pw_add_module_library(pw_rpc.nanopb.common
+pw_add_library(pw_rpc.nanopb.common STATIC
   SOURCES
     common.cc
   PUBLIC_DEPS
@@ -63,7 +63,7 @@ if(Zephyr_FOUND AND CONFIG_PIGWEED_RPC_NANOPB_COMMON)
   zephyr_link_libraries(pw_rpc.nanopb.common)
 endif()
 
-pw_add_module_library(pw_rpc.nanopb.echo_service
+pw_add_library(pw_rpc.nanopb.echo_service INTERFACE
   PUBLIC_DEPS
     pw_rpc.protos.nanopb_rpc
 )
@@ -71,7 +71,7 @@ if(Zephyr_FOUND AND CONFIG_PIGWEED_RPC_NANOPB_ECHO_SERVICE)
   zephyr_link_libraries(pw_rpc.nanopb.echo_service)
 endif()
 
-pw_add_module_library(pw_rpc.nanopb.client_testing
+pw_add_library(pw_rpc.nanopb.client_testing INTERFACE
   PUBLIC_DEPS
     pw_rpc.client
     pw_rpc.raw
@@ -82,13 +82,13 @@ pw_add_module_library(pw_rpc.nanopb.client_testing
     pw_rpc.test_utils
 )
 
-pw_add_module_library(pw_rpc.nanopb.client_server_testing
+pw_add_library(pw_rpc.nanopb.client_server_testing INTERFACE
   PUBLIC_DEPS
     pw_rpc.nanopb.client_testing
     pw_rpc.client_server_testing
 )
 
-pw_add_module_library(pw_rpc.nanopb.client_server_testing_threaded
+pw_add_library(pw_rpc.nanopb.client_server_testing_threaded INTERFACE
   PUBLIC_DEPS
     pw_rpc.nanopb.client_testing
     pw_rpc.client_server_testing_threaded

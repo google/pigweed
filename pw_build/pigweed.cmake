@@ -122,7 +122,7 @@ macro(pw_require_args FUNCTION_NAME ARG_PREFIX)
   endforeach()
 endmacro()
 
-# This method is deprecated, please use pw_add_module_library, pw_add_facade,
+# This method is deprecated, please use pw_add_library, pw_add_facade,
 # and pw_add_test.
 #
 # Automatically creates a library and test targets for the files in a module.
@@ -139,13 +139,13 @@ endmacro()
 #
 # Modules that do not meet these requirements may not use
 # pw_auto_add_simple_module. Instead, define the module's libraries and tests
-# with pw_add_module_library, pw_add_module_facade, pw_add_test, and the
+# with pw_add_library, pw_add_module_facade, pw_add_test, and the
 # standard CMake functions, such as add_library, target_link_libraries, etc.
 #
 # This function does the following:
 #
 #   1. Find all .c and .cc files in the module's root directory.
-#   2. Create a library with the module name using pw_add_module_library with
+#   2. Create a library with the module name using pw_add_library with
 #      all source files that do not end with _test.cc.
 #   3. Declare a test for each source file that ends with _test.cc.
 #
@@ -174,7 +174,13 @@ function(pw_auto_add_simple_module MODULE)
 
   file(GLOB_RECURSE headers *.h)
 
-  pw_add_module_library("${MODULE}"
+  if("${sources}" STREQUAL "")
+    set(type "INTERFACE")
+  else()
+    set(type "STATIC")
+  endif()
+
+  pw_add_library("${MODULE}" "${type}"
     PUBLIC_DEPS
       ${arg_PUBLIC_DEPS}
     PRIVATE_DEPS
@@ -318,12 +324,6 @@ macro(_pw_add_library_multi_value_args variable)
                     PUBLIC_COMPILE_OPTIONS PRIVATE_COMPILE_OPTIONS
                     PUBLIC_LINK_OPTIONS PRIVATE_LINK_OPTIONS "${ARGN}")
 endmacro()
-
-function(pw_add_library NAME TYPE)
-  message(DEPRECATION
-          "pw_add_library is being transitioned to pw_add_library_generic")
-  pw_add_library_generic("${NAME}" "${TYPE}" ${ARGN})
-endfunction()
 
 # pw_add_library_generic: Creates a CMake library target.
 #
@@ -501,6 +501,8 @@ endfunction(_pw_check_name_is_relative_to_root)
 # Required Args:
 #
 #   <name> - The name of the library target to be created.
+#   <type> - The library type which must be INTERFACE, OBJECT, STATIC, SHARED,
+#            or MODULE.
 #
 # Optional Args:
 #
@@ -517,13 +519,13 @@ endfunction(_pw_check_name_is_relative_to_root)
 #   PUBLIC_LINK_OPTIONS - public target_link_options arguments
 #   PRIVATE_LINK_OPTIONS - private target_link_options arguments
 #
-function(pw_add_module_library NAME)
-  _pw_add_library_multi_value_args(multi_value_args)
+function(pw_add_library NAME TYPE)
+  _pw_add_library_multi_value_args(pw_add_library_generic_multi_value_args)
   pw_parse_arguments(
     NUM_POSITIONAL_ARGS
-      1
+      2
     MULTI_VALUE_ARGS
-      ${multi_value_args}
+      ${pw_add_library_generic_multi_value_args}
   )
 
   _pw_check_name_is_relative_to_root("${NAME}" "$ENV{PW_ROOT}"
@@ -531,18 +533,12 @@ function(pw_add_module_library NAME)
       third_party pw_third_party
   )
 
-  # Use STATIC libraries if sources are provided, else instantiate an INTERFACE
-  # library. Also conditionally select PUBLIC vs INTERFACE depending on this
-  # selection.
-  if(NOT "${arg_SOURCES}" STREQUAL "")
-    set(type STATIC)
-    set(public_or_interface PUBLIC)
-  else("${arg_SOURCES}" STREQUAL "")
-    set(type INTERFACE)
-    set(public_or_interface INTERFACE)
-  endif(NOT "${arg_SOURCES}" STREQUAL "")
+  # TODO(b/235273746): Deprecate this legacy implicit PUBLIC_INCLUDES.
+  if("${arg_PUBLIC_INCLUDES}" STREQUAL "")
+    set(legacy_implicit_public_include_dirs "public")
+  endif("${arg_PUBLIC_INCLUDES}" STREQUAL "")
 
-  pw_add_library_generic(${NAME} ${type}
+  pw_add_library_generic(${NAME} ${TYPE}
     SOURCES
       ${arg_SOURCES}
     HEADERS
@@ -556,6 +552,7 @@ function(pw_add_module_library NAME)
       pw_build.warnings
       ${arg_PRIVATE_DEPS}
     PUBLIC_INCLUDES
+      ${legacy_implicit_public_include_dirs}
       ${arg_PUBLIC_INCLUDES}
     PRIVATE_INCLUDES
       ${arg_PRIVATE_INCLUDES}
@@ -572,12 +569,7 @@ function(pw_add_module_library NAME)
     PRIVATE_LINK_OPTIONS
       ${arg_PRIVATE_LINK_OPTIONS}
   )
-
-  # TODO(b/235273746): Deprecate this legacy implicit PUBLIC_INCLUDES.
-  if("${arg_PUBLIC_INCLUDES}" STREQUAL "")
-    target_include_directories("${NAME}" ${public_or_interface} public)
-  endif("${arg_PUBLIC_INCLUDES}" STREQUAL "")
-endfunction(pw_add_module_library)
+endfunction(pw_add_library)
 
 # Declares a module as a facade.
 #
@@ -586,7 +578,7 @@ endfunction(pw_add_module_library)
 # module that implements the facade depends on a library named
 # MODULE_NAME.facade.
 #
-# pw_add_module_facade accepts the same arguments as pw_add_module_library.
+# pw_add_module_facade accepts the same arguments as pw_add_library.
 # It also accepts the following argument:
 #
 #  BACKEND - The name of the facade's backend variable.

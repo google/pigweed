@@ -14,7 +14,7 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_module_library(pw_rpc.pwpb.method
+pw_add_library(pw_rpc.pwpb.method STATIC
   SOURCES
     server_reader_writer.cc
   PUBLIC_DEPS
@@ -24,7 +24,7 @@ pw_add_module_library(pw_rpc.pwpb.method
     pw_log
 )
 
-pw_add_module_library(pw_rpc.pwpb.method_union
+pw_add_library(pw_rpc.pwpb.method_union INTERFACE
   PUBLIC_DEPS
     pw_rpc.pwpb.method
     pw_rpc.raw
@@ -33,14 +33,14 @@ pw_add_module_library(pw_rpc.pwpb.method_union
     pw_log
 )
 
-pw_add_module_library(pw_rpc.pwpb.client
+pw_add_library(pw_rpc.pwpb.client INTERFACE
   PUBLIC_DEPS
     pw_function
     pw_rpc.pwpb.common
     pw_rpc.common
 )
 
-pw_add_module_library(pw_rpc.pwpb.common
+pw_add_library(pw_rpc.pwpb.common INTERFACE
   PUBLIC_DEPS
     pw_bytes
     pw_log
@@ -48,12 +48,12 @@ pw_add_module_library(pw_rpc.pwpb.common
     pw_rpc.common
 )
 
-pw_add_module_library(pw_rpc.pwpb.echo_service
+pw_add_library(pw_rpc.pwpb.echo_service INTERFACE
   PUBLIC_DEPS
     pw_rpc.protos.pwpb_rpc
 )
 
-pw_add_module_library(pw_rpc.pwpb.client_testing
+pw_add_library(pw_rpc.pwpb.client_testing INTERFACE
   PUBLIC_DEPS
     pw_rpc.client
     pw_rpc.raw
@@ -64,13 +64,13 @@ pw_add_module_library(pw_rpc.pwpb.client_testing
     pw_rpc.test_utils
 )
 
-pw_add_module_library(pw_rpc.pwpb.client_server_testing
+pw_add_library(pw_rpc.pwpb.client_server_testing INTERFACE
   PUBLIC_DEPS
     pw_rpc.pwpb.client_testing
     pw_rpc.client_server_testing
 )
 
-pw_add_module_library(pw_rpc.pwpb.client_server_testing_threaded
+pw_add_library(pw_rpc.pwpb.client_server_testing_threaded INTERFACE
   PUBLIC_DEPS
     pw_rpc.pwpb.client_testing
     pw_rpc.client_server_testing_threaded

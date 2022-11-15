@@ -16,14 +16,14 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 add_subdirectory(rpc_example)
 
-pw_add_module_library(pw_hdlc
+pw_add_library(pw_hdlc INTERFACE
   PUBLIC_DEPS
     pw_hdlc.decoder
     pw_hdlc.encoded_size
     pw_hdlc.encoder
 )
 
-pw_add_module_library(pw_hdlc.common
+pw_add_library(pw_hdlc.common INTERFACE
   HEADERS
     public/pw_hdlc/internal/protocol.h
   PUBLIC_INCLUDES
@@ -32,7 +32,7 @@ pw_add_module_library(pw_hdlc.common
     pw_varint
 )
 
-pw_add_module_library(pw_hdlc.encoded_size
+pw_add_library(pw_hdlc.encoded_size INTERFACE
   HEADERS
     public/pw_hdlc/encoded_size.h
   PUBLIC_INCLUDES
@@ -44,7 +44,7 @@ pw_add_module_library(pw_hdlc.encoded_size
     pw_varint
 )
 
-pw_add_module_library(pw_hdlc.decoder
+pw_add_library(pw_hdlc.decoder STATIC
   HEADERS
     public/pw_hdlc/decoder.h
   PUBLIC_INCLUDES
@@ -62,7 +62,7 @@ pw_add_module_library(pw_hdlc.decoder
     decoder.cc
 )
 
-pw_add_module_library(pw_hdlc.encoder
+pw_add_library(pw_hdlc.encoder STATIC
   HEADERS
     public/pw_hdlc/encoder.h
   PUBLIC_INCLUDES
@@ -81,7 +81,7 @@ pw_add_module_library(pw_hdlc.encoder
     public/pw_hdlc/internal/encoder.h
 )
 
-pw_add_module_library(pw_hdlc.rpc_channel_output
+pw_add_library(pw_hdlc.rpc_channel_output INTERFACE
   HEADERS
     public/pw_hdlc/rpc_channel.h
   PUBLIC_INCLUDES
@@ -92,7 +92,7 @@ pw_add_module_library(pw_hdlc.rpc_channel_output
     pw_span
 )
 
-pw_add_module_library(pw_hdlc.pw_rpc
+pw_add_library(pw_hdlc.pw_rpc STATIC
   HEADERS
     public/pw_hdlc/rpc_packets.h
   PUBLIC_INCLUDES
@@ -105,7 +105,7 @@ pw_add_module_library(pw_hdlc.pw_rpc
     rpc_packets.cc
 )
 
-pw_add_module_library(pw_hdlc.packet_parser
+pw_add_library(pw_hdlc.packet_parser STATIC
   HEADERS
     public/pw_hdlc/wire_packet_parser.h
   PUBLIC_INCLUDES
@@ -120,7 +120,7 @@ pw_add_module_library(pw_hdlc.packet_parser
     wire_packet_parser.cc
 )
 
-pw_add_module_library(pw_hdlc.hdlc_sys_io_system_server
+pw_add_library(pw_hdlc.hdlc_sys_io_system_server STATIC
   PRIVATE_DEPS
     pw_hdlc.pw_rpc
     pw_hdlc.rpc_channel_output

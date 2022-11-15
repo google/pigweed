@@ -17,14 +17,14 @@ include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
 
 pw_add_module_config(pw_cpu_exception_cortex_m_CONFIG)
 
-pw_add_module_library(pw_cpu_exception_cortex_m.config
+pw_add_library(pw_cpu_exception_cortex_m.config INTERFACE
   HEADERS
     pw_cpu_exception_cortex_m_private/config.h
   PUBLIC_DEPS
     ${pw_cpu_exception_cortex_m_CONFIG}
 )
 
-pw_add_module_library(pw_cpu_exception_cortex_m.cpu_state
+pw_add_library(pw_cpu_exception_cortex_m.cpu_state INTERFACE
   HEADERS
     public/pw_cpu_exception_cortex_m/cpu_state.h
   PUBLIC_INCLUDES
@@ -34,7 +34,7 @@ pw_add_module_library(pw_cpu_exception_cortex_m.cpu_state
     pw_preprocessor.arch
 )
 
-pw_add_module_library(pw_cpu_exception_cortex_m.cpu_exception
+pw_add_library(pw_cpu_exception_cortex_m.cpu_exception STATIC
   HEADERS
     public_overrides/pw_cpu_exception_backend/state.h
   PUBLIC_INCLUDES
@@ -52,7 +52,7 @@ pw_add_module_library(pw_cpu_exception_cortex_m.cpu_exception
     entry.cc
 )
 
-pw_add_module_library(pw_cpu_exception_cortex_m.util
+pw_add_library(pw_cpu_exception_cortex_m.util STATIC
   HEADERS
     public/pw_cpu_exception_cortex_m/util.h
   PUBLIC_INCLUDES
@@ -68,7 +68,7 @@ pw_add_module_library(pw_cpu_exception_cortex_m.util
     util.cc
 )
 
-pw_add_module_library(pw_cpu_exception_cortex_m.support
+pw_add_library(pw_cpu_exception_cortex_m.support STATIC
   PRIVATE_DEPS
     pw_cpu_exception_cortex_m.config
     pw_cpu_exception_cortex_m.constants
@@ -86,7 +86,7 @@ pw_proto_library(pw_cpu_exception_cortex_m.cpu_state_protos
     pw_cpu_exception_cortex_m_protos/cpu_state.proto
 )
 
-pw_add_module_library(pw_cpu_exception_cortex_m.proto_dump
+pw_add_library(pw_cpu_exception_cortex_m.proto_dump STATIC
   HEADERS
     public/pw_cpu_exception_cortex_m/proto_dump.h
   PUBLIC_INCLUDES
@@ -103,7 +103,7 @@ pw_add_module_library(pw_cpu_exception_cortex_m.proto_dump
     proto_dump.cc
 )
 
-pw_add_module_library(pw_cpu_exception_cortex_m.snapshot
+pw_add_library(pw_cpu_exception_cortex_m.snapshot STATIC
   PUBLIC_DEPS
     pw_cpu_exception_cortex_m.cpu_state
     pw_cpu_exception_cortex_m.cpu_state_protos.pwpb
@@ -124,7 +124,7 @@ pw_add_module_library(pw_cpu_exception_cortex_m.snapshot
     public/pw_cpu_exception_cortex_m/snapshot.h
 )
 
-pw_add_module_library(pw_cpu_exception_cortex_m.constants
+pw_add_library(pw_cpu_exception_cortex_m.constants INTERFACE
   PUBLIC_DEPS
     pw_preprocessor.arch
   HEADERS

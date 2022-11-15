@@ -14,7 +14,7 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_module_library(pw_bytes
+pw_add_library(pw_bytes STATIC
   HEADERS
     public/pw_bytes/array.h
     public/pw_bytes/byte_builder.h
@@ -37,7 +37,7 @@ if(Zephyr_FOUND AND CONFIG_PIGWEED_BYTES)
   zephyr_link_libraries(pw_bytes)
 endif()
 
-pw_add_module_library(pw_bytes.bit
+pw_add_library(pw_bytes.bit INTERFACE
   HEADERS
     public/pw_bytes/bit.h
   PUBLIC_INCLUDES

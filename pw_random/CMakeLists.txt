@@ -14,7 +14,7 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_module_library(pw_random
+pw_add_library(pw_random INTERFACE
   HEADERS
     public/pw_random/random.h
     public/pw_random/xor_shift.h

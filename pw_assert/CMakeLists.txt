@@ -17,14 +17,14 @@ include($ENV{PW_ROOT}/pw_assert/backend.cmake)
 
 pw_add_module_config(pw_assert_CONFIG)
 
-pw_add_module_library(pw_assert
+pw_add_library(pw_assert INTERFACE
   PUBLIC_DEPS
     pw_assert.check
     pw_assert.assert
     pw_assert.config
 )
 
-pw_add_module_library(pw_assert.config
+pw_add_library(pw_assert.config INTERFACE
   HEADERS
     public/pw_assert/config.h
   PUBLIC_INCLUDES
@@ -60,7 +60,7 @@ pw_add_module_facade(pw_assert.check
 
 # Warning: The assert facade is in a transitional state, and this target is
 # likely to be removed as the pw_assert API is reassessed. (b/235149326)
-pw_add_module_library(pw_assert.assert_compatibility_backend
+pw_add_library(pw_assert.assert_compatibility_backend INTERFACE
   HEADERS
     assert_compatibility_public_overrides/pw_assert_backend/assert_backend.h
   PUBLIC_INCLUDES
@@ -69,7 +69,7 @@ pw_add_module_library(pw_assert.assert_compatibility_backend
     pw_preprocessor
 )
 
-pw_add_module_library(pw_assert.print_and_abort
+pw_add_library(pw_assert.print_and_abort INTERFACE
   HEADERS
     public/pw_assert/internal/print_and_abort.h
   PUBLIC_INCLUDES
@@ -81,7 +81,7 @@ pw_add_module_library(pw_assert.print_and_abort
 # This backend to pw_assert's PW_CHECK()/PW_DCHECK() macros prints the assert
 # expression, evaluated expression, file/line number, function, and user message
 # with printf, then aborts. It is intended for use with host builds.
-pw_add_module_library(pw_assert.print_and_abort_check_backend
+pw_add_library(pw_assert.print_and_abort_check_backend INTERFACE
   HEADERS
     print_and_abort_check_public_overrides/pw_assert_backend/check_backend.h
   PUBLIC_INCLUDES
@@ -93,7 +93,7 @@ pw_add_module_library(pw_assert.print_and_abort_check_backend
 # This backend to pw_assert's PW_ASSERT()/PW_DASSERT() macros prints the assert
 # expression, file/line number, and function with printf, then aborts. It is
 # intended for use with host builds.
-pw_add_module_library(pw_assert.print_and_abort_assert_backend
+pw_add_library(pw_assert.print_and_abort_assert_backend INTERFACE
   HEADERS
     print_and_abort_assert_public_overrides/pw_assert_backend/assert_backend.h
   PUBLIC_INCLUDES

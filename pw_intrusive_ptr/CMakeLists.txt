@@ -14,7 +14,7 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_module_library(pw_intrusive_ptr
+pw_add_library(pw_intrusive_ptr STATIC
   HEADERS
     public/pw_intrusive_ptr/internal/ref_counted_base.h
     public/pw_intrusive_ptr/intrusive_ptr.h

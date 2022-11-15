@@ -14,7 +14,7 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_module_library(pw_preprocessor
+pw_add_library(pw_preprocessor INTERFACE
   HEADERS
     public/pw_preprocessor/arguments.h
     public/pw_preprocessor/boolean.h
@@ -24,7 +24,7 @@ pw_add_module_library(pw_preprocessor
     public/pw_preprocessor/internal/arg_count_impl.h
 )
 
-pw_add_module_library(pw_preprocessor.arch
+pw_add_library(pw_preprocessor.arch INTERFACE
   HEADERS
     public/pw_preprocessor/arch.h
 )

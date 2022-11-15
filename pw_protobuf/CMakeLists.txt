@@ -17,7 +17,7 @@ include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
 
 pw_add_module_config(pw_protobuf_CONFIG)
 
-pw_add_module_library(pw_protobuf.config
+pw_add_library(pw_protobuf.config INTERFACE
   HEADERS
     public/pw_protobuf/config.h
   PUBLIC_INCLUDES
@@ -26,7 +26,7 @@ pw_add_module_library(pw_protobuf.config
     ${pw_protobuf_CONFIG}
 )
 
-pw_add_module_library(pw_protobuf
+pw_add_library(pw_protobuf STATIC
   HEADERS
     public/pw_protobuf/decoder.h
     public/pw_protobuf/encoder.h
@@ -65,7 +65,7 @@ pw_add_module_library(pw_protobuf
     stream_decoder.cc
 )
 
-pw_add_module_library(pw_protobuf.bytes_utils
+pw_add_library(pw_protobuf.bytes_utils INTERFACE
   HEADERS
     public/pw_protobuf/bytes_utils.h
   PUBLIC_INCLUDES

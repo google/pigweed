@@ -16,7 +16,7 @@ include("$ENV{PW_ROOT}/pw_build/pigweed.cmake")
 
 add_subdirectory(arm_gcc EXCLUDE_FROM_ALL)
 
-pw_add_module_library(pw_toolchain.wrap_abort
+pw_add_library(pw_toolchain.wrap_abort STATIC
   SOURCES
     wrap_abort.cc
   PUBLIC_DEPS

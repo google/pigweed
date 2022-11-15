@@ -19,12 +19,12 @@ include($ENV{PW_ROOT}/pw_system/backend.cmake)
 # added/updated. This is provided as a starting point, but currently does not
 # work.
 
-pw_add_module_library(pw_system.config
+pw_add_library(pw_system.config INTERFACE
   HEADERS
     public/pw_system/config.h
 )
 
-pw_add_module_library(pw_system.log
+pw_add_library(pw_system.log STATIC
   PUBLIC_DEPS
     # TODO(b/246101669): Add CMake support.
     # pw_log_rpc.log_service
@@ -43,7 +43,7 @@ pw_add_module_library(pw_system.log
     log.cc
 )
 
-pw_add_module_library(pw_system.log_backend
+pw_add_library(pw_system.log_backend STATIC
   PRIVATE_DEPS
     pw_system.config
     pw_system.log
@@ -73,7 +73,7 @@ pw_add_module_facade(pw_system.rpc_server
     public/pw_system/rpc_server.h
 )
 
-pw_add_module_library(pw_system.hdlc_rpc_server
+pw_add_library(pw_system.hdlc_rpc_server STATIC
   PRIVATE_DEPS
     pw_assert
     pw_hdlc.pw_rpc
@@ -88,14 +88,14 @@ pw_add_module_library(pw_system.hdlc_rpc_server
     hdlc_rpc_server.cc
 )
 
-pw_add_module_library(pw_system.io
+pw_add_library(pw_system.io INTERFACE
   HEADERS
     public/pw_system/io.h
   PUBLIC_DEPS
     pw_stream
 )
 
-pw_add_module_library(pw_system.init
+pw_add_library(pw_system.init STATIC
   PRIVATE_DEPS
         pw_system.log
         pw_system.rpc_server
@@ -107,7 +107,7 @@ pw_add_module_library(pw_system.init
     public/pw_system/init.h
 )
 
-pw_add_module_library(pw_system.work_queue
+pw_add_library(pw_system.work_queue STATIC
   PRIVATE_DEPS
     pw_work_queue
   SOURCES
@@ -116,7 +116,7 @@ pw_add_module_library(pw_system.work_queue
     public/pw_system/work_queue.h
 )
 
-pw_add_module_library(pw_system.target_io
+pw_add_library(pw_system.target_io STATIC
   PRIVATE_DEPS
     pw_system.io
     pw_stream
@@ -125,14 +125,14 @@ pw_add_module_library(pw_system.target_io
     target_io.cc
 )
 
-pw_add_module_library(pw_system.target_hooks
+pw_add_library(pw_system.target_hooks INTERFACE
   PUBLIC_DEPS
     pw_thread.thread
   HEADERS
     public/pw_system/target_hooks.h
 )
 
-pw_add_module_library(pw_system.stl_target_hooks
+pw_add_library(pw_system.stl_target_hooks STATIC
   PRIVATE_DEPS
     pw_thread.sleep
     pw_thread.thread
@@ -142,7 +142,7 @@ pw_add_module_library(pw_system.stl_target_hooks
     stl_target_hooks.cc
 )
 
-pw_add_module_library(pw_system.freertos_target_hooks
+pw_add_library(pw_system.freertos_target_hooks STATIC
   SOURCES
     freertos_target_hooks.cc
   PRIVATE_DEPS
@@ -152,7 +152,7 @@ pw_add_module_library(pw_system.freertos_target_hooks
     # currently do not have CMake support.
 )
 
-pw_add_module_library(pw_system.system_example
+pw_add_library(pw_system.system_example STATIC
   PRIVATE_DEPS
     pw_system.init
     pw_system.io

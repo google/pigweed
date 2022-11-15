@@ -52,7 +52,7 @@ pw_add_module_facade(pw_cpu_exception.support
     pw_cpu_exception.entry
 )
 
-pw_add_module_library(pw_cpu_exception.basic_handler
+pw_add_library(pw_cpu_exception.basic_handler STATIC
   SOURCES
     basic_handler.cc
   PRIVATE_DEPS

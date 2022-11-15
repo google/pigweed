@@ -24,7 +24,7 @@ set(pw_third_party_freertos_PORT "" CACHE STRING
 option(pw_third_party_freertos_DISABLE_TASKS_STATICS
        "Whether to disable statics inside of tasks.c")
 
-pw_add_module_library(pw_third_party.freertos.disable_warnings
+pw_add_library(pw_third_party.freertos.disable_warnings INTERFACE
   PUBLIC_COMPILE_OPTIONS
     -Wno-unused-parameter
     -Wno-cast-qual
@@ -50,7 +50,7 @@ else(dir_pw_third_party_freertos)
             "pw_third_party_freertos_CONFIG is not set.")
   endif()
 
-  pw_add_module_library(pw_third_party.freertos
+  pw_add_library(pw_third_party.freertos STATIC
     HEADERS
       ${dir_pw_third_party_freertos}/include/FreeRTOS.h
       ${dir_pw_third_party_freertos}/include/StackMacros.h
@@ -90,7 +90,7 @@ endif()
 if(pw_third_party_freertos_DISABLE_TASKS_STATICS)
   set(disable_tasks_statics "static=" "PW_THIRD_PARTY_FREERTOS_NO_STATICS=1")
 endif()
-pw_add_module_library(pw_third_party.freertos.freertos_tasks
+pw_add_library(pw_third_party.freertos.freertos_tasks STATIC
   SOURCES
     ${dir_pw_third_party_freertos}/tasks.c
   PRIVATE_DEPS
@@ -104,7 +104,7 @@ pw_add_module_library(pw_third_party.freertos.freertos_tasks
 )
 
 # ARM CM7 port of FreeRTOS.
-pw_add_module_library(pw_third_party.freertos.arm_cm7
+pw_add_library(pw_third_party.freertos.arm_cm7 STATIC
   HEADERS
     ${dir_pw_third_party_freertos}/portable/GCC/ARM_CM7/r0p1/portmacro.h
   PUBLIC_DEPS
@@ -119,7 +119,7 @@ pw_add_module_library(pw_third_party.freertos.arm_cm7
 )
 
 # ARM CM4F port of FreeRTOS.
-pw_add_module_library(pw_third_party.freertos.arm_cm4f
+pw_add_library(pw_third_party.freertos.arm_cm4f STATIC
   HEADERS
     ${dir_pw_third_party_freertos}/portable/GCC/ARM_CM4F/portmacro.h
   PUBLIC_DEPS
@@ -134,7 +134,7 @@ pw_add_module_library(pw_third_party.freertos.arm_cm4f
 )
 
 # ARM CM33F port of FreeRTOS.
-pw_add_module_library(pw_third_party.freertos.arm_cm33f
+pw_add_library(pw_third_party.freertos.arm_cm33f STATIC
   HEADERS
     ${dir_pw_third_party_freertos}/portable/GCC/ARM_CM33F/portmacro.h
   PUBLIC_DEPS
@@ -148,7 +148,7 @@ pw_add_module_library(pw_third_party.freertos.arm_cm33f
     pw_third_party.freertos.disable_warnings
 )
 
-pw_add_module_library(pw_third_party.freertos.config_assert
+pw_add_library(pw_third_party.freertos.config_assert INTERFACE
   HEADERS
     public/pw_third_party/freertos/config_assert.h
   PUBLIC_INCLUDES

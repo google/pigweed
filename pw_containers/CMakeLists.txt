@@ -14,7 +14,7 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_module_library(pw_containers
+pw_add_library(pw_containers INTERFACE
   PUBLIC_DEPS
     pw_containers.algorithm
     pw_containers.flat_map
@@ -25,7 +25,7 @@ if(Zephyr_FOUND AND CONFIG_PIGWEED_CONTAINERS)
   zephyr_link_libraries(pw_containers)
 endif()
 
-pw_add_module_library(pw_containers.algorithm
+pw_add_library(pw_containers.algorithm INTERFACE
   HEADERS
     public/pw_containers/algorithm.h
     public/pw_containers/internal/algorithm_internal.h
@@ -33,7 +33,7 @@ pw_add_module_library(pw_containers.algorithm
     public
 )
 
-pw_add_module_library(pw_containers.filtered_view
+pw_add_library(pw_containers.filtered_view INTERFACE
   HEADERS
     public/pw_containers/filtered_view.h
   PUBLIC_INCLUDES
@@ -43,28 +43,28 @@ pw_add_module_library(pw_containers.filtered_view
     pw_preprocessor
 )
 
-pw_add_module_library(pw_containers.flat_map
+pw_add_library(pw_containers.flat_map INTERFACE
   HEADERS
     public/pw_containers/flat_map.h
   PUBLIC_INCLUDES
     public
 )
 
-pw_add_module_library(pw_containers.iterator
+pw_add_library(pw_containers.iterator INTERFACE
   HEADERS
     public/pw_containers/iterator.h
   PUBLIC_INCLUDES
     public
 )
 
-pw_add_module_library(pw_containers.to_array
+pw_add_library(pw_containers.to_array INTERFACE
   HEADERS
     public/pw_containers/to_array.h
   PUBLIC_INCLUDES
     public
 )
 
-pw_add_module_library(pw_containers.vector
+pw_add_library(pw_containers.vector INTERFACE
   HEADERS
     public/pw_containers/vector.h
   PUBLIC_INCLUDES
@@ -74,14 +74,14 @@ pw_add_module_library(pw_containers.vector
     pw_polyfill
 )
 
-pw_add_module_library(pw_containers.wrapped_iterator
+pw_add_library(pw_containers.wrapped_iterator INTERFACE
   HEADERS
     public/pw_containers/wrapped_iterator.h
   PUBLIC_INCLUDES
     public
 )
 
-pw_add_module_library(pw_containers.intrusive_list
+pw_add_library(pw_containers.intrusive_list STATIC
   HEADERS
     public/pw_containers/internal/intrusive_list_impl.h
     public/pw_containers/intrusive_list.h

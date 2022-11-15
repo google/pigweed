@@ -17,7 +17,7 @@ include($ENV{PW_ROOT}/pw_chrono/backend.cmake)
 include($ENV{PW_ROOT}/pw_sync/backend.cmake)
 include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
 
-pw_add_module_library(pw_chrono.epoch
+pw_add_library(pw_chrono.epoch INTERFACE
   HEADERS
     public/pw_chrono/epoch.h
   PUBLIC_INCLUDES
@@ -52,7 +52,7 @@ pw_add_module_facade(pw_chrono.system_timer
 )
 
 # Dependency injectable implementation of pw::chrono::SystemClock::Interface.
-pw_add_module_library(pw_chrono.simulated_system_clock
+pw_add_library(pw_chrono.simulated_system_clock INTERFACE
   HEADERS
     public/pw_chrono/simulated_system_clock.h
   PUBLIC_INCLUDES

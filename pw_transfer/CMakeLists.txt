@@ -17,14 +17,14 @@ include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
 
 pw_add_module_config(pw_transfer_CONFIG)
 
-pw_add_module_library(pw_transfer.config
+pw_add_library(pw_transfer.config INTERFACE
   PUBLIC_DEPS
     ${pw_transfer_CONFIG}
   HEADERS
     public/pw_transfer/internal/config.h
 )
 
-pw_add_module_library(pw_transfer
+pw_add_library(pw_transfer INTERFACE
   PUBLIC_DEPS
     pw_assert
     pw_result
@@ -37,7 +37,7 @@ pw_add_module_library(pw_transfer
     pw_transfer.proto.pwpb
 )
 
-pw_add_module_library(pw_transfer.client
+pw_add_library(pw_transfer.client INTERFACE
   PUBLIC_DEPS
     pw_assert
     pw_function
@@ -50,7 +50,7 @@ pw_add_module_library(pw_transfer.client
     pw_transfer.proto.pwpb
 )
 
-pw_add_module_library(pw_transfer.core
+pw_add_library(pw_transfer.core INTERFACE
   PUBLIC_DEPS
     pw_bytes
     pw_chrono.system_clock

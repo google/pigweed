@@ -14,7 +14,7 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_module_library(pw_checksum
+pw_add_library(pw_checksum STATIC
   HEADERS
     public/pw_checksum/crc16_ccitt.h
     public/pw_checksum/crc32.h

@@ -20,7 +20,7 @@ pw_add_module_config(pw_log_CONFIG)
 
 pw_add_module_config(pw_log_GLOG_ADAPTER_CONFIG)
 
-pw_add_module_library(pw_log.config
+pw_add_library(pw_log.config INTERFACE
   HEADERS
     public/pw_log/config.h
   PUBLIC_INCLUDES
@@ -44,7 +44,7 @@ pw_add_module_facade(pw_log
     pw_log.config
 )
 
-pw_add_module_library(pw_log.glog_adapter
+pw_add_library(pw_log.glog_adapter INTERFACE
   HEADERS
     public/pw_log/glog_adapter.h
     public/pw_log/glog_adapter_config.h
@@ -60,7 +60,7 @@ pw_add_module_library(pw_log.glog_adapter
     ${pw_log_GLOG_ADAPTER_CONFIG}
 )
 
-pw_add_module_library(pw_log.proto_utils
+pw_add_library(pw_log.proto_utils STATIC
   HEADERS
     public/pw_log/proto_utils.h
   PUBLIC_INCLUDES

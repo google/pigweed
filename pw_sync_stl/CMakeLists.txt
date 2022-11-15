@@ -15,7 +15,7 @@
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 # This target provides the backend for pw::sync::BinarySemaphore.
-pw_add_module_library(pw_sync_stl.binary_semaphore_backend
+pw_add_library(pw_sync_stl.binary_semaphore_backend STATIC
   HEADERS
     public/pw_sync_stl/binary_semaphore_inline.h
     public/pw_sync_stl/binary_semaphore_native.h
@@ -33,7 +33,7 @@ pw_add_module_library(pw_sync_stl.binary_semaphore_backend
     pw_chrono.system_clock
 )
 
-pw_add_module_library(pw_sync_stl.condition_variable_backend
+pw_add_library(pw_sync_stl.condition_variable_backend INTERFACE
   HEADERS
     public/pw_sync_stl/condition_variable_inline.h
     public/pw_sync_stl/condition_variable_native.h
@@ -47,7 +47,7 @@ pw_add_module_library(pw_sync_stl.condition_variable_backend
 )
 
 # This target provides the backend for pw::sync::CountingSemaphore.
-pw_add_module_library(pw_sync_stl.counting_semaphore_backend
+pw_add_library(pw_sync_stl.counting_semaphore_backend STATIC
   HEADERS
     public/pw_sync_stl/counting_semaphore_inline.h
     public/pw_sync_stl/counting_semaphore_native.h
@@ -66,7 +66,7 @@ pw_add_module_library(pw_sync_stl.counting_semaphore_backend
 )
 
 # This target provides the backend for pw::sync::Mutex.
-pw_add_module_library(pw_sync_stl.mutex_backend
+pw_add_library(pw_sync_stl.mutex_backend STATIC
   HEADERS
     public/pw_sync_stl/mutex_inline.h
     public/pw_sync_stl/mutex_native.h
@@ -84,7 +84,7 @@ pw_add_module_library(pw_sync_stl.mutex_backend
 )
 
 # This target provides the backend for pw::sync::TimedMutex.
-pw_add_module_library(pw_sync_stl.timed_mutex_backend
+pw_add_library(pw_sync_stl.timed_mutex_backend INTERFACE
   HEADERS
     public/pw_sync_stl/timed_mutex_inline.h
     public_overrides/pw_sync_backend/timed_mutex_inline.h
@@ -97,7 +97,7 @@ pw_add_module_library(pw_sync_stl.timed_mutex_backend
     pw_sync.timed_mutex.facade
 )
 
-pw_add_module_library(pw_sync_stl.interrupt_spin_lock
+pw_add_library(pw_sync_stl.interrupt_spin_lock INTERFACE
   HEADERS
     public/pw_sync_stl/interrupt_spin_lock_inline.h
     public/pw_sync_stl/interrupt_spin_lock_native.h

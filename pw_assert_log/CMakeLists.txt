@@ -15,7 +15,7 @@
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 # This backend to pw_assert's PW_CHECK()/PW_CRASH() macros via PW_LOG.
-pw_add_module_library(pw_assert_log.check_backend
+pw_add_library(pw_assert_log.check_backend STATIC
   HEADERS
     check_backend_public_overrides/pw_assert_backend/check_backend.h
     public/pw_assert_log/check_log.h
@@ -35,7 +35,7 @@ pw_add_module_library(pw_assert_log.check_backend
 # This backend to pw_assert's PW_ASSERT() macros via PW_LOG. It is intended only
 # for use with PW_LOG backends which are constexpr compatible such as
 # pw_log_android.
-pw_add_module_library(pw_assert_log.assert_backend
+pw_add_library(pw_assert_log.assert_backend INTERFACE
   HEADERS
     assert_backend_public_overrides/pw_assert_backend/assert_backend.h
     public/pw_assert_log/assert_log.h

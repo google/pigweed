@@ -22,7 +22,7 @@ add_subdirectory(system_server)
 
 pw_add_module_config(pw_rpc_CONFIG)
 
-pw_add_module_library(pw_rpc.config
+pw_add_library(pw_rpc.config INTERFACE
   HEADERS
     public/pw_rpc/internal/config.h
   PUBLIC_INCLUDES
@@ -31,7 +31,7 @@ pw_add_module_library(pw_rpc.config
     ${pw_rpc_CONFIG}
 )
 
-pw_add_module_library(pw_rpc.server
+pw_add_library(pw_rpc.server STATIC
   SOURCES
     call.cc
     endpoint.cc
@@ -47,7 +47,7 @@ if(Zephyr_FOUND AND CONFIG_PIGWEED_RPC_SERVER)
   zephyr_link_libraries(pw_rpc.server)
 endif()
 
-pw_add_module_library(pw_rpc.client
+pw_add_library(pw_rpc.client STATIC
   SOURCES
     client.cc
     client_call.cc
@@ -61,7 +61,7 @@ if(Zephyr_FOUND AND CONFIG_PIGWEED_RPC_CLIENT)
   zephyr_link_libraries(pw_rpc.client)
 endif()
 
-pw_add_module_library(pw_rpc.client_server
+pw_add_library(pw_rpc.client_server STATIC
   SOURCES
     client_server.cc
   PUBLIC_DEPS
@@ -72,7 +72,7 @@ if(Zephyr_FOUND AND CONFIG_PIGWEED_RPC_CLIENT_SERVER)
   zephyr_link_libraries(pw_rpc.client_server)
 endif()
 
-pw_add_module_library(pw_rpc.synchronous_client_api
+pw_add_library(pw_rpc.synchronous_client_api INTERFACE
   HEADERS
     public/pw_rpc/synchronous_call.h
     public/pw_rpc/synchronous_call_result.h
@@ -83,7 +83,7 @@ pw_add_module_library(pw_rpc.synchronous_client_api
     pw_sync.timed_thread_notification
 )
 
-pw_add_module_library(pw_rpc.common
+pw_add_library(pw_rpc.common STATIC
   HEADERS
     public/pw_rpc/method_id.h
     public/pw_rpc/method_info.h
@@ -115,7 +115,7 @@ if (NOT "${pw_sync.mutex_BACKEND}" STREQUAL "")
   target_link_libraries(pw_rpc.common PUBLIC pw_sync.mutex)
 endif()
 
-pw_add_module_library(pw_rpc.test_utils
+pw_add_library(pw_rpc.test_utils STATIC
   SOURCES
     fake_channel_output.cc
   PUBLIC_DEPS
@@ -130,7 +130,7 @@ pw_add_module_library(pw_rpc.test_utils
 )
 target_include_directories(pw_rpc.test_utils PUBLIC .)
 
-pw_add_module_library(pw_rpc.client_server_testing
+pw_add_library(pw_rpc.client_server_testing INTERFACE
   PUBLIC_DEPS
     pw_bytes
     pw_result
@@ -138,7 +138,7 @@ pw_add_module_library(pw_rpc.client_server_testing
     pw_rpc.test_utils
 )
 
-pw_add_module_library(pw_rpc.client_server_testing_threaded
+pw_add_library(pw_rpc.client_server_testing_threaded INTERFACE
   PUBLIC_DEPS
     pw_bytes
     pw_result

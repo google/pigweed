@@ -16,7 +16,7 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 pw_add_module_config(pw_kvs_CONFIG)
 
-pw_add_module_library(pw_kvs.config
+pw_add_library(pw_kvs.config INTERFACE
   HEADERS
     pw_kvs_private/config.h
   PUBLIC_INCLUDES

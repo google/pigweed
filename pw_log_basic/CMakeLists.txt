@@ -16,7 +16,7 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 pw_add_module_config(pw_log_basic_CONFIG)
 
-pw_add_module_library(pw_log_basic
+pw_add_library(pw_log_basic STATIC
   HEADERS
     public/pw_log_basic/log_basic.h
     public_overrides/pw_log_backend/log_backend.h

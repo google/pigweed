@@ -16,7 +16,7 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 pw_add_module_config(pw_function_CONFIG)
 
-pw_add_module_library(pw_function.config
+pw_add_library(pw_function.config INTERFACE
   HEADERS
     public/pw_function/config.h
   PUBLIC_INCLUDES
@@ -25,7 +25,7 @@ pw_add_module_library(pw_function.config
     ${pw_function_CONFIG}
 )
 
-pw_add_module_library(pw_function
+pw_add_library(pw_function INTERFACE
   HEADERS
     public/pw_function/function.h
   PUBLIC_INCLUDES

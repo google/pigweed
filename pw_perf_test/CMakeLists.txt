@@ -16,7 +16,7 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 include($ENV{PW_ROOT}/pw_perf_test/backend.cmake)
 include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
 
-pw_add_module_library(pw_perf_test.duration_unit
+pw_add_library(pw_perf_test.duration_unit INTERFACE
   HEADERS
     public/pw_perf_test/internal/duration_unit.h
   PUBLIC_INCLUDES
@@ -34,7 +34,7 @@ pw_add_module_facade(pw_perf_test.timer
     pw_perf_test.duration_unit
 )
 
-pw_add_module_library(pw_perf_test
+pw_add_library(pw_perf_test STATIC
   SOURCES
     perf_test.cc
   HEADERS
@@ -43,7 +43,7 @@ pw_add_module_library(pw_perf_test
     public
 )
 
-pw_add_module_library(pw_perf_test.chrono_timer
+pw_add_library(pw_perf_test.chrono_timer INTERFACE
   HEADERS
     chrono_public_overrides/pw_perf_test_timer_backend/timer.h
     public/pw_perf_test/internal/chrono_timer_interface.h

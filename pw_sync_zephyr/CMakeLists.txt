@@ -15,7 +15,7 @@
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 if(CONFIG_PIGWEED_SYNC_MUTEX)
-  pw_add_module_library(pw_sync_zephyr.mutex_backend
+  pw_add_library(pw_sync_zephyr.mutex_backend INTERFACE
     HEADERS
       public/pw_sync_zephyr/mutex_inline.h
       public/pw_sync_zephyr/mutex_native.h
@@ -32,7 +32,7 @@ if(CONFIG_PIGWEED_SYNC_MUTEX)
 endif()
 
 if(CONFIG_PIGWEED_SYNC_BINARY_SEMAPHORE)
-  pw_add_module_library(pw_sync_zephyr.binary_semaphore_backend
+  pw_add_library(pw_sync_zephyr.binary_semaphore_backend STATIC
     HEADERS
       public/pw_sync_zephyr/binary_semaphore_native.h
       public/pw_sync_zephyr/binary_semaphore_inline.h

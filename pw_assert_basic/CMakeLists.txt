@@ -28,7 +28,7 @@ pw_add_module_facade(pw_assert_basic.handler
 
 # TODO(b/235149326): This backend implements pw_assert's check backend and the
 # temporary compatibility C ABI (pw_assert_HandleFailure()).
-pw_add_module_library(pw_assert_basic.check_backend
+pw_add_library(pw_assert_basic.check_backend STATIC
   HEADERS
     public_overrides/pw_assert_backend/check_backend.h
     public/pw_assert_basic/assert_basic.h
@@ -45,7 +45,7 @@ pw_add_module_library(pw_assert_basic.check_backend
     pw_assert.assert_compatibility_backend
 )
 
-pw_add_module_library(pw_assert_basic.basic_handler
+pw_add_library(pw_assert_basic.basic_handler STATIC
   SOURCES
     basic_handler.cc
   PRIVATE_DEPS

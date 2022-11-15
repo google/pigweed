@@ -18,7 +18,7 @@ if(NOT CONFIG_PIGWEED_INTERRUPT_CONTEXT)
   return()
 endif()
 
-pw_add_module_library(pw_interrupt_zephyr.context
+pw_add_library(pw_interrupt_zephyr.context INTERFACE
   HEADERS
     public/pw_interrupt_zephyr/context_inline.h
     public_overrides/pw_interrupt_backend/context_inline.h

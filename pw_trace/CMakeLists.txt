@@ -27,7 +27,7 @@ pw_add_module_facade(pw_trace
     pw_preprocessor
 )
 
-pw_add_module_library(pw_trace.null
+pw_add_library(pw_trace.null INTERFACE
   HEADERS
     public/pw_trace/internal/null.h
     public_overrides/pw_trace_backend/trace_backend.h

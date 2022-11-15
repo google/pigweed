@@ -14,7 +14,7 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_module_library(pw_work_queue
+pw_add_library(pw_work_queue STATIC
   HEADERS
     public/pw_work_queue/internal/circular_buffer.h
     public/pw_work_queue/work_queue.h
@@ -33,7 +33,7 @@ pw_add_module_library(pw_work_queue
     work_queue.cc
 )
 
-pw_add_module_library(pw_work_queue.test_thread
+pw_add_library(pw_work_queue.test_thread INTERFACE
   HEADERS
     public/pw_work_queue/test_thread.h
   PUBLIC_INCLUDES
@@ -46,7 +46,7 @@ pw_add_module_library(pw_work_queue.test_thread
 # test_thread you can create a pw_add_test which depends on this
 # pw_add_library and a pw_add_library which provides the implementation of
 # test_thread. See pw_work_queue.stl_work_queue_test as an example.
-pw_add_module_library(pw_work_queue.work_queue_test
+pw_add_library(pw_work_queue.work_queue_test STATIC
   SOURCES
     work_queue_test.cc
   PRIVATE_DEPS
@@ -56,7 +56,7 @@ pw_add_module_library(pw_work_queue.work_queue_test
     pw_unit_test
 )
 
-pw_add_module_library(pw_work_queue.stl_test_thread
+pw_add_library(pw_work_queue.stl_test_thread STATIC
   SOURCES
     stl_test_thread.cc
   PRIVATE_DEPS

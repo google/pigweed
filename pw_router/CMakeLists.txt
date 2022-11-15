@@ -14,7 +14,7 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_module_library(pw_router.static_router
+pw_add_library(pw_router.static_router STATIC
   SOURCES
     static_router.cc
   PUBLIC_DEPS
@@ -29,7 +29,7 @@ if(Zephyr_FOUND AND CONFIG_PIGWEED_ROUTER_STATIC_ROUTER)
   zephyr_link_libraries(pw_router.static_router)
 endif()
 
-pw_add_module_library(pw_router.egress
+pw_add_library(pw_router.egress INTERFACE
   PUBLIC_DEPS
     pw_bytes
     pw_router.packet_parser
@@ -38,7 +38,7 @@ if(Zephyr_FOUND AND CONFIG_PIGWEED_ROUTER_EGRESS)
   zephyr_link_libraries(pw_router.egress)
 endif()
 
-pw_add_module_library(pw_router.packet_parser
+pw_add_library(pw_router.packet_parser INTERFACE
   PUBLIC_DEPS
     pw_bytes
 )
@@ -46,7 +46,7 @@ if(Zephyr_FOUND AND CONFIG_PIGWEED_ROUTER_PACKET_PARSER)
   zephyr_link_libraries(pw_router.packet_parser)
 endif()
 
-pw_add_module_library(pw_router.egress_function
+pw_add_library(pw_router.egress_function INTERFACE
   PUBLIC_DEPS
     pw_function
     pw_router.egress

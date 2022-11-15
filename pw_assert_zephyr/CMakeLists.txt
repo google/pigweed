@@ -18,7 +18,7 @@ if(NOT CONFIG_PIGWEED_ASSERT)
   return()
 endif()
 
-pw_add_module_library(pw_assert_zephyr.check
+pw_add_library(pw_assert_zephyr.check INTERFACE
   HEADERS
     public/pw_assert_zephyr/check_zephyr.h
     public_overrides/pw_assert_backend/check_backend.h
@@ -31,7 +31,7 @@ pw_add_module_library(pw_assert_zephyr.check
 )
 zephyr_link_libraries(pw_assert_zephyr.check)
 
-pw_add_module_library(pw_assert_zephyr.assert
+pw_add_library(pw_assert_zephyr.assert INTERFACE
   HEADERS
     public/pw_assert_zephyr/assert_zephyr.h
     public_overrides/pw_assert_backend/assert_backend.h

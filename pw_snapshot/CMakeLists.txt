@@ -15,7 +15,7 @@
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
 
-pw_add_module_library(pw_snapshot.uuid
+pw_add_library(pw_snapshot.uuid STATIC
   HEADERS
     public/pw_snapshot/uuid.h
   PUBLIC_INCLUDES

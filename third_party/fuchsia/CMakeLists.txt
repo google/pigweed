@@ -14,7 +14,7 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_module_library(pw_third_party.fuchsia.fit
+pw_add_library(pw_third_party.fuchsia.fit INTERFACE
   HEADERS
     repo/sdk/lib/fit/include/lib/fit/function.h
     repo/sdk/lib/fit/include/lib/fit/internal/compiler.h
@@ -30,7 +30,7 @@ pw_add_module_library(pw_third_party.fuchsia.fit
     pw_third_party.fuchsia.stdcompat
 )
 
-pw_add_module_library(pw_third_party.fuchsia.stdcompat
+pw_add_library(pw_third_party.fuchsia.stdcompat INTERFACE
   HEADERS
     repo/sdk/lib/stdcompat/include/lib/stdcompat/bit.h
     repo/sdk/lib/stdcompat/include/lib/stdcompat/memory.h

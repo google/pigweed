@@ -17,7 +17,7 @@ include($ENV{PW_ROOT}/pw_thread_freertos/backend.cmake)
 
 pw_add_module_config(pw_thread_freertos_CONFIG)
 
-pw_add_module_library(pw_thread_freertos.config
+pw_add_library(pw_thread_freertos.config INTERFACE
   HEADERS
     public/pw_thread_freertos/config.h
   PUBLIC_INCLUDES
@@ -28,7 +28,7 @@ pw_add_module_library(pw_thread_freertos.config
 )
 
 # This target provides the backend for pw::thread::Id & pw::this_thread::get_id.
-pw_add_module_library(pw_thread_freertos.id
+pw_add_library(pw_thread_freertos.id INTERFACE
   HEADERS
     public/pw_thread_freertos/id_inline.h
     public/pw_thread_freertos/id_native.h
@@ -45,7 +45,7 @@ pw_add_module_library(pw_thread_freertos.id
 )
 
 # This target provides the backend for pw::this_thread::sleep_{for,until}.
-pw_add_module_library(pw_thread_freertos.sleep
+pw_add_library(pw_thread_freertos.sleep STATIC
   HEADERS
     public/pw_thread_freertos/sleep_inline.h
     sleep_public_overrides/pw_thread_backend/sleep_inline.h
@@ -66,7 +66,7 @@ pw_add_module_library(pw_thread_freertos.sleep
 
 # This target provides the backend for pw::thread::Thread and the headers needed
 # for thread creation.
-pw_add_module_library(pw_thread_freertos.thread
+pw_add_library(pw_thread_freertos.thread STATIC
   HEADERS
     public/pw_thread_freertos/context.h
     public/pw_thread_freertos/options.h
@@ -90,7 +90,7 @@ pw_add_module_library(pw_thread_freertos.thread
 )
 
 # This target provides the backend for pw::this_thread::yield.
-pw_add_module_library(pw_thread_freertos.yield
+pw_add_library(pw_thread_freertos.yield INTERFACE
   HEADERS
     public/pw_thread_freertos/yield_inline.h
     yield_public_overrides/pw_thread_backend/yield_inline.h
@@ -104,7 +104,7 @@ pw_add_module_library(pw_thread_freertos.yield
     pw_thread.yield.facade
 )
 
-pw_add_module_library(pw_thread_freertos.util
+pw_add_library(pw_thread_freertos.util STATIC
   HEADERS
     public/pw_thread_freertos/util.h
   PUBLIC_INCLUDES
@@ -120,7 +120,7 @@ pw_add_module_library(pw_thread_freertos.util
     pw_log
 )
 
-pw_add_module_library(pw_thread_freertos.snapshot
+pw_add_library(pw_thread_freertos.snapshot STATIC
   HEADERS
     public/pw_thread_freertos/snapshot.h
   PUBLIC_INCLUDES

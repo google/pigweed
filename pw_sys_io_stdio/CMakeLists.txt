@@ -14,7 +14,7 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_module_library(pw_sys_io_stdio
+pw_add_library(pw_sys_io_stdio STATIC
   SOURCES
     sys_io.cc
   PRIVATE_DEPS

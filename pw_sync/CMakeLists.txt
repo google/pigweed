@@ -43,7 +43,7 @@ pw_add_module_facade(pw_sync.counting_semaphore
     counting_semaphore.cc
 )
 
-pw_add_module_library(pw_sync.lock_annotations
+pw_add_library(pw_sync.lock_annotations INTERFACE
   HEADERS
     public/pw_sync/lock_annotations.h
   PUBLIC_INCLUDES
@@ -52,7 +52,7 @@ pw_add_module_library(pw_sync.lock_annotations
     pw_preprocessor
 )
 
-pw_add_module_library(pw_sync.borrow
+pw_add_library(pw_sync.borrow INTERFACE
   HEADERS
     public/pw_sync/borrow.h
   PUBLIC_INCLUDES
@@ -63,7 +63,7 @@ pw_add_module_library(pw_sync.borrow
     pw_sync.virtual_basic_lockable
 )
 
-pw_add_module_library(pw_sync.inline_borrowable
+pw_add_library(pw_sync.inline_borrowable INTERFACE
   HEADERS
     public/pw_sync/inline_borrowable.h
     public/pw_sync/internal/borrowable_storage.h
@@ -75,7 +75,7 @@ pw_add_module_library(pw_sync.inline_borrowable
     pw_sync.virtual_basic_lockable
 )
 
-pw_add_module_library(pw_sync.virtual_basic_lockable
+pw_add_library(pw_sync.virtual_basic_lockable INTERFACE
   HEADERS
     public/pw_sync/virtual_basic_lockable.h
   PUBLIC_INCLUDES
@@ -168,7 +168,7 @@ pw_add_module_facade(pw_sync.timed_thread_notification
 
 # This target provides the backend for pw::sync::ThreadNotification based on
 # pw::sync::BinarySemaphore.
-pw_add_module_library(pw_sync.binary_semaphore_thread_notification_backend
+pw_add_library(pw_sync.binary_semaphore_thread_notification_backend INTERFACE
   HEADERS
     public/pw_sync/backends/binary_semaphore_thread_notification_inline.h
     public/pw_sync/backends/binary_semaphore_thread_notification_native.h
@@ -183,7 +183,7 @@ pw_add_module_library(pw_sync.binary_semaphore_thread_notification_backend
 
 # This target provides the backend for pw::sync::TimedThreadNotification based
 # on pw::sync::BinarySemaphore.
-pw_add_module_library(pw_sync.binary_semaphore_timed_thread_notification_backend
+pw_add_library(pw_sync.binary_semaphore_timed_thread_notification_backend INTERFACE
   HEADERS
     public/pw_sync/backends/binary_semaphore_timed_thread_notification_inline.h
     public_overrides/pw_sync_backend/timed_thread_notification_inline.h
@@ -195,7 +195,7 @@ pw_add_module_library(pw_sync.binary_semaphore_timed_thread_notification_backend
     pw_sync.binary_semaphore_thread_notification_backend
 )
 
-pw_add_module_library(pw_sync.yield_core
+pw_add_library(pw_sync.yield_core INTERFACE
   HEADERS
     public/pw_sync/yield_core.h
   PUBLIC_INCLUDES
@@ -333,7 +333,7 @@ if(NOT "${pw_sync.timed_thread_notification_BACKEND}" STREQUAL "")
   )
 endif()
 
-pw_add_module_library(pw_sync.condition_variable_test
+pw_add_library(pw_sync.condition_variable_test STATIC
   PUBLIC_DEPS
     pw_sync.condition_variable
     pw_containers.vector

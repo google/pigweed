@@ -15,7 +15,7 @@
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 if(CONFIG_PIGWEED_CHRONO_SYSTEM_CLOCK)
-  pw_add_module_library(pw_chrono_zephyr.system_clock
+  pw_add_library(pw_chrono_zephyr.system_clock INTERFACE
     HEADERS
       public/pw_chrono_zephyr/system_clock_constants.h
       public/pw_chrono_zephyr/system_clock_config.h

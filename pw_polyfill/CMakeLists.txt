@@ -14,7 +14,7 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_module_library(pw_polyfill
+pw_add_library(pw_polyfill INTERFACE
   HEADERS
     public/pw_polyfill/language_feature_macros.h
     public/pw_polyfill/standard.h
@@ -25,7 +25,7 @@ if(Zephyr_FOUND AND CONFIG_PIGWEED_POLYFILL)
   zephyr_link_libraries(pw_polyfill)
 endif()
 
-pw_add_module_library(pw_polyfill.standard_library
+pw_add_library(pw_polyfill.standard_library INTERFACE
   HEADERS
     standard_library_public/pw_polyfill/standard_library/namespace.h
   PUBLIC_INCLUDES
