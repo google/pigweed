@@ -444,7 +444,6 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     '-//pw_chrono:chrono_proto_pb2',
     '-//pw_cpu_exception_cortex_m/...:all',
     '-//pw_crypto/...:all',  # TODO(b/236321905) Remove when passing.
-    '-//pw_i2c_mcuxpresso/...:all',
     '-//pw_system/...:all',
     '-//pw_thread/py/...:all',
     '-//pw_thread:thread_proto_py_pb2',
