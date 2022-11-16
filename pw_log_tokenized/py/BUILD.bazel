@@ -15,6 +15,7 @@
 py_library(
     name = "pw_log_tokenized",
     srcs = ["pw_log_tokenized/__init__.py"],
+    imports = ["."],
     visibility = ["//visibility:public"],
 )
 
