@@ -180,6 +180,11 @@ function(pw_auto_add_simple_module MODULE)
     set(type "STATIC")
   endif()
 
+  if(NOT "${headers}" STREQUAL "")
+    set(public_includes "public")
+  endif()
+
+
   pw_add_library("${MODULE}" "${type}"
     PUBLIC_DEPS
       ${arg_PUBLIC_DEPS}
@@ -189,6 +194,8 @@ function(pw_auto_add_simple_module MODULE)
       ${sources}
     HEADERS
       ${headers}
+    PUBLIC_INCLUDES
+      ${public_includes}
   )
 
   pw_auto_add_module_tests("${MODULE}"
@@ -533,11 +540,6 @@ function(pw_add_library NAME TYPE)
       third_party pw_third_party
   )
 
-  # TODO(b/235273746): Deprecate this legacy implicit PUBLIC_INCLUDES.
-  if("${arg_PUBLIC_INCLUDES}" STREQUAL "")
-    set(legacy_implicit_public_include_dirs "public")
-  endif("${arg_PUBLIC_INCLUDES}" STREQUAL "")
-
   pw_add_library_generic(${NAME} ${TYPE}
     SOURCES
       ${arg_SOURCES}
@@ -552,7 +554,6 @@ function(pw_add_library NAME TYPE)
       pw_build.warnings
       ${arg_PRIVATE_DEPS}
     PUBLIC_INCLUDES
-      ${legacy_implicit_public_include_dirs}
       ${arg_PUBLIC_INCLUDES}
     PRIVATE_INCLUDES
       ${arg_PRIVATE_INCLUDES}

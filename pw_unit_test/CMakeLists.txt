@@ -17,11 +17,13 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 pw_add_module_config(pw_unit_test_CONFIG)
 
 pw_add_library(pw_unit_test.config INTERFACE
+  HEADERS
+    public/pw_unit_test/config.h
+  PUBLIC_INCLUDES
+    public
   PUBLIC_DEPS
     ${pw_unit_test_CONFIG}
     pw_polyfill
-  HEADERS
-    public/pw_unit_test/config.h
 )
 
 add_library(pw_unit_test INTERFACE)
@@ -45,6 +47,8 @@ pw_add_library(pw_unit_test.light STATIC
 pw_add_library(pw_unit_test.static_library_support STATIC
   HEADERS
     public/pw_unit_test/static_library_support.h
+  PUBLIC_INCLUDES
+    public
   SOURCES
     static_library_support.cc
   PUBLIC_DEPS
@@ -54,14 +58,18 @@ pw_add_library(pw_unit_test.static_library_support STATIC
 pw_add_library(pw_unit_test.event_handler INTERFACE
   HEADERS
     public/pw_unit_test/event_handler.h
+  PUBLIC_INCLUDES
+    public
 )
 
 pw_add_library(pw_unit_test.googletest_style_event_handler STATIC
+  HEADERS
+    public/pw_unit_test/googletest_style_event_handler.h
+  PUBLIC_INCLUDES
+    public
   PUBLIC_DEPS
     pw_unit_test.event_handler
     pw_preprocessor
-  HEADERS
-    public/pw_unit_test/googletest_style_event_handler.h
   SOURCES
     googletest_style_event_handler.cc
 )

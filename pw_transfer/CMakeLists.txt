@@ -22,6 +22,8 @@ pw_add_library(pw_transfer.config INTERFACE
     ${pw_transfer_CONFIG}
   HEADERS
     public/pw_transfer/internal/config.h
+  PUBLIC_INCLUDES
+    public
 )
 
 pw_add_library(pw_transfer INTERFACE

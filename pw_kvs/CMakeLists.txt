@@ -19,8 +19,6 @@ pw_add_module_config(pw_kvs_CONFIG)
 pw_add_library(pw_kvs.config INTERFACE
   HEADERS
     pw_kvs_private/config.h
-  PUBLIC_INCLUDES
-    ${CMAKE_SOURCE_DIR}
   PUBLIC_DEPS
     ${pw_kvs_CONFIG}
 )

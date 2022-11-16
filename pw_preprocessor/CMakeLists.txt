@@ -22,11 +22,15 @@ pw_add_library(pw_preprocessor INTERFACE
     public/pw_preprocessor/concat.h
     public/pw_preprocessor/util.h
     public/pw_preprocessor/internal/arg_count_impl.h
+  PUBLIC_INCLUDES
+    public
 )
 
 pw_add_library(pw_preprocessor.arch INTERFACE
   HEADERS
     public/pw_preprocessor/arch.h
+  PUBLIC_INCLUDES
+    public
 )
 
 if(Zephyr_FOUND AND CONFIG_PIGWEED_PREPROCESSOR)

@@ -104,6 +104,10 @@ pw_add_library(pw_cpu_exception_cortex_m.proto_dump STATIC
 )
 
 pw_add_library(pw_cpu_exception_cortex_m.snapshot STATIC
+  HEADERS
+    public/pw_cpu_exception_cortex_m/snapshot.h
+  PUBLIC_INCLUDES
+    public
   PUBLIC_DEPS
     pw_cpu_exception_cortex_m.cpu_state
     pw_cpu_exception_cortex_m.cpu_state_protos.pwpb
@@ -120,15 +124,13 @@ pw_add_library(pw_cpu_exception_cortex_m.snapshot STATIC
     pw_span
   SOURCES
     snapshot.cc
-  HEADERS
-    public/pw_cpu_exception_cortex_m/snapshot.h
 )
 
 pw_add_library(pw_cpu_exception_cortex_m.constants INTERFACE
-  PUBLIC_DEPS
-    pw_preprocessor.arch
   HEADERS
     pw_cpu_exception_cortex_m_private/cortex_m_constants.h
+  PUBLIC_DEPS
+    pw_preprocessor.arch
 )
 
 # TODO(b/234888156): Add ARMv8-M mainline coverage.

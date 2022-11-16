@@ -18,12 +18,12 @@ pw_add_library(pw_intrusive_ptr STATIC
   HEADERS
     public/pw_intrusive_ptr/internal/ref_counted_base.h
     public/pw_intrusive_ptr/intrusive_ptr.h
-  SOURCES
-    ref_counted_base.cc
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
     pw_assert
+  SOURCES
+    ref_counted_base.cc
 )
 
 pw_add_test(pw_intrusive_ptr.intrusive_ptr_test
