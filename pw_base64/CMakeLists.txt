@@ -14,8 +14,25 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_auto_add_simple_module(pw_base64
+pw_add_library(pw_base64 STATIC
+  HEADERS
+    public/pw_base64/base64.h
+  PUBLIC_INCLUDES
+    public
   PUBLIC_DEPS
     pw_span
     pw_string.string
+  SOURCES
+    base64.cc
+)
+
+pw_add_test(pw_base64.base64_test
+  SOURCES
+    base64_test.cc
+    base64_test_c.c
+  PRIVATE_DEPS
+    pw_base64
+  GROUPS
+    modules
+    pw_base64
 )
