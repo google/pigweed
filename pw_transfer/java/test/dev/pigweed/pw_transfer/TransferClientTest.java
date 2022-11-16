@@ -2237,6 +2237,59 @@ public final class TransferClientTest {
             // after 4, receive final OK
             newChunk(Chunk.Type.COMPLETION_ACK, 123).build());
   }
+  @Test
+  public void write_maxLifetimeRetries() throws Exception {
+    createTransferClientThatMayTimeOut(ProtocolVersion.VERSION_TWO, 5);
+    assertThat(MAX_RETRIES).isEqualTo(2); // This test assumes 2 retries
+
+    // Wait for four outgoing packets (Write RPC request and START chunk + 2 retries)
+    enqueueWriteChunks(4, // 2 retries
+        newChunk(Chunk.Type.START_ACK, 123)
+            .setResourceId(5)
+            .setProtocolVersion(ProtocolVersion.VERSION_TWO.ordinal()));
+
+    // Wait for start ack confirmation + 2 retries, then request three packets.
+    enqueueWriteChunks(3, // 2 retries
+        newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, 123)
+            .setOffset(0)
+            .setWindowEndOffset(60)
+            .setMaxChunkSizeBytes(20));
+
+    // After 3 data packets, wait for two more retries, which should put this over the retry limit.
+    enqueueWriteChunks(5, // 2 retries
+        newChunk(Chunk.Type.PARAMETERS_RETRANSMIT, 123) // This packet should be ignored
+            .setOffset(80)
+            .setWindowEndOffset(200)
+            .setMaxChunkSizeBytes(20));
+
+    ListenableFuture<Void> future = transferClient.write(5, TEST_DATA_100B.toByteArray());
+
+    ExecutionException exception = assertThrows(ExecutionException.class, future::get);
+    assertThat(((TransferError) exception.getCause()).status()).isEqualTo(Status.DEADLINE_EXCEEDED);
+
+    final Chunk startAckConfirmation =
+        newChunk(Chunk.Type.START_ACK_CONFIRMATION, 123)
+            .setProtocolVersion(ProtocolVersion.VERSION_TWO.ordinal())
+            .setRemainingBytes(TEST_DATA_100B.size())
+            .build();
+
+    assertThat(lastChunks())
+        .containsExactly(
+            // initial chunk and 2 retries
+            initialWriteChunk(5, ProtocolVersion.VERSION_TWO, TEST_DATA_100B.size()),
+            initialWriteChunk(5, ProtocolVersion.VERSION_TWO, TEST_DATA_100B.size()),
+            initialWriteChunk(5, ProtocolVersion.VERSION_TWO, TEST_DATA_100B.size()),
+            // START_ACK_CONFIRMATION and 2 retries
+            startAckConfirmation,
+            startAckConfirmation,
+            startAckConfirmation,
+            // send all data
+            dataChunk(123, TEST_DATA_100B, 0, 20), // data 0-20
+            dataChunk(123, TEST_DATA_100B, 20, 40), // data 20-40
+            dataChunk(123, TEST_DATA_100B, 40, 60), // data 40-60
+            // last packet retry, then hit the lifetime retry limit and abort
+            dataChunk(123, TEST_DATA_100B, 40, 60)); // data 40-60
+  }
 
   private static ByteString range(int startInclusive, int endExclusive) {
     assertThat(startInclusive).isLessThan((int) Byte.MAX_VALUE);
@@ -2422,25 +2475,34 @@ public final class TransferClientTest {
   }
 
   private void createTransferClientThatMayTimeOut(ProtocolVersion version) {
-    createTransferClient(version, 1, 1, TransferEventHandler::runForTestsThatMustTimeOut);
+    createTransferClientThatMayTimeOut(version, Integer.MAX_VALUE);
+  }
+
+  private void createTransferClientThatMayTimeOut(ProtocolVersion version, int maxLifetimeRetries) {
+    createTransferClient(
+        version, 1, 1, maxLifetimeRetries, TransferEventHandler::runForTestsThatMustTimeOut);
   }
 
   private void createTransferClientForTransferThatWillNotTimeOut(ProtocolVersion version) {
-    createTransferClient(version, 60000, 60000, TransferEventHandler::run);
+    createTransferClient(version, 60000, 60000, Integer.MAX_VALUE, TransferEventHandler::run);
   }
 
   private void createTransferClient(ProtocolVersion version,
       int transferTimeoutMillis,
       int initialTransferTimeoutMillis,
+      int maxLifetimeRetries,
       Consumer<TransferEventHandler> eventHandlerFunction) {
     if (transferClient != null) {
       throw new AssertionError("createTransferClient must only be called once!");
     }
     transferClient = new TransferClient(rpcClient.client().method(CHANNEL_ID, SERVICE + "/Read"),
         rpcClient.client().method(CHANNEL_ID, SERVICE + "/Write"),
-        transferTimeoutMillis,
-        initialTransferTimeoutMillis,
-        MAX_RETRIES,
+        TransferTimeoutSettings.builder()
+            .setTimeoutMillis(transferTimeoutMillis)
+            .setInitialTimeoutMillis(initialTransferTimeoutMillis)
+            .setMaxRetries(MAX_RETRIES)
+            .setMaxLifetimeRetries(maxLifetimeRetries)
+            .build(),
         ()
             -> this.shouldAbortFlag,
         eventHandlerFunction);

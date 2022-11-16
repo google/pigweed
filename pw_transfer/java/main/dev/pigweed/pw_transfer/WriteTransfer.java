@@ -40,18 +40,14 @@ class WriteTransfer extends Transfer<Void> {
   protected WriteTransfer(int resourceId,
       ProtocolVersion desiredProtocolVersion,
       TransferInterface transferManager,
-      int timeoutMillis,
-      int initialTimeoutMillis,
-      int maxRetries,
+      TransferTimeoutSettings timeoutSettings,
       byte[] data,
       Consumer<TransferProgress> progressCallback,
       BooleanSupplier shouldAbortCallback) {
     super(resourceId,
         desiredProtocolVersion,
         transferManager,
-        timeoutMillis,
-        initialTimeoutMillis,
-        maxRetries,
+        timeoutSettings,
         progressCallback,
         shouldAbortCallback);
     this.data = data;

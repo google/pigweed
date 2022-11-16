@@ -67,15 +67,12 @@ class TransferEventHandler {
 
   ListenableFuture<Void> startWriteTransferAsClient(int resourceId,
       ProtocolVersion desiredProtocolVersion,
-      int transferTimeoutMillis,
-      int initialTransferTimeoutMillis,
-      int maxRetries,
+      TransferTimeoutSettings settings,
       byte[] data,
       Consumer<TransferProgress> progressCallback,
       BooleanSupplier shouldAbortCallback) {
-    WriteTransfer transfer = new WriteTransfer(resourceId,
-        desiredProtocolVersion,
-        new TransferInterface() {
+    WriteTransfer transfer =
+        new WriteTransfer(resourceId, desiredProtocolVersion, new TransferInterface() {
           @Override
           Call.ClientStreaming<Chunk> getStream() throws ChannelOutputException {
             if (writeStream == null) {
@@ -88,28 +85,19 @@ class TransferEventHandler {
             }
             return writeStream;
           }
-        },
-        transferTimeoutMillis,
-        initialTransferTimeoutMillis,
-        maxRetries,
-        data,
-        progressCallback,
-        shouldAbortCallback);
+        }, settings, data, progressCallback, shouldAbortCallback);
     startTransferAsClient(transfer);
     return transfer.getFuture();
   }
 
   ListenableFuture<byte[]> startReadTransferAsClient(int resourceId,
       ProtocolVersion desiredProtocolVersion,
-      int transferTimeoutMillis,
-      int initialTransferTimeoutMillis,
-      int maxRetries,
+      TransferTimeoutSettings settings,
       TransferParameters parameters,
       Consumer<TransferProgress> progressCallback,
       BooleanSupplier shouldAbortCallback) {
-    ReadTransfer transfer = new ReadTransfer(resourceId,
-        desiredProtocolVersion,
-        new TransferInterface() {
+    ReadTransfer transfer =
+        new ReadTransfer(resourceId, desiredProtocolVersion, new TransferInterface() {
           @Override
           Call.ClientStreaming<Chunk> getStream() throws ChannelOutputException {
             if (readStream == null) {
@@ -122,13 +110,7 @@ class TransferEventHandler {
             }
             return readStream;
           }
-        },
-        transferTimeoutMillis,
-        initialTransferTimeoutMillis,
-        maxRetries,
-        parameters,
-        progressCallback,
-        shouldAbortCallback);
+        }, settings, parameters, progressCallback, shouldAbortCallback);
     startTransferAsClient(transfer);
     return transfer.getFuture();
   }

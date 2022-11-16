@@ -38,9 +38,7 @@ abstract class Transfer<T> {
   private final ProtocolVersion desiredProtocolVersion;
   private final TransferEventHandler.TransferInterface eventHandler;
   private final SettableFuture<T> future;
-  private final int maxRetries;
-  private final int timeoutMillis;
-  private final int initialTimeoutMillis;
+  private final TransferTimeoutSettings timeoutSettings;
   private final Consumer<TransferProgress> progressCallback;
   private final BooleanSupplier shouldAbortCallback;
   private final Instant startTime;
@@ -55,24 +53,21 @@ abstract class Transfer<T> {
   // maxRetries to prevent repeated crashes if reading to / writing from a particular transfer is
   // causing crashes.
   private int disconnectionRetries = 0;
+  private int lifetimeRetries = 0;
 
   /**
    * Creates a new read or write transfer.
    * @param resourceId The resource ID of the transfer
    * @param desiredProtocolVersion protocol version to request
    * @param eventHandler Interface to use to send a chunk.
-   * @param timeoutMillis Maximum time to wait for a chunk from the server.
-   * @param initialTimeoutMillis Maximum time to wait for the first chunk from the server.
-   * @param maxRetries Number of times to retry due to a timeout or RPC error.
+   * @param timeoutSettings Timeout and retry settings for this transfer.
    * @param progressCallback Called each time a packet is sent.
    * @param shouldAbortCallback BooleanSupplier that returns true if a transfer should be aborted.
    */
   Transfer(int resourceId,
       ProtocolVersion desiredProtocolVersion,
       TransferInterface eventHandler,
-      int timeoutMillis,
-      int initialTimeoutMillis,
-      int maxRetries,
+      TransferTimeoutSettings timeoutSettings,
       Consumer<TransferProgress> progressCallback,
       BooleanSupplier shouldAbortCallback) {
     this.resourceId = resourceId;
@@ -80,9 +75,7 @@ abstract class Transfer<T> {
     this.eventHandler = eventHandler;
 
     this.future = SettableFuture.create();
-    this.timeoutMillis = timeoutMillis;
-    this.initialTimeoutMillis = initialTimeoutMillis;
-    this.maxRetries = maxRetries;
+    this.timeoutSettings = timeoutSettings;
     this.progressCallback = progressCallback;
     this.shouldAbortCallback = shouldAbortCallback;
 
@@ -138,11 +131,11 @@ abstract class Transfer<T> {
   }
 
   final void setNextChunkTimeout() {
-    deadline = Instant.now().plusMillis(timeoutMillis);
+    deadline = Instant.now().plusMillis(timeoutSettings.timeoutMillis());
   }
 
   private void setInitialTimeout() {
-    deadline = Instant.now().plusMillis(initialTimeoutMillis);
+    deadline = Instant.now().plusMillis(timeoutSettings.initialTimeoutMillis());
   }
 
   final void setTimeoutMicros(int timeoutMicros) {
@@ -157,9 +150,9 @@ abstract class Transfer<T> {
     logger.atInfo().log(
         "%s starting with parameters: default timeout %d ms, initial timeout %d ms, %d max retires",
         this,
-        timeoutMillis,
-        initialTimeoutMillis,
-        maxRetries);
+        timeoutSettings.timeoutMillis(),
+        timeoutSettings.initialTimeoutMillis(),
+        timeoutSettings.maxRetries());
     VersionedChunk.Builder chunk =
         VersionedChunk.createInitialChunk(desiredProtocolVersion, resourceId);
     prepareInitialChunk(chunk);
@@ -213,11 +206,11 @@ abstract class Transfer<T> {
   final void handleDisconnection() {
     // disconnectionRetries is set to Int.MAX_VALUE when a packet is received to prevent retries
     // after the initial packet.
-    if (disconnectionRetries++ < maxRetries) {
+    if (disconnectionRetries++ < timeoutSettings.maxRetries()) {
       logger.atFine().log("Restarting the pw_transfer RPC for %s (attempt %d/%d)",
           this,
           disconnectionRetries,
-          maxRetries);
+          timeoutSettings.maxRetries());
       try {
         sendChunk(getChunkForRetry());
       } catch (TransferAbortedException e) {
@@ -225,8 +218,8 @@ abstract class Transfer<T> {
       }
       setInitialTimeout();
     } else {
-      changeState(new Completed(new TransferError(
-          "Transfer " + sessionId + " restarted " + maxRetries + " times, aborting",
+      changeState(new Completed(new TransferError("Transfer " + sessionId + " restarted "
+              + timeoutSettings.maxRetries() + " times, aborting",
           Status.INTERNAL)));
     }
   }
@@ -449,20 +442,28 @@ abstract class Transfer<T> {
 
     @Override
     public void handleTimeout() throws TransferAbortedException {
-      if (retries < maxRetries) {
-        logger.atFiner().log("%s received no chunks for %d ms; retrying %d/%d",
-            Transfer.this,
-            timeoutMillis,
-            retries,
-            maxRetries);
-        sendChunk(getChunkForRetry());
-        retries += 1;
-        setNextChunkTimeout();
+      // If the transfer timed out, skip to the completed state. Don't send any more packets.
+      if (retries >= timeoutSettings.maxRetries()) {
+        logger.atFine().log("%s exhausted its %d retries", Transfer.this, retries);
+        changeState(new Completed(Status.DEADLINE_EXCEEDED));
         return;
       }
 
-      // If the transfer timed out, skip to the completed state. Don't send any more packets.
-      changeState(new Completed(Status.DEADLINE_EXCEEDED));
+      if (lifetimeRetries >= timeoutSettings.maxLifetimeRetries()) {
+        logger.atFine().log("%s exhausted its %d lifetime retries", Transfer.this, retries);
+        changeState(new Completed(Status.DEADLINE_EXCEEDED));
+        return;
+      }
+
+      logger.atFiner().log("%s received no chunks for %d ms; retrying %d/%d",
+          Transfer.this,
+          timeoutSettings.timeoutMillis(),
+          retries,
+          timeoutSettings.maxRetries());
+      sendChunk(getChunkForRetry());
+      retries += 1;
+      lifetimeRetries += 1;
+      setNextChunkTimeout();
     }
   }
 

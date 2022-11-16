@@ -29,9 +29,7 @@ public class TransferClient {
   public static final TransferParameters DEFAULT_READ_TRANSFER_PARAMETERS =
       TransferParameters.create(8192, 1024, 0);
 
-  private final int transferTimeoutMillis;
-  private final int initialTransferTimeoutMillis;
-  private final int maxRetries;
+  private final TransferTimeoutSettings settings;
   private final BooleanSupplier shouldAbortCallback;
 
   private final TransferEventHandler transferEventHandler;
@@ -44,25 +42,11 @@ public class TransferClient {
    *
    * @param readMethod Method client for the pw.transfer.Transfer.Read method.
    * @param writeMethod Method client for the pw.transfer.Transfer.Write method.
-   * @param transferTimeoutMillis How long to wait for communication from the server. If the server
-   *     delays longer than this, retry up to maxRetries times.
-   * @param initialTransferTimeoutMillis How long to wait for the initial communication from the
-   *     server. If the server delays longer than this, retry up to maxRetries times.
-   * @param maxRetries How many times to retry if a communication times out.
+   * @param settings Settings for timeouts and retries.
    */
-  public TransferClient(MethodClient readMethod,
-      MethodClient writeMethod,
-      int transferTimeoutMillis,
-      int initialTransferTimeoutMillis,
-      int maxRetries) {
-    this(readMethod,
-        writeMethod,
-        transferTimeoutMillis,
-        initialTransferTimeoutMillis,
-        maxRetries,
-        ()
-            -> false, // Never abort
-        TransferEventHandler::run);
+  public TransferClient(
+      MethodClient readMethod, MethodClient writeMethod, TransferTimeoutSettings settings) {
+    this(readMethod, writeMethod, settings, () -> false, TransferEventHandler::run);
   }
 
   /**
@@ -78,9 +62,11 @@ public class TransferClient {
       BooleanSupplier shouldAbortCallback) {
     this(readMethod,
         writeMethod,
-        transferTimeoutMillis,
-        initialTransferTimeoutMillis,
-        maxRetries,
+        TransferTimeoutSettings.builder()
+            .setTimeoutMillis(transferTimeoutMillis)
+            .setInitialTimeoutMillis(initialTransferTimeoutMillis)
+            .setMaxRetries(maxRetries)
+            .build(),
         shouldAbortCallback,
         TransferEventHandler::run);
   }
@@ -88,14 +74,10 @@ public class TransferClient {
   /** Constructor exposed to package for test use only. */
   TransferClient(MethodClient readMethod,
       MethodClient writeMethod,
-      int transferTimeoutMillis,
-      int initialTransferTimeoutMillis,
-      int maxRetries,
+      TransferTimeoutSettings settings,
       BooleanSupplier shouldAbortCallback,
       Consumer<TransferEventHandler> runFunction) {
-    this.transferTimeoutMillis = transferTimeoutMillis;
-    this.initialTransferTimeoutMillis = initialTransferTimeoutMillis;
-    this.maxRetries = maxRetries;
+    this.settings = settings;
     this.shouldAbortCallback = shouldAbortCallback;
 
     transferEventHandler = new TransferEventHandler(readMethod, writeMethod);
@@ -118,14 +100,8 @@ public class TransferClient {
    */
   public ListenableFuture<Void> write(
       int resourceId, byte[] data, Consumer<TransferProgress> progressCallback) {
-    return transferEventHandler.startWriteTransferAsClient(resourceId,
-        desiredProtocolVersion,
-        transferTimeoutMillis,
-        initialTransferTimeoutMillis,
-        maxRetries,
-        data,
-        progressCallback,
-        shouldAbortCallback);
+    return transferEventHandler.startWriteTransferAsClient(
+        resourceId, desiredProtocolVersion, settings, data, progressCallback, shouldAbortCallback);
   }
 
   /** Reads the data from the given transfer resource ID. */
@@ -151,9 +127,7 @@ public class TransferClient {
       int resourceId, TransferParameters parameters, Consumer<TransferProgress> progressCallback) {
     return transferEventHandler.startReadTransferAsClient(resourceId,
         desiredProtocolVersion,
-        transferTimeoutMillis,
-        initialTransferTimeoutMillis,
-        maxRetries,
+        settings,
         parameters,
         progressCallback,
         shouldAbortCallback);

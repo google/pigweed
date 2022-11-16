@@ -27,6 +27,7 @@ java_library(
         "TransferParameters.java",
         "TransferProgress.java",
         "TransferService.java",
+        "TransferTimeoutSettings.java",
         "VersionedChunk.java",
         "WriteTransfer.java",
     ],

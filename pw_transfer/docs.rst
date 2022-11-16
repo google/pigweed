@@ -348,25 +348,31 @@ to represent the results of a read or write transfer.
 
   import dev.pigweed.pw_transfer.TransferClient;
 
-  // Create a new transfer client.
-  TransferClient client = new TransferClient(
-      transferReadMethodClient,
-      transferWriteMethodClient,
-      transferTimeoutMillis,
-      initialTransferTimeoutMillis,
-      maxRetries);
+  public class TheClass  {
+    public void DoTransfer(MethodClient transferReadMethodClient,
+                           MethodClient transferWriteMethodClient) {
+      // Create a new transfer client.
+      TransferClient client = new TransferClient(
+          transferReadMethodClient,
+          transferWriteMethodClient,
+          TransferTimeoutSettings.builder()
+              .setTimeoutMillis(TRANSFER_TIMEOUT_MS)
+              .setMaxRetries(MAX_RETRIES)
+              .build());
 
-  // Start a read transfer.
-  ListenableFuture<byte[]> readTransfer = client.read(123);
+      // Start a read transfer.
+      ListenableFuture<byte[]> readTransfer = client.read(123);
 
-  // Start a write transfer.
-  ListenableFuture<Void> writeTransfer = client.write(123, dataToWrite);
+      // Start a write transfer.
+      ListenableFuture<Void> writeTransfer = client.write(123, dataToWrite);
 
-  // Get the data from the read transfer.
-  byte[] readData = readTransfer.get();
+      // Get the data from the read transfer.
+      byte[] readData = readTransfer.get();
 
-  // Wait for the write transfer to complete.
-  writeTransfer.get();
+      // Wait for the write transfer to complete.
+      writeTransfer.get();
+    }
+  }
 
 --------
 Protocol

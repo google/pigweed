@@ -54,18 +54,14 @@ class ReadTransfer extends Transfer<byte[]> {
   ReadTransfer(int resourceId,
       ProtocolVersion desiredProtocolVersion,
       TransferInterface transferManager,
-      int timeoutMillis,
-      int initialTimeoutMillis,
-      int maxRetries,
+      TransferTimeoutSettings timeoutSettings,
       TransferParameters transferParameters,
       Consumer<TransferProgress> progressCallback,
       BooleanSupplier shouldAbortCallback) {
     super(resourceId,
         desiredProtocolVersion,
         transferManager,
-        timeoutMillis,
-        initialTimeoutMillis,
-        maxRetries,
+        timeoutSettings,
         progressCallback,
         shouldAbortCallback);
     this.parameters = transferParameters;
