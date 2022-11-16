@@ -127,9 +127,9 @@ pw_add_library_generic(pw_build.cpp17 INTERFACE
     $<$<COMPILE_LANGUAGE:CXX>:-Wno-register>
 )
 
-# Create an empty source file and library for general use.
-file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/empty_file.c" "")
-add_library(pw_build.empty OBJECT "${CMAKE_CURRENT_BINARY_DIR}/empty_file.c" "")
+# Create an empty C++ source file and library for general use.
+file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/empty_file.cc" "")
+add_library(pw_build.empty OBJECT "${CMAKE_CURRENT_BINARY_DIR}/empty_file.cc" "")
 
 pw_add_test(pw_build.cc_blob_library_test
   SOURCES

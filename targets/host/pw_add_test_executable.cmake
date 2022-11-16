@@ -32,7 +32,8 @@ function(pw_add_test_executable NAME TEST_DEP)
       pw_add_test_executable "${num_positional_args}" "${option_args}"
       "${one_value_args}" "${multi_value_args}")
 
-  add_executable(${NAME} EXCLUDE_FROM_ALL
+  # CMake requires a source file to determine the LINKER_LANGUAGE.
+  add_executable("${NAME}" EXCLUDE_FROM_ALL
                  $<TARGET_PROPERTY:pw_build.empty,SOURCES>)
 
   set(test_backend "${pw_unit_test_GOOGLETEST_BACKEND}")
