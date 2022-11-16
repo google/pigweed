@@ -287,6 +287,9 @@ channel output and the example service.
   pw::rpc::FixedMtuChannelOutput<kMaxTransmissionUnit> hdlc_channel_output(
       writer, pw::hdlc::kDefaultRpcAddress, "HDLC output");
 
+  // Allocate an array of channels for the server to use. If dynamic allocation
+  // is enabled (PW_RPC_DYNAMIC_ALLOCATION=1), the server can be initialized
+  // without any channels, and they can be added later.
   pw::rpc::Channel channels[] = {
       pw::rpc::Channel::Create<1>(&hdlc_channel_output)};
 

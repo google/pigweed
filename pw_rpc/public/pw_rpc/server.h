@@ -33,7 +33,17 @@ namespace pw::rpc {
 
 class Server : public internal::Endpoint {
  public:
-  _PW_RPC_CONSTEXPR Server(span<Channel> channels) : Endpoint(channels) {}
+  // If dynamic allocation is supported, it is not necessary to preallocate a
+  // channels list.
+#if PW_RPC_DYNAMIC_ALLOCATION
+  _PW_RPC_CONSTEXPR Server() = default;
+#endif  // PW_RPC_DYNAMIC_ALLOCATION
+
+  // Creates a client that uses a set of RPC channels. Channels can be shared
+  // between multiple clients and servers.
+  template <typename Span>
+  _PW_RPC_CONSTEXPR Server(Span&& channels)
+      : Endpoint(std::forward<Span>(channels)) {}
 
   // Registers one or more services with the server. This should not be called
   // directly with a Service; instead, use a generated class which inherits

@@ -31,8 +31,13 @@ namespace pw::rpc::internal {
 
 class ChannelList {
  public:
-  _PW_RPC_CONSTEXPR ChannelList(span<Channel> channels)
-      : channels_(channels.begin(), channels.end()) {}
+  _PW_RPC_CONSTEXPR ChannelList() = default;
+
+  // Make this a template so it is only instantiated if it is referred to. This
+  // avoids requiring an iterator constructor on the underlying container.
+  template <typename Span>
+  _PW_RPC_CONSTEXPR ChannelList(Span&& channels_span)
+      : channels_(std::begin(channels_span), std::end(channels_span)) {}
 
   // Returns the first channel with the matching ID or nullptr if none match.
   // Except for Channel::kUnassignedChannelId, there should be no duplicate

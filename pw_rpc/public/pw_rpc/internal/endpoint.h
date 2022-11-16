@@ -82,10 +82,15 @@ class Endpoint {
   }
 
  protected:
-  _PW_RPC_CONSTEXPR Endpoint(span<rpc::Channel> channels)
-      : channels_(span(static_cast<internal::Channel*>(channels.data()),
-                       channels.size())),
-        next_call_id_(0) {}
+  _PW_RPC_CONSTEXPR Endpoint() = default;
+
+  // Initializes the endpoint with a span of channels. This is a template to
+  // avoid requiring an iterator constructor on the the underlying channels
+  // container.
+  template <typename Span>
+  _PW_RPC_CONSTEXPR Endpoint(Span&& channels)
+      : channels_(span(static_cast<internal::Channel*>(std::data(channels)),
+                       std::size(channels))) {}
 
   // Parses an RPC packet and sets ongoing_call to the matching call, if any.
   // Returns the parsed packet or an error.
@@ -149,7 +154,7 @@ class Endpoint {
   ChannelList channels_ PW_GUARDED_BY(rpc_lock());
   IntrusiveList<Call> calls_ PW_GUARDED_BY(rpc_lock());
 
-  uint32_t next_call_id_ PW_GUARDED_BY(rpc_lock());
+  uint32_t next_call_id_ PW_GUARDED_BY(rpc_lock()) = 0;
 };
 
 // An `Endpoint` indicating that `rpc_lock()` is held.
