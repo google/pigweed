@@ -15,13 +15,17 @@
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 pw_add_library(pw_router.static_router STATIC
-  SOURCES
-    static_router.cc
+  HEADERS
+    public/pw_router/static_router.h
+  PUBLIC_INCLUDES
+    public
   PUBLIC_DEPS
     pw_metric
     pw_router.egress
     pw_router.packet_parser
-    pw_sync.mutex
+    pw_span
+  SOURCES
+    static_router.cc
   PRIVATE_DEPS
     pw_log
 )
@@ -30,33 +34,53 @@ if(Zephyr_FOUND AND CONFIG_PIGWEED_ROUTER_STATIC_ROUTER)
 endif()
 
 pw_add_library(pw_router.egress INTERFACE
+  HEADERS
+    public/pw_router/egress.h
+  PUBLIC_INCLUDES
+    public
   PUBLIC_DEPS
     pw_bytes
     pw_router.packet_parser
+    pw_span
 )
 if(Zephyr_FOUND AND CONFIG_PIGWEED_ROUTER_EGRESS)
   zephyr_link_libraries(pw_router.egress)
 endif()
 
 pw_add_library(pw_router.packet_parser INTERFACE
+  HEADERS
+    public/pw_router/packet_parser.h
+  PUBLIC_INCLUDES
+    public
   PUBLIC_DEPS
     pw_bytes
+    pw_span
 )
 if(Zephyr_FOUND AND CONFIG_PIGWEED_ROUTER_PACKET_PARSER)
   zephyr_link_libraries(pw_router.packet_parser)
 endif()
 
 pw_add_library(pw_router.egress_function INTERFACE
+  HEADERS
+    public/pw_router/egress_function.h
+  PUBLIC_INCLUDES
+    public
   PUBLIC_DEPS
     pw_function
     pw_router.egress
+    pw_span
 )
 if(Zephyr_FOUND AND CONFIG_PIGWEED_ROUTER_EGRESS_FUNCTION)
   zephyr_link_libraries(pw_router.egress_function)
 endif()
 
-pw_auto_add_module_tests(pw_router
+pw_add_test(pw_router.static_router_test
+  SOURCES
+    static_router_test.cc
   PRIVATE_DEPS
     pw_router.egress_function
     pw_router.static_router
+  GROUPS
+    modules
+    pw_router
 )
