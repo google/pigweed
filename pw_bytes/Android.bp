@@ -27,5 +27,8 @@ cc_library_static {
     host_supported: true,
     srcs: [
         "byte_builder.cc"
-    ]
+    ],
+    static_libs: [
+        "pw_containers",
+    ],
 }
