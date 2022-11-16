@@ -737,11 +737,7 @@ template("pw_python_package") {
 # in deps and their dependencies.
 template("pw_python_group") {
   if (defined(invoker.python_deps)) {
-    _python_deps = []
-    foreach(pydep, invoker.python_deps) {
-      _python_deps += [ get_label_info(pydep, "label_no_toolchain") +
-                        "($pw_build_PYTHON_TOOLCHAIN)" ]
-    }
+    _python_deps = invoker.python_deps
   } else {
     _python_deps = []
     not_needed([ "invoker" ])  # Allow empty groups.
