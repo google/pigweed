@@ -18,7 +18,7 @@ import("$dir_pw_toolchain/clang_tools.gni")
 
 declare_args() {
   # Sets the sanitizer to pass to clang. Valid values are "address", "memory",
-  # "thread", "undefined".
+  # "thread", "undefined", "undefined_heuristic", and "coverage".
   pw_toolchain_SANITIZERS = []
 
   # Indicates if this toolchain supports generating coverage reports from
@@ -156,9 +156,8 @@ pw_toolchain_host_clang = {
       default_configs += [ "$dir_pw_build:optimize_debugging" ]
       default_configs += [ "$dir_pw_toolchain/host_clang:sanitize_address" ]
 
-      # Always disable coverage generation since we cannot instrument the
-      # binaries correctly.
-      pw_toolchain_COVERAGE_ENABLED = false
+      # Allow coverage generation if pw_toolchain_SANITIZERS = ["coverage"].
+      pw_toolchain_COVERAGE_ENABLED = true
     }
   }
 
@@ -172,9 +171,8 @@ pw_toolchain_host_clang = {
       default_configs += [ "$dir_pw_build:optimize_debugging" ]
       default_configs += [ "$dir_pw_toolchain/host_clang:sanitize_undefined" ]
 
-      # Always disable coverage generation since we cannot instrument the
-      # binaries correctly.
-      pw_toolchain_COVERAGE_ENABLED = false
+      # Allow coverage generation if pw_toolchain_SANITIZERS = ["coverage"].
+      pw_toolchain_COVERAGE_ENABLED = true
     }
   }
 
@@ -189,9 +187,8 @@ pw_toolchain_host_clang = {
       default_configs +=
           [ "$dir_pw_toolchain/host_clang:sanitize_undefined_heuristic" ]
 
-      # Always disable coverage generation since we cannot instrument the
-      # binaries correctly.
-      pw_toolchain_COVERAGE_ENABLED = false
+      # Allow coverage generation if pw_toolchain_SANITIZERS = ["coverage"].
+      pw_toolchain_COVERAGE_ENABLED = true
     }
   }
 
@@ -205,9 +202,8 @@ pw_toolchain_host_clang = {
       default_configs += [ "$dir_pw_build:optimize_debugging" ]
       default_configs += [ "$dir_pw_toolchain/host_clang:sanitize_memory" ]
 
-      # Always disable coverage generation since we cannot instrument the
-      # binaries correctly.
-      pw_toolchain_COVERAGE_ENABLED = false
+      # Allow coverage generation if pw_toolchain_SANITIZERS = ["coverage"].
+      pw_toolchain_COVERAGE_ENABLED = true
     }
   }
 
@@ -221,9 +217,8 @@ pw_toolchain_host_clang = {
       default_configs += [ "$dir_pw_build:optimize_debugging" ]
       default_configs += [ "$dir_pw_toolchain/host_clang:sanitize_thread" ]
 
-      # Always disable coverage generation since we cannot instrument the
-      # binaries correctly.
-      pw_toolchain_COVERAGE_ENABLED = false
+      # Allow coverage generation if pw_toolchain_SANITIZERS = ["coverage"].
+      pw_toolchain_COVERAGE_ENABLED = true
     }
   }
 }
