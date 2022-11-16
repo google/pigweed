@@ -100,7 +100,6 @@ function(pw_add_test NAME)
       # TODO(b/232141950): Apply compilation options that affect ABI
       # globally in the CMake build instead of injecting them into libraries.
       pw_build
-      pw_build.warnings
       ${arg_PRIVATE_DEPS}
     PRIVATE_INCLUDES
       ${arg_PRIVATE_INCLUDES}
@@ -113,6 +112,16 @@ function(pw_add_test NAME)
     GROUPS
       ${arg_GROUPS}
   )
+  # Add the compiler warnings by prefixing INTERFACE_COMPILE_OPTIONS instead of
+  # suffixing the list by using the `BEFORE` keyword. This way warnings can
+  # always be deterministically disabled/adjusted by callers of pw_add_test.
+  # Note that INTERFACE_COMPILE_OPTIONS are read from both the target and all
+  # of its dependencies.
+  if(NOT "${arg_SOURCES}" STREQUAL "")
+    target_compile_options("${NAME}.bin" BEFORE PRIVATE
+        $<TARGET_PROPERTY:pw_build.warnings,INTERFACE_COMPILE_OPTIONS>
+    )
+  endif()
 endfunction()
 
 # pw_add_test_generic: Declares a single unit test suite.

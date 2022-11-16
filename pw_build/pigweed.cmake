@@ -551,7 +551,6 @@ function(pw_add_library NAME TYPE)
       pw_build
       ${arg_PUBLIC_DEPS}
     PRIVATE_DEPS
-      pw_build.warnings
       ${arg_PRIVATE_DEPS}
     PUBLIC_INCLUDES
       ${arg_PUBLIC_INCLUDES}
@@ -570,6 +569,16 @@ function(pw_add_library NAME TYPE)
     PRIVATE_LINK_OPTIONS
       ${arg_PRIVATE_LINK_OPTIONS}
   )
+  # Add the compiler warnings by prefixing INTERFACE_COMPILE_OPTIONS instead of
+  # suffixing the list by using the `BEFORE` keyword. This way warnings can
+  # always be deterministically disabled/adjusted by callers of pw_add_library.
+  # Note that INTERFACE_COMPILE_OPTIONS are read from both the target and all
+  # of its dependencies.
+  if(NOT "${arg_SOURCES}" STREQUAL "")
+    target_compile_options("${NAME}" BEFORE PRIVATE
+        $<TARGET_PROPERTY:pw_build.warnings,INTERFACE_COMPILE_OPTIONS>
+    )
+  endif()
 endfunction(pw_add_library)
 
 # Declares a module as a facade.
@@ -612,7 +621,6 @@ function(pw_add_facade NAME TYPE)
       pw_build
       ${arg_PUBLIC_DEPS}
     PRIVATE_DEPS
-      pw_build.warnings
       ${arg_PRIVATE_DEPS}
     PUBLIC_INCLUDES
       ${arg_PUBLIC_INCLUDES}
@@ -631,6 +639,16 @@ function(pw_add_facade NAME TYPE)
     PRIVATE_LINK_OPTIONS
       ${arg_PRIVATE_LINK_OPTIONS}
   )
+  # Add the compiler warnings by prefixing INTERFACE_COMPILE_OPTIONS instead of
+  # suffixing the list by using the `BEFORE` keyword. This way warnings can
+  # always be deterministically disabled/adjusted by callers of pw_add_facade.
+  # Note that INTERFACE_COMPILE_OPTIONS are read from both the target and all
+  # of its dependencies.
+  if(NOT "${arg_SOURCES}" STREQUAL "")
+    target_compile_options("${NAME}" BEFORE PRIVATE
+        $<TARGET_PROPERTY:pw_build.warnings,INTERFACE_COMPILE_OPTIONS>
+    )
+  endif()
 endfunction(pw_add_facade)
 
 # pw_add_facade_generic: Creates a CMake facade library target.
