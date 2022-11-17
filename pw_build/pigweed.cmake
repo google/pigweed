@@ -238,26 +238,6 @@ function(pw_add_library_generic NAME TYPE)
       ${multi_value_args}
   )
 
-  add_library("${NAME}" "${TYPE}" EXCLUDE_FROM_ALL)
-
-  # Instead of forking all of the code below or injecting an empty source file,
-  # conditionally select PUBLIC vs INTERFACE depending on the type.
-  if("${TYPE}" STREQUAL "INTERFACE")
-    set(public_or_interface INTERFACE)
-    if(NOT "${arg_SOURCES}" STREQUAL "")
-      message(
-        SEND_ERROR "${NAME} cannot have sources as it's an INTERFACE library")
-    endif(NOT "${arg_SOURCES}" STREQUAL "")
-  else()  # ${TYPE} != INTERFACE
-    set(public_or_interface PUBLIC)
-    if("${arg_SOURCES}" STREQUAL "")
-      message(
-        SEND_ERROR "${NAME} must have SOURCES as it's not an INTERFACE library")
-    endif("${arg_SOURCES}" STREQUAL "")
-  endif("${TYPE}" STREQUAL "INTERFACE")
-
-  target_sources("${NAME}" PRIVATE ${arg_SOURCES} ${arg_HEADERS})
-
   # CMake 3.22 does not have a notion of target_headers yet, so in the mean
   # time we ask for headers to be specified for consistency with GN & Bazel and
   # to improve the IDE experience. However, we do want to ensure all the headers
@@ -272,61 +252,90 @@ function(pw_add_library_generic NAME TYPE)
     endif()
   endforeach()
 
-  # Public and private target_include_directories.
-  target_include_directories("${NAME}" PRIVATE ${arg_PRIVATE_INCLUDES})
-  target_include_directories(
-        "${NAME}" ${public_or_interface} ${arg_PUBLIC_INCLUDES})
-
-  # Public and private target_link_libraries.
-  if(NOT "${arg_SOURCES}" STREQUAL "")
-    pw_target_link_targets("${NAME}" PRIVATE ${arg_PRIVATE_DEPS})
-  endif(NOT "${arg_SOURCES}" STREQUAL "")
-  pw_target_link_targets("${NAME}" ${public_or_interface} ${arg_PUBLIC_DEPS})
-
-  # The target_compile_options are always added before target_link_libraries'
-  # target_compile_options. In order to support the enabling of warning
-  # compile options injected via arg_PRIVATE_DEPS (target_link_libraries
-  # dependencies) that are partially disabled via arg_PRIVATE_COMPILE_OPTIONS (
-  # target_compile_options), the defines, compile options, and link options are
-  # also added as target_link_libraries dependencies. This enables reasonable
-  # ordering between the enabling (target_link_libraries) and disabling (
-  # now also target_link_libraries) of compiler warnings.
+  # In order to more easily create the various types of libraries, two hidden
+  # targets are created: NAME._config and NAME._public_config which loosely
+  # mirror the GN configs although we also carry target link dependencies
+  # through these.
 
   # Add the NAME._config target_link_libraries dependency with the
-  # PRIVATE_DEFINES, PRIVATE_COMPILE_OPTIONS, and PRIVATE_LINK_OPTIONS.
-  if(NOT "${TYPE}" STREQUAL "INTERFACE")
-    pw_target_link_targets("${NAME}" PRIVATE "${NAME}._config")
-    add_library("${NAME}._config" INTERFACE EXCLUDE_FROM_ALL)
-    if(NOT "${arg_PRIVATE_DEFINES}" STREQUAL "")
-      target_compile_definitions(
-          "${NAME}._config" INTERFACE ${arg_PRIVATE_DEFINES})
-    endif(NOT "${arg_PRIVATE_DEFINES}" STREQUAL "")
-    if(NOT "${arg_PRIVATE_COMPILE_OPTIONS}" STREQUAL "")
-      target_compile_options(
-          "${NAME}._config" INTERFACE ${arg_PRIVATE_COMPILE_OPTIONS})
-    endif(NOT "${arg_PRIVATE_COMPILE_OPTIONS}" STREQUAL "")
-    if(NOT "${arg_PRIVATE_LINK_OPTIONS}" STREQUAL "")
-      target_link_options("${NAME}._config" INTERFACE ${arg_PRIVATE_LINK_OPTIONS})
-    endif(NOT "${arg_PRIVATE_LINK_OPTIONS}" STREQUAL "")
-  endif(NOT "${TYPE}" STREQUAL "INTERFACE")
+  # PRIVATE_INCLUDES, PRIVATE_DEFINES, PRIVATE_COMPILE_OPTIONS,
+  # PRIVATE_LINK_OPTIONS, and PRIVATE_DEPS.
+  add_library("${NAME}._config" INTERFACE EXCLUDE_FROM_ALL)
+  target_include_directories("${NAME}._config"
+    INTERFACE
+      ${arg_PRIVATE_INCLUDES}
+  )
+  target_compile_definitions("${NAME}._config"
+    INTERFACE
+      ${arg_PRIVATE_DEFINES}
+  )
+  target_compile_options("${NAME}._config"
+    INTERFACE
+      ${arg_PRIVATE_COMPILE_OPTIONS}
+  )
+  target_link_options("${NAME}._config"
+    INTERFACE
+      ${arg_PRIVATE_LINK_OPTIONS}
+  )
+  pw_target_link_targets("${NAME}._config"
+    INTERFACE
+      ${arg_PRIVATE_DEPS}
+  )
 
   # Add the NAME._public_config target_link_libraries dependency with the
-  # PUBLIC_DEFINES, PUBLIC_COMPILE_OPTIONS, and PUBLIC_LINK_OPTIONS.
+  # PUBLIC_INCLUDES, PUBLIC_DEFINES, PUBLIC_COMPILE_OPTIONS,
+  # PUBLIC_LINK_OPTIONS, and PUBLIC_DEPS.
   add_library("${NAME}._public_config" INTERFACE EXCLUDE_FROM_ALL)
-  pw_target_link_targets(
-      "${NAME}" ${public_or_interface} "${NAME}._public_config")
-  if(NOT "${arg_PUBLIC_DEFINES}" STREQUAL "")
-    target_compile_definitions(
-        "${NAME}._public_config" INTERFACE ${arg_PUBLIC_DEFINES})
-  endif(NOT "${arg_PUBLIC_DEFINES}" STREQUAL "")
-  if(NOT "${arg_PUBLIC_COMPILE_OPTIONS}" STREQUAL "")
-    target_compile_options(
-        "${NAME}._public_config" INTERFACE ${arg_PUBLIC_COMPILE_OPTIONS})
-  endif(NOT "${arg_PUBLIC_COMPILE_OPTIONS}" STREQUAL "")
-  if(NOT "${arg_PUBLIC_LINK_OPTIONS}" STREQUAL "")
-    target_link_options(
-        "${NAME}._public_config" INTERFACE ${arg_PUBLIC_LINK_OPTIONS})
-  endif(NOT "${arg_PUBLIC_LINK_OPTIONS}" STREQUAL "")
+  target_include_directories("${NAME}._public_config"
+    INTERFACE
+      ${arg_PUBLIC_INCLUDES}
+  )
+  target_compile_definitions("${NAME}._public_config"
+    INTERFACE
+      ${arg_PUBLIC_DEFINES}
+  )
+  target_compile_options("${NAME}._public_config"
+    INTERFACE
+      ${arg_PUBLIC_COMPILE_OPTIONS}
+  )
+  target_link_options("${NAME}._public_config"
+    INTERFACE
+      ${arg_PUBLIC_LINK_OPTIONS}
+  )
+  pw_target_link_targets("${NAME}._public_config"
+    INTERFACE
+      ${arg_PUBLIC_DEPS}
+  )
+
+  # Instantiate the library depending on the type using the NAME._config and
+  # NAME._public_config libraries we just created.
+  if("${TYPE}" STREQUAL "INTERFACE")
+    if(NOT "${arg_SOURCES}" STREQUAL "")
+      message(
+        SEND_ERROR "${NAME} cannot have sources as it's an INTERFACE library")
+    endif(NOT "${arg_SOURCES}" STREQUAL "")
+
+    add_library("${NAME}" INTERFACE EXCLUDE_FROM_ALL)
+    target_sources("${NAME}" PRIVATE ${arg_HEADERS})
+    pw_target_link_targets("${NAME}"
+      INTERFACE
+        "${NAME}._public_config"
+    )
+  else()
+    if("${arg_SOURCES}" STREQUAL "")
+      message(
+        SEND_ERROR "${NAME} must have SOURCES as it's not an INTERFACE library")
+    endif("${arg_SOURCES}" STREQUAL "")
+
+    add_library("${NAME}" "${TYPE}" EXCLUDE_FROM_ALL)
+    target_sources("${NAME}" PRIVATE ${arg_HEADERS} ${arg_SOURCES})
+    pw_target_link_targets("${NAME}"
+      PUBLIC
+        "${NAME}._public_config"
+      PRIVATE
+        "${NAME}._config"
+    )
+  endif()
 endfunction(pw_add_library_generic)
 
 # Checks that the library's name is prefixed by the relative path with dot
