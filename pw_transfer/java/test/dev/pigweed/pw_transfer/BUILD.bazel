@@ -39,7 +39,6 @@ java_test(
 
 test_suite(
     name = "pw_transfer",
-    tags = ["manual"],
     tests = [
         ":TransferClientTest",
     ],
