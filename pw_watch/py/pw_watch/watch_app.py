@@ -20,13 +20,13 @@ from pathlib import Path
 import re
 import sys
 import time
-from typing import List, NoReturn, Optional
+from typing import Callable, Dict, List, NoReturn, Optional
 
 from prompt_toolkit.application import Application
 from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
 from prompt_toolkit.filters import Condition
 from prompt_toolkit.history import (
-    FileHistory,
+    InMemoryHistory,
     History,
     ThreadedHistory,
 )
@@ -50,15 +50,109 @@ from prompt_toolkit.styles import DynamicStyle, merge_styles, Style
 from prompt_toolkit.formatted_text import StyleAndTextTuples
 
 from pw_console.console_app import get_default_colordepth
-from pw_console.console_prefs import ConsolePrefs
 from pw_console.get_pw_console_app import PW_CONSOLE_APP_CONTEXTVAR
+from pw_console.key_bindings import DEFAULT_KEY_BINDINGS
 from pw_console.log_pane import LogPane
 from pw_console.plugin_mixin import PluginMixin
 from pw_console.plugins.twenty48_pane import Twenty48Pane
 from pw_console.quit_dialog import QuitDialog
 from pw_console.window_manager import WindowManager
 import pw_console.style
+from pw_console.style import get_theme_colors
 import pw_console.widgets.border
+
+from pw_build.project_builder_prefs import ProjectBuilderPrefs
+
+
+class WatchAppPrefs(ProjectBuilderPrefs):
+    """Add pw_console specific prefs standard ProjectBuilderPrefs."""
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self.registered_commands = DEFAULT_KEY_BINDINGS
+        self.registered_commands.update(self.user_key_bindings)
+
+        self.default_config.update({
+            'key_bindings': DEFAULT_KEY_BINDINGS,
+        })
+        self.reset_config()
+
+    # Required pw_console preferences for key bindings and themes
+    @property
+    def user_key_bindings(self) -> Dict[str, List[str]]:
+        return self._config.get('key_bindings', {})
+
+    @property
+    def ui_theme(self) -> str:
+        return self._config.get('ui_theme', '')
+
+    @ui_theme.setter
+    def ui_theme(self, new_ui_theme: str) -> None:
+        self._config['ui_theme'] = new_ui_theme
+
+    @property
+    def theme_colors(self):
+        return get_theme_colors(self.ui_theme)
+
+    def get_function_keys(self, name: str) -> List:
+        """Return the keys for the named function."""
+        try:
+            return self.registered_commands[name]
+        except KeyError as error:
+            raise KeyError('Unbound key function: {}'.format(name)) from error
+
+    def register_named_key_function(self, name: str,
+                                    default_bindings: List[str]) -> None:
+        self.registered_commands[name] = default_bindings
+
+    def register_keybinding(self, name: str, key_bindings: KeyBindings,
+                            **kwargs) -> Callable:
+        """Apply registered keys for the given named function."""
+        def decorator(handler: Callable) -> Callable:
+            "`handler` is a callable or Binding."
+            for keys in self.get_function_keys(name):
+                key_bindings.add(*keys.split(' '), **kwargs)(handler)
+            return handler
+
+        return decorator
+
+    # Required pw_console preferences for using a log window pane.
+    @property
+    def spaces_between_columns(self) -> int:
+        return 2
+
+    @property
+    def window_column_split_method(self) -> str:
+        return 'horizontal'
+
+    @property
+    def hide_date_from_log_time(self) -> bool:
+        return True
+
+    @property
+    def column_order(self) -> list:
+        return []
+
+    def column_style(  # pylint: disable=no-self-use
+        self,
+        _column_name: str,
+        _column_value: str,
+        default='',
+    ) -> str:
+        return default
+
+    @property
+    def show_python_file(self) -> bool:
+        return self._config.get('show_python_file', False)
+
+    @property
+    def show_source_file(self) -> bool:
+        return self._config.get('show_source_file', False)
+
+    @property
+    def show_python_logger(self) -> bool:
+        return self._config.get('show_python_logger', False)
+
 
 _NINJA_LOG = logging.getLogger('pw_watch_ninja_output')
 _LOG = logging.getLogger('pw_watch')
@@ -81,6 +175,7 @@ class WatchApp(PluginMixin):
 
     def __init__(self,
                  event_handler,
+                 prefs: WatchAppPrefs,
                  debug_logging: bool = False,
                  log_file_name: Optional[str] = None):
 
@@ -94,14 +189,11 @@ class WatchApp(PluginMixin):
         # such as mouse drag resizing.
         PW_CONSOLE_APP_CONTEXTVAR.set(self)  # type: ignore
 
-        self.prefs = ConsolePrefs()
+        self.prefs = prefs
 
         self.quit_dialog = QuitDialog(self, self.exit)  # type: ignore
 
-        self.search_history_filename = self.prefs.search_history
-        # History instance for search toolbars.
-        self.search_history: History = ThreadedHistory(
-            FileHistory(str(self.search_history_filename)))
+        self.search_history: History = ThreadedHistory(InMemoryHistory())
 
         self.window_manager = WatchWindowManager(self)
 
@@ -178,7 +270,7 @@ class WatchApp(PluginMixin):
                             content=FormattedTextControl(
                                 self.get_resultbar_text),
                             height=lambda: len(self.event_handler.
-                                               build_commands),
+                                               project_builder),
                             style='class:toolbar_inactive',
                         ),
                     ]),
@@ -233,10 +325,9 @@ class WatchApp(PluginMixin):
 
         self.current_theme = pw_console.style.generate_styles(
             self.prefs.ui_theme)
-        self.current_theme = merge_styles([
-            self.current_theme,
-            Style.from_dict({'search': 'bg:ansired ansiblack'}),
-        ])
+        self.style_overrides = Style.from_dict({
+            # 'search': 'bg:ansired ansiblack',
+        })
 
         self.layout = Layout(self.root_container,
                              focused_element=self.ninja_log_pane)
@@ -249,6 +340,7 @@ class WatchApp(PluginMixin):
             clipboard=PyperclipClipboard(),
             style=DynamicStyle(lambda: merge_styles([
                 self.current_theme,
+                self.style_overrides,
             ])),
             full_screen=True,
         )

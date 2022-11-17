@@ -36,6 +36,8 @@ pw_python_package("py") {
     "pw_cli/process.py",
     "pw_cli/pw_command_plugins.py",
     "pw_cli/requires.py",
+    "pw_cli/toml_config_loader_mixin.py",
+    "pw_cli/yaml_config_loader_mixin.py",
   ]
   tests = [
     "envparse_test.py",

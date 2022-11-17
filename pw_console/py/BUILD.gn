@@ -67,7 +67,6 @@ pw_python_package("py") {
     "pw_console/templates/__init__.py",
     "pw_console/test_mode.py",
     "pw_console/text_formatting.py",
-    "pw_console/toml_config_loader_mixin.py",
     "pw_console/widgets/__init__.py",
     "pw_console/widgets/border.py",
     "pw_console/widgets/checkbox.py",
@@ -78,7 +77,6 @@ pw_python_package("py") {
     "pw_console/widgets/window_pane_toolbar.py",
     "pw_console/window_list.py",
     "pw_console/window_manager.py",
-    "pw_console/yaml_config_loader_mixin.py",
   ]
   tests = [
     "command_runner_test.py",

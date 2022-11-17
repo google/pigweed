@@ -36,7 +36,6 @@ Usage examples:
 """
 
 import argparse
-from dataclasses import dataclass
 import errno
 import http.server
 from itertools import zip_longest
@@ -44,7 +43,6 @@ import logging
 import os
 from pathlib import Path
 import re
-import shlex
 import subprocess
 import socketserver
 import sys
@@ -54,7 +52,6 @@ from typing import (
     Callable,
     Iterable,
     List,
-    NamedTuple,
     NoReturn,
     Optional,
     Sequence,
@@ -73,6 +70,12 @@ from prompt_toolkit import prompt
 from prompt_toolkit.formatted_text.base import OneStyleAndTextTuple
 from prompt_toolkit.formatted_text import StyleAndTextTuples
 
+from pw_build.build_recipe import BuildRecipe, create_build_recipes
+from pw_build.project_builder import (
+    ProjectBuilder,
+    ASCII_CHARSET,
+    EMOJI_CHARSET,
+)
 import pw_cli.branding
 import pw_cli.color
 import pw_cli.env
@@ -80,8 +83,9 @@ import pw_cli.log
 import pw_cli.plugins
 import pw_console.python_logging
 
-from pw_watch.watch_app import WatchApp
+from pw_watch.argparser import WATCH_PATTERN_DELIMITER, add_parser_arguments
 from pw_watch.debounce import DebouncedFunction, Debouncer
+from pw_watch.watch_app import WatchAppPrefs, WatchApp
 
 _COLOR = pw_cli.color.colors()
 _LOG = logging.getLogger('pw_watch')
@@ -94,59 +98,7 @@ _ERRNO_INOTIFY_LIMIT_REACHED = 28
 _FSEVENTS_LOG = logging.getLogger('fsevents')
 _FSEVENTS_LOG.setLevel(logging.WARNING)
 
-_PASS_MESSAGE = """
-  ██████╗  █████╗ ███████╗███████╗██╗
-  ██╔══██╗██╔══██╗██╔════╝██╔════╝██║
-  ██████╔╝███████║███████╗███████╗██║
-  ██╔═══╝ ██╔══██║╚════██║╚════██║╚═╝
-  ██║     ██║  ██║███████║███████║██╗
-  ╚═╝     ╚═╝  ╚═╝╚══════╝╚══════╝╚═╝
-"""
-
-# Pick a visually-distinct font from "PASS" to ensure that readers can't
-# possibly mistake the difference between the two states.
-_FAIL_MESSAGE = """
-   ▄██████▒░▄▄▄       ██▓  ░██▓
-  ▓█▓     ░▒████▄    ▓██▒  ░▓██▒
-  ▒████▒   ░▒█▀  ▀█▄  ▒██▒ ▒██░
-  ░▓█▒    ░░██▄▄▄▄██ ░██░  ▒██░
-  ░▒█░      ▓█   ▓██▒░██░░ ████████▒
-   ▒█░      ▒▒   ▓▒█░░▓  ░  ▒░▓  ░
-   ░▒        ▒   ▒▒ ░ ▒ ░░  ░ ▒  ░
-   ░ ░       ░   ▒    ▒ ░   ░ ░
-                 ░  ░ ░       ░  ░
-"""
-
 _FULLSCREEN_STATUS_COLUMN_WIDTH = 10
-
-
-# TODO(keir): Figure out a better strategy for exiting. The problem with the
-# watcher is that doing a "clean exit" is slow. However, by directly exiting,
-# we remove the possibility of the wrapper script doing anything on exit.
-def _die(*args) -> NoReturn:
-    _LOG.critical(*args)
-    sys.exit(1)
-
-
-class WatchCharset(NamedTuple):
-    slug_ok: str
-    slug_fail: str
-
-
-_ASCII_CHARSET = WatchCharset(_COLOR.green('OK  '), _COLOR.red('FAIL'))
-_EMOJI_CHARSET = WatchCharset('✔️ ', '💥')
-
-
-@dataclass(frozen=True)
-class BuildCommand:
-    build_dir: Path
-    targets: Tuple[str, ...] = ()
-
-    def args(self) -> Tuple[str, ...]:
-        return (str(self.build_dir), *self.targets)
-
-    def __str__(self) -> str:
-        return ' '.join(shlex.quote(arg) for arg in self.args())
 
 
 def git_ignored(file: Path) -> bool:
@@ -183,17 +135,14 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
     NINJA_BUILD_STEP = re.compile(
         r'^\[(?P<step>[0-9]+)/(?P<total_steps>[0-9]+)\] (?P<action>.*)$')
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
-        build_commands: Sequence[BuildCommand],
+        project_builder: ProjectBuilder,
         patterns: Sequence[str] = (),
         ignore_patterns: Sequence[str] = (),
-        charset: WatchCharset = _ASCII_CHARSET,
         restart: bool = True,
-        jobs: Optional[int] = None,
         fullscreen: bool = False,
         banners: bool = True,
-        keep_going: bool = False,
     ):
         super().__init__()
 
@@ -206,8 +155,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         self.current_build_errors = 0
         self.patterns = patterns
         self.ignore_patterns = ignore_patterns
-        self.build_commands = build_commands
-        self.charset: WatchCharset = charset
+        self.project_builder = project_builder
 
         self.restart_on_changes = restart
         self.fullscreen_enabled = fullscreen
@@ -217,10 +165,6 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         self._current_build = subprocess.Popen('',
                                                shell=True,
                                                errors='replace')
-
-        self._extra_ninja_args = [] if jobs is None else [f'-j{jobs}']
-        if keep_going:
-            self._extra_ninja_args.extend(['-k', '0'])
 
         self.debouncer = Debouncer(self)
 
@@ -293,9 +237,10 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
             _LOG.info('%s ; not rebuilding', log_message)
 
     def _clear_screen(self) -> None:
-        if not self.fullscreen_enabled:
-            print('\033c', end='')  # TODO(pwbug/38): Not Windows compatible.
-            sys.stdout.flush()
+        if self.fullscreen_enabled:
+            return
+        print('\033c', end='')  # TODO(pwbug/38): Not Windows compatible.
+        sys.stdout.flush()
 
     # Implementation of DebouncedFunction.run()
     #
@@ -326,7 +271,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         self._clear_screen()
 
         self.builds_succeeded = []
-        num_builds = len(self.build_commands)
+        num_builds = len(self.project_builder)
         _LOG.info('Starting build with %d directories', num_builds)
 
         env = os.environ.copy()
@@ -335,9 +280,13 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         # Force Ninja to output ANSI colors
         env['CLICOLOR_FORCE'] = '1'
 
-        for i, cmd in enumerate(self.build_commands, 1):
+        for i, cfg in enumerate(self.project_builder, 1):
             index = f'[{i}/{num_builds}]'
-            self.builds_succeeded.append(self._run_build(index, cmd, env))
+            build_start_msg = '{} Starting {}'.format(index, cfg)
+            _LOG.info(build_start_msg)
+
+            self.builds_succeeded.append(
+                self.project_builder.run_build(cfg, env, index_message=index))
             if self.builds_succeeded[-1]:
                 level = logging.INFO
                 tag = '(OK)'
@@ -345,7 +294,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
                 level = logging.ERROR
                 tag = '(FAIL)'
 
-            _LOG.log(level, '%s Finished build: %s %s', index, cmd, tag)
+            _LOG.log(level, '%s Finished %s %s', index, cfg, tag)
             self.create_result_message()
 
     def create_result_message(self):
@@ -354,8 +303,9 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
 
         self.result_message = []
         first_building_target_found = False
-        for (succeeded, command) in zip_longest(self.builds_succeeded,
-                                                self.build_commands):
+        for (succeeded, command) in zip_longest(
+                self.builds_succeeded,
+            [cfg.build_dir for cfg in self.project_builder]):
             if succeeded:
                 self.result_message.append(
                     ('class:theme-fg-green',
@@ -374,34 +324,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
                      'Failed'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH)))
             self.result_message.append(('', f'  {command}\n'))
 
-    def _run_build(self, index: str, cmd: BuildCommand, env: dict) -> bool:
-        # Make sure there is a build.ninja file for Ninja to use.
-        build_ninja = cmd.build_dir / 'build.ninja'
-        if not build_ninja.exists():
-            # If this is a CMake directory, prompt the user to re-run CMake.
-            if cmd.build_dir.joinpath('CMakeCache.txt').exists():
-                _LOG.error('%s %s does not exist; re-run CMake to generate it',
-                           index, build_ninja)
-                return False
-
-            if not cmd.build_dir.joinpath('args.gn').exists():
-                _LOG.error(
-                    '%s %s does not exist; run GN or CMake in %s to generate '
-                    'it', index, build_ninja, cmd.build_dir)
-                return False
-
-            _LOG.warning('%s %s does not exist; running gn gen %s', index,
-                         build_ninja, cmd.build_dir)
-            if not self._execute_command(['gn', 'gen', cmd.build_dir], env):
-                return False
-
-        command = ['ninja', *self._extra_ninja_args, '-C', *cmd.args()]
-        _LOG.info('%s Starting build: %s', index,
-                  ' '.join(shlex.quote(arg) for arg in command))
-
-        return self._execute_command(command, env)
-
-    def _execute_command(self, command: list, env: dict) -> bool:
+    def execute_command(self, command: list, env: dict) -> bool:
         """Runs a command with a blank before/after for visual separation."""
         self.current_build_errors = 0
         self.status_message = (
@@ -484,13 +407,14 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
 
         return False
 
-    # Implementation of DebouncedFunction.run()
+    # Implementation of DebouncedFunction.on_complete()
     def on_complete(self, cancelled: bool = False) -> None:
         # First, use the standard logging facilities to report build status.
         if cancelled:
             self.status_message = (
                 '', 'Cancelled'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH))
             _LOG.error('Finished; build was interrupted')
+
         elif all(self.builds_succeeded):
             self.status_message = (
                 'class:theme-fg-green',
@@ -508,36 +432,8 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         # For non-fullscreen pw watch
         else:
             # Show a more distinct colored banner.
-            if not cancelled:
-                # Write out build summary table so you can tell which builds
-                # passed and which builds failed.
-                _LOG.info('')
-                _LOG.info(' .------------------------------------')
-                _LOG.info(' |')
-                for (succeeded, cmd) in zip(self.builds_succeeded,
-                                            self.build_commands):
-                    slug = (self.charset.slug_ok
-                            if succeeded else self.charset.slug_fail)
-                    _LOG.info(' |   %s  %s', slug, cmd)
-                _LOG.info(' |')
-                _LOG.info(" '------------------------------------")
-            else:
-                # Build was interrupted.
-                _LOG.info('')
-                _LOG.info(' .------------------------------------')
-                _LOG.info(' |')
-                _LOG.info(' |  %s- interrupted', self.charset.slug_fail)
-                _LOG.info(' |')
-                _LOG.info(" '------------------------------------")
-
-            # Show a large color banner for the overall result.
-            if self.banners:
-                if all(self.builds_succeeded) and not cancelled:
-                    for line in _PASS_MESSAGE.splitlines():
-                        _LOG.info(_COLOR.green(line))
-                else:
-                    for line in _FAIL_MESSAGE.splitlines():
-                        _LOG.info(_COLOR.red(line))
+            self.project_builder.print_build_summary(self.builds_succeeded,
+                                                     cancelled=cancelled)
 
         if self.watch_app:
             self.watch_app.redraw_ui()
@@ -546,126 +442,6 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
     # Implementation of DebouncedFunction.on_keyboard_interrupt()
     def on_keyboard_interrupt(self) -> NoReturn:
         _exit_due_to_interrupt()
-
-
-_WATCH_PATTERN_DELIMITER = ','
-_WATCH_PATTERNS = (
-    # keep-sorted: start ignore-case ignore-prefix=','*.
-    '*.bloaty',
-    '*.c',
-    '*.cc',
-    '*.cfg',
-    '*.cmake',
-    'CMakeLists.txt',
-    '*.cpp',
-    '*.css',
-    '*.dts',
-    '*.dtsi',
-    '*.gn',
-    '*.gni',
-    '*.go',
-    '*.h',
-    '*.hpp',
-    '*.ld',
-    '*.md',
-    '*.options',
-    '*.proto',
-    '*.py',
-    '*.rs',
-    '*.rst',
-    '*.S',
-    '*.s',
-    '*.toml',
-    # keep-sorted: end
-)
-
-
-def add_parser_arguments(parser: argparse.ArgumentParser) -> None:
-    """Sets up an argument parser for pw watch."""
-    parser.add_argument('--patterns',
-                        help=(_WATCH_PATTERN_DELIMITER +
-                              '-delimited list of globs to '
-                              'watch to trigger recompile'),
-                        default=_WATCH_PATTERN_DELIMITER.join(_WATCH_PATTERNS))
-    parser.add_argument('--ignore_patterns',
-                        dest='ignore_patterns_string',
-                        help=(_WATCH_PATTERN_DELIMITER +
-                              '-delimited list of globs to '
-                              'ignore events from'))
-
-    parser.add_argument('--exclude_list',
-                        nargs='+',
-                        type=Path,
-                        help='directories to ignore during pw watch',
-                        default=[])
-    parser.add_argument('--no-restart',
-                        dest='restart',
-                        action='store_false',
-                        help='do not restart ongoing builds if files change')
-    parser.add_argument('-k',
-                        '--keep-going',
-                        action='store_true',
-                        help=('Keep building past the first failure. This is '
-                              'equivalent to passing "-k 0" to ninja.'))
-    parser.add_argument(
-        'default_build_targets',
-        nargs='*',
-        metavar='target',
-        default=[],
-        help=('Automatically locate a build directory and build these '
-              'targets. For example, `host docs` searches for a Ninja '
-              'build directory at out/ and builds the `host` and `docs` '
-              'targets. To specify one or more directories, ust the '
-              '-C / --build_directory option.'))
-    parser.add_argument(
-        '-C',
-        '--build_directory',
-        dest='build_directories',
-        nargs='+',
-        action='append',
-        default=[],
-        metavar=('directory', 'target'),
-        help=('Specify a build directory and optionally targets to '
-              'build. `pw watch -C out tgt` is equivalent to `ninja '
-              '-C out tgt`'))
-    parser.add_argument(
-        '--serve-docs',
-        dest='serve_docs',
-        action='store_true',
-        default=False,
-        help=('Start a webserver for docs on localhost. The port for this '
-              'webserver can be set with the --serve-docs-port option. '
-              'Defaults to http://127.0.0.1:8000.'))
-    parser.add_argument(
-        '--serve-docs-port',
-        dest='serve_docs_port',
-        type=int,
-        default=8000,
-        help='Set the port for the docs webserver. Default to 8000.')
-    parser.add_argument(
-        '--serve-docs-path',
-        dest='serve_docs_path',
-        type=Path,
-        default="docs/gen/docs",
-        help=('Set the path for the docs to serve. Default to docs/gen/docs'
-              ' in the build directory.'))
-    parser.add_argument(
-        '-j',
-        '--jobs',
-        type=int,
-        help="Number of cores to use; defaults to Ninja's default")
-    parser.add_argument('-f',
-                        '--fullscreen',
-                        action='store_true',
-                        default=False,
-                        help='Use a fullscreen interface.')
-    parser.add_argument('--debug-logging',
-                        action='store_true',
-                        help='Enable debug logging.')
-    parser.add_argument('--no-banners',
-                        dest='banners',
-                        action='store_false',
-                        help='Hide pass/fail banners.')
 
 
 def _exit(code: int) -> NoReturn:
@@ -863,9 +639,11 @@ def _serve_docs(build_dir: Path,
     threading.Thread(None, server_thread, 'pw_docs_server').start()
 
 
-def watch_setup(
-    default_build_targets: List[str],
-    build_directories: List[str],
+def watch_setup(  # pylint: disable=too-many-locals
+    build_recipes: List[BuildRecipe],
+    default_build_targets: List[str],  # pylint: disable=unused-argument
+    build_directories: List[str],  # pylint: disable=unused-argument
+    build_system_commands: List[str],  # pylint: disable=unused-argument
     patterns: str,
     ignore_patterns_string: str,
     exclude_list: List[Path],
@@ -878,6 +656,7 @@ def watch_setup(
     banners: bool,
     keep_going: bool,
     debug_logging: bool,  # pylint: disable=unused-argument
+    colors: bool,
     # pylint: disable=too-many-arguments
 ) -> Tuple[str, PigweedBuildWatcher, List[Path]]:
     """Watches files and runs Ninja commands when they change."""
@@ -893,35 +672,16 @@ def watch_setup(
     # Preset exclude list for pigweed directory.
     exclude_list += get_common_excludes()
     # Add build directories to the exclude list.
-    exclude_list.extend(
-        Path(build_dir[0]).resolve() for build_dir in build_directories)
+    exclude_list.extend(cfg.build_dir.resolve() for cfg in build_recipes)
 
-    build_commands = [
-        BuildCommand(Path(build_dir[0]), tuple(build_dir[1:]))
-        for build_dir in build_directories
-    ]
-
-    # If no build directory was specified, check for out/build.ninja.
-    if default_build_targets or not build_directories:
-        # Make sure we found something; if not, bail.
-        if not Path('out').exists():
-            _die("No build dirs found. Did you forget to run 'gn gen out'?")
-
-        build_commands.append(
-            BuildCommand(Path('out'), tuple(default_build_targets)))
-
-    # Verify that the build output directories exist.
-    for i, build_target in enumerate(build_commands, 1):
-        if not build_target.build_dir.is_dir():
-            _die("Build directory doesn't exist: %s", build_target)
-        else:
-            _LOG.info('Will build [%d/%d]: %s', i, len(build_commands),
-                      build_target)
+    for i, build_recipe in enumerate(build_recipes, 1):
+        _LOG.info('Will build [%d/%d]: %s', i, len(build_recipes),
+                  build_recipe)
 
     _LOG.debug('Patterns: %s', patterns)
 
     if serve_docs:
-        _serve_docs(build_commands[0].build_dir,
+        _serve_docs(build_recipes[0].build_dir,
                     serve_docs_path,
                     port=serve_docs_port)
 
@@ -931,26 +691,35 @@ def watch_setup(
     path_to_log = str(Path().resolve()).replace(str(Path.home()), '$HOME')
 
     # Ignore the user-specified patterns.
-    ignore_patterns = (ignore_patterns_string.split(_WATCH_PATTERN_DELIMITER)
+    ignore_patterns = (ignore_patterns_string.split(WATCH_PATTERN_DELIMITER)
                        if ignore_patterns_string else [])
 
     env = pw_cli.env.pigweed_environment()
     if env.PW_EMOJI:
-        charset = _EMOJI_CHARSET
+        charset = EMOJI_CHARSET
     else:
-        charset = _ASCII_CHARSET
+        charset = ASCII_CHARSET
 
-    event_handler = PigweedBuildWatcher(
-        build_commands=build_commands,
-        patterns=patterns.split(_WATCH_PATTERN_DELIMITER),
-        ignore_patterns=ignore_patterns,
-        charset=charset,
-        restart=restart,
+    project_builder = ProjectBuilder(
+        build_recipes=build_recipes,
         jobs=jobs,
-        fullscreen=fullscreen,
         banners=banners,
         keep_going=keep_going,
+        charset=charset,
+        colors=colors,
     )
+
+    event_handler = PigweedBuildWatcher(
+        project_builder=project_builder,
+        patterns=patterns.split(WATCH_PATTERN_DELIMITER),
+        ignore_patterns=ignore_patterns,
+        restart=restart,
+        fullscreen=fullscreen,
+        banners=banners,
+    )
+
+    project_builder.execute_command = event_handler.execute_command
+
     return path_to_log, event_handler, exclude_list
 
 
@@ -994,19 +763,21 @@ def watch(path_to_log: Path, event_handler: PigweedBuildWatcher,
             _exit_due_to_inotify_instance_limit()
         raise err
 
-    _LOG.critical('Should never get here')
-    observer.join()
-
 
 def main() -> None:
     """Watch files for changes and rebuild."""
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
-    add_parser_arguments(parser)
+    parser = add_parser_arguments(parser)
     args = parser.parse_args()
 
-    path_to_log, event_handler, exclude_list = watch_setup(**vars(args))
+    prefs = WatchAppPrefs(load_argparse_arguments=add_parser_arguments)
+    prefs.apply_command_line_args(args)
+    build_recipes = create_build_recipes(prefs)
+
+    path_to_log, event_handler, exclude_list = watch_setup(
+        build_recipes=build_recipes, **vars(args))
 
     if args.fullscreen:
         watch_logfile = (pw_console.python_logging.create_temp_log_file(
@@ -1025,6 +796,7 @@ def main() -> None:
                               daemon=True)
         watch_thread.start()
         watch_app = WatchApp(event_handler=event_handler,
+                             prefs=prefs,
                              debug_logging=args.debug_logging,
                              log_file_name=watch_logfile)
 

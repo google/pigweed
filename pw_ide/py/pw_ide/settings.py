@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any, cast, Dict, List, Literal, Optional, Union
 import yaml
 
-from pw_console.yaml_config_loader_mixin import YamlConfigLoaderMixin
+from pw_cli.yaml_config_loader_mixin import YamlConfigLoaderMixin
 
 PW_IDE_DIR_NAME = '.pw_ide'
 PW_IDE_DEFAULT_DIR = Path(

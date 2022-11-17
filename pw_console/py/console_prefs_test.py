@@ -13,7 +13,6 @@
 # the License.
 """Tests for pw_console.console_app"""
 
-from datetime import datetime
 from pathlib import Path
 import tempfile
 import unittest
@@ -28,15 +27,10 @@ from pw_console.console_prefs import (
 
 
 def _create_tempfile(content: str) -> Path:
-    # Grab the current system timestamp as a string.
-    isotime = datetime.now().isoformat(sep='_', timespec='seconds')
-    isotime = isotime.replace(':', '')
-
-    with tempfile.NamedTemporaryFile(prefix=f'{__package__}_{isotime}_',
+    with tempfile.NamedTemporaryFile(prefix=f'{__package__}',
                                      delete=False) as output_file:
-        file_path = Path(output_file.name)
         output_file.write(content.encode('UTF-8'))
-    return file_path
+        return Path(output_file.name)
 
 
 class TestConsolePrefs(unittest.TestCase):

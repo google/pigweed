@@ -17,7 +17,7 @@ from typing import Any, Dict, List
 
 import toml  # type: ignore
 
-from pw_console.yaml_config_loader_mixin import YamlConfigLoaderMixin
+from pw_cli.yaml_config_loader_mixin import YamlConfigLoaderMixin
 
 
 class TomlConfigLoaderMixin(YamlConfigLoaderMixin):
@@ -28,7 +28,7 @@ class TomlConfigLoaderMixin(YamlConfigLoaderMixin):
 
     ::
 
-       from pw_console.toml_config_loader_mixin import TomlConfigLoaderMixin
+       from pw_cli.toml_config_loader_mixin import TomlConfigLoaderMixin
 
        class PwBloatPrefs(TomlConfigLoaderMixin):
            def __init__(self) -> None:

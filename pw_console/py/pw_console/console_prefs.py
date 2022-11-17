@@ -20,9 +20,10 @@ from typing import Dict, Callable, List, Tuple, Union
 from prompt_toolkit.key_binding import KeyBindings
 import yaml
 
+from pw_cli.yaml_config_loader_mixin import YamlConfigLoaderMixin
+
 from pw_console.style import get_theme_colors, generate_styles
 from pw_console.key_bindings import DEFAULT_KEY_BINDINGS
-from pw_console.yaml_config_loader_mixin import YamlConfigLoaderMixin
 
 _DEFAULT_REPL_HISTORY: Path = Path.home() / '.pw_console_history'
 _DEFAULT_SEARCH_HISTORY: Path = Path.home() / '.pw_console_search'

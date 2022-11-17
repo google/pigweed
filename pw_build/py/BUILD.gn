@@ -24,6 +24,7 @@ pw_python_package("py") {
   ]
   sources = [
     "pw_build/__init__.py",
+    "pw_build/build_recipe.py",
     "pw_build/collect_wheels.py",
     "pw_build/copy_from_cipd.py",
     "pw_build/create_gn_venv.py",
@@ -42,15 +43,20 @@ pw_python_package("py") {
     "pw_build/mirror_tree.py",
     "pw_build/nop.py",
     "pw_build/pip_install_python_deps.py",
+    "pw_build/project_builder.py",
+    "pw_build/project_builder_argparse.py",
+    "pw_build/project_builder_prefs.py",
     "pw_build/python_package.py",
     "pw_build/python_runner.py",
     "pw_build/python_wheels.py",
     "pw_build/zip.py",
   ]
   tests = [
+    "build_recipe_test.py",
     "create_python_tree_test.py",
     "file_prefix_map_test.py",
     "generate_cc_blob_library_test.py",
+    "project_builder_prefs_test.py",
     "python_runner_test.py",
     "zip_test.py",
   ]
