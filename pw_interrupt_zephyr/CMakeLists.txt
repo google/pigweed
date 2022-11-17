@@ -25,6 +25,8 @@ pw_add_library(pw_interrupt_zephyr.context INTERFACE
   PUBLIC_INCLUDES
     public
     public_overrides
+  PUBLIC_DEPS
+    pw_interrupt.context.facade
 )
 zephyr_link_interface(pw_interrupt_zephyr.context)
 zephyr_link_libraries(pw_interrupt_zephyr.context)

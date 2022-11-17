@@ -27,6 +27,7 @@ pw_add_library(pw_log_zephyr STATIC
     public
     public_overrides
   PUBLIC_DEPS
+    pw_log.facade
     zephyr_interface
   SOURCES
     log_zephyr.cc
