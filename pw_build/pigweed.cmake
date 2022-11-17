@@ -122,50 +122,6 @@ macro(pw_require_args FUNCTION_NAME ARG_PREFIX)
   endforeach()
 endmacro()
 
-# Creates a test for each source file ending in _test. Tests with mutliple .cc
-# files or different dependencies than the module will not work correctly.
-#
-# Args:
-#
-#  PRIVATE_DEPS - dependencies to apply to all tests
-#  GROUPS - groups in addition to MODULE to which to add these tests
-#
-function(pw_auto_add_module_tests MODULE)
-  pw_parse_arguments(
-    NUM_POSITIONAL_ARGS
-      1
-    MULTI_VALUE_ARGS
-      PRIVATE_DEPS
-      GROUPS
-  )
-
-  file(GLOB cc_tests *_test.cc)
-
-  foreach(test IN LISTS cc_tests)
-    get_filename_component(test_name "${test}" NAME_WE)
-
-    # Find a .c test corresponding with the test .cc file, if any.
-    file(GLOB c_test "${test_name}.c" "${test_name}_c.c")
-
-    pw_add_test("${MODULE}.${test_name}"
-      SOURCES
-        "${test}"
-        ${c_test}
-      PRIVATE_DEPS
-        ${arg_PRIVATE_DEPS}
-      GROUPS
-        "${MODULE}"
-        ${arg_GROUPS}
-    )
-    # Generator expressions are not targets, ergo cannot be passed via the
-    # public pw_add_test_generic API.
-    target_link_libraries("${MODULE}.${test_name}.lib"
-      PRIVATE
-        "$<TARGET_NAME_IF_EXISTS:${MODULE}>"
-    )
-  endforeach()
-endfunction(pw_auto_add_module_tests)
-
 # pw_target_link_targets: CMake target only form of target_link_libraries.
 #
 # Helper wrapper around target_link_libraries which only supports CMake targets
