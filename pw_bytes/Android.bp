@@ -22,6 +22,7 @@ cc_library_static {
     export_include_dirs: ["public"],
     header_libs: [
         "pw_polyfill_headers",
+        "pw_preprocessor_headers",
         "pw_span_headers",
     ],
     host_supported: true,
