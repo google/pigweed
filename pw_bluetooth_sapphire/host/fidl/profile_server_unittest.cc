@@ -1322,6 +1322,51 @@ TEST_F(ProfileServerTestFakeAdapter, L2capParametersExtRequestParametersClosedOn
   RunLoopUntilIdle();
 }
 
+TEST_F(ProfileServerTestFakeAdapter, AudioDirectionExtRequestParametersClosedOnChannelClosed) {
+  const bt::PeerId kPeerId;
+  const fuchsia::bluetooth::PeerId kFidlPeerId{kPeerId.value()};
+
+  fxl::WeakPtr<FakeChannel> last_channel;
+  adapter()->fake_bredr()->set_l2cap_channel_callback([&](auto chan) { last_channel = chan; });
+
+  fidlbredr::L2capParameters l2cap_params;
+  l2cap_params.set_psm(fidlbredr::PSM_AVDTP);
+  fidlbredr::ConnectParameters conn_params;
+  conn_params.set_l2cap(std::move(l2cap_params));
+
+  std::optional<fidlbredr::Channel> response_channel;
+  client()->Connect(kFidlPeerId, std::move(conn_params),
+                    [&](fidlbredr::Profile_Connect_Result result) {
+                      ASSERT_TRUE(result.is_response());
+                      response_channel = std::move(result.response().channel);
+                    });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(last_channel);
+  ASSERT_TRUE(response_channel.has_value());
+
+  fidlbredr::AudioDirectionExtPtr audio_client = response_channel->mutable_ext_direction()->Bind();
+  bool audio_client_closed = false;
+  audio_client.set_error_handler([&](zx_status_t /*status*/) { audio_client_closed = true; });
+
+  // Closing the channel should close audio_client (after running the loop).
+  last_channel->Close();
+  // Destroy the channel (like the real LogicalLink would) to verify that ProfileServer doesn't try
+  // to use channel pointers.
+  EXPECT_TRUE(adapter()->fake_bredr()->DestroyChannel(last_channel->id()));
+
+  // Any request for the closed channel should be ignored.
+  fidlbredr::ChannelParameters request_chan_params;
+  size_t priority_cb_count = 0;
+  audio_client->SetPriority(fidlbredr::A2dpDirectionPriority::NORMAL,
+                            [&](auto result) { priority_cb_count++; });
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(audio_client_closed);
+  EXPECT_EQ(priority_cb_count, 0u);
+  audio_client.Unbind();
+  RunLoopUntilIdle();
+}
+
 class AndroidSupportedFeaturesTest
     : public ProfileServerTestFakeAdapter,
       public ::testing::WithParamInterface<

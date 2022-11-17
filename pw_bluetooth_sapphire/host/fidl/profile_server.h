@@ -9,13 +9,10 @@
 
 #include <fbl/ref_counted.h>
 
-#include "lib/fidl/cpp/binding.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_manager.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/server.h"
-#include "src/connectivity/bluetooth/core/bt-host/sdp/service_record.h"
 #include "src/connectivity/bluetooth/core/bt-host/socket/socket_factory.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
@@ -189,17 +186,22 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
    public:
     // Calls to SetPriority() are forwarded to |priority_cb|.
     AudioDirectionExt(fidl::InterfaceRequest<fuchsia::bluetooth::bredr::AudioDirectionExt> request,
-                      fxl::WeakPtr<bt::l2cap::Channel> channel);
+                      fxl::WeakPtr<bt::l2cap::Channel> channel)
+        : ServerBase(this, std::move(request)),
+          unique_id_(channel->unique_id()),
+          channel_(std::move(channel)){};
+
+    bt::l2cap::Channel::UniqueId unique_id() const { return unique_id_; }
 
     // fuchsia::bluetooth::bredr::AudioDirectionExt overrides:
     void SetPriority(fuchsia::bluetooth::bredr::A2dpDirectionPriority priority,
                      SetPriorityCallback callback) override;
 
    private:
+    bt::l2cap::Channel::UniqueId unique_id_;
     fxl::WeakPtr<bt::l2cap::Channel> channel_;
-    fit::function<void(fuchsia::bluetooth::bredr::A2dpDirectionPriority, SetPriorityCallback)> cb_;
   };
-  std::unordered_map<AudioDirectionExt*, std::unique_ptr<AudioDirectionExt>>
+  std::unordered_map<bt::l2cap::Channel::UniqueId, std::unique_ptr<AudioDirectionExt>>
       audio_direction_ext_servers_;
 
   std::unordered_map<bt::l2cap::Channel::UniqueId, std::unique_ptr<L2capParametersExt>>

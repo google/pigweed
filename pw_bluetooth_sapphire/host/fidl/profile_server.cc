@@ -714,7 +714,7 @@ void ProfileServer::OnScoConnectionResult(
 void ProfileServer::OnAudioDirectionExtError(AudioDirectionExt* ext_server, zx_status_t status) {
   bt_log(DEBUG, "fidl", "audio direction ext server closed (reason: %s)",
          zx_status_get_string(status));
-  auto handle = audio_direction_ext_servers_.extract(ext_server);
+  auto handle = audio_direction_ext_servers_.extract(ext_server->unique_id());
   if (handle.empty()) {
     bt_log(WARN, "fidl", "could not find ext server in audio direction ext error callback");
   }
@@ -724,6 +724,8 @@ fidl::InterfaceHandle<fidlbredr::AudioDirectionExt> ProfileServer::BindAudioDire
     fxl::WeakPtr<bt::l2cap::Channel> channel) {
   fidl::InterfaceHandle<fidlbredr::AudioDirectionExt> client;
 
+  bt::l2cap::Channel::UniqueId unique_id = channel->unique_id();
+
   auto audio_direction_ext_server =
       std::make_unique<AudioDirectionExt>(client.NewRequest(), std::move(channel));
   AudioDirectionExt* server_ptr = audio_direction_ext_server.get();
@@ -731,7 +733,7 @@ fidl::InterfaceHandle<fidlbredr::AudioDirectionExt> ProfileServer::BindAudioDire
   audio_direction_ext_server->set_error_handler(
       [this, server_ptr](zx_status_t status) { OnAudioDirectionExtError(server_ptr, status); });
 
-  audio_direction_ext_servers_[server_ptr] = std::move(audio_direction_ext_server);
+  audio_direction_ext_servers_[unique_id] = std::move(audio_direction_ext_server);
 
   return client;
 }
@@ -811,6 +813,7 @@ fuchsia::bluetooth::bredr::Channel ProfileServer::ChannelToFidl(
 
   auto closed_cb = [this, unique_id = channel->unique_id()]() {
     l2cap_parameters_ext_servers_.erase(unique_id);
+    audio_direction_ext_servers_.erase(unique_id);
     // TODO(fxbug.dev/113355): Erase other channel extension servers.
   };
 
@@ -818,11 +821,6 @@ fuchsia::bluetooth::bredr::Channel ProfileServer::ChannelToFidl(
   fidl_chan.set_socket(std::move(sock));
   return fidl_chan;
 }
-
-ProfileServer::AudioDirectionExt::AudioDirectionExt(
-    fidl::InterfaceRequest<fidlbredr::AudioDirectionExt> request,
-    fxl::WeakPtr<bt::l2cap::Channel> channel)
-    : ServerBase(this, std::move(request)), channel_(std::move(channel)) {}
 
 void ProfileServer::AudioDirectionExt::SetPriority(
     fuchsia::bluetooth::bredr::A2dpDirectionPriority priority, SetPriorityCallback callback) {
