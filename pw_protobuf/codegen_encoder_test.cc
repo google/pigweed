@@ -32,7 +32,25 @@
 namespace pw::protobuf {
 namespace {
 
-using namespace pw::protobuf::test;
+using test::pwpb::Bool;
+using test::pwpb::Enum;
+
+namespace Bar = test::pwpb::Bar;
+namespace BaseMessage = test::pwpb::BaseMessage;
+namespace Crate = test::pwpb::Crate;
+namespace DeviceInfo = test::pwpb::DeviceInfo;
+namespace Foo = test::pwpb::Foo;
+namespace IntegerMetadata = test::pwpb::IntegerMetadata;
+namespace KeyValuePair = test::pwpb::KeyValuePair;
+namespace Overlay = test::pwpb::Overlay;
+namespace Period = test::pwpb::Period;
+namespace Pigweed = test::pwpb::Pigweed;
+namespace Proto = test::pwpb::Proto;
+namespace RepeatedTest = test::pwpb::RepeatedTest;
+
+namespace imported {
+namespace Timestamp = ::pw::protobuf::test::imported::pwpb::Timestamp;
+}  // namespace imported
 
 TEST(Codegen, Codegen) {
   std::byte encode_buffer[Pigweed::kMaxEncodedSizeBytes +
@@ -488,7 +506,8 @@ TEST(Codegen, Import) {
 }
 
 TEST(Codegen, NonPigweedPackage) {
-  using namespace non::pigweed::package::name;
+  namespace Packed = ::non::pigweed::package::name::pwpb::Packed;
+
   std::byte encode_buffer[Packed::kMaxEncodedSizeBytes];
   std::array<const int64_t, 2> repeated = {0, 1};
   stream::MemoryWriter writer(encode_buffer);

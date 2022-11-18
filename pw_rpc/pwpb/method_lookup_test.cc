@@ -20,6 +20,10 @@
 namespace pw::rpc {
 namespace {
 
+namespace TestRequest = ::pw::rpc::test::pwpb::TestRequest;
+namespace TestResponse = ::pw::rpc::test::pwpb::TestResponse;
+namespace TestStreamResponse = ::pw::rpc::test::pwpb::TestStreamResponse;
+
 class MixedService1
     : public test::pw_rpc::pwpb::TestService::Service<MixedService1> {
  public:
@@ -28,13 +32,13 @@ class MixedService1
     ASSERT_EQ(OkStatus(), responder.Finish(response, OkStatus()));
   }
 
-  void TestAnotherUnaryRpc(const test::TestRequest::Message&,
-                           PwpbUnaryResponder<test::TestResponse::Message>&) {
+  void TestAnotherUnaryRpc(const TestRequest::Message&,
+                           PwpbUnaryResponder<TestResponse::Message>&) {
     called_async_unary_method = true;
   }
 
-  void TestServerStreamRpc(const test::TestRequest::Message&,
-                           ServerWriter<test::TestStreamResponse::Message>&) {
+  void TestServerStreamRpc(const TestRequest::Message&,
+                           ServerWriter<TestStreamResponse::Message>&) {
     called_server_streaming_method = true;
   }
 
@@ -43,8 +47,7 @@ class MixedService1
   }
 
   void TestBidirectionalStreamRpc(
-      ServerReaderWriter<test::TestRequest::Message,
-                         test::TestStreamResponse::Message>&) {
+      ServerReaderWriter<TestRequest::Message, TestStreamResponse::Message>&) {
     called_bidirectional_streaming_method = true;
   }
 
@@ -57,8 +60,7 @@ class MixedService1
 class MixedService2
     : public test::pw_rpc::pwpb::TestService::Service<MixedService2> {
  public:
-  Status TestUnaryRpc(const test::TestRequest::Message&,
-                      test::TestResponse::Message&) {
+  Status TestUnaryRpc(const TestRequest::Message&, TestResponse::Message&) {
     return Status::Unauthenticated();
   }
 
@@ -70,8 +72,8 @@ class MixedService2
     called_server_streaming_method = true;
   }
 
-  void TestClientStreamRpc(ServerReader<test::TestRequest::Message,
-                                        test::TestStreamResponse::Message>&) {
+  void TestClientStreamRpc(
+      ServerReader<TestRequest::Message, TestStreamResponse::Message>&) {
     called_client_streaming_method = true;
   }
 

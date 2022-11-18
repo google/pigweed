@@ -49,7 +49,8 @@ class PwpbMetricWriter : public virtual internal::MetricWriter {
     {  // Scope to control proto_encoder lifetime.
 
       // Grab the next available Metric slot to write to in the response.
-      proto::Metric::StreamEncoder proto_encoder = encoder_.GetMetricsEncoder();
+      proto::pwpb::Metric::StreamEncoder proto_encoder =
+          encoder_.GetMetricsEncoder();
       PW_TRY(proto_encoder.WriteTokenPath(path));
       // Encode the metric value.
       if (metric.is_float()) {
@@ -74,7 +75,7 @@ class PwpbMetricWriter : public virtual internal::MetricWriter {
       // Different way to clear MemoryEncoder. Copy constructor is disabled
       // for memory encoder, and there is no "clear()" method.
       encoder_.~MemoryEncoder();
-      new (&encoder_) proto::MetricRequest::MemoryEncoder(response_);
+      new (&encoder_) proto::pwpb::MetricRequest::MemoryEncoder(response_);
       metrics_count = 0;
     }
     return status;
@@ -85,7 +86,7 @@ class PwpbMetricWriter : public virtual internal::MetricWriter {
   // This RPC stream writer handle must be valid for the metric writer
   // lifetime.
   rpc::RawServerWriter& response_writer_;
-  proto::MetricRequest::MemoryEncoder encoder_;
+  proto::pwpb::MetricRequest::MemoryEncoder encoder_;
   size_t metrics_count = 0;
 };
 }  // namespace
@@ -95,8 +96,8 @@ void MetricService::Get(ConstByteSpan /*request*/,
   // For now, ignore the request and just stream all the metrics back.
   // TODO(amontanez): Make this follow the metric_service.options configuration.
   constexpr size_t kSizeOfOneMetric =
-      pw::metric::proto::MetricResponse::kMaxEncodedSizeBytes +
-      pw::metric::proto::Metric::kMaxEncodedSizeBytes;
+      pw::metric::proto::pwpb::MetricResponse::kMaxEncodedSizeBytes +
+      pw::metric::proto::pwpb::Metric::kMaxEncodedSizeBytes;
   constexpr size_t kEncodeBufferSize = kMaxNumPackedEntries * kSizeOfOneMetric;
 
   std::array<std::byte, kEncodeBufferSize> encode_buffer;

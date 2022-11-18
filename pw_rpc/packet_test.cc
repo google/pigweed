@@ -22,6 +22,7 @@ namespace pw::rpc::internal {
 namespace {
 
 using protobuf::FieldKey;
+using ::pw::rpc::internal::pwpb::PacketType;
 using std::byte;
 
 constexpr auto kPayload = bytes::Array<0x82, 0x02, 0xff, 0xff>();

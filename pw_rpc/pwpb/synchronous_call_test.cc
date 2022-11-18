@@ -34,6 +34,9 @@ namespace {
 using pw::rpc::test::pw_rpc::pwpb::TestService;
 using MethodInfo = internal::MethodInfo<TestService::TestUnaryRpc>;
 
+namespace TestRequest = ::pw::rpc::test::pwpb::TestRequest;
+namespace TestResponse = ::pw::rpc::test::pwpb::TestResponse;
+
 class SynchronousCallTest : public ::testing::Test {
  public:
   SynchronousCallTest()

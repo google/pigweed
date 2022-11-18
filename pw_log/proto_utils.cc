@@ -34,7 +34,7 @@ Result<ConstByteSpan> EncodeLog(int level,
                                 std::string_view message,
                                 ByteSpan encode_buffer) {
   // Encode message to the LogEntry protobuf.
-  LogEntry::MemoryEncoder encoder(encode_buffer);
+  pwpb::LogEntry::MemoryEncoder encoder(encode_buffer);
 
   if (message.empty()) {
     return Status::InvalidArgument();
@@ -62,13 +62,13 @@ Result<ConstByteSpan> EncodeLog(int level,
   return ConstByteSpan(encoder);
 }
 
-LogEntry::MemoryEncoder CreateEncoderAndEncodeTokenizedLog(
+pwpb::LogEntry::MemoryEncoder CreateEncoderAndEncodeTokenizedLog(
     pw::log_tokenized::Metadata metadata,
     ConstByteSpan tokenized_data,
     int64_t ticks_since_epoch,
     ByteSpan encode_buffer) {
   // Encode message to the LogEntry protobuf.
-  LogEntry::MemoryEncoder encoder(encode_buffer);
+  pwpb::LogEntry::MemoryEncoder encoder(encode_buffer);
 
   // Defer status checks until the end.
   Status status = encoder.WriteMessage(tokenized_data);

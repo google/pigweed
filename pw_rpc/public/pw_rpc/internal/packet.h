@@ -29,18 +29,19 @@ class Packet {
   static constexpr uint32_t kUnassignedId = 0;
 
   // TODO(b/236156534): This can use the pwpb generated
-  // pw::rpc::internal::RpcPacket::kMaxEncodedSizeBytes once the max value of
-  // enums is properly accounted for and when `status` is changed from a uint32
-  // to a StatusCode.
+  // pw::rpc::internal::pwpb::RpcPacket::kMaxEncodedSizeBytes once the max value
+  // of enums is properly accounted for and when `status` is changed from a
+  // uint32 to a StatusCode.
   static constexpr size_t kMinEncodedSizeWithoutPayload =
-      protobuf::SizeOfFieldEnum(RpcPacket::Fields::TYPE, 7) +
-      protobuf::SizeOfFieldUint32(RpcPacket::Fields::CHANNEL_ID) +
-      protobuf::SizeOfFieldFixed32(RpcPacket::Fields::SERVICE_ID) +
-      protobuf::SizeOfFieldFixed32(RpcPacket::Fields::METHOD_ID) +
-      protobuf::SizeOfDelimitedFieldWithoutValue(RpcPacket::Fields::PAYLOAD) +
-      protobuf::SizeOfFieldUint32(RpcPacket::Fields::STATUS,
+      protobuf::SizeOfFieldEnum(pwpb::RpcPacket::Fields::TYPE, 7) +
+      protobuf::SizeOfFieldUint32(pwpb::RpcPacket::Fields::CHANNEL_ID) +
+      protobuf::SizeOfFieldFixed32(pwpb::RpcPacket::Fields::SERVICE_ID) +
+      protobuf::SizeOfFieldFixed32(pwpb::RpcPacket::Fields::METHOD_ID) +
+      protobuf::SizeOfDelimitedFieldWithoutValue(
+          pwpb::RpcPacket::Fields::PAYLOAD) +
+      protobuf::SizeOfFieldUint32(pwpb::RpcPacket::Fields::STATUS,
                                   Status::Unauthenticated().code()) +
-      protobuf::SizeOfFieldUint32(RpcPacket::Fields::CALL_ID);
+      protobuf::SizeOfFieldUint32(pwpb::RpcPacket::Fields::CALL_ID);
 
   // Parses a packet from a protobuf message. Missing or malformed fields take
   // their default values.
@@ -50,7 +51,7 @@ class Packet {
   // provided packet.
   static constexpr Packet Response(const Packet& request,
                                    Status status = OkStatus()) {
-    return Packet(PacketType::RESPONSE,
+    return Packet(pwpb::PacketType::RESPONSE,
                   request.channel_id(),
                   request.service_id(),
                   request.method_id(),
@@ -62,7 +63,7 @@ class Packet {
   // Creates a SERVER_ERROR packet with the channel, service, and method ID of
   // the provided packet.
   static constexpr Packet ServerError(const Packet& packet, Status status) {
-    return Packet(PacketType::SERVER_ERROR,
+    return Packet(pwpb::PacketType::SERVER_ERROR,
                   packet.channel_id(),
                   packet.service_id(),
                   packet.method_id(),
@@ -74,7 +75,7 @@ class Packet {
   // Creates a CLIENT_ERROR packet with the channel, service, and method ID of
   // the provided packet.
   static constexpr Packet ClientError(const Packet& packet, Status status) {
-    return Packet(PacketType::CLIENT_ERROR,
+    return Packet(pwpb::PacketType::CLIENT_ERROR,
                   packet.channel_id(),
                   packet.service_id(),
                   packet.method_id(),
@@ -85,9 +86,10 @@ class Packet {
 
   // Creates an empty packet.
   constexpr Packet()
-      : Packet(PacketType{}, kUnassignedId, kUnassignedId, kUnassignedId) {}
+      : Packet(
+            pwpb::PacketType{}, kUnassignedId, kUnassignedId, kUnassignedId) {}
 
-  constexpr Packet(PacketType type,
+  constexpr Packet(pwpb::PacketType type,
                    uint32_t channel_id,
                    uint32_t service_id,
                    uint32_t method_id,
@@ -119,7 +121,7 @@ class Packet {
     return static_cast<int>(type_) % 2 == 0 ? kServer : kClient;
   }
 
-  constexpr PacketType type() const { return type_; }
+  constexpr pwpb::PacketType type() const { return type_; }
   constexpr uint32_t channel_id() const { return channel_id_; }
   constexpr uint32_t service_id() const { return service_id_; }
   constexpr uint32_t method_id() const { return method_id_; }
@@ -127,7 +129,7 @@ class Packet {
   constexpr const ConstByteSpan& payload() const { return payload_; }
   constexpr const Status& status() const { return status_; }
 
-  constexpr void set_type(PacketType type) { type_ = type; }
+  constexpr void set_type(pwpb::PacketType type) { type_ = type; }
   constexpr void set_channel_id(uint32_t channel_id) {
     channel_id_ = channel_id;
   }
@@ -140,7 +142,7 @@ class Packet {
   constexpr void set_status(Status status) { status_ = status; }
 
  private:
-  PacketType type_;
+  pwpb::PacketType type_;
   uint32_t channel_id_;
   uint32_t service_id_;
   uint32_t method_id_;

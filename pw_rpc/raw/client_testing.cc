@@ -25,7 +25,7 @@
 
 namespace pw::rpc {
 
-void FakeServer::CheckProcessPacket(internal::PacketType type,
+void FakeServer::CheckProcessPacket(internal::pwpb::PacketType type,
                                     uint32_t service_id,
                                     uint32_t method_id,
                                     std::optional<uint32_t> call_id,
@@ -48,7 +48,7 @@ void FakeServer::CheckProcessPacket(internal::PacketType type,
   }
 }
 
-Status FakeServer::ProcessPacket(internal::PacketType type,
+Status FakeServer::ProcessPacket(internal::pwpb::PacketType type,
                                  uint32_t service_id,
                                  uint32_t method_id,
                                  std::optional<uint32_t> call_id,
@@ -58,8 +58,8 @@ Status FakeServer::ProcessPacket(internal::PacketType type,
     internal::LockGuard lock(output_.mutex_);
     auto view = internal::test::PacketsView(
         output_.packets(),
-        internal::test::PacketFilter(internal::PacketType::REQUEST,
-                                     internal::PacketType::RESPONSE,
+        internal::test::PacketFilter(internal::pwpb::PacketType::REQUEST,
+                                     internal::pwpb::PacketType::RESPONSE,
                                      channel_id_,
                                      service_id,
                                      method_id));

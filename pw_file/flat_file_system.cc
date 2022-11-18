@@ -37,13 +37,13 @@ namespace pw::file {
 using Entry = FlatFileSystemService::Entry;
 
 Status FlatFileSystemService::EnumerateFile(
-    Entry& entry, pw::file::ListResponse::StreamEncoder& output_encoder) {
+    Entry& entry, pwpb::ListResponse::StreamEncoder& output_encoder) {
   StatusWithSize sws = entry.Name(file_name_buffer_);
   if (!sws.ok()) {
     return sws.status();
   }
   {
-    pw::file::Path::StreamEncoder encoder = output_encoder.GetPathsEncoder();
+    pwpb::Path::StreamEncoder encoder = output_encoder.GetPathsEncoder();
 
     encoder
         .WritePath(reinterpret_cast<const char*>(file_name_buffer_.data()),
@@ -60,7 +60,7 @@ void FlatFileSystemService::EnumerateAllFiles(RawServerWriter& writer) {
   for (Entry* entry : entries_) {
     PW_DCHECK_NOTNULL(entry);
     // For now, don't try to pack entries.
-    pw::file::ListResponse::MemoryEncoder encoder(encoding_buffer_);
+    pwpb::ListResponse::MemoryEncoder encoder(encoding_buffer_);
     if (Status status = EnumerateFile(*entry, encoder); !status.ok()) {
       if (status != Status::NotFound()) {
         PW_LOG_ERROR("Failed to enumerate file (id: %u) with status %d",
@@ -87,7 +87,7 @@ void FlatFileSystemService::List(ConstByteSpan request,
   // If a file name was provided, try and find and enumerate the file.
   while (decoder.Next().ok()) {
     if (decoder.FieldNumber() !=
-        static_cast<uint32_t>(pw::file::ListRequest::Fields::PATH)) {
+        static_cast<uint32_t>(pwpb::ListRequest::Fields::PATH)) {
       continue;
     }
 
@@ -107,7 +107,7 @@ void FlatFileSystemService::List(ConstByteSpan request,
       return;
     }
 
-    pw::file::ListResponse::MemoryEncoder encoder(encoding_buffer_);
+    pwpb::ListResponse::MemoryEncoder encoder(encoding_buffer_);
     Status proto_encode_status = EnumerateFile(*result.value(), encoder);
     if (!proto_encode_status.ok()) {
       writer.Finish(proto_encode_status)
@@ -129,7 +129,7 @@ void FlatFileSystemService::Delete(ConstByteSpan request,
   protobuf::Decoder decoder(request);
   while (decoder.Next().ok()) {
     if (decoder.FieldNumber() !=
-        static_cast<uint32_t>(pw::file::DeleteRequest::Fields::PATH)) {
+        static_cast<uint32_t>(pwpb::DeleteRequest::Fields::PATH)) {
       continue;
     }
 

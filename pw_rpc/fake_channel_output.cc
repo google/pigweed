@@ -63,26 +63,26 @@ Status FakeChannelOutput::HandlePacket(span<const std::byte> buffer) {
   CopyPayloadToBuffer(packet);
 
   switch (packet.type()) {
-    case PacketType::REQUEST:
+    case pwpb::PacketType::REQUEST:
       return OkStatus();
-    case PacketType::RESPONSE:
+    case pwpb::PacketType::RESPONSE:
       total_response_packets_ += 1;
       return OkStatus();
-    case PacketType::CLIENT_STREAM:
+    case pwpb::PacketType::CLIENT_STREAM:
       return OkStatus();
-    case PacketType::DEPRECATED_SERVER_STREAM_END:
+    case pwpb::PacketType::DEPRECATED_SERVER_STREAM_END:
       PW_CRASH("Deprecated PacketType %d", static_cast<int>(packet.type()));
-    case PacketType::CLIENT_ERROR:
+    case pwpb::PacketType::CLIENT_ERROR:
       PW_LOG_WARN("FakeChannelOutput received client error: %s",
                   packet.status().str());
       return OkStatus();
-    case PacketType::SERVER_ERROR:
+    case pwpb::PacketType::SERVER_ERROR:
       PW_LOG_WARN("FakeChannelOutput received server error: %s",
                   packet.status().str());
       return OkStatus();
-    case PacketType::DEPRECATED_CANCEL:
-    case PacketType::SERVER_STREAM:
-    case PacketType::CLIENT_STREAM_END:
+    case pwpb::PacketType::DEPRECATED_CANCEL:
+    case pwpb::PacketType::SERVER_STREAM:
+    case pwpb::PacketType::CLIENT_STREAM_END:
       return OkStatus();
   }
   PW_CRASH("Unhandled PacketType %d", static_cast<int>(result.value().type()));

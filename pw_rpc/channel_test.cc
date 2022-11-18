@@ -35,7 +35,7 @@ TEST(ChannelOutput, Name) {
 }
 
 constexpr Packet kTestPacket(
-    PacketType::RESPONSE, 23, 42, 100, 0, {}, Status::NotFound());
+    pwpb::PacketType::RESPONSE, 23, 42, 100, 0, {}, Status::NotFound());
 const size_t kReservedSize = 2 /* type */ + 2 /* channel */ + 5 /* service */ +
                              5 /* method */ + 2 /* payload key */ +
                              2 /* status (if not OK) */;
@@ -64,7 +64,7 @@ TEST(Channel, MaxSafePayload) {
     payload[i] = std::byte(i % std::numeric_limits<uint8_t>::max());
   }
 
-  Packet packet(PacketType::SERVER_STREAM,
+  Packet packet(pwpb::PacketType::SERVER_STREAM,
                 /*channel_id=*/kUint32Max,  // Varint, needs to be uint32_t max.
                 /*service_id=*/42,       // Fixed-width. Value doesn't matter.
                 /*method_id=*/100,       // Fixed-width. Value doesn't matter.
@@ -96,7 +96,7 @@ TEST(Channel, MaxSafePayload_OffByOne) {
     payload[i] = std::byte(i % std::numeric_limits<uint8_t>::max());
   }
 
-  Packet packet(PacketType::SERVER_STREAM,
+  Packet packet(pwpb::PacketType::SERVER_STREAM,
                 /*channel_id=*/kUint32Max,  // Varint, needs to be uint32_t max.
                 /*service_id=*/42,       // Fixed-width. Value doesn't matter.
                 /*method_id=*/100,       // Fixed-width. Value doesn't matter.

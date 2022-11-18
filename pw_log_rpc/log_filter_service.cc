@@ -20,11 +20,15 @@
 
 namespace pw::log_rpc {
 
+namespace GetFilterRequest = ::pw::log::pwpb::GetFilterRequest;
+namespace SetFilterRequest = ::pw::log::pwpb::SetFilterRequest;
+namespace FilterRule = ::pw::log::pwpb::FilterRule;
+
 Status FilterService::SetFilterImpl(ConstByteSpan request) {
   protobuf::Decoder decoder(request);
   PW_TRY(decoder.Next());
-  if (static_cast<log::SetFilterRequest::Fields>(decoder.FieldNumber()) !=
-      log::SetFilterRequest::Fields::FILTER_ID) {
+  if (static_cast<SetFilterRequest::Fields>(decoder.FieldNumber()) !=
+      SetFilterRequest::Fields::FILTER_ID) {
     return Status::InvalidArgument();
   }
   ConstByteSpan filter_id;
@@ -36,8 +40,8 @@ Status FilterService::SetFilterImpl(ConstByteSpan request) {
 
   PW_TRY(decoder.Next());
   ConstByteSpan filter_buffer;
-  if (static_cast<log::SetFilterRequest::Fields>(decoder.FieldNumber()) !=
-      log::SetFilterRequest::Fields::FILTER) {
+  if (static_cast<SetFilterRequest::Fields>(decoder.FieldNumber()) !=
+      SetFilterRequest::Fields::FILTER) {
     return Status::InvalidArgument();
   }
   PW_TRY(decoder.ReadBytes(&filter_buffer));
@@ -49,8 +53,8 @@ StatusWithSize FilterService::GetFilterImpl(ConstByteSpan request,
                                             ByteSpan response) {
   protobuf::Decoder decoder(request);
   PW_TRY_WITH_SIZE(decoder.Next());
-  if (static_cast<log::GetFilterRequest::Fields>(decoder.FieldNumber()) !=
-      log::GetFilterRequest::Fields::FILTER_ID) {
+  if (static_cast<GetFilterRequest::Fields>(decoder.FieldNumber()) !=
+      GetFilterRequest::Fields::FILTER_ID) {
     return StatusWithSize::InvalidArgument();
   }
   ConstByteSpan filter_id;
@@ -60,14 +64,14 @@ StatusWithSize FilterService::GetFilterImpl(ConstByteSpan request,
     return StatusWithSize::NotFound();
   }
 
-  log::Filter::MemoryEncoder encoder(response);
+  log::pwpb::Filter::MemoryEncoder encoder(response);
   for (auto& rule : (*filter)->rules()) {
-    log::FilterRule::StreamEncoder rule_encoder = encoder.GetRuleEncoder();
+    FilterRule::StreamEncoder rule_encoder = encoder.GetRuleEncoder();
     rule_encoder.WriteLevelGreaterThanOrEqual(rule.level_greater_than_or_equal)
         .IgnoreError();
     rule_encoder.WriteModuleEquals(rule.module_equals).IgnoreError();
     rule_encoder.WriteAnyFlagsSet(rule.any_flags_set).IgnoreError();
-    rule_encoder.WriteAction(static_cast<log::FilterRule::Action>(rule.action))
+    rule_encoder.WriteAction(static_cast<FilterRule::Action>(rule.action))
         .IgnoreError();
     rule_encoder.WriteThreadEquals(rule.thread_equals).IgnoreError();
     PW_TRY_WITH_SIZE(rule_encoder.status());
@@ -78,7 +82,7 @@ StatusWithSize FilterService::GetFilterImpl(ConstByteSpan request,
 }
 
 StatusWithSize FilterService::ListFilterIdsImpl(ByteSpan response) {
-  log::FilterIdListResponse::MemoryEncoder encoder(response);
+  log::pwpb::FilterIdListResponse::MemoryEncoder encoder(response);
   for (auto& filter : filter_map_.filters()) {
     PW_TRY_WITH_SIZE(encoder.WriteFilterId(filter.id()));
   }

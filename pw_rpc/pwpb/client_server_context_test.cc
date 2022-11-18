@@ -17,6 +17,14 @@
 #include "pw_rpc_test_protos/test.rpc.pwpb.h"
 
 namespace pw::rpc {
+namespace {
+
+namespace TestRequest = ::pw::rpc::test::pwpb::TestRequest;
+namespace TestResponse = ::pw::rpc::test::pwpb::TestResponse;
+namespace TestStreamResponse = ::pw::rpc::test::pwpb::TestStreamResponse;
+
+}  // namespace
+
 namespace test {
 
 using GeneratedService = ::pw::rpc::test::pw_rpc::pwpb::TestService;
@@ -51,12 +59,11 @@ TEST(PwpbClientServerTestContext, ReceivesUnaryRpcReponse) {
   test::TestService service;
   ctx.server().RegisterService(service);
 
-  test::TestResponse::Message response = {};
-  auto handler = [&response](const test::TestResponse::Message& server_response,
+  TestResponse::Message response = {};
+  auto handler = [&response](const TestResponse::Message& server_response,
                              pw::Status) { response = server_response; };
 
-  test::TestRequest::Message request{.integer = 1,
-                                     .status_code = OkStatus().code()};
+  TestRequest::Message request{.integer = 1, .status_code = OkStatus().code()};
   auto call = test::GeneratedService::TestUnaryRpc(
       ctx.client(), ctx.channel().id(), request, handler);
   // Force manual forwarding of packets as context is not threaded
@@ -77,19 +84,15 @@ TEST(PwpbClientServerTestContext, ReceivesMultipleReponses) {
   test::TestService service;
   ctx.server().RegisterService(service);
 
-  test::TestResponse::Message response1 = {};
-  test::TestResponse::Message response2 = {};
-  auto handler1 = [&response1](
-                      const test::TestResponse::Message& server_response,
-                      pw::Status) { response1 = server_response; };
-  auto handler2 = [&response2](
-                      const test::TestResponse::Message& server_response,
-                      pw::Status) { response2 = server_response; };
+  TestResponse::Message response1 = {};
+  TestResponse::Message response2 = {};
+  auto handler1 = [&response1](const TestResponse::Message& server_response,
+                               pw::Status) { response1 = server_response; };
+  auto handler2 = [&response2](const TestResponse::Message& server_response,
+                               pw::Status) { response2 = server_response; };
 
-  test::TestRequest::Message request1{.integer = 1,
-                                      .status_code = OkStatus().code()};
-  test::TestRequest::Message request2{.integer = 2,
-                                      .status_code = OkStatus().code()};
+  TestRequest::Message request1{.integer = 1, .status_code = OkStatus().code()};
+  TestRequest::Message request2{.integer = 2, .status_code = OkStatus().code()};
   const auto call1 = test::GeneratedService::TestUnaryRpc(
       ctx.client(), ctx.channel().id(), request1, handler1);
   // Force manual forwarding of packets as context is not threaded

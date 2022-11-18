@@ -19,6 +19,14 @@
 #include "pw_thread/test_threads.h"
 
 namespace pw::rpc {
+namespace {
+
+namespace TestRequest = ::pw::rpc::test::pwpb::TestRequest;
+namespace TestResponse = ::pw::rpc::test::pwpb::TestResponse;
+namespace TestStreamResponse = ::pw::rpc::test::pwpb::TestStreamResponse;
+
+}  // namespace
+
 namespace test {
 
 using GeneratedService = ::pw::rpc::test::pw_rpc::pwpb::TestService;
@@ -51,15 +59,13 @@ namespace {
 class RpcCaller {
  public:
   void BlockOnResponse(uint32_t i, Client& client, uint32_t channel_id) {
-    test::TestRequest::Message request{.integer = i,
-                                       .status_code = OkStatus().code()};
+    TestRequest::Message request{.integer = i,
+                                 .status_code = OkStatus().code()};
     auto call = test::GeneratedService::TestUnaryRpc(
         client,
         channel_id,
         request,
-        [this](const test::TestResponse::Message&, Status) {
-          semaphore_.release();
-        },
+        [this](const TestResponse::Message&, Status) { semaphore_.release(); },
         [](Status) {});
 
     semaphore_.acquire();

@@ -174,7 +174,8 @@ TEST(Client, ProcessPacket_ReturnsInvalidArgumentOnServerPacket) {
 
   std::byte encoded[64];
   Result<span<const std::byte>> result =
-      internal::Packet(internal::PacketType::REQUEST, 1, 2, 3).Encode(encoded);
+      internal::Packet(internal::pwpb::PacketType::REQUEST, 1, 2, 3)
+          .Encode(encoded);
   ASSERT_TRUE(result.ok());
 
   EXPECT_EQ(context.client().ProcessPacket(*result), Status::InvalidArgument());

@@ -34,32 +34,32 @@ class FakeGeneratedService : public Service {
   static constexpr std::array<PwpbMethodUnion, 4> kMethods = {
       GetPwpbOrRawMethodFor<&Implementation::DoNothing,
                             MethodType::kUnary,
-                            pw::rpc::test::Empty::Message,
-                            pw::rpc::test::Empty::Message>(
+                            pw::rpc::test::pwpb::Empty::Message,
+                            pw::rpc::test::pwpb::Empty::Message>(
           10u,
-          kPwpbMethodSerde<&pw::rpc::test::Empty::kMessageFields,
-                           &pw::rpc::test::Empty::kMessageFields>),
+          kPwpbMethodSerde<&pw::rpc::test::pwpb::Empty::kMessageFields,
+                           &pw::rpc::test::pwpb::Empty::kMessageFields>),
       GetPwpbOrRawMethodFor<&Implementation::RawStream,
                             MethodType::kServerStreaming,
-                            pw::rpc::test::TestRequest::Message,
-                            pw::rpc::test::TestResponse::Message>(
+                            pw::rpc::test::pwpb::TestRequest::Message,
+                            pw::rpc::test::pwpb::TestResponse::Message>(
           11u,
-          kPwpbMethodSerde<&pw::rpc::test::TestRequest::kMessageFields,
-                           &pw::rpc::test::TestResponse::kMessageFields>),
+          kPwpbMethodSerde<&pw::rpc::test::pwpb::TestRequest::kMessageFields,
+                           &pw::rpc::test::pwpb::TestResponse::kMessageFields>),
       GetPwpbOrRawMethodFor<&Implementation::AddFive,
                             MethodType::kUnary,
-                            pw::rpc::test::TestRequest::Message,
-                            pw::rpc::test::TestResponse::Message>(
+                            pw::rpc::test::pwpb::TestRequest::Message,
+                            pw::rpc::test::pwpb::TestResponse::Message>(
           12u,
-          kPwpbMethodSerde<&pw::rpc::test::TestRequest::kMessageFields,
-                           &pw::rpc::test::TestResponse::kMessageFields>),
+          kPwpbMethodSerde<&pw::rpc::test::pwpb::TestRequest::kMessageFields,
+                           &pw::rpc::test::pwpb::TestResponse::kMessageFields>),
       GetPwpbOrRawMethodFor<&Implementation::StartStream,
                             MethodType::kServerStreaming,
-                            pw::rpc::test::TestRequest::Message,
-                            pw::rpc::test::TestResponse::Message>(
+                            pw::rpc::test::pwpb::TestRequest::Message,
+                            pw::rpc::test::pwpb::TestResponse::Message>(
           13u,
-          kPwpbMethodSerde<&pw::rpc::test::TestRequest::kMessageFields,
-                           &pw::rpc::test::TestResponse::kMessageFields>),
+          kPwpbMethodSerde<&pw::rpc::test::pwpb::TestRequest::kMessageFields,
+                           &pw::rpc::test::pwpb::TestResponse::kMessageFields>),
   };
 };
 
@@ -68,8 +68,8 @@ class FakeGeneratedServiceImpl
  public:
   FakeGeneratedServiceImpl(uint32_t id) : FakeGeneratedService(id) {}
 
-  Status AddFive(const pw::rpc::test::TestRequest::Message& request,
-                 pw::rpc::test::TestResponse::Message& response) {
+  Status AddFive(const pw::rpc::test::pwpb::TestRequest::Message& request,
+                 pw::rpc::test::pwpb::TestResponse::Message& response) {
     last_request = request;
     response.value = request.integer + 5;
     return Status::Unauthenticated();
@@ -84,14 +84,14 @@ class FakeGeneratedServiceImpl
   }
 
   void StartStream(
-      const pw::rpc::test::TestRequest::Message& request,
-      PwpbServerWriter<pw::rpc::test::TestResponse::Message>& writer) {
+      const pw::rpc::test::pwpb::TestRequest::Message& request,
+      PwpbServerWriter<pw::rpc::test::pwpb::TestResponse::Message>& writer) {
     last_request = request;
     last_writer = std::move(writer);
   }
 
-  pw::rpc::test::TestRequest::Message last_request;
-  PwpbServerWriter<pw::rpc::test::TestResponse::Message> last_writer;
+  pw::rpc::test::pwpb::TestRequest::Message last_request;
+  PwpbServerWriter<pw::rpc::test::pwpb::TestResponse::Message> last_writer;
   RawServerWriter last_raw_writer;
 };
 
@@ -107,8 +107,10 @@ TEST(PwpbMethodUnion, Raw_CallsUnaryMethod) {
 }
 
 TEST(PwpbMethodUnion, Raw_CallsServerStreamingMethod) {
-  PW_ENCODE_PB(
-      pw::rpc::test::TestRequest, request, .integer = 555, .status_code = 0);
+  PW_ENCODE_PB(pw::rpc::test::pwpb::TestRequest,
+               request,
+               .integer = 555,
+               .status_code = 0);
 
   const Method& method =
       std::get<1>(FakeGeneratedServiceImpl::kMethods).method();
@@ -119,12 +121,14 @@ TEST(PwpbMethodUnion, Raw_CallsServerStreamingMethod) {
 
   EXPECT_TRUE(context.service().last_raw_writer.active());
   EXPECT_EQ(OkStatus(), context.service().last_raw_writer.Finish());
-  EXPECT_EQ(context.output().last_packet().type(), PacketType::RESPONSE);
+  EXPECT_EQ(context.output().last_packet().type(), pwpb::PacketType::RESPONSE);
 }
 
 TEST(PwpbMethodUnion, Pwpb_CallsUnaryMethod) {
-  PW_ENCODE_PB(
-      pw::rpc::test::TestRequest, request, .integer = 123, .status_code = 3);
+  PW_ENCODE_PB(pw::rpc::test::pwpb::TestRequest,
+               request,
+               .integer = 123,
+               .status_code = 3);
 
   const Method& method =
       std::get<2>(FakeGeneratedServiceImpl::kMethods).method();
@@ -148,8 +152,10 @@ TEST(PwpbMethodUnion, Pwpb_CallsUnaryMethod) {
 }
 
 TEST(PwpbMethodUnion, Pwpb_CallsServerStreamingMethod) {
-  PW_ENCODE_PB(
-      pw::rpc::test::TestRequest, request, .integer = 555, .status_code = 0);
+  PW_ENCODE_PB(pw::rpc::test::pwpb::TestRequest,
+               request,
+               .integer = 555,
+               .status_code = 0);
 
   const Method& method =
       std::get<3>(FakeGeneratedServiceImpl::kMethods).method();
@@ -162,7 +168,7 @@ TEST(PwpbMethodUnion, Pwpb_CallsServerStreamingMethod) {
   EXPECT_TRUE(context.service().last_writer.active());
 
   EXPECT_EQ(OkStatus(), context.service().last_writer.Finish());
-  EXPECT_EQ(context.output().last_packet().type(), PacketType::RESPONSE);
+  EXPECT_EQ(context.output().last_packet().type(), pwpb::PacketType::RESPONSE);
 }
 
 }  // namespace

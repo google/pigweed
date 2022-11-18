@@ -21,8 +21,10 @@
 namespace pw::rpc::internal {
 namespace {
 
-constexpr PwpbSerde kTestRequest(&test::TestRequest::kMessageFields);
-constexpr test::TestRequest::Message kProto{.integer = 3, .status_code = 0};
+namespace TestRequest = ::pw::rpc::test::pwpb::TestRequest;
+
+constexpr PwpbSerde kTestRequest(&TestRequest::kMessageFields);
+constexpr TestRequest::Message kProto{.integer = 3, .status_code = 0};
 
 TEST(PwpbSerde, Encode) {
   std::byte buffer[32] = {};
@@ -42,7 +44,7 @@ TEST(PwpbSerde, Encode_TooSmall) {
 
 TEST(PwpbSerde, Decode) {
   constexpr std::byte buffer[]{std::byte{1} << 3, std::byte{3}};
-  test::TestRequest::Message proto = {};
+  TestRequest::Message proto = {};
 
   EXPECT_EQ(OkStatus(), kTestRequest.Decode(buffer, proto));
 

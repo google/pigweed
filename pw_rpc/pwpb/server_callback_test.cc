@@ -21,38 +21,41 @@
 #include "pw_rpc_test_protos/test.rpc.pwpb.h"
 
 namespace pw::rpc {
+namespace {
+
+namespace TestRequest = ::pw::rpc::test::pwpb::TestRequest;
+namespace TestResponse = ::pw::rpc::test::pwpb::TestResponse;
+namespace TestStreamResponse = ::pw::rpc::test::pwpb::TestStreamResponse;
 
 class TestServiceImpl final
     : public test::pw_rpc::pwpb::TestService::Service<TestServiceImpl> {
  public:
-  Status TestUnaryRpc(const test::TestRequest::Message&,
-                      test::TestResponse::Message& response) {
+  Status TestUnaryRpc(const TestRequest::Message&,
+                      TestResponse::Message& response) {
     response.value = 42;
     return OkStatus();
   }
 
-  Status TestAnotherUnaryRpc(const test::TestRequest::Message&,
-                             test::TestResponse::Message& response) {
+  Status TestAnotherUnaryRpc(const TestRequest::Message&,
+                             TestResponse::Message& response) {
     response.value = 42;
     response.repeated_field.SetEncoder(
-        [](test::TestResponse::StreamEncoder& encoder) {
+        [](TestResponse::StreamEncoder& encoder) {
           constexpr std::array<uint32_t, 3> kValues = {7, 8, 9};
           return encoder.WriteRepeatedField(kValues);
         });
     return OkStatus();
   }
 
-  void TestServerStreamRpc(
-      const test::TestRequest::Message&,
-      PwpbServerWriter<test::TestStreamResponse::Message>&) {}
+  void TestServerStreamRpc(const TestRequest::Message&,
+                           PwpbServerWriter<TestStreamResponse::Message>&) {}
 
   void TestClientStreamRpc(
-      PwpbServerReader<test::TestRequest::Message,
-                       test::TestStreamResponse::Message>&) {}
+      PwpbServerReader<TestRequest::Message, TestStreamResponse::Message>&) {}
 
   void TestBidirectionalStreamRpc(
-      PwpbServerReaderWriter<test::TestRequest::Message,
-                             test::TestStreamResponse::Message>&) {}
+      PwpbServerReaderWriter<TestRequest::Message,
+                             TestStreamResponse::Message>&) {}
 };
 
 TEST(PwpbTestMethodContext, ResponseWithoutCallbacks) {
@@ -61,7 +64,7 @@ TEST(PwpbTestMethodContext, ResponseWithoutCallbacks) {
   PW_PWPB_TEST_METHOD_CONTEXT(TestServiceImpl, TestUnaryRpc) ctx;
   ASSERT_EQ(ctx.call({}), OkStatus());
 
-  test::TestResponse::Message response = ctx.response();
+  TestResponse::Message response = ctx.response();
   EXPECT_EQ(42, response.value);
 }
 
@@ -73,9 +76,9 @@ TEST(PwpbTestMethodContext, ResponseWithCallbacks) {
   // response() method as a parameter.
   pw::Vector<uint32_t, 4> values{};
 
-  test::TestResponse::Message response{};
+  TestResponse::Message response{};
   response.repeated_field.SetDecoder(
-      [&values](test::TestResponse::StreamDecoder& decoder) {
+      [&values](TestResponse::StreamDecoder& decoder) {
         return decoder.ReadRepeatedField(values);
       });
   ctx.response(response);
@@ -88,4 +91,5 @@ TEST(PwpbTestMethodContext, ResponseWithCallbacks) {
   EXPECT_EQ(9u, values[2]);
 }
 
+}  // namespace
 }  // namespace pw::rpc

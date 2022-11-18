@@ -125,10 +125,10 @@ class PwpbFakeChannelOutput final
   PwpbPayloadsView<Request<kMethod>> requests(
       uint32_t channel_id = Channel::kUnassignedChannelId) const
       PW_NO_LOCK_SAFETY_ANALYSIS {
-    constexpr internal::PacketType packet_type =
+    constexpr internal::pwpb::PacketType packet_type =
         HasClientStream(internal::MethodInfo<kMethod>::kType)
-            ? internal::PacketType::CLIENT_STREAM
-            : internal::PacketType::REQUEST;
+            ? internal::pwpb::PacketType::CLIENT_STREAM
+            : internal::pwpb::PacketType::REQUEST;
     return PwpbPayloadsView<Request<kMethod>>(
         internal::MethodInfo<kMethod>::serde().request(),
         internal::test::FakeChannelOutputBuffer<
@@ -152,10 +152,10 @@ class PwpbFakeChannelOutput final
   PwpbPayloadsView<Response<kMethod>> responses(
       uint32_t channel_id = Channel::kUnassignedChannelId) const
       PW_NO_LOCK_SAFETY_ANALYSIS {
-    constexpr internal::PacketType packet_type =
+    constexpr internal::pwpb::PacketType packet_type =
         HasServerStream(internal::MethodInfo<kMethod>::kType)
-            ? internal::PacketType::SERVER_STREAM
-            : internal::PacketType::RESPONSE;
+            ? internal::pwpb::PacketType::SERVER_STREAM
+            : internal::pwpb::PacketType::RESPONSE;
     return PwpbPayloadsView<Response<kMethod>>(
         internal::MethodInfo<kMethod>::serde().response(),
         internal::test::FakeChannelOutputBuffer<

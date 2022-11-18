@@ -21,7 +21,7 @@
 
 namespace pw::transfer::internal {
 
-namespace ProtoChunk = transfer::Chunk;
+namespace ProtoChunk = transfer::pwpb::Chunk;
 
 Result<uint32_t> Chunk::ExtractIdentifier(ConstByteSpan message) {
   protobuf::Decoder decoder(message);

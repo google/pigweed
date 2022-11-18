@@ -29,8 +29,9 @@ PW_MODIFY_DIAGNOSTIC(ignored, "-Wmissing-field-initializers");
 namespace pw::rpc::internal::test {
 namespace {
 
-using rpc::test::pw_rpc::pwpb::TestService;
-using Info = internal::MethodInfo<TestService::TestUnaryRpc>;
+using ::pw::rpc::internal::pwpb::PacketType;
+using ::pw::rpc::test::pw_rpc::pwpb::TestService;
+using Info = ::pw::rpc::internal::MethodInfo<TestService::TestUnaryRpc>;
 
 TEST(PwpbFakeChannelOutput, Requests) {
   PwpbFakeChannelOutput<1> output;

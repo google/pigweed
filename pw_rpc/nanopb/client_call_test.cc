@@ -198,7 +198,7 @@ TEST_F(UnaryClientCall, InvokesErrorCallbackOnServerError) {
       [this](Status status) { last_error_ = status; });
 
   EXPECT_EQ(OkStatus(),
-            context.SendPacket(internal::PacketType::SERVER_ERROR,
+            context.SendPacket(internal::pwpb::PacketType::SERVER_ERROR,
                                Status::NotFound()));
 
   EXPECT_EQ(responses_received_, 0);
@@ -382,7 +382,7 @@ TEST_F(ServerStreamingClientCall, InvokesErrorCallbackOnInvalidResponses) {
   EXPECT_EQ(last_response_number_, 22);
 
   EXPECT_EQ(OkStatus(),
-            context.SendPacket(internal::PacketType::SERVER_ERROR,
+            context.SendPacket(internal::pwpb::PacketType::SERVER_ERROR,
                                Status::NotFound()));
   EXPECT_EQ(responses_received_, 2);
   EXPECT_EQ(rpc_error_, Status::NotFound());

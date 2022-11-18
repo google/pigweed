@@ -24,7 +24,7 @@ namespace pw::transfer::internal {
 
 class Chunk {
  public:
-  using Type = transfer::Chunk::Type;
+  using Type = transfer::pwpb::Chunk::Type;
 
   // Constructs a new chunk with the given transfer protocol version. All fields
   // are initialized to their zero values.

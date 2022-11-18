@@ -42,8 +42,8 @@ class Filter {
 
     // Checks if the log level is greater or equal to this value when it
     // does not equal NOT_SET.
-    log::FilterRule::Level level_greater_than_or_equal =
-        log::FilterRule::Level::ANY_LEVEL;
+    log::pwpb::FilterRule::Level level_greater_than_or_equal =
+        log::pwpb::FilterRule::Level::ANY_LEVEL;
 
     // Checks if the log entry has any flag is set when it doesn't equal 0.
     uint32_t any_flags_set = 0;

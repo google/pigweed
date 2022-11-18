@@ -55,7 +55,7 @@ class ServerContextForTest {
 
   // Create packets for this context's channel, service, and method.
   internal::Packet request(span<const std::byte> payload) const {
-    return internal::Packet(internal::PacketType::REQUEST,
+    return internal::Packet(internal::pwpb::PacketType::REQUEST,
                             kChannelId,
                             kServiceId,
                             context_.method().id(),
@@ -65,7 +65,7 @@ class ServerContextForTest {
 
   internal::Packet response(Status status,
                             span<const std::byte> payload = {}) const {
-    return internal::Packet(internal::PacketType::RESPONSE,
+    return internal::Packet(internal::pwpb::PacketType::RESPONSE,
                             kChannelId,
                             kServiceId,
                             context_.method().id(),
@@ -75,7 +75,7 @@ class ServerContextForTest {
   }
 
   internal::Packet server_stream(span<const std::byte> payload) const {
-    return internal::Packet(internal::PacketType::SERVER_STREAM,
+    return internal::Packet(internal::pwpb::PacketType::SERVER_STREAM,
                             kChannelId,
                             kServiceId,
                             context_.method().id(),
@@ -84,7 +84,7 @@ class ServerContextForTest {
   }
 
   internal::Packet client_stream(span<const std::byte> payload) const {
-    return internal::Packet(internal::PacketType::CLIENT_STREAM,
+    return internal::Packet(internal::pwpb::PacketType::CLIENT_STREAM,
                             kChannelId,
                             kServiceId,
                             context_.method().id(),
@@ -126,7 +126,7 @@ class ClientContextForTest {
 
   // Sends a packet to be processed by the client. Returns the client's
   // ProcessPacket status.
-  Status SendPacket(internal::PacketType type,
+  Status SendPacket(internal::pwpb::PacketType type,
                     Status status = OkStatus(),
                     span<const std::byte> payload = {}) {
     uint32_t call_id =
@@ -141,11 +141,12 @@ class ClientContextForTest {
   }
 
   Status SendResponse(Status status, span<const std::byte> payload = {}) {
-    return SendPacket(internal::PacketType::RESPONSE, status, payload);
+    return SendPacket(internal::pwpb::PacketType::RESPONSE, status, payload);
   }
 
   Status SendServerStream(span<const std::byte> payload) {
-    return SendPacket(internal::PacketType::SERVER_STREAM, OkStatus(), payload);
+    return SendPacket(
+        internal::pwpb::PacketType::SERVER_STREAM, OkStatus(), payload);
   }
 
  private:

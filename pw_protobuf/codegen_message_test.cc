@@ -39,7 +39,7 @@
 namespace pw::protobuf {
 namespace {
 
-using namespace ::pw::protobuf::test;
+using namespace ::pw::protobuf::test::pwpb;
 
 PW_MODIFY_DIAGNOSTICS_PUSH();
 PW_MODIFY_DIAGNOSTIC(ignored, "-Wmissing-field-initializers");

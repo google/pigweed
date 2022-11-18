@@ -33,9 +33,9 @@ namespace {
 using std::byte;
 
 using internal::Packet;
-using internal::PacketType;
 using internal::TestMethod;
 using internal::TestMethodUnion;
+using internal::pwpb::PacketType;
 
 class TestService : public Service {
  public:

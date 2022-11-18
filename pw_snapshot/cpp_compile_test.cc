@@ -26,9 +26,9 @@ TEST(Status, CompileTest) {
   std::byte submessage_buffer[kMaxProtoSize];
 
   stream::MemoryWriter writer(encode_buffer);
-  Snapshot::StreamEncoder snapshot_encoder(writer, submessage_buffer);
+  pwpb::Snapshot::StreamEncoder snapshot_encoder(writer, submessage_buffer);
   {
-    Metadata::StreamEncoder metadata_encoder =
+    pwpb::Metadata::StreamEncoder metadata_encoder =
         snapshot_encoder.GetMetadataEncoder();
     ASSERT_EQ(OkStatus(),
               metadata_encoder.WriteReason(

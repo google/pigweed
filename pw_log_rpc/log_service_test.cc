@@ -41,6 +41,8 @@ namespace {
 
 using log::pw_rpc::raw::Logs;
 
+namespace FilterRule = log::pwpb::FilterRule;
+
 #define LOG_SERVICE_METHOD_CONTEXT \
   PW_RAW_TEST_METHOD_CONTEXT(LogService, Listen, 10)
 
@@ -325,7 +327,7 @@ TEST_F(LogServiceTest, HandleDroppedBetweenFilteredOutLogs) {
   context.set_channel_id(drain_channel_id);
   // Set filter to drop INFO+ and keep DEBUG logs
   rules1_[0].action = Filter::Rule::Action::kDrop;
-  rules1_[0].level_greater_than_or_equal = log::FilterRule::Level::INFO_LEVEL;
+  rules1_[0].level_greater_than_or_equal = FilterRule::Level::INFO_LEVEL;
 
   // Add log entries.
   const size_t total_entries = 5;
@@ -472,7 +474,7 @@ TEST_F(LogServiceTest, LargeLogEntry) {
   };
 
   // Add entry to multisink.
-  log::LogEntry::MemoryEncoder encoder(entry_encode_buffer_);
+  log::pwpb::LogEntry::MemoryEncoder encoder(entry_encode_buffer_);
   ASSERT_EQ(encoder.WriteMessage(expected_entry.tokenized_data), OkStatus());
   ASSERT_EQ(encoder.WriteLineLevel(
                 (expected_entry.metadata.level() & PW_LOG_LEVEL_BITMASK) |
@@ -801,25 +803,24 @@ TEST_F(LogServiceTest, FilterLogs) {
       bytes::CopyInOrder<uint32_t>(endian::little, module);
   rules2_[0] = {
       .action = Filter::Rule::Action::kKeep,
-      .level_greater_than_or_equal = log::FilterRule::Level::INFO_LEVEL,
+      .level_greater_than_or_equal = FilterRule::Level::INFO_LEVEL,
       .any_flags_set = flags,
       .module_equals{module_little_endian.begin(), module_little_endian.end()},
       .thread_equals{kSampleThread.begin(), kSampleThread.end()}};
   rules2_[1] = {
       .action = Filter::Rule::Action::kKeep,
-      .level_greater_than_or_equal = log::FilterRule::Level::DEBUG_LEVEL,
+      .level_greater_than_or_equal = FilterRule::Level::DEBUG_LEVEL,
       .any_flags_set = flags,
       .module_equals{module_little_endian.begin(), module_little_endian.end()},
       .thread_equals{kNewThread.begin(), kNewThread.end()}};
-  rules2_[2] = {
-      .action = Filter::Rule::Action::kDrop,
-      .level_greater_than_or_equal = log::FilterRule::Level::ANY_LEVEL,
-      .any_flags_set = 0,
-      .module_equals{},
-      .thread_equals{}};
+  rules2_[2] = {.action = Filter::Rule::Action::kDrop,
+                .level_greater_than_or_equal = FilterRule::Level::ANY_LEVEL,
+                .any_flags_set = 0,
+                .module_equals{},
+                .thread_equals{}};
   rules2_[3] = {
       .action = Filter::Rule::Action::kKeep,
-      .level_greater_than_or_equal = log::FilterRule::Level::INFO_LEVEL,
+      .level_greater_than_or_equal = FilterRule::Level::INFO_LEVEL,
       .any_flags_set = flags,
       .module_equals{module_little_endian.begin(), module_little_endian.end()},
       .thread_equals{kNewThread.begin(), kNewThread.end()}};

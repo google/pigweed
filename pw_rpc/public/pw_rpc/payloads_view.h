@@ -39,8 +39,8 @@ class FakeChannelOutput;
 class PacketFilter {
  public:
   // Use Channel::kUnassignedChannelId to ignore the channel.
-  constexpr PacketFilter(PacketType packet_type_1,
-                         PacketType packet_type_2,
+  constexpr PacketFilter(internal::pwpb::PacketType packet_type_1,
+                         internal::pwpb::PacketType packet_type_2,
                          uint32_t channel_id,
                          uint32_t service_id,
                          uint32_t method_id)
@@ -62,8 +62,8 @@ class PacketFilter {
  private:
   // Support filtering on two packet types to handle reading both client and
   // server streams for bidirectional streams.
-  PacketType packet_type_1_;
-  PacketType packet_type_2_;
+  internal::pwpb::PacketType packet_type_1_;
+  internal::pwpb::PacketType packet_type_2_;
   uint32_t channel_id_;
   uint32_t service_id_;
   uint32_t method_id_;
@@ -130,7 +130,7 @@ class PayloadsView {
   template <auto kMethod>
   using MethodInfo = internal::MethodInfo<kMethod>;
 
-  using PacketType = internal::PacketType;
+  using PacketType = internal::pwpb::PacketType;
 
   template <auto kMethod>
   static constexpr PayloadsView For(const Vector<internal::Packet>& packets,
@@ -243,7 +243,7 @@ class StatusView {
   template <auto kMethod>
   using MethodInfo = internal::MethodInfo<kMethod>;
 
-  using PacketType = internal::PacketType;
+  using PacketType = internal::pwpb::PacketType;
 
   constexpr StatusView(const Vector<internal::Packet>& packets,
                        PacketType packet_type_1,

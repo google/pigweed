@@ -28,6 +28,10 @@ namespace {
 
 using test::pw_rpc::pwpb::TestService;
 
+namespace TestRequest = ::pw::rpc::test::pwpb::TestRequest;
+namespace TestResponse = ::pw::rpc::test::pwpb::TestResponse;
+namespace TestStreamResponse = ::pw::rpc::test::pwpb::TestStreamResponse;
+
 void FailIfCalled(Status) { FAIL(); }
 template <typename T>
 void FailIfOnNextCalled(const T&) {
@@ -39,21 +43,19 @@ void FailIfOnCompletedCalled(const T&, Status) {
 }
 
 TEST(PwpbUnaryReceiver, DefaultConstructed) {
-  PwpbUnaryReceiver<test::TestResponse::Message> call;
+  PwpbUnaryReceiver<TestResponse::Message> call;
 
   ASSERT_FALSE(call.active());
   EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
 
   EXPECT_EQ(Status::FailedPrecondition(), call.Cancel());
 
-  call.set_on_completed([](const test::TestResponse::Message&, Status) {});
+  call.set_on_completed([](const TestResponse::Message&, Status) {});
   call.set_on_error([](Status) {});
 }
 
 TEST(PwpbClientWriter, DefaultConstructed) {
-  PwpbClientWriter<test::TestRequest::Message,
-                   test::TestStreamResponse::Message>
-      call;
+  PwpbClientWriter<TestRequest::Message, TestStreamResponse::Message> call;
 
   ASSERT_FALSE(call.active());
   EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
@@ -62,13 +64,12 @@ TEST(PwpbClientWriter, DefaultConstructed) {
   EXPECT_EQ(Status::FailedPrecondition(), call.Cancel());
   EXPECT_EQ(Status::FailedPrecondition(), call.CloseClientStream());
 
-  call.set_on_completed(
-      [](const test::TestStreamResponse::Message&, Status) {});
+  call.set_on_completed([](const TestStreamResponse::Message&, Status) {});
   call.set_on_error([](Status) {});
 }
 
 TEST(PwpbClientReader, DefaultConstructed) {
-  PwpbClientReader<test::TestStreamResponse::Message> call;
+  PwpbClientReader<TestStreamResponse::Message> call;
 
   ASSERT_FALSE(call.active());
   EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
@@ -76,13 +77,12 @@ TEST(PwpbClientReader, DefaultConstructed) {
   EXPECT_EQ(Status::FailedPrecondition(), call.Cancel());
 
   call.set_on_completed([](Status) {});
-  call.set_on_next([](const test::TestStreamResponse::Message&) {});
+  call.set_on_next([](const TestStreamResponse::Message&) {});
   call.set_on_error([](Status) {});
 }
 
 TEST(PwpbClientReaderWriter, DefaultConstructed) {
-  PwpbClientReaderWriter<test::TestRequest::Message,
-                         test::TestStreamResponse::Message>
+  PwpbClientReaderWriter<TestRequest::Message, TestStreamResponse::Message>
       call;
 
   ASSERT_FALSE(call.active());
@@ -93,19 +93,18 @@ TEST(PwpbClientReaderWriter, DefaultConstructed) {
   EXPECT_EQ(Status::FailedPrecondition(), call.CloseClientStream());
 
   call.set_on_completed([](Status) {});
-  call.set_on_next([](const test::TestStreamResponse::Message&) {});
+  call.set_on_next([](const TestStreamResponse::Message&) {});
   call.set_on_error([](Status) {});
 }
 
 TEST(PwpbUnaryReceiver, Closed) {
   PwpbClientTestContext ctx;
-  PwpbUnaryReceiver<test::TestResponse::Message> call =
-      TestService::TestUnaryRpc(
-          ctx.client(),
-          ctx.channel().id(),
-          {},
-          FailIfOnCompletedCalled<test::TestResponse::Message>,
-          FailIfCalled);
+  PwpbUnaryReceiver<TestResponse::Message> call =
+      TestService::TestUnaryRpc(ctx.client(),
+                                ctx.channel().id(),
+                                {},
+                                FailIfOnCompletedCalled<TestResponse::Message>,
+                                FailIfCalled);
   ASSERT_EQ(OkStatus(), call.Cancel());
 
   ASSERT_FALSE(call.active());
@@ -113,18 +112,17 @@ TEST(PwpbUnaryReceiver, Closed) {
 
   EXPECT_EQ(Status::FailedPrecondition(), call.Cancel());
 
-  call.set_on_completed([](const test::TestResponse::Message&, Status) {});
+  call.set_on_completed([](const TestResponse::Message&, Status) {});
   call.set_on_error([](Status) {});
 }
 
 TEST(PwpbClientWriter, Closed) {
   PwpbClientTestContext ctx;
-  PwpbClientWriter<test::TestRequest::Message,
-                   test::TestStreamResponse::Message>
-      call = TestService::TestClientStreamRpc(
+  PwpbClientWriter<TestRequest::Message, TestStreamResponse::Message> call =
+      TestService::TestClientStreamRpc(
           ctx.client(),
           ctx.channel().id(),
-          FailIfOnCompletedCalled<test::TestStreamResponse::Message>,
+          FailIfOnCompletedCalled<TestStreamResponse::Message>,
           FailIfCalled);
   ASSERT_EQ(OkStatus(), call.Cancel());
 
@@ -135,19 +133,18 @@ TEST(PwpbClientWriter, Closed) {
   EXPECT_EQ(Status::FailedPrecondition(), call.Cancel());
   EXPECT_EQ(Status::FailedPrecondition(), call.CloseClientStream());
 
-  call.set_on_completed(
-      [](const test::TestStreamResponse::Message&, Status) {});
+  call.set_on_completed([](const TestStreamResponse::Message&, Status) {});
   call.set_on_error([](Status) {});
 }
 
 TEST(PwpbClientReader, Closed) {
   PwpbClientTestContext ctx;
-  PwpbClientReader<test::TestStreamResponse::Message> call =
+  PwpbClientReader<TestStreamResponse::Message> call =
       TestService::TestServerStreamRpc(
           ctx.client(),
           ctx.channel().id(),
           {},
-          FailIfOnNextCalled<test::TestStreamResponse::Message>,
+          FailIfOnNextCalled<TestStreamResponse::Message>,
           FailIfCalled,
           FailIfCalled);
   ASSERT_EQ(OkStatus(), call.Cancel());
@@ -158,18 +155,17 @@ TEST(PwpbClientReader, Closed) {
   EXPECT_EQ(Status::FailedPrecondition(), call.Cancel());
 
   call.set_on_completed([](Status) {});
-  call.set_on_next([](const test::TestStreamResponse::Message&) {});
+  call.set_on_next([](const TestStreamResponse::Message&) {});
   call.set_on_error([](Status) {});
 }
 
 TEST(PwpbClientReaderWriter, Closed) {
   PwpbClientTestContext ctx;
-  PwpbClientReaderWriter<test::TestRequest::Message,
-                         test::TestStreamResponse::Message>
+  PwpbClientReaderWriter<TestRequest::Message, TestStreamResponse::Message>
       call = TestService::TestBidirectionalStreamRpc(
           ctx.client(),
           ctx.channel().id(),
-          FailIfOnNextCalled<test::TestStreamResponse::Message>,
+          FailIfOnNextCalled<TestStreamResponse::Message>,
           FailIfCalled,
           FailIfCalled);
   ASSERT_EQ(OkStatus(), call.Cancel());
@@ -182,7 +178,7 @@ TEST(PwpbClientReaderWriter, Closed) {
   EXPECT_EQ(Status::FailedPrecondition(), call.CloseClientStream());
 
   call.set_on_completed([](Status) {});
-  call.set_on_next([](const test::TestStreamResponse::Message&) {});
+  call.set_on_next([](const TestStreamResponse::Message&) {});
   call.set_on_error([](Status) {});
 }
 
@@ -190,17 +186,17 @@ TEST(PwpbUnaryReceiver, CallbacksMoveCorrectly) {
   PwpbClientTestContext ctx;
 
   struct {
-    test::TestResponse::Message payload = {.value = 12345678};
+    TestResponse::Message payload = {.value = 12345678};
     std::optional<Status> status;
   } reply;
 
-  PwpbUnaryReceiver<test::TestResponse::Message> call_2;
+  PwpbUnaryReceiver<TestResponse::Message> call_2;
   {
     PwpbUnaryReceiver call_1 = TestService::TestUnaryRpc(
         ctx.client(),
         ctx.channel().id(),
         {},
-        [&reply](const test::TestResponse::Message& response, Status status) {
+        [&reply](const TestResponse::Message& response, Status status) {
           reply.payload = response;
           reply.status = status;
         });
@@ -217,16 +213,15 @@ TEST(PwpbUnaryReceiver, CallbacksMoveCorrectly) {
 TEST(PwpbClientReaderWriter, CallbacksMoveCorrectly) {
   PwpbClientTestContext ctx;
 
-  test::TestStreamResponse::Message payload = {.chunk = {}, .number = 13579};
+  TestStreamResponse::Message payload = {.chunk = {}, .number = 13579};
 
-  PwpbClientReaderWriter<test::TestRequest::Message,
-                         test::TestStreamResponse::Message>
+  PwpbClientReaderWriter<TestRequest::Message, TestStreamResponse::Message>
       call_2;
   {
     PwpbClientReaderWriter call_1 = TestService::TestBidirectionalStreamRpc(
         ctx.client(),
         ctx.channel().id(),
-        [&payload](const test::TestStreamResponse::Message& response) {
+        [&payload](const TestStreamResponse::Message& response) {
           payload = response;
         });
 

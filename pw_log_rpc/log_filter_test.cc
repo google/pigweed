@@ -33,6 +33,8 @@
 namespace pw::log_rpc {
 namespace {
 
+namespace FilterRule = ::pw::log::pwpb::FilterRule;
+
 constexpr uint32_t kSampleModule = 0x1234;
 constexpr uint32_t kSampleFlags = 0x3;
 const std::array<std::byte, cfg::kMaxThreadNameBytes - 7> kSampleThread = {
@@ -55,19 +57,19 @@ Result<ConstByteSpan> EncodeLogEntry(std::string_view message,
 }
 
 Status EncodeFilterRule(const Filter::Rule& rule,
-                        log::FilterRule::StreamEncoder& encoder) {
+                        FilterRule::StreamEncoder& encoder) {
   PW_TRY(
       encoder.WriteLevelGreaterThanOrEqual(rule.level_greater_than_or_equal));
   PW_TRY(encoder.WriteModuleEquals(rule.module_equals));
   PW_TRY(encoder.WriteAnyFlagsSet(rule.any_flags_set));
   PW_TRY(encoder.WriteThreadEquals(rule.thread_equals));
-  return encoder.WriteAction(static_cast<log::FilterRule::Action>(rule.action));
+  return encoder.WriteAction(static_cast<FilterRule::Action>(rule.action));
 }
 
 Result<ConstByteSpan> EncodeFilter(const Filter& filter, ByteSpan buffer) {
-  log::Filter::MemoryEncoder encoder(buffer);
+  log::pwpb::Filter::MemoryEncoder encoder(buffer);
   for (auto& rule : filter.rules()) {
-    log::FilterRule::StreamEncoder rule_encoder = encoder.GetRuleEncoder();
+    FilterRule::StreamEncoder rule_encoder = encoder.GetRuleEncoder();
     PW_TRY(EncodeFilterRule(rule, rule_encoder));
   }
   return ConstByteSpan(encoder);
@@ -130,28 +132,28 @@ TEST(Filter, UpdateFilterRules) {
   const std::array<Filter::Rule, 4> new_rules{{
       {
           .action = Filter::Rule::Action::kKeep,
-          .level_greater_than_or_equal = log::FilterRule::Level::DEBUG_LEVEL,
+          .level_greater_than_or_equal = FilterRule::Level::DEBUG_LEVEL,
           .any_flags_set = 0x0f,
           .module_equals{std::byte(123)},
           .thread_equals{},
       },
       {
           .action = Filter::Rule::Action::kInactive,
-          .level_greater_than_or_equal = log::FilterRule::Level::ANY_LEVEL,
+          .level_greater_than_or_equal = FilterRule::Level::ANY_LEVEL,
           .any_flags_set = 0xef,
           .module_equals{},
           .thread_equals{std::byte('L'), std::byte('O'), std::byte('G')},
       },
       {
           .action = Filter::Rule::Action::kKeep,
-          .level_greater_than_or_equal = log::FilterRule::Level::INFO_LEVEL,
+          .level_greater_than_or_equal = FilterRule::Level::INFO_LEVEL,
           .any_flags_set = 0x1234,
           .module_equals{std::byte(99)},
           .thread_equals{},
       },
       {
           .action = Filter::Rule::Action::kDrop,
-          .level_greater_than_or_equal = log::FilterRule::Level::ANY_LEVEL,
+          .level_greater_than_or_equal = FilterRule::Level::ANY_LEVEL,
           .any_flags_set = 0,
           .module_equals{std::byte(4)},
           .thread_equals{std::byte('P'),
@@ -183,7 +185,7 @@ TEST(Filter, UpdateFilterRules) {
   EXPECT_EQ(filter.UpdateRulesFromProto(encode_result.value()), OkStatus());
   const Filter::Rule empty_rule{
       .action = Filter::Rule::Action::kInactive,
-      .level_greater_than_or_equal = log::FilterRule::Level::ANY_LEVEL,
+      .level_greater_than_or_equal = FilterRule::Level::ANY_LEVEL,
       .any_flags_set = 0,
       .module_equals{},
       .thread_equals{},
@@ -197,14 +199,14 @@ TEST(Filter, UpdateFilterRules) {
   const std::array<Filter::Rule, 2> few_rules{{
       {
           .action = Filter::Rule::Action::kInactive,
-          .level_greater_than_or_equal = log::FilterRule::Level::ANY_LEVEL,
+          .level_greater_than_or_equal = FilterRule::Level::ANY_LEVEL,
           .any_flags_set = 0xef,
           .module_equals{},
           .thread_equals{},
       },
       {
           .action = Filter::Rule::Action::kKeep,
-          .level_greater_than_or_equal = log::FilterRule::Level::INFO_LEVEL,
+          .level_greater_than_or_equal = FilterRule::Level::INFO_LEVEL,
           .any_flags_set = 0x1234,
           .module_equals{std::byte(99)},
           .thread_equals{std::byte('P'),
@@ -233,7 +235,7 @@ TEST(Filter, UpdateFilterRules) {
   const std::array<Filter::Rule, 6> extra_rules{{
       {
           .action = Filter::Rule::Action::kKeep,
-          .level_greater_than_or_equal = log::FilterRule::Level::DEBUG_LEVEL,
+          .level_greater_than_or_equal = FilterRule::Level::DEBUG_LEVEL,
           .any_flags_set = 0x0f,
           .module_equals{std::byte(123)},
           .thread_equals{std::byte('P'),
@@ -244,35 +246,35 @@ TEST(Filter, UpdateFilterRules) {
       },
       {
           .action = Filter::Rule::Action::kInactive,
-          .level_greater_than_or_equal = log::FilterRule::Level::ANY_LEVEL,
+          .level_greater_than_or_equal = FilterRule::Level::ANY_LEVEL,
           .any_flags_set = 0xef,
           .module_equals{},
           .thread_equals{},
       },
       {
           .action = Filter::Rule::Action::kInactive,
-          .level_greater_than_or_equal = log::FilterRule::Level::ANY_LEVEL,
+          .level_greater_than_or_equal = FilterRule::Level::ANY_LEVEL,
           .any_flags_set = 0xef,
           .module_equals{},
           .thread_equals{},
       },
       {
           .action = Filter::Rule::Action::kKeep,
-          .level_greater_than_or_equal = log::FilterRule::Level::INFO_LEVEL,
+          .level_greater_than_or_equal = FilterRule::Level::INFO_LEVEL,
           .any_flags_set = 0x1234,
           .module_equals{std::byte(99)},
           .thread_equals{std::byte('L'), std::byte('O'), std::byte('G')},
       },
       {
           .action = Filter::Rule::Action::kDrop,
-          .level_greater_than_or_equal = log::FilterRule::Level::ANY_LEVEL,
+          .level_greater_than_or_equal = FilterRule::Level::ANY_LEVEL,
           .any_flags_set = 0,
           .module_equals{std::byte(4)},
           .thread_equals{std::byte('L'), std::byte('O'), std::byte('G')},
       },
       {
           .action = Filter::Rule::Action::kKeep,
-          .level_greater_than_or_equal = log::FilterRule::Level::INFO_LEVEL,
+          .level_greater_than_or_equal = FilterRule::Level::INFO_LEVEL,
           .any_flags_set = 0x1234,
           .module_equals{std::byte('M'),
                          std::byte('0'),
@@ -303,7 +305,7 @@ TEST(FilterTest, FilterLogsRuleDefaultDrop) {
   const std::array<Filter::Rule, 2> rules{{
       {
           .action = Filter::Rule::Action::kKeep,
-          .level_greater_than_or_equal = log::FilterRule::Level::INFO_LEVEL,
+          .level_greater_than_or_equal = FilterRule::Level::INFO_LEVEL,
           .any_flags_set = kSampleFlags,
           .module_equals{kSampleModuleLittleEndian.begin(),
                          kSampleModuleLittleEndian.end()},
@@ -312,7 +314,7 @@ TEST(FilterTest, FilterLogsRuleDefaultDrop) {
       // This rule catches all logs.
       {
           .action = Filter::Rule::Action::kDrop,
-          .level_greater_than_or_equal = log::FilterRule::Level::ANY_LEVEL,
+          .level_greater_than_or_equal = FilterRule::Level::ANY_LEVEL,
           .any_flags_set = 0,
           .module_equals = {},
           .thread_equals{},
@@ -387,7 +389,7 @@ TEST(FilterTest, FilterLogsKeepLogsWhenNoRuleMatches) {
   const std::array<Filter::Rule, 1> rules{{
       {
           .action = Filter::Rule::Action::kKeep,
-          .level_greater_than_or_equal = log::FilterRule::Level::INFO_LEVEL,
+          .level_greater_than_or_equal = FilterRule::Level::INFO_LEVEL,
           .any_flags_set = kSampleFlags,
           .module_equals = {kSampleModuleLittleEndian.begin(),
                             kSampleModuleLittleEndian.end()},
@@ -519,7 +521,7 @@ TEST(FilterTest, FilterLogsFirstRuleWins) {
   const std::array<Filter::Rule, 2> rules{{
       {
           .action = Filter::Rule::Action::kKeep,
-          .level_greater_than_or_equal = log::FilterRule::Level::INFO_LEVEL,
+          .level_greater_than_or_equal = FilterRule::Level::INFO_LEVEL,
           .any_flags_set = kSampleFlags,
           .module_equals = {kSampleModuleLittleEndian.begin(),
                             kSampleModuleLittleEndian.end()},
@@ -527,7 +529,7 @@ TEST(FilterTest, FilterLogsFirstRuleWins) {
       },
       {
           .action = Filter::Rule::Action::kDrop,
-          .level_greater_than_or_equal = log::FilterRule::Level::INFO_LEVEL,
+          .level_greater_than_or_equal = FilterRule::Level::INFO_LEVEL,
           .any_flags_set = kSampleFlags,
           .module_equals = {kSampleModuleLittleEndian.begin(),
                             kSampleModuleLittleEndian.end()},
@@ -537,7 +539,7 @@ TEST(FilterTest, FilterLogsFirstRuleWins) {
   const std::array<Filter::Rule, 2> rules_reversed{{
       {
           .action = Filter::Rule::Action::kDrop,
-          .level_greater_than_or_equal = log::FilterRule::Level::INFO_LEVEL,
+          .level_greater_than_or_equal = FilterRule::Level::INFO_LEVEL,
           .any_flags_set = kSampleFlags,
           .module_equals = {kSampleModuleLittleEndian.begin(),
                             kSampleModuleLittleEndian.end()},
@@ -545,7 +547,7 @@ TEST(FilterTest, FilterLogsFirstRuleWins) {
       },
       {
           .action = Filter::Rule::Action::kKeep,
-          .level_greater_than_or_equal = log::FilterRule::Level::INFO_LEVEL,
+          .level_greater_than_or_equal = FilterRule::Level::INFO_LEVEL,
           .any_flags_set = kSampleFlags,
           .module_equals = {kSampleModuleLittleEndian.begin(),
                             kSampleModuleLittleEndian.end()},
@@ -576,7 +578,7 @@ TEST(FilterTest, DropFilterRuleDueToThreadName) {
   const std::array<Filter::Rule, 2> rules{{
       {
           .action = Filter::Rule::Action::kKeep,
-          .level_greater_than_or_equal = log::FilterRule::Level::INFO_LEVEL,
+          .level_greater_than_or_equal = FilterRule::Level::INFO_LEVEL,
           .any_flags_set = kSampleFlags,
           .module_equals = {kSampleModuleLittleEndian.begin(),
                             kSampleModuleLittleEndian.end()},
@@ -584,7 +586,7 @@ TEST(FilterTest, DropFilterRuleDueToThreadName) {
       },
       {
           .action = Filter::Rule::Action::kDrop,
-          .level_greater_than_or_equal = log::FilterRule::Level::INFO_LEVEL,
+          .level_greater_than_or_equal = FilterRule::Level::INFO_LEVEL,
           .any_flags_set = kSampleFlags,
           .module_equals = {kSampleModuleLittleEndian.begin(),
                             kSampleModuleLittleEndian.end()},
@@ -595,7 +597,7 @@ TEST(FilterTest, DropFilterRuleDueToThreadName) {
   const std::array<Filter::Rule, 2> drop_rule{{
       {
           .action = Filter::Rule::Action::kDrop,
-          .level_greater_than_or_equal = log::FilterRule::Level::INFO_LEVEL,
+          .level_greater_than_or_equal = FilterRule::Level::INFO_LEVEL,
           .any_flags_set = kSampleFlags,
           .module_equals = {kSampleModuleLittleEndian.begin(),
                             kSampleModuleLittleEndian.end()},
@@ -647,7 +649,7 @@ TEST(FilterTest, UpdateFilterWithLargeThreadNamePasses) {
   const std::array<Filter::Rule, 2> rule{{
       {
           .action = Filter::Rule::Action::kKeep,
-          .level_greater_than_or_equal = log::FilterRule::Level::INFO_LEVEL,
+          .level_greater_than_or_equal = FilterRule::Level::INFO_LEVEL,
           .any_flags_set = kSampleFlags,
           .module_equals = {kSampleModuleLittleEndian.begin(),
                             kSampleModuleLittleEndian.end()},
@@ -656,7 +658,7 @@ TEST(FilterTest, UpdateFilterWithLargeThreadNamePasses) {
       },
       {
           .action = Filter::Rule::Action::kKeep,
-          .level_greater_than_or_equal = log::FilterRule::Level::INFO_LEVEL,
+          .level_greater_than_or_equal = FilterRule::Level::INFO_LEVEL,
           .any_flags_set = kSampleFlags,
           .module_equals = {kSampleModuleLittleEndian.begin(),
                             kSampleModuleLittleEndian.end()},
@@ -680,7 +682,7 @@ TEST(FilterTest, UpdateFilterWithLargeThreadNamePasses) {
 TEST(FilterTest, UpdateFilterWithLargeThreadNameFails) {
   const std::array<Filter::Rule, 1> rule_with_more_than_ten_bytes{{{
       .action = Filter::Rule::Action::kKeep,
-      .level_greater_than_or_equal = log::FilterRule::Level::INFO_LEVEL,
+      .level_greater_than_or_equal = FilterRule::Level::INFO_LEVEL,
       .any_flags_set = kSampleFlags,
       .module_equals = {kSampleModuleLittleEndian.begin(),
                         kSampleModuleLittleEndian.end()},
@@ -692,7 +694,7 @@ TEST(FilterTest, UpdateFilterWithLargeThreadNameFails) {
       filter_id,
       const_cast<std::array<Filter::Rule, 1>&>(rule_with_more_than_ten_bytes));
   std::byte buffer[256];
-  log::Filter::MemoryEncoder encoder(buffer);
+  log::pwpb::Filter::MemoryEncoder encoder(buffer);
   {
     std::array<const std::byte, cfg::kMaxThreadNameBytes + 1>
         kThreadNameLongerThanAllowed = {
@@ -709,7 +711,7 @@ TEST(FilterTest, UpdateFilterWithLargeThreadNameFails) {
             std::byte('S'),
         };
     // Stream encoder writes to the buffer when it goes out of scope.
-    log::FilterRule::StreamEncoder rule_encoder = encoder.GetRuleEncoder();
+    FilterRule::StreamEncoder rule_encoder = encoder.GetRuleEncoder();
     ASSERT_EQ(rule_encoder.WriteThreadEquals(kThreadNameLongerThanAllowed),
               OkStatus());
   }

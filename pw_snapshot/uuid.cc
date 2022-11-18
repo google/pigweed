@@ -34,7 +34,7 @@ Result<ConstByteSpan> ReadUuidFromSnapshot(ConstByteSpan snapshot,
   while (decoder.Next().ok()) {
     if (decoder.FieldNumber() ==
         static_cast<uint32_t>(
-            pw::snapshot::SnapshotBasicInfo::Fields::METADATA)) {
+            pw::snapshot::pwpb::SnapshotBasicInfo::Fields::METADATA)) {
       PW_TRY(decoder.ReadBytes(&metadata));
       break;
     }
@@ -48,7 +48,8 @@ Result<ConstByteSpan> ReadUuidFromSnapshot(ConstByteSpan snapshot,
   ConstByteSpan snapshot_uuid;
   while (decoder.Next().ok()) {
     if (decoder.FieldNumber() ==
-        static_cast<uint32_t>(pw::snapshot::Metadata::Fields::SNAPSHOT_UUID)) {
+        static_cast<uint32_t>(
+            pw::snapshot::pwpb::Metadata::Fields::SNAPSHOT_UUID)) {
       PW_TRY(decoder.ReadBytes(&snapshot_uuid));
       break;
     }

@@ -27,6 +27,11 @@ namespace pw::rpc {
 namespace {
 
 using internal::ClientContextForTest;
+using internal::pwpb::PacketType;
+
+namespace TestRequest = ::pw::rpc::test::pwpb::TestRequest;
+namespace TestResponse = ::pw::rpc::test::pwpb::TestResponse;
+namespace TestStreamResponse = ::pw::rpc::test::pwpb::TestStreamResponse;
 
 constexpr uint32_t kServiceId = 16;
 constexpr uint32_t kUnaryMethodId = 111;
@@ -34,62 +39,59 @@ constexpr uint32_t kServerStreamingMethodId = 112;
 
 class FakeGeneratedServiceClient {
  public:
-  static PwpbUnaryReceiver<test::TestResponse::Message> TestUnaryRpc(
+  static PwpbUnaryReceiver<TestResponse::Message> TestUnaryRpc(
       Client& client,
       uint32_t channel_id,
-      const test::TestRequest::Message& request,
-      Function<void(const test::TestResponse::Message&, Status)> on_response,
+      const TestRequest::Message& request,
+      Function<void(const TestResponse::Message&, Status)> on_response,
       Function<void(Status)> on_error = nullptr) {
-    return internal::PwpbUnaryResponseClientCall<test::TestResponse::Message>::
-        Start<PwpbUnaryReceiver<test::TestResponse::Message>>(
-            client,
-            channel_id,
-            kServiceId,
-            kUnaryMethodId,
-            internal::kPwpbMethodSerde<&test::TestRequest::kMessageFields,
-                                       &test::TestResponse::kMessageFields>,
-            std::move(on_response),
-            std::move(on_error),
-            request);
+    return internal::PwpbUnaryResponseClientCall<TestResponse::Message>::Start<
+        PwpbUnaryReceiver<TestResponse::Message>>(
+        client,
+        channel_id,
+        kServiceId,
+        kUnaryMethodId,
+        internal::kPwpbMethodSerde<&TestRequest::kMessageFields,
+                                   &TestResponse::kMessageFields>,
+        std::move(on_response),
+        std::move(on_error),
+        request);
   }
 
-  static PwpbUnaryReceiver<test::TestResponse::Message> TestAnotherUnaryRpc(
+  static PwpbUnaryReceiver<TestResponse::Message> TestAnotherUnaryRpc(
       Client& client,
       uint32_t channel_id,
-      const test::TestRequest::Message& request,
-      Function<void(const test::TestResponse::Message&, Status)> on_response,
+      const TestRequest::Message& request,
+      Function<void(const TestResponse::Message&, Status)> on_response,
       Function<void(Status)> on_error = nullptr) {
-    return internal::PwpbUnaryResponseClientCall<test::TestResponse::Message>::
-        Start<PwpbUnaryReceiver<test::TestResponse::Message>>(
-            client,
-            channel_id,
-            kServiceId,
-            kUnaryMethodId,
-            internal::kPwpbMethodSerde<&test::TestRequest::kMessageFields,
-                                       &test::TestResponse::kMessageFields>,
-            std::move(on_response),
-            std::move(on_error),
-            request);
+    return internal::PwpbUnaryResponseClientCall<TestResponse::Message>::Start<
+        PwpbUnaryReceiver<TestResponse::Message>>(
+        client,
+        channel_id,
+        kServiceId,
+        kUnaryMethodId,
+        internal::kPwpbMethodSerde<&TestRequest::kMessageFields,
+                                   &TestResponse::kMessageFields>,
+        std::move(on_response),
+        std::move(on_error),
+        request);
   }
 
-  static PwpbClientReader<test::TestStreamResponse::Message>
-  TestServerStreamRpc(
+  static PwpbClientReader<TestStreamResponse::Message> TestServerStreamRpc(
       Client& client,
       uint32_t channel_id,
-      const test::TestRequest::Message& request,
-      Function<void(const test::TestStreamResponse::Message&)> on_response,
+      const TestRequest::Message& request,
+      Function<void(const TestStreamResponse::Message&)> on_response,
       Function<void(Status)> on_stream_end,
       Function<void(Status)> on_error = nullptr) {
-    return internal::
-        PwpbStreamResponseClientCall<test::TestStreamResponse::Message>::Start<
-            PwpbClientReader<test::TestStreamResponse::Message>>(
+    return internal::PwpbStreamResponseClientCall<TestStreamResponse::Message>::
+        Start<PwpbClientReader<TestStreamResponse::Message>>(
             client,
             channel_id,
             kServiceId,
             kServerStreamingMethodId,
-            internal::kPwpbMethodSerde<
-                &test::TestRequest::kMessageFields,
-                &test::TestStreamResponse::kMessageFields>,
+            internal::kPwpbMethodSerde<&TestRequest::kMessageFields,
+                                       &TestStreamResponse::kMessageFields>,
             std::move(on_response),
             std::move(on_stream_end),
             std::move(on_error),
@@ -112,7 +114,7 @@ TEST(PwpbClientCall, Unary_SendsRequestPacket) {
   EXPECT_EQ(packet.service_id(), kServiceId);
   EXPECT_EQ(packet.method_id(), kUnaryMethodId);
 
-  PW_DECODE_PB(test::TestRequest, sent_proto, packet.payload());
+  PW_DECODE_PB(TestRequest, sent_proto, packet.payload());
   EXPECT_EQ(sent_proto.integer, 123);
 }
 
@@ -131,13 +133,13 @@ TEST_F(UnaryClientCall, InvokesCallbackOnValidResponse) {
       context.client(),
       context.channel().id(),
       {.integer = 123, .status_code = 0},
-      [this](const test::TestResponse::Message& response, Status status) {
+      [this](const TestResponse::Message& response, Status status) {
         ++responses_received_;
         last_status_ = status;
         last_response_value_ = response.value;
       });
 
-  PW_ENCODE_PB(test::TestResponse, response, .value = 42);
+  PW_ENCODE_PB(TestResponse, response, .value = 42);
   EXPECT_EQ(OkStatus(), context.SendResponse(OkStatus(), response));
 
   ASSERT_EQ(responses_received_, 1);
@@ -154,7 +156,7 @@ TEST_F(UnaryClientCall, DoesNothingOnNullCallback) {
       {.integer = 123, .status_code = 0},
       nullptr);
 
-  PW_ENCODE_PB(test::TestResponse, response, .value = 42);
+  PW_ENCODE_PB(TestResponse, response, .value = 42);
   EXPECT_EQ(OkStatus(), context.SendResponse(OkStatus(), response));
 
   ASSERT_EQ(responses_received_, 0);
@@ -167,7 +169,7 @@ TEST_F(UnaryClientCall, InvokesErrorCallbackOnInvalidResponse) {
       context.client(),
       context.channel().id(),
       {.integer = 123, .status_code = 0},
-      [this](const test::TestResponse::Message& response, Status status) {
+      [this](const TestResponse::Message& response, Status status) {
         ++responses_received_;
         last_status_ = status;
         last_response_value_ = response.value;
@@ -190,7 +192,7 @@ TEST_F(UnaryClientCall, InvokesErrorCallbackOnServerError) {
       context.client(),
       context.channel().id(),
       {.integer = 123, .status_code = 0},
-      [this](const test::TestResponse::Message& response, Status status) {
+      [this](const TestResponse::Message& response, Status status) {
         ++responses_received_;
         last_status_ = status;
         last_response_value_ = response.value;
@@ -198,8 +200,7 @@ TEST_F(UnaryClientCall, InvokesErrorCallbackOnServerError) {
       [this](Status status) { last_error_ = status; });
 
   EXPECT_EQ(OkStatus(),
-            context.SendPacket(internal::PacketType::SERVER_ERROR,
-                               Status::NotFound()));
+            context.SendPacket(PacketType::SERVER_ERROR, Status::NotFound()));
 
   EXPECT_EQ(responses_received_, 0);
   EXPECT_EQ(last_error_, Status::NotFound());
@@ -212,7 +213,7 @@ TEST_F(UnaryClientCall, DoesNothingOnErrorWithoutCallback) {
       context.client(),
       context.channel().id(),
       {.integer = 123, .status_code = 0},
-      [this](const test::TestResponse::Message& response, Status status) {
+      [this](const TestResponse::Message& response, Status status) {
         ++responses_received_;
         last_status_ = status;
         last_response_value_ = response.value;
@@ -232,17 +233,17 @@ TEST_F(UnaryClientCall, OnlyReceivesOneResponse) {
       context.client(),
       context.channel().id(),
       {.integer = 123, .status_code = 0},
-      [this](const test::TestResponse::Message& response, Status status) {
+      [this](const TestResponse::Message& response, Status status) {
         ++responses_received_;
         last_status_ = status;
         last_response_value_ = response.value;
       });
 
-  PW_ENCODE_PB(test::TestResponse, r1, .value = 42);
+  PW_ENCODE_PB(TestResponse, r1, .value = 42);
   EXPECT_EQ(OkStatus(), context.SendResponse(Status::Unimplemented(), r1));
-  PW_ENCODE_PB(test::TestResponse, r2, .value = 44);
+  PW_ENCODE_PB(TestResponse, r2, .value = 44);
   EXPECT_EQ(OkStatus(), context.SendResponse(Status::OutOfRange(), r2));
-  PW_ENCODE_PB(test::TestResponse, r3, .value = 46);
+  PW_ENCODE_PB(TestResponse, r3, .value = 46);
   EXPECT_EQ(OkStatus(), context.SendResponse(Status::Internal(), r3));
 
   EXPECT_EQ(responses_received_, 1);
@@ -275,7 +276,7 @@ TEST_F(ServerStreamingClientCall, SendsRequestPacket) {
   EXPECT_EQ(packet.service_id(), kServiceId);
   EXPECT_EQ(packet.method_id(), kServerStreamingMethodId);
 
-  PW_DECODE_PB(test::TestRequest, sent_proto, packet.payload());
+  PW_DECODE_PB(TestRequest, sent_proto, packet.payload());
   EXPECT_EQ(sent_proto.integer, 71);
 }
 
@@ -286,7 +287,7 @@ TEST_F(ServerStreamingClientCall, InvokesCallbackOnValidResponse) {
       context.client(),
       context.channel().id(),
       {.integer = 71, .status_code = 0},
-      [this](const test::TestStreamResponse::Message& response) {
+      [this](const TestStreamResponse::Message& response) {
         ++responses_received_;
         last_response_number_ = response.number;
       },
@@ -295,19 +296,19 @@ TEST_F(ServerStreamingClientCall, InvokesCallbackOnValidResponse) {
         stream_status_ = status;
       });
 
-  PW_ENCODE_PB(test::TestStreamResponse, r1, .chunk = {}, .number = 11u);
+  PW_ENCODE_PB(TestStreamResponse, r1, .chunk = {}, .number = 11u);
   EXPECT_EQ(OkStatus(), context.SendServerStream(r1));
   EXPECT_TRUE(active_);
   EXPECT_EQ(responses_received_, 1);
   EXPECT_EQ(last_response_number_, 11);
 
-  PW_ENCODE_PB(test::TestStreamResponse, r2, .chunk = {}, .number = 22u);
+  PW_ENCODE_PB(TestStreamResponse, r2, .chunk = {}, .number = 22u);
   EXPECT_EQ(OkStatus(), context.SendServerStream(r2));
   EXPECT_TRUE(active_);
   EXPECT_EQ(responses_received_, 2);
   EXPECT_EQ(last_response_number_, 22);
 
-  PW_ENCODE_PB(test::TestStreamResponse, r3, .chunk = {}, .number = 33u);
+  PW_ENCODE_PB(TestStreamResponse, r3, .chunk = {}, .number = 33u);
   EXPECT_EQ(OkStatus(), context.SendServerStream(r3));
   EXPECT_TRUE(active_);
   EXPECT_EQ(responses_received_, 3);
@@ -321,7 +322,7 @@ TEST_F(ServerStreamingClientCall, InvokesStreamEndOnFinish) {
       context.client(),
       context.channel().id(),
       {.integer = 71, .status_code = 0},
-      [this](const test::TestStreamResponse::Message& response) {
+      [this](const TestStreamResponse::Message& response) {
         ++responses_received_;
         last_response_number_ = response.number;
       },
@@ -330,18 +331,18 @@ TEST_F(ServerStreamingClientCall, InvokesStreamEndOnFinish) {
         stream_status_ = status;
       });
 
-  PW_ENCODE_PB(test::TestStreamResponse, r1, .chunk = {}, .number = 11u);
+  PW_ENCODE_PB(TestStreamResponse, r1, .chunk = {}, .number = 11u);
   EXPECT_EQ(OkStatus(), context.SendServerStream(r1));
   EXPECT_TRUE(active_);
 
-  PW_ENCODE_PB(test::TestStreamResponse, r2, .chunk = {}, .number = 22u);
+  PW_ENCODE_PB(TestStreamResponse, r2, .chunk = {}, .number = 22u);
   EXPECT_EQ(OkStatus(), context.SendServerStream(r2));
   EXPECT_TRUE(active_);
 
   // Close the stream.
   EXPECT_EQ(OkStatus(), context.SendResponse(Status::NotFound()));
 
-  PW_ENCODE_PB(test::TestStreamResponse, r3, .chunk = {}, .number = 33u);
+  PW_ENCODE_PB(TestStreamResponse, r3, .chunk = {}, .number = 33u);
   EXPECT_EQ(OkStatus(), context.SendServerStream(r3));
   EXPECT_FALSE(active_);
 
@@ -355,14 +356,14 @@ TEST_F(ServerStreamingClientCall, InvokesErrorCallbackOnInvalidResponses) {
       context.client(),
       context.channel().id(),
       {.integer = 71, .status_code = 0},
-      [this](const test::TestStreamResponse::Message& response) {
+      [this](const TestStreamResponse::Message& response) {
         ++responses_received_;
         last_response_number_ = response.number;
       },
       nullptr,
       [this](Status error) { rpc_error_ = error; });
 
-  PW_ENCODE_PB(test::TestStreamResponse, r1, .chunk = {}, .number = 11u);
+  PW_ENCODE_PB(TestStreamResponse, r1, .chunk = {}, .number = 11u);
   EXPECT_EQ(OkStatus(), context.SendServerStream(r1));
   EXPECT_TRUE(active_);
   EXPECT_EQ(responses_received_, 1);
@@ -375,15 +376,14 @@ TEST_F(ServerStreamingClientCall, InvokesErrorCallbackOnInvalidResponses) {
   ASSERT_TRUE(rpc_error_.has_value());
   EXPECT_EQ(rpc_error_, Status::DataLoss());
 
-  PW_ENCODE_PB(test::TestStreamResponse, r2, .chunk = {}, .number = 22u);
+  PW_ENCODE_PB(TestStreamResponse, r2, .chunk = {}, .number = 22u);
   EXPECT_EQ(OkStatus(), context.SendServerStream(r2));
   EXPECT_TRUE(active_);
   EXPECT_EQ(responses_received_, 2);
   EXPECT_EQ(last_response_number_, 22);
 
   EXPECT_EQ(OkStatus(),
-            context.SendPacket(internal::PacketType::SERVER_ERROR,
-                               Status::NotFound()));
+            context.SendPacket(PacketType::SERVER_ERROR, Status::NotFound()));
   EXPECT_EQ(responses_received_, 2);
   EXPECT_EQ(rpc_error_, Status::NotFound());
 }

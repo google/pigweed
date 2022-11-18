@@ -43,7 +43,7 @@ PW_NO_INLINE void ConsumeValue(T val) {
 
 #if _PW_PROTOBUF_SIZE_REPORT_NO_CODEGEN
 
-std::array<std::byte, ItemInfo::kMaxEncodedSizeBytes> encode_buffer;
+std::array<std::byte, pwpb::ItemInfo::kMaxEncodedSizeBytes> encode_buffer;
 pw::protobuf::MemoryEncoder generic_encoder(encode_buffer);
 
 PW_NO_INLINE void BasicEncode() {
@@ -54,27 +54,27 @@ PW_NO_INLINE void BasicEncode() {
   ConsumeValue(status);
 }
 
-std::array<std::byte, ItemInfo::kMaxEncodedSizeBytes> decode_buffer;
+std::array<std::byte, pwpb::ItemInfo::kMaxEncodedSizeBytes> decode_buffer;
 pw::protobuf::Decoder generic_decoder(decode_buffer);
 
 PW_NO_INLINE void BasicDecode() {
   while (generic_decoder.Next().ok()) {
     switch (generic_decoder.FieldNumber()) {
-      case static_cast<uint32_t>(ItemInfo::Fields::OFFSET): {
+      case static_cast<uint32_t>(pwpb::ItemInfo::Fields::OFFSET): {
         uint64_t value;
         if (generic_decoder.ReadUint64(&value).ok()) {
           ConsumeValue(value);
         }
         break;
       }
-      case static_cast<uint32_t>(ItemInfo::Fields::SIZE): {
+      case static_cast<uint32_t>(pwpb::ItemInfo::Fields::SIZE): {
         uint32_t value;
         if (generic_decoder.ReadUint32(&value).ok()) {
           ConsumeValue(value);
         }
         break;
       }
-      case static_cast<uint32_t>(ItemInfo::Fields::ACCESS_LEVEL): {
+      case static_cast<uint32_t>(pwpb::ItemInfo::Fields::ACCESS_LEVEL): {
         uint32_t value;
 
         if (generic_decoder.ReadUint32(&value).ok()) {
@@ -89,46 +89,46 @@ PW_NO_INLINE void BasicDecode() {
 
 #if _PW_PROTOBUF_SIZE_REPORT_WIRE_FORMAT
 
-std::array<std::byte, ItemInfo::kMaxEncodedSizeBytes> encode_buffer;
-ItemInfo::MemoryEncoder encoder(encode_buffer);
+std::array<std::byte, pwpb::ItemInfo::kMaxEncodedSizeBytes> encode_buffer;
+pwpb::ItemInfo::MemoryEncoder encoder(encode_buffer);
 
 PW_NO_INLINE void BasicEncode() {
   pw::Status status;
   status.Update(encoder.WriteOffset(0x5001DBADFEEDBEE5));
   status.Update(encoder.WriteSize(128));
-  status.Update(encoder.WriteAccessLevel(ItemInfo::Access::WRITE));
+  status.Update(encoder.WriteAccessLevel(pwpb::ItemInfo::Access::WRITE));
   ConsumeValue(status);
 }
 
-std::array<std::byte, ItemInfo::kMaxEncodedSizeBytes> decode_buffer;
+std::array<std::byte, pwpb::ItemInfo::kMaxEncodedSizeBytes> decode_buffer;
 pw::stream::MemoryReader reader(decode_buffer);
-ItemInfo::StreamDecoder decoder(reader);
+pwpb::ItemInfo::StreamDecoder decoder(reader);
 
 PW_NO_INLINE void BasicDecode() {
   while (decoder.Next().ok()) {
-    pw::Result<ItemInfo::Fields> field = decoder.Field();
+    pw::Result<pwpb::ItemInfo::Fields> field = decoder.Field();
     if (!field.ok()) {
       ConsumeValue(field.status());
       return;
     }
 
     switch (field.value()) {
-      case ItemInfo::Fields::OFFSET: {
+      case pwpb::ItemInfo::Fields::OFFSET: {
         pw::Result<uint64_t> value = decoder.ReadOffset();
         if (value.ok()) {
           ConsumeValue(value);
         }
         break;
       }
-      case ItemInfo::Fields::SIZE: {
+      case pwpb::ItemInfo::Fields::SIZE: {
         pw::Result<uint32_t> value = decoder.ReadSize();
         if (value.ok()) {
           ConsumeValue(value);
         }
         break;
       }
-      case ItemInfo::Fields::ACCESS_LEVEL: {
-        pw::Result<ItemInfo::Access> value = decoder.ReadAccessLevel();
+      case pwpb::ItemInfo::Fields::ACCESS_LEVEL: {
+        pw::Result<pwpb::ItemInfo::Access> value = decoder.ReadAccessLevel();
         if (value.ok()) {
           ConsumeValue(value);
         }
@@ -141,21 +141,21 @@ PW_NO_INLINE void BasicDecode() {
 
 #if _PW_PROTOBUF_SIZE_REPORT_MESSAGE
 
-ItemInfo::Message message;
+pwpb::ItemInfo::Message message;
 
-std::array<std::byte, ItemInfo::kMaxEncodedSizeBytes> encode_buffer;
-ItemInfo::MemoryEncoder encoder(encode_buffer);
+std::array<std::byte, pwpb::ItemInfo::kMaxEncodedSizeBytes> encode_buffer;
+pwpb::ItemInfo::MemoryEncoder encoder(encode_buffer);
 
 PW_NO_INLINE void BasicEncode() {
   message.offset = 0x5001DBADFEEDBEE5;
   message.size = 128;
-  message.access_level = ItemInfo::Access::WRITE;
+  message.access_level = pwpb::ItemInfo::Access::WRITE;
   ConsumeValue(encoder.Write(message));
 }
 
-std::array<std::byte, ItemInfo::kMaxEncodedSizeBytes> decode_buffer;
+std::array<std::byte, pwpb::ItemInfo::kMaxEncodedSizeBytes> decode_buffer;
 pw::stream::MemoryReader reader(decode_buffer);
-ItemInfo::StreamDecoder decoder(reader);
+pwpb::ItemInfo::StreamDecoder decoder(reader);
 
 PW_NO_INLINE void BasicDecode() {
   if (pw::Status status = decoder.Read(message); status.ok()) {

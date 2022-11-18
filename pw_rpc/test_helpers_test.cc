@@ -47,8 +47,8 @@ class EntityUnderTest {
 
   void AskForEcho() {
     call_ = echo_client_.Echo(
-        EchoMessage::Message{},
-        [this](const EchoMessage::Message& response, pw::Status status) {
+        pwpb::EchoMessage::Message{},
+        [this](const pwpb::EchoMessage::Message& response, pw::Status status) {
           lock_.lock();
           if (status.ok()) {
             last_echo_ = response.msg;
@@ -77,7 +77,7 @@ class EntityUnderTest {
 
  private:
   pw_rpc::pwpb::EchoService::Client& echo_client_;
-  PwpbUnaryReceiver<EchoMessage::Message> call_;
+  PwpbUnaryReceiver<pwpb::EchoMessage::Message> call_;
   pw::sync::TimedThreadNotification notifier_;
   pw::Result<pw::InlineString<64>> last_echo_ PW_GUARDED_BY(lock_);
   mutable pw::sync::InterruptSpinLock lock_;

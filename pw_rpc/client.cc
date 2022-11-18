@@ -27,7 +27,7 @@ namespace pw::rpc {
 namespace {
 
 using internal::Packet;
-using internal::PacketType;
+using internal::pwpb::PacketType;
 
 }  // namespace
 

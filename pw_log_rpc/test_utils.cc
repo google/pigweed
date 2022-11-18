@@ -28,7 +28,7 @@
 namespace pw::log_rpc {
 namespace {
 void VerifyOptionallyTokenizedField(protobuf::Decoder& entry_decoder,
-                                    log::LogEntry::Fields field_number,
+                                    log::pwpb::LogEntry::Fields field_number,
                                     ConstByteSpan expected_data) {
   if (expected_data.empty()) {
     return;
@@ -53,12 +53,12 @@ void VerifyLogEntry(protobuf::Decoder& entry_decoder,
                     const TestLogEntry& expected_entry,
                     uint32_t& drop_count_out) {
   VerifyOptionallyTokenizedField(entry_decoder,
-                                 log::LogEntry::Fields::MESSAGE,
+                                 log::pwpb::LogEntry::Fields::MESSAGE,
                                  expected_entry.tokenized_data);
   if (expected_entry.metadata.level()) {
     ASSERT_EQ(entry_decoder.Next(), OkStatus());
     ASSERT_EQ(entry_decoder.FieldNumber(),
-              static_cast<uint32_t>(log::LogEntry::Fields::LINE_LEVEL));
+              static_cast<uint32_t>(log::pwpb::LogEntry::Fields::LINE_LEVEL));
     uint32_t line_level;
     ASSERT_TRUE(entry_decoder.ReadUint32(&line_level).ok());
     EXPECT_EQ(expected_entry.metadata.level(),
@@ -69,18 +69,19 @@ void VerifyLogEntry(protobuf::Decoder& entry_decoder,
   if (expected_entry.metadata.flags()) {
     ASSERT_EQ(entry_decoder.Next(), OkStatus());
     ASSERT_EQ(entry_decoder.FieldNumber(),
-              static_cast<uint32_t>(log::LogEntry::Fields::FLAGS));
+              static_cast<uint32_t>(log::pwpb::LogEntry::Fields::FLAGS));
     uint32_t flags;
     ASSERT_TRUE(entry_decoder.ReadUint32(&flags).ok());
     EXPECT_EQ(expected_entry.metadata.flags(), flags);
   }
   if (expected_entry.timestamp) {
     ASSERT_EQ(entry_decoder.Next(), OkStatus());
-    ASSERT_TRUE(entry_decoder.FieldNumber() ==
-                    static_cast<uint32_t>(log::LogEntry::Fields::TIMESTAMP) ||
-                entry_decoder.FieldNumber() ==
-                    static_cast<uint32_t>(
-                        log::LogEntry::Fields::TIME_SINCE_LAST_ENTRY));
+    ASSERT_TRUE(
+        entry_decoder.FieldNumber() ==
+            static_cast<uint32_t>(log::pwpb::LogEntry::Fields::TIMESTAMP) ||
+        entry_decoder.FieldNumber() ==
+            static_cast<uint32_t>(
+                log::pwpb::LogEntry::Fields::TIME_SINCE_LAST_ENTRY));
     int64_t timestamp;
     ASSERT_TRUE(entry_decoder.ReadInt64(&timestamp).ok());
     EXPECT_EQ(expected_entry.timestamp, timestamp);
@@ -88,7 +89,7 @@ void VerifyLogEntry(protobuf::Decoder& entry_decoder,
   if (expected_entry.dropped) {
     ASSERT_EQ(entry_decoder.Next(), OkStatus());
     ASSERT_EQ(entry_decoder.FieldNumber(),
-              static_cast<uint32_t>(log::LogEntry::Fields::DROPPED));
+              static_cast<uint32_t>(log::pwpb::LogEntry::Fields::DROPPED));
     uint32_t dropped = 0;
     ASSERT_TRUE(entry_decoder.ReadUint32(&dropped).ok());
     EXPECT_EQ(expected_entry.dropped, dropped);
@@ -97,16 +98,17 @@ void VerifyLogEntry(protobuf::Decoder& entry_decoder,
   if (expected_entry.metadata.module()) {
     ASSERT_EQ(entry_decoder.Next(), OkStatus());
     ASSERT_EQ(entry_decoder.FieldNumber(),
-              static_cast<uint32_t>(log::LogEntry::Fields::MODULE));
+              static_cast<uint32_t>(log::pwpb::LogEntry::Fields::MODULE));
     const Result<uint32_t> module =
         protobuf::DecodeBytesToUint32(entry_decoder);
     ASSERT_EQ(module.status(), OkStatus());
     EXPECT_EQ(expected_entry.metadata.module(), module.value());
   }
   VerifyOptionallyTokenizedField(
-      entry_decoder, log::LogEntry::Fields::FILE, expected_entry.file);
-  VerifyOptionallyTokenizedField(
-      entry_decoder, log::LogEntry::Fields::THREAD, expected_entry.thread);
+      entry_decoder, log::pwpb::LogEntry::Fields::FILE, expected_entry.file);
+  VerifyOptionallyTokenizedField(entry_decoder,
+                                 log::pwpb::LogEntry::Fields::THREAD,
+                                 expected_entry.thread);
 }
 
 // Compares an encoded LogEntry's fields against the expected sequence ID and
@@ -120,9 +122,9 @@ void VerifyLogEntries(protobuf::Decoder& entries_decoder,
                       uint32_t& drop_count_out) {
   size_t entry_index = entries_count_out;
   while (entries_decoder.Next().ok()) {
-    if (static_cast<pw::log::LogEntries::Fields>(
+    if (static_cast<log::pwpb::LogEntries::Fields>(
             entries_decoder.FieldNumber()) ==
-        log::LogEntries::Fields::ENTRIES) {
+        log::pwpb::LogEntries::Fields::ENTRIES) {
       ConstByteSpan entry;
       EXPECT_EQ(entries_decoder.ReadBytes(&entry), OkStatus());
       protobuf::Decoder entry_decoder(entry);
@@ -141,9 +143,9 @@ void VerifyLogEntries(protobuf::Decoder& entries_decoder,
       if (current_drop_count == 0) {
         ++entries_count_out;
       }
-    } else if (static_cast<pw::log::LogEntries::Fields>(
+    } else if (static_cast<log::pwpb::LogEntries::Fields>(
                    entries_decoder.FieldNumber()) ==
-               log::LogEntries::Fields::FIRST_ENTRY_SEQUENCE_ID) {
+               log::pwpb::LogEntries::Fields::FIRST_ENTRY_SEQUENCE_ID) {
       uint32_t first_entry_sequence_id = 0;
       EXPECT_EQ(entries_decoder.ReadUint32(&first_entry_sequence_id),
                 OkStatus());
@@ -155,9 +157,9 @@ void VerifyLogEntries(protobuf::Decoder& entries_decoder,
 size_t CountLogEntries(protobuf::Decoder& entries_decoder) {
   size_t entries_found = 0;
   while (entries_decoder.Next().ok()) {
-    if (static_cast<pw::log::LogEntries::Fields>(
+    if (static_cast<log::pwpb::LogEntries::Fields>(
             entries_decoder.FieldNumber()) ==
-        log::LogEntries::Fields::ENTRIES) {
+        log::pwpb::LogEntries::Fields::ENTRIES) {
       ++entries_found;
     }
   }

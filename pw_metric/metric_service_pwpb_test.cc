@@ -34,7 +34,7 @@ size_t CountEncodedMetrics(ConstByteSpan serialized_path) {
   while (decoder.Next().ok()) {
     switch (decoder.FieldNumber()) {
       case static_cast<uint32_t>(
-          pw::metric::proto::MetricResponse::Fields::METRICS): {
+          pw::metric::proto::pwpb::MetricResponse::Fields::METRICS): {
         num_metrics++;
       }
     }
@@ -47,7 +47,8 @@ size_t SumMetricInts(ConstByteSpan serialized_path) {
   size_t metrics_sum = 0;
   while (decoder.Next().ok()) {
     switch (decoder.FieldNumber()) {
-      case static_cast<uint32_t>(pw::metric::proto::Metric::Fields::AS_INT): {
+      case static_cast<uint32_t>(
+          pw::metric::proto::pwpb::Metric::Fields::AS_INT): {
         uint32_t metric_value;
         EXPECT_EQ(OkStatus(), decoder.ReadUint32(&metric_value));
         metrics_sum += metric_value;
@@ -63,7 +64,7 @@ size_t GetMetricsSum(ConstByteSpan serialized_metric_buffer) {
   while (decoder.Next().ok()) {
     switch (decoder.FieldNumber()) {
       case static_cast<uint32_t>(
-          pw::metric::proto::MetricResponse::Fields::METRICS): {
+          pw::metric::proto::pwpb::MetricResponse::Fields::METRICS): {
         ConstByteSpan metric_buffer;
         EXPECT_EQ(OkStatus(), decoder.ReadBytes(&metric_buffer));
         metrics_sum += SumMetricInts(metric_buffer);

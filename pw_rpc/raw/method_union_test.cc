@@ -27,8 +27,8 @@
 namespace pw::rpc::internal {
 namespace {
 
-namespace TestRequest = ::pw::rpc::test::TestRequest;
-namespace TestResponse = ::pw::rpc::test::TestResponse;
+namespace TestRequest = ::pw::rpc::test::pwpb::TestRequest;
+namespace TestResponse = ::pw::rpc::test::pwpb::TestResponse;
 
 template <typename Implementation>
 class FakeGeneratedService : public Service {

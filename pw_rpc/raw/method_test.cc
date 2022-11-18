@@ -31,8 +31,8 @@
 namespace pw::rpc::internal {
 namespace {
 
-namespace TestRequest = ::pw::rpc::test::TestRequest;
-namespace TestResponse = ::pw::rpc::test::TestResponse;
+namespace TestRequest = ::pw::rpc::test::pwpb::TestRequest;
+namespace TestResponse = ::pw::rpc::test::pwpb::TestResponse;
 
 // Create a fake service for use with the MethodImplTester.
 class TestRawService final : public Service {
@@ -204,7 +204,7 @@ TEST(RawMethod, AsyncUnaryRpc0_SendsResponse) {
   kAsyncUnary0.Invoke(context.get(), context.request({}));
 
   const Packet& packet = context.output().last_packet();
-  EXPECT_EQ(PacketType::RESPONSE, packet.type());
+  EXPECT_EQ(pwpb::PacketType::RESPONSE, packet.type());
   EXPECT_EQ(Status::Unknown(), packet.status());
   EXPECT_EQ(context.service_id(), packet.service_id());
   EXPECT_EQ(kAsyncUnary0.id(), packet.method_id());
@@ -274,7 +274,7 @@ TEST(RawServerWriter, Write_SendsPayload) {
   EXPECT_EQ(context.service().last_writer.Write(data), OkStatus());
 
   const internal::Packet& packet = context.output().last_packet();
-  EXPECT_EQ(packet.type(), internal::PacketType::SERVER_STREAM);
+  EXPECT_EQ(packet.type(), pwpb::PacketType::SERVER_STREAM);
   EXPECT_EQ(packet.channel_id(), context.channel_id());
   EXPECT_EQ(packet.service_id(), context.service_id());
   EXPECT_EQ(packet.method_id(), context.get().method().id());
@@ -290,7 +290,7 @@ TEST(RawServerWriter, Write_EmptyBuffer) {
   ASSERT_EQ(context.service().last_writer.Write({}), OkStatus());
 
   const internal::Packet& packet = context.output().last_packet();
-  EXPECT_EQ(packet.type(), internal::PacketType::SERVER_STREAM);
+  EXPECT_EQ(packet.type(), pwpb::PacketType::SERVER_STREAM);
   EXPECT_EQ(packet.channel_id(), context.channel_id());
   EXPECT_EQ(packet.service_id(), context.service_id());
   EXPECT_EQ(packet.method_id(), context.get().method().id());

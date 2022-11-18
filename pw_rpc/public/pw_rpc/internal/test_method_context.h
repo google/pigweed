@@ -76,6 +76,8 @@ class InvocationContext {
   }
 
   void SendClientError(Status error) {
+    using PacketType = ::pw::rpc::internal::pwpb::PacketType;
+
     std::byte packet[kNoPayloadPacketSizeBytes];
     PW_ASSERT(server_
                   .ProcessPacket(Packet(PacketType::CLIENT_ERROR,
@@ -113,6 +115,8 @@ class InvocationContext {
 
   template <size_t kMaxPayloadSize = 32>
   void SendClientStream(ConstByteSpan payload) {
+    using PacketType = ::pw::rpc::internal::pwpb::PacketType;
+
     std::byte packet[kNoPayloadPacketSizeBytes + 3 + kMaxPayloadSize];
     PW_ASSERT(server_
                   .ProcessPacket(Packet(PacketType::CLIENT_STREAM,
@@ -127,6 +131,8 @@ class InvocationContext {
   }
 
   void SendClientStreamEnd() {
+    using PacketType = ::pw::rpc::internal::pwpb::PacketType;
+
     std::byte packet[kNoPayloadPacketSizeBytes];
     PW_ASSERT(server_
                   .ProcessPacket(Packet(PacketType::CLIENT_STREAM_END,

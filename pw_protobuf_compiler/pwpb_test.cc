@@ -16,8 +16,11 @@
 #include "pw_protobuf_compiler_pwpb_protos/pwpb_test.pwpb.h"
 #include "pw_string/string.h"
 
+namespace pw::protobuf_compiler {
+namespace {
+
 TEST(Pwpb, CompilesProtobufs) {
-  pw::protobuf_compiler::Point::Message point = {4, 8, "point"};
+  pwpb::Point::Message point = {4, 8, "point"};
   EXPECT_EQ(point.x, 4u);
   EXPECT_EQ(point.y, 8u);
   EXPECT_EQ(point.name.size(), 5u);
@@ -25,7 +28,7 @@ TEST(Pwpb, CompilesProtobufs) {
 }
 
 TEST(Pwpb, OptionsFilesAreApplied) {
-  pw::protobuf_compiler::OptionsFileExample::Message string_options_comparison;
+  pwpb::OptionsFileExample::Message string_options_comparison;
 
   static_assert(
       std::is_same_v<decltype(string_options_comparison.thirty_two_chars),
@@ -40,8 +43,10 @@ TEST(Pwpb, OptionsFilesAreApplied) {
   static_assert(
       std::is_same_v<
           decltype(string_options_comparison.unspecified_length),
-          pw::protobuf::Callback<
-              pw::protobuf_compiler::OptionsFileExample::StreamEncoder,
-              pw::protobuf_compiler::OptionsFileExample::StreamDecoder>>,
+          pw::protobuf::Callback<pwpb::OptionsFileExample::StreamEncoder,
+                                 pwpb::OptionsFileExample::StreamDecoder>>,
       "The field `unspecified_length` should be a `pw::protobuf::Callback`.");
 }
+
+}  // namespace
+}  // namespace pw::protobuf_compiler

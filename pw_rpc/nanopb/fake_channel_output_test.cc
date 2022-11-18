@@ -40,7 +40,7 @@ TEST(NanopbFakeChannelOutput, Requests) {
 
   std::array<std::byte, 128> buffer;
 
-  auto packet = Packet(PacketType::REQUEST,
+  auto packet = Packet(pwpb::PacketType::REQUEST,
                        1,
                        Info::kServiceId,
                        Info::kMethodId,
@@ -70,7 +70,7 @@ TEST(NanopbFakeChannelOutput, Responses) {
 
   std::array<std::byte, 128> buffer;
 
-  auto packet = Packet(PacketType::RESPONSE,
+  auto packet = Packet(pwpb::PacketType::RESPONSE,
                        1,
                        Info::kServiceId,
                        Info::kMethodId,

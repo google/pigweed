@@ -38,7 +38,7 @@ class FlatFileSystemService
  public:
   class Entry {
    public:
-    using FilePermissions = pw::file::Path::Permissions;
+    using FilePermissions = ::pw::file::pwpb::Path::Permissions;
     using Id = uint32_t;
 
     Entry() = default;
@@ -79,7 +79,7 @@ class FlatFileSystemService
                                                   size_t minimum_entries = 1) {
     return minimum_entries *
            protobuf::SizeOfDelimitedField(
-               ListResponse::Fields::PATHS,
+               pwpb::ListResponse::Fields::PATHS,
                EncodedPathProtoSizeBytes(max_file_name_length));
   }
 
@@ -113,19 +113,19 @@ class FlatFileSystemService
   // Returns the maximum size of a single encoded Path proto.
   static constexpr size_t EncodedPathProtoSizeBytes(
       size_t max_file_name_length) {
-    return protobuf::SizeOfFieldString(Path::Fields::PATH,
+    return protobuf::SizeOfFieldString(pwpb::Path::Fields::PATH,
                                        max_file_name_length) +
-           protobuf::SizeOfFieldEnum(Path::Fields::PERMISSIONS,
-                                     Path::Permissions::READ_AND_WRITE) +
-           protobuf::SizeOfFieldUint32(Path::Fields::SIZE_BYTES) +
-           protobuf::SizeOfFieldUint32(Path::Fields::FILE_ID);
+           protobuf::SizeOfFieldEnum(pwpb::Path::Fields::PERMISSIONS,
+                                     pwpb::Path::Permissions::READ_AND_WRITE) +
+           protobuf::SizeOfFieldUint32(pwpb::Path::Fields::SIZE_BYTES) +
+           protobuf::SizeOfFieldUint32(pwpb::Path::Fields::FILE_ID);
   }
 
   Result<Entry*> FindFile(std::string_view file_name);
   Status FindAndDeleteFile(std::string_view file_name);
 
   Status EnumerateFile(Entry& entry,
-                       pw::file::ListResponse::StreamEncoder& output_encoder);
+                       pwpb::ListResponse::StreamEncoder& output_encoder);
   void EnumerateAllFiles(RawServerWriter& writer);
 
   const span<std::byte> encoding_buffer_;

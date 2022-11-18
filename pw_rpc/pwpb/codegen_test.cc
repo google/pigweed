@@ -29,23 +29,23 @@ namespace test {
 class TestService final
     : public pw_rpc::pwpb::TestService::Service<TestService> {
  public:
-  Status TestUnaryRpc(const TestRequest::Message& request,
-                      TestResponse::Message& response) {
+  Status TestUnaryRpc(const pwpb::TestRequest::Message& request,
+                      pwpb::TestResponse::Message& response) {
     response.value = request.integer + 1;
     return static_cast<Status::Code>(request.status_code);
   }
 
   void TestAnotherUnaryRpc(
-      const TestRequest::Message& request,
-      PwpbUnaryResponder<TestResponse::Message>& responder) {
-    TestResponse::Message response{};
+      const pwpb::TestRequest::Message& request,
+      PwpbUnaryResponder<pwpb::TestResponse::Message>& responder) {
+    pwpb::TestResponse::Message response{};
     EXPECT_EQ(OkStatus(),
               responder.Finish(response, TestUnaryRpc(request, response)));
   }
 
   static void TestServerStreamRpc(
-      const TestRequest::Message& request,
-      ServerWriter<TestStreamResponse::Message>& writer) {
+      const pwpb::TestRequest::Message& request,
+      ServerWriter<pwpb::TestStreamResponse::Message>& writer) {
     for (int i = 0; i < request.integer; ++i) {
       EXPECT_EQ(
           OkStatus(),
@@ -57,19 +57,22 @@ class TestService final
   }
 
   void TestClientStreamRpc(
-      ServerReader<TestRequest::Message, TestStreamResponse::Message>&
-          new_reader) {
+      ServerReader<pwpb::TestRequest::Message,
+                   pwpb::TestStreamResponse::Message>& new_reader) {
     reader = std::move(new_reader);
   }
 
   void TestBidirectionalStreamRpc(
-      ServerReaderWriter<TestRequest::Message, TestStreamResponse::Message>&
+      ServerReaderWriter<pwpb::TestRequest::Message,
+                         pwpb::TestStreamResponse::Message>&
           new_reader_writer) {
     reader_writer = std::move(new_reader_writer);
   }
 
-  ServerReader<TestRequest::Message, TestStreamResponse::Message> reader;
-  ServerReaderWriter<TestRequest::Message, TestStreamResponse::Message>
+  ServerReader<pwpb::TestRequest::Message, pwpb::TestStreamResponse::Message>
+      reader;
+  ServerReaderWriter<pwpb::TestRequest::Message,
+                     pwpb::TestStreamResponse::Message>
       reader_writer;
 };
 
@@ -164,9 +167,11 @@ TEST(PwpbCodegen, Server_InvokeClientStreamingRpc) {
 
   context.call();
 
-  test::TestRequest::Message request = {};
+  test::pwpb::TestRequest::Message request = {};
   context.service().reader.set_on_next(
-      [&request](const test::TestRequest::Message& req) { request = req; });
+      [&request](const test::pwpb::TestRequest::Message& req) {
+        request = req;
+      });
 
   context.SendClientStream({.integer = -99, .status_code = 10});
   EXPECT_EQ(request.integer, -99);
@@ -185,9 +190,11 @@ TEST(PwpbCodegen, Server_InvokeBidirectionalStreamingRpc) {
 
   context.call();
 
-  test::TestRequest::Message request = {};
+  test::pwpb::TestRequest::Message request = {};
   context.service().reader_writer.set_on_next(
-      [&request](const test::TestRequest::Message& req) { request = req; });
+      [&request](const test::pwpb::TestRequest::Message& req) {
+        request = req;
+      });
 
   context.SendClientStream({.integer = -99, .status_code = 10});
   EXPECT_EQ(request.integer, -99);
@@ -203,8 +210,9 @@ TEST(PwpbCodegen, Server_InvokeBidirectionalStreamingRpc) {
 }
 
 TEST(PwpbCodegen, ClientCall_DefaultConstructor) {
-  PwpbUnaryReceiver<test::TestResponse::Message> unary_call;
-  PwpbClientReader<test::TestStreamResponse::Message> server_streaming_call;
+  PwpbUnaryReceiver<test::pwpb::TestResponse::Message> unary_call;
+  PwpbClientReader<test::pwpb::TestStreamResponse::Message>
+      server_streaming_call;
 }
 
 using TestServiceClient = test::pw_rpc::pwpb::TestService::Client;
@@ -224,7 +232,8 @@ TEST(PwpbCodegen, Client_InvokesUnaryRpcWithCallback) {
 
   auto call = test_client.TestUnaryRpc(
       {.integer = 123, .status_code = 0},
-      [&result](const test::TestResponse::Message& response, Status status) {
+      [&result](const test::pwpb::TestResponse::Message& response,
+                Status status) {
         result.last_status = status;
         result.response_value = response.value;
       });
@@ -238,10 +247,10 @@ TEST(PwpbCodegen, Client_InvokesUnaryRpcWithCallback) {
   EXPECT_EQ(packet.channel_id(), context.channel().id());
   EXPECT_EQ(packet.service_id(), kServiceId);
   EXPECT_EQ(packet.method_id(), kMethodId);
-  PW_DECODE_PB(test::TestRequest, sent_proto, packet.payload());
+  PW_DECODE_PB(test::pwpb::TestRequest, sent_proto, packet.payload());
   EXPECT_EQ(sent_proto.integer, 123);
 
-  PW_ENCODE_PB(test::TestResponse, response, .value = 42);
+  PW_ENCODE_PB(test::pwpb::TestResponse, response, .value = 42);
   EXPECT_EQ(OkStatus(), context.SendResponse(OkStatus(), response));
   EXPECT_EQ(result.last_status, OkStatus());
   EXPECT_EQ(result.response_value, 42);
@@ -265,7 +274,7 @@ TEST(PwpbCodegen, Client_InvokesServerStreamingRpcWithCallback) {
 
   auto call = test_client.TestServerStreamRpc(
       {.integer = 123, .status_code = 0},
-      [&result](const test::TestStreamResponse::Message& response) {
+      [&result](const test::pwpb::TestStreamResponse::Message& response) {
         result.active = true;
         result.response_value = response.number;
       },
@@ -283,10 +292,11 @@ TEST(PwpbCodegen, Client_InvokesServerStreamingRpcWithCallback) {
   EXPECT_EQ(packet.channel_id(), context.channel().id());
   EXPECT_EQ(packet.service_id(), kServiceId);
   EXPECT_EQ(packet.method_id(), kMethodId);
-  PW_DECODE_PB(test::TestRequest, sent_proto, packet.payload());
+  PW_DECODE_PB(test::pwpb::TestRequest, sent_proto, packet.payload());
   EXPECT_EQ(sent_proto.integer, 123);
 
-  PW_ENCODE_PB(test::TestStreamResponse, response, .chunk = {}, .number = 11u);
+  PW_ENCODE_PB(
+      test::pwpb::TestStreamResponse, response, .chunk = {}, .number = 11u);
   EXPECT_EQ(OkStatus(), context.SendServerStream(response));
   EXPECT_TRUE(result.active);
   EXPECT_EQ(result.response_value, 11);
@@ -311,7 +321,8 @@ TEST(PwpbCodegen, Client_StaticMethod_InvokesUnaryRpcWithCallback) {
       context.client(),
       context.channel().id(),
       {.integer = 123, .status_code = 0},
-      [&result](const test::TestResponse::Message& response, Status status) {
+      [&result](const test::pwpb::TestResponse::Message& response,
+                Status status) {
         result.last_status = status;
         result.response_value = response.value;
       });
@@ -325,10 +336,10 @@ TEST(PwpbCodegen, Client_StaticMethod_InvokesUnaryRpcWithCallback) {
   EXPECT_EQ(packet.channel_id(), context.channel().id());
   EXPECT_EQ(packet.service_id(), kServiceId);
   EXPECT_EQ(packet.method_id(), kMethodId);
-  PW_DECODE_PB(test::TestRequest, sent_proto, packet.payload());
+  PW_DECODE_PB(test::pwpb::TestRequest, sent_proto, packet.payload());
   EXPECT_EQ(sent_proto.integer, 123);
 
-  PW_ENCODE_PB(test::TestResponse, response, .value = 42);
+  PW_ENCODE_PB(test::pwpb::TestResponse, response, .value = 42);
   EXPECT_EQ(OkStatus(), context.SendResponse(OkStatus(), response));
   EXPECT_EQ(result.last_status, OkStatus());
   EXPECT_EQ(result.response_value, 42);
@@ -350,7 +361,7 @@ TEST(PwpbCodegen, Client_StaticMethod_InvokesServerStreamingRpcWithCallback) {
       context.client(),
       context.channel().id(),
       {.integer = 123, .status_code = 0},
-      [&result](const test::TestStreamResponse::Message& response) {
+      [&result](const test::pwpb::TestStreamResponse::Message& response) {
         result.active = true;
         result.response_value = response.number;
       },
@@ -368,10 +379,11 @@ TEST(PwpbCodegen, Client_StaticMethod_InvokesServerStreamingRpcWithCallback) {
   EXPECT_EQ(packet.channel_id(), context.channel().id());
   EXPECT_EQ(packet.service_id(), kServiceId);
   EXPECT_EQ(packet.method_id(), kMethodId);
-  PW_DECODE_PB(test::TestRequest, sent_proto, packet.payload());
+  PW_DECODE_PB(test::pwpb::TestRequest, sent_proto, packet.payload());
   EXPECT_EQ(sent_proto.integer, 123);
 
-  PW_ENCODE_PB(test::TestStreamResponse, response, .chunk = {}, .number = 11u);
+  PW_ENCODE_PB(
+      test::pwpb::TestStreamResponse, response, .chunk = {}, .number = 11u);
   EXPECT_EQ(OkStatus(), context.SendServerStream(response));
   EXPECT_TRUE(result.active);
   EXPECT_EQ(result.response_value, 11);

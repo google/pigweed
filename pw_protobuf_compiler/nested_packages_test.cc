@@ -19,14 +19,15 @@
 #include "proto_root/data_type/thing/thing.pwpb.h"
 #include "proto_root/data_type/thing/type_of_thing.pwpb.h"
 
+namespace pw::protobuf_compiler {
+namespace {
+
 TEST(NestedPackages, CompilesProtobufs) {
-  using Aggregate = pw::protobuf_compiler::proto_root::Aggregate::Message;
-  using AggregateWrapper =
-      pw::protobuf_compiler::proto_root::AggregateWrapper::Message;
-  using Id = pw::protobuf_compiler::proto_root::data_type::id::Id::Message;
-  using Thing =
-      pw::protobuf_compiler::proto_root::data_type::thing::Thing::Message;
-  using pw::protobuf_compiler::proto_root::data_type::thing::TypeOfThing;
+  using Aggregate = proto_root::pwpb::Aggregate::Message;
+  using AggregateWrapper = proto_root::pwpb::AggregateWrapper::Message;
+  using Id = proto_root::data_type::id::pwpb::Id::Message;
+  using Thing = proto_root::data_type::thing::pwpb::Thing::Message;
+  using proto_root::data_type::thing::pwpb::TypeOfThing;
 
   AggregateWrapper wrapper = {
       Id{0u, {1, 2}},
@@ -66,3 +67,6 @@ TEST(NestedPackages, CompilesProtobufs) {
   EXPECT_EQ(wrapper.aggregate.mountain.id.impl.bar, 6);
   EXPECT_EQ(wrapper.aggregate.mountain.type, TypeOfThing::kObject);
 }
+
+}  // namespace
+}  // namespace pw::protobuf_compiler

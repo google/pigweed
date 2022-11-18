@@ -28,9 +28,9 @@ namespace pw::snapshot {
 namespace {
 
 ConstByteSpan EncodeSnapshotWithUuid(ConstByteSpan uuid, ByteSpan dest) {
-  SnapshotBasicInfo::MemoryEncoder snapshot_encoder(dest);
+  pwpb::SnapshotBasicInfo::MemoryEncoder snapshot_encoder(dest);
   {
-    Metadata::StreamEncoder metadata_encoder =
+    pwpb::Metadata::StreamEncoder metadata_encoder =
         snapshot_encoder.GetMetadataEncoder();
     EXPECT_EQ(OkStatus(), metadata_encoder.WriteSnapshotUuid(uuid));
   }
@@ -57,9 +57,9 @@ TEST(ReadUuid, NoUuid) {
   std::array<std::byte, 16> snapshot_buffer;
 
   // Write some snapshot metadata, but no UUID.
-  SnapshotBasicInfo::MemoryEncoder snapshot_encoder(snapshot_buffer);
+  pwpb::SnapshotBasicInfo::MemoryEncoder snapshot_encoder(snapshot_buffer);
   {
-    Metadata::StreamEncoder metadata_encoder =
+    pwpb::Metadata::StreamEncoder metadata_encoder =
         snapshot_encoder.GetMetadataEncoder();
     EXPECT_EQ(OkStatus(), metadata_encoder.WriteFatal(true));
   }

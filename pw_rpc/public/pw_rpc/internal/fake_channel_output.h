@@ -121,8 +121,8 @@ class FakeChannelOutput : public ChannelOutput {
       const PW_LOCKS_EXCLUDED(mutex_) {
     LockGuard lock(mutex_);
     return StatusView(packets_,
-                      internal::PacketType::RESPONSE,
-                      internal::PacketType::RESPONSE,
+                      internal::pwpb::PacketType::RESPONSE,
+                      internal::pwpb::PacketType::RESPONSE,
                       channel_id,
                       MethodInfo<kMethod>::kServiceId,
                       MethodInfo<kMethod>::kMethodId);
@@ -140,8 +140,8 @@ class FakeChannelOutput : public ChannelOutput {
       PW_LOCKS_EXCLUDED(mutex_) {
     LockGuard lock(mutex_);
     return StatusView(packets_,
-                      internal::PacketType::CLIENT_ERROR,
-                      internal::PacketType::SERVER_ERROR,
+                      internal::pwpb::PacketType::CLIENT_ERROR,
+                      internal::pwpb::PacketType::SERVER_ERROR,
                       channel_id,
                       MethodInfo<kMethod>::kServiceId,
                       MethodInfo<kMethod>::kMethodId);
@@ -157,8 +157,8 @@ class FakeChannelOutput : public ChannelOutput {
     return internal::test::PacketsView(
                packets_,
                internal::test::PacketFilter(
-                   internal::PacketType::CLIENT_STREAM_END,
-                   internal::PacketType::CLIENT_STREAM_END,
+                   internal::pwpb::PacketType::CLIENT_STREAM_END,
+                   internal::pwpb::PacketType::CLIENT_STREAM_END,
                    channel_id,
                    MethodInfo<kMethod>::kServiceId,
                    MethodInfo<kMethod>::kMethodId))

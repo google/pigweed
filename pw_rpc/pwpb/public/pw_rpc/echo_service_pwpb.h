@@ -20,8 +20,8 @@ namespace pw::rpc {
 class EchoService final
     : public pw_rpc::pwpb::EchoService::Service<EchoService> {
  public:
-  Status Echo(const EchoMessage::Message& request,
-              EchoMessage::Message& response) {
+  Status Echo(const pwpb::EchoMessage::Message& request,
+              pwpb::EchoMessage::Message& response) {
     response.msg = request.msg;
     return OkStatus();
   }

@@ -39,8 +39,8 @@ Result<uint32_t> ExtractChannelId(ConstByteSpan packet) {
   protobuf::Decoder decoder(packet);
 
   while (decoder.Next().ok()) {
-    if (static_cast<internal::RpcPacket::Fields>(decoder.FieldNumber()) !=
-        internal::RpcPacket::Fields::CHANNEL_ID) {
+    if (static_cast<internal::pwpb::RpcPacket::Fields>(decoder.FieldNumber()) !=
+        internal::pwpb::RpcPacket::Fields::CHANNEL_ID) {
       continue;
     }
     uint32_t channel_id;

@@ -33,12 +33,13 @@ namespace {
 
 // Creates an encoded drop message on the provided buffer and adds it to the
 // bulk log entries. Resets the drop count when successfull.
-void TryEncodeDropMessage(ByteSpan encoded_drop_message_buffer,
-                          std::string_view reason,
-                          uint32_t& drop_count,
-                          log::LogEntries::MemoryEncoder& entries_encoder) {
+void TryEncodeDropMessage(
+    ByteSpan encoded_drop_message_buffer,
+    std::string_view reason,
+    uint32_t& drop_count,
+    log::pwpb::LogEntries::MemoryEncoder& entries_encoder) {
   // Encode drop count and reason, if any, in log proto.
-  log::LogEntry::MemoryEncoder encoder(encoded_drop_message_buffer);
+  log::pwpb::LogEntry::MemoryEncoder encoder(encoded_drop_message_buffer);
   if (!reason.empty()) {
     encoder.WriteMessage(as_bytes(span<const char>(reason))).IgnoreError();
   }
@@ -51,7 +52,8 @@ void TryEncodeDropMessage(ByteSpan encoded_drop_message_buffer,
   if (drop_message.size() + RpcLogDrain::kLogEntriesEncodeFrameSize <
       entries_encoder.ConservativeWriteLimit()) {
     PW_CHECK_OK(entries_encoder.WriteBytes(
-        static_cast<uint32_t>(log::LogEntries::Fields::ENTRIES), drop_message));
+        static_cast<uint32_t>(log::pwpb::LogEntries::Fields::ENTRIES),
+        drop_message));
     drop_count = 0;
   }
 }
@@ -113,7 +115,7 @@ RpcLogDrain::LogDrainState RpcLogDrain::SendLogs(size_t max_num_bundles,
       // No reason to keep polling this drain until the writer is opened.
       return LogDrainState::kCaughtUp;
     }
-    log::LogEntries::MemoryEncoder encoder(encoding_buffer);
+    log::pwpb::LogEntries::MemoryEncoder encoder(encoding_buffer);
     uint32_t packed_entry_count = 0;
     log_sink_state = EncodeOutgoingPacket(encoder, packed_entry_count);
 
@@ -141,7 +143,8 @@ RpcLogDrain::LogDrainState RpcLogDrain::SendLogs(size_t max_num_bundles,
 }
 
 RpcLogDrain::LogDrainState RpcLogDrain::EncodeOutgoingPacket(
-    log::LogEntries::MemoryEncoder& encoder, uint32_t& packed_entry_count_out) {
+    log::pwpb::LogEntries::MemoryEncoder& encoder,
+    uint32_t& packed_entry_count_out) {
   const size_t total_buffer_size = encoder.ConservativeWriteLimit();
   do {
     // Peek entry and get drop count from multisink.
@@ -245,7 +248,7 @@ RpcLogDrain::LogDrainState RpcLogDrain::EncodeOutgoingPacket(
 
     // Encode the entry and remove it from multisink.
     PW_CHECK_OK(encoder.WriteBytes(
-        static_cast<uint32_t>(log::LogEntries::Fields::ENTRIES),
+        static_cast<uint32_t>(log::pwpb::LogEntries::Fields::ENTRIES),
         possible_entry.value().entry()));
     PW_CHECK_OK(PopEntry(possible_entry.value()));
     ++packed_entry_count_out;

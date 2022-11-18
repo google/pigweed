@@ -47,7 +47,8 @@ class FakeServer {
                 HasServerStream(internal::MethodInfo<kMethod>::kType)>>
   void SendResponse(Status status,
                     std::optional<uint32_t> call_id = std::nullopt) const {
-    SendPacket<kMethod>(internal::PacketType::RESPONSE, {}, status, call_id);
+    SendPacket<kMethod>(
+        internal::pwpb::PacketType::RESPONSE, {}, status, call_id);
   }
 
   // Sends a response packet for a unary or client streaming streaming RPC to
@@ -59,7 +60,7 @@ class FakeServer {
                     Status status,
                     std::optional<uint32_t> call_id = std::nullopt) const {
     SendPacket<kMethod>(
-        internal::PacketType::RESPONSE, payload, status, call_id);
+        internal::pwpb::PacketType::RESPONSE, payload, status, call_id);
   }
 
   // Sends a stream packet for a server or bidirectional streaming RPC to the
@@ -70,20 +71,23 @@ class FakeServer {
     static_assert(HasServerStream(internal::MethodInfo<kMethod>::kType),
                   "Only server and bidirectional streaming methods can receive "
                   "server stream packets");
-    SendPacket<kMethod>(
-        internal::PacketType::SERVER_STREAM, payload, OkStatus(), call_id);
+    SendPacket<kMethod>(internal::pwpb::PacketType::SERVER_STREAM,
+                        payload,
+                        OkStatus(),
+                        call_id);
   }
 
   // Sends a server error packet to the client.
   template <auto kMethod>
   void SendServerError(Status error,
                        std::optional<uint32_t> call_id = std::nullopt) const {
-    SendPacket<kMethod>(internal::PacketType::SERVER_ERROR, {}, error, call_id);
+    SendPacket<kMethod>(
+        internal::pwpb::PacketType::SERVER_ERROR, {}, error, call_id);
   }
 
  private:
   template <auto kMethod>
-  void SendPacket(internal::PacketType type,
+  void SendPacket(internal::pwpb::PacketType type,
                   ConstByteSpan payload,
                   Status status,
                   std::optional<uint32_t> call_id) const {
@@ -92,14 +96,14 @@ class FakeServer {
         type, Info::kServiceId, Info::kMethodId, call_id, payload, status);
   }
 
-  void CheckProcessPacket(internal::PacketType type,
+  void CheckProcessPacket(internal::pwpb::PacketType type,
                           uint32_t service_id,
                           uint32_t method_id,
                           std::optional<uint32_t> call_id,
                           ConstByteSpan payload,
                           Status status) const;
 
-  Status ProcessPacket(internal::PacketType type,
+  Status ProcessPacket(internal::pwpb::PacketType type,
                        uint32_t service_id,
                        uint32_t method_id,
                        std::optional<uint32_t> call_id,

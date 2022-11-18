@@ -40,15 +40,16 @@ namespace pw::log_rpc {
 
 // RpcLogDrain matches a MultiSink::Drain with with an RPC channel's writer. A
 // RPC channel ID identifies this drain. The user must attach this drain
-// to a MultiSink that returns a log::LogEntry, and provide a buffer large
-// enough to hold the largest log::LogEntry transmittable. The user must call
-// Flush(), which, on every call, packs as many log::LogEntry items as possible
-// into a log::LogEntries message, writes the message to the provided writer,
-// then repeats the process until there are no more entries in the MultiSink or
-// the writer failed to write the outgoing package and error_handling is set to
-// `kCloseStreamOnWriterError`. When error_handling is `kIgnoreWriterErrors` the
-// drain will continue to retrieve log entries out of the MultiSink and attempt
-// to send them out ignoring the writer errors without sending a drop count.
+// to a MultiSink that returns a log::pwpb::LogEntry, and provide a buffer large
+// enough to hold the largest log::pwpb::LogEntry transmittable. The user must
+// call Flush(), which, on every call, packs as many log::pwpb::LogEntry items
+// as possible into a log::pwpb::LogEntries message, writes the message to the
+// provided writer, then repeats the process until there are no more entries in
+// the MultiSink or the writer failed to write the outgoing package and
+// error_handling is set to `kCloseStreamOnWriterError`. When error_handling is
+// `kIgnoreWriterErrors` the drain will continue to retrieve log entries out of
+// the MultiSink and attempt to send them out ignoring the writer errors without
+// sending a drop count.
 // Note: the error handling and drop count reporting might change in the future.
 // Log filtering is done using the rules of the Filter provided if any.
 class RpcLogDrain : public multisink::MultiSink::Drain {
@@ -60,17 +61,18 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
   };
 
   // The minimum buffer size, without the message payload or module sizes,
-  // needed to retrieve a log::LogEntry from the attached MultiSink. The user
-  // must account for the max message size to avoid log entry drops. The dropped
-  // field is not accounted since a dropped message has all other fields unset.
+  // needed to retrieve a log::pwpb::LogEntry from the attached MultiSink. The
+  // user must account for the max message size to avoid log entry drops. The
+  // dropped field is not accounted since a dropped message has all other fields
+  // unset.
   static constexpr size_t kMinEntrySizeWithoutPayload =
-      protobuf::SizeOfFieldBytes(log::LogEntry::Fields::MESSAGE, 0) +
-      protobuf::SizeOfFieldUint32(log::LogEntry::Fields::LINE_LEVEL) +
-      protobuf::SizeOfFieldUint32(log::LogEntry::Fields::FLAGS) +
-      protobuf::SizeOfFieldInt64(log::LogEntry::Fields::TIMESTAMP) +
-      protobuf::SizeOfFieldBytes(log::LogEntry::Fields::MODULE, 0) +
-      protobuf::SizeOfFieldBytes(log::LogEntry::Fields::FILE, 0) +
-      protobuf::SizeOfFieldBytes(log::LogEntry::Fields::THREAD, 0);
+      protobuf::SizeOfFieldBytes(log::pwpb::LogEntry::Fields::MESSAGE, 0) +
+      protobuf::SizeOfFieldUint32(log::pwpb::LogEntry::Fields::LINE_LEVEL) +
+      protobuf::SizeOfFieldUint32(log::pwpb::LogEntry::Fields::FLAGS) +
+      protobuf::SizeOfFieldInt64(log::pwpb::LogEntry::Fields::TIMESTAMP) +
+      protobuf::SizeOfFieldBytes(log::pwpb::LogEntry::Fields::MODULE, 0) +
+      protobuf::SizeOfFieldBytes(log::pwpb::LogEntry::Fields::FILE, 0) +
+      protobuf::SizeOfFieldBytes(log::pwpb::LogEntry::Fields::THREAD, 0);
 
   // Error messages sent when logs are dropped.
   static constexpr std::string_view kIngressErrorMessage{
@@ -99,14 +101,14 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
   // bytes added to the encoded LogEntry. This constant and kMinEntryBufferSize
   // can be used to calculate the minimum RPC ChannelOutput buffer size.
   static constexpr size_t kLogEntriesEncodeFrameSize =
-      protobuf::TagSizeBytes(log::LogEntries::Fields::ENTRIES) +
+      protobuf::TagSizeBytes(log::pwpb::LogEntries::Fields::ENTRIES) +
       protobuf::kMaxSizeOfLength +
       protobuf::SizeOfFieldUint32(
-          log::LogEntries::Fields::FIRST_ENTRY_SEQUENCE_ID);
+          log::pwpb::LogEntries::Fields::FIRST_ENTRY_SEQUENCE_ID);
 
   // Creates a closed log stream with a writer that can be set at a later time.
   // The provided buffer must be large enough to hold the largest transmittable
-  // log::LogEntry or a drop count message at the very least. The user can
+  // log::pwpb::LogEntry or a drop count message at the very least. The user can
   // choose to provide a unique mutex for the drain, or share it to save RAM as
   // long as they are aware of contengency issues.
   RpcLogDrain(
@@ -210,9 +212,9 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
                          Status& encoding_status) PW_LOCKS_EXCLUDED(mutex_);
 
   // Fills the outgoing buffer with as many entries as possible.
-  LogDrainState EncodeOutgoingPacket(log::LogEntries::MemoryEncoder& encoder,
-                                     uint32_t& packed_entry_count_out)
-      PW_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  LogDrainState EncodeOutgoingPacket(
+      log::pwpb::LogEntries::MemoryEncoder& encoder,
+      uint32_t& packed_entry_count_out) PW_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   const uint32_t channel_id_;
   const LogDrainErrorHandling error_handling_;

@@ -26,9 +26,13 @@
 namespace pw::rpc {
 namespace {
 
+namespace TestRequest = ::pw::rpc::test::pwpb::TestRequest;
+namespace TestResponse = ::pw::rpc::test::pwpb::TestResponse;
+namespace TestStreamResponse = ::pw::rpc::test::pwpb::TestStreamResponse;
+
 Vector<std::byte, 64> EncodeRequest(int integer, Status status) {
   Vector<std::byte, 64> buffer(64);
-  test::TestRequest::MemoryEncoder test_request(buffer);
+  TestRequest::MemoryEncoder test_request(buffer);
 
   EXPECT_EQ(OkStatus(), test_request.WriteInteger(integer));
   EXPECT_EQ(OkStatus(), test_request.WriteStatusCode(status.code()));
@@ -40,7 +44,7 @@ Vector<std::byte, 64> EncodeRequest(int integer, Status status) {
 
 Vector<std::byte, 64> EncodeResponse(int number) {
   Vector<std::byte, 64> buffer(64);
-  test::TestStreamResponse::MemoryEncoder test_response(buffer);
+  TestStreamResponse::MemoryEncoder test_response(buffer);
 
   EXPECT_EQ(OkStatus(), test_response.WriteNumber(number));
 
@@ -212,14 +216,14 @@ TEST(RawCodegen, Server_InvokeUnaryRpc) {
   protobuf::Decoder decoder(context.response());
 
   while (decoder.Next().ok()) {
-    switch (static_cast<test::TestResponse::Fields>(decoder.FieldNumber())) {
-      case test::TestResponse::Fields::VALUE: {
+    switch (static_cast<TestResponse::Fields>(decoder.FieldNumber())) {
+      case TestResponse::Fields::VALUE: {
         int32_t value;
         EXPECT_EQ(OkStatus(), decoder.ReadInt32(&value));
         EXPECT_EQ(value, 124);
         break;
       }
-      case test::TestResponse::Fields::REPEATED_FIELD:
+      case TestResponse::Fields::REPEATED_FIELD:
         break;  // Ignore this field
     }
   }
@@ -234,14 +238,14 @@ TEST(RawCodegen, Server_InvokeAsyncUnaryRpc) {
   protobuf::Decoder decoder(context.response());
 
   while (decoder.Next().ok()) {
-    switch (static_cast<test::TestResponse::Fields>(decoder.FieldNumber())) {
-      case test::TestResponse::Fields::VALUE: {
+    switch (static_cast<TestResponse::Fields>(decoder.FieldNumber())) {
+      case TestResponse::Fields::VALUE: {
         int32_t value;
         EXPECT_EQ(OkStatus(), decoder.ReadInt32(&value));
         EXPECT_EQ(value, 124);
         break;
       }
-      case test::TestResponse::Fields::REPEATED_FIELD:
+      case TestResponse::Fields::REPEATED_FIELD:
         break;  // Ignore this field
     }
   }
@@ -321,15 +325,14 @@ TEST(RawCodegen, Server_InvokeServerStreamingRpc) {
 
   protobuf::Decoder decoder(context.responses().back());
   while (decoder.Next().ok()) {
-    switch (
-        static_cast<test::TestStreamResponse::Fields>(decoder.FieldNumber())) {
-      case test::TestStreamResponse::Fields::NUMBER: {
+    switch (static_cast<TestStreamResponse::Fields>(decoder.FieldNumber())) {
+      case TestStreamResponse::Fields::NUMBER: {
         int32_t value;
         EXPECT_EQ(OkStatus(), decoder.ReadInt32(&value));
         EXPECT_EQ(value, 4);
         break;
       }
-      case test::TestStreamResponse::Fields::CHUNK:
+      case TestStreamResponse::Fields::CHUNK:
         FAIL();
         break;
     }
@@ -340,13 +343,12 @@ int32_t ReadResponseNumber(ConstByteSpan data) {
   int32_t value = -1;
   protobuf::Decoder decoder(data);
   while (decoder.Next().ok()) {
-    switch (
-        static_cast<test::TestStreamResponse::Fields>(decoder.FieldNumber())) {
-      case test::TestStreamResponse::Fields::NUMBER: {
+    switch (static_cast<TestStreamResponse::Fields>(decoder.FieldNumber())) {
+      case TestStreamResponse::Fields::NUMBER: {
         EXPECT_EQ(OkStatus(), decoder.ReadInt32(&value));
         break;
       }
-      case test::TestStreamResponse::Fields::CHUNK:
+      case TestStreamResponse::Fields::CHUNK:
       default:
         ADD_FAILURE();
         break;

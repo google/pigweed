@@ -120,44 +120,45 @@ class FakeServiceBase : public Service {
   static constexpr std::array<PwpbMethodUnion, 5> kMethods = {
       PwpbMethod::SynchronousUnary<&Impl::DoNothing>(
           10u,
-          kPwpbMethodSerde<&pw::rpc::test::Empty::kMessageFields,
-                           &pw::rpc::test::Empty::kMessageFields>),
+          kPwpbMethodSerde<&pw::rpc::test::pwpb::Empty::kMessageFields,
+                           &pw::rpc::test::pwpb::Empty::kMessageFields>),
       PwpbMethod::AsynchronousUnary<&Impl::AddFive>(
           11u,
-          kPwpbMethodSerde<&pw::rpc::test::TestRequest::kMessageFields,
-                           &pw::rpc::test::TestResponse::kMessageFields>),
+          kPwpbMethodSerde<&pw::rpc::test::pwpb::TestRequest::kMessageFields,
+                           &pw::rpc::test::pwpb::TestResponse::kMessageFields>),
       PwpbMethod::ServerStreaming<&Impl::StartStream>(
           12u,
-          kPwpbMethodSerde<&pw::rpc::test::TestRequest::kMessageFields,
-                           &pw::rpc::test::TestResponse::kMessageFields>),
+          kPwpbMethodSerde<&pw::rpc::test::pwpb::TestRequest::kMessageFields,
+                           &pw::rpc::test::pwpb::TestResponse::kMessageFields>),
       PwpbMethod::ClientStreaming<&Impl::ClientStream>(
           13u,
-          kPwpbMethodSerde<&pw::rpc::test::TestRequest::kMessageFields,
-                           &pw::rpc::test::TestResponse::kMessageFields>),
+          kPwpbMethodSerde<&pw::rpc::test::pwpb::TestRequest::kMessageFields,
+                           &pw::rpc::test::pwpb::TestResponse::kMessageFields>),
       PwpbMethod::BidirectionalStreaming<&Impl::BidirectionalStream>(
           14u,
-          kPwpbMethodSerde<&pw::rpc::test::TestRequest::kMessageFields,
-                           &pw::rpc::test::TestResponse::kMessageFields>)};
+          kPwpbMethodSerde<&pw::rpc::test::pwpb::TestRequest::kMessageFields,
+                           &pw::rpc::test::pwpb::TestResponse::kMessageFields>),
+  };
 };
 
 class FakeService : public FakeServiceBase<FakeService> {
  public:
   FakeService(uint32_t id) : FakeServiceBase(id) {}
 
-  Status DoNothing(const pw::rpc::test::Empty::Message&,
-                   pw::rpc::test::Empty::Message&) {
+  Status DoNothing(const pw::rpc::test::pwpb::Empty::Message&,
+                   pw::rpc::test::pwpb::Empty::Message&) {
     return Status::Unknown();
   }
 
-  void AddFive(
-      const pw::rpc::test::TestRequest::Message& request,
-      PwpbUnaryResponder<pw::rpc::test::TestResponse::Message>& responder) {
+  void AddFive(const pw::rpc::test::pwpb::TestRequest::Message& request,
+               PwpbUnaryResponder<pw::rpc::test::pwpb::TestResponse::Message>&
+                   responder) {
     last_request = request;
 
     if (fail_to_encode_async_unary_response) {
-      pw::rpc::test::TestResponse::Message response = {};
+      pw::rpc::test::pwpb::TestResponse::Message response = {};
       response.repeated_field.SetEncoder(
-          [](const pw::rpc::test::TestResponse::StreamEncoder&) {
+          [](const pw::rpc::test::pwpb::TestResponse::StreamEncoder&) {
             return Status::Internal();
           });
       ASSERT_EQ(OkStatus(), responder.Finish(response, Status::NotFound()));
@@ -170,34 +171,34 @@ class FakeService : public FakeServiceBase<FakeService> {
   }
 
   void StartStream(
-      const pw::rpc::test::TestRequest::Message& request,
-      PwpbServerWriter<pw::rpc::test::TestResponse::Message>& writer) {
+      const pw::rpc::test::pwpb::TestRequest::Message& request,
+      PwpbServerWriter<pw::rpc::test::pwpb::TestResponse::Message>& writer) {
     last_request = request;
     last_writer = std::move(writer);
   }
 
   void ClientStream(
-      PwpbServerReader<pw::rpc::test::TestRequest::Message,
-                       pw::rpc::test::TestResponse::Message>& reader) {
+      PwpbServerReader<pw::rpc::test::pwpb::TestRequest::Message,
+                       pw::rpc::test::pwpb::TestResponse::Message>& reader) {
     last_reader = std::move(reader);
   }
 
   void BidirectionalStream(
-      PwpbServerReaderWriter<pw::rpc::test::TestRequest::Message,
-                             pw::rpc::test::TestResponse::Message>&
+      PwpbServerReaderWriter<pw::rpc::test::pwpb::TestRequest::Message,
+                             pw::rpc::test::pwpb::TestResponse::Message>&
           reader_writer) {
     last_reader_writer = std::move(reader_writer);
   }
 
   bool fail_to_encode_async_unary_response = false;
 
-  pw::rpc::test::TestRequest::Message last_request;
-  PwpbServerWriter<pw::rpc::test::TestResponse::Message> last_writer;
-  PwpbServerReader<pw::rpc::test::TestRequest::Message,
-                   pw::rpc::test::TestResponse::Message>
+  pw::rpc::test::pwpb::TestRequest::Message last_request;
+  PwpbServerWriter<pw::rpc::test::pwpb::TestResponse::Message> last_writer;
+  PwpbServerReader<pw::rpc::test::pwpb::TestRequest::Message,
+                   pw::rpc::test::pwpb::TestResponse::Message>
       last_reader;
-  PwpbServerReaderWriter<pw::rpc::test::TestRequest::Message,
-                         pw::rpc::test::TestResponse::Message>
+  PwpbServerReaderWriter<pw::rpc::test::pwpb::TestRequest::Message,
+                         pw::rpc::test::pwpb::TestResponse::Message>
       last_reader_writer;
 };
 
@@ -213,8 +214,10 @@ constexpr const PwpbMethod& kBidirectionalStream =
     std::get<4>(FakeServiceBase<FakeService>::kMethods).pwpb_method();
 
 TEST(PwpbMethod, AsyncUnaryRpc_SendsResponse) {
-  PW_ENCODE_PB(
-      pw::rpc::test::TestRequest, request, .integer = 123, .status_code = 0);
+  PW_ENCODE_PB(pw::rpc::test::pwpb::TestRequest,
+               request,
+               .integer = 123,
+               .status_code = 0);
 
   ServerContextForTest<FakeService> context(kAsyncUnary);
   rpc_lock().lock();
@@ -242,7 +245,7 @@ TEST(PwpbMethod, SyncUnaryRpc_InvalidPayload_SendsError) {
   kSyncUnary.Invoke(context.get(), context.request(bad_payload));
 
   const Packet& packet = context.output().last_packet();
-  EXPECT_EQ(PacketType::SERVER_ERROR, packet.type());
+  EXPECT_EQ(pwpb::PacketType::SERVER_ERROR, packet.type());
   EXPECT_EQ(Status::DataLoss(), packet.status());
   EXPECT_EQ(context.service_id(), packet.service_id());
   EXPECT_EQ(kSyncUnary.id(), packet.method_id());
@@ -250,8 +253,10 @@ TEST(PwpbMethod, SyncUnaryRpc_InvalidPayload_SendsError) {
 
 TEST(PwpbMethod, AsyncUnaryRpc_ResponseEncodingFails_SendsInternalError) {
   constexpr int64_t value = 0x7FFFFFFF'FFFFFF00ll;
-  PW_ENCODE_PB(
-      pw::rpc::test::TestRequest, request, .integer = value, .status_code = 0);
+  PW_ENCODE_PB(pw::rpc::test::pwpb::TestRequest,
+               request,
+               .integer = value,
+               .status_code = 0);
 
   ServerContextForTest<FakeService> context(kAsyncUnary);
   context.service().fail_to_encode_async_unary_response = true;
@@ -260,7 +265,7 @@ TEST(PwpbMethod, AsyncUnaryRpc_ResponseEncodingFails_SendsInternalError) {
   kAsyncUnary.Invoke(context.get(), context.request(request));
 
   const Packet& packet = context.output().last_packet();
-  EXPECT_EQ(PacketType::SERVER_ERROR, packet.type());
+  EXPECT_EQ(pwpb::PacketType::SERVER_ERROR, packet.type());
   EXPECT_EQ(Status::Internal(), packet.status());
   EXPECT_EQ(context.service_id(), packet.service_id());
   EXPECT_EQ(kAsyncUnary.id(), packet.method_id());
@@ -269,8 +274,10 @@ TEST(PwpbMethod, AsyncUnaryRpc_ResponseEncodingFails_SendsInternalError) {
 }
 
 TEST(PwpbMethod, ServerStreamingRpc_SendsNothingWhenInitiallyCalled) {
-  PW_ENCODE_PB(
-      pw::rpc::test::TestRequest, request, .integer = 555, .status_code = 0);
+  PW_ENCODE_PB(pw::rpc::test::pwpb::TestRequest,
+               request,
+               .integer = 555,
+               .status_code = 0);
 
   ServerContextForTest<FakeService> context(kServerStream);
 
@@ -289,7 +296,7 @@ TEST(PwpbMethod, ServerWriter_SendsResponse) {
 
   EXPECT_EQ(OkStatus(), context.service().last_writer.Write({.value = 100}));
 
-  PW_ENCODE_PB(pw::rpc::test::TestResponse, payload, .value = 100);
+  PW_ENCODE_PB(pw::rpc::test::pwpb::TestResponse, payload, .value = 100);
   std::array<byte, 128> encoded_response = {};
   auto encoded = context.server_stream(payload).Encode(encoded_response);
   ASSERT_EQ(OkStatus(), encoded.status());
@@ -315,7 +322,7 @@ TEST(PwpbMethod, ServerWriter_WriteAfterMoved_ReturnsFailedPrecondition) {
 
   rpc_lock().lock();
   kServerStream.Invoke(context.get(), context.request({}));
-  PwpbServerWriter<pw::rpc::test::TestResponse::Message> new_writer =
+  PwpbServerWriter<pw::rpc::test::pwpb::TestResponse::Message> new_writer =
       std::move(context.service().last_writer);
 
   EXPECT_EQ(OkStatus(), new_writer.Write({.value = 100}));
@@ -336,9 +343,9 @@ TEST(PwpbMethod, ServerStreamingRpc_ResponseEncodingFails_InternalError) {
 
   EXPECT_EQ(OkStatus(), context.service().last_writer.Write({}));
 
-  pw::rpc::test::TestResponse::Message response = {};
+  pw::rpc::test::pwpb::TestResponse::Message response = {};
   response.repeated_field.SetEncoder(
-      [](const pw::rpc::test::TestResponse::StreamEncoder&) {
+      [](const pw::rpc::test::pwpb::TestResponse::StreamEncoder&) {
         return Status::Internal();
       });
   EXPECT_EQ(Status::Internal(), context.service().last_writer.Write(response));
@@ -350,13 +357,13 @@ TEST(PwpbMethod, ServerReader_HandlesRequests) {
   rpc_lock().lock();
   kClientStream.Invoke(context.get(), context.request({}));
 
-  pw::rpc::test::TestRequest::Message request_struct{};
+  pw::rpc::test::pwpb::TestRequest::Message request_struct{};
   context.service().last_reader.set_on_next(
-      [&request_struct](const pw::rpc::test::TestRequest::Message& req) {
+      [&request_struct](const pw::rpc::test::pwpb::TestRequest::Message& req) {
         request_struct = req;
       });
 
-  PW_ENCODE_PB(pw::rpc::test::TestRequest,
+  PW_ENCODE_PB(pw::rpc::test::pwpb::TestRequest,
                request,
                .integer = 1 << 30,
                .status_code = 9);
@@ -378,7 +385,7 @@ TEST(PwpbMethod, ServerReaderWriter_WritesResponses) {
   EXPECT_EQ(OkStatus(),
             context.service().last_reader_writer.Write({.value = 100}));
 
-  PW_ENCODE_PB(pw::rpc::test::TestResponse, payload, .value = 100);
+  PW_ENCODE_PB(pw::rpc::test::pwpb::TestResponse, payload, .value = 100);
   std::array<byte, 128> encoded_response = {};
   auto encoded = context.server_stream(payload).Encode(encoded_response);
   ASSERT_EQ(OkStatus(), encoded.status());
@@ -393,13 +400,13 @@ TEST(PwpbMethod, ServerReaderWriter_HandlesRequests) {
   rpc_lock().lock();
   kBidirectionalStream.Invoke(context.get(), context.request({}));
 
-  pw::rpc::test::TestRequest::Message request_struct{};
+  pw::rpc::test::pwpb::TestRequest::Message request_struct{};
   context.service().last_reader_writer.set_on_next(
-      [&request_struct](const pw::rpc::test::TestRequest::Message& req) {
+      [&request_struct](const pw::rpc::test::pwpb::TestRequest::Message& req) {
         request_struct = req;
       });
 
-  PW_ENCODE_PB(pw::rpc::test::TestRequest,
+  PW_ENCODE_PB(pw::rpc::test::pwpb::TestRequest,
                request,
                .integer = 1 << 29,
                .status_code = 8);

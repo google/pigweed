@@ -39,7 +39,20 @@
 namespace pw::protobuf {
 namespace {
 
-using namespace pw::protobuf::test;
+using test::pwpb::Bool;
+using test::pwpb::Enum;
+
+namespace DeviceInfo = test::pwpb::DeviceInfo;
+namespace KeyValuePair = test::pwpb::KeyValuePair;
+namespace Pigweed = test::pwpb::Pigweed;
+namespace Proto = test::pwpb::Proto;
+namespace RepeatedTest = test::pwpb::RepeatedTest;
+namespace TestResult = test::pwpb::TestResult;
+
+namespace imported {
+using ::pw::protobuf::test::imported::pwpb::IsValidStatus;
+using ::pw::protobuf::test::imported::pwpb::Status;
+}  // namespace imported
 
 TEST(Codegen, StreamDecoder) {
   // clang-format off

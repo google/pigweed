@@ -50,7 +50,7 @@ TEST(FakeChannelOutput, SendAndClear) {
   constexpr MethodType type = MethodType::kServerStreaming;
   TestFakeChannelOutput output;
   Channel channel(kChannelId, &output);
-  const internal::Packet server_stream_packet(PacketType::SERVER_STREAM,
+  const internal::Packet server_stream_packet(pwpb::PacketType::SERVER_STREAM,
                                               kChannelId,
                                               kServiceId,
                                               kMethodId,
@@ -77,7 +77,7 @@ TEST(FakeChannelOutput, SendAndFakeFutureResults) {
   constexpr MethodType type = MethodType::kUnary;
   TestFakeChannelOutput output;
   Channel channel(kChannelId, &output);
-  const internal::Packet response_packet(PacketType::RESPONSE,
+  const internal::Packet response_packet(pwpb::PacketType::RESPONSE,
                                          kChannelId,
                                          kServiceId,
                                          kMethodId,
@@ -103,7 +103,7 @@ TEST(FakeChannelOutput, SendAndFakeFutureResults) {
   EXPECT_EQ(output.total_payloads(type), 2u);
   EXPECT_EQ(output.total_packets(), 2u);
 
-  const internal::Packet server_stream_packet(PacketType::SERVER_STREAM,
+  const internal::Packet server_stream_packet(pwpb::PacketType::SERVER_STREAM,
                                               kChannelId,
                                               kServiceId,
                                               kMethodId,
@@ -124,7 +124,7 @@ TEST(FakeChannelOutput, SendAndFakeSingleResult) {
   constexpr MethodType type = MethodType::kUnary;
   TestFakeChannelOutput output;
   Channel channel(kChannelId, &output);
-  const internal::Packet response_packet(PacketType::RESPONSE,
+  const internal::Packet response_packet(pwpb::PacketType::RESPONSE,
                                          kChannelId,
                                          kServiceId,
                                          kMethodId,
@@ -158,7 +158,7 @@ TEST(FakeChannelOutput, SendAndFakeSingleResult) {
 TEST(FakeChannelOutput, SendResponseUpdated) {
   TestFakeChannelOutput output;
   Channel channel(kChannelId, &output);
-  const internal::Packet response_packet(PacketType::RESPONSE,
+  const internal::Packet response_packet(pwpb::PacketType::RESPONSE,
                                          kChannelId,
                                          kServiceId,
                                          kMethodId,
@@ -176,15 +176,19 @@ TEST(FakeChannelOutput, SendResponseUpdated) {
   EXPECT_TRUE(output.done());
 
   output.clear();
-  const internal::Packet packet_empty_payload(
-      PacketType::RESPONSE, kChannelId, kServiceId, kMethodId, kCallId, {});
+  const internal::Packet packet_empty_payload(pwpb::PacketType::RESPONSE,
+                                              kChannelId,
+                                              kServiceId,
+                                              kMethodId,
+                                              kCallId,
+                                              {});
   EXPECT_EQ(channel.Send(packet_empty_payload), OkStatus());
   EXPECT_EQ(output.last_response(MethodType::kUnary).size(), 0u);
   EXPECT_EQ(output.total_payloads(MethodType::kUnary), 1u);
   EXPECT_EQ(output.total_packets(), 1u);
   EXPECT_TRUE(output.done());
 
-  const internal::Packet server_stream_packet(PacketType::SERVER_STREAM,
+  const internal::Packet server_stream_packet(pwpb::PacketType::SERVER_STREAM,
                                               kChannelId,
                                               kServiceId,
                                               kMethodId,

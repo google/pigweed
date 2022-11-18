@@ -20,6 +20,15 @@
 #include "pw_status/status.h"
 
 namespace pw::rpc {
+
+namespace test {
+
+namespace TestRequest = ::pw::rpc::test::pwpb::TestRequest;
+namespace TestResponse = ::pw::rpc::test::pwpb::TestResponse;
+namespace TestStreamResponse = ::pw::rpc::test::pwpb::TestStreamResponse;
+
+}  // namespace test
+
 namespace {
 
 class TestService final

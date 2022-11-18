@@ -36,6 +36,9 @@
 namespace pw::protobuf_size_report {
 namespace {
 
+namespace ItemInfo = pwpb::ItemInfo;
+namespace ResponseInfo = pwpb::ResponseInfo;
+
 template <typename T>
 PW_NO_INLINE void ConsumeValue(T val) {
   [[maybe_unused]] volatile T no_optimize = val;

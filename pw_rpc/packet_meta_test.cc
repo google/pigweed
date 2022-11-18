@@ -28,7 +28,7 @@ TEST(PacketMeta, FromBufferDecodesValidMinimalPacket) {
   internal::Packet packet;
   packet.set_channel_id(kChannelId);
   packet.set_service_id(internal::UnwrapServiceId(kServiceId));
-  packet.set_type(internal::PacketType::RESPONSE);
+  packet.set_type(internal::pwpb::PacketType::RESPONSE);
   packet.set_method_id(kMethodId);
 
   std::byte buffer[128];

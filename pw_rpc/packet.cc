@@ -18,6 +18,10 @@
 
 namespace pw::rpc::internal {
 
+using pwpb::PacketType;
+
+namespace RpcPacket = pwpb::RpcPacket;
+
 Result<Packet> Packet::FromBuffer(ConstByteSpan data) {
   Packet packet;
   Status status;

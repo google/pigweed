@@ -22,6 +22,8 @@
 
 namespace pw::rpc::internal {
 
+using pwpb::PacketType;
+
 // Creates an active server-side Call.
 Call::Call(const LockedCallContext& context, MethodType type)
     : Call(context.server().ClaimLocked(),

@@ -21,6 +21,9 @@
 namespace pw::log_rpc {
 namespace {
 
+namespace FilterRule = ::pw::log::pwpb::FilterRule;
+namespace LogEntry = ::pw::log::pwpb::LogEntry;
+
 // Returns true if the provided log parameters match the given filter rule.
 bool IsRuleMet(const Filter::Rule& rule,
                uint32_t level,
@@ -68,13 +71,12 @@ Status Filter::UpdateRulesFromProto(ConstByteSpan buffer) {
     PW_TRY(decoder.ReadBytes(&rule_buffer));
     protobuf::Decoder rule_decoder(rule_buffer);
     while ((status = rule_decoder.Next()).ok()) {
-      switch (
-          static_cast<log::FilterRule::Fields>(rule_decoder.FieldNumber())) {
-        case log::FilterRule::Fields::LEVEL_GREATER_THAN_OR_EQUAL:
+      switch (static_cast<FilterRule::Fields>(rule_decoder.FieldNumber())) {
+        case FilterRule::Fields::LEVEL_GREATER_THAN_OR_EQUAL:
           PW_TRY(rule_decoder.ReadUint32(reinterpret_cast<uint32_t*>(
               &rules_[i].level_greater_than_or_equal)));
           break;
-        case log::FilterRule::Fields::MODULE_EQUALS: {
+        case FilterRule::Fields::MODULE_EQUALS: {
           ConstByteSpan module;
           PW_TRY(rule_decoder.ReadBytes(&module));
           if (module.size() > rules_[i].module_equals.max_size()) {
@@ -82,14 +84,14 @@ Status Filter::UpdateRulesFromProto(ConstByteSpan buffer) {
           }
           rules_[i].module_equals.assign(module.begin(), module.end());
         } break;
-        case log::FilterRule::Fields::ANY_FLAGS_SET:
+        case FilterRule::Fields::ANY_FLAGS_SET:
           PW_TRY(rule_decoder.ReadUint32(&rules_[i].any_flags_set));
           break;
-        case log::FilterRule::Fields::ACTION:
+        case FilterRule::Fields::ACTION:
           PW_TRY(rule_decoder.ReadUint32(
               reinterpret_cast<uint32_t*>(&rules_[i].action)));
           break;
-        case log::FilterRule::Fields::THREAD_EQUALS: {
+        case FilterRule::Fields::THREAD_EQUALS: {
           ConstByteSpan thread;
           PW_TRY(rule_decoder.ReadBytes(&thread));
           if (thread.size() > rules_[i].thread_equals.max_size()) {
@@ -114,21 +116,20 @@ bool Filter::ShouldDropLog(ConstByteSpan entry) const {
   uint32_t log_flags = 0;
   protobuf::Decoder decoder(entry);
   while (decoder.Next().ok()) {
-    const auto field_num =
-        static_cast<log::LogEntry::Fields>(decoder.FieldNumber());
+    const auto field_num = static_cast<LogEntry::Fields>(decoder.FieldNumber());
 
-    if (field_num == log::LogEntry::Fields::LINE_LEVEL) {
+    if (field_num == LogEntry::Fields::LINE_LEVEL) {
       if (decoder.ReadUint32(&log_level).ok()) {
         log_level &= PW_LOG_LEVEL_BITMASK;
       }
 
-    } else if (field_num == log::LogEntry::Fields::MODULE) {
+    } else if (field_num == LogEntry::Fields::MODULE) {
       decoder.ReadBytes(&log_module).IgnoreError();
 
-    } else if (field_num == log::LogEntry::Fields::FLAGS) {
+    } else if (field_num == LogEntry::Fields::FLAGS) {
       decoder.ReadUint32(&log_flags).IgnoreError();
 
-    } else if (field_num == log::LogEntry::Fields::THREAD) {
+    } else if (field_num == LogEntry::Fields::THREAD) {
       decoder.ReadBytes(&log_thread).IgnoreError();
     }
   }
