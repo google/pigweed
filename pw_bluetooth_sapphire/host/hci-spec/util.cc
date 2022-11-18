@@ -128,9 +128,9 @@ std::string LinkTypeToString(hci_spec::LinkType link_type) {
 
 std::string ConnectionRoleToString(hci_spec::ConnectionRole role) {
   switch (role) {
-    case ConnectionRole::kCentral:
+    case hci_spec::ConnectionRole::CENTRAL:
       return "central";
-    case ConnectionRole::kPeripheral:
+    case hci_spec::ConnectionRole::PERIPHERAL:
       return "peripheral";
     default:
       return "<unknown role>";

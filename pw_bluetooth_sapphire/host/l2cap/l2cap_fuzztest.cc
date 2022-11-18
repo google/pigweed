@@ -137,7 +137,7 @@ class DataFuzzTest : public TestingBase {
 
     acl_data_channel()->RegisterLink(kHandle, bt::LinkType::kACL);
     channel_manager_->AddACLConnection(
-        kHandle, hci_spec::ConnectionRole::kCentral, /*link_error_callback=*/[] {},
+        kHandle, hci_spec::ConnectionRole::CENTRAL, /*link_error_callback=*/[] {},
         /*security_callback=*/[](auto, auto, auto) {});
     connection_ = true;
   }

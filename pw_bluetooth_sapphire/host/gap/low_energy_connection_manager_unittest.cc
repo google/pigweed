@@ -2285,7 +2285,7 @@ TEST_F(LowEnergyConnectionManagerTest, L2capRequestConnParamUpdateAfterInterroga
   test_device()->AddPeer(std::move(peer));
 
   // First create a fake incoming connection as peripheral.
-  test_device()->ConnectLowEnergy(kAddress0, hci_spec::ConnectionRole::kPeripheral);
+  test_device()->ConnectLowEnergy(kAddress0, hci_spec::ConnectionRole::PERIPHERAL);
 
   RunLoopUntilIdle();
 
@@ -2348,7 +2348,7 @@ TEST_F(LowEnergyConnectionManagerTest, PeripheralsRetryLLConnectionUpdateWithL2c
   test_device()->AddPeer(std::move(peer1));
 
   // First create fake incoming connections with local host as peripheral.
-  test_device()->ConnectLowEnergy(kAddress0, hci_spec::ConnectionRole::kPeripheral);
+  test_device()->ConnectLowEnergy(kAddress0, hci_spec::ConnectionRole::PERIPHERAL);
   RunLoopUntilIdle();
   auto link0 = MoveLastRemoteInitiated();
   ASSERT_TRUE(link0);
@@ -2360,7 +2360,7 @@ TEST_F(LowEnergyConnectionManagerTest, PeripheralsRetryLLConnectionUpdateWithL2c
                                             conn_handle0 = std::move(result).value();
                                           });
 
-  test_device()->ConnectLowEnergy(kAddress1, hci_spec::ConnectionRole::kPeripheral);
+  test_device()->ConnectLowEnergy(kAddress1, hci_spec::ConnectionRole::PERIPHERAL);
   RunLoopUntilIdle();
   auto link1 = MoveLastRemoteInitiated();
   ASSERT_TRUE(link1);
@@ -2439,7 +2439,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   test_device()->AddPeer(std::move(peer));
 
   // First create a fake incoming connection with local host as peripheral.
-  test_device()->ConnectLowEnergy(kAddress0, hci_spec::ConnectionRole::kPeripheral);
+  test_device()->ConnectLowEnergy(kAddress0, hci_spec::ConnectionRole::PERIPHERAL);
   RunLoopUntilIdle();
 
   auto link = MoveLastRemoteInitiated();
@@ -2496,7 +2496,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   test_device()->AddPeer(std::move(peer));
 
   // First create a fake incoming connection with local host as peripheral.
-  test_device()->ConnectLowEnergy(kAddress0, hci_spec::ConnectionRole::kPeripheral);
+  test_device()->ConnectLowEnergy(kAddress0, hci_spec::ConnectionRole::PERIPHERAL);
   RunLoopUntilIdle();
 
   auto link = MoveLastRemoteInitiated();
@@ -2549,7 +2549,7 @@ TEST_F(LowEnergyConnectionManagerTest, HciUpdateConnParamsAfterInterrogation) {
   test_device()->AddPeer(std::move(peer));
 
   // First create a fake incoming connection.
-  test_device()->ConnectLowEnergy(kAddress0, hci_spec::ConnectionRole::kPeripheral);
+  test_device()->ConnectLowEnergy(kAddress0, hci_spec::ConnectionRole::PERIPHERAL);
 
   RunLoopUntilIdle();
 

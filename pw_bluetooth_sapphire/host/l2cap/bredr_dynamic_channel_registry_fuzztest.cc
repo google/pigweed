@@ -39,7 +39,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
       bt::LinkType::kACL);
 
   bt::l2cap::internal::BrEdrSignalingChannel sig_chan(fake_chan->GetWeakPtr(),
-                                                      bt::hci_spec::ConnectionRole::kCentral);
+                                                      bt::hci_spec::ConnectionRole::CENTRAL);
 
   auto open_cb = [](auto chan) {};
   auto close_cb = [](auto chan) {};

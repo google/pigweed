@@ -1358,12 +1358,6 @@ enum class SynchronousDataPacketStatusFlag : uint8_t {
   kDataPartiallyLost = 0x03,
 };
 
-// A connection role. Used for LE and BR/EDR connection roles.
-enum class ConnectionRole : uint8_t {
-  kCentral     = 0x00,
-  kPeripheral = 0x01,
-};
-
 // Possible values that can be reported for the Central_Clock_Accuracy and
 // Advertiser_Clock_Accuracy parameters.
 enum class LEClockAccuracy : uint8_t {

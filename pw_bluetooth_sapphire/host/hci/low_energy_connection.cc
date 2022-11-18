@@ -38,7 +38,7 @@ bool LowEnergyConnection::StartEncryption() {
     bt_log(DEBUG, "hci", "connection closed; cannot start encryption");
     return false;
   }
-  if (role() != hci_spec::ConnectionRole::kCentral) {
+  if (role() != hci_spec::ConnectionRole::CENTRAL) {
     bt_log(DEBUG, "hci", "only the central can start encryption");
     return false;
   }

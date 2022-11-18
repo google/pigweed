@@ -228,8 +228,8 @@ SecurityManagerImpl::SecurityManagerImpl(fxl::WeakPtr<hci::LowEnergyConnection> 
       io_cap_(io_capability),
       sm_chan_(std::make_unique<PairingChannel>(
           smp, fit::bind_member<&SecurityManagerImpl::StartNewTimer>(this))),
-      role_(le_link_->role() == hci_spec::ConnectionRole::kCentral ? Role::kInitiator
-                                                                   : Role::kResponder),
+      role_(le_link_->role() == hci_spec::ConnectionRole::CENTRAL ? Role::kInitiator
+                                                                  : Role::kResponder),
       weak_ptr_factory_(this) {
   BT_ASSERT(delegate_);
   BT_ASSERT(le_link_);

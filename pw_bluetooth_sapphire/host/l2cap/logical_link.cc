@@ -523,7 +523,7 @@ void LogicalLink::SendConnectionParameterUpdateRequest(
     ConnectionParameterUpdateRequestCallback request_cb) {
   BT_ASSERT(signaling_channel_);
   BT_ASSERT(type_ == bt::LinkType::kLE);
-  BT_ASSERT(role_ == hci_spec::ConnectionRole::kPeripheral);
+  BT_ASSERT(role_ == hci_spec::ConnectionRole::PERIPHERAL);
 
   LowEnergyCommandHandler cmd_handler(signaling_channel_.get());
   cmd_handler.SendConnectionParameterUpdateRequest(
@@ -736,7 +736,7 @@ void LogicalLink::OnRxConnectionParameterUpdateRequest(
   // Only a LE peripheral can send this command. "If a Peripheral’s Host receives an
   // L2CAP_CONNECTION_PARAMETER_UPDATE_REQ packet it shall respond with an L2CAP_COMMAND_REJECT_RSP
   // packet with reason 0x0000 (Command not understood)." (v5.0, Vol 3, Part A, Section 4.20)
-  if (role_ == hci_spec::ConnectionRole::kPeripheral) {
+  if (role_ == hci_spec::ConnectionRole::PERIPHERAL) {
     bt_log(DEBUG, "l2cap", "rejecting conn. param. update request from central");
     responder->RejectNotUnderstood();
     return;

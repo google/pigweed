@@ -12,7 +12,7 @@ namespace {
 
 constexpr hci_spec::ConnectionHandle kTestHandle = 0x0001;
 constexpr uint8_t kTestCmdId = 97;
-constexpr hci_spec::ConnectionRole kDeviceRole = hci_spec::ConnectionRole::kCentral;
+constexpr hci_spec::ConnectionRole kDeviceRole = hci_spec::ConnectionRole::CENTRAL;
 
 class BrEdrSignalingChannelTest : public testing::MockChannelTest {
  public:

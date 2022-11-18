@@ -20,8 +20,8 @@ TestSecurityManager::TestSecurityManager(fxl::WeakPtr<hci::LowEnergyConnection> 
                                          BondableMode bondable_mode,
                                          gap::LESecurityMode security_mode)
     : SecurityManager(bondable_mode, security_mode),
-      role_(link->role() == hci_spec::ConnectionRole::kCentral ? Role::kInitiator
-                                                               : Role::kResponder),
+      role_(link->role() == hci_spec::ConnectionRole::CENTRAL ? Role::kInitiator
+                                                              : Role::kResponder),
       weak_ptr_factory_(this) {}
 
 bool TestSecurityManager::AssignLongTermKey(const LTK& ltk) {

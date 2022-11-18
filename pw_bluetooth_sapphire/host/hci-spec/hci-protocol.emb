@@ -54,6 +54,11 @@ enum ScoDataPath:
   # 0x01 - 0xFE specify the logical channel number (vendor specific)
   AUDIO_TEST_MODE = 0xFF
 
+enum ConnectionRole:
+  [maximum_bits: 8]
+  CENTRAL = 0x00
+  PERIPHERAL = 0x01
+
 # Bitmask of SCO packet types.
 bits ScoPacketType:
   # SCO packet types
@@ -230,6 +235,15 @@ struct EnhancedAcceptSynchronousConnectionRequestCommand:
 
   let scp_size = SynchronousConnectionParameters.$size_in_bytes
   $next [+scp_size] SynchronousConnectionParameters connection_parameters
+
+struct AcceptConnectionRequestCommand:
+  let hdr_size = EmbossCommandHeader.$size_in_bytes
+  0     [+hdr_size] EmbossCommandHeader header
+
+  # The 48-bit BD_ADDR of the remote device requesting the connection.
+  $next [+6] UInt bd_addr
+
+  $next [+1] ConnectionRole role
 
 # ============================ Test packets =============================
 

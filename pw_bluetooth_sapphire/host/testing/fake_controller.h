@@ -282,7 +282,7 @@ class FakeController : public ControllerTestDoubleBase {
   // Sets up a LE link to the device with the given |addr|. FakeController will
   // report a connection event in which it is in the given |role|.
   void ConnectLowEnergy(const DeviceAddress& addr,
-                        hci_spec::ConnectionRole role = hci_spec::ConnectionRole::kPeripheral);
+                        hci_spec::ConnectionRole role = hci_spec::ConnectionRole::PERIPHERAL);
 
   // Sends an HCI Connection Request event.
   void SendConnectionRequest(const DeviceAddress& addr, hci_spec::LinkType link_type);

@@ -210,16 +210,6 @@ struct CreateConnectionCancelReturnParams {
 // Accept Connection Request (v1.1) (BR/EDR)
 constexpr OpCode kAcceptConnectionRequest = LinkControlOpCode(0x0009);
 
-struct AcceptConnectionRequestCommandParams {
-  // BD_ADDR of the device to be connected
-  DeviceAddressBytes bd_addr;
-
-  // Role. Allowable values:
-  //  - kCentral - Host will become the central (Link Central will role switch)
-  //  - kPeripheral - Host will remain the peripheral.
-  ConnectionRole role;
-} __PACKED;
-
 // =========================================
 // Reject Connection Request (v1.1) (BR/EDR)
 constexpr OpCode kRejectConnectionRequest = LinkControlOpCode(0x000A);

@@ -755,7 +755,7 @@ void FakeController::OnLECreateConnectionCommandReceived(
     response.conn_interval = le16toh(interval);
     response.supervision_timeout = params.supervision_timeout;
 
-    response.role = hci_spec::ConnectionRole::kCentral;
+    response.role = hci_spec::ConnectionRole::CENTRAL;
 
     hci_spec::ConnectionHandle handle = ++next_conn_handle_;
     response.connection_handle = htole16(handle);

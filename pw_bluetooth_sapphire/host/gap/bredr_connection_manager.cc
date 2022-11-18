@@ -17,6 +17,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/emboss_control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
@@ -833,16 +834,15 @@ void BrEdrConnectionManager::CompleteRequest(PeerId peer_id, DeviceAddress addre
 
   const char* direction = completes_outgoing_request ? "outgoing" : "incoming";
   const char* result = status.is_ok() ? "complete" : "error";
-  hci_spec::ConnectionRole role = completes_outgoing_request
-                                      ? hci_spec::ConnectionRole::kCentral
-                                      : hci_spec::ConnectionRole::kPeripheral;
+  hci_spec::ConnectionRole role = completes_outgoing_request ? hci_spec::ConnectionRole::CENTRAL
+                                                             : hci_spec::ConnectionRole::PERIPHERAL;
   if (request.role_change()) {
     role = request.role_change().value();
   }
 
   bt_log(INFO, "gap-bredr",
          "%s connection %s (status: %s, role: %s, peer: %s, addr: %s, handle: %#.4x)", direction,
-         result, bt_str(status), role == hci_spec::ConnectionRole::kCentral ? "leader" : "follower",
+         result, bt_str(status), role == hci_spec::ConnectionRole::CENTRAL ? "leader" : "follower",
          bt_str(peer_id), bt_str(address), handle);
 
   if (completes_outgoing_request) {
@@ -1437,13 +1437,14 @@ void BrEdrConnectionManager::SendCommandWithStatusCallback(
 
 void BrEdrConnectionManager::SendAcceptConnectionRequest(DeviceAddressBytes addr,
                                                          hci::ResultFunction<> cb) {
-  auto accept = hci::CommandPacket::New(hci_spec::kAcceptConnectionRequest,
-                                        sizeof(hci_spec::AcceptConnectionRequestCommandParams));
-  auto accept_params = accept->mutable_payload<hci_spec::AcceptConnectionRequestCommandParams>();
-  accept_params->bd_addr = addr;
+  hci::EmbossCommandPacket accept =
+      hci::EmbossCommandPacket::New<hci_spec::AcceptConnectionRequestCommandView>(
+          hci_spec::kAcceptConnectionRequest);
+  auto accept_params = accept.view<hci_spec::AcceptConnectionRequestCommandWriter>();
+  accept_params.bd_addr().Write(addr.as_int());
   // This role switch preference can fail. A HCI_Role_Change event will be generated if the role
   // switch is successful (Core Spec v5.2, Vol 2, Part F, Sec 3.1).
-  accept_params->role = hci_spec::ConnectionRole::kCentral;
+  accept_params.role().Write(hci_spec::ConnectionRole::CENTRAL);
 
   hci::CommandChannel::CommandCallback command_cb;
   if (cb) {

@@ -140,7 +140,7 @@ class L2capIntegrationTest : public TestingBase {
 
   QueueAclConnectionRetVal QueueAclConnection(
       hci_spec::ConnectionHandle handle,
-      hci_spec::ConnectionRole role = hci_spec::ConnectionRole::kCentral) {
+      hci_spec::ConnectionRole role = hci_spec::ConnectionRole::CENTRAL) {
     QueueAclConnectionRetVal cmd_ids;
     cmd_ids.extended_features_id = NextCommandId();
     cmd_ids.fixed_channels_supported_id = NextCommandId();
@@ -598,7 +598,7 @@ TEST_F(L2capIntegrationTest, RequestConnectionParameterUpdateAndReceiveResponse)
                                                           kPeripheralLatency, kTimeoutMult);
 
   constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
-  QueueLEConnection(kLinkHandle, hci_spec::ConnectionRole::kPeripheral);
+  QueueLEConnection(kLinkHandle, hci_spec::ConnectionRole::PERIPHERAL);
 
   std::optional<bool> accepted;
   auto request_cb = [&accepted](bool cb_accepted) { accepted = cb_accepted; };
@@ -637,7 +637,7 @@ TEST_F(L2capIntegrationTest, InspectHierarchy) {
 
 TEST_F(L2capIntegrationTest, AddLEConnectionReturnsFixedChannels) {
   constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
-  auto channels = QueueLEConnection(kLinkHandle, hci_spec::ConnectionRole::kPeripheral);
+  auto channels = QueueLEConnection(kLinkHandle, hci_spec::ConnectionRole::PERIPHERAL);
   ASSERT_TRUE(channels.att);
   EXPECT_EQ(l2cap::kATTChannelId, channels.att->id());
   ASSERT_TRUE(channels.smp);

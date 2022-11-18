@@ -55,8 +55,8 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
                                 dispatcher());
 
     // Setup a fake logical link.
-    auto link_role = role == Role::kInitiator ? hci_spec::ConnectionRole::kCentral
-                                              : hci_spec::ConnectionRole::kPeripheral;
+    auto link_role = role == Role::kInitiator ? hci_spec::ConnectionRole::CENTRAL
+                                              : hci_spec::ConnectionRole::PERIPHERAL;
 
     fake_link_.reset();
     InitializeTransport();

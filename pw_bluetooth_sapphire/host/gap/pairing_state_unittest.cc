@@ -96,7 +96,7 @@ class PairingStateTest : public TestBase {
 
   std::unique_ptr<FakeBrEdrConnection> MakeFakeConnection() {
     return std::make_unique<FakeBrEdrConnection>(kTestHandle, kLocalAddress, kPeerAddress,
-                                                 hci_spec::ConnectionRole::kCentral,
+                                                 hci_spec::ConnectionRole::CENTRAL,
                                                  transport()->WeakPtr());
   }
 

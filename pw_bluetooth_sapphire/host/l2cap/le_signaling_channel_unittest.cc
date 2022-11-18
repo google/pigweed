@@ -13,7 +13,7 @@ namespace {
 constexpr hci_spec::ConnectionHandle kTestHandle = 0x0001;
 constexpr uint8_t kTestCmdId = 1;
 
-template <hci_spec::ConnectionRole Role = hci_spec::ConnectionRole::kCentral>
+template <hci_spec::ConnectionRole Role = hci_spec::ConnectionRole::CENTRAL>
 class LESignalingChannelTestBase : public testing::FakeChannelTest {
  public:
   LESignalingChannelTestBase() = default;
@@ -42,7 +42,7 @@ class LESignalingChannelTestBase : public testing::FakeChannelTest {
 using LESignalingChannelTest = LESignalingChannelTestBase<>;
 
 using LESignalingChannelPeripheralTest =
-    LESignalingChannelTestBase<hci_spec::ConnectionRole::kPeripheral>;
+    LESignalingChannelTestBase<hci_spec::ConnectionRole::PERIPHERAL>;
 
 TEST_F(LESignalingChannelTest, IgnoreEmptyFrame) {
   bool send_cb_called = false;

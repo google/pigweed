@@ -43,7 +43,7 @@ class LogicalLinkTest : public TestingBase {
     const hci_spec::ConnectionHandle kConnHandle = 0x0001;
     const size_t kMaxPayload = kDefaultMTU;
     auto query_service_cb = [](hci_spec::ConnectionHandle, PSM) { return std::nullopt; };
-    link_ = std::make_unique<LogicalLink>(kConnHandle, type, hci_spec::ConnectionRole::kCentral,
+    link_ = std::make_unique<LogicalLink>(kConnHandle, type, hci_spec::ConnectionRole::CENTRAL,
                                           kMaxPayload, std::move(query_service_cb),
                                           transport()->acl_data_channel(),
                                           transport()->command_channel(),
