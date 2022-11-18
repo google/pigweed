@@ -110,6 +110,7 @@ pw_doc_gen("docs") {
     ":static_assets",
     ":target_docs",
     ":third_party_docs",
+    "$dir_pigweed/seed:docs",
     "$dir_pw_env_setup:python.install",
   ]
 

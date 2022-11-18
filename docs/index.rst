@@ -26,6 +26,7 @@
   Build System <build_system>
   docs/size_optimizations
   FAQ <docs/faq>
+  SEEDs <seed/0000-index>
   docs/module_structure
   module_guides
   third_party_support
