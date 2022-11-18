@@ -76,12 +76,11 @@ describe('PrintfDecoder', () => {
     expect(
       printfDecoder.decode('Value: %f', argFromStringBinary('\xdb\x0f\x49\x40'))
     ).toEqual('Value: 3.1415927410125732');
-    // TODO(asadmemon): Add support to decoder for this format:
-    // expect(
-    //   printfDecoder.decode(
-    //     'Value: %0.5f',
-    //     argFromStringBinary('\xdb\x0f\x49\x40')
-    //   )
-    // ).toEqual('Value: 3.14159');
+    expect(
+      printfDecoder.decode(
+        'Value: %.5f',
+        argFromStringBinary('\xdb\x0f\x49\x40')
+      )
+    ).toEqual('Value: 3.14159');
   });
 });

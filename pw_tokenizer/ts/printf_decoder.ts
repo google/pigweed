@@ -14,7 +14,7 @@
 
 /** Decodes arguments and formats them with the provided format string. */
 
-const SPECIFIER_REGEX = /%[a-zA-Z%]/g;
+const SPECIFIER_REGEX = /%(\.([0-9]+))?([%csdioxXufFeEaAgGnp])/g;
 
 // Conversion specifiers by type; n is not supported.
 const SIGNED_INT = 'di'.split('');
@@ -106,41 +106,43 @@ export class PrintfDecoder {
     return arg;
   }
 
-  private decodeFloat(args: Uint8Array): DecodedArg {
+  private decodeFloat(args: Uint8Array, precision: string): DecodedArg {
     if (args.length < 4) return {size: 0, value: ''};
     const floatValue = new DataView(args.buffer, args.byteOffset, 4).getFloat32(
       0,
       true
     );
+    if (precision) return {size: 4, value: floatValue.toFixed(parseInt(precision))}
     return {size: 4, value: floatValue};
   }
 
-  private format(specifier: string, args: Uint8Array): DecodedArg {
-    if (specifier == '%') return {size: 0, value: '%'}; // literal %
-    specifier = specifier.slice(1);
-    if (specifier === 's') {
+  private format(specifierType: string, args: Uint8Array, precision: string): DecodedArg {
+    if (specifierType == '%') return {size: 0, value: '%'}; // literal %
+    if (specifierType === 's') {
       return this.decodeString(args);
     }
-    if (specifier === 'c') {
+    if (specifierType === 'c') {
       return this.decodeChar(args);
     }
-    if (SIGNED_INT.indexOf(specifier) !== -1) {
+    if (SIGNED_INT.indexOf(specifierType) !== -1) {
       return this.decodeSignedInt(args);
     }
-    if (UNSIGNED_INT.indexOf(specifier) !== -1) {
+    if (UNSIGNED_INT.indexOf(specifierType) !== -1) {
       return this.decodeUnsignedInt(args);
     }
-    if (FLOATING_POINT.indexOf(specifier) !== -1) {
-      return this.decodeFloat(args);
+    if (FLOATING_POINT.indexOf(specifierType) !== -1) {
+      return this.decodeFloat(args, precision);
     }
 
     // Unsupported specifier, return as-is
-    return {size: 0, value: '%' + specifier};
+    return {size: 0, value: '%' + specifierType};
   }
 
   decode(formatString: string, args: Uint8Array): string {
-    return formatString.replace(SPECIFIER_REGEX, specifier => {
-      const decodedArg = this.format(specifier, args);
+    return formatString.replace(
+      SPECIFIER_REGEX,
+      (_specifier, _precisionFull, precision, specifierType) => {
+        const decodedArg = this.format(specifierType, args, precision);
       args = args.slice(decodedArg.size);
       if (decodedArg === null) return '';
       return String(decodedArg.value);
