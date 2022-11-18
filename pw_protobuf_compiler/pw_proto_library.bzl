@@ -196,6 +196,7 @@ def _proto_compiler_aspect_impl(target, ctx):
     args.add("--plugin=protoc-gen-pwpb={}".format(ctx.executable._protoc_plugin.path))
     for options_file_include_path in options_file_include_paths:
         args.add("--pwpb_opt=-I{}".format(options_file_include_path))
+    args.add("--pwpb_opt=--no-legacy-namespace")
     args.add("--pwpb_out={}".format(ctx.bin_dir.path))
     args.add_joined(
         "--descriptor_set_in",
