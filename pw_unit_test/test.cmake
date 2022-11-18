@@ -105,6 +105,8 @@ function(pw_add_test NAME)
       ${arg_PRIVATE_INCLUDES}
     PRIVATE_DEFINES
       ${arg_PRIVATE_DEFINES}
+    PRIVATE_COMPILE_OPTIONS_DEPS_BEFORE
+      pw_build.warnings
     PRIVATE_COMPILE_OPTIONS
       ${arg_PRIVATE_COMPILE_OPTIONS}
     PRIVATE_LINK_OPTIONS
@@ -112,16 +114,6 @@ function(pw_add_test NAME)
     GROUPS
       ${arg_GROUPS}
   )
-  # Add the compiler warnings by prefixing INTERFACE_COMPILE_OPTIONS instead of
-  # suffixing the list by using the `BEFORE` keyword. This way warnings can
-  # always be deterministically disabled/adjusted by callers of pw_add_test.
-  # Note that INTERFACE_COMPILE_OPTIONS are read from both the target and all
-  # of its dependencies.
-  if(NOT "${arg_SOURCES}" STREQUAL "")
-    target_compile_options("${NAME}.bin" BEFORE PRIVATE
-        $<TARGET_PROPERTY:pw_build.warnings,INTERFACE_COMPILE_OPTIONS>
-    )
-  endif()
 endfunction()
 
 # pw_add_test_generic: Declares a single unit test suite.
@@ -146,6 +138,10 @@ endfunction()
 #   PRIVATE_DEPS - private pw_target_link_targets arguments
 #   PRIVATE_INCLUDES - public target_include_directories argument
 #   PRIVATE_DEFINES - private target_compile_definitions arguments
+#   PRIVATE_COMPILE_OPTIONS_DEPS_BEFORE - private target_compile_options BEFORE
+#     arguments from the specified deps's INTERFACE_COMPILE_OPTIONS. Note that
+#     these deps are not pulled in as target_link_libraries. This should not be
+#     exposed by the non-generic API.
 #   PRIVATE_COMPILE_OPTIONS - private target_compile_options arguments
 #   PRIVATE_LINK_OPTIONS - private target_link_options arguments
 #
@@ -158,7 +154,8 @@ function(pw_add_test_generic NAME)
       1
     MULTI_VALUE_ARGS
       SOURCES HEADERS PRIVATE_DEPS PRIVATE_INCLUDES
-      PRIVATE_DEFINES PRIVATE_COMPILE_OPTIONS
+      PRIVATE_DEFINES
+      PRIVATE_COMPILE_OPTIONS_DEPS_BEFORE PRIVATE_COMPILE_OPTIONS
       PRIVATE_LINK_OPTIONS GROUPS
   )
 
@@ -181,6 +178,8 @@ function(pw_add_test_generic NAME)
       ${arg_PRIVATE_INCLUDES}
     PRIVATE_DEFINES
       ${arg_PRIVATE_DEFINES}
+    PRIVATE_COMPILE_OPTIONS_DEPS_BEFORE
+      ${PRIVATE_COMPILE_OPTIONS_DEPS_BEFORE}
     PRIVATE_COMPILE_OPTIONS
       ${arg_PRIVATE_COMPILE_OPTIONS}
     PRIVATE_LINK_OPTIONS

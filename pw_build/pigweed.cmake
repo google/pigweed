@@ -221,6 +221,10 @@ endmacro()
 #   PRIVATE_DEFINES - private target_compile_definitions arguments
 #   PUBLIC_COMPILE_OPTIONS - public target_compile_options arguments
 #   PRIVATE_COMPILE_OPTIONS - private target_compile_options arguments
+#   PRIVATE_COMPILE_OPTIONS_DEPS_BEFORE - private target_compile_options BEFORE
+#     arguments from the specified deps's INTERFACE_COMPILE_OPTIONS. Note that
+#     these deps are not pulled in as target_link_libraries. This should not be
+#     exposed by the non-generic API.
 #   PUBLIC_LINK_OPTIONS - public target_link_options arguments
 #   PRIVATE_LINK_OPTIONS - private target_link_options arguments
 function(pw_add_library_generic NAME TYPE)
@@ -236,6 +240,7 @@ function(pw_add_library_generic NAME TYPE)
       2
     MULTI_VALUE_ARGS
       ${multi_value_args}
+      PRIVATE_COMPILE_OPTIONS_DEPS_BEFORE
   )
 
   # CMake 3.22 does not have a notion of target_headers yet, so in the mean
@@ -335,6 +340,12 @@ function(pw_add_library_generic NAME TYPE)
       PRIVATE
         "${NAME}._config"
     )
+    foreach(compile_option_dep IN LISTS arg_PRIVATE_COMPILE_OPTIONS_DEPS_BEFORE)
+      # This will fail at build time if the target does not exist.
+      target_compile_options("${NAME}" BEFORE PRIVATE
+          $<TARGET_PROPERTY:${compile_option_dep},INTERFACE_COMPILE_OPTIONS>
+      )
+    endforeach()
   endif()
 endfunction(pw_add_library_generic)
 
@@ -440,6 +451,8 @@ function(pw_add_library NAME TYPE)
       ${arg_PRIVATE_DEFINES}
     PUBLIC_COMPILE_OPTIONS
       ${arg_PUBLIC_COMPILE_OPTIONS}
+    PRIVATE_COMPILE_OPTIONS_DEPS_BEFORE
+      pw_build.warnings
     PRIVATE_COMPILE_OPTIONS
       ${arg_PRIVATE_COMPILE_OPTIONS}
     PUBLIC_LINK_OPTIONS
@@ -447,16 +460,6 @@ function(pw_add_library NAME TYPE)
     PRIVATE_LINK_OPTIONS
       ${arg_PRIVATE_LINK_OPTIONS}
   )
-  # Add the compiler warnings by prefixing INTERFACE_COMPILE_OPTIONS instead of
-  # suffixing the list by using the `BEFORE` keyword. This way warnings can
-  # always be deterministically disabled/adjusted by callers of pw_add_library.
-  # Note that INTERFACE_COMPILE_OPTIONS are read from both the target and all
-  # of its dependencies.
-  if(NOT "${arg_SOURCES}" STREQUAL "")
-    target_compile_options("${NAME}" BEFORE PRIVATE
-        $<TARGET_PROPERTY:pw_build.warnings,INTERFACE_COMPILE_OPTIONS>
-    )
-  endif()
 endfunction(pw_add_library)
 
 # Declares a module as a facade.
@@ -510,6 +513,8 @@ function(pw_add_facade NAME TYPE)
       ${arg_PRIVATE_DEFINES}
     PUBLIC_COMPILE_OPTIONS
       ${arg_PUBLIC_COMPILE_OPTIONS}
+    PRIVATE_COMPILE_OPTIONS_DEPS_BEFORE
+      pw_build.warnings
     PRIVATE_COMPILE_OPTIONS
       ${arg_PRIVATE_COMPILE_OPTIONS}
     PUBLIC_LINK_OPTIONS
@@ -517,16 +522,6 @@ function(pw_add_facade NAME TYPE)
     PRIVATE_LINK_OPTIONS
       ${arg_PRIVATE_LINK_OPTIONS}
   )
-  # Add the compiler warnings by prefixing INTERFACE_COMPILE_OPTIONS instead of
-  # suffixing the list by using the `BEFORE` keyword. This way warnings can
-  # always be deterministically disabled/adjusted by callers of pw_add_facade.
-  # Note that INTERFACE_COMPILE_OPTIONS are read from both the target and all
-  # of its dependencies.
-  if(NOT "${arg_SOURCES}" STREQUAL "")
-    target_compile_options("${NAME}" BEFORE PRIVATE
-        $<TARGET_PROPERTY:pw_build.warnings,INTERFACE_COMPILE_OPTIONS>
-    )
-  endif()
 endfunction(pw_add_facade)
 
 # pw_add_facade_generic: Creates a CMake facade library target.
@@ -555,6 +550,10 @@ endfunction(pw_add_facade)
 #   PUBLIC_DEFINES - public target_compile_definitions arguments
 #   PRIVATE_DEFINES - private target_compile_definitions arguments
 #   PUBLIC_COMPILE_OPTIONS - public target_compile_options arguments
+#   PRIVATE_COMPILE_OPTIONS_DEPS_BEFORE - private target_compile_options BEFORE
+#     arguments from the specified deps's INTERFACE_COMPILE_OPTIONS. Note that
+#     these deps are not pulled in as target_link_libraries. This should not be
+#     exposed by the non-generic API.
 #   PRIVATE_COMPILE_OPTIONS - private target_compile_options arguments
 #   PUBLIC_LINK_OPTIONS - public target_link_options arguments
 #   PRIVATE_LINK_OPTIONS - private target_link_options arguments
@@ -573,6 +572,7 @@ function(pw_add_facade_generic NAME TYPE)
       BACKEND
     MULTI_VALUE_ARGS
       ${multi_value_args}
+      PRIVATE_COMPILE_OPTIONS_DEPS_BEFORE
     REQUIRED_ARGS
       BACKEND
   )
@@ -635,6 +635,8 @@ function(pw_add_facade_generic NAME TYPE)
       ${arg_PRIVATE_DEPS}
     PRIVATE_DEFINES
       ${arg_PRIVATE_DEFINES}
+    PRIVATE_COMPILE_OPTIONS_DEPS_BEFORE
+      ${arg_PRIVATE_COMPILE_OPTIONS_DEPS_BEFORE}
     PRIVATE_COMPILE_OPTIONS
       ${arg_PRIVATE_COMPILE_OPTIONS}
     PRIVATE_LINK_OPTIONS
