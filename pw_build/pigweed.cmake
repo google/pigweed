@@ -206,8 +206,8 @@ endmacro()
 # Required Args:
 #
 #   <name> - The name of the library target to be created.
-#   <type> - The library type which must be INTERFACE, OBJECT, STATIC, SHARED,
-#            or MODULE.
+#   <type> - The library type which must be INTERFACE, OBJECT, STATIC, or
+#            SHARED.
 #
 # Optional Args:
 #
@@ -228,10 +228,10 @@ endmacro()
 #   PUBLIC_LINK_OPTIONS - public target_link_options arguments
 #   PRIVATE_LINK_OPTIONS - private target_link_options arguments
 function(pw_add_library_generic NAME TYPE)
-  set(supported_library_types INTERFACE OBJECT STATIC SHARED MODULE)
+  set(supported_library_types INTERFACE OBJECT STATIC SHARED)
   if(NOT "${TYPE}" IN_LIST supported_library_types)
     message(FATAL_ERROR "\"${TYPE}\" is not a valid library type for ${NAME}. "
-          "Must be INTERFACE, OBJECT, STATIC, SHARED, or MODULE.")
+          "Must be INTERFACE, OBJECT, STATIC, or SHARED.")
   endif()
 
   _pw_add_library_multi_value_args(multi_value_args)
@@ -326,7 +326,7 @@ function(pw_add_library_generic NAME TYPE)
       INTERFACE
         "${NAME}._public_config"
     )
-  else()
+  elseif(("${TYPE}" STREQUAL "STATIC") OR ("${TYPE}" STREQUAL "SHARED"))
     if("${arg_SOURCES}" STREQUAL "")
       message(
         SEND_ERROR "${NAME} must have SOURCES as it's not an INTERFACE library")
@@ -346,6 +346,43 @@ function(pw_add_library_generic NAME TYPE)
           $<TARGET_PROPERTY:${compile_option_dep},INTERFACE_COMPILE_OPTIONS>
       )
     endforeach()
+  elseif("${TYPE}" STREQUAL "OBJECT")
+    if("${arg_SOURCES}" STREQUAL "")
+      message(
+        SEND_ERROR "${NAME} must have SOURCES as it's not an INTERFACE library")
+    endif("${arg_SOURCES}" STREQUAL "")
+
+    # In order to support OBJECT libraries while maintaining transitive
+    # linking dependencies, the library has to be split up into two where the
+    # outer interface library forwards not only the internal object library
+    # but also its TARGET_OBJECTS.
+    add_library("${NAME}._object" OBJECT EXCLUDE_FROM_ALL)
+    target_sources("${NAME}._object" PRIVATE ${arg_SOURCES})
+    pw_target_link_targets("${NAME}._object"
+      PRIVATE
+        "${NAME}._public_config"
+        "${NAME}._config"
+    )
+    foreach(compile_option_dep IN LISTS arg_PRIVATE_COMPILE_OPTIONS_DEPS_BEFORE)
+      # This will fail at build time if the target does not exist.
+      target_compile_options("${NAME}._object" BEFORE PRIVATE
+          $<TARGET_PROPERTY:${compile_option_dep},INTERFACE_COMPILE_OPTIONS>
+      )
+    endforeach()
+
+    add_library("${NAME}" INTERFACE EXCLUDE_FROM_ALL)
+    target_sources("${NAME}" PRIVATE ${arg_HEADERS})
+    pw_target_link_targets("${NAME}"
+      INTERFACE
+        "${NAME}._public_config"
+        "${NAME}._object"
+    )
+    target_link_libraries("${NAME}"
+      INTERFACE
+        $<TARGET_OBJECTS:${NAME}._object>
+    )
+  else()
+    message(FATAL_ERROR "Unsupported libary type: ${TYPE}")
   endif()
 endfunction(pw_add_library_generic)
 
@@ -397,8 +434,7 @@ endfunction(_pw_check_name_is_relative_to_root)
 # Required Args:
 #
 #   <name> - The name of the library target to be created.
-#   <type> - The library type which must be INTERFACE, OBJECT, STATIC, SHARED,
-#            or MODULE.
+#   <type> - The library type which must be INTERFACE, OBJECT, STATIC or SHARED.
 #
 # Optional Args:
 #
@@ -535,8 +571,8 @@ endfunction(pw_add_facade)
 #
 #   <name> - The name for the public facade target (<name>) for all users and
 #            the suffixed facade target for backend implementers (<name.facade).
-#   <type> - The library type which must be INTERFACE, OBJECT, STATIC, SHARED,
-#            or MODULE.
+#   <type> - The library type which must be INTERFACE, OBJECT, STATIC, or
+#            SHARED.
 #   BACKEND - The name of the facade's backend variable.
 #
 # Optional Args:
@@ -558,10 +594,10 @@ endfunction(pw_add_facade)
 #   PUBLIC_LINK_OPTIONS - public target_link_options arguments
 #   PRIVATE_LINK_OPTIONS - private target_link_options arguments
 function(pw_add_facade_generic NAME TYPE)
-  set(supported_library_types INTERFACE OBJECT STATIC SHARED MODULE)
+  set(supported_library_types INTERFACE OBJECT STATIC SHARED)
   if(NOT "${TYPE}" IN_LIST supported_library_types)
     message(FATAL_ERROR "\"${TYPE}\" is not a valid library type for ${NAME}. "
-          "Must be INTERFACE, OBJECT, STATIC, SHARED, or MODULE.")
+          "Must be INTERFACE, OBJECT, STATIC, or SHARED.")
   endif()
 
   _pw_add_library_multi_value_args(multi_value_args)

@@ -14,7 +14,7 @@
 
 include("$ENV{PW_ROOT}/pw_build/pigweed.cmake")
 
-pw_add_library_generic(pw_toolchain.arm_gcc.newlib_os_interface_stubs STATIC
+pw_add_library_generic(pw_toolchain.arm_gcc.newlib_os_interface_stubs OBJECT
   SOURCES
     newlib_os_interface_stubs.cc
   PUBLIC_DEPS
