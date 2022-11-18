@@ -603,10 +603,11 @@ below.
   to acknowledge. Resources used by the transfer are immediately freed, and
   there is no guarantee that the peer is notified of completion.
 
-Modern transfer server and client implementations will detect if their transfer
-peer is running the legacy protocol and automatically switch to it if required.
-It is **strongly** unadvised to use the legacy protocol in new code.
-
+Transfer clients request the latest transfer protocol version by default, but
+may be configured to request the legacy protocol. Transfer server and client
+implementations detect if their transfer peer is running the legacy protocol and
+automatically switch to it if required, even if they requested a newer protocol
+version. It is **strongly** unadvised to use the legacy protocol in new code.
 
 -----------------
 Integration tests

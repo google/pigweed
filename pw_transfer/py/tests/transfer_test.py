@@ -559,9 +559,11 @@ class TransferManagerTest(unittest.TestCase):
         self.assertEqual(exception.status, Status.INTERNAL)
 
     def test_write_transfer_timeout_after_initial_chunk(self) -> None:
-        manager = pw_transfer.Manager(self._service,
-                                      default_response_timeout_s=0.001,
-                                      max_retries=2)
+        manager = pw_transfer.Manager(
+            self._service,
+            default_response_timeout_s=0.001,
+            max_retries=2,
+            default_protocol_version=ProtocolVersion.LEGACY)
 
         with self.assertRaises(pw_transfer.Error) as context:
             manager.write(22, b'no server response!')
@@ -592,7 +594,8 @@ class TransferManagerTest(unittest.TestCase):
         manager = pw_transfer.Manager(
             self._service,
             default_response_timeout_s=DEFAULT_TIMEOUT_S,
-            max_retries=2)
+            max_retries=2,
+            default_protocol_version=ProtocolVersion.LEGACY)
 
         self._enqueue_server_responses(_Method.WRITE, [[
             transfer_pb2.Chunk(

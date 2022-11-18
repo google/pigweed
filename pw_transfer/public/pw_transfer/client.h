@@ -104,10 +104,8 @@ class Client {
   }
 
  private:
-  // TODO(frolv): This should be switched to default to kLatest once
-  // implementation of protocol v2 is complete.
   static constexpr ProtocolVersion kDefaultProtocolVersion =
-      ProtocolVersion::kLegacy;
+      ProtocolVersion::kLatest;
 
   using Transfer = pw_rpc::raw::Transfer;
 
