@@ -20,10 +20,23 @@ cc_library_static {
     name: "pw_string",
     vendor_available: true,
     export_include_dirs: ["public"],
+    header_libs: [
+        "pw_assert_headers",
+        "pw_assert_log_headers",
+        "pw_log_headers",
+        "pw_log_null_headers",
+        "pw_polyfill_headers",
+        "pw_preprocessor_headers",
+        "pw_result_headers",
+        "pw_span_headers",
+    ],
     host_supported: true,
     srcs: [
         "format.cc",
         "string_builder.cc",
         "type_to_string.cc",
+    ],
+    static_libs: [
+        "pw_status",
     ],
 }

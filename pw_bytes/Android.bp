@@ -31,5 +31,6 @@ cc_library_static {
     ],
     static_libs: [
         "pw_containers",
+        "pw_status",
     ],
 }
