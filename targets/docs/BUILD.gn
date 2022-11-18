@@ -21,13 +21,15 @@ import("$dir_pw_third_party/nanopb/nanopb.gni")
 import("$dir_pw_toolchain/arm_gcc/toolchains.gni")
 import("$dir_pw_toolchain/generate_toolchain.gni")
 
-pw_source_set("tokenized_log_handler") {
-  deps = [
-    "$dir_pw_bytes",
-    "$dir_pw_sys_io",
-    "$dir_pw_tokenizer:global_handler_with_payload.facade",
-  ]
-  sources = [ "tokenized_log_handler.cc" ]
+if (current_toolchain != default_toolchain) {
+  pw_source_set("tokenized_log_handler") {
+    deps = [
+      "$dir_pw_bytes",
+      "$dir_pw_sys_io",
+      "$dir_pw_tokenizer:global_handler_with_payload.facade",
+    ]
+    sources = [ "tokenized_log_handler.cc" ]
+  }
 }
 
 # Toolchain for generating upstream Pigweed documentation.
