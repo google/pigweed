@@ -192,6 +192,12 @@ message ServerFailureConfig {
   repeated uint32 packets_before_failure = 1;
 }
 
+// Configuration for the WindowPacketDropper proxy filter.
+message WindowPacketDropperConfig {
+  // The nth packet of every window to drop.
+  uint32 window_packet_to_drop = 1;
+}
+
 // Configuration for a single stage in the proxy filter stack.
 message FilterConfig {
   oneof filter {
@@ -201,6 +207,7 @@ message FilterConfig {
     DataTransposerConfig data_transposer = 4;
     ServerFailureConfig server_failure = 5;
     KeepDropQueueConfig keep_drop_queue = 6;
+    WindowPacketDropperConfig window_packet_dropper = 7;
   }
 }
 

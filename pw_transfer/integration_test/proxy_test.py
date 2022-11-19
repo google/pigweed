@@ -185,6 +185,44 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
             await keep_drop_queue.process(packet)
         self.assertEqual(sent_packets, expected_sequence)
 
+    async def test_window_packet_dropper(self):
+        sent_packets: List[bytes] = []
+
+        # Async helper so DataTransposer can await on it.
+        async def append(list: List[bytes], data: bytes):
+            list.append(data)
+
+        window_packet_dropper = proxy.WindowPacketDropper(
+            lambda data: append(sent_packets, data),
+            name="test",
+            window_packet_to_drop=0)
+
+        packets = [
+            b'1',
+            b'2',
+            b'3',
+            b'4',
+            b'5',
+        ]
+
+        expected_packets = packets[1:]
+
+        # Test each even twice to assure the filter does not have issues
+        # on new window bondaries.
+        events = [
+            proxy.Event.PARAMETERS_RETRANSMIT,
+            proxy.Event.PARAMETERS_CONTINUE,
+            proxy.Event.PARAMETERS_RETRANSMIT,
+            proxy.Event.PARAMETERS_CONTINUE,
+        ]
+
+        for event in events:
+            sent_packets.clear()
+            for packet in packets:
+                await window_packet_dropper.process(packet)
+            self.assertEqual(sent_packets, expected_packets)
+            window_packet_dropper.handle_event(event)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -56,6 +56,8 @@ _RECEIVE_BUFFER_SIZE = 2048
 
 class Event(Enum):
     TRANSFER_START = 1
+    PARAMETERS_RETRANSMIT = 2
+    PARAMETERS_CONTINUE = 3
 
 
 class Filter(abc.ABC):
@@ -292,6 +294,36 @@ class ServerFailure(Filter):
             self.advance_packets_before_failure()
 
 
+class WindowPacketDropper(Filter):
+    """A filter to allow the same packet in each window to be dropped
+
+    WindowPacketDropper with drop the nth packet in each window as
+    specified by window_packet_to_drop.  This process will happend
+    indefinitely for each window.
+
+    This filter should be instantiated in the same filter stack as an
+    HdlcPacketizer so that EventFilter can decode complete packets.
+    """
+    def __init__(self, send_data: Callable[[bytes], Awaitable[None]],
+                 name: str, window_packet_to_drop: int):
+        super().__init__(send_data)
+        self._name = name
+        self._relay_packets = True
+        self._window_packet_to_drop = window_packet_to_drop
+        self._window_packet = 0
+
+    async def process(self, data: bytes) -> None:
+        if self._window_packet != self._window_packet_to_drop:
+            await self.send_data(data)
+
+        self._window_packet += 1
+
+    def handle_event(self, event: Event) -> None:
+        if (event is Event.PARAMETERS_RETRANSMIT
+                or event is Event.PARAMETERS_CONTINUE):
+            self._window_packet = 0
+
+
 class EventFilter(Filter):
     """A filter that inspects packets and send events to other filters.
 
@@ -310,6 +342,10 @@ class EventFilter(Filter):
             chunk = Chunk.from_message(raw_chunk)
             if chunk.type is Chunk.Type.START:
                 await self._queue.put(Event.TRANSFER_START)
+            elif chunk.type is Chunk.Type.PARAMETERS_RETRANSMIT:
+                await self._queue.put(Event.PARAMETERS_RETRANSMIT)
+            elif chunk.type is Chunk.Type.PARAMETERS_CONTINUE:
+                await self._queue.put(Event.PARAMETERS_CONTINUE)
         except:
             # Silently ignore invalid packets
             pass
@@ -367,6 +403,12 @@ async def _handle_simplex_connection(
             keep_drop_queue = config.keep_drop_queue
             filter_stack = KeepDropQueue(filter_stack, name,
                                          keep_drop_queue.keep_drop_queue)
+        elif filter_name == "window_packet_dropper":
+            window_packet_dropper = config.window_packet_dropper
+            filter_stack = WindowPacketDropper(
+                filter_stack, name,
+                window_packet_dropper.window_packet_to_drop)
+            event_handlers.append(filter_stack.handle_event)
         else:
             sys.exit(f'Unknown filter {filter_name}')
 
