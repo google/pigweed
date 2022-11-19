@@ -842,8 +842,9 @@ void BrEdrConnectionManager::CompleteRequest(PeerId peer_id, DeviceAddress addre
 
   bt_log(INFO, "gap-bredr",
          "%s connection %s (status: %s, role: %s, peer: %s, addr: %s, handle: %#.4x)", direction,
-         result, bt_str(status), role == hci_spec::ConnectionRole::CENTRAL ? "leader" : "follower",
-         bt_str(peer_id), bt_str(address), handle);
+         result, bt_str(status),
+         role == hci_spec::ConnectionRole::CENTRAL ? "central" : "peripheral", bt_str(peer_id),
+         bt_str(address), handle);
 
   if (completes_outgoing_request) {
     // Determine the modified status in case of cancellation or timeout

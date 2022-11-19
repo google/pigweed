@@ -119,6 +119,18 @@ struct InquiryCommand:
 # inquiry to indicate it's completion. No Inquiry Complete event is sent if
 # Inquiry is cancelled.
 
+# =========================================
+# Accept Connection Request (v1.1) (BR/EDR)
+
+struct AcceptConnectionRequestCommand:
+  let hdr_size = EmbossCommandHeader.$size_in_bytes
+  0     [+hdr_size] EmbossCommandHeader header
+
+  # The 48-bit BD_ADDR of the remote device requesting the connection.
+  $next [+6] UInt bd_addr
+
+  $next [+1] ConnectionRole role
+
 # ======================================================
 # Enhanced Setup Synchronous Connection Command (CSA2) (BR/EDR)
 
@@ -226,6 +238,9 @@ struct EnhancedSetupSynchronousConnectionCommand:
   let scp_size = SynchronousConnectionParameters.$size_in_bytes
   $next [+scp_size] SynchronousConnectionParameters connection_parameters
 
+# ===============================================================
+# Enhanced Accept Synchronous Connection Request Command (CSA2) (BR/EDR)
+
 struct EnhancedAcceptSynchronousConnectionRequestCommand:
   let hdr_size = EmbossCommandHeader.$size_in_bytes
   0     [+hdr_size] EmbossCommandHeader header
@@ -235,15 +250,6 @@ struct EnhancedAcceptSynchronousConnectionRequestCommand:
 
   let scp_size = SynchronousConnectionParameters.$size_in_bytes
   $next [+scp_size] SynchronousConnectionParameters connection_parameters
-
-struct AcceptConnectionRequestCommand:
-  let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size] EmbossCommandHeader header
-
-  # The 48-bit BD_ADDR of the remote device requesting the connection.
-  $next [+6] UInt bd_addr
-
-  $next [+1] ConnectionRole role
 
 # ============================ Test packets =============================
 
