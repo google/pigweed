@@ -108,7 +108,7 @@ such as a quick program for local use and a full program for automated use. The
 * ``root``: Source checkout root directory
 * ``repos``: Repositories (top-level and submodules) processed by
   ``pw presubmit``
-* ``output_dir``: Output directory for the presubmit step
+* ``output_dir``: Output directory for this specific presubmit step
 * ``paths``: Modified files for the presubmit step to check (often used in
   formatting steps but ignored in compile steps)
 * ``package_root``: Root directory for ``pw package`` installations

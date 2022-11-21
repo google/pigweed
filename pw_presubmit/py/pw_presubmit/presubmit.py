@@ -242,7 +242,24 @@ class LuciContext:
 
 @dataclasses.dataclass
 class PresubmitContext:
-    """Context passed into presubmit checks."""
+    """Context passed into presubmit checks.
+
+    For full documentation on the members see pw_presubmit/docs.rst.
+
+    Args:
+        root: Source checkout root directory
+        repos: Repositories (top-level and submodules) processed by
+            pw presubmit
+        output_dir: Output directory for this specific presubmit step
+        paths: Modified files for the presubmit step to check (often used in
+            formatting steps but ignored in compile steps)
+        package_root: Root directory for pw package installations
+        override_gn_args: Additional GN args processed by build.gn_gen()
+        luci: Information about the LUCI build or None if not running in LUCI
+        num_jobs: Number of jobs to run in parallel
+        continue_after_build_error: For steps that compile, don't exit on the
+            first compilation error
+    """
     root: Path
     repos: Tuple[Path, ...]
     output_dir: Path
