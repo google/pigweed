@@ -118,11 +118,19 @@ _update_or_check_modules_lists = {
   ]
 }
 
+# There are races if the module check and module file update are run at the same
+# time. Force them to be serialized to prevent races. As long as the generated
+# module file is up to date, they'll pass.
+pool("module_check_pool") {
+  depth = 1
+}
+
 # Check that PIGWEED_MODULES is up-to-date and sorted.
 action("check_modules") {
   forward_variables_from(_update_or_check_modules_lists, "*")
   outputs = [ "$target_gen_dir/$target_name.passed" ]
   args += [ "--warn-only" ] + rebase_path(outputs, root_build_dir)
+  pool = ":module_check_pool"
 }
 
 # Run this command after adding an item to PIGWEED_MODULES to update the
@@ -130,6 +138,7 @@ action("check_modules") {
 action("update_modules") {
   forward_variables_from(_update_or_check_modules_lists, "*")
   outputs = [ "$target_gen_dir/$target_name.ALWAYS_RERUN" ]  # Never created
+  pool = ":module_check_pool"
 }
 
 group("pw_system_demo") {
@@ -183,8 +192,13 @@ _build_pigweed_default_at_all_optimization_levels("host_clang") {
   toolchain_prefix = "$_internal_toolchains:pw_strict_host_clang_"
 }
 
-_build_pigweed_default_at_all_optimization_levels("host_gcc") {
-  toolchain_prefix = "$_internal_toolchains:pw_strict_host_gcc_"
+# GCC is only supported for Windows. Pigweed doesn't yet provide a Windows
+# clang toolchain, and Pigweed does not provide gcc toolchains for macOS and
+# Linux.
+if (host_os == "win") {
+  _build_pigweed_default_at_all_optimization_levels("host_gcc") {
+    toolchain_prefix = "$_internal_toolchains:pw_strict_host_gcc_"
+  }
 }
 
 if (pw_third_party_mcuxpresso_SDK != "") {
@@ -208,9 +222,18 @@ _build_pigweed_default_at_all_optimization_levels("qemu_gcc") {
       "$dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_gcc_"
 }
 
-_build_pigweed_default_at_all_optimization_levels("qemu_clang") {
-  toolchain_prefix =
-      "$dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_clang_"
+# TODO(b/244604080): Inline string tests are too big to fit in the QEMU firmware
+# except under a size-optimized build. For now, only build size-optimized.
+#
+# _build_pigweed_default_at_all_optimization_levels("qemu_clang") {
+#   toolchain_prefix =
+#       "$dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_clang_"
+# }
+group("qemu_clang_size_optimized") {
+  deps = [ ":pigweed_default($dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_clang_size_optimized)" ]
+}
+group("qemu_clang") {
+  deps = [ ":qemu_clang_size_optimized" ]
 }
 
 # Run clang-tidy on pigweed_default with pw_strict_host_clang_debug toolchain options.
@@ -255,7 +278,8 @@ group("asan") {
 # TODO(b/234876100): msan will not work until the C++ standard library included
 # in the sysroot has a variant built with msan.
 group("msan") {
-  if (host_os != "win") {
+  # TODO(b/259695498): msan doesn't work on macOS yet.
+  if (host_os != "win" && host_os != "mac") {
     deps = [ ":pw_module_tests.run($dir_pigweed/targets/host:host_clang_msan)" ]
   }
 }
@@ -267,14 +291,16 @@ group("tsan") {
 }
 
 group("ubsan") {
-  if (host_os != "win") {
+  # TODO(b/259695498): ubsan doesn't work on macOS yet.
+  if (host_os != "win" && host_os != "mac") {
     deps =
         [ ":pw_module_tests.run($dir_pigweed/targets/host:host_clang_ubsan)" ]
   }
 }
 
 group("ubsan_heuristic") {
-  if (host_os != "win") {
+  # TODO(b/259695498): ubsan_heuristic doesn't work on macOS yet.
+  if (host_os != "win" && host_os != "mac") {
     deps = [ ":pw_module_tests.run($dir_pigweed/targets/host:host_clang_ubsan_heuristic)" ]
   }
 }
