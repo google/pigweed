@@ -35,15 +35,15 @@ DynamicByteBuffer ConnectionRequestPacket(DeviceAddress address,
 DynamicByteBuffer CreateConnectionPacket(DeviceAddress address);
 DynamicByteBuffer ConnectionCompletePacket(
     DeviceAddress address, hci_spec::ConnectionHandle conn,
-    hci_spec::StatusCode status = hci_spec::StatusCode::kSuccess);
+    hci_spec::StatusCode status = hci_spec::StatusCode::SUCCESS);
 
 DynamicByteBuffer DisconnectPacket(
     hci_spec::ConnectionHandle conn,
-    hci_spec::StatusCode reason = hci_spec::StatusCode::kRemoteUserTerminatedConnection);
+    hci_spec::StatusCode reason = hci_spec::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
 DynamicByteBuffer DisconnectStatusResponsePacket();
 DynamicByteBuffer DisconnectionCompletePacket(
     hci_spec::ConnectionHandle conn,
-    hci_spec::StatusCode reason = hci_spec::StatusCode::kRemoteUserTerminatedConnection);
+    hci_spec::StatusCode reason = hci_spec::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
 
 DynamicByteBuffer EncryptionChangeEventPacket(hci_spec::StatusCode status_code,
                                               hci_spec::ConnectionHandle conn,
@@ -77,7 +77,7 @@ DynamicByteBuffer RejectSynchronousConnectionRequest(DeviceAddress address,
                                                      hci_spec::StatusCode status_code);
 
 DynamicByteBuffer RoleChangePacket(DeviceAddress address, hci_spec::ConnectionRole role,
-                                   hci_spec::StatusCode status = hci_spec::StatusCode::kSuccess);
+                                   hci_spec::StatusCode status = hci_spec::StatusCode::SUCCESS);
 
 DynamicByteBuffer SetConnectionEncryption(hci_spec::ConnectionHandle conn, bool enable);
 

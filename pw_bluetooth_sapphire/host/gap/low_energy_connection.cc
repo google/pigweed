@@ -356,7 +356,7 @@ void LowEnergyConnection::HandleRequestConnectionParameterUpdateCommandStatus(
   // The next LE Connection Update complete event is for this command iff the command |status|
   // is success.
   if (status.is_error()) {
-    if (status == ToResult(hci_spec::StatusCode::kUnsupportedRemoteFeature)) {
+    if (status == ToResult(hci_spec::StatusCode::UNSUPPORTED_REMOTE_FEATURE)) {
       // Retry connection parameter update with l2cap if the peer doesn't support LL procedure.
       bt_log(
           INFO, "gap-le",
@@ -371,7 +371,7 @@ void LowEnergyConnection::HandleRequestConnectionParameterUpdateCommandStatus(
   // status event, which is handled by the above code (see v5.2, Vol. 4, Part E 7.7.15 / 7.7.65.3).
   le_conn_update_complete_command_callback_ = [this, params](hci_spec::StatusCode status) {
     // Retry connection parameter update with l2cap if the peer doesn't support LL procedure.
-    if (status == hci_spec::StatusCode::kUnsupportedRemoteFeature) {
+    if (status == hci_spec::StatusCode::UNSUPPORTED_REMOTE_FEATURE) {
       bt_log(INFO, "gap-le",
              "peer does not support HCI LE Connection Update command, trying l2cap request "
              "(peer: %s)",
@@ -455,10 +455,10 @@ void LowEnergyConnection::OnLEConnectionUpdateComplete(const hci::EventPacket& e
     le_conn_update_complete_command_callback_(payload->status);
   }
 
-  if (payload->status != hci_spec::StatusCode::kSuccess) {
+  if (payload->status != hci_spec::StatusCode::SUCCESS) {
     bt_log(WARN, "gap-le",
            "HCI LE Connection Update Complete event with error "
-           "(peer: %s, status: %#.2x, handle: %#.4x)",
+           "(peer: %s, status: %#.2hhx, handle: %#.4x)",
            bt_str(peer_id()), payload->status, handle);
 
     return;

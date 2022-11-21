@@ -297,17 +297,18 @@ class FakeController : public ControllerTestDoubleBase {
   // by LE central or spontaneously by the controller.
   void SendLEConnectionUpdateCompleteSubevent(
       hci_spec::ConnectionHandle handle, const hci_spec::LEConnectionParameters& params,
-      hci_spec::StatusCode status = hci_spec::StatusCode::kSuccess);
+      hci_spec::StatusCode status = hci_spec::StatusCode::SUCCESS);
 
   // Marks the FakePeer with address |address| as disconnected and sends a HCI
   // Disconnection Complete event for all of its links.
-  void Disconnect(const DeviceAddress& addr,
-                  hci_spec::StatusCode reason = hci_spec::kRemoteUserTerminatedConnection);
+  void Disconnect(
+      const DeviceAddress& addr,
+      hci_spec::StatusCode reason = hci_spec::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
 
   // Send HCI Disconnection Complete event for |handle|.
   void SendDisconnectionCompleteEvent(
       hci_spec::ConnectionHandle handle,
-      hci_spec::StatusCode reason = hci_spec::kRemoteUserTerminatedConnection);
+      hci_spec::StatusCode reason = hci_spec::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
 
   // Send HCI encryption change event for |handle| with the given parameters.
   void SendEncryptionChangeEvent(hci_spec::ConnectionHandle handle, hci_spec::StatusCode status,

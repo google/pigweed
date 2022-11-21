@@ -265,7 +265,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, ConnectionTest) {
   EXPECT_FALSE(this->advertiser()->IsAdvertising(kPublicAddress));
 
   // Advertising state should get cleared on a disconnection
-  link->Disconnect(hci_spec::StatusCode::kRemoteUserTerminatedConnection);
+  link->Disconnect(hci_spec::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
   this->test_device()->SendDisconnectionCompleteEvent(link->handle());
   this->RunLoopUntilIdle();
   EXPECT_FALSE(this->GetControllerAdvertisingState().enabled);

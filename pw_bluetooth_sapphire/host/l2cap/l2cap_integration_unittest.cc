@@ -689,8 +689,8 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
 
   if (kPriority != hci::AclPriority::kNormal) {
     auto cmd_complete =
-        CommandCompletePacket(op_code, kExpectSuccess ? hci_spec::StatusCode::kSuccess
-                                                      : hci_spec::StatusCode::kUnknownCommand);
+        CommandCompletePacket(op_code, kExpectSuccess ? hci_spec::StatusCode::SUCCESS
+                                                      : hci_spec::StatusCode::UNKNOWN_COMMAND);
     EXPECT_CMD_PACKET_OUT(test_device(), kEncodedCommand, &cmd_complete);
   }
 
@@ -714,7 +714,7 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
   priority_from_encode_cb.reset();
 
   if (kPriority != hci::AclPriority::kNormal && kExpectSuccess) {
-    auto cmd_complete = CommandCompletePacket(op_code, hci_spec::StatusCode::kSuccess);
+    auto cmd_complete = CommandCompletePacket(op_code, hci_spec::StatusCode::SUCCESS);
     EXPECT_CMD_PACKET_OUT(test_device(), kEncodedCommand, &cmd_complete);
   }
 

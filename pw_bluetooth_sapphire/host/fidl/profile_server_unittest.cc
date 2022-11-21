@@ -1076,7 +1076,7 @@ TEST_F(ProfileServerTestConnectedPeer, ConnectScoInitiatorAndCloseReceiverBefore
   FakeScoConnectionReceiver receiver(receiver_handle.NewRequest(), dispatcher());
 
   test_device()->SetDefaultCommandStatus(bt::hci_spec::kEnhancedSetupSynchronousConnection,
-                                         bt::hci_spec::kSuccess);
+                                         bt::hci_spec::StatusCode::SUCCESS);
   client()->ConnectSco(fuchsia::bluetooth::PeerId{peer()->identifier().value()}, /*initiator=*/true,
                        std::move(sco_params_list), std::move(receiver_handle));
   receiver.Close();
@@ -1085,7 +1085,7 @@ TEST_F(ProfileServerTestConnectedPeer, ConnectScoInitiatorAndCloseReceiverBefore
   EXPECT_FALSE(receiver.connection().is_bound());
   test_device()->SendCommandChannelPacket(bt::testing::SynchronousConnectionCompletePacket(
       0x00, peer()->address(), bt::hci_spec::LinkType::kSCO,
-      bt::hci_spec::StatusCode::kConnectionTimeout));
+      bt::hci_spec::StatusCode::CONNECTION_TIMEOUT));
   RunLoopUntilIdle();
   EXPECT_FALSE(receiver.error().has_value());
   EXPECT_FALSE(receiver.connection().is_bound());
@@ -1383,7 +1383,7 @@ TEST_P(AndroidSupportedFeaturesTest, AudioOffloadExtGetSupportedFeatures) {
     hci_android::LEGetVendorCapabilitiesReturnParams params;
     memset(&params, 0, sizeof(params));
     params.a2dp_source_offload_capability_mask = htole32(a2dp_offload_capabilities);
-    params.status = bt::hci_spec::StatusCode::kSuccess;
+    params.status = bt::hci_spec::StatusCode::SUCCESS;
     adapter()->mutable_state().android_vendor_capabilities.Initialize(params);
   }
 

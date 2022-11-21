@@ -19,7 +19,7 @@ using namespace inspect::testing;
 
 const DeviceAddress kTestAddr(DeviceAddress::Type::kBREDR, {1});
 const PeerId kPeerId;
-constexpr hci::Error RetryableError = ToResult(hci_spec::StatusCode::kPageTimeout).error_value();
+constexpr hci::Error RetryableError = ToResult(hci_spec::StatusCode::PAGE_TIMEOUT).error_value();
 
 TEST(BrEdrConnectionRequestTests, IncomingRequestStatusTracked) {
   // A freshly created request is not yet incoming

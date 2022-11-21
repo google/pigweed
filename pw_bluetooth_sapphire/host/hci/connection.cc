@@ -42,7 +42,7 @@ Connection::Connection(hci_spec::ConnectionHandle handle, const DeviceAddress& l
 
 Connection::~Connection() {
   if (conn_state_ == Connection::State::kConnected) {
-    Disconnect(hci_spec::StatusCode::kRemoteUserTerminatedConnection);
+    Disconnect(hci_spec::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
   }
 }
 
@@ -69,7 +69,7 @@ CommandChannel::EventCallbackResult Connection::OnDisconnectionComplete(
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
-  bt_log(INFO, "hci", "disconnection complete - %s, handle: %#.4x, reason: %#.2x (%s)",
+  bt_log(INFO, "hci", "disconnection complete - %s, handle: %#.4x, reason: %#.2hhx (%s)",
          bt_str(event.ToResult()), handle, params.reason,
          hci_spec::StatusCodeToString(params.reason).c_str());
 
@@ -108,7 +108,8 @@ void Connection::Disconnect(hci_spec::StatusCode reason) {
   params->connection_handle = htole16(handle());
   params->reason = reason;
 
-  bt_log(DEBUG, "hci", "disconnecting connection (handle: %#.4x, reason: %#.2x)", handle(), reason);
+  bt_log(DEBUG, "hci", "disconnecting connection (handle: %#.4x, reason: %#.2hhx)", handle(),
+         reason);
 
   // Send HCI Disconnect.
   hci_->command_channel()->SendCommand(std::move(disconn), std::move(status_cb),

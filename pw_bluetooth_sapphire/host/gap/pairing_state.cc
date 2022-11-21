@@ -426,7 +426,7 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci_spec::Link
 
 void PairingState::OnAuthenticationComplete(hci_spec::StatusCode status_code) {
   if (is_pairing() && peer_->bredr() && peer_->bredr()->bonded() &&
-      status_code == hci_spec::StatusCode::kPinOrKeyMissing) {
+      status_code == hci_spec::StatusCode::PIN_OR_KEY_MISSING) {
     // We have provided our link key, but the remote side says they don't have a key.
     // Pretend we don't have a link key, then start the pairing over.
     // We will get consent even if we are otherwise kAutomatic

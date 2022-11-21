@@ -265,7 +265,7 @@ TEST_F(LowEnergyCentralServerTest, FailedConnectionCleanedUp) {
   };
 
   test_device()->SetDefaultCommandStatus(bt::hci_spec::kReadRemoteVersionInfo,
-                                         bt::hci_spec::StatusCode::kConnectionLimitExceeded);
+                                         bt::hci_spec::StatusCode::CONNECTION_LIMIT_EXCEEDED);
 
   ASSERT_FALSE(server()->FindConnectionForTesting(peer->identifier()).has_value());
   central_proxy()->ConnectPeripheral(peer->identifier().ToString(), std::move(options),
@@ -940,7 +940,7 @@ TEST_F(LowEnergyCentralServerTest, DiscoveryStartJustAfterScanCanceledShouldBeIg
 
 TEST_F(LowEnergyCentralServerTest, ScanFailsToStart) {
   test_device()->SetDefaultResponseStatus(bt::hci_spec::kLESetScanEnable,
-                                          bt::hci_spec::StatusCode::kControllerBusy);
+                                          bt::hci_spec::StatusCode::CONTROLLER_BUSY);
 
   fidl::InterfaceHandle<fble::ScanResultWatcher> result_watcher_handle;
   auto result_watcher_server = result_watcher_handle.NewRequest();
@@ -969,7 +969,7 @@ TEST_F(LowEnergyCentralServerTest, ScanSessionErrorCancelsScan) {
     if (scan_states.size() == 2u) {
       EXPECT_FALSE(enabled);
       test_device()->SetDefaultResponseStatus(bt::hci_spec::kLESetScanEnable,
-                                              bt::hci_spec::StatusCode::kCommandDisallowed);
+                                              bt::hci_spec::StatusCode::COMMAND_DISALLOWED);
     }
   });
 

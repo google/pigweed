@@ -517,7 +517,7 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
         event->params<hci_spec::CommandStatusEventParams>();
     matching_opcode = le16toh(params.command_opcode);
     allowed_command_packets_.Set(params.num_hci_command_packets);
-    unregister_async_handler = params.status != hci_spec::StatusCode::kSuccess;
+    unregister_async_handler = params.status != hci_spec::StatusCode::SUCCESS;
   }
   bt_log(TRACE, "hci", "allowed packets update: %zu", allowed_command_packets_.value());
 

@@ -216,14 +216,14 @@ void ChannelImpl::SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
   // Channel may be inactive if this method is called before activation.
   if (!link_) {
     bt_log(DEBUG, "l2cap", "Ignoring %s on closed channel", __FUNCTION__);
-    callback(ToResult(hci_spec::StatusCode::kCommandDisallowed));
+    callback(ToResult(hci_spec::StatusCode::COMMAND_DISALLOWED));
     return;
   }
 
   auto cb_wrapper = [self = weak_ptr_factory_.GetWeakPtr(), cb = std::move(callback),
                      flush_timeout](auto result) mutable {
     if (!self) {
-      cb(ToResult(hci_spec::StatusCode::kUnspecifiedError));
+      cb(ToResult(hci_spec::StatusCode::UNSPECIFIED_ERROR));
       return;
     }
 

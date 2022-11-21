@@ -133,15 +133,15 @@ TEST_P(LinkTypeConnectionTest, Disconnect) {
 
   // HCI_Disconnect (handle: 0x0001, reason: RemoteUserTerminatedConnection)
   StaticByteBuffer req_bytes(
-      0x06, 0x04, 0x03, 0x01, 0x00, hci_spec::StatusCode::kRemoteUserTerminatedConnection);
+      0x06, 0x04, 0x03, 0x01, 0x00, hci_spec::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
 
   // Respond with Command Status and Disconnection Complete.
   StaticByteBuffer cmd_status_bytes(
-      hci_spec::kCommandStatusEventCode, 0x04, hci_spec::StatusCode::kSuccess, 1, 0x06, 0x04);
+      hci_spec::kCommandStatusEventCode, 0x04, hci_spec::StatusCode::SUCCESS, 1, 0x06, 0x04);
 
   StaticByteBuffer disc_cmpl_bytes(
       hci_spec::kDisconnectionCompleteEventCode, 0x04,
-      hci_spec::StatusCode::kSuccess, 0x01, 0x00, hci_spec::StatusCode::kConnectionTerminatedByLocalHost);
+      hci_spec::StatusCode::SUCCESS, 0x01, 0x00, hci_spec::StatusCode::CONNECTION_TERMINATED_BY_LOCAL_HOST);
 
   // clang-format on
 
@@ -156,11 +156,11 @@ TEST_P(LinkTypeConnectionTest, Disconnect) {
   size_t disconn_cb_count = 0;
   auto disconn_complete_cb = [&](const Connection* cb_conn, auto reason) {
     disconn_cb_count++;
-    EXPECT_EQ(reason, hci_spec::StatusCode::kConnectionTerminatedByLocalHost);
+    EXPECT_EQ(reason, hci_spec::StatusCode::CONNECTION_TERMINATED_BY_LOCAL_HOST);
   };
   connection->set_peer_disconnect_callback(disconn_complete_cb);
 
-  connection->Disconnect(hci_spec::StatusCode::kRemoteUserTerminatedConnection);
+  connection->Disconnect(hci_spec::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
 
   RunLoopUntilIdle();
   EXPECT_TRUE(callback_called);
@@ -218,7 +218,7 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndLocalDisconnection) {
   EXPECT_CMD_PACKET_OUT(test_device(), bt::testing::DisconnectPacket(kHandle0),
                         &disconnect_status_rsp);
 
-  conn0->Disconnect(hci_spec::StatusCode::kRemoteUserTerminatedConnection);
+  conn0->Disconnect(hci_spec::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
   RunLoopUntilIdle();
 
   // controller packet counts for |kHandle0| should not have been cleared after disconnect.
@@ -349,15 +349,15 @@ TEST_P(LinkTypeConnectionTest, DisconnectError) {
 
   // HCI_Disconnect (handle: 0x0001, reason: RemoteUserTerminatedConnection)
   StaticByteBuffer req_bytes(
-      0x06, 0x04, 0x03, 0x01, 0x00, hci_spec::StatusCode::kRemoteUserTerminatedConnection);
+      0x06, 0x04, 0x03, 0x01, 0x00, hci_spec::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
 
   // Respond with Command Status and Disconnection Complete.
   StaticByteBuffer cmd_status_bytes(
-      hci_spec::kCommandStatusEventCode, 0x04, hci_spec::StatusCode::kSuccess, 1, 0x06, 0x04);
+      hci_spec::kCommandStatusEventCode, 0x04, hci_spec::StatusCode::SUCCESS, 1, 0x06, 0x04);
 
   StaticByteBuffer disc_cmpl_bytes(
       hci_spec::kDisconnectionCompleteEventCode, 0x04,
-      hci_spec::StatusCode::kCommandDisallowed, 0x01, 0x00, hci_spec::StatusCode::kConnectionTerminatedByLocalHost);
+      hci_spec::StatusCode::COMMAND_DISALLOWED, 0x01, 0x00, hci_spec::StatusCode::CONNECTION_TERMINATED_BY_LOCAL_HOST);
 
   // clang-format on
 
@@ -370,7 +370,7 @@ TEST_P(LinkTypeConnectionTest, DisconnectError) {
 
   auto connection = NewConnection();
 
-  connection->Disconnect(hci_spec::StatusCode::kRemoteUserTerminatedConnection);
+  connection->Disconnect(hci_spec::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
 
   RunLoopUntilIdle();
   EXPECT_TRUE(callback_called);
@@ -409,7 +409,7 @@ TEST_F(ConnectionTest, LEStartEncryptionFailsAtStatus) {
   conn->set_ltk(hci_spec::LinkKey(kLTK, kRand, kEDiv));
   conn->set_encryption_change_callback([&](Result<bool> result) {
     ASSERT_TRUE(result.is_error());
-    EXPECT_TRUE(result.error_value().is(hci_spec::StatusCode::kCommandDisallowed));
+    EXPECT_TRUE(result.error_value().is(hci_spec::StatusCode::COMMAND_DISALLOWED));
     callback = true;
   });
 
@@ -472,7 +472,7 @@ TEST_F(ConnectionTest, AclStartEncryptionFailsAtStatus) {
   conn->set_link_key(hci_spec::LinkKey(kLTK, 0, 0), kLinkKeyType);
   conn->set_encryption_change_callback([&](Result<bool> result) {
     ASSERT_TRUE(result.is_error());
-    EXPECT_TRUE(result.error_value().is(hci_spec::StatusCode::kCommandDisallowed));
+    EXPECT_TRUE(result.error_value().is(hci_spec::StatusCode::COMMAND_DISALLOWED));
     callback = true;
   });
 
@@ -625,7 +625,7 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeEvents) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(3, callback_count);
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::kPinOrKeyMissing).error_value(), result);
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::PIN_OR_KEY_MISSING).error_value(), result);
 }
 
 TEST_F(ConnectionTest, EncryptionFailureNotifiesPeerDisconnectCallback) {
@@ -639,7 +639,7 @@ TEST_F(ConnectionTest, EncryptionFailureNotifiesPeerDisconnectCallback) {
   // Send the encryption change failure. The host should disconnect the link as a result.
   EXPECT_CMD_PACKET_OUT(test_device(), kDisconnectCommand);
   test_device()->SendCommandChannelPacket(bt::testing::EncryptionChangeEventPacket(
-      hci_spec::StatusCode::kConnectionTerminatedMICFailure, kTestHandle,
+      hci_spec::StatusCode::CONNECTION_TERMINATED_MIC_FAILURE, kTestHandle,
       hci_spec::EncryptionStatus::kOff));
   RunLoopUntilIdle();
   EXPECT_FALSE(peer_disconnect_callback_received);
@@ -648,7 +648,7 @@ TEST_F(ConnectionTest, EncryptionFailureNotifiesPeerDisconnectCallback) {
   // correspond to the Disconnect command sent by hci::Connection, which will cause a later
   // subsequent event).
   test_device()->SendCommandChannelPacket(bt::testing::DisconnectionCompletePacket(
-      kTestHandle, hci_spec::StatusCode::kConnectionTerminatedMICFailure));
+      kTestHandle, hci_spec::StatusCode::CONNECTION_TERMINATED_MIC_FAILURE));
   RunLoopUntilIdle();
   EXPECT_TRUE(peer_disconnect_callback_received);
 }
@@ -745,7 +745,7 @@ TEST_P(LinkTypeConnectionTest, EncryptionKeyRefreshEvents) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(2, callback_count);
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::kPinOrKeyMissing).error_value(), result);
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::PIN_OR_KEY_MISSING).error_value(), result);
 }
 
 TEST_F(ConnectionTest, LELongTermKeyRequestIgnoredEvent) {

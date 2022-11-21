@@ -359,7 +359,7 @@ TEST_F(LegacyLowEnergyAdvertiserTest, StartAdvertisingReadTxPowerFails) {
 
   // Simulate failure for Read TX Power operation.
   test_device()->SetDefaultResponseStatus(hci_spec::kLEReadAdvertisingChannelTxPower,
-                                          hci_spec::StatusCode::kHardwareFailure);
+                                          hci_spec::StatusCode::HARDWARE_FAILURE);
 
   advertiser()->StartAdvertising(kRandomAddress, ad, scan_data, options, nullptr,
                                  MakeExpectErrorCallback());

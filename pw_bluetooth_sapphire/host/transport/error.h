@@ -7,6 +7,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/hci-protocol.emb.h"
 
 namespace bt {
 namespace hci {
@@ -30,7 +31,7 @@ struct ProtocolErrorTraits<hci_spec::StatusCode> {
   static std::string ToString(hci_spec::StatusCode ecode);
 
   static constexpr bool is_success(hci_spec::StatusCode ecode) {
-    return ecode == hci_spec::StatusCode::kSuccess;
+    return ecode == hci_spec::StatusCode::SUCCESS;
   }
 };
 

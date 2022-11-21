@@ -70,7 +70,7 @@ TEST_F(CommandChannelTest, SingleRequestResponse) {
       0x04,  // parameter_total_size (4 byte payload)
       0x01,  // num_hci_command_packets (1 can be sent)
       LowerBits(hci_spec::kReset), UpperBits(hci_spec::kReset),  // HCI_Reset opcode
-      hci_spec::StatusCode::kHardwareFailure);
+      hci_spec::StatusCode::HARDWARE_FAILURE);
   // clang-format on
   EXPECT_CMD_PACKET_OUT(test_device(), req, &rsp);
   StartTestDevice();
@@ -94,7 +94,7 @@ TEST_F(CommandChannelTest, SingleRequestResponse) {
         EXPECT_EQ(
             hci_spec::kReset,
             le16toh(event.view().payload<hci_spec::CommandCompleteEventParams>().command_opcode));
-        EXPECT_EQ(hci_spec::StatusCode::kHardwareFailure,
+        EXPECT_EQ(hci_spec::StatusCode::HARDWARE_FAILURE,
                   event.return_params<hci_spec::SimpleReturnParams>()->status);
       });
 
@@ -123,14 +123,14 @@ TEST_F(CommandChannelTest, SingleAsynchronousRequest) {
   auto rsp0 = StaticByteBuffer(
        hci_spec::kCommandStatusEventCode,
       0x04,  // parameter_total_size (4 byte payload)
-      hci_spec::StatusCode::kSuccess, 0x01, // status, num_hci_command_packets (1 can be sent)
+      hci_spec::StatusCode::SUCCESS, 0x01, // status, num_hci_command_packets (1 can be sent)
       LowerBits(hci_spec::kInquiry), UpperBits(hci_spec::kInquiry)  // HCI_Inquiry opcode
       );
   // HCI_InquiryComplete
   auto rsp1 = StaticByteBuffer(
       hci_spec::kInquiryCompleteEventCode,
       0x01,  // parameter_total_size (1 byte payload)
-      hci_spec::StatusCode::kSuccess);
+      hci_spec::StatusCode::SUCCESS);
   // clang-format on
   EXPECT_CMD_PACKET_OUT(test_device(), req, &rsp0, &rsp1);
   StartTestDevice();
@@ -144,7 +144,7 @@ TEST_F(CommandChannelTest, SingleAsynchronousRequest) {
     if (cb_count == 1) {
       ASSERT_EQ(hci_spec::kCommandStatusEventCode, event.event_code());
       const auto params = event.params<hci_spec::CommandStatusEventParams>();
-      EXPECT_EQ(hci_spec::StatusCode::kSuccess, params.status);
+      EXPECT_EQ(hci_spec::StatusCode::SUCCESS, params.status);
       EXPECT_EQ(hci_spec::kInquiry, params.command_opcode);
     } else {
       EXPECT_EQ(hci_spec::kInquiryCompleteEventCode, event.event_code());
@@ -176,7 +176,7 @@ TEST_F(CommandChannelTest, SingleRequestWithStatusResponse) {
   auto rsp = StaticByteBuffer(
        hci_spec::kCommandStatusEventCode,
       0x04,  // parameter_total_size (4 byte payload)
-      hci_spec::StatusCode::kSuccess, 0x01, // status, num_hci_command_packets (1 can be sent)
+      hci_spec::StatusCode::SUCCESS, 0x01, // status, num_hci_command_packets (1 can be sent)
       LowerBits(hci_spec::kReset), UpperBits(hci_spec::kReset)  // HCI_Reset opcode
       );
   // clang-format on
@@ -188,7 +188,7 @@ TEST_F(CommandChannelTest, SingleRequestWithStatusResponse) {
   auto complete_cb = [&id](CommandChannel::TransactionId callback_id, const EventPacket& event) {
     EXPECT_EQ(callback_id, id);
     EXPECT_EQ(hci_spec::kCommandStatusEventCode, event.event_code());
-    EXPECT_EQ(hci_spec::StatusCode::kSuccess,
+    EXPECT_EQ(hci_spec::StatusCode::SUCCESS,
               event.params<hci_spec::CommandStatusEventParams>().status);
     EXPECT_EQ(1,
               event.view().payload<hci_spec::CommandStatusEventParams>().num_hci_command_packets);
@@ -231,7 +231,7 @@ TEST_F(CommandChannelTest, OneSentUntilStatus) {
   auto rsp_commandsavail = StaticByteBuffer(
        hci_spec::kCommandStatusEventCode,
       0x04,  // parameter_total_size (3 byte payload)
-      hci_spec::StatusCode::kSuccess, 0x01, // status, num_hci_command_packets (1 can be sent)
+      hci_spec::StatusCode::SUCCESS, 0x01, // status, num_hci_command_packets (1 can be sent)
       0x00, 0x00 // No associated opcode.
       );
   // clang-format on
@@ -306,7 +306,7 @@ TEST_F(CommandChannelTest, QueuedCommands) {
   auto rsp_commandsavail = StaticByteBuffer(
        hci_spec::kCommandStatusEventCode,
       0x04,  // parameter_total_size (3 byte payload)
-      hci_spec::StatusCode::kSuccess, 0xFA, // status, num_hci_command_packets (250 can be sent)
+      hci_spec::StatusCode::SUCCESS, 0xFA, // status, num_hci_command_packets (250 can be sent)
       0x00, 0x00 // No associated opcode.
       );
   // clang-format on
@@ -387,7 +387,7 @@ TEST_F(CommandChannelTest, AsynchronousCommands) {
   auto rsp_resetstatus = StaticByteBuffer(
        hci_spec::kCommandStatusEventCode,
       0x04,  // parameter_total_size (4 byte payload)
-      hci_spec::StatusCode::kSuccess, 0xFA, // status, num_hci_command_packets (250 can be sent)
+      hci_spec::StatusCode::SUCCESS, 0xFA, // status, num_hci_command_packets (250 can be sent)
       LowerBits(hci_spec::kReset), UpperBits(hci_spec::kReset)  // HCI_Reset opcode
       );
   auto req_inqcancel = StaticByteBuffer(
@@ -397,7 +397,7 @@ TEST_F(CommandChannelTest, AsynchronousCommands) {
   auto rsp_inqstatus = StaticByteBuffer(
        hci_spec::kCommandStatusEventCode,
       0x04,  // parameter_total_size (4 byte payload)
-      hci_spec::StatusCode::kSuccess, 0xFA, // status, num_hci_command_packets (250 can be sent)
+      hci_spec::StatusCode::SUCCESS, 0xFA, // status, num_hci_command_packets (250 can be sent)
       LowerBits(hci_spec::kInquiryCancel), UpperBits(hci_spec::kInquiryCancel)  // HCI_Reset opcode
       );
   auto rsp_bogocomplete = StaticByteBuffer(
@@ -423,7 +423,7 @@ TEST_F(CommandChannelTest, AsynchronousCommands) {
     if ((cb_count % 2) == 0) {
       EXPECT_EQ(hci_spec::kCommandStatusEventCode, event.event_code());
       auto params = event.params<hci_spec::CommandStatusEventParams>();
-      EXPECT_EQ(hci_spec::StatusCode::kSuccess, params.status);
+      EXPECT_EQ(hci_spec::StatusCode::SUCCESS, params.status);
     } else if ((cb_count % 2) == 1) {
       EXPECT_EQ(kTestEventCode0, event.event_code());
     }
@@ -481,7 +481,7 @@ TEST_F(CommandChannelTest, AsyncQueueWhenBlocked) {
   auto rsp_resetstatus = StaticByteBuffer(
        hci_spec::kCommandStatusEventCode,
       0x04,  // parameter_total_size (4 byte payload)
-      hci_spec::StatusCode::kSuccess, 0xFA, // status, num_hci_command_packets (250 can be sent)
+      hci_spec::StatusCode::SUCCESS, 0xFA, // status, num_hci_command_packets (250 can be sent)
       LowerBits(hci_spec::kReset), UpperBits(hci_spec::kReset)  // HCI_Reset opcode
       );
   auto rsp_bogocomplete = StaticByteBuffer(
@@ -491,13 +491,13 @@ TEST_F(CommandChannelTest, AsyncQueueWhenBlocked) {
   auto rsp_nocommandsavail = StaticByteBuffer(
        hci_spec::kCommandStatusEventCode,
       0x04,  // parameter_total_size (3 byte payload)
-      hci_spec::StatusCode::kSuccess, 0x00, // status, num_hci_command_packets (none can be sent)
+      hci_spec::StatusCode::SUCCESS, 0x00, // status, num_hci_command_packets (none can be sent)
       0x00, 0x00 // No associated opcode.
       );
   auto rsp_commandsavail = StaticByteBuffer(
        hci_spec::kCommandStatusEventCode,
       0x04,  // parameter_total_size (3 byte payload)
-      hci_spec::StatusCode::kSuccess, 0x01, // status, num_hci_command_packets (one can be sent)
+      hci_spec::StatusCode::SUCCESS, 0x01, // status, num_hci_command_packets (one can be sent)
       0x00, 0x00 // No associated opcode.
       );
   // clang-format on
@@ -523,7 +523,7 @@ TEST_F(CommandChannelTest, AsyncQueueWhenBlocked) {
     if (cb_count == 1) {
       ASSERT_EQ(hci_spec::kCommandStatusEventCode, event.event_code());
       const auto params = event.params<hci_spec::CommandStatusEventParams>();
-      EXPECT_EQ(hci_spec::StatusCode::kSuccess, params.status);
+      EXPECT_EQ(hci_spec::StatusCode::SUCCESS, params.status);
       EXPECT_EQ(hci_spec::kReset, params.command_opcode);
     } else {
       EXPECT_EQ(kTestEventCode0, event.event_code());
@@ -826,9 +826,9 @@ const StaticByteBuffer kReadRemoteSupportedFeaturesCmd(
 // Command Status for Read Remote Supported Features
 const auto kReadRemoteSupportedFeaturesRsp =
     StaticByteBuffer(hci_spec::kCommandStatusEventCode,
-                     0x04,                            // parameter_total_size (4 byte payload)
-                     hci_spec::StatusCode::kSuccess,  // status
-                     0xFF,                            // num_hci_command_packets
+                     0x04,                           // parameter_total_size (4 byte payload)
+                     hci_spec::StatusCode::SUCCESS,  // status
+                     0xFF,                           // num_hci_command_packets
                      LowerBits(hci_spec::kReadRemoteSupportedFeatures),
                      UpperBits(hci_spec::kReadRemoteSupportedFeatures)  // opcode
     );
@@ -836,9 +836,9 @@ const auto kReadRemoteSupportedFeaturesRsp =
 // Read Remote Supported Features Complete
 const auto kReadRemoteSupportedFeaturesComplete =
     StaticByteBuffer(hci_spec::kReadRemoteSupportedFeaturesCompleteEventCode,
-                     0x0B,                            // parameter_total_size (11 bytes)
-                     hci_spec::StatusCode::kSuccess,  // status
-                     0x01, 0x00,                      // connection_handle
+                     0x0B,                           // parameter_total_size (11 bytes)
+                     hci_spec::StatusCode::SUCCESS,  // status
+                     0x01, 0x00,                     // connection_handle
                      0xFF, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x80  // lmp_features
                      // Set: 3 slot packets, 5 slot packets, Encryption, Timing Accuracy,
                      // Role Switch, Hold Mode, Sniff Mode, LE Supported, Extended Features
@@ -1177,7 +1177,7 @@ TEST_F(CommandChannelTest, AsyncEventHandlersAndLeMetaEventHandlersDoNotInterfer
   auto cmd_status = StaticByteBuffer(
        hci_spec::kCommandStatusEventCode,
       0x04,  // parameter_total_size (4 byte payload)
-      hci_spec::StatusCode::kSuccess, 0x01, // status, num_hci_command_packets (1 can be sent)
+      hci_spec::StatusCode::SUCCESS, 0x01, // status, num_hci_command_packets (1 can be sent)
       LowerBits(hci_spec::kInquiry), UpperBits(hci_spec::kInquiry)  // HCI_Inquiry opcode
   );
   // clang-format on
@@ -1218,7 +1218,7 @@ TEST_F(CommandChannelTest, AsyncEventHandlersAndLeMetaEventHandlersDoNotInterfer
   auto event_bytes = StaticByteBuffer(
       kTestEventCode,
       0x01,  // parameter_total_size
-      hci_spec::StatusCode::kSuccess);
+      hci_spec::StatusCode::SUCCESS);
   auto le_event_bytes = StaticByteBuffer(
       hci_spec::kLEMetaEventCode,
       0x01,  // parameter_total_size
@@ -1352,7 +1352,7 @@ TEST_F(CommandChannelTest, AsynchronousCommandChaining) {
   auto rsp_resetstatus = StaticByteBuffer(
        hci_spec::kCommandStatusEventCode,
       0x04,                        // parameter_total_size (4 byte payload)
-      hci_spec::StatusCode::kSuccess, 0xFA,  // status, num_hci_command_packets (250)
+      hci_spec::StatusCode::SUCCESS, 0xFA,  // status, num_hci_command_packets (250)
       LowerBits(hci_spec::kReset), UpperBits(hci_spec::kReset)  // HCI_Reset opcode
   );
   auto req_inqcancel = StaticByteBuffer(
@@ -1362,7 +1362,7 @@ TEST_F(CommandChannelTest, AsynchronousCommandChaining) {
   auto rsp_inqstatus = StaticByteBuffer(
        hci_spec::kCommandStatusEventCode,
       0x04,                        // parameter_total_size (4 byte payload)
-      hci_spec::StatusCode::kSuccess, 0xFA,  // status, num_hci_command_packets (250)
+      hci_spec::StatusCode::SUCCESS, 0xFA,  // status, num_hci_command_packets (250)
       LowerBits(hci_spec::kInquiryCancel), UpperBits(hci_spec::kInquiryCancel) // HCI_InquiryCanacel
   );
   auto rsp_bogocomplete = StaticByteBuffer(
@@ -1390,7 +1390,7 @@ TEST_F(CommandChannelTest, AsynchronousCommandChaining) {
       // First event from each command - CommandStatus
       EXPECT_EQ(hci_spec::kCommandStatusEventCode, event.event_code());
       auto params = event.params<hci_spec::CommandStatusEventParams>();
-      EXPECT_EQ(hci_spec::StatusCode::kSuccess, params.status);
+      EXPECT_EQ(hci_spec::StatusCode::SUCCESS, params.status);
     } else {
       // Second event from each command - completion event
       EXPECT_EQ(kTestEventCode0, event.event_code());
@@ -1449,7 +1449,7 @@ TEST_F(CommandChannelTest, ExclusiveCommands) {
       );
   auto rsp_excl_one_status = StaticByteBuffer(hci_spec::kCommandStatusEventCode,
                                               0x04,  // parameter_total_size (4 byte payload)
-                                              hci_spec::StatusCode::kSuccess,
+                                              hci_spec::StatusCode::SUCCESS,
                                               0xFA,  // status, num_hci_command_packets (250)
                                               LowerBits(kExclusiveOne),
                                               UpperBits(kExclusiveOne)  // HCI opcode
@@ -1463,7 +1463,7 @@ TEST_F(CommandChannelTest, ExclusiveCommands) {
       );
   auto rsp_excl_two_status = StaticByteBuffer(hci_spec::kCommandStatusEventCode,
                                               0x04,  // parameter_total_size (4 byte payload)
-                                              hci_spec::StatusCode::kSuccess,
+                                              hci_spec::StatusCode::SUCCESS,
                                               0xFA,  // status, num_hci_command_packets (250)
                                               LowerBits(kExclusiveTwo),
                                               UpperBits(kExclusiveTwo)  // HCI opcode
@@ -1481,7 +1481,7 @@ TEST_F(CommandChannelTest, ExclusiveCommands) {
                        0x04,  // parameter_total_size (4 byte payload)
                        0xFA,  // num_hci_command_packets (250)
                        LowerBits(kNonExclusive), UpperBits(kNonExclusive),  // HCI opcode
-                       hci_spec::StatusCode::kSuccess                       // Command succeeded
+                       hci_spec::StatusCode::SUCCESS                        // Command succeeded
       );
 
   StartTestDevice();
@@ -1513,7 +1513,7 @@ TEST_F(CommandChannelTest, ExclusiveCommands) {
         EXPECT_EQ(id1, callback_id);
         EXPECT_EQ(hci_spec::kCommandStatusEventCode, event.event_code());
         auto params = event.params<hci_spec::CommandStatusEventParams>();
-        EXPECT_EQ(hci_spec::StatusCode::kSuccess, params.status);
+        EXPECT_EQ(hci_spec::StatusCode::SUCCESS, params.status);
         auto packet = CommandPacket::New(kExclusiveTwo);
         id2 = cmd_channel->SendExclusiveCommand(std::move(packet), exclusive_cb.share(),
                                                 kExclTwoCompleteEvent, {kExclusiveOne});
@@ -1538,7 +1538,7 @@ TEST_F(CommandChannelTest, ExclusiveCommands) {
         EXPECT_EQ(id2, callback_id);
         EXPECT_EQ(hci_spec::kCommandStatusEventCode, event.event_code());
         auto params = event.params<hci_spec::CommandStatusEventParams>();
-        EXPECT_EQ(hci_spec::StatusCode::kSuccess, params.status);
+        EXPECT_EQ(hci_spec::StatusCode::SUCCESS, params.status);
         break;
       }
       case 3: {  // Complete for kExclusiveTwo
@@ -1550,7 +1550,7 @@ TEST_F(CommandChannelTest, ExclusiveCommands) {
         EXPECT_EQ(id3, callback_id);
         EXPECT_EQ(hci_spec::kCommandStatusEventCode, event.event_code());
         auto params = event.params<hci_spec::CommandStatusEventParams>();
-        EXPECT_EQ(hci_spec::StatusCode::kSuccess, params.status);
+        EXPECT_EQ(hci_spec::StatusCode::SUCCESS, params.status);
         break;
       }
       case 5: {  // Complete for Second kExclusiveOne
@@ -1659,7 +1659,7 @@ TEST_F(CommandChannelTest, SendCommandWithLEMetaEventSubeventRsp) {
                                            // parameter total size (4 byte payload)
                                            0x04,
                                            // status, num_hci_command_packets (250)
-                                           hci_spec::StatusCode::kSuccess, 0xFA,
+                                           hci_spec::StatusCode::SUCCESS, 0xFA,
                                            // HCI opcode
                                            LowerBits(kOpCode), UpperBits(kOpCode));
   auto cmd_complete_subevent = StaticByteBuffer(hci_spec::kLEMetaEventCode,
@@ -1742,7 +1742,7 @@ TEST_F(CommandChannelTest, SendingSecondLECommandWithSameSubeventShouldWaitForFi
                                             // parameter total size (4 byte payload)
                                             0x04,
                                             // status, num_hci_command_packets (250)
-                                            hci_spec::StatusCode::kSuccess, 0xFA,
+                                            hci_spec::StatusCode::SUCCESS, 0xFA,
                                             // HCI opcode
                                             LowerBits(kOpCode0), UpperBits(kOpCode0));
   auto cmd1 = StaticByteBuffer(LowerBits(kOpCode1), UpperBits(kOpCode1),
@@ -1752,7 +1752,7 @@ TEST_F(CommandChannelTest, SendingSecondLECommandWithSameSubeventShouldWaitForFi
                                             // parameter total size (4 byte payload)
                                             0x04,
                                             // status, num_hci_command_packets (250)
-                                            hci_spec::StatusCode::kSuccess, 0xFA,
+                                            hci_spec::StatusCode::SUCCESS, 0xFA,
                                             // HCI opcode
                                             LowerBits(kOpCode1), UpperBits(kOpCode1));
 
@@ -1839,7 +1839,7 @@ TEST_F(
                                            // parameter total size (4 byte payload)
                                            0x04,
                                            // status, num_hci_command_packets (250)
-                                           hci_spec::StatusCode::kSuccess, 0xFA,
+                                           hci_spec::StatusCode::SUCCESS, 0xFA,
                                            // HCI opcode
                                            LowerBits(kOpCode), UpperBits(kOpCode));
 

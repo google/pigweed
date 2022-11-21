@@ -19,7 +19,7 @@ class FakeBrEdrConnection final : public BrEdrConnection {
   void TriggerEncryptionChangeCallback(hci::Result<bool> result);
 
   void TriggerPeerDisconnectCallback() {
-    peer_disconnect_callback()(this, hci_spec::StatusCode::kRemoteUserTerminatedConnection);
+    peer_disconnect_callback()(this, hci_spec::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
   }
 
   // BrEdrConnection overrides:

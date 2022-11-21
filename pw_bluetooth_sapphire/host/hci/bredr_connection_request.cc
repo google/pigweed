@@ -100,7 +100,7 @@ Result<> BrEdrConnectionRequest::CompleteRequest(Result<> status) {
   if (status.is_error()) {
     if (state_ == RequestState::kTimedOut) {
       return ToResult(HostError::kTimedOut);
-    } else if (status == ToResult(hci_spec::StatusCode::kUnknownConnectionId)) {
+    } else if (status == ToResult(hci_spec::StatusCode::UNKNOWN_CONNECTION_ID)) {
       // The "Unknown Connection Identifier" error code is returned if this
       // event was sent due to a successful cancellation via the
       // HCI_Create_Connection_Cancel command

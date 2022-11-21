@@ -136,13 +136,13 @@ TEST_F(LowEnergyConnectorTest, CreateConnection) {
   EXPECT_EQ(1u, conn->handle());
   EXPECT_EQ(kLocalAddress, conn->local_address());
   EXPECT_EQ(kTestAddress, conn->peer_address());
-  conn->Disconnect(hci_spec::StatusCode::kRemoteUserTerminatedConnection);
+  conn->Disconnect(hci_spec::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
 }
 
 // Controller reports error from HCI Command Status event.
 TEST_F(LowEnergyConnectorTest, CreateConnectionStatusError) {
   auto fake_peer = std::make_unique<FakePeer>(kTestAddress, true, true);
-  fake_peer->set_connect_status(hci_spec::StatusCode::kCommandDisallowed);
+  fake_peer->set_connect_status(hci_spec::StatusCode::COMMAND_DISALLOWED);
   test_device()->AddPeer(std::move(fake_peer));
 
   EXPECT_FALSE(connector()->request_pending());
@@ -167,7 +167,7 @@ TEST_F(LowEnergyConnectorTest, CreateConnectionStatusError) {
 
   EXPECT_FALSE(connector()->request_pending());
   EXPECT_TRUE(callback_called);
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::kCommandDisallowed), status);
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::COMMAND_DISALLOWED), status);
   EXPECT_FALSE(conn);
   EXPECT_TRUE(in_connections().empty());
 }
@@ -175,7 +175,7 @@ TEST_F(LowEnergyConnectorTest, CreateConnectionStatusError) {
 // Controller reports error from HCI LE Connection Complete event
 TEST_F(LowEnergyConnectorTest, CreateConnectionEventError) {
   auto fake_peer = std::make_unique<FakePeer>(kTestAddress, true, true);
-  fake_peer->set_connect_response(hci_spec::StatusCode::kConnectionRejectedSecurity);
+  fake_peer->set_connect_response(hci_spec::StatusCode::CONNECTION_REJECTED_SECURITY);
   test_device()->AddPeer(std::move(fake_peer));
 
   EXPECT_FALSE(connector()->request_pending());
@@ -200,7 +200,7 @@ TEST_F(LowEnergyConnectorTest, CreateConnectionEventError) {
 
   EXPECT_FALSE(connector()->request_pending());
   EXPECT_TRUE(callback_called);
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::kConnectionRejectedSecurity), status);
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::CONNECTION_REJECTED_SECURITY), status);
   EXPECT_TRUE(in_connections().empty());
   EXPECT_FALSE(conn);
 }
@@ -256,7 +256,7 @@ TEST_F(LowEnergyConnectorTest, IncomingConnect) {
   hci_spec::LEConnectionCompleteSubeventParams event;
   std::memset(&event, 0, sizeof(event));
 
-  event.status = hci_spec::StatusCode::kSuccess;
+  event.status = hci_spec::StatusCode::SUCCESS;
   event.peer_address = kTestAddress.value();
   event.peer_address_type = hci_spec::LEPeerAddressType::kPublic;
   event.conn_interval = hci_spec::defaults::kLEConnectionIntervalMin;
@@ -273,7 +273,7 @@ TEST_F(LowEnergyConnectorTest, IncomingConnect) {
   EXPECT_EQ(1u, conn->handle());
   EXPECT_EQ(kLocalAddress, conn->local_address());
   EXPECT_EQ(kTestAddress, conn->peer_address());
-  conn->Disconnect(hci_spec::StatusCode::kRemoteUserTerminatedConnection);
+  conn->Disconnect(hci_spec::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
 }
 
 TEST_F(LowEnergyConnectorTest, IncomingConnectDuringConnectionRequest) {
@@ -303,7 +303,7 @@ TEST_F(LowEnergyConnectorTest, IncomingConnectDuringConnectionRequest) {
     hci_spec::LEConnectionCompleteSubeventParams event;
     std::memset(&event, 0, sizeof(event));
 
-    event.status = hci_spec::StatusCode::kSuccess;
+    event.status = hci_spec::StatusCode::SUCCESS;
     event.peer_address = kIncomingAddress.value();
     event.peer_address_type = hci_spec::LEPeerAddressType::kPublic;
     event.conn_interval = hci_spec::defaults::kLEConnectionIntervalMin;
@@ -326,8 +326,8 @@ TEST_F(LowEnergyConnectorTest, IncomingConnectDuringConnectionRequest) {
   EXPECT_EQ(kTestAddress, conn->peer_address());
   EXPECT_EQ(kIncomingAddress, in_conn->peer_address());
 
-  conn->Disconnect(hci_spec::StatusCode::kRemoteUserTerminatedConnection);
-  in_conn->Disconnect(hci_spec::StatusCode::kRemoteUserTerminatedConnection);
+  conn->Disconnect(hci_spec::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
+  in_conn->Disconnect(hci_spec::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
 }
 
 TEST_F(LowEnergyConnectorTest, CreateConnectionTimeout) {

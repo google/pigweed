@@ -214,19 +214,6 @@ constexpr OpCode kAcceptConnectionRequest = LinkControlOpCode(0x0009);
 // Reject Connection Request (v1.1) (BR/EDR)
 constexpr OpCode kRejectConnectionRequest = LinkControlOpCode(0x000A);
 
-struct RejectConnectionRequestCommandParams {
-  // BD_ADDR of the device to reject the connection from
-  DeviceAddressBytes bd_addr;
-
-  // Reason.
-  // Must be one of kConnectionRejected* from Status in hci_constants.h
-  StatusCode reason;
-} __PACKED;
-
-// NOTE on ReturnParams: No Command Complete event will be sent by the
-// Controller to indicate that this command has been completed. Instead, the
-// Connection Complete event will indicate that this command has been completed.
-
 // ==============================================
 // Link Key Request Reply Command (v1.1) (BR/EDR)
 constexpr OpCode kLinkKeyRequestReply = LinkControlOpCode(0x000B);

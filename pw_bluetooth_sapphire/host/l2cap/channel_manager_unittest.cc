@@ -2871,7 +2871,7 @@ TEST_F(ChannelManagerTest,
 
   // Completing the command should cause the channel to be returned.
   const auto kCommandComplete = bt::testing::CommandCompletePacket(
-      hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::kSuccess);
+      hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::SUCCESS);
   test_device()->SendCommandChannelPacket(kCommandComplete);
   RunLoopUntilIdle();
   ASSERT_TRUE(channel);
@@ -2896,7 +2896,7 @@ TEST_F(ChannelManagerTest, OutboundChannelWithFlushTimeoutInChannelParametersFai
   RunLoopUntilIdle();
 
   const auto kCommandCompleteError = bt::testing::CommandCompletePacket(
-      hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::kUnspecifiedError);
+      hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::UNSPECIFIED_ERROR);
   EXPECT_CMD_PACKET_OUT(
       test_device(),
       bt::testing::WriteAutomaticFlushTimeoutPacket(kTestHandle1, kExpectedFlushTimeoutParam),
@@ -2929,7 +2929,7 @@ TEST_F(ChannelManagerTest, InboundChannelWithFlushTimeoutInChannelParameters) {
   RunLoopUntilIdle();
 
   const auto kCommandComplete = bt::testing::CommandCompletePacket(
-      hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::kSuccess);
+      hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::SUCCESS);
   EXPECT_CMD_PACKET_OUT(
       test_device(),
       bt::testing::WriteAutomaticFlushTimeoutPacket(kTestHandle1, kExpectedFlushTimeoutParam),
@@ -2984,7 +2984,7 @@ TEST_F(ChannelManagerTest, FlushableChannelAndNonFlushableChannelOnSameLink) {
   auto flushable_channel = SetUpOutboundChannel(kLocalId + 1, kRemoteId + 1);
 
   const auto kCommandComplete = bt::testing::CommandCompletePacket(
-      hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::kSuccess);
+      hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::SUCCESS);
   EXPECT_CMD_PACKET_OUT(
       test_device(),
       bt::testing::WriteAutomaticFlushTimeoutPacket(kTestHandle1, kExpectedFlushTimeoutParam),
@@ -3029,14 +3029,14 @@ TEST_F(ChannelManagerTest, SettingFlushTimeoutFails) {
   auto channel = SetUpOutboundChannel();
 
   const auto kCommandComplete = bt::testing::CommandCompletePacket(
-      hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::kUnknownConnectionId);
+      hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::UNKNOWN_CONNECTION_ID);
   EXPECT_CMD_PACKET_OUT(
       test_device(),
       bt::testing::WriteAutomaticFlushTimeoutPacket(kTestHandle1, kExpectedFlushTimeoutParam),
       &kCommandComplete);
 
   channel->SetBrEdrAutomaticFlushTimeout(kFlushTimeout, [](auto result) {
-    EXPECT_EQ(ToResult(hci_spec::StatusCode::kUnknownConnectionId), result);
+    EXPECT_EQ(ToResult(hci_spec::StatusCode::UNKNOWN_CONNECTION_ID), result);
   });
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
@@ -3066,7 +3066,7 @@ TEST_P(StartA2dpOffloadTest, StartA2dpOffloadSuccess) {
   fxl::WeakPtr<Channel> channel = SetUpOutboundChannel();
 
   const auto command_complete = bt::testing::CommandCompletePacket(hci_android::kA2dpOffloadCommand,
-                                                                   hci_spec::StatusCode::kSuccess);
+                                                                   hci_spec::StatusCode::SUCCESS);
   EXPECT_CMD_PACKET_OUT(
       test_device(),
       bt::testing::StartA2dpOffloadRequest(config, channel->link_handle(), channel->remote_id(),
@@ -3095,7 +3095,7 @@ TEST_F(ChannelManagerTest, StartA2dpOffloadInvalidConfiguration) {
   fxl::WeakPtr<Channel> channel = SetUpOutboundChannel();
 
   const auto command_complete = bt::testing::CommandCompletePacket(
-      hci_android::kA2dpOffloadCommand, hci_spec::StatusCode::kInvalidHCICommandParameters);
+      hci_android::kA2dpOffloadCommand, hci_spec::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
   EXPECT_CMD_PACKET_OUT(
       test_device(),
       bt::testing::StartA2dpOffloadRequest(config, channel->link_handle(), channel->remote_id(),
@@ -3104,7 +3104,7 @@ TEST_F(ChannelManagerTest, StartA2dpOffloadInvalidConfiguration) {
 
   std::optional<hci::Result<>> result_;
   channel->StartA2dpOffload(&config, [&result_](auto result) {
-    EXPECT_EQ(ToResult(hci_spec::StatusCode::kInvalidHCICommandParameters), result);
+    EXPECT_EQ(ToResult(hci_spec::StatusCode::INVALID_HCI_COMMAND_PARAMETERS), result);
     result_ = result;
   });
   RunLoopUntilIdle();
@@ -3121,7 +3121,7 @@ TEST_F(ChannelManagerTest, StartA2dpOffloadAlreadyStarted) {
   fxl::WeakPtr<Channel> channel = SetUpOutboundChannel();
 
   const auto command_complete = bt::testing::CommandCompletePacket(
-      hci_android::kA2dpOffloadCommand, hci_spec::StatusCode::kConnectionAlreadyExists);
+      hci_android::kA2dpOffloadCommand, hci_spec::StatusCode::CONNECTION_ALREADY_EXISTS);
   EXPECT_CMD_PACKET_OUT(
       test_device(),
       bt::testing::StartA2dpOffloadRequest(config, channel->link_handle(), channel->remote_id(),
@@ -3130,7 +3130,7 @@ TEST_F(ChannelManagerTest, StartA2dpOffloadAlreadyStarted) {
 
   std::optional<hci::Result<>> result_;
   channel->StartA2dpOffload(&config, [&result_](auto result) {
-    EXPECT_EQ(ToResult(hci_spec::StatusCode::kConnectionAlreadyExists), result);
+    EXPECT_EQ(ToResult(hci_spec::StatusCode::CONNECTION_ALREADY_EXISTS), result);
     result_ = result;
   });
   RunLoopUntilIdle();
@@ -3147,7 +3147,7 @@ TEST_F(ChannelManagerTest, StartA2dpOffloadStatusStarted) {
   fxl::WeakPtr<Channel> channel = SetUpOutboundChannel();
 
   const auto command_complete = bt::testing::CommandCompletePacket(hci_android::kA2dpOffloadCommand,
-                                                                   hci_spec::StatusCode::kSuccess);
+                                                                   hci_spec::StatusCode::SUCCESS);
   EXPECT_CMD_PACKET_OUT(
       test_device(),
       bt::testing::StartA2dpOffloadRequest(config, channel->link_handle(), channel->remote_id(),
@@ -3156,7 +3156,7 @@ TEST_F(ChannelManagerTest, StartA2dpOffloadStatusStarted) {
 
   std::optional<hci::Result<>> result_;
   channel->StartA2dpOffload(&config, [&result_](auto result) {
-    EXPECT_EQ(ToResult(hci_spec::StatusCode::kSuccess), result);
+    EXPECT_EQ(ToResult(hci_spec::StatusCode::SUCCESS), result);
     result_ = result;
   });
   RunLoopUntilIdle();
@@ -3182,7 +3182,7 @@ TEST_F(ChannelManagerTest, StartA2dpOffloadChannelDisconnected) {
   fxl::WeakPtr<Channel> channel = SetUpOutboundChannel();
 
   const auto command_complete = bt::testing::CommandCompletePacket(hci_android::kA2dpOffloadCommand,
-                                                                   hci_spec::StatusCode::kSuccess);
+                                                                   hci_spec::StatusCode::SUCCESS);
   EXPECT_CMD_PACKET_OUT(
       test_device(),
       bt::testing::StartA2dpOffloadRequest(config, channel->link_handle(), channel->remote_id(),
@@ -3191,7 +3191,7 @@ TEST_F(ChannelManagerTest, StartA2dpOffloadChannelDisconnected) {
 
   std::optional<hci::Result<>> result_;
   channel->StartA2dpOffload(&config, [&result_](auto result) {
-    EXPECT_EQ(ToResult(hci_spec::StatusCode::kSuccess), result);
+    EXPECT_EQ(ToResult(hci_spec::StatusCode::SUCCESS), result);
     result_ = result;
   });
 

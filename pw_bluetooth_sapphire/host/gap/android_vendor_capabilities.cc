@@ -15,7 +15,7 @@ void AndroidVendorCapabilities::Initialize(
     const hci_android::LEGetVendorCapabilitiesReturnParams& c) {
   initialized_ = false;
 
-  if (c.status != hci_spec::StatusCode::kSuccess) {
+  if (c.status != hci_spec::StatusCode::SUCCESS) {
     bt_log(INFO, "android_vendor_extensions", "refusing to parse non-success vendor capabilities");
     return;
   }

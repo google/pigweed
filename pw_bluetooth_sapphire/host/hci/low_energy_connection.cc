@@ -79,7 +79,7 @@ void LowEnergyConnection::HandleEncryptionStatus(Result<bool> result, bool /*key
   // disconnected by the Link Layer." (HCI_LE_Start_Encryption, Vol 2, Part E,
   // 7.8.24). We make sure of this by telling the controller to disconnect.
   if (result.is_error()) {
-    Disconnect(hci_spec::StatusCode::kAuthenticationFailure);
+    Disconnect(hci_spec::StatusCode::AUTHENTICATION_FAILURE);
   }
 
   if (!encryption_change_callback()) {

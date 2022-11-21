@@ -1701,7 +1701,7 @@ TEST_F(InitiatorPairingTest, EncryptionWithSTKFails) {
   EXPECT_EQ(1, fake_link()->start_encryption_count());
 
   fake_link()->TriggerEncryptionChangeCallback(
-      ToResult(hci_spec::StatusCode::kPinOrKeyMissing).take_error());
+      ToResult(hci_spec::StatusCode::PIN_OR_KEY_MISSING).take_error());
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, pairing_failed_count());
@@ -1709,7 +1709,7 @@ TEST_F(InitiatorPairingTest, EncryptionWithSTKFails) {
   EXPECT_EQ(1, auth_failure_callback_count());
   EXPECT_EQ(ToResult(ErrorCode::kUnspecifiedReason), security_status());
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, received_error_code());
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::kPinOrKeyMissing), auth_failure_status());
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::PIN_OR_KEY_MISSING), auth_failure_status());
 
   // No security property update should have been sent since the security
   // properties have not changed.
@@ -2736,7 +2736,7 @@ TEST_F(InitiatorPairingTest, ModifyAssignedLinkLtkBeforeSecurityRequestCausesDis
   RunLoopUntilIdle();
   ASSERT_TRUE(fake_chan()->link_error());
   ASSERT_EQ(1, auth_failure_callback_count());
-  ASSERT_EQ(ToResult(hci_spec::StatusCode::kPinOrKeyMissing), auth_failure_status());
+  ASSERT_EQ(ToResult(hci_spec::StatusCode::PIN_OR_KEY_MISSING), auth_failure_status());
 }
 
 TEST_F(ResponderPairingTest, SuccessfulPairAfterResetInProgressPairing) {
@@ -3337,7 +3337,7 @@ TEST_F(ResponderPairingTest, EncryptWithLinkKeyModifiedOutsideSmDisconnects) {
   RunLoopUntilIdle();
   ASSERT_TRUE(fake_chan()->link_error());
   ASSERT_EQ(1, auth_failure_callback_count());
-  ASSERT_EQ(ToResult(hci_spec::StatusCode::kPinOrKeyMissing), auth_failure_status());
+  ASSERT_EQ(ToResult(hci_spec::StatusCode::PIN_OR_KEY_MISSING), auth_failure_status());
 }
 
 TEST_F(ResponderPairingTest, EncryptWithLinkKeyButNoSmLtkDisconnects) {
@@ -3348,7 +3348,7 @@ TEST_F(ResponderPairingTest, EncryptWithLinkKeyButNoSmLtkDisconnects) {
   RunLoopUntilIdle();
   ASSERT_TRUE(fake_chan()->link_error());
   ASSERT_EQ(1, auth_failure_callback_count());
-  ASSERT_EQ(ToResult(hci_spec::StatusCode::kPinOrKeyMissing), auth_failure_status());
+  ASSERT_EQ(ToResult(hci_spec::StatusCode::PIN_OR_KEY_MISSING), auth_failure_status());
 }
 
 // As responder, we reject security requests, as the initiator should never send them.

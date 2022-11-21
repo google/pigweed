@@ -822,7 +822,7 @@ Result<> SecurityManagerImpl::ValidateExistingLocalLtk() {
   if (status.is_error()) {
     // SM does not own the link, so although the checks above should never fail, disconnecting the
     // link (vs. ASSERTing these checks) is safer against non-SM code potentially touching the key.
-    delegate_->OnAuthenticationFailure(ToResult(hci_spec::StatusCode::kPinOrKeyMissing));
+    delegate_->OnAuthenticationFailure(ToResult(hci_spec::StatusCode::PIN_OR_KEY_MISSING));
     sm_chan_->SignalLinkError();
   }
   return status;

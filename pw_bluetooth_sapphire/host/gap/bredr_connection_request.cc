@@ -66,7 +66,8 @@ void BrEdrConnectionRequest::RecordHciCreateConnectionAttempt() {
 bool BrEdrConnectionRequest::ShouldRetry(hci::Error failure_mode) {
   zx::time now = async::Now(async_get_default_dispatcher());
   std::optional<zx::time> first_create_conn_req_made = first_create_connection_req_made_.value();
-  return failure_mode.is(hci_spec::kPageTimeout) && first_create_conn_req_made.has_value() &&
+  return failure_mode.is(hci_spec::StatusCode::PAGE_TIMEOUT) &&
+         first_create_conn_req_made.has_value() &&
          now - *first_create_conn_req_made < kRetryWindowAfterFirstCreateConn;
 }
 }  // namespace bt::gap

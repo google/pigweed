@@ -24,16 +24,16 @@ constexpr hci_spec::ConnectionHandle kConnectionHandle = 0x0BAA;
 const DeviceAddress kTestDevAddr(DeviceAddress::Type::kBREDR, {1});
 
 const auto kRemoteNameRequestRsp =
-    testing::CommandStatusPacket(hci_spec::kRemoteNameRequest, hci_spec::StatusCode::kSuccess);
+    testing::CommandStatusPacket(hci_spec::kRemoteNameRequest, hci_spec::StatusCode::SUCCESS);
 
 const auto kReadRemoteVersionInfoRsp =
-    testing::CommandStatusPacket(hci_spec::kReadRemoteVersionInfo, hci_spec::StatusCode::kSuccess);
+    testing::CommandStatusPacket(hci_spec::kReadRemoteVersionInfo, hci_spec::StatusCode::SUCCESS);
 
 const auto kReadRemoteSupportedFeaturesRsp = testing::CommandStatusPacket(
-    hci_spec::kReadRemoteSupportedFeatures, hci_spec::StatusCode::kSuccess);
+    hci_spec::kReadRemoteSupportedFeatures, hci_spec::StatusCode::SUCCESS);
 
 const auto kReadRemoteExtendedFeaturesRsp = testing::CommandStatusPacket(
-    hci_spec::kReadRemoteExtendedFeatures, hci_spec::StatusCode::kSuccess);
+    hci_spec::kReadRemoteExtendedFeatures, hci_spec::StatusCode::SUCCESS);
 
 using bt::testing::CommandTransaction;
 
@@ -125,8 +125,8 @@ TEST_F(BrEdrInterrogatorTest, InterrogationFailsWithMalformedRemoteNameRequestCo
   const auto addr = kTestDevAddr.value().bytes();
   StaticByteBuffer remote_name_request_complete_packet(
       hci_spec::kRemoteNameRequestCompleteEventCode,
-      0x08,                            // parameter_total_size (8)
-      hci_spec::StatusCode::kSuccess,  // status
+      0x08,                           // parameter_total_size (8)
+      hci_spec::StatusCode::SUCCESS,  // status
       addr[0], addr[1], addr[2], addr[3], addr[4],
       addr[5],  // peer address
       'F'       // remote name
@@ -180,7 +180,7 @@ TEST_F(BrEdrInterrogatorTest, SuccessfulReinterrogation) {
 
 TEST_F(BrEdrInterrogatorTest, InterrogationFailedToGetName) {
   const DynamicByteBuffer remote_name_request_failure_rsp = testing::CommandStatusPacket(
-      hci_spec::kRemoteNameRequest, hci_spec::StatusCode::kUnspecifiedError);
+      hci_spec::kRemoteNameRequest, hci_spec::StatusCode::UNSPECIFIED_ERROR);
   EXPECT_CMD_PACKET_OUT(test_device(), testing::RemoteNameRequestPacket(kTestDevAddr),
                         &remote_name_request_failure_rsp);
   EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteVersionInfoPacket(kConnectionHandle));

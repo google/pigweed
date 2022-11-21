@@ -161,7 +161,7 @@ TEST_F(LegacyLowEnergyScannerTest, StartScanHCIErrors) {
 
   // Set Scan Parameters will fail.
   test_device()->SetDefaultResponseStatus(hci_spec::kLESetScanParameters,
-                                          hci_spec::StatusCode::kHardwareFailure);
+                                          hci_spec::StatusCode::HARDWARE_FAILURE);
   EXPECT_EQ(0, test_device()->le_scan_state().scan_interval);
 
   EXPECT_TRUE(StartScan(false));
@@ -181,7 +181,7 @@ TEST_F(LegacyLowEnergyScannerTest, StartScanHCIErrors) {
   // Set Scan Parameters will succeed but Set Scan Enable will fail.
   test_device()->ClearDefaultResponseStatus(hci_spec::kLESetScanParameters);
   test_device()->SetDefaultResponseStatus(hci_spec::kLESetScanEnable,
-                                          hci_spec::StatusCode::kHardwareFailure);
+                                          hci_spec::StatusCode::HARDWARE_FAILURE);
 
   EXPECT_TRUE(StartScan(false));
   EXPECT_EQ(LowEnergyScanner::State::kInitiating, scanner()->state());

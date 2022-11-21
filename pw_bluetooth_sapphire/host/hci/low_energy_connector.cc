@@ -204,7 +204,7 @@ CommandChannel::EventCallbackResult LowEnergyConnector::OnConnectionCompleteEven
       // HCI_LE_Create_Connection_Cancel command (sent by Cancel()).
       if (pending_request_->timed_out) {
         result = ToResult(HostError::kTimedOut);
-      } else if (params->status == hci_spec::StatusCode::kUnknownConnectionId) {
+      } else if (params->status == hci_spec::StatusCode::UNKNOWN_CONNECTION_ID) {
         result = ToResult(HostError::kCanceled);
       }
       OnCreateConnectionComplete(result, nullptr);

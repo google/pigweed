@@ -1161,7 +1161,7 @@ TEST_P(AclPriorityTest, RequestAclPriority) {
 
   auto cmd_complete = bt::testing::CommandCompletePacket(
       op_code,
-      kExpectSuccess ? hci_spec::StatusCode::kSuccess : hci_spec::StatusCode::kUnknownCommand);
+      kExpectSuccess ? hci_spec::StatusCode::SUCCESS : hci_spec::StatusCode::UNKNOWN_COMMAND);
   EXPECT_CMD_PACKET_OUT(test_device(), kEncodedCommand, &cmd_complete);
 
   size_t request_cb_count = 0;

@@ -18,7 +18,7 @@ class AndroidVendorCapabilitiesTest : public ::testing::Test {
     hci_android::LEGetVendorCapabilitiesReturnParams params;
     std::memset(&params, 0, sizeof(params));
 
-    params.status = hci_spec::StatusCode::kSuccess;
+    params.status = hci_spec::StatusCode::SUCCESS;
 
     // select values other than the zero value to ensure the results of std::memset don't propagate
     params.max_advt_instances = 1;
@@ -74,7 +74,7 @@ TEST_F(AndroidVendorCapabilitiesTest, InitializeFailure) {
 
   hci_android::LEGetVendorCapabilitiesReturnParams params;
   std::memset(&params, 0, sizeof(params));
-  params.status = hci_spec::StatusCode::kUnknownCommand;
+  params.status = hci_spec::StatusCode::UNKNOWN_COMMAND;
   vendor_capabilities().Initialize(params);
 
   EXPECT_FALSE(vendor_capabilities().IsInitialized());

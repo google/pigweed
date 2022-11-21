@@ -81,7 +81,7 @@ void BrEdrConnection::HandleEncryptionStatusValidated(Result<bool> result) {
   // not specify actions to take after encryption failures. We'll choose to
   // disconnect ACL links after encryption failure.
   if (result.is_error()) {
-    Disconnect(hci_spec::StatusCode::kAuthenticationFailure);
+    Disconnect(hci_spec::StatusCode::AUTHENTICATION_FAILURE);
   }
 
   if (!encryption_change_callback()) {

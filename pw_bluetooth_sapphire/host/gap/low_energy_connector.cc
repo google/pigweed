@@ -349,8 +349,8 @@ void LowEnergyConnector::OnInterrogationComplete(hci::Result<> status) {
 
   // If the controller responds to an interrogation command with the 0x3e
   // "kConnectionFailedToBeEstablished" error, it will send a Disconnection Complete event soon
-  // after. Wait for this event before initating a retry.
-  if (status == ToResult(hci_spec::kConnectionFailedToBeEstablished)) {
+  // after. Wait for this event before initiating a retry.
+  if (status == ToResult(hci_spec::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED)) {
     bt_log(INFO, "gap-le",
            "Received kConnectionFailedToBeEstablished during interrogation. Waiting for Disconnect "
            "Complete. (peer: %s)",
@@ -378,7 +378,7 @@ void LowEnergyConnector::OnPeerDisconnect(hci_spec::StatusCode status_code) {
                 "Received peer disconnect during invalid state (state: %s, status: %s)",
                 StateToString(*state_), bt_str(ToResult(status_code)));
   if (*state_ == State::kInterrogating &&
-      status_code != hci_spec::StatusCode::kConnectionFailedToBeEstablished) {
+      status_code != hci_spec::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED) {
     NotifyFailure(ToResult(status_code));
     return;
   }

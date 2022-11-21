@@ -711,7 +711,7 @@ void BrEdrConnectionManager::OnConnectionRequest(ConnectionRequestEvent event) {
   if (deny_incoming_.contains(event.addr)) {
     bt_log(INFO, "gap-bredr", "rejecting incoming from peer (addr: %s) on cooldown",
            bt_str(event.addr));
-    SendRejectConnectionRequest(event.addr, hci_spec::StatusCode::kConnectionRejectedBadBdAddr);
+    SendRejectConnectionRequest(event.addr, hci_spec::StatusCode::CONNECTION_REJECTED_BAD_BD_ADDR);
     return;
   }
   // Initialize the peer if it doesn't exist, to ensure we have allocated a PeerId
@@ -725,7 +725,7 @@ void BrEdrConnectionManager::OnConnectionRequest(ConnectionRequestEvent event) {
            "class: %s)",
            bt_str(peer_id), bt_str(event.addr), hci_spec::LinkTypeToString(event.link_type).c_str(),
            bt_str(event.class_of_device));
-    SendRejectConnectionRequest(event.addr, hci_spec::StatusCode::kConnectionRejectedBadBdAddr);
+    SendRejectConnectionRequest(event.addr, hci_spec::StatusCode::CONNECTION_REJECTED_BAD_BD_ADDR);
     return;
   }
 
@@ -736,7 +736,7 @@ void BrEdrConnectionManager::OnConnectionRequest(ConnectionRequestEvent event) {
       bt_log(WARN, "gap-bredr",
              "rejecting incoming connection request; already connected (peer: %s, addr: %s)",
              bt_str(peer_id), bt_str(event.addr));
-      SendRejectConnectionRequest(event.addr, hci_spec::StatusCode::kConnectionAlreadyExists);
+      SendRejectConnectionRequest(event.addr, hci_spec::StatusCode::CONNECTION_ALREADY_EXISTS);
       return;
     }
 
@@ -784,12 +784,12 @@ void BrEdrConnectionManager::OnConnectionRequest(ConnectionRequestEvent event) {
         "rejecting (e)SCO connection request for peer that is not connected (peer: %s, addr: %s)",
         bt_str(peer_id), bt_str(event.addr));
     SendRejectSynchronousRequest(event.addr,
-                                 hci_spec::StatusCode::kUnacceptableConnectionParameters);
+                                 hci_spec::StatusCode::UNACCEPTABLE_CONNECTION_PARAMETERS);
   } else {
     auto link_type = static_cast<unsigned int>(event.link_type);
     bt_log(WARN, "gap-bredr", "reject unsupported connection type %u (peer: %s, addr: %s)",
            link_type, bt_str(peer_id), bt_str(event.addr));
-    SendRejectConnectionRequest(event.addr, hci_spec::StatusCode::kUnsupportedFeatureOrParameter);
+    SendRejectConnectionRequest(event.addr, hci_spec::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
   }
 }
 
@@ -939,14 +939,14 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnIoCapabilityR
   auto conn_pair = FindConnectionByAddress(params.bd_addr);
   if (!conn_pair) {
     bt_log(ERROR, "gap-bredr", "got %s for unconnected addr %s", __func__, bt_str(params.bd_addr));
-    SendIoCapabilityRequestNegativeReply(params.bd_addr, hci_spec::StatusCode::kPairingNotAllowed);
+    SendIoCapabilityRequestNegativeReply(params.bd_addr, hci_spec::StatusCode::PAIRING_NOT_ALLOWED);
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
   auto [handle, conn_ptr] = *conn_pair;
   auto reply = conn_ptr->pairing_state().OnIoCapabilityRequest();
 
   if (!reply) {
-    SendIoCapabilityRequestNegativeReply(params.bd_addr, hci_spec::StatusCode::kPairingNotAllowed);
+    SendIoCapabilityRequestNegativeReply(params.bd_addr, hci_spec::StatusCode::PAIRING_NOT_ALLOWED);
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
@@ -1461,11 +1461,12 @@ void BrEdrConnectionManager::SendAcceptConnectionRequest(DeviceAddressBytes addr
 void BrEdrConnectionManager::SendRejectConnectionRequest(DeviceAddress addr,
                                                          hci_spec::StatusCode reason,
                                                          hci::ResultFunction<> cb) {
-  auto reject = hci::CommandPacket::New(hci_spec::kRejectConnectionRequest,
-                                        sizeof(hci_spec::RejectConnectionRequestCommandParams));
-  auto reject_params = reject->mutable_payload<hci_spec::RejectConnectionRequestCommandParams>();
-  reject_params->bd_addr = addr.value();
-  reject_params->reason = reason;
+  hci::EmbossCommandPacket reject =
+      hci::EmbossCommandPacket::New<hci_spec::RejectConnectionRequestCommandView>(
+          hci_spec::kRejectConnectionRequest);
+  auto reject_params = reject.view<hci_spec::RejectConnectionRequestCommandWriter>();
+  reject_params.bd_addr().Write(addr.value().as_int());
+  reject_params.reason().Write(reason);
 
   hci::CommandChannel::CommandCallback command_cb;
   if (cb) {

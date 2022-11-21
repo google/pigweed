@@ -323,7 +323,7 @@ TEST_F(LowEnergyAdvertisingManagerTest, RegisterUnregister) {
 
 //  - When the advertiser returns an error, we return an error
 TEST_F(LowEnergyAdvertisingManagerTest, AdvertiserError) {
-  advertiser()->ErrorOnNext(ToResult(hci_spec::kInvalidHCICommandParameters));
+  advertiser()->ErrorOnNext(ToResult(hci_spec::StatusCode::INVALID_HCI_COMMAND_PARAMETERS));
 
   EXPECT_FALSE(adv_mgr()->advertising());
   adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(), AdvertisingData(),

@@ -190,7 +190,8 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnConnectionReque
   if (!in_progress_request_ || in_progress_request_->initiator) {
     bt_log(INFO, "sco", "reject unexpected %s connection request (peer: %s)",
            hci_spec::LinkTypeToString(params.link_type).c_str(), bt_str(peer_id_));
-    SendRejectConnectionCommand(params.bd_addr, hci_spec::StatusCode::kConnectionRejectedBadBdAddr);
+    SendRejectConnectionCommand(params.bd_addr,
+                                hci_spec::StatusCode::CONNECTION_REJECTED_BAD_BD_ADDR);
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
@@ -205,7 +206,7 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnConnectionReque
     // The controller will send an HCI Synchronous Connection Complete event, so the request will be
     // completed then.
     SendRejectConnectionCommand(params.bd_addr,
-                                hci_spec::StatusCode::kConnectionRejectedLimitedResources);
+                                hci_spec::StatusCode::CONNECTION_REJECTED_LIMITED_RESOURCES);
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
@@ -397,9 +398,9 @@ void ScoConnectionManager::SendRejectConnectionCommand(DeviceAddressBytes addr,
                                                        hci_spec::StatusCode reason) {
   // The reject command has a small range of allowed reasons (the controller sends "Invalid HCI
   // Command Parameters" for other reasons).
-  BT_ASSERT_MSG(reason == hci_spec::StatusCode::kConnectionRejectedLimitedResources ||
-                    reason == hci_spec::StatusCode::kConnectionRejectedSecurity ||
-                    reason == hci_spec::StatusCode::kConnectionRejectedBadBdAddr,
+  BT_ASSERT_MSG(reason == hci_spec::StatusCode::CONNECTION_REJECTED_LIMITED_RESOURCES ||
+                    reason == hci_spec::StatusCode::CONNECTION_REJECTED_SECURITY ||
+                    reason == hci_spec::StatusCode::CONNECTION_REJECTED_BAD_BD_ADDR,
                 "Tried to send invalid reject reason: %s",
                 hci_spec::StatusCodeToString(reason).c_str());
 

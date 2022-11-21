@@ -119,14 +119,14 @@ DynamicByteBuffer DisconnectPacket(hci_spec::ConnectionHandle conn, hci_spec::St
 
 DynamicByteBuffer DisconnectStatusResponsePacket() {
   return DynamicByteBuffer(
-      COMMAND_STATUS_RSP(hci_spec::kDisconnect, hci_spec::StatusCode::kSuccess));
+      COMMAND_STATUS_RSP(hci_spec::kDisconnect, hci_spec::StatusCode::SUCCESS));
 }
 
 DynamicByteBuffer DisconnectionCompletePacket(hci_spec::ConnectionHandle conn,
                                               hci_spec::StatusCode reason) {
   return DynamicByteBuffer(StaticByteBuffer(hci_spec::kDisconnectionCompleteEventCode,
                                             0x04,  // parameter_total_size (4 bytes)
-                                            hci_spec::StatusCode::kSuccess,  // status
+                                            hci_spec::StatusCode::SUCCESS,  // status
                                             LowerBits(conn),
                                             UpperBits(conn),  // Little-Endian Connection_handle
                                             reason            // Reason
@@ -208,8 +208,8 @@ DynamicByteBuffer RemoteNameRequestCompletePacket(DeviceAddress address, const s
                                  sizeof(hci_spec::RemoteNameRequestCompleteEventParams));
   event.SetToZeros();
   const StaticByteBuffer header(hci_spec::kRemoteNameRequestCompleteEventCode,
-                                0xff,                            // parameter_total_size (255)
-                                hci_spec::StatusCode::kSuccess,  // status
+                                0xff,                           // parameter_total_size (255)
+                                hci_spec::StatusCode::SUCCESS,  // status
                                 addr[0], addr[1], addr[2], addr[3], addr[4],
                                 addr[5]  // peer address
   );
@@ -229,7 +229,7 @@ DynamicByteBuffer ReadRemoteVersionInfoPacket(hci_spec::ConnectionHandle conn) {
 DynamicByteBuffer ReadRemoteVersionInfoCompletePacket(hci_spec::ConnectionHandle conn) {
   return DynamicByteBuffer(StaticByteBuffer(hci_spec::kReadRemoteVersionInfoCompleteEventCode,
                                             0x08,  // parameter_total_size (8 bytes)
-                                            hci_spec::StatusCode::kSuccess,  // status
+                                            hci_spec::StatusCode::SUCCESS,  // status
                                             LowerBits(conn),
                                             UpperBits(conn),  // Little-Endian Connection_handle
                                             hci_spec::HCIVersion::k4_2,  // lmp_version
@@ -251,7 +251,7 @@ DynamicByteBuffer ReadRemoteSupportedFeaturesCompletePacket(hci_spec::Connection
   return DynamicByteBuffer(StaticByteBuffer(
       hci_spec::kReadRemoteSupportedFeaturesCompleteEventCode,
       0x0B,                              // parameter_total_size (11 bytes)
-      hci_spec::StatusCode::kSuccess,    // status
+      hci_spec::StatusCode::SUCCESS,     // status
       LowerBits(conn), UpperBits(conn),  // Little-Endian Connection_handle
       0xFF, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, (extended_features ? 0x80 : 0x00)
       // lmp_features
@@ -325,7 +325,7 @@ DynamicByteBuffer LEReadRemoteFeaturesCompletePacket(hci_spec::ConnectionHandle 
   return DynamicByteBuffer(StaticByteBuffer(hci_spec::kLEMetaEventCode,
                                             0x0c,  // parameter total size (12 bytes)
                                             hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode,
-                                            hci_spec::StatusCode::kSuccess,  // status
+                                            hci_spec::StatusCode::SUCCESS,  // status
                                             // Little-Endian connection handle
                                             LowerBits(conn), UpperBits(conn),
                                             // bit mask of LE features
@@ -361,7 +361,7 @@ DynamicByteBuffer ReadRemoteExtended1CompletePacket(hci_spec::ConnectionHandle c
   return DynamicByteBuffer(StaticByteBuffer(
       hci_spec::kReadRemoteExtendedFeaturesCompleteEventCode,
       0x0D,                              // parameter_total_size (13 bytes)
-      hci_spec::StatusCode::kSuccess,    // status
+      hci_spec::StatusCode::SUCCESS,     // status
       LowerBits(conn), UpperBits(conn),  // Little-Endian Connection_handle
       0x01,                              // page_number
       0x03,                              // max_page_number (3 pages)
@@ -385,7 +385,7 @@ DynamicByteBuffer ReadRemoteExtended2Packet(hci_spec::ConnectionHandle conn) {
 DynamicByteBuffer ReadRemoteExtended2CompletePacket(hci_spec::ConnectionHandle conn) {
   return DynamicByteBuffer(StaticByteBuffer(hci_spec::kReadRemoteExtendedFeaturesCompleteEventCode,
                                             0x0D,  // parameter_total_size (13 bytes)
-                                            hci_spec::StatusCode::kSuccess,  // status
+                                            hci_spec::StatusCode::SUCCESS,  // status
                                             LowerBits(conn),
                                             UpperBits(conn),  // Little-Endian Connection_handle
                                             0x02,             // page_number

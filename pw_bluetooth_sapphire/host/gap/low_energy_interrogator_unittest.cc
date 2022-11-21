@@ -22,9 +22,9 @@ constexpr hci_spec::ConnectionHandle kConnectionHandle = 0x0BAA;
 const DeviceAddress kTestDevAddr(DeviceAddress::Type::kLERandom, {1});
 
 const auto kReadRemoteVersionInfoRsp =
-    testing::CommandStatusPacket(hci_spec::kReadRemoteVersionInfo, hci_spec::StatusCode::kSuccess);
+    testing::CommandStatusPacket(hci_spec::kReadRemoteVersionInfo, hci_spec::StatusCode::SUCCESS);
 const auto kLEReadRemoteFeaturesRsp =
-    testing::CommandStatusPacket(hci_spec::kLEReadRemoteFeatures, hci_spec::StatusCode::kSuccess);
+    testing::CommandStatusPacket(hci_spec::kLEReadRemoteFeatures, hci_spec::StatusCode::SUCCESS);
 
 using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
 
@@ -150,7 +150,7 @@ TEST_F(LowEnergyInterrogatorTest, LEReadRemoteFeaturesErrorStatus) {
   const auto remote_version_complete_packet =
       testing::ReadRemoteVersionInfoCompletePacket(kConnectionHandle);
   const auto le_read_remote_features_error_status_packet = testing::CommandStatusPacket(
-      hci_spec::kLEReadRemoteFeatures, hci_spec::StatusCode::kUnknownCommand);
+      hci_spec::kLEReadRemoteFeatures, hci_spec::StatusCode::UNKNOWN_COMMAND);
   EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteVersionInfoPacket(kConnectionHandle),
                         &kReadRemoteVersionInfoRsp, &remote_version_complete_packet);
   EXPECT_CMD_PACKET_OUT(test_device(), testing::LEReadRemoteFeaturesPacket(kConnectionHandle),
@@ -166,7 +166,7 @@ TEST_F(LowEnergyInterrogatorTest, LEReadRemoteFeaturesErrorStatus) {
 
 TEST_F(LowEnergyInterrogatorTest, ReadRemoteVersionErrorStatus) {
   const auto remote_version_error_status_packet = testing::CommandStatusPacket(
-      hci_spec::kReadRemoteVersionInfo, hci_spec::StatusCode::kUnknownCommand);
+      hci_spec::kReadRemoteVersionInfo, hci_spec::StatusCode::UNKNOWN_COMMAND);
   const auto le_remote_features_complete_packet =
       testing::LEReadRemoteFeaturesCompletePacket(kConnectionHandle, /*features=*/{0});
   EXPECT_CMD_PACKET_OUT(test_device(), testing::ReadRemoteVersionInfoPacket(kConnectionHandle),

@@ -244,7 +244,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectNonConnectablePeer) {
 TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerErrorStatus) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   auto fake_peer = std::make_unique<FakePeer>(kAddress0);
-  fake_peer->set_connect_status(hci_spec::StatusCode::kConnectionFailedToBeEstablished);
+  fake_peer->set_connect_status(hci_spec::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED);
   test_device()->AddPeer(std::move(fake_peer));
 
   ASSERT_TRUE(peer->le());
@@ -267,7 +267,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerErrorStatus) {
 TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerFailure) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   auto fake_peer = std::make_unique<FakePeer>(kAddress0);
-  fake_peer->set_connect_response(hci_spec::StatusCode::kConnectionFailedToBeEstablished);
+  fake_peer->set_connect_response(hci_spec::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED);
   test_device()->AddPeer(std::move(fake_peer));
 
   ConnectionResult result = fit::ok(nullptr);
@@ -545,7 +545,7 @@ TEST_F(LowEnergyConnectionManagerTest, OnePeerTwoPendingRequestsBothFail) {
 
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   auto fake_peer = std::make_unique<FakePeer>(kAddress0);
-  fake_peer->set_connect_response(hci_spec::StatusCode::kConnectionFailedToBeEstablished);
+  fake_peer->set_connect_response(hci_spec::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED);
   test_device()->AddPeer(std::move(fake_peer));
 
   std::vector<ConnectionResult> results;
@@ -698,7 +698,7 @@ TEST_F(LowEnergyConnectionManagerTest, PendingRequestsOnTwoPeersOneFails) {
   auto* peer1 = peer_cache()->NewPeer(kAddress1, /*connectable=*/true);
 
   auto fake_peer0 = std::make_unique<FakePeer>(kAddress0);
-  fake_peer0->set_connect_response(hci_spec::StatusCode::kConnectionFailedToBeEstablished);
+  fake_peer0->set_connect_response(hci_spec::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED);
   test_device()->AddPeer(std::move(fake_peer0));
   test_device()->AddPeer(std::make_unique<FakePeer>(kAddress1));
 
@@ -2171,7 +2171,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectionCleanUpFollowingEncryptionFailu
   });
 
   test_device()->SendEncryptionChangeEvent(handle,
-                                           hci_spec::StatusCode::kConnectionTerminatedMICFailure,
+                                           hci_spec::StatusCode::CONNECTION_TERMINATED_MIC_FAILURE,
                                            hci_spec::EncryptionStatus::kOff);
   test_device()->SendDisconnectionCompleteEvent(handle);
   RunLoopUntilIdle();
@@ -2418,7 +2418,7 @@ TEST_F(LowEnergyConnectionManagerTest, PeripheralsRetryLLConnectionUpdateWithL2c
   // l2cap requests should not be sent on subsequent events
   test_device()->SendLEConnectionUpdateCompleteSubevent(
       conn_handle1->handle(), hci_spec::LEConnectionParameters(),
-      hci_spec::StatusCode::kUnsupportedRemoteFeature);
+      hci_spec::StatusCode::UNSUPPORTED_REMOTE_FEATURE);
   RunLoopUntilIdle();
   EXPECT_EQ(1u, l2cap_conn_param_update_count0);
   EXPECT_EQ(1u, l2cap_conn_param_update_count1);
@@ -2464,7 +2464,7 @@ TEST_F(LowEnergyConnectionManagerTest,
       [&](auto address, auto params) { hci_update_conn_param_count++; });
 
   test_device()->SetDefaultCommandStatus(hci_spec::kLEConnectionUpdate,
-                                         hci_spec::StatusCode::kUnsupportedRemoteFeature);
+                                         hci_spec::StatusCode::UNSUPPORTED_REMOTE_FEATURE);
 
   RunLoopFor(kLEConnectionPausePeripheral);
   ASSERT_TRUE(conn_handle);
@@ -2477,7 +2477,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   // l2cap request should not be called on subsequent events
   test_device()->SendLEConnectionUpdateCompleteSubevent(
       conn_handle->handle(), hci_spec::LEConnectionParameters(),
-      hci_spec::StatusCode::kUnsupportedRemoteFeature);
+      hci_spec::StatusCode::UNSUPPORTED_REMOTE_FEATURE);
 
   RunLoopUntilIdle();
   EXPECT_EQ(1u, l2cap_conn_param_update_count);
@@ -2521,7 +2521,7 @@ TEST_F(LowEnergyConnectionManagerTest,
       [&](auto address, auto params) { hci_update_conn_param_count++; });
 
   test_device()->SetDefaultCommandStatus(hci_spec::kLEConnectionUpdate,
-                                         hci_spec::StatusCode::kUnspecifiedError);
+                                         hci_spec::StatusCode::UNSPECIFIED_ERROR);
 
   RunLoopFor(kLEConnectionPausePeripheral);
   ASSERT_TRUE(conn_handle);
@@ -2534,7 +2534,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   // l2cap request should not be called on subsequent events
   test_device()->SendLEConnectionUpdateCompleteSubevent(
       conn_handle->handle(), hci_spec::LEConnectionParameters(),
-      hci_spec::StatusCode::kUnsupportedRemoteFeature);
+      hci_spec::StatusCode::UNSUPPORTED_REMOTE_FEATURE);
 
   RunLoopUntilIdle();
   EXPECT_EQ(0u, l2cap_conn_param_update_count);
@@ -2638,7 +2638,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectCalledForPeerBeingInterrogated) {
 
   // Prevent remote features event from being received.
   test_device()->SetDefaultCommandStatus(hci_spec::kLEReadRemoteFeatures,
-                                         hci_spec::StatusCode::kSuccess);
+                                         hci_spec::StatusCode::SUCCESS);
 
   conn_mgr()->Connect(
       peer->identifier(), [&](auto result) { ASSERT_TRUE(result.is_error()); }, kConnectionOptions);
@@ -2767,7 +2767,7 @@ TEST_F(LowEnergyConnectionManagerTest,
 
   // Prevent remote features event from being received.
   test_device()->SetDefaultCommandStatus(hci_spec::kLEReadRemoteFeatures,
-                                         hci_spec::StatusCode::kSuccess);
+                                         hci_spec::StatusCode::SUCCESS);
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_0;
   conn_mgr()->Connect(
@@ -2808,7 +2808,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   auto handle_0 = *fake_peer_0_ptr->logical_links().begin();
   hci_spec::LEReadRemoteFeaturesCompleteSubeventParams response;
   response.connection_handle = htole16(handle_0);
-  response.status = hci_spec::kSuccess;
+  response.status = hci_spec::StatusCode::SUCCESS;
   response.le_features = 0u;
   test_device()->SendLEMetaEvent(hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode,
                                  BufferView(&response, sizeof(response)));
@@ -2837,7 +2837,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSecondPeerDuringInterrogationOfFir
 
   // Prevent remote features event from being received.
   test_device()->SetDefaultCommandStatus(hci_spec::kLEReadRemoteFeatures,
-                                         hci_spec::StatusCode::kSuccess);
+                                         hci_spec::StatusCode::SUCCESS);
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_0;
   conn_mgr()->Connect(
@@ -2856,7 +2856,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSecondPeerDuringInterrogationOfFir
   test_device()->ClearDefaultCommandStatus(hci_spec::kLEReadRemoteFeatures);
   // Stall connection complete for peer 1.
   test_device()->SetDefaultCommandStatus(hci_spec::kLECreateConnection,
-                                         hci_spec::StatusCode::kSuccess);
+                                         hci_spec::StatusCode::SUCCESS);
 
   auto* peer_1 = peer_cache()->NewPeer(kAddress1, /*connectable=*/true);
   ASSERT_TRUE(peer_1->le());
@@ -2875,7 +2875,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSecondPeerDuringInterrogationOfFir
   auto handle_0 = *fake_peer_0_ptr->logical_links().begin();
   hci_spec::LEReadRemoteFeaturesCompleteSubeventParams response;
   response.connection_handle = htole16(handle_0);
-  response.status = hci_spec::kSuccess;
+  response.status = hci_spec::StatusCode::SUCCESS;
   response.le_features = 0u;
   test_device()->SendLEMetaEvent(hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode,
                                  BufferView(&response, sizeof(response)));
@@ -2974,7 +2974,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerStartDiscoveryFailed) {
 
   // Cause discovery to fail.
   test_device()->SetDefaultCommandStatus(hci_spec::kLESetScanEnable,
-                                         hci_spec::StatusCode::kCommandDisallowed);
+                                         hci_spec::StatusCode::COMMAND_DISALLOWED);
 
   EXPECT_TRUE(connected_peers().empty());
   conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
@@ -3008,7 +3008,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeerDiscoveryFailedDuringSca
 
   // Cause discovery to fail when attempting to restart scan after scan period ends.
   test_device()->SetDefaultCommandStatus(hci_spec::kLESetScanEnable,
-                                         hci_spec::StatusCode::kCommandDisallowed);
+                                         hci_spec::StatusCode::COMMAND_DISALLOWED);
   RunLoopFor(kLEGeneralDiscoveryScanMin);
   EXPECT_EQ(connect_cb_count, 1u);
   EXPECT_FALSE(peer->temporary());
@@ -3025,7 +3025,7 @@ TEST_F(LowEnergyConnectionManagerTest, PeerDisconnectBeforeInterrogationComplete
 
   // Cause interrogation to stall by not responding with a Read Remote Version complete event.
   test_device()->SetDefaultCommandStatus(hci_spec::kReadRemoteVersionInfo,
-                                         hci_spec::StatusCode::kSuccess);
+                                         hci_spec::StatusCode::SUCCESS);
 
   int connect_count = 0;
   auto callback = [&connect_count](auto result) {
@@ -3049,7 +3049,7 @@ TEST_F(LowEnergyConnectionManagerTest, PeerDisconnectBeforeInterrogationComplete
 
   // Complete interrogation so that callback gets called.
   hci_spec::ReadRemoteVersionInfoCompleteEventParams response = {};
-  response.status = hci_spec::kSuccess;
+  response.status = hci_spec::StatusCode::SUCCESS;
   response.connection_handle = htole16(handle);
   test_device()->SendEvent(hci_spec::kReadRemoteVersionInfoCompleteEventCode,
                            BufferView(&response, sizeof(response)));
@@ -3070,7 +3070,7 @@ TEST_F(LowEnergyConnectionManagerTest, LocalDisconnectBeforeInterrogationComplet
 
   // Cause interrogation to stall by not responding with a Read Remote Version complete event.
   test_device()->SetDefaultCommandStatus(hci_spec::kReadRemoteVersionInfo,
-                                         hci_spec::StatusCode::kSuccess);
+                                         hci_spec::StatusCode::SUCCESS);
 
   int connect_count = 0;
   auto callback = [&connect_count](auto result) {
@@ -3094,7 +3094,7 @@ TEST_F(LowEnergyConnectionManagerTest, LocalDisconnectBeforeInterrogationComplet
 
   // Complete interrogation so that callback gets called.
   hci_spec::ReadRemoteVersionInfoCompleteEventParams response = {};
-  response.status = hci_spec::kSuccess;
+  response.status = hci_spec::StatusCode::SUCCESS;
   response.connection_handle = htole16(handle);
   test_device()->SendEvent(hci_spec::kReadRemoteVersionInfoCompleteEventCode,
                            BufferView(&response, sizeof(response)));
@@ -3129,7 +3129,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectionFailedToBeEstablishedRetriesTwi
 
   // Cause interrogation to fail.
   test_device()->SetDefaultCommandStatus(hci_spec::kReadRemoteVersionInfo,
-                                         hci_spec::StatusCode::kConnectionFailedToBeEstablished);
+                                         hci_spec::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED);
 
   conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
   ASSERT_TRUE(peer->le());
@@ -3148,7 +3148,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectionFailedToBeEstablishedRetriesTwi
     EXPECT_EQ(connected_count, i + 1);
     EXPECT_EQ(Peer::ConnectionState::kInitializing, peer->le()->connection_state());
 
-    test_device()->Disconnect(kAddress0, hci_spec::StatusCode::kConnectionFailedToBeEstablished);
+    test_device()->Disconnect(kAddress0, hci_spec::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED);
     RunLoopUntilIdle();
     EXPECT_EQ(connected_count, i + 1);
     // A connect command should be sent in connect_delays[i+1]
@@ -3179,7 +3179,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectionFailedToBeEstablishedRetriesAnd
 
   // Cause interrogation to fail.
   test_device()->SetDefaultCommandStatus(hci_spec::kReadRemoteVersionInfo,
-                                         hci_spec::StatusCode::kConnectionFailedToBeEstablished);
+                                         hci_spec::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED);
 
   conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
   ASSERT_TRUE(peer->le());
@@ -3193,7 +3193,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectionFailedToBeEstablishedRetriesAnd
   test_device()->ClearDefaultCommandStatus(hci_spec::kReadRemoteVersionInfo);
 
   // Disconnect should initiate retry #2 after a pause.
-  test_device()->Disconnect(kAddress0, hci_spec::StatusCode::kConnectionFailedToBeEstablished);
+  test_device()->Disconnect(kAddress0, hci_spec::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED);
   RunLoopFor(zx::sec(2));
   EXPECT_EQ(1u, connected_peers().size());
   EXPECT_EQ(1u, connected_peers().count(kAddress0));
@@ -3222,7 +3222,7 @@ TEST_F(LowEnergyConnectionManagerTest,
 
   // Cause interrogation to fail.
   test_device()->SetDefaultCommandStatus(hci_spec::kReadRemoteVersionInfo,
-                                         hci_spec::StatusCode::kConnectionFailedToBeEstablished);
+                                         hci_spec::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED);
 
   conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
   ASSERT_TRUE(peer->le());
@@ -3236,7 +3236,7 @@ TEST_F(LowEnergyConnectionManagerTest,
   test_device()->ClearDefaultCommandStatus(hci_spec::kReadRemoteVersionInfo);
 
   // Peer disconnection during interrogation should also cause retry (after a pause)
-  test_device()->Disconnect(kAddress0, hci_spec::StatusCode::kConnectionFailedToBeEstablished);
+  test_device()->Disconnect(kAddress0, hci_spec::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED);
   RunLoopUntilIdle();
   // Disconnect will cancel request.
   conn_mgr()->Disconnect(peer->identifier());
@@ -3270,7 +3270,7 @@ TEST_F(LowEnergyConnectionManagerTest,
 
   // Cause interrogation to stall waiting for command complete event.
   test_device()->SetDefaultCommandStatus(hci_spec::kReadRemoteVersionInfo,
-                                         hci_spec::StatusCode::kSuccess);
+                                         hci_spec::StatusCode::SUCCESS);
 
   conn_mgr()->Connect(peer->identifier(), callback, kConnectionOptions);
   ASSERT_TRUE(peer->le());
@@ -3284,13 +3284,13 @@ TEST_F(LowEnergyConnectionManagerTest,
   test_device()->ClearDefaultCommandStatus(hci_spec::kReadRemoteVersionInfo);
 
   // Peer disconnection during interrogation should also cause retry (after a pause).
-  test_device()->Disconnect(kAddress0, hci_spec::StatusCode::kConnectionFailedToBeEstablished);
+  test_device()->Disconnect(kAddress0, hci_spec::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED);
   RunLoopUntilIdle();
 
   // Complete interrogation with an error that will be received after the disconnect event.
   // Event params other than status will be ignored because status is an error.
-  hci_spec::ReadRemoteVersionInfoCompleteEventParams response{.status =
-                                                                  hci_spec::kUnknownConnectionId};
+  hci_spec::ReadRemoteVersionInfoCompleteEventParams response{
+      .status = hci_spec::StatusCode::UNKNOWN_CONNECTION_ID};
   test_device()->SendEvent(hci_spec::kReadRemoteVersionInfoCompleteEventCode,
                            BufferView(&response, sizeof(response)));
   RunLoopUntilIdle();
@@ -3318,11 +3318,11 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSucceedsThenAutoConnectFailsDisabl
   // behavior until the next successful connection to avoid looping.
   // clang-format off
   std::array statuses_that_disable_autoconnect = {
-      hci_spec::StatusCode::kConnectionTimeout,
-      hci_spec::StatusCode::kConnectionRejectedSecurity,
-      hci_spec::StatusCode::kConnectionAcceptTimeoutExceeded,
-      hci_spec::StatusCode::kConnectionTerminatedByLocalHost,
-      hci_spec::StatusCode::kConnectionFailedToBeEstablished
+      hci_spec::StatusCode::CONNECTION_TIMEOUT,
+      hci_spec::StatusCode::CONNECTION_REJECTED_SECURITY,
+      hci_spec::StatusCode::CONNECTION_ACCEPT_TIMEOUT_EXCEEDED,
+      hci_spec::StatusCode::CONNECTION_TERMINATED_BY_LOCAL_HOST,
+      hci_spec::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED
   };
   // clang-format on
   // Validate that looping with a uint8_t is safe, it makes the rest of the code simpler.
@@ -3379,8 +3379,9 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSucceedsThenAutoConnectFailsDisabl
     // We always wait until the peer disconnects to relay connection failure when dealing with
     // the 0x3e kConnectionFailedToBeEstablished error.
     if (statuses_that_disable_autoconnect[i] ==
-        hci_spec::StatusCode::kConnectionFailedToBeEstablished) {
-      test_device()->Disconnect(kAddressI, hci_spec::StatusCode::kConnectionFailedToBeEstablished);
+        hci_spec::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED) {
+      test_device()->Disconnect(kAddressI,
+                                hci_spec::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED);
       RunLoopUntilIdle();
     }
     // Remote-initiated connection attempts that fail should not disable the auto-connect flag.
@@ -3516,7 +3517,7 @@ TEST_F(LowEnergyConnectionManagerTest, InspectFailedConnection) {
   EXPECT_TRUE(peer->temporary());
 
   auto fake_peer = std::make_unique<FakePeer>(kAddress0);
-  fake_peer->set_connect_status(hci_spec::StatusCode::kConnectionLimitExceeded);
+  fake_peer->set_connect_status(hci_spec::StatusCode::CONNECTION_LIMIT_EXCEEDED);
   test_device()->AddPeer(std::move(fake_peer));
 
   auto callback = [](auto result) { ASSERT_TRUE(result.is_error()); };

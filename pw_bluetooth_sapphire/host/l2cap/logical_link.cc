@@ -561,7 +561,7 @@ void LogicalLink::SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
                                                 hci::ResultCallback<> callback) {
   if (type_ != bt::LinkType::kACL) {
     bt_log(ERROR, "l2cap", "attempt to set flush timeout on non-ACL logical link");
-    callback(ToResult(hci_spec::StatusCode::kInvalidHCICommandParameters));
+    callback(ToResult(hci_spec::StatusCode::INVALID_HCI_COMMAND_PARAMETERS));
     return;
   }
 
@@ -575,7 +575,7 @@ void LogicalLink::SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
 
   if (flush_timeout < zx::msec(1) || (flush_timeout > hci_spec::kMaxAutomaticFlushTimeoutDuration &&
                                       flush_timeout != zx::duration::infinite())) {
-    callback_wrapper(ToResult(hci_spec::StatusCode::kInvalidHCICommandParameters));
+    callback_wrapper(ToResult(hci_spec::StatusCode::INVALID_HCI_COMMAND_PARAMETERS));
     return;
   }
 

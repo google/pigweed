@@ -123,7 +123,7 @@ TEST_F(LogicalLinkTest, SetBrEdrAutomaticFlushTimeoutFailsForLELink) {
   link()->SetBrEdrAutomaticFlushTimeout(kTimeout, [&](auto result) {
     cb_called = true;
     ASSERT_TRUE(result.is_error());
-    EXPECT_EQ(ToResult(hci_spec::StatusCode::kInvalidHCICommandParameters), result.error_value());
+    EXPECT_EQ(ToResult(hci_spec::StatusCode::INVALID_HCI_COMMAND_PARAMETERS), result.error_value());
   });
   EXPECT_TRUE(cb_called);
 }
@@ -137,7 +137,7 @@ TEST_F(LogicalLinkTest, SetAutomaticFlushTimeoutSuccess) {
 
   // Test command complete error
   const auto kCommandCompleteError = bt::testing::CommandCompletePacket(
-      hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::kUnknownConnectionId);
+      hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::UNKNOWN_CONNECTION_ID);
   EXPECT_CMD_PACKET_OUT(test_device(),
                         bt::testing::WriteAutomaticFlushTimeoutPacket(link()->handle(), 0),
                         &kCommandCompleteError);
@@ -145,7 +145,7 @@ TEST_F(LogicalLinkTest, SetAutomaticFlushTimeoutSuccess) {
   RunLoopUntilIdle();
   ASSERT_TRUE(cb_status.has_value());
   ASSERT_TRUE(cb_status->is_error());
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::kUnknownConnectionId), *cb_status);
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::UNKNOWN_CONNECTION_ID), *cb_status);
   cb_status.reset();
 
   // Test flush timeout = 0 (no command should be sent)
@@ -153,11 +153,11 @@ TEST_F(LogicalLinkTest, SetAutomaticFlushTimeoutSuccess) {
   RunLoopUntilIdle();
   ASSERT_TRUE(cb_status.has_value());
   EXPECT_TRUE(cb_status->is_error());
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::kInvalidHCICommandParameters), *cb_status);
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::INVALID_HCI_COMMAND_PARAMETERS), *cb_status);
 
   // Test infinite flush timeout (flush timeout of 0 should be sent).
   const auto kCommandComplete = bt::testing::CommandCompletePacket(
-      hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::kSuccess);
+      hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::SUCCESS);
   EXPECT_CMD_PACKET_OUT(test_device(),
                         bt::testing::WriteAutomaticFlushTimeoutPacket(link()->handle(), 0),
                         &kCommandComplete);
@@ -184,7 +184,7 @@ TEST_F(LogicalLinkTest, SetAutomaticFlushTimeoutSuccess) {
   RunLoopUntilIdle();
   ASSERT_TRUE(cb_status.has_value());
   EXPECT_TRUE(cb_status->is_error());
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::kInvalidHCICommandParameters), *cb_status);
+  EXPECT_EQ(ToResult(hci_spec::StatusCode::INVALID_HCI_COMMAND_PARAMETERS), *cb_status);
 }
 
 }  // namespace

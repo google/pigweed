@@ -123,7 +123,7 @@ class FakePeer {
 
   // The status that will be returned in the Command Status event in response to
   // a LE Create Connection command. If this is set to anything other than
-  // hci_spec::StatusCode::kSuccess, then connect_response() will have no effect.
+  // hci_spec::StatusCode::SUCCESS, then connect_response() will have no effect.
   hci_spec::StatusCode connect_status() const { return connect_status_; }
   void set_connect_status(hci_spec::StatusCode status) { connect_status_ = status; }
 

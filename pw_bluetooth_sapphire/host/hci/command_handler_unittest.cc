@@ -35,8 +35,7 @@ struct TestEvent {
 using DecodableEvent = TestEvent<true>;
 using UndecodableEvent = TestEvent<false>;
 
-DynamicByteBuffer MakeTestEventPacket(
-    hci_spec::StatusCode status = hci_spec::StatusCode::kSuccess) {
+DynamicByteBuffer MakeTestEventPacket(hci_spec::StatusCode status = hci_spec::StatusCode::SUCCESS) {
   return DynamicByteBuffer(StaticByteBuffer(DecodableEvent::kEventCode,
                                             0x01,  // parameters_total_size
                                             status));
@@ -104,7 +103,7 @@ class CommandHandlerTest : public TestingBase {
 
 TEST_F(CommandHandlerTest, SuccessfulSendCommandWithSyncEvent) {
   const auto kEventPacket =
-      bt::testing::CommandCompletePacket(kOpCode, hci_spec::StatusCode::kSuccess);
+      bt::testing::CommandCompletePacket(kOpCode, hci_spec::StatusCode::SUCCESS);
   EXPECT_CMD_PACKET_OUT(test_device(), kTestCommandPacket, &kEventPacket);
 
   std::optional<DecodableCommandCompleteEvent> event;
@@ -120,7 +119,7 @@ TEST_F(CommandHandlerTest, SuccessfulSendCommandWithSyncEvent) {
 
 TEST_F(CommandHandlerTest, SendCommandReceiveFailEvent) {
   const auto kEventPacket =
-      bt::testing::CommandCompletePacket(kOpCode, hci_spec::StatusCode::kCommandDisallowed);
+      bt::testing::CommandCompletePacket(kOpCode, hci_spec::StatusCode::COMMAND_DISALLOWED);
   EXPECT_CMD_PACKET_OUT(test_device(), kTestCommandPacket, &kEventPacket);
 
   std::optional<hci::Error> error;
@@ -131,12 +130,12 @@ TEST_F(CommandHandlerTest, SendCommandReceiveFailEvent) {
 
   RunLoopUntilIdle();
   ASSERT_TRUE(error.has_value());
-  EXPECT_TRUE(error->is(hci_spec::StatusCode::kCommandDisallowed));
+  EXPECT_TRUE(error->is(hci_spec::StatusCode::COMMAND_DISALLOWED));
 }
 
 TEST_F(CommandHandlerTest, SendCommandWithSyncEventFailsToDecode) {
   const auto kEventPacket =
-      bt::testing::CommandCompletePacket(kOpCode, hci_spec::StatusCode::kSuccess);
+      bt::testing::CommandCompletePacket(kOpCode, hci_spec::StatusCode::SUCCESS);
   EXPECT_CMD_PACKET_OUT(test_device(), kTestCommandPacket, &kEventPacket);
 
   std::optional<hci::Error> error;
@@ -153,7 +152,7 @@ TEST_F(CommandHandlerTest, SendCommandWithSyncEventFailsToDecode) {
 TEST_F(CommandHandlerTest, SuccessfulSendCommandWithAsyncEvent) {
   const auto kTestEventPacket = MakeTestEventPacket();
   const auto kStatusEventPacket =
-      bt::testing::CommandStatusPacket(kOpCode, hci_spec::StatusCode::kSuccess);
+      bt::testing::CommandStatusPacket(kOpCode, hci_spec::StatusCode::SUCCESS);
   EXPECT_CMD_PACKET_OUT(test_device(), kTestCommandPacket, &kStatusEventPacket, &kTestEventPacket);
 
   std::optional<DecodableEvent> event;
@@ -200,7 +199,7 @@ TEST_F(CommandHandlerTest, AddEventHandlerDecodeError) {
 
 TEST_F(CommandHandlerTest, SendCommandFinishOnStatus) {
   const auto kStatusEventPacket =
-      bt::testing::CommandStatusPacket(kOpCode, hci_spec::StatusCode::kSuccess);
+      bt::testing::CommandStatusPacket(kOpCode, hci_spec::StatusCode::SUCCESS);
   EXPECT_CMD_PACKET_OUT(test_device(), kTestCommandPacket, &kStatusEventPacket);
 
   size_t cb_count = 0;
