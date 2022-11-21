@@ -30,6 +30,42 @@ from pw_software_update.tuf_pb2 import (RootMetadata, SignedRootMetadata,
 from pw_software_update.update_bundle_pb2 import UpdateBundle
 
 
+def sign_bundle_handler(arg) -> None:
+    """Handles signing of a bundle"""
+
+    signed_bundle = dev_sign.sign_update_bundle(
+        UpdateBundle.FromString(arg.bundle.read_bytes()), arg.key.read_bytes())
+
+    arg.bundle.write_bytes(signed_bundle.SerializeToString())
+
+
+def _new_sign_bundle_parser(subparsers) -> None:
+    """Parser for sign-bundle subcommand"""
+
+    formatter_class = lambda prog: argparse.HelpFormatter(
+        prog, max_help_position=100, width=200)
+    sign_bundle_parser = subparsers.add_parser(
+        'sign-bundle',
+        description='Sign an existing bundle using a development key',
+        formatter_class=formatter_class,
+        help="",
+    )
+
+    sign_bundle_parser.set_defaults(func=sign_bundle_handler)
+    required_arguments = sign_bundle_parser.add_argument_group(
+        'required arguments')
+    required_arguments.add_argument('--bundle',
+                                    help='Bundle to be signed',
+                                    metavar='BUNDLE',
+                                    required=True,
+                                    type=Path)
+    required_arguments.add_argument('--key',
+                                    help='Bundle signing key',
+                                    metavar='KEY',
+                                    required=True,
+                                    type=Path)
+
+
 def add_file_to_bundle(bundle: UpdateBundle, file_name: str,
                        file_contents: bytes) -> UpdateBundle:
     """Adds a target file represented by file_name and file_contents to an
@@ -368,7 +404,7 @@ def _parse_args() -> argparse.Namespace:
     _new_create_empty_bundle_parser(subparsers)
     _new_add_root_metadata_to_bundle_parser(subparsers)
     _new_add_file_to_bundle_parser(subparsers)
-
+    _new_sign_bundle_parser(subparsers)
     return parser_root.parse_args()
 
 
