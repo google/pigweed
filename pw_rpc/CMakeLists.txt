@@ -144,6 +144,7 @@ pw_add_library(pw_rpc.common STATIC
     pw_span
     pw_status
     pw_sync.lock_annotations
+    pw_toolchain.no_destructor
   SOURCES
     call.cc
     channel.cc

@@ -20,12 +20,13 @@
 
 #include "pw_log/log.h"
 #include "pw_rpc/internal/lock.h"
+#include "pw_toolchain/no_destructor.h"
 
 namespace pw::rpc::internal {
 
 RpcLock& rpc_lock() {
-  static RpcLock lock;
-  return lock;
+  static NoDestructor<RpcLock> lock;
+  return *lock;
 }
 
 Endpoint::~Endpoint() {

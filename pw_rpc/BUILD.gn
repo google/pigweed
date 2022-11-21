@@ -152,6 +152,7 @@ pw_source_set("common") {
     ":protos.pwpb",
     "$dir_pw_containers:intrusive_list",
     "$dir_pw_sync:lock_annotations",
+    "$dir_pw_toolchain:no_destructor",
     dir_pw_assert,
     dir_pw_bytes,
     dir_pw_function,
