@@ -644,6 +644,7 @@ def watch_setup(  # pylint: disable=too-many-locals
     default_build_targets: List[str],  # pylint: disable=unused-argument
     build_directories: List[str],  # pylint: disable=unused-argument
     build_system_commands: List[str],  # pylint: disable=unused-argument
+    run_command: List[str],  # pylint: disable=unused-argument
     patterns: str,
     ignore_patterns_string: str,
     exclude_list: List[Path],
@@ -672,7 +673,8 @@ def watch_setup(  # pylint: disable=too-many-locals
     # Preset exclude list for pigweed directory.
     exclude_list += get_common_excludes()
     # Add build directories to the exclude list.
-    exclude_list.extend(cfg.build_dir.resolve() for cfg in build_recipes)
+    exclude_list.extend(cfg.build_dir.resolve() for cfg in build_recipes
+                        if isinstance(cfg.build_dir, Path))
 
     for i, build_recipe in enumerate(build_recipes, 1):
         _LOG.info('Will build [%d/%d]: %s', i, len(build_recipes),

@@ -78,24 +78,41 @@ class BuildCommand:
 class BuildRecipe:
     build_dir: Path
     steps: List[BuildCommand]
-    build_system_command: str
+    build_system_command: Optional[str] = None
+    title: Optional[str] = None
+
+    @property
+    def display_name(self) -> str:
+        if self.title:
+            return self.title
+        return str(self.build_dir)
 
     def targets(self) -> List[str]:
         return list(
             set(target for step in self.steps for target in step.targets))
 
     def __str__(self) -> str:
-        message = f"Build '{self.build_dir}'"
+        message = f"{self.display_name}"
         targets = self.targets()
         if targets:
-            message = '{} with targets: {}'.format(message,
-                                                   ' '.join(self.targets()))
+            message = '{}  ({})'.format(message, ' '.join(self.targets()))
         return message
 
 
 def create_build_recipes(prefs: 'ProjectBuilderPrefs') -> List[BuildRecipe]:
     """Create a list of BuildRecipes from ProjectBuilderPrefs."""
     build_recipes: List[BuildRecipe] = []
+
+    if prefs.run_commands:
+        for command_str in prefs.run_commands:
+            build_recipes.append(
+                BuildRecipe(
+                    build_dir=Path.cwd(),
+                    steps=[
+                        BuildCommand(Path.cwd(), command_string=command_str)
+                    ],
+                    title=command_str,
+                ))
 
     for build_dir, targets in prefs.build_directories.items():
         steps: List[BuildCommand] = []
@@ -112,6 +129,8 @@ def create_build_recipes(prefs: 'ProjectBuilderPrefs') -> List[BuildRecipe]:
                          targets=targets))
 
         build_recipes.append(
-            BuildRecipe(build_path, steps, build_system_command))
+            BuildRecipe(build_dir=build_path,
+                        steps=steps,
+                        build_system_command=build_system_command))
 
     return build_recipes

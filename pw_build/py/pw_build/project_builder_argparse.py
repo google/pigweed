@@ -88,4 +88,14 @@ def add_project_builder_arguments(
                         metavar=('directory', 'command'),
                         help='Build system command.')
 
+    parser.add_argument(
+        '--run-command',
+        action='append',
+        default=[],
+        help=('Additional build commands to run. These are run before any -C '
+              'arguments and may be repeated. For example: '
+              "--run-command 'bazel build //pw_cli/...'"
+              "--run-command 'bazel test //pw_cli/...'"
+              "-C out python.lint python.test"))
+
     return parser

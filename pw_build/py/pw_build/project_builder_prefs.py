@@ -93,6 +93,10 @@ class ProjectBuilderPrefs(TomlConfigLoaderMixin):
         self._update_config(changed_settings)
 
     @property
+    def run_commands(self) -> List[str]:
+        return self._config.get('run_command', [])
+
+    @property
     def build_directories(self) -> Dict[str, List[str]]:
         """Returns build directories and the targets to build in each."""
         build_directories: Union[List[str],
@@ -117,9 +121,10 @@ class ProjectBuilderPrefs(TomlConfigLoaderMixin):
                 existing_targets.extend(new_targets)
                 final_build_dirs[build_dir_name] = existing_targets
 
-        # If no build directory was specified, fall back to 'out' with
-        # default_build_targets or empty targets.
-        if not final_build_dirs:
+        # If no build directory was specified fall back to 'out' with
+        # default_build_targets or empty targets. If run_commands were supplied,
+        # only run those by returning an empty final_build_dirs list.
+        if not final_build_dirs and not self.run_commands:
             final_build_dirs['out'] = self._config.get('default_build_targets',
                                                        [])
 

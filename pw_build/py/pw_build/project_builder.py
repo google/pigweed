@@ -179,7 +179,7 @@ class ProjectBuilder:
             _LOG.info(' .------------------------------------')
             _LOG.info(' |')
             for (succeeded, cmd) in zip(builds_succeeded,
-                                        [cfg.build_dir for cfg in self]):
+                                        [str(cfg) for cfg in self]):
                 slug = (self.charset.slug_ok
                         if succeeded else self.charset.slug_fail)
                 _LOG.info(' |   %s  %s', slug, cmd)
