@@ -44,6 +44,15 @@ def gen_common_metadata(
                           version=version)
 
 
+def gen_target_file(file_name: str,
+                    file_contents: bytes,
+                    hash_funcs=DEFAULT_HASHES) -> TargetFile:
+
+    return TargetFile(file_name=file_name,
+                      length=len(file_contents),
+                      hashes=gen_hashes(file_contents, hash_funcs))
+
+
 def gen_targets_metadata(
     target_payloads: Dict[str, bytes],
     hash_funcs: Iterable['HashFunction.V'] = DEFAULT_HASHES,
@@ -52,10 +61,11 @@ def gen_targets_metadata(
     """Generates TargetsMetadata the given target payloads."""
     target_files = []
     for target_file_name, target_payload in target_payloads.items():
-        target_files.append(
-            TargetFile(file_name=target_file_name,
-                       length=len(target_payload),
-                       hashes=gen_hashes(target_payload, hash_funcs)))
+        new_target_file = gen_target_file(file_name=target_file_name,
+                                          file_contents=target_payload,
+                                          hash_funcs=hash_funcs)
+
+        target_files.append(new_target_file)
 
     common_metadata = gen_common_metadata(RoleType.TARGETS, version=version)
     return TargetsMetadata(common_metadata=common_metadata,

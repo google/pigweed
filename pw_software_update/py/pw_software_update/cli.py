@@ -19,11 +19,100 @@ Learn more at: pigweed.dev/pw_software_update
 """
 
 import argparse
+import os
 import sys
 from pathlib import Path
-from pw_software_update import dev_sign, keys, root_metadata, update_bundle
-from pw_software_update.tuf_pb2 import (RootMetadata, SignedRootMetadata)
+
+from pw_software_update import (dev_sign, keys, metadata, root_metadata,
+                                update_bundle)
+from pw_software_update.tuf_pb2 import (RootMetadata, SignedRootMetadata,
+                                        TargetsMetadata)
 from pw_software_update.update_bundle_pb2 import UpdateBundle
+
+
+def add_file_to_bundle(bundle: UpdateBundle, file_name: str,
+                       file_contents: bytes) -> UpdateBundle:
+    """Adds a target file represented by file_name and file_contents to an
+    existing UpdateBundle -- bundle and returns the updated UpdateBundle object.
+    """
+
+    if not file_name in bundle.target_payloads:
+        bundle.target_payloads[file_name] = file_contents
+    else:
+        raise Exception(f'File name {file_name} already exists in bundle')
+
+    signed_targets_metadata = bundle.targets_metadata['targets']
+    targets_metadata = TargetsMetadata().FromString(
+        signed_targets_metadata.serialized_targets_metadata)
+
+    matching_file_names = list(
+        filter(lambda name: name.file_name == file_name,
+               targets_metadata.target_files))
+
+    target_file = metadata.gen_target_file(file_name, file_contents)
+
+    if not matching_file_names:
+        targets_metadata.target_files.append(target_file)
+    else:
+        raise Exception(f'File name {file_name} already exists in bundle')
+
+    bundle.targets_metadata['targets'].serialized_targets_metadata =\
+            targets_metadata.SerializeToString()
+
+    return bundle
+
+
+def add_file_to_bundle_handler(arg) -> None:
+    """Add a new file to an existing bundle. Updates the targets metadata
+    and errors out if the file already exists.
+    """
+
+    try:
+        if not arg.new_name:
+            file_name = os.path.splitext(os.path.basename(arg.file))[0]
+        else:
+            file_name = arg.new_name
+
+        bundle = UpdateBundle().FromString(arg.bundle.read_bytes())
+        updated_bundle = add_file_to_bundle(
+            bundle=bundle,
+            file_name=file_name,
+            file_contents=arg.file.read_bytes())
+
+        arg.bundle.write_bytes(updated_bundle.SerializeToString())
+
+    except (IOError) as error:
+        print(error)
+
+
+def _new_add_file_to_bundle_parser(subparsers) -> None:
+    """Parser for adding file to bundle subcommand"""
+
+    formatter_class = lambda prog: argparse.HelpFormatter(
+        prog, max_help_position=100, width=200)
+    add_file_to_bundle_parser = subparsers.add_parser(
+        'add-file-to-bundle',
+        description='Add a file to an existing bundle',
+        formatter_class=formatter_class,
+        help="")
+    add_file_to_bundle_parser.set_defaults(func=add_file_to_bundle_handler)
+    required_arguments = add_file_to_bundle_parser.add_argument_group(
+        'required arguments')
+    required_arguments.add_argument('--bundle',
+                                    help='Path to an existing bundle',
+                                    metavar='BUNDLE',
+                                    required=True,
+                                    type=Path)
+    required_arguments.add_argument('--file',
+                                    help='Path to a target file',
+                                    metavar='FILE_PATH',
+                                    required=True,
+                                    type=Path)
+    required_arguments.add_argument('--new-name',
+                                    help='Optional new name for target',
+                                    metavar='NEW_NAME',
+                                    required=False,
+                                    type=str)
 
 
 def add_root_metadata_to_bundle_handler(arg) -> None:
@@ -278,6 +367,7 @@ def _parse_args() -> argparse.Namespace:
     # Bundle related parsers
     _new_create_empty_bundle_parser(subparsers)
     _new_add_root_metadata_to_bundle_parser(subparsers)
+    _new_add_file_to_bundle_parser(subparsers)
 
     return parser_root.parse_args()
 

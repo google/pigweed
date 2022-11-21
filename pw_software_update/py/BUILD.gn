@@ -48,6 +48,7 @@ pw_python_package("py") {
   ]
 
   tests = [
+    "cli_test.py",
     "dev_sign_test.py",
     "keys_test.py",
     "metadata_test.py",
