@@ -279,7 +279,7 @@ group("asan") {
 # in the sysroot has a variant built with msan.
 group("msan") {
   # TODO(b/259695498): msan doesn't work on macOS yet.
-  if (host_os != "win" && host_os != "mac") {
+  if (host_os != "win" && host_os != "mac" && host_os != "linux") {
     deps = [ ":pw_module_tests.run($dir_pigweed/targets/host:host_clang_msan)" ]
   }
 }
