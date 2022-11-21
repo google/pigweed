@@ -41,11 +41,17 @@ generate_toolchains("host_clang_suite") {
   toolchains = pw_toolchain_host_clang_list
 }
 
+config("public_include_path") {
+  include_dirs = [ "public" ]
+}
+
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }
 
-pw_test_group("tests") {
+pw_source_set("no_destructor") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_toolchain/no_destructor.h" ]
 }
 
 config("wrap_abort_config") {
@@ -57,4 +63,16 @@ pw_source_set("wrap_abort") {
   all_dependent_configs = [ ":wrap_abort_config" ]
   sources = [ "wrap_abort.cc" ]
   deps = [ dir_pw_assert ]
+}
+
+pw_test_group("tests") {
+  tests = [ ":no_destructor_test" ]
+}
+
+pw_test("no_destructor_test") {
+  sources = [ "no_destructor_test.cc" ]
+  deps = [
+    ":no_destructor",
+    dir_pw_assert,
+  ]
 }

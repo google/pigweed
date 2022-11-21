@@ -15,11 +15,27 @@
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_library",
+    "pw_cc_test",
 )
 
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
+
+pw_cc_library(
+    name = "no_destructor",
+    hdrs = ["public/pw_toolchain/no_destructor.h"],
+    includes = ["public"],
+)
+
+pw_cc_test(
+    name = "no_destructor_test",
+    srcs = ["no_destructor_test.cc"],
+    deps = [
+        ":no_destructor",
+        "//pw_unit_test",
+    ],
+)
 
 pw_cc_library(
     name = "wrap_abort",

@@ -135,10 +135,10 @@ List of traits
   https://en.cppreference.com/w/cpp/preprocessor/replace#Predefined_macros for
   further details.
 
-----------------------------
-Standard library integration
-----------------------------
-``pw_toolchain`` provides features for integrating with the standard library.
+---------------
+C/C++ libraries
+---------------
+``pw_toolchain`` provides some toolchain-related C/C++ libraries.
 
 ``std:abort`` wrapper
 =====================
@@ -177,3 +177,46 @@ provided through ``pw_toolchain/arm_gcc:arm_none_eabi_gcc_support``, implements
 these functions and forces a linker error if they are used. It also wraps some
 functions related to use of ``stdout`` and ``stderr`` that abort if they are
 called.
+
+pw_toolchain/no_destructor.h
+============================
+.. cpp:class:: template <typename T> pw::NoDestructor
+
+  Helper type to create a function-local static variable of type ``T`` when
+  ``T`` has a non-trivial destructor. Storing a ``T`` in a
+  ``pw::NoDestructor<T>`` will prevent ``~T()`` from running, even when the
+  variable goes out of scope.
+
+  This class is useful when a variable has static storage duration but its type
+  has a non-trivial destructor. Destructor ordering is not defined and can
+  cause issues in multithreaded environments. Additionally, removing destructor
+  calls can save code size.
+
+  Do not use ``pw::NoDestructor<T>`` with trivially destructible types. Use the
+  type directly instead. If the variable can be constexpr, make it constexpr.
+
+  ``pw::NoDestructor<T>`` provides a similar API to std::optional. Use ``*`` or
+  ``->`` to access the wrapped type.
+
+  ``pw::NoDestructor<T>`` is based on Chromium's ``base::NoDestructor<T>`` in
+  `src/base/no_destructor.h <https://chromium.googlesource.com/chromium/src/base/+/5ea6e31f927aa335bfceb799a2007c7f9007e680/no_destructor.h>`_.
+
+  In Clang, ``pw::NoDestructor`` can be replaced with the `[[clang::no_destroy]]
+  <https://clang.llvm.org/docs/AttributeReference.html#no-destroy>`_.
+  attribute.
+
+Example usage
+-------------
+.. code-block:: cpp
+
+  pw::sync::Mutex& GetMutex() {
+    // Use NoDestructor to avoid running the mutex destructor when exit-time
+    // destructors run.
+    static const pw::NoDestructor<pw::sync::Mutex> global_mutex;
+    return *global_mutex;
+  }
+
+.. warning::
+
+  Misuse of :cpp:class:`pw::NoDestructor` can cause resource leaks and other
+  problems. Only skip destructors when you know it is safe to do so.
