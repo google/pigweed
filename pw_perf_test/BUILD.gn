@@ -34,6 +34,7 @@ pw_test_group("tests") {
     ":perf_test_test",
     ":timer_facade_test",
     ":chrono_timer_test",
+    ":state_test",
   ]
 }
 
@@ -54,6 +55,10 @@ pw_source_set("pw_perf_test") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_perf_test/perf_test.h" ]
   public_deps = [ ":timer_interface" ]
+  deps = [
+    dir_pw_assert,
+    dir_pw_log,
+  ]
   sources = [ "perf_test.cc" ]
 }
 
@@ -77,6 +82,12 @@ pw_test("chrono_timer_test") {
     "$dir_pw_chrono:system_timer",
     "$dir_pw_thread:sleep",
   ]
+}
+
+pw_test("state_test") {
+  enable_if = pw_perf_test_TIMER_INTERFACE_BACKEND != ""
+  sources = [ "state_test.cc" ]
+  public_deps = [ ":pw_perf_test" ]
 }
 
 pw_doc_group("docs") {

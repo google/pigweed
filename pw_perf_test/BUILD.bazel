@@ -71,6 +71,8 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         ":timer",
+        "//pw_assert",
+        "//pw_log",
     ],
 )
 
@@ -98,6 +100,12 @@ pw_cc_test(
         "//pw_chrono:system_clock",
         "//pw_thread:sleep",
     ],
+)
+
+pw_cc_test(
+    name = "state_test",
+    srcs = ["state_test.cc"],
+    deps = [":pw_perf_test"],
 )
 
 # Bazel does not yet support building docs.

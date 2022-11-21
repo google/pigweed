@@ -17,9 +17,5 @@
 #include "gtest/gtest.h"
 
 namespace pw::perf_test {
-namespace {
-
-TEST(PerfTest, GeneratesCorrectly) { EXPECT_EQ(magic, 42); }
-
-}  // namespace
+namespace {}  // namespace
 }  // namespace pw::perf_test

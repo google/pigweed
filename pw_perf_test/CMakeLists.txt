@@ -35,12 +35,17 @@ pw_add_facade(pw_perf_test.timer INTERFACE
 )
 
 pw_add_library(pw_perf_test STATIC
-  SOURCES
-    perf_test.cc
-  HEADERS
-    public/pw_perf_test/perf_test.h
   PUBLIC_INCLUDES
     public
+  HEADERS
+    public/pw_perf_test/perf_test.h
+  PUBLIC_DEPS
+    pw_perf_test.timer
+  PRIVATE_DEPS
+    pw_assert
+    pw_log
+  SOURCES
+    perf_test.cc
 )
 
 pw_add_library(pw_perf_test.chrono_timer INTERFACE
@@ -70,7 +75,7 @@ if(NOT "${pw_perf_test.TIMER_INTERFACE_BACKEND}" STREQUAL "")
 endif()
 
 if(NOT "${pw_perf_test.TIMER_INTERFACE_BACKEND}"
-    STREQUAL "pw_chrono.SYSTEM_CLOCK_BACKEND")
+    STREQUAL "pw_chrono.SYSTEM_CLOCK_BACKEND.NO_BACKEND_SET")
   pw_add_test(pw_perf_test.chrono_timer_test
     SOURCES
       chrono_test.cc
@@ -78,6 +83,18 @@ if(NOT "${pw_perf_test.TIMER_INTERFACE_BACKEND}"
       pw_perf_test.timer
       pw_thread.sleep
       pw_chrono.system_clock
+    GROUPS
+      modules
+      pw_perf_test
+  )
+endif()
+
+if(NOT "${pw_perf_test.TIMER_INTERFACE_BACKEND}" STREQUAL "")
+  pw_add_test(pw_perf_test.state_test
+    SOURCES
+      state_test.cc
+    PRIVATE_DEPS
+      pw_perf_test
     GROUPS
       modules
       pw_perf_test
