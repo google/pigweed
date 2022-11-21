@@ -56,6 +56,8 @@ load("//pw_protobuf_compiler:pw_nanopb_cc_library.bzl", "pw_nanopb_cc_library")
 def pw_proto_library(
         name = "",
         deps = [],
+        visibility = None,
+        tags = None,
         nanopb_options = None,
         enabled_targets = None):
     """Generate Pigweed proto C++ code.
@@ -66,6 +68,10 @@ def pw_proto_library(
     Args:
       name: The name of the target.
       deps: proto_library targets from which to generate Pigweed C++.
+      visibility: The visibility of the target. See
+         https://bazel.build/concepts/visibility.
+      tags: Tags for the target. See
+         https://bazel.build/reference/be/common-definitions#common-attributes.
       nanopb_options: path to file containing nanopb options, if any
         (https://jpa.kapsi.fi/nanopb/docs/reference.html#proto-file-options).
       enabled_targets: Specifies which libraries should be generated. Libraries
@@ -115,7 +121,13 @@ def pw_proto_library(
     if is_plugin_enabled("nanopb"):
         # Use nanopb to generate the pb.h and pb.c files, and the target
         # exposing them.
-        pw_nanopb_cc_library(name + ".nanopb", deps, options = nanopb_options)
+        pw_nanopb_cc_library(
+            name = name + ".nanopb",
+            deps = deps,
+            visibility = visibility,
+            tags = tags,
+            options = nanopb_options,
+        )
 
     # Use Pigweed proto plugins to generate the remaining files and targets.
     for plugin_name, info in PIGWEED_PLUGIN.items():
@@ -142,6 +154,8 @@ def pw_proto_library(
             name = name + "." + plugin_name,
             hdrs = [name_pb],
             deps = lib_deps,
+            visibility = visibility,
+            tags = tags,
             linkstatic = 1,
         )
 
