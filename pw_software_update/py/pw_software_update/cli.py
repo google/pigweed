@@ -30,13 +30,68 @@ from pw_software_update.tuf_pb2 import (RootMetadata, SignedRootMetadata,
 from pw_software_update.update_bundle_pb2 import UpdateBundle
 
 
+def inspect_bundle_handler(arg) -> None:
+    """Prints bundle contents."""
+
+    try:
+        bundle = UpdateBundle.FromString(arg.pathname.read_bytes())
+        signed_targets_metadata = bundle.targets_metadata['targets']
+        targets_metadata = TargetsMetadata().FromString(
+            signed_targets_metadata.serialized_targets_metadata)
+        print('Targets Metadata:')
+        print('=================')
+        print(targets_metadata)
+
+        print('\nTarget Files:')
+        print('=============')
+        for i, (name, contents) in enumerate(bundle.target_payloads.items()):
+            print(f'{i+1} of {len(bundle.target_payloads)}:')
+            print(f'  filename: {name}')
+            print(f'  length: {len(contents)}')
+
+            first_32_bytes = contents[:32]
+            print(f'  ascii contents(first 32 bytes): {first_32_bytes!r}')
+            print(f'  hex contents(first 32 bytes): {first_32_bytes.hex()}\n')
+
+        signed_root_metadata = bundle.root_metadata
+        deserialized_root_metadata = RootMetadata.FromString(
+            signed_root_metadata.serialized_root_metadata)
+        print('\nRoot Metadata:')
+        print('==============')
+        print(deserialized_root_metadata)
+
+    except IOError as error:
+        print(error)
+
+
+def _new_inspect_bundle_parser(subparsers) -> None:
+    """Parser to handle inspect-bundle subcommand"""
+
+    formatter_class = lambda prog: argparse.HelpFormatter(
+        prog, max_help_position=100, width=200)
+    inspect_bundle_parser = subparsers.add_parser(
+        'inspect-bundle',
+        description='Outputs contents of bundle',
+        formatter_class=formatter_class,
+        help="")
+
+    inspect_bundle_parser.set_defaults(func=inspect_bundle_handler)
+    inspect_bundle_parser.add_argument('pathname',
+                                       type=Path,
+                                       help='Path to bundle')
+
+
 def sign_bundle_handler(arg) -> None:
     """Handles signing of a bundle"""
 
-    signed_bundle = dev_sign.sign_update_bundle(
-        UpdateBundle.FromString(arg.bundle.read_bytes()), arg.key.read_bytes())
+    try:
+        signed_bundle = dev_sign.sign_update_bundle(
+            UpdateBundle.FromString(arg.bundle.read_bytes()),
+            arg.key.read_bytes())
+        arg.bundle.write_bytes(signed_bundle.SerializeToString())
 
-    arg.bundle.write_bytes(signed_bundle.SerializeToString())
+    except IOError as error:
+        print(error)
 
 
 def _new_sign_bundle_parser(subparsers) -> None:
@@ -405,6 +460,8 @@ def _parse_args() -> argparse.Namespace:
     _new_add_root_metadata_to_bundle_parser(subparsers)
     _new_add_file_to_bundle_parser(subparsers)
     _new_sign_bundle_parser(subparsers)
+    _new_inspect_bundle_parser(subparsers)
+
     return parser_root.parse_args()
 
 
