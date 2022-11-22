@@ -30,6 +30,9 @@ struct Pair {
   Second second;
 };
 
+template <typename T1, typename T2>
+Pair(T1, T2) -> Pair<T1, T2>;
+
 // A simple, fixed-size associative array with lookup by key or value.
 //
 // FlatMaps are initialized with a std::array of Pair<K, V> objects:
