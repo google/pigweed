@@ -13,15 +13,11 @@
 # the License.
 
 # These warnings need to be disabled when using strict warnings.
-#
-# TODO(amontanez): Just applying these flags to Pi Pico source sets does not
-# work because of Pigweed's default_configs notion and how it orders flags.
-# Removing Pigweed's strict  warnings config is the only working solution for
-# now.
 config("disable_warnings") {
   cflags = [
     "-Wno-undef",
     "-Wno-unused-function",
+    "-Wno-ignored-qualifiers",
   ]
   asmflags = cflags
 }

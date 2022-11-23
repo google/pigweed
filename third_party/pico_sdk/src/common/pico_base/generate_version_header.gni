@@ -64,8 +64,10 @@ template("generate_version_header") {
   }
 
   pw_source_set("${target_name}") {
-    remove_configs = [ "$dir_pw_build:strict_warnings" ]
-    public_configs = [ ":${target_name}.public_include_dirs" ]
+    public_configs = [
+      "${PICO_ROOT}/gn:disable_warnings",
+      ":${target_name}.public_include_dirs",
+    ]
     deps = [ ":${target_name}.generated_header" ]
     public = [ "${_generated_header_path}" ]
     forward_variables_from(invoker,

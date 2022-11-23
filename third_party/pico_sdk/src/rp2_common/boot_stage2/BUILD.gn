@@ -30,6 +30,17 @@ config("public_include_dirs") {
   ]
 }
 
+# The upstream boot_stage2.ld doesn't specify the binary entry point or
+# mark the required sections as KEEP(), so they're optimized out with
+# Pigweed's aggressive default optimizations.
+#
+# Because of Pigweed's pw_build_DEFAULT_CONFIGS behavior, this flag
+# needs to be a config rather than just an ldflag of boot_stage2_elf to ensure
+# the flag is ordered properly.
+config("no_gc_sections") {
+  ldflags = [ "-Wl,--no-gc-sections" ]
+}
+
 pw_executable("boot_stage2_elf") {
   _linker_script_path = rebase_path("${_CWD}/boot_stage2.ld", root_build_dir)
 
@@ -41,21 +52,11 @@ pw_executable("boot_stage2_elf") {
   ldflags += [
     "-T${_linker_script_path}",
     "-nostartfiles",
-
-    # Unfortunately, this is not properly applied to compiler flags thanks to
-    # `default_configs`.
-    "-Wl,--no-gc-sections",
   ]
 
   public_configs = [ ":public_include_dirs" ]
+  configs = [ ":no_gc_sections" ]
 
-  # The upstream boot_stage2.ld doesn't specify the binary entry point or
-  # mark the required sections as KEEP(), so they're optimized out with
-  # Pigweed's aggressive default optimizations.
-  remove_configs = [
-    "$dir_pw_build:reduced_size",
-    "$dir_pw_build:strict_warnings",
-  ]
   is_boot_stage2 = true
 
   public = [ "${_CWD}/include/boot_stage2/config.h" ]

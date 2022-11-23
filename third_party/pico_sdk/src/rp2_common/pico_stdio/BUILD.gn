@@ -40,8 +40,10 @@ config("printf_wrappers") {
 # TODO(amontanez): This is definitely a facade. For now, just have header and
 # header+impl build targets to simulate.
 pw_source_set("headers") {
-  remove_configs = [ "$dir_pw_build:strict_warnings" ]
-  public_configs = [ ":public_include_dirs" ]
+  public_configs = [
+    ":public_include_dirs",
+    "${PICO_ROOT}/gn:disable_warnings",
+  ]
   public_deps = [
     "${PICO_ROOT}/src/common/pico_base",
     "${PICO_ROOT}/src/rp2_common/pico_platform",
@@ -54,7 +56,7 @@ pw_source_set("headers") {
 }
 
 pw_source_set("pico_stdio") {
-  remove_configs = [ "$dir_pw_build:strict_warnings" ]
+  public_configs = [ "${PICO_ROOT}/gn:disable_warnings" ]
   all_dependent_configs = [ ":printf_wrappers" ]
   public_deps = [ ":headers" ]
   deps = [

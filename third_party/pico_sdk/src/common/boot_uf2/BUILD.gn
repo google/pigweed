@@ -26,7 +26,9 @@ config("public_include_dirs") {
 }
 
 pw_source_set("boot_uf2") {
-  remove_configs = [ "$dir_pw_build:strict_warnings" ]
-  public_configs = [ ":public_include_dirs" ]
+  public_configs = [
+    ":public_include_dirs",
+    "${PICO_ROOT}/gn:disable_warnings",
+  ]
   public = [ "${_CWD}/include/boot/uf2.h" ]
 }

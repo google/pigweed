@@ -44,10 +44,10 @@ generate_version_header("version") {
 }
 
 pw_source_set("pico_base") {
-  remove_configs = [ "$dir_pw_build:strict_warnings" ]
   public_configs = [
     ":board_define",
     ":public_include_dirs",
+    "${PICO_ROOT}/gn:disable_warnings",
   ]
   public = [
     "${_CWD}/include/pico.h",

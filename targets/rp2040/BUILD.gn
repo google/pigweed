@@ -22,10 +22,6 @@ import("$dir_pw_toolchain/generate_toolchain.gni")
 
 if (current_toolchain != default_toolchain) {
   pw_source_set("pico_logging_test_main") {
-    # Required because the pico SDK can't properly propagate -Wno-undef and
-    # -Wno-unused-function because of Pigweed's very unusual default_configs
-    # behavior.
-    remove_configs = [ "$dir_pw_build:strict_warnings" ]
     deps = [
       "$PICO_ROOT/src/common/pico_base",
       "$PICO_ROOT/src/common/pico_stdlib",

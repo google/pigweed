@@ -57,8 +57,10 @@ template("generate_config_header") {
   # This source set bundles up the generated header such that depending on
   # this template will allow targets to include "pico/config_autogen.h".
   pw_source_set("${target_name}") {
-    remove_configs = [ "$dir_pw_build:strict_warnings" ]
-    public_configs = [ ":${target_name}.public_include_dirs" ]
+    public_configs = [
+      "${PICO_ROOT}/gn:disable_warnings",
+      ":${target_name}.public_include_dirs",
+    ]
     deps = [ ":${target_name}.generated_header" ]
     public = [ "${_generated_header_path}" ]
     forward_variables_from(invoker, "*", [ "config_header_files" ])
