@@ -746,7 +746,7 @@ TEST_F(HostServerTest, WatchPeersHangsOnFirstCallWithNoExistingPeers) {
 }
 
 TEST_F(HostServerTest, WatchPeersRepliesOnFirstCallWithExistingPeers) {
-  __UNUSED bt::gap::Peer* peer =
+  [[maybe_unused]] bt::gap::Peer* peer =
       adapter()->peer_cache()->NewPeer(kLeTestAddr, /*connectable=*/true);
   ResetHostServer();
 
@@ -818,7 +818,7 @@ TEST_F(HostServerTest, WatchPeersStateMachine) {
 
   // Removing the peer should resolve the hanging get.
   auto peer_id = peer->identifier();
-  __UNUSED auto result = adapter()->peer_cache()->RemoveDisconnectedPeer(peer_id);
+  [[maybe_unused]] auto result = adapter()->peer_cache()->RemoveDisconnectedPeer(peer_id);
   ASSERT_TRUE(updated.has_value());
   ASSERT_TRUE(removed.has_value());
   EXPECT_TRUE(updated->empty());
@@ -835,7 +835,7 @@ TEST_F(HostServerTest, WatchPeersUpdatedThenRemoved) {
 
     // |peer| becomes a dangling pointer after the call to RemoveDisconnectedPeer. We scoped the
     // binding of |peer| so that it doesn't exist beyond this point.
-    __UNUSED auto result = adapter()->peer_cache()->RemoveDisconnectedPeer(id);
+    [[maybe_unused]] auto result = adapter()->peer_cache()->RemoveDisconnectedPeer(id);
   }
 
   bool replied = false;

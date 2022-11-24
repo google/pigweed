@@ -165,7 +165,7 @@ class Server final {
   std::unordered_map<RegistrationHandle, std::set<ServiceHandle>> reg_to_service_;
 
   // The service database state tracker.
-  uint32_t db_state_ __UNUSED;
+  uint32_t db_state_ [[maybe_unused]];
 
   fxl::WeakPtrFactory<Server> weak_ptr_factory_;
 

@@ -134,7 +134,7 @@ TEST(PduTest, ReleaseFragments) {
   // Directly count the elements in |fragments| to make sure the count is
   // correct.
   size_t count = 0;
-  for (__UNUSED const auto& f : fragments)
+  for ([[maybe_unused]] const auto& f : fragments)
     count++;
   EXPECT_EQ(1u, count);
 

@@ -213,7 +213,7 @@ bool SignalingChannel::Send(ByteBufferPtr packet) {
   // Section 4) we don't assert that here. When we receive a command that uses
   // 0 as the identifier, we reject the command and use that identifier in the
   // response rather than assert and crash.
-  __UNUSED SignalingPacket reply(packet.get(), packet->size() - sizeof(CommandHeader));
+  [[maybe_unused]] SignalingPacket reply(packet.get(), packet->size() - sizeof(CommandHeader));
   BT_DEBUG_ASSERT(reply.header().code);
   BT_DEBUG_ASSERT(reply.payload_size() == le16toh(reply.header().length));
   BT_DEBUG_ASSERT(chan_);

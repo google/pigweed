@@ -1905,7 +1905,7 @@ TEST_F(PairingStateDeathTest, OnLinkKeyRequestReceivedMissingPeerAsserts) {
 
   EXPECT_TRUE(peer_cache()->RemoveDisconnectedPeer(peer()->identifier()));
 
-  ASSERT_DEATH_IF_SUPPORTED({ __UNUSED auto reply_key = pairing_state.OnLinkKeyRequest(); },
+  ASSERT_DEATH_IF_SUPPORTED({ [[maybe_unused]] auto reply_key = pairing_state.OnLinkKeyRequest(); },
                             ".*peer.*");
 }
 
