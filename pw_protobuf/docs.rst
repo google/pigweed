@@ -495,6 +495,29 @@ through the fields and checking the field numbers, along with casting types.
     return status.IsOutOfRange() ? OkStatus() : status;
   }
 
+
+Handling of packages
+====================
+
+Package declarations in ``.proto`` files are converted to namespace
+declarations. Unlike ``protoc``'s native C++ codegen, pw_protobuf appends an
+additional ``::pwpb`` namespace after the user-specified package name: for
+example, ``package my.cool.project`` becomes ``namespace
+my::cool::project::pwpb``. We emit a different package name than stated, in
+order to avoid clashes for projects that link against multiple C++ proto
+libraries in the same library.
+
+..
+  TODO(b/258832150) Remove this section, if possible
+
+In some cases, pw_protobuf codegen may encounter external message references
+during parsing, where it is unable to resolve the package name of the message.
+In these situations, the codegen is instead forced to emit the package name as
+``pw::pwpb_xxx::my::cool::project``, where "pwpb_xxx" is the name of some
+unspecified private namespace. Users are expected to manually identify the
+intended namespace name of that symbol, as described above, and must not rely
+on any such private namespaces, even if they appear in codegen output.
+
 -------
 Codegen
 -------

@@ -42,11 +42,11 @@ T = TypeVar('T')  # pylint: disable=invalid-name
 # codegen. This namespace provides us with an alternative, more verbose
 # namespace that the codegen can use as a fallback in these cases. For example,
 # for the symbol name `my.external.package.ProtoMsg.SubMsg`, we would use
-# `::pw::pwpb_codegen_detail::my::external::package:ProtoMsg::SubMsg` to refer
+# `::pw::pwpb_codegen_private::my::external::package:ProtoMsg::SubMsg` to refer
 # to the pw_protobuf generated code, when package name info is not available.
 #
 # TODO(b/258832150) Explore removing this if possible
-EXTERNAL_SYMBOL_WORKAROUND_NAMESPACE = 'pw::pwpb_codegen_detail'
+EXTERNAL_SYMBOL_WORKAROUND_NAMESPACE = 'pw::pwpb_codegen_private'
 
 
 class ProtoNode(abc.ABC):
