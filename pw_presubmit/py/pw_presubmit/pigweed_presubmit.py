@@ -446,10 +446,6 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     '-//pw_crypto/...:all',  # TODO(b/236321905) Remove when passing.
     '-//pw_system/...:all',
     '-//pw_thread/py/...:all',
-    '-//pw_thread:thread_proto_py_pb2',
-    '-//pw_thread:thread_proto_py_pb2_genproto',
-    '-//pw_thread:thread_snapshot_service_py_pb2',
-    '-//pw_thread:thread_snapshot_service_py_pb2_genproto',
     '-//pw_thread_embos/...:all',
     '-//pw_thread_freertos/...:all',
     '-//pw_trace_tokenized/...:all',
