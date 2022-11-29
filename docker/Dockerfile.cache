@@ -25,7 +25,6 @@ ENV CIPD_CACHE_DIR /pigweed-cache/cipd-cache-dir
 # PW_ENVIRONMENT_ROOT alone.
 ENV PW_ROOT /cache/pigweed
 ENV PW_ENVIRONMENT_ROOT /cache/environment
-ENV PW_CIPD_PACKAGE_FILES "$PW_ROOT/pw_env_setup/py/pw_env_setup/cipd_setup/*.json"
 
 WORKDIR $PW_ROOT
 # env_setup requires .git for determining top-level directory with git rev-parse
