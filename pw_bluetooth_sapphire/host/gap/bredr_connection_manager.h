@@ -308,8 +308,8 @@ class BrEdrConnectionManager final {
 
   // Send the HCI command encoded in |command_packet|. If |cb| is not nullptr, the event returned
   // will be decoded for its status, which is passed to |cb|.
-  void SendCommandWithStatusCallback(std::unique_ptr<hci::CommandPacket> command_packet,
-                                     hci::ResultFunction<> cb);
+  template <typename T>
+  void SendCommandWithStatusCallback(T command_packet, hci::ResultFunction<> cb);
 
   // Record a disconnection in Inspect's list of disconnections.
   void RecordDisconnectInspect(const BrEdrConnection& conn, DisconnectReason reason);

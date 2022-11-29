@@ -188,14 +188,6 @@ constexpr OpCode kLinkKeyRequestReply = LinkControlOpCode(0x000B);
 
 constexpr size_t kBrEdrLinkKeySize = 16;
 
-struct LinkKeyRequestReplyCommandParams {
-  // BD_ADDR of the peer device the link key is for.
-  DeviceAddressBytes bd_addr;
-
-  // Link key to use for the connection with the peer device.
-  uint8_t link_key[kBrEdrLinkKeySize];
-} __PACKED;
-
 struct LinkKeyRequestReplyReturnParams {
   // See enum StatusCode in hci_constants.h.
   StatusCode status;

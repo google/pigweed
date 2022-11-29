@@ -1434,8 +1434,10 @@ void FakeController::OnAuthenticationRequestedCommandReceived(
 }
 
 void FakeController::OnLinkKeyRequestReplyCommandReceived(
-    const hci_spec::LinkKeyRequestReplyCommandParams& params) {
-  FakePeer* peer = FindPeer(DeviceAddress(DeviceAddress::Type::kBREDR, params.bd_addr));
+    const hci_spec::LinkKeyRequestReplyCommandView params) {
+  DeviceAddress peer_address(DeviceAddress::Type::kBREDR,
+                             DeviceAddressBytes(params.bd_addr().Read()));
+  FakePeer* peer = FindPeer(peer_address);
   if (!peer) {
     RespondWithCommandStatus(hci_spec::kLinkKeyRequestReply,
                              hci_spec::StatusCode::UNKNOWN_CONNECTION_ID);
@@ -2999,7 +3001,7 @@ void FakeController::HandleReceivedCommandPacket(
       break;
     }
     case hci_spec::kLinkKeyRequestReply: {
-      const auto& params = command_packet.payload<hci_spec::LinkKeyRequestReplyCommandParams>();
+      const auto& params = command_packet.payload<hci_spec::LinkKeyRequestReplyCommandView>();
       OnLinkKeyRequestReplyCommandReceived(params);
       break;
     }

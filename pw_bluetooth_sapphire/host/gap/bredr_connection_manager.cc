@@ -1416,17 +1416,23 @@ void BrEdrConnectionManager::SendLinkKeyRequestNegativeReply(DeviceAddressBytes 
 void BrEdrConnectionManager::SendLinkKeyRequestReply(DeviceAddressBytes bd_addr,
                                                      hci_spec::LinkKey link_key,
                                                      hci::ResultFunction<> cb) {
-  auto reply = hci::CommandPacket::New(hci_spec::kLinkKeyRequestReply,
-                                       sizeof(hci_spec::LinkKeyRequestReplyCommandParams));
-  auto reply_params = reply->mutable_payload<hci_spec::LinkKeyRequestReplyCommandParams>();
-  reply_params->bd_addr = bd_addr;
+  hci::EmbossCommandPacket reply =
+      hci::EmbossCommandPacket::New<hci_spec::LinkKeyRequestReplyCommandView>(
+          hci_spec::kLinkKeyRequestReply);
+
+  auto reply_params = reply.view<hci_spec::LinkKeyRequestReplyCommandWriter>();
+  reply_params.bd_addr().Write(bd_addr.as_int());
+
   const auto& key_value = link_key.value();
-  std::copy(key_value.begin(), key_value.end(), reply_params->link_key);
+  auto link_key_value_view = hci_spec::LinkKeyRequestReplyCommand::MakeLinkKeyView(&key_value);
+  reply_params.link_key().CopyFrom(link_key_value_view);
+
   SendCommandWithStatusCallback(std::move(reply), std::move(cb));
 }
 
-void BrEdrConnectionManager::SendCommandWithStatusCallback(
-    std::unique_ptr<hci::CommandPacket> command_packet, hci::ResultFunction<> cb) {
+template <typename T>
+void BrEdrConnectionManager::SendCommandWithStatusCallback(T command_packet,
+                                                           hci::ResultFunction<> cb) {
   hci::CommandChannel::CommandCallback command_cb;
   if (cb) {
     command_cb = [cb = std::move(cb)](auto, const hci::EventPacket& event) {

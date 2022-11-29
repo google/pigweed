@@ -300,6 +300,23 @@ struct RejectConnectionRequestCommand:
   # Must be one of CONNECTION_REJECTED* from StatusCode in this file
   $next [+1] StatusCode reason
 
+# ==============================================
+# Link Key Request Reply Command (v1.1) (BR/EDR)
+
+struct LinkKeyRequestReplyCommand:
+  struct LinkKey:
+    0     [+16] UInt:8[16] value
+
+  let hdr_size = EmbossCommandHeader.$size_in_bytes
+  0     [+hdr_size] EmbossCommandHeader header
+
+  # The 48-bit BD_ADDR of the remote device requesting the connection.
+  $next [+6] UInt bd_addr
+
+  # Link key to use for the connection with the peer device.
+  let bredr_link_key_size = LinkKey.$size_in_bytes
+  $next [+bredr_link_key_size] LinkKey link_key
+
 # ======================================================
 # Enhanced Setup Synchronous Connection Command (CSA2) (BR/EDR)
 
