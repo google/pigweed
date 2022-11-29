@@ -456,7 +456,6 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     '-//pw_crypto/...:all',  # TODO(b/236321905) Remove when passing.
     '-//pw_system/...:all',
     '-//pw_thread/py/...:all',
-    '-//pw_thread_freertos/...:all',
     '-//pw_work_queue/...:all',
     '-//targets/lm3s6965evb_qemu/...:all',
     '-//targets/mimxrt595_evk/...:all',

@@ -39,6 +39,9 @@ pw_cc_library(
 
 pw_cc_library(
     name = "id",
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:freertos",
+    ],
     deps = [
         ":id_headers",
         "//pw_thread:id_facade",
@@ -67,6 +70,9 @@ pw_cc_library(
     srcs = [
         "sleep.cc",
     ],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:freertos",
+    ],
     deps = [
         ":sleep_headers",
         "//pw_assert",
@@ -94,12 +100,18 @@ pw_cc_library(
         "public",
         "thread_public_overrides",
     ],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:freertos",
+    ],
     deps = [
         ":id",
         "//pw_assert",
         "//pw_string",
         "//pw_sync:binary_semaphore",
-        "//pw_thread:thread_headers",
+
+        # There's a circular dependency here, need to have the header part of
+        # the facade visibile to this library.
+        "//pw_thread:thread",
     ],
     # TODO(b/234876414): This should depend on FreeRTOS but our third parties
     # currently do not have Bazel support.
@@ -109,6 +121,9 @@ pw_cc_library(
     name = "thread",
     srcs = [
         "thread.cc",
+    ],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:freertos",
     ],
     deps = [
         ":id",
@@ -123,6 +138,9 @@ pw_cc_library(
     name = "dynamic_test_threads",
     srcs = [
         "dynamic_test_threads.cc",
+    ],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:freertos",
     ],
     deps = [
         "//pw_chrono:system_clock",
@@ -144,6 +162,9 @@ pw_cc_library(
     name = "static_test_threads",
     srcs = [
         "static_test_threads.cc",
+    ],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:freertos",
     ],
     deps = [
         "//pw_chrono:system_clock",
@@ -171,6 +192,9 @@ pw_cc_library(
         "public",
         "yield_public_overrides",
     ],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:freertos",
+    ],
     # TODO(b/234876414): This should depend on FreeRTOS but our third parties
     # currently do not have Bazel support.
 )
@@ -193,6 +217,9 @@ pw_cc_library(
         "public/pw_thread_freertos/thread_iteration.h",
         "public_overrides/pw_thread_backend/thread_iteration.h",
     ],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:freertos",
+    ],
     deps = [
         ":freertos_tasktcb",
         "//pw_function",
@@ -211,6 +238,9 @@ pw_cc_test(
         "pw_thread_freertos_private/thread_iteration.h",
         "thread_iteration_test.cc",
     ],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:freertos",
+    ],
     deps = [
         ":freertos_tasktcb",
         ":static_test_threads",
@@ -220,7 +250,7 @@ pw_cc_test(
         "//pw_string:builder",
         "//pw_string:util",
         "//pw_sync:thread_notification",
-        "//pw_thread:test_threads",
+        "//pw_thread:test_threads_header",
         "//pw_thread:thread",
         "//pw_thread:thread_info",
         "//pw_thread:thread_iteration",
@@ -236,6 +266,9 @@ pw_cc_library(
     ],
     hdrs = [
         "public/pw_thread_freertos/util.h",
+    ],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:freertos",
     ],
     deps = [
         "//pw_function",
@@ -253,6 +286,9 @@ pw_cc_library(
     hdrs = [
         "public/pw_thread_freertos/snapshot.h",
     ],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:freertos",
+    ],
     deps = [
         ":freertos_tasktcb",
         ":util",
@@ -260,8 +296,8 @@ pw_cc_library(
         "//pw_log",
         "//pw_protobuf",
         "//pw_status",
-        "//pw_thread:protos",
         "//pw_thread:snapshot",
+        "//pw_thread:thread_cc.pwpb",
     ],
     # TODO(b/234876414): This should depend on FreeRTOS but our third parties
     # currently do not have Bazel support.
@@ -273,6 +309,9 @@ pw_cc_facade(
         "public/pw_thread_freertos/freertos_tsktcb.h",
     ],
     includes = ["public"],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:freertos",
+    ],
     # TODO(b/234876414): This should depend on FreeRTOS but our third parties
     # currently do not have Bazel support.
 )
