@@ -60,7 +60,8 @@ extern "C" uint16_t pw_checksum_Crc16Ccitt(const void* data,
   const uint8_t* const array = static_cast<const uint8_t*>(data);
 
   for (size_t i = 0; i < size_bytes; ++i) {
-    value = kCrc16CcittTable[((value >> 8) ^ array[i]) & 0xffu] ^ (value << 8);
+    value = kCrc16CcittTable[((value >> 8u) ^ array[i]) & 0xffu] ^
+            static_cast<uint16_t>(value << 8u);
   }
 
   return value;

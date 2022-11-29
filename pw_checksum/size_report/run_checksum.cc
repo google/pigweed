@@ -77,8 +77,8 @@ class Fletcher16 {
 
   PW_NO_INLINE void Update(span<const std::byte> data) {
     for (std::byte b : data) {
-      sum1_ = (sum1_ + static_cast<uint16_t>(b)) % 255;
-      sum2_ = (sum2_ + sum1_) % 255;
+      sum1_ = static_cast<uint16_t>((sum1_ + static_cast<uint16_t>(b)) % 255u);
+      sum2_ = static_cast<uint16_t>((sum2_ + sum1_) % 255u);
     }
   }
   PW_NO_INLINE void Update(std::byte) {}

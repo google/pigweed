@@ -155,6 +155,19 @@ config("pedantic_warnings") {
   }
 }
 
+# Numeric conversion warnings.
+#
+# Originally Pigweed didn't enable this, but we ultimately decided to turn it
+# on since it caused issues with downstream project that enable this warning.
+#
+# b/259746255 tracks converting everything to build with this warning.
+config("conversion_warnings") {
+  # TODO(b/260629756): Remove Windows restriction once fixed for Windows + GCC.
+  if (host_os != "win") {
+    cflags = [ "-Wconversion" ]
+  }
+}
+
 config("cpp14") {
   cflags_cc = [ "-std=c++14" ]
 }
