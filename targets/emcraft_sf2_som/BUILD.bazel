@@ -32,6 +32,11 @@ pw_cc_library(
         "config/FreeRTOSConfig.h",
         "config/sf2_mss_hal_conf.h",
     ],
+    # TODO(b/260642311): This target doesn't build
+    tags = ["manual"],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:freertos",
+    ],
     deps = [
         "//pw_boot",
         "//pw_boot_cortex_m",
@@ -48,6 +53,10 @@ pw_cc_binary(
     name = "demo",
     srcs = [
         "main.cc",
+    ],
+    tags = ["manual"],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:freertos",
     ],
     deps = [
         "//pw_thread:thread",
