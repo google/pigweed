@@ -448,7 +448,6 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     '-//pw_thread/py/...:all',
     '-//pw_thread_embos/...:all',
     '-//pw_thread_freertos/...:all',
-    '-//pw_trace_tokenized/...:all',
     '-//pw_work_queue/...:all',
     '-//targets/arduino/...:all',
     '-//targets/emcraft_sf2_som/...:all',
