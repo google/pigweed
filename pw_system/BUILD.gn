@@ -16,6 +16,7 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pigweed/third_party/freertos/freertos.gni")
 import("$dir_pigweed/third_party/nanopb/nanopb.gni")
+import("$dir_pigweed/third_party/pico_sdk/pi_pico.gni")
 import("$dir_pigweed/third_party/smartfusion_mss/mss.gni")
 import("$dir_pigweed/third_party/stm32cube/stm32cube.gni")
 import("$dir_pw_build/error.gni")
@@ -251,6 +252,12 @@ group("system_examples") {
       ":system_example($dir_pigweed/targets/emcraft_sf2_som:emcraft_sf2_som.size_optimized)",
       ":system_example($dir_pigweed/targets/emcraft_sf2_som:emcraft_sf2_som.speed_optimized)",
       ":system_example($dir_pigweed/targets/emcraft_sf2_som:emcraft_sf2_som_debug.debug)",
+    ]
+  }
+  if (PICO_SRC_DIR != "" && dir_pw_third_party_freertos != "") {
+    deps += [
+      ":system_example($dir_pigweed/targets/rp2040_pw_system:rp2040_pw_system.debug)",
+      ":system_example($dir_pigweed/targets/rp2040_pw_system:rp2040_pw_system.size_optimized)",
     ]
   }
 }

@@ -377,6 +377,7 @@ def gn_pw_system_demo_build(ctx: PresubmitContext):
     build.install_package(ctx, 'freertos')
     build.install_package(ctx, 'nanopb')
     build.install_package(ctx, 'stm32cube_f4')
+    build.install_package(ctx, 'pico_sdk')
     build.gn_gen(
         ctx,
         dir_pw_third_party_freertos='"{}"'.format(ctx.package_root /
@@ -384,6 +385,7 @@ def gn_pw_system_demo_build(ctx: PresubmitContext):
         dir_pw_third_party_nanopb='"{}"'.format(ctx.package_root / 'nanopb'),
         dir_pw_third_party_stm32cube_f4='"{}"'.format(ctx.package_root /
                                                       'stm32cube_f4'),
+        PICO_SRC_DIR='"{}"'.format(str(ctx.package_root / 'pico_sdk')),
     )
     build.ninja(ctx, 'pw_system_demo')
 

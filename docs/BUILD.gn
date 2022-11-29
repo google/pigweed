@@ -69,6 +69,7 @@ group("target_docs") {
     "$dir_pigweed/targets/lm3s6965evb_qemu:target_docs",
     "$dir_pigweed/targets/mimxrt595_evk:target_docs",
     "$dir_pigweed/targets/rp2040:target_docs",
+    "$dir_pigweed/targets/rp2040_pw_system:target_docs",
     "$dir_pigweed/targets/stm32f429i_disc1:target_docs",
     "$dir_pigweed/targets/stm32f429i_disc1_stm32cube:target_docs",
   ]

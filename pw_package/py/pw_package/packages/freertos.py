@@ -26,7 +26,7 @@ class FreeRtos(pw_package.git_repo.GitRepo):
         super().__init__(*args,
                          name='freertos',
                          url='https://github.com/FreeRTOS/FreeRTOS-Kernel',
-                         commit='fa0f5c436ccd920be313313b7e08ba6a5513f93a',
+                         commit='a4b28e35103d699edf074dfff4835921b481b301',
                          **kwargs)
 
     def info(self, path: pathlib.Path) -> Sequence[str]:

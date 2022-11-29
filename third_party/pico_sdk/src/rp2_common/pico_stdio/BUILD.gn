@@ -72,4 +72,7 @@ pw_source_set("pico_stdio") {
     deps += [ "${PICO_ROOT}/src/rp2_common/pico_stdio_semihosting" ]
   }
   sources = [ "${_CWD}/stdio.c" ]
+
+  # Due to disabling CRLF support.
+  cflags = [ "-Wno-unused-parameter" ]
 }

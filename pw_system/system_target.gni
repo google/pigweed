@@ -37,6 +37,7 @@ import("stl_backends.gni")
 
 # This scope is essentially an enum for pw_system_target's `cpu` selection.
 PW_SYSTEM_CPU = {
+  CORTEX_M0PLUS = "cortex-m0plus"
   CORTEX_M4F = "cortex-m4f"
   CORTEX_M3 = "cortex-m3"
   CORTEX_M7F = "cortex-m7f"
@@ -205,6 +206,37 @@ template("pw_system_target") {
       },
       {
         toolchain_base = _system_toolchain.cortex_m3_speed_optimized
+        level_name = _OPTIMIZATION_LEVELS.SPEED_OPTIMIZED
+      },
+    ]
+  } else if (invoker.cpu == PW_SYSTEM_CPU.CORTEX_M0PLUS) {
+    _current_cpu = "arm"
+    _arch_build_args = {
+      pw_bloat_BLOATY_CONFIG = "$dir_pw_boot_cortex_m/bloaty_config.bloaty"
+      pw_boot_BACKEND = "$dir_pw_boot_cortex_m:armv7m"
+      pw_interrupt_CONTEXT_BACKEND = "$dir_pw_interrupt_cortex_m:context_armv7m"
+    }
+
+    if (defined(invoker.system_toolchain)) {
+      _system_toolchain = invoker.system_toolchain
+    } else {
+      _system_toolchain = pw_toolchain_arm_gcc
+    }
+
+    # This creates a double .elf.elf extension for the rp2040 target.
+    # _final_binary_extension = ".elf"
+
+    _toolchains = [
+      {
+        toolchain_base = _system_toolchain.cortex_m0plus_debug
+        level_name = _OPTIMIZATION_LEVELS.DEBUG
+      },
+      {
+        toolchain_base = _system_toolchain.cortex_m0plus_size_optimized
+        level_name = _OPTIMIZATION_LEVELS.SIZE_OPTIMIZED
+      },
+      {
+        toolchain_base = _system_toolchain.cortex_m0plus_speed_optimized
         level_name = _OPTIMIZATION_LEVELS.SPEED_OPTIMIZED
       },
     ]
