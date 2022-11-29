@@ -278,7 +278,8 @@ class Transfer(abc.ABC):
                 chunk.protocol_version.value))
         _LOG.debug(
             'Transfer %d negotiating protocol version: ours=%d, theirs=%d',
-            self.id, self._desired_protocol_version, chunk.protocol_version)
+            self.id, self._desired_protocol_version.value,
+            chunk.protocol_version.value)
 
         # Send a confirmation chunk to the server accepting the assigned session
         # ID and protocol version. Tag any initial transfer parameters onto the
