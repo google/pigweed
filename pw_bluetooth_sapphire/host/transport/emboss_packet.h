@@ -93,6 +93,14 @@ class DynamicPacket {
     return view;
   }
 
+  template <typename T>
+  T view() const {
+    T view(buffer_.data(), size());
+    BT_ASSERT_MSG(view.IsComplete(),
+                  "emboss packet buffer not large enough to hold requested view");
+    return view;
+  }
+
   // Returns the size of the packet, i.e. payload size + header size.
   size_t size() const { return buffer_.size(); }
   BufferView data() const { return {buffer_.data(), size()}; }

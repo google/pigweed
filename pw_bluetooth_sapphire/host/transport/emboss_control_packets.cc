@@ -19,10 +19,16 @@ EmbossCommandPacket EmbossCommandPacket::New(hci_spec::OpCode opcode, size_t pac
   return packet;
 }
 
-hci_spec::OpCode EmbossCommandPacket::opcode() {
-  auto header = view<hci_spec::EmbossCommandHeaderView>();
-  BT_ASSERT(header.opcode().Ok());
-  return header.opcode().BackingStorage().ReadUInt();
+hci_spec::OpCode EmbossCommandPacket::opcode() const {
+  return header_view().opcode().BackingStorage().ReadUInt();
+}
+
+uint8_t EmbossCommandPacket::ogf() const { return header_view().opcode().ogf().Read(); }
+
+uint16_t EmbossCommandPacket::ocf() const { return header_view().opcode().ocf().Read(); }
+
+hci_spec::EmbossCommandHeaderView EmbossCommandPacket::header_view() const {
+  return view<hci_spec::EmbossCommandHeaderView>();
 }
 
 }  // namespace bt::hci

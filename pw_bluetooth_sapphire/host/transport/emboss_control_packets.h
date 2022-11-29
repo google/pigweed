@@ -27,14 +27,16 @@ class EmbossCommandPacket : public DynamicPacket {
   // which clients must calculate packet size manually.
   static EmbossCommandPacket New(hci_spec::OpCode opcode, size_t packet_size);
 
-  hci_spec::OpCode opcode();
+  hci_spec::OpCode opcode() const;
   // Returns the OGF (OpCode Group Field) which occupies the upper 6-bits of the opcode.
-  uint8_t ogf() { return opcode() >> 10; }
+  uint8_t ogf() const;
   // Returns the OCF (OpCode Command Field) which occupies the lower 10-bits of the opcode.
-  uint16_t ocf() { return opcode() & 0x3FF; }
+  uint16_t ocf() const;
 
  private:
   explicit EmbossCommandPacket(size_t packet_size) : DynamicPacket(packet_size) {}
+
+  hci_spec::EmbossCommandHeaderView header_view() const;
 };
 
 }  // namespace bt::hci
