@@ -196,6 +196,14 @@ struct InquiryCommand:
 # inquiry to indicate it's completion. No Inquiry Complete event is sent if
 # Inquiry is cancelled.
 
+# ======================================
+# Inquiry Cancel Command (v1.1) (BR/EDR)
+
+struct InquiryCancelCommand:
+  let hdr_size = EmbossCommandHeader.$size_in_bytes
+  0     [+hdr_size] EmbossCommandHeader header
+  # No command parameters
+
 # =========================================
 # Accept Connection Request (v1.1) (BR/EDR)
 
