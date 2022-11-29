@@ -19,7 +19,8 @@ import os
 from pathlib import Path
 import re
 import shutil
-from typing import Collection, List, Optional, Sequence
+import textwrap
+from typing import Callable, Collection, List, Optional, Sequence
 
 from pw_presubmit import git_repo, presubmit
 
@@ -105,6 +106,25 @@ def _add_programs_arguments(parser: argparse.ArgumentParser,
     )
 
     all_steps = programs.all_steps()
+
+    def list_steps() -> None:
+        """List all available presubmit steps and their docstrings."""
+        for step in sorted(all_steps.values(), key=str):
+            _LOG.info('%s', step)
+            if step.doc:
+                first, *rest = step.doc.split('\n', 1)
+                _LOG.info('  %s', first)
+                if rest and _LOG.isEnabledFor(logging.DEBUG):
+                    for line in textwrap.dedent(*rest).splitlines():
+                        _LOG.debug('  %s', line)
+
+    parser.add_argument(
+        '--list-steps',
+        action='store_const',
+        const=list_steps,
+        default=None,
+        help='List all the available steps.',
+    )
 
     def presubmit_step(arg: str) -> presubmit.Check:
         if arg not in all_steps:
@@ -200,6 +220,7 @@ def run(
     root: Optional[Path] = None,
     repositories: Collection[Path] = (),
     only_list_steps=False,
+    list_steps: Optional[Callable[[], None]] = None,
     **other_args,
 ) -> int:
     """Processes arguments from add_arguments and runs the presubmit.
@@ -217,6 +238,7 @@ def run(
           defaults to the root of the current directory's repository
       only_list_steps: list the steps that would be executed, one per line,
           instead of executing them
+      list_steps: list the steps that would be executed with their docstrings
       **other_args: remaining arguments defined by by add_arguments
 
     Returns:
@@ -247,6 +269,10 @@ def run(
             shutil.rmtree(output_directory)
             _LOG.info('Deleted %s', output_directory)
 
+        return 0
+
+    if list_steps:
+        list_steps()
         return 0
 
     final_program: Optional[presubmit.Program] = None

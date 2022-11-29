@@ -728,12 +728,16 @@ class Check:
 
         # Since Check wraps a presubmit function, adopt that function's name.
         self.name: str
-        if name:
-            self.name = name
-        elif isinstance(check_function, Check):
+        self.doc: str
+        if isinstance(check_function, Check):
             self.name = check_function.name
+            self.doc = check_function.doc
         else:
             self.name = check_function.__name__
+            self.doc = check_function.__doc__ or ''
+
+        if name:
+            self.name = name
 
         self._check: Callable = check_function
         self.filter = path_filter
