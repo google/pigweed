@@ -62,12 +62,3 @@ pw_cc_library(
     # pw_boot_cortex_m is structured in the build system.
     alwayslink = 1,
 )
-
-pw_cc_library(
-    name = "system_rpc_server",
-    srcs = ["system_rpc_server.cc"],
-    deps = [
-        "//pw_hdlc:pw_rpc",
-        "//pw_rpc/system_server:facade",
-    ],
-)
