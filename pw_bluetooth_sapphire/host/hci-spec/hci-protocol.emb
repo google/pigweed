@@ -155,6 +155,40 @@ bits ScoPacketType:
 
   $next [+6] UInt padding
 
+# Bitmask values for supported Packet Types
+# Used for HCI_Create_Connection and HCI_Change_Connection_Packet_Type
+bits PacketType:
+  1  [+1] Flag disable_2_dh1
+  2  [+1] Flag disable_3_dh1
+  3  [+1] Flag enable_dm1 # Note: always on in >= v1.2
+  4  [+1] Flag enable_dh1
+  8  [+1] Flag disable_2_dh3
+  9  [+1] Flag disable_3_dh3
+  10 [+1] Flag enable_dm3
+  11 [+1] Flag enable_dh3
+  12 [+1] Flag disable_2_dh5
+  13 [+1] Flag disable_3_dh5
+  14 [+1] Flag enable_dm5
+  15 [+1] Flag enable_dh5
+  # All other bits reserved for future use.
+
+# The page scan repetition mode, representing a maximum time between Page Scans.
+# (See Core Spec v5.0, Volume 2, Part B, Section 8.3.1)
+enum PageScanRepetitionMode:
+  [maximum_bits: 8]
+  R0_ = 0x00 # Continuous Scan
+  R1_ = 0x01 # <= 1.28s
+  R2_ = 0x02 # <= 2.56s
+
+# Clock Offset. The lower 15 bits are set to the clock offset as retrieved
+# by an Inquiry. The highest bit is set to 1 if the rest of this parameter
+# is valid.
+bits ClockOffset:
+  15 [+1] Flag valid
+  if valid:
+    0 [+15] UInt clock_offset
+
+
 # ========================= HCI packet headers ==========================
 # Emboss currently lacks support for default field values and cross-type integral equality.
 # (https://github.com/google/emboss/issues/21)
@@ -203,6 +237,43 @@ struct InquiryCancelCommand:
   let hdr_size = EmbossCommandHeader.$size_in_bytes
   0     [+hdr_size] EmbossCommandHeader header
   # No command parameters
+
+
+# =================================
+# Create Connection (v1.1) (BR/EDR)
+
+# NOTE on ReturnParams: No Command Complete event will be sent by the
+# Controller to indicate that this command has been completed. Instead, the
+# Connection Complete event will indicate that this command has been
+# completed.
+
+struct CreateConnectionCommand:
+  let hdr_size = EmbossCommandHeader.$size_in_bytes
+  0     [+hdr_size] EmbossCommandHeader header
+
+  # BD_ADDR of the device to be connected
+  $next [+6] UInt bd_addr
+
+  # Mask of allowable packet types.
+  $next [+2] PacketType packet_type
+
+  # The Page Scan Repetition Mode of the remote device as retrieved by Inquiry.
+  $next [+1] PageScanRepetitionMode page_scan_repetition_mode
+
+  # Reserved, must be set to 0.
+  $next [+1] UInt reserved
+
+  # Clock Offset. The lower 15 bits are set to the clock offset as retrieved
+  # by an Inquiry. The highest bit is set to 1 if the rest of this parameter
+  # is valid.
+  $next [+2] ClockOffset clock_offset
+
+  # Allow Role Switch.
+  # Allowed values:
+  #  0x00 - No role switch allowed, this device will be the central
+  #  0x01 - Role switch allowed, this device may become peripheral during
+  #  connection setup
+  $next [+1] GenericEnableParam allow_role_switch
 
 # =========================================
 # Accept Connection Request (v1.1) (BR/EDR)

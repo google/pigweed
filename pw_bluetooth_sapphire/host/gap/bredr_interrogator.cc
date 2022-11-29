@@ -74,7 +74,7 @@ void BrEdrInterrogator::Complete(hci::Result<> result) {
 }
 
 void BrEdrInterrogator::QueueRemoteNameRequest() {
-  hci_spec::PageScanRepetitionMode mode = hci_spec::PageScanRepetitionMode::kR0;
+  hci_spec::PageScanRepetitionMode mode = hci_spec::PageScanRepetitionMode::R0_;
   if (peer_->bredr()->page_scan_repetition_mode()) {
     mode = *peer_->bredr()->page_scan_repetition_mode();
   }

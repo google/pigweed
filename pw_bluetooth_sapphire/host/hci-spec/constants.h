@@ -1320,14 +1320,6 @@ constexpr uint8_t kInquiryLengthMax = 0x30;
 // see HCI_Remote_Name_Request command, Vol 2, Part E, 7.1.19).
 constexpr uint16_t kClockOffsetValidFlagBit = 0x8000;
 
-// The page scan repetition mode, representing a maximum time between Page Scans.
-// (See Core Spec v5.0, Volume 2, Part B, Section 8.3.1)
-enum class PageScanRepetitionMode : uint8_t {
-  kR0 = 0x00, // Continuous Scan
-  kR1 = 0x01, // <= 1.28s
-  kR2 = 0x02, // <= 2.56s
-};
-
 // Bitmask Values for the Scan_Enable parameter in a
 // HCI_(Read,Write)_Scan_Enable command.
 enum class ScanEnableBit : uint8_t {

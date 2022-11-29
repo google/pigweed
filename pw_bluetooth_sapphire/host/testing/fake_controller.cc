@@ -579,7 +579,7 @@ void FakeController::NotifyLEConnectionParameters(const DeviceAddress& addr,
 }
 
 void FakeController::OnCreateConnectionCommandReceived(
-    const hci_spec::CreateConnectionCommandParams& params) {
+    const hci_spec::CreateConnectionCommandView& params) {
   acl_create_connection_command_count_++;
 
   // Cannot issue this command while a request is already pending.
@@ -588,7 +588,8 @@ void FakeController::OnCreateConnectionCommandReceived(
     return;
   }
 
-  const DeviceAddress peer_address(DeviceAddress::Type::kBREDR, params.bd_addr);
+  const DeviceAddress peer_address(DeviceAddress::Type::kBREDR,
+                                   DeviceAddressBytes(params.bd_addr().Read()));
   hci_spec::StatusCode status = hci_spec::StatusCode::SUCCESS;
 
   // Find the peer that matches the requested address.
@@ -644,7 +645,7 @@ void FakeController::OnCreateConnectionCommandReceived(
   hci_spec::ConnectionCompleteEventParams response = {};
 
   response.status = status;
-  response.bd_addr = params.bd_addr;
+  response.bd_addr = DeviceAddressBytes(params.bd_addr().Read());
   response.link_type = hci_spec::LinkType::kACL;
   response.encryption_enabled = 0x0;
 
@@ -2841,11 +2842,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnDisconnectCommandReceived(params);
       break;
     }
-    case hci_spec::kCreateConnection: {
-      const auto& params = command_packet.payload<hci_spec::CreateConnectionCommandParams>();
-      OnCreateConnectionCommandReceived(params);
-      break;
-    }
     case hci_spec::kCreateConnectionCancel: {
       OnCreateConnectionCancel();
       break;
@@ -3118,6 +3114,11 @@ void FakeController::HandleReceivedCommandPacket(hci::EmbossCommandPacket& comma
     case hci_spec::kEnhancedSetupSynchronousConnection: {
       auto params = command_packet.view<hci_spec::EnhancedSetupSynchronousConnectionCommandView>();
       OnEnhancedSetupSynchronousConnectionCommand(params);
+      break;
+    }
+    case hci_spec::kCreateConnection: {
+      const auto params = command_packet.view<hci_spec::CreateConnectionCommandView>();
+      OnCreateConnectionCommandReceived(params);
       break;
     }
     default: {

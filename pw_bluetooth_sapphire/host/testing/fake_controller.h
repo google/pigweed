@@ -446,7 +446,7 @@ class FakeController : public ControllerTestDoubleBase {
                              bool connected, bool canceled = false);
 
   // Called when a HCI_Create_Connection command is received.
-  void OnCreateConnectionCommandReceived(const hci_spec::CreateConnectionCommandParams& params);
+  void OnCreateConnectionCommandReceived(const hci_spec::CreateConnectionCommandView& params);
 
   // Notifies |le_conn_params_cb_|
   void NotifyLEConnectionParameters(const DeviceAddress& addr,

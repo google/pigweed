@@ -139,38 +139,6 @@ constexpr OpCode kInquiryCancel = LinkControlOpCode(0x0002);
 // Create Connection (v1.1) (BR/EDR)
 constexpr OpCode kCreateConnection = LinkControlOpCode(0x0005);
 
-struct CreateConnectionCommandParams {
-  // BD_ADDR of the device to be connected
-  DeviceAddressBytes bd_addr;
-
-  // Mask of allowable packet types. See PacketTypeBits in hci_constants.h for
-  // values.
-  PacketTypeType packet_type;
-
-  // The Page Scan Repetition Mode of the remote device as retrieved by Inquiry.
-  PageScanRepetitionMode page_scan_repetition_mode;
-
-  // Reserved, must be set to 0.
-  uint8_t reserved;
-
-  // Clock Offset.  The lower 15 bits are set to the clock offset as retrieved
-  // by an Inquiry. The highest bit is set to 1 if the rest of this parameter
-  // is valid.
-  uint16_t clock_offset;
-
-  // Allow Role Switch.
-  // Allowed values:
-  //  0x00 - No role switch allowed, this device will be the central
-  //  0x01 - Role switch allowed, this device may become peripheral during
-  //  connection setup
-  uint8_t allow_role_switch;
-} __PACKED;
-
-// NOTE on ReturnParams: No Command Complete event will be sent by the
-// Controller to indicate that this command has been completed. Instead, the
-// Connection Complete event will indicate that this command has been
-// completed.
-
 // =======================================
 // Disconnect Command (v1.1) (BR/EDR & LE)
 constexpr OpCode kDisconnect = LinkControlOpCode(0x0006);

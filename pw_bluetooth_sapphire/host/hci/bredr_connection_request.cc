@@ -14,38 +14,38 @@
 
 namespace bt::hci {
 
-std::unique_ptr<CommandPacket> CreateConnectionPacket(
+EmbossCommandPacket CreateConnectionPacket(
     DeviceAddress address,
     std::optional<hci_spec::PageScanRepetitionMode> page_scan_repetition_mode,
     std::optional<uint16_t> clock_offset) {
-  auto request = CommandPacket::New(hci_spec::kCreateConnection,
-                                    sizeof(hci_spec::CreateConnectionCommandParams));
-  auto params = request->mutable_payload<hci_spec::CreateConnectionCommandParams>();
-
-  params->bd_addr = address.value();
-  params->packet_type = htole16(kEnableAllPacketTypes);
+  EmbossCommandPacket request =
+      EmbossCommandPacket::New<hci_spec::CreateConnectionCommandView>(hci_spec::kCreateConnection);
+  auto params = request.view<hci_spec::CreateConnectionCommandWriter>();
+  params.bd_addr().Write(address.value().as_int());
+  params.packet_type().BackingStorage().WriteUInt(kEnableAllPacketTypes);
 
   // The Page Scan Repetition Mode of the remote device as retrieved by Inquiry.
   // If we do not have one for the device, opt for R2 so we will send for at
   // least 2.56s
-  if (page_scan_repetition_mode)
-    params->page_scan_repetition_mode = *page_scan_repetition_mode;
-  else
-    params->page_scan_repetition_mode =
-        hci_spec::PageScanRepetitionMode::kR2;  // Every 2.56 seconds
+  if (page_scan_repetition_mode) {
+    params.page_scan_repetition_mode().Write(*page_scan_repetition_mode);
+  } else {
+    params.page_scan_repetition_mode().Write(hci_spec::PageScanRepetitionMode::R2_);
+  }
 
-  params->reserved = 0;  // Reserved, must be set to 0.
+  params.reserved().Write(0);  // Reserved, must be set to 0.
 
   // Clock Offset.  The lower 15 bits are set to the clock offset as retrieved
   // by an Inquiry. The highest bit is set to 1 if the rest of this parameter
   // is valid. If we don't have one, use the default.
-  if (clock_offset)
-    params->clock_offset = htole16(*clock_offset);
-  else
-    params->clock_offset = 0x0000;
+  if (clock_offset) {
+    params.clock_offset().valid().Write(true);
+    params.clock_offset().clock_offset().Write(*clock_offset);
+  } else {
+    params.clock_offset().valid().Write(false);
+  }
 
-  params->allow_role_switch = static_cast<uint8_t>(
-      hci_spec::RoleSwitchBits::kDisallowRoleSwitch);  // Do not allow role switch
+  params.allow_role_switch().Write(hci_spec::GenericEnableParam::DISABLE);
 
   return request;
 }

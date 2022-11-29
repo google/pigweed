@@ -718,7 +718,7 @@ TEST(HelpersTest, PeerToFidlOptionalFields) {
   auto* peer = cache.NewPeer(addr, /*connectable=*/true);
   peer->MutLe().SetAdvertisingData(kRssi, kAdv, zx::time());
   peer->MutBrEdr().SetInquiryData(bt::hci_spec::InquiryResult{
-      bt::DeviceAddressBytes{{0, 1, 2, 3, 4, 5}}, bt::hci_spec::PageScanRepetitionMode::kR0, 0, 0,
+      bt::DeviceAddressBytes{{0, 1, 2, 3, 4, 5}}, bt::hci_spec::PageScanRepetitionMode::R0_, 0, 0,
       bt::DeviceClass(bt::DeviceClass::MajorClass::kPeripheral), 0});
   for (auto& service : kBrEdrServices) {
     peer->MutBrEdr().AddService(service);

@@ -1231,7 +1231,7 @@ TEST_F(PeerCacheBrEdrUpdateCallbackTest,
 TEST_F(PeerCacheBrEdrUpdateCallbackTest,
        SetBrEdrInquiryDataFromExtendedInquiryResultEventParamsUpdateCallbackProvidesUpdatedPeer) {
   eirep().clock_offset = htole16(1);
-  eirep().page_scan_repetition_mode = hci_spec::PageScanRepetitionMode::kR1;
+  eirep().page_scan_repetition_mode = hci_spec::PageScanRepetitionMode::R1_;
   eirep().rssi = kTestRSSI;
   eirep().class_of_device = kTestDeviceClass;
   eir_data().Write(kEirData);
@@ -1246,7 +1246,7 @@ TEST_F(PeerCacheBrEdrUpdateCallbackTest,
     ASSERT_TRUE(updated_peer.name().has_value());
 
     EXPECT_EQ(*data->clock_offset(), 0x8001);
-    EXPECT_EQ(*data->page_scan_repetition_mode(), hci_spec::PageScanRepetitionMode::kR1);
+    EXPECT_EQ(*data->page_scan_repetition_mode(), hci_spec::PageScanRepetitionMode::R1_);
     EXPECT_EQ(DeviceClass::MajorClass(0x02), updated_peer.bredr()->device_class()->major_class());
     EXPECT_EQ(updated_peer.rssi(), kTestRSSI);
     EXPECT_EQ(*updated_peer.name(), "Test");
@@ -1259,7 +1259,7 @@ TEST_F(
     PeerCacheBrEdrUpdateCallbackTest,
     SetBrEdrInquiryDataFromExtendedInquiryResultEventParamsGeneratesExactlyOneUpdateCallbackRegardlessOfNumberOfFieldsChanged) {
   eirep().clock_offset = htole16(1);
-  eirep().page_scan_repetition_mode = hci_spec::PageScanRepetitionMode::kR1;
+  eirep().page_scan_repetition_mode = hci_spec::PageScanRepetitionMode::R1_;
   eirep().rssi = kTestRSSI;
   eirep().class_of_device = kTestDeviceClass;
   eir_data().Write(kEirData);

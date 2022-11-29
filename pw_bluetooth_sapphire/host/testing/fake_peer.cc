@@ -87,7 +87,7 @@ DynamicByteBuffer FakePeer::CreateInquiryResponseEvent(hci_spec::InquiryMode mod
 
     auto inq_result = reinterpret_cast<hci_spec::InquiryResult*>(payload->responses);
     inq_result->bd_addr = address_.value();
-    inq_result->page_scan_repetition_mode = hci_spec::PageScanRepetitionMode::kR0;
+    inq_result->page_scan_repetition_mode = hci_spec::PageScanRepetitionMode::R0_;
     inq_result->class_of_device = class_of_device_;
     inq_result->clock_offset = 0;
   } else {
@@ -97,7 +97,7 @@ DynamicByteBuffer FakePeer::CreateInquiryResponseEvent(hci_spec::InquiryMode mod
 
     auto inq_result = reinterpret_cast<hci_spec::InquiryResultRSSI*>(payload->responses);
     inq_result->bd_addr = address_.value();
-    inq_result->page_scan_repetition_mode = hci_spec::PageScanRepetitionMode::kR0;
+    inq_result->page_scan_repetition_mode = hci_spec::PageScanRepetitionMode::R0_;
     inq_result->class_of_device = class_of_device_;
     inq_result->clock_offset = 0;
     inq_result->rssi = -30;
