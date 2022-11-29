@@ -192,8 +192,9 @@ pw_toolchain/no_destructor.h
   cause issues in multithreaded environments. Additionally, removing destructor
   calls can save code size.
 
-  Do not use ``pw::NoDestructor<T>`` with trivially destructible types. Use the
-  type directly instead. If the variable can be constexpr, make it constexpr.
+  Except in generic code, do not use ``pw::NoDestructor<T>`` with trivially
+  destructible types. Use the type directly instead. If the variable can be
+  constexpr, make it constexpr.
 
   ``pw::NoDestructor<T>`` provides a similar API to std::optional. Use ``*`` or
   ``->`` to access the wrapped type.

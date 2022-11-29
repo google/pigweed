@@ -63,11 +63,25 @@ TEST(NoDestructor, MemberAccess) {
   EXPECT_EQ(no_destructor.operator->(), no_destructor->MyAddress());
 }
 
+TEST(NoDestructor, TrivialType) {
+  NoDestructor<int> no_destructor;
+
+  EXPECT_EQ(*no_destructor, 0);
+  *no_destructor = 123;
+  EXPECT_EQ(*no_destructor, 123);
+}
+
 TEST(NoDestructor, FunctionStatic) {
   static NoDestructor<CrashInDestructor> function_static_no_destructor;
 }
 
 NoDestructor<CrashInDestructor> global_no_destructor;
+
+static_assert(!std::is_trivially_destructible<CrashInDestructor>::value,
+              "Type should not be trivially destructible");
+static_assert(
+    std::is_trivially_destructible<NoDestructor<CrashInDestructor>>::value,
+    "Wrapper should be trivially destructible");
 
 }  // namespace
 }  // namespace pw

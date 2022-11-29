@@ -28,8 +28,9 @@ namespace pw {
 // cause issues in multithreaded environments. Additionally, removing destructor
 // calls can save code size.
 //
-// Do not use pw::NoDestructor<T> with trivially destructible types. Use the
-// type directly instead. If the variable can be constexpr, make it constexpr.
+// Except in generic code, do not use pw::NoDestructor<T> with trivially
+// destructible types. Use the type directly instead. If the variable can be
+// constexpr, make it constexpr.
 //
 // pw::NoDestructor<T> provides a similar API to std::optional. Use * or -> to
 // access the wrapped type.
@@ -51,50 +52,71 @@ namespace pw {
 template <typename T>
 class NoDestructor {
  public:
-  static_assert(
-      !std::is_trivially_destructible_v<T>,
-      "T is trivially destructible; please use a function-local static of type "
-      "T directly instead.");
-
   using value_type = T;
 
   // Initializes a T in place.
-  //
-  // This constructor is not constexpr; just write static constexpr T x = ...;
-  // if the value should be a constexpr.
   //
   // This overload is disabled when it might collide with copy/move.
   template <typename... Args,
             typename std::enable_if<!std::is_same<void(std::decay_t<Args>&...),
                                                   void(NoDestructor&)>::value,
                                     int>::type = 0>
-  explicit NoDestructor(Args&&... args) {
-    new (storage_) T(std::forward<Args>(args)...);
-  }
+  explicit constexpr NoDestructor(Args&&... args)
+      : storage_(std::forward<Args>(args)...) {}
 
   // Move or copy from the contained type. This allows for construction from an
   // initializer list, e.g. for std::vector.
-  explicit NoDestructor(const T& x) { new (storage_) T(x); }
-  explicit NoDestructor(T&& x) { new (storage_) T(std::move(x)); }
+  explicit constexpr NoDestructor(const T& x) : storage_(x) {}
+  explicit constexpr NoDestructor(T&& x) : storage_(std::move(x)) {}
 
   NoDestructor(const NoDestructor&) = delete;
   NoDestructor& operator=(const NoDestructor&) = delete;
 
   ~NoDestructor() = default;
 
-  const T& operator*() const { return *get(); }
-  T& operator*() { return *get(); }
+  const T& operator*() const { return *storage_.get(); }
+  T& operator*() { return *storage_.get(); }
 
-  const T* operator->() const { return get(); }
-  T* operator->() { return get(); }
+  const T* operator->() const { return storage_.get(); }
+  T* operator->() { return storage_.get(); }
 
  private:
-  const T* get() const {
-    return std::launder(reinterpret_cast<const T*>(storage_));
-  }
-  T* get() { return std::launder(reinterpret_cast<T*>(storage_)); }
+  class DirectStorage {
+   public:
+    template <typename... Args>
+    explicit constexpr DirectStorage(Args&&... args)
+        : value_(std::forward<Args>(args)...) {}
 
-  alignas(T) char storage_[sizeof(T)];
+    const T* get() const { return &value_; }
+    T* get() { return &value_; }
+
+   private:
+    T value_;
+  };
+
+  class PlacementStorage {
+   public:
+    template <typename... Args>
+    explicit PlacementStorage(Args&&... args) {
+      new (&memory_) T(std::forward<Args>(args)...);
+    }
+
+    const T* get() const {
+      return std::launder(reinterpret_cast<const T*>(&memory_));
+    }
+    T* get() { return std::launder(reinterpret_cast<T*>(&memory_)); }
+
+   private:
+    alignas(T) char memory_[sizeof(T)];
+  };
+
+  // If the type is already trivially destructible, use it directly. Trivially
+  // destructible types do not need NoDestructor, but NoDestructor supports them
+  // to work better with generic code.
+  std::conditional_t<std::is_trivially_destructible<T>::value,
+                     DirectStorage,
+                     PlacementStorage>
+      storage_;
 };
 
 }  // namespace pw
