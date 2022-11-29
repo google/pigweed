@@ -33,6 +33,9 @@ pw_cc_library(
         "id_public_overrides",
         "public",
     ],
+    target_compatible_with = [
+        "//pw_build/constraints/rtos:embos",
+    ],
 )
 
 pw_cc_library(
@@ -96,7 +99,7 @@ pw_cc_library(
         ":id",
         "//pw_assert",
         "//pw_string",
-        "//pw_thread:thread_headers",
+        "//pw_thread:thread_facade",
     ],
     # TODO(b/234876414): This should depend on embOS but our third parties
     # currently do not have Bazel support.
@@ -121,6 +124,9 @@ pw_cc_library(
     srcs = [
         "test_threads.cc",
     ],
+    includes = ["public"],
+    # TODO(b/260637734): This target doesn't build
+    tags = ["manual"],
     deps = [
         "//pw_chrono:system_clock",
         "//pw_thread:sleep",
@@ -159,6 +165,9 @@ pw_cc_library(
     hdrs = [
         "public/pw_thread_embos/util.h",
     ],
+    includes = ["public"],
+    # TODO(b/260637734): This target doesn't build
+    tags = ["manual"],
     deps = [
         "//pw_function",
         "//pw_status",
@@ -175,6 +184,9 @@ pw_cc_library(
     hdrs = [
         "public/pw_thread_embos/snapshot.h",
     ],
+    includes = ["public"],
+    # TODO(b/260637734): This target doesn't build
+    tags = ["manual"],
     deps = [
         ":util",
         "//pw_bytes",
@@ -182,7 +194,6 @@ pw_cc_library(
         "//pw_log",
         "//pw_protobuf",
         "//pw_status",
-        "//pw_thread:protos",
         "//pw_thread:snapshot",
     ],
     # TODO(b/234876414): This should depend on embOS but our third parties
