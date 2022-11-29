@@ -459,7 +459,6 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     '-//pw_work_queue/...:all',
     '-//targets/lm3s6965evb_qemu/...:all',
     '-//targets/mimxrt595_evk/...:all',
-    '-//targets/rp2040/...:all',
     '-//targets/stm32f429i_disc1_stm32cube/...:all',
     '-//third_party/boringssl/...:all',
     # keep-sorted: end

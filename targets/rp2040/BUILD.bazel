@@ -24,11 +24,14 @@ licenses(["notice"])
 # This is just a stub to silence warnings saying that pico_logging_test_main.cc
 # is missing from the bazel build. There's no plans yet to do a Bazel build for
 # the Pi Pico.
+#
+# TODO(b/260639642): Support Pico in the Bazel build.
 pw_cc_library(
     name = "pico_logging_test_main",
     srcs = [
         "pico_logging_test_main.cc",
     ],
+    tags = ["manual"],
     deps = [
         "//pw_unit_test",
         "//pw_unit_test:logging_event_handler",
