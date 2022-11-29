@@ -34,7 +34,7 @@ pw_source_set("rename_exceptions") {
     ":public_include_dirs",
     "${PICO_ROOT}/gn:disable_warnings",
   ]
-  public = [ "include/cmsis/rename_exceptions.h" ]
+  public = [ "${_CWD}/include/cmsis/rename_exceptions.h" ]
 }
 
 # TODO(amontanez): The CMSIS stub should probably be more configurable to match

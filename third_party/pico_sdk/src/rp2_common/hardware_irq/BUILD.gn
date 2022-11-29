@@ -34,6 +34,7 @@ pw_source_set("hardware_irq") {
     "${PICO_ROOT}/src/common/pico_base",
     "${PICO_ROOT}/src/rp2040/hardware_regs",
     "${PICO_ROOT}/src/rp2_common/hardware_base",
+    "${PICO_ROOT}/src/rp2_common/hardware_claim",
   ]
   deps = [
     "${PICO_ROOT}/src/common/pico_sync",

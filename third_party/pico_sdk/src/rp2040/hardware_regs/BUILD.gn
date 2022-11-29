@@ -30,7 +30,11 @@ pw_source_set("platform_defs") {
     ":public_include_dirs",
     "${PICO_ROOT}/gn:disable_warnings",
   ]
-  public = [ "${_CWD}/include/hardware/platform_defs.h" ]
+  public = [
+    "${_CWD}/include/hardware/platform_defs.h",
+    "${_CWD}/include/hardware/regs/addressmap.h",
+    "${_CWD}/include/hardware/regs/sio.h",
+  ]
 }
 
 pw_source_set("hardware_regs") {

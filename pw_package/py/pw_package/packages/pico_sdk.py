@@ -26,7 +26,7 @@ class PiPicoSdk(pw_package.git_repo.GitRepo):
         super().__init__(*args,
                          name='pico_sdk',
                          url='https://github.com/raspberrypi/pico-sdk',
-                         commit='2062372d203b372849d573f252cf7c6dc2800c0a',
+                         commit='2e6142b15b8a75c1227dd3edbe839193b2bf9041',
                          **kwargs)
 
     def info(self, path: pathlib.Path) -> Sequence[str]:

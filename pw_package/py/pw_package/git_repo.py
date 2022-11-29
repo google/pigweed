@@ -58,6 +58,7 @@ class GitRepo(pw_package.package_manager.Package):
         self._sparse_list = sparse_list
 
     def status(self, path: pathlib.Path) -> bool:
+        # TODO(tonymd): Check the correct SHA is checked out here.
         if not os.path.isdir(path / '.git'):
             return False
 

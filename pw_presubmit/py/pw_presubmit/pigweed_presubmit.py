@@ -336,6 +336,17 @@ def gn_teensy_build(ctx: PresubmitContext):
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
+def gn_pico_build(ctx: PresubmitContext):
+    build.install_package(ctx, 'pico_sdk')
+    build.gn_gen(
+        ctx,
+        PICO_SRC_DIR='"{}"'.format(str(ctx.package_root / 'pico_sdk')),
+        pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
+    )
+    build.ninja(ctx, 'pi_pico')
+
+
+@_BUILD_FILE_FILTER.apply_to_check()
 def gn_software_update_build(ctx: PresubmitContext):
     build.install_package(ctx, 'nanopb')
     build.install_package(ctx, 'protobuf')
@@ -917,6 +928,7 @@ OTHER_CHECKS = (
 MISC = (
     # keep-sorted: start
     gn_nanopb_build,
+    gn_pico_build,
     gn_pw_system_demo_build,
     gn_teensy_build,
     # keep-sorted: end

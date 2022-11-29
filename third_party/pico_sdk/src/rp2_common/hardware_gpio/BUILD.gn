@@ -33,13 +33,13 @@ pw_source_set("hardware_gpio") {
   public_deps = [
     "${PICO_ROOT}/src/common/pico_base",
     "${PICO_ROOT}/src/rp2040/hardware_structs",
+    "${PICO_ROOT}/src/rp2_common/hardware_irq",
   ]
   deps = [
     # TODO(amontanez): This is off by default, properly control with
     # configuration.
     # "${PICO_ROOT}/src/common/pico_binary_info",
 
-    "${PICO_ROOT}/src/rp2_common/hardware_irq",
     "${PICO_ROOT}/src/rp2_common/hardware_sync",
   ]
   public = [ "${_CWD}/include/hardware/gpio.h" ]

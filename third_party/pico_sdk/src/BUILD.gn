@@ -30,7 +30,10 @@ group("pico_sdk") {
 config("elf2uf2_configs") {
   include_dirs = [ "$PICO_SRC_DIR/src/common/boot_uf2/include" ]
   cflags_cc = [ "-std=gnu++14" ]
-  cflags = [ "-Wno-reorder-ctor" ]
+  cflags = [
+    "-Wno-reorder-ctor",
+    "-Wno-unused-variable",
+  ]
 }
 
 pw_executable("elf2uf2") {
