@@ -439,6 +439,7 @@ def presubmit_check(
 
     language = code_format.language.lower().replace('+', 'p').replace(' ', '_')
     check_code_format.name = f'{language}_format'
+    check_code_format.doc = f'Check the format of {code_format.language} files.'
 
     return check_code_format
 

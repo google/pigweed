@@ -42,30 +42,35 @@ def pragma_once(ctx: PresubmitContext) -> None:
 
 @Check
 def asan(ctx: PresubmitContext) -> None:
+    """Test with the address sanitizer."""
     build.gn_gen(ctx)
     build.ninja(ctx, 'asan')
 
 
 @Check
 def msan(ctx: PresubmitContext) -> None:
+    """Test with the memory sanitizer."""
     build.gn_gen(ctx)
     build.ninja(ctx, 'msan')
 
 
 @Check
 def tsan(ctx: PresubmitContext) -> None:
+    """Test with the thread sanitizer."""
     build.gn_gen(ctx)
     build.ninja(ctx, 'tsan')
 
 
 @Check
 def ubsan(ctx: PresubmitContext) -> None:
+    """Test with the undefined behavior sanitizer."""
     build.gn_gen(ctx)
     build.ninja(ctx, 'ubsan')
 
 
 @Check
 def runtime_sanitizers(ctx: PresubmitContext) -> None:
+    """Test with the address, thread, and undefined behavior sanitizers."""
     build.gn_gen(ctx)
     build.ninja(ctx, 'runtime_sanitizers')
 

@@ -468,7 +468,7 @@ _TARGETS_THAT_DO_NOT_TEST_WITH_BAZEL = _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL
 @filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.bazel', '.bzl',
                         'BUILD'))
 def bazel_test(ctx: PresubmitContext) -> None:
-    """Runs bazel test on each bazel compatible module"""
+    """Runs bazel test on each bazel compatible module."""
     build.bazel(ctx, 'test', '--test_output=errors', '--', '//...',
                 *_TARGETS_THAT_DO_NOT_TEST_WITH_BAZEL)
 
@@ -874,6 +874,7 @@ _EXCLUDE_FROM_TODO_CHECK = (
 
 @filter_paths(exclude=_EXCLUDE_FROM_TODO_CHECK)
 def todo_check_with_exceptions(ctx: PresubmitContext):
+    """Check that non-legacy TODO lines are valid."""  # todo-check: ignore
     todo_check.create(todo_check.BUGS_OR_USERNAMES)(ctx)
 
 

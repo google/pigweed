@@ -88,7 +88,7 @@ def create(todo_pattern: re.Pattern = BUGS_ONLY,
     """Create a todo_check presubmit step that uses the given pattern."""
     @filter_paths(exclude=exclude)
     def todo_check(ctx: PresubmitContext):
-        """Presubmit check that makes sure todo lines match the pattern."""
+        """Check that TODO lines are valid."""  # todo-check: ignore
         for path in ctx.paths:
             _process_file(ctx, todo_pattern, path)
 
