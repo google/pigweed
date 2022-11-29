@@ -1,4 +1,7 @@
 {
+  "included_files": [
+    "black.json"
+  ],
   "packages": [
     {
       "path": "infra/3pp/tools/cpython3/${platform}",

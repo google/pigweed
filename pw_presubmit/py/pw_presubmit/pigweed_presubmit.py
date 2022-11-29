@@ -687,11 +687,10 @@ _BAZEL_SOURCES_IN_BUILD = tuple(format_code.C_FORMAT.extensions)
 _GN_SOURCES_IN_BUILD = ('setup.cfg', '.toml', '.rst', '.py',
                         *_BAZEL_SOURCES_IN_BUILD)
 
-SOURCE_FILES_FILTER = presubmit.FileFilter(endswith=_GN_SOURCES_IN_BUILD,
-                                           suffix=('.bazel', '.bzl', '.gn',
-                                                   '.gni'),
-                                           exclude=(r'zephyr.*/',
-                                                    r'android.*/'))
+SOURCE_FILES_FILTER = presubmit.FileFilter(
+    endswith=_GN_SOURCES_IN_BUILD,
+    suffix=('.bazel', '.bzl', '.gn', '.gni'),
+    exclude=(r'zephyr.*/', r'android.*/', r'^pyproject.toml'))
 
 
 @SOURCE_FILES_FILTER.apply_to_check()
