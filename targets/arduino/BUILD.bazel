@@ -26,17 +26,14 @@ pw_cc_library(
     srcs = [
         "init.cc",
     ],
+    hdrs = [
+    ],
+    # TODO(b/259149817): pw_sys_io_arduino cannot find "Arduino.h"
+    tags = ["manual"],
     deps = [
+        "//pw_arduino_build:pw_arduino_build_header",
         "//pw_preprocessor",
         "//pw_sys_io_arduino",
-    ],
-)
-
-pw_cc_library(
-    name = "system_rpc_server",
-    srcs = ["system_rpc_server.cc"],
-    deps = [
-        "//pw_hdlc:pw_rpc",
-        "//pw_rpc/system_server:facade",
+        "//pw_sys_io_arduino:pw_sys_io_arduino_header",
     ],
 )

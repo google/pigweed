@@ -32,3 +32,11 @@ pw_cc_library(
         "//pw_sys_io",
     ],
 )
+
+# Used in targets/arduino
+pw_cc_library(
+    name = "pw_sys_io_arduino_header",
+    hdrs = ["public/pw_sys_io_arduino/init.h"],
+    includes = ["public"],
+    visibility = ["//visibility:public"],
+)
