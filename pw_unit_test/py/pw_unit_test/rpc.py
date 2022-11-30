@@ -40,8 +40,11 @@ class TestCase:
 
 
 def _test_case(raw_test_case: unit_test_pb2.TestCaseDescriptor) -> TestCase:
-    return TestCase(raw_test_case.suite_name, raw_test_case.test_name,
-                    raw_test_case.file_name)
+    return TestCase(
+        raw_test_case.suite_name,
+        raw_test_case.test_name,
+        raw_test_case.file_name,
+    )
 
 
 @dataclass(frozen=True)
@@ -78,8 +81,9 @@ class EventHandler(abc.ABC):
         """Called when a new test case is started."""
 
     @abc.abstractmethod
-    def test_case_end(self, test_case: TestCase,
-                      result: TestCaseResult) -> None:
+    def test_case_end(
+        self, test_case: TestCase, result: TestCaseResult
+    ) -> None:
         """Called when a test case completes with its overall result."""
 
     @abc.abstractmethod
@@ -87,13 +91,15 @@ class EventHandler(abc.ABC):
         """Called when a disabled test case is encountered."""
 
     @abc.abstractmethod
-    def test_case_expect(self, test_case: TestCase,
-                         expectation: TestExpectation) -> None:
+    def test_case_expect(
+        self, test_case: TestCase, expectation: TestExpectation
+    ) -> None:
         """Called after each expect/assert statement within a test case."""
 
 
 class LoggingEventHandler(EventHandler):
     """Event handler that logs test events using Google Test format."""
+
     def run_all_tests_start(self) -> None:
         _LOG.info('[==========] Running all tests.')
 
@@ -106,8 +112,9 @@ class LoggingEventHandler(EventHandler):
     def test_case_start(self, test_case: TestCase) -> None:
         _LOG.info('[ RUN      ] %s', test_case)
 
-    def test_case_end(self, test_case: TestCase,
-                      result: TestCaseResult) -> None:
+    def test_case_end(
+        self, test_case: TestCase, result: TestCaseResult
+    ) -> None:
         if result == TestCaseResult.SUCCESS:
             _LOG.info('[       OK ] %s', test_case)
         else:
@@ -116,8 +123,9 @@ class LoggingEventHandler(EventHandler):
     def test_case_disabled(self, test_case: TestCase) -> None:
         _LOG.info('Skipping disabled test %s', test_case)
 
-    def test_case_expect(self, test_case: TestCase,
-                         expectation: TestExpectation) -> None:
+    def test_case_expect(
+        self, test_case: TestCase, expectation: TestExpectation
+    ) -> None:
         result = 'Success' if expectation.success else 'Failure'
         log = _LOG.info if expectation.success else _LOG.error
         log('%s:%d: %s', test_case.file_name, expectation.line_number, result)
@@ -125,12 +133,13 @@ class LoggingEventHandler(EventHandler):
         log('        Actual: %s', expectation.evaluated_expression)
 
 
-def run_tests(rpcs: pw_rpc.client.Services,
-              report_passed_expectations: bool = False,
-              test_suites: Iterable[str] = (),
-              event_handlers: Iterable[EventHandler] = (
-                  LoggingEventHandler(), ),
-              timeout_s: OptionalTimeout = UseDefault.VALUE) -> bool:
+def run_tests(
+    rpcs: pw_rpc.client.Services,
+    report_passed_expectations: bool = False,
+    test_suites: Iterable[str] = (),
+    event_handlers: Iterable[EventHandler] = (LoggingEventHandler(),),
+    timeout_s: OptionalTimeout = UseDefault.VALUE,
+) -> bool:
     """Runs unit tests on a device over Pigweed RPC.
 
     Calls each of the provided event handlers as test events occur, and returns
@@ -139,7 +148,8 @@ def run_tests(rpcs: pw_rpc.client.Services,
     unit_test_service = rpcs.pw.unit_test.UnitTest  # type: ignore[attr-defined]
     request = unit_test_service.Run.request(
         report_passed_expectations=report_passed_expectations,
-        test_suite=test_suites)
+        test_suite=test_suites,
+    )
     call = unit_test_service.Run.invoke(request, timeout_s=timeout_s)
     test_responses = iter(call)
 
@@ -149,14 +159,17 @@ def run_tests(rpcs: pw_rpc.client.Services,
     except StopIteration:
         _LOG.error(
             'The "test_run_start" message was dropped! UnitTest.Run '
-            'concluded with %s.', call.status)
+            'concluded with %s.',
+            call.status,
+        )
         raise
 
     if not first_response.HasField('test_run_start'):
         raise ValueError(
             'Expected a "test_run_start" response from pw.unit_test.Run, '
             'but received a different message type. A response may have been '
-            'dropped.')
+            'dropped.'
+        )
 
     for event_handler in event_handlers:
         event_handler.run_all_tests_start()
@@ -172,8 +185,9 @@ def run_tests(rpcs: pw_rpc.client.Services,
             if response.HasField('test_run_start'):
                 event_handler.run_all_tests_start()
             elif response.HasField('test_run_end'):
-                event_handler.run_all_tests_end(response.test_run_end.passed,
-                                                response.test_run_end.failed)
+                event_handler.run_all_tests_end(
+                    response.test_run_end.passed, response.test_run_end.failed
+                )
                 if response.test_run_end.failed == 0:
                     all_tests_passed = True
             elif response.HasField('test_case_start'):
@@ -183,7 +197,8 @@ def run_tests(rpcs: pw_rpc.client.Services,
                 event_handler.test_case_end(current_test_case, result)
             elif response.HasField('test_case_disabled'):
                 event_handler.test_case_disabled(
-                    _test_case(response.test_case_disabled))
+                    _test_case(response.test_case_disabled)
+                )
             elif response.HasField('test_case_expectation'):
                 raw_expectation = response.test_case_expectation
                 expectation = TestExpectation(

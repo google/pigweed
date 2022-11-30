@@ -35,7 +35,8 @@ FAILING = tuple(TestCase('Failing', case, _FILE) for case in _CASES[:-1])
 EXECUTED_TESTS = PASSING + FAILING
 
 DISABLED_SUITE = tuple(
-    TestCase('DISABLED_Disabled', case, _FILE) for case in _CASES)
+    TestCase('DISABLED_Disabled', case, _FILE) for case in _CASES
+)
 
 ALL_DISABLED_TESTS = (
     TestCase('Passing', 'DISABLED_Disabled', _FILE),
@@ -46,12 +47,14 @@ ALL_DISABLED_TESTS = (
 
 class RpcIntegrationTest(unittest.TestCase):
     """Calls RPCs on an RPC server through a socket."""
+
     test_server_command: Tuple[str, ...] = ()
     port: int
 
     def setUp(self) -> None:
         self._context = rpc.HdlcRpcLocalServerAndClient(
-            self.test_server_command, self.port, [unit_test_pb2])
+            self.test_server_command, self.port, [unit_test_pb2]
+        )
         self.rpcs = self._context.client.channel(1).rpcs
         self.handler = mock.NonCallableMagicMock(spec=EventHandler)
 
@@ -59,8 +62,7 @@ class RpcIntegrationTest(unittest.TestCase):
         self._context.close()
 
     def test_run_tests_default_handler(self) -> None:
-        with self.assertLogs(logging.getLogger('pw_unit_test'),
-                             'INFO') as logs:
+        with self.assertLogs(logging.getLogger('pw_unit_test'), 'INFO') as logs:
             self.assertFalse(run_tests(self.rpcs))
 
         for test in EXECUTED_TESTS:
@@ -70,15 +72,19 @@ class RpcIntegrationTest(unittest.TestCase):
         self.assertFalse(run_tests(self.rpcs, event_handlers=[self.handler]))
 
         self.handler.test_case_start.assert_has_calls(
-            [mock.call(case) for case in EXECUTED_TESTS], any_order=True)
+            [mock.call(case) for case in EXECUTED_TESTS], any_order=True
+        )
 
     def test_run_tests_calls_test_case_end(self) -> None:
         self.assertFalse(run_tests(self.rpcs, event_handlers=[self.handler]))
 
         calls = [
             mock.call(
-                case, unit_test_pb2.SUCCESS
-                if case.suite_name == 'Passing' else unit_test_pb2.FAILURE)
+                case,
+                unit_test_pb2.SUCCESS
+                if case.suite_name == 'Passing'
+                else unit_test_pb2.FAILURE,
+            )
             for case in EXECUTED_TESTS
         ]
         self.handler.test_case_end.assert_has_calls(calls, any_order=True)
@@ -87,38 +93,50 @@ class RpcIntegrationTest(unittest.TestCase):
         self.assertFalse(run_tests(self.rpcs, event_handlers=[self.handler]))
 
         self.handler.test_case_disabled.assert_has_calls(
-            [mock.call(case) for case in ALL_DISABLED_TESTS], any_order=True)
+            [mock.call(case) for case in ALL_DISABLED_TESTS], any_order=True
+        )
 
     def test_passing_tests_only(self) -> None:
         self.assertTrue(
-            run_tests(self.rpcs,
-                      test_suites=['Passing'],
-                      event_handlers=[self.handler]))
+            run_tests(
+                self.rpcs,
+                test_suites=['Passing'],
+                event_handlers=[self.handler],
+            )
+        )
         calls = [mock.call(case, unit_test_pb2.SUCCESS) for case in PASSING]
         self.handler.test_case_end.assert_has_calls(calls, any_order=True)
 
     def test_disabled_tests_only(self) -> None:
         self.assertTrue(
-            run_tests(self.rpcs,
-                      test_suites=['DISABLED_Disabled'],
-                      event_handlers=[self.handler]))
+            run_tests(
+                self.rpcs,
+                test_suites=['DISABLED_Disabled'],
+                event_handlers=[self.handler],
+            )
+        )
 
         self.handler.test_case_start.assert_not_called()
         self.handler.test_case_end.assert_not_called()
         self.handler.test_case_disabled.assert_has_calls(
-            [mock.call(case) for case in DISABLED_SUITE], any_order=True)
+            [mock.call(case) for case in DISABLED_SUITE], any_order=True
+        )
 
     def test_failing_tests(self) -> None:
         self.assertFalse(
-            run_tests(self.rpcs,
-                      test_suites=['Failing'],
-                      event_handlers=[self.handler]))
+            run_tests(
+                self.rpcs,
+                test_suites=['Failing'],
+                event_handlers=[self.handler],
+            )
+        )
         calls = [mock.call(case, unit_test_pb2.FAILURE) for case in FAILING]
         self.handler.test_case_end.assert_has_calls(calls, any_order=True)
 
 
-def _main(test_server_command: List[str], port: int,
-          unittest_args: List[str]) -> None:
+def _main(
+    test_server_command: List[str], port: int, unittest_args: List[str]
+) -> None:
     RpcIntegrationTest.test_server_command = tuple(test_server_command)
     RpcIntegrationTest.port = port
     unittest.main(argv=unittest_args)

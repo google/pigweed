@@ -13,5 +13,10 @@
 # the License.
 """Utilities for running unit tests over Pigweed RPC."""
 
-from pw_unit_test.rpc import (run_tests, EventHandler, TestCase,
-                              TestExpectation, TestCaseResult)
+from pw_unit_test.rpc import (
+    run_tests,
+    EventHandler,
+    TestCase,
+    TestExpectation,
+    TestCaseResult,
+)

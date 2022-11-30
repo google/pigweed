@@ -48,43 +48,46 @@ def _strip_ansi(bytes_with_sequences: bytes) -> bytes:
 def register_arguments(parser: argparse.ArgumentParser) -> None:
     """Registers command-line arguments."""
 
-    parser.add_argument('--root',
-                        type=str,
-                        default='out',
-                        help='Path to the root build directory')
-    parser.add_argument('-r',
-                        '--runner',
-                        type=str,
-                        required=True,
-                        help='Executable which runs a test on the target')
-    parser.add_argument('-m',
-                        '--timeout',
-                        type=float,
-                        help='Timeout for test runner in seconds')
+    parser.add_argument(
+        '--root',
+        type=str,
+        default='out',
+        help='Path to the root build directory',
+    )
+    parser.add_argument(
+        '-r',
+        '--runner',
+        type=str,
+        required=True,
+        help='Executable which runs a test on the target',
+    )
+    parser.add_argument(
+        '-m', '--timeout', type=float, help='Timeout for test runner in seconds'
+    )
     parser.add_argument(
         '--coverage-profraw',
         type=str,
         help='The name of the coverage profraw file to produce with the'
         ' coverage information from this test. Only provide this if the test'
-        ' should be run for coverage and is properly instrumented.')
-    parser.add_argument('runner_args',
-                        nargs="*",
-                        help='Arguments to forward to the test runner')
+        ' should be run for coverage and is properly instrumented.',
+    )
+    parser.add_argument(
+        'runner_args', nargs="*", help='Arguments to forward to the test runner'
+    )
 
     # The runner script can either run binaries directly or groups.
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('-g',
-                       '--group',
-                       action='append',
-                       help='Test groups to run')
-    group.add_argument('-t',
-                       '--test',
-                       action='append',
-                       help='Test binaries to run')
+    group.add_argument(
+        '-g', '--group', action='append', help='Test groups to run'
+    )
+    group.add_argument(
+        '-t', '--test', action='append', help='Test binaries to run'
+    )
 
 
 class TestResult(enum.Enum):
     """Result of a single unit test run."""
+
     UNKNOWN = 0
     SUCCESS = 1
     FAILURE = 2
@@ -92,6 +95,7 @@ class TestResult(enum.Enum):
 
 class Test:
     """A unit test executable."""
+
     def __init__(self, name: str, file_path: str) -> None:
         self.name: str = name
         self.file_path: str = file_path
@@ -113,6 +117,7 @@ class Test:
 
 class TestGroup:
     """Graph node representing a group of unit tests."""
+
     def __init__(self, name: str, tests: Iterable[Test]):
         self._name: str = name
         self._deps: Iterable['TestGroup'] = []
@@ -134,7 +139,9 @@ class TestGroup:
         for dep in self._deps:
             tests.update(
                 dep._all_test_dependencies(  # pylint: disable=protected-access
-                    processed_groups))
+                    processed_groups
+                )
+            )
 
         tests.update(self._tests)
         processed_groups.add(self._name)
@@ -147,12 +154,15 @@ class TestGroup:
 
 class TestRunner:
     """Runs unit tests by calling out to a runner script."""
-    def __init__(self,
-                 executable: str,
-                 args: Sequence[str],
-                 tests: Iterable[Test],
-                 coverage_profraw: Optional[str] = None,
-                 timeout: Optional[float] = None) -> None:
+
+    def __init__(
+        self,
+        executable: str,
+        args: Sequence[str],
+        tests: Iterable[Test],
+        coverage_profraw: Optional[str] = None,
+        timeout: Optional[float] = None,
+    ) -> None:
         self._executable: str = executable
         self._args: Sequence[str] = args
         self._tests: List[Test] = list(tests)
@@ -193,11 +203,10 @@ class TestRunner:
             try:
                 env = {}
                 if self._coverage_profraw is not None:
-                    env['LLVM_PROFILE_FILE'] = str(Path(
-                        self._coverage_profraw))
-                process = await pw_cli.process.run_async(*command,
-                                                         env=env,
-                                                         timeout=self._timeout)
+                    env['LLVM_PROFILE_FILE'] = str(Path(self._coverage_profraw))
+                process = await pw_cli.process.run_async(
+                    *command, env=env, timeout=self._timeout
+                )
             except subprocess.CalledProcessError as err:
                 _LOG.error(err)
                 return
@@ -210,12 +219,20 @@ class TestRunner:
                 test.status = TestResult.FAILURE
                 test_result = 'FAIL'
 
-                _LOG.log(pw_cli.log.LOGLEVEL_STDOUT, '[Pid: %s]\n%s',
-                         pw_cli.color.colors().bold_white(process.pid),
-                         process.output.decode(errors='ignore').rstrip())
+                _LOG.log(
+                    pw_cli.log.LOGLEVEL_STDOUT,
+                    '[Pid: %s]\n%s',
+                    pw_cli.color.colors().bold_white(process.pid),
+                    process.output.decode(errors='ignore').rstrip(),
+                )
 
-                _LOG.info('%s: [%s] %s in %.3f s', test_counter, test_result,
-                          test.name, test.duration_s)
+                _LOG.info(
+                    '%s: [%s] %s in %.3f s',
+                    test_counter,
+                    test_result,
+                    test.name,
+                    test.duration_s,
+                )
 
             try:
                 self._maybe_upload_to_resultdb(test, process)
@@ -227,8 +244,9 @@ class TestRunner:
         """Returns true if all unit tests passed."""
         return all(test.status is TestResult.SUCCESS for test in self._tests)
 
-    def _maybe_upload_to_resultdb(self, test: Test,
-                                  process: pw_cli.process.CompletedProcess):
+    def _maybe_upload_to_resultdb(
+        self, test: Test, process: pw_cli.process.CompletedProcess
+    ):
         """Uploads test result to ResultDB, if available."""
         if self._result_sink is None:
             # ResultDB integration not enabled.
@@ -260,8 +278,10 @@ class TestRunner:
                 # results.)
                 "name": test.file_path,
             },
-            "summaryHtml":
-            '<p><text-artifact artifact-id="artifact-content-in-request"></p>',
+            "summaryHtml": (
+                '<p><text-artifact '
+                'artifact-id="artifact-content-in-request"></p>'
+            ),
             "artifacts": {
                 "artifact-content-in-request": {
                     # Need to decode the bytes back to ASCII or they will not be
@@ -269,21 +289,21 @@ class TestRunner:
                     #
                     # TODO(b/248349219): Instead of stripping the ANSI color
                     # codes, convert them to HTML.
-                    "contents":
-                    base64.b64encode(_strip_ansi(
-                        process.output)).decode('ascii'),
+                    "contents": base64.b64encode(
+                        _strip_ansi(process.output)
+                    ).decode('ascii'),
                 },
             },
         }
 
         requests.post(
-            url='http://%s/prpc/luci.resultsink.v1.Sink/ReportTestResults' %
-            self._result_sink['address'],
+            url='http://%s/prpc/luci.resultsink.v1.Sink/ReportTestResults'
+            % self._result_sink['address'],
             headers={
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
-                'Authorization':
-                'ResultSink %s' % self._result_sink['auth_token'],
+                'Authorization': 'ResultSink %s'
+                % self._result_sink['auth_token'],
             },
             data=json.dumps({'testResults': [test_result]}),
         ).raise_for_status()
@@ -333,7 +353,8 @@ def find_binary(target: str) -> str:
             return potential_filename
 
     raise FileNotFoundError(
-        f'Could not find output binary for build target {target}')
+        f'Could not find output binary for build target {target}'
+    )
 
 
 def parse_metadata(metadata: List[str], root: str) -> Dict[str, TestGroup]:
@@ -348,6 +369,7 @@ def parse_metadata(metadata: List[str], root: str) -> Dict[str, TestGroup]:
         populated with the paths to their unit tests and references to their
         dependencies.
     """
+
     def canonicalize(path: str) -> str:
         """Removes a trailing slash from a GN target's directory.
 
@@ -357,7 +379,7 @@ def parse_metadata(metadata: List[str], root: str) -> Dict[str, TestGroup]:
         index = path.find(':')
         if index == -1 or path[index - 1] != '/':
             return path
-        return path[:index - 1] + path[index:]
+        return path[: index - 1] + path[index:]
 
     group_deps: List[Tuple[str, List[str]]] = []
     all_tests: Dict[str, Test] = {}
@@ -379,11 +401,13 @@ def parse_metadata(metadata: List[str], root: str) -> Dict[str, TestGroup]:
             elif entry['type'] == 'test':
                 test_directory = os.path.join(root, entry['test_directory'])
                 test_binary = find_binary(
-                    f'{test_directory}:{entry["test_name"]}')
+                    f'{test_directory}:{entry["test_name"]}'
+                )
 
                 if test_binary not in all_tests:
-                    all_tests[test_binary] = Test(entry['test_name'],
-                                                  test_binary)
+                    all_tests[test_binary] = Test(
+                        entry['test_name'], test_binary
+                    )
 
                 tests.append(all_tests[test_binary])
 
@@ -400,8 +424,9 @@ def parse_metadata(metadata: List[str], root: str) -> Dict[str, TestGroup]:
     return test_groups
 
 
-def tests_from_groups(group_names: Optional[Sequence[str]],
-                      root: str) -> List[Test]:
+def tests_from_groups(
+    group_names: Optional[Sequence[str]], root: str
+) -> List[Test]:
     """Returns unit tests belonging to test groups and their dependencies.
 
     If args.names is nonempty, only searches groups specified there.
@@ -452,8 +477,9 @@ async def find_and_run_tests(
     else:
         tests = tests_from_groups(group, root)
 
-    test_runner = TestRunner(runner, runner_args, tests, coverage_profraw,
-                             timeout)
+    test_runner = TestRunner(
+        runner, runner_args, tests, coverage_profraw, timeout
+    )
     await test_runner.run_tests()
 
     return 0 if test_runner.all_passed() else 1
@@ -464,10 +490,12 @@ def main() -> int:
 
     parser = argparse.ArgumentParser(description=main.__doc__)
     register_arguments(parser)
-    parser.add_argument('-v',
-                        '--verbose',
-                        action='store_true',
-                        help='Output additional logs as the script runs')
+    parser.add_argument(
+        '-v',
+        '--verbose',
+        action='store_true',
+        help='Output additional logs as the script runs',
+    )
 
     args_as_dict = dict(vars(parser.parse_args()))
     del args_as_dict['verbose']
