@@ -21,9 +21,11 @@ from pw_log_tokenized import FormatStringWithMetadata
 
 class TestFormatStringWithMetadata(unittest.TestCase):
     """Tests extracting metadata from a pw_log_tokenized-style format string."""
+
     def test_all_fields(self):
         log = FormatStringWithMetadata(
-            '■msg♦hello %d■file♦__FILE__■module♦log module name!')
+            '■msg♦hello %d■file♦__FILE__■module♦log module name!'
+        )
         self.assertEqual(log.message, 'hello %d')
         self.assertEqual(log.module, 'log module name!')
         self.assertEqual(log.file, '__FILE__')

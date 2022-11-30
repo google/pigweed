@@ -26,6 +26,7 @@ def _mask(value: int, start: int, count: int) -> int:
 @dataclass
 class Metadata:
     """Parses the metadata payload used by pw_log_tokenized."""
+
     value: int
     log_bits: int = 3
     line_bits: int = 11
@@ -35,11 +36,14 @@ class Metadata:
     def __post_init__(self):
         self.log_level = _mask(self.value, 0, self.log_bits)
         self.line = _mask(self.value, self.log_bits, self.line_bits)
-        self.flags = _mask(self.value, self.log_bits + self.line_bits,
-                           self.flag_bits)
+        self.flags = _mask(
+            self.value, self.log_bits + self.line_bits, self.flag_bits
+        )
         self.module_token = _mask(
-            self.value, self.log_bits + self.line_bits + self.flag_bits,
-            self.module_bits)
+            self.value,
+            self.log_bits + self.line_bits + self.flag_bits,
+            self.module_bits,
+        )
 
     def __iter__(self):
         return iter(asdict(self).items())
@@ -50,6 +54,7 @@ class Metadata:
 
 class FormatStringWithMetadata:
     """Parses metadata from a log format string with metadata fields."""
+
     _FIELD_KEY = re.compile(r'■([a-zA-Z]\w*)♦', flags=re.ASCII)
 
     def __init__(self, string: str) -> None:
