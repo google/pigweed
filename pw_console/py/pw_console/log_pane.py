@@ -81,6 +81,7 @@ _LOG = logging.getLogger(__package__)
 
 class LogContentControl(UIControl):
     """LogPane prompt_toolkit UIControl for displaying LogContainer lines."""
+
     def __init__(self, log_pane: 'LogPane') -> None:
         # pylint: disable=too-many-locals
         self.log_pane = log_pane
@@ -127,7 +128,8 @@ class LogContentControl(UIControl):
             """Remove log pane."""
             if self.log_pane.is_a_duplicate:
                 self.log_pane.application.window_manager.remove_pane(
-                    self.log_pane)
+                    self.log_pane
+                )
 
         @register('log-pane.clear-history', key_bindings)
         def _clear_history(_event: KeyPressEvent) -> None:
@@ -258,9 +260,11 @@ class LogContentControl(UIControl):
 
         # Create a UIContent instance if none exists
         if self.uicontent is None:
-            self.uicontent = UIContent(get_line=lambda i: self.lines[i],
-                                       line_count=len(self.lines),
-                                       show_cursor=False)
+            self.uicontent = UIContent(
+                get_line=lambda i: self.lines[i],
+                line_count=len(self.lines),
+                show_cursor=False,
+            )
 
         # Update line_count
         self.uicontent.line_count = len(self.lines)
@@ -275,13 +279,17 @@ class LogContentControl(UIControl):
         # 1. check if a mouse drag just completed.
         # 2. If not in focus, switch focus to this log pane
         #    If in focus, move the cursor to that position.
-        if (mouse_event.event_type == MouseEventType.MOUSE_UP
-                and mouse_event.button == MouseButton.LEFT):
+        if (
+            mouse_event.event_type == MouseEventType.MOUSE_UP
+            and mouse_event.button == MouseButton.LEFT
+        ):
 
             # If a drag was in progress and this is the first mouse release
             # press, set the stop flag.
-            if (self.visual_select_mode_drag_start
-                    and not self.visual_select_mode_drag_stop):
+            if (
+                self.visual_select_mode_drag_start
+                and not self.visual_select_mode_drag_stop
+            ):
                 self.visual_select_mode_drag_stop = True
 
             if not has_focus(self)():
@@ -305,11 +313,15 @@ class LogContentControl(UIControl):
 
         # Mouse drag with left button should start selecting lines.
         # The log pane does not need to be in focus to start this.
-        if (mouse_event.event_type == MouseEventType.MOUSE_MOVE
-                and mouse_event.button == MouseButton.LEFT):
+        if (
+            mouse_event.event_type == MouseEventType.MOUSE_MOVE
+            and mouse_event.button == MouseButton.LEFT
+        ):
             # If a previous mouse drag was completed, clear the selection.
-            if (self.visual_select_mode_drag_start
-                    and self.visual_select_mode_drag_stop):
+            if (
+                self.visual_select_mode_drag_start
+                and self.visual_select_mode_drag_stop
+            ):
                 self.log_pane.log_view.clear_visual_selection()
             # Drag select in progress, set flags accordingly.
             self.visual_select_mode_drag_start = True
@@ -337,6 +349,7 @@ class LogContentControl(UIControl):
 
 class LogPaneWebsocketDialog(ConditionalContainer):
     """Dialog box for showing the websocket URL."""
+
     # Height of the dialog box contens in lines of text.
     DIALOG_HEIGHT = 2
 
@@ -347,22 +360,28 @@ class LogPaneWebsocketDialog(ConditionalContainer):
         self._last_action_time: float = 0
 
         info_bar_control = FormattedTextControl(self.get_info_fragments)
-        info_bar_window = Window(content=info_bar_control,
-                                 height=1,
-                                 align=WindowAlign.LEFT,
-                                 dont_extend_width=False)
+        info_bar_window = Window(
+            content=info_bar_control,
+            height=1,
+            align=WindowAlign.LEFT,
+            dont_extend_width=False,
+        )
 
         message_bar_control = FormattedTextControl(self.get_message_fragments)
-        message_bar_window = Window(content=message_bar_control,
-                                    height=1,
-                                    align=WindowAlign.RIGHT,
-                                    dont_extend_width=False)
+        message_bar_window = Window(
+            content=message_bar_control,
+            height=1,
+            align=WindowAlign.RIGHT,
+            dont_extend_width=False,
+        )
 
         action_bar_control = FormattedTextControl(self.get_action_fragments)
-        action_bar_window = Window(content=action_bar_control,
-                                   height=1,
-                                   align=WindowAlign.RIGHT,
-                                   dont_extend_width=True)
+        action_bar_window = Window(
+            content=action_bar_control,
+            height=1,
+            align=WindowAlign.RIGHT,
+            dont_extend_width=True,
+        )
 
         super().__init__(
             pw_console.widgets.border.create_border(
@@ -400,14 +419,16 @@ class LogPaneWebsocketDialog(ConditionalContainer):
 
     def copy_url_to_clipboard(self) -> None:
         self.log_pane.application.application.clipboard.set_text(
-            self.log_pane.log_view.get_web_socket_url())
+            self.log_pane.log_view.get_web_socket_url()
+        )
         self._set_action_message('Copied!')
 
     def get_message_fragments(self):
         """Return FormattedText with the last action message."""
         # Mouse handlers
-        focus = functools.partial(pw_console.widgets.mouse_handlers.on_click,
-                                  self.focus_self)
+        focus = functools.partial(
+            pw_console.widgets.mouse_handlers.on_click, self.focus_self
+        )
         # Separator should have the focus mouse handler so clicking on any
         # whitespace focuses the input field.
         separator_text = ('', '  ', focus)
@@ -422,16 +443,20 @@ class LogPaneWebsocketDialog(ConditionalContainer):
     def get_info_fragments(self):
         """Return FormattedText with current URL info."""
         # Mouse handlers
-        focus = functools.partial(pw_console.widgets.mouse_handlers.on_click,
-                                  self.focus_self)
+        focus = functools.partial(
+            pw_console.widgets.mouse_handlers.on_click, self.focus_self
+        )
         # Separator should have the focus mouse handler so clicking on any
         # whitespace focuses the input field.
         separator_text = ('', '  ', focus)
 
         fragments = [
             ('class:saveas-dialog-setting', 'URL:  ', focus),
-            ('class:saveas-dialog-title',
-             self.log_pane.log_view.get_web_socket_url(), focus),
+            (
+                'class:saveas-dialog-title',
+                self.log_pane.log_view.get_web_socket_url(),
+                focus,
+            ),
             separator_text,
         ]
         return fragments
@@ -439,12 +464,16 @@ class LogPaneWebsocketDialog(ConditionalContainer):
     def get_action_fragments(self):
         """Return FormattedText with the action buttons."""
         # Mouse handlers
-        focus = functools.partial(pw_console.widgets.mouse_handlers.on_click,
-                                  self.focus_self)
-        cancel = functools.partial(pw_console.widgets.mouse_handlers.on_click,
-                                   self.close_dialog)
-        copy = functools.partial(pw_console.widgets.mouse_handlers.on_click,
-                                 self.copy_url_to_clipboard)
+        focus = functools.partial(
+            pw_console.widgets.mouse_handlers.on_click, self.focus_self
+        )
+        cancel = functools.partial(
+            pw_console.widgets.mouse_handlers.on_click, self.close_dialog
+        )
+        copy = functools.partial(
+            pw_console.widgets.mouse_handlers.on_click,
+            self.copy_url_to_clipboard,
+        )
 
         # Separator should have the focus mouse handler so clicking on any
         # whitespace focuses the input field.
@@ -462,7 +491,8 @@ class LogPaneWebsocketDialog(ConditionalContainer):
                 description='Stop',
                 mouse_handler=cancel,
                 base_style=button_style,
-            ))
+            )
+        )
 
         fragments.append(separator_text)
         fragments.extend(
@@ -471,7 +501,8 @@ class LogPaneWebsocketDialog(ConditionalContainer):
                 description='Copy to Clipboard',
                 mouse_handler=copy,
                 base_style=button_style,
-            ))
+            )
+        )
 
         # One space separator
         fragments.append(('', ' ', focus))
@@ -498,9 +529,9 @@ class LogPane(WindowPane):
         self.is_a_duplicate = False
 
         # Create the log container which stores and handles incoming logs.
-        self.log_view: LogView = LogView(self,
-                                         self.application,
-                                         log_store=log_store)
+        self.log_view: LogView = LogView(
+            self, self.application, log_store=log_store
+        )
 
         # Log pane size variables. These are updated just befor rendering the
         # pane by the LogLineHSplit class.
@@ -527,36 +558,51 @@ class LogPane(WindowPane):
         # Create the bottom toolbar for the whole log pane.
         self.bottom_toolbar = WindowPaneToolbar(self)
         self.bottom_toolbar.add_button(
-            ToolbarButton('/', 'Search', self.start_search))
+            ToolbarButton('/', 'Search', self.start_search)
+        )
         self.bottom_toolbar.add_button(
-            ToolbarButton('Ctrl-o', 'Save', self.start_saveas))
+            ToolbarButton('Ctrl-o', 'Save', self.start_saveas)
+        )
         self.bottom_toolbar.add_button(
-            ToolbarButton('f',
-                          'Follow',
-                          self.toggle_follow,
-                          is_checkbox=True,
-                          checked=lambda: self.log_view.follow))
+            ToolbarButton(
+                'f',
+                'Follow',
+                self.toggle_follow,
+                is_checkbox=True,
+                checked=lambda: self.log_view.follow,
+            )
+        )
         self.bottom_toolbar.add_button(
-            ToolbarButton('t',
-                          'Table',
-                          self.toggle_table_view,
-                          is_checkbox=True,
-                          checked=lambda: self.table_view))
+            ToolbarButton(
+                't',
+                'Table',
+                self.toggle_table_view,
+                is_checkbox=True,
+                checked=lambda: self.table_view,
+            )
+        )
         self.bottom_toolbar.add_button(
-            ToolbarButton('w',
-                          'Wrap',
-                          self.toggle_wrap_lines,
-                          is_checkbox=True,
-                          checked=lambda: self.wrap_lines))
+            ToolbarButton(
+                'w',
+                'Wrap',
+                self.toggle_wrap_lines,
+                is_checkbox=True,
+                checked=lambda: self.wrap_lines,
+            )
+        )
         self.bottom_toolbar.add_button(
-            ToolbarButton('C', 'Clear', self.clear_history))
+            ToolbarButton('C', 'Clear', self.clear_history)
+        )
 
         self.bottom_toolbar.add_button(
-            ToolbarButton('Shift-o',
-                          'Open in browser',
-                          self.toggle_websocket_server,
-                          is_checkbox=True,
-                          checked=lambda: self.log_view.websocket_running))
+            ToolbarButton(
+                'Shift-o',
+                'Open in browser',
+                self.toggle_websocket_server,
+                is_checkbox=True,
+                checked=lambda: self.log_view.websocket_running,
+            )
+        )
 
         self.log_content_control = LogContentControl(self)
 
@@ -598,27 +644,36 @@ class LogPane(WindowPane):
                     align=VerticalAlign.BOTTOM,
                     height=lambda: self.height,
                     width=lambda: self.width,
-                    style=functools.partial(pw_console.style.get_pane_style,
-                                            self),
+                    style=functools.partial(
+                        pw_console.style.get_pane_style, self
+                    ),
                 ),
                 floats=[
                     Float(top=0, right=0, height=1, content=LineInfoBar(self)),
-                    Float(top=0,
-                          right=0,
-                          height=LogPaneSelectionDialog.DIALOG_HEIGHT,
-                          content=self.visual_selection_dialog),
-                    Float(top=3,
-                          left=2,
-                          right=2,
-                          height=LogPaneSaveAsDialog.DIALOG_HEIGHT + 2,
-                          content=self.saveas_dialog),
-                    Float(top=1,
-                          left=2,
-                          right=2,
-                          height=LogPaneWebsocketDialog.DIALOG_HEIGHT + 2,
-                          content=self.websocket_dialog),
-                ]),
-            filter=Condition(lambda: self.show_pane))
+                    Float(
+                        top=0,
+                        right=0,
+                        height=LogPaneSelectionDialog.DIALOG_HEIGHT,
+                        content=self.visual_selection_dialog,
+                    ),
+                    Float(
+                        top=3,
+                        left=2,
+                        right=2,
+                        height=LogPaneSaveAsDialog.DIALOG_HEIGHT + 2,
+                        content=self.saveas_dialog,
+                    ),
+                    Float(
+                        top=1,
+                        left=2,
+                        right=2,
+                        height=LogPaneWebsocketDialog.DIALOG_HEIGHT + 2,
+                        content=self.websocket_dialog,
+                    ),
+                ],
+            ),
+            filter=Condition(lambda: self.show_pane),
+        )
 
     @property
     def table_view(self):
@@ -637,10 +692,12 @@ class LogPane(WindowPane):
         # List active filters
         if self.log_view.filtering_on:
             title += ' (FILTERS: '
-            title += ' '.join([
-                log_filter.pattern()
-                for log_filter in self.log_view.filters.values()
-            ])
+            title += ' '.join(
+                [
+                    log_filter.pattern()
+                    for log_filter in self.log_view.filters.values()
+                ]
+            )
             title += ')'
         return title
 
@@ -681,8 +738,10 @@ class LogPane(WindowPane):
 
     def pane_resized(self) -> bool:
         """Return True if the current window size has changed."""
-        return (self.last_log_pane_width != self.current_log_pane_width
-                or self.last_log_pane_height != self.current_log_pane_height)
+        return (
+            self.last_log_pane_width != self.current_log_pane_width
+            or self.last_log_pane_height != self.current_log_pane_height
+        )
 
     def update_pane_size(self, width, height):
         """Save width and height of the log pane for the current UI render
@@ -742,7 +801,8 @@ class LogPane(WindowPane):
         return [self.log_content_control.get_key_bindings()]
 
     def get_window_menu_options(
-            self) -> List[Tuple[str, Union[Callable, None]]]:
+        self,
+    ) -> List[Tuple[str, Union[Callable, None]]]:
         """Return all menu options for the log pane."""
 
         options = [
@@ -756,25 +816,33 @@ class LogPane(WindowPane):
             (
                 '{check} Line wrapping'.format(
                     check=pw_console.widgets.checkbox.to_checkbox_text(
-                        self.wrap_lines, end='')),
+                        self.wrap_lines, end=''
+                    )
+                ),
                 self.toggle_wrap_lines,
             ),
             (
                 '{check} Table view'.format(
                     check=pw_console.widgets.checkbox.to_checkbox_text(
-                        self._table_view, end='')),
+                        self._table_view, end=''
+                    )
+                ),
                 self.toggle_table_view,
             ),
             (
                 '{check} Follow'.format(
                     check=pw_console.widgets.checkbox.to_checkbox_text(
-                        self.log_view.follow, end='')),
+                        self.log_view.follow, end=''
+                    )
+                ),
                 self.toggle_follow,
             ),
             (
                 '{check} Open in web browser'.format(
                     check=pw_console.widgets.checkbox.to_checkbox_text(
-                        self.log_view.websocket_running, end='')),
+                        self.log_view.websocket_running, end=''
+                    )
+                ),
                 self.toggle_websocket_server,
             ),
             # Menu separator
@@ -789,11 +857,14 @@ class LogPane(WindowPane):
             ),
         ]
         if self.is_a_duplicate:
-            options += [(
-                'Remove/Delete pane',
-                functools.partial(self.application.window_manager.remove_pane,
-                                  self),
-            )]
+            options += [
+                (
+                    'Remove/Delete pane',
+                    functools.partial(
+                        self.application.window_manager.remove_pane, self
+                    ),
+                )
+            ]
 
         # Search / Filter section
         options += [
@@ -826,11 +897,11 @@ class LogPane(WindowPane):
                 if field == 'all':
                     field = None
                 if self.log_view.new_search(
-                        search_string,
-                        invert=inverted,
-                        field=field,
-                        search_matcher=matcher_name,
-                        interactive=False,
+                    search_string,
+                    invert=inverted,
+                    field=field,
+                    search_matcher=matcher_name,
+                    interactive=False,
                 ):
                     self.log_view.install_new_filter()
 
@@ -858,9 +929,11 @@ class LogPane(WindowPane):
         # Add the new pane.
         self.application.window_manager.add_pane(new_pane)
 
-    def add_log_handler(self,
-                        logger: Union[str, logging.Logger],
-                        level_name: Optional[str] = None) -> None:
+    def add_log_handler(
+        self,
+        logger: Union[str, logging.Logger],
+        level_name: Optional[str] = None,
+    ) -> None:
         """Add a log handlers to this LogPane."""
 
         if isinstance(logger, logging.Logger):
@@ -872,7 +945,5 @@ class LogPane(WindowPane):
             if not hasattr(logging, level_name):
                 raise Exception(f'Unknown log level: {level_name}')
             logger_instance.level = getattr(logging, level_name, logging.INFO)
-        logger_instance.addHandler(self.log_view.log_store  # type: ignore
-                                   )
-        self.append_pane_subtitle(  # type: ignore
-            logger_instance.name)
+        logger_instance.addHandler(self.log_view.log_store)  # type: ignore
+        self.append_pane_subtitle(logger_instance.name)  # type: ignore

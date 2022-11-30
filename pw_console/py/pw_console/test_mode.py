@@ -37,7 +37,8 @@ def start_fake_logger(lines, log_thread_entry, log_thread_loop):
         # This function will be executed in a separate thread.
         log_forever(fake_log_messages),
         # Using this asyncio event loop.
-        log_thread_loop)  # type: ignore
+        log_thread_loop,
+    )  # type: ignore
     return background_log_task
 
 
@@ -73,9 +74,13 @@ async def log_forever(fake_log_messages: List[Tuple[str, Dict]]):
         module_name = module_names[message_count % len(module_names)]
         _FAKE_DEVICE_LOG.info(
             fake_log[0],
-            extra=dict(extra_metadata_fields=dict(module=module_name,
-                                                  file='fake_app.cc',
-                                                  timestamp=time.time() -
-                                                  start_time,
-                                                  **fake_log[1])))
+            extra=dict(
+                extra_metadata_fields=dict(
+                    module=module_name,
+                    file='fake_app.cc',
+                    timestamp=time.time() - start_time,
+                    **fake_log[1],
+                )
+            ),
+        )
         message_count += 1

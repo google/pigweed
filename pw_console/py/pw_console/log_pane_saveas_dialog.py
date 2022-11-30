@@ -47,6 +47,7 @@ if TYPE_CHECKING:
 
 class PathValidator(Validator):
     """Validation of file path input."""
+
     def validate(self, document):
         """Check input path leads to a valid parent directory."""
         target_path = Path(document.text).expanduser()
@@ -55,17 +56,20 @@ class PathValidator(Validator):
             raise ValidationError(
                 # Set cursor position to the end
                 len(document.text),
-                "Directory doesn't exist: %s" % document.text)
+                "Directory doesn't exist: %s" % document.text,
+            )
 
         if target_path.is_dir():
             raise ValidationError(
                 # Set cursor position to the end
                 len(document.text),
-                "File input is an existing directory: %s" % document.text)
+                "File input is an existing directory: %s" % document.text,
+            )
 
 
 class LogPaneSaveAsDialog(ConditionalContainer):
     """Dialog box for saving logs to a file."""
+
     # Height of the dialog box contens in lines of text.
     DIALOG_HEIGHT = 3
 
@@ -81,9 +85,14 @@ class LogPaneSaveAsDialog(ConditionalContainer):
 
         self.input_field = TextArea(
             prompt=[
-                ('class:saveas-dialog-setting', 'File: ',
-                 functools.partial(pw_console.widgets.mouse_handlers.on_click,
-                                   self.focus_self))
+                (
+                    'class:saveas-dialog-setting',
+                    'File: ',
+                    functools.partial(
+                        pw_console.widgets.mouse_handlers.on_click,
+                        self.focus_self,
+                    ),
+                )
             ],
             # Pre-fill the current working directory.
             text=self.starting_file_path,
@@ -102,18 +111,21 @@ class LogPaneSaveAsDialog(ConditionalContainer):
 
         self.input_field.buffer.cursor_position = len(self.starting_file_path)
 
-        settings_bar_control = FormattedTextControl(
-            self.get_settings_fragments)
-        settings_bar_window = Window(content=settings_bar_control,
-                                     height=1,
-                                     align=WindowAlign.LEFT,
-                                     dont_extend_width=False)
+        settings_bar_control = FormattedTextControl(self.get_settings_fragments)
+        settings_bar_window = Window(
+            content=settings_bar_control,
+            height=1,
+            align=WindowAlign.LEFT,
+            dont_extend_width=False,
+        )
 
         action_bar_control = FormattedTextControl(self.get_action_fragments)
-        action_bar_window = Window(content=action_bar_control,
-                                   height=1,
-                                   align=WindowAlign.RIGHT,
-                                   dont_extend_width=False)
+        action_bar_window = Window(
+            content=action_bar_control,
+            height=1,
+            align=WindowAlign.RIGHT,
+            dont_extend_width=False,
+        )
 
         # Add additional keybindings for the input_field text area.
         key_bindings = KeyBindings()
@@ -155,15 +167,19 @@ class LogPaneSaveAsDialog(ConditionalContainer):
 
     def _toggle_table_formatting(self):
         self._export_with_table_formatting = (
-            not self._export_with_table_formatting)
+            not self._export_with_table_formatting
+        )
 
     def _toggle_selected_lines(self):
         self._export_with_selected_lines_only = (
-            not self._export_with_selected_lines_only)
+            not self._export_with_selected_lines_only
+        )
 
-    def set_export_options(self,
-                           table_format: Optional[bool] = None,
-                           selected_lines_only: Optional[bool] = None) -> None:
+    def set_export_options(
+        self,
+        table_format: Optional[bool] = None,
+        selected_lines_only: Optional[bool] = None,
+    ) -> None:
         # Allows external callers such as the line selection dialog to set
         # export format options.
         if table_format is not None:
@@ -187,9 +203,10 @@ class LogPaneSaveAsDialog(ConditionalContainer):
             return False
 
         if self.log_pane.log_view.export_logs(
-                file_name=input_text,
-                use_table_formatting=self._export_with_table_formatting,
-                selected_lines_only=self._export_with_selected_lines_only):
+            file_name=input_text,
+            use_table_formatting=self._export_with_table_formatting,
+            selected_lines_only=self._export_with_selected_lines_only,
+        ):
             self.close_dialog()
             # Reset selected_lines_only
             self.set_export_options(selected_lines_only=False)
@@ -202,14 +219,17 @@ class LogPaneSaveAsDialog(ConditionalContainer):
     def get_settings_fragments(self):
         """Return FormattedText with current save settings."""
         # Mouse handlers
-        focus = functools.partial(pw_console.widgets.mouse_handlers.on_click,
-                                  self.focus_self)
+        focus = functools.partial(
+            pw_console.widgets.mouse_handlers.on_click, self.focus_self
+        )
         toggle_table_formatting = functools.partial(
             pw_console.widgets.mouse_handlers.on_click,
-            self._toggle_table_formatting)
+            self._toggle_table_formatting,
+        )
         toggle_selected_lines = functools.partial(
             pw_console.widgets.mouse_handlers.on_click,
-            self._toggle_selected_lines)
+            self._toggle_selected_lines,
+        )
 
         # Separator should have the focus mouse handler so clicking on any
         # whitespace focuses the input field.
@@ -228,7 +248,9 @@ class LogPaneSaveAsDialog(ConditionalContainer):
                 key='',  # No key shortcut help text
                 description='Table Formatting',
                 mouse_handler=toggle_table_formatting,
-                base_style=button_style))
+                base_style=button_style,
+            )
+        )
 
         # Two space separator
         fragments.append(separator_text)
@@ -240,7 +262,9 @@ class LogPaneSaveAsDialog(ConditionalContainer):
                 key='',  # No key shortcut help text
                 description='Selected Lines Only',
                 mouse_handler=toggle_selected_lines,
-                base_style=button_style))
+                base_style=button_style,
+            )
+        )
 
         # Two space separator
         fragments.append(separator_text)
@@ -250,12 +274,15 @@ class LogPaneSaveAsDialog(ConditionalContainer):
     def get_action_fragments(self):
         """Return FormattedText with the save action buttons."""
         # Mouse handlers
-        focus = functools.partial(pw_console.widgets.mouse_handlers.on_click,
-                                  self.focus_self)
-        cancel = functools.partial(pw_console.widgets.mouse_handlers.on_click,
-                                   self.close_dialog)
-        save = functools.partial(pw_console.widgets.mouse_handlers.on_click,
-                                 self.save_action)
+        focus = functools.partial(
+            pw_console.widgets.mouse_handlers.on_click, self.focus_self
+        )
+        cancel = functools.partial(
+            pw_console.widgets.mouse_handlers.on_click, self.close_dialog
+        )
+        save = functools.partial(
+            pw_console.widgets.mouse_handlers.on_click, self.save_action
+        )
 
         # Separator should have the focus mouse handler so clicking on any
         # whitespace focuses the input field.
@@ -272,7 +299,8 @@ class LogPaneSaveAsDialog(ConditionalContainer):
                 description='Cancel',
                 mouse_handler=cancel,
                 base_style=button_style,
-            ))
+            )
+        )
 
         # Two space separator
         fragments.append(separator_text)
@@ -284,7 +312,8 @@ class LogPaneSaveAsDialog(ConditionalContainer):
                 description='Save',
                 mouse_handler=save,
                 base_style=button_style,
-            ))
+            )
+        )
 
         # One space separator
         fragments.append(('', ' ', focus))

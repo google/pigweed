@@ -77,19 +77,21 @@ def to_checkbox_with_keybind_indicator(
 ):
     """Create a clickable keybind indicator with checkbox for toolbars."""
     if mouse_handler:
-        return to_keybind_indicator(key,
-                                    description,
-                                    mouse_handler,
-                                    leading_fragments=[
-                                        to_checkbox(checked, mouse_handler,
-                                                    **checkbox_kwargs)
-                                    ],
-                                    base_style=base_style)
+        return to_keybind_indicator(
+            key,
+            description,
+            mouse_handler,
+            leading_fragments=[
+                to_checkbox(checked, mouse_handler, **checkbox_kwargs)
+            ],
+            base_style=base_style,
+        )
     return to_keybind_indicator(
         key,
         description,
         leading_fragments=[to_checkbox(checked, **checkbox_kwargs)],
-        base_style=base_style)
+        base_style=base_style,
+    )
 
 
 def to_keybind_indicator(
@@ -112,7 +114,8 @@ def to_keybind_indicator(
     def append_fragment_with_base_style(frag_list, fragment) -> None:
         if mouse_handler:
             frag_list.append(
-                (base_style + fragment[0], fragment[1], mouse_handler))
+                (base_style + fragment[0], fragment[1], mouse_handler)
+            )
         else:
             frag_list.append((base_style + fragment[0], fragment[1]))
 
@@ -124,7 +127,8 @@ def to_keybind_indicator(
     # Function name
     if mouse_handler:
         fragments.append(
-            (base_style + description_style, description, mouse_handler))
+            (base_style + description_style, description, mouse_handler)
+        )
     else:
         fragments.append((base_style + description_style, description))
 
@@ -135,8 +139,9 @@ def to_keybind_indicator(
     # Separator and keybind
     if key:
         if mouse_handler:
-            fragments.append((base_style + description_style, _KEY_SEPARATOR,
-                              mouse_handler))
+            fragments.append(
+                (base_style + description_style, _KEY_SEPARATOR, mouse_handler)
+            )
             fragments.append((base_style + key_style, key, mouse_handler))
         else:
             fragments.append((base_style + description_style, _KEY_SEPARATOR))

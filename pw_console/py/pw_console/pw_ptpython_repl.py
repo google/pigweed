@@ -32,11 +32,13 @@ from prompt_toolkit.filters import (
     to_filter,
 )
 from ptpython.completer import (  # type: ignore
-    CompletePrivateAttributes, PythonCompleter,
+    CompletePrivateAttributes,
+    PythonCompleter,
 )
 import ptpython.repl  # type: ignore
 from ptpython.layout import (  # type: ignore
-    CompletionVisualisation, Dimension,
+    CompletionVisualisation,
+    Dimension,
 )
 
 import pw_console.text_formatting
@@ -56,9 +58,12 @@ def _user_input_is_a_shell_command(text: str) -> bool:
     return text.startswith('!')
 
 
-class PwPtPythonRepl(ptpython.repl.PythonRepl):  # pylint: disable=too-many-instance-attributes
+class PwPtPythonRepl(
+    ptpython.repl.PythonRepl
+):  # pylint: disable=too-many-instance-attributes
     """A ptpython repl class with changes to code execution and output related
     methods."""
+
     def __init__(
         self,
         *args,
@@ -102,7 +107,8 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):  # pylint: disable=too-many-inst
         self.show_status_bar = False
         self.show_exit_confirmation = False
         self.complete_private_attributes = (
-            CompletePrivateAttributes.IF_NO_PUBLIC)
+            CompletePrivateAttributes.IF_NO_PUBLIC
+        )
 
         # Function signature that shows args, kwargs, and types under the cursor
         # of the input window.
@@ -114,7 +120,8 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):  # pylint: disable=too-many-inst
         # Turn off the completion menu in ptpython. The CompletionsMenu in
         # ConsoleApp.root_container will handle this.
         self.completion_visualisation: CompletionVisualisation = (
-            CompletionVisualisation.NONE)
+            CompletionVisualisation.NONE
+        )
 
         # Additional state variables.
         self.repl_pane: 'Optional[ReplPane]' = None
@@ -131,7 +138,8 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):  # pylint: disable=too-many-inst
             'ptpython/layout.py#L598\n'
             '\n'
             'The installed version of ptpython may not be compatible with'
-            ' pw console; please try re-running environment setup.')
+            ' pw console; please try re-running environment setup.'
+        )
 
         try:
             # Fetch the Window's BufferControl object.
@@ -144,8 +152,12 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):  # pylint: disable=too-many-inst
             #             [create_python_input_window()] + extra_body
             #           ), ...
             ptpython_buffer_control = (
-                self.ptpython_layout.root_container.children[0].children[0].
-                children[0].content.children[0].content)
+                self.ptpython_layout.root_container.children[0]
+                .children[0]
+                .children[0]
+                .content.children[0]
+                .content
+            )
             # This should be a BufferControl instance
             if not isinstance(ptpython_buffer_control, BufferControl):
                 raise MissingPtpythonBufferControl(error_message)
@@ -169,13 +181,15 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):  # pylint: disable=too-many-inst
     def _save_result(self, formatted_text):
         """Save the last repl execution result."""
         unformatted_result = pw_console.text_formatting.remove_formatting(
-            formatted_text)
+            formatted_text
+        )
         self._last_result = unformatted_result
 
     def _save_exception(self, formatted_text):
         """Save the last repl exception."""
         unformatted_result = pw_console.text_formatting.remove_formatting(
-            formatted_text)
+            formatted_text
+        )
         self._last_exception = unformatted_result
 
     def clear_last_result(self):
@@ -225,7 +239,8 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):  # pylint: disable=too-many-inst
                 # Use ptpython formatted results:
                 formatted_result = self._format_result_output(result_object)
                 result_text = pw_console.text_formatting.remove_formatting(
-                    formatted_result)
+                    formatted_result
+                )
 
         # Job is finished, append the last result.
         self.repl_pane.append_result_to_executed_code(
@@ -240,13 +255,15 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):  # pylint: disable=too-many-inst
 
         # Rebuild output buffer.
         self.repl_pane.update_output_buffer(
-            'pw_ptpython_repl.user_code_complete_callback')
+            'pw_ptpython_repl.user_code_complete_callback'
+        )
 
         # Trigger a prompt_toolkit application redraw.
         self.repl_pane.application.application.invalidate()
 
-    async def _run_system_command(self, text, stdout_proxy,
-                                  _stdin_proxy) -> int:
+    async def _run_system_command(
+        self, text, stdout_proxy, _stdin_proxy
+    ) -> int:
         """Run a shell command and print results to the repl."""
         command = shlex.split(text)
         returncode = None
@@ -265,11 +282,13 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):  # pylint: disable=too-many-inst
             stdout_proxy.write(output)
             _SYSTEM_COMMAND_LOG.info(output.rstrip())
 
-        with subprocess.Popen(command,
-                              env=env,
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.STDOUT,
-                              errors='replace') as proc:
+        with subprocess.Popen(
+            command,
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            errors='replace',
+        ) as proc:
             # Print the command
             _SYSTEM_COMMAND_LOG.info('')
             _SYSTEM_COMMAND_LOG.info('$ %s', text)
@@ -310,7 +329,8 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):  # pylint: disable=too-many-inst
         try:
             if _user_input_is_a_shell_command(text):
                 result = await self._run_system_command(
-                    text[1:], stdout_proxy, stdin_proxy)
+                    text[1:], stdout_proxy, stdin_proxy
+                )
             else:
                 result = await self.run_and_show_expression_async(text)
         finally:
@@ -325,7 +345,7 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):  # pylint: disable=too-many-inst
         return {
             'stdout': stdout_contents,
             'stderr': stderr_contents,
-            'result': result
+            'result': result,
         }
 
     def _accept_handler(self, buff: Buffer) -> bool:
@@ -353,7 +373,8 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):  # pylint: disable=too-many-inst
             repl_input_text = ''
             # Override stdout
             temp_stdout.write(
-                'Error: Interactive help() is not compatible with this repl.')
+                'Error: Interactive help() is not compatible with this repl.'
+            )
 
         # Pop open the system command log pane for shell commands.
         if _user_input_is_a_shell_command(repl_input_text):
@@ -364,16 +385,18 @@ class PwPtPythonRepl(ptpython.repl.PythonRepl):  # pylint: disable=too-many-inst
             # This function will be executed in a separate thread.
             self._run_user_code(repl_input_text, temp_stdout, temp_stderr),
             # Using this asyncio event loop.
-            self.repl_pane.application.user_code_loop)  # type: ignore
+            self.repl_pane.application.user_code_loop,
+        )  # type: ignore
 
         # Save the input text and future object.
-        self.repl_pane.append_executed_code(repl_input_text, future,
-                                            temp_stdout,
-                                            temp_stderr)  # type: ignore
+        self.repl_pane.append_executed_code(
+            repl_input_text, future, temp_stdout, temp_stderr
+        )  # type: ignore
 
         # Run user_code_complete_callback() when done.
-        done_callback = functools.partial(self.user_code_complete_callback,
-                                          repl_input_text)
+        done_callback = functools.partial(
+            self.user_code_complete_callback, repl_input_text
+        )
         future.add_done_callback(done_callback)
 
         # Rebuild the parent ReplPane output buffer.

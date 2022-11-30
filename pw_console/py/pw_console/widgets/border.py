@@ -49,13 +49,14 @@ def create_border(
     top_border_items: List[AnyContainer] = []
     if left:
         top_border_items.append(
-            Window(width=1, height=1, char=top_left_char, style=border_style))
+            Window(width=1, height=1, char=top_left_char, style=border_style)
+        )
 
     title_text = None
     if title:
-        title_text = FormattedTextControl([
-            ('', f'{horizontal_char}{horizontal_char} {title} ')
-        ])
+        title_text = FormattedTextControl(
+            [('', f'{horizontal_char}{horizontal_char} {title} ')]
+        )
 
     top_border_items.append(
         Window(
@@ -63,49 +64,66 @@ def create_border(
             char=horizontal_char,
             # Expand width to max available space
             dont_extend_width=False,
-            style=border_style))
+            style=border_style,
+        )
+    )
     if right:
         top_border_items.append(
-            Window(width=1, height=1, char=top_right_char, style=border_style))
+            Window(width=1, height=1, char=top_right_char, style=border_style)
+        )
 
     content_items: List[AnyContainer] = []
     if left:
         content_items.append(
-            Window(width=1,
-                   height=content_height,
-                   char=vertical_char,
-                   style=border_style))
+            Window(
+                width=1,
+                height=content_height,
+                char=vertical_char,
+                style=border_style,
+            )
+        )
 
     if left_margin_columns > 0:
         content_items.append(
-            Window(width=left_margin_columns,
-                   height=content_height,
-                   char=' ',
-                   style=border_style))
+            Window(
+                width=left_margin_columns,
+                height=content_height,
+                char=' ',
+                style=border_style,
+            )
+        )
     content_items.append(content)
     if right_margin_columns > 0:
         content_items.append(
-            Window(width=right_margin_columns,
-                   height=content_height,
-                   char=' ',
-                   style=border_style))
+            Window(
+                width=right_margin_columns,
+                height=content_height,
+                char=' ',
+                style=border_style,
+            )
+        )
 
     if right:
         content_items.append(
-            Window(width=1, height=2, char=vertical_char, style=border_style))
+            Window(width=1, height=2, char=vertical_char, style=border_style)
+        )
 
     bottom_border_items: List[AnyContainer] = []
     if left:
         bottom_border_items.append(
-            Window(width=1, height=1, char=bottom_left_char))
+            Window(width=1, height=1, char=bottom_left_char)
+        )
     bottom_border_items.append(
         Window(
             char=horizontal_char,
             # Expand width to max available space
-            dont_extend_width=False))
+            dont_extend_width=False,
+        )
+    )
     if right:
         bottom_border_items.append(
-            Window(width=1, height=1, char=bottom_right_char))
+            Window(width=1, height=1, char=bottom_right_char)
+        )
 
     rows: List[AnyContainer] = []
     if top:
@@ -113,9 +131,7 @@ def create_border(
     rows.append(VSplit(content_items, height=content_height))
     if bottom:
         rows.append(
-            VSplit(bottom_border_items,
-                   height=1,
-                   padding=0,
-                   style=border_style))
+            VSplit(bottom_border_items, height=1, padding=0, style=border_style)
+        )
 
     return HSplit(rows, style=base_style)

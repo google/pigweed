@@ -30,17 +30,15 @@ from pw_console.progress_bar.progress_bar_impl import (
     TimeLeftIfNotHidden,
 )
 from pw_console.progress_bar.progress_bar_task_counter import (
-    ProgressBarTaskCounter)
+    ProgressBarTaskCounter,
+)
 from pw_console.style import generate_styles
 
 CUSTOM_FORMATTERS = [
     formatters.Label(suffix=': '),
     formatters.Rainbow(
-        formatters.Bar(start='|Pigw',
-                       end='|',
-                       sym_a='e',
-                       sym_b='d!',
-                       sym_c=' ')),
+        formatters.Bar(start='|Pigw', end='|', sym_a='e', sym_b='d!', sym_c=' ')
+    ),
     formatters.Text(' '),
     formatters.Progress(),
     formatters.Text(' ['),
@@ -67,11 +65,13 @@ class ProgressBarState:
     """Pigweed Console wide state for all repl progress bars.
 
     An instance of this class is intended to be a global variable."""
+
     tasks: Dict[str, ProgressBarTaskCounter] = field(default_factory=dict)
     instance: Optional[Union[ProgressBar, ProgressBarImpl]] = None
 
     def _install_sigint_handler(self) -> None:
         """Add ctrl-c handling if not running inside pw_console"""
+
         def handle_sigint(_signum, _frame):
             # Shut down the ProgressBar prompt_toolkit application
             prog_bar = self.instance
@@ -85,12 +85,14 @@ class ProgressBarState:
         prog_bar = self.instance
         if not prog_bar:
             if prompt_toolkit_app_running():
-                prog_bar = ProgressBarImpl(style=get_app_or_none().style,
-                                           formatters=CUSTOM_FORMATTERS)
+                prog_bar = ProgressBarImpl(
+                    style=get_app_or_none().style, formatters=CUSTOM_FORMATTERS
+                )
             else:
                 self._install_sigint_handler()
-                prog_bar = ProgressBar(style=generate_styles(),
-                                       formatters=CUSTOM_FORMATTERS)
+                prog_bar = ProgressBar(
+                    style=generate_styles(), formatters=CUSTOM_FORMATTERS
+                )
                 # Start the ProgressBar prompt_toolkit application in a separate
                 # thread.
                 prog_bar.__enter__()
@@ -103,8 +105,11 @@ class ProgressBarState:
             if task.completed or task.canceled:
                 ptc = task.prompt_toolkit_counter
                 self.tasks.pop(task_name, None)
-                if (self.instance and self.instance.counters
-                        and ptc in self.instance.counters):
+                if (
+                    self.instance
+                    and self.instance.counters
+                    and ptc in self.instance.counters
+                ):
                     self.instance.counters.remove(ptc)
 
     @property
@@ -128,5 +133,6 @@ class ProgressBarState:
         return None
 
 
-TASKS_CONTEXTVAR = (ContextVar('pw_console_progress_bar_tasks',
-                               default=ProgressBarState()))
+TASKS_CONTEXTVAR = ContextVar(
+    'pw_console_progress_bar_tasks', default=ProgressBarState()
+)

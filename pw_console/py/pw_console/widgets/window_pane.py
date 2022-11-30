@@ -45,6 +45,7 @@ class WindowPaneHSplit(HSplit):
     This overrides the write_to_screen function to save the width and height of
     the container to be rendered.
     """
+
     def __init__(self, parent_window_pane, *args, **kwargs):
         # Save a reference to the parent window pane.
         self.parent_window_pane = parent_window_pane
@@ -61,11 +62,18 @@ class WindowPaneHSplit(HSplit):
     ) -> None:
         # Save the width and height for the current render pass. This will be
         # used by the log pane to render the correct amount of log lines.
-        self.parent_window_pane.update_pane_size(write_position.width,
-                                                 write_position.height)
+        self.parent_window_pane.update_pane_size(
+            write_position.width, write_position.height
+        )
         # Continue writing content to the screen.
-        super().write_to_screen(screen, mouse_handlers, write_position,
-                                parent_style, erase_bg, z_index)
+        super().write_to_screen(
+            screen,
+            mouse_handlers,
+            write_position,
+            parent_style,
+            erase_bg,
+            z_index,
+        )
 
 
 class WindowPane(ABC):
@@ -169,7 +177,8 @@ class WindowPane(ABC):
         return []
 
     def get_window_menu_options(
-            self) -> List[Tuple[str, Union[Callable, None]]]:
+        self,
+    ) -> List[Tuple[str, Union[Callable, None]]]:
         """Return menu options for the window pane.
 
         Should return a list of tuples containing with the display text and
@@ -185,8 +194,10 @@ class WindowPane(ABC):
 
     def pane_resized(self) -> bool:
         """Return True if the current window size has changed."""
-        return (self.last_pane_width != self.current_pane_width
-                or self.last_pane_height != self.current_pane_height)
+        return (
+            self.last_pane_width != self.current_pane_width
+            or self.last_pane_height != self.current_pane_height
+        )
 
     def update_pane_size(self, width, height) -> None:
         """Save pane width and height for the current UI render pass."""
@@ -207,7 +218,8 @@ class WindowPane(ABC):
                 width=lambda: self.width,
                 style=functools.partial(pw_console.style.get_pane_style, self),
             ),
-            filter=Condition(lambda: self.show_pane))
+            filter=Condition(lambda: self.show_pane),
+        )
 
     def has_child_container(self, child_container: AnyContainer) -> bool:
         if not child_container:
@@ -220,6 +232,7 @@ class WindowPane(ABC):
 
 class FloatingWindowPane(WindowPane):
     """The Pigweed Console FloatingWindowPane class."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

@@ -42,6 +42,7 @@ class CalcPane(WindowPane):
     Both input and output fields are prompt_toolkit TextArea objects which can
     have their own options like syntax highlighting.
     """
+
     def __init__(self):
         # Call WindowPane.__init__ and set the title to 'Calculator'
         super().__init__(pane_title='Calculator')
@@ -101,14 +102,16 @@ class CalcPane(WindowPane):
                 description='Run Calculation',  # Button name
                 # Function to run when clicked.
                 mouse_handler=self.run_calculation,
-            ))
+            )
+        )
         self.bottom_toolbar.add_button(
             ToolbarButton(
                 key='Ctrl-c',  # Key binding for this function
                 description='Copy Output',  # Button name
                 # Function to run when clicked.
                 mouse_handler=self.copy_all_output,
-            ))
+            )
+        )
 
         # self.container is the root container that contains objects to be
         # rendered in the UI, one on top of the other.
@@ -142,15 +145,15 @@ class CalcPane(WindowPane):
         prefs.register_named_key_function(
             'calc-pane.copy-selected-text',
             # default bindings
-            ['c-c'])
+            ['c-c'],
+        )
 
         # For setting additional keybindings to the output_field.
         key_bindings = KeyBindings()
 
         # Map the 'calc-pane.copy-selected-text' function keybind to the
         # _copy_all_output function below. This will set
-        @prefs.register_keybinding('calc-pane.copy-selected-text',
-                                   key_bindings)
+        @prefs.register_keybinding('calc-pane.copy-selected-text', key_bindings)
         def _copy_all_output(_event: KeyPressEvent) -> None:
             """Copy selected text from the output buffer."""
             self.copy_selected_output()
@@ -176,7 +179,8 @@ class CalcPane(WindowPane):
             output = "\n\nIn:  {}\nOut: {}".format(
                 self.input_field.text,
                 # NOTE: Don't use 'eval' in real code (this is just an example)
-                eval(self.input_field.text))  # pylint: disable=eval-used
+                eval(self.input_field.text),  # pylint: disable=eval-used
+            )
         except BaseException as exception:  # pylint: disable=broad-except
             output = "\n\n{}".format(exception)
 
@@ -186,7 +190,8 @@ class CalcPane(WindowPane):
         # Update the output_field with the new contents and move the
         # cursor_position to the end.
         self.output_field.buffer.document = Document(
-            text=new_text, cursor_position=len(new_text))
+            text=new_text, cursor_position=len(new_text)
+        )
 
     def copy_selected_output(self):
         """Copy highlighted text in the output_field to the system clipboard."""
@@ -196,4 +201,5 @@ class CalcPane(WindowPane):
     def copy_all_output(self):
         """Copy all text in the output_field to the system clipboard."""
         self.application.application.clipboard.set_text(
-            self.output_field.buffer.text)
+            self.output_field.buffer.text
+        )

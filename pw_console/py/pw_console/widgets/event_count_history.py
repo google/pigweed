@@ -84,8 +84,8 @@ class EventCountHistory:
 
     def last_count_with_units(self) -> str:
         return '{:.3f} [{}]'.format(
-            self._last_count * self.display_unit_factor,
-            self.display_unit_title)
+            self._last_count * self.display_unit_factor, self.display_unit_title
+        )
 
     def __repr__(self) -> str:
         sparkline = ''
@@ -96,9 +96,9 @@ class EventCountHistory:
     def __pt_formatted_text__(self):
         return [('', self.__repr__())]
 
-    def sparkline(self,
-                  min_value: int = 0,
-                  max_value: Optional[int] = None) -> str:
+    def sparkline(
+        self, min_value: int = 0, max_value: Optional[int] = None
+    ) -> str:
         msg = ''.rjust(self.history_limit)
         if len(self.history) == 0:
             return msg
@@ -112,8 +112,10 @@ class EventCountHistory:
         msg = ''
         for i in self.history:
             # (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
-            index = int((((1.0 * i) - minimum) / max_minus_min) *
-                        len(self.scale_characters))
+            index = int(
+                (((1.0 * i) - minimum) / max_minus_min)
+                * len(self.scale_characters)
+            )
             if index >= len(self.scale_characters):
                 index = len(self.scale_characters) - 1
             msg += self.scale_characters[index]

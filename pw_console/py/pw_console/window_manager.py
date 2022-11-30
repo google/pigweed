@@ -48,8 +48,10 @@ _WINDOW_SPLIT_ADJUST = 1
 
 class WindowListResizeHandle(FormattedTextControl):
     """Button to initiate window list resize drag events."""
-    def __init__(self, window_manager, window_list: Any, *args,
-                 **kwargs) -> None:
+
+    def __init__(
+        self, window_manager, window_list: Any, *args, **kwargs
+    ) -> None:
         self.window_manager = window_manager
         self.window_list = window_list
         super().__init__(*args, **kwargs)
@@ -73,6 +75,7 @@ class WindowManagerVSplit(VSplit):
     of the container for the current render pass. It also handles overriding
     mouse handlers for triggering window resize adjustments.
     """
+
     def __init__(self, parent_window_manager, *args, **kwargs):
         # Save a reference to the parent window pane.
         self.parent_window_manager = parent_window_manager
@@ -92,7 +95,8 @@ class WindowManagerVSplit(VSplit):
         if self.parent_window_manager.resize_mode:
             # Ignore future mouse_handler updates.
             new_mouse_handlers = (
-                pw_console.widgets.mouse_handlers.EmptyMouseHandler())
+                pw_console.widgets.mouse_handlers.EmptyMouseHandler()
+            )
             # Set existing mouse_handlers to the parent_window_managers's
             # mouse_handler. This will handle triggering resize events.
             mouse_handlers.set_mouse_handler_for_range(
@@ -100,14 +104,22 @@ class WindowManagerVSplit(VSplit):
                 write_position.xpos + write_position.width,
                 write_position.ypos,
                 write_position.ypos + write_position.height,
-                self.parent_window_manager.mouse_handler)
+                self.parent_window_manager.mouse_handler,
+            )
 
         # Save the width and height for the current render pass.
         self.parent_window_manager.update_window_manager_size(
-            write_position.width, write_position.height)
+            write_position.width, write_position.height
+        )
         # Continue writing content to the screen.
-        super().write_to_screen(screen, new_mouse_handlers, write_position,
-                                parent_style, erase_bg, z_index)
+        super().write_to_screen(
+            screen,
+            new_mouse_handlers,
+            write_position,
+            parent_style,
+            erase_bg,
+            z_index,
+        )
 
 
 class WindowManagerHSplit(HSplit):
@@ -117,6 +129,7 @@ class WindowManagerHSplit(HSplit):
     of the container for the current render pass. It also handles overriding
     mouse handlers for triggering window resize adjustments.
     """
+
     def __init__(self, parent_window_manager, *args, **kwargs):
         # Save a reference to the parent window pane.
         self.parent_window_manager = parent_window_manager
@@ -136,7 +149,8 @@ class WindowManagerHSplit(HSplit):
         if self.parent_window_manager.resize_mode:
             # Ignore future mouse_handler updates.
             new_mouse_handlers = (
-                pw_console.widgets.mouse_handlers.EmptyMouseHandler())
+                pw_console.widgets.mouse_handlers.EmptyMouseHandler()
+            )
             # Set existing mouse_handlers to the parent_window_managers's
             # mouse_handler. This will handle triggering resize events.
             mouse_handlers.set_mouse_handler_for_range(
@@ -144,14 +158,22 @@ class WindowManagerHSplit(HSplit):
                 write_position.xpos + write_position.width,
                 write_position.ypos,
                 write_position.ypos + write_position.height,
-                self.parent_window_manager.mouse_handler)
+                self.parent_window_manager.mouse_handler,
+            )
 
         # Save the width and height for the current render pass.
         self.parent_window_manager.update_window_manager_size(
-            write_position.width, write_position.height)
+            write_position.width, write_position.height
+        )
         # Continue writing content to the screen.
-        super().write_to_screen(screen, new_mouse_handlers, write_position,
-                                parent_style, erase_bg, z_index)
+        super().write_to_screen(
+            screen,
+            new_mouse_handlers,
+            write_position,
+            parent_style,
+            erase_bg,
+            z_index,
+        )
 
 
 class WindowManager:
@@ -193,13 +215,16 @@ class WindowManager:
             self.last_window_manager_height = self.current_window_manager_height
             self.current_window_manager_height = height
 
-        if (self.current_window_manager_width != self.last_window_manager_width
-                or self.current_window_manager_height !=
-                self.last_window_manager_height):
+        if (
+            self.current_window_manager_width != self.last_window_manager_width
+            or self.current_window_manager_height
+            != self.last_window_manager_height
+        ):
             self.rebalance_window_list_sizes()
 
-    def _set_window_list_sizes(self, new_heights: List[int],
-                               new_widths: List[int]) -> None:
+    def _set_window_list_sizes(
+        self, new_heights: List[int], new_widths: List[int]
+    ) -> None:
         for window_list in self.window_lists:
             window_list.height = Dimension(preferred=new_heights[0])
             new_heights = new_heights[1:]
@@ -221,9 +246,7 @@ class WindowManager:
         old_height_total = max(sum(old_heights), 1)
         old_width_total = max(sum(old_widths), 1)
 
-        height_percentages = [
-            value / old_height_total for value in old_heights
-        ]
+        height_percentages = [value / old_height_total for value in old_heights]
         width_percentages = [value / old_width_total for value in old_widths]
 
         new_heights = [
@@ -240,9 +263,7 @@ class WindowManager:
                 self.current_window_manager_height for h in new_heights
             ]
         else:
-            new_widths = [
-                self.current_window_manager_width for h in new_widths
-            ]
+            new_widths = [self.current_window_manager_width for h in new_widths]
 
         self._set_window_list_sizes(new_heights, new_widths)
 
@@ -309,7 +330,8 @@ class WindowManager:
 
     def delete_empty_window_lists(self):
         empty_lists = [
-            window_list for window_list in self.window_lists
+            window_list
+            for window_list in self.window_lists
             if window_list.empty()
         ]
         for empty_list in empty_lists:
@@ -348,7 +370,8 @@ class WindowManager:
                         separator_padding,
                         Window(
                             content=WindowListResizeHandle(
-                                self, window_list, "║\n║\n║"),
+                                self, window_list, "║\n║\n║"
+                            ),
                             char='│',
                             width=1,
                             dont_extend_height=True,
@@ -382,7 +405,8 @@ class WindowManager:
     def update_root_container_body(self):
         # Replace the root MenuContainer body with the new split.
         self.application.root_container.container.content.children[
-            1] = self.create_root_container()
+            1
+        ] = self.create_root_container()
 
     def _get_active_window_list_and_pane(self):
         active_pane = None
@@ -405,8 +429,10 @@ class WindowManager:
         return index
 
     def run_action_on_active_pane(self, function_name):
-        _active_window_list, active_pane = (
-            self._get_active_window_list_and_pane())
+        (
+            _active_window_list,
+            active_pane,
+        ) = self._get_active_window_list_and_pane()
         if not hasattr(active_pane, function_name):
             return
         method_to_call = getattr(active_pane, function_name)
@@ -419,8 +445,10 @@ class WindowManager:
 
     def focus_next_pane(self, reverse_order=False) -> None:
         """Focus on the next visible window pane or tab."""
-        active_window_list, active_pane = (
-            self._get_active_window_list_and_pane())
+        (
+            active_window_list,
+            active_pane,
+        ) = self._get_active_window_list_and_pane()
         if active_window_list is None:
             return
 
@@ -442,15 +470,17 @@ class WindowManager:
         # Action: Switch to the first pane of the next window list.
         if next_pane_index >= pane_count or next_pane_index < 0:
             # Get the next window_list
-            next_window_list_index = ((active_window_list_index + increment) %
-                                      window_list_count)
+            next_window_list_index = (
+                active_window_list_index + increment
+            ) % window_list_count
             next_window_list = self.window_lists[next_window_list_index]
 
             # If tabbed window mode is enabled, switch to the first tab.
             if next_window_list.display_mode == DisplayMode.TABBED:
                 if reverse_order:
                     next_window_list.switch_to_tab(
-                        len(next_window_list.active_panes) - 1)
+                        len(next_window_list.active_panes) - 1
+                    )
                 else:
                     next_window_list.switch_to_tab(0)
                 return
@@ -484,8 +514,10 @@ class WindowManager:
         return
 
     def move_pane_left(self):
-        active_window_list, active_pane = (
-            self._get_active_window_list_and_pane())
+        (
+            active_window_list,
+            active_pane,
+        ) = self._get_active_window_list_and_pane()
         if not active_window_list:
             return
 
@@ -512,8 +544,10 @@ class WindowManager:
         self.delete_empty_window_lists()
 
     def move_pane_right(self):
-        active_window_list, active_pane = (
-            self._get_active_window_list_and_pane())
+        (
+            active_window_list,
+            active_pane,
+        ) = self._get_active_window_list_and_pane()
         if not active_window_list:
             return
 
@@ -538,32 +572,40 @@ class WindowManager:
         self.delete_empty_window_lists()
 
     def move_pane_up(self):
-        active_window_list, _active_pane = (
-            self._get_active_window_list_and_pane())
+        (
+            active_window_list,
+            _active_pane,
+        ) = self._get_active_window_list_and_pane()
         if not active_window_list:
             return
 
         active_window_list.move_pane_up()
 
     def move_pane_down(self):
-        active_window_list, _active_pane = (
-            self._get_active_window_list_and_pane())
+        (
+            active_window_list,
+            _active_pane,
+        ) = self._get_active_window_list_and_pane()
         if not active_window_list:
             return
 
         active_window_list.move_pane_down()
 
     def shrink_pane(self):
-        active_window_list, _active_pane = (
-            self._get_active_window_list_and_pane())
+        (
+            active_window_list,
+            _active_pane,
+        ) = self._get_active_window_list_and_pane()
         if not active_window_list:
             return
 
         active_window_list.shrink_pane()
 
     def enlarge_pane(self):
-        active_window_list, _active_pane = (
-            self._get_active_window_list_and_pane())
+        (
+            active_window_list,
+            _active_pane,
+        ) = self._get_active_window_list_and_pane()
         if not active_window_list:
             return
 
@@ -573,16 +615,20 @@ class WindowManager:
         if len(self.window_lists) < 2:
             return
 
-        active_window_list, _active_pane = (
-            self._get_active_window_list_and_pane())
+        (
+            active_window_list,
+            _active_pane,
+        ) = self._get_active_window_list_and_pane()
         if not active_window_list:
             return
 
         self.adjust_split_size(active_window_list, -_WINDOW_SPLIT_ADJUST)
 
     def enlarge_split(self):
-        active_window_list, _active_pane = (
-            self._get_active_window_list_and_pane())
+        (
+            active_window_list,
+            _active_pane,
+        ) = self._get_active_window_list_and_pane()
         if not active_window_list:
             return
 
@@ -599,20 +645,23 @@ class WindowManager:
         available_width = self.current_window_manager_width
         old_heights = [w.height.preferred for w in self.window_lists]
         old_widths = [w.width.preferred for w in self.window_lists]
-        new_heights = [int(available_height / len(old_heights))
-                       ] * len(old_heights)
+        new_heights = [int(available_height / len(old_heights))] * len(
+            old_heights
+        )
         new_widths = [int(available_width / len(old_widths))] * len(old_widths)
 
         self._set_window_list_sizes(new_heights, new_widths)
 
     def _get_next_window_list_for_resizing(
-            self, window_list: WindowList) -> Optional[WindowList]:
+        self, window_list: WindowList
+    ) -> Optional[WindowList]:
         window_list_index = self.window_list_index(window_list)
         if window_list_index is None:
             return None
 
-        next_window_list_index = ((window_list_index + 1) %
-                                  len(self.window_lists))
+        next_window_list_index = (window_list_index + 1) % len(
+            self.window_lists
+        )
 
         # Use the previous window if we are on the last split
         if window_list_index == len(self.window_lists) - 1:
@@ -621,9 +670,9 @@ class WindowManager:
         next_window_list = self.window_lists[next_window_list_index]
         return next_window_list
 
-    def adjust_split_size(self,
-                          window_list: WindowList,
-                          diff: int = _WINDOW_SPLIT_ADJUST) -> None:
+    def adjust_split_size(
+        self, window_list: WindowList, diff: int = _WINDOW_SPLIT_ADJUST
+    ) -> None:
         """Increase or decrease a given window_list's vertical split width."""
         # No need to resize if only one split.
         if len(self.window_lists) < 2:
@@ -670,8 +719,7 @@ class WindowManager:
 
     def toggle_pane(self, pane):
         """Toggle a pane on or off."""
-        window_list, _pane_index = (
-            self._find_window_list_and_pane_index(pane))
+        window_list, _pane_index = self._find_window_list_and_pane_index(pane)
 
         # Don't hide the window if tabbed mode is enabled. Switching to a
         # separate tab is preffered.
@@ -695,8 +743,9 @@ class WindowManager:
     def check_for_all_hidden_panes_and_unhide(self) -> None:
         """Scan for window_lists containing only hidden panes."""
         for window_list in self.window_lists:
-            all_hidden = all(not pane.show_pane
-                             for pane in window_list.active_panes)
+            all_hidden = all(
+                not pane.show_pane for pane in window_list.active_panes
+            )
             if all_hidden:
                 # Unhide the first pane
                 self.toggle_pane(window_list.active_panes[0])
@@ -713,7 +762,8 @@ class WindowManager:
     def active_panes(self):
         """Return all active panes from all window lists."""
         return chain.from_iterable(
-            map(operator.attrgetter('active_panes'), self.window_lists))
+            map(operator.attrgetter('active_panes'), self.window_lists)
+        )
 
     def start_resize_pane(self, pane):
         window_list, pane_index = self._find_window_list_and_pane_index(pane)
@@ -723,7 +773,8 @@ class WindowManager:
         if self.resize_target_window_list_index is None:
             return
         target_window_list = self.window_lists[
-            self.resize_target_window_list_index]
+            self.resize_target_window_list_index
+        ]
 
         diff = ypos - self.resize_current_row
         if self.vertical_window_list_spliting():
@@ -739,8 +790,10 @@ class WindowManager:
         """MouseHandler used when resize_mode == True."""
         mouse_position = mouse_event.position
 
-        if (mouse_event.event_type == MouseEventType.MOUSE_MOVE
-                and mouse_event.button == MouseButton.LEFT):
+        if (
+            mouse_event.event_type == MouseEventType.MOUSE_MOVE
+            and mouse_event.button == MouseButton.LEFT
+        ):
             self.mouse_resize(mouse_position.x, mouse_position.y)
         elif mouse_event.event_type == MouseEventType.MOUSE_UP:
             self.stop_resize()
@@ -840,8 +893,9 @@ class WindowManager:
         return parent_window_list, pane_index
 
     def remove_pane(self, existing_pane: Any):
-        window_list, _pane_index = (
-            self._find_window_list_and_pane_index(existing_pane))
+        window_list, _pane_index = self._find_window_list_and_pane_index(
+            existing_pane
+        )
         if window_list:
             window_list.remove_pane(existing_pane)
             # Reset focus if this list is empty
@@ -853,7 +907,8 @@ class WindowManager:
             window_list.reset_pane_sizes()
 
     def _remove_panes_from_layout(
-            self, pane_titles: Iterable[str]) -> Dict[str, Any]:
+        self, pane_titles: Iterable[str]
+    ) -> Dict[str, Any]:
         # Gather pane objects and remove them from the window layout.
         collected_panes = {}
 
@@ -862,11 +917,14 @@ class WindowManager:
             # iterating.
             for pane in copy.copy(window_list.active_panes):
                 if pane.pane_title() in pane_titles:
-                    collected_panes[pane.pane_title()] = (
-                        window_list.remove_pane_no_checks(pane))
+                    collected_panes[
+                        pane.pane_title()
+                    ] = window_list.remove_pane_no_checks(pane)
         return collected_panes
 
-    def _set_pane_options(self, pane, options: dict) -> None:  # pylint: disable=no-self-use
+    def _set_pane_options(  # pylint: disable=no-self-use
+        self, pane, options: dict
+    ) -> None:
         if options.get('hidden', False):
             # Hide this pane
             pane.show_pane = False
@@ -884,16 +942,19 @@ class WindowManager:
                 mode = DisplayMode.TABBED
             self.window_lists[column_index].set_display_mode(mode)
 
-    def _create_new_log_pane_with_loggers(self, window_title, window_options,
-                                          existing_pane_titles) -> LogPane:
+    def _create_new_log_pane_with_loggers(
+        self, window_title, window_options, existing_pane_titles
+    ) -> LogPane:
         if 'loggers' not in window_options:
             error_unknown_window(window_title, existing_pane_titles)
 
-        new_pane = LogPane(application=self.application,
-                           pane_title=window_title)
+        new_pane = LogPane(
+            application=self.application, pane_title=window_title
+        )
         # Add logger handlers
-        for logger_name, logger_options in window_options.get('loggers',
-                                                              {}).items():
+        for logger_name, logger_options in window_options.get(
+            'loggers', {}
+        ).items():
 
             log_level_name = logger_options.get('level', None)
             new_pane.add_log_handler(logger_name, level_name=log_level_name)
@@ -908,14 +969,17 @@ class WindowManager:
         unique_titles = prefs.unique_window_titles
         collected_panes = self._remove_panes_from_layout(unique_titles)
         existing_pane_titles = [
-            p.pane_title() for p in collected_panes.values()
+            p.pane_title()
+            for p in collected_panes.values()
             if isinstance(p, LogPane)
         ]
 
         # Keep track of original non-duplicated pane titles
         already_added_panes = []
 
-        for column_index, column in enumerate(prefs.windows.items()):  # pylint: disable=too-many-nested-blocks
+        for column_index, column in enumerate(
+            prefs.windows.items()
+        ):  # pylint: disable=too-many-nested-blocks
             _column_type, windows = column
             # Add a new window_list if needed
             if column_index >= len(self.window_lists):
@@ -934,11 +998,14 @@ class WindowManager:
 
                 # Check if this pane is brand new, ready to be added, or should
                 # be duplicated.
-                if (window_title not in already_added_panes
-                        and window_title not in collected_panes):
+                if (
+                    window_title not in already_added_panes
+                    and window_title not in collected_panes
+                ):
                     # New pane entirely
                     new_pane = self._create_new_log_pane_with_loggers(
-                        window_title, window_options, existing_pane_titles)
+                        window_title, window_options, existing_pane_titles
+                    )
 
                 elif window_title not in already_added_panes:
                     # First time adding this pane
@@ -956,8 +1023,7 @@ class WindowManager:
                     # Set window size and visibility
                     self._set_pane_options(new_pane, window_options)
                     # Add the new pane
-                    self.window_lists[column_index].add_pane_no_checks(
-                        new_pane)
+                    self.window_lists[column_index].add_pane_no_checks(new_pane)
                     # Apply log pane options
                     if isinstance(new_pane, LogPane):
                         new_pane.apply_filters_from_config(window_options)
@@ -982,24 +1048,29 @@ class WindowManager:
         root_menu_items = []
         for window_list_index, window_list in enumerate(self.window_lists):
             menu_items = []
+            checkbox = pw_console.widgets.checkbox
             menu_items.append(
                 MenuItem(
                     'Column {index} View Modes'.format(
-                        index=window_list_index + 1),
+                        index=window_list_index + 1
+                    ),
                     children=[
                         MenuItem(
                             '{check} {display_mode} Windows'.format(
                                 display_mode=display_mode.value,
-                                check=pw_console.widgets.checkbox.
-                                to_checkbox_text(
+                                check=checkbox.to_checkbox_text(
                                     window_list.display_mode == display_mode,
                                     end='',
-                                )),
+                                ),
+                            ),
                             handler=functools.partial(
-                                window_list.set_display_mode, display_mode),
-                        ) for display_mode in DisplayMode
+                                window_list.set_display_mode, display_mode
+                            ),
+                        )
+                        for display_mode in DisplayMode
                     ],
-                ))
+                )
+            )
             menu_items.extend(
                 MenuItem(
                     '{index}: {title}'.format(
@@ -1009,18 +1080,25 @@ class WindowManager:
                     children=[
                         MenuItem(
                             '{check} Show/Hide Window'.format(
-                                check=pw_console.widgets.checkbox.
-                                to_checkbox_text(pane.show_pane, end='')),
+                                check=checkbox.to_checkbox_text(
+                                    pane.show_pane, end=''
+                                )
+                            ),
                             handler=functools.partial(self.toggle_pane, pane),
                         ),
-                    ] + [
-                        MenuItem(text,
-                                 handler=functools.partial(
-                                     self.application.run_pane_menu_option,
-                                     handler))
+                    ]
+                    + [
+                        MenuItem(
+                            text,
+                            handler=functools.partial(
+                                self.application.run_pane_menu_option, handler
+                            ),
+                        )
                         for text, handler in pane.get_window_menu_options()
                     ],
-                ) for pane_index, pane in enumerate(window_list.active_panes))
+                )
+                for pane_index, pane in enumerate(window_list.active_panes)
+            )
             if window_list_index + 1 < len(self.window_lists):
                 menu_items.append(MenuItem('-'))
             root_menu_items.extend(menu_items)

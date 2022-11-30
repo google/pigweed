@@ -32,55 +32,58 @@ from pw_console.log_filter import (
 
 class TestLogFilter(unittest.TestCase):
     """Tests for LogFilter."""
+
     def setUp(self):
         self.maxDiff = None  # pylint: disable=invalid-name
 
     # pylint: disable=anomalous-backslash-in-string
-    @parameterized.expand([
-        (
-            'raw string',
-            SearchMatcher.STRING,
-            'f(x)',
-            'f\(x\)',
-            re.IGNORECASE,
-        ),
-        (
-            'simple regex',
-            SearchMatcher.REGEX,
-            'f(x)',
-            'f(x)',
-            re.IGNORECASE,
-        ),
-        (
-            'regex with case sensitivity',
-            SearchMatcher.REGEX,
-            'f(X)',
-            'f(X)',
-            re.RegexFlag(0),
-        ),
-        (
-            'regex with error',
-            SearchMatcher.REGEX,
-            'f of (x', # Un-terminated open paren
-            'f of (x',
-            re.IGNORECASE,
-            True,  # fails_validation
-        ),
-        (
-            'simple fuzzy',
-            SearchMatcher.FUZZY,
-            'f x y',
-            '(f)(.*?)(x)(.*?)(y)',
-            re.IGNORECASE,
-        ),
-        (
-            'fuzzy with case sensitivity',
-            SearchMatcher.FUZZY,
-            'f X y',
-            '(f)(.*?)(X)(.*?)(y)',
-            re.RegexFlag(0),
-        ),
-    ]) # yapf: disable
+    @parameterized.expand(
+        [
+            (
+                'raw string',
+                SearchMatcher.STRING,
+                'f(x)',
+                'f\(x\)',
+                re.IGNORECASE,
+            ),
+            (
+                'simple regex',
+                SearchMatcher.REGEX,
+                'f(x)',
+                'f(x)',
+                re.IGNORECASE,
+            ),
+            (
+                'regex with case sensitivity',
+                SearchMatcher.REGEX,
+                'f(X)',
+                'f(X)',
+                re.RegexFlag(0),
+            ),
+            (
+                'regex with error',
+                SearchMatcher.REGEX,
+                'f of (x',  # Un-terminated open paren
+                'f of (x',
+                re.IGNORECASE,
+                True,  # fails_validation
+            ),
+            (
+                'simple fuzzy',
+                SearchMatcher.FUZZY,
+                'f x y',
+                '(f)(.*?)(x)(.*?)(y)',
+                re.IGNORECASE,
+            ),
+            (
+                'fuzzy with case sensitivity',
+                SearchMatcher.FUZZY,
+                'f X y',
+                '(f)(.*?)(X)(.*?)(y)',
+                re.RegexFlag(0),
+            ),
+        ]
+    )  # yapf: disable
     def test_preprocess_search_regex(
         self,
         _name,
@@ -91,15 +94,17 @@ class TestLogFilter(unittest.TestCase):
         should_fail_validation=False,
     ) -> None:
         """Test preprocess_search_regex returns the expected regex settings."""
-        result_text, re_flag = preprocess_search_regex(input_text,
-                                                       input_matcher)
+        result_text, re_flag = preprocess_search_regex(
+            input_text, input_matcher
+        )
         self.assertEqual(expected_regex, result_text)
         self.assertEqual(expected_re_flag, re_flag)
 
         if should_fail_validation:
             document = Document(text=input_text)
-            with self.assertRaisesRegex(ValidationError,
-                                        r'Regex Error.*at position [0-9]+'):
+            with self.assertRaisesRegex(
+                ValidationError, r'Regex Error.*at position [0-9]+'
+            ):
                 RegexValidator().validate(document)
 
     def _create_logs(self, log_messages):
@@ -110,76 +115,90 @@ class TestLogFilter(unittest.TestCase):
 
         return log_context
 
-    @parameterized.expand([
-        (
-            'simple fuzzy',
-            SearchMatcher.FUZZY,
-            'log item',
-            [
-                ('Log some item', {'planet': 'Jupiter'}),
-                ('Log another item', {'planet': 'Earth'}),
-                ('Some exception', {'planet': 'Earth'}),
-            ],
-            [
-                'Log some item',
-                'Log another item',
-            ],
-            None,  # field
-            False,  # invert
-        ),
-        (
-            'simple fuzzy inverted',
-            SearchMatcher.FUZZY,
-            'log item',
-            [
-                ('Log some item', dict()),
-                ('Log another item', dict()),
-                ('Some exception', dict()),
-            ],
-            [
-                'Some exception',
-            ],
-            None,  # field
-            True,  # invert
-        ),
-        (
-            'regex with field',
-            SearchMatcher.REGEX,
-            'earth',
-            [
-                ('Log some item',
-                 dict(extra_metadata_fields={'planet': 'Jupiter'})),
-                ('Log another item',
-                 dict(extra_metadata_fields={'planet': 'Earth'})),
-                ('Some exception',
-                 dict(extra_metadata_fields={'planet': 'Earth'})),
-            ],
-            [
-                'Log another item',
-                'Some exception',
-            ],
-            'planet',  # field
-            False,  # invert
-        ),
-        (
-            'regex with field inverted',
-            SearchMatcher.REGEX,
-            'earth',
-            [
-                ('Log some item',
-                 dict(extra_metadata_fields={'planet': 'Jupiter'})),
-                ('Log another item',
-                 dict(extra_metadata_fields={'planet': 'Earth'})),
-                ('Some exception',
-                 dict(extra_metadata_fields={'planet': 'Earth'})),
-            ],
-            [
-                'Log some item',
-            ],
-            'planet',  # field
-            True,  # invert
-        ),
-    ]) # yapf: disable
+    @parameterized.expand(
+        [
+            (
+                'simple fuzzy',
+                SearchMatcher.FUZZY,
+                'log item',
+                [
+                    ('Log some item', {'planet': 'Jupiter'}),
+                    ('Log another item', {'planet': 'Earth'}),
+                    ('Some exception', {'planet': 'Earth'}),
+                ],
+                [
+                    'Log some item',
+                    'Log another item',
+                ],
+                None,  # field
+                False,  # invert
+            ),
+            (
+                'simple fuzzy inverted',
+                SearchMatcher.FUZZY,
+                'log item',
+                [
+                    ('Log some item', dict()),
+                    ('Log another item', dict()),
+                    ('Some exception', dict()),
+                ],
+                [
+                    'Some exception',
+                ],
+                None,  # field
+                True,  # invert
+            ),
+            (
+                'regex with field',
+                SearchMatcher.REGEX,
+                'earth',
+                [
+                    (
+                        'Log some item',
+                        dict(extra_metadata_fields={'planet': 'Jupiter'}),
+                    ),
+                    (
+                        'Log another item',
+                        dict(extra_metadata_fields={'planet': 'Earth'}),
+                    ),
+                    (
+                        'Some exception',
+                        dict(extra_metadata_fields={'planet': 'Earth'}),
+                    ),
+                ],
+                [
+                    'Log another item',
+                    'Some exception',
+                ],
+                'planet',  # field
+                False,  # invert
+            ),
+            (
+                'regex with field inverted',
+                SearchMatcher.REGEX,
+                'earth',
+                [
+                    (
+                        'Log some item',
+                        dict(extra_metadata_fields={'planet': 'Jupiter'}),
+                    ),
+                    (
+                        'Log another item',
+                        dict(extra_metadata_fields={'planet': 'Earth'}),
+                    ),
+                    (
+                        'Some exception',
+                        dict(extra_metadata_fields={'planet': 'Earth'}),
+                    ),
+                ],
+                [
+                    'Log some item',
+                ],
+                'planet',  # field
+                True,  # invert
+            ),
+        ]
+    )  # yapf: disable
     def test_log_filter_matches(
         self,
         _name,
@@ -191,8 +210,9 @@ class TestLogFilter(unittest.TestCase):
         invert=False,
     ) -> None:
         """Test log filter matches expected lines."""
-        result_text, re_flag = preprocess_search_regex(input_text,
-                                                       input_matcher)
+        result_text, re_flag = preprocess_search_regex(
+            input_text, input_matcher
+        )
         log_filter = LogFilter(
             regex=re.compile(result_text, re_flag),
             input_text=input_text,
@@ -205,7 +225,8 @@ class TestLogFilter(unittest.TestCase):
 
         for record in logs.records:
             if log_filter.matches(
-                    LogLine(record, record.message, record.message)):
+                LogLine(record, record.message, record.message)
+            ):
                 matched_lines.append(record.message)
 
         self.assertEqual(expected_matched_lines, matched_lines)

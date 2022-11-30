@@ -19,6 +19,7 @@ from unittest.mock import MagicMock
 
 from prompt_toolkit.application import create_app_session
 from prompt_toolkit.output import ColorDepth
+
 # inclusive-language: ignore
 from prompt_toolkit.output import DummyOutput as FakeOutput
 
@@ -29,18 +30,16 @@ from pw_console.window_list import _WINDOW_HEIGHT_ADJUST, DisplayMode
 
 
 def _create_console_app(logger_count=2):
-    prefs = ConsolePrefs(project_file=False,
-                         project_user_file=False,
-                         user_file=False)
+    prefs = ConsolePrefs(
+        project_file=False, project_user_file=False, user_file=False
+    )
     prefs.set_code_theme('default')
     console_app = ConsoleApp(color_depth=ColorDepth.DEPTH_8_BIT, prefs=prefs)
     console_app.focus_on_container = MagicMock()
 
     loggers = {}
     for i in range(logger_count):
-        loggers['Log{}'.format(i)] = [
-            logging.getLogger('test_log{}'.format(i))
-        ]
+        loggers['Log{}'.format(i)] = [logging.getLogger('test_log{}'.format(i))]
     for window_title, logger_instances in loggers.items():
         console_app.add_log_handler(window_title, logger_instances)
     return console_app
@@ -53,8 +52,9 @@ _DEFAULT_WINDOW_HEIGHT = 10
 
 
 def _window_list_widths(window_manager):
-    window_manager.update_window_manager_size(_WINDOW_MANAGER_WIDTH,
-                                              _WINDOW_MANAGER_HEIGHT)
+    window_manager.update_window_manager_size(
+        _WINDOW_MANAGER_WIDTH, _WINDOW_MANAGER_HEIGHT
+    )
 
     return [
         window_list.width.preferred
@@ -63,8 +63,9 @@ def _window_list_widths(window_manager):
 
 
 def _window_list_heights(window_manager):
-    window_manager.update_window_manager_size(_WINDOW_MANAGER_WIDTH,
-                                              _WINDOW_MANAGER_HEIGHT)
+    window_manager.update_window_manager_size(
+        _WINDOW_MANAGER_WIDTH, _WINDOW_MANAGER_HEIGHT
+    )
 
     return [
         window_list.height.preferred
@@ -73,8 +74,9 @@ def _window_list_heights(window_manager):
 
 
 def _window_pane_widths(window_manager, window_list_index=0):
-    window_manager.update_window_manager_size(_WINDOW_MANAGER_WIDTH,
-                                              _WINDOW_MANAGER_HEIGHT)
+    window_manager.update_window_manager_size(
+        _WINDOW_MANAGER_WIDTH, _WINDOW_MANAGER_HEIGHT
+    )
 
     return [
         pane.width.preferred
@@ -83,8 +85,9 @@ def _window_pane_widths(window_manager, window_list_index=0):
 
 
 def _window_pane_heights(window_manager, window_list_index=0):
-    window_manager.update_window_manager_size(_WINDOW_MANAGER_WIDTH,
-                                              _WINDOW_MANAGER_HEIGHT)
+    window_manager.update_window_manager_size(
+        _WINDOW_MANAGER_WIDTH, _WINDOW_MANAGER_HEIGHT
+    )
 
     return [
         pane.height.preferred
@@ -100,10 +103,13 @@ def _window_pane_counts(window_manager):
 
 
 def window_pane_titles(window_manager):
-    return [[
-        pane.pane_title() + ' - ' + pane.pane_subtitle()
-        for pane in window_list.active_panes
-    ] for window_list in window_manager.window_lists]
+    return [
+        [
+            pane.pane_title() + ' - ' + pane.pane_subtitle()
+            for pane in window_list.active_panes
+        ]
+        for window_list in window_manager.window_lists
+    ]
 
 
 def target_list_and_pane(window_manager, list_index, pane_index):
@@ -112,18 +118,18 @@ def target_list_and_pane(window_manager, list_index, pane_index):
     pane = window_manager.window_lists[list_index].active_panes[pane_index]
     # If the pane is in focus it will be visible.
     pane.show_pane = True
-    window_manager._get_active_window_list_and_pane = (
-        MagicMock(  # type: ignore
-            return_value=(
-                window_manager.window_lists[list_index],
-                window_manager.window_lists[list_index].
-                active_panes[pane_index],
-            )))
+    window_manager._get_active_window_list_and_pane = MagicMock(  # type: ignore
+        return_value=(
+            window_manager.window_lists[list_index],
+            window_manager.window_lists[list_index].active_panes[pane_index],
+        )
+    )
 
 
 class TestWindowManager(unittest.TestCase):
     # pylint: disable=protected-access
     """Tests for window management functions."""
+
     def setUp(self):
         self.maxDiff = None  # pylint: disable=invalid-name
 
@@ -159,8 +165,10 @@ class TestWindowManager(unittest.TestCase):
 
             target_pane = window_manager.window_lists[2].active_panes[0]
 
-            result_window_list, result_pane_index = (
-                window_manager._find_window_list_and_pane_index(target_pane))
+            (
+                result_window_list,
+                result_pane_index,
+            ) = window_manager._find_window_list_and_pane_index(target_pane)
             self.assertEqual(
                 (result_window_list, result_pane_index),
                 (window_manager.window_lists[2], 0),
@@ -185,10 +193,13 @@ class TestWindowManager(unittest.TestCase):
             # Move one pane to the right, creating a new window_list split.
             window_manager.move_pane_right()
 
-            self.assertEqual(_window_list_widths(window_manager), [
-                int(_WINDOW_MANAGER_WIDTH / 2),
-                int(_WINDOW_MANAGER_WIDTH / 2),
-            ])
+            self.assertEqual(
+                _window_list_widths(window_manager),
+                [
+                    int(_WINDOW_MANAGER_WIDTH / 2),
+                    int(_WINDOW_MANAGER_WIDTH / 2),
+                ],
+            )
 
             # Move another pane to the right twice, creating a third
             # window_list split.
@@ -221,10 +232,8 @@ class TestWindowManager(unittest.TestCase):
                 _window_list_widths(window_manager),
                 [
                     int(_WINDOW_MANAGER_WIDTH / 3),
-                    int(_WINDOW_MANAGER_WIDTH / 3) -
-                    (2 * _WINDOW_SPLIT_ADJUST),
-                    int(_WINDOW_MANAGER_WIDTH / 3) +
-                    (2 * _WINDOW_SPLIT_ADJUST),
+                    int(_WINDOW_MANAGER_WIDTH / 3) - (2 * _WINDOW_SPLIT_ADJUST),
+                    int(_WINDOW_MANAGER_WIDTH / 3) + (2 * _WINDOW_SPLIT_ADJUST),
                 ],
             )
 
@@ -236,10 +245,8 @@ class TestWindowManager(unittest.TestCase):
             self.assertEqual(
                 _window_list_widths(window_manager),
                 [
-                    int(_WINDOW_MANAGER_WIDTH / 3) -
-                    (1 * _WINDOW_SPLIT_ADJUST),
-                    int(_WINDOW_MANAGER_WIDTH / 3) +
-                    (1 * _WINDOW_SPLIT_ADJUST),
+                    int(_WINDOW_MANAGER_WIDTH / 3) - (1 * _WINDOW_SPLIT_ADJUST),
+                    int(_WINDOW_MANAGER_WIDTH / 3) + (1 * _WINDOW_SPLIT_ADJUST),
                     int(_WINDOW_MANAGER_WIDTH / 3),
                 ],
             )
@@ -253,10 +260,8 @@ class TestWindowManager(unittest.TestCase):
                 _window_list_widths(window_manager),
                 [
                     int(_WINDOW_MANAGER_WIDTH / 3),
-                    int(_WINDOW_MANAGER_WIDTH / 3) +
-                    (1 * _WINDOW_SPLIT_ADJUST),
-                    int(_WINDOW_MANAGER_WIDTH / 3) -
-                    (1 * _WINDOW_SPLIT_ADJUST),
+                    int(_WINDOW_MANAGER_WIDTH / 3) + (1 * _WINDOW_SPLIT_ADJUST),
+                    int(_WINDOW_MANAGER_WIDTH / 3) - (1 * _WINDOW_SPLIT_ADJUST),
                 ],
             )
 
@@ -269,10 +274,8 @@ class TestWindowManager(unittest.TestCase):
                 _window_list_widths(window_manager),
                 [
                     int(_WINDOW_MANAGER_WIDTH / 3),
-                    int(_WINDOW_MANAGER_WIDTH / 3) -
-                    (3 * _WINDOW_SPLIT_ADJUST),
-                    int(_WINDOW_MANAGER_WIDTH / 3) +
-                    (3 * _WINDOW_SPLIT_ADJUST),
+                    int(_WINDOW_MANAGER_WIDTH / 3) - (3 * _WINDOW_SPLIT_ADJUST),
+                    int(_WINDOW_MANAGER_WIDTH / 3) + (3 * _WINDOW_SPLIT_ADJUST),
                 ],
             )
 
@@ -286,11 +289,9 @@ class TestWindowManager(unittest.TestCase):
             self.assertEqual(
                 _window_list_widths(window_manager),
                 [
-                    int(_WINDOW_MANAGER_WIDTH / 2) -
-                    (3 * _WINDOW_SPLIT_ADJUST),
+                    int(_WINDOW_MANAGER_WIDTH / 2) - (3 * _WINDOW_SPLIT_ADJUST),
                     # This split is removed
-                    int(_WINDOW_MANAGER_WIDTH / 2) +
-                    (2 * _WINDOW_SPLIT_ADJUST),
+                    int(_WINDOW_MANAGER_WIDTH / 2) + (2 * _WINDOW_SPLIT_ADJUST),
                 ],
             )
 
@@ -317,11 +318,17 @@ class TestWindowManager(unittest.TestCase):
             ]
             self.assertEqual(
                 list_pane_titles[0],
-                [('', ' '), ('class:window-tab-inactive', ' Log2 test_log2 '),
-                 ('', ' '), ('class:window-tab-inactive', ' Log1 test_log1 '),
-                 ('', ' '), ('class:window-tab-inactive', ' Log0 test_log0 '),
-                 ('', ' '), ('class:window-tab-inactive', ' Python Repl  '),
-                 ('', ' ')],
+                [
+                    ('', ' '),
+                    ('class:window-tab-inactive', ' Log2 test_log2 '),
+                    ('', ' '),
+                    ('class:window-tab-inactive', ' Log1 test_log1 '),
+                    ('', ' '),
+                    ('class:window-tab-inactive', ' Log0 test_log0 '),
+                    ('', ' '),
+                    ('class:window-tab-inactive', ' Python Repl  '),
+                    ('', ' '),
+                ],
             )
 
     def test_window_pane_movement_resizing(self) -> None:
@@ -333,7 +340,8 @@ class TestWindowManager(unittest.TestCase):
 
             # 4 panes, 3 for the loggers and 1 for the repl.
             self.assertEqual(
-                len(window_manager.first_window_list().active_panes), 4)
+                len(window_manager.first_window_list().active_panes), 4
+            )
 
             def target_window_pane(index: int):
                 # Bypass prompt_toolkit has_focus()
@@ -342,11 +350,13 @@ class TestWindowManager(unittest.TestCase):
                         return_value=(
                             window_manager.window_lists[0],
                             window_manager.window_lists[0].active_panes[index],
-                        )))
+                        )
+                    )
+                )
                 window_list = console_app.window_manager.first_window_list()
-                window_list.get_current_active_pane = (
-                    MagicMock(  # type: ignore
-                        return_value=window_list.active_panes[index]))
+                window_list.get_current_active_pane = MagicMock(  # type: ignore
+                    return_value=window_list.active_panes[index]
+                )
 
             # Target the first window pane
             target_window_pane(0)
@@ -365,7 +375,8 @@ class TestWindowManager(unittest.TestCase):
 
             # Reset pane sizes
             window_manager.window_lists[0].current_window_list_height = (
-                4 * _DEFAULT_WINDOW_HEIGHT)
+                4 * _DEFAULT_WINDOW_HEIGHT
+            )
             window_manager.reset_pane_sizes()
             self.assertEqual(
                 _window_pane_heights(window_manager),
@@ -490,7 +501,8 @@ class TestWindowManager(unittest.TestCase):
             window_manager.focus_next_pane()
             # Pane index 1 should now be focused.
             console_app.focus_on_container.assert_called_once_with(
-                window_manager.window_lists[0].active_panes[1])
+                window_manager.window_lists[0].active_panes[1]
+            )
             console_app.focus_on_container.reset_mock()
 
             # Set the first pane in focus.
@@ -500,7 +512,8 @@ class TestWindowManager(unittest.TestCase):
             # Previous pane should wrap around to the last pane in the first
             # window_list.
             console_app.focus_on_container.assert_called_once_with(
-                window_manager.window_lists[0].active_panes[-1])
+                window_manager.window_lists[0].active_panes[-1]
+            )
             console_app.focus_on_container.reset_mock()
 
             # Set the last pane in focus.
@@ -510,7 +523,8 @@ class TestWindowManager(unittest.TestCase):
             # Next pane should wrap around to the first pane in the first
             # window_list.
             console_app.focus_on_container.assert_called_once_with(
-                window_manager.window_lists[0].active_panes[0])
+                window_manager.window_lists[0].active_panes[0]
+            )
             console_app.focus_on_container.reset_mock()
 
             # Scenario: Move between panes with a single tabbed window list.
@@ -522,7 +536,8 @@ class TestWindowManager(unittest.TestCase):
 
             # Setup the switch_to_tab mock
             window_manager.window_lists[0].switch_to_tab = MagicMock(
-                wraps=window_manager.window_lists[0].switch_to_tab)
+                wraps=window_manager.window_lists[0].switch_to_tab
+            )
 
             # Set the first pane/tab in focus.
             target_list_and_pane(window_manager, 0, 0)
@@ -530,10 +545,12 @@ class TestWindowManager(unittest.TestCase):
             window_manager.focus_next_pane()
             # Check switch_to_tab is called
             window_manager.window_lists[
-                0].switch_to_tab.assert_called_once_with(1)
+                0
+            ].switch_to_tab.assert_called_once_with(1)
             # And that focus_on_container is called only once
             console_app.focus_on_container.assert_called_once_with(
-                window_manager.window_lists[0].active_panes[1])
+                window_manager.window_lists[0].active_panes[1]
+            )
             console_app.focus_on_container.reset_mock()
             window_manager.window_lists[0].switch_to_tab.reset_mock()
 
@@ -543,10 +560,12 @@ class TestWindowManager(unittest.TestCase):
             window_manager.focus_next_pane()
             # Check switch_to_tab is called
             window_manager.window_lists[
-                0].switch_to_tab.assert_called_once_with(0)
+                0
+            ].switch_to_tab.assert_called_once_with(0)
             # And that focus_on_container is called only once
             console_app.focus_on_container.assert_called_once_with(
-                window_manager.window_lists[0].active_panes[0])
+                window_manager.window_lists[0].active_panes[0]
+            )
             console_app.focus_on_container.reset_mock()
             window_manager.window_lists[0].switch_to_tab.reset_mock()
 
@@ -556,10 +575,12 @@ class TestWindowManager(unittest.TestCase):
             window_manager.focus_previous_pane()
             # Check switch_to_tab is called
             window_manager.window_lists[
-                0].switch_to_tab.assert_called_once_with(4)
+                0
+            ].switch_to_tab.assert_called_once_with(4)
             # And that focus_on_container is called only once
             console_app.focus_on_container.assert_called_once_with(
-                window_manager.window_lists[0].active_panes[4])
+                window_manager.window_lists[0].active_panes[4]
+            )
             console_app.focus_on_container.reset_mock()
             window_manager.window_lists[0].switch_to_tab.reset_mock()
 
@@ -589,14 +610,16 @@ class TestWindowManager(unittest.TestCase):
 
             # Setup the switch_to_tab mock on the second window_list
             window_manager.window_lists[1].switch_to_tab = MagicMock(
-                wraps=window_manager.window_lists[1].switch_to_tab)
+                wraps=window_manager.window_lists[1].switch_to_tab
+            )
 
             # Set Log1 in focus
             target_list_and_pane(window_manager, 0, 2)
             window_manager.focus_next_pane()
             # Log0 should now have focus
             console_app.focus_on_container.assert_called_once_with(
-                window_manager.window_lists[1].active_panes[0])
+                window_manager.window_lists[1].active_panes[0]
+            )
             console_app.focus_on_container.reset_mock()
 
             # Set Log0 in focus
@@ -604,11 +627,13 @@ class TestWindowManager(unittest.TestCase):
             window_manager.focus_previous_pane()
             # Log1 should now have focus
             console_app.focus_on_container.assert_called_once_with(
-                window_manager.window_lists[0].active_panes[2])
+                window_manager.window_lists[0].active_panes[2]
+            )
             # The first window list is in tabbed mode so switch_to_tab should be
             # called once.
             window_manager.window_lists[
-                0].switch_to_tab.assert_called_once_with(2)
+                0
+            ].switch_to_tab.assert_called_once_with(2)
             # Reset
             window_manager.window_lists[0].switch_to_tab.reset_mock()
             console_app.focus_on_container.reset_mock()
@@ -618,9 +643,11 @@ class TestWindowManager(unittest.TestCase):
             window_manager.focus_next_pane()
             # Log3 should now have focus
             console_app.focus_on_container.assert_called_once_with(
-                window_manager.window_lists[0].active_panes[0])
+                window_manager.window_lists[0].active_panes[0]
+            )
             window_manager.window_lists[
-                0].switch_to_tab.assert_called_once_with(0)
+                0
+            ].switch_to_tab.assert_called_once_with(0)
             # Reset
             window_manager.window_lists[0].switch_to_tab.reset_mock()
             console_app.focus_on_container.reset_mock()
@@ -630,9 +657,11 @@ class TestWindowManager(unittest.TestCase):
             window_manager.focus_next_pane()
             # Log2 should now have focus
             console_app.focus_on_container.assert_called_once_with(
-                window_manager.window_lists[0].active_panes[1])
+                window_manager.window_lists[0].active_panes[1]
+            )
             window_manager.window_lists[
-                0].switch_to_tab.assert_called_once_with(1)
+                0
+            ].switch_to_tab.assert_called_once_with(1)
             # Reset
             window_manager.window_lists[0].switch_to_tab.reset_mock()
             console_app.focus_on_container.reset_mock()
@@ -642,7 +671,8 @@ class TestWindowManager(unittest.TestCase):
             window_manager.focus_previous_pane()
             # Log0 should now have focus
             console_app.focus_on_container.assert_called_once_with(
-                window_manager.window_lists[1].active_panes[0])
+                window_manager.window_lists[1].active_panes[0]
+            )
             # The second window list is in stacked mode so switch_to_tab should
             # not be called.
             window_manager.window_lists[1].switch_to_tab.assert_not_called()
@@ -657,8 +687,9 @@ class TestWindowManager(unittest.TestCase):
             window_manager = console_app.window_manager
 
             # Required before moving windows
-            window_manager.update_window_manager_size(_WINDOW_MANAGER_WIDTH,
-                                                      _WINDOW_MANAGER_HEIGHT)
+            window_manager.update_window_manager_size(
+                _WINDOW_MANAGER_WIDTH, _WINDOW_MANAGER_HEIGHT
+            )
             window_manager.create_root_container()
 
             # Vertical split by default
@@ -699,8 +730,7 @@ class TestWindowManager(unittest.TestCase):
             self.assertEqual(_window_list_widths(window_manager), widths)
 
             # Decrease size of first split
-            window_manager.adjust_split_size(window_manager.window_lists[0],
-                                             -4)
+            window_manager.adjust_split_size(window_manager.window_lists[0], -4)
             widths = [
                 widths[0] - (4 * _WINDOW_SPLIT_ADJUST),
                 widths[1] + (4 * _WINDOW_SPLIT_ADJUST),
@@ -733,13 +763,15 @@ class TestWindowManager(unittest.TestCase):
             window_manager = console_app.window_manager
 
             # We want horizontal window splits
-            window_manager.vertical_window_list_spliting = (MagicMock(
-                return_value=False))
+            window_manager.vertical_window_list_spliting = MagicMock(
+                return_value=False
+            )
             self.assertFalse(window_manager.vertical_window_list_spliting())
 
             # Required before moving windows
-            window_manager.update_window_manager_size(_WINDOW_MANAGER_WIDTH,
-                                                      _WINDOW_MANAGER_HEIGHT)
+            window_manager.update_window_manager_size(
+                _WINDOW_MANAGER_WIDTH, _WINDOW_MANAGER_HEIGHT
+            )
             window_manager.create_root_container()
 
             # Move windows to create 3 splits
@@ -777,8 +809,7 @@ class TestWindowManager(unittest.TestCase):
             self.assertEqual(_window_list_heights(window_manager), heights)
 
             # Decrease size of first split
-            window_manager.adjust_split_size(window_manager.window_lists[0],
-                                             -4)
+            window_manager.adjust_split_size(window_manager.window_lists[0], -4)
             heights = [
                 heights[0] - (4 * _WINDOW_SPLIT_ADJUST),
                 heights[1] + (4 * _WINDOW_SPLIT_ADJUST),

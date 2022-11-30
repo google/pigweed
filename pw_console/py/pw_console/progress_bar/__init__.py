@@ -14,7 +14,8 @@
 """Pigweed Console progress bar functions."""
 from pw_console.progress_bar.progress_bar_state import TASKS_CONTEXTVAR
 from pw_console.progress_bar.progress_bar_task_counter import (
-    ProgressBarTaskCounter)
+    ProgressBarTaskCounter,
+)
 
 __all__ = [
     'start_progress',
@@ -32,17 +33,17 @@ def start_progress(task_name: str, total: int, hide_eta=False):
     progress_state.tasks[task_name] = ProgressBarTaskCounter(
         name=task_name,
         total=total,
-        prompt_toolkit_counter=progress_state.instance(range(total),
-                                                       label=task_name))
+        prompt_toolkit_counter=progress_state.instance(
+            range(total), label=task_name
+        ),
+    )
     ptc = progress_state.tasks[task_name].prompt_toolkit_counter
     ptc.hide_eta = hide_eta  # type: ignore
 
 
-def update_progress(task_name: str,
-                    count=1,
-                    completed=False,
-                    canceled=False,
-                    new_total=None):
+def update_progress(
+    task_name: str, count=1, completed=False, canceled=False, new_total=None
+):
     progress_state = TASKS_CONTEXTVAR.get()
     # The caller may not actually get canceled and will continue trying to
     # update after an interrupt.
@@ -60,7 +61,9 @@ def update_progress(task_name: str,
         progress_state.tasks[task_name].update(count)
 
     # Check if all tasks are complete
-    if (progress_state.instance is not None
-            and progress_state.all_tasks_complete):
+    if (
+        progress_state.instance is not None
+        and progress_state.all_tasks_complete
+    ):
         if hasattr(progress_state.instance, '__exit__'):
             progress_state.instance.__exit__()

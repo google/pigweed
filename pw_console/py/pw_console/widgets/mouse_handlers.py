@@ -53,6 +53,7 @@ def on_click(on_click_function: Callable, mouse_event: MouseEvent):
 
 class EmptyMouseHandler(MouseHandlers):
     """MouseHandler that does not propagate events."""
+
     def set_mouse_handler_for_range(
         self,
         x_min: int,

@@ -30,6 +30,7 @@ def _redraw_ui() -> None:
 @dataclass
 class ProgressBarTaskCounter:
     """Class to hold a single progress bar state."""
+
     name: str
     total: int
     count: int = 0

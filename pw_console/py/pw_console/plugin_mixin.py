@@ -80,6 +80,7 @@ class PluginMixin:
 
     .. _Future: https://docs.python.org/3/library/asyncio-future.html
     """
+
     def plugin_init(
         self,
         plugin_callback: Optional[Callable[..., bool]] = None,
@@ -130,7 +131,8 @@ class PluginMixin:
             # This function will be executed in a separate thread.
             self._plugin_periodically_run_callback(),
             # Using this asyncio event loop.
-            self.plugin_event_loop)  # type: ignore
+            self.plugin_event_loop,
+        )  # type: ignore
 
     def plugin_stop(self):
         self.plugin_enable_background_task = False

@@ -75,7 +75,4 @@ class PigweedCodeLightStyle(Style):
     background_color = '#f8f8f8'
     default_style = ''
 
-    styles = {
-        key: swap_light_dark(value)
-        for key, value in _style_list.items()
-    }
+    styles = {key: swap_light_dark(value) for key, value in _style_list.items()}

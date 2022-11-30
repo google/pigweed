@@ -233,20 +233,20 @@ def generate_styles(theme_name='dark'):
         'pane_inactive': 'bg:{} {}'.format(theme.dim_bg, theme.dim_fg),
         # Use default for active panes.
         'pane_active': 'bg:{} {}'.format(theme.default_bg, theme.default_fg),
-
         # Brighten active pane toolbars.
         'toolbar_active': 'bg:{} {}'.format(theme.active_bg, theme.active_fg),
-        'toolbar_inactive': 'bg:{} {}'.format(theme.inactive_bg,
-                                              theme.inactive_fg),
-
+        'toolbar_inactive': 'bg:{} {}'.format(
+            theme.inactive_bg, theme.inactive_fg
+        ),
         # Dimmer toolbar.
-        'toolbar_dim_active': 'bg:{} {}'.format(theme.active_bg,
-                                                theme.active_fg),
-        'toolbar_dim_inactive': 'bg:{} {}'.format(theme.default_bg,
-                                                  theme.inactive_fg),
+        'toolbar_dim_active': 'bg:{} {}'.format(
+            theme.active_bg, theme.active_fg
+        ),
+        'toolbar_dim_inactive': 'bg:{} {}'.format(
+            theme.default_bg, theme.inactive_fg
+        ),
         # Used for pane titles
         'toolbar_accent': theme.cyan_accent,
-
         'toolbar-button-decoration': '{}'.format(theme.cyan_accent),
         'toolbar-setting-active': 'bg:{} {}'.format(
             theme.green_accent,
@@ -254,79 +254,75 @@ def generate_styles(theme_name='dark'):
         ),
         'toolbar-button-active': 'bg:{}'.format(theme.button_active_bg),
         'toolbar-button-inactive': 'bg:{}'.format(theme.button_inactive_bg),
-
         # prompt_toolkit scrollbar styles:
-        'scrollbar.background': 'bg:{} {}'.format(theme.default_bg,
-                                                  theme.default_fg),
+        'scrollbar.background': 'bg:{} {}'.format(
+            theme.default_bg, theme.default_fg
+        ),
         # Scrollbar handle, bg is the bar color.
-        'scrollbar.button': 'bg:{} {}'.format(theme.purple_accent,
-                                              theme.default_bg),
-        'scrollbar.arrow': 'bg:{} {}'.format(theme.default_bg,
-                                             theme.blue_accent),
+        'scrollbar.button': 'bg:{} {}'.format(
+            theme.purple_accent, theme.default_bg
+        ),
+        'scrollbar.arrow': 'bg:{} {}'.format(
+            theme.default_bg, theme.blue_accent
+        ),
         # Unstyled scrollbar classes:
         # 'scrollbar.start'
         # 'scrollbar.end'
-
         # Top menu bar styles
         'menu-bar': 'bg:{} {}'.format(theme.inactive_bg, theme.inactive_fg),
-        'menu-bar.selected-item': 'bg:{} {}'.format(theme.blue_accent,
-                                                    theme.inactive_bg),
+        'menu-bar.selected-item': 'bg:{} {}'.format(
+            theme.blue_accent, theme.inactive_bg
+        ),
         # Menu background
         'menu': 'bg:{} {}'.format(theme.dialog_bg, theme.dim_fg),
         # Menu item separator
         'menu-border': theme.magenta_accent,
-
         # Top bar logo + keyboard shortcuts
-        'logo':    '{} bold'.format(theme.magenta_accent),
+        'logo': '{} bold'.format(theme.magenta_accent),
         'keybind': '{} bold'.format(theme.purple_accent),
         'keyhelp': theme.dim_fg,
-
         # Help window styles
         'help_window_content': 'bg:{} {}'.format(theme.dialog_bg, theme.dim_fg),
         'frame.border': 'bg:{} {}'.format(theme.dialog_bg, theme.purple_accent),
-
         'pane_indicator_active': 'bg:{}'.format(theme.magenta_accent),
         'pane_indicator_inactive': 'bg:{}'.format(theme.inactive_bg),
-
         'pane_title_active': '{} bold'.format(theme.magenta_accent),
         'pane_title_inactive': '{}'.format(theme.purple_accent),
-
-        'window-tab-active': 'bg:{} {}'.format(theme.active_bg,
-                                               theme.cyan_accent),
-        'window-tab-inactive': 'bg:{} {}'.format(theme.inactive_bg,
-                                                 theme.inactive_fg),
-
-        'pane_separator': 'bg:{} {}'.format(theme.default_bg,
-                                            theme.purple_accent),
-
+        'window-tab-active': 'bg:{} {}'.format(
+            theme.active_bg, theme.cyan_accent
+        ),
+        'window-tab-inactive': 'bg:{} {}'.format(
+            theme.inactive_bg, theme.inactive_fg
+        ),
+        'pane_separator': 'bg:{} {}'.format(
+            theme.default_bg, theme.purple_accent
+        ),
         # Search matches
         'search': 'bg:{} {}'.format(theme.cyan_accent, theme.default_bg),
-        'search.current': 'bg:{} {}'.format(theme.cyan_accent,
-                                            theme.default_bg),
-
+        'search.current': 'bg:{} {}'.format(
+            theme.cyan_accent, theme.default_bg
+        ),
         # Highlighted line styles
         'selected-log-line': 'bg:{}'.format(theme.line_highlight_bg),
         'marked-log-line': 'bg:{}'.format(theme.selected_line_bg),
         'cursor-line': 'bg:{} nounderline'.format(theme.line_highlight_bg),
-
         # Messages like 'Window too small'
-        'warning-text': 'bg:{} {}'.format(theme.default_bg,
-                                          theme.yellow_accent),
-
-        'log-time': 'bg:{} {}'.format(theme.default_fg,
-                                      theme.default_bg),
-
+        'warning-text': 'bg:{} {}'.format(
+            theme.default_bg, theme.yellow_accent
+        ),
+        'log-time': 'bg:{} {}'.format(theme.default_fg, theme.default_bg),
         # Apply foreground only for level and column values. This way the text
         # can inherit the background color of the parent window pane or line
         # selection.
         'log-level-{}'.format(logging.CRITICAL): '{} bold'.format(
-            theme.red_accent),
+            theme.red_accent
+        ),
         'log-level-{}'.format(logging.ERROR): '{}'.format(theme.red_accent),
         'log-level-{}'.format(logging.WARNING): '{}'.format(
-            theme.yellow_accent),
+            theme.yellow_accent
+        ),
         'log-level-{}'.format(logging.INFO): '{}'.format(theme.purple_accent),
         'log-level-{}'.format(logging.DEBUG): '{}'.format(theme.blue_accent),
-
         'log-table-column-0': '{}'.format(theme.cyan_accent),
         'log-table-column-1': '{}'.format(theme.green_accent),
         'log-table-column-2': '{}'.format(theme.yellow_accent),
@@ -335,52 +331,55 @@ def generate_styles(theme_name='dark'):
         'log-table-column-5': '{}'.format(theme.blue_accent),
         'log-table-column-6': '{}'.format(theme.orange_accent),
         'log-table-column-7': '{}'.format(theme.red_accent),
-
         'search-bar': 'bg:{}'.format(theme.inactive_bg),
-        'search-bar-title': 'bg:{} {}'.format(theme.cyan_accent,
-                                              theme.default_bg),
+        'search-bar-title': 'bg:{} {}'.format(
+            theme.cyan_accent, theme.default_bg
+        ),
         'search-bar-setting': '{}'.format(theme.cyan_accent),
-        'search-bar-border': 'bg:{} {}'.format(theme.inactive_bg,
-                                               theme.cyan_accent),
+        'search-bar-border': 'bg:{} {}'.format(
+            theme.inactive_bg, theme.cyan_accent
+        ),
         'search-match-count-dialog': 'bg:{}'.format(theme.inactive_bg),
         'search-match-count-dialog-title': '{}'.format(theme.cyan_accent),
         'search-match-count-dialog-default-fg': '{}'.format(theme.default_fg),
         'search-match-count-dialog-border': 'bg:{} {}'.format(
-            theme.inactive_bg,
-            theme.cyan_accent),
-
+            theme.inactive_bg, theme.cyan_accent
+        ),
         'filter-bar': 'bg:{}'.format(theme.inactive_bg),
-        'filter-bar-title': 'bg:{} {}'.format(theme.red_accent,
-                                              theme.default_bg),
+        'filter-bar-title': 'bg:{} {}'.format(
+            theme.red_accent, theme.default_bg
+        ),
         'filter-bar-setting': '{}'.format(theme.cyan_accent),
         'filter-bar-delete': '{}'.format(theme.red_accent),
         'filter-bar-delimiter': '{}'.format(theme.purple_accent),
-
         'saveas-dialog': 'bg:{}'.format(theme.inactive_bg),
-        'saveas-dialog-title': 'bg:{} {}'.format(theme.inactive_bg,
-                                                 theme.default_fg),
+        'saveas-dialog-title': 'bg:{} {}'.format(
+            theme.inactive_bg, theme.default_fg
+        ),
         'saveas-dialog-setting': '{}'.format(theme.cyan_accent),
-        'saveas-dialog-border': 'bg:{} {}'.format(theme.inactive_bg,
-                                                  theme.cyan_accent),
-
+        'saveas-dialog-border': 'bg:{} {}'.format(
+            theme.inactive_bg, theme.cyan_accent
+        ),
         'selection-dialog': 'bg:{}'.format(theme.inactive_bg),
         'selection-dialog-title': '{}'.format(theme.yellow_accent),
         'selection-dialog-default-fg': '{}'.format(theme.default_fg),
         'selection-dialog-action-bg': 'bg:{}'.format(theme.yellow_accent),
         'selection-dialog-action-fg': '{}'.format(theme.button_inactive_bg),
-        'selection-dialog-border': 'bg:{} {}'.format(theme.inactive_bg,
-                                                     theme.yellow_accent),
-
+        'selection-dialog-border': 'bg:{} {}'.format(
+            theme.inactive_bg, theme.yellow_accent
+        ),
         'quit-dialog': 'bg:{}'.format(theme.inactive_bg),
-        'quit-dialog-border': 'bg:{} {}'.format(theme.inactive_bg,
-                                                theme.red_accent),
-
+        'quit-dialog-border': 'bg:{} {}'.format(
+            theme.inactive_bg, theme.red_accent
+        ),
         'command-runner': 'bg:{}'.format(theme.inactive_bg),
-        'command-runner-title': 'bg:{} {}'.format(theme.inactive_bg,
-                                                  theme.default_fg),
+        'command-runner-title': 'bg:{} {}'.format(
+            theme.inactive_bg, theme.default_fg
+        ),
         'command-runner-setting': '{}'.format(theme.purple_accent),
-        'command-runner-border': 'bg:{} {}'.format(theme.inactive_bg,
-                                                   theme.purple_accent),
+        'command-runner-border': 'bg:{} {}'.format(
+            theme.inactive_bg, theme.purple_accent
+        ),
         'command-runner-selected-item': 'bg:{}'.format(theme.selected_line_bg),
         'command-runner-fuzzy-highlight-0': '{}'.format(theme.blue_accent),
         'command-runner-fuzzy-highlight-1': '{}'.format(theme.cyan_accent),
@@ -388,7 +387,6 @@ def generate_styles(theme_name='dark'):
         'command-runner-fuzzy-highlight-3': '{}'.format(theme.yellow_accent),
         'command-runner-fuzzy-highlight-4': '{}'.format(theme.orange_accent),
         'command-runner-fuzzy-highlight-5': '{}'.format(theme.red_accent),
-
         # Progress Bar Styles
         # Entire set of ProgressBars - no title is used in pw_console
         'title': '',
@@ -407,7 +405,6 @@ def generate_styles(theme_name='dark'):
         'total': '{}'.format(theme.cyan_accent),
         'time-elapsed': '{}'.format(theme.purple_accent),
         'time-left': '{}'.format(theme.magenta_accent),
-
         # Named theme color classes for use in user plugins.
         'theme-fg-red': '{}'.format(theme.red_accent),
         'theme-fg-orange': '{}'.format(theme.orange_accent),
@@ -425,22 +422,16 @@ def generate_styles(theme_name='dark'):
         'theme-bg-blue': 'bg:{}'.format(theme.blue_accent),
         'theme-bg-purple': 'bg:{}'.format(theme.purple_accent),
         'theme-bg-magenta': 'bg:{}'.format(theme.magenta_accent),
-
         'theme-bg-active': 'bg:{}'.format(theme.active_bg),
         'theme-fg-active': '{}'.format(theme.active_fg),
-
         'theme-bg-inactive': 'bg:{}'.format(theme.inactive_bg),
         'theme-fg-inactive': '{}'.format(theme.inactive_fg),
-
         'theme-fg-default': '{}'.format(theme.default_fg),
         'theme-bg-default': 'bg:{}'.format(theme.default_bg),
-
         'theme-fg-dim': '{}'.format(theme.dim_fg),
         'theme-bg-dim': 'bg:{}'.format(theme.dim_bg),
-
         'theme-bg-dialog': 'bg:{}'.format(theme.dialog_bg),
         'theme-bg-line-highlight': 'bg:{}'.format(theme.line_highlight_bg),
-
         'theme-bg-button-active': 'bg:{}'.format(theme.button_active_bg),
         'theme-bg-button-inactive': 'bg:{}'.format(theme.button_inactive_bg),
     }  # yapf: disable
@@ -469,10 +460,9 @@ def get_pane_style(pt_container) -> str:
     return 'class:pane_inactive'
 
 
-def get_pane_indicator(pt_container,
-                       title,
-                       mouse_handler=None,
-                       hide_indicator=False) -> StyleAndTextTuples:
+def get_pane_indicator(
+    pt_container, title, mouse_handler=None, hide_indicator=False
+) -> StyleAndTextTuples:
     """Return formatted text for a pane indicator and title."""
 
     inactive_indicator: OneStyleAndTextTuple
@@ -481,8 +471,11 @@ def get_pane_indicator(pt_container,
     active_title: OneStyleAndTextTuple
 
     if mouse_handler:
-        inactive_indicator = ('class:pane_indicator_inactive', ' ',
-                              mouse_handler)
+        inactive_indicator = (
+            'class:pane_indicator_inactive',
+            ' ',
+            mouse_handler,
+        )
         active_indicator = ('class:pane_indicator_active', ' ', mouse_handler)
         inactive_title = ('class:pane_title_inactive', title, mouse_handler)
         active_title = ('class:pane_title_active', title, mouse_handler)

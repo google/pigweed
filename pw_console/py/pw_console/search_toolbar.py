@@ -37,6 +37,7 @@ from prompt_toolkit.widgets import TextArea
 from prompt_toolkit.validation import DynamicValidator
 
 from pw_console.log_view import RegexValidator, SearchMatcher
+
 # import pw_console.widgets.checkbox
 import pw_console.widgets.mouse_handlers
 
@@ -59,9 +60,14 @@ class SearchToolbar(ConditionalContainer):
 
         self.input_field = TextArea(
             prompt=[
-                ('class:search-bar-setting', '/',
-                 functools.partial(pw_console.widgets.mouse_handlers.on_click,
-                                   self.focus_self))
+                (
+                    'class:search-bar-setting',
+                    '/',
+                    functools.partial(
+                        pw_console.widgets.mouse_handlers.on_click,
+                        self.focus_self,
+                    ),
+                )
             ],
             focusable=True,
             focus_on_click=True,
@@ -111,28 +117,38 @@ class SearchToolbar(ConditionalContainer):
             HSplit(
                 [
                     # Top row
-                    VSplit([
-                        # Search Settings toggles, only show if the search input
-                        # field is in focus.
-                        ConditionalContainer(settings_bar_window,
-                                             filter=has_focus(
-                                                 self.input_field)),
-
-                        # Match count numbers and buttons, only show if the
-                        # search input is NOT in focus.
-                        ConditionalContainer(
-                            match_count_window,
-                            filter=~has_focus(self.input_field)),  # pylint: disable=invalid-unary-operand-type
-                        ConditionalContainer(
-                            match_buttons_window,
-                            filter=~has_focus(self.input_field)),  # pylint: disable=invalid-unary-operand-type
-                    ]),
+                    VSplit(
+                        [
+                            # Search Settings toggles, only show if the search
+                            # input field is in focus.
+                            ConditionalContainer(
+                                settings_bar_window,
+                                filter=has_focus(self.input_field),
+                            ),
+                            # Match count numbers and buttons, only show if the
+                            # search input is NOT in focus.
+                            # pylint: disable=invalid-unary-operand-type
+                            ConditionalContainer(
+                                match_count_window,
+                                filter=~has_focus(self.input_field),
+                            ),
+                            ConditionalContainer(
+                                match_buttons_window,
+                                filter=~has_focus(self.input_field),
+                            ),
+                            # pylint: enable=invalid-unary-operand-type
+                        ]
+                    ),
                     # Bottom row
-                    VSplit([
-                        self.input_field,
-                        ConditionalContainer(input_field_buttons_window,
-                                             filter=has_focus(self))
-                    ])
+                    VSplit(
+                        [
+                            self.input_field,
+                            ConditionalContainer(
+                                input_field_buttons_window,
+                                filter=has_focus(self),
+                            ),
+                        ]
+                    ),
                 ],
                 height=SearchToolbar.TOOLBAR_HEIGHT,
                 style='class:search-bar',
@@ -215,7 +231,8 @@ class SearchToolbar(ConditionalContainer):
 
     def _toggle_search_follow(self) -> None:
         self.log_view.follow_search_match = (
-            not self.log_view.follow_search_match)
+            not self.log_view.follow_search_match
+        )
         # If automatically jumping to the next search match, disable normal
         # follow mode.
         if self.log_view.follow_search_match:
@@ -241,14 +258,15 @@ class SearchToolbar(ConditionalContainer):
             # Don't apply an empty search.
             return False
 
-        if self.log_pane.log_view.new_search(buff.text,
-                                             invert=self._search_invert,
-                                             field=self._search_field):
+        if self.log_pane.log_view.new_search(
+            buff.text, invert=self._search_invert, field=self._search_field
+        ):
             self._search_successful = True
 
             # Don't close the search bar, instead focus on the log content.
             self.log_pane.application.focus_on_container(
-                self.log_pane.log_display_window)
+                self.log_pane.log_display_window
+            )
             # Keep existing search text.
             return True
 
@@ -257,12 +275,15 @@ class SearchToolbar(ConditionalContainer):
 
     def get_search_help_fragments(self):
         """Return FormattedText with search general help keybinds."""
-        focus = functools.partial(pw_console.widgets.mouse_handlers.on_click,
-                                  self.focus_self)
+        focus = functools.partial(
+            pw_console.widgets.mouse_handlers.on_click, self.focus_self
+        )
         start_search = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self._start_search)
+            pw_console.widgets.mouse_handlers.on_click, self._start_search
+        )
         close_search = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self.cancel_search)
+            pw_console.widgets.mouse_handlers.on_click, self.cancel_search
+        )
 
         # Search toolbar is darker than pane toolbars, use the darker button
         # style here.
@@ -278,26 +299,34 @@ class SearchToolbar(ConditionalContainer):
 
         fragments.extend(
             pw_console.widgets.checkbox.to_keybind_indicator(
-                'Enter', 'Search', start_search, base_style=button_style))
+                'Enter', 'Search', start_search, base_style=button_style
+            )
+        )
         fragments.extend(separator_text)
 
         fragments.extend(
             pw_console.widgets.checkbox.to_keybind_indicator(
-                'Ctrl-c', 'Cancel', close_search, base_style=button_style))
+                'Ctrl-c', 'Cancel', close_search, base_style=button_style
+            )
+        )
 
         return fragments
 
     def get_search_settings_fragments(self):
         """Return FormattedText with current search settings and keybinds."""
-        focus = functools.partial(pw_console.widgets.mouse_handlers.on_click,
-                                  self.focus_self)
+        focus = functools.partial(
+            pw_console.widgets.mouse_handlers.on_click, self.focus_self
+        )
         next_field = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self._next_field)
+            pw_console.widgets.mouse_handlers.on_click, self._next_field
+        )
         toggle_invert = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self._invert_search)
+            pw_console.widgets.mouse_handlers.on_click, self._invert_search
+        )
         next_matcher = functools.partial(
             pw_console.widgets.mouse_handlers.on_click,
-            self.log_pane.log_view.select_next_search_matcher)
+            self.log_pane.log_view.select_next_search_matcher,
+        )
 
         separator_text = [('', '  ', focus)]
 
@@ -312,9 +341,11 @@ class SearchToolbar(ConditionalContainer):
         fragments.extend(separator_text)
 
         selected_column_text = [
-            (button_style + ' class:search-bar-setting',
-             (self._search_field.title() if self._search_field else 'All'),
-             next_field),
+            (
+                button_style + ' class:search-bar-setting',
+                (self._search_field.title() if self._search_field else 'All'),
+                next_field,
+            ),
         ]
         fragments.extend(
             pw_console.widgets.checkbox.to_keybind_indicator(
@@ -323,7 +354,8 @@ class SearchToolbar(ConditionalContainer):
                 next_field,
                 middle_fragments=selected_column_text,
                 base_style=button_style,
-            ))
+            )
+        )
         fragments.extend(separator_text)
 
         fragments.extend(
@@ -332,13 +364,18 @@ class SearchToolbar(ConditionalContainer):
                 'Ctrl-v',
                 'Invert',
                 toggle_invert,
-                base_style=button_style))
+                base_style=button_style,
+            )
+        )
         fragments.extend(separator_text)
 
         # Matching Method
         current_matcher_text = [
-            (button_style + ' class:search-bar-setting',
-             str(self.log_pane.log_view.search_matcher.name), next_matcher)
+            (
+                button_style + ' class:search-bar-setting',
+                str(self.log_pane.log_view.search_matcher.name),
+                next_matcher,
+            )
         ]
         fragments.extend(
             pw_console.widgets.checkbox.to_keybind_indicator(
@@ -347,7 +384,8 @@ class SearchToolbar(ConditionalContainer):
                 next_matcher,
                 middle_fragments=current_matcher_text,
                 base_style=button_style,
-            ))
+            )
+        )
         fragments.extend(separator_text)
 
         return fragments
@@ -359,13 +397,15 @@ class SearchToolbar(ConditionalContainer):
 
     def get_match_count_fragments(self):
         """Return formatted text for the match count indicator."""
-        focus = functools.partial(pw_console.widgets.mouse_handlers.on_click,
-                                  self.focus_log_pane)
+        focus = functools.partial(
+            pw_console.widgets.mouse_handlers.on_click, self.focus_log_pane
+        )
         two_spaces = ('', '  ', focus)
 
         # Check if this line is a search match
         match_number = self.log_view.search_matched_lines.get(
-            self.log_view.log_index, -1)
+            self.log_view.log_index, -1
+        )
 
         # If valid, increment the zero indexed value by one for better human
         # readability.
@@ -377,30 +417,40 @@ class SearchToolbar(ConditionalContainer):
 
         return [
             ('class:search-match-count-dialog-title', ' Match ', focus),
-            ('', '{} / {}'.format(match_number,
-                                  len(self.log_view.search_matched_lines)),
-             focus),
+            (
+                '',
+                '{} / {}'.format(
+                    match_number, len(self.log_view.search_matched_lines)
+                ),
+                focus,
+            ),
             two_spaces,
         ]
 
     def get_button_fragments(self) -> StyleAndTextTuples:
         """Return formatted text for the action buttons."""
-        focus = functools.partial(pw_console.widgets.mouse_handlers.on_click,
-                                  self.focus_log_pane)
+        focus = functools.partial(
+            pw_console.widgets.mouse_handlers.on_click, self.focus_log_pane
+        )
 
         one_space = ('', ' ', focus)
         two_spaces = ('', '  ', focus)
-        cancel = functools.partial(pw_console.widgets.mouse_handlers.on_click,
-                                   self.cancel_search)
+        cancel = functools.partial(
+            pw_console.widgets.mouse_handlers.on_click, self.cancel_search
+        )
         create_filter = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self._create_filter)
+            pw_console.widgets.mouse_handlers.on_click, self._create_filter
+        )
         next_match = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self._next_match)
+            pw_console.widgets.mouse_handlers.on_click, self._next_match
+        )
         previous_match = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self._previous_match)
+            pw_console.widgets.mouse_handlers.on_click, self._previous_match
+        )
         toggle_search_follow = functools.partial(
             pw_console.widgets.mouse_handlers.on_click,
-            self._toggle_search_follow)
+            self._toggle_search_follow,
+        )
 
         button_style = 'class:toolbar-button-inactive'
 
@@ -411,7 +461,8 @@ class SearchToolbar(ConditionalContainer):
                 description='Next',
                 mouse_handler=next_match,
                 base_style=button_style,
-            ))
+            )
+        )
         fragments.append(two_spaces)
 
         fragments.extend(
@@ -420,7 +471,8 @@ class SearchToolbar(ConditionalContainer):
                 description='Previous',
                 mouse_handler=previous_match,
                 base_style=button_style,
-            ))
+            )
+        )
         fragments.append(two_spaces)
 
         fragments.extend(
@@ -429,7 +481,8 @@ class SearchToolbar(ConditionalContainer):
                 description='Cancel',
                 mouse_handler=cancel,
                 base_style=button_style,
-            ))
+            )
+        )
         fragments.append(two_spaces)
 
         fragments.extend(
@@ -438,7 +491,8 @@ class SearchToolbar(ConditionalContainer):
                 description='Add Filter',
                 mouse_handler=create_filter,
                 base_style=button_style,
-            ))
+            )
+        )
         fragments.append(two_spaces)
 
         fragments.extend(
@@ -447,7 +501,9 @@ class SearchToolbar(ConditionalContainer):
                 key='',
                 description='Jump to new matches',
                 mouse_handler=toggle_search_follow,
-                base_style=button_style))
+                base_style=button_style,
+            )
+        )
         fragments.append(one_space)
 
         return fragments

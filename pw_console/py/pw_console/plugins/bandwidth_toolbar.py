@@ -22,6 +22,7 @@ from pw_console.pyserial_wrapper import BANDWIDTH_HISTORY_CONTEXTVAR
 
 class BandwidthToolbar(WindowPaneToolbar, PluginMixin):
     """Toolbar for displaying bandwidth history."""
+
     TOOLBAR_HEIGHT = 1
 
     def _update_toolbar_text(self):
@@ -33,18 +34,27 @@ class BandwidthToolbar(WindowPaneToolbar, PluginMixin):
         self.plugin_logger.debug('BandwidthToolbar _update_toolbar_text')
 
         for count_name, events in self.history.items():
-            tokens.extend([
-                ('', '  '),
-                ('class:theme-bg-active class:theme-fg-active',
-                 ' {}: '.format(count_name.title())),
-                ('class:theme-bg-active class:theme-fg-cyan',
-                 '{:.3f} '.format(events.last_count())),
-                ('class:theme-bg-active class:theme-fg-orange',
-                 '{} '.format(events.display_unit_title)),
-            ])
+            tokens.extend(
+                [
+                    ('', '  '),
+                    (
+                        'class:theme-bg-active class:theme-fg-active',
+                        ' {}: '.format(count_name.title()),
+                    ),
+                    (
+                        'class:theme-bg-active class:theme-fg-cyan',
+                        '{:.3f} '.format(events.last_count()),
+                    ),
+                    (
+                        'class:theme-bg-active class:theme-fg-orange',
+                        '{} '.format(events.display_unit_title),
+                    ),
+                ]
+            )
             if count_name == 'total':
                 tokens.append(
-                    ('class:theme-fg-cyan', '{}'.format(events.sparkline())))
+                    ('class:theme-fg-cyan', '{}'.format(events.sparkline()))
+                )
 
         self.formatted_text = tokens
 
@@ -57,9 +67,9 @@ class BandwidthToolbar(WindowPaneToolbar, PluginMixin):
         return [('class:theme-fg-blue', 'Serial Bandwidth Usage ')]
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args,
-                         center_section_align=WindowAlign.RIGHT,
-                         **kwargs)
+        super().__init__(
+            *args, center_section_align=WindowAlign.RIGHT, **kwargs
+        )
 
         self.history = BANDWIDTH_HISTORY_CONTEXTVAR.get()
         self.show_toolbar = True
@@ -67,8 +77,10 @@ class BandwidthToolbar(WindowPaneToolbar, PluginMixin):
 
         # Buttons for display in the center
         self.add_button(
-            ToolbarButton(description='Refresh',
-                          mouse_handler=self._update_toolbar_text))
+            ToolbarButton(
+                description='Refresh', mouse_handler=self._update_toolbar_text
+            )
+        )
 
         # Set plugin options
         self.background_task_update_count: int = 0
@@ -81,6 +93,8 @@ class BandwidthToolbar(WindowPaneToolbar, PluginMixin):
     def _background_task(self) -> bool:
         self.background_task_update_count += 1
         self._update_toolbar_text()
-        self.plugin_logger.debug('BandwidthToolbar Scheduled Update: #%s',
-                                 self.background_task_update_count)
+        self.plugin_logger.debug(
+            'BandwidthToolbar Scheduled Update: #%s',
+            self.background_task_update_count,
+        )
         return True

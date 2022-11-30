@@ -76,15 +76,16 @@ class LogStore(logging.Handler):
         console.setup_python_logging()
         console.embed()
     """
+
     def __init__(self, prefs: Optional[ConsolePrefs] = None):
         """Initializes the LogStore instance."""
 
         # ConsolePrefs may not be passed on init. For example, if the user is
         # creating a LogStore to capture log messages before console startup.
         if not prefs:
-            prefs = ConsolePrefs(project_file=False,
-                                 project_user_file=False,
-                                 user_file=False)
+            prefs = ConsolePrefs(
+                project_file=False, project_user_file=False, user_file=False
+            )
         self.prefs = prefs
         # Log storage deque for fast addition and deletion from the beginning
         # and end of the iterable.
@@ -148,9 +149,9 @@ class LogStore(logging.Handler):
 
     def get_channel_counts(self):
         """Return the seen channel log counts for this conatiner."""
-        return ', '.join([
-            f'{name}: {count}' for name, count in self.channel_counts.items()
-        ])
+        return ', '.join(
+            [f'{name}: {count}' for name, count in self.channel_counts.items()]
+        )
 
     def get_total_count(self):
         """Total size of the logs store."""
@@ -166,10 +167,12 @@ class LogStore(logging.Handler):
         """Save the formatted prefix width if this is a new logger channel
         name."""
         if self.formatter and (
-                record.name
-                not in self.channel_formatted_prefix_widths.keys()):
+            record.name not in self.channel_formatted_prefix_widths.keys()
+        ):
             # Find the width of the formatted timestamp and level
-            format_string = self.formatter._fmt  # pylint: disable=protected-access
+            format_string = (
+                self.formatter._fmt  # pylint: disable=protected-access
+            )
 
             # There may not be a _fmt defined.
             if not format_string:
@@ -177,39 +180,50 @@ class LogStore(logging.Handler):
 
             format_without_message = format_string.replace('%(message)s', '')
             # If any other style parameters are left, get the width of them.
-            if (format_without_message and 'asctime' in format_without_message
-                    and 'levelname' in format_without_message):
+            if (
+                format_without_message
+                and 'asctime' in format_without_message
+                and 'levelname' in format_without_message
+            ):
                 formatted_time_and_level = format_without_message % dict(
-                    asctime=record.asctime, levelname=record.levelname)
+                    asctime=record.asctime, levelname=record.levelname
+                )
 
                 # Delete ANSI escape sequences.
                 ansi_stripped_time_and_level = (
                     pw_console.text_formatting.strip_ansi(
-                        formatted_time_and_level))
+                        formatted_time_and_level
+                    )
+                )
 
                 self.channel_formatted_prefix_widths[record.name] = len(
-                    ansi_stripped_time_and_level)
+                    ansi_stripped_time_and_level
+                )
             else:
                 self.channel_formatted_prefix_widths[record.name] = 0
 
             # Set the max width of all known formats so far.
             self.longest_channel_prefix_width = max(
-                self.channel_formatted_prefix_widths.values())
+                self.channel_formatted_prefix_widths.values()
+            )
 
     def _append_log(self, record: logging.LogRecord):
         """Add a new log event."""
         # Format incoming log line.
         formatted_log = self.format(record)
-        ansi_stripped_log = pw_console.text_formatting.strip_ansi(
-            formatted_log)
+        ansi_stripped_log = pw_console.text_formatting.strip_ansi(formatted_log)
         # Save this log.
         self.logs.append(
-            LogLine(record=record,
-                    formatted_log=formatted_log,
-                    ansi_stripped_log=ansi_stripped_log))
+            LogLine(
+                record=record,
+                formatted_log=formatted_log,
+                ansi_stripped_log=ansi_stripped_log,
+            )
+        )
         # Increment this logger count
-        self.channel_counts[record.name] = self.channel_counts.get(
-            record.name, 0) + 1
+        self.channel_counts[record.name] = (
+            self.channel_counts.get(record.name, 0) + 1
+        )
 
         # TODO(b/235271486): Revisit calculating prefix widths automatically
         # when line wrapping indentation is supported.

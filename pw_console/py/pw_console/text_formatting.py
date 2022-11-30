@@ -30,7 +30,8 @@ def strip_ansi(text: str):
 
 
 def split_lines(
-        input_fragments: StyleAndTextTuples) -> List[StyleAndTextTuples]:
+    input_fragments: StyleAndTextTuples,
+) -> List[StyleAndTextTuples]:
     """Break a flattened list of StyleAndTextTuples into a list of lines.
 
     Ending line breaks are not preserved."""
@@ -50,9 +51,10 @@ def split_lines(
 
 
 def insert_linebreaks(
-        input_fragments: StyleAndTextTuples,
-        max_line_width: int,
-        truncate_long_lines: bool = True) -> Tuple[StyleAndTextTuples, int]:
+    input_fragments: StyleAndTextTuples,
+    max_line_width: int,
+    truncate_long_lines: bool = True,
+) -> Tuple[StyleAndTextTuples, int]:
     """Add line breaks at max_line_width if truncate_long_lines is True.
 
     Returns input_fragments with each character as it's own formatted text
@@ -118,7 +120,8 @@ def insert_linebreaks(
 
 
 def join_adjacent_style_tuples(
-        fragments: StyleAndTextTuples) -> StyleAndTextTuples:
+    fragments: StyleAndTextTuples,
+) -> StyleAndTextTuples:
     """Join adjacent FormattedTextTuples if they have the same style."""
     new_fragments: StyleAndTextTuples = []
 
@@ -145,13 +148,15 @@ def join_adjacent_style_tuples(
     return new_fragments
 
 
-def fill_character_width(input_fragments: StyleAndTextTuples,
-                         fragment_width: int,
-                         window_width: int,
-                         line_wrapping: bool = False,
-                         remaining_width: int = 0,
-                         horizontal_scroll_amount: int = 0,
-                         add_cursor: bool = False) -> StyleAndTextTuples:
+def fill_character_width(
+    input_fragments: StyleAndTextTuples,
+    fragment_width: int,
+    window_width: int,
+    line_wrapping: bool = False,
+    remaining_width: int = 0,
+    horizontal_scroll_amount: int = 0,
+    add_cursor: bool = False,
+) -> StyleAndTextTuples:
     """Fill line to the width of the window using spaces."""
     # Calculate the number of spaces to add at the end.
     empty_characters = window_width - fragment_width
@@ -195,7 +200,8 @@ def fill_character_width(input_fragments: StyleAndTextTuples,
 
 
 def flatten_formatted_text_tuples(
-        lines: Iterable[StyleAndTextTuples]) -> StyleAndTextTuples:
+    lines: Iterable[StyleAndTextTuples],
+) -> StyleAndTextTuples:
     """Flatten a list of lines of FormattedTextTuples
 
     This function will also remove trailing newlines to avoid displaying extra

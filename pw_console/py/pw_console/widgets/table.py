@@ -52,18 +52,19 @@ class TableView:
         self.column_padding = ' ' * self.prefs.spaces_between_columns
 
     def all_column_names(self):
-        columns_names = [
-            name for name, _width in self._ordered_column_widths()
-        ]
+        columns_names = [name for name, _width in self._ordered_column_widths()]
         return columns_names + ['message']
 
     def _width_of_justified_fields(self):
         """Calculate the width of all columns except LAST_TABLE_COLUMN_NAMES."""
         padding_width = len(self.column_padding)
-        used_width = sum([
-            width + padding_width for key, width in self.column_widths.items()
-            if key not in TableView.LAST_TABLE_COLUMN_NAMES
-        ])
+        used_width = sum(
+            [
+                width + padding_width
+                for key, width in self.column_widths.items()
+                if key not in TableView.LAST_TABLE_COLUMN_NAMES
+            ]
+        )
         return used_width
 
     def _ordered_column_widths(self):
@@ -117,7 +118,8 @@ class TableView:
 
         # Update log level character width.
         ansi_stripped_level = pw_console.text_formatting.strip_ansi(
-            log.record.levelname)
+            log.record.levelname
+        )
         if len(ansi_stripped_level) > self.column_widths['level']:
             self.column_widths['level'] = len(ansi_stripped_level)
 
@@ -131,15 +133,15 @@ class TableView:
         # Update time column width to current prefs setting
         self.column_widths['time'] = self._default_time_width
         if self.prefs.hide_date_from_log_time:
-            self.column_widths['time'] = (self._default_time_width -
-                                          self._year_month_day_width)
+            self.column_widths['time'] = (
+                self._default_time_width - self._year_month_day_width
+            )
 
         for name, width in self._ordered_column_widths():
             # These fields will be shown at the end
             if name in TableView.LAST_TABLE_COLUMN_NAMES:
                 continue
-            fragments.append(
-                (default_style, name.title()[:width].ljust(width)))
+            fragments.append((default_style, name.title()[:width].ljust(width)))
             fragments.append(('', self.column_padding))
 
         fragments.append((default_style, 'Message'))
@@ -178,25 +180,30 @@ class TableView:
             if name == 'time' and hasattr(log.record, 'asctime'):
                 time_text = log.record.asctime
                 if self.prefs.hide_date_from_log_time:
-                    time_text = time_text[self._year_month_day_width:]
-                time_style = self.prefs.column_style('time',
-                                                     time_text,
-                                                     default='class:log-time')
-                columns['time'] = (time_style,
-                                   time_text.ljust(self.column_widths['time']))
+                    time_text = time_text[self._year_month_day_width :]
+                time_style = self.prefs.column_style(
+                    'time', time_text, default='class:log-time'
+                )
+                columns['time'] = (
+                    time_style,
+                    time_text.ljust(self.column_widths['time']),
+                )
                 continue
 
             if name == 'level' and hasattr(log.record, 'levelname'):
                 # Remove any existing ANSI formatting and apply our colors.
                 level_text = pw_console.text_formatting.strip_ansi(
-                    log.record.levelname)
+                    log.record.levelname
+                )
                 level_style = self.prefs.column_style(
                     'level',
                     level_text,
-                    default='class:log-level-{}'.format(log.record.levelno))
-                columns['level'] = (level_style,
-                                    level_text.ljust(
-                                        self.column_widths['level']))
+                    default='class:log-level-{}'.format(log.record.levelno),
+                )
+                columns['level'] = (
+                    level_style,
+                    level_text.ljust(self.column_widths['level']),
+                )
                 continue
 
             value = log.metadata.fields.get(name, ' ')
@@ -217,8 +224,7 @@ class TableView:
 
         # Grab the message to appear after the justified columns with ANSI
         # escape sequences removed.
-        message_text = pw_console.text_formatting.strip_ansi(
-            log.record.message)
+        message_text = pw_console.text_formatting.strip_ansi(log.record.message)
         message = log.metadata.fields.get(
             'msg',
             message_text.rstrip(),  # Remove any trailing line breaks
@@ -245,12 +251,15 @@ class TableView:
             # For raw strings that don't have their own ANSI colors, apply the
             # theme color style for this column.
             if isinstance(column_value, str):
-                fallback_style = 'class:log-table-column-{}'.format(
-                    i + index_modifier) if 0 <= i <= 7 else default_style
+                fallback_style = (
+                    'class:log-table-column-{}'.format(i + index_modifier)
+                    if 0 <= i <= 7
+                    else default_style
+                )
 
-                style = self.prefs.column_style(column_name,
-                                                column_value.rstrip(),
-                                                default=fallback_style)
+                style = self.prefs.column_style(
+                    column_name, column_value.rstrip(), default=fallback_style
+                )
 
                 table_fragments.append((style, column_value))
                 table_fragments.append(padding_formatted_text)

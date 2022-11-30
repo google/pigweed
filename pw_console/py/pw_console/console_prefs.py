@@ -50,9 +50,7 @@ _DEFAULT_CONFIG = {
     'command_runner': {
         'width': 80,
         'height': 10,
-        'position': {
-            'top': 3
-        },
+        'position': {'top': 3},
     },
     'key_bindings': DEFAULT_KEY_BINDINGS,
     'snippets': {},
@@ -72,8 +70,9 @@ class EmptyWindowList(Exception):
     """Exception for window lists with no content."""
 
 
-def error_unknown_window(window_title: str,
-                         existing_pane_titles: List[str]) -> None:
+def error_unknown_window(
+    window_title: str, existing_pane_titles: List[str]
+) -> None:
     """Raise an error when the window config has an unknown title.
 
     If a window title does not already exist on startup it must have a loggers:
@@ -91,17 +90,21 @@ def error_unknown_window(window_title: str,
         f'add "duplicate_of: {existing_pane_title_example}" to your config.\n'
         'If this is a brand new window, include a "loggers:" section.\n'
         'See also: '
-        'https://pigweed.dev/pw_console/docs/user_guide.html#example-config')
+        'https://pigweed.dev/pw_console/docs/user_guide.html#example-config'
+    )
 
 
-def error_empty_window_list(window_list_title: str, ) -> None:
+def error_empty_window_list(
+    window_list_title: str,
+) -> None:
     """Raise an error if a window list is empty."""
 
     raise EmptyWindowList(
         f'\n\nError: The window layout heading "{window_list_title}" contains '
         'no windows.\n'
         'See also: '
-        'https://pigweed.dev/pw_console/docs/user_guide.html#example-config')
+        'https://pigweed.dev/pw_console/docs/user_guide.html#example-config'
+    )
 
 
 class ConsolePrefs(YamlConfigLoaderMixin):
@@ -197,10 +200,9 @@ class ConsolePrefs(YamlConfigLoaderMixin):
     def column_order(self) -> List:
         return self._config.get('column_order', [])
 
-    def column_style(self,
-                     column_name: str,
-                     column_value: str,
-                     default='') -> str:
+    def column_style(
+        self, column_name: str, column_value: str, default=''
+    ) -> str:
         column_colors = self._config.get('column_colors', {})
         column_style = default
 
@@ -212,7 +214,8 @@ class ConsolePrefs(YamlConfigLoaderMixin):
             column_style = column_colors[column_name].get('default', default)
             # Check for value specific color, otherwise use the default.
             column_style = column_colors[column_name].get(
-                column_value, column_style)
+                column_value, column_style
+            )
         return column_style
 
     def pw_console_color_config(self) -> Dict[str, Dict]:
@@ -242,8 +245,9 @@ class ConsolePrefs(YamlConfigLoaderMixin):
 
     @property
     def command_runner_position(self) -> Dict[str, int]:
-        position = self._config.get('command_runner',
-                                    {}).get('position', {'top': 3})
+        position = self._config.get('command_runner', {}).get(
+            'position', {'top': 3}
+        )
         return {
             key: value
             for key, value in position.items()
@@ -263,9 +267,9 @@ class ConsolePrefs(YamlConfigLoaderMixin):
         return self._config.get('key_bindings', {})
 
     def current_config_as_yaml(self) -> str:
-        yaml_options = dict(sort_keys=True,
-                            default_style='',
-                            default_flow_style=False)
+        yaml_options = dict(
+            sort_keys=True, default_style='', default_flow_style=False
+        )
 
         title = {'config_title': 'pw_console'}
         text = '\n'
@@ -288,7 +292,8 @@ class ConsolePrefs(YamlConfigLoaderMixin):
                 window_options = window_dict if window_dict else {}
                 # Use 'duplicate_of: Title' if it exists, otherwise use the key.
                 titles.append(
-                    window_options.get('duplicate_of', window_key_title))
+                    window_options.get('duplicate_of', window_key_title)
+                )
         return set(titles)
 
     def get_function_keys(self, name: str) -> List:
@@ -298,13 +303,16 @@ class ConsolePrefs(YamlConfigLoaderMixin):
         except KeyError as error:
             raise KeyError('Unbound key function: {}'.format(name)) from error
 
-    def register_named_key_function(self, name: str,
-                                    default_bindings: List[str]) -> None:
+    def register_named_key_function(
+        self, name: str, default_bindings: List[str]
+    ) -> None:
         self.registered_commands[name] = default_bindings
 
-    def register_keybinding(self, name: str, key_bindings: KeyBindings,
-                            **kwargs) -> Callable:
+    def register_keybinding(
+        self, name: str, key_bindings: KeyBindings, **kwargs
+    ) -> Callable:
         """Apply registered keys for the given named function."""
+
         def decorator(handler: Callable) -> Callable:
             "`handler` is a callable or Binding."
             for keys in self.get_function_keys(name):
@@ -331,7 +339,8 @@ class ConsolePrefs(YamlConfigLoaderMixin):
         if not all_descriptions:
             return []
         max_description_width = max(
-            len(description) for description in all_descriptions)
+            len(description) for description in all_descriptions
+        )
 
         all_snippets: List[Tuple[str, str]] = []
         all_snippets.extend(self.user_snippets.items())
@@ -344,7 +353,8 @@ class ConsolePrefs(YamlConfigLoaderMixin):
                 ' '.join([line.lstrip() for line in text.splitlines()]),
                 # Pass original text as the completion result.
                 text,
-            ) for description, text in all_snippets
+            )
+            for description, text in all_snippets
         ]
 
         return self._snippet_completions

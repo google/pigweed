@@ -45,17 +45,18 @@ class QuitDialog(ConditionalContainer):
 
     DIALOG_HEIGHT = 2
 
-    def __init__(self,
-                 application: ConsoleApp,
-                 on_quit: Optional[Callable] = None):
+    def __init__(
+        self, application: ConsoleApp, on_quit: Optional[Callable] = None
+    ):
         self.application = application
         self.show_dialog = False
         # Tracks the last focused container, to enable restoring focus after
         # closing the dialog.
         self.last_focused_pane = None
 
-        self.on_quit_function = (on_quit if on_quit else
-                                 self._default_on_quit_function)
+        self.on_quit_function = (
+            on_quit if on_quit else self._default_on_quit_function
+        )
 
         # Quit keybindings are active when this dialog is in focus
         key_bindings = KeyBindings()
@@ -82,10 +83,12 @@ class QuitDialog(ConditionalContainer):
             get_cursor_position=lambda: Point(len(self.exit_message), 0),
         )
 
-        action_bar_window = Window(content=action_bar_control,
-                                   height=QuitDialog.DIALOG_HEIGHT,
-                                   align=WindowAlign.LEFT,
-                                   dont_extend_width=False)
+        action_bar_window = Window(
+            content=action_bar_control,
+            height=QuitDialog.DIALOG_HEIGHT,
+            align=WindowAlign.LEFT,
+            dont_extend_width=False,
+        )
 
         super().__init__(
             pw_console.widgets.border.create_border(
@@ -133,12 +136,15 @@ class QuitDialog(ConditionalContainer):
         """Return FormattedText with action buttons."""
 
         # Mouse handlers
-        focus = functools.partial(pw_console.widgets.mouse_handlers.on_click,
-                                  self.focus_self)
-        cancel = functools.partial(pw_console.widgets.mouse_handlers.on_click,
-                                   self.close_dialog)
+        focus = functools.partial(
+            pw_console.widgets.mouse_handlers.on_click, self.focus_self
+        )
+        cancel = functools.partial(
+            pw_console.widgets.mouse_handlers.on_click, self.close_dialog
+        )
         quit_action = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self.quit_action)
+            pw_console.widgets.mouse_handlers.on_click, self.quit_action
+        )
 
         # Separator should have the focus mouse handler so clicking on any
         # whitespace focuses the input field.
@@ -157,7 +163,8 @@ class QuitDialog(ConditionalContainer):
                 description='Cancel',
                 mouse_handler=cancel,
                 base_style=button_style,
-            ))
+            )
+        )
 
         # Two space separator
         fragments.append(separator_text)
@@ -169,7 +176,8 @@ class QuitDialog(ConditionalContainer):
                 description='Quit',
                 mouse_handler=quit_action,
                 base_style=button_style,
-            ))
+            )
+        )
 
         # One space separator
         fragments.append(('', ' ', focus))

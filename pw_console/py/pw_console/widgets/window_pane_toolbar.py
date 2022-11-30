@@ -41,6 +41,7 @@ _LOG = logging.getLogger(__package__)
 
 class WindowPaneResizeHandle(FormattedTextControl):
     """Button to initiate window pane resize drag events."""
+
     def __init__(self, parent_window_pane: Any, *args, **kwargs) -> None:
         self.parent_window_pane = parent_window_pane
         super().__init__(*args, **kwargs)
@@ -50,7 +51,8 @@ class WindowPaneResizeHandle(FormattedTextControl):
         # Start resize mouse drag event
         if mouse_event.event_type == MouseEventType.MOUSE_DOWN:
             get_pw_console_app().window_manager.start_resize_pane(
-                self.parent_window_pane)
+                self.parent_window_pane
+            )
             # Mouse event handled, return None.
             return None
 
@@ -60,6 +62,7 @@ class WindowPaneResizeHandle(FormattedTextControl):
 
 class WindowPaneToolbar:
     """One line toolbar for display at the bottom of of a window pane."""
+
     # pylint: disable=too-many-instance-attributes
     TOOLBAR_HEIGHT = 1
 
@@ -71,20 +74,20 @@ class WindowPaneToolbar:
             # No title was set, fetch the parent window pane title if available.
             parent_pane_title = self.parent_window_pane.pane_title()
             title = parent_pane_title if parent_pane_title else title
-        return pw_console.style.get_pane_indicator(self.focus_check_container,
-                                                   f' {title} ',
-                                                   self.focus_mouse_handler)
+        return pw_console.style.get_pane_indicator(
+            self.focus_check_container, f' {title} ', self.focus_mouse_handler
+        )
 
     def get_center_text_tokens(self):
         """Return formatted text tokens for display in the center part of the
         toolbar."""
 
         button_style = pw_console.style.get_button_style(
-            self.focus_check_container)
+            self.focus_check_container
+        )
 
         # FormattedTextTuple contents: (Style, Text, Mouse handler)
-        separator_text = [('', '  ')
-                          ]  # 2 spaces of separaton between keybinds.
+        separator_text = [('', '  ')]  # 2 spaces of separaton between keybinds.
         if self.focus_mouse_handler:
             separator_text = [('', '  ', self.focus_mouse_handler)]
 
@@ -96,7 +99,8 @@ class WindowPaneToolbar:
             if button.mouse_handler:
                 on_click_handler = functools.partial(
                     pw_console.widgets.mouse_handlers.on_click,
-                    button.mouse_handler)
+                    button.mouse_handler,
+                )
 
             if button.is_checkbox:
                 fragments.extend(
@@ -105,13 +109,18 @@ class WindowPaneToolbar:
                         button.key,
                         button.description,
                         on_click_handler,
-                        base_style=button_style))
+                        base_style=button_style,
+                    )
+                )
             else:
                 fragments.extend(
-                    to_keybind_indicator(button.key,
-                                         button.description,
-                                         on_click_handler,
-                                         base_style=button_style))
+                    to_keybind_indicator(
+                        button.key,
+                        button.description,
+                        on_click_handler,
+                        base_style=button_style,
+                    )
+                )
 
             fragments.extend(separator_text)
 
@@ -124,22 +133,38 @@ class WindowPaneToolbar:
         """Return formatted text tokens for display."""
         fragments = []
         if not has_focus(self.focus_check_container.__pt_container__())():
-            fragments.append((
-                'class:toolbar-button-inactive class:toolbar-button-decoration',
-                ' ', self.focus_mouse_handler))
-            fragments.append(('class:toolbar-button-inactive class:keyhelp',
-                              'click to focus', self.focus_mouse_handler))
-            fragments.append((
-                'class:toolbar-button-inactive class:toolbar-button-decoration',
-                ' ', self.focus_mouse_handler))
+            fragments.append(
+                (
+                    'class:toolbar-button-inactive '
+                    'class:toolbar-button-decoration',
+                    ' ',
+                    self.focus_mouse_handler,
+                )
+            )
+            fragments.append(
+                (
+                    'class:toolbar-button-inactive class:keyhelp',
+                    'click to focus',
+                    self.focus_mouse_handler,
+                )
+            )
+            fragments.append(
+                (
+                    'class:toolbar-button-inactive '
+                    'class:toolbar-button-decoration',
+                    ' ',
+                    self.focus_mouse_handler,
+                )
+            )
         fragments.append(
-            ('', '  {} '.format(self.subtitle()), self.focus_mouse_handler))
+            ('', '  {} '.format(self.subtitle()), self.focus_mouse_handler)
+        )
         return fragments
 
     def get_resize_handle(self):
-        return pw_console.style.get_pane_indicator(self.focus_check_container,
-                                                   '─══─',
-                                                   hide_indicator=True)
+        return pw_console.style.get_pane_indicator(
+            self.focus_check_container, '─══─', hide_indicator=True
+        )
 
     def add_button(self, button: ToolbarButton):
         self.buttons.append(button)
@@ -187,7 +212,8 @@ class WindowPaneToolbar:
         if self.focus_action_callable:
             self.focus_mouse_handler = functools.partial(
                 pw_console.widgets.mouse_handlers.on_click,
-                self.focus_action_callable)
+                self.focus_action_callable,
+            )
 
         self.buttons: List[ToolbarButton] = []
         self.show_toolbar = True
@@ -212,7 +238,8 @@ class WindowPaneToolbar:
         )
 
         get_toolbar_style = functools.partial(
-            pw_console.style.get_toolbar_style, self.focus_check_container)
+            pw_console.style.get_toolbar_style, self.focus_check_container
+        )
 
         sections = [
             self.left_section_window,
@@ -241,7 +268,8 @@ class WindowPaneToolbar:
 
     def _create_toolbar_container(self, content):
         return ConditionalContainer(
-            content, filter=Condition(lambda: self.show_toolbar))
+            content, filter=Condition(lambda: self.show_toolbar)
+        )
 
     def __pt_container__(self):
         """Return the prompt_toolkit root container for this log pane.

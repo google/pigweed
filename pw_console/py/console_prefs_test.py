@@ -27,33 +27,36 @@ from pw_console.console_prefs import (
 
 
 def _create_tempfile(content: str) -> Path:
-    with tempfile.NamedTemporaryFile(prefix=f'{__package__}',
-                                     delete=False) as output_file:
+    with tempfile.NamedTemporaryFile(
+        prefix=f'{__package__}', delete=False
+    ) as output_file:
         output_file.write(content.encode('UTF-8'))
         return Path(output_file.name)
 
 
 class TestConsolePrefs(unittest.TestCase):
     """Tests for ConsolePrefs."""
+
     def setUp(self):
         self.maxDiff = None  # pylint: disable=invalid-name
 
     def test_load_no_existing_files(self) -> None:
-        prefs = ConsolePrefs(project_file=False,
-                             project_user_file=False,
-                             user_file=False)
+        prefs = ConsolePrefs(
+            project_file=False, project_user_file=False, user_file=False
+        )
         self.assertEqual(_DEFAULT_CONFIG, prefs._config)
         self.assertTrue(str(prefs.repl_history).endswith('pw_console_history'))
-        self.assertTrue(
-            str(prefs.search_history).endswith('pw_console_search'))
+        self.assertTrue(str(prefs.search_history).endswith('pw_console_search'))
 
     def test_load_empty_file(self) -> None:
         # Create an empty file
         project_config_file = _create_tempfile('')
         try:
-            prefs = ConsolePrefs(project_file=project_config_file,
-                                 project_user_file=False,
-                                 user_file=False)
+            prefs = ConsolePrefs(
+                project_file=project_config_file,
+                project_user_file=False,
+                user_file=False,
+            )
             result_settings = {
                 k: v
                 for k, v in prefs._config.items()
@@ -80,9 +83,11 @@ class TestConsolePrefs(unittest.TestCase):
         }
         project_config_file = _create_tempfile(yaml.dump(project_config))
         try:
-            prefs = ConsolePrefs(project_file=project_config_file,
-                                 project_user_file=False,
-                                 user_file=False)
+            prefs = ConsolePrefs(
+                project_file=project_config_file,
+                project_user_file=False,
+                user_file=False,
+            )
             result_settings = {
                 k: v
                 for k, v in prefs._config.items()
@@ -119,7 +124,8 @@ class TestConsolePrefs(unittest.TestCase):
             },
         }
         project_user_config_file = _create_tempfile(
-            yaml.dump(project_user_config))
+            yaml.dump(project_user_config)
+        )
 
         user_config = {
             'pw_console': {
@@ -129,32 +135,39 @@ class TestConsolePrefs(unittest.TestCase):
         }
         user_config_file = _create_tempfile(yaml.dump(user_config))
         try:
-            prefs = ConsolePrefs(project_file=project_config_file,
-                                 project_user_file=project_user_config_file,
-                                 user_file=user_config_file)
+            prefs = ConsolePrefs(
+                project_file=project_config_file,
+                project_user_file=project_user_config_file,
+                user_file=user_config_file,
+            )
             # Set by the project
-            self.assertEqual(project_config['pw_console']['code_theme'],
-                             prefs.code_theme)
+            self.assertEqual(
+                project_config['pw_console']['code_theme'], prefs.code_theme
+            )
             self.assertEqual(
                 project_config['pw_console']['swap_light_and_dark'],
-                prefs.swap_light_and_dark)
+                prefs.swap_light_and_dark,
+            )
 
             # Project user setting, result should not be project only setting.
             project_history = project_config['pw_console']['repl_history']
             assert isinstance(project_history, str)
             self.assertNotEqual(
-                Path(project_history).expanduser(), prefs.repl_history)
+                Path(project_history).expanduser(), prefs.repl_history
+            )
 
             history = project_user_config['pw_console']['repl_history']
             assert isinstance(history, str)
             self.assertEqual(Path(history).expanduser(), prefs.repl_history)
 
             # User config overrides project and project_user
-            self.assertEqual(user_config['pw_console']['ui_theme'],
-                             prefs.ui_theme)
+            self.assertEqual(
+                user_config['pw_console']['ui_theme'], prefs.ui_theme
+            )
             self.assertEqual(
                 Path(user_config['pw_console']['search_history']).expanduser(),
-                prefs.search_history)
+                prefs.search_history,
+            )
             # ui_theme should not be the project_user file setting
             project_user_theme = project_user_config['pw_console']['ui_theme']
             self.assertNotEqual(project_user_theme, prefs.ui_theme)

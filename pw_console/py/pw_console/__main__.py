@@ -42,26 +42,34 @@ def create_temp_log_file():
 
 def _build_argument_parser() -> argparse.ArgumentParser:
     """Setup argparse."""
-    parser = argparse.ArgumentParser(prog="python -m pw_console",
-                                     description=__doc__)
+    parser = argparse.ArgumentParser(
+        prog="python -m pw_console", description=__doc__
+    )
 
-    parser.add_argument('-l',
-                        '--loglevel',
-                        type=pw_cli.argument_types.log_level,
-                        default=logging.DEBUG,
-                        help='Set the log level'
-                        '(debug, info, warning, error, critical)')
+    parser.add_argument(
+        '-l',
+        '--loglevel',
+        type=pw_cli.argument_types.log_level,
+        default=logging.DEBUG,
+        help='Set the log level' '(debug, info, warning, error, critical)',
+    )
 
     parser.add_argument('--logfile', help='Pigweed Console log file.')
 
-    parser.add_argument('--test-mode',
-                        action='store_true',
-                        help='Enable fake log messages for testing purposes.')
-    parser.add_argument('--config-file',
-                        type=Path,
-                        help='Path to a pw_console yaml config file.')
-    parser.add_argument('--console-debug-log-file',
-                        help='Log file to send console debug messages to.')
+    parser.add_argument(
+        '--test-mode',
+        action='store_true',
+        help='Enable fake log messages for testing purposes.',
+    )
+    parser.add_argument(
+        '--config-file',
+        type=Path,
+        help='Path to a pw_console yaml config file.',
+    )
+    parser.add_argument(
+        '--console-debug-log-file',
+        help='Log file to send console debug messages to.',
+    )
 
     return parser
 
@@ -77,17 +85,21 @@ def main() -> int:
         # would corrupt the prompt toolkit UI.
         args.logfile = pw_console.python_logging.create_temp_log_file()
 
-    pw_cli.log.install(level=args.loglevel,
-                       use_color=True,
-                       hide_timestamp=False,
-                       log_file=args.logfile)
+    pw_cli.log.install(
+        level=args.loglevel,
+        use_color=True,
+        hide_timestamp=False,
+        log_file=args.logfile,
+    )
 
     if args.console_debug_log_file:
-        pw_cli.log.install(level=logging.DEBUG,
-                           use_color=True,
-                           hide_timestamp=False,
-                           log_file=args.console_debug_log_file,
-                           logger=logging.getLogger('pw_console'))
+        pw_cli.log.install(
+            level=logging.DEBUG,
+            use_color=True,
+            hide_timestamp=False,
+            log_file=args.console_debug_log_file,
+            logger=logging.getLogger('pw_console'),
+        )
 
     global_vars = None
     default_loggers = {}
@@ -97,7 +109,8 @@ def main() -> int:
         _ROOT_LOG.debug('pw_console test-mode starting...')
 
         fake_logger = logging.getLogger(
-            pw_console.test_mode.FAKE_DEVICE_LOGGER_NAME)
+            pw_console.test_mode.FAKE_DEVICE_LOGGER_NAME
+        )
         default_loggers = {
             # Don't include pw_console package logs (_LOG) in the log pane UI.
             # Add the fake logger for test_mode.
@@ -112,7 +125,8 @@ def main() -> int:
     app_title = None
     if args.test_mode:
         app_title = 'Console Test Mode'
-        help_text = inspect.cleandoc("""
+        help_text = inspect.cleandoc(
+            """
             Welcome to the Pigweed Console Test Mode!
 
             Example commands:
@@ -120,7 +134,8 @@ def main() -> int:
               rpcs.pw.rpc.EchoService.Echo(msg='hello!')
 
               LOG.warning('Message appears console log window.')
-        """)
+        """
+        )
 
     console = pw_console.PwConsoleEmbed(
         global_vars=global_vars,
@@ -143,7 +158,8 @@ def main() -> int:
         console.add_window_plugin(ClockPane())
         console.add_window_plugin(CalcPane())
         console.add_floating_window_plugin(
-            Twenty48Pane(include_resize_handle=False), left=4)
+            Twenty48Pane(include_resize_handle=False), left=4
+        )
         _ROOT_LOG.debug('Starting prompt_toolkit full-screen application...')
 
         overriden_window_config = {
@@ -152,17 +168,13 @@ def main() -> int:
                 'Fake Keys': {
                     'duplicate_of': 'Fake Device',
                     'filters': {
-                        'keys': {
-                            'regex': '[^ ]+'
-                        },
+                        'keys': {'regex': '[^ ]+'},
                     },
                 },
                 'Fake USB': {
                     'duplicate_of': 'Fake Device',
                     'filters': {
-                        'module': {
-                            'regex': 'USB'
-                        },
+                        'module': {'regex': 'USB'},
                     },
                 },
             },

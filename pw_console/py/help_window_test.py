@@ -40,6 +40,7 @@ def _create_app_mock():
 
 class TestHelpWindow(unittest.TestCase):
     """Tests for HelpWindow text and keybind lists."""
+
     def setUp(self):
         self.maxDiff = None  # pylint: disable=invalid-name
 
@@ -107,50 +108,62 @@ class TestHelpWindow(unittest.TestCase):
         help_window = HelpWindow(
             app,
             preamble='Pigweed CLI v0.1',
-            additional_help_text=inspect.cleandoc("""
+            additional_help_text=inspect.cleandoc(
+                """
                 Welcome to the Pigweed Console!
                 Please enjoy this extra help text.
-            """),
+            """
+            ),
         )
         help_window.add_keybind_help_text('Global', global_bindings)
         help_window.add_keybind_help_text('Focus', focus_bindings)
         help_window.generate_help_text()
 
         self.assertIn(
-            inspect.cleandoc("""
+            inspect.cleandoc(
+                """
             Welcome to the Pigweed Console!
             Please enjoy this extra help text.
-            """),
+            """
+            ),
             help_window.help_text,
         )
         self.assertIn(
-            inspect.cleandoc("""
+            inspect.cleandoc(
+                """
             ==== Global Keys ====
-            """),
+            """
+            ),
             help_window.help_text,
         )
         self.assertIn(
-            inspect.cleandoc("""
+            inspect.cleandoc(
+                """
             Toggle help window. -----------------  F1
             Quit the application. ---------------  Ctrl-Q
                                                    Ctrl-W
-            """),
+            """
+            ),
             help_window.help_text,
         )
         self.assertIn(
-            inspect.cleandoc("""
+            inspect.cleandoc(
+                """
             ==== Focus Keys ====
-            """),
+            """
+            ),
             help_window.help_text,
         )
         self.assertIn(
-            inspect.cleandoc("""
+            inspect.cleandoc(
+                """
             Move focus to the next widget. ------  Ctrl-Down
                                                    Ctrl-Right
                                                    Shift-Tab
             Move focus to the previous widget. --  Ctrl-Left
                                                    Ctrl-Up
-            """),
+            """
+            ),
             help_window.help_text,
         )
 

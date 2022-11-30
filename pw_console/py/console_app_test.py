@@ -18,6 +18,7 @@ import unittest
 
 from prompt_toolkit.application import create_app_session
 from prompt_toolkit.output import ColorDepth
+
 # inclusive-language: ignore
 from prompt_toolkit.output import DummyOutput as FakeOutput
 
@@ -27,15 +28,17 @@ from pw_console.console_prefs import ConsolePrefs
 
 class TestConsoleApp(unittest.TestCase):
     """Tests for ConsoleApp."""
+
     def test_instantiate(self) -> None:
         """Test init."""
         with create_app_session(output=FakeOutput()):
-            prefs = ConsolePrefs(project_file=False,
-                                 project_user_file=False,
-                                 user_file=False)
+            prefs = ConsolePrefs(
+                project_file=False, project_user_file=False, user_file=False
+            )
             prefs.set_code_theme('default')
-            console_app = ConsoleApp(color_depth=ColorDepth.DEPTH_8_BIT,
-                                     prefs=prefs)
+            console_app = ConsoleApp(
+                color_depth=ColorDepth.DEPTH_8_BIT, prefs=prefs
+            )
 
             self.assertIsNotNone(console_app)
 
@@ -43,12 +46,13 @@ class TestConsoleApp(unittest.TestCase):
         """Test window resizing."""
         # pylint: disable=protected-access
         with create_app_session(output=FakeOutput()):
-            prefs = ConsolePrefs(project_file=False,
-                                 project_user_file=False,
-                                 user_file=False)
+            prefs = ConsolePrefs(
+                project_file=False, project_user_file=False, user_file=False
+            )
             prefs.set_code_theme('default')
-            console_app = ConsoleApp(color_depth=ColorDepth.DEPTH_8_BIT,
-                                     prefs=prefs)
+            console_app = ConsoleApp(
+                color_depth=ColorDepth.DEPTH_8_BIT, prefs=prefs
+            )
 
             loggers = {
                 'Logs': [
@@ -65,10 +69,14 @@ class TestConsoleApp(unittest.TestCase):
             self.assertEqual(len(window_list.active_panes), 2)
 
             self.assertEqual(window_list.active_panes[0].pane_title(), 'Logs')
-            self.assertEqual(window_list.active_panes[0]._pane_subtitle,
-                             'test_log1, test_log2, test_log3')
-            self.assertEqual(window_list.active_panes[0].pane_subtitle(),
-                             'test_log1 + 3 more')
+            self.assertEqual(
+                window_list.active_panes[0]._pane_subtitle,
+                'test_log1, test_log2, test_log3',
+            )
+            self.assertEqual(
+                window_list.active_panes[0].pane_subtitle(),
+                'test_log1 + 3 more',
+            )
 
 
 if __name__ == '__main__':

@@ -41,6 +41,7 @@ class ClockControl(FormattedTextControl):
     This is the prompt_toolkit class that is responsible for drawing the clock,
     handling keybindings if in focus, and mouse input.
     """
+
     def __init__(self, clock_pane: 'ClockPane', *args, **kwargs) -> None:
         self.clock_pane = clock_pane
 
@@ -110,6 +111,7 @@ class ClockPane(WindowPane, PluginMixin):
     For an example see:
     https://pigweed.dev/pw_console/embedding.html#adding-plugins
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, pane_title='Clock', **kwargs)
         # Some toggle settings to change view and wrap lines.
@@ -161,7 +163,8 @@ class ClockPane(WindowPane, PluginMixin):
                 description='View Mode',  # Button name
                 # Function to run when clicked.
                 mouse_handler=self.toggle_view_mode,
-            ))
+            )
+        )
 
         # Add a checkbox button to display if wrap_lines is enabled.
         self.bottom_toolbar.add_button(
@@ -174,7 +177,8 @@ class ClockPane(WindowPane, PluginMixin):
                 is_checkbox=True,
                 # lambda that returns the state of the checkbox
                 checked=lambda: self.wrap_lines,
-            ))
+            )
+        )
 
         # self.container is the root container that contains objects to be
         # rendered in the UI, one on top of the other.
@@ -201,8 +205,10 @@ class ClockPane(WindowPane, PluginMixin):
         self.background_task_update_count += 1
         # Make a log message for debugging purposes. For more info see:
         # https://pigweed.dev/pw_console/plugins.html#debugging-plugin-behavior
-        self.plugin_logger.debug('background_task_update_count: %s',
-                                 self.background_task_update_count)
+        self.plugin_logger.debug(
+            'background_task_update_count: %s',
+            self.background_task_update_count,
+        )
 
         # Returning True in the background task will force the user interface to
         # re-draw.
@@ -231,8 +237,9 @@ class ClockPane(WindowPane, PluginMixin):
         # pylint: disable=no-self-use
 
         # Get the date and time
-        date, time = datetime.now().isoformat(sep='_',
-                                              timespec='seconds').split('_')
+        date, time = (
+            datetime.now().isoformat(sep='_', timespec='seconds').split('_')
+        )
 
         # Formatted text is represented as (style, text) tuples.
         # For more examples see:
@@ -252,14 +259,16 @@ class ClockPane(WindowPane, PluginMixin):
         space = ('', ' ')
 
         # Concatenate the (style, text) tuples.
-        return FormattedText([
-            line_break,
-            space,
-            space,
-            date_with_color,
-            space,
-            time_with_color,
-        ])
+        return FormattedText(
+            [
+                line_break,
+                space,
+                space,
+                date_with_color,
+                space,
+                time_with_color,
+            ]
+        )
 
     def _get_example_text(self):
         """Examples of how to create formatted text."""
@@ -279,155 +288,178 @@ class ClockPane(WindowPane, PluginMixin):
 
         # Standard ANSI colors examples
         fragments.append(
-            FormattedText([
-                # These tuples follow this format:
-                #   (style_string, text_to_display)
-                ('ansiblack', 'ansiblack'),
-                wide_space,
-                ('ansired', 'ansired'),
-                wide_space,
-                ('ansigreen', 'ansigreen'),
-                wide_space,
-                ('ansiyellow', 'ansiyellow'),
-                wide_space,
-                ('ansiblue', 'ansiblue'),
-                wide_space,
-                ('ansimagenta', 'ansimagenta'),
-                wide_space,
-                ('ansicyan', 'ansicyan'),
-                wide_space,
-                ('ansigray', 'ansigray'),
-                wide_space,
-                newline,
-                ('ansibrightblack', 'ansibrightblack'),
-                space,
-                ('ansibrightred', 'ansibrightred'),
-                space,
-                ('ansibrightgreen', 'ansibrightgreen'),
-                space,
-                ('ansibrightyellow', 'ansibrightyellow'),
-                space,
-                ('ansibrightblue', 'ansibrightblue'),
-                space,
-                ('ansibrightmagenta', 'ansibrightmagenta'),
-                space,
-                ('ansibrightcyan', 'ansibrightcyan'),
-                space,
-                ('ansiwhite', 'ansiwhite'),
-                space,
-            ]))
+            FormattedText(
+                [
+                    # These tuples follow this format:
+                    #   (style_string, text_to_display)
+                    ('ansiblack', 'ansiblack'),
+                    wide_space,
+                    ('ansired', 'ansired'),
+                    wide_space,
+                    ('ansigreen', 'ansigreen'),
+                    wide_space,
+                    ('ansiyellow', 'ansiyellow'),
+                    wide_space,
+                    ('ansiblue', 'ansiblue'),
+                    wide_space,
+                    ('ansimagenta', 'ansimagenta'),
+                    wide_space,
+                    ('ansicyan', 'ansicyan'),
+                    wide_space,
+                    ('ansigray', 'ansigray'),
+                    wide_space,
+                    newline,
+                    ('ansibrightblack', 'ansibrightblack'),
+                    space,
+                    ('ansibrightred', 'ansibrightred'),
+                    space,
+                    ('ansibrightgreen', 'ansibrightgreen'),
+                    space,
+                    ('ansibrightyellow', 'ansibrightyellow'),
+                    space,
+                    ('ansibrightblue', 'ansibrightblue'),
+                    space,
+                    ('ansibrightmagenta', 'ansibrightmagenta'),
+                    space,
+                    ('ansibrightcyan', 'ansibrightcyan'),
+                    space,
+                    ('ansiwhite', 'ansiwhite'),
+                    space,
+                ]
+            )
+        )
 
         fragments.append(HTML('\n<u>Background Colors</u>\n'))
         fragments.append(
-            FormattedText([
-                # Here's an example of a style that specifies both background
-                # and foreground colors. The background color is prefixed with
-                # 'bg:'. The foreground color follows that with no prefix.
-                ('bg:ansiblack ansiwhite', 'ansiblack'),
-                wide_space,
-                ('bg:ansired', 'ansired'),
-                wide_space,
-                ('bg:ansigreen', 'ansigreen'),
-                wide_space,
-                ('bg:ansiyellow', 'ansiyellow'),
-                wide_space,
-                ('bg:ansiblue ansiwhite', 'ansiblue'),
-                wide_space,
-                ('bg:ansimagenta', 'ansimagenta'),
-                wide_space,
-                ('bg:ansicyan', 'ansicyan'),
-                wide_space,
-                ('bg:ansigray', 'ansigray'),
-                wide_space,
-                ('', '\n'),
-                ('bg:ansibrightblack', 'ansibrightblack'),
-                space,
-                ('bg:ansibrightred', 'ansibrightred'),
-                space,
-                ('bg:ansibrightgreen', 'ansibrightgreen'),
-                space,
-                ('bg:ansibrightyellow', 'ansibrightyellow'),
-                space,
-                ('bg:ansibrightblue', 'ansibrightblue'),
-                space,
-                ('bg:ansibrightmagenta', 'ansibrightmagenta'),
-                space,
-                ('bg:ansibrightcyan', 'ansibrightcyan'),
-                space,
-                ('bg:ansiwhite', 'ansiwhite'),
-                space,
-            ]))
+            FormattedText(
+                [
+                    # Here's an example of a style that specifies both
+                    # background and foreground colors. The background color is
+                    # prefixed with 'bg:'. The foreground color follows that
+                    # with no prefix.
+                    ('bg:ansiblack ansiwhite', 'ansiblack'),
+                    wide_space,
+                    ('bg:ansired', 'ansired'),
+                    wide_space,
+                    ('bg:ansigreen', 'ansigreen'),
+                    wide_space,
+                    ('bg:ansiyellow', 'ansiyellow'),
+                    wide_space,
+                    ('bg:ansiblue ansiwhite', 'ansiblue'),
+                    wide_space,
+                    ('bg:ansimagenta', 'ansimagenta'),
+                    wide_space,
+                    ('bg:ansicyan', 'ansicyan'),
+                    wide_space,
+                    ('bg:ansigray', 'ansigray'),
+                    wide_space,
+                    ('', '\n'),
+                    ('bg:ansibrightblack', 'ansibrightblack'),
+                    space,
+                    ('bg:ansibrightred', 'ansibrightred'),
+                    space,
+                    ('bg:ansibrightgreen', 'ansibrightgreen'),
+                    space,
+                    ('bg:ansibrightyellow', 'ansibrightyellow'),
+                    space,
+                    ('bg:ansibrightblue', 'ansibrightblue'),
+                    space,
+                    ('bg:ansibrightmagenta', 'ansibrightmagenta'),
+                    space,
+                    ('bg:ansibrightcyan', 'ansibrightcyan'),
+                    space,
+                    ('bg:ansiwhite', 'ansiwhite'),
+                    space,
+                ]
+            )
+        )
 
+        # pylint: disable=line-too-long
         # These themes use Pigweed Console style classes. See full list in:
         # https://cs.pigweed.dev/pigweed/+/main:pw_console/py/pw_console/style.py;l=189
+        # pylint: enable=line-too-long
         fragments.append(HTML('\n\n<u>Current Theme Foreground Colors</u>\n'))
-        fragments.append([
-            ('class:theme-fg-red', 'class:theme-fg-red'),
-            newline,
-            ('class:theme-fg-orange', 'class:theme-fg-orange'),
-            newline,
-            ('class:theme-fg-yellow', 'class:theme-fg-yellow'),
-            newline,
-            ('class:theme-fg-green', 'class:theme-fg-green'),
-            newline,
-            ('class:theme-fg-cyan', 'class:theme-fg-cyan'),
-            newline,
-            ('class:theme-fg-blue', 'class:theme-fg-blue'),
-            newline,
-            ('class:theme-fg-purple', 'class:theme-fg-purple'),
-            newline,
-            ('class:theme-fg-magenta', 'class:theme-fg-magenta'),
-            newline,
-        ])
+        fragments.append(
+            [
+                ('class:theme-fg-red', 'class:theme-fg-red'),
+                newline,
+                ('class:theme-fg-orange', 'class:theme-fg-orange'),
+                newline,
+                ('class:theme-fg-yellow', 'class:theme-fg-yellow'),
+                newline,
+                ('class:theme-fg-green', 'class:theme-fg-green'),
+                newline,
+                ('class:theme-fg-cyan', 'class:theme-fg-cyan'),
+                newline,
+                ('class:theme-fg-blue', 'class:theme-fg-blue'),
+                newline,
+                ('class:theme-fg-purple', 'class:theme-fg-purple'),
+                newline,
+                ('class:theme-fg-magenta', 'class:theme-fg-magenta'),
+                newline,
+            ]
+        )
 
         fragments.append(HTML('\n<u>Current Theme Background Colors</u>\n'))
-        fragments.append([
-            ('class:theme-bg-red', 'class:theme-bg-red'),
-            newline,
-            ('class:theme-bg-orange', 'class:theme-bg-orange'),
-            newline,
-            ('class:theme-bg-yellow', 'class:theme-bg-yellow'),
-            newline,
-            ('class:theme-bg-green', 'class:theme-bg-green'),
-            newline,
-            ('class:theme-bg-cyan', 'class:theme-bg-cyan'),
-            newline,
-            ('class:theme-bg-blue', 'class:theme-bg-blue'),
-            newline,
-            ('class:theme-bg-purple', 'class:theme-bg-purple'),
-            newline,
-            ('class:theme-bg-magenta', 'class:theme-bg-magenta'),
-            newline,
-        ])
+        fragments.append(
+            [
+                ('class:theme-bg-red', 'class:theme-bg-red'),
+                newline,
+                ('class:theme-bg-orange', 'class:theme-bg-orange'),
+                newline,
+                ('class:theme-bg-yellow', 'class:theme-bg-yellow'),
+                newline,
+                ('class:theme-bg-green', 'class:theme-bg-green'),
+                newline,
+                ('class:theme-bg-cyan', 'class:theme-bg-cyan'),
+                newline,
+                ('class:theme-bg-blue', 'class:theme-bg-blue'),
+                newline,
+                ('class:theme-bg-purple', 'class:theme-bg-purple'),
+                newline,
+                ('class:theme-bg-magenta', 'class:theme-bg-magenta'),
+                newline,
+            ]
+        )
 
         fragments.append(HTML('\n<u>Theme UI Colors</u>\n'))
-        fragments.append([
-            ('class:theme-fg-default', 'class:theme-fg-default'),
-            space,
-            ('class:theme-bg-default', 'class:theme-bg-default'),
-            space,
-            ('class:theme-bg-active', 'class:theme-bg-active'),
-            space,
-            ('class:theme-fg-active', 'class:theme-fg-active'),
-            space,
-            ('class:theme-bg-inactive', 'class:theme-bg-inactive'),
-            space,
-            ('class:theme-fg-inactive', 'class:theme-fg-inactive'),
-            newline,
-            ('class:theme-fg-dim', 'class:theme-fg-dim'),
-            space,
-            ('class:theme-bg-dim', 'class:theme-bg-dim'),
-            space,
-            ('class:theme-bg-dialog', 'class:theme-bg-dialog'),
-            space,
-            ('class:theme-bg-line-highlight', 'class:theme-bg-line-highlight'),
-            space,
-            ('class:theme-bg-button-active', 'class:theme-bg-button-active'),
-            space,
-            ('class:theme-bg-button-inactive',
-             'class:theme-bg-button-inactive'),
-            space,
-        ])
+        fragments.append(
+            [
+                ('class:theme-fg-default', 'class:theme-fg-default'),
+                space,
+                ('class:theme-bg-default', 'class:theme-bg-default'),
+                space,
+                ('class:theme-bg-active', 'class:theme-bg-active'),
+                space,
+                ('class:theme-fg-active', 'class:theme-fg-active'),
+                space,
+                ('class:theme-bg-inactive', 'class:theme-bg-inactive'),
+                space,
+                ('class:theme-fg-inactive', 'class:theme-fg-inactive'),
+                newline,
+                ('class:theme-fg-dim', 'class:theme-fg-dim'),
+                space,
+                ('class:theme-bg-dim', 'class:theme-bg-dim'),
+                space,
+                ('class:theme-bg-dialog', 'class:theme-bg-dialog'),
+                space,
+                (
+                    'class:theme-bg-line-highlight',
+                    'class:theme-bg-line-highlight',
+                ),
+                space,
+                (
+                    'class:theme-bg-button-active',
+                    'class:theme-bg-button-active',
+                ),
+                space,
+                (
+                    'class:theme-bg-button-inactive',
+                    'class:theme-bg-button-inactive',
+                ),
+                space,
+            ]
+        )
 
         # Return all formatted text lists merged together.
         return merge_formatted_text(fragments)

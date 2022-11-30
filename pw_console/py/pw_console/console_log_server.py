@@ -41,13 +41,17 @@ def pw_console_http_server(starting_port: int, handler: Callable) -> None:
 
 class ConsoleLogHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
     """Request handler that serves files from pw_console.html package data."""
+
     def __init__(self, html_files: Dict[str, str], *args, **kwargs):
         self.html_files = html_files
         super().__init__(*args, **kwargs)
 
     def do_GET(self):  # pylint: disable=invalid-name
-        _LOG.debug('%s: %s', self.client_address[0],
-                   self.raw_requestline.decode('utf-8').strip())
+        _LOG.debug(
+            '%s: %s',
+            self.client_address[0],
+            self.raw_requestline.decode('utf-8').strip(),
+        )
 
         path = self.path
         if path == '/':

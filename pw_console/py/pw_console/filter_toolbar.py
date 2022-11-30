@@ -41,8 +41,7 @@ class FilterToolbar(ConditionalContainer):
 
     TOOLBAR_HEIGHT = 1
 
-    def mouse_handler_delete_filter(self, filter_text,
-                                    mouse_event: MouseEvent):
+    def mouse_handler_delete_filter(self, filter_text, mouse_event: MouseEvent):
         """Delete the given log filter."""
         if mouse_event.event_type == MouseEventType.MOUSE_UP:
             self.log_pane.log_view.delete_filter(filter_text)
@@ -64,17 +63,21 @@ class FilterToolbar(ConditionalContainer):
                 fragments.append(('class:filter-bar-setting', 'NOT '))
 
             if log_filter.field:
-                fragments.append(
-                    ('class:filter-bar-setting', log_filter.field))
+                fragments.append(('class:filter-bar-setting', log_filter.field))
                 fragments.append(space)
 
             fragments.append(('', filter_text))
             fragments.append(space)
 
             fragments.append(
-                (button_style + ' class:filter-bar-delete', ' (X) ',
-                 functools.partial(self.mouse_handler_delete_filter,
-                                   filter_text)))  # type: ignore
+                (
+                    button_style + ' class:filter-bar-delete',
+                    ' (X) ',
+                    functools.partial(
+                        self.mouse_handler_delete_filter, filter_text
+                    ),
+                )
+            )  # type: ignore
             fragments.append(('class:filter-bar-delimiter', '>'))
 
             fragments.append(separator)
@@ -84,7 +87,8 @@ class FilterToolbar(ConditionalContainer):
         """Return formatted text tokens for display."""
         clear_filters = functools.partial(
             pw_console.widgets.mouse_handlers.on_click,
-            self.log_pane.log_view.clear_filters)
+            self.log_pane.log_view.clear_filters,
+        )
 
         button_style = pw_console.style.get_button_style(self.log_pane)
 
@@ -92,27 +96,32 @@ class FilterToolbar(ConditionalContainer):
             'Ctrl-Alt-r',
             'Clear Filters',
             clear_filters,
-            base_style=button_style)
+            base_style=button_style,
+        )
 
     def __init__(self, log_pane: 'LogPane'):
         self.log_pane = log_pane
         left_bar_control = FormattedTextControl(self.get_left_fragments)
-        left_bar_window = Window(content=left_bar_control,
-                                 align=WindowAlign.LEFT,
-                                 dont_extend_width=True)
+        left_bar_window = Window(
+            content=left_bar_control,
+            align=WindowAlign.LEFT,
+            dont_extend_width=True,
+        )
         center_bar_control = FormattedTextControl(self.get_center_fragments)
-        center_bar_window = Window(content=center_bar_control,
-                                   align=WindowAlign.LEFT,
-                                   dont_extend_width=False)
+        center_bar_window = Window(
+            content=center_bar_control,
+            align=WindowAlign.LEFT,
+            dont_extend_width=False,
+        )
         super().__init__(
             VSplit(
                 [
                     left_bar_window,
                     center_bar_window,
                 ],
-                style=functools.partial(pw_console.style.get_toolbar_style,
-                                        self.log_pane,
-                                        dim=True),
+                style=functools.partial(
+                    pw_console.style.get_toolbar_style, self.log_pane, dim=True
+                ),
                 height=1,
                 align=HorizontalAlign.LEFT,
             ),

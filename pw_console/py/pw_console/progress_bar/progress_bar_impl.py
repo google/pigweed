@@ -92,6 +92,7 @@ class TimeLeftIfNotHidden(TimeLeft):
 
 class ProgressBarImpl:
     """ProgressBar for rendering in an existing prompt_toolkit application."""
+
     def __init__(
         self,
         title: AnyFormattedText = None,
@@ -123,17 +124,21 @@ class ProgressBarImpl:
             Window(
                 content=_ProgressControl(self, f),  # type: ignore
                 width=functools.partial(width_for_formatter, f),
-            ) for f in self.formatters
+            )
+            for f in self.formatters
         ]
 
-        self.container = HSplit([
-            title_toolbar,
-            VSplit(
-                progress_controls,
-                height=lambda: D(min=len(self.counters),
-                                 max=len(self.counters)),
-            ),
-        ])
+        self.container = HSplit(
+            [
+                title_toolbar,
+                VSplit(
+                    progress_controls,
+                    height=lambda: D(
+                        min=len(self.counters), max=len(self.counters)
+                    ),
+                ),
+            ]
+        )
 
     def __pt_container__(self):
         return self.container
@@ -162,6 +167,7 @@ class ProgressBarImpl:
             data,
             label=label,
             remove_when_done=remove_when_done,
-            total=total)
+            total=total,
+        )
         self.counters.append(counter)
         return counter

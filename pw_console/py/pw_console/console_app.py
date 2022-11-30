@@ -54,7 +54,8 @@ from prompt_toolkit.history import (
 )
 from ptpython.layout import CompletionVisualisation  # type: ignore
 from ptpython.key_bindings import (  # type: ignore
-    load_python_bindings, load_sidebar_bindings,
+    load_python_bindings,
+    load_sidebar_bindings,
 )
 
 from pw_console.command_runner import CommandRunner
@@ -89,6 +90,7 @@ MIN_REDRAW_INTERVAL = (60.0 / MAX_FPS) / 60.0
 
 class FloatingMessageBar(ConditionalContainer):
     """Floating message bar for showing status messages."""
+
     def __init__(self, application):
         super().__init__(
             FormattedTextToolbar(
@@ -96,12 +98,16 @@ class FloatingMessageBar(ConditionalContainer):
                 style='class:toolbar_inactive',
             ),
             filter=Condition(
-                lambda: application.message and application.message != ''))
+                lambda: application.message and application.message != ''
+            ),
+        )
 
 
-def _add_log_handler_to_pane(logger: Union[str, logging.Logger],
-                             pane: 'LogPane',
-                             level_name: Optional[str] = None) -> None:
+def _add_log_handler_to_pane(
+    logger: Union[str, logging.Logger],
+    pane: 'LogPane',
+    level_name: Optional[str] = None,
+) -> None:
     """A log pane handler for a given logger instance."""
     if not pane:
         return
@@ -109,7 +115,8 @@ def _add_log_handler_to_pane(logger: Union[str, logging.Logger],
 
 
 def get_default_colordepth(
-        color_depth: Optional[ColorDepth] = None) -> ColorDepth:
+    color_depth: Optional[ColorDepth] = None,
+) -> ColorDepth:
     # Set prompt_toolkit color_depth to the highest possible.
     if color_depth is None:
         # Default to 24bit color
@@ -141,8 +148,9 @@ class ConsoleApp:
         color_depth=None,
         extra_completers=None,
         prefs=None,
-        floating_window_plugins: Optional[List[Tuple[FloatingWindowPane,
-                                                     Dict]]] = None,
+        floating_window_plugins: Optional[
+            List[Tuple[FloatingWindowPane, Dict]]
+        ] = None,
     ):
         self.prefs = prefs if prefs else ConsolePrefs()
         self.color_depth = get_default_colordepth(color_depth)
@@ -180,7 +188,8 @@ class ConsoleApp:
             loader=DictLoader(jinja_templates),
             # Raise errors if variables are undefined in templates
             undefined=make_logging_undefined(
-                logger=logging.getLogger(__package__), ),
+                logger=logging.getLogger(__package__),
+            ),
             # Trim whitespace in templates
             trim_blocks=True,
             lstrip_blocks=True,
@@ -191,7 +200,8 @@ class ConsoleApp:
 
         # History instance for search toolbars.
         self.search_history: History = ThreadedHistory(
-            FileHistory(self.search_history_filename))
+            FileHistory(self.search_history_filename)
+        )
 
         # Event loop for executing user repl code.
         self.user_code_loop = asyncio.new_event_loop()
@@ -213,10 +223,13 @@ class ConsoleApp:
             pw_console.widgets.checkbox.to_keybind_indicator(
                 'Ctrl-p',
                 'Search Menu',
-                functools.partial(pw_console.widgets.mouse_handlers.on_click,
-                                  self.open_command_runner_main_menu),
+                functools.partial(
+                    pw_console.widgets.mouse_handlers.on_click,
+                    self.open_command_runner_main_menu,
+                ),
                 base_style='class:toolbar-button-inactive',
-            ))
+            )
+        )
         # One space separator
         self.message.append(('', ' '))
 
@@ -225,14 +238,17 @@ class ConsoleApp:
 
         # Downstream project specific help text
         self.app_help_text = help_text if help_text else None
-        self.app_help_window = HelpWindow(self,
-                                          additional_help_text=help_text,
-                                          title=(self.app_title + ' Help'))
+        self.app_help_window = HelpWindow(
+            self,
+            additional_help_text=help_text,
+            title=(self.app_title + ' Help'),
+        )
         self.app_help_window.generate_help_text()
 
         self.prefs_file_window = HelpWindow(self, title='.pw_console.yaml')
         self.prefs_file_window.load_yaml_text(
-            self.prefs.current_config_as_yaml())
+            self.prefs.current_config_as_yaml()
+        )
 
         self.floating_window_plugins: List[FloatingWindowPane] = []
         if floating_window_plugins:
@@ -326,41 +342,49 @@ class ConsoleApp:
         ]
 
         if floating_window_plugins:
-            self.floats.extend([
-                Float(content=plugin_container, **float_args)
-                for plugin_container, float_args in floating_window_plugins
-            ])
+            self.floats.extend(
+                [
+                    Float(content=plugin_container, **float_args)
+                    for plugin_container, float_args in floating_window_plugins
+                ]
+            )
 
-        self.floats.extend([
-            # Completion menu that can overlap other panes since it lives in
-            # the top level Float container.
-            Float(
-                xcursor=True,
-                ycursor=True,
-                content=ConditionalContainer(
-                    content=CompletionsMenu(
-                        scroll_offset=(lambda: self.pw_ptpython_repl.
-                                       completion_menu_scroll_offset),
-                        max_height=16,
+        self.floats.extend(
+            [
+                # Completion menu that can overlap other panes since it lives in
+                # the top level Float container.
+                # pylint: disable=line-too-long
+                Float(
+                    xcursor=True,
+                    ycursor=True,
+                    content=ConditionalContainer(
+                        content=CompletionsMenu(
+                            scroll_offset=(
+                                lambda: self.pw_ptpython_repl.completion_menu_scroll_offset
+                            ),
+                            max_height=16,
+                        ),
+                        # Only show our completion if ptpython's is disabled.
+                        filter=Condition(
+                            lambda: self.pw_ptpython_repl.completion_visualisation
+                            == CompletionVisualisation.NONE
+                        ),
                     ),
-                    # Only show our completion if ptpython's is disabled.
-                    filter=Condition(
-                        lambda: self.pw_ptpython_repl.completion_visualisation
-                        == CompletionVisualisation.NONE),
                 ),
-            ),
-            Float(
-                content=self.command_runner,
-                # Callable to get width
-                width=self.command_runner.content_width,
-                **self.prefs.command_runner_position,
-            ),
-            Float(
-                content=self.quit_dialog,
-                top=2,
-                left=2,
-            ),
-        ])
+                # pylint: enable=line-too-long
+                Float(
+                    content=self.command_runner,
+                    # Callable to get width
+                    width=self.command_runner.content_width,
+                    **self.prefs.command_runner_position,
+                ),
+                Float(
+                    content=self.quit_dialog,
+                    top=2,
+                    left=2,
+                ),
+            ]
+        )
 
         # prompt_toolkit root container.
         self.root_container = MenuContainer(
@@ -393,18 +417,24 @@ class ConsoleApp:
         # Create the prompt_toolkit Application instance.
         self.application: Application = Application(
             layout=self.layout,
-            key_bindings=merge_key_bindings([
-                # Pull key bindings from ptpython
-                load_python_bindings(self.pw_ptpython_repl),
-                load_sidebar_bindings(self.pw_ptpython_repl),
-                self.window_manager.key_bindings,
-                self.key_bindings,
-            ]),
-            style=DynamicStyle(lambda: merge_styles([
-                self._current_theme,
-                # Include ptpython styles
-                self.pw_ptpython_repl._current_style,  # pylint: disable=protected-access
-            ])),
+            key_bindings=merge_key_bindings(
+                [
+                    # Pull key bindings from ptpython
+                    load_python_bindings(self.pw_ptpython_repl),
+                    load_sidebar_bindings(self.pw_ptpython_repl),
+                    self.window_manager.key_bindings,
+                    self.key_bindings,
+                ]
+            ),
+            style=DynamicStyle(
+                lambda: merge_styles(
+                    [
+                        self._current_theme,
+                        # Include ptpython styles
+                        self.pw_ptpython_repl._current_style,  # pylint: disable=protected-access
+                    ]
+                )
+            ),
             style_transformation=self.pw_ptpython_repl.style_transformation,
             enable_page_navigation_bindings=True,
             full_screen=True,
@@ -434,27 +464,35 @@ class ConsoleApp:
             self.focus_main_menu()
 
     def open_new_log_pane_for_logger(
-            self,
-            logger_name: str,
-            level_name='NOTSET',
-            window_title: Optional[str] = None) -> None:
+        self,
+        logger_name: str,
+        level_name='NOTSET',
+        window_title: Optional[str] = None,
+    ) -> None:
         pane_title = window_title if window_title else logger_name
         self.run_pane_menu_option(
-            functools.partial(self.add_log_handler,
-                              pane_title, [logger_name],
-                              log_level_name=level_name))
+            functools.partial(
+                self.add_log_handler,
+                pane_title,
+                [logger_name],
+                log_level_name=level_name,
+            )
+        )
 
     def set_ui_theme(self, theme_name: str) -> Callable:
         call_function = functools.partial(
             self.run_pane_menu_option,
-            functools.partial(self.load_theme, theme_name))
+            functools.partial(self.load_theme, theme_name),
+        )
         return call_function
 
     def set_code_theme(self, theme_name: str) -> Callable:
         call_function = functools.partial(
             self.run_pane_menu_option,
-            functools.partial(self.pw_ptpython_repl.use_code_colorscheme,
-                              theme_name))
+            functools.partial(
+                self.pw_ptpython_repl.use_code_colorscheme, theme_name
+            ),
+        )
         return call_function
 
     def update_menu_items(self):
@@ -469,7 +507,8 @@ class ConsoleApp:
     def open_command_runner_loggers(self) -> None:
         self.command_runner.set_completions(
             window_title='Open Logger',
-            load_completions=self._create_logger_completions)
+            load_completions=self._create_logger_completions,
+        )
         if not self.command_runner_is_open():
             self.command_runner.open_dialog()
 
@@ -477,46 +516,56 @@ class ConsoleApp:
         completions: List[Tuple[str, Callable]] = [
             (
                 'root',
-                functools.partial(self.open_new_log_pane_for_logger,
-                                  '',
-                                  window_title='root'),
+                functools.partial(
+                    self.open_new_log_pane_for_logger, '', window_title='root'
+                ),
             ),
         ]
 
         all_logger_names = sorted([logger.name for logger in all_loggers()])
 
         for logger_name in all_logger_names:
-            completions.append((
-                logger_name,
-                functools.partial(self.open_new_log_pane_for_logger,
-                                  logger_name),
-            ))
+            completions.append(
+                (
+                    logger_name,
+                    functools.partial(
+                        self.open_new_log_pane_for_logger, logger_name
+                    ),
+                )
+            )
         return completions
 
     def open_command_runner_history(self) -> None:
         self.command_runner.set_completions(
             window_title='History',
-            load_completions=self._create_history_completions)
+            load_completions=self._create_history_completions,
+        )
         if not self.command_runner_is_open():
             self.command_runner.open_dialog()
 
     def _create_history_completions(self) -> List[Tuple[str, Callable]]:
-        return [(
-            description,
-            functools.partial(self.repl_pane.insert_text_into_input_buffer,
-                              text),
-        ) for description, text in self.repl_pane.history_completions()]
+        return [
+            (
+                description,
+                functools.partial(
+                    self.repl_pane.insert_text_into_input_buffer, text
+                ),
+            )
+            for description, text in self.repl_pane.history_completions()
+        ]
 
     def open_command_runner_snippets(self) -> None:
         self.command_runner.set_completions(
             window_title='Snippets',
-            load_completions=self._create_snippet_completions)
+            load_completions=self._create_snippet_completions,
+        )
         if not self.command_runner_is_open():
             self.command_runner.open_dialog()
 
     def _http_server_entry(self) -> None:
-        handler = functools.partial(ConsoleLogHTTPRequestHandler,
-                                    self.html_files)
+        handler = functools.partial(
+            ConsoleLogHTTPRequestHandler, self.html_files
+        )
         pw_console_http_server(3000, handler)
 
     def start_http_server(self):
@@ -525,23 +574,26 @@ class ConsoleApp:
 
         html_package_path = 'pw_console.html'
         self.html_files = {
-            '/{}'.format(t):
-            importlib.resources.read_text(html_package_path, t)
+            '/{}'.format(t): importlib.resources.read_text(html_package_path, t)
             for t in importlib.resources.contents(html_package_path)
             if Path(t).suffix in ['.css', '.html', '.js']
         }
 
-        server_thread = Thread(target=self._http_server_entry,
-                               args=(),
-                               daemon=True)
+        server_thread = Thread(
+            target=self._http_server_entry, args=(), daemon=True
+        )
         server_thread.start()
 
     def _create_snippet_completions(self) -> List[Tuple[str, Callable]]:
-        completions: List[Tuple[str, Callable]] = [(
-            description,
-            functools.partial(self.repl_pane.insert_text_into_input_buffer,
-                              text),
-        ) for description, text in self.prefs.snippet_completions()]
+        completions: List[Tuple[str, Callable]] = [
+            (
+                description,
+                functools.partial(
+                    self.repl_pane.insert_text_into_input_buffer, text
+                ),
+            )
+            for description, text in self.prefs.snippet_completions()
+        ]
 
         return completions
 
@@ -553,8 +605,9 @@ class ConsoleApp:
                 'UI Themes',
                 children=[
                     MenuItem('Default: Dark', self.set_ui_theme('dark')),
-                    MenuItem('High Contrast',
-                             self.set_ui_theme('high-contrast-dark')),
+                    MenuItem(
+                        'High Contrast', self.set_ui_theme('high-contrast-dark')
+                    ),
                     MenuItem('Nord', self.set_ui_theme('nord')),
                     MenuItem('Nord Light', self.set_ui_theme('nord-light')),
                     MenuItem('Moonlight', self.set_ui_theme('moonlight')),
@@ -563,24 +616,39 @@ class ConsoleApp:
             MenuItem(
                 'Code Themes',
                 children=[
-                    MenuItem('Code: pigweed-code',
-                             self.set_code_theme('pigweed-code')),
-                    MenuItem('Code: pigweed-code-light',
-                             self.set_code_theme('pigweed-code-light')),
-                    MenuItem('Code: material',
-                             self.set_code_theme('material')),
-                    MenuItem('Code: gruvbox-light',
-                             self.set_code_theme('gruvbox-light')),
-                    MenuItem('Code: gruvbox-dark',
-                             self.set_code_theme('gruvbox-dark')),
-                    MenuItem('Code: tomorrow-night',
-                             self.set_code_theme('tomorrow-night')),
-                    MenuItem('Code: tomorrow-night-bright',
-                             self.set_code_theme('tomorrow-night-bright')),
-                    MenuItem('Code: tomorrow-night-blue',
-                             self.set_code_theme('tomorrow-night-blue')),
-                    MenuItem('Code: tomorrow-night-eighties',
-                             self.set_code_theme('tomorrow-night-eighties')),
+                    MenuItem(
+                        'Code: pigweed-code',
+                        self.set_code_theme('pigweed-code'),
+                    ),
+                    MenuItem(
+                        'Code: pigweed-code-light',
+                        self.set_code_theme('pigweed-code-light'),
+                    ),
+                    MenuItem('Code: material', self.set_code_theme('material')),
+                    MenuItem(
+                        'Code: gruvbox-light',
+                        self.set_code_theme('gruvbox-light'),
+                    ),
+                    MenuItem(
+                        'Code: gruvbox-dark',
+                        self.set_code_theme('gruvbox-dark'),
+                    ),
+                    MenuItem(
+                        'Code: tomorrow-night',
+                        self.set_code_theme('tomorrow-night'),
+                    ),
+                    MenuItem(
+                        'Code: tomorrow-night-bright',
+                        self.set_code_theme('tomorrow-night-bright'),
+                    ),
+                    MenuItem(
+                        'Code: tomorrow-night-blue',
+                        self.set_code_theme('tomorrow-night-blue'),
+                    ),
+                    MenuItem(
+                        'Code: tomorrow-night-eighties',
+                        self.set_code_theme('tomorrow-night-eighties'),
+                    ),
                     MenuItem('Code: dracula', self.set_code_theme('dracula')),
                     MenuItem('Code: zenburn', self.set_code_theme('zenburn')),
                 ],
@@ -592,59 +660,81 @@ class ConsoleApp:
             MenuItem(
                 '[File]',
                 children=[
-                    MenuItem('Insert Repl Snippet',
-                             handler=self.open_command_runner_snippets),
-                    MenuItem('Insert Repl History',
-                             handler=self.open_command_runner_history),
-                    MenuItem('Open Logger',
-                             handler=self.open_command_runner_loggers),
+                    MenuItem(
+                        'Insert Repl Snippet',
+                        handler=self.open_command_runner_snippets,
+                    ),
+                    MenuItem(
+                        'Insert Repl History',
+                        handler=self.open_command_runner_history,
+                    ),
+                    MenuItem(
+                        'Open Logger', handler=self.open_command_runner_loggers
+                    ),
                     MenuItem(
                         'Log Table View',
                         children=[
+                            # pylint: disable=line-too-long
                             MenuItem(
                                 '{check} Hide Date'.format(
-                                    check=pw_console.widgets.checkbox.
-                                    to_checkbox_text(
+                                    check=pw_console.widgets.checkbox.to_checkbox_text(
                                         self.prefs.hide_date_from_log_time,
-                                        end='')),
+                                        end='',
+                                    )
+                                ),
                                 handler=functools.partial(
                                     self.run_pane_menu_option,
                                     functools.partial(
                                         self.toggle_pref_option,
-                                        'hide_date_from_log_time')),
+                                        'hide_date_from_log_time',
+                                    ),
+                                ),
                             ),
                             MenuItem(
                                 '{check} Show Source File'.format(
-                                    check=pw_console.widgets.checkbox.
-                                    to_checkbox_text(
-                                        self.prefs.show_source_file, end='')),
+                                    check=pw_console.widgets.checkbox.to_checkbox_text(
+                                        self.prefs.show_source_file, end=''
+                                    )
+                                ),
                                 handler=functools.partial(
                                     self.run_pane_menu_option,
-                                    functools.partial(self.toggle_pref_option,
-                                                      'show_source_file')),
+                                    functools.partial(
+                                        self.toggle_pref_option,
+                                        'show_source_file',
+                                    ),
+                                ),
                             ),
                             MenuItem(
                                 '{check} Show Python File'.format(
-                                    check=pw_console.widgets.checkbox.
-                                    to_checkbox_text(
-                                        self.prefs.show_python_file, end='')),
+                                    check=pw_console.widgets.checkbox.to_checkbox_text(
+                                        self.prefs.show_python_file, end=''
+                                    )
+                                ),
                                 handler=functools.partial(
                                     self.run_pane_menu_option,
-                                    functools.partial(self.toggle_pref_option,
-                                                      'show_python_file')),
+                                    functools.partial(
+                                        self.toggle_pref_option,
+                                        'show_python_file',
+                                    ),
+                                ),
                             ),
                             MenuItem(
                                 '{check} Show Python Logger'.format(
-                                    check=pw_console.widgets.checkbox.
-                                    to_checkbox_text(
-                                        self.prefs.show_python_logger,
-                                        end='')),
+                                    check=pw_console.widgets.checkbox.to_checkbox_text(
+                                        self.prefs.show_python_logger, end=''
+                                    )
+                                ),
                                 handler=functools.partial(
                                     self.run_pane_menu_option,
-                                    functools.partial(self.toggle_pref_option,
-                                                      'show_python_logger')),
+                                    functools.partial(
+                                        self.toggle_pref_option,
+                                        'show_python_logger',
+                                    ),
+                                ),
                             ),
-                        ]),
+                            # pylint: enable=line-too-long
+                        ],
+                    ),
                     MenuItem('-'),
                     MenuItem(
                         'Themes',
@@ -660,19 +750,29 @@ class ConsoleApp:
             MenuItem(
                 '[Edit]',
                 children=[
-                    MenuItem('Paste to Python Input',
-                             handler=self.repl_pane.
-                             paste_system_clipboard_to_input_buffer),
+                    # pylint: disable=line-too-long
+                    MenuItem(
+                        'Paste to Python Input',
+                        handler=self.repl_pane.paste_system_clipboard_to_input_buffer,
+                    ),
+                    # pylint: enable=line-too-long
                     MenuItem('-'),
-                    MenuItem('Copy all Python Output',
-                             handler=self.repl_pane.copy_all_output_text),
-                    MenuItem('Copy all Python Input',
-                             handler=self.repl_pane.copy_all_input_text),
+                    MenuItem(
+                        'Copy all Python Output',
+                        handler=self.repl_pane.copy_all_output_text,
+                    ),
+                    MenuItem(
+                        'Copy all Python Input',
+                        handler=self.repl_pane.copy_all_input_text,
+                    ),
                     MenuItem('-'),
-                    MenuItem('Clear Python Input',
-                             self.repl_pane.clear_input_buffer),
-                    MenuItem('Clear Python Output',
-                             self.repl_pane.clear_output_buffer),
+                    MenuItem(
+                        'Clear Python Input', self.repl_pane.clear_input_buffer
+                    ),
+                    MenuItem(
+                        'Clear Python Output',
+                        self.repl_pane.clear_output_buffer,
+                    ),
                 ],
             ),
         ]
@@ -682,64 +782,91 @@ class ConsoleApp:
                 '[View]',
                 children=[
                     #         [Menu Item             ][Keybind  ]
-                    MenuItem('Focus Next Window/Tab   Ctrl-Alt-n',
-                             handler=self.window_manager.focus_next_pane),
+                    MenuItem(
+                        'Focus Next Window/Tab   Ctrl-Alt-n',
+                        handler=self.window_manager.focus_next_pane,
+                    ),
                     #         [Menu Item             ][Keybind  ]
-                    MenuItem('Focus Prev Window/Tab   Ctrl-Alt-p',
-                             handler=self.window_manager.focus_previous_pane),
+                    MenuItem(
+                        'Focus Prev Window/Tab   Ctrl-Alt-p',
+                        handler=self.window_manager.focus_previous_pane,
+                    ),
                     MenuItem('-'),
-
                     #         [Menu Item             ][Keybind  ]
-                    MenuItem('Move Window Up         Ctrl-Alt-Up',
-                             handler=functools.partial(
-                                 self.run_pane_menu_option,
-                                 self.window_manager.move_pane_up)),
+                    MenuItem(
+                        'Move Window Up         Ctrl-Alt-Up',
+                        handler=functools.partial(
+                            self.run_pane_menu_option,
+                            self.window_manager.move_pane_up,
+                        ),
+                    ),
                     #         [Menu Item             ][Keybind  ]
-                    MenuItem('Move Window Down     Ctrl-Alt-Down',
-                             handler=functools.partial(
-                                 self.run_pane_menu_option,
-                                 self.window_manager.move_pane_down)),
+                    MenuItem(
+                        'Move Window Down     Ctrl-Alt-Down',
+                        handler=functools.partial(
+                            self.run_pane_menu_option,
+                            self.window_manager.move_pane_down,
+                        ),
+                    ),
                     #         [Menu Item             ][Keybind  ]
-                    MenuItem('Move Window Left     Ctrl-Alt-Left',
-                             handler=functools.partial(
-                                 self.run_pane_menu_option,
-                                 self.window_manager.move_pane_left)),
+                    MenuItem(
+                        'Move Window Left     Ctrl-Alt-Left',
+                        handler=functools.partial(
+                            self.run_pane_menu_option,
+                            self.window_manager.move_pane_left,
+                        ),
+                    ),
                     #         [Menu Item             ][Keybind  ]
-                    MenuItem('Move Window Right   Ctrl-Alt-Right',
-                             handler=functools.partial(
-                                 self.run_pane_menu_option,
-                                 self.window_manager.move_pane_right)),
+                    MenuItem(
+                        'Move Window Right   Ctrl-Alt-Right',
+                        handler=functools.partial(
+                            self.run_pane_menu_option,
+                            self.window_manager.move_pane_right,
+                        ),
+                    ),
                     MenuItem('-'),
-
                     #         [Menu Item             ][Keybind  ]
-                    MenuItem('Shrink Height            Alt-Minus',
-                             handler=functools.partial(
-                                 self.run_pane_menu_option,
-                                 self.window_manager.shrink_pane)),
+                    MenuItem(
+                        'Shrink Height            Alt-Minus',
+                        handler=functools.partial(
+                            self.run_pane_menu_option,
+                            self.window_manager.shrink_pane,
+                        ),
+                    ),
                     #         [Menu Item             ][Keybind  ]
-                    MenuItem('Enlarge Height               Alt-=',
-                             handler=functools.partial(
-                                 self.run_pane_menu_option,
-                                 self.window_manager.enlarge_pane)),
+                    MenuItem(
+                        'Enlarge Height               Alt-=',
+                        handler=functools.partial(
+                            self.run_pane_menu_option,
+                            self.window_manager.enlarge_pane,
+                        ),
+                    ),
                     MenuItem('-'),
-
                     #         [Menu Item             ][Keybind  ]
-                    MenuItem('Shrink Column                Alt-,',
-                             handler=functools.partial(
-                                 self.run_pane_menu_option,
-                                 self.window_manager.shrink_split)),
+                    MenuItem(
+                        'Shrink Column                Alt-,',
+                        handler=functools.partial(
+                            self.run_pane_menu_option,
+                            self.window_manager.shrink_split,
+                        ),
+                    ),
                     #         [Menu Item             ][Keybind  ]
-                    MenuItem('Enlarge Column               Alt-.',
-                             handler=functools.partial(
-                                 self.run_pane_menu_option,
-                                 self.window_manager.enlarge_split)),
+                    MenuItem(
+                        'Enlarge Column               Alt-.',
+                        handler=functools.partial(
+                            self.run_pane_menu_option,
+                            self.window_manager.enlarge_split,
+                        ),
+                    ),
                     MenuItem('-'),
-
                     #         [Menu Item            ][Keybind  ]
-                    MenuItem('Balance Window Sizes       Ctrl-u',
-                             handler=functools.partial(
-                                 self.run_pane_menu_option,
-                                 self.window_manager.balance_window_sizes)),
+                    MenuItem(
+                        'Balance Window Sizes       Ctrl-u',
+                        handler=functools.partial(
+                            self.run_pane_menu_option,
+                            self.window_manager.balance_window_sizes,
+                        ),
+                    ),
                 ],
             ),
         ]
@@ -757,20 +884,30 @@ class ConsoleApp:
                     ),
                     children=[
                         MenuItem(
+                            # pylint: disable=line-too-long
                             '{check} Show/Hide Window'.format(
-                                check=pw_console.widgets.checkbox.
-                                to_checkbox_text(pane.show_pane, end='')),
+                                check=pw_console.widgets.checkbox.to_checkbox_text(
+                                    pane.show_pane, end=''
+                                )
+                            ),
+                            # pylint: enable=line-too-long
                             handler=functools.partial(
-                                self.run_pane_menu_option, pane.toggle_dialog),
+                                self.run_pane_menu_option, pane.toggle_dialog
+                            ),
                         ),
-                    ] + [
-                        MenuItem(text,
-                                 handler=functools.partial(
-                                     self.run_pane_menu_option, handler))
+                    ]
+                    + [
+                        MenuItem(
+                            text,
+                            handler=functools.partial(
+                                self.run_pane_menu_option, handler
+                            ),
+                        )
                         for text, handler in pane.get_window_menu_options()
                     ],
-                ) for pane_index, pane in enumerate(
-                    self.floating_window_plugins))
+                )
+                for pane_index, pane in enumerate(self.floating_window_plugins)
+            )
             window_menu_items.extend(floating_window_items)
 
         window_menu = [MenuItem('[Windows]', children=window_menu_items)]
@@ -783,21 +920,31 @@ class ConsoleApp:
                 top_level_plugin_menus.extend(pane.get_top_level_menus())
 
         help_menu_items = [
-            MenuItem(self.user_guide_window.menu_title(),
-                     handler=self.user_guide_window.toggle_display),
-            MenuItem(self.keybind_help_window.menu_title(),
-                     handler=self.keybind_help_window.toggle_display),
+            MenuItem(
+                self.user_guide_window.menu_title(),
+                handler=self.user_guide_window.toggle_display,
+            ),
+            MenuItem(
+                self.keybind_help_window.menu_title(),
+                handler=self.keybind_help_window.toggle_display,
+            ),
             MenuItem('-'),
-            MenuItem('View Key Binding Config',
-                     handler=self.prefs_file_window.toggle_display),
+            MenuItem(
+                'View Key Binding Config',
+                handler=self.prefs_file_window.toggle_display,
+            ),
         ]
 
         if self.app_help_text:
-            help_menu_items.extend([
-                MenuItem('-'),
-                MenuItem(self.app_help_window.menu_title(),
-                         handler=self.app_help_window.toggle_display)
-            ])
+            help_menu_items.extend(
+                [
+                    MenuItem('-'),
+                    MenuItem(
+                        self.app_help_window.menu_title(),
+                        handler=self.app_help_window.toggle_display,
+                    ),
+                ]
+            )
 
         help_menu = [
             # Info / Help
@@ -807,8 +954,14 @@ class ConsoleApp:
             ),
         ]
 
-        return (file_menu + edit_menu + view_menu + top_level_plugin_menus +
-                window_menu + help_menu)
+        return (
+            file_menu
+            + edit_menu
+            + view_menu
+            + top_level_plugin_menus
+            + window_menu
+            + help_menu
+        )
 
     def focus_main_menu(self):
         """Set application focus to the main menu."""
@@ -828,7 +981,8 @@ class ConsoleApp:
         """Toggle light and dark theme colors."""
         # Use ptpython's style_transformation to swap dark and light colors.
         self.pw_ptpython_repl.swap_light_and_dark = (
-            not self.pw_ptpython_repl.swap_light_and_dark)
+            not self.pw_ptpython_repl.swap_light_and_dark
+        )
         if self.application:
             self.focus_main_menu()
 
@@ -841,13 +995,13 @@ class ConsoleApp:
         if theme_name:
             self.prefs.set_ui_theme(theme_name)
 
-    def _create_log_pane(self,
-                         title: str = '',
-                         log_store: Optional[LogStore] = None) -> 'LogPane':
+    def _create_log_pane(
+        self, title: str = '', log_store: Optional[LogStore] = None
+    ) -> 'LogPane':
         # Create one log pane.
-        log_pane = LogPane(application=self,
-                           pane_title=title,
-                           log_store=log_store)
+        log_pane = LogPane(
+            application=self, pane_title=title, log_store=log_store
+        )
         self.window_manager.add_pane(log_pane)
         return log_pane
 
@@ -864,11 +1018,12 @@ class ConsoleApp:
         self._update_help_window()
 
     def add_log_handler(
-            self,
-            window_title: str,
-            logger_instances: Union[Iterable[logging.Logger], LogStore],
-            separate_log_panes: bool = False,
-            log_level_name: Optional[str] = None) -> Optional[LogPane]:
+        self,
+        window_title: str,
+        logger_instances: Union[Iterable[logging.Logger], LogStore],
+        separate_log_panes: bool = False,
+        log_level_name: Optional[str] = None,
+    ) -> Optional[LogPane]:
         """Add the Log pane as a handler for this logger instance."""
 
         existing_log_pane = None
@@ -883,13 +1038,15 @@ class ConsoleApp:
             log_store = logger_instances
 
         if not existing_log_pane or separate_log_panes:
-            existing_log_pane = self._create_log_pane(title=window_title,
-                                                      log_store=log_store)
+            existing_log_pane = self._create_log_pane(
+                title=window_title, log_store=log_store
+            )
 
         if isinstance(logger_instances, list):
             for logger in logger_instances:
-                _add_log_handler_to_pane(logger, existing_log_pane,
-                                         log_level_name)
+                _add_log_handler_to_pane(
+                    logger, existing_log_pane, log_level_name
+                )
 
         self.refresh_layout()
         return existing_log_pane
@@ -901,9 +1058,9 @@ class ConsoleApp:
 
     def start_user_code_thread(self):
         """Create a thread for running user code so the UI isn't blocked."""
-        thread = Thread(target=self._user_code_thread_entry,
-                        args=(),
-                        daemon=True)
+        thread = Thread(
+            target=self._user_code_thread_entry, args=(), daemon=True
+        )
         thread.start()
 
     def _test_mode_log_thread_entry(self):
@@ -920,14 +1077,17 @@ class ConsoleApp:
         }
 
         self.keybind_help_window.add_custom_keybinds_help_text(
-            'Global Mouse', mouse_functions)
+            'Global Mouse', mouse_functions
+        )
 
         # Add global key bindings to the help text.
-        self.keybind_help_window.add_keybind_help_text('Global',
-                                                       self.key_bindings)
+        self.keybind_help_window.add_keybind_help_text(
+            'Global', self.key_bindings
+        )
 
         self.keybind_help_window.add_keybind_help_text(
-            'Window Management', self.window_manager.key_bindings)
+            'Window Management', self.window_manager.key_bindings
+        )
 
         # Add activated plugin key bindings to the help text.
         for pane in self.window_manager.active_panes():
@@ -935,10 +1095,12 @@ class ConsoleApp:
                 help_section_title = pane.__class__.__name__
                 if isinstance(key_bindings, KeyBindings):
                     self.keybind_help_window.add_keybind_help_text(
-                        help_section_title, key_bindings)
+                        help_section_title, key_bindings
+                    )
                 elif isinstance(key_bindings, dict):
                     self.keybind_help_window.add_custom_keybinds_help_text(
-                        help_section_title, key_bindings)
+                        help_section_title, key_bindings
+                    )
 
         self.keybind_help_window.generate_help_text()
 
@@ -960,18 +1122,22 @@ class ConsoleApp:
 
     def modal_window_is_open(self):
         """Return true if any modal window or dialog is open."""
-        floating_window_is_open = (self.keybind_help_window.show_window
-                                   or self.prefs_file_window.show_window
-                                   or self.user_guide_window.show_window
-                                   or self.quit_dialog.show_dialog
-                                   or self.command_runner.show_dialog)
+        floating_window_is_open = (
+            self.keybind_help_window.show_window
+            or self.prefs_file_window.show_window
+            or self.user_guide_window.show_window
+            or self.quit_dialog.show_dialog
+            or self.command_runner.show_dialog
+        )
 
         if self.app_help_text:
-            floating_window_is_open = (self.app_help_window.show_window
-                                       or floating_window_is_open)
+            floating_window_is_open = (
+                self.app_help_window.show_window or floating_window_is_open
+            )
 
         floating_plugin_is_open = any(
-            plugin.show_pane for plugin in self.floating_window_plugins)
+            plugin.show_pane for plugin in self.floating_window_plugins
+        )
 
         return floating_window_is_open or floating_plugin_is_open
 
@@ -1000,18 +1166,23 @@ class ConsoleApp:
         if not self.system_command_output_pane is None:
             return
 
-        self.system_command_output_pane = LogPane(application=self,
-                                                  pane_title='Shell Output')
-        self.system_command_output_pane.add_log_handler(_SYSTEM_COMMAND_LOG,
-                                                        level_name='INFO')
+        self.system_command_output_pane = LogPane(
+            application=self, pane_title='Shell Output'
+        )
+        self.system_command_output_pane.add_log_handler(
+            _SYSTEM_COMMAND_LOG, level_name='INFO'
+        )
         self.system_command_output_pane.log_view.log_store.formatter = (
-            logging.Formatter('%(message)s'))
+            logging.Formatter('%(message)s')
+        )
         self.system_command_output_pane.table_view = False
         self.system_command_output_pane.show_pane = True
         # Enable line wrapping
         self.system_command_output_pane.toggle_wrap_lines()
         # Blank right side toolbar text
-        self.system_command_output_pane._pane_subtitle = ' '  # pylint: disable=protected-access
+        # pylint: disable=protected-access
+        self.system_command_output_pane._pane_subtitle = ' '
+        # pylint: enable=protected-access
         self.window_manager.add_pane(self.system_command_output_pane)
 
     async def run(self, test_mode=False):
@@ -1020,7 +1191,8 @@ class ConsoleApp:
             background_log_task = start_fake_logger(
                 lines=self.user_guide_window.help_text_area.document.lines,
                 log_thread_entry=self._test_mode_log_thread_entry,
-                log_thread_loop=self.test_mode_log_loop)
+                log_thread_loop=self.test_mode_log_loop,
+            )
 
         # Repl pane has focus by default, if it's hidden switch focus to another
         # visible pane.
@@ -1029,7 +1201,8 @@ class ConsoleApp:
 
         try:
             unused_result = await self.application.run_async(
-                set_exception_handler=True)
+                set_exception_handler=True
+            )
         finally:
             if test_mode:
                 background_log_task.cancel()
@@ -1042,6 +1215,10 @@ def embed(
 ) -> None:
     """PwConsoleEmbed().embed() alias."""
     # Import here to avoid circular dependency
-    from pw_console.embed import PwConsoleEmbed  # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
+    from pw_console.embed import PwConsoleEmbed
+
+    # pylint: enable=import-outside-toplevel
+
     console = PwConsoleEmbed(*args, **kwargs)
     console.embed()

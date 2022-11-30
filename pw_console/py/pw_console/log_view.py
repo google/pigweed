@@ -53,6 +53,7 @@ _LOG = logging.getLogger(__package__)
 
 class FollowEvent(Enum):
     """Follow mode scroll event types."""
+
     SEARCH_MATCH = 'scroll_to_bottom'
     STICKY_FOLLOW = 'scroll_to_bottom_with_sticky_follow'
 
@@ -70,8 +71,9 @@ class LogView:
     ):
         # Parent LogPane reference. Updated by calling `set_log_pane()`.
         self.log_pane = log_pane
-        self.log_store = log_store if log_store else LogStore(
-            prefs=application.prefs)
+        self.log_store = (
+            log_store if log_store else LogStore(prefs=application.prefs)
+        )
         self.log_store.set_prefs(application.prefs)
         self.log_store.register_viewer(self)
 
@@ -111,7 +113,8 @@ class LogView:
         # Filter
         self.filtering_on: bool = False
         self.filters: 'collections.OrderedDict[str, LogFilter]' = (
-            collections.OrderedDict())
+            collections.OrderedDict()
+        )
         self.filtered_logs: collections.deque = collections.deque()
         self.filter_existing_logs_task: Optional[asyncio.Task] = None
 
@@ -157,20 +160,23 @@ class LogView:
         """Entry point for the user code thread."""
         asyncio.set_event_loop(self.websocket_loop)
         self.websocket_server = websockets.serve(  # type: ignore # pylint: disable=no-member
-            self._send_logs_over_websockets, '127.0.0.1')
+            self._send_logs_over_websockets, '127.0.0.1'
+        )
         self.websocket_loop.run_until_complete(self.websocket_server)
         self.websocket_port = self.websocket_server.ws_server.sockets[
-            0].getsockname()[1]
+            0
+        ].getsockname()[1]
         self.log_pane.application.application.clipboard.set_text(
-            self.get_web_socket_url())
+            self.get_web_socket_url()
+        )
         self.websocket_running = True
         self.websocket_loop.run_forever()
 
     def start_websocket_thread(self):
         """Create a thread for running user code so the UI isn't blocked."""
-        thread = Thread(target=self._websocket_thread_entry,
-                        args=(),
-                        daemon=True)
+        thread = Thread(
+            target=self._websocket_thread_entry, args=(), daemon=True
+        )
         thread.start()
 
     def stop_websocket_thread(self):
@@ -184,23 +190,26 @@ class LogView:
                 self._restart_filtering()
 
     async def _send_logs_over_websockets(self, websocket, _path) -> None:
-        formatter: Callable[[LogLine],
-                            str] = operator.attrgetter('ansi_stripped_log')
+        formatter: Callable[[LogLine], str] = operator.attrgetter(
+            'ansi_stripped_log'
+        )
         formatter = lambda log: log_record_to_json(log.record)
 
         theme_colors = json.dumps(
-            self.log_pane.application.prefs.pw_console_color_config())
+            self.log_pane.application.prefs.pw_console_color_config()
+        )
         # Send colors
         await websocket.send(theme_colors)
 
         while True:
             # Wait for new logs
             if not self._new_logs_since_last_websocket_serve:
-                await asyncio.sleep(.5)
+                await asyncio.sleep(0.5)
 
             _start_log_index, log_source = self._get_log_lines()
-            log_index_range = range(self._last_served_websocket_index + 1,
-                                    self.get_total_count())
+            log_index_range = range(
+                self._last_served_websocket_index + 1, self.get_total_count()
+            )
 
             for i in log_index_range:
                 log_text = formatter(log_source[i])
@@ -299,16 +308,15 @@ class LogView:
                 self._set_match_position(i)
                 return
 
-    def set_search_regex(self,
-                         text,
-                         invert,
-                         field,
-                         matcher: Optional[SearchMatcher] = None) -> bool:
+    def set_search_regex(
+        self, text, invert, field, matcher: Optional[SearchMatcher] = None
+    ) -> bool:
         search_matcher = matcher if matcher else self.search_matcher
         _LOG.debug(search_matcher)
 
         regex_text, regex_flags = preprocess_search_regex(
-            text, matcher=search_matcher)
+            text, matcher=search_matcher
+        )
 
         try:
             compiled_regex = re.compile(regex_text, regex_flags)
@@ -338,8 +346,10 @@ class LogView:
         """Start a new search for the given text."""
         valid_matchers = list(s.name for s in SearchMatcher)
         selected_matcher: Optional[SearchMatcher] = None
-        if (search_matcher is not None
-                and search_matcher.upper() in valid_matchers):
+        if (
+            search_matcher is not None
+            and search_matcher.upper() in valid_matchers
+        ):
             selected_matcher = SearchMatcher(search_matcher.upper())
 
         if not self.set_search_regex(text, invert, field, selected_matcher):
@@ -351,7 +361,8 @@ class LogView:
         if interactive:
             # Start count historical search matches task.
             self.search_match_count_task = asyncio.create_task(
-                self.count_search_matches())
+                self.count_search_matches()
+            )
 
         # Default search direction when hitting enter in the search bar.
         if interactive:
@@ -366,7 +377,8 @@ class LogView:
             # Save this log_index and its match number.
             log_index: match_number
             for match_number, log_index in enumerate(
-                sorted(self.search_matched_lines.keys()))
+                sorted(self.search_matched_lines.keys())
+            )
         }
 
     def disable_search_highlighting(self):
@@ -384,7 +396,8 @@ class LogView:
 
         # Start filtering existing log lines.
         self.filter_existing_logs_task = asyncio.create_task(
-            self.filter_past_logs())
+            self.filter_past_logs()
+        )
 
         # Reset existing search
         self.clear_search()
@@ -432,7 +445,8 @@ class LogView:
         _, logs = self._get_log_lines()
         if self._scrollback_start_index > 0:
             return collections.deque(
-                itertools.islice(logs, self.hidden_line_count(), len(logs)))
+                itertools.islice(logs, self.hidden_line_count(), len(logs))
+            )
         return logs
 
     def _get_table_formatter(self) -> Optional[Callable]:
@@ -461,7 +475,8 @@ class LogView:
         self.clear_search()
         self.filtering_on = False
         self.filters: 'collections.OrderedDict[str, re.Pattern]' = (
-            collections.OrderedDict())
+            collections.OrderedDict()
+        )
         self.filtered_logs.clear()
         # Reset scrollback start
         self._scrollback_start_index = 0
@@ -484,7 +499,7 @@ class LogView:
                 self.save_search_matched_line(i)
             # Pause every 100 lines or so
             if i % 100 == 0:
-                await asyncio.sleep(.1)
+                await asyncio.sleep(0.1)
 
     async def filter_past_logs(self):
         """Filter past log lines."""
@@ -500,7 +515,7 @@ class LogView:
             # TODO(tonymd): Tune these values.
             # Pause every 100 lines or so
             if i % 100 == 0:
-                await asyncio.sleep(.1)
+                await asyncio.sleep(0.1)
 
     def set_log_pane(self, log_pane: 'LogPane'):
         """Set the parent LogPane instance."""
@@ -518,8 +533,11 @@ class LogView:
 
     def get_total_count(self):
         """Total size of the logs store."""
-        return (len(self.filtered_logs)
-                if self.filtering_on else self.log_store.get_total_count())
+        return (
+            len(self.filtered_logs)
+            if self.filtering_on
+            else self.log_store.get_total_count()
+        )
 
     def get_last_log_index(self):
         total = self.get_total_count()
@@ -720,9 +738,9 @@ class LogView:
         # Select the new line
         self.visual_select_line(self.get_cursor_position(), autoscroll=False)
 
-    def visual_select_line(self,
-                           mouse_position: Point,
-                           autoscroll: bool = True) -> None:
+    def visual_select_line(
+        self, mouse_position: Point, autoscroll: bool = True
+    ) -> None:
         """Mark the log under mouse_position as visually selected."""
         # Check mouse_position is valid
         if not 0 <= mouse_position.y < len(self.log_screen.line_buffer):
@@ -792,8 +810,10 @@ class LogView:
         self.scroll(-1 * lines)
 
     def log_start_end_indexes_changed(self) -> bool:
-        return (self._last_start_index != self._current_start_index
-                or self._last_end_index != self._current_end_index)
+        return (
+            self._last_start_index != self._current_start_index
+            or self._last_end_index != self._current_end_index
+        )
 
     def render_table_header(self):
         """Get pre-formatted table header."""
@@ -824,8 +844,10 @@ class LogView:
             self._reset_log_screen_on_next_render = True
 
         if self.follow_event is not None:
-            if (self.follow_event == FollowEvent.SEARCH_MATCH
-                    and self.last_search_matched_log):
+            if (
+                self.follow_event == FollowEvent.SEARCH_MATCH
+                and self.last_search_matched_log
+            ):
                 self.log_index = self.last_search_matched_log
                 self.last_search_matched_log = None
                 self._reset_log_screen_on_next_render = True
@@ -851,14 +873,16 @@ class LogView:
             last_rendered_log_index = self.log_screen.last_appended_log_index
             # If so many logs have arrived than can fit on the screen, redraw
             # the whole screen from the new position.
-            if (current_log_index -
-                    last_rendered_log_index) > self.log_screen.height:
+            if (
+                current_log_index - last_rendered_log_index
+            ) > self.log_screen.height:
                 self.log_screen.reset_logs(log_index=self.log_index)
             # A small amount of logs have arrived, append them one at a time
             # without redrawing the whole screen.
             else:
-                for i in range(last_rendered_log_index + 1,
-                               current_log_index + 1):
+                for i in range(
+                    last_rendered_log_index + 1, current_log_index + 1
+                ):
                     self.log_screen.append_log(i)
 
             screen_update_needed = True
@@ -885,22 +909,29 @@ class LogView:
         selected_lines_only: bool = False,
     ) -> str:
         """Convert all or selected log messages to plaintext."""
+
         def get_table_string(log: LogLine) -> str:
             return remove_formatting(self.log_store.table.formatted_row(log))
 
-        formatter: Callable[[LogLine],
-                            str] = operator.attrgetter('ansi_stripped_log')
+        formatter: Callable[[LogLine], str] = operator.attrgetter(
+            'ansi_stripped_log'
+        )
         if use_table_formatting:
             formatter = get_table_string
 
         _start_log_index, log_source = self._get_log_lines()
 
-        log_index_range = range(self._scrollback_start_index,
-                                self.get_total_count())
-        if (selected_lines_only and self.marked_logs_start is not None
-                and self.marked_logs_end is not None):
-            log_index_range = range(self.marked_logs_start,
-                                    self.marked_logs_end + 1)
+        log_index_range = range(
+            self._scrollback_start_index, self.get_total_count()
+        )
+        if (
+            selected_lines_only
+            and self.marked_logs_start is not None
+            and self.marked_logs_end is not None
+        ):
+            log_index_range = range(
+                self.marked_logs_start, self.marked_logs_end + 1
+            )
 
         text_output = ''
         for i in log_index_range:
@@ -920,8 +951,9 @@ class LogView:
         add_markdown_fence: bool = False,
     ) -> bool:
         """Export log lines to file or clipboard."""
-        text_output = self._logs_to_text(use_table_formatting,
-                                         selected_lines_only)
+        text_output = self._logs_to_text(
+            use_table_formatting, selected_lines_only
+        )
 
         if file_name:
             target_path = Path(file_name).expanduser()
@@ -933,7 +965,8 @@ class LogView:
             if add_markdown_fence:
                 text_output = '```\n' + text_output + '```\n'
             self.log_pane.application.application.clipboard.set_text(
-                text_output)
+                text_output
+            )
             _LOG.debug('Copied logs to clipboard.')
 
         return True

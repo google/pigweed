@@ -22,8 +22,11 @@ from pw_console.console_prefs import ConsolePrefs
 
 
 def _create_log_store():
-    log_store = LogStore(prefs=ConsolePrefs(
-        project_file=False, project_user_file=False, user_file=False))
+    log_store = LogStore(
+        prefs=ConsolePrefs(
+            project_file=False, project_user_file=False, user_file=False
+        )
+    )
 
     assert not log_store.table.prefs.show_python_file
     viewer = MagicMock()
@@ -34,6 +37,7 @@ def _create_log_store():
 
 class TestLogStore(unittest.TestCase):
     """Tests for LogStore."""
+
     def setUp(self):
         self.maxDiff = None  # pylint: disable=invalid-name
 
@@ -64,11 +68,13 @@ class TestLogStore(unittest.TestCase):
         log_store, _viewer = _create_log_store()
 
         # Log some messagse on 3 separate logger instances
-        for i, logger_name in enumerate([
+        for i, logger_name in enumerate(
+            [
                 'log_store.test',
                 'log_store.dev',
                 'log_store.production',
-        ]):
+            ]
+        ):
             test_log = logging.getLogger(logger_name)
             with self.assertLogs(test_log, level='DEBUG') as _log_context:
                 test_log.addHandler(log_store)
@@ -109,11 +115,15 @@ class TestLogStore(unittest.TestCase):
         # Log table with extra columns
         with self.assertLogs(test_log, level='DEBUG') as _log_context:
             test_log.addHandler(log_store)
-            test_log.debug('Test log %s',
-                           extra=dict(extra_metadata_fields={
-                               'planet': 'Jupiter',
-                               'galaxy': 'Milky Way'
-                           }))
+            test_log.debug(
+                'Test log %s',
+                extra=dict(
+                    extra_metadata_fields={
+                        'planet': 'Jupiter',
+                        'galaxy': 'Milky Way',
+                    }
+                ),
+            )
 
         self.assertEqual(
             [

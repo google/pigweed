@@ -36,7 +36,7 @@ def _log_hex_strings(data: bytes, prefix=''):
         .replace("'>", '', 1)  # Remove ' from the end
         .rjust(2)
         for b in data
-    ] # yapf: disable
+    ]  # yapf: disable
 
     # Replace non-printable bytes with dots.
     for i, num in enumerate(hex_numbers):
@@ -46,35 +46,43 @@ def _log_hex_strings(data: bytes, prefix=''):
     hex_numbers_msg = ' '.join(hex_numbers)
     hex_chars_msg = ' '.join(hex_chars)
 
-    _LOG.debug('%s%s',
-               prefix,
-               hex_numbers_msg,
-               extra=dict(extra_metadata_fields={
-                   'msg': hex_numbers_msg,
-                   'view': 'hex',
-               }))
-    _LOG.debug('%s%s',
-               prefix,
-               hex_chars_msg,
-               extra=dict(extra_metadata_fields={
-                   'msg': hex_chars_msg,
-                   'view': 'chars',
-               }))
+    _LOG.debug(
+        '%s%s',
+        prefix,
+        hex_numbers_msg,
+        extra=dict(
+            extra_metadata_fields={
+                'msg': hex_numbers_msg,
+                'view': 'hex',
+            }
+        ),
+    )
+    _LOG.debug(
+        '%s%s',
+        prefix,
+        hex_chars_msg,
+        extra=dict(
+            extra_metadata_fields={
+                'msg': hex_chars_msg,
+                'view': 'chars',
+            }
+        ),
+    )
 
 
-BANDWIDTH_HISTORY_CONTEXTVAR = (ContextVar('pw_console_bandwidth_history',
-                                           default={
-                                               'total':
-                                               EventCountHistory(interval=3),
-                                               'read':
-                                               EventCountHistory(interval=3),
-                                               'write':
-                                               EventCountHistory(interval=3),
-                                           }))
+BANDWIDTH_HISTORY_CONTEXTVAR = ContextVar(
+    'pw_console_bandwidth_history',
+    default={
+        'total': EventCountHistory(interval=3),
+        'read': EventCountHistory(interval=3),
+        'write': EventCountHistory(interval=3),
+    },
+)
 
 
 class SerialWithLogging(serial.Serial):  # pylint: disable=too-many-ancestors
     """pyserial with read and write wrappers for logging."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.pw_bps_history = BANDWIDTH_HISTORY_CONTEXTVAR.get()
@@ -86,27 +94,35 @@ class SerialWithLogging(serial.Serial):  # pylint: disable=too-many-ancestors
 
         if len(data) > 0:
             prefix = 'Read %2d B: ' % len(data)
-            _LOG.debug('%s%s',
-                       prefix,
-                       data,
-                       extra=dict(
-                           extra_metadata_fields={
-                               'mode': 'Read',
-                               'bytes': len(data),
-                               'view': 'bytes',
-                               'msg': str(data),
-                           }))
+            _LOG.debug(
+                '%s%s',
+                prefix,
+                data,
+                extra=dict(
+                    extra_metadata_fields={
+                        'mode': 'Read',
+                        'bytes': len(data),
+                        'view': 'bytes',
+                        'msg': str(data),
+                    }
+                ),
+            )
             _log_hex_strings(data, prefix=prefix)
 
             # Print individual lines
-            for line in data.decode(encoding='utf-8',
-                                    errors='ignore').splitlines():
-                _LOG.debug('%s',
-                           line,
-                           extra=dict(extra_metadata_fields={
-                               'msg': line,
-                               'view': 'lines',
-                           }))
+            for line in data.decode(
+                encoding='utf-8', errors='ignore'
+            ).splitlines():
+                _LOG.debug(
+                    '%s',
+                    line,
+                    extra=dict(
+                        extra_metadata_fields={
+                            'msg': line,
+                            'view': 'lines',
+                        }
+                    ),
+                )
 
         return data
 
@@ -116,26 +132,34 @@ class SerialWithLogging(serial.Serial):  # pylint: disable=too-many-ancestors
 
         if len(data) > 0:
             prefix = 'Write %2d B: ' % len(data)
-            _LOG.debug('%s%s',
-                       prefix,
-                       data,
-                       extra=dict(
-                           extra_metadata_fields={
-                               'mode': 'Write',
-                               'bytes': len(data),
-                               'view': 'bytes',
-                               'msg': str(data)
-                           }))
+            _LOG.debug(
+                '%s%s',
+                prefix,
+                data,
+                extra=dict(
+                    extra_metadata_fields={
+                        'mode': 'Write',
+                        'bytes': len(data),
+                        'view': 'bytes',
+                        'msg': str(data),
+                    }
+                ),
+            )
             _log_hex_strings(data, prefix=prefix)
 
             # Print individual lines
-            for line in data.decode(encoding='utf-8',
-                                    errors='ignore').splitlines():
-                _LOG.debug('%s',
-                           line,
-                           extra=dict(extra_metadata_fields={
-                               'msg': line,
-                               'view': 'lines',
-                           }))
+            for line in data.decode(
+                encoding='utf-8', errors='ignore'
+            ).splitlines():
+                _LOG.debug(
+                    '%s',
+                    line,
+                    extra=dict(
+                        extra_metadata_fields={
+                            'msg': line,
+                            'view': 'lines',
+                        }
+                    ),
+                )
 
         super().write(data, *args, **kwargs)

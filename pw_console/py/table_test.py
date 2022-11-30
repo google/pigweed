@@ -39,72 +39,83 @@ formatter = logging.Formatter(
     '%(levelname)s'
     '\x1b[0m'
     ' '
-    '%(message)s', _TIMESTAMP_FORMAT)
+    '%(message)s',
+    _TIMESTAMP_FORMAT,
+)
 
 
 def make_log(**kwargs):
     """Create a LogLine instance."""
     # Construct a LogRecord
-    attributes = dict(name='testlogger',
-                      levelno=logging.INFO,
-                      levelname='INF',
-                      msg='[%s] %.3f %s',
-                      args=('MOD1', 3.14159, 'Real message here'),
-                      created=_TIMESTAMP_SAMPLE.timestamp(),
-                      filename='test.py',
-                      lineno=42,
-                      pathname='/home/user/test.py')
+    attributes = dict(
+        name='testlogger',
+        levelno=logging.INFO,
+        levelname='INF',
+        msg='[%s] %.3f %s',
+        args=('MOD1', 3.14159, 'Real message here'),
+        created=_TIMESTAMP_SAMPLE.timestamp(),
+        filename='test.py',
+        lineno=42,
+        pathname='/home/user/test.py',
+    )
     # Override any above attrs that are passed in.
     attributes.update(kwargs)
     # Create the record
     record = logging.makeLogRecord(dict(attributes))
     # Format
     formatted_message = formatter.format(record)
-    log_line = LogLine(record=record,
-                       formatted_log=formatted_message,
-                       ansi_stripped_log='')
+    log_line = LogLine(
+        record=record, formatted_log=formatted_message, ansi_stripped_log=''
+    )
     log_line.update_metadata()
     return log_line
 
 
 class TestTableView(unittest.TestCase):
     """Tests for rendering log lines into tables."""
+
     def setUp(self):
         # Show large diffs
         self.maxDiff = None  # pylint: disable=invalid-name
-        self.prefs = ConsolePrefs(project_file=False,
-                                  project_user_file=False,
-                                  user_file=False)
+        self.prefs = ConsolePrefs(
+            project_file=False, project_user_file=False, user_file=False
+        )
         self.prefs.reset_config()
 
-    @parameterized.expand([
-        (
-            'Correct column widths with all fields set',
-            [
-                make_log(
-                    args=('M1', 1.2345, 'Something happened'),
-                    extra_metadata_fields=dict(module='M1', anumber=12)),
-
-                make_log(
-                    args=('MD2', 567.5, 'Another cool event'),
-                    extra_metadata_fields=dict(module='MD2', anumber=123)),
-            ],
-            dict(module=len('MD2'), anumber=len('123')),
-        ),
-        (
-            'Missing metadata fields on some rows',
-            [
-                make_log(
-                    args=('M1', 54321.2, 'Something happened'),
-                    extra_metadata_fields=dict(module='M1', anumber=54321.2)),
-
-                make_log(
-                    args=('MOD2', 567.5, 'Another cool event'),
-                    extra_metadata_fields=dict(module='MOD2')),
-            ],
-            dict(module=len('MOD2'), anumber=len('54321.200')),
-        ),
-    ]) # yapf: disable
+    @parameterized.expand(
+        [
+            (
+                'Correct column widths with all fields set',
+                [
+                    make_log(
+                        args=('M1', 1.2345, 'Something happened'),
+                        extra_metadata_fields=dict(module='M1', anumber=12),
+                    ),
+                    make_log(
+                        args=('MD2', 567.5, 'Another cool event'),
+                        extra_metadata_fields=dict(module='MD2', anumber=123),
+                    ),
+                ],
+                dict(module=len('MD2'), anumber=len('123')),
+            ),
+            (
+                'Missing metadata fields on some rows',
+                [
+                    make_log(
+                        args=('M1', 54321.2, 'Something happened'),
+                        extra_metadata_fields=dict(
+                            module='M1', anumber=54321.2
+                        ),
+                    ),
+                    make_log(
+                        args=('MOD2', 567.5, 'Another cool event'),
+                        extra_metadata_fields=dict(module='MOD2'),
+                    ),
+                ],
+                dict(module=len('MOD2'), anumber=len('54321.200')),
+            ),
+        ]
+    )  # yapf: disable
     def test_column_widths(self, _name, logs, expected_widths) -> None:
         """Test colum widths calculation."""
         table = TableView(self.prefs)
@@ -125,44 +136,53 @@ class TestTableView(unittest.TestCase):
         }
         self.assertCountEqual(expected_widths, results)
 
-    @parameterized.expand([
-        (
-            'Build header adding fields incrementally',
-            [
-                make_log(
-                    args=('MODULE2', 567.5, 'Another cool event'),
-                    extra_metadata_fields=dict(
-                        # timestamp missing
-                        module='MODULE2')),
-
-                make_log(
-                    args=('MODULE1', 54321.2, 'Something happened'),
-                    extra_metadata_fields=dict(
+    @parameterized.expand(
+        [
+            (
+                'Build header adding fields incrementally',
+                [
+                    make_log(
+                        args=('MODULE2', 567.5, 'Another cool event'),
+                        extra_metadata_fields=dict(
+                            # timestamp missing
+                            module='MODULE2'
+                        ),
+                    ),
+                    make_log(
+                        args=('MODULE1', 54321.2, 'Something happened'),
+                        extra_metadata_fields=dict(
+                            # timestamp added in
+                            module='MODULE1',
+                            timestamp=54321.2,
+                        ),
+                    ),
+                ],
+                [
+                    [
+                        ('bold', 'Time             '),
+                        _TABLE_PADDING_FRAGMENT,
+                        ('bold', 'Lev'),
+                        _TABLE_PADDING_FRAGMENT,
+                        ('bold', 'Module '),
+                        _TABLE_PADDING_FRAGMENT,
+                        ('bold', 'Message'),
+                    ],
+                    [
+                        ('bold', 'Time             '),
+                        _TABLE_PADDING_FRAGMENT,
+                        ('bold', 'Lev'),
+                        _TABLE_PADDING_FRAGMENT,
+                        ('bold', 'Module '),
+                        _TABLE_PADDING_FRAGMENT,
                         # timestamp added in
-                        module='MODULE1', timestamp=54321.2)),
-            ],
-            [
-                [('bold', 'Time             '),
-                 _TABLE_PADDING_FRAGMENT,
-                 ('bold', 'Lev'),
-                 _TABLE_PADDING_FRAGMENT,
-                 ('bold', 'Module '),
-                 _TABLE_PADDING_FRAGMENT,
-                 ('bold', 'Message')],
-
-                [('bold', 'Time             '),
-                 _TABLE_PADDING_FRAGMENT,
-                 ('bold', 'Lev'),
-                 _TABLE_PADDING_FRAGMENT,
-                 ('bold', 'Module '),
-                 _TABLE_PADDING_FRAGMENT,
-                 # timestamp added in
-                 ('bold', 'Timestamp'),
-                 _TABLE_PADDING_FRAGMENT,
-                 ('bold', 'Message')],
-            ],
-        ),
-    ]) # yapf: disable
+                        ('bold', 'Timestamp'),
+                        _TABLE_PADDING_FRAGMENT,
+                        ('bold', 'Message'),
+                    ],
+                ],
+            ),
+        ]
+    )  # yapf: disable
     def test_formatted_header(self, _name, logs, expected_headers) -> None:
         """Test colum widths calculation."""
         table = TableView(self.prefs)
@@ -171,68 +191,73 @@ class TestTableView(unittest.TestCase):
             table.update_metadata_column_widths(log)
             self.assertEqual(table.formatted_header(), header)
 
-    @parameterized.expand([
-        (
-            'Build rows adding fields incrementally',
-            [
-                make_log(
-                    args=('MODULE2', 567.5, 'Another cool event'),
-                    extra_metadata_fields=dict(
-                        # timestamp missing
-                        module='MODULE2',
-                        msg='Another cool event')),
-
-                make_log(
-                    args=('MODULE2', 567.5, 'Another cool event'),
-                    extra_metadata_fields=dict(
-                        # timestamp and msg missing
-                        module='MODULE2')),
-
-                make_log(
-                    args=('MODULE1', 54321.2, 'Something happened'),
-                    extra_metadata_fields=dict(
-                        # timestamp added in
-                        module='MODULE1', timestamp=54321.2,
-                        msg='Something happened')),
-            ],
-            [
+    @parameterized.expand(
+        [
+            (
+                'Build rows adding fields incrementally',
                 [
-                    ('class:log-time', _TIMESTAMP_SAMPLE_STRING),
-                    _TABLE_PADDING_FRAGMENT,
-                    ('class:log-level-20', 'INF'),
-                    _TABLE_PADDING_FRAGMENT,
-                    ('class:log-table-column-0', 'MODULE2'),
-                    _TABLE_PADDING_FRAGMENT,
-                    ('', 'Another cool event'),
-                    ('', '\n')
+                    make_log(
+                        args=('MODULE2', 567.5, 'Another cool event'),
+                        extra_metadata_fields=dict(
+                            # timestamp missing
+                            module='MODULE2',
+                            msg='Another cool event',
+                        ),
+                    ),
+                    make_log(
+                        args=('MODULE2', 567.5, 'Another cool event'),
+                        extra_metadata_fields=dict(
+                            # timestamp and msg missing
+                            module='MODULE2'
+                        ),
+                    ),
+                    make_log(
+                        args=('MODULE1', 54321.2, 'Something happened'),
+                        extra_metadata_fields=dict(
+                            # timestamp added in
+                            module='MODULE1',
+                            timestamp=54321.2,
+                            msg='Something happened',
+                        ),
+                    ),
                 ],
-
                 [
-                    ('class:log-time', _TIMESTAMP_SAMPLE_STRING),
-                    _TABLE_PADDING_FRAGMENT,
-                    ('class:log-level-20', 'INF'),
-                    _TABLE_PADDING_FRAGMENT,
-                    ('class:log-table-column-0', 'MODULE2'),
-                    _TABLE_PADDING_FRAGMENT,
-                    ('', '[MODULE2] 567.500 Another cool event'),
-                    ('', '\n')
+                    [
+                        ('class:log-time', _TIMESTAMP_SAMPLE_STRING),
+                        _TABLE_PADDING_FRAGMENT,
+                        ('class:log-level-20', 'INF'),
+                        _TABLE_PADDING_FRAGMENT,
+                        ('class:log-table-column-0', 'MODULE2'),
+                        _TABLE_PADDING_FRAGMENT,
+                        ('', 'Another cool event'),
+                        ('', '\n'),
+                    ],
+                    [
+                        ('class:log-time', _TIMESTAMP_SAMPLE_STRING),
+                        _TABLE_PADDING_FRAGMENT,
+                        ('class:log-level-20', 'INF'),
+                        _TABLE_PADDING_FRAGMENT,
+                        ('class:log-table-column-0', 'MODULE2'),
+                        _TABLE_PADDING_FRAGMENT,
+                        ('', '[MODULE2] 567.500 Another cool event'),
+                        ('', '\n'),
+                    ],
+                    [
+                        ('class:log-time', _TIMESTAMP_SAMPLE_STRING),
+                        _TABLE_PADDING_FRAGMENT,
+                        ('class:log-level-20', 'INF'),
+                        _TABLE_PADDING_FRAGMENT,
+                        ('class:log-table-column-0', 'MODULE1'),
+                        _TABLE_PADDING_FRAGMENT,
+                        ('class:log-table-column-1', '54321.200'),
+                        _TABLE_PADDING_FRAGMENT,
+                        ('', 'Something happened'),
+                        ('', '\n'),
+                    ],
                 ],
-
-                [
-                    ('class:log-time', _TIMESTAMP_SAMPLE_STRING),
-                    _TABLE_PADDING_FRAGMENT,
-                    ('class:log-level-20', 'INF'),
-                    _TABLE_PADDING_FRAGMENT,
-                    ('class:log-table-column-0', 'MODULE1'),
-                    _TABLE_PADDING_FRAGMENT,
-                    ('class:log-table-column-1', '54321.200'),
-                    _TABLE_PADDING_FRAGMENT,
-                    ('', 'Something happened'),
-                    ('', '\n')
-                ],
-            ],
-        ),
-    ]) # yapf: disable
+            ),
+        ]
+    )  # yapf: disable
     def test_formatted_rows(self, _name, logs, expected_log_format) -> None:
         """Test colum widths calculation."""
         table = TableView(self.prefs)

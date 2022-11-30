@@ -81,6 +81,7 @@ class ScreenLine:
     logs. The subline is 0 since each line is the first one for this log. Both
     have a height of 1 since no line wrapping was performed.
     """
+
     # The StyleAndTextTuples for this line ending with a '\n'. These are the raw
     # prompt_toolkit formatted text tuples to display on screen. The colors and
     # spacing can change depending on the formatters used in the
@@ -125,11 +126,13 @@ class LogScreen:
 
     It is responsible for moving the cursor_position, prepending and appending
     log lines as the user moves the cursor."""
+
     # Callable functions to retrieve logs and display formatting.
     get_log_source: Callable[[], Tuple[int, collections.deque[LogLine]]]
     get_line_wrapping: Callable[[], bool]
-    get_log_formatter: Callable[[], Optional[Callable[[LogLine],
-                                                      StyleAndTextTuples]]]
+    get_log_formatter: Callable[
+        [], Optional[Callable[[LogLine], StyleAndTextTuples]]
+    ]
     get_search_filter: Callable[[], Optional[LogFilter]]
     get_search_highlight: Callable[[], bool]
 
@@ -144,7 +147,8 @@ class LogScreen:
     # wrapping to be displayed it will be represented by multiple ScreenLine
     # instances in this deque.
     line_buffer: collections.deque[ScreenLine] = dataclasses.field(
-        default_factory=collections.deque)
+        default_factory=collections.deque
+    )
 
     def __post_init__(self) -> None:
         # Empty screen flag. Will be true if the screen contains only newlines.
@@ -188,8 +192,9 @@ class LogScreen:
         # 6 the range below will be:
         # >>> list(i for i in range((10 - 6) + 1, 10 + 1))
         # [5, 6, 7, 8, 9, 10]
-        for i in range((log_index - max_log_messages_to_fetch) + 1,
-                       log_index + 1):
+        for i in range(
+            (log_index - max_log_messages_to_fetch) + 1, log_index + 1
+        ):
             # If i is < 0 it's an invalid log, skip to the next line. The next
             # index could be 0 or higher since we are traversing in increasing
             # order.
@@ -225,9 +230,11 @@ class LogScreen:
         for i, line in enumerate(list(self.line_buffer)):
 
             # Is this line the cursor_position? Apply line highlighting
-            if (i == self.cursor_position
-                    and (self.cursor_position < len(self.line_buffer))
-                    and not self.line_buffer[self.cursor_position].empty()):
+            if (
+                i == self.cursor_position
+                and (self.cursor_position < len(self.line_buffer))
+                and not self.line_buffer[self.cursor_position].empty()
+            ):
                 # Fill in empty charaters to the width of the screen. This
                 # ensures the backgound is highlighted to the edge of the
                 # screen.
@@ -239,10 +246,13 @@ class LogScreen:
 
                 # Apply a style to highlight this line.
                 all_lines.append(
-                    to_formatted_text(new_fragments,
-                                      style='class:selected-log-line'))
+                    to_formatted_text(
+                        new_fragments, style='class:selected-log-line'
+                    )
+                )
             elif line.log_index is not None and (
-                    marked_logs_start <= line.log_index <= marked_logs_end):
+                marked_logs_start <= line.log_index <= marked_logs_end
+            ):
                 new_fragments = fill_character_width(
                     line.fragments,
                     len(line.fragments) - 1,  # -1 for the ending line break
@@ -251,8 +261,10 @@ class LogScreen:
 
                 # Apply a style to highlight this line.
                 all_lines.append(
-                    to_formatted_text(new_fragments,
-                                      style='class:marked-log-line'))
+                    to_formatted_text(
+                        new_fragments, style='class:marked-log-line'
+                    )
+                )
 
             else:
                 all_lines.append(line.fragments)
@@ -301,8 +313,10 @@ class LogScreen:
             new_index = self.cursor_position - 1
             if new_index < 0:
                 break
-            if (new_index < len(self.line_buffer)
-                    and self.line_buffer[new_index].empty()):
+            if (
+                new_index < len(self.line_buffer)
+                and self.line_buffer[new_index].empty()
+            ):
                 # The next line is empty and has no content.
                 break
             self.cursor_position -= 1
@@ -324,8 +338,10 @@ class LogScreen:
             new_index = self.cursor_position + 1
             if new_index >= self.height:
                 break
-            if (new_index < len(self.line_buffer)
-                    and self.line_buffer[new_index].empty()):
+            if (
+                new_index < len(self.line_buffer)
+                and self.line_buffer[new_index].empty()
+            ):
                 # The next line is empty and has no content.
                 break
             self.cursor_position += 1
@@ -374,8 +390,9 @@ class LogScreen:
         remaining_lines = self.scroll_subline(amount)
         if remaining_lines != 0 and current_line.log_index is not None:
             # Restore original selected line.
-            self._move_selection_to_log(current_line.log_index,
-                                        current_line.subline)
+            self._move_selection_to_log(
+                current_line.log_index, current_line.subline
+            )
             return
         # Lines scrolled as expected, set cursor_position to top.
         self.cursor_position = 0
@@ -398,13 +415,14 @@ class LogScreen:
         remaining_lines = self.scroll_subline(amount)
         if remaining_lines != 0 and current_line.log_index is not None:
             # Restore original selected line.
-            self._move_selection_to_log(current_line.log_index,
-                                        current_line.subline)
+            self._move_selection_to_log(
+                current_line.log_index, current_line.subline
+            )
             return
 
         # Lines scrolled as expected, set cursor_position to center.
         self.cursor_position -= amount
-        self.cursor_position -= (current_line.height - 1)
+        self.cursor_position -= current_line.height - 1
 
     def scroll_subline(self, line_count: int = 1) -> int:
         """Move the cursor down or up by positive or negative lines.
@@ -475,8 +493,10 @@ class LogScreen:
 
     def get_line_at_cursor_position(self) -> ScreenLine:
         """Returns the ScreenLine under the cursor."""
-        if (self.cursor_position >= len(self.line_buffer)
-                or self.cursor_position < 0):
+        if (
+            self.cursor_position >= len(self.line_buffer)
+            or self.cursor_position < 0
+        ):
             return ScreenLine([('', '')])
         return self.line_buffer[self.cursor_position]
 
@@ -545,8 +565,9 @@ class LogScreen:
             log_index = self.line_buffer[-1].log_index
         return log_index
 
-    def _get_fragments_per_line(self,
-                                log_index: int) -> List[StyleAndTextTuples]:
+    def _get_fragments_per_line(
+        self, log_index: int
+    ) -> List[StyleAndTextTuples]:
         """Return a list of lines wrapped to the screen width for a log.
 
         Before fetching the log message this function updates the log_source and
@@ -575,7 +596,8 @@ class LogScreen:
         line_fragments, _log_line_height = insert_linebreaks(
             fragments,
             max_line_width=self.width,
-            truncate_long_lines=truncate_lines)
+            truncate_long_lines=truncate_lines,
+        )
         # Convert the existing flattened fragments to a list of lines.
         fragments_per_line = split_lines(line_fragments)
 
@@ -599,15 +621,16 @@ class LogScreen:
         fragments_per_line = self._get_fragments_per_line(log_index)
 
         # Target the last subline if the subline arg is set to -1.
-        fetch_last_subline = (subline == -1)
+        fetch_last_subline = subline == -1
 
         for line_index, line in enumerate(fragments_per_line):
             # If we are looking for a specific subline and this isn't it, skip.
             if subline is not None:
                 # If subline is set to -1 we need to append the last subline of
                 # this log message. Skip this line if it isn't the last one.
-                if fetch_last_subline and (line_index !=
-                                           len(fragments_per_line) - 1):
+                if fetch_last_subline and (
+                    line_index != len(fragments_per_line) - 1
+                ):
                     continue
                 # If subline is not -1 (0 or higher) and this isn't the desired
                 # line, skip to the next one.
@@ -620,7 +643,8 @@ class LogScreen:
                     log_index=log_index,
                     subline=line_index,
                     height=len(fragments_per_line),
-                ))
+                )
+            )
 
         # Remove lines from the bottom if over the screen height.
         if len(self.line_buffer) > self.height:
@@ -647,7 +671,8 @@ class LogScreen:
                     log_index=log_index,
                     subline=line_index,
                     height=len(fragments_per_line),
-                ))
+                )
+            )
 
         # Remove lines from the top if over the screen height.
         if len(self.line_buffer) > self.height:
