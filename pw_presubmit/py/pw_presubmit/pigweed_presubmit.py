@@ -455,7 +455,6 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     '-//pw_boot/...:all',
     '-//pw_chrono/py/...:all',
     '-//pw_chrono:chrono_proto_pb2',
-    '-//pw_crypto/...:all',  # TODO(b/236321905) Remove when passing.
     '-//pw_system/...:all',
     '-//pw_thread/py/...:all',
     '-//pw_work_queue/...:all',

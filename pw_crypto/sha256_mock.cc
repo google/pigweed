@@ -12,6 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include "pw_crypto/sha256_mock.h"
+
 #include "pw_crypto/sha256.h"
 #include "pw_status/status.h"
 

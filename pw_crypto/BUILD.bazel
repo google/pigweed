@@ -32,7 +32,17 @@ pw_cc_facade(
     deps = [
         "//pw_assert",
         "//pw_bytes",
+        "//pw_log",
         "//pw_status",
+        "//pw_stream",
+    ],
+)
+
+pw_cc_library(
+    name = "sha256",
+    deps = [
+        ":sha256_facade",
+        "@pigweed_config//:pw_crypto_sha256_backend",
     ],
 )
 
@@ -44,6 +54,8 @@ pw_cc_library(
         "public_overrides/mbedtls/pw_crypto/sha256_backend.h",
     ],
     includes = ["public_overrides/mbedtls"],
+    # TODO(b/236321905): Requires BUILD.bazel files for mbedtls
+    tags = ["manual"],
     deps = [":sha256_facade"],
 )
 
@@ -54,15 +66,22 @@ pw_cc_library(
         "public/pw_crypto/sha256_boringssl.h",
         "public_overrides/boringssl/pw_crypto/sha256_backend.h",
     ],
-    includes = ["public_overrides"],
-    deps = [":sha256_facade"],
+    includes = [
+        "public",
+        "public_overrides/boringssl",
+    ],
+    deps = [
+        ":sha256_facade",
+        "//pw_log",
+        "@boringssl//:ssl",
+    ],
 )
 
 pw_cc_test(
     name = "sha256_test",
     srcs = ["sha256_test.cc"],
     deps = [
-        ":sha256_facade",
+        ":sha256",
         "//pw_unit_test",
     ],
 )
@@ -74,15 +93,19 @@ pw_cc_library(
         "public/pw_crypto/sha256_mock.h",
         "public_overrides/mock/pw_crypto/sha256_backend.h",
     ],
-    includes = ["public_overrides"],
+    includes = [
+        "public",
+        "public_overrides/mock",
+    ],
     deps = [":sha256_facade"],
 )
 
 pw_cc_test(
     name = "sha256_mock_test",
     srcs = ["sha256_mock_test.cc"],
+    # TODO(b/236321905): Requires BUILD.bazel files for mbedtls
+    tags = ["manual"],
     deps = [
-        ":sha256_facade",
         ":sha256_mock",
         "//pw_unit_test",
     ],
@@ -101,15 +124,29 @@ pw_cc_facade(
 )
 
 pw_cc_library(
+    name = "ecdsa",
+    deps = [
+        ":ecdsa_facade",
+        "@pigweed_config//:pw_crypto_ecdsa_backend",
+    ],
+)
+
+pw_cc_library(
     name = "ecdsa_mbedtls",
     srcs = ["ecdsa_mbedtls.cc"],
+    # TODO(b/236321905): Requires BUILD.bazel files for mbedtls
+    tags = ["manual"],
     deps = [":ecdsa_facade"],
 )
 
 pw_cc_library(
     name = "ecdsa_boringssl",
     srcs = ["ecdsa_boringssl.cc"],
-    deps = [":ecdsa_facade"],
+    deps = [
+        ":ecdsa_facade",
+        "//pw_log",
+        "@boringssl//:ssl",
+    ],
 )
 
 pw_cc_library(
@@ -128,7 +165,7 @@ pw_cc_test(
     name = "ecdsa_test",
     srcs = ["ecdsa_test.cc"],
     deps = [
-        ":ecdsa_facade",
+        ":ecdsa",
         "//pw_unit_test",
     ],
 )

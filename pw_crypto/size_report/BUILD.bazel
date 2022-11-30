@@ -24,9 +24,17 @@ licenses(["notice"])
 pw_cc_binary(
     name = "sha256_simple",
     srcs = ["sha256_simple.cc"],
+    deps = [
+        "//pw_bloat:bloat_this_binary",
+        "//pw_crypto:sha256",
+    ],
 )
 
 pw_cc_binary(
     name = "ecdsa_p256_verify",
     srcs = ["ecdsa_p256_verify.cc"],
+    deps = [
+        "//pw_bloat:bloat_this_binary",
+        "//pw_crypto:ecdsa",
+    ],
 )
