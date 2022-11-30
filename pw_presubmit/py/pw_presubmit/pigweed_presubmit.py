@@ -31,8 +31,7 @@ try:
 except ImportError:
     # Append the pw_presubmit package path to the module search path to allow
     # running this module without installing the pw_presubmit package.
-    sys.path.append(os.path.dirname(os.path.dirname(
-        os.path.abspath(__file__))))
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     import pw_presubmit
 
 import pw_package.pigweed_packages
@@ -67,7 +66,8 @@ pw_package.pigweed_packages.initialize()
 
 # Trigger builds if files with these extensions change.
 _BUILD_FILE_FILTER = presubmit.FileFilter(
-    suffix=(*format_code.C_FORMAT.extensions, '.py', '.rst', '.gn', '.gni'))
+    suffix=(*format_code.C_FORMAT.extensions, '.py', '.rst', '.gn', '.gni')
+)
 
 _OPTIMIZATION_LEVELS = 'debug', 'size_optimized', 'speed_optimized'
 
@@ -90,7 +90,6 @@ def gn_clang_build(ctx: PresubmitContext):
         'tsan',
         'ubsan',
         'runtime_sanitizers',
-
         # TODO(b/234876100): msan will not work until the C++ standard library
         # included in the sysroot has a variant built with msan.
     ]
@@ -156,9 +155,11 @@ def gn_full_build_check(ctx: PresubmitContext) -> None:
     if sys.platform.startswith('linux'):
         build_targets.append('integration_tests')
 
-    build.gn_gen(ctx,
-                 pw_unit_test_FACADE_TESTS_ENABLED=True,
-                 pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS)
+    build.gn_gen(
+        ctx,
+        pw_unit_test_FACADE_TESTS_ENABLED=True,
+        pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
+    )
     build.ninja(ctx, *build_targets)
 
 
@@ -220,9 +221,11 @@ def gn_arm_build(ctx: PresubmitContext):
 
 @_BUILD_FILE_FILTER.apply_to_check()
 def stm32f429i(ctx: PresubmitContext):
-    build.gn_gen(ctx,
-                 pw_use_test_server=True,
-                 pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS)
+    build.gn_gen(
+        ctx,
+        pw_use_test_server=True,
+        pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
+    )
     with build.test_server('stm32f429i_disc1_test_server', ctx.output_dir):
         build.ninja(ctx, *_at_all_optimization_levels('stm32f429i'))
 
@@ -232,8 +235,9 @@ def gn_boringssl_build(ctx: PresubmitContext):
     build.install_package(ctx, 'boringssl')
     build.gn_gen(
         ctx,
-        dir_pw_third_party_boringssl='"{}"'.format(ctx.package_root /
-                                                   'boringssl'),
+        dir_pw_third_party_boringssl='"{}"'.format(
+            ctx.package_root / 'boringssl'
+        ),
         pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
     )
     build.ninja(
@@ -264,10 +268,12 @@ def gn_crypto_mbedtls_build(ctx: PresubmitContext):
     build.gn_gen(
         ctx,
         dir_pw_third_party_mbedtls='"{}"'.format(ctx.package_root / 'mbedtls'),
-        pw_crypto_SHA256_BACKEND='"{}"'.format(ctx.root /
-                                               'pw_crypto:sha256_mbedtls'),
-        pw_crypto_ECDSA_BACKEND='"{}"'.format(ctx.root /
-                                              'pw_crypto:ecdsa_mbedtls'),
+        pw_crypto_SHA256_BACKEND='"{}"'.format(
+            ctx.root / 'pw_crypto:sha256_mbedtls'
+        ),
+        pw_crypto_ECDSA_BACKEND='"{}"'.format(
+            ctx.root / 'pw_crypto:ecdsa_mbedtls'
+        ),
         pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
     )
     build_targets = [*_at_all_optimization_levels(f'host_{_HOST_COMPILER}')]
@@ -284,12 +290,15 @@ def gn_crypto_boringssl_build(ctx: PresubmitContext):
     build.install_package(ctx, 'boringssl')
     build.gn_gen(
         ctx,
-        dir_pw_third_party_boringssl='"{}"'.format(ctx.package_root /
-                                                   'boringssl'),
-        pw_crypto_SHA256_BACKEND='"{}"'.format(ctx.root /
-                                               'pw_crypto:sha256_boringssl'),
-        pw_crypto_ECDSA_BACKEND='"{}"'.format(ctx.root /
-                                              'pw_crypto:ecdsa_boringssl'),
+        dir_pw_third_party_boringssl='"{}"'.format(
+            ctx.package_root / 'boringssl'
+        ),
+        pw_crypto_SHA256_BACKEND='"{}"'.format(
+            ctx.root / 'pw_crypto:sha256_boringssl'
+        ),
+        pw_crypto_ECDSA_BACKEND='"{}"'.format(
+            ctx.root / 'pw_crypto:ecdsa_boringssl'
+        ),
         pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
     )
     build_targets = [*_at_all_optimization_levels(f'host_{_HOST_COMPILER}')]
@@ -306,10 +315,12 @@ def gn_crypto_micro_ecc_build(ctx: PresubmitContext):
     build.install_package(ctx, 'micro-ecc')
     build.gn_gen(
         ctx,
-        dir_pw_third_party_micro_ecc='"{}"'.format(ctx.package_root /
-                                                   'micro-ecc'),
-        pw_crypto_ECDSA_BACKEND='"{}"'.format(ctx.root /
-                                              'pw_crypto:ecdsa_uecc'),
+        dir_pw_third_party_micro_ecc='"{}"'.format(
+            ctx.package_root / 'micro-ecc'
+        ),
+        pw_crypto_ECDSA_BACKEND='"{}"'.format(
+            ctx.root / 'pw_crypto:ecdsa_uecc'
+        ),
         pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
     )
     build_targets = [*_at_all_optimization_levels(f'host_{_HOST_COMPILER}')]
@@ -354,16 +365,20 @@ def gn_software_update_build(ctx: PresubmitContext):
     build.install_package(ctx, 'micro-ecc')
     build.gn_gen(
         ctx,
-        dir_pw_third_party_protobuf='"{}"'.format(ctx.package_root /
-                                                  'protobuf'),
+        dir_pw_third_party_protobuf='"{}"'.format(
+            ctx.package_root / 'protobuf'
+        ),
         dir_pw_third_party_nanopb='"{}"'.format(ctx.package_root / 'nanopb'),
-        dir_pw_third_party_micro_ecc='"{}"'.format(ctx.package_root /
-                                                   'micro-ecc'),
-        pw_crypto_ECDSA_BACKEND='"{}"'.format(ctx.root /
-                                              'pw_crypto:ecdsa_uecc'),
+        dir_pw_third_party_micro_ecc='"{}"'.format(
+            ctx.package_root / 'micro-ecc'
+        ),
+        pw_crypto_ECDSA_BACKEND='"{}"'.format(
+            ctx.root / 'pw_crypto:ecdsa_uecc'
+        ),
         dir_pw_third_party_mbedtls='"{}"'.format(ctx.package_root / 'mbedtls'),
-        pw_crypto_SHA256_BACKEND='"{}"'.format(ctx.root /
-                                               'pw_crypto:sha256_mbedtls'),
+        pw_crypto_SHA256_BACKEND='"{}"'.format(
+            ctx.root / 'pw_crypto:sha256_mbedtls'
+        ),
         pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
     )
     build.ninja(
@@ -380,11 +395,13 @@ def gn_pw_system_demo_build(ctx: PresubmitContext):
     build.install_package(ctx, 'pico_sdk')
     build.gn_gen(
         ctx,
-        dir_pw_third_party_freertos='"{}"'.format(ctx.package_root /
-                                                  'freertos'),
+        dir_pw_third_party_freertos='"{}"'.format(
+            ctx.package_root / 'freertos'
+        ),
         dir_pw_third_party_nanopb='"{}"'.format(ctx.package_root / 'nanopb'),
-        dir_pw_third_party_stm32cube_f4='"{}"'.format(ctx.package_root /
-                                                      'stm32cube_f4'),
+        dir_pw_third_party_stm32cube_f4='"{}"'.format(
+            ctx.package_root / 'stm32cube_f4'
+        ),
         PICO_SRC_DIR='"{}"'.format(str(ctx.package_root / 'pico_sdk')),
     )
     build.ninja(ctx, 'pw_system_demo')
@@ -426,23 +443,27 @@ def _run_cmake(ctx: PresubmitContext, toolchain='host_clang') -> None:
         env = build.env_with_clang_vars()
 
     toolchain_path = ctx.root / 'pw_toolchain' / toolchain / 'toolchain.cmake'
-    build.cmake(ctx,
-                f'-DCMAKE_TOOLCHAIN_FILE={toolchain_path}',
-                '-DCMAKE_EXPORT_COMPILE_COMMANDS=1',
-                f'-Ddir_pw_third_party_nanopb={ctx.package_root / "nanopb"}',
-                '-Dpw_third_party_nanopb_ADD_SUBDIRECTORY=ON',
-                env=env)
+    build.cmake(
+        ctx,
+        f'-DCMAKE_TOOLCHAIN_FILE={toolchain_path}',
+        '-DCMAKE_EXPORT_COMPILE_COMMANDS=1',
+        f'-Ddir_pw_third_party_nanopb={ctx.package_root / "nanopb"}',
+        '-Dpw_third_party_nanopb_ADD_SUBDIRECTORY=ON',
+        env=env,
+    )
 
 
-@filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.cmake',
-                        'CMakeLists.txt'))
+@filter_paths(
+    endswith=(*format_code.C_FORMAT.extensions, '.cmake', 'CMakeLists.txt')
+)
 def cmake_clang(ctx: PresubmitContext):
     _run_cmake(ctx, toolchain='host_clang')
     build.ninja(ctx, 'pw_apps', 'pw_run_tests.modules')
 
 
-@filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.cmake',
-                        'CMakeLists.txt'))
+@filter_paths(
+    endswith=(*format_code.C_FORMAT.extensions, '.cmake', 'CMakeLists.txt')
+)
 def cmake_gcc(ctx: PresubmitContext):
     _run_cmake(ctx, toolchain='host_gcc')
     build.ninja(ctx, 'pw_apps', 'pw_run_tests.modules')
@@ -468,20 +489,29 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
 _TARGETS_THAT_DO_NOT_TEST_WITH_BAZEL = _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL
 
 
-@filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.bazel', '.bzl',
-                        'BUILD'))
+@filter_paths(
+    endswith=(*format_code.C_FORMAT.extensions, '.bazel', '.bzl', 'BUILD')
+)
 def bazel_test(ctx: PresubmitContext) -> None:
     """Runs bazel test on each bazel compatible module."""
-    build.bazel(ctx, 'test', '--test_output=errors', '--', '//...',
-                *_TARGETS_THAT_DO_NOT_TEST_WITH_BAZEL)
+    build.bazel(
+        ctx,
+        'test',
+        '--test_output=errors',
+        '--',
+        '//...',
+        *_TARGETS_THAT_DO_NOT_TEST_WITH_BAZEL,
+    )
 
 
-@filter_paths(endswith=(*format_code.C_FORMAT.extensions, '.bazel', '.bzl',
-                        'BUILD'))
+@filter_paths(
+    endswith=(*format_code.C_FORMAT.extensions, '.bazel', '.bzl', 'BUILD')
+)
 def bazel_build(ctx: PresubmitContext) -> None:
     """Runs Bazel build on each Bazel compatible module."""
-    build.bazel(ctx, 'build', '--', '//...',
-                *_TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL)
+    build.bazel(
+        ctx, 'build', '--', '//...', *_TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL
+    )
 
 
 def pw_transfer_integration_test(ctx: PresubmitContext) -> None:
@@ -491,7 +521,8 @@ def pw_transfer_integration_test(ctx: PresubmitContext) -> None:
     intended to run in CI only.
     """
     build.bazel(
-        ctx, 'test',
+        ctx,
+        'test',
         '//pw_transfer/integration_test:cross_language_small_test',
         '//pw_transfer/integration_test:cross_language_medium_read_test',
         '//pw_transfer/integration_test:cross_language_medium_write_test',
@@ -500,7 +531,8 @@ def pw_transfer_integration_test(ctx: PresubmitContext) -> None:
         '//pw_transfer/integration_test:multi_transfer_test',
         '//pw_transfer/integration_test:expected_errors_test',
         '//pw_transfer/integration_test:legacy_binaries_test',
-        '--test_output=errors')
+        '--test_output=errors',
+    )
 
 
 #
@@ -516,13 +548,17 @@ def _clang_system_include_paths(lang: str) -> List[str]:
     """
     # Dump system include paths with preprocessor verbose.
     command = [
-        'clang++', '-Xpreprocessor', '-v', '-x', f'{lang}', f'{os.devnull}',
-        '-fsyntax-only'
+        'clang++',
+        '-Xpreprocessor',
+        '-v',
+        '-x',
+        f'{lang}',
+        f'{os.devnull}',
+        '-fsyntax-only',
     ]
-    process = subprocess.run(command,
-                             check=True,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT)
+    process = subprocess.run(
+        command, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+    )
 
     # Parse the command output to retrieve system include paths.
     # The paths are listed one per line.
@@ -536,8 +572,9 @@ def _clang_system_include_paths(lang: str) -> List[str]:
     return include_paths
 
 
-def edit_compile_commands(in_path: Path, out_path: Path,
-                          func: Callable[[str, str, str], str]) -> None:
+def edit_compile_commands(
+    in_path: Path, out_path: Path, func: Callable[[str, str, str], str]
+) -> None:
     """Edit the selected compile command file.
 
     Calls the input callback on all triplets (file, directory, command) in
@@ -547,8 +584,9 @@ def edit_compile_commands(in_path: Path, out_path: Path,
     with open(in_path) as in_file:
         compile_commands = json.load(in_file)
         for item in compile_commands:
-            item['command'] = func(item['file'], item['directory'],
-                                   item['command'])
+            item['command'] = func(
+                item['file'], item['directory'], item['command']
+            )
     with open(out_path, 'w') as out_file:
         json.dump(compile_commands, out_file, indent=2)
 
@@ -611,8 +649,9 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
 # Regular expression for the copyright comment. "\1" refers to the comment
 # characters and "\2" refers to space after the comment characters, if any.
 # All period characters are escaped using a replace call.
+# pylint: disable=line-too-long
 _COPYRIGHT = re.compile(
-r"""(#|//|::| \*|)( ?)Copyright 2\d{3} The Pigweed Authors
+    r"""(#|//|::| \*|)( ?)Copyright 2\d{3} The Pigweed Authors
 \1
 \1\2Licensed under the Apache License, Version 2.0 \(the "License"\); you may not
 \1\2use this file except in compliance with the License. You may obtain a copy of
@@ -625,7 +664,12 @@ r"""(#|//|::| \*|)( ?)Copyright 2\d{3} The Pigweed Authors
 \1\2WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 \1\2License for the specific language governing permissions and limitations under
 \1\2the License.
-""".replace('.', r'\.'), re.MULTILINE)  # pylint: disable=line-too-long # yapf: disable
+""".replace(
+        '.', r'\.'
+    ),
+    re.MULTILINE,
+)
+# pylint: enable=line-too-long
 
 _SKIP_LINE_PREFIXES = (
     '#!',
@@ -670,19 +714,28 @@ def copyright_notice(ctx: PresubmitContext):
                 errors.append(path)
 
     if errors:
-        _LOG.warning('%s with a missing or incorrect copyright notice:\n%s',
-                     plural(errors, 'file'), '\n'.join(str(e) for e in errors))
+        _LOG.warning(
+            '%s with a missing or incorrect copyright notice:\n%s',
+            plural(errors, 'file'),
+            '\n'.join(str(e) for e in errors),
+        )
         raise PresubmitFailure
 
 
 _BAZEL_SOURCES_IN_BUILD = tuple(format_code.C_FORMAT.extensions)
-_GN_SOURCES_IN_BUILD = ('setup.cfg', '.toml', '.rst', '.py',
-                        *_BAZEL_SOURCES_IN_BUILD)
+_GN_SOURCES_IN_BUILD = (
+    'setup.cfg',
+    '.toml',
+    '.rst',
+    '.py',
+    *_BAZEL_SOURCES_IN_BUILD,
+)
 
 SOURCE_FILES_FILTER = presubmit.FileFilter(
     endswith=_GN_SOURCES_IN_BUILD,
     suffix=('.bazel', '.bzl', '.gn', '.gni'),
-    exclude=(r'zephyr.*/', r'android.*/', r'^pyproject.toml'))
+    exclude=(r'zephyr.*/', r'android.*/', r'^pyproject.toml'),
+)
 
 
 @SOURCE_FILES_FILTER.apply_to_check()
@@ -693,22 +746,26 @@ def source_is_in_build_files(ctx: PresubmitContext):
         _GN_SOURCES_IN_BUILD,
         ctx.paths,
         bazel_dirs=[ctx.root],
-        gn_build_files=git_repo.list_files(pathspecs=['BUILD.gn', '*BUILD.gn'],
-                                           repo_path=ctx.root))
+        gn_build_files=git_repo.list_files(
+            pathspecs=['BUILD.gn', '*BUILD.gn'], repo_path=ctx.root
+        ),
+    )
 
     if missing:
-        _LOG.warning(
-            'All source files must appear in BUILD and BUILD.gn files')
+        _LOG.warning('All source files must appear in BUILD and BUILD.gn files')
         raise PresubmitFailure
 
     _run_cmake(ctx)
     cmake_missing = build.check_compile_commands_for_files(
         ctx.output_dir / 'compile_commands.json',
-        (f for f in ctx.paths if f.suffix in ('.c', '.cc')))
+        (f for f in ctx.paths if f.suffix in ('.c', '.cc')),
+    )
     if cmake_missing:
         _LOG.warning('The CMake build is missing %d files', len(cmake_missing))
-        _LOG.warning('Files missing from CMake:\n%s',
-                     '\n'.join(str(f) for f in cmake_missing))
+        _LOG.warning(
+            'Files missing from CMake:\n%s',
+            '\n'.join(str(f) for f in cmake_missing),
+        )
         # TODO(hepler): Many files are missing from the CMake build. Make this
         #     check an error when the missing files are fixed.
         # raise PresubmitFailure
@@ -716,8 +773,7 @@ def source_is_in_build_files(ctx: PresubmitContext):
 
 def build_env_setup(ctx: PresubmitContext):
     if 'PW_CARGO_SETUP' not in os.environ:
-        _LOG.warning(
-            'Skipping build_env_setup since PW_CARGO_SETUP is not set')
+        _LOG.warning('Skipping build_env_setup since PW_CARGO_SETUP is not set')
         return
 
     tmpl = ctx.root.joinpath('pw_env_setup', 'py', 'pyoxidizer.bzl.tmpl')
@@ -736,7 +792,8 @@ def _valid_capitalization(word: str) -> bool:
     return bool(
         any(c.isupper() for c in word)  # Any capitalizatian (iTelephone)
         or not word.isalpha()  # Non-alphabetical (cool_stuff.exe)
-        or shutil.which(word))  # Matches an executable (clangd)
+        or shutil.which(word)
+    )  # Matches an executable (clangd)
 
 
 def commit_message_format(_: PresubmitContext):
@@ -756,60 +813,74 @@ def commit_message_format(_: PresubmitContext):
         raise PresubmitFailure
 
     # Ignore Gerrit-generated reverts.
-    if ('Revert' in lines[0]
-            and 'This reverts commit ' in git_repo.commit_message()
-            and 'Reason for revert: ' in git_repo.commit_message()):
+    if (
+        'Revert' in lines[0]
+        and 'This reverts commit ' in git_repo.commit_message()
+        and 'Reason for revert: ' in git_repo.commit_message()
+    ):
         _LOG.warning('Ignoring apparent Gerrit-generated revert')
         return
 
     # Ignore Gerrit-generated relands
-    if ('Reland' in lines[0]
-            and 'This is a reland of ' in git_repo.commit_message() and
-            "Original change's description: " in git_repo.commit_message()):
+    if (
+        'Reland' in lines[0]
+        and 'This is a reland of ' in git_repo.commit_message()
+        and "Original change's description: " in git_repo.commit_message()
+    ):
         _LOG.warning('Ignoring apparent Gerrit-generated reland')
         return
 
     errors = 0
 
     if len(lines[0]) > 72:
-        _LOG.warning("The commit message's first line must be no longer than "
-                     '72 characters.')
-        _LOG.warning('The first line is %d characters:\n  %s', len(lines[0]),
-                     lines[0])
+        _LOG.warning(
+            "The commit message's first line must be no longer than "
+            '72 characters.'
+        )
+        _LOG.warning(
+            'The first line is %d characters:\n  %s', len(lines[0]), lines[0]
+        )
         errors += 1
 
     if lines[0].endswith('.'):
         _LOG.warning(
             "The commit message's first line must not end with a period:\n %s",
-            lines[0])
+            lines[0],
+        )
         errors += 1
 
     # Check that the first line matches the expected pattern.
-    match = re.match(r'^[\w*/]+(?:{[\w* ,]+})?[\w*/]*: (?P<desc>.+)$',
-                     lines[0])
+    match = re.match(r'^[\w*/]+(?:{[\w* ,]+})?[\w*/]*: (?P<desc>.+)$', lines[0])
     if not match:
         _LOG.warning('The first line does not match the expected format')
         _LOG.warning(
             'Expected:\n\n  module_or_target: The description\n\n'
-            'Found:\n\n  %s\n', lines[0])
+            'Found:\n\n  %s\n',
+            lines[0],
+        )
         errors += 1
     elif not _valid_capitalization(match.group('desc').split()[0]):
         _LOG.warning(
             'The first word after the ":" in the first line ("%s") must be '
             'capitalized:\n  %s',
-            match.group('desc').split()[0], lines[0])
+            match.group('desc').split()[0],
+            lines[0],
+        )
         errors += 1
 
     if len(lines) > 1 and lines[1]:
         _LOG.warning("The commit message's second line must be blank.")
-        _LOG.warning('The second line has %d characters:\n  %s', len(lines[1]),
-                     lines[1])
+        _LOG.warning(
+            'The second line has %d characters:\n  %s', len(lines[1]), lines[1]
+        )
         errors += 1
 
     # Ignore the line length check for Copybara imports so they can include the
     # commit hash and description for imported commits.
-    if not errors and ('Copybara import' in lines[0]
-                       and 'GitOrigin-RevId:' in git_repo.commit_message()):
+    if not errors and (
+        'Copybara import' in lines[0]
+        and 'GitOrigin-RevId:' in git_repo.commit_message()
+    ):
         _LOG.warning('Ignoring Copybara import')
         return
 
@@ -822,9 +893,9 @@ def commit_message_format(_: PresubmitContext):
 
         if len(line) > 72:
             _LOG.warning(
-                'Commit message lines must be no longer than 72 characters.')
-            _LOG.warning('Line %d has %d characters:\n  %s', i, len(line),
-                         line)
+                'Commit message lines must be no longer than 72 characters.'
+            )
+            _LOG.warning('Line %d has %d characters:\n  %s', i, len(line), line)
             errors += 1
 
     if errors:
@@ -925,7 +996,7 @@ MISC = (
     # keep-sorted: end
 )
 
-SANITIZERS = (cpp_checks.all_sanitizers(), )
+SANITIZERS = (cpp_checks.all_sanitizers(),)
 
 SECURITY = (
     # keep-sorted: start
@@ -937,17 +1008,20 @@ SECURITY = (
 )
 
 # Avoid running all checks on specific paths.
-PATH_EXCLUSIONS = (re.compile(r'\bthird_party/fuchsia/repo/'), )
+PATH_EXCLUSIONS = (re.compile(r'\bthird_party/fuchsia/repo/'),)
 
 _LINTFORMAT = (
     commit_message_format,
     copyright_notice,
     format_code.presubmit_checks(
-        code_formats=format_code.CODE_FORMATS_WITH_BLACK),
-    inclusive_language.presubmit_check.with_filter(exclude=(
-        r'\byarn.lock$',
-        r'\bpackage-lock.json$',
-    )),
+        code_formats=format_code.CODE_FORMATS_WITH_BLACK
+    ),
+    inclusive_language.presubmit_check.with_filter(
+        exclude=(
+            r'\byarn.lock$',
+            r'\bpackage-lock.json$',
+        )
+    ),
     cpp_checks.pragma_once,
     build.bazel_lint,
     owners_lint_checks,
@@ -1017,7 +1091,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         '--install',
         action='store_true',
-        help='Install the presubmit as a Git pre-push hook and exit.')
+        help='Install the presubmit as a Git pre-push hook and exit.',
+    )
 
     return parser.parse_args()
 
@@ -1026,10 +1101,18 @@ def run(install: bool, exclude: list, **presubmit_args) -> int:
     """Entry point for presubmit."""
 
     if install:
-        install_git_hook('pre-push', [
-            'python', '-m', 'pw_presubmit.pigweed_presubmit', '--base',
-            'origin/main..HEAD', '--program', 'quick'
-        ])
+        install_git_hook(
+            'pre-push',
+            [
+                'python',
+                '-m',
+                'pw_presubmit.pigweed_presubmit',
+                '--base',
+                'origin/main..HEAD',
+                '--program',
+                'quick',
+            ],
+        )
         return 0
 
     exclude.extend(PATH_EXCLUSIONS)

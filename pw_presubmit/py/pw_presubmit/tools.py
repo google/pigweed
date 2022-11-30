@@ -35,12 +35,14 @@ from typing import (
 _LOG: logging.Logger = logging.getLogger(__name__)
 
 
-def plural(items_or_count,
-           singular: str,
-           count_format='',
-           these: bool = False,
-           number: bool = True,
-           are: bool = False) -> str:
+def plural(
+    items_or_count,
+    singular: str,
+    count_format='',
+    these: bool = False,
+    number: bool = True,
+    are: bool = False,
+) -> str:
     """Returns the singular or plural form of a word based on a count."""
 
     try:
@@ -65,23 +67,36 @@ def plural(items_or_count,
 def make_box(section_alignments: Sequence[str]) -> str:
     indices = [i + 1 for i in range(len(section_alignments))]
     top_sections = '{2}'.join('{1:{1}^{width%d}}' % i for i in indices)
-    mid_sections = '{5}'.join('{section%d:%s{width%d}}' %
-                              (i, section_alignments[i - 1], i)
-                              for i in indices)
+    mid_sections = '{5}'.join(
+        '{section%d:%s{width%d}}' % (i, section_alignments[i - 1], i)
+        for i in indices
+    )
     bot_sections = '{9}'.join('{8:{8}^{width%d}}' % i for i in indices)
 
-    return ''.join(['{0}', *top_sections, '{3}\n',
-                    '{4}', *mid_sections, '{6}\n',
-                    '{7}', *bot_sections, '{10}'])  # yapf: disable
+    return ''.join(
+        [
+            '{0}',
+            *top_sections,
+            '{3}\n',
+            '{4}',
+            *mid_sections,
+            '{6}\n',
+            '{7}',
+            *bot_sections,
+            '{10}',
+        ]
+    )  # yapf: disable
 
 
-def file_summary(paths: Iterable[Path],
-                 levels: int = 2,
-                 max_lines: int = 12,
-                 max_types: int = 3,
-                 pad: str = ' ',
-                 pad_start: str = ' ',
-                 pad_end: str = ' ') -> List[str]:
+def file_summary(
+    paths: Iterable[Path],
+    levels: int = 2,
+    max_lines: int = 12,
+    max_types: int = 3,
+    pad: str = ' ',
+    pad_start: str = ' ',
+    pad_end: str = ' ',
+) -> List[str]:
     """Summarizes a list of files by the file types in each directory."""
 
     # Count the file types in each directory.
@@ -93,11 +108,19 @@ def file_summary(paths: Iterable[Path],
 
     # If there are too many lines, condense directories with the fewest files.
     if len(all_counts) > max_lines:
-        counts = sorted(all_counts.items(),
-                        key=lambda item: -sum(item[1].values()))
-        counts, others = sorted(counts[:max_lines - 1]), counts[max_lines - 1:]
-        counts.append((f'({plural(others, "other")})',
-                       sum((c for _, c in others), Counter())))
+        counts = sorted(
+            all_counts.items(), key=lambda item: -sum(item[1].values())
+        )
+        counts, others = (
+            sorted(counts[: max_lines - 1]),
+            counts[max_lines - 1 :],
+        )
+        counts.append(
+            (
+                f'({plural(others, "other")})',
+                sum((c for _, c in others), Counter()),
+            )
+        )
     else:
         counts = sorted(all_counts.items())
 
@@ -132,9 +155,11 @@ def relative_paths(paths: Iterable[Path], start: Path) -> Iterable[Path]:
         yield Path(os.path.relpath(path, start))
 
 
-def exclude_paths(exclusions: Iterable[Pattern[str]],
-                  paths: Iterable[Path],
-                  relative_to: Optional[Path] = None) -> Iterable[Path]:
+def exclude_paths(
+    exclusions: Iterable[Pattern[str]],
+    paths: Iterable[Path],
+    relative_to: Optional[Path] = None,
+) -> Iterable[Path]:
     """Excludes paths based on a series of regular expressions."""
     if relative_to:
         relpath = lambda path: Path(os.path.relpath(path, relative_to))
@@ -148,7 +173,7 @@ def exclude_paths(exclusions: Iterable[Pattern[str]],
 
 def _truncate(value, length: int = 60) -> str:
     value = str(value)
-    return (value[:length - 5] + '[...]') if len(value) > length else value
+    return (value[: length - 5] + '[...]') if len(value) > length else value
 
 
 def format_command(args: Sequence, kwargs: dict) -> Tuple[str, str]:
@@ -174,7 +199,8 @@ def flatten(*items) -> Iterator:
 
     for item in items:
         if isinstance(item, collections.abc.Iterable) and not isinstance(
-                item, (str, bytes, bytearray)):
+            item, (str, bytes, bytearray)
+        ):
             yield from flatten(*item)
         else:
             yield item

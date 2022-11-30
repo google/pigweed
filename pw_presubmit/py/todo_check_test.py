@@ -27,6 +27,7 @@ from pw_presubmit import todo_check
 
 class TestTodoCheck(unittest.TestCase):
     """Test TODO checker."""
+
     def _run(self, regex: re.Pattern, contents: str) -> None:
         self.ctx = MagicMock()
         self.ctx.fail = MagicMock()

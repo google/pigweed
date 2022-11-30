@@ -48,7 +48,10 @@ _STICKY_COMMENTS = re.compile(r'sticky-comments=(\S+)', re.IGNORECASE)
 
 # Only include these literals here so keep_sorted doesn't try to reorder later
 # test lines.
-START, END = """
+(
+    START,
+    END,
+) = """
 keep-sorted: start
 keep-sorted: end
 """.strip().splitlines()
@@ -60,10 +63,12 @@ class KeepSortedContext:
     fix: bool
     failed: bool = False
 
-    def fail(self,
-             description: str = '',
-             path: Optional[Path] = None,
-             line: Optional[int] = None) -> None:
+    def fail(
+        self,
+        description: str = '',
+        path: Optional[Path] = None,
+        line: Optional[int] = None,
+    ) -> None:
         if not self.fix:
             self.failed = True
 
@@ -115,8 +120,11 @@ class _Block:
 
 
 class _FileSorter:
-    def __init__(self, ctx: Union[presubmit.PresubmitContext,
-                                  KeepSortedContext], path: Path):
+    def __init__(
+        self,
+        ctx: Union[presubmit.PresubmitContext, KeepSortedContext],
+        path: Path,
+    ):
         self.ctx = ctx
         self.path: Path = path
         self.all_lines: List[str] = []
@@ -141,7 +149,9 @@ class _FileSorter:
             if comments:
                 self.ctx.fail(
                     f'sticky comment at end of block: {comments[0].strip()}',
-                    self.path, block.start_line_number)
+                    self.path,
+                    block.start_line_number,
+                )
 
         else:
             lines = [_Line(x) for x in block.lines]
@@ -157,7 +167,7 @@ class _FileSorter:
             def strip_ignored_prefixes(val):
                 """Remove one ignored prefix from val, if present."""
                 wo_white = val[0].lstrip()
-                white = val[0][0:-len(wo_white)]
+                white = val[0][0 : -len(wo_white)]
                 for prefix in block.ignored_prefixes:
                     if wo_white.startswith(prefix):
                         return (f'{white}{wo_white[len(prefix):]}', val[1])
@@ -185,8 +195,11 @@ class _FileSorter:
 
         if block.lines != raw_sorted_lines:
             self.changed = True
-            self.ctx.fail('keep-sorted block is not sorted', self.path,
-                          block.start_line_number)
+            self.ctx.fail(
+                'keep-sorted block is not sorted',
+                self.path,
+                block.start_line_number,
+            )
             _LOG.info('  %s', block.start_line.rstrip())
             diff = difflib.Differ()
             for dline in diff.compare(
@@ -210,7 +223,9 @@ class _FileSorter:
                 if _START.search(line):
                     raise KeepSortedParsingError(
                         f'found {line.strip()!r} inside keep-sorted block',
-                        self.path, i)
+                        self.path,
+                        i,
+                    )
 
                 if _END.search(line):
                     _LOG.debug('Found end line %d %r', i, line)
@@ -248,40 +263,44 @@ class _FileSorter:
                     if match.group(1) == 'no':
                         block.sticky_comments = ()
                     else:
-                        block.sticky_comments = tuple(
-                            match.group(1).split(','))
+                        block.sticky_comments = tuple(match.group(1).split(','))
                 else:
-                    prefix = line[:start_match.start()].strip()
+                    prefix = line[: start_match.start()].strip()
                     if prefix and len(prefix) <= 3:
-                        block.sticky_comments = (prefix, )
+                        block.sticky_comments = (prefix,)
                 _LOG.debug('sticky_comments: %s', block.sticky_comments)
 
                 block.start_line = line
                 block.start_line_number = i
                 self.all_lines.append(line)
 
-                remaining = line[start_match.end():].strip()
+                remaining = line[start_match.end() :].strip()
                 remaining = _IGNORE_CASE.sub('', remaining, count=1).strip()
                 remaining = _ALLOW_DUPES.sub('', remaining, count=1).strip()
                 remaining = _IGNORE_PREFIX.sub('', remaining, count=1).strip()
-                remaining = _STICKY_COMMENTS.sub('', remaining,
-                                                 count=1).strip()
+                remaining = _STICKY_COMMENTS.sub('', remaining, count=1).strip()
                 if remaining.strip():
                     raise KeepSortedParsingError(
                         f'unrecognized directive on keep-sorted line: '
-                        f'{remaining}', self.path, i)
+                        f'{remaining}',
+                        self.path,
+                        i,
+                    )
 
             elif _END.search(line):
                 raise KeepSortedParsingError(
                     f'found {line.strip()!r} outside keep-sorted block',
-                    self.path, i)
+                    self.path,
+                    i,
+                )
 
             else:
                 self.all_lines.append(line)
 
         if block:
             raise KeepSortedParsingError(
-                f'found EOF while looking for "{END}"', self.path)
+                f'found EOF while looking for "{END}"', self.path
+            )
 
     def sort(self) -> None:
         """Check for unsorted keep-sorted blocks."""
@@ -312,14 +331,15 @@ def _print_howto_fix(paths: Sequence[Path]) -> None:
         except ValueError:
             return Path(path).resolve()
 
-    message = (f'  pw keep-sorted --fix {path_relative_to_cwd(path)}'
-               for path in paths)
+    message = (
+        f'  pw keep-sorted --fix {path_relative_to_cwd(path)}' for path in paths
+    )
     _LOG.warning('To sort these blocks, run:\n\n%s\n', '\n'.join(message))
 
 
 def _process_files(
-    ctx: Union[presubmit.PresubmitContext,
-               KeepSortedContext]) -> Sequence[Path]:
+    ctx: Union[presubmit.PresubmitContext, KeepSortedContext]
+) -> Sequence[Path]:
     fix = getattr(ctx, 'fix', False)
     changed_paths = []
 
@@ -357,26 +377,32 @@ def parse_args() -> argparse.Namespace:
 
     parser = argparse.ArgumentParser(description=__doc__)
     cli.add_path_arguments(parser)
-    parser.add_argument('--fix',
-                        action='store_true',
-                        help='Apply fixes in place.')
+    parser.add_argument(
+        '--fix', action='store_true', help='Apply fixes in place.'
+    )
 
     return parser.parse_args()
 
 
-def keep_sorted_in_repo(paths: Collection[Union[Path, str]], fix: bool,
-                        exclude: Collection[Pattern[str]], base: str) -> int:
+def keep_sorted_in_repo(
+    paths: Collection[Union[Path, str]],
+    fix: bool,
+    exclude: Collection[Pattern[str]],
+    base: str,
+) -> int:
     """Checks or fixes keep-sorted blocks for files in a Git repo."""
 
     files = [Path(path).resolve() for path in paths if os.path.isfile(path)]
     repo = git_repo.root() if git_repo.is_repo() else None
 
     # Implement a graceful fallback in case the tracking branch isn't available.
-    if (base == git_repo.TRACKING_BRANCH_ALIAS
-            and not git_repo.tracking_branch(repo)):
+    if base == git_repo.TRACKING_BRANCH_ALIAS and not git_repo.tracking_branch(
+        repo
+    ):
         _LOG.warning(
             'Failed to determine the tracking branch, using --base HEAD~1 '
-            'instead of listing all files')
+            'instead of listing all files'
+        )
         base = 'HEAD~1'
 
     # If this is a Git repo, list the original paths with git ls-files or diff.
@@ -384,16 +410,20 @@ def keep_sorted_in_repo(paths: Collection[Union[Path, str]], fix: bool,
         project_root = Path(pw_cli.env.pigweed_environment().PW_PROJECT_ROOT)
         _LOG.info(
             'Sorting %s',
-            git_repo.describe_files(repo, Path.cwd(), base, paths, exclude,
-                                    project_root))
+            git_repo.describe_files(
+                repo, Path.cwd(), base, paths, exclude, project_root
+            ),
+        )
 
         # Add files from Git and remove duplicates.
         files = sorted(
             set(tools.exclude_paths(exclude, git_repo.list_files(base, paths)))
-            | set(files))
+            | set(files)
+        )
     elif base:
         _LOG.critical(
-            'A base commit may only be provided if running from a Git repo')
+            'A base commit may only be provided if running from a Git repo'
+        )
         return 1
 
     ctx = KeepSortedContext(paths=files, fix=fix)

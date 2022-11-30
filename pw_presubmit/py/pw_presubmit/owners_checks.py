@@ -53,21 +53,27 @@ class LineType(enum.Enum):
     TRAILING_COMMENTS = "trailing-comments"
 
 
-_LINE_TYPERS: OrderedDict[LineType, Callable[
-    [str], bool]] = collections.OrderedDict((
+_LINE_TYPERS: OrderedDict[
+    LineType, Callable[[str], bool]
+] = collections.OrderedDict(
+    (
         (LineType.COMMENT, lambda x: x.startswith("#")),
         (LineType.WILDCARD, lambda x: x == "*"),
         (LineType.FILE_LEVEL, lambda x: x.startswith("set ")),
         (LineType.FILE_RULE, lambda x: x.startswith("file:")),
         (LineType.INCLUDE, lambda x: x.startswith("include ")),
         (LineType.PER_FILE, lambda x: x.startswith("per-file ")),
-        (LineType.USER,
-         lambda x: bool(re.match("^[a-zA-Z1-9.+-]+@[a-zA-Z0-9.-]+", x))),
-    ))
+        (
+            LineType.USER,
+            lambda x: bool(re.match("^[a-zA-Z1-9.+-]+@[a-zA-Z0-9.-]+", x)),
+        ),
+    )
+)
 
 
 class OwnersError(Exception):
     """Generic level OWNERS file error."""
+
     def __init__(self, message: str, *args: object) -> None:
         super().__init__(*args)
         self.message = message
@@ -88,8 +94,8 @@ class OwnersUserGrantError(OwnersError):
 class OwnersProhibitedError(OwnersError):
     """Any line that is prohibited by the owners syntax.
 
-       https://android-review.googlesource.com/plugins/code-owners/Documentation/backend-find-owners.html
-  """
+    https://android-review.googlesource.com/plugins/code-owners/Documentation/backend-find-owners.html
+    """
 
 
 class OwnersDependencyError(OwnersError):
@@ -112,6 +118,7 @@ class Line:
 
 class OwnersFile:
     """Holds OWNERS file in easy to use parsed structure."""
+
     path: pathlib.Path
     original_lines: List[str]
     sections: Dict[LineType, List[Line]]
@@ -119,7 +126,7 @@ class OwnersFile:
 
     def __init__(self, path: pathlib.Path) -> None:
         if not path.exists():
-            error_msg = (f"Tried to import {path} but it does not exists")
+            error_msg = f"Tried to import {path} but it does not exists"
             raise OwnersDependencyError(error_msg)
         self.path = path
 
@@ -156,20 +163,25 @@ class OwnersFile:
                 return line_type
 
         raise OwnersInvalidLineError(
-            f"Unrecognized OWNERS file line, '{line}'.")
+            f"Unrecognized OWNERS file line, '{line}'."
+        )
 
     @staticmethod
     def parse_owners(
-            cleaned_lines: List[str]) -> DefaultDict[LineType, List[Line]]:
+        cleaned_lines: List[str],
+    ) -> DefaultDict[LineType, List[Line]]:
         """Converts text lines of OWNERS into structured object."""
-        sections: DefaultDict[LineType,
-                              List[Line]] = collections.defaultdict(list)
+        sections: DefaultDict[LineType, List[Line]] = collections.defaultdict(
+            list
+        )
         comment_buffer: List[str] = []
 
-        def add_line_to_sections(sections, section: LineType, line: str,
-                                 comment_buffer: List[str]):
-            if any(seen_line.content == line
-                   for seen_line in sections[section]):
+        def add_line_to_sections(
+            sections, section: LineType, line: str, comment_buffer: List[str]
+        ):
+            if any(
+                seen_line.content == line for seen_line in sections[section]
+            ):
                 raise OwnersDuplicateError(f"Duplicate line '{line}'.")
             line_obj = Line(content=line, comments=comment_buffer)
             sections[section].append(line_obj)
@@ -182,39 +194,45 @@ class OwnersFile:
                 add_line_to_sections(sections, line_type, line, comment_buffer)
                 comment_buffer = []
 
-        add_line_to_sections(sections, LineType.TRAILING_COMMENTS, "",
-                             comment_buffer)
+        add_line_to_sections(
+            sections, LineType.TRAILING_COMMENTS, "", comment_buffer
+        )
 
         return sections
 
     @staticmethod
     def format_sections(
-            sections: DefaultDict[LineType, List[Line]]) -> List[str]:
+        sections: DefaultDict[LineType, List[Line]]
+    ) -> List[str]:
         """Returns ideally styled OWNERS file.
 
-    The styling rules are
-    * Content will be sorted in the following orders with a blank line
-    separating
-        * "set noparent"
-        * "include" lines
-        * "file:" lines
-        * user grants (example, "*", foo@example.com)
-        * "per-file:" lines
-    * Do not combine user grants and "*"
-    * User grants should be sorted alphabetically (this assumes English
-    ordering)
+        The styling rules are
+        * Content will be sorted in the following orders with a blank line
+        separating
+            * "set noparent"
+            * "include" lines
+            * "file:" lines
+            * user grants (example, "*", foo@example.com)
+            * "per-file:" lines
+        * Do not combine user grants and "*"
+        * User grants should be sorted alphabetically (this assumes English
+        ordering)
 
-    Returns:
-      List of strings that make up a styled version of a OWNERS file.
+        Returns:
+          List of strings that make up a styled version of a OWNERS file.
 
-    Raises:
-      FormatterError: When formatter does not handle all lines of input.
-                      This is a coding error in owners_checks.
-    """
+        Raises:
+          FormatterError: When formatter does not handle all lines of input.
+                          This is a coding error in owners_checks.
+        """
         all_sections = [
-            LineType.FILE_LEVEL, LineType.INCLUDE, LineType.FILE_RULE,
-            LineType.WILDCARD, LineType.USER, LineType.PER_FILE,
-            LineType.TRAILING_COMMENTS
+            LineType.FILE_LEVEL,
+            LineType.INCLUDE,
+            LineType.FILE_RULE,
+            LineType.WILDCARD,
+            LineType.USER,
+            LineType.PER_FILE,
+            LineType.TRAILING_COMMENTS,
         ]
         formatted_lines: List[str] = []
 
@@ -222,18 +240,24 @@ class OwnersFile:
             # Add a line of separation if there was a previous section and our
             # current section has any content. I.e. do not lead with padding and
             # do not have multiple successive lines of padding.
-            if (formatted_lines and line_type != LineType.TRAILING_COMMENTS
-                    and sections[line_type]):
+            if (
+                formatted_lines
+                and line_type != LineType.TRAILING_COMMENTS
+                and sections[line_type]
+            ):
                 formatted_lines.append("")
 
             sections[line_type].sort(key=lambda line: line.content)
             for line in sections[line_type]:
                 # Strip keep-sorted comments out since sorting is done by this
                 # script
-                formatted_lines.extend([
-                    comment for comment in line.comments
-                    if not comment.startswith("# keep-sorted: ")
-                ])
+                formatted_lines.extend(
+                    [
+                        comment
+                        for comment in line.comments
+                        if not comment.startswith("# keep-sorted: ")
+                    ]
+                )
                 formatted_lines.append(line.content)
 
         for section in all_sections:
@@ -246,23 +270,29 @@ class OwnersFile:
     def check_style(self) -> None:
         """Checks styling of OWNERS file.
 
-    Enforce consistent style on OWNERS file. This also incidentally detects a
-    few classes of errors.
+        Enforce consistent style on OWNERS file. This also incidentally detects
+        a few classes of errors.
 
-    Raises:
-      OwnersStyleError: Indicates styled lines do not match original input.
-    """
+        Raises:
+          OwnersStyleError: Indicates styled lines do not match original input.
+        """
 
         if self.original_lines != self.formatted_lines:
-            print("\n".join(
-                difflib.unified_diff(self.original_lines,
-                                     self.formatted_lines,
-                                     fromfile=str(self.path),
-                                     tofile="styled",
-                                     lineterm="")))
+            print(
+                "\n".join(
+                    difflib.unified_diff(
+                        self.original_lines,
+                        self.formatted_lines,
+                        fromfile=str(self.path),
+                        tofile="styled",
+                        lineterm="",
+                    )
+                )
+            )
 
             raise OwnersStyleError(
-                "OWNERS file format does not follow styling.")
+                "OWNERS file format does not follow styling."
+            )
 
     def look_for_owners_errors(self) -> None:
         """Scans owners files for invalid or useless content."""
@@ -272,15 +302,16 @@ class OwnersFile:
         if self.sections[LineType.WILDCARD] and self.sections[LineType.USER]:
             raise OwnersUserGrantError(
                 "Do not use '*' with individual user "
-                "grants, * already applies to all users.")
+                "grants, * already applies to all users."
+            )
 
         # NOTE: Using the include keyword in combination with a per-file rule is
         # not possible.
         # https://android-review.googlesource.com/plugins/code-owners/Documentation/backend-find-owners.html#syntax:~:text=NOTE%3A%20Using%20the%20include%20keyword%20in%20combination%20with%20a%20per%2Dfile%20rule%20is%20not%20possible.
-        if self.sections[LineType.INCLUDE] and self.sections[
-                LineType.PER_FILE]:
+        if self.sections[LineType.INCLUDE] and self.sections[LineType.PER_FILE]:
             raise OwnersProhibitedError(
-                "'include' cannot be used with 'per-file'.")
+                "'include' cannot be used with 'per-file'."
+            )
 
     def __complete_path(self, sub_owners_file_path) -> pathlib.Path:
         """Always return absolute path."""
@@ -298,28 +329,33 @@ class OwnersFile:
         dependencies = []
         # All the includes
         for include in self.sections.get(LineType.INCLUDE, []):
-            file_str = include.content[len("include "):]
+            file_str = include.content[len("include ") :]
             dependencies.append(self.__complete_path(file_str))
 
         # all file: rules:
         for file_rule in self.sections.get(LineType.FILE_RULE, []):
-            file_str = file_rule.content[len("file:"):]
+            file_str = file_rule.content[len("file:") :]
             if ":" in file_str:
                 _LOG.warning(
                     "TODO(b/254322931): This check does not yet support "
-                    "<project> or <branch> in a file: rule")
-                _LOG.warning("It will not check line '%s' found in %s",
-                             file_rule.content, self.path)
+                    "<project> or <branch> in a file: rule"
+                )
+                _LOG.warning(
+                    "It will not check line '%s' found in %s",
+                    file_rule.content,
+                    self.path,
+                )
 
             dependencies.append(self.__complete_path(file_str))
 
         # all the per-file rule includes
         for per_file in self.sections.get(LineType.PER_FILE, []):
-            file_str = per_file.content[len("per-file "):]
-            access_grant = file_str[file_str.index("=") + 1:]
+            file_str = per_file.content[len("per-file ") :]
+            access_grant = file_str[file_str.index("=") + 1 :]
             if access_grant.startswith("file:"):
                 dependencies.append(
-                    self.__complete_path(access_grant[len("file:"):]))
+                    self.__complete_path(access_grant[len("file:") :])
+                )
 
         return dependencies
 
@@ -330,7 +366,7 @@ class OwnersFile:
 def resolve_owners_tree(root_owners: pathlib.Path) -> List[OwnersFile]:
     """Given a starting OWNERS file return it and all of it's dependencies."""
     found = []
-    todo = collections.deque((root_owners, ))
+    todo = collections.deque((root_owners,))
     checked: Set[pathlib.Path] = set()
     while todo:
         cur_file = todo.popleft()
@@ -364,7 +400,7 @@ def _list_unwrapper(
     if isinstance(list_or_path, Iterable):
         files = list_or_path
     else:
-        files = (list_or_path, )
+        files = (list_or_path,)
 
     all_owners_obj: List[OwnersFile] = []
     for file in files:
@@ -380,8 +416,9 @@ def _list_unwrapper(
             func(current_owners)
         except OwnersError as err:
             errors[current_owners.path] = err.message
-            _LOG.error("%s: %s", str(current_owners.path.absolute()),
-                       err.message)
+            _LOG.error(
+                "%s: %s", str(current_owners.path.absolute()), err.message
+            )
     return errors
 
 
@@ -393,7 +430,8 @@ format_owners_file = functools.partial(_list_unwrapper, _format_owners_file)
 
 
 def presubmit_check(
-        files: Union[pathlib.Path, Collection[pathlib.Path]]) -> None:
+    files: Union[pathlib.Path, Collection[pathlib.Path]]
+) -> None:
     errors = run_owners_checks(files)
     if errors:
         for file in errors:

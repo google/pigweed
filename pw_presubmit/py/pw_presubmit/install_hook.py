@@ -28,9 +28,14 @@ _LOG: logging.Logger = logging.getLogger(__name__)
 
 def git_repo_root(path: Union[Path, str]) -> Path:
     return Path(
-        subprocess.run(['git', '-C', path, 'rev-parse', '--show-toplevel'],
-                       check=True,
-                       stdout=subprocess.PIPE).stdout.strip().decode())
+        subprocess.run(
+            ['git', '-C', path, 'rev-parse', '--show-toplevel'],
+            check=True,
+            stdout=subprocess.PIPE,
+        )
+        .stdout.strip()
+        .decode()
+    )
 
 
 def _stdin_args_for_hook(hook) -> Sequence[str]:
@@ -39,8 +44,12 @@ def _stdin_args_for_hook(hook) -> Sequence[str]:
     See https://git-scm.com/docs/githooks for more information.
     """
     if hook == 'pre-push':
-        return ('local_ref', 'local_object_name', 'remote_ref',
-                'remote_object_name')
+        return (
+            'local_ref',
+            'local_object_name',
+            'remote_ref',
+            'remote_object_name',
+        )
     if hook in ('pre-receive', 'post-receive', 'reference-transaction'):
         return ('old_value', 'new_value', 'ref_name')
     if hook == 'post-rewrite':
@@ -54,9 +63,11 @@ def _replace_arg_in_hook(arg: str, unquoted_args: Sequence[str]) -> str:
     return shlex.quote(arg)
 
 
-def install_git_hook(hook: str,
-                     command: Sequence[Union[Path, str]],
-                     repository: Union[Path, str] = '.') -> None:
+def install_git_hook(
+    hook: str,
+    command: Sequence[Union[Path, str]],
+    repository: Union[Path, str] = '.',
+) -> None:
     """Installs a simple Git hook that executes the provided command.
 
     Args:
@@ -109,12 +120,13 @@ def install_git_hook(hook: str,
         line(command_str)
 
     hook_path.chmod(0o755)
-    logging.info('Installed %s hook for `%s` at %s', hook, command_str,
-                 hook_path)
+    logging.info(
+        'Installed %s hook for `%s` at %s', hook, command_str, hook_path
+    )
 
 
 def argument_parser(
-    parser: Optional[argparse.ArgumentParser] = None
+    parser: Optional[argparse.ArgumentParser] = None,
 ) -> argparse.ArgumentParser:
     if parser is None:
         parser = argparse.ArgumentParser(description=__doc__)
@@ -130,13 +142,14 @@ def argument_parser(
         '--repository',
         default='.',
         type=path,
-        help='Path to the repository in which to install the hook')
-    parser.add_argument('--hook',
-                        required=True,
-                        help='Which type of Git hook to create')
-    parser.add_argument('command',
-                        nargs='*',
-                        help='Command to run in the commit hook')
+        help='Path to the repository in which to install the hook',
+    )
+    parser.add_argument(
+        '--hook', required=True, help='Which type of Git hook to create'
+    )
+    parser.add_argument(
+        'command', nargs='*', help='Command to run in the commit hook'
+    )
 
     return parser
 

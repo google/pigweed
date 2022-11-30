@@ -26,7 +26,7 @@ from pw_presubmit import (
 _LOG: logging.Logger = logging.getLogger(__name__)
 
 
-@filter_paths(endswith=format_code.CPP_HEADER_EXTS, exclude=(r'\.pb\.h$', ))
+@filter_paths(endswith=format_code.CPP_HEADER_EXTS, exclude=(r'\.pb\.h$',))
 def pragma_once(ctx: PresubmitContext) -> None:
     """Presubmit check that ensures all header files contain '#pragma once'."""
 

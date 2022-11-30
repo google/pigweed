@@ -28,13 +28,19 @@ TRACKING_BRANCH_ALIAS = '@{upstream}'
 _TRACKING_BRANCH_ALIASES = TRACKING_BRANCH_ALIAS, '@{u}'
 
 
-def git_stdout(*args: PathOrStr,
-               show_stderr=False,
-               repo: PathOrStr = '.') -> str:
-    return log_run(['git', '-C', str(repo), *args],
-                   stdout=subprocess.PIPE,
-                   stderr=None if show_stderr else subprocess.DEVNULL,
-                   check=True).stdout.decode().strip()
+def git_stdout(
+    *args: PathOrStr, show_stderr=False, repo: PathOrStr = '.'
+) -> str:
+    return (
+        log_run(
+            ['git', '-C', str(repo), *args],
+            stdout=subprocess.PIPE,
+            stderr=None if show_stderr else subprocess.DEVNULL,
+            check=True,
+        )
+        .stdout.decode()
+        .strip()
+    )
 
 
 def _ls_files(args: Collection[PathOrStr], repo: Path) -> Iterable[Path]:
@@ -47,17 +53,20 @@ def _ls_files(args: Collection[PathOrStr], repo: Path) -> Iterable[Path]:
             yield full_path
 
 
-def _diff_names(commit: str, pathspecs: Collection[PathOrStr],
-                repo: Path) -> Iterable[Path]:
+def _diff_names(
+    commit: str, pathspecs: Collection[PathOrStr], repo: Path
+) -> Iterable[Path]:
     """Returns absolute paths of files changed since the specified commit."""
     git_root = root(repo)
-    for file in git_stdout('diff',
-                           '--name-only',
-                           '--diff-filter=d',
-                           commit,
-                           '--',
-                           *pathspecs,
-                           repo=repo).splitlines():
+    for file in git_stdout(
+        'diff',
+        '--name-only',
+        '--diff-filter=d',
+        commit,
+        '--',
+        *pathspecs,
+        repo=repo,
+    ).splitlines():
         full_path = git_root / file
         # Modified submodules will show up as directories and should be ignored.
         if full_path.is_file():
@@ -87,19 +96,23 @@ def tracking_branch(repo_path: Optional[Path] = None) -> Optional[str]:
 
     # This command should only error out if there's no upstream branch set.
     try:
-        return git_stdout('rev-parse',
-                          '--abbrev-ref',
-                          '--symbolic-full-name',
-                          TRACKING_BRANCH_ALIAS,
-                          repo=repo_path)
+        return git_stdout(
+            'rev-parse',
+            '--abbrev-ref',
+            '--symbolic-full-name',
+            TRACKING_BRANCH_ALIAS,
+            repo=repo_path,
+        )
 
     except subprocess.CalledProcessError:
         return None
 
 
-def list_files(commit: Optional[str] = None,
-               pathspecs: Collection[PathOrStr] = (),
-               repo_path: Optional[Path] = None) -> List[Path]:
+def list_files(
+    commit: Optional[str] = None,
+    pathspecs: Collection[PathOrStr] = (),
+    repo_path: Optional[Path] = None,
+) -> List[Path]:
     """Lists files with git ls-files or git diff --name-only.
 
     Args:
@@ -122,7 +135,10 @@ def list_files(commit: Optional[str] = None,
         except subprocess.CalledProcessError:
             _LOG.warning(
                 'Error comparing with base revision %s of %s, listing all '
-                'files instead of just changed files', commit, repo_path)
+                'files instead of just changed files',
+                commit,
+                repo_path,
+            )
 
     return sorted(_ls_files(pathspecs, repo_path))
 
@@ -144,33 +160,44 @@ def has_uncommitted_changes(repo: Optional[Path] = None) -> bool:
     retries = 6
     for i in range(retries):
         try:
-            log_run(['git', '-C', repo, 'update-index', '-q', '--refresh'],
-                    capture_output=True,
-                    check=True)
+            log_run(
+                ['git', '-C', repo, 'update-index', '-q', '--refresh'],
+                capture_output=True,
+                check=True,
+            )
         except subprocess.CalledProcessError as err:
             if err.stderr or i == retries - 1:
                 raise
             continue
     # diff-index exits with 1 if there are uncommitted changes.
-    return log_run(['git', '-C', repo, 'diff-index', '--quiet', 'HEAD',
-                    '--']).returncode == 1
+    return (
+        log_run(
+            ['git', '-C', repo, 'diff-index', '--quiet', 'HEAD', '--']
+        ).returncode
+        == 1
+    )
 
 
-def _describe_constraints(git_root: Path, repo_path: Path,
-                          commit: Optional[str],
-                          pathspecs: Collection[PathOrStr],
-                          exclude: Collection[Pattern[str]]) -> Iterable[str]:
+def _describe_constraints(
+    git_root: Path,
+    repo_path: Path,
+    commit: Optional[str],
+    pathspecs: Collection[PathOrStr],
+    exclude: Collection[Pattern[str]],
+) -> Iterable[str]:
     if not git_root.samefile(repo_path):
         yield (
             f'under the {repo_path.resolve().relative_to(git_root.resolve())} '
-            'subdirectory')
+            'subdirectory'
+        )
 
     if commit in _TRACKING_BRANCH_ALIASES:
         commit = tracking_branch(git_root)
         if commit is None:
             _LOG.warning(
                 'Attempted to list files changed since the remote tracking '
-                'branch, but the repo is not tracking a branch')
+                'branch, but the repo is not tracking a branch'
+            )
 
     if commit:
         yield f'that have changed since {commit}'
@@ -180,19 +207,25 @@ def _describe_constraints(git_root: Path, repo_path: Path,
         yield f'that match {plural(pathspecs, "pathspec")} ({paths_str})'
 
     if exclude:
-        yield (f'that do not match {plural(exclude, "pattern")} (' +
-               ', '.join(p.pattern for p in exclude) + ')')
+        yield (
+            f'that do not match {plural(exclude, "pattern")} ('
+            + ', '.join(p.pattern for p in exclude)
+            + ')'
+        )
 
 
-def describe_files(git_root: Path,
-                   repo_path: Path,
-                   commit: Optional[str],
-                   pathspecs: Collection[PathOrStr],
-                   exclude: Collection[Pattern],
-                   project_root: Optional[Path] = None) -> str:
+def describe_files(
+    git_root: Path,
+    repo_path: Path,
+    commit: Optional[str],
+    pathspecs: Collection[PathOrStr],
+    exclude: Collection[Pattern],
+    project_root: Optional[Path] = None,
+) -> str:
     """Completes 'Doing something to ...' for a set of files in a Git repo."""
     constraints = list(
-        _describe_constraints(git_root, repo_path, commit, pathspecs, exclude))
+        _describe_constraints(git_root, repo_path, commit, pathspecs, exclude)
+    )
 
     name = git_root.name
     if project_root and project_root != git_root:
@@ -220,10 +253,13 @@ def root(repo_path: PathOrStr = '.', *, show_stderr: bool = True) -> Path:
         raise FileNotFoundError(f'{repo_path} does not exist')
 
     return Path(
-        git_stdout('rev-parse',
-                   '--show-toplevel',
-                   repo=repo_path if repo_path.is_dir() else repo_path.parent,
-                   show_stderr=show_stderr))
+        git_stdout(
+            'rev-parse',
+            '--show-toplevel',
+            repo=repo_path if repo_path.is_dir() else repo_path.parent,
+            show_stderr=show_stderr,
+        )
+    )
 
 
 def within_repo(repo_path: PathOrStr = '.') -> Optional[Path]:
@@ -239,9 +275,11 @@ def is_repo(repo_path: PathOrStr = '.') -> bool:
     return within_repo(repo_path) is not None
 
 
-def path(repo_path: PathOrStr,
-         *additional_repo_paths: PathOrStr,
-         repo: PathOrStr = '.') -> Path:
+def path(
+    repo_path: PathOrStr,
+    *additional_repo_paths: PathOrStr,
+    repo: PathOrStr = '.',
+) -> Path:
     """Returns a path relative to a Git repository's root."""
     return root(repo).joinpath(repo_path, *additional_repo_paths)
 
@@ -254,9 +292,9 @@ def commit_author(commit: str = 'HEAD', repo: PathOrStr = '.') -> str:
     return git_stdout('log', '--format=%ae', '-n1', commit, repo=repo)
 
 
-def commit_hash(rev: str = 'HEAD',
-                short: bool = True,
-                repo: PathOrStr = '.') -> str:
+def commit_hash(
+    rev: str = 'HEAD', short: bool = True, repo: PathOrStr = '.'
+) -> str:
     """Returns the commit hash of the revision."""
     args = ['rev-parse']
     if short:
@@ -281,12 +319,14 @@ def discover_submodules(
         List of "Path"s which were found but not excluded, this includes
         superproject_dir unless excluded.
     """
-    discovery_report = git_stdout('submodule',
-                                  'foreach',
-                                  '--quiet',
-                                  '--recursive',
-                                  'echo $toplevel/$sm_path',
-                                  repo=superproject_dir)
+    discovery_report = git_stdout(
+        'submodule',
+        'foreach',
+        '--quiet',
+        '--recursive',
+        'echo $toplevel/$sm_path',
+        repo=superproject_dir,
+    )
     module_dirs = [Path(line) for line in discovery_report.split()]
     # The superproject is omitted in the prior scan.
     module_dirs.append(superproject_dir)

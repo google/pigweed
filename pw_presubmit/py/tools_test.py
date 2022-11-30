@@ -21,6 +21,7 @@ from pw_presubmit import tools
 
 class FlattenTest(unittest.TestCase):
     """Tests the flatten function, which flattens iterables."""
+
     def test_empty(self):
         self.assertEqual([], list(tools.flatten()))
         self.assertEqual([], list(tools.flatten([])))
@@ -28,21 +29,31 @@ class FlattenTest(unittest.TestCase):
         self.assertEqual([], list(tools.flatten([[], (), [[]]], ((), []))))
 
     def test_no_nesting(self):
-        self.assertEqual(['a', 'bcd', 123, 45.6],
-                         list(tools.flatten('a', 'bcd', 123, 45.6)))
-        self.assertEqual(['a', 'bcd', 123, 45.6],
-                         list(tools.flatten(['a', 'bcd', 123, 45.6])))
-        self.assertEqual(['a', 'bcd', 123, 45.6],
-                         list(tools.flatten(['a', 'bcd'], [123, 45.6])))
+        self.assertEqual(
+            ['a', 'bcd', 123, 45.6], list(tools.flatten('a', 'bcd', 123, 45.6))
+        )
+        self.assertEqual(
+            ['a', 'bcd', 123, 45.6],
+            list(tools.flatten(['a', 'bcd', 123, 45.6])),
+        )
+        self.assertEqual(
+            ['a', 'bcd', 123, 45.6],
+            list(tools.flatten(['a', 'bcd'], [123, 45.6])),
+        )
 
     def test_nesting(self):
-        self.assertEqual(['a', 'bcd', 123, 45.6],
-                         list(tools.flatten('a', ['bcd'], [123], 45.6)))
-        self.assertEqual(['a', 'bcd', 123, 45.6],
-                         list(tools.flatten([['a', ('bcd', [123])], 45.6])))
-        self.assertEqual(['a', 'bcd', 123, 45.6],
-                         list(tools.flatten([('a', 'bcd')],
-                                            [[[[123]]], 45.6])))
+        self.assertEqual(
+            ['a', 'bcd', 123, 45.6],
+            list(tools.flatten('a', ['bcd'], [123], 45.6)),
+        )
+        self.assertEqual(
+            ['a', 'bcd', 123, 45.6],
+            list(tools.flatten([['a', ('bcd', [123])], 45.6])),
+        )
+        self.assertEqual(
+            ['a', 'bcd', 123, 45.6],
+            list(tools.flatten([('a', 'bcd')], [[[[123]]], 45.6])),
+        )
 
 
 if __name__ == '__main__':

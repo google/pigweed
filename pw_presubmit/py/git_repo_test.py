@@ -29,14 +29,14 @@ class TestGitRepo(unittest.TestCase):
     SUBMODULES = [
         pathlib.Path("third_party/pigweed"),
         pathlib.Path("vendor/anycom/p1"),
-        pathlib.Path("vendor/anycom/p2")
+        pathlib.Path("vendor/anycom/p2"),
     ]
     GIT_SUBMODULES_OUT = "\n".join([str(x) for x in SUBMODULES])
 
     def setUp(self) -> None:
-        self.git_stdout = mock.patch.object(git_repo,
-                                            "git_stdout",
-                                            autospec=True).start()
+        self.git_stdout = mock.patch.object(
+            git_repo, "git_stdout", autospec=True
+        ).start()
         self.git_stdout.return_value = self.GIT_SUBMODULES_OUT
         self.root = mock.patch.object(git_repo, "root", autospec=True).start()
         self.root.return_value = self.GIT_ROOT
@@ -61,26 +61,29 @@ class TestGitRepo(unittest.TestCase):
     def test_discover_submodules_with_exclude_str(self):
         paths = git_repo.discover_submodules(
             superproject_dir=self.GIT_ROOT,
-            excluded_paths=(self.GIT_ROOT.as_posix(), ),
+            excluded_paths=(self.GIT_ROOT.as_posix(),),
         )
         self.assertNotIn(self.GIT_ROOT, paths)
 
     def test_discover_submodules_with_exclude_regex(self):
         paths = git_repo.discover_submodules(
             superproject_dir=self.GIT_ROOT,
-            excluded_paths=(re.compile("third_party/.*"), ))
+            excluded_paths=(re.compile("third_party/.*"),),
+        )
         self.assertNotIn(self.SUBMODULES[0], paths)
 
     def test_discover_submodules_with_exclude_str_miss(self):
         paths = git_repo.discover_submodules(
             superproject_dir=self.GIT_ROOT,
-            excluded_paths=(re.compile("pigweed"), ))
+            excluded_paths=(re.compile("pigweed"),),
+        )
         self.assertIn(self.SUBMODULES[-1], paths)
 
     def test_discover_submodules_with_exclude_regex_miss_1(self):
         paths = git_repo.discover_submodules(
             superproject_dir=self.GIT_ROOT,
-            excluded_paths=(re.compile("foo/.*"), ))
+            excluded_paths=(re.compile("foo/.*"),),
+        )
         self.assertIn(self.GIT_ROOT, paths)
         for module in self.SUBMODULES:
             self.assertIn(module, paths)
@@ -88,7 +91,8 @@ class TestGitRepo(unittest.TestCase):
     def test_discover_submodules_with_exclude_regex_miss_2(self):
         paths = git_repo.discover_submodules(
             superproject_dir=self.GIT_ROOT,
-            excluded_paths=(re.compile("pigweed"), ))
+            excluded_paths=(re.compile("pigweed"),),
+        )
         self.assertIn(self.GIT_ROOT, paths)
         for module in self.SUBMODULES:
             self.assertIn(module, paths)

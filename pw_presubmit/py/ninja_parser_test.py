@@ -67,6 +67,7 @@ Found 1 error in 1 file (checked 23 source files)
 
 class TestNinjaParser(unittest.TestCase):
     """Test ninja_parser."""
+
     def _run(self, contents: str) -> str:  # pylint: disable=no-self-use
         path = MagicMock(spec=Path('foo/bar'))
 

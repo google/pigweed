@@ -48,8 +48,7 @@ try:
 except ImportError:
     # Append the pw_presubmit package path to the module search path to allow
     # running this module without installing the pw_presubmit package.
-    sys.path.append(os.path.dirname(os.path.dirname(
-        os.path.abspath(__file__))))
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     import pw_presubmit
 
 import pw_cli.color
@@ -79,6 +78,7 @@ class FormatContext:
         paths: Modified files for the presubmit step to check (often used in
             formatting steps but ignored in compile steps)
     """
+
     root: Path
     output_dir: Path
     paths: Tuple[Path, ...]
@@ -112,7 +112,10 @@ def _diff(path, original: bytes, formatted: bytes) -> str:
         difflib.unified_diff(
             original.decode(errors='replace').splitlines(True),
             formatted.decode(errors='replace').splitlines(True),
-            f'{path}  (original)', f'{path}  (reformatted)'))
+            f'{path}  (original)',
+            f'{path}  (reformatted)',
+        )
+    )
 
 
 Formatter = Callable[[str, bytes], bytes]
@@ -140,10 +143,12 @@ def _check_files(files, formatter: Formatter) -> Dict[Path, str]:
 
 
 def _clang_format(*args: Union[Path, str], **kwargs) -> bytes:
-    return log_run(['clang-format', '--style=file', *args],
-                   stdout=subprocess.PIPE,
-                   check=True,
-                   **kwargs).stdout
+    return log_run(
+        ['clang-format', '--style=file', *args],
+        stdout=subprocess.PIPE,
+        check=True,
+        **kwargs,
+    ).stdout
 
 
 def clang_format_check(ctx: _Context) -> Dict[Path, str]:
@@ -160,10 +165,14 @@ def clang_format_fix(ctx: _Context) -> Dict[Path, str]:
 def check_gn_format(ctx: _Context) -> Dict[Path, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
     return _check_files(
-        ctx.paths, lambda _, data: log_run(['gn', 'format', '--stdin'],
-                                           input=data,
-                                           stdout=subprocess.PIPE,
-                                           check=True).stdout)
+        ctx.paths,
+        lambda _, data: log_run(
+            ['gn', 'format', '--stdin'],
+            input=data,
+            stdout=subprocess.PIPE,
+            check=True,
+        ).stdout,
+    )
 
 
 def fix_gn_format(ctx: _Context) -> Dict[Path, str]:
@@ -217,8 +226,11 @@ def fix_owners_format(ctx: _Context) -> Dict[Path, str]:
 def check_go_format(ctx: _Context) -> Dict[Path, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
     return _check_files(
-        ctx.paths, lambda path, _: log_run(
-            ['gofmt', path], stdout=subprocess.PIPE, check=True).stdout)
+        ctx.paths,
+        lambda path, _: log_run(
+            ['gofmt', path], stdout=subprocess.PIPE, check=True
+        ).stdout,
+    )
 
 
 def fix_go_format(ctx: _Context) -> Dict[Path, str]:
@@ -229,9 +241,11 @@ def fix_go_format(ctx: _Context) -> Dict[Path, str]:
 
 # TODO(b/259595799) Remove yapf support.
 def _yapf(*args, **kwargs) -> subprocess.CompletedProcess:
-    return log_run(['python', '-m', 'yapf', '--parallel', *args],
-                   capture_output=True,
-                   **kwargs)
+    return log_run(
+        ['python', '-m', 'yapf', '--parallel', *args],
+        capture_output=True,
+        **kwargs,
+    )
 
 
 _DIFF_START = re.compile(r'^--- (.*)\s+\(original\)$', flags=re.MULTILINE)
@@ -249,11 +263,14 @@ def check_py_format_yapf(ctx: _Context) -> Dict[Path, str]:
         matches = tuple(_DIFF_START.finditer(raw_diff))
         for start, end in zip(matches, (*matches[1:], None)):
             errors[Path(start.group(1))] = colorize_diff(
-                raw_diff[start.start():end.start() if end else None])
+                raw_diff[start.start() : end.start() if end else None]
+            )
 
     if process.stderr:
-        _LOG.error('yapf encountered an error:\n%s',
-                   process.stderr.decode(errors='replace').rstrip())
+        _LOG.error(
+            'yapf encountered an error:\n%s',
+            process.stderr.decode(errors='replace').rstrip(),
+        )
         errors.update({file: '' for file in ctx.paths if file not in errors})
 
     return errors
@@ -296,15 +313,17 @@ def fix_trailing_space(ctx: _Context) -> Dict[Path, str]:
     return {}
 
 
-def print_format_check(errors: Dict[Path, str],
-                       show_fix_commands: bool) -> None:
+def print_format_check(
+    errors: Dict[Path, str], show_fix_commands: bool
+) -> None:
     """Prints and returns the result of a check_*_format function."""
     if not errors:
         # Don't print anything in the all-good case.
         return
     # Show the format fixing diff suggested by the tooling (with colors).
-    _LOG.warning('Found %d files with formatting errors. Format changes:',
-                 len(errors))
+    _LOG.warning(
+        'Found %d files with formatting errors. Format changes:', len(errors)
+    )
     for diff in errors.values():
         print(diff, end='')
 
@@ -317,8 +336,9 @@ def print_format_check(errors: Dict[Path, str],
             except ValueError:
                 return Path(path).resolve()
 
-        message = (f'  pw format --fix {path_relative_to_cwd(path)}'
-                   for path in errors)
+        message = (
+            f'  pw format --fix {path_relative_to_cwd(path)}' for path in errors
+        )
         _LOG.warning('To fix formatting, run:\n\n%s\n', '\n'.join(message))
 
 
@@ -336,70 +356,103 @@ class CodeFormat(NamedTuple):
 
 CPP_HEADER_EXTS = frozenset(('.h', '.hpp', '.hxx', '.h++', '.hh', '.H'))
 CPP_SOURCE_EXTS = frozenset(
-    ('.c', '.cpp', '.cxx', '.c++', '.cc', '.C', '.inc', '.inl'))
+    ('.c', '.cpp', '.cxx', '.c++', '.cc', '.C', '.inc', '.inl')
+)
 CPP_EXTS = CPP_HEADER_EXTS.union(CPP_SOURCE_EXTS)
-CPP_FILE_FILTER = FileFilter(endswith=CPP_EXTS,
-                             exclude=(r'\.pb\.h$', r'\.pb\.c$'))
+CPP_FILE_FILTER = FileFilter(
+    endswith=CPP_EXTS, exclude=(r'\.pb\.h$', r'\.pb\.c$')
+)
 
-C_FORMAT = CodeFormat('C and C++', CPP_FILE_FILTER, clang_format_check,
-                      clang_format_fix)
+C_FORMAT = CodeFormat(
+    'C and C++', CPP_FILE_FILTER, clang_format_check, clang_format_fix
+)
 
-PROTO_FORMAT: CodeFormat = CodeFormat('Protocol buffer',
-                                      FileFilter(endswith=('.proto', )),
-                                      clang_format_check, clang_format_fix)
+PROTO_FORMAT: CodeFormat = CodeFormat(
+    'Protocol buffer',
+    FileFilter(endswith=('.proto',)),
+    clang_format_check,
+    clang_format_fix,
+)
 
-JAVA_FORMAT: CodeFormat = CodeFormat('Java', FileFilter(endswith=('.java', )),
-                                     clang_format_check, clang_format_fix)
+JAVA_FORMAT: CodeFormat = CodeFormat(
+    'Java',
+    FileFilter(endswith=('.java',)),
+    clang_format_check,
+    clang_format_fix,
+)
 
-JAVASCRIPT_FORMAT: CodeFormat = CodeFormat('JavaScript',
-                                           FileFilter(endswith=('.js', )),
-                                           clang_format_check,
-                                           clang_format_fix)
+JAVASCRIPT_FORMAT: CodeFormat = CodeFormat(
+    'JavaScript',
+    FileFilter(endswith=('.js',)),
+    clang_format_check,
+    clang_format_fix,
+)
 
-GO_FORMAT: CodeFormat = CodeFormat('Go', FileFilter(endswith=('.go', )),
-                                   check_go_format, fix_go_format)
+GO_FORMAT: CodeFormat = CodeFormat(
+    'Go', FileFilter(endswith=('.go',)), check_go_format, fix_go_format
+)
 
 # TODO(b/259595799) Remove yapf support.
-PYTHON_FORMAT_YAPF: CodeFormat = CodeFormat('Python',
-                                            FileFilter(endswith=('.py',)),
-                                            check_py_format_yapf,
-                                            fix_py_format_yapf)
+PYTHON_FORMAT_YAPF: CodeFormat = CodeFormat(
+    'Python',
+    FileFilter(endswith=('.py',)),
+    check_py_format_yapf,
+    fix_py_format_yapf,
+)
 
-PYTHON_FORMAT_BLACK: CodeFormat = CodeFormat('Python',
-                                             FileFilter(endswith=('.py', )),
-                                             check_trailing_space,
-                                             fix_trailing_space)
+PYTHON_FORMAT_BLACK: CodeFormat = CodeFormat(
+    'Python',
+    FileFilter(endswith=('.py',)),
+    check_trailing_space,
+    fix_trailing_space,
+)
 
-GN_FORMAT: CodeFormat = CodeFormat('GN', FileFilter(endswith=('.gn', '.gni')),
-                                   check_gn_format, fix_gn_format)
+GN_FORMAT: CodeFormat = CodeFormat(
+    'GN', FileFilter(endswith=('.gn', '.gni')), check_gn_format, fix_gn_format
+)
 
 BAZEL_FORMAT: CodeFormat = CodeFormat(
     'Bazel',
     FileFilter(endswith=('BUILD', '.bazel', '.bzl'), name=('WORKSPACE')),
-    check_bazel_format, fix_bazel_format)
+    check_bazel_format,
+    fix_bazel_format,
+)
 
-COPYBARA_FORMAT: CodeFormat = CodeFormat('Copybara',
-                                         FileFilter(endswith=('.bara.sky', )),
-                                         check_bazel_format, fix_bazel_format)
+COPYBARA_FORMAT: CodeFormat = CodeFormat(
+    'Copybara',
+    FileFilter(endswith=('.bara.sky',)),
+    check_bazel_format,
+    fix_bazel_format,
+)
 
 # TODO(b/234881054): Add real code formatting support for CMake
 CMAKE_FORMAT: CodeFormat = CodeFormat(
-    'CMake', FileFilter(endswith=('CMakeLists.txt', '.cmake')),
-    check_trailing_space, fix_trailing_space)
+    'CMake',
+    FileFilter(endswith=('CMakeLists.txt', '.cmake')),
+    check_trailing_space,
+    fix_trailing_space,
+)
 
-RST_FORMAT: CodeFormat = CodeFormat('reStructuredText',
-                                    FileFilter(endswith=('.rst', )),
-                                    check_trailing_space, fix_trailing_space)
+RST_FORMAT: CodeFormat = CodeFormat(
+    'reStructuredText',
+    FileFilter(endswith=('.rst',)),
+    check_trailing_space,
+    fix_trailing_space,
+)
 
-MARKDOWN_FORMAT: CodeFormat = CodeFormat('Markdown',
-                                         FileFilter(endswith=('.md', )),
-                                         check_trailing_space,
-                                         fix_trailing_space)
+MARKDOWN_FORMAT: CodeFormat = CodeFormat(
+    'Markdown',
+    FileFilter(endswith=('.md',)),
+    check_trailing_space,
+    fix_trailing_space,
+)
 
-OWNERS_CODE_FORMAT = CodeFormat("OWNERS",
-                                filter=FileFilter(name=("OWNERS", )),
-                                check=check_owners_format,
-                                fix=fix_owners_format)
+OWNERS_CODE_FORMAT = CodeFormat(
+    "OWNERS",
+    filter=FileFilter(name=("OWNERS",)),
+    check=check_owners_format,
+    fix=fix_owners_format,
+)
 
 _CODE_FORMATS_WITHOUT_PYTHON: Tuple[CodeFormat, ...] = (
     # keep-sorted: start
@@ -436,7 +489,8 @@ CODE_FORMATS = CODE_FORMATS_WITH_YAPF
 def presubmit_check(
     code_format: CodeFormat,
     *,
-    exclude: Collection[Union[str, Pattern[str]]] = ()) -> Callable:
+    exclude: Collection[Union[str, Pattern[str]]] = (),
+) -> Callable:
     """Creates a presubmit check function from a CodeFormat object.
 
     Args:
@@ -468,7 +522,7 @@ def presubmit_check(
 def presubmit_checks(
     *,
     exclude: Collection[Union[str, Pattern[str]]] = (),
-    code_formats: Collection[CodeFormat] = CODE_FORMATS
+    code_formats: Collection[CodeFormat] = CODE_FORMATS,
 ) -> Tuple[Callable, ...]:
     """Returns a tuple with all supported code format presubmit checks.
 
@@ -482,11 +536,14 @@ def presubmit_checks(
 
 class CodeFormatter:
     """Checks or fixes the formatting of a set of files."""
-    def __init__(self,
-                 root: Path,
-                 files: Iterable[Path],
-                 output_dir: Path,
-                 code_formats: Collection[CodeFormat] = CODE_FORMATS):
+
+    def __init__(
+        self,
+        root: Path,
+        files: Iterable[Path],
+        output_dir: Path,
+        code_formats: Collection[CodeFormat] = CODE_FORMATS,
+    ):
         self.root = root
         self.paths = list(files)
         self._formats: Dict[CodeFormat, List] = collections.defaultdict(list)
@@ -495,8 +552,9 @@ class CodeFormatter:
         for path in self.paths:
             for code_format in code_formats:
                 if code_format.filter.matches(path):
-                    _LOG.debug('Formatting %s as %s', path,
-                               code_format.language)
+                    _LOG.debug(
+                        'Formatting %s as %s', path, code_format.language
+                    )
                     self._formats[code_format].append(path)
                     break
             else:
@@ -535,36 +593,42 @@ class CodeFormatter:
                 all_errors.update(errors)
                 continue
 
-            _LOG.info('Formatted %s',
-                      plural(files, code_format.language + ' file'))
+            _LOG.info(
+                'Formatted %s', plural(files, code_format.language + ' file')
+            )
         return all_errors
 
 
 def _file_summary(files: Iterable[Union[Path, str]], base: Path) -> List[str]:
     try:
         return file_summary(
-            Path(f).resolve().relative_to(base.resolve()) for f in files)
+            Path(f).resolve().relative_to(base.resolve()) for f in files
+        )
     except ValueError:
         return []
 
 
-def format_paths_in_repo(paths: Collection[Union[Path, str]],
-                         exclude: Collection[Pattern[str]],
-                         fix: bool,
-                         base: str,
-                         code_formats: Collection[CodeFormat] = CODE_FORMATS,
-                         output_directory: Optional[Path] = None) -> int:
+def format_paths_in_repo(
+    paths: Collection[Union[Path, str]],
+    exclude: Collection[Pattern[str]],
+    fix: bool,
+    base: str,
+    code_formats: Collection[CodeFormat] = CODE_FORMATS,
+    output_directory: Optional[Path] = None,
+) -> int:
     """Checks or fixes formatting for files in a Git repo."""
 
     files = [Path(path).resolve() for path in paths if os.path.isfile(path)]
     repo = git_repo.root() if git_repo.is_repo() else None
 
     # Implement a graceful fallback in case the tracking branch isn't available.
-    if (base == git_repo.TRACKING_BRANCH_ALIAS
-            and not git_repo.tracking_branch(repo)):
+    if base == git_repo.TRACKING_BRANCH_ALIAS and not git_repo.tracking_branch(
+        repo
+    ):
         _LOG.warning(
             'Failed to determine the tracking branch, using --base HEAD~1 '
-            'instead of listing all files')
+            'instead of listing all files'
+        )
         base = 'HEAD~1'
 
     # If this is a Git repo, list the original paths with git ls-files or diff.
@@ -572,30 +636,38 @@ def format_paths_in_repo(paths: Collection[Union[Path, str]],
         project_root = Path(pw_cli.env.pigweed_environment().PW_PROJECT_ROOT)
         _LOG.info(
             'Formatting %s',
-            git_repo.describe_files(repo, Path.cwd(), base, paths, exclude,
-                                    project_root))
+            git_repo.describe_files(
+                repo, Path.cwd(), base, paths, exclude, project_root
+            ),
+        )
 
         # Add files from Git and remove duplicates.
         files = sorted(
             set(exclude_paths(exclude, git_repo.list_files(base, paths)))
-            | set(files))
+            | set(files)
+        )
     elif base:
         _LOG.critical(
-            'A base commit may only be provided if running from a Git repo')
+            'A base commit may only be provided if running from a Git repo'
+        )
         return 1
 
-    return format_files(files,
-                        fix,
-                        repo=repo,
-                        code_formats=code_formats,
-                        output_directory=output_directory)
+    return format_files(
+        files,
+        fix,
+        repo=repo,
+        code_formats=code_formats,
+        output_directory=output_directory,
+    )
 
 
-def format_files(paths: Collection[Union[Path, str]],
-                 fix: bool,
-                 repo: Optional[Path] = None,
-                 code_formats: Collection[CodeFormat] = CODE_FORMATS,
-                 output_directory: Optional[Path] = None) -> int:
+def format_files(
+    paths: Collection[Union[Path, str]],
+    fix: bool,
+    repo: Optional[Path] = None,
+    code_formats: Collection[CodeFormat] = CODE_FORMATS,
+    output_directory: Optional[Path] = None,
+) -> int:
     """Checks or fixes formatting for the specified files."""
 
     if git_repo.is_repo():
@@ -614,10 +686,12 @@ def format_files(paths: Collection[Union[Path, str]],
         tempdir = tempfile.TemporaryDirectory()
         output_dir = Path(tempdir.name)
 
-    formatter = CodeFormatter(files=(Path(p) for p in paths),
-                              code_formats=code_formats,
-                              root=root,
-                              output_dir=output_dir)
+    formatter = CodeFormatter(
+        files=(Path(p) for p in paths),
+        code_formats=code_formats,
+        root=root,
+        output_dir=output_dir,
+    )
 
     _LOG.info('Checking formatting for %s', plural(formatter.paths, 'file'))
 
@@ -629,8 +703,9 @@ def format_files(paths: Collection[Union[Path, str]],
 
     if check_errors:
         if fix:
-            _LOG.info('Applying formatting fixes to %d files',
-                      len(check_errors))
+            _LOG.info(
+                'Applying formatting fixes to %d files', len(check_errors)
+            )
             fix_errors = formatter.fix()
             if fix_errors:
                 _LOG.info('Failed to apply formatting fixes')
@@ -660,19 +735,22 @@ def arguments(git_paths: bool) -> argparse.ArgumentParser:
             path = Path(arg)
             if not path.is_file():
                 raise argparse.ArgumentTypeError(
-                    f'{arg} is not a path to a file')
+                    f'{arg} is not a path to a file'
+                )
 
             return path
 
-        parser.add_argument('paths',
-                            metavar='path',
-                            nargs='+',
-                            type=existing_path,
-                            help='File paths to check')
+        parser.add_argument(
+            'paths',
+            metavar='path',
+            nargs='+',
+            type=existing_path,
+            help='File paths to check',
+        )
 
-    parser.add_argument('--fix',
-                        action='store_true',
-                        help='Apply formatting fixes in place.')
+    parser.add_argument(
+        '--fix', action='store_true', help='Apply formatting fixes in place.'
+    )
 
     parser.add_argument(
         '--output-directory',

@@ -23,6 +23,7 @@ from pw_presubmit import presubmit
 
 class TestFileFilter(unittest.TestCase):
     """Test FileFilter class"""
+
     @dataclasses.dataclass
     class TestData:
         filter: presubmit.FileFilter
@@ -33,32 +34,40 @@ class TestFileFilter(unittest.TestCase):
         TestData(presubmit.FileFilter(endswith=('bar', 'foo')), 'foo', True),
         TestData(presubmit.FileFilter(endswith=('bar', 'boo')), 'foo', False),
         TestData(
-            presubmit.FileFilter(exclude=(re.compile('a/.+'), ),
-                                 name=('foo', )), '/a/b/c/foo', False),
+            presubmit.FileFilter(exclude=(re.compile('a/.+'),), name=('foo',)),
+            '/a/b/c/foo',
+            False,
+        ),
         TestData(
-            presubmit.FileFilter(exclude=(re.compile('x/.+'), ),
-                                 name=('foo', )), '/a/b/c/foo', True),
+            presubmit.FileFilter(exclude=(re.compile('x/.+'),), name=('foo',)),
+            '/a/b/c/foo',
+            True,
+        ),
         TestData(
             presubmit.FileFilter(exclude=(re.compile('a+'), re.compile('b+'))),
-            'cccc', True),
-        TestData(presubmit.FileFilter(name=('foo', )), 'foo', True),
-        TestData(presubmit.FileFilter(name=('foo', )), 'food', False),
-        TestData(presubmit.FileFilter(name=(re.compile('foo'), )), 'foo',
-                 True),
-        TestData(presubmit.FileFilter(name=(re.compile('foo'), )), 'food',
-                 False),
-        TestData(presubmit.FileFilter(name=(re.compile('fo+'), )), 'foo',
-                 True),
-        TestData(presubmit.FileFilter(name=(re.compile('fo+'), )), 'fd',
-                 False),
-        TestData(presubmit.FileFilter(suffix=('.exe', )), 'a/b.py/foo.exe',
-                 True),
-        TestData(presubmit.FileFilter(suffix=('.py', )), 'a/b.py/foo.exe',
-                 False),
-        TestData(presubmit.FileFilter(suffix=('.exe', )), 'a/b.py/foo.py.exe',
-                 True),
-        TestData(presubmit.FileFilter(suffix=('.py', )), 'a/b.py/foo.py.exe',
-                 False),
+            'cccc',
+            True,
+        ),
+        TestData(presubmit.FileFilter(name=('foo',)), 'foo', True),
+        TestData(presubmit.FileFilter(name=('foo',)), 'food', False),
+        TestData(presubmit.FileFilter(name=(re.compile('foo'),)), 'foo', True),
+        TestData(
+            presubmit.FileFilter(name=(re.compile('foo'),)), 'food', False
+        ),
+        TestData(presubmit.FileFilter(name=(re.compile('fo+'),)), 'foo', True),
+        TestData(presubmit.FileFilter(name=(re.compile('fo+'),)), 'fd', False),
+        TestData(
+            presubmit.FileFilter(suffix=('.exe',)), 'a/b.py/foo.exe', True
+        ),
+        TestData(
+            presubmit.FileFilter(suffix=('.py',)), 'a/b.py/foo.exe', False
+        ),
+        TestData(
+            presubmit.FileFilter(suffix=('.exe',)), 'a/b.py/foo.py.exe', True
+        ),
+        TestData(
+            presubmit.FileFilter(suffix=('.py',)), 'a/b.py/foo.py.exe', False
+        ),
         TestData(presubmit.FileFilter(suffix=('.a', '.b')), 'foo.b', True),
         TestData(presubmit.FileFilter(suffix=('.a', '.b')), 'foo.c', False),
     )
@@ -66,8 +75,10 @@ class TestFileFilter(unittest.TestCase):
     def test_matches(self):
         for test_num, test_data in enumerate(self.test_scenarios):
             with self.subTest(i=test_num):
-                self.assertEqual(test_data.filter.matches(test_data.value),
-                                 test_data.expected)
+                self.assertEqual(
+                    test_data.filter.matches(test_data.value),
+                    test_data.expected,
+                )
 
 
 def _fake_function_1(_):
@@ -80,9 +91,10 @@ def _fake_function_2(_):
 
 class ProgramsTest(unittest.TestCase):
     """Tests the presubmit Programs abstraction."""
+
     def setUp(self):
         self._programs = presubmit.Programs(
-            first=[_fake_function_1, (), [(_fake_function_2, )]],
+            first=[_fake_function_1, (), [(_fake_function_2,)]],
             second=[_fake_function_2],
         )
 
@@ -91,19 +103,27 @@ class ProgramsTest(unittest.TestCase):
 
     def test_access_present_members(self):
         self.assertEqual('first', self._programs['first'].name)
-        self.assertEqual(('_fake_function_1', '_fake_function_2'),
-                         tuple(x.name for x in self._programs['first']))
+        self.assertEqual(
+            ('_fake_function_1', '_fake_function_2'),
+            tuple(x.name for x in self._programs['first']),
+        )
         # pylint: disable=protected-access
-        self.assertEqual((_fake_function_1, _fake_function_2),
-                         tuple(x._check for x in self._programs['first']))
+        self.assertEqual(
+            (_fake_function_1, _fake_function_2),
+            tuple(x._check for x in self._programs['first']),
+        )
         # pylint: enable=protected-access
 
         self.assertEqual('second', self._programs['second'].name)
-        self.assertEqual(('_fake_function_2', ),
-                         tuple(x.name for x in self._programs['second']))
+        self.assertEqual(
+            ('_fake_function_2',),
+            tuple(x.name for x in self._programs['second']),
+        )
         # pylint: disable=protected-access
-        self.assertEqual((_fake_function_2, ),
-                         tuple(x._check for x in self._programs['second']))
+        self.assertEqual(
+            (_fake_function_2,),
+            tuple(x._check for x in self._programs['second']),
+        )
         # pylint: enable=protected-access
 
     def test_access_missing_member(self):
@@ -114,10 +134,8 @@ class ProgramsTest(unittest.TestCase):
         all_steps = self._programs.all_steps()
         self.assertEqual(len(all_steps), 2)
         # pylint: disable=protected-access
-        self.assertEqual(all_steps['_fake_function_1']._check,
-                         _fake_function_1)
-        self.assertEqual(all_steps['_fake_function_2']._check,
-                         _fake_function_2)
+        self.assertEqual(all_steps['_fake_function_1']._check, _fake_function_1)
+        self.assertEqual(all_steps['_fake_function_2']._check, _fake_function_2)
         # pylint: enable=protected-access
 
 

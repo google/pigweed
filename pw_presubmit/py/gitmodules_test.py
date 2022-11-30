@@ -45,6 +45,7 @@ def dotgitmodules(
 
 class TestGitmodules(unittest.TestCase):
     """Test gitmodules check."""
+
     def setUp(self):
         self.ctx: MagicMock = None
 
@@ -66,7 +67,7 @@ class TestGitmodules(unittest.TestCase):
     def test_ok_restrictive(self) -> None:
         cfg: gitmodules.Config = gitmodules.Config(
             allow_non_googlesource_hosts=False,
-            allowed_googlesource_hosts=('host', ),
+            allowed_googlesource_hosts=('host',),
             require_relative_urls=True,
             allow_sso=False,
             allow_git_corp_google_com=False,
@@ -97,39 +98,46 @@ class TestGitmodules(unittest.TestCase):
 
     def test_non_google_ok(self) -> None:
         cfg: gitmodules.Config = gitmodules.Config(
-            allow_non_googlesource_hosts=True)
+            allow_non_googlesource_hosts=True
+        )
         self._run(cfg, dotgitmodules(url='https://github.com/foo/bar'))
         self.ctx.fail.assert_not_called()
 
     def test_non_google_fail(self) -> None:
         cfg: gitmodules.Config = gitmodules.Config(
-            allow_non_googlesource_hosts=False)
+            allow_non_googlesource_hosts=False
+        )
         self._run(cfg, dotgitmodules(url='https://github.com/foo/bar'))
         self.ctx.fail.assert_called()
 
     def test_bad_allowed_googlesource_hosts(self) -> None:
         with self.assertRaises(PresubmitFailure):
             cfg: gitmodules.Config = gitmodules.Config(
-                allowed_googlesource_hosts=('pigweed-review', ))
+                allowed_googlesource_hosts=('pigweed-review',)
+            )
             self._run(cfg, dotgitmodules())
 
     def test_bad_type_allowed_googlesource_hosts(self) -> None:
         with self.assertRaises(AssertionError):
             cfg: gitmodules.Config = gitmodules.Config(
-                allowed_googlesource_hosts=('pigweed'))
+                allowed_googlesource_hosts=('pigweed')
+            )
             self._run(cfg, dotgitmodules())
 
     def test_allowed_googlesource_hosts_ok(self) -> None:
-        cfg: gitmodules.Config = gitmodules.Config(allowed_googlesource_hosts=(
-            'pigweed',
-            'pigweed-internal',
-        ))
+        cfg: gitmodules.Config = gitmodules.Config(
+            allowed_googlesource_hosts=(
+                'pigweed',
+                'pigweed-internal',
+            )
+        )
         self._run(cfg, dotgitmodules(host='pigweed-internal'))
         self.ctx.fail.assert_not_called()
 
     def test_allowed_googlesource_hosts_fail(self) -> None:
         cfg: gitmodules.Config = gitmodules.Config(
-            allowed_googlesource_hosts=('pigweed-internal', ))
+            allowed_googlesource_hosts=('pigweed-internal',)
+        )
         self._run(cfg, dotgitmodules(host='pigweed'))
         self.ctx.fail.assert_called()
 
@@ -155,16 +163,16 @@ class TestGitmodules(unittest.TestCase):
 
     def test_allow_git_corp_google_com_ok(self) -> None:
         cfg: gitmodules.Config = gitmodules.Config(
-            allow_git_corp_google_com=True)
-        self._run(cfg,
-                  dotgitmodules(url='https://foo.git.corp.google.com/bar'))
+            allow_git_corp_google_com=True
+        )
+        self._run(cfg, dotgitmodules(url='https://foo.git.corp.google.com/bar'))
         self.ctx.fail.assert_not_called()
 
     def test_allow_git_corp_google_com_fail(self) -> None:
         cfg: gitmodules.Config = gitmodules.Config(
-            allow_git_corp_google_com=False)
-        self._run(cfg,
-                  dotgitmodules(url='https://foo.git.corp.google.com/bar'))
+            allow_git_corp_google_com=False
+        )
+        self._run(cfg, dotgitmodules(url='https://foo.git.corp.google.com/bar'))
         self.ctx.fail.assert_called()
 
     def test_require_branch_ok(self) -> None:

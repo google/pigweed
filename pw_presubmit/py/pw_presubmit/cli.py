@@ -41,9 +41,12 @@ def add_path_arguments(parser) -> None:
         'paths',
         metavar='pathspec',
         nargs='*',
-        help=('Paths or patterns to which to restrict the checks. These are '
-              'interpreted as Git pathspecs. If --base is provided, only '
-              'paths changed since that commit are checked.'))
+        help=(
+            'Paths or patterns to which to restrict the checks. These are '
+            'interpreted as Git pathspecs. If --base is provided, only '
+            'paths changed since that commit are checked.'
+        ),
+    )
 
     base = parser.add_mutually_exclusive_group()
     base.add_argument(
@@ -51,8 +54,11 @@ def add_path_arguments(parser) -> None:
         '--base',
         metavar='commit',
         default=git_repo.TRACKING_BRANCH_ALIAS,
-        help=('Git revision against which to diff for changed files. '
-              'Default is the tracking branch of the current branch.'))
+        help=(
+            'Git revision against which to diff for changed files. '
+            'Default is the tracking branch of the current branch.'
+        ),
+    )
 
     base.add_argument(
         '--all',
@@ -60,7 +66,8 @@ def add_path_arguments(parser) -> None:
         dest='base',
         action='store_const',
         const=None,
-        help='Run actions for all files, not just changed files.')
+        help='Run actions for all files, not just changed files.',
+    )
 
     parser.add_argument(
         '-e',
@@ -69,34 +76,43 @@ def add_path_arguments(parser) -> None:
         default=[],
         action='append',
         type=re.compile,
-        help=('Exclude paths matching any of these regular expressions, '
-              "which are interpreted relative to each Git repository's root."))
+        help=(
+            'Exclude paths matching any of these regular expressions, '
+            "which are interpreted relative to each Git repository's root."
+        ),
+    )
 
 
-def _add_programs_arguments(parser: argparse.ArgumentParser,
-                            programs: presubmit.Programs, default: str):
+def _add_programs_arguments(
+    parser: argparse.ArgumentParser, programs: presubmit.Programs, default: str
+):
     def presubmit_program(arg: str) -> presubmit.Program:
         if arg not in programs:
             all_program_names = ', '.join(sorted(programs.keys()))
             raise argparse.ArgumentTypeError(
                 f'{arg} is not the name of a presubmit program\n\n'
-                f'Valid Programs:\n{all_program_names}')
+                f'Valid Programs:\n{all_program_names}'
+            )
 
         return programs[arg]
 
     # This argument is used to copy the default program into the argparse
     # namespace argument. It's not intended to be set by users.
-    parser.add_argument('--default-program',
-                        default=[presubmit_program(default)],
-                        help=argparse.SUPPRESS)
+    parser.add_argument(
+        '--default-program',
+        default=[presubmit_program(default)],
+        help=argparse.SUPPRESS,
+    )
 
-    parser.add_argument('-p',
-                        '--program',
-                        choices=programs.values(),
-                        type=presubmit_program,
-                        action='append',
-                        default=[],
-                        help='Which presubmit program to run')
+    parser.add_argument(
+        '-p',
+        '--program',
+        choices=programs.values(),
+        type=presubmit_program,
+        action='append',
+        default=[],
+        help='Which presubmit program to run',
+    )
 
     parser.add_argument(
         '--list-steps-file',
@@ -131,7 +147,8 @@ def _add_programs_arguments(parser: argparse.ArgumentParser,
             all_step_names = ', '.join(sorted(all_steps.keys()))
             raise argparse.ArgumentTypeError(
                 f'{arg} is not the name of a presubmit step\n\n'
-                f'Valid Steps:\n{all_step_names}')
+                f'Valid Steps:\n{all_step_names}'
+            )
         return all_steps[arg]
 
     parser.add_argument(
@@ -160,9 +177,11 @@ def _add_programs_arguments(parser: argparse.ArgumentParser,
     )
 
 
-def add_arguments(parser: argparse.ArgumentParser,
-                  programs: Optional[presubmit.Programs] = None,
-                  default: str = '') -> None:
+def add_arguments(
+    parser: argparse.ArgumentParser,
+    programs: Optional[presubmit.Programs] = None,
+    default: str = '',
+) -> None:
     """Adds common presubmit check options to an argument parser."""
 
     add_path_arguments(parser)
@@ -170,12 +189,16 @@ def add_arguments(parser: argparse.ArgumentParser,
         '-k',
         '--keep-going',
         action='store_true',
-        help='Continue running presubmit steps after a failure.')
+        help='Continue running presubmit steps after a failure.',
+    )
     parser.add_argument(
         '--continue-after-build-error',
         action='store_true',
-        help=('Within presubmit steps, continue running build steps after a '
-              'failure.'))
+        help=(
+            'Within presubmit steps, continue running build steps after a '
+            'failure.'
+        ),
+    )
     parser.add_argument(
         '--output-directory',
         type=Path,
@@ -255,7 +278,8 @@ def run(
 
     output_directory.mkdir(parents=True, exist_ok=True)
     output_directory.joinpath('README.txt').write_text(
-        _OUTPUT_PATH_README.format(repo=root))
+        _OUTPUT_PATH_README.format(repo=root)
+    )
 
     if not package_root:
         package_root = Path(os.environ['PW_PACKAGE_ROOT'])
@@ -288,13 +312,15 @@ def run(
         steps.extend(step)
         final_program = presubmit.Program('', steps)
 
-    if presubmit.run(final_program,
-                     root,
-                     repositories,
-                     only_list_steps=only_list_steps,
-                     output_directory=output_directory,
-                     package_root=package_root,
-                     **other_args):
+    if presubmit.run(
+        final_program,
+        root,
+        repositories,
+        only_list_steps=only_list_steps,
+        output_directory=output_directory,
+        package_root=package_root,
+        **other_args,
+    ):
         return 0
 
     return 1
