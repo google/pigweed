@@ -301,7 +301,7 @@ pw_proto_library(pw_rpc.test_protos
 
 # Set pw_rpc_CONFIG to this to disable the global mutex.
 pw_add_library(pw_rpc.disable_global_mutex_config INTERFACE
-  PUBLIC_COMPILE_OPTIONS
+  PUBLIC_DEFINES
     PW_RPC_USE_GLOBAL_MUTEX=0
 )
 
