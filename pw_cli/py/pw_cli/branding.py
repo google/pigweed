@@ -41,14 +41,18 @@ def banner() -> str:
 
     # Take the banner from the file PW_BRANDING_BANNER; or use the default.
     banner_filename = parsed_env.PW_BRANDING_BANNER
-    _memoized_banner = (Path(banner_filename).read_text()
-                        if banner_filename else _PIGWEED_BANNER)
+    _memoized_banner = (
+        Path(banner_filename).read_text()
+        if banner_filename
+        else _PIGWEED_BANNER
+    )
 
     # Color the banner if requested.
     banner_color = parsed_env.PW_BRANDING_BANNER_COLOR
     if banner_color != '':
         set_color = operator.attrgetter(banner_color)(pw_cli.color.colors())
         _memoized_banner = '\n'.join(
-            set_color(line) for line in _memoized_banner.splitlines())
+            set_color(line) for line in _memoized_banner.splitlines()
+        )
 
     return _memoized_banner

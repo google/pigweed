@@ -42,10 +42,12 @@ def _create_files(directory: str, files: Dict[str, str]) -> Iterator[Path]:
 
 class TestPlugin(unittest.TestCase):
     """Tests for plugins.Plugins."""
+
     def test_target_name_attribute(self) -> None:
         self.assertEqual(
             plugins.Plugin('abc', _no_docstring).target_name,
-            f'{__name__}._no_docstring')
+            f'{__name__}._no_docstring',
+        )
 
     def test_target_name_no_name_attribute(self) -> None:
         has_no_name = 'no __name__'
@@ -53,42 +55,49 @@ class TestPlugin(unittest.TestCase):
 
         self.assertEqual(
             plugins.Plugin('abc', has_no_name).target_name,
-            '<unknown>.no __name__')
+            '<unknown>.no __name__',
+        )
 
 
 _TEST_PLUGINS = {
-    'TEST_PLUGINS': (f'test_plugin {__name__} _with_docstring\n'
-                     f'other_plugin {__name__} _no_docstring\n'),
-    'nested/in/dirs/TEST_PLUGINS':
-    f'test_plugin {__name__} _no_docstring\n',
+    'TEST_PLUGINS': (
+        f'test_plugin {__name__} _with_docstring\n'
+        f'other_plugin {__name__} _no_docstring\n'
+    ),
+    'nested/in/dirs/TEST_PLUGINS': f'test_plugin {__name__} _no_docstring\n',
 }
 
 
 class TestPluginRegistry(unittest.TestCase):
     """Tests for plugins.Registry."""
+
     def setUp(self) -> None:
         self._registry = plugins.Registry(
-            validator=plugins.callable_with_no_args)
+            validator=plugins.callable_with_no_args
+        )
 
     def test_register(self) -> None:
-        self.assertIsNotNone(self._registry.register('a_plugin',
-                                                     _no_docstring))
+        self.assertIsNotNone(self._registry.register('a_plugin', _no_docstring))
         self.assertIs(self._registry['a_plugin'].target, _no_docstring)
 
     def test_register_by_name(self) -> None:
         self.assertIsNotNone(
-            self._registry.register_by_name('plugin_one', __name__,
-                                            '_no_docstring'))
+            self._registry.register_by_name(
+                'plugin_one', __name__, '_no_docstring'
+            )
+        )
         self.assertIsNotNone(
-            self._registry.register('plugin_two', _no_docstring))
+            self._registry.register('plugin_two', _no_docstring)
+        )
 
         self.assertIs(self._registry['plugin_one'].target, _no_docstring)
         self.assertIs(self._registry['plugin_two'].target, _no_docstring)
 
     def test_register_by_name_undefined_module(self) -> None:
         with self.assertRaisesRegex(plugins.Error, 'No module named'):
-            self._registry.register_by_name('plugin_two', 'not a module',
-                                            'something')
+            self._registry.register_by_name(
+                'plugin_two', 'not a module', 'something'
+            )
 
     def test_register_by_name_undefined_function(self) -> None:
         with self.assertRaisesRegex(plugins.Error, 'does not exist'):
@@ -116,7 +125,8 @@ class TestPluginRegistry(unittest.TestCase):
     def test_register_cannot_overwrite(self) -> None:
         self.assertIsNotNone(self._registry.register('foo', lambda: None))
         self.assertIsNotNone(
-            self._registry.register_by_name('bar', __name__, '_no_docstring'))
+            self._registry.register_by_name('bar', __name__, '_no_docstring')
+        )
 
         with self.assertRaises(plugins.Error):
             self._registry.register('foo', lambda: None)
@@ -141,8 +151,9 @@ class TestPluginRegistry(unittest.TestCase):
     def test_register_directory_with_restriction(self) -> None:
         with tempfile.TemporaryDirectory() as tempdir:
             paths = list(_create_files(tempdir, _TEST_PLUGINS))
-            self._registry.register_directory(paths[0].parent, 'TEST_PLUGINS',
-                                              Path(tempdir, 'nested', 'in'))
+            self._registry.register_directory(
+                paths[0].parent, 'TEST_PLUGINS', Path(tempdir, 'nested', 'in')
+            )
 
         self.assertNotIn('other_plugin', self._registry)
 
@@ -161,10 +172,13 @@ class TestPluginRegistry(unittest.TestCase):
 
         self.assertIn(__doc__, '\n'.join(self._registry.detailed_help(['a'])))
 
-        self.assertNotIn(__doc__,
-                         '\n'.join(self._registry.detailed_help(['b'])))
-        self.assertIn(_with_docstring.__doc__,
-                      '\n'.join(self._registry.detailed_help(['b'])))
+        self.assertNotIn(
+            __doc__, '\n'.join(self._registry.detailed_help(['b']))
+        )
+        self.assertIn(
+            _with_docstring.__doc__,
+            '\n'.join(self._registry.detailed_help(['b'])),
+        )
 
     def test_empty_string_if_no_help(self) -> None:
         fake_module_name = f'{__name__}.fake_module_for_test{id(self)}'

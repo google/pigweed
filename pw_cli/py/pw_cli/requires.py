@@ -41,11 +41,13 @@ HELPER_PROJECT = 'requires-helper'
 HELPER_REPO = 'sso://{}/{}'.format(HELPER_GERRIT, HELPER_PROJECT)
 
 # Pass checks that look for "DO NOT ..." and block submission.
-_DNS = ' '.join((
-    'DO',
-    'NOT',
-    'SUBMIT',
-))
+_DNS = ' '.join(
+    (
+        'DO',
+        'NOT',
+        'SUBMIT',
+    )
+)
 
 # Subset of the output from pushing to Gerrit.
 DEFAULT_OUTPUT = f'''

@@ -31,4 +31,5 @@ def log_level(arg: str) -> int:
         return getattr(logging, arg.upper())
     except AttributeError:
         raise argparse.ArgumentTypeError(
-            f'"{arg.upper()}" is not a valid log level')
+            f'"{arg.upper()}" is not a valid log level'
+        )

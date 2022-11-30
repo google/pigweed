@@ -35,6 +35,7 @@ class _Color:
     # pylint: disable=too-few-public-methods
     # pylint: disable=too-many-instance-attributes
     """Helpers to surround text with ASCII color escapes"""
+
     def __init__(self):
         self.none = str
         self.red = _make_color(31, 1)
@@ -55,6 +56,7 @@ class _Color:
 
 class _NoColor:
     """Fake version of the _Color class that doesn't colorize."""
+
     def __getattr__(self, _):
         return str
 
@@ -66,8 +68,9 @@ def colors(enabled: Optional[bool] = None) -> Union[_Color, _NoColor]:
     """
     if enabled is None:
         env = pw_cli.env.pigweed_environment()
-        enabled = env.PW_USE_COLOR or (sys.stdout.isatty()
-                                       and sys.stderr.isatty())
+        enabled = env.PW_USE_COLOR or (
+            sys.stdout.isatty() and sys.stderr.isatty()
+        )
 
     if enabled and os.name == 'nt':
         # Enable ANSI color codes in Windows cmd.exe.

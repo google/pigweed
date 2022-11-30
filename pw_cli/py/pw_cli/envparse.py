@@ -29,7 +29,9 @@ from typing import (
 )
 
 
-class EnvNamespace(argparse.Namespace):  # pylint: disable=too-few-public-methods
+class EnvNamespace(
+    argparse.Namespace
+):  # pylint: disable=too-few-public-methods
     """Base class for parsed environment variable namespaces."""
 
 
@@ -51,11 +53,13 @@ class EnvironmentValueError(Exception):
     function through the __cause__ attribute for more detailed information on
     the error.
     """
+
     def __init__(self, variable: str, value: str):
         self.variable: str = variable
         self.value: str = value
         super().__init__(
-            f'Bad value for environment variable {variable}: {value}')
+            f'Bad value for environment variable {variable}: {value}'
+        )
 
 
 class EnvironmentParser:
@@ -80,9 +84,12 @@ class EnvironmentParser:
 
         configure_logging(env.PW_LOG_LEVEL, env.PW_LOG_FILE)
     """
-    def __init__(self,
-                 prefix: Optional[str] = None,
-                 error_on_unrecognized: Union[bool, None] = None) -> None:
+
+    def __init__(
+        self,
+        prefix: Optional[str] = None,
+        error_on_unrecognized: Union[bool, None] = None,
+    ) -> None:
         self._prefix: Optional[str] = prefix
         if error_on_unrecognized is None:
             varname = 'PW_ENVIRONMENT_NO_ERROR_ON_UNRECOGNIZED'
@@ -113,7 +120,8 @@ class EnvironmentParser:
         """
         if self._prefix is not None and not name.startswith(self._prefix):
             raise ValueError(
-                f'Variable {name} does not have prefix {self._prefix}')
+                f'Variable {name} does not have prefix {self._prefix}'
+            )
 
         self._variables[name] = VariableDescriptor(name, type, default)
 
@@ -122,8 +130,9 @@ class EnvironmentParser:
 
         self._allowed_suffixes.append(suffix)
 
-    def parse_env(self,
-                  env: Optional[Mapping[str, str]] = None) -> EnvNamespace:
+    def parse_env(
+        self, env: Optional[Mapping[str, str]] = None
+    ) -> EnvNamespace:
         """Parses known environment variables into a namespace.
 
         Args:
@@ -150,17 +159,21 @@ class EnvironmentParser:
 
         allowed_suffixes = tuple(self._allowed_suffixes)
         for var in env:
-            if (not hasattr(namespace, var)
-                    and (self._prefix is None or var.startswith(self._prefix))
-                    and var.endswith(allowed_suffixes)):
+            if (
+                not hasattr(namespace, var)
+                and (self._prefix is None or var.startswith(self._prefix))
+                and var.endswith(allowed_suffixes)
+            ):
                 setattr(namespace, var, env[var])
 
         if self._prefix is not None and self._error_on_unrecognized:
             for var in env:
-                if (var.startswith(self._prefix) and var not in self._variables
-                        and not var.endswith(allowed_suffixes)):
-                    raise ValueError(
-                        f'Unrecognized environment variable {var}')
+                if (
+                    var.startswith(self._prefix)
+                    and var not in self._variables
+                    and not var.endswith(allowed_suffixes)
+                ):
+                    raise ValueError(f'Unrecognized environment variable {var}')
 
         return namespace
 
@@ -169,21 +182,24 @@ class EnvironmentParser:
 
 
 # List of emoji which are considered to represent "True".
-_BOOLEAN_TRUE_EMOJI = set([
-    '✔️',
-    '👍',
-    '👍🏻',
-    '👍🏼',
-    '👍🏽',
-    '👍🏾',
-    '👍🏿',
-    '💯',
-])
+_BOOLEAN_TRUE_EMOJI = set(
+    [
+        '✔️',
+        '👍',
+        '👍🏻',
+        '👍🏼',
+        '👍🏽',
+        '👍🏾',
+        '👍🏿',
+        '💯',
+    ]
+)
 
 
 def strict_bool(value: str) -> bool:
-    return (value == '1' or value.lower() == 'true'
-            or value in _BOOLEAN_TRUE_EMOJI)
+    return (
+        value == '1' or value.lower() == 'true' or value in _BOOLEAN_TRUE_EMOJI
+    )
 
 
 # TODO(mohrr) Switch to Literal when no longer supporting Python 3.7.

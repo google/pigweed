@@ -37,6 +37,7 @@ class _LogLevel(NamedTuple):
 
 # Shorten all the log levels to 3 characters for column-aligned logs.
 # Color the logs using ANSI codes.
+# fmt: off
 _LOG_LEVELS = (
     _LogLevel(LOGLEVEL_FATAL,   'bold_red',     'FTL', '☠️ '),
     _LogLevel(logging.CRITICAL, 'bold_magenta', 'CRT', '‼️ '),
@@ -46,6 +47,7 @@ _LOG_LEVELS = (
     _LogLevel(LOGLEVEL_STDOUT,  'cyan',         'OUT', '💬'),
     _LogLevel(logging.DEBUG,    'blue',         'DBG', '👾'),
 )  # yapf: disable
+# fmt: on
 
 _LOG = logging.getLogger(__name__)
 _STDERR_HANDLER = logging.StreamHandler()
@@ -72,19 +74,25 @@ def main() -> None:
     _LOG.debug('Adding 1 to i')
 
 
-def _setup_handler(handler: logging.Handler, formatter: logging.Formatter,
-                   level: Union[str, int], logger: logging.Logger) -> None:
+def _setup_handler(
+    handler: logging.Handler,
+    formatter: logging.Formatter,
+    level: Union[str, int],
+    logger: logging.Logger,
+) -> None:
     handler.setLevel(level)
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
 
-def install(level: Union[str, int] = logging.INFO,
-            use_color: Optional[bool] = None,
-            hide_timestamp: bool = False,
-            log_file: Optional[Union[str, Path]] = None,
-            logger: Optional[logging.Logger] = None,
-            debug_log: Optional[Union[str, Path]] = None) -> None:
+def install(
+    level: Union[str, int] = logging.INFO,
+    use_color: Optional[bool] = None,
+    hide_timestamp: bool = False,
+    log_file: Optional[Union[str, Path]] = None,
+    logger: Optional[logging.Logger] = None,
+    debug_log: Optional[Union[str, Path]] = None,
+) -> None:
     """Configures the system logger for the default pw command log format.
 
     If you have Python loggers separate from the root logger you can use
@@ -131,8 +139,9 @@ def install(level: Union[str, int] = logging.INFO,
         # colored text.
         timestamp_fmt = colors.black_on_white('%(asctime)s') + ' '
 
-    formatter = logging.Formatter(timestamp_fmt + '%(levelname)s %(message)s',
-                                  '%Y%m%d %H:%M:%S')
+    formatter = logging.Formatter(
+        timestamp_fmt + '%(levelname)s %(message)s', '%Y%m%d %H:%M:%S'
+    )
 
     # Set the log level on the root logger to NOTSET, so that all logs
     # propagated from child loggers are handled.
@@ -144,16 +153,24 @@ def install(level: Union[str, int] = logging.INFO,
     if log_file:
         # Set utf-8 encoding for the log file. Encoding errors may come up on
         # Windows if the default system encoding is set to cp1250.
-        _setup_handler(logging.FileHandler(log_file, encoding='utf-8'),
-                       formatter, level, logger)
+        _setup_handler(
+            logging.FileHandler(log_file, encoding='utf-8'),
+            formatter,
+            level,
+            logger,
+        )
         # Since we're using a file, filter logs out of the stderr handler.
         _STDERR_HANDLER.setLevel(logging.CRITICAL + 1)
 
     if debug_log:
         # Set utf-8 encoding for the log file. Encoding errors may come up on
         # Windows if the default system encoding is set to cp1250.
-        _setup_handler(logging.FileHandler(debug_log, encoding='utf-8'),
-                       formatter, logging.DEBUG, logger)
+        _setup_handler(
+            logging.FileHandler(debug_log, encoding='utf-8'),
+            formatter,
+            logging.DEBUG,
+            logger,
+        )
 
     if env.PW_EMOJI:
         name_attr = 'emoji'

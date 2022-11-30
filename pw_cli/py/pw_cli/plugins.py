@@ -46,6 +46,7 @@ _BUILT_IN = '<built-in>'
 
 class Error(Exception):
     """Indicates that a plugin is invalid or cannot be registered."""
+
     def __str__(self):
         """Displays the error as a string, including the __cause__ if present.
 
@@ -54,8 +55,10 @@ class Error(Exception):
         if self.__cause__ is None:
             return super().__str__()
 
-        return (f'{super().__str__()} '
-                f'({type(self.__cause__).__name__}: {self.__cause__})')
+        return (
+            f'{super().__str__()} '
+            f'({type(self.__cause__).__name__}: {self.__cause__})'
+        )
 
 
 def _get_module(member: object) -> types.ModuleType:
@@ -69,9 +72,15 @@ class Plugin:
 
     Each plugin resolves to a Python object, typically a function.
     """
+
     @classmethod
-    def from_name(cls, name: str, module_name: str, member_name: str,
-                  source: Optional[Path]) -> 'Plugin':
+    def from_name(
+        cls,
+        name: str,
+        module_name: str,
+        member_name: str,
+        source: Optional[Path],
+    ) -> 'Plugin':
         """Creates a plugin by module and attribute name.
 
         Args:
@@ -86,24 +95,26 @@ class Plugin:
         try:
             module = importlib.import_module(module_name)
         except Exception as err:
-            _LOG.debug('Failed to import module "%s" for "%s" plugin',
-                       module_name,
-                       name,
-                       exc_info=True)
+            _LOG.debug(
+                'Failed to import module "%s" for "%s" plugin',
+                module_name,
+                name,
+                exc_info=True,
+            )
             raise Error(f'Failed to import module "{module_name}"') from err
 
         try:
             member = getattr(module, member_name)
         except AttributeError as err:
             raise Error(
-                f'"{module_name}.{member_name}" does not exist') from err
+                f'"{module_name}.{member_name}" does not exist'
+            ) from err
 
         return cls(name, member, source)
 
-    def __init__(self,
-                 name: str,
-                 target: Any,
-                 source: Optional[Path] = None) -> None:
+    def __init__(
+        self, name: str, target: Any, source: Optional[Path] = None
+    ) -> None:
         """Creates a plugin for the provided target."""
         self.name = name
         self._module = _get_module(target)
@@ -112,8 +123,10 @@ class Plugin:
 
     @property
     def target_name(self) -> str:
-        return (f'{self._module.__name__}.'
-                f'{getattr(self.target, "__name__", self.target)}')
+        return (
+            f'{self._module.__name__}.'
+            f'{getattr(self.target, "__name__", self.target)}'
+        )
 
     @property
     def source_name(self) -> str:
@@ -144,9 +157,11 @@ class Plugin:
         yield f'source  {self.source_name}'
 
     def __repr__(self) -> str:
-        return (f'{self.__class__.__name__}(name={self.name!r}, '
-                f'target={self.target_name}'
-                f'{f", source={self.source_name!r}" if self.source else ""})')
+        return (
+            f'{self.__class__.__name__}(name={self.name!r}, '
+            f'target={self.target_name}'
+            f'{f", source={self.source_name!r}" if self.source else ""})'
+        )
 
 
 def callable_with_no_args(plugin: Plugin) -> None:
@@ -157,20 +172,26 @@ def callable_with_no_args(plugin: Plugin) -> None:
     try:
         params = inspect.signature(plugin.target).parameters
     except TypeError:
-        raise Error('Plugin functions must be callable, but '
-                    f'{plugin.target_name} is a '
-                    f'{type(plugin.target).__name__}')
+        raise Error(
+            'Plugin functions must be callable, but '
+            f'{plugin.target_name} is a '
+            f'{type(plugin.target).__name__}'
+        )
 
     positional = sum(p.default == p.empty for p in params.values())
     if positional:
-        raise Error(f'Plugin functions cannot have any required positional '
-                    f'arguments, but {plugin.target_name} has {positional}')
+        raise Error(
+            f'Plugin functions cannot have any required positional '
+            f'arguments, but {plugin.target_name} has {positional}'
+        )
 
 
 class Registry(collections.abc.Mapping):
     """Manages a set of plugins from Python modules or plugins files."""
-    def __init__(self,
-                 validator: Callable[[Plugin], Any] = lambda _: None) -> None:
+
+    def __init__(
+        self, validator: Callable[[Plugin], Any] = lambda _: None
+    ) -> None:
         """Creates a new, empty plugins registry.
 
         Args:
@@ -180,8 +201,7 @@ class Registry(collections.abc.Mapping):
 
         self._registry: Dict[str, Plugin] = {}
         self._sources: Set[Path] = set()  # Paths to plugins files
-        self._errors: Dict[str,
-                           List[Exception]] = collections.defaultdict(list)
+        self._errors: Dict[str, List[Exception]] = collections.defaultdict(list)
         self._validate_plugin = validator
 
     def __getitem__(self, name: str) -> Plugin:
@@ -190,8 +210,10 @@ class Registry(collections.abc.Mapping):
             return self._registry[name]
 
         if name in self._errors:
-            raise KeyError(f'Registration for "{name}" failed: ' +
-                           ', '.join(str(e) for e in self._errors[name]))
+            raise KeyError(
+                f'Registration for "{name}" failed: '
+                + ', '.join(str(e) for e in self._errors[name])
+            )
 
         raise KeyError(f'The plugin "{name}" has not been registered')
 
@@ -225,7 +247,8 @@ class Registry(collections.abc.Mapping):
             raise Error(
                 f'Attempted to register built-in plugin "{plugin.name}", but '
                 'a plugin with that name was previously registered '
-                f'({self[plugin.name]})!')
+                f'({self[plugin.name]})!'
+            )
 
         # Run the user-provided validation function, which raises exceptions
         # if there are errors.
@@ -237,20 +260,30 @@ class Registry(collections.abc.Mapping):
             return True
 
         if existing.source is None:
-            _LOG.debug('%s: Overriding built-in plugin "%s" with %s',
-                       plugin.source_name, plugin.name, plugin.target_name)
+            _LOG.debug(
+                '%s: Overriding built-in plugin "%s" with %s',
+                plugin.source_name,
+                plugin.name,
+                plugin.target_name,
+            )
             return True
 
         if plugin.source != existing.source:
             _LOG.debug(
                 '%s: The plugin "%s" was previously registered in %s; '
-                'ignoring registration as %s', plugin.source_name, plugin.name,
-                self._registry[plugin.name].source, plugin.target_name)
+                'ignoring registration as %s',
+                plugin.source_name,
+                plugin.name,
+                self._registry[plugin.name].source,
+                plugin.target_name,
+            )
         elif plugin.source not in self._sources:
             _LOG.warning(
                 '%s: "%s" is registered file multiple times in this file! '
-                'Only the first registration takes effect', plugin.source_name,
-                plugin.name)
+                'Only the first registration takes effect',
+                plugin.source_name,
+                plugin.name,
+            )
 
         return False
 
@@ -258,14 +291,17 @@ class Registry(collections.abc.Mapping):
         """Registers an object as a plugin."""
         return self._register(Plugin(name, target, None))
 
-    def register_by_name(self,
-                         name: str,
-                         module_name: str,
-                         member_name: str,
-                         source: Optional[Path] = None) -> Optional[Plugin]:
+    def register_by_name(
+        self,
+        name: str,
+        module_name: str,
+        member_name: str,
+        source: Optional[Path] = None,
+    ) -> Optional[Plugin]:
         """Registers an object from its module and name as a plugin."""
         return self._register(
-            Plugin.from_name(name, module_name, member_name, source))
+            Plugin.from_name(name, module_name, member_name, source)
+        )
 
     def _register(self, plugin: Plugin) -> Optional[Plugin]:
         # Prohibit functions not from a plugins file from overriding others.
@@ -273,8 +309,12 @@ class Registry(collections.abc.Mapping):
             return None
 
         self._registry[plugin.name] = plugin
-        _LOG.debug('%s: Registered plugin "%s" for %s', plugin.source_name,
-                   plugin.name, plugin.target_name)
+        _LOG.debug(
+            '%s: Registered plugin "%s" for %s',
+            plugin.source_name,
+            plugin.name,
+            plugin.target_name,
+        )
 
         return plugin
 
@@ -296,22 +336,33 @@ class Registry(collections.abc.Mapping):
                     _LOG.error(
                         '%s:%d: Failed to parse plugin entry "%s": '
                         'Expected 3 items (name, module, function), '
-                        'got %d', path, lineno, line, len(line.split()))
+                        'got %d',
+                        path,
+                        lineno,
+                        line,
+                        len(line.split()),
+                    )
                     continue
 
                 try:
                     self.register_by_name(name, module, function, path)
                 except Error as err:
                     self._errors[name].append(err)
-                    _LOG.error('%s: Failed to register plugin "%s": %s', path,
-                               name, err)
+                    _LOG.error(
+                        '%s: Failed to register plugin "%s": %s',
+                        path,
+                        name,
+                        err,
+                    )
 
         self._sources.add(path)
 
-    def register_directory(self,
-                           directory: Path,
-                           file_name: str,
-                           restrict_to: Optional[Path] = None) -> None:
+    def register_directory(
+        self,
+        directory: Path,
+        file_name: str,
+        restrict_to: Optional[Path] = None,
+    ) -> None:
         """Finds and registers plugins from plugins files in a directory.
 
         Args:
@@ -326,7 +377,9 @@ class Registry(collections.abc.Mapping):
             if restrict_to is not None and restrict_to not in path.parents:
                 _LOG.debug(
                     "Skipping plugins file %s because it's outside of %s",
-                    path, restrict_to)
+                    path,
+                    restrict_to,
+                )
                 continue
 
             _LOG.debug('Found plugins file %s', path)
@@ -334,11 +387,15 @@ class Registry(collections.abc.Mapping):
 
     def short_help(self) -> str:
         """Returns a help string for the registered plugins."""
-        width = max(len(name)
-                    for name in self._registry) + 1 if self._registry else 1
+        width = (
+            max(len(name) for name in self._registry) + 1
+            if self._registry
+            else 1
+        )
         help_items = '\n'.join(
             f'  {name:{width}} {plugin.help()}'
-            for name, plugin in sorted(self._registry.items()))
+            for name, plugin in sorted(self._registry.items())
+        )
         return f'supported plugins:\n{help_items}'
 
     def detailed_help(self, plugins: Iterable[str] = ()) -> Iterator[str]:
@@ -348,9 +405,9 @@ class Registry(collections.abc.Mapping):
 
         yield '\ndetailed plugin information:'
 
-        wrapper = TextWrapper(width=80,
-                              initial_indent='   ',
-                              subsequent_indent=' ' * 11)
+        wrapper = TextWrapper(
+            width=80, initial_indent='   ', subsequent_indent=' ' * 11
+        )
 
         plugins = sorted(plugins)
         for plugin in plugins:
@@ -367,19 +424,19 @@ class Registry(collections.abc.Mapping):
         yield 'Plugins files:'
 
         if self._sources:
-            yield from (f'  [{i}] {file}'
-                        for i, file in enumerate(self._sources, 1))
+            yield from (
+                f'  [{i}] {file}' for i, file in enumerate(self._sources, 1)
+            )
         else:
             yield '  (none found)'
 
-    def plugin(self,
-               function: Optional[Callable] = None,
-               *,
-               name: Optional[str] = None) -> Callable[[Callable], Callable]:
+    def plugin(
+        self, function: Optional[Callable] = None, *, name: Optional[str] = None
+    ) -> Callable[[Callable], Callable]:
         """Decorator that registers a function with this plugin registry."""
+
         def decorator(function: Callable) -> Callable:
-            self.register(function.__name__ if name is None else name,
-                          function)
+            self.register(function.__name__ if name is None else name, function)
             return function
 
         if function is None:
@@ -414,8 +471,9 @@ def find_all_in_parents(name: str, path: Path) -> Iterator[Path]:
         path = result.parent.parent
 
 
-def import_submodules(module: types.ModuleType,
-                      recursive: bool = False) -> None:
+def import_submodules(
+    module: types.ModuleType, recursive: bool = False
+) -> None:
     """Imports the submodules of a package.
 
     This can be used to collect plugins registered with a decorator from a

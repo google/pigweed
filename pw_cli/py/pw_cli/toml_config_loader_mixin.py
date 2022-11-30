@@ -43,6 +43,8 @@ class TomlConfigLoaderMixin(YamlConfigLoaderMixin):
                )
 
     """
+
     def _load_config_from_string(  # pylint: disable=no-self-use
-            self, file_contents: str) -> List[Dict[Any, Any]]:
+        self, file_contents: str
+    ) -> List[Dict[Any, Any]]:
         return [toml.loads(file_contents)]

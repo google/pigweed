@@ -32,12 +32,12 @@ def _register_builtin_plugins(registry: plugins.Registry) -> None:
     registry.register_by_name('bloat', 'pw_bloat.__main__', 'main')
     registry.register_by_name('doctor', 'pw_doctor.doctor', 'main')
     registry.register_by_name('format', 'pw_presubmit.format_code', 'main')
-    registry.register_by_name('keep-sorted', 'pw_presubmit.keep_sorted',
-                              'main')
+    registry.register_by_name('keep-sorted', 'pw_presubmit.keep_sorted', 'main')
     registry.register_by_name('logdemo', 'pw_cli.log', 'main')
     registry.register_by_name('module', 'pw_module.__main__', 'main')
-    registry.register_by_name('python-packages',
-                              'pw_env_setup.python_packages', 'main')
+    registry.register_by_name(
+        'python-packages', 'pw_env_setup.python_packages', 'main'
+    )
     registry.register_by_name('test', 'pw_unit_test.test_runner', 'main')
     registry.register_by_name('watch', 'pw_watch.watch', 'main')
 
@@ -47,10 +47,12 @@ def _register_builtin_plugins(registry: plugins.Registry) -> None:
 def _help_command():
     """Display detailed information about pw commands."""
     parser = argparse.ArgumentParser(description=_help_command.__doc__)
-    parser.add_argument('plugins',
-                        metavar='plugin',
-                        nargs='*',
-                        help='command for which to display detailed info')
+    parser.add_argument(
+        'plugins',
+        metavar='plugin',
+        nargs='*',
+        help='command for which to display detailed info',
+    )
 
     print(arguments.format_help(_plugin_registry), file=sys.stderr)
 
@@ -61,7 +63,8 @@ def _help_command():
 def register(directory: Path) -> None:
     _register_builtin_plugins(_plugin_registry)
     _plugin_registry.register_directory(
-        directory, REGISTRY_FILE, Path(os.environ.get('PW_PROJECT_ROOT', '')))
+        directory, REGISTRY_FILE, Path(os.environ.get('PW_PROJECT_ROOT', ''))
+    )
 
 
 def errors() -> dict:

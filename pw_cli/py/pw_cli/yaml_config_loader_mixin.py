@@ -47,6 +47,7 @@ class YamlConfigLoaderMixin:
                )
 
     """
+
     def config_init(
         self,
         config_section_title: str,
@@ -101,17 +102,20 @@ class YamlConfigLoaderMixin:
 
         if project_file and isinstance(project_file, Path):
             self.project_file = Path(
-                os.path.expandvars(str(project_file.expanduser())))
+                os.path.expandvars(str(project_file.expanduser()))
+            )
             self.load_config_file(self.project_file)
 
         if project_user_file and isinstance(project_user_file, Path):
             self.project_user_file = Path(
-                os.path.expandvars(str(project_user_file.expanduser())))
+                os.path.expandvars(str(project_user_file.expanduser()))
+            )
             self.load_config_file(self.project_user_file)
 
         if user_file and isinstance(user_file, Path):
             self.user_file = Path(
-                os.path.expandvars(str(user_file.expanduser())))
+                os.path.expandvars(str(user_file.expanduser()))
+            )
             self.load_config_file(self.user_file)
 
         # Check for a config file specified by an environment variable.
@@ -122,7 +126,8 @@ class YamlConfigLoaderMixin:
             env_file_path = Path(environment_config)
             if not env_file_path.is_file():
                 raise FileNotFoundError(
-                    f'Cannot load config file: {env_file_path}')
+                    f'Cannot load config file: {env_file_path}'
+                )
             self.reset_config()
             self.load_config_file(env_file_path)
 
@@ -136,7 +141,8 @@ class YamlConfigLoaderMixin:
         self._update_config(self.default_config)
 
     def _load_config_from_string(  # pylint: disable=no-self-use
-            self, file_contents: str) -> List[Dict[Any, Any]]:
+        self, file_contents: str
+    ) -> List[Dict[Any, Any]]:
         return list(yaml.safe_load_all(file_contents))
 
     def load_config_file(self, file_path: Path) -> None:
@@ -155,4 +161,6 @@ class YamlConfigLoaderMixin:
                 raise MissingConfigTitle(
                     '\n\nThe config file "{}" is missing the expected '
                     '"config_title: {}" setting.'.format(
-                        str(file_path), self._config_section_title))
+                        str(file_path), self._config_section_title
+                    )
+                )

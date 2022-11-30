@@ -31,6 +31,7 @@ def error(value: str):
 
 class TestEnvironmentParser(unittest.TestCase):
     """Tests for envparse.EnvironmentParser."""
+
     def setUp(self):
         self.raw_env = {
             'PATH': '/bin:/usr/bin:/usr/local/bin',
@@ -91,6 +92,7 @@ class TestEnvironmentParser(unittest.TestCase):
 
 class TestEnvironmentParserWithPrefix(unittest.TestCase):
     """Tests for envparse.EnvironmentParser using a prefix."""
+
     def setUp(self):
         self.raw_env = {
             'PW_FOO': '001',
@@ -100,8 +102,9 @@ class TestEnvironmentParserWithPrefix(unittest.TestCase):
         }
 
     def test_parse_unrecognized_variable(self):
-        parser = envparse.EnvironmentParser(prefix='PW_',
-                                            error_on_unrecognized=True)
+        parser = envparse.EnvironmentParser(
+            prefix='PW_', error_on_unrecognized=True
+        )
         parser.add_var('PW_FOO')
         parser.add_var('PW_BAR')
 
@@ -109,24 +112,27 @@ class TestEnvironmentParserWithPrefix(unittest.TestCase):
             parser.parse_env(env=self.raw_env)
 
     def test_parse_unrecognized_but_allowed_suffix(self):
-        parser = envparse.EnvironmentParser(prefix='PW_',
-                                            error_on_unrecognized=True)
+        parser = envparse.EnvironmentParser(
+            prefix='PW_', error_on_unrecognized=True
+        )
         parser.add_allowed_suffix('_ALLOWED_SUFFIX')
 
         env = parser.parse_env(env={'PW_FOO_ALLOWED_SUFFIX': '001'})
         self.assertEqual(env.PW_FOO_ALLOWED_SUFFIX, '001')
 
     def test_parse_allowed_suffix_but_not_suffix(self):
-        parser = envparse.EnvironmentParser(prefix='PW_',
-                                            error_on_unrecognized=True)
+        parser = envparse.EnvironmentParser(
+            prefix='PW_', error_on_unrecognized=True
+        )
         parser.add_allowed_suffix('_ALLOWED_SUFFIX')
 
         with self.assertRaises(ValueError):
             parser.parse_env(env={'PW_FOO_ALLOWED_SUFFIX_FOO': '001'})
 
     def test_parse_ignore_unrecognized(self):
-        parser = envparse.EnvironmentParser(prefix='PW_',
-                                            error_on_unrecognized=False)
+        parser = envparse.EnvironmentParser(
+            prefix='PW_', error_on_unrecognized=False
+        )
         parser.add_var('PW_FOO')
         parser.add_var('PW_BAR')
 
@@ -135,27 +141,39 @@ class TestEnvironmentParserWithPrefix(unittest.TestCase):
         self.assertEqual(env.PW_BAR, self.raw_env['PW_BAR'])
 
     def test_add_var_without_prefix(self):
-        parser = envparse.EnvironmentParser(prefix='PW_',
-                                            error_on_unrecognized=True)
+        parser = envparse.EnvironmentParser(
+            prefix='PW_', error_on_unrecognized=True
+        )
         with self.assertRaises(ValueError):
             parser.add_var('FOO')
 
 
 class TestStrictBool(unittest.TestCase):
     """Tests for envparse.strict_bool."""
+
     def setUp(self):
         self.good_bools = ['true', '1', 'TRUE', 'tRuE']
         self.bad_bools = [
-            '', 'false', '0', 'foo', '2', '999', 'ok', 'yes', 'no'
+            '',
+            'false',
+            '0',
+            'foo',
+            '2',
+            '999',
+            'ok',
+            'yes',
+            'no',
         ]
 
     def test_good_bools(self):
         self.assertTrue(
-            all(envparse.strict_bool(val) for val in self.good_bools))
+            all(envparse.strict_bool(val) for val in self.good_bools)
+        )
 
     def test_bad_bools(self):
         self.assertFalse(
-            any(envparse.strict_bool(val) for val in self.bad_bools))
+            any(envparse.strict_bool(val) for val in self.bad_bools)
+        )
 
 
 if __name__ == '__main__':

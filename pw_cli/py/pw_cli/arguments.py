@@ -46,6 +46,7 @@ def format_help(registry: plugins.Registry) -> str:
 
 class _ArgumentParserWithBanner(argparse.ArgumentParser):
     """Parser that the Pigweed banner when there are parsing errors."""
+
     def error(self, message: str) -> NoReturn:
         print_banner()
         self.print_usage(sys.stderr)
@@ -58,41 +59,53 @@ def _parser() -> argparse.ArgumentParser:
         prog='pw',
         add_help=False,
         description=_HELP_HEADER,
-        formatter_class=argparse.RawDescriptionHelpFormatter)
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
 
     # Do not use the built-in help argument so that displaying the help info can
     # be deferred until the pw plugins have been registered.
-    argparser.add_argument('-h',
-                           '--help',
-                           action='store_true',
-                           help='Display this help message and exit')
+    argparser.add_argument(
+        '-h',
+        '--help',
+        action='store_true',
+        help='Display this help message and exit',
+    )
     argparser.add_argument(
         '-C',
         '--directory',
         type=argument_types.directory,
         default=Path.cwd(),
-        help='Change to this directory before doing anything')
+        help='Change to this directory before doing anything',
+    )
     argparser.add_argument(
         '-l',
         '--loglevel',
         type=argument_types.log_level,
         default=logging.INFO,
-        help='Set the log level (debug, info, warning, error, critical)')
+        help='Set the log level (debug, info, warning, error, critical)',
+    )
     argparser.add_argument(
         '--debug-log',
-        help=('Additional log with level set to debug, does not affect '
-              'terminal output'))
-    argparser.add_argument('--no-banner',
-                           action='store_true',
-                           help='Do not print the Pigweed banner')
+        help=(
+            'Additional log with level set to debug, does not affect '
+            'terminal output'
+        ),
+    )
+    argparser.add_argument(
+        '--no-banner',
+        action='store_true',
+        help='Do not print the Pigweed banner',
+    )
     argparser.add_argument(
         'command',
         nargs='?',
-        help='Which command to run; see supported commands below')
+        help='Which command to run; see supported commands below',
+    )
     argparser.add_argument(
         'plugin_args',
         metavar='...',
         nargs=argparse.REMAINDER,
-        help='Remaining arguments are forwarded to the command')
+        help='Remaining arguments are forwarded to the command',
+    )
 
     return argparser
