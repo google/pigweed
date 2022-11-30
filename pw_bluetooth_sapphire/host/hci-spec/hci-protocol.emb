@@ -295,6 +295,16 @@ struct DisconnectCommand:
   # Reason for the disconnect.
   $next [+1] StatusCode reason
 
+# ========================================
+# Create Connection Cancel (v1.1) (BR/EDR)
+
+struct CreateConnectionCancelCommand:
+  let hdr_size = EmbossCommandHeader.$size_in_bytes
+  0     [+hdr_size] EmbossCommandHeader header
+
+  # BD_ADDR of the Create Connection Command request
+  $next [+6] UInt bd_addr
+
 # =========================================
 # Accept Connection Request (v1.1) (BR/EDR)
 

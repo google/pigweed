@@ -1310,10 +1310,11 @@ void BrEdrConnectionManager::OnRequestTimeout() {
 }
 
 void BrEdrConnectionManager::SendCreateConnectionCancelCommand(DeviceAddress addr) {
-  auto cancel = hci::CommandPacket::New(hci_spec::kCreateConnectionCancel,
-                                        sizeof(hci_spec::CreateConnectionCancelCommandParams));
-  auto params = cancel->mutable_payload<hci_spec::CreateConnectionCancelCommandParams>();
-  params->bd_addr = addr.value();
+  hci::EmbossCommandPacket cancel =
+      hci::EmbossCommandPacket::New<hci_spec::CreateConnectionCancelCommandView>(
+          hci_spec::kCreateConnectionCancel);
+  auto params = cancel.view<hci_spec::CreateConnectionCancelCommandWriter>();
+  params.bd_addr().Write(addr.value().as_int());
   hci_->command_channel()->SendCommand(std::move(cancel), [](auto, const hci::EventPacket& event) {
     hci_is_error(event, WARN, "hci-bredr", "failed to cancel connection request");
   });
