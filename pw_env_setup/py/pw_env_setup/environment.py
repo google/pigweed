@@ -70,13 +70,13 @@ class _Action(object):  # pylint: disable=useless-object-inheritance
 
     def accept(self, visitor):
         del visitor
-        raise AcceptNotOverridden('accept() not overridden for {}'.format(
-            self.__class__.__name__))
+        raise AcceptNotOverridden(
+            'accept() not overridden for {}'.format(self.__class__.__name__)
+        )
 
-    def write_deactivate(self,
-                         outs,
-                         windows=(os.name == 'nt'),
-                         replacements=()):
+    def write_deactivate(
+        self, outs, windows=(os.name == 'nt'), replacements=()
+    ):
         pass
 
 
@@ -95,26 +95,34 @@ class _VariableAction(_Action):
             # In python2, unicode is a distinct type.
             valid_types = (str, unicode)
         except NameError:
-            valid_types = (str, )
+            valid_types = (str,)
 
         if not isinstance(self.name, valid_types):
-            raise BadNameType('variable name {!r} not of type str'.format(
-                self.name))
+            raise BadNameType(
+                'variable name {!r} not of type str'.format(self.name)
+            )
         if not isinstance(self.value, valid_types):
-            raise BadValueType('{!r} value {!r} not of type str'.format(
-                self.name, self.value))
+            raise BadValueType(
+                '{!r} value {!r} not of type str'.format(self.name, self.value)
+            )
 
         # Empty strings as environment variable values have different behavior
         # on different operating systems. Just don't allow them.
         if not self.allow_empty_values and self.value == '':
-            raise EmptyValue('{!r} value {!r} is the empty string'.format(
-                self.name, self.value))
+            raise EmptyValue(
+                '{!r} value {!r} is the empty string'.format(
+                    self.name, self.value
+                )
+            )
 
         # Many tools have issues with newlines in environment variable values.
         # Just don't allow them.
         if '\n' in self.value:
-            raise NewlineInValue('{!r} value {!r} contains a newline'.format(
-                self.name, self.value))
+            raise NewlineInValue(
+                '{!r} value {!r} contains a newline'.format(
+                    self.name, self.value
+                )
+            )
 
         if not re.match(r'^[A-Z_][A-Z0-9_]*$', self.name, re.IGNORECASE):
             raise BadVariableName('bad variable name {!r}'.format(self.name))
@@ -126,12 +134,14 @@ class _VariableAction(_Action):
             env.pop(self.name, None)
 
     def __repr__(self):
-        return '{}({}, {})'.format(self.__class__.__name__, self.name,
-                                   self.value)
+        return '{}({}, {})'.format(
+            self.__class__.__name__, self.name, self.value
+        )
 
 
 class Set(_VariableAction):
     """Set a variable."""
+
     def __init__(self, *args, **kwargs):
         deactivate = kwargs.pop('deactivate', True)
         super(Set, self).__init__(*args, **kwargs)
@@ -143,6 +153,7 @@ class Set(_VariableAction):
 
 class Clear(_VariableAction):
     """Remove a variable from the environment."""
+
     def __init__(self, *args, **kwargs):
         kwargs['value'] = ''
         kwargs['allow_empty_values'] = True
@@ -154,6 +165,7 @@ class Clear(_VariableAction):
 
 class Remove(_VariableAction):
     """Remove a value from a PATH-like variable."""
+
     def accept(self, visitor):
         visitor.visit_remove(self)
 
@@ -169,6 +181,7 @@ def _append_prepend_check(action):
 
 class Prepend(_VariableAction):
     """Prepend a value to a PATH-like variable."""
+
     def __init__(self, name, value, join, *args, **kwargs):
         super(Prepend, self).__init__(name, value, *args, **kwargs)
         self._join = join
@@ -183,6 +196,7 @@ class Prepend(_VariableAction):
 
 class Append(_VariableAction):
     """Append a value to a PATH-like variable. (Uncommon, see Prepend.)"""
+
     def __init__(self, name, value, join, *args, **kwargs):
         super(Append, self).__init__(name, value, *args, **kwargs)
         self._join = join
@@ -201,6 +215,7 @@ class BadEchoValue(ValueError):
 
 class Echo(_Action):
     """Echo a value to the terminal."""
+
     def __init__(self, value, newline, *args, **kwargs):
         # These values act funny on Windows.
         if value.lower() in ('off', 'on'):
@@ -218,6 +233,7 @@ class Echo(_Action):
 
 class Comment(_Action):
     """Add a comment to the init script."""
+
     def __init__(self, value, *args, **kwargs):
         super(Comment, self).__init__(*args, **kwargs)
         self.value = value
@@ -231,6 +247,7 @@ class Comment(_Action):
 
 class Command(_Action):
     """Run a command."""
+
     def __init__(self, command, *args, **kwargs):
         exit_on_error = kwargs.pop('exit_on_error', True)
         super(Command, self).__init__(*args, **kwargs)
@@ -248,10 +265,8 @@ class Command(_Action):
 class Doctor(Command):
     def __init__(self, *args, **kwargs):
         log_level = 'warn' if 'PW_ENVSETUP_QUIET' in os.environ else 'info'
-        super(Doctor, self).__init__(
-            command=['pw', '--no-banner', '--loglevel', log_level, 'doctor'],
-            *args,
-            **kwargs)
+        cmd = ['pw', '--no-banner', '--loglevel', log_level, 'doctor']
+        super(Doctor, self).__init__(command=cmd, *args, **kwargs)
 
     def accept(self, visitor):
         visitor.visit_doctor(self)
@@ -262,6 +277,7 @@ class Doctor(Command):
 
 class BlankLine(_Action):
     """Write a blank line to the init script."""
+
     def accept(self, visitor):
         visitor.visit_blank_line(self)
 
@@ -303,6 +319,7 @@ class Environment(object):
     These changes can be accessed by writing them to a file for bash-like
     shells to source or by using this as a context manager.
     """
+
     def __init__(self, *args, **kwargs):
         pathsep = kwargs.pop('pathsep', os.pathsep)
         windows = kwargs.pop('windows', os.name == 'nt')

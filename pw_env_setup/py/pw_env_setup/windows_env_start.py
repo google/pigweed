@@ -46,22 +46,31 @@ def print_banner(bootstrap, no_shell_file):
 
     if bootstrap:
         print(
-            Color.green('\n  BOOTSTRAP! Bootstrap may take a few minutes; '
-                        'please be patient'))
+            Color.green(
+                '\n  BOOTSTRAP! Bootstrap may take a few minutes; '
+                'please be patient'
+            )
+        )
         print(
             Color.green(
-                '  On Windows, this stage is extremely slow (~10 minutes).\n'))
+                '  On Windows, this stage is extremely slow (~10 minutes).\n'
+            )
+        )
     else:
         print(
             Color.green(
                 '\n  ACTIVATOR! This sets your console environment variables.\n'
-            ))
+            )
+        )
 
         if no_shell_file:
             print(Color.bold_red('Error!\n'))
             print(
-                Color.red('  Your Pigweed environment does not seem to be'
-                          ' configured.'))
+                Color.red(
+                    '  Your Pigweed environment does not seem to be'
+                    ' configured.'
+                )
+            )
             print(Color.red('  Run bootstrap.bat to perform initial setup.'))
 
     return 0
@@ -70,7 +79,8 @@ def print_banner(bootstrap, no_shell_file):
 def parse():
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
-        prog="python -m pw_env_setup.windows_env_start")
+        prog="python -m pw_env_setup.windows_env_start"
+    )
     parser.add_argument('--bootstrap', action='store_true')
     parser.add_argument('--no-shell-file', action='store_true')
     return parser.parse_args()

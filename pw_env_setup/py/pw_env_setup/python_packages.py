@@ -27,21 +27,19 @@ import pkg_resources
 def _installed_packages() -> Iterator[str]:
     """Run pip python_packages and write to out."""
     installed_packages = list(
-        pkg.as_requirement() for pkg in pkg_resources.working_set  # pylint: disable=not-an-iterable
+        pkg.as_requirement()
+        for pkg in pkg_resources.working_set  # pylint: disable=not-an-iterable
         # Non-editable packages only
-        if isinstance(
-            pkg,
-            pkg_resources.DistInfoDistribution  # type: ignore
-        )
+        if isinstance(pkg, pkg_resources.DistInfoDistribution)  # type: ignore
         # This will skip packages with local versions.
         #   For example text after a plus sign: 1.2.3+dev456
         and not pkg.parsed_version.local
         # These are always installed by default in:
         #   pw_env_setup/py/pw_env_setup/virtualenv_setup/install.py
-        and pkg.key not in ['pip', 'setuptools', 'wheel'])
+        and pkg.key not in ['pip', 'setuptools', 'wheel']
+    )
     for req in sorted(
-            installed_packages,
-            key=lambda pkg: pkg.name.lower()  # type: ignore
+        installed_packages, key=lambda pkg: pkg.name.lower()  # type: ignore
     ):
         yield str(req)
 
@@ -49,8 +47,8 @@ def _installed_packages() -> Iterator[str]:
 def ls(output_file: Optional[Path]) -> int:  # pylint: disable=invalid-name
     """Run pip python_packages and write to output_file."""
     actual_requirements = frozenset(
-        pkg_resources.Requirement.parse(line)
-        for line in _installed_packages())
+        pkg_resources.Requirement.parse(line) for line in _installed_packages()
+    )
     missing_requirements = set()
 
     # If updating an existing file, load the existing requirements to find lines
@@ -58,11 +56,13 @@ def ls(output_file: Optional[Path]) -> int:  # pylint: disable=invalid-name
     if output_file:
         existing_lines = output_file.read_text().splitlines()
         expected_requirements = set(
-            pkg_resources.Requirement.parse(line) for line in existing_lines)
+            pkg_resources.Requirement.parse(line) for line in existing_lines
+        )
         missing_requirements = expected_requirements - actual_requirements
 
     new_requirements: List[pkg_resources.Requirement] = list(
-        actual_requirements)
+        actual_requirements
+    )
 
     for requirement in missing_requirements:
         # Preserve this requirement if it has a marker that doesn't apply to
@@ -88,8 +88,7 @@ def ls(output_file: Optional[Path]) -> int:  # pylint: disable=invalid-name
     out = output_file.open('w') if output_file else sys.stdout
 
     for package in sorted(
-            new_requirements,
-            key=lambda pkg: pkg.name.lower()  # type: ignore
+        new_requirements, key=lambda pkg: pkg.name.lower()  # type: ignore
     ):
         print(package, file=out)
 
@@ -115,26 +114,29 @@ def _load_requirements_lines(*req_files: Path) -> Iterator[str]:
             yield line
 
 
-def diff(expected: Path,
-         ignore_requirements_file: Optional[List[Path]] = None) -> int:
+def diff(
+    expected: Path, ignore_requirements_file: Optional[List[Path]] = None
+) -> int:
     """Report on differences between installed and expected versions."""
     actual_lines = set(_installed_packages())
     expected_lines = set(_load_requirements_lines(expected))
     ignored_lines = set()
     if ignore_requirements_file:
-        ignored_lines = set(
-            _load_requirements_lines(*ignore_requirements_file))
+        ignored_lines = set(_load_requirements_lines(*ignore_requirements_file))
 
     if actual_lines == expected_lines:
         _stderr('package versions are identical')
         return 0
 
     actual_requirements = frozenset(
-        pkg_resources.Requirement.parse(line) for line in actual_lines)
+        pkg_resources.Requirement.parse(line) for line in actual_lines
+    )
     expected_requirements = frozenset(
-        pkg_resources.Requirement.parse(line) for line in expected_lines)
+        pkg_resources.Requirement.parse(line) for line in expected_lines
+    )
     ignored_requirements = frozenset(
-        pkg_resources.Requirement.parse(line) for line in ignored_lines)
+        pkg_resources.Requirement.parse(line) for line in ignored_lines
+    )
 
     removed_requirements = expected_requirements - actual_requirements
     added_requirements = actual_requirements - expected_requirements
@@ -159,13 +161,15 @@ def diff(expected: Path,
         # checking their normalized name. Since we are looking for formatting
         # mismatches here we need to retrieve the requirement instance from the
         # actual_requirements set.
-        matching_found_requirement = {req: req
-                                      for req in actual_requirements
-                                      }.get(requirement)
+        matching_found_requirement = {
+            req: req for req in actual_requirements
+        }.get(requirement)
 
         # If the actual requirement line doesn't match.
-        if matching_found_requirement and str(
-                matching_found_requirement) != line:
+        if (
+            matching_found_requirement
+            and str(matching_found_requirement) != line
+        ):
             reformatted_packages[matching_found_requirement] = line
 
         # If this requirement isn't in the active enviroment and the line
@@ -198,14 +202,18 @@ def diff(expected: Path,
             updated_packages[found_package.as_requirement()] = line
 
     ignored_distributions = list(
-        distribution for distribution in pkg_resources.working_set  # pylint: disable=not-an-iterable
-        if distribution.as_requirement() in ignored_requirements)
+        distribution
+        for distribution in pkg_resources.working_set  # pylint: disable=not-an-iterable
+        if distribution.as_requirement() in ignored_requirements
+    )
     expected_distributions = list(
-        distribution for distribution in pkg_resources.working_set  # pylint: disable=not-an-iterable
-        if distribution.as_requirement() in expected_requirements)
+        distribution
+        for distribution in pkg_resources.working_set  # pylint: disable=not-an-iterable
+        if distribution.as_requirement() in expected_requirements
+    )
 
     def get_requirements(
-        dist_info: pkg_resources.Distribution
+        dist_info: pkg_resources.Distribution,
     ) -> Iterator[pkg_resources.Distribution]:
         """Return requirement that are not in expected_distributions."""
         for req in dist_info.requires():
@@ -217,7 +225,7 @@ def diff(expected: Path,
             yield req_dist_info
 
     def expand_requirements(
-        reqs: List[pkg_resources.Distribution]
+        reqs: List[pkg_resources.Distribution],
     ) -> Iterator[List[pkg_resources.Distribution]]:
         """Recursively expand requirements."""
         for dist_info in reqs:
@@ -228,7 +236,9 @@ def diff(expected: Path,
 
     ignored_transitive_deps = set(
         itertools.chain.from_iterable(
-            expand_requirements(ignored_distributions)))
+            expand_requirements(ignored_distributions)
+        )
+    )
 
     # Check for new packages
     for requirement in added_requirements - removed_requirements:
@@ -265,7 +275,8 @@ def diff(expected: Path,
 
     if updated_packages or new_packages:
         _stderr("Package versions don't match!")
-        _stderr(f"""
+        _stderr(
+            f"""
 Please do the following:
 
 * purge your environment directory
@@ -276,7 +287,8 @@ Please do the following:
   * Windows: 'bootstrap.bat'
 * update the constraint file
   * 'pw python-packages list {expected.name}'
-""")
+"""
+        )
         return -1
 
     return 0
@@ -285,11 +297,13 @@ Please do the following:
 def parse(argv: Union[List[str], None] = None) -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
-        prog="python -m pw_env_setup.python_packages")
+        prog="python -m pw_env_setup.python_packages"
+    )
     subparsers = parser.add_subparsers(dest='cmd')
 
     list_parser = subparsers.add_parser(
-        'list', aliases=('ls', ), help='List installed package versions.')
+        'list', aliases=('ls',), help='List installed package versions.'
+    )
     list_parser.add_argument('output_file', type=Path, nargs='?')
 
     diff_parser = subparsers.add_parser(
@@ -297,9 +311,9 @@ def parse(argv: Union[List[str], None] = None) -> argparse.Namespace:
         help='Show differences between expected and actual package versions.',
     )
     diff_parser.add_argument('expected', type=Path)
-    diff_parser.add_argument('--ignore-requirements-file',
-                             type=Path,
-                             action='append')
+    diff_parser.add_argument(
+        '--ignore-requirements-file', type=Path, action='append'
+    )
 
     return parser.parse_args(argv)
 

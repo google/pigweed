@@ -53,8 +53,9 @@ def check_auth(cipd, package_files, cipd_service_account, spin):
 
     username = None
     try:
-        output = subprocess.check_output(cmd + ['auth-info'] + extra_args,
-                                         stderr=subprocess.STDOUT).decode()
+        output = subprocess.check_output(
+            cmd + ['auth-info'] + extra_args, stderr=subprocess.STDOUT
+        ).decode()
         logged_in = True
 
         match = re.search(r'Logged in as (\S*)\.', output)
@@ -71,8 +72,8 @@ def check_auth(cipd, package_files, cipd_service_account, spin):
             # Not catching CalledProcessError because 'cipd ls' seems to never
             # return an error code unless it can't reach the CIPD server.
             output = subprocess.check_output(
-                cmd + ['ls', path] + extra_args,
-                stderr=subprocess.STDOUT).decode()
+                cmd + ['ls', path] + extra_args, stderr=subprocess.STDOUT
+            ).decode()
             if 'No matching packages' not in output:
                 continue
 
@@ -81,8 +82,10 @@ def check_auth(cipd, package_files, cipd_service_account, spin):
             # 'cipd instances' does use an error code if there's no such package
             # or that package is inaccessible.
             try:
-                subprocess.check_output(cmd + ['instances', path] + extra_args,
-                                        stderr=subprocess.STDOUT)
+                subprocess.check_output(
+                    cmd + ['instances', path] + extra_args,
+                    stderr=subprocess.STDOUT,
+                )
             except subprocess.CalledProcessError:
                 inaccessible_paths.append(path)
 
@@ -94,8 +97,10 @@ def check_auth(cipd, package_files, cipd_service_account, spin):
         with spin.pause():
             stderr = lambda *args: print(*args, file=sys.stderr)
             stderr()
-            stderr('Not logged in to CIPD and no anonymous access to the '
-                   'following CIPD paths:')
+            stderr(
+                'Not logged in to CIPD and no anonymous access to the '
+                'following CIPD paths:'
+            )
             for path in inaccessible_paths:
                 stderr('  {}'.format(path))
             stderr()
@@ -115,8 +120,10 @@ def check_auth(cipd, package_files, cipd_service_account, spin):
         username_part = ''
         if username:
             username_part = '({}) '.format(username)
-        stderr('Your account {}does not have access to the following '
-               'paths'.format(username_part))
+        stderr(
+            'Your account {}does not have access to the following '
+            'paths'.format(username_part)
+        )
         stderr('(or they do not exist)')
         for path in inaccessible_paths:
             stderr('  {}'.format(path))
@@ -216,14 +223,18 @@ def deduplicate_packages(packages):
     return reversed(list(deduped.values()))
 
 
-def write_ensure_file(package_files, ensure_file, platform):  # pylint: disable=redefined-outer-name
+def write_ensure_file(
+    package_files, ensure_file, platform
+):  # pylint: disable=redefined-outer-name
     packages = all_packages(package_files)
     deduped_packages = deduplicate_packages(packages)
 
     with open(ensure_file, 'w') as outs:
-        outs.write('$VerifiedPlatform linux-amd64\n'
-                   '$VerifiedPlatform mac-amd64\n'
-                   '$ParanoidMode CheckPresence\n')
+        outs.write(
+            '$VerifiedPlatform linux-amd64\n'
+            '$VerifiedPlatform mac-amd64\n'
+            '$ParanoidMode CheckPresence\n'
+        )
 
         for pkg in deduped_packages:
             # If this is a new-style package manifest platform handling must
@@ -246,8 +257,9 @@ def package_installation_path(root_install_dir, package_file):
       root_install_dir: The CIPD installation directory.
       package_file: The path to the .json package definition file.
     """
-    return os.path.join(root_install_dir, 'packages',
-                        package_file_name(package_file))
+    return os.path.join(
+        root_install_dir, 'packages', package_file_name(package_file)
+    )
 
 
 def update(  # pylint: disable=too-many-locals
@@ -270,8 +282,9 @@ def update(  # pylint: disable=too-many-locals
 
     # This file is read by 'pw doctor' which needs to know which package files
     # were used in the environment.
-    package_files_file = os.path.join(root_install_dir,
-                                      '_all_package_files.json')
+    package_files_file = os.path.join(
+        root_install_dir, '_all_package_files.json'
+    )
     with open(package_files_file, 'w') as outs:
         json.dump(package_files, outs, indent=2)
 
@@ -297,12 +310,18 @@ def update(  # pylint: disable=too-many-locals
     cmd = [
         cipd,
         'ensure',
-        '-ensure-file', ensure_file,
-        '-root', install_dir,
-        '-log-level', 'debug',
-        '-json-output', os.path.join(root_install_dir, 'packages.json'),
-        '-cache-dir', cache_dir,
-        '-max-threads', '0',  # 0 means use CPU count.
+        '-ensure-file',
+        ensure_file,
+        '-root',
+        install_dir,
+        '-log-level',
+        'debug',
+        '-json-output',
+        os.path.join(root_install_dir, 'packages.json'),
+        '-cache-dir',
+        cache_dir,
+        '-max-threads',
+        '0',  # 0 means use CPU count.
     ]  # yapf: disable
 
     cipd_service_account = None
@@ -363,18 +382,20 @@ def update(  # pylint: disable=too-many-locals
             # installed under 'bin'. A small number of old packages prefix the
             # entire tree with the platform (e.g., chromium/third_party/tcl).
             for bin_dir in (
-                    file_install_dir,
-                    os.path.join(file_install_dir, 'bin'),
-                    os.path.join(file_install_dir, plat, 'bin'),
+                file_install_dir,
+                os.path.join(file_install_dir, 'bin'),
+                os.path.join(file_install_dir, plat, 'bin'),
             ):
                 if os.path.isdir(bin_dir):
                     env_vars.prepend('PATH', bin_dir)
-            env_vars.set('PW_{}_CIPD_INSTALL_DIR'.format(name.upper()),
-                         file_install_dir)
+            env_vars.set(
+                'PW_{}_CIPD_INSTALL_DIR'.format(name.upper()), file_install_dir
+            )
 
             # Windows has its own special toolchain.
             if os.name == 'nt':
                 env_vars.prepend(
-                    'PATH', os.path.join(file_install_dir, 'mingw64', 'bin'))
+                    'PATH', os.path.join(file_install_dir, 'mingw64', 'bin')
+                )
 
     return True

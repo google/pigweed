@@ -27,37 +27,50 @@ except ImportError:
 
 def _main():
     parser = argparse.ArgumentParser(
-        prog="python -m pw_env_setup.virtualenv_setup", description=__doc__)
+        prog="python -m pw_env_setup.virtualenv_setup", description=__doc__
+    )
 
     project_root = os.environ.get('PW_PROJECT_ROOT', None)
 
-    parser.add_argument('--project-root',
-                        default=project_root,
-                        required=not project_root,
-                        help='Path to overall project root.')
-    parser.add_argument('--venv_path',
-                        required=True,
-                        help='Path at which to create the venv')
-    parser.add_argument('-r',
-                        '--requirements',
-                        default=[],
-                        action='append',
-                        help='requirements.txt files to install')
-    parser.add_argument('--gn-target',
-                        dest='gn_targets',
-                        default=[],
-                        action='append',
-                        type=virtualenv_setup.GnTarget,
-                        help='GN targets that install packages')
-    parser.add_argument('--quick-setup',
-                        dest='full_envsetup',
-                        action='store_false',
-                        default='PW_ENVSETUP_FULL' in os.environ,
-                        help=('Do full setup or only minimal checks to see if '
-                              'full setup is required.'))
-    parser.add_argument('--python',
-                        default=sys.executable,
-                        help='Python to use when creating virtualenv.')
+    parser.add_argument(
+        '--project-root',
+        default=project_root,
+        required=not project_root,
+        help='Path to overall project root.',
+    )
+    parser.add_argument(
+        '--venv_path', required=True, help='Path at which to create the venv'
+    )
+    parser.add_argument(
+        '-r',
+        '--requirements',
+        default=[],
+        action='append',
+        help='requirements.txt files to install',
+    )
+    parser.add_argument(
+        '--gn-target',
+        dest='gn_targets',
+        default=[],
+        action='append',
+        type=virtualenv_setup.GnTarget,
+        help='GN targets that install packages',
+    )
+    parser.add_argument(
+        '--quick-setup',
+        dest='full_envsetup',
+        action='store_false',
+        default='PW_ENVSETUP_FULL' in os.environ,
+        help=(
+            'Do full setup or only minimal checks to see if '
+            'full setup is required.'
+        ),
+    )
+    parser.add_argument(
+        '--python',
+        default=sys.executable,
+        help='Python to use when creating virtualenv.',
+    )
 
     virtualenv_setup.install(**vars(parser.parse_args()))
 

@@ -69,8 +69,13 @@ try:
     SCRIPT_DIR = os.path.dirname(__file__)
 except NameError:  # __file__ not defined.
     try:
-        SCRIPT_DIR = os.path.join(os.environ['PW_ROOT'], 'pw_env_setup', 'py',
-                                  'pw_env_setup', 'cipd_setup')
+        SCRIPT_DIR = os.path.join(
+            os.environ['PW_ROOT'],
+            'pw_env_setup',
+            'py',
+            'pw_env_setup',
+            'cipd_setup',
+        )
     except KeyError:
         raise Exception('Environment variable PW_ROOT not set')
 
@@ -85,10 +90,14 @@ try:
 except KeyError:
     try:
         with open(os.devnull, 'w') as outs:
-            PW_ROOT = subprocess.check_output(
-                ['git', 'rev-parse', '--show-toplevel'],
-                stderr=outs,
-            ).strip().decode('utf-8')
+            PW_ROOT = (
+                subprocess.check_output(
+                    ['git', 'rev-parse', '--show-toplevel'],
+                    stderr=outs,
+                )
+                .strip()
+                .decode('utf-8')
+            )
     except subprocess.CalledProcessError:
         PW_ROOT = ''
 
@@ -144,7 +153,8 @@ def user_agent():
 
     try:
         rev = subprocess.check_output(
-            ['git', '-C', SCRIPT_DIR, 'rev-parse', 'HEAD']).strip()
+            ['git', '-C', SCRIPT_DIR, 'rev-parse', 'HEAD']
+        ).strip()
     except subprocess.CalledProcessError:
         rev = '???'
 
@@ -174,10 +184,9 @@ def expected_hash(rosetta=False):
             if line.startswith('#') or not line:
                 continue
             plat, hashtype, hashval = line.split()
-            if (hashtype == 'sha256' and plat == expected_plat):
+            if hashtype == 'sha256' and plat == expected_plat:
                 return hashval
-    raise Exception('platform {} not in {}'.format(expected_plat,
-                                                   DIGESTS_FILE))
+    raise Exception('platform {} not in {}'.format(expected_plat, DIGESTS_FILE))
 
 
 def https_connect_with_proxy(target_url):
@@ -196,7 +205,8 @@ def https_connect_with_proxy(target_url):
         py_version = sys.version_info.major
         if py_version >= 3:
             headers['Proxy-Authorization'] = 'Basic ' + str(
-                base64.b64encode(auth.encode()).decode())
+                base64.b64encode(auth.encode()).decode()
+            )
         else:
             headers['Proxy-Authorization'] = 'Basic ' + base64.b64encode(auth)
     conn.set_tunnel(target_url, 443, headers)
@@ -218,14 +228,16 @@ def client_bytes(rosetta=False):
         conn = https_connect_with_proxy(CIPD_HOST)
     except AttributeError:
         print('=' * 70)
-        print('''
+        print(
+            '''
 It looks like this version of Python does not support SSL. This is common
 when using Homebrew. If using Homebrew please run the following commands.
 If not using Homebrew check how your version of Python was built.
 
 brew install openssl  # Probably already installed, but good to confirm.
 brew uninstall python && brew install python
-'''.strip())
+'''.strip()
+        )
         print('=' * 70)
         raise
 
@@ -268,7 +280,8 @@ brew uninstall python && brew install python
                 "Otherwise, check that your machine's Python can use SSL, "
                 'testing with the httplib module on Python 2 or http.client on '
                 'Python 3.',
-                file=sys.stderr)
+                file=sys.stderr,
+            )
             raise
 
         # Found client bytes.
@@ -287,14 +300,15 @@ brew uninstall python && brew install python
         else:
             break
 
-    raise Exception('failed to download client from https://{}{}'.format(
-        CIPD_HOST, path))
+    raise Exception(
+        'failed to download client from https://{}{}'.format(CIPD_HOST, path)
+    )
 
 
 def bootstrap(
-        client,
-        silent=('PW_ENVSETUP_QUIET' in os.environ),
-        rosetta=False,
+    client,
+    silent=('PW_ENVSETUP_QUIET' in os.environ),
+    rosetta=False,
 ):
     """Bootstrap cipd client installation."""
 
@@ -303,8 +317,11 @@ def bootstrap(
         os.makedirs(client_dir)
 
     if not silent:
-        print('Bootstrapping cipd client for {}'.format(
-            platform_arch_normalized(rosetta)))
+        print(
+            'Bootstrapping cipd client for {}'.format(
+                platform_arch_normalized(rosetta)
+            )
+        )
 
     tmp_path = client + '.tmp'
     with open(tmp_path, 'wb') as tmp:
@@ -314,8 +331,10 @@ def bootstrap(
     actual = actual_hash(tmp_path)
 
     if expected != actual:
-        raise Exception('digest of downloaded CIPD client is incorrect, '
-                        'check that digests file is current')
+        raise Exception(
+            'digest of downloaded CIPD client is incorrect, '
+            'check that digests file is current'
+        )
 
     os.chmod(tmp_path, 0o755)
     os.rename(tmp_path, client)
@@ -327,8 +346,10 @@ def selfupdate(client):
     cmd = [
         client,
         'selfupdate',
-        '-version-file', VERSION_FILE,
-        '-service-url', 'https://{}'.format(CIPD_HOST),
+        '-version-file',
+        VERSION_FILE,
+        '-service-url',
+        'https://{}'.format(CIPD_HOST),
     ]  # yapf: disable
     subprocess.check_call(cmd)
 
@@ -359,8 +380,10 @@ def init(
     try:
         selfupdate(client)
     except subprocess.CalledProcessError:
-        print('CIPD selfupdate failed. Bootstrapping then retrying...',
-              file=sys.stderr)
+        print(
+            'CIPD selfupdate failed. Bootstrapping then retrying...',
+            file=sys.stderr,
+        )
         bootstrap(client, rosetta=rosetta)
         selfupdate(client)
 
@@ -380,15 +403,17 @@ def main(install_dir=DEFAULT_INSTALL_DIR, silent=False):
         raise
 
     except Exception:
-        print('Failed to initialize CIPD. Run '
-              '`CIPD_HTTP_USER_AGENT_PREFIX={user_agent}/manual {client} '
-              "selfupdate -version-file '{version_file}'` "
-              'to diagnose if this is persistent.'.format(
-                  user_agent=user_agent(),
-                  client=client,
-                  version_file=VERSION_FILE,
-              ),
-              file=sys.stderr)
+        print(
+            'Failed to initialize CIPD. Run '
+            '`CIPD_HTTP_USER_AGENT_PREFIX={user_agent}/manual {client} '
+            "selfupdate -version-file '{version_file}'` "
+            'to diagnose if this is persistent.'.format(
+                user_agent=user_agent(),
+                client=client,
+                version_file=VERSION_FILE,
+            ),
+            file=sys.stderr,
+        )
         raise
 
     return client

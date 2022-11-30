@@ -22,6 +22,7 @@ import time
 
 class Spinner(object):  # pylint: disable=useless-object-inheritance
     """Spinner!"""
+
     def __init__(self, quiet=False):
         self._done = None
         self._thread = None

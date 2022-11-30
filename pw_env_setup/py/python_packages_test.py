@@ -25,10 +25,13 @@ from pw_env_setup import python_packages
 
 class TestPythonPackages(unittest.TestCase):
     """Tests the python_packages module."""
+
     def setUp(self):
         self.existing_pkgs_minus_toml = '\n'.join(
-            pkg for pkg in python_packages._installed_packages()  # pylint: disable=protected-access
-            if not pkg.startswith('toml=='))
+            pkg
+            for pkg in python_packages._installed_packages()  # pylint: disable=protected-access
+            if not pkg.startswith('toml==')
+        )
         self.temp_dir = tempfile.TemporaryDirectory()
         self.temp_path = Path(self.temp_dir.name)
 
@@ -36,7 +39,9 @@ class TestPythonPackages(unittest.TestCase):
         self.temp_dir.cleanup()
 
     def test_list(self):
-        pkgs = list(python_packages._installed_packages())  # pylint: disable=protected-access
+        # pylint: disable=protected-access
+        pkgs = list(python_packages._installed_packages())
+        # pylint: enable=protected-access
         toml_version = importlib.metadata.version('toml')
 
         self.assertIn(f'toml=={toml_version}', pkgs)
@@ -69,7 +74,8 @@ class TestPythonPackages(unittest.TestCase):
 
         stderr_mock.assert_any_call('Updated packages')
         stderr_mock.assert_any_call(
-            f'  toml=={toml_version} (from toml>=0.0.1)')
+            f'  toml=={toml_version} (from toml>=0.0.1)'
+        )
 
     @mock.patch('pw_env_setup.python_packages._stderr')
     def test_diff_new(self, stderr_mock):

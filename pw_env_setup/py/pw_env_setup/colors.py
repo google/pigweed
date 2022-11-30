@@ -28,6 +28,7 @@ def _make_color(*codes):
 
 class Color:  # pylint: disable=too-few-public-methods
     """Helpers to surround text with ASCII color escapes"""
+
     bold = _make_color(1)
     red = _make_color(31)
     bold_red = _make_color(31, 1)

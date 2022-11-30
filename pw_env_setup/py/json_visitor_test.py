@@ -34,6 +34,7 @@ from pw_env_setup import environment, json_visitor
 # pylint: disable=super-with-arguments
 class JSONVisitorTest(unittest.TestCase):
     """Tests for env_setup.json_visitor."""
+
     def setUp(self):
         self.env = environment.Environment()
 
@@ -60,22 +61,16 @@ class JSONVisitorTest(unittest.TestCase):
         self.env.append('VAR', 'path2')
         self.env.append('VAR', 'path3')
         self._assert_json(
-            {'modify': {
-                'VAR': {
-                    'append': 'path1 path2 path3'.split()
-                }
-            }})
+            {'modify': {'VAR': {'append': 'path1 path2 path3'.split()}}}
+        )
 
     def test_prepend(self):
         self.env.prepend('VAR', 'path1')
         self.env.prepend('VAR', 'path2')
         self.env.prepend('VAR', 'path3')
         self._assert_json(
-            {'modify': {
-                'VAR': {
-                    'prepend': 'path3 path2 path1'.split()
-                }
-            }})
+            {'modify': {'VAR': {'prepend': 'path3 path2 path1'.split()}}}
+        )
 
     def test_remove(self):
         self.env.remove('VAR', 'path1')

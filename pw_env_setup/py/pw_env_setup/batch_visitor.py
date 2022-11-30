@@ -22,6 +22,7 @@ _SCRIPT_END_LABEL = '_pw_end'
 
 class BatchVisitor(object):  # pylint: disable=useless-object-inheritance
     """Serializes an Environment into a batch file."""
+
     def __init__(self, *args, **kwargs):
         pathsep = kwargs.pop('pathsep', ':')
         super(BatchVisitor, self).__init__(*args, **kwargs)
@@ -33,7 +34,8 @@ class BatchVisitor(object):  # pylint: disable=useless-object-inheritance
         try:
             self._replacements = tuple(
                 (key, env.get(key) if value is None else value)
-                for key, value in env.replacements)
+                for key, value in env.replacements
+            )
             self._outs = outs
             self._outs.write('@echo off\n')
 
@@ -54,8 +56,9 @@ class BatchVisitor(object):  # pylint: disable=useless-object-inheritance
 
     def visit_set(self, set):  # pylint: disable=redefined-builtin
         value = self._apply_replacements(set)
-        self._outs.write('set {name}={value}\n'.format(name=set.name,
-                                                       value=value))
+        self._outs.write(
+            'set {name}={value}\n'.format(name=set.name, value=value)
+        )
 
     def visit_clear(self, clear):
         self._outs.write('set {name}=\n'.format(name=clear.name))
@@ -71,14 +74,16 @@ class BatchVisitor(object):  # pylint: disable=useless-object-inheritance
     def visit_prepend(self, prepend):
         value = self._apply_replacements(prepend)
         value = self._join(value, '%{}%'.format(prepend.name))
-        self._outs.write('set {name}={value}\n'.format(name=prepend.name,
-                                                       value=value))
+        self._outs.write(
+            'set {name}={value}\n'.format(name=prepend.name, value=value)
+        )
 
     def visit_append(self, append):
         value = self._apply_replacements(append)
         value = self._join('%{}%'.format(append.name), value)
-        self._outs.write('set {name}={value}\n'.format(name=append.name,
-                                                       value=value))
+        self._outs.write(
+            'set {name}={value}\n'.format(name=append.name, value=value)
+        )
 
     def visit_echo(self, echo):
         if echo.newline:
@@ -101,14 +106,17 @@ class BatchVisitor(object):  # pylint: disable=useless-object-inheritance
 
         # Assume failing command produced relevant output.
         self._outs.write(
-            'if %ERRORLEVEL% neq 0 goto {}\n'.format(_SCRIPT_END_LABEL))
+            'if %ERRORLEVEL% neq 0 goto {}\n'.format(_SCRIPT_END_LABEL)
+        )
 
     def visit_doctor(self, doctor):
         self._outs.write('if "%PW_ACTIVATE_SKIP_CHECKS%"=="" (\n')
         self.visit_command(doctor)
         self._outs.write(') else (\n')
-        self._outs.write('echo Skipping environment check because '
-                         'PW_ACTIVATE_SKIP_CHECKS is set\n')
+        self._outs.write(
+            'echo Skipping environment check because '
+            'PW_ACTIVATE_SKIP_CHECKS is set\n'
+        )
         self._outs.write(')\n')
 
     def visit_blank_line(self, blank_line):

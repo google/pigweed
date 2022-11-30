@@ -27,29 +27,35 @@ class _BaseShellVisitor(object):  # pylint: disable=useless-object-inheritance
         self._outs = None
 
     def _remove_value_from_path(self, variable, value):
-        return ('{variable}="$(echo "${variable}"'
-                ' | sed "s|{pathsep}{value}{pathsep}|{pathsep}|g;"'
-                ' | sed "s|^{value}{pathsep}||g;"'
-                ' | sed "s|{pathsep}{value}$||g;"'
-                ')"\nexport {variable}\n'.format(variable=variable,
-                                                 value=value,
-                                                 pathsep=self._pathsep))
+        return (
+            '{variable}="$(echo "${variable}"'
+            ' | sed "s|{pathsep}{value}{pathsep}|{pathsep}|g;"'
+            ' | sed "s|^{value}{pathsep}||g;"'
+            ' | sed "s|{pathsep}{value}$||g;"'
+            ')"\nexport {variable}\n'.format(
+                variable=variable, value=value, pathsep=self._pathsep
+            )
+        )
 
     def visit_hash(self, hash):  # pylint: disable=redefined-builtin
         del hash
         self._outs.write(
-            inspect.cleandoc('''
+            inspect.cleandoc(
+                '''
         # This should detect bash and zsh, which have a hash command that must
         # be called to get it to forget past commands. Without forgetting past
         # commands the $PATH changes we made may not be respected.
         if [ -n "${BASH:-}" -o -n "${ZSH_VERSION:-}" ] ; then
             hash -r\n
         fi
-        '''))
+        '''
+            )
+        )
 
 
 class ShellVisitor(_BaseShellVisitor):
     """Serializes an Environment into a shell file."""
+
     def __init__(self, *args, **kwargs):
         super(ShellVisitor, self).__init__(*args, **kwargs)
         self._replacements = ()
@@ -58,7 +64,8 @@ class ShellVisitor(_BaseShellVisitor):
         try:
             self._replacements = tuple(
                 (key, env.get(key) if value is None else value)
-                for key, value in env.replacements)
+                for key, value in env.replacements
+            )
             self._outs = outs
 
             env.accept(self)
@@ -76,16 +83,21 @@ class ShellVisitor(_BaseShellVisitor):
 
     def visit_set(self, set):  # pylint: disable=redefined-builtin
         value = self._apply_replacements(set)
-        self._outs.write('{name}="{value}"\nexport {name}\n'.format(
-            name=set.name, value=value))
+        self._outs.write(
+            '{name}="{value}"\nexport {name}\n'.format(
+                name=set.name, value=value
+            )
+        )
 
     def visit_clear(self, clear):
         self._outs.write('unset {name}\n'.format(**vars(clear)))
 
     def visit_remove(self, remove):
         value = self._apply_replacements(remove)
-        self._outs.write('# Remove \n#   {value}\n# from\n#   {value}\n# '
-                         'before adding it back.\n')
+        self._outs.write(
+            '# Remove \n#   {value}\n# from\n#   {value}\n# '
+            'before adding it back.\n'
+        )
         self._outs.write(self._remove_value_from_path(remove.name, value))
 
     def _join(self, *args):
@@ -96,14 +108,20 @@ class ShellVisitor(_BaseShellVisitor):
     def visit_prepend(self, prepend):
         value = self._apply_replacements(prepend)
         value = self._join(value, '${}'.format(prepend.name))
-        self._outs.write('{name}="{value}"\nexport {name}\n'.format(
-            name=prepend.name, value=value))
+        self._outs.write(
+            '{name}="{value}"\nexport {name}\n'.format(
+                name=prepend.name, value=value
+            )
+        )
 
     def visit_append(self, append):
         value = self._apply_replacements(append)
         value = self._join('${}'.format(append.name), value)
-        self._outs.write('{name}="{value}"\nexport {name}\n'.format(
-            name=append.name, value=value))
+        self._outs.write(
+            '{name}="{value}"\nexport {name}\n'.format(
+                name=append.name, value=value
+            )
+        )
 
     def visit_echo(self, echo):
         # TODO(mohrr) use shlex.quote().
@@ -131,8 +149,10 @@ class ShellVisitor(_BaseShellVisitor):
         self._outs.write('if [ -z "$PW_ACTIVATE_SKIP_CHECKS" ]; then\n')
         self.visit_command(doctor)
         self._outs.write('else\n')
-        self._outs.write('echo Skipping environment check because '
-                         'PW_ACTIVATE_SKIP_CHECKS is set\n')
+        self._outs.write(
+            'echo Skipping environment check because '
+            'PW_ACTIVATE_SKIP_CHECKS is set\n'
+        )
         self._outs.write('fi\n')
 
     def visit_blank_line(self, blank_line):
@@ -140,12 +160,16 @@ class ShellVisitor(_BaseShellVisitor):
         self._outs.write('\n')
 
     def visit_function(self, function):
-        self._outs.write('{name}() {{\n{body}\n}}\n'.format(
-            name=function.name, body=function.body))
+        self._outs.write(
+            '{name}() {{\n{body}\n}}\n'.format(
+                name=function.name, body=function.body
+            )
+        )
 
 
 class DeactivateShellVisitor(_BaseShellVisitor):
     """Removes values from an Environment."""
+
     def __init__(self, *args, **kwargs):
         pathsep = kwargs.pop('pathsep', ':')
         super(DeactivateShellVisitor, self).__init__(*args, **kwargs)
@@ -172,11 +196,13 @@ class DeactivateShellVisitor(_BaseShellVisitor):
 
     def visit_prepend(self, prepend):
         self._outs.write(
-            self._remove_value_from_path(prepend.name, prepend.value))
+            self._remove_value_from_path(prepend.name, prepend.value)
+        )
 
     def visit_append(self, append):
         self._outs.write(
-            self._remove_value_from_path(append.name, append.value))
+            self._remove_value_from_path(append.name, append.value)
+        )
 
     def visit_echo(self, echo):
         pass  # Not relevant.

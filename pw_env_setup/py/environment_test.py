@@ -55,10 +55,11 @@ def _evaluate_env_in_shell(env):
 
     # Write env sourcing script to file.
     with tempfile.NamedTemporaryFile(
-            prefix='pw-test-written-env-',
-            suffix='.bat' if os.name == 'nt' else '.sh',
-            delete=False,
-            mode='w+') as temp:
+        prefix='pw-test-written-env-',
+        suffix='.bat' if os.name == 'nt' else '.sh',
+        delete=False,
+        mode='w+',
+    ) as temp:
         env.write(temp)
         temp_name = temp.name
 
@@ -95,6 +96,7 @@ def _evaluate_env_in_shell(env):
 # pylint: disable=too-many-public-methods
 class EnvironmentTest(unittest.TestCase):
     """Tests for env_setup.environment."""
+
     def setUp(self):
         self.env = environment.Environment()
 
@@ -245,6 +247,7 @@ class EnvironmentTest(unittest.TestCase):
 
 class _PrependAppendEnvironmentTest(unittest.TestCase):
     """Tests for env_setup.environment."""
+
     def __init__(self, *args, **kwargs):
         windows = kwargs.pop('windows', False)
         pathsep = kwargs.pop('pathsep', os.pathsep)
@@ -259,17 +262,18 @@ class _PrependAppendEnvironmentTest(unittest.TestCase):
         # Likewise if we're testing POSIX behavior and actually on a POSIX
         # system. Tests can check self.run_shell_tests and exit without
         # doing anything.
-        real_windows = (os.name == 'nt')
-        self.run_shell_tests = (self.windows == real_windows)
+        real_windows = os.name == 'nt'
+        self.run_shell_tests = self.windows == real_windows
 
     def setUp(self):
-        self.env = environment.Environment(windows=self.windows,
-                                           pathsep=self.pathsep,
-                                           allcaps=self.allcaps)
+        self.env = environment.Environment(
+            windows=self.windows, pathsep=self.pathsep, allcaps=self.allcaps
+        )
 
         self.var_already_set = self.env.normalize_key('VAR_ALREADY_SET')
         os.environ[self.var_already_set] = self.pathsep.join(
-            'one two three'.split())
+            'one two three'.split()
+        )
         self.assertIn(self.var_already_set, os.environ)
 
         self.var_not_set = self.env.normalize_key('VAR_NOT_SET')
@@ -293,8 +297,9 @@ class _AppendPrependTestMixin(object):
         orig = os.environ[self.var_already_set]
         self.env.prepend(self.var_already_set, 'path')
         with self.env(export=False) as env:
-            self.assertEqual(env[self.var_already_set],
-                             self.pathsep.join(('path', orig)))
+            self.assertEqual(
+                env[self.var_already_set], self.pathsep.join(('path', orig))
+            )
 
     def test_prepend_present_written(self):
         if not self.run_shell_tests:
@@ -303,8 +308,9 @@ class _AppendPrependTestMixin(object):
         orig = os.environ[self.var_already_set]
         self.env.prepend(self.var_already_set, 'path')
         env = _evaluate_env_in_shell(self.env)
-        self.assertEqual(env[self.var_already_set],
-                         self.pathsep.join(('path', orig)))
+        self.assertEqual(
+            env[self.var_already_set], self.pathsep.join(('path', orig))
+        )
 
     def test_prepend_notpresent_ctx(self):
         self.env.prepend(self.var_not_set, 'path')
@@ -323,8 +329,9 @@ class _AppendPrependTestMixin(object):
         orig = os.environ[self.var_already_set]
         self.env.append(self.var_already_set, 'path')
         with self.env(export=False) as env:
-            self.assertEqual(env[self.var_already_set],
-                             self.pathsep.join((orig, 'path')))
+            self.assertEqual(
+                env[self.var_already_set], self.pathsep.join((orig, 'path'))
+            )
 
     def test_append_present_written(self):
         if not self.run_shell_tests:
@@ -333,8 +340,9 @@ class _AppendPrependTestMixin(object):
         orig = os.environ[self.var_already_set]
         self.env.append(self.var_already_set, 'path')
         env = _evaluate_env_in_shell(self.env)
-        self.assertEqual(env[self.var_already_set],
-                         self.pathsep.join((orig, 'path')))
+        self.assertEqual(
+            env[self.var_already_set], self.pathsep.join((orig, 'path'))
+        )
 
     def test_append_notpresent_ctx(self):
         self.env.append(self.var_not_set, 'path')
@@ -350,13 +358,16 @@ class _AppendPrependTestMixin(object):
         self.assertEqual(env[self.var_not_set], 'path')
 
     def test_remove_ctx(self):
-        self.env.set(self.var_not_set,
-                     self.pathsep.join(('path', 'one', 'path', 'two', 'path')))
+        self.env.set(
+            self.var_not_set,
+            self.pathsep.join(('path', 'one', 'path', 'two', 'path')),
+        )
 
         self.env.append(self.var_not_set, 'path')
         with self.env(export=False) as env:
-            self.assertEqual(env[self.var_not_set],
-                             self.pathsep.join(('one', 'two', 'path')))
+            self.assertEqual(
+                env[self.var_not_set], self.pathsep.join(('one', 'two', 'path'))
+            )
 
     def test_remove_written(self):
         if not self.run_shell_tests:
@@ -365,22 +376,29 @@ class _AppendPrependTestMixin(object):
         if self.windows:
             return
 
-        self.env.set(self.var_not_set,
-                     self.pathsep.join(('path', 'one', 'path', 'two', 'path')))
+        self.env.set(
+            self.var_not_set,
+            self.pathsep.join(('path', 'one', 'path', 'two', 'path')),
+        )
 
         self.env.append(self.var_not_set, 'path')
         env = _evaluate_env_in_shell(self.env)
-        self.assertEqual(env[self.var_not_set],
-                         self.pathsep.join(('one', 'two', 'path')))
+        self.assertEqual(
+            env[self.var_not_set], self.pathsep.join(('one', 'two', 'path'))
+        )
 
     def test_remove_ctx_space(self):
-        self.env.set(self.var_not_set,
-                     self.pathsep.join(('pa th', 'one', 'pa th', 'two')))
+        self.env.set(
+            self.var_not_set,
+            self.pathsep.join(('pa th', 'one', 'pa th', 'two')),
+        )
 
         self.env.append(self.var_not_set, 'pa th')
         with self.env(export=False) as env:
-            self.assertEqual(env[self.var_not_set],
-                             self.pathsep.join(('one', 'two', 'pa th')))
+            self.assertEqual(
+                env[self.var_not_set],
+                self.pathsep.join(('one', 'two', 'pa th')),
+            )
 
     def test_remove_written_space(self):
         if not self.run_shell_tests:
@@ -389,13 +407,16 @@ class _AppendPrependTestMixin(object):
         if self.windows:
             return
 
-        self.env.set(self.var_not_set,
-                     self.pathsep.join(('pa th', 'one', 'pa th', 'two')))
+        self.env.set(
+            self.var_not_set,
+            self.pathsep.join(('pa th', 'one', 'pa th', 'two')),
+        )
 
         self.env.append(self.var_not_set, 'pa th')
         env = _evaluate_env_in_shell(self.env)
-        self.assertEqual(env[self.var_not_set],
-                         self.pathsep.join(('one', 'two', 'pa th')))
+        self.assertEqual(
+            env[self.var_not_set], self.pathsep.join(('one', 'two', 'pa th'))
+        )
 
     def test_remove_ctx_empty(self):
         self.env.remove(self.var_not_set, 'path')
@@ -411,8 +432,9 @@ class _AppendPrependTestMixin(object):
         self.assertNotIn(self.var_not_set, env)
 
 
-class WindowsEnvironmentTest(_PrependAppendEnvironmentTest,
-                             _AppendPrependTestMixin):
+class WindowsEnvironmentTest(
+    _PrependAppendEnvironmentTest, _AppendPrependTestMixin
+):
     def __init__(self, *args, **kwargs):
         kwargs['pathsep'] = ';'
         kwargs['windows'] = True
@@ -420,14 +442,15 @@ class WindowsEnvironmentTest(_PrependAppendEnvironmentTest,
         super(WindowsEnvironmentTest, self).__init__(*args, **kwargs)
 
 
-class PosixEnvironmentTest(_PrependAppendEnvironmentTest,
-                           _AppendPrependTestMixin):
+class PosixEnvironmentTest(
+    _PrependAppendEnvironmentTest, _AppendPrependTestMixin
+):
     def __init__(self, *args, **kwargs):
         kwargs['pathsep'] = ':'
         kwargs['windows'] = False
         kwargs['allcaps'] = False
         super(PosixEnvironmentTest, self).__init__(*args, **kwargs)
-        self.real_windows = (os.name == 'nt')
+        self.real_windows = os.name == 'nt'
 
 
 class WindowsCaseInsensitiveTest(unittest.TestCase):
@@ -456,5 +479,6 @@ class WindowsCaseInsensitiveTest(unittest.TestCase):
 
 if __name__ == '__main__':
     import sys
+
     logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
     unittest.main()

@@ -36,7 +36,8 @@ class GnTarget(object):  # pylint: disable=useless-object-inheritance
     def __init__(self, val):
         self.directory, self.target = val.split('#', 1)
         self.name = '-'.join(
-            (re.sub(r'\W+', '_', self.target).strip('_'), _DATETIME_STRING))
+            (re.sub(r'\W+', '_', self.target).strip('_'), _DATETIME_STRING)
+        )
 
 
 def git_stdout(*args, **kwargs):
@@ -137,20 +138,35 @@ def _check_python_install_permissions(python):
 
     # Make any existing lib2to3 pickle files read+write. This is needed for
     # importing yapf.
-    lib2to3_path = os.path.join(os.path.dirname(os.path.dirname(python)),
-                                'lib', 'python3.9', 'lib2to3')
+    lib2to3_path = os.path.join(
+        os.path.dirname(os.path.dirname(python)), 'lib', 'python3.9', 'lib2to3'
+    )
     pickle_file_paths = []
     if os.path.isdir(lib2to3_path):
-        pickle_file_paths.extend(file_path
-                                 for file_path in os.listdir(lib2to3_path)
-                                 if '.pickle' in file_path)
+        pickle_file_paths.extend(
+            file_path
+            for file_path in os.listdir(lib2to3_path)
+            if '.pickle' in file_path
+        )
     try:
         for pickle_file in pickle_file_paths:
             pickle_full_path = os.path.join(lib2to3_path, pickle_file)
-            os.chmod(pickle_full_path,
-                     stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP)
+            os.chmod(
+                pickle_full_path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP
+            )
     except PermissionError:
         pass
+
+
+def _flatten(*items):
+    """Yields items from a series of items and nested iterables."""
+
+    for item in items:
+        if isinstance(item, (list, tuple)):
+            for i in _flatten(*item):
+                yield i
+        else:
+            yield item
 
 
 def install(  # pylint: disable=too-many-arguments,too-many-locals
@@ -169,8 +185,11 @@ def install(  # pylint: disable=too-many-arguments,too-many-locals
 ):
     """Creates a venv and installs all packages in this Git repo."""
 
-    version = subprocess.check_output(
-        (python, '--version'), stderr=subprocess.STDOUT).strip().decode()
+    version = (
+        subprocess.check_output((python, '--version'), stderr=subprocess.STDOUT)
+        .strip()
+        .decode()
+    )
     if ' 3.' not in version:
         print('=' * 60, file=sys.stderr)
         print('Unexpected Python version:', version, file=sys.stderr)
@@ -232,18 +251,21 @@ def install(  # pylint: disable=too-many-arguments,too-many-locals
     # all come from 'pw'-prefixed packages we installed with --editable.
     # Source: https://stackoverflow.com/a/48972085
     for egg_link in glob.glob(
-            os.path.join(venv_path, 'lib/python*/site-packages/*.egg-link')):
+        os.path.join(venv_path, 'lib/python*/site-packages/*.egg-link')
+    ):
         os.unlink(egg_link)
 
     def pip_install(*args):
+        args = list(_flatten(args))
         with env():
-            cmd = [venv_python, '-m', 'pip', 'install'] + list(args)
+            cmd = [venv_python, '-m', 'pip', 'install'] + args
             return _check_call(cmd)
 
     constraint_args = []
     if constraints:
-        constraint_args.extend('--constraint={}'.format(constraint)
-                               for constraint in constraints)
+        constraint_args.extend(
+            '--constraint={}'.format(constraint) for constraint in constraints
+        )
 
     pip_install(
         '--log',
@@ -255,7 +277,8 @@ def install(  # pylint: disable=too-many-arguments,too-many-locals
         # Include wheel so pip installs can be done without build
         # isolation.
         'wheel',
-        *constraint_args)
+        constraint_args,
+    )
 
     # TODO(tonymd): Remove this when projects have defined requirements.
     if (not requirements) and constraints:
@@ -266,11 +289,15 @@ def install(  # pylint: disable=too-many-arguments,too-many-locals
         # Note: --no-build-isolation should be avoided for installing 3rd party
         # Python packages that use C/C++ extension modules.
         # https://setuptools.pypa.io/en/latest/userguide/ext_modules.html
-        requirement_args.extend('--requirement={}'.format(req)
-                                for req in requirements)
+        requirement_args.extend(
+            '--requirement={}'.format(req) for req in requirements
+        )
         combined_requirement_args = requirement_args + constraint_args
-        pip_install('--log', os.path.join(venv_path, 'pip-requirements.log'),
-                    *combined_requirement_args)
+        pip_install(
+            '--log',
+            os.path.join(venv_path, 'pip-requirements.log'),
+            combined_requirement_args,
+        )
 
     def install_packages(gn_target):
         if gn_out_dir is None:
@@ -305,15 +332,17 @@ def install(  # pylint: disable=too-many-arguments,too-many-locals
                 gn_cmd.append('--args={}'.format(' '.join(args)))
 
                 print(gn_cmd, file=outs)
-                subprocess.check_call(gn_cmd,
-                                      cwd=os.path.join(project_root,
-                                                       gn_target.directory),
-                                      stdout=outs,
-                                      stderr=outs)
+                subprocess.check_call(
+                    gn_cmd,
+                    cwd=os.path.join(project_root, gn_target.directory),
+                    stdout=outs,
+                    stderr=outs,
+                )
         except subprocess.CalledProcessError as err:
             with open(gn_log_path, 'r') as ins:
-                raise subprocess.CalledProcessError(err.returncode, err.cmd,
-                                                    ins.read())
+                raise subprocess.CalledProcessError(
+                    err.returncode, err.cmd, ins.read()
+                )
 
         ninja_log = 'ninja-{}.log'.format(gn_target.name)
         ninja_log_path = os.path.join(venv_path, ninja_log)
@@ -325,8 +354,9 @@ def install(  # pylint: disable=too-many-arguments,too-many-locals
                 subprocess.check_call(ninja_cmd, stdout=outs, stderr=outs)
         except subprocess.CalledProcessError as err:
             with open(ninja_log_path, 'r') as ins:
-                raise subprocess.CalledProcessError(err.returncode, err.cmd,
-                                                    ins.read())
+                raise subprocess.CalledProcessError(
+                    err.returncode, err.cmd, ins.read()
+                )
 
         with open(os.path.join(venv_path, 'pip-list.log'), 'w') as outs:
             subprocess.check_call(

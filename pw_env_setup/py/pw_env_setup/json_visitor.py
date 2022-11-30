@@ -21,6 +21,7 @@ import json
 
 class JSONVisitor(object):  # pylint: disable=useless-object-inheritance
     """Serializes an Environment into a JSON file."""
+
     def __init__(self, *args, **kwargs):
         super(JSONVisitor, self).__init__(*args, **kwargs)
         self._data = {}
