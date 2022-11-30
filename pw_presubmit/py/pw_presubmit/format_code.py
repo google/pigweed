@@ -282,6 +282,49 @@ def fix_py_format_yapf(ctx: _Context) -> Dict[Path, str]:
     return {}
 
 
+def _black(*args, **kwargs) -> subprocess.CompletedProcess:
+    return log_run(
+        ['black', *args],
+        capture_output=True,
+        **kwargs,
+    )
+
+
+def check_py_format_black(ctx: _Context) -> Dict[Path, str]:
+    """Checks formatting; returns {path: diff} for files with bad formatting."""
+    errors: Dict[Path, str] = {}
+
+    def _format_temp(path: Union[Path, str], data: bytes) -> bytes:
+        # black doesn't have an option to output the changed file, so copy the
+        # file to a temp location, run buildifier on it, read that modified
+        # copy, and return its contents.
+        with tempfile.TemporaryDirectory(dir=ctx.output_dir) as temp:
+            build = Path(temp) / os.path.basename(path)
+            build.write_bytes(data)
+
+            proc = log_run(['black', build], capture_output=True)
+            if proc.returncode:
+                stderr = proc.stderr.decode(errors='replace')
+                stderr = stderr.replace(str(build), str(path))
+                errors[Path(path)] = stderr
+            return build.read_bytes()
+
+    result = _check_files(ctx.paths, _format_temp)
+    result.update(errors)
+    return result
+
+
+def fix_py_format_black(ctx: _Context) -> Dict[Path, str]:
+    """Fixes formatting for the provided files in place."""
+    errors: Dict[Path, str] = {}
+
+    for path in ctx.paths:
+        proc = log_run(['black', path], capture_output=True)
+        if proc.returncode:
+            errors[path] = proc.stderr.decode()
+    return errors
+
+
 _TRAILING_SPACE = re.compile(rb'[ \t]+$', flags=re.MULTILINE)
 
 
@@ -403,8 +446,8 @@ PYTHON_FORMAT_YAPF: CodeFormat = CodeFormat(
 PYTHON_FORMAT_BLACK: CodeFormat = CodeFormat(
     'Python',
     FileFilter(endswith=('.py',)),
-    check_trailing_space,
-    fix_trailing_space,
+    check_py_format_black,
+    fix_py_format_black,
 )
 
 GN_FORMAT: CodeFormat = CodeFormat(
