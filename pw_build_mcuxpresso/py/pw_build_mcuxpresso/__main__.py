@@ -29,12 +29,13 @@ def _parse_args() -> argparse.Namespace:
     """Setup argparse and parse command line args."""
     parser = argparse.ArgumentParser()
 
-    subparsers = parser.add_subparsers(dest='command',
-                                       metavar='<command>',
-                                       required=True)
+    subparsers = parser.add_subparsers(
+        dest='command', metavar='<command>', required=True
+    )
 
     project_parser = subparsers.add_parser(
-        'project', help='output components of an MCUXpresso project')
+        'project', help='output components of an MCUXpresso project'
+    )
     project_parser.add_argument('manifest_filename', type=pathlib.Path)
     project_parser.add_argument('--include', type=str, action='append')
     project_parser.add_argument('--exclude', type=str, action='append')
@@ -48,10 +49,12 @@ def main():
     args = _parse_args()
 
     if args.command == 'project':
-        components.project(args.manifest_filename,
-                           include=args.include,
-                           exclude=args.exclude,
-                           path_prefix=args.path_prefix)
+        components.project(
+            args.manifest_filename,
+            include=args.include,
+            exclude=args.exclude,
+            path_prefix=args.path_prefix,
+        )
 
     sys.exit(0)
 

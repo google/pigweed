@@ -22,6 +22,7 @@ from pw_build_mcuxpresso import components
 
 class GetComponentTest(unittest.TestCase):
     """get_component tests."""
+
     def test_without_basepath(self):
         test_manifest_xml = '''
         <manifest>
@@ -75,6 +76,7 @@ class GetComponentTest(unittest.TestCase):
 
 class ParseDefinesTest(unittest.TestCase):
     """parse_defines tests."""
+
     def test_parse_defines(self):
         test_manifest_xml = '''
         <manifest>
@@ -110,6 +112,7 @@ class ParseDefinesTest(unittest.TestCase):
 
 class ParseIncludePathsTest(unittest.TestCase):
     """parse_include_paths tests."""
+
     def test_parse_include_paths(self):
         test_manifest_xml = '''
         <manifest>
@@ -126,9 +129,9 @@ class ParseIncludePathsTest(unittest.TestCase):
         root = xml.etree.ElementTree.fromstring(test_manifest_xml)
         include_paths = components.parse_include_paths(root, 'test')
 
-        self.assertEqual(include_paths,
-                         [pathlib.Path('example'),
-                          pathlib.Path('asm')])
+        self.assertEqual(
+            include_paths, [pathlib.Path('example'), pathlib.Path('asm')]
+        )
 
     def test_with_base_path(self):
         test_manifest_xml = '''
@@ -148,8 +151,8 @@ class ParseIncludePathsTest(unittest.TestCase):
 
         self.assertEqual(
             include_paths,
-            [pathlib.Path('src/example'),
-             pathlib.Path('src/asm')])
+            [pathlib.Path('src/example'), pathlib.Path('src/asm')],
+        )
 
     def test_unknown_type(self):
         test_manifest_xml = '''
@@ -185,6 +188,7 @@ class ParseIncludePathsTest(unittest.TestCase):
 
 class ParseHeadersTest(unittest.TestCase):
     """parse_headers tests."""
+
     def test_parse_headers(self):
         test_manifest_xml = '''
         <manifest>
@@ -201,10 +205,13 @@ class ParseHeadersTest(unittest.TestCase):
         root = xml.etree.ElementTree.fromstring(test_manifest_xml)
         headers = components.parse_headers(root, 'test')
 
-        self.assertEqual(headers, [
-            pathlib.Path('include/test.h'),
-            pathlib.Path('include/test_types.h')
-        ])
+        self.assertEqual(
+            headers,
+            [
+                pathlib.Path('include/test.h'),
+                pathlib.Path('include/test_types.h'),
+            ],
+        )
 
     def test_with_base_path(self):
         test_manifest_xml = '''
@@ -222,10 +229,13 @@ class ParseHeadersTest(unittest.TestCase):
         root = xml.etree.ElementTree.fromstring(test_manifest_xml)
         headers = components.parse_headers(root, 'test')
 
-        self.assertEqual(headers, [
-            pathlib.Path('src/include/test.h'),
-            pathlib.Path('src/include/test_types.h')
-        ])
+        self.assertEqual(
+            headers,
+            [
+                pathlib.Path('src/include/test.h'),
+                pathlib.Path('src/include/test_types.h'),
+            ],
+        )
 
     def test_multiple_sets(self):
         test_manifest_xml = '''
@@ -245,10 +255,13 @@ class ParseHeadersTest(unittest.TestCase):
         root = xml.etree.ElementTree.fromstring(test_manifest_xml)
         headers = components.parse_headers(root, 'test')
 
-        self.assertEqual(headers, [
-            pathlib.Path('include/test.h'),
-            pathlib.Path('internal/test_types.h')
-        ])
+        self.assertEqual(
+            headers,
+            [
+                pathlib.Path('include/test.h'),
+                pathlib.Path('internal/test_types.h'),
+            ],
+        )
 
     def test_no_headers(self):
         test_manifest_xml = '''
@@ -267,6 +280,7 @@ class ParseHeadersTest(unittest.TestCase):
 
 class ParseSourcesTest(unittest.TestCase):
     """parse_sources tests."""
+
     def test_parse_sources(self):
         test_manifest_xml = '''
         <manifest>
@@ -284,9 +298,8 @@ class ParseSourcesTest(unittest.TestCase):
         sources = components.parse_sources(root, 'test')
 
         self.assertEqual(
-            sources,
-            [pathlib.Path('src/main.cc'),
-             pathlib.Path('src/test.cc')])
+            sources, [pathlib.Path('src/main.cc'), pathlib.Path('src/test.cc')]
+        )
 
     def test_with_base_path(self):
         test_manifest_xml = '''
@@ -306,8 +319,8 @@ class ParseSourcesTest(unittest.TestCase):
 
         self.assertEqual(
             sources,
-            [pathlib.Path('src/app/main.cc'),
-             pathlib.Path('src/app/test.cc')])
+            [pathlib.Path('src/app/main.cc'), pathlib.Path('src/app/test.cc')],
+        )
 
     def test_multiple_sets(self):
         test_manifest_xml = '''
@@ -333,12 +346,15 @@ class ParseSourcesTest(unittest.TestCase):
         root = xml.etree.ElementTree.fromstring(test_manifest_xml)
         sources = components.parse_sources(root, 'test')
 
-        self.assertEqual(sources, [
-            pathlib.Path('shared/test.cc'),
-            pathlib.Path('lib/test.c'),
-            pathlib.Path('app/main.cc'),
-            pathlib.Path('startup/boot.s')
-        ])
+        self.assertEqual(
+            sources,
+            [
+                pathlib.Path('shared/test.cc'),
+                pathlib.Path('lib/test.c'),
+                pathlib.Path('app/main.cc'),
+                pathlib.Path('startup/boot.s'),
+            ],
+        )
 
     def test_unknown_type(self):
         test_manifest_xml = '''
@@ -374,6 +390,7 @@ class ParseSourcesTest(unittest.TestCase):
 
 class ParseLibsTest(unittest.TestCase):
     """parse_libs tests."""
+
     def test_parse_libs(self):
         test_manifest_xml = '''
         <manifest>
@@ -392,8 +409,8 @@ class ParseLibsTest(unittest.TestCase):
 
         self.assertEqual(
             libs,
-            [pathlib.Path('gcc/libtest.a'),
-             pathlib.Path('gcc/libtest_arm.a')])
+            [pathlib.Path('gcc/libtest.a'), pathlib.Path('gcc/libtest_arm.a')],
+        )
 
     def test_with_base_path(self):
         test_manifest_xml = '''
@@ -411,10 +428,13 @@ class ParseLibsTest(unittest.TestCase):
         root = xml.etree.ElementTree.fromstring(test_manifest_xml)
         libs = components.parse_libs(root, 'test')
 
-        self.assertEqual(libs, [
-            pathlib.Path('src/gcc/libtest.a'),
-            pathlib.Path('src/gcc/libtest_arm.a')
-        ])
+        self.assertEqual(
+            libs,
+            [
+                pathlib.Path('src/gcc/libtest.a'),
+                pathlib.Path('src/gcc/libtest_arm.a'),
+            ],
+        )
 
     def test_multiple_sets(self):
         test_manifest_xml = '''
@@ -436,8 +456,8 @@ class ParseLibsTest(unittest.TestCase):
 
         self.assertEqual(
             libs,
-            [pathlib.Path('gcc/libtest.a'),
-             pathlib.Path('arm/libtest_arm.a')])
+            [pathlib.Path('gcc/libtest.a'), pathlib.Path('arm/libtest_arm.a')],
+        )
 
     def test_no_libs(self):
         test_manifest_xml = '''
@@ -456,6 +476,7 @@ class ParseLibsTest(unittest.TestCase):
 
 class ParseDependenciesTest(unittest.TestCase):
     """parse_dependencies tests."""
+
     def test_component_dependency(self):
         test_manifest_xml = '''
         <manifest>
@@ -560,6 +581,7 @@ class ParseDependenciesTest(unittest.TestCase):
 
 class CheckDependenciesTest(unittest.TestCase):
     """check_dependencies tests."""
+
     def test_any_of_satisfied(self):
         test_manifest_xml = '''
         <manifest>
@@ -577,9 +599,9 @@ class CheckDependenciesTest(unittest.TestCase):
         </manifest>
         '''
         root = xml.etree.ElementTree.fromstring(test_manifest_xml)
-        satisfied = components.check_dependencies(root,
-                                                  'test', ['test', 'foo'],
-                                                  exclude=None)
+        satisfied = components.check_dependencies(
+            root, 'test', ['test', 'foo'], exclude=None
+        )
 
         self.assertEqual(satisfied, True)
 
@@ -600,9 +622,9 @@ class CheckDependenciesTest(unittest.TestCase):
         </manifest>
         '''
         root = xml.etree.ElementTree.fromstring(test_manifest_xml)
-        satisfied = components.check_dependencies(root,
-                                                  'test', ['test'],
-                                                  exclude=None)
+        satisfied = components.check_dependencies(
+            root, 'test', ['test'], exclude=None
+        )
 
         self.assertEqual(satisfied, False)
 
@@ -623,9 +645,9 @@ class CheckDependenciesTest(unittest.TestCase):
         </manifest>
         '''
         root = xml.etree.ElementTree.fromstring(test_manifest_xml)
-        satisfied = components.check_dependencies(root,
-                                                  'test', ['test'],
-                                                  exclude=['foo'])
+        satisfied = components.check_dependencies(
+            root, 'test', ['test'], exclude=['foo']
+        )
 
         self.assertEqual(satisfied, True)
 
@@ -649,7 +671,8 @@ class CheckDependenciesTest(unittest.TestCase):
         '''
         root = xml.etree.ElementTree.fromstring(test_manifest_xml)
         satisfied = components.check_dependencies(
-            root, 'test', ['test', 'foo', 'bar', 'baz'], exclude=None)
+            root, 'test', ['test', 'foo', 'bar', 'baz'], exclude=None
+        )
 
         self.assertEqual(satisfied, True)
 
@@ -672,10 +695,9 @@ class CheckDependenciesTest(unittest.TestCase):
         </manifest>
         '''
         root = xml.etree.ElementTree.fromstring(test_manifest_xml)
-        satisfied = components.check_dependencies(root,
-                                                  'test',
-                                                  ['test', 'foo', 'bar'],
-                                                  exclude=None)
+        satisfied = components.check_dependencies(
+            root, 'test', ['test', 'foo', 'bar'], exclude=None
+        )
 
         self.assertEqual(satisfied, False)
 
@@ -698,10 +720,9 @@ class CheckDependenciesTest(unittest.TestCase):
         </manifest>
         '''
         root = xml.etree.ElementTree.fromstring(test_manifest_xml)
-        satisfied = components.check_dependencies(root,
-                                                  'test',
-                                                  ['test', 'foo', 'bar'],
-                                                  exclude=['baz'])
+        satisfied = components.check_dependencies(
+            root, 'test', ['test', 'foo', 'bar'], exclude=['baz']
+        )
 
         self.assertEqual(satisfied, True)
 
@@ -725,9 +746,9 @@ class CheckDependenciesTest(unittest.TestCase):
         </manifest>
         '''
         root = xml.etree.ElementTree.fromstring(test_manifest_xml)
-        satisfied = components.check_dependencies(root,
-                                                  'test', ['test', 'frodo'],
-                                                  exclude=None)
+        satisfied = components.check_dependencies(
+            root, 'test', ['test', 'frodo'], exclude=None
+        )
 
         self.assertEqual(satisfied, True)
 
@@ -751,9 +772,9 @@ class CheckDependenciesTest(unittest.TestCase):
         </manifest>
         '''
         root = xml.etree.ElementTree.fromstring(test_manifest_xml)
-        satisfied = components.check_dependencies(root,
-                                                  'test', ['test'],
-                                                  exclude=None)
+        satisfied = components.check_dependencies(
+            root, 'test', ['test'], exclude=None
+        )
 
         self.assertEqual(satisfied, False)
 
@@ -777,15 +798,16 @@ class CheckDependenciesTest(unittest.TestCase):
         </manifest>
         '''
         root = xml.etree.ElementTree.fromstring(test_manifest_xml)
-        satisfied = components.check_dependencies(root,
-                                                  'test', ['test'],
-                                                  exclude=['frodo'])
+        satisfied = components.check_dependencies(
+            root, 'test', ['test'], exclude=['frodo']
+        )
 
         self.assertEqual(satisfied, True)
 
 
 class CreateProjectTest(unittest.TestCase):
     """create_project tests."""
+
     def test_create_project(self):
         """test creating a project."""
         test_manifest_xml = '''
@@ -882,27 +904,43 @@ class CreateProjectTest(unittest.TestCase):
         </manifest>
         '''
         root = xml.etree.ElementTree.fromstring(test_manifest_xml)
-        (component_ids, defines, include_dirs, headers, sources, libs) = \
-            components.create_project(root, ['test', 'frodo'],
-                                      exclude=['bilbo'])
+        (
+            component_ids,
+            defines,
+            include_dirs,
+            headers,
+            sources,
+            libs,
+        ) = components.create_project(
+            root, ['test', 'frodo'], exclude=['bilbo']
+        )
 
         self.assertEqual(component_ids, ['test', 'frodo', 'foo', 'bar'])
         self.assertEqual(defines, ['FRODO', 'FOO', 'BAR'])
-        self.assertEqual(include_dirs, [
-            pathlib.Path('frodo/include'),
-            pathlib.Path('foo/include'),
-            pathlib.Path('bar/include')
-        ])
-        self.assertEqual(headers, [
-            pathlib.Path('frodo/include/frodo.h'),
-            pathlib.Path('foo/include/foo.h'),
-            pathlib.Path('bar/include/bar.h')
-        ])
-        self.assertEqual(sources, [
-            pathlib.Path('frodo/src/frodo.cc'),
-            pathlib.Path('foo/src/foo.cc'),
-            pathlib.Path('bar/src/bar.cc')
-        ])
+        self.assertEqual(
+            include_dirs,
+            [
+                pathlib.Path('frodo/include'),
+                pathlib.Path('foo/include'),
+                pathlib.Path('bar/include'),
+            ],
+        )
+        self.assertEqual(
+            headers,
+            [
+                pathlib.Path('frodo/include/frodo.h'),
+                pathlib.Path('foo/include/foo.h'),
+                pathlib.Path('bar/include/bar.h'),
+            ],
+        )
+        self.assertEqual(
+            sources,
+            [
+                pathlib.Path('frodo/src/frodo.cc'),
+                pathlib.Path('foo/src/foo.cc'),
+                pathlib.Path('bar/src/bar.cc'),
+            ],
+        )
         self.assertEqual(libs, [pathlib.Path('frodo/libonering.a')])
 
 
