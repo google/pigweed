@@ -29,32 +29,44 @@ def _with_fcs(data: bytes) -> bytes:
 
 class TestEncodeUIFrame(unittest.TestCase):
     """Tests Encoding bytes with different arguments using a custom serial."""
+
     def test_empty(self):
-        self.assertEqual(encode.ui_frame(0, b''),
-                         FLAG + _with_fcs(b'\x01\x03') + FLAG)
-        self.assertEqual(encode.ui_frame(0x1a, b''),
-                         FLAG + _with_fcs(b'\x35\x03') + FLAG)
+        self.assertEqual(
+            encode.ui_frame(0, b''), FLAG + _with_fcs(b'\x01\x03') + FLAG
+        )
+        self.assertEqual(
+            encode.ui_frame(0x1A, b''), FLAG + _with_fcs(b'\x35\x03') + FLAG
+        )
 
     def test_1byte(self):
-        self.assertEqual(encode.ui_frame(0, b'A'),
-                         FLAG + _with_fcs(b'\x01\x03A') + FLAG)
+        self.assertEqual(
+            encode.ui_frame(0, b'A'), FLAG + _with_fcs(b'\x01\x03A') + FLAG
+        )
 
     def test_multibyte(self):
-        self.assertEqual(encode.ui_frame(0, b'123456789'),
-                         FLAG + _with_fcs(b'\x01\x03123456789') + FLAG)
+        self.assertEqual(
+            encode.ui_frame(0, b'123456789'),
+            FLAG + _with_fcs(b'\x01\x03123456789') + FLAG,
+        )
 
     def test_multibyte_address(self):
-        self.assertEqual(encode.ui_frame(128, b'123456789'),
-                         FLAG + _with_fcs(b'\x00\x03\x03123456789') + FLAG)
+        self.assertEqual(
+            encode.ui_frame(128, b'123456789'),
+            FLAG + _with_fcs(b'\x00\x03\x03123456789') + FLAG,
+        )
 
     def test_escape(self):
         self.assertEqual(
-            encode.ui_frame(0x3e, b'\x7d'),
-            FLAG + b'\x7d\x5d\x03\x7d\x5d' + _fcs(b'\x7d\x03\x7d') + FLAG)
+            encode.ui_frame(0x3E, b'\x7d'),
+            FLAG + b'\x7d\x5d\x03\x7d\x5d' + _fcs(b'\x7d\x03\x7d') + FLAG,
+        )
         self.assertEqual(
-            encode.ui_frame(0x3e, b'A\x7e\x7dBC'),
-            FLAG + b'\x7d\x5d\x03A\x7d\x5e\x7d\x5dBC' +
-            _fcs(b'\x7d\x03A\x7e\x7dBC') + FLAG)
+            encode.ui_frame(0x3E, b'A\x7e\x7dBC'),
+            FLAG
+            + b'\x7d\x5d\x03A\x7d\x5e\x7d\x5dBC'
+            + _fcs(b'\x7d\x03A\x7e\x7dBC')
+            + FLAG,
+        )
 
 
 if __name__ == '__main__':

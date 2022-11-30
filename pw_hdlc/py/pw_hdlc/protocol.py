@@ -44,7 +44,7 @@ def encode_address(address: int) -> bytes:
     result = bytearray()
 
     while True:
-        result += bytes([(address & 0x7f) << 1])
+        result += bytes([(address & 0x7F) << 1])
 
         address >>= 7
         if address == 0:

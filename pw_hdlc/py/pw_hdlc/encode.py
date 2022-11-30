@@ -21,8 +21,11 @@ _FLAG_BYTE = bytes([protocol.FLAG])
 
 def ui_frame(address: int, data: bytes) -> bytes:
     """Encodes an HDLC UI-frame with a CRC-32 frame check sequence."""
-    frame = protocol.encode_address(
-        address) + protocol.UFrameControl.unnumbered_information().data + data
+    frame = (
+        protocol.encode_address(address)
+        + protocol.UFrameControl.unnumbered_information().data
+        + data
+    )
     frame += protocol.frame_check_sequence(frame)
     frame = frame.replace(_ESCAPE_BYTE, b'\x7d\x5d')
     frame = frame.replace(_FLAG_BYTE, b'\x7d\x5e')

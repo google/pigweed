@@ -29,8 +29,9 @@ PROTO = Path(os.environ['PW_ROOT'], 'pw_rpc/echo.proto')
 def script(device: str, baud: int) -> None:
     # Set up a pw_rpc client that uses HDLC.
     ser = serial.Serial(device, baud, timeout=0.01)
-    client = HdlcRpcClient(lambda: ser.read(4096), [PROTO],
-                           default_channels(ser.write))
+    client = HdlcRpcClient(
+        lambda: ser.read(4096), [PROTO], default_channels(ser.write)
+    )
 
     # Make a shortcut to the EchoService.
     echo_service = client.rpcs().pw.rpc.EchoService
@@ -52,16 +53,18 @@ def script(device: str, baud: int) -> None:
 def main():
     parser = argparse.ArgumentParser(
         description=__doc__,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--device',
-                        '-d',
-                        default='/dev/ttyACM0',
-                        help='serial device to use')
-    parser.add_argument('--baud',
-                        '-b',
-                        type=int,
-                        default=115200,
-                        help='baud rate for the serial device')
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        '--device', '-d', default='/dev/ttyACM0', help='serial device to use'
+    )
+    parser.add_argument(
+        '--baud',
+        '-b',
+        type=int,
+        default=115200,
+        help='baud rate for the serial device',
+    )
     script(**vars(parser.parse_args()))
 
 

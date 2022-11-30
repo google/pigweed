@@ -31,6 +31,7 @@ _FLAG_BYTE = bytes([protocol.FLAG])
 
 class FrameStatus(enum.Enum):
     """Indicates that an error occurred."""
+
     OK = 'OK'
     FCS_MISMATCH = 'frame check sequence failure'
     FRAMING_ERROR = 'invalid flag or escape characters'
@@ -39,10 +40,13 @@ class FrameStatus(enum.Enum):
 
 class Frame:
     """Represents an HDLC frame."""
-    def __init__(self,
-                 raw_encoded: bytes,
-                 raw_decoded: bytes,
-                 status: FrameStatus = FrameStatus.OK):
+
+    def __init__(
+        self,
+        raw_encoded: bytes,
+        raw_decoded: bytes,
+        status: FrameStatus = FrameStatus.OK,
+    ):
         """Parses fields from an HDLC frame.
 
         Arguments:
@@ -68,8 +72,8 @@ class Frame:
                 return
 
             self.address = address
-            self.control = raw_decoded[address_length:address_length + 1]
-            self.data = raw_decoded[address_length + 1:-4]
+            self.control = raw_decoded[address_length : address_length + 1]
+            self.data = raw_decoded[address_length + 1 : -4]
 
     def ok(self) -> bool:
         """True if this represents a valid frame.
@@ -82,11 +86,15 @@ class Frame:
 
     def __repr__(self) -> str:
         if self.ok():
-            body = (f'address={self.address}, control={self.control!r}, '
-                    f'data={self.data!r}')
+            body = (
+                f'address={self.address}, control={self.control!r}, '
+                f'data={self.data!r}'
+            )
         else:
-            body = (f'raw_encoded={self.raw_encoded!r}, '
-                    f'status={str(self.status)}')
+            body = (
+                f'raw_encoded={self.raw_encoded!r}, '
+                f'status={str(self.status)}'
+            )
 
         return f'{type(self).__name__}({body})'
 
@@ -110,6 +118,7 @@ def _check_frame(frame_data: bytes) -> FrameStatus:
 
 class FrameDecoder:
     """Decodes one or more HDLC frames from a stream of data."""
+
     def __init__(self) -> None:
         self._decoded_data = bytearray()
         self._raw_data = bytearray()
@@ -135,8 +144,11 @@ class FrameDecoder:
             if frame.ok():
                 yield frame
             else:
-                _LOG.warning('Failed to decode frame: %s; discarded %d bytes',
-                             frame.status.value, len(frame.raw_encoded))
+                _LOG.warning(
+                    'Failed to decode frame: %s; discarded %d bytes',
+                    frame.status.value,
+                    len(frame.raw_encoded),
+                )
                 _LOG.debug('Discarded data: %s', frame.raw_encoded)
 
     def _finish_frame(self, status: FrameStatus) -> Frame:
@@ -168,8 +180,7 @@ class FrameDecoder:
             if byte == protocol.FLAG:
                 # On back to back frames, we may see a repeated FLAG byte.
                 if len(self._raw_data) > 1:
-                    frame = self._finish_frame(_check_frame(
-                        self._decoded_data))
+                    frame = self._finish_frame(_check_frame(self._decoded_data))
 
                 self._state = _State.FRAME
             elif byte == protocol.ESCAPE:
@@ -193,12 +204,15 @@ class FrameDecoder:
 
 class FrameAndNonFrameDecoder:
     """Processes both HDLC frames and non-frame data in a stream."""
-    def __init__(self,
-                 non_frame_data_handler: Callable[[bytes], Any],
-                 *,
-                 mtu: Optional[int] = None,
-                 timeout_s: Optional[float] = None,
-                 handle_shared_flags: bool = True) -> None:
+
+    def __init__(
+        self,
+        non_frame_data_handler: Callable[[bytes], Any],
+        *,
+        mtu: Optional[int] = None,
+        timeout_s: Optional[float] = None,
+        handle_shared_flags: bool = True,
+    ) -> None:
         """Yields valid HDLC frames and passes non-frame data to callback.
 
         Args:
@@ -261,8 +275,9 @@ class FrameAndNonFrameDecoder:
             # Flush the data if it is larger than the MTU, or flag bytes are not
             # being shared and no initial flag was seen.
             if (self._mtu is not None and len(self._raw_data) > self._mtu) or (
-                    not self._shared_flags
-                    and not self._raw_data.startswith(_FLAG_BYTE)):
+                not self._shared_flags
+                and not self._raw_data.startswith(_FLAG_BYTE)
+            ):
                 self._flush_non_frame()
 
             self._last_data_time = time.time()
@@ -287,8 +302,10 @@ class FrameAndNonFrameDecoder:
             if self._mtu is not None and len(frame.raw_encoded) > self._mtu:
                 _LOG.warning(
                     'Found a valid %d B HDLC frame, but the MTU is set to %d! '
-                    'The MTU setting may be incorrect.', self._mtu,
-                    len(frame.raw_encoded))
+                    'The MTU setting may be incorrect.',
+                    self._mtu,
+                    len(frame.raw_encoded),
+                )
 
             yield frame
         else:
