@@ -65,8 +65,7 @@ try:
 except ImportError:
     # Append this path to the module search path to allow running this module
     # without installing the pw_tokenizer package.
-    sys.path.append(os.path.dirname(os.path.dirname(
-        os.path.abspath(__file__))))
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from pw_tokenizer import database, decode, encode, tokens
 
 _LOG = logging.getLogger('pw_tokenizer')
@@ -78,11 +77,14 @@ DEFAULT_RECURSION = 9
 
 class DetokenizedString:
     """A detokenized string, with all results if there are collisions."""
-    def __init__(self,
-                 token: Optional[int],
-                 format_string_entries: Iterable[tuple],
-                 encoded_message: bytes,
-                 show_errors: bool = False):
+
+    def __init__(
+        self,
+        token: Optional[int],
+        format_string_entries: Iterable[tuple],
+        encoded_message: bytes,
+        show_errors: bool = False,
+    ):
         self.token = token
         self.encoded_message = encoded_message
         self._show_errors = show_errors
@@ -93,8 +95,9 @@ class DetokenizedString:
         decode_attempts: List[Tuple[Tuple, decode.FormattedString]] = []
 
         for entry, fmt in format_string_entries:
-            result = fmt.format(encoded_message[ENCODED_TOKEN.size:],
-                                show_errors)
+            result = fmt.format(
+                encoded_message[ENCODED_TOKEN.size :], show_errors
+            )
             decode_attempts.append((result.score(entry.date_removed), result))
 
         # Sort the attempts by the score so the most likely results are first.
@@ -145,8 +148,9 @@ class DetokenizedString:
             return result[0]
 
         if self._show_errors:
-            return '<[ERROR: {}|{!r}]>'.format(self.error_message(),
-                                               self.encoded_message)
+            return '<[ERROR: {}|{!r}]>'.format(
+                self.error_message(), self.encoded_message
+            )
 
         # Display the string as prefixed Base64 if it cannot be decoded.
         return encode.prefixed_base64(self.encoded_message)
@@ -155,8 +159,9 @@ class DetokenizedString:
         if self.ok():
             message = repr(str(self))
         else:
-            message = 'ERROR: {}|{!r}'.format(self.error_message(),
-                                              self.encoded_message)
+            message = 'ERROR: {}|{!r}'.format(
+                self.error_message(), self.encoded_message
+            )
 
         return '{}({})'.format(type(self).__name__, message)
 
@@ -168,6 +173,7 @@ class _TokenizedFormatString(NamedTuple):
 
 class Detokenizer:
     """Main detokenization class; detokenizes strings and caches results."""
+
     def __init__(self, *token_database_or_elf, show_errors: bool = False):
         """Decodes and detokenizes binary messages.
 
@@ -203,8 +209,9 @@ class Detokenizer:
     def detokenize(self, encoded_message: bytes) -> DetokenizedString:
         """Decodes and detokenizes a message as a DetokenizedString."""
         if not encoded_message:
-            return DetokenizedString(None, (), encoded_message,
-                                     self.show_errors)
+            return DetokenizedString(
+                None, (), encoded_message, self.show_errors
+            )
 
         # Pad messages smaller than ENCODED_TOKEN.size with zeroes to support
         # tokens smaller than a uint32. Messages with arguments must always use
@@ -213,14 +220,17 @@ class Detokenizer:
         if missing_token_bytes > 0:
             encoded_message += b'\0' * missing_token_bytes
 
-        token, = ENCODED_TOKEN.unpack_from(encoded_message)
-        return DetokenizedString(token, self.lookup(token), encoded_message,
-                                 self.show_errors)
+        (token,) = ENCODED_TOKEN.unpack_from(encoded_message)
+        return DetokenizedString(
+            token, self.lookup(token), encoded_message, self.show_errors
+        )
 
-    def detokenize_base64(self,
-                          data: AnyStr,
-                          prefix: Union[str, bytes] = BASE64_PREFIX,
-                          recursion: int = DEFAULT_RECURSION) -> AnyStr:
+    def detokenize_base64(
+        self,
+        data: AnyStr,
+        prefix: Union[str, bytes] = BASE64_PREFIX,
+        recursion: int = DEFAULT_RECURSION,
+    ) -> AnyStr:
         """Decodes and replaces prefixed Base64 messages in the provided data.
 
         Args:
@@ -236,24 +246,30 @@ class Detokenizer:
         result = output.getvalue()
         return result.decode() if isinstance(data, str) else result
 
-    def detokenize_base64_to_file(self,
-                                  data: Union[str, bytes],
-                                  output: BinaryIO,
-                                  prefix: Union[str, bytes] = BASE64_PREFIX,
-                                  recursion: int = DEFAULT_RECURSION) -> None:
+    def detokenize_base64_to_file(
+        self,
+        data: Union[str, bytes],
+        output: BinaryIO,
+        prefix: Union[str, bytes] = BASE64_PREFIX,
+        recursion: int = DEFAULT_RECURSION,
+    ) -> None:
         """Decodes prefixed Base64 messages in data; decodes to output file."""
         data = data.encode() if isinstance(data, str) else data
         prefix = prefix.encode() if isinstance(prefix, str) else prefix
 
         output.write(
             _base64_message_regex(prefix).sub(
-                self._detokenize_prefixed_base64(prefix, recursion), data))
+                self._detokenize_prefixed_base64(prefix, recursion), data
+            )
+        )
 
-    def detokenize_base64_live(self,
-                               input_file: BinaryIO,
-                               output: BinaryIO,
-                               prefix: Union[str, bytes] = BASE64_PREFIX,
-                               recursion: int = DEFAULT_RECURSION) -> None:
+    def detokenize_base64_live(
+        self,
+        input_file: BinaryIO,
+        output: BinaryIO,
+        prefix: Union[str, bytes] = BASE64_PREFIX,
+        recursion: int = DEFAULT_RECURSION,
+    ) -> None:
         """Reads chars one-at-a-time, decoding messages; SLOW for big files."""
         prefix_bytes = prefix.encode() if isinstance(prefix, str) else prefix
 
@@ -261,13 +277,12 @@ class Detokenizer:
 
         def transform(data: bytes) -> bytes:
             return base64_message.sub(
-                self._detokenize_prefixed_base64(prefix_bytes, recursion),
-                data)
+                self._detokenize_prefixed_base64(prefix_bytes, recursion), data
+            )
 
         for message in PrefixedMessageDecoder(
-                prefix,
-                string.ascii_letters + string.digits + '+/-_=').transform(
-                    input_file, transform):
+            prefix, string.ascii_letters + string.digits + '+/-_='
+        ).transform(input_file, transform):
             output.write(message)
 
             # Flush each line to prevent delays when piping between processes.
@@ -275,22 +290,25 @@ class Detokenizer:
                 output.flush()
 
     def _detokenize_prefixed_base64(
-            self, prefix: bytes,
-            recursion: int) -> Callable[[Match[bytes]], bytes]:
+        self, prefix: bytes, recursion: int
+    ) -> Callable[[Match[bytes]], bytes]:
         """Returns a function that decodes prefixed Base64."""
+
         def decode_and_detokenize(match: Match[bytes]) -> bytes:
             """Decodes prefixed base64 with this detokenizer."""
             original = match.group(0)
 
             try:
                 detokenized_string = self.detokenize(
-                    base64.b64decode(original[1:], validate=True))
+                    base64.b64decode(original[1:], validate=True)
+                )
                 if detokenized_string.matches():
                     result = str(detokenized_string).encode()
 
                     if recursion > 0 and original != result:
                         result = self.detokenize_base64(
-                            result, prefix, recursion - 1)
+                            result, prefix, recursion - 1
+                        )
 
                     return result
             except binascii.Error:
@@ -306,8 +324,10 @@ _PathOrFile = Union[IO, str, Path]
 
 class AutoUpdatingDetokenizer(Detokenizer):
     """Loads and updates a detokenizer from database paths."""
+
     class _DatabasePath:
         """Tracks the modified time of a path or file object."""
+
         def __init__(self, path: _PathOrFile) -> None:
             self.path: Path
             self.domain = None
@@ -340,15 +360,16 @@ class AutoUpdatingDetokenizer(Detokenizer):
         def load(self) -> tokens.Database:
             try:
                 if self.domain is not None:
-                    return database.load_token_database(self.path,
-                                                        domain=self.domain)
+                    return database.load_token_database(
+                        self.path, domain=self.domain
+                    )
                 return database.load_token_database(self.path)
             except FileNotFoundError:
                 return database.load_token_database()
 
-    def __init__(self,
-                 *paths_or_files: _PathOrFile,
-                 min_poll_period_s: float = 1.0) -> None:
+    def __init__(
+        self, *paths_or_files: _PathOrFile, min_poll_period_s: float = 1.0
+    ) -> None:
         self.paths = tuple(self._DatabasePath(path) for path in paths_or_files)
         self.min_poll_period_s = min_poll_period_s
         self._last_checked_time: float = time.time()
@@ -369,6 +390,7 @@ class AutoUpdatingDetokenizer(Detokenizer):
 
 class PrefixedMessageDecoder:
     """Parses messages that start with a prefix character from a byte stream."""
+
     def __init__(self, prefix: Union[str, bytes], chars: Union[str, bytes]):
         """Parses prefixed messages.
 
@@ -382,14 +404,17 @@ class PrefixedMessageDecoder:
             chars = chars.encode()
 
         # Store the valid message bytes as a set of binary strings.
-        self._message_bytes = frozenset(chars[i:i + 1]
-                                        for i in range(len(chars)))
+        self._message_bytes = frozenset(
+            chars[i : i + 1] for i in range(len(chars))
+        )
 
         if len(self._prefix) != 1 or self._prefix in self._message_bytes:
             raise ValueError(
                 'Invalid prefix {!r}: the prefix must be a single '
                 'character that is not a valid message character.'.format(
-                    prefix))
+                    prefix
+                )
+            )
 
         self.data = bytearray()
 
@@ -400,8 +425,9 @@ class PrefixedMessageDecoder:
         self.data += char
         return char, index
 
-    def read_messages(self,
-                      binary_fd: BinaryIO) -> Iterator[Tuple[bool, bytes]]:
+    def read_messages(
+        self, binary_fd: BinaryIO
+    ) -> Iterator[Tuple[bool, bytes]]:
         """Parses prefixed messages; yields (is_message, contents) chunks."""
         message_start = None
 
@@ -427,8 +453,9 @@ class PrefixedMessageDecoder:
             else:
                 yield False, char
 
-    def transform(self, binary_fd: BinaryIO,
-                  transform: Callable[[bytes], bytes]) -> Iterator[bytes]:
+    def transform(
+        self, binary_fd: BinaryIO, transform: Callable[[bytes], bytes]
+    ) -> Iterator[bytes]:
         """Yields the file with a transformation applied to the messages."""
         for is_message, chunk in self.read_messages(binary_fd):
             yield transform(chunk) if is_message else chunk
@@ -438,27 +465,34 @@ def _base64_message_regex(prefix: bytes) -> Pattern[bytes]:
     """Returns a regular expression for prefixed base64 tokenized strings."""
     return re.compile(
         # Base64 tokenized strings start with the prefix character ($)
-        re.escape(prefix) + (
+        re.escape(prefix)
+        + (
             # Tokenized strings contain 0 or more blocks of four Base64 chars.
             br'(?:[A-Za-z0-9+/\-_]{4})*'
             # The last block of 4 chars may have one or two padding chars (=).
-            br'(?:[A-Za-z0-9+/\-_]{3}=|[A-Za-z0-9+/\-_]{2}==)?'))
+            br'(?:[A-Za-z0-9+/\-_]{3}=|[A-Za-z0-9+/\-_]{2}==)?'
+        )
+    )
 
 
 # TODO(hepler): Remove this unnecessary function.
-def detokenize_base64(detokenizer: Detokenizer,
-                      data: bytes,
-                      prefix: Union[str, bytes] = BASE64_PREFIX,
-                      recursion: int = DEFAULT_RECURSION) -> bytes:
+def detokenize_base64(
+    detokenizer: Detokenizer,
+    data: bytes,
+    prefix: Union[str, bytes] = BASE64_PREFIX,
+    recursion: int = DEFAULT_RECURSION,
+) -> bytes:
     """Alias for detokenizer.detokenize_base64 for backwards compatibility."""
     return detokenizer.detokenize_base64(data, prefix, recursion)
 
 
-def _follow_and_detokenize_file(detokenizer: Detokenizer,
-                                file: BinaryIO,
-                                output: BinaryIO,
-                                prefix: Union[str, bytes],
-                                poll_period_s: float = 0.01) -> None:
+def _follow_and_detokenize_file(
+    detokenizer: Detokenizer,
+    file: BinaryIO,
+    output: BinaryIO,
+    prefix: Union[str, bytes],
+    poll_period_s: float = 0.01,
+) -> None:
     """Polls a file to detokenize it and any appended data."""
 
     try:
@@ -473,8 +507,14 @@ def _follow_and_detokenize_file(detokenizer: Detokenizer,
         pass
 
 
-def _handle_base64(databases, input_file: BinaryIO, output: BinaryIO,
-                   prefix: str, show_errors: bool, follow: bool) -> None:
+def _handle_base64(
+    databases,
+    input_file: BinaryIO,
+    output: BinaryIO,
+    prefix: str,
+    show_errors: bool,
+    follow: bool,
+) -> None:
     """Handles the base64 command line option."""
     # argparse.FileType doesn't correctly handle - for binary files.
     if input_file is sys.stdin:
@@ -483,15 +523,15 @@ def _handle_base64(databases, input_file: BinaryIO, output: BinaryIO,
     if output is sys.stdout:
         output = sys.stdout.buffer
 
-    detokenizer = Detokenizer(tokens.Database.merged(*databases),
-                              show_errors=show_errors)
+    detokenizer = Detokenizer(
+        tokens.Database.merged(*databases), show_errors=show_errors
+    )
 
     if follow:
         _follow_and_detokenize_file(detokenizer, input_file, output, prefix)
     elif input_file.seekable():
         # Process seekable files all at once, which is MUCH faster.
-        detokenizer.detokenize_base64_to_file(input_file.read(), output,
-                                              prefix)
+        detokenizer.detokenize_base64_to_file(input_file.read(), output, prefix)
     else:
         # For non-seekable inputs (e.g. pipes), read one character at a time.
         detokenizer.detokenize_base64_live(input_file, output, prefix)
@@ -502,7 +542,8 @@ def _parse_args() -> argparse.Namespace:
 
     parser = argparse.ArgumentParser(
         description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter)
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser.set_defaults(handler=lambda **_: parser.print_help())
 
     subparsers = parser.add_subparsers(help='Encoding of the input.')
@@ -512,7 +553,8 @@ def _parse_args() -> argparse.Namespace:
         'base64',
         description=base64_help,
         parents=[database.token_databases_parser()],
-        help=base64_help)
+        help=base64_help,
+    )
     subparser.set_defaults(handler=_handle_base64)
     subparser.add_argument(
         '-i',
@@ -520,31 +562,45 @@ def _parse_args() -> argparse.Namespace:
         dest='input_file',
         type=argparse.FileType('rb'),
         default=sys.stdin.buffer,
-        help='The file from which to read; provide - or omit for stdin.')
+        help='The file from which to read; provide - or omit for stdin.',
+    )
     subparser.add_argument(
         '-f',
         '--follow',
         action='store_true',
-        help=('Detokenize data appended to input_file as it grows; similar to '
-              'tail -f.'))
-    subparser.add_argument('-o',
-                           '--output',
-                           type=argparse.FileType('wb'),
-                           default=sys.stdout.buffer,
-                           help=('The file to which to write the output; '
-                                 'provide - or omit for stdout.'))
+        help=(
+            'Detokenize data appended to input_file as it grows; similar to '
+            'tail -f.'
+        ),
+    )
+    subparser.add_argument(
+        '-o',
+        '--output',
+        type=argparse.FileType('wb'),
+        default=sys.stdout.buffer,
+        help=(
+            'The file to which to write the output; '
+            'provide - or omit for stdout.'
+        ),
+    )
     subparser.add_argument(
         '-p',
         '--prefix',
         default=BASE64_PREFIX,
-        help=('The one-character prefix that signals the start of a '
-              'Base64-encoded message. (default: $)'))
+        help=(
+            'The one-character prefix that signals the start of a '
+            'Base64-encoded message. (default: $)'
+        ),
+    )
     subparser.add_argument(
         '-s',
         '--show_errors',
         action='store_true',
-        help=('Show error messages instead of conversion specifiers when '
-              'arguments cannot be decoded.'))
+        help=(
+            'Show error messages instead of conversion specifiers when '
+            'arguments cannot be decoded.'
+        ),
+    )
 
     return parser.parse_args()
 

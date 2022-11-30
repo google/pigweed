@@ -25,14 +25,19 @@ from pw_tokenizer import detokenize, encode
 def _tokenized_fields(proto: Message) -> Iterator[FieldDescriptor]:
     for field in proto.DESCRIPTOR.fields:
         extensions = field.GetOptions().Extensions
-        if options_pb2.format in extensions and extensions[
-                options_pb2.format] == options_pb2.TOKENIZATION_OPTIONAL:
+        if (
+            options_pb2.format in extensions
+            and extensions[options_pb2.format]
+            == options_pb2.TOKENIZATION_OPTIONAL
+        ):
             yield field
 
 
-def decode_optionally_tokenized(detokenizer: detokenize.Detokenizer,
-                                data: bytes,
-                                prefix: str = encode.BASE64_PREFIX) -> str:
+def decode_optionally_tokenized(
+    detokenizer: detokenize.Detokenizer,
+    data: bytes,
+    prefix: str = encode.BASE64_PREFIX,
+) -> str:
     """Decodes data that may be plain text or binary / Base64 tokenized text."""
     # Try detokenizing as binary.
     result = detokenizer.detokenize(data)
@@ -62,9 +67,11 @@ def decode_optionally_tokenized(detokenizer: detokenize.Detokenizer,
     return encode.prefixed_base64(data, prefix)
 
 
-def detokenize_fields(detokenizer: detokenize.Detokenizer,
-                      proto: Message,
-                      prefix: str = encode.BASE64_PREFIX) -> None:
+def detokenize_fields(
+    detokenizer: detokenize.Detokenizer,
+    proto: Message,
+    prefix: str = encode.BASE64_PREFIX,
+) -> None:
     """Detokenizes fields annotated as tokenized in the given proto.
 
     The fields are replaced with their detokenized version in the proto.
@@ -72,7 +79,7 @@ def detokenize_fields(detokenizer: detokenize.Detokenizer,
     bytes. Call .decode() to convert the detokenized string from bytes to str.
     """
     for field in _tokenized_fields(proto):
-        decoded = decode_optionally_tokenized(detokenizer,
-                                              getattr(proto, field.name),
-                                              prefix)
+        decoded = decode_optionally_tokenized(
+            detokenizer, getattr(proto, field.name), prefix
+        )
         setattr(proto, field.name, decoded.encode())

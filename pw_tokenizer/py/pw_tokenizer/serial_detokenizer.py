@@ -31,46 +31,67 @@ def _parse_args():
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        parents=[database.token_databases_parser()])
-    parser.add_argument('-d',
-                        '--device',
-                        required=True,
-                        help='The serial device from which to read')
-    parser.add_argument('-b',
-                        '--baudrate',
-                        type=int,
-                        default=115200,
-                        help='The baud rate for the serial device')
-    parser.add_argument('-o',
-                        '--output',
-                        type=argparse.FileType('wb'),
-                        default=sys.stdout.buffer,
-                        help=('The file to which to write the output; '
-                              'provide - or omit for stdout.'))
+        parents=[database.token_databases_parser()],
+    )
+    parser.add_argument(
+        '-d',
+        '--device',
+        required=True,
+        help='The serial device from which to read',
+    )
+    parser.add_argument(
+        '-b',
+        '--baudrate',
+        type=int,
+        default=115200,
+        help='The baud rate for the serial device',
+    )
+    parser.add_argument(
+        '-o',
+        '--output',
+        type=argparse.FileType('wb'),
+        default=sys.stdout.buffer,
+        help=(
+            'The file to which to write the output; '
+            'provide - or omit for stdout.'
+        ),
+    )
     parser.add_argument(
         '-p',
         '--prefix',
         default=detokenize.BASE64_PREFIX,
-        help=('The one-character prefix that signals the start of a '
-              'Base64-encoded message. (default: $)'))
+        help=(
+            'The one-character prefix that signals the start of a '
+            'Base64-encoded message. (default: $)'
+        ),
+    )
     parser.add_argument(
         '-s',
         '--show_errors',
         action='store_true',
-        help=('Show error messages instead of conversion specifiers when '
-              'arguments cannot be decoded.'))
+        help=(
+            'Show error messages instead of conversion specifiers when '
+            'arguments cannot be decoded.'
+        ),
+    )
 
     return parser.parse_args()
 
 
-def _detokenize_serial(databases: Iterable, device: serial.Serial,
-                       baudrate: int, show_errors: bool, output: BinaryIO,
-                       prefix: str) -> None:
+def _detokenize_serial(
+    databases: Iterable,
+    device: serial.Serial,
+    baudrate: int,
+    show_errors: bool,
+    output: BinaryIO,
+    prefix: str,
+) -> None:
     if output is sys.stdout:
         output = sys.stdout.buffer
 
-    detokenizer = detokenize.Detokenizer(tokens.Database.merged(*databases),
-                                         show_errors=show_errors)
+    detokenizer = detokenize.Detokenizer(
+        tokens.Database.merged(*databases), show_errors=show_errors
+    )
     serial_device = serial.Serial(port=device, baudrate=baudrate)
 
     try:

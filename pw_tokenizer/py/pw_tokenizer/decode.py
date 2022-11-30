@@ -37,9 +37,11 @@ class FormatSpec:
     """Represents a format specifier parsed from a printf-style string."""
 
     # Regular expression for finding format specifiers.
-    FORMAT_SPEC = re.compile(r'%(?:(?P<flags>[+\- #0]*\d*(?:\.\d+)?)'
-                             r'(?P<length>hh|h|ll|l|j|z|t|L)?'
-                             r'(?P<type>[csdioxXufFeEaAgGnp])|%)')
+    FORMAT_SPEC = re.compile(
+        r'%(?:(?P<flags>[+\- #0]*\d*(?:\.\d+)?)'
+        r'(?P<length>hh|h|ll|l|j|z|t|L)?'
+        r'(?P<type>[csdioxXufFeEaAgGnp])|%)'
+    )
 
     # Conversions to make format strings Python compatible.
     _UNSUPPORTED_LENGTH = frozenset(['hh', 'll', 'j', 'z', 't'])
@@ -60,7 +62,9 @@ class FormatSpec:
         if not match:
             raise ValueError(
                 '{!r} is not a valid single format specifier'.format(
-                    format_specifier))
+                    format_specifier
+                )
+            )
 
         return cls(match)
 
@@ -79,17 +83,21 @@ class FormatSpec:
         if self.type == 'p':
             self.compatible = '0x%08X'
         else:
-            self.compatible = ''.join([
-                '%', self.flags,
-                '' if self.length in self._UNSUPPORTED_LENGTH else '',
-                self._REMAP_TYPE.get(self.type, self.type)
-            ])
+            self.compatible = ''.join(
+                [
+                    '%',
+                    self.flags,
+                    '' if self.length in self._UNSUPPORTED_LENGTH else '',
+                    self._REMAP_TYPE.get(self.type, self.type),
+                ]
+            )
 
     def decode(self, encoded_arg: bytes) -> 'DecodedArg':
         """Decodes the provided data according to this format specifier."""
         if self.type == '%':  # literal %
-            return DecodedArg(self, (),
-                              b'')  # Use () as the value for % formatting.
+            return DecodedArg(
+                self, (), b''
+            )  # Use () as the value for % formatting.
 
         if self.type == 's':  # string
             return self._decode_string(encoded_arg)
@@ -108,8 +116,12 @@ class FormatSpec:
 
         # Unsupported specifier (e.g. %n)
         return DecodedArg(
-            self, None, b'', DecodedArg.DECODE_ERROR,
-            'Unsupported conversion specifier "{}"'.format(self.type))
+            self,
+            None,
+            b'',
+            DecodedArg.DECODE_ERROR,
+            'Unsupported conversion specifier "{}"'.format(self.type),
+        )
 
     def _decode_signed_integer(self, encoded: bytes) -> 'DecodedArg':
         """Decodes a signed variable-length integer."""
@@ -122,7 +134,7 @@ class FormatSpec:
 
         for byte in encoded:
             count += 1
-            result |= (byte & 0x7f) << shift
+            result |= (byte & 0x7F) << shift
 
             if not byte & 0x80:
                 return DecodedArg(self, zigzag_decode(result), encoded[:count])
@@ -131,8 +143,13 @@ class FormatSpec:
             if shift >= 64:
                 break
 
-        return DecodedArg(self, None, encoded[:count], DecodedArg.DECODE_ERROR,
-                          'Unterminated variable-length integer')
+        return DecodedArg(
+            self,
+            None,
+            encoded[:count],
+            DecodedArg.DECODE_ERROR,
+            'Unterminated variable-length integer',
+        )
 
     def _decode_unsigned_integer(self, encoded: bytes) -> 'DecodedArg':
         arg = self._decode_signed_integer(encoded)
@@ -148,9 +165,9 @@ class FormatSpec:
         if len(encoded) < 4:
             return DecodedArg.missing(self)
 
-        return DecodedArg(self,
-                          self._PACKED_FLOAT.unpack_from(encoded)[0],
-                          encoded[:4])
+        return DecodedArg(
+            self, self._PACKED_FLOAT.unpack_from(encoded)[0], encoded[:4]
+        )
 
     def _decode_string(self, encoded: bytes) -> 'DecodedArg':
         """Reads a unicode string from the encoded data."""
@@ -162,9 +179,9 @@ class FormatSpec:
 
         if size_and_status & 0x80:
             status |= DecodedArg.TRUNCATED
-            size_and_status &= 0x7f
+            size_and_status &= 0x7F
 
-        raw_data = encoded[0:size_and_status + 1]
+        raw_data = encoded[0 : size_and_status + 1]
         data = raw_data[1:]
 
         if len(data) < size_and_status:
@@ -173,9 +190,13 @@ class FormatSpec:
         try:
             decoded = data.decode()
         except UnicodeDecodeError as err:
-            return DecodedArg(self,
-                              repr(bytes(data)).lstrip('b'), raw_data,
-                              status | DecodedArg.DECODE_ERROR, err)
+            return DecodedArg(
+                self,
+                repr(bytes(data)).lstrip('b'),
+                raw_data,
+                status | DecodedArg.DECODE_ERROR,
+                err,
+            )
 
         return DecodedArg(self, decoded, raw_data, status)
 
@@ -219,16 +240,19 @@ class DecodedArg:
     def missing(cls, specifier: FormatSpec):
         return cls(specifier, None, b'', cls.MISSING)
 
-    def __init__(self,
-                 specifier: FormatSpec,
-                 value,
-                 raw_data: bytes,
-                 status: int = OK,
-                 error=None):
+    def __init__(
+        self,
+        specifier: FormatSpec,
+        value,
+        raw_data: bytes,
+        status: int = OK,
+        error=None,
+    ):
         self.specifier = specifier  # FormatSpec (e.g. to represent "%0.2f")
         self.value = value  # the decoded value, or None if decoding failed
         self.raw_data = bytes(
-            raw_data)  # the exact bytes used to decode this arg
+            raw_data
+        )  # the exact bytes used to decode this arg
         self._status = status
         self.error = error
 
@@ -264,8 +288,9 @@ class DecodedArg:
         elif self.status & self.DECODE_ERROR:
             message = '{} ERROR'.format(self.specifier)
         else:
-            raise AssertionError('Unhandled DecodedArg status {:x}!'.format(
-                self.status))
+            raise AssertionError(
+                'Unhandled DecodedArg status {:x}!'.format(self.status)
+            )
 
         if self.value is None or not str(self.value):
             return '<[{}]>'.format(message)
@@ -314,11 +339,13 @@ class FormattedString(NamedTuple):
             not self.remaining,  # decoded all data
             -sum(not arg.ok() for arg in self.args),  # fewest errors
             len(self.args),  # decoded the most arguments
-            date_removed or datetime.max)  # most recently present
+            date_removed or datetime.max,
+        )  # most recently present
 
 
 class FormatString:
     """Represents a printf-style format string."""
+
     def __init__(self, format_string: str):
         """Parses format specifiers in the format string."""
         self.format_string = format_string
@@ -335,13 +362,13 @@ class FormatString:
         spec_spans = [spec.match.span() for spec in self.specifiers]
 
         # Start with the part of the format string up to the first specifier.
-        string_pieces = [self.format_string[:spec_spans[0][0]]]
+        string_pieces = [self.format_string[: spec_spans[0][0]]]
 
         for ((_, end1), (start2, _)) in zip(spec_spans[:-1], spec_spans[1:]):
             string_pieces.append(self.format_string[end1:start2])
 
         # Append the format string segment after the last format specifier.
-        string_pieces.append(self.format_string[spec_spans[-1][1]:])
+        string_pieces.append(self.format_string[spec_spans[-1][1] :])
 
         # Make a list with spots for the replacements between the string pieces.
         segments: List = [None] * (len(string_pieces) + len(self.specifiers))
@@ -379,9 +406,9 @@ class FormatString:
 
         return tuple(decoded_args), encoded[index:]
 
-    def format(self,
-               encoded_args: bytes,
-               show_errors: bool = False) -> FormattedString:
+    def format(
+        self, encoded_args: bytes, show_errors: bool = False
+    ) -> FormattedString:
         """Decodes arguments and formats the string with them.
 
         Args:
@@ -398,16 +425,17 @@ class FormatString:
         if show_errors:
             self._segments[1::2] = (arg.format() for arg in args)
         else:
-            self._segments[1::2] = (arg.format()
-                                    if arg.ok() else arg.specifier.specifier
-                                    for arg in args)
+            self._segments[1::2] = (
+                arg.format() if arg.ok() else arg.specifier.specifier
+                for arg in args
+            )
 
         return FormattedString(''.join(self._segments), args, remaining)
 
 
-def decode(format_string: str,
-           encoded_arguments: bytes,
-           show_errors: bool = False) -> str:
+def decode(
+    format_string: str, encoded_arguments: bytes, show_errors: bool = False
+) -> str:
     """Decodes arguments and formats them with the provided format string.
 
     Args:
@@ -420,5 +448,6 @@ def decode(format_string: str,
     Returns:
       the printf-style formatted string
     """
-    return FormatString(format_string).format(encoded_arguments,
-                                              show_errors).value
+    return (
+        FormatString(format_string).format(encoded_arguments, show_errors).value
+    )

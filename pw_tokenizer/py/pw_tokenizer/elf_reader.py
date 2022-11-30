@@ -49,7 +49,8 @@ def _check_next_bytes(fd: BinaryIO, expected: bytes, what: str) -> None:
     if expected != actual:
         raise FileDecodeError(
             f'Invalid {what}: expected {expected!r}, found {actual!r} in file '
-            f'{getattr(fd, "name", "(unknown")}')
+            f'{getattr(fd, "name", "(unknown")}'
+        )
 
 
 def files_in_archive(fd: BinaryIO) -> Iterable[int]:
@@ -83,7 +84,8 @@ def files_in_archive(fd: BinaryIO) -> Iterable[int]:
             size = int(size_str, 10)
         except ValueError as exc:
             raise FileDecodeError(
-                'Archive file sizes must be decimal integers') from exc
+                'Archive file sizes must be decimal integers'
+            ) from exc
 
         _check_next_bytes(fd, b'`\n', 'archive file header ending')
         offset = fd.tell()  # Store offset in case the caller reads the file.
@@ -184,6 +186,7 @@ class FileDecodeError(Exception):
 
 class FieldReader:
     """Reads ELF fields defined with a Field tuple from an ELF file."""
+
     def __init__(self, elf: BinaryIO):
         self._elf = elf
         self.file_offset = self._elf.tell()
@@ -213,7 +216,8 @@ class FieldReader:
             endianness = '>'
         else:
             raise FileDecodeError(
-                'Unknown endianness {!r}'.format(endianness_byte))
+                'Unknown endianness {!r}'.format(endianness_byte)
+            )
 
         return {
             1: struct.Struct(endianness + 'B'),
@@ -234,8 +238,10 @@ class FieldReader:
 
 class Elf:
     """Represents an ELF file and the sections in it."""
+
     class Section(NamedTuple):
         """Info about a section in an ELF file."""
+
         name: str
         address: int
         offset: int
@@ -259,26 +265,32 @@ class Elf:
             reader = FieldReader(self._elf)
             base = reader.read(FILE_HEADER.section_header_offset)
             section_header_size = reader.offset(
-                SECTION_HEADER.section_header_end)
+                SECTION_HEADER.section_header_end
+            )
 
             # Find the section with the section names in it.
             names_section_header_base = (
-                base + section_header_size *
-                reader.read(FILE_HEADER.section_names_index))
-            names_table_base = reader.read(SECTION_HEADER.section_offset,
-                                           names_section_header_base)
+                base
+                + section_header_size
+                * reader.read(FILE_HEADER.section_names_index)
+            )
+            names_table_base = reader.read(
+                SECTION_HEADER.section_offset, names_section_header_base
+            )
 
             base = reader.read(FILE_HEADER.section_header_offset)
             for _ in range(reader.read(FILE_HEADER.section_count)):
-                name_offset = reader.read(SECTION_HEADER.section_name_offset,
-                                          base)
+                name_offset = reader.read(
+                    SECTION_HEADER.section_name_offset, base
+                )
 
                 yield self.Section(
                     reader.read_string(names_table_base + name_offset),
                     reader.read(SECTION_HEADER.section_address, base),
                     reader.read(SECTION_HEADER.section_offset, base),
                     reader.read(SECTION_HEADER.section_size, base),
-                    reader.file_offset)
+                    reader.file_offset,
+                )
 
                 base += section_header_size
 
@@ -296,25 +308,27 @@ class Elf:
             if section.name == name:
                 yield section
 
-    def read_value(self,
-                   address: int,
-                   size: Optional[int] = None) -> Union[None, bytes, int]:
+    def read_value(
+        self, address: int, size: Optional[int] = None
+    ) -> Union[None, bytes, int]:
         """Reads specified bytes or null-terminated string at address."""
         section = self.section_by_address(address)
         if not section:
             return None
 
         assert section.address <= address
-        self._elf.seek(section.file_offset + section.offset + address -
-                       section.address)
+        self._elf.seek(
+            section.file_offset + section.offset + address - section.address
+        )
 
         if size is None:
             return read_c_string(self._elf)
 
         return self._elf.read(size)
 
-    def dump_sections(self, name: Union[str,
-                                        Pattern[str]]) -> Mapping[str, bytes]:
+    def dump_sections(
+        self, name: Union[str, Pattern[str]]
+    ) -> Mapping[str, bytes]:
         """Returns a mapping of section names to section contents.
 
         If processing an archive with multiple object files, the contents of
@@ -332,7 +346,8 @@ class Elf:
         return sections
 
     def dump_section_contents(
-            self, name: Union[str, Pattern[str]]) -> Optional[bytes]:
+        self, name: Union[str, Pattern[str]]
+    ) -> Optional[bytes]:
         """Dumps a binary string containing the sections matching the regex.
 
         If processing an archive with multiple object files, the contents of
@@ -344,12 +359,15 @@ class Elf:
 
     def summary(self) -> str:
         return '\n'.join(
-            '[{0:2}] {1.address:08x} {1.offset:08x} {1.size:08x} {1.name}'.
-            format(i, section) for i, section in enumerate(self.sections))
+            '[{0:2}] {1.address:08x} {1.offset:08x} {1.size:08x} '
+            '{1.name}'.format(i, section)
+            for i, section in enumerate(self.sections)
+        )
 
     def __str__(self) -> str:
-        return 'Elf({}\n)'.format(''.join('\n  {},'.format(s)
-                                          for s in self.sections))
+        return 'Elf({}\n)'.format(
+            ''.join('\n  {},'.format(s) for s in self.sections)
+        )
 
 
 def _read_addresses(elf, size: int, output, address: Iterable[int]) -> None:
@@ -378,23 +396,27 @@ def _parse_args() -> argparse.Namespace:
     def hex_int(arg):
         return int(arg, 16)
 
-    parser.add_argument('-e',
-                        '--elf',
-                        type=argparse.FileType('rb'),
-                        help='the ELF file to examine',
-                        required=True)
+    parser.add_argument(
+        '-e',
+        '--elf',
+        type=argparse.FileType('rb'),
+        help='the ELF file to examine',
+        required=True,
+    )
 
     parser.add_argument(
         '-d',
         '--delimiter',
         default=ord('\n'),
         type=int,
-        help=r'delimiter to write after each value; \n by default')
+        help=r'delimiter to write after each value; \n by default',
+    )
 
     parser.set_defaults(handler=lambda **_: parser.print_help())
 
     subparsers = parser.add_subparsers(
-        help='select whether to work with addresses or whole sections')
+        help='select whether to work with addresses or whole sections'
+    )
 
     section_parser = subparsers.add_parser('section')
     section_parser.set_defaults(handler=_dump_sections)
@@ -403,18 +425,19 @@ def _parse_args() -> argparse.Namespace:
         metavar='section_regex',
         nargs='*',
         type=re.compile,  # type: ignore
-        help='section name regular expression')
+        help='section name regular expression',
+    )
 
     address_parser = subparsers.add_parser('address')
     address_parser.set_defaults(handler=_read_addresses)
     address_parser.add_argument(
         '--size',
         type=int,
-        help='the size to read; reads until a null terminator by default')
-    address_parser.add_argument('address',
-                                nargs='+',
-                                type=hex_int,
-                                help='hexadecimal addresses to read')
+        help='the size to read; reads until a null terminator by default',
+    )
+    address_parser.add_argument(
+        'address', nargs='+', type=hex_int, help='hexadecimal addresses to read'
+    )
 
     return parser.parse_args()
 

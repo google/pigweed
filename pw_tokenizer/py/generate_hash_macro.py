@@ -84,23 +84,29 @@ def generate_pw_tokenizer_65599_fixed_length_hash_macro(hash_length):
 
     Returns:
       the macro header file as a string
-  """
+    """
 
-    first_hash_term = ('(uint32_t)(sizeof(str "") - 1 + '
-                       '/* The argument must be a string literal. */ \\\n')
+    first_hash_term = (
+        '(uint32_t)(sizeof(str "") - 1 + '
+        '/* The argument must be a string literal. */ \\\n'
+    )
 
     # Use this to add the aligned backslash at the end of the macro lines.
     line_format = '{{:<{}}}\\\n'.format(len(first_hash_term))
 
     lines = [
-        FILE_HEADER.format(script=os.path.basename(__file__),
-                           hash_length=hash_length,
-                           year=datetime.date.today().year)
+        FILE_HEADER.format(
+            script=os.path.basename(__file__),
+            hash_length=hash_length,
+            year=datetime.date.today().year,
+        )
     ]
 
     lines.append(
-        line_format.format('#define {}_{}_HASH(str)'.format(
-            HASH_NAME.upper(), hash_length)))
+        line_format.format(
+            '#define {}_{}_HASH(str)'.format(HASH_NAME.upper(), hash_length)
+        )
+    )
     lines.append('  ' + first_hash_term)  # add indendation and the macro line
 
     indent = ' ' * len('  (uint32_t)(')
@@ -108,19 +114,23 @@ def generate_pw_tokenizer_65599_fixed_length_hash_macro(hash_length):
 
     # The string will have at least a null terminator
     lines.append(
-        line_format.format('{}0x{:0>8x}u * (uint8_t)str[0] +'.format(
-            indent, HASH_CONSTANT)))
+        line_format.format(
+            '{}0x{:0>8x}u * (uint8_t)str[0] +'.format(indent, HASH_CONSTANT)
+        )
+    )
 
     # Format string to use for the remaining terms.
     term_format = (
         '{indent}{coefficient} * '
-        '(uint8_t)({index} < sizeof(str) ? str[{index}] : 0) +').format(
-            indent=indent,
-            coefficient=coefficient_format,
-            index='{{index:>{}}}'.format(len(str(hash_length - 1))))
+        '(uint8_t)({index} < sizeof(str) ? str[{index}] : 0) +'
+    ).format(
+        indent=indent,
+        coefficient=coefficient_format,
+        index='{{index:>{}}}'.format(len(str(hash_length - 1))),
+    )
 
     for i in range(1, hash_length):
-        coefficient = HASH_CONSTANT**(i + 1) % 2**32
+        coefficient = HASH_CONSTANT ** (i + 1) % 2**32
         term = term_format.format(index=i, coefficient=coefficient)
         lines.append(line_format.format(term))
 
@@ -134,21 +144,29 @@ def generate_pw_tokenizer_65599_fixed_length_hash_macro(hash_length):
 
 def _main():
     base = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), '..', 'public', 'pw_tokenizer',
-                     'internal'))
+        os.path.join(
+            os.path.dirname(__file__),
+            '..',
+            'public',
+            'pw_tokenizer',
+            'internal',
+        )
+    )
 
     # Generate macros for hashes of the specified lengths.
     for hash_length in HASH_LENGTHS:
         path = os.path.join(
-            base, '{}_{}_hash_macro.h'.format(HASH_NAME, hash_length))
+            base, '{}_{}_hash_macro.h'.format(HASH_NAME, hash_length)
+        )
 
         with open(path, 'w') as header_file:
             header_file.write(
-                generate_pw_tokenizer_65599_fixed_length_hash_macro(
-                    hash_length))
+                generate_pw_tokenizer_65599_fixed_length_hash_macro(hash_length)
+            )
 
-        print('Generated {}-character hash macro at {}'.format(
-            hash_length, path))
+        print(
+            'Generated {}-character hash macro at {}'.format(hash_length, path)
+        )
 
 
 if __name__ == '__main__':

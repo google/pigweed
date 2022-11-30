@@ -84,7 +84,9 @@ def _include_paths(lengths):
         sorted(
             '#include "pw_tokenizer/internal/'
             'pw_tokenizer_65599_fixed_length_{}_hash_macro.h"'.format(length)
-            for length in lengths))
+            for length in lengths
+        )
+    )
 
 
 def _test_case_at_length(data, hash_length):
@@ -98,16 +100,19 @@ def _test_case_at_length(data, hash_length):
     else:
         escaped_str = ''.join(r'\x{:02x}'.format(b) for b in data)
 
-    return _TEST_CASE.format(str=escaped_str,
-                             string_length=len(data),
-                             hash_length=hash_length,
-                             hash=tokens.c_hash(data, hash_length),
-                             macro=HASH_MACRO.format(hash_length))
+    return _TEST_CASE.format(
+        str=escaped_str,
+        string_length=len(data),
+        hash_length=hash_length,
+        hash=tokens.c_hash(data, hash_length),
+        macro=HASH_MACRO.format(hash_length),
+    )
 
 
 def test_case(data):
     return ''.join(
-        _test_case_at_length(data, length) for length in (80, 96, 128))
+        _test_case_at_length(data, length) for length in (80, 96, 128)
+    )
 
 
 def generate_test_cases():
@@ -124,7 +129,8 @@ def generate_test_cases():
     random.seed(600613)
 
     random_string = lambda size: bytes(
-        random.randrange(256) for _ in range(size))
+        random.randrange(256) for _ in range(size)
+    )
 
     for i in range(1, 16):
         yield test_case(random_string(i))
@@ -138,14 +144,22 @@ def generate_test_cases():
 
 if __name__ == '__main__':
     path = os.path.realpath(
-        os.path.join(os.path.dirname(__file__), '..', 'pw_tokenizer_private',
-                     'generated_hash_test_cases.h'))
+        os.path.join(
+            os.path.dirname(__file__),
+            '..',
+            'pw_tokenizer_private',
+            'generated_hash_test_cases.h',
+        )
+    )
 
     with open(path, 'w') as output:
         output.write(
-            FILE_HEADER.format(year=datetime.date.today().year,
-                               script=os.path.basename(__file__),
-                               includes=_include_paths(HASH_LENGTHS)))
+            FILE_HEADER.format(
+                year=datetime.date.today().year,
+                script=os.path.basename(__file__),
+                includes=_include_paths(HASH_LENGTHS),
+            )
+        )
 
         for case in generate_test_cases():
             output.write(case)

@@ -23,50 +23,68 @@ from pw_tokenizer.encode import encode_token_and_args
 
 class TestEncodeTokenized(unittest.TestCase):
     """Tests encoding tokenized strings with various arguments."""
+
     def test_no_args(self):
-        self.assertEqual(b'\xab\xcd\x12\x34',
-                         encode_token_and_args(0x3412cdab))
+        self.assertEqual(b'\xab\xcd\x12\x34', encode_token_and_args(0x3412CDAB))
         self.assertEqual(b'\x00\x00\x00\x00', encode_token_and_args(0))
 
     def test_int(self):
-        self.assertEqual(b'\xff\xff\xff\xff\0',
-                         encode_token_and_args(0xffffffff, 0))
-        self.assertEqual(b'\xff\xff\xff\xff\1',
-                         encode_token_and_args(0xffffffff, -1))
-        self.assertEqual(b'\xff\xff\xff\xff\2',
-                         encode_token_and_args(0xffffffff, 1))
+        self.assertEqual(
+            b'\xff\xff\xff\xff\0', encode_token_and_args(0xFFFFFFFF, 0)
+        )
+        self.assertEqual(
+            b'\xff\xff\xff\xff\1', encode_token_and_args(0xFFFFFFFF, -1)
+        )
+        self.assertEqual(
+            b'\xff\xff\xff\xff\2', encode_token_and_args(0xFFFFFFFF, 1)
+        )
 
     def test_float(self):
-        self.assertEqual(b'\xff\xff\xff\xff\0\0\0\0',
-                         encode_token_and_args(0xffffffff, 0.0))
-        self.assertEqual(b'\xff\xff\xff\xff\0\0\0\x80',
-                         encode_token_and_args(0xffffffff, -0.0))
+        self.assertEqual(
+            b'\xff\xff\xff\xff\0\0\0\0', encode_token_and_args(0xFFFFFFFF, 0.0)
+        )
+        self.assertEqual(
+            b'\xff\xff\xff\xff\0\0\0\x80',
+            encode_token_and_args(0xFFFFFFFF, -0.0),
+        )
 
     def test_string(self):
-        self.assertEqual(b'\xff\xff\xff\xff\5hello',
-                         encode_token_and_args(0xffffffff, 'hello'))
-        self.assertEqual(b'\xff\xff\xff\xff\x7f' + b'!' * 127,
-                         encode_token_and_args(0xffffffff, '!' * 127))
+        self.assertEqual(
+            b'\xff\xff\xff\xff\5hello',
+            encode_token_and_args(0xFFFFFFFF, 'hello'),
+        )
+        self.assertEqual(
+            b'\xff\xff\xff\xff\x7f' + b'!' * 127,
+            encode_token_and_args(0xFFFFFFFF, '!' * 127),
+        )
 
     def test_string_too_long(self):
-        self.assertEqual(b'\xff\xff\xff\xff\xff' + b'!' * 127,
-                         encode_token_and_args(0xffffffff, '!' * 128))
+        self.assertEqual(
+            b'\xff\xff\xff\xff\xff' + b'!' * 127,
+            encode_token_and_args(0xFFFFFFFF, '!' * 128),
+        )
 
     def test_bytes(self):
-        self.assertEqual(b'\xff\xff\xff\xff\4\0yo\0',
-                         encode_token_and_args(0xffffffff, '\0yo\0'))
+        self.assertEqual(
+            b'\xff\xff\xff\xff\4\0yo\0',
+            encode_token_and_args(0xFFFFFFFF, '\0yo\0'),
+        )
 
     def test_bytes_too_long(self):
-        self.assertEqual(b'\xff\xff\xff\xff\xff' + b'?' * 127,
-                         encode_token_and_args(0xffffffff, b'?' * 200))
+        self.assertEqual(
+            b'\xff\xff\xff\xff\xff' + b'?' * 127,
+            encode_token_and_args(0xFFFFFFFF, b'?' * 200),
+        )
 
     def test_multiple_args(self):
-        self.assertEqual(b'\xdd\xcc\xbb\xaa\0',
-                         encode_token_and_args(0xaabbccdd, 0))
+        self.assertEqual(
+            b'\xdd\xcc\xbb\xaa\0', encode_token_and_args(0xAABBCCDD, 0)
+        )
 
 
 class TestIntegerEncoding(unittest.TestCase):
     """Test encoding variable-length integers."""
+
     def test_encode_generated_data(self):
         test_data = varint_test_data.TEST_DATA
         self.assertGreater(len(test_data), 100)
@@ -78,10 +96,10 @@ class TestIntegerEncoding(unittest.TestCase):
                 continue
 
             # Encode the value as an arg, but skip the 4 bytes for the token.
+            self.assertEqual(encode_token_and_args(0, int(signed))[4:], encoded)
             self.assertEqual(
-                encode_token_and_args(0, int(signed))[4:], encoded)
-            self.assertEqual(
-                encode_token_and_args(0, int(unsigned))[4:], encoded)
+                encode_token_and_args(0, int(unsigned))[4:], encoded
+            )
 
 
 if __name__ == '__main__':

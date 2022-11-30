@@ -64,9 +64,11 @@ def generate_argument_types_macro(size_bytes):
         raise ValueError('Invalid size_bytes (must be 4 or 8)')
 
     output = [
-        FILE_HEADER.format(script=os.path.basename(__file__),
-                           year=datetime.date.today().year,
-                           size=size_bytes)
+        FILE_HEADER.format(
+            script=os.path.basename(__file__),
+            year=datetime.date.today().year,
+            size=size_bytes,
+        )
     ]
 
     for i in range(1, max_args + 1):
@@ -76,8 +78,10 @@ def generate_argument_types_macro(size_bytes):
             for x in range(i, 0, -1)
         ]
         types.append(f'{i}')
-        output.append(f'#define _PW_TOKENIZER_TYPES_{i}({", ".join(args)}) '
-                      f'({" | ".join(types)})\n\n')
+        output.append(
+            f'#define _PW_TOKENIZER_TYPES_{i}({", ".join(args)}) '
+            f'({" | ".join(types)})\n\n'
+        )
 
     output.append('// clang-format on\n')
 
@@ -86,8 +90,14 @@ def generate_argument_types_macro(size_bytes):
 
 def _main():
     base = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), '..', 'public', 'pw_tokenizer',
-                     'internal'))
+        os.path.join(
+            os.path.dirname(__file__),
+            '..',
+            'public',
+            'pw_tokenizer',
+            'internal',
+        )
+    )
 
     with open(os.path.join(base, 'argument_types_macro_4_byte.h'), 'w') as fd:
         fd.write(generate_argument_types_macro(4))

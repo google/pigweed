@@ -61,9 +61,9 @@ def _value(char: Union[int, str]) -> int:
     return char if isinstance(char, int) else ord(char)
 
 
-def pw_tokenizer_65599_hash(string: Union[str, bytes],
-                            *,
-                            hash_length: Optional[int] = None) -> int:
+def pw_tokenizer_65599_hash(
+    string: Union[str, bytes], *, hash_length: Optional[int] = None
+) -> int:
     """Hashes the string with the hash function used to generate tokens in C++.
 
     This hash function is used calculate tokens from strings in Python. It is
@@ -80,14 +80,16 @@ def pw_tokenizer_65599_hash(string: Union[str, bytes],
     return hash_value
 
 
-def c_hash(string: Union[str, bytes],
-           hash_length: int = DEFAULT_C_HASH_LENGTH) -> int:
+def c_hash(
+    string: Union[str, bytes], hash_length: int = DEFAULT_C_HASH_LENGTH
+) -> int:
     """Hashes the string with the hash function used in C."""
     return pw_tokenizer_65599_hash(string, hash_length=hash_length)
 
 
 class _EntryKey(NamedTuple):
     """Uniquely refers to an entry."""
+
     token: int
     string: str
 
@@ -95,6 +97,7 @@ class _EntryKey(NamedTuple):
 @dataclass(eq=True, order=False)
 class TokenizedStringEntry:
     """A tokenized string with its metadata."""
+
     token: int
     string: str
     domain: str = DEFAULT_DOMAIN
@@ -104,8 +107,7 @@ class TokenizedStringEntry:
         """The key determines uniqueness for a tokenized string."""
         return _EntryKey(self.token, self.string)
 
-    def update_date_removed(self,
-                            new_date_removed: Optional[datetime]) -> None:
+    def update_date_removed(self, new_date_removed: Optional[datetime]) -> None:
         """Sets self.date_removed if the other date is newer."""
         # No removal date (None) is treated as the newest date.
         if self.date_removed is None:
@@ -122,8 +124,9 @@ class TokenizedStringEntry:
         # Sort removal dates in reverse, so the most recently removed (or still
         # present) entry appears first.
         if self.date_removed != other.date_removed:
-            return (other.date_removed or datetime.max) < (self.date_removed
-                                                           or datetime.max)
+            return (other.date_removed or datetime.max) < (
+                self.date_removed or datetime.max
+            )
 
         return self.string < other.string
 
@@ -133,6 +136,7 @@ class TokenizedStringEntry:
 
 class Database:
     """Database of tokenized strings stored as TokenizedStringEntry objects."""
+
     def __init__(self, entries: Iterable[TokenizedStringEntry] = ()):
         """Creates a token database."""
         # The database dict stores each unique (token, string) entry.
@@ -148,11 +152,15 @@ class Database:
         cls,
         strings: Iterable[str],
         domain: str = DEFAULT_DOMAIN,
-        tokenize: Callable[[str],
-                           int] = pw_tokenizer_65599_hash) -> 'Database':
+        tokenize: Callable[[str], int] = pw_tokenizer_65599_hash,
+    ) -> 'Database':
         """Creates a Database from an iterable of strings."""
-        return cls((TokenizedStringEntry(tokenize(string), string, domain)
-                    for string in strings))
+        return cls(
+            (
+                TokenizedStringEntry(tokenize(string), string, domain)
+                for string in strings
+            )
+        )
 
     @classmethod
     def merged(cls, *databases: 'Database') -> 'Database':
@@ -182,9 +190,9 @@ class Database:
                 yield token, entries
 
     def mark_removed(
-            self,
-            all_entries: Iterable[TokenizedStringEntry],
-            removal_date: Optional[datetime] = None
+        self,
+        all_entries: Iterable[TokenizedStringEntry],
+        removal_date: Optional[datetime] = None,
     ) -> List[TokenizedStringEntry]:
         """Marks entries missing from all_entries as having been removed.
 
@@ -211,9 +219,9 @@ class Database:
         removed = []
 
         for entry in self._database.values():
-            if (entry.key() not in all_keys
-                    and (entry.date_removed is None
-                         or removal_date < entry.date_removed)):
+            if entry.key() not in all_keys and (
+                entry.date_removed is None or removal_date < entry.date_removed
+            ):
                 # Add a removal date, or update it to the oldest date.
                 entry.date_removed = removal_date
                 removed.append(entry)
@@ -236,17 +244,19 @@ class Database:
                 # Keep the latest removal date between the two entries.
                 if new_entry.date_removed is None:
                     entry.date_removed = None
-                elif (entry.date_removed
-                      and entry.date_removed < new_entry.date_removed):
+                elif (
+                    entry.date_removed
+                    and entry.date_removed < new_entry.date_removed
+                ):
                     entry.date_removed = new_entry.date_removed
             except KeyError:
                 # Make a copy to avoid unintentially updating the database.
                 self._database[new_entry.key()] = TokenizedStringEntry(
-                    **vars(new_entry))
+                    **vars(new_entry)
+                )
 
     def purge(
-        self,
-        date_removed_cutoff: Optional[datetime] = None
+        self, date_removed_cutoff: Optional[datetime] = None
     ) -> List[TokenizedStringEntry]:
         """Removes and returns entries removed on/before date_removed_cutoff."""
         self._cache = None
@@ -255,7 +265,8 @@ class Database:
             date_removed_cutoff = datetime.max
 
         to_delete = [
-            entry for _, entry in self._database.items()
+            entry
+            for _, entry in self._database.items()
             if entry.date_removed and entry.date_removed <= date_removed_cutoff
         ]
 
@@ -281,7 +292,7 @@ class Database:
         self,
         include: Iterable[Union[str, Pattern[str]]] = (),
         exclude: Iterable[Union[str, Pattern[str]]] = (),
-        replace: Iterable[Tuple[Union[str, Pattern[str]], str]] = ()
+        replace: Iterable[Tuple[Union[str, Pattern[str]], str]] = (),
     ) -> None:
         """Filters the database using regular expressions (strings or compiled).
 
@@ -297,13 +308,18 @@ class Database:
         if include:
             include_re = [re.compile(pattern) for pattern in include]
             to_delete.extend(
-                key for key, val in self._database.items()
-                if not any(rgx.search(val.string) for rgx in include_re))
+                key
+                for key, val in self._database.items()
+                if not any(rgx.search(val.string) for rgx in include_re)
+            )
 
         if exclude:
             exclude_re = [re.compile(pattern) for pattern in exclude]
-            to_delete.extend(key for key, val in self._database.items() if any(
-                rgx.search(val.string) for rgx in exclude_re))
+            to_delete.extend(
+                key
+                for key, val in self._database.items()
+                if any(rgx.search(val.string) for rgx in exclude_re)
+            )
 
         for key in to_delete:
             del self._database[key]
@@ -316,8 +332,11 @@ class Database:
 
     def difference(self, other: 'Database') -> 'Database':
         """Returns a new Database with entries in this DB not in the other."""
-        return Database(e for k, e in self._database.items()
-                        if k not in other._database)  # pylint: disable=protected-access
+        # pylint: disable=protected-access
+        return Database(
+            e for k, e in self._database.items() if k not in other._database
+        )
+        # pylint: enable=protected-access
 
     def __len__(self) -> int:
         """Returns the number of entries in the database."""
@@ -341,14 +360,19 @@ def parse_csv(fd: TextIO) -> Iterable[TokenizedStringEntry]:
             token_str, date_str, string_literal = line
 
             token = int(token_str, 16)
-            date = (datetime.strptime(date_str, DATE_FORMAT)
-                    if date_str.strip() else None)
+            date = (
+                datetime.strptime(date_str, DATE_FORMAT)
+                if date_str.strip()
+                else None
+            )
 
-            yield TokenizedStringEntry(token, string_literal, DEFAULT_DOMAIN,
-                                       date)
+            yield TokenizedStringEntry(
+                token, string_literal, DEFAULT_DOMAIN, date
+            )
         except (ValueError, UnicodeDecodeError) as err:
-            _LOG.error('Failed to parse tokenized string entry %s: %s', line,
-                       err)
+            _LOG.error(
+                'Failed to parse tokenized string entry %s: %s', line, err
+            )
 
 
 def write_csv(database: Database, fd: BinaryIO) -> None:
@@ -361,10 +385,15 @@ def _write_csv_line(fd: BinaryIO, entry: TokenizedStringEntry):
     """Write a line in CSV format to the provided binary file."""
     # Align the CSV output to 10-character columns for improved readability.
     # Use \n instead of RFC 4180's \r\n.
-    fd.write('{:08x},{:10},"{}"\n'.format(
-        entry.token,
-        entry.date_removed.strftime(DATE_FORMAT) if entry.date_removed else '',
-        entry.string.replace('"', '""')).encode())  # escape " as ""
+    fd.write(
+        '{:08x},{:10},"{}"\n'.format(
+            entry.token,
+            entry.date_removed.strftime(DATE_FORMAT)
+            if entry.date_removed
+            else '',
+            entry.string.replace('"', '""'),
+        ).encode()
+    )  # escape " as ""
 
 
 class _BinaryFileFormat(NamedTuple):
@@ -405,7 +434,8 @@ def _check_that_file_is_csv_database(path: Path) -> None:
         if len(data) != 8:
             raise DatabaseFormatError(
                 f'Attempted to read {path} as a CSV token database, but the '
-                f'file is too short ({len(data)} B)')
+                f'file is too short ({len(data)} B)'
+            )
 
         # Make sure the first 8 chars are a valid hexadecimal number.
         _ = int(data.decode(), 16)
@@ -418,18 +448,21 @@ def _check_that_file_is_csv_database(path: Path) -> None:
 def parse_binary(fd: BinaryIO) -> Iterable[TokenizedStringEntry]:
     """Parses TokenizedStringEntries from a binary token database file."""
     magic, entry_count = BINARY_FORMAT.header.unpack(
-        fd.read(BINARY_FORMAT.header.size))
+        fd.read(BINARY_FORMAT.header.size)
+    )
 
     if magic != BINARY_FORMAT.magic:
         raise DatabaseFormatError(
             f'Binary token database magic number mismatch (found {magic!r}, '
-            f'expected {BINARY_FORMAT.magic!r}) while reading from {fd}')
+            f'expected {BINARY_FORMAT.magic!r}) while reading from {fd}'
+        )
 
     entries = []
 
     for _ in range(entry_count):
         token, day, month, year = BINARY_FORMAT.entry.unpack(
-            fd.read(BINARY_FORMAT.entry.size))
+            fd.read(BINARY_FORMAT.entry.size)
+        )
 
         try:
             date_removed: Optional[datetime] = datetime(year, month, day)
@@ -443,8 +476,10 @@ def parse_binary(fd: BinaryIO) -> Iterable[TokenizedStringEntry]:
 
     def read_string(start):
         end = string_table.find(b'\0', start)
-        return string_table[start:string_table.find(b'\0', start)].decode(
-        ), end + 1
+        return (
+            string_table[start : string_table.find(b'\0', start)].decode(),
+            end + 1,
+        )
 
     offset = 0
     for token, removed in entries:
@@ -469,16 +504,18 @@ def write_binary(database: Database, fd: BinaryIO) -> None:
             # If there is no removal date, use the special value 0xffffffff for
             # the day/month/year. That ensures that still-present tokens appear
             # as the newest tokens when sorted by removal date.
-            removed_day = 0xff
-            removed_month = 0xff
-            removed_year = 0xffff
+            removed_day = 0xFF
+            removed_month = 0xFF
+            removed_year = 0xFFFF
 
         string_table += entry.string.encode()
         string_table.append(0)
 
         fd.write(
-            BINARY_FORMAT.entry.pack(entry.token, removed_day, removed_month,
-                                     removed_year))
+            BINARY_FORMAT.entry.pack(
+                entry.token, removed_day, removed_month, removed_year
+            )
+        )
 
     fd.write(string_table)
 
@@ -489,8 +526,10 @@ class DatabaseFile(Database):
     This class adds the write_to_file() method that writes to file from which it
     was created in the correct format (CSV or binary).
     """
-    def __init__(self, path: Path,
-                 entries: Iterable[TokenizedStringEntry]) -> None:
+
+    def __init__(
+        self, path: Path, entries: Iterable[TokenizedStringEntry]
+    ) -> None:
         super().__init__(entries)
         self.path = path
 
@@ -515,9 +554,9 @@ class DatabaseFile(Database):
         """Exports in the original format to the original path."""
 
     @abstractmethod
-    def add_and_discard_temporary(self,
-                                  entries: Iterable[TokenizedStringEntry],
-                                  commit: str) -> None:
+    def add_and_discard_temporary(
+        self, entries: Iterable[TokenizedStringEntry], commit: str
+    ) -> None:
         """Discards and adds entries to export in the original format.
 
         Adds entries after removing temporary entries from the Database
@@ -535,13 +574,15 @@ class _BinaryDatabase(DatabaseFile):
         with self.path.open('wb') as fd:
             write_binary(self, fd)
 
-    def add_and_discard_temporary(self,
-                                  entries: Iterable[TokenizedStringEntry],
-                                  commit: str) -> None:
+    def add_and_discard_temporary(
+        self, entries: Iterable[TokenizedStringEntry], commit: str
+    ) -> None:
         # TODO(b/241471465): Implement adding new tokens and removing
         # temporary entries for binary databases.
-        raise NotImplementedError('--discard-temporary is currently only '
-                                  'supported for directory databases')
+        raise NotImplementedError(
+            '--discard-temporary is currently only '
+            'supported for directory databases'
+        )
 
 
 class _CSVDatabase(DatabaseFile):
@@ -554,13 +595,15 @@ class _CSVDatabase(DatabaseFile):
         with self.path.open('wb') as fd:
             write_csv(self, fd)
 
-    def add_and_discard_temporary(self,
-                                  entries: Iterable[TokenizedStringEntry],
-                                  commit: str) -> None:
+    def add_and_discard_temporary(
+        self, entries: Iterable[TokenizedStringEntry], commit: str
+    ) -> None:
         # TODO(b/241471465): Implement adding new tokens and removing
         # temporary entries for CSV databases.
-        raise NotImplementedError('--discard-temporary is currently only '
-                                  'supported for directory databases')
+        raise NotImplementedError(
+            '--discard-temporary is currently only '
+            'supported for directory databases'
+        )
 
 
 # The suffix used for CSV files in a directory database.
@@ -606,11 +649,13 @@ class _DirectoryDatabase(DatabaseFile):
     def _git_paths(self, commands: List) -> List[Path]:
         """Returns a list of files from a Git command, filtered to matc."""
         try:
-            output = subprocess.run(['git', *commands, _DIR_DB_GLOB],
-                                    capture_output=True,
-                                    check=True,
-                                    cwd=self.path,
-                                    text=True).stdout.strip()
+            output = subprocess.run(
+                ['git', *commands, _DIR_DB_GLOB],
+                capture_output=True,
+                check=True,
+                cwd=self.path,
+                text=True,
+            ).stdout.strip()
             return [self.path / repo_path for repo_path in output.splitlines()]
         except subprocess.CalledProcessError:
             return []
@@ -626,24 +671,35 @@ class _DirectoryDatabase(DatabaseFile):
 
         # Prioritize untracked files in the directory database.
         untracked_changes = self._git_paths(
-            ['ls-files', '--others', '--exclude-standard'])
+            ['ls-files', '--others', '--exclude-standard']
+        )
         if untracked_changes:
             return _most_recently_modified_file(untracked_changes)
 
         # Check if HEAD is an ancestor of the base commit. This checks whether
         # the top commit has been merged or not. If it has been merged, create a
         # new CSV to use. Otherwise, check if a CSV was added in the commit.
-        head_is_not_merged = subprocess.run(
-            ['git', 'merge-base', '--is-ancestor', 'HEAD', commit],
-            cwd=self.path,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL).returncode != 0
+        head_is_not_merged = (
+            subprocess.run(
+                ['git', 'merge-base', '--is-ancestor', 'HEAD', commit],
+                cwd=self.path,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            ).returncode
+            != 0
+        )
 
         if head_is_not_merged:
             # Find CSVs added in the top commit.
-            csvs_from_top_commit = self._git_paths([
-                'diff', '--name-only', '--diff-filter=A', '--relative', 'HEAD~'
-            ])
+            csvs_from_top_commit = self._git_paths(
+                [
+                    'diff',
+                    '--name-only',
+                    '--diff-filter=A',
+                    '--relative',
+                    'HEAD~',
+                ]
+            )
 
             if csvs_from_top_commit:
                 return _most_recently_modified_file(csvs_from_top_commit)
@@ -657,9 +713,9 @@ class _DirectoryDatabase(DatabaseFile):
             pass
         return file
 
-    def add_and_discard_temporary(self,
-                                  entries: Iterable[TokenizedStringEntry],
-                                  commit: str) -> None:
+    def add_and_discard_temporary(
+        self, entries: Iterable[TokenizedStringEntry], commit: str
+    ) -> None:
         """Adds new entries and discards temporary entries on disk.
 
         - Find the latest CSV in the directory database or create a new one.

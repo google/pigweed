@@ -49,7 +49,7 @@ def path_to_byte_string(path):
             except StopIteration:
                 break
 
-            line += repr(data[i:i + 1])[2:-1].replace("'", r'\'')
+            line += repr(data[i : i + 1])[2:-1].replace("'", r'\'')
 
         if not line:
             return ''.join(output)
@@ -81,7 +81,8 @@ EMPTY_ELF = (
     b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01'
     b'\x00\x00\x00\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xd4\x00\x00'
     b'\x00\x0b\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00'
-    b'\x00\x00\x00')
+    b'\x00\x00\x00'
+)
 
 # This is an ELF file with only the pw_tokenizer sections. It was created
 # from a tokenize_test binary built for the STM32F429i Discovery board. The
@@ -90,7 +91,8 @@ EMPTY_ELF = (
 #   arm-none-eabi-objcopy -S --only-section ".pw_tokenizer*" <ELF> <OUTPUT>
 #
 ELF_WITH_TOKENIZER_SECTIONS_PATH = Path(__file__).parent.joinpath(
-    'example_binary_with_tokenized_strings.elf')
+    'example_binary_with_tokenized_strings.elf'
+)
 ELF_WITH_TOKENIZER_SECTIONS = ELF_WITH_TOKENIZER_SECTIONS_PATH.read_bytes()
 
 TOKENS_IN_ELF = 22
@@ -102,23 +104,31 @@ JELLO_WORLD_TOKEN = b'\xd6\x8c\x66\x2e'
 
 class DetokenizeTest(unittest.TestCase):
     """Tests the detokenize.Detokenizer."""
+
     def test_simple(self):
         detok = detokenize.Detokenizer(
-            tokens.Database([
-                tokens.TokenizedStringEntry(0xcdab,
-                                            '%02d %s %c%%',
-                                            date_removed=dt.datetime.now())
-            ]))
-        self.assertEqual(str(detok.detokenize(b'\xab\xcd\0\0\x02\x03Two\x66')),
-                         '01 Two 3%')
+            tokens.Database(
+                [
+                    tokens.TokenizedStringEntry(
+                        0xCDAB, '%02d %s %c%%', date_removed=dt.datetime.now()
+                    )
+                ]
+            )
+        )
+        self.assertEqual(
+            str(detok.detokenize(b'\xab\xcd\0\0\x02\x03Two\x66')), '01 Two 3%'
+        )
 
     def test_detokenize_extra_data_is_unsuccessful(self):
         detok = detokenize.Detokenizer(
-            tokens.Database([
-                tokens.TokenizedStringEntry(1,
-                                            'no args',
-                                            date_removed=dt.datetime(1, 1, 1))
-            ]))
+            tokens.Database(
+                [
+                    tokens.TokenizedStringEntry(
+                        1, 'no args', date_removed=dt.datetime(1, 1, 1)
+                    )
+                ]
+            )
+        )
 
         result = detok.detokenize(b'\x01\0\0\0\x04args')
         self.assertEqual(len(result.failures), 1)
@@ -132,18 +142,23 @@ class DetokenizeTest(unittest.TestCase):
     def test_detokenize_zero_extend_short_token_with_no_args(self):
         detok = detokenize.Detokenizer(
             tokens.Database(
-                [tokens.TokenizedStringEntry(0xcdab,
-                                             'This token is 16 bits')]))
-        self.assertEqual(str(detok.detokenize(b'\xab\xcd')),
-                         'This token is 16 bits')
+                [tokens.TokenizedStringEntry(0xCDAB, 'This token is 16 bits')]
+            )
+        )
+        self.assertEqual(
+            str(detok.detokenize(b'\xab\xcd')), 'This token is 16 bits'
+        )
 
     def test_detokenize_missing_data_is_unsuccessful(self):
         detok = detokenize.Detokenizer(
-            tokens.Database([
-                tokens.TokenizedStringEntry(2,
-                                            '%s',
-                                            date_removed=dt.datetime(1, 1, 1))
-            ]))
+            tokens.Database(
+                [
+                    tokens.TokenizedStringEntry(
+                        2, '%s', date_removed=dt.datetime(1, 1, 1)
+                    )
+                ]
+            )
+        )
 
         result = detok.detokenize(b'\x02\0\0\0')
         string, args, remaining = result.failures[0]
@@ -154,12 +169,16 @@ class DetokenizeTest(unittest.TestCase):
         self.assertEqual('%s', str(result))
 
     def test_detokenize_missing_data_with_errors_is_unsuccessful(self):
-        detok = detokenize.Detokenizer(tokens.Database([
-            tokens.TokenizedStringEntry(2,
-                                        '%s',
-                                        date_removed=dt.datetime(1, 1, 1))
-        ]),
-                                       show_errors=True)
+        detok = detokenize.Detokenizer(
+            tokens.Database(
+                [
+                    tokens.TokenizedStringEntry(
+                        2, '%s', date_removed=dt.datetime(1, 1, 1)
+                    )
+                ]
+            ),
+            show_errors=True,
+        )
 
         result = detok.detokenize(b'\x02\0\0\0')
         string, args, remaining = result.failures[0]
@@ -171,12 +190,14 @@ class DetokenizeTest(unittest.TestCase):
 
     def test_unparsed_data(self):
         detok = detokenize.Detokenizer(
-            tokens.Database([
-                tokens.TokenizedStringEntry(1,
-                                            'no args',
-                                            date_removed=dt.datetime(
-                                                100, 1, 1)),
-            ]))
+            tokens.Database(
+                [
+                    tokens.TokenizedStringEntry(
+                        1, 'no args', date_removed=dt.datetime(100, 1, 1)
+                    ),
+                ]
+            )
+        )
         result = detok.detokenize(b'\x01\0\0\0o_o')
         self.assertFalse(result.ok())
         self.assertEqual('no args', str(result))
@@ -186,20 +207,24 @@ class DetokenizeTest(unittest.TestCase):
     def test_empty_db(self):
         detok = detokenize.Detokenizer(io.BytesIO(EMPTY_ELF))
         self.assertFalse(detok.detokenize(b'\x12\x34\0\0').ok())
-        self.assertIn('unknown token',
-                      detok.detokenize(b'1234').error_message())
+        self.assertIn(
+            'unknown token', detok.detokenize(b'1234').error_message()
+        )
         self.assertIn('unknown token', repr(detok.detokenize(b'1234')))
 
-        self.assertEqual('$' + base64.b64encode(b'1234').decode(),
-                         str(detok.detokenize(b'1234')))
+        self.assertEqual(
+            '$' + base64.b64encode(b'1234').decode(),
+            str(detok.detokenize(b'1234')),
+        )
 
         self.assertIsNone(detok.detokenize(b'').token)
 
     def test_empty_db_show_errors(self):
         detok = detokenize.Detokenizer(io.BytesIO(EMPTY_ELF), show_errors=True)
         self.assertFalse(detok.detokenize(b'\x12\x34\0\0').ok())
-        self.assertIn('unknown token',
-                      detok.detokenize(b'1234').error_message())
+        self.assertIn(
+            'unknown token', detok.detokenize(b'1234').error_message()
+        )
         self.assertIn('unknown token', repr(detok.detokenize(b'1234')))
         self.assertIn('unknown token', str(detok.detokenize(b'1234')))
 
@@ -222,33 +247,41 @@ class DetokenizeTest(unittest.TestCase):
         self.assertIn('unknown token', str(detok.detokenize(b'1')))
         self.assertIn('unknown token', repr(detok.detokenize(b'1')))
 
-        self.assertIn('unknown token',
-                      detok.detokenize(b'123').error_message())
+        self.assertIn('unknown token', detok.detokenize(b'123').error_message())
         self.assertIn('unknown token', str(detok.detokenize(b'123')))
         self.assertIn('unknown token', repr(detok.detokenize(b'123')))
 
     def test_unknown_shorter_token(self):
         detok = detokenize.Detokenizer(io.BytesIO(EMPTY_ELF))
 
-        self.assertEqual('unknown token 00000001',
-                         detok.detokenize(b'\1').error_message())
-        self.assertEqual('$' + base64.b64encode(b'\1\0\0\0').decode(),
-                         str(detok.detokenize(b'\1')))
+        self.assertEqual(
+            'unknown token 00000001', detok.detokenize(b'\1').error_message()
+        )
+        self.assertEqual(
+            '$' + base64.b64encode(b'\1\0\0\0').decode(),
+            str(detok.detokenize(b'\1')),
+        )
         self.assertIn('unknown token 00000001', repr(detok.detokenize(b'\1')))
 
-        self.assertEqual('unknown token 00030201',
-                         detok.detokenize(b'\1\2\3').error_message())
-        self.assertEqual('$' + base64.b64encode(b'\1\2\3\0').decode(),
-                         str(detok.detokenize(b'\1\2\3')))
-        self.assertIn('unknown token 00030201',
-                      repr(detok.detokenize(b'\1\2\3')))
+        self.assertEqual(
+            'unknown token 00030201',
+            detok.detokenize(b'\1\2\3').error_message(),
+        )
+        self.assertEqual(
+            '$' + base64.b64encode(b'\1\2\3\0').decode(),
+            str(detok.detokenize(b'\1\2\3')),
+        )
+        self.assertIn(
+            'unknown token 00030201', repr(detok.detokenize(b'\1\2\3'))
+        )
 
     def test_decode_from_elf_data(self):
         detok = detokenize.Detokenizer(io.BytesIO(ELF_WITH_TOKENIZER_SECTIONS))
 
         self.assertTrue(detok.detokenize(JELLO_WORLD_TOKEN).ok())
-        self.assertEqual(str(detok.detokenize(JELLO_WORLD_TOKEN)),
-                         'Jello, world!')
+        self.assertEqual(
+            str(detok.detokenize(JELLO_WORLD_TOKEN)), 'Jello, world!'
+        )
 
         undecoded_args = detok.detokenize(JELLO_WORLD_TOKEN + b'some junk')
         self.assertFalse(undecoded_args.ok())
@@ -273,13 +306,15 @@ class DetokenizeTest(unittest.TestCase):
 
                 self.assertEqual(
                     expected_tokens,
-                    frozenset(detok.database.token_to_entries.keys()))
+                    frozenset(detok.database.token_to_entries.keys()),
+                )
 
                 # Open ELF by path
                 detok = detokenize.Detokenizer(elf.name)
                 self.assertEqual(
                     expected_tokens,
-                    frozenset(detok.database.token_to_entries.keys()))
+                    frozenset(detok.database.token_to_entries.keys()),
+                )
 
                 # Open ELF by elf_reader.Elf
                 with open(elf.name, 'rb') as fd:
@@ -287,7 +322,8 @@ class DetokenizeTest(unittest.TestCase):
 
                 self.assertEqual(
                     expected_tokens,
-                    frozenset(detok.database.token_to_entries.keys()))
+                    frozenset(detok.database.token_to_entries.keys()),
+                )
             finally:
                 os.unlink(elf.name)
 
@@ -307,7 +343,8 @@ class DetokenizeTest(unittest.TestCase):
                 detok = detokenize.Detokenizer(csv_file.name)
                 self.assertEqual(
                     expected_tokens,
-                    frozenset(detok.database.token_to_entries.keys()))
+                    frozenset(detok.database.token_to_entries.keys()),
+                )
 
                 # Open CSV by file object
                 with open(csv_file.name) as fd:
@@ -315,7 +352,8 @@ class DetokenizeTest(unittest.TestCase):
 
                 self.assertEqual(
                     expected_tokens,
-                    frozenset(detok.database.token_to_entries.keys()))
+                    frozenset(detok.database.token_to_entries.keys()),
+                )
             finally:
                 os.unlink(csv_file.name)
 
@@ -324,33 +362,42 @@ class DetokenizeTest(unittest.TestCase):
         expected_tokens = frozenset(detok.database.token_to_entries.keys())
 
         detok = detokenize.Detokenizer(detok.database)
-        self.assertEqual(expected_tokens,
-                         frozenset(detok.database.token_to_entries.keys()))
+        self.assertEqual(
+            expected_tokens, frozenset(detok.database.token_to_entries.keys())
+        )
 
 
 class DetokenizeWithCollisions(unittest.TestCase):
     """Tests collision resolution."""
+
     def setUp(self):
         super().setUp()
-        token = 0xbaad
+        token = 0xBAAD
 
         # Database with several conflicting tokens.
-        self.detok = detokenize.Detokenizer(tokens.Database([
-            tokens.TokenizedStringEntry(
-                token, 'REMOVED', date_removed=dt.datetime(9, 1, 1)),
-            tokens.TokenizedStringEntry(token, 'newer'),
-            tokens.TokenizedStringEntry(
-                token, 'A: %d', date_removed=dt.datetime(30, 5, 9)),
-            tokens.TokenizedStringEntry(
-                token, 'B: %c', date_removed=dt.datetime(30, 5, 10)),
-            tokens.TokenizedStringEntry(token, 'C: %s'),
-            tokens.TokenizedStringEntry(token, '%d%u'),
-            tokens.TokenizedStringEntry(token, '%s%u %d'),
-            tokens.TokenizedStringEntry(1, '%s'),
-            tokens.TokenizedStringEntry(1, '%d'),
-            tokens.TokenizedStringEntry(2, 'Three %s %s %s'),
-            tokens.TokenizedStringEntry(2, 'Five %d %d %d %d %s'),
-        ]))  # yapf: disable
+        self.detok = detokenize.Detokenizer(
+            tokens.Database(
+                [
+                    tokens.TokenizedStringEntry(
+                        token, 'REMOVED', date_removed=dt.datetime(9, 1, 1)
+                    ),
+                    tokens.TokenizedStringEntry(token, 'newer'),
+                    tokens.TokenizedStringEntry(
+                        token, 'A: %d', date_removed=dt.datetime(30, 5, 9)
+                    ),
+                    tokens.TokenizedStringEntry(
+                        token, 'B: %c', date_removed=dt.datetime(30, 5, 10)
+                    ),
+                    tokens.TokenizedStringEntry(token, 'C: %s'),
+                    tokens.TokenizedStringEntry(token, '%d%u'),
+                    tokens.TokenizedStringEntry(token, '%s%u %d'),
+                    tokens.TokenizedStringEntry(1, '%s'),
+                    tokens.TokenizedStringEntry(1, '%d'),
+                    tokens.TokenizedStringEntry(2, 'Three %s %s %s'),
+                    tokens.TokenizedStringEntry(2, 'Five %d %d %d %d %s'),
+                ]
+            )
+        )  # yapf: disable
 
     def test_collision_no_args_favors_most_recently_present(self):
         no_args = self.detok.detokenize(b'\xad\xba\0\0')
@@ -407,11 +454,13 @@ class DetokenizeWithCollisions(unittest.TestCase):
 @mock.patch('os.path.getmtime')
 class AutoUpdatingDetokenizerTest(unittest.TestCase):
     """Tests the AutoUpdatingDetokenizer class."""
+
     def test_update(self, mock_getmtime):
         """Tests the update command."""
 
         db = database.load_token_database(
-            io.BytesIO(ELF_WITH_TOKENIZER_SECTIONS))
+            io.BytesIO(ELF_WITH_TOKENIZER_SECTIONS)
+        )
         self.assertEqual(len(db), TOKENS_IN_ELF)
 
         the_time = [100]
@@ -429,8 +478,9 @@ class AutoUpdatingDetokenizerTest(unittest.TestCase):
             try:
                 file.close()
 
-                detok = detokenize.AutoUpdatingDetokenizer(file.name,
-                                                           min_poll_period_s=0)
+                detok = detokenize.AutoUpdatingDetokenizer(
+                    file.name, min_poll_period_s=0
+                )
                 self.assertFalse(detok.detokenize(JELLO_WORLD_TOKEN).ok())
 
                 with open(file.name, 'wb') as fd:
@@ -450,11 +500,15 @@ class AutoUpdatingDetokenizerTest(unittest.TestCase):
             try:
                 tokens.write_csv(
                     database.load_token_database(
-                        io.BytesIO(ELF_WITH_TOKENIZER_SECTIONS)), file)
+                        io.BytesIO(ELF_WITH_TOKENIZER_SECTIONS)
+                    ),
+                    file,
+                )
                 file.close()
 
-                detok = detokenize.AutoUpdatingDetokenizer(file,
-                                                           min_poll_period_s=0)
+                detok = detokenize.AutoUpdatingDetokenizer(
+                    file, min_poll_period_s=0
+                )
                 self.assertTrue(detok.detokenize(JELLO_WORLD_TOKEN).ok())
 
                 # Empty the database, but keep the mock modified time the same.
@@ -474,11 +528,15 @@ class AutoUpdatingDetokenizerTest(unittest.TestCase):
         """Tests that token domains can be parsed from input filename"""
         filename_and_domain = f'{ELF_WITH_TOKENIZER_SECTIONS_PATH}#.*'
         detok_with_domain = detokenize.AutoUpdatingDetokenizer(
-            filename_and_domain, min_poll_period_s=0)
-        self.assertEqual(len(detok_with_domain.database),
-                         TOKENS_IN_ELF_WITH_TOKENIZER_SECTIONS)
+            filename_and_domain, min_poll_period_s=0
+        )
+        self.assertEqual(
+            len(detok_with_domain.database),
+            TOKENS_IN_ELF_WITH_TOKENIZER_SECTIONS,
+        )
         detok = detokenize.AutoUpdatingDetokenizer(
-            str(ELF_WITH_TOKENIZER_SECTIONS_PATH), min_poll_period_s=0)
+            str(ELF_WITH_TOKENIZER_SECTIONS_PATH), min_poll_period_s=0
+        )
         self.assertEqual(len(detok.database), TOKENS_IN_ELF)
 
 
@@ -494,24 +552,32 @@ class PrefixedMessageDecoderTest(unittest.TestCase):
     def test_transform_single_message(self):
         self.assertEqual(
             b'%bcde',
-            b''.join(self.decode.transform(io.BytesIO(b'$abcd'), _next_char)))
+            b''.join(self.decode.transform(io.BytesIO(b'$abcd'), _next_char)),
+        )
 
     def test_transform_message_amidst_other_only_affects_message(self):
         self.assertEqual(
-            b'%%WHAT?%bcd%WHY? is this %ok %', b''.join(
+            b'%%WHAT?%bcd%WHY? is this %ok %',
+            b''.join(
                 self.decode.transform(
-                    io.BytesIO(b'$$WHAT?$abc$WHY? is this $ok $'),
-                    _next_char)))
+                    io.BytesIO(b'$$WHAT?$abc$WHY? is this $ok $'), _next_char
+                )
+            ),
+        )
 
     def test_transform_empty_message(self):
         self.assertEqual(
             b'%1%',
-            b''.join(self.decode.transform(io.BytesIO(b'$1$'), _next_char)))
+            b''.join(self.decode.transform(io.BytesIO(b'$1$'), _next_char)),
+        )
 
     def test_transform_sequential_messages(self):
         self.assertEqual(
-            b'%bcd%efghh', b''.join(
-                self.decode.transform(io.BytesIO(b'$abc$defgh'), _next_char)))
+            b'%bcd%efghh',
+            b''.join(
+                self.decode.transform(io.BytesIO(b'$abc$defgh'), _next_char)
+            ),
+        )
 
 
 class DetokenizeBase64(unittest.TestCase):
@@ -521,11 +587,13 @@ class DetokenizeBase64(unittest.TestCase):
 
     RECURSION_STRING = f'The secret message is "{JELLO.decode()}"'
     RECURSION = b'$' + base64.b64encode(
-        struct.pack('I', tokens.c_hash(RECURSION_STRING)))
+        struct.pack('I', tokens.c_hash(RECURSION_STRING))
+    )
 
     RECURSION_STRING_2 = f"'{RECURSION.decode()}', said the spy."
     RECURSION_2 = b'$' + base64.b64encode(
-        struct.pack('I', tokens.c_hash(RECURSION_STRING_2)))
+        struct.pack('I', tokens.c_hash(RECURSION_STRING_2))
+    )
 
     TEST_CASES = (
         (b'', b''),
@@ -543,17 +611,21 @@ class DetokenizeBase64(unittest.TestCase):
         (b'$3141', b'$3141'),
         (JELLO + b'$3141', b'Jello, world!$3141'),
         (RECURSION, b'The secret message is "Jello, world!"'),
-        (RECURSION_2,
-         b'\'The secret message is "Jello, world!"\', said the spy.'),
+        (
+            RECURSION_2,
+            b'\'The secret message is "Jello, world!"\', said the spy.',
+        ),
     )
 
     def setUp(self):
         super().setUp()
         db = database.load_token_database(
-            io.BytesIO(ELF_WITH_TOKENIZER_SECTIONS))
+            io.BytesIO(ELF_WITH_TOKENIZER_SECTIONS)
+        )
         db.add(
             tokens.TokenizedStringEntry(tokens.c_hash(s), s)
-            for s in [self.RECURSION_STRING, self.RECURSION_STRING_2])
+            for s in [self.RECURSION_STRING, self.RECURSION_STRING_2]
+        )
         self.detok = detokenize.Detokenizer(db)
 
     def test_detokenize_base64_live(self):
@@ -572,48 +644,57 @@ class DetokenizeBase64(unittest.TestCase):
 
     def test_detokenize_base64(self):
         for data, expected in self.TEST_CASES:
-            self.assertEqual(expected,
-                             self.detok.detokenize_base64(data, b'$'))
+            self.assertEqual(expected, self.detok.detokenize_base64(data, b'$'))
 
     def test_detokenize_base64_str(self):
         for data, expected in self.TEST_CASES:
-            self.assertEqual(expected.decode(),
-                             self.detok.detokenize_base64(data.decode()))
+            self.assertEqual(
+                expected.decode(), self.detok.detokenize_base64(data.decode())
+            )
 
 
 class DetokenizeBase64InfiniteRecursion(unittest.TestCase):
     """Tests that infinite Bas64 token recursion resolves."""
+
     def setUp(self):
         super().setUp()
         self.detok = detokenize.Detokenizer(
-            tokens.Database([
-                tokens.TokenizedStringEntry(0, '$AAAAAA=='),  # token for 0
-                tokens.TokenizedStringEntry(1, '$AgAAAA=='),  # token for 2
-                tokens.TokenizedStringEntry(2, '$AwAAAA=='),  # token for 3
-                tokens.TokenizedStringEntry(3, '$AgAAAA=='),  # token for 2
-            ]))
+            tokens.Database(
+                [
+                    tokens.TokenizedStringEntry(0, '$AAAAAA=='),  # token for 0
+                    tokens.TokenizedStringEntry(1, '$AgAAAA=='),  # token for 2
+                    tokens.TokenizedStringEntry(2, '$AwAAAA=='),  # token for 3
+                    tokens.TokenizedStringEntry(3, '$AgAAAA=='),  # token for 2
+                ]
+            )
+        )
 
     def test_detokenize_self_recursion(self):
         for depth in range(5):
             self.assertEqual(
-                self.detok.detokenize_base64(b'This one is deep: $AAAAAA==',
-                                             recursion=depth),
-                b'This one is deep: $AAAAAA==')
+                self.detok.detokenize_base64(
+                    b'This one is deep: $AAAAAA==', recursion=depth
+                ),
+                b'This one is deep: $AAAAAA==',
+            )
 
     def test_detokenize_self_recursion_default(self):
         self.assertEqual(
             self.detok.detokenize_base64(b'This one is deep: $AAAAAA=='),
-            b'This one is deep: $AAAAAA==')
+            b'This one is deep: $AAAAAA==',
+        )
 
     def test_detokenize_cyclic_recursion_even(self):
         self.assertEqual(
             self.detok.detokenize_base64(b'I said "$AQAAAA=="', recursion=2),
-            b'I said "$AgAAAA=="')
+            b'I said "$AgAAAA=="',
+        )
 
     def test_detokenize_cyclic_recursion_odd(self):
         self.assertEqual(
             self.detok.detokenize_base64(b'I said "$AQAAAA=="', recursion=3),
-            b'I said "$AwAAAA=="')
+            b'I said "$AwAAAA=="',
+        )
 
 
 if __name__ == '__main__':
