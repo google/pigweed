@@ -86,15 +86,18 @@ def run_bloaty(
     default_bloaty = 'bloaty'
     bloaty_path = os.getenv('BLOATY_PATH', default_bloaty)
 
-    # yapf: disable
     cmd = [
         bloaty_path,
-        '-c', config,
-        '-d', ','.join(data_sources),
-        '--domain', 'vm',
-        '-n', '0',
+        '-c',
+        config,
+        '-d',
+        ','.join(data_sources),
+        '--domain',
+        'vm',
+        '-n',
+        '0',
         filename,
-        *extra_args
+        *extra_args,
     ]
 
     # yapf: enable

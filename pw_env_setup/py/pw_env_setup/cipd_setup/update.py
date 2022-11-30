@@ -322,7 +322,7 @@ def update(  # pylint: disable=too-many-locals
         cache_dir,
         '-max-threads',
         '0',  # 0 means use CPU count.
-    ]  # yapf: disable
+    ]
 
     cipd_service_account = None
     if env_vars:

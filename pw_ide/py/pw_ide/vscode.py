@@ -192,7 +192,7 @@ _DEFAULT_SETTINGS: EditorSettingsDict = OrderedDict(
             }
         ),
     }
-)  # yapf: disable
+)
 
 # pylint: disable=line-too-long
 _DEFAULT_TASKS: EditorSettingsDict = OrderedDict(
@@ -265,7 +265,7 @@ _DEFAULT_TASKS: EditorSettingsDict = OrderedDict(
             }
         ],
     }
-)  # yapf: disable
+)
 # pylint: enable=line-too-long
 
 _DEFAULT_EXTENSIONS: EditorSettingsDict = OrderedDict(
@@ -283,7 +283,7 @@ _DEFAULT_EXTENSIONS: EditorSettingsDict = OrderedDict(
             "persidskiy.vscode-gnformat",
         ],
     }
-)  # yapf: disable
+)
 
 
 def _default_settings(

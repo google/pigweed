@@ -213,7 +213,7 @@ _THEME_NAME_MAPPING = {
     'dark': DarkColors(),
     'high-contrast-dark': HighContrastDarkColors(),
     'ansi': AnsiTerm(),
-}  # yapf: disable
+}
 
 
 def get_theme_colors(theme_name=''):
@@ -434,7 +434,7 @@ def generate_styles(theme_name='dark'):
         'theme-bg-line-highlight': 'bg:{}'.format(theme.line_highlight_bg),
         'theme-bg-button-active': 'bg:{}'.format(theme.button_active_bg),
         'theme-bg-button-inactive': 'bg:{}'.format(theme.button_inactive_bg),
-    }  # yapf: disable
+    }
 
     return Style.from_dict(pw_console_styles)
 

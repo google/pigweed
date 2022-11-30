@@ -95,7 +95,7 @@ def TestCase(*args):  # pylint: disable=invalid-name
     return tuple(args)
 
 
-# yapf: disable
+
 TEST_DATA = (
 )";
 

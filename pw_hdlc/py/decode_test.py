@@ -340,7 +340,7 @@ TEST_CASES: Tuple[GroupOrTest[TestCase], ...] = (
         [Expected.error(FrameStatus.FRAMING_ERROR), Expected(1, b'\2', b'def')],
         b'~Hi~ How are you?',
     ),
-)  # yapf: disable
+)
 # Formatting for the above tuple is very slow, so disable yapf. Manually enable
 # it as needed to format the test cases.
 

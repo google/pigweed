@@ -270,7 +270,7 @@ class TestEditorSettingsManager(PwIdeTestCase):
                     }
                 ),
             }
-        )  # yapf: disable
+        )
 
         types_with_defaults = {
             EditorSettingsTestType.SETTINGS: lambda _: default_settings
@@ -288,7 +288,7 @@ class TestEditorSettingsManager(PwIdeTestCase):
                 'baz': 'xuq',
                 'foo': 'rab',
             }
-        )  # yapf: disable
+        )
 
         with manager.project(
             EditorSettingsTestType.SETTINGS
@@ -305,7 +305,7 @@ class TestEditorSettingsManager(PwIdeTestCase):
                     }
                 ),
             }
-        )  # yapf: disable
+        )
 
         with manager.user(EditorSettingsTestType.SETTINGS).modify() as settings:
             dict_deep_merge(user_settings, settings)
@@ -318,7 +318,7 @@ class TestEditorSettingsManager(PwIdeTestCase):
                 'ipsum': 'sit amet',
                 'consectetur': 'adipiscing',
             },
-        }  # yapf: disable
+        }
 
         with manager.active(
             EditorSettingsTestType.SETTINGS

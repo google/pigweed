@@ -36,7 +36,6 @@ class ArduinoCoreNotSupported(Exception):
     """Exception raised when a given core can not be installed."""
 
 
-# yapf: disable
 _ARDUINO_CORE_ARTIFACTS: Dict[str, Dict] = {
     # pylint: disable=line-too-long
     "teensy": {
@@ -111,7 +110,7 @@ _ARDUINO_CORE_ARTIFACTS: Dict[str, Dict] = {
                 "file_name": "Teensyduino.exe",
                 "sha256": "88f58681e5c4772c54e462bc88280320e4276e5b316dcab592fe38d96db990a1",
             },
-        }
+        },
     },
     "adafruit-samd": {
         "all": {

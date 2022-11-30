@@ -239,7 +239,7 @@ class TestLogView(unittest.TestCase):
                 'class:selected-log-line ',
                 '  Test log 3                                             ',
             ),
-        ]  # yapf: disable
+        ]
 
         # pylint: disable=protected-access
         result_text = join_adjacent_style_tuples(
@@ -569,7 +569,7 @@ if _PYTHON_3_8:
                     True,  # invert
                 ),
             ]
-        )  # yapf: disable
+        )
         async def test_log_filtering(
             self,
             _test_name,

@@ -101,7 +101,7 @@ class TestTextFormatting(unittest.TestCase):
                 len('_________'),  # expected_trailing_characters
             ),
         ]
-    )  # yapf: disable
+    )
     def test_get_line_height(
         self,
         _name,
@@ -196,7 +196,7 @@ class TestTextFormatting(unittest.TestCase):
                 2,  # expected_height
             ),
         ]
-    )  # yapf: disable
+    )
     # pylint: enable=line-too-long
     def test_insert_linebreaks(
         self,
@@ -265,7 +265,7 @@ class TestTextFormatting(unittest.TestCase):
                 ],
             ),
         ]
-    )  # yapf: disable
+    )
     def test_split_lines(
         self,
         _name,

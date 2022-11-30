@@ -37,7 +37,7 @@ class TestShellArgumentSplitting(unittest.TestCase):
                 ],
             )
         ]
-    )  # yapf: disable
+    )
     def test_split_arguments_and_remove_quotes(
         self, unused_test_name, input_string, expected
     ):

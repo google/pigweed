@@ -85,7 +85,7 @@ def make_box(section_alignments: Sequence[str]) -> str:
             *bot_sections,
             '{10}',
         ]
-    )  # yapf: disable
+    )
 
 
 def file_summary(

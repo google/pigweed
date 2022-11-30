@@ -25,7 +25,7 @@ def TestCase(*args):  # pylint: disable=invalid-name
     return tuple(args)
 
 
-# yapf: disable
+# fmt: off
 TEST_DATA = (
 
 # Simple strings
@@ -413,3 +413,4 @@ TestCase("%s: %lld 0x%16u%08X %d", "98: 428374782176628108 0x      1712762010661
 TestCase("%s: %lld 0x%16u%08X %d", "99: 7023621621475593673 0x       1965201350BB6A8C7 58", b'\x02\x39\x39\x92\xb7\xf2\x8c\xdd\xa9\xf5\xf8\xc2\x01\x8e\xa3\xb5\xbb\x01\x8e\xa3\xb5\xbb\x01\x74'),
 
 )
+# fmt: on

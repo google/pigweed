@@ -83,7 +83,7 @@ class TestLogFilter(unittest.TestCase):
                 re.RegexFlag(0),
             ),
         ]
-    )  # yapf: disable
+    )
     def test_preprocess_search_regex(
         self,
         _name,
@@ -198,7 +198,7 @@ class TestLogFilter(unittest.TestCase):
                 True,  # invert
             ),
         ]
-    )  # yapf: disable
+    )
     def test_log_filter_matches(
         self,
         _name,

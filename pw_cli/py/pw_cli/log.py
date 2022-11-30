@@ -46,7 +46,7 @@ _LOG_LEVELS = (
     _LogLevel(logging.INFO,     'magenta',      'INF', 'ℹ️ '),
     _LogLevel(LOGLEVEL_STDOUT,  'cyan',         'OUT', '💬'),
     _LogLevel(logging.DEBUG,    'blue',         'DBG', '👾'),
-)  # yapf: disable
+)
 # fmt: on
 
 _LOG = logging.getLogger(__name__)

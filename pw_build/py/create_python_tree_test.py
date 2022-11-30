@@ -378,7 +378,7 @@ saturn =
                 ],
             ),
         ]
-    )  # yapf: disable
+    )
     def test_build_python_tree(
         self,
         _test_name,
@@ -466,7 +466,7 @@ saturn =
                 FileExistsError,
             ),
         ]
-    )  # yapf: disable
+    )
     def test_copy_extra_files(
         self,
         _test_name,

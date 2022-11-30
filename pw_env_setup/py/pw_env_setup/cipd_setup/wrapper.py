@@ -350,7 +350,7 @@ def selfupdate(client):
         VERSION_FILE,
         '-service-url',
         'https://{}'.format(CIPD_HOST),
-    ]  # yapf: disable
+    ]
     subprocess.check_call(cmd)
 
 

@@ -97,7 +97,7 @@ class TestFileOperations(unittest.TestCase):
                 ],
             ),
         ]
-    )  # yapf: disable
+    )
     def test_find_files(
         self, test_case, base_fileset, patterns, expected_results
     ):

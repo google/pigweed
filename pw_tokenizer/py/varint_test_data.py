@@ -25,7 +25,7 @@ def TestCase(*args):  # pylint: disable=invalid-name
     return tuple(args)
 
 
-# yapf: disable
+# fmt: off
 TEST_DATA = (
 
 # Important numbers
@@ -1008,3 +1008,4 @@ TestCase("%d", "126", "%u", "126", b'\xfc\x01'),
 TestCase("%d", "127", "%u", "127", b'\xfe\x01'),
 
 )
+# fmt: on

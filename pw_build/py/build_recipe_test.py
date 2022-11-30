@@ -87,7 +87,7 @@ class TestBuildRecipe(unittest.TestCase):
                 ['python', 'pw_build/py/build_recipe_test.py'],
             ),
         ]
-    )  # yapf: disable
+    )
     def test_build_command_get_args(
         self,
         _test_name,

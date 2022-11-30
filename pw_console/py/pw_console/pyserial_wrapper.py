@@ -36,7 +36,7 @@ def _log_hex_strings(data: bytes, prefix=''):
         .replace("'>", '', 1)  # Remove ' from the end
         .rjust(2)
         for b in data
-    ]  # yapf: disable
+    ]
 
     # Replace non-printable bytes with dots.
     for i, num in enumerate(hex_numbers):

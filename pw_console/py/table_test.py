@@ -115,7 +115,7 @@ class TestTableView(unittest.TestCase):
                 dict(module=len('MOD2'), anumber=len('54321.200')),
             ),
         ]
-    )  # yapf: disable
+    )
     def test_column_widths(self, _name, logs, expected_widths) -> None:
         """Test colum widths calculation."""
         table = TableView(self.prefs)
@@ -182,7 +182,7 @@ class TestTableView(unittest.TestCase):
                 ],
             ),
         ]
-    )  # yapf: disable
+    )
     def test_formatted_header(self, _name, logs, expected_headers) -> None:
         """Test colum widths calculation."""
         table = TableView(self.prefs)
@@ -257,7 +257,7 @@ class TestTableView(unittest.TestCase):
                 ],
             ),
         ]
-    )  # yapf: disable
+    )
     def test_formatted_rows(self, _name, logs, expected_log_format) -> None:
         """Test colum widths calculation."""
         table = TableView(self.prefs)

@@ -397,7 +397,7 @@ class DetokenizeWithCollisions(unittest.TestCase):
                     tokens.TokenizedStringEntry(2, 'Five %d %d %d %d %s'),
                 ]
             )
-        )  # yapf: disable
+        )
 
     def test_collision_no_args_favors_most_recently_present(self):
         no_args = self.detok.detokenize(b'\xad\xba\0\0')
