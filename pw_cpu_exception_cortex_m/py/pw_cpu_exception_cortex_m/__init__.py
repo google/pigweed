@@ -13,4 +13,6 @@
 # the License.
 """Python tooling for Cortex-M CPU state analysis."""
 from pw_cpu_exception_cortex_m.exception_analyzer import (
-    CortexMExceptionAnalyzer, process_snapshot)
+    CortexMExceptionAnalyzer,
+    process_snapshot,
+)

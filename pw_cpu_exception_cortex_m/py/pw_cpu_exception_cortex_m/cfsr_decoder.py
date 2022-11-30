@@ -41,9 +41,9 @@ _LOG = logging.getLogger('decode_cfsr')
 def _parse_args() -> argparse.Namespace:
     """Parses arguments for this script, splitting out the command to run."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('cfsr',
-                        type=lambda val: int(val, 0),
-                        help='The Cortex-M CFSR to decode')
+    parser.add_argument(
+        'cfsr', type=lambda val: int(val, 0), help='The Cortex-M CFSR to decode'
+    )
     return parser.parse_args()
 
 
@@ -51,7 +51,8 @@ def dump_cfsr(cfsr: int) -> int:
     cpu_state_proto = cpu_state_pb2.ArmV7mCpuState()
     cpu_state_proto.cfsr = cfsr
     cpu_state_info = exception_analyzer.CortexMExceptionAnalyzer(
-        cpu_state_proto)
+        cpu_state_proto
+    )
     _LOG.info(cpu_state_info)
     return 0
 
