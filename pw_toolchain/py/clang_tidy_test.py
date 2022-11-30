@@ -23,17 +23,27 @@ from pw_toolchain import clang_tidy
 
 class ClangTidyTest(unittest.TestCase):
     """Unit tests for the clang-tidy wrapper."""
+
     @mock.patch('subprocess.run', autospec=True)
     def test_source_exclude_filters(self, mock_run):
         # Build the path using joinpath to use OS-appropriate separators on both
         # Windows and Linux.
-        source_file = pathlib.Path('..').joinpath('third_party').joinpath(
-            'somefile.cc')
+        source_file = (
+            pathlib.Path('..').joinpath('third_party').joinpath('somefile.cc')
+        )
         source_root = pathlib.Path('..')
         source_exclude = ['third_party.*']
         extra_args = ['END_OF_INVOKER']
-        got = clang_tidy.main(False, 'clang-tidy', source_file, source_root,
-                              None, source_exclude, list(), extra_args)
+        got = clang_tidy.main(
+            False,
+            'clang-tidy',
+            source_file,
+            source_root,
+            None,
+            source_exclude,
+            list(),
+            extra_args,
+        )
 
         # Return code is zero.
         self.assertEqual(got, 0)
@@ -43,13 +53,22 @@ class ClangTidyTest(unittest.TestCase):
     @mock.patch('subprocess.run', autospec=True)
     def test_source_exclude_does_not_filter(self, mock_run):
         mock_run.return_value.returncode = 0
-        source_file = pathlib.Path('..').joinpath('third_party').joinpath(
-            'somefile.cc')
+        source_file = (
+            pathlib.Path('..').joinpath('third_party').joinpath('somefile.cc')
+        )
         source_root = pathlib.Path('..')
         source_exclude = ['someotherdir.*']
         extra_args = ['END_OF_INVOKER']
-        got = clang_tidy.main(False, 'clang-tidy', source_file, source_root,
-                              None, source_exclude, list(), extra_args)
+        got = clang_tidy.main(
+            False,
+            'clang-tidy',
+            source_file,
+            source_root,
+            None,
+            source_exclude,
+            list(),
+            extra_args,
+        )
 
         # Return code is zero.
         self.assertEqual(got, 0)

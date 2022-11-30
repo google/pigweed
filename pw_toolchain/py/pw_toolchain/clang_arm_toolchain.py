@@ -49,14 +49,21 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         '--gn-scope',
         action='store_true',
-        help=("Formats the output like a GN scope so it can be ingested by "
-              "exec_script()"))
-    parser.add_argument('--cflags',
-                        action='store_true',
-                        help=('Include necessary C flags in the output'))
-    parser.add_argument('--ldflags',
-                        action='store_true',
-                        help=('Include necessary linker flags in the output'))
+        help=(
+            "Formats the output like a GN scope so it can be ingested by "
+            "exec_script()"
+        ),
+    )
+    parser.add_argument(
+        '--cflags',
+        action='store_true',
+        help=('Include necessary C flags in the output'),
+    )
+    parser.add_argument(
+        '--ldflags',
+        action='store_true',
+        help=('Include necessary linker flags in the output'),
+    )
     parser.add_argument(
         'clang_flags',
         nargs=argparse.REMAINDER,
@@ -83,23 +90,28 @@ def _compiler_info_command(print_command: str, cflags: List[str]) -> str:
 
 
 def get_gcc_lib_dir(cflags: List[str]) -> Path:
-    return Path(_compiler_info_command('-print-libgcc-file-name',
-                                       cflags)).parent
+    return Path(
+        _compiler_info_command('-print-libgcc-file-name', cflags)
+    ).parent
 
 
 def get_compiler_info(cflags: List[str]) -> Dict[str, str]:
     compiler_info: Dict[str, str] = {}
     compiler_info['gcc_libs_dir'] = os.path.relpath(
-        str(get_gcc_lib_dir(cflags)), ".")
+        str(get_gcc_lib_dir(cflags)), "."
+    )
     compiler_info['sysroot'] = os.path.relpath(
-        _compiler_info_command('-print-sysroot', cflags), ".")
+        _compiler_info_command('-print-sysroot', cflags), "."
+    )
     compiler_info['version'] = _compiler_info_command('-dumpversion', cflags)
     compiler_info['multi_dir'] = _compiler_info_command(
-        '-print-multi-directory', cflags)
+        '-print-multi-directory', cflags
+    )
     return compiler_info
 
 
 def get_cflags(compiler_info: Dict[str, str]):
+    """TODO(amontanez): Add docstring."""
     # TODO(amontanez): Make newlib-nano optional.
     cflags = [
         # TODO(amontanez): For some reason, -stdlib++-isystem and
@@ -108,24 +120,35 @@ def get_cflags(compiler_info: Dict[str, str]):
         '-Qunused-arguments',
         # Disable all default libraries.
         "-nodefaultlibs",
-        '--target=arm-none-eabi'
+        '--target=arm-none-eabi',
     ]
 
     # Add sysroot info.
-    cflags.extend((
-        '--sysroot=' + compiler_info['sysroot'],
-        '-isystem' +
-        str(Path(compiler_info['sysroot']) / 'include' / 'newlib-nano'),
-        # This must be included after Clang's builtin headers.
-        '-isystem-after' + str(Path(compiler_info['sysroot']) / 'include'),
-        '-stdlib++-isystem' + str(
-            Path(compiler_info['sysroot']) / 'include' / 'c++' /
-            compiler_info['version']),
-        '-isystem' + str(
-            Path(compiler_info['sysroot']) / 'include' / 'c++' /
-            compiler_info['version'] / _ARM_COMPILER_PREFIX /
-            compiler_info['multi_dir']),
-    ))
+    cflags.extend(
+        (
+            '--sysroot=' + compiler_info['sysroot'],
+            '-isystem'
+            + str(Path(compiler_info['sysroot']) / 'include' / 'newlib-nano'),
+            # This must be included after Clang's builtin headers.
+            '-isystem-after' + str(Path(compiler_info['sysroot']) / 'include'),
+            '-stdlib++-isystem'
+            + str(
+                Path(compiler_info['sysroot'])
+                / 'include'
+                / 'c++'
+                / compiler_info['version']
+            ),
+            '-isystem'
+            + str(
+                Path(compiler_info['sysroot'])
+                / 'include'
+                / 'c++'
+                / compiler_info['version']
+                / _ARM_COMPILER_PREFIX
+                / compiler_info['multi_dir']
+            ),
+        )
+    )
 
     return cflags
 
@@ -136,8 +159,11 @@ def get_crt_objs(compiler_info: Dict[str, str]) -> Tuple[str, ...]:
         str(Path(compiler_info['gcc_libs_dir']) / 'crti.o'),
         str(Path(compiler_info['gcc_libs_dir']) / 'crtn.o'),
         str(
-            Path(compiler_info['sysroot']) / 'lib' /
-            compiler_info['multi_dir'] / 'crt0.o'),
+            Path(compiler_info['sysroot'])
+            / 'lib'
+            / compiler_info['multi_dir']
+            / 'crt0.o'
+        ),
     )
 
 
@@ -146,9 +172,10 @@ def get_ldflags(compiler_info: Dict[str, str]) -> List[str]:
         '-lnosys',
         # Add library search paths.
         '-L' + compiler_info['gcc_libs_dir'],
-        '-L' + str(
-            Path(compiler_info['sysroot']) / 'lib' /
-            compiler_info['multi_dir']),
+        '-L'
+        + str(
+            Path(compiler_info['sysroot']) / 'lib' / compiler_info['multi_dir']
+        ),
         # Add libraries to link.
         '-lc_nano',
         '-lm',
