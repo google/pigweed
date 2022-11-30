@@ -29,6 +29,7 @@ _SHA1_BUILD_ID_LENGTH = 20
 
 class TestGnuBuildId(unittest.TestCase):
     """Unit tests for GNU build ID parsing."""
+
     def test_build_id_correctness(self):
         """Tests to ensure GNU build IDs are read/written correctly."""
         with tempfile.TemporaryDirectory() as exe_dir:
@@ -51,37 +52,45 @@ class TestGnuBuildId(unittest.TestCase):
                 exe_file,
             ]
 
-            process = subprocess.run(cmd,
-                                     stdout=subprocess.PIPE,
-                                     stderr=subprocess.STDOUT,
-                                     cwd=_MODULE_DIR)
-            self.assertEqual(process.returncode, 0,
-                             process.stdout.decode(errors='replace'))
+            process = subprocess.run(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                cwd=_MODULE_DIR,
+            )
+            self.assertEqual(
+                process.returncode, 0, process.stdout.decode(errors='replace')
+            )
 
             # Run the compiled binary so the printed build ID can be read.
-            process = subprocess.run([exe_file],
-                                     stdout=subprocess.PIPE,
-                                     stderr=subprocess.STDOUT,
-                                     cwd=_MODULE_DIR)
+            process = subprocess.run(
+                [exe_file],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                cwd=_MODULE_DIR,
+            )
             self.assertEqual(process.returncode, 0)
 
             with open(exe_file, 'rb') as elf:
                 expected = build_id.read_build_id_from_section(elf)
                 self.assertEqual(len(expected), _SHA1_BUILD_ID_LENGTH)
-                self.assertEqual(process.stdout.decode().rstrip(),
-                                 expected.hex())
+                self.assertEqual(
+                    process.stdout.decode().rstrip(), expected.hex()
+                )
 
                 # Test method that parses using symbol information.
                 expected = build_id.read_build_id_from_symbol(elf)
                 self.assertEqual(len(expected), _SHA1_BUILD_ID_LENGTH)
-                self.assertEqual(process.stdout.decode().rstrip(),
-                                 expected.hex())
+                self.assertEqual(
+                    process.stdout.decode().rstrip(), expected.hex()
+                )
 
                 # Test the user-facing method.
                 expected = build_id.read_build_id(elf)
                 self.assertEqual(len(expected), _SHA1_BUILD_ID_LENGTH)
-                self.assertEqual(process.stdout.decode().rstrip(),
-                                 expected.hex())
+                self.assertEqual(
+                    process.stdout.decode().rstrip(), expected.hex()
+                )
 
 
 if __name__ == '__main__':

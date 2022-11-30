@@ -32,15 +32,19 @@ class GnuBuildIdError(Exception):
 def read_build_id_from_section(elf_file: BinaryIO) -> Optional[bytes]:
     """Reads a build ID from a .note.gnu.build-id section."""
     parsed_elf_file = elffile.ELFFile(elf_file)
-    build_id_section = parsed_elf_file.get_section_by_name(
-        '.note.gnu.build-id')
+    build_id_section = parsed_elf_file.get_section_by_name('.note.gnu.build-id')
 
     if build_id_section is None:
         return None
 
-    section_notes = list(n for n in notes.iter_notes(
-        parsed_elf_file, build_id_section['sh_offset'],
-        build_id_section['sh_size']))
+    section_notes = list(
+        n
+        for n in notes.iter_notes(
+            parsed_elf_file,
+            build_id_section['sh_offset'],
+            build_id_section['sh_size'],
+        )
+    )
 
     if len(section_notes) != 1:
         raise GnuBuildIdError('GNU build ID section contains multiple notes')
@@ -66,9 +70,9 @@ def _addr_is_in_segment(addr: int, segment) -> bool:
 
 def _read_build_id_from_offset(elf, offset: int) -> bytes:
     """Attempts to read a GNU build ID from an offset in an elf file."""
-    note = elftools.common.utils.struct_parse(elf.structs.Elf_Nhdr,
-                                              elf.stream,
-                                              stream_pos=offset)
+    note = elftools.common.utils.struct_parse(
+        elf.structs.Elf_Nhdr, elf.stream, stream_pos=offset
+    )
     elf.stream.seek(offset + elf.structs.Elf_Nhdr.sizeof())
     name = elf.stream.read(note['n_namesz'])
 
@@ -106,8 +110,9 @@ def read_build_id_from_symbol(elf_file: BinaryIO) -> Optional[bytes]:
     build_id_start_addr = gnu_build_id_sym['st_value']
     for segment in parsed_elf_file.iter_segments():
         if segment.section_in_segment(matching_section):
-            offset = build_id_start_addr - segment['p_vaddr'] + segment[
-                'p_offset']
+            offset = (
+                build_id_start_addr - segment['p_vaddr'] + segment['p_offset']
+            )
             return _read_build_id_from_offset(parsed_elf_file, offset)
 
     return None
@@ -156,9 +161,11 @@ def _parse_args():
     """Parses command-line arguments."""
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('elf_file',
-                        type=argparse.FileType('rb'),
-                        help='The .elf to parse build info from')
+    parser.add_argument(
+        'elf_file',
+        type=argparse.FileType('rb'),
+        help='The .elf to parse build info from',
+    )
 
     return parser.parse_args()
 
