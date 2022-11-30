@@ -34,8 +34,8 @@ _OPENOCD_CONFIG = os.path.join(_DIR, 'openocd_stm32f4xx.cfg')
 
 # Path to scripts provided by openocd.
 _OPENOCD_SCRIPTS_DIR = os.path.join(
-    os.getenv('PW_PIGWEED_CIPD_INSTALL_DIR', ''), 'share', 'openocd',
-    'scripts')
+    os.getenv('PW_PIGWEED_CIPD_INSTALL_DIR', ''), 'share', 'openocd', 'scripts'
+)
 
 _LOG = logging.getLogger('unit_test_runner')
 
@@ -65,32 +65,43 @@ def parse_args():
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('binary', help='The target test binary to run')
-    parser.add_argument('--openocd-config',
-                        default=_OPENOCD_CONFIG,
-                        help='Path to openocd configuration file')
-    parser.add_argument('--stlink-serial',
-                        default=None,
-                        help='The serial number of the stlink to use when '
-                        'flashing the target device')
-    parser.add_argument('--port',
-                        default=None,
-                        help='The name of the serial port to connect to when '
-                        'running tests')
-    parser.add_argument('--baud',
-                        type=int,
-                        default=115200,
-                        help='Target baud rate to use for serial communication'
-                        ' with target device')
-    parser.add_argument('--test-timeout',
-                        type=float,
-                        default=5.0,
-                        help='Maximum communication delay in seconds before a '
-                        'test is considered unresponsive and aborted')
-    parser.add_argument('--verbose',
-                        '-v',
-                        dest='verbose',
-                        action="store_true",
-                        help='Output additional logs as the script runs')
+    parser.add_argument(
+        '--openocd-config',
+        default=_OPENOCD_CONFIG,
+        help='Path to openocd configuration file',
+    )
+    parser.add_argument(
+        '--stlink-serial',
+        default=None,
+        help='The serial number of the stlink to use when '
+        'flashing the target device',
+    )
+    parser.add_argument(
+        '--port',
+        default=None,
+        help='The name of the serial port to connect to when ' 'running tests',
+    )
+    parser.add_argument(
+        '--baud',
+        type=int,
+        default=115200,
+        help='Target baud rate to use for serial communication'
+        ' with target device',
+    )
+    parser.add_argument(
+        '--test-timeout',
+        type=float,
+        default=5.0,
+        help='Maximum communication delay in seconds before a '
+        'test is considered unresponsive and aborted',
+    )
+    parser.add_argument(
+        '--verbose',
+        '-v',
+        dest='verbose',
+        action="store_true",
+        help='Output additional logs as the script runs',
+    )
 
     return parser.parse_args()
 
@@ -111,8 +122,17 @@ def reset_device(openocd_config, stlink_serial):
     flash_tool = os.getenv('OPENOCD_PATH', default_flasher)
 
     cmd = [
-        flash_tool, '-s', _OPENOCD_SCRIPTS_DIR, '-f', openocd_config, '-c',
-        'init', '-c', 'reset run', '-c', 'exit'
+        flash_tool,
+        '-s',
+        _OPENOCD_SCRIPTS_DIR,
+        '-f',
+        openocd_config,
+        '-c',
+        'init',
+        '-c',
+        'reset run',
+        '-c',
+        'exit',
     ]
     _LOG.debug('Resetting device')
 
@@ -122,10 +142,9 @@ def reset_device(openocd_config, stlink_serial):
 
     # Disable GDB port to support multi-device testing.
     env['PW_GDB_PORT'] = 'disabled'
-    process = subprocess.run(cmd,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT,
-                             env=env)
+    process = subprocess.run(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env
+    )
     if process.returncode:
         log_subprocess_output(logging.ERROR, process.stdout)
         raise TestingFailure('Failed to reset target device')
@@ -142,9 +161,9 @@ def read_serial(port, baud_rate, test_timeout) -> bytes:
     """
 
     serial_data = bytearray()
-    device = serial.Serial(baudrate=baud_rate,
-                           port=port,
-                           timeout=_FLASH_TIMEOUT)
+    device = serial.Serial(
+        baudrate=baud_rate, port=port, timeout=_FLASH_TIMEOUT
+    )
     if not device.is_open:
         raise TestingFailure('Failed to open device')
 
@@ -175,8 +194,11 @@ def read_serial(port, baud_rate, test_timeout) -> bytes:
 
     # Try to trim captured results to only contain most recent test run.
     test_start_index = serial_data.rfind(_TESTS_STARTING_STRING)
-    return serial_data if test_start_index == -1 else serial_data[
-        test_start_index:]
+    return (
+        serial_data
+        if test_start_index == -1
+        else serial_data[test_start_index:]
+    )
 
 
 def flash_device(binary, openocd_config, stlink_serial):
@@ -188,8 +210,13 @@ def flash_device(binary, openocd_config, stlink_serial):
 
     openocd_command = ' '.join(['program', binary, 'reset', 'exit'])
     cmd = [
-        flash_tool, '-s', _OPENOCD_SCRIPTS_DIR, '-f', openocd_config, '-c',
-        openocd_command
+        flash_tool,
+        '-s',
+        _OPENOCD_SCRIPTS_DIR,
+        '-f',
+        openocd_config,
+        '-c',
+        openocd_command,
     ]
     _LOG.info('Flashing firmware to device')
 
@@ -199,10 +226,9 @@ def flash_device(binary, openocd_config, stlink_serial):
 
     # Disable GDB port to support multi-device testing.
     env['PW_GDB_PORT'] = 'disabled'
-    process = subprocess.run(cmd,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT,
-                             env=env)
+    process = subprocess.run(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env
+    )
     if process.returncode:
         log_subprocess_output(logging.ERROR, process.stdout)
         raise TestingFailure('Failed to flash target device')
@@ -236,12 +262,9 @@ def _threaded_test_reader(dest, port, baud_rate, test_timeout):
     dest.append(read_serial(port, baud_rate, test_timeout))
 
 
-def run_device_test(binary,
-                    test_timeout,
-                    openocd_config,
-                    baud,
-                    stlink_serial=None,
-                    port=None) -> bool:
+def run_device_test(
+    binary, test_timeout, openocd_config, baud, stlink_serial=None, port=None
+) -> bool:
     """Flashes, runs, and checks an on-device test binary.
 
     Returns true on test pass.
@@ -265,8 +288,9 @@ def run_device_test(binary,
         # correctly relative to the start of capturing device output.
         result: List[bytes] = []
         threaded_reader_args = (result, port, baud, test_timeout)
-        read_thread = threading.Thread(target=_threaded_test_reader,
-                                       args=threaded_reader_args)
+        read_thread = threading.Thread(
+            target=_threaded_test_reader, args=threaded_reader_args
+        )
         read_thread.start()
         _LOG.info('Running test')
         flash_device(binary, openocd_config, stlink_serial)
@@ -287,22 +311,24 @@ def main():
     # Try to use pw_cli logs, else default to something reasonable.
     try:
         import pw_cli.log  # pylint: disable=import-outside-toplevel
+
         log_level = logging.DEBUG if args.verbose else logging.INFO
         pw_cli.log.install(level=log_level)
     except ImportError:
-        coloredlogs.install(level='DEBUG' if args.verbose else 'INFO',
-                            level_styles={
-                                'debug': {
-                                    'color': 244
-                                },
-                                'error': {
-                                    'color': 'red'
-                                }
-                            },
-                            fmt='%(asctime)s %(levelname)s | %(message)s')
+        coloredlogs.install(
+            level='DEBUG' if args.verbose else 'INFO',
+            level_styles={'debug': {'color': 244}, 'error': {'color': 'red'}},
+            fmt='%(asctime)s %(levelname)s | %(message)s',
+        )
 
-    if run_device_test(args.binary, args.test_timeout, args.openocd_config,
-                       args.baud, args.stlink_serial, args.port):
+    if run_device_test(
+        args.binary,
+        args.test_timeout,
+        args.openocd_config,
+        args.baud,
+        args.stlink_serial,
+        args.port,
+    ):
         sys.exit(0)
     else:
         sys.exit(1)

@@ -27,9 +27,9 @@ def parse_args():
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('binary', help='The target test binary to run')
-    parser.add_argument('--server-port',
-                        type=int,
-                        help='Port the test server is located on')
+    parser.add_argument(
+        '--server-port', type=int, help='Port the test server is located on'
+    )
 
     return parser.parse_args()
 

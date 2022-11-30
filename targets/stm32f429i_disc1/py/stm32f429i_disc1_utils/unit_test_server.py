@@ -36,18 +36,24 @@ def parse_args():
     """Parses command-line arguments."""
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--server-port',
-                        type=int,
-                        default=8080,
-                        help='Port to launch the pw_target_runner_server on')
-    parser.add_argument('--server-config',
-                        type=argparse.FileType('r'),
-                        help='Path to server config file')
-    parser.add_argument('--verbose',
-                        '-v',
-                        dest='verbose',
-                        action="store_true",
-                        help='Output additional logs as the script runs')
+    parser.add_argument(
+        '--server-port',
+        type=int,
+        default=8080,
+        help='Port to launch the pw_target_runner_server on',
+    )
+    parser.add_argument(
+        '--server-config',
+        type=argparse.FileType('r'),
+        help='Path to server config file',
+    )
+    parser.add_argument(
+        '--verbose',
+        '-v',
+        dest='verbose',
+        action="store_true",
+        help='Output additional logs as the script runs',
+    )
 
     return parser.parse_args()
 
@@ -75,17 +81,23 @@ def generate_server_config() -> IO[bytes]:
     _LOG.debug('Found %d attached devices', len(boards))
     for board in boards:
         test_runner_args = [
-            '--stlink-serial', board.serial_number, '--port', board.dev_name
+            '--stlink-serial',
+            board.serial_number,
+            '--port',
+            board.dev_name,
         ]
         config_file.write(
-            generate_runner(_TEST_RUNNER_COMMAND,
-                            test_runner_args).encode('utf-8'))
+            generate_runner(_TEST_RUNNER_COMMAND, test_runner_args).encode(
+                'utf-8'
+            )
+        )
     config_file.flush()
     return config_file
 
 
-def launch_server(server_config: Optional[IO[bytes]],
-                  server_port: Optional[int]) -> int:
+def launch_server(
+    server_config: Optional[IO[bytes]], server_port: Optional[int]
+) -> int:
     """Launch a device test server with the provided arguments."""
     if server_config is None:
         # Auto-detect attached boards if no config is provided.
