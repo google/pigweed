@@ -25,6 +25,7 @@ import coloredlogs  # type: ignore
 @dataclass
 class HeapBlock:
     """Building blocks for memory chunk allocated at heap."""
+
     size: int
     mem_offset: int
     next: Optional['HeapBlock'] = None
@@ -33,6 +34,7 @@ class HeapBlock:
 @dataclass
 class HeapUsage:
     """Contains a linked list of allocated HeapBlocks."""
+
     # Use a default_factory to avoid mutable default value. See
     # https://docs.python.org/3/library/dataclasses.html#mutable-default-values
     begin: HeapBlock = field(default_factory=lambda: HeapBlock(0, 0))
@@ -67,33 +69,46 @@ class HeapUsage:
 
 
 def add_parser_arguments(parser):
-    parser.add_argument('--dump-file',
-                        help=('dump file that contains a list of malloc and '
-                              'free instructions. The format should be as '
-                              'follows: "m <size> <address>" on a line for '
-                              'each malloc called and "f <address>" on a line '
-                              'for each free called.'),
-                        required=True)
+    """Parse args."""
+    parser.add_argument(
+        '--dump-file',
+        help=(
+            'dump file that contains a list of malloc and '
+            'free instructions. The format should be as '
+            'follows: "m <size> <address>" on a line for '
+            'each malloc called and "f <address>" on a line '
+            'for each free called.'
+        ),
+        required=True,
+    )
 
-    parser.add_argument('--heap-low-address',
-                        help=('lower address of the heap.'),
-                        type=lambda x: int(x, 0),
-                        required=True)
+    parser.add_argument(
+        '--heap-low-address',
+        help=('lower address of the heap.'),
+        type=lambda x: int(x, 0),
+        required=True,
+    )
 
-    parser.add_argument('--heap-high-address',
-                        help=('higher address of the heap.'),
-                        type=lambda x: int(x, 0),
-                        required=True)
+    parser.add_argument(
+        '--heap-high-address',
+        help=('higher address of the heap.'),
+        type=lambda x: int(x, 0),
+        required=True,
+    )
 
-    parser.add_argument('--poison-enabled',
-                        help=('if heap poison is enabled or not.'),
-                        default=False,
-                        action='store_true')
+    parser.add_argument(
+        '--poison-enabled',
+        help=('if heap poison is enabled or not.'),
+        default=False,
+        action='store_true',
+    )
 
-    parser.add_argument('--pointer-size',
-                        help=('size of pointer on the machine.'),
-                        default=4,
-                        type=lambda x: int(x, 0))
+    parser.add_argument(
+        '--pointer-size',
+        help=('size of pointer on the machine.'),
+        default=4,
+        type=lambda x: int(x, 0),
+    )
 
 
 _LEFT_HEADER_CHAR = '['
@@ -106,23 +121,28 @@ _LOG = logging.getLogger(__name__)
 
 
 def _exit_due_to_file_not_found():
-    _LOG.critical('Dump file location is not provided or dump file is not '
-                  'found. Please specify a valid file in the argument.')
+    _LOG.critical(
+        'Dump file location is not provided or dump file is not '
+        'found. Please specify a valid file in the argument.'
+    )
     sys.exit(1)
 
 
 def _exit_due_to_bad_heap_info():
     _LOG.critical(
         'Heap low/high address is missing or invalid. Please put valid '
-        'addresses in the argument.')
+        'addresses in the argument.'
+    )
     sys.exit(1)
 
 
-def visualize(dump_file=None,
-              heap_low_address=None,
-              heap_high_address=None,
-              poison_enabled=False,
-              pointer_size=4):
+def visualize(
+    dump_file=None,
+    heap_low_address=None,
+    heap_high_address=None,
+    poison_enabled=False,
+    pointer_size=4,
+):
     """Visualization of heap usage."""
     # TODO(b/235282507): Add standarized mechanisms to produce dump file and
     # read heap information from dump file.
@@ -154,7 +174,8 @@ def visualize(dump_file=None,
             # Add a HeapBlock when malloc is called
             block = HeapBlock(
                 int(math.ceil(float(info[1]) / aligned_bytes)) * aligned_bytes,
-                int(info[2], 0) - heap_low_address)
+                int(info[2], 0) - heap_low_address,
+            )
             heap_visualizer.add_block(block)
         elif info[0] == 'f':
             # Remove the HeapBlock when free is called
@@ -176,38 +197,55 @@ def visualize(dump_file=None,
     is_used = False
 
     # Print overall heap information
-    _LOG.info('%-40s%-40s', f'The heap starts at {hex(heap_low_address)}.',
-              f'The heap ends at {hex(heap_high_address)}.')
-    _LOG.info('%-40s%-40s', f'Heap size is {heap_size // 1024}k bytes.',
-              f'Heap is aligned by {aligned_bytes} bytes.')
+    _LOG.info(
+        '%-40s%-40s',
+        f'The heap starts at {hex(heap_low_address)}.',
+        f'The heap ends at {hex(heap_high_address)}.',
+    )
+    _LOG.info(
+        '%-40s%-40s',
+        f'Heap size is {heap_size // 1024}k bytes.',
+        f'Heap is aligned by {aligned_bytes} bytes.',
+    )
     if poison_offset != 0:
         _LOG.info(
             'Poison is enabled %d bytes before and after the usable '
-            'space of each block.', poison_offset)
+            'space of each block.',
+            poison_offset,
+        )
     else:
         _LOG.info('%-40s', 'Poison is disabled.')
     _LOG.info(
-        '%-40s', 'Below is the visualization of the heap. '
-        'Each character represents 4 bytes.')
+        '%-40s',
+        'Below is the visualization of the heap. '
+        'Each character represents 4 bytes.',
+    )
     _LOG.info('%-40s', f"    '{_FREE_CHAR}' indicates free space.")
     _LOG.info('%-40s', f"    '{_USED_CHAR}' indicates used space.")
     _LOG.info(
-        '%-40s', f"    '{_LEFT_HEADER_CHAR}' indicates header or "
-        'poisoned space before the block.')
-    _LOG.info('%-40s', f"    '{_RIGHT_HEADER_CHAR}' poisoned space after "
-              'the block.')
+        '%-40s',
+        f"    '{_LEFT_HEADER_CHAR}' indicates header or "
+        'poisoned space before the block.',
+    )
+    _LOG.info(
+        '%-40s',
+        f"    '{_RIGHT_HEADER_CHAR}' poisoned space after " 'the block.',
+    )
     print()
 
     # Go over the heap space where there will be 64 characters each line.
-    for line_base_address in range(0, heap_size, _CHARACTERS_PER_LINE *
-                                   _BYTES_PER_CHARACTER):
+    for line_base_address in range(
+        0, heap_size, _CHARACTERS_PER_LINE * _BYTES_PER_CHARACTER
+    ):
         # Print the heap address of the current line.
-        sys.stdout.write(f"{' ': <13}"
-                         f'{hex(heap_low_address + line_base_address)}'
-                         f"{f' (+{line_base_address}):': <12}")
-        for line_offset in range(0,
-                                 _CHARACTERS_PER_LINE * _BYTES_PER_CHARACTER,
-                                 _BYTES_PER_CHARACTER):
+        sys.stdout.write(
+            f"{' ': <13}"
+            f'{hex(heap_low_address + line_base_address)}'
+            f"{f' (+{line_base_address}):': <12}"
+        )
+        for line_offset in range(
+            0, _CHARACTERS_PER_LINE * _BYTES_PER_CHARACTER, _BYTES_PER_CHARACTER
+        ):
             # Determine if the current 4 bytes is used, unused, or is a
             # header.
             # The case that we have went over the previous block and will
@@ -220,26 +258,34 @@ def visualize(dump_file=None,
                 # be printed out as unused.
                 # Otherwise set the next HeapBlock allocated.
                 if next_block.next is None:
-                    next_mem_offset = (heap_size + header_size +
-                                       poison_offset + 1)
+                    next_mem_offset = (
+                        heap_size + header_size + poison_offset + 1
+                    )
                     next_size = 0
                 else:
                     next_mem_offset = next_block.next.mem_offset
                     next_size = next_block.next.size
 
             # Determine the status of the current 4 bytes.
-            if (next_mem_offset - header_size - poison_offset <=
-                    current_address < next_mem_offset):
+            if (
+                next_mem_offset - header_size - poison_offset
+                <= current_address
+                < next_mem_offset
+            ):
                 is_left_header = True
                 is_right_header = False
                 is_used = False
-            elif (next_mem_offset <= current_address <
-                  next_mem_offset + next_size):
+            elif (
+                next_mem_offset <= current_address < next_mem_offset + next_size
+            ):
                 is_left_header = False
                 is_right_header = False
                 is_used = True
-            elif (next_mem_offset + next_size <= current_address <
-                  next_mem_offset + next_size + poison_offset):
+            elif (
+                next_mem_offset + next_size
+                <= current_address
+                < next_mem_offset + next_size + poison_offset
+            ):
                 is_left_header = False
                 is_right_header = True
                 is_used = False
@@ -268,18 +314,14 @@ def main():
     # Try to use pw_cli logs, else default to something reasonable.
     try:
         import pw_cli.log  # pylint: disable=import-outside-toplevel
+
         pw_cli.log.install()
     except ImportError:
-        coloredlogs.install(level='INFO',
-                            level_styles={
-                                'debug': {
-                                    'color': 244
-                                },
-                                'error': {
-                                    'color': 'red'
-                                }
-                            },
-                            fmt='%(asctime)s %(levelname)s | %(message)s')
+        coloredlogs.install(
+            level='INFO',
+            level_styles={'debug': {'color': 244}, 'error': {'color': 'red'}},
+            fmt='%(asctime)s %(levelname)s | %(message)s',
+        )
     visualize(**vars(parser.parse_args()))
 
 
