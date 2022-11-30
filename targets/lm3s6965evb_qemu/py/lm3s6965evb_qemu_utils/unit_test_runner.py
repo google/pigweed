@@ -45,8 +45,15 @@ def parse_args():
 def launch_tests(binary: str) -> int:
     """Start a process that runs test on binary."""
     cmd = [
-        _TARGET_QEMU_COMMAND, '-cpu', 'cortex-m3', '-machine', 'lm3s6965evb',
-        '-nographic', '-no-reboot', '-kernel', binary
+        _TARGET_QEMU_COMMAND,
+        '-cpu',
+        'cortex-m3',
+        '-machine',
+        'lm3s6965evb',
+        '-nographic',
+        '-no-reboot',
+        '-kernel',
+        binary,
     ]
     test_process = subprocess.run(cmd, stdout=subprocess.PIPE)
     print(test_process.stdout.decode('utf-8'))
