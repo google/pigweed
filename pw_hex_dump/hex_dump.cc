@@ -145,15 +145,15 @@ Status FormattedHexDumper::DumpLine() {
   // easy way to control zero padding for hex address.
   if (flags.prefix_mode != AddressMode::kDisabled) {
     uintptr_t val;
+    size_t significant;
     if (flags.prefix_mode == AddressMode::kAbsolute) {
       val = reinterpret_cast<uintptr_t>(source_data_.data());
       builder << "0x";
-      uint8_t significant = HexDigitCount(val);
+      significant = HexDigitCount(val);
       builder.append(sizeof(uintptr_t) * 2 - significant, '0');
     } else {
       val = current_offset_;
-      size_t significant =
-          HexDigitCount(source_data_.size_bytes() + current_offset_);
+      significant = HexDigitCount(val);
       if (significant < kMinOffsetChars) {
         builder.append(kMinOffsetChars - significant, '0');
       }
@@ -161,7 +161,7 @@ Status FormattedHexDumper::DumpLine() {
     if (val != 0) {
       builder << reinterpret_cast<void*>(val);
     } else {
-      builder.append(2, '0');
+      builder.append(significant, '0');
     }
     builder << kAddressSeparator;
   }

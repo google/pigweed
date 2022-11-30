@@ -308,14 +308,53 @@ TEST_F(HexDump, FormattedHexDump_AsciiHeaderGroupEvery) {
 }
 
 TEST_F(HexDump, FormattedHexDump_OffsetPrefix) {
-  constexpr const char* expected1 = "0000";
-  constexpr const char* expected2 = "0010";
+  constexpr const char* expected1 = "0000:";
+  constexpr const char* expected2 = "0010:";
 
   default_flags_.bytes_per_line = 16;
   default_flags_.prefix_mode = FormattedHexDumper::AddressMode::kOffset;
   dumper_ = FormattedHexDumper(dest_, default_flags_);
 
   EXPECT_TRUE(dumper_.BeginDump(source_data).ok());
+  // Dump first line.
+  EXPECT_TRUE(dumper_.DumpLine().ok());
+  // Truncate string to only contain the offset.
+  dest_[strlen(expected1)] = '\0';
+  EXPECT_STREQ(expected1, dest_.data());
+
+  // Dump second line.
+  EXPECT_TRUE(dumper_.DumpLine().ok());
+  // Truncate string to only contain the offset.
+  dest_[strlen(expected2)] = '\0';
+  EXPECT_STREQ(expected2, dest_.data());
+}
+
+TEST_F(HexDump, FormattedHexDump_OffsetPrefix_ShortLine) {
+  constexpr const char* expected = "0000:";
+
+  default_flags_.bytes_per_line = 16;
+  default_flags_.prefix_mode = FormattedHexDumper::AddressMode::kOffset;
+  dumper_ = FormattedHexDumper(dest_, default_flags_);
+
+  EXPECT_TRUE(dumper_.BeginDump(pw::span(source_data).first(8)).ok());
+  // Dump first and only line.
+  EXPECT_TRUE(dumper_.DumpLine().ok());
+  // Truncate string to only contain the offset.
+  dest_[strlen(expected)] = '\0';
+  EXPECT_STREQ(expected, dest_.data());
+}
+
+TEST_F(HexDump, FormattedHexDump_OffsetPrefix_LongData) {
+  constexpr std::array<std::byte, 300> long_data = {std::byte{0xff}};
+
+  constexpr const char* expected1 = "0000:";
+  constexpr const char* expected2 = "0010:";
+
+  default_flags_.bytes_per_line = 16;
+  default_flags_.prefix_mode = FormattedHexDumper::AddressMode::kOffset;
+  dumper_ = FormattedHexDumper(dest_, default_flags_);
+
+  EXPECT_TRUE(dumper_.BeginDump(long_data).ok());
   // Dump first line.
   EXPECT_TRUE(dumper_.DumpLine().ok());
   // Truncate string to only contain the offset.
@@ -345,12 +384,14 @@ TEST_F(HexDump, FormattedHexDump_AbsolutePrefix) {
   // Dump first line.
   EXPECT_TRUE(dumper_.DumpLine().ok());
   // Truncate string to only contain the offset.
+  EXPECT_EQ(dest_[kHexAddrStringSize], ':');
   dest_[kHexAddrStringSize] = '\0';
   EXPECT_STREQ(expected1.data(), dest_.data());
 
   // Dump second line.
   EXPECT_TRUE(dumper_.DumpLine().ok());
   // Truncate string to only contain the offset.
+  EXPECT_EQ(dest_[kHexAddrStringSize], ':');
   dest_[kHexAddrStringSize] = '\0';
   EXPECT_STREQ(expected2.data(), dest_.data());
 }
