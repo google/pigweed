@@ -64,11 +64,18 @@ def _read_files_list(file: TextIO) -> Iterable[str]:
 
 
 def _clone_fuchsia(temp_path: Path) -> Path:
-    subprocess.run([
-        'git', '-C', temp_path, 'clone', '--depth', '1',
-        'https://fuchsia.googlesource.com/fuchsia'
-    ],
-                   check=True)
+    subprocess.run(
+        [
+            'git',
+            '-C',
+            temp_path,
+            'clone',
+            '--depth',
+            '1',
+            'https://fuchsia.googlesource.com/fuchsia',
+        ],
+        check=True,
+    )
 
     return temp_path / 'fuchsia'
 
@@ -76,13 +83,16 @@ def _clone_fuchsia(temp_path: Path) -> Path:
 # TODO(b/248257406): Replace typing.List with list.  # pylint: disable=fixme
 def _read_files(script: Path) -> List[Path]:
     with script.open() as file:
-        paths_list: List[str] = eval(''.join(_read_files_list(file)))  # pylint: disable=eval-used
+        paths_list: List[str] = eval(  # pylint: disable=eval-used
+            ''.join(_read_files_list(file))
+        )
         return list(Path(p) for p in paths_list if not 'lib/stdcompat/' in p)
 
 
 def _add_include_before_namespace(text: str, include: str) -> str:
-    return text.replace('\nnamespace ',
-                        f'\n#include "{include}"\n\nnamespace ', 1)
+    return text.replace(
+        '\nnamespace ', f'\n#include "{include}"\n\nnamespace ', 1
+    )
 
 
 _ASSERT = re.compile(r'\bassert\(')
@@ -101,7 +111,8 @@ def _patch_assert(text: str) -> str:
 _INVOKE_PATCH = (
     '\n'
     '  // TODO(b/241567321): Remove "no sanitize" after pw_protobuf is fixed.\n'
-    '  Result invoke(Args... args) const PW_NO_SANITIZE("function") {')
+    '  Result invoke(Args... args) const PW_NO_SANITIZE("function") {'
+)
 
 
 def _patch_invoke(file: Path, text: str) -> str:
@@ -110,8 +121,9 @@ def _patch_invoke(file: Path, text: str) -> str:
         return text
 
     text = _add_include_before_namespace(text, 'pw_preprocessor/compiler.h')
-    return text.replace('\n  Result invoke(Args... args) const {',
-                        _INVOKE_PATCH)
+    return text.replace(
+        '\n  Result invoke(Args... args) const {', _INVOKE_PATCH
+    )
 
 
 def _patch(file: Path) -> Optional[str]:
@@ -137,17 +149,17 @@ def _main() -> None:
                 subprocess.run(['clang-format', '-i', file], check=True)
 
         # Create a diff for the changes.
-        diff = subprocess.run(['git', '-C', repo, 'diff'],
-                              stdout=subprocess.PIPE,
-                              check=True).stdout
+        diff = subprocess.run(
+            ['git', '-C', repo, 'diff'], stdout=subprocess.PIPE, check=True
+        ).stdout
         for path in paths:
             diff = diff.replace(
                 path.as_posix().encode(),
-                Path('third_party/fuchsia/repo', path).as_posix().encode())
+                Path('third_party/fuchsia/repo', path).as_posix().encode(),
+            )
 
     # Write the diff to function.patch.
-    with output_path.joinpath('pigweed_adaptations.patch').open(
-            'wb') as output:
+    with output_path.joinpath('pigweed_adaptations.patch').open('wb') as output:
         output.write(HEADER)
 
         for line in diff.splitlines(keepends=True):
