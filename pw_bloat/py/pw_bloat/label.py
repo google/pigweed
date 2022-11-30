@@ -24,6 +24,7 @@ import csv
 @dataclass
 class Label:
     """Return type of DataSourceMap generator."""
+
     name: str
     size: int
     capacity: Optional[int] = None
@@ -46,14 +47,15 @@ class LabelInfo:
 
 class _LabelMap:
     """Private module to hold parent and child labels with their size."""
+
     _label_map: Dict[str, Dict[str, LabelInfo]]
 
     def __init__(self):
         self._label_map = defaultdict(lambda: defaultdict(LabelInfo))
 
-    def remove(self,
-               parent_label: str,
-               child_label: Optional[str] = None) -> None:
+    def remove(
+        self, parent_label: str, child_label: Optional[str] = None
+    ) -> None:
         """Delete entire parent label or the child label."""
         if child_label:
             del self._label_map[parent_label][child_label]
@@ -74,6 +76,7 @@ class _LabelMap:
 
 class _DataSource:
     """Private module to store a data source name with a _LabelMap."""
+
     def __init__(self, name: str):
         self._name = name
         self._ds_label_map = _LabelMap()
@@ -81,11 +84,13 @@ class _DataSource:
     def get_name(self) -> str:
         return self._name
 
-    def add_label(self,
-                  parent_label: str,
-                  child_label: str,
-                  size: int,
-                  diff_exist: Optional[bool] = None) -> None:
+    def add_label(
+        self,
+        parent_label: str,
+        child_label: str,
+        size: int,
+        diff_exist: Optional[bool] = None,
+    ) -> None:
         curr_label_info = self._ds_label_map[parent_label][child_label]
         curr_label_info.size += size
         if curr_label_info.exists_both is None:
@@ -97,8 +102,7 @@ class _DataSource:
     def __contains__(self, parent_label: str) -> bool:
         return parent_label in self._ds_label_map
 
-    def label_map_generator(
-            self) -> Iterable[Tuple[str, Dict[str, LabelInfo]]]:
+    def label_map_generator(self) -> Iterable[Tuple[str, Dict[str, LabelInfo]]]:
         for parent_label, label_dict in self._ds_label_map.map_generator():
             yield parent_label, label_dict
 
@@ -111,6 +115,7 @@ class DataSourceMap:
     capacities to matching label names.
 
     """
+
     _BASE_TOTAL_LABEL = 'total'
 
     @classmethod
@@ -121,36 +126,46 @@ class DataSourceMap:
         vmsize_index = top_row.index('vmsize')
         ds_map_tsv = cls(top_row[:vmsize_index])
         for row in reader:
-            ds_map_tsv.insert_label_hierachy(row[:vmsize_index],
-                                             int(row[vmsize_index]))
+            ds_map_tsv.insert_label_hierachy(
+                row[:vmsize_index], int(row[vmsize_index])
+            )
         return ds_map_tsv
 
     def __init__(self, data_sources_names: Iterable[str]):
         self._data_sources = list(
-            _DataSource(name) for name in ['base', *data_sources_names])
+            _DataSource(name) for name in ['base', *data_sources_names]
+        )
         self._capacity_array: List[Tuple[str, int]] = []
 
-    def label_exists(self, ds_index: int, parent_label: str,
-                     child_label: str) -> bool:
+    def label_exists(
+        self, ds_index: int, parent_label: str, child_label: str
+    ) -> bool:
         return (parent_label in self._data_sources[ds_index]) and (
-            child_label in self._data_sources[ds_index][parent_label])
+            child_label in self._data_sources[ds_index][parent_label]
+        )
 
-    def insert_label_hierachy(self,
-                              label_hierarchy: Iterable[str],
-                              size: int,
-                              diff_exist: Optional[bool] = None) -> None:
+    def insert_label_hierachy(
+        self,
+        label_hierarchy: Iterable[str],
+        size: int,
+        diff_exist: Optional[bool] = None,
+    ) -> None:
         """Insert a hierachy of labels with its size."""
 
         # Insert initial '__base__' data source that holds the
         # running total size.
-        self._data_sources[0].add_label('__base__', self._BASE_TOTAL_LABEL,
-                                        size)
+        self._data_sources[0].add_label(
+            '__base__', self._BASE_TOTAL_LABEL, size
+        )
         complete_label_hierachy = [self._BASE_TOTAL_LABEL, *label_hierarchy]
         for index in range(len(complete_label_hierachy) - 1):
             if complete_label_hierachy[index]:
                 self._data_sources[index + 1].add_label(
                     complete_label_hierachy[index],
-                    complete_label_hierachy[index + 1], size, diff_exist)
+                    complete_label_hierachy[index + 1],
+                    size,
+                    diff_exist,
+                )
 
     def add_capacity(self, regex_pattern: str, capacity: int) -> None:
         """Insert regex pattern and capacity into dictionary."""
@@ -172,21 +187,27 @@ class DataSourceMap:
             # Check if label exists in target binary DataSourceMap.
             # Subtract base from target size and insert diff size
             # into DiffDataSourceMap.
-            if self.label_exists(parent_data_source_index, curr_parent,
-                                 b_label.name):
-                diff_size = ((self._data_sources[parent_data_source_index]
-                              [curr_parent][b_label.name].size) - b_label.size)
+            if self.label_exists(
+                parent_data_source_index, curr_parent, b_label.name
+            ):
+                diff_size = (
+                    self._data_sources[parent_data_source_index][curr_parent][
+                        b_label.name
+                    ].size
+                ) - b_label.size
 
                 if diff_size:
-                    diff_dsm.insert_label_hierachy(lb_hierachy_names,
-                                                   diff_size, True)
+                    diff_dsm.insert_label_hierachy(
+                        lb_hierachy_names, diff_size, True
+                    )
                 else:
                     diff_dsm.insert_label_hierachy(lb_hierachy_names, 0, True)
 
             # label is not present in target - insert with negative size
             else:
-                diff_dsm.insert_label_hierachy(lb_hierachy_names,
-                                               -1 * b_label.size, False)
+                diff_dsm.insert_label_hierachy(
+                    lb_hierachy_names, -1 * b_label.size, False
+                )
 
         # Iterate through all of target labels
         # to find labels new to target from base.
@@ -195,10 +216,12 @@ class DataSourceMap:
                 curr_parent = t_label.parents[-1]
 
             # New addition to target
-            if not base.label_exists(parent_data_source_index, curr_parent,
-                                     t_label.name):
+            if not base.label_exists(
+                parent_data_source_index, curr_parent, t_label.name
+            ):
                 diff_dsm.insert_label_hierachy(
-                    [*t_label.parents, f"{t_label.name}"], t_label.size, False)
+                    [*t_label.parents, f"{t_label.name}"], t_label.size, False
+                )
 
         return diff_dsm
 
@@ -207,8 +230,9 @@ class DataSourceMap:
 
     def get_ds_names(self) -> Tuple[str, ...]:
         """List of DataSource names for easy indexing and reference."""
-        return tuple(data_source.get_name()
-                     for data_source in self._data_sources[1:])
+        return tuple(
+            data_source.get_name() for data_source in self._data_sources[1:]
+        )
 
     def labels(self, ds_index: Optional[int] = None) -> Iterable[Label]:
         """Generator that yields a Label depending on specified data source.
@@ -219,14 +243,16 @@ class DataSourceMap:
         Returns:
             Iterable Label objects.
         """
-        ds_index = len(
-            self._data_sources) if ds_index is None else ds_index + 2
+        ds_index = len(self._data_sources) if ds_index is None else ds_index + 2
         yield from self._per_data_source_generator(
-            tuple(), self._data_sources[1:ds_index])
+            tuple(), self._data_sources[1:ds_index]
+        )
 
     def _per_data_source_generator(
-            self, parent_labels: Tuple[str, ...],
-            data_sources: Sequence[_DataSource]) -> Iterable[Label]:
+        self,
+        parent_labels: Tuple[str, ...],
+        data_sources: Sequence[_DataSource],
+    ) -> Iterable[Label]:
         """Recursive generator to return Label based off parent labels."""
         for ds_index, curr_ds in enumerate(data_sources):
             for parent_label, label_map in curr_ds.label_map_generator():
@@ -237,24 +263,28 @@ class DataSourceMap:
                 if parent_label == curr_parent:
                     for child_label, label_info in label_map.items():
                         if len(data_sources) == 1:
-                            yield Label(child_label,
-                                        label_info.size,
-                                        parents=parent_labels,
-                                        exists_both=label_info.exists_both)
+                            yield Label(
+                                child_label,
+                                label_info.size,
+                                parents=parent_labels,
+                                exists_both=label_info.exists_both,
+                            )
                         else:
                             yield from self._per_data_source_generator(
                                 (*parent_labels, child_label),
-                                data_sources[ds_index + 1:])
+                                data_sources[ds_index + 1 :],
+                            )
 
 
 class DiffDataSourceMap(DataSourceMap):
     """DataSourceMap that holds diff information."""
+
     def has_diff_sublabels(self, top_ds_label: str) -> bool:
         """Checks if first datasource is identical."""
         for label in self.labels():
             if label.size != 0:
-                if (label.parents and
-                    (label.parents[0] == top_ds_label)) or (label.name
-                                                            == top_ds_label):
+                if (label.parents and (label.parents[0] == top_ds_label)) or (
+                    label.name == top_ds_label
+                ):
                     return True
         return False

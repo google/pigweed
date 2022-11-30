@@ -29,8 +29,12 @@ import pw_cli.log
 
 from pw_bloat.bloaty_config import generate_bloaty_config
 from pw_bloat.label import DataSourceMap
-from pw_bloat.label_output import (BloatTableOutput, LineCharset, RstOutput,
-                                   AsciiCharset)
+from pw_bloat.label_output import (
+    BloatTableOutput,
+    LineCharset,
+    RstOutput,
+    AsciiCharset,
+)
 
 _LOG = logging.getLogger(__name__)
 
@@ -40,15 +44,18 @@ MAX_COL_WIDTH = 50
 def parse_args() -> argparse.Namespace:
     """Parses the script's arguments."""
 
-    parser = argparse.ArgumentParser(
-        'Generate a size report card for binaries')
-    parser.add_argument('--gn-arg-path',
-                        type=str,
-                        required=True,
-                        help='File path to json of binaries')
-    parser.add_argument('--single-report',
-                        action="store_true",
-                        help='Determine if calling single size report')
+    parser = argparse.ArgumentParser('Generate a size report card for binaries')
+    parser.add_argument(
+        '--gn-arg-path',
+        type=str,
+        required=True,
+        help='File path to json of binaries',
+    )
+    parser.add_argument(
+        '--single-report',
+        action="store_true",
+        help='Determine if calling single size report',
+    )
 
     return parser.parse_args()
 
@@ -58,7 +65,7 @@ def run_bloaty(
     config: str,
     base_file: Optional[str] = None,
     data_sources: Iterable[str] = (),
-    extra_args: Iterable[str] = ()
+    extra_args: Iterable[str] = (),
 ) -> bytes:
     """Executes a Bloaty size report on some binary file(s).
 
@@ -100,15 +107,16 @@ def run_bloaty(
 
 class NoMemoryRegions(Exception):
     """Exception raised if an ELF does not define any memory region symbols."""
+
     def __init__(self, elf: Path):
         super().__init__(f'ELF {elf} does not define memory region symbols')
         self.elf = elf
 
 
 def memory_regions_size_report(
-        elf: Path,
-        additional_data_sources: Iterable[str] = (),
-        extra_args: Iterable[str] = (),
+    elf: Path,
+    additional_data_sources: Iterable[str] = (),
+    extra_args: Iterable[str] = (),
 ) -> Iterable[str]:
     """Runs a size report on an ELF file using pw_bloat memory region symbols.
 
@@ -125,22 +133,29 @@ def memory_regions_size_report(
         NoMemoryRegions: The ELF does not define memory region symbols.
     """
     with tempfile.NamedTemporaryFile() as bloaty_config:
-        with open(elf.resolve(), "rb") as infile, open(bloaty_config.name,
-                                                       "w") as outfile:
-            result = generate_bloaty_config(infile,
-                                            enable_memoryregions=True,
-                                            enable_utilization=False,
-                                            out_file=outfile)
+        with open(elf.resolve(), "rb") as infile, open(
+            bloaty_config.name, "w"
+        ) as outfile:
+            result = generate_bloaty_config(
+                infile,
+                enable_memoryregions=True,
+                enable_utilization=False,
+                out_file=outfile,
+            )
 
             if not result.has_memoryregions:
                 raise NoMemoryRegions(elf)
 
-        return run_bloaty(
-            str(elf.resolve()),
-            bloaty_config.name,
-            data_sources=('memoryregions', *additional_data_sources),
-            extra_args=extra_args,
-        ).decode('utf-8').splitlines()
+        return (
+            run_bloaty(
+                str(elf.resolve()),
+                bloaty_config.name,
+                data_sources=('memoryregions', *additional_data_sources),
+                extra_args=extra_args,
+            )
+            .decode('utf-8')
+            .splitlines()
+        )
 
 
 def write_file(filename: str, contents: str, out_dir_file: str) -> None:
@@ -150,27 +165,39 @@ def write_file(filename: str, contents: str, out_dir_file: str) -> None:
     _LOG.debug('Output written to %s', path)
 
 
-def single_target_output(target: str, bloaty_config: str, target_out_file: str,
-                         out_dir: str, data_sources: Iterable[str],
-                         extra_args: Iterable[str]) -> int:
+def single_target_output(
+    target: str,
+    bloaty_config: str,
+    target_out_file: str,
+    out_dir: str,
+    data_sources: Iterable[str],
+    extra_args: Iterable[str],
+) -> int:
+    """TODO(frolv) Add docstring."""
 
     try:
-        single_output = run_bloaty(target,
-                                   bloaty_config,
-                                   data_sources=data_sources,
-                                   extra_args=extra_args)
+        single_output = run_bloaty(
+            target,
+            bloaty_config,
+            data_sources=data_sources,
+            extra_args=extra_args,
+        )
 
     except subprocess.CalledProcessError:
         _LOG.error('%s: failed to run size report on %s', sys.argv[0], target)
         return 1
 
     single_tsv = single_output.decode().splitlines()
-    single_report = BloatTableOutput(DataSourceMap.from_bloaty_tsv(single_tsv),
-                                     MAX_COL_WIDTH, LineCharset)
+    single_report = BloatTableOutput(
+        DataSourceMap.from_bloaty_tsv(single_tsv), MAX_COL_WIDTH, LineCharset
+    )
 
     rst_single_report = BloatTableOutput(
-        DataSourceMap.from_bloaty_tsv(single_tsv), MAX_COL_WIDTH, AsciiCharset,
-        True)
+        DataSourceMap.from_bloaty_tsv(single_tsv),
+        MAX_COL_WIDTH,
+        AsciiCharset,
+        True,
+    )
 
     single_report_table = single_report.create_table()
 
@@ -195,15 +222,19 @@ def main() -> int:
         single_binary_args = gn_arg_dict['binaries'][0]
         if single_binary_args['source_filter']:
             extra_args.extend(
-                ['--source-filter', single_binary_args['source_filter']])
+                ['--source-filter', single_binary_args['source_filter']]
+            )
         if single_binary_args['data_sources']:
             data_sources = single_binary_args['data_sources']
 
-        return single_target_output(single_binary_args['target'],
-                                    single_binary_args['bloaty_config'],
-                                    gn_arg_dict['target_name'],
-                                    gn_arg_dict['out_dir'], data_sources,
-                                    extra_args)
+        return single_target_output(
+            single_binary_args['target'],
+            single_binary_args['bloaty_config'],
+            gn_arg_dict['target_name'],
+            gn_arg_dict['out_dir'],
+            data_sources,
+            extra_args,
+        )
 
     default_data_sources = ['segment_names', 'symbols']
 
@@ -215,20 +246,26 @@ def main() -> int:
 
         if curr_diff_binary['source_filter']:
             curr_extra_args.extend(
-                ['--source-filter', curr_diff_binary['source_filter']])
+                ['--source-filter', curr_diff_binary['source_filter']]
+            )
 
         if curr_diff_binary['data_sources']:
             data_sources = curr_diff_binary['data_sources']
 
         try:
-            single_output_base = run_bloaty(curr_diff_binary['base'],
-                                            curr_diff_binary['bloaty_config'],
-                                            data_sources=data_sources,
-                                            extra_args=curr_extra_args)
+            single_output_base = run_bloaty(
+                curr_diff_binary['base'],
+                curr_diff_binary['bloaty_config'],
+                data_sources=data_sources,
+                extra_args=curr_extra_args,
+            )
 
         except subprocess.CalledProcessError:
-            _LOG.error('%s: failed to run base size report on %s', sys.argv[0],
-                       curr_diff_binary["base"])
+            _LOG.error(
+                '%s: failed to run base size report on %s',
+                sys.argv[0],
+                curr_diff_binary["base"],
+            )
             return 1
 
         try:
@@ -236,27 +273,34 @@ def main() -> int:
                 curr_diff_binary['target'],
                 curr_diff_binary['bloaty_config'],
                 data_sources=data_sources,
-                extra_args=curr_extra_args)
+                extra_args=curr_extra_args,
+            )
 
         except subprocess.CalledProcessError:
-            _LOG.error('%s: failed to run target size report on %s',
-                       sys.argv[0], curr_diff_binary['target'])
+            _LOG.error(
+                '%s: failed to run target size report on %s',
+                sys.argv[0],
+                curr_diff_binary['target'],
+            )
             return 1
 
         if not single_output_target or not single_output_base:
             continue
 
         base_dsm = DataSourceMap.from_bloaty_tsv(
-            single_output_base.decode().splitlines())
+            single_output_base.decode().splitlines()
+        )
         target_dsm = DataSourceMap.from_bloaty_tsv(
-            single_output_target.decode().splitlines())
+            single_output_target.decode().splitlines()
+        )
         diff_dsm = target_dsm.diff(base_dsm)
 
         diff_report += BloatTableOutput(
             diff_dsm,
             MAX_COL_WIDTH,
             LineCharset,
-            diff_label=curr_diff_binary['label']).create_table()
+            diff_label=curr_diff_binary['label'],
+        ).create_table()
 
         curr_rst_report = RstOutput(diff_dsm, curr_diff_binary['label'])
         if rst_diff_report == '':
@@ -265,10 +309,12 @@ def main() -> int:
             rst_diff_report += f"{curr_rst_report.add_report_row()}\n"
 
     print(diff_report)
-    write_file(gn_arg_dict['target_name'], rst_diff_report,
-               gn_arg_dict['out_dir'])
-    write_file(f"{gn_arg_dict['target_name']}.txt", diff_report,
-               gn_arg_dict['out_dir'])
+    write_file(
+        gn_arg_dict['target_name'], rst_diff_report, gn_arg_dict['out_dir']
+    )
+    write_file(
+        f"{gn_arg_dict['target_name']}.txt", diff_report, gn_arg_dict['out_dir']
+    )
 
     return 0
 

@@ -23,7 +23,7 @@ from pw_bloat.label import DataSourceMap, Label
 LIST_LABELS = [
     Label(name='main()', size=30, parents=tuple(['FLASH', '.code'])),
     Label(name='foo()', size=100, parents=tuple(['RAM', '.heap'])),
-    Label(name='bar()', size=220, parents=tuple(['RAM', '.heap']))
+    Label(name='bar()', size=220, parents=tuple(['RAM', '.heap'])),
 ]
 
 logger = logging.getLogger()
@@ -44,6 +44,7 @@ def get_test_map():
 
 class LabelStructTest(unittest.TestCase):
     """Testing class for the label structs."""
+
     def test_data_source_total_size(self):
         ds_map = DataSourceMap(['a', 'b', 'c'])
         self.assertEqual(ds_map.get_total_size(), 0)
@@ -63,7 +64,8 @@ class LabelStructTest(unittest.TestCase):
         ds_map = DataSourceMap(['a', 'b', 'c'])
         for label in LIST_LABELS:
             ds_map.insert_label_hierachy(
-                [label.parents[0], label.parents[1], label.name], label.size)
+                [label.parents[0], label.parents[1], label.name], label.size
+            )
         list_labels_three = [*LIST_LABELS, Label(name='total', size=350)]
         for label_hiearchy in ds_map.labels():
             self.assertIn(label_hiearchy, list_labels_three)
@@ -74,11 +76,12 @@ class LabelStructTest(unittest.TestCase):
         ds_label_list = [
             Label(name='main()', size=30, parents=tuple(['FLASH'])),
             Label(name='foo()', size=100, parents=tuple(['RAM'])),
-            Label(name='bar()', size=220, parents=tuple(['RAM']))
+            Label(name='bar()', size=220, parents=tuple(['RAM'])),
         ]
         for label in ds_label_list:
-            ds_map.insert_label_hierachy([label.parents[0], label.name],
-                                         label.size)
+            ds_map.insert_label_hierachy(
+                [label.parents[0], label.name], label.size
+            )
         list_labels_two = [*ds_label_list, Label(name='total', size=350)]
         for label_hiearchy in ds_map.labels():
             self.assertIn(label_hiearchy, list_labels_two)
@@ -88,10 +91,11 @@ class LabelStructTest(unittest.TestCase):
         ds_map = DataSourceMap(['a', 'b', 'c'])
         for label in LIST_LABELS:
             ds_map.insert_label_hierachy(
-                [label.parents[0], label.parents[1], label.name], label.size)
+                [label.parents[0], label.parents[1], label.name], label.size
+            )
         list_labels_ds_b = [
             Label(name='.code', size=30, parents=tuple(['FLASH'])),
-            Label(name='.heap', size=320, parents=tuple(['RAM']))
+            Label(name='.heap', size=320, parents=tuple(['RAM'])),
         ]
         list_labels_ds_b += [Label(name='total', size=350)]
         for label_hiearchy in ds_map.labels(1):
@@ -102,10 +106,11 @@ class LabelStructTest(unittest.TestCase):
         ds_map = DataSourceMap(['a', 'b', 'c'])
         for label in LIST_LABELS:
             ds_map.insert_label_hierachy(
-                [label.parents[0], label.parents[1], label.name], label.size)
+                [label.parents[0], label.parents[1], label.name], label.size
+            )
         list_labels_ds_a = [
             Label(name='FLASH', size=30, parents=tuple([])),
-            Label(name='RAM', size=320, parents=tuple([]))
+            Label(name='RAM', size=320, parents=tuple([])),
         ]
         list_labels_ds_a += [Label(name='total', size=350)]
         for label_hiearchy in ds_map.labels(0):
@@ -116,10 +121,11 @@ class LabelStructTest(unittest.TestCase):
         ds_map = DataSourceMap(['a', 'b', 'c'])
         for label in LIST_LABELS:
             ds_map.insert_label_hierachy(
-                [label.parents[0], label.parents[1], label.name], label.size)
+                [label.parents[0], label.parents[1], label.name], label.size
+            )
         list_labels_ds_a = [
             Label(name='FLASH', size=30, parents=tuple([])),
-            Label(name='RAM', size=320, parents=tuple([]))
+            Label(name='RAM', size=320, parents=tuple([])),
         ]
         list_labels_ds_a += [Label(name='total', size=350)]
         for label_hiearchy in ds_map.labels(0):
@@ -130,10 +136,11 @@ class LabelStructTest(unittest.TestCase):
         ds_map = DataSourceMap(['a', 'b', 'c'])
         for label in LIST_LABELS:
             ds_map.insert_label_hierachy(
-                [label.parents[0], label.parents[1], label.name], label.size)
+                [label.parents[0], label.parents[1], label.name], label.size
+            )
         list_labels_ds_b = [
             Label(name='.code', size=30, parents=tuple(['FLASH'])),
-            Label(name='.heap', size=320, parents=tuple(['RAM']))
+            Label(name='.heap', size=320, parents=tuple(['RAM'])),
         ]
         list_labels_ds_b += [Label(name='total', size=350)]
         for label_hiearchy in ds_map.labels(1):
@@ -145,27 +152,35 @@ class LabelStructTest(unittest.TestCase):
         ds_map = DataSourceMap(['a', 'b', 'c'])
         for label in LIST_LABELS:
             ds_map.insert_label_hierachy(
-                [label.parents[0], label.parents[1], label.name], label.size)
+                [label.parents[0], label.parents[1], label.name], label.size
+            )
 
         ds_map2 = DataSourceMap(['a', 'b', 'c'])
         for label in LIST_LABELS:
             ds_map2.insert_label_hierachy(
                 [label.parents[0], label.parents[1], label.name],
-                label.size + 10)
+                label.size + 10,
+            )
 
         list_labels_ds_b = [
-            Label(name='main()',
-                  size=-10,
-                  exists_both=True,
-                  parents=tuple(['FLASH', '.code'])),
-            Label(name='foo()',
-                  size=-10,
-                  exists_both=True,
-                  parents=tuple(['RAM', '.heap'])),
-            Label(name='bar()',
-                  size=-10,
-                  exists_both=True,
-                  parents=tuple(['RAM', '.heap']))
+            Label(
+                name='main()',
+                size=-10,
+                exists_both=True,
+                parents=tuple(['FLASH', '.code']),
+            ),
+            Label(
+                name='foo()',
+                size=-10,
+                exists_both=True,
+                parents=tuple(['RAM', '.heap']),
+            ),
+            Label(
+                name='bar()',
+                size=-10,
+                exists_both=True,
+                parents=tuple(['RAM', '.heap']),
+            ),
         ]
 
         ds_map_diff = ds_map.diff(ds_map2)
@@ -178,35 +193,43 @@ class LabelStructTest(unittest.TestCase):
         ds_map = DataSourceMap(['a', 'b', 'c'])
         for label in LIST_LABELS:
             ds_map.insert_label_hierachy(
-                [label.parents[0], label.parents[1], label.name], label.size)
+                [label.parents[0], label.parents[1], label.name], label.size
+            )
 
         ds_map2 = DataSourceMap(['a', 'b', 'c'])
         for label in LIST_LABELS[:-1]:
             ds_map2.insert_label_hierachy(
                 [label.parents[0], label.parents[1], label.name],
-                label.size + 20)
+                label.size + 20,
+            )
         ds_map2.insert_label_hierachy(
-            [label.parents[0], label.parents[1], 'foobar()'], label.size + 20)
+            [label.parents[0], label.parents[1], 'foobar()'], label.size + 20
+        )
 
-        ds_map2.insert_label_hierachy(["LOAD #5", 'random_load', 'func()'],
-                                      250)
+        ds_map2.insert_label_hierachy(["LOAD #5", 'random_load', 'func()'], 250)
 
         list_labels_ds_b = [
-            Label(name='FLASH',
-                  size=20,
-                  capacity=None,
-                  exists_both=True,
-                  parents=()),
-            Label(name='RAM',
-                  size=-80,
-                  capacity=None,
-                  exists_both=True,
-                  parents=()),
-            Label(name='LOAD #5',
-                  size=250,
-                  capacity=None,
-                  exists_both=False,
-                  parents=())
+            Label(
+                name='FLASH',
+                size=20,
+                capacity=None,
+                exists_both=True,
+                parents=(),
+            ),
+            Label(
+                name='RAM',
+                size=-80,
+                capacity=None,
+                exists_both=True,
+                parents=(),
+            ),
+            Label(
+                name='LOAD #5',
+                size=250,
+                capacity=None,
+                exists_both=False,
+                parents=(),
+            ),
         ]
 
         ds_map_diff = ds_map2.diff(ds_map)

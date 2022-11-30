@@ -30,31 +30,38 @@ _LOG = logging.getLogger(__name__)
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
 
-    parser.add_argument('binary',
-                        help='Path to the ELF file to analyze',
-                        metavar='BINARY',
-                        type=Path)
+    parser.add_argument(
+        'binary',
+        help='Path to the ELF file to analyze',
+        metavar='BINARY',
+        type=Path,
+    )
     parser.add_argument(
         '-d',
         '--data-sources',
         help='Comma-separated list of additional Bloaty data sources to report',
         type=lambda s: s.split(','),
-        default=())
-    parser.add_argument('--diff',
-                        metavar='BINARY',
-                        help='Run a size diff against a base binary file',
-                        type=Path)
-    parser.add_argument('-v',
-                        '--verbose',
-                        help=('Print all log messages '
-                              '(only errors are printed by default)'),
-                        action='store_true')
+        default=(),
+    )
+    parser.add_argument(
+        '--diff',
+        metavar='BINARY',
+        help='Run a size diff against a base binary file',
+        type=Path,
+    )
+    parser.add_argument(
+        '-v',
+        '--verbose',
+        help=('Print all log messages ' '(only errors are printed by default)'),
+        action='store_true',
+    )
 
     return parser.parse_args()
 
 
 def _run_size_report(
-    elf: Path, data_sources: Iterable[str] = ()) -> DataSourceMap:
+    elf: Path, data_sources: Iterable[str] = ()
+) -> DataSourceMap:
     """Runs a size analysis on an ELF file, returning a pw_bloat size map.
 
     Returns:
@@ -65,7 +72,8 @@ def _run_size_report(
     """
 
     bloaty_tsv = bloat.memory_regions_size_report(
-        elf, additional_data_sources=data_sources, extra_args=('--tsv', ))
+        elf, additional_data_sources=data_sources, extra_args=('--tsv',)
+    )
 
     return DataSourceMap.from_bloaty_tsv(bloaty_tsv)
 
@@ -73,7 +81,8 @@ def _run_size_report(
 def _no_memory_regions_error(elf: Path) -> None:
     _LOG.error('Executable %s does not define any bloat memory regions', elf)
     _LOG.error(
-        'Refer to https://pigweed.dev/pw_bloat/#memoryregions-data-source')
+        'Refer to https://pigweed.dev/pw_bloat/#memoryregions-data-source'
+    )
     _LOG.error('for information on how to configure them.')
 
 
@@ -88,8 +97,9 @@ def _single_binary_report(elf: Path, data_sources: Iterable[str] = ()) -> int:
     return 0
 
 
-def _diff_report(target: Path, base: Path,
-                 data_sources: Iterable[str] = ()) -> int:
+def _diff_report(
+    target: Path, base: Path, data_sources: Iterable[str] = ()
+) -> int:
     try:
         base_map = _run_size_report(base, data_sources)
         target_map = _run_size_report(target, data_sources)
@@ -112,9 +122,9 @@ def main() -> int:
         pw_cli.log.set_all_loggers_minimum_level(logging.ERROR)
 
     if args.diff is not None:
-        return _diff_report(args.binary,
-                            args.diff,
-                            data_sources=args.data_sources)
+        return _diff_report(
+            args.binary, args.diff, data_sources=args.data_sources
+        )
 
     return _single_binary_report(args.binary, data_sources=args.data_sources)
 

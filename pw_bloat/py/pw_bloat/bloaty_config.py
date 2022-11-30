@@ -26,8 +26,9 @@ _LOG = logging.getLogger('bloaty_config')
 
 # 'pw_bloat_config_memory_region_NAME_{start,end}{_N,}' where _N defaults to 0.
 _MEMORY_REGION_SYMBOL_RE = re.compile(
-    r'pw_bloat_config_memory_region_' +
-    r'(?P<name>\w+)_(?P<limit>(start|end))(_(?P<index>\d+))?')
+    r'pw_bloat_config_memory_region_'
+    + r'(?P<name>\w+)_(?P<limit>(start|end))(_(?P<index>\d+))?'
+)
 
 
 def _parse_args() -> argparse.Namespace:
@@ -35,20 +36,25 @@ def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description='Generates useful bloaty configurations entries',
         epilog='Hint: try this:\n'
-        '   python -m pw_bloat.bloaty_config my_app.elf -o my_app.bloat')
+        '   python -m pw_bloat.bloaty_config my_app.elf -o my_app.bloat',
+    )
     parser.add_argument('elf_file', type=argparse.FileType('rb'))
-    parser.add_argument('--output',
-                        '-o',
-                        type=argparse.FileType('w'),
-                        help='The generated bloaty configuration',
-                        default=sys.stdout)
+    parser.add_argument(
+        '--output',
+        '-o',
+        type=argparse.FileType('w'),
+        help='The generated bloaty configuration',
+        default=sys.stdout,
+    )
     parser.add_argument(
         '--utilization',
         action='store_true',
         dest='utilization',
         default=True,
-        help=('Generate the utilization custom_data_source based on sections '
-              'with "unused_space" in anywhere in their name'),
+        help=(
+            'Generate the utilization custom_data_source based on sections '
+            'with "unused_space" in anywhere in their name'
+        ),
     )
     parser.add_argument(
         '--no-utilization',
@@ -60,10 +66,12 @@ def _parse_args() -> argparse.Namespace:
         '--memoryregions',
         action='store_true',
         default=True,
-        help=('Generate the memoryregions custom_data_source based on '
-              'symbols defined in the linker script matching the following '
-              'pattern: '
-              '"pw::bloat::config::memory_region::NAME[0].{start,end}"'),
+        help=(
+            'Generate the memoryregions custom_data_source based on '
+            'symbols defined in the linker script matching the following '
+            'pattern: '
+            '"pw::bloat::config::memory_region::NAME[0].{start,end}"'
+        ),
     )
     parser.add_argument(
         '--no-memoryregions',
@@ -71,12 +79,13 @@ def _parse_args() -> argparse.Namespace:
         dest='memoryregions',
     )
 
-    parser.add_argument('-l',
-                        '--loglevel',
-                        type=pw_cli.argument_types.log_level,
-                        default=logging.INFO,
-                        help='Set the log level'
-                        '(debug, info, warning, error, critical)')
+    parser.add_argument(
+        '-l',
+        '--loglevel',
+        type=pw_cli.argument_types.log_level,
+        default=logging.INFO,
+        help='Set the log level' '(debug, info, warning, error, critical)',
+    )
     return parser.parse_args()
 
 
@@ -148,12 +157,14 @@ def _parse_memory_regions(parsed_elf_file: elffile.ELFFile) -> Optional[Dict]:
         for index, limits in ranges.items():
             if 'start' not in limits:
                 missing_range_limits = True
-                _LOG.error('%s[%d] is missing the start address', region_name,
-                           index)
+                _LOG.error(
+                    '%s[%d] is missing the start address', region_name, index
+                )
             if 'end' not in limits:
                 missing_range_limits = True
-                _LOG.error('%s[%d] is missing the end address', region_name,
-                           index)
+                _LOG.error(
+                    '%s[%d] is missing the end address', region_name, index
+                )
     if missing_range_limits:
         _LOG.error('Invalid memory regions detected: missing ranges')
         return None
@@ -165,8 +176,10 @@ def _parse_memory_regions(parsed_elf_file: elffile.ELFFile) -> Optional[Dict]:
         if region_name not in tupled_memory_regions:
             tupled_memory_regions[region_name] = {}
         for index, limits in ranges.items():
-            tupled_memory_regions[region_name][index] = (limits['start'],
-                                                         limits['end'])
+            tupled_memory_regions[region_name][index] = (
+                limits['start'],
+                limits['end'],
+            )
 
     # Ensure the memory regions do not overlap.
     if _memory_regions_overlap(tupled_memory_regions):
@@ -205,27 +218,37 @@ def _memory_regions_overlap(memory_regions: Dict) -> bool:
     """Returns where any memory regions overlap each other."""
     overlaps_detected = False
     for current_name, current_ranges in memory_regions.items():
-        for current_index, (current_start,
-                            current_end) in current_ranges.items():
+        for current_index, (
+            current_start,
+            current_end,
+        ) in current_ranges.items():
             for other_name, other_ranges in memory_regions.items():
-                for other_index, (other_start,
-                                  other_end) in other_ranges.items():
-                    if (current_name == other_name
-                            and current_index == other_index):
+                for other_index, (
+                    other_start,
+                    other_end,
+                ) in other_ranges.items():
+                    if (
+                        current_name == other_name
+                        and current_index == other_index
+                    ):
                         continue  # Skip yourself.
                     # Check if the other region end is within this region.
-                    other_end_overlaps = (current_start < other_end <=
-                                          current_end)
-                    other_start_overlaps = (current_start <= other_start <
-                                            current_end)
+                    other_end_overlaps = (
+                        current_start < other_end <= current_end
+                    )
+                    other_start_overlaps = (
+                        current_start <= other_start < current_end
+                    )
                     if other_end_overlaps or other_start_overlaps:
                         overlaps_detected = True
-                        _LOG.error(f'error: {current_name}[{current_index}] ' +
-                                   f'[{hex(current_start)},' +
-                                   f'{hex(current_end)}] overlaps with ' +
-                                   f'{other_name}[{other_index}] '
-                                   f'[{hex(other_start)},' +
-                                   f'{hex(other_end)}] overlaps with ')
+                        _LOG.error(
+                            f'error: {current_name}[{current_index}] '
+                            + f'[{hex(current_start)},'
+                            + f'{hex(current_end)}] overlaps with '
+                            + f'{other_name}[{other_index}] '
+                            f'[{hex(other_start)},'
+                            + f'{hex(other_end)}] overlaps with '
+                        )
     return overlaps_detected
 
 
@@ -244,12 +267,14 @@ def _get_segments_to_memory_region_map(elf_file: BinaryIO) -> Optional[Dict]:
 
     segments = _parse_segments(parsed_elf_file)
 
-    return map_segments_to_memory_regions(segments=segments,
-                                          memory_regions=memory_regions)
+    return map_segments_to_memory_regions(
+        segments=segments, memory_regions=memory_regions
+    )
 
 
-def map_segments_to_memory_regions(segments: Dict,
-                                   memory_regions: Dict) -> Dict:
+def map_segments_to_memory_regions(
+    segments: Dict, memory_regions: Dict
+) -> Dict:
     """
     Maps segments to the virtual memory regions they reside in.
 
@@ -269,16 +294,21 @@ def map_segments_to_memory_regions(segments: Dict,
     for segment, (segment_start, segment_end) in segments.items():
         # Note this is the final filter bloaty rewrite pattern format.
         for memory_region_name, memory_region_info in memory_regions.items():
-            for _, (subregion_start,
-                    subregion_end) in memory_region_info.items():
-                if (segment_start >= subregion_start
-                        and segment_end <= subregion_end):
+            for _, (
+                subregion_start,
+                subregion_end,
+            ) in memory_region_info.items():
+                if (
+                    segment_start >= subregion_start
+                    and segment_end <= subregion_end
+                ):
                     # We found the subregion the segment resides in.
                     segment_to_memory_region[segment] = memory_region_name
         if segment not in segment_to_memory_region:
             _LOG.error(
-                f'Error: Failed to find memory region for LOAD #{segment} ' +
-                f'[{hex(segment_start)},{hex(segment_end)}]')
+                f'Error: Failed to find memory region for LOAD #{segment} '
+                + f'[{hex(segment_start)},{hex(segment_end)}]'
+            )
     return segment_to_memory_region
 
 
@@ -347,7 +377,8 @@ def generate_bloaty_config(
         else:
             _LOG.info('memoryregions data_source is provided')
             out_file.write(
-                generate_memoryregions_data_source(segment_to_memory_region))
+                generate_memoryregions_data_source(segment_to_memory_region)
+            )
             result[0] = True
 
     if enable_utilization:
@@ -364,10 +395,12 @@ def main() -> int:
 
     logging.basicConfig(format='%(message)s', level=args.loglevel)
 
-    generate_bloaty_config(elf_file=args.elf_file,
-                           enable_memoryregions=args.memoryregions,
-                           enable_utilization=args.utilization,
-                           out_file=args.output)
+    generate_bloaty_config(
+        elf_file=args.elf_file,
+        enable_memoryregions=args.memoryregions,
+        enable_utilization=args.utilization,
+        out_file=args.output,
+    )
     return 0
 
 
