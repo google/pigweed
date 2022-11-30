@@ -65,6 +65,8 @@ class Call : public IntrusiveList<Call>::Item {
   Call& operator=(const Call&) = delete;
   Call& operator=(Call&&) = delete;
 
+  ~Call() PW_LOCKS_EXCLUDED(rpc_lock());
+
   // True if the Call is active and ready to send responses.
   [[nodiscard]] bool active() const PW_LOCKS_EXCLUDED(rpc_lock()) {
     LockGuard lock(rpc_lock());

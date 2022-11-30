@@ -68,6 +68,21 @@ Call::Call(LockedEndpoint& endpoint_ref,
   endpoint().RegisterCall(*this);
 }
 
+Call::~Call() {
+  // Note: this explicit deregistration is necessary to ensure that
+  // modifications to the endpoint call list occur while holding rpc_lock.
+  // Removing this explicit registration would result in unsynchronized
+  // modification of the endpoint call list via the destructor of the
+  // superclass `IntrusiveList<Call>::Item`.
+  LockGuard lock(rpc_lock());
+
+  // This `active_locked()` guard is necessary to ensure that `endpoint()` is
+  // still valid.
+  if (active_locked()) {
+    endpoint().UnregisterCall(*this);
+  }
+}
+
 void Call::MoveFrom(Call& other) {
   PW_DCHECK(!active_locked());
 
