@@ -23,7 +23,7 @@ _LOG = logging.getLogger(__name__)
 
 
 def argument_parser(
-    parser: Optional[argparse.ArgumentParser] = None
+    parser: Optional[argparse.ArgumentParser] = None,
 ) -> argparse.ArgumentParser:
     """Registers the script's arguments on an argument parser."""
 
@@ -33,10 +33,12 @@ def argument_parser(
     parser.add_argument('--dir', required=True, help='Target directory')
     parser.add_argument('--root', required=True, help='GN root')
     parser.add_argument('--target', required=True, help='Build target')
-    parser.add_argument('generators',
-                        metavar='GEN',
-                        nargs='+',
-                        help='Supported protobuf generators')
+    parser.add_argument(
+        'generators',
+        metavar='GEN',
+        nargs='+',
+        help='Supported protobuf generators',
+    )
 
     return parser
 
@@ -45,11 +47,10 @@ def main() -> int:
     """Prints an error message."""
 
     args = argument_parser().parse_args()
-    relative_dir = args.dir[len(args.root):].rstrip('/')
+    relative_dir = args.dir[len(args.root) :].rstrip('/')
 
     _LOG.error('')
-    _LOG.error('The target %s is not a compiled protobuf library.',
-               args.target)
+    _LOG.error('The target %s is not a compiled protobuf library.', args.target)
     _LOG.error('')
     _LOG.error('A different target is generated for each active generator.')
     _LOG.error('Depend on one of the following targets instead:')
