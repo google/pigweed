@@ -275,6 +275,26 @@ struct CreateConnectionCommand:
   #  connection setup
   $next [+1] GenericEnableParam allow_role_switch
 
+
+# =======================================
+# Disconnect Command (v1.1) (BR/EDR & LE)
+
+# NOTE on ReturnParams: No Command Complete event will be sent by the
+# Controller to indicate that this command has been completed. Instead, the
+# Disconnection Complete event will indicate that this command has been
+# completed.
+
+struct DisconnectCommand:
+  let hdr_size = EmbossCommandHeader.$size_in_bytes
+  0     [+hdr_size] EmbossCommandHeader header
+
+  # Connection_Handle (only the lower 12-bits are meaningful).
+  #   Range: 0x0000 to 0x0EFF
+  $next [+2] UInt connection_handle
+
+  # Reason for the disconnect.
+  $next [+1] StatusCode reason
+
 # =========================================
 # Accept Connection Request (v1.1) (BR/EDR)
 

@@ -843,8 +843,8 @@ void FakeController::OnLEConnectionUpdateCommandReceived(
   NotifyLEConnectionParameters(peer->address(), conn_params);
 }
 
-void FakeController::OnDisconnectCommandReceived(const hci_spec::DisconnectCommandParams& params) {
-  hci_spec::ConnectionHandle handle = le16toh(params.connection_handle);
+void FakeController::OnDisconnectCommandReceived(const hci_spec::DisconnectCommandView& params) {
+  hci_spec::ConnectionHandle handle = params.connection_handle().Read();
 
   // Find the peer that matches the disconnected handle.
   FakePeer* peer = FindByConnHandle(handle);
@@ -2839,11 +2839,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnReadBufferSize();
       break;
     }
-    case hci_spec::kDisconnect: {
-      const auto& params = command_packet.payload<hci_spec::DisconnectCommandParams>();
-      OnDisconnectCommandReceived(params);
-      break;
-    }
     case hci_spec::kCreateConnectionCancel: {
       OnCreateConnectionCancel();
       break;
@@ -3061,7 +3056,9 @@ void FakeController::HandleReceivedCommandPacket(
     }
     case hci_spec::kInquiry:
     case hci_spec::kEnhancedAcceptSynchronousConnectionRequest:
-    case hci_spec::kEnhancedSetupSynchronousConnection: {
+    case hci_spec::kEnhancedSetupSynchronousConnection:
+    case hci_spec::kCreateConnection:
+    case hci_spec::kDisconnect: {
       // This case is for packet types that have been migrated to the new Emboss architecture. Their
       // old version can be still be assembled from the HciEmulator channel, so here we repackage
       // and forward them as Emboss packets.
@@ -3121,6 +3118,11 @@ void FakeController::HandleReceivedCommandPacket(hci::EmbossCommandPacket& comma
     case hci_spec::kCreateConnection: {
       const auto params = command_packet.view<hci_spec::CreateConnectionCommandView>();
       OnCreateConnectionCommandReceived(params);
+      break;
+    }
+    case hci_spec::kDisconnect: {
+      const auto params = command_packet.view<hci_spec::DisconnectCommandView>();
+      OnDisconnectCommandReceived(params);
       break;
     }
     default: {

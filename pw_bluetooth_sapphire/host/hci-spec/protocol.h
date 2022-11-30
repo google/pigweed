@@ -143,20 +143,6 @@ constexpr OpCode kCreateConnection = LinkControlOpCode(0x0005);
 // Disconnect Command (v1.1) (BR/EDR & LE)
 constexpr OpCode kDisconnect = LinkControlOpCode(0x0006);
 
-struct DisconnectCommandParams {
-  // Connection_Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-
-  // Reason for the disconnect. See Section 7.1.6 for allowed status codes.
-  StatusCode reason;
-} __PACKED;
-
-// NOTE on ReturnParams: No Command Complete event will be sent by the
-// Controller to indicate that this command has been completed. Instead, the
-// Disconnection Complete event will indicate that this command has been
-// completed.
-
 // ========================================
 // Create Connection Cancel (v1.1) (BR/EDR)
 constexpr OpCode kCreateConnectionCancel = LinkControlOpCode(0x0008);

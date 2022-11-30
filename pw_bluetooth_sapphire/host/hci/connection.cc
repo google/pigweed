@@ -16,6 +16,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
+#include <src/connectivity/bluetooth/core/bt-host/hci-spec/hci-protocol.emb.h>
+
 namespace bt::hci {
 
 Connection::Connection(hci_spec::ConnectionHandle handle, const DeviceAddress& local_address,
@@ -102,11 +104,11 @@ void Connection::Disconnect(hci_spec::StatusCode reason) {
     hci_is_error(event, TRACE, "hci", "ignoring disconnection failure");
   };
 
-  auto disconn =
-      CommandPacket::New(hci_spec::kDisconnect, sizeof(hci_spec::DisconnectCommandParams));
-  auto params = disconn->mutable_payload<hci_spec::DisconnectCommandParams>();
-  params->connection_handle = htole16(handle());
-  params->reason = reason;
+  EmbossCommandPacket disconn =
+      EmbossCommandPacket::New<hci_spec::DisconnectCommandView>(hci_spec::kDisconnect);
+  auto params = disconn.view<hci_spec::DisconnectCommandWriter>();
+  params.connection_handle().Write(handle());
+  params.reason().Write(reason);
 
   bt_log(DEBUG, "hci", "disconnecting connection (handle: %#.4x, reason: %#.2hhx)", handle(),
          reason);

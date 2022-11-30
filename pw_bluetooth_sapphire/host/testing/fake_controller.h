@@ -459,7 +459,7 @@ class FakeController : public ControllerTestDoubleBase {
   void OnLEConnectionUpdateCommandReceived(const hci_spec::LEConnectionUpdateCommandParams& params);
 
   // Called when a HCI_Disconnect command is received.
-  void OnDisconnectCommandReceived(const hci_spec::DisconnectCommandParams& params);
+  void OnDisconnectCommandReceived(const hci_spec::DisconnectCommandView& params);
 
   // Called when a HCI_LE_Write_Host_Support command is received.
   void OnWriteLEHostSupportCommandReceived(const hci_spec::WriteLEHostSupportCommandParams& params);
