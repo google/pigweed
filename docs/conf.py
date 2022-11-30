@@ -111,10 +111,8 @@ html_static_path = ['docs/_static']
 # or fully qualified paths (eg. https://...)
 html_css_files = [
     'css/pigweed.css',
-
     # Needed for Inconsolata font.
     'https://fonts.googleapis.com/css2?family=Inconsolata&display=swap',
-
     # FontAwesome for mermaid and sphinx-design
     "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css",
 ]
@@ -188,8 +186,15 @@ man_pages = [('index', 'pigweed', 'Pigweed', ['Google'], 1)]
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    ('index', 'Pigweed', 'Pigweed', 'Google', 'Pigweed', 'Firmware framework',
-     'Miscellaneous'),
+    (
+        'index',
+        'Pigweed',
+        'Pigweed',
+        'Google',
+        'Pigweed',
+        'Firmware framework',
+        'Miscellaneous',
+    ),
 ]
 
 
