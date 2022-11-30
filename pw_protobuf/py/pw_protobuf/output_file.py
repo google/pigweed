@@ -69,6 +69,7 @@ class OutputFile:
 
     class _IndentationContext:
         """Context that increases the output's indentation when it is active."""
+
         def __init__(self, output: 'OutputFile', amount: int):
             self._output = output
             self._amount: int = amount

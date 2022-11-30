@@ -583,9 +583,11 @@ def fix_cc_identifier(proto_identifier: str) -> str:
     - Any identifier with an underscore for the first character and a capital
       letter for the second character.
     """
-    return (_transform_invalid_identifier(proto_identifier)  #
-            if proto_identifier in PW_PROTO_CODEGEN_RESERVED_WORDS  #
-            else proto_identifier)
+    return (
+        _transform_invalid_identifier(proto_identifier)  #
+        if proto_identifier in PW_PROTO_CODEGEN_RESERVED_WORDS  #
+        else proto_identifier
+    )
 
 
 def fix_cc_enum_value_name(proto_enum_entry: str) -> str:
@@ -604,6 +606,8 @@ def fix_cc_enum_value_name(proto_enum_entry: str) -> str:
     See `fix_cc_identifier` for further details.
     """
     upper_snake_case = proto_enum_entry.upper()
-    return (_transform_invalid_identifier(proto_enum_entry)  #
-            if upper_snake_case in PW_PROTO_CODEGEN_RESERVED_WORDS  #
-            else proto_enum_entry)
+    return (
+        _transform_invalid_identifier(proto_enum_entry)  #
+        if upper_snake_case in PW_PROTO_CODEGEN_RESERVED_WORDS  #
+        else proto_enum_entry
+    )

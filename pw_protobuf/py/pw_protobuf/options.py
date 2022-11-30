@@ -53,14 +53,16 @@ def load_options_from(options: FieldOptions, options_file_name: Path):
                 continue
 
 
-def load_options(include_paths: List[Path],
-                 proto_file_name: Path) -> FieldOptions:
+def load_options(
+    include_paths: List[Path], proto_file_name: Path
+) -> FieldOptions:
     """Loads the .options for the given .proto."""
     options: FieldOptions = []
 
     for include_path in include_paths:
         options_file_name = include_path / proto_file_name.with_suffix(
-            '.options')
+            '.options'
+        )
         if options_file_name.exists():
             load_options_from(options, options_file_name)
 

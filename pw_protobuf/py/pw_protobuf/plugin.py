@@ -36,20 +36,23 @@ def parse_parameter_options(parameter: str) -> Namespace:
     writing, Blaze uses --pwpb_opt, whereas the script for GN uses --custom_opt.
     """
     parser = ArgumentParser()
-    parser.add_argument('-I',
-                        '--include-path',
-                        dest='include_paths',
-                        metavar='DIR',
-                        action='append',
-                        default=[],
-                        type=Path,
-                        help='Append DIR to options file search path')
+    parser.add_argument(
+        '-I',
+        '--include-path',
+        dest='include_paths',
+        metavar='DIR',
+        action='append',
+        default=[],
+        type=Path,
+        help='Append DIR to options file search path',
+    )
     parser.add_argument(
         '--no-legacy-namespace',
         dest='no_legacy_namespace',
         action='store_true',
         help='If set, suppresses `using namespace` declarations, which '
-        'disallows use of the legacy non-prefixed namespace')
+        'disallows use of the legacy non-prefixed namespace',
+    )
 
     # protoc passes the custom arguments in shell quoted form, separated by
     # commas. Use shlex to split them, correctly handling quoted sections, with
@@ -63,8 +66,9 @@ def parse_parameter_options(parameter: str) -> Namespace:
     return parser.parse_args(args)
 
 
-def process_proto_request(req: plugin_pb2.CodeGeneratorRequest,
-                          res: plugin_pb2.CodeGeneratorResponse) -> None:
+def process_proto_request(
+    req: plugin_pb2.CodeGeneratorRequest, res: plugin_pb2.CodeGeneratorResponse
+) -> None:
     """Handles a protoc CodeGeneratorRequest message.
 
     Generates code for the files in the request and writes the output to the
@@ -76,12 +80,14 @@ def process_proto_request(req: plugin_pb2.CodeGeneratorRequest,
     """
     args = parse_parameter_options(req.parameter)
     for proto_file in req.proto_file:
-        proto_options = options.load_options(args.include_paths,
-                                             Path(proto_file.name))
+        proto_options = options.load_options(
+            args.include_paths, Path(proto_file.name)
+        )
         output_files = codegen_pwpb.process_proto_file(
             proto_file,
             proto_options,
-            suppress_legacy_namespace=args.no_legacy_namespace)
+            suppress_legacy_namespace=args.no_legacy_namespace,
+        )
         for output_file in output_files:
             fd = res.file.add()
             fd.name = output_file.name()
@@ -101,7 +107,8 @@ def main() -> int:
 
     # Declare that this plugin supports optional fields in proto3.
     response.supported_features |= (  # type: ignore[attr-defined]
-        response.FEATURE_PROTO3_OPTIONAL)  # type: ignore[attr-defined]
+        response.FEATURE_PROTO3_OPTIONAL
+    )  # type: ignore[attr-defined]
 
     sys.stdout.buffer.write(response.SerializeToString())
     return 0
