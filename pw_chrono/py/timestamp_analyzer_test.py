@@ -21,6 +21,7 @@ from pw_chrono_protos import chrono_pb2
 
 class TimestampTest(unittest.TestCase):
     """Test for the timestamp analyzer."""
+
     def test_no_timepoint(self):
         time_stamps = chrono_pb2.SnapshotTimestamps()
         self.assertEqual('', str(process_snapshot(time_stamps)))
@@ -34,8 +35,12 @@ class TimestampTest(unittest.TestCase):
 
         time_stamps.timestamps.append(time_point)
 
-        expected = '\n'.join(('Snapshot capture timestamp',
-                              '    Time since unknown epoch 0:   unknown'))
+        expected = '\n'.join(
+            (
+                'Snapshot capture timestamp',
+                '    Time since unknown epoch 0:   unknown',
+            )
+        )
 
         self.assertEqual(expected, str(process_snapshot(time_stamps)))
 
@@ -52,7 +57,8 @@ class TimestampTest(unittest.TestCase):
         time_stamps.timestamps.append(time_point)
 
         expected = '\n'.join(
-            ('Snapshot capture timestamp', '  Time since boot:   2:24:00'))
+            ('Snapshot capture timestamp', '  Time since boot:   2:24:00')
+        )
 
         self.assertEqual(expected, str(process_snapshot(time_stamps)))
 
@@ -68,8 +74,9 @@ class TimestampTest(unittest.TestCase):
 
         time_stamps.timestamps.append(time_point)
 
-        expected = '\n'.join(('Snapshot capture timestamp',
-                              '  UTC time:   1970-01-01 02:24:00'))
+        expected = '\n'.join(
+            ('Snapshot capture timestamp', '  UTC time:   1970-01-01 02:24:00')
+        )
 
         self.assertEqual(expected, str(process_snapshot(time_stamps)))
 
@@ -93,7 +100,11 @@ class TimestampTest(unittest.TestCase):
         time_stamps.timestamps.append(time_point)
 
         expected = '\n'.join(
-            ('Snapshot capture timestamps', '  Time since boot:   2:24:00',
-             '  UTC time:   1970-01-01 02:24:00'))
+            (
+                'Snapshot capture timestamps',
+                '  Time since boot:   2:24:00',
+                '  UTC time:   1970-01-01 02:24:00',
+            )
+        )
 
         self.assertEqual(expected, str(process_snapshot(time_stamps)))

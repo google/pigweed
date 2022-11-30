@@ -52,11 +52,13 @@ def timestamp_output(timestamps: chrono_pb2.SnapshotTimestamps):
 
 
 def timestamp_snapshot_analyzer(
-        captured_timepoint: chrono_pb2.TimePoint) -> datetime.timedelta:
+    captured_timepoint: chrono_pb2.TimePoint,
+) -> datetime.timedelta:
     ticks = captured_timepoint.timestamp
     clock_period = (
-        captured_timepoint.clock_parameters.tick_period_seconds_numerator /
-        captured_timepoint.clock_parameters.tick_period_seconds_denominator)
+        captured_timepoint.clock_parameters.tick_period_seconds_numerator
+        / captured_timepoint.clock_parameters.tick_period_seconds_denominator
+    )
     elapsed_seconds = ticks * clock_period
 
     time_delta = datetime.timedelta(seconds=elapsed_seconds)
