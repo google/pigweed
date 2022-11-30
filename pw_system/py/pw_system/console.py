@@ -83,95 +83,129 @@ MKFIFO_MODE = 0o666
 
 def _parse_args():
     """Parses and returns the command line arguments."""
-    parser = argparse.ArgumentParser(prog="python -m pw_system.console",
-                                     description=__doc__)
+    parser = argparse.ArgumentParser(
+        prog="python -m pw_system.console", description=__doc__
+    )
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('-d', '--device', help='the serial port to use')
-    parser.add_argument('-b',
-                        '--baudrate',
-                        type=int,
-                        default=115200,
-                        help='the baud rate to use')
+    parser.add_argument(
+        '-b',
+        '--baudrate',
+        type=int,
+        default=115200,
+        help='the baud rate to use',
+    )
     parser.add_argument(
         '--serial-debug',
         action='store_true',
-        help=('Enable debug log tracing of all data passed through'
-              'pyserial read and write.'))
+        help=(
+            'Enable debug log tracing of all data passed through'
+            'pyserial read and write.'
+        ),
+    )
     parser.add_argument(
         '-o',
         '--output',
         type=argparse.FileType('wb'),
         default=sys.stdout.buffer,
-        help=('The file to which to write device output (HDLC channel 1); '
-              'provide - or omit for stdout.'))
+        help=(
+            'The file to which to write device output (HDLC channel 1); '
+            'provide - or omit for stdout.'
+        ),
+    )
 
     # Log file options
     parser.add_argument(
         '--logfile',
         default='pw_console-logs.txt',
-        help=('Default log file. This will contain host side '
-              'log messages only unles the '
-              '--merge-device-and-host-logs argument is used.'),
+        help=(
+            'Default log file. This will contain host side '
+            'log messages only unles the '
+            '--merge-device-and-host-logs argument is used.'
+        ),
     )
 
     parser.add_argument(
         '--merge-device-and-host-logs',
         action='store_true',
-        help=('Include device logs in the default --logfile.'
-              'These are normally shown in a separate device '
-              'only log file.'),
+        help=(
+            'Include device logs in the default --logfile.'
+            'These are normally shown in a separate device '
+            'only log file.'
+        ),
     )
 
     parser.add_argument(
         '--host-logfile',
-        help=('Additional host only log file. Normally all logs in the '
-              'default logfile are host only.'),
+        help=(
+            'Additional host only log file. Normally all logs in the '
+            'default logfile are host only.'
+        ),
     )
 
-    parser.add_argument('--device-logfile',
-                        default='pw_console-device-logs.txt',
-                        help='Device only log file.')
+    parser.add_argument(
+        '--device-logfile',
+        default='pw_console-device-logs.txt',
+        help='Device only log file.',
+    )
 
-    parser.add_argument('--json-logfile',
-                        help='Device only JSON formatted log file.')
+    parser.add_argument(
+        '--json-logfile', help='Device only JSON formatted log file.'
+    )
 
-    group.add_argument('-s',
-                       '--socket-addr',
-                       type=str,
-                       help='use socket to connect to server, type default for\
-            localhost:33000, or manually input the server address:port')
-    parser.add_argument("--token-databases",
-                        metavar='elf_or_token_database',
-                        nargs="+",
-                        type=Path,
-                        help="Path to tokenizer database csv file(s).")
-    parser.add_argument('--config-file',
-                        type=Path,
-                        help='Path to a pw_console yaml config file.')
-    parser.add_argument('--proto-globs',
-                        nargs='+',
-                        default=[],
-                        help='glob pattern for .proto files.')
-    parser.add_argument('-v',
-                        '--verbose',
-                        action='store_true',
-                        help='Enables debug logging when set.')
-    parser.add_argument('--ipython',
-                        action='store_true',
-                        dest='use_ipython',
-                        help='Use IPython instead of pw_console.')
+    group.add_argument(
+        '-s',
+        '--socket-addr',
+        type=str,
+        help='use socket to connect to server, type default for\
+            localhost:33000, or manually input the server address:port',
+    )
+    parser.add_argument(
+        "--token-databases",
+        metavar='elf_or_token_database',
+        nargs="+",
+        type=Path,
+        help="Path to tokenizer database csv file(s).",
+    )
+    parser.add_argument(
+        '--config-file',
+        type=Path,
+        help='Path to a pw_console yaml config file.',
+    )
+    parser.add_argument(
+        '--proto-globs',
+        nargs='+',
+        default=[],
+        help='glob pattern for .proto files.',
+    )
+    parser.add_argument(
+        '-v',
+        '--verbose',
+        action='store_true',
+        help='Enables debug logging when set.',
+    )
+    parser.add_argument(
+        '--ipython',
+        action='store_true',
+        dest='use_ipython',
+        help='Use IPython instead of pw_console.',
+    )
 
     # TODO(b/248257406) Use argparse.BooleanOptionalAction when Python 3.8 is
     # no longer supported.
-    parser.add_argument('--rpc-logging',
-                        action='store_true',
-                        default=True,
-                        help='Use pw_rpc based logging.')
+    parser.add_argument(
+        '--rpc-logging',
+        action='store_true',
+        default=True,
+        help='Use pw_rpc based logging.',
+    )
 
-    parser.add_argument('--no-rpc-logging',
-                        action='store_false',
-                        dest='rpc_logging',
-                        help="Don't use pw_rpc based logging.")
+    parser.add_argument(
+        '--no-rpc-logging',
+        action='store_false',
+        dest='rpc_logging',
+        help="Don't use pw_rpc based logging.",
+    )
 
     return parser.parse_args()
 
@@ -206,7 +240,8 @@ def _start_python_terminal(  # pylint: disable=too-many-arguments
         LOG=logging.getLogger(),
     )
 
-    welcome_message = cleandoc("""
+    welcome_message = cleandoc(
+        """
         Welcome to the Pigweed Console!
 
         Help: Press F1 or click the [Help] menu
@@ -217,22 +252,26 @@ def _start_python_terminal(  # pylint: disable=too-many-arguments
           device.rpcs.pw.rpc.EchoService.Echo(msg='hello!')
           LOG.warning('Message appears in Host Logs window.')
           DEVICE_LOG.warning('Message appears in Device Logs window.')
-    """)
+    """
+    )
 
     welcome_message += '\n\nLogs are being saved to:\n  ' + log_file
     if host_logfile:
         welcome_message += '\nHost logs are being saved to:\n  ' + host_logfile
     if device_logfile:
-        welcome_message += ('\nDevice logs are being saved to:\n  ' +
-                            device_logfile)
+        welcome_message += (
+            '\nDevice logs are being saved to:\n  ' + device_logfile
+        )
     if json_logfile:
-        welcome_message += ('\nJSON device logs are being saved to:\n  ' +
-                            json_logfile)
+        welcome_message += (
+            '\nJSON device logs are being saved to:\n  ' + json_logfile
+        )
 
     if use_ipython:
         print(welcome_message)
         IPython.terminal.embed.InteractiveShellEmbed().mainloop(
-            local_ns=local_variables, module=argparse.Namespace())
+            local_ns=local_variables, module=argparse.Namespace()
+        )
         return
 
     client_info = device.info()
@@ -262,7 +301,8 @@ def _start_python_terminal(  # pylint: disable=too-many-arguments
         # Send any unhandled log messages to the external file.
         last_resort_filename=log_file,
         # Don't change propagation for these loggers.
-        loggers_with_no_propagation=[_DEVICE_LOG])
+        loggers_with_no_propagation=[_DEVICE_LOG],
+    )
 
     interactive_console.embed()
 
@@ -288,24 +328,26 @@ class SocketClientImpl:
         return self.socket.recv(num_bytes)
 
 
-#pylint: disable=too-many-arguments,too-many-locals
-def console(device: str,
-            baudrate: int,
-            proto_globs: Collection[str],
-            token_databases: Collection[Path],
-            socket_addr: str,
-            logfile: str,
-            host_logfile: str,
-            device_logfile: str,
-            json_logfile: str,
-            output: Any,
-            serial_debug: bool = False,
-            config_file: Optional[Path] = None,
-            verbose: bool = False,
-            compiled_protos: Optional[List[ModuleType]] = None,
-            merge_device_and_host_logs: bool = False,
-            rpc_logging: bool = True,
-            use_ipython: bool = False) -> int:
+# pylint: disable=too-many-arguments,too-many-locals
+def console(
+    device: str,
+    baudrate: int,
+    proto_globs: Collection[str],
+    token_databases: Collection[Path],
+    socket_addr: str,
+    logfile: str,
+    host_logfile: str,
+    device_logfile: str,
+    json_logfile: str,
+    output: Any,
+    serial_debug: bool = False,
+    config_file: Optional[Path] = None,
+    verbose: bool = False,
+    compiled_protos: Optional[List[ModuleType]] = None,
+    merge_device_and_host_logs: bool = False,
+    rpc_logging: bool = True,
+    use_ipython: bool = False,
+) -> int:
     """Starts an interactive RPC console for HDLC."""
     # argparse.FileType doesn't correctly handle '-' for binary files.
     if output is sys.stdout:
@@ -332,31 +374,36 @@ def console(device: str,
 
     log_level = logging.DEBUG if verbose else logging.INFO
 
-    pw_cli.log.install(level=log_level,
-                       use_color=False,
-                       hide_timestamp=False,
-                       log_file=logfile)
+    pw_cli.log.install(
+        level=log_level, use_color=False, hide_timestamp=False, log_file=logfile
+    )
 
     if device_logfile:
-        pw_cli.log.install(level=log_level,
-                           use_color=False,
-                           hide_timestamp=False,
-                           log_file=device_logfile,
-                           logger=_DEVICE_LOG)
+        pw_cli.log.install(
+            level=log_level,
+            use_color=False,
+            hide_timestamp=False,
+            log_file=device_logfile,
+            logger=_DEVICE_LOG,
+        )
     if host_logfile:
-        pw_cli.log.install(level=log_level,
-                           use_color=False,
-                           hide_timestamp=False,
-                           log_file=host_logfile,
-                           logger=_ROOT_LOG)
+        pw_cli.log.install(
+            level=log_level,
+            use_color=False,
+            hide_timestamp=False,
+            log_file=host_logfile,
+            logger=_ROOT_LOG,
+        )
 
     if merge_device_and_host_logs:
         # Add device logs to the default logfile.
-        pw_cli.log.install(level=log_level,
-                           use_color=False,
-                           hide_timestamp=False,
-                           log_file=logfile,
-                           logger=_DEVICE_LOG)
+        pw_cli.log.install(
+            level=log_level,
+            use_color=False,
+            hide_timestamp=False,
+            log_file=logfile,
+            logger=_DEVICE_LOG,
+        )
 
     _LOG.setLevel(log_level)
     _DEVICE_LOG.setLevel(log_level)
@@ -367,7 +414,8 @@ def console(device: str,
         json_filehandler = logging.FileHandler(json_logfile, encoding='utf-8')
         json_filehandler.setLevel(log_level)
         json_filehandler.setFormatter(
-            pw_console.python_logging.JsonLogFormatter())
+            pw_console.python_logging.JsonLogFormatter()
+        )
         _DEVICE_LOG.addHandler(json_filehandler)
 
     detokenizer = None
@@ -391,13 +439,17 @@ def console(device: str,
     protos.append(thread_snapshot_service_pb2)
 
     if not protos:
-        _LOG.critical('No .proto files were found with %s',
-                      ', '.join(proto_globs))
+        _LOG.critical(
+            'No .proto files were found with %s', ', '.join(proto_globs)
+        )
         _LOG.critical('At least one .proto file is required')
         return 1
 
-    _LOG.debug('Found %d .proto files found with %s', len(protos),
-               ', '.join(proto_globs))
+    _LOG.debug(
+        'Found %d .proto files found with %s',
+        len(protos),
+        ', '.join(proto_globs),
+    )
 
     serial_impl = serial.Serial
     if serial_debug:
@@ -432,14 +484,16 @@ def console(device: str,
             _LOG.exception('Failed to initialize socket at %s', socket_addr)
             return 1
 
-    device_client = Device(1,
-                           read,
-                           write,
-                           protos,
-                           detokenizer,
-                           timestamp_decoder=timestamp_decoder,
-                           rpc_timeout_s=5,
-                           use_rpc_logging=rpc_logging)
+    device_client = Device(
+        1,
+        read,
+        write,
+        protos,
+        detokenizer,
+        timestamp_decoder=timestamp_decoder,
+        rpc_timeout_s=5,
+        use_rpc_logging=rpc_logging,
+    )
 
     _start_python_terminal(
         device=device_client,
