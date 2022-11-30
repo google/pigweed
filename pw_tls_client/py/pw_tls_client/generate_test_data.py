@@ -52,17 +52,24 @@ CERTS_AND_KEYS_HEADER = """// Copyright 2021 The Pigweed Authors
 class Subject:
     """A subject wraps a name, private key and extensions for issuers
     to issue its certificate"""
-    def __init__(self, name: str, extensions: List[Tuple[x509.ExtensionType,
-                                                         bool]]):
-        self._subject_name = x509.Name([
-            x509.NameAttribute(NameOID.COUNTRY_NAME, u"US"),
-            x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, u"California"),
-            x509.NameAttribute(NameOID.LOCALITY_NAME, u"Mountain View"),
-            x509.NameAttribute(NameOID.ORGANIZATION_NAME, name),
-            x509.NameAttribute(NameOID.COMMON_NAME, u"Google-Pigweed"),
-        ])
-        self._private_key = rsa.generate_private_key(public_exponent=65537,
-                                                     key_size=2048)
+
+    def __init__(
+        self, name: str, extensions: List[Tuple[x509.ExtensionType, bool]]
+    ):
+        self._subject_name = x509.Name(
+            [
+                x509.NameAttribute(NameOID.COUNTRY_NAME, u"US"),
+                x509.NameAttribute(
+                    NameOID.STATE_OR_PROVINCE_NAME, u"California"
+                ),
+                x509.NameAttribute(NameOID.LOCALITY_NAME, u"Mountain View"),
+                x509.NameAttribute(NameOID.ORGANIZATION_NAME, name),
+                x509.NameAttribute(NameOID.COMMON_NAME, u"Google-Pigweed"),
+            ]
+        )
+        self._private_key = rsa.generate_private_key(
+            public_exponent=65537, key_size=2048
+        )
         self._extensions = extensions
 
     def subject_name(self) -> x509.Name:
@@ -84,23 +91,30 @@ class Subject:
 
 class CA(Subject):
     """A CA/Sub-ca that issues certificates"""
+
     def __init__(self, *args, **kwargs):
-        ext = [(x509.BasicConstraints(True, None), True),
-               (x509.KeyUsage(
-                   digital_signature=False,
-                   content_commitment=False,
-                   key_encipherment=False,
-                   data_encipherment=False,
-                   key_agreement=False,
-                   crl_sign=False,
-                   encipher_only=False,
-                   decipher_only=False,
-                   key_cert_sign=True,
-               ), True)]
+        ext = [
+            (x509.BasicConstraints(True, None), True),
+            (
+                x509.KeyUsage(
+                    digital_signature=False,
+                    content_commitment=False,
+                    key_encipherment=False,
+                    data_encipherment=False,
+                    key_agreement=False,
+                    crl_sign=False,
+                    encipher_only=False,
+                    decipher_only=False,
+                    key_cert_sign=True,
+                ),
+                True,
+            ),
+        ]
         super().__init__(*args, extensions=ext, **kwargs)
 
-    def sign(self, subject: Subject, not_before: datetime,
-             not_after: datetime) -> x509.Certificate:
+    def sign(
+        self, subject: Subject, not_before: datetime, not_after: datetime
+    ) -> x509.Certificate:
         """Issues a certificate for another CA/Sub-ca/Server"""
         builder = x509.CertificateBuilder()
 
@@ -115,7 +129,8 @@ class CA(Subject):
 
         # Validity period.
         builder = builder.not_valid_before(not_before).not_valid_after(
-            not_after)
+            not_after
+        )
 
         # Uses a random serial number
         builder = builder.serial_number(x509.random_serial_number())
@@ -127,30 +142,37 @@ class CA(Subject):
         # Sign and returns the certificate.
         return builder.sign(self._private_key, hashes.SHA256())
 
-    def self_sign(self, not_before: datetime,
-                  not_after: datetime) -> x509.Certificate:
+    def self_sign(
+        self, not_before: datetime, not_after: datetime
+    ) -> x509.Certificate:
         """Issues a self sign certificate"""
         return self.sign(self, not_before, not_after)
 
 
 class Server(Subject):
     """The end-entity server"""
+
     def __init__(self, *args, **kwargs):
         ext = [
             (x509.BasicConstraints(False, None), True),
-            (x509.KeyUsage(
-                digital_signature=True,
-                content_commitment=False,
-                key_encipherment=False,
-                data_encipherment=False,
-                key_agreement=False,
-                crl_sign=False,
-                encipher_only=False,
-                decipher_only=False,
-                key_cert_sign=False,
-            ), True),
-            (x509.ExtendedKeyUsage([x509.ExtendedKeyUsageOID.SERVER_AUTH]),
-             True),
+            (
+                x509.KeyUsage(
+                    digital_signature=True,
+                    content_commitment=False,
+                    key_encipherment=False,
+                    data_encipherment=False,
+                    key_agreement=False,
+                    crl_sign=False,
+                    encipher_only=False,
+                    decipher_only=False,
+                    key_cert_sign=False,
+                ),
+                True,
+            ),
+            (
+                x509.ExtendedKeyUsage([x509.ExtendedKeyUsageOID.SERVER_AUTH]),
+                True,
+            ),
         ]
         super().__init__(*args, extensions=ext, **kwargs)
 
@@ -176,12 +198,14 @@ def byte_array_declaration(data: bytes, name: str) -> str:
 
 class Codegen:
     """Base helper class for code generation"""
+
     def generate_code(self) -> str:
         """Generates C++ code for this object"""
 
 
 class PrivateKeyGen(Codegen):
     """Codegen class for a private key"""
+
     def __init__(self, key: rsa.RSAPrivateKey, name: str):
         self._key = key
         self._name = name
@@ -192,11 +216,15 @@ class PrivateKeyGen(Codegen):
             self._key.private_bytes(
                 serialization.Encoding.DER,
                 serialization.PrivateFormat.TraditionalOpenSSL,
-                serialization.NoEncryption()), self._name)
+                serialization.NoEncryption(),
+            ),
+            self._name,
+        )
 
 
 class CertificateGen(Codegen):
     """Codegen class for a single certificate"""
+
     def __init__(self, cert: x509.Certificate, name: str):
         self._cert = cert
         self._name = name
@@ -204,7 +232,8 @@ class CertificateGen(Codegen):
     def generate_code(self) -> str:
         """Code generation"""
         return byte_array_declaration(
-            self._cert.public_bytes(serialization.Encoding.DER), self._name)
+            self._cert.public_bytes(serialization.Encoding.DER), self._name
+        )
 
 
 def generate_test_data() -> str:
@@ -220,22 +249,26 @@ def generate_test_data() -> str:
     # Generate a root-A CA certificates
     root_a = CA("root-A")
     subjects.append(
-        CertificateGen(root_a.self_sign(not_before, not_after), "kRootACert"))
+        CertificateGen(root_a.self_sign(not_before, not_after), "kRootACert")
+    )
 
     # Generate a sub CA certificate signed by root-A.
     sub = CA("sub")
     subjects.append(
-        CertificateGen(root_a.sign(sub, not_before, not_after), "kSubCACert"))
+        CertificateGen(root_a.sign(sub, not_before, not_after), "kSubCACert")
+    )
 
     # Generate a valid server certificate signed by sub
     server = Server("server")
     subjects.append(
-        CertificateGen(sub.sign(server, not_before, not_after), "kServerCert"))
+        CertificateGen(sub.sign(server, not_before, not_after), "kServerCert")
+    )
     subjects.append(PrivateKeyGen(server.private_key(), "kServerKey"))
 
     root_b = CA("root-B")
     subjects.append(
-        CertificateGen(root_b.self_sign(not_before, not_after), "kRootBCert"))
+        CertificateGen(root_b.self_sign(not_before, not_after), "kRootBCert")
+    )
 
     code = 'namespace {\n\n'
     for subject in subjects:
@@ -246,11 +279,14 @@ def generate_test_data() -> str:
 
 
 def clang_format(file):
-    subprocess.run([
-        "clang-format",
-        "-i",
-        file,
-    ], check=True)
+    subprocess.run(
+        [
+            "clang-format",
+            "-i",
+            file,
+        ],
+        check=True,
+    )
 
 
 def parse_args():
@@ -258,7 +294,8 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "certs_and_keys_header",
-        help="output header file for test certificates and keys")
+        help="output header file for test certificates and keys",
+    )
     return parser.parse_args()
 
 

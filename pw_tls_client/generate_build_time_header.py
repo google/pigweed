@@ -54,14 +54,19 @@ def main() -> int:
 
         # Add a comment in the generated header to show readable build time
         string_date = datetime.fromtimestamp(time_stamp).strftime(
-            "%m/%d/%Y %H:%M:%S")
+            "%m/%d/%Y %H:%M:%S"
+        )
         header.write(f'// {string_date}\n')
 
         # Write to the header.
-        header.write(''.join([
-            'constexpr uint64_t kBuildTimeMicrosecondsUTC = ',
-            f'{int(time_stamp * 1e6)};\n'
-        ]))
+        header.write(
+            ''.join(
+                [
+                    'constexpr uint64_t kBuildTimeMicrosecondsUTC = ',
+                    f'{int(time_stamp * 1e6)};\n',
+                ]
+            )
+        )
     return 0
 
 
