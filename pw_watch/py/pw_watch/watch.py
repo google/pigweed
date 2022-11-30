@@ -116,7 +116,8 @@ def git_ignored(file: Path) -> bool:
                 ['git', 'check-ignore', '--quiet', '--no-index', file],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
-                cwd=directory).returncode
+                cwd=directory,
+            ).returncode
             return returncode in (0, 128)
         except FileNotFoundError:
             # If the directory no longer exists, try parent directories until
@@ -131,9 +132,11 @@ def git_ignored(file: Path) -> bool:
 
 class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
     """Process filesystem events and launch builds if necessary."""
+
     # pylint: disable=too-many-instance-attributes
     NINJA_BUILD_STEP = re.compile(
-        r'^\[(?P<step>[0-9]+)/(?P<total_steps>[0-9]+)\] (?P<action>.*)$')
+        r'^\[(?P<step>[0-9]+)/(?P<total_steps>[0-9]+)\] (?P<action>.*)$'
+    )
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
@@ -162,9 +165,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         self.watch_app: Optional[WatchApp] = None
 
         # Initialize self._current_build to an empty subprocess.
-        self._current_build = subprocess.Popen('',
-                                               shell=True,
-                                               errors='replace')
+        self._current_build = subprocess.Popen('', shell=True, errors='replace')
 
         self.debouncer = Debouncer(self)
 
@@ -175,7 +176,8 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
 
         if not self.fullscreen_enabled:
             self.wait_for_keypress_thread = threading.Thread(
-                None, self._wait_for_enter)
+                None, self._wait_for_enter
+            )
             self.wait_for_keypress_thread.start()
 
     def rebuild(self):
@@ -199,8 +201,9 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
 
     def _path_matches(self, path: Path) -> bool:
         """Returns true if path matches according to the watcher patterns"""
-        return (not any(path.match(x) for x in self.ignore_patterns)
-                and any(path.match(x) for x in self.patterns))
+        return not any(path.match(x) for x in self.ignore_patterns) and any(
+            path.match(x) for x in self.patterns
+        )
 
     def dispatch(self, event) -> None:
         # There isn't any point in triggering builds on new directory creation.
@@ -257,13 +260,16 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
             self.create_result_message()
             _LOG.info(
                 _COLOR.green(
-                    'Watching for changes. Ctrl-d to exit; enter to rebuild'))
+                    'Watching for changes. Ctrl-d to exit; enter to rebuild'
+                )
+            )
         else:
             for line in pw_cli.branding.banner().splitlines():
                 _LOG.info(line)
             _LOG.info(
                 _COLOR.green(
-                    '  Watching for changes. Ctrl-C to exit; enter to rebuild')
+                    '  Watching for changes. Ctrl-C to exit; enter to rebuild'
+                )
             )
         _LOG.info('')
         _LOG.info('Change detected: %s', self.matching_path)
@@ -286,7 +292,8 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
             _LOG.info(build_start_msg)
 
             self.builds_succeeded.append(
-                self.project_builder.run_build(cfg, env, index_message=index))
+                self.project_builder.run_build(cfg, env, index_message=index)
+            )
             if self.builds_succeeded[-1]:
                 level = logging.INFO
                 tag = '(OK)'
@@ -298,30 +305,42 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
             self.create_result_message()
 
     def create_result_message(self):
+        """TODO(tonymd) Add docstring."""
         if not self.fullscreen_enabled:
             return
 
         self.result_message = []
         first_building_target_found = False
         for (succeeded, command) in zip_longest(
-                self.builds_succeeded,
-            [cfg.build_dir for cfg in self.project_builder]):
+            self.builds_succeeded,
+            [cfg.build_dir for cfg in self.project_builder],
+        ):
             if succeeded:
                 self.result_message.append(
-                    ('class:theme-fg-green',
-                     'OK'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH)))
+                    (
+                        'class:theme-fg-green',
+                        'OK'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH),
+                    )
+                )
             elif succeeded is None and not first_building_target_found:
                 first_building_target_found = True
                 self.result_message.append(
-                    ('class:theme-fg-yellow',
-                     'Building'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH)))
+                    (
+                        'class:theme-fg-yellow',
+                        'Building'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH),
+                    )
+                )
             elif first_building_target_found:
                 self.result_message.append(
-                    ('', ''.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH)))
+                    ('', ''.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH))
+                )
             else:
                 self.result_message.append(
-                    ('class:theme-fg-red',
-                     'Failed'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH)))
+                    (
+                        'class:theme-fg-red',
+                        'Failed'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH),
+                    )
+                )
             self.result_message.append(('', f'  {command}\n'))
 
     def execute_command(self, command: list, env: dict) -> bool:
@@ -329,13 +348,14 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         self.current_build_errors = 0
         self.status_message = (
             'class:theme-fg-yellow',
-            'Building'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH))
+            'Building'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH),
+        )
         if self.fullscreen_enabled:
             return self._execute_command_watch_app(command, env)
         print()
-        self._current_build = subprocess.Popen(command,
-                                               env=env,
-                                               errors='replace')
+        self._current_build = subprocess.Popen(
+            command, env=env, errors='replace'
+        )
         returncode = self._current_build.wait()
         print()
         return returncode == 0
@@ -346,11 +366,13 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
             return False
         self.current_stdout = ''
         returncode = None
-        with subprocess.Popen(command,
-                              env=env,
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.STDOUT,
-                              errors='replace') as proc:
+        with subprocess.Popen(
+            command,
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            errors='replace',
+        ) as proc:
             self._current_build = proc
 
             # Empty line at the start.
@@ -367,8 +389,9 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
                     matches = line_match_result.groupdict()
                     self.current_build_step = line_match_result.group(0)
                     self.current_build_percent = float(
-                        int(matches.get('step', 0)) /
-                        int(matches.get('total_steps', 1)))
+                        int(matches.get('step', 0))
+                        / int(matches.get('total_steps', 1))
+                    )
 
                 elif output.startswith(WatchApp.NINJA_FAILURE_TEXT):
                     _NINJA_LOG.critical(output.strip())
@@ -388,8 +411,10 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
                     # The following replace calls will strip out those
                     # instances.
                     _NINJA_LOG.info(
-                        output.replace('\x1b(B\x1b[m',
-                                       '').replace('\x1b[1m', '').strip())
+                        output.replace('\x1b(B\x1b[m', '')
+                        .replace('\x1b[1m', '')
+                        .strip()
+                    )
                 self.watch_app.redraw_ui()
 
                 returncode = proc.poll()
@@ -412,18 +437,22 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         # First, use the standard logging facilities to report build status.
         if cancelled:
             self.status_message = (
-                '', 'Cancelled'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH))
+                '',
+                'Cancelled'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH),
+            )
             _LOG.error('Finished; build was interrupted')
 
         elif all(self.builds_succeeded):
             self.status_message = (
                 'class:theme-fg-green',
-                'Succeeded'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH))
+                'Succeeded'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH),
+            )
             _LOG.info('Finished; all successful')
         else:
             self.status_message = (
                 'class:theme-fg-red',
-                'Failed'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH))
+                'Failed'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH),
+            )
             _LOG.info('Finished; some builds failed')
 
         # Show individual build results for fullscreen app
@@ -432,8 +461,9 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         # For non-fullscreen pw watch
         else:
             # Show a more distinct colored banner.
-            self.project_builder.print_build_summary(self.builds_succeeded,
-                                                     cancelled=cancelled)
+            self.project_builder.print_build_summary(
+                self.builds_succeeded, cancelled=cancelled
+            )
 
         if self.watch_app:
             self.watch_app.redraw_ui()
@@ -464,37 +494,55 @@ def _exit_due_to_interrupt() -> NoReturn:
 
 def _exit_due_to_inotify_watch_limit():
     # Show information and suggested commands in OSError: inotify limit reached.
-    _LOG.error('Inotify watch limit reached: run this in your terminal if '
-               'you are in Linux to temporarily increase inotify limit.  \n')
+    _LOG.error(
+        'Inotify watch limit reached: run this in your terminal if '
+        'you are in Linux to temporarily increase inotify limit.  \n'
+    )
     _LOG.info(
-        _COLOR.green('        sudo sysctl fs.inotify.max_user_watches='
-                     '$NEW_LIMIT$\n'))
-    _LOG.info('  Change $NEW_LIMIT$ with an integer number, '
-              'e.g., 20000 should be enough.')
+        _COLOR.green(
+            '        sudo sysctl fs.inotify.max_user_watches=' '$NEW_LIMIT$\n'
+        )
+    )
+    _LOG.info(
+        '  Change $NEW_LIMIT$ with an integer number, '
+        'e.g., 20000 should be enough.'
+    )
     _exit(0)
 
 
 def _exit_due_to_inotify_instance_limit():
     # Show information and suggested commands in OSError: inotify limit reached.
-    _LOG.error('Inotify instance limit reached: run this in your terminal if '
-               'you are in Linux to temporarily increase inotify limit.  \n')
+    _LOG.error(
+        'Inotify instance limit reached: run this in your terminal if '
+        'you are in Linux to temporarily increase inotify limit.  \n'
+    )
     _LOG.info(
-        _COLOR.green('        sudo sysctl fs.inotify.max_user_instances='
-                     '$NEW_LIMIT$\n'))
-    _LOG.info('  Change $NEW_LIMIT$ with an integer number, '
-              'e.g., 20000 should be enough.')
+        _COLOR.green(
+            '        sudo sysctl fs.inotify.max_user_instances=' '$NEW_LIMIT$\n'
+        )
+    )
+    _LOG.info(
+        '  Change $NEW_LIMIT$ with an integer number, '
+        'e.g., 20000 should be enough.'
+    )
     _exit(0)
 
 
 def _exit_due_to_pigweed_not_installed():
     # Show information and suggested commands when pigweed environment variable
     # not found.
-    _LOG.error('Environment variable $PW_ROOT not defined or is defined '
-               'outside the current directory.')
-    _LOG.error('Did you forget to activate the Pigweed environment? '
-               'Try source ./activate.sh')
-    _LOG.error('Did you forget to install the Pigweed environment? '
-               'Try source ./bootstrap.sh')
+    _LOG.error(
+        'Environment variable $PW_ROOT not defined or is defined '
+        'outside the current directory.'
+    )
+    _LOG.error(
+        'Did you forget to activate the Pigweed environment? '
+        'Try source ./activate.sh'
+    )
+    _LOG.error(
+        'Did you forget to install the Pigweed environment? '
+        'Try source ./bootstrap.sh'
+    )
     _exit(1)
 
 
@@ -522,8 +570,9 @@ def minimal_watch_directories(to_watch: Path, to_exclude: Iterable[Path]):
     # and generate all parent paths needed to be watched without recursion.
     exclude_dir_parents = {to_watch}
     for directory_to_exclude in directories_to_exclude:
-        parts = list(
-            Path(directory_to_exclude).relative_to(to_watch).parts)[:-1]
+        parts = list(Path(directory_to_exclude).relative_to(to_watch).parts)[
+            :-1
+        ]
         dir_tmp = to_watch
         for part in parts:
             dir_tmp = Path(dir_tmp, part)
@@ -536,8 +585,11 @@ def minimal_watch_directories(to_watch: Path, to_exclude: Iterable[Path]):
         dir_path = Path(directory)
         yield dir_path, False
         for item in Path(directory).iterdir():
-            if (item.is_dir() and item not in exclude_dir_parents
-                    and item not in directories_to_exclude):
+            if (
+                item.is_dir()
+                and item not in exclude_dir_parents
+                and item not in directories_to_exclude
+            ):
                 yield item, True
 
 
@@ -557,8 +609,10 @@ def get_common_excludes() -> List[Path]:
 
     # Preset exclude list for Pigweed's upstream directories.
     pw_root_dir = Path(os.environ['PW_ROOT'])
-    exclude_list.extend(pw_root_dir / ignored_directory
-                        for ignored_directory in typical_ignored_directories)
+    exclude_list.extend(
+        pw_root_dir / ignored_directory
+        for ignored_directory in typical_ignored_directories
+    )
 
     # Preset exclude for common downstream project structures.
     #
@@ -568,7 +622,8 @@ def get_common_excludes() -> List[Path]:
     if pw_project_root_dir != pw_root_dir:
         exclude_list.extend(
             pw_project_root_dir / ignored_directory
-            for ignored_directory in typical_ignored_directories)
+            for ignored_directory in typical_ignored_directories
+        )
 
     # Check for and warn about legacy directories.
     legacy_directories = [
@@ -579,25 +634,31 @@ def get_common_excludes() -> List[Path]:
     for legacy_directory in legacy_directories:
         full_legacy_directory = pw_root_dir / legacy_directory
         if full_legacy_directory.is_dir():
-            _LOG.warning('Legacy environment directory found: %s',
-                         str(full_legacy_directory))
+            _LOG.warning(
+                'Legacy environment directory found: %s',
+                str(full_legacy_directory),
+            )
             exclude_list.append(full_legacy_directory)
             found_legacy = True
     if found_legacy:
-        _LOG.warning('Found legacy environment directory(s); these '
-                     'should be deleted')
+        _LOG.warning(
+            'Found legacy environment directory(s); these ' 'should be deleted'
+        )
 
     return exclude_list
 
 
-def _simple_docs_server(address: str, port: int,
-                        path: Path) -> Callable[[], None]:
+def _simple_docs_server(
+    address: str, port: int, path: Path
+) -> Callable[[], None]:
     class Handler(http.server.SimpleHTTPRequestHandler):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, directory=path, **kwargs)
 
         # Disable logs to stdout
-        def log_message(self, format: str, *args) -> None:  # pylint: disable=redefined-builtin
+        def log_message(
+            self, format: str, *args  # pylint: disable=redefined-builtin
+        ) -> None:
             return
 
     def simple_http_server_thread():
@@ -607,8 +668,9 @@ def _simple_docs_server(address: str, port: int,
     return simple_http_server_thread
 
 
-def _httpwatcher_docs_server(address: str, port: int,
-                             path: Path) -> Callable[[], None]:
+def _httpwatcher_docs_server(
+    address: str, port: int, path: Path
+) -> Callable[[], None]:
     def httpwatcher_thread():
         # Disable logs from httpwatcher and deps
         logging.getLogger('httpwatcher').setLevel(logging.CRITICAL)
@@ -619,10 +681,12 @@ def _httpwatcher_docs_server(address: str, port: int,
     return httpwatcher_thread
 
 
-def _serve_docs(build_dir: Path,
-                docs_path: Path,
-                address: str = '127.0.0.1',
-                port: int = 8000) -> None:
+def _serve_docs(
+    build_dir: Path,
+    docs_path: Path,
+    address: str = '127.0.0.1',
+    port: int = 8000,
+) -> None:
     address = '127.0.0.1'
     docs_path = build_dir.joinpath(docs_path.joinpath('html'))
 
@@ -631,7 +695,8 @@ def _serve_docs(build_dir: Path,
         server_thread = _httpwatcher_docs_server(address, port, docs_path)
     else:
         _LOG.info(
-            'Using simple HTTP server. Docs will not reload when changed.')
+            'Using simple HTTP server. Docs will not reload when changed.'
+        )
         _LOG.info('Install httpwatcher and restart for automatic docs reload.')
         server_thread = _simple_docs_server(address, port, docs_path)
 
@@ -673,19 +738,21 @@ def watch_setup(  # pylint: disable=too-many-locals
     # Preset exclude list for pigweed directory.
     exclude_list += get_common_excludes()
     # Add build directories to the exclude list.
-    exclude_list.extend(cfg.build_dir.resolve() for cfg in build_recipes
-                        if isinstance(cfg.build_dir, Path))
+    exclude_list.extend(
+        cfg.build_dir.resolve()
+        for cfg in build_recipes
+        if isinstance(cfg.build_dir, Path)
+    )
 
     for i, build_recipe in enumerate(build_recipes, 1):
-        _LOG.info('Will build [%d/%d]: %s', i, len(build_recipes),
-                  build_recipe)
+        _LOG.info('Will build [%d/%d]: %s', i, len(build_recipes), build_recipe)
 
     _LOG.debug('Patterns: %s', patterns)
 
     if serve_docs:
-        _serve_docs(build_recipes[0].build_dir,
-                    serve_docs_path,
-                    port=serve_docs_port)
+        _serve_docs(
+            build_recipes[0].build_dir, serve_docs_path, port=serve_docs_port
+        )
 
     # Try to make a short display path for the watched directory that has
     # "$HOME" instead of the full home directory. This is nice for users
@@ -693,8 +760,11 @@ def watch_setup(  # pylint: disable=too-many-locals
     path_to_log = str(Path().resolve()).replace(str(Path.home()), '$HOME')
 
     # Ignore the user-specified patterns.
-    ignore_patterns = (ignore_patterns_string.split(WATCH_PATTERN_DELIMITER)
-                       if ignore_patterns_string else [])
+    ignore_patterns = (
+        ignore_patterns_string.split(WATCH_PATTERN_DELIMITER)
+        if ignore_patterns_string
+        else []
+    )
 
     env = pw_cli.env.pigweed_environment()
     if env.PW_EMOJI:
@@ -725,8 +795,11 @@ def watch_setup(  # pylint: disable=too-many-locals
     return path_to_log, event_handler, exclude_list
 
 
-def watch(path_to_log: Path, event_handler: PigweedBuildWatcher,
-          exclude_list: List[Path]):
+def watch(
+    path_to_log: Path,
+    event_handler: PigweedBuildWatcher,
+    exclude_list: List[Path],
+):
     """Watches files and runs Ninja commands when they change."""
     try:
         # It can take awhile to configure the filesystem watcher, so have the
@@ -770,7 +843,8 @@ def main() -> None:
     """Watch files for changes and rebuild."""
     parser = argparse.ArgumentParser(
         description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter)
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser = add_parser_arguments(parser)
     args = parser.parse_args()
 
@@ -779,11 +853,13 @@ def main() -> None:
     build_recipes = create_build_recipes(prefs)
 
     path_to_log, event_handler, exclude_list = watch_setup(
-        build_recipes=build_recipes, **vars(args))
+        build_recipes=build_recipes, **vars(args)
+    )
 
     if args.fullscreen:
-        watch_logfile = (pw_console.python_logging.create_temp_log_file(
-            prefix=__package__))
+        watch_logfile = pw_console.python_logging.create_temp_log_file(
+            prefix=__package__
+        )
         pw_cli.log.install(
             level=logging.DEBUG,
             use_color=True,
@@ -791,16 +867,21 @@ def main() -> None:
             log_file=watch_logfile,
         )
         pw_console.python_logging.setup_python_logging(
-            last_resort_filename=watch_logfile)
+            last_resort_filename=watch_logfile
+        )
 
-        watch_thread = Thread(target=watch,
-                              args=(path_to_log, event_handler, exclude_list),
-                              daemon=True)
+        watch_thread = Thread(
+            target=watch,
+            args=(path_to_log, event_handler, exclude_list),
+            daemon=True,
+        )
         watch_thread.start()
-        watch_app = WatchApp(event_handler=event_handler,
-                             prefs=prefs,
-                             debug_logging=args.debug_logging,
-                             log_file_name=watch_logfile)
+        watch_app = WatchApp(
+            event_handler=event_handler,
+            prefs=prefs,
+            debug_logging=args.debug_logging,
+            log_file_name=watch_logfile,
+        )
 
         event_handler.watch_app = watch_app
         watch_app.run()

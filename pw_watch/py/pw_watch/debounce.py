@@ -23,6 +23,7 @@ _LOG = logging.getLogger('pw_watch')
 
 class DebouncedFunction(ABC):
     """Function to be run by Debouncer"""
+
     @abstractmethod
     def run(self) -> None:
         """Run the function"""
@@ -50,13 +51,14 @@ class State(enum.Enum):
     IDLE = 1  # ------- Transistions to: DEBOUNCING
     DEBOUNCING = 2  # - Transistions to: RUNNING
     RUNNING = 3  # ---- Transistions to: INTERRUPTED or COOLDOWN
-    INTERRUPTED = 4  #- Transistions to: RERUN
-    COOLDOWN = 5  #---- Transistions to: IDLE
-    RERUN = 6  #------- Transistions to: IDLE (but triggers a press)
+    INTERRUPTED = 4  # - Transistions to: RERUN
+    COOLDOWN = 5  # ---- Transistions to: IDLE
+    RERUN = 6  # ------- Transistions to: IDLE (but triggers a press)
 
 
 class Debouncer:
     """Run an interruptable, cancellable function with debouncing"""
+
     def __init__(self, function: DebouncedFunction) -> None:
         super().__init__()
         self.function = function
@@ -126,8 +128,9 @@ class Debouncer:
         assert self.lock.locked()
         if self.state == State.DEBOUNCING:
             self.debounce_timer.cancel()
-        self.debounce_timer = threading.Timer(self.debounce_seconds,
-                                              self._run_function)
+        self.debounce_timer = threading.Timer(
+            self.debounce_seconds, self._run_function
+        )
         self.debounce_timer.start()
 
     # Called from debounce_timer thread.
@@ -159,8 +162,9 @@ class Debouncer:
 
     def _start_cooldown_timer(self):
         assert self.lock.locked()
-        self.cooldown_timer = threading.Timer(self.cooldown_seconds,
-                                              self._exit_cooldown)
+        self.cooldown_timer = threading.Timer(
+            self.cooldown_seconds, self._exit_cooldown
+        )
         self.cooldown_timer.start()
 
     # Called from cooldown_timer thread.
@@ -168,13 +172,14 @@ class Debouncer:
         try:
             with self.lock:
                 self.cooldown_timer = None
-                rerun = (self.state == State.RERUN)
+                rerun = self.state == State.RERUN
                 self._transition(State.IDLE)
 
                 # If we were in the RERUN state, then re-trigger the event.
                 if rerun:
-                    self._press_unlocked('Rerunning: ' +
-                                         self.rerun_event_description)
+                    self._press_unlocked(
+                        'Rerunning: ' + self.rerun_event_description
+                    )
 
         # Ctrl-C on Unix generates KeyboardInterrupt
         # Ctrl-Z on Windows generates EOFError

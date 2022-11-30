@@ -66,15 +66,18 @@ from pw_build.project_builder_prefs import ProjectBuilderPrefs
 
 class WatchAppPrefs(ProjectBuilderPrefs):
     """Add pw_console specific prefs standard ProjectBuilderPrefs."""
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
         self.registered_commands = DEFAULT_KEY_BINDINGS
         self.registered_commands.update(self.user_key_bindings)
 
-        self.default_config.update({
-            'key_bindings': DEFAULT_KEY_BINDINGS,
-        })
+        self.default_config.update(
+            {
+                'key_bindings': DEFAULT_KEY_BINDINGS,
+            }
+        )
         self.reset_config()
 
     # Required pw_console preferences for key bindings and themes
@@ -101,13 +104,16 @@ class WatchAppPrefs(ProjectBuilderPrefs):
         except KeyError as error:
             raise KeyError('Unbound key function: {}'.format(name)) from error
 
-    def register_named_key_function(self, name: str,
-                                    default_bindings: List[str]) -> None:
+    def register_named_key_function(
+        self, name: str, default_bindings: List[str]
+    ) -> None:
         self.registered_commands[name] = default_bindings
 
-    def register_keybinding(self, name: str, key_bindings: KeyBindings,
-                            **kwargs) -> Callable:
+    def register_keybinding(
+        self, name: str, key_bindings: KeyBindings, **kwargs
+    ) -> Callable:
         """Apply registered keys for the given named function."""
+
         def decorator(handler: Callable) -> Callable:
             "`handler` is a callable or Binding."
             for keys in self.get_function_keys(name):
@@ -160,29 +166,33 @@ _LOG = logging.getLogger('pw_watch')
 
 class WatchWindowManager(WindowManager):
     def update_root_container_body(self):
-        self.application.window_manager_container = (
-            self.create_root_container())
+        self.application.window_manager_container = self.create_root_container()
 
 
 class WatchApp(PluginMixin):
     """Pigweed Watch main window application."""
+
     # pylint: disable=too-many-instance-attributes
 
     NINJA_FAILURE_TEXT = '\033[31mFAILED: '
 
     NINJA_BUILD_STEP = re.compile(
-        r"^\[(?P<step>[0-9]+)/(?P<total_steps>[0-9]+)\] (?P<action>.*)$")
+        r"^\[(?P<step>[0-9]+)/(?P<total_steps>[0-9]+)\] (?P<action>.*)$"
+    )
 
-    def __init__(self,
-                 event_handler,
-                 prefs: WatchAppPrefs,
-                 debug_logging: bool = False,
-                 log_file_name: Optional[str] = None):
+    def __init__(
+        self,
+        event_handler,
+        prefs: WatchAppPrefs,
+        debug_logging: bool = False,
+        log_file_name: Optional[str] = None,
+    ):
 
         self.event_handler = event_handler
 
-        self.external_logfile: Optional[Path] = (Path(log_file_name)
-                                                 if log_file_name else None)
+        self.external_logfile: Optional[Path] = (
+            Path(log_file_name) if log_file_name else None
+        )
         self.color_depth = get_default_colordepth()
 
         # Necessary for some of pw_console's window manager features to work
@@ -205,14 +215,17 @@ class WatchApp(PluginMixin):
         self.log_ui_update_frequency = 0.1  # 10 FPS
         self._last_ui_update_time = time.time()
 
-        self.ninja_log_pane = LogPane(application=self,
-                                      pane_title='Pigweed Watch')
+        self.ninja_log_pane = LogPane(
+            application=self, pane_title='Pigweed Watch'
+        )
         self.ninja_log_pane.add_log_handler(_NINJA_LOG, level_name='INFO')
         self.ninja_log_pane.add_log_handler(
-            _LOG, level_name=('DEBUG' if debug_logging else 'INFO'))
+            _LOG, level_name=('DEBUG' if debug_logging else 'INFO')
+        )
         # Set python log format to just the message itself.
         self.ninja_log_pane.log_view.log_store.formatter = logging.Formatter(
-            '%(message)s')
+            '%(message)s'
+        )
         self.ninja_log_pane.table_view = False
         # Disable line wrapping for improved error visibility.
         if self.ninja_log_pane.wrap_lines:
@@ -232,15 +245,17 @@ class WatchApp(PluginMixin):
         def _next_error(_event):
             self.jump_to_error()
 
-        existing_log_bindings: Optional[KeyBindingsBase] = (
-            self.ninja_log_pane.log_content_control.key_bindings)
+        existing_log_bindings: Optional[
+            KeyBindingsBase
+        ] = self.ninja_log_pane.log_content_control.key_bindings
 
         key_binding_list: List[KeyBindingsBase] = []
         if existing_log_bindings:
             key_binding_list.append(existing_log_bindings)
         key_binding_list.append(next_error_bindings)
         self.ninja_log_pane.log_content_control.key_bindings = (
-            merge_key_bindings(key_binding_list))
+            merge_key_bindings(key_binding_list)
+        )
 
         self.window_manager.add_pane(self.ninja_log_pane)
 
@@ -250,38 +265,46 @@ class WatchApp(PluginMixin):
         self.window_manager.add_pane(self.time_waster)
 
         self.window_manager_container = (
-            self.window_manager.create_root_container())
+            self.window_manager.create_root_container()
+        )
 
         self.status_bar_border_style = 'class:command-runner-border'
 
         self.root_container = FloatContainer(
-            HSplit([
-                pw_console.widgets.border.create_border(
-                    HSplit([
-                        # The top toolbar.
-                        Window(
-                            content=FormattedTextControl(
-                                self.get_statusbar_text),
-                            height=Dimension.exact(1),
-                            style='class:toolbar_inactive',
+            HSplit(
+                [
+                    pw_console.widgets.border.create_border(
+                        HSplit(
+                            [
+                                # The top toolbar.
+                                Window(
+                                    content=FormattedTextControl(
+                                        self.get_statusbar_text
+                                    ),
+                                    height=Dimension.exact(1),
+                                    style='class:toolbar_inactive',
+                                ),
+                                # Result Toolbar.
+                                Window(
+                                    content=FormattedTextControl(
+                                        self.get_resultbar_text
+                                    ),
+                                    height=lambda: len(
+                                        self.event_handler.project_builder
+                                    ),
+                                    style='class:toolbar_inactive',
+                                ),
+                            ]
                         ),
-                        # Result Toolbar.
-                        Window(
-                            content=FormattedTextControl(
-                                self.get_resultbar_text),
-                            height=lambda: len(self.event_handler.
-                                               project_builder),
-                            style='class:toolbar_inactive',
-                        ),
-                    ]),
-                    border_style=lambda: self.status_bar_border_style,
-                    base_style='class:toolbar_inactive',
-                    left_margin_columns=1,
-                    right_margin_columns=1,
-                ),
-                # The main content.
-                DynamicContainer(lambda: self.window_manager_container),
-            ]),
+                        border_style=lambda: self.status_bar_border_style,
+                        base_style='class:toolbar_inactive',
+                        left_margin_columns=1,
+                        right_margin_columns=1,
+                    ),
+                    # The main content.
+                    DynamicContainer(lambda: self.window_manager_container),
+                ]
+            ),
             floats=[
                 Float(
                     content=self.quit_dialog,
@@ -318,19 +341,25 @@ class WatchApp(PluginMixin):
             """Quit with confirmation dialog."""
             self.quit_dialog.open_dialog()
 
-        self.key_bindings = merge_key_bindings([
-            self.window_manager.key_bindings,
-            key_bindings,
-        ])
+        self.key_bindings = merge_key_bindings(
+            [
+                self.window_manager.key_bindings,
+                key_bindings,
+            ]
+        )
 
         self.current_theme = pw_console.style.generate_styles(
-            self.prefs.ui_theme)
-        self.style_overrides = Style.from_dict({
-            # 'search': 'bg:ansired ansiblack',
-        })
+            self.prefs.ui_theme
+        )
+        self.style_overrides = Style.from_dict(
+            {
+                # 'search': 'bg:ansired ansiblack',
+            }
+        )
 
-        self.layout = Layout(self.root_container,
-                             focused_element=self.ninja_log_pane)
+        self.layout = Layout(
+            self.root_container, focused_element=self.ninja_log_pane
+        )
 
         self.application: Application = Application(
             layout=self.layout,
@@ -338,10 +367,14 @@ class WatchApp(PluginMixin):
             mouse_support=True,
             color_depth=self.color_depth,
             clipboard=PyperclipClipboard(),
-            style=DynamicStyle(lambda: merge_styles([
-                self.current_theme,
-                self.style_overrides,
-            ])),
+            style=DynamicStyle(
+                lambda: merge_styles(
+                    [
+                        self.current_theme,
+                        self.style_overrides,
+                    ]
+                )
+            ),
             full_screen=True,
         )
 
@@ -364,13 +397,15 @@ class WatchApp(PluginMixin):
     def jump_to_error(self, backwards: bool = False) -> None:
         if not self.ninja_log_pane.log_view.search_text:
             self.ninja_log_pane.log_view.set_search_regex(
-                '^FAILED: ', False, None)
+                '^FAILED: ', False, None
+            )
         if backwards:
             self.ninja_log_pane.log_view.search_backwards()
         else:
             self.ninja_log_pane.log_view.search_forwards()
         self.ninja_log_pane.log_view.log_screen.reset_logs(
-            log_index=self.ninja_log_pane.log_view.log_index)
+            log_index=self.ninja_log_pane.log_view.log_index
+        )
 
         self.ninja_log_pane.log_view.move_selected_line_to_top()
 
@@ -448,7 +483,8 @@ class WatchApp(PluginMixin):
             fragments.append(separator)
             fragments.append(('', 'Errors:'))
             fragments.append(
-                ('ansired', str(self.event_handler.current_build_errors)))
+                ('ansired', str(self.event_handler.current_build_errors))
+            )
             self.status_bar_border_style = 'class:theme-fg-red'
 
         if is_building:
@@ -496,6 +532,7 @@ class WatchApp(PluginMixin):
 
     def input_box_not_focused(self) -> Condition:
         """Condition checking the focused control is not a text input field."""
+
         @Condition
         def _test() -> bool:
             """Check if the currently focused control is an input buffer.
@@ -505,7 +542,8 @@ class WatchApp(PluginMixin):
                     box. For example if the user presses enter when typing in
                     the search box, return False.
             """
-            return not isinstance(self.application.layout.current_control,
-                                  BufferControl)
+            return not isinstance(
+                self.application.layout.current_control, BufferControl
+            )
 
         return _test

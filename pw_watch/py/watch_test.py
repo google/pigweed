@@ -23,6 +23,7 @@ from pw_watch import watch
 
 class TestMinimalWatchDirectories(unittest.TestCase):
     """Tests for pw_watch.watch.minimal_watch_directories."""
+
     def setUp(self):
         self._tempdir = tempfile.TemporaryDirectory()
         self._root = Path(self._tempdir.name)
@@ -38,10 +39,12 @@ class TestMinimalWatchDirectories(unittest.TestCase):
         subdirectories_to_watch = []
         ans_subdirectories_to_watch = [(self._root, False)]
         subdirectories_to_watch = watch.minimal_watch_directories(
-            self._root, 'f1')
+            self._root, 'f1'
+        )
 
-        self.assertEqual(set(subdirectories_to_watch),
-                         set(ans_subdirectories_to_watch))
+        self.assertEqual(
+            set(subdirectories_to_watch), set(ans_subdirectories_to_watch)
+        )
 
     def test_non_exist_directories_to_exclude(self):
         subdirectories_to_watch = []
@@ -53,10 +56,12 @@ class TestMinimalWatchDirectories(unittest.TestCase):
             (self._root, False),
         ]
         subdirectories_to_watch = watch.minimal_watch_directories(
-            self._root, exclude_list)
+            self._root, exclude_list
+        )
 
-        self.assertEqual(set(subdirectories_to_watch),
-                         set(ans_subdirectories_to_watch))
+        self.assertEqual(
+            set(subdirectories_to_watch), set(ans_subdirectories_to_watch)
+        )
 
     def test_one_layer_directories(self):
         subdirectories_to_watch = []
@@ -71,10 +76,12 @@ class TestMinimalWatchDirectories(unittest.TestCase):
             (self._root, False),
         ]
         subdirectories_to_watch = watch.minimal_watch_directories(
-            self._root, exclude_list)
+            self._root, exclude_list
+        )
 
-        self.assertEqual(set(subdirectories_to_watch),
-                         set(ans_subdirectories_to_watch))
+        self.assertEqual(
+            set(subdirectories_to_watch), set(ans_subdirectories_to_watch)
+        )
 
     def test_two_layers_direcories(self):
         subdirectories_to_watch = []
@@ -91,10 +98,12 @@ class TestMinimalWatchDirectories(unittest.TestCase):
             (self._root / 'f1', False),
         ]
         subdirectories_to_watch = watch.minimal_watch_directories(
-            self._root, exclude_list)
+            self._root, exclude_list
+        )
 
-        self.assertEqual(set(subdirectories_to_watch),
-                         set(ans_subdirectories_to_watch))
+        self.assertEqual(
+            set(subdirectories_to_watch), set(ans_subdirectories_to_watch)
+        )
 
     def test_empty_exclude_list(self):
         subdirectories_to_watch = []
@@ -110,10 +119,12 @@ class TestMinimalWatchDirectories(unittest.TestCase):
             (self._root, False),
         ]
         subdirectories_to_watch = watch.minimal_watch_directories(
-            self._root, exclude_list)
+            self._root, exclude_list
+        )
 
-        self.assertEqual(set(subdirectories_to_watch),
-                         set(ans_subdirectories_to_watch))
+        self.assertEqual(
+            set(subdirectories_to_watch), set(ans_subdirectories_to_watch)
+        )
 
     def test_multiple_directories_in_exclude_list(self):
         """test case for multiple directories to exclude"""
@@ -140,10 +151,12 @@ class TestMinimalWatchDirectories(unittest.TestCase):
             (self._root / 'f3', False),
         ]
         subdirectories_to_watch = watch.minimal_watch_directories(
-            self._root, exclude_list)
+            self._root, exclude_list
+        )
 
-        self.assertEqual(set(subdirectories_to_watch),
-                         set(ans_subdirectories_to_watch))
+        self.assertEqual(
+            set(subdirectories_to_watch), set(ans_subdirectories_to_watch)
+        )
 
     def test_nested_sibling_exclusion(self):
         subdirectories_to_watch = []
@@ -167,10 +180,12 @@ class TestMinimalWatchDirectories(unittest.TestCase):
             (self._root / 'f1/f1/f1/f1', False),
         ]
         subdirectories_to_watch = watch.minimal_watch_directories(
-            self._root, exclude_list)
+            self._root, exclude_list
+        )
 
-        self.assertEqual(set(subdirectories_to_watch),
-                         set(ans_subdirectories_to_watch))
+        self.assertEqual(
+            set(subdirectories_to_watch), set(ans_subdirectories_to_watch)
+        )
 
 
 if __name__ == '__main__':
