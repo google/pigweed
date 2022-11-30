@@ -21,6 +21,7 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class Symbol:
     """Symbols produced by a symbolizer."""
+
     address: int
     name: str = ''
     file: str = ''
@@ -51,13 +52,14 @@ class Symbol:
 
 class Symbolizer(abc.ABC):
     """An interface for symbolizing addresses."""
+
     @abc.abstractmethod
     def symbolize(self, address: int) -> Symbol:
         """Symbolizes an address using a loaded binary or symbol database."""
 
-    def dump_stack_trace(self,
-                         addresses,
-                         most_recent_first: bool = True) -> str:
+    def dump_stack_trace(
+        self, addresses, most_recent_first: bool = True
+    ) -> str:
         """Symbolizes and dumps a list of addresses as a stack trace.
 
         most_recent_first controls the hint provided at the top of the stack
@@ -87,6 +89,7 @@ class Symbolizer(abc.ABC):
 
 class FakeSymbolizer(Symbolizer):
     """A fake symbolizer that only knows a fixed set of symbols."""
+
     def __init__(self, known_symbols: Optional[Iterable[Symbol]] = None):
         if known_symbols is not None:
             self._db = {sym.address: sym for sym in known_symbols}

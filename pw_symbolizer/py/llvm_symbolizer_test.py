@@ -28,6 +28,7 @@ _COMPILER = 'clang++'
 
 class TestSymbolizer(unittest.TestCase):
     """Unit tests for binary symbolization."""
+
     def _test_symbolization_results(self, expected_symbols, symbolizer):
         for expected_symbol in expected_symbols:
             result = symbolizer.symbolize(expected_symbol['Address'])
@@ -60,15 +61,17 @@ class TestSymbolizer(unittest.TestCase):
                 exe_file,
             ]
 
-            process = subprocess.run(cmd,
-                                     stdout=subprocess.PIPE,
-                                     stderr=subprocess.STDOUT,
-                                     cwd=_MODULE_PY_DIR)
+            process = subprocess.run(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                cwd=_MODULE_PY_DIR,
+            )
             self.assertEqual(process.returncode, 0)
 
-            process = subprocess.run([exe_file],
-                                     stdout=subprocess.PIPE,
-                                     stderr=subprocess.STDOUT)
+            process = subprocess.run(
+                [exe_file], stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            )
             self.assertEqual(process.returncode, 0)
 
             expected_symbols = [
@@ -81,8 +84,9 @@ class TestSymbolizer(unittest.TestCase):
 
             # Test backwards compatibility with older versions of
             # llvm-symbolizer.
-            symbolizer = pw_symbolizer.LlvmSymbolizer(exe_file,
-                                                      force_legacy=True)
+            symbolizer = pw_symbolizer.LlvmSymbolizer(
+                exe_file, force_legacy=True
+            )
             self._test_symbolization_results(expected_symbols, symbolizer)
 
 
