@@ -41,37 +41,45 @@ def parse_args() -> argparse.Namespace:
     """Parses command-line arguments."""
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--sphinx-build-dir',
-                        required=True,
-                        help='Directory in which to build docs')
-    parser.add_argument('--conf',
-                        required=True,
-                        help='Path to conf.py file for Sphinx')
-    parser.add_argument('--gn-root',
-                        required=True,
-                        help='Root of the GN build tree')
-    parser.add_argument('--gn-gen-root',
-                        required=True,
-                        help='Root of the GN gen tree')
-    parser.add_argument('sources',
-                        nargs='+',
-                        help='Paths to the root level rst source files')
-    parser.add_argument('--out-dir',
-                        required=True,
-                        help='Output directory for rendered HTML docs')
-    parser.add_argument('--metadata',
-                        required=True,
-                        type=argparse.FileType('r'),
-                        help='Metadata JSON file')
-    parser.add_argument('--google-analytics-id',
-                        const=None,
-                        help='Enables Google Analytics with the provided ID')
+    parser.add_argument(
+        '--sphinx-build-dir',
+        required=True,
+        help='Directory in which to build docs',
+    )
+    parser.add_argument(
+        '--conf', required=True, help='Path to conf.py file for Sphinx'
+    )
+    parser.add_argument(
+        '--gn-root', required=True, help='Root of the GN build tree'
+    )
+    parser.add_argument(
+        '--gn-gen-root', required=True, help='Root of the GN gen tree'
+    )
+    parser.add_argument(
+        'sources', nargs='+', help='Paths to the root level rst source files'
+    )
+    parser.add_argument(
+        '--out-dir',
+        required=True,
+        help='Output directory for rendered HTML docs',
+    )
+    parser.add_argument(
+        '--metadata',
+        required=True,
+        type=argparse.FileType('r'),
+        help='Metadata JSON file',
+    )
+    parser.add_argument(
+        '--google-analytics-id',
+        const=None,
+        help='Enables Google Analytics with the provided ID',
+    )
     return parser.parse_args()
 
 
-def build_docs(src_dir: str,
-               dst_dir: str,
-               google_analytics_id: Optional[str] = None) -> int:
+def build_docs(
+    src_dir: str, dst_dir: str, google_analytics_id: Optional[str] = None
+) -> int:
     """Runs Sphinx to render HTML documentation from a doc tree."""
 
     # TODO(frolv): Specify the Sphinx script from a prebuilts path instead of
@@ -88,6 +96,7 @@ def build_docs(src_dir: str,
 
 def copy_doc_tree(args: argparse.Namespace) -> None:
     """Copies doc source and input files into a build tree."""
+
     def build_path(path):
         """Converts a source path to a filename in the build directory."""
         if path.startswith(args.gn_root):
@@ -102,8 +111,9 @@ def copy_doc_tree(args: argparse.Namespace) -> None:
 
     os.makedirs(args.sphinx_build_dir)
     for source_path in args.sources:
-        os.link(source_path,
-                f'{args.sphinx_build_dir}/{Path(source_path).name}')
+        os.link(
+            source_path, f'{args.sphinx_build_dir}/{Path(source_path).name}'
+        )
     os.link(args.conf, f'{args.sphinx_build_dir}/conf.py')
 
     # Map of directory path to list of source and destination file paths.
@@ -136,8 +146,9 @@ def main() -> int:
     # Flush all script output before running Sphinx.
     print('-' * 80, flush=True)
 
-    return build_docs(args.sphinx_build_dir, args.out_dir,
-                      args.google_analytics_id)
+    return build_docs(
+        args.sphinx_build_dir, args.out_dir, args.google_analytics_id
+    )
 
 
 if __name__ == '__main__':

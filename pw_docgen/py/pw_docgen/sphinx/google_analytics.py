@@ -14,7 +14,9 @@
 """A Sphinx extension to add a Google Analytics tag to generated docs"""
 
 
-def add_google_analytics_tag(app, pagename, templatename, context, doctree):  # pylint: disable=unused-argument
+def add_google_analytics_tag(
+    app, pagename, templatename, context, doctree
+):  # pylint: disable=unused-argument
     if app.config.google_analytics_id is None:
         return
 
@@ -22,15 +24,16 @@ def add_google_analytics_tag(app, pagename, templatename, context, doctree):  # 
         context['metatags'] = ''
 
     # pylint: disable=line-too-long
-    context['metatags'] += (
-        f"""<script async src="https://www.googletagmanager.com/gtag/js?id={app.config.google_analytics_id}"></script>
+    context[
+        'metatags'
+    ] += f"""<script async src="https://www.googletagmanager.com/gtag/js?id={app.config.google_analytics_id}"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){{dataLayer.push(arguments);}}
   gtag('js', new Date());
 
   gtag('config', '{app.config.google_analytics_id}');
-</script>""")
+</script>"""
 
 
 def setup(app):
