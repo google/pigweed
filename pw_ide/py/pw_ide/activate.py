@@ -69,15 +69,18 @@ from typing import Dict, Optional
 # This expects this file to be in the Python module. If it ever moves
 # (e.g. to the root of the repository), this will need to change.
 _PW_PROJECT_PATH = Path(
-    os.environ.get('PW_PROJECT_ROOT',
-                   os.environ.get('PW_ROOT',
-                                  Path(__file__).parents[3])))
+    os.environ.get(
+        'PW_PROJECT_ROOT', os.environ.get('PW_ROOT', Path(__file__).parents[3])
+    )
+)
 
 
 def assumed_environment_root() -> Path:
     actual_environment_root = os.environ.get('_PW_ACTUAL_ENVIRONMENT_ROOT')
-    if actual_environment_root is not None and (
-            root_path := Path(actual_environment_root)).exists():
+    if (
+        actual_environment_root is not None
+        and (root_path := Path(actual_environment_root)).exists()
+    ):
         return root_path.absolute()
 
     default_environment = _PW_PROJECT_PATH / 'environment'
@@ -89,14 +92,16 @@ def assumed_environment_root() -> Path:
         return default_dot_environment.absolute()
 
     raise RuntimeError(
-        'This must be run from a bootstrapped Pigweed directory!')
+        'This must be run from a bootstrapped Pigweed directory!'
+    )
 
 
 _DEFAULT_CONFIG_FILE_PATH = assumed_environment_root() / 'actions.json'
 
 
-def _sanitize_path(path: str, project_root_prefix: str,
-                   user_home_prefix: str) -> str:
+def _sanitize_path(
+    path: str, project_root_prefix: str, user_home_prefix: str
+) -> str:
     """Given a path, return a sanitized path.
 
     By default, environment variable paths are usually absolute. If we want
@@ -133,12 +138,14 @@ def _sanitize_path(path: str, project_root_prefix: str,
             return False
 
     if is_relative_to(resolved_path, project_root):
-        return (f'{project_root_prefix}/' +
-                str(resolved_path.relative_to(project_root)))
+        return f'{project_root_prefix}/' + str(
+            resolved_path.relative_to(project_root)
+        )
 
     if is_relative_to(resolved_path, user_home):
-        return (f'{user_home_prefix}/' +
-                str(resolved_path.relative_to(user_home)))
+        return f'{user_home_prefix}/' + str(
+            resolved_path.relative_to(user_home)
+        )
 
     # Path is not in the project root or user home, so just return it as is.
     return path
@@ -152,15 +159,18 @@ class ShellModifier(ABC):
     as a dictionary during instantiation and modify it and/or modify shell state
     through other side effects.
     """
+
     separator = ':'
     comment = '# '
 
-    def __init__(self,
-                 env: Optional[Dict[str, str]] = None,
-                 env_only: bool = False,
-                 path_var: str = '$PATH',
-                 project_root: str = '.',
-                 user_home: str = '~'):
+    def __init__(
+        self,
+        env: Optional[Dict[str, str]] = None,
+        env_only: bool = False,
+        path_var: str = '$PATH',
+        project_root: str = '.',
+        user_home: str = '~',
+    ):
         # This will contain only the modifications to the environment, with
         # no elements of the existing environment aside from variables included
         # here. In that sense, it's like a diff against the existing
@@ -195,9 +205,11 @@ class ShellModifier(ABC):
         if not self.env_only:
             self.side_effects += f'{effect}\n'
 
-    def modify_env(self,
-                   config_file_path: Path = _DEFAULT_CONFIG_FILE_PATH,
-                   sanitize: bool = False) -> 'ShellModifier':
+    def modify_env(
+        self,
+        config_file_path: Path = _DEFAULT_CONFIG_FILE_PATH,
+        sanitize: bool = False,
+    ) -> 'ShellModifier':
         """Modify the current shell state per the actions.json file provided."""
         json_file_options = {}
 
@@ -210,13 +222,13 @@ class ShellModifier(ABC):
         # Set env vars
         for var_name, value in json_file_options.get('set', dict()).items():
             if value is not None:
-                value = _sanitize_path(value, root,
-                                       home) if sanitize else value
+                value = _sanitize_path(value, root, home) if sanitize else value
                 self.set_variable(var_name, value)
 
         # Prepend & append env vars
-        for var_name, mode_changes in json_file_options.get('modify',
-                                                            dict()).items():
+        for var_name, mode_changes in json_file_options.get(
+            'modify', dict()
+        ).items():
             for mode_name, values in mode_changes.items():
                 if mode_name in ['prepend', 'append']:
                     modify_variable = self.prepend_variable
@@ -225,8 +237,11 @@ class ShellModifier(ABC):
                         modify_variable = self.append_variable
 
                     for value in values:
-                        value = _sanitize_path(value, root,
-                                               home) if sanitize else value
+                        value = (
+                            _sanitize_path(value, root, home)
+                            if sanitize
+                            else value
+                        )
                         modify_variable(var_name, value)
 
         return self
@@ -246,6 +261,7 @@ class ShellModifier(ABC):
 
 class BashShellModifier(ShellModifier):
     """Shell modifier for bash."""
+
     def set_variable(self, var_name: str, value: str):
         self.env[var_name] = value
         self.env_mod[var_name] = value
@@ -255,18 +271,22 @@ class BashShellModifier(ShellModifier):
     def prepend_variable(self, var_name: str, value: str) -> None:
         self.env[var_name] = f'{value}{self.separator}{self.env[var_name]}'
         self.env_mod[
-            var_name] = f'{value}{self.separator}{self.env_mod[var_name]}'
+            var_name
+        ] = f'{value}{self.separator}{self.env_mod[var_name]}'
         quoted_value = shlex.quote(value)
         self.do_effect(
-            f'export {var_name}={quoted_value}{self.separator}${var_name}')
+            f'export {var_name}={quoted_value}{self.separator}${var_name}'
+        )
 
     def append_variable(self, var_name: str, value: str) -> None:
         self.env[var_name] = f'{self.env[var_name]}{self.separator}{value}'
         self.env_mod[
-            var_name] = f'{self.env_mod[var_name]}{self.separator}{value}'
+            var_name
+        ] = f'{self.env_mod[var_name]}{self.separator}{value}'
         quoted_value = shlex.quote(value)
         self.do_effect(
-            f'export {var_name}=${var_name}{self.separator}{quoted_value}')
+            f'export {var_name}=${var_name}{self.separator}{quoted_value}'
+        )
 
 
 def _build_argument_parser() -> argparse.ArgumentParser:
@@ -281,8 +301,9 @@ def _build_argument_parser() -> argparse.ArgumentParser:
     # Substitute in the actual environment path in the help text, if we can
     # find it. If not, leave the placeholder text.
     if env_root is not None:
-        doc = doc.replace('{environment}',
-                          str(env_root.relative_to(Path.cwd())))
+        doc = doc.replace(
+            '{environment}', str(env_root.relative_to(Path.cwd()))
+        )
 
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -297,26 +318,30 @@ def _build_argument_parser() -> argparse.ArgumentParser:
         help='Path to actions.json config file, which defines '
         'the modifications to the shell environment '
         'needed to activate Pigweed. '
-        f'Default: {_DEFAULT_CONFIG_FILE_PATH.relative_to(Path.cwd())}')
+        f'Default: {_DEFAULT_CONFIG_FILE_PATH.relative_to(Path.cwd())}',
+    )
 
     default_shell = Path(os.environ['SHELL']).name
-    parser.add_argument('-s',
-                        '--shell-mode',
-                        default=default_shell,
-                        help='Which shell is being used. '
-                        f'Default: {default_shell}')
+    parser.add_argument(
+        '-s',
+        '--shell-mode',
+        default=default_shell,
+        help='Which shell is being used. ' f'Default: {default_shell}',
+    )
 
-    parser.add_argument('-o',
-                        '--out',
-                        action='store_true',
-                        help='Write only the modifications to the environment '
-                        'out to JSON.')
+    parser.add_argument(
+        '-o',
+        '--out',
+        action='store_true',
+        help='Write only the modifications to the environment ' 'out to JSON.',
+    )
 
-    parser.add_argument('-O',
-                        '--out-all',
-                        action='store_true',
-                        help='Write the complete modified environment to '
-                        'JSON.')
+    parser.add_argument(
+        '-O',
+        '--out-all',
+        action='store_true',
+        help='Write the complete modified environment to ' 'JSON.',
+    )
 
     parser.add_argument(
         '-n',
@@ -324,29 +349,35 @@ def _build_argument_parser() -> argparse.ArgumentParser:
         action='store_true',
         help='Sanitize paths that are relative to the repo '
         'root or user home directory so that they are portable '
-        'to other workstations.')
+        'to other workstations.',
+    )
 
     parser.add_argument(
         '--path-var',
         default='$PATH',
-        help='The string to substitute for the existing $PATH. Default: $PATH')
+        help='The string to substitute for the existing $PATH. Default: $PATH',
+    )
 
     parser.add_argument(
         '--project-root',
         default='.',
         help='The string to substitute for the project root when sanitizing '
-        'paths. Default: .')
+        'paths. Default: .',
+    )
 
     parser.add_argument(
         '--user-home',
         default='~',
         help='The string to substitute for the user\'s home when sanitizing '
-        'paths. Default: ~')
+        'paths. Default: ~',
+    )
 
-    parser.add_argument('-x',
-                        '--exec',
-                        help='A command to execute in the activated shell.',
-                        metavar='COMMAND')
+    parser.add_argument(
+        '-x',
+        '--exec',
+        help='A command to execute in the activated shell.',
+        metavar='COMMAND',
+    )
 
     return parser
 
@@ -359,8 +390,9 @@ def main() -> int:
 
     if not config_file_path.exists():
         sys.stderr.write(f'File not found! {config_file_path}')
-        sys.stderr.write('This must be run from a bootstrapped Pigweed '
-                         'project directory.')
+        sys.stderr.write(
+            'This must be run from a bootstrapped Pigweed ' 'project directory.'
+        )
         sys.exit(1)
 
     # If we're executing a command in a subprocess, don't modify the current
@@ -372,16 +404,19 @@ def main() -> int:
 
     # TODO(chadnorvell): if args.shell_mode == 'zsh', 'ksh', 'fish'...
     try:
-        modified_env = shell_modifier(env=env,
-                                      env_only=env_only,
-                                      path_var=args.path_var,
-                                      project_root=args.project_root,
-                                      user_home=args.user_home).modify_env(
-                                          config_file_path, args.sanitize)
+        modified_env = shell_modifier(
+            env=env,
+            env_only=env_only,
+            path_var=args.path_var,
+            project_root=args.project_root,
+            user_home=args.user_home,
+        ).modify_env(config_file_path, args.sanitize)
     except (FileNotFoundError, json.JSONDecodeError):
-        sys.stderr.write('Unable to read file: {}\n'
-                         'Please run this in bash or zsh:\n'
-                         '  . ./bootstrap.sh\n'.format(str(config_file_path)))
+        sys.stderr.write(
+            'Unable to read file: {}\n'
+            'Please run this in bash or zsh:\n'
+            '  . ./bootstrap.sh\n'.format(str(config_file_path))
+        )
 
         sys.exit(1)
 
@@ -395,8 +430,9 @@ def main() -> int:
 
     if args.exec is not None:
         # We're executing a command in a subprocess with the modified env.
-        return subprocess.run(args.exec, env=modified_env.env,
-                              shell=True).returncode
+        return subprocess.run(
+            args.exec, env=modified_env.env, shell=True
+        ).returncode
 
     # If we got here, we're trying to modify the current shell's env.
     print(modified_env.side_effects)
@@ -406,14 +442,17 @@ def main() -> int:
     python_path = Path(sys.executable).relative_to(os.getcwd())
     c = shell_modifier.comment  # pylint: disable=invalid-name
     print(
-        cleandoc(f"""
+        cleandoc(
+            f"""
         {c}
         {c}Can you see these commands? If so, you probably wanted to
         {c}source this script instead of running it. Try this instead:
         {c}
         {c}    . <({str(python_path)} {' '.join(sys.argv)})
         {c}
-        {c}Run this script with `-h` for more help."""))
+        {c}Run this script with `-h` for more help."""
+        )
+    )
     return 0
 
 

@@ -27,20 +27,24 @@ _LOG = logging.getLogger(__package__)
 
 class TestMakeWorkingDir(PwIdeTestCase):
     """Tests _make_working_dir"""
+
     def test_does_not_exist_creates_dir(self):
         settings = self.make_ide_settings(working_dir=PW_IDE_DIR_NAME)
         self.assertFalse(settings.working_dir.exists())
-        _make_working_dir(reporter=LoggingStatusReporter(_LOG),
-                          settings=settings)
+        _make_working_dir(
+            reporter=LoggingStatusReporter(_LOG), settings=settings
+        )
         self.assertTrue(settings.working_dir.exists())
 
     def test_does_exist_is_idempotent(self):
         settings = self.make_ide_settings(working_dir=PW_IDE_DIR_NAME)
-        _make_working_dir(reporter=LoggingStatusReporter(_LOG),
-                          settings=settings)
+        _make_working_dir(
+            reporter=LoggingStatusReporter(_LOG), settings=settings
+        )
         modified_when_1 = os.path.getmtime(settings.working_dir)
-        _make_working_dir(reporter=LoggingStatusReporter(_LOG),
-                          settings=settings)
+        _make_working_dir(
+            reporter=LoggingStatusReporter(_LOG), settings=settings
+        )
         modified_when_2 = os.path.getmtime(settings.working_dir)
         self.assertEqual(modified_when_1, modified_when_2)
 

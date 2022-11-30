@@ -23,19 +23,30 @@ from typing import cast, Callable, List, Optional, Set, Tuple, Union
 
 from pw_cli.color import colors
 
-from pw_ide.cpp import (ClangdSettings, compdb_generate_file_path,
-                        CppCompilationDatabase, CppCompilationDatabasesMap,
-                        CppIdeFeaturesState, delete_compilation_databases,
-                        delete_compilation_database_caches,
-                        MAX_COMMANDS_TARGET_FILENAME)
+from pw_ide.cpp import (
+    ClangdSettings,
+    compdb_generate_file_path,
+    CppCompilationDatabase,
+    CppCompilationDatabasesMap,
+    CppIdeFeaturesState,
+    delete_compilation_databases,
+    delete_compilation_database_caches,
+    MAX_COMMANDS_TARGET_FILENAME,
+)
 
-from pw_ide.exceptions import (BadCompDbException, InvalidTargetException,
-                               MissingCompDbException)
+from pw_ide.exceptions import (
+    BadCompDbException,
+    InvalidTargetException,
+    MissingCompDbException,
+)
 
 from pw_ide.python import PythonPaths
 
-from pw_ide.settings import (PigweedIdeSettings, SupportedEditor,
-                             SupportedEditorName)
+from pw_ide.settings import (
+    PigweedIdeSettings,
+    SupportedEditor,
+    SupportedEditorName,
+)
 
 from pw_ide import vscode
 from pw_ide.vscode import VscSettingsManager, VscSettingsType
@@ -90,9 +101,15 @@ class StatusReporter:
     Python logging, but this shouldn't be used for performance-critical logging
     situations anyway.
     """
+
     def _report(  # pylint: disable=no-self-use
-            self, msg: Union[str, List[str]], color: Callable[[str], str],
-            char: str, func: Callable, silent: bool) -> None:
+        self,
+        msg: Union[str, List[str]],
+        color: Callable[[str], str],
+        char: str,
+        func: Callable,
+        silent: bool,
+    ) -> None:
         """Actually print/log/whatever the status lines."""
         first_line, rest_lines = _split_lines(msg)
         first_line = color(f'{char} {first_line}')
@@ -105,12 +122,14 @@ class StatusReporter:
 
     def demo(self):
         """Run this to see what your status reporter output looks like."""
-        self.info([
-            'FYI, here\'s some information:',
-            'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-            'Donec condimentum metus molestie metus maximus ultricies '
-            'ac id dolor.'
-        ])
+        self.info(
+            [
+                'FYI, here\'s some information:',
+                'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+                'Donec condimentum metus molestie metus maximus ultricies '
+                'ac id dolor.',
+            ]
+        )
         self.ok('This is okay, no changes needed.')
         self.new('We changed some things successfully!')
         self.wrn('Uh oh, you might want to be aware of this.')
@@ -134,12 +153,19 @@ class StatusReporter:
 
 class LoggingStatusReporter(StatusReporter):
     """Print status lines to logs instead of to the terminal."""
+
     def __init__(self, logger: logging.Logger) -> None:
         self.logger = logger
         super().__init__()
 
-    def _report(self, msg: Union[str, List[str]], color: Callable[[str], str],
-                char: str, func: Callable, silent: bool) -> None:
+    def _report(
+        self,
+        msg: Union[str, List[str]],
+        color: Callable[[str], str],
+        char: str,
+        func: Callable,
+        silent: bool,
+    ) -> None:
         first_line, rest_lines = _split_lines(msg)
 
         if not silent:
@@ -162,17 +188,21 @@ class LoggingStatusReporter(StatusReporter):
         self._report(msg, _no_color, '', self.logger.error, silent)
 
 
-def _make_working_dir(reporter: StatusReporter,
-                      settings: PigweedIdeSettings,
-                      quiet: bool = False) -> None:
+def _make_working_dir(
+    reporter: StatusReporter, settings: PigweedIdeSettings, quiet: bool = False
+) -> None:
     if not settings.working_dir.exists():
         settings.working_dir.mkdir()
-        reporter.new('Initialized the Pigweed IDE working directory at '
-                     f'{settings.working_dir}')
+        reporter.new(
+            'Initialized the Pigweed IDE working directory at '
+            f'{settings.working_dir}'
+        )
     else:
         if not quiet:
-            reporter.ok('Pigweed IDE working directory already present at '
-                        f'{settings.working_dir}')
+            reporter.ok(
+                'Pigweed IDE working directory already present at '
+                f'{settings.working_dir}'
+            )
 
 
 def _report_unrecognized_editor(reporter: StatusReporter, editor: str) -> None:
@@ -189,7 +219,7 @@ def cmd_clear(
     editor_backups: Optional[SupportedEditorName],
     silent: bool = False,
     reporter: StatusReporter = StatusReporter(),
-    pw_ide_settings: PigweedIdeSettings = PigweedIdeSettings()
+    pw_ide_settings: PigweedIdeSettings = PigweedIdeSettings(),
 ) -> None:
     """Clear components of the IDE features.
 
@@ -216,8 +246,9 @@ def cmd_clear(
             vsc_settings_manager = VscSettingsManager(pw_ide_settings)
             vsc_settings_manager.delete_all_active_settings()
 
-        reporter.wrn(f'Cleared active settings for {validated_editor.value}',
-                     silent)
+        reporter.wrn(
+            f'Cleared active settings for {validated_editor.value}', silent
+        )
 
     if editor_backups is not None:
         try:
@@ -230,14 +261,16 @@ def cmd_clear(
             vsc_settings_manager = VscSettingsManager(pw_ide_settings)
             vsc_settings_manager.delete_all_backups()
 
-        reporter.wrn(f'Cleared backup settings for {validated_editor.value}',
-                     silent=silent)
+        reporter.wrn(
+            f'Cleared backup settings for {validated_editor.value}',
+            silent=silent,
+        )
 
 
 def cmd_reset(
     hard: bool = False,
     reporter: StatusReporter = StatusReporter(),
-    pw_ide_settings: PigweedIdeSettings = PigweedIdeSettings()
+    pw_ide_settings: PigweedIdeSettings = PigweedIdeSettings(),
 ) -> None:
     """Reset IDE settings.
 
@@ -269,9 +302,10 @@ def cmd_reset(
     reporter.wrn('Pigweed IDE settings were reset!')
 
 
-def cmd_setup(reporter: StatusReporter = StatusReporter(),
-              pw_ide_settings: PigweedIdeSettings = PigweedIdeSettings()
-              ) -> None:
+def cmd_setup(
+    reporter: StatusReporter = StatusReporter(),
+    pw_ide_settings: PigweedIdeSettings = PigweedIdeSettings(),
+) -> None:
     """Set up or update your Pigweed project IDE features.
 
     This will automatically set up your development environment with all the
@@ -299,7 +333,7 @@ def cmd_vscode(
     exclude: Optional[List[VscSettingsType]] = None,
     no_override: bool = False,
     reporter: StatusReporter = StatusReporter(),
-    pw_ide_settings: PigweedIdeSettings = PigweedIdeSettings()
+    pw_ide_settings: PigweedIdeSettings = PigweedIdeSettings(),
 ) -> None:
     """Configure support for Visual Studio Code.
 
@@ -375,45 +409,49 @@ def cmd_vscode(
     else:
         exclude_set = set(exclude)
 
-    types_to_update = cast(List[VscSettingsType],
-                           tuple(include_set - exclude_set))
+    types_to_update = cast(
+        List[VscSettingsType], tuple(include_set - exclude_set)
+    )
 
     for settings_type in types_to_update:
-        active_settings_existed = vsc_manager.active(
-            settings_type).is_present()
+        active_settings_existed = vsc_manager.active(settings_type).is_present()
 
         if no_override and active_settings_existed:
-            reporter.ok(f'Visual Studio Code active {settings_type.value} '
-                        'already present; will not overwrite')
+            reporter.ok(
+                f'Visual Studio Code active {settings_type.value} '
+                'already present; will not overwrite'
+            )
 
         else:
             with vsc_manager.active(settings_type).modify(
-                    reinit=True) as active_settings:
+                reinit=True
+            ) as active_settings:
                 vsc_manager.default(settings_type).sync_to(active_settings)
                 vsc_manager.project(settings_type).sync_to(active_settings)
                 vsc_manager.user(settings_type).sync_to(active_settings)
 
             verb = 'Updated' if active_settings_existed else 'Created'
-            reporter.new(f'{verb} Visual Studio Code active '
-                         f'{settings_type.value}')
+            reporter.new(
+                f'{verb} Visual Studio Code active ' f'{settings_type.value}'
+            )
 
 
 # TODO(chadnorvell): Break up this function.
 # The linting errors are a nuisance but they're beginning to have a point.
 def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements
-        should_list_targets: bool,
-        should_get_target: bool,
-        target_to_set: Optional[str],
-        compdb_file_paths: Optional[List[Path]],
-        build_dir: Optional[Path],
-        use_default_target: bool = False,
-        should_run_ninja: bool = False,
-        should_run_gn: bool = False,
-        override_current_target: bool = True,
-        clangd_command: bool = False,
-        clangd_command_system: Optional[str] = None,
-        reporter: StatusReporter = StatusReporter(),
-        pw_ide_settings: PigweedIdeSettings = PigweedIdeSettings(),
+    should_list_targets: bool,
+    should_get_target: bool,
+    target_to_set: Optional[str],
+    compdb_file_paths: Optional[List[Path]],
+    build_dir: Optional[Path],
+    use_default_target: bool = False,
+    should_run_ninja: bool = False,
+    should_run_gn: bool = False,
+    override_current_target: bool = True,
+    clangd_command: bool = False,
+    clangd_command_system: Optional[str] = None,
+    reporter: StatusReporter = StatusReporter(),
+    pw_ide_settings: PigweedIdeSettings = PigweedIdeSettings(),
 ) -> None:
     """Configure C/C++ code intelligence support.
 
@@ -504,8 +542,9 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
     # If true, no arguments were provided so we do the default behavior.
     default = True
 
-    build_dir = (build_dir
-                 if build_dir is not None else pw_ide_settings.build_dir)
+    build_dir = (
+        build_dir if build_dir is not None else pw_ide_settings.build_dir
+    )
 
     if compdb_file_paths is not None:
         should_process = True
@@ -530,18 +569,19 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
         ninja_commands = ['ninja', '-t', 'compdb']
         reporter.info(f'Running Ninja: {" ".join(ninja_commands)}')
 
-        output_compdb_file_path = (build_dir / compdb_generate_file_path())
+        output_compdb_file_path = build_dir / compdb_generate_file_path()
 
         try:
             # Ninja writes to STDOUT, so we capture to a file.
             with open(output_compdb_file_path, 'w') as compdb_file:
-                result = subprocess.run(ninja_commands,
-                                        cwd=build_dir,
-                                        stdout=compdb_file,
-                                        stderr=subprocess.PIPE)
+                result = subprocess.run(
+                    ninja_commands,
+                    cwd=build_dir,
+                    stdout=compdb_file,
+                    stderr=subprocess.PIPE,
+                )
         except FileNotFoundError:
-            reporter.err(
-                f'Could not open path! {str(output_compdb_file_path)}')
+            reporter.err(f'Could not open path! {str(output_compdb_file_path)}')
 
         if result.returncode == 0:
             reporter.info('Ran Ninja successfully!')
@@ -561,15 +601,13 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
     if should_run_gn:
         default = False
 
-        gn_commands = [
-            'gn', 'gen',
-            str(build_dir), '--export-compile-commands'
-        ]
+        gn_commands = ['gn', 'gen', str(build_dir), '--export-compile-commands']
 
         try:
             with open(build_dir / 'args.gn') as args_file:
                 gn_args = [
-                    line for line in args_file.readlines()
+                    line
+                    for line in args_file.readlines()
                     if not line.startswith('#')
                 ]
         except FileNotFoundError:
@@ -578,7 +616,8 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
         gn_args_string = 'none' if len(gn_args) == 0 else ', '.join(gn_args)
 
         reporter.info(
-            [f'Running GN: {" ".join(gn_commands)} (args: {gn_args_string})'])
+            [f'Running GN: {" ".join(gn_commands)} (args: {gn_args_string})']
+        )
 
         result = subprocess.run(gn_commands, capture_output=True)
         gn_status_lines = ['Ran GN successfully!']
@@ -592,7 +631,7 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
 
             reporter.info(gn_status_lines)
             should_process = True
-            output_compdb_file_path = (build_dir / compdb_generate_file_path())
+            output_compdb_file_path = build_dir / compdb_generate_file_path()
             compdb_file_paths.append(output_compdb_file_path)
         else:
             reporter.err('Something went wrong!')
@@ -618,31 +657,38 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
 
             try:
                 compdb_databases.append(
-                    CppCompilationDatabase\
-                        .load(Path(compdb_file_path), build_dir)\
-                        .process(
-                            settings=pw_ide_settings,
-                            path_globs=pw_ide_settings.clangd_query_drivers()))
+                    CppCompilationDatabase.load(
+                        Path(compdb_file_path), build_dir
+                    ).process(
+                        settings=pw_ide_settings,
+                        path_globs=pw_ide_settings.clangd_query_drivers(),
+                    )
+                )
             except MissingCompDbException:
                 reporter.err(f'File not found: {str(compdb_file_path)}')
 
                 if '*' in str(compdb_file_path):
-                    reporter.wrn('It looks like you provided a glob that '
-                                 'did not match any files.')
+                    reporter.wrn(
+                        'It looks like you provided a glob that '
+                        'did not match any files.'
+                    )
 
                 sys.exit(1)
             # TODO(chadnorvell): Recover more gracefully from errors.
             except BadCompDbException:
                 reporter.err(
                     'File does not match compilation database format: '
-                    f'{str(compdb_file_path)}')
+                    f'{str(compdb_file_path)}'
+                )
                 sys.exit(1)
 
             last_processed_path = compdb_file_path
 
         if len(compdb_databases) == 0:
-            reporter.err('No compilation databases found in: '
-                         f'{str(compdb_file_paths)}')
+            reporter.err(
+                'No compilation databases found in: '
+                f'{str(compdb_file_paths)}'
+            )
             sys.exit(1)
 
         try:
@@ -658,12 +704,14 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
         else:
             processed_text = f'{len(compdb_file_paths)} compilation databases'
 
-        reporter.new([
-            f'Processed {processed_text} '
-            f'to {pw_ide_settings.working_dir}',
-            f'{total_targets} targets are now available '
-            f'({new_targets} are new)'
-        ])
+        reporter.new(
+            [
+                f'Processed {processed_text} '
+                f'to {pw_ide_settings.working_dir}',
+                f'{total_targets} targets are now available '
+                f'({new_targets} are new)',
+            ]
+        )
 
     if use_default_target:
         defined_default = pw_ide_settings.default_target
@@ -671,8 +719,8 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
 
         try:
             with open(
-                    pw_ide_settings.working_dir /
-                    MAX_COMMANDS_TARGET_FILENAME) as max_commands_target_file:
+                pw_ide_settings.working_dir / MAX_COMMANDS_TARGET_FILENAME
+            ) as max_commands_target_file:
                 max_commands_target = max_commands_target_file.readline()
         except FileNotFoundError:
             pass
@@ -682,8 +730,11 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
             reporter.wrn('Have you processed a compilation database yet?')
             sys.exit(1)
 
-        target_to_set = (defined_default if defined_default is not None else
-                         max_commands_target)
+        target_to_set = (
+            defined_default
+            if defined_default is not None
+            else max_commands_target
+        )
 
     if target_to_set is not None:
         default = False
@@ -692,49 +743,62 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
         # respect the --no-override flag.
         should_set_target = (
             CppIdeFeaturesState(pw_ide_settings).current_target is None
-            or override_current_target)
+            or override_current_target
+        )
 
         if should_set_target:
             try:
                 CppIdeFeaturesState(
-                    pw_ide_settings).current_target = target_to_set
+                    pw_ide_settings
+                ).current_target = target_to_set
             except InvalidTargetException:
-                reporter.err([
-                    f'Invalid target! {target_to_set} not among the '
-                    'defined targets.',
-                    'Check .pw_ide.yaml or .pw_ide.user.yaml for defined '
-                    'targets.'
-                ])
+                reporter.err(
+                    [
+                        f'Invalid target! {target_to_set} not among the '
+                        'defined targets.',
+                        'Check .pw_ide.yaml or .pw_ide.user.yaml for defined '
+                        'targets.',
+                    ]
+                )
                 sys.exit(1)
             except MissingCompDbException:
-                reporter.err([
-                    f'File not found for target! {target_to_set}',
-                    'Did you run pw ide cpp --process '
-                    '{path to compile_commands.json}?'
-                ])
+                reporter.err(
+                    [
+                        f'File not found for target! {target_to_set}',
+                        'Did you run pw ide cpp --process '
+                        '{path to compile_commands.json}?',
+                    ]
+                )
                 sys.exit(1)
 
-            reporter.new('Set C/C++ language server analysis target to: '
-                         f'{target_to_set}')
+            reporter.new(
+                'Set C/C++ language server analysis target to: '
+                f'{target_to_set}'
+            )
         else:
             reporter.ok(
                 'Target already is set and will not be overridden: '
-                f'{CppIdeFeaturesState(pw_ide_settings).current_target}')
+                f'{CppIdeFeaturesState(pw_ide_settings).current_target}'
+            )
 
     if clangd_command:
         default = False
-        reporter.info([
-            'Command to run clangd with Pigweed paths:',
-            ClangdSettings(pw_ide_settings).command()
-        ])
+        reporter.info(
+            [
+                'Command to run clangd with Pigweed paths:',
+                ClangdSettings(pw_ide_settings).command(),
+            ]
+        )
 
     if clangd_command_system is not None:
         default = False
-        reporter.info([
-            'Command to run clangd with Pigweed paths for '
-            f'{clangd_command_system}:',
-            ClangdSettings(pw_ide_settings).command(clangd_command_system)
-        ])
+        reporter.info(
+            [
+                'Command to run clangd with Pigweed paths for '
+                f'{clangd_command_system}:',
+                ClangdSettings(pw_ide_settings).command(clangd_command_system),
+            ]
+        )
 
     if should_list_targets:
         default = False
@@ -743,20 +807,22 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
         ]
 
         for target in sorted(
-                CppIdeFeaturesState(
-                    pw_ide_settings).enabled_available_targets):
+            CppIdeFeaturesState(pw_ide_settings).enabled_available_targets
+        ):
             targets_list_status.append(f'\t{target}')
 
         reporter.info(targets_list_status)
 
     if should_get_target or default:
-        reporter.info('Current C/C++ language server analysis target: '
-                      f'{CppIdeFeaturesState(pw_ide_settings).current_target}')
+        reporter.info(
+            'Current C/C++ language server analysis target: '
+            f'{CppIdeFeaturesState(pw_ide_settings).current_target}'
+        )
 
 
 def cmd_python(
-    should_print_venv: bool,
-    reporter: StatusReporter = StatusReporter()) -> None:
+    should_print_venv: bool, reporter: StatusReporter = StatusReporter()
+) -> None:
     """Configure Python code intelligence support.
 
     You can generate the path to the Python virtual environment interpreter that
@@ -771,7 +837,9 @@ def cmd_python(
     default = True
 
     if should_print_venv or default:
-        reporter.info([
-            'Location of the Pigweed Python virtual environment:',
-            PythonPaths().interpreter
-        ])
+        reporter.info(
+            [
+                'Location of the Pigweed Python virtual environment:',
+                PythonPaths().interpreter,
+            ]
+        )

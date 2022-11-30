@@ -24,17 +24,20 @@ import yaml
 from pw_cli.yaml_config_loader_mixin import YamlConfigLoaderMixin
 
 PW_IDE_DIR_NAME = '.pw_ide'
-PW_IDE_DEFAULT_DIR = Path(
-    os.path.expandvars('$PW_PROJECT_ROOT')) / PW_IDE_DIR_NAME
+PW_IDE_DEFAULT_DIR = (
+    Path(os.path.expandvars('$PW_PROJECT_ROOT')) / PW_IDE_DIR_NAME
+)
 
 PW_PIGWEED_CIPD_INSTALL_DIR = Path(
-    os.path.expandvars('$PW_PIGWEED_CIPD_INSTALL_DIR'))
+    os.path.expandvars('$PW_PIGWEED_CIPD_INSTALL_DIR')
+)
 
 PW_ARM_CIPD_INSTALL_DIR = Path(os.path.expandvars('$PW_ARM_CIPD_INSTALL_DIR'))
 
 _DEFAULT_BUILD_DIR_NAME = 'out'
-_DEFAULT_BUILD_DIR = (Path(os.path.expandvars('$PW_PROJECT_ROOT')) /
-                      _DEFAULT_BUILD_DIR_NAME)
+_DEFAULT_BUILD_DIR = (
+    Path(os.path.expandvars('$PW_PROJECT_ROOT')) / _DEFAULT_BUILD_DIR_NAME
+)
 
 _DEFAULT_COMPDB_PATHS = [_DEFAULT_BUILD_DIR]
 _DEFAULT_TARGET_INFERENCE = '?'
@@ -56,8 +59,7 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
     'compdb_paths': _DEFAULT_BUILD_DIR_NAME,
     'default_target': None,
     'editors': _DEFAULT_SUPPORTED_EDITORS,
-    'setup': ['pw --no-banner ide cpp --gn '
-              '--set-default --no-override'],
+    'setup': ['pw --no-banner ide cpp --gn --set-default --no-override'],
     'targets': [],
     'target_inference': _DEFAULT_TARGET_INFERENCE,
     'working_dir': PW_IDE_DEFAULT_DIR,
@@ -70,6 +72,7 @@ _DEFAULT_USER_FILE = Path('$HOME/.pw_ide.yaml')
 
 class PigweedIdeSettings(YamlConfigLoaderMixin):
     """Pigweed IDE features settings storage class."""
+
     def __init__(
         self,
         project_file: Union[Path, bool] = _DEFAULT_PROJECT_FILE,
@@ -83,7 +86,8 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
             project_user_file=project_user_file,
             user_file=user_file,
             default_config=_DEFAULT_CONFIG
-            if default_config is None else default_config,
+            if default_config is None
+            else default_config,
             environment_var='PW_IDE_CONFIG_FILE',
         )
 
@@ -251,9 +255,9 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
         return self._config.get('editors', {}).get(editor, False)
 
 
-def _docstring_set_default(obj: Any,
-                           default: Any,
-                           literal: bool = False) -> None:
+def _docstring_set_default(
+    obj: Any, default: Any, literal: bool = False
+) -> None:
     """Add a default value annotation to a docstring.
 
     Formatting isn't allowed in docstrings, so by default we can't inject
@@ -272,37 +276,48 @@ def _docstring_set_default(obj: Any,
             if len(lines) == 1:
                 default = f'Default: ``{lines[0]}``'
             else:
-                default = ('Default:\n\n.. code-block::\n\n  ' +
-                           '\n  '.join(lines))
+                default = 'Default:\n\n.. code-block::\n\n  ' + '\n  '.join(
+                    lines
+                )
 
         doc = cast(str, obj.__doc__)
         obj.__doc__ = f'{cleandoc(doc)}\n\n{default}'
 
 
-_docstring_set_default(PigweedIdeSettings.working_dir,
-                       PW_IDE_DIR_NAME,
-                       literal=True)
-_docstring_set_default(PigweedIdeSettings.build_dir,
-                       _DEFAULT_BUILD_DIR_NAME,
-                       literal=True)
-_docstring_set_default(PigweedIdeSettings.compdb_paths,
-                       _DEFAULT_CONFIG['compdb_paths'],
-                       literal=True)
-_docstring_set_default(PigweedIdeSettings.targets,
-                       _DEFAULT_CONFIG['targets'],
-                       literal=True)
-_docstring_set_default(PigweedIdeSettings.default_target,
-                       _DEFAULT_CONFIG['default_target'],
-                       literal=True)
-_docstring_set_default(PigweedIdeSettings.target_inference,
-                       _DEFAULT_CONFIG['target_inference'],
-                       literal=True)
-_docstring_set_default(PigweedIdeSettings.setup,
-                       _DEFAULT_CONFIG['setup'],
-                       literal=True)
-_docstring_set_default(PigweedIdeSettings.clangd_additional_query_drivers,
-                       _DEFAULT_CONFIG['clangd_additional_query_drivers'],
-                       literal=True)
-_docstring_set_default(PigweedIdeSettings.editors,
-                       yaml.dump(_DEFAULT_SUPPORTED_EDITORS),
-                       literal=True)
+_docstring_set_default(
+    PigweedIdeSettings.working_dir, PW_IDE_DIR_NAME, literal=True
+)
+_docstring_set_default(
+    PigweedIdeSettings.build_dir, _DEFAULT_BUILD_DIR_NAME, literal=True
+)
+_docstring_set_default(
+    PigweedIdeSettings.compdb_paths,
+    _DEFAULT_CONFIG['compdb_paths'],
+    literal=True,
+)
+_docstring_set_default(
+    PigweedIdeSettings.targets, _DEFAULT_CONFIG['targets'], literal=True
+)
+_docstring_set_default(
+    PigweedIdeSettings.default_target,
+    _DEFAULT_CONFIG['default_target'],
+    literal=True,
+)
+_docstring_set_default(
+    PigweedIdeSettings.target_inference,
+    _DEFAULT_CONFIG['target_inference'],
+    literal=True,
+)
+_docstring_set_default(
+    PigweedIdeSettings.setup, _DEFAULT_CONFIG['setup'], literal=True
+)
+_docstring_set_default(
+    PigweedIdeSettings.clangd_additional_query_drivers,
+    _DEFAULT_CONFIG['clangd_additional_query_drivers'],
+    literal=True,
+)
+_docstring_set_default(
+    PigweedIdeSettings.editors,
+    yaml.dump(_DEFAULT_SUPPORTED_EDITORS),
+    literal=True,
+)

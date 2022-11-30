@@ -22,13 +22,15 @@ from test_cases import PwIdeTestCase
 
 class TestVscSettingsManager(PwIdeTestCase):
     """Tests VscSettingsManager"""
+
     def test_setup(self):
         """Test realistic setup procedure. Success == doesn't raise."""
         ide_settings = self.make_ide_settings()
         manager = VscSettingsManager(ide_settings, self.temp_dir_path)
 
         with manager.active(
-                VscSettingsType.SETTINGS).modify() as active_settings:
+            VscSettingsType.SETTINGS
+        ).modify() as active_settings:
             manager.default(VscSettingsType.SETTINGS).sync_to(active_settings)
             manager.project(VscSettingsType.SETTINGS).sync_to(active_settings)
             manager.user(VscSettingsType.SETTINGS).sync_to(active_settings)
@@ -39,11 +41,10 @@ class TestVscSettingsManager(PwIdeTestCase):
             manager.user(VscSettingsType.TASKS).sync_to(active_settings)
 
         with manager.active(
-                VscSettingsType.EXTENSIONS).modify() as active_settings:
-            manager.default(
-                VscSettingsType.EXTENSIONS).sync_to(active_settings)
-            manager.project(
-                VscSettingsType.EXTENSIONS).sync_to(active_settings)
+            VscSettingsType.EXTENSIONS
+        ).modify() as active_settings:
+            manager.default(VscSettingsType.EXTENSIONS).sync_to(active_settings)
+            manager.project(VscSettingsType.EXTENSIONS).sync_to(active_settings)
             manager.user(VscSettingsType.EXTENSIONS).sync_to(active_settings)
 
     def test_json5(self):
@@ -63,7 +64,8 @@ class TestVscSettingsManager(PwIdeTestCase):
         manager = VscSettingsManager(ide_settings, self.temp_dir_path)
 
         with manager.active(
-                VscSettingsType.SETTINGS).modify() as active_settings:
+            VscSettingsType.SETTINGS
+        ).modify() as active_settings:
             manager.default(VscSettingsType.SETTINGS).sync_to(active_settings)
             manager.project(VscSettingsType.SETTINGS).sync_to(active_settings)
             manager.user(VscSettingsType.SETTINGS).sync_to(active_settings)

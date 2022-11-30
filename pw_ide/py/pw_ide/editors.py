@@ -67,21 +67,23 @@ from pw_ide.settings import PigweedIdeSettings
 
 class _StructuredFileFormat:
     """Base class for structured settings file formats."""
+
     @property
     def ext(self) -> str:
         return 'null'
 
     def load(self, *args, **kwargs) -> OrderedDict:
         raise ValueError(
-            f'Cannot load from file with {self.__class__.__name__}!')
+            f'Cannot load from file with {self.__class__.__name__}!'
+        )
 
     def dump(self, data: OrderedDict, *args, **kwargs) -> None:
-        raise ValueError(
-            f'Cannot dump to file with {self.__class__.__name__}!')
+        raise ValueError(f'Cannot dump to file with {self.__class__.__name__}!')
 
 
 class JsonFileFormat(_StructuredFileFormat):
     """JSON file format."""
+
     @property
     def ext(self) -> str:
         return 'json'
@@ -102,6 +104,7 @@ class Json5FileFormat(_StructuredFileFormat):
 
     Supports parsing files with comments and trailing commas.
     """
+
     @property
     def ext(self) -> str:
         return 'json'
@@ -124,9 +127,10 @@ _TDictLike = TypeVar('_TDictLike', bound=Dict)
 
 
 def dict_deep_merge(
-        src: _TDictLike,
-        dest: _TDictLike,
-        ctor: Optional[Callable[[], _TDictLike]] = None) -> _TDictLike:
+    src: _TDictLike,
+    dest: _TDictLike,
+    ctor: Optional[Callable[[], _TDictLike]] = None,
+) -> _TDictLike:
     """Deep merge dict-like `src` into dict-like `dest`.
 
     `dest` is mutated in place and also returned.
@@ -140,9 +144,11 @@ def dict_deep_merge(
     # here really is that they be exactly the same class, rather than "same" in
     # the polymorphic sense.
     if dest.__class__ != src.__class__:
-        raise TypeError('Cannot merge dicts of different subclasses!\n'
-                        f'src={src.__class__.__name__}, '
-                        f'dest={dest.__class__.__name__}')
+        raise TypeError(
+            'Cannot merge dicts of different subclasses!\n'
+            f'src={src.__class__.__name__}, '
+            f'dest={dest.__class__.__name__}'
+        )
 
     # If a constructor for this subclass wasn't provided, try using a
     # zero-arg constructor for the provided dicts.
@@ -154,18 +160,22 @@ def dict_deep_merge(
         empty_dict = ctor()
     except TypeError:
         # The constructor has required arguments.
-        raise TypeError('When merging a dict subclass, you must provide a '
-                        'constructor for the subclass that produces an empty '
-                        'dict.\n'
-                        f'src/dest={src.__class__.__name__}')
+        raise TypeError(
+            'When merging a dict subclass, you must provide a '
+            'constructor for the subclass that produces an empty '
+            'dict.\n'
+            f'src/dest={src.__class__.__name__}'
+        )
 
     if empty_dict.__class__ != src.__class__:
         # The constructor returns something of the wrong type.
-        raise TypeError('When merging a dict subclass, you must provide a '
-                        'constructor for the subclass that produces an empty '
-                        'dict.\n'
-                        f'src/dest={src.__class__.__name__}, '
-                        f'constructor={ctor().__class__.__name__}')
+        raise TypeError(
+            'When merging a dict subclass, you must provide a '
+            'constructor for the subclass that produces an empty '
+            'dict.\n'
+            f'src/dest={src.__class__.__name__}, '
+            f'constructor={ctor().__class__.__name__}'
+        )
 
     for key, value in src.items():
         empty_dict = ctor()
@@ -214,9 +224,12 @@ class EditorSettingsDefinition:
     This allows the initial settings to be dependent on overall IDE features
     settings.
     """
-    def __init__(self,
-                 pw_ide_settings: Optional[PigweedIdeSettings] = None,
-                 data: Optional[DefaultSettingsCallback] = None):
+
+    def __init__(
+        self,
+        pw_ide_settings: Optional[PigweedIdeSettings] = None,
+        data: Optional[DefaultSettingsCallback] = None,
+    ):
         self._data: EditorSettingsDict = OrderedDict()
 
         if data is not None and pw_ide_settings is not None:
@@ -265,8 +278,10 @@ class EditorSettingsFile(EditorSettingsDefinition):
     This represents the concept of a file; the file may not actually be
     present on disk yet.
     """
-    def __init__(self, settings_dir: Path, name: str,
-                 file_format: _StructuredFileFormat) -> None:
+
+    def __init__(
+        self, settings_dir: Path, name: str, file_format: _StructuredFileFormat
+    ) -> None:
         self._name = name
         self._format = file_format
         self._path = settings_dir / f'{name}.{self._format.ext}'
@@ -282,8 +297,7 @@ class EditorSettingsFile(EditorSettingsDefinition):
         return f'{self._name}{backup_str}.{self._format.ext}'
 
     def _make_backup(self) -> Path:
-        return self._path.replace(self._path.with_name(
-            self._backup_filename()))
+        return self._path.replace(self._path.with_name(self._backup_filename()))
 
     def _restore_backup(self, backup: Path) -> Path:
         return backup.replace(self._path)
@@ -418,16 +432,17 @@ class SettingsLevel(enum.Enum):
     particular to one checkout of the project, each of which can override
     settings higher up in the chain.
     """
-    DEFAULT = SettingsLevelData('default',
-                                is_user_configurable=False,
-                                is_file=False)
-    PROJECT = SettingsLevelData('project',
-                                is_user_configurable=True,
-                                is_file=True)
+
+    DEFAULT = SettingsLevelData(
+        'default', is_user_configurable=False, is_file=False
+    )
+    PROJECT = SettingsLevelData(
+        'project', is_user_configurable=True, is_file=True
+    )
     USER = SettingsLevelData('user', is_user_configurable=True, is_file=True)
-    ACTIVE = SettingsLevelData('active',
-                               is_user_configurable=False,
-                               is_file=True)
+    ACTIVE = SettingsLevelData(
+        'active', is_user_configurable=False, is_file=True
+    )
 
     @property
     def is_user_configurable(self) -> bool:
@@ -481,6 +496,7 @@ class EditorSettingsManager(Generic[_TSettingsType]):
     ``_TSettingsType``, fulfilled by an enum that defines each of an editor's
     settings files), along with the cascading settings levels.
     """
+
     # Prefixes should only be defined for settings that will be stored on disk
     # and are not the active settings file, which will use the name without a
     # prefix. This may be overridden in child classes, but typically should
@@ -495,15 +511,20 @@ class EditorSettingsManager(Generic[_TSettingsType]):
     file_format: _StructuredFileFormat = _StructuredFileFormat()
     types_with_defaults: EditorSettingsTypesWithDefaults[_TSettingsType] = {}
 
-    def __init__(self,
-                 pw_ide_settings: PigweedIdeSettings,
-                 settings_dir: Optional[Path] = None,
-                 file_format: Optional[_StructuredFileFormat] = None,
-                 types_with_defaults: Optional[
-                     EditorSettingsTypesWithDefaults[_TSettingsType]] = None):
+    def __init__(
+        self,
+        pw_ide_settings: PigweedIdeSettings,
+        settings_dir: Optional[Path] = None,
+        file_format: Optional[_StructuredFileFormat] = None,
+        types_with_defaults: Optional[
+            EditorSettingsTypesWithDefaults[_TSettingsType]
+        ] = None,
+    ):
         if SettingsLevel.ACTIVE in self.__class__.prefixes:
-            raise ValueError('You cannot assign a file name prefix to '
-                             'an active settings file.')
+            raise ValueError(
+                'You cannot assign a file name prefix to '
+                'an active settings file.'
+            )
 
         # This lets us use ``self._prefixes`` transparently for any file,
         # including active settings files, since it will provide an empty
@@ -516,28 +537,35 @@ class EditorSettingsManager(Generic[_TSettingsType]):
         # `default_settings_dir`, and that value is used the vast majority of
         # the time. But you can inject an alternative directory in the
         # constructor if needed (e.g. for tests).
-        self._settings_dir = (settings_dir if settings_dir is not None else
-                              self.__class__.default_settings_dir)
+        self._settings_dir = (
+            settings_dir
+            if settings_dir is not None
+            else self.__class__.default_settings_dir
+        )
 
         # The backing file format should normally be defined by the class
         # attribute ``file_format``, but can be overridden in the constructor.
-        self._file_format: _StructuredFileFormat = (file_format if file_format
-                                                    is not None else
-                                                    self.__class__.file_format)
+        self._file_format: _StructuredFileFormat = (
+            file_format
+            if file_format is not None
+            else self.__class__.file_format
+        )
 
         # The settings types with their defaults should normally be defined by
         # the class attribute ``types_with_defaults``, but can be overridden
         # in the constructor.
-        self._types_with_defaults = (types_with_defaults
-                                     if types_with_defaults is not None else
-                                     self.__class__.types_with_defaults)
+        self._types_with_defaults = (
+            types_with_defaults
+            if types_with_defaults is not None
+            else self.__class__.types_with_defaults
+        )
 
         # For each of the settings levels, there is a settings definition for
         # each settings type. Those settings definitions may be stored in files
         # or not.
-        self._settings_definitions: Dict[SettingsLevel,
-                                         Dict[_TSettingsType,
-                                              EditorSettingsDefinition]] = {}
+        self._settings_definitions: Dict[
+            SettingsLevel, Dict[_TSettingsType, EditorSettingsDefinition]
+        ] = {}
 
         self._settings_types = tuple(self._types_with_defaults.keys())
 
@@ -545,10 +573,16 @@ class EditorSettingsManager(Generic[_TSettingsType]):
         # defined in code, not files.
         self._settings_definitions[SettingsLevel.DEFAULT] = {}
 
-        for settings_type in self._types_with_defaults:  # pylint: disable=consider-using-dict-items
+        for (
+            settings_type
+        ) in (
+            self._types_with_defaults
+        ):  # pylint: disable=consider-using-dict-items
             self._settings_definitions[SettingsLevel.DEFAULT][
-                settings_type] = EditorSettingsDefinition(
-                    pw_ide_settings, self._types_with_defaults[settings_type])
+                settings_type
+            ] = EditorSettingsDefinition(
+                pw_ide_settings, self._types_with_defaults[settings_type]
+            )
 
         # Initialize the settings definitions for each settings type for each
         # settings level that's stored on disk.
@@ -558,8 +592,10 @@ class EditorSettingsManager(Generic[_TSettingsType]):
             for settings_type in self._types_with_defaults:
                 name = f'{self._prefixes[level]}{settings_type.value}'
                 self._settings_definitions[level][
-                    settings_type] = EditorSettingsFile(
-                        self._settings_dir, name, self._file_format)
+                    settings_type
+                ] = EditorSettingsFile(
+                    self._settings_dir, name, self._file_format
+                )
 
     def default(self, settings_type: _TSettingsType):
         """Default settings for the provided settings type."""

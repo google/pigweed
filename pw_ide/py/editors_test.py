@@ -17,14 +17,19 @@ from collections import OrderedDict
 from enum import Enum
 import unittest
 
-from pw_ide.editors import (dict_deep_merge, EditorSettingsFile,
-                            EditorSettingsManager, JsonFileFormat)
+from pw_ide.editors import (
+    dict_deep_merge,
+    EditorSettingsFile,
+    EditorSettingsManager,
+    JsonFileFormat,
+)
 
 from test_cases import PwIdeTestCase
 
 
 class TestDictDeepMerge(unittest.TestCase):
     """Tests dict_deep_merge"""
+
     def test_invariants_with_dict_success(self):
         # pylint: disable=unnecessary-lambda
         dict_a = {'hello': 'world'}
@@ -64,10 +69,12 @@ class TestDictDeepMerge(unittest.TestCase):
         dict_a = OrderedDict({'hello': 'world'})
         dict_b = OrderedDict({'foo': 'bar'})
 
-        expected = OrderedDict({
-            'hello': 'world',
-            'foo': 'bar',
-        })
+        expected = OrderedDict(
+            {
+                'hello': 'world',
+                'foo': 'bar',
+            }
+        )
 
         result = dict_deep_merge(dict_b, dict_a, lambda: OrderedDict())
         self.assertEqual(result, expected)
@@ -77,10 +84,12 @@ class TestDictDeepMerge(unittest.TestCase):
         dict_a = OrderedDict({'hello': 'world'})
         dict_b = OrderedDict({'foo': 'bar'})
 
-        expected = OrderedDict({
-            'hello': 'world',
-            'foo': 'bar',
-        })
+        expected = OrderedDict(
+            {
+                'hello': 'world',
+                'foo': 'bar',
+            }
+        )
 
         result = dict_deep_merge(dict_b, dict_a)
         self.assertEqual(result, expected)
@@ -96,6 +105,7 @@ class TestDictDeepMerge(unittest.TestCase):
 
 class TestEditorSettingsFile(PwIdeTestCase):
     """Tests EditorSettingsFile"""
+
     def test_open_new_file_and_write(self):
         name = 'settings'
         json_fmt = JsonFileFormat()
@@ -129,7 +139,8 @@ class TestEditorSettingsFile(PwIdeTestCase):
             settings['hello'] = 'world'
 
         backup_files = [
-            path for path in self.temp_dir_path.iterdir()
+            path
+            for path in self.temp_dir_path.iterdir()
             if path.name != f'{name}.{json_fmt.ext}'
         ]
 
@@ -150,7 +161,8 @@ class TestEditorSettingsFile(PwIdeTestCase):
         self.assertEqual(settings_dict['hello'], 'mundo')
 
         backup_files = [
-            path for path in self.temp_dir_path.iterdir()
+            path
+            for path in self.temp_dir_path.iterdir()
             if path.name != f'{name}.{json_fmt.ext}'
         ]
 
@@ -176,7 +188,8 @@ class TestEditorSettingsFile(PwIdeTestCase):
         self.assertEqual(settings_dict['hello'], 'mundo')
 
         backup_files = [
-            path for path in self.temp_dir_path.iterdir()
+            path
+            for path in self.temp_dir_path.iterdir()
             if path.name != f'{name}.{json_fmt.ext}'
         ]
 
@@ -202,7 +215,8 @@ class TestEditorSettingsFile(PwIdeTestCase):
         self.assertEqual(settings_dict['hello'], 'world')
 
         backup_files = [
-            path for path in self.temp_dir_path.iterdir()
+            path
+            for path in self.temp_dir_path.iterdir()
             if path.name != f'{name}.{json_fmt.ext}'
         ]
 
@@ -229,7 +243,8 @@ class TestEditorSettingsFile(PwIdeTestCase):
         self.assertEqual(settings_dict['hello'], 'world')
 
         backup_files = [
-            path for path in self.temp_dir_path.iterdir()
+            path
+            for path in self.temp_dir_path.iterdir()
             if path.name != f'{name}.{json_fmt.ext}'
         ]
 
@@ -242,15 +257,20 @@ class EditorSettingsTestType(Enum):
 
 class TestEditorSettingsManager(PwIdeTestCase):
     """Tests EditorSettingsManager"""
+
     def test_settings_merge(self):
         """Test that settings merge as expected in isolation."""
-        default_settings = OrderedDict({
-            'foo': 'bar',
-            'baz': 'qux',
-            'lorem': OrderedDict({
-                'ipsum': 'dolor',
-            }),
-        })  # yapf: disable
+        default_settings = OrderedDict(
+            {
+                'foo': 'bar',
+                'baz': 'qux',
+                'lorem': OrderedDict(
+                    {
+                        'ipsum': 'dolor',
+                    }
+                ),
+            }
+        )  # yapf: disable
 
         types_with_defaults = {
             EditorSettingsTestType.SETTINGS: lambda _: default_settings
@@ -258,29 +278,36 @@ class TestEditorSettingsManager(PwIdeTestCase):
 
         ide_settings = self.make_ide_settings()
         json_fmt = JsonFileFormat()
-        manager = EditorSettingsManager(ide_settings, self.temp_dir_path,
-                                        json_fmt, types_with_defaults)
+        manager = EditorSettingsManager(
+            ide_settings, self.temp_dir_path, json_fmt, types_with_defaults
+        )
 
-        project_settings = OrderedDict({
-            'alpha': 'beta',
-            'baz': 'xuq',
-            'foo': 'rab',
-        })  # yapf: disable
+        project_settings = OrderedDict(
+            {
+                'alpha': 'beta',
+                'baz': 'xuq',
+                'foo': 'rab',
+            }
+        )  # yapf: disable
 
         with manager.project(
-                EditorSettingsTestType.SETTINGS).modify() as settings:
+            EditorSettingsTestType.SETTINGS
+        ).modify() as settings:
             dict_deep_merge(project_settings, settings)
 
-        user_settings = OrderedDict({
-            'baz': 'xqu',
-            'lorem': OrderedDict({
-                'ipsum': 'sit amet',
-                'consectetur': 'adipiscing',
-            })
-        })  # yapf: disable
+        user_settings = OrderedDict(
+            {
+                'baz': 'xqu',
+                'lorem': OrderedDict(
+                    {
+                        'ipsum': 'sit amet',
+                        'consectetur': 'adipiscing',
+                    }
+                ),
+            }
+        )  # yapf: disable
 
-        with manager.user(
-                EditorSettingsTestType.SETTINGS).modify() as settings:
+        with manager.user(EditorSettingsTestType.SETTINGS).modify() as settings:
             dict_deep_merge(user_settings, settings)
 
         expected = {
@@ -294,16 +321,21 @@ class TestEditorSettingsManager(PwIdeTestCase):
         }  # yapf: disable
 
         with manager.active(
-                EditorSettingsTestType.SETTINGS).modify() as active_settings:
-            manager.default(
-                EditorSettingsTestType.SETTINGS).sync_to(active_settings)
-            manager.project(
-                EditorSettingsTestType.SETTINGS).sync_to(active_settings)
-            manager.user(
-                EditorSettingsTestType.SETTINGS).sync_to(active_settings)
+            EditorSettingsTestType.SETTINGS
+        ).modify() as active_settings:
+            manager.default(EditorSettingsTestType.SETTINGS).sync_to(
+                active_settings
+            )
+            manager.project(EditorSettingsTestType.SETTINGS).sync_to(
+                active_settings
+            )
+            manager.user(EditorSettingsTestType.SETTINGS).sync_to(
+                active_settings
+            )
 
         self.assertCountEqual(
-            manager.active(EditorSettingsTestType.SETTINGS).get(), expected)
+            manager.active(EditorSettingsTestType.SETTINGS).get(), expected
+        )
 
 
 if __name__ == '__main__':

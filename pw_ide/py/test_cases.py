@@ -25,6 +25,7 @@ from pw_ide.settings import PigweedIdeSettings
 
 class TempDirTestCase(unittest.TestCase):
     """Run tests that need access to a temporary directory."""
+
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory()
         self.temp_dir_path = Path(self.temp_dir.name)
@@ -35,9 +36,7 @@ class TempDirTestCase(unittest.TestCase):
 
     @contextmanager
     def make_temp_file(
-        self,
-        filename: Union[Path, str],
-        content: str = ''
+        self, filename: Union[Path, str], content: str = ''
     ) -> Generator[Tuple[TextIOWrapper, Path], None, None]:
         """Create a temp file in the test case's temp dir.
 
@@ -52,9 +51,9 @@ class TempDirTestCase(unittest.TestCase):
             file.seek(0)
             yield (file, path)
 
-    def touch_temp_file(self,
-                        filename: Union[Path, str],
-                        content: str = '') -> None:
+    def touch_temp_file(
+        self, filename: Union[Path, str], content: str = ''
+    ) -> None:
         """Create a temp file in the test case's temp dir, without context."""
         with self.make_temp_file(filename, content):
             pass
@@ -87,9 +86,7 @@ class TempDirTestCase(unittest.TestCase):
         files: List[TextIOWrapper] = []
 
         for filename, content in files_data:
-            file = open(self.path_in_temp_dir(filename),
-                        'a+',
-                        encoding='utf-8')
+            file = open(self.path_in_temp_dir(filename), 'a+', encoding='utf-8')
             file.write(content)
             file.flush()
             file.seek(0)
@@ -101,7 +98,8 @@ class TempDirTestCase(unittest.TestCase):
             file.close()
 
     def touch_temp_files(
-            self, files_data: List[Tuple[Union[Path, str], str]]) -> None:
+        self, files_data: List[Tuple[Union[Path, str], str]]
+    ) -> None:
         """Create several temp files in the temp dir, without context."""
         with self.make_temp_files(files_data):
             pass
@@ -150,10 +148,12 @@ class PwIdeTestCase(TempDirTestCase):
     Provides a temp dir for testing file system actions and access to IDE
     settings that wrap the temp dir.
     """
+
     def make_ide_settings(
-            self,
-            working_dir: Optional[Union[str, Path]] = None,
-            targets: Optional[List[str]] = None) -> PigweedIdeSettings:
+        self,
+        working_dir: Optional[Union[str, Path]] = None,
+        targets: Optional[List[str]] = None,
+    ) -> PigweedIdeSettings:
         """Make settings that wrap provided paths in the temp path."""
 
         if working_dir is not None:
@@ -164,10 +164,12 @@ class PwIdeTestCase(TempDirTestCase):
         if targets is None:
             targets = []
 
-        return PigweedIdeSettings(False,
-                                  False,
-                                  False,
-                                  default_config={
-                                      'working_dir': str(working_dir_path),
-                                      'targets': targets,
-                                  })
+        return PigweedIdeSettings(
+            False,
+            False,
+            False,
+            default_config={
+                'working_dir': str(working_dir_path),
+                'targets': targets,
+            },
+        )
