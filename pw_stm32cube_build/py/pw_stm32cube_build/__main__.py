@@ -19,8 +19,12 @@ import pathlib
 import sys
 
 try:
-    from pw_stm32cube_build import (find_files, gen_file_list, icf_to_ld,
-                                    inject_init)
+    from pw_stm32cube_build import (
+        find_files,
+        gen_file_list,
+        icf_to_ld,
+        inject_init,
+    )
 except ImportError:
     # Load from this directory if pw_stm32cube_build is not available.
     import find_files  # type: ignore
@@ -33,37 +37,37 @@ def _parse_args() -> argparse.Namespace:
     """Setup argparse and parse command line args."""
     parser = argparse.ArgumentParser()
 
-    subparsers = parser.add_subparsers(dest='command',
-                                       metavar='<command>',
-                                       required=True)
+    subparsers = parser.add_subparsers(
+        dest='command', metavar='<command>', required=True
+    )
 
     gen_file_list_parser = subparsers.add_parser(
-        'gen_file_list', help='generate files.txt for stm32cube directory')
+        'gen_file_list', help='generate files.txt for stm32cube directory'
+    )
     gen_file_list_parser.add_argument('stm32cube_dir', type=pathlib.Path)
 
     find_files_parser = subparsers.add_parser(
-        'find_files', help='find files in stm32cube directory')
+        'find_files', help='find files in stm32cube directory'
+    )
     find_files_parser.add_argument('stm32cube_dir', type=pathlib.Path)
     find_files_parser.add_argument('product_str')
-    find_files_parser.add_argument('--init',
-                                   default=False,
-                                   action='store_true')
+    find_files_parser.add_argument('--init', default=False, action='store_true')
 
     icf_to_ld_parser = subparsers.add_parser(
-        'icf_to_ld', help='convert stm32cube .icf linker files to .ld')
+        'icf_to_ld', help='convert stm32cube .icf linker files to .ld'
+    )
     icf_to_ld_parser.add_argument('icf_path', type=pathlib.Path)
-    icf_to_ld_parser.add_argument('--ld-path',
-                                  nargs=1,
-                                  default=None,
-                                  type=pathlib.Path)
+    icf_to_ld_parser.add_argument(
+        '--ld-path', nargs=1, default=None, type=pathlib.Path
+    )
 
     inject_init_parser = subparsers.add_parser(
-        'inject_init', help='inject `pw_stm32cube_Init()` into startup_*.s')
+        'inject_init', help='inject `pw_stm32cube_Init()` into startup_*.s'
+    )
     inject_init_parser.add_argument('in_startup_path', type=pathlib.Path)
-    inject_init_parser.add_argument('--out-startup-path',
-                                    nargs=1,
-                                    default=None,
-                                    type=pathlib.Path)
+    inject_init_parser.add_argument(
+        '--out-startup-path', nargs=1, default=None, type=pathlib.Path
+    )
 
     return parser.parse_args()
 
@@ -77,12 +81,14 @@ def main():
     elif args.command == 'find_files':
         find_files.find_files(args.stm32cube_dir, args.product_str, args.init)
     elif args.command == 'icf_to_ld':
-        icf_to_ld.icf_to_ld(args.icf_path,
-                            args.ld_path[0] if args.ld_path else None)
+        icf_to_ld.icf_to_ld(
+            args.icf_path, args.ld_path[0] if args.ld_path else None
+        )
     elif args.command == 'inject_init':
         inject_init.inject_init(
             args.in_startup_path,
-            args.out_startup_path[0] if args.out_startup_path else None)
+            args.out_startup_path[0] if args.out_startup_path else None,
+        )
 
     sys.exit(0)
 

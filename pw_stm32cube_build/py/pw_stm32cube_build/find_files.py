@@ -48,7 +48,8 @@ def parse_product_str(product_str: str) -> Tuple[str, Set[str], str]:
 
     if len(product_name) < 9:
         raise ValueError(
-            "Product string too short. Must specify at least the chip model.")
+            "Product string too short. Must specify at least the chip model."
+        )
 
     family = product_name[:7] + 'xx'
     name = product_name
@@ -91,8 +92,11 @@ def select_define(defines: Set[str], family_header: str) -> str:
     """
     valid_defines = list(
         filter(
-            lambda x: f'defined({x})' in family_header or f'defined ({x})' in
-            family_header, defines))
+            lambda x: f'defined({x})' in family_header
+            or f'defined ({x})' in family_header,
+            defines,
+        )
+    )
 
     if len(valid_defines) != 1:
         raise ValueError("Unable to select a valid define")
@@ -112,8 +116,10 @@ def match_filename(product_name: str, filename: str):
         False otherwise.
     """
     stm32_parts = list(
-        filter(lambda x: x.startswith('stm32'),
-               re.split(r'\.|_', filename.lower())))
+        filter(
+            lambda x: x.startswith('stm32'), re.split(r'\.|_', filename.lower())
+        )
+    )
 
     if len(stm32_parts) != 1:
         return False
@@ -145,34 +151,42 @@ def find_linker_files(
     """
     linker_files = list(
         filter(
-            lambda x:
-            (x.endswith('.ld') or x.endswith('.icf')) and '_flash.' in x.lower(
-            ), files))
+            lambda x: (x.endswith('.ld') or x.endswith('.icf'))
+            and '_flash.' in x.lower(),
+            files,
+        )
+    )
     matching_linker_files = list(
-        filter(lambda x: match_filename(product_name,
-                                        pathlib.Path(x).name), linker_files))
+        filter(
+            lambda x: match_filename(product_name, pathlib.Path(x).name),
+            linker_files,
+        )
+    )
 
     matching_ld_files = list(
-        filter(lambda x: x.endswith('.ld'), matching_linker_files))
+        filter(lambda x: x.endswith('.ld'), matching_linker_files)
+    )
     matching_icf_files = list(
-        filter(lambda x: x.endswith('.icf'), matching_linker_files))
+        filter(lambda x: x.endswith('.icf'), matching_linker_files)
+    )
 
     if len(matching_ld_files) > 1 or len(matching_icf_files) > 1:
         raise ValueError(
-            f'Too many linker file matches for {product_name}.' +
-            ' Provide a more specific product string or your own linker script'
+            f'Too many linker file matches for {product_name}. '
+            'Provide a more specific product string or your own linker script'
         )
     if not matching_ld_files and not matching_icf_files:
         raise ValueError(f'No linker script matching {product_name} found')
 
-    return (stm32cube_path /
-            matching_ld_files[0] if matching_ld_files else None,
-            stm32cube_path /
-            matching_icf_files[0] if matching_icf_files else None)
+    return (
+        stm32cube_path / matching_ld_files[0] if matching_ld_files else None,
+        stm32cube_path / matching_icf_files[0] if matching_icf_files else None,
+    )
 
 
-def find_startup_file(product_name: str, files: List[str],
-                      stm32cube_path: pathlib.Path) -> pathlib.Path:
+def find_startup_file(
+    product_name: str, files: List[str], stm32cube_path: pathlib.Path
+) -> pathlib.Path:
     """Finds startup file for the given product.
 
     Searches for gcc startup files.
@@ -192,8 +206,12 @@ def find_startup_file(product_name: str, files: List[str],
     # same filenames, so this looks for a 'gcc' folder in the path.
     matching_startup_files = list(
         filter(
-            lambda f: '/gcc/' in f and f.endswith('.s') and match_filename(
-                product_name, f), files))
+            lambda f: '/gcc/' in f
+            and f.endswith('.s')
+            and match_filename(product_name, f),
+            files,
+        )
+    )
 
     if not matching_startup_files:
         raise ValueError(f'No matching startup file found for {product_name}')
@@ -201,7 +219,8 @@ def find_startup_file(product_name: str, files: List[str],
         return stm32cube_path / matching_startup_files[0]
 
     raise ValueError(
-        f'Multiple matching startup files found for {product_name}')
+        f'Multiple matching startup files found for {product_name}'
+    )
 
 
 _INCLUDE_DIRS = [
@@ -219,8 +238,8 @@ def get_include_dirs(stm32cube_path: pathlib.Path) -> List[pathlib.Path]:
 
 
 def get_sources_and_headers(
-        files: List[str],
-        stm32cube_path: pathlib.Path) -> Tuple[List[str], List[str]]:
+    files: List[str], stm32cube_path: pathlib.Path
+) -> Tuple[List[str], List[str]]:
     """Gets list of all sources and headers needed to build the stm32cube hal.
 
     Args:
@@ -234,24 +253,33 @@ def get_sources_and_headers(
             `headers` is a list of absolute paths to all needed headers
     """
     source_files = filter(
-        lambda f: f.startswith('hal_driver/Src') and f.endswith('.c') and
-        'template' not in f, files)
+        lambda f: f.startswith('hal_driver/Src')
+        and f.endswith('.c')
+        and 'template' not in f,
+        files,
+    )
 
     header_files = filter(
-        lambda f: (any(f.startswith(dir)
-                       for dir in _INCLUDE_DIRS)) and f.endswith('.h'), files)
+        lambda f: (any(f.startswith(dir) for dir in _INCLUDE_DIRS))
+        and f.endswith('.h'),
+        files,
+    )
 
     rebase_path = lambda f: str(stm32cube_path / f)
-    return list(map(rebase_path,
-                    source_files)), list(map(rebase_path, header_files))
+    return list(map(rebase_path, source_files)), list(
+        map(rebase_path, header_files)
+    )
 
 
 def parse_files_txt(stm32cube_path: pathlib.Path) -> List[str]:
     """Reads files.txt into list."""
     with open(stm32cube_path / 'files.txt', 'r') as files:
         return list(
-            filter(lambda x: not x.startswith('#'),
-                   map(lambda f: f.strip(), files.readlines())))
+            filter(
+                lambda x: not x.startswith('#'),
+                map(lambda f: f.strip(), files.readlines()),
+            )
+        )
 
 
 def _gn_str_out(name: str, val: Any):
@@ -261,8 +289,9 @@ def _gn_str_out(name: str, val: Any):
 
 def _gn_list_str_out(name: str, val: List[Any]):
     """Outputs list of strings in GN format with correct escaping."""
-    list_str = ','.join('"' + str(x).replace('"', r'\"').replace('$', r'\$') +
-                        '"' for x in val)
+    list_str = ','.join(
+        '"' + str(x).replace('"', r'\"').replace('$', r'\$') + '"' for x in val
+    )
     print(f'{name} = [{list_str}]')
 
 
@@ -275,11 +304,13 @@ def find_files(stm32cube_path: pathlib.Path, product_str: str, init: bool):
     (family, defines, name) = parse_product_str(product_str)
 
     family_header_path = list(
-        filter(lambda p: p.endswith(f'/{family}.h'), headers))[0]
+        filter(lambda p: p.endswith(f'/{family}.h'), headers)
+    )[0]
 
     with open(family_header_path, 'rb') as family_header:
-        family_header_str = family_header.read().decode('utf-8',
-                                                        errors='ignore')
+        family_header_str = family_header.read().decode(
+            'utf-8', errors='ignore'
+        )
 
     define = select_define(defines, family_header_str)
 
@@ -291,8 +322,9 @@ def find_files(stm32cube_path: pathlib.Path, product_str: str, init: bool):
 
     if init:
         startup_file_path = find_startup_file(name, file_list, stm32cube_path)
-        gcc_linker, iar_linker = find_linker_files(name, file_list,
-                                                   stm32cube_path)
+        gcc_linker, iar_linker = find_linker_files(
+            name, file_list, stm32cube_path
+        )
 
         _gn_str_out('startup', startup_file_path)
         _gn_str_out('gcc_linker', gcc_linker if gcc_linker else '')

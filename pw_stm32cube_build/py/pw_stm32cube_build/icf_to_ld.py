@@ -51,23 +51,25 @@ def parse_icf(icf_file: str) -> Tuple[Dict, Dict]:
             if tokens[1] == 'symbol':
                 symbols[tokens[2]] = tokens[4].strip(';')
             elif tokens[1] == 'region':
-                regions[tokens[2].split('_')[0]] = (tokens[5],
-                                                    tokens[7].strip('];'))
+                regions[tokens[2].split('_')[0]] = (
+                    tokens[5],
+                    tokens[7].strip('];'),
+                )
             elif tokens[1] == 'block':
                 blocks[tokens[2]] = {
                     tokens[4]: tokens[6].strip(','),
-                    tokens[7]: tokens[9]
+                    tokens[7]: tokens[9],
                 }
     parsed_regions = {
-        region: (symbols[start] if start in symbols else start,
-                 symbols[end] if end in symbols else end)
+        region: (
+            symbols[start] if start in symbols else start,
+            symbols[end] if end in symbols else end,
+        )
         for region, (start, end) in regions.items()
     }
 
     parsed_blocks = {
-        name:
-        {k: symbols[v] if v in symbols else v
-         for k, v in fields.items()}
+        name: {k: symbols[v] if v in symbols else v for k, v in fields.items()}
         for name, fields in blocks.items()
     }
 

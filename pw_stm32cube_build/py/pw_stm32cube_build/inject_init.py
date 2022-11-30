@@ -42,8 +42,11 @@ def add_pre_main_init(startup: str) -> str:
     if match is None:
         raise ValueError("`bl main` not found in startup script")
 
-    return startup[:match.start(
-    )] + '\nbl pw_stm32cube_Init' + startup[match.start():]
+    return (
+        startup[: match.start()]
+        + '\nbl pw_stm32cube_Init'
+        + startup[match.start() :]
+    )
 
 
 def inject_init(startup_in: pathlib.Path, startup_out: Optional[pathlib.Path]):
@@ -55,8 +58,7 @@ def inject_init(startup_in: pathlib.Path, startup_out: Optional[pathlib.Path]):
                     If None, output startup script printed to stdout
     """
     with open(startup_in, 'rb') as startup_in_file:
-        startup_in_str = startup_in_file.read().decode('utf-8',
-                                                       errors='ignore')
+        startup_in_str = startup_in_file.read().decode('utf-8', errors='ignore')
 
     startup_out_str = add_pre_main_init(startup_in_str)
 

@@ -21,6 +21,7 @@ from pw_stm32cube_build import icf_to_ld
 
 class ParseIcfTest(unittest.TestCase):
     """parse_icf tests."""
+
     TEST_ICF_1 = """
 /*test comments*/
 // some other comments
@@ -106,73 +107,79 @@ place in RAM_region   { readwrite,
                 'ROM': ('0x08000000', '0x081FFFFF'),
                 'RAM': ('0x20000000', '0x2002FFFF'),
                 'CCMRAM': ('0x10000000', '0x1000FFFF'),
-            }, regions)
+            },
+            regions,
+        )
 
         self.assertEqual(
             {
-                'CSTACK': {
-                    'alignment': '8',
-                    'size': '0x400'
-                },
-                'HEAP': {
-                    'alignment': '8',
-                    'size': '0x200'
-                },
-            }, blocks)
+                'CSTACK': {'alignment': '8', 'size': '0x400'},
+                'HEAP': {'alignment': '8', 'size': '0x200'},
+            },
+            blocks,
+        )
 
 
 class IcfRegionsToLdRegionsTest(unittest.TestCase):
     """icf_regions_to_ld_regions tests."""
+
     def test_icf_region(self):
-        ld_regions = icf_to_ld.icf_regions_to_ld_regions({
-            'ROM': ('0x08000000', '0x081FFFFF'),
-            'RAM': ('0x20000000', '0x2002FFFF'),
-            'CCMRAM': ('0x10000000', '0x1000FFFF'),
-        })
+        ld_regions = icf_to_ld.icf_regions_to_ld_regions(
+            {
+                'ROM': ('0x08000000', '0x081FFFFF'),
+                'RAM': ('0x20000000', '0x2002FFFF'),
+                'CCMRAM': ('0x10000000', '0x1000FFFF'),
+            }
+        )
 
         self.assertEqual(
             {
                 'FLASH': ('0x08000000', '2048K'),
                 'RAM': ('0x20000000', '192K'),
                 'CCMRAM': ('0x10000000', '64K'),
-            }, ld_regions)
+            },
+            ld_regions,
+        )
 
     def test_icf_region_off_by_one(self):
-        ld_regions = icf_to_ld.icf_regions_to_ld_regions({
-            'ROM': ('0x08000000', '0x080FFFFF'),
-            'RAM': ('0x20000000', '0x20020000'),
-        })
+        ld_regions = icf_to_ld.icf_regions_to_ld_regions(
+            {
+                'ROM': ('0x08000000', '0x080FFFFF'),
+                'RAM': ('0x20000000', '0x20020000'),
+            }
+        )
 
         self.assertEqual(
             {
                 'FLASH': ('0x08000000', '1024K'),
                 'RAM': ('0x20000000', '128K'),
-            }, ld_regions)
+            },
+            ld_regions,
+        )
 
 
 class CreateLdTest(unittest.TestCase):
     """create_ld tests."""
+
     def test_create_ld(self):
         ld_str = icf_to_ld.create_ld(
             {
                 'FLASH': ('0x08000000', '2048K'),
                 'RAM': ('0x20000000', '192K'),
                 'CCMRAM': ('0x10000000', '64K'),
-            }, {
-                'CSTACK': {
-                    'alignment': '8',
-                    'size': '0x400'
-                },
-                'HEAP': {
-                    'alignment': '8',
-                    'size': '0x200'
-                },
-            })
+            },
+            {
+                'CSTACK': {'alignment': '8', 'size': '0x400'},
+                'HEAP': {'alignment': '8', 'size': '0x200'},
+            },
+        )
 
         self.assertTrue(
-            'RAM (xrw) : ORIGIN = 0x20000000, LENGTH = 192K' in ld_str)
+            'RAM (xrw) : ORIGIN = 0x20000000, LENGTH = 192K' in ld_str
+        )
         self.assertTrue(
-            'FLASH (rx) : ORIGIN = 0x08000000, LENGTH = 2048K' in ld_str)
+            'FLASH (rx) : ORIGIN = 0x08000000, LENGTH = 2048K' in ld_str
+        )
 
 
 if __name__ == '__main__':
