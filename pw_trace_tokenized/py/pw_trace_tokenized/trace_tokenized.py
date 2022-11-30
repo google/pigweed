@@ -40,7 +40,7 @@ def varint_decode(encoded):
     shift = 0
     for byte in encoded:
         count += 1
-        result |= (byte & 0x7f) << shift
+        result |= (byte & 0x7F) << shift
         if not byte & 0x80:
             return result, count
 
@@ -94,18 +94,20 @@ def has_data(token_string):
 
 def create_trace_event(token_string, timestamp_us, trace_id, data):
     token_values = token_string.split("|")
-    return trace.TraceEvent(event_type=get_trace_type(
-        token_values[TokenIdx.EVENT_TYPE]),
-                            module=token_values[TokenIdx.MODULE],
-                            label=token_values[TokenIdx.LABEL],
-                            timestamp_us=timestamp_us,
-                            group=token_values[TokenIdx.GROUP],
-                            trace_id=trace_id,
-                            flags=token_values[TokenIdx.FLAG],
-                            has_data=has_data(token_string),
-                            data_fmt=(token_values[TokenIdx.DATA_FMT]
-                                      if has_data(token_string) else ""),
-                            data=data if has_data(token_string) else b'')
+    return trace.TraceEvent(
+        event_type=get_trace_type(token_values[TokenIdx.EVENT_TYPE]),
+        module=token_values[TokenIdx.MODULE],
+        label=token_values[TokenIdx.LABEL],
+        timestamp_us=timestamp_us,
+        group=token_values[TokenIdx.GROUP],
+        trace_id=trace_id,
+        flags=token_values[TokenIdx.FLAG],
+        has_data=has_data(token_string),
+        data_fmt=(
+            token_values[TokenIdx.DATA_FMT] if has_data(token_string) else ""
+        ),
+        data=data if has_data(token_string) else b'',
+    )
 
 
 def parse_trace_event(buffer, db, last_time, ticks_per_second):
@@ -113,7 +115,7 @@ def parse_trace_event(buffer, db, last_time, ticks_per_second):
     us_per_tick = 1000000 / ticks_per_second
     idx = 0
     # Read token
-    token = struct.unpack('I', buffer[idx:idx + 4])[0]
+    token = struct.unpack('I', buffer[idx : idx + 4])[0]
     idx += 4
 
     # Decode token
@@ -143,8 +145,9 @@ def parse_trace_event(buffer, db, last_time, ticks_per_second):
     return create_trace_event(token_string, timestamp_us, trace_id, data)
 
 
-def get_trace_events(databases, raw_trace_data, ticks_per_second,
-                     time_offset: int):
+def get_trace_events(
+    databases, raw_trace_data, ticks_per_second, time_offset: int
+):
     """Handles the decoding traces."""
 
     db = tokens.Database.merged(*databases)
@@ -159,8 +162,12 @@ def get_trace_events(databases, raw_trace_data, ticks_per_second,
             _LOG.error("incomplete file")
             break
 
-        event = parse_trace_event(raw_trace_data[idx + 1:idx + 1 + size], db,
-                                  last_timestamp, ticks_per_second)
+        event = parse_trace_event(
+            raw_trace_data[idx + 1 : idx + 1 + size],
+            db,
+            last_timestamp,
+            ticks_per_second,
+        )
         if event:
             last_timestamp = event.timestamp_us
             events.append(event)
@@ -184,12 +191,14 @@ def save_trace_file(trace_lines, file_name):
         output_file.write("{}]")
 
 
-def get_trace_events_from_file(databases, input_file_name, ticks_per_second,
-                               time_offset: int):
+def get_trace_events_from_file(
+    databases, input_file_name, ticks_per_second, time_offset: int
+):
     """Get trace events from a file."""
     raw_trace_data = get_trace_data_from_file(input_file_name)
-    return get_trace_events(databases, raw_trace_data, ticks_per_second,
-                            time_offset)
+    return get_trace_events(
+        databases, raw_trace_data, ticks_per_second, time_offset
+    )
 
 
 def _parse_args():
@@ -197,42 +206,49 @@ def _parse_args():
 
     parser = argparse.ArgumentParser(
         description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter)
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser.add_argument(
         'databases',
         nargs='+',
         action=database.LoadTokenDatabases,
-        help='Databases (ELF, binary, or CSV) to use to lookup tokens.')
+        help='Databases (ELF, binary, or CSV) to use to lookup tokens.',
+    )
     parser.add_argument(
         '-i',
         '--input',
         dest='input_file',
-        help='The binary trace input file, generated using trace_to_file.h.')
-    parser.add_argument('-o',
-                        '--output',
-                        dest='output_file',
-                        help=('The json file to which to write the output.'))
+        help='The binary trace input file, generated using trace_to_file.h.',
+    )
+    parser.add_argument(
+        '-o',
+        '--output',
+        dest='output_file',
+        help=('The json file to which to write the output.'),
+    )
     parser.add_argument(
         '-t',
         '--ticks_per_second',
         type=int,
         dest='ticks_per_second',
         default=1000,
-        help=('The clock rate of the trace events (Default 1000).'))
+        help=('The clock rate of the trace events (Default 1000).'),
+    )
     parser.add_argument(
         '--time_offset',
         type=int,
         dest='time_offset',
         default=0,
-        help=('Time offset (us) of the trace events (Default 0).'))
+        help=('Time offset (us) of the trace events (Default 0).'),
+    )
 
     return parser.parse_args()
 
 
 def _main(args):
-    events = get_trace_events_from_file(args.databases, args.input_file,
-                                        args.ticks_per_second,
-                                        args.time_offset)
+    events = get_trace_events_from_file(
+        args.databases, args.input_file, args.ticks_per_second, args.time_offset
+    )
     json_lines = trace.generate_trace_json(events)
     save_trace_file(json_lines, args.output_file)
 

@@ -73,15 +73,19 @@ def generate_trace_json(events: Iterable[TraceEvent]):
     """Generates a list of JSON lines from provided trace events."""
     json_lines = []
     for event in events:
-        if event.module is None or event.timestamp_us is None or \
-           event.event_type is None or event.label is None:
+        if (
+            event.module is None
+            or event.timestamp_us is None
+            or event.event_type is None
+            or event.label is None
+        ):
             _LOG.error("Invalid sample")
             continue
 
         line = {
             "pid": event.module,
             "name": (event.label),
-            "ts": event.timestamp_us
+            "ts": event.timestamp_us,
         }
         if event.event_type == TraceType.DURATION_START:
             line["ph"] = "B"
@@ -140,7 +144,8 @@ def generate_trace_json(events: Iterable[TraceEvent]):
                 }
             elif event.data_fmt.startswith("@pw_py_struct_fmt:"):
                 items = struct.unpack_from(
-                    event.data_fmt[len("@pw_py_struct_fmt:"):], event.data)
+                    event.data_fmt[len("@pw_py_struct_fmt:") :], event.data
+                )
                 args = {}
                 for i, item in enumerate(items):
                     args["data_" + str(i)] = item
