@@ -36,10 +36,12 @@ _LOG.level = logging.DEBUG
 _LOG.addHandler(logging.StreamHandler(sys.stdout))
 
 
-class LogMonitor():
+class LogMonitor:
     """Monitors lines read from the reader, and logs them."""
+
     class Error(Exception):
         """Raised if wait_for_line reaches EOF before expected line."""
+
         pass
 
     def __init__(self, prefix: str, reader: asyncio.StreamReader):
@@ -57,7 +59,8 @@ class LogMonitor():
         # Relog any messages read from the reader, and enqueue them for
         # monitoring.
         self._relog_and_enqueue_task = asyncio.create_task(
-            self._relog_and_enqueue())
+            self._relog_and_enqueue()
+        )
 
     async def wait_for_line(self, msg: str):
         """Wait for a line containing msg to be read from the reader."""
@@ -65,7 +68,8 @@ class LogMonitor():
             line = await self._queue.get()
             if not line:
                 raise LogMonitor.Error(
-                    f"Reached EOF before getting line matching {msg}")
+                    f"Reached EOF before getting line matching {msg}"
+                )
             if msg in line.decode():
                 return
 
@@ -97,6 +101,7 @@ class LogMonitor():
 
 class MonitoredSubprocess:
     """A subprocess with monitored asynchronous communication."""
+
     @staticmethod
     async def create(cmd: List[str], prefix: str, stdinput: bytes):
         """Starts the subprocess and writes stdinput to stdin.
@@ -115,12 +120,15 @@ class MonitoredSubprocess:
             *cmd,
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE)
+            stderr=asyncio.subprocess.PIPE,
+        )
 
-        self._stderr_monitor = LogMonitor(f"{prefix} ERR:",
-                                          self._process.stderr)
-        self._stdout_monitor = LogMonitor(f"{prefix} OUT:",
-                                          self._process.stdout)
+        self._stderr_monitor = LogMonitor(
+            f"{prefix} ERR:", self._process.stderr
+        )
+        self._stdout_monitor = LogMonitor(
+            f"{prefix} OUT:", self._process.stdout
+        )
 
         self._process.stdin.write(stdinput)
         await self._process.stdin.drain()
@@ -136,7 +144,8 @@ class MonitoredSubprocess:
             monitor = self._stderr_monitor
         else:
             raise ValueError(
-                "Stream must be 'stdout' or 'stderr', got {stream}")
+                "Stream must be 'stdout' or 'stderr', got {stream}"
+            )
 
         await asyncio.wait_for(monitor.wait_for_line(msg), timeout)
 
@@ -150,9 +159,13 @@ class MonitoredSubprocess:
     async def wait_for_termination(self, timeout: float):
         """Wait for the process to terminate."""
         await asyncio.wait_for(
-            asyncio.gather(self._process.wait(),
-                           self._stdout_monitor.wait_for_eof(),
-                           self._stderr_monitor.wait_for_eof()), timeout)
+            asyncio.gather(
+                self._process.wait(),
+                self._stdout_monitor.wait_for_eof(),
+                self._stderr_monitor.wait_for_eof(),
+            ),
+            timeout,
+        )
 
     async def terminate_and_wait(self, timeout: float):
         """Terminate the process and wait for it to exit."""
@@ -165,6 +178,7 @@ class MonitoredSubprocess:
 
 class TransferConfig(NamedTuple):
     """A simple tuple to collect configs for test binaries."""
+
     server: config_pb2.ServerConfig
     client: config_pb2.ClientConfig
     proxy: config_pb2.ProxyConfig
@@ -198,15 +212,20 @@ class TransferIntegrationTestHarness:
 
         # Set defaults.
         self._JAVA_CLIENT_BINARY = r.Rlocation(
-            "pigweed/pw_transfer/integration_test/java_client")
+            "pigweed/pw_transfer/integration_test/java_client"
+        )
         self._CPP_CLIENT_BINARY = r.Rlocation(
-            "pigweed/pw_transfer/integration_test/cpp_client")
+            "pigweed/pw_transfer/integration_test/cpp_client"
+        )
         self._PYTHON_CLIENT_BINARY = r.Rlocation(
-            "pigweed/pw_transfer/integration_test/python_client")
+            "pigweed/pw_transfer/integration_test/python_client"
+        )
         self._PROXY_BINARY = r.Rlocation(
-            "pigweed/pw_transfer/integration_test/proxy")
+            "pigweed/pw_transfer/integration_test/proxy"
+        )
         self._SERVER_BINARY = r.Rlocation(
-            "pigweed/pw_transfer/integration_test/server")
+            "pigweed/pw_transfer/integration_test/server"
+        )
 
         # Server/client ports are non-optional, so use those.
         self._CLIENT_PORT = harness_config.client_port
@@ -231,36 +250,46 @@ class TransferIntegrationTestHarness:
         }
         pass
 
-    async def _start_client(self, client_type: str,
-                            config: config_pb2.ClientConfig):
+    async def _start_client(
+        self, client_type: str, config: config_pb2.ClientConfig
+    ):
         _LOG.info(f"{self._PREFIX} Starting client with config\n{config}")
         self._client = await MonitoredSubprocess.create(
-            [self._CLIENT_BINARY[client_type],
-             str(self._CLIENT_PORT)], "CLIENT",
-            str(config).encode('ascii'))
+            [self._CLIENT_BINARY[client_type], str(self._CLIENT_PORT)],
+            "CLIENT",
+            str(config).encode('ascii'),
+        )
 
     async def _start_server(self, config: config_pb2.ServerConfig):
         _LOG.info(f"{self._PREFIX} Starting server with config\n{config}")
         self._server = await MonitoredSubprocess.create(
-            [self._SERVER_BINARY, str(self._SERVER_PORT)], "SERVER",
-            str(config).encode('ascii'))
+            [self._SERVER_BINARY, str(self._SERVER_PORT)],
+            "SERVER",
+            str(config).encode('ascii'),
+        )
 
     async def _start_proxy(self, config: config_pb2.ProxyConfig):
         _LOG.info(f"{self._PREFIX} Starting proxy with config\n{config}")
         self._proxy = await MonitoredSubprocess.create(
             [
-                self._PROXY_BINARY, "--server-port",
-                str(self._SERVER_PORT), "--client-port",
-                str(self._CLIENT_PORT)
+                self._PROXY_BINARY,
+                "--server-port",
+                str(self._SERVER_PORT),
+                "--client-port",
+                str(self._CLIENT_PORT),
             ],
             # Extra space in "PROXY " so that it lines up with "SERVER".
             "PROXY ",
-            str(config).encode('ascii'))
+            str(config).encode('ascii'),
+        )
 
     async def perform_transfers(
-            self, server_config: config_pb2.ServerConfig, client_type: str,
-            client_config: config_pb2.ClientConfig,
-            proxy_config: config_pb2.ProxyConfig) -> TransferExitCodes:
+        self,
+        server_config: config_pb2.ServerConfig,
+        client_type: str,
+        client_config: config_pb2.ClientConfig,
+        proxy_config: config_pb2.ProxyConfig,
+    ) -> TransferExitCodes:
         """Performs a pw_transfer write.
 
         Args:
@@ -280,14 +309,14 @@ class TransferIntegrationTestHarness:
 
         try:
             await self._start_proxy(proxy_config)
-            await self._proxy.wait_for_line("stderr",
-                                            "Listening for client connection",
-                                            TIMEOUT)
+            await self._proxy.wait_for_line(
+                "stderr", "Listening for client connection", TIMEOUT
+            )
 
             await self._start_server(server_config)
-            await self._server.wait_for_line("stderr",
-                                             "Starting pw_rpc server on port",
-                                             TIMEOUT)
+            await self._server.wait_for_line(
+                "stderr", "Starting pw_rpc server on port", TIMEOUT
+            )
 
             await self._start_client(client_type, client_config)
             # No timeout: the client will only exit once the transfer
@@ -307,8 +336,9 @@ class TransferIntegrationTestHarness:
             if self._proxy:
                 await self._proxy.terminate_and_wait(TIMEOUT)
 
-            return self.TransferExitCodes(self._client.returncode(),
-                                          self._server.returncode())
+            return self.TransferExitCodes(
+                self._client.returncode(), self._server.returncode()
+            )
 
 
 class BasicTransfer(NamedTuple):
@@ -325,6 +355,7 @@ class TransferIntegrationTest(unittest.TestCase):
     tests itself, but instead bundles together much of the boiler plate required
     for making an integration test for pw_transfer using this test fixture.
     """
+
     HARNESS_CONFIG = TransferIntegrationTestHarness.Config()
 
     @classmethod
@@ -361,14 +392,18 @@ class TransferIntegrationTest(unittest.TestCase):
                 server_filter_stack: [
                     { hdlc_packetizer: {} },
                     { data_dropper: {rate: 0.01, seed: 1649963713563718436} }
-            ]""", config_pb2.ProxyConfig())
+            ]""",
+            config_pb2.ProxyConfig(),
+        )
 
     @staticmethod
     def default_config() -> TransferConfig:
         """Returns a new transfer config with default options."""
-        return TransferConfig(TransferIntegrationTest.default_server_config(),
-                              TransferIntegrationTest.default_client_config(),
-                              TransferIntegrationTest.default_proxy_config())
+        return TransferConfig(
+            TransferIntegrationTest.default_server_config(),
+            TransferIntegrationTest.default_client_config(),
+            TransferIntegrationTest.default_proxy_config(),
+        )
 
     def do_single_write(
         self,
@@ -381,29 +416,32 @@ class TransferIntegrationTest(unittest.TestCase):
         expected_status=status_pb2.StatusCode.OK,
     ) -> None:
         """Performs a single client-to-server write of the provided data."""
-        with tempfile.NamedTemporaryFile(
-        ) as f_payload, tempfile.NamedTemporaryFile() as f_server_output:
+        with tempfile.NamedTemporaryFile() as f_payload, tempfile.NamedTemporaryFile() as f_server_output:
             if permanent_resource_id:
                 config.server.resources[
-                    resource_id].default_destination_path = f_server_output.name
+                    resource_id
+                ].default_destination_path = f_server_output.name
             else:
                 config.server.resources[resource_id].destination_paths.append(
-                    f_server_output.name)
+                    f_server_output.name
+                )
             config.client.transfer_actions.append(
                 config_pb2.TransferAction(
                     resource_id=resource_id,
                     file_path=f_payload.name,
-                    transfer_type=config_pb2.TransferAction.TransferType.
-                    WRITE_TO_SERVER,
+                    transfer_type=config_pb2.TransferAction.TransferType.WRITE_TO_SERVER,
                     protocol_version=protocol_version,
                     expected_status=int(expected_status),
-                ))
+                )
+            )
 
             f_payload.write(data)
             f_payload.flush()  # Ensure contents are there to read!
             exit_codes = asyncio.run(
-                self.harness.perform_transfers(config.server, client_type,
-                                               config.client, config.proxy))
+                self.harness.perform_transfers(
+                    config.server, client_type, config.client, config.proxy
+                )
+            )
 
             self.assertEqual(exit_codes.client, 0)
             self.assertEqual(exit_codes.server, 0)
@@ -421,38 +459,45 @@ class TransferIntegrationTest(unittest.TestCase):
         expected_status=status_pb2.StatusCode.OK,
     ) -> None:
         """Performs a single server-to-client read of the provided data."""
-        with tempfile.NamedTemporaryFile(
-        ) as f_payload, tempfile.NamedTemporaryFile() as f_client_output:
+        with tempfile.NamedTemporaryFile() as f_payload, tempfile.NamedTemporaryFile() as f_client_output:
             if permanent_resource_id:
                 config.server.resources[
-                    resource_id].default_source_path = f_payload.name
+                    resource_id
+                ].default_source_path = f_payload.name
             else:
                 config.server.resources[resource_id].source_paths.append(
-                    f_payload.name)
+                    f_payload.name
+                )
             config.client.transfer_actions.append(
                 config_pb2.TransferAction(
                     resource_id=resource_id,
                     file_path=f_client_output.name,
-                    transfer_type=config_pb2.TransferAction.TransferType.
-                    READ_FROM_SERVER,
+                    transfer_type=config_pb2.TransferAction.TransferType.READ_FROM_SERVER,
                     protocol_version=protocol_version,
                     expected_status=int(expected_status),
-                ))
+                )
+            )
 
             f_payload.write(data)
             f_payload.flush()  # Ensure contents are there to read!
             exit_codes = asyncio.run(
-                self.harness.perform_transfers(config.server, client_type,
-                                               config.client, config.proxy))
+                self.harness.perform_transfers(
+                    config.server, client_type, config.client, config.proxy
+                )
+            )
             self.assertEqual(exit_codes.client, 0)
             self.assertEqual(exit_codes.server, 0)
             if expected_status == status_pb2.StatusCode.OK:
                 self.assertEqual(f_client_output.read(), data)
 
-    def do_basic_transfer_sequence(self, client_type: str,
-                                   config: TransferConfig,
-                                   transfers: Iterable[BasicTransfer]) -> None:
+    def do_basic_transfer_sequence(
+        self,
+        client_type: str,
+        config: TransferConfig,
+        transfers: Iterable[BasicTransfer],
+    ) -> None:
         """Performs multiple reads/writes in a single client/server session."""
+
         class ReadbackSet(NamedTuple):
             server_file: BinaryIO
             client_file: BinaryIO
@@ -463,32 +508,44 @@ class TransferIntegrationTest(unittest.TestCase):
             server_file = tempfile.NamedTemporaryFile()
             client_file = tempfile.NamedTemporaryFile()
 
-            if (transfer.type ==
-                    config_pb2.TransferAction.TransferType.READ_FROM_SERVER):
+            if (
+                transfer.type
+                == config_pb2.TransferAction.TransferType.READ_FROM_SERVER
+            ):
                 server_file.write(transfer.data)
                 server_file.flush()
                 config.server.resources[transfer.id].source_paths.append(
-                    server_file.name)
-            elif (transfer.type ==
-                  config_pb2.TransferAction.TransferType.WRITE_TO_SERVER):
+                    server_file.name
+                )
+            elif (
+                transfer.type
+                == config_pb2.TransferAction.TransferType.WRITE_TO_SERVER
+            ):
                 client_file.write(transfer.data)
                 client_file.flush()
                 config.server.resources[transfer.id].destination_paths.append(
-                    server_file.name)
+                    server_file.name
+                )
             else:
                 raise ValueError('Unknown TransferType')
 
             config.client.transfer_actions.append(
-                config_pb2.TransferAction(resource_id=transfer.id,
-                                          file_path=client_file.name,
-                                          transfer_type=transfer.type))
+                config_pb2.TransferAction(
+                    resource_id=transfer.id,
+                    file_path=client_file.name,
+                    transfer_type=transfer.type,
+                )
+            )
 
             transfer_results.append(
-                ReadbackSet(server_file, client_file, transfer.data))
+                ReadbackSet(server_file, client_file, transfer.data)
+            )
 
         exit_codes = asyncio.run(
-            self.harness.perform_transfers(config.server, client_type,
-                                           config.client, config.proxy))
+            self.harness.perform_transfers(
+                config.server, client_type, config.client, config.proxy
+            )
+        )
 
         for i, result in enumerate(transfer_results):
             with self.subTest(i=i):
@@ -496,10 +553,12 @@ class TransferIntegrationTest(unittest.TestCase):
                 # data.
                 result.client_file.seek(0, 0)
                 result.server_file.seek(0, 0)
-                self.assertEqual(result.client_file.read(),
-                                 result.expected_data)
-                self.assertEqual(result.server_file.read(),
-                                 result.expected_data)
+                self.assertEqual(
+                    result.client_file.read(), result.expected_data
+                )
+                self.assertEqual(
+                    result.server_file.read(), result.expected_data
+                )
 
         # Check exit codes at the end as they provide less useful info.
         self.assertEqual(exit_codes.client, 0)
@@ -511,14 +570,12 @@ def run_tests_for(test_class_name):
     parser.add_argument(
         '--server-port',
         type=int,
-        help=
-        'Port of the integration test server.  The proxy will forward connections to this port',
+        help='Port of the integration test server.  The proxy will forward connections to this port',
     )
     parser.add_argument(
         '--client-port',
         type=int,
-        help=
-        'Port on which to listen for connections from integration test client.',
+        help='Port on which to listen for connections from integration test client.',
     )
     parser.add_argument(
         '--java-client-binary',
@@ -548,8 +605,10 @@ def run_tests_for(test_class_name):
         '--proxy-binary',
         type=pathlib.Path,
         default=None,
-        help=('Path to the proxy binary to use in tests to allow interception '
-              'of client/server data'),
+        help=(
+            'Path to the proxy binary to use in tests to allow interception '
+            'of client/server data'
+        ),
     )
 
     (args, passthrough_args) = parser.parse_known_args()

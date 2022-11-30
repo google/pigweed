@@ -49,7 +49,8 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
             name="test",
             rate=0.5,
             timeout=100,
-            seed=1234567890)
+            seed=1234567890,
+        )
         transposer._rng = MockRng([0.6, 0.4])
         await transposer.process(b'aaaaaaaaaa')
         await transposer.process(b'bbbbbbbbbb')
@@ -71,7 +72,8 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
             name="test",
             rate=0.5,
             timeout=0.100,
-            seed=1234567890)
+            seed=1234567890,
+        )
         transposer._rng = MockRng([0.4, 0.6])
         await transposer.process(b'aaaaaaaaaa')
 
@@ -95,7 +97,8 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
         server_failure = proxy.ServerFailure(
             lambda data: append(sent_packets, data),
             name="test",
-            packets_before_failure_list=packets_before_failure.copy())
+            packets_before_failure_list=packets_before_failure.copy(),
+        )
 
         # After passing the list to ServerFailure, add a test for no
         # packets dropped
@@ -126,7 +129,8 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
         keep_drop_queue = proxy.KeepDropQueue(
             lambda data: append(sent_packets, data),
             name="test",
-            keep_drop_queue=[2, 1, 3])
+            keep_drop_queue=[2, 1, 3],
+        )
 
         expected_sequence = [
             b'1',
@@ -162,7 +166,8 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
         keep_drop_queue = proxy.KeepDropQueue(
             lambda data: append(sent_packets, data),
             name="test",
-            keep_drop_queue=[2, 1, 1, -1])
+            keep_drop_queue=[2, 1, 1, -1],
+        )
 
         expected_sequence = [
             b'1',
@@ -195,7 +200,8 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
         window_packet_dropper = proxy.WindowPacketDropper(
             lambda data: append(sent_packets, data),
             name="test",
-            window_packet_to_drop=0)
+            window_packet_to_drop=0,
+        )
 
         packets = [
             b'1',

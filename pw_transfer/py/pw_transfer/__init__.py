@@ -13,6 +13,9 @@
 # the License.
 """Provides a simple interface for transferring bulk data over pw_rpc."""
 
-from pw_transfer.transfer import (ProgressCallback, ProgressStats,
-                                  ProtocolVersion)
+from pw_transfer.transfer import (
+    ProgressCallback,
+    ProgressStats,
+    ProtocolVersion,
+)
 from pw_transfer.client import Error, Manager

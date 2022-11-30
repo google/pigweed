@@ -53,22 +53,25 @@ class Chunk:
     Wraps the generated protobuf Chunk class with protocol-aware field encoding
     and decoding.
     """
+
     Type = transfer_pb2.Chunk.Type
 
     # TODO(frolv): Figure out how to make the chunk type annotation work.
     # pylint: disable=too-many-arguments
-    def __init__(self,
-                 protocol_version: ProtocolVersion,
-                 chunk_type: Any,
-                 session_id: int = 0,
-                 resource_id: Optional[int] = None,
-                 offset: int = 0,
-                 window_end_offset: int = 0,
-                 data: bytes = b'',
-                 remaining_bytes: Optional[int] = None,
-                 max_chunk_size_bytes: Optional[int] = None,
-                 min_delay_microseconds: Optional[int] = None,
-                 status: Optional[Status] = None):
+    def __init__(
+        self,
+        protocol_version: ProtocolVersion,
+        chunk_type: Any,
+        session_id: int = 0,
+        resource_id: Optional[int] = None,
+        offset: int = 0,
+        window_end_offset: int = 0,
+        data: bytes = b'',
+        remaining_bytes: Optional[int] = None,
+        max_chunk_size_bytes: Optional[int] = None,
+        min_delay_microseconds: Optional[int] = None,
+        status: Optional[Status] = None,
+    ):
         self.protocol_version = protocol_version
         self.type = chunk_type
         self.session_id = session_id
@@ -93,19 +96,24 @@ class Chunk:
         # types: start, data, and retransmit.
         if message.HasField('type'):
             chunk_type = message.type
-        elif (message.offset == 0 and not message.data
-              and not message.HasField('status')):
+        elif (
+            message.offset == 0
+            and not message.data
+            and not message.HasField('status')
+        ):
             chunk_type = Chunk.Type.START
         elif message.data:
             chunk_type = Chunk.Type.DATA
         else:
             chunk_type = Chunk.Type.PARAMETERS_RETRANSMIT
 
-        chunk = cls(ProtocolVersion.UNKNOWN,
-                    chunk_type,
-                    offset=message.offset,
-                    window_end_offset=message.window_end_offset,
-                    data=message.data)
+        chunk = cls(
+            ProtocolVersion.UNKNOWN,
+            chunk_type,
+            offset=message.offset,
+            window_end_offset=message.window_end_offset,
+            data=message.data,
+        )
 
         if message.HasField('session_id'):
             chunk.protocol_version = ProtocolVersion.VERSION_TWO
@@ -146,9 +154,11 @@ class Chunk:
 
     def to_message(self) -> transfer_pb2.Chunk:
         """Converts the chunk to a protobuf message."""
-        message = transfer_pb2.Chunk(offset=self.offset,
-                                     window_end_offset=self.window_end_offset,
-                                     type=self.type)
+        message = transfer_pb2.Chunk(
+            offset=self.offset,
+            window_end_offset=self.window_end_offset,
+            type=self.type,
+        )
 
         if self.resource_id is not None:
             message.resource_id = self.resource_id
@@ -209,16 +219,21 @@ class Chunk:
 
     def requests_transmission_from_offset(self) -> bool:
         """Returns True if this chunk is requesting a retransmission."""
-        return (self.type is Chunk.Type.PARAMETERS_RETRANSMIT
-                or self.type is Chunk.Type.START
-                or self.type is Chunk.Type.START_ACK_CONFIRMATION)
+        return (
+            self.type is Chunk.Type.PARAMETERS_RETRANSMIT
+            or self.type is Chunk.Type.START
+            or self.type is Chunk.Type.START_ACK_CONFIRMATION
+        )
 
     def _is_initial_handshake_chunk(self) -> bool:
-        return (self.protocol_version is ProtocolVersion.VERSION_TWO
-                and (self.type is Chunk.Type.START
-                     or self.type is Chunk.Type.START_ACK
-                     or self.type is Chunk.Type.START_ACK_CONFIRMATION))
+        return self.protocol_version is ProtocolVersion.VERSION_TWO and (
+            self.type is Chunk.Type.START
+            or self.type is Chunk.Type.START_ACK
+            or self.type is Chunk.Type.START_ACK_CONFIRMATION
+        )
 
     def _should_encode_legacy_fields(self) -> bool:
-        return (self.protocol_version is ProtocolVersion.LEGACY
-                or self.type is Chunk.Type.START)
+        return (
+            self.protocol_version is ProtocolVersion.LEGACY
+            or self.type is Chunk.Type.START
+        )

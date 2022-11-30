@@ -40,30 +40,43 @@ from pigweed.pw_transfer.integration_test import config_pb2
 import test_fixture
 from test_fixture import TransferIntegrationTestHarness, TransferConfig
 
+# TODO(b/259595799) Create ALL_LANGUAGES and ALL_LANGUAGES_AND_VERSIONS globals.
+
 
 class MediumTransferReadIntegrationTest(test_fixture.TransferIntegrationTest):
     # Each set of transfer tests uses a different client/server port pair to
     # allow tests to be run in parallel.
-    HARNESS_CONFIG = TransferIntegrationTestHarness.Config(server_port=3304,
-                                                           client_port=3305)
+    HARNESS_CONFIG = TransferIntegrationTestHarness.Config(
+        server_port=3304, client_port=3305
+    )
 
     @parameterized.expand(
-        itertools.product(("cpp", "java", "python"),
-                          (config_pb2.TransferAction.ProtocolVersion.V1,
-                           config_pb2.TransferAction.ProtocolVersion.V2)))
+        itertools.product(
+            ("cpp", "java", "python"),
+            (
+                config_pb2.TransferAction.ProtocolVersion.V1,
+                config_pb2.TransferAction.ProtocolVersion.V2,
+            ),
+        )
+    )
     def test_medium_client_read(self, client_type, protocol_version):
         payload = random.Random(67336391945).randbytes(512)
         config = self.default_config()
         resource_id = 5
-        self.do_single_read(client_type, config, resource_id, payload,
-                            protocol_version)
+        self.do_single_read(
+            client_type, config, resource_id, payload, protocol_version
+        )
 
     @parameterized.expand(
-        itertools.product(("cpp", "java", "python"),
-                          (config_pb2.TransferAction.ProtocolVersion.V1,
-                           config_pb2.TransferAction.ProtocolVersion.V2)))
-    def test_large_hdlc_escape_client_read(self, client_type,
-                                           protocol_version):
+        itertools.product(
+            ("cpp", "java", "python"),
+            (
+                config_pb2.TransferAction.ProtocolVersion.V1,
+                config_pb2.TransferAction.ProtocolVersion.V2,
+            ),
+        )
+    )
+    def test_large_hdlc_escape_client_read(self, client_type, protocol_version):
         # Use bytes that will be escaped by HDLC to ensure transfer over a
         # HDLC channel doesn't cause frame corruption due to insufficient
         # buffer space. ~10KB is relatively arbitrary, but is to ensure that
@@ -72,18 +85,25 @@ class MediumTransferReadIntegrationTest(test_fixture.TransferIntegrationTest):
         payload = b"~" * 98731
         config = self.default_config()
         resource_id = 5
-        self.do_single_read(client_type, config, resource_id, payload,
-                            protocol_version)
+        self.do_single_read(
+            client_type, config, resource_id, payload, protocol_version
+        )
 
     @parameterized.expand(
-        itertools.product(("cpp", "java", "python"),
-                          (config_pb2.TransferAction.ProtocolVersion.V1,
-                           config_pb2.TransferAction.ProtocolVersion.V2)))
+        itertools.product(
+            ("cpp", "java", "python"),
+            (
+                config_pb2.TransferAction.ProtocolVersion.V1,
+                config_pb2.TransferAction.ProtocolVersion.V2,
+            ),
+        )
+    )
     def test_pattern_drop_client_read(self, client_type, protocol_version):
         """Drops packets with an alternating pattern."""
         payload = random.Random(67336391945).randbytes(1234)
         config = TransferConfig(
-            self.default_server_config(), self.default_client_config(),
+            self.default_server_config(),
+            self.default_client_config(),
             text_format.Parse(
                 """
                 client_filter_stack: [
@@ -94,34 +114,48 @@ class MediumTransferReadIntegrationTest(test_fixture.TransferIntegrationTest):
                 server_filter_stack: [
                     { hdlc_packetizer: {} },
                     { keep_drop_queue: {keep_drop_queue: [5, 1]} }
-            ]""", config_pb2.ProxyConfig()))
+            ]""",
+                config_pb2.ProxyConfig(),
+            ),
+        )
         # Resource ID is arbitrary, but deliberately set to be >1 byte.
         resource_id = 1337
 
         # This test causes flakes during the opening handshake of a transfer, so
         # allow the resource_id of this transfer to be reused multiple times.
-        self.do_single_read(client_type,
-                            config,
-                            resource_id,
-                            payload,
-                            protocol_version,
-                            permanent_resource_id=True)
+        self.do_single_read(
+            client_type,
+            config,
+            resource_id,
+            payload,
+            protocol_version,
+            permanent_resource_id=True,
+        )
 
     @parameterized.expand(
-        itertools.product(("cpp", "java", "python"),
-                          (config_pb2.TransferAction.ProtocolVersion.V1,
-                           config_pb2.TransferAction.ProtocolVersion.V2)))
+        itertools.product(
+            ("cpp", "java", "python"),
+            (
+                config_pb2.TransferAction.ProtocolVersion.V1,
+                config_pb2.TransferAction.ProtocolVersion.V2,
+            ),
+        )
+    )
     def test_parameter_drop_client_read(self, client_type, protocol_version):
         """Drops the first few transfer initialization packets."""
         # TODO(b/257308150): Python v2 breaks and the transfer fails on this
         # test.
-        if (client_type == "python" and protocol_version
-                == config_pb2.TransferAction.ProtocolVersion.V2):
+        if (
+            client_type == "python"
+            and protocol_version == config_pb2.TransferAction.ProtocolVersion.V2
+        ):
             self.skipTest(
-                "This test fails when using v2 protocol with a Python client")
+                "This test fails when using v2 protocol with a Python client"
+            )
         payload = random.Random(67336391945).randbytes(1234)
         config = TransferConfig(
-            self.default_server_config(), self.default_client_config(),
+            self.default_server_config(),
+            self.default_client_config(),
             text_format.Parse(
                 """
                 client_filter_stack: [
@@ -132,19 +166,24 @@ class MediumTransferReadIntegrationTest(test_fixture.TransferIntegrationTest):
                 server_filter_stack: [
                     { hdlc_packetizer: {} },
                     { keep_drop_queue: {keep_drop_queue: [1, 2, -1]} }
-            ]""", config_pb2.ProxyConfig()))
+            ]""",
+                config_pb2.ProxyConfig(),
+            ),
+        )
         # Resource ID is arbitrary, but deliberately set to be >2 bytes.
         resource_id = 597419
 
         # This test deliberately causes flakes during the opening handshake of
         # a transfer, so allow the resource_id of this transfer to be reused
         # multiple times.
-        self.do_single_read(client_type,
-                            config,
-                            resource_id,
-                            payload,
-                            protocol_version,
-                            permanent_resource_id=True)
+        self.do_single_read(
+            client_type,
+            config,
+            resource_id,
+            payload,
+            protocol_version,
+            permanent_resource_id=True,
+        )
 
 
 if __name__ == '__main__':

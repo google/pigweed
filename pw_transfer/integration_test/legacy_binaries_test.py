@@ -51,6 +51,7 @@ _CLIENT_PORT = 3315
 # because of known issues with transfer cleanup in the legacy transfer protocol.
 class LegacyTransferIntegrationTest(test_fixture.TransferIntegrationTest):
     """This base class defines the tests to run, but isn't run directly."""
+
     # Explicitly use UNKNOWN_VERSION (the default value of
     # TransferAction.protocol_version), as that will cause protocol_version to
     # be omitted from the generated text proto, which is critical for the legacy
@@ -60,126 +61,152 @@ class LegacyTransferIntegrationTest(test_fixture.TransferIntegrationTest):
     LEGACY_SERVER = False
     LEGACY_CLIENT = False
 
-    @parameterized.expand([
-        ("cpp"),
-        ("java"),
-        ("python"),
-    ])
+    @parameterized.expand(
+        [
+            ("cpp"),
+            ("java"),
+            ("python"),
+        ]
+    )
     def test_single_byte_client_write(self, client_type):
         if not (self.LEGACY_SERVER or self.LEGACY_CLIENT):
             self.skipTest("No legacy binary in use, skipping")
 
-        if (not self.LEGACY_SERVER
-                and (client_type == "java" or client_type == "python")):
+        if not self.LEGACY_SERVER and (
+            client_type == "java" or client_type == "python"
+        ):
             self.skipTest("Java and Python legacy clients not yet set up")
 
         payload = b"?"
         config = self.default_config()
         resource_id = 5
-        self.do_single_write("cpp", config, resource_id, payload,
-                             self.PROTOCOL_VERSION)
+        self.do_single_write(
+            "cpp", config, resource_id, payload, self.PROTOCOL_VERSION
+        )
 
-    @parameterized.expand([
-        ("cpp"),
-        ("java"),
-        ("python"),
-    ])
+    @parameterized.expand(
+        [
+            ("cpp"),
+            ("java"),
+            ("python"),
+        ]
+    )
     def test_small_client_write(self, client_type):
         if not (self.LEGACY_SERVER or self.LEGACY_CLIENT):
             self.skipTest("No legacy binary in use, skipping")
 
-        if (not self.LEGACY_SERVER
-                and (client_type == "java" or client_type == "python")):
+        if not self.LEGACY_SERVER and (
+            client_type == "java" or client_type == "python"
+        ):
             self.skipTest("Java and Python legacy clients not yet set up")
 
         payload = b"some data"
         config = self.default_config()
         resource_id = 5
-        self.do_single_write("cpp", config, resource_id, payload,
-                             self.PROTOCOL_VERSION)
+        self.do_single_write(
+            "cpp", config, resource_id, payload, self.PROTOCOL_VERSION
+        )
 
-    @parameterized.expand([
-        ("cpp"),
-        ("java"),
-        ("python"),
-    ])
+    @parameterized.expand(
+        [
+            ("cpp"),
+            ("java"),
+            ("python"),
+        ]
+    )
     def test_medium_hdlc_escape_client_write(self, client_type):
         if not (self.LEGACY_SERVER or self.LEGACY_CLIENT):
             self.skipTest("No legacy binary in use, skipping")
 
-        if (not self.LEGACY_SERVER
-                and (client_type == "java" or client_type == "python")):
+        if not self.LEGACY_SERVER and (
+            client_type == "java" or client_type == "python"
+        ):
             self.skipTest("Java and Python legacy clients not yet set up")
 
         payload = b"~" * 8731
         config = self.default_config()
         resource_id = 12345678
-        self.do_single_write("cpp", config, resource_id, payload,
-                             self.PROTOCOL_VERSION)
+        self.do_single_write(
+            "cpp", config, resource_id, payload, self.PROTOCOL_VERSION
+        )
 
-    @parameterized.expand([
-        ("cpp"),
-        ("java"),
-        ("python"),
-    ])
+    @parameterized.expand(
+        [
+            ("cpp"),
+            ("java"),
+            ("python"),
+        ]
+    )
     def test_medium_random_data_client_write(self, client_type):
         if not (self.LEGACY_SERVER or self.LEGACY_CLIENT):
             self.skipTest("No legacy binary in use, skipping")
 
-        if (not self.LEGACY_SERVER
-                and (client_type == "java" or client_type == "python")):
+        if not self.LEGACY_SERVER and (
+            client_type == "java" or client_type == "python"
+        ):
             self.skipTest("Java and Python legacy clients not yet set up")
 
         rng = random.Random(1533659510898)
         payload = rng.randbytes(13713)
         config = self.default_config()
         resource_id = 12345678
-        self.do_single_write("cpp", config, resource_id, payload,
-                             self.PROTOCOL_VERSION)
+        self.do_single_write(
+            "cpp", config, resource_id, payload, self.PROTOCOL_VERSION
+        )
 
-    @parameterized.expand([
-        ("cpp"),
-        ("java"),
-        ("python"),
-    ])
+    @parameterized.expand(
+        [
+            ("cpp"),
+            ("java"),
+            ("python"),
+        ]
+    )
     def test_single_byte_client_read(self, client_type):
         if not (self.LEGACY_SERVER or self.LEGACY_CLIENT):
             self.skipTest("No legacy binary in use, skipping")
 
-        if (not self.LEGACY_SERVER
-                and (client_type == "java" or client_type == "python")):
+        if not self.LEGACY_SERVER and (
+            client_type == "java" or client_type == "python"
+        ):
             self.skipTest("Java and Python legacy clients not yet set up")
 
         payload = b"?"
         config = self.default_config()
         resource_id = 5
-        self.do_single_read("cpp", config, resource_id, payload,
-                            self.PROTOCOL_VERSION)
+        self.do_single_read(
+            "cpp", config, resource_id, payload, self.PROTOCOL_VERSION
+        )
 
-    @parameterized.expand([
-        ("cpp"),
-        ("java"),
-        ("python"),
-    ])
+    @parameterized.expand(
+        [
+            ("cpp"),
+            ("java"),
+            ("python"),
+        ]
+    )
     def test_small_client_read(self, client_type):
         if not (self.LEGACY_SERVER or self.LEGACY_CLIENT):
             self.skipTest("No legacy binary in use, skipping")
 
-        if (not self.LEGACY_SERVER
-                and (client_type == "java" or client_type == "python")):
+        if not self.LEGACY_SERVER and (
+            client_type == "java" or client_type == "python"
+        ):
             self.skipTest("Java and Python legacy clients not yet set up")
 
         payload = b"some data"
         config = self.default_config()
         resource_id = 5
-        self.do_single_read("cpp", config, resource_id, payload,
-                            self.PROTOCOL_VERSION)
+        self.do_single_read(
+            "cpp", config, resource_id, payload, self.PROTOCOL_VERSION
+        )
 
-    @parameterized.expand([
-        ("cpp"),
-        ("java"),
-        ("python"),
-    ])
+    @parameterized.expand(
+        [
+            ("cpp"),
+            ("java"),
+            ("python"),
+        ]
+    )
     def test_medium_hdlc_escape_client_read(self, client_type):
         if not (self.LEGACY_SERVER or self.LEGACY_CLIENT):
             self.skipTest("No legacy binary in use, skipping")
@@ -190,14 +217,17 @@ class LegacyTransferIntegrationTest(test_fixture.TransferIntegrationTest):
         payload = b"~" * 8731
         config = self.default_config()
         resource_id = 5
-        self.do_single_read("cpp", config, resource_id, payload,
-                            self.PROTOCOL_VERSION)
+        self.do_single_read(
+            "cpp", config, resource_id, payload, self.PROTOCOL_VERSION
+        )
 
-    @parameterized.expand([
-        ("cpp"),
-        ("java"),
-        ("python"),
-    ])
+    @parameterized.expand(
+        [
+            ("cpp"),
+            ("java"),
+            ("python"),
+        ]
+    )
     def test_medium_random_data_client_read(self, client_type):
         if not (self.LEGACY_SERVER or self.LEGACY_CLIENT):
             self.skipTest("No legacy binary in use, skipping")
@@ -209,18 +239,19 @@ class LegacyTransferIntegrationTest(test_fixture.TransferIntegrationTest):
         payload = rng.randbytes(13713)
         config = self.default_config()
         resource_id = 5
-        self.do_single_read("cpp", config, resource_id, payload,
-                            self.PROTOCOL_VERSION)
+        self.do_single_read(
+            "cpp", config, resource_id, payload, self.PROTOCOL_VERSION
+        )
 
 
 class LegacyClientTransferIntegrationTests(LegacyTransferIntegrationTest):
     r = runfiles.Create()
-    client_binary = r.Rlocation(
-        "pw_transfer_test_binaries/cpp_client_528098d5")
+    client_binary = r.Rlocation("pw_transfer_test_binaries/cpp_client_528098d5")
     HARNESS_CONFIG = TransferIntegrationTestHarness.Config(
         cpp_client_binary=client_binary,
         server_port=_SERVER_PORT,
-        client_port=_CLIENT_PORT)
+        client_port=_CLIENT_PORT,
+    )
     LEGACY_CLIENT = True
 
 
@@ -230,7 +261,8 @@ class LegacyServerTransferIntegrationTests(LegacyTransferIntegrationTest):
     HARNESS_CONFIG = TransferIntegrationTestHarness.Config(
         server_binary=server_binary,
         server_port=_SERVER_PORT,
-        client_port=_CLIENT_PORT)
+        client_port=_CLIENT_PORT,
+    )
     LEGACY_SERVER = True
 
 

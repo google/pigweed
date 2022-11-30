@@ -21,8 +21,13 @@ from typing import Any, Dict, Optional, Union
 from pw_rpc.callback_client import BidirectionalStreamingCall
 from pw_status import Status
 
-from pw_transfer.transfer import (ProgressCallback, ProtocolVersion,
-                                  ReadTransfer, Transfer, WriteTransfer)
+from pw_transfer.transfer import (
+    ProgressCallback,
+    ProtocolVersion,
+    ReadTransfer,
+    Transfer,
+    WriteTransfer,
+)
 from pw_transfer.chunk import Chunk
 
 try:
@@ -46,14 +51,17 @@ class Manager:  # pylint: disable=too-many-instance-attributes
     When created, a Manager starts a separate thread in which transfer
     communications and events are handled.
     """
-    def __init__(self,
-                 rpc_transfer_service,
-                 *,
-                 default_response_timeout_s: float = 2.0,
-                 initial_response_timeout_s: float = 4.0,
-                 max_retries: int = 3,
-                 max_lifetime_retries: int = 1500,
-                 default_protocol_version=ProtocolVersion.LATEST):
+
+    def __init__(
+        self,
+        rpc_transfer_service,
+        *,
+        default_response_timeout_s: float = 2.0,
+        initial_response_timeout_s: float = 4.0,
+        max_retries: int = 3,
+        max_lifetime_retries: int = 1500,
+        default_protocol_version=ProtocolVersion.LATEST,
+    ):
         """Initializes a Manager on top of a TransferService.
 
         Args:
@@ -92,8 +100,9 @@ class Manager:  # pylint: disable=too-many-instance-attributes
         self._write_chunk_queue: asyncio.Queue = asyncio.Queue()
         self._quit_event = asyncio.Event()
 
-        self._thread = threading.Thread(target=self._start_event_loop_thread,
-                                        daemon=True)
+        self._thread = threading.Thread(
+            target=self._start_event_loop_thread, daemon=True
+        )
 
         self._thread.start()
 
@@ -104,10 +113,12 @@ class Manager:  # pylint: disable=too-many-instance-attributes
             self._loop.call_soon_threadsafe(self._quit_event.set)
             self._thread.join()
 
-    def read(self,
-             resource_id: int,
-             progress_callback: Optional[ProgressCallback] = None,
-             protocol_version: Optional[ProtocolVersion] = None) -> bytes:
+    def read(
+        self,
+        resource_id: int,
+        progress_callback: Optional[ProgressCallback] = None,
+        protocol_version: Optional[ProtocolVersion] = None,
+    ) -> bytes:
         """Receives ("downloads") data from the server.
 
         Args:
@@ -122,20 +133,23 @@ class Manager:  # pylint: disable=too-many-instance-attributes
 
         if resource_id in self._read_transfers:
             raise ValueError(
-                f'Read transfer for resource {resource_id} already exists')
+                f'Read transfer for resource {resource_id} already exists'
+            )
 
         if protocol_version is None:
             protocol_version = self._default_protocol_version
 
-        transfer = ReadTransfer(resource_id,
-                                self._send_read_chunk,
-                                self._end_read_transfer,
-                                self._default_response_timeout_s,
-                                self._initial_response_timeout_s,
-                                self.max_retries,
-                                self.max_lifetime_retries,
-                                protocol_version,
-                                progress_callback=progress_callback)
+        transfer = ReadTransfer(
+            resource_id,
+            self._send_read_chunk,
+            self._end_read_transfer,
+            self._default_response_timeout_s,
+            self._initial_response_timeout_s,
+            self.max_retries,
+            self.max_lifetime_retries,
+            protocol_version,
+            progress_callback=progress_callback,
+        )
         self._start_read_transfer(transfer)
 
         transfer.done.wait()
@@ -145,11 +159,13 @@ class Manager:  # pylint: disable=too-many-instance-attributes
 
         return transfer.data
 
-    def write(self,
-              resource_id: int,
-              data: Union[bytes, str],
-              progress_callback: Optional[ProgressCallback] = None,
-              protocol_version: Optional[ProtocolVersion] = None) -> None:
+    def write(
+        self,
+        resource_id: int,
+        data: Union[bytes, str],
+        progress_callback: Optional[ProgressCallback] = None,
+        protocol_version: Optional[ProtocolVersion] = None,
+    ) -> None:
         """Transmits ("uploads") data to the server.
 
         Args:
@@ -168,21 +184,24 @@ class Manager:  # pylint: disable=too-many-instance-attributes
 
         if resource_id in self._write_transfers:
             raise ValueError(
-                f'Write transfer for resource {resource_id} already exists')
+                f'Write transfer for resource {resource_id} already exists'
+            )
 
         if protocol_version is None:
             protocol_version = self._default_protocol_version
 
-        transfer = WriteTransfer(resource_id,
-                                 data,
-                                 self._send_write_chunk,
-                                 self._end_write_transfer,
-                                 self._default_response_timeout_s,
-                                 self._initial_response_timeout_s,
-                                 self.max_retries,
-                                 self.max_lifetime_retries,
-                                 protocol_version,
-                                 progress_callback=progress_callback)
+        transfer = WriteTransfer(
+            resource_id,
+            data,
+            self._send_write_chunk,
+            self._end_write_transfer,
+            self._default_response_timeout_s,
+            self._initial_response_timeout_s,
+            self.max_retries,
+            self.max_lifetime_retries,
+            protocol_version,
+            progress_callback=progress_callback,
+        )
         self._start_write_transfer(transfer)
 
         transfer.done.wait()
@@ -223,7 +242,8 @@ class Manager:  # pylint: disable=too-many-instance-attributes
             # Perform a select(2)-like wait for one of several events to occur.
             done, _ = await asyncio.wait(
                 (exit_thread, new_transfer, read_chunk, write_chunk),
-                return_when=asyncio.FIRST_COMPLETED)
+                return_when=asyncio.FIRST_COMPLETED,
+            )
 
             if exit_thread in done:
                 break
@@ -231,27 +251,35 @@ class Manager:  # pylint: disable=too-many-instance-attributes
             if new_transfer in done:
                 await new_transfer.result().begin()
                 new_transfer = self._loop.create_task(
-                    self._new_transfer_queue.get())
+                    self._new_transfer_queue.get()
+                )
 
             if read_chunk in done:
                 self._loop.create_task(
-                    self._handle_chunk(self._read_transfers,
-                                       read_chunk.result()))
+                    self._handle_chunk(
+                        self._read_transfers, read_chunk.result()
+                    )
+                )
                 read_chunk = self._loop.create_task(
-                    self._read_chunk_queue.get())
+                    self._read_chunk_queue.get()
+                )
 
             if write_chunk in done:
                 self._loop.create_task(
-                    self._handle_chunk(self._write_transfers,
-                                       write_chunk.result()))
+                    self._handle_chunk(
+                        self._write_transfers, write_chunk.result()
+                    )
+                )
                 write_chunk = self._loop.create_task(
-                    self._write_chunk_queue.get())
+                    self._write_chunk_queue.get()
+                )
 
         self._loop.stop()
 
     @staticmethod
-    async def _handle_chunk(transfers: _TransferDict,
-                            message: transfer_pb2.Chunk) -> None:
+    async def _handle_chunk(
+        transfers: _TransferDict, message: transfer_pb2.Chunk
+    ) -> None:
         """Processes an incoming chunk from a stream.
 
         The chunk is dispatched to an active transfer based on its ID. If the
@@ -266,12 +294,12 @@ class Manager:  # pylint: disable=too-many-instance-attributes
             # Note that the dictionary key can't be used here, as it refers to
             # resource ID, whereas transfers may be identified either by
             # resource or session ID.
-            transfer = next(t for t in transfers.values()
-                            if t.id == chunk.id())
+            transfer = next(t for t in transfers.values() if t.id == chunk.id())
         except StopIteration:
             _LOG.error(
                 'TransferManager received chunk for unknown transfer %d',
-                chunk.id())
+                chunk.id(),
+            )
             # TODO(frolv): What should be done here, if anything?
             return
 
@@ -280,8 +308,10 @@ class Manager:  # pylint: disable=too-many-instance-attributes
     def _open_read_stream(self) -> None:
         self._read_stream = self._service.Read.invoke(
             lambda _, chunk: self._loop.call_soon_threadsafe(
-                self._read_chunk_queue.put_nowait, chunk),
-            on_error=lambda _, status: self._on_read_error(status))
+                self._read_chunk_queue.put_nowait, chunk
+            ),
+            on_error=lambda _, status: self._on_read_error(status),
+        )
 
     def _on_read_error(self, status: Status) -> None:
         """Callback for an RPC error in the read stream."""
@@ -307,8 +337,10 @@ class Manager:  # pylint: disable=too-many-instance-attributes
     def _open_write_stream(self) -> None:
         self._write_stream = self._service.Write.invoke(
             lambda _, chunk: self._loop.call_soon_threadsafe(
-                self._write_chunk_queue.put_nowait, chunk),
-            on_error=lambda _, status: self._on_write_error(status))
+                self._write_chunk_queue.put_nowait, chunk
+            ),
+            on_error=lambda _, status: self._on_write_error(status),
+        )
 
     def _on_write_error(self, status: Status) -> None:
         """Callback for an RPC error in the write stream."""
@@ -340,16 +372,20 @@ class Manager:  # pylint: disable=too-many-instance-attributes
             self._open_read_stream()
 
         _LOG.debug('Starting new read transfer %d', transfer.id)
-        self._loop.call_soon_threadsafe(self._new_transfer_queue.put_nowait,
-                                        transfer)
+        self._loop.call_soon_threadsafe(
+            self._new_transfer_queue.put_nowait, transfer
+        )
 
     def _end_read_transfer(self, transfer: Transfer) -> None:
         """Completes a read transfer."""
         del self._read_transfers[transfer.resource_id]
 
         if not transfer.status.ok():
-            _LOG.error('Read transfer %d terminated with status %s',
-                       transfer.id, transfer.status)
+            _LOG.error(
+                'Read transfer %d terminated with status %s',
+                transfer.id,
+                transfer.status,
+            )
 
         # TODO(frolv): This doesn't seem to work. Investigate why.
         # If no more transfers are using the read stream, close it.
@@ -366,16 +402,20 @@ class Manager:  # pylint: disable=too-many-instance-attributes
             self._open_write_stream()
 
         _LOG.debug('Starting new write transfer %d', transfer.id)
-        self._loop.call_soon_threadsafe(self._new_transfer_queue.put_nowait,
-                                        transfer)
+        self._loop.call_soon_threadsafe(
+            self._new_transfer_queue.put_nowait, transfer
+        )
 
     def _end_write_transfer(self, transfer: Transfer) -> None:
         """Completes a write transfer."""
         del self._write_transfers[transfer.resource_id]
 
         if not transfer.status.ok():
-            _LOG.error('Write transfer %d terminated with status %s',
-                       transfer.id, transfer.status)
+            _LOG.error(
+                'Write transfer %d terminated with status %s',
+                transfer.id,
+                transfer.status,
+            )
 
         # TODO(frolv): This doesn't seem to work. Investigate why.
         # If no more transfers are using the write stream, close it.
@@ -389,6 +429,7 @@ class Error(Exception):
 
     Stores the ID of the failed transfer resource and the error that occurred.
     """
+
     def __init__(self, resource_id: int, status: Status):
         super().__init__(f'Transfer {resource_id} failed with status {status}')
         self.resource_id = resource_id

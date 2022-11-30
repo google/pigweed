@@ -62,9 +62,11 @@ def _main() -> int:
 
     # Initialize an RPC client over the socket and set up the pw_transfer manager.
     rpc_client = HdlcRpcClient(
-        lambda: rpc_socket.recv(4096), [transfer_pb2],
+        lambda: rpc_socket.recv(4096),
+        [transfer_pb2],
         default_channels(lambda data: rpc_socket.sendall(data)),
-        lambda data: _LOG.info("%s", str(data)))
+        lambda data: _LOG.info("%s", str(data)),
+    )
     transfer_service = rpc_client.rpcs().pw.transfer.Transfer
     transfer_manager = pw_transfer.Manager(
         transfer_service,
@@ -77,43 +79,52 @@ def _main() -> int:
     # Perform the requested transfer actions.
     for action in config.transfer_actions:
         protocol_version = pw_transfer.ProtocolVersion(
-            int(action.protocol_version))
+            int(action.protocol_version)
+        )
 
         # Default to the latest protocol version if none is specified.
         if protocol_version == pw_transfer.ProtocolVersion.UNKNOWN:
             protocol_version = pw_transfer.ProtocolVersion.LATEST
 
-        if (action.transfer_type ==
-                config_pb2.TransferAction.TransferType.WRITE_TO_SERVER):
+        if (
+            action.transfer_type
+            == config_pb2.TransferAction.TransferType.WRITE_TO_SERVER
+        ):
             try:
                 with open(action.file_path, 'rb') as f:
                     data = f.read()
             except:
-                _LOG.critical("Failed to read input file '%s'",
-                              action.file_path)
+                _LOG.critical(
+                    "Failed to read input file '%s'", action.file_path
+                )
                 return 1
 
             try:
-                transfer_manager.write(action.resource_id,
-                                       data,
-                                       protocol_version=protocol_version)
+                transfer_manager.write(
+                    action.resource_id, data, protocol_version=protocol_version
+                )
             except pw_transfer.client.Error as e:
                 if e.status != Status(action.expected_status):
                     _LOG.exception(
-                        "Unexpected error encountered during write transfer")
+                        "Unexpected error encountered during write transfer"
+                    )
                     return 1
             except:
                 _LOG.exception("Transfer (write to server) failed")
                 return 1
-        elif (action.transfer_type ==
-              config_pb2.TransferAction.TransferType.READ_FROM_SERVER):
+        elif (
+            action.transfer_type
+            == config_pb2.TransferAction.TransferType.READ_FROM_SERVER
+        ):
             try:
-                data = transfer_manager.read(action.resource_id,
-                                             protocol_version=protocol_version)
+                data = transfer_manager.read(
+                    action.resource_id, protocol_version=protocol_version
+                )
             except pw_transfer.client.Error as e:
                 if e.status != Status(action.expected_status):
                     _LOG.exception(
-                        "Unexpected error encountered during read transfer")
+                        "Unexpected error encountered during read transfer"
+                    )
                     return 1
                 continue
             except:
@@ -124,8 +135,9 @@ def _main() -> int:
                 with open(action.file_path, 'wb') as f:
                     f.write(data)
             except:
-                _LOG.critical("Failed to write output file '%s'",
-                              action.file_path)
+                _LOG.critical(
+                    "Failed to write output file '%s'", action.file_path
+                )
                 return 1
         else:
             _LOG.critical("Unknown transfer type: %d", action.transfer_type)

@@ -70,6 +70,7 @@ class Filter(abc.ABC):
     A ``Filter`` implementation should implement the ``process`` method
     and call ``self.send_data()`` when it has data to send.
     """
+
     def __init__(self, send_data: Callable[[bytes], Awaitable[None]]):
         self.send_data = send_data
         pass
@@ -93,6 +94,7 @@ class HdlcPacketizer(Filter):
     filters to operates on whole frames, this filter can be used so that
     downstream filters see whole frames.
     """
+
     def __init__(self, send_data: Callable[[bytes], Awaitable[None]]):
         super().__init__(send_data)
         self.decoder = decode.FrameDecoder()
@@ -108,11 +110,14 @@ class DataDropper(Filter):
     DataDropper will drop data passed through ``process()`` at the
     specified ``rate``.
     """
-    def __init__(self,
-                 send_data: Callable[[bytes], Awaitable[None]],
-                 name: str,
-                 rate: float,
-                 seed: Optional[int] = None):
+
+    def __init__(
+        self,
+        send_data: Callable[[bytes], Awaitable[None]],
+        name: str,
+        rate: float,
+        seed: Optional[int] = None,
+    ):
         super().__init__(send_data)
         self._rate = rate
         self._name = name
@@ -154,8 +159,13 @@ class KeepDropQueue(Filter):
         Keeps 1 packet,
         Drops all further packets.
     """
-    def __init__(self, send_data: Callable[[bytes], Awaitable[None]],
-                 name: str, keep_drop_queue: Iterable[int]):
+
+    def __init__(
+        self,
+        send_data: Callable[[bytes], Awaitable[None]],
+        name: str,
+        keep_drop_queue: Iterable[int],
+    ):
         super().__init__(send_data)
         self._keep_drop_queue = list(keep_drop_queue)
         self._loop_idx = 0
@@ -167,8 +177,9 @@ class KeepDropQueue(Filter):
         # Move forward through the queue if neeeded.
         while self._current_count == 0:
             self._loop_idx += 1
-            self._current_count = self._keep_drop_queue[self._loop_idx % len(
-                self._keep_drop_queue)]
+            self._current_count = self._keep_drop_queue[
+                self._loop_idx % len(self._keep_drop_queue)
+            ]
             self._keep = not self._keep
 
         if self._current_count > 0:
@@ -186,8 +197,10 @@ class RateLimiter(Filter):
 
     This filter delays transmission of data by len(data)/rate.
     """
-    def __init__(self, send_data: Callable[[bytes], Awaitable[None]],
-                 rate: float):
+
+    def __init__(
+        self, send_data: Callable[[bytes], Awaitable[None]], rate: float
+    ):
         super().__init__(send_data)
         self._rate = rate
 
@@ -204,8 +217,15 @@ class DataTransposer(Filter):
     holding a chunk to transpose until another chunk arrives. The filter
     will not hold a chunk longer than ``timeout`` seconds.
     """
-    def __init__(self, send_data: Callable[[bytes], Awaitable[None]],
-                 name: str, rate: float, timeout: float, seed: int):
+
+    def __init__(
+        self,
+        send_data: Callable[[bytes], Awaitable[None]],
+        name: str,
+        rate: float,
+        timeout: float,
+        seed: int,
+    ):
         super().__init__(send_data)
         self._name = name
         self._rate = rate
@@ -227,8 +247,9 @@ class DataTransposer(Filter):
             # Only use timeout if we have data held for transposition
             timeout = None if held_data is None else self._timeout
             try:
-                data = await asyncio.wait_for(self._data_queue.get(),
-                                              timeout=timeout)
+                data = await asyncio.wait_for(
+                    self._data_queue.get(), timeout=timeout
+                )
 
                 if held_data is not None:
                     # If we have held data, send it out of order.
@@ -267,8 +288,13 @@ class ServerFailure(Filter):
     This filter should be instantiated in the same filter stack as an
     HdlcPacketizer so that EventFilter can decode complete packets.
     """
-    def __init__(self, send_data: Callable[[bytes], Awaitable[None]],
-                 name: str, packets_before_failure_list: List[int]):
+
+    def __init__(
+        self,
+        send_data: Callable[[bytes], Awaitable[None]],
+        name: str,
+        packets_before_failure_list: List[int],
+    ):
         super().__init__(send_data)
         self._name = name
         self._relay_packets = True
@@ -277,8 +303,9 @@ class ServerFailure(Filter):
 
     def advance_packets_before_failure(self):
         if len(self._packets_before_failure_list) > 0:
-            self._packets_before_failure = self._packets_before_failure_list.pop(
-                0)
+            self._packets_before_failure = (
+                self._packets_before_failure_list.pop(0)
+            )
         else:
             self._packets_before_failure = None
 
@@ -304,8 +331,13 @@ class WindowPacketDropper(Filter):
     This filter should be instantiated in the same filter stack as an
     HdlcPacketizer so that EventFilter can decode complete packets.
     """
-    def __init__(self, send_data: Callable[[bytes], Awaitable[None]],
-                 name: str, window_packet_to_drop: int):
+
+    def __init__(
+        self,
+        send_data: Callable[[bytes], Awaitable[None]],
+        name: str,
+        window_packet_to_drop: int,
+    ):
         super().__init__(send_data)
         self._name = name
         self._relay_packets = True
@@ -319,8 +351,10 @@ class WindowPacketDropper(Filter):
         self._window_packet += 1
 
     def handle_event(self, event: Event) -> None:
-        if (event is Event.PARAMETERS_RETRANSMIT
-                or event is Event.PARAMETERS_CONTINUE):
+        if (
+            event is Event.PARAMETERS_RETRANSMIT
+            or event is Event.PARAMETERS_CONTINUE
+        ):
             self._window_packet = 0
 
 
@@ -330,8 +364,13 @@ class EventFilter(Filter):
     This filter should be instantiated in the same filter stack as an
     HdlcPacketizer so that it can decode complete packets.
     """
-    def __init__(self, send_data: Callable[[bytes], Awaitable[None]],
-                 name: str, event_queue: asyncio.Queue):
+
+    def __init__(
+        self,
+        send_data: Callable[[bytes], Awaitable[None]],
+        name: str,
+        event_queue: asyncio.Queue,
+    ):
         super().__init__(send_data)
         self._queue = event_queue
 
@@ -353,8 +392,9 @@ class EventFilter(Filter):
         await self.send_data(data)
 
 
-async def _handle_simplex_events(event_queue: asyncio.Queue,
-                                 handlers: List[Callable[[Event], None]]):
+async def _handle_simplex_events(
+    event_queue: asyncio.Queue, handlers: List[Callable[[Event], None]]
+):
     while True:
         event = await event_queue.get()
         for handler in handlers:
@@ -371,6 +411,7 @@ async def _handle_simplex_connection(
 ) -> None:
     """Handle a single direction of a bidirectional connection between
     server and client."""
+
     async def send(data: bytes):
         writer.write(data)
         await writer.drain()
@@ -386,34 +427,43 @@ async def _handle_simplex_connection(
             filter_stack = HdlcPacketizer(filter_stack)
         elif filter_name == "data_dropper":
             data_dropper = config.data_dropper
-            filter_stack = DataDropper(filter_stack, name, data_dropper.rate,
-                                       data_dropper.seed)
+            filter_stack = DataDropper(
+                filter_stack, name, data_dropper.rate, data_dropper.seed
+            )
         elif filter_name == "rate_limiter":
             filter_stack = RateLimiter(filter_stack, config.rate_limiter.rate)
         elif filter_name == "data_transposer":
             transposer = config.data_transposer
-            filter_stack = DataTransposer(filter_stack, name, transposer.rate,
-                                          transposer.timeout, transposer.seed)
+            filter_stack = DataTransposer(
+                filter_stack,
+                name,
+                transposer.rate,
+                transposer.timeout,
+                transposer.seed,
+            )
         elif filter_name == "server_failure":
             server_failure = config.server_failure
-            filter_stack = ServerFailure(filter_stack, name,
-                                         server_failure.packets_before_failure)
+            filter_stack = ServerFailure(
+                filter_stack, name, server_failure.packets_before_failure
+            )
             event_handlers.append(filter_stack.handle_event)
         elif filter_name == "keep_drop_queue":
             keep_drop_queue = config.keep_drop_queue
-            filter_stack = KeepDropQueue(filter_stack, name,
-                                         keep_drop_queue.keep_drop_queue)
+            filter_stack = KeepDropQueue(
+                filter_stack, name, keep_drop_queue.keep_drop_queue
+            )
         elif filter_name == "window_packet_dropper":
             window_packet_dropper = config.window_packet_dropper
             filter_stack = WindowPacketDropper(
-                filter_stack, name,
-                window_packet_dropper.window_packet_to_drop)
+                filter_stack, name, window_packet_dropper.window_packet_to_drop
+            )
             event_handlers.append(filter_stack.handle_event)
         else:
             sys.exit(f'Unknown filter {filter_name}')
 
     event_task = asyncio.create_task(
-        _handle_simplex_events(inbound_event_queue, event_handlers))
+        _handle_simplex_events(inbound_event_queue, event_handlers)
+    )
 
     while True:
         # Arbitrarily chosen "page sized" read.
@@ -427,9 +477,12 @@ async def _handle_simplex_connection(
         await filter_stack.process(data)
 
 
-async def _handle_connection(server_port: int, config: config_pb2.ProxyConfig,
-                             client_reader: asyncio.StreamReader,
-                             client_writer: asyncio.StreamWriter) -> None:
+async def _handle_connection(
+    server_port: int,
+    config: config_pb2.ProxyConfig,
+    client_reader: asyncio.StreamReader,
+    client_writer: asyncio.StreamWriter,
+) -> None:
     """Handle a connection between server and client."""
 
     client_addr = client_writer.get_extra_info('peername')
@@ -439,7 +492,8 @@ async def _handle_connection(server_port: int, config: config_pb2.ProxyConfig,
     #
     # TODO(konkers): catch exception and close client writer
     server_reader, server_writer = await asyncio.open_connection(
-        'localhost', server_port)
+        'localhost', server_port
+    )
     _LOG.info(f'New connection opened to server')
 
     # Queues for the simplex connections to pass events to each other.
@@ -457,7 +511,8 @@ async def _handle_connection(server_port: int, config: config_pb2.ProxyConfig,
                     server_writer,
                     server_event_queue,
                     client_event_queue,
-                )),
+                )
+            ),
             asyncio.create_task(
                 _handle_simplex_connection(
                     "server",
@@ -466,7 +521,8 @@ async def _handle_connection(server_port: int, config: config_pb2.ProxyConfig,
                     client_writer,
                     client_event_queue,
                     server_event_queue,
-                )),
+                )
+            ),
         ],
         return_when=asyncio.FIRST_COMPLETED,
     )
@@ -482,21 +538,20 @@ async def _handle_connection(server_port: int, config: config_pb2.ProxyConfig,
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter)
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
 
     parser.add_argument(
         '--server-port',
         type=int,
         required=True,
-        help=
-        'Port of the integration test server.  The proxy will forward connections to this port',
+        help='Port of the integration test server.  The proxy will forward connections to this port',
     )
     parser.add_argument(
         '--client-port',
         type=int,
         required=True,
-        help=
-        'Port on which to listen for connections from integration test client.',
+        help='Port on which to listen for connections from integration test client.',
     )
 
     return parser.parse_args()
@@ -509,7 +564,9 @@ def _init_logging(level: int) -> None:
     log_to_stderr.setFormatter(
         logging.Formatter(
             fmt='%(asctime)s.%(msecs)03d-%(levelname)s: %(message)s',
-            datefmt='%H:%M:%S'))
+            datefmt='%H:%M:%S',
+        )
+    )
 
     _LOG.addHandler(log_to_stderr)
 
@@ -524,14 +581,17 @@ async def _main(server_port: int, client_port: int) -> None:
 
     # Instantiate the TCP server.
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF,
-                             _RECEIVE_BUFFER_SIZE)
+    server_socket.setsockopt(
+        socket.SOL_SOCKET, socket.SO_RCVBUF, _RECEIVE_BUFFER_SIZE
+    )
     server_socket.bind(('localhost', client_port))
     server = await asyncio.start_server(
-        lambda reader, writer: _handle_connection(server_port, config, reader,
-                                                  writer),
+        lambda reader, writer: _handle_connection(
+            server_port, config, reader, writer
+        ),
         limit=_RECEIVE_BUFFER_SIZE,
-        sock=server_socket)
+        sock=server_socket,
+    )
 
     addrs = ', '.join(str(sock.getsockname()) for sock in server.sockets)
     _LOG.info(f'Listening for client connection on {addrs}')

@@ -42,14 +42,17 @@ from pigweed.pw_transfer.integration_test import config_pb2
 class MultiTransferIntegrationTest(test_fixture.TransferIntegrationTest):
     # Each set of transfer tests uses a different client/server port pair to
     # allow tests to be run in parallel.
-    HARNESS_CONFIG = TransferIntegrationTestHarness.Config(server_port=3308,
-                                                           client_port=3309)
+    HARNESS_CONFIG = TransferIntegrationTestHarness.Config(
+        server_port=3308, client_port=3309
+    )
 
-    @parameterized.expand([
-        ("cpp"),
-        ("java"),
-        ("python"),
-    ])
+    @parameterized.expand(
+        [
+            ("cpp"),
+            ("java"),
+            ("python"),
+        ]
+    )
     def test_write_to_same_id(self, client_type):
         rng = random.Random(1533659510898)
         config = self.default_config()
@@ -57,18 +60,22 @@ class MultiTransferIntegrationTest(test_fixture.TransferIntegrationTest):
         transfers: List[BasicTransfer] = []
         for i in range(1, 6):
             transfers.append(
-                BasicTransfer(id=resource_id,
-                              type=config_pb2.TransferAction.TransferType.
-                              WRITE_TO_SERVER,
-                              data=rng.randbytes(rng.randrange(213, 1111))))
+                BasicTransfer(
+                    id=resource_id,
+                    type=config_pb2.TransferAction.TransferType.WRITE_TO_SERVER,
+                    data=rng.randbytes(rng.randrange(213, 1111)),
+                )
+            )
 
         self.do_basic_transfer_sequence(client_type, config, transfers)
 
-    @parameterized.expand([
-        ("cpp"),
-        ("java"),
-        ("python"),
-    ])
+    @parameterized.expand(
+        [
+            ("cpp"),
+            ("java"),
+            ("python"),
+        ]
+    )
     def test_read_from_same_id(self, client_type):
         rng = random.Random(1533659510898)
         config = self.default_config()
@@ -76,18 +83,22 @@ class MultiTransferIntegrationTest(test_fixture.TransferIntegrationTest):
         transfers: List[BasicTransfer] = []
         for i in range(1, 6):
             transfers.append(
-                BasicTransfer(id=resource_id,
-                              type=config_pb2.TransferAction.TransferType.
-                              READ_FROM_SERVER,
-                              data=rng.randbytes(rng.randrange(213, 1111))))
+                BasicTransfer(
+                    id=resource_id,
+                    type=config_pb2.TransferAction.TransferType.READ_FROM_SERVER,
+                    data=rng.randbytes(rng.randrange(213, 1111)),
+                )
+            )
 
         self.do_basic_transfer_sequence(client_type, config, transfers)
 
-    @parameterized.expand([
-        ("cpp"),
-        ("java"),
-        ("python"),
-    ])
+    @parameterized.expand(
+        [
+            ("cpp"),
+            ("java"),
+            ("python"),
+        ]
+    )
     def test_read_write_with_same_id(self, client_type):
         rng = random.Random(1533659510898)
         config = self.default_config()
@@ -95,14 +106,17 @@ class MultiTransferIntegrationTest(test_fixture.TransferIntegrationTest):
         transfers: List[BasicTransfer] = []
         for i in range(1, 6):
             transfer_type = (
-                config_pb2.TransferAction.TransferType.READ_FROM_SERVER if i %
-                2 == 0 else
-                config_pb2.TransferAction.TransferType.WRITE_TO_SERVER)
+                config_pb2.TransferAction.TransferType.READ_FROM_SERVER
+                if i % 2 == 0
+                else config_pb2.TransferAction.TransferType.WRITE_TO_SERVER
+            )
             transfers.append(
-                BasicTransfer(id=resource_id,
-                              type=config_pb2.TransferAction.TransferType.
-                              READ_FROM_SERVER,
-                              data=rng.randbytes(rng.randrange(213, 1111))))
+                BasicTransfer(
+                    id=resource_id,
+                    type=config_pb2.TransferAction.TransferType.READ_FROM_SERVER,
+                    data=rng.randbytes(rng.randrange(213, 1111)),
+                )
+            )
 
         self.do_basic_transfer_sequence(client_type, config, transfers)
 
