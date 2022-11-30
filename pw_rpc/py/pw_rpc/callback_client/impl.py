@@ -46,9 +46,15 @@ _LOG = logging.getLogger(__package__)
 
 class _MethodClient:
     """A method that can be invoked for a particular channel."""
-    def __init__(self, client_impl: 'Impl', rpcs: PendingRpcs,
-                 channel: Channel, method: Method,
-                 default_timeout_s: Optional[float]) -> None:
+
+    def __init__(
+        self,
+        client_impl: 'Impl',
+        rpcs: PendingRpcs,
+        channel: Channel,
+        method: Method,
+        default_timeout_s: Optional[float],
+    ) -> None:
         self._impl = client_impl
         self._rpcs = rpcs
         self._rpc = PendingRpc(channel, method.service, method)
@@ -95,41 +101,47 @@ class _MethodClient:
             f'{function_call}'
             f'{arg_sep.join(descriptors.field_help(self.method.request_type))})'
             f'\n\n{textwrap.indent(docstring, "  ")}\n\n'
-            f'  Returns {annotation}.')
+            f'  Returns {annotation}.'
+        )
 
-    def _start_call(self,
-                    call_type: Type[CallType],
-                    request: Optional[Message],
-                    timeout_s: OptionalTimeout,
-                    on_next: Optional[OnNextCallback],
-                    on_completed: Optional[OnCompletedCallback],
-                    on_error: Optional[OnErrorCallback],
-                    ignore_errors: bool = False) -> CallType:
+    def _start_call(
+        self,
+        call_type: Type[CallType],
+        request: Optional[Message],
+        timeout_s: OptionalTimeout,
+        on_next: Optional[OnNextCallback],
+        on_completed: Optional[OnCompletedCallback],
+        on_error: Optional[OnErrorCallback],
+        ignore_errors: bool = False,
+    ) -> CallType:
         """Creates the Call object and invokes the RPC using it."""
         if timeout_s is UseDefault.VALUE:
             timeout_s = self.default_timeout_s
 
-        call = call_type(self._rpcs, self._rpc, timeout_s, on_next,
-                         on_completed, on_error)
+        call = call_type(
+            self._rpcs, self._rpc, timeout_s, on_next, on_completed, on_error
+        )
         call._invoke(request, ignore_errors)  # pylint: disable=protected-access
         return call
 
-    def _client_streaming_call_type(self,
-                                    base: Type[CallType]) -> Type[CallType]:
+    def _client_streaming_call_type(
+        self, base: Type[CallType]
+    ) -> Type[CallType]:
         """Creates a client or bidirectional stream call type.
 
         Applies the signature from the request protobuf to the send method.
         """
-        def send(self,
-                 _rpc_request_proto: Optional[Message] = None,
-                 **request_fields) -> None:
-            ClientStreamingCall.send(self, _rpc_request_proto,
-                                     **request_fields)
+
+        def send(
+            self, _rpc_request_proto: Optional[Message] = None, **request_fields
+        ) -> None:
+            ClientStreamingCall.send(self, _rpc_request_proto, **request_fields)
 
         _apply_protobuf_signature(self.method, send)
 
-        return type(f'{self.method.name}_{base.__name__}', (base, ),
-                    dict(send=send))
+        return type(
+            f'{self.method.name}_{base.__name__}', (base,), dict(send=send)
+        )
 
 
 def _function_docstring(method: Method) -> str:
@@ -161,107 +173,149 @@ def _apply_protobuf_signature(method: Method, function: Callable) -> None:
     params = [next(iter(sig.parameters.values()))]  # Get the "self" parameter
     params += method.request_parameters()
     params.append(
-        inspect.Parameter('pw_rpc_timeout_s', inspect.Parameter.KEYWORD_ONLY))
+        inspect.Parameter('pw_rpc_timeout_s', inspect.Parameter.KEYWORD_ONLY)
+    )
 
     function.__signature__ = sig.replace(  # type: ignore[attr-defined]
-        parameters=params)
+        parameters=params
+    )
 
 
 class _UnaryMethodClient(_MethodClient):
-    def invoke(self,
-               request: Optional[Message] = None,
-               on_next: Optional[OnNextCallback] = None,
-               on_completed: Optional[OnCompletedCallback] = None,
-               on_error: Optional[OnErrorCallback] = None,
-               *,
-               request_args: Optional[Dict[str, Any]] = None,
-               timeout_s: OptionalTimeout = UseDefault.VALUE) -> UnaryCall:
+    def invoke(
+        self,
+        request: Optional[Message] = None,
+        on_next: Optional[OnNextCallback] = None,
+        on_completed: Optional[OnCompletedCallback] = None,
+        on_error: Optional[OnErrorCallback] = None,
+        *,
+        request_args: Optional[Dict[str, Any]] = None,
+        timeout_s: OptionalTimeout = UseDefault.VALUE,
+    ) -> UnaryCall:
         """Invokes the unary RPC and returns a call object."""
-        return self._start_call(UnaryCall,
-                                self.method.get_request(request, request_args),
-                                timeout_s, on_next, on_completed, on_error)
+        return self._start_call(
+            UnaryCall,
+            self.method.get_request(request, request_args),
+            timeout_s,
+            on_next,
+            on_completed,
+            on_error,
+        )
 
-    def open(self,
-             request: Optional[Message] = None,
-             on_next: Optional[OnNextCallback] = None,
-             on_completed: Optional[OnCompletedCallback] = None,
-             on_error: Optional[OnErrorCallback] = None,
-             *,
-             request_args: Optional[Dict[str, Any]] = None) -> UnaryCall:
+    def open(
+        self,
+        request: Optional[Message] = None,
+        on_next: Optional[OnNextCallback] = None,
+        on_completed: Optional[OnCompletedCallback] = None,
+        on_error: Optional[OnErrorCallback] = None,
+        *,
+        request_args: Optional[Dict[str, Any]] = None,
+    ) -> UnaryCall:
         """Invokes the unary RPC and returns a call object."""
-        return self._start_call(UnaryCall,
-                                self.method.get_request(request, request_args),
-                                None, on_next, on_completed, on_error, True)
+        return self._start_call(
+            UnaryCall,
+            self.method.get_request(request, request_args),
+            None,
+            on_next,
+            on_completed,
+            on_error,
+            True,
+        )
 
 
 class _ServerStreamingMethodClient(_MethodClient):
     def invoke(
-            self,
-            request: Optional[Message] = None,
-            on_next: Optional[OnNextCallback] = None,
-            on_completed: Optional[OnCompletedCallback] = None,
-            on_error: Optional[OnErrorCallback] = None,
-            *,
-            request_args: Optional[Dict[str, Any]] = None,
-            timeout_s: OptionalTimeout = UseDefault.VALUE
+        self,
+        request: Optional[Message] = None,
+        on_next: Optional[OnNextCallback] = None,
+        on_completed: Optional[OnCompletedCallback] = None,
+        on_error: Optional[OnErrorCallback] = None,
+        *,
+        request_args: Optional[Dict[str, Any]] = None,
+        timeout_s: OptionalTimeout = UseDefault.VALUE,
     ) -> ServerStreamingCall:
         """Invokes the server streaming RPC and returns a call object."""
-        return self._start_call(ServerStreamingCall,
-                                self.method.get_request(request, request_args),
-                                timeout_s, on_next, on_completed, on_error)
+        return self._start_call(
+            ServerStreamingCall,
+            self.method.get_request(request, request_args),
+            timeout_s,
+            on_next,
+            on_completed,
+            on_error,
+        )
 
     def open(
-            self,
-            request: Optional[Message] = None,
-            on_next: Optional[OnNextCallback] = None,
-            on_completed: Optional[OnCompletedCallback] = None,
-            on_error: Optional[OnErrorCallback] = None,
-            *,
-            request_args: Optional[Dict[str,
-                                        Any]] = None) -> ServerStreamingCall:
+        self,
+        request: Optional[Message] = None,
+        on_next: Optional[OnNextCallback] = None,
+        on_completed: Optional[OnCompletedCallback] = None,
+        on_error: Optional[OnErrorCallback] = None,
+        *,
+        request_args: Optional[Dict[str, Any]] = None,
+    ) -> ServerStreamingCall:
         """Returns a call object for the RPC, even if the RPC cannot be invoked.
 
         Can be used to listen for responses from an RPC server that may yet be
         available.
         """
-        return self._start_call(ServerStreamingCall,
-                                self.method.get_request(request, request_args),
-                                None, on_next, on_completed, on_error, True)
+        return self._start_call(
+            ServerStreamingCall,
+            self.method.get_request(request, request_args),
+            None,
+            on_next,
+            on_completed,
+            on_error,
+            True,
+        )
 
 
 class _ClientStreamingMethodClient(_MethodClient):
     def invoke(
-            self,
-            on_next: Optional[OnNextCallback] = None,
-            on_completed: Optional[OnCompletedCallback] = None,
-            on_error: Optional[OnErrorCallback] = None,
-            *,
-            timeout_s: OptionalTimeout = UseDefault.VALUE
+        self,
+        on_next: Optional[OnNextCallback] = None,
+        on_completed: Optional[OnCompletedCallback] = None,
+        on_error: Optional[OnErrorCallback] = None,
+        *,
+        timeout_s: OptionalTimeout = UseDefault.VALUE,
     ) -> ClientStreamingCall:
         """Invokes the client streaming RPC and returns a call object"""
         return self._start_call(
-            self._client_streaming_call_type(ClientStreamingCall), None,
-            timeout_s, on_next, on_completed, on_error, True)
+            self._client_streaming_call_type(ClientStreamingCall),
+            None,
+            timeout_s,
+            on_next,
+            on_completed,
+            on_error,
+            True,
+        )
 
     def open(
-            self,
-            on_next: Optional[OnNextCallback] = None,
-            on_completed: Optional[OnCompletedCallback] = None,
-            on_error: Optional[OnErrorCallback] = None) -> ClientStreamingCall:
+        self,
+        on_next: Optional[OnNextCallback] = None,
+        on_completed: Optional[OnCompletedCallback] = None,
+        on_error: Optional[OnErrorCallback] = None,
+    ) -> ClientStreamingCall:
         """Returns a call object for the RPC, even if the RPC cannot be invoked.
 
         Can be used to listen for responses from an RPC server that may yet be
         available.
         """
         return self._start_call(
-            self._client_streaming_call_type(ClientStreamingCall), None, None,
-            on_next, on_completed, on_error, True)
+            self._client_streaming_call_type(ClientStreamingCall),
+            None,
+            None,
+            on_next,
+            on_completed,
+            on_error,
+            True,
+        )
 
     def __call__(
-            self,
-            requests: Iterable[Message] = (),
-            *,
-            timeout_s: OptionalTimeout = UseDefault.VALUE) -> UnaryResponse:
+        self,
+        requests: Iterable[Message] = (),
+        *,
+        timeout_s: OptionalTimeout = UseDefault.VALUE,
+    ) -> UnaryResponse:
         return self.invoke().finish_and_wait(requests, timeout_s=timeout_s)
 
 
@@ -272,18 +326,23 @@ class _BidirectionalStreamingMethodClient(_MethodClient):
         on_completed: Optional[OnCompletedCallback] = None,
         on_error: Optional[OnErrorCallback] = None,
         *,
-        timeout_s: OptionalTimeout = UseDefault.VALUE
+        timeout_s: OptionalTimeout = UseDefault.VALUE,
     ) -> BidirectionalStreamingCall:
         """Invokes the bidirectional streaming RPC and returns a call object."""
         return self._start_call(
-            self._client_streaming_call_type(BidirectionalStreamingCall), None,
-            timeout_s, on_next, on_completed, on_error)
+            self._client_streaming_call_type(BidirectionalStreamingCall),
+            None,
+            timeout_s,
+            on_next,
+            on_completed,
+            on_error,
+        )
 
     def open(
         self,
         on_next: Optional[OnNextCallback] = None,
         on_completed: Optional[OnCompletedCallback] = None,
-        on_error: Optional[OnErrorCallback] = None
+        on_error: Optional[OnErrorCallback] = None,
     ) -> BidirectionalStreamingCall:
         """Returns a call object for the RPC, even if the RPC cannot be invoked.
 
@@ -291,14 +350,21 @@ class _BidirectionalStreamingMethodClient(_MethodClient):
         available.
         """
         return self._start_call(
-            self._client_streaming_call_type(BidirectionalStreamingCall), None,
-            None, on_next, on_completed, on_error, True)
+            self._client_streaming_call_type(BidirectionalStreamingCall),
+            None,
+            None,
+            on_next,
+            on_completed,
+            on_error,
+            True,
+        )
 
     def __call__(
-            self,
-            requests: Iterable[Message] = (),
-            *,
-            timeout_s: OptionalTimeout = UseDefault.VALUE) -> StreamResponse:
+        self,
+        requests: Iterable[Message] = (),
+        *,
+        timeout_s: OptionalTimeout = UseDefault.VALUE,
+    ) -> StreamResponse:
         return self.invoke().finish_and_wait(requests, timeout_s=timeout_s)
 
 
@@ -313,10 +379,13 @@ asynchronously using the invoke method.
 
 class Impl(client.ClientImpl):
     """Callback-based ClientImpl, for use with pw_rpc.Client."""
-    def __init__(self,
-                 default_unary_timeout_s: Optional[float] = None,
-                 default_stream_timeout_s: Optional[float] = None,
-                 cancel_duplicate_calls: Optional[bool] = True) -> None:
+
+    def __init__(
+        self,
+        default_unary_timeout_s: Optional[float] = None,
+        default_stream_timeout_s: Optional[float] = None,
+        cancel_duplicate_calls: Optional[bool] = True,
+    ) -> None:
         super().__init__()
         self._default_unary_timeout_s = default_unary_timeout_s
         self._default_stream_timeout_s = default_stream_timeout_s
@@ -342,112 +411,148 @@ class Impl(client.ClientImpl):
         # TODO(hepler): Remove this workaround.
         assert self.rpcs
         self.rpcs.cancel_duplicate_calls = (  # type: ignore[attr-defined]
-            self._cancel_duplicate_calls)
+            self._cancel_duplicate_calls
+        )
 
         if method.type is Method.Type.UNARY:
             return self._create_unary_method_client(
-                channel, method, self.default_unary_timeout_s)
+                channel, method, self.default_unary_timeout_s
+            )
 
         if method.type is Method.Type.SERVER_STREAMING:
             return self._create_server_streaming_method_client(
-                channel, method, self.default_stream_timeout_s)
+                channel, method, self.default_stream_timeout_s
+            )
 
         if method.type is Method.Type.CLIENT_STREAMING:
-            return self._create_method_client(_ClientStreamingMethodClient,
-                                              channel, method,
-                                              self.default_unary_timeout_s)
+            return self._create_method_client(
+                _ClientStreamingMethodClient,
+                channel,
+                method,
+                self.default_unary_timeout_s,
+            )
 
         if method.type is Method.Type.BIDIRECTIONAL_STREAMING:
             return self._create_method_client(
-                _BidirectionalStreamingMethodClient, channel, method,
-                self.default_stream_timeout_s)
+                _BidirectionalStreamingMethodClient,
+                channel,
+                method,
+                self.default_stream_timeout_s,
+            )
 
         raise AssertionError(f'Unknown method type {method.type}')
 
-    def _create_method_client(self, base: type, channel: Channel,
-                              method: Method,
-                              default_timeout_s: Optional[float], **fields):
+    def _create_method_client(
+        self,
+        base: type,
+        channel: Channel,
+        method: Method,
+        default_timeout_s: Optional[float],
+        **fields,
+    ):
         """Creates a _MethodClient derived class customized for the method."""
         method_client_type = type(
-            f'{method.name}{base.__name__}', (base, ),
-            dict(__doc__=_method_client_docstring(method), **fields))
-        return method_client_type(self, self.rpcs, channel, method,
-                                  default_timeout_s)
+            f'{method.name}{base.__name__}',
+            (base,),
+            dict(__doc__=_method_client_docstring(method), **fields),
+        )
+        return method_client_type(
+            self, self.rpcs, channel, method, default_timeout_s
+        )
 
     def _create_unary_method_client(
-            self, channel: Channel, method: Method,
-            default_timeout_s: Optional[float]) -> _UnaryMethodClient:
+        self,
+        channel: Channel,
+        method: Method,
+        default_timeout_s: Optional[float],
+    ) -> _UnaryMethodClient:
         """Creates a _UnaryMethodClient with a customized __call__ method."""
 
         # TODO(hepler): Use / to mark the first arg as positional-only
         #     when when Python 3.7 support is no longer required.
-        def call(self: _UnaryMethodClient,
-                 _rpc_request_proto: Optional[Message] = None,
-                 *,
-                 pw_rpc_timeout_s: OptionalTimeout = UseDefault.VALUE,
-                 **request_fields) -> UnaryResponse:
+        def call(
+            self: _UnaryMethodClient,
+            _rpc_request_proto: Optional[Message] = None,
+            *,
+            pw_rpc_timeout_s: OptionalTimeout = UseDefault.VALUE,
+            **request_fields,
+        ) -> UnaryResponse:
             return self.invoke(
-                self.method.get_request(_rpc_request_proto,
-                                        request_fields)).wait(pw_rpc_timeout_s)
+                self.method.get_request(_rpc_request_proto, request_fields)
+            ).wait(pw_rpc_timeout_s)
 
         _update_call_method(method, call)
-        return self._create_method_client(_UnaryMethodClient,
-                                          channel,
-                                          method,
-                                          default_timeout_s,
-                                          __call__=call)
+        return self._create_method_client(
+            _UnaryMethodClient,
+            channel,
+            method,
+            default_timeout_s,
+            __call__=call,
+        )
 
     def _create_server_streaming_method_client(
-            self, channel: Channel, method: Method,
-            default_timeout_s: Optional[float]
+        self,
+        channel: Channel,
+        method: Method,
+        default_timeout_s: Optional[float],
     ) -> _ServerStreamingMethodClient:
         """Creates _ServerStreamingMethodClient with custom __call__ method."""
 
         # TODO(hepler): Use / to mark the first arg as positional-only
         #     when when Python 3.7 support is no longer required.
-        def call(self: _ServerStreamingMethodClient,
-                 _rpc_request_proto: Optional[Message] = None,
-                 *,
-                 pw_rpc_timeout_s: OptionalTimeout = UseDefault.VALUE,
-                 **request_fields) -> StreamResponse:
+        def call(
+            self: _ServerStreamingMethodClient,
+            _rpc_request_proto: Optional[Message] = None,
+            *,
+            pw_rpc_timeout_s: OptionalTimeout = UseDefault.VALUE,
+            **request_fields,
+        ) -> StreamResponse:
             return self.invoke(
-                self.method.get_request(_rpc_request_proto,
-                                        request_fields)).wait(pw_rpc_timeout_s)
+                self.method.get_request(_rpc_request_proto, request_fields)
+            ).wait(pw_rpc_timeout_s)
 
         _update_call_method(method, call)
-        return self._create_method_client(_ServerStreamingMethodClient,
-                                          channel,
-                                          method,
-                                          default_timeout_s,
-                                          __call__=call)
+        return self._create_method_client(
+            _ServerStreamingMethodClient,
+            channel,
+            method,
+            default_timeout_s,
+            __call__=call,
+        )
 
-    def handle_response(self,
-                        rpc: PendingRpc,
-                        context: Call,
-                        payload,
-                        *,
-                        args: tuple = (),
-                        kwargs: Optional[dict] = None) -> None:
+    def handle_response(
+        self,
+        rpc: PendingRpc,
+        context: Call,
+        payload,
+        *,
+        args: tuple = (),
+        kwargs: Optional[dict] = None,
+    ) -> None:
         """Invokes the callback associated with this RPC."""
         assert not args and not kwargs, 'Forwarding args & kwargs not supported'
         context._handle_response(payload)  # pylint: disable=protected-access
 
-    def handle_completion(self,
-                          rpc: PendingRpc,
-                          context: Call,
-                          status: Status,
-                          *,
-                          args: tuple = (),
-                          kwargs: Optional[dict] = None):
+    def handle_completion(
+        self,
+        rpc: PendingRpc,
+        context: Call,
+        status: Status,
+        *,
+        args: tuple = (),
+        kwargs: Optional[dict] = None,
+    ):
         assert not args and not kwargs, 'Forwarding args & kwargs not supported'
         context._handle_completion(status)  # pylint: disable=protected-access
 
-    def handle_error(self,
-                     rpc: PendingRpc,
-                     context: Call,
-                     status: Status,
-                     *,
-                     args: tuple = (),
-                     kwargs: Optional[dict] = None) -> None:
+    def handle_error(
+        self,
+        rpc: PendingRpc,
+        context: Call,
+        status: Status,
+        *,
+        args: tuple = (),
+        kwargs: Optional[dict] = None,
+    ) -> None:
         assert not args and not kwargs, 'Forwarding args & kwargs not supported'
         context._handle_error(status)  # pylint: disable=protected-access

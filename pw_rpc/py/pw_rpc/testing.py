@@ -24,26 +24,34 @@ TEMP_DIR_MARKER = '(pw_rpc:CREATE_TEMP_DIR)'
 
 
 def parse_test_server_args(
-        parser: Optional[argparse.ArgumentParser] = None
+    parser: Optional[argparse.ArgumentParser] = None,
 ) -> argparse.Namespace:
     """Parses arguments for running a Python-based integration test."""
     if parser is None:
         parser = argparse.ArgumentParser(
-            description=sys.modules['__main__'].__doc__)
+            description=sys.modules['__main__'].__doc__
+        )
 
-    parser.add_argument('--test-server-command',
-                        nargs='+',
-                        required=True,
-                        help='Command that starts the test server.')
+    parser.add_argument(
+        '--test-server-command',
+        nargs='+',
+        required=True,
+        help='Command that starts the test server.',
+    )
     parser.add_argument(
         '--port',
         type=int,
         required=True,
-        help=('The port to use to connect to the test server. This value is '
-              'passed to the test server as the last argument.'))
-    parser.add_argument('unittest_args',
-                        nargs=argparse.REMAINDER,
-                        help='Arguments after "--" are passed to unittest.')
+        help=(
+            'The port to use to connect to the test server. This value is '
+            'passed to the test server as the last argument.'
+        ),
+    )
+    parser.add_argument(
+        'unittest_args',
+        nargs=argparse.REMAINDER,
+        help='Arguments after "--" are passed to unittest.',
+    )
 
     args = parser.parse_args()
 
@@ -58,15 +66,19 @@ def parse_test_server_args(
 
 def _parse_subprocess_integration_test_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description='Executes a test between two subprocesses')
+        description='Executes a test between two subprocesses'
+    )
     parser.add_argument('--client', required=True, help='Client binary to run')
     parser.add_argument('--server', required=True, help='Server binary to run')
     parser.add_argument(
         'common_args',
         metavar='-- ...',
         nargs=argparse.REMAINDER,
-        help=('Arguments to pass to both the server and client; '
-              f'pass {TEMP_DIR_MARKER} to generate a temporary directory'))
+        help=(
+            'Arguments to pass to both the server and client; '
+            f'pass {TEMP_DIR_MARKER} to generate a temporary directory'
+        ),
+    )
 
     args = parser.parse_args()
 
@@ -78,10 +90,12 @@ def _parse_subprocess_integration_test_args() -> argparse.Namespace:
     return args
 
 
-def execute_integration_test(server: str,
-                             client: str,
-                             common_args: Sequence[str],
-                             setup_time_s: float = 0.2) -> int:
+def execute_integration_test(
+    server: str,
+    client: str,
+    common_args: Sequence[str],
+    setup_time_s: float = 0.2,
+) -> int:
     temp_dir: Optional[tempfile.TemporaryDirectory] = None
 
     if TEMP_DIR_MARKER in common_args:
@@ -109,4 +123,6 @@ def execute_integration_test(server: str,
 if __name__ == '__main__':
     sys.exit(
         execute_integration_test(
-            **vars(_parse_subprocess_integration_test_args())))
+            **vars(_parse_subprocess_integration_test_args())
+        )
+    )

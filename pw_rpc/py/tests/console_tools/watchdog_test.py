@@ -22,13 +22,15 @@ from pw_rpc.console_tools import Watchdog
 
 class TestWatchdog(unittest.TestCase):
     """Tests the Watchdog class."""
+
     def setUp(self) -> None:
         self._reset = mock.Mock()
         self._expiration = mock.Mock()
         self._while_expired = mock.Mock()
 
-        self._watchdog = Watchdog(self._reset, self._expiration,
-                                  self._while_expired, 99999)
+        self._watchdog = Watchdog(
+            self._reset, self._expiration, self._while_expired, 99999
+        )
 
     def _trigger_timeout(self) -> None:
         # Don't wait for the timeout -- that's too flaky. Call the internal

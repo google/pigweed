@@ -21,15 +21,18 @@ from pw_status import Status
 from pw_rpc.internal.packet_pb2 import PacketType, RpcPacket
 from pw_rpc import packets
 
-_TEST_REQUEST = RpcPacket(type=PacketType.REQUEST,
-                          channel_id=1,
-                          service_id=2,
-                          method_id=3,
-                          payload=RpcPacket(status=321).SerializeToString())
+_TEST_REQUEST = RpcPacket(
+    type=PacketType.REQUEST,
+    channel_id=1,
+    service_id=2,
+    method_id=3,
+    payload=RpcPacket(status=321).SerializeToString(),
+)
 
 
 class PacketsTest(unittest.TestCase):
     """Tests for packet encoding and decoding."""
+
     def test_encode_request(self):
         data = packets.encode_request((1, 2, 3), RpcPacket(status=321))
         packet = RpcPacket()
@@ -38,11 +41,13 @@ class PacketsTest(unittest.TestCase):
         self.assertEqual(_TEST_REQUEST, packet)
 
     def test_encode_response(self):
-        response = RpcPacket(type=PacketType.RESPONSE,
-                             channel_id=1,
-                             service_id=2,
-                             method_id=3,
-                             payload=RpcPacket(status=321).SerializeToString())
+        response = RpcPacket(
+            type=PacketType.RESPONSE,
+            channel_id=1,
+            service_id=2,
+            method_id=3,
+            payload=RpcPacket(status=321).SerializeToString(),
+        )
 
         data = packets.encode_response((1, 2, 3), RpcPacket(status=321))
         packet = RpcPacket()
@@ -58,11 +63,14 @@ class PacketsTest(unittest.TestCase):
 
         self.assertEqual(
             packet,
-            RpcPacket(type=PacketType.CLIENT_ERROR,
-                      channel_id=9,
-                      service_id=8,
-                      method_id=7,
-                      status=Status.CANCELLED.value))
+            RpcPacket(
+                type=PacketType.CLIENT_ERROR,
+                channel_id=9,
+                service_id=8,
+                method_id=7,
+                status=Status.CANCELLED.value,
+            ),
+        )
 
     def test_encode_client_error(self):
         data = packets.encode_client_error(_TEST_REQUEST, Status.NOT_FOUND)
@@ -72,26 +80,34 @@ class PacketsTest(unittest.TestCase):
 
         self.assertEqual(
             packet,
-            RpcPacket(type=PacketType.CLIENT_ERROR,
-                      channel_id=1,
-                      service_id=2,
-                      method_id=3,
-                      status=Status.NOT_FOUND.value))
+            RpcPacket(
+                type=PacketType.CLIENT_ERROR,
+                channel_id=1,
+                service_id=2,
+                method_id=3,
+                status=Status.NOT_FOUND.value,
+            ),
+        )
 
     def test_decode(self):
-        self.assertEqual(_TEST_REQUEST,
-                         packets.decode(_TEST_REQUEST.SerializeToString()))
+        self.assertEqual(
+            _TEST_REQUEST, packets.decode(_TEST_REQUEST.SerializeToString())
+        )
 
     def test_for_server(self):
         self.assertTrue(packets.for_server(_TEST_REQUEST))
 
         self.assertFalse(
             packets.for_server(
-                RpcPacket(type=PacketType.RESPONSE,
-                          channel_id=1,
-                          service_id=2,
-                          method_id=3,
-                          payload=RpcPacket(status=321).SerializeToString())))
+                RpcPacket(
+                    type=PacketType.RESPONSE,
+                    channel_id=1,
+                    service_id=2,
+                    method_id=3,
+                    payload=RpcPacket(status=321).SerializeToString(),
+                )
+            )
+        )
 
 
 if __name__ == '__main__':

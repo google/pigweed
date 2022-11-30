@@ -32,8 +32,11 @@ from typing import (
 )
 
 from google.protobuf import descriptor_pb2, message_factory
-from google.protobuf.descriptor import (FieldDescriptor, MethodDescriptor,
-                                        ServiceDescriptor)
+from google.protobuf.descriptor import (
+    FieldDescriptor,
+    MethodDescriptor,
+    ServiceDescriptor,
+)
 from google.protobuf.message import Message
 from pw_protobuf_compiler import python_protos
 
@@ -84,6 +87,7 @@ class ChannelManipulator(abc.ABC):
       # Create a RPC client.
       client = HdlcRpcClient(socket.read, protos, channels, stdout)
     """
+
     def __init__(self):
         self.send_packet: Callable[[bytes], Any] = lambda _: None
 
@@ -103,6 +107,7 @@ class ChannelManipulator(abc.ABC):
 @dataclass(frozen=True, eq=False)
 class Service:
     """Describes an RPC service."""
+
     _descriptor: ServiceDescriptor
     id: int
     methods: 'Methods'
@@ -121,13 +126,19 @@ class Service:
 
     @classmethod
     def from_descriptor(cls, descriptor: ServiceDescriptor) -> 'Service':
-        service = cls(descriptor, ids.calculate(descriptor.full_name),
-                      None)  # type: ignore[arg-type]
+        service = cls(
+            descriptor,
+            ids.calculate(descriptor.full_name),
+            None,  # type: ignore[arg-type]
+        )
         object.__setattr__(
-            service, 'methods',
+            service,
+            'methods',
             Methods(
                 Method.from_descriptor(method_descriptor, service)
-                for method_descriptor in descriptor.methods))
+                for method_descriptor in descriptor.methods
+            ),
+        )
 
         return service
 
@@ -147,7 +158,9 @@ def _streaming_attributes(method) -> Tuple[bool, bool]:
     file_pb = descriptor_pb2.FileDescriptorProto()
     file_pb.MergeFromString(service.file.serialized_pb)
 
-    method_pb = file_pb.service[service.index].method[method.index]  # pylint: disable=no-member
+    method_pb = file_pb.service[service.index].method[
+        method.index
+    ]  # pylint: disable=no-member
     return method_pb.server_streaming, method_pb.client_streaming
 
 
@@ -178,7 +191,8 @@ def _field_type_annotation(field: FieldDescriptor):
     """Creates a field type annotation to use in the help message only."""
     if field.type == FieldDescriptor.TYPE_MESSAGE:
         annotation = message_factory.MessageFactory(
-            field.message_type.file.pool).GetPrototype(field.message_type)
+            field.message_type.file.pool
+        ).GetPrototype(field.message_type)
     else:
         annotation = _PROTO_FIELD_TYPES.get(field.type, Parameter.empty)
 
@@ -211,8 +225,10 @@ def _message_is_type(proto, expected_type) -> bool:
     # new, unique generated proto class. Any generated classes for a particular
     # proto message share the same MessageDescriptor instance and are
     # interchangeable, so check the descriptors in addition to the types.
-    return isinstance(proto, expected_type) or (isinstance(
-        proto, Message) and proto.DESCRIPTOR is expected_type.DESCRIPTOR)
+    return isinstance(proto, expected_type) or (
+        isinstance(proto, Message)
+        and proto.DESCRIPTOR is expected_type.DESCRIPTOR
+    )
 
 
 @dataclass(frozen=True, eq=False)
@@ -230,9 +246,11 @@ class Method:
     @classmethod
     def from_descriptor(cls, descriptor: MethodDescriptor, service: Service):
         input_factory = message_factory.MessageFactory(
-            descriptor.input_type.file.pool)
+            descriptor.input_type.file.pool
+        )
         output_factory = message_factory.MessageFactory(
-            descriptor.output_type.file.pool)
+            descriptor.output_type.file.pool
+        )
         return Method(
             descriptor,
             service,
@@ -249,7 +267,9 @@ class Method:
         BIDIRECTIONAL_STREAMING = 3
 
         def sentence_name(self) -> str:
-            return self.name.lower().replace('_', ' ')  # pylint: disable=no-member
+            return self.name.lower().replace(
+                '_', ' '
+            )  # pylint: disable=no-member
 
     @property
     def name(self) -> str:
@@ -276,8 +296,9 @@ class Method:
 
         return self.Type.UNARY
 
-    def get_request(self, proto: Optional[Message],
-                    proto_kwargs: Optional[Dict[str, Any]]) -> Message:
+    def get_request(
+        self, proto: Optional[Message], proto_kwargs: Optional[Dict[str, Any]]
+    ) -> Message:
         """Returns a request_type protobuf message.
 
         The client implementation may use this to support providing a request
@@ -292,7 +313,8 @@ class Method:
             raise TypeError(
                 'Requests must be provided either as a message object or a '
                 'series of keyword args, but both were provided '
-                f"({proto_str} and {proto_kwargs!r})")
+                f"({proto_str} and {proto_kwargs!r})"
+            )
 
         if proto is None:
             return self.request_type(**proto_kwargs)
@@ -303,9 +325,11 @@ class Method:
             except AttributeError:
                 bad_type = type(proto).__name__
 
-            raise TypeError(f'Expected a message of type '
-                            f'{self.request_type.DESCRIPTOR.full_name}, '
-                            f'got {bad_type}')
+            raise TypeError(
+                f'Expected a message of type '
+                f'{self.request_type.DESCRIPTOR.full_name}, '
+                f'got {bad_type}'
+            )
 
         return proto
 
@@ -315,10 +339,12 @@ class Method:
         This can be used to make function signatures match the request proto.
         """
         for field in self.request_type.DESCRIPTOR.fields:
-            yield Parameter(field.name,
-                            Parameter.KEYWORD_ONLY,
-                            annotation=_field_type_annotation(field),
-                            default=field.default_value)
+            yield Parameter(
+                field.name,
+                Parameter.KEYWORD_ONLY,
+                annotation=_field_type_annotation(field),
+                default=field.default_value,
+            )
 
     def __repr__(self) -> str:
         req = self._method_parameter(self.request_type, self.client_streaming)
@@ -347,12 +373,14 @@ def _name(item: Union[Service, Method]) -> str:
 
 class _AccessByName(Generic[T]):
     """Wrapper for accessing types by name within a proto package structure."""
+
     def __init__(self, name: str, item: T):
         setattr(self, name, item)
 
 
 class ServiceAccessor(Collection[T]):
     """Navigates RPC services by name or ID."""
+
     def __init__(self, members, as_attrs: str = ''):
         """Creates accessor from an {item: value} dict or [values] iterable."""
         # If the members arg was passed as a [values] iterable, convert it to
@@ -368,8 +396,8 @@ class ServiceAccessor(Collection[T]):
                 setattr(self, name, member)
         elif as_attrs == 'packages':
             for package in python_protos.as_packages(
-                (m.package, _AccessByName(m.name, members[m]))
-                    for m in members).packages:
+                (m.package, _AccessByName(m.name, members[m])) for m in members
+            ).packages:
                 setattr(self, str(package), package)
         elif as_attrs:
             raise ValueError(f'Unexpected value {as_attrs!r} for as_attrs')
@@ -404,12 +432,14 @@ def _id(handle: Union[str, int]) -> int:
 
 class Methods(ServiceAccessor[Method]):
     """A collection of Method descriptors in a Service."""
+
     def __init__(self, method: Iterable[Method]):
         super().__init__(method)
 
 
 class Services(ServiceAccessor[Service]):
     """A collection of Service descriptors."""
+
     def __init__(self, services: Iterable[Service]):
         super().__init__(services)
 

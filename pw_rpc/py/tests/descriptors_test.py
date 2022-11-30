@@ -51,20 +51,24 @@ service PublicService {
 
 class MethodTest(unittest.TestCase):
     """Tests pw_rpc.Method."""
+
     def setUp(self):
-        module, = python_protos.compile_and_import_strings([TEST_PROTO])
+        (module,) = python_protos.compile_and_import_strings([TEST_PROTO])
         service = descriptors.Service.from_descriptor(
-            module.DESCRIPTOR.services_by_name['PublicService'])
+            module.DESCRIPTOR.services_by_name['PublicService']
+        )
         self._method = service.methods['SomeUnary']
 
     def test_get_request_with_both_message_and_kwargs(self):
         with self.assertRaisesRegex(TypeError, r'either'):
-            self._method.get_request(self._method.request_type(),
-                                     {'magic_number': 1})
+            self._method.get_request(
+                self._method.request_type(), {'magic_number': 1}
+            )
 
     def test_get_request_neither_message_nor_kwargs(self):
-        self.assertEqual(self._method.request_type(),
-                         self._method.get_request(None, None))
+        self.assertEqual(
+            self._method.request_type(), self._method.get_request(None, None)
+        )
 
     def test_get_request_with_wrong_type(self):
         with self.assertRaisesRegex(TypeError, r'pw\.test1\.SomeMessage'):
@@ -77,8 +81,8 @@ class MethodTest(unittest.TestCase):
 
     def test_get_request_with_different_copy_of_same_message_class(self):
         some_message_clone = MessageFactory(
-            self._method.request_type.DESCRIPTOR.file.pool).GetPrototype(
-                self._method.request_type.DESCRIPTOR)
+            self._method.request_type.DESCRIPTOR.file.pool
+        ).GetPrototype(self._method.request_type.DESCRIPTOR)
 
         msg = some_message_clone()
 

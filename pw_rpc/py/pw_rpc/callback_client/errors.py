@@ -23,7 +23,8 @@ from pw_rpc.client import PendingRpc
 class RpcTimeout(Exception):
     def __init__(self, rpc: PendingRpc, timeout: Optional[float]):
         super().__init__(
-            f'No response received for {rpc.method} after {timeout} s')
+            f'No response received for {rpc.method} after {timeout} s'
+        )
         self.rpc = rpc
         self.timeout = timeout
 

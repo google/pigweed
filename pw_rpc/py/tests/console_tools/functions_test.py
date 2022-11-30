@@ -18,7 +18,9 @@ import unittest
 from pw_rpc.console_tools import functions
 
 
-def func(one, two: int, *a: bool, three=3, four: 'int' = 4, **kw) -> None:  # pylint: disable=unused-argument
+def func(  # pylint: disable=unused-argument
+    one, two: int, *a: bool, three=3, four: 'int' = 4, **kw
+) -> None:
     """This is the docstring.
 
     More stuff.
@@ -38,8 +40,10 @@ class TestFunctions(unittest.TestCase):
         def simple_function():
             pass
 
-        self.assertEqual(functions.format_function_help(simple_function),
-                         'simple_function():\n\n    (no docstring)')
+        self.assertEqual(
+            functions.format_function_help(simple_function),
+            'simple_function():\n\n    (no docstring)',
+        )
 
     def test_format_complex_function_help(self) -> None:
         self.assertEqual(functions.format_function_help(func), _EXPECTED_HELP)

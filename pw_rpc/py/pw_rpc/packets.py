@@ -41,11 +41,13 @@ def encode_request(rpc: tuple, request: Optional[message.Message]) -> bytes:
     channel, service, method = _ids(rpc)
     payload = request.SerializeToString() if request is not None else bytes()
 
-    return packet_pb2.RpcPacket(type=packet_pb2.PacketType.REQUEST,
-                                channel_id=channel,
-                                service_id=service,
-                                method_id=method,
-                                payload=payload).SerializeToString()
+    return packet_pb2.RpcPacket(
+        type=packet_pb2.PacketType.REQUEST,
+        channel_id=channel,
+        service_id=service,
+        method_id=method,
+        payload=payload,
+    ).SerializeToString()
 
 
 def encode_response(rpc: tuple, response: message.Message) -> bytes:
@@ -56,7 +58,8 @@ def encode_response(rpc: tuple, response: message.Message) -> bytes:
         channel_id=channel,
         service_id=service,
         method_id=method,
-        payload=response.SerializeToString()).SerializeToString()
+        payload=response.SerializeToString(),
+    ).SerializeToString()
 
 
 def encode_client_stream(rpc: tuple, request: message.Message) -> bytes:
@@ -67,33 +70,40 @@ def encode_client_stream(rpc: tuple, request: message.Message) -> bytes:
         channel_id=channel,
         service_id=service,
         method_id=method,
-        payload=request.SerializeToString()).SerializeToString()
+        payload=request.SerializeToString(),
+    ).SerializeToString()
 
 
 def encode_client_error(packet: packet_pb2.RpcPacket, status: Status) -> bytes:
-    return packet_pb2.RpcPacket(type=packet_pb2.PacketType.CLIENT_ERROR,
-                                channel_id=packet.channel_id,
-                                service_id=packet.service_id,
-                                method_id=packet.method_id,
-                                status=status.value).SerializeToString()
+    return packet_pb2.RpcPacket(
+        type=packet_pb2.PacketType.CLIENT_ERROR,
+        channel_id=packet.channel_id,
+        service_id=packet.service_id,
+        method_id=packet.method_id,
+        status=status.value,
+    ).SerializeToString()
 
 
 def encode_cancel(rpc: tuple) -> bytes:
     channel, service, method = _ids(rpc)
-    return packet_pb2.RpcPacket(type=packet_pb2.PacketType.CLIENT_ERROR,
-                                status=Status.CANCELLED.value,
-                                channel_id=channel,
-                                service_id=service,
-                                method_id=method).SerializeToString()
+    return packet_pb2.RpcPacket(
+        type=packet_pb2.PacketType.CLIENT_ERROR,
+        status=Status.CANCELLED.value,
+        channel_id=channel,
+        service_id=service,
+        method_id=method,
+    ).SerializeToString()
 
 
 def encode_client_stream_end(rpc: tuple) -> bytes:
     channel, service, method = _ids(rpc)
 
-    return packet_pb2.RpcPacket(type=packet_pb2.PacketType.CLIENT_STREAM_END,
-                                channel_id=channel,
-                                service_id=service,
-                                method_id=method).SerializeToString()
+    return packet_pb2.RpcPacket(
+        type=packet_pb2.PacketType.CLIENT_STREAM_END,
+        channel_id=channel,
+        service_id=service,
+        method_id=method,
+    ).SerializeToString()
 
 
 def for_server(packet: packet_pb2.RpcPacket) -> bool:

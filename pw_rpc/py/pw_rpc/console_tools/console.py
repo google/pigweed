@@ -41,20 +41,24 @@ _INDENT = '    '
 
 class CommandHelper:
     """Used to implement a help command in an RPC console."""
-    @classmethod
-    def from_methods(cls,
-                     methods: Iterable[Method],
-                     variables: Mapping[str, object],
-                     header: str,
-                     footer: str = '') -> 'CommandHelper':
-        return cls({m.full_name: m
-                    for m in methods}, variables, header, footer)
 
-    def __init__(self,
-                 methods: Mapping[str, object],
-                 variables: Mapping[str, object],
-                 header: str,
-                 footer: str = ''):
+    @classmethod
+    def from_methods(
+        cls,
+        methods: Iterable[Method],
+        variables: Mapping[str, object],
+        header: str,
+        footer: str = '',
+    ) -> 'CommandHelper':
+        return cls({m.full_name: m for m in methods}, variables, header, footer)
+
+    def __init__(
+        self,
+        methods: Mapping[str, object],
+        variables: Mapping[str, object],
+        header: str,
+        footer: str = '',
+    ):
         self._methods = methods
         self._variables = variables
         self.header = header
@@ -66,11 +70,13 @@ class CommandHelper:
         if item is None:
             all_vars = '\n'.join(sorted(self._variables_without_methods()))
             all_rpcs = '\n'.join(self._methods)
-            return (f'{self.header}\n\n'
-                    f'All variables:\n\n{textwrap.indent(all_vars, _INDENT)}'
-                    '\n\n'
-                    f'All commands:\n\n{textwrap.indent(all_rpcs, _INDENT)}'
-                    f'\n\n{self.footer}'.strip())
+            return (
+                f'{self.header}\n\n'
+                f'All variables:\n\n{textwrap.indent(all_vars, _INDENT)}'
+                '\n\n'
+                f'All commands:\n\n{textwrap.indent(all_rpcs, _INDENT)}'
+                f'\n\n{self.footer}'.strip()
+            )
 
         # If item is a string, find commands matching that.
         if isinstance(item, str):
@@ -83,17 +89,20 @@ class CommandHelper:
                 return f'{name}\n\n{inspect.getdoc(method)}'
 
             return f'Multiple matches for {item!r}:\n\n' + textwrap.indent(
-                '\n'.join(matches), _INDENT)
+                '\n'.join(matches), _INDENT
+            )
 
         return inspect.getdoc(item) or f'No documentation for {item!r}.'
 
     def _variables_without_methods(self) -> Mapping[str, object]:
         packages = frozenset(
-            n.split('.', 1)[0] for n in self._methods if '.' in n)
+            n.split('.', 1)[0] for n in self._methods if '.' in n
+        )
 
         return {
             name: var
-            for name, var in self._variables.items() if name not in packages
+            for name, var in self._variables.items()
+            if name not in packages
         }
 
     def __call__(self, item: object = None) -> None:
@@ -107,6 +116,7 @@ class CommandHelper:
 
 class ClientInfo(NamedTuple):
     """Information about an RPC client as it appears in the console."""
+
     # The name to use in the console to refer to this client.
     name: str
 
@@ -118,7 +128,8 @@ class ClientInfo(NamedTuple):
 
 
 def flattened_rpc_completions(
-    client_info_list: Collection[ClientInfo], ) -> Dict[str, str]:
+    client_info_list: Collection[ClientInfo],
+) -> Dict[str, str]:
     """Create a flattened list of rpc commands for repl auto-completion.
 
     This gathers all rpc commands from a set of ClientInfo variables and
@@ -139,15 +150,18 @@ def flattened_rpc_completions(
         }
     """
     rpc_list = list(
-        chain.from_iterable([
-            '{}.rpcs.{}'.format(c.name, a.full_name)
-            for a in c.rpc_client.methods()
-        ] for c in client_info_list))
+        chain.from_iterable(
+            [
+                '{}.rpcs.{}'.format(c.name, a.full_name)
+                for a in c.rpc_client.methods()
+            ]
+            for c in client_info_list
+        )
+    )
 
     # Dict should contain completion text as keys and descriptions as values.
     custom_word_completions = {
-        flattened_rpc_name: 'RPC'
-        for flattened_rpc_name in rpc_list
+        flattened_rpc_name: 'RPC' for flattened_rpc_name in rpc_list
     }
     return custom_word_completions
 
@@ -167,12 +181,15 @@ class Context:
       IPython.terminal.embed.InteractiveShellEmbed().mainloop(
           module=types.SimpleNamespace(**context.variables()))
     """
-    def __init__(self,
-                 client_info: Collection[ClientInfo],
-                 default_client: Any,
-                 protos: python_protos.Library,
-                 *,
-                 help_header: str = '') -> None:
+
+    def __init__(
+        self,
+        client_info: Collection[ClientInfo],
+        default_client: Any,
+        protos: python_protos.Library,
+        *,
+        help_header: str = '',
+    ) -> None:
         """Creates an RPC console context.
 
         Protos and RPC services are accessible by their proto package and name.
@@ -193,7 +210,8 @@ class Context:
 
         # Store objects with references to RPC services, sorted by package.
         self._services: Dict[str, types.SimpleNamespace] = defaultdict(
-            types.SimpleNamespace)
+            types.SimpleNamespace
+        )
 
         self._variables: Dict[str, object] = dict(
             Status=pw_status.Status,
@@ -207,18 +225,24 @@ class Context:
 
         # Make the proto package hierarchy directly available in the console.
         for package in self.protos.packages:
-            self._variables[package._package] = package  # pylint: disable=protected-access
+            self._variables[
+                package._package
+            ] = package  # pylint: disable=protected-access
 
         # Monkey patch the message types to use an improved repr function.
         for message_type in self.protos.messages():
             message_type.__repr__ = python_protos.proto_repr
 
         # Set up the 'help' command.
-        all_methods = chain.from_iterable(c.rpc_client.methods()
-                                          for c in self.client_info)
+        all_methods = chain.from_iterable(
+            c.rpc_client.methods() for c in self.client_info
+        )
         self._helper = CommandHelper.from_methods(
-            all_methods, self._variables, help_header,
-            'Type a command and hit Enter to see detailed help information.')
+            all_methods,
+            self._variables,
+            help_header,
+            'Type a command and hit Enter to see detailed help information.',
+        )
 
         self._variables['help'] = self._helper
 
@@ -233,9 +257,9 @@ class Context:
         """Returns a mapping of names to variables for use in an RPC console."""
         return self._variables
 
-    def set_target(self,
-                   selected_client: object,
-                   channel_id: Optional[int] = None) -> None:
+    def set_target(
+        self, selected_client: object, channel_id: Optional[int] = None
+    ) -> None:
         """Sets the default target for commands."""
         # Make sure the variable is one of the client variables.
         name = ''
@@ -246,8 +270,10 @@ class Context:
                 print('CURRENT RPC TARGET:', name)
                 break
         else:
-            raise ValueError('Supported targets :' +
-                             ', '.join(c.name for c in self.client_info))
+            raise ValueError(
+                'Supported targets :'
+                + ', '.join(c.name for c in self.client_info)
+            )
 
         # Update the RPC services to use the newly selected target.
         for service_client in rpc_client.channel(channel_id).rpcs:
@@ -256,19 +282,25 @@ class Context:
                 method.request_type.__repr__ = python_protos.proto_repr
                 method.response_type.__repr__ = python_protos.proto_repr
 
-            service = service_client._service  # pylint: disable=protected-access
-            setattr(self._services[service.package], service.name,
-                    service_client)
+            service = (
+                service_client._service  # pylint: disable=protected-access
+            )
+            setattr(
+                self._services[service.package], service.name, service_client
+            )
 
         # Add the RPC methods to their proto packages.
         for package_name, rpcs in self._services.items():
-            self.protos.packages[package_name]._add_item(rpcs)  # pylint: disable=protected-access
+            # pylint: disable=protected-access
+            self.protos.packages[package_name]._add_item(rpcs)
+            # pylint: enable=protected-access
 
         self.current_client = selected_client
 
 
 def _create_command_alias(command: Any, name: str, message: str) -> object:
     """Wraps __call__, __getattr__, and __repr__ to print a message."""
+
     @functools.wraps(command.__call__)
     def print_message_and_call(_, *args, **kwargs):
         print(message)
@@ -280,10 +312,14 @@ def _create_command_alias(command: Any, name: str, message: str) -> object:
         return attr
 
     return type(
-        name, (),
-        dict(__call__=print_message_and_call,
-             __getattr__=getattr_and_print_message,
-             __repr__=lambda _: message))()
+        name,
+        (),
+        dict(
+            __call__=print_message_and_call,
+            __getattr__=getattr_and_print_message,
+            __repr__=lambda _: message,
+        ),
+    )()
 
 
 def _access_in_dict_or_namespace(item, name: str, create_if_missing: bool):
@@ -313,21 +349,24 @@ def _access_names(item, names: Iterable[str], create_if_missing: bool):
     return item
 
 
-def alias_deprecated_command(variables: Any, old_name: str,
-                             new_name: str) -> None:
+def alias_deprecated_command(
+    variables: Any, old_name: str, new_name: str
+) -> None:
     """Adds an alias for an old command that redirects to the new command.
 
     The deprecated command prints a message then invokes the new command.
     """
     # Get the new command.
-    item = _access_names(variables,
-                         new_name.split('.'),
-                         create_if_missing=False)
+    item = _access_names(
+        variables, new_name.split('.'), create_if_missing=False
+    )
 
     # Create a wrapper to the new comamnd with the old name.
     wrapper = _create_command_alias(
-        item, old_name,
-        f'WARNING: {old_name} is DEPRECATED; use {new_name} instead')
+        item,
+        old_name,
+        f'WARNING: {old_name} is DEPRECATED; use {new_name} instead',
+    )
 
     # Add the wrapper to the variables with the old command's name.
     name_parts = old_name.split('.')

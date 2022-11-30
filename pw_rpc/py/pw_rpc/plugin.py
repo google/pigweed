@@ -29,9 +29,11 @@ class Codegen(enum.Enum):
     PWPB = 2
 
 
-def process_proto_request(codegen: Codegen,
-                          req: plugin_pb2.CodeGeneratorRequest,
-                          res: plugin_pb2.CodeGeneratorResponse) -> None:
+def process_proto_request(
+    codegen: Codegen,
+    req: plugin_pb2.CodeGeneratorRequest,
+    res: plugin_pb2.CodeGeneratorResponse,
+) -> None:
     """Handles a protoc CodeGeneratorRequest message.
 
     Generates code for the files in the request and writes the output to the
@@ -71,7 +73,8 @@ def main(codegen: Codegen) -> int:
     # Declare that this plugin supports optional fields in proto3. No proto
     # message code is generated, so optional in proto3 is supported trivially.
     response.supported_features |= (  # type: ignore[attr-defined]
-        response.FEATURE_PROTO3_OPTIONAL)  # type: ignore[attr-defined]
+        response.FEATURE_PROTO3_OPTIONAL
+    )  # type: ignore[attr-defined]
 
     sys.stdout.buffer.write(response.SerializeToString())
     return 0

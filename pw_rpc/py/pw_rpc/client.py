@@ -43,6 +43,7 @@ class Error(Exception):
 
 class PendingRpc(NamedTuple):
     """Uniquely identifies an RPC call."""
+
     channel: Channel
     service: Service
     method: Method
@@ -58,26 +59,31 @@ class _PendingRpcMetadata:
 
 class PendingRpcs:
     """Tracks pending RPCs and encodes outgoing RPC packets."""
+
     def __init__(self):
         self._pending: Dict[PendingRpc, _PendingRpcMetadata] = {}
 
-    def request(self,
-                rpc: PendingRpc,
-                request: Optional[Message],
-                context: object,
-                override_pending: bool = True) -> bytes:
+    def request(
+        self,
+        rpc: PendingRpc,
+        request: Optional[Message],
+        context: object,
+        override_pending: bool = True,
+    ) -> bytes:
         """Starts the provided RPC and returns the encoded packet to send."""
         # Ensure that every context is a unique object by wrapping it in a list.
         self.open(rpc, context, override_pending)
         return packets.encode_request(rpc, request)
 
-    def send_request(self,
-                     rpc: PendingRpc,
-                     request: Optional[Message],
-                     context: object,
-                     *,
-                     ignore_errors: bool = False,
-                     override_pending: bool = False) -> Any:
+    def send_request(
+        self,
+        rpc: PendingRpc,
+        request: Optional[Message],
+        context: object,
+        *,
+        ignore_errors: bool = False,
+        override_pending: bool = False,
+    ) -> Any:
         """Starts the provided RPC and sends the request packet to the channel.
 
         Returns:
@@ -98,10 +104,9 @@ class PendingRpcs:
 
         return previous
 
-    def open(self,
-             rpc: PendingRpc,
-             context: object,
-             override_pending: bool = False) -> Any:
+    def open(
+        self, rpc: PendingRpc, context: object, override_pending: bool = False
+    ) -> Any:
         """Creates a context for an RPC, but does not invoke it.
 
         open() can be used to receive streaming responses to an RPC that was not
@@ -121,26 +126,30 @@ class PendingRpcs:
 
         if self._pending.setdefault(rpc, metadata) is not metadata:
             # If the context was not added, the RPC was already pending.
-            raise Error(f'Sent request for {rpc}, but it is already pending! '
-                        'Cancel the RPC before invoking it again')
+            raise Error(
+                f'Sent request for {rpc}, but it is already pending! '
+                'Cancel the RPC before invoking it again'
+            )
 
         return None
 
     def send_client_stream(self, rpc: PendingRpc, message: Message) -> None:
         if rpc not in self._pending:
-            raise Error(
-                f'Attempt to send client stream for inactive RPC {rpc}')
+            raise Error(f'Attempt to send client stream for inactive RPC {rpc}')
 
         rpc.channel.output(  # type: ignore
-            packets.encode_client_stream(rpc, message))
+            packets.encode_client_stream(rpc, message)
+        )
 
     def send_client_stream_end(self, rpc: PendingRpc) -> None:
         if rpc not in self._pending:
             raise Error(
-                f'Attempt to send client stream end for inactive RPC {rpc}')
+                f'Attempt to send client stream end for inactive RPC {rpc}'
+            )
 
         rpc.channel.output(  # type: ignore
-            packets.encode_client_stream_end(rpc))
+            packets.encode_client_stream_end(rpc)
+        )
 
     def cancel(self, rpc: PendingRpc) -> Optional[bytes]:
         """Cancels the RPC. Returns the CANCEL packet to send.
@@ -186,6 +195,7 @@ class ClientImpl(abc.ABC):
     This interface defines the semantics for invoking an RPC on a particular
     client.
     """
+
     def __init__(self):
         self.client: Optional['Client'] = None
         self.rpcs: Optional[PendingRpcs] = None
@@ -195,13 +205,15 @@ class ClientImpl(abc.ABC):
         """Returns an object that invokes a method using the given channel."""
 
     @abc.abstractmethod
-    def handle_response(self,
-                        rpc: PendingRpc,
-                        context: Any,
-                        payload: Any,
-                        *,
-                        args: tuple = (),
-                        kwargs: Optional[dict] = None) -> Any:
+    def handle_response(
+        self,
+        rpc: PendingRpc,
+        context: Any,
+        payload: Any,
+        *,
+        args: tuple = (),
+        kwargs: Optional[dict] = None,
+    ) -> Any:
         """Handles a response from the RPC server.
 
         Args:
@@ -212,13 +224,15 @@ class ClientImpl(abc.ABC):
         """
 
     @abc.abstractmethod
-    def handle_completion(self,
-                          rpc: PendingRpc,
-                          context: Any,
-                          status: Status,
-                          *,
-                          args: tuple = (),
-                          kwargs: Optional[dict] = None) -> Any:
+    def handle_completion(
+        self,
+        rpc: PendingRpc,
+        context: Any,
+        status: Status,
+        *,
+        args: tuple = (),
+        kwargs: Optional[dict] = None,
+    ) -> Any:
         """Handles the successful completion of an RPC.
 
         Args:
@@ -229,13 +243,15 @@ class ClientImpl(abc.ABC):
         """
 
     @abc.abstractmethod
-    def handle_error(self,
-                     rpc: PendingRpc,
-                     context,
-                     status: Status,
-                     *,
-                     args: tuple = (),
-                     kwargs: Optional[dict] = None):
+    def handle_error(
+        self,
+        rpc: PendingRpc,
+        context,
+        status: Status,
+        *,
+        args: tuple = (),
+        kwargs: Optional[dict] = None,
+    ):
         """Handles the abnormal termination of an RPC.
 
         args:
@@ -248,22 +264,27 @@ class ClientImpl(abc.ABC):
 
 class ServiceClient(descriptors.ServiceAccessor):
     """Navigates the methods in a service provided by a ChannelClient."""
-    def __init__(self, client_impl: ClientImpl, channel: Channel,
-                 service: Service):
+
+    def __init__(
+        self, client_impl: ClientImpl, channel: Channel, service: Service
+    ):
         super().__init__(
             {
                 method: client_impl.method_client(channel, method)
                 for method in service.methods
             },
-            as_attrs='members')
+            as_attrs='members',
+        )
 
         self._channel = channel
         self._service = service
 
     def __repr__(self) -> str:
-        return (f'Service({self._service.full_name!r}, '
-                f'methods={[m.name for m in self._service.methods]}, '
-                f'channel={self._channel.id})')
+        return (
+            f'Service({self._service.full_name!r}, '
+            f'methods={[m.name for m in self._service.methods]}, '
+            f'channel={self._channel.id})'
+        )
 
     def __str__(self) -> str:
         return str(self._service)
@@ -271,19 +292,23 @@ class ServiceClient(descriptors.ServiceAccessor):
 
 class Services(descriptors.ServiceAccessor[ServiceClient]):
     """Navigates the services provided by a ChannelClient."""
-    def __init__(self, client_impl, channel: Channel,
-                 services: Collection[Service]):
+
+    def __init__(
+        self, client_impl, channel: Channel, services: Collection[Service]
+    ):
         super().__init__(
-            {s: ServiceClient(client_impl, channel, s)
-             for s in services},
-            as_attrs='packages')
+            {s: ServiceClient(client_impl, channel, s) for s in services},
+            as_attrs='packages',
+        )
 
         self._channel = channel
         self._services = services
 
     def __repr__(self) -> str:
-        return (f'Services(channel={self._channel.id}, '
-                f'services={[s.full_name for s in self._services]})')
+        return (
+            f'Services(channel={self._channel.id}, '
+            f'services={[s.full_name for s in self._services]})'
+        )
 
 
 def _decode_status(rpc: PendingRpc, packet) -> Optional[Status]:
@@ -335,6 +360,7 @@ class ChannelClient:
     synchronous RPC client might return a callable object, so an RPC could be
     invoked directly (e.g. rpc(field1=123, field2=b'456')).
     """
+
     client: 'Client'
     channel: Channel
     rpcs: Services
@@ -360,12 +386,15 @@ class ChannelClient:
             yield from service_client
 
     def __repr__(self) -> str:
-        return (f'ChannelClient(channel={self.channel.id}, '
-                f'services={[str(s) for s in self.services()]})')
+        return (
+            f'ChannelClient(channel={self.channel.id}, '
+            f'services={[str(s) for s in self.services()]})'
+        )
 
 
-def _update_for_backwards_compatibility(rpc: PendingRpc,
-                                        packet: RpcPacket) -> None:
+def _update_for_backwards_compatibility(
+    rpc: PendingRpc, packet: RpcPacket
+) -> None:
     """Adapts server streaming RPC packets to the updated protocol if needed."""
     # The protocol changes only affect server streaming RPCs.
     if rpc.method.type is not Method.Type.SERVER_STREAMING:
@@ -397,16 +426,27 @@ class Client:
     Users may set an optional response_callback that is called before processing
     every response or server stream RPC packet.
     """
-    @classmethod
-    def from_modules(cls, impl: ClientImpl, channels: Iterable[Channel],
-                     modules: Iterable):
-        return cls(
-            impl, channels,
-            (Service.from_descriptor(service) for module in modules
-             for service in module.DESCRIPTOR.services_by_name.values()))
 
-    def __init__(self, impl: ClientImpl, channels: Iterable[Channel],
-                 services: Iterable[Service]):
+    @classmethod
+    def from_modules(
+        cls, impl: ClientImpl, channels: Iterable[Channel], modules: Iterable
+    ):
+        return cls(
+            impl,
+            channels,
+            (
+                Service.from_descriptor(service)
+                for module in modules
+                for service in module.DESCRIPTOR.services_by_name.values()
+            ),
+        )
+
+    def __init__(
+        self,
+        impl: ClientImpl,
+        channels: Iterable[Channel],
+        services: Iterable[Service],
+    ):
         self._impl = impl
         self._impl.client = self
         self._impl.rpcs = PendingRpcs()
@@ -414,15 +454,16 @@ class Client:
         self.services = descriptors.Services(services)
 
         self._channels_by_id = {
-            channel.id:
-            ChannelClient(self, channel,
-                          Services(self._impl, channel, self.services))
+            channel.id: ChannelClient(
+                self, channel, Services(self._impl, channel, self.services)
+            )
             for channel in channels
         }
 
         # Optional function called before processing every non-error RPC packet.
-        self.response_callback: Optional[Callable[
-            [PendingRpc, Any, Optional[Status]], Any]] = None
+        self.response_callback: Optional[
+            Callable[[PendingRpc, Any, Optional[Status]], Any]
+        ] = None
 
     def channel(self, channel_id: Optional[int] = None) -> ChannelClient:
         """Returns a ChannelClient, which is used to call RPCs on a channel.
@@ -455,8 +496,9 @@ class Client:
         for service in self.services:
             yield from service.methods
 
-    def process_packet(self, pw_rpc_raw_packet_data: bytes, *impl_args,
-                       **impl_kwargs) -> Status:
+    def process_packet(
+        self, pw_rpc_raw_packet_data: bytes, *impl_args, **impl_kwargs
+    ) -> Status:
         """Processes an incoming packet.
 
         Args:
@@ -495,8 +537,11 @@ class Client:
 
         _update_for_backwards_compatibility(rpc, packet)
 
-        if packet.type not in (PacketType.RESPONSE, PacketType.SERVER_STREAM,
-                               PacketType.SERVER_ERROR):
+        if packet.type not in (
+            PacketType.RESPONSE,
+            PacketType.SERVER_STREAM,
+            PacketType.SERVER_ERROR,
+        ):
             _LOG.error('%s: unexpected PacketType %s', rpc, packet.type)
             _LOG.debug('Packet:\n%s', packet)
             return Status.OK
@@ -507,9 +552,12 @@ class Client:
             payload = _decode_payload(rpc, packet)
         except DecodeError as err:
             _send_client_error(channel_client, packet, Status.DATA_LOSS)
-            _LOG.warning('Failed to decode %s response for %s: %s',
-                         rpc.method.response_type.DESCRIPTOR.full_name,
-                         rpc.method.full_name, err)
+            _LOG.warning(
+                'Failed to decode %s response for %s: %s',
+                rpc.method.response_type.DESCRIPTOR.full_name,
+                rpc.method.full_name,
+                err,
+            )
             _LOG.debug('Raw payload: %s', packet.payload)
 
             # Make this an error packet so the error handler is called.
@@ -518,72 +566,74 @@ class Client:
 
         # If set, call the response callback with non-error packets.
         if self.response_callback and packet.type != PacketType.SERVER_ERROR:
-            self.response_callback(rpc, payload, status)  # pylint: disable=not-callable
+            self.response_callback(  # pylint: disable=not-callable
+                rpc, payload, status
+            )
 
         try:
             assert self._impl.rpcs
             context = self._impl.rpcs.get_pending(rpc, status)
         except KeyError:
-            _send_client_error(channel_client, packet,
-                               Status.FAILED_PRECONDITION)
+            _send_client_error(
+                channel_client, packet, Status.FAILED_PRECONDITION
+            )
             _LOG.debug('Discarding response for %s, which is not pending', rpc)
             return Status.OK
 
         if packet.type == PacketType.SERVER_ERROR:
             assert status is not None and not status.ok()
             _LOG.warning('%s: invocation failed with %s', rpc, status)
-            self._impl.handle_error(rpc,
-                                    context,
-                                    status,
-                                    args=impl_args,
-                                    kwargs=impl_kwargs)
+            self._impl.handle_error(
+                rpc, context, status, args=impl_args, kwargs=impl_kwargs
+            )
             return Status.OK
 
         if payload is not None:
-            self._impl.handle_response(rpc,
-                                       context,
-                                       payload,
-                                       args=impl_args,
-                                       kwargs=impl_kwargs)
+            self._impl.handle_response(
+                rpc, context, payload, args=impl_args, kwargs=impl_kwargs
+            )
         if status is not None:
-            self._impl.handle_completion(rpc,
-                                         context,
-                                         status,
-                                         args=impl_args,
-                                         kwargs=impl_kwargs)
+            self._impl.handle_completion(
+                rpc, context, status, args=impl_args, kwargs=impl_kwargs
+            )
 
         return Status.OK
 
     def _look_up_service_and_method(
-            self, packet: RpcPacket,
-            channel_client: ChannelClient) -> PendingRpc:
+        self, packet: RpcPacket, channel_client: ChannelClient
+    ) -> PendingRpc:
         # Protobuf is sometimes silly so the 32 bit python bindings return
         # signed values from `fixed32` fields. Let's convert back to unsigned.
         # b/239712573
-        service_id = packet.service_id & 0xffffffff
+        service_id = packet.service_id & 0xFFFFFFFF
         try:
             service = self.services[service_id]
         except KeyError:
             raise ValueError(f'Unrecognized service ID {service_id}')
 
         # See above, also for b/239712573
-        method_id = packet.method_id & 0xffffffff
+        method_id = packet.method_id & 0xFFFFFFFF
         try:
             method = service.methods[method_id]
         except KeyError:
             raise ValueError(
-                f'No method ID {method_id} in service {service.name}')
+                f'No method ID {method_id} in service {service.name}'
+            )
 
         return PendingRpc(channel_client.channel, service, method)
 
     def __repr__(self) -> str:
-        return (f'pw_rpc.Client(channels={list(self._channels_by_id)}, '
-                f'services={[s.full_name for s in self.services]})')
+        return (
+            f'pw_rpc.Client(channels={list(self._channels_by_id)}, '
+            f'services={[s.full_name for s in self.services]})'
+        )
 
 
-def _send_client_error(client: ChannelClient, packet: RpcPacket,
-                       error: Status) -> None:
+def _send_client_error(
+    client: ChannelClient, packet: RpcPacket, error: Status
+) -> None:
     # Never send responses to SERVER_ERRORs.
     if packet.type != PacketType.SERVER_ERROR:
         client.channel.output(  # type: ignore
-            packets.encode_client_error(packet, error))
+            packets.encode_client_error(packet, error)
+        )

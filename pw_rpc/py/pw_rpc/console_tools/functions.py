@@ -53,12 +53,14 @@ def format_signature(name: str, signature: inspect.Signature) -> str:
     Does not yet handle / and * markers.
     """
     params = ', '.join(
-        format_parameter(arg) for arg in signature.parameters.values())
+        format_parameter(arg) for arg in signature.parameters.values()
+    )
     if signature.return_annotation is signature.empty:
         return_annotation = ''
     else:
         return_annotation = ' -> ' + _annotation_name(
-            signature.return_annotation)
+            signature.return_annotation
+        )
 
     return f'{name}({params}){return_annotation}'
 
@@ -66,7 +68,8 @@ def format_signature(name: str, signature: inspect.Signature) -> str:
 def format_function_help(function: Callable) -> str:
     """Formats a help string with a declaration and docstring."""
     signature = format_signature(
-        function.__name__, inspect.signature(function, follow_wrapped=False))
+        function.__name__, inspect.signature(function, follow_wrapped=False)
+    )
 
     docs = inspect.getdoc(function) or '(no docstring)'
     return f'{signature}:\n\n{textwrap.indent(docs, "    ")}'
@@ -80,11 +83,16 @@ def help_as_repr(function: Callable) -> Callable:
     with the full function signature, type annotations, and docstring when the
     function is wrapped with help_as_repr.
     """
+
     def display_help(_):
         return format_function_help(function)
 
     return type(
-        function.__name__, (),
-        dict(__call__=staticmethod(function),
-             __doc__=format_function_help(function),
-             __repr__=display_help))()
+        function.__name__,
+        (),
+        dict(
+            __call__=staticmethod(function),
+            __doc__=format_function_help(function),
+            __repr__=display_help,
+        ),
+    )()

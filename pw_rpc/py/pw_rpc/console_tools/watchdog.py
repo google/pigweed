@@ -23,12 +23,15 @@ class Watchdog:
     This class could be used, for example, to track a device's connection state
     for devices that send a periodic heartbeat packet.
     """
-    def __init__(self,
-                 on_reset: Callable[[], Any],
-                 on_expiration: Callable[[], Any],
-                 while_expired: Callable[[], Any] = lambda: None,
-                 timeout_s: float = 1,
-                 expired_timeout_s: Optional[float] = None):
+
+    def __init__(
+        self,
+        on_reset: Callable[[], Any],
+        on_expiration: Callable[[], Any],
+        while_expired: Callable[[], Any] = lambda: None,
+        timeout_s: float = 1,
+        expired_timeout_s: Optional[float] = None,
+    ):
         """Creates a watchdog; start() must be called to start it.
 
         Args:
@@ -61,7 +64,8 @@ class Watchdog:
         self._watchdog.cancel()
         self._watchdog = threading.Timer(
             self.expired_timeout_s if self.expired else self.timeout_s,
-            self._timeout_expired)
+            self._timeout_expired,
+        )
         self._watchdog.daemon = True
         self._watchdog.start()
 

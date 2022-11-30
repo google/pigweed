@@ -21,19 +21,21 @@ from pw_build.generated_tests import Context, TestGenerator
 from pw_build import generated_tests
 from pw_rpc import ids
 
-_TESTS = TestGenerator([
-    'Empty string',
-    (0x00000000, ''),
-    'Single character strings',
-    (0x00000001, '\0'),
-    (0x00010040, '\1'),
-    (0x003F0F82, '?'),
-    'Non-printable strings',
-    (0xD3556087, '\0\0\0\1\1\1\1'),
-    'General strings',
-    (0x63D43D8C, 'Pigweed?'),
-    (0x79AB6494, 'Pigweed!Pigweed!Pigweed!Pigweed!Pigweed!Pigweed!'),
-])
+_TESTS = TestGenerator(
+    [
+        'Empty string',
+        (0x00000000, ''),
+        'Single character strings',
+        (0x00000001, '\0'),
+        (0x00010040, '\1'),
+        (0x003F0F82, '?'),
+        'Non-printable strings',
+        (0xD3556087, '\0\0\0\1\1\1\1'),
+        'General strings',
+        (0x63D43D8C, 'Pigweed?'),
+        (0x79AB6494, 'Pigweed!Pigweed!Pigweed!Pigweed!Pigweed!Pigweed!'),
+    ]
+)
 
 
 def _define_py_test(ctx: Context):
@@ -69,7 +71,6 @@ def _cc_test(ctx: Context) -> Iterator[str]:
 if __name__ == '__main__':
     args = generated_tests.parse_test_generation_args()
     if args.generate_cc_test:
-        _TESTS.cc_tests(args.generate_cc_test, _cc_test, _CC_HEADER,
-                        _CC_FOOTER)
+        _TESTS.cc_tests(args.generate_cc_test, _cc_test, _CC_HEADER, _CC_FOOTER)
     else:
         unittest.main()
