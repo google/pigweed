@@ -942,7 +942,8 @@ PATH_EXCLUSIONS = (re.compile(r'\bthird_party/fuchsia/repo/'), )
 _LINTFORMAT = (
     commit_message_format,
     copyright_notice,
-    format_code.presubmit_checks(),
+    format_code.presubmit_checks(
+        code_formats=format_code.CODE_FORMATS_WITH_BLACK),
     inclusive_language.presubmit_check.with_filter(exclude=(
         r'\byarn.lock$',
         r'\bpackage-lock.json$',

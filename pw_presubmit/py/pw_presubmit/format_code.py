@@ -227,6 +227,7 @@ def fix_go_format(ctx: _Context) -> Dict[Path, str]:
     return {}
 
 
+# TODO(b/259595799) Remove yapf support.
 def _yapf(*args, **kwargs) -> subprocess.CompletedProcess:
     return log_run(['python', '-m', 'yapf', '--parallel', *args],
                    capture_output=True,
@@ -236,7 +237,7 @@ def _yapf(*args, **kwargs) -> subprocess.CompletedProcess:
 _DIFF_START = re.compile(r'^--- (.*)\s+\(original\)$', flags=re.MULTILINE)
 
 
-def check_py_format(ctx: _Context) -> Dict[Path, str]:
+def check_py_format_yapf(ctx: _Context) -> Dict[Path, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
     process = _yapf('--diff', *ctx.paths)
 
@@ -258,7 +259,7 @@ def check_py_format(ctx: _Context) -> Dict[Path, str]:
     return errors
 
 
-def fix_py_format(ctx: _Context) -> Dict[Path, str]:
+def fix_py_format_yapf(ctx: _Context) -> Dict[Path, str]:
     """Fixes formatting for the provided files in place."""
     _yapf('--in-place', *ctx.paths, check=True)
     return {}
@@ -358,9 +359,16 @@ JAVASCRIPT_FORMAT: CodeFormat = CodeFormat('JavaScript',
 GO_FORMAT: CodeFormat = CodeFormat('Go', FileFilter(endswith=('.go', )),
                                    check_go_format, fix_go_format)
 
-PYTHON_FORMAT: CodeFormat = CodeFormat('Python',
-                                       FileFilter(endswith=('.py', )),
-                                       check_py_format, fix_py_format)
+# TODO(b/259595799) Remove yapf support.
+PYTHON_FORMAT_YAPF: CodeFormat = CodeFormat('Python',
+                                            FileFilter(endswith=('.py',)),
+                                            check_py_format_yapf,
+                                            fix_py_format_yapf)
+
+PYTHON_FORMAT_BLACK: CodeFormat = CodeFormat('Python',
+                                             FileFilter(endswith=('.py', )),
+                                             check_trailing_space,
+                                             fix_trailing_space)
 
 GN_FORMAT: CodeFormat = CodeFormat('GN', FileFilter(endswith=('.gn', '.gni')),
                                    check_gn_format, fix_gn_format)
@@ -393,7 +401,7 @@ OWNERS_CODE_FORMAT = CodeFormat("OWNERS",
                                 check=check_owners_format,
                                 fix=fix_owners_format)
 
-CODE_FORMATS: Tuple[CodeFormat, ...] = (
+_CODE_FORMATS_WITHOUT_PYTHON: Tuple[CodeFormat, ...] = (
     # keep-sorted: start
     BAZEL_FORMAT,
     CMAKE_FORMAT,
@@ -406,10 +414,23 @@ CODE_FORMATS: Tuple[CodeFormat, ...] = (
     MARKDOWN_FORMAT,
     OWNERS_CODE_FORMAT,
     PROTO_FORMAT,
-    PYTHON_FORMAT,
     RST_FORMAT,
     # keep-sorted: end
 )
+
+# TODO(b/259595799) Remove yapf support.
+CODE_FORMATS_WITH_YAPF: Tuple[CodeFormat, ...] = (
+    *_CODE_FORMATS_WITHOUT_PYTHON,
+    PYTHON_FORMAT_YAPF,
+)
+
+CODE_FORMATS_WITH_BLACK: Tuple[CodeFormat, ...] = (
+    *_CODE_FORMATS_WITHOUT_PYTHON,
+    PYTHON_FORMAT_BLACK,
+)
+
+# TODO(b/259595799) For downstream compatibility only.
+CODE_FORMATS = CODE_FORMATS_WITH_YAPF
 
 
 def presubmit_check(
