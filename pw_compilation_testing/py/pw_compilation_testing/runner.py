@@ -43,9 +43,9 @@ def find_cc_rule(toolchain_ninja_file: Path) -> Optional[str]:
         for line in fd:
             if found_rule:
                 if line.startswith(cmd_prefix):
-                    cmd = line[len(cmd_prefix):].strip()
+                    cmd = line[len(cmd_prefix) :].strip()
                     if cmd.startswith('ccache '):
-                        cmd = cmd[len('ccache '):]
+                        cmd = cmd[len('ccache ') :]
                     return cmd
 
                 if not line.startswith('  '):
@@ -63,7 +63,7 @@ def _parse_ninja_variables(target_ninja_file: Path) -> Dict[str, str]:
         for line in fd:
             match = _NINJA_VARIABLE.match(line)
             if match:
-                variables[match.group(1)] = line[match.end():].strip()
+                variables[match.group(1)] = line[match.end() :].strip()
 
     return variables
 
@@ -106,16 +106,18 @@ _FOOTER = '\n' + '━' * 79 + '┛'
 def _start_failure(test: TestCase, command: str) -> None:
     print(_BOX_TOP, file=sys.stderr)
     print(_BOX_MID_1.format(test_name=test.name()), file=sys.stderr)
-    print(_BOX_MID_2.format(source=test.source, line=test.line),
-          file=sys.stderr)
+    print(
+        _BOX_MID_2.format(source=test.source, line=test.line), file=sys.stderr
+    )
     print(_BOX_BOT, file=sys.stderr)
     print(file=sys.stderr)
 
     _LOG.debug('Compilation command:\n%s', command)
 
 
-def _check_results(test: TestCase, command: str,
-                   process: subprocess.CompletedProcess) -> None:
+def _check_results(
+    test: TestCase, command: str, process: subprocess.CompletedProcess
+) -> None:
     stderr = process.stderr.decode(errors='replace')
 
     if process.returncode == 0:
@@ -132,9 +134,14 @@ def _check_results(test: TestCase, command: str,
         e for e in test.expectations if compiler.matches(e.compiler)
     ]
 
-    _LOG.debug('%s: Checking compilation from %s (%s) for %d of %d patterns:',
-               test.name(), compiler_str, compiler, len(expectations),
-               len(test.expectations))
+    _LOG.debug(
+        '%s: Checking compilation from %s (%s) for %d of %d patterns:',
+        test.name(),
+        compiler_str,
+        compiler,
+        len(expectations),
+        len(test.expectations),
+    )
     for expectation in expectations:
         _LOG.debug('    %s', expectation.pattern.pattern)
 
@@ -142,14 +149,19 @@ def _check_results(test: TestCase, command: str,
         _start_failure(test, command)
         _LOG.error(
             'Compilation with %s failed, but no PW_NC_EXPECT() patterns '
-            'that apply to %s were provided', compiler_str, compiler_str)
+            'that apply to %s were provided',
+            compiler_str,
+            compiler_str,
+        )
 
         _LOG.error('Compilation output:\n%s', stderr)
         _LOG.error('')
         _LOG.error(
             'Add at least one PW_NC_EXPECT("<regex>") or '
-            'PW_NC_EXPECT_%s("<regex>") expectation to %s', compiler.name,
-            test.case)
+            'PW_NC_EXPECT_%s("<regex>") expectation to %s',
+            compiler.name,
+            test.case,
+        )
         raise _TestFailure
 
     no_color = _ANSI_ESCAPE_SEQUENCES.sub('', stderr)
@@ -159,59 +171,82 @@ def _check_results(test: TestCase, command: str,
         _start_failure(test, command)
         _LOG.error(
             'Compilation with %s failed, but the output did not '
-            'match the expected patterns.', compiler_str)
-        _LOG.error('%d of %d expected patterns did not match:', len(failed),
-                   len(expectations))
+            'match the expected patterns.',
+            compiler_str,
+        )
+        _LOG.error(
+            '%d of %d expected patterns did not match:',
+            len(failed),
+            len(expectations),
+        )
         _LOG.error('')
         for expectation in expectations:
-            _LOG.error('  %s %s:%d: %s', '❌' if expectation in failed else '✅',
-                       test.source.name, expectation.line,
-                       expectation.pattern.pattern)
+            _LOG.error(
+                '  %s %s:%d: %s',
+                '❌' if expectation in failed else '✅',
+                test.source.name,
+                expectation.line,
+                expectation.pattern.pattern,
+            )
         _LOG.error('')
 
         _LOG.error('Compilation output:\n%s', stderr)
         _LOG.error('')
-        _LOG.error('Update the test so that compilation fails with the '
-                   'expected output')
+        _LOG.error(
+            'Update the test so that compilation fails with the '
+            'expected output'
+        )
         raise _TestFailure
 
 
-def _execute_test(test: TestCase, command: str, variables: Dict[str, str],
-                  all_tests: List[str]) -> None:
+def _execute_test(
+    test: TestCase,
+    command: str,
+    variables: Dict[str, str],
+    all_tests: List[str],
+) -> None:
     variables['in'] = str(test.source)
 
     command = string.Template(command).substitute(variables)
-    command = ' '.join([
-        command,
-        '-DPW_NEGATIVE_COMPILATION_TESTS_ENABLED',
-        # Define macros to disable all tests except this one.
-        *(f'{_ENABLE_TEST_MACRO}{t}={1 if test.case == t else 0}'
-          for t in all_tests),
-    ])
+    command = ' '.join(
+        [
+            command,
+            '-DPW_NEGATIVE_COMPILATION_TESTS_ENABLED',
+            # Define macros to disable all tests except this one.
+            *(
+                f'{_ENABLE_TEST_MACRO}{t}={1 if test.case == t else 0}'
+                for t in all_tests
+            ),
+        ]
+    )
     process = subprocess.run(command, shell=True, capture_output=True)
 
     _check_results(test, command, process)
 
 
-def _main(test: TestCase, toolchain_ninja: Path, target_ninja: Path,
-          all_tests: Path) -> int:
+def _main(
+    test: TestCase, toolchain_ninja: Path, target_ninja: Path, all_tests: Path
+) -> int:
     """Compiles a compile fail test and returns 1 if compilation succeeds."""
     command = find_cc_rule(toolchain_ninja)
 
     if command is None:
-        _LOG.critical('Failed to find C++ compilation command in %s',
-                      toolchain_ninja)
+        _LOG.critical(
+            'Failed to find C++ compilation command in %s', toolchain_ninja
+        )
         return 2
 
     variables = {key: '' for key in _EXPECTED_GN_VARS}
     variables.update(_parse_ninja_variables(target_ninja))
 
-    variables['out'] = str(target_ninja.parent /
-                           f'{target_ninja.stem}.compile_fail_test.out')
+    variables['out'] = str(
+        target_ninja.parent / f'{target_ninja.stem}.compile_fail_test.out'
+    )
 
     try:
-        _execute_test(test, command, variables,
-                      all_tests.read_text().splitlines())
+        _execute_test(
+            test, command, variables, all_tests.read_text().splitlines()
+        )
     except _TestFailure:
         print(_FOOTER, file=sys.stderr)
         return 1
@@ -223,22 +258,27 @@ def _parse_args() -> dict:
     """Parses command-line arguments."""
 
     parser = argparse.ArgumentParser(
-        description='Emits an error when a facade has a null backend')
+        description='Emits an error when a facade has a null backend'
+    )
     parser.add_argument(
         '--toolchain-ninja',
         type=Path,
         required=True,
-        help='Ninja file with the compilation command for the toolchain')
+        help='Ninja file with the compilation command for the toolchain',
+    )
     parser.add_argument(
         '--target-ninja',
         type=Path,
         required=True,
-        help='Ninja file with the compilation commands to the test target')
-    parser.add_argument('--test-data',
-                        dest='test',
-                        required=True,
-                        type=TestCase.deserialize,
-                        help='Serialized TestCase object')
+        help='Ninja file with the compilation commands to the test target',
+    )
+    parser.add_argument(
+        '--test-data',
+        dest='test',
+        required=True,
+        type=TestCase.deserialize,
+        help='Serialized TestCase object',
+    )
     parser.add_argument('--all-tests', type=Path, help='List of all tests')
     return vars(parser.parse_args())
 

@@ -18,9 +18,13 @@ import re
 import tempfile
 import unittest
 
-from pw_compilation_testing.generator import (Compiler, Expectation,
-                                              ParseError, TestCase,
-                                              enumerate_tests)
+from pw_compilation_testing.generator import (
+    Compiler,
+    Expectation,
+    ParseError,
+    TestCase,
+    enumerate_tests,
+)
 
 SOURCE = r'''
 #if PW_NC_TEST(FirstTest)
@@ -57,30 +61,41 @@ def _write_to_temp_file(contents: str) -> Path:
     return Path(file.name)
 
 
+# pylint: disable=missing-function-docstring
+
+
 class ParserTest(unittest.TestCase):
     """Tests parsing negative compilation tests from a file."""
+
     def test_successful(self) -> None:
         try:
             path = _write_to_temp_file(SOURCE)
 
-            self.assertEqual([
-                TestCase(
-                    'TestSuite',
-                    'FirstTest',
-                    (Expectation(Compiler.ANY, re.compile('abcdef'), 3), ),
-                    path,
-                    2,
-                ),
-                TestCase(
-                    'TestSuite',
-                    'SecondTest',
-                    (Expectation(Compiler.ANY,
-                                 re.compile('""abc123def\'456"ghi\\n\\t789'),
-                                 10), ),
-                    path,
-                    9,
-                )
-            ], list(enumerate_tests('TestSuite', [path])))
+            self.assertEqual(
+                [
+                    TestCase(
+                        'TestSuite',
+                        'FirstTest',
+                        (Expectation(Compiler.ANY, re.compile('abcdef'), 3),),
+                        path,
+                        2,
+                    ),
+                    TestCase(
+                        'TestSuite',
+                        'SecondTest',
+                        (
+                            Expectation(
+                                Compiler.ANY,
+                                re.compile('""abc123def\'456"ghi\\n\\t789'),
+                                10,
+                            ),
+                        ),
+                        path,
+                        9,
+                    ),
+                ],
+                list(enumerate_tests('TestSuite', [path])),
+            )
         finally:
             path.unlink()
 

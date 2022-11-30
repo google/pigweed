@@ -48,7 +48,8 @@ _TEST_START = re.compile(r'^[ \t]*#[ \t]*(?:el)?if[ \t]+PW_NC_TEST\([ \t]*')
 
 # Matches the name of a test case.
 _TEST_NAME = re.compile(
-    r'(?P<name>[a-zA-Z0-9_]+)[ \t]*\)[ \t]*(?://.*|/\*.*)?$')
+    r'(?P<name>[a-zA-Z0-9_]+)[ \t]*\)[ \t]*(?://.*|/\*.*)?$'
+)
 
 # Negative compilation test commands take the form PW_NC_EXPECT("regex"),
 # PW_NC_EXPECT_GCC("regex"), or PW_NC_EXPECT_CLANG("regex"). PW_NC_EXPECT() is
@@ -75,7 +76,8 @@ class Compiler(Enum):
 
         raise ValueError(
             f"Unrecognized compiler '{command}'; update the Compiler enum "
-            f'in {Path(__file__).name} to account for this')
+            f'in {Path(__file__).name} to account for this'
+        )
 
     def matches(self, other: 'Compiler') -> bool:
         return self is other or self is Compiler.ANY or other is Compiler.ANY
@@ -109,8 +111,14 @@ class TestCase:
 
 class ParseError(Exception):
     """Failed to parse a PW_NC_TEST."""
-    def __init__(self, message: str, file: Path, lines: Sequence[str],
-                 error_lines: Sequence[int]) -> None:
+
+    def __init__(
+        self,
+        message: str,
+        file: Path,
+        lines: Sequence[str],
+        error_lines: Sequence[int],
+    ) -> None:
         for i in error_lines:
             message += f'\n{file.name}:{i + 1}: {lines[i]}'
         super().__init__(message)
@@ -118,6 +126,7 @@ class ParseError(Exception):
 
 class _ExpectationParser:
     """Parses expecatations from 'PW_NC_EXPECT(' to the final ');'."""
+
     class _State:
         SPACE = 0  # Space characters, which are ignored
         COMMENT_START = 1  # First / in a //-style comment
@@ -148,7 +157,8 @@ class _ExpectationParser:
             elif self._state is self._State.COMMENT_START:
                 if char == '*':
                     raise ValueError(
-                        '"/* */" comments are not supported; use // instead')
+                        '"/* */" comments are not supported; use // instead'
+                    )
                 if char != '/':
                     raise ValueError(f'Unexpected character "{char}"')
                 self._state = self._State.COMMENT
@@ -186,8 +196,9 @@ class _ExpectationParser:
             raise ValueError('The regular expression must be a string!')
 
         try:
-            return Expectation(self._compiler, re.compile(re_string),
-                               self.index + 1)
+            return Expectation(
+                self._compiler, re.compile(re_string), self.index + 1
+            )
         except re.error as error:
             raise ValueError('Invalid regular expression: ' + error.msg)
 
@@ -220,12 +231,13 @@ class _NegativeCompilationTestSource:
 
                 compiler = expect_match['compiler'] or 'ANY'
                 expectation = _ExpectationParser(
-                    index, Compiler[compiler.lstrip('_')])
+                    index, Compiler[compiler.lstrip('_')]
+                )
 
                 self._parsed_expectations.add(index)
 
                 # Remove the 'PW_NC_EXPECT(' so the line starts with the regex.
-                line = line[expect_match.end():]
+                line = line[expect_match.end() :]
 
             # Find the regex after previously finding 'PW_NC_EXPECT('.
             try:
@@ -238,19 +250,27 @@ class _NegativeCompilationTestSource:
                     f'Failed to parse PW_NC_EXPECT() statement:\n\n  {err}.\n\n'
                     'PW_NC_EXPECT() statements must contain only a string '
                     'literal with a valid Python regular expression and '
-                    'optional //-style comments.', index)
+                    'optional //-style comments.',
+                    index,
+                )
 
         if expectation:
-            self._error('Unterminated PW_NC_EXPECT() statement!',
-                        expectation.index)
+            self._error(
+                'Unterminated PW_NC_EXPECT() statement!', expectation.index
+            )
 
     def _check_for_stray_expectations(self) -> None:
-        all_expectations = frozenset(i for i in range(len(self._lines))
-                                     if _EXPECT_START.match(self._lines[i]))
+        all_expectations = frozenset(
+            i
+            for i in range(len(self._lines))
+            if _EXPECT_START.match(self._lines[i])
+        )
         stray = all_expectations - self._parsed_expectations
         if stray:
-            self._error(f'Found {len(stray)} stray PW_NC_EXPECT() commands!',
-                        *sorted(stray))
+            self._error(
+                f'Found {len(stray)} stray PW_NC_EXPECT() commands!',
+                *sorted(stray),
+            )
 
     def parse(self, suite: str) -> Iterator[TestCase]:
         """Finds all negative compilation tests in this source file."""
@@ -264,11 +284,13 @@ class _NegativeCompilationTestSource:
                 self._error(
                     'Negative compilation test syntax error. '
                     f"Expected test name, found '{line[case_match.end():]}'",
-                    index)
+                    index,
+                )
 
             expectations = tuple(self._parse_expectations(index + 1))
-            yield TestCase(suite, name_match['name'], expectations, self._file,
-                           index + 1)
+            yield TestCase(
+                suite, name_match['name'], expectations, self._file, index + 1
+            )
 
         self._check_for_stray_expectations()
 
@@ -284,8 +306,9 @@ class SourceFile(NamedTuple):
     file_path: Path
 
 
-def generate_gn_target(base: str, source_list: str, test: TestCase,
-                       all_tests: str) -> Iterator[str]:
+def generate_gn_target(
+    base: str, source_list: str, test: TestCase, all_tests: str
+) -> Iterator[str]:
     yield f'''\
 pw_python_action("{test.name()}.negative_compilation_test") {{
   script = "$dir_pw_compilation_testing/py/pw_compilation_testing/runner.py"
@@ -306,8 +329,12 @@ pw_python_action("{test.name()}.negative_compilation_test") {{
 '''
 
 
-def generate_gn_build(base: str, sources: Iterable[SourceFile],
-                      tests: List[TestCase], all_tests: str) -> Iterator[str]:
+def generate_gn_build(
+    base: str,
+    sources: Iterable[SourceFile],
+    tests: List[TestCase],
+    all_tests: str,
+) -> Iterator[str]:
     """Generates the BUILD.gn file with compilation failure test targets."""
     _, base_name = base.rsplit(':', 1)
 
@@ -315,11 +342,15 @@ def generate_gn_build(base: str, sources: Iterable[SourceFile],
     yield ''
     yield 'import("$dir_pw_build/python_action.gni")'
     yield ''
-    yield ('_toolchain_ninja = '
-           'rebase_path("$root_out_dir/toolchain.ninja", root_build_dir)')
-    yield ('_target_ninja = '
-           f'rebase_path(get_label_info("{base}", "target_out_dir") +'
-           f'"/{base_name}.ninja", root_build_dir)')
+    yield (
+        '_toolchain_ninja = '
+        'rebase_path("$root_out_dir/toolchain.ninja", root_build_dir)'
+    )
+    yield (
+        '_target_ninja = '
+        f'rebase_path(get_label_info("{base}", "target_out_dir") +'
+        f'"/{base_name}.ninja", root_build_dir)'
+    )
     yield ''
 
     gn_source_list = ', '.join(f'"{gn_path}"' for gn_path, _ in sources)
@@ -327,8 +358,9 @@ def generate_gn_build(base: str, sources: Iterable[SourceFile],
         yield from generate_gn_target(base, gn_source_list, test, all_tests)
 
 
-def _main(name: str, base: str, sources: Iterable[SourceFile],
-          output: Path) -> int:
+def _main(
+    name: str, base: str, sources: Iterable[SourceFile], output: Path
+) -> int:
     print_stderr = lambda s: print(s, file=sys.stderr)
 
     try:
@@ -339,8 +371,9 @@ def _main(name: str, base: str, sources: Iterable[SourceFile],
 
     if not tests:
         print_stderr(f'The test "{name}" has no negative compilation tests!')
-        print_stderr('Add PW_NC_TEST() cases or remove this negative '
-                     'compilation test')
+        print_stderr(
+            'Add PW_NC_TEST() cases or remove this negative ' 'compilation test'
+        )
         return 1
 
     tests_by_case = defaultdict(list)
@@ -360,8 +393,9 @@ def _main(name: str, base: str, sources: Iterable[SourceFile],
     output.mkdir(parents=True, exist_ok=True)
     build_gn = output.joinpath('BUILD.gn')
     with build_gn.open('w') as fd:
-        for line in generate_gn_build(base, sources, tests,
-                                      output.joinpath('tests.txt').as_posix()):
+        for line in generate_gn_build(
+            base, sources, tests, output.joinpath('tests.txt').as_posix()
+        ):
             print(line, file=fd)
 
     with output.joinpath('tests.txt').open('w') as fd:
@@ -377,19 +411,23 @@ def _main(name: str, base: str, sources: Iterable[SourceFile],
 
 def _parse_args() -> dict:
     """Parses command-line arguments."""
+
     def source_file(arg: str) -> SourceFile:
         gn_path, file_path = arg.split(';', 1)
         return SourceFile(gn_path, Path(file_path))
 
     parser = argparse.ArgumentParser(
-        description='Emits an error when a facade has a null backend')
+        description='Emits an error when a facade has a null backend'
+    )
     parser.add_argument('--output', type=Path, help='Output directory')
     parser.add_argument('--name', help='Name of the NC test')
     parser.add_argument('--base', help='GN label for the base target to build')
-    parser.add_argument('sources',
-                        nargs='+',
-                        type=source_file,
-                        help='Source file with the no-compile tests')
+    parser.add_argument(
+        'sources',
+        nargs='+',
+        type=source_file,
+        help='Source file with the no-compile tests',
+    )
     return vars(parser.parse_args())
 
 
