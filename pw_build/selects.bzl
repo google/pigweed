@@ -16,8 +16,8 @@
 _RTOS_NONE = "//pw_build/constraints/rtos:none"
 
 # Common select for tagging a target as only compatible with host OS's. This
-# select implements the logic '(Windows, macOS, iOS, Linux, or Chromium OS) and
-# not RTOS'.  Example usage:
+# select implements the logic '(Windows, macOS, iOS, Linux, Android, or
+# Chromium OS) and not RTOS'.  Example usage:
 #   load("//pw_build:selects.bzl","TARGET_COMPATIBLE_WITH_HOST_SELECT")
 #   pw_cc_library(
 #       name = "some_host_only_lib",
@@ -30,5 +30,6 @@ TARGET_COMPATIBLE_WITH_HOST_SELECT = {
     "@platforms//os:ios": [_RTOS_NONE],
     "@platforms//os:linux": [_RTOS_NONE],
     "@platforms//os:chromiumos": [_RTOS_NONE],
+    "@platforms//os:android": [_RTOS_NONE],
     "//conditions:default": ["@platforms//:incompatible"],
 }
