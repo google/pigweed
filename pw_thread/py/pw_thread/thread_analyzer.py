@@ -31,9 +31,11 @@ THREAD_STATE_TO_STRING: Mapping[int, str] = {
 }
 
 
-def process_snapshot(serialized_snapshot: bytes,
-                     tokenizer_db: Optional[pw_tokenizer.Detokenizer] = None,
-                     symbolizer: Optional[Symbolizer] = None) -> str:
+def process_snapshot(
+    serialized_snapshot: bytes,
+    tokenizer_db: Optional[pw_tokenizer.Detokenizer] = None,
+    symbolizer: Optional[Symbolizer] = None,
+) -> str:
     """Processes snapshot threads, producing a multi-line string."""
     captured_threads = thread_pb2.SnapshotThreadInfo()
     captured_threads.ParseFromString(serialized_snapshot)
@@ -41,7 +43,8 @@ def process_snapshot(serialized_snapshot: bytes,
         symbolizer = LlvmSymbolizer()
 
     return str(
-        ThreadSnapshotAnalyzer(captured_threads, tokenizer_db, symbolizer))
+        ThreadSnapshotAnalyzer(captured_threads, tokenizer_db, symbolizer)
+    )
 
 
 class ThreadInfo:
@@ -55,7 +58,7 @@ class ThreadInfo:
     def _cpu_used_str(self) -> str:
         if not self._thread.HasField('cpu_usage_hundredths'):
             return 'unknown'
-        cpu_last_percent = (self._thread.cpu_usage_hundredths / 100)
+        cpu_last_percent = self._thread.cpu_usage_hundredths / 100
         return f'{cpu_last_percent:.2f}%'
 
     def _stack_size_limit_limit_str(self) -> str:
@@ -81,42 +84,54 @@ class ThreadInfo:
         high_used_str = f'{self.stack_pointer_est_peak()} bytes'
         if not self.has_stack_size_limit():
             return high_used_str
-        high_water_mark_percent = (100 * self.stack_pointer_est_peak() /
-                                   self.stack_size_limit())
+        high_water_mark_percent = (
+            100 * self.stack_pointer_est_peak() / self.stack_size_limit()
+        )
         high_used_str += f', {high_water_mark_percent:.2f}%'
         return high_used_str
 
     def _stack_used_range_str(self) -> str:
-        start_str = (f'0x{self._thread.stack_start_pointer:08x}'
-                     if self._thread.HasField('stack_start_pointer') else
-                     ThreadInfo._UNKNOWN_VALUE_STR)
-        end_str = (f'0x{self._thread.stack_pointer:08x}'
-                   if self._thread.HasField('stack_pointer') else
-                   ThreadInfo._UNKNOWN_VALUE_STR)
+        start_str = (
+            f'0x{self._thread.stack_start_pointer:08x}'
+            if self._thread.HasField('stack_start_pointer')
+            else ThreadInfo._UNKNOWN_VALUE_STR
+        )
+        end_str = (
+            f'0x{self._thread.stack_pointer:08x}'
+            if self._thread.HasField('stack_pointer')
+            else ThreadInfo._UNKNOWN_VALUE_STR
+        )
 
         # TODO(amontanez): Would be nice to represent stack growth direction.
         return f'{start_str} - {end_str} ({self._stack_used_str()})'
 
     def _stack_limit_range_str(self) -> str:
-        start_str = (f'0x{self._thread.stack_start_pointer:08x}'
-                     if self._thread.HasField('stack_start_pointer') else
-                     ThreadInfo._UNKNOWN_VALUE_STR)
-        end_str = (f'0x{self._thread.stack_end_pointer:08x}'
-                   if self._thread.HasField('stack_end_pointer') else
-                   ThreadInfo._UNKNOWN_VALUE_STR)
+        start_str = (
+            f'0x{self._thread.stack_start_pointer:08x}'
+            if self._thread.HasField('stack_start_pointer')
+            else ThreadInfo._UNKNOWN_VALUE_STR
+        )
+        end_str = (
+            f'0x{self._thread.stack_end_pointer:08x}'
+            if self._thread.HasField('stack_end_pointer')
+            else ThreadInfo._UNKNOWN_VALUE_STR
+        )
 
         # TODO(amontanez): Would be nice to represent stack growth direction.
         return f'{start_str} - {end_str} ({self._stack_size_limit_limit_str()})'
 
     def _stack_pointer_str(self) -> str:
-        return (f'0x{self._thread.stack_end_pointer:08x}'
-                if self._thread.HasField('stack_pointer') else
-                ThreadInfo._UNKNOWN_VALUE_STR)
+        return (
+            f'0x{self._thread.stack_end_pointer:08x}'
+            if self._thread.HasField('stack_pointer')
+            else ThreadInfo._UNKNOWN_VALUE_STR
+        )
 
     def has_stack_size_limit(self) -> bool:
         """Returns true if there's enough info to calculate stack size."""
-        return (self._thread.HasField('stack_start_pointer')
-                and self._thread.HasField('stack_end_pointer'))
+        return self._thread.HasField(
+            'stack_start_pointer'
+        ) and self._thread.HasField('stack_end_pointer')
 
     def stack_size_limit(self) -> int:
         """Returns the stack size limit in bytes.
@@ -125,13 +140,15 @@ class ThreadInfo:
             has_stack_size_limit() must be true.
         """
         assert self.has_stack_size_limit(), 'Missing stack size information'
-        return abs(self._thread.stack_start_pointer -
-                   self._thread.stack_end_pointer)
+        return abs(
+            self._thread.stack_start_pointer - self._thread.stack_end_pointer
+        )
 
     def has_stack_used(self) -> bool:
         """Returns true if there's enough info to calculate stack usage."""
-        return (self._thread.HasField('stack_start_pointer')
-                and self._thread.HasField('stack_pointer'))
+        return self._thread.HasField(
+            'stack_start_pointer'
+        ) and self._thread.HasField('stack_pointer')
 
     def stack_used(self) -> int:
         """Returns the stack usage in bytes.
@@ -140,15 +157,17 @@ class ThreadInfo:
             has_stack_used() must be true.
         """
         assert self.has_stack_used(), 'Missing stack usage information'
-        return abs(self._thread.stack_start_pointer -
-                   self._thread.stack_pointer)
+        return abs(
+            self._thread.stack_start_pointer - self._thread.stack_pointer
+        )
 
     def has_stack_pointer_est_peak(self) -> bool:
         """Returns true if there's enough info to calculate estimate
         used stack.
         """
-        return (self._thread.HasField('stack_start_pointer')
-                and self._thread.HasField('stack_pointer_est_peak'))
+        return self._thread.HasField(
+            'stack_start_pointer'
+        ) and self._thread.HasField('stack_pointer_est_peak')
 
     def stack_pointer_est_peak(self) -> int:
         """Returns the max estimated used stack usage in bytes.
@@ -157,8 +176,10 @@ class ThreadInfo:
             has_stack_estimated_used_bytes() must be true.
         """
         assert self.has_stack_pointer_est_peak(), 'Missing stack est. peak'
-        return abs(self._thread.stack_start_pointer -
-                   self._thread.stack_pointer_est_peak)
+        return abs(
+            self._thread.stack_start_pointer
+            - self._thread.stack_pointer_est_peak
+        )
 
     def __str__(self) -> str:
         output = [
@@ -173,13 +194,19 @@ class ThreadInfo:
 
 class ThreadSnapshotAnalyzer:
     """This class simplifies dumping contents of a snapshot Metadata message."""
-    def __init__(self,
-                 threads: thread_pb2.SnapshotThreadInfo,
-                 tokenizer_db: Optional[pw_tokenizer.Detokenizer] = None,
-                 symbolizer: Optional[Symbolizer] = None):
+
+    def __init__(
+        self,
+        threads: thread_pb2.SnapshotThreadInfo,
+        tokenizer_db: Optional[pw_tokenizer.Detokenizer] = None,
+        symbolizer: Optional[Symbolizer] = None,
+    ):
         self._threads = threads.threads
-        self._tokenizer_db = (tokenizer_db if tokenizer_db is not None else
-                              pw_tokenizer.Detokenizer(None))
+        self._tokenizer_db = (
+            tokenizer_db
+            if tokenizer_db is not None
+            else pw_tokenizer.Detokenizer(None)
+        )
         if symbolizer is not None:
             self._symbolizer = symbolizer
         else:
@@ -219,10 +246,13 @@ class ThreadSnapshotAnalyzer:
             output.append(thread_state_overview)
         else:
             thread_state_overview += ', '
-            underline = (' ' * len(thread_state_overview) +
-                         '~' * len(requesting_thread.name.decode()))
-            thread_state_overview += (f'{requesting_thread.name.decode()}'
-                                      ' active at the time of capture.')
+            underline = ' ' * len(thread_state_overview) + '~' * len(
+                requesting_thread.name.decode()
+            )
+            thread_state_overview += (
+                f'{requesting_thread.name.decode()}'
+                ' active at the time of capture.'
+            )
             output.append(thread_state_overview)
             output.append(underline)
 
@@ -238,21 +268,26 @@ class ThreadSnapshotAnalyzer:
             thread_name = thread.name.decode()
             if not thread_name:
                 thread_name = '[unnamed thread]'
-            thread_headline = ('Thread '
-                               f'({THREAD_STATE_TO_STRING[thread.state]}): '
-                               f'{thread_name}')
+            thread_headline = (
+                'Thread '
+                f'({THREAD_STATE_TO_STRING[thread.state]}): '
+                f'{thread_name}'
+            )
             if self.active_thread() == thread:
                 thread_headline += ' <-- [ACTIVE]'
             output.append(thread_headline)
             output.append(str(ThreadInfo(thread)))
             if thread.raw_backtrace:
                 output.append(
-                    self._symbolizer.dump_stack_trace(thread.raw_backtrace))
+                    self._symbolizer.dump_stack_trace(thread.raw_backtrace)
+                )
             if thread.raw_stack:
                 output.append('Raw Stack')
                 output.append(
-                    binascii.hexlify(thread.raw_stack, b'\n',
-                                     32).decode('utf-8'))
+                    binascii.hexlify(thread.raw_stack, b'\n', 32).decode(
+                        'utf-8'
+                    )
+                )
             # Blank line between threads for nicer formatting.
             output.append('')
 

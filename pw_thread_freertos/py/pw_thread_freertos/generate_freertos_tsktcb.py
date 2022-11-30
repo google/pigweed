@@ -37,13 +37,17 @@ def _parse_args() -> argparse.Namespace:
     """Parses arguments for this script, splitting out the command to run."""
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--freertos-src-dir',
-                        type=Path,
-                        help='Path to the FreeRTOS source directory.')
-    parser.add_argument('--output',
-                        '-o',
-                        type=argparse.FileType('w'),
-                        help=('Path to write generated tskTCB.h file to'))
+    parser.add_argument(
+        '--freertos-src-dir',
+        type=Path,
+        help='Path to the FreeRTOS source directory.',
+    )
+    parser.add_argument(
+        '--output',
+        '-o',
+        type=argparse.FileType('w'),
+        help=('Path to write generated tskTCB.h file to'),
+    )
     return parser.parse_args()
 
 
@@ -51,7 +55,8 @@ def _extract_struct(tasks_src: str):
     tsk_tcb_struct = re.search(
         r'(typedef struct tskTaskControlBlock.*tskTCB;\n)',
         tasks_src,
-        flags=re.DOTALL)
+        flags=re.DOTALL,
+    )
     if tsk_tcb_struct:
         return tsk_tcb_struct.group(1)
     raise ValueError('Could not find tskTCB struct in tasks.c')
