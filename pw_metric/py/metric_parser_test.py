@@ -20,18 +20,21 @@ from pw_metric_proto import metric_service_pb2
 from pw_status import Status
 from pw_tokenizer import detokenize, tokens
 
-DATABASE = tokens.Database([
-    tokens.TokenizedStringEntry(0x01148a48, "total_dropped"),
-    tokens.TokenizedStringEntry(0x03796798, "min_queue_remaining"),
-    tokens.TokenizedStringEntry(0x22198280, "total_created"),
-    tokens.TokenizedStringEntry(0x534a42f4, "max_queue_used"),
-    tokens.TokenizedStringEntry(0x5d087463, "pw::work_queue::WorkQueue"),
-    tokens.TokenizedStringEntry(0xa7c43965, "log"),
-])
+DATABASE = tokens.Database(
+    [
+        tokens.TokenizedStringEntry(0x01148A48, "total_dropped"),
+        tokens.TokenizedStringEntry(0x03796798, "min_queue_remaining"),
+        tokens.TokenizedStringEntry(0x22198280, "total_created"),
+        tokens.TokenizedStringEntry(0x534A42F4, "max_queue_used"),
+        tokens.TokenizedStringEntry(0x5D087463, "pw::work_queue::WorkQueue"),
+        tokens.TokenizedStringEntry(0xA7C43965, "log"),
+    ]
+)
 
 
 class TestParseMetrics(TestCase):
     """Test parsing metrics received from RPCs"""
+
     def setUp(self) -> None:
         """Creating detokenizer and mocking RPC."""
         self.detokenize = detokenize.Detokenizer(DATABASE)
@@ -44,37 +47,44 @@ class TestParseMetrics(TestCase):
         self.rpcs.pw.metric.proto.MetricService.Get = mock.Mock()
         self.rpcs.pw.metric.proto.MetricService.Get.return_value = mock.Mock()
         self.rpcs.pw.metric.proto.MetricService.Get.return_value.status = (
-            Status.OK)
+            Status.OK
+        )
         # Creating a group and metric name for better identification.
-        self.log = 0xa7c43965
+        self.log = 0xA7C43965
         self.total_created = 0x22198280
-        self.total_dropped = 0x01148a48
+        self.total_dropped = 0x01148A48
         self.min_queue_remaining = 0x03796798
         self.metric = [
             metric_service_pb2.Metric(
                 token_path=[self.log, self.total_created],
                 string_path='N/A',
-                as_float=3.0),
+                as_float=3.0,
+            ),
             metric_service_pb2.Metric(
                 token_path=[self.log, self.total_dropped],
                 string_path='N/A',
-                as_float=4.0)
+                as_float=4.0,
+            ),
         ]
 
     def test_invalid_detokenizer(self) -> None:
         """Test invalid detokenizer was supplied."""
-        self.assertEqual({},
-                         parse_metrics(self.rpcs, None, self.rpc_timeout_s),
-                         msg='Valid detokenizer.')
+        self.assertEqual(
+            {},
+            parse_metrics(self.rpcs, None, self.rpc_timeout_s),
+            msg='Valid detokenizer.',
+        )
 
     def test_bad_stream_status(self) -> None:
         """Test stream response has a status other than OK."""
         self.rpcs.pw.metric.proto.MetricService.Get.return_value.status = (
-            Status.ABORTED)
-        self.assertEqual({},
-                         parse_metrics(self.rpcs, self.detokenize,
-                                       self.rpc_timeout_s),
-                         msg='Stream response was not aborted.')
+            Status.ABORTED
+        )
+        self.assertEqual(
+            {},
+            parse_metrics(self.rpcs, self.detokenize, self.rpc_timeout_s),
+            msg='Stream response was not aborted.',
+        )
 
     def test_parse_metrics(self) -> None:
         """Test metrics being parsed and recorded."""
@@ -83,12 +93,15 @@ class TestParseMetrics(TestCase):
             metric_service_pb2.MetricResponse(metrics=self.metric)
         ]
         self.assertEqual(
-            {'log': {
-                'total_created': 3.0,
-                'total_dropped': 4.0,
-            }},
+            {
+                'log': {
+                    'total_created': 3.0,
+                    'total_dropped': 4.0,
+                }
+            },
             parse_metrics(self.rpcs, self.detokenize, self.rpc_timeout_s),
-            msg='Metrics are not equal.')
+            msg='Metrics are not equal.',
+        )
 
     def test_three_metric_names(self) -> None:
         """Test creating a dictionary with three paths."""
@@ -97,7 +110,9 @@ class TestParseMetrics(TestCase):
             metric_service_pb2.Metric(
                 token_path=[self.log, self.min_queue_remaining],
                 string_path='N/A',
-                as_float=1.0))
+                as_float=1.0,
+            )
+        )
         self.rpcs.pw.metric.proto.MetricService.Get.return_value.responses = [
             metric_service_pb2.MetricResponse(metrics=self.metric)
         ]
@@ -110,14 +125,18 @@ class TestParseMetrics(TestCase):
                 },
             },
             parse_metrics(self.rpcs, self.detokenize, self.rpc_timeout_s),
-            msg='Metrics are not equal.')
+            msg='Metrics are not equal.',
+        )
 
     def test_inserting_unknown_token(self) -> None:
         # Inserting an unknown token as a group name.
         self.metric.append(
-            metric_service_pb2.Metric(token_path=[0x007, self.total_dropped],
-                                      string_path='N/A',
-                                      as_float=1.0))
+            metric_service_pb2.Metric(
+                token_path=[0x007, self.total_dropped],
+                string_path='N/A',
+                as_float=1.0,
+            )
+        )
         self.rpcs.pw.metric.proto.MetricService.Get.return_value.responses = [
             metric_service_pb2.MetricResponse(metrics=self.metric)
         ]
@@ -127,24 +146,25 @@ class TestParseMetrics(TestCase):
                     'total_created': 3.0,
                     'total_dropped': 4.0,
                 },
-                '$': {
-                    'total_dropped': 1.0
-                },
+                '$': {'total_dropped': 1.0},
             },
             parse_metrics(self.rpcs, self.detokenize, self.rpc_timeout_s),
-            msg='Metrics are not equal.')
+            msg='Metrics are not equal.',
+        )
 
     def test_multiple_metric_response(self) -> None:
         """Tests multiple metric responses being handled."""
         # Adding more than one MetricResponses.
         metric = [
-            metric_service_pb2.Metric(token_path=[0x007, self.total_dropped],
-                                      string_path='N/A',
-                                      as_float=1.0)
+            metric_service_pb2.Metric(
+                token_path=[0x007, self.total_dropped],
+                string_path='N/A',
+                as_float=1.0,
+            )
         ]
         self.rpcs.pw.metric.proto.MetricService.Get.return_value.responses = [
             metric_service_pb2.MetricResponse(metrics=self.metric),
-            metric_service_pb2.MetricResponse(metrics=metric)
+            metric_service_pb2.MetricResponse(metrics=metric),
         ]
         self.assertEqual(
             {
@@ -157,42 +177,54 @@ class TestParseMetrics(TestCase):
                 },
             },
             parse_metrics(self.rpcs, self.detokenize, self.rpc_timeout_s),
-            msg='Metrics are not equal.')
+            msg='Metrics are not equal.',
+        )
 
     def test_paths_longer_than_two(self) -> None:
         """Tests metric paths longer than two."""
         # Path longer than two.
         longest_metric = [
-            metric_service_pb2.Metric(token_path=[
-                self.log, self.total_created, self.min_queue_remaining
-            ],
-                                      string_path='N/A',
-                                      as_float=1.0),
+            metric_service_pb2.Metric(
+                token_path=[
+                    self.log,
+                    self.total_created,
+                    self.min_queue_remaining,
+                ],
+                string_path='N/A',
+                as_float=1.0,
+            ),
         ]
         self.rpcs.pw.metric.proto.MetricService.Get.return_value.responses = [
             metric_service_pb2.MetricResponse(metrics=longest_metric),
         ]
         self.assertEqual(
-            {'log': {
-                'total_created': {
-                    'min_queue_remaining': 1.0
-                },
-            }},
+            {
+                'log': {
+                    'total_created': {'min_queue_remaining': 1.0},
+                }
+            },
             parse_metrics(self.rpcs, self.detokenize, self.rpc_timeout_s),
-            msg='Metrics are not equal.')
+            msg='Metrics are not equal.',
+        )
         # Create a new leaf in log.
         longest_metric.append(
             metric_service_pb2.Metric(
                 token_path=[self.log, self.total_dropped],
                 string_path='N/A',
-                as_float=3.0))
+                as_float=3.0,
+            )
+        )
         metric = [
-            metric_service_pb2.Metric(token_path=[0x007, self.total_dropped],
-                                      string_path='N/A',
-                                      as_float=1.0),
-            metric_service_pb2.Metric(token_path=[0x007, self.total_created],
-                                      string_path='N/A',
-                                      as_float=2.0),
+            metric_service_pb2.Metric(
+                token_path=[0x007, self.total_dropped],
+                string_path='N/A',
+                as_float=1.0,
+            ),
+            metric_service_pb2.Metric(
+                token_path=[0x007, self.total_created],
+                string_path='N/A',
+                as_float=2.0,
+            ),
         ]
         self.rpcs.pw.metric.proto.MetricService.Get.return_value.responses = [
             metric_service_pb2.MetricResponse(metrics=longest_metric),
@@ -212,16 +244,21 @@ class TestParseMetrics(TestCase):
                 },
             },
             parse_metrics(self.rpcs, self.detokenize, self.rpc_timeout_s),
-            msg='Metrics are not equal.')
+            msg='Metrics are not equal.',
+        )
 
     def test_conflicting_keys(self) -> None:
         """Tests conflicting key and value assignment."""
         longest_metric = [
-            metric_service_pb2.Metric(token_path=[
-                self.log, self.total_created, self.min_queue_remaining
-            ],
-                                      string_path='N/A',
-                                      as_float=1.0),
+            metric_service_pb2.Metric(
+                token_path=[
+                    self.log,
+                    self.total_created,
+                    self.min_queue_remaining,
+                ],
+                string_path='N/A',
+                as_float=1.0,
+            ),
         ]
         # Creates a conflict at log/total_created, should throw an error.
         self.rpcs.pw.metric.proto.MetricService.Get.return_value.responses = [
@@ -237,7 +274,8 @@ class TestParseMetrics(TestCase):
             metric_service_pb2.Metric(
                 token_path=[self.log, self.total_created],
                 string_path='N/A',
-                as_float=1.0),
+                as_float=1.0,
+            ),
         ]
         # Creates a duplicate metric for log/total_created.
         self.rpcs.pw.metric.proto.MetricService.Get.return_value.responses = [

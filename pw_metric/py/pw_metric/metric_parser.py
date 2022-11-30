@@ -35,13 +35,17 @@ def _insert(metrics, path_names, value):
             # the value in this position isn't a float or int,
             # then collision occurs, throw an error.
             assert ValueError(
-                'Variable already exists: {p}'.format(p=path_name))
+                'Variable already exists: {p}'.format(p=path_name)
+            )
         else:
             metrics[path_name] = value
 
 
-def parse_metrics(rpcs: Any, detokenizer: Optional[detokenize.Detokenizer],
-                  timeout_s: Optional[float]):
+def parse_metrics(
+    rpcs: Any,
+    detokenizer: Optional[detokenize.Detokenizer],
+    timeout_s: Optional[float],
+):
     """Detokenizes metric names and retrieves their values."""
     # Creates a defaultdict that can infinitely have other defaultdicts
     # without a specified type.
@@ -50,7 +54,8 @@ def parse_metrics(rpcs: Any, detokenizer: Optional[detokenize.Detokenizer],
         _LOG.error('No metrics token database set.')
         return metrics
     stream_response = rpcs.pw.metric.proto.MetricService.Get(
-        pw_rpc_timeout_s=timeout_s)
+        pw_rpc_timeout_s=timeout_s
+    )
     if not stream_response.status.ok():
         _LOG.error('Unexpected status %s', stream_response.status)
         return metrics
@@ -59,12 +64,16 @@ def parse_metrics(rpcs: Any, detokenizer: Optional[detokenize.Detokenizer],
             path_names = []
             for path in metric.token_path:
                 path_name = str(
-                    detokenize.DetokenizedString(path,
-                                                 detokenizer.lookup(path), b'',
-                                                 False)).strip('"')
+                    detokenize.DetokenizedString(
+                        path, detokenizer.lookup(path), b'', False
+                    )
+                ).strip('"')
                 path_names.append(path_name)
-            value = metric.as_float if metric.HasField(
-                'as_float') else metric.as_int
+            value = (
+                metric.as_float
+                if metric.HasField('as_float')
+                else metric.as_int
+            )
             # inserting path_names into metrics.
             _insert(metrics, path_names, value)
     # Converts default dict objects into standard dictionaries.
