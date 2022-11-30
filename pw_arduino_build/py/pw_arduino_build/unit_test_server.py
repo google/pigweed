@@ -42,27 +42,37 @@ def parse_args():
     """Parses command-line arguments."""
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--server-port',
-                        type=int,
-                        default=8081,
-                        help='Port to launch the pw_target_runner_server on')
-    parser.add_argument('--server-config',
-                        type=argparse.FileType('r'),
-                        help='Path to server config file')
-    parser.add_argument('--verbose',
-                        '-v',
-                        dest='verbose',
-                        action="store_true",
-                        help='Output additional logs as the script runs')
-    parser.add_argument("-c",
-                        "--config-file",
-                        required=True,
-                        help="Path to an arduino_builder config file.")
+    parser.add_argument(
+        '--server-port',
+        type=int,
+        default=8081,
+        help='Port to launch the pw_target_runner_server on',
+    )
+    parser.add_argument(
+        '--server-config',
+        type=argparse.FileType('r'),
+        help='Path to server config file',
+    )
+    parser.add_argument(
+        '--verbose',
+        '-v',
+        dest='verbose',
+        action="store_true",
+        help='Output additional logs as the script runs',
+    )
+    parser.add_argument(
+        "-c",
+        "--config-file",
+        required=True,
+        help="Path to an arduino_builder config file.",
+    )
     # TODO(tonymd): Explicitly split args using "--". See example in:
     # //pw_unit_test/py/pw_unit_test/test_runner.py:326
-    parser.add_argument('runner_args',
-                        nargs=argparse.REMAINDER,
-                        help='Arguments to forward to the test runner')
+    parser.add_argument(
+        'runner_args',
+        nargs=argparse.REMAINDER,
+        help='Arguments to forward to the test runner',
+    )
 
     return parser.parse_args()
 
@@ -79,8 +89,9 @@ def generate_runner(command: str, arguments: List[str]) -> str:
     return '\n'.join(runner)
 
 
-def generate_server_config(runner_args: Optional[List[str]],
-                           arduino_package_path: str) -> IO[bytes]:
+def generate_server_config(
+    runner_args: Optional[List[str]], arduino_package_path: str
+) -> IO[bytes]:
     """Returns a temporary generated file for use as the server config."""
 
     if "teensy" not in arduino_package_path:
@@ -101,20 +112,26 @@ def generate_server_config(runner_args: Optional[List[str]],
         test_runner_args += ["--port", board.dev_name]
         test_runner_args += ["--upload-tool", board.arduino_upload_tool_name]
         config_file.write(
-            generate_runner(_TEST_RUNNER_COMMAND,
-                            test_runner_args).encode('utf-8'))
+            generate_runner(_TEST_RUNNER_COMMAND, test_runner_args).encode(
+                'utf-8'
+            )
+        )
     config_file.flush()
     return config_file
 
 
-def launch_server(server_config: Optional[IO[bytes]],
-                  server_port: Optional[int], runner_args: Optional[List[str]],
-                  arduino_package_path: str) -> int:
+def launch_server(
+    server_config: Optional[IO[bytes]],
+    server_port: Optional[int],
+    runner_args: Optional[List[str]],
+    arduino_package_path: str,
+) -> int:
     """Launch a device test server with the provided arguments."""
     if server_config is None:
         # Auto-detect attached boards if no config is provided.
-        server_config = generate_server_config(runner_args,
-                                               arduino_package_path)
+        server_config = generate_server_config(
+            runner_args, arduino_package_path
+        )
 
     cmd = [_TEST_SERVER_COMMAND, '-config', server_config.name]
 
@@ -138,9 +155,11 @@ def main():
     arduino_package_path = None
     if args.config_file:
         json_file_options, unused_config_path = decode_file_json(
-            args.config_file)
-        arduino_package_path = json_file_options.get("arduino_package_path",
-                                                     None)
+            args.config_file
+        )
+        arduino_package_path = json_file_options.get(
+            "arduino_package_path", None
+        )
         # Must pass --config-file option in the runner_args.
         if "--config-file" not in args.runner_args:
             args.runner_args.append("--config-file")
@@ -149,15 +168,21 @@ def main():
     # Check for arduino_package_path in the runner_args
     try:
         arduino_package_path = args.runner_args[
-            args.runner_args.index("--arduino-package-path") + 1]
+            args.runner_args.index("--arduino-package-path") + 1
+        ]
     except (ValueError, IndexError):
         # Only raise an error if arduino_package_path not set from the json.
         if arduino_package_path is None:
-            raise UnknownArduinoCore("Test runner arguments: '{}'".format(
-                " ".join(args.runner_args)))
+            raise UnknownArduinoCore(
+                "Test runner arguments: '{}'".format(" ".join(args.runner_args))
+            )
 
-    exit_code = launch_server(args.server_config, args.server_port,
-                              args.runner_args, arduino_package_path)
+    exit_code = launch_server(
+        args.server_config,
+        args.server_port,
+        args.runner_args,
+        arduino_package_path,
+    )
     sys.exit(exit_code)
 
 

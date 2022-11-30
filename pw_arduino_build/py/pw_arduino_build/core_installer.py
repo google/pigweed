@@ -162,7 +162,8 @@ def install_core_command(args: argparse.Namespace):
 
 def install_core(prefix, core_name):
     install_prefix = os.path.realpath(
-        os.path.expanduser(os.path.expandvars(prefix)))
+        os.path.expanduser(os.path.expandvars(prefix))
+    )
     install_dir = os.path.join(install_prefix, core_name)
     cache_dir = os.path.join(install_prefix, ".cache", core_name)
 
@@ -188,7 +189,9 @@ def install_core(prefix, core_name):
     else:
         raise ArduinoCoreNotSupported(
             "Invalid core '{}'. Supported cores: {}".format(
-                core_name, ", ".join(supported_cores())))
+                core_name, ", ".join(supported_cores())
+            )
+        )
 
 
 def supported_cores():
@@ -196,8 +199,7 @@ def supported_cores():
 
 
 def get_windows_process_names() -> List[str]:
-    result = subprocess.run("wmic process get description",
-                            capture_output=True)
+    result = subprocess.run("wmic process get description", capture_output=True)
     output = result.stdout.decode().splitlines()
     return [line.strip() for line in output if line]
 
@@ -211,14 +213,16 @@ def install_teensy_core_windows(install_prefix, install_dir, cache_dir):
         url=arduino_artifact["url"],
         expected_sha256sum=arduino_artifact["sha256"],
         cache_directory=cache_dir,
-        downloaded_file_name=arduino_artifact["file_name"])
+        downloaded_file_name=arduino_artifact["file_name"],
+    )
 
     teensyduino_artifact = teensy_artifacts["teensyduino"]
     teensyduino_installer = file_operations.download_to_cache(
         url=teensyduino_artifact["url"],
         expected_sha256sum=teensyduino_artifact["sha256"],
         cache_directory=cache_dir,
-        downloaded_file_name=teensyduino_artifact["file_name"])
+        downloaded_file_name=teensyduino_artifact["file_name"],
+    )
 
     file_operations.extract_archive(arduino_zipfile, install_dir, cache_dir)
 
@@ -231,13 +235,14 @@ def install_teensy_core_windows(install_prefix, install_dir, cache_dir):
 
     install_command = [teensyduino_installer, "--dir=teensy"]
     _LOG.info("  Running: %s", " ".join(install_command))
-    _LOG.info("    Please click yes on the Windows 'User Account Control' "
-              "dialog.")
+    _LOG.info(
+        "    Please click yes on the Windows 'User Account Control' " "dialog."
+    )
     _LOG.info("    You should see: 'Verified publisher: PRJC.COM LLC'")
 
-    def wait_for_process(process_name,
-                         timeout=30,
-                         result_operator=operator.truth):
+    def wait_for_process(
+        process_name, timeout=30, result_operator=operator.truth
+    ):
         start_time = time.time()
         while result_operator(process_name in get_windows_process_names()):
             time.sleep(1)
@@ -245,19 +250,22 @@ def install_teensy_core_windows(install_prefix, install_dir, cache_dir):
                 _LOG.error(
                     "Error: Installation Failed.\n"
                     "Please click yes on the Windows 'User Account Control' "
-                    "dialog.")
+                    "dialog."
+                )
                 sys.exit(1)
 
     # Run Teensyduino installer with admin rights (non-blocking)
     # User Account Control (UAC) will prompt the user for consent
     import ctypes  # pylint: disable=import-outside-toplevel
+
     ctypes.windll.shell32.ShellExecuteW(
         None,  # parent window handle
         "runas",  # operation
         teensyduino_installer,  # file to run
         subprocess.list2cmdline(install_command),  # command parameters
         install_prefix,  # working directory
-        1)  # Display mode (SW_SHOWNORMAL: Activates and displays a window)
+        1,
+    )  # Display mode (SW_SHOWNORMAL: Activates and displays a window)
 
     # Wait for teensyduino_installer to start running
     wait_for_process("TeensyduinoInstall.exe", result_operator=operator.not_)
@@ -271,7 +279,9 @@ def install_teensy_core_windows(install_prefix, install_dir, cache_dir):
             "Error: Installation Failed.\n"
             "Please try again and ensure Teensyduino is installed in "
             "the folder:\n"
-            "%s", teensy_core_dir)
+            "%s",
+            teensy_core_dir,
+        )
         sys.exit(1)
     else:
         _LOG.info("Install complete!")
@@ -289,17 +299,21 @@ def install_teensy_core_mac(unused_install_prefix, install_dir, cache_dir):
         url=teensyduino_artifact["url"],
         expected_sha256sum=teensyduino_artifact["sha256"],
         cache_directory=cache_dir,
-        downloaded_file_name=teensyduino_artifact["file_name"])
+        downloaded_file_name=teensyduino_artifact["file_name"],
+    )
 
     extracted_files = file_operations.extract_archive(
         teensyduino_zip,
         install_dir,
         cache_dir,
-        remove_single_toplevel_folder=False)
+        remove_single_toplevel_folder=False,
+    )
     toplevel_folder = sorted(extracted_files)[0]
-    os.symlink(os.path.join(toplevel_folder, "Contents", "Java", "hardware"),
-               os.path.join(install_dir, "hardware"),
-               target_is_directory=True)
+    os.symlink(
+        os.path.join(toplevel_folder, "Contents", "Java", "hardware"),
+        os.path.join(install_dir, "hardware"),
+        target_is_directory=True,
+    )
 
 
 def install_teensy_core_linux(install_prefix, install_dir, cache_dir):
@@ -311,18 +325,22 @@ def install_teensy_core_linux(install_prefix, install_dir, cache_dir):
         url=arduino_artifact["url"],
         expected_sha256sum=arduino_artifact["sha256"],
         cache_directory=cache_dir,
-        downloaded_file_name=arduino_artifact["file_name"])
+        downloaded_file_name=arduino_artifact["file_name"],
+    )
 
     teensyduino_artifact = teensy_artifacts["teensyduino"]
     teensyduino_installer = file_operations.download_to_cache(
         url=teensyduino_artifact["url"],
         expected_sha256sum=teensyduino_artifact["sha256"],
         cache_directory=cache_dir,
-        downloaded_file_name=teensyduino_artifact["file_name"])
+        downloaded_file_name=teensyduino_artifact["file_name"],
+    )
 
     file_operations.extract_archive(arduino_tarfile, install_dir, cache_dir)
-    os.chmod(teensyduino_installer,
-             os.stat(teensyduino_installer).st_mode | stat.S_IEXEC)
+    os.chmod(
+        teensyduino_installer,
+        os.stat(teensyduino_installer).st_mode | stat.S_IEXEC,
+    )
 
     original_working_dir = os.getcwd()
     os.chdir(install_prefix)
@@ -340,31 +358,36 @@ def apply_teensy_patches(install_dir):
     #   hardware -> Teensyduino.app/Contents/Java/hardware
     # Resolve paths since `git apply` doesn't work if a path is beyond a
     # symbolic link.
-    patch_root_path = (Path(install_dir) /
-                       "hardware/teensy/avr/cores").resolve()
+    patch_root_path = (
+        Path(install_dir) / "hardware/teensy/avr/cores"
+    ).resolve()
 
     # Get all *.diff files relative to this python file's parent directory.
     patch_file_paths = sorted(
-        (Path(__file__).parent / "core_patches/teensy").glob("*.diff"))
+        (Path(__file__).parent / "core_patches/teensy").glob("*.diff")
+    )
 
     # Apply each patch file.
     for diff_path in patch_file_paths:
-        file_operations.git_apply_patch(patch_root_path.as_posix(),
-                                        diff_path.as_posix(),
-                                        unsafe_paths=True)
+        file_operations.git_apply_patch(
+            patch_root_path.as_posix(), diff_path.as_posix(), unsafe_paths=True
+        )
 
 
-def install_arduino_samd_core(install_prefix: str, install_dir: str,
-                              cache_dir: str):
+def install_arduino_samd_core(
+    install_prefix: str, install_dir: str, cache_dir: str
+):
     artifacts = _ARDUINO_CORE_ARTIFACTS["arduino-samd"]["all"]["core"]
     core_tarfile = file_operations.download_to_cache(
         url=artifacts["url"],
         expected_sha256sum=artifacts["sha256"],
         cache_directory=cache_dir,
-        downloaded_file_name=artifacts["file_name"])
+        downloaded_file_name=artifacts["file_name"],
+    )
 
-    package_path = os.path.join(install_dir, "hardware", "samd",
-                                artifacts["version"])
+    package_path = os.path.join(
+        install_dir, "hardware", "samd", artifacts["version"]
+    )
     os.makedirs(package_path, exist_ok=True)
     file_operations.extract_archive(core_tarfile, package_path, cache_dir)
     original_working_dir = os.getcwd()
@@ -375,17 +398,20 @@ def install_arduino_samd_core(install_prefix: str, install_dir: str,
     return True
 
 
-def install_adafruit_samd_core(install_prefix: str, install_dir: str,
-                               cache_dir: str):
+def install_adafruit_samd_core(
+    install_prefix: str, install_dir: str, cache_dir: str
+):
     artifacts = _ARDUINO_CORE_ARTIFACTS["adafruit-samd"]["all"]["core"]
     core_tarfile = file_operations.download_to_cache(
         url=artifacts["url"],
         expected_sha256sum=artifacts["sha256"],
         cache_directory=cache_dir,
-        downloaded_file_name=artifacts["file_name"])
+        downloaded_file_name=artifacts["file_name"],
+    )
 
-    package_path = os.path.join(install_dir, "hardware", "samd",
-                                artifacts["version"])
+    package_path = os.path.join(
+        install_dir, "hardware", "samd", artifacts["version"]
+    )
     os.makedirs(package_path, exist_ok=True)
     file_operations.extract_archive(core_tarfile, package_path, cache_dir)
 
@@ -405,10 +431,12 @@ def install_stm32duino_core(install_prefix, install_dir, cache_dir):
         url=artifacts["url"],
         expected_sha256sum=artifacts["sha256"],
         cache_directory=cache_dir,
-        downloaded_file_name=artifacts["file_name"])
+        downloaded_file_name=artifacts["file_name"],
+    )
 
-    package_path = os.path.join(install_dir, "hardware", "stm32",
-                                artifacts["version"])
+    package_path = os.path.join(
+        install_dir, "hardware", "stm32", artifacts["version"]
+    )
     os.makedirs(package_path, exist_ok=True)
     file_operations.extract_archive(core_tarfile, package_path, cache_dir)
     original_working_dir = os.getcwd()

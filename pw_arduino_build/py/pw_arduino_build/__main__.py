@@ -91,8 +91,7 @@ def show_command_print_flag_string(args, flag_string):
         print(flag_string)
 
 
-def subtract_flags(flag_list_a: List[str],
-                   flag_list_b: List[str]) -> List[str]:
+def subtract_flags(flag_list_a: List[str], flag_list_b: List[str]) -> List[str]:
     """Given two sets of flags return flags in a that are not in b."""
     flag_counts = OrderedDict()  # type: OrderedDict[str, int]
     for flag in flag_list_a + flag_list_b:
@@ -106,9 +105,9 @@ def run_command_lines(args, command_lines: List[str]):
             print(command_line)
         # TODO(tonymd): Exit with sub command exit code.
         command_line_args = shlex.split(command_line)
-        process = subprocess.run(command_line_args,
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.STDOUT)
+        process = subprocess.run(
+            command_line_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        )
         if process.returncode != 0:
             _LOG.error('Command failed with exit code %d.', process.returncode)
             _LOG.error('Full command:')
@@ -145,8 +144,9 @@ def run_command(args, builder):
         run_command_lines(args, builder.get_postbuild_steps())
 
     if args.run_upload_command:
-        command = builder.get_upload_line(args.run_upload_command,
-                                          args.serial_port)
+        command = builder.get_upload_line(
+            args.run_upload_command, args.serial_port
+        )
         run_command_lines(args, [command])
 
 
@@ -196,8 +196,10 @@ def show_command(args, builder):
         show_command_print_flag_string(args, sflags)
 
     elif args.s_only_flags:
-        s_only_flags = subtract_flags(shlex.split(builder.get_s_flags()),
-                                      shlex.split(builder.get_c_flags()))
+        s_only_flags = subtract_flags(
+            shlex.split(builder.get_s_flags()),
+            shlex.split(builder.get_c_flags()),
+        )
         show_command_print_flag_string(args, " ".join(s_only_flags))
 
     elif args.cpp_flags:
@@ -205,8 +207,10 @@ def show_command(args, builder):
         show_command_print_flag_string(args, cppflags)
 
     elif args.cpp_only_flags:
-        cpp_only_flags = subtract_flags(shlex.split(builder.get_cpp_flags()),
-                                        shlex.split(builder.get_c_flags()))
+        cpp_only_flags = subtract_flags(
+            shlex.split(builder.get_cpp_flags()),
+            shlex.split(builder.get_c_flags()),
+        )
         show_command_print_flag_string(args, " ".join(cpp_only_flags))
 
     elif args.ld_flags:
@@ -217,8 +221,9 @@ def show_command(args, builder):
         show_command_print_flag_string(args, builder.get_ld_libs())
 
     elif args.ld_lib_names:
-        show_command_print_flag_string(args,
-                                       builder.get_ld_libs(name_only=True))
+        show_command_print_flag_string(
+            args, builder.get_ld_libs(name_only=True)
+        )
 
     elif args.ar_flags:
         ar_flags = builder.get_ar_flags()
@@ -281,37 +286,50 @@ def show_command(args, builder):
             show_command_print_string_list(args, vfiles)
 
 
-def add_common_parser_args(parser, serial_port, build_path, build_project_name,
-                           project_path, project_source_path):
+def add_common_parser_args(
+    parser,
+    serial_port,
+    build_path,
+    build_project_name,
+    project_path,
+    project_source_path,
+):
     """Add command line options common to the run and show commands."""
     parser.add_argument(
         "--serial-port",
         default=serial_port,
-        help="Serial port for flashing. Default: '{}'".format(serial_port))
+        help="Serial port for flashing. Default: '{}'".format(serial_port),
+    )
     parser.add_argument(
         "--build-path",
         default=build_path,
-        help="Build directory. Default: '{}'".format(build_path))
+        help="Build directory. Default: '{}'".format(build_path),
+    )
     parser.add_argument(
         "--project-path",
         default=project_path,
-        help="Project directory. Default: '{}'".format(project_path))
+        help="Project directory. Default: '{}'".format(project_path),
+    )
     parser.add_argument(
         "--project-source-path",
         default=project_source_path,
-        help="Project directory. Default: '{}'".format(project_source_path))
-    parser.add_argument("--library-path",
-                        default=[],
-                        nargs="+",
-                        type=str,
-                        help="Path to Arduino Library directory.")
+        help="Project directory. Default: '{}'".format(project_source_path),
+    )
+    parser.add_argument(
+        "--library-path",
+        default=[],
+        nargs="+",
+        type=str,
+        help="Path to Arduino Library directory.",
+    )
     parser.add_argument(
         "--build-project-name",
         default=build_project_name,
-        help="Project name. Default: '{}'".format(build_project_name))
-    parser.add_argument("--board",
-                        required=True,
-                        help="Name of the board to use.")
+        help="Project name. Default: '{}'".format(build_project_name),
+    )
+    parser.add_argument(
+        "--board", required=True, help="Name of the board to use."
+    )
     # nargs="+" is one or more args, e.g:
     #   --menu-options menu.usb.serialhid menu.speed.150
     parser.add_argument(
@@ -320,21 +338,25 @@ def add_common_parser_args(parser, serial_port, build_path, build_project_name,
         type=str,
         metavar="menu.usb.serial",
         help="Desired Arduino menu options. See the "
-        "'list-menu-options' subcommand for available options.")
-    parser.add_argument("--set-variable",
-                        action="append",
-                        metavar='some.variable=NEW_VALUE',
-                        help="Override an Arduino recipe variable. May be "
-                        "specified multiple times. For example: "
-                        "--set-variable 'serial.port.label=/dev/ttyACM0' "
-                        "--set-variable 'serial.port.protocol=Teensy'")
+        "'list-menu-options' subcommand for available options.",
+    )
+    parser.add_argument(
+        "--set-variable",
+        action="append",
+        metavar='some.variable=NEW_VALUE',
+        help="Override an Arduino recipe variable. May be "
+        "specified multiple times. For example: "
+        "--set-variable 'serial.port.label=/dev/ttyACM0' "
+        "--set-variable 'serial.port.protocol=Teensy'",
+    )
 
 
 def check_for_missing_args(args):
     if args.arduino_package_path is None:
         raise MissingArduinoCore(
             "Please specify the location of an Arduino core using "
-            "'--arduino-package-path' and '--arduino-package-name'.")
+            "'--arduino-package-path' and '--arduino-package-name'."
+        )
 
 
 # TODO(tonymd): These defaults don't make sense anymore and should be removed.
@@ -342,11 +364,15 @@ def get_default_options():
     defaults = {}
     defaults["build_path"] = os.path.realpath(
         os.path.expanduser(
-            os.path.expandvars(os.path.join(os.getcwd(), "build"))))
+            os.path.expandvars(os.path.join(os.getcwd(), "build"))
+        )
+    )
     defaults["project_path"] = os.path.realpath(
-        os.path.expanduser(os.path.expandvars(os.getcwd())))
-    defaults["project_source_path"] = os.path.join(defaults["project_path"],
-                                                   "src")
+        os.path.expanduser(os.path.expandvars(os.getcwd()))
+    )
+    defaults["project_source_path"] = os.path.join(
+        defaults["project_path"], "src"
+    )
     defaults["build_project_name"] = os.path.basename(defaults["project_path"])
     defaults["serial_port"] = "UNKNOWN"
     return defaults
@@ -359,7 +385,8 @@ def load_config_file(args):
 
     if args.save_config and not args.config_file:
         raise FileNotFoundError(
-            "'--save-config' requires the '--config-file' option")
+            "'--save-config' requires the '--config-file' option"
+        )
 
     if not args.config_file:
         return
@@ -412,95 +439,118 @@ def load_config_file(args):
 
 def _parse_args() -> argparse.Namespace:
     """Setup argparse and parse command line args."""
+
     def log_level(arg: str) -> int:
         try:
             return getattr(logging, arg.upper())
         except AttributeError:
             raise argparse.ArgumentTypeError(
-                f'{arg.upper()} is not a valid log level')
+                f'{arg.upper()} is not a valid log level'
+            )
 
     def existing_directory(input_string: str):
         """Argparse type that resolves to an absolute path."""
         input_path = Path(os.path.expandvars(input_string)).absolute()
         if not input_path.exists():
             raise argparse.ArgumentTypeError(
-                "'{}' is not a valid directory.".format(str(input_path)))
+                "'{}' is not a valid directory.".format(str(input_path))
+            )
         return input_path.as_posix()
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-q",
-                        "--quiet",
-                        help="hide run command output",
-                        action="store_true")
-    parser.add_argument('-l',
-                        '--loglevel',
-                        type=log_level,
-                        default=logging.INFO,
-                        help='Set the log level '
-                        '(debug, info, warning, error, critical)')
+    parser.add_argument(
+        "-q", "--quiet", help="hide run command output", action="store_true"
+    )
+    parser.add_argument(
+        '-l',
+        '--loglevel',
+        type=log_level,
+        default=logging.INFO,
+        help='Set the log level ' '(debug, info, warning, error, critical)',
+    )
 
     default_options = get_default_options()
 
     # Global command line options
-    parser.add_argument("--arduino-package-path",
-                        type=existing_directory,
-                        help="Path to the arduino IDE install location.")
-    parser.add_argument("--arduino-package-name",
-                        help="Name of the Arduino board package to use.")
-    parser.add_argument("--compiler-path-override",
-                        type=existing_directory,
-                        help="Path to arm-none-eabi-gcc bin folder. "
-                        "Default: Arduino core specified gcc")
+    parser.add_argument(
+        "--arduino-package-path",
+        type=existing_directory,
+        help="Path to the arduino IDE install location.",
+    )
+    parser.add_argument(
+        "--arduino-package-name",
+        help="Name of the Arduino board package to use.",
+    )
+    parser.add_argument(
+        "--compiler-path-override",
+        type=existing_directory,
+        help="Path to arm-none-eabi-gcc bin folder. "
+        "Default: Arduino core specified gcc",
+    )
     parser.add_argument("-c", "--config-file", help="Path to a config file.")
-    parser.add_argument("--save-config",
-                        action="store_true",
-                        help="Save command line arguments to the config file.")
+    parser.add_argument(
+        "--save-config",
+        action="store_true",
+        help="Save command line arguments to the config file.",
+    )
 
     # Subcommands
-    subparsers = parser.add_subparsers(title="subcommand",
-                                       description="valid subcommands",
-                                       help="sub-command help",
-                                       dest="subcommand",
-                                       required=True)
+    subparsers = parser.add_subparsers(
+        title="subcommand",
+        description="valid subcommands",
+        help="sub-command help",
+        dest="subcommand",
+        required=True,
+    )
 
     # install-core command
     install_core_parser = subparsers.add_parser(
-        "install-core", help="Download and install arduino cores")
+        "install-core", help="Download and install arduino cores"
+    )
     install_core_parser.set_defaults(func=core_installer.install_core_command)
-    install_core_parser.add_argument("--prefix",
-                                     required=True,
-                                     help="Path to install core files.")
+    install_core_parser.add_argument(
+        "--prefix", required=True, help="Path to install core files."
+    )
     install_core_parser.add_argument(
         "--core-name",
         required=True,
         choices=core_installer.supported_cores(),
-        help="Name of the arduino core to install.")
+        help="Name of the arduino core to install.",
+    )
 
     # list-boards command
-    list_boards_parser = subparsers.add_parser("list-boards",
-                                               help="show supported boards")
+    list_boards_parser = subparsers.add_parser(
+        "list-boards", help="show supported boards"
+    )
     list_boards_parser.set_defaults(func=list_boards_command)
 
     # list-menu-options command
     list_menu_options_parser = subparsers.add_parser(
         "list-menu-options",
-        help="show available menu options for selected board")
+        help="show available menu options for selected board",
+    )
     list_menu_options_parser.set_defaults(func=list_menu_options_command)
-    list_menu_options_parser.add_argument("--board",
-                                          required=True,
-                                          help="Name of the board to use.")
+    list_menu_options_parser.add_argument(
+        "--board", required=True, help="Name of the board to use."
+    )
 
     # show command
-    show_parser = subparsers.add_parser("show",
-                                        help="Return compiler information.")
-    add_common_parser_args(show_parser, default_options["serial_port"],
-                           default_options["build_path"],
-                           default_options["build_project_name"],
-                           default_options["project_path"],
-                           default_options["project_source_path"])
-    show_parser.add_argument("--delimit-with-newlines",
-                             help="Separate flag output with newlines.",
-                             action="store_true")
+    show_parser = subparsers.add_parser(
+        "show", help="Return compiler information."
+    )
+    add_common_parser_args(
+        show_parser,
+        default_options["serial_port"],
+        default_options["build_path"],
+        default_options["build_project_name"],
+        default_options["project_path"],
+        default_options["project_source_path"],
+    )
+    show_parser.add_argument(
+        "--delimit-with-newlines",
+        help="Separate flag output with newlines.",
+        action="store_true",
+    )
     show_parser.add_argument("--library-names", nargs="+", type=str)
 
     output_group = show_parser.add_mutually_exclusive_group(required=True)
@@ -517,20 +567,23 @@ def _parse_args() -> argparse.Namespace:
     output_group.add_argument("--ld-libs", action="store_true")
     output_group.add_argument("--ld-lib-names", action="store_true")
     output_group.add_argument("--objcopy", help="objcopy step for SUFFIX")
-    output_group.add_argument("--objcopy-flags",
-                              help="objcopy flags for SUFFIX")
+    output_group.add_argument(
+        "--objcopy-flags", help="objcopy flags for SUFFIX"
+    )
     output_group.add_argument("--core-path", action="store_true")
     output_group.add_argument("--cc-binary", action="store_true")
     output_group.add_argument("--cxx-binary", action="store_true")
     output_group.add_argument("--ar-binary", action="store_true")
     output_group.add_argument("--objcopy-binary", action="store_true")
     output_group.add_argument("--size-binary", action="store_true")
-    output_group.add_argument("--prebuilds",
-                              action="store_true",
-                              help="Show prebuild step commands.")
-    output_group.add_argument("--postbuilds",
-                              action="store_true",
-                              help="Show postbuild step commands.")
+    output_group.add_argument(
+        "--prebuilds", action="store_true", help="Show prebuild step commands."
+    )
+    output_group.add_argument(
+        "--postbuilds",
+        action="store_true",
+        help="Show postbuild step commands.",
+    )
     output_group.add_argument("--upload-tools", action="store_true")
     output_group.add_argument("--upload-command")
     output_group.add_argument("--library-includes", action="store_true")
@@ -549,16 +602,21 @@ def _parse_args() -> argparse.Namespace:
 
     # run command
     run_parser = subparsers.add_parser("run", help="Run Arduino recipes.")
-    add_common_parser_args(run_parser, default_options["serial_port"],
-                           default_options["build_path"],
-                           default_options["build_project_name"],
-                           default_options["project_path"],
-                           default_options["project_source_path"])
-    run_parser.add_argument("--run-link",
-                            nargs="+",
-                            type=str,
-                            help="Run the link command. Expected arguments: "
-                            "the archive file followed by all obj files.")
+    add_common_parser_args(
+        run_parser,
+        default_options["serial_port"],
+        default_options["build_path"],
+        default_options["build_project_name"],
+        default_options["project_path"],
+        default_options["project_source_path"],
+    )
+    run_parser.add_argument(
+        "--run-link",
+        nargs="+",
+        type=str,
+        help="Run the link command. Expected arguments: "
+        "the archive file followed by all obj files.",
+    )
     run_parser.add_argument("--run-objcopy", action="store_true")
     run_parser.add_argument("--run-prebuilds", action="store_true")
     run_parser.add_argument("--run-postbuilds", action="store_true")
@@ -584,8 +642,8 @@ def main():
     if args.compiler_path_override:
         # Get absolute path
         compiler_path_override = os.path.realpath(
-            os.path.expanduser(os.path.expandvars(
-                args.compiler_path_override)))
+            os.path.expanduser(os.path.expandvars(args.compiler_path_override))
+        )
         args.compiler_path_override = compiler_path_override
 
     load_config_file(args)
@@ -594,8 +652,9 @@ def main():
         args.func(args)
     elif args.subcommand in ["list-boards", "list-menu-options"]:
         check_for_missing_args(args)
-        builder = ArduinoBuilder(args.arduino_package_path,
-                                 args.arduino_package_name)
+        builder = ArduinoBuilder(
+            args.arduino_package_path, args.arduino_package_name
+        )
         builder.load_board_definitions()
         args.func(args, builder)
     else:  # args.subcommand in ["run", "show"]
@@ -609,7 +668,8 @@ def main():
             project_source_path=args.project_source_path,
             library_path=getattr(args, 'library_path', None),
             library_names=getattr(args, 'library_names', None),
-            compiler_path_override=args.compiler_path_override)
+            compiler_path_override=args.compiler_path_override,
+        )
         builder.load_board_definitions()
         builder.select_board(args.board, args.menu_options)
         if args.set_variable:

@@ -69,56 +69,74 @@ def parse_args():
     """Parses command-line arguments."""
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('binary',
-                        help='The target test binary to run',
-                        type=valid_file_name)
-    parser.add_argument('--port',
-                        help='The name of the serial port to connect to when '
-                        'running tests')
-    parser.add_argument('--baud',
-                        type=int,
-                        default=115200,
-                        help='Target baud rate to use for serial communication'
-                        ' with target device')
-    parser.add_argument('--test-timeout',
-                        type=float,
-                        default=5.0,
-                        help='Maximum communication delay in seconds before a '
-                        'test is considered unresponsive and aborted')
-    parser.add_argument('--verbose',
-                        '-v',
-                        dest='verbose',
-                        action='store_true',
-                        help='Output additional logs as the script runs')
+    parser.add_argument(
+        'binary', help='The target test binary to run', type=valid_file_name
+    )
+    parser.add_argument(
+        '--port',
+        help='The name of the serial port to connect to when ' 'running tests',
+    )
+    parser.add_argument(
+        '--baud',
+        type=int,
+        default=115200,
+        help='Target baud rate to use for serial communication'
+        ' with target device',
+    )
+    parser.add_argument(
+        '--test-timeout',
+        type=float,
+        default=5.0,
+        help='Maximum communication delay in seconds before a '
+        'test is considered unresponsive and aborted',
+    )
+    parser.add_argument(
+        '--verbose',
+        '-v',
+        dest='verbose',
+        action='store_true',
+        help='Output additional logs as the script runs',
+    )
 
-    parser.add_argument('--flash-only',
-                        action='store_true',
-                        help="Don't check for test output after flashing.")
+    parser.add_argument(
+        '--flash-only',
+        action='store_true',
+        help="Don't check for test output after flashing.",
+    )
 
     # arduino_builder arguments
     # TODO(tonymd): Get these args from __main__.py or elsewhere.
-    parser.add_argument("-c",
-                        "--config-file",
-                        required=True,
-                        help="Path to a config file.")
-    parser.add_argument("--arduino-package-path",
-                        help="Path to the arduino IDE install location.")
-    parser.add_argument("--arduino-package-name",
-                        help="Name of the Arduino board package to use.")
-    parser.add_argument("--compiler-path-override",
-                        help="Path to arm-none-eabi-gcc bin folder. "
-                        "Default: Arduino core specified gcc")
+    parser.add_argument(
+        "-c", "--config-file", required=True, help="Path to a config file."
+    )
+    parser.add_argument(
+        "--arduino-package-path",
+        help="Path to the arduino IDE install location.",
+    )
+    parser.add_argument(
+        "--arduino-package-name",
+        help="Name of the Arduino board package to use.",
+    )
+    parser.add_argument(
+        "--compiler-path-override",
+        help="Path to arm-none-eabi-gcc bin folder. "
+        "Default: Arduino core specified gcc",
+    )
     parser.add_argument("--board", help="Name of the Arduino board to use.")
-    parser.add_argument("--upload-tool",
-                        required=True,
-                        help="Name of the Arduino upload tool to use.")
-    parser.add_argument("--set-variable",
-                        action="append",
-                        metavar='some.variable=NEW_VALUE',
-                        help="Override an Arduino recipe variable. May be "
-                        "specified multiple times. For example: "
-                        "--set-variable 'serial.port.label=/dev/ttyACM0' "
-                        "--set-variable 'serial.port.protocol=Teensy'")
+    parser.add_argument(
+        "--upload-tool",
+        required=True,
+        help="Name of the Arduino upload tool to use.",
+    )
+    parser.add_argument(
+        "--set-variable",
+        action="append",
+        metavar='some.variable=NEW_VALUE',
+        help="Override an Arduino recipe variable. May be "
+        "specified multiple times. For example: "
+        "--set-variable 'serial.port.label=/dev/ttyACM0' "
+        "--set-variable 'serial.port.protocol=Teensy'",
+    )
     return parser.parse_args()
 
 
@@ -137,9 +155,9 @@ def read_serial(port, baud_rate, test_timeout) -> bytes:
     """
 
     serial_data = bytearray()
-    device = serial.Serial(baudrate=baud_rate,
-                           port=port,
-                           timeout=_FLASH_TIMEOUT)
+    device = serial.Serial(
+        baudrate=baud_rate, port=port, timeout=_FLASH_TIMEOUT
+    )
     if not device.is_open:
         raise TestingFailure('Failed to open device')
 
@@ -170,8 +188,11 @@ def read_serial(port, baud_rate, test_timeout) -> bytes:
 
     # Try to trim captured results to only contain most recent test run.
     test_start_index = serial_data.rfind(_TESTS_STARTING_STRING)
-    return serial_data if test_start_index == -1 else serial_data[
-        test_start_index:]
+    return (
+        serial_data
+        if test_start_index == -1
+        else serial_data[test_start_index:]
+    )
 
 
 def wait_for_port(port):
@@ -186,17 +207,18 @@ def flash_device(test_runner_args, upload_tool):
     # TODO(tonymd): Create a library function to call rather than launching
     # the arduino_builder script.
     flash_tool = 'arduino_builder'
-    cmd = [flash_tool, "--quiet"] + test_runner_args + [
-        "--run-objcopy", "--run-postbuilds", "--run-upload", upload_tool
-    ]
+    cmd = (
+        [flash_tool, "--quiet"]
+        + test_runner_args
+        + ["--run-objcopy", "--run-postbuilds", "--run-upload", upload_tool]
+    )
     _LOG.info('Flashing firmware to device')
     _LOG.debug('Running: %s', " ".join(cmd))
 
     env = os.environ.copy()
-    process = subprocess.run(cmd,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT,
-                             env=env)
+    process = subprocess.run(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env
+    )
     if process.returncode:
         log_subprocess_output(logging.ERROR, process.stdout)
         raise TestingFailure('Failed to flash target device')
@@ -225,8 +247,16 @@ def handle_test_results(test_output):
     _LOG.info('Test passed!')
 
 
-def run_device_test(binary, flash_only, port, baud, test_timeout, upload_tool,
-                    arduino_package_path, test_runner_args) -> bool:
+def run_device_test(
+    binary,
+    flash_only,
+    port,
+    baud,
+    test_timeout,
+    upload_tool,
+    arduino_package_path,
+    test_runner_args,
+) -> bool:
     """Flashes, runs, and checks an on-device test binary.
 
     Returns true on test pass.
@@ -253,7 +283,8 @@ def run_device_test(binary, flash_only, port, baud, test_timeout, upload_tool,
     if platform.system() == "Windows":
         # Delete the incorrect serial port.
         index_of_port = [
-            i for i, l in enumerate(test_runner_args)
+            i
+            for i, l in enumerate(test_runner_args)
             if l.startswith('serial.port=')
         ]
         if index_of_port:
@@ -290,8 +321,10 @@ def get_option(key, config_file_values, args, required=False):
         # Print a similar error message to argparse
         executable = os.path.basename(sys.argv[0])
         option = "--" + key.replace("_", "-")
-        print(f"{executable}: error: the following arguments are required: "
-              f"{option}")
+        print(
+            f"{executable}: error: the following arguments are required: "
+            f"{option}"
+        )
         sys.exit(1)
     return final_option
 
@@ -306,33 +339,34 @@ def main():
     pw_arduino_build.log.install(log_level)
 
     # Construct arduino_builder flash arguments for a given .elf binary.
-    arduino_package_path = get_option("arduino_package_path",
-                                      json_file_options,
-                                      args,
-                                      required=True)
+    arduino_package_path = get_option(
+        "arduino_package_path", json_file_options, args, required=True
+    )
     # Arduino core args.
     arduino_builder_args = [
         "--arduino-package-path",
         arduino_package_path,
         "--arduino-package-name",
-        get_option("arduino_package_name",
-                   json_file_options,
-                   args,
-                   required=True),
+        get_option(
+            "arduino_package_name", json_file_options, args, required=True
+        ),
     ]
 
     # Use CIPD installed compilers.
-    compiler_path_override = get_option("compiler_path_override",
-                                        json_file_options, args)
+    compiler_path_override = get_option(
+        "compiler_path_override", json_file_options, args
+    )
     if compiler_path_override:
         arduino_builder_args += [
-            "--compiler-path-override", compiler_path_override
+            "--compiler-path-override",
+            compiler_path_override,
         ]
 
     # Run subcommand with board selection arg.
     arduino_builder_args += [
-        "run", "--board",
-        get_option("board", json_file_options, args, required=True)
+        "run",
+        "--board",
+        get_option("board", json_file_options, args, required=True),
     ]
 
     # .elf file location args.
@@ -351,14 +385,16 @@ def main():
         for var in args.set_variable:
             arduino_builder_args += ["--set-variable", var]
 
-    if run_device_test(binary.as_posix(),
-                       args.flash_only,
-                       args.port,
-                       args.baud,
-                       args.test_timeout,
-                       args.upload_tool,
-                       arduino_package_path,
-                       test_runner_args=arduino_builder_args):
+    if run_device_test(
+        binary.as_posix(),
+        args.flash_only,
+        args.port,
+        args.baud,
+        args.test_timeout,
+        args.upload_tool,
+        arduino_package_path,
+        test_runner_args=arduino_builder_args,
+    ):
         sys.exit(0)
     else:
         sys.exit(1)

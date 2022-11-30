@@ -35,20 +35,22 @@ class InvalidChecksumError(Exception):
     pass
 
 
-def find_files(starting_dir: str,
-               patterns: List[str],
-               directories_only=False) -> List[str]:
+def find_files(
+    starting_dir: str, patterns: List[str], directories_only=False
+) -> List[str]:
     original_working_dir = os.getcwd()
     if not (os.path.exists(starting_dir) and os.path.isdir(starting_dir)):
         raise FileNotFoundError(
-            "Directory '{}' does not exist.".format(starting_dir))
+            "Directory '{}' does not exist.".format(starting_dir)
+        )
 
     os.chdir(starting_dir)
     files = []
     for pattern in patterns:
         for file_path in glob.glob(pattern, recursive=True):
-            if not directories_only or (directories_only
-                                        and os.path.isdir(file_path)):
+            if not directories_only or (
+                directories_only and os.path.isdir(file_path)
+            ):
                 files.append(file_path)
     os.chdir(original_working_dir)
     return sorted(files)
@@ -70,9 +72,7 @@ def md5_sum(file_name):
     return hash_md5.hexdigest()
 
 
-def verify_file_checksum(file_path,
-                         expected_checksum,
-                         sum_function=sha256_sum):
+def verify_file_checksum(file_path, expected_checksum, sum_function=sha256_sum):
     downloaded_checksum = sum_function(file_path)
     if downloaded_checksum != expected_checksum:
         raise InvalidChecksumError(
@@ -80,7 +80,8 @@ def verify_file_checksum(file_path,
             f"{downloaded_checksum} {os.path.basename(file_path)}\n"
             f"{expected_checksum} (expected)\n\n"
             "Please delete this file and try again:\n"
-            f"{file_path}")
+            f"{file_path}"
+        )
 
     _LOG.debug("  %s:", sum_function.__name__)
     _LOG.debug("  %s %s", downloaded_checksum, os.path.basename(file_path))
@@ -96,14 +97,18 @@ def relative_or_absolute_path(file_string: str):
         return file_path.resolve()
 
 
-def download_to_cache(url: str,
-                      expected_md5sum=None,
-                      expected_sha256sum=None,
-                      cache_directory=".cache",
-                      downloaded_file_name=None) -> str:
+def download_to_cache(
+    url: str,
+    expected_md5sum=None,
+    expected_sha256sum=None,
+    cache_directory=".cache",
+    downloaded_file_name=None,
+) -> str:
+    """TODO(tonymd) Add docstring."""
 
     cache_dir = os.path.realpath(
-        os.path.expanduser(os.path.expandvars(cache_directory)))
+        os.path.expanduser(os.path.expandvars(cache_directory))
+    )
     if not downloaded_file_name:
         # Use the last part of the URL as the file name.
         downloaded_file_name = url.split("/")[-1]
@@ -117,13 +122,13 @@ def download_to_cache(url: str,
     if os.path.exists(downloaded_file):
         _LOG.info("Downloaded: %s", relative_or_absolute_path(downloaded_file))
         if expected_sha256sum:
-            verify_file_checksum(downloaded_file,
-                                 expected_sha256sum,
-                                 sum_function=sha256_sum)
+            verify_file_checksum(
+                downloaded_file, expected_sha256sum, sum_function=sha256_sum
+            )
         elif expected_md5sum:
-            verify_file_checksum(downloaded_file,
-                                 expected_md5sum,
-                                 sum_function=md5_sum)
+            verify_file_checksum(
+                downloaded_file, expected_md5sum, sum_function=md5_sum
+            )
 
     return downloaded_file
 
@@ -144,10 +149,12 @@ def extract_tarfile(archive_file: str, dest_dir: str):
         archive.extractall(path=dest_dir)
 
 
-def extract_archive(archive_file: str,
-                    dest_dir: str,
-                    cache_dir: str,
-                    remove_single_toplevel_folder=True):
+def extract_archive(
+    archive_file: str,
+    dest_dir: str,
+    cache_dir: str,
+    remove_single_toplevel_folder=True,
+):
     """Extract a tar or zip file.
 
     Args:
@@ -159,8 +166,9 @@ def extract_archive(archive_file: str,
             directory.
     """
     # Make a temporary directory to extract files into
-    temp_extract_dir = os.path.join(cache_dir,
-                                    "." + os.path.basename(archive_file))
+    temp_extract_dir = os.path.join(
+        cache_dir, "." + os.path.basename(archive_file)
+    )
     os.makedirs(temp_extract_dir, exist_ok=True)
 
     _LOG.info("Extracting: %s", relative_or_absolute_path(archive_file))
@@ -179,8 +187,9 @@ def extract_archive(archive_file: str,
     # Check if tarfile has only one folder
     # If yes, make that the new path_to_extracted_files
     if remove_single_toplevel_folder and len(extracted_top_level_files) == 1:
-        path_to_extracted_files = os.path.join(temp_extract_dir,
-                                               extracted_top_level_files[0])
+        path_to_extracted_files = os.path.join(
+            temp_extract_dir, extracted_top_level_files[0]
+        )
 
     # Move extracted files to dest_dir
     extracted_files = os.listdir(path_to_extracted_files)
@@ -215,7 +224,8 @@ def decode_file_json(file_name):
 
     # Get absolute path to the file.
     file_path = os.path.realpath(
-        os.path.expanduser(os.path.expandvars(file_name)))
+        os.path.expanduser(os.path.expandvars(file_name))
+    )
 
     json_file_options = {}
     try:
@@ -227,10 +237,9 @@ def decode_file_json(file_name):
     return json_file_options, file_path
 
 
-def git_apply_patch(root_directory,
-                    patch_file,
-                    ignore_whitespace=True,
-                    unsafe_paths=False):
+def git_apply_patch(
+    root_directory, patch_file, ignore_whitespace=True, unsafe_paths=False
+):
     """Use `git apply` to apply a diff file."""
 
     _LOG.info("Applying Patch: %s", patch_file)

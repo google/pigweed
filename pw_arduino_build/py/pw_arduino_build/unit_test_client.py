@@ -27,13 +27,17 @@ def parse_args():
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('binary', help='The target test binary to run')
-    parser.add_argument('--server-port',
-                        type=int,
-                        default=8081,
-                        help='Port the test server is located on')
-    parser.add_argument('runner_args',
-                        nargs=argparse.REMAINDER,
-                        help='Arguments to forward to the test runner')
+    parser.add_argument(
+        '--server-port',
+        type=int,
+        default=8081,
+        help='Port the test server is located on',
+    )
+    parser.add_argument(
+        'runner_args',
+        nargs=argparse.REMAINDER,
+        help='Arguments to forward to the test runner',
+    )
 
     return parser.parse_args()
 

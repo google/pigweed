@@ -47,54 +47,67 @@ def create_files(root_dir, file_names):
 
 class TestFileOperations(unittest.TestCase):
     """Tests to ensure arduino core library source files can be found."""
+
     def setUp(self):
         self.test_dir = tempfile.mkdtemp()
 
     def tearDown(self):
         shutil.rmtree(self.test_dir)
 
-    @parameterized.expand([
-        (
-            "sources recursive", file_set(), ["**/*.ino", "**/*.h", "**/*.cpp"],
-            [
-                "app.ino",
-                os.path.join("core", "pwm", "pulse.h"),
-                os.path.join("libraries", "b.cpp"),
-                os.path.join("libraries", "c.h"),
-            ]
-        ),
-        (
-            "directories recursive", file_set(), ["**"],
-            [
-                "core",
-                os.path.join("core", "pwm"),
-                "libraries",
-            ]
-        ),
-        (
-            "directories one level deep", file_set(), ["*"],
-            [
-                "core",
-                "libraries",
-            ]
-        ),
-        (
-            "items one level deep", file_set(), ["*"],
-            [
-                "app.ino",
-                "core",
-                "libraries",
-            ]
-        )
-    ]) # yapf: disable
-    def test_find_files(self, test_case, base_fileset, patterns,
-                        expected_results):
+    @parameterized.expand(
+        [
+            (
+                "sources recursive",
+                file_set(),
+                ["**/*.ino", "**/*.h", "**/*.cpp"],
+                [
+                    "app.ino",
+                    os.path.join("core", "pwm", "pulse.h"),
+                    os.path.join("libraries", "b.cpp"),
+                    os.path.join("libraries", "c.h"),
+                ],
+            ),
+            (
+                "directories recursive",
+                file_set(),
+                ["**"],
+                [
+                    "core",
+                    os.path.join("core", "pwm"),
+                    "libraries",
+                ],
+            ),
+            (
+                "directories one level deep",
+                file_set(),
+                ["*"],
+                [
+                    "core",
+                    "libraries",
+                ],
+            ),
+            (
+                "items one level deep",
+                file_set(),
+                ["*"],
+                [
+                    "app.ino",
+                    "core",
+                    "libraries",
+                ],
+            ),
+        ]
+    )  # yapf: disable
+    def test_find_files(
+        self, test_case, base_fileset, patterns, expected_results
+    ):
         """Test find_files on source files and directories."""
         create_files(self.test_dir, base_fileset)
-        result = file_operations.find_files(self.test_dir,
-                                            patterns,
-                                            directories_only=("directories"
-                                                              in test_case))
+        result = file_operations.find_files(
+            self.test_dir,
+            patterns,
+            directories_only=("directories" in test_case),
+        )
         self.assertSequenceEqual(expected_results, result)
 
 

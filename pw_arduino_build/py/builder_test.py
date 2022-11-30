@@ -21,25 +21,27 @@ from parameterized import parameterized  # type: ignore
 class TestShellArgumentSplitting(unittest.TestCase):
     """Tests to ensure shlex.split handles expected use cases."""
 
-    @parameterized.expand([
-        (
-            "remove-both-quotes",
-            """ -DUSB_CONFIG_POWER=100 """
-            """ '-DUSB_MANUFACTURER="Adafruit LLC"' """
-            """ '-DUSB_PRODUCT="Adafruit PyGamer Advance M4"' """
-            """ "-I$HOME/samd/1.6.2/cores/arduino/TinyUSB" """,
-            [
-                """ -DUSB_CONFIG_POWER=100 """.strip(),
-                """ -DUSB_MANUFACTURER="Adafruit LLC" """.strip(),
-                """ -DUSB_PRODUCT="Adafruit PyGamer Advance M4" """.strip(),
-                """ -I$HOME/samd/1.6.2/cores/arduino/TinyUSB """.strip(),
-            ]
-        )
-    ]) # yapf: disable
-    def test_split_arguments_and_remove_quotes(self, unused_test_name,
-                                               input_string, expected):
-        """Test splitting a string into a list of arguments with quotes removed.
-        """
+    @parameterized.expand(
+        [
+            (
+                "remove-both-quotes",
+                """ -DUSB_CONFIG_POWER=100 """
+                """ '-DUSB_MANUFACTURER="Adafruit LLC"' """
+                """ '-DUSB_PRODUCT="Adafruit PyGamer Advance M4"' """
+                """ "-I$HOME/samd/1.6.2/cores/arduino/TinyUSB" """,
+                [
+                    """ -DUSB_CONFIG_POWER=100 """.strip(),
+                    """ -DUSB_MANUFACTURER="Adafruit LLC" """.strip(),
+                    """ -DUSB_PRODUCT="Adafruit PyGamer Advance M4" """.strip(),
+                    """ -I$HOME/samd/1.6.2/cores/arduino/TinyUSB """.strip(),
+                ],
+            )
+        ]
+    )  # yapf: disable
+    def test_split_arguments_and_remove_quotes(
+        self, unused_test_name, input_string, expected
+    ):
+        """Test splitting a str into a list of arguments with quotes removed."""
         result = shlex.split(input_string)
         self.assertEqual(result, expected)
 

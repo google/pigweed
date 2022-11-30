@@ -24,6 +24,7 @@ def install(level: int = logging.INFO) -> None:
 
     try:
         import pw_cli.log  # pylint: disable=import-outside-toplevel
+
         pw_cli.log.install(level=level)
     except ImportError:
         # Set log level on root logger to debug, otherwise any higher levels
@@ -33,8 +34,10 @@ def install(level: int = logging.INFO) -> None:
 
         _STDERR_HANDLER.setLevel(level)
         _STDERR_HANDLER.setFormatter(
-            logging.Formatter("[%(asctime)s] "
-                              "%(levelname)s %(message)s", "%Y%m%d %H:%M:%S"))
+            logging.Formatter(
+                "[%(asctime)s] " "%(levelname)s %(message)s", "%Y%m%d %H:%M:%S"
+            )
+        )
         root.addHandler(_STDERR_HANDLER)
 
 

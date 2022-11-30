@@ -41,6 +41,7 @@ def log_subprocess_output(level, output):
 
 class BoardInfo(typing.NamedTuple):
     """Information about a connected dev board."""
+
     dev_name: str
     usb_device_path: str
     protocol: str
@@ -49,9 +50,12 @@ class BoardInfo(typing.NamedTuple):
 
     def test_runner_args(self) -> List[str]:
         return [
-            "--set-variable", f"serial.port.protocol={self.protocol}",
-            "--set-variable", f"serial.port={self.usb_device_path}",
-            "--set-variable", f"serial.port.label={self.dev_name}"
+            "--set-variable",
+            f"serial.port.protocol={self.protocol}",
+            "--set-variable",
+            f"serial.port={self.usb_device_path}",
+            "--set-variable",
+            f"serial.port.label={self.dev_name}",
         ]
 
 
@@ -65,18 +69,24 @@ def detect_boards(arduino_package_path=False) -> list:
         teensy_core = Path("third_party/arduino/cores/teensy")
         if not teensy_core.exists():
             teensy_core = Path(
-                "third_party/pigweed/third_party/arduino/cores/teensy")
+                "third_party/pigweed/third_party/arduino/cores/teensy"
+            )
 
     if not teensy_core.exists():
         raise UnknownArduinoCore
 
     teensy_device_line_regex = re.compile(
         r"^(?P<address>[^ ]+) (?P<dev_name>[^ ]+) "
-        r"\((?P<label>[^)]+)\) ?(?P<rest>.*)$")
+        r"\((?P<label>[^)]+)\) ?(?P<rest>.*)$"
+    )
 
     boards = []
-    detect_command = [(teensy_core / "hardware" / "tools" /
-                       "teensy_ports").absolute().as_posix(), "-L"]
+    detect_command = [
+        (teensy_core / "hardware" / "tools" / "teensy_ports")
+        .absolute()
+        .as_posix(),
+        "-L",
+    ]
 
     # TODO(tonymd): teensy_ports -L on windows does not return the right port
     # string Example:
@@ -87,9 +97,9 @@ def detect_boards(arduino_package_path=False) -> list:
     # So we get "-port=Port_#0001.Hub_#0003"
     # But it should be "-port=usb:0/140000/0/1"
 
-    process = subprocess.run(detect_command,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT)
+    process = subprocess.run(
+        detect_command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+    )
     if process.returncode != 0:
         _LOG.error("Command failed with exit code %d.", process.returncode)
         _LOG.error("Full command:")
@@ -104,11 +114,14 @@ def detect_boards(arduino_package_path=False) -> list:
         if device_match_result:
             teensy_device = device_match_result.groupdict()
             boards.append(
-                BoardInfo(dev_name=teensy_device["dev_name"],
-                          usb_device_path=teensy_device["address"],
-                          protocol="Teensy",
-                          label=teensy_device["label"],
-                          arduino_upload_tool_name="teensyloader"))
+                BoardInfo(
+                    dev_name=teensy_device["dev_name"],
+                    usb_device_path=teensy_device["address"],
+                    protocol="Teensy",
+                    label=teensy_device["label"],
+                    arduino_upload_tool_name="teensyloader",
+                )
+            )
     return boards
 
 
@@ -125,8 +138,9 @@ def main():
         _LOG.info("  - Name: %s", board.label)
         _LOG.info("  - Port: %s", board.dev_name)
         _LOG.info("  - Address: %s", board.usb_device_path)
-        _LOG.info("  - Test runner args: %s",
-                  " ".join(board.test_runner_args()))
+        _LOG.info(
+            "  - Test runner args: %s", " ".join(board.test_runner_args())
+        )
 
 
 if __name__ == "__main__":
