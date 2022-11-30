@@ -26,9 +26,9 @@ def _add_threads(snapshot: snapshot_pb2.Snapshot) -> snapshot_pb2.Snapshot:
     # Build example idle thread.
     thread = thread_pb2.Thread()
     thread.name = 'Idle'.encode()
-    thread.stack_start_pointer = 0x2001ac00
-    thread.stack_end_pointer = 0x2001aa00
-    thread.stack_pointer = 0x2001ab0c
+    thread.stack_start_pointer = 0x2001AC00
+    thread.stack_end_pointer = 0x2001AA00
+    thread.stack_pointer = 0x2001AB0C
     thread.state = thread_pb2.ThreadState.Enum.RUNNING
     snapshot.threads.append(thread)
 
@@ -36,8 +36,8 @@ def _add_threads(snapshot: snapshot_pb2.Snapshot) -> snapshot_pb2.Snapshot:
     thread = thread_pb2.Thread()
     thread.name = 'Main Stack (Handler Mode)'.encode()
     thread.active = True
-    thread.stack_start_pointer = 0x2001b000
-    thread.stack_pointer = 0x2001ae20
+    thread.stack_start_pointer = 0x2001B000
+    thread.stack_pointer = 0x2001AE20
     thread.state = thread_pb2.ThreadState.Enum.INTERRUPT_HANDLER
     thread.raw_stack = b'\x00\xCA\xAD\xDE'
     snapshot.threads.append(thread)
@@ -49,19 +49,20 @@ def _main(out_file: TextIO):
     snapshot = snapshot_pb2.Snapshot()
 
     snapshot.metadata.reason = (
-        '■msg♦Assert failed: 1+1 == 42'
-        '■file♦../examples/example_rpc.cc').encode('utf-8')
+        '■msg♦Assert failed: 1+1 == 42' '■file♦../examples/example_rpc.cc'
+    ).encode('utf-8')
     snapshot.metadata.fatal = True
     snapshot.metadata.project_name = 'gShoe'.encode('utf-8')
     snapshot.metadata.software_version = 'QUANTUM_CORE-0.1.325-e4a84b1a'
     snapshot.metadata.software_build_uuid = (
         b'\xAD\x2D\x39\x25\x8C\x1B\xC4\x87'
         b'\xF0\x7C\xA7\xE0\x49\x91\xA8\x36'
-        b'\xFD\xF7\xD0\xA0')
-    snapshot.metadata.device_name = 'GSHOE-QUANTUM_CORE-REV_0.1'.encode(
-        'utf-8')
-    snapshot.metadata.snapshot_uuid = (b'\x84\x81\xBB\x12\xA1\x62\x16\x4F'
-                                       b'\x5C\x74\x85\x5F\x6D\x94\xEA\x1A')
+        b'\xFD\xF7\xD0\xA0'
+    )
+    snapshot.metadata.device_name = 'GSHOE-QUANTUM_CORE-REV_0.1'.encode('utf-8')
+    snapshot.metadata.snapshot_uuid = (
+        b'\x84\x81\xBB\x12\xA1\x62\x16\x4F' b'\x5C\x74\x85\x5F\x6D\x94\xEA\x1A'
+    )
 
     # Add some thread-related info.
     snapshot = _add_threads(snapshot)
@@ -72,10 +73,12 @@ def _main(out_file: TextIO):
 
 def _parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--out-file',
-                        '-o',
-                        type=argparse.FileType('w'),
-                        help='File to output serialized snapshot to.')
+    parser.add_argument(
+        '--out-file',
+        '-o',
+        type=argparse.FileType('w'),
+        help='File to output serialized snapshot to.',
+    )
 
     return parser.parse_args()
 

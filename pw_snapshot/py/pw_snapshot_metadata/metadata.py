@@ -21,6 +21,14 @@ from pw_snapshot_metadata_proto import snapshot_metadata_pb2
 
 _PRETTY_FORMAT_DEFAULT_WIDTH = 80
 
+_FATAL = (
+    '▪▄▄▄ ▄▄▄· ▄▄▄▄▄ ▄▄▄· ▄ ·',
+    '█▄▄▄▐█ ▀█ • █▌ ▐█ ▀█ █  ',
+    '█ ▪ ▄█▀▀█   █. ▄█▀▀█ █  ',
+    '▐▌ .▐█ ▪▐▌ ▪▐▌·▐█ ▪▐▌▐▌ ',
+    '▀    ▀  ▀ ·  ▀  ▀  ▀ .▀▀',
+)
+
 
 def _process_tags(tags: Mapping[str, str]) -> Optional[str]:
     """Outputs snapshot tags as a multi-line string."""
@@ -34,8 +42,9 @@ def _process_tags(tags: Mapping[str, str]) -> Optional[str]:
     return '\n'.join(output)
 
 
-def process_snapshot(serialized_snapshot: bytes,
-                     tokenizer_db: Optional[pw_tokenizer.Detokenizer]) -> str:
+def process_snapshot(
+    serialized_snapshot: bytes, tokenizer_db: Optional[pw_tokenizer.Detokenizer]
+) -> str:
     """Processes snapshot metadata and tags, producing a multi-line string."""
     snapshot = snapshot_metadata_pb2.SnapshotBasicInfo()
     snapshot.ParseFromString(serialized_snapshot)
@@ -43,10 +52,12 @@ def process_snapshot(serialized_snapshot: bytes,
     output: List[str] = []
 
     if snapshot.HasField('metadata'):
-        output.extend((
-            str(MetadataProcessor(snapshot.metadata, tokenizer_db)),
-            '',
-        ))
+        output.extend(
+            (
+                str(MetadataProcessor(snapshot.metadata, tokenizer_db)),
+                '',
+            )
+        )
 
     if snapshot.tags:
         tags = _process_tags(snapshot.tags)
@@ -60,13 +71,21 @@ def process_snapshot(serialized_snapshot: bytes,
 
 class MetadataProcessor:
     """This class simplifies dumping contents of a snapshot Metadata message."""
-    def __init__(self, metadata: snapshot_metadata_pb2.Metadata,
-                 tokenizer_db: Optional[pw_tokenizer.Detokenizer]):
+
+    def __init__(
+        self,
+        metadata: snapshot_metadata_pb2.Metadata,
+        tokenizer_db: Optional[pw_tokenizer.Detokenizer],
+    ):
         self._metadata = metadata
-        self._tokenizer_db = (tokenizer_db if tokenizer_db is not None else
-                              pw_tokenizer.Detokenizer(None))
+        self._tokenizer_db = (
+            tokenizer_db
+            if tokenizer_db is not None
+            else pw_tokenizer.Detokenizer(None)
+        )
         self._reason_token = self._tokenizer_db.detokenize(
-            metadata.reason).token
+            metadata.reason
+        ).token
         self._format_width = _PRETTY_FORMAT_DEFAULT_WIDTH
         proto_detokenizer.detokenize_fields(self._tokenizer_db, self._metadata)
 
@@ -78,7 +97,8 @@ class MetadataProcessor:
             return 'UNKNOWN (field missing)'
 
         log = pw_log_tokenized.FormatStringWithMetadata(
-            self._metadata.reason.decode())
+            self._metadata.reason.decode()
+        )
 
         return f'{log.file}: {log.message}' if log.file else log.message
 
@@ -109,22 +129,22 @@ class MetadataProcessor:
         """outputs a pw.snapshot.Metadata proto as a multi-line string."""
         output: List[str] = []
         if self._metadata.fatal:
-            output.extend((
-                '▪▄▄▄ ▄▄▄· ▄▄▄▄▄ ▄▄▄· ▄ ·'.center(self._format_width).rstrip(),
-                '█▄▄▄▐█ ▀█ • █▌ ▐█ ▀█ █  '.center(self._format_width).rstrip(),
-                '█ ▪ ▄█▀▀█   █. ▄█▀▀█ █  '.center(self._format_width).rstrip(),
-                '▐▌ .▐█ ▪▐▌ ▪▐▌·▐█ ▪▐▌▐▌ '.center(self._format_width).rstrip(),
-                '▀    ▀  ▀ ·  ▀  ▀  ▀ .▀▀'.center(self._format_width).rstrip(),
-                '',
-                'Device crash cause:',
-            ))
+            output.extend(
+                (
+                    *[x.center(self._format_width).rstrip() for x in _FATAL],
+                    '',
+                    'Device crash cause:',
+                )
+            )
         else:
             output.append('Snapshot capture reason:')
 
-        output.extend((
-            '    ' + self.reason(),
-            '',
-        ))
+        output.extend(
+            (
+                '    ' + self.reason(),
+                '',
+            )
+        )
         if self.reason_token():
             output.append(f'Reason token:      0x{self.reason_token():x}')
 

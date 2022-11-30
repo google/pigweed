@@ -55,16 +55,18 @@ SymbolizerMatcher = Callable[[snapshot_pb2.Snapshot], Symbolizer]
 
 
 def process_snapshot(
-        serialized_snapshot: bytes,
-        detokenizer: Optional[pw_tokenizer.Detokenizer] = None,
-        elf_matcher: Optional[ElfMatcher] = None,
-        symbolizer_matcher: Optional[SymbolizerMatcher] = None) -> str:
+    serialized_snapshot: bytes,
+    detokenizer: Optional[pw_tokenizer.Detokenizer] = None,
+    elf_matcher: Optional[ElfMatcher] = None,
+    symbolizer_matcher: Optional[SymbolizerMatcher] = None,
+) -> str:
     """Processes a single snapshot."""
 
     output = [_BRANDING]
 
-    captured_metadata = metadata.process_snapshot(serialized_snapshot,
-                                                  detokenizer)
+    captured_metadata = metadata.process_snapshot(
+        serialized_snapshot, detokenizer
+    )
     if captured_metadata:
         output.append(captured_metadata)
 
@@ -80,12 +82,14 @@ def process_snapshot(
         symbolizer = LlvmSymbolizer()
 
     cortex_m_cpu_state = pw_cpu_exception_cortex_m.process_snapshot(
-        serialized_snapshot, symbolizer)
+        serialized_snapshot, symbolizer
+    )
     if cortex_m_cpu_state:
         output.append(cortex_m_cpu_state)
 
-    thread_info = thread_analyzer.process_snapshot(serialized_snapshot,
-                                                   detokenizer, symbolizer)
+    thread_info = thread_analyzer.process_snapshot(
+        serialized_snapshot, detokenizer, symbolizer
+    )
 
     if thread_info:
         output.append(thread_info)
@@ -99,26 +103,29 @@ def process_snapshot(
     if snapshot.related_snapshots:
         snapshot_count = len(snapshot.related_snapshots)
         plural = 's' if snapshot_count > 1 else ''
-        output.extend((
-            f'This snapshot contains {snapshot_count} related snapshot{plural}',
-            '',
-        ))
+        output.append(
+            f'This snapshot contains {snapshot_count} related snapshot{plural}'
+        )
+        output.append('')
 
     return '\n'.join(output)
 
 
 def process_snapshots(
-        serialized_snapshot: bytes,
-        detokenizer: Optional[pw_tokenizer.Detokenizer] = None,
-        elf_matcher: Optional[ElfMatcher] = None,
-        user_processing_callback: Optional[Callable[[bytes], str]] = None,
-        symbolizer_matcher: Optional[SymbolizerMatcher] = None) -> str:
+    serialized_snapshot: bytes,
+    detokenizer: Optional[pw_tokenizer.Detokenizer] = None,
+    elf_matcher: Optional[ElfMatcher] = None,
+    user_processing_callback: Optional[Callable[[bytes], str]] = None,
+    symbolizer_matcher: Optional[SymbolizerMatcher] = None,
+) -> str:
     """Processes a snapshot that may have multiple embedded snapshots."""
     output = []
     # Process the top-level snapshot.
     output.append(
-        process_snapshot(serialized_snapshot, detokenizer, elf_matcher,
-                         symbolizer_matcher))
+        process_snapshot(
+            serialized_snapshot, detokenizer, elf_matcher, symbolizer_matcher
+        )
+    )
 
     # If the user provided a custom processing callback, call it on each
     # snapshot.
@@ -132,61 +139,81 @@ def process_snapshots(
         output.append('\n[' + '=' * 78 + ']\n')
         output.append(
             str(
-                process_snapshots(nested_snapshot.SerializeToString(),
-                                  detokenizer, elf_matcher,
-                                  user_processing_callback,
-                                  symbolizer_matcher)))
+                process_snapshots(
+                    nested_snapshot.SerializeToString(),
+                    detokenizer,
+                    elf_matcher,
+                    user_processing_callback,
+                    symbolizer_matcher,
+                )
+            )
+        )
 
     return '\n'.join(output)
 
 
 def _snapshot_symbolizer_matcher(
-        artifacts_dir: Path,
-        snapshot: snapshot_pb2.Snapshot) -> LlvmSymbolizer:
+    artifacts_dir: Path, snapshot: snapshot_pb2.Snapshot
+) -> LlvmSymbolizer:
     matching_elf: Optional[Path] = pw_build_info.build_id.find_matching_elf(
-        snapshot.metadata.software_build_uuid, artifacts_dir)
+        snapshot.metadata.software_build_uuid, artifacts_dir
+    )
     if not matching_elf:
-        _LOG.error('Error: No matching ELF found for GNU build ID %s.',
-                   snapshot.metadata.software_build_uuid.hex())
+        _LOG.error(
+            'Error: No matching ELF found for GNU build ID %s.',
+            snapshot.metadata.software_build_uuid.hex(),
+        )
     return LlvmSymbolizer(matching_elf)
 
 
-def _load_and_dump_snapshots(in_file: BinaryIO, out_file: TextIO,
-                             token_db: Optional[TextIO],
-                             artifacts_dir: Optional[Path]):
+def _load_and_dump_snapshots(
+    in_file: BinaryIO,
+    out_file: TextIO,
+    token_db: Optional[TextIO],
+    artifacts_dir: Optional[Path],
+):
     detokenizer = None
     if token_db:
         detokenizer = pw_tokenizer.Detokenizer(token_db)
     symbolizer_matcher: Optional[SymbolizerMatcher] = None
     if artifacts_dir:
-        symbolizer_matcher = functools.partial(_snapshot_symbolizer_matcher,
-                                               artifacts_dir)
+        symbolizer_matcher = functools.partial(
+            _snapshot_symbolizer_matcher, artifacts_dir
+        )
     out_file.write(
-        process_snapshots(serialized_snapshot=in_file.read(),
-                          detokenizer=detokenizer,
-                          symbolizer_matcher=symbolizer_matcher))
+        process_snapshots(
+            serialized_snapshot=in_file.read(),
+            detokenizer=detokenizer,
+            symbolizer_matcher=symbolizer_matcher,
+        )
+    )
 
 
 def _parse_args():
     parser = argparse.ArgumentParser(description='Decode Pigweed snapshots')
-    parser.add_argument('in_file',
-                        type=argparse.FileType('rb'),
-                        help='Binary snapshot file')
+    parser.add_argument(
+        'in_file', type=argparse.FileType('rb'), help='Binary snapshot file'
+    )
     parser.add_argument(
         '--out-file',
         '-o',
         default='-',
         type=argparse.FileType('wb'),
-        help='File to output decoded snapshots to. Defaults to stdout.')
+        help='File to output decoded snapshots to. Defaults to stdout.',
+    )
     parser.add_argument(
         '--token-db',
         type=argparse.FileType('r'),
-        help='Token database or ELF file to use for detokenization.')
+        help='Token database or ELF file to use for detokenization.',
+    )
     parser.add_argument(
         '--artifacts-dir',
         type=Path,
-        help=('Directory to recursively search for matching ELF files to use '
-              'for symbolization.'))
+        help=(
+            'Directory to recursively search for matching ELF files to use '
+            'for symbolization.'
+        ),
+    )
     return parser.parse_args()
 
 

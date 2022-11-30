@@ -24,19 +24,25 @@ from pw_tokenizer import tokens
 
 class MetadataProcessorTest(unittest.TestCase):
     """Tests that the metadata processor produces expected results."""
+
     def setUp(self):
         super().setUp()
         self.detok = pw_tokenizer.Detokenizer(
-            tokens.Database([
-                tokens.TokenizedStringEntry(0x3A9BC4C3,
-                                            'Assert failed: 1+1 == 42'),
-                tokens.TokenizedStringEntry(0x01170923, 'gShoe'),
-            ]))
+            tokens.Database(
+                [
+                    tokens.TokenizedStringEntry(
+                        0x3A9BC4C3, 'Assert failed: 1+1 == 42'
+                    ),
+                    tokens.TokenizedStringEntry(0x01170923, 'gShoe'),
+                ]
+            )
+        )
 
         snapshot = snapshot_pb2.Snapshot()
         snapshot.metadata.reason = b'\xc3\xc4\x9b\x3a'
         snapshot.metadata.project_name = b'$' + base64.b64encode(
-            b'\x23\x09\x17\x01')
+            b'\x23\x09\x17\x01'
+        )
         snapshot.metadata.device_name = b'hyper-fast-gshoe'
         snapshot.metadata.software_version = 'gShoe-debug-1.2.1-6f23412b+'
         snapshot.metadata.snapshot_uuid = b'\x00\x00\x00\x01'
@@ -49,11 +55,12 @@ class MetadataProcessorTest(unittest.TestCase):
 
     def test_reason_log_format(self):
         self.snapshot.metadata.reason = (
-            '■msg♦Assert failed :('
-            '■file♦rpc_services/crash.cc').encode('utf-8')
+            '■msg♦Assert failed :(' '■file♦rpc_services/crash.cc'
+        ).encode('utf-8')
         meta = MetadataProcessor(self.snapshot.metadata, self.detok)
-        self.assertEqual(meta.reason(),
-                         'rpc_services/crash.cc: Assert failed :(')
+        self.assertEqual(
+            meta.reason(), 'rpc_services/crash.cc: Assert failed :('
+        )
 
     def test_project_name_tokenized(self):
         meta = MetadataProcessor(self.snapshot.metadata, self.detok)
@@ -69,8 +76,9 @@ class MetadataProcessorTest(unittest.TestCase):
 
     def test_fw_version(self):
         meta = MetadataProcessor(self.snapshot.metadata, self.detok)
-        self.assertEqual(meta.device_fw_version(),
-                         'gShoe-debug-1.2.1-6f23412b+')
+        self.assertEqual(
+            meta.device_fw_version(), 'gShoe-debug-1.2.1-6f23412b+'
+        )
 
     def test_snapshot_uuid(self):
         meta = MetadataProcessor(self.snapshot.metadata, self.detok)
@@ -82,37 +90,41 @@ class MetadataProcessorTest(unittest.TestCase):
 
     def test_as_str(self):
         meta = MetadataProcessor(self.snapshot.metadata, self.detok)
-        expected = '\n'.join((
-            'Snapshot capture reason:',
-            '    Assert failed: 1+1 == 42',
-            '',
-            'Reason token:      0x3a9bc4c3',
-            'Project name:      gShoe',
-            'Device:            hyper-fast-gshoe',
-            'Device FW version: gShoe-debug-1.2.1-6f23412b+',
-            'Snapshot UUID:     00000001',
-        ))
+        expected = '\n'.join(
+            (
+                'Snapshot capture reason:',
+                '    Assert failed: 1+1 == 42',
+                '',
+                'Reason token:      0x3a9bc4c3',
+                'Project name:      gShoe',
+                'Device:            hyper-fast-gshoe',
+                'Device FW version: gShoe-debug-1.2.1-6f23412b+',
+                'Snapshot UUID:     00000001',
+            )
+        )
         self.assertEqual(expected, str(meta))
 
     def test_as_str_fatal(self):
         self.snapshot.metadata.fatal = True
         meta = MetadataProcessor(self.snapshot.metadata, self.detok)
-        expected = '\n'.join((
-            '                            ▪▄▄▄ ▄▄▄· ▄▄▄▄▄ ▄▄▄· ▄ ·',
-            '                            █▄▄▄▐█ ▀█ • █▌ ▐█ ▀█ █',
-            '                            █ ▪ ▄█▀▀█   █. ▄█▀▀█ █',
-            '                            ▐▌ .▐█ ▪▐▌ ▪▐▌·▐█ ▪▐▌▐▌',
-            '                            ▀    ▀  ▀ ·  ▀  ▀  ▀ .▀▀',
-            '',
-            'Device crash cause:',
-            '    Assert failed: 1+1 == 42',
-            '',
-            'Reason token:      0x3a9bc4c3',
-            'Project name:      gShoe',
-            'Device:            hyper-fast-gshoe',
-            'Device FW version: gShoe-debug-1.2.1-6f23412b+',
-            'Snapshot UUID:     00000001',
-        ))
+        expected = '\n'.join(
+            (
+                '                            ▪▄▄▄ ▄▄▄· ▄▄▄▄▄ ▄▄▄· ▄ ·',
+                '                            █▄▄▄▐█ ▀█ • █▌ ▐█ ▀█ █',
+                '                            █ ▪ ▄█▀▀█   █. ▄█▀▀█ █',
+                '                            ▐▌ .▐█ ▪▐▌ ▪▐▌·▐█ ▪▐▌▐▌',
+                '                            ▀    ▀  ▀ ·  ▀  ▀  ▀ .▀▀',
+                '',
+                'Device crash cause:',
+                '    Assert failed: 1+1 == 42',
+                '',
+                'Reason token:      0x3a9bc4c3',
+                'Project name:      gShoe',
+                'Device:            hyper-fast-gshoe',
+                'Device FW version: gShoe-debug-1.2.1-6f23412b+',
+                'Snapshot UUID:     00000001',
+            )
+        )
         self.assertEqual(expected, str(meta))
 
     def test_no_reason(self):
@@ -120,38 +132,43 @@ class MetadataProcessorTest(unittest.TestCase):
         snapshot.metadata.fatal = True
         meta = MetadataProcessor(snapshot.metadata, self.detok)
         meta.set_pretty_format_width(40)
-        expected = '\n'.join((
-            '        ▪▄▄▄ ▄▄▄· ▄▄▄▄▄ ▄▄▄· ▄ ·',
-            '        █▄▄▄▐█ ▀█ • █▌ ▐█ ▀█ █',
-            '        █ ▪ ▄█▀▀█   █. ▄█▀▀█ █',
-            '        ▐▌ .▐█ ▪▐▌ ▪▐▌·▐█ ▪▐▌▐▌',
-            '        ▀    ▀  ▀ ·  ▀  ▀  ▀ .▀▀',
-            '',
-            'Device crash cause:',
-            '    UNKNOWN (field missing)',
-            '',
-        ))
+        expected = '\n'.join(
+            (
+                '        ▪▄▄▄ ▄▄▄· ▄▄▄▄▄ ▄▄▄· ▄ ·',
+                '        █▄▄▄▐█ ▀█ • █▌ ▐█ ▀█ █',
+                '        █ ▪ ▄█▀▀█   █. ▄█▀▀█ █',
+                '        ▐▌ .▐█ ▪▐▌ ▪▐▌·▐█ ▪▐▌▐▌',
+                '        ▀    ▀  ▀ ·  ▀  ▀  ▀ .▀▀',
+                '',
+                'Device crash cause:',
+                '    UNKNOWN (field missing)',
+                '',
+            )
+        )
         self.assertEqual(expected, str(meta))
 
     def test_serialized_snapshot(self):
         self.snapshot.tags['type'] = 'obviously a crash'
-        expected = '\n'.join((
-            'Snapshot capture reason:',
-            '    Assert failed: 1+1 == 42',
-            '',
-            'Reason token:      0x3a9bc4c3',
-            'Project name:      gShoe',
-            'Device:            hyper-fast-gshoe',
-            'Device FW version: gShoe-debug-1.2.1-6f23412b+',
-            'Snapshot UUID:     00000001',
-            '',
-            'Tags:',
-            '  type: obviously a crash',
-            '',
-        ))
+        expected = '\n'.join(
+            (
+                'Snapshot capture reason:',
+                '    Assert failed: 1+1 == 42',
+                '',
+                'Reason token:      0x3a9bc4c3',
+                'Project name:      gShoe',
+                'Device:            hyper-fast-gshoe',
+                'Device FW version: gShoe-debug-1.2.1-6f23412b+',
+                'Snapshot UUID:     00000001',
+                '',
+                'Tags:',
+                '  type: obviously a crash',
+                '',
+            )
+        )
         self.assertEqual(
             expected,
-            process_snapshot(self.snapshot.SerializeToString(), self.detok))
+            process_snapshot(self.snapshot.SerializeToString(), self.detok),
+        )
 
 
 if __name__ == '__main__':
