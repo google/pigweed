@@ -26,6 +26,7 @@ _LOG = logging.getLogger(__name__)
 
 class TestWithTempDirectory(unittest.TestCase):
     """Tests for pw_module.check."""
+
     def setUp(self):
         # Create a temporary directory for the test.
         self.test_dir = tempfile.mkdtemp()
@@ -68,8 +69,9 @@ class TestWithTempDirectory(unittest.TestCase):
         # Python files; no setup --> error.
         self.create_file('pw_foo/py/pw_foo/__init__.py')
         self.create_file('pw_foo/py/pw_foo/bar.py')
-        self.assert_issue(pw_module.check.check_python_proper_module,
-                          'setup.py')
+        self.assert_issue(
+            pw_module.check.check_python_proper_module, 'setup.py'
+        )
 
         # Python files; have setup.py --> ok.
         self.create_file('pw_foo/py/setup.py')
@@ -140,5 +142,6 @@ class TestWithTempDirectory(unittest.TestCase):
 
 if __name__ == '__main__':
     import sys
+
     logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
     unittest.main()

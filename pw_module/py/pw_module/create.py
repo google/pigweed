@@ -30,8 +30,8 @@ from pw_build import generate_modules_lists
 
 _LOG = logging.getLogger(__name__)
 
-_PIGWEED_LICENSE = \
-f"""# Copyright {datetime.datetime.now().year} The Pigweed Authors
+_PIGWEED_LICENSE = f"""
+# Copyright {datetime.datetime.now().year} The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -43,7 +43,7 @@ f"""# Copyright {datetime.datetime.now().year} The Pigweed Authors
 # distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
-# the License."""
+# the License.""".lstrip()
 
 _PIGWEED_LICENSE_CC = _PIGWEED_LICENSE.replace('#', '//')
 
@@ -70,7 +70,8 @@ class _OutputFile:
     ) -> '_OutputFile._IndentationContext':
         """Increases the indentation level of the output."""
         return self._IndentationContext(
-            self, width if width is not None else self._indent_width)
+            self, width if width is not None else self._indent_width
+        )
 
     @property
     def path(self) -> Path:
@@ -86,6 +87,7 @@ class _OutputFile:
 
     class _IndentationContext:
         """Context that increases the output's indentation when it is active."""
+
         def __init__(self, output: '_OutputFile', width: int):
             self._output = output
             self._width: int = width
@@ -166,6 +168,7 @@ class _ModuleContext:
 
 class _BuildFile:
     """Abstract representation of a build file for a module."""
+
     @dataclass
     class Target:
         name: str
@@ -278,10 +281,12 @@ class _GnBuildFile(_BuildFile):
     _DEFAULT_FILENAME = 'BUILD.gn'
     _INCLUDE_CONFIG_TARGET = 'public_include_path'
 
-    def __init__(self,
-                 directory: Path,
-                 ctx: _ModuleContext,
-                 filename: str = _DEFAULT_FILENAME):
+    def __init__(
+        self,
+        directory: Path,
+        ctx: _ModuleContext,
+        filename: str = _DEFAULT_FILENAME,
+    ):
         super().__init__(directory / filename, ctx)
 
     def _indent_width(self) -> int:
@@ -308,18 +313,26 @@ class _GnBuildFile(_BuildFile):
 
         if self._cc_targets:
             file.line()
-            _GnBuildFile._target(file, 'config',
-                                 _GnBuildFile._INCLUDE_CONFIG_TARGET, {
-                                     'include_dirs': ['public'],
-                                     'visibility': [':*'],
-                                 })
+            _GnBuildFile._target(
+                file,
+                'config',
+                _GnBuildFile._INCLUDE_CONFIG_TARGET,
+                {
+                    'include_dirs': ['public'],
+                    'visibility': [':*'],
+                },
+            )
 
         if has_tests:
             file.line()
             _GnBuildFile._target(
-                file, 'pw_test_group', 'tests', {
+                file,
+                'pw_test_group',
+                'tests',
+                {
                     'tests': list(f':{test.name}' for test in self._cc_tests),
-                })
+                },
+            )
 
     def _write_cc_target(
         self,
@@ -350,10 +363,14 @@ class _GnBuildFile(_BuildFile):
         target: '_BuildFile.CcTarget',
     ) -> None:
         _GnBuildFile._target(
-            file, 'pw_test', target.name, {
+            file,
+            'pw_test',
+            target.name,
+            {
                 'sources': list(target.rebased_sources(self.dir)),
                 'deps': target.deps,
-            })
+            },
+        )
 
     def _write_docs_target(
         self,
@@ -361,9 +378,14 @@ class _GnBuildFile(_BuildFile):
         docs_sources: List[str],
     ) -> None:
         """Defines a pw_doc_group for module documentation."""
-        _GnBuildFile._target(file, 'pw_doc_group', 'docs', {
-            'sources': docs_sources,
-        })
+        _GnBuildFile._target(
+            file,
+            'pw_doc_group',
+            'docs',
+            {
+                'sources': docs_sources,
+            },
+        )
 
     @staticmethod
     def _target(
@@ -463,10 +485,12 @@ class _GnBuildFile(_BuildFile):
 class _BazelBuildFile(_BuildFile):
     _DEFAULT_FILENAME = 'BUILD.bazel'
 
-    def __init__(self,
-                 directory: Path,
-                 ctx: _ModuleContext,
-                 filename: str = _DEFAULT_FILENAME):
+    def __init__(
+        self,
+        directory: Path,
+        ctx: _ModuleContext,
+        filename: str = _DEFAULT_FILENAME,
+    ):
         super().__init__(directory / filename, ctx)
 
     def _indent_width(self) -> int:
@@ -495,21 +519,30 @@ class _BazelBuildFile(_BuildFile):
         target: _BuildFile.CcTarget,
     ) -> None:
         _BazelBuildFile._target(
-            file, 'pw_cc_library', target.name, {
+            file,
+            'pw_cc_library',
+            target.name,
+            {
                 'srcs': list(target.rebased_sources(self.dir)),
                 'hdrs': list(target.rebased_headers(self.dir)),
                 'includes': ['public'],
-            })
+            },
+        )
 
     def _write_cc_test(
         self,
         file: _OutputFile,
         target: '_BuildFile.CcTarget',
     ) -> None:
-        _BazelBuildFile._target(file, 'pw_cc_test', target.name, {
-            'srcs': list(target.rebased_sources(self.dir)),
-            'deps': target.deps,
-        })
+        _BazelBuildFile._target(
+            file,
+            'pw_cc_test',
+            target.name,
+            {
+                'srcs': list(target.rebased_sources(self.dir)),
+                'deps': target.deps,
+            },
+        )
 
     def _write_docs_target(
         self,
@@ -517,8 +550,9 @@ class _BazelBuildFile(_BuildFile):
         docs_sources: List[str],
     ) -> None:
         file.line('# Bazel does not yet support building docs.')
-        _BazelBuildFile._target(file, 'filegroup', 'docs',
-                                {'srcs': docs_sources})
+        _BazelBuildFile._target(
+            file, 'filegroup', 'docs', {'srcs': docs_sources}
+        )
 
     @staticmethod
     def _target(
@@ -549,10 +583,12 @@ class _BazelBuildFile(_BuildFile):
 class _CmakeBuildFile(_BuildFile):
     _DEFAULT_FILENAME = 'CMakeLists.txt'
 
-    def __init__(self,
-                 directory: Path,
-                 ctx: _ModuleContext,
-                 filename: str = _DEFAULT_FILENAME):
+    def __init__(
+        self,
+        directory: Path,
+        ctx: _ModuleContext,
+        filename: str = _DEFAULT_FILENAME,
+    ):
         super().__init__(directory / filename, ctx)
 
     def _indent_width(self) -> int:
@@ -587,8 +623,12 @@ class _CmakeBuildFile(_BuildFile):
         file: _OutputFile,
         target: '_BuildFile.CcTarget',
     ) -> None:
-        _CmakeBuildFile._target(file, 'pw_auto_add_module_tests',
-                                self._ctx.name.full, {'private_deps': []})
+        _CmakeBuildFile._target(
+            file,
+            'pw_auto_add_module_tests',
+            self._ctx.name.full,
+            {'private_deps': []},
+        )
 
     def _write_docs_target(
         self,
@@ -618,6 +658,7 @@ class _CmakeBuildFile(_BuildFile):
 
 class _LanguageGenerator:
     """Generates files for a programming language in a new Pigweed module."""
+
     def __init__(self, ctx: _ModuleContext) -> None:
         self._ctx = ctx
 
@@ -628,6 +669,7 @@ class _LanguageGenerator:
 
 class _CcLanguageGenerator(_LanguageGenerator):
     """Generates boilerplate source files for a C++ module."""
+
     def __init__(self, ctx: _ModuleContext) -> None:
         super().__init__(ctx)
 
@@ -645,7 +687,8 @@ class _CcLanguageGenerator(_LanguageGenerator):
         namespace = self._ctx.name.default_namespace
 
         main_source.line(
-            f'#include "{main_header.path.relative_to(self._public_dir)}"\n')
+            f'#include "{main_header.path.relative_to(self._public_dir)}"\n'
+        )
         main_source.line(f'namespace {namespace} {{\n')
         main_source.line('int magic = 42;\n')
         main_source.line(f'}}  // namespace {namespace}')
@@ -655,7 +698,8 @@ class _CcLanguageGenerator(_LanguageGenerator):
         main_header.line(f'}}  // namespace {namespace}')
 
         test_source.line(
-            f'#include "{main_header.path.relative_to(self._public_dir)}"\n')
+            f'#include "{main_header.path.relative_to(self._public_dir)}"\n'
+        )
         test_source.line('#include "gtest/gtest.h"\n')
         test_source.line(f'namespace {namespace} {{')
         test_source.line('namespace {\n')
@@ -669,14 +713,20 @@ class _CcLanguageGenerator(_LanguageGenerator):
         test_source.line(f'}}  // namespace {namespace}')
 
         self._ctx.add_cc_target(
-            _BuildFile.CcTarget(name=self._ctx.name.full,
-                                sources=[main_source.path],
-                                headers=[main_header.path]))
+            _BuildFile.CcTarget(
+                name=self._ctx.name.full,
+                sources=[main_source.path],
+                headers=[main_header.path],
+            )
+        )
 
         self._ctx.add_cc_test(
-            _BuildFile.CcTarget(name=f'{self._ctx.name.main}_test',
-                                deps=[f':{self._ctx.name.full}'],
-                                sources=[test_source.path]))
+            _BuildFile.CcTarget(
+                name=f'{self._ctx.name.main}_test',
+                deps=[f':{self._ctx.name.full}'],
+                sources=[test_source.path],
+            )
+        )
 
         main_header.write()
         main_source.write()
@@ -720,8 +770,9 @@ def _check_module_name(
 
     name = _ModuleName.parse(module)
     if not name:
-        _LOG.error('"%s" does not conform to the Pigweed module name format',
-                   module)
+        _LOG.error(
+            '"%s" does not conform to the Pigweed module name format', module
+        )
         return None
 
     if is_upstream and name.prefix != 'pw':
@@ -757,23 +808,27 @@ def _basic_module_setup(
     """Creates the basic layout of a Pigweed module."""
     module_dir.mkdir()
 
-    ctx = _ModuleContext(name=module_name,
-                         dir=module_dir,
-                         root_build_files=[],
-                         sub_build_files=[],
-                         build_systems=list(build_systems),
-                         is_upstream=is_upstream)
+    ctx = _ModuleContext(
+        name=module_name,
+        dir=module_dir,
+        root_build_files=[],
+        sub_build_files=[],
+        build_systems=list(build_systems),
+        is_upstream=is_upstream,
+    )
 
-    ctx.root_build_files.extend(_BUILD_FILES[build](module_dir, ctx)
-                                for build in ctx.build_systems)
+    ctx.root_build_files.extend(
+        _BUILD_FILES[build](module_dir, ctx) for build in ctx.build_systems
+    )
 
     _create_main_docs_file(ctx)
 
     return ctx
 
 
-def _create_module(module: str, languages: Iterable[str],
-                   build_systems: Iterable[str]) -> None:
+def _create_module(
+    module: str, languages: Iterable[str], build_systems: Iterable[str]
+) -> None:
     project_root = Path(os.environ.get('PW_PROJECT_ROOT', ''))
     assert project_root.is_dir()
 
@@ -784,8 +839,10 @@ def _create_module(module: str, languages: Iterable[str],
         sys.exit(1)
 
     if not is_upstream:
-        _LOG.error('`pw module create` is experimental and does '
-                   'not yet support downstream projects.')
+        _LOG.error(
+            '`pw module create` is experimental and does '
+            'not yet support downstream projects.'
+        )
         sys.exit(1)
 
     module_dir = project_root / module
@@ -797,15 +854,16 @@ def _create_module(module: str, languages: Iterable[str],
     if module_dir.is_file():
         _LOG.error(
             'Cannot create module %s as a file of that name already exists',
-            module)
+            module,
+        )
         sys.exit(1)
 
-    ctx = _basic_module_setup(module_name, module_dir, build_systems,
-                              is_upstream)
+    ctx = _basic_module_setup(
+        module_name, module_dir, build_systems, is_upstream
+    )
 
     try:
-        generators = list(_LANGUAGE_GENERATORS[lang](ctx)
-                          for lang in languages)
+        generators = list(_LANGUAGE_GENERATORS[lang](ctx) for lang in languages)
     except KeyError as key:
         _LOG.error('Unsupported language: %s', key)
         sys.exit(1)
@@ -819,12 +877,15 @@ def _create_module(module: str, languages: Iterable[str],
     if is_upstream:
         modules_file = project_root / 'PIGWEED_MODULES'
         if not modules_file.exists():
-            _LOG.error('Could not locate PIGWEED_MODULES file; '
-                       'your repository may be in a bad state.')
+            _LOG.error(
+                'Could not locate PIGWEED_MODULES file; '
+                'your repository may be in a bad state.'
+            )
             return
 
-        modules_gni_file = (project_root / 'pw_build' /
-                            'generated_pigweed_modules_lists.gni')
+        modules_gni_file = (
+            project_root / 'pw_build' / 'generated_pigweed_modules_lists.gni'
+        )
 
         # Cut off the extra newline at the end of the file.
         modules_list = modules_file.read_text().split('\n')[:-1]
@@ -843,8 +904,11 @@ def _create_module(module: str, languages: Iterable[str],
         print('  modify  ' + str(modules_gni_file.relative_to(Path.cwd())))
 
     print()
-    _LOG.info('Module %s created at %s', module_name,
-              module_dir.relative_to(Path.cwd()))
+    _LOG.info(
+        'Module %s created at %s',
+        module_name,
+        module_dir.relative_to(Path.cwd()),
+    )
 
 
 def register_subcommand(parser: argparse.ArgumentParser) -> None:
@@ -852,19 +916,25 @@ def register_subcommand(parser: argparse.ArgumentParser) -> None:
 
     parser.add_argument(
         '--build-systems',
-        help=('Comma-separated list of build systems the module supports. '
-              f'Options: {", ".join(_BUILD_FILES.keys())}'),
+        help=(
+            'Comma-separated list of build systems the module supports. '
+            f'Options: {", ".join(_BUILD_FILES.keys())}'
+        ),
         type=csv,
         default=_BUILD_FILES.keys(),
-        metavar='BUILD[,BUILD,...]')
+        metavar='BUILD[,BUILD,...]',
+    )
     parser.add_argument(
         '--languages',
-        help=('Comma-separated list of languages the module will use. '
-              f'Options: {", ".join(_LANGUAGE_GENERATORS.keys())}'),
+        help=(
+            'Comma-separated list of languages the module will use. '
+            f'Options: {", ".join(_LANGUAGE_GENERATORS.keys())}'
+        ),
         type=csv,
         default=[],
-        metavar='LANG[,LANG,...]')
-    parser.add_argument('module',
-                        help='Name of the module to create.',
-                        metavar='MODULE_NAME')
+        metavar='LANG[,LANG,...]',
+    )
+    parser.add_argument(
+        'module', help='Name of the module to create.', metavar='MODULE_NAME'
+    )
     parser.set_defaults(func=_create_module)

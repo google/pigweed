@@ -28,9 +28,11 @@ def main() -> None:
     subparsers = parser.add_subparsers(title='subcommands')
 
     pw_module.check.register_subcommand(
-        subparsers.add_parser('check', help=pw_module.check.__doc__))
+        subparsers.add_parser('check', help=pw_module.check.__doc__)
+    )
     pw_module.create.register_subcommand(
-        subparsers.add_parser('create', help=pw_module.create.__doc__))
+        subparsers.add_parser('create', help=pw_module.create.__doc__)
+    )
 
     args = {**vars(parser.parse_args())}
     func = args['func']

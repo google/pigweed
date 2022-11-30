@@ -76,11 +76,13 @@ def check_module(module) -> bool:
             # Try to make an error message that will help editors open the part
             # of the module in question (e.g. vim's 'cerr' functionality).
             components = [
-                x for x in (
+                x
+                for x in (
                     issue.file,
                     issue.line_number,
                     issue.line_contents,
-                ) if x
+                )
+                if x
             ]
             editor_error_line = ':'.join(components)
             if editor_error_line:
@@ -97,8 +99,9 @@ def check_module(module) -> bool:
 
     # TODO(keir): Give this a proper ASCII art treatment.
     if not found_any_warnings and not found_any_errors:
-        _LOG.info('OK: Module %s looks good; no errors or warnings found',
-                  module)
+        _LOG.info(
+            'OK: Module %s looks good; no errors or warnings found', module
+        )
     if found_any_errors:
         _LOG.error('FAIL: Found errors when checking module %s', module)
         return False
@@ -147,8 +150,7 @@ def check_python_proper_module(directory):
 @checker('PWCK002', 'If there are C++ files, there are C++ tests')
 def check_have_cc_tests(directory):
     module_cc_files = glob.glob(f'{directory}/**/*.cc', recursive=True)
-    module_cc_test_files = glob.glob(f'{directory}/**/*test.cc',
-                                     recursive=True)
+    module_cc_test_files = glob.glob(f'{directory}/**/*test.cc', recursive=True)
     if module_cc_files and not module_cc_test_files:
         yield Issue('C++ code present but no tests at all (you monster).')
 
@@ -156,8 +158,9 @@ def check_have_cc_tests(directory):
 @checker('PWCK003', 'If there are Python files, there are Python tests')
 def check_have_python_tests(directory):
     module_py_files = glob.glob(f'{directory}/**/*.py', recursive=True)
-    module_py_test_files = glob.glob(f'{directory}/**/*test*.py',
-                                     recursive=True)
+    module_py_test_files = glob.glob(
+        f'{directory}/**/*test*.py', recursive=True
+    )
     if module_py_files and not module_py_test_files:
         yield Issue('Python code present but no tests (you monster).')
 
@@ -171,17 +174,19 @@ def check_has_readme(directory):
 @checker('PWCK005', 'There is ReST documentation (*.rst)')
 def check_has_rst_docs(directory):
     if not glob.glob(f'{directory}/**/*.rst', recursive=True):
-        yield Issue(
-            'Missing ReST documentation; need at least e.g. "docs.rst"')
+        yield Issue('Missing ReST documentation; need at least e.g. "docs.rst"')
 
 
-@checker('PWCK006', 'If C++, have <mod>/public/<mod>/*.h or '
-         '<mod>/public_override/*.h')
+@checker(
+    'PWCK006',
+    'If C++, have <mod>/public/<mod>/*.h or ' '<mod>/public_override/*.h',
+)
 def check_has_public_or_override_headers(directory):
     # TODO(keir): Should likely have a decorator to check for C++ in a checker,
     # or other more useful and cachable mechanisms.
-    if (not glob.glob(f'{directory}/**/*.cc', recursive=True)
-            and not glob.glob(f'{directory}/**/*.h', recursive=True)):
+    if not glob.glob(f'{directory}/**/*.cc', recursive=True) and not glob.glob(
+        f'{directory}/**/*.h', recursive=True
+    ):
         # No C++ files.
         return
 
@@ -189,17 +194,22 @@ def check_has_public_or_override_headers(directory):
 
     has_public_cpp_headers = glob.glob(f'{directory}/public/{module_name}/*.h')
     has_public_cpp_override_headers = glob.glob(
-        f'{directory}/public_overrides/**/*.h')
+        f'{directory}/public_overrides/**/*.h'
+    )
 
     if not has_public_cpp_headers and not has_public_cpp_override_headers:
-        yield Issue(f'Have C++ code but no public/{module_name}/*.h '
-                    'found and no public_overrides/ found')
+        yield Issue(
+            f'Have C++ code but no public/{module_name}/*.h '
+            'found and no public_overrides/ found'
+        )
 
     multiple_public_directories = glob.glob(f'{directory}/public/*')
     if len(multiple_public_directories) != 1:
-        yield Issue(f'Have multiple directories under public/; there should '
-                    f'only be a single directory: "public/{module_name}". '
-                    'Perhaps you were looking for public_overrides/?.')
+        yield Issue(
+            f'Have multiple directories under public/; there should '
+            f'only be a single directory: "public/{module_name}". '
+            'Perhaps you were looking for public_overrides/?.'
+        )
 
 
 def register_subcommand(parser: argparse.ArgumentParser) -> None:
