@@ -26,7 +26,8 @@ from google.cloud.storage.bucket import Bucket  # type: ignore
 from pw_software_update import remote_sign
 
 # inclusive-language: disable
-FAKE_BUILDER_KEY = textwrap.dedent("""\
+FAKE_BUILDER_KEY = textwrap.dedent(
+    """\
     -----BEGIN RSA PRIVATE KEY-----
     MIIEpAIBAAKCAQEA4qEQSHM0QpWEhTvhWMBahS7wbTIihaiRpUQC8+hEkmHhoJQy
     zaNR3CKdYWnJ1bAjdBT1HTHznbYSBasFAUKPiB16K/akuKSPnwHG9OM6+8Psw7lt
@@ -54,9 +55,11 @@ FAKE_BUILDER_KEY = textwrap.dedent("""\
     bWFpW7rWV7ldSgxKJ6ucKWl78uUMUnkM+CGPt5WJiisZXM2X1Q8+V7fmdAtK/AFj
     /tbEFpftkCyIM1nGZwZ/ziPF4n5hzGGF6w/ZMWZkwFZlqxlejK9IfQ==
     -----END RSA PRIVATE KEY-----
-""")
+"""
+)
 
-FAKE_BUILDER_PUBLIC_KEY = textwrap.dedent("""\
+FAKE_BUILDER_PUBLIC_KEY = textwrap.dedent(
+    """\
     -----BEGIN PUBLIC KEY-----
     MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4qEQSHM0QpWEhTvhWMBa
     hS7wbTIihaiRpUQC8+hEkmHhoJQyzaNR3CKdYWnJ1bAjdBT1HTHznbYSBasFAUKP
@@ -66,7 +69,8 @@ FAKE_BUILDER_PUBLIC_KEY = textwrap.dedent("""\
     R7TP2B857agog4rhqtVlPvHqFialWEU1WmAQz+oYqtRikUVWHq10SACxo6MFoM7L
     qQIDAQAB
     -----END PUBLIC KEY-----
-""")
+"""
+)
 
 # inclusive-language: enable
 
@@ -74,6 +78,7 @@ FAKE_BUILDER_PUBLIC_KEY = textwrap.dedent("""\
 # TODO(b/235240430): Improve unit test coverage.
 class PathSigningTest(unittest.TestCase):
     """Tests the signing of bundles by path."""
+
     @classmethod
     def setUpClass(cls):
         cls.tempdir = tempfile.mkdtemp()
@@ -95,21 +100,28 @@ class PathSigningTest(unittest.TestCase):
         mock_in_bucket.blob = mock.MagicMock(return_value=mock_blob)
         mock_out_bucket = mock.create_autospec(Bucket, instance=True)
         mock_out_bucket.name = 'fake_out_bucket'
-        client = remote_sign.RemoteSignClient(input_bucket=mock_in_bucket,
-                                              output_bucket=mock_out_bucket)
+        client = remote_sign.RemoteSignClient(
+            input_bucket=mock_in_bucket, output_bucket=mock_out_bucket
+        )
 
-        client.sign(self.bundle,
-                    signing_key_name='fake_key',
-                    builder_key=self.builder_key,
-                    builder_public_key=self.builder_pub_key,
-                    request_blob_name='signing_request.json',
-                    timeout_s=0.1)
+        client.sign(
+            self.bundle,
+            signing_key_name='fake_key',
+            builder_key=self.builder_key,
+            builder_public_key=self.builder_pub_key,
+            request_blob_name='signing_request.json',
+            timeout_s=0.1,
+        )
 
-        mock_blob.upload_from_filename.assert_has_calls([
-            mock.call(os.path.join(self.tempdir, 'fake_bundle')),
-            mock.call(os.path.join(self.tempdir, 'fake_builder_pub_key.pem')),
-        ],
-                                                        any_order=True)
+        mock_blob.upload_from_filename.assert_has_calls(
+            [
+                mock.call(os.path.join(self.tempdir, 'fake_bundle')),
+                mock.call(
+                    os.path.join(self.tempdir, 'fake_builder_pub_key.pem')
+                ),
+            ],
+            any_order=True,
+        )
         mock_blob.upload_from_string.assert_called_once()
 
 

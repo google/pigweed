@@ -28,9 +28,10 @@ _LOG = logging.getLogger(__package__)
 
 
 def targets_from_directory(
-        root_dir: Path,
-        exclude: Iterable[Path] = tuple(),
-        remap_paths: Optional[Dict[Path, str]] = None) -> Dict[str, Path]:
+    root_dir: Path,
+    exclude: Iterable[Path] = tuple(),
+    remap_paths: Optional[Dict[Path, str]] = None,
+) -> Dict[str, Path]:
     """Given a directory on dist, generate a dict of target names to files.
 
     Args:
@@ -49,7 +50,8 @@ def targets_from_directory(
     """
     if not root_dir.is_dir():
         raise ValueError(
-            f'Cannot generate TUF targets from {root_dir}; not a directory.')
+            f'Cannot generate TUF targets from {root_dir}; not a directory.'
+        )
     targets = {}
     for path in root_dir.glob('**/*'):
         if path.is_dir():
@@ -70,13 +72,14 @@ def targets_from_directory(
             if new_target_file_name not in targets:
                 raise FileNotFoundError(
                     f'Unable to remap "{original_path}" to'
-                    f' "{new_target_file_name}"; file not found in root dir.')
+                    f' "{new_target_file_name}"; file not found in root dir.'
+                )
 
     return targets
 
 
 def gen_empty_update_bundle(
-    targets_metadata_version: int = metadata.DEFAULT_METADATA_VERSION
+    targets_metadata_version: int = metadata.DEFAULT_METADATA_VERSION,
 ) -> UpdateBundle:
     """Generates an empty bundle
 
@@ -90,21 +93,25 @@ def gen_empty_update_bundle(
     """
 
     targets_metadata = metadata.gen_targets_metadata(
-        target_payloads={}, version=targets_metadata_version)
+        target_payloads={}, version=targets_metadata_version
+    )
     unsigned_targets_metadata = SignedTargetsMetadata(
-        serialized_targets_metadata=targets_metadata.SerializeToString())
+        serialized_targets_metadata=targets_metadata.SerializeToString()
+    )
 
     return UpdateBundle(
         root_metadata=None,
         targets_metadata=dict(targets=unsigned_targets_metadata),
-        target_payloads=None)
+        target_payloads=None,
+    )
 
 
 def gen_unsigned_update_bundle(
-        targets: Dict[Path, str],
-        persist: Optional[Path] = None,
-        targets_metadata_version: int = metadata.DEFAULT_METADATA_VERSION,
-        root_metadata: Optional[SignedRootMetadata] = None) -> UpdateBundle:
+    targets: Dict[Path, str],
+    persist: Optional[Path] = None,
+    targets_metadata_version: int = metadata.DEFAULT_METADATA_VERSION,
+    root_metadata: Optional[SignedRootMetadata] = None,
+) -> UpdateBundle:
     """Given a set of targets, generates an unsigned UpdateBundle.
 
     Args:
@@ -130,8 +137,10 @@ def gen_unsigned_update_bundle(
     """
     if persist:
         if persist.exists() and not persist.is_dir():
-            raise ValueError(f'TUF repo cannot be persisted to "{persist}";'
-                             ' file exists and is not a directory.')
+            raise ValueError(
+                f'TUF repo cannot be persisted to "{persist}";'
+                ' file exists and is not a directory.'
+            )
         if persist.exists():
             shutil.rmtree(persist)
 
@@ -146,14 +155,17 @@ def gen_unsigned_update_bundle(
             shutil.copy(path, target_persist_path)
 
     targets_metadata = metadata.gen_targets_metadata(
-        target_payloads, version=targets_metadata_version)
+        target_payloads, version=targets_metadata_version
+    )
     unsigned_targets_metadata = SignedTargetsMetadata(
-        serialized_targets_metadata=targets_metadata.SerializeToString())
+        serialized_targets_metadata=targets_metadata.SerializeToString()
+    )
 
     return UpdateBundle(
         root_metadata=root_metadata,
         targets_metadata=dict(targets=unsigned_targets_metadata),
-        target_payloads=target_payloads)
+        target_payloads=target_payloads,
+    )
 
 
 def parse_target_arg(target_arg: str) -> Tuple[Path, str]:
@@ -169,52 +181,70 @@ def parse_target_arg(target_arg: str) -> Tuple[Path, str]:
         file_path_str, target_name = target_arg.split('>')
         return Path(file_path_str.strip()), target_name.strip()
     except ValueError as err:
-        raise ValueError('Targets must be strings of the form:\n'
-                         '  "FILE_PATH > TARGET_NAME"') from err
+        raise ValueError(
+            'Targets must be strings of the form:\n'
+            '  "FILE_PATH > TARGET_NAME"'
+        ) from err
 
 
 def parse_args() -> argparse.Namespace:
     """Parse CLI arguments."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('-t',
-                        '--targets',
-                        type=str,
-                        nargs='+',
-                        required=True,
-                        help='Strings defining targets to bundle')
-    parser.add_argument('-o',
-                        '--out',
-                        type=Path,
-                        required=True,
-                        help='Output path for serialized UpdateBundle')
-    parser.add_argument('--persist',
-                        type=Path,
-                        default=None,
-                        help=('If provided, TUF repo will be persisted to disk'
-                              ' at this path for debugging'))
-    parser.add_argument('--targets-metadata-version',
-                        type=int,
-                        default=metadata.DEFAULT_METADATA_VERSION,
-                        help='Version number for the targets metadata')
-    parser.add_argument('--targets-metadata-version-file',
-                        type=Path,
-                        default=None,
-                        help='Read version number string from this file. When '
-                        'provided, content of this file supersede '
-                        '--targets-metadata-version')
-    parser.add_argument('--signed-root-metadata',
-                        type=Path,
-                        default=None,
-                        help='Path to the signed Root metadata')
+    parser.add_argument(
+        '-t',
+        '--targets',
+        type=str,
+        nargs='+',
+        required=True,
+        help='Strings defining targets to bundle',
+    )
+    parser.add_argument(
+        '-o',
+        '--out',
+        type=Path,
+        required=True,
+        help='Output path for serialized UpdateBundle',
+    )
+    parser.add_argument(
+        '--persist',
+        type=Path,
+        default=None,
+        help=(
+            'If provided, TUF repo will be persisted to disk'
+            ' at this path for debugging'
+        ),
+    )
+    parser.add_argument(
+        '--targets-metadata-version',
+        type=int,
+        default=metadata.DEFAULT_METADATA_VERSION,
+        help='Version number for the targets metadata',
+    )
+    parser.add_argument(
+        '--targets-metadata-version-file',
+        type=Path,
+        default=None,
+        help='Read version number string from this file. When '
+        'provided, content of this file supersede '
+        '--targets-metadata-version',
+    )
+    parser.add_argument(
+        '--signed-root-metadata',
+        type=Path,
+        default=None,
+        help='Path to the signed Root metadata',
+    )
     return parser.parse_args()
 
 
-def main(targets: Iterable[str],
-         out: Path,
-         persist: Optional[Path] = None,
-         targets_metadata_version: int = metadata.DEFAULT_METADATA_VERSION,
-         targets_metadata_version_file: Optional[Path] = None,
-         signed_root_metadata: Optional[Path] = None) -> None:
+def main(
+    targets: Iterable[str],
+    out: Path,
+    persist: Optional[Path] = None,
+    targets_metadata_version: int = metadata.DEFAULT_METADATA_VERSION,
+    targets_metadata_version_file: Optional[Path] = None,
+    signed_root_metadata: Optional[Path] = None,
+) -> None:
     """Generates an UpdateBundle and serializes it to disk."""
     target_dict = {}
     for target_arg in targets:
@@ -224,15 +254,16 @@ def main(targets: Iterable[str],
     root_metadata = None
     if signed_root_metadata:
         root_metadata = SignedRootMetadata.FromString(
-            signed_root_metadata.read_bytes())
+            signed_root_metadata.read_bytes()
+        )
 
     if targets_metadata_version_file:
         with targets_metadata_version_file.open() as version_file:
             targets_metadata_version = int(version_file.read().strip())
 
-    bundle = gen_unsigned_update_bundle(target_dict, persist,
-                                        targets_metadata_version,
-                                        root_metadata)
+    bundle = gen_unsigned_update_bundle(
+        target_dict, persist, targets_metadata_version, root_metadata
+    )
 
     out.write_bytes(bundle.SerializeToString())
 

@@ -21,8 +21,9 @@ from pw_software_update.tuf_pb2 import SignedRootMetadata
 from pw_software_update.update_bundle_pb2 import UpdateBundle
 
 
-def sign_root_metadata(root_metadata: SignedRootMetadata,
-                       root_key_pem: bytes) -> SignedRootMetadata:
+def sign_root_metadata(
+    root_metadata: SignedRootMetadata, root_key_pem: bytes
+) -> SignedRootMetadata:
     """Signs or re-signs a Root Metadata.
 
     Args:
@@ -31,14 +32,16 @@ def sign_root_metadata(root_metadata: SignedRootMetadata,
     """
 
     signature = keys.create_ecdsa_signature(
-        root_metadata.serialized_root_metadata, root_key_pem)
+        root_metadata.serialized_root_metadata, root_key_pem
+    )
     root_metadata.signatures.append(signature)
 
     return root_metadata
 
 
-def sign_update_bundle(bundle: UpdateBundle,
-                       targets_key_pem: bytes) -> UpdateBundle:
+def sign_update_bundle(
+    bundle: UpdateBundle, targets_key_pem: bytes
+) -> UpdateBundle:
     """Signs or re-signs an update bundle.
 
     Args:
@@ -48,7 +51,9 @@ def sign_update_bundle(bundle: UpdateBundle,
     bundle.targets_metadata['targets'].signatures.append(
         keys.create_ecdsa_signature(
             bundle.targets_metadata['targets'].serialized_targets_metadata,
-            targets_key_pem))
+            targets_key_pem,
+        )
+    )
     return bundle
 
 
@@ -56,33 +61,38 @@ def parse_args():
     """Parse CLI arguments."""
     parser = argparse.ArgumentParser(description=__doc__)
 
-    parser.add_argument('--root-metadata',
-                        type=Path,
-                        required=False,
-                        help='Path to the root metadata to be signed')
+    parser.add_argument(
+        '--root-metadata',
+        type=Path,
+        required=False,
+        help='Path to the root metadata to be signed',
+    )
 
-    parser.add_argument('--bundle',
-                        type=Path,
-                        required=False,
-                        help='Path to the bundle to be signed')
+    parser.add_argument(
+        '--bundle',
+        type=Path,
+        required=False,
+        help='Path to the bundle to be signed',
+    )
 
     parser.add_argument(
         '--output',
         type=Path,
         required=False,
-        help=('Path to save the signed root metadata or bundle '
-              'to; Defaults to the input path if unspecified'))
+        help=(
+            'Path to save the signed root metadata or bundle '
+            'to; Defaults to the input path if unspecified'
+        ),
+    )
 
-    parser.add_argument('--key',
-                        type=Path,
-                        required=True,
-                        help='Path to the signing key')
+    parser.add_argument(
+        '--key', type=Path, required=True, help='Path to the signing key'
+    )
 
     args = parser.parse_args()
 
     if not (args.root_metadata or args.bundle):
-        parser.error(
-            'either "--root-metadata" or "--bundle" must be specified')
+        parser.error('either "--root-metadata" or "--bundle" must be specified')
     if args.root_metadata and args.bundle:
         parser.error('"--root-metadata" and "--bundle" are mutually exclusive')
 
@@ -94,14 +104,16 @@ def main(root_metadata: Path, bundle: Path, key: Path, output: Path) -> None:
     if root_metadata:
         signed_root_metadata = sign_root_metadata(
             SignedRootMetadata.FromString(root_metadata.read_bytes()),
-            key.read_bytes())
+            key.read_bytes(),
+        )
 
         if not output:
             output = root_metadata
         output.write_bytes(signed_root_metadata.SerializeToString())
     else:
         signed_bundle = sign_update_bundle(
-            UpdateBundle.FromString(bundle.read_bytes()), key.read_bytes())
+            UpdateBundle.FromString(bundle.read_bytes()), key.read_bytes()
+        )
 
         if not output:
             output = bundle

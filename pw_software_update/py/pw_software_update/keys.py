@@ -29,23 +29,37 @@ from pathlib import Path
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.utils import (
-    decode_dss_signature, encode_dss_signature)
+    decode_dss_signature,
+    encode_dss_signature,
+)
 from cryptography.hazmat.primitives.serialization import (
-    Encoding, NoEncryption, PrivateFormat, PublicFormat, load_pem_private_key,
-    load_pem_public_key)
+    Encoding,
+    NoEncryption,
+    PrivateFormat,
+    PublicFormat,
+    load_pem_private_key,
+    load_pem_public_key,
+)
 
-from pw_software_update.tuf_pb2 import (Key, KeyMapping, KeyScheme, KeyType,
-                                        Signature)
+from pw_software_update.tuf_pb2 import (
+    Key,
+    KeyMapping,
+    KeyScheme,
+    KeyType,
+    Signature,
+)
 
 
 def parse_args():
     """Parse CLI arguments."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('-o',
-                        '--out',
-                        type=Path,
-                        required=True,
-                        help='Output path for the generated key')
+    parser.add_argument(
+        '-o',
+        '--out',
+        type=Path,
+        required=True,
+        help='Output path for the generated key',
+    )
     return parser.parse_args()
 
 
@@ -61,12 +75,14 @@ def gen_ecdsa_keypair(out: Path) -> None:
     private_pem = private_key.private_bytes(
         encoding=Encoding.PEM,
         format=PrivateFormat.PKCS8,
-        encryption_algorithm=NoEncryption())
+        encryption_algorithm=NoEncryption(),
+    )
     public_pem = public_key.public_bytes(
-        encoding=Encoding.PEM, format=PublicFormat.SubjectPublicKeyInfo)
+        encoding=Encoding.PEM, format=PublicFormat.SubjectPublicKeyInfo
+    )
 
     out.write_bytes(private_pem)
-    public_out = (out.parent / f'{out.name}.pub')
+    public_out = out.parent / f'{out.name}.pub'
     public_out.write_bytes(public_pem)
 
 
@@ -86,18 +102,24 @@ def import_ecdsa_public_key(pem: bytes) -> KeyMapping:
     if not isinstance(ec_key, ec.EllipticCurvePublicKey):
         raise TypeError(
             f'Not an elliptic curve public key type: {type(ec_key)}.'
-            'Try generate a key with gen_ecdsa_keypair()?')
+            'Try generate a key with gen_ecdsa_keypair()?'
+        )
 
     # pylint: disable=no-member
     if not (ec_key.curve.name == 'secp256r1' and ec_key.key_size == 256):
-        raise TypeError(f'Unsupported curve: {ec_key.curve.name}.'
-                        'Try generate a key with gen_ecdsa_keypair()?')
+        raise TypeError(
+            f'Unsupported curve: {ec_key.curve.name}.'
+            'Try generate a key with gen_ecdsa_keypair()?'
+        )
     # pylint: enable=no-member
 
-    tuf_key = Key(key_type=KeyType.ECDSA_SHA2_NISTP256,
-                  scheme=KeyScheme.ECDSA_SHA2_NISTP256_SCHEME,
-                  keyval=ec_key.public_bytes(Encoding.X962,
-                                             PublicFormat.UncompressedPoint))
+    tuf_key = Key(
+        key_type=KeyType.ECDSA_SHA2_NISTP256,
+        scheme=KeyScheme.ECDSA_SHA2_NISTP256_SCHEME,
+        keyval=ec_key.public_bytes(
+            Encoding.X962, PublicFormat.UncompressedPoint
+        ),
+    )
     return KeyMapping(key_id=gen_key_id(tuf_key), key=tuf_key)
 
 
@@ -105,15 +127,22 @@ def create_ecdsa_signature(data: bytes, key: bytes) -> Signature:
     """Creates an ECDSA-SHA2-NISTP256 signature."""
     ec_key = load_pem_private_key(key, password=None)
     if not isinstance(ec_key, ec.EllipticCurvePrivateKey):
-        raise TypeError(f'Not an elliptic curve private key: {type(ec_key)}.'
-                        'Try generate a key with gen_ecdsa_keypair()?')
+        raise TypeError(
+            f'Not an elliptic curve private key: {type(ec_key)}.'
+            'Try generate a key with gen_ecdsa_keypair()?'
+        )
 
-    tuf_key = Key(key_type=KeyType.ECDSA_SHA2_NISTP256,
-                  scheme=KeyScheme.ECDSA_SHA2_NISTP256_SCHEME,
-                  keyval=ec_key.public_key().public_bytes(
-                      Encoding.X962, PublicFormat.UncompressedPoint))
+    tuf_key = Key(
+        key_type=KeyType.ECDSA_SHA2_NISTP256,
+        scheme=KeyScheme.ECDSA_SHA2_NISTP256_SCHEME,
+        keyval=ec_key.public_key().public_bytes(
+            Encoding.X962, PublicFormat.UncompressedPoint
+        ),
+    )
 
-    der_signature = ec_key.sign(data, ec.ECDSA(hashes.SHA256()))  # pylint: disable=no-value-for-parameter
+    der_signature = ec_key.sign(
+        data, ec.ECDSA(hashes.SHA256())
+    )  # pylint: disable=no-value-for-parameter
     int_r, int_s = decode_dss_signature(der_signature)
     sig_bytes = int_r.to_bytes(32, 'big') + int_s.to_bytes(32, 'big')
 
@@ -132,10 +161,12 @@ def verify_ecdsa_signature(sig: bytes, data: bytes, key: Key) -> bool:
       True if the signature is verified. False otherwise.
     """
     ec_key = ec.EllipticCurvePublicKey.from_encoded_point(
-        ec.SECP256R1(), key.keyval)
+        ec.SECP256R1(), key.keyval
+    )
     try:
-        dss_sig = encode_dss_signature(int.from_bytes(sig[:32], 'big'),
-                                       int.from_bytes(sig[-32:], 'big'))
+        dss_sig = encode_dss_signature(
+            int.from_bytes(sig[:32], 'big'), int.from_bytes(sig[-32:], 'big')
+        )
         ec_key.verify(dss_sig, data, ec.ECDSA(hashes.SHA256()))
     except:  # pylint: disable=bare-except
         return False

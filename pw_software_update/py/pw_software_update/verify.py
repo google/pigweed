@@ -21,16 +21,18 @@ import sys
 from typing import Iterable
 
 from pw_software_update import keys, metadata
-from pw_software_update.tuf_pb2 import (RootMetadata, SignedRootMetadata,
-                                        SignedTargetsMetadata, TargetsMetadata)
+from pw_software_update.tuf_pb2 import (
+    RootMetadata,
+    SignedRootMetadata,
+    SignedTargetsMetadata,
+    TargetsMetadata,
+)
 from pw_software_update.update_bundle_pb2 import UpdateBundle
 
 _LOG = logging.getLogger(__package__)
 
 
-def log_progress(message: str,
-                 indent_offset: int = -5,
-                 indent_str: str = '  '):
+def log_progress(message: str, indent_offset: int = -5, indent_str: str = '  '):
     """Logs verification progress.
 
     The default indent offset is chosen per actual output of 'python -m verify'.
@@ -64,8 +66,10 @@ def lint_root_metadata(root: RootMetadata) -> Iterable[str]:
         elif not entry.key.keyval:
             errors.append(f'Key {entry.key_id.hex()} does not have a value')
         elif not entry.key_id == keys.gen_key_id(entry.key):
-            errors.append(f'Key id "{entry.key_id.hex()}" cannot be derived'
-                          f'from key content')
+            errors.append(
+                f'Key id "{entry.key_id.hex()}" cannot be derived'
+                f'from key content'
+            )
 
     # Check root signature requirement.
     log_progress('Checking root signature requirement')
@@ -76,7 +80,8 @@ def lint_root_metadata(root: RootMetadata) -> Iterable[str]:
     if len(root_sig_req.key_ids) < root_sig_req.threshold:
         errors.append(
             f'Insufficient root keys: '
-            f'{len(root_sig_req.key_ids)} < {root_sig_req.threshold}')
+            f'{len(root_sig_req.key_ids)} < {root_sig_req.threshold}'
+        )
 
     for key_id in root_sig_req.key_ids:
         if key_id not in [km.key_id for km in root.keys]:
@@ -91,7 +96,8 @@ def lint_root_metadata(root: RootMetadata) -> Iterable[str]:
     if len(targets_sig_req.key_ids) < targets_sig_req.threshold:
         errors.append(
             f'Insufficient Targets keys: '
-            f'{len(targets_sig_req.key_ids)} < {targets_sig_req.threshold}')
+            f'{len(targets_sig_req.key_ids)} < {targets_sig_req.threshold}'
+        )
 
     for key_id in targets_sig_req.key_ids:
         if key_id not in [km.key_id for km in root.keys]:
@@ -106,8 +112,9 @@ def lint_root_metadata(root: RootMetadata) -> Iterable[str]:
     return errors
 
 
-def verify_root_metadata_signatures(incoming: SignedRootMetadata,
-                                    trusted: RootMetadata) -> None:
+def verify_root_metadata_signatures(
+    incoming: SignedRootMetadata, trusted: RootMetadata
+) -> None:
     """Verifies the signatures of an incoming root metadata.
 
     Verifies the signatures of an incoming root metadata against signature
@@ -118,8 +125,10 @@ def verify_root_metadata_signatures(incoming: SignedRootMetadata,
     """
     sig_requirement = trusted.root_signature_requirement
 
-    log_progress(f'Total={len(incoming.signatures)}, '
-                 f'threshold={sig_requirement.threshold}')
+    log_progress(
+        f'Total={len(incoming.signatures)}, '
+        f'threshold={sig_requirement.threshold}'
+    )
     good_signature_count = 0
     for sig in incoming.signatures:
         if sig.key_id not in sig_requirement.key_ids:
@@ -134,7 +143,8 @@ def verify_root_metadata_signatures(incoming: SignedRootMetadata,
             raise VerificationError(f'Invalid key_id: {sig.key_id.hex()}.')
 
         if not keys.verify_ecdsa_signature(
-                sig.sig, incoming.serialized_root_metadata, key):
+            sig.sig, incoming.serialized_root_metadata, key
+        ):
             raise VerificationError('Invalid signature, key_id={sig.key_id}.')
 
         good_signature_count += 1
@@ -144,8 +154,9 @@ def verify_root_metadata_signatures(incoming: SignedRootMetadata,
         raise VerificationError('Not enough good signatures.')
 
 
-def verify_root_metadata(incoming: SignedRootMetadata,
-                         trusted: RootMetadata) -> bool:
+def verify_root_metadata(
+    incoming: SignedRootMetadata, trusted: RootMetadata
+) -> bool:
     """Verifies an incoming root metadata against a trusted root metadata.
 
     Returns:
@@ -164,7 +175,8 @@ def verify_root_metadata(incoming: SignedRootMetadata,
     # before parsing it to guard against chosen-ciphertext attacks.
     log_progress('Checking content')
     lint_errors = lint_root_metadata(
-        RootMetadata.FromString(incoming.serialized_root_metadata))
+        RootMetadata.FromString(incoming.serialized_root_metadata)
+    )
     if lint_errors:
         log_progress(f'Lint errors: {lint_errors}')
         raise VerificationError('Malformed root metadata.')
@@ -173,7 +185,8 @@ def verify_root_metadata(incoming: SignedRootMetadata,
     # target root metadata.
     log_progress('Checking signatures against current root')
     verify_root_metadata_signatures(
-        incoming, RootMetadata.FromString(incoming.serialized_root_metadata))
+        incoming, RootMetadata.FromString(incoming.serialized_root_metadata)
+    )
 
     # Check rollback attack.
     log_progress('Checking for version rollback')
@@ -182,14 +195,16 @@ def verify_root_metadata(incoming: SignedRootMetadata,
     cur_ver = trusted.common_metadata.version
     if new_ver < cur_ver:
         raise VerificationError(
-            f'Root metadata version rollback ({cur_ver}->{new_ver}) detected!')
+            f'Root metadata version rollback ({cur_ver}->{new_ver}) detected!'
+        )
 
     # Any signature requirement change indicates a targets key rotation.
     new_sig_req = incoming_meta.targets_signature_requirement
     cur_sig_req = trusted.targets_signature_requirement
     targets_key_rotated = not (
         set(new_sig_req.key_ids) == set(cur_sig_req.key_ids)
-        and new_sig_req.threshold == cur_sig_req.threshold)
+        and new_sig_req.threshold == cur_sig_req.threshold
+    )
     log_progress(f'Targets key rotation: {targets_key_rotated}')
     return targets_key_rotated
 
@@ -207,7 +222,8 @@ def lint_targets_metadata(meta: TargetsMetadata) -> Iterable[str]:
     log_progress("Checking role type")
     if meta.common_metadata.role != metadata.RoleType.TARGETS.value:
         errors.append(
-            f'Role type is not "targets" but "{meta.common_metadata.role}"')
+            f'Role type is not "targets" but "{meta.common_metadata.role}"'
+        )
 
     for file in meta.target_files:
         if not file.file_name:
@@ -218,8 +234,9 @@ def lint_targets_metadata(meta: TargetsMetadata) -> Iterable[str]:
     return errors
 
 
-def verify_targets_metadata(signed: SignedTargetsMetadata,
-                            root: RootMetadata) -> None:
+def verify_targets_metadata(
+    signed: SignedTargetsMetadata, root: RootMetadata
+) -> None:
     """Verifies a targets metadata is sufficiently signed and well-formed.
 
     Raises:
@@ -227,8 +244,10 @@ def verify_targets_metadata(signed: SignedTargetsMetadata,
         malformed.
     """
     sig_requirement = root.targets_signature_requirement
-    log_progress(f'Checking signatures: total={len(signed.signatures)}, '
-                 f'threshold={sig_requirement.threshold}')
+    log_progress(
+        f'Checking signatures: total={len(signed.signatures)}, '
+        f'threshold={sig_requirement.threshold}'
+    )
     good_signatures_count = 0
     for sig in signed.signatures:
         # Ignore extraneous signatures.
@@ -245,12 +264,15 @@ def verify_targets_metadata(signed: SignedTargetsMetadata,
                 break
         if not key:
             raise VerificationError(
-                f'No such key_id in root: {sig.key_id.hex()}.')
+                f'No such key_id in root: {sig.key_id.hex()}.'
+            )
 
         if not keys.verify_ecdsa_signature(
-                sig=sig.sig, data=signed.serialized_targets_metadata, key=key):
+            sig=sig.sig, data=signed.serialized_targets_metadata, key=key
+        ):
             raise VerificationError(
-                f'Invalid signature, key_id={sig.key_id.hex()}.')
+                f'Invalid signature, key_id={sig.key_id.hex()}.'
+            )
 
         good_signatures_count += 1
 
@@ -258,11 +280,13 @@ def verify_targets_metadata(signed: SignedTargetsMetadata,
     if good_signatures_count < sig_requirement.threshold:
         raise VerificationError(
             f'Not enough good signatures: {good_signatures_count} < '
-            f'{sig_requirement.threshold}.')
+            f'{sig_requirement.threshold}.'
+        )
 
     log_progress('Checking content')
     lint_errors = lint_targets_metadata(
-        TargetsMetadata.FromString(signed.serialized_targets_metadata))
+        TargetsMetadata.FromString(signed.serialized_targets_metadata)
+    )
     if lint_errors:
         log_progress(f'Lint errors: {lint_errors}')
         raise VerificationError('Malformed targets metadata.')
@@ -278,7 +302,8 @@ def verify_bundle(incoming: UpdateBundle, trusted: UpdateBundle) -> None:
     if not trusted.HasField('root_metadata'):
         raise VerificationError('Trusted bundle missing root metadata')
     trusted_root = RootMetadata.FromString(
-        trusted.root_metadata.serialized_root_metadata)
+        trusted.root_metadata.serialized_root_metadata
+    )
 
     # Check the contents of the trusted root metadata. This is optional
     # in practice as we generally trust what is provisioned in the factory.
@@ -299,11 +324,13 @@ def verify_bundle(incoming: UpdateBundle, trusted: UpdateBundle) -> None:
     incoming_root = incoming.root_metadata
     if incoming_root:
         log_progress('Verifying incoming root metadata')
-        targets_key_rotated = verify_root_metadata(incoming=incoming_root,
-                                                   trusted=trusted_root)
+        targets_key_rotated = verify_root_metadata(
+            incoming=incoming_root, trusted=trusted_root
+        )
         log_progress('Upgrading trust to the incoming root metadata')
         trusted_root = RootMetadata.FromString(
-            incoming_root.serialized_root_metadata)
+            incoming_root.serialized_root_metadata
+        )
 
     log_progress('Verifying targets metadata')
     signed_targets_metadata = incoming.targets_metadata['targets']
@@ -312,7 +339,8 @@ def verify_bundle(incoming: UpdateBundle, trusted: UpdateBundle) -> None:
     # Unless the targets signing key has been rotated, check for version
     # rollback attack.
     targets_metadata = TargetsMetadata.FromString(
-        signed_targets_metadata.serialized_targets_metadata)
+        signed_targets_metadata.serialized_targets_metadata
+    )
     if not targets_key_rotated:
         log_progress('Checking targets metadata for version rollback')
         new_ver = targets_metadata.common_metadata.version
@@ -321,8 +349,8 @@ def verify_bundle(incoming: UpdateBundle, trusted: UpdateBundle) -> None:
         ).common_metadata.version
         if new_ver < cur_ver:
             raise VerificationError(
-                f'Targets metadata rolling back: {cur_ver} '
-                f'-> {new_ver}.')
+                f'Targets metadata rolling back: {cur_ver} ' f'-> {new_ver}.'
+            )
 
     # Verify all files listed in the targets metadata exist along with the
     # correct sizes and hashes.
@@ -331,33 +359,41 @@ def verify_bundle(incoming: UpdateBundle, trusted: UpdateBundle) -> None:
 
         payload = incoming.target_payloads[file.file_name]
         if file.length != len(payload):
-            raise VerificationError(f'Wrong file size for {file.file_name}: '
-                                    f'expected: {file.length}, '
-                                    f'got: {len(payload)}.')
+            raise VerificationError(
+                f'Wrong file size for {file.file_name}: '
+                f'expected: {file.length}, '
+                f'got: {len(payload)}.'
+            )
 
         if not file.hashes:
             raise VerificationError(f'Missing hashes for: {file.file_name}.')
         calculated_hashes = metadata.gen_hashes(
-            payload, [h.function for h in file.hashes])
+            payload, [h.function for h in file.hashes]
+        )
         if list(calculated_hashes) != list(file.hashes):
-            raise VerificationError(
-                f'Mismatched hashes for: {file.file_name}.')
+            raise VerificationError(f'Mismatched hashes for: {file.file_name}.')
 
 
 def parse_args():
     """Parse CLI arguments."""
     parser = argparse.ArgumentParser(description=__doc__)
 
-    parser.add_argument('--incoming',
-                        type=Path,
-                        required=True,
-                        help='Path to the TUF bundle to be verified')
+    parser.add_argument(
+        '--incoming',
+        type=Path,
+        required=True,
+        help='Path to the TUF bundle to be verified',
+    )
 
-    parser.add_argument('--trusted',
-                        type=Path,
-                        help=('Path to the TUF bundle to be trusted; '
-                              'defaults to the value of `--incoming` '
-                              'if unspecified.'))
+    parser.add_argument(
+        '--trusted',
+        type=Path,
+        help=(
+            'Path to the TUF bundle to be trusted; '
+            'defaults to the value of `--incoming` '
+            'if unspecified.'
+        ),
+    )
 
     return parser.parse_args()
 
@@ -375,7 +411,7 @@ def main(incoming: Path, trusted: Path) -> int:
     log_progress(f'Verifying: {incoming}')
     incoming_bundle = UpdateBundle.FromString(incoming.read_bytes())
 
-    is_self_verification = (not trusted)
+    is_self_verification = not trusted
     if is_self_verification:
         trusted_bundle = incoming_bundle
         log_progress('(self-verification)')

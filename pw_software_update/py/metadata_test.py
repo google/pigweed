@@ -21,6 +21,7 @@ from pw_software_update.tuf_pb2 import HashFunction
 
 class GenTargetsMetadataTest(unittest.TestCase):
     """Test the generation of targets metadata."""
+
     def test_multiple_targets(self):
         """Checks that multiple targets generates multiple TargetFiles."""
         target_payloads = {
@@ -28,22 +29,27 @@ class GenTargetsMetadataTest(unittest.TestCase):
             'bar': b'\x12\x34',
         }
         targets_metadata = metadata.gen_targets_metadata(
-            target_payloads, (HashFunction.SHA256, ), version=42)
+            target_payloads, (HashFunction.SHA256,), version=42
+        )
         self.assertEqual(2, len(targets_metadata.target_files))
-        self.assertEqual(metadata.RoleType.TARGETS.value,
-                         targets_metadata.common_metadata.role)
+        self.assertEqual(
+            metadata.RoleType.TARGETS.value,
+            targets_metadata.common_metadata.role,
+        )
         self.assertEqual(42, targets_metadata.common_metadata.version)
 
 
 class GenHashesTest(unittest.TestCase):
     """Test the generation of hashes."""
+
     def test_sha256(self):
         """Checks that SHA256 hashes are computed and stored properly."""
         data = b'\x1e\xe7'
-        sha256_hash = metadata.gen_hashes(data, (HashFunction.SHA256, ))[0]
+        sha256_hash = metadata.gen_hashes(data, (HashFunction.SHA256,))[0]
         self.assertEqual(
             '9f36ce605a3b28110d2a25ec36bdfff86059086cbd53c9efc1428ef01070515d',
-            sha256_hash.hash.hex())
+            sha256_hash.hash.hex(),
+        )
 
 
 if __name__ == '__main__':

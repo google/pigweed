@@ -106,48 +106,59 @@ PathOrBytes = Union[Path, bytes]
 def _parse_args():
     """Parse CLI aguments."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--project',
-                        help='GCP project that owns storage buckets.')
-    parser.add_argument('--input-bucket',
-                        help='GCS bucket used as a signing queue')
-    parser.add_argument('--output-bucket',
-                        help='GCS bucket to watch for signed bundles')
-    parser.add_argument('--bundle',
-                        type=Path,
-                        help='Update bundle to upload for signing')
-    parser.add_argument('--out',
-                        type=Path,
-                        help='Path to which to download signed bundle')
+    parser.add_argument(
+        '--project', help='GCP project that owns storage buckets.'
+    )
+    parser.add_argument(
+        '--input-bucket', help='GCS bucket used as a signing queue'
+    )
+    parser.add_argument(
+        '--output-bucket', help='GCS bucket to watch for signed bundles'
+    )
+    parser.add_argument(
+        '--bundle', type=Path, help='Update bundle to upload for signing'
+    )
+    parser.add_argument(
+        '--out', type=Path, help='Path to which to download signed bundle'
+    )
     parser.add_argument(
         '--signing-key-name',
-        help='Name of signing key remote signing service should use')
+        help='Name of signing key remote signing service should use',
+    )
     parser.add_argument(
         '--builder-key',
         type=Path,
-        help='Path to builder private key for intermediate signatures')
-    parser.add_argument('--builder-public-key',
-                        type=Path,
-                        help='Path to builder public key')
+        help='Path to builder private key for intermediate signatures',
+    )
+    parser.add_argument(
+        '--builder-public-key', type=Path, help='Path to builder public key'
+    )
     parser.add_argument(
         '--bundle-blob-name',
         default=None,
-        help='Path in the input bucket at which to upload bundle')
+        help='Path in the input bucket at which to upload bundle',
+    )
     parser.add_argument(
         '--request-blob-name',
         default=None,
-        help='Path in the input bucket at which to put signing request')
-    parser.add_argument('--signed-bundle-blob-name',
-                        default=None,
-                        help='Path in the output bucket for the signed bundle')
+        help='Path in the input bucket at which to put signing request',
+    )
+    parser.add_argument(
+        '--signed-bundle-blob-name',
+        default=None,
+        help='Path in the output bucket for the signed bundle',
+    )
     parser.add_argument(
         '--dev-gcs-auth-module-override',
         default=None,
-        help='Developer use only; custom auth module to use with GCS.')
+        help='Developer use only; custom auth module to use with GCS.',
+    )
     parser.add_argument(
         '--timeout',
         type=int,
         default=DEFAULT_TIMEOUT_S,
-        help='Seconds to wait for signed bundle to appeaer before giving up.')
+        help='Seconds to wait for signed bundle to appeaer before giving up.',
+    )
 
     return parser.parse_args()
 
@@ -156,8 +167,9 @@ class BlobExistsError(Exception):
     """Raised if the blob to be uploaded already exists in the input bucket."""
 
 
-class RemoteSignClient():
+class RemoteSignClient:
     """GCS client for use in remote signing."""
+
     def __init__(self, input_bucket: Bucket, output_bucket: Bucket):
         # "Application Default Credentials" are used implicitly when None is
         # passed to Client() as credentials. See the cloud docs for details:
@@ -166,26 +178,33 @@ class RemoteSignClient():
         self._output_bucket = output_bucket
 
     @classmethod
-    def from_names(cls,
-                   project_name: str,
-                   input_bucket_name: str,
-                   output_bucket_name: str,
-                   gcs_credentials: Optional[Credentials] = None):
-        storage_client = storage.Client(project=project_name,
-                                        credentials=gcs_credentials)
-        return cls(input_bucket=storage_client.bucket(input_bucket_name),
-                   output_bucket=storage_client.bucket(output_bucket_name))
+    def from_names(
+        cls,
+        project_name: str,
+        input_bucket_name: str,
+        output_bucket_name: str,
+        gcs_credentials: Optional[Credentials] = None,
+    ):
+        storage_client = storage.Client(
+            project=project_name, credentials=gcs_credentials
+        )
+        return cls(
+            input_bucket=storage_client.bucket(input_bucket_name),
+            output_bucket=storage_client.bucket(output_bucket_name),
+        )
 
-    def sign(self,
-             bundle: Path,
-             signing_key_name: str,
-             builder_key: Path,
-             builder_public_key: Path,
-             bundle_blob_name: Optional[str] = None,
-             request_blob_name: Optional[str] = None,
-             signed_bundle_blob_name: Optional[str] = None,
-             request_overrides: Optional[Dict] = None,
-             timeout_s: int = DEFAULT_TIMEOUT_S) -> bytes:
+    def sign(
+        self,
+        bundle: Path,
+        signing_key_name: str,
+        builder_key: Path,
+        builder_public_key: Path,
+        bundle_blob_name: Optional[str] = None,
+        request_blob_name: Optional[str] = None,
+        signed_bundle_blob_name: Optional[str] = None,
+        request_overrides: Optional[Dict] = None,
+        timeout_s: int = DEFAULT_TIMEOUT_S,
+    ) -> bytes:
         """Upload file to GCS and download signed counterpart when ready.
 
         Args:
@@ -209,8 +228,10 @@ class RemoteSignClient():
             request_blob_name = f't{time.time()}_signing_request.json'
 
         if not request_blob_name.endswith('signing_request.json'):
-            raise ValueError(f'Signing request blob name {request_blob_name}'
-                             ' does not end with "signing_request.json".')
+            raise ValueError(
+                f'Signing request blob name {request_blob_name}'
+                ' does not end with "signing_request.json".'
+            )
 
         request_name = request_blob_name[:-5]  # strip the ".json"
         builder_public_key_blob_name = f'{request_name}.publickey.pem'
@@ -230,7 +251,8 @@ class RemoteSignClient():
             signing_request.update(request_overrides)
 
         builder_public_key_blob = self._input_bucket.blob(
-            builder_public_key_blob_name)
+            builder_public_key_blob_name
+        )
         bundle_blob = self._input_bucket.blob(bundle_blob_name)
         request_blob = self._input_bucket.blob(request_blob_name)
 
@@ -238,35 +260,38 @@ class RemoteSignClient():
             if blob.exists():
                 raise BlobExistsError(
                     f'A blob named "{blob}" already exists in the input bucket.'
-                    ' A unique blob name is required for uploading.')
+                    ' A unique blob name is required for uploading.'
+                )
 
         builder_public_key_blob.upload_from_filename(str(builder_public_key))
 
         bundle_blob.metadata = {
-            'signature':
-            self._get_builder_signature(bundle, builder_key).decode('ascii')
+            'signature': self._get_builder_signature(
+                bundle, builder_key
+            ).decode('ascii')
         }
         bundle_blob.upload_from_filename(str(bundle))
 
         encoded_json = bytes(json.dumps(signing_request), 'utf-8')
         request_blob.metadata = {
-            'signature':
-            self._get_builder_signature(encoded_json,
-                                        builder_key).decode('ascii')
+            'signature': self._get_builder_signature(
+                encoded_json, builder_key
+            ).decode('ascii')
         }
 
         # Despite its name, the upload_from_string() method can take either a
         # str or bytes object; here we already pre-encoded the string in utf-8.
         request_blob.upload_from_string(encoded_json)
 
-        return self._wait_for_blob(signed_bundle_blob_name,
-                                   timeout_s=timeout_s)
+        return self._wait_for_blob(signed_bundle_blob_name, timeout_s=timeout_s)
 
-    def _wait_for_blob(self,
-                       blob_name,
-                       interval: int = 1,
-                       max_tries: Optional[int] = None,
-                       timeout_s: int = DEFAULT_TIMEOUT_S) -> storage.Blob:
+    def _wait_for_blob(
+        self,
+        blob_name,
+        interval: int = 1,
+        max_tries: Optional[int] = None,
+        timeout_s: int = DEFAULT_TIMEOUT_S,
+    ) -> storage.Blob:
         """Wait for a specific blob to appear in the output bucket.
 
         Args:
@@ -278,17 +303,19 @@ class RemoteSignClient():
         blob = self._output_bucket.blob(blob_name)
         end_time = time.time() + timeout_s
         tries = 0
-        while (max_tries is None or tries < max_tries):
+        while max_tries is None or tries < max_tries:
             if time.time() > end_time:
                 raise FileNotFoundError(
-                    'Timed out while waiting for signed blob.')
+                    'Timed out while waiting for signed blob.'
+                )
             if blob.exists():
                 return blob
             tries += 1
             time.sleep(interval)
 
         raise FileNotFoundError(
-            'Too many retries while waiting for signed blob.')
+            'Too many retries while waiting for signed blob.'
+        )
 
     @staticmethod
     def _get_builder_signature(data: PathOrBytes, key: Path) -> bytes:
@@ -302,7 +329,8 @@ class RemoteSignClient():
             data = data.read_bytes()
 
         private_key = serialization.load_pem_private_key(
-            key.read_bytes(), None, backends.default_backend())
+            key.read_bytes(), None, backends.default_backend()
+        )
 
         if isinstance(private_key, ed25519.Ed25519PrivateKey):
             signature = private_key.sign(data)
@@ -310,14 +338,19 @@ class RemoteSignClient():
         elif isinstance(private_key, rsa.RSAPrivateKey):
             signature = private_key.sign(
                 data,  # type: ignore
-                padding=padding.PSS(mgf=padding.MGF1(hashes.SHA256()),
-                                    salt_length=padding.PSS.MAX_LENGTH),
-                algorithm=hashes.SHA256())
+                padding=padding.PSS(
+                    mgf=padding.MGF1(hashes.SHA256()),
+                    salt_length=padding.PSS.MAX_LENGTH,
+                ),
+                algorithm=hashes.SHA256(),
+            )
 
         else:
-            raise TypeError(f'Key {private_key} has unsupported type'
-                            f' ({type(private_key)}). Valid types are'
-                            ' Ed25519PrivateKey and RSAPrivateKey.')
+            raise TypeError(
+                f'Key {private_key} has unsupported type'
+                f' ({type(private_key)}). Valid types are'
+                ' Ed25519PrivateKey and RSAPrivateKey.'
+            )
 
         return base64.b64encode(signature)
 
@@ -334,11 +367,20 @@ def _credentials_from_module(module_name: str) -> Credentials:
 
 
 def main(  # pylint: disable=too-many-arguments
-        project: str, input_bucket: str, output_bucket: str, bundle: Path,
-        out: Path, signing_key_name: str, builder_key: Path,
-        builder_public_key: Path, bundle_blob_name: str,
-        request_blob_name: str, signed_bundle_blob_name: str,
-        dev_gcs_auth_module_override: str, timeout: int) -> None:
+    project: str,
+    input_bucket: str,
+    output_bucket: str,
+    bundle: Path,
+    out: Path,
+    signing_key_name: str,
+    builder_key: Path,
+    builder_public_key: Path,
+    bundle_blob_name: str,
+    request_blob_name: str,
+    signed_bundle_blob_name: str,
+    dev_gcs_auth_module_override: str,
+    timeout: int,
+) -> None:
     """Send bundle for remote signing and write signed counterpart to disk.
 
     Args:
@@ -365,16 +407,19 @@ def main(  # pylint: disable=too-many-arguments
         project_name=project,
         input_bucket_name=input_bucket,
         output_bucket_name=output_bucket,
-        gcs_credentials=credentials)
+        gcs_credentials=credentials,
+    )
 
-    signed_bundle = remote_sign_client.sign(bundle,
-                                            signing_key_name,
-                                            builder_key,
-                                            builder_public_key,
-                                            bundle_blob_name,
-                                            request_blob_name,
-                                            signed_bundle_blob_name,
-                                            timeout_s=timeout)
+    signed_bundle = remote_sign_client.sign(
+        bundle,
+        signing_key_name,
+        builder_key,
+        builder_public_key,
+        bundle_blob_name,
+        request_blob_name,
+        signed_bundle_blob_name,
+        timeout_s=timeout,
+    )
 
     out.write_bytes(signed_bundle.download_as_bytes())
 

@@ -23,6 +23,7 @@ from pw_software_update.tuf_pb2 import SignedRootMetadata, TargetsMetadata
 
 class TargetsFromDirectoryTest(unittest.TestCase):
     """Test turning a directory into TUF targets."""
+
     def test_excludes(self):
         """Checks that excludes are excluded."""
         with tempfile.TemporaryDirectory() as tempdir_name:
@@ -35,7 +36,8 @@ class TargetsFromDirectoryTest(unittest.TestCase):
                 path.touch()
 
             targets = update_bundle.targets_from_directory(
-                temp_root, exclude=(Path('foo.bin'), Path('baz.bin')))
+                temp_root, exclude=(Path('foo.bin'), Path('baz.bin'))
+            )
 
             self.assertNotIn('foo.bin', targets)
             self.assertEqual(bar_path, targets['bar.bin'])
@@ -59,9 +61,8 @@ class TargetsFromDirectoryTest(unittest.TestCase):
                 path.touch()
 
             targets = update_bundle.targets_from_directory(
-                temp_root,
-                exclude=(Path('qux.exe'), ),
-                remap_paths=remap_paths)
+                temp_root, exclude=(Path('qux.exe'),), remap_paths=remap_paths
+            )
 
             self.assertEqual(foo_path, targets['main'])
             self.assertEqual(bar_path, targets['backup'])
@@ -81,11 +82,13 @@ class TargetsFromDirectoryTest(unittest.TestCase):
             with self.assertLogs(level='WARNING') as log:
                 update_bundle.targets_from_directory(
                     temp_root,
-                    exclude=(Path('qux.exe'), ),
-                    remap_paths=remap_paths)
+                    exclude=(Path('qux.exe'),),
+                    remap_paths=remap_paths,
+                )
 
-                self.assertIn('Some remaps defined, but not "bar.bin"',
-                              log.output[0])
+                self.assertIn(
+                    'Some remaps defined, but not "bar.bin"', log.output[0]
+                )
 
     def test_remap_of_missing_file(self):
         """Checks that remapping a missing file raises an error."""
@@ -99,12 +102,14 @@ class TargetsFromDirectoryTest(unittest.TestCase):
             }
 
             with self.assertRaises(FileNotFoundError):
-                update_bundle.targets_from_directory(temp_root,
-                                                     remap_paths=remap_paths)
+                update_bundle.targets_from_directory(
+                    temp_root, remap_paths=remap_paths
+                )
 
 
 class GenUnsignedUpdateBundleTest(unittest.TestCase):
     """Test the generation of unsigned update bundles."""
+
     def test_bundle_generation(self):
         """Tests basic creation of an UpdateBundle."""
         with tempfile.TemporaryDirectory() as tempdir_name:
@@ -134,17 +139,22 @@ class GenUnsignedUpdateBundleTest(unittest.TestCase):
                 targets,
                 targets_metadata_version=42,
                 root_metadata=SignedRootMetadata(
-                    serialized_root_metadata=serialized_root_metadata_bytes))
+                    serialized_root_metadata=serialized_root_metadata_bytes
+                ),
+            )
 
             self.assertEqual(foo_bytes, bundle.target_payloads['foo'])
             self.assertEqual(bar_bytes, bundle.target_payloads['bar'])
             self.assertEqual(baz_bytes, bundle.target_payloads['baz'])
             self.assertEqual(qux_bytes, bundle.target_payloads['qux'])
             targets_metadata = TargetsMetadata.FromString(
-                bundle.targets_metadata['targets'].serialized_targets_metadata)
+                bundle.targets_metadata['targets'].serialized_targets_metadata
+            )
             self.assertEqual(targets_metadata.common_metadata.version, 42)
-            self.assertEqual(serialized_root_metadata_bytes,
-                             bundle.root_metadata.serialized_root_metadata)
+            self.assertEqual(
+                serialized_root_metadata_bytes,
+                bundle.root_metadata.serialized_root_metadata,
+            )
 
     def test_persist_to_disk(self):
         """Tests persisting the TUF repo to disk for debugging"""
@@ -171,22 +181,26 @@ class GenUnsignedUpdateBundleTest(unittest.TestCase):
             }
             persist_path = temp_root / 'persisted'
 
-            update_bundle.gen_unsigned_update_bundle(targets,
-                                                     persist=persist_path)
+            update_bundle.gen_unsigned_update_bundle(
+                targets, persist=persist_path
+            )
 
             self.assertEqual(foo_bytes, (persist_path / 'foo').read_bytes())
             self.assertEqual(bar_bytes, (persist_path / 'bar').read_bytes())
             self.assertEqual(baz_bytes, (persist_path / 'baz').read_bytes())
-            self.assertEqual(qux_bytes,
-                             (persist_path / 'subdir' / 'qux').read_bytes())
+            self.assertEqual(
+                qux_bytes, (persist_path / 'subdir' / 'qux').read_bytes()
+            )
 
 
 class ParseTargetArgTest(unittest.TestCase):
     """Test the parsing of target argument strings."""
+
     def test_valid_arg(self):
         """Checks that valid remap strings are parsed correctly."""
         file_path, target_name = update_bundle.parse_target_arg(
-            'foo.bin > main')
+            'foo.bin > main'
+        )
 
         self.assertEqual(Path('foo.bin'), file_path)
         self.assertEqual('main', target_name)

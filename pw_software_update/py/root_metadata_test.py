@@ -16,44 +16,55 @@
 import unittest
 
 from pw_software_update import metadata
-from pw_software_update.root_metadata import (RootKeys, TargetsKeys,
-                                              gen_root_metadata)
+from pw_software_update.root_metadata import (
+    RootKeys,
+    TargetsKeys,
+    gen_root_metadata,
+)
 
 
 class GenRootMetadataTest(unittest.TestCase):
     """Test the generation of root metadata."""
+
     def setUp(self):
         self.root_key_public = (
             b'-----BEGIN PUBLIC KEY-----\n'
             b'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE4XWOT3o27TNqeh7YF7P+2ErLzzFm'
             b'c/VItYABCqw7Hh5z8wtNjGyo0GnUSBWeISg3LMs/WjOkCiwjawjqmI8OrQ=='
-            b'\n-----END PUBLIC KEY-----\n')
+            b'\n-----END PUBLIC KEY-----\n'
+        )
 
         self.targets_key_public = (
             b'-----BEGIN PUBLIC KEY-----\n'
             b'MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE9UM6qRZJ0gIWwLjo8tjbrrBTlKXg'
             b'ukwVjOlnguSSiYMrN4MDqMlNDnaJgLvcCuiNUKHu9Oj1DG1i6ckNdE4VTA=='
-            b'\n-----END PUBLIC KEY-----\n')
+            b'\n-----END PUBLIC KEY-----\n'
+        )
 
     def test_multiple_keys(self) -> None:
         """Checks that multiple keys generates multiple KeyMappings and
         SignatureRequirements."""
-        root_metadata = gen_root_metadata(RootKeys([self.root_key_public]),
-                                          TargetsKeys(
-                                              [self.targets_key_public]),
-                                          version=42)
+        root_metadata = gen_root_metadata(
+            RootKeys([self.root_key_public]),
+            TargetsKeys([self.targets_key_public]),
+            version=42,
+        )
 
         self.assertEqual(len(root_metadata.keys), 2)
-        self.assertEqual(len(root_metadata.root_signature_requirement.key_ids),
-                         1)
+        self.assertEqual(
+            len(root_metadata.root_signature_requirement.key_ids), 1
+        )
         self.assertEqual(root_metadata.root_signature_requirement.threshold, 1)
         self.assertEqual(
-            len(root_metadata.targets_signature_requirement.key_ids), 1)
-        self.assertEqual(root_metadata.targets_signature_requirement.threshold,
-                         1)
+            len(root_metadata.targets_signature_requirement.key_ids), 1
+        )
+        self.assertEqual(
+            root_metadata.targets_signature_requirement.threshold, 1
+        )
         self.assertEqual(root_metadata.common_metadata.version, 42)
-        self.assertEqual(root_metadata.common_metadata.role,
-                         metadata.RoleType.ROOT.value)
+        self.assertEqual(
+            root_metadata.common_metadata.role, metadata.RoleType.ROOT.value
+        )
 
 
 if __name__ == '__main__':
