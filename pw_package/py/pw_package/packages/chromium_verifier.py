@@ -57,30 +57,35 @@ CHROMIUM_VERIFIER_UNITTEST_SOURCES = [
     'net/cert/internal/path_builder_unittest.cc',
 ]
 
-CHROMIUM_VERIFIER_SOURCES = CHROMIUM_VERIFIER_LIBRARY_SOURCES +\
-    CHROMIUM_VERIFIER_UNITTEST_SOURCES
+CHROMIUM_VERIFIER_SOURCES = (
+    CHROMIUM_VERIFIER_LIBRARY_SOURCES + CHROMIUM_VERIFIER_UNITTEST_SOURCES
+)
 
 
 def chromium_verifier_repo_path(
-        chromium_verifier_install: pathlib.Path) -> pathlib.Path:
+    chromium_verifier_install: pathlib.Path,
+) -> pathlib.Path:
     """Return the sub-path for repo checkout of chromium verifier"""
     return chromium_verifier_install / 'src'
 
 
 def chromium_third_party_boringssl_repo_path(
-        chromium_verifier_repo: pathlib.Path) -> pathlib.Path:
+    chromium_verifier_repo: pathlib.Path,
+) -> pathlib.Path:
     """Returns the path of third_party/boringssl library in chromium repo"""
     return chromium_verifier_repo / 'third_party' / 'boringssl' / 'src'
 
 
 def chromium_third_party_googletest_repo_path(
-        chromium_verifier_repo: pathlib.Path) -> pathlib.Path:
+    chromium_verifier_repo: pathlib.Path,
+) -> pathlib.Path:
     """Returns the path of third_party/googletest in chromium repo"""
     return chromium_verifier_repo / 'third_party' / 'googletest' / 'src'
 
 
 class ChromiumVerifier(pw_package.package_manager.Package):
     """Install and check status of Chromium Verifier"""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, name='chromium_verifier', **kwargs)
         self._chromium_verifier = pw_package.git_repo.GitRepo(
@@ -96,25 +101,30 @@ class ChromiumVerifier(pw_package.package_manager.Package):
 
         self._boringssl = pw_package.git_repo.GitRepo(
             name='boringssl',
-            url=''.join([
-                'https://pigweed.googlesource.com',
-                '/third_party/boringssl/boringssl'
-            ]),
+            url=''.join(
+                [
+                    'https://pigweed.googlesource.com',
+                    '/third_party/boringssl/boringssl',
+                ]
+            ),
             commit='9f55d972854d0b34dae39c7cd3679d6ada3dfd5b',
             sparse_list=['include'],
         )
 
         self._googletest = pw_package.git_repo.GitRepo(
             name='googletest',
-            url=''.join([
-                'https://chromium.googlesource.com/',
-                'external/github.com/google/googletest.git',
-            ]),
+            url=''.join(
+                [
+                    'https://chromium.googlesource.com/',
+                    'external/github.com/google/googletest.git',
+                ]
+            ),
             commit='53495a2a7d6ba7e0691a7f3602e9a5324bba6e45',
             sparse_list=[
                 'googletest/include',
                 'googlemock/include',
-            ])
+            ],
+        )
 
     def install(self, path: pathlib.Path) -> None:
         # Checkout chromium verifier
@@ -122,13 +132,13 @@ class ChromiumVerifier(pw_package.package_manager.Package):
         self._chromium_verifier.install(chromium_repo)
 
         # Checkout third party boringssl headers
-        boringssl_repo = chromium_third_party_boringssl_repo_path(
-            chromium_repo)
+        boringssl_repo = chromium_third_party_boringssl_repo_path(chromium_repo)
         self._boringssl.install(boringssl_repo)
 
         # Checkout third party googletest headers
         googletest_repo = chromium_third_party_googletest_repo_path(
-            chromium_repo)
+            chromium_repo
+        )
         self._googletest.install(googletest_repo)
 
     def status(self, path: pathlib.Path) -> bool:
@@ -136,13 +146,13 @@ class ChromiumVerifier(pw_package.package_manager.Package):
         if not self._chromium_verifier.status(chromium_repo):
             return False
 
-        boringssl_repo = chromium_third_party_boringssl_repo_path(
-            chromium_repo)
+        boringssl_repo = chromium_third_party_boringssl_repo_path(chromium_repo)
         if not self._boringssl.status(boringssl_repo):
             return False
 
         googletest_repo = chromium_third_party_googletest_repo_path(
-            chromium_repo)
+            chromium_repo
+        )
         if not self._googletest.status(googletest_repo):
             return False
 

@@ -29,6 +29,7 @@ class Package:
 
     Subclass this to implement installation of a specific package.
     """
+
     def __init__(self, name):
         self._name = name
 
@@ -36,7 +37,9 @@ class Package:
     def name(self):
         return self._name
 
-    def install(self, path: pathlib.Path) -> None:  # pylint: disable=no-self-use
+    def install(
+        self, path: pathlib.Path
+    ) -> None:  # pylint: disable=no-self-use
         """Install the package at path.
 
         Install the package in path. Cannot assume this directory is empty—it
@@ -59,7 +62,9 @@ class Package:
         This method will be skipped if the directory does not exist.
         """
 
-    def info(self, path: pathlib.Path) -> Sequence[str]:  # pylint: disable=no-self-use
+    def info(
+        self, path: pathlib.Path
+    ) -> Sequence[str]:  # pylint: disable=no-self-use
         """Returns a short string explaining how to enable the package."""
 
 
@@ -80,6 +85,7 @@ class Packages:
 
 class PackageManager:
     """Install and remove optional packages."""
+
     def __init__(self, root: pathlib.Path):
         self._pkg_root = root
         os.makedirs(root, exist_ok=True)
@@ -122,6 +128,7 @@ class PackageManager:
 
 class PackageManagerCLI:
     """Command-line interface to PackageManager."""
+
     def __init__(self):
         self._mgr: PackageManager = None
 

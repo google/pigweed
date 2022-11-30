@@ -35,6 +35,7 @@ def crlset_file_path(path: pathlib.Path) -> pathlib.Path:
 
 class CRLSet(pw_package.package_manager.Package):
     """Install and check status of CRLSet and downloaded CLRSet file."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, name='crlset', **kwargs)
         self._crlset_tools = pw_package.git_repo.GitRepo(
@@ -62,10 +63,10 @@ class CRLSet(pw_package.package_manager.Package):
 
         # Build the go tool
         subprocess.run(
-            ['go', 'build', '-o',
-             crlset_exec_path(path), 'crlset.go'],
+            ['go', 'build', '-o', crlset_exec_path(path), 'crlset.go'],
             check=True,
-            cwd=crlset_tools_repo_path(path))
+            cwd=crlset_tools_repo_path(path),
+        )
 
         crlset_tools_exec = crlset_exec_path(path)
         if not os.path.exists(crlset_tools_exec):
@@ -73,9 +74,11 @@ class CRLSet(pw_package.package_manager.Package):
 
         # Download the latest CRLSet with the go tool
         with open(crlset_file_path(path), 'wb') as crlset_file:
-            fetched = subprocess.run([crlset_exec_path(path), 'fetch'],
-                                     capture_output=True,
-                                     check=True).stdout
+            fetched = subprocess.run(
+                [crlset_exec_path(path), 'fetch'],
+                capture_output=True,
+                check=True,
+            ).stdout
             crlset_file.write(fetched)
 
     def info(self, path: pathlib.Path) -> Sequence[str]:

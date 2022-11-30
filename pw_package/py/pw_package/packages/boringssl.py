@@ -27,15 +27,19 @@ def boringssl_repo_path(path: pathlib.Path) -> pathlib.Path:
 
 class BoringSSL(pw_package.package_manager.Package):
     """Install and check status of BoringSSL and chromium verifier."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, name='boringssl', **kwargs)
         self._boringssl = pw_package.git_repo.GitRepo(
             name='boringssl',
-            url=''.join([
-                'https://pigweed.googlesource.com',
-                '/third_party/boringssl/boringssl'
-            ]),
-            commit='9f55d972854d0b34dae39c7cd3679d6ada3dfd5b')
+            url=''.join(
+                [
+                    'https://pigweed.googlesource.com',
+                    '/third_party/boringssl/boringssl',
+                ]
+            ),
+            commit='9f55d972854d0b34dae39c7cd3679d6ada3dfd5b',
+        )
 
     def status(self, path: pathlib.Path) -> bool:
         if not self._boringssl.status(boringssl_repo_path(path)):

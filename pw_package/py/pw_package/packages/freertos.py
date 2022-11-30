@@ -22,12 +22,15 @@ import pw_package.package_manager
 
 class FreeRtos(pw_package.git_repo.GitRepo):
     """Install and check status of FreeRTOS."""
+
     def __init__(self, *args, **kwargs):
-        super().__init__(*args,
-                         name='freertos',
-                         url='https://github.com/FreeRTOS/FreeRTOS-Kernel',
-                         commit='a4b28e35103d699edf074dfff4835921b481b301',
-                         **kwargs)
+        super().__init__(
+            *args,
+            name='freertos',
+            url='https://github.com/FreeRTOS/FreeRTOS-Kernel',
+            commit='a4b28e35103d699edf074dfff4835921b481b301',
+            **kwargs,
+        )
 
     def info(self, path: pathlib.Path) -> Sequence[str]:
         return (

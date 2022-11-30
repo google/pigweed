@@ -22,15 +22,20 @@ import pw_package.package_manager
 
 class MbedTLS(pw_package.git_repo.GitRepo):
     """Install and check status of MbedTLS."""
+
     def __init__(self, *args, **kwargs):
-        super().__init__(*args,
-                         name='mbedtls',
-                         url="".join([
-                             "https://pigweed.googlesource.com",
-                             "/third_party/github/ARMmbed/mbedtls",
-                         ]),
-                         commit='e483a77c85e1f9c1dd2eb1c5a8f552d2617fe400',
-                         **kwargs)
+        super().__init__(
+            *args,
+            name='mbedtls',
+            url="".join(
+                [
+                    "https://pigweed.googlesource.com",
+                    "/third_party/github/ARMmbed/mbedtls",
+                ]
+            ),
+            commit='e483a77c85e1f9c1dd2eb1c5a8f552d2617fe400',
+            **kwargs,
+        )
 
     def info(self, path: pathlib.Path) -> Sequence[str]:
         return (

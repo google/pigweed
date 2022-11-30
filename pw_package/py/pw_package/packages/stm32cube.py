@@ -106,6 +106,7 @@ _STM32CUBE_VERSIONS = {
 
 class Stm32Cube(pw_package.package_manager.Package):
     """Install and check status of stm32cube."""
+
     def __init__(self, family, tags, *args, **kwargs):
         super().__init__(*args, name=f'stm32cube_{family}', **kwargs)
 
@@ -137,12 +138,14 @@ class Stm32Cube(pw_package.package_manager.Package):
         pw_stm32cube_build.gen_file_list.gen_file_list(path)
 
     def status(self, path: pathlib.Path) -> bool:
-        return all([
-            self._hal_driver.status(path / self._hal_driver.name),
-            self._cmsis_core.status(path / self._cmsis_core.name),
-            self._cmsis_device.status(path / self._cmsis_device.name),
-            (path / "files.txt").is_file(),
-        ])
+        return all(
+            [
+                self._hal_driver.status(path / self._hal_driver.name),
+                self._cmsis_core.status(path / self._cmsis_core.name),
+                self._cmsis_device.status(path / self._cmsis_device.name),
+                (path / "files.txt").is_file(),
+            ]
+        )
 
     def info(self, path: pathlib.Path) -> Sequence[str]:
         return (

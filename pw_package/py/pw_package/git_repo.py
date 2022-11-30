@@ -25,29 +25,31 @@ import pw_package.package_manager
 PathOrStr = Union[pathlib.Path, str]
 
 
-def git_stdout(*args: PathOrStr,
-               show_stderr=False,
-               repo: PathOrStr = '.') -> str:
-    return subprocess.run(['git', '-C', repo, *args],
-                          stdout=subprocess.PIPE,
-                          stderr=None if show_stderr else subprocess.DEVNULL,
-                          check=True).stdout.decode().strip()
+def git_stdout(
+    *args: PathOrStr, show_stderr=False, repo: PathOrStr = '.'
+) -> str:
+    return (
+        subprocess.run(
+            ['git', '-C', repo, *args],
+            stdout=subprocess.PIPE,
+            stderr=None if show_stderr else subprocess.DEVNULL,
+            check=True,
+        )
+        .stdout.decode()
+        .strip()
+    )
 
 
-def git(*args: PathOrStr,
-        repo: PathOrStr = '.') -> subprocess.CompletedProcess:
+def git(*args: PathOrStr, repo: PathOrStr = '.') -> subprocess.CompletedProcess:
     return subprocess.run(['git', '-C', repo, *args], check=True)
 
 
 class GitRepo(pw_package.package_manager.Package):
     """Install and check status of Git repository-based packages."""
-    def __init__(self,
-                 url,
-                 *args,
-                 commit='',
-                 tag='',
-                 sparse_list=None,
-                 **kwargs):
+
+    def __init__(
+        self, url, *args, commit='', tag='', sparse_list=None, **kwargs
+    ):
         super().__init__(*args, **kwargs)
         if not (commit or tag):
             raise ValueError('git repo must specify a commit or tag')
@@ -113,8 +115,7 @@ class GitRepo(pw_package.package_manager.Package):
             git('clone', '--filter=blob:none', self._url, path)
             git('reset', '--hard', self._commit, repo=path)
         elif self._tag:
-            git('clone', '-b', self._tag, '--filter=blob:none', self._url,
-                path)
+            git('clone', '-b', self._tag, '--filter=blob:none', self._url, path)
 
     def checkout_sparse(self, path: pathlib.Path) -> None:
         # sparse checkout
@@ -132,6 +133,9 @@ class GitRepo(pw_package.package_manager.Package):
         git('pull', '--depth=1', 'origin', target, repo=path)
 
     def check_sparse_list(self, path: pathlib.Path) -> bool:
-        sparse_list = git_stdout('sparse-checkout', 'list',
-                                 repo=path).strip('\n').splitlines()
+        sparse_list = (
+            git_stdout('sparse-checkout', 'list', repo=path)
+            .strip('\n')
+            .splitlines()
+        )
         return set(sparse_list) == set(self._sparse_list)

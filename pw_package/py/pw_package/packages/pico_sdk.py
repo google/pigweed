@@ -22,12 +22,15 @@ import pw_package.package_manager
 
 class PiPicoSdk(pw_package.git_repo.GitRepo):
     """Install and check status of the Raspberry Pi Pico SDK."""
+
     def __init__(self, *args, **kwargs):
-        super().__init__(*args,
-                         name='pico_sdk',
-                         url='https://github.com/raspberrypi/pico-sdk',
-                         commit='2e6142b15b8a75c1227dd3edbe839193b2bf9041',
-                         **kwargs)
+        super().__init__(
+            *args,
+            name='pico_sdk',
+            url='https://github.com/raspberrypi/pico-sdk',
+            commit='2e6142b15b8a75c1227dd3edbe839193b2bf9041',
+            **kwargs,
+        )
 
     def info(self, path: pathlib.Path) -> Sequence[str]:
         return (

@@ -22,15 +22,20 @@ import pw_package.package_manager
 
 class MicroECC(pw_package.git_repo.GitRepo):
     """Install and check the status of the Micro-ECC cryptography library."""
+
     def __init__(self, *args, **kwargs):
-        super().__init__(*args,
-                         name='micro-ecc',
-                         url="".join([
-                             "https://github.com",
-                             "/kmackay/micro-ecc.git",
-                         ]),
-                         commit='24c60e243580c7868f4334a1ba3123481fe1aa48',
-                         **kwargs)
+        super().__init__(
+            *args,
+            name='micro-ecc',
+            url="".join(
+                [
+                    "https://github.com",
+                    "/kmackay/micro-ecc.git",
+                ]
+            ),
+            commit='24c60e243580c7868f4334a1ba3123481fe1aa48',
+            **kwargs,
+        )
 
     def info(self, path: pathlib.Path) -> Sequence[str]:
         return (

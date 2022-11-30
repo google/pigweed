@@ -22,12 +22,15 @@ import pw_package.package_manager
 
 class SmartfusionMss(pw_package.git_repo.GitRepo):
     """Install and check status of SmartFusion MSS."""
+
     def __init__(self, *args, **kwargs):
-        super().__init__(*args,
-                         name='smartfusion_mss',
-                         url='https://github.com/seank/smartfusion_mss',
-                         commit='bb22f26cc3a54df15bb901dc6c95662727158fed',
-                         **kwargs)
+        super().__init__(
+            *args,
+            name='smartfusion_mss',
+            url='https://github.com/seank/smartfusion_mss',
+            commit='bb22f26cc3a54df15bb901dc6c95662727158fed',
+            **kwargs,
+        )
 
     def info(self, path: pathlib.Path) -> Sequence[str]:
         return (

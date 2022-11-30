@@ -22,14 +22,17 @@ import pw_package.package_manager
 
 class NanoPB(pw_package.git_repo.GitRepo):
     """Install and check status of nanopb."""
+
     def __init__(self, *args, **kwargs):
+        # pylint: disable=line-too-long
         super().__init__(
             *args,
             name='nanopb',
-            url=
-            'https://pigweed.googlesource.com/third_party/github/nanopb/nanopb',
+            url='https://pigweed.googlesource.com/third_party/github/nanopb/nanopb',
             commit='2b48a361786dfb1f63d229840217a93aae064667',
-            **kwargs)
+            **kwargs,
+        )
+        # pylint: enable=line-too-long
 
     def info(self, path: pathlib.Path) -> Sequence[str]:
         return (

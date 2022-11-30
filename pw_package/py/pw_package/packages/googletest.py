@@ -22,12 +22,15 @@ import pw_package.package_manager
 
 class Googletest(pw_package.git_repo.GitRepo):
     """Install and check status of googletest."""
+
     def __init__(self, *args, **kwargs):
-        super().__init__(*args,
-                         name='googletest',
-                         url='https://github.com/google/googletest',
-                         commit='073293463e1733c5e931313da1c3f1de044e1db3',
-                         **kwargs)
+        super().__init__(
+            *args,
+            name='googletest',
+            url='https://github.com/google/googletest',
+            commit='073293463e1733c5e931313da1c3f1de044e1db3',
+            **kwargs,
+        )
 
     def info(self, path: pathlib.Path) -> Sequence[str]:
         return (

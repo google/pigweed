@@ -22,12 +22,15 @@ import pw_package.package_manager
 
 class Protobuf(pw_package.git_repo.GitRepo):
     """Install and check status of Protobuf."""
+
     def __init__(self, *args, **kwargs):
-        super().__init__(*args,
-                         name='protobuf',
-                         url="https://github.com/protocolbuffers/protobuf.git",
-                         commit='15c40c6cdac2f816a56640d24a5c4c3ec0f84b00',
-                         **kwargs)
+        super().__init__(
+            *args,
+            name='protobuf',
+            url="https://github.com/protocolbuffers/protobuf.git",
+            commit='15c40c6cdac2f816a56640d24a5c4c3ec0f84b00',
+            **kwargs,
+        )
 
     def info(self, path: pathlib.Path) -> Sequence[str]:
         return (
