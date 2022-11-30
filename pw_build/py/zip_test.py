@@ -35,17 +35,17 @@ IN_FILENAMES = [
 def make_directory(parent_path: pathlib.Path, dir_name: str, filenames: list):
     """Creates a directory and returns a pathlib.Path() of it's root dir.
 
-        Args:
-            parent_path: Path to directory where the new directory will be made.
-            dir_name: Name of the new directory.
-            filenames: list of file contents of the new directory. Also allows
-                the creation of subdirectories. Example:
-                [
-                    'file1.txt',
-                    'subdir/file2.txt'
-                ]
+    Args:
+        parent_path: Path to directory where the new directory will be made.
+        dir_name: Name of the new directory.
+        filenames: list of file contents of the new directory. Also allows
+            the creation of subdirectories. Example:
+            [
+                'file1.txt',
+                'subdir/file2.txt'
+            ]
 
-        Returns: pathlib.Path() to the newly created directory.
+    Returns: pathlib.Path() to the newly created directory.
     """
     root_path = pathlib.Path(parent_path / dir_name)
     os.mkdir(root_path)
@@ -53,7 +53,7 @@ def make_directory(parent_path: pathlib.Path, dir_name: str, filenames: list):
         # Make the sub directories if they don't already exist.
         directories = filename.split('/')[:-1]
         for i in range(len(directories)):
-            directory = pathlib.PurePath('/'.join(directories[:i + 1]))
+            directory = pathlib.PurePath('/'.join(directories[: i + 1]))
             if not (root_path / directory).is_dir():
                 os.mkdir(root_path / directory)
 
@@ -79,6 +79,7 @@ def get_directory_contents(path: pathlib.Path):
 
 class TestZipping(unittest.TestCase):
     """Tests for the pw_build.zip module."""
+
     def test_zip_up_file(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             # Arrange.
@@ -95,8 +96,10 @@ class TestZipping(unittest.TestCase):
             expected_path = make_directory(tmp_path, 'expected', ['file1.txt'])
 
             # Assert.
-            self.assertSetEqual(get_directory_contents(out_path),
-                                get_directory_contents(expected_path))
+            self.assertSetEqual(
+                get_directory_contents(out_path),
+                get_directory_contents(expected_path),
+            )
 
     def test_zip_up_dir(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -111,16 +114,22 @@ class TestZipping(unittest.TestCase):
             out_path = pathlib.Path(f'{tmp_path}/out/')
             with zipfile.ZipFile(out_filename, 'r') as zip_file:
                 zip_file.extractall(out_path)
-            expected_path = make_directory(tmp_path, 'expected', [
-                'file3.txt',
-                'file4.txt',
-                'dir2/file5.txt',
-                'dir2/file6.txt',
-            ])
+            expected_path = make_directory(
+                tmp_path,
+                'expected',
+                [
+                    'file3.txt',
+                    'file4.txt',
+                    'dir2/file5.txt',
+                    'dir2/file6.txt',
+                ],
+            )
 
             # Assert.
-            self.assertSetEqual(get_directory_contents(out_path),
-                                get_directory_contents(expected_path))
+            self.assertSetEqual(
+                get_directory_contents(out_path),
+                get_directory_contents(expected_path),
+            )
 
     def test_file_rename(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -135,12 +144,15 @@ class TestZipping(unittest.TestCase):
             out_path = pathlib.Path(f'{tmp_path}/out/')
             with zipfile.ZipFile(out_filename, 'r') as zip_file:
                 zip_file.extractall(out_path)
-            expected_path = make_directory(tmp_path, 'expected',
-                                           ['renamed.txt'])
+            expected_path = make_directory(
+                tmp_path, 'expected', ['renamed.txt']
+            )
 
             # Assert.
-            self.assertSetEqual(get_directory_contents(out_path),
-                                get_directory_contents(expected_path))
+            self.assertSetEqual(
+                get_directory_contents(out_path),
+                get_directory_contents(expected_path),
+            )
 
     def test_file_move(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -155,12 +167,15 @@ class TestZipping(unittest.TestCase):
             out_path = pathlib.Path(f'{tmp_path}/out/')
             with zipfile.ZipFile(out_filename, 'r') as zip_file:
                 zip_file.extractall(out_path)
-            expected_path = make_directory(tmp_path, 'expected',
-                                           ['foo/file1.txt'])
+            expected_path = make_directory(
+                tmp_path, 'expected', ['foo/file1.txt']
+            )
 
             # Assert.
-            self.assertSetEqual(get_directory_contents(out_path),
-                                get_directory_contents(expected_path))
+            self.assertSetEqual(
+                get_directory_contents(out_path),
+                get_directory_contents(expected_path),
+            )
 
     def test_dir_move(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -175,16 +190,22 @@ class TestZipping(unittest.TestCase):
             out_path = pathlib.Path(f'{tmp_path}/out/')
             with zipfile.ZipFile(out_filename, 'r') as zip_file:
                 zip_file.extractall(out_path)
-            expected_path = make_directory(tmp_path, 'expected', [
-                'foo/file3.txt',
-                'foo/file4.txt',
-                'foo/dir2/file5.txt',
-                'foo/dir2/file6.txt',
-            ])
+            expected_path = make_directory(
+                tmp_path,
+                'expected',
+                [
+                    'foo/file3.txt',
+                    'foo/file4.txt',
+                    'foo/dir2/file5.txt',
+                    'foo/dir2/file6.txt',
+                ],
+            )
 
             # Assert.
-            self.assertSetEqual(get_directory_contents(out_path),
-                                get_directory_contents(expected_path))
+            self.assertSetEqual(
+                get_directory_contents(out_path),
+                get_directory_contents(expected_path),
+            )
 
     def test_change_delimiter(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -203,8 +224,10 @@ class TestZipping(unittest.TestCase):
             expected_path = make_directory(tmp_path, 'expected', ['file1.txt'])
 
             # Assert.
-            self.assertSetEqual(get_directory_contents(out_path),
-                                get_directory_contents(expected_path))
+            self.assertSetEqual(
+                get_directory_contents(out_path),
+                get_directory_contents(expected_path),
+            )
 
     def test_wrong_input_syntax_raises_error(self):
         with tempfile.TemporaryDirectory() as tmp_dir:

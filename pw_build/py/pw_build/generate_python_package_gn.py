@@ -57,8 +57,9 @@ class PackageFiles(NamedTuple):
 
 
 def _find_package_files(root_dir: Path) -> PackageFiles:
-    files = git_repo.list_files(pathspecs=('*.py', '*.toml', '*.cfg'),
-                                repo_path=root_dir)
+    files = git_repo.list_files(
+        pathspecs=('*.py', '*.toml', '*.cfg'), repo_path=root_dir
+    )
 
     package_files = PackageFiles([], [], [], [])
 
@@ -104,7 +105,8 @@ def generate_build_gn(root_dir: Path):
 def main(paths: Iterable[Path]):
     for path in paths:
         path.joinpath('BUILD.gn').write_text(
-            '\n'.join(generate_build_gn(path)) + '\n')
+            '\n'.join(generate_build_gn(path)) + '\n'
+        )
 
 
 if __name__ == '__main__':

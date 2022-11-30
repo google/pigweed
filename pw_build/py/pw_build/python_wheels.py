@@ -27,9 +27,11 @@ def _parse_args():
     parser.add_argument(
         'setup_files',
         nargs='+',
-        help='Path to a setup.py file to invoke to build wheels.')
-    parser.add_argument('--out_dir',
-                        help='Path where the build artifacts should be put.')
+        help='Path to a setup.py file to invoke to build wheels.',
+    )
+    parser.add_argument(
+        '--out_dir', help='Path where the build artifacts should be put.'
+    )
 
     return parser.parse_args()
 

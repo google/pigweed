@@ -17,24 +17,32 @@ import argparse
 
 
 def add_project_builder_arguments(
-        parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
+    parser: argparse.ArgumentParser,
+) -> argparse.ArgumentParser:
     """Add ProjectBuilder.main specific arguments."""
-    parser.add_argument('-k',
-                        '--keep-going',
-                        action='store_true',
-                        help=('Keep building past the first failure. This is '
-                              'equivalent to passing "-k 0" to ninja.'))
+    parser.add_argument(
+        '-k',
+        '--keep-going',
+        action='store_true',
+        help=(
+            'Keep building past the first failure. This is '
+            'equivalent to passing "-k 0" to ninja.'
+        ),
+    )
 
     parser.add_argument(
         'default_build_targets',
         nargs='*',
         metavar='target',
         default=[],
-        help=('Automatically locate a build directory and build these '
-              'targets. For example, `host docs` searches for a Ninja '
-              'build directory at out/ and builds the `host` and `docs` '
-              'targets. To specify one or more directories, use the '
-              '-C / --build_directory option.'))
+        help=(
+            'Automatically locate a build directory and build these '
+            'targets. For example, `host docs` searches for a Ninja '
+            'build directory at out/ and builds the `host` and `docs` '
+            'targets. To specify one or more directories, use the '
+            '-C / --build_directory option.'
+        ),
+    )
 
     parser.add_argument(
         '-C',
@@ -44,58 +52,75 @@ def add_project_builder_arguments(
         action='append',
         default=[],
         metavar=('directory', 'target'),
-        help=('Specify a build directory and optionally targets to '
-              'build. `pw watch -C out tgt` is equivalent to `ninja '
-              '-C out tgt`'))
+        help=(
+            'Specify a build directory and optionally targets to '
+            'build. `pw watch -C out tgt` is equivalent to `ninja '
+            '-C out tgt`'
+        ),
+    )
 
     parser.add_argument(
         '-j',
         '--jobs',
         type=int,
-        help="Number of cores to use; defaults to Ninja's default")
+        help="Number of cores to use; defaults to Ninja's default",
+    )
 
-    parser.add_argument('--debug-logging',
-                        action='store_true',
-                        help='Enable debug logging.')
-
-    # TODO(b/248257406) Use argparse.BooleanOptionalAction when Python 3.8 is
-    # no longer supported.
-    parser.add_argument('--banners',
-                        action='store_true',
-                        default=True,
-                        help='Show pass/fail banners.')
-    parser.add_argument('--no-banners',
-                        action='store_false',
-                        dest='banners',
-                        help='Hide pass/fail banners.')
+    parser.add_argument(
+        '--debug-logging', action='store_true', help='Enable debug logging.'
+    )
 
     # TODO(b/248257406) Use argparse.BooleanOptionalAction when Python 3.8 is
     # no longer supported.
-    parser.add_argument('--colors',
-                        action='store_true',
-                        default=True,
-                        help='Force color output from ninja.')
-    parser.add_argument('--no-colors',
-                        action='store_false',
-                        dest='colors',
-                        help="Don't force ninja to use color output.")
+    parser.add_argument(
+        '--banners',
+        action='store_true',
+        default=True,
+        help='Show pass/fail banners.',
+    )
+    parser.add_argument(
+        '--no-banners',
+        action='store_false',
+        dest='banners',
+        help='Hide pass/fail banners.',
+    )
 
-    parser.add_argument('--build-system-command',
-                        nargs=2,
-                        action='append',
-                        default=[],
-                        dest='build_system_commands',
-                        metavar=('directory', 'command'),
-                        help='Build system command.')
+    # TODO(b/248257406) Use argparse.BooleanOptionalAction when Python 3.8 is
+    # no longer supported.
+    parser.add_argument(
+        '--colors',
+        action='store_true',
+        default=True,
+        help='Force color output from ninja.',
+    )
+    parser.add_argument(
+        '--no-colors',
+        action='store_false',
+        dest='colors',
+        help="Don't force ninja to use color output.",
+    )
+
+    parser.add_argument(
+        '--build-system-command',
+        nargs=2,
+        action='append',
+        default=[],
+        dest='build_system_commands',
+        metavar=('directory', 'command'),
+        help='Build system command.',
+    )
 
     parser.add_argument(
         '--run-command',
         action='append',
         default=[],
-        help=('Additional build commands to run. These are run before any -C '
-              'arguments and may be repeated. For example: '
-              "--run-command 'bazel build //pw_cli/...'"
-              "--run-command 'bazel test //pw_cli/...'"
-              "-C out python.lint python.test"))
+        help=(
+            'Additional build commands to run. These are run before any -C '
+            'arguments and may be repeated. For example: '
+            "--run-command 'bazel build //pw_cli/...'"
+            "--run-command 'bazel test //pw_cli/...'"
+            "-C out python.lint python.test"
+        ),
+    )
 
     return parser

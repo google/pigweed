@@ -32,18 +32,26 @@ def _parse_args() -> Tuple[argparse.Namespace, List[str]]:
         '--python-dep-list-files',
         type=Path,
         required=True,
-        help=
-        'Path to a text file containing the list of Python package metadata '
-        'json files.',
+        help=(
+            'Path to a text file containing the list of Python package '
+            'metadata json files.'
+        ),
     )
-    parser.add_argument('--gn-packages',
-                        required=True,
-                        help=('Comma separated list of GN python package '
-                              'targets to install.'))
-    parser.add_argument('--editable-pip-install',
-                        action='store_true',
-                        help=('If true run the pip install command with the '
-                              '\'--editable\' option.'))
+    parser.add_argument(
+        '--gn-packages',
+        required=True,
+        help=(
+            'Comma separated list of GN python package ' 'targets to install.'
+        ),
+    )
+    parser.add_argument(
+        '--editable-pip-install',
+        action='store_true',
+        help=(
+            'If true run the pip install command with the '
+            '\'--editable\' option.'
+        ),
+    )
     return parser.parse_known_args()
 
 
@@ -51,8 +59,12 @@ class NoMatchingGnPythonDependency(Exception):
     """An error occurred while processing a Python dependency."""
 
 
-def main(python_dep_list_files: Path, editable_pip_install: bool,
-         gn_targets: List[str], pip_args: List[str]) -> int:
+def main(
+    python_dep_list_files: Path,
+    editable_pip_install: bool,
+    gn_targets: List[str],
+    pip_args: List[str],
+) -> int:
     """Find matching python packages to pip install."""
     pip_target_dirs: List[str] = []
 
@@ -68,8 +80,10 @@ def main(python_dep_list_files: Path, editable_pip_install: bool,
         raise NoMatchingGnPythonDependency(
             'No matching GN Python dependency found to install.\n'
             'GN Targets to pip install:\n' + '\n'.join(gn_targets) + '\n\n'
-            'Declared Python Dependencies:\n' +
-            '\n'.join(pkg.gn_target_name for pkg in py_packages) + '\n\n')
+            'Declared Python Dependencies:\n'
+            + '\n'.join(pkg.gn_target_name for pkg in py_packages)
+            + '\n\n'
+        )
 
     for target in pip_target_dirs:
         command_args = [sys.executable, "-m", "pip"]
@@ -78,9 +92,9 @@ def main(python_dep_list_files: Path, editable_pip_install: bool,
             command_args.append('--editable')
         command_args.append(target)
 
-        process = subprocess.run(command_args,
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.STDOUT)
+        process = subprocess.run(
+            command_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        )
         pip_output = process.stdout.decode()
         if process.returncode != 0:
             print(pip_output)
@@ -94,12 +108,15 @@ if __name__ == '__main__':
 
     # Split the comma separated string and remove leading slashes.
     gn_target_names = [
-        target.lstrip('/') for target in argparse_args.gn_packages.split(',')
+        target.lstrip('/')
+        for target in argparse_args.gn_packages.split(',')
         if target  # The last target may be an empty string.
     ]
 
-    result = main(python_dep_list_files=argparse_args.python_dep_list_files,
-                  editable_pip_install=argparse_args.editable_pip_install,
-                  gn_targets=gn_target_names,
-                  pip_args=remaining_args_for_pip)
+    result = main(
+        python_dep_list_files=argparse_args.python_dep_list_files,
+        editable_pip_install=argparse_args.editable_pip_install,
+        gn_targets=gn_target_names,
+        pip_args=remaining_args_for_pip,
+    )
     sys.exit(result)

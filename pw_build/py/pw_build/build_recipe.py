@@ -24,13 +24,13 @@ if TYPE_CHECKING:
 
 
 class UnknownBuildSystem(Exception):
-    """Exception for requesting build systems other than make, ninja, or bazel.
-    """
+    """Exception for requesting unsupported build systems."""
 
 
 @dataclass
 class BuildCommand:
     """Store details of a single build step."""
+
     build_dir: Path
     build_system_command: Optional[str] = None
     build_system_extra_args: List[str] = field(default_factory=list)
@@ -42,8 +42,9 @@ class BuildCommand:
 
     def _get_build_system_args(self) -> List[str]:
         assert self.build_system_command
-        if (self.build_system_command.endswith('make')
-                or self.build_system_command.endswith('ninja')):
+        if self.build_system_command.endswith(
+            'make'
+        ) or self.build_system_command.endswith('ninja'):
             return ['-C', str(self.build_dir), *self.targets]
 
         if self.build_system_command.endswith('bazel'):
@@ -52,7 +53,8 @@ class BuildCommand:
         raise UnknownBuildSystem(
             f'\n\nUnknown build system command "{self.build_system_command}" '
             f'for build directory "{self.build_dir}".\n'
-            'Supported commands: ninja, bazel, make')
+            'Supported commands: ninja, bazel, make'
+        )
 
     def get_args(
         self,
@@ -64,8 +66,9 @@ class BuildCommand:
             if additional_build_args:
                 extra_args.extend(additional_build_args)
             command = [
-                self.build_system_command, *extra_args,
-                *self._get_build_system_args()
+                self.build_system_command,
+                *extra_args,
+                *self._get_build_system_args(),
             ]
             return command
         return self._expanded_args
@@ -89,7 +92,8 @@ class BuildRecipe:
 
     def targets(self) -> List[str]:
         return list(
-            set(target for step in self.steps for target in step.targets))
+            set(target for step in self.steps for target in step.targets)
+        )
 
     def __str__(self) -> str:
         message = f"{self.display_name}"
@@ -112,25 +116,34 @@ def create_build_recipes(prefs: 'ProjectBuilderPrefs') -> List[BuildRecipe]:
                         BuildCommand(Path.cwd(), command_string=command_str)
                     ],
                     title=command_str,
-                ))
+                )
+            )
 
     for build_dir, targets in prefs.build_directories.items():
         steps: List[BuildCommand] = []
         build_path = Path(build_dir)
-        build_system_command, build_system_extra_args = (
-            prefs.build_system_commands(build_dir))
+        (
+            build_system_command,
+            build_system_extra_args,
+        ) = prefs.build_system_commands(build_dir)
 
         if not targets:
             targets = []
         steps.append(
-            BuildCommand(build_dir=build_path,
-                         build_system_command=build_system_command,
-                         build_system_extra_args=build_system_extra_args,
-                         targets=targets))
+            BuildCommand(
+                build_dir=build_path,
+                build_system_command=build_system_command,
+                build_system_extra_args=build_system_extra_args,
+                targets=targets,
+            )
+        )
 
         build_recipes.append(
-            BuildRecipe(build_dir=build_path,
-                        steps=steps,
-                        build_system_command=build_system_command))
+            BuildRecipe(
+                build_dir=build_path,
+                steps=steps,
+                build_system_command=build_system_command,
+            )
+        )
 
     return build_recipes

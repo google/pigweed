@@ -41,15 +41,20 @@ COMMENT = f"""\
 // See https://pigweed.dev/pw_build/#pw-cc-blob-library for details.
 """
 
-HEADER_PREFIX = COMMENT + textwrap.dedent("""\
+HEADER_PREFIX = COMMENT + textwrap.dedent(
+    """\
     #pragma once
 
     #include <array>
     #include <cstddef>
 
-    """)
+    """
+)
 
-SOURCE_PREFIX_TEMPLATE = Template(COMMENT + textwrap.dedent("""\
+SOURCE_PREFIX_TEMPLATE = Template(
+    COMMENT
+    + textwrap.dedent(
+        """\
 
         #include "$header_path"
 
@@ -58,22 +63,25 @@ SOURCE_PREFIX_TEMPLATE = Template(COMMENT + textwrap.dedent("""\
 
         #include "pw_preprocessor/compiler.h"
 
-        """))
+        """
+    )
+)
 
 NAMESPACE_OPEN_TEMPLATE = Template('namespace ${namespace} {\n')
 
 NAMESPACE_CLOSE_TEMPLATE = Template('\n}  // namespace ${namespace}\n')
 
 BLOB_DECLARATION_TEMPLATE = Template(
-    '\nextern const std::array<std::byte, ${size_bytes}> ${symbol_name};\n')
+    '\nextern const std::array<std::byte, ${size_bytes}> ${symbol_name};\n'
+)
 
-LINKER_SECTION_TEMPLATE = Template(
-    'PW_PLACE_IN_SECTION("${linker_section}")\n')
+LINKER_SECTION_TEMPLATE = Template('PW_PLACE_IN_SECTION("${linker_section}")\n')
 
 BLOB_DEFINITION_MULTI_LINE = Template(
     '\n${section_attr}'
     '${alignas}constexpr std::array<std::byte, ${size_bytes}> ${symbol_name}'
-    ' = {\n${bytes_lines}\n};\n')
+    ' = {\n${bytes_lines}\n};\n'
+)
 
 BYTES_PER_LINE = 4
 
@@ -86,40 +94,53 @@ class Blob(NamedTuple):
 
     @staticmethod
     def from_dict(blob_dict: dict) -> 'Blob':
-        return Blob(blob_dict['symbol_name'], Path(blob_dict['file_path']),
-                    blob_dict.get('linker_section'), blob_dict.get('alignas'))
+        return Blob(
+            blob_dict['symbol_name'],
+            Path(blob_dict['file_path']),
+            blob_dict.get('linker_section'),
+            blob_dict.get('alignas'),
+        )
 
 
 def parse_args() -> dict:
+    """Parse arguments."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--blob-file',
-                        type=Path,
-                        required=True,
-                        help=('Path to json file containing the list of blobs '
-                              'to generate.'))
-    parser.add_argument('--header-include',
-                        required=True,
-                        help='Path to use in #includes for the header')
-    parser.add_argument('--out-source',
-                        type=Path,
-                        required=True,
-                        help='Path at which to write .cpp file')
-    parser.add_argument('--out-header',
-                        type=Path,
-                        required=True,
-                        help='Path at which to write .h file')
-    parser.add_argument('--namespace',
-                        type=str,
-                        required=False,
-                        help=('Optional namespace that blobs will be scoped'
-                              'within.'))
+    parser.add_argument(
+        '--blob-file',
+        type=Path,
+        required=True,
+        help=('Path to json file containing the list of blobs ' 'to generate.'),
+    )
+    parser.add_argument(
+        '--header-include',
+        required=True,
+        help='Path to use in #includes for the header',
+    )
+    parser.add_argument(
+        '--out-source',
+        type=Path,
+        required=True,
+        help='Path at which to write .cpp file',
+    )
+    parser.add_argument(
+        '--out-header',
+        type=Path,
+        required=True,
+        help='Path at which to write .h file',
+    )
+    parser.add_argument(
+        '--namespace',
+        type=str,
+        required=False,
+        help=('Optional namespace that blobs will be scoped' 'within.'),
+    )
 
     return vars(parser.parse_args())
 
 
 def split_into_chunks(
-        data: Iterable[Any],
-        chunk_size: int) -> Generator[Tuple[Any, ...], None, None]:
+    data: Iterable[Any], chunk_size: int
+) -> Generator[Tuple[Any, ...], None, None]:
     """Splits an iterable into chunks of a given size."""
     data_iterator = iter(data)
     chunk = tuple(itertools.islice(data_iterator, chunk_size))
@@ -128,8 +149,9 @@ def split_into_chunks(
         chunk = tuple(itertools.islice(data_iterator, chunk_size))
 
 
-def header_from_blobs(blobs: Iterable[Blob],
-                      namespace: Optional[str] = None) -> str:
+def header_from_blobs(
+    blobs: Iterable[Blob], namespace: Optional[str] = None
+) -> str:
     """Generate the contents of a C++ header file from blobs."""
     lines = [HEADER_PREFIX]
     if namespace:
@@ -137,8 +159,10 @@ def header_from_blobs(blobs: Iterable[Blob],
     for blob in blobs:
         data = blob.file_path.read_bytes()
         lines.append(
-            BLOB_DECLARATION_TEMPLATE.substitute(symbol_name=blob.symbol_name,
-                                                 size_bytes=len(data)))
+            BLOB_DECLARATION_TEMPLATE.substitute(
+                symbol_name=blob.symbol_name, size_bytes=len(data)
+            )
+        )
     if namespace:
         lines.append(NAMESPACE_CLOSE_TEMPLATE.substitute(namespace=namespace))
 
@@ -149,7 +173,8 @@ def array_def_from_blob_data(blob: Blob, blob_data: bytes) -> str:
     """Generates an array definition for the given blob data."""
     if blob.linker_section:
         section_attr = LINKER_SECTION_TEMPLATE.substitute(
-            linker_section=blob.linker_section)
+            linker_section=blob.linker_section
+        )
     else:
         section_attr = ''
 
@@ -165,12 +190,13 @@ def array_def_from_blob_data(blob: Blob, blob_data: bytes) -> str:
         alignas=f'alignas({blob.alignas}) ' if blob.alignas else '',
         symbol_name=blob.symbol_name,
         size_bytes=len(blob_data),
-        bytes_lines='\n'.join(lines))
+        bytes_lines='\n'.join(lines),
+    )
 
 
-def source_from_blobs(blobs: Iterable[Blob],
-                      header_path: str,
-                      namespace: Optional[str] = None) -> str:
+def source_from_blobs(
+    blobs: Iterable[Blob], header_path: str, namespace: Optional[str] = None
+) -> str:
     """Generate the contents of a C++ source file from blobs."""
     lines = [SOURCE_PREFIX_TEMPLATE.substitute(header_path=header_path)]
     if namespace:
@@ -189,11 +215,13 @@ def load_blobs(blob_file: Path) -> Sequence[Blob]:
         return [Blob.from_dict(blob) for blob in json.load(blob_fp)]
 
 
-def main(blob_file: Path,
-         header_include: str,
-         out_source: Path,
-         out_header: Path,
-         namespace: Optional[str] = None) -> None:
+def main(
+    blob_file: Path,
+    header_include: str,
+    out_source: Path,
+    out_header: Path,
+    namespace: Optional[str] = None,
+) -> None:
     blobs = load_blobs(blob_file)
 
     out_header.parent.mkdir(parents=True, exist_ok=True)

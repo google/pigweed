@@ -53,13 +53,19 @@ _COPYRIGHT = f"""\
 // Generated at {datetime.now().isoformat()}
 """
 
-_HEADER_CPP = _COPYRIGHT + """\
+_HEADER_CPP = (
+    _COPYRIGHT
+    + """\
 // clang-format off
 """
+)
 
-_HEADER_JS = _COPYRIGHT + """\
+_HEADER_JS = (
+    _COPYRIGHT
+    + """\
 /* eslint-env browser, jasmine */
 """
+)
 
 
 class Error(Exception):
@@ -72,20 +78,23 @@ T = TypeVar('T')
 @dataclass
 class Context(Generic[T]):
     """Info passed into test generator functions for each test case."""
+
     group: str
     count: int
     total: int
     test_case: T
 
     def cc_name(self) -> str:
-        name = ''.join(w.capitalize()
-                       for w in self.group.replace('-', ' ').split(' '))
+        name = ''.join(
+            w.capitalize() for w in self.group.replace('-', ' ').split(' ')
+        )
         name = ''.join(c if c.isalnum() else '_' for c in name)
         return f'{name}_{self.count}' if self.total > 1 else name
 
     def py_name(self) -> str:
-        name = 'test_' + ''.join(c if c.isalnum() else '_'
-                                 for c in self.group.lower())
+        name = 'test_' + ''.join(
+            c if c.isalnum() else '_' for c in self.group.lower()
+        )
         return f'{name}_{self.count}' if self.total > 1 else name
 
     def ts_name(self) -> str:
@@ -121,6 +130,7 @@ JsTestGenerator = Callable[[Context[T]], Iterable[str]]
 
 class TestGenerator(Generic[T]):
     """Generates tests for multiple languages from a series of test cases."""
+
     def __init__(self, test_cases: Sequence[GroupOrTest[T]]):
         self._cases: Dict[str, List[T]] = defaultdict(list)
         message = ''
@@ -130,7 +140,8 @@ class TestGenerator(Generic[T]):
 
         if not isinstance(test_cases[0], str):
             raise Error(
-                'The first item in the test cases must be a group name string')
+                'The first item in the test cases must be a group name string'
+            )
 
         for case in test_cases:
             if isinstance(case, str):
@@ -154,8 +165,7 @@ class TestGenerator(Generic[T]):
             test.__name__ = ctx.py_name()
 
             if test.__name__ in tests:
-                raise Error(
-                    f'Multiple Python tests are named {test.__name__}!')
+                raise Error(f'Multiple Python tests are named {test.__name__}!')
 
             tests[test.__name__] = test
 
@@ -163,11 +173,15 @@ class TestGenerator(Generic[T]):
 
     def python_tests(self, name: str, define_py_test: PyTestGenerator) -> type:
         """Returns a Python unittest.TestCase class with tests for each case."""
-        return type(name, (unittest.TestCase, ),
-                    self._generate_python_tests(define_py_test))
+        return type(
+            name,
+            (unittest.TestCase,),
+            self._generate_python_tests(define_py_test),
+        )
 
-    def _generate_cc_tests(self, define_cpp_test: CcTestGenerator, header: str,
-                           footer: str) -> Iterator[str]:
+    def _generate_cc_tests(
+        self, define_cpp_test: CcTestGenerator, header: str, footer: str
+    ) -> Iterator[str]:
         yield _HEADER_CPP
         yield header
 
@@ -177,15 +191,21 @@ class TestGenerator(Generic[T]):
 
         yield footer
 
-    def cc_tests(self, output: TextIO, define_cpp_test: CcTestGenerator,
-                 header: str, footer: str):
+    def cc_tests(
+        self,
+        output: TextIO,
+        define_cpp_test: CcTestGenerator,
+        header: str,
+        footer: str,
+    ):
         """Writes C++ unit tests for each test case to the given file."""
         for line in self._generate_cc_tests(define_cpp_test, header, footer):
             output.write(line)
             output.write('\n')
 
-    def _generate_ts_tests(self, define_ts_test: JsTestGenerator, header: str,
-                           footer: str) -> Iterator[str]:
+    def _generate_ts_tests(
+        self, define_ts_test: JsTestGenerator, header: str, footer: str
+    ) -> Iterator[str]:
         yield _HEADER_JS
         yield header
 
@@ -193,8 +213,13 @@ class TestGenerator(Generic[T]):
             yield from define_ts_test(ctx)
         yield footer
 
-    def ts_tests(self, output: TextIO, define_js_test: JsTestGenerator,
-                 header: str, footer: str):
+    def ts_tests(
+        self,
+        output: TextIO,
+        define_js_test: JsTestGenerator,
+        header: str,
+        footer: str,
+    ):
         """Writes JS unit tests for each test case to the given file."""
         for line in self._generate_ts_tests(define_js_test, header, footer):
             output.write(line)
@@ -204,7 +229,7 @@ class TestGenerator(Generic[T]):
 def _to_chars(data: bytes) -> Iterator[str]:
     for i, byte in enumerate(data):
         try:
-            char = data[i:i + 1].decode()
+            char = data[i : i + 1].decode()
             yield char if char.isprintable() else fr'\x{byte:02x}'
         except UnicodeDecodeError:
             yield fr'\x{byte:02x}'
@@ -220,10 +245,14 @@ def cc_string(data: Union[str, bytes]) -> str:
 
 def parse_test_generation_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description='Generate unit test files')
-    parser.add_argument('--generate-cc-test',
-                        type=argparse.FileType('w'),
-                        help='Generate the C++ test file')
-    parser.add_argument('--generate-ts-test',
-                        type=argparse.FileType('w'),
-                        help='Generate the JS test file')
+    parser.add_argument(
+        '--generate-cc-test',
+        type=argparse.FileType('w'),
+        help='Generate the C++ test file',
+    )
+    parser.add_argument(
+        '--generate-ts-test',
+        type=argparse.FileType('w'),
+        help='Generate the JS test file',
+    )
     return parser.parse_known_args()[0]

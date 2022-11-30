@@ -40,6 +40,7 @@ except (ImportError, ModuleNotFoundError):
 
 if sys.platform != 'win32':
     import fcntl  # pylint: disable=import-error
+
     # TODO(b/227670947): Support Windows.
 
 _LOG = logging.getLogger(__name__)
@@ -54,25 +55,33 @@ def _parse_args() -> argparse.Namespace:
     """Parses arguments for this script, splitting out the command to run."""
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--gn-root',
-                        type=Path,
-                        required=True,
-                        help=('Path to the root of the GN tree; '
-                              'value of rebase_path("//", root_build_dir)'))
-    parser.add_argument('--current-path',
-                        type=Path,
-                        required=True,
-                        help='Value of rebase_path(".", root_build_dir)')
-    parser.add_argument('--default-toolchain',
-                        required=True,
-                        help='Value of default_toolchain')
-    parser.add_argument('--current-toolchain',
-                        required=True,
-                        help='Value of current_toolchain')
+    parser.add_argument(
+        '--gn-root',
+        type=Path,
+        required=True,
+        help=(
+            'Path to the root of the GN tree; '
+            'value of rebase_path("//", root_build_dir)'
+        ),
+    )
+    parser.add_argument(
+        '--current-path',
+        type=Path,
+        required=True,
+        help='Value of rebase_path(".", root_build_dir)',
+    )
+    parser.add_argument(
+        '--default-toolchain', required=True, help='Value of default_toolchain'
+    )
+    parser.add_argument(
+        '--current-toolchain', required=True, help='Value of current_toolchain'
+    )
     parser.add_argument('--module', help='Run this module instead of a script')
-    parser.add_argument('--env',
-                        action='append',
-                        help='Environment variables to set as NAME=VALUE')
+    parser.add_argument(
+        '--env',
+        action='append',
+        help='Environment variables to set as NAME=VALUE',
+    )
     parser.add_argument(
         '--touch',
         type=Path,
@@ -108,8 +117,11 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         '--lockfile',
         type=Path,
-        help=('Path to a pip lockfile. Any pip execution will acquire an '
-              'exclusive lock on it, any other module a shared lock.'))
+        help=(
+            'Path to a pip lockfile. Any pip execution will acquire an '
+            'exclusive lock on it, any other module a shared lock.'
+        ),
+    )
     return parser.parse_args()
 
 
@@ -151,7 +163,8 @@ def acquire_lock(lockfile: Path, exclusive: bool):
     while time.monotonic() - start_time < _LOCK_ACQUISITION_TIMEOUT:
         try:
             fcntl.flock(  # type: ignore[name-defined]
-                fd, lock_type | fcntl.LOCK_NB)  # type: ignore[name-defined]
+                fd, lock_type | fcntl.LOCK_NB  # type: ignore[name-defined]
+            )
             return  # Lock acquired!
         except BlockingIOError:
             pass  # Keep waiting.
@@ -160,7 +173,8 @@ def acquire_lock(lockfile: Path, exclusive: bool):
         backoff += 1
 
     raise LockAcquisitionTimeoutError(
-        f"Failed to acquire lock {lockfile} in {_LOCK_ACQUISITION_TIMEOUT}")
+        f"Failed to acquire lock {lockfile} in {_LOCK_ACQUISITION_TIMEOUT}"
+    )
 
 
 class MissingPythonDependency(Exception):
@@ -196,20 +210,23 @@ def main(  # pylint: disable=too-many-arguments,too-many-branches,too-many-local
             python_dep_list_files,
             # If this python_action has no gn python_deps this file will be
             # empty.
-            ignore_missing=True)
+            ignore_missing=True,
+        )
 
         for pkg in py_packages:
             top_level_source_dir = pkg.package_dir
             if not top_level_source_dir:
                 raise MissingPythonDependency(
                     'Unable to find top level source dir for the Python '
-                    f'package "{pkg}"')
+                    f'package "{pkg}"'
+                )
             # Don't add this dir to the PYTHONPATH if no __init__.py exists.
             init_py_files = top_level_source_dir.parent.glob('*/__init__.py')
             if not any(init_py_files):
                 continue
             python_paths_list.append(
-                gn_resolver.abspath(top_level_source_dir.parent))
+                gn_resolver.abspath(top_level_source_dir.parent)
+            )
 
         # Sort the PYTHONPATH list, it will be in a different order each build.
         python_paths_list = sorted(python_paths_list)
@@ -222,10 +239,12 @@ def main(  # pylint: disable=too-many-arguments,too-many-branches,too-many-local
     root_build_dir = gn_resolver.abspath(Path.cwd())
 
     tool = current_toolchain if current_toolchain != default_toolchain else ''
-    paths = gn_resolver.GnPaths(root=gn_resolver.abspath(gn_root),
-                                build=root_build_dir,
-                                cwd=gn_resolver.abspath(current_path),
-                                toolchain=tool)
+    paths = gn_resolver.GnPaths(
+        root=gn_resolver.abspath(gn_root),
+        build=root_build_dir,
+        cwd=gn_resolver.abspath(current_path),
+        toolchain=tool,
+    )
 
     command = [sys.executable]
 
@@ -233,7 +252,8 @@ def main(  # pylint: disable=too-many-arguments,too-many-branches,too-many-local
     python_virtualenv = None
     if python_virtualenv_config:
         python_interpreter, python_virtualenv = _load_virtualenv_config(
-            python_virtualenv_config)
+            python_virtualenv_config
+        )
 
     if python_interpreter is not None:
         command = [str(root_build_dir / python_interpreter)]
@@ -256,29 +276,36 @@ def main(  # pylint: disable=too-many-arguments,too-many-branches,too-many-local
     if script_command == '--':
         script_command = original_cmd[1]
 
-    is_pip_command = (module == 'pip'
-                      or 'pip_install_python_deps.py' in script_command)
+    is_pip_command = (
+        module == 'pip' or 'pip_install_python_deps.py' in script_command
+    )
 
-    existing_env = (run_args['env']
-                    if 'env' in run_args else os.environ.copy())
+    existing_env = run_args['env'] if 'env' in run_args else os.environ.copy()
     new_env = {}
     if python_virtualenv:
         new_env['VIRTUAL_ENV'] = str(root_build_dir / python_virtualenv)
         bin_folder = 'Scripts' if platform.system() == 'Windows' else 'bin'
-        new_env['PATH'] = os.pathsep.join([
-            str(root_build_dir / python_virtualenv / bin_folder),
-            existing_env.get('PATH', '')
-        ])
+        new_env['PATH'] = os.pathsep.join(
+            [
+                str(root_build_dir / python_virtualenv / bin_folder),
+                existing_env.get('PATH', ''),
+            ]
+        )
 
     if python_virtualenv and python_paths_list and not is_pip_command:
         python_path_prepend = os.pathsep.join(
-            str(p) for p in set(python_paths_list))
+            str(p) for p in set(python_paths_list)
+        )
 
         # Append the existing PYTHONPATH to the new one.
         new_python_path = os.pathsep.join(
-            path_str for path_str in
-            [python_path_prepend,
-             existing_env.get('PYTHONPATH', '')] if path_str)
+            path_str
+            for path_str in [
+                python_path_prepend,
+                existing_env.get('PYTHONPATH', ''),
+            ]
+            if path_str
+        )
 
         new_env['PYTHONPATH'] = new_python_path
 
@@ -317,8 +344,9 @@ def main(  # pylint: disable=too-many-arguments,too-many-branches,too-many-local
     completed_process = subprocess.run(command, **run_args)
 
     if completed_process.returncode != 0:
-        _LOG.debug('Command failed; exit code: %d',
-                   completed_process.returncode)
+        _LOG.debug(
+            'Command failed; exit code: %d', completed_process.returncode
+        )
         if capture_output:
             sys.stdout.buffer.write(completed_process.stdout)
     elif touch:

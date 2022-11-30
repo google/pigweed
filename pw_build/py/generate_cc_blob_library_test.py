@@ -31,14 +31,19 @@ COMMENT = """\
 // See https://pigweed.dev/pw_build/#pw-cc-blob-library for details.
 """
 
-COMMON_HEADER_START = COMMENT + """\
+COMMON_HEADER_START = (
+    COMMENT
+    + """\
 #pragma once
 
 #include <array>
 #include <cstddef>
 """
+)
 
-COMMON_SOURCE_START = COMMENT + """\
+COMMON_SOURCE_START = (
+    COMMENT
+    + """\
 
 #include "path/to/header.h"
 
@@ -47,6 +52,7 @@ COMMON_SOURCE_START = COMMENT + """\
 
 #include "pw_preprocessor/compiler.h"
 """
+)
 
 FOO_BLOB = """\
 constexpr std::array<std::byte, 2> fooBlob = {
@@ -65,23 +71,27 @@ constexpr std::array<std::byte, 10> barBlob = {
 
 class TestSplitIntoChunks(unittest.TestCase):
     """Unit tests for the split_into_chunks() function."""
+
     def test_perfect_split(self):
         """Tests basic splitting where the iterable divides perfectly."""
         data = (1, 7, 0, 1)
         self.assertEqual(
             ((1, 7), (0, 1)),
-            tuple(generate_cc_blob_library.split_into_chunks(data, 2)))
+            tuple(generate_cc_blob_library.split_into_chunks(data, 2)),
+        )
 
     def test_split_with_remainder(self):
         """Tests basic splitting where there is a remainder."""
         data = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
         self.assertEqual(
-            ((1, 2, 3), (4, 5, 6), (7, 8, 9), (10, )),
-            tuple(generate_cc_blob_library.split_into_chunks(data, 3)))
+            ((1, 2, 3), (4, 5, 6), (7, 8, 9), (10,)),
+            tuple(generate_cc_blob_library.split_into_chunks(data, 3)),
+        )
 
 
 class TestHeaderFromBlobs(unittest.TestCase):
     """Unit tests for the header_from_blobs() function."""
+
     def test_single_blob_header(self):
         """Tests the generation of a header for a single blob."""
         foo_blob = Path(tempfile.NamedTemporaryFile().name)
@@ -92,7 +102,8 @@ class TestHeaderFromBlobs(unittest.TestCase):
         expected_header = (
             f'{COMMON_HEADER_START}'
             '\n\n'  # No namespace, so two blank lines
-            'extern const std::array<std::byte, 6> fooBlob;\n')
+            'extern const std::array<std::byte, 6> fooBlob;\n'
+        )
         self.assertEqual(expected_header, header)
 
     def test_multi_blob_header(self):
@@ -107,11 +118,13 @@ class TestHeaderFromBlobs(unittest.TestCase):
         ]
 
         header = generate_cc_blob_library.header_from_blobs(blobs)
-        expected_header = (f'{COMMON_HEADER_START}\n'
-                           '\n'
-                           'extern const std::array<std::byte, 6> fooBlob;\n'
-                           '\n'
-                           'extern const std::array<std::byte, 5> barBlob;\n')
+        expected_header = (
+            f'{COMMON_HEADER_START}\n'
+            '\n'
+            'extern const std::array<std::byte, 6> fooBlob;\n'
+            '\n'
+            'extern const std::array<std::byte, 5> barBlob;\n'
+        )
 
         self.assertEqual(expected_header, header)
 
@@ -122,25 +135,29 @@ class TestHeaderFromBlobs(unittest.TestCase):
         blobs = [generate_cc_blob_library.Blob('fooBlob', foo_blob, None)]
 
         header = generate_cc_blob_library.header_from_blobs(blobs, 'pw::foo')
-        expected_header = (f'{COMMON_HEADER_START}'
-                           '\n'
-                           'namespace pw::foo {\n'
-                           '\n'
-                           'extern const std::array<std::byte, 6> fooBlob;\n'
-                           '\n'
-                           '}  // namespace pw::foo\n')
+        expected_header = (
+            f'{COMMON_HEADER_START}'
+            '\n'
+            'namespace pw::foo {\n'
+            '\n'
+            'extern const std::array<std::byte, 6> fooBlob;\n'
+            '\n'
+            '}  // namespace pw::foo\n'
+        )
 
         self.assertEqual(expected_header, header)
 
 
 class TestArrayDefFromBlobData(unittest.TestCase):
     """Unit tests for the array_def_from_blob_data() function."""
+
     def test_single_line(self):
         """Tests the generation of array definitions with one line of data."""
         foo_data = bytes((1, 2))
 
         foo_definition = generate_cc_blob_library.array_def_from_blob_data(
-            generate_cc_blob_library.Blob('fooBlob', Path(), None), foo_data)
+            generate_cc_blob_library.Blob('fooBlob', Path(), None), foo_data
+        )
         self.assertEqual(f'\n{FOO_BLOB}', foo_definition)
 
     def test_multi_line(self):
@@ -148,12 +165,14 @@ class TestArrayDefFromBlobData(unittest.TestCase):
         bar_data = bytes((1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
 
         bar_definition = generate_cc_blob_library.array_def_from_blob_data(
-            generate_cc_blob_library.Blob('barBlob', Path(), None), bar_data)
+            generate_cc_blob_library.Blob('barBlob', Path(), None), bar_data
+        )
         self.assertEqual(f'\n{BAR_BLOB}', bar_definition)
 
 
 class TestSourceFromBlobs(unittest.TestCase):
     """Unit tests for the source_from_blobs() function."""
+
     def test_source_with_mixed_blobs(self):
         """Tests generation of a source file with single- and multi-liners."""
         foo_blob = Path(tempfile.NamedTemporaryFile().name)
@@ -166,13 +185,11 @@ class TestSourceFromBlobs(unittest.TestCase):
         ]
 
         source = generate_cc_blob_library.source_from_blobs(
-            blobs, 'path/to/header.h')
-        expected_source = (f'{COMMON_SOURCE_START}'
-                           '\n'
-                           '\n'
-                           f'{FOO_BLOB}'
-                           '\n'
-                           f'{BAR_BLOB}')
+            blobs, 'path/to/header.h'
+        )
+        expected_source = (
+            f'{COMMON_SOURCE_START}' '\n' '\n' f'{FOO_BLOB}' '\n' f'{BAR_BLOB}'
+        )
 
         self.assertEqual(expected_source, source)
 
@@ -183,14 +200,17 @@ class TestSourceFromBlobs(unittest.TestCase):
         blobs = [generate_cc_blob_library.Blob('fooBlob', foo_blob, None)]
 
         source = generate_cc_blob_library.source_from_blobs(
-            blobs, 'path/to/header.h', 'pw::foo')
-        expected_source = (f'{COMMON_SOURCE_START}'
-                           '\n'
-                           'namespace pw::foo {\n'
-                           '\n'
-                           f'{FOO_BLOB}'
-                           '\n'
-                           '}  // namespace pw::foo\n')
+            blobs, 'path/to/header.h', 'pw::foo'
+        )
+        expected_source = (
+            f'{COMMON_SOURCE_START}'
+            '\n'
+            'namespace pw::foo {\n'
+            '\n'
+            f'{FOO_BLOB}'
+            '\n'
+            '}  // namespace pw::foo\n'
+        )
 
         self.assertEqual(expected_source, source)
 
@@ -206,15 +226,18 @@ class TestSourceFromBlobs(unittest.TestCase):
         ]
 
         source = generate_cc_blob_library.source_from_blobs(
-            blobs, 'path/to/header.h')
-        expected_source = (f'{COMMON_SOURCE_START}'
-                           '\n'
-                           '\n'
-                           'PW_PLACE_IN_SECTION(".foo_section")\n'
-                           f'{FOO_BLOB}'
-                           '\n'
-                           'PW_PLACE_IN_SECTION(".bar_section")\n'
-                           f'{BAR_BLOB}')
+            blobs, 'path/to/header.h'
+        )
+        expected_source = (
+            f'{COMMON_SOURCE_START}'
+            '\n'
+            '\n'
+            'PW_PLACE_IN_SECTION(".foo_section")\n'
+            f'{FOO_BLOB}'
+            '\n'
+            'PW_PLACE_IN_SECTION(".bar_section")\n'
+            f'{BAR_BLOB}'
+        )
 
         self.assertEqual(expected_source, source)
 
@@ -230,14 +253,17 @@ class TestSourceFromBlobs(unittest.TestCase):
         ]
 
         source = generate_cc_blob_library.source_from_blobs(
-            blobs, 'path/to/header.h')
-        expected_source = (f'{COMMON_SOURCE_START}'
-                           '\n'
-                           '\n'
-                           f'alignas(64) {FOO_BLOB}'
-                           '\n'
-                           'PW_PLACE_IN_SECTION(".abc")\n'
-                           f'alignas(int) {BAR_BLOB}')
+            blobs, 'path/to/header.h'
+        )
+        expected_source = (
+            f'{COMMON_SOURCE_START}'
+            '\n'
+            '\n'
+            f'alignas(64) {FOO_BLOB}'
+            '\n'
+            'PW_PLACE_IN_SECTION(".abc")\n'
+            f'alignas(int) {BAR_BLOB}'
+        )
 
         self.assertEqual(expected_source, source)
 

@@ -52,10 +52,12 @@ zip_safe = False
     '''
 
 
-def _create_fake_python_package(location: Path,
-                                package_name: str,
-                                files: List[str],
-                                install_requires: str = '') -> None:
+def _create_fake_python_package(
+    location: Path,
+    package_name: str,
+    files: List[str],
+    install_requires: str = '',
+) -> None:
     for file in files:
         destination = location / file
         destination.parent.mkdir(parents=True, exist_ok=True)
@@ -70,6 +72,7 @@ def _create_fake_python_package(location: Path,
 
 class TestCreatePythonTree(unittest.TestCase):
     """Integration tests for create_python_tree."""
+
     def setUp(self):
         self.maxDiff = None  # pylint: disable=invalid-name
         # Save the starting working directory for returning to later.
@@ -88,14 +91,17 @@ class TestCreatePythonTree(unittest.TestCase):
         expected_paths = set(Path(p).as_posix() for p in expected_results)
         actual_paths = set(
             p.relative_to(install_dir).as_posix()
-            for p in install_dir.glob('**/*') if p.is_file())
+            for p in install_dir.glob('**/*')
+            if p.is_file()
+        )
         self.assertEqual(expected_paths, actual_paths)
 
     def test_update_config_with_packages(self) -> None:
         """Test merging package setup.cfg files."""
         temp_root = Path(self.temp_dir.name)
         common_config = temp_root / 'common_setup.cfg'
-        common_config.write_text('''
+        common_config.write_text(
+            '''
 [metadata]
 name = megapackage
 version = 0.0.1
@@ -109,44 +115,45 @@ zip_safe = False
 [options.package_data]
 megapackage =
     py.typed
-''')
-        config = load_common_config(common_config=common_config,
-                                    append_git_sha=False,
-                                    append_date=False)
+'''
+        )
+        config = load_common_config(
+            common_config=common_config, append_git_sha=False, append_date=False
+        )
         config_metadata = dict(config['metadata'].items())
         self.assertIn('name', config_metadata)
 
         pkg1_root = temp_root / 'pkg1'
         pkg2_root = temp_root / 'pkg2'
-        _create_fake_python_package(pkg1_root,
-                                    'mars', [
-                                        'planets/BUILD.mars_rocket',
-                                        'planets/mars/__init__.py',
-                                        'planets/mars/__main__.py',
-                                        'planets/mars/moons/__init__.py',
-                                        'planets/mars/moons/deimos.py',
-                                        'planets/mars/moons/phobos.py',
-                                        'planets/hohmann_transfer_test.py',
-                                        'planets/pyproject.toml',
-                                        'planets/setup.cfg',
-                                    ],
-                                    install_requires='''
+        _create_fake_python_package(
+            pkg1_root,
+            'mars',
+            [
+                'planets/BUILD.mars_rocket',
+                'planets/mars/__init__.py',
+                'planets/mars/__main__.py',
+                'planets/mars/moons/__init__.py',
+                'planets/mars/moons/deimos.py',
+                'planets/mars/moons/phobos.py',
+                'planets/hohmann_transfer_test.py',
+                'planets/pyproject.toml',
+                'planets/setup.cfg',
+            ],
+            install_requires='''
 install_requires =
         coloredlogs
         coverage
         cryptography
         graphlib-backport;python_version<'3.9'
         httpwatcher
-''')
+''',
+        )
 
         os.chdir(pkg1_root)
         pkg1 = PythonPackage.from_dict(
             **{
                 'generate_setup': {
-                    'metadata': {
-                        'name': 'mars',
-                        'version': '0.0.1'
-                    },
+                    'metadata': {'name': 'mars', 'version': '0.0.1'},
                 },
                 'inputs': [],
                 'setup_sources': [
@@ -163,29 +170,33 @@ install_requires =
                 'tests': [
                     'planets/hohmann_transfer_test.py',
                 ],
-            })
+            }
+        )
 
-        _create_fake_python_package(pkg2_root,
-                                    'saturn', [
-                                        'planets/BUILD.saturn_rocket',
-                                        'planets/hohmann_transfer_test.py',
-                                        'planets/pyproject.toml',
-                                        'planets/saturn/__init__.py',
-                                        'planets/saturn/__main__.py',
-                                        'planets/saturn/misson.py',
-                                        'planets/saturn/moons/__init__.py',
-                                        'planets/saturn/moons/enceladus.py',
-                                        'planets/saturn/moons/iapetus.py',
-                                        'planets/saturn/moons/rhea.py',
-                                        'planets/saturn/moons/titan.py',
-                                        'planets/setup.cfg',
-                                        'planets/setup.py',
-                                    ],
-                                    install_requires='''
+        _create_fake_python_package(
+            pkg2_root,
+            'saturn',
+            [
+                'planets/BUILD.saturn_rocket',
+                'planets/hohmann_transfer_test.py',
+                'planets/pyproject.toml',
+                'planets/saturn/__init__.py',
+                'planets/saturn/__main__.py',
+                'planets/saturn/misson.py',
+                'planets/saturn/moons/__init__.py',
+                'planets/saturn/moons/enceladus.py',
+                'planets/saturn/moons/iapetus.py',
+                'planets/saturn/moons/rhea.py',
+                'planets/saturn/moons/titan.py',
+                'planets/setup.cfg',
+                'planets/setup.py',
+            ],
+            install_requires='''
 install_requires =
         graphlib-backport;python_version<'3.9'
         httpwatcher
-''')
+''',
+        )
         os.chdir(pkg2_root)
         pkg2 = PythonPackage.from_dict(
             **{
@@ -207,11 +218,11 @@ install_requires =
                 ],
                 'tests': [
                     'planets/hohmann_transfer_test.py',
-                ]
-            })
+                ],
+            }
+        )
 
-        update_config_with_packages(config=config,
-                                    python_packages=[pkg1, pkg2])
+        update_config_with_packages(config=config, python_packages=[pkg1, pkg2])
 
         setup_cfg_text = io.StringIO()
         config.write(setup_cfg_text)
@@ -245,105 +256,76 @@ saturn =
 '''
         result_cfg_lines = [
             line.rstrip().replace('\t', '    ')
-            for line in setup_cfg_text.getvalue().splitlines() if line
+            for line in setup_cfg_text.getvalue().splitlines()
+            if line
         ]
         expected_cfg_lines = [
             line.rstrip() for line in expected_cfg.splitlines() if line
         ]
         self.assertEqual(expected_cfg_lines, result_cfg_lines)
 
-
-    @parameterized.expand([
-        (
-            # Test name
-            'working case',
-            # Package name
-            'mars',
-            # File list
-            [
-                'planets/BUILD.mars_rocket',
-                'planets/mars/__init__.py',
-                'planets/mars/__main__.py',
-                'planets/mars/moons/__init__.py',
-                'planets/mars/moons/deimos.py',
-                'planets/mars/moons/phobos.py',
-                'planets/hohmann_transfer_test.py',
-                'planets/pyproject.toml',
-                'planets/setup.cfg',
-            ],
-            # Extra_files
-            [],
-            # Package definition
-            {
-                'generate_setup': {
-                    'metadata': {
-                        'name': 'mars',
-                        'version': '0.0.1'
-                    },
-                },
-                'inputs': [
-                ],
-                'setup_sources': [
-                    'planets/pyproject.toml',
-                    'planets/setup.cfg',
-                ],
-                'sources': [
+    @parameterized.expand(
+        [
+            (
+                # Test name
+                'working case',
+                # Package name
+                'mars',
+                # File list
+                [
+                    'planets/BUILD.mars_rocket',
                     'planets/mars/__init__.py',
                     'planets/mars/__main__.py',
                     'planets/mars/moons/__init__.py',
                     'planets/mars/moons/deimos.py',
                     'planets/mars/moons/phobos.py',
-                ],
-                'tests': [
                     'planets/hohmann_transfer_test.py',
-                ],
-            },
-            # Output file list
-            [
-                'mars/__init__.py',
-                'mars/__main__.py',
-                'mars/moons/__init__.py',
-                'mars/moons/deimos.py',
-                'mars/moons/phobos.py',
-                'mars/tests/hohmann_transfer_test.py',
-            ],
-        ),
-
-        (
-            # Test name
-            'with extra files',
-            # Package name
-            'saturn',
-            # File list
-            [
-                'planets/BUILD.saturn_rocket',
-                'planets/hohmann_transfer_test.py',
-                'planets/pyproject.toml',
-                'planets/saturn/__init__.py',
-                'planets/saturn/__main__.py',
-                'planets/saturn/misson.py',
-                'planets/saturn/moons/__init__.py',
-                'planets/saturn/moons/enceladus.py',
-                'planets/saturn/moons/iapetus.py',
-                'planets/saturn/moons/rhea.py',
-                'planets/saturn/moons/titan.py',
-                'planets/setup.cfg',
-                'planets/setup.py',
-            ],
-            # Extra files
-            [
-                'planets/BUILD.saturn_rocket > out/saturn/BUILD.rocket',
-            ],
-            # Package definition
-            {
-                'inputs': [
-                ],
-                'setup_sources': [
                     'planets/pyproject.toml',
                     'planets/setup.cfg',
-                    'planets/setup.py',
                 ],
-                'sources': [
+                # Extra_files
+                [],
+                # Package definition
+                {
+                    'generate_setup': {
+                        'metadata': {'name': 'mars', 'version': '0.0.1'},
+                    },
+                    'inputs': [],
+                    'setup_sources': [
+                        'planets/pyproject.toml',
+                        'planets/setup.cfg',
+                    ],
+                    'sources': [
+                        'planets/mars/__init__.py',
+                        'planets/mars/__main__.py',
+                        'planets/mars/moons/__init__.py',
+                        'planets/mars/moons/deimos.py',
+                        'planets/mars/moons/phobos.py',
+                    ],
+                    'tests': [
+                        'planets/hohmann_transfer_test.py',
+                    ],
+                },
+                # Output file list
+                [
+                    'mars/__init__.py',
+                    'mars/__main__.py',
+                    'mars/moons/__init__.py',
+                    'mars/moons/deimos.py',
+                    'mars/moons/phobos.py',
+                    'mars/tests/hohmann_transfer_test.py',
+                ],
+            ),
+            (
+                # Test name
+                'with extra files',
+                # Package name
+                'saturn',
+                # File list
+                [
+                    'planets/BUILD.saturn_rocket',
+                    'planets/hohmann_transfer_test.py',
+                    'planets/pyproject.toml',
                     'planets/saturn/__init__.py',
                     'planets/saturn/__main__.py',
                     'planets/saturn/misson.py',
@@ -352,26 +334,51 @@ saturn =
                     'planets/saturn/moons/iapetus.py',
                     'planets/saturn/moons/rhea.py',
                     'planets/saturn/moons/titan.py',
+                    'planets/setup.cfg',
+                    'planets/setup.py',
                 ],
-                'tests': [
-                    'planets/hohmann_transfer_test.py',
-                ]
-            },
-            # Output file list
-            [
-                'saturn/BUILD.rocket',
-                'saturn/__init__.py',
-                'saturn/__main__.py',
-                'saturn/misson.py',
-                'saturn/moons/__init__.py',
-                'saturn/moons/enceladus.py',
-                'saturn/moons/iapetus.py',
-                'saturn/moons/rhea.py',
-                'saturn/moons/titan.py',
-                'saturn/tests/hohmann_transfer_test.py',
-            ],
-        ),
-    ]) # yapf: disable
+                # Extra files
+                [
+                    'planets/BUILD.saturn_rocket > out/saturn/BUILD.rocket',
+                ],
+                # Package definition
+                {
+                    'inputs': [],
+                    'setup_sources': [
+                        'planets/pyproject.toml',
+                        'planets/setup.cfg',
+                        'planets/setup.py',
+                    ],
+                    'sources': [
+                        'planets/saturn/__init__.py',
+                        'planets/saturn/__main__.py',
+                        'planets/saturn/misson.py',
+                        'planets/saturn/moons/__init__.py',
+                        'planets/saturn/moons/enceladus.py',
+                        'planets/saturn/moons/iapetus.py',
+                        'planets/saturn/moons/rhea.py',
+                        'planets/saturn/moons/titan.py',
+                    ],
+                    'tests': [
+                        'planets/hohmann_transfer_test.py',
+                    ],
+                },
+                # Output file list
+                [
+                    'saturn/BUILD.rocket',
+                    'saturn/__init__.py',
+                    'saturn/__main__.py',
+                    'saturn/misson.py',
+                    'saturn/moons/__init__.py',
+                    'saturn/moons/enceladus.py',
+                    'saturn/moons/iapetus.py',
+                    'saturn/moons/rhea.py',
+                    'saturn/moons/titan.py',
+                    'saturn/tests/hohmann_transfer_test.py',
+                ],
+            ),
+        ]
+    )  # yapf: disable
     def test_build_python_tree(
         self,
         _test_name,
@@ -389,73 +396,77 @@ saturn =
         install_dir = temp_root / 'out'
 
         package = PythonPackage.from_dict(**package_definition)
-        build_python_tree(python_packages=[package],
-                          tree_destination_dir=install_dir,
-                          include_tests=True)
+        build_python_tree(
+            python_packages=[package],
+            tree_destination_dir=install_dir,
+            include_tests=True,
+        )
         copy_extra_files(extra_files)
 
         # Check expected files are in place.
         self._check_result_paths_equal(install_dir, expected_file_list)
 
-    @parameterized.expand([
-        (
-            # Test name
-            'everything in correct locations',
-            # Package name
-            'planets',
-            # File list
-            [
-                'BUILD.mars_rocket',
-            ],
-            # Extra_files
-            [
-                'BUILD.mars_rocket > out/mars/BUILD.rocket',
-            ],
-            # Output file list
-            [
-                'mars/BUILD.rocket',
-            ],
-            # Should raise exception
-            None,
-        ),
-        (
-            # Test name
-            'missing source files',
-            # Package name
-            'planets',
-            # File list
-            [
-                'BUILD.mars_rocket',
-            ],
-            # Extra_files
-            [
-                'BUILD.venus_rocket > out/venus/BUILD.rocket',
-            ],
-            # Output file list
-            [],
-            # Should raise exception
-            FileNotFoundError,
-        ),
-        (
-            # Test name
-            'existing destination files',
-            # Package name
-            'planets',
-            # File list
-            [
-                'BUILD.jupiter_rocket',
-                'out/jupiter/BUILD.rocket',
-            ],
-            # Extra_files
-            [
-                'BUILD.jupiter_rocket > out/jupiter/BUILD.rocket',
-            ],
-            # Output file list
-            [],
-            # Should raise exception
-            FileExistsError,
-        ),
-    ]) # yapf: disable
+    @parameterized.expand(
+        [
+            (
+                # Test name
+                'everything in correct locations',
+                # Package name
+                'planets',
+                # File list
+                [
+                    'BUILD.mars_rocket',
+                ],
+                # Extra_files
+                [
+                    'BUILD.mars_rocket > out/mars/BUILD.rocket',
+                ],
+                # Output file list
+                [
+                    'mars/BUILD.rocket',
+                ],
+                # Should raise exception
+                None,
+            ),
+            (
+                # Test name
+                'missing source files',
+                # Package name
+                'planets',
+                # File list
+                [
+                    'BUILD.mars_rocket',
+                ],
+                # Extra_files
+                [
+                    'BUILD.venus_rocket > out/venus/BUILD.rocket',
+                ],
+                # Output file list
+                [],
+                # Should raise exception
+                FileNotFoundError,
+            ),
+            (
+                # Test name
+                'existing destination files',
+                # Package name
+                'planets',
+                # File list
+                [
+                    'BUILD.jupiter_rocket',
+                    'out/jupiter/BUILD.rocket',
+                ],
+                # Extra_files
+                [
+                    'BUILD.jupiter_rocket > out/jupiter/BUILD.rocket',
+                ],
+                # Output file list
+                [],
+                # Should raise exception
+                FileExistsError,
+            ),
+        ]
+    )  # yapf: disable
     def test_copy_extra_files(
         self,
         _test_name,

@@ -35,6 +35,7 @@ TEST_PATHS = GnPaths(
 
 class LabelTest(unittest.TestCase):
     """Tests GN label parsing."""
+
     def setUp(self):
         self._paths_and_toolchain_name = [
             (TEST_PATHS, 'ToolChain'),
@@ -46,40 +47,48 @@ class LabelTest(unittest.TestCase):
             label = Label(paths, '//')
             self.assertEqual(label.name, '')
             self.assertEqual(label.dir, ROOT)
-            self.assertEqual(label.out_dir,
-                             ROOT.joinpath('out', toolchain, 'obj'))
-            self.assertEqual(label.gen_dir,
-                             ROOT.joinpath('out', toolchain, 'gen'))
+            self.assertEqual(
+                label.out_dir, ROOT.joinpath('out', toolchain, 'obj')
+            )
+            self.assertEqual(
+                label.gen_dir, ROOT.joinpath('out', toolchain, 'gen')
+            )
 
     def test_absolute(self):
         for paths, toolchain in self._paths_and_toolchain_name:
             label = Label(paths, '//foo/bar:baz')
             self.assertEqual(label.name, 'baz')
             self.assertEqual(label.dir, ROOT.joinpath('foo/bar'))
-            self.assertEqual(label.out_dir,
-                             ROOT.joinpath('out', toolchain, 'obj/foo/bar'))
-            self.assertEqual(label.gen_dir,
-                             ROOT.joinpath('out', toolchain, 'gen/foo/bar'))
+            self.assertEqual(
+                label.out_dir, ROOT.joinpath('out', toolchain, 'obj/foo/bar')
+            )
+            self.assertEqual(
+                label.gen_dir, ROOT.joinpath('out', toolchain, 'gen/foo/bar')
+            )
 
     def test_absolute_implicit_target(self):
         for paths, toolchain in self._paths_and_toolchain_name:
             label = Label(paths, '//foo/bar')
             self.assertEqual(label.name, 'bar')
             self.assertEqual(label.dir, ROOT.joinpath('foo/bar'))
-            self.assertEqual(label.out_dir,
-                             ROOT.joinpath('out', toolchain, 'obj/foo/bar'))
-            self.assertEqual(label.gen_dir,
-                             ROOT.joinpath('out', toolchain, 'gen/foo/bar'))
+            self.assertEqual(
+                label.out_dir, ROOT.joinpath('out', toolchain, 'obj/foo/bar')
+            )
+            self.assertEqual(
+                label.gen_dir, ROOT.joinpath('out', toolchain, 'gen/foo/bar')
+            )
 
     def test_relative(self):
         for paths, toolchain in self._paths_and_toolchain_name:
             label = Label(paths, ':tgt')
             self.assertEqual(label.name, 'tgt')
             self.assertEqual(label.dir, ROOT.joinpath('some/cwd'))
-            self.assertEqual(label.out_dir,
-                             ROOT.joinpath('out', toolchain, 'obj/some/cwd'))
-            self.assertEqual(label.gen_dir,
-                             ROOT.joinpath('out', toolchain, 'gen/some/cwd'))
+            self.assertEqual(
+                label.out_dir, ROOT.joinpath('out', toolchain, 'obj/some/cwd')
+            )
+            self.assertEqual(
+                label.gen_dir, ROOT.joinpath('out', toolchain, 'gen/some/cwd')
+            )
 
     def test_relative_subdir(self):
         for paths, toolchain in self._paths_and_toolchain_name:
@@ -88,30 +97,37 @@ class LabelTest(unittest.TestCase):
             self.assertEqual(label.dir, ROOT.joinpath('some/cwd/tgt'))
             self.assertEqual(
                 label.out_dir,
-                ROOT.joinpath('out', toolchain, 'obj/some/cwd/tgt'))
+                ROOT.joinpath('out', toolchain, 'obj/some/cwd/tgt'),
+            )
             self.assertEqual(
                 label.gen_dir,
-                ROOT.joinpath('out', toolchain, 'gen/some/cwd/tgt'))
+                ROOT.joinpath('out', toolchain, 'gen/some/cwd/tgt'),
+            )
 
     def test_relative_parent_dir(self):
         for paths, toolchain in self._paths_and_toolchain_name:
             label = Label(paths, '..:tgt')
             self.assertEqual(label.name, 'tgt')
             self.assertEqual(label.dir, ROOT.joinpath('some'))
-            self.assertEqual(label.out_dir,
-                             ROOT.joinpath('out', toolchain, 'obj/some'))
-            self.assertEqual(label.gen_dir,
-                             ROOT.joinpath('out', toolchain, 'gen/some'))
+            self.assertEqual(
+                label.out_dir, ROOT.joinpath('out', toolchain, 'obj/some')
+            )
+            self.assertEqual(
+                label.gen_dir, ROOT.joinpath('out', toolchain, 'gen/some')
+            )
 
 
 class ResolvePathTest(unittest.TestCase):
     """Tests GN path resolution."""
+
     def test_resolve_absolute(self):
         self.assertEqual(TEST_PATHS.resolve('//'), TEST_PATHS.root)
-        self.assertEqual(TEST_PATHS.resolve('//foo/bar'),
-                         TEST_PATHS.root / 'foo' / 'bar')
-        self.assertEqual(TEST_PATHS.resolve('//foo/../baz'),
-                         TEST_PATHS.root / 'baz')
+        self.assertEqual(
+            TEST_PATHS.resolve('//foo/bar'), TEST_PATHS.root / 'foo' / 'bar'
+        )
+        self.assertEqual(
+            TEST_PATHS.resolve('//foo/../baz'), TEST_PATHS.root / 'baz'
+        )
 
     def test_resolve_relative(self):
         self.assertEqual(TEST_PATHS.resolve(''), TEST_PATHS.cwd)
@@ -186,19 +202,23 @@ def _create_ninja_files(source_set: str) -> tuple:
 
     outdir = Path(tempdir.name, 'out', 'fake_toolchain', 'obj', 'fake_module')
 
-    paths = GnPaths(root=Path(tempdir.name),
-                    build=Path(tempdir.name, 'out'),
-                    cwd=Path(tempdir.name, 'some', 'module'),
-                    toolchain='//tools:fake_toolchain')
+    paths = GnPaths(
+        root=Path(tempdir.name),
+        build=Path(tempdir.name, 'out'),
+        cwd=Path(tempdir.name, 'some', 'module'),
+        toolchain='//tools:fake_toolchain',
+    )
 
     return tempdir, outdir, paths
 
 
 class TargetTest(unittest.TestCase):
     """Tests querying GN target information."""
+
     def setUp(self):
         self._tempdir, self._outdir, self._paths = _create_ninja_files(
-            NINJA_SOURCE_SET)
+            NINJA_SOURCE_SET
+        )
 
         self._rel_outdir = self._outdir.relative_to(self._paths.build)
 
@@ -214,51 +234,62 @@ class TargetTest(unittest.TestCase):
         target = TargetInfo(self._paths, '//fake_module:fake_source_set')
         self.assertTrue(target.generated)
         self.assertEqual(
-            set(target.object_files), {
+            set(target.object_files),
+            {
                 self._rel_outdir / 'fake_source_set.file_a.cc.o',
                 self._rel_outdir / 'fake_source_set.file_b.c.o',
-            })
+            },
+        )
 
     def test_executable_object_files(self):
         target = TargetInfo(self._paths, '//fake_module:fake_test')
         self.assertEqual(
-            set(target.object_files), {
+            set(target.object_files),
+            {
                 self._rel_outdir / 'fake_test.fake_test.cc.o',
                 self._rel_outdir / 'fake_test.fake_test_c.c.o',
-            })
+            },
+        )
 
     def test_executable_artifact(self):
         target = TargetInfo(self._paths, '//fake_module:fake_test')
-        self.assertEqual(target.artifact,
-                         self._rel_outdir / 'test' / 'fake_test.elf')
+        self.assertEqual(
+            target.artifact, self._rel_outdir / 'test' / 'fake_test.elf'
+        )
 
     def test_non_existent_target(self):
-        target = TargetInfo(self._paths,
-                            '//fake_module:definitely_not_a_real_target')
+        target = TargetInfo(
+            self._paths, '//fake_module:definitely_not_a_real_target'
+        )
         self.assertFalse(target.generated)
         self.assertIsNone(target.artifact)
 
     def test_non_existent_toolchain(self):
         target = TargetInfo(
-            self._paths, '//fake_module:fake_source_set(//not_a:toolchain)')
+            self._paths, '//fake_module:fake_source_set(//not_a:toolchain)'
+        )
         self.assertFalse(target.generated)
         self.assertIsNone(target.artifact)
 
 
 class StampTargetTest(TargetTest):
     """Test with old-style .stamp files instead of phony Ninja targets."""
+
     def setUp(self):
         self._tempdir, self._outdir, self._paths = _create_ninja_files(
-            NINJA_SOURCE_SET_STAMP)
+            NINJA_SOURCE_SET_STAMP
+        )
 
         self._rel_outdir = self._outdir.relative_to(self._paths.build)
 
 
 class ExpandExpressionsTest(unittest.TestCase):
     """Tests expansion of expressions like <TARGET_FILE(//foo)>."""
+
     def setUp(self):
         self._tempdir, self._outdir, self._paths = _create_ninja_files(
-            NINJA_SOURCE_SET)
+            NINJA_SOURCE_SET
+        )
 
     def tearDown(self):
         self._tempdir.cleanup()
@@ -276,19 +307,21 @@ class ExpandExpressionsTest(unittest.TestCase):
         self.assertEqual(list(expand_expressions(self._paths, '')), [''])
 
     def test_no_expressions(self):
-        self.assertEqual(list(expand_expressions(self._paths, 'foobar')),
-                         ['foobar'])
+        self.assertEqual(
+            list(expand_expressions(self._paths, 'foobar')), ['foobar']
+        )
         self.assertEqual(
             list(expand_expressions(self._paths, '<NOT_AN_EXPRESSION()>')),
-            ['<NOT_AN_EXPRESSION()>'])
+            ['<NOT_AN_EXPRESSION()>'],
+        )
 
     def test_incomplete_expression(self):
         for incomplete_expression in [
-                '<TARGET_FILE(',
-                '<TARGET_FILE(//foo)',
-                '<TARGET_FILE(//foo>',
-                '<TARGET_FILE(//foo) >',
-                '--arg=<TARGET_FILE_IF_EXISTS(//foo) Hello>',
+            '<TARGET_FILE(',
+            '<TARGET_FILE(//foo)',
+            '<TARGET_FILE(//foo>',
+            '<TARGET_FILE(//foo) >',
+            '--arg=<TARGET_FILE_IF_EXISTS(//foo) Hello>',
         ]:
             with self.assertRaises(ExpressionError):
                 expand_expressions(self._paths, incomplete_expression)
@@ -299,17 +332,21 @@ class ExpandExpressionsTest(unittest.TestCase):
         for expr, expected in [
             ('<TARGET_FILE(//fake_module:fake_test)>', path),
             ('--arg=<TARGET_FILE(//fake_module:fake_test)>', f'--arg={path}'),
-            ('--argument=<TARGET_FILE(//fake_module:fake_test)>;'
-             '<TARGET_FILE(//fake_module:fake_test)>',
-             f'--argument={path};{path}'),
+            (
+                '--argument=<TARGET_FILE(//fake_module:fake_test)>;'
+                '<TARGET_FILE(//fake_module:fake_test)>',
+                f'--argument={path};{path}',
+            ),
         ]:
-            self.assertEqual(list(expand_expressions(self._paths, expr)),
-                             [expected])
+            self.assertEqual(
+                list(expand_expressions(self._paths, expr)), [expected]
+            )
 
     def test_target_objects_no_target_file(self):
         with self.assertRaisesRegex(ExpressionError, 'no output file'):
-            expand_expressions(self._paths,
-                               '<TARGET_FILE(//fake_module:fake_source_set)>')
+            expand_expressions(
+                self._paths, '<TARGET_FILE(//fake_module:fake_source_set)>'
+            )
 
     def test_target_file_non_existent_target(self):
         with self.assertRaisesRegex(ExpressionError, 'generated'):
@@ -320,32 +357,37 @@ class ExpandExpressionsTest(unittest.TestCase):
 
         for expr, expected in [
             ('<TARGET_FILE_IF_EXISTS(//fake_module:fake_test)>', path),
-            ('--arg=<TARGET_FILE_IF_EXISTS(//fake_module:fake_test)>',
-             f'--arg={path}'),
-            ('--argument=<TARGET_FILE_IF_EXISTS(//fake_module:fake_test)>;'
-             '<TARGET_FILE_IF_EXISTS(//fake_module:fake_test)>',
-             f'--argument={path};{path}'),
+            (
+                '--arg=<TARGET_FILE_IF_EXISTS(//fake_module:fake_test)>',
+                f'--arg={path}',
+            ),
+            (
+                '--argument=<TARGET_FILE_IF_EXISTS(//fake_module:fake_test)>;'
+                '<TARGET_FILE_IF_EXISTS(//fake_module:fake_test)>',
+                f'--argument={path};{path}',
+            ),
         ]:
-            self.assertEqual(list(expand_expressions(self._paths, expr)),
-                             [expected])
+            self.assertEqual(
+                list(expand_expressions(self._paths, expr)), [expected]
+            )
 
     def test_target_file_if_exists_arg_omitted(self):
         for expr in [
-                '<TARGET_FILE_IF_EXISTS(//fake_module:fake_test)>',
-                '<TARGET_FILE_IF_EXISTS(//fake_module:fake_test(fake)>',
-                '<TARGET_FILE_IF_EXISTS(//not_a_module:nothing)>',
-                '--arg=<TARGET_FILE_IF_EXISTS(//fake_module:fake_test)>',
-                '--argument=<TARGET_FILE_IF_EXISTS(//fake_module:fake_test)>;'
-                '<TARGET_FILE_IF_EXISTS(//fake_module:fake_test)>',
+            '<TARGET_FILE_IF_EXISTS(//fake_module:fake_test)>',
+            '<TARGET_FILE_IF_EXISTS(//fake_module:fake_test(fake)>',
+            '<TARGET_FILE_IF_EXISTS(//not_a_module:nothing)>',
+            '--arg=<TARGET_FILE_IF_EXISTS(//fake_module:fake_test)>',
+            '--argument=<TARGET_FILE_IF_EXISTS(//fake_module:fake_test)>;'
+            '<TARGET_FILE_IF_EXISTS(//fake_module:fake_test)>',
         ]:
             self.assertEqual(list(expand_expressions(self._paths, expr)), [])
 
     def test_target_file_if_exists_error_if_never_has_artifact(self):
         for expr in [
-                '<TARGET_FILE_IF_EXISTS(//fake_module:fake_source_set)>'
-                'bar=<TARGET_FILE_IF_EXISTS(//fake_module:fake_source_set)>'
-                '<TARGET_FILE_IF_EXISTS(//fake_module:fake_no_objects)>',
-                '--foo=<TARGET_FILE_IF_EXISTS(//fake_module:fake_no_objects)>',
+            '<TARGET_FILE_IF_EXISTS(//fake_module:fake_source_set)>'
+            'bar=<TARGET_FILE_IF_EXISTS(//fake_module:fake_source_set)>'
+            '<TARGET_FILE_IF_EXISTS(//fake_module:fake_no_objects)>',
+            '--foo=<TARGET_FILE_IF_EXISTS(//fake_module:fake_no_objects)>',
         ]:
             with self.assertRaises(ExpressionError):
                 expand_expressions(self._paths, expr)
@@ -355,35 +397,46 @@ class ExpandExpressionsTest(unittest.TestCase):
             set(
                 expand_expressions(
                     self._paths,
-                    '<TARGET_OBJECTS(//fake_module:fake_source_set)>')), {
-                        self._path('fake_source_set.file_a.cc.o'),
-                        self._path('fake_source_set.file_b.c.o')
-                    })
+                    '<TARGET_OBJECTS(//fake_module:fake_source_set)>',
+                )
+            ),
+            {
+                self._path('fake_source_set.file_a.cc.o'),
+                self._path('fake_source_set.file_b.c.o'),
+            },
+        )
         self.assertEqual(
             set(
                 expand_expressions(
-                    self._paths, '<TARGET_OBJECTS(//fake_module:fake_test)>')),
+                    self._paths, '<TARGET_OBJECTS(//fake_module:fake_test)>'
+                )
+            ),
             {
                 self._path('fake_test.fake_test.cc.o'),
-                self._path('fake_test.fake_test_c.c.o')
-            })
+                self._path('fake_test.fake_test_c.c.o'),
+            },
+        )
 
     def test_target_objects_no_objects(self):
         self.assertEqual(
             list(
                 expand_expressions(
                     self._paths,
-                    '<TARGET_OBJECTS(//fake_module:fake_no_objects)>')), [])
+                    '<TARGET_OBJECTS(//fake_module:fake_no_objects)>',
+                )
+            ),
+            [],
+        )
 
     def test_target_objects_other_content_in_arg(self):
         for arg in [
-                '--foo=<TARGET_OBJECTS(//fake_module:fake_no_objects)>',
-                '<TARGET_OBJECTS(//fake_module:fake_no_objects)>bar',
-                '--foo<TARGET_OBJECTS(//fake_module:fake_no_objects)>bar',
-                '<TARGET_OBJECTS(//fake_module:fake_no_objects)>'
-                '<TARGET_OBJECTS(//fake_module:fake_no_objects)>',
-                '<TARGET_OBJECTS(//fake_module:fake_source_set)>'
-                '<TARGET_OBJECTS(//fake_module:fake_source_set)>',
+            '--foo=<TARGET_OBJECTS(//fake_module:fake_no_objects)>',
+            '<TARGET_OBJECTS(//fake_module:fake_no_objects)>bar',
+            '--foo<TARGET_OBJECTS(//fake_module:fake_no_objects)>bar',
+            '<TARGET_OBJECTS(//fake_module:fake_no_objects)>'
+            '<TARGET_OBJECTS(//fake_module:fake_no_objects)>',
+            '<TARGET_OBJECTS(//fake_module:fake_source_set)>'
+            '<TARGET_OBJECTS(//fake_module:fake_source_set)>',
         ]:
             with self.assertRaises(ExpressionError):
                 expand_expressions(self._paths, arg)
@@ -395,9 +448,11 @@ class ExpandExpressionsTest(unittest.TestCase):
 
 class StampExpandExpressionsTest(TargetTest):
     """Test with old-style .stamp files instead of phony Ninja targets."""
+
     def setUp(self):
         self._tempdir, self._outdir, self._paths = _create_ninja_files(
-            NINJA_SOURCE_SET_STAMP)
+            NINJA_SOURCE_SET_STAMP
+        )
 
         self._rel_outdir = self._outdir.relative_to(self._paths.build)
 

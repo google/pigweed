@@ -33,7 +33,7 @@ _LOG = logging.getLogger(__name__)
 
 
 def argument_parser(
-    parser: Optional[argparse.ArgumentParser] = None
+    parser: Optional[argparse.ArgumentParser] = None,
 ) -> argparse.ArgumentParser:
     """Registers the script's arguments on an argument parser."""
 
@@ -71,9 +71,11 @@ def argument_parser(
         '--target',
         help='GN build target that runs the program',
     )
-    parser.add_argument('--working-directory',
-                        type=pathlib.Path,
-                        help='Directory to execute program in')
+    parser.add_argument(
+        '--working-directory',
+        type=pathlib.Path,
+        help='Directory to execute program in',
+    )
     parser.add_argument(
         'command',
         nargs=argparse.REMAINDER,
@@ -159,8 +161,9 @@ def main() -> int:
 
     if process.returncode != 0 and args.capture_output:
         _LOG.error('')
-        _LOG.error('Command failed with exit code %d in GN build.',
-                   process.returncode)
+        _LOG.error(
+            'Command failed with exit code %d in GN build.', process.returncode
+        )
         _LOG.error('')
         _LOG.error('Build target:')
         _LOG.error('')

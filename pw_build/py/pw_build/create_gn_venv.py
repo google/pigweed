@@ -20,10 +20,12 @@ from pathlib import Path
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--destination-dir',
-                        type=Path,
-                        required=True,
-                        help='Path to venv directory.')
+    parser.add_argument(
+        '--destination-dir',
+        type=Path,
+        required=True,
+        help='Path to venv directory.',
+    )
     return parser.parse_args()
 
 

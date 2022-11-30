@@ -28,16 +28,21 @@ def _parse_args():
     parser.add_argument(
         '--prefix',
         type=Path,
-        help='Root search path to use in conjunction with --wheels_file')
+        help='Root search path to use in conjunction with --wheels_file',
+    )
     parser.add_argument(
         '--suffix_file',
         type=argparse.FileType('r'),
-        help=('File that lists subdirs relative to --prefix, one per line,'
-              'to search for .whl files to copy into --out_dir'))
+        help=(
+            'File that lists subdirs relative to --prefix, one per line,'
+            'to search for .whl files to copy into --out_dir'
+        ),
+    )
     parser.add_argument(
         '--out_dir',
         type=Path,
-        help='Path where all the built and collected .whl files should be put')
+        help='Path where all the built and collected .whl files should be put',
+    )
 
     return parser.parse_args()
 
@@ -54,11 +59,15 @@ def copy_wheels(prefix, suffix_file, out_dir):
             continue
         for wheel in path.glob('**/*.whl'):
             if wheel.name in copied_files:
-                _LOG.error('Attempting to override %s with %s',
-                           copied_files[wheel.name], wheel)
+                _LOG.error(
+                    'Attempting to override %s with %s',
+                    copied_files[wheel.name],
+                    wheel,
+                )
                 raise FileExistsError(
                     f'{wheel.name} conflict: '
-                    f'{copied_files[wheel.name]} and {wheel}')
+                    f'{copied_files[wheel.name]} and {wheel}'
+                )
             copied_files[wheel.name] = wheel
             _LOG.debug('Copying %s to %s', wheel, out_dir)
             shutil.copy(wheel, out_dir)

@@ -33,9 +33,10 @@ def _parse_args() -> argparse.Namespace:
         '--python-dep-list-files',
         type=Path,
         required=True,
-        help=
-        'Path to a text file containing the list of Python package metadata '
-        'json files.',
+        help=(
+            'Path to a text file containing the list of Python package '
+            'metadata json files.'
+        ),
     )
     parser.add_argument(
         '--requirement',
@@ -43,10 +44,14 @@ def _parse_args() -> argparse.Namespace:
         required=True,
         help='requirement file to generate',
     )
-    parser.add_argument('--gn-packages',
-                        required=True,
-                        help=('Comma separated list of GN python package '
-                              'targets to check for requirements.'))
+    parser.add_argument(
+        '--gn-packages',
+        required=True,
+        help=(
+            'Comma separated list of GN python package '
+            'targets to check for requirements.'
+        ),
+    )
     parser.add_argument(
         '--exclude-transitive-deps',
         action='store_true',
@@ -69,13 +74,13 @@ def main(
 
     # Split the comma separated string and remove leading slashes.
     gn_target_names = [
-        target.lstrip('/') for target in gn_packages.split(',')
+        target.lstrip('/')
+        for target in gn_packages.split(',')
         if target  # The last target may be an empty string.
     ]
     for i, gn_target in enumerate(gn_target_names):
         # Remove metadata subtarget if present.
-        python_package_target = gn_target.replace('._package_metadata(', '(',
-                                                  1)
+        python_package_target = gn_target.replace('._package_metadata(', '(', 1)
         # Split on the first paren to ignore the toolchain.
         gn_target_names[i] = python_package_target.split('(')[0]
 
@@ -100,19 +105,24 @@ def main(
             'GN Targets to include:\n'
             f'{gn_targets_to_include}\n\n'
             'Declared Python Dependencies:\n'
-            f'{declared_py_deps}\n\n')
+            f'{declared_py_deps}\n\n'
+        )
 
     config = configparser.ConfigParser()
     config['options'] = {}
-    update_config_with_packages(config=config,
-                                python_packages=target_py_packages)
+    update_config_with_packages(
+        config=config, python_packages=target_py_packages
+    )
 
     output = (
-        '# Auto-generated requirements.txt from the following packages:\n'
-        '#\n')
-    output += '\n'.join('# ' + pkg.gn_target_name
-                        for pkg in sorted(target_py_packages,
-                                          key=lambda pkg: pkg.gn_target_name))
+        '# Auto-generated requirements.txt from the following packages:\n#\n'
+    )
+    output += '\n'.join(
+        '# ' + pkg.gn_target_name
+        for pkg in sorted(
+            target_py_packages, key=lambda pkg: pkg.gn_target_name
+        )
+    )
 
     output += config['options']['install_requires']
     output += '\n'

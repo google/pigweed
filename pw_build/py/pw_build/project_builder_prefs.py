@@ -31,11 +31,13 @@ _DEFAULT_CONFIG: Dict[Any, Any] = {
 
 
 def load_defaults_from_argparse(
-    add_parser_arguments: Callable[[argparse.ArgumentParser],
-                                   argparse.ArgumentParser]
+    add_parser_arguments: Callable[
+        [argparse.ArgumentParser], argparse.ArgumentParser
+    ]
 ) -> Dict[Any, Any]:
     parser = argparse.ArgumentParser(
-        description='', formatter_class=argparse.RawDescriptionHelpFormatter)
+        description='', formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser = add_parser_arguments(parser)
     default_namespace, _unknown_args = parser.parse_known_args(
         [],  # Pass in blank arguments to avoid catching args from sys.argv.
@@ -46,10 +48,12 @@ def load_defaults_from_argparse(
 
 class ProjectBuilderPrefs(TomlConfigLoaderMixin):
     """Pigweed Watch preferences storage class."""
+
     def __init__(
         self,
-        load_argparse_arguments: Callable[[argparse.ArgumentParser],
-                                          argparse.ArgumentParser],
+        load_argparse_arguments: Callable[
+            [argparse.ArgumentParser], argparse.ArgumentParser
+        ],
     ) -> None:
         self.load_argparse_arguments = load_argparse_arguments
 
@@ -66,10 +70,12 @@ class ProjectBuilderPrefs(TomlConfigLoaderMixin):
     def reset_config(self) -> None:
         super().reset_config()
         self._update_config(
-            load_defaults_from_argparse(self.load_argparse_arguments))
+            load_defaults_from_argparse(self.load_argparse_arguments)
+        )
 
     def _argparse_build_system_commands_to_prefs(  # pylint: disable=no-self-use
-            self, argparse_input: List[List[str]]) -> Dict[str, Any]:
+        self, argparse_input: List[List[str]]
+    ) -> Dict[str, Any]:
         result = copy.copy(_DEFAULT_CONFIG['build_system_commands'])
         for out_dir, command in argparse_input:
             new_dir = result.get('out_dir', {})
@@ -78,16 +84,14 @@ class ProjectBuilderPrefs(TomlConfigLoaderMixin):
         return result
 
     def apply_command_line_args(self, new_args: argparse.Namespace) -> None:
-        default_args = load_defaults_from_argparse(
-            self.load_argparse_arguments)
+        default_args = load_defaults_from_argparse(self.load_argparse_arguments)
 
         # Only apply settings that differ from the defaults.
         changed_settings: Dict[Any, Any] = {}
         for key, value in vars(new_args).items():
             if key in default_args and value != default_args[key]:
                 if key == 'build_system_commands':
-                    value = self._argparse_build_system_commands_to_prefs(
-                        value)
+                    value = self._argparse_build_system_commands_to_prefs(value)
                 changed_settings[key] = value
 
         self._update_config(changed_settings)
@@ -99,9 +103,9 @@ class ProjectBuilderPrefs(TomlConfigLoaderMixin):
     @property
     def build_directories(self) -> Dict[str, List[str]]:
         """Returns build directories and the targets to build in each."""
-        build_directories: Union[List[str],
-                                 Dict[str, List[str]]] = (self._config.get(
-                                     'build_directories', {}))
+        build_directories: Union[
+            List[str], Dict[str, List[str]]
+        ] = self._config.get('build_directories', {})
         final_build_dirs: Dict[str, List[str]] = {}
 
         if isinstance(build_directories, dict):
@@ -125,8 +129,9 @@ class ProjectBuilderPrefs(TomlConfigLoaderMixin):
         # default_build_targets or empty targets. If run_commands were supplied,
         # only run those by returning an empty final_build_dirs list.
         if not final_build_dirs and not self.run_commands:
-            final_build_dirs['out'] = self._config.get('default_build_targets',
-                                                       [])
+            final_build_dirs['out'] = self._config.get(
+                'default_build_targets', []
+            )
 
         return final_build_dirs
 
@@ -134,8 +139,7 @@ class ProjectBuilderPrefs(TomlConfigLoaderMixin):
         config_dict = self._config.get('build_system_commands', {})
         if not config_dict:
             config_dict = _DEFAULT_CONFIG['build_system_commands']
-        default_system_commands: Dict[str,
-                                      Any] = config_dict.get('default', {})
+        default_system_commands: Dict[str, Any] = config_dict.get('default', {})
         if default_system_commands is None:
             default_system_commands = {}
         build_system_commands = config_dict.get(build_dir)

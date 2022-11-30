@@ -107,6 +107,7 @@ def _execute_command(command: list, env: dict) -> bool:
 
 class ProjectBuilder:
     """Pigweed Project Builder"""
+
     def __init__(
         self,
         build_recipes: Sequence[BuildRecipe],
@@ -138,10 +139,9 @@ class ProjectBuilder:
     def __iter__(self) -> Generator[BuildRecipe, None, None]:
         return (build_recipe for build_recipe in self.build_recipes)
 
-    def run_build(self,
-                  cfg: BuildRecipe,
-                  env: Dict,
-                  index_message: Optional[str] = '') -> bool:
+    def run_build(
+        self, cfg: BuildRecipe, env: Dict, index_message: Optional[str] = ''
+    ) -> bool:
         """Run a single build config."""
         if self.colors:
             # Force colors in Pigweed subcommands run through the watcher.
@@ -152,16 +152,22 @@ class ProjectBuilder:
         build_succeded = False
         for command_step in cfg.steps:
             command_args = command_step.get_args(
-                additional_build_args=self.extra_ninja_args)
+                additional_build_args=self.extra_ninja_args
+            )
 
-            _LOG.info('%s Running ==> %s', index_message,
-                      ' '.join(shlex.quote(arg) for arg in command_args))
+            _LOG.info(
+                '%s Running ==> %s',
+                index_message,
+                ' '.join(shlex.quote(arg) for arg in command_args),
+            )
 
             # Verify that the build output directories exist.
             if command_step.build_system_command is not None and (
-                    not cfg.build_dir.is_dir()):
-                self.abort_callback('Build directory does not exist: %s',
-                                    cfg.build_dir)
+                not cfg.build_dir.is_dir()
+            ):
+                self.abort_callback(
+                    'Build directory does not exist: %s', cfg.build_dir
+                )
 
             build_succeded = self.execute_command(command_args, env)
             # Don't run further steps if a command fails.
@@ -170,18 +176,22 @@ class ProjectBuilder:
 
         return build_succeded
 
-    def print_build_summary(self,
-                            builds_succeeded: List[bool],
-                            cancelled: bool = False) -> None:
+    def print_build_summary(
+        self, builds_succeeded: List[bool], cancelled: bool = False
+    ) -> None:
         """Print build results summary table."""
         if not cancelled:
             _LOG.info('')
             _LOG.info(' .------------------------------------')
             _LOG.info(' |')
-            for (succeeded, cmd) in zip(builds_succeeded,
-                                        [str(cfg) for cfg in self]):
-                slug = (self.charset.slug_ok
-                        if succeeded else self.charset.slug_fail)
+            for (succeeded, cmd) in zip(
+                builds_succeeded, [str(cfg) for cfg in self]
+            ):
+                slug = (
+                    self.charset.slug_ok
+                    if succeeded
+                    else self.charset.slug_fail
+                )
                 _LOG.info(' |   %s  %s', slug, cmd)
             _LOG.info(' |')
             _LOG.info(" '------------------------------------")
@@ -208,7 +218,8 @@ def main() -> None:
     """Build a Pigweed Project."""
     parser = argparse.ArgumentParser(
         description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter)
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser = add_project_builder_arguments(parser)
     args = parser.parse_args()
 
@@ -219,7 +230,8 @@ def main() -> None:
         charset = ASCII_CHARSET
 
     prefs = ProjectBuilderPrefs(
-        load_argparse_arguments=add_project_builder_arguments)
+        load_argparse_arguments=add_project_builder_arguments
+    )
     prefs.apply_command_line_args(args)
     build_recipes = create_build_recipes(prefs)
 
@@ -250,7 +262,8 @@ def main() -> None:
 
         try:
             builds_succeeded.append(
-                project_builder.run_build(cfg, env, index_message=index))
+                project_builder.run_build(cfg, env, index_message=index)
+            )
         # Ctrl-C on Unix generates KeyboardInterrupt
         # Ctrl-Z on Windows generates EOFError
         except (KeyboardInterrupt, EOFError):

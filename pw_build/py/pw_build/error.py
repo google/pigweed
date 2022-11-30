@@ -30,12 +30,12 @@ _LOG = logging.getLogger(__name__)
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--message',
-                        required=True,
-                        help='Error message to print')
-    parser.add_argument('--target',
-                        required=True,
-                        help='GN target in which the error occurred')
+    parser.add_argument(
+        '--message', required=True, help='Error message to print'
+    )
+    parser.add_argument(
+        '--target', required=True, help='GN target in which the error occurred'
+    )
     parser.add_argument('--root', required=True, type=Path, help='GN root')
     parser.add_argument('--out', required=True, type=Path, help='GN out dir')
     return parser.parse_args()
@@ -55,7 +55,8 @@ def main(message: str, target: str, root: Path, out: Path) -> int:
 
     gn_cmd = subprocess.run(
         ['gn', 'path', f'--root={root}', out, '//:default', target],
-        capture_output=True)
+        capture_output=True,
+    )
     path_info = gn_cmd.stdout.decode(errors='replace').rstrip()
 
     relative_out = os.path.relpath(out, root)
@@ -63,8 +64,9 @@ def main(message: str, target: str, root: Path, out: Path) -> int:
     if gn_cmd.returncode == 0 and 'No non-data paths found' not in path_info:
         _LOG.error('Dependency path to this target:')
         _LOG.error('')
-        _LOG.error('  gn path %s //:default "%s"\n%s', relative_out, target,
-                   path_info)
+        _LOG.error(
+            '  gn path %s //:default "%s"\n%s', relative_out, target, path_info
+        )
         _LOG.error('')
     else:
         _LOG.error(

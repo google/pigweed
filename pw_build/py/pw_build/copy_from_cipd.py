@@ -53,41 +53,50 @@ logger = logging.getLogger(__name__)
 
 
 def parse_args():
+    """Parse arguments."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--verbose',
-                        '-v',
-                        help='Verbose output',
-                        action='store_true')
-    parser.add_argument('--manifest',
-                        required=True,
-                        type=Path,
-                        help='Path to CIPD JSON manifest file')
-    parser.add_argument('--out-dir',
-                        type=Path,
-                        default='.',
-                        help='Output folder to copy the specified file to')
-    parser.add_argument('--package-name',
-                        required=True,
-                        help='The CIPD package name')
+    parser.add_argument(
+        '--verbose', '-v', help='Verbose output', action='store_true'
+    )
+    parser.add_argument(
+        '--manifest',
+        required=True,
+        type=Path,
+        help='Path to CIPD JSON manifest file',
+    )
+    parser.add_argument(
+        '--out-dir',
+        type=Path,
+        default='.',
+        help='Output folder to copy the specified file to',
+    )
+    parser.add_argument(
+        '--package-name', required=True, help='The CIPD package name'
+    )
     # TODO(pwbug/334) Support multiple values for --file.
-    parser.add_argument('--file',
-                        required=True,
-                        type=Path,
-                        help='Path of the file to copy from the CIPD package. '
-                        'This is relative to the CIPD package root of the '
-                        'provided manifest.')
-    parser.add_argument('--cipd-package-root',
-                        type=Path,
-                        help="Path to the root of the package's install "
-                        'directory. This is usually at '
-                        'PW_{manifest name}_CIPD_INSTALL_DIR')
+    parser.add_argument(
+        '--file',
+        required=True,
+        type=Path,
+        help='Path of the file to copy from the CIPD package. '
+        'This is relative to the CIPD package root of the '
+        'provided manifest.',
+    )
+    parser.add_argument(
+        '--cipd-package-root',
+        type=Path,
+        help="Path to the root of the package's install "
+        'directory. This is usually at '
+        'PW_{manifest name}_CIPD_INSTALL_DIR',
+    )
     return parser.parse_args()
 
 
 def check_version(manifest, cipd_path, package_name):
     base_package_name = os.path.basename(package_name)
-    instance_id_path = os.path.join(cipd_path, '.versions',
-                                    f'{base_package_name}.cipd_version')
+    instance_id_path = os.path.join(
+        cipd_path, '.versions', f'{base_package_name}.cipd_version'
+    )
     with open(instance_id_path, 'r') as ins:
         instance_id = json.load(ins)['instance_id']
 
@@ -107,8 +116,11 @@ def check_version(manifest, cipd_path, package_name):
     output = subprocess.check_output(cmd).decode()
     if expected_version not in output:
         pw_env_setup.cipd_setup.update.update(
-            'cipd', (manifest, ), os.environ['PW_CIPD_INSTALL_DIR'],
-            os.environ['CIPD_CACHE_DIR'])
+            'cipd',
+            (manifest,),
+            os.environ['PW_CIPD_INSTALL_DIR'],
+            os.environ['CIPD_CACHE_DIR'],
+        )
 
 
 def main():
@@ -127,13 +139,18 @@ def main():
             logger.error(
                 "The %s environment variable isn't set. Did you forget to run "
                 '`. ./bootstrap.sh`? Is the %s manifest installed to a '
-                'different path?', args.cipd_var, file_base_name)
+                'different path?',
+                args.cipd_var,
+                file_base_name,
+            )
             sys.exit(1)
 
     check_version(args.manifest, args.cipd_package_root, args.package_name)
 
-    shutil.copyfile(os.path.join(args.cipd_package_root, args.file),
-                    os.path.join(args.out_dir, args.file))
+    shutil.copyfile(
+        os.path.join(args.cipd_package_root, args.file),
+        os.path.join(args.out_dir, args.file),
+    )
 
 
 if __name__ == '__main__':

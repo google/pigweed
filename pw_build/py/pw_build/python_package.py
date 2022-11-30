@@ -72,8 +72,9 @@ def _sanitize_install_requires(metadata_dict: dict) -> dict:
     try:
         install_requires = metadata_dict['options']['install_requires']
         if isinstance(install_requires, list):
-            metadata_dict['options']['install_requires'] = (
-                '\n'.join(install_requires))
+            metadata_dict['options']['install_requires'] = '\n'.join(
+                install_requires
+            )
     except KeyError:
         pass
     return metadata_dict
@@ -98,9 +99,7 @@ class PythonPackage:
 
         # Transform string filenames to Paths
         for attribute in ['sources', 'tests', 'inputs', 'setup_sources']:
-            transformed_kwargs[attribute] = [
-                Path(s) for s in kwargs[attribute]
-            ]
+            transformed_kwargs[attribute] = [Path(s) for s in kwargs[attribute]]
 
         return PythonPackage(**transformed_kwargs)
 
@@ -119,7 +118,8 @@ class PythonPackage:
     @property
     def setup_py(self) -> Path:
         setup_py = [
-            setup_file for setup_file in self.setup_sources
+            setup_file
+            for setup_file in self.setup_sources
             if str(setup_file).endswith('setup.py')
         ]
         # setup.py will not exist for GN generated Python packages
@@ -129,7 +129,8 @@ class PythonPackage:
     @property
     def setup_cfg(self) -> Optional[Path]:
         setup_cfg = [
-            setup_file for setup_file in self.setup_sources
+            setup_file
+            for setup_file in self.setup_sources
             if str(setup_file).endswith('setup.cfg')
         ]
         if len(setup_cfg) < 1:
@@ -152,14 +153,16 @@ class PythonPackage:
             'Cannot determine the package_name for the Python '
             f'library/package: {self.gn_target_name}\n\n'
             'This could be due to a missing python dependency in GN for:\n'
-            f'{self.gn_target_name}\n\n')
+            f'{self.gn_target_name}\n\n'
+        )
 
         if self.config:
             try:
                 name = self.config['metadata']['name']
             except KeyError:
-                raise UnknownPythonPackageName(unknown_package_message +
-                                               _pretty_format(self.as_dict()))
+                raise UnknownPythonPackageName(
+                    unknown_package_message + _pretty_format(self.as_dict())
+                )
             return name
         top_level_source_dir = self.top_level_source_dir
         if top_level_source_dir:
@@ -182,9 +185,10 @@ class PythonPackage:
 
     @property
     def top_level_source_dir(self) -> Optional[Path]:
-        source_dir_paths = sorted(set(
-            (len(sfile.parts), sfile.parent) for sfile in self.sources),
-                                  key=lambda s: s[1])
+        source_dir_paths = sorted(
+            set((len(sfile.parts), sfile.parent) for sfile in self.sources),
+            key=lambda s: s[1],
+        )
         if not source_dir_paths:
             return None
 
@@ -237,8 +241,9 @@ class PythonPackage:
 
         # Requires are delimited by newlines or semicolons.
         # Split existing list on either one.
-        for req in re.split(r' *[\n;] *',
-                            self.config['options']['install_requires']):
+        for req in re.split(
+            r' *[\n;] *', self.config['options']['install_requires']
+        ):
             # Skip empty lines.
             if not req:
                 continue
@@ -259,8 +264,9 @@ class PythonPackage:
         return this_requires
 
 
-def load_packages(input_list_files: Iterable[Path],
-                  ignore_missing=False) -> List[PythonPackage]:
+def load_packages(
+    input_list_files: Iterable[Path], ignore_missing=False
+) -> List[PythonPackage]:
     """Load Python package metadata and configs."""
 
     packages = []

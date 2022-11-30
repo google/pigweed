@@ -42,6 +42,7 @@ def abspath(path: Path) -> Path:
 
 class GnPaths(NamedTuple):
     """The set of paths needed to resolve GN paths to filesystem paths."""
+
     root: Path
     build: Path
     cwd: Path
@@ -58,13 +59,13 @@ class GnPaths(NamedTuple):
 
     def resolve_paths(self, gn_paths: str, sep: str = ';') -> str:
         """Resolves GN paths to filesystem paths in a delimited string."""
-        return sep.join(
-            str(self.resolve(path)) for path in gn_paths.split(sep))
+        return sep.join(str(self.resolve(path)) for path in gn_paths.split(sep))
 
 
 @dataclass(frozen=True)
 class Label:
     """Represents a GN label."""
+
     name: str
     dir: Path
     relative_dir: Path
@@ -99,10 +100,12 @@ class Label:
 
         set_attr(
             'out_dir',
-            paths.build / self.toolchain_name() / 'obj' / self.relative_dir)
+            paths.build / self.toolchain_name() / 'obj' / self.relative_dir,
+        )
         set_attr(
             'gen_dir',
-            paths.build / self.toolchain_name() / 'gen' / self.relative_dir)
+            paths.build / self.toolchain_name() / 'gen' / self.relative_dir,
+        )
 
     def gn_label(self) -> str:
         label = f'//{self.relative_dir.as_posix()}:{self.name}'
@@ -123,7 +126,7 @@ class _Artifact(NamedTuple):
 # Matches a non-phony build statement.
 _GN_NINJA_BUILD_STATEMENT = re.compile(r'^build (.+):[ \n](?!phony\b)')
 
-_OBJECTS_EXTENSIONS = ('.o', )
+_OBJECTS_EXTENSIONS = ('.o',)
 
 # Extensions used for compilation artifacts.
 _MAIN_ARTIFACTS = '', '.elf', '.a', '.so', '.dylib', '.exe', '.lib', '.dll'
@@ -147,7 +150,8 @@ def _get_artifact(entries: List[str]) -> _Artifact:
 
     raise ExpressionError(
         f'Expected 1, but found {len(filtered)} artifacts, after filtering for '
-        f'extensions {", ".join(repr(e) for e in _MAIN_ARTIFACTS)}: {entries}')
+        f'extensions {", ".join(repr(e) for e in _MAIN_ARTIFACTS)}: {entries}'
+    )
 
 
 def _parse_build_artifacts(fd) -> Iterator[_Artifact]:
@@ -185,8 +189,9 @@ def _parse_build_artifacts(fd) -> Iterator[_Artifact]:
         yield artifact
 
 
-def _search_target_ninja(ninja_file: Path,
-                         target: Label) -> Tuple[Optional[Path], List[Path]]:
+def _search_target_ninja(
+    ninja_file: Path, target: Label
+) -> Tuple[Optional[Path], List[Path]]:
     """Parses the main output file and object files from <target>.ninja."""
 
     artifact: Optional[Path] = None
@@ -209,8 +214,9 @@ def _search_target_ninja(ninja_file: Path,
     return artifact, objects
 
 
-def _search_toolchain_ninja(ninja_file: Path, paths: GnPaths,
-                            target: Label) -> Optional[Path]:
+def _search_toolchain_ninja(
+    ninja_file: Path, paths: GnPaths, target: Label
+) -> Optional[Path]:
     """Searches the toolchain.ninja file for outputs from the provided target.
 
     Files created by an action appear in toolchain.ninja instead of in their own
@@ -228,15 +234,16 @@ def _search_toolchain_ninja(ninja_file: Path, paths: GnPaths,
     stamp_statement = f'build {stamp_dir}/{target.name}.stamp: {stamp_tool} '
 
     # Newer GN uses a phony Ninja target to signal completion of a target.
-    phony_dir = Path(target.toolchain_name(), 'phony',
-                     target.relative_dir).as_posix()
+    phony_dir = Path(
+        target.toolchain_name(), 'phony', target.relative_dir
+    ).as_posix()
     phony_statement = f'build {phony_dir}/{target.name}: phony '
 
     with ninja_file.open() as fd:
         for line in fd:
             for statement in (phony_statement, stamp_statement):
                 if line.startswith(statement):
-                    output_files = line[len(statement):].strip().split()
+                    output_files = line[len(statement) :].strip().split()
                     if len(output_files) == 1:
                         return Path(output_files[0])
 
@@ -246,8 +253,8 @@ def _search_toolchain_ninja(ninja_file: Path, paths: GnPaths,
 
 
 def _search_ninja_files(
-        paths: GnPaths,
-        target: Label) -> Tuple[bool, Optional[Path], List[Path]]:
+    paths: GnPaths, target: Label
+) -> Tuple[bool, Optional[Path], List[Path]]:
     ninja_file = target.out_dir / f'{target.name}.ninja'
     if ninja_file.exists():
         return (True, *_search_target_ninja(ninja_file, target))
@@ -305,10 +312,10 @@ class _Expression:
         return self._ending + len(_ENDING)
 
     def contents(self) -> str:
-        return self.string[self._match.end():self._ending]
+        return self.string[self._match.end() : self._ending]
 
     def expression(self) -> str:
-        return self.string[self._match.start():self.end]
+        return self.string[self._match.start() : self.end]
 
 
 _Actions = Iterator[Tuple[_ArgAction, str]]
@@ -345,7 +352,8 @@ def _target_objects(paths: GnPaths, expr: _Expression) -> _Actions:
         raise ExpressionError(
             f'The expression "{expr.expression()}" in "{expr.string}" may '
             'expand to multiple arguments, so it cannot be used alongside '
-            'other text or expressions')
+            'other text or expressions'
+        )
 
     target = TargetInfo(paths, expr.contents())
     if not target.generated:
@@ -371,12 +379,14 @@ def _expand_arguments(paths: GnPaths, string: str) -> _Actions:
 
     for match in _START_EXPRESSION.finditer(string):
         if pos != match.start():
-            yield _ArgAction.APPEND, string[pos:match.start()]
+            yield _ArgAction.APPEND, string[pos : match.start()]
 
         ending = string.find(_ENDING, match.end())
         if ending == -1:
-            raise ExpressionError(f'Parse error: no terminating "{_ENDING}" '
-                                  f'was found for "{string[match.start():]}"')
+            raise ExpressionError(
+                f'Parse error: no terminating "{_ENDING}" '
+                f'was found for "{string[match.start():]}"'
+            )
 
         expression = _Expression(match, ending)
         yield from _FUNCTIONS[match.group(1)](paths, expression)
@@ -407,26 +417,34 @@ def expand_expressions(paths: GnPaths, arg: str) -> Iterable[str]:
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--gn-root',
-                        type=Path,
-                        required=True,
-                        help=('Path to the root of the GN tree; '
-                              'value of rebase_path("//", root_build_dir)'))
-    parser.add_argument('--current-path',
-                        type=Path,
-                        required=True,
-                        help='Value of rebase_path(".", root_build_dir)')
-    parser.add_argument('--default-toolchain',
-                        required=True,
-                        help='Value of default_toolchain')
-    parser.add_argument('--current-toolchain',
-                        required=True,
-                        help='Value of current_toolchain')
-    parser.add_argument('files',
-                        metavar='FILE',
-                        nargs='+',
-                        type=Path,
-                        help='Files to scan for expressions to evaluate')
+    parser.add_argument(
+        '--gn-root',
+        type=Path,
+        required=True,
+        help=(
+            'Path to the root of the GN tree; '
+            'value of rebase_path("//", root_build_dir)'
+        ),
+    )
+    parser.add_argument(
+        '--current-path',
+        type=Path,
+        required=True,
+        help='Value of rebase_path(".", root_build_dir)',
+    )
+    parser.add_argument(
+        '--default-toolchain', required=True, help='Value of default_toolchain'
+    )
+    parser.add_argument(
+        '--current-toolchain', required=True, help='Value of current_toolchain'
+    )
+    parser.add_argument(
+        'files',
+        metavar='FILE',
+        nargs='+',
+        type=Path,
+        help='Files to scan for expressions to evaluate',
+    )
     return parser.parse_args()
 
 
@@ -447,10 +465,12 @@ def main(
     Modifies the files in-place with their resolved contents.
     """
     tool = current_toolchain if current_toolchain != default_toolchain else ''
-    paths = GnPaths(root=abspath(gn_root),
-                    build=Path.cwd(),
-                    cwd=abspath(current_path),
-                    toolchain=tool)
+    paths = GnPaths(
+        root=abspath(gn_root),
+        build=Path.cwd(),
+        cwd=abspath(current_path),
+        toolchain=tool,
+    )
 
     for file in files:
         try:

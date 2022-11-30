@@ -46,27 +46,37 @@ def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
 
     parser.add_argument('--label', help='Label for this Python package')
-    parser.add_argument('--proto-library',
-                        dest='proto_libraries',
-                        type=argparse.FileType('r'),
-                        default=[],
-                        action='append',
-                        help='Paths')
-    parser.add_argument('--generated-root',
-                        required=True,
-                        type=Path,
-                        help='The base directory for the Python package')
-    parser.add_argument('--setup-json',
-                        required=True,
-                        type=argparse.FileType('r'),
-                        help='setup.py keywords as JSON')
-    parser.add_argument('--module-as-package',
-                        action='store_true',
-                        help='Generate an __init__.py that imports everything')
-    parser.add_argument('files',
-                        type=Path,
-                        nargs='+',
-                        help='Relative paths to the files in the package')
+    parser.add_argument(
+        '--proto-library',
+        dest='proto_libraries',
+        type=argparse.FileType('r'),
+        default=[],
+        action='append',
+        help='Paths',
+    )
+    parser.add_argument(
+        '--generated-root',
+        required=True,
+        type=Path,
+        help='The base directory for the Python package',
+    )
+    parser.add_argument(
+        '--setup-json',
+        required=True,
+        type=argparse.FileType('r'),
+        help='setup.py keywords as JSON',
+    )
+    parser.add_argument(
+        '--module-as-package',
+        action='store_true',
+        help='Generate an __init__.py that imports everything',
+    )
+    parser.add_argument(
+        'files',
+        type=Path,
+        nargs='+',
+        help='Relative paths to the files in the package',
+    )
     return parser.parse_args()
 
 
@@ -78,7 +88,8 @@ def _check_nested_protos(label: str, proto_info: Dict[str, Any]) -> None:
         raise ValueError(
             f"{label}'s 'proto_library' is set to {proto_info['label']}, but "
             f"that target's 'python_package' is {python_package or 'not set'}. "
-            f"Set {proto_info['label']}'s 'python_package' to {label}.")
+            f"Set {proto_info['label']}'s 'python_package' to {label}."
+        )
 
 
 @dataclass(frozen=True)
@@ -89,8 +100,8 @@ class _ProtoInfo:
 
 
 def _collect_all_files(
-        root: Path, files: List[Path],
-        paths_to_collect: Iterable[_ProtoInfo]) -> Dict[str, Set[str]]:
+    root: Path, files: List[Path], paths_to_collect: Iterable[_ProtoInfo]
+) -> Dict[str, Set[str]]:
     """Collects files in output dir, adds to files; returns package_data."""
     root.mkdir(exist_ok=True)
 
@@ -119,7 +130,8 @@ def _collect_all_files(
             # separate PYTHONPATH locations.
             initpy.write_text(
                 'from pkgutil import extend_path  # type: ignore\n'
-                '__path__ = extend_path(__path__, __name__)  # type: ignore\n')
+                '__path__ = extend_path(__path__, __name__)  # type: ignore\n'
+            )
         files.append(initpy)
 
     pkg_data: Dict[str, Set[str]] = defaultdict(set)
@@ -146,17 +158,16 @@ def _get_setup_keywords(pkg_data: dict, keywords: dict) -> Dict:
     """Gather all setuptools.setup() keyword args."""
     options_keywords = dict(
         packages=list(pkg_data),
-        package_data={pkg: list(files)
-                      for pkg, files in pkg_data.items()},
+        package_data={pkg: list(files) for pkg, files in pkg_data.items()},
     )
 
     keywords['options'].update(options_keywords)
     return keywords
 
 
-def _write_to_config(config: configparser.ConfigParser,
-                     data: Dict,
-                     section: Optional[str] = None):
+def _write_to_config(
+    config: configparser.ConfigParser, data: Dict, section: Optional[str] = None
+):
     """Populate a ConfigParser instance with the contents of a dict."""
     # Add a specified section if missing.
     if section is not None and not config.has_section(section):
@@ -208,16 +219,19 @@ def _import_module_in_package_init(all_files: List[Path]) -> None:
     sources = [
         f for f in all_files if f.suffix == '.py' and f.name != '__init__.py'
     ]
-    assert len(sources) == 1, (
-        'Module as package expects a single .py source file')
+    assert (
+        len(sources) == 1
+    ), 'Module as package expects a single .py source file'
 
-    source, = sources
+    (source,) = sources
     source.parent.joinpath('__init__.py').write_text(
-        f'from {source.stem}.{source.stem} import *\n')
+        f'from {source.stem}.{source.stem} import *\n'
+    )
 
 
-def _load_metadata(label: str,
-                   proto_libraries: Iterable[TextIO]) -> Iterator[_ProtoInfo]:
+def _load_metadata(
+    label: str, proto_libraries: Iterable[TextIO]
+) -> Iterator[_ProtoInfo]:
     for proto_library_file in proto_libraries:
         info = json.load(proto_library_file)
         _check_nested_protos(label, info)
@@ -227,13 +241,21 @@ def _load_metadata(label: str,
             with open(dep) as file:
                 deps.append(json.load(file)['package'])
 
-        yield _ProtoInfo(Path(info['root']),
-                         tuple(Path(p) for p in info['protoc_outputs']), deps)
+        yield _ProtoInfo(
+            Path(info['root']),
+            tuple(Path(p) for p in info['protoc_outputs']),
+            deps,
+        )
 
 
-def main(generated_root: Path, files: List[Path], module_as_package: bool,
-         setup_json: TextIO, label: str,
-         proto_libraries: Iterable[TextIO]) -> int:
+def main(
+    generated_root: Path,
+    files: List[Path],
+    module_as_package: bool,
+    setup_json: TextIO,
+    label: str,
+    proto_libraries: Iterable[TextIO],
+) -> int:
     """Generates a setup.py and other files for a Python package."""
     proto_infos = list(_load_metadata(label, proto_libraries))
     try:
@@ -243,7 +265,8 @@ def main(generated_root: Path, files: List[Path], module_as_package: bool,
         print(
             f'ERROR: Failed to generate Python package {label}:\n\n'
             f'{textwrap.indent(msg, "  ")}\n',
-            file=sys.stderr)
+            file=sys.stderr,
+        )
         return 1
 
     with setup_json:
@@ -257,9 +280,11 @@ def main(generated_root: Path, files: List[Path], module_as_package: bool,
 
     # Create the pyproject.toml and setup.cfg files for this package.
     generated_root.joinpath('pyproject.toml').write_text(PYPROJECT_FILE)
-    _generate_setup_cfg(pkg_data,
-                        setup_keywords,
-                        config_file_path=generated_root.joinpath('setup.cfg'))
+    _generate_setup_cfg(
+        pkg_data,
+        setup_keywords,
+        config_file_path=generated_root.joinpath('setup.cfg'),
+    )
 
     return 0
 

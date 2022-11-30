@@ -33,19 +33,21 @@ def _parse_args():
         '--delimiter',
         nargs='?',
         default=DEFAULT_DELIMITER,
-        help='Symbol that separates the path and the zip path destination.')
+        help='Symbol that separates the path and the zip path destination.',
+    )
     parser.add_argument(
         '--input_list',
         nargs='+',
-        help='Paths to files and dirs to zip and their desired zip location.')
+        help='Paths to files and dirs to zip and their desired zip location.',
+    )
     parser.add_argument('--out_filename', help='Zip file destination.')
 
     return parser.parse_args()
 
 
-def zip_up(input_list: Iterable,
-           out_filename: str,
-           delimiter=DEFAULT_DELIMITER):
+def zip_up(
+    input_list: Iterable, out_filename: str, delimiter=DEFAULT_DELIMITER
+):
     """Zips up all input files/dirs.
 
     Args:
@@ -68,18 +70,21 @@ def zip_up(input_list: Iterable,
             except ValueError as value_error:
                 msg = (
                     f'Input in the form of "[filename or dir] {delimiter} '
-                    f'/zip_destination/" expected. Instead got:\n  {_input}')
+                    f'/zip_destination/" expected. Instead got:\n  {_input}'
+                )
                 raise ZipError(msg) from value_error
             if not source:
                 raise ZipError(
                     f'Bad input:\n  {_input}\nInput source '
                     f'cannot be empty. Please specify the input in the form '
-                    f'of "[filename or dir] {delimiter} /zip_destination/".')
+                    f'of "[filename or dir] {delimiter} /zip_destination/".'
+                )
             if not destination.startswith('/'):
                 raise ZipError(
                     f'Bad input:\n  {_input}\nZip desination '
                     f'"{destination}" must start with "/" to indicate the '
-                    f'zip file\'s root directory.')
+                    f'zip file\'s root directory.'
+                )
             source_path = pathlib.Path(source)
             destination_path = pathlib.PurePath(destination)
 
@@ -88,8 +93,9 @@ def zip_up(input_list: Iterable,
                 # Case: "foo.txt > /mydir/"; destination is dir. Put foo.txt
                 # into mydir as /mydir/foo.txt
                 if destination.endswith('/'):
-                    zip_file.write(source_path,
-                                   destination_path / source_path.name)
+                    zip_file.write(
+                        source_path, destination_path / source_path.name
+                    )
                 # Case: "foo.txt > /bar.txt"; destination is a file--rename the
                 # source file: put foo.txt into the zip as /bar.txt
                 else:
@@ -97,24 +103,32 @@ def zip_up(input_list: Iterable,
                 continue
             # Case: the input source path points to a directory.
             if source_path.is_dir():
-                zip_up_dir(source, source_path, destination, destination_path,
-                           zip_file)
+                zip_up_dir(
+                    source, source_path, destination, destination_path, zip_file
+                )
                 continue
             raise ZipError(f'Unknown source path\n  {source_path}')
 
 
-def zip_up_dir(source: str, source_path: pathlib.Path, destination: str,
-               destination_path: pathlib.PurePath, zip_file: zipfile.ZipFile):
+def zip_up_dir(
+    source: str,
+    source_path: pathlib.Path,
+    destination: str,
+    destination_path: pathlib.PurePath,
+    zip_file: zipfile.ZipFile,
+):
     if not source.endswith('/'):
         raise ZipError(
             f'Source path:\n  {source}\nis a directory, but is '
             f'missing a trailing "/". The / requirement helps prevent bugs. '
-            f'To fix, add a trailing /:\n  {source}/')
+            f'To fix, add a trailing /:\n  {source}/'
+        )
     if not destination.endswith('/'):
         raise ZipError(
             f'Destination path:\n  {destination}\nis a directory, '
             f'but is missing a trailing "/". The / requirement helps prevent '
-            f'bugs. To fix, add a trailing /:\n  {destination}/')
+            f'bugs. To fix, add a trailing /:\n  {destination}/'
+        )
 
     # Walk the directory and add zip all of the files with the
     # same structure as the source.

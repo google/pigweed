@@ -26,26 +26,26 @@ _LOG = logging.getLogger(__name__)
 
 
 def argument_parser(
-    parser: Optional[argparse.ArgumentParser] = None
+    parser: Optional[argparse.ArgumentParser] = None,
 ) -> argparse.ArgumentParser:
     """Registers the script's arguments on an argument parser."""
 
     if parser is None:
         parser = argparse.ArgumentParser(description=__doc__)
 
-    parser.add_argument('--dst',
-                        type=Path,
-                        required=True,
-                        help='Path to host tools directory')
+    parser.add_argument(
+        '--dst', type=Path, required=True, help='Path to host tools directory'
+    )
     parser.add_argument('--name', help='Name for the installed tool')
-    parser.add_argument('--out-root',
-                        type=Path,
-                        required=True,
-                        help='Root of Ninja out directory')
-    parser.add_argument('--src',
-                        type=Path,
-                        required=True,
-                        help='Path to host tool executable')
+    parser.add_argument(
+        '--out-root',
+        type=Path,
+        required=True,
+        help='Root of Ninja out directory',
+    )
+    parser.add_argument(
+        '--src', type=Path, required=True, help='Path to host tool executable'
+    )
 
     return parser
 
@@ -81,12 +81,14 @@ def main() -> int:
             _LOG.error('  %s has been rebuilt but cannot be', name)
             _LOG.error('  copied into the host tools directory:')
             _LOG.error('')
-            _LOG.error('    %s',
-                       args.dst.relative_to(args.out_root).joinpath(name))
+            _LOG.error(
+                '    %s', args.dst.relative_to(args.out_root).joinpath(name)
+            )
             _LOG.error('')
             _LOG.error('  This can occur if the program is already running.')
             _LOG.error(
-                '  If it is running, exit it and try re-running the build.')
+                '  If it is running, exit it and try re-running the build.'
+            )
             _LOG.error('')
 
         return 1

@@ -25,27 +25,31 @@ def _parse_args() -> argparse.Namespace:
 
     parser = argparse.ArgumentParser(description=__doc__)
 
-    parser.add_argument('--source-root',
-                        type=Path,
-                        required=True,
-                        help='Prefix to strip from the source files')
-    parser.add_argument('sources',
-                        type=Path,
-                        nargs='*',
-                        help='Files to mirror to the directory')
-    parser.add_argument('--directory',
-                        type=Path,
-                        required=True,
-                        help='Directory to which to mirror the sources')
-    parser.add_argument('--path-file',
-                        type=Path,
-                        help='File with paths to files to mirror')
+    parser.add_argument(
+        '--source-root',
+        type=Path,
+        required=True,
+        help='Prefix to strip from the source files',
+    )
+    parser.add_argument(
+        'sources', type=Path, nargs='*', help='Files to mirror to the directory'
+    )
+    parser.add_argument(
+        '--directory',
+        type=Path,
+        required=True,
+        help='Directory to which to mirror the sources',
+    )
+    parser.add_argument(
+        '--path-file', type=Path, help='File with paths to files to mirror'
+    )
 
     return parser.parse_args()
 
 
-def _link_files(source_root: Path, sources: Iterable[Path],
-                directory: Path) -> Iterator[Path]:
+def _link_files(
+    source_root: Path, sources: Iterable[Path], directory: Path
+) -> Iterator[Path]:
     for source in sources:
         dest = directory / source.relative_to(source_root)
         dest.parent.mkdir(parents=True, exist_ok=True)
@@ -67,8 +71,9 @@ def _link_files(source_root: Path, sources: Iterable[Path],
             yield dest
 
 
-def _link_files_or_dirs(paths: Iterable[Path],
-                        directory: Path) -> Iterator[Path]:
+def _link_files_or_dirs(
+    paths: Iterable[Path], directory: Path
+) -> Iterator[Path]:
     """Links files or directories into the output directory.
 
     Files are linked directly; files in directories are linked as relative paths
@@ -85,10 +90,12 @@ def _link_files_or_dirs(paths: Iterable[Path],
             raise FileNotFoundError(f'{path} does not exist!')
 
 
-def mirror_paths(source_root: Path,
-                 sources: Iterable[Path],
-                 directory: Path,
-                 path_file: Optional[Path] = None) -> List[Path]:
+def mirror_paths(
+    source_root: Path,
+    sources: Iterable[Path],
+    directory: Path,
+    path_file: Optional[Path] = None,
+) -> List[Path]:
     """Creates hard links in the provided directory for the provided sources.
 
     Args:
