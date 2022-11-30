@@ -40,7 +40,14 @@ from pigweed.pw_transfer.integration_test import config_pb2
 import test_fixture
 from test_fixture import TransferIntegrationTestHarness, TransferConfig
 
-# TODO(b/259595799) Create ALL_LANGUAGES and ALL_LANGUAGES_AND_VERSIONS globals.
+_ALL_LANGUAGES = ("cpp", "java", "python")
+_ALL_VERSIONS = (
+    config_pb2.TransferAction.ProtocolVersion.V1,
+    config_pb2.TransferAction.ProtocolVersion.V2,
+)
+_ALL_LANGUAGES_AND_VERSIONS = tuple(
+    itertools.product(_ALL_LANGUAGES, _ALL_VERSIONS)
+)
 
 
 class MediumTransferReadIntegrationTest(test_fixture.TransferIntegrationTest):
@@ -50,15 +57,7 @@ class MediumTransferReadIntegrationTest(test_fixture.TransferIntegrationTest):
         server_port=3304, client_port=3305
     )
 
-    @parameterized.expand(
-        itertools.product(
-            ("cpp", "java", "python"),
-            (
-                config_pb2.TransferAction.ProtocolVersion.V1,
-                config_pb2.TransferAction.ProtocolVersion.V2,
-            ),
-        )
-    )
+    @parameterized.expand(_ALL_LANGUAGES_AND_VERSIONS)
     def test_medium_client_read(self, client_type, protocol_version):
         payload = random.Random(67336391945).randbytes(512)
         config = self.default_config()
@@ -67,15 +66,7 @@ class MediumTransferReadIntegrationTest(test_fixture.TransferIntegrationTest):
             client_type, config, resource_id, payload, protocol_version
         )
 
-    @parameterized.expand(
-        itertools.product(
-            ("cpp", "java", "python"),
-            (
-                config_pb2.TransferAction.ProtocolVersion.V1,
-                config_pb2.TransferAction.ProtocolVersion.V2,
-            ),
-        )
-    )
+    @parameterized.expand(_ALL_LANGUAGES_AND_VERSIONS)
     def test_large_hdlc_escape_client_read(self, client_type, protocol_version):
         # Use bytes that will be escaped by HDLC to ensure transfer over a
         # HDLC channel doesn't cause frame corruption due to insufficient
@@ -89,15 +80,7 @@ class MediumTransferReadIntegrationTest(test_fixture.TransferIntegrationTest):
             client_type, config, resource_id, payload, protocol_version
         )
 
-    @parameterized.expand(
-        itertools.product(
-            ("cpp", "java", "python"),
-            (
-                config_pb2.TransferAction.ProtocolVersion.V1,
-                config_pb2.TransferAction.ProtocolVersion.V2,
-            ),
-        )
-    )
+    @parameterized.expand(_ALL_LANGUAGES_AND_VERSIONS)
     def test_pattern_drop_client_read(self, client_type, protocol_version):
         """Drops packets with an alternating pattern."""
         payload = random.Random(67336391945).randbytes(1234)
@@ -132,15 +115,7 @@ class MediumTransferReadIntegrationTest(test_fixture.TransferIntegrationTest):
             permanent_resource_id=True,
         )
 
-    @parameterized.expand(
-        itertools.product(
-            ("cpp", "java", "python"),
-            (
-                config_pb2.TransferAction.ProtocolVersion.V1,
-                config_pb2.TransferAction.ProtocolVersion.V2,
-            ),
-        )
-    )
+    @parameterized.expand(_ALL_LANGUAGES_AND_VERSIONS)
     def test_parameter_drop_client_read(self, client_type, protocol_version):
         """Drops the first few transfer initialization packets."""
         # TODO(b/257308150): Python v2 breaks and the transfer fails on this

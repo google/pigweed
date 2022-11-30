@@ -43,6 +43,8 @@ from test_fixture import (
 )
 from pigweed.pw_transfer.integration_test import config_pb2
 
+_ALL_LANGUAGES = ("cpp", "java", "python")
+
 
 class LargeWriteTransferIntegrationTest(TransferIntegrationTest):
     # Each set of transfer tests uses a different client/server port pair to
@@ -51,13 +53,7 @@ class LargeWriteTransferIntegrationTest(TransferIntegrationTest):
         server_port=3310, client_port=3311
     )
 
-    @parameterized.expand(
-        [
-            ("cpp"),
-            ("java"),
-            ("python"),
-        ]
-    )
+    @parameterized.expand(_ALL_LANGUAGES)
     def test_1mb_write_dropped_data(self, client_type):
         server_config = config_pb2.ServerConfig(
             chunk_size_bytes=216,
@@ -92,13 +88,7 @@ class LargeWriteTransferIntegrationTest(TransferIntegrationTest):
         config = TransferConfig(server_config, client_config, proxy_config)
         self.do_single_write(client_type, config, resource_id, payload)
 
-    @parameterized.expand(
-        [
-            ("cpp"),
-            ("java"),
-            ("python"),
-        ]
-    )
+    @parameterized.expand(_ALL_LANGUAGES)
     def test_1mb_write_reordered_data(self, client_type):
         server_config = config_pb2.ServerConfig(
             chunk_size_bytes=216,
