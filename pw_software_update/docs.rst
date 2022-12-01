@@ -98,5 +98,347 @@ the new slot has passed boot verification and fully booted into a good state.
 Lastly, updates should be checked again in case there are newer updates
 available.
 
+
+Command-line Interface
+======================
+
+You can access the software update CLI by running ``pw update`` in the pigweed environment.
+
+
+.. code-block:: bash
+
+  ~$ cd pigweed
+  ~/pigweed$ source ./activate.sh
+  ~/pigweed$ pw update
+
+  usage: pw update [-h] <command>
+
+  Software update related operations.
+
+  positional arguments:
+      generate-key
+      create-root-metadata
+      sign-root-metadata
+      inspect-root-metadata
+      create-empty-bundle
+      add-root-metadata-to-bundle
+      add-file-to-bundle
+      sign-bundle
+      inspect-bundle
+      verify-bundle
+
+  optional arguments:
+    -h, --help            show this help message and exit
+
+  Learn more at: pigweed.dev/pw_software_update
+
+
+generate-key
+^^^^^^^^^^^^
+
+The ``generate-key`` subcommmand generates an ECDSA SHA-256 public + private keypair.
+
+.. code-block:: bash
+
+  $ pw update generate-key -h
+
+  usage: pw update generate-key [-h] pathname
+
+  Generates an ecdsa-sha2-nistp256 signing key pair (private + public)
+
+  positional arguments:
+    pathname    Path to generated key pair
+
+  optional arguments:
+    -h, --help  show this help message and exit
+
+
++------------+------------+----------------+
+| positional argument                      |
++============+============+================+
+|``pathname``|path to the generated keypair|
++------------+------------+----------------+
+
+create-root-metadata
+^^^^^^^^^^^^^^^^^^^^
+
+The ``create-root-metadata`` subcommand creates a root metadata.
+
+.. code-block:: bash
+
+  $ pw update create-root-metadata -h
+
+  usage: pw update create-root-metadata [-h] [--version VERSION] --append-root-key ROOT_KEY
+         --append-targets-key TARGETS_KEY -o/--out OUT
+
+  Creation of root metadata
+
+  optional arguments:
+    -h, --help                        show this help message and exit
+    --version VERSION                 Canonical version number for rollback checks;
+                                      Defaults to 1
+
+  required arguments:
+    --append-root-key ROOT_KEY        Path to root key
+    --append-targets-key TARGETS_KEY  Path to targets key
+    -o OUT, --out OUT                 Path to output file
+
+
+
++--------------------------+-------------------------------------------+
+| required arguments                                                   |
++==========================+===========================================+
+|``--append-root-key``     | path to desired root key                  |
++--------------------------+-------------------------------------------+
+|``--append-targets-key``  | path to desired target key                |
++--------------------------+-------------------------------------------+
+|``--out``                 | output path of newly created root metadata|
++--------------------------+-------------------------------------------+
+
+
++-------------+------------+------------------------------+
+| optional argument                                       |
++=============+============+==============================+
+|``--version``| Rollback version number(default set to 1) |
++-------------+------------+------------------------------+
+
+sign-root-metadata
+^^^^^^^^^^^^^^^^^^
+
+The ``sign-root-metadata`` subcommand signs a given root metadata.
+
+.. code-block:: bash
+
+  usage: pw update sign-root-metadata [-h] --root-metadata ROOT_METADATA --root-key ROOT_KEY
+
+  Signing of root metadata
+
+  optional arguments:
+    -h, --help                     show this help message and exit
+
+  required arguments:
+    --root-metadata ROOT_METADATA  Root metadata to be signed
+    --root-key ROOT_KEY            Root signing key
+
+
+
++--------------------------+-------------------------------------------+
+| required arguments                                                   |
++==========================+===========================================+
+|``--root-metadata``       | Path of root metadata to be signed        |
++--------------------------+-------------------------------------------+
+|``--root-key``            | Path to root signing key                  |
++--------------------------+-------------------------------------------+
+
+inspect-root-metadata
+^^^^^^^^^^^^^^^^^^^^^
+
+The ``inspect-root-metadata`` subcommand prints the contents of a given root metadata.
+
+.. code-block:: bash
+
+  $ pw update inspect-root-metadata -h
+
+  usage: pw update inspect-root-metadata [-h] pathname
+
+  Outputs contents of root metadata
+
+  positional arguments:
+    pathname    Path to root metadata
+
+  optional arguments:
+    -h, --help  show this help message and exit
+
+
++--------------------------+-------------------------------------------+
+| positional argument                                                  |
++==========================+===========================================+
+|``pathname``              | Path to root metadata                     |
++--------------------------+-------------------------------------------+
+
+
+create-empty-bundle
+^^^^^^^^^^^^^^^^^^^
+
+The ``create-empty-bundle`` subcommand creates an empty update bundle.
+
+.. code-block:: bash
+
+  $ pw update create-empty-bundle -h
+
+  usage: pw update create-empty-bundle [-h] [--target-metadata-version VERSION] pathname
+
+  Creation of an empty bundle
+
+  positional arguments:
+    pathname                           Path to newly created empty bundle
+
+  optional arguments:
+    -h, --help                         show this help message and exit
+    --target-metadata-version VERSION  Version number for targets metadata;
+                                       Defaults to 1
+
++--------------------------+-------------------------------------------+
+| positional argument                                                  |
++==========================+===========================================+
+|``pathname``              | Path to newly created empty bundle        |
++--------------------------+-------------------------------------------+
+
++------------------------------+--------------------------------------+
+| optional arguments                                                  |
++==============================+======================================+
+|``--target-metadata-version`` | Version number for targets metadata; |
+|                              |         Defaults to 1                |
++------------------------------+--------------------------------------+
+
+add-root-metadata-to-bundle
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The ``add-root-metadata-to-bundle`` subcommand adds a root metadata to a bundle.
+
+.. code-block:: bash
+
+  $ pw update add-root-metadata-to-bundle -h
+
+  usage: pw update add-root-metadata-to-bundle [-h] --append-root-metadata ROOT_METADATA
+         --bundle BUNDLE
+
+  Add root metadata to a bundle
+
+  optional arguments:
+    -h, --help                            show this help message and exit
+
+  required arguments:
+    --append-root-metadata ROOT_METADATA  Path to root metadata
+    --bundle BUNDLE                       Path to bundle
+
++--------------------------+-------------------------------------------+
+| required arguments                                                   |
++==========================+===========================================+
+|``--append-root-metadata``| Path to root metadata                     |
++--------------------------+-------------------------------------------+
+|``--bundle``              | Path to bundle                            |
++--------------------------+-------------------------------------------+
+
+
+add-file-to-bundle
+^^^^^^^^^^^^^^^^^^
+
+The ``add-file-to-bundle`` subcommand adds a target file to an existing bundle.
+
+.. code-block:: bash
+
+  $ pw update add-file-to-bundle -h
+
+  usage: pw update add-file-to-bundle [-h] [--new-name NEW_NAME] --bundle BUNDLE
+         --file FILE_PATH
+
+  Add a file to an existing bundle
+
+  optional arguments:
+    -h, --help           show this help message and exit
+    --new-name NEW_NAME  Optional new name for target
+
+  required arguments:
+    --bundle BUNDLE      Path to an existing bundle
+    --file FILE_PATH     Path to a target file
+
++--------------------------+-------------------------------------------+
+| required arguments                                                   |
++==========================+===========================================+
+|``--file``                | Path to a target file                     |
++--------------------------+-------------------------------------------+
+|``--bundle``              | Path to bundle                            |
++--------------------------+-------------------------------------------+
+
++--------------------------+-------------------------------------------+
+| optional argument                                                    |
++==========================+===========================================+
+|``--new-name``            | Optional new name for target              |
++--------------------------+-------------------------------------------+
+
+sign-bundle
+^^^^^^^^^^^
+
+The ``sign-bundle`` subcommand signs an existing bundle with a dev key.
+
+.. code-block:: bash
+
+  $ pw update sign-bundle -h
+
+  usage: pw update sign-bundle [-h] --bundle BUNDLE --key KEY
+
+  Sign an existing bundle using a development key
+
+  optional arguments:
+    -h, --help       show this help message and exit
+
+  required arguments:
+    --bundle BUNDLE  Bundle to be signed
+    --key KEY        Bundle signing key
+
++--------------------------+-------------------------------------------+
+| required arguments                                                   |
++==========================+===========================================+
+|``--key``                 | Key to sign bundle                        |
++--------------------------+-------------------------------------------+
+|``--bundle``              | Path to bundle                            |
++--------------------------+-------------------------------------------+
+
+inspect-bundle
+^^^^^^^^^^^^^^
+
+The ``inspect-bundle`` subcommand prints the contents of a given bundle.
+
+.. code-block:: bash
+
+  $ pw update inspect-bundle -h
+
+  usage: pw update inspect-bundle [-h] pathname
+
+  Outputs contents of bundle
+
+  positional arguments:
+    pathname    Path to bundle
+
+  optional arguments:
+    -h, --help  show this help message and exit
+
+
++------------+------------+----------------+
+| positional argument                      |
++============+============+================+
+|``pathname``|Path to bundle               |
++------------+------------+----------------+
+
+verify-bundle
+^^^^^^^^^^^^^
+
+The ``verify-bundle`` subcommand performs verification of an existing bundle.
+
+.. code-block:: bash
+
+  $ pw update verify-bundle -h
+
+  usage: pw update verify-bundle [-h] --bundle BUNDLE
+         --trusted-root-metadata ROOT_METADATA
+
+  Verify a bundle
+
+  optional arguments:
+    -h, --help                             show this help message and exit
+
+  required arguments:
+    --bundle BUNDLE                        Bundle to be verified
+    --trusted-root-metadata ROOT_METADATA  Trusted root metadata
+
++---------------------------+-------------------------------------------+
+| required arguments                                                    |
++===========================+===========================================+
+|``--trusted-root-metadata``| Trusted root metadata(anchor)             |
++---------------------------+-------------------------------------------+
+|``--bundle``               | Path of bundle to be verified             |
++---------------------------+-------------------------------------------+
+
 Getting started with bundles (coming soon)
 ==========================================
