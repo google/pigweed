@@ -347,6 +347,15 @@ struct LinkKeyRequestReplyCommand:
   let bredr_link_key_size = LinkKey.$size_in_bytes
   $next [+bredr_link_key_size] LinkKey link_key
 
+# =======================================================
+# Link Key Request Negative Reply Command (v1.1) (BR/EDR)
+struct LinkKeyRequestNegativeReplyCommand:
+  let hdr_size = EmbossCommandHeader.$size_in_bytes
+  0     [+hdr_size] EmbossCommandHeader header
+
+  # BD_ADDR of the peer device that the host does not have a link key for.
+  $next [+6] UInt bd_addr
+
 # ======================================================
 # Enhanced Setup Synchronous Connection Command (CSA2) (BR/EDR)
 

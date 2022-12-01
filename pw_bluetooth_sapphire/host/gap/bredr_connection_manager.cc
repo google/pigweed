@@ -1406,11 +1406,11 @@ void BrEdrConnectionManager::SendUserPasskeyRequestNegativeReply(DeviceAddressBy
 void BrEdrConnectionManager::SendLinkKeyRequestNegativeReply(DeviceAddressBytes bd_addr,
                                                              hci::ResultFunction<> cb) {
   auto negative_reply =
-      hci::CommandPacket::New(hci_spec::kLinkKeyRequestNegativeReply,
-                              sizeof(hci_spec::LinkKeyRequestNegativeReplyCommandParams));
+      hci::EmbossCommandPacket::New<hci_spec::LinkKeyRequestNegativeReplyCommandView>(
+          hci_spec::kLinkKeyRequestNegativeReply);
   auto negative_reply_params =
-      negative_reply->mutable_payload<hci_spec::LinkKeyRequestNegativeReplyCommandParams>();
-  negative_reply_params->bd_addr = bd_addr;
+      negative_reply.view<hci_spec::LinkKeyRequestNegativeReplyCommandWriter>();
+  negative_reply_params.bd_addr().Write(bd_addr.as_int());
   SendCommandWithStatusCallback(std::move(negative_reply), std::move(cb));
 }
 

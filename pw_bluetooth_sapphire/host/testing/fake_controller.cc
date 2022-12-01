@@ -1458,8 +1458,9 @@ void FakeController::OnLinkKeyRequestReplyCommandReceived(
 }
 
 void FakeController::OnLinkKeyRequestNegativeReplyCommandReceived(
-    const hci_spec::LinkKeyRequestNegativeReplyCommandParams& params) {
-  FakePeer* peer = FindPeer(DeviceAddress(DeviceAddress::Type::kBREDR, params.bd_addr));
+    hci_spec::LinkKeyRequestNegativeReplyCommandView params) {
+  FakePeer* peer = FindPeer(
+      DeviceAddress(DeviceAddress::Type::kBREDR, DeviceAddressBytes(params.bd_addr().Read())));
   if (!peer) {
     RespondWithCommandStatus(hci_spec::kLinkKeyRequestNegativeReply,
                              hci_spec::StatusCode::UNKNOWN_CONNECTION_ID);
@@ -1468,7 +1469,7 @@ void FakeController::OnLinkKeyRequestNegativeReplyCommandReceived(
   RespondWithCommandStatus(hci_spec::kLinkKeyRequestNegativeReply, hci_spec::StatusCode::SUCCESS);
 
   hci_spec::IOCapabilityRequestEventParams request = {};
-  request.bd_addr = params.bd_addr;
+  request.bd_addr = DeviceAddressBytes(params.bd_addr().Read());
   SendEvent(hci_spec::kIOCapabilityRequestEventCode, BufferView(&request, sizeof(request)));
 }
 
@@ -3000,12 +3001,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnLinkKeyRequestReplyCommandReceived(params);
       break;
     }
-    case hci_spec::kLinkKeyRequestNegativeReply: {
-      const auto& params =
-          command_packet.payload<hci_spec::LinkKeyRequestNegativeReplyCommandParams>();
-      OnLinkKeyRequestNegativeReplyCommandReceived(params);
-      break;
-    }
     case hci_spec::kIOCapabilityRequestReply: {
       const auto& params =
           command_packet.payload<hci_spec::IOCapabilityRequestReplyCommandParams>();
@@ -3058,7 +3053,8 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kEnhancedAcceptSynchronousConnectionRequest:
     case hci_spec::kEnhancedSetupSynchronousConnection:
     case hci_spec::kCreateConnection:
-    case hci_spec::kDisconnect: {
+    case hci_spec::kDisconnect:
+    case hci_spec::kLinkKeyRequestNegativeReply: {
       // This case is for packet types that have been migrated to the new Emboss architecture. Their
       // old version can be still be assembled from the HciEmulator channel, so here we repackage
       // and forward them as Emboss packets.
@@ -3123,6 +3119,11 @@ void FakeController::HandleReceivedCommandPacket(hci::EmbossCommandPacket& comma
     case hci_spec::kDisconnect: {
       const auto params = command_packet.view<hci_spec::DisconnectCommandView>();
       OnDisconnectCommandReceived(params);
+      break;
+    }
+    case hci_spec::kLinkKeyRequestNegativeReply: {
+      const auto params = command_packet.view<hci_spec::LinkKeyRequestNegativeReplyCommandView>();
+      OnLinkKeyRequestNegativeReplyCommandReceived(params);
       break;
     }
     default: {

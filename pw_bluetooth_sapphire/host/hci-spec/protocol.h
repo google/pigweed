@@ -181,11 +181,6 @@ struct LinkKeyRequestReplyReturnParams {
 // Link Key Request Negative Reply Command (v1.1) (BR/EDR)
 constexpr OpCode kLinkKeyRequestNegativeReply = LinkControlOpCode(0x000C);
 
-struct LinkKeyRequestNegativeReplyCommandParams {
-  // BD_ADDR of the peer device that the host does not have a link key for.
-  DeviceAddressBytes bd_addr;
-} __PACKED;
-
 struct LinkKeyRequestNegativeReplyReturnParams {
   // See enum StatusCode in hci_constants.h.
   StatusCode status;

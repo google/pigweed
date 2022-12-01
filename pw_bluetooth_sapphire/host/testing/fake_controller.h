@@ -634,7 +634,7 @@ class FakeController : public ControllerTestDoubleBase {
 
   // Called when a HCI_Link_Key_Request_Negative_Reply command is received.
   void OnLinkKeyRequestNegativeReplyCommandReceived(
-      const hci_spec::LinkKeyRequestNegativeReplyCommandParams& params);
+      hci_spec::LinkKeyRequestNegativeReplyCommandView params);
 
   // Called when a HCI_IO_Capability_Request_Reply command is received.
   void OnIOCapabilityRequestReplyCommand(
