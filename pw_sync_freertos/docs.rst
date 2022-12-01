@@ -45,6 +45,102 @@ state.
   APIs, see the `FreeRTOS kernel interrupt priority documentation
   <https://www.freertos.org/a00110.html#kernel_priority>`_ for more details.
 
+Design Notes
+------------
+FreeRTOS does not supply an interrupt spin-lock API, so this backend provides
+a suitable implementation using a compbination of both critical section and
+schduler APIs provided by FreeRTOS.
+
+This design is influenced by the following factors:
+
+- FreeRTOS support for both synchronous and asynchronous yield behavior in
+  different ports.
+- Critical sections behave differently depending on whether or not yield is
+  synchronous or asynchronous.
+- Users must be allowed to call functions that result in a call to yield
+  while an InterruptSpinLock is held.
+- The signaling mechanisms in FreeRTOS all internally call yield to preempt
+  the currently-running task in the event that a higher-priority task is
+  unblocked during execution.
+
+Synchronous and Asynchronous Yield
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+In FreeRTOS, any kernel API call that results in a higher-priority task being
+made “ready” triggers a call to ``taskYIELD()``.
+
+In some ports, this results in an immediate context switch directly from
+within the API - this is known as synchronous yielding behavior.
+
+In other cases, this results in a software-triggered interrupt
+being pended - and depending on the state of interrupts being masked, this
+results in thread-scheduling being deferred until interrupts are unmasked.
+This is known as asynchronous yielding behavior.
+
+As part of a yield, it is left to the port-specific code to call
+the FreeRTOS ``vTaskSwitchContext()`` function to swap current/ready tasks.
+This function will select the next task to run, and swap it for the
+currently executing task.
+
+Yield Within a Critical Section
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+A FreeRTOS critical section provides an interrupt-disabled context that ensures
+that a thread of execution cannot be interrupted by incoming ISRs.
+
+If a port implements asynchronous yield, any calls to ``taskYIELD()`` that
+occur during execution of a critical section will not be handled until the
+interrupts are re-enabled at the end of the critical section.  As a result,
+any higher priority tasks that are unblocked will not preempt the current task
+from within the critical section. In these ports, a critical section alone is
+sufficient to prevent any interruption to code flow - be it from preempting
+tasks or ISRs.
+
+If a port implements synchronous yield, then a context switch to a
+higher-priority ready task can occur within a critical section as a result
+of a kernel API unblocking a higher-prirority task. When this occurs, the
+higher-priority task will be swapped in immediately, and its interrupt-enabled
+status applied to the CPU core. This typically causes interrupts to be
+re-enabled as a result of the context switch, which is an unintended
+side-effect for tasks that presume to have exclusive access to the CPU,
+leading to logic errors and broken assumptions.
+
+In short, any code that uses a FreeRTOS interrupt-disabled critical section
+alone to provide an interrupt-safe context is subject to port-specific behavior
+if it calls kernel APIs that can unblock tasks. A critical section alone is
+insufficient to implement InterruptSpinLock correctly.
+
+Yielding with Scheduling Suspended
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+If a task is unblocked while the scheduler is suspended, the task is moved
+to a "pending ready-list", and a flag is set to ensure that tasks are
+scheduled as necessary once the scheduler is resumed.  Once scheduling
+resumes, any tasks that were unblocked while the scheduler was suspended
+are processed immediately, and rescheduling/preemption resumes at that time.
+
+In the event that a call to ``taskYIELD()`` occurs directly while the
+scheduler is suspended, the result is that ``vTaskSwitchContext()`` switches
+back to the currently running task.  This is a guard-rail that short-circuits
+any attempts to bypass the scheduler-suspended state manually.
+
+Critical Section with Suspended Scheduling
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+It is important to note that a critical section may be entered while the
+scheduler is also disabled. In such a state, the system observes FreeRTOS'
+contract that threads are not re-scheduled while the scheduler is supsended,
+with the benefit that ISRs may not break the atomicity of code executing
+while the lock is held.
+
+This state is also compatible with either synchronous or asynchronous
+yield behavior:
+
+- In the synchronous cases, the result of a call to yield is that
+  ``vTaskSwitchContext`` is invoked immediately, with the current task being
+  restored.
+- In the Asynchronous case, the result of a call to yield is that the context
+  switch interrupt is deferred until the end of the critical section.
+
+This is sufficient to satisfy the requirements implement an InterruptSpinLock
+for any FreeRTOS target.
+
 --------------------
 Signaling Primitives
 --------------------
