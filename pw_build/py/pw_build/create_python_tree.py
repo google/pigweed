@@ -47,6 +47,11 @@ except ImportError:
 def _parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
+        '--repo-root',
+        type=Path,
+        help='Path to the root git repo.',
+    )
+    parser.add_argument(
         '--tree-destination-dir', type=Path, help='Path to output directory.'
     )
     parser.add_argument(
@@ -102,13 +107,25 @@ def _parse_args():
 
 
 class UnknownGitSha(Exception):
-    "Exception thrown when the current git SHA cannot be found."
+    """Exception thrown when the current git SHA cannot be found."""
 
 
-def get_current_git_sha() -> str:
-    git_command = 'git log -1 --pretty=format:%h'
+def get_current_git_sha(repo_root: Optional[Path] = None) -> str:
+    if not repo_root:
+        repo_root = Path.cwd()
+    git_command = [
+        'git',
+        '-C',
+        str(repo_root),
+        'log',
+        '-1',
+        '--pretty=format:%h',
+    ]
+
     process = subprocess.run(
-        git_command.split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+        git_command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
     )
     gitsha = process.stdout.decode()
     if process.returncode != 0 or not gitsha:
@@ -126,7 +143,7 @@ def get_current_date() -> str:
 
 
 class UnexpectedConfigSection(Exception):
-    "Exception thrown when the common configparser contains unexpected values."
+    """Exception thrown when the common config contains unexpected values."""
 
 
 def load_common_config(
@@ -135,6 +152,7 @@ def load_common_config(
     package_version_override: Optional[str] = None,
     append_git_sha: bool = False,
     append_date: bool = False,
+    repo_root: Optional[Path] = None,
 ) -> configparser.ConfigParser:
     """Load an existing ConfigParser file and update metadata.version."""
     config = configparser.ConfigParser()
@@ -164,7 +182,7 @@ def load_common_config(
     if append_date:
         build_metadata.append(get_current_date())
     if append_git_sha:
-        build_metadata.append(get_current_git_sha())
+        build_metadata.append(get_current_git_sha(repo_root))
     if build_metadata:
         version_prefix = config['metadata']['version']
         build_metadata_text = '.'.join(build_metadata)
@@ -385,6 +403,7 @@ def _main():
             package_version_override=args.setupcfg_override_version,
             append_git_sha=args.setupcfg_version_append_git_sha,
             append_date=args.setupcfg_version_append_date,
+            repo_root=args.repo_root,
         )
 
         update_config_with_packages(config=config, python_packages=py_packages)

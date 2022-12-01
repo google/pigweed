@@ -297,6 +297,8 @@ template("pw_python_distribution") {
     _pw_internal_run_in_venv = false
 
     args = [
+      "--repo-root",
+      rebase_path("//", root_build_dir),
       "--tree-destination-dir",
       rebase_path(_output_dir, root_build_dir),
       "--input-list-files",
