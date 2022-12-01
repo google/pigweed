@@ -298,7 +298,7 @@ class Context {
 
   // Ends the transfer with the specified status, sending a completion chunk to
   // the peer.
-  void TerminateTransfer(Status status);
+  void TerminateTransfer(Status status, bool with_resource_id = false);
 
   // Ends a transfer following notification of completion from the peer.
   void HandleTermination(Status status);
@@ -312,7 +312,7 @@ class Context {
   // Sends a final status chunk of a completed transfer without updating the
   // transfer. Sends status_, which MUST have been set by a previous Finish()
   // call.
-  void SendFinalStatusChunk();
+  void SendFinalStatusChunk(bool with_resource_id = false);
 
   // Marks the transfer as completed and calls FinalCleanup(). Sets status_ to
   // the final status for this transfer. The transfer MUST be active when this

@@ -133,13 +133,19 @@ bool Context::StartTransferAsServer(const NewTransferEvent& new_transfer) {
 
   flags_ |= kFlagsContactMade;
 
-  if (const Status status = new_transfer.handler->Prepare(new_transfer.type);
+  if (Status status = new_transfer.handler->Prepare(new_transfer.type);
       !status.ok()) {
     PW_LOG_WARN("Transfer handler %u prepare failed with status %u",
                 static_cast<unsigned>(new_transfer.handler->id()),
                 status.code());
-    TerminateTransfer(status.IsPermissionDenied() ? status
-                                                  : Status::DataLoss());
+
+    // As this failure occurs at the start of a transfer, no protocol version is
+    // yet negotiated and one must be set to send a response. It is okay to use
+    // the desired version here, as that comes from the client.
+    configured_protocol_version_ = desired_protocol_version_;
+
+    status = status.IsPermissionDenied() ? status : Status::DataLoss();
+    TerminateTransfer(status, /*with_resource_id=*/true);
     return false;
   }
 
@@ -840,7 +846,7 @@ void Context::HandleTerminatingChunk(const Chunk& chunk) {
   }
 }
 
-void Context::TerminateTransfer(Status status) {
+void Context::TerminateTransfer(Status status, bool with_resource_id) {
   if (transfer_state_ == TransferState::kTerminating ||
       transfer_state_ == TransferState::kCompleted) {
     // Transfer has already been terminated; no need to do it again.
@@ -863,7 +869,7 @@ void Context::TerminateTransfer(Status status) {
   // Don't send a final chunk if the other end of the transfer has not yet
   // made contact, as there is no one to notify.
   if ((flags_ & kFlagsContactMade) == kFlagsContactMade) {
-    SendFinalStatusChunk();
+    SendFinalStatusChunk(with_resource_id);
   }
 }
 
@@ -885,7 +891,7 @@ void Context::HandleTermination(Status status) {
   }
 }
 
-void Context::SendFinalStatusChunk() {
+void Context::SendFinalStatusChunk(bool with_resource_id) {
   PW_DCHECK(transfer_state_ == TransferState::kCompleted ||
             transfer_state_ == TransferState::kTerminating);
 
@@ -893,8 +899,12 @@ void Context::SendFinalStatusChunk() {
                static_cast<unsigned>(session_id_),
                status_.code());
 
-  EncodeAndSendChunk(
-      Chunk::Final(configured_protocol_version_, session_id_, status_));
+  Chunk chunk =
+      Chunk::Final(configured_protocol_version_, session_id_, status_);
+  if (with_resource_id) {
+    chunk.set_resource_id(resource_id_);
+  }
+  EncodeAndSendChunk(chunk);
 }
 
 void Context::Finish(Status status) {

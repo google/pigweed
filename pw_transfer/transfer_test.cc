@@ -1953,6 +1953,23 @@ TEST_F(ReadTransfer, Version2_InvalidResourceId) {
   EXPECT_EQ(chunk.status().value(), Status::NotFound());
 }
 
+TEST_F(ReadTransfer, Version2_PrepareError) {
+  SometimesUnavailableReadHandler unavailable_handler(99, kData);
+  ctx_.service().RegisterHandler(unavailable_handler);
+
+  ctx_.SendClientStream(
+      EncodeChunk(Chunk(ProtocolVersion::kVersionTwo, Chunk::Type::kStart)
+                      .set_resource_id(99)));
+  transfer_thread_.WaitUntilEventIsProcessed();
+
+  ASSERT_EQ(ctx_.total_responses(), 1u);
+  Chunk chunk = DecodeChunk(ctx_.responses().back());
+  EXPECT_EQ(chunk.protocol_version(), ProtocolVersion::kVersionTwo);
+  EXPECT_EQ(chunk.type(), Chunk::Type::kCompletion);
+  EXPECT_EQ(chunk.resource_id(), 99u);
+  EXPECT_EQ(chunk.status().value(), Status::DataLoss());
+}
+
 TEST_F(WriteTransfer, Version2_SimpleTransfer) {
   ctx_.SendClientStream(
       EncodeChunk(Chunk(ProtocolVersion::kVersionTwo, Chunk::Type::kStart)
