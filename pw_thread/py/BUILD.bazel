@@ -23,6 +23,7 @@ py_library(
         "pw_thread/__init__.py",
         "pw_thread/thread_analyzer.py",
     ],
+    tags = ["manual"],
     deps = [
         "//pw_symbolizer/py:pw_symbolizer",
         "//pw_thread:thread_proto_py_pb2",
@@ -38,6 +39,7 @@ py_test(
     srcs = [
         "thread_analyzer_test.py",
     ],
+    tags = ["manual"],
     deps = [
         ":pw_thread",
         "//pw_thread:thread_proto_py_pb2",

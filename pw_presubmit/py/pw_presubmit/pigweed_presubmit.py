@@ -476,7 +476,6 @@ _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
     '-//pw_boot/...:all',
     '-//pw_chrono/py/...:all',
     '-//pw_chrono:chrono_proto_pb2',
-    '-//pw_thread/py/...:all',
     '-//pw_work_queue/...:all',
     '-//targets/stm32f429i_disc1_stm32cube/...:all',
     '-//third_party/boringssl/...:all',
