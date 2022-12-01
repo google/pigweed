@@ -38,13 +38,7 @@ Transport::Transport(std::unique_ptr<HciWrapper> hci)
   command_channel_->set_channel_timeout_cb(fit::bind_member<&Transport::OnChannelError>(this));
 }
 
-Transport::~Transport() {
-  bt_log(INFO, "hci", "transport shutting down");
-
-  ResetChannels();
-
-  bt_log(INFO, "hci", "transport shut down complete");
-}
+Transport::~Transport() { bt_log(INFO, "hci", "Transport shutting down"); }
 
 bool Transport::InitializeACLDataChannel(const DataBufferInfo& bredr_buffer_info,
                                          const DataBufferInfo& le_buffer_info) {
@@ -74,37 +68,19 @@ bool Transport::InitializeScoDataChannel(const DataBufferInfo& buffer_info) {
 
 VendorFeaturesBits Transport::GetVendorFeatures() { return hci_->GetVendorFeatures(); }
 
-void Transport::SetTransportClosedCallback(fit::closure callback) {
+void Transport::SetTransportErrorCallback(fit::closure callback) {
   BT_ASSERT(callback);
-  BT_ASSERT(!closed_cb_);
-  closed_cb_ = std::move(callback);
-}
-
-void Transport::NotifyClosedCallback() {
-  bt_log(INFO, "hci", "channel(s) were closed");
-  if (closed_cb_) {
-    closed_cb_();
-  }
+  BT_ASSERT(!error_cb_);
+  error_cb_ = std::move(callback);
 }
 
 void Transport::OnChannelError() {
-  bt_log(ERROR, "hci", "channel error");
-
-  // TODO(fxbug.dev/52588): remove cleanup calls here as Host will destroy Transport in
-  // closed callback
-  ResetChannels();
-  hci_.reset();
-
-  NotifyClosedCallback();
-}
-
-void Transport::ResetChannels() {
-  acl_data_channel_.reset();
-  sco_data_channel_.reset();
-
-  // Command channel must be shut down last because the data channels unregister events on
-  // destruction.
-  command_channel_.reset();
+  bt_log(ERROR, "hci", "channel error, calling Transport error callback");
+  // The channels should not be shut down yet. That should be left to higher layers so
+  // dependent objects can be destroyed first.
+  if (error_cb_) {
+    error_cb_();
+  }
 }
 
 void Transport::AttachInspect(inspect::Node& parent, const std::string& name) {

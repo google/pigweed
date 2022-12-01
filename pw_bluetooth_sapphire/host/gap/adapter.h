@@ -88,7 +88,7 @@ class Adapter {
   // reason). The implementation is responsible for cleaning up this adapter by
   // calling ShutDown().
   using InitializeCallback = fit::callback<void(bool success)>;
-  virtual bool Initialize(InitializeCallback callback, fit::closure transport_closed_callback) = 0;
+  virtual bool Initialize(InitializeCallback callback, fit::closure transport_error_callback) = 0;
 
   // Shuts down this Adapter. Invokes |callback| when shut down has completed.
   // TODO(armansito): This needs to do several things to potentially preserve

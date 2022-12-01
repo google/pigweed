@@ -119,6 +119,8 @@ void HostDevice::InitializeHostLocked(fit::function<void(bool success)> callback
     bt_host_node_ = inspect_.GetRoot().CreateChild("bt-host");
     host_->Initialize(bt_host_node_, std::move(callback), [this]() {
       bt_log(WARN, "bt-host", "transport error, shutting down and removing host..");
+      // TODO(fxbug.dev/52588): Consider destroying the host stack synchronously here, instead of
+      // waiting for device unbinding.
       DdkAsyncRemove();
     });
   });

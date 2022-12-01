@@ -838,14 +838,14 @@ TEST_F(ACLDataChannelTest, ReceiveData) {
 TEST_F(ACLDataChannelTest, TransportClosedCallbackBothChannels) {
   InitializeACLDataChannel(DataBufferInfo(1u, 1u), DataBufferInfo(1u, 1u));
 
-  int closed_cb_count = 0;
-  auto closed_cb = [&closed_cb_count] { closed_cb_count++; };
-  transport()->SetTransportClosedCallback(closed_cb);
+  int error_cb_count = 0;
+  auto error_cb = [&error_cb_count] { error_cb_count++; };
+  transport()->SetTransportErrorCallback(error_cb);
 
   async::PostTask(dispatcher(), [this] { test_device()->Stop(ZX_ERR_PEER_CLOSED); });
 
   RunLoopUntilIdle();
-  EXPECT_EQ(1, closed_cb_count);
+  EXPECT_EQ(1, error_cb_count);
 }
 
 // Make sure that a HCI "Number of completed packets" event received after shut

@@ -61,23 +61,27 @@ class Transport final {
   VendorFeaturesBits GetVendorFeatures();
 
   // Returns a pointer to the HCI command and event flow control handler.
+  // CommandChannel is guaranteed to live as long as Transport, but may stop
+  // processing packets after the Transport error callback has been called.
   CommandChannel* command_channel() const { return command_channel_.get(); }
 
-  // Returns a pointer to the HCI ACL data flow control handler.
+  // Returns a pointer to the HCI ACL data flow control handler. Nullptr until
+  // InitializeACLDataChannel() has succeeded.
+  // AclDataChannel is guaranteed to live as long as Transport.
   AclDataChannel* acl_data_channel() const { return acl_data_channel_.get(); }
 
-  // Returns a pointer to the HCI SCO data flow control handler.
+  // Returns a pointer to the HCI SCO data flow control handler. Nullptr until
+  // InitializeScoDataChannel succeeds.
+  // ScoDataChannel is guaranteed to live as long as Transport.
   ScoDataChannel* sco_data_channel() const { return sco_data_channel_.get(); }
 
-  // Set a callback that should be invoked when any one of the underlying
-  // channels gets closed for any reason (e.g. the HCI device has disappeared)
-  // and the dispatcher on which the callback should be posted.
+  // Set a callback that should be invoked when any one of the underlying channels experiences a
+  // fatal error (e.g. the HCI device has disappeared).
   //
-  // When this callback is called the channels will be in an invalid state and
-  // packet processing is no longer guaranteed to work. It is the responsibility
-  // of the callback implementation to clean up this Transport instance by
-  // calling ShutDown() and/or deleting it.
-  void SetTransportClosedCallback(fit::closure callback);
+  // When this callback is called the channels will be in an invalid state and packet processing is
+  // no longer guaranteed to work. However, the channel pointers are guaranteed to still be valid.
+  // It is the responsibility of the callback implementation to clean up this Transport instance.
+  void SetTransportErrorCallback(fit::closure callback);
 
   // Attach hci transport inspect node as a child node of |parent|.
   static constexpr const char* kInspectNodeName = "hci";
@@ -88,30 +92,29 @@ class Transport final {
  private:
   explicit Transport(std::unique_ptr<HciWrapper> hci);
 
-  // Notifies the closed callback.
-  void NotifyClosedCallback();
-
   // Callback called by CommandChannel or ACLDataChannel on errors.
   void OnChannelError();
 
-  void ResetChannels();
+  // HCI inspect node.
+  inspect::Node hci_node_;
 
+  // Callback invoked when the transport is closed (due to a channel error).
+  fit::closure error_cb_;
+
+  // HciWrapper must outlive the channels, which depend on it.
   std::unique_ptr<HciWrapper> hci_;
+
+  // The HCI command and event flow control handler.
+  // CommandChannel must be constructed first & shut down last because AclDataChannel and
+  // ScoDataChannel depend on it. CommandChannel must live as long as Transport to meet the
+  // expectations of upper layers, which may try to send commands on destruction.
+  std::unique_ptr<CommandChannel> command_channel_;
 
   // The ACL data flow control handler.
   std::unique_ptr<AclDataChannel> acl_data_channel_;
 
   // The SCO data flow control handler.
   std::unique_ptr<ScoDataChannel> sco_data_channel_;
-
-  // The HCI command and event flow control handler.
-  std::unique_ptr<CommandChannel> command_channel_;
-
-  // Callback invoked when the transport is closed (due to a channel error).
-  fit::closure closed_cb_;
-
-  // HCI inspect node.
-  inspect::Node hci_node_;
 
   fxl::WeakPtrFactory<Transport> weak_ptr_factory_;
 

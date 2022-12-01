@@ -44,10 +44,12 @@ CommandChannel::QueuedCommand::QueuedCommand(
 }
 
 CommandChannel::TransactionData::TransactionData(
-    TransactionId transaction_id, hci_spec::OpCode opcode, hci_spec::EventCode complete_event_code,
+    CommandChannel* channel, TransactionId transaction_id, hci_spec::OpCode opcode,
+    hci_spec::EventCode complete_event_code,
     std::optional<hci_spec::EventCode> le_meta_subevent_code,
     std::unordered_set<hci_spec::OpCode> exclusions, CommandCallback callback)
-    : transaction_id_(transaction_id),
+    : channel_(channel),
+      transaction_id_(transaction_id),
       opcode_(opcode),
       complete_event_code_(complete_event_code),
       le_meta_subevent_code_(le_meta_subevent_code),
@@ -64,12 +66,11 @@ CommandChannel::TransactionData::~TransactionData() {
   }
 }
 
-void CommandChannel::TransactionData::Start(fit::closure timeout_cb, zx::duration timeout) {
+void CommandChannel::TransactionData::StartTimer() {
   // Transactions should only ever be started once.
   BT_DEBUG_ASSERT(!timeout_task_.is_pending());
-
-  timeout_task_.set_handler(std::move(timeout_cb));
-  timeout_task_.PostDelayed(async_get_default_dispatcher(), timeout);
+  timeout_task_.set_handler([chan = channel_, tid = id()] { chan->OnCommandTimeout(tid); });
+  timeout_task_.PostDelayed(async_get_default_dispatcher(), hci_spec::kCommandTimeout);
 }
 
 void CommandChannel::TransactionData::Complete(std::unique_ptr<EventPacket> event) {
@@ -163,6 +164,11 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
     hci_spec::EventCode complete_event_code,
     std::optional<hci_spec::EventCode> le_meta_subevent_code,
     std::unordered_set<hci_spec::OpCode> exclusions) {
+  if (!active_) {
+    bt_log(INFO, "hci", "ignoring command (CommandChannel is inactive)");
+    return 0;
+  }
+
   BT_ASSERT((command_packet && !emboss_command_packet) ||
             (!command_packet && emboss_command_packet));
   BT_ASSERT_MSG(
@@ -194,8 +200,8 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
   const TransactionId transaction_id = next_transaction_id_.value();
   next_transaction_id_.Set(transaction_id + 1);
   std::unique_ptr<CommandChannel::TransactionData> data = std::make_unique<TransactionData>(
-      transaction_id, opcode, complete_event_code, le_meta_subevent_code, std::move(exclusions),
-      std::move(callback));
+      this, transaction_id, opcode, complete_event_code, le_meta_subevent_code,
+      std::move(exclusions), std::move(callback));
 
   QueuedCommand command(std::move(command_packet), std::move(emboss_command_packet),
                         std::move(data));
@@ -421,14 +427,7 @@ void CommandChannel::SendQueuedCommand(QueuedCommand&& cmd) {
 
   std::unique_ptr<TransactionData>& transaction = cmd.data;
 
-  transaction->Start(
-      [this, transaction_id = cmd.data->id()] {
-        bt_log(ERROR, "hci", "command %zu timed out, notifying error", transaction_id);
-        if (channel_timeout_cb_) {
-          channel_timeout_cb_();
-        }
-      },
-      hci_spec::kCommandTimeout);
+  transaction->StartTimer();
 
   MaybeAddTransactionHandler(transaction.get());
 
@@ -634,12 +633,30 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
 }
 
 void CommandChannel::OnEvent(std::unique_ptr<EventPacket> event) {
+  if (!active_) {
+    bt_log(INFO, "hci", "ignoring event (CommandChannel is inactive)");
+    return;
+  }
+
   if (event->event_code() == hci_spec::kCommandStatusEventCode ||
       event->event_code() == hci_spec::kCommandCompleteEventCode) {
     UpdateTransaction(std::move(event));
     TrySendQueuedCommands();
   } else {
     NotifyEventHandler(std::move(event));
+  }
+}
+
+void CommandChannel::OnCommandTimeout(TransactionId transaction_id) {
+  if (!active_) {
+    return;
+  }
+  bt_log(ERROR, "hci", "command %zu timed out, notifying error", transaction_id);
+  active_ = false;
+  if (channel_timeout_cb_) {
+    fit::closure cb = std::move(channel_timeout_cb_);
+    // The callback may destroy CommandChannel, so no state should be accessed after this line.
+    cb();
   }
 }
 

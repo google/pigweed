@@ -104,11 +104,9 @@ BrEdrDiscoveryManager::BrEdrDiscoveryManager(fxl::WeakPtr<hci::Transport> hci,
 }
 
 BrEdrDiscoveryManager::~BrEdrDiscoveryManager() {
-  if (hci_->command_channel()) {
-    hci_->command_channel()->RemoveEventHandler(eir_handler_id_);
-    hci_->command_channel()->RemoveEventHandler(rssi_handler_id_);
-    hci_->command_channel()->RemoveEventHandler(result_handler_id_);
-  }
+  hci_->command_channel()->RemoveEventHandler(eir_handler_id_);
+  hci_->command_channel()->RemoveEventHandler(rssi_handler_id_);
+  hci_->command_channel()->RemoveEventHandler(result_handler_id_);
   InvalidateDiscoverySessions();
 }
 

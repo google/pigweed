@@ -35,6 +35,9 @@ namespace bt::hci {
 class Transport;
 
 // Represents the HCI Bluetooth command channel. Manages HCI command and event packet control flow.
+// CommandChannel is expected to remain allocated as long as the host exists. On fatal errors, it is
+// put into an inactive state where no packets are processed, but it may continue to be accessed by
+// higher layers until shutdown completes.
 class CommandChannel final {
  public:
   // Starts listening for HCI commands and starts handling commands and events.
@@ -234,14 +237,15 @@ class CommandChannel final {
   //   skipping commands that cannot be sent)
   class TransactionData {
    public:
-    TransactionData(TransactionId id, hci_spec::OpCode opcode,
+    TransactionData(CommandChannel* channel, TransactionId id, hci_spec::OpCode opcode,
                     hci_spec::EventCode complete_event_code,
                     std::optional<hci_spec::EventCode> le_meta_subevent_code,
                     std::unordered_set<hci_spec::OpCode> exclusions, CommandCallback callback);
     ~TransactionData();
 
-    // Starts the transaction timer, which will call timeout_cb if it's not completed in time.
-    void Start(fit::closure timeout_cb, zx::duration timeout);
+    // Starts the transaction timer, which will call CommandChannel::OnCommandTimeout if it's not
+    // completed in time.
+    void StartTimer();
 
     // Completes the transaction with |event|. For asynchronous commands, this should be called with
     // the status event (the complete event is handled separately by the event handler).
@@ -267,6 +271,7 @@ class CommandChannel final {
     void set_handler_id(EventHandlerId id) { handler_id_ = id; }
 
    private:
+    CommandChannel* channel_;
     TransactionId transaction_id_;
     hci_spec::OpCode opcode_;
     hci_spec::EventCode complete_event_code_;
@@ -356,6 +361,12 @@ class CommandChannel final {
 
   // Event handler.
   void OnEvent(std::unique_ptr<EventPacket> event);
+
+  // Called when a command times out. Notifies upper layers of the error.
+  void OnCommandTimeout(TransactionId transaction_id);
+
+  // True if CommandChannel is still processing packets. Set to false upon fatal errors.
+  bool active_ = true;
 
   // Opcodes of commands that we have sent to the controller but not received a status update from.
   // New commands with these opcodes can't be sent because they are indistinguishable from ones we

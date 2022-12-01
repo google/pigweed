@@ -53,7 +53,7 @@ class AdapterImpl final : public Adapter {
 
   AdapterId identifier() const override { return identifier_; }
 
-  bool Initialize(InitializeCallback callback, fit::closure transport_closed_cb) override;
+  bool Initialize(InitializeCallback callback, fit::closure transport_error_cb) override;
 
   void ShutDown() override;
 
@@ -308,8 +308,8 @@ class AdapterImpl final : public Adapter {
   // synchronously cleans up the transports and resets initialization state.
   void CleanUp();
 
-  // Called by Transport after it has been unexpectedly closed.
-  void OnTransportClosed();
+  // Called by Transport after it experiences a fatal error.
+  void OnTransportError();
 
   // Called when a directed connectable advertisement is received from a bonded
   // LE device. This amounts to a connection request from a bonded peripheral
@@ -389,7 +389,7 @@ class AdapterImpl final : public Adapter {
   fxl::WeakPtr<hci::Transport> hci_;
 
   // Callback invoked to notify clients when the underlying transport is closed.
-  fit::closure transport_closed_cb_;
+  fit::closure transport_error_cb_;
 
   // Parameters relevant to the initialization sequence.
   // TODO(armansito): The Initialize()/ShutDown() pattern has become common
@@ -471,9 +471,9 @@ AdapterImpl::AdapterImpl(fxl::WeakPtr<hci::Transport> hci, fxl::WeakPtr<gatt::GA
   init_seq_runner_ = std::make_unique<hci::SequentialCommandRunner>(hci_);
 
   auto self = weak_ptr_factory_.GetWeakPtr();
-  hci_->SetTransportClosedCallback([self] {
+  hci_->SetTransportErrorCallback([self] {
     if (self) {
-      self->OnTransportClosed();
+      self->OnTransportError();
     }
   });
 
@@ -515,9 +515,9 @@ AdapterImpl::~AdapterImpl() {
   }
 }
 
-bool AdapterImpl::Initialize(InitializeCallback callback, fit::closure transport_closed_cb) {
+bool AdapterImpl::Initialize(InitializeCallback callback, fit::closure transport_error_cb) {
   BT_DEBUG_ASSERT(callback);
-  BT_DEBUG_ASSERT(transport_closed_cb);
+  BT_DEBUG_ASSERT(transport_error_cb);
 
   if (IsInitialized()) {
     bt_log(WARN, "gap", "Adapter already initialized");
@@ -530,7 +530,7 @@ bool AdapterImpl::Initialize(InitializeCallback callback, fit::closure transport
 
   init_state_ = State::kInitializing;
   init_cb_ = std::move(callback);
-  transport_closed_cb_ = std::move(transport_closed_cb);
+  transport_error_cb_ = std::move(transport_error_cb);
 
   state_.vendor_features = hci_->GetVendorFeatures();
 
@@ -1129,7 +1129,7 @@ void AdapterImpl::CleanUp() {
 
   init_state_ = State::kNotInitialized;
   state_ = AdapterState();
-  transport_closed_cb_ = nullptr;
+  transport_error_cb_ = nullptr;
 
   // Destroy objects in reverse order of construction.
   low_energy_ = nullptr;
@@ -1151,13 +1151,13 @@ void AdapterImpl::CleanUp() {
   hci_ = nullptr;
 }
 
-void AdapterImpl::OnTransportClosed() {
-  bt_log(INFO, "gap", "HCI transport was closed");
+void AdapterImpl::OnTransportError() {
+  bt_log(INFO, "gap", "HCI transport error");
   if (CompleteInitialization(/*success=*/false)) {
     return;
   }
-  if (transport_closed_cb_) {
-    transport_closed_cb_();
+  if (transport_error_cb_) {
+    transport_error_cb_();
   }
 }
 

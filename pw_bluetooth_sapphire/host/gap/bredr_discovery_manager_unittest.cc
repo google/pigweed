@@ -1212,26 +1212,5 @@ TEST_F(BrEdrDiscoveryManagerTest, Inspect) {
 }
 #endif  // NINSPECT
 
-TEST_F(BrEdrDiscoveryManagerTest, CommandChannelDestroyedBeforeDestructorDoesNotCrash) {
-  size_t closed_cb_count = 0;
-  transport()->SetTransportClosedCallback([&] { closed_cb_count++; });
-
-  StaticByteBuffer req_reset(LowerBits(hci_spec::kReset),
-                             UpperBits(hci_spec::kReset),  // HCI_Reset opcode
-                             0x00                          // parameter_total_size
-  );
-
-  // Expect the HCI_Reset command but dont send a reply back to make the command
-  // time out.
-  EXPECT_CMD_PACKET_OUT(test_device(), req_reset);
-  cmd_channel()->SendCommand(hci::CommandPacket::New(hci_spec::kReset), [](auto, auto&) {});
-
-  constexpr zx::duration kCommandTimeout = zx::sec(12);
-  RunLoopFor(kCommandTimeout);
-  EXPECT_EQ(1u, closed_cb_count);
-
-  DestroyDiscoveryManager();
-}
-
 }  // namespace
 }  // namespace bt::gap

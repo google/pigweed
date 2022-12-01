@@ -13,6 +13,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
 
 namespace bt::hci {
@@ -23,6 +24,8 @@ using namespace inspect::testing;
 using bt::LowerBits;
 using bt::UpperBits;
 using EventCallbackResult = CommandChannel::EventCallbackResult;
+
+constexpr zx::duration kCommandTimeout = zx::sec(12);
 
 using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
 
@@ -1252,18 +1255,16 @@ TEST_F(CommandChannelTest, AsyncEventHandlersAndLeMetaEventHandlersDoNotInterfer
 TEST_F(CommandChannelTest, TransportClosedCallback) {
   StartTestDevice();
 
-  bool closed_cb_called = false;
-  auto closed_cb = [&closed_cb_called] { closed_cb_called = true; };
-  transport()->SetTransportClosedCallback(closed_cb);
+  bool error_cb_called = false;
+  auto error_cb = [&error_cb_called] { error_cb_called = true; };
+  transport()->SetTransportErrorCallback(error_cb);
 
   async::PostTask(dispatcher(), [this] { test_device()->Stop(); });
   RunLoopUntilIdle();
-  EXPECT_TRUE(closed_cb_called);
+  EXPECT_TRUE(error_cb_called);
 }
 
 TEST_F(CommandChannelTest, CommandTimeoutCallback) {
-  constexpr zx::duration kCommandTimeout = zx::sec(12);
-
   auto req_reset = StaticByteBuffer(LowerBits(hci_spec::kReset),
                                     UpperBits(hci_spec::kReset),  // HCI_Reset opcode
                                     0x00                          // parameter_total_size
@@ -1303,8 +1304,6 @@ TEST_F(CommandChannelTest, CommandTimeoutCallback) {
 }
 
 TEST_F(CommandChannelTest, DestroyChannelInTimeoutCallback) {
-  constexpr zx::duration kCommandTimeout = zx::sec(12);
-
   auto req_reset = StaticByteBuffer(LowerBits(hci_spec::kReset),
                                     UpperBits(hci_spec::kReset),  // HCI_Reset opcode
                                     0x00                          // parameter_total_size
@@ -1334,6 +1333,47 @@ TEST_F(CommandChannelTest, DestroyChannelInTimeoutCallback) {
 
   RunLoopFor(kCommandTimeout);
   EXPECT_EQ(1u, timeout_cb_count);
+}
+
+TEST_F(CommandChannelTest, CommandsAndEventsIgnoredAfterCommandTimeout) {
+  StartTestDevice();
+
+  size_t timeout_cb_count = 0;
+  auto timeout_cb = [&] { timeout_cb_count++; };
+  cmd_channel()->set_channel_timeout_cb(timeout_cb);
+
+  size_t cmd_cb_count = 0;
+  auto cb = [&](auto, auto&) { cmd_cb_count++; };
+
+  // Expect the HCI_Reset command but dont send a reply back to make the command time out.
+  auto req_reset = StaticByteBuffer(LowerBits(hci_spec::kReset),
+                                    UpperBits(hci_spec::kReset),  // HCI_Reset opcode
+                                    0x00                          // parameter_total_size
+  );
+  EXPECT_CMD_PACKET_OUT(test_device(), req_reset);
+  auto packet = CommandPacket::New(hci_spec::kReset);
+  CommandChannel::TransactionId id1 = cmd_channel()->SendCommand(std::move(packet), cb);
+  ASSERT_NE(0u, id1);
+
+  // Run the loop until the command timeout task gets scheduled.
+  RunLoopUntilIdle();
+  EXPECT_EQ(0u, timeout_cb_count);
+  RunLoopFor(kCommandTimeout);
+  EXPECT_EQ(1u, timeout_cb_count);
+  EXPECT_EQ(0u, cmd_cb_count);
+
+  // Additional commands should be ignored.
+  packet = CommandPacket::New(hci_spec::kReset);
+  CommandChannel::TransactionId id2 = cmd_channel()->SendCommand(std::move(packet), cb);
+  EXPECT_EQ(0u, id2);
+  // No command should be sent.
+  RunLoopUntilIdle();
+
+  // Events should be ignored.
+  test_device()->SendCommandChannelPacket(
+      bt::testing::CommandCompletePacket(hci_spec::kReset, hci_spec::StatusCode::SUCCESS));
+  RunLoopUntilIdle();
+  EXPECT_EQ(0u, cmd_cb_count);
 }
 
 // Tests:

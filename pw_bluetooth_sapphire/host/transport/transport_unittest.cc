@@ -23,9 +23,11 @@ class TransportTestWithoutSco : public TransportTest {
   void SetUp() override { TransportTest::SetUp(/*sco_enabled=*/false); }
 };
 
-TEST_F(TransportTest, CommandChannelTimeoutShutsDownChannelAndNotifiesClosedCallback) {
+TEST_F(TransportTest, CommandChannelTimeoutNotifiesClosedCallback) {
+  fxl::WeakPtr<CommandChannel> cmd_chan_weak = cmd_channel()->AsWeakPtr();
+
   size_t closed_cb_count = 0;
-  transport()->SetTransportClosedCallback([&] { closed_cb_count++; });
+  transport()->SetTransportErrorCallback([&] { closed_cb_count++; });
 
   constexpr zx::duration kCommandTimeout = zx::sec(12);
 
@@ -61,6 +63,7 @@ TEST_F(TransportTest, CommandChannelTimeoutShutsDownChannelAndNotifiesClosedCall
   RunLoopFor(kCommandTimeout);
   EXPECT_EQ(0u, cb_count);
   EXPECT_EQ(1u, closed_cb_count);
+  EXPECT_TRUE(cmd_chan_weak);
 }
 
 TEST_F(TransportDeathTest, AttachInspectBeforeInitializeACLDataChannelCrashes) {
@@ -72,7 +75,7 @@ TEST_F(TransportTest, HciErrorClosesTransportWithSco) {
   StartTestDevice();
 
   size_t closed_cb_count = 0;
-  transport()->SetTransportClosedCallback([&] { closed_cb_count++; });
+  transport()->SetTransportErrorCallback([&] { closed_cb_count++; });
 
   EXPECT_TRUE(transport()->InitializeScoDataChannel(
       DataBufferInfo(/*max_data_length=*/1, /*max_num_packets=*/1)));
@@ -85,7 +88,7 @@ TEST_F(TransportTest, HciErrorClosesTransportWithSco) {
 
 TEST_F(TransportTestWithoutSco, GetScoChannelFailure) {
   size_t closed_cb_count = 0;
-  transport()->SetTransportClosedCallback([&] { closed_cb_count++; });
+  transport()->SetTransportErrorCallback([&] { closed_cb_count++; });
   EXPECT_FALSE(transport()->InitializeScoDataChannel(
       DataBufferInfo(/*max_data_length=*/1, /*max_num_packets=*/1)));
   RunLoopUntilIdle();
