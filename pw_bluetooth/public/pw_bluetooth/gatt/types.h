@@ -38,6 +38,27 @@ enum class CharacteristicPropertyBits : uint16_t {
   kWritableAuxiliaries = 0x200
 };
 
+// Helper operators to allow combining and comparing CharacteristicPropertyBits
+// values.
+inline constexpr bool operator&(CharacteristicPropertyBits left,
+                                CharacteristicPropertyBits right) {
+  return static_cast<bool>(
+      static_cast<std::underlying_type_t<CharacteristicPropertyBits>>(left) &
+      static_cast<std::underlying_type_t<CharacteristicPropertyBits>>(right));
+}
+
+inline constexpr CharacteristicPropertyBits operator|(
+    CharacteristicPropertyBits left, CharacteristicPropertyBits right) {
+  return static_cast<CharacteristicPropertyBits>(
+      static_cast<std::underlying_type_t<CharacteristicPropertyBits>>(left) |
+      static_cast<std::underlying_type_t<CharacteristicPropertyBits>>(right));
+}
+
+inline constexpr CharacteristicPropertyBits& operator|=(
+    CharacteristicPropertyBits& left, CharacteristicPropertyBits right) {
+  return left = left | right;
+}
+
 // Represents encryption, authentication, and authorization permissions that can
 // be assigned to a specific access permission.
 struct SecurityRequirements {
