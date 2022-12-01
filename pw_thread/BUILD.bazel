@@ -82,8 +82,19 @@ pw_cc_library(
     name = "thread_iteration",
     deps = [
         ":thread_iteration_facade",
-        "@pigweed_config//:pw_thread_thread_backend",
+        "@pigweed_config//:pw_thread_iteration_backend",
     ],
+)
+
+pw_cc_library(
+    name = "iteration_backend_multiplexer",
+    visibility = ["@pigweed_config//:__pkg__"],
+    deps = select({
+        "//pw_build/constraints/rtos:embos": ["//pw_thread_embos:thread_iteration"],
+        "//pw_build/constraints/rtos:freertos": ["//pw_thread_freertos:thread_iteration"],
+        "//pw_build/constraints/rtos:threadx": ["//pw_thread_threadx:thread_iteration"],
+        "//conditions:default": ["//pw_thread_stl:thread_iteration"],
+    }),
 )
 
 pw_cc_facade(

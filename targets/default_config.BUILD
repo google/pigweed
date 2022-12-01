@@ -117,6 +117,11 @@ label_flag(
 )
 
 label_flag(
+    name = "pw_thread_iteration_backend",
+    build_setting_default = "@pigweed//pw_thread:iteration_backend_multiplexer",
+)
+
+label_flag(
     name = "pw_thread_sleep_backend",
     build_setting_default = "@pigweed//pw_thread:sleep_backend_multiplexer",
 )
@@ -144,6 +149,11 @@ label_flag(
 label_flag(
     name = "pw_sys_io_backend",
     build_setting_default = "@pigweed//pw_sys_io:backend_multiplexer",
+)
+
+label_flag(
+    name = "pw_system_target_hooks_backend",
+    build_setting_default = "@pigweed//pw_system:target_hooks_multiplexer",
 )
 
 label_flag(
