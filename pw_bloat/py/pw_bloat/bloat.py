@@ -100,8 +100,6 @@ def run_bloaty(
         *extra_args,
     ]
 
-    # yapf: enable
-
     if base_file is not None:
         cmd.extend(['--', base_file])
 

@@ -152,7 +152,6 @@ _ARDUINO_CORE_ARTIFACTS: Dict[str, Dict] = {
         "Windows": {},
     },
 }
-# yapf: enable
 
 
 def install_core_command(args: argparse.Namespace):
