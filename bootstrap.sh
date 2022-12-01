@@ -90,3 +90,5 @@ unset SETUP_SH
 unset _bootstrap_abspath
 
 pw_cleanup
+
+git config blame.ignoreRevsFile .git-blame-ignore-revs
