@@ -83,8 +83,8 @@ pw_cc_library(
     srcs = ["metric_service_pwpb.cc"],
     hdrs = ["public/pw_metric/metric_service_pwpb.h"],
     includes = [
-        "metric_proto_cc_pb.pwpb/pw_metric",
-        "metric_proto_cc_pb.raw_rpc/pw_metric",
+        "metric_proto_cc.pwpb.pb/pw_metric",
+        "metric_proto_cc.raw_rpc.pb/pw_metric",
     ],
     deps = [
         ":metric",

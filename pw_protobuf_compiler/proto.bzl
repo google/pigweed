@@ -15,8 +15,18 @@
 
 load(
     "//third_party/rules_proto_grpc:internal_proto.bzl",
+    _nanopb_proto_library = "nanopb_proto_library",
+    _nanopb_rpc_proto_library = "nanopb_rpc_proto_library",
     _pw_proto_library = "pw_proto_library",
+    _pwpb_proto_library = "pwpb_proto_library",
+    _pwpb_rpc_proto_library = "pwpb_rpc_proto_library",
+    _raw_rpc_proto_library = "raw_rpc_proto_library",
 )
 
 # Export internal symbols.
+nanopb_proto_library = _nanopb_proto_library
+nanopb_rpc_proto_library = _nanopb_rpc_proto_library
 pw_proto_library = _pw_proto_library
+pwpb_proto_library = _pwpb_proto_library
+pwpb_rpc_proto_library = _pwpb_rpc_proto_library
+raw_rpc_proto_library = _raw_rpc_proto_library
