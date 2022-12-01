@@ -282,12 +282,15 @@ def fix_py_format_yapf(ctx: _Context) -> Dict[Path, str]:
     return {}
 
 
-def _black(*args, **kwargs) -> subprocess.CompletedProcess:
-    return log_run(
-        ['black', *args],
-        capture_output=True,
-        **kwargs,
-    )
+_BLACK_OPTS = (
+    '--skip-string-normalization',
+    '--line-length',
+    '80',
+    '--target-version',
+    'py310',
+    '--include',
+    r'\.pyi?$',
+)
 
 
 def check_py_format_black(ctx: _Context) -> Dict[Path, str]:
@@ -302,7 +305,7 @@ def check_py_format_black(ctx: _Context) -> Dict[Path, str]:
             build = Path(temp) / os.path.basename(path)
             build.write_bytes(data)
 
-            proc = log_run(['black', build], capture_output=True)
+            proc = log_run(['black', *_BLACK_OPTS, build], capture_output=True)
             if proc.returncode:
                 stderr = proc.stderr.decode(errors='replace')
                 stderr = stderr.replace(str(build), str(path))
@@ -319,7 +322,8 @@ def fix_py_format_black(ctx: _Context) -> Dict[Path, str]:
     errors: Dict[Path, str] = {}
 
     for path in ctx.paths:
-        proc = log_run(['black', path], capture_output=True)
+        _LOG.info('running black on %r', path)
+        proc = log_run(['black', *_BLACK_OPTS, path], capture_output=True)
         if proc.returncode:
             errors[path] = proc.stderr.decode()
     return errors
@@ -565,7 +569,7 @@ def presubmit_check(
 def presubmit_checks(
     *,
     exclude: Collection[Union[str, Pattern[str]]] = (),
-    code_formats: Collection[CodeFormat] = CODE_FORMATS,
+    code_formats: Collection[CodeFormat] = CODE_FORMATS_WITH_YAPF,
 ) -> Tuple[Callable, ...]:
     """Returns a tuple with all supported code format presubmit checks.
 
@@ -585,7 +589,7 @@ class CodeFormatter:
         root: Path,
         files: Iterable[Path],
         output_dir: Path,
-        code_formats: Collection[CodeFormat] = CODE_FORMATS,
+        code_formats: Collection[CodeFormat] = CODE_FORMATS_WITH_YAPF,
     ):
         self.root = root
         self.paths = list(files)
@@ -656,7 +660,7 @@ def format_paths_in_repo(
     exclude: Collection[Pattern[str]],
     fix: bool,
     base: str,
-    code_formats: Collection[CodeFormat] = CODE_FORMATS,
+    code_formats: Collection[CodeFormat] = CODE_FORMATS_WITH_YAPF,
     output_directory: Optional[Path] = None,
 ) -> int:
     """Checks or fixes formatting for files in a Git repo."""
@@ -765,7 +769,10 @@ def format_files(
     return 0
 
 
-def arguments(git_paths: bool) -> argparse.ArgumentParser:
+def arguments(
+    git_paths: bool,
+    use_black: bool = False,
+) -> argparse.ArgumentParser:
     """Creates an argument parser for format_files or format_paths_in_repo."""
 
     parser = argparse.ArgumentParser(description=__doc__)
@@ -795,10 +802,22 @@ def arguments(git_paths: bool) -> argparse.ArgumentParser:
         '--fix', action='store_true', help='Apply formatting fixes in place.'
     )
 
+    # TODO(b/259595799, b/261025545) Remove --code-formats option when
+    # downstream projects have switched away from yapf.
+    default_code_formats = CODE_FORMATS_WITH_YAPF
+    if use_black:
+        default_code_formats = CODE_FORMATS_WITH_BLACK
+    parser.add_argument(
+        '--code-formats',
+        choices=(CODE_FORMATS_WITH_YAPF, CODE_FORMATS_WITH_BLACK),
+        default=default_code_formats,
+        help=argparse.SUPPRESS,
+    )
+
     parser.add_argument(
         '--output-directory',
         type=Path,
-        help=f'Output directory (default: {"<repo root>" / _DEFAULT_PATH})',
+        help=f"Output directory (default: {'<repo root>' / _DEFAULT_PATH})",
     )
     return parser
 
@@ -813,7 +832,7 @@ def _pigweed_upstream_main() -> int:
 
     Excludes third party sources.
     """
-    args = arguments(git_paths=True).parse_args()
+    args = arguments(git_paths=True, use_black=True).parse_args()
 
     # Exclude paths with third party code from formatting.
     args.exclude.append(re.compile('^third_party/fuchsia/repo/'))
