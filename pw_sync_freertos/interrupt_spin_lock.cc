@@ -20,10 +20,26 @@
 
 namespace pw::sync {
 
+#if (INCLUDE_xTaskGetSchedulerState != 1) && (configUSE_TIMERS != 1)
+#error "xTaskGetScheduler is required for pw_sync_freertos:interrupt_spin_lock"
+#endif
+
 void InterruptSpinLock::lock() {
   if (interrupt::InInterruptContext()) {
     native_type_.saved_interrupt_mask = taskENTER_CRITICAL_FROM_ISR();
   } else {  // Task context
+    // Suspending the scheduler ensures that kernel API calls that occur
+    // within the critical section will not preempt the current task
+    // (if called from a thread context).  Otherwise, kernel APIs called
+    // from within the critical section may preempt the running task if
+    // the port implements portYIELD synchronously.
+    // Note: calls to vTaskSuspendAll(), like taskENTER_CRITICAL() can
+    // be nested.
+    // Note: vTaskSuspendAll()/xTaskResumeAll() are not safe to call before the
+    // scheduler has been started.
+    if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED) {
+      vTaskSuspendAll();
+    }
     taskENTER_CRITICAL();
   }
   // We can't deadlock here so crash instead.
@@ -38,6 +54,9 @@ void InterruptSpinLock::unlock() {
     taskEXIT_CRITICAL_FROM_ISR(native_type_.saved_interrupt_mask);
   } else {  // Task context
     taskEXIT_CRITICAL();
+    if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED) {
+      xTaskResumeAll();
+    }
   }
 }
 

@@ -27,8 +27,15 @@ The FreeRTOS backend for InterruptSpinLock is backed by ``UBaseType_t`` and a
 detect accidental recursive locking.
 
 This object uses ``taskENTER_CRITICAL_FROM_ISR`` and
-``taskEXIT_CRITICAL_FROM_ISR`` from interrupt contexts and
-``taskENTER_CRITICAL`` and ``taskEXIT_CRITICAL`` from other contexts.
+``taskEXIT_CRITICAL_FROM_ISR`` from interrupt contexts, and
+``taskENTER_CRITICAL`` and ``taskEXIT_CRITICAL`` in all other contexts.
+``vTaskSuspendAll`` and ``xTaskResumeAll`` are additionally used within
+lock/unlock respectively when called from task context in the scheduler-enabled
+state.
+
+.. Note::
+  Scheduler State API support is required in your FreeRTOS Configuration, i.e.
+  ``INCLUDE_xTaskGetSchedulerState == 1``.
 
 .. warning::
   ``taskENTER_CRITICAL_FROM_ISR`` only disables interrupts with priority at or
