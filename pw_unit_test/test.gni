@@ -109,11 +109,11 @@ if (pw_unit_test_EXECUTABLE_TARGET_TYPE != "pw_executable" &&
 # <target_name>.DISABLED and creates an empty <target_name> group. This can be
 # used to conditionally create targets without having to conditionally add them
 # to groups. This results in simpler BUILD.gn files.
-template("_pw_disableable_target") {
+template("pw_internal_disableable_target") {
   assert(defined(invoker.enable_if),
-         "`enable_if` is required for _pw_disableable_target")
+         "`enable_if` is required for pw_internal_disableable_target")
   assert(defined(invoker.target_type),
-         "`target_type` is required for _pw_disableable_target")
+         "`target_type` is required for pw_internal_disableable_target")
 
   if (invoker.enable_if) {
     _actual_target_name = target_name
@@ -206,7 +206,7 @@ template("pw_test") {
   }
 
   # The unit test code as a source_set.
-  _pw_disableable_target("$target_name.lib") {
+  pw_internal_disableable_target("$target_name.lib") {
     target_type = "pw_source_set"
     enable_if = _test_is_enabled
     forward_variables_from(invoker, "*", [ "metadata" ])
@@ -225,7 +225,7 @@ template("pw_test") {
     }
   }
 
-  _pw_disableable_target(_test_target_name) {
+  pw_internal_disableable_target(_test_target_name) {
     target_type = pw_unit_test_EXECUTABLE_TARGET_TYPE
     enable_if = _test_is_enabled
 
