@@ -18,11 +18,14 @@ SequentialCommandRunner::SequentialCommandRunner(fxl::WeakPtr<Transport> transpo
   BT_DEBUG_ASSERT(transport_);
 }
 
-void SequentialCommandRunner::QueueCommand(std::unique_ptr<CommandPacket> command_packet,
+void SequentialCommandRunner::QueueCommand(CommandPacketVariant command_packet,
                                            CommandCompleteCallback callback, bool wait,
                                            hci_spec::EventCode complete_event_code,
                                            std::unordered_set<hci_spec::OpCode> exclusions) {
-  BT_DEBUG_ASSERT(sizeof(hci_spec::CommandHeader) <= command_packet->view().size());
+  if (std::holds_alternative<std::unique_ptr<CommandPacket>>(command_packet)) {
+    BT_DEBUG_ASSERT(sizeof(hci_spec::CommandHeader) <=
+                    std::get<std::unique_ptr<CommandPacket>>(command_packet)->view().size());
+  }
 
   command_queue_.emplace(QueuedCommand{.packet = std::move(command_packet),
                                        .complete_event_code = complete_event_code,
@@ -36,7 +39,7 @@ void SequentialCommandRunner::QueueCommand(std::unique_ptr<CommandPacket> comman
   }
 }
 
-void SequentialCommandRunner::QueueLeAsyncCommand(std::unique_ptr<CommandPacket> command_packet,
+void SequentialCommandRunner::QueueLeAsyncCommand(CommandPacketVariant command_packet,
                                                   hci_spec::EventCode le_meta_subevent_code,
                                                   CommandCompleteCallback callback, bool wait) {
   command_queue_.emplace(QueuedCommand{.packet = std::move(command_packet),

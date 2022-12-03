@@ -17,6 +17,19 @@
 
 namespace bt::hci {
 
+namespace {
+
+// Helper for std::variant
+template <class... Ts>
+struct overloaded : Ts... {
+  using Ts::operator()...;
+};
+// explicit deduction guide (not needed in C++20)
+template <class... Ts>
+overloaded(Ts...) -> overloaded<Ts...>;
+
+}  // namespace
+
 static bool IsAsync(hci_spec::EventCode code) {
   return code != hci_spec::kCommandCompleteEventCode && code != hci_spec::kCommandStatusEventCode;
 }
@@ -32,15 +45,10 @@ static std::string EventTypeToString(CommandChannel::EventType event_type) {
   }
 }
 
-CommandChannel::QueuedCommand::QueuedCommand(
-    std::unique_ptr<CommandPacket> command_packet,
-    std::optional<EmbossCommandPacket> emboss_command_packet,
-    std::unique_ptr<TransactionData> transaction_data)
-    : packet(std::move(command_packet)),
-      emboss_packet(std::move(emboss_command_packet)),
-      data(std::move(transaction_data)) {
+CommandChannel::QueuedCommand::QueuedCommand(CommandPacketVariant command_packet,
+                                             std::unique_ptr<TransactionData> transaction_data)
+    : packet(std::move(command_packet)), data(std::move(transaction_data)) {
   BT_DEBUG_ASSERT(data);
-  BT_DEBUG_ASSERT(packet || emboss_packet);
 }
 
 CommandChannel::TransactionData::TransactionData(
@@ -115,52 +123,37 @@ CommandChannel::CommandChannel(HciWrapper* hci)
 CommandChannel::~CommandChannel() { bt_log(INFO, "hci", "CommandChannel destroyed"); }
 
 CommandChannel::TransactionId CommandChannel::SendCommand(
-    std::unique_ptr<CommandPacket> command_packet, CommandCallback callback,
-    const hci_spec::EventCode complete_event_code) {
-  return SendExclusiveCommand(std::move(command_packet), std::move(callback), complete_event_code);
-}
-
-CommandChannel::TransactionId CommandChannel::SendCommand(
-    EmbossCommandPacket command_packet, CommandCallback callback,
+    CommandPacketVariant command_packet, CommandCallback callback,
     const hci_spec::EventCode complete_event_code) {
   return SendExclusiveCommand(std::move(command_packet), std::move(callback), complete_event_code);
 }
 
 CommandChannel::TransactionId CommandChannel::SendLeAsyncCommand(
-    std::unique_ptr<CommandPacket> command_packet, CommandCallback callback,
+    CommandPacketVariant command_packet, CommandCallback callback,
     hci_spec::EventCode le_meta_subevent_code) {
   return SendLeAsyncExclusiveCommand(std::move(command_packet), std::move(callback),
                                      le_meta_subevent_code);
 }
 
 CommandChannel::TransactionId CommandChannel::SendExclusiveCommand(
-    std::unique_ptr<CommandPacket> command_packet, CommandCallback callback,
+    CommandPacketVariant command_packet, CommandCallback callback,
     const hci_spec::EventCode complete_event_code,
     std::unordered_set<hci_spec::OpCode> exclusions) {
-  return SendExclusiveCommandInternal(std::move(command_packet), std::nullopt, std::move(callback),
-                                      complete_event_code, std::nullopt, std::move(exclusions));
-}
-
-CommandChannel::TransactionId CommandChannel::SendExclusiveCommand(
-    EmbossCommandPacket command_packet, CommandCallback callback,
-    const hci_spec::EventCode complete_event_code,
-    std::unordered_set<hci_spec::OpCode> exclusions) {
-  return SendExclusiveCommandInternal(nullptr, std::move(command_packet), std::move(callback),
+  return SendExclusiveCommandInternal(std::move(command_packet), std::move(callback),
                                       complete_event_code, std::nullopt, std::move(exclusions));
 }
 
 CommandChannel::TransactionId CommandChannel::SendLeAsyncExclusiveCommand(
-    std::unique_ptr<CommandPacket> command_packet, CommandCallback callback,
+    CommandPacketVariant command_packet, CommandCallback callback,
     std::optional<hci_spec::EventCode> le_meta_subevent_code,
     std::unordered_set<hci_spec::OpCode> exclusions) {
-  return SendExclusiveCommandInternal(std::move(command_packet), std::nullopt, std::move(callback),
+  return SendExclusiveCommandInternal(std::move(command_packet), std::move(callback),
                                       hci_spec::kLEMetaEventCode, le_meta_subevent_code,
                                       std::move(exclusions));
 }
 
 CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
-    std::unique_ptr<CommandPacket> command_packet,
-    std::optional<EmbossCommandPacket> emboss_command_packet, CommandCallback callback,
+    CommandPacketVariant command_packet, CommandCallback callback,
     hci_spec::EventCode complete_event_code,
     std::optional<hci_spec::EventCode> le_meta_subevent_code,
     std::unordered_set<hci_spec::OpCode> exclusions) {
@@ -169,8 +162,6 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
     return 0;
   }
 
-  BT_ASSERT((command_packet && !emboss_command_packet) ||
-            (!command_packet && emboss_command_packet));
   BT_ASSERT_MSG(
       (complete_event_code == hci_spec::kLEMetaEventCode) == le_meta_subevent_code.has_value(),
       "only LE Meta Event subevents are supported");
@@ -196,15 +187,16 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
   }
 
   const hci_spec::OpCode opcode =
-      command_packet ? command_packet->opcode() : emboss_command_packet->opcode();
+      std::visit(overloaded{[](std::unique_ptr<CommandPacket>& p) { return p->opcode(); },
+                            [](EmbossCommandPacket& p) { return p.opcode(); }},
+                 command_packet);
   const TransactionId transaction_id = next_transaction_id_.value();
   next_transaction_id_.Set(transaction_id + 1);
   std::unique_ptr<CommandChannel::TransactionData> data = std::make_unique<TransactionData>(
       this, transaction_id, opcode, complete_event_code, le_meta_subevent_code,
       std::move(exclusions), std::move(callback));
 
-  QueuedCommand command(std::move(command_packet), std::move(emboss_command_packet),
-                        std::move(data));
+  QueuedCommand command(std::move(command_packet), std::move(data));
 
   if (IsAsync(complete_event_code)) {
     MaybeAddTransactionHandler(command.data.get());
@@ -407,15 +399,9 @@ void CommandChannel::TrySendQueuedCommands() {
 }
 
 void CommandChannel::SendQueuedCommand(QueuedCommand&& cmd) {
-  zx_status_t status;
-  if (cmd.packet) {
-    status = hci_->SendCommand(std::move(cmd.packet));
-  } else if (cmd.emboss_packet) {
-    status = hci_->SendCommand(std::move(cmd.emboss_packet.value()));
-  } else {
-    bt_log(ERROR, "hci", "no command packet set");
-    return;
-  }
+  zx_status_t status =
+      std::visit([this](auto&& packet) { return hci_->SendCommand(std::move(packet)); },
+                 std::move(cmd.packet));
 
   if (status < 0) {
     // TODO(armansito): We should notify the |status_callback| of the pending

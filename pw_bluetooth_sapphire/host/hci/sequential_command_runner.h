@@ -48,6 +48,8 @@ class Transport;
 // RunCommands will report success.
 class SequentialCommandRunner final {
  public:
+  using CommandPacketVariant = CommandChannel::CommandPacketVariant;
+
   explicit SequentialCommandRunner(fxl::WeakPtr<Transport> transport);
   ~SequentialCommandRunner() = default;
 
@@ -58,14 +60,14 @@ class SequentialCommandRunner final {
   // successfully before this command is sent.
   // |exclusions| will be passed to CommandChannel::SendExclusiveCommand().
   using CommandCompleteCallback = fit::function<void(const EventPacket& event)>;
-  void QueueCommand(std::unique_ptr<CommandPacket> command_packet,
-                    CommandCompleteCallback callback = {}, bool wait = true,
+  void QueueCommand(CommandPacketVariant command_packet, CommandCompleteCallback callback = {},
+                    bool wait = true,
                     hci_spec::EventCode complete_event_code = hci_spec::kCommandCompleteEventCode,
                     std::unordered_set<hci_spec::OpCode> exclusions = {});
 
   // Same as QueueCommand(), except the command completes on the LE Meta Event with subevent code
   // |le_meta_subevent_code|.
-  void QueueLeAsyncCommand(std::unique_ptr<CommandPacket> command_packet,
+  void QueueLeAsyncCommand(CommandPacketVariant command_packet,
                            hci_spec::EventCode le_meta_subevent_code,
                            CommandCompleteCallback callback = {}, bool wait = true);
 
@@ -109,7 +111,7 @@ class SequentialCommandRunner final {
 
  private:
   struct QueuedCommand {
-    std::unique_ptr<CommandPacket> packet;
+    CommandPacketVariant packet;
     hci_spec::EventCode complete_event_code;
     bool is_le_async_command;
     CommandCompleteCallback callback;

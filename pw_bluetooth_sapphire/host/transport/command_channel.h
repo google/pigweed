@@ -40,6 +40,15 @@ class Transport;
 // higher layers until shutdown completes.
 class CommandChannel final {
  public:
+  // Currently, two versions of the HCI packet infrastructure coexist. The old, packed-struct
+  // approach, which is being obsoleted in favor of a new Emboss-based packet infrastructure. Until
+  // all old instances of `CommandPacket` are replaced by `EmbossCommandPacket`, command packet
+  // transmission will support both versions.
+  //
+  // TODO(fxbug.dev/86811): Finish migration away from std::unique_ptr<CommandPacket> and replace
+  // with EmbossCommandPacket.
+  using CommandPacketVariant = std::variant<std::unique_ptr<CommandPacket>, EmbossCommandPacket>;
+
   // Starts listening for HCI commands and starts handling commands and events.
   explicit CommandChannel(HciWrapper* hci);
 
@@ -87,12 +96,7 @@ class CommandChannel final {
   // information about the HCI command flow control.
   using CommandCallback = fit::function<void(TransactionId id, const EventPacket& event)>;
   TransactionId SendCommand(
-      std::unique_ptr<CommandPacket> command_packet, CommandCallback callback,
-      hci_spec::EventCode complete_event_code = hci_spec::kCommandCompleteEventCode);
-
-  // Same as above; Emboss version.
-  TransactionId SendCommand(
-      EmbossCommandPacket command_packet, CommandCallback callback,
+      CommandPacketVariant command_packet, CommandCallback callback,
       hci_spec::EventCode complete_event_code = hci_spec::kCommandCompleteEventCode);
 
   // As SendCommand, but the transaction completes on the LE Meta Event. |le_meta_subevent_code| is
@@ -100,8 +104,7 @@ class CommandChannel final {
   //
   // |le_meta_subevent_code| cannot be a code that has been registered for events via
   // AddLEMetaEventHandler.
-  TransactionId SendLeAsyncCommand(std::unique_ptr<CommandPacket> command_packet,
-                                   CommandCallback callback,
+  TransactionId SendLeAsyncCommand(CommandPacketVariant command_packet, CommandCallback callback,
                                    hci_spec::EventCode le_meta_subevent_code);
 
   // As SendCommand, but will wait to run this command until there are no commands with with opcodes
@@ -109,20 +112,14 @@ class CommandChannel final {
   // that cannot run concurrently (i.e. Inquiry and Connect). Two commands with the same opcode will
   // never run simultaneously.
   TransactionId SendExclusiveCommand(
-      std::unique_ptr<CommandPacket> command_packet, CommandCallback callback,
-      hci_spec::EventCode complete_event_code = hci_spec::kCommandCompleteEventCode,
-      std::unordered_set<hci_spec::OpCode> exclusions = {});
-
-  // Same as above; Emboss version.
-  TransactionId SendExclusiveCommand(
-      EmbossCommandPacket command_packet, CommandCallback callback,
+      CommandPacketVariant command_packet, CommandCallback callback,
       hci_spec::EventCode complete_event_code = hci_spec::kCommandCompleteEventCode,
       std::unordered_set<hci_spec::OpCode> exclusions = {});
 
   // As SendExclusiveCommand, but the transaction completes on the LE Meta Event with subevent code
   // |le_meta_subevent_code|.
   TransactionId SendLeAsyncExclusiveCommand(
-      std::unique_ptr<CommandPacket> command_packet, CommandCallback callback,
+      CommandPacketVariant command_packet, CommandCallback callback,
       std::optional<hci_spec::EventCode> le_meta_subevent_code,
       std::unordered_set<hci_spec::OpCode> exclusions = {});
 
@@ -209,15 +206,8 @@ class CommandChannel final {
   fxl::WeakPtr<CommandChannel> AsWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
  private:
-  // One of |command_packet| or |emboss_command_packet| must be null.
-  //
-  // Currently, two versions of the HCI packet infrastructure coexist. The old, packed-struct
-  // approach, which is being obsoleted in favor of a new Emboss-based packet infrastructure. Until
-  // all old instances of `CommandPacket` are replaced by `EmbossCommandPacket`, command packet
-  // transmission will support both versions.
   TransactionId SendExclusiveCommandInternal(
-      std::unique_ptr<CommandPacket> command_packet,
-      std::optional<EmbossCommandPacket> emboss_command_packet, CommandCallback callback,
+      CommandPacketVariant command_packet, CommandCallback callback,
       hci_spec::EventCode complete_event_code,
       std::optional<hci_spec::EventCode> le_meta_subevent_code = std::nullopt,
       std::unordered_set<hci_spec::OpCode> exclusions = {});
@@ -293,16 +283,13 @@ class CommandChannel final {
 
   // Represents a queued command packet.
   struct QueuedCommand {
-    QueuedCommand(std::unique_ptr<CommandPacket> command_packet,
-                  std::optional<EmbossCommandPacket> emboss_command_packet,
-                  std::unique_ptr<TransactionData> data);
+    QueuedCommand(CommandPacketVariant command_packet, std::unique_ptr<TransactionData> data);
     QueuedCommand() = default;
 
     QueuedCommand(QueuedCommand&& other) = default;
     QueuedCommand& operator=(QueuedCommand&& other) = default;
 
-    std::unique_ptr<CommandPacket> packet;
-    std::optional<EmbossCommandPacket> emboss_packet;
+    CommandPacketVariant packet;
     std::unique_ptr<TransactionData> data;
   };
 
