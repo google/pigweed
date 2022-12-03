@@ -28,9 +28,14 @@ from prompt_toolkit.layout import (
 )
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 
-import pw_console.widgets.checkbox
-import pw_console.widgets.mouse_handlers
-import pw_console.style
+from pw_console.style import (
+    get_button_style,
+    get_toolbar_style,
+)
+from pw_console.widgets import (
+    mouse_handlers,
+    to_keybind_indicator,
+)
 
 if TYPE_CHECKING:
     from pw_console.log_pane import LogPane
@@ -54,7 +59,7 @@ class FilterToolbar(ConditionalContainer):
         space = ('', ' ')
         fragments = [('class:filter-bar-title', ' Filters '), separator]
 
-        button_style = pw_console.style.get_button_style(self.log_pane)
+        button_style = get_button_style(self.log_pane)
 
         for filter_text, log_filter in self.log_pane.log_view.filters.items():
             fragments.append(('class:filter-bar-delimiter', '<'))
@@ -86,13 +91,13 @@ class FilterToolbar(ConditionalContainer):
     def get_center_fragments(self):
         """Return formatted text tokens for display."""
         clear_filters = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click,
+            mouse_handlers.on_click,
             self.log_pane.log_view.clear_filters,
         )
 
-        button_style = pw_console.style.get_button_style(self.log_pane)
+        button_style = get_button_style(self.log_pane)
 
-        return pw_console.widgets.checkbox.to_keybind_indicator(
+        return to_keybind_indicator(
             'Ctrl-Alt-r',
             'Clear Filters',
             clear_filters,
@@ -120,7 +125,7 @@ class FilterToolbar(ConditionalContainer):
                     center_bar_window,
                 ],
                 style=functools.partial(
-                    pw_console.style.get_toolbar_style, self.log_pane, dim=True
+                    get_toolbar_style, self.log_pane, dim=True
                 ),
                 height=1,
                 align=HorizontalAlign.LEFT,

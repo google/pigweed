@@ -53,8 +53,6 @@ from prompt_toolkit.layout import (
 )
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType, MouseButton
 
-import pw_console.widgets.checkbox
-import pw_console.style
 from pw_console.log_view import LogView
 from pw_console.log_pane_toolbars import (
     LineInfoBar,
@@ -65,12 +63,21 @@ from pw_console.log_pane_selection_dialog import LogPaneSelectionDialog
 from pw_console.log_store import LogStore
 from pw_console.search_toolbar import SearchToolbar
 from pw_console.filter_toolbar import FilterToolbar
+
+from pw_console.style import (
+    get_pane_style,
+)
 from pw_console.widgets import (
     ToolbarButton,
     WindowPane,
     WindowPaneHSplit,
     WindowPaneToolbar,
+    create_border,
+    mouse_handlers,
+    to_checkbox_text,
+    to_keybind_indicator,
 )
+
 
 if TYPE_CHECKING:
     from pw_console.console_app import ConsoleApp
@@ -384,7 +391,7 @@ class LogPaneWebsocketDialog(ConditionalContainer):
         )
 
         super().__init__(
-            pw_console.widgets.border.create_border(
+            create_border(
                 HSplit(
                     [
                         info_bar_window,
@@ -426,9 +433,7 @@ class LogPaneWebsocketDialog(ConditionalContainer):
     def get_message_fragments(self):
         """Return FormattedText with the last action message."""
         # Mouse handlers
-        focus = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self.focus_self
-        )
+        focus = functools.partial(mouse_handlers.on_click, self.focus_self)
         # Separator should have the focus mouse handler so clicking on any
         # whitespace focuses the input field.
         separator_text = ('', '  ', focus)
@@ -443,9 +448,7 @@ class LogPaneWebsocketDialog(ConditionalContainer):
     def get_info_fragments(self):
         """Return FormattedText with current URL info."""
         # Mouse handlers
-        focus = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self.focus_self
-        )
+        focus = functools.partial(mouse_handlers.on_click, self.focus_self)
         # Separator should have the focus mouse handler so clicking on any
         # whitespace focuses the input field.
         separator_text = ('', '  ', focus)
@@ -464,14 +467,10 @@ class LogPaneWebsocketDialog(ConditionalContainer):
     def get_action_fragments(self):
         """Return FormattedText with the action buttons."""
         # Mouse handlers
-        focus = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self.focus_self
-        )
-        cancel = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self.close_dialog
-        )
+        focus = functools.partial(mouse_handlers.on_click, self.focus_self)
+        cancel = functools.partial(mouse_handlers.on_click, self.close_dialog)
         copy = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click,
+            mouse_handlers.on_click,
             self.copy_url_to_clipboard,
         )
 
@@ -486,7 +485,7 @@ class LogPaneWebsocketDialog(ConditionalContainer):
 
         # Action buttons
         fragments.extend(
-            pw_console.widgets.checkbox.to_keybind_indicator(
+            to_keybind_indicator(
                 key=None,
                 description='Stop',
                 mouse_handler=cancel,
@@ -496,7 +495,7 @@ class LogPaneWebsocketDialog(ConditionalContainer):
 
         fragments.append(separator_text)
         fragments.extend(
-            pw_console.widgets.checkbox.to_keybind_indicator(
+            to_keybind_indicator(
                 key=None,
                 description='Copy to Clipboard',
                 mouse_handler=copy,
@@ -624,7 +623,7 @@ class LogPane(WindowPane):
             dont_extend_width=False,
             # Needed for log lines ANSI sequences that don't specify foreground
             # or background colors.
-            style=functools.partial(pw_console.style.get_pane_style, self),
+            style=functools.partial(get_pane_style, self),
         )
 
         # Root level container
@@ -644,9 +643,7 @@ class LogPane(WindowPane):
                     align=VerticalAlign.BOTTOM,
                     height=lambda: self.height,
                     width=lambda: self.width,
-                    style=functools.partial(
-                        pw_console.style.get_pane_style, self
-                    ),
+                    style=functools.partial(get_pane_style, self),
                 ),
                 floats=[
                     Float(top=0, right=0, height=1, content=LineInfoBar(self)),
@@ -815,31 +812,25 @@ class LogPane(WindowPane):
             ('-', None),
             (
                 '{check} Line wrapping'.format(
-                    check=pw_console.widgets.checkbox.to_checkbox_text(
-                        self.wrap_lines, end=''
-                    )
+                    check=to_checkbox_text(self.wrap_lines, end='')
                 ),
                 self.toggle_wrap_lines,
             ),
             (
                 '{check} Table view'.format(
-                    check=pw_console.widgets.checkbox.to_checkbox_text(
-                        self._table_view, end=''
-                    )
+                    check=to_checkbox_text(self._table_view, end='')
                 ),
                 self.toggle_table_view,
             ),
             (
                 '{check} Follow'.format(
-                    check=pw_console.widgets.checkbox.to_checkbox_text(
-                        self.log_view.follow, end=''
-                    )
+                    check=to_checkbox_text(self.log_view.follow, end='')
                 ),
                 self.toggle_follow,
             ),
             (
                 '{check} Open in web browser'.format(
-                    check=pw_console.widgets.checkbox.to_checkbox_text(
+                    check=to_checkbox_text(
                         self.log_view.websocket_running, end=''
                     )
                 ),

@@ -19,11 +19,11 @@ import logging
 from datetime import datetime
 from typing import Dict, List, Optional, TYPE_CHECKING
 
-import pw_cli.color
+from pw_cli.color import colors as pw_cli_colors
 
 from pw_console.console_prefs import ConsolePrefs
 from pw_console.log_line import LogLine
-import pw_console.text_formatting
+from pw_console.text_formatting import strip_ansi
 from pw_console.widgets.table import TableView
 
 if TYPE_CHECKING:
@@ -127,7 +127,7 @@ class LogStore(logging.Handler):
     def set_formatting(self) -> None:
         """Setup log formatting."""
         # Copy of pw_cli log formatter
-        colors = pw_cli.color.colors(True)
+        colors = pw_cli_colors(True)
         timestamp_prefix = colors.black_on_white('%(asctime)s') + ' '
         timestamp_format = '%Y%m%d %H:%M:%S'
         format_string = timestamp_prefix + '%(levelname)s %(message)s'
@@ -190,10 +190,8 @@ class LogStore(logging.Handler):
                 )
 
                 # Delete ANSI escape sequences.
-                ansi_stripped_time_and_level = (
-                    pw_console.text_formatting.strip_ansi(
-                        formatted_time_and_level
-                    )
+                ansi_stripped_time_and_level = strip_ansi(
+                    formatted_time_and_level
                 )
 
                 self.channel_formatted_prefix_widths[record.name] = len(
@@ -211,7 +209,7 @@ class LogStore(logging.Handler):
         """Add a new log event."""
         # Format incoming log line.
         formatted_log = self.format(record)
-        ansi_stripped_log = pw_console.text_formatting.strip_ansi(formatted_log)
+        ansi_stripped_log = strip_ansi(formatted_log)
         # Save this log.
         self.logs.append(
             LogLine(

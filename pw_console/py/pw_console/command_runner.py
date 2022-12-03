@@ -51,9 +51,11 @@ from prompt_toolkit.layout import (
 from prompt_toolkit.widgets import MenuItem
 from prompt_toolkit.widgets import TextArea
 
-import pw_console.widgets.border
-import pw_console.widgets.checkbox
-import pw_console.widgets.mouse_handlers
+from pw_console.widgets import (
+    create_border,
+    mouse_handlers,
+    to_keybind_indicator,
+)
 
 if TYPE_CHECKING:
     from pw_console.console_app import ConsoleApp
@@ -162,7 +164,7 @@ class CommandRunner:
                     'class:command-runner-setting',
                     '> ',
                     functools.partial(
-                        pw_console.widgets.mouse_handlers.on_click,
+                        mouse_handlers.on_click,
                         self.focus_self,
                     ),
                 )
@@ -237,7 +239,7 @@ class CommandRunner:
     def _create_bordered_content(self) -> None:
         """Wrap self.command_runner_content in a border."""
         # This should be called whenever the window_title changes.
-        self.bordered_content = pw_console.widgets.border.create_border(
+        self.bordered_content = create_border(
             self.command_runner_content,
             title=self.window_title,
             border_style='class:command-runner-border',
@@ -420,14 +422,10 @@ class CommandRunner:
 
     def _get_input_field_button_fragments(self) -> StyleAndTextTuples:
         # Mouse handlers
-        focus = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self.focus_self
-        )
-        cancel = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self.close_dialog
-        )
+        focus = functools.partial(mouse_handlers.on_click, self.focus_self)
+        cancel = functools.partial(mouse_handlers.on_click, self.close_dialog)
         select_item = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self._run_selected_item
+            mouse_handlers.on_click, self._run_selected_item
         )
 
         separator_text = ('', ' ', focus)
@@ -439,7 +437,7 @@ class CommandRunner:
 
         # Cancel button
         fragments.extend(
-            pw_console.widgets.checkbox.to_keybind_indicator(
+            to_keybind_indicator(
                 key='Ctrl-c',
                 description='Cancel',
                 mouse_handler=cancel,
@@ -450,7 +448,7 @@ class CommandRunner:
 
         # Run button
         fragments.extend(
-            pw_console.widgets.checkbox.to_keybind_indicator(
+            to_keybind_indicator(
                 'Enter', 'Run', select_item, base_style=button_style
             )
         )

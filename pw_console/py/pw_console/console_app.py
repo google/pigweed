@@ -65,24 +65,29 @@ from pw_console.console_log_server import (
 )
 from pw_console.console_prefs import ConsolePrefs
 from pw_console.help_window import HelpWindow
-import pw_console.key_bindings
+from pw_console.key_bindings import create_key_bindings
 from pw_console.log_pane import LogPane
 from pw_console.log_store import LogStore
 from pw_console.pw_ptpython_repl import PwPtPythonRepl
 from pw_console.python_logging import all_loggers
 from pw_console.quit_dialog import QuitDialog
 from pw_console.repl_pane import ReplPane
-import pw_console.style
+from pw_console.style import generate_styles
 from pw_console.test_mode import start_fake_logger
-import pw_console.widgets.checkbox
-from pw_console.widgets import FloatingWindowPane
-import pw_console.widgets.mouse_handlers
+from pw_console.widgets import (
+    FloatingWindowPane,
+    mouse_handlers,
+    to_checkbox_text,
+    to_keybind_indicator,
+)
 from pw_console.window_manager import WindowManager
 
 _LOG = logging.getLogger(__package__)
 _ROOT_LOG = logging.getLogger('')
 
 _SYSTEM_COMMAND_LOG = logging.getLogger('pw_console_system_command')
+
+_PW_CONSOLE_MODULE = 'pw_console'
 
 MAX_FPS = 30
 MIN_REDRAW_INTERVAL = (60.0 / MAX_FPS) / 60.0
@@ -177,8 +182,12 @@ class ConsoleApp:
         local_vars = local_vars or global_vars
 
         jinja_templates = {
-            t: importlib.resources.read_text('pw_console.templates', t)
-            for t in importlib.resources.contents('pw_console.templates')
+            t: importlib.resources.read_text(
+                f'{_PW_CONSOLE_MODULE}.templates', t
+            )
+            for t in importlib.resources.contents(
+                f'{_PW_CONSOLE_MODULE}.templates'
+            )
             if t.endswith('.jinja')
         }
 
@@ -220,11 +229,11 @@ class ConsoleApp:
         self.message = [('class:logo', self.app_title), ('', '  ')]
 
         self.message.extend(
-            pw_console.widgets.checkbox.to_keybind_indicator(
+            to_keybind_indicator(
                 'Ctrl-p',
                 'Search Menu',
                 functools.partial(
-                    pw_console.widgets.mouse_handlers.on_click,
+                    mouse_handlers.on_click,
                     self.open_command_runner_main_menu,
                 ),
                 base_style='class:toolbar-button-inactive',
@@ -291,7 +300,7 @@ class ConsoleApp:
         self.quit_dialog = QuitDialog(self)
 
         # Key bindings registry.
-        self.key_bindings = pw_console.key_bindings.create_key_bindings(self)
+        self.key_bindings = create_key_bindings(self)
 
         # Create help window text based global key_bindings and active panes.
         self._update_help_window()
@@ -572,7 +581,7 @@ class ConsoleApp:
         if self.http_server is not None:
             return
 
-        html_package_path = 'pw_console.html'
+        html_package_path = f'{_PW_CONSOLE_MODULE}.html'
         self.html_files = {
             '/{}'.format(t): importlib.resources.read_text(html_package_path, t)
             for t in importlib.resources.contents(html_package_path)
@@ -633,23 +642,6 @@ class ConsoleApp:
                         'Code: gruvbox-dark',
                         self.set_code_theme('gruvbox-dark'),
                     ),
-                    MenuItem(
-                        'Code: tomorrow-night',
-                        self.set_code_theme('tomorrow-night'),
-                    ),
-                    MenuItem(
-                        'Code: tomorrow-night-bright',
-                        self.set_code_theme('tomorrow-night-bright'),
-                    ),
-                    MenuItem(
-                        'Code: tomorrow-night-blue',
-                        self.set_code_theme('tomorrow-night-blue'),
-                    ),
-                    MenuItem(
-                        'Code: tomorrow-night-eighties',
-                        self.set_code_theme('tomorrow-night-eighties'),
-                    ),
-                    MenuItem('Code: dracula', self.set_code_theme('dracula')),
                     MenuItem('Code: zenburn', self.set_code_theme('zenburn')),
                 ],
             ),
@@ -677,7 +669,7 @@ class ConsoleApp:
                             # pylint: disable=line-too-long
                             MenuItem(
                                 '{check} Hide Date'.format(
-                                    check=pw_console.widgets.checkbox.to_checkbox_text(
+                                    check=to_checkbox_text(
                                         self.prefs.hide_date_from_log_time,
                                         end='',
                                     )
@@ -692,7 +684,7 @@ class ConsoleApp:
                             ),
                             MenuItem(
                                 '{check} Show Source File'.format(
-                                    check=pw_console.widgets.checkbox.to_checkbox_text(
+                                    check=to_checkbox_text(
                                         self.prefs.show_source_file, end=''
                                     )
                                 ),
@@ -706,7 +698,7 @@ class ConsoleApp:
                             ),
                             MenuItem(
                                 '{check} Show Python File'.format(
-                                    check=pw_console.widgets.checkbox.to_checkbox_text(
+                                    check=to_checkbox_text(
                                         self.prefs.show_python_file, end=''
                                     )
                                 ),
@@ -720,7 +712,7 @@ class ConsoleApp:
                             ),
                             MenuItem(
                                 '{check} Show Python Logger'.format(
-                                    check=pw_console.widgets.checkbox.to_checkbox_text(
+                                    check=to_checkbox_text(
                                         self.prefs.show_python_logger, end=''
                                     )
                                 ),
@@ -886,9 +878,7 @@ class ConsoleApp:
                         MenuItem(
                             # pylint: disable=line-too-long
                             '{check} Show/Hide Window'.format(
-                                check=pw_console.widgets.checkbox.to_checkbox_text(
-                                    pane.show_pane, end=''
-                                )
+                                check=to_checkbox_text(pane.show_pane, end='')
                             ),
                             # pylint: enable=line-too-long
                             handler=functools.partial(
@@ -991,7 +981,7 @@ class ConsoleApp:
 
     def load_theme(self, theme_name=None):
         """Regenerate styles for the current theme_name."""
-        self._current_theme = pw_console.style.generate_styles(theme_name)
+        self._current_theme = generate_styles(theme_name)
         if theme_name:
             self.prefs.set_ui_theme(theme_name)
 

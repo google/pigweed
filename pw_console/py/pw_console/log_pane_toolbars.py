@@ -27,9 +27,7 @@ from prompt_toolkit.layout import (
     HorizontalAlign,
 )
 
-import pw_console.widgets.checkbox
-import pw_console.widgets.mouse_handlers
-import pw_console.style
+from pw_console.style import get_toolbar_style
 
 if TYPE_CHECKING:
     from pw_console.log_pane import LogPane
@@ -60,7 +58,7 @@ class LineInfoBar(ConditionalContainer):
                 [info_bar_window],
                 height=1,
                 style=functools.partial(
-                    pw_console.style.get_toolbar_style, self.log_pane, dim=True
+                    get_toolbar_style, self.log_pane, dim=True
                 ),
                 align=HorizontalAlign.RIGHT,
             ),
@@ -90,9 +88,7 @@ class TableToolbar(ConditionalContainer):
             VSplit(
                 [table_header_bar_window],
                 height=1,
-                style=functools.partial(
-                    pw_console.style.get_toolbar_style, log_pane, dim=True
-                ),
+                style=functools.partial(get_toolbar_style, log_pane, dim=True),
                 align=HorizontalAlign.LEFT,
             ),
             filter=Condition(

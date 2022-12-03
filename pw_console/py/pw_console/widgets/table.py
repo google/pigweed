@@ -20,7 +20,7 @@ from prompt_toolkit.formatted_text import StyleAndTextTuples
 
 from pw_console.console_prefs import ConsolePrefs
 from pw_console.log_line import LogLine
-import pw_console.text_formatting
+from pw_console.text_formatting import strip_ansi
 
 
 class TableView:
@@ -117,9 +117,7 @@ class TableView:
                 self.column_widths[field_name] = len(value_string)
 
         # Update log level character width.
-        ansi_stripped_level = pw_console.text_formatting.strip_ansi(
-            log.record.levelname
-        )
+        ansi_stripped_level = strip_ansi(log.record.levelname)
         if len(ansi_stripped_level) > self.column_widths['level']:
             self.column_widths['level'] = len(ansi_stripped_level)
 
@@ -192,9 +190,7 @@ class TableView:
 
             if name == 'level' and hasattr(log.record, 'levelname'):
                 # Remove any existing ANSI formatting and apply our colors.
-                level_text = pw_console.text_formatting.strip_ansi(
-                    log.record.levelname
-                )
+                level_text = strip_ansi(log.record.levelname)
                 level_style = self.prefs.column_style(
                     'level',
                     level_text,
@@ -224,7 +220,7 @@ class TableView:
 
         # Grab the message to appear after the justified columns with ANSI
         # escape sequences removed.
-        message_text = pw_console.text_formatting.strip_ansi(log.record.message)
+        message_text = strip_ansi(log.record.message)
         message = log.metadata.fields.get(
             'msg',
             message_text.rstrip(),  # Remove any trailing line breaks

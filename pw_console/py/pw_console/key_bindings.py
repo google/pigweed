@@ -24,7 +24,6 @@ from prompt_toolkit.key_binding import KeyBindings
 from prompt_toolkit.key_binding.bindings.focus import focus_next, focus_previous
 from prompt_toolkit.key_binding.key_bindings import Binding
 
-import pw_console.pw_ptpython_repl
 
 __all__ = ('create_key_bindings',)
 

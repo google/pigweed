@@ -20,24 +20,19 @@ from pathlib import Path
 import sys
 from typing import Optional, Dict
 
-import pw_cli.log
-import pw_cli.argument_types
+from pw_cli import log as pw_cli_log
+from pw_cli import argument_types
 
-import pw_console
-import pw_console.python_logging
-import pw_console.test_mode
+from pw_console import PwConsoleEmbed
+from pw_console.python_logging import create_temp_log_file
 from pw_console.log_store import LogStore
 from pw_console.plugins.calc_pane import CalcPane
 from pw_console.plugins.clock_pane import ClockPane
 from pw_console.plugins.twenty48_pane import Twenty48Pane
+from pw_console.test_mode import FAKE_DEVICE_LOGGER_NAME
 
 _LOG = logging.getLogger(__package__)
 _ROOT_LOG = logging.getLogger('')
-
-
-# TODO(tonymd): Remove this when no downstream projects are using it.
-def create_temp_log_file():
-    return pw_console.python_logging.create_temp_log_file()
 
 
 def _build_argument_parser() -> argparse.ArgumentParser:
@@ -49,7 +44,7 @@ def _build_argument_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         '-l',
         '--loglevel',
-        type=pw_cli.argument_types.log_level,
+        type=argument_types.log_level,
         default=logging.DEBUG,
         help='Set the log level' '(debug, info, warning, error, critical)',
     )
@@ -83,9 +78,9 @@ def main() -> int:
     if not args.logfile:
         # Create a temp logfile to prevent logs from appearing over stdout. This
         # would corrupt the prompt toolkit UI.
-        args.logfile = pw_console.python_logging.create_temp_log_file()
+        args.logfile = create_temp_log_file()
 
-    pw_cli.log.install(
+    pw_cli_log.install(
         level=args.loglevel,
         use_color=True,
         hide_timestamp=False,
@@ -93,7 +88,7 @@ def main() -> int:
     )
 
     if args.console_debug_log_file:
-        pw_cli.log.install(
+        pw_cli_log.install(
             level=logging.DEBUG,
             use_color=True,
             hide_timestamp=False,
@@ -108,9 +103,7 @@ def main() -> int:
         _ROOT_LOG.addHandler(root_log_store)
         _ROOT_LOG.debug('pw_console test-mode starting...')
 
-        fake_logger = logging.getLogger(
-            pw_console.test_mode.FAKE_DEVICE_LOGGER_NAME
-        )
+        fake_logger = logging.getLogger(FAKE_DEVICE_LOGGER_NAME)
         default_loggers = {
             # Don't include pw_console package logs (_LOG) in the log pane UI.
             # Add the fake logger for test_mode.
@@ -137,7 +130,7 @@ def main() -> int:
         """
         )
 
-    console = pw_console.PwConsoleEmbed(
+    console = PwConsoleEmbed(
         global_vars=global_vars,
         loggers=default_loggers,
         test_mode=args.test_mode,

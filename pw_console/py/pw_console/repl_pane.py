@@ -54,14 +54,13 @@ from pygments.lexers.python import PythonConsoleLexer  # type: ignore
 
 from pw_console.progress_bar.progress_bar_state import TASKS_CONTEXTVAR
 from pw_console.pw_ptpython_repl import PwPtPythonRepl
+from pw_console.style import get_pane_style
 from pw_console.widgets import (
     ToolbarButton,
     WindowPane,
     WindowPaneHSplit,
     WindowPaneToolbar,
 )
-import pw_console.mouse
-import pw_console.style
 
 if TYPE_CHECKING:
     from pw_console.console_app import ConsoleApp
@@ -198,9 +197,7 @@ class ReplPane(WindowPane):
                     # Repl pane dimensions
                     height=lambda: self.height,
                     width=lambda: self.width,
-                    style=functools.partial(
-                        pw_console.style.get_pane_style, self
-                    ),
+                    style=functools.partial(get_pane_style, self),
                 ),
                 floats=[],
             ),

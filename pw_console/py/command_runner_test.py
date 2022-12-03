@@ -32,7 +32,6 @@ from pw_console.text_formatting import (
     flatten_formatted_text_tuples,
     join_adjacent_style_tuples,
 )
-from window_manager_test import target_list_and_pane, window_pane_titles
 
 
 def _create_console_app(log_pane_count=2):
@@ -54,6 +53,30 @@ def _create_console_app(log_pane_count=2):
         console_app.add_log_handler(window_title, logger_instances)
 
     return console_app
+
+
+def window_pane_titles(window_manager):
+    return [
+        [
+            pane.pane_title() + ' - ' + pane.pane_subtitle()
+            for pane in window_list.active_panes
+        ]
+        for window_list in window_manager.window_lists
+    ]
+
+
+def target_list_and_pane(window_manager, list_index, pane_index):
+    # pylint: disable=protected-access
+    # Bypass prompt_toolkit has_focus()
+    pane = window_manager.window_lists[list_index].active_panes[pane_index]
+    # If the pane is in focus it will be visible.
+    pane.show_pane = True
+    window_manager._get_active_window_list_and_pane = MagicMock(  # type: ignore
+        return_value=(
+            window_manager.window_lists[list_index],
+            window_manager.window_lists[list_index].active_panes[pane_index],
+        )
+    )
 
 
 class TestCommandRunner(unittest.TestCase):

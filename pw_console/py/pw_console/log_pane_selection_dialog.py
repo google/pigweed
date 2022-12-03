@@ -25,10 +25,12 @@ from prompt_toolkit.layout import (
     WindowAlign,
 )
 
-import pw_console.style
-import pw_console.widgets.checkbox
-import pw_console.widgets.border
-import pw_console.widgets.mouse_handlers
+from pw_console.widgets import (
+    create_border,
+    mouse_handlers,
+    to_checkbox_with_keybind_indicator,
+    to_keybind_indicator,
+)
 
 if TYPE_CHECKING:
     from pw_console.log_pane import LogPane
@@ -61,7 +63,7 @@ class LogPaneSelectionDialog(ConditionalContainer):
         )
 
         super().__init__(
-            pw_console.widgets.border.create_border(
+            create_border(
                 selection_bar_window,
                 (LogPaneSelectionDialog.DIALOG_HEIGHT - 1),
                 border_style='class:selection-dialog-border',
@@ -105,31 +107,29 @@ class LogPaneSelectionDialog(ConditionalContainer):
         """Return formatted text tuples for both rows of the selection
         dialog."""
 
-        focus = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self.focus_log_pane
-        )
+        focus = functools.partial(mouse_handlers.on_click, self.focus_log_pane)
 
         one_space = ('', ' ', focus)
         two_spaces = ('', '  ', focus)
         select_all = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self._select_all
+            mouse_handlers.on_click, self._select_all
         )
         select_none = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self._select_none
+            mouse_handlers.on_click, self._select_none
         )
 
         copy_selection = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self._copy_selection
+            mouse_handlers.on_click, self._copy_selection
         )
         saveas_file = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self._saveas_file
+            mouse_handlers.on_click, self._saveas_file
         )
         toggle_markdown = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click,
+            mouse_handlers.on_click,
             self._toggle_markdown_flag,
         )
         toggle_table = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self._toggle_table_flag
+            mouse_handlers.on_click, self._toggle_table_flag
         )
 
         button_style = 'class:toolbar-button-inactive'
@@ -149,7 +149,7 @@ class LogPaneSelectionDialog(ConditionalContainer):
 
         # Table and Markdown options
         fragments.extend(
-            pw_console.widgets.checkbox.to_checkbox_with_keybind_indicator(
+            to_checkbox_with_keybind_indicator(
                 self._table_flag,
                 key='',
                 description='Table',
@@ -159,7 +159,7 @@ class LogPaneSelectionDialog(ConditionalContainer):
         )
 
         fragments.extend(
-            pw_console.widgets.checkbox.to_checkbox_with_keybind_indicator(
+            to_checkbox_with_keybind_indicator(
                 self._markdown_flag,
                 key='',
                 description='Markdown',
@@ -175,7 +175,7 @@ class LogPaneSelectionDialog(ConditionalContainer):
         fragments.append(one_space)
 
         fragments.extend(
-            pw_console.widgets.checkbox.to_keybind_indicator(
+            to_keybind_indicator(
                 key='Ctrl-c',
                 description='Cancel',
                 mouse_handler=select_none,
@@ -185,7 +185,7 @@ class LogPaneSelectionDialog(ConditionalContainer):
         fragments.append(two_spaces)
 
         fragments.extend(
-            pw_console.widgets.checkbox.to_keybind_indicator(
+            to_keybind_indicator(
                 key='Ctrl-a',
                 description='Select All',
                 mouse_handler=select_all,
@@ -196,7 +196,7 @@ class LogPaneSelectionDialog(ConditionalContainer):
 
         fragments.append(one_space)
         fragments.extend(
-            pw_console.widgets.checkbox.to_keybind_indicator(
+            to_keybind_indicator(
                 key='',
                 description='Save as File',
                 mouse_handler=saveas_file,
@@ -206,7 +206,7 @@ class LogPaneSelectionDialog(ConditionalContainer):
         fragments.append(two_spaces)
 
         fragments.extend(
-            pw_console.widgets.checkbox.to_keybind_indicator(
+            to_keybind_indicator(
                 key='',
                 description='Copy',
                 mouse_handler=copy_selection,

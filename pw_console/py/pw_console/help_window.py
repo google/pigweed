@@ -37,12 +37,21 @@ from prompt_toolkit.widgets import Box, TextArea
 
 from pygments.lexers.markup import RstLexer  # type: ignore
 from pygments.lexers.data import YamlLexer  # type: ignore
-import pw_console.widgets.mouse_handlers
+
+from pw_console.style import (
+    get_pane_indicator,
+)
+from pw_console.widgets import (
+    mouse_handlers,
+    to_keybind_indicator,
+)
 
 if TYPE_CHECKING:
     from pw_console.console_app import ConsoleApp
 
 _LOG = logging.getLogger(__package__)
+
+_PW_CONSOLE_MODULE = 'pw_console'
 
 
 def _longest_line_length(text):
@@ -120,10 +129,10 @@ class HelpWindow(ConditionalContainer):
         self.help_text_area: TextArea = self._create_help_text_area()
 
         close_mouse_handler = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self.toggle_display
+            mouse_handlers.on_click, self.toggle_display
         )
         copy_mouse_handler = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self.copy_all_text
+            mouse_handlers.on_click, self.copy_all_text
         )
 
         toolbar_padding = 1
@@ -132,7 +141,7 @@ class HelpWindow(ConditionalContainer):
 
         buttons = []
         buttons.extend(
-            pw_console.widgets.checkbox.to_keybind_indicator(
+            to_keybind_indicator(
                 'Ctrl-c',
                 'Copy All',
                 copy_mouse_handler,
@@ -141,7 +150,7 @@ class HelpWindow(ConditionalContainer):
         )
         buttons.append(('', '  '))
         buttons.extend(
-            pw_console.widgets.checkbox.to_keybind_indicator(
+            to_keybind_indicator(
                 'q',
                 'Close',
                 close_mouse_handler,
@@ -154,7 +163,7 @@ class HelpWindow(ConditionalContainer):
                     content=FormattedTextControl(
                         # [('', toolbar_title)]
                         functools.partial(
-                            pw_console.style.get_pane_indicator,
+                            get_pane_indicator,
                             self,
                             toolbar_title,
                         )
@@ -261,7 +270,7 @@ class HelpWindow(ConditionalContainer):
 
     def load_user_guide(self):
         rstdoc_text = importlib.resources.read_text(
-            'pw_console.docs', 'user_guide.rst'
+            f'{_PW_CONSOLE_MODULE}.docs', 'user_guide.rst'
         )
         max_line_length = 0
         rst_text = ''

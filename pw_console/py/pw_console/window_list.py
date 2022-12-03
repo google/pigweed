@@ -31,8 +31,7 @@ from prompt_toolkit.layout import (
 )
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType, MouseButton
 
-import pw_console.style
-import pw_console.widgets.mouse_handlers
+from pw_console.widgets import mouse_handlers as pw_console_mouse_handlers
 
 if TYPE_CHECKING:
     # pylint: disable=ungrouped-imports
@@ -80,9 +79,7 @@ class WindowListHSplit(HSplit):
         # Is resize mode active?
         if self.parent_window_list.resize_mode:
             # Ignore future mouse_handler updates.
-            new_mouse_handlers = (
-                pw_console.widgets.mouse_handlers.EmptyMouseHandler()
-            )
+            new_mouse_handlers = mouse_handlers.EmptyMouseHandler()
             # Set existing mouse_handlers to the parent_window_list's
             # mouse_handler. This will handle triggering resize events.
             mouse_handlers.set_mouse_handler_for_range(
@@ -261,7 +258,7 @@ class WindowList:
                     text,
                     # Mouse handler
                     functools.partial(
-                        pw_console.widgets.mouse_handlers.on_click,
+                        pw_console_mouse_handlers.on_click,
                         functools.partial(self.switch_to_tab, pane_index),
                     ),
                 )

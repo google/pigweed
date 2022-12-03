@@ -12,7 +12,7 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("@rules_python//python:defs.bzl", "py_library", "py_test")
+load("@rules_python//python:defs.bzl", "py_binary", "py_library", "py_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -85,12 +85,32 @@ py_library(
         "pw_console/window_list.py",
         "pw_console/window_manager.py",
     ],
+    data = [
+        "pw_console/docs/user_guide.rst",
+        "pw_console/html/index.html",
+        "pw_console/html/main.js",
+        "pw_console/html/style.css",
+        "pw_console/py.typed",
+        "pw_console/templates/keybind_list.jinja",
+        "pw_console/templates/repl_output.jinja",
+    ],
     imports = ["."],
     deps = [
         ":event_count_history",
         ":pyserial_wrapper",
         "//pw_cli/py:pw_cli",
         "//pw_log_tokenized/py:pw_log_tokenized",
+    ],
+)
+
+py_binary(
+    name = "pw_console_test_mode",
+    srcs = [
+        "pw_console/__main__.py",
+    ],
+    main = "pw_console/__main__.py",
+    deps = [
+        ":pw_console",
     ],
 )
 

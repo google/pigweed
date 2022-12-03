@@ -28,13 +28,17 @@ from prompt_toolkit.layout import (
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 
 from pw_console.get_pw_console_app import get_pw_console_app
-import pw_console.style
+from pw_console.style import (
+    get_pane_indicator,
+    get_button_style,
+    get_toolbar_style,
+)
 from pw_console.widgets import (
     ToolbarButton,
+    mouse_handlers,
     to_checkbox_with_keybind_indicator,
     to_keybind_indicator,
 )
-import pw_console.widgets.mouse_handlers
 
 _LOG = logging.getLogger(__package__)
 
@@ -74,7 +78,7 @@ class WindowPaneToolbar:
             # No title was set, fetch the parent window pane title if available.
             parent_pane_title = self.parent_window_pane.pane_title()
             title = parent_pane_title if parent_pane_title else title
-        return pw_console.style.get_pane_indicator(
+        return get_pane_indicator(
             self.focus_check_container, f' {title} ', self.focus_mouse_handler
         )
 
@@ -82,9 +86,7 @@ class WindowPaneToolbar:
         """Return formatted text tokens for display in the center part of the
         toolbar."""
 
-        button_style = pw_console.style.get_button_style(
-            self.focus_check_container
-        )
+        button_style = get_button_style(self.focus_check_container)
 
         # FormattedTextTuple contents: (Style, Text, Mouse handler)
         separator_text = [('', '  ')]  # 2 spaces of separaton between keybinds.
@@ -98,7 +100,7 @@ class WindowPaneToolbar:
             on_click_handler = None
             if button.mouse_handler:
                 on_click_handler = functools.partial(
-                    pw_console.widgets.mouse_handlers.on_click,
+                    mouse_handlers.on_click,
                     button.mouse_handler,
                 )
 
@@ -162,7 +164,7 @@ class WindowPaneToolbar:
         return fragments
 
     def get_resize_handle(self):
-        return pw_console.style.get_pane_indicator(
+        return get_pane_indicator(
             self.focus_check_container, '─══─', hide_indicator=True
         )
 
@@ -211,7 +213,7 @@ class WindowPaneToolbar:
         self.focus_mouse_handler = None
         if self.focus_action_callable:
             self.focus_mouse_handler = functools.partial(
-                pw_console.widgets.mouse_handlers.on_click,
+                mouse_handlers.on_click,
                 self.focus_action_callable,
             )
 
@@ -237,8 +239,8 @@ class WindowPaneToolbar:
             dont_extend_width=True,
         )
 
-        get_toolbar_style = functools.partial(
-            pw_console.style.get_toolbar_style, self.focus_check_container
+        wrapped_get_toolbar_style = functools.partial(
+            get_toolbar_style, self.focus_check_container
         )
 
         sections = [
@@ -261,7 +263,7 @@ class WindowPaneToolbar:
         self.toolbar_vsplit = VSplit(
             sections,
             height=WindowPaneToolbar.TOOLBAR_HEIGHT,
-            style=get_toolbar_style,
+            style=wrapped_get_toolbar_style,
         )
 
         self.container = self._create_toolbar_container(self.toolbar_vsplit)

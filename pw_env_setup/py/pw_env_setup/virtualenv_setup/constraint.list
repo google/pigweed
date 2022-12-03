@@ -52,8 +52,6 @@ pyasn1-modules==0.2.8
 pycparser==2.21
 pyelftools==0.27
 Pygments==2.11.2
-pygments-style-dracula==1.2.5.1
-pygments-style-tomorrow==1.0.0.1
 pylint==2.9.3
 pyparsing==3.0.6
 pyperclip==1.8.2

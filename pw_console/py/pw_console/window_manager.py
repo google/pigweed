@@ -35,9 +35,10 @@ from prompt_toolkit.widgets import MenuItem
 
 from pw_console.console_prefs import ConsolePrefs, error_unknown_window
 from pw_console.log_pane import LogPane
-import pw_console.widgets.checkbox
-from pw_console.widgets import WindowPaneToolbar
-import pw_console.widgets.mouse_handlers
+from pw_console.widgets import (
+    WindowPaneToolbar,
+    to_checkbox_text,
+)
 from pw_console.window_list import WindowList, DisplayMode
 
 _LOG = logging.getLogger(__package__)
@@ -94,9 +95,7 @@ class WindowManagerVSplit(VSplit):
         # Is resize mode active?
         if self.parent_window_manager.resize_mode:
             # Ignore future mouse_handler updates.
-            new_mouse_handlers = (
-                pw_console.widgets.mouse_handlers.EmptyMouseHandler()
-            )
+            new_mouse_handlers = mouse_handlers.EmptyMouseHandler()
             # Set existing mouse_handlers to the parent_window_managers's
             # mouse_handler. This will handle triggering resize events.
             mouse_handlers.set_mouse_handler_for_range(
@@ -148,9 +147,7 @@ class WindowManagerHSplit(HSplit):
         # Is resize mode active?
         if self.parent_window_manager.resize_mode:
             # Ignore future mouse_handler updates.
-            new_mouse_handlers = (
-                pw_console.widgets.mouse_handlers.EmptyMouseHandler()
-            )
+            new_mouse_handlers = mouse_handlers.EmptyMouseHandler()
             # Set existing mouse_handlers to the parent_window_managers's
             # mouse_handler. This will handle triggering resize events.
             mouse_handlers.set_mouse_handler_for_range(
@@ -1048,7 +1045,6 @@ class WindowManager:
         root_menu_items = []
         for window_list_index, window_list in enumerate(self.window_lists):
             menu_items = []
-            checkbox = pw_console.widgets.checkbox
             menu_items.append(
                 MenuItem(
                     'Column {index} View Modes'.format(
@@ -1058,7 +1054,7 @@ class WindowManager:
                         MenuItem(
                             '{check} {display_mode} Windows'.format(
                                 display_mode=display_mode.value,
-                                check=checkbox.to_checkbox_text(
+                                check=to_checkbox_text(
                                     window_list.display_mode == display_mode,
                                     end='',
                                 ),
@@ -1080,9 +1076,7 @@ class WindowManager:
                     children=[
                         MenuItem(
                             '{check} Show/Hide Window'.format(
-                                check=checkbox.to_checkbox_text(
-                                    pane.show_pane, end=''
-                                )
+                                check=to_checkbox_text(pane.show_pane, end='')
                             ),
                             handler=functools.partial(self.toggle_pane, pane),
                         ),

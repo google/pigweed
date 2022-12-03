@@ -22,6 +22,7 @@ import sys
 import shlex
 import subprocess
 from typing import Iterable, Optional, TYPE_CHECKING
+from unittest.mock import patch
 
 from prompt_toolkit.buffer import Buffer
 from prompt_toolkit.layout.controls import BufferControl
@@ -40,14 +41,34 @@ from ptpython.layout import (  # type: ignore
     CompletionVisualisation,
     Dimension,
 )
+import pygments.plugin
 
-import pw_console.text_formatting
+from pw_console.pigweed_code_style import (
+    PigweedCodeStyle,
+    PigweedCodeLightStyle,
+)
+from pw_console.text_formatting import remove_formatting
 
 if TYPE_CHECKING:
     from pw_console.repl_pane import ReplPane
 
 _LOG = logging.getLogger(__package__)
 _SYSTEM_COMMAND_LOG = logging.getLogger('pw_console_system_command')
+
+_original_find_plugin_styles = pygments.plugin.find_plugin_styles
+
+
+def _wrapped_find_plugin_styles():
+    """Patch pygment find_plugin_styles to also include Pigweed codes styles
+
+    This allows using these themes without requiring Python entrypoints.
+    """
+    for style in [
+        ('pigweed-code', PigweedCodeStyle),
+        ('pigweed-code-light', PigweedCodeLightStyle),
+    ]:
+        yield style
+    yield from _original_find_plugin_styles()
 
 
 class MissingPtpythonBufferControl(Exception):
@@ -64,6 +85,9 @@ class PwPtPythonRepl(
     """A ptpython repl class with changes to code execution and output related
     methods."""
 
+    @patch(
+        'pygments.styles.find_plugin_styles', new=_wrapped_find_plugin_styles
+    )
     def __init__(
         self,
         *args,
@@ -180,16 +204,12 @@ class PwPtPythonRepl(
 
     def _save_result(self, formatted_text):
         """Save the last repl execution result."""
-        unformatted_result = pw_console.text_formatting.remove_formatting(
-            formatted_text
-        )
+        unformatted_result = remove_formatting(formatted_text)
         self._last_result = unformatted_result
 
     def _save_exception(self, formatted_text):
         """Save the last repl exception."""
-        unformatted_result = pw_console.text_formatting.remove_formatting(
-            formatted_text
-        )
+        unformatted_result = remove_formatting(formatted_text)
         self._last_exception = unformatted_result
 
     def clear_last_result(self):
@@ -238,9 +258,7 @@ class PwPtPythonRepl(
             if result_object is not None:
                 # Use ptpython formatted results:
                 formatted_result = self._format_result_output(result_object)
-                result_text = pw_console.text_formatting.remove_formatting(
-                    formatted_result
-                )
+                result_text = remove_formatting(formatted_result)
 
         # Job is finished, append the last result.
         self.repl_pane.append_result_to_executed_code(

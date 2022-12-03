@@ -17,9 +17,8 @@ import logging
 from pathlib import Path
 from typing import NamedTuple, Optional, Union, Iterator
 
-import pw_cli.color
-import pw_cli.env
-import pw_cli.plugins
+from pw_cli.color import colors as pw_cli_colors
+from pw_cli.env import pigweed_environment
 
 # Log level used for captured output of a subprocess run through pw.
 LOGLEVEL_STDOUT = 21
@@ -126,9 +125,9 @@ def install(
     if not logger:
         logger = logging.getLogger()
 
-    colors = pw_cli.color.colors(use_color)
+    colors = pw_cli_colors(use_color)
 
-    env = pw_cli.env.pigweed_environment()
+    env = pigweed_environment()
     if env.PW_SUBPROCESS or hide_timestamp:
         # If the logger is being run in the context of a pw subprocess, the
         # time and date are omitted (since pw_cli.process will provide them).

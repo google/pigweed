@@ -23,8 +23,11 @@ from prompt_toolkit.key_binding import KeyBindings
 
 from pw_console.help_window import HelpWindow
 
+_PW_CONSOLE_MODULE = 'pw_console'
+
+
 _jinja_env = Environment(
-    loader=PackageLoader('pw_console'),
+    loader=PackageLoader(_PW_CONSOLE_MODULE),
     undefined=make_logging_undefined(logger=logging.getLogger('pw_console')),
     trim_blocks=True,
     lstrip_blocks=True,

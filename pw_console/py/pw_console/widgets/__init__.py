@@ -14,6 +14,7 @@
 """Pigweed Console Reusable UI widgets."""
 
 # pylint: disable=unused-import
+from pw_console.widgets.border import create_border
 from pw_console.widgets.checkbox import (
     ToolbarButton,
     to_checkbox,

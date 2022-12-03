@@ -32,8 +32,8 @@ from prompt_toolkit.layout import (
 from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
 from prompt_toolkit.widgets import MenuItem
 
-import pw_console.widgets.border
 from pw_console.widgets import (
+    create_border,
     FloatingWindowPane,
     ToolbarButton,
     WindowPaneToolbar,
@@ -453,7 +453,7 @@ class Twenty48Pane(FloatingWindowPane, PluginMixin):
         # self.container is the root container that contains objects to be
         # rendered in the UI, one on top of the other.
         self.container = self._create_pane_container(
-            pw_console.widgets.border.create_border(
+            create_border(
                 HSplit(
                     [
                         # Vertical split content
@@ -490,7 +490,7 @@ class Twenty48Pane(FloatingWindowPane, PluginMixin):
             self.bottom_toolbar,
         ]
         # Wrap the dialog content in a border
-        self.bordered_dialog_content = pw_console.widgets.border.create_border(
+        self.bordered_dialog_content = create_border(
             HSplit(self.dialog_content),
             title='2048',
             border_style='class:command-runner-border',

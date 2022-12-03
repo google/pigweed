@@ -30,9 +30,11 @@ from prompt_toolkit.layout import (
     WindowAlign,
 )
 
-import pw_console.widgets.border
-import pw_console.widgets.checkbox
-import pw_console.widgets.mouse_handlers
+from pw_console.widgets import (
+    create_border,
+    mouse_handlers,
+    to_keybind_indicator,
+)
 
 if TYPE_CHECKING:
     from pw_console.console_app import ConsoleApp
@@ -91,7 +93,7 @@ class QuitDialog(ConditionalContainer):
         )
 
         super().__init__(
-            pw_console.widgets.border.create_border(
+            create_border(
                 HSplit(
                     [action_bar_window],
                     height=QuitDialog.DIALOG_HEIGHT,
@@ -136,14 +138,10 @@ class QuitDialog(ConditionalContainer):
         """Return FormattedText with action buttons."""
 
         # Mouse handlers
-        focus = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self.focus_self
-        )
-        cancel = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self.close_dialog
-        )
+        focus = functools.partial(mouse_handlers.on_click, self.focus_self)
+        cancel = functools.partial(mouse_handlers.on_click, self.close_dialog)
         quit_action = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self.quit_action
+            mouse_handlers.on_click, self.quit_action
         )
 
         # Separator should have the focus mouse handler so clicking on any
@@ -158,7 +156,7 @@ class QuitDialog(ConditionalContainer):
 
         # Cancel button
         fragments.extend(
-            pw_console.widgets.checkbox.to_keybind_indicator(
+            to_keybind_indicator(
                 key='n / Ctrl-c',
                 description='Cancel',
                 mouse_handler=cancel,
@@ -171,7 +169,7 @@ class QuitDialog(ConditionalContainer):
 
         # Save button
         fragments.extend(
-            pw_console.widgets.checkbox.to_keybind_indicator(
+            to_keybind_indicator(
                 key='y / Ctrl-d',
                 description='Quit',
                 mouse_handler=quit_action,

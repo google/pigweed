@@ -37,9 +37,11 @@ from prompt_toolkit.widgets import TextArea
 from prompt_toolkit.validation import DynamicValidator
 
 from pw_console.log_view import RegexValidator, SearchMatcher
-
-# import pw_console.widgets.checkbox
-import pw_console.widgets.mouse_handlers
+from pw_console.widgets import (
+    mouse_handlers,
+    to_checkbox_with_keybind_indicator,
+    to_keybind_indicator,
+)
 
 if TYPE_CHECKING:
     from pw_console.log_pane import LogPane
@@ -64,7 +66,7 @@ class SearchToolbar(ConditionalContainer):
                     'class:search-bar-setting',
                     '/',
                     functools.partial(
-                        pw_console.widgets.mouse_handlers.on_click,
+                        mouse_handlers.on_click,
                         self.focus_self,
                     ),
                 )
@@ -275,14 +277,12 @@ class SearchToolbar(ConditionalContainer):
 
     def get_search_help_fragments(self):
         """Return FormattedText with search general help keybinds."""
-        focus = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self.focus_self
-        )
+        focus = functools.partial(mouse_handlers.on_click, self.focus_self)
         start_search = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self._start_search
+            mouse_handlers.on_click, self._start_search
         )
         close_search = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self.cancel_search
+            mouse_handlers.on_click, self.cancel_search
         )
 
         # Search toolbar is darker than pane toolbars, use the darker button
@@ -298,14 +298,14 @@ class SearchToolbar(ConditionalContainer):
         fragments.extend(separator_text)
 
         fragments.extend(
-            pw_console.widgets.checkbox.to_keybind_indicator(
+            to_keybind_indicator(
                 'Enter', 'Search', start_search, base_style=button_style
             )
         )
         fragments.extend(separator_text)
 
         fragments.extend(
-            pw_console.widgets.checkbox.to_keybind_indicator(
+            to_keybind_indicator(
                 'Ctrl-c', 'Cancel', close_search, base_style=button_style
             )
         )
@@ -314,17 +314,15 @@ class SearchToolbar(ConditionalContainer):
 
     def get_search_settings_fragments(self):
         """Return FormattedText with current search settings and keybinds."""
-        focus = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self.focus_self
-        )
+        focus = functools.partial(mouse_handlers.on_click, self.focus_self)
         next_field = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self._next_field
+            mouse_handlers.on_click, self._next_field
         )
         toggle_invert = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self._invert_search
+            mouse_handlers.on_click, self._invert_search
         )
         next_matcher = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click,
+            mouse_handlers.on_click,
             self.log_pane.log_view.select_next_search_matcher,
         )
 
@@ -348,7 +346,7 @@ class SearchToolbar(ConditionalContainer):
             ),
         ]
         fragments.extend(
-            pw_console.widgets.checkbox.to_keybind_indicator(
+            to_keybind_indicator(
                 'Ctrl-t',
                 'Column:',
                 next_field,
@@ -359,7 +357,7 @@ class SearchToolbar(ConditionalContainer):
         fragments.extend(separator_text)
 
         fragments.extend(
-            pw_console.widgets.checkbox.to_checkbox_with_keybind_indicator(
+            to_checkbox_with_keybind_indicator(
                 self._search_invert,
                 'Ctrl-v',
                 'Invert',
@@ -378,7 +376,7 @@ class SearchToolbar(ConditionalContainer):
             )
         ]
         fragments.extend(
-            pw_console.widgets.checkbox.to_keybind_indicator(
+            to_keybind_indicator(
                 'Ctrl-n',
                 'Matcher:',
                 next_matcher,
@@ -397,9 +395,7 @@ class SearchToolbar(ConditionalContainer):
 
     def get_match_count_fragments(self):
         """Return formatted text for the match count indicator."""
-        focus = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self.focus_log_pane
-        )
+        focus = functools.partial(mouse_handlers.on_click, self.focus_log_pane)
         two_spaces = ('', '  ', focus)
 
         # Check if this line is a search match
@@ -429,26 +425,22 @@ class SearchToolbar(ConditionalContainer):
 
     def get_button_fragments(self) -> StyleAndTextTuples:
         """Return formatted text for the action buttons."""
-        focus = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self.focus_log_pane
-        )
+        focus = functools.partial(mouse_handlers.on_click, self.focus_log_pane)
 
         one_space = ('', ' ', focus)
         two_spaces = ('', '  ', focus)
-        cancel = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self.cancel_search
-        )
+        cancel = functools.partial(mouse_handlers.on_click, self.cancel_search)
         create_filter = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self._create_filter
+            mouse_handlers.on_click, self._create_filter
         )
         next_match = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self._next_match
+            mouse_handlers.on_click, self._next_match
         )
         previous_match = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self._previous_match
+            mouse_handlers.on_click, self._previous_match
         )
         toggle_search_follow = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click,
+            mouse_handlers.on_click,
             self._toggle_search_follow,
         )
 
@@ -456,7 +448,7 @@ class SearchToolbar(ConditionalContainer):
 
         fragments = []
         fragments.extend(
-            pw_console.widgets.checkbox.to_keybind_indicator(
+            to_keybind_indicator(
                 key='n',
                 description='Next',
                 mouse_handler=next_match,
@@ -466,7 +458,7 @@ class SearchToolbar(ConditionalContainer):
         fragments.append(two_spaces)
 
         fragments.extend(
-            pw_console.widgets.checkbox.to_keybind_indicator(
+            to_keybind_indicator(
                 key='N',
                 description='Previous',
                 mouse_handler=previous_match,
@@ -476,7 +468,7 @@ class SearchToolbar(ConditionalContainer):
         fragments.append(two_spaces)
 
         fragments.extend(
-            pw_console.widgets.checkbox.to_keybind_indicator(
+            to_keybind_indicator(
                 key='Ctrl-c',
                 description='Cancel',
                 mouse_handler=cancel,
@@ -486,7 +478,7 @@ class SearchToolbar(ConditionalContainer):
         fragments.append(two_spaces)
 
         fragments.extend(
-            pw_console.widgets.checkbox.to_keybind_indicator(
+            to_keybind_indicator(
                 key='Ctrl-Alt-f',
                 description='Add Filter',
                 mouse_handler=create_filter,
@@ -496,7 +488,7 @@ class SearchToolbar(ConditionalContainer):
         fragments.append(two_spaces)
 
         fragments.extend(
-            pw_console.widgets.checkbox.to_checkbox_with_keybind_indicator(
+            to_checkbox_with_keybind_indicator(
                 checked=self.log_view.follow_search_match,
                 key='',
                 description='Jump to new matches',

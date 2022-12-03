@@ -36,10 +36,12 @@ from prompt_toolkit.validation import (
     Validator,
 )
 
-import pw_console.widgets.checkbox
-import pw_console.widgets.border
-import pw_console.widgets.mouse_handlers
-import pw_console.style
+from pw_console.widgets import (
+    create_border,
+    mouse_handlers,
+    to_checkbox_with_keybind_indicator,
+    to_keybind_indicator,
+)
 
 if TYPE_CHECKING:
     from pw_console.log_pane import LogPane
@@ -89,7 +91,7 @@ class LogPaneSaveAsDialog(ConditionalContainer):
                     'class:saveas-dialog-setting',
                     'File: ',
                     functools.partial(
-                        pw_console.widgets.mouse_handlers.on_click,
+                        mouse_handlers.on_click,
                         self.focus_self,
                     ),
                 )
@@ -139,7 +141,7 @@ class LogPaneSaveAsDialog(ConditionalContainer):
         self.input_field.control.key_bindings = key_bindings
 
         super().__init__(
-            pw_console.widgets.border.create_border(
+            create_border(
                 HSplit(
                     [
                         settings_bar_window,
@@ -219,15 +221,13 @@ class LogPaneSaveAsDialog(ConditionalContainer):
     def get_settings_fragments(self):
         """Return FormattedText with current save settings."""
         # Mouse handlers
-        focus = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self.focus_self
-        )
+        focus = functools.partial(mouse_handlers.on_click, self.focus_self)
         toggle_table_formatting = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click,
+            mouse_handlers.on_click,
             self._toggle_table_formatting,
         )
         toggle_selected_lines = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click,
+            mouse_handlers.on_click,
             self._toggle_selected_lines,
         )
 
@@ -243,7 +243,7 @@ class LogPaneSaveAsDialog(ConditionalContainer):
 
         # Table checkbox
         fragments.extend(
-            pw_console.widgets.checkbox.to_checkbox_with_keybind_indicator(
+            to_checkbox_with_keybind_indicator(
                 checked=self._export_with_table_formatting,
                 key='',  # No key shortcut help text
                 description='Table Formatting',
@@ -257,7 +257,7 @@ class LogPaneSaveAsDialog(ConditionalContainer):
 
         # Selected lines checkbox
         fragments.extend(
-            pw_console.widgets.checkbox.to_checkbox_with_keybind_indicator(
+            to_checkbox_with_keybind_indicator(
                 checked=self._export_with_selected_lines_only,
                 key='',  # No key shortcut help text
                 description='Selected Lines Only',
@@ -274,15 +274,9 @@ class LogPaneSaveAsDialog(ConditionalContainer):
     def get_action_fragments(self):
         """Return FormattedText with the save action buttons."""
         # Mouse handlers
-        focus = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self.focus_self
-        )
-        cancel = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self.close_dialog
-        )
-        save = functools.partial(
-            pw_console.widgets.mouse_handlers.on_click, self.save_action
-        )
+        focus = functools.partial(mouse_handlers.on_click, self.focus_self)
+        cancel = functools.partial(mouse_handlers.on_click, self.close_dialog)
+        save = functools.partial(mouse_handlers.on_click, self.save_action)
 
         # Separator should have the focus mouse handler so clicking on any
         # whitespace focuses the input field.
@@ -294,7 +288,7 @@ class LogPaneSaveAsDialog(ConditionalContainer):
         fragments = [separator_text]
         # Cancel button
         fragments.extend(
-            pw_console.widgets.checkbox.to_keybind_indicator(
+            to_keybind_indicator(
                 key='Ctrl-c',
                 description='Cancel',
                 mouse_handler=cancel,
@@ -307,7 +301,7 @@ class LogPaneSaveAsDialog(ConditionalContainer):
 
         # Save button
         fragments.extend(
-            pw_console.widgets.checkbox.to_keybind_indicator(
+            to_keybind_indicator(
                 key='Enter',
                 description='Save',
                 mouse_handler=save,

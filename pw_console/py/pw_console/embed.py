@@ -23,7 +23,9 @@ from prompt_toolkit.completion import WordCompleter
 from pw_console.console_app import ConsoleApp
 from pw_console.get_pw_console_app import PW_CONSOLE_APP_CONTEXTVAR
 from pw_console.plugin_mixin import PluginMixin
-import pw_console.python_logging
+from pw_console.python_logging import (
+    setup_python_logging as pw_console_setup_python_logging,
+)
 from pw_console.widgets import (
     FloatingWindowPane,
     WindowPane,
@@ -281,7 +283,7 @@ class PwConsoleEmbed:
                logger.
         """
         self.setup_python_logging_called = True
-        pw_console.python_logging.setup_python_logging(
+        pw_console_setup_python_logging(
             last_resort_filename, loggers_with_no_propagation
         )
 

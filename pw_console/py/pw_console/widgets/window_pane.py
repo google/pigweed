@@ -30,10 +30,7 @@ from prompt_toolkit.layout import (
 from prompt_toolkit.widgets import MenuItem
 
 from pw_console.get_pw_console_app import get_pw_console_app
-
-import pw_console.widgets.checkbox
-import pw_console.widgets.mouse_handlers
-import pw_console.style
+from pw_console.style import get_pane_style
 
 if TYPE_CHECKING:
     from pw_console.console_app import ConsoleApp
@@ -216,7 +213,7 @@ class WindowPane(ABC):
                 # Window pane dimensions
                 height=lambda: self.height,
                 width=lambda: self.width,
-                style=functools.partial(pw_console.style.get_pane_style, self),
+                style=functools.partial(get_pane_style, self),
             ),
             filter=Condition(lambda: self.show_pane),
         )
