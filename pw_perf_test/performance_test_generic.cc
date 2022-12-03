@@ -14,21 +14,32 @@
 
 #include "pw_perf_test/perf_test.h"
 
-#include "gtest/gtest.h"
+constexpr int kGlobalVariablePerfTest = 4;
 
-void TestingFunction(pw::perf_test::State& state) {
+namespace pw::perf_test {
+namespace {
+
+void SimpleTestingFunction(pw::perf_test::State& state) {
   int p = 0;
   while (state.KeepRunning()) {
     ++p;
   }
 }
 
-namespace pw::perf_test {
-namespace {
-
-TEST(MacroTesting, RegisterTest) {
-  PW_PERF_TEST(TestingComponentRegistration, TestingFunction);
+void FunctionWithDelay(pw::perf_test::State& state, int a, int b) {
+  while (state.KeepRunning()) {
+    for (volatile int i = 0; i < a * b * 100000; i = i + 1) {
+    }
+  }
 }
+
+PW_PERF_TEST(IntialTest, SimpleTestingFunction);
+
+PW_PERF_TEST(FunctionWithParameters, FunctionWithDelay, 5, 5);
+
+PW_PERF_TEST(LambdaFunction, [](pw::perf_test::State& state_) {
+  FunctionWithDelay(state_, kGlobalVariablePerfTest, 4);
+});
 
 }  // namespace
 }  // namespace pw::perf_test

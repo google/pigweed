@@ -16,6 +16,7 @@ load(
     "//pw_build:pigweed.bzl",
     "pw_cc_facade",
     "pw_cc_library",
+    "pw_cc_perf_test",
     "pw_cc_test",
 )
 load(
@@ -64,17 +65,62 @@ pw_cc_library(
     }),
 )
 
+# EventHandler Configuraitions
+
+pw_cc_library(
+    name = "event_handler",
+    hdrs = ["public/pw_perf_test/event_handler.h"],
+    includes = ["public"],
+    deps = [":timer"],
+)
+
 pw_cc_library(
     name = "pw_perf_test",
     srcs = ["perf_test.cc"],
     hdrs = ["public/pw_perf_test/perf_test.h"],
     includes = ["public"],
     deps = [
+        ":event_handler",
         ":timer",
         "//pw_assert",
         "//pw_log",
     ],
 )
+
+pw_cc_library(
+    name = "google_test_style_event_strings",
+    hdrs = ["public/pw_perf_test/googletest_style_event_handler.h"],
+)
+
+pw_cc_library(
+    name = "log_main_handler",
+    srcs = ["log_perf_handler.cc"],
+    hdrs = ["public/pw_perf_test/log_perf_handler.h"],
+    includes = [
+        "public",
+    ],
+    deps = [
+        ":event_handler",
+        ":google_test_style_event_strings",
+        "//pw_log",
+    ],
+)
+
+pw_cc_library(
+    name = "logging_main",
+    srcs = ["log_perf_handler_main.cc"],
+    deps = [
+        ":log_main_handler",
+        ":pw_perf_test",
+    ],
+)
+
+pw_cc_perf_test(
+    name = "generic_test",
+    srcs = ["performance_test_generic.cc"],
+)
+
+# Test Declarations
 
 pw_cc_test(
     name = "perf_test_test",

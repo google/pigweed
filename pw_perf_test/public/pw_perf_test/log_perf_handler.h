@@ -11,24 +11,23 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+#pragma once
 
-#include "pw_perf_test/perf_test.h"
+#include <cstdint>
 
-#include "gtest/gtest.h"
-
-void TestingFunction(pw::perf_test::State& state) {
-  int p = 0;
-  while (state.KeepRunning()) {
-    ++p;
-  }
-}
+#include "pw_perf_test/event_handler.h"
 
 namespace pw::perf_test {
-namespace {
 
-TEST(MacroTesting, RegisterTest) {
-  PW_PERF_TEST(TestingComponentRegistration, TestingFunction);
-}
+// An event handler that depends on the pw_log module. This event handler acts
+// as the default for perf tests, and follows a GTEST-style format of messaging.
+class LoggingEventHandler : public EventHandler {
+ public:
+  void RunAllTestsStart(const TestRunInfo& summary) override;
+  void RunAllTestsEnd() override;
+  void TestCaseStart(const TestCase& info) override;
+  void TestCaseEnd(const TestCase& info, const Results& end_result) override;
+  void TestCaseIteration(const IterationResult& result) override;
+};
 
-}  // namespace
 }  // namespace pw::perf_test

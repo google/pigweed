@@ -27,7 +27,7 @@ inline constexpr DurationUnit kDurationUnit = DurationUnit::kNanoseconds;
 
 [[nodiscard]] inline bool TimerPrepare() { return true; }
 
-void TimerCleanup();
+inline void TimerCleanup() {}
 
 inline Timestamp GetCurrentTimestamp() { return chrono::SystemClock::now(); }
 

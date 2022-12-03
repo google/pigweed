@@ -18,7 +18,7 @@ import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
 import("$dir_pw_docgen/docs.gni")
-import("$dir_pw_perf_test/backend.gni")
+import("$dir_pw_perf_test/perf_test.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("public_include_path") {
@@ -38,6 +38,12 @@ pw_test_group("tests") {
   ]
 }
 
+group("perf_test_tests_test") {
+  deps = [ ":generic_perf_test" ]
+}
+
+# Timing interface variables
+
 pw_source_set("duration_unit") {
   public = [ "public/pw_perf_test/internal/duration_unit.h" ]
   public_configs = [ ":public_include_path" ]
@@ -51,16 +57,53 @@ pw_facade("timer_interface") {
   visibility = [ ":*" ]
 }
 
+# Event Handler Configurations
+
+pw_source_set("event_handler") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_perf_test/event_handler.h" ]
+}
+
 pw_source_set("pw_perf_test") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_perf_test/perf_test.h" ]
-  public_deps = [ ":timer_interface" ]
-  deps = [
+  public_deps = [
+    ":event_handler",
+    ":timer_interface",
     dir_pw_assert,
-    dir_pw_log,
   ]
+  deps = [ dir_pw_log ]
   sources = [ "perf_test.cc" ]
 }
+
+pw_source_set("googletest_style_event_handler") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_perf_test/googletest_style_event_handler.h" ]
+}
+
+pw_source_set("log_perf_handler") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_perf_test/log_perf_handler.h" ]
+  public_deps = [
+    ":event_handler",
+    ":googletest_style_event_handler",
+    ":pw_perf_test",
+  ]
+  deps = [ dir_pw_log ]
+  sources = [ "log_perf_handler.cc" ]
+}
+
+pw_source_set("log_perf_handler_main") {
+  public_deps = [ ":log_perf_handler" ]
+  sources = [ "log_perf_handler_main.cc" ]
+}
+
+pw_perf_test("generic_perf_test") {
+  enable_if = pw_perf_test_TIMER_INTERFACE_BACKEND != ""
+  sources = [ "performance_test_generic.cc" ]
+}
+
+# Declaring module tests
 
 pw_test("perf_test_test") {
   enable_if = pw_perf_test_TIMER_INTERFACE_BACKEND != ""
@@ -89,6 +132,8 @@ pw_test("state_test") {
   sources = [ "state_test.cc" ]
   public_deps = [ ":pw_perf_test" ]
 }
+
+# Documentation declaration
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]

@@ -19,6 +19,7 @@ import("$dir_pw_arduino_build/arduino.gni")
 import("$dir_pw_build/host_tool.gni")
 import("$dir_pw_build/python.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_perf_test/perf_test.gni")
 import("$dir_pw_rpc/config.gni")
 import("$dir_pw_rust/rust.gni")
 import("$dir_pw_third_party/mcuxpresso/mcuxpresso.gni")
@@ -362,6 +363,9 @@ group("pigweed_default") {
       deps += [ ":pw_module_tests.run" ]
     }
 
+    # Add performance tests to the automatic build
+    deps += [ ":pw_perf_tests" ]
+
     # Trace examples currently only support running on non-windows host
     if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&
         pw_toolchain_SCOPE.is_host_toolchain && host_os != "win") {
@@ -429,6 +433,10 @@ if (current_toolchain != default_toolchain) {
   # Targets for all module unit test groups.
   pw_test_group("pw_module_tests") {
     group_deps = pw_module_tests
+  }
+
+  group("pw_perf_tests") {
+    deps = [ "$dir_pw_perf_test:perf_test_tests_test" ]
   }
 
   # Modules that support C++14.

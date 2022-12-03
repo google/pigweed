@@ -13,10 +13,22 @@
 // the License.
 
 #include "gtest/gtest.h"
+#include "pw_perf_test/event_handler.h"
 #include "pw_perf_test/perf_test.h"
 
 namespace pw::perf_test {
 namespace {
+
+class EmptyEventHandler : public EventHandler {
+ public:
+  void RunAllTestsStart(const TestRunInfo&) override {}
+  void TestCaseStart(const TestCase&) override {}
+  void TestCaseEnd(const TestCase&, const Results&) override {}
+  void TestCaseIteration(const IterationResult&) override {}
+  void RunAllTestsEnd() override {}
+};
+
+EmptyEventHandler handler;
 
 void TestFunction() {
   for (volatile int i = 0; i < 100000; i = i + 1) {
@@ -25,7 +37,7 @@ void TestFunction() {
 
 TEST(StateTest, KeepRunningTest) {
   constexpr int test_iterations = 10;
-  State state_obj(test_iterations);
+  State state_obj = internal::CreateState(test_iterations, handler, "");
   int total_iterations = 0;
   while (state_obj.KeepRunning()) {
     ++total_iterations;
@@ -36,7 +48,7 @@ TEST(StateTest, KeepRunningTest) {
 
 TEST(StateTest, SingleTest) {
   constexpr int test_iterations = 1;
-  State state_obj(test_iterations);
+  State state_obj = internal::CreateState(test_iterations, handler, "");
   int total_iterations = 0;
   while (state_obj.KeepRunning()) {
     ++total_iterations;

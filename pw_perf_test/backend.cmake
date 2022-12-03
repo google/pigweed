@@ -15,4 +15,4 @@ include_guard(GLOBAL)
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_backend_variable(pw_perf_test.timer_BACKEND)
+pw_add_backend_variable(pw_perf_test.TIMER_INTERFACE_BACKEND)

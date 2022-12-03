@@ -43,6 +43,14 @@ def pw_cc_test(**kwargs):
         kwargs["deps"] = kwargs["deps"] + ["@pigweed//pw_assert"]
     _add_cc_and_c_targets(native.cc_test, kwargs)
 
+def pw_cc_perf_test(**kwargs):
+    kwargs["deps"] = kwargs.get("deps", []) + \
+                     ["@pigweed//pw_perf_test:logging_main"]
+
+    if not _has_pw_assert_dep(kwargs["deps"]):
+        kwargs["deps"] = kwargs["deps"] + ["@pigweed//pw_assert"]
+    _add_cc_and_c_targets(native.cc_binary, kwargs)
+
 def pw_cc_facade(**kwargs):
     # Bazel facades should be source only cc_library's this is to simplify
     # lazy header evaluation. Bazel headers are not 'precompiled' so the build

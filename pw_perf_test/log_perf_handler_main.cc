@@ -12,23 +12,11 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include "pw_perf_test/log_perf_handler.h"
 #include "pw_perf_test/perf_test.h"
 
-#include "gtest/gtest.h"
-
-void TestingFunction(pw::perf_test::State& state) {
-  int p = 0;
-  while (state.KeepRunning()) {
-    ++p;
-  }
+int main() {
+  pw::perf_test::LoggingEventHandler handler;
+  pw::perf_test::RunAllTests(handler);
+  return 0;
 }
-
-namespace pw::perf_test {
-namespace {
-
-TEST(MacroTesting, RegisterTest) {
-  PW_PERF_TEST(TestingComponentRegistration, TestingFunction);
-}
-
-}  // namespace
-}  // namespace pw::perf_test

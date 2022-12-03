@@ -40,4 +40,14 @@ inline int64_t GetDuration(Timestamp begin, Timestamp end) {
   return backend::GetDuration(begin, end);
 }
 
+constexpr const char* GetDurationUnitStr() {
+  switch (kDurationUnit) {
+    case DurationUnit::kNanoseconds:
+      return "ns";
+    case DurationUnit::kClockCycle:
+      return "clock cycles";
+    default:
+      return "unknown";
+  }
+}
 }  // namespace pw::perf_test::internal
