@@ -380,6 +380,16 @@ def _print_ui(*args) -> None:
     print(*args, flush=True)
 
 
+@dataclasses.dataclass(frozen=True)
+class FilteredCheck:
+    check: Check
+    paths: Sequence[Path]
+
+    @property
+    def name(self) -> str:
+        return self.check.name
+
+
 class Presubmit:
     """Runs a series of presubmit checks on a list of files."""
 
@@ -432,7 +442,7 @@ class Presubmit:
         if not self._paths:
             _print_ui(_COLOR.yellow('No files are being checked!'))
 
-        _LOG.debug('Checks:\n%s', '\n'.join(c.name for c, _ in checks))
+        _LOG.debug('Checks:\n%s', '\n'.join(c.name for c in checks))
 
         start_time: float = time.time()
         passed, failed, skipped = self._execute_checks(checks, keep_going)
@@ -440,10 +450,8 @@ class Presubmit:
 
         return not failed and not skipped
 
-    def apply_filters(
-        self, program: Sequence[Callable]
-    ) -> List[Tuple[Check, Sequence[Path]]]:
-        """Returns list of (check, paths) for checks that should run."""
+    def apply_filters(self, program: Sequence[Callable]) -> List[FilteredCheck]:
+        """Returns list of FilteredCheck for checks that should run."""
         checks = [c if isinstance(c, Check) else Check(c) for c in program]
         filter_to_checks: Dict[
             FileFilter, List[Check]
@@ -453,7 +461,11 @@ class Presubmit:
             filter_to_checks[chk.filter].append(chk)
 
         check_to_paths = self._map_checks_to_paths(filter_to_checks)
-        return [(c, check_to_paths[c]) for c in checks if c in check_to_paths]
+        return [
+            FilteredCheck(c, check_to_paths[c])
+            for c in checks
+            if c in check_to_paths
+        ]
 
     def _map_checks_to_paths(
         self, filter_to_checks: Dict[FileFilter, List[Check]]
@@ -516,11 +528,11 @@ class Presubmit:
         return PresubmitContext(**kwargs)
 
     @contextlib.contextmanager
-    def _context(self, name: str, paths: Tuple[Path, ...]):
+    def _context(self, filtered_check: FilteredCheck):
         # There are many characters banned from filenames on Windows. To
         # simplify things, just strip everything that's not a letter, digit,
         # or underscore.
-        sanitized_name = re.sub(r'[\W_]+', '_', name).lower()
+        sanitized_name = re.sub(r'[\W_]+', '_', filtered_check.name).lower()
         output_directory = self._output_directory.joinpath(sanitized_name)
         os.makedirs(output_directory, exist_ok=True)
 
@@ -536,7 +548,7 @@ class Presubmit:
                 root=self._root,
                 repos=self._repos,
                 output_dir=output_directory,
-                paths=paths,
+                paths=filtered_check.paths,
                 package_root=self._package_root,
                 override_gn_args=self._override_gn_args,
                 continue_after_build_error=self._continue_after_build_error,
@@ -547,14 +559,14 @@ class Presubmit:
             _LOG.removeHandler(handler)
 
     def _execute_checks(
-        self, program, keep_going: bool
+        self, program: List[FilteredCheck], keep_going: bool
     ) -> Tuple[int, int, int]:
         """Runs presubmit checks; returns (passed, failed, skipped) lists."""
         passed = failed = 0
 
-        for i, (chk, paths) in enumerate(program, 1):
-            with self._context(chk.name, paths) as ctx:
-                result = chk.run(ctx, i, len(program))
+        for i, filtered_check in enumerate(program, 1):
+            with self._context(filtered_check) as ctx:
+                result = filtered_check.check.run(ctx, i, len(program))
 
             if result is _Result.PASS:
                 passed += 1
@@ -708,11 +720,11 @@ def run(  # pylint: disable=too-many-arguments,too-many-locals
 
     if only_list_steps:
         steps: List[Dict] = []
-        for chk, filtered_paths in presubmit.apply_filters(program):
+        for filtered_check in presubmit.apply_filters(program):
             steps.append(
                 {
-                    'name': chk.name,
-                    'paths': [str(x) for x in filtered_paths],
+                    'name': filtered_check.name,
+                    'paths': [str(x) for x in filtered_check.paths],
                 }
             )
         json.dump(steps, sys.stdout, indent=2)
