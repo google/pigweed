@@ -1313,7 +1313,7 @@ void BrEdrConnectionManager::SendCreateConnectionCancelCommand(DeviceAddress add
   auto cancel = hci::EmbossCommandPacket::New<hci_spec::CreateConnectionCancelCommandWriter>(
       hci_spec::kCreateConnectionCancel);
   auto params = cancel.view_t();
-  params.bd_addr().Write(addr.value().as_int());
+  params.bd_addr().CopyFrom(addr.value().view());
   hci_->command_channel()->SendCommand(std::move(cancel), [](auto, const hci::EventPacket& event) {
     hci_is_error(event, WARN, "hci-bredr", "failed to cancel connection request");
   });
@@ -1408,7 +1408,7 @@ void BrEdrConnectionManager::SendLinkKeyRequestNegativeReply(DeviceAddressBytes 
       hci::EmbossCommandPacket::New<hci_spec::LinkKeyRequestNegativeReplyCommandWriter>(
           hci_spec::kLinkKeyRequestNegativeReply);
   auto negative_reply_params = negative_reply.view_t();
-  negative_reply_params.bd_addr().Write(bd_addr.as_int());
+  negative_reply_params.bd_addr().CopyFrom(bd_addr.view());
   SendCommandWithStatusCallback(std::move(negative_reply), std::move(cb));
 }
 
@@ -1418,7 +1418,7 @@ void BrEdrConnectionManager::SendLinkKeyRequestReply(DeviceAddressBytes bd_addr,
   auto reply = hci::EmbossCommandPacket::New<hci_spec::LinkKeyRequestReplyCommandWriter>(
       hci_spec::kLinkKeyRequestReply);
   auto reply_params = reply.view_t();
-  reply_params.bd_addr().Write(bd_addr.as_int());
+  reply_params.bd_addr().CopyFrom(bd_addr.view());
 
   const auto& key_value = link_key.value();
   auto link_key_value_view = hci_spec::LinkKeyRequestReplyCommand::MakeLinkKeyView(&key_value);
@@ -1444,7 +1444,7 @@ void BrEdrConnectionManager::SendAcceptConnectionRequest(DeviceAddressBytes addr
   auto accept = hci::EmbossCommandPacket::New<hci_spec::AcceptConnectionRequestCommandWriter>(
       hci_spec::kAcceptConnectionRequest);
   auto accept_params = accept.view_t();
-  accept_params.bd_addr().Write(addr.as_int());
+  accept_params.bd_addr().CopyFrom(addr.view());
   // This role switch preference can fail. A HCI_Role_Change event will be generated if the role
   // switch is successful (Core Spec v5.2, Vol 2, Part F, Sec 3.1).
   accept_params.role().Write(hci_spec::ConnectionRole::CENTRAL);
@@ -1466,7 +1466,7 @@ void BrEdrConnectionManager::SendRejectConnectionRequest(DeviceAddress addr,
   auto reject = hci::EmbossCommandPacket::New<hci_spec::RejectConnectionRequestCommandWriter>(
       hci_spec::kRejectConnectionRequest);
   auto reject_params = reject.view_t();
-  reject_params.bd_addr().Write(addr.value().as_int());
+  reject_params.bd_addr().CopyFrom(addr.value().view());
   reject_params.reason().Write(reason);
 
   hci::CommandChannel::CommandCallback command_cb;

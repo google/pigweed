@@ -188,6 +188,10 @@ bits ClockOffset:
   if valid:
     0 [+15] UInt clock_offset
 
+# Bluetooth Device Address
+struct BdAddr:
+  0 [+6] UInt bd_addr
+
 
 # ========================= HCI packet headers ==========================
 # Emboss currently lacks support for default field values and cross-type integral equality.
@@ -252,7 +256,7 @@ struct CreateConnectionCommand:
   0     [+hdr_size] EmbossCommandHeader header
 
   # BD_ADDR of the device to be connected
-  $next [+6] UInt bd_addr
+  $next [+BdAddr.$size_in_bytes] BdAddr bd_addr
 
   # Mask of allowable packet types.
   $next [+2] PacketType packet_type
@@ -303,7 +307,7 @@ struct CreateConnectionCancelCommand:
   0     [+hdr_size] EmbossCommandHeader header
 
   # BD_ADDR of the Create Connection Command request
-  $next [+6] UInt bd_addr
+  $next [+BdAddr.$size_in_bytes] BdAddr bd_addr
 
 # =========================================
 # Accept Connection Request (v1.1) (BR/EDR)
@@ -313,7 +317,7 @@ struct AcceptConnectionRequestCommand:
   0     [+hdr_size] EmbossCommandHeader header
 
   # The 48-bit BD_ADDR of the remote device requesting the connection.
-  $next [+6] UInt bd_addr
+  $next [+BdAddr.$size_in_bytes] BdAddr bd_addr
 
   $next [+1] ConnectionRole role
 
@@ -325,7 +329,7 @@ struct RejectConnectionRequestCommand:
   0     [+hdr_size] EmbossCommandHeader header
 
   # The 48-bit BD_ADDR of the remote device requesting the connection.
-  $next [+6] UInt bd_addr
+  $next [+BdAddr.$size_in_bytes] BdAddr bd_addr
 
   # Must be one of CONNECTION_REJECTED* from StatusCode in this file
   $next [+1] StatusCode reason
@@ -341,7 +345,7 @@ struct LinkKeyRequestReplyCommand:
   0     [+hdr_size] EmbossCommandHeader header
 
   # The 48-bit BD_ADDR of the remote device requesting the connection.
-  $next [+6] UInt bd_addr
+  $next [+BdAddr.$size_in_bytes] BdAddr bd_addr
 
   # Link key to use for the connection with the peer device.
   let bredr_link_key_size = LinkKey.$size_in_bytes
@@ -354,7 +358,7 @@ struct LinkKeyRequestNegativeReplyCommand:
   0     [+hdr_size] EmbossCommandHeader header
 
   # BD_ADDR of the peer device that the host does not have a link key for.
-  $next [+6] UInt bd_addr
+  $next [+BdAddr.$size_in_bytes] BdAddr bd_addr
 
 # ======================================================
 # Enhanced Setup Synchronous Connection Command (CSA2) (BR/EDR)
@@ -471,7 +475,7 @@ struct EnhancedAcceptSynchronousConnectionRequestCommand:
   0     [+hdr_size] EmbossCommandHeader header
 
   # The 48-bit BD_ADDR of the remote device requesting the connection.
-  $next [+6] UInt bd_addr
+  $next [+BdAddr.$size_in_bytes] BdAddr bd_addr
 
   let scp_size = SynchronousConnectionParameters.$size_in_bytes
   $next [+scp_size] SynchronousConnectionParameters connection_parameters

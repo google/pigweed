@@ -40,11 +40,8 @@ DeviceAddressBytes::DeviceAddressBytes(const ByteBuffer& bytes) {
   std::copy(bytes.cbegin(), bytes.cend(), bytes_.begin());
 }
 
-DeviceAddressBytes::DeviceAddressBytes(uint64_t addr) {
-  for (uint8_t i = 0; i < kDeviceAddressSize; ++i) {
-    bytes_[i] = static_cast<uint8_t>(addr & 0xff);
-    addr >>= CHAR_BIT;
-  }
+DeviceAddressBytes::DeviceAddressBytes(hci_spec::BdAddrView view) {
+  hci_spec::MakeBdAddrView(&bytes_).CopyFrom(view);
 }
 
 std::string DeviceAddressBytes::ToString() const {
@@ -59,19 +56,6 @@ std::string DeviceAddressBytes::ToString() const {
 }
 
 void DeviceAddressBytes::SetToZero() { bytes_.fill(0); }
-
-uint64_t DeviceAddressBytes::as_int() const {
-  uint64_t addr = 0;
-
-  for (int i = kDeviceAddressSize - 1; i >= 0; --i) {
-    addr |= bytes_[i];
-    if (i != 0) {
-      addr <<= CHAR_BIT;
-    }
-  }
-
-  return addr;
-}
 
 std::size_t DeviceAddressBytes::Hash() const {
   uint64_t bytes_as_int = 0;

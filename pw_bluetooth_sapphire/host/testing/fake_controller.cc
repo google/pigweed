@@ -589,7 +589,7 @@ void FakeController::OnCreateConnectionCommandReceived(
   }
 
   const DeviceAddress peer_address(DeviceAddress::Type::kBREDR,
-                                   DeviceAddressBytes(params.bd_addr().Read()));
+                                   DeviceAddressBytes(params.bd_addr()));
   hci_spec::StatusCode status = hci_spec::StatusCode::SUCCESS;
 
   // Find the peer that matches the requested address.
@@ -645,7 +645,7 @@ void FakeController::OnCreateConnectionCommandReceived(
   hci_spec::ConnectionCompleteEventParams response = {};
 
   response.status = status;
-  response.bd_addr = DeviceAddressBytes(params.bd_addr().Read());
+  response.bd_addr = DeviceAddressBytes(params.bd_addr());
   response.link_type = hci_spec::LinkType::kACL;
   response.encryption_enabled = 0x0;
 
@@ -1435,8 +1435,7 @@ void FakeController::OnAuthenticationRequestedCommandReceived(
 
 void FakeController::OnLinkKeyRequestReplyCommandReceived(
     const hci_spec::LinkKeyRequestReplyCommandView params) {
-  DeviceAddress peer_address(DeviceAddress::Type::kBREDR,
-                             DeviceAddressBytes(params.bd_addr().Read()));
+  DeviceAddress peer_address(DeviceAddress::Type::kBREDR, DeviceAddressBytes(params.bd_addr()));
   FakePeer* peer = FindPeer(peer_address);
   if (!peer) {
     RespondWithCommandStatus(hci_spec::kLinkKeyRequestReply,
@@ -1459,8 +1458,8 @@ void FakeController::OnLinkKeyRequestReplyCommandReceived(
 
 void FakeController::OnLinkKeyRequestNegativeReplyCommandReceived(
     hci_spec::LinkKeyRequestNegativeReplyCommandView params) {
-  FakePeer* peer = FindPeer(
-      DeviceAddress(DeviceAddress::Type::kBREDR, DeviceAddressBytes(params.bd_addr().Read())));
+  FakePeer* peer =
+      FindPeer(DeviceAddress(DeviceAddress::Type::kBREDR, DeviceAddressBytes(params.bd_addr())));
   if (!peer) {
     RespondWithCommandStatus(hci_spec::kLinkKeyRequestNegativeReply,
                              hci_spec::StatusCode::UNKNOWN_CONNECTION_ID);
@@ -1469,7 +1468,7 @@ void FakeController::OnLinkKeyRequestNegativeReplyCommandReceived(
   RespondWithCommandStatus(hci_spec::kLinkKeyRequestNegativeReply, hci_spec::StatusCode::SUCCESS);
 
   hci_spec::IOCapabilityRequestEventParams request = {};
-  request.bd_addr = DeviceAddressBytes(params.bd_addr().Read());
+  request.bd_addr = DeviceAddressBytes(params.bd_addr());
   SendEvent(hci_spec::kIOCapabilityRequestEventCode, BufferView(&request, sizeof(request)));
 }
 
@@ -1574,8 +1573,7 @@ void FakeController::OnReadEncryptionKeySizeCommand(
 
 void FakeController::OnEnhancedAcceptSynchronousConnectionRequestCommand(
     hci_spec::EnhancedAcceptSynchronousConnectionRequestCommandView params) {
-  DeviceAddress peer_address(DeviceAddress::Type::kBREDR,
-                             DeviceAddressBytes(params.bd_addr().Read()));
+  DeviceAddress peer_address(DeviceAddress::Type::kBREDR, DeviceAddressBytes(params.bd_addr()));
   FakePeer* peer = FindPeer(peer_address);
   if (!peer || !peer->last_connection_request_link_type().has_value()) {
     RespondWithCommandStatus(hci_spec::kEnhancedAcceptSynchronousConnectionRequest,

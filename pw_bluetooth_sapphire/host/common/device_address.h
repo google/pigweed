@@ -11,6 +11,8 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 
+#include <src/connectivity/bluetooth/core/bt-host/hci-spec/hci-protocol.emb.h>
+
 namespace bt {
 
 const size_t kDeviceAddressSize = 6;
@@ -25,8 +27,7 @@ class DeviceAddressBytes {
   // Initializes the contents from |bytes|.
   explicit DeviceAddressBytes(std::array<uint8_t, kDeviceAddressSize> bytes);
   explicit DeviceAddressBytes(const ByteBuffer& bytes);
-  // Initializes the contents from the 6 least significant bytes of |addr|.
-  explicit DeviceAddressBytes(uint64_t addr);
+  explicit DeviceAddressBytes(hci_spec::BdAddrView view);
 
   // Returns a string representation of the device address. The bytes in
   // human-readable form will appear in big-endian byte order even though the
@@ -47,7 +48,7 @@ class DeviceAddressBytes {
   bool operator!=(const DeviceAddressBytes& other) const { return !(*this == other); }
   bool operator<(const DeviceAddressBytes& other) const { return bytes_ < other.bytes_; }
 
-  uint64_t as_int() const;
+  hci_spec::BdAddrView view() const { return hci_spec::MakeBdAddrView(&bytes_); }
 
   // Returns a hash of the contents of this address.
   std::size_t Hash() const;

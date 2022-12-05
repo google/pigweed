@@ -46,20 +46,19 @@ TEST(DeviceAddressBytesTest, CastFromBytes) {
   EXPECT_EQ("03:7F:FF:02:0F:01", test_payload->bdaddr.ToString());
 }
 
-TEST(DeviceAddressBytesTest, FromInt) {
-  DeviceAddressBytes addr = DeviceAddressBytes(0);
-  EXPECT_EQ(addr, DeviceAddressBytes({0, 0, 0, 0, 0, 0}));
-
-  addr = DeviceAddressBytes(0xfffffffffffelu);
-  EXPECT_EQ(addr, DeviceAddressBytes({0xfe, 0xff, 0xff, 0xff, 0xff, 0xff}));
+TEST(DeviceAddressBytesTest, FromView) {
+  std::array<uint8_t, 6> buffer = {0xfe, 0xff, 0xff, 0xff, 0xff, 0xAA};
+  auto bdaddr_view = hci_spec::MakeBdAddrView(&buffer);
+  DeviceAddressBytes addr(bdaddr_view);
+  EXPECT_EQ("AA:FF:FF:FF:FF:FE", addr.ToString());
 }
 
-TEST(DeviceAddressBytesTest, ToInt) {
+TEST(DeviceAddressBytesTest, ToView) {
   DeviceAddressBytes addr = DeviceAddressBytes({0, 0, 0, 0, 0, 0});
-  EXPECT_EQ(addr.as_int(), 0u);
+  EXPECT_EQ(addr.view().bd_addr().Read(), 0u);
 
   addr = DeviceAddressBytes({0xfe, 0xff, 0xff, 0xff, 0xff, 0xff});
-  EXPECT_EQ(addr.as_int(), 0xfffffffffffelu);
+  EXPECT_EQ(addr.view().bd_addr().Read(), 0xfffffffffffelu);
 }
 
 TEST(DeviceAddressBytesTest, Comparison) {

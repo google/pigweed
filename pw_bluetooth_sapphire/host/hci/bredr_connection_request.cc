@@ -21,7 +21,7 @@ EmbossCommandPacket CreateConnectionPacket(
   auto request = EmbossCommandPacket::New<hci_spec::CreateConnectionCommandWriter>(
       hci_spec::kCreateConnection);
   auto params = request.view_t();
-  params.bd_addr().Write(address.value().as_int());
+  params.bd_addr().CopyFrom(address.value().view());
   params.packet_type().BackingStorage().WriteUInt(kEnableAllPacketTypes);
 
   // The Page Scan Repetition Mode of the remote device as retrieved by Inquiry.

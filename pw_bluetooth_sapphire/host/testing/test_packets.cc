@@ -153,7 +153,7 @@ DynamicByteBuffer EnhancedAcceptSynchronousConnectionRequestPacket(
       hci_spec::kEnhancedAcceptSynchronousConnectionRequest);
   auto view = packet.view_t();
 
-  view.bd_addr().Write(peer_address.value().as_int());
+  view.bd_addr().CopyFrom(peer_address.value().view());
   view.connection_parameters().CopyFrom(params.view());
 
   return DynamicByteBuffer(packet.data());

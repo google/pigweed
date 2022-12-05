@@ -218,7 +218,7 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnConnectionReque
       hci_spec::EnhancedAcceptSynchronousConnectionRequestCommandWriter>(
       hci_spec::kEnhancedAcceptSynchronousConnectionRequest);
   auto view = accept.view_t();
-  view.bd_addr().Write(params.bd_addr.as_int());
+  view.bd_addr().CopyFrom(params.bd_addr.view());
   view.connection_parameters().CopyFrom(
       in_progress_request_->parameters[in_progress_request_->current_param_index].view());
 
