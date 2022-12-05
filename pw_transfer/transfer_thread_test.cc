@@ -332,9 +332,9 @@ TEST_F(TransferThreadTest, VersionTwo_NoHandler) {
   EXPECT_FALSE(handler.prepare_read_called);
 
   ASSERT_EQ(ctx_.total_responses(), 1u);
-  Result<uint32_t> id = Chunk::ExtractIdentifier(ctx_.response());
+  Result<Chunk::Identifier> id = Chunk::ExtractIdentifier(ctx_.response());
   ASSERT_TRUE(id.ok());
-  EXPECT_EQ(id.value(), 7u);
+  EXPECT_EQ(id->value(), 7u);
   auto chunk = DecodeChunk(ctx_.response());
   EXPECT_EQ(chunk.session_id(), 7u);
   EXPECT_EQ(chunk.resource_id(), 7u);

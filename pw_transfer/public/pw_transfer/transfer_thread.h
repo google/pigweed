@@ -170,13 +170,24 @@ class TransferThread : public thread::ThreadCore {
   static constexpr chrono::SystemClock::duration kMaxTimeout =
       std::chrono::seconds(2);
 
-  // Finds an active server or client transfer.
+  // Finds an active server or client transfer, matching against its legacy ID.
   template <typename T>
-  static Context* FindActiveTransfer(const span<T>& transfers,
-                                     uint32_t context_identifier) {
+  static Context* FindActiveTransferByLegacyId(const span<T>& transfers,
+                                               uint32_t session_id) {
+    auto transfer =
+        std::find_if(transfers.begin(), transfers.end(), [session_id](auto& c) {
+          return c.initialized() && c.id() == session_id;
+        });
+    return transfer != transfers.end() ? &*transfer : nullptr;
+  }
+
+  // Finds an active server or client transfer, matching against resource ID.
+  template <typename T>
+  static Context* FindActiveTransferByResourceId(const span<T>& transfers,
+                                                 uint32_t resource_id) {
     auto transfer = std::find_if(
-        transfers.begin(), transfers.end(), [context_identifier](auto& c) {
-          return c.initialized() && c.id() == context_identifier;
+        transfers.begin(), transfers.end(), [resource_id](auto& c) {
+          return c.initialized() && c.resource_id() == resource_id;
         });
     return transfer != transfers.end() ? &*transfer : nullptr;
   }

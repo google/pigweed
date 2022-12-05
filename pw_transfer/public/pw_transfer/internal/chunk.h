@@ -26,6 +26,40 @@ class Chunk {
  public:
   using Type = transfer::pwpb::Chunk::Type;
 
+  class Identifier {
+   public:
+    constexpr bool is_session() const { return type_ == kSession; }
+    constexpr bool is_resource() const { return !is_session(); }
+
+    constexpr uint32_t value() const { return value_; }
+
+   private:
+    friend class Chunk;
+
+    static constexpr Identifier Session(uint32_t value) {
+      return Identifier(kSession, value);
+    }
+    static constexpr Identifier Resource(uint32_t value) {
+      return Identifier(kResource, value);
+    }
+
+    enum IdType {
+      kSession,
+      kResource,
+    };
+
+    constexpr Identifier(IdType type, uint32_t value)
+        : type_(type), value_(value) {}
+
+    IdType type_;
+    uint32_t value_;
+  };
+
+  // Partially decodes a transfer chunk to find its transfer context identifier.
+  // Depending on the protocol version and type of chunk, this may be one of
+  // several proto fields.
+  static Result<Identifier> ExtractIdentifier(ConstByteSpan message);
+
   // Constructs a new chunk with the given transfer protocol version. All fields
   // are initialized to their zero values.
   constexpr Chunk(ProtocolVersion version, Type type)
@@ -33,11 +67,6 @@ class Chunk {
 
   // Parses a chunk from a serialized protobuf message.
   static Result<Chunk> Parse(ConstByteSpan message);
-
-  // Partially decodes a transfer chunk to find its transfer context identifier.
-  // Depending on the protocol version and type of chunk, this may be one of
-  // several proto fields.
-  static Result<uint32_t> ExtractIdentifier(ConstByteSpan message);
 
   // Creates a terminating status chunk within a transfer.
   static Chunk Final(ProtocolVersion version,

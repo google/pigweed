@@ -91,8 +91,15 @@ struct NewTransferEvent {
   size_t raw_chunk_size;
 };
 
+// A chunk received by a transfer client / server.
 struct ChunkEvent {
+  // Identifier for the transfer to which the chunk belongs.
   uint32_t context_identifier;
+
+  // If true, only match the identifier against context resource IDs.
+  bool match_resource_id;
+
+  // The raw data of the chunk.
   const std::byte* data;
   size_t size;
 };

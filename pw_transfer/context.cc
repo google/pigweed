@@ -44,6 +44,7 @@ void Context::HandleEvent(const Event& event) {
         if (StartTransferAsServer(event.new_transfer)) {
           // TODO(frolv): This should probably be restructured.
           HandleChunkEvent({.context_identifier = event.new_transfer.session_id,
+                            .match_resource_id = false,  // Unused.
                             .data = event.new_transfer.raw_chunk_data,
                             .size = event.new_transfer.raw_chunk_size});
         }

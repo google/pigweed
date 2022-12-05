@@ -182,7 +182,7 @@ void TransferThread::ProcessChunk(EventType type, ConstByteSpan chunk) {
   PW_CHECK(chunk.size() <= chunk_buffer_.size(),
            "Transfer received a larger chunk than it can handle.");
 
-  Result<uint32_t> identifier = Chunk::ExtractIdentifier(chunk);
+  Result<Chunk::Identifier> identifier = Chunk::ExtractIdentifier(chunk);
   if (!identifier.ok()) {
     PW_LOG_ERROR("Received a malformed chunk without a context identifier");
     return;
@@ -195,7 +195,8 @@ void TransferThread::ProcessChunk(EventType type, ConstByteSpan chunk) {
 
   next_event_.type = type;
   next_event_.chunk = {
-      .context_identifier = *identifier,
+      .context_identifier = identifier->value(),
+      .match_resource_id = identifier->is_resource(),
       .data = chunk_buffer_.data(),
       .size = chunk.size(),
   };
@@ -392,25 +393,34 @@ Context* TransferThread::FindContextForEvent(
       return FindNewTransfer(server_transfers_, event.new_transfer.session_id);
 
     case EventType::kClientChunk:
-      return FindActiveTransfer(client_transfers_,
-                                event.chunk.context_identifier);
+      if (event.chunk.match_resource_id) {
+        return FindActiveTransferByResourceId(client_transfers_,
+                                              event.chunk.context_identifier);
+      }
+      return FindActiveTransferByLegacyId(client_transfers_,
+                                          event.chunk.context_identifier);
+
     case EventType::kServerChunk:
-      return FindActiveTransfer(server_transfers_,
-                                event.chunk.context_identifier);
+      if (event.chunk.match_resource_id) {
+        return FindActiveTransferByResourceId(server_transfers_,
+                                              event.chunk.context_identifier);
+      }
+      return FindActiveTransferByLegacyId(server_transfers_,
+                                          event.chunk.context_identifier);
 
     case EventType::kClientTimeout:  // Manually triggered client timeout
-      return FindActiveTransfer(client_transfers_,
-                                event.chunk.context_identifier);
+      return FindActiveTransferByLegacyId(client_transfers_,
+                                          event.chunk.context_identifier);
     case EventType::kServerTimeout:  // Manually triggered server timeout
-      return FindActiveTransfer(server_transfers_,
-                                event.chunk.context_identifier);
+      return FindActiveTransferByLegacyId(server_transfers_,
+                                          event.chunk.context_identifier);
 
     case EventType::kClientEndTransfer:
-      return FindActiveTransfer(client_transfers_,
-                                event.end_transfer.session_id);
+      return FindActiveTransferByLegacyId(client_transfers_,
+                                          event.end_transfer.session_id);
     case EventType::kServerEndTransfer:
-      return FindActiveTransfer(server_transfers_,
-                                event.end_transfer.session_id);
+      return FindActiveTransferByLegacyId(server_transfers_,
+                                          event.end_transfer.session_id);
 
     case EventType::kSendStatusChunk:
     case EventType::kSetTransferStream:

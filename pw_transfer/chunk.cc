@@ -23,16 +23,11 @@ namespace pw::transfer::internal {
 
 namespace ProtoChunk = transfer::pwpb::Chunk;
 
-Result<uint32_t> Chunk::ExtractIdentifier(ConstByteSpan message) {
+Result<Chunk::Identifier> Chunk::ExtractIdentifier(ConstByteSpan message) {
   protobuf::Decoder decoder(message);
 
   uint32_t session_id = 0;
   uint32_t resource_id = 0;
-
-  // During the initial handshake, a START_ACK chunk sent from the server
-  // to a client identifies its transfer context using a resource_id, as
-  // the client does not yet know its session_id.
-  bool should_use_resource_id = false;
 
   while (decoder.Next().ok()) {
     ProtoChunk::Fields field =
@@ -47,22 +42,19 @@ Result<uint32_t> Chunk::ExtractIdentifier(ConstByteSpan message) {
     } else if (field == ProtoChunk::Fields::SESSION_ID) {
       // A session_id field always takes precedence over transfer_id.
       PW_TRY(decoder.ReadUint32(&session_id));
-    } else if (field == ProtoChunk::Fields::TYPE) {
-      // Check if the chunk is a START_ACK.
-      uint32_t type;
-      PW_TRY(decoder.ReadUint32(&type));
-      should_use_resource_id = static_cast<Type>(type) == Type::kStartAck;
     } else if (field == ProtoChunk::Fields::RESOURCE_ID) {
       PW_TRY(decoder.ReadUint32(&resource_id));
     }
   }
 
-  if (should_use_resource_id) {
-    if (resource_id != 0) {
-      return resource_id;
-    }
-  } else if (session_id != 0) {
-    return session_id;
+  // Always prioritize a resource_id if one is set. Resource IDs should only be
+  // set in cases where the transfer session ID has not yet been negotiated.
+  if (resource_id != 0) {
+    return Identifier::Resource(resource_id);
+  }
+
+  if (session_id != 0) {
+    return Identifier::Session(session_id);
   }
 
   return Status::DataLoss();
