@@ -322,7 +322,6 @@ def fix_py_format_black(ctx: _Context) -> Dict[Path, str]:
     errors: Dict[Path, str] = {}
 
     for path in ctx.paths:
-        _LOG.info('running black on %r', path)
         proc = log_run(['black', *_BLACK_OPTS, path], capture_output=True)
         if proc.returncode:
             errors[path] = proc.stderr.decode()
