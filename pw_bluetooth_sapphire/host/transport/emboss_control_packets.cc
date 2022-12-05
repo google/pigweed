@@ -6,17 +6,14 @@
 
 namespace bt::hci {
 
-EmbossCommandPacket EmbossCommandPacket::New(hci_spec::OpCode opcode, size_t packet_size) {
+EmbossCommandPacket::EmbossCommandPacket(hci_spec::OpCode opcode, size_t packet_size)
+    : DynamicPacket(packet_size) {
   BT_ASSERT_MSG(packet_size >= hci_spec::EmbossCommandHeader::IntrinsicSizeInBytes(),
                 "command packet size must be at least 3 bytes to accomodate header");
-  EmbossCommandPacket packet(packet_size);
-
-  auto header = packet.view<hci_spec::EmbossCommandHeaderWriter>();
+  auto header = view<hci_spec::EmbossCommandHeaderWriter>();
   header.opcode().BackingStorage().WriteUInt(opcode);
   header.parameter_total_size().Write(packet_size -
                                       hci_spec::EmbossCommandHeader::IntrinsicSizeInBytes());
-
-  return packet;
 }
 
 hci_spec::OpCode EmbossCommandPacket::opcode() const {

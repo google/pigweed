@@ -66,8 +66,7 @@ struct TestCommand {
 
   EmbossCommandPacket Encode() {
     auto packet = EmbossCommandPacket::New<hci_spec::TestCommandPacketWriter>(kOpCode);
-    auto view = packet.view<hci_spec::TestCommandPacketWriter>();
-    view.payload().Write(kEncodedTestCommandParam);
+    packet.view_t().payload().Write(kEncodedTestCommandParam);
     return packet;
   }
 

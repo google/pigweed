@@ -3058,8 +3058,8 @@ void FakeController::HandleReceivedCommandPacket(
       // This case is for packet types that have been migrated to the new Emboss architecture. Their
       // old version can be still be assembled from the HciEmulator channel, so here we repackage
       // and forward them as Emboss packets.
-      bt::hci::EmbossCommandPacket emboss_packet =
-          bt::hci::EmbossCommandPacket::New(opcode, command_packet.size());
+      auto emboss_packet = bt::hci::EmbossCommandPacket::New<hci_spec::EmbossCommandHeaderView>(
+          opcode, command_packet.size());
       bt::MutableBufferView dest = emboss_packet.mutable_data();
       command_packet.data().view().Copy(&dest);
       HandleReceivedCommandPacket(emboss_packet);

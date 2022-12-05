@@ -163,9 +163,8 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
         });
   }
 
-  hci::EmbossCommandPacket inquiry =
-      hci::EmbossCommandPacket::New<hci_spec::InquiryCommandView>(hci_spec::kInquiry);
-  auto view = inquiry.view<hci_spec::InquiryCommandWriter>();
+  auto inquiry = hci::EmbossCommandPacket::New<hci_spec::InquiryCommandWriter>(hci_spec::kInquiry);
+  auto view = inquiry.view_t();
   view.lap().Write(hci_spec::InquiryAccessCode::GIAC);
   view.inquiry_length().Write(kInquiryLengthDefault);
   view.num_responses().Write(0);

@@ -25,8 +25,8 @@ TEST(StaticPacketTest, StaticPacketBasic) {
 }
 
 TEST(EmbossCommandPacketTest, EmbossCommandPacketBasic) {
-  EmbossCommandPacket packet = EmbossCommandPacket::New<hci_spec::TestCommandPacketView>(1234);
-  packet.view<hci_spec::TestCommandPacketWriter>().payload().Write(13);
+  auto packet = EmbossCommandPacket::New<hci_spec::TestCommandPacketWriter>(1234);
+  packet.view_t().payload().Write(13);
 
   EXPECT_EQ(packet.size(), 4u);
   EXPECT_EQ(packet.data(), BufferView({0xD2, 0x04, 0x01, 0x0D}));
@@ -44,7 +44,7 @@ TEST(EmbossCommandPacketTest, EmbossCommandPacketDeathTest) {
   EXPECT_DEATH_IF_SUPPORTED(packet.view<hci_spec::InquiryCommandView>(),
                             "emboss packet buffer not large enough");
   // Try and fail to allocate 0 length packet (needs at least 3 bytes for the header).
-  EXPECT_DEATH_IF_SUPPORTED(EmbossCommandPacket::New(1234, 0),
+  EXPECT_DEATH_IF_SUPPORTED(EmbossCommandPacket::New<hci_spec::EmbossCommandHeaderView>(1234, 0),
                             "command packet size must be at least 3 bytes");
 }
 

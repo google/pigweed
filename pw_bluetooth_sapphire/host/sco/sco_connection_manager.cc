@@ -214,10 +214,10 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnConnectionReque
          hci_spec::LinkTypeToString(params.link_type).c_str(), bt_str(params.bd_addr),
          bt_str(peer_id_));
 
-  hci::EmbossCommandPacket accept = hci::EmbossCommandPacket::New<
-      hci_spec::EnhancedAcceptSynchronousConnectionRequestCommandView>(
+  auto accept = hci::EmbossCommandPacket::New<
+      hci_spec::EnhancedAcceptSynchronousConnectionRequestCommandWriter>(
       hci_spec::kEnhancedAcceptSynchronousConnectionRequest);
-  auto view = accept.view<hci_spec::EnhancedAcceptSynchronousConnectionRequestCommandWriter>();
+  auto view = accept.view_t();
   view.bd_addr().Write(params.bd_addr.as_int());
   view.connection_parameters().CopyFrom(
       in_progress_request_->parameters[in_progress_request_->current_param_index].view());
@@ -311,10 +311,10 @@ void ScoConnectionManager::TryCreateNextConnection() {
   if (in_progress_request_->initiator) {
     bt_log(DEBUG, "gap-sco", "Initiating SCO connection (peer: %s)", bt_str(peer_id_));
 
-    hci::EmbossCommandPacket packet =
-        hci::EmbossCommandPacket::New<hci_spec::EnhancedSetupSynchronousConnectionCommandView>(
+    auto packet =
+        hci::EmbossCommandPacket::New<hci_spec::EnhancedSetupSynchronousConnectionCommandWriter>(
             hci_spec::kEnhancedSetupSynchronousConnection);
-    auto view = packet.view<hci_spec::EnhancedSetupSynchronousConnectionCommandWriter>();
+    auto view = packet.view_t();
     view.connection_handle().Write(acl_handle_);
     view.connection_parameters().CopyFrom(
         in_progress_request_->parameters[in_progress_request_->current_param_index].view());

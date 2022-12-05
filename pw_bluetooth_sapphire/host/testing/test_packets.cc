@@ -148,10 +148,10 @@ DynamicByteBuffer EncryptionChangeEventPacket(hci_spec::StatusCode status_code,
 DynamicByteBuffer EnhancedAcceptSynchronousConnectionRequestPacket(
     DeviceAddress peer_address,
     bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> params) {
-  hci::EmbossCommandPacket packet = hci::EmbossCommandPacket::New<
-      hci_spec::EnhancedAcceptSynchronousConnectionRequestCommandView>(
+  auto packet = hci::EmbossCommandPacket::New<
+      hci_spec::EnhancedAcceptSynchronousConnectionRequestCommandWriter>(
       hci_spec::kEnhancedAcceptSynchronousConnectionRequest);
-  auto view = packet.view<hci_spec::EnhancedAcceptSynchronousConnectionRequestCommandWriter>();
+  auto view = packet.view_t();
 
   view.bd_addr().Write(peer_address.value().as_int());
   view.connection_parameters().CopyFrom(params.view());
@@ -162,11 +162,11 @@ DynamicByteBuffer EnhancedAcceptSynchronousConnectionRequestPacket(
 DynamicByteBuffer EnhancedSetupSynchronousConnectionPacket(
     hci_spec::ConnectionHandle conn,
     bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> params) {
-  hci::EmbossCommandPacket packet =
-      hci::EmbossCommandPacket::New<hci_spec::EnhancedSetupSynchronousConnectionCommandView>(
+  auto packet =
+      hci::EmbossCommandPacket::New<hci_spec::EnhancedSetupSynchronousConnectionCommandWriter>(
           hci_spec::kEnhancedSetupSynchronousConnection);
-  auto view = packet.view<hci_spec::EnhancedSetupSynchronousConnectionCommandWriter>();
 
+  auto view = packet.view_t();
   view.connection_handle().Write(conn);
   view.connection_parameters().CopyFrom(params.view());
 

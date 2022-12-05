@@ -155,9 +155,8 @@ TEST_F(CommandChannelTest, SingleAsynchronousRequest) {
     }
   };
 
-  hci::EmbossCommandPacket packet =
-      hci::EmbossCommandPacket::New<hci_spec::InquiryCommandView>(hci_spec::kInquiry);
-  auto view = packet.view<hci_spec::InquiryCommandWriter>();
+  auto packet = hci::EmbossCommandPacket::New<hci_spec::InquiryCommandWriter>(hci_spec::kInquiry);
+  auto view = packet.view_t();
   view.lap().Write(hci_spec::InquiryAccessCode::GIAC);
   view.inquiry_length().Write(1);
   view.num_responses().Write(0);
@@ -1213,8 +1212,8 @@ TEST_F(CommandChannelTest, AsyncEventHandlersAndLeMetaEventHandlersDoNotInterfer
     async_cmd_cb_count++;
   };
 
-  auto packet = EmbossCommandPacket::New(hci_spec::kInquiry,
-                                         hci_spec::EmbossCommandHeader::IntrinsicSizeInBytes());
+  auto packet = EmbossCommandPacket::New<hci_spec::InquiryCommandView>(
+      hci_spec::kInquiry, hci_spec::EmbossCommandHeader::IntrinsicSizeInBytes());
   cmd_channel()->SendCommand(std::move(packet), std::move(async_cmd_cb), kTestEventCode);
 
   // clang-format off

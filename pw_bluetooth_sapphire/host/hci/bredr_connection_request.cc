@@ -18,9 +18,9 @@ EmbossCommandPacket CreateConnectionPacket(
     DeviceAddress address,
     std::optional<hci_spec::PageScanRepetitionMode> page_scan_repetition_mode,
     std::optional<uint16_t> clock_offset) {
-  EmbossCommandPacket request =
-      EmbossCommandPacket::New<hci_spec::CreateConnectionCommandView>(hci_spec::kCreateConnection);
-  auto params = request.view<hci_spec::CreateConnectionCommandWriter>();
+  auto request = EmbossCommandPacket::New<hci_spec::CreateConnectionCommandWriter>(
+      hci_spec::kCreateConnection);
+  auto params = request.view_t();
   params.bd_addr().Write(address.value().as_int());
   params.packet_type().BackingStorage().WriteUInt(kEnableAllPacketTypes);
 

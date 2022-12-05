@@ -104,9 +104,8 @@ void Connection::Disconnect(hci_spec::StatusCode reason) {
     hci_is_error(event, TRACE, "hci", "ignoring disconnection failure");
   };
 
-  EmbossCommandPacket disconn =
-      EmbossCommandPacket::New<hci_spec::DisconnectCommandView>(hci_spec::kDisconnect);
-  auto params = disconn.view<hci_spec::DisconnectCommandWriter>();
+  auto disconn = EmbossCommandPacket::New<hci_spec::DisconnectCommandWriter>(hci_spec::kDisconnect);
+  auto params = disconn.view_t();
   params.connection_handle().Write(handle());
   params.reason().Write(reason);
 

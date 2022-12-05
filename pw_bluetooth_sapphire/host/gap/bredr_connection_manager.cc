@@ -1310,10 +1310,9 @@ void BrEdrConnectionManager::OnRequestTimeout() {
 }
 
 void BrEdrConnectionManager::SendCreateConnectionCancelCommand(DeviceAddress addr) {
-  hci::EmbossCommandPacket cancel =
-      hci::EmbossCommandPacket::New<hci_spec::CreateConnectionCancelCommandView>(
-          hci_spec::kCreateConnectionCancel);
-  auto params = cancel.view<hci_spec::CreateConnectionCancelCommandWriter>();
+  auto cancel = hci::EmbossCommandPacket::New<hci_spec::CreateConnectionCancelCommandWriter>(
+      hci_spec::kCreateConnectionCancel);
+  auto params = cancel.view_t();
   params.bd_addr().Write(addr.value().as_int());
   hci_->command_channel()->SendCommand(std::move(cancel), [](auto, const hci::EventPacket& event) {
     hci_is_error(event, WARN, "hci-bredr", "failed to cancel connection request");
@@ -1406,10 +1405,9 @@ void BrEdrConnectionManager::SendUserPasskeyRequestNegativeReply(DeviceAddressBy
 void BrEdrConnectionManager::SendLinkKeyRequestNegativeReply(DeviceAddressBytes bd_addr,
                                                              hci::ResultFunction<> cb) {
   auto negative_reply =
-      hci::EmbossCommandPacket::New<hci_spec::LinkKeyRequestNegativeReplyCommandView>(
+      hci::EmbossCommandPacket::New<hci_spec::LinkKeyRequestNegativeReplyCommandWriter>(
           hci_spec::kLinkKeyRequestNegativeReply);
-  auto negative_reply_params =
-      negative_reply.view<hci_spec::LinkKeyRequestNegativeReplyCommandWriter>();
+  auto negative_reply_params = negative_reply.view_t();
   negative_reply_params.bd_addr().Write(bd_addr.as_int());
   SendCommandWithStatusCallback(std::move(negative_reply), std::move(cb));
 }
@@ -1417,11 +1415,9 @@ void BrEdrConnectionManager::SendLinkKeyRequestNegativeReply(DeviceAddressBytes 
 void BrEdrConnectionManager::SendLinkKeyRequestReply(DeviceAddressBytes bd_addr,
                                                      hci_spec::LinkKey link_key,
                                                      hci::ResultFunction<> cb) {
-  hci::EmbossCommandPacket reply =
-      hci::EmbossCommandPacket::New<hci_spec::LinkKeyRequestReplyCommandView>(
-          hci_spec::kLinkKeyRequestReply);
-
-  auto reply_params = reply.view<hci_spec::LinkKeyRequestReplyCommandWriter>();
+  auto reply = hci::EmbossCommandPacket::New<hci_spec::LinkKeyRequestReplyCommandWriter>(
+      hci_spec::kLinkKeyRequestReply);
+  auto reply_params = reply.view_t();
   reply_params.bd_addr().Write(bd_addr.as_int());
 
   const auto& key_value = link_key.value();
@@ -1445,10 +1441,9 @@ void BrEdrConnectionManager::SendCommandWithStatusCallback(T command_packet,
 
 void BrEdrConnectionManager::SendAcceptConnectionRequest(DeviceAddressBytes addr,
                                                          hci::ResultFunction<> cb) {
-  hci::EmbossCommandPacket accept =
-      hci::EmbossCommandPacket::New<hci_spec::AcceptConnectionRequestCommandView>(
-          hci_spec::kAcceptConnectionRequest);
-  auto accept_params = accept.view<hci_spec::AcceptConnectionRequestCommandWriter>();
+  auto accept = hci::EmbossCommandPacket::New<hci_spec::AcceptConnectionRequestCommandWriter>(
+      hci_spec::kAcceptConnectionRequest);
+  auto accept_params = accept.view_t();
   accept_params.bd_addr().Write(addr.as_int());
   // This role switch preference can fail. A HCI_Role_Change event will be generated if the role
   // switch is successful (Core Spec v5.2, Vol 2, Part F, Sec 3.1).
@@ -1468,10 +1463,9 @@ void BrEdrConnectionManager::SendAcceptConnectionRequest(DeviceAddressBytes addr
 void BrEdrConnectionManager::SendRejectConnectionRequest(DeviceAddress addr,
                                                          hci_spec::StatusCode reason,
                                                          hci::ResultFunction<> cb) {
-  hci::EmbossCommandPacket reject =
-      hci::EmbossCommandPacket::New<hci_spec::RejectConnectionRequestCommandView>(
-          hci_spec::kRejectConnectionRequest);
-  auto reject_params = reject.view<hci_spec::RejectConnectionRequestCommandWriter>();
+  auto reject = hci::EmbossCommandPacket::New<hci_spec::RejectConnectionRequestCommandWriter>(
+      hci_spec::kRejectConnectionRequest);
+  auto reject_params = reject.view_t();
   reject_params.bd_addr().Write(addr.value().as_int());
   reject_params.reason().Write(reason);
 
