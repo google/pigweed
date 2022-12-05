@@ -306,6 +306,9 @@ class BrEdrDynamicChannel final : public DynamicChannel {
   ChannelConfiguration local_config_;
 
   fxl::WeakPtrFactory<BrEdrDynamicChannel> weak_ptr_factory_;
+
+  // Counter for number of basic mode configuration requests
+  uint8_t num_basic_config_requests_ = 0;
 };
 
 }  // namespace bt::l2cap::internal

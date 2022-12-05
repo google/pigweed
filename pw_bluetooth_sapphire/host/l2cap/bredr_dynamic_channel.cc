@@ -24,6 +24,7 @@ ChannelConfiguration::RetransmissionAndFlowControlOption WriteRfcOutboundTimeout
 constexpr uint16_t kBrEdrDynamicChannelCount =
     kLastACLDynamicChannelId - kFirstDynamicChannelId + 1;
 
+const uint8_t kMaxNumBasicConfigRequests = 2;
 }  // namespace
 
 BrEdrDynamicChannelRegistry::BrEdrDynamicChannelRegistry(SignalingChannelInterface* sig,
@@ -697,6 +698,10 @@ void BrEdrDynamicChannel::SendLocalConfig() {
     request_config.set_retransmission_flow_control_option(std::nullopt);
   }
 
+  if (!request_config.retransmission_flow_control_option()) {
+    num_basic_config_requests_++;
+  }
+
   if (!cmd_handler.SendConfigurationRequest(
           remote_cid(), 0, request_config.Options(),
           [self = weak_ptr_factory_.GetWeakPtr()](auto& rsp) {
@@ -840,7 +845,7 @@ bool BrEdrDynamicChannel::TryRecoverFromUnacceptableParametersConfigRsp(
   if (rsp_config.retransmission_flow_control_option()) {
     // Check if peer rejected basic mode. Do not disconnect, in case peer will accept resending
     // basic mode (as is the case with PTS test L2CAP/COS/CFD/BV-02-C).
-    if (local_config_.retransmission_flow_control_option()->mode() == ChannelMode::kBasic) {
+    if (local_config().retransmission_flow_control_option()->mode() == ChannelMode::kBasic) {
       bt_log(WARN, "l2cap-bredr",
              "Channel %#.4x: Peer rejected basic mode with unacceptable "
              "parameters result (rsp mode: %#.2x)",
@@ -857,7 +862,7 @@ bool BrEdrDynamicChannel::TryRecoverFromUnacceptableParametersConfigRsp(
       const auto remote_mode = remote_config_.retransmission_flow_control_option()->mode();
       if (rsp_mode != remote_mode) {
         bt_log(ERROR, "l2cap-bredr",
-               "Channel %#.4x: Unsuccussful config: mode in unacceptable parameters config "
+               "Channel %#.4x: Unsuccessful config: mode in unacceptable parameters config "
                "response does not match mode in remote config request (rsp mode: %#.2x, req mode: "
                "%#.2x)",
                local_cid(), static_cast<uint8_t>(rsp_mode), static_cast<uint8_t>(remote_mode));
@@ -870,9 +875,15 @@ bool BrEdrDynamicChannel::TryRecoverFromUnacceptableParametersConfigRsp(
            "falling back to basic mode and resending config request",
            local_cid());
 
-    // Fall back to basic mode and try sending config again.
-    // TODO(fxbug.dev/46992): limit the number of retries
+    // Fall back to basic mode and try sending config again up to kMaxNumBasicConfigRequests times
     peer_supports_ertm_ = false;
+    if (num_basic_config_requests_ == kMaxNumBasicConfigRequests) {
+      bt_log(
+          WARN, "l2cap-bredr",
+          "Channel %#.4x: Peer rejected config request. Channel's limit of %#.2x basic mode config request attempts has been met",
+          local_cid(), kMaxNumBasicConfigRequests);
+      return false;
+    }
     UpdateLocalConfigForErtm();
     SendLocalConfig();
     return true;

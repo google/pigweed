@@ -12,6 +12,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/bredr_dynamic_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_signaling_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
@@ -2066,8 +2067,69 @@ TEST_F(BrEdrDynamicChannelTest, RetryWhenPeerRejectsConfigReqWithBasicMode) {
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
-  RunLoopUntilIdle();
   EXPECT_EQ(0, open_cb_count);
+}
+
+TEST_F(BrEdrDynamicChannelTest, RetryNTimesWhenPeerRejectsConfigReqWithBasicMode) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  uint8_t retry_limit = 2;
+  for (int i = 0; i < retry_limit; i++) {
+    EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
+                        {SignalingChannel::Status::kSuccess,
+                         kInboundUnacceptableParamsWithRfcBasicConfigRsp.view()});
+  }
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+
+  int open_cb_count = 0;
+
+  auto open_cb = [&open_cb_count](const DynamicChannel* chan) {
+    ASSERT_TRUE(chan == nullptr);
+    open_cb_count++;
+  };
+
+  registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  EXPECT_EQ(1, open_cb_count);
+}
+
+TEST_F(BrEdrDynamicChannelTest, RetryNTimesWhenPeerRejectsERTMConfigReqWithBasicMode) {
+  EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
+                      {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
+  EXPECT_OUTBOUND_REQ(
+      *sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view(),
+      {SignalingChannel::Status::kSuccess, kInboundUnacceptableParamsWithRfcBasicConfigRsp.view()});
+  uint8_t retry_limit = 2;
+  for (int i = 0; i < retry_limit; i++) {
+    EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
+                        {SignalingChannel::Status::kSuccess,
+                         kInboundUnacceptableParamsWithRfcBasicConfigRsp.view()});
+  }
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+
+  int open_cb_count = 0;
+
+  auto open_cb = [&open_cb_count](const DynamicChannel* chan) {
+    ASSERT_TRUE(chan == nullptr);
+    open_cb_count++;
+  };
+
+  registry()->OpenOutbound(kPsm, kERTMChannelParams, std::move(open_cb));
+
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+
+  sig()->ReceiveResponses(ext_info_transaction_id(), {{SignalingChannel::Status::kSuccess,
+                                                       kExtendedFeaturesInfoRspWithERTM.view()}});
+
+  RETURN_IF_FATAL(
+      sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(1, open_cb_count);
 }
 
 TEST_F(BrEdrDynamicChannelTest,
