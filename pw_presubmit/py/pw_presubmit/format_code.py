@@ -297,6 +297,21 @@ def check_py_format_black(ctx: _Context) -> Dict[Path, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
     errors: Dict[Path, str] = {}
 
+    # Run black --check on the full list of paths and then only run black
+    # individually on the files that black found issue with.
+    changed_paths: List[str] = []
+    for line in (
+        log_run(
+            ['black', '--check', *_BLACK_OPTS, *ctx.paths],
+            capture_output=True,
+        )
+        .stderr.decode()
+        .splitlines()
+    ):
+        if match := re.search(r'^would reformat (.*)\s*$', line):
+            changed_paths.append(match.group(1))
+    paths: Tuple[str, ...] = tuple(changed_paths)
+
     def _format_temp(path: Union[Path, str], data: bytes) -> bytes:
         # black doesn't have an option to output the changed file, so copy the
         # file to a temp location, run buildifier on it, read that modified
@@ -312,7 +327,10 @@ def check_py_format_black(ctx: _Context) -> Dict[Path, str]:
                 errors[Path(path)] = stderr
             return build.read_bytes()
 
-    result = _check_files(ctx.paths, _format_temp)
+    result = _check_files(
+        [x for x in ctx.paths if str(x).endswith(paths)],
+        _format_temp,
+    )
     result.update(errors)
     return result
 
@@ -396,7 +414,7 @@ class CodeFormat(NamedTuple):
 
     @property
     def extensions(self):
-        # TODO(b/23842636): Switch calls of this to using "filter" and remove.
+        # TODO(b/23842636): Switch calls of this to using 'filter' and remove.
         return self.filter.endswith
 
 
@@ -494,8 +512,8 @@ MARKDOWN_FORMAT: CodeFormat = CodeFormat(
 )
 
 OWNERS_CODE_FORMAT = CodeFormat(
-    "OWNERS",
-    filter=FileFilter(name=("OWNERS",)),
+    'OWNERS',
+    filter=FileFilter(name=('OWNERS',)),
     check=check_owners_format,
     fix=fix_owners_format,
 )
