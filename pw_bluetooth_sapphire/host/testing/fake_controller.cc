@@ -1417,8 +1417,8 @@ void FakeController::OnReadRemoteExtendedFeaturesCommandReceived(
 }
 
 void FakeController::OnAuthenticationRequestedCommandReceived(
-    const hci_spec::AuthenticationRequestedCommandParams& params) {
-  hci_spec::ConnectionHandle handle = le16toh(params.connection_handle);
+    hci_spec::AuthenticationRequestedCommandView params) {
+  hci_spec::ConnectionHandle handle = params.connection_handle().Read();
   FakePeer* peer = FindByConnHandle(handle);
   if (!peer) {
     RespondWithCommandStatus(hci_spec::kAuthenticationRequested,
@@ -2989,11 +2989,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnReadRemoteExtendedFeaturesCommandReceived(params);
       break;
     }
-    case hci_spec::kAuthenticationRequested: {
-      const auto& params = command_packet.payload<hci_spec::AuthenticationRequestedCommandParams>();
-      OnAuthenticationRequestedCommandReceived(params);
-      break;
-    }
     case hci_spec::kLinkKeyRequestReply: {
       const auto& params = command_packet.payload<hci_spec::LinkKeyRequestReplyCommandView>();
       OnLinkKeyRequestReplyCommandReceived(params);
@@ -3052,7 +3047,8 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kEnhancedSetupSynchronousConnection:
     case hci_spec::kCreateConnection:
     case hci_spec::kDisconnect:
-    case hci_spec::kLinkKeyRequestNegativeReply: {
+    case hci_spec::kLinkKeyRequestNegativeReply:
+    case hci_spec::kAuthenticationRequested: {
       // This case is for packet types that have been migrated to the new Emboss architecture. Their
       // old version can be still be assembled from the HciEmulator channel, so here we repackage
       // and forward them as Emboss packets.
@@ -3122,6 +3118,11 @@ void FakeController::HandleReceivedCommandPacket(hci::EmbossCommandPacket& comma
     case hci_spec::kLinkKeyRequestNegativeReply: {
       const auto params = command_packet.view<hci_spec::LinkKeyRequestNegativeReplyCommandView>();
       OnLinkKeyRequestNegativeReplyCommandReceived(params);
+      break;
+    }
+    case hci_spec::kAuthenticationRequested: {
+      const auto params = command_packet.view<hci_spec::AuthenticationRequestedCommandView>();
+      OnAuthenticationRequestedCommandReceived(params);
       break;
     }
     default: {

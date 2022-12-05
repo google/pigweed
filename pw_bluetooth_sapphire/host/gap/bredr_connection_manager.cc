@@ -1321,10 +1321,9 @@ void BrEdrConnectionManager::SendCreateConnectionCancelCommand(DeviceAddress add
 
 void BrEdrConnectionManager::SendAuthenticationRequested(hci_spec::ConnectionHandle handle,
                                                          hci::ResultFunction<> cb) {
-  auto auth_request = hci::CommandPacket::New(
-      hci_spec::kAuthenticationRequested, sizeof(hci_spec::AuthenticationRequestedCommandParams));
-  auth_request->mutable_payload<hci_spec::AuthenticationRequestedCommandParams>()
-      ->connection_handle = htole16(handle);
+  auto auth_request = hci::EmbossCommandPacket::New<hci_spec::AuthenticationRequestedCommandWriter>(
+      hci_spec::kAuthenticationRequested);
+  auth_request.view_t().connection_handle().Write(handle);
 
   // Complete on command status because Authentication Complete Event is already registered.
   hci::CommandChannel::CommandCallback command_cb;

@@ -627,7 +627,7 @@ class FakeController : public ControllerTestDoubleBase {
 
   // Called when a HCI_Authentication_Requested command is received.
   void OnAuthenticationRequestedCommandReceived(
-      const hci_spec::AuthenticationRequestedCommandParams& params);
+      hci_spec::AuthenticationRequestedCommandView params);
 
   // Called when a HCI_Link_Key_Request_Reply command is received.
   void OnLinkKeyRequestReplyCommandReceived(hci_spec::LinkKeyRequestReplyCommandView params);

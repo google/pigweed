@@ -193,18 +193,6 @@ struct LinkKeyRequestNegativeReplyReturnParams {
 // Authentication Requested Command (v1.1) (BR/EDR)
 constexpr OpCode kAuthenticationRequested = LinkControlOpCode(0x0011);
 
-struct AuthenticationRequestedCommandParams {
-  // Connection_Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  // Must be the handle of a connected ACL-U logical link.
-  ConnectionHandle connection_handle;
-} __PACKED;
-
-// NOTE on ReturnParams: No Command Complete event will be sent by the
-// Controller to indicate that this command has been completed. Instead, the
-// Authentication Complete event will indicate that this command has been
-// completed.
-
 // =================================================
 // Set Connection Encryption Command (v1.1) (BR/EDR)
 constexpr OpCode kSetConnectionEncryption = LinkControlOpCode(0x0013);

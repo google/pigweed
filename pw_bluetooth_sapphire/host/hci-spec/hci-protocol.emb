@@ -360,6 +360,23 @@ struct LinkKeyRequestNegativeReplyCommand:
   # BD_ADDR of the peer device that the host does not have a link key for.
   $next [+BdAddr.$size_in_bytes] BdAddr bd_addr
 
+# ================================================
+# Authentication Requested Command (v1.1) (BR/EDR)
+
+# NOTE on ReturnParams: No Command Complete event will be sent by the
+# Controller to indicate that this command has been completed. Instead, the
+# Authentication Complete event will indicate that this command has been
+# completed.
+
+struct AuthenticationRequestedCommand:
+  let hdr_size = EmbossCommandHeader.$size_in_bytes
+  0     [+hdr_size] EmbossCommandHeader header
+
+  # Connection_Handle (only the lower 12-bits are meaningful).
+  #   Range: 0x0000 to 0x0EFF
+  # Must be the handle of a connected ACL-U logical link.
+  $next [+2] UInt connection_handle
+
 # ======================================================
 # Enhanced Setup Synchronous Connection Command (CSA2) (BR/EDR)
 
