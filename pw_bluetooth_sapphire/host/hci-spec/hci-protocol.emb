@@ -1,506 +1,500 @@
 # Copyright 2022 The Fuchsia Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
 [$default byte_order: "LittleEndian"]
 [(cpp) namespace: "bt::hci_spec"]
-
 # =========================== Constants =================================
 
-# Coding formats from assigned numbers.
-# (https://www.bluetooth.com/specifications/assigned-numbers/host-controller-interface)
+
 enum CodingFormat:
+  -- Coding formats from assigned numbers.
+  -- (https://www.bluetooth.com/specifications/assigned-numbers/host-controller-interface)
   [maximum_bits: 8]
-  U_LAW = 0x00
-  A_LAW = 0x01
-  CVSD = 0x02
-  TRANSPARENT = 0x03
-  LINEAR_PCM = 0x04
-  MSBC = 0x05
-  LC3 = 0x06
-  G729A = 0x07
+  U_LAW           = 0x00
+  A_LAW           = 0x01
+  CVSD            = 0x02
+  TRANSPARENT     = 0x03
+  LINEAR_PCM      = 0x04
+  MSBC            = 0x05
+  LC3             = 0x06
+  G729A           = 0x07
   VENDOR_SPECIFIC = 0xFF
 
-# Binary values that can be generically passed to HCI commands that expect a
-# 1-octet boolean "enable"/"disable" parameter.
+
 enum GenericEnableParam:
+  -- Binary values that can be generically passed to HCI commands that expect a
+  -- 1-octet boolean "enable"/"disable" parameter.
   [maximum_bits: 8]
   DISABLE = 0x00
-  ENABLE = 0x01
+  ENABLE  = 0x01
 
-# General- and Device-specific Inquiry Access Codes (DIACs) for use in Inquiry
-# command LAP fields.
-# (https://www.bluetooth.com/specifications/assigned-numbers/baseband)
+
 enum InquiryAccessCode:
+  -- General- and Device-specific Inquiry Access Codes (DIACs) for use in Inquiry
+  -- command LAP fields.
+  -- (https://www.bluetooth.com/specifications/assigned-numbers/baseband)
   [maximum_bits: 24]
-  # General Inquiry Access Code
   GIAC = 0x9E8B33
+    -- General Inquiry Access Code
 
-  # Limited Dedicated Inquiry Access Code
   LIAC = 0x9E8B00
+    -- Limited Dedicated Inquiry Access Code
 
-# PCM data formats from assigned numbers.
-# (https://www.bluetooth.com/specifications/assigned-numbers/host-controller-interface)
+
 enum PcmDataFormat:
+  -- PCM data formats from assigned numbers.
+  -- (https://www.bluetooth.com/specifications/assigned-numbers/host-controller-interface)
   [maximum_bits: 8]
-  NOT_APPLICABLE = 0x00
+  NOT_APPLICABLE  = 0x00
   ONES_COMPLEMENT = 0x01
   TWOS_COMPLEMENT = 0x02
-  SIGN_MAGNITUDE = 0x03
-  UNSIGNED = 0x04
+  SIGN_MAGNITUDE  = 0x03
+  UNSIGNED        = 0x04
+
 
 enum ScoDataPath:
   [maximum_bits: 8]
-  HCI = 0x00
-  # 0x01 - 0xFE specify the logical channel number (vendor specific)
+  HCI             = 0x00
   AUDIO_TEST_MODE = 0xFF
+    -- 0x01 - 0xFE specify the logical channel number (vendor specific)
+
 
 enum ConnectionRole:
   [maximum_bits: 8]
-  CENTRAL = 0x00
+  CENTRAL    = 0x00
   PERIPHERAL = 0x01
 
-# HCI Error Codes. Refer to Core Spec v5.0, Vol 2, Part D for definitions and
-# descriptions. All enum values are in increasing numerical order, however the
-# values are listed below for clarity.
+
 enum StatusCode:
+  -- HCI Error Codes. Refer to Core Spec v5.0, Vol 2, Part D for definitions and
+  -- descriptions. All enum values are in increasing numerical order, however the
+  -- values are listed below for clarity.
   [maximum_bits: 8]
-  SUCCESS = 0x00
-  UNKNOWN_COMMAND = 0x01
-  UNKNOWN_CONNECTION_ID = 0x02
-  HARDWARE_FAILURE = 0x03
-  PAGE_TIMEOUT = 0x04
-  AUTHENTICATION_FAILURE = 0x05
-  PIN_OR_KEY_MISSING = 0x06
-  MEMORY_CAPACITY_EXCEEDED = 0x07
-  CONNECTION_TIMEOUT = 0x08
-  CONNECTION_LIMIT_EXCEEDED = 0x09
-  SYNCHRONOUS_CONNECTION_LIMIT_EXCEEDED = 0x0A
-  CONNECTION_ALREADY_EXISTS = 0x0B
-  COMMAND_DISALLOWED = 0x0C
-  CONNECTION_REJECTED_LIMITED_RESOURCES = 0x0D
-  CONNECTION_REJECTED_SECURITY = 0x0E
-  CONNECTION_REJECTED_BAD_BD_ADDR = 0x0F
-  CONNECTION_ACCEPT_TIMEOUT_EXCEEDED = 0x10
-  UNSUPPORTED_FEATURE_OR_PARAMETER = 0x11
-  INVALID_HCI_COMMAND_PARAMETERS = 0x12
-  REMOTE_USER_TERMINATED_CONNECTION = 0x13
+  SUCCESS                                           = 0x00
+  UNKNOWN_COMMAND                                   = 0x01
+  UNKNOWN_CONNECTION_ID                             = 0x02
+  HARDWARE_FAILURE                                  = 0x03
+  PAGE_TIMEOUT                                      = 0x04
+  AUTHENTICATION_FAILURE                            = 0x05
+  PIN_OR_KEY_MISSING                                = 0x06
+  MEMORY_CAPACITY_EXCEEDED                          = 0x07
+  CONNECTION_TIMEOUT                                = 0x08
+  CONNECTION_LIMIT_EXCEEDED                         = 0x09
+  SYNCHRONOUS_CONNECTION_LIMIT_EXCEEDED             = 0x0A
+  CONNECTION_ALREADY_EXISTS                         = 0x0B
+  COMMAND_DISALLOWED                                = 0x0C
+  CONNECTION_REJECTED_LIMITED_RESOURCES             = 0x0D
+  CONNECTION_REJECTED_SECURITY                      = 0x0E
+  CONNECTION_REJECTED_BAD_BD_ADDR                   = 0x0F
+  CONNECTION_ACCEPT_TIMEOUT_EXCEEDED                = 0x10
+  UNSUPPORTED_FEATURE_OR_PARAMETER                  = 0x11
+  INVALID_HCI_COMMAND_PARAMETERS                    = 0x12
+  REMOTE_USER_TERMINATED_CONNECTION                 = 0x13
   REMOTE_DEVICE_TERMINATED_CONNECTION_LOW_RESOURCES = 0x14
-  REMOTE_DEVICE_TERMINATED_CONNECTION_POWER_OFF = 0x15
-  CONNECTION_TERMINATED_BY_LOCAL_HOST = 0x16
-  REPEATED_ATTEMPTS = 0x17
-  PAIRING_NOT_ALLOWED = 0x18
-  UNKNOWN_LMP_PDU = 0x19
-  UNSUPPORTED_REMOTE_FEATURE = 0x1A
-  SCO_OFFSET_REJECTED = 0x1B
-  SCO_INTERVAL_REJECTED = 0x1C
-  SCO_AIRMODE_REJECTED = 0x1D
-  INVALID_LMP_OR_LL_PARAMETERS = 0x1E
-  UNSPECIFIED_ERROR = 0x1F
-  UNSUPPORTED_LMP_OR_LL_PARAMETER_VALUE = 0x20
-  ROLE_CHANGE_NOT_ALLOWED = 0x21
-  LMP_OR_LL_RESPONSE_TIMEOUT = 0x22
-  LMP_ERROR_TRANSACTION_COLLISION = 0x23
-  LMP_PDU_NOT_ALLOWED = 0x24
-  ENCRYPTION_MODE_NOT_ACCEPTABLE = 0x25
-  LINK_KEY_CANNOT_BE_CHANGED = 0x26
-  REQUESTED_QOS_NOT_SUPPORTED = 0x27
-  INSTANT_PASSED = 0x28
-  PAIRING_WITH_UNIT_KEY_NOT_SUPPORTED = 0x29
-  DIFFERENT_TRANSACTION_COLLISION = 0x2A
-  RESERVED_0 = 0x2B
-  QOS_UNACCEPTABLE_PARAMETER = 0x2C
-  QOS_REJECTED = 0x2D
-  CHANNEL_CLASSIFICATION_NOT_SUPPORTED = 0x2E
-  INSUFFICIENT_SECURITY = 0x2F
-  PARAMETER_OUT_OF_MANDATORY_RANGE = 0x30
-  RESERVED_1 = 0x31
-  ROLE_SWITCH_PENDING = 0x32
-  RESERVED_2 = 0x33
-  RESERVED_SLOT_VIOLATION = 0x34
-  ROLE_SWITCH_FAILED = 0x35
-  EXTENDED_INQUIRY_RESPONSE_TOO_LARGE = 0x36
-  SECURE_SIMPLE_PAIRING_NOT_SUPPORTED_BY_HOST = 0x37
-  HOST_BUSY_PAIRING = 0x38
-  CONNECTION_REJECTED_NO_SUITABLE_CHANNEL_FOUND = 0x39
-  CONTROLLER_BUSY = 0x3A
-  UNACCEPTABLE_CONNECTION_PARAMETERS = 0x3B
-  DIRECTED_ADVERTISING_TIMEOUT = 0x3C
-  CONNECTION_TERMINATED_MIC_FAILURE = 0x3D
-  CONNECTION_FAILED_TO_BE_ESTABLISHED = 0x3E
-  MAC_CONNECTION_FAILED = 0x3F
-  COARSE_CLOCK_ADJUSTMENT_REJECTED = 0x40
-
+  REMOTE_DEVICE_TERMINATED_CONNECTION_POWER_OFF     = 0x15
+  CONNECTION_TERMINATED_BY_LOCAL_HOST               = 0x16
+  REPEATED_ATTEMPTS                                 = 0x17
+  PAIRING_NOT_ALLOWED                               = 0x18
+  UNKNOWN_LMP_PDU                                   = 0x19
+  UNSUPPORTED_REMOTE_FEATURE                        = 0x1A
+  SCO_OFFSET_REJECTED                               = 0x1B
+  SCO_INTERVAL_REJECTED                             = 0x1C
+  SCO_AIRMODE_REJECTED                              = 0x1D
+  INVALID_LMP_OR_LL_PARAMETERS                      = 0x1E
+  UNSPECIFIED_ERROR                                 = 0x1F
+  UNSUPPORTED_LMP_OR_LL_PARAMETER_VALUE             = 0x20
+  ROLE_CHANGE_NOT_ALLOWED                           = 0x21
+  LMP_OR_LL_RESPONSE_TIMEOUT                        = 0x22
+  LMP_ERROR_TRANSACTION_COLLISION                   = 0x23
+  LMP_PDU_NOT_ALLOWED                               = 0x24
+  ENCRYPTION_MODE_NOT_ACCEPTABLE                    = 0x25
+  LINK_KEY_CANNOT_BE_CHANGED                        = 0x26
+  REQUESTED_QOS_NOT_SUPPORTED                       = 0x27
+  INSTANT_PASSED                                    = 0x28
+  PAIRING_WITH_UNIT_KEY_NOT_SUPPORTED               = 0x29
+  DIFFERENT_TRANSACTION_COLLISION                   = 0x2A
+  RESERVED_0                                        = 0x2B
+  QOS_UNACCEPTABLE_PARAMETER                        = 0x2C
+  QOS_REJECTED                                      = 0x2D
+  CHANNEL_CLASSIFICATION_NOT_SUPPORTED              = 0x2E
+  INSUFFICIENT_SECURITY                             = 0x2F
+  PARAMETER_OUT_OF_MANDATORY_RANGE                  = 0x30
+  RESERVED_1                                        = 0x31
+  ROLE_SWITCH_PENDING                               = 0x32
+  RESERVED_2                                        = 0x33
+  RESERVED_SLOT_VIOLATION                           = 0x34
+  ROLE_SWITCH_FAILED                                = 0x35
+  EXTENDED_INQUIRY_RESPONSE_TOO_LARGE               = 0x36
+  SECURE_SIMPLE_PAIRING_NOT_SUPPORTED_BY_HOST       = 0x37
+  HOST_BUSY_PAIRING                                 = 0x38
+  CONNECTION_REJECTED_NO_SUITABLE_CHANNEL_FOUND     = 0x39
+  CONTROLLER_BUSY                                   = 0x3A
+  UNACCEPTABLE_CONNECTION_PARAMETERS                = 0x3B
+  DIRECTED_ADVERTISING_TIMEOUT                      = 0x3C
+  CONNECTION_TERMINATED_MIC_FAILURE                 = 0x3D
+  CONNECTION_FAILED_TO_BE_ESTABLISHED               = 0x3E
+  MAC_CONNECTION_FAILED                             = 0x3F
+  COARSE_CLOCK_ADJUSTMENT_REJECTED                  = 0x40
   # 5.0
-  TYPE_0_SUBMAP_NOT_DEFINED = 0x41
-  UNKNOWN_ADVERTISING_IDENTIFIER = 0x42
-  LIMIT_REACHED = 0x43
-  OPERATION_CANCELLED_BY_HOST = 0x44
+  TYPE_0_SUBMAP_NOT_DEFINED                         = 0x41
+  UNKNOWN_ADVERTISING_IDENTIFIER                    = 0x42
+  LIMIT_REACHED                                     = 0x43
+  OPERATION_CANCELLED_BY_HOST                       = 0x44
 
-# Bitmask of SCO packet types.
+
 bits ScoPacketType:
+  -- Bitmask of SCO packet types.
   # SCO packet types
-  0     [+1] Flag hv1
-  $next [+1] Flag hv2
-  $next [+1] Flag hv3
-
+  0     [+1]  Flag  hv1
+  $next [+1]  Flag  hv2
+  $next [+1]  Flag  hv3
   # eSCO packet types
-  $next [+1] Flag ev3
-  $next [+1] Flag ev4
-  $next [+1] Flag ev5
+  $next [+1]  Flag  ev3
+  $next [+1]  Flag  ev4
+  $next [+1]  Flag  ev5
+  $next [+1]  Flag  not_2_ev3
+  $next [+1]  Flag  not_3_ev3
+  $next [+1]  Flag  not_2_ev5
+  $next [+1]  Flag  not_3_ev5
+  $next [+6]  UInt  padding
 
-  $next [+1] Flag not_2_ev3
-  $next [+1] Flag not_3_ev3
-  $next [+1] Flag not_2_ev5
-  $next [+1] Flag not_3_ev5
 
-  $next [+6] UInt padding
-
-# Bitmask values for supported Packet Types
-# Used for HCI_Create_Connection and HCI_Change_Connection_Packet_Type
 bits PacketType:
-  1  [+1] Flag disable_2_dh1
-  2  [+1] Flag disable_3_dh1
-  3  [+1] Flag enable_dm1 # Note: always on in >= v1.2
-  4  [+1] Flag enable_dh1
-  8  [+1] Flag disable_2_dh3
-  9  [+1] Flag disable_3_dh3
-  10 [+1] Flag enable_dm3
-  11 [+1] Flag enable_dh3
-  12 [+1] Flag disable_2_dh5
-  13 [+1] Flag disable_3_dh5
-  14 [+1] Flag enable_dm5
-  15 [+1] Flag enable_dh5
-  # All other bits reserved for future use.
+  -- Bitmask values for supported Packet Types
+  -- Used for HCI_Create_Connection and HCI_Change_Connection_Packet_Type
+  -- All other bits reserved for future use.
+  1  [+1]  Flag  disable_2_dh1
+  2  [+1]  Flag  disable_3_dh1
+  3  [+1]  Flag  enable_dm1     # Note: always on in >= v1.2
+  4  [+1]  Flag  enable_dh1
+  8  [+1]  Flag  disable_2_dh3
+  9  [+1]  Flag  disable_3_dh3
+  10 [+1]  Flag  enable_dm3
+  11 [+1]  Flag  enable_dh3
+  12 [+1]  Flag  disable_2_dh5
+  13 [+1]  Flag  disable_3_dh5
+  14 [+1]  Flag  enable_dm5
+  15 [+1]  Flag  enable_dh5
 
-# The page scan repetition mode, representing a maximum time between Page Scans.
-# (See Core Spec v5.0, Volume 2, Part B, Section 8.3.1)
+
 enum PageScanRepetitionMode:
+  -- The page scan repetition mode, representing a maximum time between Page Scans.
+  -- (See Core Spec v5.0, Volume 2, Part B, Section 8.3.1)
   [maximum_bits: 8]
-  R0_ = 0x00 # Continuous Scan
-  R1_ = 0x01 # <= 1.28s
-  R2_ = 0x02 # <= 2.56s
+  R0_ = 0x00  # Continuous Scan
+  R1_ = 0x01  # <= 1.28s
+  R2_ = 0x02  # <= 2.56s
 
-# Clock Offset. The lower 15 bits are set to the clock offset as retrieved
-# by an Inquiry. The highest bit is set to 1 if the rest of this parameter
-# is valid.
+
 bits ClockOffset:
-  15 [+1] Flag valid
+  -- Clock Offset. The lower 15 bits are set to the clock offset as retrieved
+  -- by an Inquiry. The highest bit is set to 1 if the rest of this parameter
+  -- is valid.
+  15 [+1]     Flag  valid
   if valid:
-    0 [+15] UInt clock_offset
+    0  [+15]  UInt  clock_offset
 
-# Bluetooth Device Address
+
 struct BdAddr:
-  0 [+6] UInt bd_addr
-
+  -- Bluetooth Device Address
+  0 [+6]  UInt  bd_addr
 
 # ========================= HCI packet headers ==========================
-# Emboss currently lacks support for default field values and cross-type integral equality.
-# (https://github.com/google/emboss/issues/21)
-# (https://github.com/google/emboss/issues/23)
-# Upon the addition of these features, we will transition OpCodeBits to be a parameterized
-# field which defaults for each HCI packet type to its corresponding OpCode.
-bits OpCodeBits:
-  0     [+10] UInt ocf
-  $next [+6] UInt ogf
 
-# HCI Command packet header.
+
+bits OpCodeBits:
+  # Emboss currently lacks support for default field values and cross-type integral equality.
+  # (https://github.com/google/emboss/issues/21)
+  # (https://github.com/google/emboss/issues/23)
+  # Upon the addition of these features, we will transition OpCodeBits to be a parameterized
+  # field which defaults for each HCI packet type to its corresponding OpCode.
+  0     [+10]  UInt  ocf
+  $next [+6]   UInt  ogf
+
+
 struct EmbossCommandHeader:
-  0     [+2] OpCodeBits opcode
-  $next [+1] UInt parameter_total_size
+  -- HCI Command packet header.
+  0     [+2]  OpCodeBits  opcode
+  $next [+1]  UInt        parameter_total_size
 
 # ======================== HCI Command payloads =========================
 
-# ===============================
-# Inquiry Command (v1.1) (BR/EDR)
 
 struct InquiryCommand:
+  -- Inquiry Command (v1.1) (BR/EDR)
+  --
+  -- Note: NO Command Complete; Sends Inquiry Complete at the end of the
+  -- inquiry to indicate it's completion. No Inquiry Complete event is sent if
+  -- Inquiry is cancelled.
+
   let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size] EmbossCommandHeader header
 
-  # LAP (Lower Address Part)
-  # In the range 0x9E8B00 - 0x9E8B3F, defined by the Bluetooth SIG in
-  # Baseband Assigned Numbers.
-  $next [+3] InquiryAccessCode lap
+  0     [+hdr_size]  EmbossCommandHeader  header
 
-  # Time before the inquiry is halted. Defined in 1.28s units.
-  # Range: 0x01 to kInquiryLengthMax in hci_constants.h
-  $next [+1] UInt inquiry_length
+  $next [+3]         InquiryAccessCode    lap
+    -- LAP (Lower Address Part)
+    -- In the range 0x9E8B00 - 0x9E8B3F, defined by the Bluetooth SIG in
+    -- Baseband Assigned Numbers.
 
-  # Maximum number of responses before inquiry is halted.
-  # Set to 0x00 for unlimited.
-  $next [+1] UInt num_responses
+  $next [+1]         UInt                 inquiry_length
+    -- Time before the inquiry is halted. Defined in 1.28s units.
+    -- Range: 0x01 to kInquiryLengthMax in hci_constants.h
 
-# Note: NO Command Complete; Sends Inquiry Complete at the end of the
-# inquiry to indicate it's completion. No Inquiry Complete event is sent if
-# Inquiry is cancelled.
+  $next [+1]         UInt                 num_responses
+    -- Maximum number of responses before inquiry is halted.
+    -- Set to 0x00 for unlimited.
 
-# ======================================
-# Inquiry Cancel Command (v1.1) (BR/EDR)
 
 struct InquiryCancelCommand:
+  -- Inquiry Cancel Command (v1.1) (BR/EDR)
+  -- No command parameters
   let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size] EmbossCommandHeader header
-  # No command parameters
+  0 [+hdr_size]  EmbossCommandHeader  header
 
-
-# =================================
-# Create Connection (v1.1) (BR/EDR)
-
-# NOTE on ReturnParams: No Command Complete event will be sent by the
-# Controller to indicate that this command has been completed. Instead, the
-# Connection Complete event will indicate that this command has been
-# completed.
 
 struct CreateConnectionCommand:
+  -- Create Connection (v1.1) (BR/EDR)
+  --
+  -- NOTE on ReturnParams: No Command Complete event will be sent by the
+  -- Controller to indicate that this command has been completed. Instead, the
+  -- Connection Complete event will indicate that this command has been
+  -- completed.
   let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size] EmbossCommandHeader header
+  0     [+hdr_size]               EmbossCommandHeader     header
+  $next [+BdAddr.$size_in_bytes]  BdAddr                  bd_addr
+    -- BD_ADDR of the device to be connected
 
-  # BD_ADDR of the device to be connected
-  $next [+BdAddr.$size_in_bytes] BdAddr bd_addr
+  $next [+2]                      PacketType              packet_type
+    -- Mask of allowable packet types.
 
-  # Mask of allowable packet types.
-  $next [+2] PacketType packet_type
+  $next [+1]                      PageScanRepetitionMode  page_scan_repetition_mode
+    -- The Page Scan Repetition Mode of the remote device as retrieved by Inquiry.
 
-  # The Page Scan Repetition Mode of the remote device as retrieved by Inquiry.
-  $next [+1] PageScanRepetitionMode page_scan_repetition_mode
+  $next [+1]                      UInt                    reserved
+    -- Reserved, must be set to 0.
 
-  # Reserved, must be set to 0.
-  $next [+1] UInt reserved
+  $next [+2]                      ClockOffset             clock_offset
+    -- Clock Offset. The lower 15 bits are set to the clock offset as retrieved
+    -- by an Inquiry. The highest bit is set to 1 if the rest of this parameter
+    -- is valid.
 
-  # Clock Offset. The lower 15 bits are set to the clock offset as retrieved
-  # by an Inquiry. The highest bit is set to 1 if the rest of this parameter
-  # is valid.
-  $next [+2] ClockOffset clock_offset
+  $next [+1]                      GenericEnableParam      allow_role_switch
+    -- Allow Role Switch.
+    -- Allowed values:
+    --  0x00 - No role switch allowed, this device will be the central
+    --  0x01 - Role switch allowed, this device may become peripheral during
+    --  connection setup
 
-  # Allow Role Switch.
-  # Allowed values:
-  #  0x00 - No role switch allowed, this device will be the central
-  #  0x01 - Role switch allowed, this device may become peripheral during
-  #  connection setup
-  $next [+1] GenericEnableParam allow_role_switch
-
-
-# =======================================
-# Disconnect Command (v1.1) (BR/EDR & LE)
-
-# NOTE on ReturnParams: No Command Complete event will be sent by the
-# Controller to indicate that this command has been completed. Instead, the
-# Disconnection Complete event will indicate that this command has been
-# completed.
 
 struct DisconnectCommand:
+  -- Disconnect Command (v1.1) (BR/EDR & LE)
+  --
+  -- NOTE on ReturnParams: No Command Complete event will be sent by the
+  -- Controller to indicate that this command has been completed. Instead, the
+  -- Disconnection Complete event will indicate that this command has been
+  -- completed.
   let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size] EmbossCommandHeader header
+  0     [+hdr_size]  EmbossCommandHeader  header
+  $next [+2]         UInt                 connection_handle
+    -- Connection_Handle (only the lower 12-bits are meaningful).
+    --   Range: 0x0000 to 0x0EFF
 
-  # Connection_Handle (only the lower 12-bits are meaningful).
-  #   Range: 0x0000 to 0x0EFF
-  $next [+2] UInt connection_handle
+  $next [+1]         StatusCode           reason
+    -- Reason for the disconnect.
 
-  # Reason for the disconnect.
-  $next [+1] StatusCode reason
-
-# ========================================
-# Create Connection Cancel (v1.1) (BR/EDR)
 
 struct CreateConnectionCancelCommand:
+  -- Create Connection Cancel (v1.1) (BR/EDR)
   let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size] EmbossCommandHeader header
+  0     [+hdr_size]               EmbossCommandHeader  header
+  $next [+BdAddr.$size_in_bytes]  BdAddr               bd_addr
+    -- BD_ADDR of the Create Connection Command request
 
-  # BD_ADDR of the Create Connection Command request
-  $next [+BdAddr.$size_in_bytes] BdAddr bd_addr
-
-# =========================================
-# Accept Connection Request (v1.1) (BR/EDR)
 
 struct AcceptConnectionRequestCommand:
+  -- Accept Connection Request (v1.1) (BR/EDR)
   let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size] EmbossCommandHeader header
+  0     [+hdr_size]               EmbossCommandHeader  header
+  $next [+BdAddr.$size_in_bytes]  BdAddr               bd_addr
+    -- The 48-bit BD_ADDR of the remote device requesting the connection.
 
-  # The 48-bit BD_ADDR of the remote device requesting the connection.
-  $next [+BdAddr.$size_in_bytes] BdAddr bd_addr
+  $next [+1]                      ConnectionRole       role
 
-  $next [+1] ConnectionRole role
-
-# =========================================
-# Reject Connection Request (v1.1) (BR/EDR)
 
 struct RejectConnectionRequestCommand:
+  -- Reject Connection Request (v1.1) (BR/EDR)
   let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size] EmbossCommandHeader header
+  0     [+hdr_size]               EmbossCommandHeader  header
+  $next [+BdAddr.$size_in_bytes]  BdAddr               bd_addr
+    -- The 48-bit BD_ADDR of the remote device requesting the connection.
 
-  # The 48-bit BD_ADDR of the remote device requesting the connection.
-  $next [+BdAddr.$size_in_bytes] BdAddr bd_addr
+  $next [+1]                      StatusCode           reason
+    -- Must be one of CONNECTION_REJECTED* from StatusCode in this file
 
-  # Must be one of CONNECTION_REJECTED* from StatusCode in this file
-  $next [+1] StatusCode reason
-
-# ==============================================
-# Link Key Request Reply Command (v1.1) (BR/EDR)
 
 struct LinkKeyRequestReplyCommand:
+  -- Link Key Request Reply Command (v1.1) (BR/EDR)
   struct LinkKey:
-    0     [+16] UInt:8[16] value
+    0 [+16]  UInt:8[16]  value
 
   let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size] EmbossCommandHeader header
+  0     [+hdr_size]               EmbossCommandHeader  header
+  $next [+BdAddr.$size_in_bytes]  BdAddr               bd_addr
+    -- The 48-bit BD_ADDR of the remote device requesting the connection.
 
-  # The 48-bit BD_ADDR of the remote device requesting the connection.
-  $next [+BdAddr.$size_in_bytes] BdAddr bd_addr
-
-  # Link key to use for the connection with the peer device.
   let bredr_link_key_size = LinkKey.$size_in_bytes
-  $next [+bredr_link_key_size] LinkKey link_key
+  $next [+bredr_link_key_size]    LinkKey              link_key
+    -- Link key to use for the connection with the peer device.
 
-# =======================================================
-# Link Key Request Negative Reply Command (v1.1) (BR/EDR)
+
 struct LinkKeyRequestNegativeReplyCommand:
+  -- Link Key Request Negative Reply Command (v1.1) (BR/EDR)
   let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size] EmbossCommandHeader header
+  0     [+hdr_size]               EmbossCommandHeader  header
+  $next [+BdAddr.$size_in_bytes]  BdAddr               bd_addr
+    -- BD_ADDR of the peer device that the host does not have a link key for.
 
-  # BD_ADDR of the peer device that the host does not have a link key for.
-  $next [+BdAddr.$size_in_bytes] BdAddr bd_addr
-
-# ================================================
-# Authentication Requested Command (v1.1) (BR/EDR)
-
-# NOTE on ReturnParams: No Command Complete event will be sent by the
-# Controller to indicate that this command has been completed. Instead, the
-# Authentication Complete event will indicate that this command has been
-# completed.
 
 struct AuthenticationRequestedCommand:
+  -- Authentication Requested Command (v1.1) (BR/EDR)
+  --
+  -- NOTE on ReturnParams: No Command Complete event will be sent by the
+  -- Controller to indicate that this command has been completed. Instead, the
+  -- Authentication Complete event will indicate that this command has been
+  -- completed.
   let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size] EmbossCommandHeader header
+  0     [+hdr_size]  EmbossCommandHeader  header
+  $next [+2]         UInt                 connection_handle
+    -- Connection_Handle (only the lower 12-bits are meaningful).
+    --   Range: 0x0000 to 0x0EFF
+    -- Must be the handle of a connected ACL-U logical link.
 
-  # Connection_Handle (only the lower 12-bits are meaningful).
-  #   Range: 0x0000 to 0x0EFF
-  # Must be the handle of a connected ACL-U logical link.
-  $next [+2] UInt connection_handle
-
-# ======================================================
-# Enhanced Setup Synchronous Connection Command (CSA2) (BR/EDR)
 
 struct SynchronousConnectionParameters:
+  -- Enhanced Setup Synchronous Connection Command (CSA2) (BR/EDR)
+
   struct VendorCodingFormat:
-    0     [+1] CodingFormat coding_format
+    0     [+1]  CodingFormat  coding_format
+    $next [+2]  UInt          company_id
+      -- See assigned numbers.
 
-    # See assigned numbers.
-    $next [+2] UInt company_id
-
-    # Shall be ignored if |coding_format| is not VENDOR_SPECIFIC.
-    $next [+2] UInt vendor_codec_id
+    $next [+2]  UInt          vendor_codec_id
+      -- Shall be ignored if |coding_format| is not VENDOR_SPECIFIC.
 
   enum ScoRetransmissionEffort:
     [maximum_bits: 8]
-    # SCO or eSCO
-    NONE = 0x00
+    NONE              = 0x00
+      -- SCO or eSCO
 
-    # eSCO only
-    POWER_OPTIMIZED  = 0x01
+    POWER_OPTIMIZED   = 0x01
+      -- eSCO only
 
-    # eSCO only
-    QUALITY_OPTIMIZED  = 0x02
+    QUALITY_OPTIMIZED = 0x02
+      -- eSCO only
 
-    # SCO or eSCO
-    DONT_CARE = 0xFF
+    DONT_CARE         = 0xFF
+      -- SCO or eSCO
 
-  # Transmit bandwidth in octets per second.
-  0     [+4] UInt transmit_bandwidth
+  0     [+4]         UInt                     transmit_bandwidth
+    -- Transmit bandwidth in octets per second.
 
-  # Receive bandwidth in octets per second.
-  $next [+4] UInt receive_bandwidth
+  $next [+4]         UInt                     receive_bandwidth
+    -- Receive bandwidth in octets per second.
 
   let vcf_size = VendorCodingFormat.$size_in_bytes
-  # Local Controller -> Remote Controller coding format.
-  $next [+vcf_size] VendorCodingFormat transmit_coding_format
 
-  # Remote Controller -> Local Controller coding format.
-  $next [+vcf_size] VendorCodingFormat receive_coding_format
+  $next [+vcf_size]  VendorCodingFormat       transmit_coding_format
+    -- Local Controller -> Remote Controller coding format.
 
-  $next [+2] UInt transmit_codec_frame_size_bytes
+  $next [+vcf_size]  VendorCodingFormat       receive_coding_format
+    -- Remote Controller -> Local Controller coding format.
 
-  $next [+2] UInt receive_codec_frame_size_bytes
+  $next [+2]         UInt                     transmit_codec_frame_size_bytes
 
-  # Host->Controller data rate in octets per second.
-  $next [+4] UInt input_bandwidth
+  $next [+2]         UInt                     receive_codec_frame_size_bytes
 
-  # Controller->Host data rate in octets per second.
-  $next [+4] UInt output_bandwidth
+  $next [+4]         UInt                     input_bandwidth
+    -- Host->Controller data rate in octets per second.
 
-  # Host->Controller coding format.
-  $next [+vcf_size] VendorCodingFormat input_coding_format
+  $next [+4]         UInt                     output_bandwidth
+    -- Controller->Host data rate in octets per second.
 
-  # Controller->Host coding format.
-  $next [+vcf_size] VendorCodingFormat output_coding_format
+  $next [+vcf_size]  VendorCodingFormat       input_coding_format
+    -- Host->Controller coding format.
 
-  # Size, in bits, of the sample or framed data.
-  $next [+2] UInt input_coded_data_size_bits
+  $next [+vcf_size]  VendorCodingFormat       output_coding_format
+    -- Controller->Host coding format.
 
-  # Size, in bits, of the sample or framed data.
-  $next [+2] UInt output_coded_data_size_bits
+  $next [+2]         UInt                     input_coded_data_size_bits
+    -- Size, in bits, of the sample or framed data.
 
-  $next [+1] PcmDataFormat input_pcm_data_format
-  $next [+1] PcmDataFormat output_pcm_data_format
+  $next [+2]         UInt                     output_coded_data_size_bits
+    -- Size, in bits, of the sample or framed data.
 
-  # The number of bit positions within an audio sample that the MSB of
-  # the sample is away from starting at the MSB of the data.
-  $next [+1] UInt input_pcm_sample_payload_msb_position
+  $next [+1]         PcmDataFormat            input_pcm_data_format
 
-  # The number of bit positions within an audio sample that the MSB of
-  # the sample is away from starting at the MSB of the data.
-  $next [+1] UInt output_pcm_sample_payload_msb_position
+  $next [+1]         PcmDataFormat            output_pcm_data_format
 
-  $next [+1] ScoDataPath input_data_path
-  $next [+1] ScoDataPath output_data_path
+  $next [+1]         UInt                     input_pcm_sample_payload_msb_position
+    -- The number of bit positions within an audio sample that the MSB of
+    -- the sample is away from starting at the MSB of the data.
 
-  # The number of bits in each unit of data received from the Host over the audio data transport.
-  # 0 indicates "not applicable"  (implied by the choice of audio data transport).
-  $next [+1] UInt input_transport_unit_size_bits
+  $next [+1]         UInt                     output_pcm_sample_payload_msb_position
+    -- The number of bit positions within an audio sample that the MSB of
+    -- the sample is away from starting at the MSB of the data.
 
-  # The number of bits in each unit of data sent to the Host over the audio data transport.
-  # 0 indicates "not applicable"  (implied by the choice of audio data transport).
-  $next [+1] UInt output_transport_unit_size_bits
+  $next [+1]         ScoDataPath              input_data_path
 
-  # The value in milliseconds representing the upper limit of the sum of
-  # the synchronous interval, and the size of the eSCO window, where the
-  # eSCO window is the reserved slots plus the retransmission window.
-  # Minimum: 0x0004
-  # Don't care: 0xFFFF
-  $next [+2] UInt max_latency_ms
+  $next [+1]         ScoDataPath              output_data_path
 
-  # Bitmask of allowed packet types.
-  $next [+2] ScoPacketType packet_types
+  $next [+1]         UInt                     input_transport_unit_size_bits
+    -- The number of bits in each unit of data received from the Host over the audio data transport.
+    -- 0 indicates "not applicable"  (implied by the choice of audio data transport).
 
-  $next [+1] ScoRetransmissionEffort retransmission_effort
+  $next [+1]         UInt                     output_transport_unit_size_bits
+    -- The number of bits in each unit of data sent to the Host over the audio data transport.
+    -- 0 indicates "not applicable"  (implied by the choice of audio data transport).
+
+  $next [+2]         UInt                     max_latency_ms
+    -- The value in milliseconds representing the upper limit of the sum of
+    -- the synchronous interval, and the size of the eSCO window, where the
+    -- eSCO window is the reserved slots plus the retransmission window.
+    -- Minimum: 0x0004
+    -- Don't care: 0xFFFF
+
+  $next [+2]         ScoPacketType            packet_types
+    -- Bitmask of allowed packet types.
+
+  $next [+1]         ScoRetransmissionEffort  retransmission_effort
+
 
 struct EnhancedSetupSynchronousConnectionCommand:
   let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size] EmbossCommandHeader header
-
-  # The connection handle of the associated ACL link if creating a new (e)SCO connection, or the
-  # handle of an existing eSCO link if updating connection parameters.
-  $next [+2] UInt connection_handle
+  0     [+hdr_size]  EmbossCommandHeader              header
+  $next [+2]         UInt                             connection_handle
+    -- The connection handle of the associated ACL link if creating a new (e)SCO connection, or the
+    -- handle of an existing eSCO link if updating connection parameters.
 
   let scp_size = SynchronousConnectionParameters.$size_in_bytes
-  $next [+scp_size] SynchronousConnectionParameters connection_parameters
+  $next [+scp_size]  SynchronousConnectionParameters  connection_parameters
 
-# ===============================================================
-# Enhanced Accept Synchronous Connection Request Command (CSA2) (BR/EDR)
 
 struct EnhancedAcceptSynchronousConnectionRequestCommand:
+  -- Enhanced Accept Synchronous Connection Request Command (CSA2) (BR/EDR)
   let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size] EmbossCommandHeader header
-
-  # The 48-bit BD_ADDR of the remote device requesting the connection.
-  $next [+BdAddr.$size_in_bytes] BdAddr bd_addr
+  0     [+hdr_size]               EmbossCommandHeader              header
+  $next [+BdAddr.$size_in_bytes]  BdAddr                           bd_addr
+    -- The 48-bit BD_ADDR of the remote device requesting the connection.
 
   let scp_size = SynchronousConnectionParameters.$size_in_bytes
-  $next [+scp_size] SynchronousConnectionParameters connection_parameters
+  $next [+scp_size]               SynchronousConnectionParameters  connection_parameters
 
 # ============================ Test packets =============================
 
-# Test HCI Command packet with single byte payload.
+
 struct TestCommandPacket:
+  -- Test HCI Command packet with single byte payload.
   let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size] EmbossCommandHeader header
-  $next [+1] UInt payload
+  0     [+hdr_size]  EmbossCommandHeader  header
+  $next [+1]         UInt                 payload
