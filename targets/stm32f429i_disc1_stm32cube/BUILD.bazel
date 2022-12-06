@@ -32,6 +32,8 @@ pw_cc_library(
         "config/FreeRTOSConfig.h",
         "config/stm32f4xx_hal_conf.h",
     ],
+    # TODO(b/261506064): Get this to build. Requires FreeRTOS.
+    tags = ["manual"],
     deps = [
         "//pw_boot",
         "//pw_boot_cortex_m",
@@ -49,6 +51,8 @@ pw_cc_binary(
     srcs = [
         "main.cc",
     ],
+    # TODO(b/261506064): Get this to build. Requires FreeRTOS.
+    tags = ["manual"],
     deps = [
         "//pw_thread:thread",
         "//pw_thread:thread_core",
