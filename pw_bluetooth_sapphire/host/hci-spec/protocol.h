@@ -198,29 +198,8 @@ constexpr OpCode kAuthenticationRequested = LinkControlOpCode(0x0011);
 constexpr OpCode kSetConnectionEncryption = LinkControlOpCode(0x0013);
 
 // ============================================================
-// Read Remote Name Request Command (v1.1) (BR/EDR)
+// Remote Name Request Command (v1.1) (BR/EDR)
 constexpr OpCode kRemoteNameRequest = LinkControlOpCode(0x0019);
-
-struct RemoteNameRequestCommandParams {
-  // Address of the device whose name is to be requested.
-  DeviceAddressBytes bd_addr;
-
-  // Page Scan Repetition Mode of the device, obtained by Inquiry.
-  PageScanRepetitionMode page_scan_repetition_mode;
-
-  // Reserved and must be 0x00
-  uint8_t reserved;
-
-  // Clock offset.  The lower 15 bits of this represent bits 14-2
-  // of CLKNPeripheral-CLK, and the highest bit is set when the other
-  // bits are valid.
-  uint16_t clock_offset;
-} __PACKED;
-
-// NOTE on ReturnParams: No Command Complete event will be sent by the
-// Controller to indicate that this command has been completed. Instead, the
-// Remote Name Request Complete event will indicate that this command has been
-// completed.
 
 // ======================================================
 // Read Remote Supported Features Command (v1.1) (BR/EDR)

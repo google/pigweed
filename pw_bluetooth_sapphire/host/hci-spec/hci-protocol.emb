@@ -272,7 +272,7 @@ struct CreateConnectionCommand:
     -- The Page Scan Repetition Mode of the remote device as retrieved by Inquiry.
 
   $next [+1]                      UInt                    reserved
-    -- Reserved, must be set to 0.
+    [requires: this == 0]
 
   $next [+2]                      ClockOffset             clock_offset
     -- Clock Offset. The lower 15 bits are set to the clock offset as retrieved
@@ -386,6 +386,30 @@ struct SetConnectionEncryptionCommand:
 
   $next [+1]         GenericEnableParam   encryption_enable
     -- Whether link level encryption should be turned on or off.
+
+
+struct RemoteNameRequestCommand:
+  -- Remote Name Request Command (v1.1) (BR/EDR)
+  --
+  -- NOTE on ReturnParams: No Command Complete event will be sent by the
+  -- Controller to indicate that this command has been completed. Instead, the
+  -- Remote Name Request Complete event will indicate that this command has been
+  -- completed.
+  let hdr_size = EmbossCommandHeader.$size_in_bytes
+  0     [+hdr_size]               EmbossCommandHeader     header
+  $next [+BdAddr.$size_in_bytes]  BdAddr                  bd_addr
+    -- Address of the device whose name is to be requested.
+
+  $next [+1]                      PageScanRepetitionMode  page_scan_repetition_mode
+    -- Page Scan Repetition Mode of the device, obtained by Inquiry.
+
+  $next [+1]                      UInt                    reserved
+    [requires: this == 0]
+
+  $next [+2]                      ClockOffset             clock_offset
+    -- Clock offset.  The lower 15 bits of this represent bits 14-2
+    -- of CLKNPeripheral-CLK, and the highest bit is set when the other
+    -- bits are valid.
 
 
 struct SynchronousConnectionParameters:

@@ -1320,6 +1320,9 @@ constexpr uint8_t kInquiryLengthMax = 0x30;
 // see HCI_Remote_Name_Request command, Vol 2, Part E, 7.1.19).
 constexpr uint16_t kClockOffsetValidFlagBit = 0x8000;
 
+// Masks the lower 15 bits of a Clock_Offset, excluding the bit 15 - the reserved/validity bit.
+constexpr uint16_t kClockOffsetMask = 0x7FFF;
+
 // Bitmask Values for the Scan_Enable parameter in a
 // HCI_(Read,Write)_Scan_Enable command.
 enum class ScanEnableBit : uint8_t {

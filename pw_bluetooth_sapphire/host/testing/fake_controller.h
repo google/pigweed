@@ -608,8 +608,7 @@ class FakeController : public ControllerTestDoubleBase {
   // Interrogation command handlers:
 
   // Called when a HCI_Read_Remote_Name_Request command is received.
-  void OnReadRemoteNameRequestCommandReceived(
-      const hci_spec::RemoteNameRequestCommandParams& params);
+  void OnReadRemoteNameRequestCommandReceived(hci_spec::RemoteNameRequestCommandView params);
 
   // Called when a HCI_Read_Remote_Supported_Features command is received.
   void OnReadRemoteSupportedFeaturesCommandReceived(

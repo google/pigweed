@@ -1245,7 +1245,7 @@ TEST_F(PeerCacheBrEdrUpdateCallbackTest,
     ASSERT_TRUE(data->device_class().has_value());
     ASSERT_TRUE(updated_peer.name().has_value());
 
-    EXPECT_EQ(*data->clock_offset(), 0x8001);
+    EXPECT_EQ(*data->clock_offset(), 0x01);
     EXPECT_EQ(*data->page_scan_repetition_mode(), hci_spec::PageScanRepetitionMode::R1_);
     EXPECT_EQ(DeviceClass::MajorClass(0x02), updated_peer.bredr()->device_class()->major_class());
     EXPECT_EQ(updated_peer.rssi(), kTestRSSI);

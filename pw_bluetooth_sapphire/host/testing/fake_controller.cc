@@ -1339,8 +1339,9 @@ void FakeController::OnReadLocalVersionInfo() {
 }
 
 void FakeController::OnReadRemoteNameRequestCommandReceived(
-    const hci_spec::RemoteNameRequestCommandParams& params) {
-  const DeviceAddress peer_address(DeviceAddress::Type::kBREDR, params.bd_addr);
+    hci_spec::RemoteNameRequestCommandView params) {
+  const DeviceAddress peer_address(DeviceAddress::Type::kBREDR,
+                                   DeviceAddressBytes(params.bd_addr()));
 
   // Find the peer that matches the requested address.
   FakePeer* peer = FindPeer(peer_address);
@@ -1358,7 +1359,7 @@ void FakeController::OnReadRemoteNameRequestCommandReceived(
     uint8_t remote_name[hci_spec::kMaxNameLength];
   } __PACKED;
   RemoteNameRequestCompleteEventParams response = {};
-  response.bd_addr = params.bd_addr;
+  response.bd_addr = DeviceAddressBytes(params.bd_addr());
   std::strncpy((char*)response.remote_name, peer->name().c_str(), hci_spec::kMaxNameLength);
   response.status = hci_spec::StatusCode::SUCCESS;
   SendEvent(hci_spec::kRemoteNameRequestCompleteEventCode, BufferView(&response, sizeof(response)));
@@ -2967,11 +2968,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnWriteLEHostSupportCommandReceived(params);
       break;
     }
-    case hci_spec::kRemoteNameRequest: {
-      const auto& params = command_packet.payload<hci_spec::RemoteNameRequestCommandParams>();
-      OnReadRemoteNameRequestCommandReceived(params);
-      break;
-    }
     case hci_spec::kReadRemoteVersionInfo: {
       const auto& params = command_packet.payload<hci_spec::ReadRemoteVersionInfoCommandParams>();
       OnReadRemoteVersionInfoCommandReceived(params);
@@ -3044,7 +3040,8 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kDisconnect:
     case hci_spec::kLinkKeyRequestNegativeReply:
     case hci_spec::kAuthenticationRequested:
-    case hci_spec::kSetConnectionEncryption: {
+    case hci_spec::kSetConnectionEncryption:
+    case hci_spec::kRemoteNameRequest: {
       // This case is for packet types that have been migrated to the new Emboss architecture. Their
       // old version can be still be assembled from the HciEmulator channel, so here we repackage
       // and forward them as Emboss packets.
@@ -3124,6 +3121,11 @@ void FakeController::HandleReceivedCommandPacket(hci::EmbossCommandPacket& comma
     case hci_spec::kSetConnectionEncryption: {
       const auto params = command_packet.view<hci_spec::SetConnectionEncryptionCommandView>();
       OnSetConnectionEncryptionCommand(params);
+      break;
+    }
+    case hci_spec::kRemoteNameRequest: {
+      const auto params = command_packet.view<hci_spec::RemoteNameRequestCommandView>();
+      OnReadRemoteNameRequestCommandReceived(params);
       break;
     }
     default: {

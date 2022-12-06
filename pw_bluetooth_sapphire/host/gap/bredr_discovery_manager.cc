@@ -401,16 +401,17 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
     bt_log(WARN, "gap-bredr", "cannot request name, unknown peer: %s", bt_str(id));
     return;
   }
-  auto packet = hci::CommandPacket::New(hci_spec::kRemoteNameRequest,
-                                        sizeof(hci_spec::RemoteNameRequestCommandParams));
-  packet->mutable_view()->mutable_payload_data().SetToZeros();
-  auto params = packet->mutable_payload<hci_spec::RemoteNameRequestCommandParams>();
+  auto packet = hci::EmbossCommandPacket::New<hci_spec::RemoteNameRequestCommandWriter>(
+      hci_spec::kRemoteNameRequest);
+  auto params = packet.view_t();
   BT_DEBUG_ASSERT(peer->bredr());
   BT_DEBUG_ASSERT(peer->bredr()->page_scan_repetition_mode());
-  params->bd_addr = peer->address().value();
-  params->page_scan_repetition_mode = *(peer->bredr()->page_scan_repetition_mode());
+  params.bd_addr().CopyFrom(peer->address().value().view());
+  params.page_scan_repetition_mode().Write(*(peer->bredr()->page_scan_repetition_mode()));
   if (peer->bredr()->clock_offset()) {
-    params->clock_offset = htole16(*(peer->bredr()->clock_offset()));
+    params.clock_offset().valid().Write(true);
+    uint16_t offset = peer->bredr()->clock_offset().value();
+    params.clock_offset().clock_offset().Write(offset);
   }
 
   auto cb = [id, self = weak_ptr_factory_.GetWeakPtr()](auto, const auto& event) {

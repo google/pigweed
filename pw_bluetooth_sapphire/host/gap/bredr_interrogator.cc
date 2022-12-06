@@ -78,14 +78,16 @@ void BrEdrInterrogator::QueueRemoteNameRequest() {
   if (peer_->bredr()->page_scan_repetition_mode()) {
     mode = *peer_->bredr()->page_scan_repetition_mode();
   }
-  auto packet = hci::CommandPacket::New(hci_spec::kRemoteNameRequest,
-                                        sizeof(hci_spec::RemoteNameRequestCommandParams));
-  packet->mutable_view()->mutable_payload_data().SetToZeros();
-  auto params = packet->mutable_payload<hci_spec::RemoteNameRequestCommandParams>();
-  params->bd_addr = peer_->address().value();
-  params->page_scan_repetition_mode = mode;
+
+  auto packet = hci::EmbossCommandPacket::New<hci_spec::RemoteNameRequestCommandWriter>(
+      hci_spec::kRemoteNameRequest);
+  auto params = packet.view_t();
+  params.bd_addr().CopyFrom(peer_->address().value().view());
+  params.page_scan_repetition_mode().Write(mode);
   if (peer_->bredr()->clock_offset()) {
-    params->clock_offset = *(peer_->bredr()->clock_offset());
+    params.clock_offset().valid().Write(true);
+    const uint16_t offset = peer_->bredr()->clock_offset().value();
+    params.clock_offset().clock_offset().Write(offset);
   }
 
   auto cmd_cb = [this](const hci::EventPacket& event) {

@@ -366,7 +366,7 @@ void Peer::BrEdrData::SetInquiryData(DeviceClass device_class, uint16_t clock_of
   peer_->SetRssiInternal(rssi);
 
   page_scan_rep_mode_ = page_scan_rep_mode;
-  clock_offset_ = static_cast<uint16_t>(hci_spec::kClockOffsetValidFlagBit | le16toh(clock_offset));
+  clock_offset_ = le16toh(clock_offset) & hci_spec::kClockOffsetMask;
 
   if (!device_class_ || *device_class_ != device_class) {
     device_class_ = device_class;
