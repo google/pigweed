@@ -1218,9 +1218,6 @@ bool BrEdrConnectionManager::Connect(PeerId peer_id, ConnectResultCallback on_co
     return false;
   }
 
-  // Br/Edr peers should always be connectable by definition
-  BT_ASSERT(peer->connectable());
-
   // Succeed immediately or after interrogation if there is already an active connection.
   auto conn = FindConnectionById(peer_id);
   if (conn) {

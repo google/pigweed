@@ -2836,9 +2836,12 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSecondPeerFirstTimesOut) {
   EXPECT_FALSE(IsNotConnected(peer_b));
 }
 
-TEST_F(BrEdrConnectionManagerTest, ConnectToDualModePeerThatWasFirstLowEnergyOnly) {
+class FirstLowEnergyOnlyPeer : public BrEdrConnectionManagerTest,
+                               public ::testing::WithParamInterface<bool> {};
+
+TEST_P(FirstLowEnergyOnlyPeer, ConnectToDualModePeerThatWasFirstLowEnergyOnly) {
   const DeviceAddress kTestDevAddrLeAlias(DeviceAddress::Type::kLEPublic, kTestDevAddr.value());
-  auto* peer = peer_cache()->NewPeer(kTestDevAddrLeAlias, /*connectable=*/true);
+  auto* peer = peer_cache()->NewPeer(kTestDevAddrLeAlias, /*connectable=*/GetParam());
   EXPECT_TRUE(peer->temporary());
   EXPECT_EQ(TechnologyType::kLowEnergy, peer->technology());
 
@@ -2873,6 +2876,9 @@ TEST_F(BrEdrConnectionManagerTest, ConnectToDualModePeerThatWasFirstLowEnergyOnl
   EXPECT_FALSE(IsNotConnected(peer));
   EXPECT_EQ(conn_ref->link().role(), hci_spec::ConnectionRole::CENTRAL);
 }
+
+INSTANTIATE_TEST_SUITE_P(BrEdrConnectionManagerTest, FirstLowEnergyOnlyPeer,
+                         ::testing::Values(true, false));
 
 // Tests the successful retry case. "don't retry for other error codes" is implicitly tested in
 // ConnectSinglePeerFailure - MockController would error if we unexpectedly retried.

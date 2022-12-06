@@ -283,7 +283,6 @@ void Peer::BrEdrData::SetInquiryData(const hci_spec::ExtendedInquiryResultEventP
 }
 
 Peer::InitializingConnectionToken Peer::BrEdrData::RegisterInitializingConnection() {
-  BT_ASSERT(peer_->connectable());
   BT_ASSERT(!connected());
 
   ConnectionState prev_state = connection_state();
@@ -302,7 +301,6 @@ Peer::InitializingConnectionToken Peer::BrEdrData::RegisterInitializingConnectio
 }
 
 Peer::ConnectionToken Peer::BrEdrData::RegisterConnection() {
-  BT_ASSERT(peer_->connectable());
   BT_ASSERT_MSG(
       !connected(),
       "attempt to register BR/EDR connection when a connection is already registered (peer: %s)",
