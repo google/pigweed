@@ -39,6 +39,7 @@ from pw_console.widgets import (
     WindowPaneToolbar,
     to_checkbox_text,
 )
+from pw_console.widgets import mouse_handlers as pw_console_mouse_handlers
 from pw_console.window_list import WindowList, DisplayMode
 
 _LOG = logging.getLogger(__package__)
@@ -95,7 +96,7 @@ class WindowManagerVSplit(VSplit):
         # Is resize mode active?
         if self.parent_window_manager.resize_mode:
             # Ignore future mouse_handler updates.
-            new_mouse_handlers = mouse_handlers.EmptyMouseHandler()
+            new_mouse_handlers = pw_console_mouse_handlers.EmptyMouseHandler()
             # Set existing mouse_handlers to the parent_window_managers's
             # mouse_handler. This will handle triggering resize events.
             mouse_handlers.set_mouse_handler_for_range(
@@ -147,7 +148,7 @@ class WindowManagerHSplit(HSplit):
         # Is resize mode active?
         if self.parent_window_manager.resize_mode:
             # Ignore future mouse_handler updates.
-            new_mouse_handlers = mouse_handlers.EmptyMouseHandler()
+            new_mouse_handlers = pw_console_mouse_handlers.EmptyMouseHandler()
             # Set existing mouse_handlers to the parent_window_managers's
             # mouse_handler. This will handle triggering resize events.
             mouse_handlers.set_mouse_handler_for_range(

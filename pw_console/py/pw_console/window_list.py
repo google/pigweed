@@ -79,7 +79,7 @@ class WindowListHSplit(HSplit):
         # Is resize mode active?
         if self.parent_window_list.resize_mode:
             # Ignore future mouse_handler updates.
-            new_mouse_handlers = mouse_handlers.EmptyMouseHandler()
+            new_mouse_handlers = pw_console_mouse_handlers.EmptyMouseHandler()
             # Set existing mouse_handlers to the parent_window_list's
             # mouse_handler. This will handle triggering resize events.
             mouse_handlers.set_mouse_handler_for_range(
