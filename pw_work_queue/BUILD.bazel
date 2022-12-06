@@ -58,7 +58,7 @@ pw_cc_library(
     ],
     deps = [
         ":pw_work_queue",
-        ":test_thread",
+        ":stl_test_thread",
         "//pw_log",
         "//pw_unit_test",
     ],
