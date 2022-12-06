@@ -289,13 +289,17 @@ class Manager:  # pylint: disable=too-many-instance-attributes
 
         chunk = Chunk.from_message(message)
 
+        # Find a transfer for the chunk in the list of active transfers.
         try:
-            # Find a transfer for the chunk in the list of active transfers.
-            # Note that the dictionary key can't be used here, as it refers to
-            # resource ID, whereas transfers may be identified either by
-            # resource or session ID.
-            transfer = next(t for t in transfers.values() if t.id == chunk.id())
-        except StopIteration:
+            if chunk.resource_id is not None:
+                # Prioritize a resource_id if one is set.
+                transfer = transfers[chunk.resource_id]
+            else:
+                # Otherwise, match against either resource or session ID.
+                transfer = next(
+                    t for t in transfers.values() if t.id == chunk.id()
+                )
+        except (KeyError, StopIteration):
             _LOG.error(
                 'TransferManager received chunk for unknown transfer %d',
                 chunk.id(),

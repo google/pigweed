@@ -208,11 +208,8 @@ class Chunk:
         Depending on the protocol version and type of chunk, this may correspond
         to one of several proto fields.
         """
-        if self.type is Chunk.Type.START_ACK:
-            # During the initial handshake, a START_ACK chunk sent from the
-            # server to a client identifies its transfer context using a
-            # resource_id, as the client does not yet know its session_id.
-            assert self.resource_id is not None
+        if self.resource_id is not None:
+            # Always prioritize a resource_id over a session_id.
             return self.resource_id
 
         return self.session_id
