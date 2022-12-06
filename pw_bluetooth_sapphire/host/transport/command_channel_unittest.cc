@@ -50,12 +50,10 @@ class CommandChannelTest : public TestingBase {
   inspect::Inspector inspector_;
 };
 
-std::unique_ptr<CommandPacket> MakeReadRemoteSupportedFeatures(uint16_t connection_handle) {
-  auto packet = CommandPacket::New(hci_spec::kReadRemoteSupportedFeatures,
-                                   sizeof(hci_spec::ReadRemoteSupportedFeaturesCommandParams));
-  auto params =
-      packet->mutable_view()->mutable_payload<hci_spec::ReadRemoteSupportedFeaturesCommandParams>();
-  params->connection_handle = connection_handle;
+EmbossCommandPacket MakeReadRemoteSupportedFeatures(uint16_t connection_handle) {
+  auto packet = EmbossCommandPacket::New<hci_spec::ReadRemoteSupportedFeaturesCommandWriter>(
+      hci_spec::kReadRemoteSupportedFeatures);
+  packet.view_t().connection_handle().Write(connection_handle);
   return packet;
 }
 

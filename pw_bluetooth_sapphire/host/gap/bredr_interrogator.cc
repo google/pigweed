@@ -107,10 +107,9 @@ void BrEdrInterrogator::QueueRemoteNameRequest() {
 }
 
 void BrEdrInterrogator::QueueReadRemoteFeatures() {
-  auto packet = hci::CommandPacket::New(hci_spec::kReadRemoteSupportedFeatures,
-                                        sizeof(hci_spec::ReadRemoteSupportedFeaturesCommandParams));
-  packet->mutable_payload<hci_spec::ReadRemoteSupportedFeaturesCommandParams>()->connection_handle =
-      htole16(handle_);
+  auto packet = hci::EmbossCommandPacket::New<hci_spec::ReadRemoteSupportedFeaturesCommandWriter>(
+      hci_spec::kReadRemoteSupportedFeatures);
+  packet.view_t().connection_handle().Write(handle_);
 
   auto cmd_cb = [this](const hci::EventPacket& event) {
     if (hci_is_error(event, WARN, "gap-bredr", "read remote supported features failed")) {

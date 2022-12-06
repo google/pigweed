@@ -1366,12 +1366,12 @@ void FakeController::OnReadRemoteNameRequestCommandReceived(
 }
 
 void FakeController::OnReadRemoteSupportedFeaturesCommandReceived(
-    const hci_spec::ReadRemoteSupportedFeaturesCommandParams& params) {
+    hci_spec::ReadRemoteSupportedFeaturesCommandView params) {
   RespondWithCommandStatus(hci_spec::kReadRemoteSupportedFeatures, hci_spec::StatusCode::SUCCESS);
 
   hci_spec::ReadRemoteSupportedFeaturesCompleteEventParams response = {};
   response.status = hci_spec::StatusCode::SUCCESS;
-  response.connection_handle = params.connection_handle;
+  response.connection_handle = htole16(params.connection_handle().Read());
   response.lmp_features = settings_.lmp_features_page0;
   SendEvent(hci_spec::kReadRemoteSupportedFeaturesCompleteEventCode,
             BufferView(&response, sizeof(response)));
@@ -2973,12 +2973,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnReadRemoteVersionInfoCommandReceived(params);
       break;
     }
-    case hci_spec::kReadRemoteSupportedFeatures: {
-      const auto& params =
-          command_packet.payload<hci_spec::ReadRemoteSupportedFeaturesCommandParams>();
-      OnReadRemoteSupportedFeaturesCommandReceived(params);
-      break;
-    }
     case hci_spec::kReadRemoteExtendedFeatures: {
       const auto& params =
           command_packet.payload<hci_spec::ReadRemoteExtendedFeaturesCommandParams>();
@@ -3041,7 +3035,8 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kLinkKeyRequestNegativeReply:
     case hci_spec::kAuthenticationRequested:
     case hci_spec::kSetConnectionEncryption:
-    case hci_spec::kRemoteNameRequest: {
+    case hci_spec::kRemoteNameRequest:
+    case hci_spec::kReadRemoteSupportedFeatures: {
       // This case is for packet types that have been migrated to the new Emboss architecture. Their
       // old version can be still be assembled from the HciEmulator channel, so here we repackage
       // and forward them as Emboss packets.
@@ -3126,6 +3121,11 @@ void FakeController::HandleReceivedCommandPacket(hci::EmbossCommandPacket& comma
     case hci_spec::kRemoteNameRequest: {
       const auto params = command_packet.view<hci_spec::RemoteNameRequestCommandView>();
       OnReadRemoteNameRequestCommandReceived(params);
+      break;
+    }
+    case hci_spec::kReadRemoteSupportedFeatures: {
+      const auto params = command_packet.view<hci_spec::ReadRemoteSupportedFeaturesCommandView>();
+      OnReadRemoteSupportedFeaturesCommandReceived(params);
       break;
     }
     default: {
