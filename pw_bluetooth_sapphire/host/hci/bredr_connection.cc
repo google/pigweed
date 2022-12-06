@@ -34,11 +34,11 @@ bool BrEdrConnection::StartEncryption() {
     return false;
   }
 
-  auto cmd = CommandPacket::New(hci_spec::kSetConnectionEncryption,
-                                sizeof(hci_spec::SetConnectionEncryptionCommandParams));
-  auto* params = cmd->mutable_payload<hci_spec::SetConnectionEncryptionCommandParams>();
-  params->connection_handle = htole16(handle());
-  params->encryption_enable = hci_spec::GenericEnableParam::ENABLE;
+  auto cmd = EmbossCommandPacket::New<hci_spec::SetConnectionEncryptionCommandWriter>(
+      hci_spec::kSetConnectionEncryption);
+  auto params = cmd.view_t();
+  params.connection_handle().Write(handle());
+  params.encryption_enable().Write(hci_spec::GenericEnableParam::ENABLE);
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto event_cb = [self, handle = handle()](auto id, const EventPacket& event) {

@@ -371,6 +371,23 @@ struct AuthenticationRequestedCommand:
     -- Must be the handle of a connected ACL-U logical link.
 
 
+struct SetConnectionEncryptionCommand:
+  -- Set Connection Encryption Command (v1.1) (BR/EDR)
+  --
+  -- NOTE on ReturnParams: No Command Complete event will be sent by the
+  -- Controller to indicate that this command has been completed. Instead, the
+  -- Encryption Change event will indicate that this command has been completed.
+  let hdr_size = EmbossCommandHeader.$size_in_bytes
+  0     [+hdr_size]  EmbossCommandHeader  header
+  $next [+2]         UInt                 connection_handle
+    -- Connection_Handle (only the lower 12-bits are meaningful).
+    --   Range: 0x0000 to 0x0EFF
+    -- Must be the handle of a connected ACL-U logical link.
+
+  $next [+1]         GenericEnableParam   encryption_enable
+    -- Whether link level encryption should be turned on or off.
+
+
 struct SynchronousConnectionParameters:
   -- Enhanced Setup Synchronous Connection Command (CSA2) (BR/EDR)
 

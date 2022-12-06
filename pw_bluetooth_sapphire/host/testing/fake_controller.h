@@ -649,8 +649,7 @@ class FakeController : public ControllerTestDoubleBase {
       const hci_spec::UserConfirmationRequestNegativeReplyCommandParams& params);
 
   // Called when a HCI_Set_Connection_Encryption command is received.
-  void OnSetConnectionEncryptionCommand(
-      const hci_spec::SetConnectionEncryptionCommandParams& params);
+  void OnSetConnectionEncryptionCommand(hci_spec::SetConnectionEncryptionCommandView params);
 
   // Called when a HCI_Read_Encryption_Key_Size command is received.
   void OnReadEncryptionKeySizeCommand(const hci_spec::ReadEncryptionKeySizeParams& params);

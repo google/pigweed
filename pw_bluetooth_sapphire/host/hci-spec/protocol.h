@@ -197,20 +197,6 @@ constexpr OpCode kAuthenticationRequested = LinkControlOpCode(0x0011);
 // Set Connection Encryption Command (v1.1) (BR/EDR)
 constexpr OpCode kSetConnectionEncryption = LinkControlOpCode(0x0013);
 
-struct SetConnectionEncryptionCommandParams {
-  // Connection_Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  // Must be the handle of a connected ACL-U logical link.
-  ConnectionHandle connection_handle;
-
-  // Whether link level encryption should be turned on or off.
-  GenericEnableParam encryption_enable;
-} __PACKED;
-
-// NOTE on ReturnParams: No Command Complete event will be sent by the
-// Controller to indicate that this command has been completed. Instead, the
-// Encryption Change event will indicate that this command has been completed.
-
 // ============================================================
 // Read Remote Name Request Command (v1.1) (BR/EDR)
 constexpr OpCode kRemoteNameRequest = LinkControlOpCode(0x0019);

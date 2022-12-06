@@ -1551,11 +1551,11 @@ void FakeController::OnUserConfirmationRequestNegativeReplyCommand(
 }
 
 void FakeController::OnSetConnectionEncryptionCommand(
-    const hci_spec::SetConnectionEncryptionCommandParams& params) {
+    hci_spec::SetConnectionEncryptionCommandView params) {
   RespondWithCommandStatus(hci_spec::kSetConnectionEncryption, hci_spec::StatusCode::SUCCESS);
 
   hci_spec::EncryptionChangeEventParams response;
-  response.connection_handle = params.connection_handle;
+  response.connection_handle = htole16(params.connection_handle().Read());
   response.status = hci_spec::StatusCode::SUCCESS;
   response.encryption_enabled = hci_spec::EncryptionStatus::kOn;
   SendEvent(hci_spec::kEncryptionChangeEventCode, BufferView(&response, sizeof(response)));
@@ -3012,11 +3012,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnUserConfirmationRequestNegativeReplyCommand(params);
       break;
     }
-    case hci_spec::kSetConnectionEncryption: {
-      const auto& params = command_packet.payload<hci_spec::SetConnectionEncryptionCommandParams>();
-      OnSetConnectionEncryptionCommand(params);
-      break;
-    }
     case hci_spec::kReadEncryptionKeySize: {
       const auto& params = command_packet.payload<hci_spec::ReadEncryptionKeySizeParams>();
       OnReadEncryptionKeySizeCommand(params);
@@ -3048,7 +3043,8 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kCreateConnection:
     case hci_spec::kDisconnect:
     case hci_spec::kLinkKeyRequestNegativeReply:
-    case hci_spec::kAuthenticationRequested: {
+    case hci_spec::kAuthenticationRequested:
+    case hci_spec::kSetConnectionEncryption: {
       // This case is for packet types that have been migrated to the new Emboss architecture. Their
       // old version can be still be assembled from the HciEmulator channel, so here we repackage
       // and forward them as Emboss packets.
@@ -3123,6 +3119,11 @@ void FakeController::HandleReceivedCommandPacket(hci::EmbossCommandPacket& comma
     case hci_spec::kAuthenticationRequested: {
       const auto params = command_packet.view<hci_spec::AuthenticationRequestedCommandView>();
       OnAuthenticationRequestedCommandReceived(params);
+      break;
+    }
+    case hci_spec::kSetConnectionEncryption: {
+      const auto params = command_packet.view<hci_spec::SetConnectionEncryptionCommandView>();
+      OnSetConnectionEncryptionCommand(params);
       break;
     }
     default: {
