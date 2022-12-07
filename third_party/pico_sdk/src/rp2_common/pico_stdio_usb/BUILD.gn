@@ -25,6 +25,15 @@ config("public_include_dirs") {
   include_dirs = [ "${_CWD}/include" ]
 }
 
+pw_source_set("tusb_config") {
+  public_configs = [ ":public_include_dirs" ]
+  public = [ "${_CWD}/include/tusb_config.h" ]
+  visibility = [
+    ":pico_stdio_usb",
+    "${PICO_ROOT}/src/rp2_common/tinyusb",
+  ]
+}
+
 pw_source_set("pico_stdio_usb") {
   public_configs = [
     ":public_include_dirs",
@@ -35,20 +44,28 @@ pw_source_set("pico_stdio_usb") {
     "${PICO_ROOT}/src/rp2_common/pico_stdio:headers",
   ]
   deps = [
+    ":tusb_config",
+    "${PICO_ROOT}/src/common/pico_binary_info",
     "${PICO_ROOT}/src/common/pico_sync",
     "${PICO_ROOT}/src/common/pico_time",
     "${PICO_ROOT}/src/rp2_common/hardware_irq",
+    "${PICO_ROOT}/src/rp2_common/hardware_watchdog",
+    "${PICO_ROOT}/src/rp2_common/pico_bootrom",
+    "${PICO_ROOT}/src/rp2_common/pico_unique_id",
+    "${PICO_ROOT}/src/rp2_common/tinyusb",
   ]
 
-  # TODO(amontanez): Still needs a dependency on tinyusb.
   public = [
     "${_CWD}/include/pico/stdio_usb.h",
     "${_CWD}/include/pico/stdio_usb/reset_interface.h",
-    "${_CWD}/include/tusb_config.h",
   ]
   sources = [
     "${_CWD}/reset_interface.c",
     "${_CWD}/stdio_usb.c",
     "${_CWD}/stdio_usb_descriptors.c",
+  ]
+  allow_circular_includes_from = [
+    "${PICO_ROOT}/src/rp2_common/tinyusb",
+    ":tusb_config",
   ]
 }

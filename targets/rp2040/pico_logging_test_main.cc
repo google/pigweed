@@ -13,12 +13,20 @@
 // the License.
 
 #include "gtest/gtest.h"
-#include "pico/stdlib.h"
+#include "pw_log/log.h"
+#include "pw_sys_io/sys_io.h"
 #include "pw_unit_test/logging_event_handler.h"
 
 int main() {
-  setup_default_uart();
   pw::unit_test::LoggingEventHandler handler;
   pw::unit_test::RegisterEventHandler(&handler);
-  return RUN_ALL_TESTS();
+  while (true) {
+    std::byte b;
+    if (pw::sys_io::ReadByte(&b).ok() && b == std::byte(' ')) {
+      RUN_ALL_TESTS();
+    } else {
+      PW_LOG_INFO("Press space to start test");
+    }
+  }
+  return 0;
 }

@@ -137,6 +137,7 @@ declare_args() {
   dir_pw_sys_io_emcraft_sf2 =
       get_path_info("../pw_sys_io_emcraft_sf2", "abspath")
   dir_pw_sys_io_mcuxpresso = get_path_info("../pw_sys_io_mcuxpresso", "abspath")
+  dir_pw_sys_io_pico = get_path_info("../pw_sys_io_pico", "abspath")
   dir_pw_sys_io_stdio = get_path_info("../pw_sys_io_stdio", "abspath")
   dir_pw_sys_io_stm32cube = get_path_info("../pw_sys_io_stm32cube", "abspath")
   dir_pw_sys_io_zephyr = get_path_info("../pw_sys_io_zephyr", "abspath")
@@ -273,6 +274,7 @@ declare_args() {
     dir_pw_sys_io_baremetal_stm32f429,
     dir_pw_sys_io_emcraft_sf2,
     dir_pw_sys_io_mcuxpresso,
+    dir_pw_sys_io_pico,
     dir_pw_sys_io_stdio,
     dir_pw_sys_io_stm32cube,
     dir_pw_sys_io_zephyr,
@@ -404,6 +406,7 @@ declare_args() {
     "$dir_pw_sys_io_baremetal_stm32f429:tests",
     "$dir_pw_sys_io_emcraft_sf2:tests",
     "$dir_pw_sys_io_mcuxpresso:tests",
+    "$dir_pw_sys_io_pico:tests",
     "$dir_pw_sys_io_stdio:tests",
     "$dir_pw_sys_io_stm32cube:tests",
     "$dir_pw_sys_io_zephyr:tests",
@@ -535,6 +538,7 @@ declare_args() {
     "$dir_pw_sys_io_baremetal_stm32f429:docs",
     "$dir_pw_sys_io_emcraft_sf2:docs",
     "$dir_pw_sys_io_mcuxpresso:docs",
+    "$dir_pw_sys_io_pico:docs",
     "$dir_pw_sys_io_stdio:docs",
     "$dir_pw_sys_io_stm32cube:docs",
     "$dir_pw_sys_io_zephyr:docs",

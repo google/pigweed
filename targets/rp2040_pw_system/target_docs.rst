@@ -102,8 +102,8 @@ flashed to a device with the following commands:
   .. code:: sh
 
      cat <<EOF > 49-picoprobe.rules
-     SUBSYSTEMS=="usb", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0004", MODE:="0666"
-     KERNEL=="ttyACM*", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="0004", MODE:="0666"
+     SUBSYSTEMS=="usb", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="000[43a]", MODE:="0666"
+     KERNEL=="ttyACM*", ATTRS{idVendor}=="2e8a", ATTRS{idProduct}=="000[43a]", MODE:="0666"
      EOF
      sudo cp 49-picoprobe.rules /usr/lib/udev/rules.d/49-picoprobe.rules
      sudo udevadm control --reload-rules

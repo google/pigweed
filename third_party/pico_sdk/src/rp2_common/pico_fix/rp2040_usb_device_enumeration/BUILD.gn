@@ -37,5 +37,5 @@ pw_source_set("rp2040_usb_device_enumeration") {
     "${PICO_ROOT}/src/rp2_common/hardware_gpio",
   ]
   public = [ "${_CWD}/include/pico/fix/rp2040_usb_device_enumeration.h" ]
-  sources = [ "${_CWD}/rp2040_usb_device_enumberation.c" ]
+  sources = [ "${_CWD}/rp2040_usb_device_enumeration.c" ]
 }

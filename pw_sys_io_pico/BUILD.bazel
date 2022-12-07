@@ -12,13 +12,24 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-ENUM_LIB_PICO_STDIO = {
-  UART = "LIB_PICO_STDIO_UART"
-  USB = "LIB_PICO_STDIO_USB"
-  SEMIHOSTING = "LIB_PICO_STDIO_SEMIHOSTING"
-}
+load(
+    "//pw_build:pigweed.bzl",
+    "pw_cc_library",
+)
 
-# TODO(amontanez): This looks like a facade. Rethink?
-declare_args() {
-  PICO_STDIO = ENUM_LIB_PICO_STDIO.USB
-}
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])
+
+pw_cc_library(
+    name = "pw_sys_io_pico",
+    srcs = [
+        "sys_io.cc",
+    ],
+    # TODO(b/261603269): Get this to build.
+    tags = ["manual"],
+    deps = [
+        "//pw_status",
+        "//pw_sys_io",
+    ],
+)

@@ -23,8 +23,8 @@ import("$dir_pw_toolchain/generate_toolchain.gni")
 if (current_toolchain != default_toolchain) {
   pw_source_set("pico_logging_test_main") {
     deps = [
-      "$PICO_ROOT/src/common/pico_base",
-      "$PICO_ROOT/src/common/pico_stdlib",
+      "$dir_pw_log",
+      "$dir_pw_sys_io",
       "$dir_pw_unit_test:logging_event_handler",
       "$dir_pw_unit_test:pw_unit_test",
     ]
@@ -50,7 +50,7 @@ generate_toolchain("rp2040") {
     pw_unit_test_MAIN = "$dir_pigweed/targets/rp2040:pico_logging_test_main"
     pw_assert_BACKEND = dir_pw_assert_basic
     pw_log_BACKEND = dir_pw_log_basic
-    pw_sys_io_BACKEND = "$dir_pw_sys_io_stdio"
+    pw_sys_io_BACKEND = dir_pw_sys_io_pico
 
     pw_sync_INTERRUPT_SPIN_LOCK_BACKEND =
         "$dir_pw_sync_baremetal:interrupt_spin_lock"

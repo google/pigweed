@@ -25,11 +25,19 @@ config("public_include_dirs") {
   include_dirs = [ "${_CWD}/include" ]
 }
 
+config("disable_warnings") {
+  cflags = [
+    "-Wno-pointer-arith",
+    "-Wno-shadow",
+  ]
+}
+
 pw_source_set("hardware_flash") {
   public_configs = [
     ":public_include_dirs",
     "${PICO_ROOT}/gn:disable_warnings",
   ]
+  configs = [ ":disable_warnings" ]
   public_deps = [ "${PICO_ROOT}/src/common/pico_base" ]
   deps = [
     "${PICO_ROOT}/src/common/pico_sync",

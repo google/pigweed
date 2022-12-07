@@ -13,26 +13,47 @@
 # the License.
 """Install and check status of the Raspberry Pi Pico SDK."""
 
-import pathlib
+from contextlib import contextmanager
+import os
+from pathlib import Path
 from typing import Sequence
+import subprocess
 
 import pw_package.git_repo
 import pw_package.package_manager
 
 
-class PiPicoSdk(pw_package.git_repo.GitRepo):
+@contextmanager
+def change_working_dir(directory: Path):
+    original_dir = Path.cwd()
+    try:
+        os.chdir(directory)
+        yield directory
+    finally:
+        os.chdir(original_dir)
+
+
+class PiPicoSdk(pw_package.package_manager.Package):
     """Install and check status of the Raspberry Pi Pico SDK."""
 
     def __init__(self, *args, **kwargs):
-        super().__init__(
-            *args,
+        super().__init__(*args, name='pico_sdk', **kwargs)
+        self._pico_sdk = pw_package.git_repo.GitRepo(
             name='pico_sdk',
             url='https://github.com/raspberrypi/pico-sdk',
             commit='2e6142b15b8a75c1227dd3edbe839193b2bf9041',
-            **kwargs,
         )
 
-    def info(self, path: pathlib.Path) -> Sequence[str]:
+    def install(self, path: Path) -> None:
+        self._pico_sdk.install(path)
+
+        # Run submodule update --init to fetch tinyusb.
+        with change_working_dir(path) as _pico_sdk_repo:
+            subprocess.run(
+                ['git', 'submodule', 'update', '--init'], capture_output=True
+            )
+
+    def info(self, path: Path) -> Sequence[str]:
         return (
             f'{self.name} installed in: {path}',
             "Enable by running 'gn args out' and adding this line:",

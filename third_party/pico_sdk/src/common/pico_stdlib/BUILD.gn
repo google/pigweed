@@ -45,6 +45,13 @@ pw_source_set("headers") {
     public_deps += [ "${PICO_ROOT}/src/rp2_common/pico_stdio_uart" ]
   } else if (PICO_STDIO == ENUM_LIB_PICO_STDIO.USB) {
     public_deps += [ "${PICO_ROOT}/src/rp2_common/pico_stdio_usb" ]
+
+    # Required to allow circular dependencies.
+    deps = [ "${PICO_ROOT}/src/rp2_common/tinyusb:bsp" ]
+    allow_circular_includes_from = [
+      "${PICO_ROOT}/src/rp2_common/pico_stdio_usb",
+      "${PICO_ROOT}/src/rp2_common/tinyusb:bsp",
+    ]
   } else if (PICO_STDIO == ENUM_LIB_PICO_STDIO.SEMIHOSTING) {
     public_deps += [ "${PICO_ROOT}/src/rp2_common/pico_stdio_semihosting" ]
   }
@@ -55,6 +62,7 @@ pw_source_set("headers") {
 pw_source_set("pico_stdlib") {
   public_configs = [ "${PICO_ROOT}/gn:disable_warnings" ]
   public_deps = [ ":headers" ]
+  public = [ "${_CWD}/include/pico/stdlib.h" ]
 
   # Ensure the pico stdlib implementation is linked in.
   deps = [ "${PICO_ROOT}/src/rp2_common/pico_stdlib" ]

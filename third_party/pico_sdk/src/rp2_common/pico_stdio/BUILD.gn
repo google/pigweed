@@ -25,6 +25,7 @@ import("${PICO_ROOT}/src/common/pico_stdlib/pico_stdio.gni")
 
 config("public_include_dirs") {
   include_dirs = [ "${_CWD}/include" ]
+  defines = [ "${PICO_STDIO}=1" ]
 }
 
 config("printf_wrappers") {
