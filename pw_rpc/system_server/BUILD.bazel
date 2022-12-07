@@ -52,8 +52,8 @@ pw_cc_library(
     name = "system_server_backend_multiplexer",
     visibility = ["@pigweed_config//:__pkg__"],
     deps = select({
-        "//pw_build/constraints/board:stm32f429i-disc1": ["//targets/stm32f429i_disc1:system_rpc_server"],
-        "//pw_build/constraints/board:mimxrt595_evk": ["//targets/mimxrt595_evk:system_rpc_server"],
+        "//pw_build/constraints/board:stm32f429i-disc1": ["//pw_hdlc:hdlc_sys_io_system_server"],
+        "//pw_build/constraints/board:mimxrt595_evk": ["//pw_hdlc:hdlc_sys_io_system_server"],
         "//conditions:default": ["//targets/host:system_rpc_server"],
     }),
 )
