@@ -469,22 +469,6 @@ def cmake_gcc(ctx: PresubmitContext):
     build.ninja(ctx, 'pw_apps', 'pw_run_tests.modules')
 
 
-# TODO(b/235882003): Slowly remove targets from here that work with bazel until
-# none remain.
-_TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL = (
-    # keep-sorted: start
-    '-//pw_boot/...:all',
-    '-//pw_chrono/py/...:all',
-    '-//pw_chrono:chrono_proto_pb2',
-    '-//third_party/boringssl/...:all',
-    # keep-sorted: end
-)
-
-# TODO(b/235882003): Slowly remove targets from here that work with bazel until
-# none remain.
-_TARGETS_THAT_DO_NOT_TEST_WITH_BAZEL = _TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL
-
-
 @filter_paths(
     endswith=(*format_code.C_FORMAT.extensions, '.bazel', '.bzl', 'BUILD')
 )
@@ -496,7 +480,6 @@ def bazel_test(ctx: PresubmitContext) -> None:
         '--test_output=errors',
         '--',
         '//...',
-        *_TARGETS_THAT_DO_NOT_TEST_WITH_BAZEL,
     )
 
 
@@ -506,7 +489,10 @@ def bazel_test(ctx: PresubmitContext) -> None:
 def bazel_build(ctx: PresubmitContext) -> None:
     """Runs Bazel build on each Bazel compatible module."""
     build.bazel(
-        ctx, 'build', '--', '//...', *_TARGETS_THAT_DO_NOT_BUILD_WITH_BAZEL
+        ctx,
+        'build',
+        '--',
+        '//...',
     )
 
 
