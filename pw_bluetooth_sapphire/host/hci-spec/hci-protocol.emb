@@ -464,6 +464,17 @@ struct ReadRemoteVersionInfoCommand:
     --   Range: 0x0000 to 0x0EFF
 
 
+struct RejectSynchronousConnectionRequestCommand:
+  -- Reject Synchronous Connection Command (BR/EDR)
+  let hdr_size = EmbossCommandHeader.$size_in_bytes
+  0     [+hdr_size]               EmbossCommandHeader  header
+  $next [+BdAddr.$size_in_bytes]  BdAddr               bd_addr
+    -- Address of the remote device that sent the request.
+
+  $next [+1]                      StatusCode           reason
+    -- Reason the connection request was rejected.
+
+
 struct SynchronousConnectionParameters:
   -- Enhanced Setup Synchronous Connection Command (CSA2) (BR/EDR)
 

@@ -217,14 +217,6 @@ constexpr OpCode kReadRemoteVersionInfo = LinkControlOpCode(0x001D);
 // Reject Synchronous Connection Command (BR/EDR)
 constexpr OpCode kRejectSynchronousConnectionRequest = LinkControlOpCode(0x002A);
 
-struct RejectSynchronousConnectionRequestCommandParams {
-  // Address of the remote device that sent the request.
-  DeviceAddressBytes bd_addr;
-
-  // Reason the connection request was rejected.
-  StatusCode reason;
-} __PACKED;
-
 // =========================================================
 // IO Capability Request Reply Command (v2.1 + EDR) (BR/EDR)
 constexpr OpCode kIOCapabilityRequestReply = LinkControlOpCode(0x002B);

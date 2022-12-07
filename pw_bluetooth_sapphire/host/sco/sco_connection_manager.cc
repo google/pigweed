@@ -405,12 +405,11 @@ void ScoConnectionManager::SendRejectConnectionCommand(DeviceAddressBytes addr,
                 hci_spec::StatusCodeToString(reason).c_str());
 
   auto reject =
-      hci::CommandPacket::New(hci_spec::kRejectSynchronousConnectionRequest,
-                              sizeof(hci_spec::RejectSynchronousConnectionRequestCommandParams));
-  auto reject_params =
-      reject->mutable_payload<hci_spec::RejectSynchronousConnectionRequestCommandParams>();
-  reject_params->bd_addr = addr;
-  reject_params->reason = reason;
+      hci::EmbossCommandPacket::New<hci_spec::RejectSynchronousConnectionRequestCommandWriter>(
+          hci_spec::kRejectSynchronousConnectionRequest);
+  auto reject_params = reject.view_t();
+  reject_params.bd_addr().CopyFrom(addr.view());
+  reject_params.reason().Write(reason);
 
   transport_->command_channel()->SendCommand(std::move(reject), nullptr,
                                              hci_spec::kCommandStatusEventCode);

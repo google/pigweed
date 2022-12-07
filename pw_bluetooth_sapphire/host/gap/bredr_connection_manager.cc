@@ -1479,12 +1479,11 @@ void BrEdrConnectionManager::SendRejectSynchronousRequest(DeviceAddress addr,
                                                           hci_spec::StatusCode reason,
                                                           hci::ResultFunction<> cb) {
   auto reject =
-      hci::CommandPacket::New(hci_spec::kRejectSynchronousConnectionRequest,
-                              sizeof(hci_spec::RejectSynchronousConnectionRequestCommandParams));
-  auto reject_params =
-      reject->mutable_payload<hci_spec::RejectSynchronousConnectionRequestCommandParams>();
-  reject_params->bd_addr = addr.value();
-  reject_params->reason = reason;
+      hci::EmbossCommandPacket::New<hci_spec::RejectSynchronousConnectionRequestCommandWriter>(
+          hci_spec::kRejectSynchronousConnectionRequest);
+  auto reject_params = reject.view_t();
+  reject_params.bd_addr().CopyFrom(addr.value().view());
+  reject_params.reason().Write(reason);
 
   hci::CommandChannel::CommandCallback command_cb;
   if (cb) {
