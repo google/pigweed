@@ -150,6 +150,15 @@ pw_cc_library(
 )
 
 pw_cc_test(
+    name = "chunk_test",
+    srcs = ["chunk_test.cc"],
+    deps = [
+        ":core",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
     name = "handler_test",
     srcs = ["handler_test.cc"],
     deps = [

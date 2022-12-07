@@ -163,7 +163,8 @@ pw_test_group("tests") {
 
   # pw_transfer requires threading.
   if (pw_thread_THREAD_BACKEND != "") {
-    tests = [
+    tests += [
+      ":chunk_test",
       ":client_test",
       ":transfer_thread_test",
     ]
@@ -178,6 +179,11 @@ pw_test_group("tests") {
       ]
     }
   }
+}
+
+pw_test("chunk_test") {
+  sources = [ "chunk_test.cc" ]
+  deps = [ ":core" ]
 }
 
 pw_test("handler_test") {
