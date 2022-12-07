@@ -620,7 +620,7 @@ class FakeController : public ControllerTestDoubleBase {
 
   // Called when a HCI_Read_Remote_Extended_Features command is received.
   void OnReadRemoteExtendedFeaturesCommandReceived(
-      const hci_spec::ReadRemoteExtendedFeaturesCommandParams& params);
+      hci_spec::ReadRemoteExtendedFeaturesCommandView params);
 
   // Pairing command handlers:
 

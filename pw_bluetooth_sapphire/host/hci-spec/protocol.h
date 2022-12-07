@@ -209,24 +209,6 @@ constexpr OpCode kReadRemoteSupportedFeatures = LinkControlOpCode(0x001B);
 // Read Remote Extended Features Command (v1.2) (BR/EDR)
 constexpr OpCode kReadRemoteExtendedFeatures = LinkControlOpCode(0x001C);
 
-struct ReadRemoteExtendedFeaturesCommandParams {
-  // Connection_Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  // Must be the handle of a connected ACL-U logical link.
-  ConnectionHandle connection_handle;
-
-  // Page of features to read.
-  // Values:
-  //  - 0x00 standard features as if requested by Read Remote Supported Features
-  //  - 0x01-0xFF the corresponding features page see Vol 2, Part C, Sec 3.3)
-  uint8_t page_number;
-} __PACKED;
-
-// NOTE on ReturnParams: No Command Complete event will be sent by the
-// Controller to indicate that this command has been completed. Instead, the
-// Read Remote Extended Features Complete event will indicate that this
-// command has been completed.
-
 // ============================================================
 // Read Remote Version Information Command (v1.1) (BR/EDR & LE)
 constexpr OpCode kReadRemoteVersionInfo = LinkControlOpCode(0x001D);

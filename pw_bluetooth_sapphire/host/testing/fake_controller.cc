@@ -1392,10 +1392,10 @@ void FakeController::OnReadRemoteVersionInfoCommandReceived(
 }
 
 void FakeController::OnReadRemoteExtendedFeaturesCommandReceived(
-    const hci_spec::ReadRemoteExtendedFeaturesCommandParams& params) {
+    hci_spec::ReadRemoteExtendedFeaturesCommandView params) {
   hci_spec::ReadRemoteExtendedFeaturesCompleteEventParams response = {};
 
-  switch (params.page_number) {
+  switch (params.page_number().Read()) {
     case 1:
       response.lmp_features = settings_.lmp_features_page1;
       break;
@@ -1409,9 +1409,9 @@ void FakeController::OnReadRemoteExtendedFeaturesCommandReceived(
   }
 
   RespondWithCommandStatus(hci_spec::kReadRemoteExtendedFeatures, hci_spec::StatusCode::SUCCESS);
-  response.page_number = params.page_number;
+  response.page_number = params.page_number().Read();
   response.max_page_number = 3;
-  response.connection_handle = params.connection_handle;
+  response.connection_handle = htole16(params.connection_handle().Read());
   response.status = hci_spec::StatusCode::SUCCESS;
   SendEvent(hci_spec::kReadRemoteExtendedFeaturesCompleteEventCode,
             BufferView(&response, sizeof(response)));
@@ -2973,12 +2973,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnReadRemoteVersionInfoCommandReceived(params);
       break;
     }
-    case hci_spec::kReadRemoteExtendedFeatures: {
-      const auto& params =
-          command_packet.payload<hci_spec::ReadRemoteExtendedFeaturesCommandParams>();
-      OnReadRemoteExtendedFeaturesCommandReceived(params);
-      break;
-    }
     case hci_spec::kLinkKeyRequestReply: {
       const auto& params = command_packet.payload<hci_spec::LinkKeyRequestReplyCommandView>();
       OnLinkKeyRequestReplyCommandReceived(params);
@@ -3036,7 +3030,8 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kAuthenticationRequested:
     case hci_spec::kSetConnectionEncryption:
     case hci_spec::kRemoteNameRequest:
-    case hci_spec::kReadRemoteSupportedFeatures: {
+    case hci_spec::kReadRemoteSupportedFeatures:
+    case hci_spec::kReadRemoteExtendedFeatures: {
       // This case is for packet types that have been migrated to the new Emboss architecture. Their
       // old version can be still be assembled from the HciEmulator channel, so here we repackage
       // and forward them as Emboss packets.
@@ -3126,6 +3121,11 @@ void FakeController::HandleReceivedCommandPacket(hci::EmbossCommandPacket& comma
     case hci_spec::kReadRemoteSupportedFeatures: {
       const auto params = command_packet.view<hci_spec::ReadRemoteSupportedFeaturesCommandView>();
       OnReadRemoteSupportedFeaturesCommandReceived(params);
+      break;
+    }
+    case hci_spec::kReadRemoteExtendedFeatures: {
+      const auto params = command_packet.view<hci_spec::ReadRemoteExtendedFeaturesCommandView>();
+      OnReadRemoteExtendedFeaturesCommandReceived(params);
       break;
     }
     default: {

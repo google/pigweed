@@ -132,11 +132,11 @@ void BrEdrInterrogator::QueueReadRemoteFeatures() {
 }
 
 void BrEdrInterrogator::QueueReadRemoteExtendedFeatures(uint8_t page) {
-  auto packet = hci::CommandPacket::New(hci_spec::kReadRemoteExtendedFeatures,
-                                        sizeof(hci_spec::ReadRemoteExtendedFeaturesCommandParams));
-  auto params = packet->mutable_payload<hci_spec::ReadRemoteExtendedFeaturesCommandParams>();
-  params->connection_handle = htole16(handle_);
-  params->page_number = page;
+  auto packet = hci::EmbossCommandPacket::New<hci_spec::ReadRemoteExtendedFeaturesCommandWriter>(
+      hci_spec::kReadRemoteExtendedFeatures);
+  auto params = packet.view_t();
+  params.connection_handle().Write(handle_);
+  params.page_number().Write(page);
 
   auto cmd_cb = [this, page](const auto& event) {
     if (hci_is_error(event, WARN, "gap-bredr", "read remote extended features failed (peer id: %s)",
