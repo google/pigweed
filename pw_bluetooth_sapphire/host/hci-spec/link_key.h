@@ -8,6 +8,7 @@
 #include <cstdint>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/hci-protocol.emb.h"
 
 namespace bt::hci_spec {
 
@@ -29,6 +30,8 @@ class LinkKey final {
   bool operator==(const LinkKey& other) const {
     return value() == other.value() && rand() == other.rand() && ediv() == other.ediv();
   }
+
+  auto view() { return hci_spec::MakeEmbossLinkKeyView(&value_); }
 
  private:
   UInt128 value_;

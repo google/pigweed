@@ -1416,8 +1416,7 @@ void BrEdrConnectionManager::SendLinkKeyRequestReply(DeviceAddressBytes bd_addr,
   auto reply_params = reply.view_t();
   reply_params.bd_addr().CopyFrom(bd_addr.view());
 
-  const auto& key_value = link_key.value();
-  auto link_key_value_view = hci_spec::LinkKeyRequestReplyCommand::MakeLinkKeyView(&key_value);
+  auto link_key_value_view = link_key.view();
   reply_params.link_key().CopyFrom(link_key_value_view);
 
   SendCommandWithStatusCallback(std::move(reply), std::move(cb));
