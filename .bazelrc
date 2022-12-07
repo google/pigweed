@@ -19,6 +19,10 @@ build --incompatible_enable_cc_toolchain_resolution
 coverage --experimental_generate_llvm_lcov
 coverage --combined_report=lcov
 
+# Suppress the DEBUG: log messages from bazel. We get lots of spammy DEBUG:
+# messages from our third-party dependencies.
+build --ui_event_filters=-debug
+
 # Enforces consistent action environment variables. This is important to
 # address Protobuf's rebuild sensitivity on changes to the environment
 # variables.
