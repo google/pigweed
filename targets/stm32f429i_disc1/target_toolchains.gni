@@ -15,6 +15,7 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_compilation_testing/negative_compilation_test.gni")
+import("$dir_pw_perf_test/perf_test.gni")
 import("$dir_pw_rpc/system_server/backend.gni")
 import("$dir_pw_sys_io/backend.gni")
 import("$dir_pw_toolchain/arm_gcc/toolchains.gni")
@@ -30,6 +31,9 @@ _target_config = {
 
   # Use the logging main.
   pw_unit_test_MAIN = "$dir_pw_unit_test:logging_main"
+
+  # Use ARM Cycle Counts
+  pw_perf_test_TIMER_INTERFACE_BACKEND = "$dir_pw_perf_test:arm_cortex_timer"
 
   # Configuration options for Pigweed executable targets.
   pw_build_EXECUTABLE_TARGET_TYPE = "stm32f429i_executable"

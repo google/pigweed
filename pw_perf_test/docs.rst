@@ -158,3 +158,24 @@ For most host applications, pw_perf_test depends on :ref:`module-pw_chrono` its
 timing needs. At the moment, the interface will only measure performance in
 terms of nanoseconds. To see more information about how pw_chrono works, see the
 module documentation.
+
+Cycle Count Measurement
+------------------------------------
+In the case of running tests on an embedded system, clock cycles may give more
+insight into the actual performance of the system. The timing API gives you this
+option by providing time measurements through a facade. In this case, by setting
+the ccynt timer as the backend, perf tests can be measured in clock cycles for
+ARM Cortex devices.
+
+This implementation directly accesses the registers of the Cortex, and therefore
+needs no operating system to function. This is achieved by enabling the
+`DWT register<https://developer.arm.com/documentation/ddi0337/e/System-Debug/DWT?lang=en>_`
+through the `DEMCR register<https://developer.arm.com/documentation/ddi0337/e/CEGHJDCF>_`.
+While this provides cycle counts directly from the CPU, notably it is vulnerable
+to rollover upon a duration of a test exceeding 2^32 clock cycles. This works
+out to a 43 second duration limit per iteration at 100 mhz.
+
+.. warning::
+  The interface only measures raw clock cycles and does not take into account
+  other possible sources of pollution such as LSUs, Sleeps and other registers.
+  `Read more on the DWT methods of counting instructions. <https://developer.arm.com/documentation/ka001499/1-0/>`_

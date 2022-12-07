@@ -22,10 +22,17 @@ import("$dir_pw_perf_test/perf_test.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("public_include_path") {
-  include_dirs = [
-    "public",
-    "chrono_public_overrides",
-  ]
+  include_dirs = [ "public" ]
+  visibility = [ ":*" ]
+}
+
+config("arm_config") {
+  include_dirs = [ "arm_cortex_cyccnt_public_overrides" ]
+  visibility = [ ":*" ]
+}
+
+config("chrono_config") {
+  include_dirs = [ "chrono_public_overrides" ]
   visibility = [ ":*" ]
 }
 
@@ -121,7 +128,7 @@ pw_test("chrono_timer_test") {
   enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
   sources = [ "chrono_test.cc" ]
   public_deps = [
-    ":timer_interface",
+    ":chrono_timer",
     "$dir_pw_chrono:system_timer",
     "$dir_pw_thread:sleep",
   ]
@@ -141,17 +148,40 @@ pw_doc_group("docs") {
 
 # Chrono Implementation
 pw_source_set("pw_perf_test_chrono") {
-  public_configs = [ ":public_overrides_include_path" ]
+  public_configs = [ ":chrono_config" ]
   public = [ "chrono_public_overrides/pw_perf_test_timer_backend/timer.h" ]
   public_deps = [ ":chrono_timer" ]
 }
 
 pw_source_set("chrono_timer") {
-  public_configs = [ ":public_include_path" ]
+  public_configs = [
+    ":public_include_path",
+    ":chrono_config",
+  ]
   public = [ "public/pw_perf_test/internal/chrono_timer_interface.h" ]
   public_deps = [
     ":duration_unit",
     "$dir_pw_chrono:system_clock",
   ]
   visibility = [ ":*" ]
+}
+
+# ARM Cortex Implementation
+
+pw_source_set("arm_cortex_timer") {
+  public_configs = [
+    ":public_include_path",
+    ":arm_config",
+  ]
+  public = [ "public/pw_perf_test/internal/cyccnt_timer_interface.h" ]
+  public_deps = [ ":duration_unit" ]
+  visibility = [ ":*" ]
+}
+
+pw_source_set("pw_perf_test_arm_cortex") {
+  public_configs = [ ":arm_config" ]
+  public = [
+    "arm_cortex_cyccnt_public_overrides/pw_perf_test_timer_backend/timer.h",
+  ]
+  public_deps = [ ":arm_cortex_timer" ]
 }
