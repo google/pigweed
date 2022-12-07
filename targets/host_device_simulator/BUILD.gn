@@ -18,9 +18,21 @@ import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_system/system_target.gni")
 
+if (current_toolchain != default_toolchain) {
+  pw_source_set("boot") {
+    deps = [
+      "$dir_pw_log",
+      "$dir_pw_system",
+      "$dir_pw_thread:sleep",
+    ]
+    sources = [ "boot.cc" ]
+  }
+}
+
 pw_system_target("host_device_simulator") {
   cpu = PW_SYSTEM_CPU.NATIVE
   scheduler = PW_SYSTEM_SCHEDULER.NATIVE
+  link_deps = [ "$dir_pigweed/targets/host_device_simulator:boot" ]
 }
 
 pw_doc_group("target_docs") {

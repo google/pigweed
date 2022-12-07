@@ -193,9 +193,6 @@ if (pw_system_TARGET_HOOKS_BACKEND == "") {
            get_label_info(":stl_target_hooks", "label_no_toolchain")) {
   pw_source_set("stl_target_hooks") {
     deps = [
-      ":init",
-      "$dir_pw_log",
-      "$dir_pw_thread:sleep",
       "$dir_pw_thread:thread",
       "$dir_pw_thread_stl:thread",
     ]

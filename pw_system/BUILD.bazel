@@ -232,7 +232,10 @@ pw_cc_library(
     visibility = ["@pigweed_config//:__pkg__"],
     deps = select({
         "//pw_build/constraints/rtos:freertos": [":freertos_target_hooks"],
-        "//conditions:default": [":stl_target_hooks"],
+        "//conditions:default": [
+            ":stl_target_hooks",
+            "//targets/host_device_simulator:boot",
+        ],
     }),
 )
 
@@ -242,8 +245,6 @@ pw_cc_library(
         "stl_target_hooks.cc",
     ],
     deps = [
-        ":init",
-        "//pw_thread:sleep",
         "//pw_thread:thread",
         "//pw_thread_stl:thread",
     ],
