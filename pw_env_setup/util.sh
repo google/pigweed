@@ -368,7 +368,6 @@ pw_cleanup() {
   unset _PW_DEACTIVATE_SH
   unset _NEW_PW_ROOT
   unset _PW_ENV_SETUP_STATUS
-  unset PW_ENVIRONMENT_ROOT
   unset _PW_ENV_PREFIX
   unset _PW_ENV
   unset _PW_DOTENV
