@@ -76,6 +76,10 @@ def _main() -> int:
         default_protocol_version=pw_transfer.ProtocolVersion.LATEST,
     )
 
+    transfer_logger = logging.getLogger('pw_transfer')
+    transfer_logger.setLevel(logging.DEBUG)
+    transfer_logger.addHandler(logging.StreamHandler(sys.stdout))
+
     # Perform the requested transfer actions.
     for action in config.transfer_actions:
         protocol_version = pw_transfer.ProtocolVersion(
