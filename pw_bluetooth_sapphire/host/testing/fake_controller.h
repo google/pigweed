@@ -615,8 +615,7 @@ class FakeController : public ControllerTestDoubleBase {
       hci_spec::ReadRemoteSupportedFeaturesCommandView params);
 
   // Called when a HCI_Read_Remote_Version_Information command is received.
-  void OnReadRemoteVersionInfoCommandReceived(
-      const hci_spec::ReadRemoteVersionInfoCommandParams& params);
+  void OnReadRemoteVersionInfoCommandReceived(hci_spec::ReadRemoteVersionInfoCommandView params);
 
   // Called when a HCI_Read_Remote_Extended_Features command is received.
   void OnReadRemoteExtendedFeaturesCommandReceived(

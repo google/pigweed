@@ -450,6 +450,20 @@ struct ReadRemoteExtendedFeaturesCommand:
     --  - 0x01-0xFF the corresponding features page (see Vol 2, Part C, Sec 3.3).
 
 
+struct ReadRemoteVersionInfoCommand:
+  -- Read Remote Version Information Command (v1.1) (BR/EDR & LE)
+  --
+  -- NOTE on ReturnParams: No Command Complete event will be sent by the
+  -- Controller to indicate that this command has been completed. Instead, the
+  -- Read Remote Version Information Complete event will indicate that this
+  -- command has been completed.
+  let hdr_size = EmbossCommandHeader.$size_in_bytes
+  0     [+hdr_size]  EmbossCommandHeader  header
+  $next [+2]         UInt                 connection_handle
+    -- Connection_Handle (only the lower 12-bits are meaningful).
+    --   Range: 0x0000 to 0x0EFF
+
+
 struct SynchronousConnectionParameters:
   -- Enhanced Setup Synchronous Connection Command (CSA2) (BR/EDR)
 

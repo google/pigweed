@@ -93,10 +93,9 @@ void LowEnergyInterrogator::QueueReadLERemoteFeatures() {
 }
 
 void LowEnergyInterrogator::QueueReadRemoteVersionInformation() {
-  auto packet = hci::CommandPacket::New(hci_spec::kReadRemoteVersionInfo,
-                                        sizeof(hci_spec::ReadRemoteVersionInfoCommandParams));
-  packet->mutable_payload<hci_spec::ReadRemoteVersionInfoCommandParams>()->connection_handle =
-      htole16(handle_);
+  auto packet = hci::EmbossCommandPacket::New<hci_spec::ReadRemoteVersionInfoCommandWriter>(
+      hci_spec::kReadRemoteVersionInfo);
+  packet.view_t().connection_handle().Write(handle_);
 
   // It's safe to capture |this| instead of a weak ptr to self because |cmd_runner_| guarantees that
   // |cmd_cb| won't be invoked if |cmd_runner_| is destroyed, and |this| outlives |cmd_runner_|.

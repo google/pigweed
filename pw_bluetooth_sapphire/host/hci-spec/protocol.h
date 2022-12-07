@@ -213,17 +213,6 @@ constexpr OpCode kReadRemoteExtendedFeatures = LinkControlOpCode(0x001C);
 // Read Remote Version Information Command (v1.1) (BR/EDR & LE)
 constexpr OpCode kReadRemoteVersionInfo = LinkControlOpCode(0x001D);
 
-struct ReadRemoteVersionInfoCommandParams {
-  // Connection_Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-} __PACKED;
-
-// NOTE on ReturnParams: No Command Complete event will be sent by the
-// Controller to indicate that this command has been completed. Instead, the
-// Read Remote Version Information Complete event will indicate that this
-// command has been completed.
-
 // =============================================
 // Reject Synchronous Connection Command (BR/EDR)
 constexpr OpCode kRejectSynchronousConnectionRequest = LinkControlOpCode(0x002A);

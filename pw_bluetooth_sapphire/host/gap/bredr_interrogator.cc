@@ -174,10 +174,9 @@ void BrEdrInterrogator::QueueReadRemoteExtendedFeatures(uint8_t page) {
 }
 
 void BrEdrInterrogator::QueueReadRemoteVersionInformation() {
-  auto packet = hci::CommandPacket::New(hci_spec::kReadRemoteVersionInfo,
-                                        sizeof(hci_spec::ReadRemoteVersionInfoCommandParams));
-  packet->mutable_payload<hci_spec::ReadRemoteVersionInfoCommandParams>()->connection_handle =
-      htole16(handle_);
+  auto packet = hci::EmbossCommandPacket::New<hci_spec::ReadRemoteVersionInfoCommandWriter>(
+      hci_spec::kReadRemoteVersionInfo);
+  packet.view_t().connection_handle().Write(handle_);
 
   auto cmd_cb = [this](const hci::EventPacket& event) {
     if (hci_is_error(event, WARN, "gap", "read remote version info failed")) {

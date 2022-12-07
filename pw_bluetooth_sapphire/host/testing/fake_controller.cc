@@ -1378,12 +1378,12 @@ void FakeController::OnReadRemoteSupportedFeaturesCommandReceived(
 }
 
 void FakeController::OnReadRemoteVersionInfoCommandReceived(
-    const hci_spec::ReadRemoteVersionInfoCommandParams& params) {
+    hci_spec::ReadRemoteVersionInfoCommandView params) {
   RespondWithCommandStatus(hci_spec::kReadRemoteVersionInfo, hci_spec::StatusCode::SUCCESS);
 
   hci_spec::ReadRemoteVersionInfoCompleteEventParams response = {};
   response.status = hci_spec::StatusCode::SUCCESS;
-  response.connection_handle = params.connection_handle;
+  response.connection_handle = htole16(params.connection_handle().Read());
   response.lmp_version = hci_spec::HCIVersion::k4_2;
   response.manufacturer_name = 0xFFFF;  // anything
   response.lmp_subversion = 0xADDE;     // anything
@@ -2968,11 +2968,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnWriteLEHostSupportCommandReceived(params);
       break;
     }
-    case hci_spec::kReadRemoteVersionInfo: {
-      const auto& params = command_packet.payload<hci_spec::ReadRemoteVersionInfoCommandParams>();
-      OnReadRemoteVersionInfoCommandReceived(params);
-      break;
-    }
     case hci_spec::kLinkKeyRequestReply: {
       const auto& params = command_packet.payload<hci_spec::LinkKeyRequestReplyCommandView>();
       OnLinkKeyRequestReplyCommandReceived(params);
@@ -3031,7 +3026,8 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kSetConnectionEncryption:
     case hci_spec::kRemoteNameRequest:
     case hci_spec::kReadRemoteSupportedFeatures:
-    case hci_spec::kReadRemoteExtendedFeatures: {
+    case hci_spec::kReadRemoteExtendedFeatures:
+    case hci_spec::kReadRemoteVersionInfo: {
       // This case is for packet types that have been migrated to the new Emboss architecture. Their
       // old version can be still be assembled from the HciEmulator channel, so here we repackage
       // and forward them as Emboss packets.
@@ -3126,6 +3122,11 @@ void FakeController::HandleReceivedCommandPacket(hci::EmbossCommandPacket& comma
     case hci_spec::kReadRemoteExtendedFeatures: {
       const auto params = command_packet.view<hci_spec::ReadRemoteExtendedFeaturesCommandView>();
       OnReadRemoteExtendedFeaturesCommandReceived(params);
+      break;
+    }
+    case hci_spec::kReadRemoteVersionInfo: {
+      const auto params = command_packet.view<hci_spec::ReadRemoteVersionInfoCommandView>();
+      OnReadRemoteVersionInfoCommandReceived(params);
       break;
     }
     default: {
