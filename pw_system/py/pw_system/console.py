@@ -54,12 +54,12 @@ import socket
 import serial  # type: ignore
 import IPython  # type: ignore
 
-import pw_cli.log
+from pw_cli import log as pw_cli_log
 from pw_console.embed import PwConsoleEmbed
 from pw_console.log_store import LogStore
 from pw_console.plugins.bandwidth_toolbar import BandwidthToolbar
 from pw_console.pyserial_wrapper import SerialWithLogging
-import pw_console.python_logging
+from pw_console.python_logging import create_temp_log_file, JsonLogFormatter
 from pw_rpc.console_tools.console import flattened_rpc_completions
 from pw_system.device import Device
 from pw_tokenizer.detokenize import AutoUpdatingDetokenizer
@@ -370,16 +370,16 @@ def console(
     if not logfile:
         # Create a temp logfile to prevent logs from appearing over stdout. This
         # would corrupt the prompt toolkit UI.
-        logfile = pw_console.python_logging.create_temp_log_file()
+        logfile = create_temp_log_file()
 
     log_level = logging.DEBUG if verbose else logging.INFO
 
-    pw_cli.log.install(
+    pw_cli_log.install(
         level=log_level, use_color=False, hide_timestamp=False, log_file=logfile
     )
 
     if device_logfile:
-        pw_cli.log.install(
+        pw_cli_log.install(
             level=log_level,
             use_color=False,
             hide_timestamp=False,
@@ -387,7 +387,7 @@ def console(
             logger=_DEVICE_LOG,
         )
     if host_logfile:
-        pw_cli.log.install(
+        pw_cli_log.install(
             level=log_level,
             use_color=False,
             hide_timestamp=False,
@@ -397,7 +397,7 @@ def console(
 
     if merge_device_and_host_logs:
         # Add device logs to the default logfile.
-        pw_cli.log.install(
+        pw_cli_log.install(
             level=log_level,
             use_color=False,
             hide_timestamp=False,
@@ -413,9 +413,7 @@ def console(
     if json_logfile:
         json_filehandler = logging.FileHandler(json_logfile, encoding='utf-8')
         json_filehandler.setLevel(log_level)
-        json_filehandler.setFormatter(
-            pw_console.python_logging.JsonLogFormatter()
-        )
+        json_filehandler.setFormatter(JsonLogFormatter())
         _DEVICE_LOG.addHandler(json_filehandler)
 
     detokenizer = None

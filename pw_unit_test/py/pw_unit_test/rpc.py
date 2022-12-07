@@ -19,7 +19,7 @@ from dataclasses import dataclass
 import logging
 from typing import Iterable
 
-import pw_rpc.client
+from pw_rpc.client import Services
 from pw_rpc.callback_client import OptionalTimeout, UseDefault
 from pw_unit_test_proto import unit_test_pb2
 
@@ -134,7 +134,7 @@ class LoggingEventHandler(EventHandler):
 
 
 def run_tests(
-    rpcs: pw_rpc.client.Services,
+    rpcs: Services,
     report_passed_expectations: bool = False,
     test_suites: Iterable[str] = (),
     event_handlers: Iterable[EventHandler] = (LoggingEventHandler(),),

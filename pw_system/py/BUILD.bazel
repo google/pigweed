@@ -16,6 +16,17 @@ load("@rules_python//python:defs.bzl", "py_binary", "py_library")
 
 package(default_visibility = ["//visibility:public"])
 
+# TODO(b/241456982): The following deps are required to build :pw_system_lib
+# deps = [
+#     "//pw_thread/py:pw_thread",
+#     "//pw_log:log_proto_py_pb2",
+#     "//pw_metric:metric_proto_py_pb2",
+#     "//pw_thread:thread_proto_py_pb2",
+#     "//pw_thread:thread_snapshot_service_py_pb2",
+#     "//pw_tokenizer:tokenizer_proto_py_pb2",
+#     "//pw_unit_test:unit_test_py_pb2",
+#     "//pw_unit_test/py:pw_unit_test_lib",
+# ],
 py_library(
     name = "pw_system_lib",
     srcs = [
@@ -32,15 +43,10 @@ py_library(
         "//pw_metric/py:pw_metric",
         "//pw_rpc/py:pw_rpc",
         "//pw_status/py:pw_status",
-        "//pw_thread/py:pw_thread",
         "//pw_tokenizer/py:pw_tokenizer",
     ],
 )
 
-# TODO(b/241456982): This won't run due to missing proto_py_pb2 imports:
-#   "//pw_log:log_proto_py_pb2",
-#   "//pw_thread:thread_proto_py_pb2",
-#   "//pw_tokenizer:tokenizer_proto_py_pb2",
 py_binary(
     name = "pw_system_console",
     srcs = [
