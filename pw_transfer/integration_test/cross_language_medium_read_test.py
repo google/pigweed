@@ -118,15 +118,6 @@ class MediumTransferReadIntegrationTest(test_fixture.TransferIntegrationTest):
     @parameterized.expand(_ALL_LANGUAGES_AND_VERSIONS)
     def test_parameter_drop_client_read(self, client_type, protocol_version):
         """Drops the first few transfer initialization packets."""
-        # TODO(b/257308150): Python v2 breaks and the transfer fails on this
-        # test.
-        if (
-            client_type == "python"
-            and protocol_version == config_pb2.TransferAction.ProtocolVersion.V2
-        ):
-            self.skipTest(
-                "This test fails when using v2 protocol with a Python client"
-            )
         payload = random.Random(67336391945).randbytes(1234)
         config = TransferConfig(
             self.default_server_config(),

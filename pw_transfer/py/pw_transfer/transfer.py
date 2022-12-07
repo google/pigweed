@@ -353,10 +353,15 @@ class Transfer(abc.ABC):
             self._max_retries,
         )
 
-        if self._state in (
+        retry_handshake_chunk = self._state in (
             Transfer._State.INITIATING,
             Transfer._State.TERMINATING,
-        ):
+        ) or (
+            self._last_chunk is not None
+            and self._last_chunk.type is Chunk.Type.START_ACK_CONFIRMATION
+        )
+
+        if retry_handshake_chunk:
             assert self._last_chunk is not None
             self._send_chunk(self._last_chunk)
         else:
