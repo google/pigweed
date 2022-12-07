@@ -60,9 +60,10 @@ Implementations
 ---------------
 Pigweed provides 3 different CRC32 implementations with different size and
 runtime tradeoffs.  The below table summarizes the variants.  For more detailed
-size information see the :ref:`pw_checksum-size-report` below.  Instructions counts were
-calculated by hand by analyzing the
-`assembly <https://godbolt.org/z/nY1bbb5Pb>`_.
+size information see the :ref:`pw_checksum-size-report` below.  Instructions
+counts were calculated by hand by analyzing the
+`assembly <https://godbolt.org/z/nY1bbb5Pb>`_. Clock Cycle counts were measured
+using :ref:`module-pw_perf_test` on a STM32F429I-DISC1 development board.
 
 
 .. list-table::
@@ -73,21 +74,29 @@ calculated by hand by analyzing the
      - Speed
      - Lookup table size (entries)
      - Instructions/byte (M33/-Os)
+     - Clock Cycles (123 char string)
+     - Clock Cycles (9 bytes)
    * - 8 bits per iteration (default)
      - large
      - fastest
      - 256
      - 8
+     - 1538
+     - 170
    * - 4 bits per iteration
      - small
      - fast
      - 16
      - 13
+     - 2153
+     - 215
    * - 1 bit per iteration
      - smallest
      - slow
      - 0
      - 43
+     - 7690
+     - 622
 
 The default implementation provided by the APIs above can be selected through
 :ref:`Module Configuration Options`.  Additionally ``pw_checksum`` provides

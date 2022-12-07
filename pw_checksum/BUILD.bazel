@@ -15,6 +15,7 @@
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_library",
+    "pw_cc_perf_test",
     "pw_cc_test",
 )
 
@@ -63,5 +64,14 @@ pw_cc_test(
         ":pw_checksum",
         "//pw_bytes",
         "//pw_unit_test",
+    ],
+)
+
+pw_cc_perf_test(
+    name = "crc32_perf_test",
+    srcs = ["crc32_perf_test.cc"],
+    deps = [
+        ":pw_checksum",
+        "//pw_bytes",
     ],
 )
