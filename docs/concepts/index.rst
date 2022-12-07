@@ -121,6 +121,8 @@ Pigweed code is compatible with C++20. Pigweed defines toolchains for testing
 with C++14 and C++20; see :ref:`target-host` target documentation for more
 information.
 
+.. _docs-concepts-python-version:
+
 Python
 ------
-We currently officially support Python 3.8, 3.9, and 3.10.
+Pigweed officially supports Python 3.8, 3.9, and 3.10.

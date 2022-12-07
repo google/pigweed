@@ -862,8 +862,10 @@ https://www.python.org/dev/peps/pep-0008/. All Pigweed Python code should pass
 
 Python versions
 ===============
-Pigweed code must support Python 3.7.7, 3.8, and 3.9. The only exception is
-:ref:`module-pw_env_setup`, which also supports Python 2 and 3.6.
+Pigweed officially supports :ref:`a few Python versions
+<docs-concepts-python-version>`. Upstream Pigweed code must support those Python
+versions. The only exception is :ref:`module-pw_env_setup`, which must also
+support Python 2 and 3.6.
 
 ---------------
 Build files: GN

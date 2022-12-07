@@ -20,7 +20,7 @@ Checks carried out by pw_doctor include:
     suppress the anti-vendoring portion of this check.
 
 * The presubmit git hook is installed.
-* The current Python version is 3.8 or 3.9.
+* Python is one of the :ref:`supported versions <docs-concepts-python-version>`.
 * The Pigweed virtual env is active.
 * CIPD is set up correctly and in use.
 * The CIPD packages required by Pigweed are up to date.
