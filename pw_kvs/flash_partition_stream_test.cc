@@ -49,7 +49,7 @@ class FlashStreamTest : public ::testing::Test {
     std::memset(buffer_span.data(),
                 static_cast<int>(flash_.erased_memory_content()),
                 buffer_span.size());
-    ASSERT_EQ(OkStatus(), rng.Get(buffer_span).status());
+    rng.Get(buffer_span);
   }
 
   void VerifyFlash(ConstByteSpan verify_bytes, size_t offset = 0) {

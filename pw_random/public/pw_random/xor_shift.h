@@ -37,16 +37,13 @@ class XorShiftStarRng64 : public RandomGenerator {
 
   // This generator uses entropy-seeded PRNG to never exhaust its random number
   // pool.
-  StatusWithSize Get(ByteSpan dest) final {
-    const size_t bytes_written = dest.size_bytes();
+  void Get(ByteSpan dest) final {
     while (!dest.empty()) {
       uint64_t random = Regenerate();
       size_t copy_size = std::min(dest.size_bytes(), sizeof(state_));
       std::memcpy(dest.data(), &random, copy_size);
       dest = dest.subspan(copy_size);
     }
-
-    return StatusWithSize(bytes_written);
   }
 
   // Entropy is injected by rotating the state by the number of entropy bits

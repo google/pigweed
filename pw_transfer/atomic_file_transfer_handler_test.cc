@@ -51,7 +51,7 @@ class TempDir {
   std::string GetRandomSuffix() {
     StringBuffer<9> random_suffix_str;
     uint32_t random_suffix_int = 0;
-    PW_ASSERT(rng_.GetInt(random_suffix_int).ok());
+    rng_.GetInt(random_suffix_int);
     PW_ASSERT(random_suffix_str.Format("%08" PRIx32, random_suffix_int).ok());
     return std::string(random_suffix_str.view());
   }

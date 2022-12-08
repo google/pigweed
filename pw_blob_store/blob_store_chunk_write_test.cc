@@ -41,7 +41,7 @@ class BlobStoreChunkTest : public ::testing::Test {
   void InitSourceBufferToRandom(uint64_t seed) {
     ASSERT_EQ(OkStatus(), partition_.Erase());
     random::XorShiftStarRng64 rng(seed);
-    ASSERT_EQ(OkStatus(), rng.Get(source_buffer_).status());
+    rng.Get(source_buffer_);
   }
 
   void InitSourceBufferToFill(char fill) {

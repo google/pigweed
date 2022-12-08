@@ -44,7 +44,7 @@ TEST(XorShiftStarRng64, ValidateSeries1) {
   XorShiftStarRng64 rng(seed1);
   for (size_t i = 0; i < result1_count; ++i) {
     uint64_t val = 0;
-    EXPECT_EQ(rng.GetInt(val).status(), OkStatus());
+    rng.GetInt(val);
     EXPECT_EQ(val, result1[i]);
   }
 }
@@ -53,7 +53,7 @@ TEST(XorShiftStarRng64, ValidateSeries2) {
   XorShiftStarRng64 rng(seed2);
   for (size_t i = 0; i < result2_count; ++i) {
     uint64_t val = 0;
-    EXPECT_EQ(rng.GetInt(val).status(), OkStatus());
+    rng.GetInt(val);
     EXPECT_EQ(val, result2[i]);
   }
 }
@@ -62,7 +62,7 @@ TEST(XorShiftStarRng64, InjectEntropyBits) {
   XorShiftStarRng64 rng(seed1);
   uint64_t val = 0;
   rng.InjectEntropyBits(0x1, 1);
-  EXPECT_EQ(rng.GetInt(val).status(), OkStatus());
+  rng.GetInt(val);
   EXPECT_NE(val, result1[0]);
 }
 
@@ -70,7 +70,7 @@ TEST(XorShiftStarRng64, Inject32BitsEntropy) {
   XorShiftStarRng64 rng_1(seed1);
   uint64_t first_val = 0;
   rng_1.InjectEntropyBits(0x12345678, 32);
-  EXPECT_EQ(rng_1.GetInt(first_val).status(), OkStatus());
+  rng_1.GetInt(first_val);
   EXPECT_NE(first_val, result1[0]);
 }
 
@@ -80,14 +80,14 @@ TEST(XorShiftStarRng64, EntropyBitCount) {
   XorShiftStarRng64 rng_1(seed1);
   uint64_t first_val = 0;
   rng_1.InjectEntropyBits(0x1, 1);
-  EXPECT_EQ(rng_1.GetInt(first_val).status(), OkStatus());
+  rng_1.GetInt(first_val);
 
   // Use the same starting seed.
   XorShiftStarRng64 rng_2(seed1);
   uint64_t second_val = 0;
   // Use a different number of entropy bits.
   rng_2.InjectEntropyBits(0x1, 2);
-  EXPECT_EQ(rng_2.GetInt(second_val).status(), OkStatus());
+  rng_2.GetInt(second_val);
 
   EXPECT_NE(first_val, second_val);
 }
@@ -99,7 +99,7 @@ TEST(XorShiftStarRng64, IncrementalEntropy) {
   XorShiftStarRng64 rng_1(seed1);
   uint64_t first_val = 0;
   rng_1.InjectEntropyBits(0x6, 3);
-  EXPECT_EQ(rng_1.GetInt(first_val).status(), OkStatus());
+  rng_1.GetInt(first_val);
 
   // Use the same starting seed.
   XorShiftStarRng64 rng_2(seed1);
@@ -108,7 +108,7 @@ TEST(XorShiftStarRng64, IncrementalEntropy) {
   rng_2.InjectEntropyBits(0x1, 1);
   rng_2.InjectEntropyBits(0x1, 1);
   rng_2.InjectEntropyBits(0x0, 1);
-  EXPECT_EQ(rng_2.GetInt(second_val).status(), OkStatus());
+  rng_2.GetInt(second_val);
 
   EXPECT_EQ(first_val, second_val);
 }
@@ -122,7 +122,7 @@ TEST(XorShiftStarRng64, InjectEntropy) {
                                                    std::byte(0x17),
                                                    std::byte(0x02)};
   rng.InjectEntropy(entropy);
-  EXPECT_EQ(rng.GetInt(val).status(), OkStatus());
+  rng.GetInt(val);
   EXPECT_NE(val, result1[0]);
 }
 

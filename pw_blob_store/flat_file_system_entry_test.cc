@@ -55,8 +55,7 @@ class FlatFileSystemBlobStoreEntryTest : public ::testing::Test {
     std::memset(source_buffer_.data(),
                 static_cast<int>(flash_.erased_memory_content()),
                 source_buffer_.size());
-    ASSERT_EQ(OkStatus(),
-              rng.Get(span(source_buffer_).first(init_size_bytes)).status());
+    rng.Get(span(source_buffer_).first(init_size_bytes));
   }
 
   // Fill the source buffer with random pattern based on given seed, written to

@@ -37,16 +37,12 @@ class DeferredWriteTest : public ::testing::Test {
 
   void InitFlashToRandom(uint64_t seed) {
     random::XorShiftStarRng64 rng(seed);
-    StatusWithSize sws = rng.Get(flash_.buffer());
-    ASSERT_EQ(OkStatus(), sws.status());
-    ASSERT_EQ(sws.size(), flash_.buffer().size());
+    rng.Get(flash_.buffer());
   }
 
   void InitBufferToRandom(uint64_t seed) {
     random::XorShiftStarRng64 rng(seed);
-    StatusWithSize sws = rng.Get(buffer_);
-    ASSERT_EQ(OkStatus(), sws.status());
-    ASSERT_EQ(sws.size(), buffer_.size());
+    rng.Get(buffer_);
   }
 
   void InitBufferToFill(char fill) {

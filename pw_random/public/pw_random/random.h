@@ -25,25 +25,22 @@ namespace pw::random {
 // A random generator uses injected entropy to generate random values. Many of
 // the guarantees for this interface are provided at the level of the
 // implementations. In general:
+//  * DO assume a generator will always succeed.
 //  * DO NOT assume a generator is cryptographically secure.
 //  * DO NOT assume uniformity of generated data.
-//  * DO assume a generator can be exhausted.
 class RandomGenerator {
  public:
   virtual ~RandomGenerator() = default;
 
   template <class T>
-  StatusWithSize GetInt(T& dest) {
+  void GetInt(T& dest) {
     static_assert(std::is_integral<T>::value,
                   "Use Get() for non-integral types");
-    return Get({reinterpret_cast<std::byte*>(&dest), sizeof(T)});
+    Get({reinterpret_cast<std::byte*>(&dest), sizeof(T)});
   }
 
-  // Populates the destination buffer with a randomly generated value. Returns:
-  //  OK - Successfully filled the destination buffer with random data.
-  //  RESOURCE_EXHAUSTED - Filled the buffer with the returned number of bytes.
-  //    The returned size is number of complete bytes with random data.
-  virtual StatusWithSize Get(ByteSpan dest) = 0;
+  // Populates the destination buffer with a randomly generated value.
+  virtual void Get(ByteSpan dest) = 0;
 
   // Injects entropy into the pool. `data` may have up to 32 bits of random
   // entropy. If the number of bits of entropy is less than 32, entropy is
