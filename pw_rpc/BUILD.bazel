@@ -261,6 +261,20 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "callback_test",
+    srcs = ["callback_test.cc"],
+    deps = [
+        ":pw_rpc",
+        ":pw_rpc_test_cc",
+        "//pw_rpc/raw:client_testing",
+        "//pw_sync:binary_semaphore",
+        "//pw_thread:sleep",
+        "//pw_thread:test_threads_header",
+        "//pw_thread_stl:test_threads",
+    ],
+)
+
+pw_cc_test(
     name = "channel_test",
     srcs = ["channel_test.cc"],
     deps = [

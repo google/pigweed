@@ -427,6 +427,7 @@ pw_size_diff("server_size") {
 pw_test_group("tests") {
   tests = [
     ":call_test",
+    ":callback_test",
     ":channel_test",
     ":client_server_test",
     ":test_helpers_test",
@@ -460,6 +461,21 @@ pw_test("call_test") {
     ":test_utils",
   ]
   sources = [ "call_test.cc" ]
+}
+
+pw_test("callback_test") {
+  enable_if = pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread"
+  deps = [
+    ":client",
+    ":server",
+    ":test_protos.raw_rpc",
+    "$dir_pw_sync:binary_semaphore",
+    "$dir_pw_thread:sleep",
+    "$dir_pw_thread:test_threads",
+    "$dir_pw_thread_stl:test_threads",
+    "raw:client_testing",
+  ]
+  sources = [ "callback_test.cc" ]
 }
 
 pw_test("channel_test") {
