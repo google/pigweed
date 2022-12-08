@@ -896,6 +896,9 @@ class LogPane(WindowPane):
                 ):
                     self.log_view.install_new_filter()
 
+        # Trigger any existing log messages to be added to the view.
+        self.log_view.new_logs_arrived()
+
     def create_duplicate(self) -> 'LogPane':
         """Create a duplicate of this LogView."""
         new_pane = LogPane(self.application, pane_title=self.pane_title())
