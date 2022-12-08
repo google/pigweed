@@ -200,6 +200,39 @@ struct BdAddr:
   -- Bluetooth Device Address
   0 [+6]  UInt  bd_addr
 
+
+enum IoCapability:
+  -- All other values reserved for future use.
+  [maximum_bits: 8]
+  DISPLAY_ONLY       = 0x00
+  DISPLAY_YES_NO     = 0x01
+  KEYBOARD_ONLY      = 0x02
+  NO_INPUT_NO_OUTPUT = 0x03
+
+
+enum OobDataPresent:
+  -- Whether there is out-of-band data present, and what type.
+  -- All other values reserved for future use.
+  [maximum_bits: 8]
+  NOT_PRESENT   = 0x00
+  P192_         = 0x01
+  P256_         = 0x02
+  P192_AND_P256 = 0x03
+
+
+enum AuthenticationRequirements:
+  -- All options without MITM do not require MITM protection, and a numeric
+  -- comparison with automatic accept is allowed.
+  -- All options with MITM do require MITM protection, and IO capabilities should
+  -- be used to determine the authentication procedure.
+  [maximum_bits: 8]
+  NO_BONDING             = 0x00
+  MITM_NO_BONDING        = 0x01
+  DEDICATED_BONDING      = 0x02
+  MITM_DEDICATED_BONDING = 0x03
+  GENERAL_BONDING        = 0x04
+  MITM_GENERAL_BONDING   = 0x05
+
 # ========================= HCI packet headers ==========================
 
 
@@ -334,12 +367,11 @@ struct RejectConnectionRequestCommand:
 
 
 struct EmbossLinkKey:
-  0     [+16] UInt:8[16] value
+  0 [+16]  UInt:8[16]  value
 
 
 struct LinkKeyRequestReplyCommand:
   -- Link Key Request Reply Command (v1.1) (BR/EDR)
-
   let hdr_size = EmbossCommandHeader.$size_in_bytes
   0     [+hdr_size]               EmbossCommandHeader  header
   $next [+BdAddr.$size_in_bytes]  BdAddr               bd_addr
@@ -473,6 +505,23 @@ struct RejectSynchronousConnectionRequestCommand:
 
   $next [+1]                      StatusCode           reason
     -- Reason the connection request was rejected.
+
+
+struct IoCapabilityRequestReplyCommand:
+  -- IO Capability Request Reply Command (v2.1 + EDR) (BR/EDR)
+  let hdr_size = EmbossCommandHeader.$size_in_bytes
+  0     [+hdr_size]               EmbossCommandHeader         header
+  $next [+BdAddr.$size_in_bytes]  BdAddr                      bd_addr
+    -- The BD_ADDR of the remote device involved in simple pairing process
+
+  $next [+1]                      IoCapability                io_capability
+    -- The IO capabilities of this device.
+
+  $next [+1]                      OobDataPresent              oob_data_present
+    -- Whether there is out-of-band data present, and what type.
+
+  $next [+1]                      AuthenticationRequirements  authentication_requirements
+    -- Authentication requirements of the host.
 
 
 struct SynchronousConnectionParameters:

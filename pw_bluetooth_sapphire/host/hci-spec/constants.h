@@ -1399,28 +1399,6 @@ constexpr size_t kExtendedInquiryResponseMaxNameBytes = kExtendedInquiryResponse
 // Vol 2, Part H, 1).
 constexpr uint8_t kMinEncryptionKeySize = 7;
 
-// Values for the IO Capabilities
-enum class IOCapability : uint8_t {
-  kDisplayOnly = 0x00,
-  kDisplayYesNo = 0x01,
-  kKeyboardOnly = 0x02,
-  kNoInputNoOutput = 0x03,
-};
-
-// Authentication requirements
-// All options without MITM do not require MITM protection, and a numeric
-// comparison with automatic accept is allowed.
-// All options with MITM do require MITM protection, and IO capabilities should
-// be used to determine the authentication procedure.
-enum class AuthRequirements : uint8_t {
-  kNoBonding = 0x00,
-  kMITMNoBonding = 0x01,
-  kDedicatedBonding = 0x02,
-  kMITMDedicatedBonding = 0x03,
-  kGeneralBonding = 0x04,
-  kMITMGeneralBonding = 0x05,
-};
-
 // Key types for BR/EDR link encryption as reported to the host using the Link
 // Key Notification event upon pairing or key changes (v5.0 Vol 2, Part E,
 // Section 7.7.24).

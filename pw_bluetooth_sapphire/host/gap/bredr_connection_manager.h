@@ -283,8 +283,9 @@ class BrEdrConnectionManager final {
   // All callbacks will run on |dispatcher_|.
   void SendAuthenticationRequested(hci_spec::ConnectionHandle handle, hci::ResultFunction<> cb);
   void SendIoCapabilityRequestReply(DeviceAddressBytes bd_addr,
-                                    hci_spec::IOCapability io_capability, uint8_t oob_data_present,
-                                    hci_spec::AuthRequirements auth_requirements,
+                                    hci_spec::IoCapability io_capability,
+                                    hci_spec::OobDataPresent oob_data_present,
+                                    hci_spec::AuthenticationRequirements auth_requirements,
                                     hci::ResultFunction<> cb = nullptr);
   void SendIoCapabilityRequestNegativeReply(DeviceAddressBytes bd_addr, hci_spec::StatusCode reason,
                                             hci::ResultFunction<> cb = nullptr);

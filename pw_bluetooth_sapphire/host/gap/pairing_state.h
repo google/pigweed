@@ -218,10 +218,10 @@ class PairingState final {
   // Capability Negative Reply.
   //
   // TODO(fxbug.dev/601): Indicate presence of out-of-band (OOB) data.
-  [[nodiscard]] std::optional<hci_spec::IOCapability> OnIoCapabilityRequest();
+  [[nodiscard]] std::optional<hci_spec::IoCapability> OnIoCapabilityRequest();
 
   // Caller is not expected to send a response.
-  void OnIoCapabilityResponse(hci_spec::IOCapability peer_iocap);
+  void OnIoCapabilityResponse(hci_spec::IoCapability peer_iocap);
 
   // |cb| is called with: true to send User Confirmation Request Reply, else
   // for to send User Confirmation Request Negative Reply. It may be called from
@@ -305,7 +305,7 @@ class PairingState final {
    public:
     static std::unique_ptr<Pairing> MakeInitiator(BrEdrSecurityRequirements security_requirements,
                                                   bool link_initiated);
-    static std::unique_ptr<Pairing> MakeResponder(hci_spec::IOCapability peer_iocap,
+    static std::unique_ptr<Pairing> MakeResponder(hci_spec::IoCapability peer_iocap,
                                                   bool link_inititated);
     // Make a responder for a peer that has initiated a pairing (asked for our key while in idle)
     static std::unique_ptr<Pairing> MakeResponderForBonded();
@@ -325,10 +325,10 @@ class PairingState final {
     bool allow_automatic;
 
     // IO Capability obtained from the pairing delegate.
-    hci_spec::IOCapability local_iocap;
+    hci_spec::IoCapability local_iocap;
 
     // IO Capability from peer through IO Capability Response.
-    hci_spec::IOCapability peer_iocap;
+    hci_spec::IoCapability peer_iocap;
 
     // User interaction to perform after receiving HCI user event.
     PairingAction action;
@@ -441,13 +441,13 @@ class PairingState final {
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PairingState);
 };
 
-PairingAction GetInitiatorPairingAction(hci_spec::IOCapability initiator_cap,
-                                        hci_spec::IOCapability responder_cap);
-PairingAction GetResponderPairingAction(hci_spec::IOCapability initiator_cap,
-                                        hci_spec::IOCapability responder_cap);
-hci_spec::EventCode GetExpectedEvent(hci_spec::IOCapability local_cap,
-                                     hci_spec::IOCapability peer_cap);
-bool IsPairingAuthenticated(hci_spec::IOCapability local_cap, hci_spec::IOCapability peer_cap);
+PairingAction GetInitiatorPairingAction(hci_spec::IoCapability initiator_cap,
+                                        hci_spec::IoCapability responder_cap);
+PairingAction GetResponderPairingAction(hci_spec::IoCapability initiator_cap,
+                                        hci_spec::IoCapability responder_cap);
+hci_spec::EventCode GetExpectedEvent(hci_spec::IoCapability local_cap,
+                                     hci_spec::IoCapability peer_cap);
+bool IsPairingAuthenticated(hci_spec::IoCapability local_cap, hci_spec::IoCapability peer_cap);
 
 // Get the Authentication Requirements for a locally-initiated pairing according
 // to Core Spec v5.0, Vol 2, Part E, Sec 7.1.29.
@@ -457,7 +457,8 @@ bool IsPairingAuthenticated(hci_spec::IOCapability local_cap, hci_spec::IOCapabi
 // kNoInputNoOutput, kGeneralBonding otherwise. This requests authentication
 // when possible (based on IO Capabilities), as we don't know the peer's
 // authentication requirements yet.
-hci_spec::AuthRequirements GetInitiatorAuthRequirements(hci_spec::IOCapability local_cap);
+hci_spec::AuthenticationRequirements GetInitiatorAuthenticationRequirements(
+    hci_spec::IoCapability local_cap);
 
 // Get the Authentication Requirements for a peer-initiated pairing. This will
 // request MITM protection whenever possible to obtain an "authenticated" link
@@ -468,8 +469,8 @@ hci_spec::AuthRequirements GetInitiatorAuthRequirements(hci_spec::IOCapability l
 // Bonding over BR/EDR are not supported, so this always returns
 // kMITMGeneralBonding if this pairing can result in an authenticated link key,
 // kGeneralBonding otherwise.
-hci_spec::AuthRequirements GetResponderAuthRequirements(hci_spec::IOCapability local_cap,
-                                                        hci_spec::IOCapability remote_cap);
+hci_spec::AuthenticationRequirements GetResponderAuthenticationRequirements(
+    hci_spec::IoCapability local_cap, hci_spec::IoCapability remote_cap);
 
 }  // namespace bt::gap
 

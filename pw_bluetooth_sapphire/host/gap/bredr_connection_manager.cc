@@ -950,16 +950,16 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnIoCapabilityR
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
-  const hci_spec::IOCapability io_capability = *reply;
+  const hci_spec::IoCapability io_capability = *reply;
 
   // TODO(fxbug.dev/601): Add OOB status from PeerCache.
-  const uint8_t oob_data_present = 0x00;  // None present.
+  const hci_spec::OobDataPresent oob_data_present = hci_spec::OobDataPresent::NOT_PRESENT;
 
   // TODO(fxbug.dev/1249): Determine this based on the service requirements.
-  const hci_spec::AuthRequirements auth_requirements =
-      io_capability == hci_spec::IOCapability::kNoInputNoOutput
-          ? hci_spec::AuthRequirements::kGeneralBonding
-          : hci_spec::AuthRequirements::kMITMGeneralBonding;
+  const hci_spec::AuthenticationRequirements auth_requirements =
+      io_capability == hci_spec::IoCapability::NO_INPUT_NO_OUTPUT
+          ? hci_spec::AuthenticationRequirements::GENERAL_BONDING
+          : hci_spec::AuthenticationRequirements::MITM_GENERAL_BONDING;
 
   SendIoCapabilityRequestReply(params.bd_addr, io_capability, oob_data_present, auth_requirements);
   return hci::CommandChannel::EventCallbackResult::kContinue;
@@ -1334,15 +1334,16 @@ void BrEdrConnectionManager::SendAuthenticationRequested(hci_spec::ConnectionHan
 }
 
 void BrEdrConnectionManager::SendIoCapabilityRequestReply(
-    DeviceAddressBytes bd_addr, hci_spec::IOCapability io_capability, uint8_t oob_data_present,
-    hci_spec::AuthRequirements auth_requirements, hci::ResultFunction<> cb) {
-  auto packet = hci::CommandPacket::New(hci_spec::kIOCapabilityRequestReply,
-                                        sizeof(hci_spec::IOCapabilityRequestReplyCommandParams));
-  auto params = packet->mutable_payload<hci_spec::IOCapabilityRequestReplyCommandParams>();
-  params->bd_addr = bd_addr;
-  params->io_capability = io_capability;
-  params->oob_data_present = oob_data_present;
-  params->auth_requirements = auth_requirements;
+    DeviceAddressBytes bd_addr, hci_spec::IoCapability io_capability,
+    hci_spec::OobDataPresent oob_data_present,
+    hci_spec::AuthenticationRequirements auth_requirements, hci::ResultFunction<> cb) {
+  auto packet = hci::EmbossCommandPacket::New<hci_spec::IoCapabilityRequestReplyCommandWriter>(
+      hci_spec::kIOCapabilityRequestReply);
+  auto params = packet.view_t();
+  params.bd_addr().CopyFrom(bd_addr.view());
+  params.io_capability().Write(io_capability);
+  params.oob_data_present().Write(oob_data_present);
+  params.authentication_requirements().Write(auth_requirements);
   SendCommandWithStatusCallback(std::move(packet), std::move(cb));
 }
 

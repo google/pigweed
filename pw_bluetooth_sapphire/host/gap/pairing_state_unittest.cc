@@ -21,8 +21,8 @@ namespace bt::gap {
 namespace {
 
 using hci::testing::FakeBrEdrConnection;
-using hci_spec::AuthRequirements;
-using hci_spec::IOCapability;
+using hci_spec::AuthenticationRequirements;
+using hci_spec::IoCapability;
 using hci_spec::kUserConfirmationRequestEventCode;
 using hci_spec::kUserPasskeyNotificationEventCode;
 using hci_spec::kUserPasskeyRequestEventCode;
@@ -32,7 +32,7 @@ const DeviceAddress kLocalAddress(DeviceAddress::Type::kBREDR,
                                   {0x22, 0x11, 0x00, 0xCC, 0xBB, 0xAA});
 const DeviceAddress kPeerAddress(DeviceAddress::Type::kBREDR, {0x99, 0x88, 0x77, 0xFF, 0xEE, 0xDD});
 const auto kTestLocalIoCap = sm::IOCapability::kDisplayYesNo;
-const auto kTestPeerIoCap = IOCapability::kDisplayOnly;
+const auto kTestPeerIoCap = IoCapability::DISPLAY_ONLY;
 const uint32_t kTestPasskey = 123456;
 const auto kTestLinkKeyValue = UInt128{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                                        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
@@ -571,7 +571,7 @@ TEST_F(PairingStateTest, ResponderPairingStateRejectsIoCapReqWithoutPairingDeleg
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
 
   // Advance state machine to Responder Waiting IOCap Request
-  pairing_state.OnIoCapabilityResponse(hci_spec::IOCapability::kDisplayYesNo);
+  pairing_state.OnIoCapabilityResponse(hci_spec::IoCapability::DISPLAY_YES_NO);
   EXPECT_FALSE(pairing_state.initiator());
   EXPECT_EQ(0, status_handler.call_count());
 
@@ -593,7 +593,7 @@ TEST_F(PairingStateTest, UnexpectedLinkKeyAuthenticationRaisesError) {
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
-  pairing_state.OnIoCapabilityResponse(IOCapability::kDisplayYesNo);
+  pairing_state.OnIoCapabilityResponse(IoCapability::DISPLAY_YES_NO);
   ASSERT_FALSE(pairing_state.initiator());
   static_cast<void>(pairing_state.OnIoCapabilityRequest());
   pairing_state.OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
@@ -619,7 +619,7 @@ TEST_F(PairingStateTest, LegacyPairingLinkKeyRaisesError) {
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
-  pairing_state.OnIoCapabilityResponse(IOCapability::kDisplayYesNo);
+  pairing_state.OnIoCapabilityResponse(IoCapability::DISPLAY_YES_NO);
   ASSERT_FALSE(pairing_state.initiator());
   static_cast<void>(pairing_state.OnIoCapabilityRequest());
   pairing_state.OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
@@ -644,7 +644,7 @@ TEST_F(PairingStateTest, PairingSetsConnectionLinkKey) {
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
-  pairing_state.OnIoCapabilityResponse(IOCapability::kDisplayYesNo);
+  pairing_state.OnIoCapabilityResponse(IoCapability::DISPLAY_YES_NO);
   ASSERT_FALSE(pairing_state.initiator());
   static_cast<void>(pairing_state.OnIoCapabilityRequest());
   pairing_state.OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
@@ -670,9 +670,9 @@ TEST_F(PairingStateTest, NumericComparisonPairingComparesPasskeyOnInitiatorDispl
   pairing_state.InitiatePairing(kNoSecurityRequirements, status_handler.MakeStatusCallback());
   ASSERT_TRUE(pairing_state.initiator());
   static_cast<void>(pairing_state.OnLinkKeyRequest());
-  EXPECT_EQ(IOCapability::kDisplayYesNo, *pairing_state.OnIoCapabilityRequest());
+  EXPECT_EQ(IoCapability::DISPLAY_YES_NO, *pairing_state.OnIoCapabilityRequest());
 
-  pairing_state.OnIoCapabilityResponse(IOCapability::kDisplayYesNo);
+  pairing_state.OnIoCapabilityResponse(IoCapability::DISPLAY_YES_NO);
 
   pairing_delegate.SetDisplayPasskeyCallback(
       [this](PeerId peer_id, uint32_t value, PairingDelegate::DisplayMethod method, auto cb) {
@@ -705,9 +705,9 @@ TEST_F(PairingStateTest, NumericComparisonPairingComparesPasskeyOnResponderDispl
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
-  pairing_state.OnIoCapabilityResponse(IOCapability::kDisplayYesNo);
+  pairing_state.OnIoCapabilityResponse(IoCapability::DISPLAY_YES_NO);
   ASSERT_FALSE(pairing_state.initiator());
-  EXPECT_EQ(IOCapability::kDisplayYesNo, *pairing_state.OnIoCapabilityRequest());
+  EXPECT_EQ(IoCapability::DISPLAY_YES_NO, *pairing_state.OnIoCapabilityRequest());
 
   pairing_delegate.SetDisplayPasskeyCallback(
       [this](PeerId peer_id, uint32_t value, PairingDelegate::DisplayMethod method, auto cb) {
@@ -744,9 +744,9 @@ TEST_F(PairingStateTest, NumericComparisonWithoutValueRequestsConsentFromDisplay
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
-  pairing_state.OnIoCapabilityResponse(IOCapability::kNoInputNoOutput);
+  pairing_state.OnIoCapabilityResponse(IoCapability::NO_INPUT_NO_OUTPUT);
   ASSERT_FALSE(pairing_state.initiator());
-  EXPECT_EQ(IOCapability::kDisplayYesNo, *pairing_state.OnIoCapabilityRequest());
+  EXPECT_EQ(IoCapability::DISPLAY_YES_NO, *pairing_state.OnIoCapabilityRequest());
 
   pairing_delegate.SetConfirmPairingCallback([this](PeerId peer_id, auto cb) {
     EXPECT_EQ(peer()->identifier(), peer_id);
@@ -776,9 +776,9 @@ TEST_F(PairingStateTest, PasskeyEntryPairingDisplaysPasskeyToDisplayOnlySide) {
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
-  pairing_state.OnIoCapabilityResponse(IOCapability::kKeyboardOnly);
+  pairing_state.OnIoCapabilityResponse(IoCapability::KEYBOARD_ONLY);
   ASSERT_FALSE(pairing_state.initiator());
-  EXPECT_EQ(IOCapability::kDisplayOnly, *pairing_state.OnIoCapabilityRequest());
+  EXPECT_EQ(IoCapability::DISPLAY_ONLY, *pairing_state.OnIoCapabilityRequest());
 
   pairing_delegate.SetDisplayPasskeyCallback(
       [this](PeerId peer_id, uint32_t value, PairingDelegate::DisplayMethod method, auto cb) {
@@ -807,9 +807,9 @@ TEST_F(PairingStateTest, PasskeyEntryPairingRequestsPasskeyFromKeyboardOnlySide)
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
-  pairing_state.OnIoCapabilityResponse(IOCapability::kDisplayOnly);
+  pairing_state.OnIoCapabilityResponse(IoCapability::DISPLAY_ONLY);
   ASSERT_FALSE(pairing_state.initiator());
-  EXPECT_EQ(IOCapability::kKeyboardOnly, *pairing_state.OnIoCapabilityRequest());
+  EXPECT_EQ(IoCapability::KEYBOARD_ONLY, *pairing_state.OnIoCapabilityRequest());
 
   pairing_delegate.SetRequestPasskeyCallback([this](PeerId peer_id, auto cb) {
     EXPECT_EQ(peer()->identifier(), peer_id);
@@ -852,9 +852,9 @@ TEST_F(PairingStateTest, JustWorksPairingOutgoingConnectDoesNotRequestUserAction
                                 initiator_status_handler.MakeStatusCallback());
   EXPECT_TRUE(pairing_state.initiator());
   static_cast<void>(pairing_state.OnLinkKeyRequest());
-  EXPECT_EQ(IOCapability::kNoInputNoOutput, *pairing_state.OnIoCapabilityRequest());
+  EXPECT_EQ(IoCapability::NO_INPUT_NO_OUTPUT, *pairing_state.OnIoCapabilityRequest());
 
-  pairing_state.OnIoCapabilityResponse(IOCapability::kNoInputNoOutput);
+  pairing_state.OnIoCapabilityResponse(IoCapability::NO_INPUT_NO_OUTPUT);
   bool confirmed = false;
   pairing_state.OnUserConfirmationRequest(kTestPasskey,
                                           [&confirmed](bool confirm) { confirmed = confirm; });
@@ -879,9 +879,9 @@ TEST_F(PairingStateTest, JustWorksPairingOutgoingConnectDoesNotRequestUserAction
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
-  pairing_state.OnIoCapabilityResponse(IOCapability::kNoInputNoOutput);
+  pairing_state.OnIoCapabilityResponse(IoCapability::NO_INPUT_NO_OUTPUT);
   ASSERT_FALSE(pairing_state.initiator());
-  EXPECT_EQ(IOCapability::kNoInputNoOutput, *pairing_state.OnIoCapabilityRequest());
+  EXPECT_EQ(IoCapability::NO_INPUT_NO_OUTPUT, *pairing_state.OnIoCapabilityRequest());
 
   bool confirmed = false;
   pairing_state.OnUserConfirmationRequest(kTestPasskey,
@@ -906,9 +906,9 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationReje
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
-  pairing_state.OnIoCapabilityResponse(IOCapability::kNoInputNoOutput);
+  pairing_state.OnIoCapabilityResponse(IoCapability::NO_INPUT_NO_OUTPUT);
   ASSERT_FALSE(pairing_state.initiator());
-  EXPECT_EQ(IOCapability::kNoInputNoOutput, *pairing_state.OnIoCapabilityRequest());
+  EXPECT_EQ(IoCapability::NO_INPUT_NO_OUTPUT, *pairing_state.OnIoCapabilityRequest());
 
   pairing_delegate.SetConfirmPairingCallback([this](PeerId peer_id, auto cb) {
     EXPECT_EQ(peer()->identifier(), peer_id);
@@ -947,9 +947,9 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationReje
                                 initiator_status_handler.MakeStatusCallback());
   EXPECT_TRUE(pairing_state.initiator());
   static_cast<void>(pairing_state.OnLinkKeyRequest());
-  EXPECT_EQ(IOCapability::kNoInputNoOutput, *pairing_state.OnIoCapabilityRequest());
+  EXPECT_EQ(IoCapability::NO_INPUT_NO_OUTPUT, *pairing_state.OnIoCapabilityRequest());
 
-  pairing_state.OnIoCapabilityResponse(IOCapability::kNoInputNoOutput);
+  pairing_state.OnIoCapabilityResponse(IoCapability::NO_INPUT_NO_OUTPUT);
 
   pairing_delegate.SetConfirmPairingCallback([this](PeerId peer_id, auto cb) {
     EXPECT_EQ(peer()->identifier(), peer_id);
@@ -986,9 +986,9 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationAcce
   pairing_state.SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
-  pairing_state.OnIoCapabilityResponse(IOCapability::kNoInputNoOutput);
+  pairing_state.OnIoCapabilityResponse(IoCapability::NO_INPUT_NO_OUTPUT);
   ASSERT_FALSE(pairing_state.initiator());
-  EXPECT_EQ(IOCapability::kNoInputNoOutput, *pairing_state.OnIoCapabilityRequest());
+  EXPECT_EQ(IoCapability::NO_INPUT_NO_OUTPUT, *pairing_state.OnIoCapabilityRequest());
 
   pairing_delegate.SetConfirmPairingCallback([this](PeerId peer_id, auto cb) {
     EXPECT_EQ(peer()->identifier(), peer_id);
@@ -1024,9 +1024,9 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationAcce
                                 initiator_status_handler.MakeStatusCallback());
   EXPECT_TRUE(pairing_state.initiator());
   static_cast<void>(pairing_state.OnLinkKeyRequest());
-  EXPECT_EQ(IOCapability::kNoInputNoOutput, *pairing_state.OnIoCapabilityRequest());
+  EXPECT_EQ(IoCapability::NO_INPUT_NO_OUTPUT, *pairing_state.OnIoCapabilityRequest());
 
-  pairing_state.OnIoCapabilityResponse(IOCapability::kNoInputNoOutput);
+  pairing_state.OnIoCapabilityResponse(IoCapability::NO_INPUT_NO_OUTPUT);
 
   pairing_delegate.SetConfirmPairingCallback([this](PeerId peer_id, auto cb) {
     EXPECT_EQ(peer()->identifier(), peer_id);
@@ -1254,7 +1254,7 @@ TEST_P(HandlesEvent, InWaitUserConfirmationStateAsInitiator) {
   pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
   static_cast<void>(pairing_state().OnLinkKeyRequest());
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
-  pairing_state().OnIoCapabilityResponse(IOCapability::kDisplayYesNo);
+  pairing_state().OnIoCapabilityResponse(IoCapability::DISPLAY_YES_NO);
   ASSERT_TRUE(pairing_state().initiator());
 
   RETURN_IF_FATAL(InjectEvent());
@@ -1275,7 +1275,7 @@ TEST_P(HandlesEvent, InWaitUserPasskeyRequestStateAsInitiator) {
   pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
   static_cast<void>(pairing_state().OnLinkKeyRequest());
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
-  pairing_state().OnIoCapabilityResponse(IOCapability::kDisplayOnly);
+  pairing_state().OnIoCapabilityResponse(IoCapability::DISPLAY_ONLY);
   ASSERT_TRUE(pairing_state().initiator());
 
   RETURN_IF_FATAL(InjectEvent());
@@ -1296,7 +1296,7 @@ TEST_P(HandlesEvent, InWaitUserPasskeyNotificationStateAsInitiator) {
   pairing_state().InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
   static_cast<void>(pairing_state().OnLinkKeyRequest());
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
-  pairing_state().OnIoCapabilityResponse(IOCapability::kKeyboardOnly);
+  pairing_state().OnIoCapabilityResponse(IoCapability::KEYBOARD_ONLY);
   ASSERT_TRUE(pairing_state().initiator());
 
   RETURN_IF_FATAL(InjectEvent());
@@ -1315,7 +1315,7 @@ TEST_P(HandlesEvent, InWaitUserConfirmationStateAsResponder) {
   pairing_state().SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
-  pairing_state().OnIoCapabilityResponse(IOCapability::kDisplayYesNo);
+  pairing_state().OnIoCapabilityResponse(IoCapability::DISPLAY_YES_NO);
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
   ASSERT_FALSE(pairing_state().initiator());
 
@@ -1334,7 +1334,7 @@ TEST_P(HandlesEvent, InWaitUserPasskeyRequestStateAsResponder) {
   pairing_state().SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
-  pairing_state().OnIoCapabilityResponse(IOCapability::kDisplayOnly);
+  pairing_state().OnIoCapabilityResponse(IoCapability::DISPLAY_ONLY);
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
   ASSERT_FALSE(pairing_state().initiator());
 
@@ -1353,7 +1353,7 @@ TEST_P(HandlesEvent, InWaitUserNotificationStateAsResponder) {
   pairing_state().SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
   // Advance state machine.
-  pairing_state().OnIoCapabilityResponse(IOCapability::kKeyboardOnly);
+  pairing_state().OnIoCapabilityResponse(IoCapability::KEYBOARD_ONLY);
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
   ASSERT_FALSE(pairing_state().initiator());
 
@@ -1569,199 +1569,215 @@ TEST_P(HandlesEvent, InFailedStateAfterAuthenticationFailed) {
 // Stage 1 specs in v5.0 Vol 3, Part C, Sec 5.2.2.6, Table 5.7.
 TEST_F(PairingStateTest, GetInitiatorPairingAction) {
   EXPECT_EQ(PairingAction::kAutomatic,
-            GetInitiatorPairingAction(IOCapability::kDisplayOnly, IOCapability::kDisplayOnly));
+            GetInitiatorPairingAction(IoCapability::DISPLAY_ONLY, IoCapability::DISPLAY_ONLY));
   EXPECT_EQ(PairingAction::kDisplayPasskey,
-            GetInitiatorPairingAction(IOCapability::kDisplayOnly, IOCapability::kDisplayYesNo));
+            GetInitiatorPairingAction(IoCapability::DISPLAY_ONLY, IoCapability::DISPLAY_YES_NO));
   EXPECT_EQ(PairingAction::kDisplayPasskey,
-            GetInitiatorPairingAction(IOCapability::kDisplayOnly, IOCapability::kKeyboardOnly));
-  EXPECT_EQ(PairingAction::kAutomatic,
-            GetInitiatorPairingAction(IOCapability::kDisplayOnly, IOCapability::kNoInputNoOutput));
+            GetInitiatorPairingAction(IoCapability::DISPLAY_ONLY, IoCapability::KEYBOARD_ONLY));
+  EXPECT_EQ(PairingAction::kAutomatic, GetInitiatorPairingAction(IoCapability::DISPLAY_ONLY,
+                                                                 IoCapability::NO_INPUT_NO_OUTPUT));
 
   EXPECT_EQ(PairingAction::kComparePasskey,
-            GetInitiatorPairingAction(IOCapability::kDisplayYesNo, IOCapability::kDisplayOnly));
+            GetInitiatorPairingAction(IoCapability::DISPLAY_YES_NO, IoCapability::DISPLAY_ONLY));
   EXPECT_EQ(PairingAction::kDisplayPasskey,
-            GetInitiatorPairingAction(IOCapability::kDisplayYesNo, IOCapability::kDisplayYesNo));
+            GetInitiatorPairingAction(IoCapability::DISPLAY_YES_NO, IoCapability::DISPLAY_YES_NO));
   EXPECT_EQ(PairingAction::kDisplayPasskey,
-            GetInitiatorPairingAction(IOCapability::kDisplayYesNo, IOCapability::kKeyboardOnly));
-  EXPECT_EQ(PairingAction::kGetConsent,
-            GetInitiatorPairingAction(IOCapability::kDisplayYesNo, IOCapability::kNoInputNoOutput));
+            GetInitiatorPairingAction(IoCapability::DISPLAY_YES_NO, IoCapability::KEYBOARD_ONLY));
+  EXPECT_EQ(
+      PairingAction::kGetConsent,
+      GetInitiatorPairingAction(IoCapability::DISPLAY_YES_NO, IoCapability::NO_INPUT_NO_OUTPUT));
 
   EXPECT_EQ(PairingAction::kRequestPasskey,
-            GetInitiatorPairingAction(IOCapability::kKeyboardOnly, IOCapability::kDisplayOnly));
+            GetInitiatorPairingAction(IoCapability::KEYBOARD_ONLY, IoCapability::DISPLAY_ONLY));
   EXPECT_EQ(PairingAction::kRequestPasskey,
-            GetInitiatorPairingAction(IOCapability::kKeyboardOnly, IOCapability::kDisplayYesNo));
+            GetInitiatorPairingAction(IoCapability::KEYBOARD_ONLY, IoCapability::DISPLAY_YES_NO));
   EXPECT_EQ(PairingAction::kRequestPasskey,
-            GetInitiatorPairingAction(IOCapability::kKeyboardOnly, IOCapability::kKeyboardOnly));
-  EXPECT_EQ(PairingAction::kAutomatic,
-            GetInitiatorPairingAction(IOCapability::kKeyboardOnly, IOCapability::kNoInputNoOutput));
+            GetInitiatorPairingAction(IoCapability::KEYBOARD_ONLY, IoCapability::KEYBOARD_ONLY));
+  EXPECT_EQ(PairingAction::kAutomatic, GetInitiatorPairingAction(IoCapability::KEYBOARD_ONLY,
+                                                                 IoCapability::NO_INPUT_NO_OUTPUT));
 
-  EXPECT_EQ(PairingAction::kAutomatic,
-            GetInitiatorPairingAction(IOCapability::kNoInputNoOutput, IOCapability::kDisplayOnly));
-  EXPECT_EQ(PairingAction::kAutomatic,
-            GetInitiatorPairingAction(IOCapability::kNoInputNoOutput, IOCapability::kDisplayYesNo));
-  EXPECT_EQ(PairingAction::kAutomatic,
-            GetInitiatorPairingAction(IOCapability::kNoInputNoOutput, IOCapability::kKeyboardOnly));
-  EXPECT_EQ(PairingAction::kAutomatic, GetInitiatorPairingAction(IOCapability::kNoInputNoOutput,
-                                                                 IOCapability::kNoInputNoOutput));
+  EXPECT_EQ(PairingAction::kAutomatic, GetInitiatorPairingAction(IoCapability::NO_INPUT_NO_OUTPUT,
+                                                                 IoCapability::DISPLAY_ONLY));
+  EXPECT_EQ(PairingAction::kAutomatic, GetInitiatorPairingAction(IoCapability::NO_INPUT_NO_OUTPUT,
+                                                                 IoCapability::DISPLAY_YES_NO));
+  EXPECT_EQ(PairingAction::kAutomatic, GetInitiatorPairingAction(IoCapability::NO_INPUT_NO_OUTPUT,
+                                                                 IoCapability::KEYBOARD_ONLY));
+  EXPECT_EQ(PairingAction::kAutomatic, GetInitiatorPairingAction(IoCapability::NO_INPUT_NO_OUTPUT,
+                                                                 IoCapability::NO_INPUT_NO_OUTPUT));
 }
 
 // Ibid., but for "device B."
 TEST_F(PairingStateTest, GetResponderPairingAction) {
   EXPECT_EQ(PairingAction::kAutomatic,
-            GetResponderPairingAction(IOCapability::kDisplayOnly, IOCapability::kDisplayOnly));
+            GetResponderPairingAction(IoCapability::DISPLAY_ONLY, IoCapability::DISPLAY_ONLY));
   EXPECT_EQ(PairingAction::kComparePasskey,
-            GetResponderPairingAction(IOCapability::kDisplayOnly, IOCapability::kDisplayYesNo));
+            GetResponderPairingAction(IoCapability::DISPLAY_ONLY, IoCapability::DISPLAY_YES_NO));
   EXPECT_EQ(PairingAction::kRequestPasskey,
-            GetResponderPairingAction(IOCapability::kDisplayOnly, IOCapability::kKeyboardOnly));
-  EXPECT_EQ(PairingAction::kAutomatic,
-            GetResponderPairingAction(IOCapability::kDisplayOnly, IOCapability::kNoInputNoOutput));
+            GetResponderPairingAction(IoCapability::DISPLAY_ONLY, IoCapability::KEYBOARD_ONLY));
+  EXPECT_EQ(PairingAction::kAutomatic, GetResponderPairingAction(IoCapability::DISPLAY_ONLY,
+                                                                 IoCapability::NO_INPUT_NO_OUTPUT));
 
   EXPECT_EQ(PairingAction::kDisplayPasskey,
-            GetResponderPairingAction(IOCapability::kDisplayYesNo, IOCapability::kDisplayOnly));
+            GetResponderPairingAction(IoCapability::DISPLAY_YES_NO, IoCapability::DISPLAY_ONLY));
   EXPECT_EQ(PairingAction::kComparePasskey,
-            GetResponderPairingAction(IOCapability::kDisplayYesNo, IOCapability::kDisplayYesNo));
+            GetResponderPairingAction(IoCapability::DISPLAY_YES_NO, IoCapability::DISPLAY_YES_NO));
   EXPECT_EQ(PairingAction::kRequestPasskey,
-            GetResponderPairingAction(IOCapability::kDisplayYesNo, IOCapability::kKeyboardOnly));
-  EXPECT_EQ(PairingAction::kAutomatic,
-            GetResponderPairingAction(IOCapability::kDisplayYesNo, IOCapability::kNoInputNoOutput));
+            GetResponderPairingAction(IoCapability::DISPLAY_YES_NO, IoCapability::KEYBOARD_ONLY));
+  EXPECT_EQ(PairingAction::kAutomatic, GetResponderPairingAction(IoCapability::DISPLAY_YES_NO,
+                                                                 IoCapability::NO_INPUT_NO_OUTPUT));
 
   EXPECT_EQ(PairingAction::kDisplayPasskey,
-            GetResponderPairingAction(IOCapability::kKeyboardOnly, IOCapability::kDisplayOnly));
+            GetResponderPairingAction(IoCapability::KEYBOARD_ONLY, IoCapability::DISPLAY_ONLY));
   EXPECT_EQ(PairingAction::kDisplayPasskey,
-            GetResponderPairingAction(IOCapability::kKeyboardOnly, IOCapability::kDisplayYesNo));
+            GetResponderPairingAction(IoCapability::KEYBOARD_ONLY, IoCapability::DISPLAY_YES_NO));
   EXPECT_EQ(PairingAction::kRequestPasskey,
-            GetResponderPairingAction(IOCapability::kKeyboardOnly, IOCapability::kKeyboardOnly));
-  EXPECT_EQ(PairingAction::kAutomatic,
-            GetResponderPairingAction(IOCapability::kKeyboardOnly, IOCapability::kNoInputNoOutput));
+            GetResponderPairingAction(IoCapability::KEYBOARD_ONLY, IoCapability::KEYBOARD_ONLY));
+  EXPECT_EQ(PairingAction::kAutomatic, GetResponderPairingAction(IoCapability::KEYBOARD_ONLY,
+                                                                 IoCapability::NO_INPUT_NO_OUTPUT));
 
-  EXPECT_EQ(PairingAction::kAutomatic,
-            GetResponderPairingAction(IOCapability::kNoInputNoOutput, IOCapability::kDisplayOnly));
-  EXPECT_EQ(PairingAction::kGetConsent,
-            GetResponderPairingAction(IOCapability::kNoInputNoOutput, IOCapability::kDisplayYesNo));
-  EXPECT_EQ(PairingAction::kGetConsent,
-            GetResponderPairingAction(IOCapability::kNoInputNoOutput, IOCapability::kKeyboardOnly));
-  EXPECT_EQ(PairingAction::kAutomatic, GetResponderPairingAction(IOCapability::kNoInputNoOutput,
-                                                                 IOCapability::kNoInputNoOutput));
+  EXPECT_EQ(PairingAction::kAutomatic, GetResponderPairingAction(IoCapability::NO_INPUT_NO_OUTPUT,
+                                                                 IoCapability::DISPLAY_ONLY));
+  EXPECT_EQ(PairingAction::kGetConsent, GetResponderPairingAction(IoCapability::NO_INPUT_NO_OUTPUT,
+                                                                  IoCapability::DISPLAY_YES_NO));
+  EXPECT_EQ(PairingAction::kGetConsent, GetResponderPairingAction(IoCapability::NO_INPUT_NO_OUTPUT,
+                                                                  IoCapability::KEYBOARD_ONLY));
+  EXPECT_EQ(PairingAction::kAutomatic, GetResponderPairingAction(IoCapability::NO_INPUT_NO_OUTPUT,
+                                                                 IoCapability::NO_INPUT_NO_OUTPUT));
 }
 
 // Events are obtained from ibid. association models, mapped to HCI sequences in
 // v5.0 Vol 3, Vol 2, Part F, Sec 4.2.10–15.
 TEST_F(PairingStateTest, GetExpectedEvent) {
   EXPECT_EQ(kUserConfirmationRequestEventCode,
-            GetExpectedEvent(IOCapability::kDisplayOnly, IOCapability::kDisplayOnly));
+            GetExpectedEvent(IoCapability::DISPLAY_ONLY, IoCapability::DISPLAY_ONLY));
   EXPECT_EQ(kUserConfirmationRequestEventCode,
-            GetExpectedEvent(IOCapability::kDisplayOnly, IOCapability::kDisplayYesNo));
+            GetExpectedEvent(IoCapability::DISPLAY_ONLY, IoCapability::DISPLAY_YES_NO));
   EXPECT_EQ(kUserPasskeyNotificationEventCode,
-            GetExpectedEvent(IOCapability::kDisplayOnly, IOCapability::kKeyboardOnly));
+            GetExpectedEvent(IoCapability::DISPLAY_ONLY, IoCapability::KEYBOARD_ONLY));
   EXPECT_EQ(kUserConfirmationRequestEventCode,
-            GetExpectedEvent(IOCapability::kDisplayOnly, IOCapability::kNoInputNoOutput));
+            GetExpectedEvent(IoCapability::DISPLAY_ONLY, IoCapability::NO_INPUT_NO_OUTPUT));
 
   EXPECT_EQ(kUserConfirmationRequestEventCode,
-            GetExpectedEvent(IOCapability::kDisplayYesNo, IOCapability::kDisplayOnly));
+            GetExpectedEvent(IoCapability::DISPLAY_YES_NO, IoCapability::DISPLAY_ONLY));
   EXPECT_EQ(kUserConfirmationRequestEventCode,
-            GetExpectedEvent(IOCapability::kDisplayYesNo, IOCapability::kDisplayYesNo));
+            GetExpectedEvent(IoCapability::DISPLAY_YES_NO, IoCapability::DISPLAY_YES_NO));
   EXPECT_EQ(kUserPasskeyNotificationEventCode,
-            GetExpectedEvent(IOCapability::kDisplayYesNo, IOCapability::kKeyboardOnly));
+            GetExpectedEvent(IoCapability::DISPLAY_YES_NO, IoCapability::KEYBOARD_ONLY));
   EXPECT_EQ(kUserConfirmationRequestEventCode,
-            GetExpectedEvent(IOCapability::kDisplayYesNo, IOCapability::kNoInputNoOutput));
+            GetExpectedEvent(IoCapability::DISPLAY_YES_NO, IoCapability::NO_INPUT_NO_OUTPUT));
 
   EXPECT_EQ(kUserPasskeyRequestEventCode,
-            GetExpectedEvent(IOCapability::kKeyboardOnly, IOCapability::kDisplayOnly));
+            GetExpectedEvent(IoCapability::KEYBOARD_ONLY, IoCapability::DISPLAY_ONLY));
   EXPECT_EQ(kUserPasskeyRequestEventCode,
-            GetExpectedEvent(IOCapability::kKeyboardOnly, IOCapability::kDisplayYesNo));
+            GetExpectedEvent(IoCapability::KEYBOARD_ONLY, IoCapability::DISPLAY_YES_NO));
   EXPECT_EQ(kUserPasskeyRequestEventCode,
-            GetExpectedEvent(IOCapability::kKeyboardOnly, IOCapability::kKeyboardOnly));
+            GetExpectedEvent(IoCapability::KEYBOARD_ONLY, IoCapability::KEYBOARD_ONLY));
   EXPECT_EQ(kUserConfirmationRequestEventCode,
-            GetExpectedEvent(IOCapability::kKeyboardOnly, IOCapability::kNoInputNoOutput));
+            GetExpectedEvent(IoCapability::KEYBOARD_ONLY, IoCapability::NO_INPUT_NO_OUTPUT));
 
   EXPECT_EQ(kUserConfirmationRequestEventCode,
-            GetExpectedEvent(IOCapability::kNoInputNoOutput, IOCapability::kDisplayOnly));
+            GetExpectedEvent(IoCapability::NO_INPUT_NO_OUTPUT, IoCapability::DISPLAY_ONLY));
   EXPECT_EQ(kUserConfirmationRequestEventCode,
-            GetExpectedEvent(IOCapability::kNoInputNoOutput, IOCapability::kDisplayYesNo));
+            GetExpectedEvent(IoCapability::NO_INPUT_NO_OUTPUT, IoCapability::DISPLAY_YES_NO));
   EXPECT_EQ(kUserConfirmationRequestEventCode,
-            GetExpectedEvent(IOCapability::kNoInputNoOutput, IOCapability::kKeyboardOnly));
+            GetExpectedEvent(IoCapability::NO_INPUT_NO_OUTPUT, IoCapability::KEYBOARD_ONLY));
   EXPECT_EQ(kUserConfirmationRequestEventCode,
-            GetExpectedEvent(IOCapability::kNoInputNoOutput, IOCapability::kNoInputNoOutput));
+            GetExpectedEvent(IoCapability::NO_INPUT_NO_OUTPUT, IoCapability::NO_INPUT_NO_OUTPUT));
 }
 
 // Level of authentication from ibid. table.
 TEST_F(PairingStateTest, IsPairingAuthenticated) {
-  EXPECT_FALSE(IsPairingAuthenticated(IOCapability::kDisplayOnly, IOCapability::kDisplayOnly));
-  EXPECT_FALSE(IsPairingAuthenticated(IOCapability::kDisplayOnly, IOCapability::kDisplayYesNo));
-  EXPECT_TRUE(IsPairingAuthenticated(IOCapability::kDisplayOnly, IOCapability::kKeyboardOnly));
-  EXPECT_FALSE(IsPairingAuthenticated(IOCapability::kDisplayOnly, IOCapability::kNoInputNoOutput));
-
-  EXPECT_FALSE(IsPairingAuthenticated(IOCapability::kDisplayYesNo, IOCapability::kDisplayOnly));
-  EXPECT_TRUE(IsPairingAuthenticated(IOCapability::kDisplayYesNo, IOCapability::kDisplayYesNo));
-  EXPECT_TRUE(IsPairingAuthenticated(IOCapability::kDisplayYesNo, IOCapability::kKeyboardOnly));
-  EXPECT_FALSE(IsPairingAuthenticated(IOCapability::kDisplayYesNo, IOCapability::kNoInputNoOutput));
-
-  EXPECT_TRUE(IsPairingAuthenticated(IOCapability::kKeyboardOnly, IOCapability::kDisplayOnly));
-  EXPECT_TRUE(IsPairingAuthenticated(IOCapability::kKeyboardOnly, IOCapability::kDisplayYesNo));
-  EXPECT_TRUE(IsPairingAuthenticated(IOCapability::kKeyboardOnly, IOCapability::kKeyboardOnly));
-  EXPECT_FALSE(IsPairingAuthenticated(IOCapability::kKeyboardOnly, IOCapability::kNoInputNoOutput));
-
-  EXPECT_FALSE(IsPairingAuthenticated(IOCapability::kNoInputNoOutput, IOCapability::kDisplayOnly));
-  EXPECT_FALSE(IsPairingAuthenticated(IOCapability::kNoInputNoOutput, IOCapability::kDisplayYesNo));
-  EXPECT_FALSE(IsPairingAuthenticated(IOCapability::kNoInputNoOutput, IOCapability::kKeyboardOnly));
+  EXPECT_FALSE(IsPairingAuthenticated(IoCapability::DISPLAY_ONLY, IoCapability::DISPLAY_ONLY));
+  EXPECT_FALSE(IsPairingAuthenticated(IoCapability::DISPLAY_ONLY, IoCapability::DISPLAY_YES_NO));
+  EXPECT_TRUE(IsPairingAuthenticated(IoCapability::DISPLAY_ONLY, IoCapability::KEYBOARD_ONLY));
   EXPECT_FALSE(
-      IsPairingAuthenticated(IOCapability::kNoInputNoOutput, IOCapability::kNoInputNoOutput));
+      IsPairingAuthenticated(IoCapability::DISPLAY_ONLY, IoCapability::NO_INPUT_NO_OUTPUT));
+
+  EXPECT_FALSE(IsPairingAuthenticated(IoCapability::DISPLAY_YES_NO, IoCapability::DISPLAY_ONLY));
+  EXPECT_TRUE(IsPairingAuthenticated(IoCapability::DISPLAY_YES_NO, IoCapability::DISPLAY_YES_NO));
+  EXPECT_TRUE(IsPairingAuthenticated(IoCapability::DISPLAY_YES_NO, IoCapability::KEYBOARD_ONLY));
+  EXPECT_FALSE(
+      IsPairingAuthenticated(IoCapability::DISPLAY_YES_NO, IoCapability::NO_INPUT_NO_OUTPUT));
+
+  EXPECT_TRUE(IsPairingAuthenticated(IoCapability::KEYBOARD_ONLY, IoCapability::DISPLAY_ONLY));
+  EXPECT_TRUE(IsPairingAuthenticated(IoCapability::KEYBOARD_ONLY, IoCapability::DISPLAY_YES_NO));
+  EXPECT_TRUE(IsPairingAuthenticated(IoCapability::KEYBOARD_ONLY, IoCapability::KEYBOARD_ONLY));
+  EXPECT_FALSE(
+      IsPairingAuthenticated(IoCapability::KEYBOARD_ONLY, IoCapability::NO_INPUT_NO_OUTPUT));
+
+  EXPECT_FALSE(
+      IsPairingAuthenticated(IoCapability::NO_INPUT_NO_OUTPUT, IoCapability::DISPLAY_ONLY));
+  EXPECT_FALSE(
+      IsPairingAuthenticated(IoCapability::NO_INPUT_NO_OUTPUT, IoCapability::DISPLAY_YES_NO));
+  EXPECT_FALSE(
+      IsPairingAuthenticated(IoCapability::NO_INPUT_NO_OUTPUT, IoCapability::KEYBOARD_ONLY));
+  EXPECT_FALSE(
+      IsPairingAuthenticated(IoCapability::NO_INPUT_NO_OUTPUT, IoCapability::NO_INPUT_NO_OUTPUT));
 }
 
-TEST_F(PairingStateTest, GetInitiatorAuthRequirements) {
-  EXPECT_EQ(AuthRequirements::kMITMGeneralBonding,
-            GetInitiatorAuthRequirements(IOCapability::kDisplayOnly));
-  EXPECT_EQ(AuthRequirements::kMITMGeneralBonding,
-            GetInitiatorAuthRequirements(IOCapability::kDisplayYesNo));
-  EXPECT_EQ(AuthRequirements::kMITMGeneralBonding,
-            GetInitiatorAuthRequirements(IOCapability::kKeyboardOnly));
-  EXPECT_EQ(AuthRequirements::kGeneralBonding,
-            GetInitiatorAuthRequirements(IOCapability::kNoInputNoOutput));
+TEST_F(PairingStateTest, GetInitiatorAuthenticationRequirements) {
+  EXPECT_EQ(AuthenticationRequirements::MITM_GENERAL_BONDING,
+            GetInitiatorAuthenticationRequirements(IoCapability::DISPLAY_ONLY));
+  EXPECT_EQ(AuthenticationRequirements::MITM_GENERAL_BONDING,
+            GetInitiatorAuthenticationRequirements(IoCapability::DISPLAY_YES_NO));
+  EXPECT_EQ(AuthenticationRequirements::MITM_GENERAL_BONDING,
+            GetInitiatorAuthenticationRequirements(IoCapability::KEYBOARD_ONLY));
+  EXPECT_EQ(AuthenticationRequirements::GENERAL_BONDING,
+            GetInitiatorAuthenticationRequirements(IoCapability::NO_INPUT_NO_OUTPUT));
 }
 
-TEST_F(PairingStateTest, GetResponderAuthRequirements) {
-  EXPECT_EQ(AuthRequirements::kGeneralBonding,
-            GetResponderAuthRequirements(IOCapability::kDisplayOnly, IOCapability::kDisplayOnly));
-  EXPECT_EQ(AuthRequirements::kGeneralBonding,
-            GetResponderAuthRequirements(IOCapability::kDisplayOnly, IOCapability::kDisplayYesNo));
-  EXPECT_EQ(AuthRequirements::kMITMGeneralBonding,
-            GetResponderAuthRequirements(IOCapability::kDisplayOnly, IOCapability::kKeyboardOnly));
-  EXPECT_EQ(
-      AuthRequirements::kGeneralBonding,
-      GetResponderAuthRequirements(IOCapability::kDisplayOnly, IOCapability::kNoInputNoOutput));
+TEST_F(PairingStateTest, GetResponderAuthenticationRequirements) {
+  EXPECT_EQ(AuthenticationRequirements::GENERAL_BONDING,
+            GetResponderAuthenticationRequirements(IoCapability::DISPLAY_ONLY,
+                                                   IoCapability::DISPLAY_ONLY));
+  EXPECT_EQ(AuthenticationRequirements::GENERAL_BONDING,
+            GetResponderAuthenticationRequirements(IoCapability::DISPLAY_ONLY,
+                                                   IoCapability::DISPLAY_YES_NO));
+  EXPECT_EQ(AuthenticationRequirements::MITM_GENERAL_BONDING,
+            GetResponderAuthenticationRequirements(IoCapability::DISPLAY_ONLY,
+                                                   IoCapability::KEYBOARD_ONLY));
+  EXPECT_EQ(AuthenticationRequirements::GENERAL_BONDING,
+            GetResponderAuthenticationRequirements(IoCapability::DISPLAY_ONLY,
+                                                   IoCapability::NO_INPUT_NO_OUTPUT));
 
-  EXPECT_EQ(AuthRequirements::kGeneralBonding,
-            GetResponderAuthRequirements(IOCapability::kDisplayYesNo, IOCapability::kDisplayOnly));
-  EXPECT_EQ(AuthRequirements::kMITMGeneralBonding,
-            GetResponderAuthRequirements(IOCapability::kDisplayYesNo, IOCapability::kDisplayYesNo));
-  EXPECT_EQ(AuthRequirements::kMITMGeneralBonding,
-            GetResponderAuthRequirements(IOCapability::kDisplayYesNo, IOCapability::kKeyboardOnly));
-  EXPECT_EQ(
-      AuthRequirements::kGeneralBonding,
-      GetResponderAuthRequirements(IOCapability::kDisplayYesNo, IOCapability::kNoInputNoOutput));
+  EXPECT_EQ(AuthenticationRequirements::GENERAL_BONDING,
+            GetResponderAuthenticationRequirements(IoCapability::DISPLAY_YES_NO,
+                                                   IoCapability::DISPLAY_ONLY));
+  EXPECT_EQ(AuthenticationRequirements::MITM_GENERAL_BONDING,
+            GetResponderAuthenticationRequirements(IoCapability::DISPLAY_YES_NO,
+                                                   IoCapability::DISPLAY_YES_NO));
+  EXPECT_EQ(AuthenticationRequirements::MITM_GENERAL_BONDING,
+            GetResponderAuthenticationRequirements(IoCapability::DISPLAY_YES_NO,
+                                                   IoCapability::KEYBOARD_ONLY));
+  EXPECT_EQ(AuthenticationRequirements::GENERAL_BONDING,
+            GetResponderAuthenticationRequirements(IoCapability::DISPLAY_YES_NO,
+                                                   IoCapability::NO_INPUT_NO_OUTPUT));
 
-  EXPECT_EQ(AuthRequirements::kMITMGeneralBonding,
-            GetResponderAuthRequirements(IOCapability::kKeyboardOnly, IOCapability::kDisplayOnly));
-  EXPECT_EQ(AuthRequirements::kMITMGeneralBonding,
-            GetResponderAuthRequirements(IOCapability::kKeyboardOnly, IOCapability::kDisplayYesNo));
-  EXPECT_EQ(AuthRequirements::kMITMGeneralBonding,
-            GetResponderAuthRequirements(IOCapability::kKeyboardOnly, IOCapability::kKeyboardOnly));
-  EXPECT_EQ(
-      AuthRequirements::kGeneralBonding,
-      GetResponderAuthRequirements(IOCapability::kKeyboardOnly, IOCapability::kNoInputNoOutput));
+  EXPECT_EQ(AuthenticationRequirements::MITM_GENERAL_BONDING,
+            GetResponderAuthenticationRequirements(IoCapability::KEYBOARD_ONLY,
+                                                   IoCapability::DISPLAY_ONLY));
+  EXPECT_EQ(AuthenticationRequirements::MITM_GENERAL_BONDING,
+            GetResponderAuthenticationRequirements(IoCapability::KEYBOARD_ONLY,
+                                                   IoCapability::DISPLAY_YES_NO));
+  EXPECT_EQ(AuthenticationRequirements::MITM_GENERAL_BONDING,
+            GetResponderAuthenticationRequirements(IoCapability::KEYBOARD_ONLY,
+                                                   IoCapability::KEYBOARD_ONLY));
+  EXPECT_EQ(AuthenticationRequirements::GENERAL_BONDING,
+            GetResponderAuthenticationRequirements(IoCapability::KEYBOARD_ONLY,
+                                                   IoCapability::NO_INPUT_NO_OUTPUT));
 
-  EXPECT_EQ(
-      AuthRequirements::kGeneralBonding,
-      GetResponderAuthRequirements(IOCapability::kNoInputNoOutput, IOCapability::kDisplayOnly));
-  EXPECT_EQ(
-      AuthRequirements::kGeneralBonding,
-      GetResponderAuthRequirements(IOCapability::kNoInputNoOutput, IOCapability::kDisplayYesNo));
-  EXPECT_EQ(
-      AuthRequirements::kGeneralBonding,
-      GetResponderAuthRequirements(IOCapability::kNoInputNoOutput, IOCapability::kKeyboardOnly));
-  EXPECT_EQ(
-      AuthRequirements::kGeneralBonding,
-      GetResponderAuthRequirements(IOCapability::kNoInputNoOutput, IOCapability::kNoInputNoOutput));
+  EXPECT_EQ(AuthenticationRequirements::GENERAL_BONDING,
+            GetResponderAuthenticationRequirements(IoCapability::NO_INPUT_NO_OUTPUT,
+                                                   IoCapability::DISPLAY_ONLY));
+  EXPECT_EQ(AuthenticationRequirements::GENERAL_BONDING,
+            GetResponderAuthenticationRequirements(IoCapability::NO_INPUT_NO_OUTPUT,
+                                                   IoCapability::DISPLAY_YES_NO));
+  EXPECT_EQ(AuthenticationRequirements::GENERAL_BONDING,
+            GetResponderAuthenticationRequirements(IoCapability::NO_INPUT_NO_OUTPUT,
+                                                   IoCapability::KEYBOARD_ONLY));
+  EXPECT_EQ(AuthenticationRequirements::GENERAL_BONDING,
+            GetResponderAuthenticationRequirements(IoCapability::NO_INPUT_NO_OUTPUT,
+                                                   IoCapability::NO_INPUT_NO_OUTPUT));
 }
 
 TEST_F(PairingStateTest, SkipPairingIfExistingKeyMeetsSecurityRequirements) {
@@ -1884,7 +1900,7 @@ TEST_F(PairingStateTest, SimplePairingCompleteWithErrorCodeReceivedEarlyFailsPai
   pairing_state.InitiatePairing(kNoSecurityRequirements, NoOpStatusCallback);
 
   EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest());
-  EXPECT_EQ(IOCapability::kNoInputNoOutput, *pairing_state.OnIoCapabilityRequest());
+  EXPECT_EQ(IoCapability::NO_INPUT_NO_OUTPUT, *pairing_state.OnIoCapabilityRequest());
   EXPECT_EQ(0, status_handler.call_count());
 
   const auto status_code = hci_spec::StatusCode::PAIRING_NOT_ALLOWED;
@@ -1961,7 +1977,7 @@ TEST_F(PairingStateTest,
   EXPECT_EQ(0, status_handler.call_count());
 
   static_cast<void>(pairing_state.OnIoCapabilityRequest());
-  pairing_state.OnIoCapabilityResponse(IOCapability::kNoInputNoOutput);
+  pairing_state.OnIoCapabilityResponse(IoCapability::NO_INPUT_NO_OUTPUT);
   pairing_delegate.SetConfirmPairingCallback([this](PeerId peer_id, auto cb) {
     EXPECT_EQ(peer()->identifier(), peer_id);
     ASSERT_TRUE(cb);
@@ -2063,7 +2079,7 @@ TEST_F(PairingStateTest,
   EXPECT_EQ(0, status_handler.call_count());
 
   static_cast<void>(pairing_state.OnIoCapabilityRequest());
-  pairing_state.OnIoCapabilityResponse(IOCapability::kNoInputNoOutput);
+  pairing_state.OnIoCapabilityResponse(IoCapability::NO_INPUT_NO_OUTPUT);
   pairing_delegate.SetConfirmPairingCallback([this](PeerId peer_id, auto cb) {
     EXPECT_EQ(peer()->identifier(), peer_id);
     ASSERT_TRUE(cb);
@@ -2264,8 +2280,8 @@ TEST_F(PairingStateTest, InitiatingPairingDuringAuthenticationWithExistingUnauth
   EXPECT_EQ(2u, auth_request_count());
   EXPECT_TRUE(pairing_state.initiator());
   EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest());
-  EXPECT_EQ(IOCapability::kDisplayYesNo, *pairing_state.OnIoCapabilityRequest());
-  pairing_state.OnIoCapabilityResponse(IOCapability::kDisplayYesNo);
+  EXPECT_EQ(IoCapability::DISPLAY_YES_NO, *pairing_state.OnIoCapabilityRequest());
+  pairing_state.OnIoCapabilityResponse(IoCapability::DISPLAY_YES_NO);
 
   bool confirmed = false;
   pairing_state.OnUserConfirmationRequest(kTestPasskey,

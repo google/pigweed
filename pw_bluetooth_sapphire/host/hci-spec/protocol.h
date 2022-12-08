@@ -221,25 +221,6 @@ constexpr OpCode kRejectSynchronousConnectionRequest = LinkControlOpCode(0x002A)
 // IO Capability Request Reply Command (v2.1 + EDR) (BR/EDR)
 constexpr OpCode kIOCapabilityRequestReply = LinkControlOpCode(0x002B);
 
-struct IOCapabilityRequestReplyCommandParams {
-  // The BD_ADDR of the remote device involved in simple pairing process
-  DeviceAddressBytes bd_addr;
-
-  // The IOCapabilities of this device
-  IOCapability io_capability;
-
-  // Whether there is OOB Data Present, and what type. Valid values:
-  // 0x00 - OOB authentication data not present
-  // 0x01 - P-192 OOB authentication data from remote device present
-  // 0x02 - P-256 OOB authentication data from remote device present
-  // 0x03 - P-192 and P-256 OOB authentication data from remote device present
-  uint8_t oob_data_present;
-
-  // Authentication Requirements.
-  // See enum class AuthRequirements in hci_constants.h
-  AuthRequirements auth_requirements;
-} __PACKED;
-
 struct IOCapabilityRequestReplyReturnParams {
   // See enum StatusCode in hci_constants.h.
   StatusCode status;
@@ -1342,7 +1323,7 @@ struct IOCapabilityResponseEventParams {
   DeviceAddressBytes bd_addr;
 
   // IO Capabilities of the device
-  IOCapability io_capability;
+  IoCapability io_capability;
 
   // Whether OOB Data is present.
   // Allowed values:
@@ -1352,7 +1333,7 @@ struct IOCapabilityResponseEventParams {
 
   // Authentication Requirements.
   // See AuthenticationRequirements in hci_constants.h
-  AuthRequirements auth_requirements;
+  AuthenticationRequirements auth_requirements;
 } __PACKED;
 
 // =====================================================

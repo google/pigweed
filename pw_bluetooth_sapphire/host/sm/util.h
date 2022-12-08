@@ -35,8 +35,8 @@ std::string DisplayMethodToString(Delegate::DisplayMethod method);
 std::string IOCapabilityToString(IOCapability capability);
 
 // Returns the HCI version of an SMP IOCapability. Returns
-// hci_spec::IOCapability::kNoInputNoOutput for values not in sm::IOCapability.
-hci_spec::IOCapability IOCapabilityForHci(IOCapability capability);
+// hci_spec::IoCapability::NO_INPUT_NO_OUTPUT for values not in sm::IOCapability.
+hci_spec::IoCapability IOCapabilityForHci(IOCapability capability);
 
 // Utility function to heap allocate a new PDU.
 MutableByteBufferPtr NewPdu(size_t param_size);

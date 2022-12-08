@@ -1474,22 +1474,22 @@ void FakeController::OnLinkKeyRequestNegativeReplyCommandReceived(
 }
 
 void FakeController::OnIOCapabilityRequestReplyCommand(
-    const hci_spec::IOCapabilityRequestReplyCommandParams& params) {
+    hci_spec::IoCapabilityRequestReplyCommandView params) {
   RespondWithCommandStatus(hci_spec::kIOCapabilityRequestReply, hci_spec::StatusCode::SUCCESS);
 
   hci_spec::IOCapabilityResponseEventParams io_response = {};
-  io_response.bd_addr = params.bd_addr;
+  io_response.bd_addr = DeviceAddressBytes(params.bd_addr());
   // By specifying kNoInputNoOutput, we constrain the possible subsequent event types
   // to just UserConfirmationRequestEventCode.
-  io_response.io_capability = hci_spec::IOCapability::kNoInputNoOutput;
+  io_response.io_capability = hci_spec::IoCapability::NO_INPUT_NO_OUTPUT;
   io_response.oob_data_present = 0x00;  // OOB auth data not present
-  io_response.auth_requirements = hci_spec::AuthRequirements::kGeneralBonding;
+  io_response.auth_requirements = hci_spec::AuthenticationRequirements::GENERAL_BONDING;
   SendEvent(hci_spec::kIOCapabilityResponseEventCode,
             BufferView(&io_response, sizeof(io_response)));
 
   // Event type based on |params.io_capability| and |io_response.io_capability|.
   hci_spec::UserConfirmationRequestEventParams request = {};
-  request.bd_addr = params.bd_addr;
+  request.bd_addr = DeviceAddressBytes(params.bd_addr());
   request.numeric_value = 0;
   SendEvent(hci_spec::kUserConfirmationRequestEventCode, BufferView(&request, sizeof(request)));
 }
@@ -2973,12 +2973,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnLinkKeyRequestReplyCommandReceived(params);
       break;
     }
-    case hci_spec::kIOCapabilityRequestReply: {
-      const auto& params =
-          command_packet.payload<hci_spec::IOCapabilityRequestReplyCommandParams>();
-      OnIOCapabilityRequestReplyCommand(params);
-      break;
-    }
     case hci_spec::kUserConfirmationRequestReply: {
       const auto& params =
           command_packet.payload<hci_spec::UserConfirmationRequestReplyCommandParams>();
@@ -3027,7 +3021,8 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kRemoteNameRequest:
     case hci_spec::kReadRemoteSupportedFeatures:
     case hci_spec::kReadRemoteExtendedFeatures:
-    case hci_spec::kReadRemoteVersionInfo: {
+    case hci_spec::kReadRemoteVersionInfo:
+    case hci_spec::kIOCapabilityRequestReply: {
       // This case is for packet types that have been migrated to the new Emboss architecture. Their
       // old version can be still be assembled from the HciEmulator channel, so here we repackage
       // and forward them as Emboss packets.
@@ -3127,6 +3122,11 @@ void FakeController::HandleReceivedCommandPacket(hci::EmbossCommandPacket& comma
     case hci_spec::kReadRemoteVersionInfo: {
       const auto params = command_packet.view<hci_spec::ReadRemoteVersionInfoCommandView>();
       OnReadRemoteVersionInfoCommandReceived(params);
+      break;
+    }
+    case hci_spec::kIOCapabilityRequestReply: {
+      const auto params = command_packet.view<hci_spec::IoCapabilityRequestReplyCommandView>();
+      OnIOCapabilityRequestReplyCommand(params);
       break;
     }
     default: {

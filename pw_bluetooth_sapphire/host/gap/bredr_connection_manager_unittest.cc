@@ -32,8 +32,8 @@ namespace {
 
 using namespace inspect::testing;
 
-using bt::hci_spec::AuthRequirements;
-using bt::hci_spec::IOCapability;
+using bt::hci_spec::AuthenticationRequirements;
+using bt::hci_spec::IoCapability;
 using bt::testing::CommandTransaction;
 
 using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
@@ -322,7 +322,7 @@ const auto kLinkKeyRequestNegativeReplyRsp =
                      TEST_DEV_ADDR_BYTES_LE          // peer address
     );
 
-auto MakeIoCapabilityResponse(IOCapability io_cap, AuthRequirements auth_req) {
+auto MakeIoCapabilityResponse(IoCapability io_cap, AuthenticationRequirements auth_req) {
   return StaticByteBuffer(hci_spec::kIOCapabilityResponseEventCode,
                           0x09,                    // parameter_total_size (9 bytes)
                           TEST_DEV_ADDR_BYTES_LE,  // address
@@ -336,7 +336,7 @@ const StaticByteBuffer kIoCapabilityRequest(hci_spec::kIOCapabilityRequestEventC
                                             TEST_DEV_ADDR_BYTES_LE  // address
 );
 
-auto MakeIoCapabilityRequestReply(IOCapability io_cap, AuthRequirements auth_req) {
+auto MakeIoCapabilityRequestReply(IoCapability io_cap, AuthenticationRequirements auth_req) {
   return StaticByteBuffer(LowerBits(hci_spec::kIOCapabilityRequestReply),
                           UpperBits(hci_spec::kIOCapabilityRequestReply),
                           0x09,                    // parameter_total_size (9 bytes)
@@ -748,13 +748,13 @@ class BrEdrConnectionManagerTest : public TestingBase {
     EXPECT_CMD_PACKET_OUT(test_device(), kLinkKeyRequestNegativeReply,
                           &kLinkKeyRequestNegativeReplyRsp, &kIoCapabilityRequest);
     const auto kIoCapabilityResponse = MakeIoCapabilityResponse(
-        IOCapability::kDisplayYesNo, AuthRequirements::kMITMGeneralBonding);
+        IoCapability::DISPLAY_YES_NO, AuthenticationRequirements::MITM_GENERAL_BONDING);
     const auto kUserConfirmationRequest = MakeUserConfirmationRequest(kPasskey);
-    EXPECT_CMD_PACKET_OUT(test_device(),
-                          MakeIoCapabilityRequestReply(IOCapability::kDisplayYesNo,
-                                                       AuthRequirements::kMITMGeneralBonding),
-                          &kIoCapabilityRequestReplyRsp, &kIoCapabilityResponse,
-                          &kUserConfirmationRequest);
+    EXPECT_CMD_PACKET_OUT(
+        test_device(),
+        MakeIoCapabilityRequestReply(IoCapability::DISPLAY_YES_NO,
+                                     AuthenticationRequirements::MITM_GENERAL_BONDING),
+        &kIoCapabilityRequestReplyRsp, &kIoCapabilityResponse, &kUserConfirmationRequest);
     const auto kLinkKeyNotificationWithKeyType = MakeLinkKeyNotification(key_type);
     EXPECT_CMD_PACKET_OUT(test_device(), kUserConfirmationRequestReply,
                           &kUserConfirmationRequestReplyRsp, &kSimplePairingCompleteSuccess,
@@ -771,10 +771,10 @@ class BrEdrConnectionManagerTest : public TestingBase {
                           &kLinkKeyRequest);
     EXPECT_CMD_PACKET_OUT(test_device(), kLinkKeyRequestNegativeReply,
                           &kLinkKeyRequestNegativeReplyRsp, &kIoCapabilityRequest);
-    const auto kIoCapabilityReply = MakeIoCapabilityRequestReply(IOCapability::kNoInputNoOutput,
-                                                                 AuthRequirements::kGeneralBonding);
-    const auto kIoCapabilityResponse =
-        MakeIoCapabilityResponse(IOCapability::kNoInputNoOutput, AuthRequirements::kGeneralBonding);
+    const auto kIoCapabilityReply = MakeIoCapabilityRequestReply(
+        IoCapability::NO_INPUT_NO_OUTPUT, AuthenticationRequirements::GENERAL_BONDING);
+    const auto kIoCapabilityResponse = MakeIoCapabilityResponse(
+        IoCapability::NO_INPUT_NO_OUTPUT, AuthenticationRequirements::GENERAL_BONDING);
     const auto kUserConfirmationRequest = MakeUserConfirmationRequest(kPasskey);
     EXPECT_CMD_PACKET_OUT(test_device(), kIoCapabilityReply, &kIoCapabilityRequestReplyRsp,
                           &kIoCapabilityResponse, &kUserConfirmationRequest);
@@ -1031,12 +1031,12 @@ TEST_F(BrEdrConnectionManagerTest, IoCapabilityRequestReplyWhenConnected) {
   ASSERT_EQ(kIncomingConnTransactions, transaction_count());
 
   EXPECT_CMD_PACKET_OUT(test_device(),
-                        MakeIoCapabilityRequestReply(IOCapability::kNoInputNoOutput,
-                                                     AuthRequirements::kGeneralBonding),
+                        MakeIoCapabilityRequestReply(IoCapability::NO_INPUT_NO_OUTPUT,
+                                                     AuthenticationRequirements::GENERAL_BONDING),
                         &kIoCapabilityRequestReplyRsp);
 
-  test_device()->SendCommandChannelPacket(
-      MakeIoCapabilityResponse(IOCapability::kDisplayOnly, AuthRequirements::kMITMGeneralBonding));
+  test_device()->SendCommandChannelPacket(MakeIoCapabilityResponse(
+      IoCapability::DISPLAY_ONLY, AuthenticationRequirements::MITM_GENERAL_BONDING));
   test_device()->SendCommandChannelPacket(kIoCapabilityRequest);
 
   RunLoopUntilIdle();
@@ -1059,13 +1059,14 @@ TEST_F(BrEdrConnectionManagerTest, RespondToNumericComparisonPairingAfterUserRej
   FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
   connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
-  EXPECT_CMD_PACKET_OUT(test_device(),
-                        MakeIoCapabilityRequestReply(IOCapability::kDisplayYesNo,
-                                                     AuthRequirements::kMITMGeneralBonding),
-                        &kIoCapabilityRequestReplyRsp);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      MakeIoCapabilityRequestReply(IoCapability::DISPLAY_YES_NO,
+                                   AuthenticationRequirements::MITM_GENERAL_BONDING),
+      &kIoCapabilityRequestReplyRsp);
 
-  test_device()->SendCommandChannelPacket(
-      MakeIoCapabilityResponse(IOCapability::kDisplayOnly, AuthRequirements::kGeneralBonding));
+  test_device()->SendCommandChannelPacket(MakeIoCapabilityResponse(
+      IoCapability::DISPLAY_ONLY, AuthenticationRequirements::GENERAL_BONDING));
   test_device()->SendCommandChannelPacket(kIoCapabilityRequest);
 
   pairing_delegate.SetDisplayPasskeyCallback(
@@ -1125,13 +1126,14 @@ TEST_F(BrEdrConnectionManagerTest, RespondToPasskeyEntryPairingAfterUserProvides
   FakePairingDelegate pairing_delegate(sm::IOCapability::kKeyboardOnly);
   connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
-  EXPECT_CMD_PACKET_OUT(test_device(),
-                        MakeIoCapabilityRequestReply(IOCapability::kKeyboardOnly,
-                                                     AuthRequirements::kMITMGeneralBonding),
-                        &kIoCapabilityRequestReplyRsp);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      MakeIoCapabilityRequestReply(IoCapability::KEYBOARD_ONLY,
+                                   AuthenticationRequirements::MITM_GENERAL_BONDING),
+      &kIoCapabilityRequestReplyRsp);
 
-  test_device()->SendCommandChannelPacket(
-      MakeIoCapabilityResponse(IOCapability::kDisplayOnly, AuthRequirements::kGeneralBonding));
+  test_device()->SendCommandChannelPacket(MakeIoCapabilityResponse(
+      IoCapability::DISPLAY_ONLY, AuthenticationRequirements::GENERAL_BONDING));
   test_device()->SendCommandChannelPacket(kIoCapabilityRequest);
 
   pairing_delegate.SetRequestPasskeyCallback([](PeerId, auto response_cb) {
@@ -1242,13 +1244,14 @@ TEST_F(BrEdrConnectionManagerTest, EncryptAfterPasskeyEntryPairingAndUserProvide
   FakePairingDelegate pairing_delegate(sm::IOCapability::kKeyboardOnly);
   connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
-  EXPECT_CMD_PACKET_OUT(test_device(),
-                        MakeIoCapabilityRequestReply(IOCapability::kKeyboardOnly,
-                                                     AuthRequirements::kMITMGeneralBonding),
-                        &kIoCapabilityRequestReplyRsp);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      MakeIoCapabilityRequestReply(IoCapability::KEYBOARD_ONLY,
+                                   AuthenticationRequirements::MITM_GENERAL_BONDING),
+      &kIoCapabilityRequestReplyRsp);
 
-  test_device()->SendCommandChannelPacket(
-      MakeIoCapabilityResponse(IOCapability::kDisplayOnly, AuthRequirements::kGeneralBonding));
+  test_device()->SendCommandChannelPacket(MakeIoCapabilityResponse(
+      IoCapability::DISPLAY_ONLY, AuthenticationRequirements::GENERAL_BONDING));
   test_device()->SendCommandChannelPacket(kIoCapabilityRequest);
 
   pairing_delegate.SetRequestPasskeyCallback([](PeerId, auto response_cb) {
@@ -1296,13 +1299,14 @@ TEST_F(BrEdrConnectionManagerTest, EncryptAfterPasskeyDisplayPairing) {
   FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayOnly);
   connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
-  EXPECT_CMD_PACKET_OUT(test_device(),
-                        MakeIoCapabilityRequestReply(IOCapability::kDisplayOnly,
-                                                     AuthRequirements::kMITMGeneralBonding),
-                        &kIoCapabilityRequestReplyRsp);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      MakeIoCapabilityRequestReply(IoCapability::DISPLAY_ONLY,
+                                   AuthenticationRequirements::MITM_GENERAL_BONDING),
+      &kIoCapabilityRequestReplyRsp);
 
-  test_device()->SendCommandChannelPacket(
-      MakeIoCapabilityResponse(IOCapability::kKeyboardOnly, AuthRequirements::kGeneralBonding));
+  test_device()->SendCommandChannelPacket(MakeIoCapabilityResponse(
+      IoCapability::KEYBOARD_ONLY, AuthenticationRequirements::GENERAL_BONDING));
   test_device()->SendCommandChannelPacket(kIoCapabilityRequest);
 
   pairing_delegate.SetDisplayPasskeyCallback(
@@ -1353,13 +1357,14 @@ TEST_F(BrEdrConnectionManagerTest, EncryptAndBondAfterNumericComparisonPairingAn
   FakePairingDelegate pairing_delegate(sm::IOCapability::kDisplayYesNo);
   connmgr()->SetPairingDelegate(pairing_delegate.GetWeakPtr());
 
-  EXPECT_CMD_PACKET_OUT(test_device(),
-                        MakeIoCapabilityRequestReply(IOCapability::kDisplayYesNo,
-                                                     AuthRequirements::kMITMGeneralBonding),
-                        &kIoCapabilityRequestReplyRsp);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      MakeIoCapabilityRequestReply(IoCapability::DISPLAY_YES_NO,
+                                   AuthenticationRequirements::MITM_GENERAL_BONDING),
+      &kIoCapabilityRequestReplyRsp);
 
-  test_device()->SendCommandChannelPacket(
-      MakeIoCapabilityResponse(IOCapability::kDisplayYesNo, AuthRequirements::kGeneralBonding));
+  test_device()->SendCommandChannelPacket(MakeIoCapabilityResponse(
+      IoCapability::DISPLAY_YES_NO, AuthenticationRequirements::GENERAL_BONDING));
   test_device()->SendCommandChannelPacket(kIoCapabilityRequest);
 
   pairing_delegate.SetDisplayPasskeyCallback(
@@ -1952,14 +1957,14 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capPairsAndEncryptsThenRetries) {
                         &kLinkKeyRequest);
   EXPECT_CMD_PACKET_OUT(test_device(), kLinkKeyRequestNegativeReply,
                         &kLinkKeyRequestNegativeReplyRsp, &kIoCapabilityRequest);
-  const auto kIoCapabilityResponse =
-      MakeIoCapabilityResponse(IOCapability::kDisplayYesNo, AuthRequirements::kMITMGeneralBonding);
+  const auto kIoCapabilityResponse = MakeIoCapabilityResponse(
+      IoCapability::DISPLAY_YES_NO, AuthenticationRequirements::MITM_GENERAL_BONDING);
   const auto kUserConfirmationRequest = MakeUserConfirmationRequest(kPasskey);
-  EXPECT_CMD_PACKET_OUT(test_device(),
-                        MakeIoCapabilityRequestReply(IOCapability::kDisplayYesNo,
-                                                     AuthRequirements::kMITMGeneralBonding),
-                        &kIoCapabilityRequestReplyRsp, &kIoCapabilityResponse,
-                        &kUserConfirmationRequest);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      MakeIoCapabilityRequestReply(IoCapability::DISPLAY_YES_NO,
+                                   AuthenticationRequirements::MITM_GENERAL_BONDING),
+      &kIoCapabilityRequestReplyRsp, &kIoCapabilityResponse, &kUserConfirmationRequest);
   EXPECT_CMD_PACKET_OUT(test_device(), kUserConfirmationRequestReply,
                         &kUserConfirmationRequestReplyRsp, &kSimplePairingCompleteSuccess,
                         &kLinkKeyNotification, &kAuthenticationComplete);
@@ -2163,14 +2168,14 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capPairingFinishesButDisconnects) {
                         &kLinkKeyRequest);
   EXPECT_CMD_PACKET_OUT(test_device(), kLinkKeyRequestNegativeReply,
                         &kLinkKeyRequestNegativeReplyRsp, &kIoCapabilityRequest);
-  const auto kIoCapabilityResponse =
-      MakeIoCapabilityResponse(IOCapability::kDisplayYesNo, AuthRequirements::kMITMGeneralBonding);
+  const auto kIoCapabilityResponse = MakeIoCapabilityResponse(
+      IoCapability::DISPLAY_YES_NO, AuthenticationRequirements::MITM_GENERAL_BONDING);
   const auto kUserConfirmationRequest = MakeUserConfirmationRequest(kPasskey);
-  EXPECT_CMD_PACKET_OUT(test_device(),
-                        MakeIoCapabilityRequestReply(IOCapability::kDisplayYesNo,
-                                                     AuthRequirements::kMITMGeneralBonding),
-                        &kIoCapabilityRequestReplyRsp, &kIoCapabilityResponse,
-                        &kUserConfirmationRequest);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      MakeIoCapabilityRequestReply(IoCapability::DISPLAY_YES_NO,
+                                   AuthenticationRequirements::MITM_GENERAL_BONDING),
+      &kIoCapabilityRequestReplyRsp, &kIoCapabilityResponse, &kUserConfirmationRequest);
   EXPECT_CMD_PACKET_OUT(test_device(), kUserConfirmationRequestReply,
                         &kUserConfirmationRequestReplyRsp, &kSimplePairingCompleteSuccess,
                         &kLinkKeyNotification, &kAuthenticationComplete);
@@ -2243,8 +2248,8 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capDuringPairingWaitsForPairingToComple
       [](PeerId, sm::Result<> status) { EXPECT_EQ(fit::ok(), status); });
 
   // Initiate pairing from the peer
-  test_device()->SendCommandChannelPacket(
-      MakeIoCapabilityResponse(IOCapability::kDisplayYesNo, AuthRequirements::kMITMGeneralBonding));
+  test_device()->SendCommandChannelPacket(MakeIoCapabilityResponse(
+      IoCapability::DISPLAY_YES_NO, AuthenticationRequirements::MITM_GENERAL_BONDING));
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
@@ -2254,10 +2259,11 @@ TEST_F(BrEdrConnectionManagerTest, OpenL2capDuringPairingWaitsForPairingToComple
   // are opening the L2CAP channel because the peer started pairing first.
   test_device()->SendCommandChannelPacket(kIoCapabilityRequest);
   const auto kUserConfirmationRequest = MakeUserConfirmationRequest(kPasskey);
-  EXPECT_CMD_PACKET_OUT(test_device(),
-                        MakeIoCapabilityRequestReply(IOCapability::kDisplayYesNo,
-                                                     AuthRequirements::kMITMGeneralBonding),
-                        &kIoCapabilityRequestReplyRsp, &kUserConfirmationRequest);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      MakeIoCapabilityRequestReply(IoCapability::DISPLAY_YES_NO,
+                                   AuthenticationRequirements::MITM_GENERAL_BONDING),
+      &kIoCapabilityRequestReplyRsp, &kUserConfirmationRequest);
   EXPECT_CMD_PACKET_OUT(test_device(), kUserConfirmationRequestReply,
                         &kUserConfirmationRequestReplyRsp, &kSimplePairingCompleteSuccess,
                         &kLinkKeyNotification);
@@ -2324,14 +2330,15 @@ TEST_F(BrEdrConnectionManagerTest, InterrogationInProgressAllowsBondingButNotL2c
       [](PeerId, sm::Result<> status) { EXPECT_EQ(fit::ok(), status); });
 
   // Initiate pairing from the peer before interrogation completes
-  test_device()->SendCommandChannelPacket(
-      MakeIoCapabilityResponse(IOCapability::kDisplayYesNo, AuthRequirements::kMITMGeneralBonding));
+  test_device()->SendCommandChannelPacket(MakeIoCapabilityResponse(
+      IoCapability::DISPLAY_YES_NO, AuthenticationRequirements::MITM_GENERAL_BONDING));
   test_device()->SendCommandChannelPacket(kIoCapabilityRequest);
   const auto kUserConfirmationRequest = MakeUserConfirmationRequest(kPasskey);
-  EXPECT_CMD_PACKET_OUT(test_device(),
-                        MakeIoCapabilityRequestReply(IOCapability::kDisplayYesNo,
-                                                     AuthRequirements::kMITMGeneralBonding),
-                        &kIoCapabilityRequestReplyRsp, &kUserConfirmationRequest);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      MakeIoCapabilityRequestReply(IoCapability::DISPLAY_YES_NO,
+                                   AuthenticationRequirements::MITM_GENERAL_BONDING),
+      &kIoCapabilityRequestReplyRsp, &kUserConfirmationRequest);
   EXPECT_CMD_PACKET_OUT(test_device(), kUserConfirmationRequestReply,
                         &kUserConfirmationRequestReplyRsp, &kSimplePairingCompleteSuccess,
                         &kLinkKeyNotification);

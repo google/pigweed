@@ -11,8 +11,8 @@
 
 namespace bt::gap {
 
-using hci_spec::AuthRequirements;
-using hci_spec::IOCapability;
+using hci_spec::AuthenticationRequirements;
+using hci_spec::IoCapability;
 using sm::util::IOCapabilityForHci;
 
 PairingState::PairingState(fxl::WeakPtr<Peer> peer, hci::BrEdrConnection* link, bool link_initiated,
@@ -114,7 +114,7 @@ void PairingState::InitiateNextPairingRequest() {
   send_auth_request_callback_();
 }
 
-std::optional<IOCapability> PairingState::OnIoCapabilityRequest() {
+std::optional<IoCapability> PairingState::OnIoCapabilityRequest() {
   if (state() != State::kInitiatorWaitIoCapRequest &&
       state() != State::kResponderWaitIoCapRequest) {
     FailWithUnexpectedEvent(__func__);
@@ -149,7 +149,7 @@ std::optional<IOCapability> PairingState::OnIoCapabilityRequest() {
   return current_pairing_->local_iocap;
 }
 
-void PairingState::OnIoCapabilityResponse(IOCapability peer_iocap) {
+void PairingState::OnIoCapabilityResponse(IoCapability peer_iocap) {
   // If we preivously provided a key for peer to pair, but that didn't work, they may try to
   // re-pair.  Cancel the previous pairing if they try to restart.
   if (state() == State::kWaitEncryption) {
@@ -497,7 +497,7 @@ std::unique_ptr<PairingState::Pairing> PairingState::Pairing::MakeInitiator(
 }
 
 std::unique_ptr<PairingState::Pairing> PairingState::Pairing::MakeResponder(
-    hci_spec::IOCapability peer_iocap, bool link_initiated) {
+    hci_spec::IoCapability peer_iocap, bool link_initiated) {
   // Private ctor is inaccessible to std::make_unique.
   std::unique_ptr<Pairing> pairing(new Pairing(link_initiated));
   pairing->initiator = false;
@@ -685,21 +685,21 @@ void PairingState::FailWithUnexpectedEvent(const char* handler_name) {
   SignalStatus(ToResult(HostError::kNotSupported), __func__);
 }
 
-PairingAction GetInitiatorPairingAction(IOCapability initiator_cap, IOCapability responder_cap) {
-  if (initiator_cap == IOCapability::kNoInputNoOutput) {
+PairingAction GetInitiatorPairingAction(IoCapability initiator_cap, IoCapability responder_cap) {
+  if (initiator_cap == IoCapability::NO_INPUT_NO_OUTPUT) {
     return PairingAction::kAutomatic;
   }
-  if (responder_cap == IOCapability::kNoInputNoOutput) {
-    if (initiator_cap == IOCapability::kDisplayYesNo) {
+  if (responder_cap == IoCapability::NO_INPUT_NO_OUTPUT) {
+    if (initiator_cap == IoCapability::DISPLAY_YES_NO) {
       return PairingAction::kGetConsent;
     }
     return PairingAction::kAutomatic;
   }
-  if (initiator_cap == IOCapability::kKeyboardOnly) {
+  if (initiator_cap == IoCapability::KEYBOARD_ONLY) {
     return PairingAction::kRequestPasskey;
   }
-  if (responder_cap == IOCapability::kDisplayOnly) {
-    if (initiator_cap == IOCapability::kDisplayYesNo) {
+  if (responder_cap == IoCapability::DISPLAY_ONLY) {
+    if (initiator_cap == IoCapability::DISPLAY_YES_NO) {
       return PairingAction::kComparePasskey;
     }
     return PairingAction::kAutomatic;
@@ -707,56 +707,59 @@ PairingAction GetInitiatorPairingAction(IOCapability initiator_cap, IOCapability
   return PairingAction::kDisplayPasskey;
 }
 
-PairingAction GetResponderPairingAction(IOCapability initiator_cap, IOCapability responder_cap) {
-  if (initiator_cap == IOCapability::kNoInputNoOutput &&
-      responder_cap == IOCapability::kKeyboardOnly) {
+PairingAction GetResponderPairingAction(IoCapability initiator_cap, IoCapability responder_cap) {
+  if (initiator_cap == IoCapability::NO_INPUT_NO_OUTPUT &&
+      responder_cap == IoCapability::KEYBOARD_ONLY) {
     return PairingAction::kGetConsent;
   }
-  if (initiator_cap == IOCapability::kDisplayYesNo &&
-      responder_cap == IOCapability::kDisplayYesNo) {
+  if (initiator_cap == IoCapability::DISPLAY_YES_NO &&
+      responder_cap == IoCapability::DISPLAY_YES_NO) {
     return PairingAction::kComparePasskey;
   }
   return GetInitiatorPairingAction(responder_cap, initiator_cap);
 }
 
-hci_spec::EventCode GetExpectedEvent(IOCapability local_cap, IOCapability peer_cap) {
-  if (local_cap == IOCapability::kNoInputNoOutput || peer_cap == IOCapability::kNoInputNoOutput) {
+hci_spec::EventCode GetExpectedEvent(IoCapability local_cap, IoCapability peer_cap) {
+  if (local_cap == IoCapability::NO_INPUT_NO_OUTPUT ||
+      peer_cap == IoCapability::NO_INPUT_NO_OUTPUT) {
     return hci_spec::kUserConfirmationRequestEventCode;
   }
-  if (local_cap == IOCapability::kKeyboardOnly) {
+  if (local_cap == IoCapability::KEYBOARD_ONLY) {
     return hci_spec::kUserPasskeyRequestEventCode;
   }
-  if (peer_cap == IOCapability::kKeyboardOnly) {
+  if (peer_cap == IoCapability::KEYBOARD_ONLY) {
     return hci_spec::kUserPasskeyNotificationEventCode;
   }
   return hci_spec::kUserConfirmationRequestEventCode;
 }
 
-bool IsPairingAuthenticated(IOCapability local_cap, IOCapability peer_cap) {
-  if (local_cap == IOCapability::kNoInputNoOutput || peer_cap == IOCapability::kNoInputNoOutput) {
+bool IsPairingAuthenticated(IoCapability local_cap, IoCapability peer_cap) {
+  if (local_cap == IoCapability::NO_INPUT_NO_OUTPUT ||
+      peer_cap == IoCapability::NO_INPUT_NO_OUTPUT) {
     return false;
   }
-  if (local_cap == IOCapability::kDisplayYesNo && peer_cap == IOCapability::kDisplayYesNo) {
+  if (local_cap == IoCapability::DISPLAY_YES_NO && peer_cap == IoCapability::DISPLAY_YES_NO) {
     return true;
   }
-  if (local_cap == IOCapability::kKeyboardOnly || peer_cap == IOCapability::kKeyboardOnly) {
+  if (local_cap == IoCapability::KEYBOARD_ONLY || peer_cap == IoCapability::KEYBOARD_ONLY) {
     return true;
   }
   return false;
 }
 
-AuthRequirements GetInitiatorAuthRequirements(IOCapability local_cap) {
-  if (local_cap == IOCapability::kNoInputNoOutput) {
-    return AuthRequirements::kGeneralBonding;
+AuthenticationRequirements GetInitiatorAuthenticationRequirements(IoCapability local_cap) {
+  if (local_cap == IoCapability::NO_INPUT_NO_OUTPUT) {
+    return AuthenticationRequirements::GENERAL_BONDING;
   }
-  return AuthRequirements::kMITMGeneralBonding;
+  return AuthenticationRequirements::MITM_GENERAL_BONDING;
 }
 
-AuthRequirements GetResponderAuthRequirements(IOCapability local_cap, IOCapability peer_cap) {
+AuthenticationRequirements GetResponderAuthenticationRequirements(IoCapability local_cap,
+                                                                  IoCapability peer_cap) {
   if (IsPairingAuthenticated(local_cap, peer_cap)) {
-    return AuthRequirements::kMITMGeneralBonding;
+    return AuthenticationRequirements::MITM_GENERAL_BONDING;
   }
-  return AuthRequirements::kGeneralBonding;
+  return AuthenticationRequirements::GENERAL_BONDING;
 }
 
 }  // namespace bt::gap
