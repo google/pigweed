@@ -122,7 +122,7 @@ class ProgressBarImpl:
 
         progress_controls = [
             Window(
-                content=_ProgressControl(self, f),  # type: ignore
+                content=_ProgressControl(self, f, None),  # type: ignore
                 width=functools.partial(width_for_formatter, f),
             )
             for f in self.formatters

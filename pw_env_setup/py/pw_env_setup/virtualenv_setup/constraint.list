@@ -43,9 +43,9 @@ parso==0.8.3
 pep517==0.12.0
 pexpect==4.8.0
 pickleshare==0.7.5
-prompt-toolkit==3.0.26
+prompt-toolkit==3.0.36
 protobuf==3.20.1
-ptpython==3.0.20
+ptpython==3.0.22
 ptyprocess==0.7.0
 pyasn1==0.4.8
 pyasn1-modules==0.2.8

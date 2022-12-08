@@ -176,7 +176,7 @@ class PwPtPythonRepl(
             #             [create_python_input_window()] + extra_body
             #           ), ...
             ptpython_buffer_control = (
-                self.ptpython_layout.root_container.children[0]
+                self.ptpython_layout.root_container.children[0]  # type: ignore
                 .children[0]
                 .children[0]
                 .content.children[0]
