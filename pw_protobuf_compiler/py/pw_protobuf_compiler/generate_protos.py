@@ -31,8 +31,6 @@ except ImportError:
 
 _LOG = logging.getLogger(__name__)
 
-_COMMON_FLAGS = ('--experimental_allow_proto3_optional',)
-
 
 def _argument_parser() -> argparse.ArgumentParser:
     """Registers the script's arguments on an argument parser."""
@@ -68,14 +66,36 @@ def _argument_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         '--sources', type=Path, nargs='+', help='Input protobuf files'
     )
+    parser.add_argument(
+        '--protoc', type=Path, default='protoc', help='Path to protoc'
+    )
+    parser.add_argument(
+        '--no-experimental-proto3-optional',
+        dest='experimental_proto3_optional',
+        action='store_false',
+        help='Do not invoke protoc with --experimental_allow_proto3_optional',
+    )
+    parser.add_argument(
+        '--no-generate-type-hints',
+        dest='generate_type_hints',
+        action='store_false',
+        help='Do not generate pyi files for python',
+    )
 
     return parser
+
+
+def protoc_common_args(args: argparse.Namespace) -> Tuple[str, ...]:
+    flags: Tuple[str, ...] = ()
+    if args.experimental_proto3_optional:
+        flags += ('--experimental_allow_proto3_optional',)
+    return flags
 
 
 def protoc_pwpb_args(
     args: argparse.Namespace, include_paths: List[str]
 ) -> Tuple[str, ...]:
-    return _COMMON_FLAGS + (
+    return (
         '--plugin',
         f'protoc-gen-custom={args.plugin_path}',
         f'--custom_opt=-I{args.compile_dir}',
@@ -88,7 +108,7 @@ def protoc_pwpb_args(
 def protoc_pwpb_rpc_args(
     args: argparse.Namespace, _include_paths: List[str]
 ) -> Tuple[str, ...]:
-    return _COMMON_FLAGS + (
+    return (
         '--plugin',
         f'protoc-gen-custom={args.plugin_path}',
         '--custom_out',
@@ -99,7 +119,7 @@ def protoc_pwpb_rpc_args(
 def protoc_go_args(
     args: argparse.Namespace, _include_paths: List[str]
 ) -> Tuple[str, ...]:
-    return _COMMON_FLAGS + (
+    return (
         '--go_out',
         f'plugins=grpc:{args.out_dir}',
     )
@@ -109,7 +129,7 @@ def protoc_nanopb_args(
     args: argparse.Namespace, _include_paths: List[str]
 ) -> Tuple[str, ...]:
     # nanopb needs to know of the include path to parse *.options files
-    return _COMMON_FLAGS + (
+    return (
         '--plugin',
         f'protoc-gen-nanopb={args.plugin_path}',
         # nanopb_opt provides the flags to use for nanopb_out. Windows doesn't
@@ -124,7 +144,7 @@ def protoc_nanopb_args(
 def protoc_nanopb_rpc_args(
     args: argparse.Namespace, _include_paths: List[str]
 ) -> Tuple[str, ...]:
-    return _COMMON_FLAGS + (
+    return (
         '--plugin',
         f'protoc-gen-custom={args.plugin_path}',
         '--custom_out',
@@ -135,7 +155,7 @@ def protoc_nanopb_rpc_args(
 def protoc_raw_rpc_args(
     args: argparse.Namespace, _include_paths: List[str]
 ) -> Tuple[str, ...]:
-    return _COMMON_FLAGS + (
+    return (
         '--plugin',
         f'protoc-gen-custom={args.plugin_path}',
         '--custom_out',
@@ -146,12 +166,18 @@ def protoc_raw_rpc_args(
 def protoc_python_args(
     args: argparse.Namespace, _include_paths: List[str]
 ) -> Tuple[str, ...]:
-    return _COMMON_FLAGS + (
+    flags: Tuple[str, ...] = (
         '--python_out',
         args.out_dir,
-        '--mypy_out',
-        args.out_dir,
     )
+
+    if args.generate_type_hints:
+        flags += (
+            '--mypy_out',
+            args.out_dir,
+        )
+
+    return flags
 
 
 _DefaultArgsFunction = Callable[
@@ -209,9 +235,10 @@ def main() -> int:
             _LOG.debug('Using generated plugin wrapper %s', args.plugin_path)
 
     cmd: Tuple[Union[str, Path], ...] = (
-        'protoc',
+        args.protoc,
         f'-I{args.compile_dir}',
         *[f'-I{include_path}' for include_path in include_paths],
+        *protoc_common_args(args),
         *DEFAULT_PROTOC_ARGS[args.language](args, include_paths),
         *args.sources,
     )
