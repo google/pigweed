@@ -64,6 +64,8 @@ class Client {
                             : transfer_thread.max_chunk_size(),
                         transfer_thread.max_chunk_size(),
                         extend_window_divisor),
+        max_retries_(cfg::kDefaultMaxRetries),
+        max_lifetime_retries_(cfg::kDefaultMaxLifetimeRetries),
         has_read_stream_(false),
         has_write_stream_(false) {}
 
@@ -103,6 +105,22 @@ class Client {
     return OkStatus();
   }
 
+  constexpr Status set_max_retries(uint32_t max_retries) {
+    if (max_retries < 1 || max_retries > max_lifetime_retries_) {
+      return Status::InvalidArgument();
+    }
+    max_retries_ = max_retries;
+    return OkStatus();
+  }
+
+  constexpr Status set_max_lifetime_retries(uint32_t max_lifetime_retries) {
+    if (max_lifetime_retries < max_retries_) {
+      return Status::InvalidArgument();
+    }
+    max_lifetime_retries_ = max_lifetime_retries;
+    return OkStatus();
+  }
+
  private:
   static constexpr ProtocolVersion kDefaultProtocolVersion =
       ProtocolVersion::kLatest;
@@ -113,7 +131,10 @@ class Client {
 
   Transfer::Client client_;
   TransferThread& transfer_thread_;
+
   internal::TransferParameters max_parameters_;
+  uint32_t max_retries_;
+  uint32_t max_lifetime_retries_;
 
   bool has_read_stream_;
   bool has_write_stream_;

@@ -49,8 +49,8 @@ Status Client::Read(uint32_t resource_id,
                                        max_parameters_,
                                        std::move(on_completion),
                                        timeout,
-                                       cfg::kDefaultMaxRetries,
-                                       cfg::kDefaultMaxLifetimeRetries);
+                                       max_retries_,
+                                       max_lifetime_retries_);
   return OkStatus();
 }
 
@@ -83,8 +83,8 @@ Status Client::Write(uint32_t resource_id,
                                        max_parameters_,
                                        std::move(on_completion),
                                        timeout,
-                                       cfg::kDefaultMaxRetries,
-                                       cfg::kDefaultMaxLifetimeRetries);
+                                       max_retries_,
+                                       max_lifetime_retries_);
 
   return OkStatus();
 }
