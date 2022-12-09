@@ -81,6 +81,10 @@ message ClientConfig {
   //
   // TODO(tpudlik): google.protobuf.Duration?
   uint32 chunk_timeout_ms = 4;
+
+  // Cumulative maximum number of times to retry over the course of the transfer
+  // before giving up.
+  uint32 max_lifetime_retries = 5;
 }
 
 // Stacks of paths to use when doing transfers. Each new initiated transfer

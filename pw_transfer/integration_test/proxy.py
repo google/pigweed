@@ -32,6 +32,7 @@ from typing import Any, Awaitable, Callable, Iterable, List, Optional
 
 from google.protobuf import text_format
 
+from pigweed.pw_rpc.internal import packet_pb2
 from pigweed.pw_transfer import transfer_pb2
 from pigweed.pw_transfer.integration_test import config_pb2
 from pw_hdlc import decode
@@ -58,6 +59,7 @@ class Event(Enum):
     TRANSFER_START = 1
     PARAMETERS_RETRANSMIT = 2
     PARAMETERS_CONTINUE = 3
+    START_ACK_CONFIRMATION = 4
 
 
 class Filter(abc.ABC):
@@ -345,15 +347,28 @@ class WindowPacketDropper(Filter):
         self._window_packet = 0
 
     async def process(self, data: bytes) -> None:
-        if self._window_packet != self._window_packet_to_drop:
+        try:
+            is_data_chunk = (
+                _extract_transfer_chunk(data).type is Chunk.Type.DATA
+            )
+        except Exception:
+            # Invalid / non-chunk data (e.g. text logs); ignore.
+            is_data_chunk = False
+
+        # Only count transfer data chunks as part of a window.
+        if is_data_chunk:
+            if self._window_packet != self._window_packet_to_drop:
+                await self.send_data(data)
+
+            self._window_packet += 1
+        else:
             await self.send_data(data)
 
-        self._window_packet += 1
-
     def handle_event(self, event: Event) -> None:
-        if (
-            event is Event.PARAMETERS_RETRANSMIT
-            or event is Event.PARAMETERS_CONTINUE
+        if event in (
+            Event.PARAMETERS_RETRANSMIT,
+            Event.PARAMETERS_CONTINUE,
+            Event.START_ACK_CONFIRMATION,
         ):
             self._window_packet = 0
 
@@ -376,11 +391,11 @@ class EventFilter(Filter):
 
     async def process(self, data: bytes) -> None:
         try:
-            raw_chunk = transfer_pb2.Chunk()
-            raw_chunk.ParseFromString(data)
-            chunk = Chunk.from_message(raw_chunk)
+            chunk = _extract_transfer_chunk(data)
             if chunk.type is Chunk.Type.START:
                 await self._queue.put(Event.TRANSFER_START)
+            if chunk.type is Chunk.Type.START_ACK_CONFIRMATION:
+                await self._queue.put(Event.START_ACK_CONFIRMATION)
             elif chunk.type is Chunk.Type.PARAMETERS_RETRANSMIT:
                 await self._queue.put(Event.PARAMETERS_RETRANSMIT)
             elif chunk.type is Chunk.Type.PARAMETERS_CONTINUE:
@@ -390,6 +405,23 @@ class EventFilter(Filter):
             pass
 
         await self.send_data(data)
+
+
+def _extract_transfer_chunk(data: bytes) -> Chunk:
+    """Gets a transfer Chunk from an HDLC frame containing an RPC packet.
+
+    Raises an exception if a valid chunk does not exist.
+    """
+
+    decoder = decode.FrameDecoder()
+    for frame in decoder.process(data):
+        packet = packet_pb2.RpcPacket()
+        packet.ParseFromString(frame.data)
+        raw_chunk = transfer_pb2.Chunk()
+        raw_chunk.ParseFromString(packet.payload)
+        return Chunk.from_message(raw_chunk)
+
+    raise ValueError("Invalid transfer frame")
 
 
 async def _handle_simplex_events(

@@ -26,6 +26,7 @@ import dev.pigweed.pw_transfer.ProtocolVersion;
 import dev.pigweed.pw_transfer.TransferClient;
 import dev.pigweed.pw_transfer.TransferError;
 import dev.pigweed.pw_transfer.TransferService;
+import dev.pigweed.pw_transfer.TransferTimeoutSettings;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -155,6 +156,9 @@ public class JavaClient {
     if (config_builder.getMaxRetries() == 0) {
       throw new AssertionError("max_retries may not be 0");
     }
+    if (config_builder.getMaxLifetimeRetries() == 0) {
+      throw new AssertionError("max_lifetime_retries may not be 0");
+    }
     return config_builder.build();
   }
 
@@ -253,10 +257,12 @@ public class JavaClient {
     TransferClient client = new TransferClient(
         hdlc_rpc_client.getRpcClient().method(CHANNEL_ID, TransferService.get().name() + "/Read"),
         hdlc_rpc_client.getRpcClient().method(CHANNEL_ID, TransferService.get().name() + "/Write"),
-        config.getChunkTimeoutMs(),
-        config.getInitialChunkTimeoutMs(),
-        config.getMaxRetries(),
-        () -> false);
+        TransferTimeoutSettings.builder()
+            .setTimeoutMillis(config.getChunkTimeoutMs())
+            .setInitialTimeoutMillis(config.getInitialChunkTimeoutMs())
+            .setMaxRetries(config.getMaxRetries())
+            .setMaxLifetimeRetries(config.getMaxLifetimeRetries())
+            .build());
 
     for (ConfigProtos.TransferAction action : config.getTransferActionsList()) {
       int resourceId = action.getResourceId();

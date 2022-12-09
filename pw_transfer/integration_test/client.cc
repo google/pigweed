@@ -88,6 +88,9 @@ pw::Status PerformTransferActions(const pw::transfer::ClientConfig& config) {
                               rpc::integration_test::kChannelId,
                               transfer_thread);
 
+  client.set_max_retries(config.max_retries());
+  client.set_max_lifetime_retries(config.max_lifetime_retries());
+
   Status status = pw::OkStatus();
   for (const pw::transfer::TransferAction& action : config.transfer_actions()) {
     TransferResult result;

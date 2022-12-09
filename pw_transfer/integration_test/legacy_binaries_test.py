@@ -61,6 +61,14 @@ class LegacyTransferIntegrationTest(test_fixture.TransferIntegrationTest):
     LEGACY_SERVER = False
     LEGACY_CLIENT = False
 
+    def default_config(self) -> test_fixture.TransferConfig:
+        # The legacy binaries aren't aware of the max_lifetime_retries field,
+        # which was added more recently. Clear it so it isn't encoded into the
+        # serialized message.
+        config = super().default_config()
+        config.client.max_lifetime_retries = 0
+        return config
+
     @parameterized.expand(
         [
             ("cpp"),

@@ -21,6 +21,12 @@ import time
 from typing import List
 import unittest
 
+from pigweed.pw_rpc.internal import packet_pb2
+from pigweed.pw_transfer import transfer_pb2
+from pw_hdlc import encode
+from pw_transfer import ProtocolVersion
+from pw_transfer.chunk import Chunk
+
 import proxy
 
 
@@ -204,11 +210,21 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
         )
 
         packets = [
-            b'1',
-            b'2',
-            b'3',
-            b'4',
-            b'5',
+            _encode_rpc_frame(
+                Chunk(ProtocolVersion.VERSION_TWO, Chunk.Type.DATA, data=b'1')
+            ),
+            _encode_rpc_frame(
+                Chunk(ProtocolVersion.VERSION_TWO, Chunk.Type.DATA, data=b'2')
+            ),
+            _encode_rpc_frame(
+                Chunk(ProtocolVersion.VERSION_TWO, Chunk.Type.DATA, data=b'3')
+            ),
+            _encode_rpc_frame(
+                Chunk(ProtocolVersion.VERSION_TWO, Chunk.Type.DATA, data=b'4')
+            ),
+            _encode_rpc_frame(
+                Chunk(ProtocolVersion.VERSION_TWO, Chunk.Type.DATA, data=b'5')
+            ),
         ]
 
         expected_packets = packets[1:]
@@ -228,6 +244,17 @@ class ProxyTest(unittest.IsolatedAsyncioTestCase):
                 await window_packet_dropper.process(packet)
             self.assertEqual(sent_packets, expected_packets)
             window_packet_dropper.handle_event(event)
+
+
+def _encode_rpc_frame(chunk: Chunk) -> bytes:
+    packet = packet_pb2.RpcPacket(
+        type=packet_pb2.PacketType.SERVER_STREAM,
+        channel_id=101,
+        service_id=1001,
+        method_id=100001,
+        payload=chunk.to_message().SerializeToString(),
+    ).SerializeToString()
+    return encode.ui_frame(73, packet)
 
 
 if __name__ == '__main__':

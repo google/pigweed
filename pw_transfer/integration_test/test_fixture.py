@@ -376,6 +376,7 @@ class TransferIntegrationTest(unittest.TestCase):
     def default_client_config() -> config_pb2.ClientConfig:
         return config_pb2.ClientConfig(
             max_retries=5,
+            max_lifetime_retries=1500,
             initial_chunk_timeout_ms=4000,
             chunk_timeout_ms=4000,
         )

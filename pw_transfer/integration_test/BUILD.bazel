@@ -55,6 +55,7 @@ py_test(
     main = "proxy_test.py",
     deps = [
         ":config_pb2",
+        "//pw_rpc:internal_packet_proto_pb2",
         "//pw_transfer:transfer_proto_pb2",
         "//pw_transfer/py:pw_transfer",
     ],

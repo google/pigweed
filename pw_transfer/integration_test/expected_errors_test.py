@@ -282,6 +282,55 @@ class ErrorTransferIntegrationTest(test_fixture.TransferIntegrationTest):
             expected_status=status_pb2.StatusCode.DEADLINE_EXCEEDED,
         )
 
+    @parameterized.expand(
+        [
+            ("cpp"),
+            ("java"),
+            ("python"),
+        ]
+    )
+    def test_data_drop_client_lifetime_timeout(self, client_type):
+        """Drops the first data chunk of a transfer but allows the rest."""
+        payload = random.Random(67336391945).randbytes(1234)
+
+        # This test is expected to hit the lifetime retry count, so make it
+        # reasonable.
+        client_config = self.default_client_config()
+        client_config.max_lifetime_retries = 20
+        client_config.chunk_timeout_ms = 1000
+
+        config = TransferConfig(
+            self.default_server_config(),
+            client_config,
+            text_format.Parse(
+                """
+                client_filter_stack: [
+                    { hdlc_packetizer: {} },
+                    { window_packet_dropper: { window_packet_to_drop: 0 } }
+                ]
+
+                server_filter_stack: [
+                    { hdlc_packetizer: {} },
+                    { window_packet_dropper: { window_packet_to_drop: 0 } }
+            ]""",
+                config_pb2.ProxyConfig(),
+            ),
+        )
+        # Resource ID is arbitrary, but deliberately set to be >1 byte.
+        resource_id = 7332
+
+        # This test deliberately tries to time out the transfer, so because of
+        # the retry process the resource ID might be re-initialized multiple
+        # times.
+        self.do_single_read(
+            client_type,
+            config,
+            resource_id,
+            payload,
+            permanent_resource_id=True,
+            expected_status=status_pb2.StatusCode.DEADLINE_EXCEEDED,
+        )
+
 
 if __name__ == '__main__':
     test_fixture.run_tests_for(ErrorTransferIntegrationTest)
