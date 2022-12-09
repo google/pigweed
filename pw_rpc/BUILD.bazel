@@ -265,7 +265,7 @@ pw_cc_test(
     srcs = ["callback_test.cc"],
     deps = [
         ":pw_rpc",
-        ":pw_rpc_test_cc",
+        ":pw_rpc_test_cc.raw_rpc",
         "//pw_rpc/raw:client_testing",
         "//pw_sync:binary_semaphore",
         "//pw_thread:sleep",
