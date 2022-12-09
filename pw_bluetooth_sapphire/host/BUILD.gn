@@ -75,6 +75,7 @@ group("stack") {
   public_deps = [
     "att",
     "common",
+    "controllers",
     "gap",
     "gatt",
     "hci",
@@ -140,6 +141,7 @@ group("tests") {
     ":fuzzers",
     "att:bt-host-att-tests",
     "common:bt-host-common-tests",
+    "controllers:bt-host-controllers-tests",
     "fidl:bt-host-fidl-tests",
     "gap:bt-host-gap-tests",
     "gatt:bt-host-gatt-tests",
