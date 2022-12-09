@@ -51,3 +51,26 @@ cc_library_static {
         "pw_varint",
     ],
 }
+
+genrule {
+    name: "pw_protobuf_codegen_protos_py",
+    srcs: ["pw_protobuf_codegen_protos/options.proto"],
+    cmd: "$(location aprotoc) " +
+         "-I$$(dirname $(in)) " +
+         "--python_out=$(genDir) " +
+         "$(in)",
+    out: [
+        "options_pb2.py",
+    ],
+    tools: [
+        "aprotoc",
+    ],
+}
+
+python_library_host {
+    name: "pw_protobuf_codegen_protos_py_lib",
+    srcs: [
+        ":pw_protobuf_codegen_protos_py",
+    ],
+    pkg_path: "pw_protobuf_codegen_protos",
+}
