@@ -21,7 +21,7 @@ code, writing a performance test is as easy as:
 
 .. code-block:: cpp
 
-  void TestFunction(::pw::perf_test::State& state){
+  void TestFunction(::pw::perf_test::State& state) {
     // space to create any needed variables.
     while (state.KeepRunning()){
       // code to measure here
@@ -50,8 +50,8 @@ measured should be in the body of the ``while()`` loop like so:
 
   // The State object is injected into a performance test by including it as an
   // argument to the function.
-  void TestFunction(::pw::perf_test::State& state_obj){
-    while (state_obj.KeepRunning()){
+  void TestFunction(::pw::perf_test::State& state_obj) {
+    while (state_obj.KeepRunning()) {
       /*
         Code to be measured here
       */
@@ -104,7 +104,8 @@ The test collection and registration process is done by a macro, much like
 
 .. warning::
   Internally, the testing framework stores the testing function as a function
-  pointer. Therefore the test function argument must be converible to a function pointer
+  pointer. Therefore the test function argument must be converible to a function
+  pointer.
 
 Event Handler
 =============
@@ -129,13 +130,13 @@ overridden, in order to provide flexibility on how data gets transferred.
 
     Called when a new performance test is started
 
+  .. cpp:function:: virtual void TestCaseIteration(const IterationResult& result)
+
+    Called to output the results of an iteration
+
   .. cpp:function:: virtual void TestCaseEnd(const TestCase& info, const Results& end_result)
 
     Called after a performance test ends
-
-  .. cpp:function:: virtual void ReportIteration(const IterationResult& result)
-
-    Called to output the results of an iteration
 
 Logging Event Handler
 ---------------------
@@ -154,8 +155,8 @@ clock cycle record keeping or second based recordings.
 
 Time-Based Measurement
 ----------------------
-For most host applications, pw_perf_test depends on :ref:`module-pw_chrono` its
-timing needs. At the moment, the interface will only measure performance in
+For most host applications, pw_perf_test depends on :ref:`module-pw_chrono` for
+its timing needs. At the moment, the interface will only measure performance in
 terms of nanoseconds. To see more information about how pw_chrono works, see the
 module documentation.
 
@@ -169,8 +170,8 @@ ARM Cortex devices.
 
 This implementation directly accesses the registers of the Cortex, and therefore
 needs no operating system to function. This is achieved by enabling the
-`DWT register<https://developer.arm.com/documentation/ddi0337/e/System-Debug/DWT?lang=en>_`
-through the `DEMCR register<https://developer.arm.com/documentation/ddi0337/e/CEGHJDCF>_`.
+`DWT register <https://developer.arm.com/documentation/ddi0337/e/System-Debug/DWT?lang=en>`_
+through the `DEMCR register <https://developer.arm.com/documentation/ddi0337/e/CEGHJDCF>`_.
 While this provides cycle counts directly from the CPU, notably it is vulnerable
 to rollover upon a duration of a test exceeding 2^32 clock cycles. This works
 out to a 43 second duration limit per iteration at 100 mhz.
@@ -179,3 +180,132 @@ out to a 43 second duration limit per iteration at 100 mhz.
   The interface only measures raw clock cycles and does not take into account
   other possible sources of pollution such as LSUs, Sleeps and other registers.
   `Read more on the DWT methods of counting instructions. <https://developer.arm.com/documentation/ka001499/1-0/>`_
+
+------------------------
+Build System Integration
+------------------------
+As of this moment, pw_perf_test provides build integration with Bazel and GN.
+Performance tests can be built in CMake, but must be built as regular
+executables.
+
+While each build system has their own names for their variables, each test must
+configure an ``EventHandler`` by choosing an associated ``main()`` function, and
+they must configure a ``timing interface``. At the moment, only a
+:ref:`module-pw_log` based event handler exists, timing is only supported
+where :ref:`module-pw_chrono` is supported, and cycle counts are only supported
+on ARM Cortex M series microcontrollers with a Data Watchpoint and Trace (DWT)
+unit.
+
+GN
+===
+To get tests building in GN, set the ``pw_perf_test_TIMER_INTERFACE_BACKEND``
+variable to whichever implementation is necessary for timings. Next, set the
+``pw_perf_test_MAIN_FUNCTION`` variable to the preferred event handler. Finally
+use the ``pw_perf_test`` template to register your code.
+
+.. code-block::
+
+ import("$dir_pw_perf_test/perf_test.gni")
+
+ pw_perf_test("foo_perf_test") {
+   sources = [ "foo_perf_test.cc" ]
+ }
+
+.. note::
+   If you use ``pw_watch``, the template is configured to build automatically
+   with ``pw_watch``. However you will still need to add your test group to the
+   pw_perf_tests group in the top level BUILD.gn.
+
+pw_perf_test template
+---------------------
+``pw_perf_test`` defines a single perf test suite. It creates two sub-targets.
+
+* ``<target_name>``: The test suite within a single binary. The test code is
+  linked against the target set in the build arg ``pw_unit_test_MAIN``.
+* ``<target_name>.lib``: The test sources without ``pw_unit_test_MAIN``.
+
+**Arguments**
+
+* All GN executable arguments are accepted and forwarded to the underlying
+  ``pw_executable``.
+* ``enable_if``: Boolean indicating whether the test should be built. If false,
+  replaces the test with an empty target. Default true.
+
+**Example**
+
+.. code::
+
+ import("$dir_pw_perf_test/perf_test.gni")
+
+ pw_perf_test("large_test") {
+   sources = [ "large_test.cc" ]
+   enable_if = device_has_1m_flash
+ }
+
+Grouping
+--------
+For grouping tests, no special template is required. Simply create a basic GN
+``group()`` and add each perf test as a dependency.
+
+**Example**
+
+.. code::
+
+  import("$dir_pw_perf_test/perf_test.gni")
+
+  pw_perf_test("foo_test") {
+    sources = [ "foo.cc" ]
+  }
+
+  pw_perf_test("bar_test") {
+    sources = [ "bar.cc" ]
+  }
+
+  group("my_perf_tests_collection") {
+    deps = [
+      ":foo_test",
+      ":bar_test",
+    ]
+  }
+
+Running
+-------
+To run perf tests from gn, locate the associated binaries from the ``out``
+directory and run/flash them manually.
+
+Bazel
+=====
+Bazel is a very efficient build system for running tests on host, needing very
+minimal setup to get tests running. To configure the timing interface, set the
+``pw_perf_test_timer_backend`` variable to use the preferred method of
+timekeeping. Right now, only the logging event handler is supported for Bazel.
+
+Template
+--------
+To use the ``pw_ccp_perf_test()`` template, load the ``pw_cc_perf_test``
+template from ``//pw_build:pigweed.bzl``.
+
+**Arguments**
+
+* All bazel executable arguments are accepted and forwarded to the underlying
+  ``native.cc_binary``.
+
+**Example**
+
+.. code::
+
+  load(
+    "//pw_build:pigweed.bzl",
+    "pw_cc_test",
+  )
+
+  pw_cc_perf_test(
+    name = "foo_test",
+    srcs = ["foo_perf_test.cc"],
+  )
+
+Running
+-------
+Running tests in Bazel is like running any other program. Use the default bazel
+run command: ``bazel run //path/to:target``.
+
