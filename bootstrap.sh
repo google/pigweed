@@ -91,4 +91,4 @@ unset _bootstrap_abspath
 
 pw_cleanup
 
-git config blame.ignoreRevsFile .git-blame-ignore-revs
+git -C "$PW_ROOT" config blame.ignoreRevsFile .git-blame-ignore-revs
