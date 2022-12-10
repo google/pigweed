@@ -156,6 +156,9 @@ pw_cc_library(
         # TODO(b/234876414): This should depend on FreeRTOS but our third parties
         # currently do not have Bazel support.
         "//pw_interrupt:context",
+        "//pw_polyfill",
+        "//pw_sync:interrupt_spin_lock",
+        "//pw_sync:lock_annotations",
     ],
 )
 

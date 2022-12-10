@@ -14,13 +14,21 @@
 #pragma once
 
 #include "FreeRTOS.h"
+#include "pw_polyfill/language_feature_macros.h"
+#include "pw_sync/interrupt_spin_lock.h"
+#include "pw_sync/lock_annotations.h"
 #include "task.h"
 
 namespace pw::sync::backend {
 
 struct NativeThreadNotification {
-  TaskHandle_t blocked_thread;
-  bool notified;
+  TaskHandle_t blocked_thread PW_GUARDED_BY(shared_spin_lock);
+  bool notified PW_GUARDED_BY(shared_spin_lock);
+  // We use a global ISL for all thread notifications because these backends
+  // only support uniprocessor targets and ergo we reduce the memory cost for
+  // all ISL instances without any risk of spin contention between different
+  // instances.
+  PW_CONSTINIT inline static InterruptSpinLock shared_spin_lock = {};
 };
 using NativeThreadNotificationHandle = NativeThreadNotification&;
 

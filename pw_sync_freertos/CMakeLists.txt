@@ -120,6 +120,9 @@ pw_add_library(pw_sync_freertos.thread_notification STATIC
   PUBLIC_DEPS
     pw_assert
     pw_interrupt.context
+    pw_polyfill
+    pw_sync.interrupt_spin_lock
+    pw_sync.lock_annotations
     pw_sync.thread_notification.facade
     pw_third_party.freertos
   SOURCES
@@ -138,6 +141,7 @@ pw_add_library(pw_sync_freertos.timed_thread_notification STATIC
     public_overrides/timed_thread_notification
   PUBLIC_DEPS
     pw_chrono.system_clock
+    pw_sync.interrupt_spin_lock
     pw_sync.timed_thread_notification.facade
   SOURCES
     timed_thread_notification.cc

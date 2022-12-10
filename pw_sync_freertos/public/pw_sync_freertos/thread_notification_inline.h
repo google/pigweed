@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+#include <mutex>
+
 #include "FreeRTOS.h"
 #include "pw_assert/assert.h"
 #include "pw_interrupt/context.h"
@@ -38,10 +40,9 @@ inline ThreadNotification::~ThreadNotification() = default;
 inline bool ThreadNotification::try_acquire() {
   // Enforce the pw::sync::ThreadNotification IRQ contract.
   PW_DASSERT(!interrupt::InInterruptContext());
-  taskENTER_CRITICAL();
+  std::lock_guard lock(native_type_.shared_spin_lock);
   const bool notified = native_type_.notified;
   native_type_.notified = false;
-  taskEXIT_CRITICAL();
   return notified;
 }
 

@@ -59,19 +59,17 @@ bool TimedThreadNotification::try_acquire_until(
   // state in the TCB.
   PW_DCHECK(xTaskNotifyStateClear(nullptr) == pdFALSE);
 
-  taskENTER_CRITICAL();
   {
+    std::lock_guard lock(native_handle().shared_spin_lock);
     const bool notified = native_handle().notified;
     // Don't block if we've already reached the specified deadline time.
     if (notified || (SystemClock::now() >= deadline)) {
       native_handle().notified = false;
-      taskEXIT_CRITICAL();
       return notified;
     }
     // Not notified yet, set the task handle for a one-time notification.
     native_handle().blocked_thread = xTaskGetCurrentTaskHandle();
   }
-  taskEXIT_CRITICAL();
 
   // xTaskNotifyWait may spuriously return pdFALSE due to vTaskSuspend &
   // vTaskResume. Ergo, loop until we have been notified or the specified
@@ -87,7 +85,7 @@ bool TimedThreadNotification::try_acquire_until(
     }
   }
 
-  taskENTER_CRITICAL();
+  std::lock_guard lock(native_handle().shared_spin_lock);
   // We need to clear the thread notification state in case we were
   // notified after timing out but before entering this critical section.
 #ifdef configTASK_NOTIFICATION_ARRAY_ENTRIES
@@ -103,7 +101,6 @@ bool TimedThreadNotification::try_acquire_until(
   const bool notified = native_handle().notified;
   native_handle().notified = false;
   native_handle().blocked_thread = nullptr;
-  taskEXIT_CRITICAL();
   return notified;
 }
 

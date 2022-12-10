@@ -14,6 +14,8 @@
 
 #include "pw_sync/thread_notification.h"
 
+#include <mutex>
+
 #include "FreeRTOS.h"
 #include "pw_assert/check.h"
 #include "pw_interrupt/context.h"
@@ -52,15 +54,15 @@ void ThreadNotification::acquire() {
   // state in the TCB.
   PW_DCHECK(xTaskNotifyStateClear(nullptr) == pdFALSE);
 
-  taskENTER_CRITICAL();
-  if (native_type_.notified) {
-    native_type_.notified = false;
-    taskEXIT_CRITICAL();
-    return;
+  {
+    std::lock_guard lock(native_type_.shared_spin_lock);
+    if (native_type_.notified) {
+      native_type_.notified = false;
+      return;
+    }
+    // Not notified yet, set the task handle for a one-time notification.
+    native_type_.blocked_thread = xTaskGetCurrentTaskHandle();
   }
-  // Not notified yet, set the task handle for a one-time notification.
-  native_type_.blocked_thread = xTaskGetCurrentTaskHandle();
-  taskEXIT_CRITICAL();
 
   // Even if INCLUDE_vTaskSuspend == 1 and ergo portMAX_DELAY means indefinite,
   // vTaskSuspend() can abort xTaskNotifyWait() causing it to spuriously wake up
@@ -68,18 +70,17 @@ void ThreadNotification::acquire() {
   while (WaitForNotification(portMAX_DELAY) == pdFALSE) {
   }
 
-  taskENTER_CRITICAL();
+  std::lock_guard lock(native_type_.shared_spin_lock);
   // The task handle was cleared by the notifier.
   // Note that this may hide another notification, however this is considered
   // a form of notification saturation just like as if this happened before
   // acquire() was invoked.
   native_type_.notified = false;
-  taskEXIT_CRITICAL();
 }
 
 void ThreadNotification::release() {
   if (!interrupt::InInterruptContext()) {  // Task context
-    taskENTER_CRITICAL();
+    std::lock_guard lock(native_type_.shared_spin_lock);
     if (native_type_.blocked_thread != nullptr) {
 #ifdef configTASK_NOTIFICATION_ARRAY_ENTRIES
       xTaskNotifyIndexed(native_type_.blocked_thread,
@@ -89,16 +90,14 @@ void ThreadNotification::release() {
 #else   // !configTASK_NOTIFICATION_ARRAY_ENTRIES
       xTaskNotify(native_type_.blocked_thread, 0u, eNoAction);
 #endif  // configTASK_NOTIFICATION_ARRAY_ENTRIES
-
       native_type_.blocked_thread = nullptr;
     }
     native_type_.notified = true;
-    taskEXIT_CRITICAL();
     return;
   }
 
   // Interrupt context
-  const UBaseType_t saved_interrupt_mask = taskENTER_CRITICAL_FROM_ISR();
+  std::lock_guard lock(native_type_.shared_spin_lock);
   if (native_type_.blocked_thread != nullptr) {
     BaseType_t woke_higher_task = pdFALSE;
 
@@ -118,7 +117,6 @@ void ThreadNotification::release() {
     portYIELD_FROM_ISR(woke_higher_task);
   }
   native_type_.notified = true;
-  taskEXIT_CRITICAL_FROM_ISR(saved_interrupt_mask);
 }
 
 }  // namespace pw::sync

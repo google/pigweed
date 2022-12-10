@@ -175,6 +175,9 @@ pw_source_set("thread_notification") {
   public_deps = [
     "$dir_pw_assert",
     "$dir_pw_interrupt:context",
+    "$dir_pw_polyfill",
+    "$dir_pw_sync:interrupt_spin_lock",
+    "$dir_pw_sync:lock_annotations",
     "$dir_pw_sync:thread_notification.facade",
     "$dir_pw_third_party/freertos",
   ]
@@ -200,6 +203,7 @@ pw_source_set("timed_thread_notification") {
   ]
   public_deps = [
     "$dir_pw_chrono:system_clock",
+    "$dir_pw_sync:interrupt_spin_lock",
     "$dir_pw_sync:timed_thread_notification.facade",
   ]
   sources = [ "timed_thread_notification.cc" ]
