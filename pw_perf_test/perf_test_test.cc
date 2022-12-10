@@ -23,11 +23,15 @@ void TestingFunction(pw::perf_test::State& state) {
   }
 }
 
+// This function is intentionally left blank
+void SimpleFunction() {}
+
 namespace pw::perf_test {
 namespace {
 
 TEST(MacroTesting, RegisterTest) {
   PW_PERF_TEST(TestingComponentRegistration, TestingFunction);
+  PW_PERF_TEST_SIMPLE(TestingSimpleRegistration, SimpleFunction);
 }
 
 }  // namespace

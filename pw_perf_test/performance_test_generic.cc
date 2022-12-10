@@ -33,6 +33,8 @@ void FunctionWithDelay(pw::perf_test::State& state, int a, int b) {
   }
 }
 
+int TestSimple(int a, int b) { return a + b; }
+
 PW_PERF_TEST(IntialTest, SimpleTestingFunction);
 
 PW_PERF_TEST(FunctionWithParameters, FunctionWithDelay, 5, 5);
@@ -41,5 +43,8 @@ PW_PERF_TEST(LambdaFunction, [](pw::perf_test::State& state_) {
   FunctionWithDelay(state_, kGlobalVariablePerfTest, 4);
 });
 
+PW_PERF_TEST_SIMPLE(SimpleTest, TestSimple, 2, 4);
+PW_PERF_TEST_SIMPLE(
+    SimpleLambda, [](int a, int b) { return a + b; }, 1, 3);
 }  // namespace
 }  // namespace pw::perf_test

@@ -68,6 +68,13 @@ The test collection and registration process is done by a macro, much like
   Registers a performance test. Any additional arguments are passed to the test
   function.
 
+.. c:macro:: PW_PERF_TEST_SIMPLE(test_name, test_function, ...)
+
+  Like the original PW_PERF_TEST macro it registers a performance test. However
+  the test function does not need to have a state object. Internally this macro
+  runs all of the input function inside of its own state loop. Any additional
+  arguments are passed into the function to be tested.
+
 .. code-block:: cpp
 
   // Declare performance test functions.
@@ -101,6 +108,13 @@ The test collection and registration process is done by a macro, much like
 
   PW_PERF_TEST(Name2, TestFunctionWithArgs, 1, true);
   PW_PERF_TEST(Name3, TestFunctionWithArgs, 2, false);
+
+  void Sum(int a, int b) {
+    return a + b;
+  }
+
+  PW_PERF_TEST_SIMPLE(SimpleExample, Sum, 4, 2);
+  PW_PERF_TEST_SIMPLE(Name4, MyExistingFunction, "input");
 
 .. warning::
   Internally, the testing framework stores the testing function as a function

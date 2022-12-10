@@ -21,11 +21,15 @@
 #include "pw_perf_test/internal/duration_unit.h"
 #include "pw_perf_test/internal/timer.h"
 
-#define PW_PERF_TEST(Name, Function, ...)                                     \
-  ::pw::perf_test::internal::TestInfo PwPerfTest_##Name(                      \
-      #Name,                                                                  \
-      [](::pw::perf_test::State& state) { Function(state, ##__VA_ARGS__); }); \
+#define PW_PERF_TEST(Name, Function, ...)                  \
+  ::pw::perf_test::internal::TestInfo PwPerfTest_##Name(   \
+      #Name, [](::pw::perf_test::State& state) {           \
+        static_cast<void>(Function(state, ##__VA_ARGS__)); \
+      });                                                  \
   static_assert(true, "Perftest calls must end with a semicolon")
+
+#define PW_PERF_TEST_SIMPLE(name, /*function,*/...) \
+  PW_PERF_TEST(name, ::pw::perf_test::internal::RunSimpleFunction, __VA_ARGS__)
 
 namespace pw::perf_test {
 
@@ -159,6 +163,19 @@ class State {
 
   TestCase test_info;
 };
+
+namespace internal {
+
+template <typename Function, typename... Args>
+void RunSimpleFunction(::pw::perf_test::State& state,
+                       Function function,
+                       const Args&... args) {
+  while (state.KeepRunning()) {
+    static_cast<void>(function(args...));
+  }
+}
+
+}  // namespace internal
 
 void RunAllTests(pw::perf_test::EventHandler& handler);
 
