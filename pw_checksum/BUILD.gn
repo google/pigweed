@@ -104,8 +104,20 @@ pw_perf_test("crc32_perf_tests") {
   sources = [ "crc32_perf_test.cc" ]
 }
 
+pw_perf_test("crc16_perf_tests") {
+  enable_if = pw_perf_test_TIMER_INTERFACE_BACKEND != ""
+  deps = [
+    ":pw_checksum",
+    dir_pw_bytes,
+  ]
+  sources = [ "crc16_ccitt_perf_test.cc" ]
+}
+
 group("perf_tests") {
-  deps = [ ":crc32_perf_tests" ]
+  deps = [
+    ":crc16_perf_tests",
+    ":crc32_perf_tests",
+  ]
 }
 
 pw_size_diff("size_report") {

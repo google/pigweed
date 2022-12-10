@@ -75,3 +75,12 @@ pw_cc_perf_test(
         "//pw_bytes",
     ],
 )
+
+pw_cc_perf_test(
+    name = "crc16_perf_test",
+    srcs = ["crc16_ccitt_perf_test.cc"],
+    deps = [
+        ":pw_checksum",
+        "//pw_bytes",
+    ],
+)
