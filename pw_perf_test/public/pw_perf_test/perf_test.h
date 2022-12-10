@@ -140,7 +140,6 @@ class State {
 
   int64_t mean_;
 
-  bool TimerBegin();
   // Stores the total number of iterations wanted
   int test_iterations_;
 

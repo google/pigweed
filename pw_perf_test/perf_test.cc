@@ -39,7 +39,7 @@ int Framework::RunAllTests() {
         CreateState(kDefaultIterations, *event_handler_, test->test_name());
     test->Run(test_state);
   }
-
+  internal::TimerCleanup();
   event_handler_->RunAllTestsEnd();
   return true;
 }
@@ -65,7 +65,6 @@ State CreateState(int durations,
 
 bool State::KeepRunning() {
   internal::Timestamp iteration_end = internal::GetCurrentTimestamp();
-  internal::TimerCleanup();
   if (current_iteration_ == -1) {
     ++current_iteration_;
     event_handler_->TestCaseStart(test_info);
