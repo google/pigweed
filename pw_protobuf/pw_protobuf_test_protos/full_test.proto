@@ -32,7 +32,9 @@ enum Error {
 }
 
 // Single-value enum
-enum AlwaysBlue { BLUE = 0; }
+enum AlwaysBlue {
+  BLUE = 0;
+}
 
 // A message!
 message Pigweed {
