@@ -488,6 +488,19 @@ TEST(Vector, Generic) {
   }
 }
 
+TEST(Vector, ConstexprMaxSize) {
+  Vector<int, 10> vector;
+  Vector<int, vector.max_size()> vector2;
+
+  EXPECT_EQ(vector.max_size(), vector2.max_size());
+
+  // The following code would fail with the following compiler error:
+  // "non-type template argument is not a constant expression"
+  // Reason: the generic_vector doesn't return a constexpr max_size value.
+  // Vector<int>& generic_vector(vector);
+  // Vector<int, generic_vector.max_size()> vector3;
+}
+
 // Test that Vector<T> is trivially destructible when its type is.
 static_assert(std::is_trivially_destructible_v<Vector<int>>);
 static_assert(std::is_trivially_destructible_v<Vector<int, 4>>);

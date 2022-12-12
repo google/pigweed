@@ -114,6 +114,8 @@ class Vector : public Vector<T, vector_impl::kGeneric> {
   Vector(std::initializer_list<T> list)
       : Vector<T, vector_impl::kGeneric>(kMaxSize, list) {}
 
+  static constexpr size_t max_size() { return kMaxSize; }
+
   // Construct from std::string_view when T is char.
   template <typename U = T,
             typename = std::enable_if_t<std::is_same_v<U, char>>>
