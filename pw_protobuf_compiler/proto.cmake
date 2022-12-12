@@ -449,7 +449,7 @@ function(_pw_nanopb_library NAME)
       )
 
       # Create the library with the generated source files.
-      pw_add_library_generic("${NAME}.nanopb" OBJECT
+      pw_add_library_generic("${NAME}.nanopb" STATIC
         SOURCES
           ${generated_outputs}
         PUBLIC_INCLUDES
