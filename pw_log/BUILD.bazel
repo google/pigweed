@@ -103,6 +103,11 @@ py_proto_library(
     deps = [":log_proto"],
 )
 
+java_lite_proto_library(
+    name = "log_java_proto_lite",
+    deps = [":log_proto"],
+)
+
 pw_proto_library(
     name = "log_proto_cc",
     deps = [":log_proto"],
