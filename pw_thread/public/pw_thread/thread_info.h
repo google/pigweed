@@ -52,6 +52,16 @@ class ThreadInfo {
 
   void clear_stack_high_addr() { clear_stack_info_ptr(kStackHighAddress); }
 
+  constexpr std::optional<uintptr_t> stack_pointer() const {
+    return get_stack_info_ptr(kStackPointer);
+  }
+
+  void set_stack_pointer(uintptr_t val) {
+    set_stack_info_ptr(kStackPointer, val);
+  }
+
+  void clear_stack_pointer() { clear_stack_info_ptr(kStackPointer); }
+
   constexpr std::optional<uintptr_t> stack_peak_addr() const {
     return get_stack_info_ptr(kStackPeakAddress);
   }
@@ -78,6 +88,7 @@ class ThreadInfo {
   enum ThreadInfoIndex {
     kStackLowAddress,
     kStackHighAddress,
+    kStackPointer,
     kStackPeakAddress,
     kThreadName,
     kMaxNumMembersDoNotUse,

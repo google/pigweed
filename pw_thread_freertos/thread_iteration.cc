@@ -37,6 +37,8 @@ bool StackInfoCollector(TaskHandle_t current_thread,
       as_bytes(span(std::string_view(tcb.pcTaskName)));
   thread_info.set_thread_name(current_name);
 
+  thread_info.set_stack_pointer(reinterpret_cast<uintptr_t>(tcb.pxTopOfStack));
+
   // Current thread stack bounds.
   thread_info.set_stack_low_addr(reinterpret_cast<uintptr_t>(tcb.pxStack));
 #if configRECORD_STACK_HIGH_ADDRESS
