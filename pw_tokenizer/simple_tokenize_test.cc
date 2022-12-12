@@ -67,8 +67,7 @@ TEST(TokenizeStringLiteral, GlobalVariable_MatchesHash) {
 
 class TokenizeToBuffer : public ::testing::Test {
  public:
-  TokenizeToBuffer() : buffer_ {}
-  {}
+  TokenizeToBuffer() : buffer_{} {}
 
  protected:
   uint8_t buffer_[64];

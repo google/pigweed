@@ -246,8 +246,7 @@ class KeyValueStore {
 
     constexpr Item(const KeyValueStore& kvs,
                    const internal::EntryCache::const_iterator& item_iterator)
-        : kvs_(kvs), iterator_(item_iterator), key_buffer_ {}
-    {}
+        : kvs_(kvs), iterator_(item_iterator), key_buffer_{} {}
 
     void ReadKey();
 

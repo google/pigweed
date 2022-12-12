@@ -250,10 +250,7 @@ class LIB_FIT_NODISCARD result<E, T> {
 
   // Implicit conversion from fit::failed. This overload is only enabled when the error type E is
   // fit::failed.
-  constexpr result(failed_or_none) : storage_ {
-    ::fit::internal::error_v, failed {}
-  }
-  {}
+  constexpr result(failed_or_none) : storage_{::fit::internal::error_v, failed{}} {}
 
   // Implicit conversion from success<U>, where T is constructible from U.
   template <typename U, ::fit::internal::requires_conditions<std::is_constructible<T, U>> = true>
@@ -458,10 +455,7 @@ class LIB_FIT_NODISCARD result<E> {
 
   // Implicit conversion from fit::failure. This overload is only enabled when the error type E is
   // fit::failed.
-  constexpr result(failure_or_none) : storage_ {
-    ::fit::internal::error_v, failed {}
-  }
-  {}
+  constexpr result(failure_or_none) : storage_{::fit::internal::error_v, failed{}} {}
 
   // Implicit conversion from fit::success<>.
   constexpr result(success<>) : storage_{::fit::internal::value_v} {}

@@ -44,8 +44,9 @@ class SimplePrintingEventHandler : public GoogleTestStyleEventHandler {
   // failures.
   constexpr SimplePrintingEventHandler(WriteFunction write_function,
                                        bool verbose = false)
-      : GoogleTestStyleEventHandler(verbose), write_(write_function), buffer_ {}
-  {}
+      : GoogleTestStyleEventHandler(verbose),
+        write_(write_function),
+        buffer_{} {}
 
  private:
   void WriteLine(const char* format, ...) override PW_PRINTF_FORMAT(2, 3);

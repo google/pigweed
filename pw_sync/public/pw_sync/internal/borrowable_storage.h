@@ -25,8 +25,7 @@ class BorrowableStorage {
   // Construct the object in-place using a list of arguments.
   template <typename... Args>
   constexpr explicit BorrowableStorage(std::in_place_t, Args&&... args)
-      : object_{std::forward<Args>(args)...}, lock_ {}
-  {}
+      : object_{std::forward<Args>(args)...}, lock_{} {}
 
   // Construct the object and lock in-place using the provided parameters.
   template <typename... ObjectArgs, typename... LockArgs>

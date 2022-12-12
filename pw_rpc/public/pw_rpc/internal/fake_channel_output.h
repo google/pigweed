@@ -278,8 +278,7 @@ template <size_t kMaxPackets, size_t kPayloadsBufferSizeBytes>
 class FakeChannelOutputBuffer : public FakeChannelOutput {
  protected:
   FakeChannelOutputBuffer()
-      : FakeChannelOutput(packets_array_, payloads_array_), payloads_array_ {}
-  {}
+      : FakeChannelOutput(packets_array_, payloads_array_), payloads_array_{} {}
 
   Vector<std::byte, kPayloadsBufferSizeBytes> payloads_array_;
   Vector<Packet, kMaxPackets> packets_array_;

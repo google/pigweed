@@ -14,8 +14,8 @@
 
 // This is a very basic direct output log implementation with no buffering.
 
-//#define PW_LOG_MODULE_NAME "ASRT"
-//#include "pw_log/log.h"
+// #define PW_LOG_MODULE_NAME "ASRT"
+// #include "pw_log/log.h"
 
 #include <cstdio>
 #include <cstring>
