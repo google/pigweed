@@ -503,7 +503,7 @@ class FakeController final : public ControllerTestDoubleBase {
   void OnReadLocalExtendedFeatures(const hci_spec::ReadLocalExtendedFeaturesCommandParams& params);
 
   // Called when a HCI_SetEventMask command is received.
-  void OnSetEventMask(const hci_spec::SetEventMaskCommandParams& params);
+  void OnSetEventMask(hci_spec::SetEventMaskCommandView params);
 
   // Called when a HCI_LE_Set_Event_Mask command is received.
   void OnLESetEventMask(const hci_spec::LESetEventMaskCommandParams& params);

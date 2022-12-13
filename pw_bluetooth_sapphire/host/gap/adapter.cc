@@ -18,6 +18,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/metrics.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/hci-protocol.emb.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/android_extended_low_energy_advertiser.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
@@ -27,6 +28,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connector.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/emboss_control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
 namespace bt::gap {
@@ -940,11 +942,11 @@ void AdapterImpl::InitializeStep3() {
   // HCI_Set_Event_Mask
   {
     uint64_t event_mask = BuildEventMask();
-    auto cmd_packet = hci::CommandPacket::New(hci_spec::kSetEventMask,
-                                              sizeof(hci_spec::SetEventMaskCommandParams));
-    cmd_packet->mutable_payload<hci_spec::SetEventMaskCommandParams>()->event_mask =
-        htole64(event_mask);
-    init_seq_runner_->QueueCommand(std::move(cmd_packet), [](const auto& event) {
+    auto set_event =
+        hci::EmbossCommandPacket::New<hci_spec::SetEventMaskCommandWriter>(hci_spec::kSetEventMask);
+    auto set_event_params = set_event.view_t();
+    set_event_params.event_mask().Write(event_mask);
+    init_seq_runner_->QueueCommand(std::move(set_event), [](const auto& event) {
       hci_is_error(event, WARN, "gap", "set event mask failed");
     });
   }

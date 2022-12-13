@@ -1000,8 +1000,8 @@ void FakeController::OnReadLocalExtendedFeatures(
                              BufferView(&out_params, sizeof(out_params)));
 }
 
-void FakeController::OnSetEventMask(const hci_spec::SetEventMaskCommandParams& params) {
-  settings_.event_mask = le64toh(params.event_mask);
+void FakeController::OnSetEventMask(hci_spec::SetEventMaskCommandView params) {
+  settings_.event_mask = params.event_mask().Read();
   RespondWithCommandComplete(hci_spec::kSetEventMask, hci_spec::StatusCode::SUCCESS);
 }
 
@@ -2929,11 +2929,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnLEReadBufferSize();
       break;
     }
-    case hci_spec::kSetEventMask: {
-      const auto& params = command_packet.payload<hci_spec::SetEventMaskCommandParams>();
-      OnSetEventMask(params);
-      break;
-    }
     case hci_spec::kLESetEventMask: {
       const auto& params = command_packet.payload<hci_spec::LESetEventMaskCommandParams>();
       OnLESetEventMask(params);
@@ -3018,7 +3013,8 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kReadRemoteSupportedFeatures:
     case hci_spec::kReadRemoteExtendedFeatures:
     case hci_spec::kReadRemoteVersionInfo:
-    case hci_spec::kIOCapabilityRequestReply: {
+    case hci_spec::kIOCapabilityRequestReply:
+    case hci_spec::kSetEventMask: {
       // This case is for packet types that have been migrated to the new Emboss architecture. Their
       // old version can be still be assembled from the HciEmulator channel, so here we repackage
       // and forward them as Emboss packets.
@@ -3123,6 +3119,11 @@ void FakeController::HandleReceivedCommandPacket(hci::EmbossCommandPacket& comma
     case hci_spec::kIOCapabilityRequestReply: {
       const auto params = command_packet.view<hci_spec::IoCapabilityRequestReplyCommandView>();
       OnIOCapabilityRequestReplyCommand(params);
+      break;
+    }
+    case hci_spec::kSetEventMask: {
+      const auto params = command_packet.view<hci_spec::SetEventMaskCommandView>();
+      OnSetEventMask(params);
       break;
     }
     default: {
