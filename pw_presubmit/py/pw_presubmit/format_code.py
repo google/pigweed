@@ -578,14 +578,37 @@ def presubmit_check(
 
     @pw_presubmit.filter_paths(file_filter=file_filter)
     def check_code_format(ctx: pw_presubmit.PresubmitContext):
+        failure_summary_log = ctx.output_dir / 'failure-summary.log'
+        failure_summary_log.unlink(missing_ok=True)
+
         errors = code_format.check(ctx)
         print_format_check(
             errors,
             # When running as part of presubmit, show the fix command help.
             show_fix_commands=True,
         )
-        if errors:
-            raise pw_presubmit.PresubmitFailure
+        if not errors:
+            return
+
+        with failure_summary_log.open('w') as outs:
+            failure = next(iter(errors.values()))
+            seen_atat = False
+            dotdotdot = len(errors) > 1
+            maxlines = 20
+            for i, line in enumerate(failure.splitlines()):
+                line = re.sub(r'\x1b\[[;\d]+m', '', line)
+                if i > maxlines:
+                    dotdotdot = True
+                    break
+                if seen_atat and line.startswith('@@'):
+                    dotdotdot = True
+                    break
+                if line.startswith('@@'):
+                    seen_atat = True
+                print(line, file=outs)
+            if dotdotdot:
+                print('...', file=outs)
+        raise pw_presubmit.PresubmitFailure
 
     language = code_format.language.lower().replace('+', 'p').replace(' ', '_')
     check_code_format.name = f'{language}_format'
