@@ -16,6 +16,8 @@
 #include <iterator>
 #include <type_traits>
 
+#include "pw_span/span.h"
+
 namespace pw {
 namespace kvs {
 namespace internal {
