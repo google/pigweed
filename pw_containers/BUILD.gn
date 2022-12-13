@@ -43,6 +43,10 @@ pw_source_set("algorithm") {
 pw_source_set("filtered_view") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_containers/filtered_view.h" ]
+  public_deps = [
+    dir_pw_assert,
+    dir_pw_preprocessor,
+  ]
 }
 
 pw_source_set("flat_map") {

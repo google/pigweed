@@ -79,7 +79,10 @@ pw_cc_library(
     name = "filtered_view",
     hdrs = ["public/pw_containers/filtered_view.h"],
     includes = ["public"],
-    deps = ["//pw_assert"],
+    deps = [
+        "//pw_assert",
+        "//pw_containers",
+    ],
 )
 
 pw_cc_library(
