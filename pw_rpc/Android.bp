@@ -179,6 +179,44 @@ genrule {
     ],
 }
 
+// Generate cc and header nanopb files.
+// The output file names are based on the srcs file name with a .pb.c / .pb.h extension.
+genrule_defaults {
+    name: "pw_rpc_generate_nanopb_proto",
+    cmd: "python3 $(location pw_protobuf_compiler_py) " +
+         "--plugin-path=$(location protoc-gen-nanopb) " +
+         "--out-dir=$(genDir) " +
+         "--compile-dir=$$(dirname $(in)) " +
+         "--language nanopb " +
+         "--sources $(in) " +
+         "--no-experimental-proto3-optional " +
+         "--protoc=$(location aprotoc)",
+    tools: [
+        "aprotoc",
+        "protoc-gen-nanopb",
+        "pw_protobuf_compiler_py",
+    ],
+}
+
+// Generate the header nanopb RPC file.
+// The output file name is based on the srcs file name with a .rpc.pb.h extension.
+genrule_defaults {
+    name: "pw_rpc_generate_nanopb_rpc_header",
+    cmd: "python3 $(location pw_protobuf_compiler_py) " +
+         "--plugin-path=$(location pw_rpc_plugin_nanopb_py) " +
+         "--out-dir=$(genDir) " +
+         "--compile-dir=$$(dirname $(in)) " +
+         "--language nanopb_rpc " +
+         "--sources $(in) " +
+         "--no-experimental-proto3-optional " +
+         "--protoc=$(location aprotoc)",
+    tools: [
+        "aprotoc",
+        "pw_protobuf_compiler_py",
+        "pw_rpc_plugin_nanopb_py",
+    ],
+}
+
 python_library_host {
     name: "pw_rpc_internal_packet_py_lib",
     srcs: [
