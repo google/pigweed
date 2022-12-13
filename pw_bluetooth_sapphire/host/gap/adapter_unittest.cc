@@ -31,29 +31,31 @@ using testing::FakeController;
 using testing::FakePeer;
 using TestingBase = testing::ControllerTest<FakeController>;
 
+using FeaturesBits = pw::bluetooth::Controller::FeaturesBits;
+
 const DeviceAddress kTestAddr(DeviceAddress::Type::kLEPublic, {0x01, 0, 0, 0, 0, 0});
 const DeviceAddress kTestAddr2(DeviceAddress::Type::kLEPublic, {2, 0, 0, 0, 0, 0});
 const DeviceAddress kTestAddrBrEdr(DeviceAddress::Type::kBREDR, {3, 0, 0, 0, 0, 0});
 
-const hci::VendorFeaturesBits kVendorFeaturesBits = hci::VendorFeaturesBits::kSetAclPriorityCommand;
+constexpr FeaturesBits kDefaultFeaturesBits =
+    FeaturesBits::kHciSco | FeaturesBits::kSetAclPriorityCommand;
 
 class AdapterTest : public TestingBase {
  public:
   AdapterTest() = default;
   ~AdapterTest() override = default;
 
-  void SetUp() override { SetUp(/*sco_enabled=*/true); }
+  void SetUp() override { SetUp(kDefaultFeaturesBits); }
 
-  void SetUp(bool sco_enabled, hci::VendorFeaturesBits vendor_features = kVendorFeaturesBits) {
-    set_vendor_features(vendor_features);
-    TestingBase::SetUp(sco_enabled);
+  void SetUp(FeaturesBits features) {
+    // Don't initialize Transport yet because Adapter initializes Transport.
+    TestingBase::SetUp(features, /*initialize_transport=*/false);
 
     transport_closed_called_ = false;
 
     auto l2cap = std::make_unique<l2cap::testing::FakeL2cap>();
     gatt_ = std::make_unique<gatt::testing::FakeLayer>();
     adapter_ = Adapter::Create(transport()->WeakPtr(), gatt_->AsWeakPtr(), std::move(l2cap));
-    StartTestDevice();
   }
 
   void TearDown() override {
@@ -95,7 +97,7 @@ class AdapterTest : public TestingBase {
 
 class AdapterScoDisabledTest : public AdapterTest {
  public:
-  void SetUp() override { AdapterTest::SetUp(/*sco_enabled=*/false); }
+  void SetUp() override { AdapterTest::SetUp(FeaturesBits{0}); }
 };
 
 TEST_F(AdapterTest, InitializeFailureNoFeaturesSupported) {
@@ -160,8 +162,7 @@ TEST_F(AdapterTest, InitializeNoBREDR) {
 
 TEST_F(AdapterTest, InitializeQueriesAndroidExtensionsCapabilitiesIfSupported) {
   TearDown();
-  SetUp(/*sco_enabled=*/true,
-        /*vendor_features=*/hci::VendorFeaturesBits::kAndroidVendorExtensions);
+  SetUp(FeaturesBits::kAndroidVendorExtensions);
 
   bool success;
   int init_cb_count = 0;
@@ -183,8 +184,7 @@ TEST_F(AdapterTest, InitializeQueriesAndroidExtensionsCapabilitiesIfSupported) {
 
 TEST_F(AdapterTest, InitializeQueryAndroidExtensionsCapabilitiesFailureHandled) {
   TearDown();
-  SetUp(/*sco_enabled=*/true,
-        /*vendor_features=*/hci::VendorFeaturesBits::kAndroidVendorExtensions);
+  SetUp(FeaturesBits::kAndroidVendorExtensions);
 
   bool success;
   int init_cb_count = 0;
@@ -277,7 +277,7 @@ TEST_F(AdapterTest, InitializeFailureTransportErrorDuringWriteLocalName) {
   EXPECT_EQ(0, init_cb_count);
 
   // Signaling an error should cause Transport to close, which should cause initialization to fail.
-  test_device()->SignalError(ZX_ERR_IO);
+  test_device()->SignalError(pw::Status::Unknown());
   ASSERT_TRUE(success.has_value());
   EXPECT_FALSE(*success);
   EXPECT_EQ(1, init_cb_count);
@@ -302,9 +302,7 @@ TEST_F(AdapterTest, TransportClosedCallback) {
   EXPECT_TRUE(adapter()->state().IsLowEnergySupported());
   EXPECT_FALSE(transport_closed_called());
 
-  // Deleting the FakeController should cause the transport closed callback to
-  // get called.
-  async::PostTask(dispatcher(), [this] { DeleteTestDevice(); });
+  test_device()->SignalError(pw::Status::Aborted());
   RunLoopUntilIdle();
 
   EXPECT_TRUE(transport_closed_called());
@@ -1081,7 +1079,7 @@ TEST_F(AdapterTest, VendorFeatures) {
   auto init_cb = [&](bool cb_success) { success = cb_success; };
   InitializeAdapter(std::move(init_cb));
   EXPECT_TRUE(success);
-  EXPECT_EQ(adapter()->state().vendor_features, kVendorFeaturesBits);
+  EXPECT_EQ(adapter()->state().controller_features, kDefaultFeaturesBits);
 }
 
 TEST_F(AdapterTest, LowEnergyStartAdvertisingConnectCallbackReceivesConnection) {

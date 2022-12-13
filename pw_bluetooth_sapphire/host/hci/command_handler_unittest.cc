@@ -90,7 +90,7 @@ class CommandHandlerTest : public TestingBase {
  public:
   void SetUp() override {
     TestingBase::SetUp();
-    StartTestDevice();
+
     handler_.emplace(cmd_channel()->AsWeakPtr());
   }
 

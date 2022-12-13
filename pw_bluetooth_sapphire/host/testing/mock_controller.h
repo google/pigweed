@@ -15,6 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test_double_base.h"
+#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::testing {
 
@@ -121,7 +122,7 @@ class ScoTransaction final : public Transaction {
 // MockController allows unit tests to set up an expected sequence of HCI
 // command packets and ACL data packets and any packets that should be sent back in response. The
 // code internally verifies each received packet using gtest ASSERT_* macros.
-class MockController : public ControllerTestDoubleBase {
+class MockController final : public ControllerTestDoubleBase {
  public:
   MockController();
   ~MockController() override;
@@ -182,14 +183,17 @@ class MockController : public ControllerTestDoubleBase {
   void SetTransactionCallback(fit::closure callback, async_dispatcher_t* dispatcher);
   void ClearTransactionCallback();
 
- private:
-  // ControllerTestDoubleBase overrides:
-  void OnCommandPacketReceived(const PacketView<hci_spec::CommandHeader>& command_packet) override;
-  void OnCommandPacketReceived(hci::EmbossCommandPacket& command_packet) override;
-  void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) override;
-  void OnScoDataPacketReceived(const ByteBuffer& sco_data_packet) override;
+  fxl::WeakPtr<MockController> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
-  void ProcessCommandPacket(uint16_t opcode, const BufferView& data);
+ private:
+  void OnCommandReceived(const ByteBuffer& data);
+  void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet);
+  void OnScoDataPacketReceived(const ByteBuffer& sco_data_packet);
+
+  // Controller overrides:
+  void SendCommand(pw::span<const std::byte> data) override;
+  void SendAclData(pw::span<const std::byte> data) override;
+  void SendScoData(pw::span<const std::byte> data) override;
 
   std::queue<CommandTransaction> cmd_transactions_;
   std::queue<DataTransaction> data_transactions_;
@@ -199,6 +203,8 @@ class MockController : public ControllerTestDoubleBase {
   async_dispatcher_t* data_dispatcher_;
   TransactionCallback transaction_callback_;
   async_dispatcher_t* transaction_dispatcher_;
+
+  fxl::WeakPtrFactory<MockController> weak_ptr_factory_{this};
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(MockController);
 };

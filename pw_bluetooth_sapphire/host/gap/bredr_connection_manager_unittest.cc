@@ -580,7 +580,6 @@ class BrEdrConnectionManagerTest : public TestingBase {
   void SetUp() override {
     TestingBase::SetUp();
     InitializeACLDataChannel(kBrEdrBufferInfo, kLeBufferInfo);
-    StartTestDevice();
 
     peer_cache_ = std::make_unique<PeerCache>();
     l2cap_ = std::make_unique<l2cap::testing::FakeL2cap>();

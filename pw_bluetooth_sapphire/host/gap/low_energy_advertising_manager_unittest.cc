@@ -168,7 +168,6 @@ class LowEnergyAdvertisingManagerTest : public TestingBase {
   void SetUp() override {
     TestingBase::SetUp();
     InitializeACLDataChannel();
-    StartTestDevice();
 
     fake_address_delegate_.set_local_address(kRandomAddress);
     MakeFakeAdvertiser();

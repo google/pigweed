@@ -111,6 +111,7 @@ source_set("testing") {
     "//src/lib/fxl",
     "//src/lib/testing/loop_fixture",
     "//third_party/googletest:gtest",
+    "//third_party/pigweed:pw_bluetooth",
   ]
 
   # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings
@@ -163,10 +164,6 @@ source_set("tests") {
 
   # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings
   configs += [ "//build/config:Wno-conversion" ]
-
-  # TODO(fxbug.dev/95833): This target uses the deprecated C bindings.
-  # Consider switching to the C++ bindings. See linked bug for details.
-  configs += [ "//build/c:fidl-deprecated-c-bindings" ]
 }
 
 bt_gtest_package("bt-host-l2cap-tests") {

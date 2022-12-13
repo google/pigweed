@@ -16,6 +16,8 @@
 #include <queue>
 #include <unordered_map>
 
+#include "pw_bluetooth/controller.h"
+#include "pw_bluetooth/vendor.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspect.h"
@@ -24,7 +26,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/data_buffer_info.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/hci_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/link_type.h"
 
 namespace bt::hci {
@@ -62,7 +63,8 @@ class AclDataChannel {
   //
   // As this class is intended to support flow-control for both, this function
   // should be called based on what is reported by the controller.
-  static std::unique_ptr<AclDataChannel> Create(Transport* transport, HciWrapper* hci,
+  static std::unique_ptr<AclDataChannel> Create(Transport* transport,
+                                                pw::bluetooth::Controller* hci,
                                                 const DataBufferInfo& bredr_buffer_info,
                                                 const DataBufferInfo& le_buffer_info);
 
@@ -154,7 +156,8 @@ class AclDataChannel {
 
   // Attempts to set the ACL |priority| of the connection indicated by |handle|. |callback| will be
   // called with the result of the request.
-  virtual void RequestAclPriority(hci::AclPriority priority, hci_spec::ConnectionHandle handle,
+  virtual void RequestAclPriority(pw::bluetooth::AclPriority priority,
+                                  hci_spec::ConnectionHandle handle,
                                   fit::callback<void(fit::result<fit::failed>)> callback) = 0;
 };
 

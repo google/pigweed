@@ -29,6 +29,8 @@ namespace {
 
 namespace fidlbredr = fuchsia::bluetooth::bredr;
 namespace hci_android = bt::hci_spec::vendor::android;
+using pw::bluetooth::AclPriority;
+using FeaturesBits = pw::bluetooth::Controller::FeaturesBits;
 
 namespace {
 
@@ -160,18 +162,19 @@ class ProfileServerTest : public TestingBase {
   ~ProfileServerTest() override = default;
 
  protected:
-  void SetUp() override {
+  void SetUp(FeaturesBits features) {
     bt::testing::FakeController::Settings settings;
     settings.ApplyDualModeDefaults();
     settings.synchronous_data_packet_length = kSynchronousDataPacketLength;
     settings.total_num_synchronous_data_packets = kTotalNumSynchronousDataPackets;
-    TestingBase::SetUp(settings);
+    TestingBase::SetUp(settings, features);
 
     fidl::InterfaceHandle<fidlbredr::Profile> profile_handle;
     client_.Bind(std::move(profile_handle));
     server_ =
         std::make_unique<ProfileServer>(adapter()->AsWeakPtr(), client_.NewRequest(dispatcher()));
   }
+  void SetUp() override { SetUp(FeaturesBits{0}); }
 
   void TearDown() override {
     RunLoopUntilIdle();
@@ -423,8 +426,8 @@ class ProfileServerTestConnectedPeer : public ProfileServerTest {
   ~ProfileServerTestConnectedPeer() override = default;
 
  protected:
-  void SetUp() override {
-    ProfileServerTest::SetUp();
+  void SetUp(FeaturesBits features) {
+    ProfileServerTest::SetUp(features);
     peer_ = peer_cache()->NewPeer(kTestDevAddr, /*connectable=*/true);
     auto fake_peer = std::make_unique<bt::testing::FakePeer>(kTestDevAddr);
     test_device()->AddPeer(std::move(fake_peer));
@@ -445,6 +448,7 @@ class ProfileServerTestConnectedPeer : public ProfileServerTest {
     EXPECT_EQ(peer_->identifier(), connection_->peer_id());
     EXPECT_NE(bt::gap::Peer::ConnectionState::kNotConnected, peer_->bredr()->connection_state());
   }
+  void SetUp() override { SetUp(FeaturesBits::kHciSco); }
 
   void TearDown() override {
     connection_ = nullptr;
@@ -473,10 +477,10 @@ class ProfileServerTestScoConnected : public ProfileServerTestConnectedPeer {
   }
 
   void SetUp(fidlbredr::ScoConnectionParameters conn_params) {
-    ProfileServerTestConnectedPeer::SetUp();
+    ProfileServerTestConnectedPeer::SetUp(FeaturesBits::kHciSco);
 
-    set_configure_sco_cb([](auto, auto, auto, auto cb) { cb(ZX_OK); });
-    set_reset_sco_cb([](auto cb) { cb(ZX_OK); });
+    test_device()->set_configure_sco_cb([](auto, auto, auto, auto cb) { cb(PW_STATUS_OK); });
+    test_device()->set_reset_sco_cb([](auto cb) { cb(PW_STATUS_OK); });
 
     std::vector<fidlbredr::ScoConnectionParameters> sco_params_list;
     sco_params_list.emplace_back(std::move(conn_params));
@@ -697,8 +701,7 @@ TEST_F(ProfileServerTestConnectedPeer,
 class AclPrioritySupportedTest : public ProfileServerTestConnectedPeer {
  public:
   void SetUp() override {
-    set_vendor_features(bt::hci::VendorFeaturesBits::kSetAclPriorityCommand);
-    ProfileServerTestConnectedPeer::SetUp();
+    ProfileServerTestConnectedPeer::SetUp(FeaturesBits::kSetAclPriorityCommand);
   }
 };
 
@@ -761,16 +764,16 @@ TEST_P(PriorityTest, OutboundConnectAndSetPriority) {
   if (kExpectSuccess) {
     switch (kPriority) {
       case fidlbredr::A2dpDirectionPriority::SOURCE:
-        EXPECT_EQ(fake_channel->requested_acl_priority(), bt::hci::AclPriority::kSource);
+        EXPECT_EQ(fake_channel->requested_acl_priority(), AclPriority::kSource);
         break;
       case fidlbredr::A2dpDirectionPriority::SINK:
-        EXPECT_EQ(fake_channel->requested_acl_priority(), bt::hci::AclPriority::kSink);
+        EXPECT_EQ(fake_channel->requested_acl_priority(), AclPriority::kSink);
         break;
       default:
-        EXPECT_EQ(fake_channel->requested_acl_priority(), bt::hci::AclPriority::kNormal);
+        EXPECT_EQ(fake_channel->requested_acl_priority(), AclPriority::kNormal);
     }
   } else {
-    EXPECT_EQ(fake_channel->requested_acl_priority(), bt::hci::AclPriority::kNormal);
+    EXPECT_EQ(fake_channel->requested_acl_priority(), AclPriority::kNormal);
   }
 }
 
@@ -824,7 +827,7 @@ TEST_F(AclPrioritySupportedTest, InboundConnectAndSetPriority) {
   RunLoopUntilIdle();
   EXPECT_EQ(priority_cb_count, 1u);
   ASSERT_TRUE(fake_channel);
-  EXPECT_EQ(fake_channel->requested_acl_priority(), bt::hci::AclPriority::kSink);
+  EXPECT_EQ(fake_channel->requested_acl_priority(), AclPriority::kSink);
 }
 
 // Verifies that a socket channel relay is correctly set up such that bytes written to the socket
@@ -1377,8 +1380,7 @@ TEST_P(AndroidSupportedFeaturesTest, AudioOffloadExtGetSupportedFeatures) {
   const uint32_t a2dp_offload_capabilities = GetParam().second;
 
   if (android_vendor_ext_support) {
-    adapter()->mutable_state().vendor_features |=
-        bt::hci::VendorFeaturesBits::kAndroidVendorExtensions;
+    adapter()->mutable_state().controller_features |= FeaturesBits::kAndroidVendorExtensions;
 
     hci_android::LEGetVendorCapabilitiesReturnParams params;
     memset(&params, 0, sizeof(params));

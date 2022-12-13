@@ -18,6 +18,8 @@ namespace fidlbredr = fuchsia::bluetooth::bredr;
 namespace hci_android = bt::hci_spec::vendor::android;
 using fidlbredr::DataElement;
 using fidlbredr::Profile;
+using pw::bluetooth::AclPriority;
+using FeaturesBits = pw::bluetooth::Controller::FeaturesBits;
 
 namespace bthost {
 
@@ -182,14 +184,14 @@ fidlbredr::ProtocolDescriptorPtr DataElementToProtocolDescriptor(const bt::sdp::
   return desc;
 }
 
-bt::hci::AclPriority FidlToAclPriority(fidlbredr::A2dpDirectionPriority in) {
+AclPriority FidlToAclPriority(fidlbredr::A2dpDirectionPriority in) {
   switch (in) {
     case fidlbredr::A2dpDirectionPriority::SOURCE:
-      return bt::hci::AclPriority::kSource;
+      return AclPriority::kSource;
     case fidlbredr::A2dpDirectionPriority::SINK:
-      return bt::hci::AclPriority::kSink;
+      return AclPriority::kSink;
     default:
-      return bt::hci::AclPriority::kNormal;
+      return AclPriority::kNormal;
   }
 }
 
@@ -247,8 +249,7 @@ void ProfileServer::AudioOffloadExt::GetSupportedFeatures(GetSupportedFeaturesCa
       response.mutable_audio_offload_features();
   const bt::gap::AdapterState& adapter_state = adapter_->state();
 
-  if (!adapter_state.IsVendorFeatureSupported(
-          bt::hci::VendorFeaturesBits::kAndroidVendorExtensions)) {
+  if (!adapter_state.IsControllerFeatureSupported(FeaturesBits::kAndroidVendorExtensions)) {
     callback(std::move(response));
     return;
   }
@@ -798,13 +799,11 @@ fuchsia::bluetooth::bredr::Channel ProfileServer::ChannelToFidl(
     fidl_chan.set_flush_timeout(channel->info().flush_timeout->get());
   }
 
-  if (adapter()->state().IsVendorFeatureSupported(
-          bt::hci::VendorFeaturesBits::kSetAclPriorityCommand)) {
+  if (adapter()->state().IsControllerFeatureSupported(FeaturesBits::kSetAclPriorityCommand)) {
     fidl_chan.set_ext_direction(BindAudioDirectionExtServer(channel));
   }
 
-  if (adapter()->state().IsVendorFeatureSupported(
-          bt::hci::VendorFeaturesBits::kAndroidVendorExtensions) &&
+  if (adapter()->state().IsControllerFeatureSupported(FeaturesBits::kAndroidVendorExtensions) &&
       adapter()->state().android_vendor_capabilities.a2dp_source_offload_capability_mask()) {
     fidl_chan.set_ext_audio_offload(BindAudioOffloadExtServer(channel));
   }

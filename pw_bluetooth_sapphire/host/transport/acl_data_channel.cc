@@ -14,6 +14,7 @@
 #include <numeric>
 
 #include "lib/fit/function.h"
+#include "pw_bluetooth/vendor.h"
 #include "slab_allocators.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
@@ -29,8 +30,8 @@ namespace bt::hci {
 
 class AclDataChannelImpl final : public AclDataChannel {
  public:
-  AclDataChannelImpl(Transport* transport, HciWrapper* hci, const DataBufferInfo& bredr_buffer_info,
-                     const DataBufferInfo& le_buffer_info);
+  AclDataChannelImpl(Transport* transport, pw::bluetooth::Controller* hci,
+                     const DataBufferInfo& bredr_buffer_info, const DataBufferInfo& le_buffer_info);
   ~AclDataChannelImpl() override;
 
   // AclDataChannel overrides
@@ -46,7 +47,7 @@ class AclDataChannelImpl final : public AclDataChannel {
   void ClearControllerPacketCount(hci_spec::ConnectionHandle handle) override;
   const DataBufferInfo& GetBufferInfo() const override;
   const DataBufferInfo& GetLeBufferInfo() const override;
-  void RequestAclPriority(hci::AclPriority priority, hci_spec::ConnectionHandle handle,
+  void RequestAclPriority(pw::bluetooth::AclPriority priority, hci_spec::ConnectionHandle handle,
                           fit::callback<void(fit::result<fit::failed>)> callback) override;
 
  private:
@@ -119,7 +120,7 @@ class AclDataChannelImpl final : public AclDataChannel {
   // Increments the total number of sent LE packets count by the given amount.
   void IncrementLETotalNumPackets(size_t count);
 
-  void OnRxPacket(std::unique_ptr<ACLDataPacket> packet);
+  void OnRxPacket(pw::span<const std::byte> packet);
 
   // Compute and write quantiles of send latency metrics to Inspect properties. Should only be
   // called by |write_send_metrics_task_|.
@@ -158,8 +159,8 @@ class AclDataChannelImpl final : public AclDataChannel {
   // The Transport object that owns this instance.
   Transport* transport_;  // weak;
 
-  // HciWrapper is owned by Transport and will outlive this object.
-  HciWrapper* hci_;
+  // Controller is owned by Transport and will outlive this object.
+  pw::bluetooth::Controller* hci_;
 
   // The event handler ID for the Number Of Completed Packets event.
   CommandChannel::EventHandlerId num_completed_packets_event_handler_id_ = 0;
@@ -244,13 +245,14 @@ class AclDataChannelImpl final : public AclDataChannel {
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AclDataChannelImpl);
 };
 
-std::unique_ptr<AclDataChannel> AclDataChannel::Create(Transport* transport, HciWrapper* hci,
+std::unique_ptr<AclDataChannel> AclDataChannel::Create(Transport* transport,
+                                                       pw::bluetooth::Controller* hci,
                                                        const DataBufferInfo& bredr_buffer_info,
                                                        const DataBufferInfo& le_buffer_info) {
   return std::make_unique<AclDataChannelImpl>(transport, hci, bredr_buffer_info, le_buffer_info);
 }
 
-AclDataChannelImpl::AclDataChannelImpl(Transport* transport, HciWrapper* hci,
+AclDataChannelImpl::AclDataChannelImpl(Transport* transport, pw::bluetooth::Controller* hci,
                                        const DataBufferInfo& bredr_buffer_info,
                                        const DataBufferInfo& le_buffer_info)
     : transport_(transport),
@@ -284,6 +286,8 @@ AclDataChannelImpl::~AclDataChannelImpl() {
 
   transport_->command_channel()->RemoveEventHandler(num_completed_packets_event_handler_id_);
   transport_->command_channel()->RemoveEventHandler(data_buffer_overflow_event_handler_id_);
+
+  hci_->SetReceiveAclFunction(nullptr);
 }
 
 void AclDataChannelImpl::AttachInspect(inspect::Node& parent, const std::string& name) {
@@ -314,7 +318,7 @@ void AclDataChannelImpl::AttachInspect(inspect::Node& parent, const std::string&
 void AclDataChannelImpl::SetDataRxHandler(ACLPacketHandler rx_callback) {
   BT_ASSERT(rx_callback);
   rx_callback_ = std::move(rx_callback);
-  hci_->SetAclCallback(fit::bind_member<&AclDataChannelImpl::OnRxPacket>(this));
+  hci_->SetReceiveAclFunction(fit::bind_member<&AclDataChannelImpl::OnRxPacket>(this));
 }
 
 bool AclDataChannelImpl::SendPacket(ACLDataPacketPtr data_packet, UniqueChannelId channel_id,
@@ -452,42 +456,47 @@ const DataBufferInfo& AclDataChannelImpl::GetLeBufferInfo() const {
 }
 
 void AclDataChannelImpl::RequestAclPriority(
-    hci::AclPriority priority, hci_spec::ConnectionHandle handle,
+    pw::bluetooth::AclPriority priority, hci_spec::ConnectionHandle handle,
     fit::callback<void(fit::result<fit::failed>)> callback) {
   bt_log(TRACE, "hci", "sending ACL priority command");
 
-  fit::result<zx_status_t, DynamicByteBuffer> encode_result =
-      hci_->EncodeSetAclPriorityCommand(handle, priority);
-  if (encode_result.is_error()) {
-    bt_log(TRACE, "hci", "encoding ACL priority command failed");
-    callback(fit::failed());
-    return;
-  }
-
-  DynamicByteBuffer encoded = std::move(encode_result.value());
-  if (encoded.size() < sizeof(hci_spec::CommandHeader)) {
-    bt_log(TRACE, "hci", "encoded ACL priority command too small (size: %zu)", encoded.size());
-    callback(fit::failed());
-    return;
-  }
-
-  hci_spec::OpCode op_code = letoh16(encoded.ReadMember<&hci_spec::CommandHeader::opcode>());
-  auto packet =
-      bt::hci::CommandPacket::New(op_code, encoded.size() - sizeof(hci_spec::CommandHeader));
-  auto packet_view = packet->mutable_view()->mutable_data();
-  encoded.Copy(&packet_view);
-
-  transport_->command_channel()->SendCommand(
-      std::move(packet),
-      [cb = std::move(callback), priority](auto id, const hci::EventPacket& event) mutable {
-        if (hci_is_error(event, WARN, "hci", "acl priority failed")) {
-          cb(fit::failed());
+  hci_->EncodeVendorCommand(
+      pw::bluetooth::SetAclPriorityCommandParameters{.connection_handle = handle,
+                                                     .priority = priority},
+      [this, priority, callback = std::move(callback)](
+          pw::Result<pw::span<const std::byte>> encode_result) mutable {
+        if (!encode_result.ok()) {
+          bt_log(TRACE, "hci", "encoding ACL priority command failed");
+          callback(fit::failed());
           return;
         }
 
-        bt_log(DEBUG, "hci", "acl priority updated (priority: %#.8x)",
-               static_cast<uint32_t>(priority));
-        cb(fit::ok());
+        DynamicByteBuffer encoded(BufferView(encode_result->data(), encode_result->size()));
+        if (encoded.size() < sizeof(hci_spec::CommandHeader)) {
+          bt_log(TRACE, "hci", "encoded ACL priority command too small (size: %zu)",
+                 encoded.size());
+          callback(fit::failed());
+          return;
+        }
+
+        hci_spec::OpCode op_code = letoh16(encoded.ReadMember<&hci_spec::CommandHeader::opcode>());
+        auto packet =
+            bt::hci::CommandPacket::New(op_code, encoded.size() - sizeof(hci_spec::CommandHeader));
+        auto packet_view = packet->mutable_view()->mutable_data();
+        encoded.Copy(&packet_view);
+
+        transport_->command_channel()->SendCommand(
+            std::move(packet),
+            [cb = std::move(callback), priority](auto id, const hci::EventPacket& event) mutable {
+              if (hci_is_error(event, WARN, "hci", "acl priority failed")) {
+                cb(fit::failed());
+                return;
+              }
+
+              bt_log(DEBUG, "hci", "acl priority updated (priority: %#.8x)",
+                     static_cast<uint32_t>(priority));
+              cb(fit::ok());
+            });
       });
 }
 
@@ -672,13 +681,7 @@ void AclDataChannelImpl::TrySendNextQueuedPackets() {
     QueuedDataPacket& packet = to_send.front();
     const hci_spec::ConnectionHandle connection_handle = packet.packet->connection_handle();
 
-    zx_status_t status = hci_->SendAclPacket(std::move(packet.packet));
-    if (status != ZX_OK) {
-      bt_log(ERROR, "hci", "failed to send data packet to HCI driver (%s) - dropping packet",
-             zx_status_get_string(status));
-      to_send.pop_front();
-      continue;
-    }
+    hci_->SendAclData(packet.packet->view().data().subspan());
 
     if (packet.ll_type == bt::LinkType::kACL) {
       ++bredr_packets_sent;
@@ -752,8 +755,32 @@ void AclDataChannelImpl::IncrementLETotalNumPackets(size_t count) {
   *le_num_sent_packets_.Mutable() += count;
 }
 
-void AclDataChannelImpl::OnRxPacket(std::unique_ptr<ACLDataPacket> packet) {
+void AclDataChannelImpl::OnRxPacket(pw::span<const std::byte> buffer) {
   BT_ASSERT(rx_callback_);
+
+  if (buffer.size() < sizeof(hci_spec::ACLDataHeader)) {
+    // TODO(fxbug.dev/97362): Handle these types of errors by signaling Transport.
+    bt_log(ERROR, "hci", "malformed packet - expected at least %zu bytes, got %zu",
+           sizeof(hci_spec::ACLDataHeader), buffer.size());
+    return;
+  }
+
+  const size_t payload_size = buffer.size() - sizeof(hci_spec::ACLDataHeader);
+
+  ACLDataPacketPtr packet = ACLDataPacket::New(payload_size);
+  packet->mutable_view()->mutable_data().Write(reinterpret_cast<const uint8_t*>(buffer.data()),
+                                               buffer.size());
+  packet->InitializeFromBuffer();
+
+  if (packet->view().header().data_total_length != payload_size) {
+    // TODO(fxbug.dev/97362): Handle these types of errors by signaling Transport.
+    bt_log(ERROR, "hci",
+           "malformed packet - payload size from header (%hu) does not match"
+           " received payload size: %zu",
+           packet->view().header().data_total_length, payload_size);
+    return;
+  }
+
   {
     TRACE_DURATION("bluetooth", "AclDataChannelImpl->rx_callback_");
     rx_callback_(std::move(packet));

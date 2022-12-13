@@ -18,6 +18,9 @@
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
 namespace bt::l2cap::internal {
+
+using pw::bluetooth::AclPriority;
+
 namespace {
 
 const char* kInspectHandlePropertyName = "handle";
@@ -543,7 +546,7 @@ void LogicalLink::SendConnectionParameterUpdateRequest(
       });
 }
 
-void LogicalLink::RequestAclPriority(Channel* channel, hci::AclPriority priority,
+void LogicalLink::RequestAclPriority(Channel* channel, AclPriority priority,
                                      fit::callback<void(fit::result<fit::failed>)> callback) {
   BT_ASSERT(channel);
   auto iter = channels_.find(channel->id());
@@ -657,7 +660,7 @@ void LogicalLink::HandleNextAclPriorityRequest() {
   // Prevent closed channels with queued requests from upgrading channel priority.
   // Allow closed channels to downgrade priority so that they can clean up their priority on
   // destruction.
-  if (!request.channel && request.priority != hci::AclPriority::kNormal) {
+  if (!request.channel && request.priority != AclPriority::kNormal) {
     request.callback(fit::failed());
     pending_acl_requests_.pop();
     HandleNextAclPriorityRequest();
@@ -675,16 +678,16 @@ void LogicalLink::HandleNextAclPriorityRequest() {
 
   // If priority is not kNormal, then a channel might be using a conflicting priority, and the new
   // priority should not be requested.
-  if (acl_priority_ != hci::AclPriority::kNormal) {
+  if (acl_priority_ != AclPriority::kNormal) {
     for (auto& [chan_id, chan] : channels_) {
       if (chan.get() == request.channel.get() ||
-          chan->requested_acl_priority() == hci::AclPriority::kNormal) {
+          chan->requested_acl_priority() == AclPriority::kNormal) {
         continue;
       }
 
       // If the request returns priority to normal but a different channel still requires high
       // priority, skip sending command and just report success.
-      if (request.priority == hci::AclPriority::kNormal) {
+      if (request.priority == AclPriority::kNormal) {
         request.callback(fit::ok());
         break;
       }

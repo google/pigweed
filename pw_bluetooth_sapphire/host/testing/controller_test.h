@@ -9,11 +9,11 @@
 
 #include <memory>
 
+#include "pw_bluetooth/controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_packet.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/mock_hci_wrapper.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/sco_data_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 #include "src/lib/testing/loop_fixture/test_loop_fixture.h"
@@ -51,20 +51,30 @@ class ControllerTest : public ::gtest::TestLoopFixture {
   ~ControllerTest() override = default;
 
  protected:
-  void SetUp() override { SetUp(/*sco_enabled=*/true); }
+  void SetUp(pw::bluetooth::Controller::FeaturesBits features, bool initialize_transport = true) {
+    std::unique_ptr<pw::bluetooth::Controller> controller =
+        ControllerTest<ControllerTestDoubleType>::SetUpTestController();
+    test_device_->set_features(features);
+    transport_ = std::make_unique<hci::Transport>(std::move(controller));
 
-  void SetUp(bool sco_enabled) {
-    sco_enabled_ = sco_enabled;
-    transport_ = hci::Transport::Create(ControllerTest<ControllerTestDoubleType>::SetUpTestHci());
+    if (initialize_transport) {
+      std::optional<bool> init_result;
+      transport_->Initialize([&init_result](bool success) { init_result = success; });
+      RunLoopUntilIdle();
+      ASSERT_TRUE(init_result.has_value());
+      ASSERT_TRUE(init_result.value());
+    }
   }
 
+  void SetUp() override { SetUp(pw::bluetooth::Controller::FeaturesBits::kHciSco); }
+
   void TearDown() override {
-    if (!transport_)
+    if (!transport_) {
       return;
+    }
 
     RunLoopUntilIdle();
     transport_ = nullptr;
-    test_device_ = nullptr;
   }
 
   // Directly initializes the ACL data channel and wires up its data rx
@@ -115,128 +125,12 @@ class ControllerTest : public ::gtest::TestLoopFixture {
   // Getters for internal fields frequently used by tests.
   ControllerTestDoubleType* test_device() const { return test_device_.get(); }
 
-  // Wires up MockHciWrapper to the controller test double so that packets can be exchanged.
-  void StartTestDevice() {
-    BT_ASSERT(mock_hci_);
-    BT_ASSERT(test_device_);
-
-    mock_hci_->set_send_acl_cb([this](std::unique_ptr<hci::ACLDataPacket> packet) {
-      if (test_device_) {
-        test_device_->HandleACLPacket(std::move(packet));
-        return ZX_OK;
-      }
-      return ZX_ERR_IO_NOT_PRESENT;
-    });
-    test_device_->StartAclChannel([this](std::unique_ptr<hci::ACLDataPacket> packet) {
-      if (mock_hci_) {
-        mock_hci_->ReceiveAclPacket(std::move(packet));
-      }
-    });
-
-    mock_hci_->set_send_command_cb([this](std::unique_ptr<hci::CommandPacket> packet) {
-      if (test_device_) {
-        test_device_->HandleCommandPacket(std::move(packet));
-        return ZX_OK;
-      }
-      return ZX_ERR_IO_NOT_PRESENT;
-    });
-    mock_hci_->set_send_emboss_command_cb([this](hci::EmbossCommandPacket packet) {
-      if (test_device_) {
-        test_device_->HandleCommandPacket(std::move(packet));
-        return ZX_OK;
-      }
-      return ZX_ERR_IO_NOT_PRESENT;
-    });
-    test_device_->StartCmdChannel([this](std::unique_ptr<hci::EventPacket> packet) {
-      // TODO(fxbug.dev/97629): Remove this PostTask and call ReceiveEvent() synchronously.
-      async::PostTask(dispatcher(), [this, packet = std::move(packet)]() mutable {
-        if (mock_hci_) {
-          mock_hci_->ReceiveEvent(std::move(packet));
-        }
-      });
-    });
-
-    if (sco_enabled_) {
-      mock_hci_->set_send_sco_cb([this](std::unique_ptr<hci::ScoDataPacket> packet) {
-        if (test_device_) {
-          test_device_->HandleScoPacket(std::move(packet));
-          return ZX_OK;
-        }
-        return ZX_ERR_IO_NOT_PRESENT;
-      });
-      test_device_->StartScoChannel([this](std::unique_ptr<hci::ScoDataPacket> packet) {
-        if (mock_hci_) {
-          mock_hci_->ReceiveScoPacket(std::move(packet));
-        }
-      });
-    }
-  }
-
-  // Set the vendor features that the transport will be configured to return.
-  void set_vendor_features(hci::VendorFeaturesBits features) {
-    BT_ASSERT(!transport_);
-    vendor_features_ = features;
-  }
-
-  // Set a function to be called when HciWrapper's EncodeSetAclPriorityCommand method is called.
-  void set_encode_acl_priority_command_cb(
-      hci::testing::MockHciWrapper::EncodeAclPriorityCommandFunction cb) {
-    encode_acl_priority_command_cb_ = std::move(cb);
-  }
-
-  // Set a function to be called when HciWrapper's ConfigureSco method is called.
-  void set_configure_sco_cb(hci::testing::MockHciWrapper::ConfigureScoFunction cb) {
-    configure_sco_cb_ = std::move(cb);
-  }
-
-  // Set a function to be called when HciWrapper's ResetSco method is called.
-  void set_reset_sco_cb(hci::testing::MockHciWrapper::ResetScoFunction cb) {
-    reset_sco_cb_ = std::move(cb);
-  }
-
  private:
-  // Initializes |test_device_| and returns the HciWrapper which can be passed to classes that are
-  // under test.
-  std::unique_ptr<hci::HciWrapper> SetUpTestHci() {
-    // Wrap MockHciWrapper callbacks so that tests can change them after handing off MockHciWrapper
-    // to Transport.
-    auto encode_set_acl_priority_cb =
-        [this](hci_spec::ConnectionHandle connection,
-               hci::AclPriority priority) -> fit::result<zx_status_t, DynamicByteBuffer> {
-      if (encode_acl_priority_command_cb_) {
-        return encode_acl_priority_command_cb_(connection, priority);
-      }
-      return fit::error(ZX_ERR_NOT_SUPPORTED);
-    };
-    auto config_sco_cb = [this](hci::ScoCodingFormat coding_format, hci::ScoEncoding encoding,
-                                hci::ScoSampleRate sample_rate,
-                                hci::HciWrapper::StatusCallback callback) mutable {
-      if (configure_sco_cb_) {
-        configure_sco_cb_(coding_format, encoding, sample_rate, std::move(callback));
-      }
-    };
-    auto reset_sco_cb = [this](hci::HciWrapper::StatusCallback callback) mutable {
-      if (reset_sco_cb_) {
-        reset_sco_cb_(std::move(callback));
-      }
-    };
-
-    auto hci_wrapper = std::make_unique<hci::testing::MockHciWrapper>();
-    mock_hci_ = hci_wrapper->GetWeakPtr();
-    hci_wrapper->SetVendorFeatures(vendor_features_);
-    hci_wrapper->set_sco_supported(sco_enabled_);
-    hci_wrapper->SetEncodeAclPriorityCommandCallback(std::move(encode_set_acl_priority_cb));
-    hci_wrapper->set_configure_sco_callback(std::move(config_sco_cb));
-    hci_wrapper->SetResetScoCallback(std::move(reset_sco_cb));
-
-    test_device_ = std::make_unique<ControllerTestDoubleType>();
-    test_device_->set_error_callback([mock_hci = mock_hci_](zx_status_t status) {
-      if (mock_hci) {
-        mock_hci->SimulateError(status);
-      }
-    });
-
-    return hci_wrapper;
+  std::unique_ptr<pw::bluetooth::Controller> SetUpTestController() {
+    std::unique_ptr<ControllerTestDoubleType> controller =
+        std::make_unique<ControllerTestDoubleType>();
+    test_device_ = controller->GetWeakPtr();
+    return controller;
   }
 
   void OnAclDataReceived(hci::ACLDataPacketPtr data_packet) {
@@ -250,17 +144,9 @@ class ControllerTest : public ::gtest::TestLoopFixture {
     });
   }
 
-  fxl::WeakPtr<hci::testing::MockHciWrapper> mock_hci_;
-  std::unique_ptr<ControllerTestDoubleType> test_device_;
+  fxl::WeakPtr<ControllerTestDoubleType> test_device_;
   std::unique_ptr<hci::Transport> transport_;
   hci::ACLPacketHandler data_received_callback_;
-
-  hci::VendorFeaturesBits vendor_features_ = static_cast<hci::VendorFeaturesBits>(0);
-  // If true, return a valid SCO channel from DeviceWrapper.
-  bool sco_enabled_ = true;
-  hci::testing::MockHciWrapper::EncodeAclPriorityCommandFunction encode_acl_priority_command_cb_;
-  hci::testing::MockHciWrapper::ConfigureScoFunction configure_sco_cb_;
-  hci::testing::MockHciWrapper::ResetScoFunction reset_sco_cb_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ControllerTest);
   static_assert(std::is_base_of<ControllerTestDoubleBase, ControllerTestDoubleType>::value,

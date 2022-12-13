@@ -6,6 +6,7 @@
 
 #include <gtest/gtest.h>
 
+#include "pw_bluetooth/controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
@@ -14,6 +15,10 @@
 
 namespace bt::hci {
 namespace {
+
+using ScoCodingFormat = pw::bluetooth::Controller::ScoCodingFormat;
+using ScoEncoding = pw::bluetooth::Controller::ScoEncoding;
+using ScoSampleRate = pw::bluetooth::Controller::ScoSampleRate;
 
 constexpr hci_spec::ConnectionHandle kConnectionHandle0 = 0x0000;
 constexpr hci_spec::ConnectionHandle kConnectionHandle1 = 0x0001;
@@ -161,7 +166,6 @@ class ScoDataChannelTest : public TestingBase {
  public:
   void SetUp() override {
     TestingBase::SetUp();
-    StartTestDevice();
 
     DataBufferInfo buffer_info(/*max_data_length=*/10, kBufferMaxNumPackets);
     InitializeScoDataChannel(buffer_info);
@@ -173,18 +177,19 @@ class ScoDataChannelSingleConnectionTest : public ScoDataChannelTest {
   void SetUp() override {
     ScoDataChannelTest::SetUp();
 
-    set_configure_sco_cb([this](ScoCodingFormat format, ScoEncoding encoding, ScoSampleRate rate,
-                                HciWrapper::StatusCallback callback) {
+    test_device()->set_configure_sco_cb([this](ScoCodingFormat format, ScoEncoding encoding,
+                                               ScoSampleRate rate,
+                                               fit::callback<void(pw::Status)> callback) {
       config_count_++;
       EXPECT_EQ(format, ScoCodingFormat::kMsbc);
       EXPECT_EQ(encoding, ScoEncoding::k16Bits);
       EXPECT_EQ(rate, ScoSampleRate::k16Khz);
-      callback(ZX_OK);
+      callback(PW_STATUS_OK);
     });
 
-    set_reset_sco_cb([this](HciWrapper::StatusCallback callback) {
+    test_device()->set_reset_sco_cb([this](fit::callback<void(pw::Status)> callback) {
       reset_count_++;
-      callback(ZX_OK);
+      callback(PW_STATUS_OK);
     });
 
     connection_.emplace(sco_data_channel());
@@ -198,8 +203,8 @@ class ScoDataChannelSingleConnectionTest : public ScoDataChannelTest {
     sco_data_channel()->UnregisterConnection(connection_->handle());
     EXPECT_EQ(config_count_, 1);
     EXPECT_EQ(reset_count_, 1);
-    set_configure_sco_cb(nullptr);
-    set_reset_sco_cb(nullptr);
+    test_device()->set_configure_sco_cb(nullptr);
+    test_device()->set_reset_sco_cb(nullptr);
     ScoDataChannelTest::TearDown();
   }
 
@@ -257,15 +262,16 @@ TEST_F(ScoDataChannelSingleConnectionTest, ReceiveManyPackets) {
 
 TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndUnregisterFirstConnection) {
   int config_count = 0;
-  set_configure_sco_cb([&](auto, auto, auto, HciWrapper::StatusCallback callback) {
-    config_count++;
-    callback(ZX_OK);
-  });
+  test_device()->set_configure_sco_cb(
+      [&](auto, auto, auto, fit::callback<void(pw::Status)> callback) {
+        config_count++;
+        callback(PW_STATUS_OK);
+      });
 
   int reset_count = 0;
-  set_reset_sco_cb([&](HciWrapper::StatusCallback callback) {
+  test_device()->set_reset_sco_cb([&](fit::callback<void(pw::Status)> callback) {
     reset_count++;
-    callback(ZX_OK);
+    callback(PW_STATUS_OK);
   });
 
   FakeScoConnection connection_0(sco_data_channel());
@@ -342,10 +348,9 @@ TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndUnregisterFirstConnection) {
 }
 
 TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndClearControllerPacketCountOfFirstConnection) {
-  set_configure_sco_cb(
-      [](auto, auto, auto, HciWrapper::StatusCallback callback) { callback(ZX_OK); });
-
-  set_reset_sco_cb([](HciWrapper::StatusCallback callback) { callback(ZX_OK); });
+  test_device()->set_configure_sco_cb(
+      [](auto, auto, auto, fit::callback<void(pw::Status)> cb) { cb(PW_STATUS_OK); });
+  test_device()->set_reset_sco_cb([](fit::callback<void(pw::Status)> cb) { cb(PW_STATUS_OK); });
 
   FakeScoConnection connection_0(sco_data_channel());
   sco_data_channel()->RegisterConnection(connection_0.GetWeakPtr());
@@ -488,19 +493,20 @@ TEST_F(ScoDataChannelSingleConnectionTest, ReceivePacketWithIncorrectHeaderLengt
 TEST_F(ScoDataChannelTest, CvsdConnectionEncodingBits8SampleRate8Khz) {
   int config_count = 0;
 
-  set_configure_sco_cb([&](ScoCodingFormat format, ScoEncoding encoding, ScoSampleRate rate,
-                           HciWrapper::StatusCallback callback) {
+  test_device()->set_configure_sco_cb([&](ScoCodingFormat format, ScoEncoding encoding,
+                                          ScoSampleRate rate,
+                                          fit::callback<void(pw::Status)> callback) {
     config_count++;
     EXPECT_EQ(format, ScoCodingFormat::kCvsd);
     EXPECT_EQ(encoding, ScoEncoding::k8Bits);
     EXPECT_EQ(rate, ScoSampleRate::k8Khz);
-    callback(ZX_OK);
+    callback(PW_STATUS_OK);
   });
 
   int reset_count = 0;
-  set_reset_sco_cb([&](HciWrapper::StatusCallback callback) {
+  test_device()->set_reset_sco_cb([&](fit::callback<void(pw::Status)> callback) {
     reset_count++;
-    callback(ZX_OK);
+    callback(PW_STATUS_OK);
   });
 
   FakeScoConnection connection_0(sco_data_channel(), kConnectionHandle0, cvsd_connection_params());
@@ -511,19 +517,20 @@ TEST_F(ScoDataChannelTest, CvsdConnectionEncodingBits8SampleRate8Khz) {
 
 TEST_F(ScoDataChannelTest, CvsdConnectionEncodingBits16SampleRate8Khz) {
   int config_count = 0;
-  set_configure_sco_cb([&](ScoCodingFormat format, ScoEncoding encoding, ScoSampleRate rate,
-                           HciWrapper::StatusCallback callback) {
+  test_device()->set_configure_sco_cb([&](ScoCodingFormat format, ScoEncoding encoding,
+                                          ScoSampleRate rate,
+                                          fit::callback<void(pw::Status)> callback) {
     config_count++;
     EXPECT_EQ(format, ScoCodingFormat::kCvsd);
     EXPECT_EQ(encoding, ScoEncoding::k16Bits);
     EXPECT_EQ(rate, ScoSampleRate::k8Khz);
-    callback(ZX_OK);
+    callback(PW_STATUS_OK);
   });
 
   int reset_count = 0;
-  set_reset_sco_cb([&](HciWrapper::StatusCallback callback) {
+  test_device()->set_reset_sco_cb([&](fit::callback<void(pw::Status)> callback) {
     reset_count++;
-    callback(ZX_OK);
+    callback(PW_STATUS_OK);
   });
 
   bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> params =
@@ -542,19 +549,20 @@ TEST_F(ScoDataChannelTest, CvsdConnectionEncodingBits16SampleRate8Khz) {
 
 TEST_F(ScoDataChannelTest, CvsdConnectionEncodingBits16SampleRate16Khz) {
   int config_count = 0;
-  set_configure_sco_cb([&](ScoCodingFormat format, ScoEncoding encoding, ScoSampleRate rate,
-                           HciWrapper::StatusCallback callback) {
+  test_device()->set_configure_sco_cb([&](ScoCodingFormat format, ScoEncoding encoding,
+                                          ScoSampleRate rate,
+                                          fit::callback<void(pw::Status)> callback) {
     config_count++;
     EXPECT_EQ(format, ScoCodingFormat::kCvsd);
     EXPECT_EQ(encoding, ScoEncoding::k16Bits);
     EXPECT_EQ(rate, ScoSampleRate::k16Khz);
-    callback(ZX_OK);
+    callback(PW_STATUS_OK);
   });
 
   int reset_count = 0;
-  set_reset_sco_cb([&](HciWrapper::StatusCallback callback) {
+  test_device()->set_reset_sco_cb([&](fit::callback<void(pw::Status)> callback) {
     reset_count++;
-    callback(ZX_OK);
+    callback(PW_STATUS_OK);
   });
 
   bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> params =
@@ -573,19 +581,20 @@ TEST_F(ScoDataChannelTest, CvsdConnectionEncodingBits16SampleRate16Khz) {
 
 TEST_F(ScoDataChannelTest, CvsdConnectionInvalidSampleSizeAndRate) {
   int config_count = 0;
-  set_configure_sco_cb([&](ScoCodingFormat format, ScoEncoding encoding, ScoSampleRate rate,
-                           HciWrapper::StatusCallback callback) {
+  test_device()->set_configure_sco_cb([&](ScoCodingFormat format, ScoEncoding encoding,
+                                          ScoSampleRate rate,
+                                          fit::callback<void(pw::Status)> callback) {
     config_count++;
     EXPECT_EQ(format, ScoCodingFormat::kCvsd);
     EXPECT_EQ(encoding, ScoEncoding::k16Bits);
     EXPECT_EQ(rate, ScoSampleRate::k16Khz);
-    callback(ZX_OK);
+    callback(PW_STATUS_OK);
   });
 
   int reset_count = 0;
-  set_reset_sco_cb([&](HciWrapper::StatusCallback callback) {
+  test_device()->set_reset_sco_cb([&](fit::callback<void(pw::Status)> callback) {
     reset_count++;
-    callback(ZX_OK);
+    callback(PW_STATUS_OK);
   });
 
   bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> params =
@@ -604,15 +613,15 @@ TEST_F(ScoDataChannelTest, CvsdConnectionInvalidSampleSizeAndRate) {
 }
 
 TEST_F(ScoDataChannelTest, ConfigureCallbackCalledAfterTransportDestroyedDoesNotUseAfterFree) {
-  HciWrapper::StatusCallback config_cb = nullptr;
-  set_configure_sco_cb(
+  fit::callback<void(pw::Status)> config_cb = nullptr;
+  test_device()->set_configure_sco_cb(
       [&](ScoCodingFormat format, ScoEncoding encoding, ScoSampleRate rate,
-          HciWrapper::StatusCallback callback) { config_cb = std::move(callback); });
+          fit::callback<void(pw::Status)> callback) { config_cb = std::move(callback); });
 
   int reset_count = 0;
-  set_reset_sco_cb([&](HciWrapper::StatusCallback callback) {
+  test_device()->set_reset_sco_cb([&](fit::callback<void(pw::Status)> callback) {
     reset_count++;
-    callback(ZX_OK);
+    callback(PW_STATUS_OK);
   });
 
   FakeScoConnection connection(sco_data_channel());
@@ -624,21 +633,22 @@ TEST_F(ScoDataChannelTest, ConfigureCallbackCalledAfterTransportDestroyedDoesNot
   RunLoopUntilIdle();
 
   // Callback should not use-after-free.
-  config_cb(ZX_OK);
+  config_cb(PW_STATUS_OK);
   RunLoopUntilIdle();
 }
 
 TEST_F(ScoDataChannelTest,
        RegisterAndUnregisterFirstConnectionAndRegisterSecondConnectionBeforeFirstConfigCompletes) {
-  std::vector<HciWrapper::StatusCallback> config_callbacks;
-  set_configure_sco_cb([&](auto, auto, auto, HciWrapper::StatusCallback callback) {
-    config_callbacks.emplace_back(std::move(callback));
-  });
+  std::vector<fit::callback<void(pw::Status)>> config_callbacks;
+  test_device()->set_configure_sco_cb(
+      [&](auto, auto, auto, fit::callback<void(pw::Status)> callback) {
+        config_callbacks.emplace_back(std::move(callback));
+      });
 
   int reset_count = 0;
-  set_reset_sco_cb([&](HciWrapper::StatusCallback callback) {
+  test_device()->set_reset_sco_cb([&](fit::callback<void(pw::Status)> callback) {
     reset_count++;
-    callback(ZX_OK);
+    callback(PW_STATUS_OK);
   });
 
   FakeScoConnection connection_0(sco_data_channel());
@@ -662,12 +672,12 @@ TEST_F(ScoDataChannelTest,
   // sco_packet should not be sent yet.
   RunLoopUntilIdle();
   // The first callback completing should not complete the second connection configuration.
-  config_callbacks[0](ZX_OK);
+  config_callbacks[0](PW_STATUS_OK);
   // sco_packet should not be sent yet.
   RunLoopUntilIdle();
   EXPECT_EQ(connection_1.queued_packets().size(), 1u);
   // Queued packet should be sent after second callback called.
-  config_callbacks[1](ZX_OK);
+  config_callbacks[1](PW_STATUS_OK);
   EXPECT_SCO_PACKET_OUT(test_device(), packet);
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedScoPacketsSent());
@@ -714,20 +724,21 @@ TEST_F(ScoDataChannelSingleConnectionTest,
 
 TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndFirstConfigurationFails) {
   int config_count = 0;
-  set_configure_sco_cb([&](ScoCodingFormat format, ScoEncoding encoding, ScoSampleRate rate,
-                           HciWrapper::StatusCallback callback) {
+  test_device()->set_configure_sco_cb([&](ScoCodingFormat format, ScoEncoding encoding,
+                                          ScoSampleRate rate,
+                                          fit::callback<void(pw::Status)> callback) {
     config_count++;
     if (config_count == 1) {
-      callback(ZX_ERR_INVALID_ARGS);
+      callback(pw::Status::InvalidArgument());
       return;
     }
-    callback(ZX_OK);
+    callback(PW_STATUS_OK);
   });
 
   int reset_count = 0;
-  set_reset_sco_cb([&](HciWrapper::StatusCallback callback) {
+  test_device()->set_reset_sco_cb([&](fit::callback<void(pw::Status)> callback) {
     reset_count++;
-    callback(ZX_OK);
+    callback(PW_STATUS_OK);
   });
 
   FakeScoConnection connection_0(sco_data_channel());
@@ -773,17 +784,18 @@ TEST_F(ScoDataChannelTest, RegisterTwoConnectionsAndFirstConfigurationFails) {
 
 TEST_F(ScoDataChannelTest, UnsupportedCodingFormatTreatedAsCvsd) {
   int config_count = 0;
-  set_configure_sco_cb([&](ScoCodingFormat format, ScoEncoding encoding, ScoSampleRate rate,
-                           HciWrapper::StatusCallback callback) {
+  test_device()->set_configure_sco_cb([&](ScoCodingFormat format, ScoEncoding encoding,
+                                          ScoSampleRate rate,
+                                          fit::callback<void(pw::Status)> callback) {
     config_count++;
     EXPECT_EQ(format, ScoCodingFormat::kCvsd);
-    callback(ZX_OK);
+    callback(PW_STATUS_OK);
   });
 
   int reset_count = 0;
-  set_reset_sco_cb([&](HciWrapper::StatusCallback callback) {
+  test_device()->set_reset_sco_cb([&](fit::callback<void(pw::Status)> callback) {
     reset_count++;
-    callback(ZX_OK);
+    callback(PW_STATUS_OK);
   });
 
   bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> params =

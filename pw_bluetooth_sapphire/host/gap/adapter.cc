@@ -284,7 +284,10 @@ class AdapterImpl final : public Adapter {
   fxl::WeakPtr<Adapter> AsWeakPtr() override { return weak_ptr_factory_.GetWeakPtr(); }
 
  private:
-  // Second step of the initialization sequence. Called by Initialize() when the
+  // Called by Initialize() after Transport is initialized.
+  void InitializeStep1();
+
+  // Second step of the initialization sequence. Called by InitializeStep1() when the
   // first batch of HCI commands have been sent.
   void InitializeStep2();
 
@@ -330,7 +333,8 @@ class AdapterImpl final : public Adapter {
       return std::make_unique<hci::ExtendedLowEnergyAdvertiser>(hci_);
     }
 
-    if (state().IsVendorFeatureSupported(hci::VendorFeaturesBits::kAndroidVendorExtensions)) {
+    if (state().IsControllerFeatureSupported(
+            pw::bluetooth::Controller::FeaturesBits::kAndroidVendorExtensions)) {
       uint8_t max_advt = state().android_vendor_capabilities.max_simultaneous_advertisements();
       bt_log(INFO, "gap",
              "controller supports android vendor extensions, max simultaneous advertisements: %d",
@@ -532,88 +536,14 @@ bool AdapterImpl::Initialize(InitializeCallback callback, fit::closure transport
   init_cb_ = std::move(callback);
   transport_error_cb_ = std::move(transport_error_cb);
 
-  state_.vendor_features = hci_->GetVendorFeatures();
-
-  // Start by resetting the controller to a clean state and then send
-  // informational parameter commands that are not specific to LE or BR/EDR. The
-  // commands sent here are mandatory for all LE controllers.
-  //
-  // NOTE: It's safe to pass capture |this| directly in the callbacks as
-  // |init_seq_runner_| will internally invalidate the callbacks if it ever gets
-  // deleted.
-
-  // HCI_Reset
-  init_seq_runner_->QueueCommand(hci::CommandPacket::New(hci_spec::kReset));
-
-  // HCI_Read_Local_Version_Information
-  init_seq_runner_->QueueCommand(
-      hci::CommandPacket::New(hci_spec::kReadLocalVersionInfo),
-      [this](const hci::EventPacket& cmd_complete) {
-        if (hci_is_error(cmd_complete, WARN, "gap", "read local version info failed")) {
-          return;
-        }
-        auto params = cmd_complete.return_params<hci_spec::ReadLocalVersionInfoReturnParams>();
-        state_.hci_version = params->hci_version;
-      });
-
-  // HCI_Read_Local_Supported_Commands
-  init_seq_runner_->QueueCommand(
-      hci::CommandPacket::New(hci_spec::kReadLocalSupportedCommands),
-      [this](const hci::EventPacket& cmd_complete) {
-        if (hci_is_error(cmd_complete, WARN, "gap", "read local supported commands failed")) {
-          return;
-        }
-        auto params =
-            cmd_complete.return_params<hci_spec::ReadLocalSupportedCommandsReturnParams>();
-        std::memcpy(state_.supported_commands, params->supported_commands,
-                    sizeof(params->supported_commands));
-      });
-
-  // HCI_Read_Local_Supported_Features
-  init_seq_runner_->QueueCommand(
-      hci::CommandPacket::New(hci_spec::kReadLocalSupportedFeatures),
-      [this](const hci::EventPacket& cmd_complete) {
-        if (hci_is_error(cmd_complete, WARN, "gap", "read local supported features failed")) {
-          return;
-        }
-        auto params =
-            cmd_complete.return_params<hci_spec::ReadLocalSupportedFeaturesReturnParams>();
-        state_.features.SetPage(0, le64toh(params->lmp_features));
-      });
-
-  // HCI_Read_BD_ADDR
-  init_seq_runner_->QueueCommand(
-      hci::CommandPacket::New(hci_spec::kReadBDADDR), [this](const hci::EventPacket& cmd_complete) {
-        if (hci_is_error(cmd_complete, WARN, "gap", "read BR_ADDR failed")) {
-          return;
-        }
-        auto params = cmd_complete.return_params<hci_spec::ReadBDADDRReturnParams>();
-        state_.controller_address = params->bd_addr;
-      });
-
-  if (state().IsVendorFeatureSupported(hci::VendorFeaturesBits::kAndroidVendorExtensions)) {
-    bt_log(INFO, "gap", "controller supports android hci extensions, querying exact feature set");
-    init_seq_runner_->QueueCommand(
-        hci::CommandPacket::New(hci_android::kLEGetVendorCapabilities),
-        [this](const hci::EventPacket& event) {
-          if (hci_is_error(event, WARN, "gap",
-                           "Failed to query android hci extension capabilities")) {
-            return;
-          }
-
-          auto params = event.return_params<hci_android::LEGetVendorCapabilitiesReturnParams>();
-          state_.android_vendor_capabilities.Initialize(*params);
-        });
-  }
-
-  init_seq_runner_->RunCommands([this](hci::Result<> status) mutable {
-    if (bt_is_error(status, ERROR, "gap", "Failed to obtain initial controller information: %s",
-                    bt_str(status))) {
+  hci_->Initialize([this](bool success) {
+    if (!success) {
+      bt_log(ERROR, "gap", "Failed to initialize Transport");
       CompleteInitialization(/*success=*/false);
       return;
     }
 
-    InitializeStep2();
+    InitializeStep1();
   });
 
   return true;
@@ -721,6 +651,93 @@ void AdapterImpl::AttachInspect(inspect::Node& parent, std::string name) {
                                                            "request_discoverable_events");
   metrics_.bredr.open_l2cap_channel_requests.AttachInspect(metrics_bredr_node_,
                                                            "open_l2cap_channel_requests");
+}
+
+void AdapterImpl::InitializeStep1() {
+  state_.controller_features = hci_->GetFeatures();
+
+  // Start by resetting the controller to a clean state and then send
+  // informational parameter commands that are not specific to LE or BR/EDR. The
+  // commands sent here are mandatory for all LE controllers.
+  //
+  // NOTE: It's safe to pass capture |this| directly in the callbacks as
+  // |init_seq_runner_| will internally invalidate the callbacks if it ever gets
+  // deleted.
+
+  // HCI_Reset
+  init_seq_runner_->QueueCommand(hci::CommandPacket::New(hci_spec::kReset));
+
+  // HCI_Read_Local_Version_Information
+  init_seq_runner_->QueueCommand(
+      hci::CommandPacket::New(hci_spec::kReadLocalVersionInfo),
+      [this](const hci::EventPacket& cmd_complete) {
+        if (hci_is_error(cmd_complete, WARN, "gap", "read local version info failed")) {
+          return;
+        }
+        auto params = cmd_complete.return_params<hci_spec::ReadLocalVersionInfoReturnParams>();
+        state_.hci_version = params->hci_version;
+      });
+
+  // HCI_Read_Local_Supported_Commands
+  init_seq_runner_->QueueCommand(
+      hci::CommandPacket::New(hci_spec::kReadLocalSupportedCommands),
+      [this](const hci::EventPacket& cmd_complete) {
+        if (hci_is_error(cmd_complete, WARN, "gap", "read local supported commands failed")) {
+          return;
+        }
+        auto params =
+            cmd_complete.return_params<hci_spec::ReadLocalSupportedCommandsReturnParams>();
+        std::memcpy(state_.supported_commands, params->supported_commands,
+                    sizeof(params->supported_commands));
+      });
+
+  // HCI_Read_Local_Supported_Features
+  init_seq_runner_->QueueCommand(
+      hci::CommandPacket::New(hci_spec::kReadLocalSupportedFeatures),
+      [this](const hci::EventPacket& cmd_complete) {
+        if (hci_is_error(cmd_complete, WARN, "gap", "read local supported features failed")) {
+          return;
+        }
+        auto params =
+            cmd_complete.return_params<hci_spec::ReadLocalSupportedFeaturesReturnParams>();
+        state_.features.SetPage(0, le64toh(params->lmp_features));
+      });
+
+  // HCI_Read_BD_ADDR
+  init_seq_runner_->QueueCommand(
+      hci::CommandPacket::New(hci_spec::kReadBDADDR), [this](const hci::EventPacket& cmd_complete) {
+        if (hci_is_error(cmd_complete, WARN, "gap", "read BR_ADDR failed")) {
+          return;
+        }
+        auto params = cmd_complete.return_params<hci_spec::ReadBDADDRReturnParams>();
+        state_.controller_address = params->bd_addr;
+      });
+
+  if (state().IsControllerFeatureSupported(
+          pw::bluetooth::Controller::FeaturesBits::kAndroidVendorExtensions)) {
+    bt_log(INFO, "gap", "controller supports android hci extensions, querying exact feature set");
+    init_seq_runner_->QueueCommand(
+        hci::CommandPacket::New(hci_android::kLEGetVendorCapabilities),
+        [this](const hci::EventPacket& event) {
+          if (hci_is_error(event, WARN, "gap",
+                           "Failed to query android hci extension capabilities")) {
+            return;
+          }
+
+          auto params = event.return_params<hci_android::LEGetVendorCapabilitiesReturnParams>();
+          state_.android_vendor_capabilities.Initialize(*params);
+        });
+  }
+
+  init_seq_runner_->RunCommands([this](hci::Result<> status) mutable {
+    if (bt_is_error(status, ERROR, "gap", "Failed to obtain initial controller information: %s",
+                    bt_str(status))) {
+      CompleteInitialization(/*success=*/false);
+      return;
+    }
+
+    InitializeStep2();
+  });
 }
 
 void AdapterImpl::InitializeStep2() {

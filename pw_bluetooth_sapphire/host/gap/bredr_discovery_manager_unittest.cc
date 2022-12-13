@@ -58,13 +58,12 @@ class BrEdrDiscoveryManagerTest : public TestingBase {
 
   void SetUp() override {
     TestingBase::SetUp();
-    StartTestDevice();
+
     NewDiscoveryManager(hci_spec::InquiryMode::kStandard);
   }
 
   void TearDown() override {
     discovery_manager_ = nullptr;
-    test_device()->Stop();
     TestingBase::TearDown();
   }
 

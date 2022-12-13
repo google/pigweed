@@ -38,10 +38,6 @@ source_set("tests") {
     "//src/lib/testing/loop_fixture",
     "//third_party/googletest:gtest",
   ]
-
-  # TODO(fxbug.dev/95833): This target uses the deprecated C bindings.
-  # Consider switching to the C++ bindings. See linked bug for details.
-  configs += [ "//build/c:fidl-deprecated-c-bindings" ]
 }
 
 bt_gtest_package("bt-host-sco-tests") {

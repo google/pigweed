@@ -14,6 +14,7 @@
 #include <mutex>
 #include <unordered_map>
 
+#include "pw_bluetooth/vendor.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
@@ -127,7 +128,7 @@ class LogicalLink final {
   // controller does not support changing the ACL priority.
   //
   // Requests are queued and handled sequentially in order to prevent race conditions.
-  void RequestAclPriority(Channel* channel, hci::AclPriority priority,
+  void RequestAclPriority(Channel* channel, pw::bluetooth::AclPriority priority,
                           fit::callback<void(fit::result<fit::failed>)> callback);
 
   // Sets an automatic flush timeout with duration |flush_timeout|. |callback| will be called with
@@ -268,13 +269,13 @@ class LogicalLink final {
 
   struct PendingAclRequest {
     fxl::WeakPtr<ChannelImpl> channel;
-    hci::AclPriority priority;
+    pw::bluetooth::AclPriority priority;
     fit::callback<void(fit::result<fit::failed>)> callback;
   };
   std::queue<PendingAclRequest> pending_acl_requests_;
 
   // The current ACL priority of this link.
-  hci::AclPriority acl_priority_ = hci::AclPriority::kNormal;
+  pw::bluetooth::AclPriority acl_priority_ = pw::bluetooth::AclPriority::kNormal;
 
   // Dynamic channels opened with the remote. The registry is destroyed and all
   // procedures terminated when this link gets closed.

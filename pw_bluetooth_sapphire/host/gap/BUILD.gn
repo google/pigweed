@@ -83,6 +83,7 @@ static_library("gap") {
     "//src/connectivity/bluetooth/core/bt-host/sm",
     "//src/lib/fxl",
     "//src/lib/uuid",
+    "//third_party/pigweed:pw_bluetooth",
     "//zircon/system/ulib/fbl",
     "//zircon/system/ulib/zx",
   ]
@@ -152,10 +153,6 @@ source_set("tests") {
 
   # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings
   configs += [ "//build/config:Wno-conversion" ]
-
-  # TODO(fxbug.dev/95833): This target uses the deprecated C bindings.
-  # Consider switching to the C++ bindings. See linked bug for details.
-  configs += [ "//build/c:fidl-deprecated-c-bindings" ]
 }
 
 bt_gtest_package("bt-host-gap-tests") {

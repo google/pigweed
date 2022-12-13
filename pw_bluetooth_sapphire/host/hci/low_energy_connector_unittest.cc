@@ -51,7 +51,6 @@ class LowEnergyConnectorTest : public TestingBase {
 
     test_device()->set_connection_state_callback(
         fit::bind_member<&LowEnergyConnectorTest::OnConnectionStateChanged>(this));
-    StartTestDevice();
   }
 
   void TearDown() override {

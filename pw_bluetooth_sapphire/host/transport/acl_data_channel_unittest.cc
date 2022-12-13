@@ -29,6 +29,8 @@ namespace {
 
 constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
 
+using pw::bluetooth::AclPriority;
+
 using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
 
 class ACLDataChannelTest : public TestingBase {
@@ -38,10 +40,7 @@ class ACLDataChannelTest : public TestingBase {
 
  protected:
   // TestBase overrides:
-  void SetUp() override {
-    TestingBase::SetUp();
-    StartTestDevice();
-  }
+  void SetUp() override { TestingBase::SetUp(); }
 
  private:
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ACLDataChannelTest);
@@ -842,29 +841,10 @@ TEST_F(ACLDataChannelTest, TransportClosedCallbackBothChannels) {
   auto error_cb = [&error_cb_count] { error_cb_count++; };
   transport()->SetTransportErrorCallback(error_cb);
 
-  async::PostTask(dispatcher(), [this] { test_device()->Stop(ZX_ERR_PEER_CLOSED); });
+  async::PostTask(dispatcher(), [this] { test_device()->SignalError(pw::Status::Unavailable()); });
 
   RunLoopUntilIdle();
   EXPECT_EQ(1, error_cb_count);
-}
-
-// Make sure that a HCI "Number of completed packets" event received after shut
-// down does not cause a crash.
-TEST_F(ACLDataChannelTest, HciEventReceivedAfterShutDown) {
-  InitializeACLDataChannel(DataBufferInfo(1u, 1u), DataBufferInfo(1u, 1u));
-
-  // Notify the processed packets with a Number Of Completed Packet HCI event.
-  StaticByteBuffer event_buffer(0x13, 0x09,              // Event header
-                                0x02,                    // Number of handles
-                                0x01, 0x00, 0x03, 0x00,  // 3 packets on handle 0x0001
-                                0x02, 0x00, 0x02, 0x00   // 2 packets on handle 0x0002
-  );
-
-  // Shuts down ACLDataChannel and CommandChannel.
-  DeleteTransport();
-
-  test_device()->SendCommandChannelPacket(event_buffer);
-  RunLoopUntilIdle();
 }
 
 TEST_F(ACLDataChannelTest, DropQueuedPacketsRemovesPacketsMatchingFilterFromQueue) {
@@ -1134,7 +1114,7 @@ TEST_F(ACLDataChannelTest, OutOfBoundsPacketCountsIgnored) {
 }
 
 class AclPriorityTest : public HCI_ACLDataChannelTest,
-                        public ::testing::WithParamInterface<std::pair<hci::AclPriority, bool>> {};
+                        public ::testing::WithParamInterface<std::pair<AclPriority, bool>> {};
 TEST_P(AclPriorityTest, RequestAclPriority) {
   const auto kPriority = GetParam().first;
   const bool kExpectSuccess = GetParam().second;
@@ -1151,12 +1131,18 @@ TEST_P(AclPriorityTest, RequestAclPriority) {
   constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
 
   std::optional<hci_spec::ConnectionHandle> connection;
-  std::optional<hci::AclPriority> priority;
-  set_encode_acl_priority_command_cb(
-      [&](hci_spec::ConnectionHandle cb_connection, hci::AclPriority cb_priority) {
-        connection = cb_connection;
-        priority = cb_priority;
-        return fit::ok(DynamicByteBuffer(kEncodedCommand));
+  std::optional<AclPriority> priority;
+  test_device()->set_encode_vendor_command_cb(
+      [&](pw::bluetooth::VendorCommandParameters cb_params,
+          fit::callback<void(pw::Result<pw::span<const std::byte>>)> cb) {
+        ASSERT_TRUE(
+            std::holds_alternative<pw::bluetooth::SetAclPriorityCommandParameters>(cb_params));
+        pw::bluetooth::SetAclPriorityCommandParameters params =
+            std::get<pw::bluetooth::SetAclPriorityCommandParameters>(cb_params);
+        connection = params.connection_handle;
+        priority = params.priority;
+        cb(pw::span(reinterpret_cast<const std::byte*>(kEncodedCommand.data()),
+                    kEncodedCommand.size()));
       });
 
   auto cmd_complete = bt::testing::CommandCompletePacket(
@@ -1178,18 +1164,18 @@ TEST_P(AclPriorityTest, RequestAclPriority) {
   EXPECT_EQ(priority.value(), kPriority);
 }
 
-const std::array<std::pair<hci::AclPriority, bool>, 4> kPriorityParams = {
-    {{hci::AclPriority::kSource, /*expect_success=*/false},
-     {hci::AclPriority::kSource, true},
-     {hci::AclPriority::kSink, true},
-     {hci::AclPriority::kNormal, true}}};
+const std::array<std::pair<AclPriority, bool>, 4> kPriorityParams = {
+    {{AclPriority::kSource, /*expect_success=*/false},
+     {AclPriority::kSource, true},
+     {AclPriority::kSink, true},
+     {AclPriority::kNormal, true}}};
 INSTANTIATE_TEST_SUITE_P(ACLDataChannelTest, AclPriorityTest, ::testing::ValuesIn(kPriorityParams));
 
 TEST_F(ACLDataChannelTest, RequestAclPriorityEncodeFails) {
   const DataBufferInfo kBREDRBufferInfo(1024, 50);
   InitializeACLDataChannel(kBREDRBufferInfo, DataBufferInfo());
 
-  set_encode_acl_priority_command_cb([&](auto, auto) { return fit::error(ZX_ERR_INTERNAL); });
+  test_device()->set_encode_vendor_command_cb([](auto, auto cb) { cb(pw::Status::Internal()); });
 
   size_t request_cb_count = 0;
   acl_data_channel()->RequestAclPriority(hci::AclPriority::kSink, kLinkHandle, [&](auto result) {
@@ -1205,8 +1191,11 @@ TEST_F(ACLDataChannelTest, RequestAclPriorityEncodeReturnsTooSmallBuffer) {
   const DataBufferInfo kBREDRBufferInfo(1024, 50);
   InitializeACLDataChannel(kBREDRBufferInfo, DataBufferInfo());
 
-  set_encode_acl_priority_command_cb(
-      [](auto, auto) { return fit::ok(DynamicByteBuffer(StaticByteBuffer(0x00))); });
+  test_device()->set_encode_vendor_command_cb(
+      [](auto, fit::callback<void(pw::Result<pw::span<const std::byte>>)> cb) {
+        const std::byte buffer[] = {std::byte{0x00}};
+        cb(buffer);
+      });
 
   size_t request_cb_count = 0;
   acl_data_channel()->RequestAclPriority(hci::AclPriority::kSink, kLinkHandle, [&](auto result) {

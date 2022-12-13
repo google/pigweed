@@ -14,34 +14,30 @@
 #include <memory>
 #include <thread>
 
+#include "pw_bluetooth/controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/hci_wrapper.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/sco_data_channel.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::hci {
 
-class DeviceWrapper;
-
 // Represents the HCI transport layer. This object owns the HCI command, ACL,
 // and SCO channels and provides the necessary control-flow mechanisms to send
 // and receive HCI packets from the underlying Bluetooth controller.
-//
-// TODO(armansito): This object has become too heavy-weight. I think it will be
-// cleaner to have CommandChannel and ACLDataChannel each be owned directly by
-// the main and L2CAP domains. Transport should go away as part of the HCI layer
-// clean up (and also fxbug.dev/721).
 class Transport final {
  public:
-  // Initializes the command channel. Returns nullptr on error.
+  explicit Transport(std::unique_ptr<pw::bluetooth::Controller> hci);
+
+  // Initializes the command channel and features. The result will be reported via
+  // |complete_callback|.
   //
   // NOTE: AclDataChannel and ScoDataChannel will be left uninitialized. They must be
   // initialized after available data buffer information has been obtained from
   // the controller (via HCI_Read_Buffer_Size and HCI_LE_Read_Buffer_Size).
-  static std::unique_ptr<Transport> Create(std::unique_ptr<HciWrapper> hci);
+  void Initialize(fit::callback<void(bool /*success*/)> complete_callback);
 
   // TODO(armansito): hci::Transport::~Transport() should send a shutdown message
   // to the bt-hci device, which would be responsible for sending HCI_Reset upon
@@ -58,7 +54,7 @@ class Transport final {
   // if an error occurs during initialization.
   bool InitializeScoDataChannel(const DataBufferInfo& buffer_info);
 
-  VendorFeaturesBits GetVendorFeatures();
+  pw::bluetooth::Controller::FeaturesBits GetFeatures();
 
   // Returns a pointer to the HCI command and event flow control handler.
   // CommandChannel is guaranteed to live as long as Transport, but may stop
@@ -90,8 +86,6 @@ class Transport final {
   fxl::WeakPtr<Transport> WeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
  private:
-  explicit Transport(std::unique_ptr<HciWrapper> hci);
-
   // Callback called by CommandChannel or ACLDataChannel on errors.
   void OnChannelError();
 
@@ -101,8 +95,9 @@ class Transport final {
   // Callback invoked when the transport is closed (due to a channel error).
   fit::closure error_cb_;
 
-  // HciWrapper must outlive the channels, which depend on it.
-  std::unique_ptr<HciWrapper> hci_;
+  std::unique_ptr<pw::bluetooth::Controller> controller_;
+
+  std::optional<pw::bluetooth::Controller::FeaturesBits> features_;
 
   // The HCI command and event flow control handler.
   // CommandChannel must be constructed first & shut down last because AclDataChannel and

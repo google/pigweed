@@ -7,6 +7,7 @@
 
 #include <cstdint>
 
+#include "pw_bluetooth/controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/android_vendor_capabilities.h"
@@ -30,9 +31,9 @@ struct AdapterState final {
     return TechnologyType::kLowEnergy;
   }
 
-  // Returns true if the indicated feature is supported by the vendor driver.
-  bool IsVendorFeatureSupported(hci::VendorFeaturesBits feature) const {
-    return feature & vendor_features;
+  // Returns true if the indicated feature is supported by Controller.
+  bool IsControllerFeatureSupported(pw::bluetooth::Controller::FeaturesBits feature) const {
+    return feature & controller_features;
   }
 
   // Helpers for querying LMP capabilities.
@@ -57,8 +58,8 @@ struct AdapterState final {
   // The Features that are supported by this adapter.
   hci_spec::LMPFeatureSet features;
 
-  // Features reported by vendor driver.
-  hci::VendorFeaturesBits vendor_features = static_cast<hci::VendorFeaturesBits>(0);
+  // Features reported by Controller.
+  pw::bluetooth::Controller::FeaturesBits controller_features{0};
 
   // Bitmask list of HCI commands that the controller supports.
   uint8_t supported_commands[64] = {0};

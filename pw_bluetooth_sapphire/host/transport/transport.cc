@@ -8,41 +8,64 @@
 #include <lib/zx/channel.h>
 #include <zircon/status.h>
 
-#include "device_wrapper.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
 
 namespace bt::hci {
 
-std::unique_ptr<Transport> Transport::Create(std::unique_ptr<HciWrapper> hci) {
-  auto transport = std::unique_ptr<Transport>(new Transport(std::move(hci)));
-  if (!transport->command_channel()) {
-    return nullptr;
-  }
-  return transport;
-}
+using FeaturesBits = pw::bluetooth::Controller::FeaturesBits;
 
-Transport::Transport(std::unique_ptr<HciWrapper> hci)
-    : hci_(std::move(hci)), weak_ptr_factory_(this) {
-  BT_ASSERT(hci_);
-
-  bt_log(INFO, "hci", "initializing HCI");
-
-  bool success = hci_->Initialize([this](zx_status_t /*status*/) { OnChannelError(); });
-  if (!success) {
-    return;
-  }
-
-  command_channel_ = std::make_unique<CommandChannel>(hci_.get());
-  command_channel_->set_channel_timeout_cb(fit::bind_member<&Transport::OnChannelError>(this));
+Transport::Transport(std::unique_ptr<pw::bluetooth::Controller> controller)
+    : controller_(std::move(controller)), weak_ptr_factory_(this) {
+  BT_ASSERT(controller_);
 }
 
 Transport::~Transport() { bt_log(INFO, "hci", "Transport shutting down"); }
 
+void Transport::Initialize(fit::callback<void(bool /*success*/)> complete_callback) {
+  BT_ASSERT(!command_channel_);
+
+  bt_log(INFO, "hci", "initializing Transport");
+  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto complete_cb_wrapper = [self, cb = std::move(complete_callback)](pw::Status status) mutable {
+    if (!self) {
+      return;
+    }
+
+    if (!status.ok()) {
+      cb(/*success=*/false);
+      return;
+    }
+
+    self->command_channel_ = std::make_unique<CommandChannel>(self->controller_.get());
+    self->command_channel_->set_channel_timeout_cb(
+        fit::bind_member<&Transport::OnChannelError>(self.get()));
+
+    self->controller_->GetFeatures([self, cb = std::move(cb)](FeaturesBits features) mutable {
+      if (!self) {
+        return;
+      }
+      self->features_ = features;
+
+      bt_log(INFO, "hci", "Transport initialized");
+      cb(/*success=*/true);
+    });
+  };
+
+  auto error_cb = [self](pw::Status status) {
+    if (self) {
+      self->OnChannelError();
+    }
+  };
+
+  controller_->Initialize(std::move(complete_cb_wrapper), std::move(error_cb));
+}
+
 bool Transport::InitializeACLDataChannel(const DataBufferInfo& bredr_buffer_info,
                                          const DataBufferInfo& le_buffer_info) {
-  acl_data_channel_ = AclDataChannel::Create(this, hci_.get(), bredr_buffer_info, le_buffer_info);
+  acl_data_channel_ =
+      AclDataChannel::Create(this, controller_.get(), bredr_buffer_info, le_buffer_info);
 
   if (hci_node_) {
     acl_data_channel_->AttachInspect(hci_node_, AclDataChannel::kInspectNodeName);
@@ -57,16 +80,20 @@ bool Transport::InitializeScoDataChannel(const DataBufferInfo& buffer_info) {
     return false;
   }
 
-  if (!hci_->IsScoSupported()) {
-    bt_log(WARN, "hci", "SCO not supported");
+  if (static_cast<uint32_t>(*features_ & FeaturesBits::kHciSco) == 0) {
+    bt_log(WARN, "hci", "HCI SCO not supported");
     return false;
   }
 
-  sco_data_channel_ = ScoDataChannel::Create(buffer_info, command_channel_.get(), hci_.get());
+  sco_data_channel_ =
+      ScoDataChannel::Create(buffer_info, command_channel_.get(), controller_.get());
   return true;
 }
 
-VendorFeaturesBits Transport::GetVendorFeatures() { return hci_->GetVendorFeatures(); }
+FeaturesBits Transport::GetFeatures() {
+  BT_ASSERT(features_);
+  return features_.value();
+}
 
 void Transport::SetTransportErrorCallback(fit::closure callback) {
   BT_ASSERT(callback);

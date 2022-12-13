@@ -76,8 +76,6 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
   EXPECT_CMD_PACKET_OUT(test_device(), command_bytes, &command_cmpl_success_bytes);
   EXPECT_CMD_PACKET_OUT(test_device(), command_bytes, &command_cmpl_success_bytes);
 
-  StartTestDevice();
-
   Result<> status = fit::ok();
   int status_cb_called = 0;
   auto status_cb = [&](Result<> cb_status) {
@@ -206,8 +204,6 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
   //   -> Command; <- error complete
   EXPECT_CMD_PACKET_OUT(test_device(), command_bytes, &command_cmpl_success_bytes);
   EXPECT_CMD_PACKET_OUT(test_device(), command_bytes, &command_cmpl_error_bytes);
-
-  StartTestDevice();
 
   Result<> status = fit::ok();
   int status_cb_called = 0;
@@ -348,7 +344,6 @@ TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
                        0x04,  // parameter_total_size (4 byte payload)
                        2, 0x0F, 0xF0, hci_spec::StatusCode::SUCCESS);
 
-  StartTestDevice();
   test_device()->SendCommandChannelPacket(command_status_queue_increase);
 
   // Parallel commands should all run before commands that require success.
@@ -450,8 +445,6 @@ TEST_F(SequentialCommandRunnerTest, CommandCompletesOnStatusEvent) {
   auto command1_cmpl_event =
       bt::testing::CommandCompletePacket(kTestOpCode2, hci_spec::StatusCode::SUCCESS);
 
-  StartTestDevice();
-
   Result<> status = fit::ok();
   int status_cb_called = 0;
   auto status_cb = [&](Result<> cb_status) {
@@ -501,8 +494,6 @@ TEST_F(SequentialCommandRunnerTest, AsyncCommands) {
   auto command2_status_event = bt::testing::CommandStatusPacket(hci_spec::kReadRemoteVersionInfo,
                                                                 hci_spec::StatusCode::SUCCESS);
   auto command2_cmpl_event = bt::testing::ReadRemoteVersionInfoCompletePacket(/*conn=*/0x0000);
-
-  StartTestDevice();
 
   Result<> status = fit::ok();
   int status_cb_called = 0;
@@ -563,8 +554,6 @@ TEST_F(SequentialCommandRunnerTest, ExclusiveAsyncCommands) {
                                                                 hci_spec::StatusCode::SUCCESS);
   auto command1_cmpl_event = bt::testing::ReadRemoteVersionInfoCompletePacket(/*conn=*/0x0000);
 
-  StartTestDevice();
-
   Result<> status = fit::ok();
   int status_cb_called = 0;
   auto status_cb = [&](Result<> cb_status) {
@@ -623,8 +612,6 @@ TEST_F(SequentialCommandRunnerTest, CommandRunnerDestroyedBeforeSecondEventCallb
   std::optional<SequentialCommandRunner> cmd_runner;
   cmd_runner.emplace(transport()->WeakPtr());
 
-  StartTestDevice();
-
   Result<> status = fit::ok();
   int status_cb_called = 0;
   auto status_cb = [&](Result<> cb_status) {
@@ -665,7 +652,6 @@ TEST_F(SequentialCommandRunnerTest, CommandRunnerDestroyedBeforeSecondEventCallb
 
 TEST_F(SequentialCommandRunnerTest,
        SequentialCommandRunnerDestroyedInCancelStatusCallbackDoesNotCrash) {
-  StartTestDevice();
   std::optional<SequentialCommandRunner> cmd_runner;
   cmd_runner.emplace(transport()->WeakPtr());
 
@@ -710,8 +696,6 @@ TEST_F(SequentialCommandRunnerTest, QueueCommandsWhileAlreadyRunning) {
   auto command2_status_event = bt::testing::CommandStatusPacket(hci_spec::kReadRemoteVersionInfo,
                                                                 hci_spec::StatusCode::SUCCESS);
   auto command2_cmpl_event = bt::testing::ReadRemoteVersionInfoCompletePacket(/*conn=*/0x0000);
-
-  StartTestDevice();
 
   SequentialCommandRunner cmd_runner(transport()->WeakPtr());
 

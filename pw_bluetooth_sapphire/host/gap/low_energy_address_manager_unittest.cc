@@ -34,7 +34,6 @@ class LowEnergyAddressManagerTest : public TestingBase {
     ASSERT_EQ(kPublic, addr_mgr()->identity_address());
     ASSERT_FALSE(addr_mgr()->irk());
     addr_mgr_->register_address_changed_callback([&](auto) { address_changed_cb_count_++; });
-    StartTestDevice();
   }
 
   void TearDown() override {

@@ -63,7 +63,6 @@ class LowEnergyAdvertiserTest : public TestingBase {
  protected:
   void SetUp() override {
     TestingBase::SetUp();
-    StartTestDevice();
 
     // ACL data channel needs to be present for production hci::Connection objects.
     TestingBase::InitializeACLDataChannel(hci::DataBufferInfo(),
@@ -81,7 +80,6 @@ class LowEnergyAdvertiserTest : public TestingBase {
 
   void TearDown() override {
     advertiser_ = nullptr;
-    test_device()->Stop();
     TestingBase::TearDown();
   }
 

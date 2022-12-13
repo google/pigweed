@@ -4,6 +4,7 @@
 
 #include <lib/async/cpp/task.h>
 
+#include "pw_bluetooth/vendor.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
@@ -28,6 +29,8 @@ using namespace bt::testing;
 
 using bt::testing::MockController;
 using TestingBase = bt::testing::ControllerTest<MockController>;
+
+using AclPriority = pw::bluetooth::AclPriority;
 
 // Sized intentionally to cause fragmentation for outbound dynamic channel data but not others. May
 // need adjustment if Signaling Channel Configuration {Request,Response} default transactions get
@@ -59,8 +62,6 @@ class L2capIntegrationTest : public TestingBase {
     // TODO(63074): Remove assumptions about channel ordering so we can turn random ids on.
     l2cap_ = ChannelManager::Create(transport()->acl_data_channel(), transport()->command_channel(),
                                     /*random_channel_ids=*/false);
-
-    StartTestDevice();
 
     test_device()->set_data_expectations_enabled(true);
 
@@ -645,7 +646,7 @@ TEST_F(L2capIntegrationTest, AddLEConnectionReturnsFixedChannels) {
 }
 
 class AclPriorityTest : public L2capIntegrationTest,
-                        public ::testing::WithParamInterface<std::pair<hci::AclPriority, bool>> {};
+                        public ::testing::WithParamInterface<std::pair<AclPriority, bool>> {};
 
 TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
   const auto kPriority = GetParam().first;
@@ -663,12 +664,16 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
   constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
 
   std::optional<hci_spec::ConnectionHandle> connection_handle_from_encode_cb;
-  std::optional<hci::AclPriority> priority_from_encode_cb;
-  set_encode_acl_priority_command_cb(
-      [&](hci_spec::ConnectionHandle connection, hci::AclPriority priority) {
-        connection_handle_from_encode_cb = connection;
-        priority_from_encode_cb = priority;
-        return fit::ok(DynamicByteBuffer(kEncodedCommand));
+  std::optional<AclPriority> priority_from_encode_cb;
+  test_device()->set_encode_vendor_command_cb(
+      [&](pw::bluetooth::VendorCommandParameters vendor_params,
+          fit::callback<void(pw::Result<pw::span<const std::byte>>)> callback) {
+        ASSERT_TRUE(
+            std::holds_alternative<pw::bluetooth::SetAclPriorityCommandParameters>(vendor_params));
+        auto& params = std::get<pw::bluetooth::SetAclPriorityCommandParameters>(vendor_params);
+        connection_handle_from_encode_cb = params.connection_handle;
+        priority_from_encode_cb = params.priority;
+        callback(kEncodedCommand.subspan());
       });
 
   QueueAclConnection(kLinkHandle);
@@ -687,7 +692,7 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
   ASSERT_TRUE(channel);
   channel->Activate([](auto) {}, []() {});
 
-  if (kPriority != hci::AclPriority::kNormal) {
+  if (kPriority != AclPriority::kNormal) {
     auto cmd_complete =
         CommandCompletePacket(op_code, kExpectSuccess ? hci_spec::StatusCode::SUCCESS
                                                       : hci_spec::StatusCode::UNKNOWN_COMMAND);
@@ -702,7 +707,7 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
 
   RunLoopUntilIdle();
   EXPECT_EQ(request_cb_count, 1u);
-  if (kPriority == hci::AclPriority::kNormal) {
+  if (kPriority == AclPriority::kNormal) {
     EXPECT_FALSE(connection_handle_from_encode_cb);
   } else {
     ASSERT_TRUE(connection_handle_from_encode_cb);
@@ -713,7 +718,7 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
   connection_handle_from_encode_cb.reset();
   priority_from_encode_cb.reset();
 
-  if (kPriority != hci::AclPriority::kNormal && kExpectSuccess) {
+  if (kPriority != AclPriority::kNormal && kExpectSuccess) {
     auto cmd_complete = CommandCompletePacket(op_code, hci_spec::StatusCode::SUCCESS);
     EXPECT_CMD_PACKET_OUT(test_device(), kEncodedCommand, &cmd_complete);
   }
@@ -727,21 +732,21 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
-  if (kPriority != hci::AclPriority::kNormal && kExpectSuccess) {
+  if (kPriority != AclPriority::kNormal && kExpectSuccess) {
     ASSERT_TRUE(connection_handle_from_encode_cb);
     EXPECT_EQ(connection_handle_from_encode_cb.value(), kLinkHandle);
     ASSERT_TRUE(priority_from_encode_cb);
-    EXPECT_EQ(priority_from_encode_cb.value(), hci::AclPriority::kNormal);
+    EXPECT_EQ(priority_from_encode_cb.value(), AclPriority::kNormal);
   } else {
     EXPECT_FALSE(connection_handle_from_encode_cb);
   }
 }
 
-const std::array<std::pair<hci::AclPriority, bool>, 4> kPriorityParams = {
-    {{hci::AclPriority::kSource, false},
-     {hci::AclPriority::kSource, true},
-     {hci::AclPriority::kSink, true},
-     {hci::AclPriority::kNormal, true}}};
+const std::array<std::pair<AclPriority, bool>, 4> kPriorityParams = {
+    {{AclPriority::kSource, false},
+     {AclPriority::kSource, true},
+     {AclPriority::kSink, true},
+     {AclPriority::kNormal, true}}};
 INSTANTIATE_TEST_SUITE_P(L2capTest, AclPriorityTest, ::testing::ValuesIn(kPriorityParams));
 
 }  // namespace

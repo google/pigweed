@@ -15,8 +15,9 @@ void AdapterTestFixture::SetUp() {
   SetUp(settings);
 }
 
-void AdapterTestFixture::SetUp(FakeController::Settings settings) {
-  TestingBase::SetUp();
+void AdapterTestFixture::SetUp(FakeController::Settings settings,
+                               pw::bluetooth::Controller::FeaturesBits features) {
+  TestingBase::SetUp(features, /*initialize_transport=*/false);
 
   auto l2cap = std::make_unique<bt::l2cap::testing::FakeL2cap>();
   l2cap_ = l2cap.get();
@@ -24,7 +25,6 @@ void AdapterTestFixture::SetUp(FakeController::Settings settings) {
   adapter_ = bt::gap::Adapter::Create(transport()->WeakPtr(), gatt_->AsWeakPtr(), std::move(l2cap));
 
   test_device()->set_settings(settings);
-  StartTestDevice();
 
   bool success = false;
   adapter_->Initialize([&](bool result) { success = result; }, [] {});

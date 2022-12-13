@@ -9,15 +9,14 @@
 
 #include <src/lib/fxl/memory/weak_ptr.h>
 
+#include "pw_bluetooth/controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/data_buffer_info.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/hci_wrapper.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/sco_data_packet.h"
 
 namespace bt::hci {
 
 class Transport;
-class DeviceWrapper;
 
 // Represents the Bluetooth SCO Data channel and manages the Host->Controller SCO data flow when SCO
 // is not offloaded. ScoDataChannel uses a pull model, where packets are queued in the connections
@@ -53,7 +52,8 @@ class ScoDataChannel {
   };
 
   static std::unique_ptr<ScoDataChannel> Create(const DataBufferInfo& buffer_info,
-                                                CommandChannel* command_channel, HciWrapper* hci);
+                                                CommandChannel* command_channel,
+                                                pw::bluetooth::Controller* hci);
   virtual ~ScoDataChannel() = default;
 
   // Register a connection. The connection must have a data path of hci_spec::ScoDataPath::kHci.

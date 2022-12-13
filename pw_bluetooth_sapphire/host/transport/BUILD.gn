@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import("//build/fuzzing/fuzzer.gni")
 import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
 
 static_library("transport") {
@@ -16,16 +15,11 @@ static_library("transport") {
     "control_packets.cc",
     "control_packets.h",
     "data_buffer_info.h",
-    "device_wrapper.cc",
-    "device_wrapper.h",
     "emboss_control_packets.cc",
     "emboss_control_packets.h",
     "emboss_packet.h",
     "error.cc",
     "error.h",
-    "hci_defs.h",
-    "hci_wrapper.cc",
-    "hci_wrapper.h",
     "link_type.cc",
     "link_type.h",
     "packet.h",
@@ -39,17 +33,12 @@ static_library("transport") {
   ]
 
   public_deps = [
-    "//sdk/banjo/fuchsia.hardware.bt.hci:fuchsia.hardware.bt.hci_banjo_cpp",
-    "//sdk/banjo/fuchsia.hardware.bt.vendor:fuchsia.hardware.bt.vendor_banjo_cpp",
-    "//sdk/fidl/fuchsia.hardware.bluetooth:fuchsia.hardware.bluetooth_c",
-    "//sdk/fidl/fuchsia.hardware.bluetooth:fuchsia.hardware.bluetooth_c_client",
     "//sdk/lib/fdio",
     "//sdk/lib/fit",
     "//src/connectivity/bluetooth/core/bt-host/common",
     "//src/connectivity/bluetooth/core/bt-host/hci-spec",
-    "//src/lib/ddk",
-    "//src/lib/files",
     "//src/lib/fxl",
+    "//third_party/pigweed:pw_bluetooth",
     "//zircon/system/ulib/async-loop:async-loop-cpp",
     "//zircon/system/ulib/async-loop:async-loop-default",
     "//zircon/system/ulib/fbl",
@@ -59,10 +48,6 @@ static_library("transport") {
 
   # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings
   configs += [ "//build/config:Wno-conversion" ]
-
-  # TODO(fxbug.dev/95833): This target uses the deprecated C bindings.
-  # Consider switching to the C++ bindings. See linked bug for details.
-  public_configs = [ "//build/c:fidl-deprecated-c-bindings" ]
 }
 
 source_set("testing") {
@@ -72,7 +57,6 @@ source_set("testing") {
     "fake_sco_data_channel.cc",
     "fake_sco_data_channel.h",
     "mock_acl_data_channel.h",
-    "mock_hci_wrapper.h",
   ]
 
   public_deps = [ ":transport" ]
@@ -84,9 +68,7 @@ source_set("tests") {
   sources = [
     "acl_data_channel_unittest.cc",
     "command_channel_unittest.cc",
-    "device_wrapper_unittest.cc",
     "emboss_packet_unittest.cc",
-    "hci_wrapper_unittest.cc",
     "packet_unittest.cc",
     "sco_data_channel_unittest.cc",
     "sco_data_packet_unittest.cc",
@@ -102,22 +84,9 @@ source_set("tests") {
 
   # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings
   configs += [ "//build/config:Wno-conversion" ]
-
-  # TODO(fxbug.dev/95833): This target uses the deprecated C bindings.
-  # Consider switching to the C++ bindings. See linked bug for details.
-  configs += [ "//build/c:fidl-deprecated-c-bindings" ]
 }
 
 bt_gtest_package("bt-host-transport-tests") {
   with_death_tests = true
   deps = [ ":tests" ]
-}
-
-fuzzer("hci_wrapper_rx_fuzzer") {
-  sources = [ "hci_wrapper_rx_fuzztest.cc" ]
-  deps = [
-    ":transport",
-    "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
-    "//zircon/system/ulib/async-testing",
-  ]
 }

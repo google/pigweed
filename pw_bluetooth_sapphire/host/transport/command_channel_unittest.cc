@@ -74,7 +74,6 @@ TEST_F(CommandChannelTest, SingleRequestResponse) {
       hci_spec::StatusCode::HARDWARE_FAILURE);
   // clang-format on
   EXPECT_CMD_PACKET_OUT(test_device(), req, &rsp);
-  StartTestDevice();
 
   // Send a HCI_Reset command. We attach an instance of TestCallbackObject to the callbacks to
   // verify that it gets cleaned up as expected.
@@ -134,7 +133,6 @@ TEST_F(CommandChannelTest, SingleAsynchronousRequest) {
       hci_spec::StatusCode::SUCCESS);
   // clang-format on
   EXPECT_CMD_PACKET_OUT(test_device(), req, &rsp0, &rsp1);
-  StartTestDevice();
 
   // Send HCI_Inquiry
   CommandChannel::TransactionId id;
@@ -181,7 +179,6 @@ TEST_F(CommandChannelTest, SingleRequestWithStatusResponse) {
       );
   // clang-format on
   EXPECT_CMD_PACKET_OUT(test_device(), req, &rsp);
-  StartTestDevice();
 
   // Send HCI_Reset
   CommandChannel::TransactionId id;
@@ -237,7 +234,6 @@ TEST_F(CommandChannelTest, OneSentUntilStatus) {
   // clang-format on
   EXPECT_CMD_PACKET_OUT(test_device(), req1, &rsp1);
   EXPECT_CMD_PACKET_OUT(test_device(), req2, &rsp2);
-  StartTestDevice();
 
   size_t cb_event_count = 0u;
   size_t transaction_count = 0u;
@@ -315,7 +311,6 @@ TEST_F(CommandChannelTest, QueuedCommands) {
   EXPECT_CMD_PACKET_OUT(test_device(), req_reset, );
   EXPECT_CMD_PACKET_OUT(test_device(), req_inqcancel, );
   EXPECT_CMD_PACKET_OUT(test_device(), req_reset, &rsp_reset);
-  StartTestDevice();
 
   size_t transaction_count = 0u;
   size_t reset_count = 0u;
@@ -408,7 +403,6 @@ TEST_F(CommandChannelTest, AsynchronousCommands) {
 
   EXPECT_CMD_PACKET_OUT(test_device(), req_reset, &rsp_resetstatus);
   EXPECT_CMD_PACKET_OUT(test_device(), req_inqcancel, &rsp_inqstatus);
-  StartTestDevice();
 
   CommandChannel::TransactionId id1, id2;
   size_t cb_count = 0u;
@@ -508,7 +502,6 @@ TEST_F(CommandChannelTest, AsyncQueueWhenBlocked) {
                                         dispatcher());
 
   EXPECT_CMD_PACKET_OUT(test_device(), req_reset, &rsp_resetstatus, &rsp_bogocomplete);
-  StartTestDevice();
 
   test_device()->SendCommandChannelPacket(rsp_nocommandsavail);
 
@@ -604,7 +597,6 @@ TEST_F(CommandChannelTest, EventHandlerBasic) {
 
   EXPECT_EQ(0u, transaction_id);
 
-  StartTestDevice();
   test_device()->SendCommandChannelPacket(cmd_status);
   test_device()->SendCommandChannelPacket(cmd_complete);
   test_device()->SendCommandChannelPacket(event1);
@@ -689,7 +681,6 @@ TEST_F(CommandChannelTest, EventHandlerEventWhileTransactionPending) {
   // handler we register below should only get invoked once and after the pending transaction
   // completes.
   EXPECT_CMD_PACKET_OUT(test_device(), req, &req_complete, &event, &event);
-  StartTestDevice();
 
   int event_count = 0;
   auto event_cb = [&event_count, kTestEventCode](const EventPacket& event) {
@@ -732,7 +723,6 @@ TEST_F(CommandChannelTest, RemoveQueuedSyncCommandPendingStatus) {
                                     UpperBits(hci_spec::kReset)  // HCI_Reset opcode
   );
   EXPECT_CMD_PACKET_OUT(test_device(), req_reset, );
-  StartTestDevice();
 
   int transaction_count = 0u;
   test_device()->SetTransactionCallback([&transaction_count]() { transaction_count++; },
@@ -772,7 +762,6 @@ TEST_F(CommandChannelTest, RemoveQueuedQueuedSyncCommand) {
                                     UpperBits(hci_spec::kReset)  // HCI_Reset opcode
   );
   EXPECT_CMD_PACKET_OUT(test_device(), req_reset, );
-  StartTestDevice();
 
   int transaction_count = 0u;
   test_device()->SetTransactionCallback([&transaction_count]() { transaction_count++; },
@@ -850,7 +839,6 @@ const auto kReadRemoteSupportedFeaturesComplete =
 TEST_F(CommandChannelTest, RemoveQueuedQueuedAsyncCommand) {
   using namespace std::placeholders;
   EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteSupportedFeaturesCmd, );
-  StartTestDevice();
 
   int transaction_count = 0u;
   test_device()->SetTransactionCallback([&transaction_count]() { transaction_count++; },
@@ -902,7 +890,6 @@ TEST_F(CommandChannelTest, RemoveQueuedQueuedAsyncCommand) {
 TEST_F(CommandChannelTest, RemoveQueuedCompletedAsyncCommand) {
   EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteSupportedFeaturesCmd,
                         &kReadRemoteSupportedFeaturesRsp, &kReadRemoteSupportedFeaturesComplete);
-  StartTestDevice();
 
   int transaction_count = 0;
   test_device()->SetTransactionCallback([&transaction_count] { transaction_count++; },
@@ -937,7 +924,6 @@ TEST_F(CommandChannelTest, RemoveQueuedCompletedAsyncCommand) {
 //  - The command still notifies the callback for update and completion events.
 TEST_F(CommandChannelTest, RemoveQueuedAsyncCommandPendingUpdate) {
   EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteSupportedFeaturesCmd, );
-  StartTestDevice();
 
   int transaction_count = 0;
   test_device()->SetTransactionCallback([&transaction_count] { transaction_count++; },
@@ -982,7 +968,6 @@ TEST_F(CommandChannelTest, RemoveQueuedAsyncCommandPendingUpdate) {
 TEST_F(CommandChannelTest, RemoveQueuedAsyncCommandPendingCompletion) {
   EXPECT_CMD_PACKET_OUT(test_device(), kReadRemoteSupportedFeaturesCmd,
                         &kReadRemoteSupportedFeaturesRsp);
-  StartTestDevice();
 
   int transaction_count = 0;
   test_device()->SetTransactionCallback([&transaction_count] { transaction_count++; },
@@ -1054,8 +1039,6 @@ TEST_F(CommandChannelTest, VendorEventHandler) {
   auto id2 = cmd_channel()->AddVendorEventHandler(kTestSubeventCode1, event_cb1);
   EXPECT_NE(0u, id2);
 
-  StartTestDevice();
-
   test_device()->SendCommandChannelPacket(vendor_event_bytes0);
   RunLoopUntilIdle();
   EXPECT_EQ(2, event_count0);
@@ -1115,8 +1098,6 @@ TEST_F(CommandChannelTest, LEMetaEventHandler) {
   // Add a handler for a different event code.
   auto id2 = cmd_channel()->AddLEMetaEventHandler(kTestSubeventCode1, event_cb1);
   EXPECT_NE(0u, id2);
-
-  StartTestDevice();
 
   test_device()->SendCommandChannelPacket(le_meta_event_bytes0);
   RunLoopUntilIdle();
@@ -1183,7 +1164,6 @@ TEST_F(CommandChannelTest, AsyncEventHandlersAndLeMetaEventHandlersDoNotInterfer
   // clang-format on
 
   EXPECT_CMD_PACKET_OUT(test_device(), cmd, &cmd_status);
-  StartTestDevice();
 
   constexpr hci_spec::EventCode kTestEventCode = 0x01;
 
@@ -1250,8 +1230,6 @@ TEST_F(CommandChannelTest, AsyncEventHandlersAndLeMetaEventHandlersDoNotInterfer
 }
 
 TEST_F(CommandChannelTest, TransportClosedCallback) {
-  StartTestDevice();
-
   bool error_cb_called = false;
   auto error_cb = [&error_cb_called] { error_cb_called = true; };
   transport()->SetTransportErrorCallback(error_cb);
@@ -1269,7 +1247,6 @@ TEST_F(CommandChannelTest, CommandTimeoutCallback) {
 
   // Expect the HCI_Reset command but dont send a reply back to make the command time out.
   EXPECT_CMD_PACKET_OUT(test_device(), req_reset, );
-  StartTestDevice();
 
   size_t timeout_cb_count = 0;
   auto timeout_cb = [&] { timeout_cb_count++; };
@@ -1308,7 +1285,6 @@ TEST_F(CommandChannelTest, DestroyChannelInTimeoutCallback) {
 
   // Expect the HCI_Reset command but dont send a reply back to make the command time out.
   EXPECT_CMD_PACKET_OUT(test_device(), req_reset, );
-  StartTestDevice();
 
   size_t timeout_cb_count = 0;
   auto timeout_cb = [&] {
@@ -1333,8 +1309,6 @@ TEST_F(CommandChannelTest, DestroyChannelInTimeoutCallback) {
 }
 
 TEST_F(CommandChannelTest, CommandsAndEventsIgnoredAfterCommandTimeout) {
-  StartTestDevice();
-
   size_t timeout_cb_count = 0;
   auto timeout_cb = [&] { timeout_cb_count++; };
   cmd_channel()->set_channel_timeout_cb(timeout_cb);
@@ -1410,7 +1384,6 @@ TEST_F(CommandChannelTest, AsynchronousCommandChaining) {
 
   EXPECT_CMD_PACKET_OUT(test_device(), req_reset, &rsp_resetstatus);
   EXPECT_CMD_PACKET_OUT(test_device(), req_reset, &rsp_resetstatus);
-  StartTestDevice();
 
   CommandChannel::TransactionId id1, id2;
   CommandChannel::CommandCallback cb;
@@ -1520,8 +1493,6 @@ TEST_F(CommandChannelTest, ExclusiveCommands) {
                        LowerBits(kNonExclusive), UpperBits(kNonExclusive),  // HCI opcode
                        hci_spec::StatusCode::SUCCESS                        // Command succeeded
       );
-
-  StartTestDevice();
 
   CommandChannel::TransactionId id1, id2, id3;
   CommandChannel::CommandCallback exclusive_cb;
@@ -1672,8 +1643,6 @@ TEST_F(CommandChannelTest, EventHandlerResults) {
 
   EXPECT_NE(cmd_channel()->AddEventHandler(kTestEventCode0, event_cb), 0u);
 
-  StartTestDevice();
-
   // Send three requests, and process the callbacks immediately. The second callback returns
   // "remove" before the third event callback has been called.
   auto event0 = StaticByteBuffer(kTestEventCode0, 0x00);
@@ -1704,7 +1673,6 @@ TEST_F(CommandChannelTest, SendCommandWithLEMetaEventSubeventRsp) {
                                                 kSubeventCode);
 
   EXPECT_CMD_PACKET_OUT(test_device(), cmd, &cmd_status_event);
-  StartTestDevice();
 
   auto cmd_packet = CommandPacket::New(kOpCode);
 
@@ -1748,8 +1716,6 @@ TEST_F(
     SendingLECommandAfterAddingLEMetaEventHandlerFailsForSameSubeventCodeAndSucceedsForDifferentSubeventCode) {
   constexpr hci_spec::EventCode kSubeventCode = hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode;
   constexpr hci_spec::OpCode kOpCode = hci_spec::kLEReadRemoteFeatures;  // LE Read Remote Features
-
-  StartTestDevice();
 
   EXPECT_NE(0u, cmd_channel()->AddLEMetaEventHandler(
                     kSubeventCode, [](const auto&) { return EventCallbackResult::kContinue; }));
@@ -1798,7 +1764,6 @@ TEST_F(CommandChannelTest, SendingSecondLECommandWithSameSubeventShouldWaitForFi
                                                 kSubeventCode);
 
   EXPECT_CMD_PACKET_OUT(test_device(), cmd0, &cmd0_status_event);
-  StartTestDevice();
 
   size_t event_count_0 = 0;
   auto event_cb_0 = [&event_count_0](auto, const EventPacket& event) {
@@ -1881,7 +1846,6 @@ TEST_F(
                                            LowerBits(kOpCode), UpperBits(kOpCode));
 
   EXPECT_CMD_PACKET_OUT(test_device(), cmd, &cmd_status_event);
-  StartTestDevice();
 
   size_t event_count = 0;
   auto event_cb = [&event_count](auto, const EventPacket& event) {

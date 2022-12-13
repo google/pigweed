@@ -28,7 +28,7 @@ class MockAclDataChannel final : public AclDataChannel {
   }
 
   using RequestAclPriorityCallback =
-      fit::function<void(hci::AclPriority priority, hci_spec::ConnectionHandle handle,
+      fit::function<void(pw::bluetooth::AclPriority priority, hci_spec::ConnectionHandle handle,
                          fit::callback<void(fit::result<fit::failed>)> callback)>;
   void set_request_acl_priority_cb(RequestAclPriorityCallback cb) {
     request_acl_priority_cb_ = std::move(cb);
@@ -66,7 +66,7 @@ class MockAclDataChannel final : public AclDataChannel {
   void ClearControllerPacketCount(hci_spec::ConnectionHandle handle) override {}
   const DataBufferInfo& GetBufferInfo() const override { return bredr_buffer_info_; }
   const DataBufferInfo& GetLeBufferInfo() const override { return le_buffer_info_; }
-  void RequestAclPriority(hci::AclPriority priority, hci_spec::ConnectionHandle handle,
+  void RequestAclPriority(pw::bluetooth::AclPriority priority, hci_spec::ConnectionHandle handle,
                           fit::callback<void(fit::result<fit::failed>)> callback) override {
     if (request_acl_priority_cb_) {
       request_acl_priority_cb_(priority, handle, std::move(callback));

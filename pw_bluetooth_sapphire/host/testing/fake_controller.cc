@@ -215,6 +215,21 @@ FakePeer* FakeController::FindPeer(const DeviceAddress& address) {
   return (iter == peers_.end()) ? nullptr : iter->second.get();
 }
 
+void FakeController::SendCommand(pw::span<const std::byte> command) {
+  BT_ASSERT(command.size() >= sizeof(hci_spec::CommandHeader));
+
+  // Post the packet to simulate async HCI behavior.
+  async::PostTask(dispatcher(), [self = weak_ptr_factory_.GetWeakPtr(),
+                                 command = DynamicByteBuffer(BufferView(command))]() {
+    if (!self) {
+      return;
+    }
+    const size_t payload_size = command.size() - sizeof(hci_spec::CommandHeader);
+    PacketView<hci_spec::CommandHeader> packet_view(&command, payload_size);
+    self->OnCommandPacketReceived(packet_view);
+  });
+}
+
 FakePeer* FakeController::FindByConnHandle(hci_spec::ConnectionHandle handle) {
   for (auto& [addr, peer] : peers_) {
     if (peer->HasLink(handle)) {
@@ -2193,25 +2208,6 @@ void FakeController::SendAndroidLEMultipleAdvertisingStateChangeSubevent(
 void FakeController::OnCommandPacketReceived(
     const PacketView<hci_spec::CommandHeader>& command_packet) {
   hci_spec::OpCode opcode = le16toh(command_packet.header().opcode);
-
-  bt_log(TRACE, "fake-hci", "received command packet with opcode: %#.4x", opcode);
-  // We handle commands immediately unless a client has explicitly set a listener for `opcode`.
-  if (paused_opcode_listeners_.find(opcode) == paused_opcode_listeners_.end()) {
-    HandleReceivedCommandPacket(command_packet);
-    return;
-  }
-
-  bt_log(DEBUG, "fake-hci", "pausing response for opcode: %#.4x", opcode);
-  paused_opcode_listeners_[opcode](
-      [this, packet_data = DynamicByteBuffer(command_packet.data())]() {
-        PacketView<hci_spec::CommandHeader> command_packet(
-            &packet_data, packet_data.size() - sizeof(hci_spec::CommandHeader));
-        HandleReceivedCommandPacket(command_packet);
-      });
-}
-
-void FakeController::OnCommandPacketReceived(hci::EmbossCommandPacket& command_packet) {
-  hci_spec::OpCode opcode = command_packet.opcode();
 
   bt_log(TRACE, "fake-hci", "received command packet with opcode: %#.4x", opcode);
   // We handle commands immediately unless a client has explicitly set a listener for `opcode`.

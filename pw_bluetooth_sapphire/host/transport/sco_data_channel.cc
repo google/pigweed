@@ -8,16 +8,22 @@
 #include <lib/fit/defer.h>
 #include <zircon/status.h>
 
-#include "device_wrapper.h"
+#include "pw_bluetooth/vendor.h"
 #include "slab_allocators.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::hci {
+
+using pw::bluetooth::Controller;
+using ScoCodingFormat = pw::bluetooth::Controller::ScoCodingFormat;
+using ScoEncoding = pw::bluetooth::Controller::ScoEncoding;
+using ScoSampleRate = pw::bluetooth::Controller::ScoSampleRate;
+
 class ScoDataChannelImpl final : public ScoDataChannel {
  public:
   ScoDataChannelImpl(const DataBufferInfo& buffer_info, CommandChannel* command_channel,
-                     HciWrapper* hci);
+                     Controller* hci);
   ~ScoDataChannelImpl() override;
 
   // ScoDataChannel overrides:
@@ -38,7 +44,7 @@ class ScoDataChannelImpl final : public ScoDataChannel {
     HciConfigState config_state = HciConfigState::kPending;
   };
 
-  void OnRxPacket(std::unique_ptr<ScoDataPacket> packet);
+  void OnRxPacket(pw::span<const std::byte> buffer);
 
   // Send packets queued on the active channel if the controller has free buffer slots.
   void TrySendNextPackets();
@@ -54,7 +60,7 @@ class ScoDataChannelImpl final : public ScoDataChannel {
   void ConfigureHci();
 
   // Called when SCO configuration is complete.
-  void OnHciConfigured(hci_spec::ConnectionHandle conn_handle, zx_status_t status);
+  void OnHciConfigured(hci_spec::ConnectionHandle conn_handle, pw::Status status);
 
   // Handler for the HCI Number of Completed Packets Event, used for
   // packet-based data flow control.
@@ -70,7 +76,7 @@ class ScoDataChannelImpl final : public ScoDataChannel {
   }
 
   CommandChannel* command_channel_;
-  HciWrapper* hci_;
+  Controller* hci_;
   DataBufferInfo buffer_info_;
 
   async_dispatcher_t* dispatcher_;
@@ -92,7 +98,7 @@ class ScoDataChannelImpl final : public ScoDataChannel {
 };
 
 ScoDataChannelImpl::ScoDataChannelImpl(const DataBufferInfo& buffer_info,
-                                       CommandChannel* command_channel, HciWrapper* hci)
+                                       CommandChannel* command_channel, Controller* hci)
     : command_channel_(command_channel),
       hci_(hci),
       buffer_info_(buffer_info),
@@ -106,7 +112,7 @@ ScoDataChannelImpl::ScoDataChannelImpl(const DataBufferInfo& buffer_info,
       fit::bind_member<&ScoDataChannelImpl::OnNumberOfCompletedPacketsEvent>(this));
   BT_ASSERT(num_completed_packets_event_handler_id_);
 
-  hci_->SetScoCallback(fit::bind_member<&ScoDataChannelImpl::OnRxPacket>(this));
+  hci_->SetReceiveScoFunction(fit::bind_member<&ScoDataChannelImpl::OnRxPacket>(this));
 }
 
 ScoDataChannelImpl::~ScoDataChannelImpl() {
@@ -146,7 +152,29 @@ void ScoDataChannelImpl::ClearControllerPacketCount(hci_spec::ConnectionHandle h
 
 void ScoDataChannelImpl::OnOutboundPacketReadable() { TrySendNextPackets(); }
 
-void ScoDataChannelImpl::OnRxPacket(std::unique_ptr<ScoDataPacket> packet) {
+void ScoDataChannelImpl::OnRxPacket(pw::span<const std::byte> buffer) {
+  if (buffer.size() < sizeof(hci_spec::SynchronousDataHeader)) {
+    // TODO(fxbug.dev/97362): Handle these types of errors by signaling Transport.
+    bt_log(ERROR, "hci", "malformed packet - expected at least %zu bytes, got %zu",
+           sizeof(hci_spec::SynchronousDataHeader), buffer.size());
+    return;
+  }
+
+  const size_t payload_size = buffer.size() - sizeof(hci_spec::SynchronousDataHeader);
+  std::unique_ptr<ScoDataPacket> packet = ScoDataPacket::New(payload_size);
+  packet->mutable_view()->mutable_data().Write(reinterpret_cast<const uint8_t*>(buffer.data()),
+                                               buffer.size());
+  packet->InitializeFromBuffer();
+
+  if (packet->view().header().data_total_length != payload_size) {
+    // TODO(fxbug.dev/97362): Handle these types of errors by signaling Transport.
+    bt_log(ERROR, "hci",
+           "malformed packet - payload size from header (%hu) does not match"
+           " received payload size: %zu",
+           packet->view().header().data_total_length, payload_size);
+    return;
+  }
+
   auto conn_iter = connections_.find(letoh16(packet->connection_handle()));
   if (conn_iter == connections_.end()) {
     // Ignore inbound packets for connections that aren't registered. Unlike ACL, buffering data
@@ -234,12 +262,7 @@ void ScoDataChannelImpl::TrySendNextPackets() {
         break;
       }
 
-      zx_status_t status = hci_->SendScoPacket(std::move(packet));
-      if (status != ZX_OK) {
-        bt_log(ERROR, "hci", "failed to send data packet to HCI driver (%s) - dropping packet",
-               zx_status_get_string(status));
-        continue;
-      }
+      hci_->SendScoData(packet->view().data().subspan());
 
       auto [iter, _] = pending_packet_counts_.try_emplace(conn_handle, 0u);
       iter->second++;
@@ -273,8 +296,8 @@ void ScoDataChannelImpl::MaybeUpdateActiveConnection() {
 
 void ScoDataChannelImpl::ConfigureHci() {
   if (!active_connection_) {
-    hci_->ResetSco([](zx_status_t status) {
-      bt_log(DEBUG, "hci", "ResetSco completed with status %s", zx_status_get_string(status));
+    hci_->ResetSco([](pw::Status status) {
+      bt_log(DEBUG, "hci", "ResetSco completed with status %s", pw_StatusString(status));
     });
     return;
   }
@@ -327,8 +350,7 @@ void ScoDataChannelImpl::ConfigureHci() {
   auto conn = connections_.find(active_connection_->handle());
   BT_ASSERT(conn != connections_.end());
 
-  auto callback = [self = weak_ptr_factory_.GetWeakPtr(),
-                   handle = conn->first](zx_status_t status) {
+  auto callback = [self = weak_ptr_factory_.GetWeakPtr(), handle = conn->first](pw::Status status) {
     if (self) {
       self->OnHciConfigured(handle, status);
     }
@@ -338,16 +360,16 @@ void ScoDataChannelImpl::ConfigureHci() {
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 void ScoDataChannelImpl::OnHciConfigured(hci_spec::ConnectionHandle conn_handle,
-                                         zx_status_t status) {
+                                         pw::Status status) {
   auto iter = connections_.find(conn_handle);
   if (iter == connections_.end()) {
     // The connection may have been unregistered before the config callback was called.
     return;
   }
 
-  if (status != ZX_OK) {
+  if (!status.ok()) {
     bt_log(WARN, "hci", "ConfigureSco failed with status %s (handle: %#.4x)",
-           zx_status_get_string(status), conn_handle);
+           pw_StatusString(status), conn_handle);
     // The error callback may unregister the connection synchronously, so |iter| should not be
     // used past this line.
     iter->second.connection->OnHciError();
@@ -361,7 +383,7 @@ void ScoDataChannelImpl::OnHciConfigured(hci_spec::ConnectionHandle conn_handle,
 
 std::unique_ptr<ScoDataChannel> ScoDataChannel::Create(const DataBufferInfo& buffer_info,
                                                        CommandChannel* command_channel,
-                                                       HciWrapper* hci) {
+                                                       Controller* hci) {
   return std::make_unique<ScoDataChannelImpl>(buffer_info, command_channel, hci);
 }
 

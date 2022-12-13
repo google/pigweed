@@ -109,18 +109,21 @@ CommandChannel::EventCallback CommandChannel::TransactionData::MakeCallback() {
   };
 }
 
-CommandChannel::CommandChannel(HciWrapper* hci)
+CommandChannel::CommandChannel(pw::bluetooth::Controller* hci)
     : next_transaction_id_(1u),
       next_event_handler_id_(1u),
       hci_(hci),
       allowed_command_packets_(1u),
       weak_ptr_factory_(this) {
-  hci_->SetEventCallback(fit::bind_member<&CommandChannel::OnEvent>(this));
+  hci_->SetEventFunction(fit::bind_member<&CommandChannel::OnEvent>(this));
 
   bt_log(INFO, "hci", "CommandChannel initialized");
 }
 
-CommandChannel::~CommandChannel() { bt_log(INFO, "hci", "CommandChannel destroyed"); }
+CommandChannel::~CommandChannel() {
+  bt_log(INFO, "hci", "CommandChannel destroyed");
+  hci_->SetEventFunction(nullptr);
+}
 
 CommandChannel::TransactionId CommandChannel::SendCommand(
     CommandPacketVariant command_packet, CommandCallback callback,
@@ -399,16 +402,12 @@ void CommandChannel::TrySendQueuedCommands() {
 }
 
 void CommandChannel::SendQueuedCommand(QueuedCommand&& cmd) {
-  zx_status_t status =
-      std::visit([this](auto&& packet) { return hci_->SendCommand(std::move(packet)); },
-                 std::move(cmd.packet));
+  pw::span packet_span = std::visit(
+      overloaded{[](std::unique_ptr<CommandPacket>& p) { return p->view().data().subspan(); },
+                 [](EmbossCommandPacket& p) { return p.data().subspan(); }},
+      cmd.packet);
+  hci_->SendCommand(packet_span);
 
-  if (status < 0) {
-    // TODO(armansito): We should notify the |status_callback| of the pending
-    // command with a special error code in this case.
-    bt_log(ERROR, "hci", "failed to send command: %s", zx_status_get_string(status));
-    return;
-  }
   allowed_command_packets_.Set(allowed_command_packets_.value() - 1);
 
   std::unique_ptr<TransactionData>& transaction = cmd.data;
@@ -618,9 +617,32 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
   }
 }
 
-void CommandChannel::OnEvent(std::unique_ptr<EventPacket> event) {
+void CommandChannel::OnEvent(pw::span<const std::byte> buffer) {
   if (!active_) {
     bt_log(INFO, "hci", "ignoring event (CommandChannel is inactive)");
+    return;
+  }
+
+  if (buffer.size() < sizeof(hci_spec::EventHeader)) {
+    // TODO(fxbug.dev/97362): Handle these types of errors by signaling Transport.
+    bt_log(ERROR, "hci", "malformed packet - expected at least %zu bytes, got %zu",
+           sizeof(hci_spec::EventHeader), buffer.size());
+    return;
+  }
+
+  const size_t payload_size = buffer.size() - sizeof(hci_spec::EventHeader);
+
+  std::unique_ptr<EventPacket> event = EventPacket::New(payload_size);
+  event->mutable_view()->mutable_data().Write(reinterpret_cast<const uint8_t*>(buffer.data()),
+                                              buffer.size());
+  event->InitializeFromBuffer();
+
+  if (event->view().header().parameter_total_size != payload_size) {
+    // TODO(fxbug.dev/97362): Handle these types of errors by signaling Transport.
+    bt_log(ERROR, "hci",
+           "malformed packet - payload size from header (%hu) does not match"
+           " received payload size: %zu",
+           event->view().header().parameter_total_size, payload_size);
     return;
   }
 

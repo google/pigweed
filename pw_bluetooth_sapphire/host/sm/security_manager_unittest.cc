@@ -21,6 +21,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 #include "util.h"
 
@@ -34,17 +35,24 @@ const DeviceAddress kPeerAddr(DeviceAddress::Type::kLERandom, {0xB6, 0xB5, 0xB4,
 const PairingRandomValue kHardCodedPairingRandom = {0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7,
                                                     0x8, 0x9, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF};
 
+constexpr hci_spec::ConnectionHandle kConnectionHandle(1);
+
 class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::Delegate {
  public:
   SecurityManagerTest() : weak_ptr_factory_(this) {}
   ~SecurityManagerTest() override = default;
 
  protected:
+  void SetUp() override {
+    l2cap::testing::FakeChannelTest::SetUp();
+    InitializeTransport();
+  }
   void TearDown() override {
     RunLoopUntilIdle();
     DestroySecurityManager();
     fake_link_.reset();
     transport_.reset();
+    l2cap::testing::FakeChannelTest::TearDown();
   }
 
   void NewSecurityManager(Role role, IOCapability ioc, BondableMode bondable_mode) {
@@ -58,10 +66,17 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
     auto link_role = role == Role::kInitiator ? hci_spec::ConnectionRole::CENTRAL
                                               : hci_spec::ConnectionRole::PERIPHERAL;
 
-    fake_link_.reset();
-    InitializeTransport();
+    if (fake_link_) {
+      auto status_event =
+          testing::CommandStatusPacket(hci_spec::kDisconnect, hci_spec::StatusCode::SUCCESS);
+      auto disconnect_complete = testing::DisconnectionCompletePacket(kConnectionHandle);
+      EXPECT_CMD_PACKET_OUT(controller_, testing::DisconnectPacket(kConnectionHandle),
+                            &status_event, &disconnect_complete);
+      fake_link_.reset();
+      RunLoopUntilIdle();
+    }
     fake_link_ = std::make_unique<hci::testing::FakeLowEnergyConnection>(
-        1, kLocalAddr, kPeerAddr, link_role, transport_->WeakPtr());
+        kConnectionHandle, kLocalAddr, kPeerAddr, link_role, transport_->WeakPtr());
 
     pairing_ = SecurityManager::Create(fake_link_->GetWeakPtr(), fake_chan_->GetWeakPtr(), ioc,
                                        weak_ptr_factory_.GetWeakPtr(), bondable_mode,
@@ -413,22 +428,18 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
   void InitializeTransport() {
     // Ensure any tasks posted by an existing transport are dispatched.
     RunLoopUntilIdle();
-    zx::channel cmd0;
-    zx::channel::create(0, &cmd0, &cmd_chan_);
-    zx::channel acl0;
-    zx::channel::create(0, &acl0, &acl_chan_);
-    auto vendor_encode_cb = [](auto cmd, auto params) -> std::optional<DynamicByteBuffer> {
-      return std::nullopt;
-    };
-    auto device_wrapper = std::make_unique<hci::DummyDeviceWrapper>(
-        std::move(cmd0), std::move(acl0), bt_vendor_features_t(), std::move(vendor_encode_cb));
-    auto hci_wrapper = hci::HciWrapper::Create(std::move(device_wrapper), dispatcher());
-    transport_ = hci::Transport::Create(std::move(hci_wrapper));
+    auto mock_controller = std::make_unique<bt::testing::MockController>();
+    controller_ = mock_controller->GetWeakPtr();
+    transport_ = std::make_unique<hci::Transport>(std::move(mock_controller));
+    std::optional<bool> init_success;
+    transport_->Initialize([&](bool success) { init_success = success; });
+    RunLoopUntilIdle();
+    ASSERT_TRUE(init_success.has_value());
+    ASSERT_TRUE(init_success.value());
     transport_->InitializeACLDataChannel(hci::DataBufferInfo(1, 1), hci::DataBufferInfo(1, 1));
   }
 
-  zx::channel cmd_chan_;
-  zx::channel acl_chan_;
+  fxl::WeakPtr<testing::MockController> controller_;
   std::unique_ptr<hci::Transport> transport_;
 
   // We store the preq/pres values here to generate a valid confirm value for
@@ -511,7 +522,10 @@ class InitiatorPairingTest : public SecurityManagerTest {
   InitiatorPairingTest() = default;
   ~InitiatorPairingTest() override = default;
 
-  void SetUp() override { SetUpSecurityManager(); }
+  void SetUp() override {
+    SecurityManagerTest::SetUp();
+    SetUpSecurityManager();
+  }
 
   void SetUpSecurityManager(IOCapability ioc = IOCapability::kDisplayOnly,
                             BondableMode bondable_mode = BondableMode::Bondable) {
@@ -686,7 +700,10 @@ class ResponderPairingTest : public SecurityManagerTest {
   ResponderPairingTest() = default;
   ~ResponderPairingTest() override = default;
 
-  void SetUp() override { SetUpSecurityManager(); }
+  void SetUp() override {
+    SecurityManagerTest::SetUp();
+    SetUpSecurityManager();
+  }
 
   void SetUpSecurityManager(IOCapability ioc = IOCapability::kDisplayOnly,
                             BondableMode bondable_mode = BondableMode::Bondable) {

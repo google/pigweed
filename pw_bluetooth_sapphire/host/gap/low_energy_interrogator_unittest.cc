@@ -35,7 +35,6 @@ class LowEnergyInterrogatorTest : public TestingBase {
 
   void SetUp() override {
     TestingBase::SetUp();
-    StartTestDevice();
 
     peer_cache_ = std::make_unique<PeerCache>();
 

@@ -93,7 +93,6 @@ class ScoConnectionManagerTest : public TestingBase {
     TestingBase::SetUp();
     InitializeACLDataChannel();
     InitializeScoDataChannel();
-    StartTestDevice();
 
     manager_ = std::make_unique<ScoConnectionManager>(PeerId(1), kAclConnectionHandle, kPeerAddress,
                                                       kLocalAddress, transport()->WeakPtr());

@@ -18,12 +18,7 @@ namespace {
 using TransportTest = bt::testing::ControllerTest<bt::testing::MockController>;
 using TransportDeathTest = TransportTest;
 
-class TransportTestWithoutSco : public TransportTest {
- public:
-  void SetUp() override { TransportTest::SetUp(/*sco_enabled=*/false); }
-};
-
-TEST_F(TransportTest, CommandChannelTimeoutNotifiesClosedCallback) {
+TEST_F(TransportTest, CommandChannelTimeoutShutsDownChannelAndNotifiesClosedCallback) {
   fxl::WeakPtr<CommandChannel> cmd_chan_weak = cmd_channel()->AsWeakPtr();
 
   size_t closed_cb_count = 0;
@@ -39,7 +34,6 @@ TEST_F(TransportTest, CommandChannelTimeoutNotifiesClosedCallback) {
   // Expect the HCI_Reset command but dont send a reply back to make the command
   // time out.
   EXPECT_CMD_PACKET_OUT(test_device(), req_reset);
-  StartTestDevice();
 
   size_t cb_count = 0;
   CommandChannel::TransactionId id1, id2;
@@ -72,8 +66,6 @@ TEST_F(TransportDeathTest, AttachInspectBeforeInitializeACLDataChannelCrashes) {
 }
 
 TEST_F(TransportTest, HciErrorClosesTransportWithSco) {
-  StartTestDevice();
-
   size_t closed_cb_count = 0;
   transport()->SetTransportErrorCallback([&] { closed_cb_count++; });
 
@@ -85,6 +77,14 @@ TEST_F(TransportTest, HciErrorClosesTransportWithSco) {
   RunLoopUntilIdle();
   EXPECT_EQ(closed_cb_count, 1u);
 }
+
+class TransportTestWithoutSco : public TransportTest {
+ public:
+  void SetUp() override {
+    // Disable the SCO feature bit.
+    TransportTest::SetUp(testing::MockController::FeaturesBits{0});
+  }
+};
 
 TEST_F(TransportTestWithoutSco, GetScoChannelFailure) {
   size_t closed_cb_count = 0;

@@ -73,7 +73,7 @@ class FakeChannel : public Channel {
   void SignalLinkError() override;
   bool Send(ByteBufferPtr sdu) override;
   void UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> callback) override;
-  void RequestAclPriority(hci::AclPriority priority,
+  void RequestAclPriority(pw::bluetooth::AclPriority priority,
                           fit::callback<void(fit::result<fit::failed>)> cb) override;
   void SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
                                      hci::ResultCallback<> callback) override;

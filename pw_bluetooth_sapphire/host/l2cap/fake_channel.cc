@@ -119,7 +119,7 @@ void FakeChannel::UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> 
                    level]() mutable { f(handle, level, std::move(cb)); });
 }
 
-void FakeChannel::RequestAclPriority(hci::AclPriority priority,
+void FakeChannel::RequestAclPriority(pw::bluetooth::AclPriority priority,
                                      fit::callback<void(fit::result<fit::failed>)> cb) {
   if (acl_priority_fails_) {
     cb(fit::failed());

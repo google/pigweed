@@ -17,6 +17,7 @@
 #include <mutex>
 #include <queue>
 
+#include "pw_bluetooth/vendor.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
@@ -29,7 +30,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/hci_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/link_type.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
@@ -203,7 +203,7 @@ class Channel {
   // Calls |callback| with success if the request succeeded, or error otherwise.
   // Requests may fail if the controller does not support changing the ACL priority or the indicated
   // priority conflicts with another channel.
-  virtual void RequestAclPriority(hci::AclPriority priority,
+  virtual void RequestAclPriority(pw::bluetooth::AclPriority,
                                   fit::callback<void(fit::result<fit::failed>)> callback) = 0;
 
   // Sets an automatic flush timeout with duration |flush_timeout|. |callback| will be called with
@@ -224,7 +224,7 @@ class Channel {
                                 hci::ResultCallback<> callback) = 0;
 
   // The ACL priority that was both requested and accepted by the controller.
-  hci::AclPriority requested_acl_priority() const { return requested_acl_priority_; }
+  pw::bluetooth::AclPriority requested_acl_priority() const { return requested_acl_priority_; }
 
   virtual fxl::WeakPtr<Channel> GetWeakPtr() = 0;
 
@@ -235,7 +235,7 @@ class Channel {
   const hci_spec::ConnectionHandle link_handle_;
   ChannelInfo info_;
   // The ACL priority that was requested by a client and accepted by the controller.
-  hci::AclPriority requested_acl_priority_;
+  pw::bluetooth::AclPriority requested_acl_priority_;
   A2dpOffloadStatus a2dp_offload_status_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Channel);
@@ -299,7 +299,7 @@ class ChannelImpl : public Channel {
   void SignalLinkError() override;
   bool Send(ByteBufferPtr sdu) override;
   void UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> callback) override;
-  void RequestAclPriority(hci::AclPriority priority,
+  void RequestAclPriority(pw::bluetooth::AclPriority priority,
                           fit::callback<void(fit::result<fit::failed>)> callback) override;
   void SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
                                      hci::ResultCallback<> callback) override;

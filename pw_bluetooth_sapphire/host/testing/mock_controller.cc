@@ -6,6 +6,7 @@
 
 #include <endian.h>
 #include <lib/async/cpp/task.h>
+#include <lib/async/default.h>
 #include <zircon/status.h>
 
 #include <cstdint>
@@ -75,8 +76,6 @@ MockController::~MockController() {
         << ByteContainerToString(transaction.expected().data) << "}";
     sco_transactions_.pop();
   }
-
-  Stop();
 }
 
 void MockController::QueueCommandTransaction(CommandTransaction transaction) {
@@ -151,7 +150,9 @@ void MockController::ClearTransactionCallback() {
   transaction_callback_ = nullptr;
 }
 
-void MockController::ProcessCommandPacket(uint16_t opcode, const BufferView& data) {
+void MockController::OnCommandReceived(const ByteBuffer& data) {
+  ASSERT_GE(data.size(), sizeof(hci_spec::OpCode));
+  const hci_spec::OpCode opcode = le16toh(data.To<hci_spec::OpCode>());
   const uint8_t ogf = hci_spec::GetOGF(opcode);
   const uint16_t ocf = hci_spec::GetOCF(opcode);
 
@@ -189,15 +190,6 @@ void MockController::ProcessCommandPacket(uint16_t opcode, const BufferView& dat
     async::PostTask(transaction_dispatcher_,
                     [rx = std::move(rx), f = transaction_callback_.share()] { f(rx); });
   }
-}
-
-void MockController::OnCommandPacketReceived(
-    const PacketView<hci_spec::CommandHeader>& command_packet) {
-  ProcessCommandPacket(le16toh(command_packet.header().opcode), command_packet.data());
-}
-
-void MockController::OnCommandPacketReceived(hci::EmbossCommandPacket& command_packet) {
-  ProcessCommandPacket(command_packet.opcode(), command_packet.data());
 }
 
 void MockController::OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) {
@@ -238,6 +230,25 @@ void MockController::OnScoDataPacketReceived(const ByteBuffer& sco_data_packet) 
   }
 
   sco_transactions_.pop();
+}
+
+void MockController::SendCommand(pw::span<const std::byte> data) {
+  // Post task to simulate async
+  DynamicByteBuffer buffer(BufferView(data.data(), data.size()));
+  async::PostTask(async_get_default_dispatcher(),
+                  [this, buffer = std::move(buffer)]() { OnCommandReceived(buffer); });
+}
+void MockController::SendAclData(pw::span<const std::byte> data) {
+  // Post task to simulate async
+  DynamicByteBuffer buffer(BufferView(data.data(), data.size()));
+  async::PostTask(async_get_default_dispatcher(),
+                  [this, buffer = std::move(buffer)]() { OnACLDataPacketReceived(buffer); });
+}
+void MockController::SendScoData(pw::span<const std::byte> data) {
+  // Post task to simulate async
+  DynamicByteBuffer buffer(BufferView(data.data(), data.size()));
+  async::PostTask(async_get_default_dispatcher(),
+                  [this, buffer = std::move(buffer)]() { OnScoDataPacketReceived(buffer); });
 }
 
 }  // namespace bt::testing

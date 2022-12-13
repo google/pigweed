@@ -32,12 +32,15 @@ class FuzzerController : public ControllerTestDoubleBase {
   FuzzerController() {}
   ~FuzzerController() override = default;
 
+  fxl::WeakPtr<FuzzerController> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
+
  private:
-  void OnCommandPacketReceived(const PacketView<hci_spec::CommandHeader>& command_packet) override {
-  }
-  void OnCommandPacketReceived(hci::EmbossCommandPacket& command_packet) override {}
-  void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) override {}
-  void OnScoDataPacketReceived(const ByteBuffer& acl_data_packet) override {}
+  // Controller overrides:
+  void SendCommand(pw::span<const std::byte> command) override {}
+  void SendAclData(pw::span<const std::byte> data) override {}
+  void SendScoData(pw::span<const std::byte> data) override {}
+
+  fxl::WeakPtrFactory<FuzzerController> weak_ptr_factory_{this};
 };
 
 // Reuse ControllerTest test fixture code even though we're not using gtest.
@@ -52,8 +55,6 @@ class DataFuzzTest : public TestingBase {
     channel_manager_ = l2cap::ChannelManager::Create(transport()->acl_data_channel(),
                                                      transport()->command_channel(),
                                                      /*random_channel_ids=*/true);
-
-    StartTestDevice();
   }
 
   ~DataFuzzTest() override {

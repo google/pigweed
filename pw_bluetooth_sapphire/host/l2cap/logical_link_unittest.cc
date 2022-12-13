@@ -28,7 +28,7 @@ class LogicalLinkTest : public TestingBase {
   void SetUp() override {
     TestingBase::SetUp();
     InitializeACLDataChannel();
-    StartTestDevice();
+
     NewLogicalLink();
   }
   void TearDown() override {

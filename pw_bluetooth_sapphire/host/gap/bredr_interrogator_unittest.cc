@@ -57,8 +57,6 @@ class BrEdrInterrogatorTest : public TestingBase {
 
     interrogator_ = std::make_unique<BrEdrInterrogator>(peer_->GetWeakPtr(), kConnectionHandle,
                                                         transport()->WeakPtr());
-
-    StartTestDevice();
   }
 
   void TearDown() override {

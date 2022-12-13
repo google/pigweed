@@ -19,6 +19,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "pw_bluetooth/controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
@@ -27,7 +28,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/hci_wrapper.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/emboss_control_packets.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::hci {
@@ -50,7 +51,7 @@ class CommandChannel final {
   using CommandPacketVariant = std::variant<std::unique_ptr<CommandPacket>, EmbossCommandPacket>;
 
   // Starts listening for HCI commands and starts handling commands and events.
-  explicit CommandChannel(HciWrapper* hci);
+  explicit CommandChannel(pw::bluetooth::Controller* hci);
 
   ~CommandChannel();
 
@@ -347,7 +348,7 @@ class CommandChannel final {
   void UpdateTransaction(std::unique_ptr<EventPacket> event);
 
   // Event handler.
-  void OnEvent(std::unique_ptr<EventPacket> event);
+  void OnEvent(pw::span<const std::byte> buffer);
 
   // Called when a command times out. Notifies upper layers of the error.
   void OnCommandTimeout(TransactionId transaction_id);
@@ -367,7 +368,7 @@ class CommandChannel final {
   UintInspectable<size_t> next_event_handler_id_;
 
   // The HCI we use to send/receive HCI commands/events.
-  HciWrapper* hci_;
+  pw::bluetooth::Controller* hci_;
 
   // Callback called when a command times out.
   fit::closure channel_timeout_cb_;

@@ -39,10 +39,9 @@ class ScoConnectionTest : public TestingBase {
     TestingBase::SetUp();
     InitializeACLDataChannel();
     InitializeScoDataChannel(kDataBufferInfo);
-    StartTestDevice();
 
-    set_configure_sco_cb([](auto, auto, auto, auto cb) { cb(ZX_OK); });
-    set_reset_sco_cb([](auto cb) { cb(ZX_OK); });
+    test_device()->set_configure_sco_cb([](auto, auto, auto, auto cb) { cb(PW_STATUS_OK); });
+    test_device()->set_reset_sco_cb([](auto cb) { cb(PW_STATUS_OK); });
 
     auto conn = std::make_unique<hci::ScoConnection>(kConnectionHandle, DeviceAddress(),
                                                      DeviceAddress(), transport()->WeakPtr());

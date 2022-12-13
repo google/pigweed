@@ -12,8 +12,6 @@ source_set("testing") {
     "inspect.h",
     "inspect_util.cc",
     "inspect_util.h",
-    "mock_controller.cc",
-    "mock_controller.h",
     "test_packets.cc",
     "test_packets.h",
   ]
@@ -22,6 +20,7 @@ source_set("testing") {
 
   public_deps = [
     ":fake_controller",
+    ":mock_controller",
     ":test_helpers",
     "//sdk/lib/inspect/testing/cpp",
     "//src/connectivity/bluetooth/core/bt-host/transport",
@@ -30,6 +29,7 @@ source_set("testing") {
   ]
 }
 
+# test_helpers is separate from :testing to fix dependency cycles.
 source_set("test_helpers") {
   testonly = true
 
@@ -68,14 +68,50 @@ bt_gtest_package("bt-host-testing-tests") {
   deps = [ ":tests" ]
 }
 
+source_set("controller_test_double_base") {
+  testonly = true
+
+  sources = [
+    "controller_test_double_base.cc",
+    "controller_test_double_base.h",
+  ]
+
+  public_deps = [
+    "//sdk/lib/fit",
+    "//src/connectivity/bluetooth/core/bt-host/common",
+    "//src/connectivity/bluetooth/core/bt-host/hci",
+    "//third_party/pigweed:pw_bluetooth",
+    "//zircon/system/ulib/async:async-cpp",
+    "//zircon/system/ulib/async-default",
+    "//zircon/system/ulib/zx",
+  ]
+}
+
+source_set("mock_controller") {
+  testonly = true
+
+  sources = [
+    "mock_controller.cc",
+    "mock_controller.h",
+  ]
+
+  deps = [ "//third_party/googletest:gtest" ]
+
+  public_deps = [
+    ":controller_test_double_base",
+    ":test_helpers",
+    "//src/connectivity/bluetooth/core/bt-host/transport",
+    "//src/connectivity/bluetooth/core/bt-host/transport:testing",
+    "//src/lib/testing/loop_fixture",
+  ]
+}
+
 # Target that includes Fake HCI emulation support. This should NOT depend on
 # gtest.
 source_set("fake_controller") {
   testonly = true
 
   sources = [
-    "controller_test_double_base.cc",
-    "controller_test_double_base.h",
     "fake_controller.cc",
     "fake_controller.h",
     "fake_dynamic_channel.cc",
@@ -93,6 +129,7 @@ source_set("fake_controller") {
   ]
 
   public_deps = [
+    ":controller_test_double_base",
     ":test_helpers",
     "//sdk/lib/fit",
     "//src/connectivity/bluetooth/core/bt-host/att:definitions",

@@ -44,7 +44,6 @@ class ConnectionTest : public TestingBase {
   void SetUp() override {
     TestingBase::SetUp();
     InitializeACLDataChannel(kBrEdrBufferInfo, kLeBufferInfo);
-    StartTestDevice();
   }
 
   std::unique_ptr<LowEnergyConnection> NewLEConnection(

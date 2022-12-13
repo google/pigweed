@@ -25,6 +25,7 @@
 namespace bt::l2cap {
 
 namespace hci_android = bt::hci_spec::vendor::android;
+using pw::bluetooth::AclPriority;
 
 Channel::Channel(ChannelId id, ChannelId remote_id, bt::LinkType link_type,
                  hci_spec::ConnectionHandle link_handle, ChannelInfo info)
@@ -33,7 +34,7 @@ Channel::Channel(ChannelId id, ChannelId remote_id, bt::LinkType link_type,
       link_type_(link_type),
       link_handle_(link_handle),
       info_(info),
-      requested_acl_priority_(hci::AclPriority::kNormal),
+      requested_acl_priority_(AclPriority::kNormal),
       a2dp_offload_status_(A2dpOffloadStatus::kStopped) {
   BT_DEBUG_ASSERT(id_);
   BT_DEBUG_ASSERT(link_type_ == bt::LinkType::kLE || link_type_ == bt::LinkType::kACL);
@@ -191,7 +192,7 @@ void ChannelImpl::UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> 
   link_->UpgradeSecurity(level, std::move(callback));
 }
 
-void ChannelImpl::RequestAclPriority(hci::AclPriority priority,
+void ChannelImpl::RequestAclPriority(AclPriority priority,
                                      fit::callback<void(fit::result<fit::failed>)> callback) {
   if (!link_ || !active_) {
     bt_log(DEBUG, "l2cap", "Ignoring ACL priority request on inactive channel");
@@ -366,7 +367,7 @@ void ChannelImpl::HandleRxPdu(PDU&& pdu) {
 }
 
 void ChannelImpl::CleanUp() {
-  RequestAclPriority(hci::AclPriority::kNormal, [](auto result) {
+  RequestAclPriority(AclPriority::kNormal, [](auto result) {
     if (result.is_error()) {
       bt_log(WARN, "l2cap", "Resetting ACL priority on channel closed failed");
     }

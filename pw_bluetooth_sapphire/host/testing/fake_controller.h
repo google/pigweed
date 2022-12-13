@@ -32,7 +32,7 @@ class FakePeer;
 
 // FakeController emulates a real Bluetooth controller. It can be configured to respond to HCI
 // commands in a predictable manner.
-class FakeController : public ControllerTestDoubleBase {
+class FakeController final : public ControllerTestDoubleBase {
  public:
   // Global settings for the FakeController. These can be used to initialize a FakeController and/or
   // to re-configure an existing one.
@@ -158,7 +158,7 @@ class FakeController : public ControllerTestDoubleBase {
   // Constructor initializes the controller with the minimal default settings (equivalent to calling
   // Settings::ApplyDefaults()).
   FakeController() : weak_ptr_factory_(this) {}
-  ~FakeController() override { Stop(); }
+  ~FakeController() override = default;
 
   // Resets the controller settings.
   void set_settings(const Settings& settings) { settings_ = settings; }
@@ -376,6 +376,29 @@ class FakeController : public ControllerTestDoubleBase {
     BT_ASSERT(value >= extended_advertising_states_.size());
     BT_ASSERT(value <= hci_spec::kAdvertisingHandleMax + 1);  // support advertising handle of 0
     num_supported_advertising_sets_ = value;
+  }
+
+  fxl::WeakPtr<FakeController> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
+
+  // Controller overrides:
+  void SendCommand(pw::span<const std::byte> command) override;
+  void SendAclData(pw::span<const std::byte> data) override {
+    // Post the packet to simulate async HCI behavior.
+    async::PostTask(dispatcher(), [self = weak_ptr_factory_.GetWeakPtr(),
+                                   data = DynamicByteBuffer(BufferView(data))]() {
+      if (self) {
+        self->OnACLDataPacketReceived(BufferView(data));
+      }
+    });
+  }
+  void SendScoData(pw::span<const std::byte> data) override {
+    // Post the packet to simulate async HCI behavior.
+    async::PostTask(dispatcher(), [self = weak_ptr_factory_.GetWeakPtr(),
+                                   data = DynamicByteBuffer(BufferView(data))]() {
+      if (self) {
+        self->OnScoDataPacketReceived(BufferView(data));
+      }
+    });
   }
 
  private:
@@ -701,11 +724,9 @@ class FakeController : public ControllerTestDoubleBase {
   void HandleReceivedCommandPacket(const PacketView<hci_spec::CommandHeader>& command_packet);
   void HandleReceivedCommandPacket(hci::EmbossCommandPacket& command_packet);
 
-  // ControllerTestDoubleBase overrides:
-  void OnCommandPacketReceived(const PacketView<hci_spec::CommandHeader>& command_packet) override;
-  void OnCommandPacketReceived(hci::EmbossCommandPacket& command_packet) override;
-  void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) override;
-  void OnScoDataPacketReceived(const ByteBuffer& sco_data_packet) override;
+  void OnCommandPacketReceived(const PacketView<hci_spec::CommandHeader>& command_packet);
+  void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet);
+  void OnScoDataPacketReceived(const ByteBuffer& sco_data_packet);
 
   Settings settings_;
 

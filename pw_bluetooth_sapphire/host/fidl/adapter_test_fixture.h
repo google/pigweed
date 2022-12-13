@@ -24,7 +24,9 @@ class AdapterTestFixture : public bt::testing::ControllerTest<bt::testing::FakeC
 
  protected:
   void SetUp() override;
-  void SetUp(bt::testing::FakeController::Settings settings);
+  void SetUp(bt::testing::FakeController::Settings settings,
+             pw::bluetooth::Controller::FeaturesBits features =
+                 pw::bluetooth::Controller::FeaturesBits{0});
   void TearDown() override;
 
   fxl::WeakPtr<bt::gap::Adapter> adapter() const { return adapter_->AsWeakPtr(); }
