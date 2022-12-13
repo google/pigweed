@@ -16,35 +16,41 @@
 
 namespace bt::gap::internal {
 
+// LowEnergyConnector is a single-use utility for executing either the outbound connection procedure
+// or the inbound connection procedure (which is a subset of the outbound procedure). The outbound
+// procedure first scans for and connects to a peer, whereas the inbound procedure starts with an
+// existing connection. Next, both procedures interrogate the peer. After construction, the
+// connection procedure may be started with either StartOutbound() or StartInbound() and will run to
+// completion unless Cancel() is called.
 class LowEnergyConnector final {
  public:
   using ResultCallback = hci::ResultCallback<std::unique_ptr<LowEnergyConnection>>;
 
-  // Initiate an outbound connection to |peer_id|. |cb| will be called with the result of the
-  // procedure.
-  static std::unique_ptr<LowEnergyConnector> CreateOutboundConnector(
-      PeerId peer_id, LowEnergyConnectionOptions options, hci::LowEnergyConnector* connector,
-      zx::duration request_timeout, fxl::WeakPtr<hci::Transport> transport, PeerCache* peer_cache,
-      fxl::WeakPtr<LowEnergyDiscoveryManager> discovery_manager,
-      fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr, l2cap::ChannelManager* l2cap,
-      fxl::WeakPtr<gatt::GATT> gatt, ResultCallback cb);
-
-  // Start interrogating peer using an already established |connection|. |cb| will be called with
-  // the result of the procedure.
-  static std::unique_ptr<LowEnergyConnector> CreateInboundConnector(
-      PeerId peer_id, std::unique_ptr<hci::LowEnergyConnection> connection,
-      LowEnergyConnectionOptions options, fxl::WeakPtr<hci::Transport> transport,
-      PeerCache* peer_cache, fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
-      l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt, ResultCallback cb);
+  // Create a connector for connecting to |peer_id|. The connection will be established with
+  // the parameters specified in |options|.
+  LowEnergyConnector(PeerId peer_id, LowEnergyConnectionOptions options,
+                     fxl::WeakPtr<hci::Transport> transport, PeerCache* peer_cache,
+                     fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
+                     l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt);
 
   // Instances should only be destroyed after the result callback is called (except for stack tear
   // down). Due to the asynchronous nature of cancelling the connection process, it is NOT safe to
   // destroy a connector before the result callback has been called. The connector will be unable to
   // wait for the HCI connection cancellation to complete, which can lead to failure to connect in
-  // later connectors (as the HCI connector is still pending).
+  // later connectors (as the hci::LowEnergyConnector is still pending).
   ~LowEnergyConnector();
 
-  // Cancelling an already completed connector is a no-op.
+  // Initiate an outbound connection. |cb| will be called with the result of the
+  // procedure. Must only be called once.
+  void StartOutbound(zx::duration request_timeout, hci::LowEnergyConnector* connector,
+                     fxl::WeakPtr<LowEnergyDiscoveryManager> discovery_manager, ResultCallback cb);
+
+  // Start interrogating peer using an already established |connection|. |cb| will be called with
+  // the result of the procedure. Must only be called once.
+  void StartInbound(std::unique_ptr<hci::LowEnergyConnection> connection, ResultCallback cb);
+
+  // Canceling a connector that has not started or has already completed is a no-op. Otherwise,
+  // the pending result callback will be called asynchronously once cancelation has succeeded.
   void Cancel();
 
   // Attach connector inspect node as a child node of |parent| with the name |name|.
@@ -52,25 +58,16 @@ class LowEnergyConnector final {
 
  private:
   enum class State {
-    kIdle,
-    kStartingScanning,
-    kScanning,
-    kConnecting,
-    kInterrogating,
-    kAwaitingConnectionFailedToBeEstablishedDisconnect,
-    kPauseBeforeConnectionRetry,
-    kComplete,
-    kFailed,
+    kDefault,
+    kStartingScanning,                                   // Outbound only
+    kScanning,                                           // Outbound only
+    kConnecting,                                         // Outbound only
+    kInterrogating,                                      // Outbound & inbound
+    kAwaitingConnectionFailedToBeEstablishedDisconnect,  // Outbound & inbound
+    kPauseBeforeConnectionRetry,                         // Outbound only
+    kComplete,                                           // Outbound & inbound
+    kFailed,                                             // Outbound & inbound
   };
-
-  LowEnergyConnector(bool outbound, PeerId peer_id,
-                     std::unique_ptr<hci::LowEnergyConnection> connection,
-                     LowEnergyConnectionOptions options, hci::LowEnergyConnector* connector,
-                     zx::duration request_timeout, fxl::WeakPtr<hci::Transport> transport,
-                     PeerCache* peer_cache, fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
-                     fxl::WeakPtr<LowEnergyDiscoveryManager> discovery_manager,
-                     l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt,
-                     ResultCallback cb);
 
   static const char* StateToString(State);
 
@@ -109,7 +106,11 @@ class LowEnergyConnector final {
   void NotifySuccess();
   void NotifyFailure(hci::Result<> status = ToResult(HostError::kFailed));
 
-  StringInspectable<State> state_;
+  // Set is_outbound_ and its Inspect property.
+  void set_is_outbound(bool is_outbound);
+
+  StringInspectable<State> state_{State::kDefault,
+                                  /*convert=*/[](auto s) { return StateToString(s); }};
 
   PeerId peer_id_;
   DeviceAddress peer_address_;
@@ -121,7 +122,7 @@ class LowEnergyConnector final {
 
   // True if this connector is connecting an outbound connection, false if it is connecting an
   // inbound connection.
-  const bool is_outbound_;
+  std::optional<bool> is_outbound_;
 
   // Time after which an outbound HCI connection request is considered to have timed out. This
   // is configurable to allow unit tests to set a shorter value.
@@ -133,7 +134,7 @@ class LowEnergyConnector final {
   ResultCallback result_cb_;
 
   // Used to connect outbound connections during the kConnecting state.
-  hci::LowEnergyConnector* hci_connector_;
+  hci::LowEnergyConnector* hci_connector_ = nullptr;
 
   // The LowEnergyConnection to be passed to LowEnergyConnectionManager. Created during the
   // kConnecting state for outbound connections, or during construction for inbound connections.
@@ -141,7 +142,7 @@ class LowEnergyConnector final {
 
   // For outbound connections, this is a 0-indexed counter of which connection attempt the connector
   // is on.
-  IntInspectable<int> connection_attempt_;
+  IntInspectable<int> connection_attempt_{0};
 
   async::TaskClosureMethod<LowEnergyConnector, &LowEnergyConnector::RequestCreateConnection>
       request_create_connection_task_{this};
@@ -169,7 +170,7 @@ class LowEnergyConnector final {
   InspectProperties inspect_properties_;
   inspect::Node inspect_node_;
 
-  fxl::WeakPtrFactory<LowEnergyConnector> weak_ptr_factory_;
+  fxl::WeakPtrFactory<LowEnergyConnector> weak_ptr_factory_{this};
 };
 
 }  // namespace bt::gap::internal

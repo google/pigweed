@@ -32,80 +32,27 @@ constexpr const char* kInspectIsOutboundPropertyName = "is_outbound";
 
 }  // namespace
 
-std::unique_ptr<LowEnergyConnector> LowEnergyConnector::CreateOutboundConnector(
-    PeerId peer_id, LowEnergyConnectionOptions options, hci::LowEnergyConnector* connector,
-    zx::duration request_timeout, fxl::WeakPtr<hci::Transport> transport, PeerCache* peer_cache,
-    fxl::WeakPtr<LowEnergyDiscoveryManager> discovery_manager,
-    fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr, l2cap::ChannelManager* l2cap,
-    fxl::WeakPtr<gatt::GATT> gatt, ResultCallback cb) {
-  return std::unique_ptr<LowEnergyConnector>(new LowEnergyConnector(
-      /*outbound=*/true, peer_id, /*connection=*/nullptr, options, connector, request_timeout,
-      transport, peer_cache, conn_mgr, discovery_manager, l2cap, gatt, std::move(cb)));
-}
-
-std::unique_ptr<LowEnergyConnector> LowEnergyConnector::CreateInboundConnector(
-    PeerId peer_id, std::unique_ptr<hci::LowEnergyConnection> connection,
-    LowEnergyConnectionOptions options, fxl::WeakPtr<hci::Transport> transport,
-    PeerCache* peer_cache, fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
-    l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt, ResultCallback cb) {
-  return std::unique_ptr<LowEnergyConnector>(new LowEnergyConnector(
-      /*outbound=*/false, peer_id, std::move(connection), options, /*connector=*/nullptr,
-      /*request_timeout=*/zx::duration(0), transport, peer_cache, conn_mgr,
-      /*discovery_manager=*/nullptr, l2cap, gatt, std::move(cb)));
-}
-
-LowEnergyConnector::LowEnergyConnector(
-    bool outbound, PeerId peer_id, std::unique_ptr<hci::LowEnergyConnection> connection,
-    LowEnergyConnectionOptions options, hci::LowEnergyConnector* connector,
-    zx::duration request_timeout, fxl::WeakPtr<hci::Transport> transport, PeerCache* peer_cache,
-    fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
-    fxl::WeakPtr<LowEnergyDiscoveryManager> discovery_manager, l2cap::ChannelManager* l2cap,
-    fxl::WeakPtr<gatt::GATT> gatt, ResultCallback cb)
-    : state_(State::kIdle, /*convert=*/[](auto s) { return StateToString(s); }),
-      peer_id_(peer_id),
+LowEnergyConnector::LowEnergyConnector(PeerId peer_id, LowEnergyConnectionOptions options,
+                                       fxl::WeakPtr<hci::Transport> transport,
+                                       PeerCache* peer_cache,
+                                       fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
+                                       l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt)
+    : peer_id_(peer_id),
       peer_cache_(peer_cache),
       l2cap_(l2cap),
       gatt_(gatt),
-      is_outbound_(outbound),
-      hci_request_timeout_(request_timeout),
       options_(options),
-      result_cb_(std::move(cb)),
-      hci_connector_(connector),
-      connection_attempt_(0),
-      discovery_manager_(std::move(discovery_manager)),
       transport_(transport),
-      le_connection_manager_(conn_mgr),
-      weak_ptr_factory_(this) {
-  BT_ASSERT(le_connection_manager_);
+      le_connection_manager_(conn_mgr) {
   BT_ASSERT(transport_);
   BT_ASSERT(peer_cache_);
+  BT_ASSERT(l2cap_);
+  BT_ASSERT(gatt_);
+  BT_ASSERT(le_connection_manager_);
 
   auto peer = peer_cache_->FindById(peer_id_);
   BT_ASSERT(peer);
   peer_address_ = peer->address();
-
-  if (is_outbound_) {
-    BT_ASSERT(discovery_manager_);
-    BT_ASSERT(!connection);
-    BT_ASSERT(hci_connector_);
-    BT_ASSERT(hci_request_timeout_.get() != 0);
-
-    if (options.auto_connect) {
-      RequestCreateConnection();
-    } else {
-      StartScanningForPeer();
-    }
-  } else {
-    BT_ASSERT(connection);
-    // Connection address should resolve to same peer as the given peer ID.
-    Peer* conn_peer = peer_cache_->FindByAddress(connection->peer_address());
-    BT_ASSERT(conn_peer);
-    BT_ASSERT_MSG(peer_id_ == conn_peer->identifier(), "peer_id_ (%s) != connection peer (%s)",
-                  bt_str(peer_id_), bt_str(conn_peer->identifier()));
-
-    InitializeConnection(std::move(connection));
-    StartInterrogation();
-  }
 }
 
 LowEnergyConnector::~LowEnergyConnector() {
@@ -123,11 +70,55 @@ LowEnergyConnector::~LowEnergyConnector() {
   }
 }
 
+void LowEnergyConnector::StartOutbound(zx::duration request_timeout,
+                                       hci::LowEnergyConnector* connector,
+                                       fxl::WeakPtr<LowEnergyDiscoveryManager> discovery_manager,
+                                       ResultCallback cb) {
+  BT_ASSERT(*state_ == State::kDefault);
+  BT_ASSERT(discovery_manager);
+  BT_ASSERT(connector);
+  BT_ASSERT(request_timeout.get() != 0);
+  hci_connector_ = connector;
+  discovery_manager_ = std::move(discovery_manager);
+  hci_request_timeout_ = request_timeout;
+  result_cb_ = std::move(cb);
+  set_is_outbound(true);
+
+  if (options_.auto_connect) {
+    RequestCreateConnection();
+  } else {
+    StartScanningForPeer();
+  }
+}
+
+void LowEnergyConnector::StartInbound(std::unique_ptr<hci::LowEnergyConnection> connection,
+                                      ResultCallback cb) {
+  BT_ASSERT(*state_ == State::kDefault);
+  BT_ASSERT(connection);
+  // Connection address should resolve to same peer as the given peer ID.
+  Peer* conn_peer = peer_cache_->FindByAddress(connection->peer_address());
+  BT_ASSERT(conn_peer);
+  BT_ASSERT_MSG(peer_id_ == conn_peer->identifier(), "peer_id_ (%s) != connection peer (%s)",
+                bt_str(peer_id_), bt_str(conn_peer->identifier()));
+  result_cb_ = std::move(cb);
+  set_is_outbound(false);
+
+  if (!InitializeConnection(std::move(connection))) {
+    return;
+  }
+
+  StartInterrogation();
+}
+
 void LowEnergyConnector::Cancel() {
   bt_log(INFO, "gap-le", "canceling connector (peer: %s, state: %s)", bt_str(peer_id_),
          StateToString(*state_));
 
   switch (*state_) {
+    case State::kDefault:
+      // There is nothing to do if cancel is called before the procedure has started. There is no
+      // result callback to call yet.
+      break;
     case State::kStartingScanning:
       discovery_session_.reset();
       NotifyFailure(ToResult(HostError::kCanceled));
@@ -155,9 +146,6 @@ void LowEnergyConnector::Cancel() {
     case State::kFailed:
       // Cancelling completed/failed connector is a no-op.
       break;
-    case State::kIdle:
-      // It should not be possible to cancel during kIdle as the state is immediately changed.
-      BT_PANIC("Cancel called during kIdle");
   }
 }
 
@@ -167,14 +155,16 @@ void LowEnergyConnector::AttachInspect(inspect::Node& parent, std::string name) 
       inspect_node_.CreateString(kInspectPeerIdPropertyName, peer_id_.ToString());
   connection_attempt_.AttachInspect(inspect_node_, kInspectConnectionAttemptPropertyName);
   state_.AttachInspect(inspect_node_, kInspectStatePropertyName);
-  inspect_properties_.is_outbound =
-      inspect_node_.CreateBool(kInspectIsOutboundPropertyName, is_outbound_);
+  if (is_outbound_.has_value()) {
+    inspect_properties_.is_outbound =
+        inspect_node_.CreateBool(kInspectIsOutboundPropertyName, *is_outbound_);
+  }
 }
 
 const char* LowEnergyConnector::StateToString(State state) {
   switch (state) {
-    case State::kIdle:
-      return "Idle";
+    case State::kDefault:
+      return "Default";
     case State::kStartingScanning:
       return "StartingScanning";
     case State::kScanning:
@@ -264,7 +254,7 @@ void LowEnergyConnector::OnScanStart(LowEnergyDiscoverySessionPtr session) {
 void LowEnergyConnector::RequestCreateConnection() {
   // Scanning may be skipped. When the peer disconnects during/after interrogation, a retry may be
   // initiated by calling this method.
-  BT_ASSERT(*state_ == State::kIdle || *state_ == State::kScanning ||
+  BT_ASSERT(*state_ == State::kDefault || *state_ == State::kScanning ||
             *state_ == State::kPauseBeforeConnectionRetry);
 
   // Pause discovery until connection complete.
@@ -325,8 +315,8 @@ bool LowEnergyConnector::InitializeConnection(std::unique_ptr<hci::LowEnergyConn
 }
 
 void LowEnergyConnector::StartInterrogation() {
-  BT_ASSERT((is_outbound_ && *state_ == State::kConnecting) ||
-            (!is_outbound_ && *state_ == State::kIdle));
+  BT_ASSERT((*is_outbound_ && *state_ == State::kConnecting) ||
+            (!*is_outbound_ && *state_ == State::kDefault));
   BT_ASSERT(connection_);
 
   state_.Set(State::kInterrogating);
@@ -392,7 +382,7 @@ void LowEnergyConnector::OnPeerDisconnect(hci_spec::StatusCode status_code) {
 
 bool LowEnergyConnector::MaybeRetryConnection() {
   // Only retry outbound connections.
-  if (is_outbound_ && *connection_attempt_ < kMaxConnectionAttempts - 1) {
+  if (*is_outbound_ && *connection_attempt_ < kMaxConnectionAttempts - 1) {
     connection_.reset();
     state_.Set(State::kPauseBeforeConnectionRetry);
 
@@ -433,6 +423,12 @@ void LowEnergyConnector::NotifyFailure(hci::Result<> status) {
   if (result_cb_) {
     result_cb_(fit::error(status.take_error()));
   }
+}
+
+void LowEnergyConnector::set_is_outbound(bool is_outbound) {
+  is_outbound_ = is_outbound;
+  inspect_properties_.is_outbound =
+      inspect_node_.CreateBool(kInspectIsOutboundPropertyName, is_outbound);
 }
 
 }  // namespace bt::gap::internal

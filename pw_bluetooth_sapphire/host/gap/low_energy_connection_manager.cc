@@ -352,13 +352,16 @@ void LowEnergyConnectionManager::RegisterRemoteInitiatedLink(
   internal::LowEnergyConnectionRequest request(peer_id, std::move(callback), connection_options,
                                                peer->MutLe().RegisterInitializingConnection());
 
+  std::unique_ptr<internal::LowEnergyConnector> connector =
+      std::make_unique<internal::LowEnergyConnector>(peer_id, connection_options, hci_, peer_cache_,
+                                                     weak_ptr_factory_.GetWeakPtr(), l2cap_, gatt_);
+  auto [conn_iter, _] = remote_connectors_.emplace(
+      peer_id, RequestAndConnector{std::move(request), std::move(connector)});
+  // Wait until the connector is in the map to start in case the result callback is called
+  // synchronously.
   auto result_cb = std::bind(&LowEnergyConnectionManager::OnRemoteInitiatedConnectResult, this,
                              peer_id, std::placeholders::_1);
-  auto connector = internal::LowEnergyConnector::CreateInboundConnector(
-      peer_id, std::move(link), connection_options, hci_, peer_cache_,
-      weak_ptr_factory_.GetWeakPtr(), l2cap_, gatt_, result_cb);
-  remote_connectors_.emplace(peer_id,
-                             RequestAndConnector{std::move(request), std::move(connector)});
+  conn_iter->second.connector->StartInbound(std::move(link), std::move(result_cb));
 }
 
 void LowEnergyConnectionManager::SetPairingDelegate(fxl::WeakPtr<PairingDelegate> delegate) {
@@ -416,16 +419,18 @@ void LowEnergyConnectionManager::TryCreateNextConnection() {
       auto request_pair = pending_requests_.extract(peer_id);
       internal::LowEnergyConnectionRequest request = std::move(request_pair.mapped());
 
-      auto result_cb =
-          fit::bind_member<&LowEnergyConnectionManager::OnLocalInitiatedConnectResult>(this);
       std::unique_ptr<internal::LowEnergyConnector> connector =
-          internal::LowEnergyConnector::CreateOutboundConnector(
-              peer_id, request.connection_options(), hci_connector_, request_timeout_, hci_,
-              peer_cache_, discovery_manager_, weak_ptr_factory_.GetWeakPtr(), l2cap_, gatt_,
-              std::move(result_cb));
+          std::make_unique<internal::LowEnergyConnector>(
+              peer_id, request.connection_options(), hci_, peer_cache_,
+              weak_ptr_factory_.GetWeakPtr(), l2cap_, gatt_);
       connector->AttachInspect(inspect_node_, kInspectOutboundConnectorNodeName);
 
       current_request_ = RequestAndConnector{std::move(request), std::move(connector)};
+      // Wait until the connector is in current_request_ to start in case the result callback is
+      // called synchronously.
+      current_request_->connector->StartOutbound(
+          request_timeout_, hci_connector_, discovery_manager_,
+          fit::bind_member<&LowEnergyConnectionManager::OnLocalInitiatedConnectResult>(this));
       return;
     }
 
