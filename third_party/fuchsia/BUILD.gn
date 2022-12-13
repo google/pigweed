@@ -35,7 +35,10 @@ config("stdcompat_public_include_path") {
 
 pw_source_set("fit") {
   public_configs = [ ":fit_public_include_path" ]
-  public_deps = [ ":stdcompat" ]
+  public_deps = [
+    ":stdcompat",
+    dir_pw_assert,
+  ]
   public = [
     "repo/sdk/lib/fit/include/lib/fit/function.h",
     "repo/sdk/lib/fit/include/lib/fit/nullable.h",

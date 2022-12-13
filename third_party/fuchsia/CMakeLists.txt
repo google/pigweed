@@ -28,6 +28,7 @@ pw_add_library(pw_third_party.fuchsia.fit INTERFACE
     repo/sdk/lib/fit/include
   PUBLIC_DEPS
     pw_third_party.fuchsia.stdcompat
+    pw_assert.assert
 )
 
 pw_add_library(pw_third_party.fuchsia.stdcompat INTERFACE

@@ -44,6 +44,7 @@ pw_cc_library(
     includes = ["repo/sdk/lib/fit/include"],
     deps = [
         ":stdcompat",
+        "//pw_assert",
     ],
 )
 
