@@ -104,6 +104,7 @@ pw_cc_test(
         "//pw_compilation_testing:negative_compilation_testing",
         "//pw_preprocessor",
         "//pw_span",
+        "//pw_status",
         "//pw_string",
         "//pw_unit_test",
     ],
@@ -117,6 +118,7 @@ pw_cc_test(
     ],
     deps = [
         "//pw_assert",
+        "//pw_status",
         "//pw_unit_test",
     ],
 )

@@ -181,7 +181,10 @@ group("impl") {
 pw_test("assert_test") {
   configs = [ ":public_include_path" ]
   sources = [ "assert_test.cc" ]
-  deps = [ ":pw_assert" ]
+  deps = [
+    ":pw_assert",
+    dir_pw_status,
+  ]
 }
 
 pw_test_group("tests") {
