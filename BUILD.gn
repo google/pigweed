@@ -439,6 +439,7 @@ if (current_toolchain != default_toolchain) {
     deps = [
       "$dir_pw_checksum:perf_tests",
       "$dir_pw_perf_test:perf_test_tests_test",
+      "$dir_pw_protobuf:perf_tests",
     ]
   }
 

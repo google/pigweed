@@ -16,6 +16,7 @@ load("@rules_proto//proto:defs.bzl", "proto_library")
 load(
     "//pw_build:pigweed.bzl",
     "pw_cc_library",
+    "pw_cc_perf_test",
     "pw_cc_test",
 )
 load("//pw_fuzzer:fuzzer.bzl", "pw_cc_fuzz_test")
@@ -170,6 +171,15 @@ pw_cc_test(
 pw_cc_test(
     name = "message_test",
     srcs = ["message_test.cc"],
+    deps = [
+        ":pw_protobuf",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_perf_test(
+    name = "encoder_perf_test",
+    srcs = ["encoder_perf_test.cc"],
     deps = [
         ":pw_protobuf",
         "//pw_unit_test",
