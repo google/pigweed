@@ -65,8 +65,6 @@ pw_test("trace_facade_test") {
   configs = [ ":default_config" ]
   sources = [ "trace_facade_test.cc" ]
   public = [
-    "public/pw_trace/internal/trace_internal.h",
-    "public/pw_trace/trace.h",
     "pw_trace_test/fake_backend.h",
     "pw_trace_test/public_overrides/pw_trace_backend/trace_backend.h",
   ]
@@ -74,6 +72,7 @@ pw_test("trace_facade_test") {
     "pw_trace_test",
     "pw_trace_test/public_overrides",
   ]
+  deps = [ ":pw_trace" ]
 }
 
 pw_test("trace_backend_compile_test") {
