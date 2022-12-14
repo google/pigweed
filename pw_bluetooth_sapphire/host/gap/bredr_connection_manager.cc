@@ -459,14 +459,14 @@ void BrEdrConnectionManager::WritePageTimeout(zx::duration page_timeout, hci::Re
   BT_ASSERT(page_timeout <= hci_spec::kMaxPageTimeoutDuration);
 
   const int64_t raw_page_timeout = page_timeout / hci_spec::kDurationPerPageTimeoutUnit;
-  BT_ASSERT(raw_page_timeout >= hci_spec::kMinPageTimeoutCommandParameterValue);
-  BT_ASSERT(raw_page_timeout <= hci_spec::kMaxPageTimeoutCommandParameterValue);
+  BT_ASSERT(raw_page_timeout >= static_cast<uint16_t>(hci_spec::PageTimeout::MIN));
+  BT_ASSERT(raw_page_timeout <= static_cast<uint16_t>(hci_spec::PageTimeout::MAX));
 
-  auto write_page_timeout_cmd = hci::CommandPacket::New(
-      hci_spec::kWritePageTimeout, sizeof(hci_spec::WritePageTimeoutCommandParams));
-  auto& params =
-      *write_page_timeout_cmd->mutable_payload<hci_spec::WritePageTimeoutCommandParams>();
-  params.page_timeout = static_cast<uint16_t>(raw_page_timeout);
+  auto write_page_timeout_cmd =
+      hci::EmbossCommandPacket::New<hci_spec::WritePageTimeoutCommandWriter>(
+          hci_spec::kWritePageTimeout);
+  auto params = write_page_timeout_cmd.view_t();
+  params.page_timeout().Write(raw_page_timeout);
 
   hci_->command_channel()->SendCommand(
       std::move(write_page_timeout_cmd),

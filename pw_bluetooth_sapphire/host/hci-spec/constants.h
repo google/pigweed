@@ -13,6 +13,7 @@
 
 #include "lib/zx/time.h"
 
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/hci-protocol.emb.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 
 // This file contains constants and numbers used in HCI packet payloads.
@@ -1487,13 +1488,10 @@ constexpr zx::duration kMaxAutomaticFlushTimeoutDuration = zx::msec(static_cast<
 
 // Page Timeout = N * 0.625 ms (Core Spec v5.2, Vol 4, Part E, Sec 7.3.16).
 // The default is 5.12 sec.
-constexpr uint16_t kMinPageTimeoutCommandParameterValue = 0x0001;
-constexpr uint16_t kDefaultPageTimeoutCommandParameterValue = 0x2000;
-constexpr uint16_t kMaxPageTimeoutCommandParameterValue = 0xFFFF;
 constexpr zx::duration kDurationPerPageTimeoutUnit = zx::usec(625);
-constexpr zx::duration kMinPageTimeoutDuration = kDurationPerPageTimeoutUnit * kMinPageTimeoutCommandParameterValue;
-constexpr zx::duration kDefaultPageTimeoutDuration = kDurationPerPageTimeoutUnit * kDefaultPageTimeoutCommandParameterValue;
-constexpr zx::duration kMaxPageTimeoutDuration = kDurationPerPageTimeoutUnit * kMaxPageTimeoutCommandParameterValue;
+constexpr zx::duration kMinPageTimeoutDuration = kDurationPerPageTimeoutUnit * static_cast<uint16_t>(hci_spec::PageTimeout::MIN);
+constexpr zx::duration kDefaultPageTimeoutDuration = kDurationPerPageTimeoutUnit * static_cast<uint16_t>(hci_spec::PageTimeout::DEFAULT);
+constexpr zx::duration kMaxPageTimeoutDuration = kDurationPerPageTimeoutUnit * static_cast<uint16_t>(hci_spec::PageTimeout::MAX);
 
 }  // namespace bt::hci_spec
 

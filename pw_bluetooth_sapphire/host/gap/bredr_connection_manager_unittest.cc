@@ -587,7 +587,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
     // Respond to BrEdrConnectionManager controller setup with success.
     EXPECT_CMD_PACKET_OUT(
         test_device(),
-        testing::WritePageTimeoutPacket(hci_spec::kDefaultPageTimeoutCommandParameterValue),
+        testing::WritePageTimeoutPacket(static_cast<uint16_t>(hci_spec::PageTimeout::DEFAULT)),
         &kWritePageTimeoutRsp);
 
     connection_manager_ = std::make_unique<BrEdrConnectionManager>(

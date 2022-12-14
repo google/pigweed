@@ -196,7 +196,7 @@ class BrEdrConnectionManager final {
   bool ExistsIncomingRequest(PeerId id);
 
   // Writes page timeout duration to the controller.
-  // |page_timeout| must be in the range [kMinPageTimeoutDuration, kMaxPageTimeoutDuration]
+  // |page_timeout| must be in the range [PageTimeout::MIN (0x0001), PageTimeout::MAX (0xFFFF)]
   // |cb| will be called with the resulting return parameter status.
   void WritePageTimeout(zx::duration page_timeout, hci::ResultFunction<> cb);
 
