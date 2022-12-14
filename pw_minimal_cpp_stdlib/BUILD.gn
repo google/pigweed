@@ -93,6 +93,7 @@ pw_source_set("minimal_cpp_stdlib_isolated_test") {
   configs = [ ":no_cpp_includes" ]
   deps = [
     ":pw_minimal_cpp_stdlib",
+    dir_pw_polyfill,
     dir_pw_preprocessor,
   ]
   sources = [ "isolated_test.cc" ]
@@ -105,6 +106,10 @@ pw_test("minimal_cpp_stdlib_test") {
 }
 
 pw_test("standard_library_test") {
+  deps = [
+    dir_pw_polyfill,
+    dir_pw_preprocessor,
+  ]
   sources = [
     "isolated_test.cc",
     "test.cc",

@@ -76,6 +76,7 @@ pw_cc_library(
     tags = ["manual"],  # TODO(b/257529911): Fix build failures.
     deps = [
         ":pw_minimal_cpp_stdlib",
+        "//pw_polyfill",
         "//pw_preprocessor",
     ],
 )
