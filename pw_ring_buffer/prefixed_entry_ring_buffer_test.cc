@@ -16,6 +16,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 
 #include "gtest/gtest.h"
 #include "pw_assert/check.h"
