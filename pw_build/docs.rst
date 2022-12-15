@@ -866,6 +866,14 @@ work with, since their values only change when they're assigned, but then
 persist accross CMake invocations. These variables should be set in one of the
 following ways:
 
+* Prior to setting a backend, your application should include
+  ``$ENV{PW_ROOT}/backends.cmake``. This file will setup all the backend targets
+  such that any misspelling of a facade or backend will yield a warning.
+
+  .. note::
+    Zephyr developers do not need to do this, backends can be set automatically
+    by enabling the appropriate Kconfig options.
+
 * Call ``pw_set_backend`` to set backends appropriate for the target in the
   target's toolchain file. The toolchain file is provided to ``cmake`` with
   ``-DCMAKE_TOOLCHAIN_FILE=<toolchain file>``.

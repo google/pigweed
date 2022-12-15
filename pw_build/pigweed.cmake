@@ -725,14 +725,15 @@ function(pw_set_backend NAME BACKEND)
   set("${NAME}" "${BACKEND}" CACHE STRING "backend variable for a facade" FORCE)
 endfunction(pw_set_backend)
 
-# Zephyr specific wrapper for pw_set_backend, selects the default zephyr backend based on a Kconfig while
-# still allowing the application to set the backend if they choose to
-function(pw_set_zephyr_backend_ifdef COND FACADE BACKEND)
-  get_property(result CACHE "${FACADE}_BACKEND" PROPERTY TYPE)
+# Zephyr specific wrapper for pw_set_backend.
+function(pw_set_zephyr_backend_ifdef COND FACADE BACKEND BACKEND_DECL)
   if(${${COND}})
-    if("${result}" STREQUAL "")
-      pw_set_backend("${FACADE}" "${BACKEND}")
+    if(NOT EXISTS "${BACKEND_DECL}")
+      message(FATAL_ERROR
+          "Can't find backend declaration file '${BACKEND_DECL}'")
     endif()
+    include("${BACKEND_DECL}")
+    pw_set_backend("${FACADE}" "${BACKEND}")
   endif()
 endfunction()
 
