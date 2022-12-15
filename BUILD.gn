@@ -102,7 +102,7 @@ assert(get_path_info("//", "abspath") == get_path_info(".", "abspath"),
        "Pigweed's top-level BUILD.gn may only be used when building upstream " +
            "Pigweed. To pull all Pigweed code into your build, import " +
            "\$dir_pigweed/modules.gni and create a top-level pw_test_group " +
-           "that depends on the tests in pw_modules_tests. See " +
+           "that depends on the tests in pw_module_tests. See " +
            "https://pigweed.dev/build_system.html for details.")
 
 _update_or_check_modules_lists = {
