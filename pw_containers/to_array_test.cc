@@ -14,6 +14,8 @@
 
 #include "pw_containers/to_array.h"
 
+#include <cstring>
+
 #include "gtest/gtest.h"
 
 namespace pw {
