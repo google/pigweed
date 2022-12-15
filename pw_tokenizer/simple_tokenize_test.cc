@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstring>
 
 #include "gtest/gtest.h"
 #include "pw_tokenizer/tokenize.h"
