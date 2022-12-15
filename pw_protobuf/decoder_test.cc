@@ -14,6 +14,8 @@
 
 #include "pw_protobuf/decoder.h"
 
+#include <cstring>
+
 #include "gtest/gtest.h"
 #include "pw_preprocessor/util.h"
 
