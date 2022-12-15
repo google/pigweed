@@ -185,7 +185,6 @@ abstract class Transfer<T> {
 
   final void handleTimeoutIfDeadlineExceeded() {
     if (Instant.now().isAfter(deadline)) {
-      logger.atFinest().log("%s timed out since the deadline %s has passed", this, deadline);
       try {
         state.handleTimeout();
       } catch (TransferAbortedException e) {
