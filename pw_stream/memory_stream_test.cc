@@ -14,6 +14,8 @@
 
 #include "pw_stream/memory_stream.h"
 
+#include <cstring>
+
 #include "gtest/gtest.h"
 #include "pw_preprocessor/compiler.h"
 
