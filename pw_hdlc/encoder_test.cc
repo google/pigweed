@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstring>
 
 #include "gtest/gtest.h"
 #include "pw_bytes/array.h"
