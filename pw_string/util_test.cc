@@ -14,6 +14,8 @@
 
 #include "pw_string/util.h"
 
+#include <cstring>
+
 #include "gtest/gtest.h"
 
 namespace pw::string {
