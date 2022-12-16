@@ -34,6 +34,9 @@ abstract class Transfer<T> {
   // Largest nanosecond instant. Used to block indefinitely when no transfers are pending.
   static final Instant NO_TIMEOUT = Instant.ofEpochSecond(0, Long.MAX_VALUE);
 
+  // Whether to output some particularly noisy logs.
+  static final boolean VERBOSE_LOGGING = false;
+
   private final int resourceId;
   private final ProtocolVersion desiredProtocolVersion;
   private final TransferEventHandler.TransferInterface eventHandler;
@@ -277,7 +280,9 @@ abstract class Transfer<T> {
     }
 
     try {
-      logger.atFinest().log("%s sending %s", this, chunk);
+      if (VERBOSE_LOGGING) {
+        logger.atFinest().log("%s sending %s", this, chunk);
+      }
       eventHandler.sendChunk(chunk.toMessage());
     } catch (TransferError transferError) {
       changeState(new Completed(transferError));
@@ -305,7 +310,7 @@ abstract class Transfer<T> {
     long durationNanos = Duration.between(startTime, Instant.now()).toNanos();
     long totalRate = durationNanos == 0 ? 0 : (bytesSent * 1_000_000_000 / durationNanos);
 
-    logger.atFine().log("%s progress: "
+    logger.atFiner().log("%s progress: "
             + "%5.1f%% (%d B sent, %d B confirmed received of %s B total) at %d B/s",
         this,
         progress.percentReceived(),

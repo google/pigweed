@@ -90,12 +90,14 @@ class WriteTransfer extends Transfer<Void> {
       ByteString chunkData = ByteString.copyFrom(
           data, sentOffset, min(windowEndOffset - sentOffset, maxChunkSizeBytes));
 
-      logger.atFiner().log("%s sending bytes %d-%d (%d B chunk, max size %d B)",
-          WriteTransfer.this,
-          sentOffset,
-          sentOffset + chunkData.size() - 1,
-          chunkData.size(),
-          maxChunkSizeBytes);
+      if (VERBOSE_LOGGING) {
+        logger.atFinest().log("%s sending bytes %d-%d (%d B chunk, max size %d B)",
+            WriteTransfer.this,
+            sentOffset,
+            sentOffset + chunkData.size() - 1,
+            chunkData.size(),
+            maxChunkSizeBytes);
+      }
 
       sendChunk(buildDataChunk(chunkData));
 

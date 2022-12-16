@@ -138,7 +138,7 @@ class ReadTransfer extends Transfer<byte[]> {
           remainingWindowSize <= parameters.maxPendingBytes() / EXTEND_WINDOW_DIVISOR;
 
       if (remainingWindowSize == 0) {
-        logger.atFiner().log(
+        logger.atFinest().log(
             "%s received all pending bytes; sending transfer parameters update", ReadTransfer.this);
         sendChunk(prepareTransferParameters(/*extend=*/false));
       } else if (extendWindow) {
