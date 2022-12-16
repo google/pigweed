@@ -560,7 +560,7 @@ class FakeController final : public ControllerTestDoubleBase {
   void OnReadLocalName();
 
   // Called when a HCI_Write_Local_Name command is received.
-  void OnWriteLocalName(const hci_spec::WriteLocalNameCommandParams& params);
+  void OnWriteLocalName(hci_spec::WriteLocalNameCommandView params);
 
   // Called when a HCI_Create_Connection_Cancel command is received.
   void OnCreateConnectionCancel();

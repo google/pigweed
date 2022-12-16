@@ -1165,15 +1165,17 @@ void FakeController::OnReadLocalName() {
   RespondWithCommandComplete(hci_spec::kReadLocalName, BufferView(&params, sizeof(params)));
 }
 
-void FakeController::OnWriteLocalName(const hci_spec::WriteLocalNameCommandParams& params) {
+void FakeController::OnWriteLocalName(hci_spec::WriteLocalNameCommandView params) {
   std::size_t name_len = 0;
 
+  auto local_name = params.local_name().BackingStorage().data();
+
   for (; name_len < hci_spec::kMaxNameLength; ++name_len) {
-    if (params.local_name[name_len] == '\0') {
+    if (local_name[name_len] == '\0') {
       break;
     }
   }
-  local_name_ = std::string(params.local_name, params.local_name + name_len);
+  local_name_ = std::string(local_name, local_name + name_len);
   NotifyControllerParametersChanged();
   RespondWithCommandComplete(hci_spec::kWriteLocalName, hci_spec::StatusCode::SUCCESS);
 }
@@ -2839,11 +2841,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnCreateConnectionCancel();
       break;
     }
-    case hci_spec::kWriteLocalName: {
-      const auto& params = command_packet.payload<hci_spec::WriteLocalNameCommandParams>();
-      OnWriteLocalName(params);
-      break;
-    }
     case hci_spec::kReadLocalName: {
       OnReadLocalName();
       break;
@@ -3014,7 +3011,8 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kReadRemoteExtendedFeatures:
     case hci_spec::kReadRemoteVersionInfo:
     case hci_spec::kIOCapabilityRequestReply:
-    case hci_spec::kSetEventMask: {
+    case hci_spec::kSetEventMask:
+    case hci_spec::kWriteLocalName: {
       // This case is for packet types that have been migrated to the new Emboss architecture. Their
       // old version can be still be assembled from the HciEmulator channel, so here we repackage
       // and forward them as Emboss packets.
@@ -3124,6 +3122,11 @@ void FakeController::HandleReceivedCommandPacket(hci::EmbossCommandPacket& comma
     case hci_spec::kSetEventMask: {
       const auto params = command_packet.view<hci_spec::SetEventMaskCommandView>();
       OnSetEventMask(params);
+      break;
+    }
+    case hci_spec::kWriteLocalName: {
+      const auto params = command_packet.view<hci_spec::WriteLocalNameCommandView>();
+      OnWriteLocalName(params);
       break;
     }
     default: {

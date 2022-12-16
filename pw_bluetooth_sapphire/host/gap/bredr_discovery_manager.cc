@@ -10,10 +10,12 @@
 #include <lib/stdcompat/functional.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/supplement_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/emboss_control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
 namespace bt::gap {
@@ -310,18 +312,19 @@ void BrEdrDiscoveryManager::UpdateEIRResponseData(std::string name,
 }
 
 void BrEdrDiscoveryManager::UpdateLocalName(std::string name, hci::ResultFunction<> callback) {
-  size_t name_size = name.size();
-  if (name.size() >= hci_spec::kMaxNameLength) {
-    name_size = hci_spec::kMaxNameLength;
-  }
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto write_name = hci::CommandPacket::New(hci_spec::kWriteLocalName,
-                                            sizeof(hci_spec::WriteLocalNameCommandParams));
-  auto name_buf = MutableBufferView(
-      write_name->mutable_payload<hci_spec::WriteLocalNameCommandParams>()->local_name,
-      hci_spec::kMaxNameLength);
-  name_buf.Fill(0);
-  name_buf.Write(reinterpret_cast<const uint8_t*>(name.data()), name_size);
+
+  auto write_name = hci::EmbossCommandPacket::New<hci_spec::WriteLocalNameCommandWriter>(
+      hci_spec::kWriteLocalName);
+  auto write_name_view = write_name.view_t();
+  auto local_name = write_name_view.local_name().BackingStorage();
+  size_t name_size = std::min(name.size(), hci_spec::kMaxNameLength);
+
+  // Use ContiguousBuffer instead of constructing LocalName view in case of invalid view being
+  // created when name is not large enough for the view
+  auto name_buf = emboss::support::ReadOnlyContiguousBuffer(&name);
+
+  local_name.CopyFrom(name_buf, name_size);
   hci_->command_channel()->SendCommand(
       std::move(write_name), [self, name = std::move(name), cb = std::move(callback)](
                                  auto, const hci::EventPacket& event) mutable {

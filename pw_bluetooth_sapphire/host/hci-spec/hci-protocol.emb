@@ -661,6 +661,23 @@ struct SetEventMaskCommand:
     -- Host. See enum class EventMask in hci_constants.h
 
 
+struct LocalName:
+  0     [+248] UInt:8[248] local_name
+
+
+struct WriteLocalNameCommand:
+  -- Write Local Name Command (v1.1) (BR/EDR)
+  let hdr_size = EmbossCommandHeader.$size_in_bytes
+  0     [+hdr_size]                 EmbossCommandHeader            header
+
+  let local_name_size = LocalName.$size_in_bytes
+  $next [+local_name_size]          LocalName                      local_name
+    -- A UTF-8 encoded User Friendly Descriptive Name for the device.
+    -- If the name contained in the parameter is shorter than 248 octets, the end
+    -- of the name is indicated by a NULL octet (0x00), and the following octets
+    -- (to fill up 248 octets, which is the length of the parameter) do not have
+    -- valid values.
+
 
 struct WritePageTimeoutCommand:
   -- Write Page Timeout Command (v1.1) (BR/EDR)
