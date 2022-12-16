@@ -129,6 +129,14 @@ The ``luci`` member is of type ``LuciContext`` and has the following members:
   with ``ci`` or ``try``)
 * ``builder``: The builder being run
 * ``swarming_task_id``: The swarming task id of this build
+* ``pipeline``: Information about the build pipeline, if applicable.
+
+The ``pipeline`` member is of type ``LuciPipeline`` and has the following
+members:
+
+* ``round``: The zero-indexed round number.
+* ``builds_from_previous_iteration``: A list of the buildbucket ids from the
+  previous round, if any.
 
 Additional members can be added by subclassing ``PresubmitContext`` and
 ``Presubmit``. Then override ``Presubmit._create_presubmit_context()`` to

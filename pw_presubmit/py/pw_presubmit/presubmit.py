@@ -51,11 +51,13 @@ import logging
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import time
 import types
 from typing import (
+    Any,
     Callable,
     Collection,
     Dict,
@@ -209,6 +211,22 @@ class Programs(collections.abc.Mapping):
 
 
 @dataclasses.dataclass
+class LuciPipeline:
+    round: int
+    builds_from_previous_iteration: Sequence[int]
+
+
+def get_buildbucket_info(bbid) -> Dict[str, Any]:
+    if not shutil.which('bb'):
+        return {}
+
+    output = subprocess.check_output(
+        ['bb', 'get', '-json', '-p', f'{bbid}'], text=True
+    )
+    return json.loads(output)
+
+
+@dataclasses.dataclass
 class LuciContext:
     """LUCI-specific information about the environment."""
 
@@ -218,9 +236,11 @@ class LuciContext:
     bucket: str
     builder: str
     swarming_task_id: str
+    pipeline: Optional[LuciPipeline]
 
     @staticmethod
     def create_from_environment():
+        """Create a LuciContext from the environment."""
         luci_vars = [
             'BUILDBUCKET_ID',
             'BUILDBUCKET_NAME',
@@ -233,8 +253,27 @@ class LuciContext:
         project, bucket, builder = os.environ['BUILDBUCKET_NAME'].split(':')
 
         bbid: int = 0
+        pipeline: Optional[LuciPipeline] = None
         try:
             bbid = int(os.environ['BUILDBUCKET_ID'])
+
+            pipeline_props = (
+                get_buildbucket_info(bbid)
+                .get('input', {})
+                .get('properties', {})
+                .get('$pigweed/pipeline', {})
+            )
+            if pipeline_props.get('inside_a_pipeline', False):
+                pipeline = LuciPipeline(
+                    round=int(pipeline_props['round']),
+                    builds_from_previous_iteration=[
+                        int(x)
+                        for x in pipeline_props[
+                            'builds_from_previous_iteration'
+                        ]
+                    ],
+                )
+
         except ValueError:
             pass
 
@@ -245,6 +284,7 @@ class LuciContext:
             bucket=bucket,
             builder=builder,
             swarming_task_id=os.environ['SWARMING_TASK_ID'],
+            pipeline=pipeline,
         )
 
 
