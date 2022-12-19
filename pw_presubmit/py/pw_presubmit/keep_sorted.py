@@ -134,27 +134,29 @@ class _FileSorter:
         raw_lines: List[str] = block.lines
         lines: List[_Line] = []
 
-        if block.sticky_comments:
-            comments: List[str] = []
-            for raw_line in raw_lines:
-                if raw_line.lstrip().startswith(block.sticky_comments):
-                    _LOG.debug('found sticky %s', raw_line.strip())
-                    comments.append(raw_line)
-                else:
-                    _LOG.debug('non-sticky %s', raw_line.strip())
-                    line = _Line(raw_line, tuple(comments))
-                    _LOG.debug('line %s', line)
-                    lines.append(line)
-                    comments = []
-            if comments:
-                self.ctx.fail(
-                    f'sticky comment at end of block: {comments[0].strip()}',
-                    self.path,
-                    block.start_line_number,
-                )
-
-        else:
-            lines = [_Line(x) for x in block.lines]
+        comments: List[str] = []
+        for raw_line in raw_lines:
+            # A "sticky" comment is a comment in the middle of a list of
+            # non-comments. The keep-sorted check keeps this comment with the
+            # following item in the list. For more details see
+            # https://pigweed.dev/pw_presubmit/#sorted-blocks.
+            if block.sticky_comments and raw_line.lstrip().startswith(
+                block.sticky_comments
+            ):
+                _LOG.debug('found sticky %s', raw_line.strip())
+                comments.append(raw_line)
+            else:
+                _LOG.debug('non-sticky %s', raw_line.strip())
+                line = _Line(raw_line, tuple(comments))
+                _LOG.debug('line %s', line)
+                lines.append(line)
+                comments = []
+        if comments:
+            self.ctx.fail(
+                f'sticky comment at end of block: {comments[0].strip()}',
+                self.path,
+                block.start_line_number,
+            )
 
         if not block.allow_dupes:
             lines = list({x.full: x for x in lines}.values())
