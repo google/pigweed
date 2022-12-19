@@ -50,6 +50,7 @@ source_set("common") {
     "uint256.h",
     "uuid.cc",
     "uuid.h",
+    "weak_self.h",
     "windowed_inspect_numeric_property.h",
   ]
 
@@ -94,6 +95,7 @@ source_set("tests") {
     "slab_allocator_unittest.cc",
     "supplement_data_unittest.cc",
     "uuid_unittest.cc",
+    "weak_self_unittest.cc",
     "windowed_inspect_numeric_property_unittest.cc",
   ]
 
