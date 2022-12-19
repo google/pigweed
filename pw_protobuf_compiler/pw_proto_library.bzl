@@ -326,7 +326,7 @@ def _proto_compiler_aspect_impl(target, ctx):
     args.add_joined(
         "--descriptor_set_in",
         target[ProtoInfo].transitive_descriptor_sets,
-        join_with = ctx.host_configuration.host_path_separator,
+        join_with = ctx.configuration.host_path_separator,
         map_each = _get_path,
     )
 
