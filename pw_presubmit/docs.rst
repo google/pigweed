@@ -212,6 +212,19 @@ By default, the prefix of the keep-sorted line is assumed to be the comment
 marker used by any inline comments. This can be overridden by adding lines like
 ``sticky-comments=%,#`` to the start line.
 
+Lines indented more than the preceding line are assumed to be continuations.
+Thus, the following block is already sorted. keep-sorted blocks can not be
+nested, so there's no ability to add a keep-sorted block for the sub-items.
+
+.. code-block::
+
+  # keep-sorted: start
+  * abc
+    * xyz
+    * uvw
+  * def
+  # keep-sorted: end
+
 The presubmit check will suggest fixes using ``pw keep-sorted --fix``.
 
 Future versions may support additional multiline list items.

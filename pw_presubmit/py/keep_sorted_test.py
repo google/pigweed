@@ -16,6 +16,7 @@
 
 from pathlib import Path
 import tempfile
+import textwrap
 import unittest
 from unittest.mock import MagicMock
 
@@ -252,6 +253,95 @@ class TestKeepSorted(unittest.TestCase):
             self.contents,
             f'# {START} sticky-comments=%\n# B\n% A\n1\n2\n# {END}\n',
         )
+
+    def test_continuation_sorted(self) -> None:
+        initial = textwrap.dedent(
+            f"""
+            # {START}
+            baz
+             abc
+            foo
+              bar
+            # {END}
+            """.lstrip(
+                '\n'
+            )
+        )
+
+        self._run(initial)
+        self.ctx.fail.assert_not_called()
+
+    def test_continuation_not_sorted(self) -> None:
+        initial = textwrap.dedent(
+            f"""
+            # {START}
+            foo
+              bar
+            baz
+             abc
+            # {END}
+            """.lstrip(
+                '\n'
+            )
+        )
+
+        expected = textwrap.dedent(
+            f"""
+            # {START}
+            baz
+             abc
+            foo
+              bar
+            # {END}
+            """.lstrip(
+                '\n'
+            )
+        )
+
+        self._run(initial)
+        self.ctx.fail.assert_called()
+        self.assertEqual(self.contents, expected)
+
+    def test_indented_continuation_sorted(self) -> None:
+        # Intentionally not using textwrap.dedent().
+        initial = f"""
+        # {START}
+        baz
+         abc
+        foo
+          bar
+        # {END}""".lstrip(
+            '\n'
+        )
+
+        self._run(initial)
+        self.ctx.fail.assert_not_called()
+
+    def test_indented_continuation_not_sorted(self) -> None:
+        # Intentionally not using textwrap.dedent().
+        initial = f"""
+        # {START}
+        foo
+          bar
+        baz
+         abc
+        # {END}""".lstrip(
+            '\n'
+        )
+
+        expected = f"""
+        # {START}
+        baz
+         abc
+        foo
+          bar
+        # {END}""".lstrip(
+            '\n'
+        )
+
+        self._run(initial)
+        self.ctx.fail.assert_called()
+        self.assertEqual(self.contents, expected)
 
 
 if __name__ == '__main__':

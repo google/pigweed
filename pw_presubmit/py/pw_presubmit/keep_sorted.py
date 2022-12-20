@@ -94,17 +94,18 @@ class KeepSortedParsingError(presubmit.PresubmitFailure):
 class _Line:
     value: str = ''
     sticky_comments: Sequence[str] = ()
+    continuations: Sequence[str] = ()
 
     @property
     def full(self):
-        return ''.join((*self.sticky_comments, self.value))
+        return ''.join((*self.sticky_comments, self.value, *self.continuations))
 
     def __lt__(self, other):
         if not isinstance(other, _Line):
             return NotImplemented
-        if self.value != other.value:
-            return self.value < other.value
-        return self.sticky_comments < other.sticky_comments
+        left = (self.value, self.continuations, self.sticky_comments)
+        right = (other.value, other.continuations, other.sticky_comments)
+        return left < right
 
 
 @dataclasses.dataclass
@@ -134,8 +135,14 @@ class _FileSorter:
         raw_lines: List[str] = block.lines
         lines: List[_Line] = []
 
+        prefix = lambda x: len(x) - len(x.lstrip())
+
+        prev_prefix: Optional[int] = None
         comments: List[str] = []
         for raw_line in raw_lines:
+            curr_prefix: int = prefix(raw_line)
+            _LOG.debug('prev_prefix %r', prev_prefix)
+            _LOG.debug('curr_prefix %r', curr_prefix)
             # A "sticky" comment is a comment in the middle of a list of
             # non-comments. The keep-sorted check keeps this comment with the
             # following item in the list. For more details see
@@ -143,14 +150,19 @@ class _FileSorter:
             if block.sticky_comments and raw_line.lstrip().startswith(
                 block.sticky_comments
             ):
-                _LOG.debug('found sticky %s', raw_line.strip())
+                _LOG.debug('found sticky %r', raw_line)
                 comments.append(raw_line)
+            elif prev_prefix is not None and curr_prefix > prev_prefix:
+                _LOG.debug('found continuation %r', raw_line)
+                lines[-1].continuations = (*lines[-1].continuations, raw_line)
+                _LOG.debug('modified line %s', lines[-1])
             else:
-                _LOG.debug('non-sticky %s', raw_line.strip())
+                _LOG.debug('non-sticky %r', raw_line)
                 line = _Line(raw_line, tuple(comments))
                 _LOG.debug('line %s', line)
                 lines.append(line)
                 comments = []
+                prev_prefix = curr_prefix
         if comments:
             self.ctx.fail(
                 f'sticky comment at end of block: {comments[0].strip()}',
@@ -194,6 +206,7 @@ class _FileSorter:
         for line in sorted_lines:
             raw_sorted_lines.extend(line.sticky_comments)
             raw_sorted_lines.append(line.value)
+            raw_sorted_lines.extend(line.continuations)
 
         if block.lines != raw_sorted_lines:
             self.changed = True
