@@ -39,6 +39,7 @@ from typing import (
     NamedTuple,
     Optional,
     Pattern,
+    TextIO,
     Tuple,
     Union,
 )
@@ -108,7 +109,7 @@ def colorize_diff(lines: Iterable[str]) -> str:
 
 
 def _diff(path, original: bytes, formatted: bytes) -> str:
-    return colorize_diff(
+    return ''.join(
         difflib.unified_diff(
             original.decode(errors='replace').splitlines(True),
             formatted.decode(errors='replace').splitlines(True),
@@ -262,9 +263,9 @@ def check_py_format_yapf(ctx: _Context) -> Dict[Path, str]:
 
         matches = tuple(_DIFF_START.finditer(raw_diff))
         for start, end in zip(matches, (*matches[1:], None)):
-            errors[Path(start.group(1))] = colorize_diff(
-                raw_diff[start.start() : end.start() if end else None]
-            )
+            errors[Path(start.group(1))] = raw_diff[
+                start.start() : end.start() if end else None
+            ]
 
     if process.stderr:
         _LOG.error(
@@ -389,18 +390,30 @@ def fix_trailing_space(ctx: _Context) -> Dict[Path, str]:
 
 
 def print_format_check(
-    errors: Dict[Path, str], show_fix_commands: bool
+    errors: Dict[Path, str],
+    show_fix_commands: bool,
+    show_summary: bool = True,
+    colors: Optional[bool] = None,
+    file: TextIO = sys.stdout,
 ) -> None:
     """Prints and returns the result of a check_*_format function."""
     if not errors:
         # Don't print anything in the all-good case.
         return
+
+    if colors is None:
+        colors = file == sys.stdout
+
     # Show the format fixing diff suggested by the tooling (with colors).
-    _LOG.warning(
-        'Found %d files with formatting errors. Format changes:', len(errors)
-    )
+    if show_summary:
+        _LOG.warning(
+            'Found %d files with formatting errors. Format changes:',
+            len(errors),
+        )
     for diff in errors.values():
-        print(diff, end='')
+        if colors:
+            diff = colorize_diff(diff)
+        print(diff, end='', file=file)
 
     # Show a copy-and-pastable command to fix the issues.
     if show_fix_commands:
@@ -591,23 +604,13 @@ def presubmit_check(
             return
 
         with failure_summary_log.open('w') as outs:
-            failure = next(iter(errors.values()))
-            seen_atat = False
-            dotdotdot = len(errors) > 1
-            maxlines = 20
-            for i, line in enumerate(failure.splitlines()):
-                line = re.sub(r'\x1b\[[;\d]+m', '', line)
-                if i > maxlines:
-                    dotdotdot = True
-                    break
-                if seen_atat and line.startswith('@@'):
-                    dotdotdot = True
-                    break
-                if line.startswith('@@'):
-                    seen_atat = True
-                print(line, file=outs)
-            if dotdotdot:
-                print('...', file=outs)
+            print_format_check(
+                errors,
+                show_summary=False,
+                show_fix_commands=False,
+                file=outs,
+            )
+
         raise pw_presubmit.PresubmitFailure
 
     language = code_format.language.lower().replace('+', 'p').replace(' ', '_')
