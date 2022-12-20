@@ -13,7 +13,7 @@ class FakeLowEnergyConnection final : public LowEnergyConnection {
  public:
   FakeLowEnergyConnection(hci_spec::ConnectionHandle handle, const DeviceAddress& local_address,
                           const DeviceAddress& peer_address, hci_spec::ConnectionRole role,
-                          const fxl::WeakPtr<Transport>& hci);
+                          const Transport::WeakPtr& hci);
 
   // Triggers the encryption change callback.
   void TriggerEncryptionChangeCallback(hci::Result<bool> result);

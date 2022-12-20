@@ -13,7 +13,7 @@ class FakeBrEdrConnection final : public BrEdrConnection {
  public:
   FakeBrEdrConnection(hci_spec::ConnectionHandle handle, const DeviceAddress& local_address,
                       const DeviceAddress& peer_address, hci_spec::ConnectionRole role,
-                      const fxl::WeakPtr<Transport>& hci);
+                      const hci::Transport::WeakPtr& hci);
 
   // Triggers the encryption change callback.
   void TriggerEncryptionChangeCallback(hci::Result<bool> result);

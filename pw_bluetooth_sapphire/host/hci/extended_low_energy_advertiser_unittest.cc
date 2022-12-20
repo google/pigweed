@@ -38,7 +38,7 @@ class ExtendedLowEnergyAdvertiserTest : public TestingBase {
     settings.ApplyExtendedLEConfig();
     this->test_device()->set_settings(settings);
 
-    advertiser_ = std::make_unique<ExtendedLowEnergyAdvertiser>(transport()->WeakPtr());
+    advertiser_ = std::make_unique<ExtendedLowEnergyAdvertiser>(transport()->GetWeakPtr());
   }
 
   void TearDown() override {

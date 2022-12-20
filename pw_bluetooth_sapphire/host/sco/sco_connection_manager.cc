@@ -28,7 +28,7 @@ bool ConnectionParametersSupportEscoTransport(
 
 ScoConnectionManager::ScoConnectionManager(PeerId peer_id, hci_spec::ConnectionHandle acl_handle,
                                            DeviceAddress peer_address, DeviceAddress local_address,
-                                           fxl::WeakPtr<hci::Transport> transport)
+                                           hci::Transport::WeakPtr transport)
     : next_req_id_(0u),
       peer_id_(peer_id),
       local_address_(local_address),
@@ -36,7 +36,7 @@ ScoConnectionManager::ScoConnectionManager(PeerId peer_id, hci_spec::ConnectionH
       acl_handle_(acl_handle),
       transport_(std::move(transport)),
       weak_ptr_factory_(this) {
-  BT_ASSERT(transport_);
+  BT_ASSERT(transport_.is_alive());
 
   AddEventHandler(hci_spec::kSynchronousConnectionCompleteEventCode,
                   fit::bind_member<&ScoConnectionManager::OnSynchronousConnectionComplete>(this));
@@ -99,10 +99,9 @@ ScoConnectionManager::RequestHandle ScoConnectionManager::AcceptConnection(
 
 hci::CommandChannel::EventHandlerId ScoConnectionManager::AddEventHandler(
     const hci_spec::EventCode& code, hci::CommandChannel::EventCallback cb) {
-  auto self = weak_ptr_factory_.GetWeakPtr();
   auto event_id = transport_->command_channel()->AddEventHandler(
-      code, [self, callback = std::move(cb)](const auto& event) {
-        if (self) {
+      code, [self = weak_ptr_factory_.GetWeakPtr(), callback = std::move(cb)](const auto& event) {
+        if (self.is_alive()) {
           return callback(event);
         }
         return hci::CommandChannel::EventCallbackResult::kRemove;
@@ -224,7 +223,7 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnConnectionReque
 
   SendCommandWithStatusCallback(std::move(accept), [self = weak_ptr_factory_.GetWeakPtr(),
                                                     peer_id = peer_id_](hci::Result<> status) {
-    if (!self || status.is_ok()) {
+    if (!self.is_alive() || status.is_ok()) {
       return;
     }
     bt_is_error(
@@ -289,7 +288,7 @@ ScoConnectionManager::RequestHandle ScoConnectionManager::QueueRequest(
   TryCreateNextConnection();
 
   return RequestHandle([req_id, self = weak_ptr_factory_.GetWeakPtr()]() {
-    if (self) {
+    if (self.is_alive()) {
       self->CancelRequestWithId(req_id);
     }
   });
@@ -320,7 +319,7 @@ void ScoConnectionManager::TryCreateNextConnection() {
         in_progress_request_->parameters[in_progress_request_->current_param_index].view());
 
     auto status_cb = [self = weak_ptr_factory_.GetWeakPtr()](hci::Result<> status) {
-      if (!self || status.is_ok()) {
+      if (!self.is_alive() || status.is_ok()) {
         return;
       }
       bt_is_error(status, WARN, "sco", "SCO setup connection command failed");

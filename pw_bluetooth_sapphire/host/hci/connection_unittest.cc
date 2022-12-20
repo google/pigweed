@@ -50,14 +50,14 @@ class ConnectionTest : public TestingBase {
       hci_spec::ConnectionRole role = hci_spec::ConnectionRole::CENTRAL,
       hci_spec::ConnectionHandle handle = kTestHandle) {
     return std::make_unique<LowEnergyConnection>(handle, kLEAddress1, kLEAddress2, kTestParams,
-                                                 role, transport()->WeakPtr());
+                                                 role, transport()->GetWeakPtr());
   }
 
   std::unique_ptr<BrEdrConnection> NewACLConnection(
       hci_spec::ConnectionRole role = hci_spec::ConnectionRole::CENTRAL,
       hci_spec::ConnectionHandle handle = kTestHandle) {
     return std::make_unique<BrEdrConnection>(handle, kACLAddress1, kACLAddress2, role,
-                                             transport()->WeakPtr());
+                                             transport()->GetWeakPtr());
   }
 };
 

@@ -21,17 +21,17 @@ LowEnergyConnector::PendingRequest::PendingRequest(const DeviceAddress& peer_add
                                                    StatusCallback status_callback)
     : peer_address(peer_address), status_callback(std::move(status_callback)) {}
 
-LowEnergyConnector::LowEnergyConnector(fxl::WeakPtr<Transport> hci,
+LowEnergyConnector::LowEnergyConnector(Transport::WeakPtr hci,
                                        LocalAddressDelegate* local_addr_delegate,
                                        async_dispatcher_t* dispatcher,
                                        IncomingConnectionDelegate delegate)
     : dispatcher_(dispatcher),
-      hci_(hci),
+      hci_(std::move(hci)),
       local_addr_delegate_(local_addr_delegate),
       delegate_(std::move(delegate)),
       weak_ptr_factory_(this) {
   BT_DEBUG_ASSERT(dispatcher_);
-  BT_DEBUG_ASSERT(hci_);
+  BT_DEBUG_ASSERT(hci_.is_alive());
   BT_DEBUG_ASSERT(local_addr_delegate_);
   BT_DEBUG_ASSERT(delegate_);
 
@@ -46,7 +46,7 @@ LowEnergyConnector::LowEnergyConnector(fxl::WeakPtr<Transport> hci,
 }
 
 LowEnergyConnector::~LowEnergyConnector() {
-  if (hci_->command_channel()) {
+  if (hci_.is_alive() && hci_->command_channel()) {
     hci_->command_channel()->RemoveEventHandler(event_handler_id_);
   }
   if (request_pending())
@@ -84,6 +84,9 @@ void LowEnergyConnector::CreateConnectionInternal(
     uint16_t scan_interval, uint16_t scan_window,
     const hci_spec::LEPreferredConnectionParameters& initial_parameters,
     StatusCallback status_callback, zx::duration timeout) {
+  if (!hci_.is_alive()) {
+    return;
+  }
   // Check if the connection request was canceled via Cancel().
   if (!pending_request_ || pending_request_->canceled) {
     bt_log(DEBUG, "hci-le", "connection request was canceled while obtaining local address");
@@ -167,7 +170,7 @@ void LowEnergyConnector::CancelInternal(bool timed_out) {
   // Tell the controller to cancel the connection initiation attempt if a
   // request is outstanding. Otherwise there is no need to talk to the
   // controller.
-  if (pending_request_->initiating) {
+  if (pending_request_->initiating && hci_.is_alive()) {
     bt_log(DEBUG, "hci-le", "telling controller to cancel LE connection attempt");
     auto complete_cb = [](auto id, const EventPacket& event) {
       hci_is_error(event, WARN, "hci-le", "failed to cancel connection request");

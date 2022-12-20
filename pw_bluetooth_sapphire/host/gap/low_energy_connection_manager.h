@@ -32,13 +32,13 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
 
 namespace hci {
 class LocalAddressDelegate;
-class Transport;
 }  // namespace hci
 
 namespace gap {
@@ -80,8 +80,7 @@ class LowEnergyConnectionManager final {
   //                 connection and bonding state of a peer via the cache.
   // |l2cap|: Used to interact with the L2CAP layer.
   // |gatt|: Used to interact with the GATT profile layer.
-  LowEnergyConnectionManager(fxl::WeakPtr<hci::Transport> hci,
-                             hci::LocalAddressDelegate* addr_delegate,
+  LowEnergyConnectionManager(hci::Transport::WeakPtr hci, hci::LocalAddressDelegate* addr_delegate,
                              hci::LowEnergyConnector* connector, PeerCache* peer_cache,
                              l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt,
                              LowEnergyDiscoveryManager::WeakPtr discovery_manager,
@@ -252,7 +251,7 @@ class LowEnergyConnectionManager final {
   // the returned value.
   ConnectionMap::iterator FindConnection(hci_spec::ConnectionHandle handle);
 
-  fxl::WeakPtr<hci::Transport> hci_;
+  hci::Transport::WeakPtr hci_;
 
   // The pairing delegate used for authentication challenges. If nullptr, all
   // pairing requests will be rejected.

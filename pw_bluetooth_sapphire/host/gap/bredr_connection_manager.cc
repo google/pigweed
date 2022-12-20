@@ -10,6 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/expiring_set.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/bredr_interrogator.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
@@ -18,8 +19,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/emboss_control_packets.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
 namespace bt::gap {
 
@@ -68,8 +67,8 @@ std::string ReasonAsString(DisconnectReason reason) {
 
 // This procedure can continue to operate independently of the existence of an
 // BrEdrConnectionManager instance, which will begin to disable Page Scan as it shuts down.
-void SetPageScanEnabled(bool enabled, fxl::WeakPtr<hci::Transport> hci,
-                        async_dispatcher_t* dispatcher, hci::ResultFunction<> cb) {
+void SetPageScanEnabled(bool enabled, hci::Transport::WeakPtr hci, async_dispatcher_t* dispatcher,
+                        hci::ResultFunction<> cb) {
   BT_DEBUG_ASSERT(cb);
   auto read_enable = hci::CommandPacket::New(hci_spec::kReadScanEnable);
   auto finish_enable_cb = [enabled, hci, finish_cb = std::move(cb)](
@@ -134,8 +133,8 @@ hci::CommandChannel::EventHandlerId BrEdrConnectionManager::AddEventHandler(
   return event_id;
 }
 
-BrEdrConnectionManager::BrEdrConnectionManager(fxl::WeakPtr<hci::Transport> hci,
-                                               PeerCache* peer_cache, DeviceAddress local_address,
+BrEdrConnectionManager::BrEdrConnectionManager(hci::Transport::WeakPtr hci, PeerCache* peer_cache,
+                                               DeviceAddress local_address,
                                                l2cap::ChannelManager* l2cap,
                                                bool use_interlaced_scan)
     : hci_(std::move(hci)),
@@ -148,7 +147,7 @@ BrEdrConnectionManager::BrEdrConnectionManager(fxl::WeakPtr<hci::Transport> hci,
       request_timeout_(kBrEdrCreateConnectionTimeout),
       dispatcher_(async_get_default_dispatcher()),
       weak_ptr_factory_(this) {
-  BT_DEBUG_ASSERT(hci_);
+  BT_DEBUG_ASSERT(hci_.is_alive());
   BT_DEBUG_ASSERT(cache_);
   BT_DEBUG_ASSERT(l2cap_);
   BT_DEBUG_ASSERT(dispatcher_);
@@ -195,7 +194,7 @@ BrEdrConnectionManager::~BrEdrConnectionManager() {
   // Disconnect any connections that we're holding.
   connections_.clear();
 
-  if (!hci_ || !hci_->command_channel()) {
+  if (!hci_.is_alive() || !hci_->command_channel()) {
     return;
   }
 

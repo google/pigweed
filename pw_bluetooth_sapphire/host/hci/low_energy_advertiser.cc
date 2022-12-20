@@ -8,7 +8,7 @@
 
 namespace bt::hci {
 
-LowEnergyAdvertiser::LowEnergyAdvertiser(fxl::WeakPtr<Transport> hci)
+LowEnergyAdvertiser::LowEnergyAdvertiser(hci::Transport::WeakPtr hci)
     : hci_(std::move(hci)), hci_cmd_runner_(std::make_unique<SequentialCommandRunner>(hci_)) {}
 
 fit::result<HostError> LowEnergyAdvertiser::CanStartAdvertising(

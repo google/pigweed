@@ -59,7 +59,7 @@ void LegacyLowEnergyScanner::PendingScanResult::Append(const ByteBuffer& data) {
 }
 
 LegacyLowEnergyScanner::LegacyLowEnergyScanner(LocalAddressDelegate* local_addr_delegate,
-                                               fxl::WeakPtr<Transport> hci,
+                                               Transport::WeakPtr hci,
                                                async_dispatcher_t* dispatcher)
     : LowEnergyScanner(std::move(hci), dispatcher), local_addr_delegate_(local_addr_delegate) {
   BT_DEBUG_ASSERT(local_addr_delegate_);

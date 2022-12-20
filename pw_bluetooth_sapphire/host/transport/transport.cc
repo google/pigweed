@@ -17,7 +17,7 @@ namespace bt::hci {
 using FeaturesBits = pw::bluetooth::Controller::FeaturesBits;
 
 Transport::Transport(std::unique_ptr<pw::bluetooth::Controller> controller)
-    : controller_(std::move(controller)), weak_ptr_factory_(this) {
+    : WeakSelf(this), controller_(std::move(controller)) {
   BT_ASSERT(controller_);
 }
 
@@ -27,9 +27,9 @@ void Transport::Initialize(fit::callback<void(bool /*success*/)> complete_callba
   BT_ASSERT(!command_channel_);
 
   bt_log(INFO, "hci", "initializing Transport");
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = GetWeakPtr();
   auto complete_cb_wrapper = [self, cb = std::move(complete_callback)](pw::Status status) mutable {
-    if (!self) {
+    if (!self.is_alive()) {
       return;
     }
 
@@ -39,11 +39,14 @@ void Transport::Initialize(fit::callback<void(bool /*success*/)> complete_callba
     }
 
     self->command_channel_ = std::make_unique<CommandChannel>(self->controller_.get());
-    self->command_channel_->set_channel_timeout_cb(
-        fit::bind_member<&Transport::OnChannelError>(self.get()));
+    self->command_channel_->set_channel_timeout_cb([self] {
+      if (self.is_alive()) {
+        self->OnChannelError();
+      }
+    });
 
     self->controller_->GetFeatures([self, cb = std::move(cb)](FeaturesBits features) mutable {
-      if (!self) {
+      if (!self.is_alive()) {
         return;
       }
       self->features_ = features;
@@ -54,7 +57,7 @@ void Transport::Initialize(fit::callback<void(bool /*success*/)> complete_callba
   };
 
   auto error_cb = [self](pw::Status status) {
-    if (self) {
+    if (self.is_alive()) {
       self->OnChannelError();
     }
   };

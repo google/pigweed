@@ -10,7 +10,7 @@ FakeBrEdrConnection::FakeBrEdrConnection(hci_spec::ConnectionHandle handle,
                                          const DeviceAddress& local_address,
                                          const DeviceAddress& peer_address,
                                          hci_spec::ConnectionRole role,
-                                         const fxl::WeakPtr<Transport>& hci)
+                                         const hci::Transport::WeakPtr& hci)
     : BrEdrConnection(handle, local_address, peer_address, role, hci) {}
 
 void FakeBrEdrConnection::TriggerEncryptionChangeCallback(hci::Result<bool> result) {

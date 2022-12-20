@@ -16,7 +16,7 @@ class LowEnergyConnection : public AclConnection {
   LowEnergyConnection(hci_spec::ConnectionHandle handle, const DeviceAddress& local_address,
                       const DeviceAddress& peer_address,
                       const hci_spec::LEConnectionParameters& params, hci_spec::ConnectionRole role,
-                      const fxl::WeakPtr<Transport>& hci);
+                      const Transport::WeakPtr& hci);
 
   ~LowEnergyConnection() override;
 

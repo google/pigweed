@@ -14,7 +14,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/supplement_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/emboss_control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
@@ -75,7 +74,7 @@ BrEdrDiscoverableSession::BrEdrDiscoverableSession(fxl::WeakPtr<BrEdrDiscoveryMa
 
 BrEdrDiscoverableSession::~BrEdrDiscoverableSession() { manager_->RemoveDiscoverableSession(this); }
 
-BrEdrDiscoveryManager::BrEdrDiscoveryManager(fxl::WeakPtr<hci::Transport> hci,
+BrEdrDiscoveryManager::BrEdrDiscoveryManager(hci::Transport::WeakPtr hci,
                                              hci_spec::InquiryMode mode, PeerCache* peer_cache)
     : hci_(std::move(hci)),
       dispatcher_(async_get_default_dispatcher()),
@@ -85,7 +84,7 @@ BrEdrDiscoveryManager::BrEdrDiscoveryManager(fxl::WeakPtr<hci::Transport> hci,
       current_inquiry_mode_(hci_spec::InquiryMode::kStandard),
       weak_ptr_factory_(this) {
   BT_DEBUG_ASSERT(cache_);
-  BT_DEBUG_ASSERT(hci_);
+  BT_DEBUG_ASSERT(hci_.is_alive());
   BT_DEBUG_ASSERT(dispatcher_);
 
   result_handler_id_ = hci_->command_channel()->AddEventHandler(
@@ -221,7 +220,7 @@ void BrEdrDiscoveryManager::StopInquiry() {
 
   hci::EmbossCommandPacket inq_cancel =
       hci::EmbossCommandPacket::New<hci_spec::InquiryCancelCommandView>(hci_spec::kInquiryCancel);
-  hci_->command_channel()->SendCommand(std::move(inq_cancel), [](long, const auto& event) {
+  hci_->command_channel()->SendCommand(std::move(inq_cancel), [](int64_t, const auto& event) {
     // Warn if the command failed.
     hci_is_error(event, WARN, "gap-bredr", "inquiry cancel failed");
   });

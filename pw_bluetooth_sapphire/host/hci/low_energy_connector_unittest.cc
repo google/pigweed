@@ -46,7 +46,7 @@ class LowEnergyConnectorTest : public TestingBase {
 
     fake_address_delegate_.set_local_address(kLocalAddress);
     connector_ = std::make_unique<LowEnergyConnector>(
-        transport()->WeakPtr(), &fake_address_delegate_, dispatcher(),
+        transport()->GetWeakPtr(), &fake_address_delegate_, dispatcher(),
         fit::bind_member<&LowEnergyConnectorTest::OnIncomingConnectionCreated>(this));
 
     test_device()->set_connection_state_callback(
@@ -75,7 +75,7 @@ class LowEnergyConnectorTest : public TestingBase {
                                    const DeviceAddress& peer_address,
                                    const hci_spec::LEConnectionParameters& conn_params) {
     in_connections_.push_back(std::make_unique<testing::FakeLowEnergyConnection>(
-        handle, kLocalAddress, peer_address, role, transport()->WeakPtr()));
+        handle, kLocalAddress, peer_address, role, transport()->GetWeakPtr()));
   }
 
   void OnConnectionStateChanged(const DeviceAddress& address, hci_spec::ConnectionHandle handle,

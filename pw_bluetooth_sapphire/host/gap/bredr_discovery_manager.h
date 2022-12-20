@@ -17,13 +17,10 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
-
-namespace hci {
-class Transport;
-}  // namespace hci
 
 namespace gap {
 
@@ -103,7 +100,7 @@ class BrEdrDiscoverableSession final {
 class BrEdrDiscoveryManager final {
  public:
   // |peer_cache| MUST out-live this BrEdrDiscoveryManager.
-  BrEdrDiscoveryManager(fxl::WeakPtr<hci::Transport> hci, hci_spec::InquiryMode mode,
+  BrEdrDiscoveryManager(hci::Transport::WeakPtr hci, hci_spec::InquiryMode mode,
                         PeerCache* peer_cache);
 
   ~BrEdrDiscoveryManager();
@@ -187,7 +184,7 @@ class BrEdrDiscoveryManager final {
   void UpdateInspectProperties();
 
   // The HCI Transport
-  fxl::WeakPtr<hci::Transport> hci_;
+  hci::Transport::WeakPtr hci_;
 
   struct InspectProperties {
     inspect::Node node;

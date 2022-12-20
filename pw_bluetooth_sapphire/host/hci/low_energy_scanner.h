@@ -16,10 +16,9 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
 namespace bt::hci {
-
-class Transport;
 
 // Represents a discovered Bluetooth Low Energy peer.
 struct LowEnergyScanResult {
@@ -84,7 +83,7 @@ class LowEnergyScanner : public LocalAddressClient {
     virtual void OnDirectedAdvertisement(const LowEnergyScanResult& result);
   };
 
-  LowEnergyScanner(fxl::WeakPtr<Transport> hci, async_dispatcher_t* dispatcher);
+  LowEnergyScanner(Transport::WeakPtr hci, async_dispatcher_t* dispatcher);
   virtual ~LowEnergyScanner() = default;
 
   // Returns the current Scan state.
@@ -201,7 +200,7 @@ class LowEnergyScanner : public LocalAddressClient {
 
  protected:
   async_dispatcher_t* dispatcher() const { return dispatcher_; }
-  fxl::WeakPtr<Transport> transport() const { return transport_; }
+  Transport::WeakPtr transport() const { return transport_; }
   SequentialCommandRunner* hci_cmd_runner() const { return hci_cmd_runner_.get(); }
   Delegate* delegate() const {
     BT_ASSERT(delegate_);
@@ -225,7 +224,7 @@ class LowEnergyScanner : public LocalAddressClient {
   async_dispatcher_t* dispatcher_;
 
   // The HCI transport.
-  fxl::WeakPtr<Transport> transport_;
+  Transport::WeakPtr transport_;
 
   // Command runner for all HCI commands sent out by implementations.
   std::unique_ptr<SequentialCommandRunner> hci_cmd_runner_;

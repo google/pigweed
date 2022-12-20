@@ -49,7 +49,7 @@ class AdapterImpl final : public Adapter {
   // There must be an async_t dispatcher registered as a default when an AdapterImpl
   // instance is created. The Adapter instance will use it for all of its
   // asynchronous tasks.
-  explicit AdapterImpl(fxl::WeakPtr<hci::Transport> hci, fxl::WeakPtr<gatt::GATT> gatt,
+  explicit AdapterImpl(hci::Transport::WeakPtr hci, fxl::WeakPtr<gatt::GATT> gatt,
                        std::unique_ptr<l2cap::ChannelManager> l2cap);
   ~AdapterImpl() override;
 
@@ -392,7 +392,7 @@ class AdapterImpl final : public Adapter {
   AdapterId identifier_;
 
   async_dispatcher_t* dispatcher_;
-  fxl::WeakPtr<hci::Transport> hci_;
+  hci::Transport::WeakPtr hci_;
 
   // Callback invoked to notify clients when the underlying transport is closed.
   fit::closure transport_error_cb_;
@@ -459,7 +459,7 @@ class AdapterImpl final : public Adapter {
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdapterImpl);
 };
 
-AdapterImpl::AdapterImpl(fxl::WeakPtr<hci::Transport> hci, fxl::WeakPtr<gatt::GATT> gatt,
+AdapterImpl::AdapterImpl(hci::Transport::WeakPtr hci, fxl::WeakPtr<gatt::GATT> gatt,
                          std::unique_ptr<l2cap::ChannelManager> l2cap)
     : identifier_(Random<AdapterId>()),
       dispatcher_(async_get_default_dispatcher()),
@@ -470,7 +470,7 @@ AdapterImpl::AdapterImpl(fxl::WeakPtr<hci::Transport> hci, fxl::WeakPtr<gatt::GA
       l2cap_(std::move(l2cap)),
       gatt_(gatt),
       weak_ptr_factory_(this) {
-  BT_DEBUG_ASSERT(hci_);
+  BT_DEBUG_ASSERT(hci_.is_alive());
   BT_DEBUG_ASSERT(gatt_);
   BT_DEBUG_ASSERT_MSG(dispatcher_, "must create on a thread with a dispatcher");
 
@@ -1167,7 +1167,7 @@ void AdapterImpl::CleanUp() {
 
   l2cap_ = nullptr;
 
-  hci_ = nullptr;
+  hci_.reset();
 }
 
 void AdapterImpl::OnTransportError() {
@@ -1227,8 +1227,7 @@ bool AdapterImpl::IsLeRandomAddressChangeAllowed() {
          hci_le_connector_->AllowsRandomAddressChange();
 }
 
-std::unique_ptr<Adapter> Adapter::Create(fxl::WeakPtr<hci::Transport> hci,
-                                         fxl::WeakPtr<gatt::GATT> gatt,
+std::unique_ptr<Adapter> Adapter::Create(hci::Transport::WeakPtr hci, fxl::WeakPtr<gatt::GATT> gatt,
                                          std::unique_ptr<l2cap::ChannelManager> l2cap) {
   return std::make_unique<AdapterImpl>(hci, gatt, std::move(l2cap));
 }

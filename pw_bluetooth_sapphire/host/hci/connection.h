@@ -15,11 +15,10 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/link_type.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::hci {
-
-class Transport;
 
 // A Connection represents a logical link connection to a peer. It maintains link-specific
 // configuration parameters (such as the connection handle) and state (e.g
@@ -80,10 +79,10 @@ class Connection {
   // |on_disconnection_complete| will be called when the disconnection complete event is received,
   // which may be after this object is destroyed (which is why this isn't a virtual method).
   Connection(hci_spec::ConnectionHandle handle, const DeviceAddress& local_address,
-             const DeviceAddress& peer_address, const fxl::WeakPtr<Transport>& hci,
+             const DeviceAddress& peer_address, const Transport::WeakPtr& hci,
              fit::callback<void()> on_disconnection_complete);
 
-  const fxl::WeakPtr<Transport>& hci() { return hci_; }
+  const Transport::WeakPtr& hci() { return hci_; }
 
   PeerDisconnectCallback& peer_disconnect_callback() { return peer_disconnect_callback_; }
 
@@ -107,7 +106,7 @@ class Connection {
 
   State conn_state_;
 
-  fxl::WeakPtr<Transport> hci_;
+  Transport::WeakPtr hci_;
 
   fxl::WeakPtrFactory<Connection> weak_ptr_factory_;
 

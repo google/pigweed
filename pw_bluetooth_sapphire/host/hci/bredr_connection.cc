@@ -11,11 +11,11 @@ namespace bt::hci {
 BrEdrConnection::BrEdrConnection(hci_spec::ConnectionHandle handle,
                                  const DeviceAddress& local_address,
                                  const DeviceAddress& peer_address, hci_spec::ConnectionRole role,
-                                 const fxl::WeakPtr<Transport>& hci)
+                                 const Transport::WeakPtr& hci)
     : AclConnection(handle, local_address, peer_address, role, hci), weak_ptr_factory_(this) {
   BT_ASSERT(local_address.type() == DeviceAddress::Type::kBREDR);
   BT_ASSERT(peer_address.type() == DeviceAddress::Type::kBREDR);
-  BT_ASSERT(hci);
+  BT_ASSERT(hci.is_alive());
   BT_ASSERT(hci->acl_data_channel());
 
   // Allow packets to be sent on this link immediately.
@@ -57,6 +57,9 @@ bool BrEdrConnection::StartEncryption() {
     bt_log(DEBUG, "hci-bredr", "requested encryption start on %#.04x", handle);
   };
 
+  if (!hci().is_alive()) {
+    return false;
+  }
   return hci()->command_channel()->SendCommand(std::move(cmd), std::move(event_cb),
                                                hci_spec::kCommandStatusEventCode);
 }

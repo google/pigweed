@@ -591,7 +591,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
         &kWritePageTimeoutRsp);
 
     connection_manager_ = std::make_unique<BrEdrConnectionManager>(
-        transport()->WeakPtr(), peer_cache_.get(), kLocalDevAddr, l2cap_.get(), true);
+        transport()->GetWeakPtr(), peer_cache_.get(), kLocalDevAddr, l2cap_.get(), true);
 
     RunLoopUntilIdle();
 

@@ -87,7 +87,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
   auto cb = [&](const EventPacket& event) { cb_called++; };
 
   // Sequence 1 (test)
-  SequentialCommandRunner cmd_runner(transport()->WeakPtr());
+  SequentialCommandRunner cmd_runner(transport()->GetWeakPtr());
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
 
   cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode), cb);
@@ -216,7 +216,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
   auto cb = [&](const EventPacket& event) { cb_called++; };
 
   // Sequence 1: Sequence will be cancelled after the first command.
-  SequentialCommandRunner cmd_runner(transport()->WeakPtr());
+  SequentialCommandRunner cmd_runner(transport()->GetWeakPtr());
   cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode), cb);
   cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode), cb);
   EXPECT_TRUE(cmd_runner.IsReady());
@@ -365,7 +365,7 @@ TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
     status_cb_called++;
   };
 
-  SequentialCommandRunner cmd_runner(transport()->WeakPtr());
+  SequentialCommandRunner cmd_runner(transport()->GetWeakPtr());
 
   cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode), cb, /*wait=*/false);
   cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode2), cb, /*wait=*/false);
@@ -455,7 +455,7 @@ TEST_F(SequentialCommandRunnerTest, CommandCompletesOnStatusEvent) {
   int cb_called = 0;
   auto cb = [&](const EventPacket& event) { cb_called++; };
 
-  SequentialCommandRunner cmd_runner(transport()->WeakPtr());
+  SequentialCommandRunner cmd_runner(transport()->GetWeakPtr());
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
 
   EXPECT_CMD_PACKET_OUT(test_device(), command, &command0_status_event);
@@ -505,7 +505,7 @@ TEST_F(SequentialCommandRunnerTest, AsyncCommands) {
   int cb_called = 0;
   auto cb = [&](const EventPacket& event) { cb_called++; };
 
-  SequentialCommandRunner cmd_runner(transport()->WeakPtr());
+  SequentialCommandRunner cmd_runner(transport()->GetWeakPtr());
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
 
   EXPECT_CMD_PACKET_OUT(test_device(), command, &command0_status_event);
@@ -564,7 +564,7 @@ TEST_F(SequentialCommandRunnerTest, ExclusiveAsyncCommands) {
   int cb_called = 0;
   auto cb = [&](const EventPacket& event) { cb_called++; };
 
-  SequentialCommandRunner cmd_runner(transport()->WeakPtr());
+  SequentialCommandRunner cmd_runner(transport()->GetWeakPtr());
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
 
   EXPECT_CMD_PACKET_OUT(test_device(), command, &command0_status_event);
@@ -610,7 +610,7 @@ TEST_F(SequentialCommandRunnerTest, CommandRunnerDestroyedBeforeSecondEventCallb
       /*conn=*/0x0000, hci_spec::LESupportedFeatures{0});
 
   std::optional<SequentialCommandRunner> cmd_runner;
-  cmd_runner.emplace(transport()->WeakPtr());
+  cmd_runner.emplace(transport()->GetWeakPtr());
 
   Result<> status = fit::ok();
   int status_cb_called = 0;
@@ -653,7 +653,7 @@ TEST_F(SequentialCommandRunnerTest, CommandRunnerDestroyedBeforeSecondEventCallb
 TEST_F(SequentialCommandRunnerTest,
        SequentialCommandRunnerDestroyedInCancelStatusCallbackDoesNotCrash) {
   std::optional<SequentialCommandRunner> cmd_runner;
-  cmd_runner.emplace(transport()->WeakPtr());
+  cmd_runner.emplace(transport()->GetWeakPtr());
 
   Result<> status = fit::ok();
   int status_cb_called = 0;
@@ -697,7 +697,7 @@ TEST_F(SequentialCommandRunnerTest, QueueCommandsWhileAlreadyRunning) {
                                                                 hci_spec::StatusCode::SUCCESS);
   auto command2_cmpl_event = bt::testing::ReadRemoteVersionInfoCompletePacket(/*conn=*/0x0000);
 
-  SequentialCommandRunner cmd_runner(transport()->WeakPtr());
+  SequentialCommandRunner cmd_runner(transport()->GetWeakPtr());
 
   Result<> status = fit::ok();
   int status_cb_called = 0;

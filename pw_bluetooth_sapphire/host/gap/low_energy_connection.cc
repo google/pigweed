@@ -31,7 +31,7 @@ std::unique_ptr<LowEnergyConnection> LowEnergyConnection::Create(
     LowEnergyConnectionOptions connection_options, PeerDisconnectCallback peer_disconnect_cb,
     ErrorCallback error_cb, fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
     l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt,
-    fxl::WeakPtr<hci::Transport> transport) {
+    hci::Transport::WeakPtr transport) {
   // Catch any errors/disconnects during connection initialization so that they are reported by
   // returning a nullptr. This is less error-prone than calling the user's callbacks during
   // initialization.
@@ -59,8 +59,7 @@ LowEnergyConnection::LowEnergyConnection(
     fxl::WeakPtr<Peer> peer, std::unique_ptr<hci::LowEnergyConnection> link,
     LowEnergyConnectionOptions connection_options, PeerDisconnectCallback peer_disconnect_cb,
     ErrorCallback error_cb, fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
-    l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt,
-    fxl::WeakPtr<hci::Transport> transport)
+    l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt, hci::Transport::WeakPtr transport)
     : peer_(std::move(peer)),
       link_(std::move(link)),
       connection_options_(connection_options),
@@ -76,7 +75,7 @@ LowEnergyConnection::LowEnergyConnection(
   BT_ASSERT(link_);
   BT_ASSERT(conn_mgr_);
   BT_ASSERT(gatt_);
-  BT_ASSERT(transport_);
+  BT_ASSERT(transport_.is_alive());
   BT_ASSERT(peer_disconnect_callback_);
   BT_ASSERT(error_callback_);
 

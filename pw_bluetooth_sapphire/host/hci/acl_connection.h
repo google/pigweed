@@ -44,7 +44,7 @@ class AclConnection : public Connection {
  protected:
   AclConnection(hci_spec::ConnectionHandle handle, const DeviceAddress& local_address,
                 const DeviceAddress& peer_address, hci_spec::ConnectionRole role,
-                const fxl::WeakPtr<Transport>& hci);
+                const Transport::WeakPtr& hci);
 
   void set_ltk(const hci_spec::LinkKey& link_key) { ltk_ = link_key; }
 
@@ -57,7 +57,7 @@ class AclConnection : public Connection {
   // This method must be static since it may be invoked after the connection associated with it is
   // destroyed.
   static void OnDisconnectionComplete(hci_spec::ConnectionHandle handle,
-                                      const fxl::WeakPtr<Transport>& hci);
+                                      const Transport::WeakPtr& hci);
 
   // HCI event handlers.
   CommandChannel::EventCallbackResult OnEncryptionChangeEvent(const EventPacket& event);

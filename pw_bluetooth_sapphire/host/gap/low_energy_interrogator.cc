@@ -12,7 +12,7 @@ namespace bt::gap {
 
 LowEnergyInterrogator::LowEnergyInterrogator(fxl::WeakPtr<Peer> peer,
                                              hci_spec::ConnectionHandle handle,
-                                             fxl::WeakPtr<hci::Transport> hci)
+                                             hci::Transport::WeakPtr hci)
     : hci_(std::move(hci)),
       peer_(std::move(peer)),
       peer_id_(peer_->identifier()),

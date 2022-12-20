@@ -14,7 +14,7 @@ class SequentialCommandRunner;
 
 class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
  public:
-  explicit LegacyLowEnergyAdvertiser(fxl::WeakPtr<Transport> hci)
+  explicit LegacyLowEnergyAdvertiser(hci::Transport::WeakPtr hci)
       : LowEnergyAdvertiser(std::move(hci)) {}
   ~LegacyLowEnergyAdvertiser() override;
 

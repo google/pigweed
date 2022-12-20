@@ -6,10 +6,10 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SCO_SCO_CONNECTION_MANAGER_H_
 
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/sco/sco_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::sco {
 
@@ -41,7 +41,7 @@ class ScoConnectionManager final {
   // |transport| must outlive this object.
   ScoConnectionManager(PeerId peer_id, hci_spec::ConnectionHandle acl_handle,
                        DeviceAddress peer_address, DeviceAddress local_address,
-                       fxl::WeakPtr<hci::Transport> transport);
+                       hci::Transport::WeakPtr transport);
   // Closes connections and cancels connection requests.
   ~ScoConnectionManager();
 
@@ -165,11 +165,11 @@ class ScoConnectionManager final {
 
   hci_spec::ConnectionHandle acl_handle_;
 
-  fxl::WeakPtr<hci::Transport> transport_;
+  hci::Transport::WeakPtr transport_;
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.
-  fxl::WeakPtrFactory<ScoConnectionManager> weak_ptr_factory_;
+  WeakSelf<ScoConnectionManager> weak_ptr_factory_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ScoConnectionManager);
 };

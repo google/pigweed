@@ -19,8 +19,7 @@ BrEdrConnection::BrEdrConnection(fxl::WeakPtr<Peer> peer,
                                  fit::closure send_auth_request_cb,
                                  fit::callback<void()> disconnect_cb,
                                  fit::closure on_peer_disconnect_cb, l2cap::ChannelManager* l2cap,
-                                 fxl::WeakPtr<hci::Transport> transport,
-                                 std::optional<Request> request)
+                                 hci::Transport::WeakPtr transport, std::optional<Request> request)
     : peer_id_(peer->identifier()),
       peer_(std::move(peer)),
       link_(std::move(link)),

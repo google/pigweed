@@ -96,21 +96,23 @@ class LowEnergyConnectionManagerTest : public TestingBase {
     peer_cache_ = std::make_unique<PeerCache>();
     l2cap_ = std::make_unique<l2cap::testing::FakeL2cap>();
 
+    const hci::Transport::WeakPtr transport_weak = transport()->GetWeakPtr();
+
     connector_ = std::make_unique<hci::LowEnergyConnector>(
-        transport()->WeakPtr(), &addr_delegate_, dispatcher(),
+        transport_weak, &addr_delegate_, dispatcher(),
         fit::bind_member<&LowEnergyConnectionManagerTest::OnIncomingConnection>(this));
 
     gatt_ = std::make_unique<gatt::testing::FakeLayer>();
     sm_factory_ = std::make_unique<TestSmFactory>();
 
     address_manager_ = std::make_unique<LowEnergyAddressManager>(
-        kAdapterAddress, /*delegate=*/[] { return false; }, transport()->WeakPtr());
-    scanner_ = std::make_unique<hci::LegacyLowEnergyScanner>(address_manager_.get(),
-                                                             transport()->WeakPtr(), dispatcher());
+        kAdapterAddress, /*delegate=*/[] { return false; }, transport_weak);
+    scanner_ = std::make_unique<hci::LegacyLowEnergyScanner>(address_manager_.get(), transport_weak,
+                                                             dispatcher());
     discovery_manager_ =
         std::make_unique<LowEnergyDiscoveryManager>(scanner_.get(), peer_cache_.get());
     conn_mgr_ = std::make_unique<LowEnergyConnectionManager>(
-        transport()->WeakPtr(), &addr_delegate_, connector_.get(), peer_cache_.get(), l2cap_.get(),
+        transport_weak, &addr_delegate_, connector_.get(), peer_cache_.get(), l2cap_.get(),
         gatt_->AsWeakPtr(), discovery_manager_->GetWeakPtr(),
         fit::bind_member<&TestSmFactory::CreateSm>(sm_factory_.get()));
 
@@ -168,7 +170,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
     // Create a production connection object that can interact with the fake
     // controller.
     last_remote_initiated_ = std::make_unique<hci::LowEnergyConnection>(
-        handle, local_address, peer_address, conn_params, role, transport()->WeakPtr());
+        handle, local_address, peer_address, conn_params, role, transport()->GetWeakPtr());
   }
 
   // Called by FakeController on connection events.

@@ -21,7 +21,7 @@
 namespace bt::hci {
 
 Connection::Connection(hci_spec::ConnectionHandle handle, const DeviceAddress& local_address,
-                       const DeviceAddress& peer_address, const fxl::WeakPtr<Transport>& hci,
+                       const DeviceAddress& peer_address, const Transport::WeakPtr& hci,
                        fit::callback<void()> on_disconnection_complete)
     : handle_(handle),
       local_address_(local_address),
@@ -30,7 +30,7 @@ Connection::Connection(hci_spec::ConnectionHandle handle, const DeviceAddress& l
       hci_(hci),
       weak_ptr_factory_(this) {
   BT_ASSERT(handle_);
-  BT_ASSERT(hci_);
+  BT_ASSERT(hci_.is_alive());
 
   auto disconn_complete_handler = [self = weak_ptr_factory_.GetWeakPtr(), handle, hci = hci_,
                                    on_disconnection_complete =

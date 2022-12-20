@@ -13,12 +13,13 @@ LowEnergyConnection::LowEnergyConnection(hci_spec::ConnectionHandle handle,
                                          const DeviceAddress& peer_address,
                                          const hci_spec::LEConnectionParameters& params,
                                          hci_spec::ConnectionRole role,
-                                         const fxl::WeakPtr<Transport>& hci)
+                                         const Transport::WeakPtr& hci)
     : AclConnection(handle, local_address, peer_address, role, hci),
       parameters_(params),
       weak_ptr_factory_(this) {
   BT_ASSERT(local_address.type() != DeviceAddress::Type::kBREDR);
   BT_ASSERT(peer_address.type() != DeviceAddress::Type::kBREDR);
+  BT_ASSERT(hci.is_alive());
 
   le_ltk_request_id_ = hci->command_channel()->AddLEMetaEventHandler(
       hci_spec::kLELongTermKeyRequestSubeventCode,
@@ -30,7 +31,9 @@ LowEnergyConnection::LowEnergyConnection(hci_spec::ConnectionHandle handle,
 
 LowEnergyConnection::~LowEnergyConnection() {
   // Unregister HCI event handlers.
-  hci()->command_channel()->RemoveEventHandler(le_ltk_request_id_);
+  if (hci().is_alive()) {
+    hci()->command_channel()->RemoveEventHandler(le_ltk_request_id_);
+  }
 }
 
 bool LowEnergyConnection::StartEncryption() {
@@ -70,6 +73,9 @@ bool LowEnergyConnection::StartEncryption() {
     }
     bt_log(DEBUG, "hci-le", "requested encryption start on %#.04x", handle);
   };
+  if (!hci().is_alive()) {
+    return false;
+  }
   return hci()->command_channel()->SendCommand(std::move(cmd), std::move(event_cb),
                                                hci_spec::kCommandStatusEventCode);
 }
@@ -133,6 +139,9 @@ CommandChannel::EventCallbackResult LowEnergyConnection::OnLELongTermKeyRequestE
   auto status_cb = [](auto id, const EventPacket& event) {
     hci_is_error(event, TRACE, "hci-le", "failed to reply to LTK request");
   };
+  if (!hci().is_alive()) {
+    return CommandChannel::EventCallbackResult::kRemove;
+  }
   hci()->command_channel()->SendCommand(std::move(cmd), std::move(status_cb));
   return CommandChannel::EventCallbackResult::kContinue;
 }

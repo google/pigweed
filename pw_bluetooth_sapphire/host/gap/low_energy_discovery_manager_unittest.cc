@@ -64,8 +64,8 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
     // |discovery_manager_| rather than constructed by it, a fake implementation
     // could be injected directly. Consider providing fake behavior here in this
     // harness rather than using a FakeController.
-    scanner_ = std::make_unique<hci::LegacyLowEnergyScanner>(&fake_address_delegate_,
-                                                             transport()->WeakPtr(), dispatcher());
+    scanner_ = std::make_unique<hci::LegacyLowEnergyScanner>(
+        &fake_address_delegate_, transport()->GetWeakPtr(), dispatcher());
     discovery_manager_ = std::make_unique<LowEnergyDiscoveryManager>(scanner_.get(), &peer_cache_);
     discovery_manager_->AttachInspect(inspector_.GetRoot(), kInspectNodeName);
 

@@ -15,7 +15,7 @@ namespace bt::gap {
 
 LowEnergyAddressManager::LowEnergyAddressManager(const DeviceAddress& public_address,
                                                  StateQueryDelegate delegate,
-                                                 fxl::WeakPtr<hci::Transport> hci)
+                                                 hci::Transport::WeakPtr hci)
     : delegate_(std::move(delegate)),
       hci_(std::move(hci)),
       privacy_enabled_(false),
@@ -25,7 +25,7 @@ LowEnergyAddressManager::LowEnergyAddressManager(const DeviceAddress& public_add
       weak_ptr_factory_(this) {
   BT_DEBUG_ASSERT(public_.type() == DeviceAddress::Type::kLEPublic);
   BT_DEBUG_ASSERT(delegate_);
-  BT_DEBUG_ASSERT(hci_);
+  BT_DEBUG_ASSERT(hci_.is_alive());
 }
 
 LowEnergyAddressManager::~LowEnergyAddressManager() { CancelExpiry(); }

@@ -17,17 +17,17 @@
 #include "pw_bluetooth/controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/sco_data_channel.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::hci {
 
 // Represents the HCI transport layer. This object owns the HCI command, ACL,
 // and SCO channels and provides the necessary control-flow mechanisms to send
 // and receive HCI packets from the underlying Bluetooth controller.
-class Transport final {
+class Transport final : public WeakSelf<Transport> {
  public:
   explicit Transport(std::unique_ptr<pw::bluetooth::Controller> hci);
 
@@ -83,8 +83,6 @@ class Transport final {
   static constexpr const char* kInspectNodeName = "hci";
   void AttachInspect(inspect::Node& parent, const std::string& name = kInspectNodeName);
 
-  fxl::WeakPtr<Transport> WeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
-
  private:
   // Callback called by CommandChannel or ACLDataChannel on errors.
   void OnChannelError();
@@ -110,8 +108,6 @@ class Transport final {
 
   // The SCO data flow control handler.
   std::unique_ptr<ScoDataChannel> sco_data_channel_;
-
-  fxl::WeakPtrFactory<Transport> weak_ptr_factory_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Transport);
 };

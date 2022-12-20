@@ -29,7 +29,7 @@ class LowEnergyConnector final {
   // Create a connector for connecting to |peer_id|. The connection will be established with
   // the parameters specified in |options|.
   LowEnergyConnector(PeerId peer_id, LowEnergyConnectionOptions options,
-                     fxl::WeakPtr<hci::Transport> transport, PeerCache* peer_cache,
+                     hci::Transport::WeakPtr transport, PeerCache* peer_cache,
                      fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
                      l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt);
 
@@ -158,7 +158,7 @@ class LowEnergyConnector final {
 
   LowEnergyDiscoveryManager::WeakPtr discovery_manager_;
 
-  fxl::WeakPtr<hci::Transport> transport_;
+  hci::Transport::WeakPtr transport_;
 
   // Only used to construct a LowEnergyConnection.
   fxl::WeakPtr<LowEnergyConnectionManager> le_connection_manager_;

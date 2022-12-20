@@ -38,7 +38,7 @@ class AdvertisingIntervalRange final {
 
 class LowEnergyAdvertiser : public LocalAddressClient {
  public:
-  explicit LowEnergyAdvertiser(fxl::WeakPtr<Transport> hci);
+  explicit LowEnergyAdvertiser(hci::Transport::WeakPtr hci);
   ~LowEnergyAdvertiser() override = default;
 
   // Get the current limit in bytes of the advertisement data supported.
@@ -206,7 +206,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
                                   const hci_spec::LEConnectionParameters& conn_params);
 
   SequentialCommandRunner& hci_cmd_runner() const { return *hci_cmd_runner_; }
-  fxl::WeakPtr<Transport> hci() const { return hci_; }
+  hci::Transport::WeakPtr hci() const { return hci_; }
 
   const std::unordered_map<DeviceAddress, ConnectionCallback>& connection_callbacks() const {
     return connection_callbacks_;
@@ -235,7 +235,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // cannot be generated for some reason, no HCI commands are enqueued.
   bool EnqueueStopAdvertisingCommands(const DeviceAddress& address);
 
-  fxl::WeakPtr<Transport> hci_;
+  hci::Transport::WeakPtr hci_;
   std::unique_ptr<SequentialCommandRunner> hci_cmd_runner_;
   std::unordered_map<DeviceAddress, ConnectionCallback> connection_callbacks_;
   StagedParameters staged_parameters_;

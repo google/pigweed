@@ -14,7 +14,7 @@ constexpr int8_t kTransmitPower = -25;  // Android range -70 to +20, select the 
 namespace hci_android = hci_spec::vendor::android;
 
 AndroidExtendedLowEnergyAdvertiser::AndroidExtendedLowEnergyAdvertiser(
-    fxl::WeakPtr<Transport> hci_ptr, uint8_t max_advertisements)
+    hci::Transport::WeakPtr hci_ptr, uint8_t max_advertisements)
     : LowEnergyAdvertiser(std::move(hci_ptr)),
       max_advertisements_(max_advertisements),
       advertising_handle_map_(max_advertisements_),
@@ -33,7 +33,7 @@ AndroidExtendedLowEnergyAdvertiser::AndroidExtendedLowEnergyAdvertiser(
 AndroidExtendedLowEnergyAdvertiser::~AndroidExtendedLowEnergyAdvertiser() {
   // This object is probably being destroyed because the stack is shutting down, in which case the
   // HCI layer may have already been destroyed.
-  if (!hci() || !hci()->command_channel()) {
+  if (!hci().is_alive() || !hci()->command_channel()) {
     return;
   }
   hci()->command_channel()->RemoveEventHandler(state_changed_event_handler_id_);

@@ -44,7 +44,7 @@ class LowEnergyInterrogatorTest : public TestingBase {
     EXPECT_FALSE(peer_->le()->features());
 
     interrogator_ = std::make_unique<LowEnergyInterrogator>(peer_->GetWeakPtr(), kConnectionHandle,
-                                                            transport()->WeakPtr());
+                                                            transport()->GetWeakPtr());
   }
 
   void TearDown() override {

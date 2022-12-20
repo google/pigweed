@@ -17,7 +17,7 @@ class BrEdrConnection : public AclConnection {
  public:
   BrEdrConnection(hci_spec::ConnectionHandle handle, const DeviceAddress& local_address,
                   const DeviceAddress& peer_address, hci_spec::ConnectionRole role,
-                  const fxl::WeakPtr<Transport>& hci);
+                  const Transport::WeakPtr& hci);
 
   bool StartEncryption() override;
 

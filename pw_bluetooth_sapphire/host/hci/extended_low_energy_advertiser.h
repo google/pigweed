@@ -7,15 +7,15 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/advertising_handle_map.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_advertiser.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
 namespace bt::hci {
 
-class Transport;
 class SequentialCommandRunner;
 
 class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
  public:
-  explicit ExtendedLowEnergyAdvertiser(fxl::WeakPtr<Transport> hci);
+  explicit ExtendedLowEnergyAdvertiser(hci::Transport::WeakPtr hci);
   ~ExtendedLowEnergyAdvertiser() override;
 
   bool AllowsRandomAddressChange() const override { return !IsAdvertising(); }

@@ -20,7 +20,7 @@ namespace bt::hci {
 LegacyLowEnergyAdvertiser::~LegacyLowEnergyAdvertiser() {
   // This object is probably being destroyed because the stack is shutting down, in which case the
   // HCI layer may have already been destroyed.
-  if (!hci() || !hci()->command_channel()) {
+  if (!hci().is_alive() || !hci()->command_channel()) {
     return;
   }
   StopAdvertising();

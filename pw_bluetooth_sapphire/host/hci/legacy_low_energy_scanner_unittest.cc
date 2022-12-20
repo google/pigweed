@@ -56,7 +56,7 @@ class LegacyLowEnergyScannerTest : public TestingBase, public LowEnergyScanner::
     test_device()->set_settings(settings);
 
     scanner_ = std::make_unique<LegacyLowEnergyScanner>(&fake_address_delegate_,
-                                                        transport()->WeakPtr(), dispatcher());
+                                                        transport()->GetWeakPtr(), dispatcher());
     scanner_->set_delegate(this);
   }
 

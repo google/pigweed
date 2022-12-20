@@ -33,8 +33,6 @@
 
 namespace bt::hci {
 
-class Transport;
-
 // Represents the HCI Bluetooth command channel. Manages HCI command and event packet control flow.
 // CommandChannel is expected to remain allocated as long as the host exists. On fatal errors, it is
 // put into an inactive state where no packets are processed, but it may continue to be accessed by

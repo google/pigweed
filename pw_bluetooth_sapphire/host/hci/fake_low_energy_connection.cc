@@ -10,7 +10,7 @@ FakeLowEnergyConnection::FakeLowEnergyConnection(hci_spec::ConnectionHandle hand
                                                  const DeviceAddress& local_address,
                                                  const DeviceAddress& peer_address,
                                                  hci_spec::ConnectionRole role,
-                                                 const fxl::WeakPtr<Transport>& hci)
+                                                 const hci::Transport::WeakPtr& hci)
     : LowEnergyConnection(handle, local_address, peer_address, hci_spec::LEConnectionParameters(),
                           role, hci) {}
 

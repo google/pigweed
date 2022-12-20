@@ -50,7 +50,7 @@ struct AdvertisementStatus {
 //  - Actually just accepts all ads and stores them in ad_store
 class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
  public:
-  FakeLowEnergyAdvertiser(const fxl::WeakPtr<hci::Transport>& hci, size_t max_ad_size,
+  FakeLowEnergyAdvertiser(const hci::Transport::WeakPtr& hci, size_t max_ad_size,
                           std::unordered_map<DeviceAddress, AdvertisementStatus>* ad_store)
       : hci::LowEnergyAdvertiser(hci), max_ad_size_(max_ad_size), ads_(ad_store), hci_(hci) {
     BT_ASSERT(ads_);
@@ -154,7 +154,7 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
   size_t max_ad_size_;
   std::unordered_map<DeviceAddress, AdvertisementStatus>* ads_;
   hci::Result<> pending_error_ = fit::ok();
-  fxl::WeakPtr<hci::Transport> hci_;
+  hci::Transport::WeakPtr hci_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeLowEnergyAdvertiser);
 };
@@ -213,8 +213,8 @@ class LowEnergyAdvertisingManagerTest : public TestingBase {
   }
 
   void MakeFakeAdvertiser(size_t max_ad_size = kDefaultMaxAdSize) {
-    advertiser_ =
-        std::make_unique<FakeLowEnergyAdvertiser>(transport()->WeakPtr(), max_ad_size, &ad_store_);
+    advertiser_ = std::make_unique<FakeLowEnergyAdvertiser>(transport()->GetWeakPtr(), max_ad_size,
+                                                            &ad_store_);
   }
 
   void MakeAdvertisingManager() {

@@ -44,7 +44,7 @@ class ScoConnectionTest : public TestingBase {
     test_device()->set_reset_sco_cb([](auto cb) { cb(PW_STATUS_OK); });
 
     auto conn = std::make_unique<hci::ScoConnection>(kConnectionHandle, DeviceAddress(),
-                                                     DeviceAddress(), transport()->WeakPtr());
+                                                     DeviceAddress(), transport()->GetWeakPtr());
     hci_conn_ = conn->GetWeakPtr();
     deactivated_cb_count_ = 0;
     sco_conn_ = CreateScoConnection(std::move(conn));
@@ -73,7 +73,7 @@ class ScoConnectionTest : public TestingBase {
  private:
   size_t deactivated_cb_count_;
   std::unique_ptr<ScoConnection> sco_conn_;
-  fxl::WeakPtr<hci::ScoConnection> hci_conn_;
+  hci::ScoConnection::WeakPtr hci_conn_;
 };
 
 class HciScoConnectionTest : public ScoConnectionTest {
@@ -124,12 +124,12 @@ TEST_F(ScoConnectionTest, ActivateAndDeactivate) {
 
   EXPECT_TRUE(sco_conn()->Activate(/*rx_callback=*/[]() {}, std::move(closed_cb)));
   EXPECT_EQ(close_count, 0u);
-  EXPECT_TRUE(hci_conn());
+  EXPECT_TRUE(hci_conn().is_alive());
 
   sco_conn()->Deactivate();
   EXPECT_EQ(close_count, 0u);
   EXPECT_EQ(deactivated_count(), 1u);
-  EXPECT_FALSE(hci_conn());
+  EXPECT_FALSE(hci_conn().is_alive());
 
   // Deactivating should be idempotent.
   sco_conn()->Deactivate();
@@ -157,12 +157,12 @@ TEST_F(ScoConnectionTest, ActivateAndClose) {
 
   EXPECT_TRUE(sco_conn()->Activate(/*rx_callback=*/[]() {}, std::move(closed_cb)));
   EXPECT_EQ(close_count, 0u);
-  EXPECT_TRUE(hci_conn());
+  EXPECT_TRUE(hci_conn().is_alive());
 
   sco_conn()->Close();
   EXPECT_EQ(close_count, 1u);
   EXPECT_EQ(deactivated_count(), 0u);
-  EXPECT_FALSE(hci_conn());
+  EXPECT_FALSE(hci_conn().is_alive());
 
   // Closing should be idempotent.
   sco_conn()->Close();
@@ -189,10 +189,10 @@ TEST_F(ScoConnectionTest, UniqueId) {
 }
 
 TEST_F(ScoConnectionTest, CloseWithoutActivating) {
-  EXPECT_TRUE(hci_conn());
+  EXPECT_TRUE(hci_conn().is_alive());
   sco_conn()->Close();
   EXPECT_EQ(deactivated_count(), 0u);
-  EXPECT_FALSE(hci_conn());
+  EXPECT_FALSE(hci_conn().is_alive());
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kConnectionHandle));
 }
 
@@ -207,14 +207,14 @@ TEST_F(ScoConnectionTest, ActivateAndPeerDisconnectDeactivates) {
 
   EXPECT_TRUE(sco_conn()->Activate(/*rx_callback=*/[]() {}, std::move(closed_cb)));
   EXPECT_EQ(close_count, 0u);
-  ASSERT_TRUE(hci_conn());
+  ASSERT_TRUE(hci_conn().is_alive());
 
   test_device()->SendCommandChannelPacket(
       bt::testing::DisconnectionCompletePacket(kConnectionHandle));
   RunLoopUntilIdle();
   EXPECT_EQ(close_count, 1u);
   EXPECT_EQ(deactivated_count(), 0u);
-  EXPECT_FALSE(hci_conn());
+  EXPECT_FALSE(hci_conn().is_alive());
 }
 
 TEST_F(HciScoConnectionTestWithFakeScoChannel, ReceiveTwoPackets) {
@@ -342,7 +342,7 @@ TEST_F(HciScoConnectionTest, ControllerPacketCountClearedOnPeerDisconnect) {
 
   EXPECT_TRUE(sco_conn()->Activate(/*rx_callback=*/[]() {}, std::move(closed_cb_0)));
   EXPECT_EQ(close_count_0, 0u);
-  ASSERT_TRUE(hci_conn());
+  ASSERT_TRUE(hci_conn().is_alive());
 
   // Fill up the controller buffer.
   ASSERT_EQ(kMaxScoPacketCount, 1u);
@@ -359,8 +359,8 @@ TEST_F(HciScoConnectionTest, ControllerPacketCountClearedOnPeerDisconnect) {
   EXPECT_TRUE(test_device()->AllExpectedScoPacketsSent());
 
   // Queue a packet on a second connection.
-  auto hci_conn_1 = std::make_unique<hci::ScoConnection>(kConnectionHandle2, DeviceAddress(),
-                                                         DeviceAddress(), transport()->WeakPtr());
+  auto hci_conn_1 = std::make_unique<hci::ScoConnection>(
+      kConnectionHandle2, DeviceAddress(), DeviceAddress(), transport()->GetWeakPtr());
   std::unique_ptr<ScoConnection> sco_conn_1 = CreateScoConnection(std::move(hci_conn_1));
   size_t close_count_1 = 0;
   auto closed_cb_1 = [&] { close_count_1++; };
@@ -382,7 +382,7 @@ TEST_F(HciScoConnectionTest, ControllerPacketCountClearedOnPeerDisconnect) {
   EXPECT_SCO_PACKET_OUT(test_device(), packet_buffer_1);
   RunLoopUntilIdle();
   EXPECT_EQ(close_count_0, 1u);
-  EXPECT_FALSE(hci_conn());
+  EXPECT_FALSE(hci_conn().is_alive());
   EXPECT_EQ(close_count_1, 0u);
 
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kConnectionHandle2));

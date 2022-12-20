@@ -13,7 +13,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/metrics.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_request.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/bredr_interrogator.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
@@ -26,13 +25,13 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
 
 namespace hci {
 class SequentialCommandRunner;
-class Transport;
 }  // namespace hci
 
 namespace gap {
@@ -66,7 +65,7 @@ enum class DisconnectReason : uint8_t {
 // from the internal |connections_| map.
 class BrEdrConnectionManager final {
  public:
-  BrEdrConnectionManager(fxl::WeakPtr<hci::Transport> hci, PeerCache* peer_cache,
+  BrEdrConnectionManager(hci::Transport::WeakPtr hci, PeerCache* peer_cache,
                          DeviceAddress local_address, l2cap::ChannelManager* l2cap,
                          bool use_interlaced_scan);
   ~BrEdrConnectionManager();
@@ -317,7 +316,7 @@ class BrEdrConnectionManager final {
 
   using ConnectionMap = std::unordered_map<hci_spec::ConnectionHandle, BrEdrConnection>;
 
-  fxl::WeakPtr<hci::Transport> hci_;
+  hci::Transport::WeakPtr hci_;
   std::unique_ptr<hci::SequentialCommandRunner> hci_cmd_runner_;
 
   // The pairing delegate used for authentication challenges. If nullptr, all

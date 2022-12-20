@@ -33,8 +33,7 @@ constexpr const char* kInspectIsOutboundPropertyName = "is_outbound";
 }  // namespace
 
 LowEnergyConnector::LowEnergyConnector(PeerId peer_id, LowEnergyConnectionOptions options,
-                                       fxl::WeakPtr<hci::Transport> transport,
-                                       PeerCache* peer_cache,
+                                       hci::Transport::WeakPtr transport, PeerCache* peer_cache,
                                        fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
                                        l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt)
     : peer_id_(peer_id),
@@ -42,9 +41,9 @@ LowEnergyConnector::LowEnergyConnector(PeerId peer_id, LowEnergyConnectionOption
       l2cap_(l2cap),
       gatt_(gatt),
       options_(options),
-      transport_(transport),
-      le_connection_manager_(conn_mgr) {
-  BT_ASSERT(transport_);
+      transport_(std::move(transport)),
+      le_connection_manager_(std::move(conn_mgr)) {
+  BT_ASSERT(transport_.is_alive());
   BT_ASSERT(peer_cache_);
   BT_ASSERT(l2cap_);
   BT_ASSERT(gatt_);

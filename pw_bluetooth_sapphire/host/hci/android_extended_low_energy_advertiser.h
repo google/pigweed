@@ -25,7 +25,7 @@ class AndroidExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   // Create an AndroidExtendedLowEnergyAdvertiser. The maximum number of advertisements the
   // controller can support (obtained via hci_spec::vendor::android::LEGetVendorCapabilities)
   // should be passed to the constructor via the max_advertisements parameter.
-  explicit AndroidExtendedLowEnergyAdvertiser(fxl::WeakPtr<Transport> hci,
+  explicit AndroidExtendedLowEnergyAdvertiser(hci::Transport::WeakPtr hci,
                                               uint8_t max_advertisements);
   ~AndroidExtendedLowEnergyAdvertiser() override;
 

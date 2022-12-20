@@ -10,12 +10,12 @@
 
 namespace bt::hci {
 
-SequentialCommandRunner::SequentialCommandRunner(fxl::WeakPtr<Transport> transport)
+SequentialCommandRunner::SequentialCommandRunner(hci::Transport::WeakPtr transport)
     : transport_(std::move(transport)),
       sequence_number_(0u),
       running_commands_(0u),
       weak_ptr_factory_(this) {
-  BT_DEBUG_ASSERT(transport_);
+  BT_DEBUG_ASSERT(transport_.is_alive());
 }
 
 void SequentialCommandRunner::QueueCommand(CommandPacketVariant command_packet,

@@ -15,13 +15,10 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
-
-namespace hci {
-class Transport;
-}  // namespace hci
 
 namespace gap {
 
@@ -71,7 +68,7 @@ class LowEnergyAddressManager final : public hci::LocalAddressDelegate {
   using StateQueryDelegate = fit::function<bool()>;
 
   LowEnergyAddressManager(const DeviceAddress& public_address, StateQueryDelegate delegate,
-                          fxl::WeakPtr<hci::Transport> hci);
+                          hci::Transport::WeakPtr hci);
   ~LowEnergyAddressManager();
 
   // Assigns the IRK to generate a RPA for the next address refresh when privacy
@@ -125,7 +122,7 @@ class LowEnergyAddressManager final : public hci::LocalAddressDelegate {
   void NotifyAddressUpdate();
 
   StateQueryDelegate delegate_;
-  fxl::WeakPtr<hci::Transport> hci_;
+  hci::Transport::WeakPtr hci_;
   bool privacy_enabled_;
 
   // The public device address (i.e. BD_ADDR) that is assigned to the

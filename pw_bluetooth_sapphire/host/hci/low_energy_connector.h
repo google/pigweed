@@ -19,12 +19,12 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::hci {
 
 class LocalAddressDelegate;
-class Transport;
 
 // A LowEnergyConnector abstracts over the HCI commands and events involved in
 // initiating a direct link-layer connection with a peer device. This class also
@@ -64,7 +64,7 @@ class LowEnergyConnector : public LocalAddressClient {
   //
   //   - |delegate|: The delegate that will be notified when a new logical link
   //     is established due to an incoming request (remote initiated).
-  LowEnergyConnector(fxl::WeakPtr<Transport> hci, LocalAddressDelegate* local_addr_delegate,
+  LowEnergyConnector(Transport::WeakPtr hci, LocalAddressDelegate* local_addr_delegate,
                      async_dispatcher_t* dispatcher, IncomingConnectionDelegate delegate);
 
   // Deleting an instance cancels any pending connection request.
@@ -158,7 +158,7 @@ class LowEnergyConnector : public LocalAddressClient {
   async_dispatcher_t* dispatcher_;
 
   // The HCI transport.
-  fxl::WeakPtr<Transport> hci_;
+  Transport::WeakPtr hci_;
 
   // Used to obtain the local device address type to use during initiation.
   LocalAddressDelegate* local_addr_delegate_;  // weak

@@ -34,7 +34,7 @@ class BrEdrInterrogator final {
 
   // |peer| must live longer than this object.
   BrEdrInterrogator(fxl::WeakPtr<Peer>, hci_spec::ConnectionHandle handle,
-                    fxl::WeakPtr<hci::Transport> hci);
+                    hci::Transport::WeakPtr hci);
 
   // Cancels the pending interrogation without calling the result callback.
   ~BrEdrInterrogator() = default;
@@ -62,7 +62,7 @@ class BrEdrInterrogator final {
   void QueueReadRemoteVersionInformation();
 
   // The hci transport to use.
-  fxl::WeakPtr<hci::Transport> hci_;
+  hci::Transport::WeakPtr hci_;
 
   fxl::WeakPtr<Peer> peer_;
   const PeerId peer_id_;

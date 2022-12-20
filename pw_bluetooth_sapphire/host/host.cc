@@ -36,7 +36,7 @@ bool Host::Initialize(inspect::Node& root_node, InitCallback init_cb, ErrorCallb
 
   gatt_ = gatt::GATT::Create();
 
-  gap_ = gap::Adapter::Create(hci_->WeakPtr(), gatt_->AsWeakPtr());
+  gap_ = gap::Adapter::Create(hci_->GetWeakPtr(), gatt_->AsWeakPtr());
   if (!gap_)
     return false;
 

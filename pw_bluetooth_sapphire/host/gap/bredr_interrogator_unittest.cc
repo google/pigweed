@@ -56,7 +56,7 @@ class BrEdrInterrogatorTest : public TestingBase {
     EXPECT_EQ(0u, peer_->features().last_page_number());
 
     interrogator_ = std::make_unique<BrEdrInterrogator>(peer_->GetWeakPtr(), kConnectionHandle,
-                                                        transport()->WeakPtr());
+                                                        transport()->GetWeakPtr());
   }
 
   void TearDown() override {

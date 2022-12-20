@@ -73,7 +73,7 @@ class BrEdrDiscoveryManagerTest : public TestingBase {
     EXPECT_CMD_PACKET_OUT(test_device(), kWriteInquiryType, &kWriteInquiryTypeRsp);
 
     discovery_manager_ =
-        std::make_unique<BrEdrDiscoveryManager>(transport()->WeakPtr(), mode, &peer_cache_);
+        std::make_unique<BrEdrDiscoveryManager>(transport()->GetWeakPtr(), mode, &peer_cache_);
 
     RunLoopUntilIdle();
   }

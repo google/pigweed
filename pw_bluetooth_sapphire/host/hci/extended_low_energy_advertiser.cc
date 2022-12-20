@@ -9,7 +9,7 @@
 
 namespace bt::hci {
 
-ExtendedLowEnergyAdvertiser::ExtendedLowEnergyAdvertiser(fxl::WeakPtr<Transport> hci_ptr)
+ExtendedLowEnergyAdvertiser::ExtendedLowEnergyAdvertiser(hci::Transport::WeakPtr hci_ptr)
     : LowEnergyAdvertiser(std::move(hci_ptr)), weak_ptr_factory_(this) {
   auto self = weak_ptr_factory_.GetWeakPtr();
   set_terminated_event_handler_id_ = hci()->command_channel()->AddLEMetaEventHandler(
@@ -25,7 +25,7 @@ ExtendedLowEnergyAdvertiser::ExtendedLowEnergyAdvertiser(fxl::WeakPtr<Transport>
 ExtendedLowEnergyAdvertiser::~ExtendedLowEnergyAdvertiser() {
   // This object is probably being destroyed because the stack is shutting down, in which case the
   // HCI layer may have already been destroyed.
-  if (!hci() || !hci()->command_channel()) {
+  if (!hci().is_alive() || !hci()->command_channel()) {
     return;
   }
   hci()->command_channel()->RemoveEventHandler(set_terminated_event_handler_id_);

@@ -76,7 +76,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
       RunLoopUntilIdle();
     }
     fake_link_ = std::make_unique<hci::testing::FakeLowEnergyConnection>(
-        kConnectionHandle, kLocalAddr, kPeerAddr, link_role, transport_->WeakPtr());
+        kConnectionHandle, kLocalAddr, kPeerAddr, link_role, transport_->GetWeakPtr());
 
     pairing_ = SecurityManager::Create(fake_link_->GetWeakPtr(), fake_chan_->GetWeakPtr(), ioc,
                                        weak_ptr_factory_.GetWeakPtr(), bondable_mode,

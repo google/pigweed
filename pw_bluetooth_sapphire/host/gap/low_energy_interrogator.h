@@ -22,7 +22,7 @@ class LowEnergyInterrogator final {
  public:
   // |peer| must outlive this object.
   LowEnergyInterrogator(fxl::WeakPtr<Peer> peer, hci_spec::ConnectionHandle handle,
-                        fxl::WeakPtr<hci::Transport> hci);
+                        hci::Transport::WeakPtr hci);
 
   // Destroying the LowEnergyInterrogator effectively abandons an in-flight interrogation, if there
   // is one. The result callback will not be called.
@@ -43,7 +43,7 @@ class LowEnergyInterrogator final {
   void QueueReadLERemoteFeatures();
   void QueueReadRemoteVersionInformation();
 
-  fxl::WeakPtr<hci::Transport> hci_;
+  hci::Transport::WeakPtr hci_;
 
   fxl::WeakPtr<Peer> peer_;
   // Cache of the PeerId to allow for debug logging even if the WeakPtr<Peer> is invalidated

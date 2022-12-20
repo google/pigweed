@@ -55,7 +55,7 @@ class LowEnergyConnection final : public sm::Delegate {
       LowEnergyConnectionOptions connection_options, PeerDisconnectCallback peer_disconnect_cb,
       ErrorCallback error_cb, fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
       l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt,
-      fxl::WeakPtr<hci::Transport> transport);
+      hci::Transport::WeakPtr transport);
 
   // Notifies request callbacks and connection refs of the disconnection.
   ~LowEnergyConnection() override;
@@ -136,7 +136,7 @@ class LowEnergyConnection final : public sm::Delegate {
                       PeerDisconnectCallback peer_disconnect_cb, ErrorCallback error_cb,
                       fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
                       l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt,
-                      fxl::WeakPtr<hci::Transport> transport);
+                      hci::Transport::WeakPtr transport);
 
   // Registers this connection with L2CAP and initializes the fixed channel
   // protocols. Return true on success, false on failure.
@@ -294,7 +294,7 @@ class LowEnergyConnection final : public sm::Delegate {
   // SMP pairing manager.
   std::unique_ptr<sm::SecurityManager> sm_;
 
-  fxl::WeakPtr<hci::Transport> transport_;
+  hci::Transport::WeakPtr transport_;
 
   // Called when the peer disconnects.
   PeerDisconnectCallback peer_disconnect_callback_;
