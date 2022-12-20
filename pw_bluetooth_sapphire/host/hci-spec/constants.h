@@ -1333,16 +1333,6 @@ enum class ScanEnableBit : uint8_t {
 
 using ScanEnableType = uint8_t;
 
-// The minimum and maximum range values for Page Scan Interval (in time slices)
-// (see Core Spec v5.0, Vol 2, Part E, Section 7.3.19)
-constexpr uint16_t kPageScanIntervalMin = 0x0012;
-constexpr uint16_t kPageScanIntervalMax = 0x1000;
-
-// The minimum and maximum range valeus for Page Scan Window (in time slices)
-// (see Core Spec v5.0, Vol 2, Part E, Section 7.3.19)
-constexpr uint16_t kPageScanWindowMin = 0x0011;
-constexpr uint16_t kPageScanWindowMax = 0x1000;
-
 enum class PageScanType : uint8_t {
   kStandardScan = 0x00, // Standard scan (default) (mandatory)
   kInterlacedScan = 0x01, // Interlaced scan

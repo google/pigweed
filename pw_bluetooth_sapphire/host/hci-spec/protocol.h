@@ -384,16 +384,6 @@ struct ReadPageScanActivityReturnParams {
 // Write Page Scan Activity Command (v1.1) (BR/EDR)
 constexpr OpCode kWritePageScanActivity = ControllerAndBasebandOpCode(0x001C);
 
-struct WritePageScanActivityCommandParams {
-  // Page_Scan_Interval, in time slices (0.625ms)
-  // Valid Range: kPageScanIntervalMin - kPageScanIntervalMax in hci_constants.h
-  uint16_t page_scan_interval;
-
-  // Page_Scan_Window, in time slices
-  // Valid Range: kPageScanWindowMin - kPageScanWindowMax in hci_constants.h
-  uint16_t page_scan_window;
-} __PACKED;
-
 // ===============================================
 // Read Inquiry Scan Activity Command (v1.1) (BR/EDR)
 constexpr OpCode kReadInquiryScanActivity = ControllerAndBasebandOpCode(0x001D);

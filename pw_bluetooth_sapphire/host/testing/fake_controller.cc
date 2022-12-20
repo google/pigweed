@@ -1129,10 +1129,9 @@ void FakeController::OnWriteClassOfDevice(const hci_spec::WriteClassOfDeviceComm
   RespondWithCommandComplete(hci_spec::kWriteClassOfDevice, hci_spec::StatusCode::SUCCESS);
 }
 
-void FakeController::OnWritePageScanActivity(
-    const hci_spec::WritePageScanActivityCommandParams& params) {
-  page_scan_interval_ = letoh16(params.page_scan_interval);
-  page_scan_window_ = letoh16(params.page_scan_window);
+void FakeController::OnWritePageScanActivity(hci_spec::WritePageScanActivityCommandView params) {
+  page_scan_interval_ = params.page_scan_interval().Read();
+  page_scan_window_ = params.page_scan_window().Read();
   RespondWithCommandComplete(hci_spec::kWritePageScanActivity, hci_spec::StatusCode::SUCCESS);
 }
 
@@ -2858,11 +2857,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnReadPageScanActivity();
       break;
     }
-    case hci_spec::kWritePageScanActivity: {
-      const auto& params = command_packet.payload<hci_spec::WritePageScanActivityCommandParams>();
-      OnWritePageScanActivity(params);
-      break;
-    }
     case hci_spec::kWriteClassOfDevice: {
       const auto& params = command_packet.payload<hci_spec::WriteClassOfDeviceCommandParams>();
       OnWriteClassOfDevice(params);
@@ -3012,7 +3006,8 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kReadRemoteVersionInfo:
     case hci_spec::kIOCapabilityRequestReply:
     case hci_spec::kSetEventMask:
-    case hci_spec::kWriteLocalName: {
+    case hci_spec::kWriteLocalName:
+    case hci_spec::kWritePageScanActivity: {
       // This case is for packet types that have been migrated to the new Emboss architecture. Their
       // old version can be still be assembled from the HciEmulator channel, so here we repackage
       // and forward them as Emboss packets.
@@ -3127,6 +3122,11 @@ void FakeController::HandleReceivedCommandPacket(hci::EmbossCommandPacket& comma
     case hci_spec::kWriteLocalName: {
       const auto params = command_packet.view<hci_spec::WriteLocalNameCommandView>();
       OnWriteLocalName(params);
+      break;
+    }
+    case hci_spec::kWritePageScanActivity: {
+      const auto& params = command_packet.view<hci_spec::WritePageScanActivityCommandView>();
+      OnWritePageScanActivity(params);
       break;
     }
     default: {

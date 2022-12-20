@@ -545,7 +545,7 @@ class FakeController final : public ControllerTestDoubleBase {
   void OnWriteClassOfDevice(const hci_spec::WriteClassOfDeviceCommandParams& params);
 
   // Called when a HCI_Write_Page_Scan_Activity command is received.
-  void OnWritePageScanActivity(const hci_spec::WritePageScanActivityCommandParams& params);
+  void OnWritePageScanActivity(hci_spec::WritePageScanActivityCommandView params);
 
   // Called when a HCI_Read_Page_Scan_Activity command is received.
   void OnReadPageScanActivity();

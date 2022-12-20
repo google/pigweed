@@ -482,12 +482,11 @@ void BrEdrConnectionManager::WritePageScanSettings(uint16_t interval, uint16_t w
     return;
   }
 
-  auto write_activity = hci::CommandPacket::New(
-      hci_spec::kWritePageScanActivity, sizeof(hci_spec::WritePageScanActivityCommandParams));
-  auto* activity_params =
-      write_activity->mutable_payload<hci_spec::WritePageScanActivityCommandParams>();
-  activity_params->page_scan_interval = htole16(interval);
-  activity_params->page_scan_window = htole16(window);
+  auto write_activity = hci::EmbossCommandPacket::New<hci_spec::WritePageScanActivityCommandWriter>(
+      hci_spec::kWritePageScanActivity);
+  auto activity_params = write_activity.view_t();
+  activity_params.page_scan_interval().Write(interval);
+  activity_params.page_scan_window().Write(window);
 
   hci_cmd_runner_->QueueCommand(
       std::move(write_activity), [self, interval, window](const hci::EventPacket& event) {

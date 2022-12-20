@@ -73,6 +73,22 @@ enum PageTimeout:
   DEFAULT = 0x2000
 
 
+enum PageScanInterval:
+  -- The minimum and maximum range values for Page Scan Interval (in time slices)
+  -- (see Core Spec v5.0, Vol 2, Part E, Section 7.3.19)
+  [maximum_bits: 16]
+  MIN = 0x0012
+  MAX = 0x1000
+
+
+enum PageScanWindow:
+  -- The minimum and maximum range valeus for Page Scan Window (in time slices)
+  -- (see Core Spec v5.0, Vol 2, Part E, Section 7.3.19)
+  [maximum_bits: 16]
+  MIN = 0x0011
+  MAX = 0x1000
+
+
 enum StatusCode:
   -- HCI Error Codes. Refer to Core Spec v5.0, Vol 2, Part D for definitions and
   -- descriptions. All enum values are in increasing numerical order, however the
@@ -688,6 +704,23 @@ struct WritePageTimeoutCommand:
     -- Page_Timeout, in time slices (0.625 ms)
     -- Range: From MIN to MAX in PageTimeout in this file
     [requires: 0x0001 <= this <= 0xFFFF]
+
+
+struct WritePageScanActivityCommand:
+  -- Write Page Scan Activity Command (v1.1) (BR/EDR)
+  let hdr_size = EmbossCommandHeader.$size_in_bytes
+  0     [+hdr_size]               EmbossCommandHeader              header
+
+  $next [+2]                      UInt                             page_scan_interval
+    -- Page_Scan_Interval, in time slices (0.625ms)
+    -- Valid Range: MIN - MAX in PageScanInterval in this file
+    [requires: 0x0012 <= this <= 0x1000]
+
+
+  $next [+2]                      UInt                             page_scan_window
+    -- Page_Scan_Window, in time slices
+    -- Valid Range: MIN - MAX in PageScanWindow in this file
+    [requires: 0x0011 <= this <= 0x1000]
 
 
 # ============================ Test packets =============================
