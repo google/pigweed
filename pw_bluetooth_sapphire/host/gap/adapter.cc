@@ -1032,7 +1032,7 @@ void AdapterImpl::InitializeStep4() {
 
   // Initialize the LE manager objects
   le_discovery_manager_ =
-      std::make_unique<LowEnergyDiscoveryManager>(hci_, hci_le_scanner_.get(), &peer_cache_);
+      std::make_unique<LowEnergyDiscoveryManager>(hci_le_scanner_.get(), &peer_cache_);
   le_discovery_manager_->AttachInspect(adapter_node_, kInspectLowEnergyDiscoveryManagerNodeName);
   le_discovery_manager_->set_peer_connectable_callback(
       fit::bind_member<&AdapterImpl::OnLeAutoConnectRequest>(this));

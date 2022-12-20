@@ -9,6 +9,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_advertiser.h"
@@ -48,12 +49,12 @@ class AdvertisementInstance final {
  private:
   friend class LowEnergyAdvertisingManager;
 
-  AdvertisementInstance(AdvertisementId id, fxl::WeakPtr<LowEnergyAdvertisingManager> owner);
+  AdvertisementInstance(AdvertisementId id, WeakSelf<LowEnergyAdvertisingManager>::WeakPtr owner);
   void Move(AdvertisementInstance* other);
   void Reset();
 
   AdvertisementId id_;
-  fxl::WeakPtr<LowEnergyAdvertisingManager> owner_;
+  WeakSelf<LowEnergyAdvertisingManager>::WeakPtr owner_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdvertisementInstance);
 };
@@ -130,7 +131,7 @@ class LowEnergyAdvertisingManager {
 
   // Note: Should remain the last member so it'll be destroyed and
   // invalidate it's pointers before other members are destroyed.
-  fxl::WeakPtrFactory<LowEnergyAdvertisingManager> weak_ptr_factory_;
+  WeakSelf<LowEnergyAdvertisingManager> weak_ptr_factory_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyAdvertisingManager);
 };

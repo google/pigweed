@@ -138,7 +138,7 @@ Server::Server(l2cap::ChannelManager* l2cap)
   sdp_chan_params.mode = l2cap::ChannelMode::kBasic;
   l2cap_->RegisterService(l2cap::kSDP, sdp_chan_params,
                           [self = weak_ptr_factory_.GetWeakPtr()](auto channel) {
-                            if (self)
+                            if (self.is_alive())
                               self->AddConnection(channel);
                           });
 
@@ -172,7 +172,7 @@ bool Server::AddConnection(fxl::WeakPtr<l2cap::Channel> channel) {
   auto self = weak_ptr_factory_.GetWeakPtr();
   bool activated = channel->Activate(
       [self, chan_id, max_tx_sdu_size = channel->max_tx_sdu_size()](ByteBufferPtr sdu) {
-        if (self) {
+        if (self.is_alive()) {
           auto packet = self->HandleRequest(std::move(sdu), max_tx_sdu_size);
           if (packet) {
             self->Send(chan_id, std::move(packet.value()));
@@ -180,7 +180,7 @@ bool Server::AddConnection(fxl::WeakPtr<l2cap::Channel> channel) {
         }
       },
       [self, chan_id] {
-        if (self) {
+        if (self.is_alive()) {
           self->OnChannelClosed(chan_id);
         }
       });
@@ -335,11 +335,11 @@ RegistrationHandle Server::RegisterService(std::vector<ServiceRecord> records,
     BT_DEBUG_ASSERT(success);
     const ServiceRecord& placed_record = it->second;
     if (placed_record.IsProtocolOnly()) {
-      bt_log(TRACE, "sdp", "registered protocol-only service %#.8x, Protocol: %s", placed_record.handle(),
-          bt_str(placed_record.GetAttribute(kProtocolDescriptorList)));
+      bt_log(TRACE, "sdp", "registered protocol-only service %#.8x, Protocol: %s",
+             placed_record.handle(), bt_str(placed_record.GetAttribute(kProtocolDescriptorList)));
     } else {
       bt_log(TRACE, "sdp", "registered service %#.8x, classes: %s", placed_record.handle(),
-           bt_str(placed_record.GetAttribute(kServiceClassIdList)));
+             bt_str(placed_record.GetAttribute(kServiceClassIdList)));
     }
   }
 

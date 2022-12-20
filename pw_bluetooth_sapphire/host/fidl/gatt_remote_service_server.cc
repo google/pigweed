@@ -234,7 +234,7 @@ void GattRemoteServiceServer::ReadByType(fuchsia::bluetooth::Uuid uuid,
       [self = weak_ptr_factory_.GetWeakPtr(), cb = std::move(callback), func = __FUNCTION__](
           bt::att::Result<> status,
           std::vector<bt::gatt::RemoteService::ReadByTypeResult> results) {
-        if (!self) {
+        if (!self.is_alive()) {
           return;
         }
 
@@ -310,7 +310,7 @@ void GattRemoteServiceServer::NotifyCharacteristic(uint64_t id, bool enable,
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto value_cb = [self, id](const ByteBuffer& value, bool /*maybe_truncated*/) {
-    if (!self)
+    if (!self.is_alive())
       return;
 
     self->binding()->events().OnCharacteristicValueUpdated(id, value.ToVector());
@@ -318,7 +318,7 @@ void GattRemoteServiceServer::NotifyCharacteristic(uint64_t id, bool enable,
 
   auto status_cb = [self, svc = service_, handle, callback = std::move(callback)](
                        bt::att::Result<> status, HandlerId handler_id) {
-    if (!self) {
+    if (!self.is_alive()) {
       if (status.is_ok()) {
         // Disable this handler so it doesn't leak.
         svc->DisableNotifications(handle, handler_id, NopStatusCallback);

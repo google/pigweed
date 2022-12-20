@@ -84,7 +84,7 @@ class LowEnergyConnectionManager final {
                              hci::LocalAddressDelegate* addr_delegate,
                              hci::LowEnergyConnector* connector, PeerCache* peer_cache,
                              l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt,
-                             fxl::WeakPtr<LowEnergyDiscoveryManager> discovery_manager,
+                             LowEnergyDiscoveryManager::WeakPtr discovery_manager,
                              sm::SecurityManagerFactory sm_creator);
   ~LowEnergyConnectionManager();
 
@@ -291,7 +291,7 @@ class LowEnergyConnectionManager final {
   // Local GATT service registry.
   std::unique_ptr<gatt::LocalServiceManager> gatt_registry_;
 
-  fxl::WeakPtr<LowEnergyDiscoveryManager> discovery_manager_;
+  LowEnergyDiscoveryManager::WeakPtr discovery_manager_;
 
   // Callbacks used by unit tests to observe connection state events.
   DisconnectCallback test_disconn_cb_;

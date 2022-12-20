@@ -90,7 +90,7 @@ const char* kInspectDisconnectRemoteDisconnectionNodeName = "disconnect_remote_d
 LowEnergyConnectionManager::LowEnergyConnectionManager(
     fxl::WeakPtr<hci::Transport> hci, hci::LocalAddressDelegate* addr_delegate,
     hci::LowEnergyConnector* connector, PeerCache* peer_cache, l2cap::ChannelManager* l2cap,
-    fxl::WeakPtr<gatt::GATT> gatt, fxl::WeakPtr<LowEnergyDiscoveryManager> discovery_manager,
+    fxl::WeakPtr<gatt::GATT> gatt, LowEnergyDiscoveryManager::WeakPtr discovery_manager,
     sm::SecurityManagerFactory sm_creator)
     : hci_(std::move(hci)),
       security_mode_(LESecurityMode::Mode1),

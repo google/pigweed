@@ -72,10 +72,10 @@ LowEnergyConnector::~LowEnergyConnector() {
 
 void LowEnergyConnector::StartOutbound(zx::duration request_timeout,
                                        hci::LowEnergyConnector* connector,
-                                       fxl::WeakPtr<LowEnergyDiscoveryManager> discovery_manager,
+                                       LowEnergyDiscoveryManager::WeakPtr discovery_manager,
                                        ResultCallback cb) {
   BT_ASSERT(*state_ == State::kDefault);
-  BT_ASSERT(discovery_manager);
+  BT_ASSERT(discovery_manager.is_alive());
   BT_ASSERT(connector);
   BT_ASSERT(request_timeout.get() != 0);
   hci_connector_ = connector;
@@ -185,6 +185,9 @@ const char* LowEnergyConnector::StateToString(State state) {
 }
 
 void LowEnergyConnector::StartScanningForPeer() {
+  if (!discovery_manager_.is_alive()) {
+    return;
+  }
   auto self = weak_ptr_factory_.GetWeakPtr();
 
   state_.Set(State::kStartingScanning);
@@ -258,7 +261,10 @@ void LowEnergyConnector::RequestCreateConnection() {
             *state_ == State::kPauseBeforeConnectionRetry);
 
   // Pause discovery until connection complete.
-  auto pause_token = discovery_manager_->PauseDiscovery();
+  std::optional<LowEnergyDiscoveryManager::PauseToken> pause_token;
+  if (discovery_manager_.is_alive()) {
+    pause_token = discovery_manager_->PauseDiscovery();
+  }
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   auto status_cb = [self, pause = std::move(pause_token)](hci::Result<> status, auto link) {

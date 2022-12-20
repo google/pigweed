@@ -26,10 +26,10 @@ const char* kInspectFailedCountPropertyName = "failed_count";
 const char* kInspectScanIntervalPropertyName = "scan_interval_ms";
 const char* kInspectScanWindowPropertyName = "scan_window_ms";
 
-LowEnergyDiscoverySession::LowEnergyDiscoverySession(
-    bool active, fxl::WeakPtr<LowEnergyDiscoveryManager> manager)
-    : alive_(true), active_(active), manager_(manager) {
-  BT_ASSERT(manager_);
+LowEnergyDiscoverySession::LowEnergyDiscoverySession(bool active,
+                                                     LowEnergyDiscoveryManager::WeakPtr manager)
+    : alive_(true), active_(active), manager_(std::move(manager)) {
+  BT_ASSERT(manager_.is_alive());
 }
 
 LowEnergyDiscoverySession::~LowEnergyDiscoverySession() {
@@ -40,7 +40,7 @@ LowEnergyDiscoverySession::~LowEnergyDiscoverySession() {
 
 void LowEnergyDiscoverySession::SetResultCallback(PeerFoundCallback callback) {
   peer_found_callback_ = std::move(callback);
-  if (!manager_)
+  if (!manager_.is_alive())
     return;
   for (PeerId cached_peer_id : manager_->cached_scan_results()) {
     auto peer = manager_->peer_cache()->FindById(cached_peer_id);
@@ -56,7 +56,7 @@ void LowEnergyDiscoverySession::SetResultCallback(PeerFoundCallback callback) {
 
 void LowEnergyDiscoverySession::Stop() {
   BT_DEBUG_ASSERT(alive_);
-  if (manager_) {
+  if (manager_.is_alive()) {
     manager_->RemoveSession(this);
   }
   alive_ = false;
@@ -82,16 +82,14 @@ void LowEnergyDiscoverySession::NotifyError() {
   }
 }
 
-LowEnergyDiscoveryManager::LowEnergyDiscoveryManager(fxl::WeakPtr<hci::Transport> hci,
-                                                     hci::LowEnergyScanner* scanner,
+LowEnergyDiscoveryManager::LowEnergyDiscoveryManager(hci::LowEnergyScanner* scanner,
                                                      PeerCache* peer_cache)
-    : dispatcher_(async_get_default_dispatcher()),
+    : WeakSelf(this),
+      dispatcher_(async_get_default_dispatcher()),
       state_(State::kIdle, StateToString),
       peer_cache_(peer_cache),
       paused_count_(0),
-      scanner_(scanner),
-      weak_ptr_factory_(this) {
-  BT_DEBUG_ASSERT(hci);
+      scanner_(scanner) {
   BT_DEBUG_ASSERT(dispatcher_);
   BT_DEBUG_ASSERT(peer_cache_);
   BT_DEBUG_ASSERT(scanner_);
@@ -164,8 +162,8 @@ LowEnergyDiscoveryManager::PauseToken LowEnergyDiscoveryManager::PauseDiscovery(
 
   paused_count_.Set(*paused_count_ + 1);
 
-  return PauseToken([this, self = weak_ptr_factory_.GetWeakPtr()]() {
-    if (!self) {
+  return PauseToken([this, self = GetWeakPtr()]() {
+    if (!self.is_alive()) {
       return;
     }
 
@@ -209,7 +207,7 @@ std::unique_ptr<LowEnergyDiscoverySession> LowEnergyDiscoveryManager::AddSession
   // Cannot use make_unique here since LowEnergyDiscoverySession has a private
   // constructor.
   std::unique_ptr<LowEnergyDiscoverySession> session(
-      new LowEnergyDiscoverySession(active, weak_ptr_factory_.GetWeakPtr()));
+      new LowEnergyDiscoverySession(active, GetWeakPtr()));
   sessions_.push_back(session.get());
   return session;
 }
@@ -445,8 +443,8 @@ void LowEnergyDiscoveryManager::NotifyPending() {
 }
 
 void LowEnergyDiscoveryManager::StartScan(bool active) {
-  auto cb = [self = weak_ptr_factory_.GetWeakPtr()](auto status) {
-    if (self)
+  auto cb = [self = GetWeakPtr()](auto status) {
+    if (self.is_alive())
       self->OnScanStatus(status);
   };
 

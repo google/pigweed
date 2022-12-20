@@ -37,10 +37,10 @@ hci::AdvertisingIntervalRange GetIntervalRange(AdvertisingInterval interval) {
 AdvertisementInstance::AdvertisementInstance() : id_(kInvalidAdvertisementId) {}
 
 AdvertisementInstance::AdvertisementInstance(AdvertisementId id,
-                                             fxl::WeakPtr<LowEnergyAdvertisingManager> owner)
-    : id_(id), owner_(owner) {
+                                             WeakSelf<LowEnergyAdvertisingManager>::WeakPtr owner)
+    : id_(id), owner_(std::move(owner)) {
   BT_DEBUG_ASSERT(id_ != kInvalidAdvertisementId);
-  BT_DEBUG_ASSERT(owner_);
+  BT_DEBUG_ASSERT(owner_.is_alive());
 }
 
 AdvertisementInstance::~AdvertisementInstance() { Reset(); }
@@ -56,7 +56,7 @@ void AdvertisementInstance::Move(AdvertisementInstance* other) {
 }
 
 void AdvertisementInstance::Reset() {
-  if (owner_ && id_ != kInvalidAdvertisementId) {
+  if (owner_.is_alive() && id_ != kInvalidAdvertisementId) {
     owner_->StopAdvertising(id_);
   }
 
@@ -135,7 +135,7 @@ void LowEnergyAdvertisingManager::StartAdvertising(AdvertisingData data, Adverti
       [self, data = std::move(data), scan_rsp = std::move(scan_rsp), options,
        connect_cb = std::move(connect_callback),
        status_cb = std::move(status_callback)](const auto& address) mutable {
-        if (!self) {
+        if (!self.is_alive()) {
           return;
         }
 
@@ -145,7 +145,7 @@ void LowEnergyAdvertisingManager::StartAdvertising(AdvertisingData data, Adverti
           adv_conn_cb = [self, id = ad_ptr->id(), connect_cb = std::move(connect_cb)](auto link) {
             bt_log(DEBUG, "gap-le", "received new connection");
 
-            if (!self) {
+            if (!self.is_alive()) {
               return;
             }
 
@@ -156,7 +156,7 @@ void LowEnergyAdvertisingManager::StartAdvertising(AdvertisingData data, Adverti
         }
         auto status_cb_wrapper = [self, ad_ptr = std::move(ad_ptr),
                                   status_cb = std::move(status_cb)](hci::Result<> status) mutable {
-          if (!self) {
+          if (!self.is_alive()) {
             return;
           }
 

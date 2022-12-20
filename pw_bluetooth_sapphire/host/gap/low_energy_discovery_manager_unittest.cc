@@ -66,8 +66,7 @@ class LowEnergyDiscoveryManagerTest : public TestingBase {
     // harness rather than using a FakeController.
     scanner_ = std::make_unique<hci::LegacyLowEnergyScanner>(&fake_address_delegate_,
                                                              transport()->WeakPtr(), dispatcher());
-    discovery_manager_ = std::make_unique<LowEnergyDiscoveryManager>(transport()->WeakPtr(),
-                                                                     scanner_.get(), &peer_cache_);
+    discovery_manager_ = std::make_unique<LowEnergyDiscoveryManager>(scanner_.get(), &peer_cache_);
     discovery_manager_->AttachInspect(inspector_.GetRoot(), kInspectNodeName);
 
     test_device()->set_scan_state_callback(

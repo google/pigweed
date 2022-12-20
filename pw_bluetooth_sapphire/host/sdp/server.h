@@ -12,13 +12,13 @@
 #include <optional>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/inspect.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/scoped_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/pdu.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/service_record.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::sdp {
 
@@ -167,7 +167,7 @@ class Server final {
   // The service database state tracker.
   uint32_t db_state_ [[maybe_unused]];
 
-  fxl::WeakPtrFactory<Server> weak_ptr_factory_;
+  WeakSelf<Server> weak_ptr_factory_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Server);
 };

@@ -107,8 +107,8 @@ class LowEnergyConnectionManagerTest : public TestingBase {
         kAdapterAddress, /*delegate=*/[] { return false; }, transport()->WeakPtr());
     scanner_ = std::make_unique<hci::LegacyLowEnergyScanner>(address_manager_.get(),
                                                              transport()->WeakPtr(), dispatcher());
-    discovery_manager_ = std::make_unique<LowEnergyDiscoveryManager>(
-        transport()->WeakPtr(), scanner_.get(), peer_cache_.get());
+    discovery_manager_ =
+        std::make_unique<LowEnergyDiscoveryManager>(scanner_.get(), peer_cache_.get());
     conn_mgr_ = std::make_unique<LowEnergyConnectionManager>(
         transport()->WeakPtr(), &addr_delegate_, connector_.get(), peer_cache_.get(), l2cap_.get(),
         gatt_->AsWeakPtr(), discovery_manager_->GetWeakPtr(),

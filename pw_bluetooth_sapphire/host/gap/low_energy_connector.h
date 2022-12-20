@@ -43,7 +43,7 @@ class LowEnergyConnector final {
   // Initiate an outbound connection. |cb| will be called with the result of the
   // procedure. Must only be called once.
   void StartOutbound(zx::duration request_timeout, hci::LowEnergyConnector* connector,
-                     fxl::WeakPtr<LowEnergyDiscoveryManager> discovery_manager, ResultCallback cb);
+                     LowEnergyDiscoveryManager::WeakPtr discovery_manager, ResultCallback cb);
 
   // Start interrogating peer using an already established |connection|. |cb| will be called with
   // the result of the procedure. Must only be called once.
@@ -156,7 +156,7 @@ class LowEnergyConnector final {
   // controllers. Initialized only during interrogation.
   std::optional<LowEnergyInterrogator> interrogator_;
 
-  fxl::WeakPtr<LowEnergyDiscoveryManager> discovery_manager_;
+  LowEnergyDiscoveryManager::WeakPtr discovery_manager_;
 
   fxl::WeakPtr<hci::Transport> transport_;
 
