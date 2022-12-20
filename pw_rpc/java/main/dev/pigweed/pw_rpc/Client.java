@@ -38,7 +38,7 @@ public class Client {
   private final Map<Integer, Service> services;
 
   private final Map<PendingRpc, MethodClient> methodClients;
-  private final RpcManager rpcs;
+  private final Endpoint rpcs;
 
   private final Function<PendingRpc, StreamObserver<MessageLite>> defaultObserverFactory;
 
@@ -55,7 +55,7 @@ public class Client {
     this.services = services.stream().collect(Collectors.toMap(Service::id, s -> s));
 
     this.methodClients = new HashMap<>();
-    this.rpcs = new RpcManager();
+    this.rpcs = new Endpoint();
 
     this.defaultObserverFactory = defaultObserverFactory;
   }

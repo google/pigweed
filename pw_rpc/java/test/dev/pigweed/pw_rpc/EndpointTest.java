@@ -32,7 +32,7 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
-public final class RpcManagerTest {
+public final class EndpointTest {
   @Rule public final MockitoRule mockito = MockitoJUnit.rule();
 
   private static final Service SERVICE = new Service("pw.rpc.test1.TheTestService",
@@ -51,7 +51,7 @@ public final class RpcManagerTest {
 
   @Mock private Channel.Output mockOutput;
 
-  private final RpcManager manager = new RpcManager();
+  private final Endpoint manager = new Endpoint();
   private final PendingRpc rpc =
       PendingRpc.create(new Channel(CHANNEL_ID, bytes -> mockOutput.send(bytes)), SERVICE, METHOD);
   private final AbstractCall<MessageLite, MessageLite> call =

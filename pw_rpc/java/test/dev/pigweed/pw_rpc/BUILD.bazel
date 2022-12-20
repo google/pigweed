@@ -51,6 +51,22 @@ java_test(
 )
 
 java_test(
+    name = "EndpointTest",
+    size = "small",
+    srcs = ["EndpointTest.java"],
+    test_class = "dev.pigweed.pw_rpc.EndpointTest",
+    deps = [
+        ":test_proto_java_proto_lite",
+        "//pw_rpc:packet_proto_java_lite",
+        "//pw_rpc/java/main/dev/pigweed/pw_rpc:client",
+        "@com_google_protobuf//java/lite",
+        "@maven//:com_google_flogger_flogger_system_backend",
+        "@maven//:com_google_truth_truth",
+        "@maven//:org_mockito_mockito_core",
+    ],
+)
+
+java_test(
     name = "FutureCallTest",
     size = "small",
     srcs = ["FutureCallTest.java"],
@@ -93,22 +109,6 @@ java_test(
 )
 
 java_test(
-    name = "RpcManagerTest",
-    size = "small",
-    srcs = ["RpcManagerTest.java"],
-    test_class = "dev.pigweed.pw_rpc.RpcManagerTest",
-    deps = [
-        ":test_proto_java_proto_lite",
-        "//pw_rpc:packet_proto_java_lite",
-        "//pw_rpc/java/main/dev/pigweed/pw_rpc:client",
-        "@com_google_protobuf//java/lite",
-        "@maven//:com_google_flogger_flogger_system_backend",
-        "@maven//:com_google_truth_truth",
-        "@maven//:org_mockito_mockito_core",
-    ],
-)
-
-java_test(
     name = "StreamObserverCallTest",
     size = "small",
     srcs = ["StreamObserverCallTest.java"],
@@ -143,10 +143,10 @@ test_suite(
     name = "pw_rpc",
     tests = [
         ":ClientTest",
+        ":EndpointTest",
         ":FutureCallTest",
         ":IdsTest",
         ":PacketsTest",
-        ":RpcManagerTest",
         ":StreamObserverCallTest",
         ":StreamObserverMethodClientTest",
     ],

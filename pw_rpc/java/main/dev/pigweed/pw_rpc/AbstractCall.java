@@ -32,13 +32,13 @@ abstract class AbstractCall<RequestT extends MessageLite, ResponseT extends Mess
     implements Call, ClientStreaming<RequestT> {
   private static final Logger logger = Logger.forClass(StreamObserverCall.class);
 
-  private final RpcManager rpcs;
+  private final Endpoint rpcs;
   private final PendingRpc rpc;
 
   @Nullable private Status status = null;
   @Nullable private Status error = null;
 
-  AbstractCall(RpcManager rpcs, PendingRpc rpc) {
+  AbstractCall(Endpoint rpcs, PendingRpc rpc) {
     this.rpcs = rpcs;
     this.rpc = rpc;
   }
@@ -83,7 +83,7 @@ abstract class AbstractCall<RequestT extends MessageLite, ResponseT extends Mess
     return rpc;
   }
 
-  final RpcManager rpcManager() {
+  final Endpoint rpcManager() {
     return rpcs;
   }
 

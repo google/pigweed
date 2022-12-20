@@ -34,7 +34,7 @@ abstract class FutureCall<RequestT extends MessageLite, ResponseT extends Messag
 
   private final SettableFuture<ResultT> future = SettableFuture.create();
 
-  private FutureCall(RpcManager rpcs, PendingRpc rpc) {
+  private FutureCall(Endpoint rpcs, PendingRpc rpc) {
     super(rpcs, rpc);
   }
 
@@ -109,7 +109,7 @@ abstract class FutureCall<RequestT extends MessageLite, ResponseT extends Messag
       implements ClientStreamingFuture<RequestT, ResponseT> {
     @Nullable ResponseT response = null;
 
-    UnaryResponseFuture(RpcManager rpcs, PendingRpc rpc, @Nullable RequestT request) {
+    UnaryResponseFuture(Endpoint rpcs, PendingRpc rpc, @Nullable RequestT request) {
       super(rpcs, rpc);
       start(request);
     }
@@ -141,7 +141,7 @@ abstract class FutureCall<RequestT extends MessageLite, ResponseT extends Messag
     private final Consumer<ResponseT> onNext;
 
     StreamResponseFuture(
-        RpcManager rpcs, PendingRpc rpc, Consumer<ResponseT> onNext, @Nullable RequestT request) {
+        Endpoint rpcs, PendingRpc rpc, Consumer<ResponseT> onNext, @Nullable RequestT request) {
       super(rpcs, rpc);
       this.onNext = onNext;
       start(request);

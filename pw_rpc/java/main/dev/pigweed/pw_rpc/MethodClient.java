@@ -27,10 +27,10 @@ import java.util.function.Consumer;
  */
 public class MethodClient {
   protected final StreamObserver<? extends MessageLite> defaultObserver;
-  private final RpcManager rpcs;
+  private final Endpoint rpcs;
   private final PendingRpc rpc;
 
-  MethodClient(RpcManager rpcs, PendingRpc rpc, StreamObserver<MessageLite> defaultObserver) {
+  MethodClient(Endpoint rpcs, PendingRpc rpc, StreamObserver<MessageLite> defaultObserver) {
     this.rpcs = rpcs;
     this.rpc = rpc;
     this.defaultObserver = defaultObserver;
@@ -41,7 +41,7 @@ public class MethodClient {
   }
 
   /** Gives implementations access to the RpcManager shared with the Client. */
-  protected final RpcManager rpcs() {
+  protected final Endpoint rpcs() {
     return rpcs;
   }
 

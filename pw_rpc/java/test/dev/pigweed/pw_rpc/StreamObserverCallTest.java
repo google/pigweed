@@ -41,7 +41,7 @@ public final class StreamObserverCallTest {
   @Mock private StreamObserver<AnotherMessage> observer;
   @Mock private Channel.Output mockOutput;
 
-  private final RpcManager rpcManager = new RpcManager();
+  private final Endpoint endpoint = new Endpoint();
   private final PendingRpc rpc = PendingRpc.create(
       new Channel(CHANNEL_ID, packet -> mockOutput.send(packet)), SERVICE, METHOD);
   private StreamObserverCall<SomeMessage, AnotherMessage> streamObserverCall;
@@ -63,7 +63,7 @@ public final class StreamObserverCallTest {
 
   @Before
   public void createCall() throws Exception {
-    streamObserverCall = StreamObserverCall.start(rpcManager, rpc, observer, null);
+    streamObserverCall = StreamObserverCall.start(endpoint, rpc, observer, null);
   }
 
   @Test

@@ -55,7 +55,7 @@ public final class StreamObserverMethodClientTest {
   private final PendingRpc BIDIRECTIONAL_STREAMING_RPC =
       PendingRpc.create(channel, SERVICE, SERVICE.method("SomeBidirectionalStreaming"));
 
-  private final RpcManager rpcManager = new RpcManager();
+  private final Endpoint endpoint = new Endpoint();
   private MethodClient unaryMethodClient;
   private MethodClient serverStreamingMethodClient;
   private MethodClient clientStreamingMethodClient;
@@ -63,13 +63,11 @@ public final class StreamObserverMethodClientTest {
 
   @Before
   public void createMethodClient() {
-    unaryMethodClient = new MethodClient(rpcManager, UNARY_RPC, defaultObserver);
-    serverStreamingMethodClient =
-        new MethodClient(rpcManager, SERVER_STREAMING_RPC, defaultObserver);
-    clientStreamingMethodClient =
-        new MethodClient(rpcManager, CLIENT_STREAMING_RPC, defaultObserver);
+    unaryMethodClient = new MethodClient(endpoint, UNARY_RPC, defaultObserver);
+    serverStreamingMethodClient = new MethodClient(endpoint, SERVER_STREAMING_RPC, defaultObserver);
+    clientStreamingMethodClient = new MethodClient(endpoint, CLIENT_STREAMING_RPC, defaultObserver);
     bidirectionalStreamingMethodClient =
-        new MethodClient(rpcManager, BIDIRECTIONAL_STREAMING_RPC, defaultObserver);
+        new MethodClient(endpoint, BIDIRECTIONAL_STREAMING_RPC, defaultObserver);
   }
 
   @Test
@@ -77,7 +75,7 @@ public final class StreamObserverMethodClientTest {
     unaryMethodClient.invokeUnary(SomeMessage.getDefaultInstance());
     AnotherMessage reply = AnotherMessage.newBuilder().setPayload("yo").build();
 
-    rpcManager.handleNext(UNARY_RPC, reply.toByteString());
+    endpoint.handleNext(UNARY_RPC, reply.toByteString());
 
     verify(defaultObserver).onNext(reply);
   }
@@ -86,7 +84,7 @@ public final class StreamObserverMethodClientTest {
   public void invoke_usesProvidedObserver() throws Exception {
     unaryMethodClient.invokeUnary(SomeMessage.getDefaultInstance(), observer);
     AnotherMessage reply = AnotherMessage.newBuilder().setPayload("yo").build();
-    rpcManager.handleNext(UNARY_RPC, reply.toByteString());
+    endpoint.handleNext(UNARY_RPC, reply.toByteString());
 
     verify(observer).onNext(reply);
   }

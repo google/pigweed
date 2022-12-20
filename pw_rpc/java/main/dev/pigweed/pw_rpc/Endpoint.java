@@ -27,8 +27,8 @@ import javax.annotation.Nullable;
  * The RPC manager handles all RPC-related events and actions. It synchronizes interactions between
  * the endpoint and any threads interacting with RPC call objects.
  */
-class RpcManager {
-  private static final Logger logger = Logger.forClass(RpcManager.class);
+class Endpoint {
+  private static final Logger logger = Logger.forClass(Endpoint.class);
 
   private final Map<PendingRpc, AbstractCall<?, ?>> pending = new HashMap<>();
 

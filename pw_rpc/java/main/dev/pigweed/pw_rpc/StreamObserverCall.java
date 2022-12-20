@@ -15,7 +15,6 @@
 package dev.pigweed.pw_rpc;
 
 import com.google.protobuf.MessageLite;
-import dev.pigweed.pw_log.Logger;
 import javax.annotation.Nullable;
 
 /**
@@ -34,7 +33,7 @@ final class StreamObserverCall<RequestT extends MessageLite, ResponseT extends M
 
   /** Invokes the specified RPC. */
   static <RequestT extends MessageLite, ResponseT extends MessageLite>
-      StreamObserverCall<RequestT, ResponseT> start(RpcManager rpcs,
+      StreamObserverCall<RequestT, ResponseT> start(Endpoint rpcs,
           PendingRpc rpc,
           StreamObserver<ResponseT> observer,
           @Nullable MessageLite request) throws ChannelOutputException {
@@ -46,13 +45,13 @@ final class StreamObserverCall<RequestT extends MessageLite, ResponseT extends M
   /** Open the specified RPC locally without sending any packets. */
   static <RequestT extends MessageLite, ResponseT extends MessageLite>
       StreamObserverCall<RequestT, ResponseT> open(
-          RpcManager rpcs, PendingRpc rpc, StreamObserver<ResponseT> observer) {
+          Endpoint rpcs, PendingRpc rpc, StreamObserver<ResponseT> observer) {
     StreamObserverCall<RequestT, ResponseT> call = new StreamObserverCall<>(rpcs, rpc, observer);
     rpcs.open(call);
     return call;
   }
 
-  private StreamObserverCall(RpcManager rpcs, PendingRpc rpc, StreamObserver<ResponseT> observer) {
+  private StreamObserverCall(Endpoint rpcs, PendingRpc rpc, StreamObserver<ResponseT> observer) {
     super(rpcs, rpc);
     this.observer = observer;
   }
