@@ -38,7 +38,12 @@ public class Channel {
   private final int id;
   private final Output output;
 
+  /** Creates a new Channel with the provided ID, which must be positive. */
   public Channel(int id, Output output) {
+    if (id <= 0) {
+      throw new IllegalArgumentException("The channel ID must be positive: " + id + " is invalid");
+    }
+
     this.id = id;
     this.output = output;
   }
@@ -47,7 +52,7 @@ public class Channel {
     return id;
   }
 
-  public void send(byte[] data) throws ChannelOutputException {
+  void send(byte[] data) throws ChannelOutputException {
     output.send(data);
   }
 }

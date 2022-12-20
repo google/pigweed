@@ -222,8 +222,8 @@ class TransferEventHandler {
      */
     void sendChunk(Chunk chunk) throws TransferError {
       try {
-        getStream().send(chunk);
-      } catch (ChannelOutputException | RpcError e) {
+        getStream().write(chunk);
+      } catch (ChannelOutputException e) {
         throw new TransferError("Failed to send chunk for write transfer", e);
       }
     }

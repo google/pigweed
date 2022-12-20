@@ -18,13 +18,29 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.MessageLite;
 import javax.annotation.Nullable;
 
-/** Represents an ongoing RPC call. */
+/**
+ * Represents an ongoing RPC call.
+ *
+ * Methods that send packets may throw a ChannelOutputException if sending failed.
+ */
 public interface Call {
-  /** Cancels the RPC. Sends a cancellation packet to the server and sets error() to CANCELLED. */
-  void cancel() throws ChannelOutputException;
+  /**
+   * Cancels the RPC.
+   *
+   * Sends a cancellation packet to the server and sets error() to CANCELLED. Does nothing if the
+   * call is inactive.
+   *
+   * @return true if the call was active; false if the call was inactive so nothing was done
+   * @throws ChannelOutputException the Channel.Output was unable to send the cancellation packet
+   */
+  boolean cancel() throws ChannelOutputException;
 
-  /** Cancels the RPC as in cancel(), but does not send a cancellation packet to the server. */
-  void abandon();
+  /**
+   * Cancels the RPC as in cancel(), but does not send a cancellation packet to the server.
+   *
+   * @return true if the call was active; false if the call was inactive so nothing was done
+   */
+  boolean abandon();
 
   /** True if the RPC has not yet completed. */
   default boolean active() {
@@ -49,17 +65,34 @@ public interface Call {
   /** Represents a call to a client or bidirectional streaming RPC. */
   interface ClientStreaming<RequestT extends MessageLite> extends Call {
     /**
-     * Sends a request to a pending client streaming RPC.
+     * Sends a request to a pending client or bidirectional streaming RPC.
      *
-     * <p>The semantics of send() reflect the Channel.Output implementation for this channel.
+     * Sends a client stream packet to the server. Does nothing if the call is inactive.
      *
+     * @return true if the packet was sent; false if the call was inactive so nothing was done
      * @throws ChannelOutputException the Channel.Output was unable to send the request
-     * @throws RpcError the RPC is not currently active
      */
-    void send(RequestT request) throws ChannelOutputException, RpcError;
+    boolean write(RequestT request) throws ChannelOutputException;
 
-    /** Signals to the server that the client stream has completed. */
-    void finish() throws ChannelOutputException;
+    /**
+     * send() was renamed to write() for consistency with other pw_rpc clients.
+     *
+     * @deprecated Renamed to write(); call write() instead
+     */
+    @Deprecated
+    default void send(RequestT request) throws ChannelOutputException {
+      write(request);
+    }
+
+    /**
+     * Signals to the server that the client stream has completed.
+     *
+     * Sends a client stream end packet to the server. Does nothing if the call is inactive.
+     *
+     * @return true if the packet was sent; false if the call was inactive so nothing was done
+     * @throws ChannelOutputException the Channel.Output was unable to send the request
+     */
+    boolean finish() throws ChannelOutputException;
   }
 
   /** Represents a call to a client streaming RPC that uses a future. */

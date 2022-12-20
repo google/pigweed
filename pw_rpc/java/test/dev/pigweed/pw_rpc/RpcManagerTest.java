@@ -22,10 +22,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.MessageLite;
 import dev.pigweed.pw_rpc.internal.Packet.PacketType;
 import dev.pigweed.pw_rpc.internal.Packet.RpcPacket;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -50,16 +50,21 @@ public final class RpcManagerTest {
   private static final int CHANNEL_ID = 555;
 
   @Mock private Channel.Output mockOutput;
-  @Mock private StreamObserverCall<MessageLite, MessageLite> call;
 
-  private PendingRpc rpc;
-  private RpcManager manager;
+  private final RpcManager manager = new RpcManager();
+  private final PendingRpc rpc =
+      PendingRpc.create(new Channel(CHANNEL_ID, bytes -> mockOutput.send(bytes)), SERVICE, METHOD);
+  private final AbstractCall<MessageLite, MessageLite> call =
+      new AbstractCall<MessageLite, MessageLite>(manager, rpc) {
+        @Override
+        void doHandleNext(MessageLite response) {}
 
-  @Before
-  public void setup() {
-    rpc = PendingRpc.create(new Channel(CHANNEL_ID, mockOutput), SERVICE, METHOD);
-    manager = new RpcManager();
-  }
+        @Override
+        void doHandleCompleted() {}
+
+        @Override
+        void doHandleError() {}
+      };
 
   private static byte[] request(MessageLite payload) {
     return packetBuilder()
@@ -85,56 +90,77 @@ public final class RpcManagerTest {
   }
 
   @Test
-  public void start_sendingFails_rpcNotPending() throws Exception {
-    doThrow(new ChannelOutputException()).when(mockOutput).send(any());
-
-    assertThrows(ChannelOutputException.class, () -> manager.start(rpc, call, REQUEST_PAYLOAD));
+  public void start_succeeds_rpcIsPending() throws Exception {
+    manager.start(call, REQUEST_PAYLOAD);
 
     verify(mockOutput).send(REQUEST);
-    assertThat(manager.getPending(rpc)).isNull();
+    assertThat(manager.abandon(call)).isTrue();
   }
 
   @Test
-  public void start_succeeds_rpcIsPending() throws Exception {
-    assertThat(manager.start(rpc, call, REQUEST_PAYLOAD)).isNull();
+  public void start_sendingFails_callsHandleError() throws Exception {
+    doThrow(new ChannelOutputException()).when(mockOutput).send(any());
 
-    assertThat(manager.getPending(rpc)).isSameInstanceAs(call);
+    assertThrows(ChannelOutputException.class, () -> manager.start(call, REQUEST_PAYLOAD));
+
+    verify(mockOutput).send(REQUEST);
+    assertThat(manager.abandon(call)).isFalse();
   }
 
   @Test
-  public void startThenCancel_rpcNotPending() throws Exception {
-    assertThat(manager.start(rpc, call, REQUEST_PAYLOAD)).isNull();
-    assertThat(manager.cancel(rpc)).isSameInstanceAs(call);
+  public void abandon_rpcNoLongerPending() throws Exception {
+    manager.start(call, REQUEST_PAYLOAD);
+    assertThat(manager.abandon(call)).isTrue();
 
-    assertThat(manager.getPending(rpc)).isNull();
+    assertThat(manager.abandon(call)).isFalse();
   }
 
   @Test
-  public void startThenCancel_sendsCancelPacket() throws Exception {
-    assertThat(manager.start(rpc, call, REQUEST_PAYLOAD)).isNull();
-    assertThat(manager.cancel(rpc)).isEqualTo(call);
+  public void abandon_sendsNoPackets() throws Exception {
+    manager.start(call, REQUEST_PAYLOAD);
+    verify(mockOutput).send(REQUEST);
+    verifyNoMoreInteractions(mockOutput);
+
+    assertThat(manager.abandon(call)).isTrue();
+  }
+
+  @Test
+  public void cancel_rpcNoLongerPending() throws Exception {
+    manager.start(call, REQUEST_PAYLOAD);
+    assertThat(manager.cancel(call)).isTrue();
+
+    assertThat(manager.abandon(call)).isFalse();
+  }
+
+  @Test
+  public void cancel_sendsCancelPacket() throws Exception {
+    manager.start(call, REQUEST_PAYLOAD);
+    assertThat(manager.cancel(call)).isTrue();
 
     verify(mockOutput).send(cancel());
   }
 
   @Test
-  public void startThenClear_sendsNothing() throws Exception {
-    verifyNoMoreInteractions(mockOutput);
+  public void open_sendsNoPacketsButRpcIsPending() {
+    manager.open(call);
 
-    assertThat(manager.start(rpc, call, REQUEST_PAYLOAD)).isNull();
-    assertThat(manager.clear(rpc)).isEqualTo(call);
-  }
-
-  @Test
-  public void clear_notPending_returnsNull() {
-    assertThat(manager.clear(rpc)).isNull();
-  }
-
-  @Test
-  public void open_rpcIsPending() {
-    assertThat(manager.open(rpc, call)).isNull();
-
-    assertThat(manager.getPending(rpc)).isSameInstanceAs(call);
+    assertThat(manager.abandon(call)).isTrue();
     verifyNoInteractions(mockOutput);
+  }
+
+  @Test
+  public void ignoresActionsIfCallIsNotPending() throws Exception {
+    assertThat(manager.cancel(call)).isFalse();
+    assertThat(manager.abandon(call)).isFalse();
+    assertThat(manager.clientStream(call, REQUEST_PAYLOAD)).isFalse();
+    assertThat(manager.clientStreamEnd(call)).isFalse();
+  }
+
+  @Test
+  public void ignoresPacketsIfCallIsNotPending() {
+    assertThat(manager.handleNext(call.rpc(), ByteString.EMPTY)).isFalse();
+    assertThat(manager.handleUnaryCompleted(call.rpc(), ByteString.EMPTY, Status.OK)).isFalse();
+    assertThat(manager.handleStreamCompleted(call.rpc(), Status.OK)).isFalse();
+    assertThat(manager.handleError(call.rpc(), Status.INVALID_ARGUMENT)).isFalse();
   }
 }

@@ -15,18 +15,11 @@
 package dev.pigweed.pw_rpc;
 
 import static com.google.common.truth.Truth.assertThat;
-import static org.junit.Assert.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import dev.pigweed.pw_rpc.StreamObserverCall.StreamResponseFuture;
-import dev.pigweed.pw_rpc.StreamObserverCall.UnaryResponseFuture;
 import dev.pigweed.pw_rpc.internal.Packet.PacketType;
 import dev.pigweed.pw_rpc.internal.Packet.RpcPacket;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -49,8 +42,9 @@ public final class StreamObserverCallTest {
   @Mock private Channel.Output mockOutput;
 
   private final RpcManager rpcManager = new RpcManager();
+  private final PendingRpc rpc = PendingRpc.create(
+      new Channel(CHANNEL_ID, packet -> mockOutput.send(packet)), SERVICE, METHOD);
   private StreamObserverCall<SomeMessage, AnotherMessage> streamObserverCall;
-  private PendingRpc rpc;
 
   private static byte[] cancel() {
     return packetBuilder()
@@ -69,9 +63,7 @@ public final class StreamObserverCallTest {
 
   @Before
   public void createCall() throws Exception {
-    rpc = PendingRpc.create(new Channel(CHANNEL_ID, mockOutput), SERVICE, METHOD);
     streamObserverCall = StreamObserverCall.start(rpcManager, rpc, observer, null);
-    rpcManager.start(rpc, streamObserverCall, SomeMessage.getDefaultInstance());
   }
 
   @Test
@@ -115,7 +107,7 @@ public final class StreamObserverCallTest {
   @Test
   public void send_sendsClientStreamPacket() throws Exception {
     SomeMessage request = SomeMessage.newBuilder().setMagicNumber(123).build();
-    streamObserverCall.send(request);
+    streamObserverCall.write(request);
 
     verify(mockOutput)
         .send(packetBuilder()
@@ -129,9 +121,7 @@ public final class StreamObserverCallTest {
   public void send_raisesExceptionIfClosed() throws Exception {
     streamObserverCall.cancel();
 
-    RpcError thrown = assertThrows(
-        RpcError.class, () -> streamObserverCall.send(SomeMessage.getDefaultInstance()));
-    assertThat(thrown.status()).isSameInstanceAs(Status.CANCELLED);
+    assertThat(streamObserverCall.write(SomeMessage.getDefaultInstance())).isFalse();
   }
 
   @Test
@@ -144,29 +134,21 @@ public final class StreamObserverCallTest {
 
   @Test
   public void onNext_callsObserverIfActive() {
-    streamObserverCall.onNext(AnotherMessage.getDefaultInstance().toByteString());
+    streamObserverCall.handleNext(AnotherMessage.getDefaultInstance().toByteString());
 
     verify(observer).onNext(AnotherMessage.getDefaultInstance());
   }
 
   @Test
-  public void onNext_ignoresIfNotActive() throws Exception {
-    streamObserverCall.cancel();
-    streamObserverCall.onNext(AnotherMessage.getDefaultInstance().toByteString());
-
-    verify(observer, never()).onNext(any());
-  }
-
-  @Test
   public void callDispatcher_onCompleted_callsObserver() {
-    streamObserverCall.onCompleted(Status.ABORTED);
+    streamObserverCall.handleStreamCompleted(Status.ABORTED);
 
     verify(observer).onCompleted(Status.ABORTED);
   }
 
   @Test
   public void callDispatcher_onCompleted_setsActiveAndStatus() {
-    streamObserverCall.onCompleted(Status.ABORTED);
+    streamObserverCall.handleStreamCompleted(Status.ABORTED);
 
     verify(observer).onCompleted(Status.ABORTED);
     assertThat(streamObserverCall.active()).isFalse();
@@ -175,109 +157,17 @@ public final class StreamObserverCallTest {
 
   @Test
   public void callDispatcher_onError_callsObserver() {
-    streamObserverCall.onError(Status.NOT_FOUND);
+    streamObserverCall.handleError(Status.NOT_FOUND);
 
     verify(observer).onError(Status.NOT_FOUND);
   }
 
   @Test
   public void callDispatcher_onError_deactivates() {
-    streamObserverCall.onError(Status.ABORTED);
+    streamObserverCall.handleError(Status.ABORTED);
 
     verify(observer).onError(Status.ABORTED);
     assertThat(streamObserverCall.active()).isFalse();
     assertThat(streamObserverCall.status()).isNull();
-  }
-
-  @Test
-  public void unaryFuture_response_setsValue() throws Exception {
-    UnaryResponseFuture<SomeMessage, AnotherMessage> call =
-        new UnaryResponseFuture<>(rpcManager, rpc, SomeMessage.getDefaultInstance());
-
-    AnotherMessage response = AnotherMessage.newBuilder().setResultValue(1138).build();
-    call.onNext(response);
-    assertThat(call.isDone()).isFalse();
-    call.onCompleted(Status.CANCELLED);
-
-    assertThat(call.isDone()).isTrue();
-    assertThat(call.get()).isEqualTo(UnaryResult.create(response, Status.CANCELLED));
-  }
-
-  @Test
-  public void unaryFuture_serverError_setsException() {
-    UnaryResponseFuture<SomeMessage, AnotherMessage> call =
-        new UnaryResponseFuture<>(rpcManager, rpc, SomeMessage.getDefaultInstance());
-
-    call.onError(Status.NOT_FOUND);
-
-    assertThat(call.isDone()).isTrue();
-    ExecutionException exception = assertThrows(ExecutionException.class, call::get);
-    assertThat(exception).hasCauseThat().isInstanceOf(RpcError.class);
-
-    RpcError error = (RpcError) exception.getCause();
-    assertThat(error).isNotNull();
-    assertThat(error.rpc()).isEqualTo(rpc);
-    assertThat(error.status()).isEqualTo(Status.NOT_FOUND);
-  }
-
-  @Test
-  public void unaryFuture_noMessage_setsException() {
-    UnaryResponseFuture<SomeMessage, AnotherMessage> call =
-        new UnaryResponseFuture<>(rpcManager, rpc, SomeMessage.getDefaultInstance());
-
-    call.onCompleted(Status.OK);
-
-    assertThat(call.isDone()).isTrue();
-    ExecutionException exception = assertThrows(ExecutionException.class, call::get);
-    assertThat(exception).hasCauseThat().isInstanceOf(IllegalStateException.class);
-  }
-
-  @Test
-  public void unaryFuture_multipleResponses_setsException() {
-    UnaryResponseFuture<SomeMessage, AnotherMessage> call =
-        new UnaryResponseFuture<>(rpcManager, rpc, SomeMessage.getDefaultInstance());
-
-    AnotherMessage response = AnotherMessage.newBuilder().setResultValue(1138).build();
-    call.onNext(response);
-    call.onNext(response);
-    call.onCompleted(Status.OK);
-
-    assertThat(call.isDone()).isTrue();
-    ExecutionException exception = assertThrows(ExecutionException.class, call::get);
-    assertThat(exception).hasCauseThat().isInstanceOf(IllegalStateException.class);
-  }
-
-  @Test
-  public void bidirectionalStreamingFuture_responses_setsValue() throws Exception {
-    List<AnotherMessage> responses = new ArrayList<>();
-    StreamResponseFuture<SomeMessage, AnotherMessage> call =
-        new StreamResponseFuture<>(rpcManager, rpc, responses::add, null);
-
-    AnotherMessage message = AnotherMessage.newBuilder().setResultValue(1138).build();
-    call.onNext(message);
-    call.onNext(message);
-    assertThat(call.isDone()).isFalse();
-    call.onCompleted(Status.OK);
-
-    assertThat(call.isDone()).isTrue();
-    assertThat(call.get()).isEqualTo(Status.OK);
-    assertThat(responses).containsExactly(message, message);
-  }
-
-  @Test
-  public void bidirectionalStreamingFuture_serverError_setsException() {
-    StreamResponseFuture<SomeMessage, AnotherMessage> call =
-        new StreamResponseFuture<>(rpcManager, rpc, (msg) -> {}, null);
-
-    call.onError(Status.NOT_FOUND);
-
-    assertThat(call.isDone()).isTrue();
-    ExecutionException exception = assertThrows(ExecutionException.class, call::get);
-    assertThat(exception).hasCauseThat().isInstanceOf(RpcError.class);
-
-    RpcError error = (RpcError) exception.getCause();
-    assertThat(error).isNotNull();
-    assertThat(error.rpc()).isEqualTo(rpc);
-    assertThat(error.status()).isEqualTo(Status.NOT_FOUND);
   }
 }

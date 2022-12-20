@@ -15,8 +15,8 @@
 package dev.pigweed.pw_rpc;
 
 import com.google.protobuf.MessageLite;
-import dev.pigweed.pw_rpc.StreamObserverCall.StreamResponseFuture;
-import dev.pigweed.pw_rpc.StreamObserverCall.UnaryResponseFuture;
+import dev.pigweed.pw_rpc.FutureCall.StreamResponseFuture;
+import dev.pigweed.pw_rpc.FutureCall.UnaryResponseFuture;
 import java.util.function.Consumer;
 
 /**

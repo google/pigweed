@@ -32,6 +32,6 @@ public abstract class PendingRpc {
 
   @Override
   public final String toString() {
-    return String.format(Locale.ENGLISH, "RpcCall[%s channel=%d]", method(), channel().id());
+    return String.format(Locale.ENGLISH, "PendingRpc[%s|channel=%d]", method(), channel().id());
   }
 }

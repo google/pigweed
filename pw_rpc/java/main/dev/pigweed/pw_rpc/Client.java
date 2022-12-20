@@ -18,7 +18,6 @@ import com.google.protobuf.ExtensionRegistryLite;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.MessageLite;
 import dev.pigweed.pw_log.Logger;
-import dev.pigweed.pw_rpc.internal.Packet.PacketType;
 import dev.pigweed.pw_rpc.internal.Packet.RpcPacket;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -206,43 +205,32 @@ public class Client {
       return true; // true since the packet was handled, even though it was invalid.
     }
 
-    // Any packet type other than SERVER_STREAM indicates that this is the last packet for this RPC.
-    StreamObserverCall<?, ?> call =
-        packet.getType().equals(PacketType.SERVER_STREAM) ? rpcs.getPending(rpc) : rpcs.clear(rpc);
-    if (call == null) {
-      logger.atFine().log(
-          "Ignoring packet for %s, which isn't pending. Pending RPCs are %s", rpc, rpcs);
+    if (!updateCall(packet, rpc)) {
+      logger.atFine().log("Ignoring packet for %s, which isn't pending", rpc);
+      logger.atFinest().log("Pending RPCs: %s", rpcs);
       sendError(channel, packet, Status.FAILED_PRECONDITION);
-      return true;
     }
 
+    return true;
+  }
+
+  /** Returns true if the packet was forwarded to an active RPC call; false if no call was found. */
+  private boolean updateCall(RpcPacket packet, PendingRpc rpc) {
     switch (packet.getType()) {
       case SERVER_ERROR: {
         Status status = decodeStatus(packet);
-        logger.atWarning().log("%s failed with error %s", rpc, status);
-        call.onError(status);
-        break;
+        return rpcs.handleError(rpc, status);
       }
       case RESPONSE: {
         Status status = decodeStatus(packet);
-        // Server streaming an unary RPCs include a payload with their response packet.
-        if (!rpc.method().isServerStreaming()) {
-          logger.atFiner().log("%s completed with status %s and %d B payload",
-              rpc,
-              status,
-              packet.getPayload().size());
-          call.onNext(packet.getPayload());
-        } else {
-          logger.atFiner().log("%s completed with status %s", rpc, status);
+        // Client streaming and unary RPCs include a payload with their response packet.
+        if (rpc.method().isServerStreaming()) {
+          return rpcs.handleStreamCompleted(rpc, status);
         }
-        call.onCompleted(status);
-        break;
+        return rpcs.handleUnaryCompleted(rpc, packet.getPayload(), status);
       }
       case SERVER_STREAM:
-        logger.atFiner().log(
-            "%s received server stream with %d B payload", rpc, packet.getPayload().size());
-        call.onNext(packet.getPayload());
-        break;
+        return rpcs.handleNext(rpc, packet.getPayload());
       default:
         logger.atWarning().log(
             "%s received unexpected PacketType %d", rpc, packet.getType().getNumber());

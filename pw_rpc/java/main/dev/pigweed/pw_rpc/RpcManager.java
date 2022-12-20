@@ -14,32 +14,36 @@
 
 package dev.pigweed.pw_rpc;
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.MessageLite;
 import dev.pigweed.pw_log.Logger;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 
-/** Tracks the state of service method invocations. */
-public class RpcManager {
+/**
+ * Tracks the state of service method invocations.
+ *
+ * The RPC manager handles all RPC-related events and actions. It synchronizes interactions between
+ * the endpoint and any threads interacting with RPC call objects.
+ */
+class RpcManager {
   private static final Logger logger = Logger.forClass(RpcManager.class);
 
-  private final Map<PendingRpc, StreamObserverCall<?, ?>> pending = new HashMap<>();
+  private final Map<PendingRpc, AbstractCall<?, ?>> pending = new HashMap<>();
 
   /**
    * Invokes an RPC.
    *
-   * @param rpc channel / service / method tuple that unique identifies this RPC
    * @param call object for this RPC
    * @param payload the request
    */
-  @Nullable
-  public synchronized StreamObserverCall<?, ?> start(
-      PendingRpc rpc, StreamObserverCall<?, ?> call, @Nullable MessageLite payload)
+  public synchronized void start(AbstractCall<?, ?> call, @Nullable MessageLite payload)
       throws ChannelOutputException {
-    logger.atFine().log("%s starting", rpc);
-    rpc.channel().send(Packets.request(rpc, payload));
-    return pending.put(rpc, call);
+    logger.atFiner().log("Starting %s", call);
+    // If sending the packet fails, the RPC is never considered pending.
+    call.rpc().channel().send(Packets.request(call.rpc(), payload));
+    registerCall(call);
   }
 
   /**
@@ -48,66 +52,99 @@ public class RpcManager {
    * <p>The RPC remains open until it is closed by the server (either with a response or error
    * packet) or cancelled.
    */
-  @Nullable
-  public synchronized StreamObserverCall<?, ?> open(PendingRpc rpc, StreamObserverCall<?, ?> call) {
-    logger.atFine().log("%s opening", rpc);
-    return pending.put(rpc, call);
+  public synchronized void open(AbstractCall<?, ?> call) {
+    logger.atFiner().log("Opening %s", call);
+    registerCall(call);
+  }
+
+  private void registerCall(AbstractCall<?, ?> call) {
+    // TODO(hepler): Use call_id to support simultaneous calls for the same RPC on one channel.
+    //
+    // Originally, only one call per service/method/channel was supported. With this restriction,
+    // the original call should have been aborted here, but was not. The client will be updated to
+    // support multiple simultaneous calls instead of aborting the call.
+    pending.put(call.rpc(), call);
   }
 
   /** Cancels an ongoing RPC */
-  @Nullable
-  public synchronized StreamObserverCall<?, ?> cancel(PendingRpc rpc)
-      throws ChannelOutputException {
-    StreamObserverCall<?, ?> call = pending.remove(rpc);
-    if (call != null) {
-      logger.atFine().log("%s was cancelled", rpc);
-      rpc.channel().send(Packets.cancel(rpc));
+  public synchronized boolean cancel(AbstractCall<?, ?> call) throws ChannelOutputException {
+    if (pending.remove(call.rpc()) == null) {
+      return false;
     }
-    return call;
+    logger.atFiner().log("Cancelling %s", call);
+    call.handleError(Status.CANCELLED);
+    call.sendPacket(Packets.cancel(call.rpc()));
+    return true;
   }
 
   /** Cancels an ongoing RPC without sending a cancellation packet. */
-  public synchronized void abandon(PendingRpc rpc) {
-    StreamObserverCall<?, ?> call = pending.remove(rpc);
-    if (call != null) {
-      logger.atFine().log("%s was abandoned", rpc);
+  public synchronized boolean abandon(AbstractCall<?, ?> call) {
+    if (pending.remove(call.rpc()) == null) {
+      return false;
     }
+    logger.atFiner().log("Abandoning %s", call);
+    call.handleError(Status.CANCELLED);
+    return true;
   }
 
-  @Nullable
-  public synchronized StreamObserverCall<?, ?> clientStream(PendingRpc rpc, MessageLite payload)
+  public synchronized boolean clientStream(AbstractCall<?, ?> call, MessageLite payload)
       throws ChannelOutputException {
-    StreamObserverCall<?, ?> call = pending.get(rpc);
-    if (call != null) {
-      rpc.channel().send(Packets.clientStream(rpc, payload));
-    }
-    return call;
+    return sendPacket(call, Packets.clientStream(call.rpc(), payload));
   }
 
-  @Nullable
-  public synchronized StreamObserverCall<?, ?> clientStreamEnd(PendingRpc rpc)
+  public synchronized boolean clientStreamEnd(AbstractCall<?, ?> call)
       throws ChannelOutputException {
-    StreamObserverCall<?, ?> call = pending.get(rpc);
-    if (call != null) {
-      logger.atFiner().log("%s client stream closed", rpc);
-      rpc.channel().send(Packets.clientStreamEnd(rpc));
+    return sendPacket(call, Packets.clientStreamEnd(call.rpc()));
+  }
+
+  private boolean sendPacket(AbstractCall<?, ?> call, byte[] packet) throws ChannelOutputException {
+    if (!pending.containsKey(call.rpc())) {
+      return false;
     }
-    return call;
+    // TODO(hepler): Consider aborting the call if sending the packet fails.
+    call.sendPacket(packet);
+    return true;
   }
 
-  @Nullable
-  public synchronized StreamObserverCall<?, ?> clear(PendingRpc rpc) {
-    return pending.remove(rpc);
+  public synchronized boolean handleNext(PendingRpc rpc, ByteString payload) {
+    AbstractCall<?, ?> call = pending.get(rpc);
+    if (call == null) {
+      return false;
+    }
+    call.handleNext(payload);
+    logger.atFiner().log("%s received server stream with %d B payload", call, payload.size());
+    return true;
   }
 
-  @Nullable
-  public synchronized StreamObserverCall<?, ?> getPending(PendingRpc rpc) {
-    return pending.get(rpc);
+  public synchronized boolean handleUnaryCompleted(
+      PendingRpc rpc, ByteString payload, Status status) {
+    AbstractCall<?, ?> call = pending.remove(rpc);
+    if (call == null) {
+      return false;
+    }
+    call.handleUnaryCompleted(payload, status);
+    logger.atFiner().log(
+        "%s completed with status %s and %d B payload", call, status, payload.size());
+    return true;
   }
 
-  @Override
-  public synchronized String toString() {
-    return "RpcManager{"
-        + "pending=" + pending + '}';
+  public synchronized boolean handleStreamCompleted(PendingRpc rpc, Status status) {
+    AbstractCall<?, ?> call = pending.remove(rpc);
+    if (call == null) {
+      return false;
+    }
+    call.handleStreamCompleted(status);
+    logger.atFiner().log("%s completed with status %s", call, status);
+    return true;
+  }
+
+  public synchronized boolean handleError(PendingRpc rpc, Status status) {
+    AbstractCall<?, ?> call = pending.remove(rpc);
+    if (call == null) {
+      return false;
+    }
+    call.handleError(status);
+    logger.atFiner().log("%s failed with error %s", call, status);
+    return true;
   }
 }

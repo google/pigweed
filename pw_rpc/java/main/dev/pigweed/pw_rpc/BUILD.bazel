@@ -17,10 +17,12 @@
 java_library(
     name = "client",
     srcs = [
+        "AbstractCall.java",
         "Call.java",
         "Channel.java",
         "ChannelOutputException.java",
         "Client.java",
+        "FutureCall.java",
         "Ids.java",
         "Method.java",
         "MethodClient.java",
