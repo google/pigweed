@@ -112,6 +112,9 @@ def presubmit_check(
 ):
     """Presubmit check that ensures files do not contain banned words."""
 
+    failure_summary_log = ctx.output_dir / 'failure-summary.log'
+    failure_summary_log.unlink(missing_ok=True)
+
     found_words: Dict[Path, List[Union[PathMatch, LineMatch]]] = {}
 
     for path in ctx.paths:
@@ -153,11 +156,15 @@ def presubmit_check(
             # File is not text, like a gif.
             pass
 
-    for path, matches in found_words.items():
-        print('=' * 40)
-        print(path)
-        for match in matches:
-            print(match)
+    with open(failure_summary_log, 'w') as outs:
+        for i, (path, matches) in enumerate(found_words.items()):
+            if i:
+                print('=' * 40, file=outs)
+            print(path, file=outs)
+            for match in matches:
+                print(match, file=outs)
+
+    print(failure_summary_log.read_text(), end=None)
 
     if found_words:
         print()
