@@ -61,7 +61,8 @@ class XorShiftStarRng64 : public RandomGenerator {
     uint64_t untouched_state = state_ >> (kNumStateBits - num_bits);
     state_ = untouched_state | (state_ << num_bits);
     // Zero-out all irrelevant bits, then XOR entropy into state.
-    uint32_t mask = (static_cast<uint64_t>(1) << num_bits) - 1;
+    uint32_t mask =
+        static_cast<uint32_t>((static_cast<uint64_t>(1) << num_bits) - 1);
     state_ ^= (data & mask);
   }
 
