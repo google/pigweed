@@ -24,6 +24,7 @@ import sys
 from typing import (
     Callable,
     Collection,
+    Dict,
     List,
     Optional,
     Pattern,
@@ -33,7 +34,9 @@ from typing import (
 )
 
 import pw_cli
-from . import cli, git_repo, presubmit, tools
+from . import cli, format_code, git_repo, presubmit, tools
+
+DEFAULT_PATH = Path('out', 'presubmit', 'keep_sorted')
 
 _COLOR = pw_cli.color.colors()
 _LOG: logging.Logger = logging.getLogger(__name__)
@@ -61,6 +64,7 @@ keep-sorted: end
 class KeepSortedContext:
     paths: List[Path]
     fix: bool
+    output_dir: Path
     failed: bool = False
 
     def fail(
@@ -125,11 +129,15 @@ class _FileSorter:
         self,
         ctx: Union[presubmit.PresubmitContext, KeepSortedContext],
         path: Path,
+        errors: Optional[Dict[Path, Sequence[str]]] = None,
     ):
         self.ctx = ctx
         self.path: Path = path
         self.all_lines: List[str] = []
         self.changed: bool = False
+        self._errors: Dict[Path, Sequence[str]] = {}
+        if errors is not None:
+            self._errors = errors
 
     def _process_block(self, block: _Block) -> Sequence[str]:
         raw_lines: List[str] = block.lines
@@ -210,23 +218,15 @@ class _FileSorter:
 
         if block.lines != raw_sorted_lines:
             self.changed = True
-            self.ctx.fail(
-                'keep-sorted block is not sorted',
-                self.path,
-                block.start_line_number,
-            )
-            _LOG.info('  %s', block.start_line.rstrip())
             diff = difflib.Differ()
-            for dline in diff.compare(
-                [x.rstrip() for x in block.lines],
-                [x.rstrip() for x in raw_sorted_lines],
-            ):
-                if dline.startswith('-'):
-                    dline = _COLOR.red(dline)
-                elif dline.startswith('+'):
-                    dline = _COLOR.green(dline)
-                _LOG.info(dline)
-            _LOG.info('  %s', block.end_line.rstrip())
+            diff_lines = ''.join(diff.compare(block.lines, raw_sorted_lines))
+
+            self._errors.setdefault(self.path, [])
+            self._errors[self.path] = (
+                f'@@ {block.start_line_number},{len(block.lines)+2} '
+                f'{block.start_line_number},{len(raw_sorted_lines)+2} @@\n'
+                f'  {block.start_line}{diff_lines}  {block.end_line}'
+            )
 
         return raw_sorted_lines
 
@@ -354,37 +354,57 @@ def _print_howto_fix(paths: Sequence[Path]) -> None:
 
 def _process_files(
     ctx: Union[presubmit.PresubmitContext, KeepSortedContext]
-) -> Sequence[Path]:
+) -> Dict[Path, Sequence[str]]:
     fix = getattr(ctx, 'fix', False)
-    changed_paths = []
+    errors: Dict[Path, Sequence[str]] = {}
+
+    failure_summary_log = ctx.output_dir / 'failure-summary.log'
+    failure_summary_log.unlink(missing_ok=True)
 
     for path in ctx.paths:
         if path.is_symlink() or path.is_dir():
             continue
 
         try:
-            sorter = _FileSorter(ctx, path)
+            sorter = _FileSorter(ctx, path, errors)
 
             sorter.sort()
             if sorter.changed:
-                changed_paths.append(path)
                 if fix:
                     sorter.write()
 
         except KeepSortedParsingError as exc:
             ctx.fail(str(exc))
 
-    return changed_paths
+    if not errors:
+        return errors
+
+    ctx.fail(f'Found {len(errors)} files with keep-sorted errors:')
+
+    with failure_summary_log.open('w') as outs:
+        for path, diffs in errors.items():
+            diff = ''.join(
+                [
+                    f'--- {path} (original)\n',
+                    f'+++ {path} (sorted)\n',
+                    *diffs,
+                ]
+            )
+
+            outs.write(diff)
+            print(format_code.colorize_diff(diff))
+
+    return errors
 
 
 @presubmit.check(name='keep_sorted')
 def presubmit_check(ctx: presubmit.PresubmitContext) -> None:
     """Presubmit check that ensures specified lists remain sorted."""
 
-    changed_paths = _process_files(ctx)
+    errors = _process_files(ctx)
 
-    if changed_paths:
-        _print_howto_fix(changed_paths)
+    if errors:
+        _print_howto_fix(list(errors.keys()))
 
 
 def parse_args() -> argparse.Namespace:
@@ -396,6 +416,12 @@ def parse_args() -> argparse.Namespace:
         '--fix', action='store_true', help='Apply fixes in place.'
     )
 
+    parser.add_argument(
+        '--output-directory',
+        type=Path,
+        help=f'Output directory (default: {"<repo root>" / DEFAULT_PATH})',
+    )
+
     return parser.parse_args()
 
 
@@ -404,6 +430,7 @@ def keep_sorted_in_repo(
     fix: bool,
     exclude: Collection[Pattern[str]],
     base: str,
+    output_directory: Optional[Path],
 ) -> int:
     """Checks or fixes keep-sorted blocks for files in a Git repo."""
 
@@ -421,8 +448,8 @@ def keep_sorted_in_repo(
         base = 'HEAD~1'
 
     # If this is a Git repo, list the original paths with git ls-files or diff.
+    project_root = Path(pw_cli.env.pigweed_environment().PW_PROJECT_ROOT)
     if repo:
-        project_root = Path(pw_cli.env.pigweed_environment().PW_PROJECT_ROOT)
         _LOG.info(
             'Sorting %s',
             git_repo.describe_files(
@@ -441,11 +468,17 @@ def keep_sorted_in_repo(
         )
         return 1
 
-    ctx = KeepSortedContext(paths=files, fix=fix)
-    changed_paths = _process_files(ctx)
+    if not output_directory:
+        if repo:
+            output_directory = repo / DEFAULT_PATH
+        else:
+            output_directory = project_root / DEFAULT_PATH
 
-    if not fix and changed_paths:
-        _print_howto_fix(changed_paths)
+    ctx = KeepSortedContext(paths=files, fix=fix, output_dir=output_directory)
+    errors = _process_files(ctx)
+
+    if not fix and errors:
+        _print_howto_fix(list(errors.keys()))
 
     return int(ctx.failed)
 

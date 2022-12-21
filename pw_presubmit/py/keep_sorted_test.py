@@ -17,6 +17,7 @@
 from pathlib import Path
 import tempfile
 import textwrap
+from typing import Dict, Sequence
 import unittest
 from unittest.mock import MagicMock
 
@@ -44,8 +45,10 @@ class TestKeepSorted(unittest.TestCase):
             with path.open('w') as outs:
                 outs.write(contents)
 
+            self.errors: Dict[Path, Sequence[str]] = {}
+
             # pylint: disable=protected-access
-            self.sorter = keep_sorted._FileSorter(self.ctx, path)
+            self.sorter = keep_sorted._FileSorter(self.ctx, path, self.errors)
 
             # pylint: enable=protected-access
 
@@ -59,6 +62,12 @@ class TestKeepSorted(unittest.TestCase):
             self.sorter.write(path)
             with path.open() as ins:
                 self.contents = ins.read()
+
+    def assert_errors(self):
+        self.assertTrue(self.errors)
+
+    def assert_no_errors(self):
+        self.assertFalse(self.errors)
 
     def test_missing_end(self) -> None:
         with self.assertRaises(keep_sorted.KeepSortedParsingError):
@@ -82,132 +91,132 @@ class TestKeepSorted(unittest.TestCase):
 
     def test_already_sorted(self) -> None:
         self._run(f'{START}\n1\n2\n3\n4\n{END}\n')
-        self.ctx.fail.assert_not_called()
+        self.assert_no_errors()
         self.assertEqual(self.contents, '')
 
     def test_not_sorted(self) -> None:
         self._run(f'{START}\n4\n3\n2\n1\n{END}\n')
-        self.ctx.fail.assert_called()
+        self.assert_errors()
         self.assertEqual(self.contents, f'{START}\n1\n2\n3\n4\n{END}\n')
 
     def test_prefix_sorted(self) -> None:
         self._run(f'foo\nbar\n{START}\n1\n2\n{END}\n')
-        self.ctx.fail.assert_not_called()
+        self.assert_no_errors()
         self.assertEqual(self.contents, '')
 
     def test_prefix_not_sorted(self) -> None:
         self._run(f'foo\nbar\n{START}\n2\n1\n{END}\n')
-        self.ctx.fail.assert_called()
+        self.assert_errors()
         self.assertEqual(self.contents, f'foo\nbar\n{START}\n1\n2\n{END}\n')
 
     def test_suffix_sorted(self) -> None:
         self._run(f'{START}\n1\n2\n{END}\nfoo\nbar\n')
-        self.ctx.fail.assert_not_called()
+        self.assert_no_errors()
         self.assertEqual(self.contents, '')
 
     def test_suffix_not_sorted(self) -> None:
         self._run(f'{START}\n2\n1\n{END}\nfoo\nbar\n')
-        self.ctx.fail.assert_called()
+        self.assert_errors()
         self.assertEqual(self.contents, f'{START}\n1\n2\n{END}\nfoo\nbar\n')
 
     def test_not_sorted_case_sensitive(self) -> None:
         self._run(f'{START}\na\nD\nB\nc\n{END}\n')
-        self.ctx.fail.assert_called()
+        self.assert_errors()
         self.assertEqual(self.contents, f'{START}\nB\nD\na\nc\n{END}\n')
 
     def test_not_sorted_case_insensitive(self) -> None:
         self._run(f'{START} ignore-case\na\nD\nB\nc\n{END}\n')
-        self.ctx.fail.assert_called()
+        self.assert_errors()
         self.assertEqual(
             self.contents, f'{START} ignore-case\na\nB\nc\nD\n{END}\n'
         )
 
     def test_remove_dupes(self) -> None:
         self._run(f'{START}\n1\n2\n2\n1\n{END}\n')
-        self.ctx.fail.assert_called()
+        self.assert_errors()
         self.assertEqual(self.contents, f'{START}\n1\n2\n{END}\n')
 
     def test_allow_dupes(self) -> None:
         self._run(f'{START} allow-dupes\n1\n2\n2\n1\n{END}\n')
-        self.ctx.fail.assert_called()
+        self.assert_errors()
         self.assertEqual(
             self.contents, f'{START} allow-dupes\n1\n1\n2\n2\n{END}\n'
         )
 
     def test_case_insensitive_dupes(self) -> None:
         self._run(f'{START} ignore-case\na\nB\nA\n{END}\n')
-        self.ctx.fail.assert_called()
+        self.assert_errors()
         self.assertEqual(
             self.contents, f'{START} ignore-case\nA\na\nB\n{END}\n'
         )
 
     def test_ignored_prefixes(self) -> None:
         self._run(f'{START} ignore-prefix=foo,bar\na\nb\nfoob\nbarc\n{END}\n')
-        self.ctx.fail.assert_not_called()
+        self.assert_no_errors()
 
     def test_ignored_longest_prefixes(self) -> None:
         self._run(f'{START} ignore-prefix=1,123\na\n123b\nb\n1c\n{END}\n')
-        self.ctx.fail.assert_not_called()
+        self.assert_no_errors()
 
     def test_ignored_prefixes_whitespace(self) -> None:
         self._run(
             f'{START} ignore-prefix=foo,bar\n' f' a\n b\n foob\n barc\n{END}\n'
         )
-        self.ctx.fail.assert_not_called()
+        self.assert_no_errors()
 
     def test_ignored_prefixes_insensitive(self) -> None:
         self._run(
             f'{START} ignore-prefix=foo,bar ignore-case\n'
             f'a\nB\nfooB\nbarc\n{END}\n'
         )
-        self.ctx.fail.assert_not_called()
+        self.assert_no_errors()
 
     def test_python_comment_marks_sorted(self) -> None:
         self._run(f'# {START}\n1\n2\n# {END}\n')
-        self.ctx.fail.assert_not_called()
+        self.assert_no_errors()
 
     def test_python_comment_marks_not_sorted(self) -> None:
         self._run(f'# {START}\n2\n1\n# {END}\n')
-        self.ctx.fail.assert_called()
+        self.assert_errors()
         self.assertEqual(self.contents, f'# {START}\n1\n2\n# {END}\n')
 
     def test_python_comment_sticky_sorted(self) -> None:
         self._run(f'# {START}\n# A\n1\n2\n# {END}\n')
-        self.ctx.fail.assert_not_called()
+        self.assert_no_errors()
 
     def test_python_comment_sticky_not_sorted(self) -> None:
         self._run(f'# {START}\n2\n# A\n1\n# {END}\n')
-        self.ctx.fail.assert_called()
+        self.assert_errors()
         self.assertEqual(self.contents, f'# {START}\n# A\n1\n2\n# {END}\n')
 
     def test_python_comment_sticky_disabled(self) -> None:
         self._run(f'# {START} sticky-comments=no\n1\n# B\n2\n# {END}\n')
-        self.ctx.fail.assert_called()
+        self.assert_errors()
         self.assertEqual(
             self.contents, f'# {START} sticky-comments=no\n# B\n1\n2\n# {END}\n'
         )
 
     def test_cpp_comment_marks_sorted(self) -> None:
         self._run(f'// {START}\n1\n2\n// {END}\n')
-        self.ctx.fail.assert_not_called()
+        self.assert_no_errors()
 
     def test_cpp_comment_marks_not_sorted(self) -> None:
         self._run(f'// {START}\n2\n1\n// {END}\n')
-        self.ctx.fail.assert_called()
+        self.assert_errors()
         self.assertEqual(self.contents, f'// {START}\n1\n2\n// {END}\n')
 
     def test_cpp_comment_sticky_sorted(self) -> None:
         self._run(f'// {START}\n1\n// B\n2\n// {END}\n')
-        self.ctx.fail.assert_not_called()
+        self.assert_no_errors()
 
     def test_cpp_comment_sticky_not_sorted(self) -> None:
         self._run(f'// {START}\n// B\n2\n1\n// {END}\n')
-        self.ctx.fail.assert_called()
+        self.assert_errors()
         self.assertEqual(self.contents, f'// {START}\n1\n// B\n2\n// {END}\n')
 
     def test_cpp_comment_sticky_disabled(self) -> None:
         self._run(f'// {START} sticky-comments=no\n1\n// B\n2\n// {END}\n')
-        self.ctx.fail.assert_called()
+        self.assert_errors()
         self.assertEqual(
             self.contents,
             f'// {START} sticky-comments=no\n// B\n1\n2\n// {END}\n',
@@ -215,40 +224,40 @@ class TestKeepSorted(unittest.TestCase):
 
     def test_custom_comment_sticky_sorted(self) -> None:
         self._run(f'{START} sticky-comments=%\n1\n% B\n2\n{END}\n')
-        self.ctx.fail.assert_not_called()
+        self.assert_no_errors()
 
     def test_custom_comment_sticky_not_sorted(self) -> None:
         self._run(f'{START} sticky-comments=%\n% B\n2\n1\n{END}\n')
-        self.ctx.fail.assert_called()
+        self.assert_errors()
         self.assertEqual(
             self.contents, f'{START} sticky-comments=%\n1\n% B\n2\n{END}\n'
         )
 
     def test_multiline_comment_sticky_sorted(self) -> None:
         self._run(f'# {START}\n# B\n# A\n1\n2\n# {END}\n')
-        self.ctx.fail.assert_not_called()
+        self.assert_no_errors()
 
     def test_multiline_comment_sticky_not_sorted(self) -> None:
         self._run(f'# {START}\n# B\n# A\n2\n1\n# {END}\n')
-        self.ctx.fail.assert_called()
+        self.assert_errors()
         self.assertEqual(self.contents, f'# {START}\n1\n# B\n# A\n2\n# {END}\n')
 
     def test_comment_sticky_sorted_fallback_sorted(self) -> None:
         self._run(f'# {START}\n# A\n1\n# B\n1\n# {END}\n')
-        self.ctx.fail.assert_not_called()
+        self.assert_no_errors()
 
     def test_comment_sticky_sorted_fallback_not_sorted(self) -> None:
         self._run(f'# {START}\n# B\n1\n# A\n1\n# {END}\n')
-        self.ctx.fail.assert_called()
+        self.assert_errors()
         self.assertEqual(self.contents, f'# {START}\n# A\n1\n# B\n1\n# {END}\n')
 
     def test_comment_sticky_sorted_fallback_dupes(self) -> None:
         self._run(f'# {START} allow-dupes\n# A\n1\n# A\n1\n# {END}\n')
-        self.ctx.fail.assert_not_called()
+        self.assert_no_errors()
 
     def test_different_comment_sticky_not_sorted(self) -> None:
         self._run(f'# {START} sticky-comments=%\n% A\n1\n# B\n2\n# {END}\n')
-        self.ctx.fail.assert_called()
+        self.assert_errors()
         self.assertEqual(
             self.contents,
             f'# {START} sticky-comments=%\n# B\n% A\n1\n2\n# {END}\n',
@@ -269,7 +278,7 @@ class TestKeepSorted(unittest.TestCase):
         )
 
         self._run(initial)
-        self.ctx.fail.assert_not_called()
+        self.assert_no_errors()
 
     def test_continuation_not_sorted(self) -> None:
         initial = textwrap.dedent(
@@ -299,7 +308,7 @@ class TestKeepSorted(unittest.TestCase):
         )
 
         self._run(initial)
-        self.ctx.fail.assert_called()
+        self.assert_errors()
         self.assertEqual(self.contents, expected)
 
     def test_indented_continuation_sorted(self) -> None:
@@ -315,7 +324,7 @@ class TestKeepSorted(unittest.TestCase):
         )
 
         self._run(initial)
-        self.ctx.fail.assert_not_called()
+        self.assert_no_errors()
 
     def test_indented_continuation_not_sorted(self) -> None:
         # Intentionally not using textwrap.dedent().
@@ -340,7 +349,7 @@ class TestKeepSorted(unittest.TestCase):
         )
 
         self._run(initial)
-        self.ctx.fail.assert_called()
+        self.assert_errors()
         self.assertEqual(self.contents, expected)
 
 
