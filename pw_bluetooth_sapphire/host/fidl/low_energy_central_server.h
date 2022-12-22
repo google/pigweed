@@ -30,7 +30,7 @@ class LowEnergyCentralServer : public AdapterServerBase<fuchsia::bluetooth::le::
   // vector of FIDL `le.Peer`s, is limited by the size of the FIDL channel.
   constexpr static const size_t kMaxPendingScanResultWatcherPeers = 100;
 
-  LowEnergyCentralServer(fxl::WeakPtr<bt::gap::Adapter> adapter,
+  LowEnergyCentralServer(bt::gap::Adapter::WeakPtr adapter,
                          ::fidl::InterfaceRequest<fuchsia::bluetooth::le::Central> request,
                          fxl::WeakPtr<bt::gatt::GATT> gatt);
   ~LowEnergyCentralServer() override;
@@ -47,7 +47,7 @@ class LowEnergyCentralServer : public AdapterServerBase<fuchsia::bluetooth::le::
 
     // `error_cb` will be called when the client closes the protocol.
     ScanResultWatcherServer(
-        fxl::WeakPtr<bt::gap::Adapter> adapter,
+        bt::gap::Adapter::WeakPtr adapter,
         fidl::InterfaceRequest<fuchsia::bluetooth::le::ScanResultWatcher> watcher,
         fit::callback<void()> error_cb);
     ~ScanResultWatcherServer() override = default;
@@ -66,7 +66,7 @@ class LowEnergyCentralServer : public AdapterServerBase<fuchsia::bluetooth::le::
     // channel.
     void MaybeSendPeers();
 
-    fxl::WeakPtr<bt::gap::Adapter> adapter_;
+    bt::gap::Adapter::WeakPtr adapter_;
     std::unordered_set<bt::PeerId> updated_peers_;
     WatchCallbackOnce watch_callback_ = nullptr;
     fit::callback<void()> error_callback_;
@@ -77,7 +77,7 @@ class LowEnergyCentralServer : public AdapterServerBase<fuchsia::bluetooth::le::
    public:
     using ScanCompleteCallback = fit::callback<void()>;
 
-    ScanInstance(fxl::WeakPtr<bt::gap::Adapter> adapter, LowEnergyCentralServer* central_server,
+    ScanInstance(bt::gap::Adapter::WeakPtr adapter, LowEnergyCentralServer* central_server,
                  std::vector<fuchsia::bluetooth::le::Filter> filters,
                  fidl::InterfaceRequest<fuchsia::bluetooth::le::ScanResultWatcher> watcher,
                  ScanCallback cb);
@@ -99,7 +99,7 @@ class LowEnergyCentralServer : public AdapterServerBase<fuchsia::bluetooth::le::
     // The filters specified in `ScanOptions`.
     std::vector<bt::gap::DiscoveryFilter> filters_;
     LowEnergyCentralServer* central_server_;
-    fxl::WeakPtr<bt::gap::Adapter> adapter_;
+    bt::gap::Adapter::WeakPtr adapter_;
     fxl::WeakPtrFactory<ScanInstance> weak_ptr_factory_;
   };
 

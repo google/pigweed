@@ -87,7 +87,7 @@ void WatchPeersGetter::Notify(std::queue<Callback> callbacks, PeerTracker peers)
   }
 }
 
-HostServer::HostServer(zx::channel channel, fxl::WeakPtr<bt::gap::Adapter> adapter,
+HostServer::HostServer(zx::channel channel, const bt::gap::Adapter::WeakPtr& adapter,
                        fxl::WeakPtr<bt::gatt::GATT> gatt)
     : AdapterServerBase(adapter, this, std::move(channel)),
       pairing_delegate_(nullptr),
@@ -226,7 +226,7 @@ void HostServer::StartLEDiscovery(StartDiscoveryCallback callback) {
 
 void HostServer::StartDiscovery(StartDiscoveryCallback callback) {
   bt_log(DEBUG, "fidl", "%s", __FUNCTION__);
-  BT_DEBUG_ASSERT(adapter());
+  BT_DEBUG_ASSERT(adapter().is_alive());
 
   if (le_discovery_session_ || requesting_discovery_) {
     bt_log(DEBUG, "fidl", "discovery already in progress");
@@ -352,7 +352,7 @@ void HostServer::RestoreBonds(::std::vector<fsys::BondingData> bonds,
 
 void HostServer::OnPeerBonded(const bt::gap::Peer& peer) {
   bt_log(DEBUG, "fidl", "%s", __FUNCTION__);
-  binding()->events().OnNewBondingData(fidl_helpers::PeerToFidlBondingData(*adapter(), peer));
+  binding()->events().OnNewBondingData(fidl_helpers::PeerToFidlBondingData(adapter().get(), peer));
 }
 
 void HostServer::RegisterLowEnergyConnection(
@@ -704,44 +704,44 @@ void HostServer::PairBrEdr(PeerId peer_id, PairCallback callback) {
 }
 
 void HostServer::RequestLowEnergyCentral(
-    fidl::InterfaceRequest<fuchsia::bluetooth::le::Central> request) {
-  BindServer<LowEnergyCentralServer>(std::move(request), gatt_);
+    fidl::InterfaceRequest<fuchsia::bluetooth::le::Central> central) {
+  BindServer<LowEnergyCentralServer>(std::move(central), gatt_);
 }
 
 void HostServer::RequestLowEnergyPeripheral(
-    fidl::InterfaceRequest<fuchsia::bluetooth::le::Peripheral> request) {
-  BindServer<LowEnergyPeripheralServer>(gatt_, std::move(request));
+    fidl::InterfaceRequest<fuchsia::bluetooth::le::Peripheral> peripheral) {
+  BindServer<LowEnergyPeripheralServer>(gatt_, std::move(peripheral));
 }
 
 void HostServer::RequestGattServer(
-    fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Server> request) {
+    fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Server> server) {
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto server = std::make_unique<GattServerServer>(gatt_->AsWeakPtr(), std::move(request));
-  server->set_error_handler([self, server = server.get()](zx_status_t status) {
+  auto server_ptr = std::make_unique<GattServerServer>(gatt_->AsWeakPtr(), std::move(server));
+  server_ptr->set_error_handler([self, server = server_ptr.get()](zx_status_t status) {
     if (self) {
       bt_log(DEBUG, "bt-host", "GATT server disconnected");
       self->servers_.erase(server);
     }
   });
-  servers_[server.get()] = std::move(server);
+  servers_[server_ptr.get()] = std::move(server_ptr);
 }
 
 void HostServer::RequestGatt2Server(
-    fidl::InterfaceRequest<fuchsia::bluetooth::gatt2::Server> request) {
+    fidl::InterfaceRequest<fuchsia::bluetooth::gatt2::Server> server) {
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto server = std::make_unique<Gatt2ServerServer>(gatt_->AsWeakPtr(), std::move(request));
-  server->set_error_handler([self, server = server.get()](zx_status_t status) {
+  auto server_ptr = std::make_unique<Gatt2ServerServer>(gatt_->AsWeakPtr(), std::move(server));
+  server_ptr->set_error_handler([self, server = server_ptr.get()](zx_status_t status) {
     if (self) {
       bt_log(DEBUG, "bt-host", "GATT2 server disconnected");
       self->servers_.erase(server);
     }
   });
-  servers_[server.get()] = std::move(server);
+  servers_[server_ptr.get()] = std::move(server_ptr);
 }
 
 void HostServer::RequestProfile(
-    fidl::InterfaceRequest<fuchsia::bluetooth::bredr::Profile> request) {
-  BindServer<ProfileServer>(std::move(request));
+    fidl::InterfaceRequest<fuchsia::bluetooth::bredr::Profile> profile) {
+  BindServer<ProfileServer>(std::move(profile));
 }
 
 void HostServer::Close() {
@@ -901,6 +901,8 @@ void HostServer::ResetPairingDelegate() {
   adapter()->SetPairingDelegate(fxl::WeakPtr<HostServer>());
 }
 
-void HostServer::NotifyInfoChange() { info_getter_.Set(fidl_helpers::HostInfoToFidl(*adapter())); }
+void HostServer::NotifyInfoChange() {
+  info_getter_.Set(fidl_helpers::HostInfoToFidl(adapter().get()));
+}
 
 }  // namespace bthost

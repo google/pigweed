@@ -191,7 +191,7 @@ zx_status_t LowEnergyPeripheralServer::AdvertisementInstanceDeprecated::Register
   return status;
 }
 
-LowEnergyPeripheralServer::LowEnergyPeripheralServer(fxl::WeakPtr<bt::gap::Adapter> adapter,
+LowEnergyPeripheralServer::LowEnergyPeripheralServer(bt::gap::Adapter::WeakPtr adapter,
                                                      fxl::WeakPtr<bt::gatt::GATT> gatt,
                                                      fidl::InterfaceRequest<Peripheral> request)
     : AdapterServerBase(std::move(adapter), this, std::move(request)),

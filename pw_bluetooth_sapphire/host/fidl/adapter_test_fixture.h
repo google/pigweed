@@ -29,7 +29,7 @@ class AdapterTestFixture : public bt::testing::ControllerTest<bt::testing::FakeC
                  pw::bluetooth::Controller::FeaturesBits{0});
   void TearDown() override;
 
-  fxl::WeakPtr<bt::gap::Adapter> adapter() const { return adapter_->AsWeakPtr(); }
+  bt::gap::Adapter::WeakPtr adapter() const { return adapter_->AsWeakPtr(); }
   bt::gatt::testing::FakeLayer* gatt() const { return gatt_.get(); }
   std::unique_ptr<bt::gatt::testing::FakeLayer> take_gatt() { return std::move(gatt_); }
   bt::l2cap::testing::FakeL2cap* l2cap() const { return l2cap_; }

@@ -13,6 +13,7 @@
 #include "lib/fidl/cpp/interface_request.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
+#include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
@@ -73,22 +74,22 @@ class ServerBase : public Server, public Interface {
 template <typename Interface>
 class AdapterServerBase : public ServerBase<Interface> {
  public:
-  AdapterServerBase(fxl::WeakPtr<bt::gap::Adapter> adapter, Interface* impl,
+  AdapterServerBase(bt::gap::Adapter::WeakPtr adapter, Interface* impl,
                     fidl::InterfaceRequest<Interface> request)
       : AdapterServerBase(adapter, impl, request.TakeChannel()) {}
 
-  AdapterServerBase(fxl::WeakPtr<bt::gap::Adapter> adapter, Interface* impl, zx::channel channel)
+  AdapterServerBase(bt::gap::Adapter::WeakPtr adapter, Interface* impl, zx::channel channel)
       : ServerBase<Interface>(impl, std::move(channel)), adapter_(adapter) {
-    BT_DEBUG_ASSERT(adapter_);
+    BT_DEBUG_ASSERT(adapter_.is_alive());
   }
 
   ~AdapterServerBase() override = default;
 
  protected:
-  bt::gap::Adapter* adapter() const { return adapter_.get(); }
+  const bt::gap::Adapter::WeakPtr& adapter() const { return adapter_; }
 
  private:
-  fxl::WeakPtr<bt::gap::Adapter> adapter_;
+  bt::gap::Adapter::WeakPtr adapter_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdapterServerBase);
 };

@@ -243,7 +243,7 @@ class FakeAdapter final : public Adapter {
 
   void AttachInspect(inspect::Node& parent, std::string name) override {}
 
-  fxl::WeakPtr<Adapter> AsWeakPtr() override { return weak_ptr_factory_.GetWeakPtr(); }
+  Adapter::WeakPtr AsWeakPtr() override { return weak_self_.GetWeakPtr(); }
 
  private:
   enum InitState {
@@ -263,7 +263,7 @@ class FakeAdapter final : public Adapter {
   DeviceClass device_class_;
   LESecurityMode le_security_mode_;
 
-  fxl::WeakPtrFactory<FakeAdapter> weak_ptr_factory_;
+  WeakSelf<Adapter> weak_self_;
 };
 
 }  // namespace bt::gap::testing

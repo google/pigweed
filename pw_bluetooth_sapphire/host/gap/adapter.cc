@@ -283,7 +283,7 @@ class AdapterImpl final : public Adapter {
 
   void AttachInspect(inspect::Node& parent, std::string name) override;
 
-  fxl::WeakPtr<Adapter> AsWeakPtr() override { return weak_ptr_factory_.GetWeakPtr(); }
+  WeakSelf<Adapter>::WeakPtr AsWeakPtr() override { return weak_self_adapter_.GetWeakPtr(); }
 
  private:
   // Called by Initialize() after Transport is initialized.
@@ -454,7 +454,8 @@ class AdapterImpl final : public Adapter {
 
   // This must remain the last member to make sure that all weak pointers are
   // invalidating before other members are destroyed.
-  fxl::WeakPtrFactory<AdapterImpl> weak_ptr_factory_;
+  WeakSelf<AdapterImpl> weak_self_;
+  WeakSelf<Adapter> weak_self_adapter_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdapterImpl);
 };
@@ -468,14 +469,15 @@ AdapterImpl::AdapterImpl(hci::Transport::WeakPtr hci, fxl::WeakPtr<gatt::GATT> g
       max_lmp_feature_page_index_(0),
       l2cap_(std::move(l2cap)),
       gatt_(std::move(gatt)),
-      weak_ptr_factory_(this) {
+      weak_self_(this),
+      weak_self_adapter_(this) {
   BT_DEBUG_ASSERT(hci_.is_alive());
   BT_DEBUG_ASSERT(gatt_);
   BT_DEBUG_ASSERT_MSG(dispatcher_, "must create on a thread with a dispatcher");
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   hci_->SetTransportErrorCallback([self] {
-    if (self) {
+    if (self.is_alive()) {
       self->OnTransportError();
     }
   });
@@ -1087,7 +1089,7 @@ void AdapterImpl::InitializeStep4() {
   UpdateInspectProperties();
 
   // Assign a default name and device class before notifying completion.
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   SetLocalName(kDefaultLocalName, [self](auto status) mutable {
     // Set the default device class - a computer with audio.
     // TODO(fxbug.dev/1234): set this from a platform configuration file
@@ -1197,11 +1199,11 @@ void AdapterImpl::OnLeAutoConnectRequest(Peer* peer) {
 
   LowEnergyConnectionOptions options{.auto_connect = true};
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   le_connection_manager_->Connect(
       peer_id,
       [self, peer_id](auto result) {
-        if (!self) {
+        if (!self.is_alive()) {
           bt_log(DEBUG, "gap", "ignoring auto-connection (adapter destroyed)");
           return;
         }

@@ -71,7 +71,7 @@ class WatchPeersGetter
 class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
                    public bt::gap::PairingDelegate {
  public:
-  HostServer(zx::channel channel, fxl::WeakPtr<bt::gap::Adapter> adapter,
+  HostServer(zx::channel channel, const bt::gap::Adapter::WeakPtr& adapter,
              fxl::WeakPtr<bt::gatt::GATT> gatt);
   ~HostServer() override;
 

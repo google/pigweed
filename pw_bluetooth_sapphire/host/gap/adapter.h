@@ -384,7 +384,8 @@ class Adapter {
   virtual void AttachInspect(inspect::Node& parent, std::string name) = 0;
 
   // Returns a weak pointer to this adapter.
-  virtual fxl::WeakPtr<Adapter> AsWeakPtr() = 0;
+  using WeakPtr = WeakSelf<Adapter>::WeakPtr;
+  virtual Adapter::WeakPtr AsWeakPtr() = 0;
 };
 
 }  // namespace gap

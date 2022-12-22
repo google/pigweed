@@ -21,7 +21,7 @@ namespace bthost {
 // Implements the bredr::Profile FIDL interface.
 class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
  public:
-  ProfileServer(fxl::WeakPtr<bt::gap::Adapter> adapter,
+  ProfileServer(bt::gap::Adapter::WeakPtr adapter,
                 fidl::InterfaceRequest<fuchsia::bluetooth::bredr::Profile> request);
   ~ProfileServer() override;
 
@@ -51,8 +51,7 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
   class AudioOffloadExt final : public ServerBase<fuchsia::bluetooth::bredr::AudioOffloadExt> {
    public:
     AudioOffloadExt(fidl::InterfaceRequest<fuchsia::bluetooth::bredr::AudioOffloadExt> request,
-                    fxl::WeakPtr<bt::l2cap::Channel> channel,
-                    fxl::WeakPtr<bt::gap::Adapter> adapter)
+                    fxl::WeakPtr<bt::l2cap::Channel> channel, bt::gap::Adapter::WeakPtr adapter)
         : ServerBase(this, std::move(request)),
           channel_(std::move(channel)),
           adapter_(std::move(adapter)) {}
@@ -63,7 +62,7 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
 
    private:
     fxl::WeakPtr<bt::l2cap::Channel> channel_;
-    fxl::WeakPtr<bt::gap::Adapter> adapter_;
+    bt::gap::Adapter::WeakPtr adapter_;
   };
 
   class ScoConnectionServer final : public ServerBase<fuchsia::bluetooth::bredr::ScoConnection> {
@@ -152,7 +151,7 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
   // and returned in the FIDL Channel.
   fuchsia::bluetooth::bredr::Channel ChannelToFidl(fxl::WeakPtr<bt::l2cap::Channel> channel);
 
-  bt::gap::Adapter* adapter() const { return adapter_.get(); }
+  const bt::gap::Adapter::WeakPtr& adapter() const { return adapter_; }
 
   // Advertised Services
   struct AdvertisedService {
@@ -209,7 +208,7 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
 
   std::unordered_map<AudioOffloadExt*, std::unique_ptr<AudioOffloadExt>> audio_offload_ext_servers_;
 
-  fxl::WeakPtr<bt::gap::Adapter> adapter_;
+  bt::gap::Adapter::WeakPtr adapter_;
 
   // Creates sockets that bridge L2CAP channels to profile processes.
   bt::socket::SocketFactory<bt::l2cap::Channel> l2cap_socket_factory_;

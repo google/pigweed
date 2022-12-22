@@ -197,7 +197,7 @@ AclPriority FidlToAclPriority(fidlbredr::A2dpDirectionPriority in) {
 
 }  // namespace
 
-ProfileServer::ProfileServer(fxl::WeakPtr<bt::gap::Adapter> adapter,
+ProfileServer::ProfileServer(bt::gap::Adapter::WeakPtr adapter,
                              fidl::InterfaceRequest<Profile> request)
     : ServerBase(this, std::move(request)),
       advertised_total_(0),
@@ -206,7 +206,7 @@ ProfileServer::ProfileServer(fxl::WeakPtr<bt::gap::Adapter> adapter,
       weak_ptr_factory_(this) {}
 
 ProfileServer::~ProfileServer() {
-  if (adapter()) {
+  if (adapter().is_alive()) {
     // Unregister anything that we have registered.
     for (const auto& it : current_advertised_) {
       adapter()->bredr()->UnregisterService(it.second.registration_handle);
@@ -373,7 +373,7 @@ void ProfileServer::Advertise(
     registering.emplace_back(std::move(rec.value()));
   }
 
-  BT_ASSERT(adapter());
+  BT_ASSERT(adapter().is_alive());
   BT_ASSERT(adapter()->bredr());
 
   uint64_t next = advertised_total_ + 1;
@@ -410,7 +410,7 @@ void ProfileServer::Search(
     attributes.insert(bt::sdp::kBluetoothProfileDescriptorList);
   }
 
-  BT_DEBUG_ASSERT(adapter());
+  BT_DEBUG_ASSERT(adapter().is_alive());
 
   auto next = searches_total_ + 1;
 
@@ -471,7 +471,7 @@ void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id,
 
     cb(fpromise::ok(std::move(fidl_chan)));
   };
-  BT_DEBUG_ASSERT(adapter());
+  BT_DEBUG_ASSERT(adapter().is_alive());
 
   adapter()->bredr()->OpenL2capChannel(
       id, psm, fidl_helpers::FidlToBrEdrSecurityRequirements(parameters),
@@ -561,7 +561,7 @@ void ProfileServer::OnChannelConnected(uint64_t ad_id, fxl::WeakPtr<bt::l2cap::C
     return;
   }
 
-  BT_DEBUG_ASSERT(adapter());
+  BT_DEBUG_ASSERT(adapter().is_alive());
   auto handle = channel->link_handle();
   auto id = adapter()->bredr()->GetPeerId(handle);
 
@@ -588,7 +588,7 @@ void ProfileServer::OnConnectionReceiverError(uint64_t ad_id) {
 
   auto it = current_advertised_.find(ad_id);
 
-  if (it == current_advertised_.end() || !adapter()) {
+  if (it == current_advertised_.end() || !adapter().is_alive()) {
     return;
   }
 
@@ -604,7 +604,7 @@ void ProfileServer::OnSearchResultError(uint64_t search_id, zx_status_t status) 
 
   auto it = searches_.find(search_id);
 
-  if (it == searches_.end() || !adapter()) {
+  if (it == searches_.end() || !adapter().is_alive()) {
     return;
   }
 

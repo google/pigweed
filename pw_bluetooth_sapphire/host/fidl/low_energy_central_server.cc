@@ -6,6 +6,8 @@
 
 #include <zircon/types.h>
 
+#include <utility>
+
 #include <measure_tape/hlcpp/hlcpp_measure_tape_for_peer.h>
 
 #include "gatt_client_server.h"
@@ -47,11 +49,11 @@ bt::gap::LowEnergyConnectionOptions ConnectionOptionsFromFidl(
 
 }  // namespace
 
-LowEnergyCentralServer::LowEnergyCentralServer(fxl::WeakPtr<bt::gap::Adapter> adapter,
+LowEnergyCentralServer::LowEnergyCentralServer(bt::gap::Adapter::WeakPtr adapter,
                                                fidl::InterfaceRequest<Central> request,
                                                fxl::WeakPtr<bt::gatt::GATT> gatt)
-    : AdapterServerBase(adapter, this, std::move(request)),
-      gatt_(gatt),
+    : AdapterServerBase(std::move(adapter), this, std::move(request)),
+      gatt_(std::move(gatt)),
       requesting_scan_deprecated_(false),
       weak_ptr_factory_(this) {
   BT_ASSERT(gatt_);
@@ -74,7 +76,7 @@ std::optional<bt::gap::LowEnergyConnectionHandle*> LowEnergyCentralServer::FindC
 }
 
 LowEnergyCentralServer::ScanResultWatcherServer::ScanResultWatcherServer(
-    fxl::WeakPtr<bt::gap::Adapter> adapter,
+    bt::gap::Adapter::WeakPtr adapter,
     fidl::InterfaceRequest<fuchsia::bluetooth::le::ScanResultWatcher> watcher,
     fit::callback<void()> error_cb)
     : ServerBase(this, std::move(watcher)),
@@ -162,7 +164,7 @@ void LowEnergyCentralServer::ScanResultWatcherServer::MaybeSendPeers() {
 }
 
 LowEnergyCentralServer::ScanInstance::ScanInstance(
-    fxl::WeakPtr<bt::gap::Adapter> adapter, LowEnergyCentralServer* central_server,
+    bt::gap::Adapter::WeakPtr adapter, LowEnergyCentralServer* central_server,
     std::vector<fuchsia::bluetooth::le::Filter> fidl_filters,
     fidl::InterfaceRequest<fuchsia::bluetooth::le::ScanResultWatcher> watcher, ScanCallback cb)
     : result_watcher_(adapter, std::move(watcher),

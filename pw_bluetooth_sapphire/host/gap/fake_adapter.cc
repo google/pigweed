@@ -12,7 +12,7 @@ FakeAdapter::FakeAdapter()
     : init_state_(InitState::kNotInitialized),
       fake_le_(std::make_unique<FakeLowEnergy>(this)),
       fake_bredr_(std::make_unique<FakeBrEdr>()),
-      weak_ptr_factory_(this) {}
+      weak_self_(this) {}
 
 bool FakeAdapter::Initialize(InitializeCallback callback, fit::closure transport_closed_callback) {
   init_state_ = InitState::kInitializing;

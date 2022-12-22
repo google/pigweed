@@ -24,8 +24,7 @@ namespace bthost {
 // Implements the low_energy::Peripheral FIDL interface.
 class LowEnergyPeripheralServer : public AdapterServerBase<fuchsia::bluetooth::le::Peripheral> {
  public:
-  LowEnergyPeripheralServer(fxl::WeakPtr<bt::gap::Adapter> adapter,
-                            fxl::WeakPtr<bt::gatt::GATT> gatt,
+  LowEnergyPeripheralServer(bt::gap::Adapter::WeakPtr adapter, fxl::WeakPtr<bt::gatt::GATT> gatt,
                             fidl::InterfaceRequest<fuchsia::bluetooth::le::Peripheral> request);
   ~LowEnergyPeripheralServer() override;
 
