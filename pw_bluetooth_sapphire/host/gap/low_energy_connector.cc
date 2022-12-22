@@ -6,6 +6,8 @@
 
 #include <lib/async/default.h>
 
+#include <utility>
+
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 
 namespace bt::gap::internal {
@@ -33,17 +35,18 @@ constexpr const char* kInspectIsOutboundPropertyName = "is_outbound";
 }  // namespace
 
 LowEnergyConnector::LowEnergyConnector(PeerId peer_id, LowEnergyConnectionOptions options,
-                                       hci::Transport::WeakPtr transport, PeerCache* peer_cache,
+                                       hci::CommandChannel::WeakPtr cmd_channel,
+                                       PeerCache* peer_cache,
                                        fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
                                        l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt)
     : peer_id_(peer_id),
       peer_cache_(peer_cache),
       l2cap_(l2cap),
-      gatt_(gatt),
+      gatt_(std::move(gatt)),
       options_(options),
-      transport_(std::move(transport)),
+      cmd_(std::move(cmd_channel)),
       le_connection_manager_(std::move(conn_mgr)) {
-  BT_ASSERT(transport_.is_alive());
+  BT_ASSERT(cmd_.is_alive());
   BT_ASSERT(peer_cache_);
   BT_ASSERT(l2cap_);
   BT_ASSERT(gatt_);
@@ -308,7 +311,7 @@ bool LowEnergyConnector::InitializeConnection(std::unique_ptr<hci::LowEnergyConn
   BT_ASSERT(peer);
   auto connection =
       LowEnergyConnection::Create(peer->GetWeakPtr(), std::move(link), options_, peer_disconnect_cb,
-                                  error_cb, le_connection_manager_, l2cap_, gatt_, transport_);
+                                  error_cb, le_connection_manager_, l2cap_, gatt_, cmd_);
   if (!connection) {
     bt_log(WARN, "gap-le", "connection initialization failed (peer: %s)", bt_str(peer_id_));
     NotifyFailure();
@@ -327,7 +330,7 @@ void LowEnergyConnector::StartInterrogation() {
   state_.Set(State::kInterrogating);
   auto peer = peer_cache_->FindById(peer_id_);
   BT_ASSERT(peer);
-  interrogator_.emplace(peer->GetWeakPtr(), connection_->handle(), transport_);
+  interrogator_.emplace(peer->GetWeakPtr(), connection_->handle(), cmd_);
   interrogator_->Start(fit::bind_member<&LowEnergyConnector::OnInterrogationComplete>(this));
 }
 

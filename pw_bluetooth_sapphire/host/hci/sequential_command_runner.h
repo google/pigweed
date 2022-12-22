@@ -9,10 +9,10 @@
 
 #include <queue>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
 namespace bt::hci {
 
@@ -51,7 +51,7 @@ class SequentialCommandRunner final {
  public:
   using CommandPacketVariant = CommandChannel::CommandPacketVariant;
 
-  explicit SequentialCommandRunner(hci::Transport::WeakPtr transport);
+  explicit SequentialCommandRunner(hci::CommandChannel::WeakPtr cmd_channel);
   ~SequentialCommandRunner() = default;
 
   // Adds a HCI command packet to the queue.
@@ -134,7 +134,7 @@ class SequentialCommandRunner final {
   void Reset();
   void NotifyStatusAndReset(Result<> status);
 
-  hci::Transport::WeakPtr transport_;
+  hci::CommandChannel::WeakPtr cmd_;
 
   std::queue<QueuedCommand> command_queue_;
 
@@ -153,7 +153,7 @@ class SequentialCommandRunner final {
   // Number of commands sent to the controller we are waiting to finish.
   size_t running_commands_;
 
-  fxl::WeakPtrFactory<SequentialCommandRunner> weak_ptr_factory_;
+  WeakSelf<SequentialCommandRunner> weak_ptr_factory_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SequentialCommandRunner);
 };

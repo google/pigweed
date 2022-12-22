@@ -466,15 +466,12 @@ AdapterImpl::AdapterImpl(hci::Transport::WeakPtr hci, fxl::WeakPtr<gatt::GATT> g
       hci_(std::move(hci)),
       init_state_(State::kNotInitialized),
       max_lmp_feature_page_index_(0),
-      peer_cache_(),
       l2cap_(std::move(l2cap)),
-      gatt_(gatt),
+      gatt_(std::move(gatt)),
       weak_ptr_factory_(this) {
   BT_DEBUG_ASSERT(hci_.is_alive());
   BT_DEBUG_ASSERT(gatt_);
   BT_DEBUG_ASSERT_MSG(dispatcher_, "must create on a thread with a dispatcher");
-
-  init_seq_runner_ = std::make_unique<hci::SequentialCommandRunner>(hci_);
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   hci_->SetTransportErrorCallback([self] {
@@ -531,8 +528,7 @@ bool AdapterImpl::Initialize(InitializeCallback callback, fit::closure transport
   }
 
   BT_DEBUG_ASSERT(!IsInitializing());
-  BT_DEBUG_ASSERT(init_seq_runner_->IsReady());
-  BT_DEBUG_ASSERT(!init_seq_runner_->HasQueuedCommands());
+  BT_DEBUG_ASSERT(!init_seq_runner_);
 
   init_state_ = State::kInitializing;
   init_cb_ = std::move(callback);
@@ -544,6 +540,8 @@ bool AdapterImpl::Initialize(InitializeCallback callback, fit::closure transport
       CompleteInitialization(/*success=*/false);
       return;
     }
+    init_seq_runner_ =
+      std::make_unique<hci::SequentialCommandRunner>(hci_->command_channel()->AsWeakPtr());
 
     InitializeStep1();
   });
@@ -1020,7 +1018,8 @@ void AdapterImpl::InitializeStep4() {
 
   // Initialize the LE local address manager.
   le_address_manager_ = std::make_unique<LowEnergyAddressManager>(
-      adapter_identity, fit::bind_member<&AdapterImpl::IsLeRandomAddressChangeAllowed>(this), hci_);
+      adapter_identity, fit::bind_member<&AdapterImpl::IsLeRandomAddressChangeAllowed>(this),
+      hci_->command_channel()->AsWeakPtr());
 
   // Initialize the HCI adapters.
   hci_le_advertiser_ = CreateAdvertiser();
@@ -1038,8 +1037,9 @@ void AdapterImpl::InitializeStep4() {
       fit::bind_member<&AdapterImpl::OnLeAutoConnectRequest>(this));
 
   le_connection_manager_ = std::make_unique<LowEnergyConnectionManager>(
-      hci_, le_address_manager_.get(), hci_le_connector_.get(), &peer_cache_, l2cap_.get(), gatt_,
-      le_discovery_manager_->GetWeakPtr(), sm::SecurityManager::Create);
+      hci_->command_channel()->AsWeakPtr(), le_address_manager_.get(), hci_le_connector_.get(),
+      &peer_cache_, l2cap_.get(), gatt_, le_discovery_manager_->GetWeakPtr(),
+      sm::SecurityManager::Create);
   le_connection_manager_->AttachInspect(adapter_node_, kInspectLowEnergyConnectionManagerNodeName);
 
   le_advertising_manager_ = std::make_unique<LowEnergyAdvertisingManager>(
@@ -1062,7 +1062,8 @@ void AdapterImpl::InitializeStep4() {
       mode = hci_spec::InquiryMode::kRSSI;
     }
 
-    bredr_discovery_manager_ = std::make_unique<BrEdrDiscoveryManager>(hci_, mode, &peer_cache_);
+    bredr_discovery_manager_ = std::make_unique<BrEdrDiscoveryManager>(
+        hci_->command_channel()->AsWeakPtr(), mode, &peer_cache_);
     bredr_discovery_manager_->AttachInspect(adapter_node_, kInspectBrEdrDiscoveryManagerNodeName);
 
     sdp_server_ = std::make_unique<sdp::Server>(l2cap_.get());

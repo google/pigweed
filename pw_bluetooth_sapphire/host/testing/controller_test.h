@@ -10,7 +10,6 @@
 #include <memory>
 
 #include "pw_bluetooth/controller.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_packet.h"

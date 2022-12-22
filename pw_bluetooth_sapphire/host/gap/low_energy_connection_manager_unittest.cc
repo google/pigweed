@@ -96,23 +96,23 @@ class LowEnergyConnectionManagerTest : public TestingBase {
     peer_cache_ = std::make_unique<PeerCache>();
     l2cap_ = std::make_unique<l2cap::testing::FakeL2cap>();
 
-    const hci::Transport::WeakPtr transport_weak = transport()->GetWeakPtr();
+    const hci::CommandChannel::WeakPtr cmd_weak = cmd_channel()->AsWeakPtr();
 
     connector_ = std::make_unique<hci::LowEnergyConnector>(
-        transport_weak, &addr_delegate_, dispatcher(),
+        transport()->GetWeakPtr(), &addr_delegate_, dispatcher(),
         fit::bind_member<&LowEnergyConnectionManagerTest::OnIncomingConnection>(this));
 
     gatt_ = std::make_unique<gatt::testing::FakeLayer>();
     sm_factory_ = std::make_unique<TestSmFactory>();
 
     address_manager_ = std::make_unique<LowEnergyAddressManager>(
-        kAdapterAddress, /*delegate=*/[] { return false; }, transport_weak);
-    scanner_ = std::make_unique<hci::LegacyLowEnergyScanner>(address_manager_.get(), transport_weak,
-                                                             dispatcher());
+        kAdapterAddress, /*delegate=*/[] { return false; }, cmd_weak);
+    scanner_ = std::make_unique<hci::LegacyLowEnergyScanner>(
+        address_manager_.get(), transport()->GetWeakPtr(), dispatcher());
     discovery_manager_ =
         std::make_unique<LowEnergyDiscoveryManager>(scanner_.get(), peer_cache_.get());
     conn_mgr_ = std::make_unique<LowEnergyConnectionManager>(
-        transport_weak, &addr_delegate_, connector_.get(), peer_cache_.get(), l2cap_.get(),
+        cmd_weak, &addr_delegate_, connector_.get(), peer_cache_.get(), l2cap_.get(),
         gatt_->AsWeakPtr(), discovery_manager_->GetWeakPtr(),
         fit::bind_member<&TestSmFactory::CreateSm>(sm_factory_.get()));
 

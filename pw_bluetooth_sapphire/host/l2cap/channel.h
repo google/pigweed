@@ -273,13 +273,13 @@ class ChannelImpl : public Channel {
   // fixed channels are required to respect their MTU internally by:
   //   1.) never sending packets larger than their spec-defined MTU.
   //   2.) handling inbound PDUs which are larger than their spec-defined MTU appropriately.
-  static std::unique_ptr<ChannelImpl> CreateFixedChannel(
-      ChannelId id, fxl::WeakPtr<internal::LogicalLink> link,
-      fxl::WeakPtr<hci::CommandChannel> cmd_channel);
+  static std::unique_ptr<ChannelImpl> CreateFixedChannel(ChannelId id,
+                                                         fxl::WeakPtr<internal::LogicalLink> link,
+                                                         hci::CommandChannel::WeakPtr cmd_channel);
 
   static std::unique_ptr<ChannelImpl> CreateDynamicChannel(
       ChannelId id, ChannelId peer_id, fxl::WeakPtr<internal::LogicalLink> link, ChannelInfo info,
-      fxl::WeakPtr<hci::CommandChannel> cmd_channel);
+      hci::CommandChannel::WeakPtr cmd_channel);
 
   ~ChannelImpl() override = default;
 
@@ -310,7 +310,7 @@ class ChannelImpl : public Channel {
 
  private:
   ChannelImpl(ChannelId id, ChannelId remote_id, fxl::WeakPtr<internal::LogicalLink> link,
-              ChannelInfo info, fxl::WeakPtr<hci::CommandChannel> cmd_channel);
+              ChannelInfo info, hci::CommandChannel::WeakPtr cmd_channel);
 
   // Common channel closure logic. Called on Deactivate/OnClosed.
   void CleanUp();
@@ -332,7 +332,7 @@ class ChannelImpl : public Channel {
   fxl::WeakPtr<internal::LogicalLink> link_;
 
   // Command channel used to transport A2DP offload configuration of vendor extensions.
-  fxl::WeakPtr<hci::CommandChannel> cmd_channel_;
+  hci::CommandChannel::WeakPtr cmd_channel_;
 
   // The engine which processes received PDUs, and converts them to SDUs for
   // upper layers.

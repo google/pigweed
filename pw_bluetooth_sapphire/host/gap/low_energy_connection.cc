@@ -9,7 +9,6 @@
 #include <lib/async/time.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_manager.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
 namespace bt::gap::internal {
 
@@ -31,16 +30,17 @@ std::unique_ptr<LowEnergyConnection> LowEnergyConnection::Create(
     LowEnergyConnectionOptions connection_options, PeerDisconnectCallback peer_disconnect_cb,
     ErrorCallback error_cb, fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
     l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt,
-    hci::Transport::WeakPtr transport) {
+    hci::CommandChannel::WeakPtr cmd_channel) {
   // Catch any errors/disconnects during connection initialization so that they are reported by
   // returning a nullptr. This is less error-prone than calling the user's callbacks during
   // initialization.
   bool error = false;
   auto peer_disconnect_cb_temp = [&error](auto) { error = true; };
   auto error_cb_temp = [&error] { error = true; };
-  std::unique_ptr<LowEnergyConnection> connection(new LowEnergyConnection(
-      std::move(peer), std::move(link), connection_options, std::move(peer_disconnect_cb_temp),
-      std::move(error_cb_temp), std::move(conn_mgr), l2cap, std::move(gatt), std::move(transport)));
+  std::unique_ptr<LowEnergyConnection> connection(
+      new LowEnergyConnection(std::move(peer), std::move(link), connection_options,
+                              std::move(peer_disconnect_cb_temp), std::move(error_cb_temp),
+                              std::move(conn_mgr), l2cap, std::move(gatt), std::move(cmd_channel)));
 
   // This looks strange, but it is possible for InitializeFixedChannels() to trigger an error and
   // still return true, so |error| can change between the first and last check.
@@ -59,14 +59,15 @@ LowEnergyConnection::LowEnergyConnection(
     fxl::WeakPtr<Peer> peer, std::unique_ptr<hci::LowEnergyConnection> link,
     LowEnergyConnectionOptions connection_options, PeerDisconnectCallback peer_disconnect_cb,
     ErrorCallback error_cb, fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
-    l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt, hci::Transport::WeakPtr transport)
+    l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt,
+    hci::CommandChannel::WeakPtr cmd_channel)
     : peer_(std::move(peer)),
       link_(std::move(link)),
       connection_options_(connection_options),
       conn_mgr_(std::move(conn_mgr)),
       l2cap_(l2cap),
       gatt_(std::move(gatt)),
-      transport_(std::move(transport)),
+      cmd_(std::move(cmd_channel)),
       peer_disconnect_callback_(std::move(peer_disconnect_cb)),
       error_callback_(std::move(error_cb)),
       refs_(/*convert=*/[](const auto& refs) { return refs.size(); }),
@@ -75,7 +76,7 @@ LowEnergyConnection::LowEnergyConnection(
   BT_ASSERT(link_);
   BT_ASSERT(conn_mgr_);
   BT_ASSERT(gatt_);
-  BT_ASSERT(transport_.is_alive());
+  BT_ASSERT(cmd_.is_alive());
   BT_ASSERT(peer_disconnect_callback_);
   BT_ASSERT(error_callback_);
 
@@ -87,7 +88,7 @@ LowEnergyConnection::LowEnergyConnection(
 }
 
 LowEnergyConnection::~LowEnergyConnection() {
-  transport_->command_channel()->RemoveEventHandler(conn_update_cmpl_handler_id_);
+  cmd_->RemoveEventHandler(conn_update_cmpl_handler_id_);
 
   // Unregister this link from the GATT profile and the L2CAP plane. This
   // invalidates all L2CAP channels that are associated with this link.
@@ -220,7 +221,7 @@ void LowEnergyConnection::StartConnectionPauseTimeout() {
 
 void LowEnergyConnection::RegisterEventHandlers() {
   auto self = GetWeakPtr();
-  conn_update_cmpl_handler_id_ = transport_->command_channel()->AddLEMetaEventHandler(
+  conn_update_cmpl_handler_id_ = cmd_->AddLEMetaEventHandler(
       hci_spec::kLEConnectionUpdateCompleteSubeventCode, [self](const auto& event) {
         if (self) {
           self->OnLEConnectionUpdateComplete(event);
@@ -431,8 +432,8 @@ void LowEnergyConnection::UpdateConnectionParams(
     }
   };
 
-  transport_->command_channel()->SendCommand(std::move(command), std::move(status_cb_wrapper),
-                                             hci_spec::kCommandStatusEventCode);
+  cmd_->SendCommand(std::move(command), std::move(status_cb_wrapper),
+                    hci_spec::kCommandStatusEventCode);
 }
 
 void LowEnergyConnection::OnLEConnectionUpdateComplete(const hci::EventPacket& event) {

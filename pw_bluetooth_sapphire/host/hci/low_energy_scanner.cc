@@ -26,7 +26,8 @@ LowEnergyScanner::LowEnergyScanner(hci::Transport::WeakPtr hci, async_dispatcher
   BT_DEBUG_ASSERT(transport_.is_alive());
   BT_DEBUG_ASSERT(dispatcher_);
 
-  hci_cmd_runner_ = std::make_unique<SequentialCommandRunner>(transport_);
+  hci_cmd_runner_ =
+      std::make_unique<SequentialCommandRunner>(transport_->command_channel()->AsWeakPtr());
 }
 
 }  // namespace bt::hci

@@ -6,18 +6,17 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 
 namespace bt::gap {
 
 LowEnergyInterrogator::LowEnergyInterrogator(fxl::WeakPtr<Peer> peer,
                                              hci_spec::ConnectionHandle handle,
-                                             hci::Transport::WeakPtr hci)
-    : hci_(std::move(hci)),
-      peer_(std::move(peer)),
+                                             hci::CommandChannel::WeakPtr cmd_channel)
+    : peer_(std::move(peer)),
       peer_id_(peer_->identifier()),
       handle_(handle),
-      cmd_runner_(hci_),
+      cmd_runner_(cmd_channel->AsWeakPtr()),
       weak_ptr_factory_(this) {}
 
 void LowEnergyInterrogator::Start(ResultCallback callback) {

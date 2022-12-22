@@ -88,11 +88,11 @@ const char* kInspectDisconnectRemoteDisconnectionNodeName = "disconnect_remote_d
 }  // namespace
 
 LowEnergyConnectionManager::LowEnergyConnectionManager(
-    hci::Transport::WeakPtr hci, hci::LocalAddressDelegate* addr_delegate,
+    hci::CommandChannel::WeakPtr cmd_channel, hci::LocalAddressDelegate* addr_delegate,
     hci::LowEnergyConnector* connector, PeerCache* peer_cache, l2cap::ChannelManager* l2cap,
     fxl::WeakPtr<gatt::GATT> gatt, LowEnergyDiscoveryManager::WeakPtr discovery_manager,
     sm::SecurityManagerFactory sm_creator)
-    : hci_(std::move(hci)),
+    : cmd_(std::move(cmd_channel)),
       security_mode_(LESecurityMode::Mode1),
       sm_factory_func_(std::move(sm_creator)),
       request_timeout_(kLECreateConnectionTimeout),
@@ -108,7 +108,7 @@ LowEnergyConnectionManager::LowEnergyConnectionManager(
   BT_DEBUG_ASSERT(peer_cache_);
   BT_DEBUG_ASSERT(l2cap_);
   BT_DEBUG_ASSERT(gatt_);
-  BT_DEBUG_ASSERT(hci_.is_alive());
+  BT_DEBUG_ASSERT(cmd_.is_alive());
   BT_DEBUG_ASSERT(hci_connector_);
   BT_DEBUG_ASSERT(local_address_delegate_);
 }
@@ -353,7 +353,7 @@ void LowEnergyConnectionManager::RegisterRemoteInitiatedLink(
                                                peer->MutLe().RegisterInitializingConnection());
 
   std::unique_ptr<internal::LowEnergyConnector> connector =
-      std::make_unique<internal::LowEnergyConnector>(peer_id, connection_options, hci_, peer_cache_,
+      std::make_unique<internal::LowEnergyConnector>(peer_id, connection_options, cmd_, peer_cache_,
                                                      weak_ptr_factory_.GetWeakPtr(), l2cap_, gatt_);
   auto [conn_iter, _] = remote_connectors_.emplace(
       peer_id, RequestAndConnector{std::move(request), std::move(connector)});
@@ -421,7 +421,7 @@ void LowEnergyConnectionManager::TryCreateNextConnection() {
 
       std::unique_ptr<internal::LowEnergyConnector> connector =
           std::make_unique<internal::LowEnergyConnector>(
-              peer_id, request.connection_options(), hci_, peer_cache_,
+              peer_id, request.connection_options(), cmd_, peer_cache_,
               weak_ptr_factory_.GetWeakPtr(), l2cap_, gatt_);
       connector->AttachInspect(inspect_node_, kInspectOutboundConnectorNodeName);
 

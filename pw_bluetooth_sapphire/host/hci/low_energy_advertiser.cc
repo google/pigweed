@@ -9,7 +9,9 @@
 namespace bt::hci {
 
 LowEnergyAdvertiser::LowEnergyAdvertiser(hci::Transport::WeakPtr hci)
-    : hci_(std::move(hci)), hci_cmd_runner_(std::make_unique<SequentialCommandRunner>(hci_)) {}
+    : hci_(std::move(hci)),
+      hci_cmd_runner_(
+          std::make_unique<SequentialCommandRunner>(hci_->command_channel()->AsWeakPtr())) {}
 
 fit::result<HostError> LowEnergyAdvertiser::CanStartAdvertising(
     const DeviceAddress& address, const AdvertisingData& data, const AdvertisingData& scan_rsp,

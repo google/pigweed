@@ -80,7 +80,8 @@ class LowEnergyConnectionManager final {
   //                 connection and bonding state of a peer via the cache.
   // |l2cap|: Used to interact with the L2CAP layer.
   // |gatt|: Used to interact with the GATT profile layer.
-  LowEnergyConnectionManager(hci::Transport::WeakPtr hci, hci::LocalAddressDelegate* addr_delegate,
+  LowEnergyConnectionManager(hci::CommandChannel::WeakPtr cmd_channel,
+                             hci::LocalAddressDelegate* addr_delegate,
                              hci::LowEnergyConnector* connector, PeerCache* peer_cache,
                              l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt,
                              LowEnergyDiscoveryManager::WeakPtr discovery_manager,
@@ -251,7 +252,7 @@ class LowEnergyConnectionManager final {
   // the returned value.
   ConnectionMap::iterator FindConnection(hci_spec::ConnectionHandle handle);
 
-  hci::Transport::WeakPtr hci_;
+  hci::CommandChannel::WeakPtr cmd_;
 
   // The pairing delegate used for authentication challenges. If nullptr, all
   // pairing requests will be rejected.

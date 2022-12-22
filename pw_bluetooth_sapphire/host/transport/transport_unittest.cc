@@ -19,7 +19,7 @@ using TransportTest = bt::testing::ControllerTest<bt::testing::MockController>;
 using TransportDeathTest = TransportTest;
 
 TEST_F(TransportTest, CommandChannelTimeoutShutsDownChannelAndNotifiesClosedCallback) {
-  fxl::WeakPtr<CommandChannel> cmd_chan_weak = cmd_channel()->AsWeakPtr();
+  CommandChannel::WeakPtr cmd_chan_weak = cmd_channel()->AsWeakPtr();
 
   size_t closed_cb_count = 0;
   transport()->SetTransportErrorCallback([&] { closed_cb_count++; });
@@ -57,7 +57,7 @@ TEST_F(TransportTest, CommandChannelTimeoutShutsDownChannelAndNotifiesClosedCall
   RunLoopFor(kCommandTimeout);
   EXPECT_EQ(0u, cb_count);
   EXPECT_EQ(1u, closed_cb_count);
-  EXPECT_TRUE(cmd_chan_weak);
+  EXPECT_TRUE(cmd_chan_weak.is_alive());
 }
 
 TEST_F(TransportDeathTest, AttachInspectBeforeInitializeACLDataChannelCrashes) {

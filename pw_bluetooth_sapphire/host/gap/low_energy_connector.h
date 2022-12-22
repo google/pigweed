@@ -12,7 +12,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connector.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 
 namespace bt::gap::internal {
 
@@ -29,7 +29,7 @@ class LowEnergyConnector final {
   // Create a connector for connecting to |peer_id|. The connection will be established with
   // the parameters specified in |options|.
   LowEnergyConnector(PeerId peer_id, LowEnergyConnectionOptions options,
-                     hci::Transport::WeakPtr transport, PeerCache* peer_cache,
+                     hci::CommandChannel::WeakPtr cmd_channel, PeerCache* peer_cache,
                      fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
                      l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt);
 
@@ -158,7 +158,7 @@ class LowEnergyConnector final {
 
   LowEnergyDiscoveryManager::WeakPtr discovery_manager_;
 
-  hci::Transport::WeakPtr transport_;
+  hci::CommandChannel::WeakPtr cmd_;
 
   // Only used to construct a LowEnergyConnection.
   fxl::WeakPtr<LowEnergyConnectionManager> le_connection_manager_;

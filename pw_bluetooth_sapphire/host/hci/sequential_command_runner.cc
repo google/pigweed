@@ -6,16 +6,15 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
 namespace bt::hci {
 
-SequentialCommandRunner::SequentialCommandRunner(hci::Transport::WeakPtr transport)
-    : transport_(std::move(transport)),
+SequentialCommandRunner::SequentialCommandRunner(hci::CommandChannel::WeakPtr cmd_channel)
+    : cmd_(std::move(cmd_channel)),
       sequence_number_(0u),
       running_commands_(0u),
       weak_ptr_factory_(this) {
-  BT_DEBUG_ASSERT(transport_.is_alive());
+  BT_DEBUG_ASSERT(cmd_.is_alive());
 }
 
 void SequentialCommandRunner::QueueCommand(CommandPacketVariant command_packet,
@@ -76,7 +75,7 @@ void SequentialCommandRunner::TryRunNextQueuedCommand(Result<> status) {
 
   // If an error occurred or we're done, reset.
   if (status.is_error() || (command_queue_.empty() && running_commands_ == 0)) {
-    NotifyStatusAndReset(std::move(status));
+    NotifyStatusAndReset(status);
     return;
   }
 
@@ -94,14 +93,14 @@ void SequentialCommandRunner::TryRunNextQueuedCommand(Result<> status) {
                            seq_no = sequence_number_](auto, const EventPacket& event_packet) {
     auto status = event_packet.ToResult();
 
-    if (self && seq_no != self->sequence_number_) {
+    if (self.is_alive() && seq_no != self->sequence_number_) {
       bt_log(TRACE, "hci", "Ignoring event for previous sequence (event code: %#.2x, status: %s)",
              event_packet.event_code(), bt_str(status));
     }
 
     // The sequence could have failed or been canceled, and a new sequence could have started.
     // This check prevents calling cmd_cb if the corresponding sequence is no longer running.
-    if (!self || !self->status_callback_ || seq_no != self->sequence_number_) {
+    if (!self.is_alive() || !self->status_callback_ || seq_no != self->sequence_number_) {
       return;
     }
 
@@ -115,7 +114,7 @@ void SequentialCommandRunner::TryRunNextQueuedCommand(Result<> status) {
 
       // The callback could have destroyed, canceled, or restarted the command runner.  While this
       // check looks redundant to the above check, the state could have changed in cmd_cb.
-      if (!self || !self->status_callback_ || seq_no != self->sequence_number_) {
+      if (!self.is_alive() || !self->status_callback_ || seq_no != self->sequence_number_) {
         return;
       }
     }
@@ -135,14 +134,17 @@ void SequentialCommandRunner::TryRunNextQueuedCommand(Result<> status) {
 
 bool SequentialCommandRunner::SendQueuedCommand(QueuedCommand command,
                                                 CommandChannel::CommandCallback callback) {
+  if (!cmd_.is_alive()) {
+    bt_log(INFO, "hci", "SequentialCommandRunner command channel died, aborting");
+    return false;
+  }
   if (command.is_le_async_command) {
-    return transport_->command_channel()->SendLeAsyncCommand(
-        std::move(command.packet), std::move(callback), command.complete_event_code);
+    return cmd_->SendLeAsyncCommand(std::move(command.packet), std::move(callback),
+                                    command.complete_event_code);
   }
 
-  return transport_->command_channel()->SendExclusiveCommand(
-      std::move(command.packet), std::move(callback), command.complete_event_code,
-      std::move(command.exclusions));
+  return cmd_->SendExclusiveCommand(std::move(command.packet), std::move(callback),
+                                    command.complete_event_code, std::move(command.exclusions));
 }
 
 void SequentialCommandRunner::Reset() {

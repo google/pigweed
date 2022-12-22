@@ -12,12 +12,11 @@
 namespace bt::gap {
 
 BrEdrInterrogator::BrEdrInterrogator(fxl::WeakPtr<Peer> peer, hci_spec::ConnectionHandle handle,
-                                     hci::Transport::WeakPtr hci)
-    : hci_(std::move(hci)),
-      peer_(std::move(peer)),
+                                     hci::CommandChannel::WeakPtr cmd_channel)
+    : peer_(std::move(peer)),
       peer_id_(peer_->identifier()),
       handle_(handle),
-      cmd_runner_(hci_),
+      cmd_runner_(std::move(cmd_channel)),
       weak_ptr_factory_(this) {
   BT_ASSERT(peer_);
 }

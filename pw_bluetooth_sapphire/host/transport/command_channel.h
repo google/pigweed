@@ -25,11 +25,11 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/trace.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/emboss_control_packets.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::hci {
 
@@ -202,7 +202,8 @@ class CommandChannel final {
   static constexpr const char* kInspectNodeName = "command_channel";
   void AttachInspect(inspect::Node& parent, const std::string& name = kInspectNodeName);
 
-  fxl::WeakPtr<CommandChannel> AsWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
+  using WeakPtr = WeakSelf<CommandChannel>::WeakPtr;
+  WeakPtr AsWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
  private:
   TransactionId SendExclusiveCommandInternal(
@@ -399,7 +400,9 @@ class CommandChannel final {
   // Command channel inspect node.
   inspect::Node command_channel_node_;
 
-  fxl::WeakPtrFactory<CommandChannel> weak_ptr_factory_;
+  // As events can arrive in the event thread at any time, we should invalidate our weak pointers
+  // early.
+  WeakSelf<CommandChannel> weak_ptr_factory_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(CommandChannel);
 };

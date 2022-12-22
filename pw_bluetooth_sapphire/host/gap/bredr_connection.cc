@@ -6,6 +6,8 @@
 
 #include <lib/async/default.h>
 
+#include <utility>
+
 namespace bt::gap {
 
 namespace {
@@ -31,7 +33,8 @@ BrEdrConnection::BrEdrConnection(fxl::WeakPtr<Peer> peer,
       l2cap_(l2cap),
       sco_manager_(std::make_unique<sco::ScoConnectionManager>(
           peer_id_, link_->handle(), link_->peer_address(), link_->local_address(), transport)),
-      interrogator_(new BrEdrInterrogator(peer_, link_->handle(), std::move(transport))),
+      interrogator_(
+          new BrEdrInterrogator(peer_, link_->handle(), transport->command_channel()->AsWeakPtr())),
       create_time_(async::Now(async_get_default_dispatcher())),
       disconnect_cb_(std::move(disconnect_cb)),
       peer_init_token_(request_->take_peer_init_token()),
@@ -92,8 +95,9 @@ void BrEdrConnection::OpenL2capChannel(l2cap::PSM psm, l2cap::ChannelParameters 
 BrEdrConnection::ScoRequestHandle BrEdrConnection::OpenScoConnection(
     bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> parameters,
     sco::ScoConnectionManager::OpenConnectionCallback callback) {
-  return sco_manager_->OpenConnection(parameters, std::move(callback));
+  return sco_manager_->OpenConnection(std::move(parameters), std::move(callback));
 }
+
 BrEdrConnection::ScoRequestHandle BrEdrConnection::AcceptScoConnection(
     std::vector<bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>> parameters,
     sco::ScoConnectionManager::AcceptConnectionCallback callback) {

@@ -52,7 +52,7 @@ constexpr const char* kInspectPsmPropertyName = "psm";
 
 std::unique_ptr<ChannelImpl> ChannelImpl::CreateFixedChannel(
     ChannelId id, fxl::WeakPtr<internal::LogicalLink> link,
-    fxl::WeakPtr<hci::CommandChannel> cmd_channel) {
+    hci::CommandChannel::WeakPtr cmd_channel) {
   // A fixed channel's endpoints have the same local and remote identifiers.
   // Setting the ChannelInfo MTU to kMaxMTU effectively cancels any L2CAP-level MTU enforcement for
   // services which operate over fixed channels. Such services often define minimum MTU values in
@@ -65,14 +65,14 @@ std::unique_ptr<ChannelImpl> ChannelImpl::CreateFixedChannel(
 
 std::unique_ptr<ChannelImpl> ChannelImpl::CreateDynamicChannel(
     ChannelId id, ChannelId peer_id, fxl::WeakPtr<internal::LogicalLink> link, ChannelInfo info,
-    fxl::WeakPtr<hci::CommandChannel> cmd_channel) {
+    hci::CommandChannel::WeakPtr cmd_channel) {
   return std::unique_ptr<ChannelImpl>(
       new ChannelImpl(id, peer_id, link, info, std::move(cmd_channel)));
 }
 
 ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id,
                          fxl::WeakPtr<internal::LogicalLink> link, ChannelInfo info,
-                         fxl::WeakPtr<hci::CommandChannel> cmd_channel)
+                         hci::CommandChannel::WeakPtr cmd_channel)
     : Channel(id, remote_id, link->type(), link->handle(), info),
       active_(false),
       link_(link),
@@ -252,6 +252,11 @@ void ChannelImpl::AttachInspect(inspect::Node& parent, std::string name) {
 
 void ChannelImpl::StartA2dpOffload(const A2dpOffloadConfiguration* config,
                                    hci::ResultCallback<> callback) {
+  if (!cmd_channel_.is_alive()) {
+    bt_log(INFO, "hci", "A2DP Offload requested without command channel");
+    callback(ToResult(HostError::kFailed));
+    return;
+  }
   if (a2dp_offload_status_ == A2dpOffloadStatus::kStarted ||
       a2dp_offload_status_ == A2dpOffloadStatus::kPending) {
     bt_log(WARN, "hci", "A2DP offload already started (status: %hhu)", a2dp_offload_status_);

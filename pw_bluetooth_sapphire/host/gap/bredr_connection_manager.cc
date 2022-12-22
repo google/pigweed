@@ -152,7 +152,8 @@ BrEdrConnectionManager::BrEdrConnectionManager(hci::Transport::WeakPtr hci, Peer
   BT_DEBUG_ASSERT(l2cap_);
   BT_DEBUG_ASSERT(dispatcher_);
 
-  hci_cmd_runner_ = std::make_unique<hci::SequentialCommandRunner>(hci_);
+  hci_cmd_runner_ =
+      std::make_unique<hci::SequentialCommandRunner>(hci_->command_channel()->AsWeakPtr());
 
   // Register event handlers
   AddEventHandler(hci_spec::kAuthenticationCompleteEventCode,

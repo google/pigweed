@@ -19,6 +19,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/security_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::gap {
@@ -46,7 +47,7 @@ class LowEnergyConnection final : public sm::Delegate {
   // |error_cb| will be called when a fatal connection error occurs and the connection should be
   // closed (e.g. when L2CAP reports an error). It will not be called before this method returns.
   // |conn_mgr| is the LowEnergyConnectionManager that owns this connection.
-  // |l2cap|, |gatt|, and |transport| are pointers to the interfaces of the corresponding layers.
+  // |l2cap|, |gatt|, and |cmd_channel| are pointers to the interfaces of the corresponding layers.
   // Returns nullptr if connection initialization fails.
   using PeerDisconnectCallback = fit::callback<void(hci_spec::StatusCode)>;
   using ErrorCallback = fit::callback<void()>;
@@ -55,7 +56,7 @@ class LowEnergyConnection final : public sm::Delegate {
       LowEnergyConnectionOptions connection_options, PeerDisconnectCallback peer_disconnect_cb,
       ErrorCallback error_cb, fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
       l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt,
-      hci::Transport::WeakPtr transport);
+      hci::CommandChannel::WeakPtr cmd_channel);
 
   // Notifies request callbacks and connection refs of the disconnection.
   ~LowEnergyConnection() override;
@@ -136,7 +137,7 @@ class LowEnergyConnection final : public sm::Delegate {
                       PeerDisconnectCallback peer_disconnect_cb, ErrorCallback error_cb,
                       fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
                       l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt,
-                      hci::Transport::WeakPtr transport);
+                      hci::CommandChannel::WeakPtr cmd_channel);
 
   // Registers this connection with L2CAP and initializes the fixed channel
   // protocols. Return true on success, false on failure.
@@ -294,7 +295,7 @@ class LowEnergyConnection final : public sm::Delegate {
   // SMP pairing manager.
   std::unique_ptr<sm::SecurityManager> sm_;
 
-  hci::Transport::WeakPtr transport_;
+  hci::CommandChannel::WeakPtr cmd_;
 
   // Called when the peer disconnects.
   PeerDisconnectCallback peer_disconnect_callback_;

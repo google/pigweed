@@ -7,6 +7,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
 namespace bt {
 namespace hci {
@@ -22,7 +23,7 @@ class LowEnergyInterrogator final {
  public:
   // |peer| must outlive this object.
   LowEnergyInterrogator(fxl::WeakPtr<Peer> peer, hci_spec::ConnectionHandle handle,
-                        hci::Transport::WeakPtr hci);
+                        hci::CommandChannel::WeakPtr hci);
 
   // Destroying the LowEnergyInterrogator effectively abandons an in-flight interrogation, if there
   // is one. The result callback will not be called.
@@ -42,8 +43,6 @@ class LowEnergyInterrogator final {
 
   void QueueReadLERemoteFeatures();
   void QueueReadRemoteVersionInformation();
-
-  hci::Transport::WeakPtr hci_;
 
   fxl::WeakPtr<Peer> peer_;
   // Cache of the PeerId to allow for debug logging even if the WeakPtr<Peer> is invalidated

@@ -9,15 +9,14 @@
 #include "gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
 namespace bt::gap {
 
 LowEnergyAddressManager::LowEnergyAddressManager(const DeviceAddress& public_address,
                                                  StateQueryDelegate delegate,
-                                                 hci::Transport::WeakPtr hci)
+                                                 hci::CommandChannel::WeakPtr cmd_channel)
     : delegate_(std::move(delegate)),
-      hci_(std::move(hci)),
+      cmd_(std::move(cmd_channel)),
       privacy_enabled_(false),
       public_(public_address),
       needs_refresh_(false),
@@ -25,7 +24,7 @@ LowEnergyAddressManager::LowEnergyAddressManager(const DeviceAddress& public_add
       weak_ptr_factory_(this) {
   BT_DEBUG_ASSERT(public_.type() == DeviceAddress::Type::kLEPublic);
   BT_DEBUG_ASSERT(delegate_);
-  BT_DEBUG_ASSERT(hci_.is_alive());
+  BT_DEBUG_ASSERT(cmd_.is_alive());
 }
 
 LowEnergyAddressManager::~LowEnergyAddressManager() { CancelExpiry(); }
@@ -132,7 +131,7 @@ void LowEnergyAddressManager::TryRefreshRandomAddress() {
     ResolveAddressRequests();
   };
 
-  hci_->command_channel()->SendCommand(std::move(cmd), std::move(cmd_complete_cb));
+  cmd_->SendCommand(std::move(cmd), std::move(cmd_complete_cb));
 }
 
 void LowEnergyAddressManager::CleanUpPrivacyState() {

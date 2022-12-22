@@ -11,7 +11,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::hci {
 
@@ -24,7 +23,7 @@ namespace bt::hci {
 // temporary or saved object.
 class CommandHandler {
  public:
-  explicit CommandHandler(fxl::WeakPtr<CommandChannel> channel) : channel_(channel) {}
+  explicit CommandHandler(CommandChannel::WeakPtr channel) : channel_(std::move(channel)) {}
 
   // Wrapper around CommandChannel::SendCommand that sends a CommandT and completes on
   // CommandT::EventT.
@@ -140,7 +139,7 @@ class CommandHandler {
   }
 
  private:
-  fxl::WeakPtr<CommandChannel> channel_;
+  CommandChannel::WeakPtr channel_;
 };
 
 }  // namespace bt::hci
