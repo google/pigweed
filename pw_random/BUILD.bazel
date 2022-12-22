@@ -29,6 +29,9 @@ pw_cc_library(
         "public/pw_random/xor_shift.h",
     ],
     includes = ["public"],
+    deps = [
+        "//pw_assert",
+    ],
 )
 
 pw_cc_test(
@@ -36,6 +39,7 @@ pw_cc_test(
     srcs = ["xor_shift_test.cc"],
     deps = [
         ":pw_random",
+        "//pw_assert",
         "//pw_bytes",
         "//pw_unit_test",
     ],

@@ -24,12 +24,15 @@ pw_add_library(pw_random INTERFACE
     pw_bytes
     pw_span
     pw_status
+  PRIVATE_DEPS
+    pw_assert
 )
 
 pw_add_test(pw_random.xor_shift_star_test
   SOURCES
     xor_shift_test.cc
   PRIVATE_DEPS
+    pw_assert
     pw_random
   GROUPS
     modules

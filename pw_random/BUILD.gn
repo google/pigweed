@@ -16,6 +16,7 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_fuzzer/fuzzer.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("default_config") {
@@ -29,19 +30,42 @@ pw_source_set("pw_random") {
     "public/pw_random/xor_shift.h",
   ]
   public_deps = [
+    dir_pw_assert,
     dir_pw_bytes,
     dir_pw_span,
     dir_pw_status,
   ]
 }
 
+pw_source_set("fuzzer_generator") {
+  public = [ "public/pw_random/fuzzer.h" ]
+  public_deps = [
+    ":pw_random",
+    dir_pw_fuzzer,
+  ]
+}
+
 pw_test_group("tests") {
-  tests = [ ":xor_shift_star_test" ]
+  tests = [
+    ":xor_shift_star_test",
+    ":get_int_bounded_fuzzer",
+  ]
 }
 
 pw_test("xor_shift_star_test") {
-  deps = [ ":pw_random" ]
+  deps = [
+    ":pw_random",
+    dir_pw_assert,
+  ]
   sources = [ "xor_shift_test.cc" ]
+}
+
+pw_fuzzer("get_int_bounded_fuzzer") {
+  sources = [ "get_int_bounded_fuzzer.cc" ]
+  deps = [
+    ":fuzzer_generator",
+    ":pw_random",
+  ]
 }
 
 pw_doc_group("docs") {

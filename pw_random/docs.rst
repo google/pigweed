@@ -20,13 +20,14 @@ easier to manage.
 Using RandomGenerator
 =====================
 There's two sides to a RandomGenerator; the input, and the output. The outputs
-are relatively straightforward; ``GetInt()`` randomizes the passed integer
-reference, and ``Get()`` dumps random values into a the passed span. The inputs
-are in the form of the ``InjectEntropy*()`` functions. These functions are used
-to "seed" the random generator. In some implementations, this can simply be
-resetting the seed of a PRNG, while in others it might directly populate a
-limited buffer of random data. In all cases, entropy injection is used to
-improve the randomness of calls to ``Get*()``.
+are relatively straightforward; ``GetInt(T&)`` randomizes the passed integer
+reference, ``GetInt(T&, T exclusive_upper_bound)`` produces a random integer
+less than ``exclusive_upper_bound``, and ``Get()`` dumps random values into the
+passed span. The inputs are in the form of the ``InjectEntropy*()`` functions.
+These functions are used to "seed" the random generator. In some
+implementations, this can simply be resetting the seed of a PRNG, while in
+others it might directly populate a limited buffer of random data. In all cases,
+entropy injection is used to improve the randomness of calls to ``Get*()``.
 
 It might not be easy to find sources of entropy in a system, but in general a
 few bits of noise from ADCs or other highly variable inputs can be accumulated
