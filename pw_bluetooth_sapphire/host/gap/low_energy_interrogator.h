@@ -22,7 +22,7 @@ namespace gap {
 class LowEnergyInterrogator final {
  public:
   // |peer| must outlive this object.
-  LowEnergyInterrogator(fxl::WeakPtr<Peer> peer, hci_spec::ConnectionHandle handle,
+  LowEnergyInterrogator(Peer::WeakPtr peer, hci_spec::ConnectionHandle handle,
                         hci::CommandChannel::WeakPtr hci);
 
   // Destroying the LowEnergyInterrogator effectively abandons an in-flight interrogation, if there
@@ -44,7 +44,7 @@ class LowEnergyInterrogator final {
   void QueueReadLERemoteFeatures();
   void QueueReadRemoteVersionInformation();
 
-  fxl::WeakPtr<Peer> peer_;
+  Peer::WeakPtr peer_;
   // Cache of the PeerId to allow for debug logging even if the WeakPtr<Peer> is invalidated
   const PeerId peer_id_;
   const hci_spec::ConnectionHandle handle_;
@@ -55,7 +55,7 @@ class LowEnergyInterrogator final {
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.
-  fxl::WeakPtrFactory<LowEnergyInterrogator> weak_ptr_factory_;
+  WeakSelf<LowEnergyInterrogator> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyInterrogator);
 };

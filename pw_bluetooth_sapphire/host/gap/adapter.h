@@ -355,7 +355,7 @@ class Adapter {
   // Assigns a pairing delegate to this adapter. This PairingDelegate and its
   // I/O capabilities will be used for all future pairing procedures. Setting a
   // new PairingDelegate cancels all ongoing pairing procedures.
-  virtual void SetPairingDelegate(fxl::WeakPtr<PairingDelegate> delegate) = 0;
+  virtual void SetPairingDelegate(PairingDelegate::WeakPtr delegate) = 0;
 
   // Returns true if this adapter is currently in discoverable mode on the LE or BR/EDR transports.
   virtual bool IsDiscoverable() const = 0;

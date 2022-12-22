@@ -157,7 +157,7 @@ class LowEnergyAddressManager final : public hci::LocalAddressDelegate {
   // refreshed.
   async::Task random_address_expiry_task_;
 
-  fxl::WeakPtrFactory<LowEnergyAddressManager> weak_ptr_factory_;
+  WeakSelf<LowEnergyAddressManager> weak_self_;
 
   BT_DISALLOW_COPY_ASSIGN_AND_MOVE(LowEnergyAddressManager);
 };

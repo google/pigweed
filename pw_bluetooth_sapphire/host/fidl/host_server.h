@@ -215,6 +215,8 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
   // invalidated before other members get destroyed.
   fxl::WeakPtrFactory<HostServer> weak_ptr_factory_;
 
+  WeakSelf<PairingDelegate> weak_pairing_;
+
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(HostServer);
 };
 

@@ -5,6 +5,7 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_DELEGATE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_DELEGATE_H_
 
+#include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/pairing_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
@@ -51,6 +52,8 @@ class Delegate {
 
   // Called when the security properties of the link change.
   virtual void OnNewSecurityProperties(const SecurityProperties& sec) = 0;
+
+  using WeakPtr = WeakSelf<Delegate>::WeakPtr;
 };
 
 }  // namespace bt::sm

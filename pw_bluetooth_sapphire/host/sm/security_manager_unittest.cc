@@ -39,7 +39,7 @@ constexpr hci_spec::ConnectionHandle kConnectionHandle(1);
 
 class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::Delegate {
  public:
-  SecurityManagerTest() : weak_ptr_factory_(this) {}
+  SecurityManagerTest() : weak_delegate_(this) {}
   ~SecurityManagerTest() override = default;
 
  protected:
@@ -79,7 +79,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
         kConnectionHandle, kLocalAddr, kPeerAddr, link_role, transport_->GetWeakPtr());
 
     pairing_ = SecurityManager::Create(fake_link_->GetWeakPtr(), fake_chan_->GetWeakPtr(), ioc,
-                                       weak_ptr_factory_.GetWeakPtr(), bondable_mode,
+                                       weak_delegate_.GetWeakPtr(), bondable_mode,
                                        gap::LESecurityMode::Mode1);
   }
 
@@ -512,7 +512,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
   std::unique_ptr<hci::testing::FakeLowEnergyConnection> fake_link_;
   std::unique_ptr<SecurityManager> pairing_;
 
-  fxl::WeakPtrFactory<SecurityManagerTest> weak_ptr_factory_;
+  WeakSelf<Delegate> weak_delegate_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SecurityManagerTest);
 };

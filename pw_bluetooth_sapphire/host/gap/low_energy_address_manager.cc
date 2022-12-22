@@ -21,7 +21,7 @@ LowEnergyAddressManager::LowEnergyAddressManager(const DeviceAddress& public_add
       public_(public_address),
       needs_refresh_(false),
       refreshing_(false),
-      weak_ptr_factory_(this) {
+      weak_self_(this) {
   BT_DEBUG_ASSERT(public_.type() == DeviceAddress::Type::kLEPublic);
   BT_DEBUG_ASSERT(delegate_);
   BT_DEBUG_ASSERT(cmd_.is_alive());
@@ -96,9 +96,9 @@ void LowEnergyAddressManager::TryRefreshRandomAddress() {
   auto params = cmd->mutable_payload<hci_spec::LESetRandomAddressCommandParams>();
   params->random_address = random_addr.value();
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   auto cmd_complete_cb = [self, this, random_addr](auto id, const hci::EventPacket& event) {
-    if (!self) {
+    if (!self.is_alive()) {
       return;
     }
 

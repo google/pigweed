@@ -74,13 +74,13 @@ class BrEdrConnectionManager final {
   void SetConnectable(bool connectable, hci::ResultFunction<> status_cb);
 
   // Returns the PairingDelegate currently assigned to this connection manager.
-  PairingDelegate* pairing_delegate() const { return pairing_delegate_.get(); }
+  const PairingDelegate::WeakPtr& pairing_delegate() const { return pairing_delegate_; }
 
   // Assigns a new PairingDelegate to handle BR/EDR authentication challenges.
   // Replacing an existing pairing delegate cancels all ongoing pairing
   // procedures. If a delegate is not set then all pairing requests will be
   // rejected.
-  void SetPairingDelegate(fxl::WeakPtr<PairingDelegate> delegate);
+  void SetPairingDelegate(PairingDelegate::WeakPtr delegate);
 
   // Retrieves the peer id that is connected to the connection |handle|.
   // Returns kInvalidPeerId if no such peer exists.
@@ -232,7 +232,7 @@ class BrEdrConnectionManager final {
 
   // Called once interrogation completes to make connection identified by |handle| available to
   // upper layers and begin new connection procedures.
-  void CompleteConnectionSetup(Peer* peer, hci_spec::ConnectionHandle handle);
+  void CompleteConnectionSetup(Peer::WeakPtr peer, hci_spec::ConnectionHandle handle);
 
   // Callbacks for registered events
   hci::CommandChannel::EventCallbackResult OnAuthenticationComplete(const hci::EventPacket& event);
@@ -321,7 +321,7 @@ class BrEdrConnectionManager final {
 
   // The pairing delegate used for authentication challenges. If nullptr, all
   // pairing requests will be rejected.
-  fxl::WeakPtr<PairingDelegate> pairing_delegate_;
+  PairingDelegate::WeakPtr pairing_delegate_;
 
   // Peer cache is used to look up parameters for connecting to peers and
   // update the state of connected peers as well as introduce unknown peers.
@@ -392,7 +392,7 @@ class BrEdrConnectionManager final {
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.
-  fxl::WeakPtrFactory<BrEdrConnectionManager> weak_ptr_factory_;
+  WeakSelf<BrEdrConnectionManager> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrConnectionManager);
 };

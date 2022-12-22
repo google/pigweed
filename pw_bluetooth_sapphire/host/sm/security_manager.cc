@@ -50,7 +50,7 @@ class SecurityManagerImpl final : public SecurityManager,
  public:
   ~SecurityManagerImpl() override;
   SecurityManagerImpl(fxl::WeakPtr<hci::LowEnergyConnection> link, fxl::WeakPtr<l2cap::Channel> smp,
-                      IOCapability io_capability, fxl::WeakPtr<Delegate> delegate,
+                      IOCapability io_capability, Delegate::WeakPtr delegate,
                       BondableMode bondable_mode, gap::LESecurityMode security_mode);
   // SecurityManager overrides:
   bool AssignLongTermKey(const LTK& ltk) override;
@@ -167,7 +167,7 @@ class SecurityManagerImpl final : public SecurityManager,
   PairingProcedureId next_pairing_id_;
 
   // The higher-level class acting as a delegate for operations outside of SMP.
-  fxl::WeakPtr<Delegate> delegate_;
+  Delegate::WeakPtr delegate_;
 
   // Data for the currently registered LE-U link, if any.
   fxl::WeakPtr<hci::LowEnergyConnection> le_link_;
@@ -217,8 +217,7 @@ SecurityManagerImpl::~SecurityManagerImpl() {
 
 SecurityManagerImpl::SecurityManagerImpl(fxl::WeakPtr<hci::LowEnergyConnection> link,
                                          fxl::WeakPtr<l2cap::Channel> smp,
-                                         IOCapability io_capability,
-                                         fxl::WeakPtr<Delegate> delegate,
+                                         IOCapability io_capability, Delegate::WeakPtr delegate,
                                          BondableMode bondable_mode,
                                          gap::LESecurityMode security_mode)
     : SecurityManager(bondable_mode, security_mode),
@@ -231,7 +230,7 @@ SecurityManagerImpl::SecurityManagerImpl(fxl::WeakPtr<hci::LowEnergyConnection> 
       role_(le_link_->role() == hci_spec::ConnectionRole::CENTRAL ? Role::kInitiator
                                                                   : Role::kResponder),
       weak_ptr_factory_(this) {
-  BT_ASSERT(delegate_);
+  BT_ASSERT(delegate_.is_alive());
   BT_ASSERT(le_link_);
   BT_ASSERT(smp);
   BT_ASSERT(le_link_->handle() == smp->link_handle());
@@ -441,7 +440,7 @@ bool SecurityManagerImpl::CurrentLtkInsufficientlySecureForEncryption(
 void SecurityManagerImpl::OnEncryptionChange(hci::Result<bool> enabled_result) {
   // First notify the delegate in case of failure.
   if (bt_is_error(enabled_result, ERROR, "sm", "link layer authentication failed")) {
-    BT_ASSERT(delegate_);
+    BT_ASSERT(delegate_.is_alive());
     delegate_->OnAuthenticationFailure(fit::error(enabled_result.error_value()));
   }
 
@@ -511,7 +510,7 @@ void SecurityManagerImpl::OnPairingComplete(PairingData pairing_data) {
     BT_ASSERT(InPhase2());
     BT_ASSERT(!HasKeysToDistribute(*features_));
   }
-  BT_ASSERT(delegate_);
+  BT_ASSERT(delegate_.is_alive());
   BT_ASSERT(features_.has_value());
   bt_log(DEBUG, "sm", "LE pairing complete");
   delegate_->OnPairingComplete(fit::ok());
@@ -652,12 +651,12 @@ void SecurityManagerImpl::Abort(ErrorCode ecode) {
 std::optional<IdentityInfo> SecurityManagerImpl::OnIdentityRequest() {
   // This is called by the bearer to determine if we have local identity
   // information to distribute.
-  BT_ASSERT(delegate_);
+  BT_ASSERT(delegate_.is_alive());
   return delegate_->OnIdentityInformationRequest();
 }
 
 void SecurityManagerImpl::ConfirmPairing(ConfirmCallback confirm) {
-  BT_ASSERT(delegate_);
+  BT_ASSERT(delegate_.is_alive());
   delegate_->ConfirmPairing([id = next_pairing_id_, self = weak_ptr_factory_.GetWeakPtr(),
                              cb = std::move(confirm)](bool confirm) {
     if (!self || self->next_pairing_id_ != id) {
@@ -670,7 +669,7 @@ void SecurityManagerImpl::ConfirmPairing(ConfirmCallback confirm) {
 
 void SecurityManagerImpl::DisplayPasskey(uint32_t passkey, Delegate::DisplayMethod method,
                                          ConfirmCallback confirm) {
-  BT_ASSERT(delegate_);
+  BT_ASSERT(delegate_.is_alive());
   delegate_->DisplayPasskey(passkey, method,
                             [id = next_pairing_id_, self = weak_ptr_factory_.GetWeakPtr(), method,
                              cb = std::move(confirm)](bool confirm) {
@@ -685,7 +684,7 @@ void SecurityManagerImpl::DisplayPasskey(uint32_t passkey, Delegate::DisplayMeth
 }
 
 void SecurityManagerImpl::RequestPasskey(PasskeyResponseCallback respond) {
-  BT_ASSERT(delegate_);
+  BT_ASSERT(delegate_.is_alive());
   delegate_->RequestPasskey([id = next_pairing_id_, self = weak_ptr_factory_.GetWeakPtr(),
                              cb = std::move(respond)](int64_t passkey) {
     if (!self || self->next_pairing_id_ != id) {
@@ -739,7 +738,7 @@ void SecurityManagerImpl::OnPairingFailed(Error error) {
   // TODO(fxbug.dev/910): implement "waiting interval" to prevent repeated attempts
   // as described in Vol 3, Part H, 2.3.6.
 
-  BT_ASSERT(delegate_);
+  BT_ASSERT(delegate_.is_alive());
   delegate_->OnPairingComplete(fit::error(error));
 
   auto requests = std::move(request_queue_);
@@ -830,7 +829,7 @@ Result<> SecurityManagerImpl::ValidateExistingLocalLtk() {
 
 std::unique_ptr<SecurityManager> SecurityManager::Create(
     fxl::WeakPtr<hci::LowEnergyConnection> link, fxl::WeakPtr<l2cap::Channel> smp,
-    IOCapability io_capability, fxl::WeakPtr<Delegate> delegate, BondableMode bondable_mode,
+    IOCapability io_capability, Delegate::WeakPtr delegate, BondableMode bondable_mode,
     gap::LESecurityMode security_mode) {
   return std::unique_ptr<SecurityManagerImpl>(
       new SecurityManagerImpl(std::move(link), std::move(smp), io_capability, std::move(delegate),

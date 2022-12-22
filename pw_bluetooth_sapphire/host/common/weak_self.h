@@ -125,17 +125,19 @@ class DynamicWeakManager {
 
   using RefType = WeakRef<T>;
 
-  ~DynamicWeakManager() {
-    if (weak_ptr_ref_) {
-      weak_ptr_ref_->maybe_unset(self_ptr_);
-    }
-  }
+  ~DynamicWeakManager() { InvalidateAll(); }
 
   std::optional<fbl::RefPtr<RefType>> GetWeakRef() {
     if (weak_ptr_ref_ == nullptr) {
       weak_ptr_ref_ = fbl::AdoptRef(new RefType(self_ptr_));
     }
     return weak_ptr_ref_;
+  }
+
+  void InvalidateAll() {
+    if (weak_ptr_ref_) {
+      weak_ptr_ref_->maybe_unset(self_ptr_);
+    }
   }
 
  private:
@@ -210,6 +212,11 @@ class WeakSelf {
 
     friend WeakSelf<T, WeakPtrManager>;
   };
+
+  // Invalidates all the WeakPtrs that have been vended before now (they will return false for
+  // is_alive) and prevents any new pointers from being vended.  This is effectively the same as
+  // calling the destructor, but can be done early.
+  void InvalidatePtrs() { manager_.InvalidateAll(); }
 
   WeakPtr GetWeakPtr() {
     auto weak_ref = manager_.GetWeakRef();

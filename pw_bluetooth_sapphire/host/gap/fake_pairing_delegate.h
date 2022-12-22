@@ -5,8 +5,8 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_FAKE_PAIRING_DELEGATE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_FAKE_PAIRING_DELEGATE_H_
 
+#include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/pairing_delegate.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::gap {
 
@@ -17,10 +17,9 @@ namespace bt::gap {
 // called, a Google Test failure is added.
 class FakePairingDelegate final : public PairingDelegate {
  public:
-  FakePairingDelegate(sm::IOCapability io_capability);
+  explicit FakePairingDelegate(sm::IOCapability io_capability);
   ~FakePairingDelegate() override;
 
-  fxl::WeakPtr<FakePairingDelegate> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
   void set_io_capability(sm::IOCapability io_capability) { io_capability_ = io_capability; }
 
   // If set, these will receive calls to their respective calls. If not set,
@@ -55,8 +54,6 @@ class FakePairingDelegate final : public PairingDelegate {
   int confirm_pairing_count_;
   int display_passkey_count_;
   int request_passkey_count_;
-
-  fxl::WeakPtrFactory<FakePairingDelegate> weak_ptr_factory_;
 };
 
 }  // namespace bt::gap

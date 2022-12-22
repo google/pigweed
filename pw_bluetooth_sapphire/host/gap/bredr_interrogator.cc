@@ -7,24 +7,24 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 
 namespace bt::gap {
 
-BrEdrInterrogator::BrEdrInterrogator(fxl::WeakPtr<Peer> peer, hci_spec::ConnectionHandle handle,
+BrEdrInterrogator::BrEdrInterrogator(Peer::WeakPtr peer, hci_spec::ConnectionHandle handle,
                                      hci::CommandChannel::WeakPtr cmd_channel)
     : peer_(std::move(peer)),
       peer_id_(peer_->identifier()),
       handle_(handle),
       cmd_runner_(std::move(cmd_channel)),
-      weak_ptr_factory_(this) {
-  BT_ASSERT(peer_);
+      weak_self_(this) {
+  BT_ASSERT(peer_.is_alive());
 }
 
 void BrEdrInterrogator::Start(ResultCallback callback) {
   callback_ = std::move(callback);
 
-  if (!peer_ || !peer_->bredr()) {
+  if (!peer_.is_alive() || !peer_->bredr()) {
     Complete(ToResult(HostError::kFailed));
     return;
   }
@@ -62,12 +62,12 @@ void BrEdrInterrogator::Complete(hci::Result<> result) {
     return;
   }
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
 
   // callback may destroy this object
   callback_(result);
 
-  if (self && !cmd_runner_.IsReady()) {
+  if (self.is_alive() && !cmd_runner_.IsReady()) {
     cmd_runner_.Cancel();
   }
 }

@@ -135,13 +135,13 @@ class LowEnergyConnectionManager final {
                                    ConnectionResultCallback callback);
 
   // Returns the PairingDelegate currently assigned to this connection manager.
-  PairingDelegate* pairing_delegate() const { return pairing_delegate_.get(); }
+  const PairingDelegate::WeakPtr& pairing_delegate() const { return pairing_delegate_; }
 
   // Assigns a new PairingDelegate to handle LE authentication challenges.
   // Replacing an existing pairing delegate cancels all ongoing pairing
   // procedures. If a delegate is not set then all pairing requests will be
   // rejected.
-  void SetPairingDelegate(fxl::WeakPtr<PairingDelegate> delegate);
+  void SetPairingDelegate(const PairingDelegate::WeakPtr& delegate);
 
   // TODO(armansito): Add a PeerCache::Observer interface and move these
   // callbacks there.
@@ -185,6 +185,8 @@ class LowEnergyConnectionManager final {
 
   LESecurityMode security_mode() const { return security_mode_; }
   sm::SecurityManagerFactory sm_factory_func() const { return sm_factory_func_; }
+
+  using WeakPtr = WeakSelf<LowEnergyConnectionManager>::WeakPtr;
 
  private:
   friend class internal::LowEnergyConnection;
@@ -256,7 +258,7 @@ class LowEnergyConnectionManager final {
 
   // The pairing delegate used for authentication challenges. If nullptr, all
   // pairing requests will be rejected.
-  fxl::WeakPtr<PairingDelegate> pairing_delegate_;
+  PairingDelegate::WeakPtr pairing_delegate_;
 
   // The GAP LE security mode of the device (v5.2 Vol. 3 Part C 10.2).
   LESecurityMode security_mode_;
@@ -347,7 +349,7 @@ class LowEnergyConnectionManager final {
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.
-  fxl::WeakPtrFactory<LowEnergyConnectionManager> weak_ptr_factory_;
+  WeakSelf<LowEnergyConnectionManager> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnectionManager);
 };

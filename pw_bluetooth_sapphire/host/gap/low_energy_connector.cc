@@ -37,7 +37,7 @@ constexpr const char* kInspectIsOutboundPropertyName = "is_outbound";
 LowEnergyConnector::LowEnergyConnector(PeerId peer_id, LowEnergyConnectionOptions options,
                                        hci::CommandChannel::WeakPtr cmd_channel,
                                        PeerCache* peer_cache,
-                                       fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
+                                       WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr,
                                        l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt)
     : peer_id_(peer_id),
       peer_cache_(peer_cache),
@@ -50,7 +50,7 @@ LowEnergyConnector::LowEnergyConnector(PeerId peer_id, LowEnergyConnectionOption
   BT_ASSERT(peer_cache_);
   BT_ASSERT(l2cap_);
   BT_ASSERT(gatt_);
-  BT_ASSERT(le_connection_manager_);
+  BT_ASSERT(le_connection_manager_.is_alive());
 
   auto peer = peer_cache_->FindById(peer_id_);
   BT_ASSERT(peer);
@@ -190,12 +190,12 @@ void LowEnergyConnector::StartScanningForPeer() {
   if (!discovery_manager_.is_alive()) {
     return;
   }
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
 
   state_.Set(State::kStartingScanning);
 
   discovery_manager_->StartDiscovery(/*active=*/false, [self](auto session) {
-    if (self) {
+    if (self.is_alive()) {
       self->OnScanStart(std::move(session));
     }
   });
@@ -217,7 +217,7 @@ void LowEnergyConnector::OnScanStart(LowEnergyDiscoverySessionPtr session) {
   bt_log(INFO, "gap-le", "started scanning for pending connection (peer: %s)", bt_str(peer_id_));
   state_.Set(State::kScanning);
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   scan_timeout_task_.emplace([this] {
     BT_ASSERT(*state_ == State::kScanning);
     bt_log(INFO, "gap-le", "scan for pending connection timed out (peer: %s)", bt_str(peer_id_));
@@ -268,9 +268,9 @@ void LowEnergyConnector::RequestCreateConnection() {
     pause_token = discovery_manager_->PauseDiscovery();
   }
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   auto status_cb = [self, pause = std::move(pause_token)](hci::Result<> status, auto link) {
-    if (self) {
+    if (self.is_alive()) {
       self->OnConnectResult(status, std::move(link));
     }
   };

@@ -52,9 +52,9 @@ void NoOpUserPasskeyCallback(std::optional<uint32_t>) {}
 class NoOpPairingDelegate final : public PairingDelegate {
  public:
   NoOpPairingDelegate(sm::IOCapability io_capability)
-      : io_capability_(io_capability), weak_ptr_factory_(this) {}
+      : io_capability_(io_capability), weak_self_(this) {}
 
-  fxl::WeakPtr<NoOpPairingDelegate> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
+  PairingDelegate::WeakPtr GetWeakPtr() { return weak_self_.GetWeakPtr(); }
 
   // PairingDelegate overrides that do nothing.
   ~NoOpPairingDelegate() override = default;
@@ -67,7 +67,7 @@ class NoOpPairingDelegate final : public PairingDelegate {
 
  private:
   const sm::IOCapability io_capability_;
-  fxl::WeakPtrFactory<NoOpPairingDelegate> weak_ptr_factory_;
+  WeakSelf<PairingDelegate> weak_self_;
 };
 
 using TestBase = testing::ControllerTest<testing::MockController>;
@@ -1220,7 +1220,7 @@ TEST_P(HandlesEvent, InResponderWaitIoCapRequestState) {
 
 TEST_P(HandlesEvent, InErrorStateAfterIoCapRequestRejectedWithoutPairingDelegate) {
   // Clear the default pairing delegate set by the fixture.
-  pairing_state().SetPairingDelegate(fxl::WeakPtr<PairingDelegate>());
+  pairing_state().SetPairingDelegate(PairingDelegate::WeakPtr());
 
   // Advance state machine.
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);

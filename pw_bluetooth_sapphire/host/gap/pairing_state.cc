@@ -15,7 +15,7 @@ using hci_spec::AuthenticationRequirements;
 using hci_spec::IoCapability;
 using sm::util::IOCapabilityForHci;
 
-PairingState::PairingState(fxl::WeakPtr<Peer> peer, hci::BrEdrConnection* link, bool link_initiated,
+PairingState::PairingState(Peer::WeakPtr peer, hci::BrEdrConnection* link, bool link_initiated,
                            fit::closure auth_cb, StatusCallback status_cb)
     : peer_id_(peer->identifier()),
       peer_(std::move(peer)),
@@ -124,7 +124,7 @@ std::optional<IoCapability> PairingState::OnIoCapabilityRequest() {
   // Log an error and return std::nullopt if we can't respond to a pairing request because there's
   // no pairing delegate. This corresponds to the non-bondable state as outlined in spec v5.2 Vol.
   // 3 Part C 4.3.1.
-  if (!pairing_delegate()) {
+  if (!pairing_delegate().is_alive()) {
     bt_log(WARN, "gap-bredr", "No pairing delegate set; not pairing link %#.4x (peer: %s)",
            handle(), bt_str(peer_id()));
     // We set the state_ to Idle instead of Failed because it is possible that a PairingDelegate
@@ -185,7 +185,7 @@ void PairingState::OnUserConfirmationRequest(uint32_t numeric_value, UserConfirm
   BT_ASSERT(is_pairing());
 
   // TODO(fxbug.dev/37447): Reject pairing if pairing delegate went away.
-  BT_ASSERT(pairing_delegate());
+  BT_ASSERT(pairing_delegate().is_alive());
   state_ = State::kWaitPairingComplete;
 
   if (current_pairing_->action == PairingAction::kAutomatic) {
@@ -203,7 +203,7 @@ void PairingState::OnUserConfirmationRequest(uint32_t numeric_value, UserConfirm
   }
   auto confirm_cb = [cb = std::move(cb), pairing = current_pairing_->GetWeakPtr(),
                      peer_id = peer_id(), handle = handle()](bool confirm) mutable {
-    if (!pairing) {
+    if (!pairing.is_alive()) {
       return;
     }
     bt_log(DEBUG, "gap-bredr", "%sing User Confirmation Request (peer: %s, handle: %#.4x)",
@@ -234,7 +234,7 @@ void PairingState::OnUserPasskeyRequest(UserPasskeyCallback cb) {
   BT_ASSERT(is_pairing());
 
   // TODO(fxbug.dev/37447): Reject pairing if pairing delegate went away.
-  BT_ASSERT(pairing_delegate());
+  BT_ASSERT(pairing_delegate().is_alive());
   state_ = State::kWaitPairingComplete;
 
   BT_ASSERT_MSG(current_pairing_->action == PairingAction::kRequestPasskey,
@@ -242,7 +242,7 @@ void PairingState::OnUserPasskeyRequest(UserPasskeyCallback cb) {
                 current_pairing_->action);
   auto pairing = current_pairing_->GetWeakPtr();
   auto passkey_cb = [this, cb = std::move(cb), pairing](int64_t passkey) mutable {
-    if (!pairing) {
+    if (!pairing.is_alive()) {
       return;
     }
     bt_log(DEBUG, "gap-bredr", "%#.4x (id: %s): Replying %" PRId64 " to User Passkey Request",
@@ -264,12 +264,12 @@ void PairingState::OnUserPasskeyNotification(uint32_t numeric_value) {
   BT_ASSERT(is_pairing());
 
   // TODO(fxbug.dev/37447): Reject pairing if pairing delegate went away.
-  BT_ASSERT(pairing_delegate());
+  BT_ASSERT(pairing_delegate().is_alive());
   state_ = State::kWaitPairingComplete;
 
   auto pairing = current_pairing_->GetWeakPtr();
   auto confirm_cb = [this, pairing](bool confirm) {
-    if (!pairing) {
+    if (!pairing.is_alive()) {
       return;
     }
     bt_log(DEBUG, "gap-bredr", "%#.4x (id: %s): Can't %s pairing from Passkey Notification side",
@@ -287,7 +287,7 @@ void PairingState::OnSimplePairingComplete(hci_spec::StatusCode status_code) {
       bt_is_error(result, INFO, "gap-bredr", "Pairing failed on link %#.4x (id: %s)", handle(),
                   bt_str(peer_id()))) {
     // TODO(fxbug.dev/37447): Checking pairing_delegate() for reset like this isn't thread safe.
-    if (pairing_delegate()) {
+    if (pairing_delegate().is_alive()) {
       pairing_delegate()->CompletePairing(peer_id(), ToResult(HostError::kFailed));
     }
     state_ = State::kFailed;
@@ -311,7 +311,7 @@ std::optional<hci_spec::LinkKey> PairingState::OnLinkKeyRequest() {
     return std::nullopt;
   }
 
-  BT_ASSERT(peer_);
+  BT_ASSERT(peer_.is_alive());
 
   std::optional<sm::LTK> link_key;
 

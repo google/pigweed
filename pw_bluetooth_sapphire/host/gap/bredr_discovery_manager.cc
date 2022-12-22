@@ -52,7 +52,7 @@ std::unordered_set<Peer*> ProcessInquiryResult(PeerCache* cache, const hci::Even
 
 }  // namespace
 
-BrEdrDiscoverySession::BrEdrDiscoverySession(fxl::WeakPtr<BrEdrDiscoveryManager> manager)
+BrEdrDiscoverySession::BrEdrDiscoverySession(BrEdrDiscoveryManager::WeakPtr manager)
     : manager_(std::move(manager)) {}
 
 BrEdrDiscoverySession::~BrEdrDiscoverySession() { manager_->RemoveDiscoverySession(this); }
@@ -69,7 +69,7 @@ void BrEdrDiscoverySession::NotifyError() const {
   }
 }
 
-BrEdrDiscoverableSession::BrEdrDiscoverableSession(fxl::WeakPtr<BrEdrDiscoveryManager> manager)
+BrEdrDiscoverableSession::BrEdrDiscoverableSession(BrEdrDiscoveryManager::WeakPtr manager)
     : manager_(std::move(manager)) {}
 
 BrEdrDiscoverableSession::~BrEdrDiscoverableSession() { manager_->RemoveDiscoverableSession(this); }
@@ -82,7 +82,7 @@ BrEdrDiscoveryManager::BrEdrDiscoveryManager(hci::CommandChannel::WeakPtr cmd,
       result_handler_id_(0u),
       desired_inquiry_mode_(mode),
       current_inquiry_mode_(hci_spec::InquiryMode::kStandard),
-      weak_ptr_factory_(this) {
+      weak_self_(this) {
   BT_DEBUG_ASSERT(cache_);
   BT_DEBUG_ASSERT(cmd_.is_alive());
   BT_DEBUG_ASSERT(dispatcher_);
@@ -145,7 +145,7 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
 
   bt_log(TRACE, "gap-bredr", "starting inquiry");
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   if (desired_inquiry_mode_ != current_inquiry_mode_) {
     auto packet = hci::CommandPacket::New(hci_spec::kWriteInquiryMode,
                                           sizeof(hci_spec::WriteInquiryModeCommandParams));
@@ -153,7 +153,7 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
         desired_inquiry_mode_;
     cmd_->SendCommand(std::move(packet),
                       [self, mode = desired_inquiry_mode_](auto /*unused*/, const auto& event) {
-                        if (!self) {
+                        if (!self.is_alive()) {
                           return;
                         }
 
@@ -172,7 +172,7 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
   cmd_->SendExclusiveCommand(
       std::move(inquiry),
       [self](auto, const auto& event) {
-        if (!self) {
+        if (!self.is_alive()) {
           return;
         }
         auto status = event.ToResult();
@@ -287,7 +287,7 @@ void BrEdrDiscoveryManager::UpdateEIRResponseData(std::string name,
     name_type = DataType::kShortenedLocalName;
     name_size = hci_spec::kExtendedInquiryResponseMaxNameBytes;
   }
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   auto eir_packet = hci::CommandPacket::New(hci_spec::kWriteExtendedInquiryResponse,
                                             sizeof(hci_spec::WriteExtendedInquiryResponseParams));
   eir_packet->mutable_payload<hci_spec::WriteExtendedInquiryResponseParams>()->fec_required = 0x00;
@@ -310,7 +310,7 @@ void BrEdrDiscoveryManager::UpdateEIRResponseData(std::string name,
 }
 
 void BrEdrDiscoveryManager::UpdateLocalName(std::string name, hci::ResultFunction<> callback) {
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
 
   auto write_name = hci::EmbossCommandPacket::New<hci_spec::WriteLocalNameCommandWriter>(
       hci_spec::kWriteLocalName);
@@ -414,8 +414,8 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
     params.clock_offset().clock_offset().Write(offset);
   }
 
-  auto cb = [id, self = weak_ptr_factory_.GetWeakPtr()](auto, const auto& event) {
-    if (!self) {
+  auto cb = [id, self = weak_self_.GetWeakPtr()](auto, const auto& event) {
+    if (!self.is_alive()) {
       return;
     }
     if (hci_is_error(event, TRACE, "gap-bredr", "remote name request failed")) {
@@ -452,7 +452,7 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
 void BrEdrDiscoveryManager::RequestDiscoverable(DiscoverableCallback callback) {
   BT_DEBUG_ASSERT(callback);
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   auto result_cb = [self, cb = callback.share()](const hci::Result<>& result) {
     cb(result, (result.is_ok() ? self->AddDiscoverableSession() : nullptr));
   };
@@ -481,9 +481,9 @@ void BrEdrDiscoveryManager::SetInquiryScan() {
   bt_log(INFO, "gap-bredr", "%sabling inquiry scan: %lu sessions, %lu pending",
          (enable ? "en" : "dis"), discoverable_.size(), pending_discoverable_.size());
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   auto scan_enable_cb = [self](auto, const hci::EventPacket& event) {
-    if (!self) {
+    if (!self.is_alive()) {
       return;
     }
 
@@ -525,7 +525,7 @@ void BrEdrDiscoveryManager::SetInquiryScan() {
         scan_type & static_cast<uint8_t>(hci_spec::ScanEnableBit::kPage));
     resolve_pending.cancel();
     self->cmd_->SendCommand(std::move(write_enable), [self](auto, const hci::EventPacket& event) {
-      if (!self) {
+      if (!self.is_alive()) {
         return;
       }
 
@@ -582,7 +582,7 @@ std::unique_ptr<BrEdrDiscoverySession> BrEdrDiscoveryManager::AddDiscoverySessio
   // Cannot use make_unique here since BrEdrDiscoverySession has a private
   // constructor.
   std::unique_ptr<BrEdrDiscoverySession> session(
-      new BrEdrDiscoverySession(weak_ptr_factory_.GetWeakPtr()));
+      new BrEdrDiscoverySession(weak_self_.GetWeakPtr()));
   BT_DEBUG_ASSERT(discovering_.find(session.get()) == discovering_.end());
   discovering_.insert(session.get());
   bt_log(INFO, "gap-bredr", "new discovery session: %lu sessions active", discovering_.size());
@@ -607,7 +607,7 @@ std::unique_ptr<BrEdrDiscoverableSession> BrEdrDiscoveryManager::AddDiscoverable
   // Cannot use make_unique here since BrEdrDiscoverableSession has a private
   // constructor.
   std::unique_ptr<BrEdrDiscoverableSession> session(
-      new BrEdrDiscoverableSession(weak_ptr_factory_.GetWeakPtr()));
+      new BrEdrDiscoverableSession(weak_self_.GetWeakPtr()));
   BT_DEBUG_ASSERT(discoverable_.find(session.get()) == discoverable_.end());
   discoverable_.insert(session.get());
   bt_log(INFO, "gap-bredr", "new discoverable session: %lu sessions active", discoverable_.size());

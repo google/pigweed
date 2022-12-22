@@ -5,6 +5,7 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_GENERIC_ACCESS_CLIENT_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_GENERIC_ACCESS_CLIENT_H_
 
+#include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_service.h"
 
 namespace bt::gap::internal {
@@ -13,7 +14,7 @@ namespace bt::gap::internal {
 // Characteristics are not cached and read requests are not multiplexed because this is already
 // taken care of in gatt::RemoteService.
 // Destroying GenericAccessClient will cancel any read requests and callbacks will not be called.
-class GenericAccessClient {
+class GenericAccessClient : private WeakSelf<GenericAccessClient> {
  public:
   // |peer_id| is the id of the peer serving the service.
   // The UUID of |generic_access_service| must be kGenericAccessService.
@@ -35,7 +36,6 @@ class GenericAccessClient {
  private:
   fxl::WeakPtr<gatt::RemoteService> service_;
   PeerId peer_id_;
-  fxl::WeakPtrFactory<GenericAccessClient> weak_ptr_factory_;
 };
 
 }  // namespace bt::gap::internal

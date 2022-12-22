@@ -9,17 +9,16 @@
 namespace bt::gap::internal {
 
 GenericAccessClient::GenericAccessClient(PeerId peer_id, fxl::WeakPtr<gatt::RemoteService> service)
-    : service_(std::move(service)), peer_id_(peer_id), weak_ptr_factory_(this) {
+    : WeakSelf(this), service_(std::move(service)), peer_id_(peer_id) {
   BT_ASSERT(service_);
   BT_ASSERT(service_->uuid() == kGenericAccessService);
 }
 
 void GenericAccessClient::ReadDeviceName(DeviceNameCallback callback) {
-  auto self = weak_ptr_factory_.GetWeakPtr();
   service_->DiscoverCharacteristics(
-      [self, cb = std::move(callback)](att::Result<> result,
-                                       const gatt::CharacteristicMap& chars) mutable {
-        if (!self) {
+      [self = GetWeakPtr(), cb = std::move(callback)](
+          att::Result<> result, const gatt::CharacteristicMap& chars) mutable {
+        if (!self.is_alive()) {
           return;
         }
 
@@ -51,7 +50,7 @@ void GenericAccessClient::ReadDeviceName(DeviceNameCallback callback) {
             *device_name_value_handle, /*offset=*/0, att::kMaxAttributeValueLength,
             [self, cb = std::move(cb)](att::Result<> result, const ByteBuffer& buffer,
                                        bool /*maybe_truncated*/) mutable {
-              if (!self) {
+              if (!self.is_alive()) {
                 return;
               }
 
@@ -69,11 +68,10 @@ void GenericAccessClient::ReadDeviceName(DeviceNameCallback callback) {
 }
 
 void GenericAccessClient::ReadAppearance(AppearanceCallback callback) {
-  auto self = weak_ptr_factory_.GetWeakPtr();
-  service_->DiscoverCharacteristics([self, cb = std::move(callback)](
+  service_->DiscoverCharacteristics([self = GetWeakPtr(), cb = std::move(callback)](
                                         att::Result<> result,
                                         const gatt::CharacteristicMap& chars) mutable {
-    if (!self) {
+    if (!self.is_alive()) {
       return;
     }
 
@@ -105,7 +103,7 @@ void GenericAccessClient::ReadAppearance(AppearanceCallback callback) {
         *appearance_value_handle,
         [self, cb = std::move(cb)](att::Result<> result, const ByteBuffer& buffer,
                                    bool /*maybe_truncated*/) mutable {
-          if (!self) {
+          if (!self.is_alive()) {
             return;
           }
 
@@ -131,11 +129,10 @@ void GenericAccessClient::ReadAppearance(AppearanceCallback callback) {
 
 void GenericAccessClient::ReadPeripheralPreferredConnectionParameters(
     ConnectionParametersCallback callback) {
-  auto self = weak_ptr_factory_.GetWeakPtr();
-  service_->DiscoverCharacteristics([self, cb = std::move(callback)](
+  service_->DiscoverCharacteristics([self = GetWeakPtr(), cb = std::move(callback)](
                                         att::Result<> result,
                                         const gatt::CharacteristicMap& chars) mutable {
-    if (!self) {
+    if (!self.is_alive()) {
       return;
     }
 
@@ -166,7 +163,7 @@ void GenericAccessClient::ReadPeripheralPreferredConnectionParameters(
         *conn_params_value_handle,
         [self, cb = std::move(cb)](att::Result<> result, const ByteBuffer& buffer,
                                    bool /*maybe_truncated*/) mutable {
-          if (!self) {
+          if (!self.is_alive()) {
             return;
           }
 

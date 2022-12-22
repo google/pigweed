@@ -9,14 +9,11 @@
 
 #include <memory>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
@@ -33,7 +30,7 @@ class BrEdrInterrogator final {
   using ResultCallback = hci::ResultCallback<>;
 
   // |peer| must live longer than this object.
-  BrEdrInterrogator(fxl::WeakPtr<Peer>, hci_spec::ConnectionHandle handle,
+  BrEdrInterrogator(Peer::WeakPtr peer, hci_spec::ConnectionHandle handle,
                     hci::CommandChannel::WeakPtr cmd_channel);
 
   // Cancels the pending interrogation without calling the result callback.
@@ -61,7 +58,7 @@ class BrEdrInterrogator final {
 
   void QueueReadRemoteVersionInformation();
 
-  fxl::WeakPtr<Peer> peer_;
+  Peer::WeakPtr peer_;
   const PeerId peer_id_;
   const hci_spec::ConnectionHandle handle_;
 
@@ -71,7 +68,7 @@ class BrEdrInterrogator final {
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.
-  fxl::WeakPtrFactory<BrEdrInterrogator> weak_ptr_factory_;
+  WeakSelf<BrEdrInterrogator> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrInterrogator);
 };

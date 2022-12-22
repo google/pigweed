@@ -17,14 +17,13 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
+#include "src/connectivity/bluetooth/core/bt-host/sm/delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/security_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::gap {
-
-class LowEnergyConnectionManager;
 
 namespace internal {
 
@@ -52,9 +51,9 @@ class LowEnergyConnection final : public sm::Delegate {
   using PeerDisconnectCallback = fit::callback<void(hci_spec::StatusCode)>;
   using ErrorCallback = fit::callback<void()>;
   static std::unique_ptr<LowEnergyConnection> Create(
-      fxl::WeakPtr<Peer> peer, std::unique_ptr<hci::LowEnergyConnection> link,
+      Peer::WeakPtr peer, std::unique_ptr<hci::LowEnergyConnection> link,
       LowEnergyConnectionOptions connection_options, PeerDisconnectCallback peer_disconnect_cb,
-      ErrorCallback error_cb, fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
+      ErrorCallback error_cb, WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr,
       l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt,
       hci::CommandChannel::WeakPtr cmd_channel);
 
@@ -129,13 +128,14 @@ class LowEnergyConnection final : public sm::Delegate {
     return sm_->security();
   }
 
-  fxl::WeakPtr<LowEnergyConnection> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
+  using WeakPtr = WeakSelf<LowEnergyConnection>::WeakPtr;
+  LowEnergyConnection::WeakPtr GetWeakPtr() { return weak_self_.GetWeakPtr(); }
 
  private:
-  LowEnergyConnection(fxl::WeakPtr<Peer> peer, std::unique_ptr<hci::LowEnergyConnection> link,
+  LowEnergyConnection(Peer::WeakPtr peer, std::unique_ptr<hci::LowEnergyConnection> link,
                       LowEnergyConnectionOptions connection_options,
                       PeerDisconnectCallback peer_disconnect_cb, ErrorCallback error_cb,
-                      fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
+                      WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr,
                       l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt,
                       hci::CommandChannel::WeakPtr cmd_channel);
 
@@ -268,10 +268,10 @@ class LowEnergyConnection final : public sm::Delegate {
   // destroyed last.
   std::optional<Peer::ConnectionToken> peer_conn_token_;
 
-  fxl::WeakPtr<Peer> peer_;
+  Peer::WeakPtr peer_;
   std::unique_ptr<hci::LowEnergyConnection> link_;
   LowEnergyConnectionOptions connection_options_;
-  fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr_;
+  WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr_;
 
   struct InspectProperties {
     inspect::StringProperty peer_id;
@@ -331,7 +331,8 @@ class LowEnergyConnection final : public sm::Delegate {
   // Null until service discovery completes.
   std::optional<GenericAccessClient> gap_service_client_;
 
-  fxl::WeakPtrFactory<LowEnergyConnection> weak_ptr_factory_;
+  WeakSelf<LowEnergyConnection> weak_self_;
+  WeakSelf<sm::Delegate> weak_delegate_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnection);
 };

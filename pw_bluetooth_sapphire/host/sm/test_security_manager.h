@@ -45,7 +45,7 @@ class TestSecurityManager final : public SecurityManager {
  private:
   friend class TestSecurityManagerFactory;
   TestSecurityManager(fxl::WeakPtr<hci::LowEnergyConnection> link, fxl::WeakPtr<l2cap::Channel> smp,
-                      IOCapability io_capability, fxl::WeakPtr<Delegate> delegate,
+                      IOCapability io_capability, Delegate::WeakPtr delegate,
                       BondableMode bondable_mode, gap::LESecurityMode security_mode);
   Role role_;
   std::optional<LTK> current_ltk_;
@@ -72,8 +72,7 @@ class TestSecurityManagerFactory {
   // |security_mode|: the security mode this SecurityManager is in (see v5.2, Vol. 3, Part C 10.2).
   std::unique_ptr<SecurityManager> CreateSm(fxl::WeakPtr<hci::LowEnergyConnection> link,
                                             fxl::WeakPtr<l2cap::Channel> smp,
-                                            IOCapability io_capability,
-                                            fxl::WeakPtr<Delegate> delegate,
+                                            IOCapability io_capability, Delegate::WeakPtr delegate,
                                             BondableMode bondable_mode,
                                             gap::LESecurityMode security_mode);
 

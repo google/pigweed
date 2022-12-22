@@ -177,7 +177,7 @@ class PairingState final {
   // this peer.
   //
   // |link| must be valid for the lifetime of this object.
-  PairingState(fxl::WeakPtr<Peer> peer, hci::BrEdrConnection* link, bool link_initiated,
+  PairingState(Peer::WeakPtr peer, hci::BrEdrConnection* link, bool link_initiated,
                fit::closure auth_cb, StatusCallback status_cb);
   PairingState(PairingState&&) = default;
   PairingState& operator=(PairingState&&) = default;
@@ -194,7 +194,7 @@ class PairingState final {
   // If the delegate indicates passkey display capabilities, then it will always
   // be asked to confirm pairing, even when Core Spec v5.0, Vol 3, Part C,
   // Section 5.2.2.6 indicates "automatic confirmation."
-  void SetPairingDelegate(fxl::WeakPtr<PairingDelegate> pairing_delegate) {
+  void SetPairingDelegate(PairingDelegate::WeakPtr pairing_delegate) {
     pairing_delegate_ = std::move(pairing_delegate);
   }
 
@@ -316,7 +316,8 @@ class PairingState final {
     void ComputePairingData();
 
     // Used to prevent PairingDelegate callbacks from using captured stale pointers.
-    fxl::WeakPtr<Pairing> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
+    using WeakPtr = WeakSelf<Pairing>::WeakPtr;
+    Pairing::WeakPtr GetWeakPtr() { return weak_self_.GetWeakPtr(); }
 
     // True if the local device initiated pairing.
     bool initiator;
@@ -347,9 +348,9 @@ class PairingState final {
     BrEdrSecurityRequirements preferred_security;
 
    private:
-    explicit Pairing(bool automatic) : allow_automatic(automatic), weak_ptr_factory_(this) {}
+    explicit Pairing(bool automatic) : allow_automatic(automatic), weak_self_(this) {}
 
-    fxl::WeakPtrFactory<Pairing> weak_ptr_factory_;
+    WeakSelf<Pairing> weak_self_;
   };
 
   static const char* ToString(State state);
@@ -367,7 +368,7 @@ class PairingState final {
   hci_spec::ConnectionHandle handle() const { return link_->handle(); }
 
   // Returns nullptr if the delegate is not set or no longer alive.
-  PairingDelegate* pairing_delegate() { return pairing_delegate_.get(); }
+  const PairingDelegate::WeakPtr& pairing_delegate() const { return pairing_delegate_; }
 
   // Call the permanent status callback this object was created with as well as any completed
   // request callbacks from local initiators. Resets the current pairing and may initiate a new
@@ -398,7 +399,7 @@ class PairingState final {
   void WritePairingData();
 
   PeerId peer_id_;
-  fxl::WeakPtr<Peer> peer_;
+  Peer::WeakPtr peer_;
 
   // The BR/EDR link whose pairing is being driven by this object.
   hci::BrEdrConnection* link_;
@@ -409,7 +410,7 @@ class PairingState final {
   // True when the remote device has reported it doesn't have a link key.
   bool peer_missing_key_;
 
-  fxl::WeakPtr<PairingDelegate> pairing_delegate_;
+  PairingDelegate::WeakPtr pairing_delegate_;
 
   // State machine representation.
   State state_;

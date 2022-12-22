@@ -139,7 +139,7 @@ Peer::InitializingConnectionToken Peer::LowEnergyData::RegisterInitializingConne
   OnConnectionStateMaybeChanged(prev_state);
 
   auto unregister_cb = [self = peer_->GetWeakPtr(), this] {
-    if (!self) {
+    if (!self.is_alive()) {
       return;
     }
 
@@ -162,7 +162,7 @@ Peer::ConnectionToken Peer::LowEnergyData::RegisterConnection() {
   OnConnectionStateMaybeChanged(prev_state);
 
   auto unregister_cb = [self = peer_->GetWeakPtr(), this] {
-    if (!self) {
+    if (!self.is_alive()) {
       return;
     }
 
@@ -290,7 +290,7 @@ Peer::InitializingConnectionToken Peer::BrEdrData::RegisterInitializingConnectio
   OnConnectionStateMaybeChanged(prev_state);
 
   return InitializingConnectionToken([self = peer_->GetWeakPtr(), this] {
-    if (!self) {
+    if (!self.is_alive()) {
       return;
     }
 
@@ -311,7 +311,7 @@ Peer::ConnectionToken Peer::BrEdrData::RegisterConnection() {
   OnConnectionStateMaybeChanged(prev_state);
 
   return ConnectionToken([self = peer_->GetWeakPtr(), this] {
-    if (!self) {
+    if (!self.is_alive()) {
       return;
     }
 
@@ -471,7 +471,7 @@ Peer::Peer(NotifyListenersCallback notify_listeners_callback, PeerCallback updat
       rssi_(hci_spec::kRSSIInvalid),
       peer_metrics_(peer_metrics),
       last_updated_(async::Now(async_get_default_dispatcher())),
-      weak_ptr_factory_(this) {
+      weak_self_(this) {
   BT_DEBUG_ASSERT(notify_listeners_callback_);
   BT_DEBUG_ASSERT(update_expiry_callback_);
   BT_DEBUG_ASSERT(dual_mode_callback_);

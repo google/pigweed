@@ -8,6 +8,7 @@
 #include <lib/fit/function.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 
@@ -15,7 +16,7 @@ namespace bt::gap {
 
 // An object that implements PairingDelegate is responsible for fulfilling user
 // authentication challenges during pairing.
-class PairingDelegate {
+class PairingDelegate : public WeakSelf<PairingDelegate> {
  public:
   using ConfirmCallback = fit::callback<void(bool confirm)>;
 
@@ -53,7 +54,7 @@ class PairingDelegate {
   virtual void RequestPasskey(PeerId peer_id, PasskeyResponseCallback respond) = 0;
 
  protected:
-  PairingDelegate() = default;
+  PairingDelegate() : WeakSelf(this) {}
 
  private:
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PairingDelegate);

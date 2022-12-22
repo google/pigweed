@@ -19,12 +19,12 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
-namespace bt {
+namespace bt::gap {
 
-namespace gap {
-
-class BrEdrDiscoveryManager;
 class PeerCache;
+
+class BrEdrDiscoverySession;
+class BrEdrDiscoverableSession;
 
 // BrEdrDiscoveryManager implements discovery for BR/EDR peers.  We provide a
 // mechanism for multiple clients to simultaneously request discovery.  Peers
@@ -41,61 +41,6 @@ class PeerCache;
 //
 // This class is not thread-safe, BrEdrDiscoverySessions should be created and
 // accessed on the same thread the BrEdrDiscoveryManager is created.
-class BrEdrDiscoverySession final {
- public:
-  // Destroying a session instance ends this discovery session. Discovery may
-  // continue if other clients have started discovery sesisons.
-  ~BrEdrDiscoverySession();
-
-  // Set a result callback that will be notified whenever a result is returned
-  // from the controller.  You will get duplicate results when using this
-  // method.
-  // Prefer PeerCache.add_peer_updated_callback() instead.
-  using PeerFoundCallback = fit::function<void(const Peer& peer)>;
-  void set_result_callback(PeerFoundCallback callback) {
-    peer_found_callback_ = std::move(callback);
-  }
-
-  // Set a callback to be notified if the session becomes inactive because
-  // of internal errors.
-  void set_error_callback(fit::closure callback) { error_callback_ = std::move(callback); }
-
- private:
-  friend class BrEdrDiscoveryManager;
-
-  // Used by the BrEdrDiscoveryManager to create a session.
-  explicit BrEdrDiscoverySession(fxl::WeakPtr<BrEdrDiscoveryManager> manager);
-
-  // Called by the BrEdrDiscoveryManager when a peer report is found.
-  void NotifyDiscoveryResult(const Peer& peer) const;
-
-  // Marks this session as ended because of an error.
-  void NotifyError() const;
-
-  fxl::WeakPtr<BrEdrDiscoveryManager> manager_;
-  fit::closure error_callback_;
-  PeerFoundCallback peer_found_callback_;
-
-  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrDiscoverySession);
-};
-
-class BrEdrDiscoverableSession final {
- public:
-  // Destroying a session instance relinquishes the request.
-  // The peer may still be discoverable if others are requesting so.
-  ~BrEdrDiscoverableSession();
-
- private:
-  friend class BrEdrDiscoveryManager;
-
-  // Used by the BrEdrDiscoveryManager to create a session.
-  explicit BrEdrDiscoverableSession(fxl::WeakPtr<BrEdrDiscoveryManager> manager);
-
-  fxl::WeakPtr<BrEdrDiscoveryManager> manager_;
-
-  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrDiscoverableSession);
-};
-
 class BrEdrDiscoveryManager final {
  public:
   // |peer_cache| MUST out-live this BrEdrDiscoveryManager.
@@ -131,6 +76,8 @@ class BrEdrDiscoveryManager final {
 
   // Attach discovery manager inspect node as a child node of |parent|.
   void AttachInspect(inspect::Node& parent, std::string name);
+
+  using WeakPtr = WeakSelf<BrEdrDiscoveryManager>::WeakPtr;
 
  private:
   friend class BrEdrDiscoverySession;
@@ -254,12 +201,66 @@ class BrEdrDiscoveryManager final {
   // The current inquiry mode.
   hci_spec::InquiryMode current_inquiry_mode_;
 
-  fxl::WeakPtrFactory<BrEdrDiscoveryManager> weak_ptr_factory_;
+  WeakSelf<BrEdrDiscoveryManager> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrDiscoveryManager);
 };
 
-}  // namespace gap
-}  // namespace bt
+class BrEdrDiscoverySession final {
+ public:
+  // Destroying a session instance ends this discovery session. Discovery may
+  // continue if other clients have started discovery sesisons.
+  ~BrEdrDiscoverySession();
+
+  // Set a result callback that will be notified whenever a result is returned
+  // from the controller.  You will get duplicate results when using this
+  // method.
+  // Prefer PeerCache.add_peer_updated_callback() instead.
+  using PeerFoundCallback = fit::function<void(const Peer& peer)>;
+  void set_result_callback(PeerFoundCallback callback) {
+    peer_found_callback_ = std::move(callback);
+  }
+
+  // Set a callback to be notified if the session becomes inactive because
+  // of internal errors.
+  void set_error_callback(fit::closure callback) { error_callback_ = std::move(callback); }
+
+ private:
+  friend class BrEdrDiscoveryManager;
+
+  // Used by the BrEdrDiscoveryManager to create a session.
+  explicit BrEdrDiscoverySession(BrEdrDiscoveryManager::WeakPtr manager);
+
+  // Called by the BrEdrDiscoveryManager when a peer report is found.
+  void NotifyDiscoveryResult(const Peer& peer) const;
+
+  // Marks this session as ended because of an error.
+  void NotifyError() const;
+
+  BrEdrDiscoveryManager::WeakPtr manager_;
+  fit::closure error_callback_;
+  PeerFoundCallback peer_found_callback_;
+
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrDiscoverySession);
+};
+
+class BrEdrDiscoverableSession final {
+ public:
+  // Destroying a session instance relinquishes the request.
+  // The peer may still be discoverable if others are requesting so.
+  ~BrEdrDiscoverableSession();
+
+ private:
+  friend class BrEdrDiscoveryManager;
+
+  // Used by the BrEdrDiscoveryManager to create a session.
+  explicit BrEdrDiscoverableSession(BrEdrDiscoveryManager::WeakPtr manager);
+
+  BrEdrDiscoveryManager::WeakPtr manager_;
+
+  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(BrEdrDiscoverableSession);
+};
+
+}  // namespace bt::gap
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_GAP_BREDR_DISCOVERY_MANAGER_H_

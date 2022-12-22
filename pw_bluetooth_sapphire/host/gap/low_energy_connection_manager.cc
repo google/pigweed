@@ -103,7 +103,7 @@ LowEnergyConnectionManager::LowEnergyConnectionManager(
       discovery_manager_(discovery_manager),
       hci_connector_(connector),
       local_address_delegate_(addr_delegate),
-      weak_ptr_factory_(this) {
+      weak_self_(this) {
   BT_DEBUG_ASSERT(dispatcher_);
   BT_DEBUG_ASSERT(peer_cache_);
   BT_DEBUG_ASSERT(l2cap_);
@@ -116,7 +116,7 @@ LowEnergyConnectionManager::LowEnergyConnectionManager(
 LowEnergyConnectionManager::~LowEnergyConnectionManager() {
   bt_log(INFO, "gap-le", "LowEnergyConnectionManager shutting down");
 
-  weak_ptr_factory_.InvalidateWeakPtrs();
+  weak_self_.InvalidatePtrs();
 
   // Clear |pending_requests_| and notify failure.
   for (auto& iter : pending_requests_) {
@@ -354,7 +354,7 @@ void LowEnergyConnectionManager::RegisterRemoteInitiatedLink(
 
   std::unique_ptr<internal::LowEnergyConnector> connector =
       std::make_unique<internal::LowEnergyConnector>(peer_id, connection_options, cmd_, peer_cache_,
-                                                     weak_ptr_factory_.GetWeakPtr(), l2cap_, gatt_);
+                                                     weak_self_.GetWeakPtr(), l2cap_, gatt_);
   auto [conn_iter, _] = remote_connectors_.emplace(
       peer_id, RequestAndConnector{std::move(request), std::move(connector)});
   // Wait until the connector is in the map to start in case the result callback is called
@@ -364,7 +364,7 @@ void LowEnergyConnectionManager::RegisterRemoteInitiatedLink(
   conn_iter->second.connector->StartInbound(std::move(link), std::move(result_cb));
 }
 
-void LowEnergyConnectionManager::SetPairingDelegate(fxl::WeakPtr<PairingDelegate> delegate) {
+void LowEnergyConnectionManager::SetPairingDelegate(const PairingDelegate::WeakPtr& delegate) {
   // TODO(armansito): Add a test case for this once fxbug.dev/886 is done.
   pairing_delegate_ = delegate;
 
@@ -372,8 +372,8 @@ void LowEnergyConnectionManager::SetPairingDelegate(fxl::WeakPtr<PairingDelegate
   // delegate will receive calls to PairingDelegate::CompletePairing, unless it
   // is null.
   for (auto& iter : connections_) {
-    iter.second->ResetSecurityManager(delegate ? delegate->io_capability()
-                                               : sm::IOCapability::kNoInputNoOutput);
+    iter.second->ResetSecurityManager(delegate.is_alive() ? delegate->io_capability()
+                                                          : sm::IOCapability::kNoInputNoOutput);
   }
 }
 
@@ -420,9 +420,9 @@ void LowEnergyConnectionManager::TryCreateNextConnection() {
       internal::LowEnergyConnectionRequest request = std::move(request_pair.mapped());
 
       std::unique_ptr<internal::LowEnergyConnector> connector =
-          std::make_unique<internal::LowEnergyConnector>(
-              peer_id, request.connection_options(), cmd_, peer_cache_,
-              weak_ptr_factory_.GetWeakPtr(), l2cap_, gatt_);
+          std::make_unique<internal::LowEnergyConnector>(peer_id, request.connection_options(),
+                                                         cmd_, peer_cache_, weak_self_.GetWeakPtr(),
+                                                         l2cap_, gatt_);
       connector->AttachInspect(inspect_node_, kInspectOutboundConnectorNodeName);
 
       current_request_ = RequestAndConnector{std::move(request), std::move(connector)};

@@ -20,8 +20,7 @@ FakePairingDelegate::FakePairingDelegate(sm::IOCapability io_capability)
       complete_pairing_count_(0),
       confirm_pairing_count_(0),
       display_passkey_count_(0),
-      request_passkey_count_(0),
-      weak_ptr_factory_(this) {}
+      request_passkey_count_(0) {}
 
 FakePairingDelegate::~FakePairingDelegate() {
   if (complete_pairing_cb_ && complete_pairing_count_ == 0) {

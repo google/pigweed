@@ -72,15 +72,50 @@ TEST_F(WeakSelfTest, InvalidatingSelf) {
   EXPECT_DEATH_IF_SUPPORTED(ptr.get(), "destroyed");
 }
 
+TEST_F(WeakSelfTest, InvalidatePtrs) {
+  bool called = false;
+  FunctionTester::WeakPtr ptr;
+
+  // Default-constructed weak pointers are not alive.
+  EXPECT_FALSE(ptr.is_alive());
+
+  auto cb = [&ptr, &called](auto weakptr) {
+    called = true;
+    ptr = weakptr;
+  };
+
+  FunctionTester test(0xBA);
+
+  test.callback_later_with_weak(cb);
+
+  // Run the loop until we're called back.
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(called);
+  EXPECT_TRUE(ptr.is_alive());
+  EXPECT_EQ(&test, &ptr.get());
+  EXPECT_EQ(0xBA, ptr->value());
+
+  called = false;
+  test.callback_later_with_weak(cb);
+
+  // Now invalidate the pointers.
+  test.InvalidatePtrs();
+
+  // Run the loop until we're called back.
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(called);
+  EXPECT_FALSE(ptr.is_alive());
+  EXPECT_DEATH_IF_SUPPORTED(ptr.get(), "destroyed");
+}
+
 class StaticTester;
 
 class OnlyTwoStaticManager {
  public:
   explicit OnlyTwoStaticManager(StaticTester *self_ptr) : obj_ptr_(self_ptr) {}
-  ~OnlyTwoStaticManager() {
-    OnlyTwoStaticManager::pointers_[0].maybe_unset(obj_ptr_);
-    OnlyTwoStaticManager::pointers_[1].maybe_unset(obj_ptr_);
-  }
+  ~OnlyTwoStaticManager() { InvalidateAll(); }
 
   using RefType = RecyclingWeakRef<StaticTester>;
 
@@ -97,6 +132,11 @@ class OnlyTwoStaticManager {
       }
     }
     return std::nullopt;
+  }
+
+  void InvalidateAll() {
+    OnlyTwoStaticManager::pointers_[0].maybe_unset(obj_ptr_);
+    OnlyTwoStaticManager::pointers_[1].maybe_unset(obj_ptr_);
   }
 
  private:

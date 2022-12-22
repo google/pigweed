@@ -53,7 +53,7 @@ class SecurityManager {
   static std::unique_ptr<SecurityManager> Create(fxl::WeakPtr<hci::LowEnergyConnection> link,
                                                  fxl::WeakPtr<l2cap::Channel> smp,
                                                  IOCapability io_capability,
-                                                 fxl::WeakPtr<Delegate> delegate,
+                                                 Delegate::WeakPtr delegate,
                                                  BondableMode bondable_mode,
                                                  gap::LESecurityMode security_mode);
   virtual ~SecurityManager() = default;

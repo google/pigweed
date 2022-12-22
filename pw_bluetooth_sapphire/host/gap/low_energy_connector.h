@@ -30,7 +30,7 @@ class LowEnergyConnector final {
   // the parameters specified in |options|.
   LowEnergyConnector(PeerId peer_id, LowEnergyConnectionOptions options,
                      hci::CommandChannel::WeakPtr cmd_channel, PeerCache* peer_cache,
-                     fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
+                     WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr,
                      l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt);
 
   // Instances should only be destroyed after the result callback is called (except for stack tear
@@ -161,7 +161,7 @@ class LowEnergyConnector final {
   hci::CommandChannel::WeakPtr cmd_;
 
   // Only used to construct a LowEnergyConnection.
-  fxl::WeakPtr<LowEnergyConnectionManager> le_connection_manager_;
+  WeakSelf<LowEnergyConnectionManager>::WeakPtr le_connection_manager_;
 
   struct InspectProperties {
     inspect::StringProperty peer_id;
@@ -170,7 +170,7 @@ class LowEnergyConnector final {
   InspectProperties inspect_properties_;
   inspect::Node inspect_node_;
 
-  fxl::WeakPtrFactory<LowEnergyConnector> weak_ptr_factory_{this};
+  WeakSelf<LowEnergyConnector> weak_self_{this};
 };
 
 }  // namespace bt::gap::internal

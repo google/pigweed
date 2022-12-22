@@ -22,7 +22,6 @@
 
 namespace bt::gap {
 
-using std::unique_ptr;
 using ConnectionState = Peer::ConnectionState;
 
 namespace {
@@ -124,10 +123,10 @@ BrEdrConnectionManager::ConnectionRequestEvent::ConnectionRequestEvent(
 
 hci::CommandChannel::EventHandlerId BrEdrConnectionManager::AddEventHandler(
     const hci_spec::EventCode& code, hci::CommandChannel::EventCallback cb) {
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   auto event_id = hci_->command_channel()->AddEventHandler(
       code, [self, callback = std::move(cb)](const auto& event) {
-        if (self) {
+        if (self.is_alive()) {
           return callback(event);
         }
         return hci::CommandChannel::EventCallbackResult::kRemove;
@@ -150,7 +149,7 @@ BrEdrConnectionManager::BrEdrConnectionManager(hci::Transport::WeakPtr hci, Peer
       use_interlaced_scan_(use_interlaced_scan),
       request_timeout_(kBrEdrCreateConnectionTimeout),
       dispatcher_(async_get_default_dispatcher()),
-      weak_ptr_factory_(this) {
+      weak_self_(this) {
   BT_DEBUG_ASSERT(hci_.is_alive());
   BT_DEBUG_ASSERT(cache_);
   BT_DEBUG_ASSERT(l2cap_);
@@ -216,10 +215,10 @@ BrEdrConnectionManager::~BrEdrConnectionManager() {
 }
 
 void BrEdrConnectionManager::SetConnectable(bool connectable, hci::ResultFunction<> status_cb) {
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   if (!connectable) {
     auto not_connectable_cb = [self, cb = std::move(status_cb)](const auto& status) {
-      if (self) {
+      if (self.is_alive()) {
         self->page_scan_interval_ = 0;
         self->page_scan_window_ = 0;
       } else if (status.is_ok()) {
@@ -239,7 +238,7 @@ void BrEdrConnectionManager::SetConnectable(bool connectable, hci::ResultFunctio
           cb(status);
           return;
         }
-        if (!self) {
+        if (!self.is_alive()) {
           cb(ToResult(HostError::kFailed));
           return;
         }
@@ -247,7 +246,7 @@ void BrEdrConnectionManager::SetConnectable(bool connectable, hci::ResultFunctio
       });
 }
 
-void BrEdrConnectionManager::SetPairingDelegate(fxl::WeakPtr<PairingDelegate> delegate) {
+void BrEdrConnectionManager::SetPairingDelegate(PairingDelegate::WeakPtr delegate) {
   pairing_delegate_ = std::move(delegate);
   for (auto& [handle, connection] : connections_) {
     connection.pairing_state().SetPairingDelegate(pairing_delegate_);
@@ -284,11 +283,11 @@ void BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
                                               BrEdrSecurityRequirements security_reqs,
                                               l2cap::ChannelParameters params,
                                               l2cap::ChannelCallback cb) {
-  auto pairing_cb = [self = weak_ptr_factory_.GetWeakPtr(), peer_id, psm, params,
+  auto pairing_cb = [self = weak_self_.GetWeakPtr(), peer_id, psm, params,
                      cb = std::move(cb)](auto status) mutable {
     bt_log(TRACE, "gap-bredr", "got pairing status %s, %sreturning socket to %s", bt_str(status),
            status.is_ok() ? "" : "not ", bt_str(peer_id));
-    if (status.is_error() || !self) {
+    if (status.is_error() || !self.is_alive()) {
       // Report the failure to the user with a null channel.
       cb(nullptr);
       return;
@@ -313,9 +312,9 @@ void BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
 BrEdrConnectionManager::SearchId BrEdrConnectionManager::AddServiceSearch(
     const UUID& uuid, std::unordered_set<sdp::AttributeId> attributes,
     BrEdrConnectionManager::SearchCallback callback) {
-  auto on_service_discovered = [self = weak_ptr_factory_.GetWeakPtr(), uuid,
+  auto on_service_discovered = [self = weak_self_.GetWeakPtr(), uuid,
                                 client_cb = std::move(callback)](PeerId peer_id, auto& attributes) {
-    if (self) {
+    if (self.is_alive()) {
       Peer* const peer = self->cache_->FindById(peer_id);
       BT_ASSERT(peer);
       peer->MutBrEdr().AddService(uuid);
@@ -325,12 +324,12 @@ BrEdrConnectionManager::SearchId BrEdrConnectionManager::AddServiceSearch(
   SearchId new_id =
       discoverer_.AddSearch(uuid, std::move(attributes), std::move(on_service_discovered));
   for (auto& [handle, connection] : connections_) {
-    auto self = weak_ptr_factory_.GetWeakPtr();
+    auto self = weak_self_.GetWeakPtr();
     connection.OpenL2capChannel(
         l2cap::kSDP, l2cap::ChannelParameters(),
         [self, peer_id = connection.peer_id(), search_id = new_id](auto channel) {
           bt_log(ERROR, "gap", "connecting l2cap channel");
-          if (!self) {
+          if (!self.is_alive()) {
             return;
           }
           if (!channel) {
@@ -479,7 +478,7 @@ void BrEdrConnectionManager::WritePageTimeout(zx::duration page_timeout, hci::Re
 
 void BrEdrConnectionManager::WritePageScanSettings(uint16_t interval, uint16_t window,
                                                    bool interlaced, hci::ResultFunction<> cb) {
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   if (!hci_cmd_runner_->IsReady()) {
     // TODO(jamuraa): could run the three "settings" commands in parallel and
     // remove the sequence runner.
@@ -495,7 +494,8 @@ void BrEdrConnectionManager::WritePageScanSettings(uint16_t interval, uint16_t w
 
   hci_cmd_runner_->QueueCommand(
       std::move(write_activity), [self, interval, window](const hci::EventPacket& event) {
-        if (!self || hci_is_error(event, WARN, "gap-bredr", "write page scan activity failed")) {
+        if (!self.is_alive() ||
+            hci_is_error(event, WARN, "gap-bredr", "write page scan activity failed")) {
           return;
         }
 
@@ -511,17 +511,17 @@ void BrEdrConnectionManager::WritePageScanSettings(uint16_t interval, uint16_t w
   type_params->page_scan_type = (interlaced ? hci_spec::PageScanType::kInterlacedScan
                                             : hci_spec::PageScanType::kStandardScan);
 
-  hci_cmd_runner_->QueueCommand(
-      std::move(write_type), [self, interlaced](const hci::EventPacket& event) {
-        if (!self || hci_is_error(event, WARN, "gap-bredr", "write page scan type failed")) {
-          return;
-        }
+  hci_cmd_runner_->QueueCommand(std::move(write_type), [self,
+                                                        interlaced](const hci::EventPacket& event) {
+    if (!self.is_alive() || hci_is_error(event, WARN, "gap-bredr", "write page scan type failed")) {
+      return;
+    }
 
-        self->page_scan_type_ = (interlaced ? hci_spec::PageScanType::kInterlacedScan
-                                            : hci_spec::PageScanType::kStandardScan);
+    self->page_scan_type_ = (interlaced ? hci_spec::PageScanType::kInterlacedScan
+                                        : hci_spec::PageScanType::kStandardScan);
 
-        bt_log(TRACE, "gap-bredr", "page scan type updated");
-      });
+    bt_log(TRACE, "gap-bredr", "page scan type updated");
+  });
 
   hci_cmd_runner_->RunCommands(std::move(cb));
 }
@@ -608,7 +608,7 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
     }
     bt_log(INFO, "gap-bredr", "interrogation complete (peer: %s, handle: %#.4x)",
            bt_str(peer->identifier()), handle);
-    CompleteConnectionSetup(peer.get(), handle);
+    CompleteConnectionSetup(peer, handle);
   });
 
   // If this was our in-flight request, close it
@@ -620,9 +620,9 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
 }
 
 // Finish connection setup after a successful interrogation.
-void BrEdrConnectionManager::CompleteConnectionSetup(Peer* peer,
+void BrEdrConnectionManager::CompleteConnectionSetup(Peer::WeakPtr peer,
                                                      hci_spec::ConnectionHandle handle) {
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   auto peer_id = peer->identifier();
 
   auto connections_iter = connections_.find(handle);
@@ -642,7 +642,7 @@ void BrEdrConnectionManager::CompleteConnectionSetup(Peer* peer,
   hci::BrEdrConnection* const connection = &conn_state.link();
 
   auto error_handler = [self, peer_id, connection = connection->GetWeakPtr(), handle] {
-    if (!self || !connection)
+    if (!self.is_alive() || !connection)
       return;
     bt_log(WARN, "gap-bredr", "Link error received, closing connection (peer: %s, handle: %#.4x)",
            bt_str(peer_id), handle);
@@ -669,7 +669,7 @@ void BrEdrConnectionManager::CompleteConnectionSetup(Peer* peer,
   if (discoverer_.search_count()) {
     l2cap_->OpenL2capChannel(
         handle, l2cap::kSDP, l2cap::ChannelParameters(), [self, peer_id](auto channel) {
-          if (!self) {
+          if (!self.is_alive()) {
             return;
           }
           if (!channel) {
@@ -764,8 +764,8 @@ void BrEdrConnectionManager::OnConnectionRequest(ConnectionRequestEvent event) {
 
     SendAcceptConnectionRequest(
         event.addr.value(),
-        [addr = event.addr, self = weak_ptr_factory_.GetWeakPtr(), peer_id](auto status) {
-          if (self && status.is_error())
+        [addr = event.addr, self = weak_self_.GetWeakPtr(), peer_id](auto status) {
+          if (self.is_alive() && status.is_error())
             self->CompleteRequest(peer_id, addr, status, /*handle=*/0);
         });
 
@@ -1110,16 +1110,15 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnUserConfirmat
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
-  auto confirm_cb = [this, self = weak_ptr_factory_.GetWeakPtr(),
-                     bd_addr = params.bd_addr](bool confirm) {
-    if (!self) {
+  auto confirm_cb = [self = weak_self_.GetWeakPtr(), bd_addr = params.bd_addr](bool confirm) {
+    if (!self.is_alive()) {
       return;
     }
 
     if (confirm) {
-      SendUserConfirmationRequestReply(bd_addr);
+      self->SendUserConfirmationRequestReply(bd_addr);
     } else {
-      SendUserConfirmationRequestNegativeReply(bd_addr);
+      self->SendUserConfirmationRequestNegativeReply(bd_addr);
     }
   };
   conn_pair->second->pairing_state().OnUserConfirmationRequest(letoh32(params.numeric_value),
@@ -1139,16 +1138,16 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnUserPasskeyRe
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
-  auto passkey_cb = [this, self = weak_ptr_factory_.GetWeakPtr(),
+  auto passkey_cb = [self = weak_self_.GetWeakPtr(),
                      bd_addr = params.bd_addr](std::optional<uint32_t> passkey) {
-    if (!self) {
+    if (!self.is_alive()) {
       return;
     }
 
     if (passkey) {
-      SendUserPasskeyRequestReply(bd_addr, *passkey);
+      self->SendUserPasskeyRequestReply(bd_addr, *passkey);
     } else {
-      SendUserPasskeyRequestNegativeReply(bd_addr);
+      self->SendUserPasskeyRequestNegativeReply(bd_addr);
     }
   };
   conn_pair->second->pairing_state().OnUserPasskeyRequest(std::move(passkey_cb));
@@ -1283,13 +1282,13 @@ void BrEdrConnectionManager::TryCreateNextConnection() {
 }
 
 void BrEdrConnectionManager::InitiatePendingConnection(CreateConnectionParams params) {
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   auto on_failure = [self, addr = params.addr](hci::Result<> status, auto peer_id) {
-    if (self && status.is_error())
+    if (self.is_alive() && status.is_error())
       self->CompleteRequest(peer_id, addr, status, /*handle=*/0);
   };
   auto on_timeout = [self] {
-    if (self)
+    if (self.is_alive())
       self->OnRequestTimeout();
   };
   BrEdrConnectionRequest& pending_gap_req = connection_requests_.find(params.peer_id)->second;

@@ -227,7 +227,7 @@ class FakeAdapter final : public Adapter {
 
   bool AddBondedPeer(BondingData bonding_data) override { return true; }
 
-  void SetPairingDelegate(fxl::WeakPtr<PairingDelegate> delegate) override {}
+  void SetPairingDelegate(PairingDelegate::WeakPtr delegate) override {}
 
   bool IsDiscoverable() const override { return is_discoverable_; }
 

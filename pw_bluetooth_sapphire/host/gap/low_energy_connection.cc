@@ -26,9 +26,9 @@ static const hci_spec::LEPreferredConnectionParameters kDefaultPreferredConnecti
 }  // namespace
 
 std::unique_ptr<LowEnergyConnection> LowEnergyConnection::Create(
-    fxl::WeakPtr<Peer> peer, std::unique_ptr<hci::LowEnergyConnection> link,
+    Peer::WeakPtr peer, std::unique_ptr<hci::LowEnergyConnection> link,
     LowEnergyConnectionOptions connection_options, PeerDisconnectCallback peer_disconnect_cb,
-    ErrorCallback error_cb, fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
+    ErrorCallback error_cb, WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr,
     l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt,
     hci::CommandChannel::WeakPtr cmd_channel) {
   // Catch any errors/disconnects during connection initialization so that they are reported by
@@ -56,9 +56,9 @@ std::unique_ptr<LowEnergyConnection> LowEnergyConnection::Create(
 }
 
 LowEnergyConnection::LowEnergyConnection(
-    fxl::WeakPtr<Peer> peer, std::unique_ptr<hci::LowEnergyConnection> link,
+    Peer::WeakPtr peer, std::unique_ptr<hci::LowEnergyConnection> link,
     LowEnergyConnectionOptions connection_options, PeerDisconnectCallback peer_disconnect_cb,
-    ErrorCallback error_cb, fxl::WeakPtr<LowEnergyConnectionManager> conn_mgr,
+    ErrorCallback error_cb, WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr,
     l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt,
     hci::CommandChannel::WeakPtr cmd_channel)
     : peer_(std::move(peer)),
@@ -71,10 +71,11 @@ LowEnergyConnection::LowEnergyConnection(
       peer_disconnect_callback_(std::move(peer_disconnect_cb)),
       error_callback_(std::move(error_cb)),
       refs_(/*convert=*/[](const auto& refs) { return refs.size(); }),
-      weak_ptr_factory_(this) {
-  BT_ASSERT(peer_);
+      weak_self_(this),
+      weak_delegate_(this) {
+  BT_ASSERT(peer_.is_alive());
   BT_ASSERT(link_);
-  BT_ASSERT(conn_mgr_);
+  BT_ASSERT(conn_mgr_.is_alive());
   BT_ASSERT(gatt_);
   BT_ASSERT(cmd_.is_alive());
   BT_ASSERT(peer_disconnect_callback_);
@@ -103,16 +104,16 @@ LowEnergyConnection::~LowEnergyConnection() {
 std::unique_ptr<bt::gap::LowEnergyConnectionHandle> LowEnergyConnection::AddRef() {
   auto self = GetWeakPtr();
   auto release_cb = [self](LowEnergyConnectionHandle* handle) {
-    if (self) {
+    if (self.is_alive()) {
       self->conn_mgr_->ReleaseReference(handle);
     }
   };
   auto bondable_cb = [self] {
-    BT_ASSERT(self);
+    BT_ASSERT(self.is_alive());
     return self->bondable_mode();
   };
   auto security_cb = [self] {
-    BT_ASSERT(self);
+    BT_ASSERT(self.is_alive());
     return self->security();
   };
   std::unique_ptr<bt::gap::LowEnergyConnectionHandle> conn_ref(new LowEnergyConnectionHandle(
@@ -142,17 +143,17 @@ void LowEnergyConnection::DropRef(LowEnergyConnectionHandle* ref) {
   auto self = GetWeakPtr();
   // Ensure error_callback_ is only called once if link_error_cb is called multiple times.
   auto link_error_cb = [self]() {
-    if (self && self->error_callback_) {
+    if (self.is_alive() && self->error_callback_) {
       self->error_callback_();
     }
   };
   auto update_conn_params_cb = [self](auto params) {
-    if (self) {
+    if (self.is_alive()) {
       self->OnNewLEConnectionParams(params);
     }
   };
   auto security_upgrade_cb = [self](auto handle, auto level, auto cb) {
-    if (!self) {
+    if (!self.is_alive()) {
       return;
     }
 
@@ -223,7 +224,7 @@ void LowEnergyConnection::RegisterEventHandlers() {
   auto self = GetWeakPtr();
   conn_update_cmpl_handler_id_ = cmd_->AddLEMetaEventHandler(
       hci_spec::kLEConnectionUpdateCompleteSubeventCode, [self](const auto& event) {
-        if (self) {
+        if (self.is_alive()) {
           self->OnLEConnectionUpdateComplete(event);
           return hci::CommandChannel::EventCallbackResult::kContinue;
         }
@@ -286,13 +287,13 @@ bool LowEnergyConnection::OnL2capFixedChannelsOpened(
   // Obtain the local I/O capabilities from the delegate. Default to
   // NoInputNoOutput if no delegate is available.
   auto io_cap = sm::IOCapability::kNoInputNoOutput;
-  if (conn_mgr_->pairing_delegate()) {
+  if (conn_mgr_->pairing_delegate().is_alive()) {
     io_cap = conn_mgr_->pairing_delegate()->io_capability();
   }
   LESecurityMode security_mode = conn_mgr_->security_mode();
   sm_ = conn_mgr_->sm_factory_func()(link_->GetWeakPtr(), std::move(smp), io_cap,
-                                     weak_ptr_factory_.GetWeakPtr(),
-                                     connection_options.bondable_mode, security_mode);
+                                     weak_delegate_.GetWeakPtr(), connection_options.bondable_mode,
+                                     security_mode);
 
   // Provide SMP with the correct LTK from a previous pairing with the peer, if it exists. This
   // will start encryption if the local device is the link-layer central.
@@ -310,7 +311,7 @@ void LowEnergyConnection::OnNewLEConnectionParams(
   bt_log(INFO, "gap-le", "LE connection parameters received (peer: %s, handle: %#.4x)",
          bt_str(peer_id()), link_->handle());
 
-  BT_ASSERT(peer_);
+  BT_ASSERT(peer_.is_alive());
 
   peer_->MutLe().SetPreferredConnectionParameters(params);
 
@@ -322,7 +323,7 @@ void LowEnergyConnection::RequestConnectionParameterUpdate(
   BT_ASSERT_MSG(link_->role() == hci_spec::ConnectionRole::PERIPHERAL,
                 "tried to send connection parameter update request as central");
 
-  BT_ASSERT(peer_);
+  BT_ASSERT(peer_.is_alive());
   // Ensure interrogation has completed.
   BT_ASSERT(peer_->le()->features().has_value());
 
@@ -336,9 +337,9 @@ void LowEnergyConnection::RequestConnectionParameterUpdate(
          ll_connection_parameters_req_supported ? "true" : "false");
 
   if (ll_connection_parameters_req_supported) {
-    auto self = weak_ptr_factory_.GetWeakPtr();
+    auto self = weak_self_.GetWeakPtr();
     auto status_cb = [self, params](hci::Result<> status) {
-      if (!self) {
+      if (!self.is_alive()) {
         return;
       }
 
@@ -471,7 +472,7 @@ void LowEnergyConnection::OnLEConnectionUpdateComplete(const hci::EventPacket& e
                                           le16toh(payload->supervision_timeout));
   link_->set_low_energy_parameters(params);
 
-  BT_ASSERT(peer_);
+  BT_ASSERT(peer_.is_alive());
   peer_->MutLe().SetConnectionParameters(params);
 }
 
@@ -487,7 +488,7 @@ void LowEnergyConnection::MaybeUpdateConnectionParameters() {
     // If the GAP service preferred connection parameters characteristic has not been read by now,
     // just use the default parameters.
     // TODO(fxbug.dev/66031): Wait for preferred connection parameters to be read.
-    BT_ASSERT(peer_);
+    BT_ASSERT(peer_.is_alive());
     auto conn_params = peer_->le()->preferred_connection_parameters().value_or(
         kDefaultPreferredConnectionParameters);
     UpdateConnectionParams(conn_params);
@@ -523,9 +524,9 @@ bool LowEnergyConnection::InitializeGatt(fxl::WeakPtr<l2cap::Channel> att_channe
   }
   gatt_->InitializeClient(peer_id(), std::move(service_uuids));
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   gatt_->ListServices(peer_id(), {kGenericAccessService}, [self](auto status, auto services) {
-    if (self) {
+    if (self.is_alive()) {
       self->OnGattServicesResult(status, std::move(services));
     }
   });
@@ -546,10 +547,10 @@ void LowEnergyConnection::OnGattServicesResult(att::Result<> status, gatt::Servi
   }
 
   gap_service_client_.emplace(peer_id(), services.front());
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
 
   gap_service_client_->ReadDeviceName([self](att::Result<std::string> result) {
-    if (!self || result.is_error()) {
+    if (!self.is_alive() || result.is_error()) {
       return;
     }
 
@@ -557,7 +558,7 @@ void LowEnergyConnection::OnGattServicesResult(att::Result<> status, gatt::Servi
   });
 
   gap_service_client_->ReadAppearance([self](att::Result<uint16_t> result) {
-    if (!self || result.is_error()) {
+    if (!self.is_alive() || result.is_error()) {
       return;
     }
 
@@ -567,7 +568,7 @@ void LowEnergyConnection::OnGattServicesResult(att::Result<> status, gatt::Servi
   if (!peer_->le()->preferred_connection_parameters().has_value()) {
     gap_service_client_->ReadPeripheralPreferredConnectionParameters(
         [self](att::Result<hci_spec::LEPreferredConnectionParameters> result) {
-          if (!self) {
+          if (!self.is_alive()) {
             return;
           }
 
@@ -625,7 +626,7 @@ void LowEnergyConnection::OnPairingComplete(sm::Result<> status) {
          bt_str(peer_id()));
 
   auto delegate = conn_mgr_->pairing_delegate();
-  if (delegate) {
+  if (delegate.is_alive()) {
     delegate->CompletePairing(peer_id(), status);
   }
 }
@@ -664,8 +665,8 @@ void LowEnergyConnection::ConfirmPairing(ConfirmCallback confirm) {
          "pairing delegate request for pairing confirmation w/ no passkey (peer: %s)",
          bt_str(peer_id()));
 
-  auto* delegate = conn_mgr_->pairing_delegate();
-  if (!delegate) {
+  auto delegate = conn_mgr_->pairing_delegate();
+  if (!delegate.is_alive()) {
     bt_log(ERROR, "gap-le", "rejecting pairing without a PairingDelegate! (peer: %s)",
            bt_str(peer_id()));
     confirm(false);
@@ -679,8 +680,8 @@ void LowEnergyConnection::DisplayPasskey(uint32_t passkey, sm::Delegate::Display
   bt_log(INFO, "gap-le", "pairing delegate request (method: %s, peer: %s)",
          sm::util::DisplayMethodToString(method).c_str(), bt_str(peer_id()));
 
-  auto* delegate = conn_mgr_->pairing_delegate();
-  if (!delegate) {
+  auto delegate = conn_mgr_->pairing_delegate();
+  if (!delegate.is_alive()) {
     bt_log(ERROR, "gap-le", "rejecting pairing without a PairingDelegate!");
     confirm(false);
   } else {
@@ -692,8 +693,8 @@ void LowEnergyConnection::RequestPasskey(PasskeyResponseCallback respond) {
   bt_log(INFO, "gap-le", "pairing delegate request for passkey entry (peer: %s)",
          bt_str(peer_id()));
 
-  auto* delegate = conn_mgr_->pairing_delegate();
-  if (!delegate) {
+  auto delegate = conn_mgr_->pairing_delegate();
+  if (!delegate.is_alive()) {
     bt_log(ERROR, "gap-le", "rejecting pairing without a PairingDelegate! (peer: %s)",
            bt_str(peer_id()));
     respond(-1);

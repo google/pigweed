@@ -16,8 +16,7 @@ const char* const kInspectPeerIdPropertyName = "peer_id";
 
 }
 
-BrEdrConnection::BrEdrConnection(fxl::WeakPtr<Peer> peer,
-                                 std::unique_ptr<hci::BrEdrConnection> link,
+BrEdrConnection::BrEdrConnection(Peer::WeakPtr peer, std::unique_ptr<hci::BrEdrConnection> link,
                                  fit::closure send_auth_request_cb,
                                  fit::callback<void()> disconnect_cb,
                                  fit::closure on_peer_disconnect_cb, l2cap::ChannelManager* l2cap,

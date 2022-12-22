@@ -7,6 +7,8 @@
 #include <fuchsia/mem/cpp/fidl.h>
 #include <lib/fpromise/result.h>
 
+#include <utility>
+
 #include "gatt2_server_server.h"
 #include "gatt_server_server.h"
 #include "helpers.h"
@@ -91,13 +93,14 @@ HostServer::HostServer(zx::channel channel, const bt::gap::Adapter::WeakPtr& ada
                        fxl::WeakPtr<bt::gatt::GATT> gatt)
     : AdapterServerBase(adapter, this, std::move(channel)),
       pairing_delegate_(nullptr),
-      gatt_(gatt),
+      gatt_(std::move(gatt)),
       requesting_discovery_(false),
       requesting_background_scan_(false),
       requesting_discoverable_(false),
       io_capability_(IOCapability::kNoInputNoOutput),
       watch_peers_getter_(adapter->peer_cache()),
-      weak_ptr_factory_(this) {
+      weak_ptr_factory_(this),
+      weak_pairing_(this) {
   BT_ASSERT(gatt_);
 
   auto self = weak_ptr_factory_.GetWeakPtr();
@@ -499,8 +502,9 @@ void HostServer::SetPairingDelegate(fsys::InputCapability input, fsys::OutputCap
   bt_log(INFO, "fidl", "%s: PairingDelegate assigned (I/O capability: %s)", __FUNCTION__,
          bt::sm::util::IOCapabilityToString(io_capability_).c_str());
 
+  auto pairing = weak_pairing_.GetWeakPtr();
   auto self = weak_ptr_factory_.GetWeakPtr();
-  adapter()->SetPairingDelegate(self);
+  adapter()->SetPairingDelegate(pairing);
   pairing_delegate_.set_error_handler([self, func = __FUNCTION__](zx_status_t status) {
     bt_log(INFO, "fidl", "%s error handler: PairingDelegate disconnected", func);
     if (self) {
@@ -898,7 +902,7 @@ void HostServer::OnPeerRemoved(bt::PeerId id) {
 
 void HostServer::ResetPairingDelegate() {
   io_capability_ = IOCapability::kNoInputNoOutput;
-  adapter()->SetPairingDelegate(fxl::WeakPtr<HostServer>());
+  adapter()->SetPairingDelegate(PairingDelegate::WeakPtr());
 }
 
 void HostServer::NotifyInfoChange() {

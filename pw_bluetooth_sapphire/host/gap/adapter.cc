@@ -265,7 +265,7 @@ class AdapterImpl final : public Adapter {
 
   bool AddBondedPeer(BondingData bonding_data) override;
 
-  void SetPairingDelegate(fxl::WeakPtr<PairingDelegate> delegate) override;
+  void SetPairingDelegate(PairingDelegate::WeakPtr delegate) override;
 
   bool IsDiscoverable() const override;
 
@@ -566,7 +566,7 @@ bool AdapterImpl::AddBondedPeer(BondingData bonding_data) {
   return peer_cache()->AddBondedPeer(bonding_data);
 }
 
-void AdapterImpl::SetPairingDelegate(fxl::WeakPtr<PairingDelegate> delegate) {
+void AdapterImpl::SetPairingDelegate(PairingDelegate::WeakPtr delegate) {
   le_connection_manager_->SetPairingDelegate(delegate);
   bredr_connection_manager_->SetPairingDelegate(delegate);
 }

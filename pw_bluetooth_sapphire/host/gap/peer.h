@@ -571,7 +571,8 @@ class Peer final {
   // * name is updated
   zx::time last_updated() const { return last_updated_; }
 
-  fxl::WeakPtr<Peer> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
+  using WeakPtr = WeakSelf<Peer>::WeakPtr;
+  Peer::WeakPtr GetWeakPtr() { return weak_self_.GetWeakPtr(); }
 
  private:
   struct PeerName {
@@ -664,7 +665,7 @@ class Peer final {
   // The time when the most recent update occurred.
   zx::time last_updated_;
 
-  fxl::WeakPtrFactory<Peer> weak_ptr_factory_;
+  WeakSelf<Peer> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Peer);
 };

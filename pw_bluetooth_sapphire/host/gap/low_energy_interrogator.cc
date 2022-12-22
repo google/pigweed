@@ -10,20 +10,19 @@
 
 namespace bt::gap {
 
-LowEnergyInterrogator::LowEnergyInterrogator(fxl::WeakPtr<Peer> peer,
-                                             hci_spec::ConnectionHandle handle,
+LowEnergyInterrogator::LowEnergyInterrogator(Peer::WeakPtr peer, hci_spec::ConnectionHandle handle,
                                              hci::CommandChannel::WeakPtr cmd_channel)
     : peer_(std::move(peer)),
       peer_id_(peer_->identifier()),
       handle_(handle),
       cmd_runner_(cmd_channel->AsWeakPtr()),
-      weak_ptr_factory_(this) {}
+      weak_self_(this) {}
 
 void LowEnergyInterrogator::Start(ResultCallback callback) {
   BT_ASSERT(!callback_);
   callback_ = std::move(callback);
 
-  if (!peer_) {
+  if (!peer_.is_alive()) {
     Complete(ToResult(HostError::kFailed));
     return;
   }
@@ -54,14 +53,14 @@ void LowEnergyInterrogator::Complete(hci::Result<> result) {
     return;
   }
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
 
   // callback may destroy this object
   callback_(result);
 
   // Complete() may have been called by a command callback, in which case the runner needs to be
   // canceled.
-  if (self && !cmd_runner_.IsReady()) {
+  if (self.is_alive() && !cmd_runner_.IsReady()) {
     cmd_runner_.Cancel();
   }
 }
