@@ -299,6 +299,8 @@ class PresubmitContext:
         repos: Repositories (top-level and submodules) processed by
             pw presubmit
         output_dir: Output directory for this specific presubmit step
+        failure_summary_log: Path where steps should write a brief summary of
+            any failures encountered for use by other tooling.
         paths: Modified files for the presubmit step to check (often used in
             formatting steps but ignored in compile steps)
         package_root: Root directory for pw package installations
@@ -312,6 +314,7 @@ class PresubmitContext:
     root: Path
     repos: Tuple[Path, ...]
     output_dir: Path
+    failure_summary_log: Path
     paths: Tuple[Path, ...]
     package_root: Path
     luci: Optional[LuciContext]
@@ -576,6 +579,9 @@ class Presubmit:
         output_directory = self._output_directory.joinpath(sanitized_name)
         os.makedirs(output_directory, exist_ok=True)
 
+        failure_summary_log = output_directory / 'failure-summary.log'
+        failure_summary_log.unlink(missing_ok=True)
+
         handler = logging.FileHandler(
             output_directory.joinpath('step.log'), mode='w'
         )
@@ -588,6 +594,7 @@ class Presubmit:
                 root=self._root,
                 repos=self._repos,
                 output_dir=output_directory,
+                failure_summary_log=failure_summary_log,
                 paths=filtered_check.paths,
                 package_root=self._package_root,
                 override_gn_args=self._override_gn_args,

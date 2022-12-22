@@ -215,9 +215,6 @@ def ninja(
         )
         (ctx.output_dir / 'ninja.graph').write_bytes(proc.stdout)
 
-    failure_summary_log = ctx.output_dir / 'ninja-failure-summary.log'
-    failure_summary_log.unlink(missing_ok=True)
-
     ninja_stdout = ctx.output_dir / 'ninja.stdout'
     try:
         with ninja_stdout.open('w') as outs:
@@ -235,7 +232,7 @@ def ninja(
     except PresubmitFailure as exc:
         failure = ninja_parser.parse_ninja_stdout(ninja_stdout)
         if failure:
-            with failure_summary_log.open('w') as outs:
+            with ctx.failure_summary_log.open('w') as outs:
                 outs.write(failure)
 
         raise exc

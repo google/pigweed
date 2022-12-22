@@ -65,6 +65,7 @@ class KeepSortedContext:
     paths: List[Path]
     fix: bool
     output_dir: Path
+    failure_summary_log: Path
     failed: bool = False
 
     def fail(
@@ -358,9 +359,6 @@ def _process_files(
     fix = getattr(ctx, 'fix', False)
     errors: Dict[Path, Sequence[str]] = {}
 
-    failure_summary_log = ctx.output_dir / 'failure-summary.log'
-    failure_summary_log.unlink(missing_ok=True)
-
     for path in ctx.paths:
         if path.is_symlink() or path.is_dir():
             continue
@@ -381,7 +379,7 @@ def _process_files(
 
     ctx.fail(f'Found {len(errors)} files with keep-sorted errors:')
 
-    with failure_summary_log.open('w') as outs:
+    with ctx.failure_summary_log.open('w') as outs:
         for path, diffs in errors.items():
             diff = ''.join(
                 [
@@ -474,7 +472,12 @@ def keep_sorted_in_repo(
         else:
             output_directory = project_root / DEFAULT_PATH
 
-    ctx = KeepSortedContext(paths=files, fix=fix, output_dir=output_directory)
+    ctx = KeepSortedContext(
+        paths=files,
+        fix=fix,
+        output_dir=output_directory,
+        failure_summary_log=output_directory / 'failure-summary.log',
+    )
     errors = _process_files(ctx)
 
     if not fix and errors:

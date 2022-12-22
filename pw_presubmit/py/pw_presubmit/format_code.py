@@ -591,9 +591,6 @@ def presubmit_check(
 
     @pw_presubmit.filter_paths(file_filter=file_filter)
     def check_code_format(ctx: pw_presubmit.PresubmitContext):
-        failure_summary_log = ctx.output_dir / 'failure-summary.log'
-        failure_summary_log.unlink(missing_ok=True)
-
         errors = code_format.check(ctx)
         print_format_check(
             errors,
@@ -603,7 +600,7 @@ def presubmit_check(
         if not errors:
             return
 
-        with failure_summary_log.open('w') as outs:
+        with ctx.failure_summary_log.open('w') as outs:
             print_format_check(
                 errors,
                 show_summary=False,

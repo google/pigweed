@@ -109,6 +109,8 @@ such as a quick program for local use and a full program for automated use. The
 * ``repos``: Repositories (top-level and submodules) processed by
   ``pw presubmit``
 * ``output_dir``: Output directory for this specific presubmit step
+* ``failure_summary_log``: File path where steps should write a brief summary
+  of any failures
 * ``paths``: Modified files for the presubmit step to check (often used in
   formatting steps but ignored in compile steps)
 * ``package_root``: Root directory for ``pw package`` installations
