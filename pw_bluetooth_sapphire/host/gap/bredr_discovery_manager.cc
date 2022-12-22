@@ -515,10 +515,14 @@ void BrEdrDiscoveryManager::SetInquiryScan() {
     } else {
       scan_type &= ~static_cast<uint8_t>(hci_spec::ScanEnableBit::kInquiry);
     }
-    auto write_enable = hci::CommandPacket::New(hci_spec::kWriteScanEnable,
-                                                sizeof(hci_spec::WriteScanEnableCommandParams));
-    write_enable->mutable_payload<hci_spec::WriteScanEnableCommandParams>()->scan_enable =
-        scan_type;
+
+    auto write_enable = hci::EmbossCommandPacket::New<hci_spec::WriteScanEnableCommandWriter>(
+        hci_spec::kWriteScanEnable);
+    auto write_enable_view = write_enable.view_t();
+    write_enable_view.scan_enable().inquiry().Write(
+        scan_type & static_cast<uint8_t>(hci_spec::ScanEnableBit::kInquiry));
+    write_enable_view.scan_enable().page().Write(
+        scan_type & static_cast<uint8_t>(hci_spec::ScanEnableBit::kPage));
     resolve_pending.cancel();
     self->cmd_->SendCommand(std::move(write_enable), [self](auto, const hci::EventPacket& event) {
       if (!self) {

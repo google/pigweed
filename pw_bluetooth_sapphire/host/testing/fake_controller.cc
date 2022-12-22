@@ -1143,8 +1143,8 @@ void FakeController::OnReadPageScanActivity() {
   RespondWithCommandComplete(hci_spec::kReadPageScanActivity, BufferView(&params, sizeof(params)));
 }
 
-void FakeController::OnWriteScanEnable(const hci_spec::WriteScanEnableCommandParams& params) {
-  bredr_scan_state_ = params.scan_enable;
+void FakeController::OnWriteScanEnable(hci_spec::WriteScanEnableCommandView params) {
+  bredr_scan_state_ = params.scan_enable().BackingStorage().ReadUInt();
   RespondWithCommandComplete(hci_spec::kWriteScanEnable, hci_spec::StatusCode::SUCCESS);
 }
 
@@ -2848,11 +2848,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnReadScanEnable();
       break;
     }
-    case hci_spec::kWriteScanEnable: {
-      const auto& params = command_packet.payload<hci_spec::WriteScanEnableCommandParams>();
-      OnWriteScanEnable(params);
-      break;
-    }
     case hci_spec::kReadPageScanActivity: {
       OnReadPageScanActivity();
       break;
@@ -3007,6 +3002,7 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kIOCapabilityRequestReply:
     case hci_spec::kSetEventMask:
     case hci_spec::kWriteLocalName:
+    case hci_spec::kWriteScanEnable:
     case hci_spec::kWritePageScanActivity: {
       // This case is for packet types that have been migrated to the new Emboss architecture. Their
       // old version can be still be assembled from the HciEmulator channel, so here we repackage
@@ -3122,6 +3118,11 @@ void FakeController::HandleReceivedCommandPacket(hci::EmbossCommandPacket& comma
     case hci_spec::kWriteLocalName: {
       const auto params = command_packet.view<hci_spec::WriteLocalNameCommandView>();
       OnWriteLocalName(params);
+      break;
+    }
+    case hci_spec::kWriteScanEnable: {
+      const auto& params = command_packet.view<hci_spec::WriteScanEnableCommandView>();
+      OnWriteScanEnable(params);
       break;
     }
     case hci_spec::kWritePageScanActivity: {

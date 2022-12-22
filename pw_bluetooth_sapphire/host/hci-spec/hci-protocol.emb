@@ -256,6 +256,17 @@ enum AuthenticationRequirements:
   GENERAL_BONDING        = 0x04
   MITM_GENERAL_BONDING   = 0x05
 
+
+bits ScanEnableBits:
+  -- Bitmask Values for the Scan_Enable parameter in a
+  -- HCI_(Read,Write)_Scan_Enable command.
+  0     [+1]   Flag  inquiry
+    -- Inquiry scan enabled
+  $next [+1]   Flag  page
+    -- Page scan enabled
+  $next [+6]   UInt  padding
+
+
 # ========================= HCI packet headers ==========================
 
 
@@ -704,6 +715,16 @@ struct WritePageTimeoutCommand:
     -- Page_Timeout, in time slices (0.625 ms)
     -- Range: From MIN to MAX in PageTimeout in this file
     [requires: 0x0001 <= this <= 0xFFFF]
+
+
+struct WriteScanEnableCommand:
+  -- Write Scan Enable Command (v1.1) (BR/EDR)
+  let hdr_size = EmbossCommandHeader.$size_in_bytes
+  0     [+hdr_size]               EmbossCommandHeader              header
+
+  $next [+1]                      ScanEnableBits                    scan_enable
+    -- Bit Mask of enabled scans. See enum class ScanEnableBits in this file
+    -- for how to construct this bitfield.
 
 
 struct WritePageScanActivityCommand:

@@ -551,7 +551,7 @@ class FakeController final : public ControllerTestDoubleBase {
   void OnReadPageScanActivity();
 
   // Called when a HCI_Write_Scan_Enable command is received.
-  void OnWriteScanEnable(const hci_spec::WriteScanEnableCommandParams& params);
+  void OnWriteScanEnable(hci_spec::WriteScanEnableCommandView params);
 
   // Called when a HCI_Read_Scan_Enable command is received.
   void OnReadScanEnable();

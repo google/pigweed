@@ -357,12 +357,6 @@ struct ReadScanEnableReturnParams {
 // Write Scan Enable Command (v1.1) (BR/EDR)
 constexpr OpCode kWriteScanEnable = ControllerAndBasebandOpCode(0x001A);
 
-struct WriteScanEnableCommandParams {
-  // Bit Mask of enabled scans. See enum class ScanEnableBit in hci_constants.h
-  // for how to construct this bitfield.
-  ScanEnableType scan_enable;
-} __PACKED;
-
 // ===============================================
 // Read Page Scan Activity Command (v1.1) (BR/EDR)
 constexpr OpCode kReadPageScanActivity = ControllerAndBasebandOpCode(0x001B);
