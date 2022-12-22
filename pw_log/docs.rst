@@ -76,11 +76,14 @@ Logging macros
 These are the primary macros for logging information about the functioning of a
 system, intended to be used directly.
 
-.. cpp:function:: PW_LOG(level, flags, fmt, ...)
+.. c:macro:: PW_LOG(level, module, flags, fmt, ...)
 
   This is the primary mechanism for logging.
 
   *level* - An integer level as defined by ``pw_log/levels.h``.
+
+  *module* - A string literal for the module name. Defaults to
+  :c:macro:`PW_LOG_MODULE_NAME`.
 
   *flags* - Arbitrary flags the backend can leverage. The semantics of these
   flags are not defined in the facade, but are instead meant as a general
@@ -104,8 +107,8 @@ system, intended to be used directly.
 
   .. code-block:: cpp
 
-    PW_LOG(PW_LOG_FLAGS, PW_LOG_LEVEL_INFO, "Temp is %d degrees", temp);
-    PW_LOG(UNRELIABLE_DELIVERY, PW_LOG_LEVEL_ERROR, "It didn't work!");
+    PW_LOG(PW_LOG_LEVEL_INFO, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, "Temp is %d degrees", temp);
+    PW_LOG(PW_LOG_LEVEL_ERROR, PW_LOG_MODULE_NAME, UNRELIABLE_DELIVERY, "It didn't work!");
 
   .. note::
 
@@ -116,13 +119,13 @@ system, intended to be used directly.
     in the backend.
 
 
-.. cpp:function:: PW_LOG_DEBUG(fmt, ...)
-.. cpp:function:: PW_LOG_INFO(fmt, ...)
-.. cpp:function:: PW_LOG_WARN(fmt, ...)
-.. cpp:function:: PW_LOG_ERROR(fmt, ...)
-.. cpp:function:: PW_LOG_CRITICAL(fmt, ...)
+.. c:macro:: PW_LOG_DEBUG(fmt, ...)
+.. c:macro:: PW_LOG_INFO(fmt, ...)
+.. c:macro:: PW_LOG_WARN(fmt, ...)
+.. c:macro:: PW_LOG_ERROR(fmt, ...)
+.. c:macro:: PW_LOG_CRITICAL(fmt, ...)
 
-  Shorthand for `PW_LOG(PW_LOG_FLAGS, <level>, fmt, ...)`.
+  Shorthand for ``PW_LOG(<level>, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, fmt, ...)``.
 
 --------------------
 Module configuration

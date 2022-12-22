@@ -22,11 +22,11 @@
 // This is the log macro frontend that funnels everything into the C-based
 // message hangler facade, i.e. pw_log_string_HandleMessage. It's not efficient
 // at the callsite, since it passes many arguments.
-#define PW_HANDLE_LOG(level, flags, message, ...)                    \
+#define PW_HANDLE_LOG(level, module, flags, message, ...)            \
   do {                                                               \
     pw_log_string_HandleMessage((level),                             \
                                 (flags),                             \
-                                PW_LOG_MODULE_NAME,                  \
+                                (module),                            \
                                 __FILE__,                            \
                                 __LINE__,                            \
                                 message PW_COMMA_ARGS(__VA_ARGS__)); \

@@ -40,12 +40,14 @@ extern "C" void pw_assert_tokenized_HandleAssertFailure(
   base64_buffer[len] = '\0';
 #if PW_ASSERT_ENABLE_DEBUG
   PW_LOG(PW_LOG_LEVEL_FATAL,
+         "pw_assert_tokenized",
          PW_LOG_FLAGS,
          "PW_ASSERT() or PW_DASSERT() failure at $%s:%d",
          base64_buffer,
          line_number);
 #else
   PW_LOG(PW_LOG_LEVEL_FATAL,
+         "pw_assert_tokenized",
          PW_LOG_FLAGS,
          "PW_ASSERT() failure. Note: PW_DASSERT disabled $%s:%d",
          base64_buffer,

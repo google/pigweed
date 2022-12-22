@@ -65,11 +65,11 @@
 // macro. The format string is not listed as a separate argument to avoid adding
 // a comma after the format string when it has no arguments.
 #ifndef PW_LOG
-#define PW_LOG(level, flags, /* format string and arguments */...) \
-  do {                                                             \
-    if (PW_LOG_ENABLE_IF(level, flags)) {                          \
-      PW_HANDLE_LOG(level, flags, __VA_ARGS__);                    \
-    }                                                              \
+#define PW_LOG(level, module, flags, /* format string and arguments */...) \
+  do {                                                                     \
+    if (PW_LOG_ENABLE_IF(level, module, flags)) {                          \
+      PW_HANDLE_LOG(level, module, flags, __VA_ARGS__);                    \
+    }                                                                      \
   } while (0)
 #endif  // PW_LOG
 
@@ -77,24 +77,28 @@
 // specialized versions, define the standard PW_LOG_<level>() macros in terms
 // of the general PW_LOG().
 #ifndef PW_LOG_DEBUG
-#define PW_LOG_DEBUG(...) PW_LOG(PW_LOG_LEVEL_DEBUG, PW_LOG_FLAGS, __VA_ARGS__)
+#define PW_LOG_DEBUG(...) \
+  PW_LOG(PW_LOG_LEVEL_DEBUG, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, __VA_ARGS__)
 #endif  // PW_LOG_DEBUG
 
 #ifndef PW_LOG_INFO
-#define PW_LOG_INFO(...) PW_LOG(PW_LOG_LEVEL_INFO, PW_LOG_FLAGS, __VA_ARGS__)
+#define PW_LOG_INFO(...) \
+  PW_LOG(PW_LOG_LEVEL_INFO, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, __VA_ARGS__)
 #endif  // PW_LOG_INFO
 
 #ifndef PW_LOG_WARN
-#define PW_LOG_WARN(...) PW_LOG(PW_LOG_LEVEL_WARN, PW_LOG_FLAGS, __VA_ARGS__)
+#define PW_LOG_WARN(...) \
+  PW_LOG(PW_LOG_LEVEL_WARN, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, __VA_ARGS__)
 #endif  // PW_LOG_WARN
 
 #ifndef PW_LOG_ERROR
-#define PW_LOG_ERROR(...) PW_LOG(PW_LOG_LEVEL_ERROR, PW_LOG_FLAGS, __VA_ARGS__)
+#define PW_LOG_ERROR(...) \
+  PW_LOG(PW_LOG_LEVEL_ERROR, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, __VA_ARGS__)
 #endif  // PW_LOG_ERROR
 
 #ifndef PW_LOG_CRITICAL
 #define PW_LOG_CRITICAL(...) \
-  PW_LOG(PW_LOG_LEVEL_CRITICAL, PW_LOG_FLAGS, __VA_ARGS__)
+  PW_LOG(PW_LOG_LEVEL_CRITICAL, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, __VA_ARGS__)
 #endif  // PW_LOG_CRITICAL
 
 // Default: Number of bits available for the log flags

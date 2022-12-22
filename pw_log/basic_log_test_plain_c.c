@@ -67,29 +67,54 @@ void BasicLogTestPlainC(void) {
   PW_LOG_CRITICAL("This log is the last one; device should reboot");
 
   // Core log macro, with manually specified level and flags.
-  PW_LOG(PW_LOG_LEVEL_DEBUG, 0, "A manual DEBUG-level message");
-  PW_LOG(PW_LOG_LEVEL_DEBUG, 1, "A manual DEBUG-level message; with a flag");
+  PW_LOG(PW_LOG_LEVEL_DEBUG,
+         PW_LOG_MODULE_NAME,
+         0,
+         "A manual DEBUG-level message");
+  PW_LOG(PW_LOG_LEVEL_DEBUG,
+         PW_LOG_MODULE_NAME,
+         1,
+         "A manual DEBUG-level message; with a flag");
 
-  PW_LOG(PW_LOG_LEVEL_INFO, 0, "A manual INFO-level message");
-  PW_LOG(PW_LOG_LEVEL_INFO, 1, "A manual INFO-level message; with a flag");
-
-  PW_LOG(PW_LOG_LEVEL_WARN, 0, "A manual WARN-level message");
-  PW_LOG(PW_LOG_LEVEL_WARN, 1, "A manual WARN-level message; with a flag");
-
-  PW_LOG(PW_LOG_LEVEL_ERROR, 0, "A manual ERROR-level message");
-  PW_LOG(PW_LOG_LEVEL_ERROR, 1, "A manual ERROR-level message; with a flag");
-
-  PW_LOG(PW_LOG_LEVEL_CRITICAL, 0, "A manual CRITICAL-level message");
   PW_LOG(
-      PW_LOG_LEVEL_CRITICAL, 1, "A manual CRITICAL-level message; with a flag");
+      PW_LOG_LEVEL_INFO, PW_LOG_MODULE_NAME, 0, "A manual INFO-level message");
+  PW_LOG(PW_LOG_LEVEL_INFO,
+         PW_LOG_MODULE_NAME,
+         1,
+         "A manual INFO-level message; with a flag");
+
+  PW_LOG(
+      PW_LOG_LEVEL_WARN, PW_LOG_MODULE_NAME, 0, "A manual WARN-level message");
+  PW_LOG(PW_LOG_LEVEL_WARN,
+         PW_LOG_MODULE_NAME,
+         1,
+         "A manual WARN-level message; with a flag");
+
+  PW_LOG(PW_LOG_LEVEL_ERROR,
+         PW_LOG_MODULE_NAME,
+         0,
+         "A manual ERROR-level message");
+  PW_LOG(PW_LOG_LEVEL_ERROR,
+         PW_LOG_MODULE_NAME,
+         1,
+         "A manual ERROR-level message; with a flag");
+
+  PW_LOG(PW_LOG_LEVEL_CRITICAL,
+         PW_LOG_MODULE_NAME,
+         0,
+         "A manual CRITICAL-level message");
+  PW_LOG(PW_LOG_LEVEL_CRITICAL,
+         PW_LOG_MODULE_NAME,
+         1,
+         "A manual CRITICAL-level message; with a flag");
 
   // Log levels other than the standard ones work; what each backend does is
   // implementation defined.
-  PW_LOG(0, PW_LOG_FLAGS, "Custom log level: 0");
-  PW_LOG(1, PW_LOG_FLAGS, "Custom log level: 1");
-  PW_LOG(2, PW_LOG_FLAGS, "Custom log level: 2");
-  PW_LOG(3, PW_LOG_FLAGS, "Custom log level: 3");
-  PW_LOG(100, PW_LOG_FLAGS, "Custom log level: 100");
+  PW_LOG(0, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, "Custom log level: 0");
+  PW_LOG(1, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, "Custom log level: 1");
+  PW_LOG(2, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, "Custom log level: 2");
+  PW_LOG(3, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, "Custom log level: 3");
+  PW_LOG(100, PW_LOG_MODULE_NAME, PW_LOG_FLAGS, "Custom log level: 100");
 
   // Logging from a function.
   LoggingFromFunctionPlainC();
@@ -104,15 +129,20 @@ void BasicLogTestPlainC(void) {
 }
 
 #undef PW_LOG
-#define PW_LOG(level, flags, message, ...)                               \
-  DoNothingFakeFunction("%d/%d/%d: incoming transmission [" message "]", \
+#define PW_LOG(level, module, flags, message, ...)                       \
+  DoNothingFakeFunction(module,                                          \
+                        "%d/%d/%d: incoming transmission [" message "]", \
                         level,                                           \
                         __LINE__,                                        \
                         flags PW_COMMA_ARGS(__VA_ARGS__))
 
-static void DoNothingFakeFunction(const char* f, ...) PW_PRINTF_FORMAT(1, 2);
+static void DoNothingFakeFunction(const char* module, const char* f, ...)
+    PW_PRINTF_FORMAT(2, 3);
 
-static void DoNothingFakeFunction(const char* f, ...) { (void)f; }
+static void DoNothingFakeFunction(const char* module, const char* f, ...) {
+  (void)module;
+  (void)f;
+}
 
 static void CustomFormatStringTest(void) {
   PW_LOG_DEBUG("Abc");

@@ -39,13 +39,16 @@ class GlogStreamingLog {
 
 // Declares a unique GlogStreamingLog class definition with a destructor which
 // matches the desired pw_log_level.
-#define _PW_LOG_GLOG_DECLARATION_PW_LOG(pw_log_level, unique)         \
-  class unique : public ::pw::log::internal::GlogStreamingLog {       \
-   public:                                                            \
-    ~unique() {                                                       \
-      PW_HANDLE_LOG(                                                  \
-          pw_log_level, PW_LOG_FLAGS, "%s", string_builder_.c_str()); \
-    }                                                                 \
+#define _PW_LOG_GLOG_DECLARATION_PW_LOG(pw_log_level, unique)   \
+  class unique : public ::pw::log::internal::GlogStreamingLog { \
+   public:                                                      \
+    ~unique() {                                                 \
+      PW_HANDLE_LOG(pw_log_level,                               \
+                    PW_LOG_MODULE_NAME,                         \
+                    PW_LOG_FLAGS,                               \
+                    "%s",                                       \
+                    string_builder_.c_str());                   \
+    }                                                           \
   }
 
 // Declares a unique GlogStreamingLog class definition with a destructor which

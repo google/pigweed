@@ -37,5 +37,5 @@
 // This expression determines whether or not the statement is enabled and
 // should be passed to the backend.
 #ifndef PW_LOG_ENABLE_IF_DEFAULT
-#define PW_LOG_ENABLE_IF_DEFAULT(level, flags) ((level) >= PW_LOG_LEVEL)
+#define PW_LOG_ENABLE_IF_DEFAULT(level, module, flags) ((level) >= PW_LOG_LEVEL)
 #endif  // PW_LOG_ENABLE_IF_DEFAULT

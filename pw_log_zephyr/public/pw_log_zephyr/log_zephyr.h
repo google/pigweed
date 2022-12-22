@@ -18,10 +18,6 @@
 
 #include "pw_log_zephyr/config.h"
 
-#ifndef PW_LOG_MODULE_NAME
-#define PW_LOG_MODULE_NAME ""
-#endif
-
 // If the consumer defined PW_LOG_LEVEL use it, otherwise fallback to the global
 // CONFIG_PIGWEED_LOG_LEVEL set by Kconfig.
 #ifdef PW_LOG_LEVEL
@@ -47,26 +43,26 @@
 
 LOG_MODULE_DECLARE(PW_LOG_ZEPHYR_MODULE_NAME, LOG_LEVEL);
 
-#define PW_HANDLE_LOG(level, flags, ...)             \
-  do {                                               \
-    switch (level) {                                 \
-      case PW_LOG_LEVEL_INFO:                        \
-        LOG_INF(PW_LOG_MODULE_NAME " " __VA_ARGS__); \
-        break;                                       \
-      case PW_LOG_LEVEL_WARN:                        \
-        LOG_WRN(PW_LOG_MODULE_NAME " " __VA_ARGS__); \
-        break;                                       \
-      case PW_LOG_LEVEL_ERROR:                       \
-      case PW_LOG_LEVEL_CRITICAL:                    \
-        LOG_ERR(PW_LOG_MODULE_NAME " " __VA_ARGS__); \
-        break;                                       \
-      case PW_LOG_LEVEL_FATAL:                       \
-        LOG_ERR(PW_LOG_MODULE_NAME " " __VA_ARGS__); \
-        LOG_PANIC();                                 \
-        break;                                       \
-      case PW_LOG_LEVEL_DEBUG:                       \
-      default:                                       \
-        LOG_DBG(PW_LOG_MODULE_NAME " " __VA_ARGS__); \
-        break;                                       \
-    }                                                \
+#define PW_HANDLE_LOG(level, module, flags, ...) \
+  do {                                           \
+    switch (level) {                             \
+      case PW_LOG_LEVEL_INFO:                    \
+        LOG_INF(module " " __VA_ARGS__);         \
+        break;                                   \
+      case PW_LOG_LEVEL_WARN:                    \
+        LOG_WRN(module " " __VA_ARGS__);         \
+        break;                                   \
+      case PW_LOG_LEVEL_ERROR:                   \
+      case PW_LOG_LEVEL_CRITICAL:                \
+        LOG_ERR(module " " __VA_ARGS__);         \
+        break;                                   \
+      case PW_LOG_LEVEL_FATAL:                   \
+        LOG_ERR(module " " __VA_ARGS__);         \
+        LOG_PANIC();                             \
+        break;                                   \
+      case PW_LOG_LEVEL_DEBUG:                   \
+      default:                                   \
+        LOG_DBG(module " " __VA_ARGS__);         \
+        break;                                   \
+    }                                            \
   } while (0)

@@ -42,17 +42,25 @@ void pw_log_tokenized_CaptureArgs(uintptr_t payload,
 // These functions correspond to tests in log_tokenized_test.cc. The tests call
 // these functions and check the results.
 void pw_log_tokenized_Test_LogMetadata_LevelTooLarge_Clamps(void) {
-  PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(8, 0, "hello");
+#line 1000
+  PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(8, PW_LOG_MODULE_NAME, 0, "");
 }
 
 void pw_log_tokenized_Test_LogMetadata_TooManyFlags_Truncates(void) {
-  PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(1, 0xFFFFFFFF, "hello");
+// clang-format off
+#line 1100
+  PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(1, PW_LOG_MODULE_NAME, 0xFFFFFFFF, "hello");
+  // clang-format on
 }
 
 void pw_log_tokenized_Test_LogMetadata_LogMetadata_VariousValues(void) {
-  PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(6, 3, "hello%s", "?");
+// clang-format off
+#line 1200
+  PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(6, PW_LOG_MODULE_NAME, 3, "hello%s", "?");
+  // clang-format on
 }
 
 void pw_log_tokenized_Test_LogMetadata_LogMetadata_Zero(void) {
-  PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(0, 0, "hello");
+#line 1300
+  PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(0, PW_LOG_MODULE_NAME, 0, "");
 }

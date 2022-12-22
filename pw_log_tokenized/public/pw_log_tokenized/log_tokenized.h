@@ -31,7 +31,7 @@
 // Two strings are tokenized in this macro:
 //
 //   - The log format string, tokenized in the default tokenizer domain.
-//   - PW_LOG_MODULE_NAME, masked to 16 bits and tokenized in the
+//   - Log module name, masked to 16 bits and tokenized in the
 //     "pw_log_module_names" tokenizer domain.
 //
 // To use this macro, implement pw_tokenizer_HandleEncodedMessageWithPayload,
@@ -48,12 +48,12 @@
 //   }
 //
 #define PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(                     \
-    level, flags, message, ...)                                              \
+    level, module, flags, message, ...)                                      \
   do {                                                                       \
     _PW_TOKENIZER_CONST uintptr_t _pw_log_tokenized_module_token =           \
         PW_TOKENIZE_STRING_MASK("pw_log_module_names",                       \
                                 ((1u << PW_LOG_TOKENIZED_MODULE_BITS) - 1u), \
-                                PW_LOG_MODULE_NAME);                         \
+                                module);                                     \
     const uintptr_t _pw_log_tokenized_level = level;                         \
     PW_LOG_TOKENIZED_ENCODE_MESSAGE(                                         \
         (_PW_LOG_TOKENIZED_LEVEL(_pw_log_tokenized_level) |                  \

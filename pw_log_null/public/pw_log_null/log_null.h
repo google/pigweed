@@ -31,26 +31,23 @@ PW_EXTERN_C_START
 // For compatibility with C and the printf compiler attribute, the declaration
 // and definition must be separate and both marked inline.
 static inline void pw_log_Ignored(int level,
-                                  unsigned int flags,
                                   const char* module_name,
+                                  unsigned int flags,
                                   const char* message,
                                   ...) PW_PRINTF_FORMAT(4, 5);
 
 static inline void pw_log_Ignored(int level,
-                                  unsigned int flags,
                                   const char* module_name,
+                                  unsigned int flags,
                                   const char* message,
                                   ...) {
   (void)level;
-  (void)flags;
   (void)module_name;
+  (void)flags;
   (void)message;
 }
 
 PW_EXTERN_C_END
 
-#define PW_HANDLE_LOG(level, flags, message, ...) \
-  pw_log_Ignored((level),                         \
-                 (flags),                         \
-                 PW_LOG_MODULE_NAME,              \
-                 message PW_COMMA_ARGS(__VA_ARGS__))
+#define PW_HANDLE_LOG(level, module, flags, message, ...) \
+  pw_log_Ignored((level), module, (flags), message PW_COMMA_ARGS(__VA_ARGS__))

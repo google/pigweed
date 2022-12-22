@@ -24,15 +24,16 @@ static int global;
 static int IncrementGlobal(void) { return ++global; }
 
 bool CTest(void) {
-  PW_HANDLE_LOG(1, 2, "3");
-  PW_HANDLE_LOG(1, 2, "whoa");
-  PW_HANDLE_LOG(1, 2, "%s", "hello");
-  PW_HANDLE_LOG(1, 2, "%d + %s == %p", 1, "two", NULL);
+  PW_HANDLE_LOG(1, PW_LOG_MODULE_NAME, 2, "3");
+  PW_HANDLE_LOG(1, PW_LOG_MODULE_NAME, 2, "whoa");
+  PW_HANDLE_LOG(1, PW_LOG_MODULE_NAME, 2, "%s", "hello");
+  PW_HANDLE_LOG(1, PW_LOG_MODULE_NAME, 2, "%d + %s == %p", 1, "two", NULL);
 
   global = 0;
   bool local = true;
 
   PW_HANDLE_LOG(1,
+                PW_LOG_MODULE_NAME,
                 2,
                 "You are number%s %d!",
                 (local = false) ? "" : " not",

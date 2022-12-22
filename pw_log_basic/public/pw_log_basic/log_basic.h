@@ -40,15 +40,15 @@ PW_EXTERN_C_END
 //
 // TODO(b/235289435): Reconsider the naming of this module when more is in
 // place.
-#define PW_HANDLE_LOG(level, flags, message, ...) \
-  do {                                            \
-    pw_Log((level),                               \
-           (flags),                               \
-           PW_LOG_MODULE_NAME,                    \
-           __FILE__,                              \
-           __LINE__,                              \
-           __func__,                              \
-           message PW_COMMA_ARGS(__VA_ARGS__));   \
+#define PW_HANDLE_LOG(level, module, flags, message, ...) \
+  do {                                                    \
+    pw_Log((level),                                       \
+           (flags),                                       \
+           module,                                        \
+           __FILE__,                                      \
+           __LINE__,                                      \
+           __func__,                                      \
+           message PW_COMMA_ARGS(__VA_ARGS__));           \
   } while (0)
 
 #ifdef __cplusplus

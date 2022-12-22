@@ -34,7 +34,8 @@ namespace pw::log_tokenized {
 namespace {
 
 TEST(LogTokenized, FormatString) {
-  PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(63, 1023, "hello %d", 1);
+  PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(
+      63, PW_LOG_MODULE_NAME, 1023, "hello %d", 1);
   EXPECT_STREQ(last_log.format_string,
                "■msg♦hello %d■module♦log module name!■file♦" __FILE__);
 }
@@ -49,10 +50,11 @@ TEST(LogTokenized, LogMetadata_LevelTooLarge_Clamps) {
     EXPECT_EQ(metadata.level(), 7u);
     EXPECT_EQ(metadata.flags(), 0u);
     EXPECT_EQ(metadata.module(), kModuleToken);
-    EXPECT_TRUE(metadata.line_number() == 55u || metadata.line_number() == 45u);
+    EXPECT_EQ(metadata.line_number(), 1000u);
   };
 
-  PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(8, 0, "hello");
+#line 1000
+  PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(8, PW_LOG_MODULE_NAME, 0, "");
   check_metadata();
 
   pw_log_tokenized_Test_LogMetadata_LevelTooLarge_Clamps();
@@ -65,10 +67,15 @@ TEST(LogTokenized, LogMetadata_TooManyFlags_Truncates) {
     EXPECT_EQ(metadata.level(), 1u);
     EXPECT_EQ(metadata.flags(), 0b11u);
     EXPECT_EQ(metadata.module(), kModuleToken);
-    EXPECT_TRUE(metadata.line_number() == 71u || metadata.line_number() == 49u);
+    EXPECT_EQ(metadata.line_number(), 1100u);
   };
 
-  PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(1, 0xFFFFFFFF, "hello");
+  // Keep statements on a single line, since GCC and Clang disagree about which
+  // line number to assign to multi-line macros.
+  // clang-format off
+#line 1100
+  PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(1, PW_LOG_MODULE_NAME, 0xFFFFFFFF, "hello");
+  // clang-format on
   check_metadata();
 
   pw_log_tokenized_Test_LogMetadata_TooManyFlags_Truncates();
@@ -82,10 +89,13 @@ TEST(LogTokenized, LogMetadata_VariousValues) {
     EXPECT_EQ(metadata.flags(), 3u);
     EXPECT_EQ(metadata.module(), kModuleToken);
     EXPECT_EQ(last_log.arg_count, 1u);
-    EXPECT_TRUE(metadata.line_number() == 88u || metadata.line_number() == 53u);
+    EXPECT_EQ(metadata.line_number(), 1200u);
   };
 
-  PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(6, 3, "hello%s", "?");
+  // clang-format off
+#line 1200
+  PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(6, PW_LOG_MODULE_NAME, 3, "hello%s", "?");
+  // clang-format on
   check_metadata();
 
   pw_log_tokenized_Test_LogMetadata_LogMetadata_VariousValues();
@@ -99,11 +109,11 @@ TEST(LogTokenized, LogMetadata_Zero) {
     EXPECT_EQ(metadata.flags(), 0u);
     EXPECT_EQ(metadata.module(), kModuleToken);
     EXPECT_EQ(last_log.arg_count, 0u);
-    EXPECT_TRUE(metadata.line_number() == 106u ||
-                metadata.line_number() == 57u);
+    EXPECT_EQ(metadata.line_number(), 1300u);
   };
 
-  PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(0, 0, "hello");
+#line 1300
+  PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(0, PW_LOG_MODULE_NAME, 0, "");
   check_metadata();
 
   pw_log_tokenized_Test_LogMetadata_LogMetadata_Zero();
@@ -112,27 +122,32 @@ TEST(LogTokenized, LogMetadata_Zero) {
 
 TEST(LogTokenized, LogMetadata_MaxValues) {
 #line 2047
-  PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(7, 3, "hello %d", 1);
+  PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(7, "name", 3, "hello %d", 1);
 
   Metadata metadata = Metadata(last_log.metadata);
   EXPECT_EQ(metadata.line_number(), 2047u);
   EXPECT_EQ(metadata.level(), 7u);
   EXPECT_EQ(metadata.flags(), 3u);
-  EXPECT_EQ(metadata.module(), kModuleToken);
+  EXPECT_EQ(metadata.module(),
+            PW_TOKENIZER_STRING_TOKEN("name") &
+                ((1u << PW_LOG_TOKENIZED_MODULE_BITS) - 1));
   EXPECT_EQ(last_log.arg_count, 1u);
 }
 
 TEST(LogTokenized, LogMetadata_LineNumberTooLarge_IsZero) {
 #line 2048  // At 11 bits, the largest representable line is 2047
-  PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(7, 3, "hello %d", 1);
+  PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(
+      7, PW_LOG_MODULE_NAME, 3, "hello %d", 1);
   EXPECT_EQ(Metadata(last_log.metadata).line_number(), 0u);
 
 #line 2049
-  PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(7, 3, "hello %d", 1);
+  PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(
+      7, PW_LOG_MODULE_NAME, 3, "hello %d", 1);
   EXPECT_EQ(Metadata(last_log.metadata).line_number(), 0u);
 
 #line 99999
-  PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(7, 3, "hello %d", 1);
+  PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(
+      7, PW_LOG_MODULE_NAME, 3, "hello %d", 1);
   EXPECT_EQ(Metadata(last_log.metadata).line_number(), 0u);
 }
 
