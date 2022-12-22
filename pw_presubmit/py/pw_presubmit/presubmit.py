@@ -217,7 +217,7 @@ class LuciPipeline:
 
 
 def get_buildbucket_info(bbid) -> Dict[str, Any]:
-    if not shutil.which('bb'):
+    if not bbid or not shutil.which('bb'):
         return {}
 
     output = subprocess.check_output(
