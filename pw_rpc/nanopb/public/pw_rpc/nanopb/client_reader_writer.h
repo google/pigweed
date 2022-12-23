@@ -103,10 +103,14 @@ class NanopbUnaryResponseClientCall : public UnaryResponseClientCall {
 
     UnaryResponseClientCall::set_on_completed_locked(
         [this](ConstByteSpan payload, Status status) {
-          if (nanopb_on_completed_) {
+          rpc_lock().lock();
+          auto nanopb_on_completed_local = std::move(nanopb_on_completed_);
+          rpc_lock().unlock();
+
+          if (nanopb_on_completed_local) {
             Response response_struct{};
             if (serde_->DecodeResponse(payload, &response_struct)) {
-              nanopb_on_completed_(response_struct, status);
+              nanopb_on_completed_local(response_struct, status);
             } else {
               // TODO(hepler): This should send a DATA_LOSS error and call the
               //     error callback.
@@ -118,7 +122,8 @@ class NanopbUnaryResponseClientCall : public UnaryResponseClientCall {
   }
 
   const NanopbMethodSerde* serde_;
-  Function<void(const Response&, Status)> nanopb_on_completed_;
+  Function<void(const Response&, Status)> nanopb_on_completed_
+      PW_GUARDED_BY(rpc_lock());
 };
 
 // Base class for server and bidirectional streaming calls.
