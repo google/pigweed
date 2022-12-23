@@ -93,6 +93,10 @@ class TestUnaryCall : public internal::UnaryResponseClientCall {
     set_on_error_locked([this](Status status) { error = status; });
   }
 
+  void clear_on_completed() PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock()) {
+    set_on_completed_locked(nullptr);
+  }
+
   const char* payload;
   std::optional<Status> completed;
   std::optional<Status> error;
@@ -112,6 +116,21 @@ TEST(Client, ProcessPacket_InvokesUnaryCallbacks) {
   ASSERT_NE(call.payload, nullptr);
   EXPECT_STREQ(call.payload, "you nary?!?");
   EXPECT_EQ(call.completed, OkStatus());
+  EXPECT_FALSE(call.active());
+}
+
+TEST(Client, ProcessPacket_NoCallbackSet) {
+  RawClientTestContext context;
+  internal::rpc_lock().lock();
+  TestUnaryCall call = MakeCall<UnaryMethod, TestUnaryCall>(context);
+  call.clear_on_completed();
+  call.SendInitialClientRequest({});
+
+  ASSERT_NE(call.completed, OkStatus());
+
+  context.server().SendResponse<UnaryMethod>(as_bytes(span("you nary?!?")),
+                                             OkStatus());
+  EXPECT_FALSE(call.active());
 }
 
 TEST(Client, ProcessPacket_InvokesStreamCallbacks) {

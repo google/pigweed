@@ -81,12 +81,12 @@ class UnaryResponseClientCall : public ClientCall {
 
   void HandleCompleted(ConstByteSpan response, Status status)
       PW_UNLOCK_FUNCTION(rpc_lock()) {
-    const bool invoke_callback = on_completed_ != nullptr;
     UnregisterAndMarkClosed();
-
+    auto on_completed_local = std::move(on_completed_);
     rpc_lock().unlock();
-    if (invoke_callback) {
-      on_completed_(response, status);
+
+    if (on_completed_local) {
+      on_completed_local(response, status);
     }
   }
 
@@ -120,7 +120,6 @@ class UnaryResponseClientCall : public ClientCall {
 
   void set_on_completed(Function<void(ConstByteSpan, Status)>&& on_completed)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    // TODO(b/234876851): Ensure on_completed_ is properly guarded.
     LockGuard lock(rpc_lock());
     set_on_completed_locked(std::move(on_completed));
   }
@@ -134,7 +133,7 @@ class UnaryResponseClientCall : public ClientCall {
  private:
   using internal::ClientCall::set_on_next;  // Not used in unary response calls.
 
-  Function<void(ConstByteSpan, Status)> on_completed_;
+  Function<void(ConstByteSpan, Status)> on_completed_ PW_GUARDED_BY(rpc_lock());
 };
 
 // Stream response client calls only receive the status in their on_completed
@@ -162,14 +161,12 @@ class StreamResponseClientCall : public ClientCall {
   }
 
   void HandleCompleted(Status status) PW_UNLOCK_FUNCTION(rpc_lock()) {
-    const bool invoke_callback = on_completed_ != nullptr;
-
     UnregisterAndMarkClosed();
+    auto on_completed_local = std::move(on_completed_);
     rpc_lock().unlock();
 
-    // TODO(b/234876851): Ensure on_completed_ is properly guarded.
-    if (invoke_callback) {
-      on_completed_(status);
+    if (on_completed_local) {
+      on_completed_local(status);
     }
   }
 
@@ -203,7 +200,6 @@ class StreamResponseClientCall : public ClientCall {
 
   void set_on_completed(Function<void(Status)>&& on_completed)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    // TODO(b/234876851): Ensure on_completed_ is properly guarded.
     LockGuard lock(rpc_lock());
     set_on_completed_locked(std::move(on_completed));
   }
@@ -214,7 +210,7 @@ class StreamResponseClientCall : public ClientCall {
   }
 
  private:
-  Function<void(Status)> on_completed_;
+  Function<void(Status)> on_completed_ PW_GUARDED_BY(rpc_lock());
 };
 
 }  // namespace pw::rpc::internal
