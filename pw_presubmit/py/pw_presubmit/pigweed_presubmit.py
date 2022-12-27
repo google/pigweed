@@ -866,11 +866,19 @@ def commit_message_format(_: PresubmitContext):
         _LOG.warning('Ignoring Copybara import')
         return
 
-    # Check that the lines are 72 characters or less, but skip any lines that
-    # might possibly have a URL, path, or metadata in them. Also skip any lines
-    # with non-ASCII characters.
+    # Check that the lines are 72 characters or less.
     for i, line in enumerate(lines[2:], 3):
-        if any(c in line for c in ':/>') or not line.isascii():
+        # Skip any lines that might possibly have a URL, path, or metadata in
+        # them.
+        if any(c in line for c in ':/>'):
+            continue
+
+        # Skip any lines with non-ASCII characters.
+        if not line.isascii():
+            continue
+
+        # Skip any blockquoted lines.
+        if line.startswith('  '):
             continue
 
         if len(line) > 72:
