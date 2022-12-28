@@ -24,6 +24,7 @@ pw_python_package("py") {
   ]
   sources = [
     "pw_presubmit/__init__.py",
+    "pw_presubmit/bazel_parser.py",
     "pw_presubmit/build.py",
     "pw_presubmit/cli.py",
     "pw_presubmit/cpp_checks.py",
@@ -44,6 +45,7 @@ pw_python_package("py") {
     "pw_presubmit/tools.py",
   ]
   tests = [
+    "bazel_parser_test.py",
     "git_repo_test.py",
     "gitmodules_test.py",
     "keep_sorted_test.py",

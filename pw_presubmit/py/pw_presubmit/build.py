@@ -38,6 +38,7 @@ from typing import (
 
 from pw_package import package_manager
 from pw_presubmit import (
+    bazel_parser,
     call,
     Check,
     FileFilter,
@@ -68,19 +69,31 @@ def bazel(ctx: PresubmitContext, cmd: str, *args: str) -> None:
     if ctx.continue_after_build_error:
         keep_going.append('--keep_going')
 
-    call(
-        'bazel',
-        cmd,
-        '--verbose_failures',
-        '--verbose_explanations',
-        '--worker_verbose',
-        f'--symlink_prefix={ctx.output_dir / ".bazel-"}',
-        *num_jobs,
-        *keep_going,
-        *args,
-        cwd=ctx.root,
-        env=env_with_clang_vars(),
-    )
+    bazel_stdout = ctx.output_dir / 'bazel.stdout'
+    try:
+        with bazel_stdout.open('w') as outs:
+            call(
+                'bazel',
+                cmd,
+                '--verbose_failures',
+                '--verbose_explanations',
+                '--worker_verbose',
+                f'--symlink_prefix={ctx.output_dir / ".bazel-"}',
+                *num_jobs,
+                *keep_going,
+                *args,
+                cwd=ctx.root,
+                env=env_with_clang_vars(),
+                tee=outs,
+            )
+
+    except PresubmitFailure as exc:
+        failure = bazel_parser.parse_bazel_stdout(bazel_stdout)
+        if failure:
+            with ctx.failure_summary_log.open('w') as outs:
+                outs.write(failure)
+
+        raise exc
 
 
 def install_package(ctx: PresubmitContext, name: str) -> None:
