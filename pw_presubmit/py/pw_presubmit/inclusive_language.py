@@ -153,17 +153,17 @@ def presubmit_check(
             # File is not text, like a gif.
             pass
 
-    with open(ctx.failure_summary_log, 'w') as outs:
-        for i, (path, matches) in enumerate(found_words.items()):
-            if i:
-                print('=' * 40, file=outs)
-            print(path, file=outs)
-            for match in matches:
-                print(match, file=outs)
-
-    print(ctx.failure_summary_log.read_text(), end=None)
-
     if found_words:
+        with open(ctx.failure_summary_log, 'w') as outs:
+            for i, (path, matches) in enumerate(found_words.items()):
+                if i:
+                    print('=' * 40, file=outs)
+                print(path, file=outs)
+                for match in matches:
+                    print(match, file=outs)
+
+        print(ctx.failure_summary_log.read_text(), end=None)
+
         print()
         print(
             """
