@@ -64,10 +64,8 @@ FAILED: Build did NOT complete successfully
 
 _REAL_TEST_SUMMARY = """
 ERROR: /usr/local/google/home/mohrr/pigweed/pigweed/pw_kvs/BUILD.bazel:25:14: Compiling pw_kvs/entry.cc failed: (Exit 1): gcc failed: error executing command
-# Configuration: 752863e407a197a5b9da05cfc572e7013efd6958e856cee61d2fa474ed...
 # Execution platform: @local_config_platform//:host
 
-Use --sandbox_debug to see verbose messages from the sandbox and retain the sandbox build root for debugging
 pw_kvs/entry.cc:49:20: error: no member named 'Dat' in 'pw::Status'
     return Status::Dat aLoss();
            ~~~~~~~~^

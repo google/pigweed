@@ -42,6 +42,12 @@ def parse_bazel_stdout(bazel_stdout: Path) -> str:
                 if line.strip().startswith(('(cd /', 'exec env')):
                     continue
 
+                if line.strip().startswith('Use --sandbox_debug to see'):
+                    continue
+
+                if line.strip().startswith('# Configuration'):
+                    continue
+
                 # An "<ALLCAPS>:" line usually means compiler output is done
                 # and useful compiler errors are complete.
                 if re.match(r'^(?!ERROR)[A-Z]+:', line):
