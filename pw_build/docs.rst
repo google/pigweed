@@ -786,6 +786,42 @@ on without an error.
 
 The templates for build time errors are defined in ``pw_build/error.gni``.
 
+Improved Ninja progress output
+------------------------------
+Ninja includes a basic progress display, showing in a single line the number of
+targets finished, the total number of targets, and the name of the most recent
+target it has either started or finished.
+
+For additional insight into the status of the build, Pigweed includes a Ninja
+wrapper, ``pw-wrap-ninja``, that displays additional real-time information about
+the progress of the build. The wrapper is invoked the same way you'd normally
+invoke Ninja:
+
+.. code-block:: sh
+
+  pw-wrap-ninja -C out
+
+The script lists the progress of the build, as well as the list of targets that
+Ninja is currently building, along with a timer that measures how long each
+target has been building for:
+
+.. code-block::
+
+  [51.3s] Building [8924/10690] ...
+    [10.4s] c++ pw_strict_host_clang_debug/obj/pw_string/string_test.lib.string_test.cc.o
+    [ 9.5s] ACTION //pw_console/py:py.lint.mypy(//pw_build/python_toolchain:python)
+    [ 9.4s] ACTION //pw_console/py:py.lint.pylint(//pw_build/python_toolchain:python)
+    [ 6.1s] clang-tidy ../pw_log_rpc/log_service.cc
+    [ 6.1s] clang-tidy ../pw_log_rpc/log_service_test.cc
+    [ 6.1s] clang-tidy ../pw_log_rpc/rpc_log_drain.cc
+    [ 6.1s] clang-tidy ../pw_log_rpc/rpc_log_drain_test.cc
+    [ 5.4s] c++ pw_strict_host_clang_debug/obj/BUILD_DIR/pw_strict_host_clang_debug/gen/pw...
+    ... and 109 more
+
+This allows you to, at a glance, know what Ninja's currently building, which
+targets are bottlenecking the rest of the build, and which targets are taking
+an unusually long time to complete.
+
 CMake
 =====
 Pigweed's `CMake`_ support is provided primarily for projects that have an
