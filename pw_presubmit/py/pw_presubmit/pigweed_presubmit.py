@@ -114,53 +114,13 @@ def gn_clang_build(ctx: PresubmitContext):
     build.ninja(ctx, *build_targets)
 
 
-@_BUILD_FILE_FILTER.apply_to_check()
-def gn_gcc_build(ctx: PresubmitContext):
-    build.gn_gen(ctx, pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS)
-    build.ninja(ctx, *_at_all_optimization_levels('host_gcc'))
-
-
 _HOST_COMPILER = 'gcc' if sys.platform == 'win32' else 'clang'
-
-
-def gn_host_build(ctx: PresubmitContext):
-    build.gn_gen(ctx, pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS)
-    build.ninja(ctx, *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'))
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_quick_build_check(ctx: PresubmitContext):
     """Checks the state of the GN build by running gn gen and gn check."""
     build.gn_gen(ctx)
-
-
-@_BUILD_FILE_FILTER.apply_to_check()
-def gn_full_build_check(ctx: PresubmitContext) -> None:
-    build_targets = [
-        *_at_all_optimization_levels('stm32f429i'),
-        *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'),
-        'python.tests',
-        'python.lint',
-        'docs',
-        'fuzzers',
-        'pigweed_pypi_distribution',
-    ]
-
-    # TODO(b/234645359): Re-enable on Windows when compatibility tests build.
-    if sys.platform != 'win32':
-        build_targets.append('cpp14_compatibility')
-        build_targets.append('cpp20_compatibility')
-
-    # TODO(b/240982565): SocketStream currently requires Linux.
-    if sys.platform.startswith('linux'):
-        build_targets.append('integration_tests')
-
-    build.gn_gen(
-        ctx,
-        pw_unit_test_FACADE_TESTS_ENABLED=True,
-        pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
-    )
-    build.ninja(ctx, *build_targets)
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
@@ -234,23 +194,6 @@ def stm32f429i(ctx: PresubmitContext):
     )
     with build.test_server('stm32f429i_disc1_test_server', ctx.output_dir):
         build.ninja(ctx, *_at_all_optimization_levels('stm32f429i'))
-
-
-@_BUILD_FILE_FILTER.apply_to_check()
-def gn_boringssl_build(ctx: PresubmitContext):
-    build.install_package(ctx, 'boringssl')
-    build.gn_gen(
-        ctx,
-        dir_pw_third_party_boringssl='"{}"'.format(
-            ctx.package_root / 'boringssl'
-        ),
-        pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
-    )
-    build.ninja(
-        ctx,
-        *_at_all_optimization_levels('stm32f429i'),
-        *_at_all_optimization_levels('host_clang'),
-    )
 
 
 gn_nanopb_build = build.GnGenNinja(
@@ -415,18 +358,6 @@ def gn_pw_system_demo_build(ctx: PresubmitContext):
     build.ninja(ctx, 'pw_system_demo')
 
 
-@_BUILD_FILE_FILTER.apply_to_check()
-def gn_qemu_build(ctx: PresubmitContext):
-    build.gn_gen(ctx, pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS)
-    build.ninja(ctx, *_at_all_optimization_levels('qemu_gcc'))
-
-
-@_BUILD_FILE_FILTER.apply_to_check()
-def gn_qemu_clang_build(ctx: PresubmitContext):
-    build.gn_gen(ctx, pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS)
-    build.ninja(ctx, *_at_all_optimization_levels('qemu_clang'))
-
-
 def gn_docs_build(ctx: PresubmitContext):
     build.gn_gen(ctx)
     build.ninja(ctx, 'docs')
@@ -435,12 +366,6 @@ def gn_docs_build(ctx: PresubmitContext):
 def gn_host_tools(ctx: PresubmitContext):
     build.gn_gen(ctx)
     build.ninja(ctx, 'host_tools')
-
-
-@filter_paths(endswith=format_code.C_FORMAT.extensions)
-def oss_fuzz_build(ctx: PresubmitContext):
-    build.gn_gen(ctx, pw_toolchain_OSS_FUZZ_ENABLED=True)
-    build.ninja(ctx, "fuzzers")
 
 
 def _run_cmake(ctx: PresubmitContext, toolchain='host_clang') -> None:
@@ -967,15 +892,9 @@ OTHER_CHECKS = (
     cmake_clang,
     cmake_gcc,
     gitmodules.create(),
-    gn_boringssl_build,
     gn_clang_build,
     gn_combined_build_check,
-    gn_full_build_check,
-    gn_full_qemu_check,
-    gn_gcc_build,
     npm_presubmit.npm_test,
-    # Attempts to duplicate OSS-Fuzz. Currently failing.
-    oss_fuzz_build,
     pw_transfer_integration_test,
     static_analysis,
     stm32f429i,
@@ -1046,19 +965,10 @@ QUICK = (
 
 FULL = (
     _LINTFORMAT,
-    gn_host_build,
-    gn_arm_build,
-    gn_docs_build,
+    gn_combined_build_check,
     gn_host_tools,
     bazel_test if sys.platform == 'linux' else (),
     bazel_build if sys.platform == 'linux' else (),
-    # On Mac OS, system 'gcc' is a symlink to 'clang' by default, so skip GCC
-    # host builds on Mac for now. Skip it on Windows too, since gn_host_build
-    # already uses 'gcc' on Windows.
-    gn_gcc_build if sys.platform not in ('darwin', 'win32') else (),
-    # Windows doesn't support QEMU yet.
-    gn_qemu_build if sys.platform != 'win32' else (),
-    gn_qemu_clang_build if sys.platform != 'win32' else (),
     source_is_in_build_files,
     python_checks.gn_python_check,
     python_checks.gn_python_test_coverage,
