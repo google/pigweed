@@ -491,7 +491,7 @@ class FakeController final : public ControllerTestDoubleBase {
   void OnReset();
 
   // Called when a HCI_Inquiry command is received.
-  void OnInquiry(hci_spec::InquiryCommandView params);
+  void OnInquiry(const hci_spec::InquiryCommandView& params);
 
   // Called when a HCI_LE_Set_Scan_Enable command is received.
   void OnLESetScanEnable(const hci_spec::LESetScanEnableCommandParams& params);
@@ -503,7 +503,7 @@ class FakeController final : public ControllerTestDoubleBase {
   void OnReadLocalExtendedFeatures(const hci_spec::ReadLocalExtendedFeaturesCommandParams& params);
 
   // Called when a HCI_SetEventMask command is received.
-  void OnSetEventMask(hci_spec::SetEventMaskCommandView params);
+  void OnSetEventMask(const hci_spec::SetEventMaskCommandView& params);
 
   // Called when a HCI_LE_Set_Event_Mask command is received.
   void OnLESetEventMask(const hci_spec::LESetEventMaskCommandParams& params);
@@ -545,13 +545,13 @@ class FakeController final : public ControllerTestDoubleBase {
   void OnWriteClassOfDevice(const hci_spec::WriteClassOfDeviceCommandParams& params);
 
   // Called when a HCI_Write_Page_Scan_Activity command is received.
-  void OnWritePageScanActivity(hci_spec::WritePageScanActivityCommandView params);
+  void OnWritePageScanActivity(const hci_spec::WritePageScanActivityCommandView& params);
 
   // Called when a HCI_Read_Page_Scan_Activity command is received.
   void OnReadPageScanActivity();
 
   // Called when a HCI_Write_Scan_Enable command is received.
-  void OnWriteScanEnable(hci_spec::WriteScanEnableCommandView params);
+  void OnWriteScanEnable(const hci_spec::WriteScanEnableCommandView& params);
 
   // Called when a HCI_Read_Scan_Enable command is received.
   void OnReadScanEnable();
@@ -560,7 +560,7 @@ class FakeController final : public ControllerTestDoubleBase {
   void OnReadLocalName();
 
   // Called when a HCI_Write_Local_Name command is received.
-  void OnWriteLocalName(hci_spec::WriteLocalNameCommandView params);
+  void OnWriteLocalName(const hci_spec::WriteLocalNameCommandView& params);
 
   // Called when a HCI_Create_Connection_Cancel command is received.
   void OnCreateConnectionCancel();
@@ -631,34 +631,36 @@ class FakeController final : public ControllerTestDoubleBase {
   // Interrogation command handlers:
 
   // Called when a HCI_Read_Remote_Name_Request command is received.
-  void OnReadRemoteNameRequestCommandReceived(hci_spec::RemoteNameRequestCommandView params);
+  void OnReadRemoteNameRequestCommandReceived(const hci_spec::RemoteNameRequestCommandView& params);
 
   // Called when a HCI_Read_Remote_Supported_Features command is received.
   void OnReadRemoteSupportedFeaturesCommandReceived(
-      hci_spec::ReadRemoteSupportedFeaturesCommandView params);
+      const hci_spec::ReadRemoteSupportedFeaturesCommandView& params);
 
   // Called when a HCI_Read_Remote_Version_Information command is received.
-  void OnReadRemoteVersionInfoCommandReceived(hci_spec::ReadRemoteVersionInfoCommandView params);
+  void OnReadRemoteVersionInfoCommandReceived(
+      const hci_spec::ReadRemoteVersionInfoCommandView& params);
 
   // Called when a HCI_Read_Remote_Extended_Features command is received.
   void OnReadRemoteExtendedFeaturesCommandReceived(
-      hci_spec::ReadRemoteExtendedFeaturesCommandView params);
+      const hci_spec::ReadRemoteExtendedFeaturesCommandView& params);
 
   // Pairing command handlers:
 
   // Called when a HCI_Authentication_Requested command is received.
   void OnAuthenticationRequestedCommandReceived(
-      hci_spec::AuthenticationRequestedCommandView params);
+      const hci_spec::AuthenticationRequestedCommandView& params);
 
   // Called when a HCI_Link_Key_Request_Reply command is received.
-  void OnLinkKeyRequestReplyCommandReceived(hci_spec::LinkKeyRequestReplyCommandView params);
+  void OnLinkKeyRequestReplyCommandReceived(const hci_spec::LinkKeyRequestReplyCommandView& params);
 
   // Called when a HCI_Link_Key_Request_Negative_Reply command is received.
   void OnLinkKeyRequestNegativeReplyCommandReceived(
-      hci_spec::LinkKeyRequestNegativeReplyCommandView params);
+      const hci_spec::LinkKeyRequestNegativeReplyCommandView& params);
 
   // Called when a HCI_IO_Capability_Request_Reply command is received.
-  void OnIOCapabilityRequestReplyCommand(hci_spec::IoCapabilityRequestReplyCommandView params);
+  void OnIOCapabilityRequestReplyCommand(
+      const hci_spec::IoCapabilityRequestReplyCommandView& params);
 
   // Called when a HCI_User_Confirmation_Request_Reply command is received.
   void OnUserConfirmationRequestReplyCommand(
@@ -669,18 +671,18 @@ class FakeController final : public ControllerTestDoubleBase {
       const hci_spec::UserConfirmationRequestNegativeReplyCommandParams& params);
 
   // Called when a HCI_Set_Connection_Encryption command is received.
-  void OnSetConnectionEncryptionCommand(hci_spec::SetConnectionEncryptionCommandView params);
+  void OnSetConnectionEncryptionCommand(const hci_spec::SetConnectionEncryptionCommandView& params);
 
   // Called when a HCI_Read_Encryption_Key_Size command is received.
   void OnReadEncryptionKeySizeCommand(const hci_spec::ReadEncryptionKeySizeParams& params);
 
   // Called when a HCI_Enhanced_Accept_Synchronous_Connection_Request command is received.
   void OnEnhancedAcceptSynchronousConnectionRequestCommand(
-      hci_spec::EnhancedAcceptSynchronousConnectionRequestCommandView params);
+      const hci_spec::EnhancedAcceptSynchronousConnectionRequestCommandView& params);
 
   // Called when a HCI_Enhanced_Setup_Synchronous_Connection command is received.
   void OnEnhancedSetupSynchronousConnectionCommand(
-      hci_spec::EnhancedSetupSynchronousConnectionCommandView params);
+      const hci_spec::EnhancedSetupSynchronousConnectionCommandView& params);
 
   // Called when a HCI_LE_Read_Remote_Features_Command is received.
   void OnLEReadRemoteFeaturesCommand(const hci_spec::LEReadRemoteFeaturesCommandParams& params);
@@ -722,7 +724,7 @@ class FakeController final : public ControllerTestDoubleBase {
   // Respond to a command packet. This may be done immediately upon reception or via a client-
   // triggered callback if pause_responses_for_opcode has been called for that command's opcode.
   void HandleReceivedCommandPacket(const PacketView<hci_spec::CommandHeader>& command_packet);
-  void HandleReceivedCommandPacket(hci::EmbossCommandPacket& command_packet);
+  void HandleReceivedCommandPacket(const hci::EmbossCommandPacket& command_packet);
 
   void OnCommandPacketReceived(const PacketView<hci_spec::CommandHeader>& command_packet);
   void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet);

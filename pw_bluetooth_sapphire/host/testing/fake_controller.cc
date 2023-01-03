@@ -899,7 +899,7 @@ void FakeController::OnReset() {
   RespondWithCommandComplete(hci_spec::kReset, hci_spec::StatusCode::SUCCESS);
 }
 
-void FakeController::OnInquiry(hci_spec::InquiryCommandView params) {
+void FakeController::OnInquiry(const hci_spec::InquiryCommandView& params) {
   // Confirm that LAP array is equal to either kGIAC or kLIAC.
   if (params.lap().Read() != hci_spec::InquiryAccessCode::GIAC &&
       params.lap().Read() != hci_spec::InquiryAccessCode::LIAC) {
@@ -1000,7 +1000,7 @@ void FakeController::OnReadLocalExtendedFeatures(
                              BufferView(&out_params, sizeof(out_params)));
 }
 
-void FakeController::OnSetEventMask(hci_spec::SetEventMaskCommandView params) {
+void FakeController::OnSetEventMask(const hci_spec::SetEventMaskCommandView& params) {
   settings_.event_mask = params.event_mask().Read();
   RespondWithCommandComplete(hci_spec::kSetEventMask, hci_spec::StatusCode::SUCCESS);
 }
@@ -1129,7 +1129,8 @@ void FakeController::OnWriteClassOfDevice(const hci_spec::WriteClassOfDeviceComm
   RespondWithCommandComplete(hci_spec::kWriteClassOfDevice, hci_spec::StatusCode::SUCCESS);
 }
 
-void FakeController::OnWritePageScanActivity(hci_spec::WritePageScanActivityCommandView params) {
+void FakeController::OnWritePageScanActivity(
+    const hci_spec::WritePageScanActivityCommandView& params) {
   page_scan_interval_ = params.page_scan_interval().Read();
   page_scan_window_ = params.page_scan_window().Read();
   RespondWithCommandComplete(hci_spec::kWritePageScanActivity, hci_spec::StatusCode::SUCCESS);
@@ -1143,7 +1144,7 @@ void FakeController::OnReadPageScanActivity() {
   RespondWithCommandComplete(hci_spec::kReadPageScanActivity, BufferView(&params, sizeof(params)));
 }
 
-void FakeController::OnWriteScanEnable(hci_spec::WriteScanEnableCommandView params) {
+void FakeController::OnWriteScanEnable(const hci_spec::WriteScanEnableCommandView& params) {
   bredr_scan_state_ = params.scan_enable().BackingStorage().ReadUInt();
   RespondWithCommandComplete(hci_spec::kWriteScanEnable, hci_spec::StatusCode::SUCCESS);
 }
@@ -1164,7 +1165,7 @@ void FakeController::OnReadLocalName() {
   RespondWithCommandComplete(hci_spec::kReadLocalName, BufferView(&params, sizeof(params)));
 }
 
-void FakeController::OnWriteLocalName(hci_spec::WriteLocalNameCommandView params) {
+void FakeController::OnWriteLocalName(const hci_spec::WriteLocalNameCommandView& params) {
   std::size_t name_len = 0;
 
   auto local_name = params.local_name().BackingStorage().data();
@@ -1355,7 +1356,7 @@ void FakeController::OnReadLocalVersionInfo() {
 }
 
 void FakeController::OnReadRemoteNameRequestCommandReceived(
-    hci_spec::RemoteNameRequestCommandView params) {
+    const hci_spec::RemoteNameRequestCommandView& params) {
   const DeviceAddress peer_address(DeviceAddress::Type::kBREDR,
                                    DeviceAddressBytes(params.bd_addr()));
 
@@ -1382,7 +1383,7 @@ void FakeController::OnReadRemoteNameRequestCommandReceived(
 }
 
 void FakeController::OnReadRemoteSupportedFeaturesCommandReceived(
-    hci_spec::ReadRemoteSupportedFeaturesCommandView params) {
+    const hci_spec::ReadRemoteSupportedFeaturesCommandView& params) {
   RespondWithCommandStatus(hci_spec::kReadRemoteSupportedFeatures, hci_spec::StatusCode::SUCCESS);
 
   hci_spec::ReadRemoteSupportedFeaturesCompleteEventParams response = {};
@@ -1394,7 +1395,7 @@ void FakeController::OnReadRemoteSupportedFeaturesCommandReceived(
 }
 
 void FakeController::OnReadRemoteVersionInfoCommandReceived(
-    hci_spec::ReadRemoteVersionInfoCommandView params) {
+    const hci_spec::ReadRemoteVersionInfoCommandView& params) {
   RespondWithCommandStatus(hci_spec::kReadRemoteVersionInfo, hci_spec::StatusCode::SUCCESS);
 
   hci_spec::ReadRemoteVersionInfoCompleteEventParams response = {};
@@ -1408,7 +1409,7 @@ void FakeController::OnReadRemoteVersionInfoCommandReceived(
 }
 
 void FakeController::OnReadRemoteExtendedFeaturesCommandReceived(
-    hci_spec::ReadRemoteExtendedFeaturesCommandView params) {
+    const hci_spec::ReadRemoteExtendedFeaturesCommandView& params) {
   hci_spec::ReadRemoteExtendedFeaturesCompleteEventParams response = {};
 
   switch (params.page_number().Read()) {
@@ -1434,7 +1435,7 @@ void FakeController::OnReadRemoteExtendedFeaturesCommandReceived(
 }
 
 void FakeController::OnAuthenticationRequestedCommandReceived(
-    hci_spec::AuthenticationRequestedCommandView params) {
+    const hci_spec::AuthenticationRequestedCommandView& params) {
   hci_spec::ConnectionHandle handle = params.connection_handle().Read();
   FakePeer* peer = FindByConnHandle(handle);
   if (!peer) {
@@ -1451,7 +1452,7 @@ void FakeController::OnAuthenticationRequestedCommandReceived(
 }
 
 void FakeController::OnLinkKeyRequestReplyCommandReceived(
-    const hci_spec::LinkKeyRequestReplyCommandView params) {
+    const hci_spec::LinkKeyRequestReplyCommandView& params) {
   DeviceAddress peer_address(DeviceAddress::Type::kBREDR, DeviceAddressBytes(params.bd_addr()));
   FakePeer* peer = FindPeer(peer_address);
   if (!peer) {
@@ -1474,7 +1475,7 @@ void FakeController::OnLinkKeyRequestReplyCommandReceived(
 }
 
 void FakeController::OnLinkKeyRequestNegativeReplyCommandReceived(
-    hci_spec::LinkKeyRequestNegativeReplyCommandView params) {
+    const hci_spec::LinkKeyRequestNegativeReplyCommandView& params) {
   FakePeer* peer =
       FindPeer(DeviceAddress(DeviceAddress::Type::kBREDR, DeviceAddressBytes(params.bd_addr())));
   if (!peer) {
@@ -1490,7 +1491,7 @@ void FakeController::OnLinkKeyRequestNegativeReplyCommandReceived(
 }
 
 void FakeController::OnIOCapabilityRequestReplyCommand(
-    hci_spec::IoCapabilityRequestReplyCommandView params) {
+    const hci_spec::IoCapabilityRequestReplyCommandView& params) {
   RespondWithCommandStatus(hci_spec::kIOCapabilityRequestReply, hci_spec::StatusCode::SUCCESS);
 
   hci_spec::IOCapabilityResponseEventParams io_response = {};
@@ -1568,7 +1569,7 @@ void FakeController::OnUserConfirmationRequestNegativeReplyCommand(
 }
 
 void FakeController::OnSetConnectionEncryptionCommand(
-    hci_spec::SetConnectionEncryptionCommandView params) {
+    const hci_spec::SetConnectionEncryptionCommandView& params) {
   RespondWithCommandStatus(hci_spec::kSetConnectionEncryption, hci_spec::StatusCode::SUCCESS);
 
   hci_spec::EncryptionChangeEventParams response;
@@ -1589,7 +1590,7 @@ void FakeController::OnReadEncryptionKeySizeCommand(
 }
 
 void FakeController::OnEnhancedAcceptSynchronousConnectionRequestCommand(
-    hci_spec::EnhancedAcceptSynchronousConnectionRequestCommandView params) {
+    const hci_spec::EnhancedAcceptSynchronousConnectionRequestCommandView& params) {
   DeviceAddress peer_address(DeviceAddress::Type::kBREDR, DeviceAddressBytes(params.bd_addr()));
   FakePeer* peer = FindPeer(peer_address);
   if (!peer || !peer->last_connection_request_link_type().has_value()) {
@@ -1620,7 +1621,7 @@ void FakeController::OnEnhancedAcceptSynchronousConnectionRequestCommand(
 }
 
 void FakeController::OnEnhancedSetupSynchronousConnectionCommand(
-    hci_spec::EnhancedSetupSynchronousConnectionCommandView params) {
+    const hci_spec::EnhancedSetupSynchronousConnectionCommandView& params) {
   const hci_spec::ConnectionHandle acl_handle = params.connection_handle().Read();
   FakePeer* peer = FindByConnHandle(acl_handle);
   if (!peer) {
@@ -3022,7 +3023,7 @@ void FakeController::HandleReceivedCommandPacket(
   }
 }
 
-void FakeController::HandleReceivedCommandPacket(hci::EmbossCommandPacket& command_packet) {
+void FakeController::HandleReceivedCommandPacket(const hci::EmbossCommandPacket& command_packet) {
   hci_spec::OpCode opcode = command_packet.opcode();
 
   if (MaybeRespondWithDefaultCommandStatus(opcode)) {

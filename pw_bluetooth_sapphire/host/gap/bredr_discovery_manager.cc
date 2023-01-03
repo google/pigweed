@@ -217,7 +217,7 @@ void BrEdrDiscoveryManager::StopInquiry() {
   BT_DEBUG_ASSERT(result_handler_id_);
   bt_log(TRACE, "gap-bredr", "cancelling inquiry");
 
-  hci::EmbossCommandPacket inq_cancel =
+  const hci::EmbossCommandPacket inq_cancel =
       hci::EmbossCommandPacket::New<hci_spec::InquiryCancelCommandView>(hci_spec::kInquiryCancel);
   cmd_->SendCommand(std::move(inq_cancel), [](int64_t, const auto& event) {
     // Warn if the command failed.
