@@ -1052,7 +1052,7 @@ class Check:
         """
         result: PresubmitResult
         for substep in self.substeps():
-            result = substep(ctx)
+            result = self._try_call(substep, ctx)
             if result and result != PresubmitResult.PASS:
                 return result
         return PresubmitResult.PASS
