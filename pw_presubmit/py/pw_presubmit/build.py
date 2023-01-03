@@ -526,9 +526,7 @@ class GnGenNinja(Check):
         super().__init__(self._substeps(), *args, **kwargs)
         self.packages: Sequence[str] = packages
         self.gn_args: Dict[str, Any] = gn_args or {}
-        self.ninja_contexts: Tuple[
-            Union[ContextManager, _CtxMgrLambda], ...
-        ] = tuple(ninja_contexts)
+        self.ninja_contexts: Tuple[_CtxMgrOrLambda, ...] = tuple(ninja_contexts)
 
         ninja_targets = list(ninja_targets)
         all_strings = all(isinstance(x, str) for x in ninja_targets)
@@ -590,11 +588,14 @@ class GnGenNinja(Check):
         self, ctx: PresubmitContext, targets: Sequence[str]
     ) -> PresubmitResult:
         with contextlib.ExitStack() as stack:
-            for ctx_mgr in self.ninja_contexts:
-                if hasattr(ctx_mgr, '__enter__'):
-                    stack.enter_context(ctx_mgr)  # type: ignore
+            for mgr in self.ninja_contexts:
+                # hasattr(x, '__enter__') can return True for types, so
+                # explicitly exclude them. Only non-type objects can be
+                # context managers.
+                if hasattr(mgr, '__enter__') and not isinstance(mgr, type):
+                    stack.enter_context(mgr)  # type: ignore
                 else:
-                    stack.enter_context(ctx_mgr(ctx))  # type: ignore
+                    stack.enter_context(mgr(ctx))  # type: ignore
             ninja(ctx, *targets)
         return PresubmitResult.PASS
 
