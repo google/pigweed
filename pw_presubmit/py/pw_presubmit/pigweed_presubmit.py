@@ -353,14 +353,12 @@ def gn_pw_system_demo_build(ctx: PresubmitContext):
     build.ninja(ctx, 'pw_system_demo')
 
 
-def gn_docs_build(ctx: PresubmitContext):
-    build.gn_gen(ctx)
-    build.ninja(ctx, 'docs')
+gn_docs_build = build.GnGenNinja(name='gn_docs_build', ninja_targets=('docs',))
 
-
-def gn_host_tools(ctx: PresubmitContext):
-    build.gn_gen(ctx)
-    build.ninja(ctx, 'host_tools')
+gn_host_tools = build.GnGenNinja(
+    name='gn_host_tools',
+    ninja_targets=('host_tools',),
+)
 
 
 def _run_cmake(ctx: PresubmitContext, toolchain='host_clang') -> None:
