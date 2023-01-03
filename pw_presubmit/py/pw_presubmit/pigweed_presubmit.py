@@ -304,34 +304,33 @@ def gn_pico_build(ctx: PresubmitContext):
     build.ninja(ctx, 'pi_pico')
 
 
-@_BUILD_FILE_FILTER.apply_to_check()
-def gn_software_update_build(ctx: PresubmitContext):
-    build.install_package(ctx, 'nanopb')
-    build.install_package(ctx, 'protobuf')
-    build.install_package(ctx, 'mbedtls')
-    build.install_package(ctx, 'micro-ecc')
-    build.gn_gen(
-        ctx,
-        dir_pw_third_party_protobuf='"{}"'.format(
+gn_software_update_build = build.GnGenNinja(
+    name='gn_software_update_build',
+    path_filter=_BUILD_FILE_FILTER,
+    packages=('nanopb', 'protobuf', 'mbedtls', 'micro-ecc'),
+    gn_args={
+        'dir_pw_third_party_protobuf': lambda ctx: '"{}"'.format(
             ctx.package_root / 'protobuf'
         ),
-        dir_pw_third_party_nanopb='"{}"'.format(ctx.package_root / 'nanopb'),
-        dir_pw_third_party_micro_ecc='"{}"'.format(
+        'dir_pw_third_party_nanopb': lambda ctx: '"{}"'.format(
+            ctx.package_root / 'nanopb'
+        ),
+        'dir_pw_third_party_micro_ecc': lambda ctx: '"{}"'.format(
             ctx.package_root / 'micro-ecc'
         ),
-        pw_crypto_ECDSA_BACKEND='"{}"'.format(
+        'pw_crypto_ECDSA_BACKEND': lambda ctx: '"{}"'.format(
             ctx.root / 'pw_crypto:ecdsa_uecc'
         ),
-        dir_pw_third_party_mbedtls='"{}"'.format(ctx.package_root / 'mbedtls'),
-        pw_crypto_SHA256_BACKEND='"{}"'.format(
+        'dir_pw_third_party_mbedtls': lambda ctx: '"{}"'.format(
+            ctx.package_root / 'mbedtls'
+        ),
+        'pw_crypto_SHA256_BACKEND': lambda ctx: '"{}"'.format(
             ctx.root / 'pw_crypto:sha256_mbedtls'
         ),
-        pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
-    )
-    build.ninja(
-        ctx,
-        *_at_all_optimization_levels('host_clang'),
-    )
+        'pw_C_OPTIMIZATION_LEVELS': _OPTIMIZATION_LEVELS,
+    },
+    ninja_targets=_at_all_optimization_levels('host_clang'),
+)
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
