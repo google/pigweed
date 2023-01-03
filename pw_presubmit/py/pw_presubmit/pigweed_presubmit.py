@@ -212,75 +212,71 @@ gn_nanopb_build = build.GnGenNinja(
     ),
 )
 
-
-@_BUILD_FILE_FILTER.apply_to_check()
-def gn_crypto_mbedtls_build(ctx: PresubmitContext):
-    build.install_package(ctx, 'mbedtls')
-    build.gn_gen(
-        ctx,
-        dir_pw_third_party_mbedtls='"{}"'.format(ctx.package_root / 'mbedtls'),
-        pw_crypto_SHA256_BACKEND='"{}"'.format(
+gn_crypto_mbedtls_build = build.GnGenNinja(
+    name='gn_crypto_mbedtls_build',
+    path_filter=_BUILD_FILE_FILTER,
+    packages=('mbedtls',),
+    gn_args={
+        'dir_pw_third_party_mbedtls': lambda ctx: '"{}"'.format(
+            ctx.package_root / 'mbedtls'
+        ),
+        'pw_crypto_SHA256_BACKEND': lambda ctx: '"{}"'.format(
             ctx.root / 'pw_crypto:sha256_mbedtls'
         ),
-        pw_crypto_ECDSA_BACKEND='"{}"'.format(
+        'pw_crypto_ECDSA_BACKEND': lambda ctx: '"{}"'.format(
             ctx.root / 'pw_crypto:ecdsa_mbedtls'
         ),
-        pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
-    )
-    build_targets = [*_at_all_optimization_levels(f'host_{_HOST_COMPILER}')]
+        'pw_C_OPTIMIZATION_LEVELS': _OPTIMIZATION_LEVELS,
+    },
+    ninja_targets=(
+        *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'),
+        # TODO(b/240982565): SocketStream currently requires Linux.
+        *(('integration_tests',) if sys.platform.startswith('linux') else ()),
+    ),
+)
 
-    # TODO(b/240982565): SocketStream currently requires Linux.
-    if sys.platform.startswith('linux'):
-        build_targets.append('integration_tests')
-
-    build.ninja(ctx, *build_targets)
-
-
-@_BUILD_FILE_FILTER.apply_to_check()
-def gn_crypto_boringssl_build(ctx: PresubmitContext):
-    build.install_package(ctx, 'boringssl')
-    build.gn_gen(
-        ctx,
-        dir_pw_third_party_boringssl='"{}"'.format(
+gn_crypto_boringssl_build = build.GnGenNinja(
+    name='gn_crypto_boringssl_build',
+    path_filter=_BUILD_FILE_FILTER,
+    packages=('boringssl',),
+    gn_args={
+        'dir_pw_third_party_boringssl': lambda ctx: '"{}"'.format(
             ctx.package_root / 'boringssl'
         ),
-        pw_crypto_SHA256_BACKEND='"{}"'.format(
+        'pw_crypto_SHA256_BACKEND': lambda ctx: '"{}"'.format(
             ctx.root / 'pw_crypto:sha256_boringssl'
         ),
-        pw_crypto_ECDSA_BACKEND='"{}"'.format(
+        'pw_crypto_ECDSA_BACKEND': lambda ctx: '"{}"'.format(
             ctx.root / 'pw_crypto:ecdsa_boringssl'
         ),
-        pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
-    )
-    build_targets = [*_at_all_optimization_levels(f'host_{_HOST_COMPILER}')]
+        'pw_C_OPTIMIZATION_LEVELS': _OPTIMIZATION_LEVELS,
+    },
+    ninja_targets=(
+        *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'),
+        # TODO(b/240982565): SocketStream currently requires Linux.
+        *(('integration_tests',) if sys.platform.startswith('linux') else ()),
+    ),
+)
 
-    # TODO(b/240982565): SocketStream currently requires Linux.
-    if sys.platform.startswith('linux'):
-        build_targets.append('integration_tests')
-
-    build.ninja(ctx, *build_targets)
-
-
-@_BUILD_FILE_FILTER.apply_to_check()
-def gn_crypto_micro_ecc_build(ctx: PresubmitContext):
-    build.install_package(ctx, 'micro-ecc')
-    build.gn_gen(
-        ctx,
-        dir_pw_third_party_micro_ecc='"{}"'.format(
+gn_crypto_micro_ecc_build = build.GnGenNinja(
+    name='gn_crypto_micro_ecc_build',
+    path_filter=_BUILD_FILE_FILTER,
+    packages=('micro-ecc',),
+    gn_args={
+        'dir_pw_third_party_micro_ecc': lambda ctx: '"{}"'.format(
             ctx.package_root / 'micro-ecc'
         ),
-        pw_crypto_ECDSA_BACKEND='"{}"'.format(
+        'pw_crypto_ECDSA_BACKEND': lambda ctx: '"{}"'.format(
             ctx.root / 'pw_crypto:ecdsa_uecc'
         ),
-        pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
-    )
-    build_targets = [*_at_all_optimization_levels(f'host_{_HOST_COMPILER}')]
-
-    # TODO(b/240982565): SocketStream currently requires Linux.
-    if sys.platform.startswith('linux'):
-        build_targets.append('integration_tests')
-
-    build.ninja(ctx, *build_targets)
+        'pw_C_OPTIMIZATION_LEVELS': _OPTIMIZATION_LEVELS,
+    },
+    ninja_targets=(
+        *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'),
+        # TODO(b/240982565): SocketStream currently requires Linux.
+        *(('integration_tests',) if sys.platform.startswith('linux') else ()),
+    ),
+)
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
