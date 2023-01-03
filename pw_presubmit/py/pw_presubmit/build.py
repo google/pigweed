@@ -24,13 +24,17 @@ import re
 import subprocess
 from shutil import which
 from typing import (
+    Any,
+    Callable,
     Collection,
     Container,
+    ContextManager,
     Dict,
     Iterable,
     List,
     Mapping,
     Optional,
+    Sequence,
     Set,
     Tuple,
     Union,
@@ -44,11 +48,14 @@ from pw_presubmit import (
     FileFilter,
     filter_paths,
     format_code,
+    Iterator,
     log_run,
     ninja_parser,
     plural,
     PresubmitContext,
     PresubmitFailure,
+    PresubmitResult,
+    SubStep,
     tools,
 )
 
@@ -483,3 +490,130 @@ def bazel_lint(ctx: PresubmitContext):
 def gn_gen_check(ctx: PresubmitContext):
     """Runs gn gen --check to enforce correct header dependencies."""
     gn_gen(ctx, gn_check=True)
+
+
+_CtxMgrLambda = Callable[[PresubmitContext], ContextManager]
+_CtxMgrOrLambda = Union[ContextManager, _CtxMgrLambda]
+
+
+class GnGenNinja(Check):
+    """Thin wrapper of Check for steps that just call gn/ninja."""
+
+    def __init__(
+        self,
+        *args,
+        packages: Sequence[str] = (),
+        gn_args: Optional[  # pylint: disable=redefined-outer-name
+            Dict[str, Any]
+        ] = None,
+        ninja_contexts: Sequence[_CtxMgrOrLambda] = (),
+        ninja_targets: Union[Sequence[str], Sequence[Sequence[str]]] = (),
+        **kwargs,
+    ):
+        """Initializes a GnGenNinja object.
+
+        Args:
+            *args: Passed on to superclass.
+            packages: List of 'pw package' packages to install.
+            gn_args: Dict of GN args.
+            ninja_contexts: List of context managers to apply around ninja
+                calls.
+            ninja_targets: List of Ninja targets, or list of list of ninja
+                targets. If a list of a list, ninja will be called multiple
+                times with the same build directory.
+            **kwargs: Passed on to superclass.
+        """
+        super().__init__(self._substeps(), *args, **kwargs)
+        self.packages: Sequence[str] = packages
+        self.gn_args: Dict[str, Any] = gn_args or {}
+        self.ninja_contexts: Tuple[
+            Union[ContextManager, _CtxMgrLambda], ...
+        ] = tuple(ninja_contexts)
+
+        ninja_targets = list(ninja_targets)
+        all_strings = all(isinstance(x, str) for x in ninja_targets)
+        any_strings = any(isinstance(x, str) for x in ninja_targets)
+        if ninja_targets and all_strings != any_strings:
+            raise ValueError(repr(ninja_targets))
+
+        self.ninja_target_lists: Tuple[Tuple[str, ...], ...]
+        if all_strings:
+            targets: List[str] = []
+            for target in ninja_targets:
+                targets.append(target)  # type: ignore
+            self.ninja_target_lists = (tuple(targets),)
+        else:
+            self.ninja_target_lists = tuple(tuple(x) for x in ninja_targets)
+
+    def _install_package(  # pylint: disable=no-self-use
+        self,
+        ctx: PresubmitContext,
+        package: str,
+    ) -> PresubmitResult:
+        install_package(ctx, package)
+        return PresubmitResult.PASS
+
+    def _gn_gen(self, ctx: PresubmitContext) -> PresubmitResult:
+        Item = Union[int, str]
+        Value = Union[Item, Sequence[Item]]
+        ValueCallable = Callable[[PresubmitContext], Value]
+        InputItem = Union[Item, ValueCallable]
+        InputValue = Union[InputItem, Sequence[InputItem]]
+
+        # TODO(mohrr) Use typing.TypeGuard instead of "type: ignore"
+
+        def value(val: InputValue) -> Value:
+            if isinstance(val, (str, int)):
+                return val
+            if callable(val):
+                return val(ctx)
+
+            result: List[Item] = []
+            for item in val:
+                if callable(item):
+                    call_result = item(ctx)
+                    if isinstance(item, (int, str)):
+                        result.append(call_result)
+                    else:  # Sequence.
+                        result.extend(call_result)  # type: ignore
+                elif isinstance(item, (int, str)):
+                    result.append(item)
+                else:  # Sequence.
+                    result.extend(item)
+            return result
+
+        args = {k: value(v) for k, v in self.gn_args.items()}
+        gn_gen(ctx, **args)  # type: ignore
+        return PresubmitResult.PASS
+
+    def _ninja(
+        self, ctx: PresubmitContext, targets: Sequence[str]
+    ) -> PresubmitResult:
+        with contextlib.ExitStack() as stack:
+            for ctx_mgr in self.ninja_contexts:
+                if hasattr(ctx_mgr, '__enter__'):
+                    stack.enter_context(ctx_mgr)  # type: ignore
+                else:
+                    stack.enter_context(ctx_mgr(ctx))  # type: ignore
+            ninja(ctx, *targets)
+        return PresubmitResult.PASS
+
+    def _substeps(self) -> Iterator[SubStep]:
+        for package in self.packages:
+            yield SubStep(
+                f'install {package} package',
+                self._install_package,
+                (package,),
+            )
+
+        yield SubStep('gn gen', self._gn_gen)
+
+        targets_parts = set()
+        for targets in self.ninja_target_lists:
+            targets_part = " ".join(targets)
+            maxlen = 70
+            if len(targets_part) > maxlen:
+                targets_part = f'{targets_part[0:maxlen-3]}...'
+            assert targets_part not in targets_parts
+            targets_parts.add(targets_part)
+            yield SubStep(f'ninja {targets_part}', self._ninja, (targets,))

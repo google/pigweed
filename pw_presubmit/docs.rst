@@ -133,8 +133,8 @@ The ``luci`` member is of type ``LuciContext`` and has the following members:
 * ``swarming_task_id``: The swarming task id of this build
 * ``pipeline``: Information about the build pipeline, if applicable.
 
-The ``pipeline`` member is of type ``LuciPipeline`` and has the following
-members:
+The ``pipeline`` member, if present, is of type ``LuciPipeline`` and has the
+following members:
 
 * ``round``: The zero-indexed round number.
 * ``builds_from_previous_iteration``: A list of the buildbucket ids from the
@@ -144,6 +144,21 @@ Additional members can be added by subclassing ``PresubmitContext`` and
 ``Presubmit``. Then override ``Presubmit._create_presubmit_context()`` to
 return the subclass of ``PresubmitContext``. Finally, add
 ``presubmit_class=PresubmitSubClass`` when calling ``cli.run()``.
+
+Substeps
+--------
+Presubmit steps can define substeps that can run independently in other tooling.
+These steps should subclass ``SubStepCheck`` and must define a ``substeps()``
+method that yields ``SubStep`` objects. ``SubStep`` objects have the following
+members:
+
+* ``name``: Name of the substep
+* ``_func``: Substep code
+* ``args``: Positional arguments for ``_func``
+* ``kwargs``: Keyword arguments for ``_func``
+
+``SubStep`` objects must have unique names. For a detailed example of a
+``SubStepCheck`` subclass see ``GnGenNinja`` in ``build.py``.
 
 Existing Presubmit Checks
 -------------------------

@@ -173,9 +173,7 @@ def gn_full_qemu_check(ctx: PresubmitContext):
     )
 
 
-@_BUILD_FILE_FILTER.apply_to_check()
-def gn_combined_build_check(ctx: PresubmitContext) -> None:
-    """Run most host and device (QEMU) tests."""
+def _gn_combined_build_check_targets() -> Sequence[str]:
     build_targets = [
         *_at_all_optimization_levels('stm32f429i'),
         *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'),
@@ -209,8 +207,16 @@ def gn_combined_build_check(ctx: PresubmitContext) -> None:
     if sys.platform.startswith('linux'):
         build_targets.append('integration_tests')
 
-    build.gn_gen(ctx, pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS)
-    build.ninja(ctx, *build_targets)
+    return build_targets
+
+
+gn_combined_build_check = build.GnGenNinja(
+    name='gn_combined_build_check',
+    doc='Run most host and device (QEMU) tests.',
+    path_filter=_BUILD_FILE_FILTER,
+    gn_args=dict(pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS),
+    ninja_targets=_gn_combined_build_check_targets(),
+)
 
 
 @_BUILD_FILE_FILTER.apply_to_check()
@@ -247,19 +253,21 @@ def gn_boringssl_build(ctx: PresubmitContext):
     )
 
 
-@_BUILD_FILE_FILTER.apply_to_check()
-def gn_nanopb_build(ctx: PresubmitContext):
-    build.install_package(ctx, 'nanopb')
-    build.gn_gen(
-        ctx,
-        dir_pw_third_party_nanopb='"{}"'.format(ctx.package_root / 'nanopb'),
+gn_nanopb_build = build.GnGenNinja(
+    name='gn_nanopb_build',
+    path_filter=_BUILD_FILE_FILTER,
+    packages=('nanopb',),
+    gn_args=dict(
+        dir_pw_third_party_nanopb=lambda ctx: '"{}"'.format(
+            ctx.package_root / 'nanopb'
+        ),
         pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
-    )
-    build.ninja(
-        ctx,
+    ),
+    ninja_targets=(
         *_at_all_optimization_levels('stm32f429i'),
         *_at_all_optimization_levels('host_clang'),
-    )
+    ),
+)
 
 
 @_BUILD_FILE_FILTER.apply_to_check()

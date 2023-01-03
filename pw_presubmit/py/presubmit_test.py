@@ -89,6 +89,16 @@ def _fake_function_2(_):
     """Fake presubmit function."""
 
 
+def _all_substeps(program):
+    substeps = {}
+    for step in program:
+        # pylint: disable=protected-access
+        for sub in step.substeps():
+            substeps[sub.name or step.name] = sub._func
+        # pylint: enable=protected-access
+    return substeps
+
+
 class ProgramsTest(unittest.TestCase):
     """Tests the presubmit Programs abstraction."""
 
@@ -101,30 +111,33 @@ class ProgramsTest(unittest.TestCase):
     def test_empty(self):
         self.assertEqual({}, presubmit.Programs())
 
-    def test_access_present_members(self):
+    def test_access_present_members_first(self):
         self.assertEqual('first', self._programs['first'].name)
         self.assertEqual(
             ('_fake_function_1', '_fake_function_2'),
             tuple(x.name for x in self._programs['first']),
         )
-        # pylint: disable=protected-access
-        self.assertEqual(
-            (_fake_function_1, _fake_function_2),
-            tuple(x._check for x in self._programs['first']),
-        )
-        # pylint: enable=protected-access
 
+        self.assertEqual(2, len(self._programs['first']))
+        substeps = _all_substeps(
+            self._programs['first']  # pylint: disable=protected-access
+        ).values()
+        self.assertEqual(2, len(substeps))
+        self.assertEqual((_fake_function_1, _fake_function_2), tuple(substeps))
+
+    def test_access_present_members_second(self):
         self.assertEqual('second', self._programs['second'].name)
         self.assertEqual(
             ('_fake_function_2',),
             tuple(x.name for x in self._programs['second']),
         )
-        # pylint: disable=protected-access
-        self.assertEqual(
-            (_fake_function_2,),
-            tuple(x._check for x in self._programs['second']),
-        )
-        # pylint: enable=protected-access
+
+        self.assertEqual(1, len(self._programs['second']))
+        substeps = _all_substeps(
+            self._programs['second']  # pylint: disable=protected-access
+        ).values()
+        self.assertEqual(1, len(substeps))
+        self.assertEqual((_fake_function_2,), tuple(substeps))
 
     def test_access_missing_member(self):
         with self.assertRaises(KeyError):
@@ -133,9 +146,12 @@ class ProgramsTest(unittest.TestCase):
     def test_all_steps(self):
         all_steps = self._programs.all_steps()
         self.assertEqual(len(all_steps), 2)
+        all_substeps = _all_substeps(all_steps.values())
+        self.assertEqual(len(all_substeps), 2)
+
         # pylint: disable=protected-access
-        self.assertEqual(all_steps['_fake_function_1']._check, _fake_function_1)
-        self.assertEqual(all_steps['_fake_function_2']._check, _fake_function_2)
+        self.assertEqual(all_substeps['_fake_function_1'], _fake_function_1)
+        self.assertEqual(all_substeps['_fake_function_2'], _fake_function_2)
         # pylint: enable=protected-access
 
 

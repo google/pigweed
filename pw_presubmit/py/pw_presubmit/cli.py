@@ -160,6 +160,15 @@ def _add_programs_arguments(
         type=presubmit_step,
     )
 
+    parser.add_argument(
+        '--substep',
+        action='store',
+        help=(
+            "Run a specific substep of a step. Only supported if there's only "
+            'one --step argument and no --program arguments.'
+        ),
+    )
+
     def gn_arg(argument):
         key, value = argument.split('=', 1)
         return (key, value)
@@ -233,10 +242,11 @@ def add_arguments(
         )
 
 
-def run(
+def run(  # pylint: disable=too-many-arguments
     default_program: Optional[presubmit.Program],
     program: Sequence[presubmit.Program],
     step: Sequence[presubmit.Check],
+    substep: str,
     output_directory: Optional[Path],
     package_root: Path,
     clear: bool,
@@ -252,6 +262,7 @@ def run(
       default_program: program to use if neither --program nor --step is used
       program: from the --program option
       step: from the --step option
+      substep: from the --substep option
       output_directory: from --output-directory option
       package_root: from --package-root option
       clear: from the --clear option
@@ -312,6 +323,10 @@ def run(
         steps.extend(step)
         final_program = presubmit.Program('', steps)
 
+    if substep and len(final_program) > 1:
+        _LOG.error('--substep not supported if there are multiple steps')
+        return 1
+
     if presubmit.run(
         final_program,
         root,
@@ -319,6 +334,7 @@ def run(
         only_list_steps=only_list_steps,
         output_directory=output_directory,
         package_root=package_root,
+        substep=substep,
         **other_args,
     ):
         return 0
