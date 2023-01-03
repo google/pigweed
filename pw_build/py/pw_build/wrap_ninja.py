@@ -14,6 +14,7 @@
 # the License.
 """Wrapper for Ninja that adds a real-time status interface."""
 
+import argparse
 import dataclasses
 import os
 import pty
@@ -26,10 +27,6 @@ from typing import Dict, IO, List, Tuple, Optional
 
 # The status formatting string for Ninja to use. Includes a sentinel prefix.
 _NINJA_STATUS = '@@!!@@%s,%f,%t>'
-# Update rate of the TUI (in seconds).
-_UI_UPDATE_RATE: float = 0.1
-# Maximum build actions to display at once in the UI.
-_UI_MAX_ACTIONS: int = 8
 
 # "ANSI" terminal codes for controlling terminal output. This are more-or-less
 # standardized. See https://en.wikipedia.org/wiki/ANSI_escape_code for a more
@@ -268,9 +265,32 @@ class Ninja:
                 self.log_lines.append((context_action, line))
 
 
+def _parse_args() -> Tuple[argparse.Namespace, List[str]]:
+    """Parses CLI arguments.
+
+    Returns:
+        The tuple containing the parsed arguments and the remaining unparsed
+        arguments to be passed to Ninja.
+    """
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        '--ui-update-rate',
+        help='update rate of the UI (in seconds)',
+        type=float,
+        default=0.1,
+    )
+    parser.add_argument(
+        '--ui-max-actions',
+        help='maximum build actions to display at once',
+        type=int,
+        default=8,
+    )
+    return parser.parse_known_args()
+
+
 def main() -> int:
     """Main entrypoint for script."""
-    ninja_args = sys.argv[1:]
+    args, ninja_args = _parse_args()
 
     if sys.platform == 'win32':
         print(
@@ -303,11 +323,11 @@ def main() -> int:
                 f'[{total_elapsed: >5}] '
                 f'Building [{ninja.num_finished}/{ninja.num_total}] ...'
             ]
-            for action in actions[:_UI_MAX_ACTIONS]:
+            for action in actions[: args.ui_max_actions]:
                 elapsed = _format_duration(now - action.start_time)
                 lines.append(f'  [{elapsed: >5}] {action.name}')
-            if len(actions) > _UI_MAX_ACTIONS:
-                remaining = len(actions) - _UI_MAX_ACTIONS
+            if len(actions) > args.ui_max_actions:
+                remaining = len(actions) - args.ui_max_actions
                 lines.append(f'  ... and {remaining} more')
 
             if ninja.exited:
@@ -315,7 +335,7 @@ def main() -> int:
 
         renderer.set_temporary_lines(lines)
         renderer.render()
-        time.sleep(_UI_UPDATE_RATE)
+        time.sleep(args.ui_update_rate)
 
     # Output the final summary build line.
     ninja.process.wait()
