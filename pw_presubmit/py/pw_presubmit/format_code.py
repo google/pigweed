@@ -80,7 +80,7 @@ class FormatContext:
             formatting steps but ignored in compile steps)
     """
 
-    root: Path
+    root: Optional[Path]
     output_dir: Path
     paths: Tuple[Path, ...]
 
@@ -637,7 +637,7 @@ class CodeFormatter:
 
     def __init__(
         self,
-        root: Path,
+        root: Optional[Path],
         files: Iterable[Path],
         output_dir: Path,
         code_formats: Collection[CodeFormat] = CODE_FORMATS_WITH_YAPF,
@@ -767,6 +767,8 @@ def format_files(
     output_directory: Optional[Path] = None,
 ) -> int:
     """Checks or fixes formatting for the specified files."""
+
+    root: Optional[Path] = None
 
     if git_repo.is_repo():
         root = git_repo.root()
