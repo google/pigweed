@@ -58,6 +58,7 @@ class GitRepo(pw_package.package_manager.Package):
         self._commit = commit
         self._tag = tag
         self._sparse_list = sparse_list
+        self._allow_use_in_downstream = False
 
     def status(self, path: pathlib.Path) -> bool:
         # TODO(tonymd): Check the correct SHA is checked out here.

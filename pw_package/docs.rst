@@ -21,7 +21,8 @@ In general, these should not be used by projects using Pigweed. Pigweed uses
 these packages to avoid using submodules so downstream projects don't have
 multiple copies of a given repository in their source tree. Projects using
 Pigweed should use submodules instead of packages because submodules are
-supported by much more mature tooling: git.
+supported by much more mature tooling: git. To install these packages anyway,
+use ``--force`` on the command line or ``force=True`` in Python code.
 
 -----
 Usage

@@ -40,6 +40,7 @@ class BoringSSL(pw_package.package_manager.Package):
             ),
             commit='9f55d972854d0b34dae39c7cd3679d6ada3dfd5b',
         )
+        self._allow_use_in_downstream = False
 
     def status(self, path: pathlib.Path) -> bool:
         if not self._boringssl.status(boringssl_repo_path(path)):

@@ -103,7 +103,9 @@ def bazel(ctx: PresubmitContext, cmd: str, *args: str) -> None:
         raise exc
 
 
-def install_package(ctx: PresubmitContext, name: str) -> None:
+def install_package(
+    ctx: PresubmitContext, name: str, force: bool = False
+) -> None:
     """Install package with given name in given path."""
     root = ctx.package_root
     mgr = package_manager.PackageManager(root)
@@ -114,8 +116,8 @@ def install_package(ctx: PresubmitContext, name: str) -> None:
             'configuration module'
         )
 
-    if not mgr.status(name):
-        mgr.install(name)
+    if not mgr.status(name) or force:
+        mgr.install(name, force=force)
 
 
 def _gn_value(value) -> str:
