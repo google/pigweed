@@ -253,7 +253,6 @@ TEST_F(UnaryClientCall, OnlyReceivesOneResponse) {
 
 class ServerStreamingClientCall : public ::testing::Test {
  protected:
-  bool active_ = true;
   std::optional<Status> stream_status_;
   std::optional<Status> rpc_error_;
   int responses_received_ = 0;
@@ -291,26 +290,23 @@ TEST_F(ServerStreamingClientCall, InvokesCallbackOnValidResponse) {
         ++responses_received_;
         last_response_number_ = response.number;
       },
-      [this](Status status) {
-        active_ = false;
-        stream_status_ = status;
-      });
+      [this](Status status) { stream_status_ = status; });
 
   PW_ENCODE_PB(TestStreamResponse, r1, .chunk = {}, .number = 11u);
   EXPECT_EQ(OkStatus(), context.SendServerStream(r1));
-  EXPECT_TRUE(active_);
+  EXPECT_TRUE(call.active());
   EXPECT_EQ(responses_received_, 1);
   EXPECT_EQ(last_response_number_, 11);
 
   PW_ENCODE_PB(TestStreamResponse, r2, .chunk = {}, .number = 22u);
   EXPECT_EQ(OkStatus(), context.SendServerStream(r2));
-  EXPECT_TRUE(active_);
+  EXPECT_TRUE(call.active());
   EXPECT_EQ(responses_received_, 2);
   EXPECT_EQ(last_response_number_, 22);
 
   PW_ENCODE_PB(TestStreamResponse, r3, .chunk = {}, .number = 33u);
   EXPECT_EQ(OkStatus(), context.SendServerStream(r3));
-  EXPECT_TRUE(active_);
+  EXPECT_TRUE(call.active());
   EXPECT_EQ(responses_received_, 3);
   EXPECT_EQ(last_response_number_, 33);
 }
@@ -326,30 +322,27 @@ TEST_F(ServerStreamingClientCall, InvokesStreamEndOnFinish) {
         ++responses_received_;
         last_response_number_ = response.number;
       },
-      [this](Status status) {
-        active_ = false;
-        stream_status_ = status;
-      });
+      [this](Status status) { stream_status_ = status; });
 
   PW_ENCODE_PB(TestStreamResponse, r1, .chunk = {}, .number = 11u);
   EXPECT_EQ(OkStatus(), context.SendServerStream(r1));
-  EXPECT_TRUE(active_);
+  EXPECT_TRUE(call.active());
 
   PW_ENCODE_PB(TestStreamResponse, r2, .chunk = {}, .number = 22u);
   EXPECT_EQ(OkStatus(), context.SendServerStream(r2));
-  EXPECT_TRUE(active_);
+  EXPECT_TRUE(call.active());
 
   // Close the stream.
   EXPECT_EQ(OkStatus(), context.SendResponse(Status::NotFound()));
 
   PW_ENCODE_PB(TestStreamResponse, r3, .chunk = {}, .number = 33u);
   EXPECT_EQ(OkStatus(), context.SendServerStream(r3));
-  EXPECT_FALSE(active_);
+  EXPECT_FALSE(call.active());
 
   EXPECT_EQ(responses_received_, 2);
 }
 
-TEST_F(ServerStreamingClientCall, InvokesErrorCallbackOnInvalidResponses) {
+TEST_F(ServerStreamingClientCall, ParseErrorTerminatesCallWithDataLoss) {
   ClientContextForTest<128, 99, kServiceId, kServerStreamingMethodId> context;
 
   auto call = FakeGeneratedServiceClient::TestServerStreamRpc(
@@ -365,27 +358,16 @@ TEST_F(ServerStreamingClientCall, InvokesErrorCallbackOnInvalidResponses) {
 
   PW_ENCODE_PB(TestStreamResponse, r1, .chunk = {}, .number = 11u);
   EXPECT_EQ(OkStatus(), context.SendServerStream(r1));
-  EXPECT_TRUE(active_);
+  EXPECT_TRUE(call.active());
   EXPECT_EQ(responses_received_, 1);
   EXPECT_EQ(last_response_number_, 11);
 
   constexpr std::byte bad_payload[]{
       std::byte{0xab}, std::byte{0xcd}, std::byte{0xef}};
   EXPECT_EQ(OkStatus(), context.SendServerStream(bad_payload));
+  EXPECT_FALSE(call.active());
   EXPECT_EQ(responses_received_, 1);
-  ASSERT_TRUE(rpc_error_.has_value());
   EXPECT_EQ(rpc_error_, Status::DataLoss());
-
-  PW_ENCODE_PB(TestStreamResponse, r2, .chunk = {}, .number = 22u);
-  EXPECT_EQ(OkStatus(), context.SendServerStream(r2));
-  EXPECT_TRUE(active_);
-  EXPECT_EQ(responses_received_, 2);
-  EXPECT_EQ(last_response_number_, 22);
-
-  EXPECT_EQ(OkStatus(),
-            context.SendPacket(PacketType::SERVER_ERROR, Status::NotFound()));
-  EXPECT_EQ(responses_received_, 2);
-  EXPECT_EQ(rpc_error_, Status::NotFound());
 }
 
 }  // namespace

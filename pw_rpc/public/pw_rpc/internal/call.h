@@ -259,19 +259,6 @@ class Call : public IntrusiveList<Call>::Item {
     on_error_ = std::move(on_error);
   }
 
-  // Calls the on_error callback without closing the RPC. This is used when the
-  // call has already completed.
-  void CallOnError(Status error) PW_UNLOCK_FUNCTION(rpc_lock()) {
-    const bool invoke = on_error_ != nullptr;
-
-    // TODO(b/234876851): Ensure on_error_ is properly guarded.
-
-    rpc_lock().unlock();
-    if (invoke) {
-      on_error_(error);
-    }
-  }
-
   void MarkClientStreamCompleted() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     client_stream_state_ = kClientStreamInactive;
   }
@@ -329,6 +316,17 @@ class Call : public IntrusiveList<Call>::Item {
     client_stream_state_ = kClientStreamInactive;
   }
 
+  // Calls the on_error callback without closing the RPC. This is used when the
+  // call has already completed.
+  void CallOnError(Status error) PW_UNLOCK_FUNCTION(rpc_lock()) {
+    auto on_error_local = std::move(on_error_);
+
+    rpc_lock().unlock();
+    if (on_error_local) {
+      on_error_local(error);
+    }
+  }
+
   // Sends a payload with the specified type. The payload may either be in a
   // previously acquired buffer or in a standalone buffer.
   //
@@ -358,7 +356,7 @@ class Call : public IntrusiveList<Call>::Item {
   } client_stream_state_ PW_GUARDED_BY(rpc_lock());
 
   // Called when the RPC is terminated due to an error.
-  Function<void(Status error)> on_error_;
+  Function<void(Status error)> on_error_ PW_GUARDED_BY(rpc_lock());
 
   // Called when a request is received. Only used for RPCs with client streams.
   // The raw payload buffer is passed to the callback.

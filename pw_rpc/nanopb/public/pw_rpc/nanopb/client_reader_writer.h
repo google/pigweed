@@ -112,10 +112,8 @@ class NanopbUnaryResponseClientCall : public UnaryResponseClientCall {
             if (serde_->DecodeResponse(payload, &response_struct)) {
               nanopb_on_completed_local(response_struct, status);
             } else {
-              // TODO(hepler): This should send a DATA_LOSS error and call the
-              //     error callback.
               rpc_lock().lock();
-              CallOnError(Status::DataLoss());
+              HandleError(Status::DataLoss());
             }
           }
         });
@@ -211,7 +209,7 @@ class NanopbStreamResponseClientCall : public StreamResponseClientCall {
           // TODO(hepler): This should send a DATA_LOSS error and call the
           //     error callback.
           rpc_lock().lock();
-          CallOnError(Status::DataLoss());
+          HandleError(Status::DataLoss());
         }
       }
     });

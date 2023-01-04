@@ -148,7 +148,7 @@ class PwpbUnaryResponseClientCall : public UnaryResponseClientCall {
               pwpb_on_completed_local(response, status);
             } else {
               rpc_lock().lock();
-              CallOnError(Status::DataLoss());
+              HandleError(Status::DataLoss());
             }
           }
         });
@@ -274,7 +274,7 @@ class PwpbStreamResponseClientCall : public StreamResponseClientCall {
           pwpb_on_next_(response);
         } else {
           rpc_lock().lock();
-          CallOnError(Status::DataLoss());
+          HandleError(Status::DataLoss());
         }
       }
     });
