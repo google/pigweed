@@ -230,6 +230,8 @@ pw_test template
 * ``test_main``: Target label to add to the tests's dependencies to provide the
   ``main()`` function. Defaults to ``pw_unit_test_MAIN``. Set to ``""`` if
   ``main()`` is implemented in the test's ``sources``.
+* ``test_automatic_runner_args``: Array of args to pass to automatic test
+  runner. Defaults to ``pw_unit_test_AUTOMATIC_RUNNER_ARGS``.
 
 **Example**
 

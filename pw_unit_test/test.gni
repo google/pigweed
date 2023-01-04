@@ -144,6 +144,7 @@ template("pw_internal_disableable_target") {
                              "negative_compilation_tests",
                              "enable_if",
                              "target_type",
+                             "test_automatic_runner_args",
                            ])
 
     # Remove "" from dependencies. This allows disabling targets if a variable
@@ -289,6 +290,12 @@ template("pw_test") {
       }
     }
 
+    _test_automatic_runner_args = pw_unit_test_AUTOMATIC_RUNNER_ARGS
+    if (defined(invoker.test_automatic_runner_args)) {
+      _test_automatic_runner_args = []
+      _test_automatic_runner_args += invoker.test_automatic_runner_args
+    }
+
     pw_python_action(_test_to_run + "._run") {
       # Optionally limit max test runner concurrency.
       if (pw_unit_test_POOL_DEPTH != 0) {
@@ -324,8 +331,9 @@ template("pw_test") {
           rebase_path(_profraw_path, root_build_dir),
         ]
       }
-      if (pw_unit_test_AUTOMATIC_RUNNER_ARGS != []) {
-        args += [ "--" ] + pw_unit_test_AUTOMATIC_RUNNER_ARGS
+
+      if (_test_automatic_runner_args != []) {
+        args += [ "--" ] + _test_automatic_runner_args
       }
 
       outputs = []
