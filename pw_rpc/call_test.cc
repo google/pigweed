@@ -244,7 +244,7 @@ TEST_F(ServerReaderWriterTest, Move_MovesCallbacks) {
   reader_writer_.set_on_next([&calls](ConstByteSpan) { calls += 1; });
 
 #if PW_RPC_CLIENT_STREAM_END_CALLBACK
-  reader_writer.set_on_client_stream_end([&calls]() { calls += 1; });
+  reader_writer_.set_on_client_stream_end([&calls]() { calls += 1; });
 #endif  // PW_RPC_CLIENT_STREAM_END_CALLBACK
 
   FakeServerReaderWriter destination(std::move(reader_writer_));
