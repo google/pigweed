@@ -278,30 +278,34 @@ gn_crypto_micro_ecc_build = build.GnGenNinja(
     ),
 )
 
+gn_teensy_build = build.GnGenNinja(
+    name='gn_teensy_build',
+    path_filter=_BUILD_FILE_FILTER,
+    packages=('teensy',),
+    gn_args={
+        'pw_arduino_build_CORE_PATH': lambda ctx: '"{}"'.format(
+            str(ctx.package_root)
+        ),
+        'pw_arduino_build_CORE_NAME': 'teensy',
+        'pw_arduino_build_PACKAGE_NAME': 'teensy/avr',
+        'pw_arduino_build_BOARD': 'teensy40',
+        'pw_C_OPTIMIZATION_LEVELS': _OPTIMIZATION_LEVELS,
+    },
+    ninja_targets=_at_all_optimization_levels('arduino'),
+)
 
-@_BUILD_FILE_FILTER.apply_to_check()
-def gn_teensy_build(ctx: PresubmitContext):
-    build.install_package(ctx, 'teensy')
-    build.gn_gen(
-        ctx,
-        pw_arduino_build_CORE_PATH='"{}"'.format(str(ctx.package_root)),
-        pw_arduino_build_CORE_NAME='teensy',
-        pw_arduino_build_PACKAGE_NAME='teensy/avr',
-        pw_arduino_build_BOARD='teensy40',
-        pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
-    )
-    build.ninja(ctx, *_at_all_optimization_levels('arduino'))
-
-
-@_BUILD_FILE_FILTER.apply_to_check()
-def gn_pico_build(ctx: PresubmitContext):
-    build.install_package(ctx, 'pico_sdk')
-    build.gn_gen(
-        ctx,
-        PICO_SRC_DIR='"{}"'.format(str(ctx.package_root / 'pico_sdk')),
-        pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
-    )
-    build.ninja(ctx, 'pi_pico')
+gn_pico_build = build.GnGenNinja(
+    name='gn_pico_build',
+    path_filter=_BUILD_FILE_FILTER,
+    packages=('pico_sdk',),
+    gn_args={
+        'PICO_SRC_DIR': lambda ctx: '"{}"'.format(
+            str(ctx.package_root / 'pico_sdk')
+        ),
+        'pw_C_OPTIMIZATION_LEVELS': _OPTIMIZATION_LEVELS,
+    },
+    ninja_targets=('pi_pico',),
+)
 
 
 gn_software_update_build = build.GnGenNinja(
