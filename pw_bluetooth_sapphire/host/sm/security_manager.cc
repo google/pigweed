@@ -49,7 +49,7 @@ class SecurityManagerImpl final : public SecurityManager,
                                   public PairingChannel::Handler {
  public:
   ~SecurityManagerImpl() override;
-  SecurityManagerImpl(fxl::WeakPtr<hci::LowEnergyConnection> link, fxl::WeakPtr<l2cap::Channel> smp,
+  SecurityManagerImpl(fxl::WeakPtr<hci::LowEnergyConnection> link, l2cap::Channel::WeakPtr smp,
                       IOCapability io_capability, Delegate::WeakPtr delegate,
                       BondableMode bondable_mode, gap::LESecurityMode security_mode);
   // SecurityManager overrides:
@@ -216,9 +216,8 @@ SecurityManagerImpl::~SecurityManagerImpl() {
 }
 
 SecurityManagerImpl::SecurityManagerImpl(fxl::WeakPtr<hci::LowEnergyConnection> link,
-                                         fxl::WeakPtr<l2cap::Channel> smp,
-                                         IOCapability io_capability, Delegate::WeakPtr delegate,
-                                         BondableMode bondable_mode,
+                                         l2cap::Channel::WeakPtr smp, IOCapability io_capability,
+                                         Delegate::WeakPtr delegate, BondableMode bondable_mode,
                                          gap::LESecurityMode security_mode)
     : SecurityManager(bondable_mode, security_mode),
       next_pairing_id_(0),
@@ -232,7 +231,7 @@ SecurityManagerImpl::SecurityManagerImpl(fxl::WeakPtr<hci::LowEnergyConnection> 
       weak_ptr_factory_(this) {
   BT_ASSERT(delegate_.is_alive());
   BT_ASSERT(le_link_);
-  BT_ASSERT(smp);
+  BT_ASSERT(smp.is_alive());
   BT_ASSERT(le_link_->handle() == smp->link_handle());
   BT_ASSERT(smp->id() == l2cap::kLESMPChannelId);
   // `current_phase_` is default constructed into std::monostate in the initializer list as no
@@ -828,7 +827,7 @@ Result<> SecurityManagerImpl::ValidateExistingLocalLtk() {
 }
 
 std::unique_ptr<SecurityManager> SecurityManager::Create(
-    fxl::WeakPtr<hci::LowEnergyConnection> link, fxl::WeakPtr<l2cap::Channel> smp,
+    fxl::WeakPtr<hci::LowEnergyConnection> link, l2cap::Channel::WeakPtr smp,
     IOCapability io_capability, Delegate::WeakPtr delegate, BondableMode bondable_mode,
     gap::LESecurityMode security_mode) {
   return std::unique_ptr<SecurityManagerImpl>(

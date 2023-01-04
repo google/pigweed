@@ -32,11 +32,11 @@ class PairingChannel {
 
   // Initializes this PairingChannel with the L2CAP SMP fixed channel that this class wraps and the
   // specified timer reset method. For use in production code.
-  PairingChannel(fxl::WeakPtr<l2cap::Channel> chan, fit::closure timer_resetter);
+  PairingChannel(l2cap::Channel::WeakPtr chan, fit::closure timer_resetter);
 
   // Initializes this PairingChannel with a no-op timer reset method. Only for use in tests of
   // classes which do not depend on the timer reset behavior.
-  explicit PairingChannel(fxl::WeakPtr<l2cap::Channel> chan);
+  explicit PairingChannel(l2cap::Channel::WeakPtr chan);
 
   // For setting the new handler, expected to be used when switching phases. PairingChannel is not
   // fully initialized until SetChannelHandler has been called with a valid Handler. This two-phase

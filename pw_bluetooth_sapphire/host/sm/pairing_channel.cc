@@ -14,7 +14,7 @@
 
 namespace bt::sm {
 
-PairingChannel::PairingChannel(fxl::WeakPtr<l2cap::Channel> chan, fit::closure timer_resetter)
+PairingChannel::PairingChannel(l2cap::Channel::WeakPtr chan, fit::closure timer_resetter)
     : chan_(std::move(chan)), reset_timer_(std::move(timer_resetter)), weak_ptr_factory_(this) {
   BT_ASSERT(chan_);
   BT_ASSERT(async_get_default_dispatcher());
@@ -47,7 +47,7 @@ PairingChannel::PairingChannel(fxl::WeakPtr<l2cap::Channel> chan, fit::closure t
             chan_->max_rx_sdu_size() >= kNoSecureConnectionsMtu);
 }
 
-PairingChannel::PairingChannel(fxl::WeakPtr<l2cap::Channel> chan)
+PairingChannel::PairingChannel(l2cap::Channel::WeakPtr chan)
     : PairingChannel(std::move(chan), []() {}) {}
 
 void PairingChannel::SetChannelHandler(fxl::WeakPtr<Handler> new_handler) {

@@ -14,7 +14,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fragmenter.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::l2cap::testing {
 
@@ -47,7 +46,8 @@ class FakeChannel : public Channel {
   // Emulates channel closure.
   void Close();
 
-  fxl::WeakPtr<FakeChannel> AsWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
+  using WeakPtr = WeakSelf<FakeChannel>::WeakPtr;
+  FakeChannel::WeakPtr AsWeakPtr() { return weak_fake_chan_.GetWeakPtr(); }
 
   // Activating always fails if true.
   void set_activate_fails(bool value) { activate_fails_ = value; }
@@ -80,7 +80,6 @@ class FakeChannel : public Channel {
   void AttachInspect(inspect::Node& parent, std::string name) override {}
   void StartA2dpOffload(const A2dpOffloadConfiguration* configuration,
                         hci::ResultCallback<> callback) override {}
-  fxl::WeakPtr<Channel> GetWeakPtr() override { return weak_ptr_factory_.GetWeakPtr(); }
 
  private:
   hci_spec::ConnectionHandle handle_;
@@ -108,7 +107,7 @@ class FakeChannel : public Channel {
   // currently not set.
   std::queue<ByteBufferPtr> pending_rx_sdus_;
 
-  fxl::WeakPtrFactory<FakeChannel> weak_ptr_factory_;
+  WeakSelf<FakeChannel> weak_fake_chan_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeChannel);
 };

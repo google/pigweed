@@ -122,7 +122,7 @@ class ControllerTest : public ::gtest::TestLoopFixture {
   void DeleteTransport() { transport_ = nullptr; }
 
   // Getters for internal fields frequently used by tests.
-  ControllerTestDoubleType* test_device() const { return test_device_.get(); }
+  const typename ControllerTestDoubleType::WeakPtr& test_device() const { return test_device_; }
 
  private:
   std::unique_ptr<pw::bluetooth::Controller> SetUpTestController() {
@@ -143,7 +143,7 @@ class ControllerTest : public ::gtest::TestLoopFixture {
     });
   }
 
-  fxl::WeakPtr<ControllerTestDoubleType> test_device_;
+  typename ControllerTestDoubleType::WeakPtr test_device_;
   std::unique_ptr<hci::Transport> transport_;
   hci::ACLPacketHandler data_received_callback_;
 

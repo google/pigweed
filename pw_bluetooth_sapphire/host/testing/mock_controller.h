@@ -13,9 +13,9 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test_double_base.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::testing {
 
@@ -122,7 +122,7 @@ class ScoTransaction final : public Transaction {
 // MockController allows unit tests to set up an expected sequence of HCI
 // command packets and ACL data packets and any packets that should be sent back in response. The
 // code internally verifies each received packet using gtest ASSERT_* macros.
-class MockController final : public ControllerTestDoubleBase {
+class MockController final : public ControllerTestDoubleBase, public WeakSelf<MockController> {
  public:
   MockController();
   ~MockController() override;
@@ -183,8 +183,6 @@ class MockController final : public ControllerTestDoubleBase {
   void SetTransactionCallback(fit::closure callback, async_dispatcher_t* dispatcher);
   void ClearTransactionCallback();
 
-  fxl::WeakPtr<MockController> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
-
  private:
   void OnCommandReceived(const ByteBuffer& data);
   void OnACLDataPacketReceived(const ByteBuffer& acl_data_packet);
@@ -203,8 +201,6 @@ class MockController final : public ControllerTestDoubleBase {
   async_dispatcher_t* data_dispatcher_;
   TransactionCallback transaction_callback_;
   async_dispatcher_t* transaction_dispatcher_;
-
-  fxl::WeakPtrFactory<MockController> weak_ptr_factory_{this};
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(MockController);
 };

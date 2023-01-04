@@ -9,6 +9,8 @@
 #include <functional>
 #include <optional>
 
+#include "src/lib/fxl/memory/weak_ptr.h"
+
 namespace bt::sdp {
 
 namespace {
@@ -19,7 +21,7 @@ constexpr zx::duration kTransactionTimeout = zx::sec(10);
 
 class Impl final : public Client {
  public:
-  explicit Impl(fxl::WeakPtr<l2cap::Channel> channel);
+  explicit Impl(l2cap::Channel::WeakPtr channel);
 
   virtual ~Impl() override;
 
@@ -76,7 +78,7 @@ class Impl final : public Client {
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Impl);
 };
 
-Impl::Impl(fxl::WeakPtr<l2cap::Channel> channel)
+Impl::Impl(l2cap::Channel::WeakPtr channel)
     : channel_(std::move(channel)), next_tid_(0), weak_ptr_factory_(this) {
   auto self = weak_ptr_factory_.GetWeakPtr();
   bool activated = channel_->Activate(
@@ -267,8 +269,8 @@ TransactionId Impl::GetNextId() {
 
 }  // namespace
 
-std::unique_ptr<Client> Client::Create(fxl::WeakPtr<l2cap::Channel> channel) {
-  BT_DEBUG_ASSERT(channel);
+std::unique_ptr<Client> Client::Create(l2cap::Channel::WeakPtr channel) {
+  BT_DEBUG_ASSERT(channel.is_alive());
   return std::make_unique<Impl>(std::move(channel));
 }
 

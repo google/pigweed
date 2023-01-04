@@ -9,7 +9,6 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/test_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
@@ -212,21 +211,21 @@ auto OutboundConfigurationResponse(CommandId id, uint16_t mtu = kDefaultMTU,
         LowerBits(kErtmReceiverReadyPollTimerMsecs), UpperBits(kErtmReceiverReadyPollTimerMsecs),
         LowerBits(kErtmMonitorTimerMsecs), UpperBits(kErtmMonitorTimerMsecs),
         LowerBits(kMaxInboundPduPayloadSize), UpperBits(kMaxInboundPduPayloadSize)));
-  } else {
-    return DynamicByteBuffer(StaticByteBuffer(
-        // ACL data header (handle: 0x0001, length: 14 bytes)
-        0x01, 0x00, LowerBits(kAclLength), UpperBits(kAclLength),
-
-        // L2CAP B-frame header (length, channel-id: 0x0001 (ACL sig))
-        LowerBits(kL2capLength), UpperBits(kL2capLength), 0x01, 0x00,
-
-        // Configuration Response (ID, length, src cid, flags: 0, result: success)
-        0x05, id, kConfigLength, 0x00, LowerBits(kRemoteId), UpperBits(kRemoteId), 0x00, 0x00, 0x00,
-        0x00,
-
-        // MTU option (ID, Length, MTU)
-        0x01, 0x02, LowerBits(mtu), UpperBits(mtu)));
   }
+
+  return DynamicByteBuffer(StaticByteBuffer(
+      // ACL data header (handle: 0x0001, length: 14 bytes)
+      0x01, 0x00, LowerBits(kAclLength), UpperBits(kAclLength),
+
+      // L2CAP B-frame header (length, channel-id: 0x0001 (ACL sig))
+      LowerBits(kL2capLength), UpperBits(kL2capLength), 0x01, 0x00,
+
+      // Configuration Response (ID, length, src cid, flags: 0, result: success)
+      0x05, id, kConfigLength, 0x00, LowerBits(kRemoteId), UpperBits(kRemoteId), 0x00, 0x00, 0x00,
+      0x00,
+
+      // MTU option (ID, Length, MTU)
+      0x01, 0x02, LowerBits(mtu), UpperBits(mtu)));
 }
 
 auto OutboundDisconnectionRequest(CommandId id) {
@@ -377,12 +376,13 @@ class ChannelManagerTest : public TestingBase {
                                                                    kTestHandle1, channels));
   }
 
-  fxl::WeakPtr<Channel> ActivateNewFixedChannel(
-      ChannelId id, hci_spec::ConnectionHandle conn_handle = kTestHandle1,
-      Channel::ClosedCallback closed_cb = DoNothing, Channel::RxCallback rx_cb = NopRxCallback) {
+  Channel::WeakPtr ActivateNewFixedChannel(ChannelId id,
+                                           hci_spec::ConnectionHandle conn_handle = kTestHandle1,
+                                           Channel::ClosedCallback closed_cb = DoNothing,
+                                           Channel::RxCallback rx_cb = NopRxCallback) {
     auto chan = chanmgr()->OpenFixedChannel(conn_handle, id);
-    if (!chan || !chan->Activate(std::move(rx_cb), std::move(closed_cb))) {
-      return nullptr;
+    if (!chan.is_alive() || !chan->Activate(std::move(rx_cb), std::move(closed_cb))) {
+      return Channel::WeakPtr();
     }
 
     return chan;
@@ -396,8 +396,8 @@ class ChannelManagerTest : public TestingBase {
                                Channel::RxCallback rx_cb = NopRxCallback) {
     ChannelCallback open_cb = [activated_cb = std::move(activated_cb), rx_cb = std::move(rx_cb),
                                closed_cb = std::move(closed_cb)](auto chan) mutable {
-      if (!chan || !chan->Activate(std::move(rx_cb), std::move(closed_cb))) {
-        activated_cb(nullptr);
+      if (!chan.is_alive() || !chan->Activate(std::move(rx_cb), std::move(closed_cb))) {
+        activated_cb(Channel::WeakPtr());
       } else {
         activated_cb(std::move(chan));
       }
@@ -408,7 +408,7 @@ class ChannelManagerTest : public TestingBase {
   void SetUpOutboundChannelWithCallback(ChannelId local_id, ChannelId remote_id,
                                         Channel::ClosedCallback closed_cb,
                                         ChannelParameters channel_params,
-                                        fit::function<void(fxl::WeakPtr<Channel>)> channel_cb) {
+                                        fit::function<void(Channel::WeakPtr)> channel_cb) {
     const auto conn_req_id = NextCommandId();
     const auto config_req_id = NextCommandId();
     EXPECT_ACL_PACKET_OUT(testing::AclConnectionReq(conn_req_id, kTestHandle1, local_id, kTestPsm),
@@ -434,18 +434,18 @@ class ChannelManagerTest : public TestingBase {
     EXPECT_TRUE(AllExpectedPacketsSent());
   }
 
-  fxl::WeakPtr<Channel> SetUpOutboundChannel(ChannelId local_id = kLocalId,
-                                             ChannelId remote_id = kRemoteId,
-                                             Channel::ClosedCallback closed_cb = DoNothing,
-                                             ChannelParameters channel_params = kChannelParams) {
-    fxl::WeakPtr<Channel> channel;
-    auto channel_cb = [&channel](fxl::WeakPtr<l2cap::Channel> activated_chan) {
+  Channel::WeakPtr SetUpOutboundChannel(ChannelId local_id = kLocalId,
+                                        ChannelId remote_id = kRemoteId,
+                                        Channel::ClosedCallback closed_cb = DoNothing,
+                                        ChannelParameters channel_params = kChannelParams) {
+    Channel::WeakPtr channel;
+    auto channel_cb = [&channel](l2cap::Channel::WeakPtr activated_chan) {
       channel = std::move(activated_chan);
     };
 
     SetUpOutboundChannelWithCallback(local_id, remote_id, std::move(closed_cb), channel_params,
                                      channel_cb);
-    EXPECT_TRUE(channel);
+    EXPECT_TRUE(channel.is_alive());
     return channel;
   }
 
@@ -555,12 +555,12 @@ class ChannelManagerTest : public TestingBase {
 
 TEST_F(ChannelManagerTest, OpenFixedChannelErrorNoConn) {
   // This should fail as the ChannelManager has no entry for |kTestHandle1|.
-  EXPECT_FALSE(ActivateNewFixedChannel(kATTChannelId));
+  EXPECT_FALSE(ActivateNewFixedChannel(kATTChannelId).is_alive());
 
   LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
 
   // This should fail as the ChannelManager has no entry for |kTestHandle2|.
-  EXPECT_FALSE(ActivateNewFixedChannel(kATTChannelId, kTestHandle2));
+  EXPECT_FALSE(ActivateNewFixedChannel(kATTChannelId, kTestHandle2).is_alive());
 }
 
 TEST_F(ChannelManagerTest, OpenFixedChannelErrorDisallowedId) {
@@ -572,10 +572,10 @@ TEST_F(ChannelManagerTest, OpenFixedChannelErrorDisallowedId) {
   RunLoopUntilIdle();
 
   // This should fail as kSMPChannelId is ACL-U only.
-  EXPECT_FALSE(ActivateNewFixedChannel(kSMPChannelId, kTestHandle1));
+  EXPECT_FALSE(ActivateNewFixedChannel(kSMPChannelId, kTestHandle1).is_alive());
 
   // This should fail as kATTChannelId is LE-U only.
-  EXPECT_FALSE(ActivateNewFixedChannel(kATTChannelId, kTestHandle2));
+  EXPECT_FALSE(ActivateNewFixedChannel(kATTChannelId, kTestHandle2).is_alive());
 }
 
 TEST_F(ChannelManagerTest, DeactivateDynamicChannelInvalidatesChannelPointer) {
@@ -587,8 +587,8 @@ TEST_F(ChannelManagerTest, DeactivateDynamicChannelInvalidatesChannelPointer) {
   EXPECT_ACL_PACKET_OUT(OutboundConnectionRequest(conn_req_id), kHighPriority);
   EXPECT_ACL_PACKET_OUT(OutboundConfigurationRequest(config_req_id), kHighPriority);
   EXPECT_ACL_PACKET_OUT(OutboundConfigurationResponse(kPeerConfigRequestId), kHighPriority);
-  fxl::WeakPtr<Channel> channel;
-  auto channel_cb = [&channel](fxl::WeakPtr<l2cap::Channel> activated_chan) {
+  Channel::WeakPtr channel;
+  auto channel_cb = [&channel](l2cap::Channel::WeakPtr activated_chan) {
     channel = std::move(activated_chan);
   };
   ActivateOutboundChannel(kTestPsm, kChannelParams, std::move(channel_cb), kTestHandle1, []() {});
@@ -597,18 +597,18 @@ TEST_F(ChannelManagerTest, DeactivateDynamicChannelInvalidatesChannelPointer) {
   ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
   RunLoopUntilIdle();
 
-  ASSERT_TRUE(channel);
+  ASSERT_TRUE(channel.is_alive());
   const auto disconn_req_id = NextCommandId();
   EXPECT_ACL_PACKET_OUT(OutboundDisconnectionRequest(disconn_req_id), kHighPriority);
   channel->Deactivate();
-  ASSERT_FALSE(channel);
+  ASSERT_FALSE(channel.is_alive());
 }
 
 TEST_F(ChannelManagerTest, DeactivateAttChannelInvalidatesChannelPointer) {
   LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
   ASSERT_TRUE(fixed_channels.att->Activate(NopRxCallback, DoNothing));
   fixed_channels.att->Deactivate();
-  ASSERT_FALSE(fixed_channels.att);
+  ASSERT_FALSE(fixed_channels.att.is_alive());
 }
 
 TEST_F(ChannelManagerTest, OpenFixedChannelAndUnregisterLink) {
@@ -684,7 +684,7 @@ TEST_F(ChannelManagerTest, SendingPacketsBeforeRemoveConnectionAndVerifyChannelC
   bool closed_called = false;
   auto closed_cb = [&closed_called] { closed_called = true; };
   auto chan = fixed_channels.att;
-  ASSERT_TRUE(chan);
+  ASSERT_TRUE(chan.is_alive());
   ASSERT_TRUE(chan->Activate(NopRxCallback, closed_cb));
 
   EXPECT_LE_PACKET_OUT(StaticByteBuffer(
@@ -705,7 +705,7 @@ TEST_F(ChannelManagerTest, SendingPacketsBeforeRemoveConnectionAndVerifyChannelC
 
   // The L2CAP channel should have been notified of closure immediately.
   EXPECT_TRUE(closed_called);
-  EXPECT_FALSE(chan);
+  EXPECT_FALSE(chan.is_alive());
   RunLoopUntilIdle();
 }
 
@@ -717,7 +717,7 @@ TEST_F(ChannelManagerTest, DestroyingChannelManagerCleansUpChannels) {
   bool closed_called = false;
   auto closed_cb = [&closed_called] { closed_called = true; };
   auto chan = fixed_channels.att;
-  ASSERT_TRUE(chan);
+  ASSERT_TRUE(chan.is_alive());
   ASSERT_TRUE(chan->Activate(NopRxCallback, closed_cb));
 
   EXPECT_LE_PACKET_OUT(StaticByteBuffer(
@@ -737,7 +737,7 @@ TEST_F(ChannelManagerTest, DestroyingChannelManagerCleansUpChannels) {
   TearDown();
 
   EXPECT_TRUE(closed_called);
-  EXPECT_FALSE(chan);
+  EXPECT_FALSE(chan.is_alive());
   // No outbound packet expectations were set, so this test will fail if it sends any data.
   RunLoopUntilIdle();
 }
@@ -746,7 +746,7 @@ TEST_F(ChannelManagerTest, DeactivateDoesNotCrashOrHang) {
   // Tests that the clean up task posted to the LogicalLink does not crash when
   // a dynamic registry is not present (which is the case for LE links).
   LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
-  ASSERT_TRUE(fixed_channels.att);
+  ASSERT_TRUE(fixed_channels.att.is_alive());
   ASSERT_TRUE(fixed_channels.att->Activate(NopRxCallback, DoNothing));
   fixed_channels.att->Deactivate();
 
@@ -767,8 +767,8 @@ TEST_F(ChannelManagerTest, CallingDeactivateFromClosedCallbackDoesNotCrashOrHang
 TEST_F(ChannelManagerTest, ReceiveData) {
   // LE-U link
   LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
-  ASSERT_TRUE(fixed_channels.att);
-  ASSERT_TRUE(fixed_channels.smp);
+  ASSERT_TRUE(fixed_channels.att.is_alive());
+  ASSERT_TRUE(fixed_channels.smp.is_alive());
 
   // We use the ATT channel to control incoming packets and the SMP channel to
   // quit the message loop.
@@ -859,7 +859,7 @@ TEST_F(ChannelManagerTest, ReceiveDataBeforeRegisteringLink) {
       // L2CAP B-frame (empty)
       0x00, 0x00, 0x06, 0x00));
 
-  fxl::WeakPtr<Channel> att_chan, smp_chan;
+  Channel::WeakPtr att_chan, smp_chan;
 
   // Run the loop so all packets are received.
   RunLoopUntilIdle();
@@ -1010,7 +1010,7 @@ TEST_F(ChannelManagerTest, RemovingLinkInvalidatesChannelPointer) {
   LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
   BT_ASSERT(fixed_channels.att->Activate(NopRxCallback, DoNothing));
   chanmgr()->RemoveConnection(kTestHandle1);
-  EXPECT_FALSE(fixed_channels.att);
+  EXPECT_FALSE(fixed_channels.att.is_alive());
 }
 
 TEST_F(ChannelManagerTest, SendBasicSdu) {
@@ -1084,7 +1084,7 @@ TEST_F(ChannelManagerTest, SendBrEdrFragmentedSdus) {
       kHighPriority);
   RegisterACL(kTestHandle2, hci_spec::ConnectionRole::CENTRAL);
   auto sm_chan = ActivateNewFixedChannel(kSMPChannelId, kTestHandle2);
-  ASSERT_TRUE(sm_chan);
+  ASSERT_TRUE(sm_chan.is_alive());
 
   EXPECT_ACL_PACKET_OUT(StaticByteBuffer(
                             // ACL data header (handle: 2, length: 6)
@@ -1191,8 +1191,8 @@ TEST_F(ChannelManagerTest, SignalLinkErrorDisconnectsChannels) {
   EXPECT_ACL_PACKET_OUT(OutboundConfigurationRequest(config_req_id), kHighPriority);
   EXPECT_ACL_PACKET_OUT(OutboundConfigurationResponse(kPeerConfigRequestId), kHighPriority);
 
-  fxl::WeakPtr<Channel> dynamic_channel;
-  auto channel_cb = [&dynamic_channel](fxl::WeakPtr<l2cap::Channel> activated_chan) {
+  Channel::WeakPtr dynamic_channel;
+  auto channel_cb = [&dynamic_channel](l2cap::Channel::WeakPtr activated_chan) {
     dynamic_channel = std::move(activated_chan);
   };
 
@@ -1208,7 +1208,7 @@ TEST_F(ChannelManagerTest, SignalLinkErrorDisconnectsChannels) {
   EXPECT_TRUE(AllExpectedPacketsSent());
 
   // The channel on kTestHandle1 should be open.
-  EXPECT_TRUE(dynamic_channel);
+  EXPECT_TRUE(dynamic_channel.is_alive());
   EXPECT_EQ(0, dynamic_channel_closed);
 
   EXPECT_TRUE(AllExpectedPacketsSent());
@@ -1314,8 +1314,8 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
   QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
 
-  fxl::WeakPtr<Channel> channel;
-  auto channel_cb = [&channel](fxl::WeakPtr<l2cap::Channel> activated_chan) {
+  Channel::WeakPtr channel;
+  auto channel_cb = [&channel](l2cap::Channel::WeakPtr activated_chan) {
     channel = std::move(activated_chan);
   };
 
@@ -1339,7 +1339,7 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
   RunLoopUntilIdle();
 
   EXPECT_TRUE(AllExpectedPacketsSent());
-  ASSERT_TRUE(channel);
+  ASSERT_TRUE(channel.is_alive());
   EXPECT_FALSE(closed_cb_called);
   EXPECT_EQ(kLocalId, channel->id());
   EXPECT_EQ(kRemoteId, channel->remote_id());
@@ -1415,8 +1415,8 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
 TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelRemoteDisconnect) {
   QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
 
-  fxl::WeakPtr<Channel> channel;
-  auto channel_cb = [&channel](fxl::WeakPtr<l2cap::Channel> activated_chan) {
+  Channel::WeakPtr channel;
+  auto channel_cb = [&channel](l2cap::Channel::WeakPtr activated_chan) {
     channel = std::move(activated_chan);
   };
 
@@ -1447,7 +1447,7 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelRemoteDisconnect) {
   RunLoopUntilIdle();
 
   EXPECT_TRUE(AllExpectedPacketsSent());
-  EXPECT_TRUE(channel);
+  EXPECT_TRUE(channel.is_alive());
   EXPECT_FALSE(channel_closed);
 
   // Test SDU reception.
@@ -1518,8 +1518,8 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelRemoteDisconnect) {
 TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelDataNotBuffered) {
   QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
 
-  fxl::WeakPtr<Channel> channel;
-  auto channel_cb = [&channel](fxl::WeakPtr<l2cap::Channel> activated_chan) {
+  Channel::WeakPtr channel;
+  auto channel_cb = [&channel](l2cap::Channel::WeakPtr activated_chan) {
     channel = std::move(activated_chan);
   };
 
@@ -1565,7 +1565,7 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelDataNotBuffered) {
   RunLoopUntilIdle();
 
   EXPECT_TRUE(AllExpectedPacketsSent());
-  EXPECT_TRUE(channel);
+  EXPECT_TRUE(channel.is_alive());
   EXPECT_FALSE(channel_closed);
 
   EXPECT_ACL_PACKET_OUT(OutboundDisconnectionResponse(7), kHighPriority);
@@ -1591,9 +1591,9 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelRemoteRefused) {
   QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
 
   bool channel_cb_called = false;
-  auto channel_cb = [&channel_cb_called](fxl::WeakPtr<l2cap::Channel> channel) {
+  auto channel_cb = [&channel_cb_called](l2cap::Channel::WeakPtr channel) {
     channel_cb_called = true;
-    EXPECT_FALSE(channel);
+    EXPECT_FALSE(channel.is_alive());
   };
 
   const CommandId conn_req_id = NextCommandId();
@@ -1626,9 +1626,9 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelFailedConfiguration) {
   QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
 
   bool channel_cb_called = false;
-  auto channel_cb = [&channel_cb_called](fxl::WeakPtr<l2cap::Channel> channel) {
+  auto channel_cb = [&channel_cb_called](l2cap::Channel::WeakPtr channel) {
     channel_cb_called = true;
-    EXPECT_FALSE(channel);
+    EXPECT_FALSE(channel.is_alive());
   };
 
   const auto conn_req_id = NextCommandId();
@@ -1685,9 +1685,9 @@ TEST_F(ChannelManagerTest, ACLInboundDynamicChannelLocalDisconnect) {
   bool closed_cb_called = false;
   auto closed_cb = [&closed_cb_called] { closed_cb_called = true; };
 
-  fxl::WeakPtr<Channel> channel;
+  Channel::WeakPtr channel;
   auto channel_cb = [&channel,
-                     closed_cb = std::move(closed_cb)](fxl::WeakPtr<l2cap::Channel> opened_chan) {
+                     closed_cb = std::move(closed_cb)](l2cap::Channel::WeakPtr opened_chan) {
     channel = std::move(opened_chan);
     EXPECT_TRUE(channel->Activate(NopRxCallback, std::move(closed_cb)));
   };
@@ -1708,7 +1708,7 @@ TEST_F(ChannelManagerTest, ACLInboundDynamicChannelLocalDisconnect) {
   RunLoopUntilIdle();
 
   EXPECT_TRUE(AllExpectedPacketsSent());
-  ASSERT_TRUE(channel);
+  ASSERT_TRUE(channel.is_alive());
   EXPECT_FALSE(closed_cb_called);
   EXPECT_EQ(kLocalId, channel->id());
   EXPECT_EQ(kRemoteId, channel->remote_id());
@@ -1786,7 +1786,7 @@ TEST_F(ChannelManagerTest, AssignLinkSecurityPropertiesOnClosedLinkDoesNothing) 
 
   chanmgr()->RemoveConnection(kTestHandle1);
   RunLoopUntilIdle();
-  EXPECT_FALSE(fixed_channels.att);
+  EXPECT_FALSE(fixed_channels.att.is_alive());
 
   // Assign a new security level.
   sm::SecurityProperties security(sm::SecurityLevel::kEncrypted, 16, /*secure_connections=*/false);
@@ -1818,7 +1818,7 @@ TEST_F(ChannelManagerTest, UpgradeSecurity) {
   LEFixedChannels fixed_channels =
       RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL, DoNothing, NopLeConnParamCallback,
                  std::move(security_handler));
-  fxl::WeakPtr<l2cap::Channel> att = std::move(fixed_channels.att);
+  l2cap::Channel::WeakPtr att = std::move(fixed_channels.att);
   ASSERT_TRUE(att->Activate(NopRxCallback, DoNothing));
 
   // Requesting security at or below the current level should succeed without
@@ -1840,7 +1840,7 @@ TEST_F(ChannelManagerTest, UpgradeSecurity) {
 
   chanmgr()->RemoveConnection(kTestHandle1);
   RunLoopUntilIdle();
-  EXPECT_FALSE(att);
+  EXPECT_FALSE(att.is_alive());
   EXPECT_EQ(1, security_request_count);
   EXPECT_EQ(2, security_status_count);
 }
@@ -1848,8 +1848,8 @@ TEST_F(ChannelManagerTest, UpgradeSecurity) {
 TEST_F(ChannelManagerTest, SignalingChannelDataPrioritizedOverDynamicChannelData) {
   QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
 
-  fxl::WeakPtr<Channel> channel;
-  auto channel_cb = [&channel](fxl::WeakPtr<l2cap::Channel> activated_chan) {
+  Channel::WeakPtr channel;
+  auto channel_cb = [&channel](l2cap::Channel::WeakPtr activated_chan) {
     channel = std::move(activated_chan);
   };
 
@@ -1870,7 +1870,7 @@ TEST_F(ChannelManagerTest, SignalingChannelDataPrioritizedOverDynamicChannelData
   RunLoopUntilIdle();
 
   EXPECT_TRUE(AllExpectedPacketsSent());
-  EXPECT_TRUE(channel);
+  EXPECT_TRUE(channel.is_alive());
 
   // Packet sent on dynamic channel should be sent with low priority.
   EXPECT_ACL_PACKET_OUT(
@@ -1894,8 +1894,8 @@ TEST_F(ChannelManagerTest, MtuOutboundChannelConfiguration) {
 
   QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
 
-  fxl::WeakPtr<Channel> channel;
-  auto channel_cb = [&channel](fxl::WeakPtr<l2cap::Channel> activated_chan) {
+  Channel::WeakPtr channel;
+  auto channel_cb = [&channel](l2cap::Channel::WeakPtr activated_chan) {
     channel = std::move(activated_chan);
   };
 
@@ -1917,7 +1917,7 @@ TEST_F(ChannelManagerTest, MtuOutboundChannelConfiguration) {
   RunLoopUntilIdle();
 
   EXPECT_TRUE(AllExpectedPacketsSent());
-  EXPECT_TRUE(channel);
+  EXPECT_TRUE(channel.is_alive());
   EXPECT_EQ(kRemoteMtu, channel->max_tx_sdu_size());
   EXPECT_EQ(kLocalMtu, channel->max_rx_sdu_size());
 }
@@ -1928,8 +1928,8 @@ TEST_F(ChannelManagerTest, MtuInboundChannelConfiguration) {
 
   QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
 
-  fxl::WeakPtr<Channel> channel;
-  auto channel_cb = [&channel](fxl::WeakPtr<l2cap::Channel> opened_chan) {
+  Channel::WeakPtr channel;
+  auto channel_cb = [&channel](l2cap::Channel::WeakPtr opened_chan) {
     channel = std::move(opened_chan);
     EXPECT_TRUE(channel->Activate(NopRxCallback, DoNothing));
   };
@@ -1950,7 +1950,7 @@ TEST_F(ChannelManagerTest, MtuInboundChannelConfiguration) {
 
   RunLoopUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
-  EXPECT_TRUE(channel);
+  EXPECT_TRUE(channel.is_alive());
   EXPECT_EQ(kRemoteMtu, channel->max_tx_sdu_size());
   EXPECT_EQ(kLocalMtu, channel->max_rx_sdu_size());
 }
@@ -1964,8 +1964,8 @@ TEST_F(ChannelManagerTest, OutboundChannelConfigurationUsesChannelParameters) {
   ReceiveAclDataPacket(testing::AclExtFeaturesInfoRsp(cmd_ids.extended_features_id, kTestHandle1,
                                                       kExtendedFeaturesBitEnhancedRetransmission));
 
-  fxl::WeakPtr<Channel> channel;
-  auto channel_cb = [&channel](fxl::WeakPtr<Channel> activated_chan) {
+  Channel::WeakPtr channel;
+  auto channel_cb = [&channel](Channel::WeakPtr activated_chan) {
     channel = std::move(activated_chan);
   };
 
@@ -1990,7 +1990,7 @@ TEST_F(ChannelManagerTest, OutboundChannelConfigurationUsesChannelParameters) {
   RunLoopUntilIdle();
 
   EXPECT_TRUE(AllExpectedPacketsSent());
-  EXPECT_TRUE(channel);
+  EXPECT_TRUE(channel.is_alive());
   EXPECT_EQ(*chan_params.max_rx_sdu_size, channel->max_rx_sdu_size());
   EXPECT_EQ(*chan_params.mode, channel->mode());
 
@@ -2018,8 +2018,8 @@ TEST_F(ChannelManagerTest, InboundChannelConfigurationUsesChannelParameters) {
   const auto cmd_ids = QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
   ReceiveAclDataPacket(testing::AclExtFeaturesInfoRsp(cmd_ids.extended_features_id, kTestHandle1,
                                                       kExtendedFeaturesBitEnhancedRetransmission));
-  fxl::WeakPtr<Channel> channel;
-  auto channel_cb = [&channel](fxl::WeakPtr<l2cap::Channel> opened_chan) {
+  Channel::WeakPtr channel;
+  auto channel_cb = [&channel](l2cap::Channel::WeakPtr opened_chan) {
     channel = std::move(opened_chan);
     EXPECT_TRUE(channel->Activate(NopRxCallback, DoNothing));
   };
@@ -2043,7 +2043,7 @@ TEST_F(ChannelManagerTest, InboundChannelConfigurationUsesChannelParameters) {
 
   RunLoopUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
-  EXPECT_TRUE(channel);
+  EXPECT_TRUE(channel.is_alive());
   EXPECT_EQ(*chan_params.max_rx_sdu_size, channel->max_rx_sdu_size());
   EXPECT_EQ(*chan_params.mode, channel->mode());
 
@@ -2075,8 +2075,8 @@ TEST_F(ChannelManagerTest,
        PacketsReceivedAfterChannelDeactivatedAndBeforeRemoveChannelCalledAreDropped) {
   QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
 
-  fxl::WeakPtr<Channel> channel;
-  auto channel_cb = [&channel](fxl::WeakPtr<l2cap::Channel> opened_chan) {
+  Channel::WeakPtr channel;
+  auto channel_cb = [&channel](l2cap::Channel::WeakPtr opened_chan) {
     channel = std::move(opened_chan);
     EXPECT_TRUE(channel->Activate(NopRxCallback, DoNothing));
   };
@@ -2095,7 +2095,7 @@ TEST_F(ChannelManagerTest,
   ReceiveAclDataPacket(InboundConfigurationResponse(kLocalConfigRequestId));
 
   EXPECT_TRUE(AllExpectedPacketsSent());
-  EXPECT_TRUE(channel);
+  EXPECT_TRUE(channel.is_alive());
 
   EXPECT_ACL_PACKET_OUT(OutboundDisconnectionRequest(NextCommandId()), kHighPriority);
 
@@ -2360,26 +2360,26 @@ TEST_F(ChannelManagerTest, DestroyingChannelManagerReleasesLogicalLinkAndClosesC
   QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
   auto link = chanmgr()->LogicalLinkForTesting(kTestHandle1);
-  ASSERT_TRUE(link);
+  ASSERT_TRUE(link.is_alive());
 
   bool closed = false;
   auto closed_cb = [&] { closed = true; };
 
   auto chan = ActivateNewFixedChannel(kSMPChannelId, kTestHandle1, closed_cb);
-  ASSERT_TRUE(chan);
+  ASSERT_TRUE(chan.is_alive());
   ASSERT_FALSE(closed);
 
   TearDown();  // Destroys channel manager
   RunLoopUntilIdle();
   EXPECT_TRUE(closed);
   // If link is still valid, there may be a memory leak.
-  EXPECT_FALSE(link);
+  EXPECT_FALSE(link.is_alive());
 
   // If the above fails, check if the channel was holding a strong reference to the link.
-  chan = nullptr;
+  chan = Channel::WeakPtr();
   RunLoopUntilIdle();
   EXPECT_TRUE(closed);
-  EXPECT_FALSE(link);
+  EXPECT_FALSE(link.is_alive());
 }
 
 TEST_F(ChannelManagerTest, RequestAclPriorityNormal) {
@@ -2775,7 +2775,7 @@ TEST_F(ChannelManagerTest, QueuedSinkAclPriorityForClosedChannelIsIgnored) {
   EXPECT_ACL_PACKET_OUT(OutboundDisconnectionRequest(NextCommandId()), kHighPriority);
   // Closing channel will queue normal request.
   channel->Deactivate();
-  EXPECT_FALSE(channel);
+  EXPECT_FALSE(channel.is_alive());
 
   // Send result to source request. Second sink request should receive error result too.
   requests[1].second(fit::ok());
@@ -2806,8 +2806,8 @@ TEST_F(ChannelManagerTest, InspectHierarchy) {
   EXPECT_ACL_PACKET_OUT(OutboundConnectionRequest(conn_req_id), kHighPriority);
   EXPECT_ACL_PACKET_OUT(OutboundConfigurationRequest(config_req_id), kHighPriority);
   EXPECT_ACL_PACKET_OUT(OutboundConfigurationResponse(kPeerConfigRequestId), kHighPriority);
-  fxl::WeakPtr<Channel> dynamic_channel;
-  auto channel_cb = [&dynamic_channel](fxl::WeakPtr<l2cap::Channel> activated_chan) {
+  Channel::WeakPtr dynamic_channel;
+  auto channel_cb = [&dynamic_channel](l2cap::Channel::WeakPtr activated_chan) {
     dynamic_channel = std::move(activated_chan);
   };
   ActivateOutboundChannel(kTestPsm, kChannelParams, std::move(channel_cb), kTestHandle1, []() {});
@@ -2858,8 +2858,8 @@ TEST_F(ChannelManagerTest,
   ChannelParameters chan_params;
   chan_params.flush_timeout = kFlushTimeout;
 
-  fxl::WeakPtr<Channel> channel;
-  auto channel_cb = [&channel](fxl::WeakPtr<l2cap::Channel> activated_chan) {
+  Channel::WeakPtr channel;
+  auto channel_cb = [&channel](l2cap::Channel::WeakPtr activated_chan) {
     channel = std::move(activated_chan);
   };
   SetUpOutboundChannelWithCallback(kLocalId, kRemoteId, /*closed_cb=*/DoNothing, chan_params,
@@ -2867,14 +2867,14 @@ TEST_F(ChannelManagerTest,
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
   // Channel should not be returned yet because setting flush timeout has not completed yet.
-  EXPECT_FALSE(channel);
+  EXPECT_FALSE(channel.is_alive());
 
   // Completing the command should cause the channel to be returned.
   const auto kCommandComplete = bt::testing::CommandCompletePacket(
       hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::SUCCESS);
   test_device()->SendCommandChannelPacket(kCommandComplete);
   RunLoopUntilIdle();
-  ASSERT_TRUE(channel);
+  ASSERT_TRUE(channel.is_alive());
   ASSERT_TRUE(channel->info().flush_timeout.has_value());
   EXPECT_EQ(channel->info().flush_timeout.value(), kFlushTimeout);
 
@@ -2938,8 +2938,8 @@ TEST_F(ChannelManagerTest, InboundChannelWithFlushTimeoutInChannelParameters) {
   ChannelParameters chan_params;
   chan_params.flush_timeout = kFlushTimeout;
 
-  fxl::WeakPtr<Channel> channel;
-  auto channel_cb = [&channel](fxl::WeakPtr<l2cap::Channel> opened_chan) {
+  Channel::WeakPtr channel;
+  auto channel_cb = [&channel](l2cap::Channel::WeakPtr opened_chan) {
     channel = std::move(opened_chan);
     EXPECT_TRUE(channel->Activate(NopRxCallback, DoNothing));
   };
@@ -2960,7 +2960,7 @@ TEST_F(ChannelManagerTest, InboundChannelWithFlushTimeoutInChannelParameters) {
   RunLoopUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
-  ASSERT_TRUE(channel);
+  ASSERT_TRUE(channel.is_alive());
   ASSERT_TRUE(channel->info().flush_timeout.has_value());
   EXPECT_EQ(channel->info().flush_timeout.value(), kFlushTimeout);
 
@@ -3063,7 +3063,7 @@ TEST_P(StartA2dpOffloadTest, StartA2dpOffloadSuccess) {
   const hci_android::A2dpCodecType codec = GetParam();
   Channel::A2dpOffloadConfiguration config = BuildA2dpOffloadConfiguration(codec);
 
-  fxl::WeakPtr<Channel> channel = SetUpOutboundChannel();
+  Channel::WeakPtr channel = SetUpOutboundChannel();
 
   const auto command_complete = bt::testing::CommandCompletePacket(hci_android::kA2dpOffloadCommand,
                                                                    hci_spec::StatusCode::SUCCESS);
@@ -3092,7 +3092,7 @@ TEST_F(ChannelManagerTest, StartA2dpOffloadInvalidConfiguration) {
   RunLoopUntilIdle();
 
   Channel::A2dpOffloadConfiguration config = BuildA2dpOffloadConfiguration();
-  fxl::WeakPtr<Channel> channel = SetUpOutboundChannel();
+  Channel::WeakPtr channel = SetUpOutboundChannel();
 
   const auto command_complete = bt::testing::CommandCompletePacket(
       hci_android::kA2dpOffloadCommand, hci_spec::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
@@ -3118,7 +3118,7 @@ TEST_F(ChannelManagerTest, StartA2dpOffloadAlreadyStarted) {
   RunLoopUntilIdle();
 
   Channel::A2dpOffloadConfiguration config = BuildA2dpOffloadConfiguration();
-  fxl::WeakPtr<Channel> channel = SetUpOutboundChannel();
+  Channel::WeakPtr channel = SetUpOutboundChannel();
 
   const auto command_complete = bt::testing::CommandCompletePacket(
       hci_android::kA2dpOffloadCommand, hci_spec::StatusCode::CONNECTION_ALREADY_EXISTS);
@@ -3144,7 +3144,7 @@ TEST_F(ChannelManagerTest, StartA2dpOffloadStatusStarted) {
   RunLoopUntilIdle();
 
   Channel::A2dpOffloadConfiguration config = BuildA2dpOffloadConfiguration();
-  fxl::WeakPtr<Channel> channel = SetUpOutboundChannel();
+  Channel::WeakPtr channel = SetUpOutboundChannel();
 
   const auto command_complete = bt::testing::CommandCompletePacket(hci_android::kA2dpOffloadCommand,
                                                                    hci_spec::StatusCode::SUCCESS);
@@ -3179,7 +3179,7 @@ TEST_F(ChannelManagerTest, StartA2dpOffloadChannelDisconnected) {
   RunLoopUntilIdle();
 
   Channel::A2dpOffloadConfiguration config = BuildA2dpOffloadConfiguration();
-  fxl::WeakPtr<Channel> channel = SetUpOutboundChannel();
+  Channel::WeakPtr channel = SetUpOutboundChannel();
 
   const auto command_complete = bt::testing::CommandCompletePacket(hci_android::kA2dpOffloadCommand,
                                                                    hci_spec::StatusCode::SUCCESS);
@@ -3195,11 +3195,11 @@ TEST_F(ChannelManagerTest, StartA2dpOffloadChannelDisconnected) {
     result_ = result;
   });
 
-  ASSERT_TRUE(channel);
+  ASSERT_TRUE(channel.is_alive());
   const auto disconn_req_id = NextCommandId();
   EXPECT_ACL_PACKET_OUT(OutboundDisconnectionRequest(disconn_req_id), kHighPriority);
   channel->Deactivate();
-  ASSERT_FALSE(channel);
+  ASSERT_FALSE(channel.is_alive());
 
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());

@@ -62,9 +62,9 @@ class FakeL2cap final : public ChannelManager {
       hci_spec::ConnectionHandle handle, hci_spec::LEPreferredConnectionParameters params,
       ConnectionParameterUpdateRequestCallback request_cb) override;
 
-  fxl::WeakPtr<Channel> OpenFixedChannel(hci_spec::ConnectionHandle connection_handle,
-                                         ChannelId channel_id) override {
-    return nullptr;
+  Channel::WeakPtr OpenFixedChannel(hci_spec::ConnectionHandle connection_handle,
+                                    ChannelId channel_id) override {
+    return Channel::WeakPtr();
   }
   void OpenL2capChannel(hci_spec::ConnectionHandle handle, PSM psm, ChannelParameters params,
                         ChannelCallback cb) override;
@@ -72,14 +72,14 @@ class FakeL2cap final : public ChannelManager {
                        ChannelCallback channel_callback) override;
   void UnregisterService(PSM psm) override;
 
-  fxl::WeakPtr<internal::LogicalLink> LogicalLinkForTesting(
+  WeakSelf<internal::LogicalLink>::WeakPtr LogicalLinkForTesting(
       hci_spec::ConnectionHandle handle) override {
-    return nullptr;
+    return WeakSelf<internal::LogicalLink>::WeakPtr();
   }
 
   // Called when a new channel gets opened. Tests can use this to obtain a
   // reference to all channels.
-  using FakeChannelCallback = fit::function<void(fxl::WeakPtr<testing::FakeChannel>)>;
+  using FakeChannelCallback = fit::function<void(testing::FakeChannel::WeakPtr)>;
   void set_channel_callback(FakeChannelCallback callback) { chan_cb_ = std::move(callback); }
   void set_simulate_open_channel_failure(bool simulate_failure) {
     simulate_open_channel_failure_ = simulate_failure;
@@ -124,10 +124,10 @@ class FakeL2cap final : public ChannelManager {
   LinkData* RegisterInternal(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
                              bt::LinkType link_type, LinkErrorCallback link_error_callback);
 
-  fxl::WeakPtr<testing::FakeChannel> OpenFakeChannel(
+  testing::FakeChannel::WeakPtr OpenFakeChannel(
       LinkData* link, ChannelId id, ChannelId remote_id,
       ChannelInfo info = ChannelInfo::MakeBasicMode(kDefaultMTU, kDefaultMTU));
-  fxl::WeakPtr<testing::FakeChannel> OpenFakeFixedChannel(LinkData* link, ChannelId id);
+  testing::FakeChannel::WeakPtr OpenFakeFixedChannel(LinkData* link, ChannelId id);
 
   // Gets the link data for |handle|, creating it if necessary.
   LinkData& GetLinkData(hci_spec::ConnectionHandle handle);

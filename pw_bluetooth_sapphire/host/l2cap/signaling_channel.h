@@ -100,7 +100,7 @@ class SignalingChannelInterface {
 // TODO(armansito): Implement flow control (RTX/ERTX timers).
 class SignalingChannel : public SignalingChannelInterface {
  public:
-  SignalingChannel(fxl::WeakPtr<Channel> chan, hci_spec::ConnectionRole role);
+  SignalingChannel(Channel::WeakPtr chan, hci_spec::ConnectionRole role);
   ~SignalingChannel() override = default;
 
   // SignalingChannelInterface overrides
@@ -255,7 +255,7 @@ class SignalingChannel : public SignalingChannelInterface {
   // Stores handlers for incoming request packets.
   std::unordered_map<CommandCode, RequestDelegate> inbound_handlers_;
 
-  fxl::WeakPtrFactory<SignalingChannel> weak_ptr_factory_;
+  WeakSelf<SignalingChannel> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SignalingChannel);
 };

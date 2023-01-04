@@ -6,21 +6,21 @@
 
 namespace bt::l2cap {
 
-ScopedChannel::ScopedChannel(fxl::WeakPtr<Channel> chan) : chan_(std::move(chan)) {}
+ScopedChannel::ScopedChannel(Channel::WeakPtr chan) : chan_(std::move(chan)) {}
 
 ScopedChannel::~ScopedChannel() { Close(); }
 
-void ScopedChannel::Reset(fxl::WeakPtr<Channel> new_channel) {
-  if (chan_) {
+void ScopedChannel::Reset(Channel::WeakPtr new_channel) {
+  if (chan_.is_alive()) {
     Close();
   }
   chan_ = std::move(new_channel);
 }
 
 void ScopedChannel::Close() {
-  if (chan_) {
+  if (chan_.is_alive()) {
     chan_->Deactivate();
-    chan_ = nullptr;
+    chan_ = Channel::WeakPtr();
   }
 }
 

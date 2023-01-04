@@ -305,7 +305,7 @@ class BrEdrDynamicChannel final : public DynamicChannel {
   // Sections 5 and 7.1.2).
   ChannelConfiguration local_config_;
 
-  fxl::WeakPtrFactory<BrEdrDynamicChannel> weak_ptr_factory_;
+  WeakSelf<BrEdrDynamicChannel> weak_self_;
 
   // Counter for number of basic mode configuration requests
   uint8_t num_basic_config_requests_ = 0;

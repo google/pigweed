@@ -5,12 +5,11 @@
 #include "le_signaling_channel.h"
 
 #include "channel.h"
-#include "logical_link.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
 namespace bt::l2cap::internal {
 
-LESignalingChannel::LESignalingChannel(fxl::WeakPtr<Channel> chan, hci_spec::ConnectionRole role)
+LESignalingChannel::LESignalingChannel(Channel::WeakPtr chan, hci_spec::ConnectionRole role)
     : SignalingChannel(std::move(chan), role) {
   set_mtu(kMinLEMTU);
 }

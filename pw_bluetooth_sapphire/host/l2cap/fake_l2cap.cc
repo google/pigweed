@@ -74,7 +74,7 @@ bool FakeL2cap::TriggerInboundL2capChannel(hci_spec::ConnectionHandle handle, l2
   }
 
   auto chan = OpenFakeChannel(&link_data, id, remote_id, channel_info);
-  cb(std::move(chan));
+  cb(chan->GetWeakPtr());
 
   return true;
 }
@@ -101,7 +101,7 @@ ChannelManager::LEFixedChannels FakeL2cap::AddLEConnection(
   // Open the ATT and SMP fixed channels.
   auto att = OpenFakeFixedChannel(data, l2cap::kATTChannelId);
   auto smp = OpenFakeFixedChannel(data, l2cap::kLESMPChannelId);
-  return LEFixedChannels{.att = std::move(att), .smp = std::move(smp)};
+  return LEFixedChannels{.att = att->GetWeakPtr(), .smp = smp->GetWeakPtr()};
 }
 
 void FakeL2cap::RemoveConnection(hci_spec::ConnectionHandle handle) { links_.erase(handle); }
@@ -147,11 +147,16 @@ void FakeL2cap::OpenL2capChannel(hci_spec::ConnectionHandle handle, l2cap::PSM p
         /*max_tx_pdu_payload_size=*/kMaxTxPduPayloadSize);
   }
 
-  auto chan = OpenFakeChannel(&link_data, chan_data.local_id, chan_data.remote_id, channel_info);
+  auto fake_chan =
+      OpenFakeChannel(&link_data, chan_data.local_id, chan_data.remote_id, channel_info);
+  l2cap::Channel::WeakPtr chan;
+  if (fake_chan.is_alive()) {
+    chan = fake_chan->GetWeakPtr();
+  }
 
   // Simulate async channel creation process.
   async::PostTask(async_get_default_dispatcher(),
-                  [cb = std::move(cb), chan = std::move(chan)]() { cb(std::move(chan)); });
+                  [cb = std::move(cb), chan = std::move(chan)]() { cb(chan); });
 }
 
 bool FakeL2cap::RegisterService(l2cap::PSM psm, l2cap::ChannelParameters params,
@@ -187,10 +192,10 @@ FakeL2cap::LinkData* FakeL2cap::RegisterInternal(hci_spec::ConnectionHandle hand
   return &data;
 }
 
-fxl::WeakPtr<FakeChannel> FakeL2cap::OpenFakeChannel(LinkData* link, l2cap::ChannelId id,
-                                                     l2cap::ChannelId remote_id,
-                                                     l2cap::ChannelInfo info) {
-  fxl::WeakPtr<FakeChannel> chan;
+FakeChannel::WeakPtr FakeL2cap::OpenFakeChannel(LinkData* link, l2cap::ChannelId id,
+                                                l2cap::ChannelId remote_id,
+                                                l2cap::ChannelInfo info) {
+  FakeChannel::WeakPtr chan;
   if (!simulate_open_channel_failure_) {
     auto channel = std::make_unique<FakeChannel>(id, remote_id, link->handle, link->type, info);
     chan = channel->AsWeakPtr();
@@ -205,7 +210,7 @@ fxl::WeakPtr<FakeChannel> FakeL2cap::OpenFakeChannel(LinkData* link, l2cap::Chan
   return chan;
 }
 
-fxl::WeakPtr<FakeChannel> FakeL2cap::OpenFakeFixedChannel(LinkData* link, l2cap::ChannelId id) {
+FakeChannel::WeakPtr FakeL2cap::OpenFakeFixedChannel(LinkData* link, l2cap::ChannelId id) {
   return OpenFakeChannel(link, id, id);
 }
 

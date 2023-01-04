@@ -267,7 +267,7 @@ void LowEnergyConnection::StartConnectionPauseCentralTimeout() {
 }
 
 bool LowEnergyConnection::OnL2capFixedChannelsOpened(
-    fxl::WeakPtr<l2cap::Channel> att, fxl::WeakPtr<l2cap::Channel> smp,
+    l2cap::Channel::WeakPtr att, l2cap::Channel::WeakPtr smp,
     LowEnergyConnectionOptions connection_options) {
   bt_log(DEBUG, "gap-le", "ATT and SMP fixed channels open (peer: %s)", bt_str(peer_id()));
 
@@ -497,7 +497,7 @@ void LowEnergyConnection::MaybeUpdateConnectionParameters() {
   }
 }
 
-bool LowEnergyConnection::InitializeGatt(fxl::WeakPtr<l2cap::Channel> att_channel,
+bool LowEnergyConnection::InitializeGatt(l2cap::Channel::WeakPtr att_channel,
                                          std::optional<UUID> service_uuid) {
   att_bearer_ = att::Bearer::Create(std::move(att_channel));
   if (!att_bearer_) {

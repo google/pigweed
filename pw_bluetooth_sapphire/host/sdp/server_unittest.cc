@@ -28,7 +28,7 @@ using TestingBase = l2cap::testing::FakeChannelTest;
 constexpr hci_spec::ConnectionHandle kTestHandle1 = 1;
 constexpr hci_spec::ConnectionHandle kTestHandle2 = 2;
 
-void NopConnectCallback(fxl::WeakPtr<l2cap::Channel>, const DataElement&) {}
+void NopConnectCallback(l2cap::Channel::WeakPtr, const DataElement&) {}
 
 constexpr l2cap::ChannelParameters kChannelParams;
 
@@ -50,7 +50,7 @@ class ServerTest : public TestingBase {
   }
 
   void TearDown() override {
-    channel_ = nullptr;
+    channel_.reset();
     server_ = nullptr;
     l2cap_ = nullptr;
   }
@@ -114,7 +114,7 @@ class ServerTest : public TestingBase {
   }
 
  private:
-  fxl::WeakPtr<l2cap::testing::FakeChannel> channel_;
+  l2cap::testing::FakeChannel::WeakPtr channel_;
   std::unique_ptr<l2cap::testing::FakeL2cap> l2cap_;
   std::unique_ptr<Server> server_;
 };
@@ -136,7 +136,7 @@ constexpr l2cap::ChannelId kSdpChannel = 0x0041;
 TEST_F(ServerTest, BasicError) {
   EXPECT_TRUE(l2cap()->TriggerInboundL2capChannel(kTestHandle1, l2cap::kSDP, kSdpChannel, 0x0bad));
   RunLoopUntilIdle();
-  ASSERT_TRUE(fake_chan());
+  ASSERT_TRUE(fake_chan().is_alive());
   EXPECT_TRUE(fake_chan()->activated());
 
   const auto kRspErrSize = SDP_ERROR_RSP(0x1001, ErrorCode::kInvalidSize);
@@ -167,7 +167,7 @@ TEST_F(ServerTest, BasicError) {
   EXPECT_TRUE(
       l2cap()->TriggerInboundL2capChannel(kTestHandle1, l2cap::kSDP, kSdpChannel + 1, 0x0bad));
   RunLoopUntilIdle();
-  ASSERT_TRUE(fake_chan());
+  ASSERT_TRUE(fake_chan().is_alive());
   EXPECT_TRUE(fake_chan()->activated());
 
   EXPECT_TRUE(ReceiveAndExpect(kTooSmall, kRspTooSmall));
@@ -1170,11 +1170,11 @@ TEST_F(ServerTest, ConnectionCallbacks) {
   EXPECT_TRUE(l2cap()->TriggerInboundL2capChannel(kTestHandle1, l2cap::kSDP, kSdpChannel, 0x0bad));
   RunLoopUntilIdle();
 
-  std::vector<fxl::WeakPtr<l2cap::Channel>> channels;
+  std::vector<l2cap::Channel::WeakPtr> channels;
   hci_spec::ConnectionHandle latest_handle;
 
   // Register a service
-  AddA2DPSink([&channels, &latest_handle](fxl::WeakPtr<l2cap::Channel> chan, const auto& protocol) {
+  AddA2DPSink([&channels, &latest_handle](l2cap::Channel::WeakPtr chan, const auto& protocol) {
     bt_log(TRACE, "test", "Got channel for the a2dp sink");
     latest_handle = chan->link_handle();
     channels.emplace_back(std::move(chan));
@@ -1197,7 +1197,7 @@ TEST_F(ServerTest, ConnectionCallbacks) {
 
   ASSERT_EQ(2u, channels.size());
   EXPECT_EQ(kTestHandle2, latest_handle);
-  EXPECT_NE(channels.front().get(), channels.back().get());
+  EXPECT_NE(&channels.front().get(), &channels.back().get());
 
   // Connect to the service again, on the first connection.
   EXPECT_TRUE(

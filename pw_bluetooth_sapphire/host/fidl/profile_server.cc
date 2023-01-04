@@ -454,8 +454,8 @@ void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id,
   fidlbredr::ChannelParameters parameters = std::move(*l2cap_params.mutable_parameters());
 
   auto connected_cb = [self = weak_ptr_factory_.GetWeakPtr(), cb = callback.share(),
-                       id](fxl::WeakPtr<bt::l2cap::Channel> chan) {
-    if (!chan) {
+                       id](bt::l2cap::Channel::WeakPtr chan) {
+    if (!chan.is_alive()) {
       bt_log(INFO, "fidl", "Connect: Channel socket is empty, returning failed. (peer: %s)",
              bt_str(id));
       cb(fpromise::error(fuchsia::bluetooth::ErrorCode::FAILED));
@@ -553,7 +553,7 @@ void ProfileServer::ConnectSco(fuchsia::bluetooth::PeerId fidl_peer_id, bool ini
       adapter()->bredr()->AcceptScoConnection(peer_id, params, std::move(callback));
 }
 
-void ProfileServer::OnChannelConnected(uint64_t ad_id, fxl::WeakPtr<bt::l2cap::Channel> channel,
+void ProfileServer::OnChannelConnected(uint64_t ad_id, bt::l2cap::Channel::WeakPtr channel,
                                        const bt::sdp::DataElement& protocol_list) {
   auto it = current_advertised_.find(ad_id);
   if (it == current_advertised_.end()) {
@@ -722,7 +722,7 @@ void ProfileServer::OnAudioDirectionExtError(AudioDirectionExt* ext_server, zx_s
 }
 
 fidl::InterfaceHandle<fidlbredr::AudioDirectionExt> ProfileServer::BindAudioDirectionExtServer(
-    fxl::WeakPtr<bt::l2cap::Channel> channel) {
+    bt::l2cap::Channel::WeakPtr channel) {
   fidl::InterfaceHandle<fidlbredr::AudioDirectionExt> client;
 
   bt::l2cap::Channel::UniqueId unique_id = channel->unique_id();
@@ -749,7 +749,7 @@ void ProfileServer::OnL2capParametersExtError(L2capParametersExt* ext_server, zx
 }
 
 fidl::InterfaceHandle<fidlbredr::L2capParametersExt> ProfileServer::BindL2capParametersExtServer(
-    fxl::WeakPtr<bt::l2cap::Channel> channel) {
+    bt::l2cap::Channel::WeakPtr channel) {
   fidl::InterfaceHandle<fidlbredr::L2capParametersExt> client;
 
   bt::l2cap::Channel::UniqueId unique_id = channel->unique_id();
@@ -775,7 +775,7 @@ void ProfileServer::OnAudioOffloadExtError(AudioOffloadExt* ext_server, zx_statu
 }
 
 fidl::InterfaceHandle<fidlbredr::AudioOffloadExt> ProfileServer::BindAudioOffloadExtServer(
-    fxl::WeakPtr<bt::l2cap::Channel> channel) {
+    bt::l2cap::Channel::WeakPtr channel) {
   fidl::InterfaceHandle<fidlbredr::AudioOffloadExt> client;
 
   std::unique_ptr<bthost::ProfileServer::AudioOffloadExt> audio_offload_ext_server =
@@ -790,8 +790,8 @@ fidl::InterfaceHandle<fidlbredr::AudioOffloadExt> ProfileServer::BindAudioOffloa
 }
 
 fuchsia::bluetooth::bredr::Channel ProfileServer::ChannelToFidl(
-    fxl::WeakPtr<bt::l2cap::Channel> channel) {
-  BT_ASSERT(channel);
+    bt::l2cap::Channel::WeakPtr channel) {
+  BT_ASSERT(channel.is_alive());
   fidlbredr::Channel fidl_chan;
   fidl_chan.set_channel_mode(ChannelModeToFidl(channel->mode()));
   fidl_chan.set_max_tx_sdu_size(channel->max_tx_sdu_size());

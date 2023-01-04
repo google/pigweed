@@ -141,7 +141,7 @@ class FakeAdapter final : public Adapter {
 
     // Called with a reference to the l2cap::FakeChannel created when a channel is connected with
     // Connect().
-    using ChannelCallback = fit::function<void(fxl::WeakPtr<l2cap::testing::FakeChannel>)>;
+    using ChannelCallback = fit::function<void(l2cap::testing::FakeChannel::WeakPtr)>;
     void set_l2cap_channel_callback(ChannelCallback cb) { channel_cb_ = std::move(cb); }
 
     // Destroys the channel, invaliding all weak pointers. Returns true if the channel was

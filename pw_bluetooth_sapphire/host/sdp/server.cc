@@ -16,9 +16,9 @@ using RegistrationHandle = Server::RegistrationHandle;
 
 namespace {
 
-static constexpr const char* kInspectRegisteredPsmName = "registered_psms";
-static constexpr const char* kInspectPsmName = "psm";
-static constexpr const char* kInspectRecordName = "record";
+constexpr const char* kInspectRegisteredPsmName = "registered_psms";
+constexpr const char* kInspectPsmName = "psm";
+constexpr const char* kInspectRecordName = "record";
 
 // Finds the PSM that is specified in a ProtocolDescriptorList
 // Returns l2cap::kInvalidPSM if none is found or the list is invalid
@@ -36,7 +36,8 @@ l2cap::PSM FindProtocolListPSM(const DataElement& protocol_list) {
   const auto* psm_elem = l2cap_protocol->At(1);
   if (psm_elem && psm_elem->Get<uint16_t>()) {
     return *psm_elem->Get<uint16_t>();
-  } else if (psm_elem) {
+  }
+  if (psm_elem) {
     bt_log(TRACE, "sdp", "ProtocolDescriptorList invalid L2CAP parameter type");
     return l2cap::kInvalidPSM;
   }
@@ -92,7 +93,7 @@ l2cap::PSM PSMFromProtocolList(ServiceRecord* record, const DataElement* protoco
 // Sets the browse group list of the record to be the top-level group.
 void SetBrowseGroupList(ServiceRecord* record) {
   std::vector<DataElement> browse_list;
-  browse_list.emplace_back(DataElement(kPublicBrowseRootUuid));
+  browse_list.emplace_back(kPublicBrowseRootUuid);
   record->SetAttribute(kBrowseGroupList, DataElement(std::move(browse_list)));
 }
 
@@ -117,7 +118,7 @@ ServiceRecord Server::MakeServiceDiscoveryService() {
   // The VersionNumberList attribute. See v5.0, Vol 3, Part B, Sec 5.2.3
   // Version 1.0
   std::vector<DataElement> version_attribute;
-  version_attribute.emplace_back(DataElement(kVersion));
+  version_attribute.emplace_back(kVersion);
   sdp.SetAttribute(kSDP_VersionNumberList, DataElement(std::move(version_attribute)));
 
   // ServiceDatabaseState attribute. Changes when a service gets added or
@@ -157,8 +158,8 @@ void Server::AttachInspect(inspect::Node& parent, std::string name) {
   UpdateInspectProperties();
 }
 
-bool Server::AddConnection(fxl::WeakPtr<l2cap::Channel> channel) {
-  BT_ASSERT(channel);
+bool Server::AddConnection(l2cap::Channel::WeakPtr channel) {
+  BT_ASSERT(channel.is_alive());
   hci_spec::ConnectionHandle handle = channel->link_handle();
   bt_log(DEBUG, "sdp", "add connection handle %#.4x", handle);
 
@@ -317,12 +318,12 @@ RegistrationHandle Server::RegisterService(std::vector<ServiceRecord> records,
     bt_log(TRACE, "sdp", "Allocating PSM %#.4x for new service", psm);
     l2cap_->RegisterService(
         psm, chan_params,
-        [psm = psm, conn_cb = conn_cb.share()](fxl::WeakPtr<l2cap::Channel> channel) mutable {
+        [psm = psm, conn_cb = conn_cb.share()](l2cap::Channel::WeakPtr channel) mutable {
           bt_log(TRACE, "sdp", "Channel connected to %#.4x", psm);
           // Build the L2CAP descriptor
           std::vector<DataElement> protocol_l2cap;
-          protocol_l2cap.emplace_back(DataElement(protocol::kL2CAP));
-          protocol_l2cap.emplace_back(DataElement(psm));
+          protocol_l2cap.emplace_back(protocol::kL2CAP);
+          protocol_l2cap.emplace_back(psm);
           std::vector<DataElement> protocol;
           protocol.emplace_back(std::move(protocol_l2cap));
           conn_cb(std::move(channel), DataElement(std::move(protocol)));
@@ -544,7 +545,7 @@ void Server::Send(l2cap::Channel::UniqueId channel_id, ByteBufferPtr bytes) {
     bt_log(ERROR, "sdp", "can't find peer to respond to; dropping");
     return;
   }
-  l2cap::Channel* chan = it->second.get();
+  l2cap::Channel::WeakPtr chan = it->second.get();
   chan->Send(std::move(bytes));
 }
 
@@ -587,7 +588,7 @@ void Server::InspectProperties::InspectServiceRecordProperties::AttachInspect(in
   for (const auto& psm : psms) {
     auto psm_node = psms_node.CreateChild(psms_node.UniqueName(kInspectPsmName));
     auto psm_string = psm_node.CreateString(kInspectPsmName, l2cap::PsmToString(psm));
-    psm_nodes.push_back(std::make_pair(std::move(psm_node), std::move(psm_string)));
+    psm_nodes.emplace_back(std::move(psm_node), std::move(psm_string));
   }
 }
 

@@ -21,7 +21,6 @@ constexpr uint16_t kResponseMaxSize = 672;
 class ClientTest : public TestingBase {
  public:
   ClientTest() = default;
-  ~ClientTest() = default;
 
  protected:
   void SetUp() override {
@@ -43,7 +42,7 @@ class ClientTest : public TestingBase {
 //  - closes SDP channel when client is deallocated
 TEST_F(ClientTest, ConnectAndQuery) {
   {
-    auto client = Client::Create(fake_chan());
+    auto client = Client::Create(fake_chan()->GetWeakPtr());
 
     EXPECT_TRUE(fake_chan()->activated());
 
@@ -138,7 +137,7 @@ TEST_F(ClientTest, ConnectAndQuery) {
 
 TEST_F(ClientTest, TwoQueriesSubsequent) {
   {
-    auto client = Client::Create(fake_chan());
+    auto client = Client::Create(fake_chan()->GetWeakPtr());
 
     EXPECT_TRUE(fake_chan()->activated());
 
@@ -213,7 +212,7 @@ TEST_F(ClientTest, TwoQueriesSubsequent) {
 
 TEST_F(ClientTest, TwoQueriesQueued) {
   {
-    auto client = Client::Create(fake_chan());
+    auto client = Client::Create(fake_chan()->GetWeakPtr());
 
     EXPECT_TRUE(fake_chan()->activated());
 
@@ -295,7 +294,7 @@ TEST_F(ClientTest, TwoQueriesQueued) {
 //  - responds with the results
 //  - gives up when callback returns false
 TEST_F(ClientTest, ContinuingResponseRequested) {
-  auto client = Client::Create(fake_chan());
+  auto client = Client::Create(fake_chan()->GetWeakPtr());
 
   size_t cb_count = 0;
   auto result_cb =
@@ -371,7 +370,7 @@ TEST_F(ClientTest, ContinuingResponseRequested) {
 //  - receives response with no results
 //  - callback with no results (kNotFound right away)
 TEST_F(ClientTest, NoResults) {
-  auto client = Client::Create(fake_chan());
+  auto client = Client::Create(fake_chan()->GetWeakPtr());
 
   size_t cb_count = 0;
   auto result_cb =
@@ -433,7 +432,7 @@ TEST_F(ClientTest, NoResults) {
 //  - remote end disconnects
 //  - result should be called with kLinkDisconnected
 TEST_F(ClientTest, Disconnected) {
-  auto client = Client::Create(fake_chan());
+  auto client = Client::Create(fake_chan()->GetWeakPtr());
 
   size_t cb_count = 0;
   auto result_cb =
@@ -491,7 +490,7 @@ TEST_F(ClientTest, Disconnected) {
 //  - remote end sends invalid response
 //  - callback receives no response with a malformed packet error
 TEST_F(ClientTest, InvalidResponse) {
-  auto client = Client::Create(fake_chan());
+  auto client = Client::Create(fake_chan()->GetWeakPtr());
 
   size_t cb_count = 0;
   auto result_cb =
@@ -550,7 +549,7 @@ TEST_F(ClientTest, InvalidResponse) {
 // Time out (or possibly dropped packets that were malformed)
 TEST_F(ClientTest, Timeout) {
   constexpr uint32_t kTimeoutMs = 10000;
-  auto client = Client::Create(fake_chan());
+  auto client = Client::Create(fake_chan()->GetWeakPtr());
 
   size_t cb_count = 0;
   auto result_cb =
@@ -603,7 +602,7 @@ TEST_F(ClientTest, Timeout) {
 
 TEST_F(ClientTest, DestroyClientInErrorResultCallbackDoesNotCrash) {
   constexpr uint32_t kTimeoutMs = 10000;
-  auto client = Client::Create(fake_chan());
+  auto client = Client::Create(fake_chan()->GetWeakPtr());
 
   size_t cb_count = 0;
   auto result_cb =
@@ -631,7 +630,7 @@ TEST_F(ClientTest, DestroyClientInErrorResultCallbackDoesNotCrash) {
 }
 
 TEST_F(ClientTest, DestroyClientInDisconnectedResultCallback) {
-  auto client = Client::Create(fake_chan());
+  auto client = Client::Create(fake_chan()->GetWeakPtr());
 
   size_t cb_count = 0;
   auto result_cb =

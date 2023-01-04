@@ -29,13 +29,13 @@ class BearerTest : public l2cap::testing::MockChannelTest {
  protected:
   void SetUp() override {
     ChannelOptions options(l2cap::kATTChannelId);
-    bearer_ = Bearer::Create(CreateFakeChannel(options));
+    bearer_ = Bearer::Create(CreateFakeChannel(options)->GetWeakPtr());
   }
 
   void TearDown() override { bearer_ = nullptr; }
 
   Bearer* bearer() const { return bearer_.get(); }
-  l2cap::testing::FakeChannel* fake_att_chan() const { return fake_chan().get(); }
+  l2cap::testing::FakeChannel::WeakPtr fake_att_chan() const { return fake_chan(); }
 
   void DeleteBearer() { bearer_ = nullptr; }
 

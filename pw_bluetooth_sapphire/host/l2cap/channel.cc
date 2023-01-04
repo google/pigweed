@@ -29,7 +29,8 @@ using pw::bluetooth::AclPriority;
 
 Channel::Channel(ChannelId id, ChannelId remote_id, bt::LinkType link_type,
                  hci_spec::ConnectionHandle link_handle, ChannelInfo info)
-    : id_(id),
+    : WeakSelf(this),
+      id_(id),
       remote_id_(remote_id),
       link_type_(link_type),
       link_handle_(link_handle),
@@ -51,8 +52,7 @@ constexpr const char* kInspectPsmPropertyName = "psm";
 }  // namespace
 
 std::unique_ptr<ChannelImpl> ChannelImpl::CreateFixedChannel(
-    ChannelId id, fxl::WeakPtr<internal::LogicalLink> link,
-    hci::CommandChannel::WeakPtr cmd_channel) {
+    ChannelId id, internal::LogicalLinkWeakPtr link, hci::CommandChannel::WeakPtr cmd_channel) {
   // A fixed channel's endpoints have the same local and remote identifiers.
   // Setting the ChannelInfo MTU to kMaxMTU effectively cancels any L2CAP-level MTU enforcement for
   // services which operate over fixed channels. Such services often define minimum MTU values in
@@ -64,21 +64,19 @@ std::unique_ptr<ChannelImpl> ChannelImpl::CreateFixedChannel(
 }
 
 std::unique_ptr<ChannelImpl> ChannelImpl::CreateDynamicChannel(
-    ChannelId id, ChannelId peer_id, fxl::WeakPtr<internal::LogicalLink> link, ChannelInfo info,
+    ChannelId id, ChannelId peer_id, internal::LogicalLinkWeakPtr link, ChannelInfo info,
     hci::CommandChannel::WeakPtr cmd_channel) {
   return std::unique_ptr<ChannelImpl>(
       new ChannelImpl(id, peer_id, link, info, std::move(cmd_channel)));
 }
 
-ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id,
-                         fxl::WeakPtr<internal::LogicalLink> link, ChannelInfo info,
-                         hci::CommandChannel::WeakPtr cmd_channel)
+ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id, internal::LogicalLinkWeakPtr link,
+                         ChannelInfo info, hci::CommandChannel::WeakPtr cmd_channel)
     : Channel(id, remote_id, link->type(), link->handle(), info),
       active_(false),
       link_(link),
-      cmd_channel_(std::move(cmd_channel)),
-      weak_ptr_factory_(this) {
-  BT_ASSERT(link_);
+      cmd_channel_(std::move(cmd_channel)) {
+  BT_ASSERT(link_.is_alive());
   BT_ASSERT_MSG(
       info_.mode == ChannelMode::kBasic || info_.mode == ChannelMode::kEnhancedRetransmission,
       "Channel constructed with unsupported mode: %hhu\n", info.mode);
@@ -90,7 +88,7 @@ ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id,
   } else {
     // Must capture |link| and not |link_| to avoid having to take |mutex_|.
     auto connection_failure_cb = [link] {
-      if (link) {
+      if (link.is_alive()) {
         // |link| is expected to ignore this call if it has been closed.
         link->SignalError();
       }
@@ -102,7 +100,7 @@ ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id,
 }
 
 const sm::SecurityProperties ChannelImpl::security() {
-  if (link_) {
+  if (link_.is_alive()) {
     return link_->security();
   }
   return sm::SecurityProperties();
@@ -114,7 +112,7 @@ bool ChannelImpl::Activate(RxCallback rx_callback, ClosedCallback closed_callbac
 
   // Activating on a closed link has no effect. We also clear this on
   // deactivation to prevent a channel from being activated more than once.
-  if (!link_)
+  if (!link_.is_alive())
     return false;
 
   BT_ASSERT(!active_);
@@ -126,9 +124,9 @@ bool ChannelImpl::Activate(RxCallback rx_callback, ClosedCallback closed_callbac
   if (!pending_rx_sdus_.empty()) {
     TRACE_DURATION("bluetooth", "ChannelImpl::Activate pending drain");
     // Channel may be destroyed in rx_cb_, so we need to check self after calling rx_cb_.
-    auto self = weak_ptr_factory_.GetWeakPtr();
+    auto self = GetWeakPtr();
     auto pending = std::move(pending_rx_sdus_);
-    while (self && !pending.empty()) {
+    while (self.is_alive() && !pending.empty()) {
       TRACE_FLOW_END("bluetooth", "ChannelImpl::HandleRxPdu queued", pending.size());
       rx_cb_(std::move(pending.front()));
       pending.pop();
@@ -142,8 +140,8 @@ void ChannelImpl::Deactivate() {
   bt_log(TRACE, "l2cap", "deactivating channel (link: %#.4x, id: %#.4x)", link_handle(), id());
 
   // De-activating on a closed link has no effect.
-  if (!link_ || !active_) {
-    link_ = nullptr;
+  if (!link_.is_alive() || !active_) {
+    link_ = internal::LogicalLinkWeakPtr();
     return;
   }
 
@@ -157,7 +155,7 @@ void ChannelImpl::Deactivate() {
 
 void ChannelImpl::SignalLinkError() {
   // Cannot signal an error on a closed or deactivated link.
-  if (!link_ || !active_)
+  if (!link_.is_alive() || !active_)
     return;
 
   // |link_| is expected to ignore this call if it has been closed.
@@ -169,7 +167,7 @@ bool ChannelImpl::Send(ByteBufferPtr sdu) {
 
   TRACE_DURATION("bluetooth", "l2cap:channel_send", "handle", link_->handle(), "id", id());
 
-  if (!link_) {
+  if (!link_.is_alive()) {
     bt_log(ERROR, "l2cap", "cannot send SDU on a closed link");
     return false;
   }
@@ -184,7 +182,7 @@ bool ChannelImpl::Send(ByteBufferPtr sdu) {
 void ChannelImpl::UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> callback) {
   BT_ASSERT(callback);
 
-  if (!link_ || !active_) {
+  if (!link_.is_alive() || !active_) {
     bt_log(DEBUG, "l2cap", "Ignoring security request on inactive channel");
     return;
   }
@@ -194,20 +192,22 @@ void ChannelImpl::UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> 
 
 void ChannelImpl::RequestAclPriority(AclPriority priority,
                                      fit::callback<void(fit::result<fit::failed>)> callback) {
-  if (!link_ || !active_) {
+  if (!link_.is_alive() || !active_) {
     bt_log(DEBUG, "l2cap", "Ignoring ACL priority request on inactive channel");
     callback(fit::failed());
     return;
   }
 
-  link_->RequestAclPriority(this, priority,
-                            [self = weak_ptr_factory_.GetWeakPtr(), priority,
-                             cb = std::move(callback)](auto result) mutable {
-                              if (self && result.is_ok()) {
-                                self->requested_acl_priority_ = priority;
-                              }
-                              cb(result);
-                            });
+  // Callback is only called after checking that the weak pointer passed is alive, so using this in
+  // lambda is safe.
+  link_->RequestAclPriority(
+      GetWeakPtr(), priority,
+      [self = GetWeakPtr(), this, priority, cb = std::move(callback)](auto result) mutable {
+        if (self.is_alive() && result.is_ok()) {
+          requested_acl_priority_ = priority;
+        }
+        cb(result);
+      });
 }
 
 void ChannelImpl::SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
@@ -215,21 +215,21 @@ void ChannelImpl::SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
   BT_ASSERT(link_type_ == bt::LinkType::kACL);
 
   // Channel may be inactive if this method is called before activation.
-  if (!link_) {
+  if (!link_.is_alive()) {
     bt_log(DEBUG, "l2cap", "Ignoring %s on closed channel", __FUNCTION__);
     callback(ToResult(hci_spec::StatusCode::COMMAND_DISALLOWED));
     return;
   }
 
-  auto cb_wrapper = [self = weak_ptr_factory_.GetWeakPtr(), cb = std::move(callback),
+  auto cb_wrapper = [self = GetWeakPtr(), this, cb = std::move(callback),
                      flush_timeout](auto result) mutable {
-    if (!self) {
+    if (!self.is_alive()) {
       cb(ToResult(hci_spec::StatusCode::UNSPECIFIED_ERROR));
       return;
     }
 
     if (result.is_ok()) {
-      self->info_.flush_timeout = flush_timeout;
+      info_.flush_timeout = flush_timeout;
     }
 
     cb(result);
@@ -295,20 +295,19 @@ void ChannelImpl::StartA2dpOffload(const A2dpOffloadConfiguration* config,
 
   a2dp_offload_status_ = A2dpOffloadStatus::kPending;
   cmd_channel_->SendCommand(
-      std::move(packet),
-      [cb = std::move(callback), handle = link_handle_, channel = weak_ptr_factory_.GetWeakPtr()](
-          auto /*transaction_id*/, const hci::EventPacket& event) mutable {
-        if (!channel) {
+      std::move(packet), [cb = std::move(callback), handle = link_handle_, channel = GetWeakPtr(),
+                          this](auto /*transaction_id*/, const hci::EventPacket& event) mutable {
+        if (!channel.is_alive()) {
           return;
         }
 
         if (event.ToResult().is_error()) {
           bt_log(WARN, "hci", "StartA2dpOffload command failed (result: %s, handle: %#.4x)",
                  bt_str(event.ToResult()), handle);
-          channel->a2dp_offload_status_ = A2dpOffloadStatus::kStopped;
+          a2dp_offload_status_ = A2dpOffloadStatus::kStopped;
         } else {
           bt_log(INFO, "hci", "A2DP offload started (handle: %#.4x", handle);
-          channel->a2dp_offload_status_ = A2dpOffloadStatus::kStarted;
+          a2dp_offload_status_ = A2dpOffloadStatus::kStarted;
         }
         cb(event.ToResult());
       });
@@ -317,8 +316,8 @@ void ChannelImpl::StartA2dpOffload(const A2dpOffloadConfiguration* config,
 void ChannelImpl::OnClosed() {
   bt_log(TRACE, "l2cap", "channel closed (link: %#.4x, id: %#.4x)", link_handle(), id());
 
-  if (!link_ || !active_) {
-    link_ = nullptr;
+  if (!link_.is_alive() || !active_) {
+    link_ = internal::LogicalLinkWeakPtr();
     return;
   }
 
@@ -336,7 +335,7 @@ void ChannelImpl::HandleRxPdu(PDU&& pdu) {
 
   // link_ may be nullptr if a pdu is received after the channel has been deactivated but
   // before LogicalLink::RemoveChannel has been dispatched
-  if (!link_) {
+  if (!link_.is_alive()) {
     bt_log(TRACE, "l2cap", "ignoring pdu on deactivated channel");
     return;
   }
@@ -379,7 +378,7 @@ void ChannelImpl::CleanUp() {
   });
 
   active_ = false;
-  link_ = nullptr;
+  link_ = internal::LogicalLinkWeakPtr();
   rx_cb_ = nullptr;
   closed_cb_ = nullptr;
   rx_engine_ = nullptr;
@@ -387,7 +386,7 @@ void ChannelImpl::CleanUp() {
 }
 
 void ChannelImpl::SendFrame(ByteBufferPtr pdu) {
-  if (!link_ || !active_) {
+  if (!link_.is_alive() || !active_) {
     return;
   }
 

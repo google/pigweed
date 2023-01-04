@@ -221,9 +221,9 @@ void BrEdrDynamicChannelRegistry::SendInformationRequests() {
     return;
   }
   BrEdrCommandHandler cmd_handler(sig_);
-  auto on_rx_info_rsp = [self = GetWeakPtr()](auto& rsp) {
-    if (self) {
-      static_cast<BrEdrDynamicChannelRegistry*>(self.get())->OnRxExtendedFeaturesInfoRsp(rsp);
+  auto on_rx_info_rsp = [self = GetWeakPtr(), this](auto& rsp) {
+    if (self.is_alive()) {
+      OnRxExtendedFeaturesInfoRsp(rsp);
     }
   };
   if (!cmd_handler.SendInformationRequest(InformationType::kExtendedFeaturesSupported,
@@ -267,15 +267,15 @@ void BrEdrDynamicChannel::Open(fit::closure open_result_cb) {
   }
 
   auto on_conn_rsp =
-      [self = weak_ptr_factory_.GetWeakPtr()](const BrEdrCommandHandler::ConnectionResponse& rsp) {
-        if (self) {
+      [self = weak_self_.GetWeakPtr()](const BrEdrCommandHandler::ConnectionResponse& rsp) {
+        if (self.is_alive()) {
           return self->OnRxConnRsp(rsp);
         }
         return BrEdrCommandHandler::ResponseHandlerAction::kCompleteOutboundTransaction;
       };
 
-  auto on_conn_rsp_timeout = [this, self = weak_ptr_factory_.GetWeakPtr()] {
-    if (self) {
+  auto on_conn_rsp_timeout = [this, self = weak_self_.GetWeakPtr()] {
+    if (self.is_alive()) {
       bt_log(WARN, "l2cap-bredr", "Channel %#.4x: Timed out waiting for Connection Response",
              local_cid());
       PassOpenError();
@@ -311,7 +311,7 @@ void BrEdrDynamicChannel::Disconnect(DisconnectDoneCallback done_cb) {
   }
 
   auto on_discon_rsp =
-      [local_cid = local_cid(), remote_cid = remote_cid(), self = weak_ptr_factory_.GetWeakPtr(),
+      [local_cid = local_cid(), remote_cid = remote_cid(), self = weak_self_.GetWeakPtr(),
        done_cb = done_cb.share()](const BrEdrCommandHandler::DisconnectionResponse& rsp) mutable {
         if (rsp.local_cid() != local_cid || rsp.remote_cid() != remote_cid) {
           bt_log(WARN, "l2cap-bredr",
@@ -322,17 +322,17 @@ void BrEdrDynamicChannel::Disconnect(DisconnectDoneCallback done_cb) {
           bt_log(TRACE, "l2cap-bredr", "Channel %#.4x: Got Disconnection Response", local_cid);
         }
 
-        if (self) {
+        if (self.is_alive()) {
           done_cb();
         }
       };
 
-  auto on_discon_rsp_timeout = [local_cid = local_cid(), self = weak_ptr_factory_.GetWeakPtr(),
+  auto on_discon_rsp_timeout = [local_cid = local_cid(), self = weak_self_.GetWeakPtr(),
                                 done_cb = done_cb.share()]() mutable {
     bt_log(WARN, "l2cap-bredr",
            "Channel %#.4x: Timed out waiting for Disconnection Response; completing disconnection",
            local_cid);
-    if (self) {
+    if (self.is_alive()) {
       done_cb();
     }
   };
@@ -595,7 +595,7 @@ BrEdrDynamicChannel::BrEdrDynamicChannel(DynamicChannelRegistry* registry,
       parameters_(params),
       state_(0u),
       peer_supports_ertm_(peer_supports_ertm),
-      weak_ptr_factory_(this) {
+      weak_self_(this) {
   BT_DEBUG_ASSERT(signaling_channel_);
   BT_DEBUG_ASSERT(local_cid != kInvalidChannelId);
 
@@ -681,8 +681,8 @@ void BrEdrDynamicChannel::TrySendLocalConfig() {
 }
 
 void BrEdrDynamicChannel::SendLocalConfig() {
-  auto on_config_rsp_timeout = [this, self = weak_ptr_factory_.GetWeakPtr()] {
-    if (self) {
+  auto on_config_rsp_timeout = [this, self = weak_self_.GetWeakPtr()] {
+    if (self.is_alive()) {
       bt_log(WARN, "l2cap-bredr", "Channel %#.4x: Timed out waiting for Configuration Response",
              local_cid());
       PassOpenError();
@@ -703,9 +703,8 @@ void BrEdrDynamicChannel::SendLocalConfig() {
   }
 
   if (!cmd_handler.SendConfigurationRequest(
-          remote_cid(), 0, request_config.Options(),
-          [self = weak_ptr_factory_.GetWeakPtr()](auto& rsp) {
-            if (self) {
+          remote_cid(), 0, request_config.Options(), [self = weak_self_.GetWeakPtr()](auto& rsp) {
+            if (self.is_alive()) {
               return self->OnRxConfigRsp(rsp);
             }
             return ResponseHandlerAction::kCompleteOutboundTransaction;

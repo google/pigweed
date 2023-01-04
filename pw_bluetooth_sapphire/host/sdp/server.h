@@ -40,7 +40,7 @@ class Server final {
 
   // Initialize a new SDP profile connection with |peer_id| on |channel|.
   // Returns false if the channel cannot be activated.
-  bool AddConnection(fxl::WeakPtr<l2cap::Channel> channel);
+  bool AddConnection(l2cap::Channel::WeakPtr channel);
 
   // An identifier for a set of services that have been registered at the same time.
   using RegistrationHandle = uint32_t;
@@ -57,7 +57,7 @@ class Server final {
   //
   // |conn_cb| will be called for any connections made to any of the services in |records| with a
   // connected channel and the descriptor list for the endpoint which was connected.
-  using ConnectCallback = fit::function<void(fxl::WeakPtr<l2cap::Channel>, const DataElement&)>;
+  using ConnectCallback = fit::function<void(l2cap::Channel::WeakPtr, const DataElement&)>;
   RegistrationHandle RegisterService(std::vector<ServiceRecord> records,
                                      l2cap::ChannelParameters chan_params, ConnectCallback conn_cb);
 
@@ -67,7 +67,7 @@ class Server final {
 
   // Define the ServiceDiscoveryService record for the SDP server object.
   // This method is public for testing purposes.
-  ServiceRecord MakeServiceDiscoveryService();
+  static ServiceRecord MakeServiceDiscoveryService();
 
   // Construct a response based on input packet |sdu| and max size
   // |max_tx_sdu_size|. Note that this function can both be called by means of

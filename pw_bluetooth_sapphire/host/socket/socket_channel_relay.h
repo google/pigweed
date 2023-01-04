@@ -56,7 +56,7 @@ class SocketChannelRelay final {
   // we never leave the thread idle), and b) to provide in-order delivery,
   // moving the data between the zx::socket and the ChannelT needs to be
   // serialized even in the multi-threaded case.
-  SocketChannelRelay(zx::socket socket, fxl::WeakPtr<ChannelT> channel,
+  SocketChannelRelay(zx::socket socket, typename ChannelT::WeakPtr channel,
                      DeactivationCallback deactivation_cb,
                      size_t socket_write_queue_max_frames = kDefaultSocketWriteQueueLimitFrames);
   ~SocketChannelRelay();
@@ -134,7 +134,7 @@ class SocketChannelRelay final {
   RelayState state_;  // Initial state is kActivating.
 
   zx::socket socket_;
-  const fxl::WeakPtr<ChannelT> channel_;
+  const typename ChannelT::WeakPtr channel_;
   async_dispatcher_t* const dispatcher_;
   DeactivationCallback deactivation_cb_;
   const size_t socket_write_queue_max_frames_;
@@ -166,7 +166,8 @@ class SocketChannelRelay final {
 };
 
 template <typename ChannelT>
-SocketChannelRelay<ChannelT>::SocketChannelRelay(zx::socket socket, fxl::WeakPtr<ChannelT> channel,
+SocketChannelRelay<ChannelT>::SocketChannelRelay(zx::socket socket,
+                                                 typename ChannelT::WeakPtr channel,
                                                  DeactivationCallback deactivation_cb,
                                                  size_t socket_write_queue_max_frames)
     : state_(RelayState::kActivating),
@@ -182,7 +183,7 @@ SocketChannelRelay<ChannelT>::SocketChannelRelay(zx::socket socket, fxl::WeakPtr
       weak_ptr_factory_(this) {
   BT_ASSERT(dispatcher_);
   BT_ASSERT(socket_);
-  BT_ASSERT(channel_);
+  BT_ASSERT(channel_.is_alive());
 
   // Note: binding |this| is safe, as BindWait() wraps the bound method inside
   // of a lambda which verifies that |this| hasn't been destroyed.

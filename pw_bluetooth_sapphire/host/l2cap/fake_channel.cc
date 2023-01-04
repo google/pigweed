@@ -19,7 +19,7 @@ FakeChannel::FakeChannel(ChannelId id, ChannelId remote_id, hci_spec::Connection
       activate_fails_(false),
       link_error_(false),
       acl_priority_fails_(false),
-      weak_ptr_factory_(this) {
+      weak_fake_chan_(this) {
   BT_DEBUG_ASSERT(handle_);
 }
 

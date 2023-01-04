@@ -65,16 +65,16 @@ class FakeChannelTest : public ::gtest::TestLoopFixture {
   // calling FakeChannel::SetSendCallback().
   bool ReceiveAndExpect(const ByteBuffer& packet, const ByteBuffer& expected_response);
 
-  fxl::WeakPtr<FakeChannel> fake_chan() const { return fake_chan_; }
+  FakeChannel::WeakPtr fake_chan() const { return fake_chan_; }
 
-  void set_fake_chan(fxl::WeakPtr<FakeChannel> chan) { fake_chan_ = chan; }
+  void set_fake_chan(FakeChannel::WeakPtr chan) { fake_chan_ = chan; }
 
  private:
   // Helper that sets a reception expectation callback with |expected| then sends |packet| if it is
   // not std::nullopt, returning whether |expected| was received when the test loop run until idle.
   bool ExpectAfterMaybeReceiving(std::optional<BufferView> packet, const ByteBuffer& expected);
 
-  fxl::WeakPtr<FakeChannel> fake_chan_;
+  FakeChannel::WeakPtr fake_chan_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeChannelTest);
 };

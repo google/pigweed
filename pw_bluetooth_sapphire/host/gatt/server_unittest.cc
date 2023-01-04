@@ -57,7 +57,7 @@ class ServerTest : public l2cap::testing::MockChannelTest {
     RunLoopUntilIdle();
     server_ = nullptr;
     att_ = nullptr;
-    fake_att_chan_ = nullptr;
+    fake_att_chan_ = l2cap::testing::FakeChannel::WeakPtr();
     local_services_ = nullptr;
   }
 
@@ -143,7 +143,7 @@ class ServerTest : public l2cap::testing::MockChannelTest {
   }
 
   std::unique_ptr<LocalServiceManager> local_services_;
-  fxl::WeakPtr<l2cap::testing::FakeChannel> fake_att_chan_;
+  l2cap::testing::FakeChannel::WeakPtr fake_att_chan_;
   std::unique_ptr<att::Bearer> att_;
   std::unique_ptr<Server> server_;
 

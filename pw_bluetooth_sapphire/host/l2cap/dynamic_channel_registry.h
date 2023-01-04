@@ -11,11 +11,11 @@
 #include <unordered_map>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/dynamic_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/signaling_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::l2cap::internal {
 
@@ -28,7 +28,7 @@ namespace bt::l2cap::internal {
 //
 // This class is not thread-safe and is intended to be created and run on the
 // L2CAP thread for each logical link connected.
-class DynamicChannelRegistry {
+class DynamicChannelRegistry : public WeakSelf<DynamicChannelRegistry> {
  public:
   // Used to pass an optional channel to clients of the registry. |channel| may
   // be nullptr upon failure to open. Otherwise, it points to an instance owned
@@ -113,8 +113,6 @@ class DynamicChannelRegistry {
   // Iterates over all channels, running |f| on each entry synchronously.
   void ForEach(fit::function<void(DynamicChannel*)> f) const;
 
-  fxl::WeakPtr<DynamicChannelRegistry> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
-
  private:
   friend class DynamicChannel;
 
@@ -147,8 +145,6 @@ class DynamicChannelRegistry {
   ChannelMap channels_;
 
   std::optional<std::default_random_engine> rng_;
-
-  fxl::WeakPtrFactory<DynamicChannelRegistry> weak_ptr_factory_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(DynamicChannelRegistry);
 };

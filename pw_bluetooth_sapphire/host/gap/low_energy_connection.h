@@ -161,8 +161,8 @@ class LowEnergyConnection final : public sm::Delegate {
   // Initializes SecurityManager and GATT.
   // Called by the L2CAP layer once the link has been registered and the fixed
   // channels have been opened. Returns false if GATT initialization fails.
-  [[nodiscard]] bool OnL2capFixedChannelsOpened(fxl::WeakPtr<l2cap::Channel> att,
-                                                fxl::WeakPtr<l2cap::Channel> smp,
+  [[nodiscard]] bool OnL2capFixedChannelsOpened(l2cap::Channel::WeakPtr att,
+                                                l2cap::Channel::WeakPtr smp,
                                                 LowEnergyConnectionOptions connection_options);
 
   // Called when the preferred connection parameters have been received for a LE
@@ -244,7 +244,7 @@ class LowEnergyConnection final : public sm::Delegate {
   // Registers the peer with GATT and initiates service discovery. If |service_uuid| is specified,
   // only discover the indicated service and the GAP service. Returns true on success, false on
   // failure.
-  bool InitializeGatt(fxl::WeakPtr<l2cap::Channel> att, std::optional<UUID> service_uuid);
+  bool InitializeGatt(l2cap::Channel::WeakPtr att, std::optional<UUID> service_uuid);
 
   // Called when service discovery completes. |services| will only include services with the GAP
   // UUID (there should only be one, but this is not guaranteed).

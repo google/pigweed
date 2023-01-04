@@ -163,7 +163,7 @@ OpCode MatchingTransactionCode(OpCode transaction_end_code) {
 }  // namespace
 
 // static
-std::unique_ptr<Bearer> Bearer::Create(fxl::WeakPtr<l2cap::Channel> chan) {
+std::unique_ptr<Bearer> Bearer::Create(l2cap::Channel::WeakPtr chan) {
   std::unique_ptr<Bearer> bearer(new Bearer(std::move(chan)));
   return bearer->Activate() ? std::move(bearer) : nullptr;
 }
@@ -201,9 +201,9 @@ void Bearer::TransactionQueue::Enqueue(PendingTransactionPtr transaction) {
   queue_.push(std::move(transaction));
 }
 
-void Bearer::TransactionQueue::TrySendNext(l2cap::Channel* chan, async::Task::Handler timeout_cb,
-                                           zx::duration timeout) {
-  BT_DEBUG_ASSERT(chan);
+void Bearer::TransactionQueue::TrySendNext(const l2cap::Channel::WeakPtr& chan,
+                                           async::Task::Handler timeout_cb, zx::duration timeout) {
+  BT_DEBUG_ASSERT(chan.is_alive());
 
   // Abort if a transaction is currently pending or there are no transactions queued.
   if (current_ || queue_.empty()) {
@@ -262,7 +262,7 @@ void Bearer::TransactionQueue::InvokeErrorAll(Error error) {
   }
 }
 
-Bearer::Bearer(fxl::WeakPtr<l2cap::Channel> chan)
+Bearer::Bearer(l2cap::Channel::WeakPtr chan)
     : chan_(std::move(chan)),
       next_remote_transaction_id_(1u),
       next_handler_id_(1u),

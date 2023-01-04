@@ -439,7 +439,7 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
     transport_->InitializeACLDataChannel(hci::DataBufferInfo(1, 1), hci::DataBufferInfo(1, 1));
   }
 
-  fxl::WeakPtr<testing::MockController> controller_;
+  testing::MockController::WeakPtr controller_;
   std::unique_ptr<hci::Transport> transport_;
 
   // We store the preq/pres values here to generate a valid confirm value for

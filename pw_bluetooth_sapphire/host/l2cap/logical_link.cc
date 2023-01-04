@@ -70,7 +70,7 @@ LogicalLink::LogicalLink(hci_spec::ConnectionHandle handle, bt::LinkType type,
       acl_data_channel_(acl_data_channel),
       cmd_channel_(cmd_channel),
       query_service_cb_(std::move(query_service_cb)),
-      weak_ptr_factory_(this) {
+      weak_self_(this) {
   BT_ASSERT(type_ == bt::LinkType::kLE || type_ == bt::LinkType::kACL);
   BT_ASSERT(acl_data_channel_);
   BT_ASSERT(cmd_channel_);
@@ -99,7 +99,7 @@ LogicalLink::~LogicalLink() {
   BT_ASSERT(closed_);
 }
 
-fxl::WeakPtr<Channel> LogicalLink::OpenFixedChannel(ChannelId id) {
+Channel::WeakPtr LogicalLink::OpenFixedChannel(ChannelId id) {
   BT_DEBUG_ASSERT(!closed_);
 
   TRACE_DURATION("bluetooth", "LogicalLink::OpenFixedChannel", "handle", handle_, "channel id", id);
@@ -107,13 +107,13 @@ fxl::WeakPtr<Channel> LogicalLink::OpenFixedChannel(ChannelId id) {
   // We currently only support the pre-defined fixed-channels.
   if (!AllowsFixedChannel(id)) {
     bt_log(ERROR, "l2cap", "cannot open fixed channel with id %#.4x", id);
-    return nullptr;
+    return Channel::WeakPtr();
   }
 
   auto iter = channels_.find(id);
   if (iter != channels_.end()) {
     bt_log(ERROR, "l2cap", "channel is already open! (id: %#.4x, handle: %#.4x)", id, handle_);
-    return nullptr;
+    return Channel::WeakPtr();
   }
 
   std::unique_ptr<ChannelImpl> chan =
@@ -435,7 +435,7 @@ void LogicalLink::CompleteDynamicOpen(const DynamicChannel* dyn_chan, ChannelCal
   BT_DEBUG_ASSERT(!closed_);
 
   if (!dyn_chan) {
-    open_cb(nullptr);
+    open_cb(Channel::WeakPtr());
     return;
   }
 
@@ -479,7 +479,7 @@ void LogicalLink::SendFixedChannelsSupportedInformationRequest() {
   BrEdrCommandHandler cmd_handler(signaling_channel_.get());
   if (!cmd_handler.SendInformationRequest(InformationType::kFixedChannelsSupported,
                                           [self = GetWeakPtr()](auto& rsp) {
-                                            if (self) {
+                                            if (self.is_alive()) {
                                               self->OnRxFixedChannelsSupportedInfoRsp(rsp);
                                             }
                                           })) {
@@ -546,15 +546,12 @@ void LogicalLink::SendConnectionParameterUpdateRequest(
       });
 }
 
-void LogicalLink::RequestAclPriority(Channel* channel, AclPriority priority,
+void LogicalLink::RequestAclPriority(Channel::WeakPtr channel, AclPriority priority,
                                      fit::callback<void(fit::result<fit::failed>)> callback) {
-  BT_ASSERT(channel);
+  BT_ASSERT(channel.is_alive());
   auto iter = channels_.find(channel->id());
   BT_ASSERT(iter != channels_.end());
-  fxl::WeakPtr<ChannelImpl> chan_weak = iter->second->GetWeakImplPtr();
-
-  pending_acl_requests_.push(
-      PendingAclRequest{std::move(chan_weak), priority, std::move(callback)});
+  pending_acl_requests_.push(PendingAclRequest{std::move(channel), priority, std::move(callback)});
   if (pending_acl_requests_.size() == 1) {
     HandleNextAclPriorityRequest();
   }
@@ -570,7 +567,7 @@ void LogicalLink::SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
 
   auto callback_wrapper = [self = GetWeakPtr(), flush_timeout,
                            cb = std::move(callback)](auto result) mutable {
-    if (self && result.is_ok()) {
+    if (self.is_alive() && result.is_ok()) {
       self->flush_timeout_.Set(flush_timeout);
     }
     cb(result);
@@ -660,7 +657,7 @@ void LogicalLink::HandleNextAclPriorityRequest() {
   // Prevent closed channels with queued requests from upgrading channel priority.
   // Allow closed channels to downgrade priority so that they can clean up their priority on
   // destruction.
-  if (!request.channel && request.priority != AclPriority::kNormal) {
+  if (!request.channel.is_alive() && request.priority != AclPriority::kNormal) {
     request.callback(fit::failed());
     pending_acl_requests_.pop();
     HandleNextAclPriorityRequest();
@@ -680,7 +677,7 @@ void LogicalLink::HandleNextAclPriorityRequest() {
   // priority should not be requested.
   if (acl_priority_ != AclPriority::kNormal) {
     for (auto& [chan_id, chan] : channels_) {
-      if (chan.get() == request.channel.get() ||
+      if ((request.channel.is_alive() && chan.get() == &request.channel.get()) ||
           chan->requested_acl_priority() == AclPriority::kNormal) {
         continue;
       }
@@ -709,7 +706,7 @@ void LogicalLink::HandleNextAclPriorityRequest() {
 
   auto cb_wrapper = [self = GetWeakPtr(), cb = std::move(request.callback),
                      priority = request.priority](auto result) mutable {
-    if (!self) {
+    if (!self.is_alive()) {
       return;
     }
     if (result.is_ok()) {

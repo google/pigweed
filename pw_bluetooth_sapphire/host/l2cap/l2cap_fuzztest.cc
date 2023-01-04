@@ -9,7 +9,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test_double_base.h"
-#include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 
 namespace bt::testing {
 
@@ -27,20 +26,16 @@ constexpr hci_spec::ConnectionHandle kHandle = 0x0001;
 // Don't toggle connection too often or else l2cap won't get very far.
 constexpr float kToggleConnectionChance = 0.04;
 
-class FuzzerController : public ControllerTestDoubleBase {
+class FuzzerController : public ControllerTestDoubleBase, public WeakSelf<FuzzerController> {
  public:
-  FuzzerController() {}
+  FuzzerController() : WeakSelf(this) {}
   ~FuzzerController() override = default;
-
-  fxl::WeakPtr<FuzzerController> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
  private:
   // Controller overrides:
   void SendCommand(pw::span<const std::byte> command) override {}
   void SendAclData(pw::span<const std::byte> data) override {}
   void SendScoData(pw::span<const std::byte> data) override {}
-
-  fxl::WeakPtrFactory<FuzzerController> weak_ptr_factory_{this};
 };
 
 // Reuse ControllerTest test fixture code even though we're not using gtest.
@@ -118,8 +113,8 @@ class DataFuzzTest : public TestingBase {
 
   void RegisterService() {
     channel_manager_->RegisterService(
-        l2cap::kAVDTP, l2cap::ChannelParameters(), [this](fxl::WeakPtr<l2cap::Channel> chan) {
-          if (!chan) {
+        l2cap::kAVDTP, l2cap::ChannelParameters(), [this](l2cap::Channel::WeakPtr chan) {
+          if (!chan.is_alive()) {
             return;
           }
           chan->Activate(/*rx_callback=*/[](auto) {}, /*closed_callback=*/
@@ -147,7 +142,7 @@ class DataFuzzTest : public TestingBase {
   FuzzedDataProvider data_;
   std::unique_ptr<l2cap::ChannelManager> channel_manager_;
   bool connection_;
-  std::unordered_map<l2cap::ChannelId, fxl::WeakPtr<l2cap::Channel>> channels_;
+  std::unordered_map<l2cap::ChannelId, l2cap::Channel::WeakPtr> channels_;
 };
 
 }  // namespace bt::testing

@@ -9,8 +9,6 @@
 #include "logical_link.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/trace.h"
-#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
 namespace bt::l2cap {
 
@@ -47,8 +45,8 @@ class ChannelManagerImpl final : public ChannelManager {
   void AssignLinkSecurityProperties(hci_spec::ConnectionHandle handle,
                                     sm::SecurityProperties security) override;
 
-  fxl::WeakPtr<Channel> OpenFixedChannel(hci_spec::ConnectionHandle connection_handle,
-                                         ChannelId channel_id) override;
+  Channel::WeakPtr OpenFixedChannel(hci_spec::ConnectionHandle connection_handle,
+                                    ChannelId channel_id) override;
 
   void OpenL2capChannel(hci_spec::ConnectionHandle handle, PSM psm, ChannelParameters params,
                         ChannelCallback cb) override;
@@ -62,8 +60,7 @@ class ChannelManagerImpl final : public ChannelManager {
 
   void AttachInspect(inspect::Node& parent, std::string name) override;
 
-  fxl::WeakPtr<internal::LogicalLink> LogicalLinkForTesting(
-      hci_spec::ConnectionHandle handle) override;
+  internal::LogicalLink::WeakPtr LogicalLinkForTesting(hci_spec::ConnectionHandle handle) override;
 
  private:
   // Returns a handler for data packets received from the Bluetooth controller bound to this object.
@@ -120,7 +117,7 @@ class ChannelManagerImpl final : public ChannelManager {
   // Stored info on whether random channel ids are requested.
   bool random_channel_ids_;
 
-  fxl::WeakPtrFactory<ChannelManagerImpl> weak_ptr_factory_;
+  WeakSelf<ChannelManagerImpl> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ChannelManagerImpl);
 };
@@ -130,7 +127,7 @@ ChannelManagerImpl::ChannelManagerImpl(hci::AclDataChannel* acl_data_channel,
     : acl_data_channel_(acl_data_channel),
       cmd_channel_(cmd_channel),
       random_channel_ids_(random_channel_ids),
-      weak_ptr_factory_(this) {
+      weak_self_(this) {
   BT_ASSERT(acl_data_channel_);
   max_acl_payload_size_ = acl_data_channel_->GetBufferInfo().max_data_length();
   max_le_payload_size_ = acl_data_channel_->GetLeBufferInfo().max_data_length();
@@ -149,8 +146,8 @@ ChannelManagerImpl::~ChannelManagerImpl() {
 }
 
 hci::ACLPacketHandler ChannelManagerImpl::MakeInboundDataHandler() {
-  return [self = weak_ptr_factory_.GetWeakPtr()](auto packet) {
-    if (self) {
+  return [self = weak_self_.GetWeakPtr()](auto packet) {
+    if (self.is_alive()) {
       self->OnACLDataReceived(std::move(packet));
     }
   };
@@ -178,10 +175,10 @@ ChannelManagerImpl::LEFixedChannels ChannelManagerImpl::AddLEConnection(
   ll->set_security_upgrade_callback(std::move(security_cb));
   ll->set_connection_parameter_update_callback(std::move(conn_param_cb));
 
-  fxl::WeakPtr<Channel> att = OpenFixedChannel(handle, kATTChannelId);
-  fxl::WeakPtr<Channel> smp = OpenFixedChannel(handle, kLESMPChannelId);
-  BT_ASSERT(att);
-  BT_ASSERT(smp);
+  Channel::WeakPtr att = OpenFixedChannel(handle, kATTChannelId);
+  Channel::WeakPtr smp = OpenFixedChannel(handle, kLESMPChannelId);
+  BT_ASSERT(att.is_alive());
+  BT_ASSERT(smp.is_alive());
   return LEFixedChannels{.att = std::move(att), .smp = std::move(smp)};
 }
 
@@ -214,12 +211,12 @@ void ChannelManagerImpl::AssignLinkSecurityProperties(hci_spec::ConnectionHandle
   iter->second->AssignSecurityProperties(security);
 }
 
-fxl::WeakPtr<Channel> ChannelManagerImpl::OpenFixedChannel(hci_spec::ConnectionHandle handle,
-                                                           ChannelId channel_id) {
+Channel::WeakPtr ChannelManagerImpl::OpenFixedChannel(hci_spec::ConnectionHandle handle,
+                                                      ChannelId channel_id) {
   auto iter = ll_map_.find(handle);
   if (iter == ll_map_.end()) {
     bt_log(ERROR, "l2cap", "cannot open fixed channel on unknown connection handle: %#.4x", handle);
-    return nullptr;
+    return Channel::WeakPtr();
   }
 
   return iter->second->OpenFixedChannel(channel_id);
@@ -230,7 +227,7 @@ void ChannelManagerImpl::OpenL2capChannel(hci_spec::ConnectionHandle handle, PSM
   auto iter = ll_map_.find(handle);
   if (iter == ll_map_.end()) {
     bt_log(ERROR, "l2cap", "Cannot open channel on unknown connection handle: %#.4x", handle);
-    cb(nullptr);
+    cb(Channel::WeakPtr());
     return;
   }
 
@@ -287,11 +284,11 @@ void ChannelManagerImpl::AttachInspect(inspect::Node& parent, std::string name) 
   }
 }
 
-fxl::WeakPtr<internal::LogicalLink> ChannelManagerImpl::LogicalLinkForTesting(
+internal::LogicalLink::WeakPtr ChannelManagerImpl::LogicalLinkForTesting(
     hci_spec::ConnectionHandle handle) {
   auto iter = ll_map_.find(handle);
   if (iter == ll_map_.end()) {
-    return nullptr;
+    return internal::LogicalLink::WeakPtr();
   }
   return iter->second->GetWeakPtr();
 }

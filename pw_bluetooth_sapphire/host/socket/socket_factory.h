@@ -56,7 +56,7 @@ class SocketFactory final {
   //
   // Returns the new socket on success, and an invalid socket otherwise
   // (including if |channel| is nullptr).
-  zx::socket MakeSocketForChannel(fxl::WeakPtr<ChannelT> channel,
+  zx::socket MakeSocketForChannel(typename ChannelT::WeakPtr channel,
                                   fit::callback<void()> closed_callback = nullptr);
 
  private:
@@ -79,9 +79,9 @@ template <typename ChannelT>
 SocketFactory<ChannelT>::~SocketFactory() {}
 
 template <typename ChannelT>
-zx::socket SocketFactory<ChannelT>::MakeSocketForChannel(fxl::WeakPtr<ChannelT> channel,
+zx::socket SocketFactory<ChannelT>::MakeSocketForChannel(typename ChannelT::WeakPtr channel,
                                                          fit::callback<void()> closed_callback) {
-  if (!channel) {
+  if (!channel.is_alive()) {
     return zx::socket();
   }
 

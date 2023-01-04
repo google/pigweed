@@ -83,7 +83,7 @@ void BrEdrConnection::OpenL2capChannel(l2cap::PSM psm, l2cap::ChannelParameters 
     // Connection is not yet ready for L2CAP; return a null channel.
     bt_log(INFO, "gap-bredr", "connection not ready; canceling connect to PSM %.4x (peer: %s)", psm,
            bt_str(peer_id_));
-    cb(nullptr);
+    cb(l2cap::Channel::WeakPtr());
     return;
   }
 

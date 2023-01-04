@@ -41,7 +41,7 @@ void MockChannelTest::QueueTransaction(const ByteBuffer& expected,
   transactions_.emplace(expected, replies, meta);
 }
 
-fxl::WeakPtr<FakeChannel> MockChannelTest::CreateFakeChannel(const ChannelOptions& options) {
+FakeChannel::WeakPtr MockChannelTest::CreateFakeChannel(const ChannelOptions& options) {
   fake_chan_ = std::make_unique<FakeChannel>(options.id, options.remote_id, options.conn_handle,
                                              options.link_type,
                                              ChannelInfo::MakeBasicMode(options.mtu, options.mtu));

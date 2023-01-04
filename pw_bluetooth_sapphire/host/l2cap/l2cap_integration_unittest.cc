@@ -78,7 +78,7 @@ class L2capIntegrationTest : public TestingBase {
 
   l2cap::CommandId NextCommandId() { return next_command_id_++; }
 
-  zx::socket MakeSocketForChannel(fxl::WeakPtr<l2cap::Channel> channel) {
+  zx::socket MakeSocketForChannel(l2cap::Channel::WeakPtr channel) {
     return socket_factory_->MakeSocketForChannel(std::move(channel));
   }
 
@@ -187,7 +187,7 @@ TEST_F(L2capIntegrationTest, InboundL2capSocket) {
 
   QueueAclConnection(kLinkHandle);
 
-  fxl::WeakPtr<l2cap::Channel> chan;
+  l2cap::Channel::WeakPtr chan;
   auto chan_cb = [&](auto cb_chan) {
     EXPECT_EQ(kLinkHandle, cb_chan->link_handle());
     chan = std::move(cb_chan);
@@ -199,7 +199,7 @@ TEST_F(L2capIntegrationTest, InboundL2capSocket) {
   QueueInboundL2capConnection(kLinkHandle, kPSM, kLocalId, kRemoteId);
 
   RunLoopUntilIdle();
-  ASSERT_TRUE(chan);
+  ASSERT_TRUE(chan.is_alive());
   zx::socket sock = MakeSocketForChannel(chan);
 
   // Test basic channel<->socket interaction by verifying that an ACL packet
@@ -314,7 +314,7 @@ TEST_F(L2capIntegrationTest, InboundPacketQueuedAfterChannelOpenIsNotDropped) {
 
   QueueAclConnection(kLinkHandle);
 
-  fxl::WeakPtr<l2cap::Channel> chan;
+  l2cap::Channel::WeakPtr chan;
   auto chan_cb = [&](auto cb_chan) {
     EXPECT_EQ(kLinkHandle, cb_chan->link_handle());
     chan = std::move(cb_chan);
@@ -346,7 +346,7 @@ TEST_F(L2capIntegrationTest, InboundPacketQueuedAfterChannelOpenIsNotDropped) {
 
   // Queue up a data packet for the new channel before the channel configuration has been
   // processed.
-  ASSERT_FALSE(chan);
+  ASSERT_FALSE(chan.is_alive());
   test_device()->SendACLDataChannelPacket(StaticByteBuffer(
       // ACL data header (handle: 1, length 8)
       0x01, 0x00, 0x08, 0x00,
@@ -356,7 +356,7 @@ TEST_F(L2capIntegrationTest, InboundPacketQueuedAfterChannelOpenIsNotDropped) {
 
   // Run until the channel opens and the packet is written to the socket buffer.
   RunLoopUntilIdle();
-  ASSERT_TRUE(chan);
+  ASSERT_TRUE(chan.is_alive());
   zx::socket sock = MakeSocketForChannel(chan);
 
   // Allocate a larger buffer than the number of SDU bytes we expect (which is 4).
@@ -382,7 +382,7 @@ TEST_F(L2capIntegrationTest, OutboundL2capSocket) {
 
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
-  fxl::WeakPtr<l2cap::Channel> chan;
+  l2cap::Channel::WeakPtr chan;
   auto chan_cb = [&](auto cb_chan) {
     EXPECT_EQ(kLinkHandle, cb_chan->link_handle());
     chan = std::move(cb_chan);
@@ -393,7 +393,7 @@ TEST_F(L2capIntegrationTest, OutboundL2capSocket) {
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
   // We should have opened a channel successfully.
-  ASSERT_TRUE(chan);
+  ASSERT_TRUE(chan.is_alive());
   zx::socket sock = MakeSocketForChannel(chan);
 
   // Test basic channel<->socket interaction by verifying that an ACL packet
@@ -429,7 +429,7 @@ TEST_F(L2capIntegrationTest, OutboundChannelIsInvalidWhenL2capFailsToOpenChannel
   bool chan_cb_called = false;
   auto chan_cb = [&chan_cb_called](auto chan) {
     chan_cb_called = true;
-    EXPECT_FALSE(chan);
+    EXPECT_FALSE(chan.is_alive());
   };
 
   l2cap()->OpenL2capChannel(kLinkHandle, kPSM, kChannelParameters, std::move(chan_cb));
@@ -457,7 +457,7 @@ TEST_F(L2capIntegrationTest, ChannelCreationPrioritizedOverDynamicChannelData) {
 
   QueueAclConnection(kLinkHandle);
 
-  fxl::WeakPtr<l2cap::Channel> chan0;
+  l2cap::Channel::WeakPtr chan0;
   auto chan_cb0 = [&](auto cb_chan) {
     EXPECT_EQ(kLinkHandle, cb_chan->link_handle());
     chan0 = std::move(cb_chan);
@@ -468,7 +468,7 @@ TEST_F(L2capIntegrationTest, ChannelCreationPrioritizedOverDynamicChannelData) {
 
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
-  ASSERT_TRUE(chan0);
+  ASSERT_TRUE(chan0.is_alive());
   zx::socket sock0 = MakeSocketForChannel(chan0);
 
   test_device()->SendCommandChannelPacket(NumberOfCompletedPacketsPacket(
@@ -503,7 +503,7 @@ TEST_F(L2capIntegrationTest, ChannelCreationPrioritizedOverDynamicChannelData) {
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
-  fxl::WeakPtr<l2cap::Channel> chan1;
+  l2cap::Channel::WeakPtr chan1;
   auto chan_cb1 = [&](auto cb_chan) {
     EXPECT_EQ(kLinkHandle, cb_chan->link_handle());
     chan1 = std::move(cb_chan);
@@ -518,7 +518,7 @@ TEST_F(L2capIntegrationTest, ChannelCreationPrioritizedOverDynamicChannelData) {
   }
 
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
-  EXPECT_TRUE(chan1);
+  EXPECT_TRUE(chan1.is_alive());
 
   // Make room in buffer for queued dynamic channel packet.
   test_device()->SendCommandChannelPacket(NumberOfCompletedPacketsPacket(kLinkHandle, 1));
@@ -544,15 +544,15 @@ TEST_F(L2capIntegrationTest, NegotiateChannelParametersOnOutboundL2capSocket) {
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
-  fxl::WeakPtr<l2cap::Channel> chan;
-  auto chan_cb = [&](fxl::WeakPtr<l2cap::Channel> cb_chan) { chan = std::move(cb_chan); };
+  l2cap::Channel::WeakPtr chan;
+  auto chan_cb = [&](l2cap::Channel::WeakPtr cb_chan) { chan = std::move(cb_chan); };
 
   QueueOutboundL2capConnection(kLinkHandle, kPSM, kLocalId, kRemoteId, chan_cb, chan_params,
                                chan_params);
 
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
-  ASSERT_TRUE(chan);
+  ASSERT_TRUE(chan.is_alive());
   EXPECT_EQ(kLinkHandle, chan->link_handle());
   EXPECT_EQ(*chan_params.max_rx_sdu_size, chan->max_rx_sdu_size());
   EXPECT_EQ(*chan_params.mode, chan->mode());
@@ -572,7 +572,7 @@ TEST_F(L2capIntegrationTest, NegotiateChannelParametersOnInboundL2capSocket) {
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
-  fxl::WeakPtr<l2cap::Channel> chan;
+  l2cap::Channel::WeakPtr chan;
   auto chan_cb = [&](auto cb_chan) { chan = std::move(cb_chan); };
   l2cap()->RegisterService(kPSM, chan_params, chan_cb);
 
@@ -580,7 +580,7 @@ TEST_F(L2capIntegrationTest, NegotiateChannelParametersOnInboundL2capSocket) {
 
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
-  ASSERT_TRUE(chan);
+  ASSERT_TRUE(chan.is_alive());
   EXPECT_EQ(*chan_params.max_rx_sdu_size, chan->max_rx_sdu_size());
   EXPECT_EQ(*chan_params.mode, chan->mode());
 
@@ -639,9 +639,9 @@ TEST_F(L2capIntegrationTest, InspectHierarchy) {
 TEST_F(L2capIntegrationTest, AddLEConnectionReturnsFixedChannels) {
   constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
   auto channels = QueueLEConnection(kLinkHandle, hci_spec::ConnectionRole::PERIPHERAL);
-  ASSERT_TRUE(channels.att);
+  ASSERT_TRUE(channels.att.is_alive());
   EXPECT_EQ(l2cap::kATTChannelId, channels.att->id());
-  ASSERT_TRUE(channels.smp);
+  ASSERT_TRUE(channels.smp.is_alive());
   EXPECT_EQ(l2cap::kLESMPChannelId, channels.smp->id());
 }
 
@@ -681,7 +681,7 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
 
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
-  fxl::WeakPtr<l2cap::Channel> channel = nullptr;
+  l2cap::Channel::WeakPtr channel;
   auto chan_cb = [&](auto chan) { channel = std::move(chan); };
 
   QueueOutboundL2capConnection(kLinkHandle, kPSM, kLocalId, kRemoteId, std::move(chan_cb));
@@ -689,7 +689,7 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
   // We should have opened a channel successfully.
-  ASSERT_TRUE(channel);
+  ASSERT_TRUE(channel.is_alive());
   channel->Activate([](auto) {}, []() {});
 
   if (kPriority != AclPriority::kNormal) {

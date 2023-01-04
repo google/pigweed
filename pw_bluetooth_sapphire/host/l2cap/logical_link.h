@@ -28,7 +28,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/recombiner.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/link_type.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
 namespace bt::l2cap::internal {
 
@@ -77,7 +76,7 @@ class LogicalLink final {
   // if a Channel for |channel_id| already exists.
   //
   // The link MUST not be closed when this is called.
-  fxl::WeakPtr<Channel> OpenFixedChannel(ChannelId channel_id);
+  Channel::WeakPtr OpenFixedChannel(ChannelId channel_id);
 
   // Opens a dynamic channel to the requested |psm| with the preferred parameters |params| and
   // returns a channel asynchronously via |callback|.
@@ -122,13 +121,13 @@ class LogicalLink final {
                                             ConnectionParameterUpdateRequestCallback request_cb);
 
   // Request a change of this link's ACL priority to |priority|.
-  // |channel| must indicate the channel making the request.
+  // |channel| must indicate the channel making the request, which must be alive.
   // |callback| will be called with the result of the request.
   // The request will fail if |priority| conflicts with another channel's priority or the
   // controller does not support changing the ACL priority.
   //
   // Requests are queued and handled sequentially in order to prevent race conditions.
-  void RequestAclPriority(Channel* channel, pw::bluetooth::AclPriority priority,
+  void RequestAclPriority(Channel::WeakPtr channel, pw::bluetooth::AclPriority priority,
                           fit::callback<void(fit::result<fit::failed>)> callback);
 
   // Sets an automatic flush timeout with duration |flush_timeout|. |callback| will be called with
@@ -165,7 +164,8 @@ class LogicalLink final {
   // LE-U link.
   LESignalingChannel* le_signaling_channel() const;
 
-  fxl::WeakPtr<LogicalLink> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
+  using WeakPtr = WeakSelf<LogicalLink>::WeakPtr;
+  LogicalLink::WeakPtr GetWeakPtr() { return weak_self_.GetWeakPtr(); }
 
  private:
   friend class ChannelImpl;
@@ -268,7 +268,7 @@ class LogicalLink final {
   PendingPduMap pending_pdus_;
 
   struct PendingAclRequest {
-    fxl::WeakPtr<ChannelImpl> channel;
+    Channel::WeakPtr channel;
     pw::bluetooth::AclPriority priority;
     fit::callback<void(fit::result<fit::failed>)> callback;
   };
@@ -295,7 +295,7 @@ class LogicalLink final {
   };
   InspectProperties inspect_properties_;
 
-  fxl::WeakPtrFactory<LogicalLink> weak_ptr_factory_;
+  WeakSelf<LogicalLink> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LogicalLink);
 };

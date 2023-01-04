@@ -14,32 +14,35 @@ namespace bt::l2cap {
 // deleted.
 class ScopedChannel final {
  public:
-  explicit ScopedChannel(fxl::WeakPtr<Channel> channel);
+  explicit ScopedChannel(Channel::WeakPtr channel);
   ScopedChannel() = default;
   ~ScopedChannel();
 
   // Returns true if there is an open underlying channel.
-  [[nodiscard]] bool is_active() const { return static_cast<bool>(chan_); }
+  [[nodiscard]] bool is_active() const { return chan_.is_alive(); }
 
   // Resets the underlying channel to the one that is provided. Any previous
   // channel will be deactivated.
-  void Reset(fxl::WeakPtr<Channel> new_channel);
+  void Reset(Channel::WeakPtr new_channel);
 
-  void operator=(decltype(nullptr)) { Close(); }
+  ScopedChannel& operator=(decltype(nullptr)) {
+    Close();
+    return *this;
+  }
   explicit operator bool() const { return is_active(); }
 
-  Channel* get() const { return chan_.get(); }
-  Channel* operator->() const { return get(); }
+  const Channel::WeakPtr& get() const { return chan_; }
+  Channel* operator->() const { return &chan_.get(); }
 
   // Returns a copy of the underlying Channel reference without releasing
   // ownership.  The channel will still be deactivated when this goes out
   // of scope.
-  inline fxl::WeakPtr<Channel> share() const { return chan_; }
+  inline Channel::WeakPtr share() const { return chan_; }
 
  private:
   void Close();
 
-  fxl::WeakPtr<Channel> chan_;
+  Channel::WeakPtr chan_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ScopedChannel);
 };

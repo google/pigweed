@@ -32,7 +32,7 @@ class FakePeer;
 
 // FakeController emulates a real Bluetooth controller. It can be configured to respond to HCI
 // commands in a predictable manner.
-class FakeController final : public ControllerTestDoubleBase {
+class FakeController final : public ControllerTestDoubleBase, public WeakSelf<FakeController> {
  public:
   // Global settings for the FakeController. These can be used to initialize a FakeController and/or
   // to re-configure an existing one.
@@ -157,7 +157,7 @@ class FakeController final : public ControllerTestDoubleBase {
 
   // Constructor initializes the controller with the minimal default settings (equivalent to calling
   // Settings::ApplyDefaults()).
-  FakeController() : weak_ptr_factory_(this) {}
+  FakeController() : WeakSelf(this) {}
   ~FakeController() override = default;
 
   // Resets the controller settings.
@@ -378,27 +378,25 @@ class FakeController final : public ControllerTestDoubleBase {
     num_supported_advertising_sets_ = value;
   }
 
-  fxl::WeakPtr<FakeController> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
-
   // Controller overrides:
   void SendCommand(pw::span<const std::byte> command) override;
   void SendAclData(pw::span<const std::byte> data) override {
     // Post the packet to simulate async HCI behavior.
-    async::PostTask(dispatcher(), [self = weak_ptr_factory_.GetWeakPtr(),
-                                   data = DynamicByteBuffer(BufferView(data))]() {
-      if (self) {
-        self->OnACLDataPacketReceived(BufferView(data));
-      }
-    });
+    async::PostTask(dispatcher(),
+                    [self = GetWeakPtr(), data = DynamicByteBuffer(BufferView(data))]() {
+                      if (self.is_alive()) {
+                        self->OnACLDataPacketReceived(BufferView(data));
+                      }
+                    });
   }
   void SendScoData(pw::span<const std::byte> data) override {
     // Post the packet to simulate async HCI behavior.
-    async::PostTask(dispatcher(), [self = weak_ptr_factory_.GetWeakPtr(),
-                                   data = DynamicByteBuffer(BufferView(data))]() {
-      if (self) {
-        self->OnScoDataPacketReceived(BufferView(data));
-      }
-    });
+    async::PostTask(dispatcher(),
+                    [self = GetWeakPtr(), data = DynamicByteBuffer(BufferView(data))]() {
+                      if (self.is_alive()) {
+                        self->OnScoDataPacketReceived(BufferView(data));
+                      }
+                    });
   }
 
  private:
@@ -816,10 +814,6 @@ class FakeController final : public ControllerTestDoubleBase {
 
   bool auto_completed_packets_event_enabled_ = true;
   bool auto_disconnection_complete_event_enabled_ = true;
-
-  // Keep this as the last member to make sure that all weak pointers are
-  // invalidated before other members get destroyed.
-  fxl::WeakPtrFactory<FakeController> weak_ptr_factory_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeController);
 };

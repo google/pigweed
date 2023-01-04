@@ -44,7 +44,7 @@ bool CommandTransaction::Match(const ByteBuffer& cmd) {
 }
 
 MockController::MockController()
-    : ControllerTestDoubleBase(),
+    : WeakSelf(this),
       data_expectations_enabled_(false),
       data_dispatcher_(nullptr),
       transaction_dispatcher_(nullptr) {}

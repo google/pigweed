@@ -35,13 +35,14 @@ class SocketFactoryTest : public ::testing::Test {
         kDynamicChannelIdMin, kRemoteChannelId, kDefaultConnectionHandle, bt::LinkType::kACL);
   }
 
-  void TearDown() {
+  void TearDown() override {
     // Process any pending events, to tickle any use-after-free bugs.
     RunLoopUntilIdle();
   }
 
  protected:
-  fxl::WeakPtr<l2cap::testing::FakeChannel> channel() { return channel_->AsWeakPtr(); }
+  l2cap::Channel::WeakPtr channel() { return channel_->GetWeakPtr(); }
+  l2cap::testing::FakeChannel::WeakPtr fake_channel() { return channel_->AsWeakPtr(); }
   async_dispatcher_t* dispatcher() { return loop_.dispatcher(); }
   void RunLoopUntilIdle() { loop_.RunUntilIdle(); }
 
@@ -59,7 +60,7 @@ TEST_F(SocketFactoryTest, CanCreateSocket) {
 
 TEST_F(SocketFactoryTest, SocketCreationFailsIfChannelIsNullptr) {
   FactoryT socket_factory;
-  EXPECT_FALSE(socket_factory.MakeSocketForChannel(nullptr));
+  EXPECT_FALSE(socket_factory.MakeSocketForChannel(l2cap::Channel::WeakPtr()));
 }
 
 TEST_F(SocketFactoryTest, SocketCreationFailsIfChannelAlreadyHasASocket) {
@@ -71,7 +72,7 @@ TEST_F(SocketFactoryTest, SocketCreationFailsIfChannelAlreadyHasASocket) {
 }
 
 TEST_F(SocketFactoryTest, SocketCreationFailsIfChannelActivationFails) {
-  channel()->set_activate_fails(true);
+  fake_channel()->set_activate_fails(true);
   EXPECT_FALSE(FactoryT().MakeSocketForChannel(channel()));
 }
 
@@ -103,7 +104,7 @@ TEST_F(SocketFactoryTest, DestructionAfterDeactivatingRelayDoesNotCrash) {
   FactoryT socket_factory;
   zx::socket socket = socket_factory.MakeSocketForChannel(channel());
   ASSERT_TRUE(socket);
-  channel()->Close();
+  fake_channel()->Close();
   RunLoopUntilIdle();  // Process any events related to channel closure.
   // |socket_factory| is destroyed implicitly.
 }
@@ -123,7 +124,7 @@ TEST_F(SocketFactoryTest, ClosedCallbackCalledOnChannelClosure) {
   auto closed_cb = [&]() { closed_cb_count++; };
   zx::socket sock = socket_factory.MakeSocketForChannel(channel(), std::move(closed_cb));
   EXPECT_TRUE(sock);
-  channel()->Close();
+  fake_channel()->Close();
   EXPECT_EQ(closed_cb_count, 1);
 }
 

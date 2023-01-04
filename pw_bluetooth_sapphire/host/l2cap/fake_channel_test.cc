@@ -30,7 +30,7 @@ bool FakeChannelTest::ReceiveAndExpect(const ByteBuffer& packet,
 
 bool FakeChannelTest::ExpectAfterMaybeReceiving(std::optional<BufferView> packet,
                                                 const ByteBuffer& expected) {
-  if (!fake_chan()) {
+  if (!fake_chan().is_alive()) {
     bt_log(ERROR, "testing", "no channel, failing!");
     return false;
   }

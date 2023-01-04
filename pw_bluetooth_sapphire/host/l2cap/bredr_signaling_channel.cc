@@ -10,8 +10,7 @@
 
 namespace bt::l2cap::internal {
 
-BrEdrSignalingChannel::BrEdrSignalingChannel(fxl::WeakPtr<Channel> chan,
-                                             hci_spec::ConnectionRole role)
+BrEdrSignalingChannel::BrEdrSignalingChannel(Channel::WeakPtr chan, hci_spec::ConnectionRole role)
     : SignalingChannel(std::move(chan), role) {
   set_mtu(kDefaultMTU);
 

@@ -44,10 +44,11 @@ void FakeAdapter::FakeBrEdr::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
   auto channel = std::make_unique<l2cap::testing::FakeChannel>(
       /*id=*/local_id, /*remote_id=*/l2cap::kFirstDynamicChannelId,
       /*handle=*/1, bt::LinkType::kACL, info);
-  fxl::WeakPtr<l2cap::testing::FakeChannel> weak_channel = channel->AsWeakPtr();
+  l2cap::testing::FakeChannel::WeakPtr weak_fake_channel = channel->AsWeakPtr();
+  l2cap::Channel::WeakPtr weak_channel = channel->GetWeakPtr();
   channels_.emplace(local_id, std::move(channel));
   if (channel_cb_) {
-    channel_cb_(weak_channel);
+    channel_cb_(weak_fake_channel);
   }
   cb(weak_channel);
 }

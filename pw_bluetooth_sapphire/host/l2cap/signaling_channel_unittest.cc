@@ -26,7 +26,7 @@ const auto kTestResponseHandler = [](Status status, const ByteBuffer& rsp_payloa
 
 class TestSignalingChannel : public SignalingChannel {
  public:
-  explicit TestSignalingChannel(fxl::WeakPtr<Channel> chan)
+  explicit TestSignalingChannel(Channel::WeakPtr chan)
       : SignalingChannel(std::move(chan), hci_spec::ConnectionRole::CENTRAL) {
     set_mtu(kTestMTU);
   }
@@ -272,7 +272,7 @@ TEST_F(SignalingChannelTest, UseChannelAfterSignalFree) {
   DestroySig();
 
   // Ensure that the underlying channel is still alive.
-  ASSERT_TRUE(static_cast<bool>(fake_chan()));
+  ASSERT_TRUE(fake_chan().is_alive());
 
   // SignalingChannel is expected to deactivate the channel if it doesn't own
   // it. Either way, the channel isn't in a state that can receive test data.

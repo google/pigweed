@@ -44,7 +44,7 @@ class Bearer final {
  public:
   // Creates a new ATT Bearer. Returns nullptr if |chan| cannot be activated.
   // This can happen if the link is closed.
-  static std::unique_ptr<Bearer> Create(fxl::WeakPtr<l2cap::Channel> chan);
+  static std::unique_ptr<Bearer> Create(l2cap::Channel::WeakPtr chan);
 
   ~Bearer();
 
@@ -153,7 +153,7 @@ class Bearer final {
   fxl::WeakPtr<Bearer> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
  private:
-  explicit Bearer(fxl::WeakPtr<l2cap::Channel> chan);
+  explicit Bearer(l2cap::Channel::WeakPtr chan);
 
   // Returns false if activation fails. This is called by the factory method.
   bool Activate();
@@ -212,7 +212,8 @@ class Bearer final {
 
     // Tries to initiate the next transaction. Sends the PDU over |chan| if
     // successful.
-    void TrySendNext(l2cap::Channel* chan, async::Task::Handler timeout_cb, zx::duration timeout);
+    void TrySendNext(const l2cap::Channel::WeakPtr& chan, async::Task::Handler timeout_cb,
+                     zx::duration timeout);
 
     // Adds |next| to the transaction queue.
     void Enqueue(PendingTransactionPtr transaction);

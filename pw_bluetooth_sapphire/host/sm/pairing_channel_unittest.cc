@@ -57,7 +57,7 @@ class PairingChannelTest : public l2cap::testing::MockChannelTest {
     options.link_type = ll_type;
     fake_sm_chan_ = CreateFakeChannel(options);
     sm_chan_ = std::make_unique<PairingChannel>(
-        fake_sm_chan_, fit::bind_member<&PairingChannelTest::ResetTimer>(this));
+        fake_sm_chan_->GetWeakPtr(), fit::bind_member<&PairingChannelTest::ResetTimer>(this));
   }
 
   PairingChannel* sm_chan() { return sm_chan_.get(); }
@@ -68,7 +68,7 @@ class PairingChannelTest : public l2cap::testing::MockChannelTest {
  private:
   void ResetTimer() { timer_resetter_(); }
 
-  fxl::WeakPtr<l2cap::testing::FakeChannel> fake_sm_chan_;
+  l2cap::testing::FakeChannel::WeakPtr fake_sm_chan_;
   std::unique_ptr<PairingChannel> sm_chan_;
   fit::closure timer_resetter_ = []() {};
 };

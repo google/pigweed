@@ -21,6 +21,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/pdu.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/rx_engine.h"
@@ -31,7 +32,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/link_type.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::l2cap {
 
@@ -61,7 +61,7 @@ namespace bt::l2cap {
 // When a LogicalLink closes, all of its active channels become deactivated
 // when it closes and this is signaled by running the ClosedCallback passed to
 // Activate().
-class Channel {
+class Channel : public WeakSelf<Channel> {
  public:
   // Defines the state of A2DP offloading to the controller.
   enum class A2dpOffloadStatus : uint8_t {
@@ -226,8 +226,6 @@ class Channel {
   // The ACL priority that was both requested and accepted by the controller.
   pw::bluetooth::AclPriority requested_acl_priority() const { return requested_acl_priority_; }
 
-  virtual fxl::WeakPtr<Channel> GetWeakPtr() = 0;
-
  protected:
   const ChannelId id_;
   const ChannelId remote_id_;
@@ -263,6 +261,7 @@ struct ChannelSocket {
 namespace internal {
 
 class LogicalLink;
+using LogicalLinkWeakPtr = WeakSelf<LogicalLink>::WeakPtr;
 
 // Channel implementation used in production.
 class ChannelImpl : public Channel {
@@ -274,11 +273,11 @@ class ChannelImpl : public Channel {
   //   1.) never sending packets larger than their spec-defined MTU.
   //   2.) handling inbound PDUs which are larger than their spec-defined MTU appropriately.
   static std::unique_ptr<ChannelImpl> CreateFixedChannel(ChannelId id,
-                                                         fxl::WeakPtr<internal::LogicalLink> link,
+                                                         internal::LogicalLinkWeakPtr link,
                                                          hci::CommandChannel::WeakPtr cmd_channel);
 
   static std::unique_ptr<ChannelImpl> CreateDynamicChannel(
-      ChannelId id, ChannelId peer_id, fxl::WeakPtr<internal::LogicalLink> link, ChannelInfo info,
+      ChannelId id, ChannelId peer_id, internal::LogicalLinkWeakPtr link, ChannelInfo info,
       hci::CommandChannel::WeakPtr cmd_channel);
 
   ~ChannelImpl() override = default;
@@ -289,8 +288,6 @@ class ChannelImpl : public Channel {
   // Called by |link_| when a PDU targeting this channel has been received.
   // Contents of |pdu| will be moved.
   void HandleRxPdu(PDU&& pdu);
-
-  fxl::WeakPtr<ChannelImpl> GetWeakImplPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
   // Channel overrides:
   const sm::SecurityProperties security() override;
@@ -306,10 +303,9 @@ class ChannelImpl : public Channel {
   void AttachInspect(inspect::Node& parent, std::string name) override;
   void StartA2dpOffload(const A2dpOffloadConfiguration* config,
                         hci::ResultCallback<> callback) override;
-  fxl::WeakPtr<Channel> GetWeakPtr() override { return weak_ptr_factory_.GetWeakPtr(); }
 
  private:
-  ChannelImpl(ChannelId id, ChannelId remote_id, fxl::WeakPtr<internal::LogicalLink> link,
+  ChannelImpl(ChannelId id, ChannelId remote_id, internal::LogicalLinkWeakPtr link,
               ChannelInfo info, hci::CommandChannel::WeakPtr cmd_channel);
 
   // Common channel closure logic. Called on Deactivate/OnClosed.
@@ -329,7 +325,7 @@ class ChannelImpl : public Channel {
   // because when a LogicalLink is torn down, it will notify all of its
   // associated channels by calling OnLinkClosed() which sets |link_| to
   // nullptr.
-  fxl::WeakPtr<internal::LogicalLink> link_;
+  internal::LogicalLinkWeakPtr link_;
 
   // Command channel used to transport A2DP offload configuration of vendor extensions.
   hci::CommandChannel::WeakPtr cmd_channel_;
@@ -355,8 +351,6 @@ class ChannelImpl : public Channel {
     inspect::StringProperty remote_id;
   };
   InspectProperties inspect_;
-
-  fxl::WeakPtrFactory<ChannelImpl> weak_ptr_factory_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ChannelImpl);
 };

@@ -725,7 +725,7 @@ TEST_P(PriorityTest, OutboundConnectAndSetPriority) {
   l2cap()->ExpectOutboundL2capChannel(connection()->link().handle(), kPSM, 0x40, 0x41,
                                       bt::l2cap::ChannelParameters());
 
-  fxl::WeakPtr<bt::l2cap::testing::FakeChannel> fake_channel;
+  bt::l2cap::testing::FakeChannel::WeakPtr fake_channel;
   l2cap()->set_channel_callback([&](auto chan) { fake_channel = std::move(chan); });
 
   // Expect a non-empty channel result.
@@ -744,7 +744,7 @@ TEST_P(PriorityTest, OutboundConnectAndSetPriority) {
   // Initiates pairing
   client()->Connect(peer_id, std::move(conn_params), std::move(chan_cb));
   RunLoopUntilIdle();
-  ASSERT_TRUE(fake_channel);
+  ASSERT_TRUE(fake_channel.is_alive());
   ASSERT_TRUE(channel.has_value());
   ASSERT_TRUE(channel->has_ext_direction());
   auto client = channel->mutable_ext_direction()->Bind();
@@ -794,7 +794,7 @@ TEST_F(AclPrioritySupportedTest, InboundConnectAndSetPriority) {
       std::make_unique<bt::gap::FakePairingDelegate>(bt::sm::IOCapability::kDisplayYesNo);
   adapter()->SetPairingDelegate(pairing_delegate->GetWeakPtr());
 
-  fxl::WeakPtr<bt::l2cap::testing::FakeChannel> fake_channel;
+  bt::l2cap::testing::FakeChannel::WeakPtr fake_channel;
   l2cap()->set_channel_callback([&](auto chan) { fake_channel = std::move(chan); });
 
   fidl::InterfaceHandle<fidlbredr::ConnectionReceiver> connect_receiver_handle;
@@ -826,7 +826,7 @@ TEST_F(AclPrioritySupportedTest, InboundConnectAndSetPriority) {
 
   RunLoopUntilIdle();
   EXPECT_EQ(priority_cb_count, 1u);
-  ASSERT_TRUE(fake_channel);
+  ASSERT_TRUE(fake_channel.is_alive());
   EXPECT_EQ(fake_channel->requested_acl_priority(), AclPriority::kSink);
 }
 
@@ -848,7 +848,7 @@ TEST_F(ProfileServerTestConnectedPeer, ConnectReturnsValidSocket) {
 
   fidlbredr::ChannelParameters fidl_params;
 
-  std::optional<fxl::WeakPtr<bt::l2cap::testing::FakeChannel>> fake_chan;
+  std::optional<bt::l2cap::testing::FakeChannel::WeakPtr> fake_chan;
   l2cap()->set_channel_callback([&fake_chan](auto chan) { fake_chan = std::move(chan); });
 
   // Expect a non-empty channel result.
@@ -876,7 +876,7 @@ TEST_F(ProfileServerTestConnectedPeer, ConnectReturnsValidSocket) {
   auto& socket = channel->socket();
 
   ASSERT_TRUE(fake_chan.has_value());
-  auto fake_chan_ptr = fake_chan->get();
+  auto fake_chan_ptr = fake_chan.value();
   size_t send_count = 0;
   fake_chan_ptr->SetSendCallback([&send_count](auto buffer) { send_count++; },
                                  async_get_default_dispatcher());
@@ -900,7 +900,7 @@ TEST_F(ProfileServerTestConnectedPeer, ConnectionReceiverReturnsValidSocket) {
   fidl::InterfaceHandle<fidlbredr::ConnectionReceiver> connect_receiver_handle;
   FakeConnectionReceiver connect_receiver(connect_receiver_handle.NewRequest(), dispatcher());
 
-  std::optional<fxl::WeakPtr<bt::l2cap::testing::FakeChannel>> fake_chan;
+  std::optional<bt::l2cap::testing::FakeChannel::WeakPtr> fake_chan;
   l2cap()->set_channel_callback([&fake_chan](auto chan) { fake_chan = std::move(chan); });
 
   fidlbredr::ChannelParameters fidl_chan_params;
@@ -924,7 +924,7 @@ TEST_F(ProfileServerTestConnectedPeer, ConnectionReceiverReturnsValidSocket) {
   auto channel = connect_receiver.take_channel();
 
   ASSERT_TRUE(fake_chan.has_value());
-  auto fake_chan_ptr = fake_chan->get();
+  auto fake_chan_ptr = fake_chan.value();
   size_t send_count = 0;
   fake_chan_ptr->SetSendCallback([&send_count](auto buffer) { send_count++; },
                                  async_get_default_dispatcher());
@@ -1123,7 +1123,7 @@ TEST_F(ProfileServerTestFakeAdapter, ConnectChannelParametersContainsFlushTimeou
   const fuchsia::bluetooth::PeerId kFidlPeerId{kPeerId.value()};
   const zx::duration kFlushTimeout(zx::msec(100));
 
-  fxl::WeakPtr<FakeChannel> last_channel;
+  FakeChannel::WeakPtr last_channel;
   adapter()->fake_bredr()->set_l2cap_channel_callback(
       [&](auto chan) { last_channel = std::move(chan); });
 
@@ -1142,7 +1142,7 @@ TEST_F(ProfileServerTestFakeAdapter, ConnectChannelParametersContainsFlushTimeou
                       response_channel = std::move(result.response().channel);
                     });
   RunLoopUntilIdle();
-  ASSERT_TRUE(last_channel);
+  ASSERT_TRUE(last_channel.is_alive());
   EXPECT_EQ(last_channel->info().flush_timeout, std::optional(kFlushTimeout));
   ASSERT_TRUE(response_channel.has_value());
   ASSERT_TRUE(response_channel->has_flush_timeout());
@@ -1191,7 +1191,7 @@ TEST_F(ProfileServerTestFakeAdapter, L2capParametersExtRequestParametersSucceeds
   const zx::duration kFlushTimeout(zx::msec(100));
   const uint16_t kMaxRxSduSize(200);
 
-  fxl::WeakPtr<FakeChannel> last_channel;
+  FakeChannel::WeakPtr last_channel;
   adapter()->fake_bredr()->set_l2cap_channel_callback([&](auto chan) { last_channel = chan; });
 
   fidlbredr::ChannelParameters chan_params;
@@ -1210,7 +1210,7 @@ TEST_F(ProfileServerTestFakeAdapter, L2capParametersExtRequestParametersSucceeds
                       response_channel = std::move(result.response().channel);
                     });
   RunLoopUntilIdle();
-  ASSERT_TRUE(last_channel);
+  ASSERT_TRUE(last_channel.is_alive());
   EXPECT_FALSE(last_channel->info().flush_timeout.has_value());
   ASSERT_TRUE(response_channel.has_value());
   ASSERT_FALSE(response_channel->has_flush_timeout());
@@ -1243,7 +1243,7 @@ TEST_F(ProfileServerTestFakeAdapter, L2capParametersExtRequestParametersFails) {
   const fuchsia::bluetooth::PeerId kFidlPeerId{kPeerId.value()};
   const zx::duration kFlushTimeout(zx::msec(100));
 
-  fxl::WeakPtr<FakeChannel> last_channel;
+  FakeChannel::WeakPtr last_channel;
   adapter()->fake_bredr()->set_l2cap_channel_callback([&](auto chan) { last_channel = chan; });
 
   fidlbredr::L2capParameters l2cap_params;
@@ -1258,7 +1258,7 @@ TEST_F(ProfileServerTestFakeAdapter, L2capParametersExtRequestParametersFails) {
                       response_channel = std::move(result.response().channel);
                     });
   RunLoopUntilIdle();
-  ASSERT_TRUE(last_channel);
+  ASSERT_TRUE(last_channel.is_alive());
   EXPECT_FALSE(last_channel->info().flush_timeout.has_value());
   ASSERT_TRUE(response_channel.has_value());
   ASSERT_FALSE(response_channel->has_flush_timeout());
@@ -1284,7 +1284,7 @@ TEST_F(ProfileServerTestFakeAdapter, L2capParametersExtRequestParametersClosedOn
   const bt::PeerId kPeerId;
   const fuchsia::bluetooth::PeerId kFidlPeerId{kPeerId.value()};
 
-  fxl::WeakPtr<FakeChannel> last_channel;
+  FakeChannel::WeakPtr last_channel;
   adapter()->fake_bredr()->set_l2cap_channel_callback([&](auto chan) { last_channel = chan; });
 
   fidlbredr::L2capParameters l2cap_params;
@@ -1299,7 +1299,7 @@ TEST_F(ProfileServerTestFakeAdapter, L2capParametersExtRequestParametersClosedOn
                       response_channel = std::move(result.response().channel);
                     });
   RunLoopUntilIdle();
-  ASSERT_TRUE(last_channel);
+  ASSERT_TRUE(last_channel.is_alive());
   ASSERT_TRUE(response_channel.has_value());
 
   fidlbredr::L2capParametersExtPtr l2cap_client = response_channel->mutable_ext_l2cap()->Bind();
@@ -1329,7 +1329,7 @@ TEST_F(ProfileServerTestFakeAdapter, AudioDirectionExtRequestParametersClosedOnC
   const bt::PeerId kPeerId;
   const fuchsia::bluetooth::PeerId kFidlPeerId{kPeerId.value()};
 
-  fxl::WeakPtr<FakeChannel> last_channel;
+  FakeChannel::WeakPtr last_channel;
   adapter()->fake_bredr()->set_l2cap_channel_callback([&](auto chan) { last_channel = chan; });
 
   fidlbredr::L2capParameters l2cap_params;
@@ -1344,7 +1344,7 @@ TEST_F(ProfileServerTestFakeAdapter, AudioDirectionExtRequestParametersClosedOnC
                       response_channel = std::move(result.response().channel);
                     });
   RunLoopUntilIdle();
-  ASSERT_TRUE(last_channel);
+  ASSERT_TRUE(last_channel.is_alive());
   ASSERT_TRUE(response_channel.has_value());
 
   fidlbredr::AudioDirectionExtPtr audio_client = response_channel->mutable_ext_direction()->Bind();

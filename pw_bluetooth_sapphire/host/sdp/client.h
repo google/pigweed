@@ -25,7 +25,7 @@ class Client {
  public:
   // Create a new SDP client on the given |channel|.  |channel| must be
   // un-activated. |channel| must not be null.
-  static std::unique_ptr<Client> Create(fxl::WeakPtr<l2cap::Channel> channel);
+  static std::unique_ptr<Client> Create(l2cap::Channel::WeakPtr channel);
 
   virtual ~Client() = default;
 

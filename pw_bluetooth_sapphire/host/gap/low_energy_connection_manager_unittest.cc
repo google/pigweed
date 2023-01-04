@@ -1493,7 +1493,7 @@ TEST_F(LowEnergyConnectionManagerTest, L2CAPSignalLinkError) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   ASSERT_TRUE(peer);
 
-  fxl::WeakPtr<l2cap::Channel> att_chan;
+  l2cap::testing::FakeChannel::WeakPtr att_chan;
   auto l2cap_chan_cb = [&att_chan](auto chan) { att_chan = chan; };
   fake_l2cap()->set_channel_callback(l2cap_chan_cb);
 
@@ -1506,7 +1506,7 @@ TEST_F(LowEnergyConnectionManagerTest, L2CAPSignalLinkError) {
 
   RunLoopUntilIdle();
   ASSERT_TRUE(conn_handle);
-  ASSERT_TRUE(att_chan);
+  ASSERT_TRUE(att_chan.is_alive());
   ASSERT_EQ(1u, connected_peers().size());
 
   // Signaling a link error through the channel should disconnect the link.
@@ -1521,8 +1521,8 @@ TEST_F(LowEnergyConnectionManagerTest, OutboundConnectATTChannelActivateFails) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   ASSERT_TRUE(peer);
 
-  std::optional<fxl::WeakPtr<l2cap::testing::FakeChannel>> att_chan;
-  auto l2cap_chan_cb = [&att_chan](fxl::WeakPtr<l2cap::testing::FakeChannel> chan) {
+  std::optional<l2cap::testing::FakeChannel::WeakPtr> att_chan;
+  auto l2cap_chan_cb = [&att_chan](l2cap::testing::FakeChannel::WeakPtr chan) {
     if (chan->id() == l2cap::kATTChannelId) {
       // Cause att::Bearer construction/activation to fail.
       chan->set_activate_fails(true);
@@ -1540,7 +1540,7 @@ TEST_F(LowEnergyConnectionManagerTest, OutboundConnectATTChannelActivateFails) {
   RunLoopUntilIdle();
   ASSERT_TRUE(att_chan.has_value());
   // The link should have been closed due to the error, invalidating the channel.
-  EXPECT_FALSE(att_chan.value());
+  EXPECT_FALSE(att_chan.value().is_alive());
   ASSERT_TRUE(result.has_value());
   EXPECT_EQ(HostError::kFailed, result->error_value());
   EXPECT_TRUE(connected_peers().empty());
@@ -1551,8 +1551,8 @@ TEST_F(LowEnergyConnectionManagerTest, InboundConnectionATTChannelActivateFails)
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   ASSERT_TRUE(peer);
 
-  std::optional<fxl::WeakPtr<l2cap::testing::FakeChannel>> att_chan;
-  auto l2cap_chan_cb = [&att_chan](fxl::WeakPtr<l2cap::testing::FakeChannel> chan) {
+  std::optional<l2cap::testing::FakeChannel::WeakPtr> att_chan;
+  auto l2cap_chan_cb = [&att_chan](l2cap::testing::FakeChannel::WeakPtr chan) {
     if (chan->id() == l2cap::kATTChannelId) {
       // Cause att::Bearer construction/activation to fail.
       chan->set_activate_fails(true);
@@ -1575,7 +1575,7 @@ TEST_F(LowEnergyConnectionManagerTest, InboundConnectionATTChannelActivateFails)
   RunLoopUntilIdle();
   ASSERT_TRUE(att_chan.has_value());
   // The link should have been closed due to the error, invalidating the channel.
-  EXPECT_FALSE(att_chan.value());
+  EXPECT_FALSE(att_chan.value().is_alive());
   ASSERT_TRUE(result.has_value());
   EXPECT_EQ(HostError::kFailed, result->error_value());
   EXPECT_TRUE(connected_peers().empty());
@@ -1587,8 +1587,8 @@ TEST_F(LowEnergyConnectionManagerTest, LinkErrorDuringInterrogation) {
   ASSERT_TRUE(peer);
 
   // Get an arbitrary channel in order to signal a link error.
-  fxl::WeakPtr<l2cap::testing::FakeChannel> chan;
-  auto l2cap_chan_cb = [&chan](fxl::WeakPtr<l2cap::testing::FakeChannel> cb_chan) {
+  l2cap::testing::FakeChannel::WeakPtr chan;
+  auto l2cap_chan_cb = [&chan](l2cap::testing::FakeChannel::WeakPtr cb_chan) {
     chan = std::move(cb_chan);
   };
   fake_l2cap()->set_channel_callback(l2cap_chan_cb);
@@ -1606,7 +1606,7 @@ TEST_F(LowEnergyConnectionManagerTest, LinkErrorDuringInterrogation) {
   conn_mgr()->Connect(peer->identifier(), conn_cb, kConnectionOptions);
 
   RunLoopUntilIdle();
-  ASSERT_TRUE(chan);
+  ASSERT_TRUE(chan.is_alive());
   fake_l2cap()->TriggerLinkError(chan->link_handle());
 
   send_read_remote_features_rsp();

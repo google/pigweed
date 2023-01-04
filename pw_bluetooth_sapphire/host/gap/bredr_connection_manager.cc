@@ -289,7 +289,7 @@ void BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
            status.is_ok() ? "" : "not ", bt_str(peer_id));
     if (status.is_error() || !self.is_alive()) {
       // Report the failure to the user with a null channel.
-      cb(nullptr);
+      cb(l2cap::Channel::WeakPtr());
       return;
     }
 
@@ -297,7 +297,7 @@ void BrEdrConnectionManager::OpenL2capChannel(PeerId peer_id, l2cap::PSM psm,
     if (!conn_pair) {
       bt_log(INFO, "gap-bredr", "can't open l2cap channel: connection not found (peer: %s)",
              bt_str(peer_id));
-      cb(nullptr);
+      cb(l2cap::Channel::WeakPtr());
       return;
     }
     auto& [handle, connection] = *conn_pair;
@@ -332,7 +332,7 @@ BrEdrConnectionManager::SearchId BrEdrConnectionManager::AddServiceSearch(
           if (!self.is_alive()) {
             return;
           }
-          if (!channel) {
+          if (!channel.is_alive()) {
             // Likely interrogation is not complete. Search will be done at end of interrogation.
             bt_log(INFO, "gap", "no l2cap channel for new search (peer: %s)", bt_str(peer_id));
             // Try anyway, maybe there's a channel open
@@ -672,7 +672,7 @@ void BrEdrConnectionManager::CompleteConnectionSetup(Peer::WeakPtr peer,
           if (!self.is_alive()) {
             return;
           }
-          if (!channel) {
+          if (!channel.is_alive()) {
             bt_log(ERROR, "gap", "failed to create l2cap channel for SDP (peer: %s)",
                    bt_str(peer_id));
             return;

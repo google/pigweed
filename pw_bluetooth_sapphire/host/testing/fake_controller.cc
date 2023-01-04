@@ -219,15 +219,15 @@ void FakeController::SendCommand(pw::span<const std::byte> command) {
   BT_ASSERT(command.size() >= sizeof(hci_spec::CommandHeader));
 
   // Post the packet to simulate async HCI behavior.
-  async::PostTask(dispatcher(), [self = weak_ptr_factory_.GetWeakPtr(),
-                                 command = DynamicByteBuffer(BufferView(command))]() {
-    if (!self) {
-      return;
-    }
-    const size_t payload_size = command.size() - sizeof(hci_spec::CommandHeader);
-    PacketView<hci_spec::CommandHeader> packet_view(&command, payload_size);
-    self->OnCommandPacketReceived(packet_view);
-  });
+  async::PostTask(dispatcher(),
+                  [self = GetWeakPtr(), command = DynamicByteBuffer(BufferView(command))]() {
+                    if (!self.is_alive()) {
+                      return;
+                    }
+                    const size_t payload_size = command.size() - sizeof(hci_spec::CommandHeader);
+                    PacketView<hci_spec::CommandHeader> packet_view(&command, payload_size);
+                    self->OnCommandPacketReceived(packet_view);
+                  });
 }
 
 FakePeer* FakeController::FindByConnHandle(hci_spec::ConnectionHandle handle) {

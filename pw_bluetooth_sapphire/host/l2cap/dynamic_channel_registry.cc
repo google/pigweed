@@ -44,9 +44,8 @@ void DynamicChannelRegistry::CloseChannel(ChannelId local_cid, fit::closure clos
   }
 
   BT_DEBUG_ASSERT(channel->IsConnected());
-  auto disconn_done_cb = [self = weak_ptr_factory_.GetWeakPtr(), close_cb = std::move(close_cb),
-                          channel] {
-    if (!self) {
+  auto disconn_done_cb = [self = GetWeakPtr(), close_cb = std::move(close_cb), channel] {
+    if (!self.is_alive()) {
       close_cb();
       return;
     }
@@ -60,10 +59,10 @@ DynamicChannelRegistry::DynamicChannelRegistry(uint16_t max_num_channels,
                                                DynamicChannelCallback close_cb,
                                                ServiceRequestCallback service_request_cb,
                                                bool random_channel_ids)
-    : max_num_channels_(max_num_channels),
+    : WeakSelf(this),
+      max_num_channels_(max_num_channels),
       close_cb_(std::move(close_cb)),
-      service_request_cb_(std::move(service_request_cb)),
-      weak_ptr_factory_(this) {
+      service_request_cb_(std::move(service_request_cb)) {
   BT_DEBUG_ASSERT(max_num_channels > 0);
   BT_DEBUG_ASSERT(max_num_channels < 65473);
   BT_DEBUG_ASSERT(close_cb_);
@@ -160,8 +159,8 @@ void DynamicChannelRegistry::ActivateChannel(DynamicChannel* channel,
 
     // This lambda is owned by the channel, so captures are no longer valid
     // after this call.
-    auto disconn_done_cb = [self = weak_ptr_factory_.GetWeakPtr(), channel] {
-      if (!self) {
+    auto disconn_done_cb = [self = GetWeakPtr(), channel] {
+      if (!self.is_alive()) {
         return;
       }
       self->RemoveChannel(channel);

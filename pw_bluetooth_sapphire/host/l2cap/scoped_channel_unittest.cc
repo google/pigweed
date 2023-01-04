@@ -44,7 +44,7 @@ TEST(ScopedChannelTest, Reset) {
   EXPECT_FALSE(chan1->activated());
   EXPECT_TRUE(chan2->activated());
 
-  scoped.Reset(nullptr);
+  scoped.Reset(Channel::WeakPtr());
   EXPECT_FALSE(chan2->activated());
 }
 
