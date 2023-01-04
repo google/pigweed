@@ -32,7 +32,10 @@ if (dir_pw_third_party_googletest != "") {
     ]
 
     # Fix some compiler warnings.
-    cflags = [ "-Wno-undef" ]
+    cflags = [
+      "-Wno-undef",
+      "-Wno-conversion",
+    ]
   }
 
   pw_source_set("googletest") {
