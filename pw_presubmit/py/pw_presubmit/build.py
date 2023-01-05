@@ -509,7 +509,7 @@ class GnGenNinja(Check):
             Dict[str, Any]
         ] = None,
         ninja_contexts: Sequence[_CtxMgrOrLambda] = (),
-        ninja_targets: Union[Sequence[str], Sequence[Sequence[str]]] = (),
+        ninja_targets: Union[str, Sequence[str], Sequence[Sequence[str]]] = (),
         **kwargs,
     ):
         """Initializes a GnGenNinja object.
@@ -520,9 +520,9 @@ class GnGenNinja(Check):
             gn_args: Dict of GN args.
             ninja_contexts: List of context managers to apply around ninja
                 calls.
-            ninja_targets: List of Ninja targets, or list of list of ninja
-                targets. If a list of a list, ninja will be called multiple
-                times with the same build directory.
+            ninja_targets: Single ninja target, list of Ninja targets, or list
+                of list of ninja targets. If a list of a list, ninja will be
+                called multiple times with the same build directory.
             **kwargs: Passed on to superclass.
         """
         super().__init__(self._substeps(), *args, **kwargs)
@@ -530,6 +530,8 @@ class GnGenNinja(Check):
         self.gn_args: Dict[str, Any] = gn_args or {}
         self.ninja_contexts: Tuple[_CtxMgrOrLambda, ...] = tuple(ninja_contexts)
 
+        if isinstance(ninja_targets, str):
+            ninja_targets = (ninja_targets,)
         ninja_targets = list(ninja_targets)
         all_strings = all(isinstance(x, str) for x in ninja_targets)
         any_strings = any(isinstance(x, str) for x in ninja_targets)
