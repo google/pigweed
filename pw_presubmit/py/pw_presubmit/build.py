@@ -169,8 +169,10 @@ def gn_gen(
     **gn_arguments,
 ) -> None:
     """Runs gn gen in the specified directory with optional GN args."""
-    args_option = gn_args(**gn_arguments)
-    override_args_option = gn_args(**ctx.override_gn_args)
+    all_gn_args = dict(gn_arguments)
+    all_gn_args.update(ctx.override_gn_args)
+    _LOG.debug('%r', all_gn_args)
+    args_option = gn_args(**all_gn_args)
 
     if not preserve_args_gn:
         # Delete args.gn to ensure this is a clean build.
@@ -192,8 +194,7 @@ def gn_gen(
         *(['--fail-on-unused-args'] if gn_fail_on_unused else []),
         *([export_commands_arg] if export_commands_arg else []),
         *args,
-        *([args_option] if gn_arguments else []),
-        *([override_args_option] if ctx.override_gn_args else []),
+        *([args_option] if all_gn_args else []),
         cwd=ctx.root,
     )
 
