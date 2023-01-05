@@ -543,8 +543,6 @@ TEST_F(BrEdrDynamicChannelTest,
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
                       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
-  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
-                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
   int open_cb_count = 0;
   auto open_cb = [&open_cb_count](auto chan) {
@@ -577,6 +575,13 @@ TEST_F(BrEdrDynamicChannelTest,
   // simulate inbound request to make new connection using already allocated remote CId
   sig()->ReceiveExpect(kConnectionRequest, kInboundConnReq,
                        kOutboundSourceCIdAlreadyAllocatedConnRsp);
+
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(channel_close_cb_called);
 }
 
 TEST_F(BrEdrDynamicChannelTest,
@@ -642,6 +647,10 @@ TEST_F(BrEdrDynamicChannelTest,
 
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(channel_close_cb_called);
 }
 
 TEST_F(BrEdrDynamicChannelTest,
@@ -702,6 +711,10 @@ TEST_F(BrEdrDynamicChannelTest,
 
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(channel_close_cb_called);
 }
 
 TEST_F(BrEdrDynamicChannelTest,
@@ -747,6 +760,10 @@ TEST_F(BrEdrDynamicChannelTest,
 
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(channel_close_cb_called);
 }
 
 TEST_F(BrEdrDynamicChannelTest, ChannelDeletedBeforeConnectionResponse) {
@@ -1079,8 +1096,6 @@ TEST_F(BrEdrDynamicChannelTest, OpenChannelWithPendingConn) {
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
                       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
-  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
-                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
   int open_cb_count = 0;
   registry()->OpenOutbound(kPsm, kChannelParams, [&open_cb_count](auto chan) {
@@ -1096,6 +1111,13 @@ TEST_F(BrEdrDynamicChannelTest, OpenChannelWithPendingConn) {
       sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
 
   EXPECT_EQ(1, open_cb_count);
+
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(channel_close_cb_called);
 }
 
 TEST_F(BrEdrDynamicChannelTest, OpenChannelMismatchConnRsp) {
@@ -1106,8 +1128,6 @@ TEST_F(BrEdrDynamicChannelTest, OpenChannelMismatchConnRsp) {
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
                       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
-  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
-                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
   int open_cb_count = 0;
   registry()->OpenOutbound(kPsm, kChannelParams, [&open_cb_count](auto chan) {
@@ -1123,6 +1143,13 @@ TEST_F(BrEdrDynamicChannelTest, OpenChannelMismatchConnRsp) {
       sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
 
   EXPECT_EQ(1, open_cb_count);
+
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(channel_close_cb_called);
 }
 
 TEST_F(BrEdrDynamicChannelTest, OpenChannelConfigPending) {
@@ -1131,8 +1158,6 @@ TEST_F(BrEdrDynamicChannelTest, OpenChannelConfigPending) {
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
                       {SignalingChannel::Status::kSuccess, kOutboundEmptyPendingConfigRsp.view()},
                       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
-  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
-                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
   int open_cb_count = 0;
   registry()->OpenOutbound(kPsm, kChannelParams, [&open_cb_count](auto chan) {
@@ -1148,6 +1173,13 @@ TEST_F(BrEdrDynamicChannelTest, OpenChannelConfigPending) {
       sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp));
 
   EXPECT_EQ(1, open_cb_count);
+
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(channel_close_cb_called);
 }
 
 TEST_F(BrEdrDynamicChannelTest, OpenChannelRemoteDisconnectWhileConfiguring) {
@@ -1445,7 +1477,10 @@ TEST_F(BrEdrDynamicChannelTest, RejectConfigReqWithUnknownOptions) {
                       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
 
   size_t open_cb_count = 0;
-  auto open_cb = [&open_cb_count](auto chan) { open_cb_count++; };
+  auto open_cb = [&open_cb_count](auto chan) {
+    EXPECT_FALSE(chan);
+    open_cb_count++;
+  };
 
   registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
@@ -1480,9 +1515,6 @@ TEST_F(BrEdrDynamicChannelTest, RejectConfigReqWithUnknownOptions) {
   EXPECT_EQ(0u, open_cb_count);
 
   RunLoopUntilIdle();
-
-  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
-                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 }
 
 TEST_F(BrEdrDynamicChannelTest, ClampErtmChannelInfoMaxTxSduSizeToMaxPduPayloadSize) {
@@ -1490,8 +1522,6 @@ TEST_F(BrEdrDynamicChannelTest, ClampErtmChannelInfoMaxTxSduSizeToMaxPduPayloadS
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view(),
                       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
-  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
-                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
   const auto kPeerMps = 1024;
   const auto kPeerMtu = kPeerMps + 1;
@@ -1500,6 +1530,7 @@ TEST_F(BrEdrDynamicChannelTest, ClampErtmChannelInfoMaxTxSduSizeToMaxPduPayloadS
     channel_opened = true;
     ASSERT_TRUE(chan);
     EXPECT_TRUE(chan->IsOpen());
+    EXPECT_EQ(kLocalCId, chan->local_cid());
 
     // Note that max SDU size is the peer's MPS because it's smaller than its MTU.
     EXPECT_EQ(kPeerMps, chan->info().max_tx_sdu_size);
@@ -1523,6 +1554,13 @@ TEST_F(BrEdrDynamicChannelTest, ClampErtmChannelInfoMaxTxSduSizeToMaxPduPayloadS
       sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundConfigRsp));
 
   EXPECT_TRUE(channel_opened);
+
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(channel_close_cb_called);
 }
 
 struct ReceiveMtuTestParams {
@@ -1544,6 +1582,7 @@ TEST_P(ReceivedMtuTest, ResponseMtuAndStatus) {
     channel_opened = true;
     ASSERT_TRUE(chan);
     EXPECT_TRUE(chan->IsOpen());
+    EXPECT_EQ(kLocalCId, chan->local_cid());
     EXPECT_EQ(chan->info().max_tx_sdu_size, GetParam().response_mtu);
   };
 
@@ -1567,6 +1606,10 @@ TEST_P(ReceivedMtuTest, ResponseMtuAndStatus) {
 
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(channel_close_cb_called);
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -1601,6 +1644,7 @@ TEST_P(ConfigRspWithMtuTest, ConfiguredLocalMtu) {
   size_t open_cb_count = 0;
   auto open_cb = [&](auto chan) {
     EXPECT_TRUE(chan->IsOpen());
+    EXPECT_EQ(kLocalCId, chan->local_cid());
     EXPECT_EQ(kExpectedConfiguredLocalMtu, chan->info().max_rx_sdu_size);
     open_cb_count++;
   };
@@ -1615,6 +1659,10 @@ TEST_P(ConfigRspWithMtuTest, ConfiguredLocalMtu) {
 
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(channel_close_cb_called);
 }
 
 TEST_P(ConfigRspWithMtuTest, ConfiguredLocalMtuWithPendingRsp) {
@@ -1639,6 +1687,7 @@ TEST_P(ConfigRspWithMtuTest, ConfiguredLocalMtuWithPendingRsp) {
   size_t open_cb_count = 0;
   auto open_cb = [&](auto chan) {
     EXPECT_TRUE(chan->IsOpen());
+    EXPECT_EQ(kLocalCId, chan->local_cid());
     EXPECT_EQ(kExpectedConfiguredLocalMtu, chan->info().max_rx_sdu_size);
     open_cb_count++;
   };
@@ -1653,6 +1702,10 @@ TEST_P(ConfigRspWithMtuTest, ConfiguredLocalMtuWithPendingRsp) {
 
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(channel_close_cb_called);
 }
 
 INSTANTIATE_TEST_SUITE_P(BrEdrDynamicChannelTest, ConfigRspWithMtuTest,
@@ -1701,7 +1754,10 @@ TEST_P(InformationResultTest,
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
 
   size_t open_cb_count = 0;
-  auto open_cb = [&open_cb_count](auto chan) { open_cb_count++; };
+  auto open_cb = [&open_cb_count](auto chan) {
+    EXPECT_EQ(kLocalCId, chan->local_cid());
+    open_cb_count++;
+  };
 
   registry()->OpenOutbound(kPsm, kERTMChannelParams, std::move(open_cb));
 
@@ -1725,6 +1781,10 @@ TEST_P(InformationResultTest,
 
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(channel_close_cb_called);
 }
 
 INSTANTIATE_TEST_SUITE_P(BrEdrDynamicChannelTest, InformationResultTest,
@@ -1753,6 +1813,10 @@ TEST_F(BrEdrDynamicChannelTest, ERTChannelDoesNotSendConfigReqBeforeConnRspRecei
 
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(channel_close_cb_called);
 }
 
 TEST_F(BrEdrDynamicChannelTest, SendAndReceiveERTMConfigReq) {
@@ -1765,15 +1829,13 @@ TEST_F(BrEdrDynamicChannelTest, SendAndReceiveERTMConfigReq) {
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kExpectedOutboundConfigReq.view(),
                       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
-  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
-                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
   int open_cb_count = 0;
-
   auto open_cb = [kPreferredMtu, &open_cb_count](const DynamicChannel* chan) {
     if (open_cb_count == 0) {
       ASSERT_TRUE(chan);
       EXPECT_TRUE(chan->IsOpen());
+      EXPECT_EQ(kLocalCId, chan->local_cid());
 
       // Check values of ChannelInfo fields.
       EXPECT_EQ(ChannelMode::kEnhancedRetransmission, chan->info().mode);
@@ -1806,6 +1868,13 @@ TEST_F(BrEdrDynamicChannelTest, SendAndReceiveERTMConfigReq) {
 
   RunLoopUntilIdle();
   EXPECT_EQ(1, open_cb_count);
+
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(channel_close_cb_called);
 }
 
 // When the peer rejects ERTM with the result Unacceptable Parameters and the R&FC
@@ -1820,15 +1889,13 @@ TEST_F(BrEdrDynamicChannelTest, PeerRejectsERTM) {
       {SignalingChannel::Status::kSuccess, kInboundUnacceptableParamsWithRfcBasicConfigRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
                       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
-  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
-                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
   int open_cb_count = 0;
-
   auto open_cb = [&open_cb_count](const DynamicChannel* chan) {
     if (open_cb_count == 0) {
       ASSERT_TRUE(chan);
       EXPECT_TRUE(chan->IsOpen());
+      EXPECT_EQ(kLocalCId, chan->local_cid());
     }
     open_cb_count++;
   };
@@ -1845,6 +1912,13 @@ TEST_F(BrEdrDynamicChannelTest, PeerRejectsERTM) {
 
   RunLoopUntilIdle();
   EXPECT_EQ(1, open_cb_count);
+
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(channel_close_cb_called);
 }
 
 // Local device that prefers ERTM will renegotiate channel mode to basic mode after peer negotiates
@@ -1857,11 +1931,11 @@ TEST_F(BrEdrDynamicChannelTest, RenegotiateChannelModeAfterPeerRequestsBasicMode
       EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view());
 
   int open_cb_count = 0;
-
   auto open_cb = [&open_cb_count](const DynamicChannel* chan) {
     if (open_cb_count == 0) {
       ASSERT_TRUE(chan);
       EXPECT_TRUE(chan->IsOpen());
+      EXPECT_EQ(kLocalCId, chan->local_cid());
     }
     open_cb_count++;
   };
@@ -1892,6 +1966,10 @@ TEST_F(BrEdrDynamicChannelTest, RenegotiateChannelModeAfterPeerRequestsBasicMode
 
   EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(channel_close_cb_called);
 }
 
 // The local device should configure basic mode if peer does not indicate support for ERTM when it
@@ -1902,8 +1980,6 @@ TEST_F(BrEdrDynamicChannelTest, PreferredModeIsERTMButERTMIsNotInPeerFeatureMask
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
                       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
-  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
-                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
   registry()->OpenOutbound(kPsm, kERTMChannelParams, {});
 
@@ -1912,6 +1988,13 @@ TEST_F(BrEdrDynamicChannelTest, PreferredModeIsERTMButERTMIsNotInPeerFeatureMask
   // Receive features mask without ERTM bit set.
   sig()->ReceiveResponses(ext_info_transaction_id(),
                           {{SignalingChannel::Status::kSuccess, kExtendedFeaturesInfoRsp.view()}});
+
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(channel_close_cb_called);
 }
 
 TEST_F(BrEdrDynamicChannelTest, RejectERTMRequestWhenPreferredModeIsBasic) {
@@ -1919,8 +2002,6 @@ TEST_F(BrEdrDynamicChannelTest, RejectERTMRequestWhenPreferredModeIsBasic) {
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
                       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
-  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
-                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
   registry()->OpenOutbound(kPsm, kChannelParams, {});
 
@@ -1929,6 +2010,13 @@ TEST_F(BrEdrDynamicChannelTest, RejectERTMRequestWhenPreferredModeIsBasic) {
   // Peer requests ERTM. Local device should reject with unacceptable params.
   RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithERTM,
                                        kOutboundUnacceptableParamsWithRfcBasicConfigRsp));
+
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(channel_close_cb_called);
 }
 
 // Core Spec v5.1, Vol 3, Part A, Sec 5.4:
@@ -2057,11 +2145,12 @@ TEST_F(BrEdrDynamicChannelTest, RetryWhenPeerRejectsConfigReqWithBasicMode) {
       {SignalingChannel::Status::kSuccess, kInboundUnacceptableParamsWithRfcBasicConfigRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
                       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
-  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
-                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
   int open_cb_count = 0;
-  auto open_cb = [&open_cb_count](const DynamicChannel* chan) { open_cb_count++; };
+  auto open_cb = [&open_cb_count](const DynamicChannel* chan) {
+    EXPECT_FALSE(chan);
+    open_cb_count++;
+  };
 
   registry()->OpenOutbound(kPsm, kChannelParams, std::move(open_cb));
 
@@ -2083,7 +2172,6 @@ TEST_F(BrEdrDynamicChannelTest, RetryNTimesWhenPeerRejectsConfigReqWithBasicMode
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
   int open_cb_count = 0;
-
   auto open_cb = [&open_cb_count](const DynamicChannel* chan) {
     ASSERT_TRUE(chan == nullptr);
     open_cb_count++;
@@ -2112,7 +2200,6 @@ TEST_F(BrEdrDynamicChannelTest, RetryNTimesWhenPeerRejectsERTMConfigReqWithBasic
                       {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
   int open_cb_count = 0;
-
   auto open_cb = [&open_cb_count](const DynamicChannel* chan) {
     ASSERT_TRUE(chan == nullptr);
     open_cb_count++;
@@ -2136,8 +2223,6 @@ TEST_F(BrEdrDynamicChannelTest,
        SendUnacceptableParamsResponseWhenPeerRequestsUnsupportedChannelMode) {
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
-  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
-                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
   registry()->OpenOutbound(kPsm, kERTMChannelParams, {});
 
@@ -2149,6 +2234,13 @@ TEST_F(BrEdrDynamicChannelTest,
   RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest,
                                        kInboundConfigReqWithRetransmissionMode,
                                        kOutboundUnacceptableParamsWithRfcBasicConfigRsp));
+
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(channel_close_cb_called);
 }
 
 TEST_F(BrEdrDynamicChannelTest,
@@ -2156,8 +2248,6 @@ TEST_F(BrEdrDynamicChannelTest,
   EXPECT_OUTBOUND_REQ(*sig(), kConnectionRequest, kConnReq.view(),
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view(), {});
-  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
-                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
   registry()->OpenOutbound(kPsm, kERTMChannelParams, {});
 
@@ -2174,6 +2264,13 @@ TEST_F(BrEdrDynamicChannelTest,
   RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest,
                                        kInboundConfigReqWithRetransmissionMode,
                                        kOutboundUnacceptableParamsWithRfcERTMConfigRsp));
+
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(channel_close_cb_called);
 }
 
 TEST_F(BrEdrDynamicChannelTest, SendUnacceptableParamsResponseWhenPeerRequestErtmWithZeroTxWindow) {
@@ -2181,8 +2278,6 @@ TEST_F(BrEdrDynamicChannelTest, SendUnacceptableParamsResponseWhenPeerRequestErt
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view(),
                       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
-  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
-                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
   registry()->OpenOutbound(kPsm, kERTMChannelParams, {});
 
@@ -2215,8 +2310,6 @@ TEST_F(BrEdrDynamicChannelTest,
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view(),
                       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
-  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
-                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
   registry()->OpenOutbound(kPsm, kERTMChannelParams, {});
 
@@ -2241,6 +2334,13 @@ TEST_F(BrEdrDynamicChannelTest,
       /*retransmission_timeout=*/0, /*monitor_timeout=*/0, /*mps=*/kMps);
   RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithOversizeTxWindow,
                                        kOutboundConfigRsp));
+
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(channel_close_cb_called);
 }
 
 TEST_F(BrEdrDynamicChannelTest, SendUnacceptableParamsResponseWhenPeerRequestErtmWithUndersizeMps) {
@@ -2248,8 +2348,6 @@ TEST_F(BrEdrDynamicChannelTest, SendUnacceptableParamsResponseWhenPeerRequestErt
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view(),
                       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
-  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
-                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
   registry()->OpenOutbound(kPsm, kERTMChannelParams, {});
 
@@ -2274,6 +2372,13 @@ TEST_F(BrEdrDynamicChannelTest, SendUnacceptableParamsResponseWhenPeerRequestErt
       /*retransmission_timeout=*/0, /*monitor_timeout=*/0, /*mps=*/kMinACLMTU);
   RETURN_IF_FATAL(sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithUndersizeMps,
                                        kOutboundConfigRsp));
+
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(channel_close_cb_called);
 }
 
 // Local config with ERTM incorrectly accepted by peer, then peer requests basic mode which
@@ -2284,14 +2389,12 @@ TEST_F(BrEdrDynamicChannelTest, OpenBasicModeChannelAfterPeerAcceptsErtmThenPeer
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view(),
                       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
-  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
-                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
   int open_cb_count = 0;
-
   auto open_cb = [&open_cb_count](const DynamicChannel* chan) {
     if (open_cb_count == 0) {
       ASSERT_TRUE(chan);
+      EXPECT_EQ(kLocalCId, chan->local_cid());
       EXPECT_EQ(ChannelMode::kBasic, chan->info().mode);
     }
     open_cb_count++;
@@ -2314,6 +2417,13 @@ TEST_F(BrEdrDynamicChannelTest, OpenBasicModeChannelAfterPeerAcceptsErtmThenPeer
   // Disconnect
   RunLoopUntilIdle();
   EXPECT_EQ(1, open_cb_count);
+
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(channel_close_cb_called);
 }
 
 // Same as above, but the peer sends its positive response after sending its Basic Mode request.
@@ -2322,14 +2432,12 @@ TEST_F(BrEdrDynamicChannelTest, OpenBasicModeChannelAfterPeerRequestsBasicModeTh
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view(),
                       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
-  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
-                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
   int open_cb_count = 0;
-
   auto open_cb = [&open_cb_count](const DynamicChannel* chan) {
     if (open_cb_count == 0) {
       ASSERT_TRUE(chan);
+      EXPECT_EQ(kLocalCId, chan->local_cid());
       EXPECT_EQ(ChannelMode::kBasic, chan->info().mode);
     }
     open_cb_count++;
@@ -2349,6 +2457,13 @@ TEST_F(BrEdrDynamicChannelTest, OpenBasicModeChannelAfterPeerRequestsBasicModeTh
   // Request ERTM & Disconnect
   RunLoopUntilIdle();
   EXPECT_EQ(1, open_cb_count);
+
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(channel_close_cb_called);
 }
 
 TEST_F(BrEdrDynamicChannelTest, MtuChannelParameterSentInConfigReq) {
@@ -2359,13 +2474,12 @@ TEST_F(BrEdrDynamicChannelTest, MtuChannelParameterSentInConfigReq) {
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kExpectedOutboundConfigReq.view(),
                       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
-  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
-                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
   int open_cb_count = 0;
   auto open_cb = [&](const DynamicChannel* chan) {
     if (open_cb_count == 0) {
       ASSERT_TRUE(chan);
+      EXPECT_EQ(kLocalCId, chan->local_cid());
       EXPECT_EQ(kPreferredMtu, chan->info().max_rx_sdu_size);
     }
     open_cb_count++;
@@ -2377,6 +2491,13 @@ TEST_F(BrEdrDynamicChannelTest, MtuChannelParameterSentInConfigReq) {
   sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp);
   RunLoopUntilIdle();
   EXPECT_EQ(1, open_cb_count);
+
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(channel_close_cb_called);
 }
 
 TEST_F(BrEdrDynamicChannelTest, UseMinMtuWhenMtuChannelParameterIsBelowMin) {
@@ -2387,13 +2508,12 @@ TEST_F(BrEdrDynamicChannelTest, UseMinMtuWhenMtuChannelParameterIsBelowMin) {
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kExpectedOutboundConfigReq.view(),
                       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
-  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
-                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
   int open_cb_count = 0;
   auto open_cb = [&](const DynamicChannel* chan) {
     if (open_cb_count == 0) {
       ASSERT_TRUE(chan);
+      EXPECT_EQ(kLocalCId, chan->local_cid());
       EXPECT_EQ(kMinACLMTU, chan->info().max_rx_sdu_size);
     }
     open_cb_count++;
@@ -2405,6 +2525,13 @@ TEST_F(BrEdrDynamicChannelTest, UseMinMtuWhenMtuChannelParameterIsBelowMin) {
   sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kOutboundOkConfigRsp);
   RunLoopUntilIdle();
   EXPECT_EQ(1, open_cb_count);
+
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(channel_close_cb_called);
 }
 
 TEST_F(BrEdrDynamicChannelTest, UseMaxPduPayloadSizeWhenMtuChannelParameterExceedsItWithErtm) {
@@ -2418,13 +2545,12 @@ TEST_F(BrEdrDynamicChannelTest, UseMaxPduPayloadSizeWhenMtuChannelParameterExcee
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kExpectedOutboundConfigReq.view(),
                       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
-  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
-                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
   int open_cb_count = 0;
   auto open_cb = [&](const DynamicChannel* chan) {
     if (open_cb_count == 0) {
       ASSERT_TRUE(chan);
+      EXPECT_EQ(kLocalCId, chan->local_cid());
       EXPECT_EQ(kMaxInboundPduPayloadSize, chan->info().max_rx_sdu_size);
     }
     open_cb_count++;
@@ -2444,6 +2570,13 @@ TEST_F(BrEdrDynamicChannelTest, UseMaxPduPayloadSizeWhenMtuChannelParameterExcee
 
   RunLoopUntilIdle();
   EXPECT_EQ(1, open_cb_count);
+
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(channel_close_cb_called);
 }
 
 TEST_F(BrEdrDynamicChannelTest, BasicModeChannelReportsChannelInfoWithBasicModeAndSduCapacities) {
@@ -2454,8 +2587,6 @@ TEST_F(BrEdrDynamicChannelTest, BasicModeChannelReportsChannelInfoWithBasicModeA
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kExpectedOutboundConfigReq.view(),
                       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
-  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
-                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
   constexpr uint16_t kPeerMtu = kDefaultMTU + 2;
   const auto kInboundConfigReq = MakeConfigReqWithMtu(kLocalCId, kPeerMtu);
@@ -2463,6 +2594,7 @@ TEST_F(BrEdrDynamicChannelTest, BasicModeChannelReportsChannelInfoWithBasicModeA
   int open_cb_count = 0;
   auto open_cb = [&](const DynamicChannel* chan) {
     ASSERT_TRUE(chan);
+    EXPECT_EQ(kLocalCId, chan->local_cid());
     EXPECT_EQ(ChannelMode::kBasic, chan->info().mode);
     EXPECT_EQ(kPreferredMtu, chan->info().max_rx_sdu_size);
     EXPECT_EQ(kPeerMtu, chan->info().max_tx_sdu_size);
@@ -2476,6 +2608,13 @@ TEST_F(BrEdrDynamicChannelTest, BasicModeChannelReportsChannelInfoWithBasicModeA
   sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReq, kExpectedOutboundOkConfigRsp);
   RunLoopUntilIdle();
   EXPECT_EQ(1, open_cb_count);
+
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(channel_close_cb_called);
 }
 
 TEST_F(BrEdrDynamicChannelTest, Receive2ConfigReqsWithContinuationFlagInFirstReq) {
@@ -2484,8 +2623,6 @@ TEST_F(BrEdrDynamicChannelTest, Receive2ConfigReqsWithContinuationFlagInFirstReq
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReqWithErtm.view(),
                       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
-  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
-                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
   const auto kInboundConfigReq0 =
       MakeConfigReqWithMtu(kLocalCId, kTxMtu, kConfigurationContinuation);
@@ -2497,6 +2634,7 @@ TEST_F(BrEdrDynamicChannelTest, Receive2ConfigReqsWithContinuationFlagInFirstReq
   auto open_cb = [&](const DynamicChannel* chan) {
     if (open_cb_count == 0) {
       ASSERT_TRUE(chan);
+      EXPECT_EQ(kLocalCId, chan->local_cid());
       EXPECT_EQ(kTxMtu, chan->info().max_tx_sdu_size);
       EXPECT_EQ(ChannelMode::kEnhancedRetransmission, chan->info().mode);
     }
@@ -2516,6 +2654,13 @@ TEST_F(BrEdrDynamicChannelTest, Receive2ConfigReqsWithContinuationFlagInFirstReq
   sig()->ReceiveExpect(kConfigurationRequest, kInboundConfigReqWithERTM, kOutboundConfigRsp1);
   RunLoopUntilIdle();
   EXPECT_EQ(1u, open_cb_count);
+
+  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
+                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
+  bool channel_close_cb_called = false;
+  registry()->CloseChannel(kLocalCId, [&] { channel_close_cb_called = true; });
+  RETURN_IF_FATAL(RunLoopUntilIdle());
+  EXPECT_TRUE(channel_close_cb_called);
 }
 
 // The unknown options from both configuration requests should be included when responding
@@ -2526,8 +2671,6 @@ TEST_F(BrEdrDynamicChannelTest,
                       {SignalingChannel::Status::kSuccess, kOkConnRsp.view()});
   EXPECT_OUTBOUND_REQ(*sig(), kConfigurationRequest, kOutboundConfigReq.view(),
                       {SignalingChannel::Status::kSuccess, kInboundEmptyConfigRsp.view()});
-  EXPECT_OUTBOUND_REQ(*sig(), kDisconnectionRequest, kDisconReq.view(),
-                      {SignalingChannel::Status::kSuccess, kDisconRsp.view()});
 
   constexpr uint8_t kUnknownOption0Type = 0x70;
   constexpr uint8_t kUnknownOption1Type = 0x71;
@@ -2558,7 +2701,10 @@ TEST_F(BrEdrDynamicChannelTest,
       kUnknownOption0Type, 0x01, 0x00, kUnknownOption1Type, 0x01, 0x00);
 
   size_t open_cb_count = 0;
-  auto open_cb = [&](const DynamicChannel* chan) { open_cb_count++; };
+  auto open_cb = [&](const DynamicChannel* chan) {
+    EXPECT_FALSE(chan);
+    open_cb_count++;
+  };
 
   registry()->OpenOutbound(kPsm, kChannelParams, open_cb);
   RunLoopUntilIdle();

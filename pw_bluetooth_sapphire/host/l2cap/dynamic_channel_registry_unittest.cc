@@ -6,6 +6,8 @@
 
 #include <lib/async/cpp/task.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/bredr_dynamic_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_signaling_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
 #include "src/lib/testing/loop_fixture/test_loop_fixture.h"
 
@@ -22,7 +24,6 @@ class FakeDynamicChannel final : public DynamicChannel {
   FakeDynamicChannel(DynamicChannelRegistry* registry, PSM psm, ChannelId local_cid,
                      ChannelId remote_cid)
       : DynamicChannel(registry, psm, local_cid, remote_cid) {}
-  ~FakeDynamicChannel() override { EXPECT_FALSE(IsConnected()); }
 
   // DynamicChannel overrides
   bool IsConnected() const override { return connected_; }
@@ -259,6 +260,11 @@ TEST(DynamicChannelRegistryTest, AcceptServiceRequestThenOpenOk) {
   EXPECT_NE(kInvalidChannelId, local_cid);
   EXPECT_NE(kInvalidChannelId, remote_cid);
   EXPECT_TRUE(registry.FindChannelByLocalId(local_cid));
+
+  bool close_cb_called = false;
+  registry.CloseChannel(local_cid, [&] { close_cb_called = true; });
+  EXPECT_TRUE(close_cb_called);
+  EXPECT_FALSE(registry.FindChannelByLocalId(local_cid));
 }
 
 TEST(DynamicChannelRegistryTest, AcceptServiceRequestThenOpenFails) {
@@ -292,7 +298,7 @@ TEST(DynamicChannelRegistryTest, AcceptServiceRequestThenOpenFails) {
   EXPECT_EQ(0u, registry.AliveChannelCount());
 }
 
-TEST(DynamicChannelRegistryTest, DestroyRegistryWithOpenChannelClosesIt) {
+TEST(DynamicChannelRegistryTest, DestroyRegistryWithOpenChannelNoDisconnectionRequest) {
   bool close_cb_called = false;
   auto close_cb = [&close_cb_called](const DynamicChannel* chan) { close_cb_called = true; };
 
@@ -312,9 +318,6 @@ TEST(DynamicChannelRegistryTest, DestroyRegistryWithOpenChannelClosesIt) {
   EXPECT_TRUE(open_result_cb_called);
   EXPECT_TRUE(registry.FindChannelByRemoteId(kRemoteCId));
   EXPECT_FALSE(close_cb_called);
-
-  // |registry| goes out of scope and FakeDynamicChannel's dtor checks that it
-  // is disconnected.
 }
 
 TEST(DynamicChannelRegistryTest, ErrorConnectingChannel) {
@@ -390,6 +393,15 @@ TEST(DynamicChannelRegistryTest, ExhaustedChannelIds) {
   registry.last_channel()->DoOpen();
   EXPECT_EQ(kNumChannelsAllowed + 2, open_result_cb_count);
   EXPECT_EQ(1, close_cb_count);
+
+  ChannelId last_local_cid = registry.last_channel()->local_cid();
+
+  int close_cb_called = 0;
+  for (int i = 0; i < kNumChannelsAllowed; i++) {
+    registry.CloseChannel(kFirstDynamicChannelId + i, [&] { close_cb_called++; });
+  }
+  EXPECT_EQ(close_cb_called, kNumChannelsAllowed);
+  EXPECT_FALSE(registry.FindChannelByLocalId(last_local_cid));
 }
 
 TEST(DynamicChannelRegistryTest, ChannelIdNotReusedUntilDisconnectionCompletes) {
@@ -437,11 +449,11 @@ TEST(DynamicChannelRegistryTest, ChannelIdNotReusedUntilDisconnectionCompletes) 
   // Close the channel but don't let the disconnection complete.
   FakeDynamicChannel* const last_channel = registry.last_channel();
   last_channel->set_defer_disconnect_done_callback();
-  bool close_cb_called = false;
-  registry.CloseChannel(last_local_cid, [&] { close_cb_called = true; });
+  int close_cb_called = 0;
+  registry.CloseChannel(last_local_cid, [&] { close_cb_called++; });
 
   // New channels should not reuse the "mostly disconnected" channel's ID.
-  EXPECT_FALSE(close_cb_called);
+  EXPECT_EQ(close_cb_called, 0);
   // There should still be no channels left.
   EXPECT_EQ(kInvalidChannelId, registry.FindAvailableChannelId());
   ASSERT_TRUE(registry.FindChannelByLocalId(last_local_cid));
@@ -450,7 +462,7 @@ TEST(DynamicChannelRegistryTest, ChannelIdNotReusedUntilDisconnectionCompletes) 
   // Complete the disconnection for the first channel opened.
   ASSERT_TRUE(last_channel->disconnect_done_callback());
   last_channel->disconnect_done_callback()();
-  EXPECT_TRUE(close_cb_called);
+  EXPECT_EQ(close_cb_called, 1);
   EXPECT_EQ(last_local_cid, registry.FindAvailableChannelId());
 
   // Open a new channel and make sure that last ID can be reused now.
@@ -465,6 +477,13 @@ TEST(DynamicChannelRegistryTest, ChannelIdNotReusedUntilDisconnectionCompletes) 
   registry.last_channel()->DoConnect(kRemoteCId + kNumChannelsAllowed - 1);
   registry.last_channel()->DoOpen();
   EXPECT_TRUE(open_result_cb_called);
+
+  close_cb_called = 0;
+  for (int i = 0; i < kNumChannelsAllowed; i++) {
+    registry.CloseChannel(kFirstDynamicChannelId + i, [&] { close_cb_called++; });
+  }
+  EXPECT_EQ(close_cb_called, kNumChannelsAllowed);
+  EXPECT_FALSE(registry.FindChannelByLocalId(last_local_cid));
 }
 
 // Removing a channel from the channel map while iterating the channels in ForEach should not cause

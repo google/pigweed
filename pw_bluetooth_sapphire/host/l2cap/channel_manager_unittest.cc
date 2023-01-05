@@ -1359,7 +1359,6 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
   EXPECT_TRUE(channel->Send(NewBuffer('T', 'e', 's', 't')));
 
   RunLoopUntilIdle();
-
   EXPECT_TRUE(AllExpectedPacketsSent());
 
   const auto disconn_req_id = NextCommandId();
@@ -1392,6 +1391,9 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
   RunLoopUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
   EXPECT_EQ(1u, filter_cb_count);
+
+  // Ensure callback is not called after the channel has disconnected
+  acl_data_channel()->set_drop_queued_packets_cb(nullptr);
 
   // clang-format off
   ReceiveAclDataPacket(StaticByteBuffer(
@@ -1513,6 +1515,9 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelRemoteDisconnect) {
   EXPECT_TRUE(channel_closed);
   EXPECT_FALSE(sdu_received);
   EXPECT_EQ(1u, filter_cb_count);
+
+  // Ensure callback is not called after the channel has disconnected
+  acl_data_channel()->set_drop_queued_packets_cb(nullptr);
 }
 
 TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelDataNotBuffered) {

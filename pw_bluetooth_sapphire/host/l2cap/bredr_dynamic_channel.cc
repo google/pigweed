@@ -339,8 +339,7 @@ void BrEdrDynamicChannel::Disconnect(DisconnectDoneCallback done_cb) {
 
   BrEdrCommandHandler cmd_handler(signaling_channel_, std::move(on_discon_rsp_timeout));
   if (!cmd_handler.SendDisconnectionRequest(remote_cid(), local_cid(), std::move(on_discon_rsp))) {
-    bt_log(ERROR, "l2cap-bredr", "Channel %#.4x: Failed to send Disconnection Request",
-           local_cid());
+    bt_log(WARN, "l2cap-bredr", "Channel %#.4x: Failed to send Disconnection Request", local_cid());
     done_cb();
     return;
   }

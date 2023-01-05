@@ -41,7 +41,7 @@ class DynamicChannelRegistry : public WeakSelf<DynamicChannelRegistry> {
   // that accepts the inbound dynamic channel opened.
   using ServiceRequestCallback = fit::function<std::optional<ServiceInfo>(PSM psm)>;
 
-  virtual ~DynamicChannelRegistry();
+  virtual ~DynamicChannelRegistry() = default;
 
   // Create and connect a dynamic channel. The result will be returned by
   // calling |open_cb| on the L2CAP thread the channel is ready for data

@@ -388,6 +388,7 @@ void LogicalLink::Close() {
     iter.second->OnClosed();
   }
   channels_.clear();
+  dynamic_registry_.reset();
 }
 
 std::optional<DynamicChannelRegistry::ServiceInfo> LogicalLink::OnServiceRequest(PSM psm) {

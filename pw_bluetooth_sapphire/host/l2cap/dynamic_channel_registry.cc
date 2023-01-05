@@ -10,17 +10,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 
 namespace bt::l2cap::internal {
-
-DynamicChannelRegistry::~DynamicChannelRegistry() {
-  // Clean up connected channels.
-  for (auto& [id, channel] : channels_) {
-    if (channel->IsConnected()) {
-      const auto no_op = [] {};
-      channel->Disconnect(no_op);
-    }
-  }
-}
-
 // Run return callbacks on the L2CAP thread. LogicalLink takes care of out-of-
 // thread dispatch for delivering the pointer to the channel.
 void DynamicChannelRegistry::OpenOutbound(PSM psm, ChannelParameters params,
