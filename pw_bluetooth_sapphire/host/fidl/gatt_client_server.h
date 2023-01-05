@@ -18,7 +18,7 @@ namespace bthost {
 // Implements the gatt::Client FIDL interface.
 class GattClientServer : public GattServerBase<fuchsia::bluetooth::gatt::Client> {
  public:
-  GattClientServer(bt::gatt::PeerId peer_id, fxl::WeakPtr<bt::gatt::GATT> gatt,
+  GattClientServer(bt::gatt::PeerId peer_id, bt::gatt::GATT::WeakPtr gatt,
                    fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Client> request);
   ~GattClientServer() override = default;
 

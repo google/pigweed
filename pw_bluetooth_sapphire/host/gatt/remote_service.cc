@@ -44,11 +44,11 @@ CharacteristicMap CharacteristicsToCharacteristicMap(
 
 }  // namespace
 
-RemoteService::RemoteService(const ServiceData& service_data, fxl::WeakPtr<Client> client)
+RemoteService::RemoteService(const ServiceData& service_data, Client::WeakPtr client)
     : service_data_(service_data),
       client_(std::move(client)),
       remaining_descriptor_requests_(kSentinel) {
-  BT_DEBUG_ASSERT(client_);
+  BT_DEBUG_ASSERT(client_.is_alive());
 }
 
 RemoteService::~RemoteService() {
@@ -87,7 +87,7 @@ void RemoteService::DiscoverCharacteristics(CharacteristicCallback callback) {
 
   auto self = GetWeakPtr();
   auto chrc_cb = [self](const CharacteristicData& chr) {
-    if (!self) {
+    if (!self.is_alive()) {
       return;
     }
     // try_emplace should not fail here; our GATT::Client explicitly ensures that handles are
@@ -96,7 +96,7 @@ void RemoteService::DiscoverCharacteristics(CharacteristicCallback callback) {
   };
 
   auto res_cb = [self](att::Result<> status) mutable {
-    if (!self) {
+    if (!self.is_alive()) {
       return;
     }
 
@@ -381,7 +381,7 @@ void RemoteService::StartDescriptorDiscovery() {
   // order since we request the descriptors of all characteristics all at
   // once.
   auto desc_done_callback = [self](att::Result<> status) {
-    if (!self) {
+    if (!self.is_alive()) {
       return;
     }
 
@@ -428,7 +428,7 @@ void RemoteService::StartDescriptorDiscovery() {
       end_handle = next->second.info().handle - 1;
     }
 
-    BT_DEBUG_ASSERT(client_);
+    BT_DEBUG_ASSERT(client_.is_alive());
     iter->second.DiscoverDescriptors(end_handle, desc_done_callback);
   }
 }
@@ -526,7 +526,7 @@ void RemoteService::ReadLongHelper(att::Handle value_handle, uint16_t offset,
   auto read_cb = [self, value_handle, offset, buffer = std::move(buffer), bytes_read,
                   cb = std::move(callback)](att::Result<> status, const ByteBuffer& blob,
                                             bool maybe_truncated_by_mtu) mutable {
-    if (!self) {
+    if (!self.is_alive()) {
       return;
     }
 
@@ -588,7 +588,7 @@ void RemoteService::ReadByTypeHelper(const UUID& type, att::Handle start, att::H
 
   auto read_cb = [self = GetWeakPtr(), type, start, end, values_accum = std::move(values),
                   cb = std::move(callback)](Client::ReadByTypeResult result) mutable {
-    if (!self) {
+    if (!self.is_alive()) {
       return;
     }
 
@@ -602,12 +602,13 @@ void RemoteService::ReadByTypeHelper(const UUID& type, att::Handle start, att::H
         // reads has successfully read all matching attributes.
         deferred_cb = [&cb, &values_accum]() { cb(fit::ok(), std::move(values_accum)); };
         return;
-      } else if (error.is_any_of(att::ErrorCode::kRequestNotSupported,
-                                 att::ErrorCode::kInsufficientResources,
-                                 att::ErrorCode::kInvalidPDU)) {
+      }
+      if (error.is_any_of(att::ErrorCode::kRequestNotSupported,
+                          att::ErrorCode::kInsufficientResources, att::ErrorCode::kInvalidPDU)) {
         // Pass up these protocol errors as they aren't handle specific or recoverable.
         return;
-      } else if (error.is_protocol_error()) {
+      }
+      if (error.is_protocol_error()) {
         // Other errors may correspond to reads of specific handles, so treat them as a result and
         // continue reading after the error.
 

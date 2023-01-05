@@ -31,7 +31,7 @@ class LowEnergyConnector final {
   LowEnergyConnector(PeerId peer_id, LowEnergyConnectionOptions options,
                      hci::CommandChannel::WeakPtr cmd_channel, PeerCache* peer_cache,
                      WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr,
-                     l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt);
+                     l2cap::ChannelManager* l2cap, gatt::GATT::WeakPtr gatt);
 
   // Instances should only be destroyed after the result callback is called (except for stack tear
   // down). Due to the asynchronous nature of cancelling the connection process, it is NOT safe to
@@ -118,7 +118,7 @@ class LowEnergyConnector final {
 
   // Layer pointers to be passed to LowEnergyConnection.
   l2cap::ChannelManager* l2cap_;
-  fxl::WeakPtr<gatt::GATT> gatt_;
+  gatt::GATT::WeakPtr gatt_;
 
   // True if this connector is connecting an outbound connection, false if it is connecting an
   // inbound connection.

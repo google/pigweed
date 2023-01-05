@@ -13,20 +13,19 @@ namespace bthost {
 
 namespace {
 
-fbg::ServiceInfo RemoteServiceToFidlServiceInfo(const bt::gatt::RemoteService& svc) {
+fbg::ServiceInfo RemoteServiceToFidlServiceInfo(const bt::gatt::RemoteService::WeakPtr& svc) {
   fbg::ServiceInfo out;
-  out.set_handle(fbg::ServiceHandle{svc.handle()});
-  auto kind = svc.info().kind == bt::gatt::ServiceKind::PRIMARY ? fbg::ServiceKind::PRIMARY
-                                                                : fbg::ServiceKind::SECONDARY;
+  out.set_handle(fbg::ServiceHandle{svc->handle()});
+  auto kind = svc->info().kind == bt::gatt::ServiceKind::PRIMARY ? fbg::ServiceKind::PRIMARY
+                                                                 : fbg::ServiceKind::SECONDARY;
   out.set_kind(kind);
-  out.set_type(fb::Uuid{svc.uuid().value()});
+  out.set_type(fb::Uuid{svc->uuid().value()});
   return out;
 }
 
 }  // namespace
 
-Gatt2ClientServer::Gatt2ClientServer(bt::gatt::PeerId peer_id,
-                                     fxl::WeakPtr<bt::gatt::GATT> weak_gatt,
+Gatt2ClientServer::Gatt2ClientServer(bt::gatt::PeerId peer_id, bt::gatt::GATT::WeakPtr weak_gatt,
                                      fidl::InterfaceRequest<fbg::Client> request,
                                      fit::callback<void()> error_cb)
     : GattServerBase(std::move(weak_gatt), /*impl=*/this, std::move(request)),
@@ -73,10 +72,10 @@ void Gatt2ClientServer::OnWatchServicesResult(const std::vector<bt::att::Handle>
   }
 
   // Replace any existing updated services with same handle and add new updates.
-  for (const fxl::WeakPtr<bt::gatt::RemoteService>& svc : added) {
+  for (const bt::gatt::RemoteService::WeakPtr& svc : added) {
     next_watch_services_result_->updated[svc->handle()] = svc;
   }
-  for (const fxl::WeakPtr<bt::gatt::RemoteService>& svc : modified) {
+  for (const bt::gatt::RemoteService::WeakPtr& svc : modified) {
     next_watch_services_result_->updated[svc->handle()] = svc;
   }
 
@@ -108,7 +107,7 @@ void Gatt2ClientServer::TrySendNextWatchServicesResult() {
     // existing service with the new UUIDs, only new ones
     if (prev_watch_services_uuids_.empty() ||
         prev_watch_services_uuids_.count(svc_pair.second->uuid()) == 1) {
-      fidl_updated.push_back(RemoteServiceToFidlServiceInfo(*svc_pair.second));
+      fidl_updated.push_back(RemoteServiceToFidlServiceInfo(svc_pair.second));
     }
   }
 
@@ -212,8 +211,8 @@ void Gatt2ClientServer::ConnectToService(fbg::ServiceHandle handle,
   // Mark this connection as in progress.
   services_.try_emplace(service_handle, nullptr);
 
-  fxl::WeakPtr<bt::gatt::RemoteService> service = gatt()->FindService(peer_id_, service_handle);
-  if (!service) {
+  bt::gatt::RemoteService::WeakPtr service = gatt()->FindService(peer_id_, service_handle);
+  if (!service.is_alive()) {
     bt_log(INFO, "fidl", "service not found (peer: %s, handle: %#.4x)", bt_str(peer_id_),
            service_handle);
     services_.erase(service_handle);

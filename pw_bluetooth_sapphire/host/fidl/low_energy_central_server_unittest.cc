@@ -61,7 +61,7 @@ class LowEnergyCentralServerTest : public TestingBase {
     fidl::InterfaceHandle<fble::Central> handle;
     gatt_ = take_gatt();
     server_ = std::make_unique<LowEnergyCentralServer>(adapter(), handle.NewRequest(),
-                                                       gatt_->AsWeakPtr());
+                                                       gatt_->GetWeakPtr());
     proxy_.Bind(std::move(handle));
 
     bt::testing::FakeController::Settings settings;
@@ -125,7 +125,7 @@ class LowEnergyCentralServerTestFakeAdapter : public bt::gap::testing::FakeAdapt
     fidl::InterfaceHandle<fble::Central> handle;
     gatt_ = std::make_unique<bt::gatt::testing::FakeLayer>();
     server_ = std::make_unique<LowEnergyCentralServer>(adapter()->AsWeakPtr(), handle.NewRequest(),
-                                                       gatt_->AsWeakPtr());
+                                                       gatt_->GetWeakPtr());
     proxy_.Bind(std::move(handle));
   }
 

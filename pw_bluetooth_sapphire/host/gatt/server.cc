@@ -19,13 +19,13 @@ namespace bt::gatt {
 
 class AttBasedServer final : public Server {
  public:
-  AttBasedServer(PeerId peer_id, fxl::WeakPtr<LocalServiceManager> local_services,
+  AttBasedServer(PeerId peer_id, LocalServiceManager::WeakPtr local_services,
                  fxl::WeakPtr<att::Bearer> bearer)
       : peer_id_(peer_id),
         local_services_(std::move(local_services)),
         att_(std::move(bearer)),
-        weak_ptr_factory_(this) {
-    BT_ASSERT(local_services_);
+        weak_self_(this) {
+    BT_ASSERT(local_services_.is_alive());
     BT_DEBUG_ASSERT(att_);
 
     exchange_mtu_id_ = att_->RegisterHandler(
@@ -418,10 +418,10 @@ class AttBasedServer final : public Server {
                                             static_cast<size_t>(att::kMaxReadByTypeValueLength));
 
       att::Handle handle = results.front()->handle();
-      auto self = weak_ptr_factory_.GetWeakPtr();
+      auto self = weak_self_.GetWeakPtr();
       auto result_cb = [self, tid, handle, kMaxValueSize](fit::result<att::ErrorCode> status,
                                                           const auto& value) {
-        if (!self)
+        if (!self.is_alive())
           return;
 
         if (status.is_error()) {
@@ -504,9 +504,9 @@ class AttBasedServer final : public Server {
 
     constexpr size_t kHeaderSize = sizeof(att::Header);
 
-    auto self = weak_ptr_factory_.GetWeakPtr();
+    auto self = weak_self_.GetWeakPtr();
     auto callback = [self, tid, handle](fit::result<att::ErrorCode> status, const auto& value) {
-      if (!self)
+      if (!self.is_alive())
         return;
 
       if (status.is_error()) {
@@ -567,9 +567,9 @@ class AttBasedServer final : public Server {
 
     constexpr size_t kHeaderSize = sizeof(att::Header);
 
-    auto self = weak_ptr_factory_.GetWeakPtr();
+    auto self = weak_self_.GetWeakPtr();
     auto callback = [self, tid, handle](fit::result<att::ErrorCode> status, const auto& value) {
-      if (!self)
+      if (!self.is_alive())
         return;
 
       if (status.is_error()) {
@@ -671,9 +671,9 @@ class AttBasedServer final : public Server {
       return;
     }
 
-    auto self = weak_ptr_factory_.GetWeakPtr();
+    auto self = weak_self_.GetWeakPtr();
     auto result_cb = [self, tid, handle](fit::result<att::ErrorCode> status) {
-      if (!self)
+      if (!self.is_alive())
         return;
 
       if (status.is_error()) {
@@ -757,10 +757,10 @@ class AttBasedServer final : public Server {
       return;
     }
 
-    auto self = weak_ptr_factory_.GetWeakPtr();
+    auto self = weak_self_.GetWeakPtr();
     auto result_cb = [self,
                       tid](fit::result<std::tuple<att::Handle, att::ErrorCode>> result) mutable {
-      if (!self)
+      if (!self.is_alive())
         return;
 
       if (result.is_error()) {
@@ -861,7 +861,7 @@ class AttBasedServer final : public Server {
   }
 
   PeerId peer_id_;
-  fxl::WeakPtr<LocalServiceManager> local_services_;
+  LocalServiceManager::WeakPtr local_services_;
   fxl::WeakPtr<att::Bearer> att_;
 
   // The queue data structure used for queued writes (see Vol 3, Part F, 3.4.6).
@@ -883,14 +883,13 @@ class AttBasedServer final : public Server {
   att::Bearer::HandlerId prepare_write_id_;
   att::Bearer::HandlerId exec_write_id_;
 
-  fxl::WeakPtrFactory<AttBasedServer> weak_ptr_factory_;
+  WeakSelf<AttBasedServer> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AttBasedServer);
 };
 
 // static
-std::unique_ptr<Server> Server::Create(PeerId peer_id,
-                                       fxl::WeakPtr<LocalServiceManager> local_services,
+std::unique_ptr<Server> Server::Create(PeerId peer_id, LocalServiceManager::WeakPtr local_services,
                                        fxl::WeakPtr<att::Bearer> bearer) {
   return std::make_unique<AttBasedServer>(peer_id, std::move(local_services), std::move(bearer));
 }

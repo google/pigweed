@@ -6,6 +6,8 @@
 
 #include <lib/fit/defer.h>
 
+#include <utility>
+
 #include "gatt_remote_service_server.h"
 #include "helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
@@ -21,9 +23,11 @@ using fuchsia::bluetooth::gatt::ServiceInfoPtr;
 
 namespace bthost {
 
-GattClientServer::GattClientServer(bt::gatt::PeerId peer_id, fxl::WeakPtr<bt::gatt::GATT> gatt,
+GattClientServer::GattClientServer(bt::gatt::PeerId peer_id, bt::gatt::GATT::WeakPtr gatt,
                                    fidl::InterfaceRequest<Client> request)
-    : GattServerBase(gatt, this, std::move(request)), peer_id_(peer_id), weak_ptr_factory_(this) {}
+    : GattServerBase(std::move(gatt), this, std::move(request)),
+      peer_id_(peer_id),
+      weak_ptr_factory_(this) {}
 
 void GattClientServer::ListServices(::fidl::VectorPtr<::std::string> fidl_uuids,
                                     ListServicesCallback callback) {
@@ -38,7 +42,7 @@ void GattClientServer::ListServices(::fidl::VectorPtr<::std::string> fidl_uuids,
                fidl_uuids.value()[i].c_str(), bt_str(peer_id_));
         callback(fidl_helpers::NewFidlError(ErrorCode::INVALID_ARGUMENTS,
                                             "Invalid UUID: " + fidl_uuids.value()[i]),
-                 std::vector<ServiceInfo>((size_t)0u));
+                 std::vector<ServiceInfo>(static_cast<size_t>(0u)));
         return;
       }
     }
@@ -82,12 +86,12 @@ void GattClientServer::ConnectToService(uint64_t id,
   // Initialize an entry so that we remember when this request is in progress.
   connected_services_[id] = nullptr;
 
-  fxl::WeakPtr<bt::gatt::RemoteService> service = gatt()->FindService(peer_id_, id);
+  bt::gatt::RemoteService::WeakPtr service = gatt()->FindService(peer_id_, id);
 
   // Automatically called on failure.
   auto fail_cleanup = fit::defer([this, id] { connected_services_.erase(id); });
 
-  if (!service) {
+  if (!service.is_alive()) {
     bt_log(WARN, "fidl", "%s: failed (service: %lu, peer: %s)", __FUNCTION__, id, bt_str(peer_id_));
     return;
   }

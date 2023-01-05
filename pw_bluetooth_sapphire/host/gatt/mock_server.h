@@ -18,11 +18,12 @@ using UpdateHandler = fit::function<void(IdType service_id, IdType chrc_id, Buff
 // indications without a production att::Bearer in tests.
 class MockServer : public Server {
  public:
-  MockServer(PeerId peer_id, fxl::WeakPtr<LocalServiceManager> local_services);
+  MockServer(PeerId peer_id, LocalServiceManager::WeakPtr local_services);
 
   void set_update_handler(UpdateHandler handler) { update_handler_ = std::move(handler); }
 
-  fxl::WeakPtr<MockServer> AsMockWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
+  using WeakPtr = WeakSelf<MockServer>::WeakPtr;
+  MockServer::WeakPtr AsMockWeakPtr() { return weak_self_.GetWeakPtr(); }
 
   bool was_shut_down() const { return was_shut_down_; }
 
@@ -33,10 +34,10 @@ class MockServer : public Server {
   void ShutDown() override { was_shut_down_ = true; }
 
   PeerId peer_id_;
-  fxl::WeakPtr<LocalServiceManager> local_services_;
+  LocalServiceManager::WeakPtr local_services_;
   UpdateHandler update_handler_ = nullptr;
   bool was_shut_down_ = false;
-  fxl::WeakPtrFactory<MockServer> weak_ptr_factory_;
+  WeakSelf<MockServer> weak_self_;
 };
 
 }  // namespace bt::gatt::testing

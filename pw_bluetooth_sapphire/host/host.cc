@@ -36,7 +36,7 @@ bool Host::Initialize(inspect::Node& root_node, InitCallback init_cb, ErrorCallb
 
   gatt_ = gatt::GATT::Create();
 
-  gap_ = gap::Adapter::Create(hci_->GetWeakPtr(), gatt_->AsWeakPtr());
+  gap_ = gap::Adapter::Create(hci_->GetWeakPtr(), gatt_->GetWeakPtr());
   if (!gap_)
     return false;
 
@@ -97,7 +97,7 @@ void Host::BindHostInterface(zx::channel channel) {
   BT_DEBUG_ASSERT(gatt_);
 
   host_server_ =
-      std::make_unique<HostServer>(std::move(channel), gap_->AsWeakPtr(), gatt_->AsWeakPtr());
+      std::make_unique<HostServer>(std::move(channel), gap_->AsWeakPtr(), gatt_->GetWeakPtr());
   host_server_->set_error_handler([this](zx_status_t status) {
     BT_DEBUG_ASSERT(host_server_);
     bt_log(DEBUG, "bt-host", "Host interface disconnected");

@@ -119,7 +119,7 @@ class HostServerTest : public bthost::testing::AdapterTestFixture {
   void ResetHostServer() {
     fidl::InterfaceHandle<fuchsia::bluetooth::host::Host> host_handle;
     host_server_ = std::make_unique<HostServer>(host_handle.NewRequest().TakeChannel(),
-                                                adapter()->AsWeakPtr(), gatt_->AsWeakPtr());
+                                                adapter()->AsWeakPtr(), gatt_->GetWeakPtr());
     host_.Bind(std::move(host_handle));
   }
 
@@ -1235,7 +1235,7 @@ class HostServerTestFakeAdapter : public bt::gap::testing::FakeAdapterTestFixtur
     gatt_ = std::make_unique<bt::gatt::testing::FakeLayer>();
     fidl::InterfaceHandle<fuchsia::bluetooth::host::Host> host_handle;
     host_server_ = std::make_unique<HostServer>(host_handle.NewRequest().TakeChannel(),
-                                                adapter()->AsWeakPtr(), gatt_->AsWeakPtr());
+                                                adapter()->AsWeakPtr(), gatt_->GetWeakPtr());
     host_.Bind(std::move(host_handle));
   }
 

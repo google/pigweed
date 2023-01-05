@@ -90,7 +90,7 @@ const char* kInspectDisconnectRemoteDisconnectionNodeName = "disconnect_remote_d
 LowEnergyConnectionManager::LowEnergyConnectionManager(
     hci::CommandChannel::WeakPtr cmd_channel, hci::LocalAddressDelegate* addr_delegate,
     hci::LowEnergyConnector* connector, PeerCache* peer_cache, l2cap::ChannelManager* l2cap,
-    fxl::WeakPtr<gatt::GATT> gatt, LowEnergyDiscoveryManager::WeakPtr discovery_manager,
+    gatt::GATT::WeakPtr gatt, LowEnergyDiscoveryManager::WeakPtr discovery_manager,
     sm::SecurityManagerFactory sm_creator)
     : cmd_(std::move(cmd_channel)),
       security_mode_(LESecurityMode::Mode1),
@@ -107,7 +107,7 @@ LowEnergyConnectionManager::LowEnergyConnectionManager(
   BT_DEBUG_ASSERT(dispatcher_);
   BT_DEBUG_ASSERT(peer_cache_);
   BT_DEBUG_ASSERT(l2cap_);
-  BT_DEBUG_ASSERT(gatt_);
+  BT_DEBUG_ASSERT(gatt_.is_alive());
   BT_DEBUG_ASSERT(cmd_.is_alive());
   BT_DEBUG_ASSERT(hci_connector_);
   BT_DEBUG_ASSERT(local_address_delegate_);

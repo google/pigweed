@@ -19,7 +19,7 @@ namespace bt::gatt {
 
 class RemoteService;
 
-using ServiceList = std::vector<fxl::WeakPtr<RemoteService>>;
+using ServiceList = std::vector<WeakSelf<RemoteService>::WeakPtr>;
 
 // Callback type invoked when GATT services are removed, added, or modified.
 // `added` and `modified` are not combined into `updated` for flexibility and debuggability.
@@ -46,7 +46,7 @@ class RemoteService final {
  public:
   // In production, a RemoteService should only be constructed by a RemoteServiceManager.
   // The constructor and destructor are made available for testing.
-  RemoteService(const ServiceData& service_data, fxl::WeakPtr<Client> client);
+  RemoteService(const ServiceData& service_data, Client::WeakPtr client);
   ~RemoteService();
 
   // If true, a Service Changed notification for this service was received. This service may no
@@ -200,7 +200,8 @@ class RemoteService final {
     HandleNotification(value_handle, value, maybe_truncated);
   }
 
-  fxl::WeakPtr<RemoteService> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
+  using WeakPtr = WeakSelf<RemoteService>::WeakPtr;
+  RemoteService::WeakPtr GetWeakPtr() { return weak_self_.GetWeakPtr(); }
 
  private:
   friend class internal::RemoteServiceManager;
@@ -251,7 +252,7 @@ class RemoteService final {
   ServiceData service_data_;
 
   // The GATT Client bearer for performing remote procedures.
-  fxl::WeakPtr<Client> client_;
+  Client::WeakPtr client_;
 
   // Queued discovery requests.
   using PendingDiscoveryList = std::vector<CharacteristicCallback>;
@@ -274,7 +275,7 @@ class RemoteService final {
   // Called by ShutDown().
   std::vector<fit::callback<void()>> rm_handlers_;
 
-  fxl::WeakPtrFactory<RemoteService> weak_ptr_factory_{this};
+  WeakSelf<RemoteService> weak_self_{this};
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RemoteService);
 };

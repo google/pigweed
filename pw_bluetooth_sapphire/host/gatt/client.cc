@@ -74,8 +74,7 @@ bool ProcessDescriptorDiscoveryResponse(att::Handle range_start, att::Handle ran
 
 class Impl final : public Client {
  public:
-  explicit Impl(fxl::WeakPtr<att::Bearer> bearer)
-      : att_(std::move(bearer)), weak_ptr_factory_(this) {
+  explicit Impl(fxl::WeakPtr<att::Bearer> bearer) : att_(std::move(bearer)), weak_self_(this) {
     BT_DEBUG_ASSERT(att_);
 
     auto handler = [this](auto txn_id, const att::PacketReader& pdu) {
@@ -128,9 +127,10 @@ class Impl final : public Client {
     att_->UnregisterHandler(ind_handler_id_);
   }
 
- private:
-  fxl::WeakPtr<Client> AsWeakPtr() override { return weak_ptr_factory_.GetWeakPtr(); }
+  using WeakPtr = WeakSelf<Client>::WeakPtr;
+  WeakPtr GetWeakPtr() override { return weak_self_.GetWeakPtr(); }
 
+ private:
   uint16_t mtu() const override { return att_->mtu(); }
 
   void ExchangeMTU(MTUCallback mtu_cb) override {
@@ -1067,12 +1067,11 @@ class Impl final : public Client {
   // Wraps |callback| in a TransactionCallback that only runs if this Client is
   // still alive.
   att::Bearer::TransactionCallback BindCallback(att::Bearer::TransactionCallback callback) {
-    return
-        [self = weak_ptr_factory_.GetWeakPtr(), callback = std::move(callback)](auto rsp) mutable {
-          if (self) {
-            callback(rsp);
-          }
-        };
+    return [self = weak_self_.GetWeakPtr(), callback = std::move(callback)](auto rsp) mutable {
+      if (self.is_alive()) {
+        callback(rsp);
+      }
+    };
   }
 
   fxl::WeakPtr<att::Bearer> att_;
@@ -1090,7 +1089,7 @@ class Impl final : public Client {
   // Following the processing of each queue, the client will automatically
   // process the next queue in the |long_write_queue_|.
   std::queue<PreparedWrite> long_write_queue_;
-  fxl::WeakPtrFactory<Client> weak_ptr_factory_;
+  WeakSelf<Client> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Impl);
 };

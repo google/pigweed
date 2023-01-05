@@ -29,7 +29,7 @@ class Gatt2ServerServer : public GattServerBase<fuchsia::bluetooth::gatt2::Serve
 
   // |gatt| - The GATT instance underlying this Server.
   // |request| - The FIDL request.
-  Gatt2ServerServer(fxl::WeakPtr<bt::gatt::GATT> gatt,
+  Gatt2ServerServer(bt::gatt::GATT::WeakPtr gatt,
                     fidl::InterfaceRequest<fuchsia::bluetooth::gatt2::Server> request);
 
   ~Gatt2ServerServer() override;

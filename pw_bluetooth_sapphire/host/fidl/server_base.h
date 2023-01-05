@@ -7,6 +7,8 @@
 
 #include <lib/fit/function.h>
 
+#include <utility>
+
 #include <fbl/ref_ptr.h>
 
 #include "lib/fidl/cpp/binding.h"
@@ -14,7 +16,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
 
@@ -79,7 +80,7 @@ class AdapterServerBase : public ServerBase<Interface> {
       : AdapterServerBase(adapter, impl, request.TakeChannel()) {}
 
   AdapterServerBase(bt::gap::Adapter::WeakPtr adapter, Interface* impl, zx::channel channel)
-      : ServerBase<Interface>(impl, std::move(channel)), adapter_(adapter) {
+      : ServerBase<Interface>(impl, std::move(channel)), adapter_(std::move(adapter)) {
     BT_DEBUG_ASSERT(adapter_.is_alive());
   }
 
@@ -99,19 +100,19 @@ class AdapterServerBase : public ServerBase<Interface> {
 template <typename Interface>
 class GattServerBase : public ServerBase<Interface> {
  public:
-  GattServerBase(fxl::WeakPtr<bt::gatt::GATT> gatt, Interface* impl,
+  GattServerBase(bt::gatt::GATT::WeakPtr gatt, Interface* impl,
                  fidl::InterfaceRequest<Interface> request)
-      : ServerBase<Interface>(impl, std::move(request)), gatt_(gatt) {
-    BT_DEBUG_ASSERT(gatt_);
+      : ServerBase<Interface>(impl, std::move(request)), gatt_(std::move(gatt)) {
+    BT_DEBUG_ASSERT(gatt_.is_alive());
   }
 
   ~GattServerBase() override = default;
 
  protected:
-  fxl::WeakPtr<bt::gatt::GATT> gatt() const { return gatt_; }
+  bt::gatt::GATT::WeakPtr gatt() const { return gatt_; }
 
  private:
-  fxl::WeakPtr<bt::gatt::GATT> gatt_;
+  bt::gatt::GATT::WeakPtr gatt_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GattServerBase);
 };

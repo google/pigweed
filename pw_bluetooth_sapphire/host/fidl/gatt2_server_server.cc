@@ -43,7 +43,7 @@ using fuchsia::bluetooth::gatt2::ValueChangedParameters;
 namespace bthost {
 
 Gatt2ServerServer::Gatt2ServerServer(
-    fxl::WeakPtr<btg::GATT> gatt, fidl::InterfaceRequest<fuchsia::bluetooth::gatt2::Server> request)
+    btg::GATT::WeakPtr gatt, fidl::InterfaceRequest<fuchsia::bluetooth::gatt2::Server> request)
     : GattServerBase(std::move(gatt), this, std::move(request)), weak_ptr_factory_(this) {}
 
 Gatt2ServerServer::~Gatt2ServerServer() {

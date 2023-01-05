@@ -7,7 +7,9 @@
 namespace bt::gatt::testing {
 
 FakeLayerTest::FakeLayerTest()
-    : gatt_(std::make_unique<FakeLayer>()), weak_gatt_(gatt_->AsWeakPtr()) {}
+    : gatt_(std::make_unique<FakeLayer>()),
+      weak_gatt_(gatt_->GetWeakPtr()),
+      weak_fake_layer_(gatt_->GetFakePtr()) {}
 
 void FakeLayerTest::TearDown() { RunLoopUntilIdle(); }
 

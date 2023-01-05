@@ -21,7 +21,7 @@
 
 namespace bt::gatt {
 
-GATT::GATT() : weak_ptr_factory_(this) {}
+GATT::GATT() : WeakSelf(this) {}
 
 namespace {
 
@@ -72,12 +72,11 @@ class Impl final : public GATT {
       return;
     }
 
-    RemoteServiceWatcher service_watcher = [this, peer_id](
-                                               std::vector<att::Handle> removed,
-                                               std::vector<fxl::WeakPtr<RemoteService>> added,
-                                               std::vector<fxl::WeakPtr<RemoteService>> modified) {
-      OnServicesChanged(peer_id, removed, added, modified);
-    };
+    RemoteServiceWatcher service_watcher =
+        [this, peer_id](std::vector<att::Handle> removed, std::vector<RemoteService::WeakPtr> added,
+                        std::vector<RemoteService::WeakPtr> modified) {
+          OnServicesChanged(peer_id, removed, added, modified);
+        };
     std::unique_ptr<Server> server = server_factory(peer_id, local_services_->GetWeakPtr());
     connections_.try_emplace(peer_id, std::move(client), std::move(server),
                              std::move(service_watcher), async_get_default_dispatcher());
@@ -221,19 +220,19 @@ class Impl final : public GATT {
     iter->second.remote_service_manager()->ListServices(uuids, std::move(callback));
   }
 
-  fxl::WeakPtr<RemoteService> FindService(PeerId peer_id, IdType service_id) override {
+  RemoteService::WeakPtr FindService(PeerId peer_id, IdType service_id) override {
     auto iter = connections_.find(peer_id);
     if (iter == connections_.end()) {
       // Connection not found.
-      return nullptr;
+      return RemoteService::WeakPtr();
     }
     return iter->second.remote_service_manager()->FindService(service_id);
   }
 
  private:
   void OnServicesChanged(PeerId peer_id, const std::vector<att::Handle>& removed,
-                         const std::vector<fxl::WeakPtr<RemoteService>>& added,
-                         const std::vector<fxl::WeakPtr<RemoteService>>& modified) {
+                         const std::vector<RemoteService::WeakPtr>& added,
+                         const std::vector<RemoteService::WeakPtr>& modified) {
     auto peer_watcher_range = peer_remote_service_watchers_.equal_range(peer_id);
     for (auto it = peer_watcher_range.first; it != peer_watcher_range.second; it++) {
       TRACE_DURATION("bluetooth", "GATT::OnServiceChanged notify watcher");

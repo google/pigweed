@@ -10,6 +10,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/att/attribute.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/database.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/types.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
@@ -57,7 +58,7 @@ using ServiceChangedCallback =
 // internally maintains an attribute database and provides hooks for clients to
 // respond to read and write requests, send notifications/indications,
 // add/remove services, etc.
-class LocalServiceManager final {
+class LocalServiceManager final : public WeakSelf<LocalServiceManager> {
  public:
   LocalServiceManager();
   // Even though this is a noop, cannot be defaulted due to forward declaration of ServiceData.
@@ -103,8 +104,6 @@ class LocalServiceManager final {
 
   inline fxl::WeakPtr<att::Database> database() { return db_->GetWeakPtr(); }
 
-  inline fxl::WeakPtr<LocalServiceManager> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
-
  private:
   class ServiceData;
 
@@ -115,8 +114,6 @@ class LocalServiceManager final {
   std::unordered_map<IdType, std::unique_ptr<ServiceData>> services_;
 
   ServiceChangedCallback service_changed_callback_;
-
-  fxl::WeakPtrFactory<LocalServiceManager> weak_ptr_factory_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LocalServiceManager);
 };

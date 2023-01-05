@@ -62,7 +62,7 @@ class HostServerFuzzTest final : public bthost::testing::AdapterTestFixture {
     gatt_ = take_gatt();
     fidl::InterfaceHandle<fuchsia::bluetooth::host::Host> host_handle;
     host_server_ = std::make_unique<HostServer>(host_handle.NewRequest().TakeChannel(),
-                                                adapter()->AsWeakPtr(), gatt_->AsWeakPtr());
+                                                adapter()->AsWeakPtr(), gatt_->GetWeakPtr());
     host_.Bind(std::move(host_handle));
   }
 

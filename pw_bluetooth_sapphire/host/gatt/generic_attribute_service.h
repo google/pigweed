@@ -37,7 +37,7 @@ class GenericAttributeService final {
   // indications for the Service Changed characteristic. Holds the
   // LocalServiceManager pointer for this object's lifetime. Do not register
   // multiple instances of this service in a single bt-host.
-  GenericAttributeService(fxl::WeakPtr<LocalServiceManager> local_service_manager,
+  GenericAttributeService(LocalServiceManager::WeakPtr local_service_manager,
                           SendIndicationCallback send_indication_callback);
   ~GenericAttributeService();
 
@@ -60,7 +60,7 @@ class GenericAttributeService final {
 
   // Data store against which to register and unregister this service. It must
   // outlive this instance.
-  fxl::WeakPtr<LocalServiceManager> local_service_manager_;
+  LocalServiceManager::WeakPtr local_service_manager_;
   const SendIndicationCallback send_indication_callback_;
 
   // Peers that have subscribed to indications.

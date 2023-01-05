@@ -68,7 +68,7 @@ class RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
   }
 
   // Initializes a RemoteService based on |data|.
-  fxl::WeakPtr<RemoteService> SetUpFakeService(const ServiceData& data) {
+  RemoteService::WeakPtr SetUpFakeService(const ServiceData& data) {
     std::vector<ServiceData> fake_services{{data}};
     fake_client()->set_services(std::move(fake_services));
 
@@ -95,9 +95,9 @@ class RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
 
   // Discover the characteristics of |service| based on the given |fake_data|.
   void SetupCharacteristics(
-      fxl::WeakPtr<RemoteService> service, std::vector<CharacteristicData> fake_chrs,
+      RemoteService::WeakPtr service, std::vector<CharacteristicData> fake_chrs,
       std::vector<DescriptorData> fake_descrs = std::vector<DescriptorData>()) {
-    BT_DEBUG_ASSERT(service);
+    BT_DEBUG_ASSERT(service.is_alive());
 
     SetCharacteristicsAndDescriptors(std::move(fake_chrs), std::move(fake_descrs));
 
@@ -105,7 +105,7 @@ class RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
     RunLoopUntilIdle();
   }
 
-  fxl::WeakPtr<RemoteService> SetupServiceWithChrcs(
+  RemoteService::WeakPtr SetupServiceWithChrcs(
       const ServiceData& data, std::vector<CharacteristicData> fake_chrs,
       std::vector<DescriptorData> fake_descrs = std::vector<DescriptorData>()) {
     auto service = SetUpFakeService(data);
@@ -114,7 +114,7 @@ class RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
   }
 
   // Create a fake service with one notifiable characteristic.
-  fxl::WeakPtr<RemoteService> SetupNotifiableService() {
+  RemoteService::WeakPtr SetupNotifiableService() {
     ServiceData data(ServiceKind::PRIMARY, 1, 4, kTestServiceUuid1);
     auto service = SetUpFakeService(data);
 
@@ -130,7 +130,7 @@ class RemoteServiceManagerTest : public ::gtest::TestLoopFixture {
     return service;
   }
 
-  void EnableNotifications(fxl::WeakPtr<RemoteService> service, CharacteristicHandle chr_id,
+  void EnableNotifications(RemoteService::WeakPtr service, CharacteristicHandle chr_id,
                            att::Result<>* out_status, IdType* out_id,
                            RemoteService::ValueCallback callback = NopValueCallback) {
     BT_DEBUG_ASSERT(out_status);
@@ -327,9 +327,11 @@ TEST_F(RemoteServiceManagerTest, InitializeWithUuids) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(fit::ok(), status);
-  EXPECT_THAT(services,
-              UnorderedElementsAre(Pointee(::testing::Property(&RemoteService::info, Eq(svc1))),
-                                   Pointee(::testing::Property(&RemoteService::info, Eq(svc3)))));
+  std::vector<ServiceData> found_services;
+  for (const auto& ptr : services) {
+    found_services.push_back(ptr->info());
+  }
+  EXPECT_THAT(found_services, UnorderedElementsAre(Eq(svc1), Eq(svc3)));
 }
 
 TEST_F(RemoteServiceManagerTest, InitializeByUUIDFailure) {
@@ -3435,7 +3437,7 @@ TEST_F(RemoteServiceManagerServiceChangedTest, SecondServiceChangedNotificationI
   ASSERT_EQ(1u, svc_watcher_data()[0].added.size());
   EXPECT_EQ(0u, svc_watcher_data()[0].removed.size());
   EXPECT_EQ(0u, svc_watcher_data()[0].modified.size());
-  EXPECT_FALSE(svc_watcher_data()[0].added[0]);  // WeakPtr should already be invalidated
+  EXPECT_FALSE(svc_watcher_data()[0].added[0].is_alive());  // WeakPtr should already be invalidated
 
   EXPECT_EQ(0u, svc_watcher_data()[1].added.size());
   EXPECT_EQ(0u, svc_watcher_data()[1].removed.size());
@@ -3649,7 +3651,7 @@ TEST_F(RemoteServiceManagerServiceChangedTest, GattProfileServiceChanged) {
   EXPECT_EQ(gatt_service().range_start, svc_watcher_data()[1].modified[0]->handle());
   EXPECT_EQ(1, service_changed_ccc_write_count());
   // A new service should not have been created for the modified GATT Profile service.
-  EXPECT_EQ(svc_watcher_data()[0].modified[0].get(), svc_watcher_data()[1].modified[0].get());
+  EXPECT_EQ(&svc_watcher_data()[0].modified[0].get(), &svc_watcher_data()[1].modified[0].get());
 }
 
 TEST_F(RemoteServiceManagerTest, ErrorDiscoveringGattProfileService) {
@@ -3761,7 +3763,7 @@ TEST_F(RemoteServiceManagerTest, ErrorDiscoveringGattProfileServiceCharacteristi
 
 TEST_F(RemoteServiceManagerTest, DisableNotificationInHandlerCallback) {
   const CharacteristicHandle kChrcValueHandle(3);
-  fxl::WeakPtr<RemoteService> svc = SetupNotifiableService();
+  RemoteService::WeakPtr svc = SetupNotifiableService();
   std::optional<IdType> handler_id;
   RemoteCharacteristic::NotifyStatusCallback status_cb = [&](att::Result<> status,
                                                              IdType cb_handler_id) {
@@ -3818,7 +3820,7 @@ TEST_F(RemoteServiceManagerServiceChangedTest, ServiceRemovedDuringReadLongChara
   ASSERT_EQ(1u, svc_watcher_data()[0].added.size());
   EXPECT_EQ(kSvc1StartHandle, svc_watcher_data()[0].added[0]->handle());
 
-  fxl::WeakPtr<RemoteService> service = svc_watcher_data()[0].added[0];
+  RemoteService::WeakPtr service = svc_watcher_data()[0].added[0];
   service->DiscoverCharacteristics([](auto, const auto&) {});
   RunLoopUntilIdle();
 
@@ -3841,7 +3843,7 @@ TEST_F(RemoteServiceManagerServiceChangedTest, ServiceRemovedDuringReadLongChara
   fake_client()->SendNotification(/*indicate=*/true, service_changed_characteristic().value_handle,
                                   svc_changed_range_buffer, /*maybe_truncated=*/false);
   RunLoopUntilIdle();
-  EXPECT_FALSE(service);
+  EXPECT_FALSE(service.is_alive());
   ASSERT_EQ(2u, svc_watcher_data().size());
   ASSERT_EQ(1u, svc_watcher_data()[1].removed.size());
   EXPECT_EQ(read_req_count, 1);

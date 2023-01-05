@@ -69,7 +69,7 @@ class Adapter {
 
   // Optionally, a FakeL2cap  may be passed for testing purposes as |l2cap|. If nullptr is
   // passed, then the Adapter will create and initialize its own L2cap.
-  static std::unique_ptr<Adapter> Create(hci::Transport::WeakPtr hci, fxl::WeakPtr<gatt::GATT> gatt,
+  static std::unique_ptr<Adapter> Create(hci::Transport::WeakPtr hci, gatt::GATT::WeakPtr gatt,
                                          std::unique_ptr<l2cap::ChannelManager> l2cap = nullptr);
   virtual ~Adapter() = default;
 

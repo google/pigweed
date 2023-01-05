@@ -39,8 +39,9 @@ class FakeLayer final : public GATT {
   // Returns the fake remote service and a handle to the fake object.
   //
   // NOTE: the remote service watcher can also get triggered by calling InitializeClient().
-  std::pair<fxl::WeakPtr<RemoteService>, fxl::WeakPtr<FakeClient>> AddPeerService(
-      PeerId peer_id, const ServiceData& info, bool notify = false);
+  std::pair<RemoteService::WeakPtr, FakeClient::WeakPtr> AddPeerService(PeerId peer_id,
+                                                                        const ServiceData& info,
+                                                                        bool notify = false);
 
   // Removes the service with start handle of |handle| and notifies service watcher.
   void RemovePeerService(PeerId peer_id, att::Handle handle);
@@ -103,7 +104,10 @@ class FakeLayer final : public GATT {
                                                              RemoteServiceWatcher watcher) override;
   bool UnregisterRemoteServiceWatcher(RemoteServiceWatcherId watcher_id) override;
   void ListServices(PeerId peer_id, std::vector<UUID> uuids, ServiceListCallback callback) override;
-  fxl::WeakPtr<RemoteService> FindService(PeerId peer_id, IdType service_id) override;
+  RemoteService::WeakPtr FindService(PeerId peer_id, IdType service_id) override;
+
+  using WeakPtr = WeakSelf<FakeLayer>::WeakPtr;
+  FakeLayer::WeakPtr GetFakePtr() { return weak_fake_.GetWeakPtr(); }
 
  private:
   IdType next_local_service_id_ = 100;  // Start at a random large ID to help catch bugs (e.g.
@@ -136,6 +140,8 @@ class FakeLayer final : public GATT {
     BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(TestPeer);
   };
   std::unordered_map<PeerId, TestPeer> peers_;
+
+  WeakSelf<FakeLayer> weak_fake_{this};
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeLayer);
 };

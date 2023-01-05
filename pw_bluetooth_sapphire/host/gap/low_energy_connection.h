@@ -54,7 +54,7 @@ class LowEnergyConnection final : public sm::Delegate {
       Peer::WeakPtr peer, std::unique_ptr<hci::LowEnergyConnection> link,
       LowEnergyConnectionOptions connection_options, PeerDisconnectCallback peer_disconnect_cb,
       ErrorCallback error_cb, WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr,
-      l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt,
+      l2cap::ChannelManager* l2cap, gatt::GATT::WeakPtr gatt,
       hci::CommandChannel::WeakPtr cmd_channel);
 
   // Notifies request callbacks and connection refs of the disconnection.
@@ -136,7 +136,7 @@ class LowEnergyConnection final : public sm::Delegate {
                       LowEnergyConnectionOptions connection_options,
                       PeerDisconnectCallback peer_disconnect_cb, ErrorCallback error_cb,
                       WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr,
-                      l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt,
+                      l2cap::ChannelManager* l2cap, gatt::GATT::WeakPtr gatt,
                       hci::CommandChannel::WeakPtr cmd_channel);
 
   // Registers this connection with L2CAP and initializes the fixed channel
@@ -285,7 +285,7 @@ class LowEnergyConnection final : public sm::Delegate {
 
   // Reference to the GATT profile layer is used to initiate service discovery
   // and register the link.
-  fxl::WeakPtr<gatt::GATT> gatt_;
+  gatt::GATT::WeakPtr gatt_;
 
   // The ATT Bearer is owned by LowEnergyConnection but weak pointers are passed to the GATT layer.
   // As such, this connection must be unregistered from the GATT layer before the Bearer is

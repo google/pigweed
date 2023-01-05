@@ -111,8 +111,9 @@ class FakeClient final : public Client {
                         bool maybe_truncated);
 
   // Methods to obtain a weak pointer to both FakeClient and the base class types.
-  fxl::WeakPtr<Client> AsWeakPtr() override { return weak_ptr_factory_.GetWeakPtr(); }
-  fxl::WeakPtr<FakeClient> AsFakeWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
+  Client::WeakPtr GetWeakPtr() override { return weak_self_.GetWeakPtr(); }
+  using WeakPtr = WeakSelf<FakeClient>::WeakPtr;
+  FakeClient::WeakPtr AsFakeWeakPtr() { return weak_fake_.GetWeakPtr(); }
 
   // Client overrides:
   uint16_t mtu() const override;
@@ -196,7 +197,8 @@ class FakeClient final : public Client {
   WriteWithoutResponseCallback write_without_rsp_callback_;
   NotificationCallback notification_callback_;
 
-  fxl::WeakPtrFactory<FakeClient> weak_ptr_factory_;
+  WeakSelf<Client> weak_self_;
+  WeakSelf<FakeClient> weak_fake_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeClient);
 };

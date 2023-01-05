@@ -90,7 +90,7 @@ void WatchPeersGetter::Notify(std::queue<Callback> callbacks, PeerTracker peers)
 }
 
 HostServer::HostServer(zx::channel channel, const bt::gap::Adapter::WeakPtr& adapter,
-                       fxl::WeakPtr<bt::gatt::GATT> gatt)
+                       bt::gatt::GATT::WeakPtr gatt)
     : AdapterServerBase(adapter, this, std::move(channel)),
       pairing_delegate_(nullptr),
       gatt_(std::move(gatt)),
@@ -101,7 +101,7 @@ HostServer::HostServer(zx::channel channel, const bt::gap::Adapter::WeakPtr& ada
       watch_peers_getter_(adapter->peer_cache()),
       weak_ptr_factory_(this),
       weak_pairing_(this) {
-  BT_ASSERT(gatt_);
+  BT_ASSERT(gatt_.is_alive());
 
   auto self = weak_ptr_factory_.GetWeakPtr();
   peer_updated_callback_id_ =
@@ -720,7 +720,7 @@ void HostServer::RequestLowEnergyPeripheral(
 void HostServer::RequestGattServer(
     fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Server> server) {
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto server_ptr = std::make_unique<GattServerServer>(gatt_->AsWeakPtr(), std::move(server));
+  auto server_ptr = std::make_unique<GattServerServer>(gatt_->GetWeakPtr(), std::move(server));
   server_ptr->set_error_handler([self, server = server_ptr.get()](zx_status_t status) {
     if (self) {
       bt_log(DEBUG, "bt-host", "GATT server disconnected");
@@ -733,7 +733,7 @@ void HostServer::RequestGattServer(
 void HostServer::RequestGatt2Server(
     fidl::InterfaceRequest<fuchsia::bluetooth::gatt2::Server> server) {
   auto self = weak_ptr_factory_.GetWeakPtr();
-  auto server_ptr = std::make_unique<Gatt2ServerServer>(gatt_->AsWeakPtr(), std::move(server));
+  auto server_ptr = std::make_unique<Gatt2ServerServer>(gatt_->GetWeakPtr(), std::move(server));
   server_ptr->set_error_handler([self, server = server_ptr.get()](zx_status_t status) {
     if (self) {
       bt_log(DEBUG, "bt-host", "GATT2 server disconnected");

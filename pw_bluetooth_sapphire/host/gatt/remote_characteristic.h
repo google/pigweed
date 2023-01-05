@@ -13,6 +13,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/att/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
+#include "src/connectivity/bluetooth/core/bt-host/gatt/client.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/lib/fxl/memory/weak_ptr.h"
 
@@ -40,7 +41,7 @@ class RemoteCharacteristic final {
   // We use an ordered map so that the Descriptors are exposed to the world in order
   using DescriptorMap = std::map<DescriptorHandle, DescriptorData>;
 
-  RemoteCharacteristic(fxl::WeakPtr<Client> client, const CharacteristicData& info);
+  RemoteCharacteristic(Client::WeakPtr client, const CharacteristicData& info);
   ~RemoteCharacteristic();
 
   // The properties for this characteristic.
@@ -128,9 +129,9 @@ class RemoteCharacteristic final {
   size_t next_notify_handler_id_;
 
   // The GATT client bearer used for ATT requests.
-  fxl::WeakPtr<Client> client_;
+  Client::WeakPtr client_;
 
-  fxl::WeakPtrFactory<RemoteCharacteristic> weak_ptr_factory_;
+  WeakSelf<RemoteCharacteristic> weak_self_;
 
   BT_DISALLOW_COPY_ASSIGN_AND_MOVE(RemoteCharacteristic);
 };

@@ -26,8 +26,8 @@ class Gatt2ClientServerTest : public bt::gatt::testing::FakeLayerTest {
   ~Gatt2ClientServerTest() override = default;
 
   void SetUp() override {
-    server_ = std::make_unique<Gatt2ClientServer>(kPeerId, gatt()->AsWeakPtr(), proxy_.NewRequest(),
-                                                  [this]() {
+    server_ = std::make_unique<Gatt2ClientServer>(kPeerId, gatt()->GetWeakPtr(),
+                                                  proxy_.NewRequest(), [this]() {
                                                     error_cb_called_ = true;
                                                     server_.reset();
                                                   });
@@ -62,7 +62,7 @@ TEST_F(Gatt2ClientServerTest, WatchServicesListsServicesOnFirstRequestAndUpdates
   const bt::att::Handle kSvcEndHandle0(kSvcStartHandle0);
   bt::gatt::ServiceData svc_data_0(bt::gatt::ServiceKind::PRIMARY, kSvcStartHandle0, kSvcEndHandle0,
                                    kTestServiceUuid0);
-  gatt()->AddPeerService(kPeerId, svc_data_0);
+  fake_gatt()->AddPeerService(kPeerId, svc_data_0);
 
   std::vector<fbg::ServiceInfo> updated;
   std::vector<fbg::Handle> removed;
@@ -107,7 +107,7 @@ TEST_F(Gatt2ClientServerTest, WatchServicesListsServicesOnFirstRequestAndUpdates
   const bt::att::Handle kSvcEndHandle1(kSvcStartHandle1);
   bt::gatt::ServiceData svc_data_1(bt::gatt::ServiceKind::PRIMARY, kSvcStartHandle1, kSvcEndHandle1,
                                    kTestServiceUuid0);
-  gatt()->AddPeerService(kPeerId, svc_data_1, /*notify=*/true);
+  fake_gatt()->AddPeerService(kPeerId, svc_data_1, /*notify=*/true);
 
   RunLoopUntilIdle();
   EXPECT_EQ(watch_cb_count, 1);
@@ -129,13 +129,13 @@ TEST_F(Gatt2ClientServerTest,
   const bt::att::Handle kSvcEndHandle0(kSvcStartHandle0);
   bt::gatt::ServiceData svc_data_0(bt::gatt::ServiceKind::PRIMARY, kSvcStartHandle0, kSvcEndHandle0,
                                    kTestServiceUuid0);
-  gatt()->AddPeerService(kPeerId, svc_data_0);
+  fake_gatt()->AddPeerService(kPeerId, svc_data_0);
 
   const bt::att::Handle kSvcStartHandle1(2);
   const bt::att::Handle kSvcEndHandle1(kSvcStartHandle1);
   bt::gatt::ServiceData svc_data_1(bt::gatt::ServiceKind::PRIMARY, kSvcStartHandle1, kSvcEndHandle1,
                                    kTestServiceUuid1);
-  gatt()->AddPeerService(kPeerId, svc_data_1);
+  fake_gatt()->AddPeerService(kPeerId, svc_data_1);
 
   std::vector<fbg::ServiceInfo> updated;
   std::vector<fbg::Handle> removed;
@@ -173,7 +173,7 @@ TEST_F(Gatt2ClientServerTest,
   const bt::att::Handle kSvcEndHandle2(kSvcStartHandle2);
   bt::gatt::ServiceData svc_data_2(bt::gatt::ServiceKind::PRIMARY, kSvcStartHandle2, kSvcEndHandle2,
                                    kTestServiceUuid1);
-  gatt()->AddPeerService(kPeerId, svc_data_2, /*notify=*/true);
+  fake_gatt()->AddPeerService(kPeerId, svc_data_2, /*notify=*/true);
   RunLoopUntilIdle();
   EXPECT_EQ(watch_cb_count, 0);
   EXPECT_EQ(updated.size(), 0u);
@@ -184,7 +184,7 @@ TEST_F(Gatt2ClientServerTest,
   const bt::att::Handle kSvcEndHandle3(kSvcStartHandle3);
   bt::gatt::ServiceData svc_data_3(bt::gatt::ServiceKind::PRIMARY, kSvcStartHandle3, kSvcEndHandle3,
                                    kTestServiceUuid0);
-  gatt()->AddPeerService(kPeerId, svc_data_3, /*notify=*/true);
+  fake_gatt()->AddPeerService(kPeerId, svc_data_3, /*notify=*/true);
   RunLoopUntilIdle();
   EXPECT_EQ(watch_cb_count, 1);
   EXPECT_EQ(removed.size(), 0u);
@@ -205,9 +205,9 @@ TEST_F(Gatt2ClientServerTest, ServiceWatcherResultsIgnoredBeforeWatchServices) {
                                    kTestServiceUuid0);
 
   // Notifications should be ignored.
-  gatt()->AddPeerService(kPeerId, svc_data_0, /*notify=*/true);
-  gatt()->RemovePeerService(kPeerId, kSvcStartHandle0);
-  gatt()->AddPeerService(kPeerId, svc_data_1, /*notify=*/true);
+  fake_gatt()->AddPeerService(kPeerId, svc_data_0, /*notify=*/true);
+  fake_gatt()->RemovePeerService(kPeerId, kSvcStartHandle0);
+  fake_gatt()->AddPeerService(kPeerId, svc_data_1, /*notify=*/true);
 
   std::vector<fbg::ServiceInfo> updated;
   std::vector<fbg::Handle> removed;
@@ -233,7 +233,7 @@ TEST_F(Gatt2ClientServerTest, RemoveConnectedServiceClosesRemoteServiceAndNotifi
   const bt::att::Handle kSvcEndHandle0(kSvcStartHandle0);
   bt::gatt::ServiceData svc_data_0(bt::gatt::ServiceKind::PRIMARY, kSvcStartHandle0, kSvcEndHandle0,
                                    kTestServiceUuid0);
-  gatt()->AddPeerService(kPeerId, svc_data_0);
+  fake_gatt()->AddPeerService(kPeerId, svc_data_0);
 
   std::vector<fbg::ServiceInfo> updated;
   std::vector<fbg::Handle> removed;
@@ -260,7 +260,7 @@ TEST_F(Gatt2ClientServerTest, RemoveConnectedServiceClosesRemoteServiceAndNotifi
   RunLoopUntilIdle();
   EXPECT_FALSE(service_error);
 
-  gatt()->RemovePeerService(kPeerId, kSvcStartHandle0);
+  fake_gatt()->RemovePeerService(kPeerId, kSvcStartHandle0);
 
   updated.clear();
   removed.clear();
@@ -285,7 +285,7 @@ TEST_F(Gatt2ClientServerTest, ModifiedService) {
   const bt::att::Handle kSvcEndHandle0(kSvcStartHandle0);
   bt::gatt::ServiceData svc_data_0(bt::gatt::ServiceKind::PRIMARY, kSvcStartHandle0, kSvcEndHandle0,
                                    kTestServiceUuid0);
-  gatt()->AddPeerService(kPeerId, svc_data_0);
+  fake_gatt()->AddPeerService(kPeerId, svc_data_0);
 
   std::vector<fbg::ServiceInfo> updated;
   std::vector<fbg::Handle> removed;
@@ -317,7 +317,7 @@ TEST_F(Gatt2ClientServerTest, ModifiedService) {
   EXPECT_EQ(watch_cb_count, 0);
 
   // Adding same service will send "modified" service to service watcher.
-  gatt()->AddPeerService(kPeerId, svc_data_0, /*notify=*/true);
+  fake_gatt()->AddPeerService(kPeerId, svc_data_0, /*notify=*/true);
 
   RunLoopUntilIdle();
   EXPECT_EQ(watch_cb_count, 1);
@@ -332,7 +332,7 @@ TEST_F(Gatt2ClientServerTest, ReplacedService) {
   const bt::att::Handle kSvcEndHandle0(kSvcStartHandle0);
   bt::gatt::ServiceData svc_data_0(bt::gatt::ServiceKind::PRIMARY, kSvcStartHandle0, kSvcEndHandle0,
                                    kTestServiceUuid0);
-  gatt()->AddPeerService(kPeerId, svc_data_0);
+  fake_gatt()->AddPeerService(kPeerId, svc_data_0);
 
   std::vector<fbg::ServiceInfo> updated;
   std::vector<fbg::Handle> removed;
@@ -367,7 +367,7 @@ TEST_F(Gatt2ClientServerTest, ReplacedService) {
   // to service watcher.
   bt::gatt::ServiceData svc_data_1(bt::gatt::ServiceKind::PRIMARY, kSvcStartHandle0, kSvcEndHandle0,
                                    kTestServiceUuid1);
-  gatt()->AddPeerService(kPeerId, svc_data_1, /*notify=*/true);
+  fake_gatt()->AddPeerService(kPeerId, svc_data_1, /*notify=*/true);
 
   RunLoopUntilIdle();
   EXPECT_EQ(watch_cb_count, 1);
@@ -387,7 +387,7 @@ TEST_F(Gatt2ClientServerTest, ServiceAddedFollowedByServiceRemovedBetweenWatchSe
   const bt::att::Handle kSvcEndHandle0(kSvcStartHandle0);
   bt::gatt::ServiceData svc_data_0(bt::gatt::ServiceKind::PRIMARY, kSvcStartHandle0, kSvcEndHandle0,
                                    kTestServiceUuid0);
-  gatt()->AddPeerService(kPeerId, svc_data_0);
+  fake_gatt()->AddPeerService(kPeerId, svc_data_0);
 
   int watch_cb_count = 0;
   proxy()->WatchServices(/*uuids=*/{}, [&](auto, auto) { watch_cb_count++; });
@@ -398,8 +398,8 @@ TEST_F(Gatt2ClientServerTest, ServiceAddedFollowedByServiceRemovedBetweenWatchSe
   const bt::att::Handle kSvcEndHandle1(kSvcStartHandle1);
   bt::gatt::ServiceData svc_data_1(bt::gatt::ServiceKind::PRIMARY, kSvcStartHandle1, kSvcEndHandle1,
                                    kTestServiceUuid1);
-  gatt()->AddPeerService(kPeerId, svc_data_1);
-  gatt()->RemovePeerService(kPeerId, kSvcStartHandle1);
+  fake_gatt()->AddPeerService(kPeerId, svc_data_1);
+  fake_gatt()->RemovePeerService(kPeerId, kSvcStartHandle1);
   RunLoopUntilIdle();
 
   std::vector<fbg::ServiceInfo> updated;
@@ -422,7 +422,7 @@ TEST_F(Gatt2ClientServerTest, ServiceAddedFollowedByServiceRemovedBetweenWatchSe
 TEST_F(Gatt2ClientServerTest, WatchServicesCalledTwiceClosesServer) {
   // Prevent GATT::ListServices() from completing so that we can queue a second WatchServices
   // request.
-  gatt()->stop_list_services();
+  fake_gatt()->stop_list_services();
 
   int watch_cb_count_0 = 0;
   int watch_cb_count_1 = 0;
@@ -441,9 +441,9 @@ TEST_F(Gatt2ClientServerTest, ListServicesFails) {
   const bt::att::Handle kSvcEndHandle0(kSvcStartHandle0);
   bt::gatt::ServiceData svc_data(bt::gatt::ServiceKind::PRIMARY, kSvcStartHandle0, kSvcEndHandle0,
                                  kTestServiceUuid0);
-  gatt()->AddPeerService(kPeerId, svc_data);
+  fake_gatt()->AddPeerService(kPeerId, svc_data);
 
-  gatt()->set_list_services_status(bt::ToResult(bt::HostError::kPacketMalformed));
+  fake_gatt()->set_list_services_status(bt::ToResult(bt::HostError::kPacketMalformed));
 
   int watch_cb_count = 0;
   proxy()->WatchServices(/*uuids=*/{}, [&](auto, auto) { watch_cb_count++; });
@@ -472,7 +472,7 @@ TEST_F(Gatt2ClientServerTest, ConnectToServiceServiceAlreadyConnected) {
   const bt::att::Handle kSvcEndHandle0(kSvcStartHandle0);
   bt::gatt::ServiceData svc_data(bt::gatt::ServiceKind::PRIMARY, kSvcStartHandle0, kSvcEndHandle0,
                                  kTestServiceUuid0);
-  gatt()->AddPeerService(kPeerId, svc_data);
+  fake_gatt()->AddPeerService(kPeerId, svc_data);
 
   fbg::RemoteServicePtr service_ptr_0;
   proxy()->ConnectToService(fbg::ServiceHandle{kSvcStartHandle0}, service_ptr_0.NewRequest());
@@ -512,7 +512,7 @@ TEST_F(Gatt2ClientServerTest, ConnectToServiceNotFoundThenConnectToServiceWithSa
   // Add a service with the same handle as the service that was previously not found.
   bt::gatt::ServiceData svc_data(bt::gatt::ServiceKind::PRIMARY, kSvcStartHandle0, kSvcEndHandle0,
                                  kTestServiceUuid0);
-  gatt()->AddPeerService(kPeerId, svc_data);
+  fake_gatt()->AddPeerService(kPeerId, svc_data);
 
   // Connecting to the service after it is added should succeed.
   fbg::RemoteServicePtr service_ptr_1;
@@ -530,7 +530,7 @@ TEST_F(Gatt2ClientServerTest, ClientClosesRemoteServiceAndReconnectsFollowedBySe
   const bt::att::Handle kSvcEndHandle0(kSvcStartHandle0);
   bt::gatt::ServiceData svc_data(bt::gatt::ServiceKind::PRIMARY, kSvcStartHandle0, kSvcEndHandle0,
                                  kTestServiceUuid0);
-  gatt()->AddPeerService(kPeerId, svc_data);
+  fake_gatt()->AddPeerService(kPeerId, svc_data);
 
   fbg::RemoteServicePtr service_ptr_0;
   proxy()->ConnectToService(fbg::ServiceHandle{kSvcStartHandle0}, service_ptr_0.NewRequest());
@@ -554,7 +554,7 @@ TEST_F(Gatt2ClientServerTest, ClientClosesRemoteServiceAndReconnectsFollowedBySe
 
   // Server should not crash when both service removed handlers are called (one was registered for
   // each call to ConnectToService). The second handler should do nothing.
-  gatt()->RemovePeerService(kPeerId, kSvcStartHandle0);
+  fake_gatt()->RemovePeerService(kPeerId, kSvcStartHandle0);
   RunLoopUntilIdle();
   ASSERT_TRUE(service_epitaph_1);
   EXPECT_EQ(service_epitaph_1.value(), ZX_ERR_CONNECTION_RESET);
@@ -567,7 +567,7 @@ TEST_F(Gatt2ClientServerTest, ClientClosesRemoteServiceFollowedByServiceRemoved)
   const bt::att::Handle kSvcEndHandle0(kSvcStartHandle0);
   bt::gatt::ServiceData svc_data(bt::gatt::ServiceKind::PRIMARY, kSvcStartHandle0, kSvcEndHandle0,
                                  kTestServiceUuid0);
-  gatt()->AddPeerService(kPeerId, svc_data);
+  fake_gatt()->AddPeerService(kPeerId, svc_data);
 
   fbg::RemoteServicePtr service_ptr_0;
   proxy()->ConnectToService(fbg::ServiceHandle{kSvcStartHandle0}, service_ptr_0.NewRequest());
@@ -584,7 +584,7 @@ TEST_F(Gatt2ClientServerTest, ClientClosesRemoteServiceFollowedByServiceRemoved)
 
   // Server should not crash when service removed handler is called and finds that the service isn't
   // in the server's map.
-  gatt()->RemovePeerService(kPeerId, kSvcStartHandle0);
+  fake_gatt()->RemovePeerService(kPeerId, kSvcStartHandle0);
   RunLoopUntilIdle();
 }
 
@@ -594,13 +594,13 @@ TEST_F(Gatt2ClientServerTest,
   const bt::att::Handle kSvcEndHandle0(kSvcStartHandle0);
   bt::gatt::ServiceData svc_data_0(bt::gatt::ServiceKind::PRIMARY, kSvcStartHandle0, kSvcEndHandle0,
                                    kTestServiceUuid0);
-  gatt()->AddPeerService(kPeerId, svc_data_0);
+  fake_gatt()->AddPeerService(kPeerId, svc_data_0);
 
   const bt::att::Handle kSvcStartHandle1(2);
   const bt::att::Handle kSvcEndHandle1(kSvcStartHandle1);
   bt::gatt::ServiceData svc_data_1(bt::gatt::ServiceKind::PRIMARY, kSvcStartHandle1, kSvcEndHandle1,
                                    kTestServiceUuid1);
-  gatt()->AddPeerService(kPeerId, svc_data_1);
+  fake_gatt()->AddPeerService(kPeerId, svc_data_1);
 
   std::vector<fbg::ServiceInfo> updated;
   std::vector<fbg::Handle> removed;
@@ -629,7 +629,7 @@ TEST_F(Gatt2ClientServerTest,
   const bt::att::Handle kSvcEndHandle2(kSvcStartHandle2);
   bt::gatt::ServiceData svc_data_2(bt::gatt::ServiceKind::PRIMARY, kSvcStartHandle2, kSvcEndHandle2,
                                    kTestServiceUuid3);
-  gatt()->AddPeerService(kPeerId, svc_data_2);
+  fake_gatt()->AddPeerService(kPeerId, svc_data_2);
 
   // UUIDs changed, so WatchServices() should immediately receive a response with all existing
   // services that match UUIDs.
@@ -660,13 +660,13 @@ TEST_F(
   const bt::att::Handle kSvcEndHandle0(kSvcStartHandle0);
   bt::gatt::ServiceData svc_data_0(bt::gatt::ServiceKind::PRIMARY, kSvcStartHandle0, kSvcEndHandle0,
                                    kTestServiceUuid0);
-  gatt()->AddPeerService(kPeerId, svc_data_0);
+  fake_gatt()->AddPeerService(kPeerId, svc_data_0);
 
   const bt::att::Handle kSvcStartHandle1(2);
   const bt::att::Handle kSvcEndHandle1(kSvcStartHandle1);
   bt::gatt::ServiceData svc_data_1(bt::gatt::ServiceKind::PRIMARY, kSvcStartHandle1, kSvcEndHandle1,
                                    kTestServiceUuid1);
-  gatt()->AddPeerService(kPeerId, svc_data_1);
+  fake_gatt()->AddPeerService(kPeerId, svc_data_1);
 
   std::vector<fbg::ServiceInfo> updated;
   std::vector<fbg::Handle> removed;

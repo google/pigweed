@@ -60,13 +60,13 @@ void NopStatusCallback(bt::att::Result<>) {}
 }  // namespace
 
 GattRemoteServiceServer::GattRemoteServiceServer(
-    fxl::WeakPtr<bt::gatt::RemoteService> service, fxl::WeakPtr<bt::gatt::GATT> gatt,
-    bt::PeerId peer_id, fidl::InterfaceRequest<fuchsia::bluetooth::gatt::RemoteService> request)
+    bt::gatt::RemoteService::WeakPtr service, bt::gatt::GATT::WeakPtr gatt, bt::PeerId peer_id,
+    fidl::InterfaceRequest<fuchsia::bluetooth::gatt::RemoteService> request)
     : GattServerBase(gatt, this, std::move(request)),
       service_(std::move(service)),
       peer_id_(peer_id),
       weak_ptr_factory_(this) {
-  BT_DEBUG_ASSERT(service_);
+  BT_DEBUG_ASSERT(service_.is_alive());
 }
 
 GattRemoteServiceServer::~GattRemoteServiceServer() {

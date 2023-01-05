@@ -32,7 +32,7 @@ class LowEnergyCentralServer : public AdapterServerBase<fuchsia::bluetooth::le::
 
   LowEnergyCentralServer(bt::gap::Adapter::WeakPtr adapter,
                          ::fidl::InterfaceRequest<fuchsia::bluetooth::le::Central> request,
-                         fxl::WeakPtr<bt::gatt::GATT> gatt);
+                         bt::gatt::GATT::WeakPtr gatt);
   ~LowEnergyCentralServer() override;
 
   // Returns the connection pointer in the connections_deprecated_ map, if it exists. The pointer
@@ -135,7 +135,7 @@ class LowEnergyCentralServer : public AdapterServerBase<fuchsia::bluetooth::le::
   void ClearScan() { scan_instance_.reset(); }
 
   // GATT is used to construct GattClientServers upon connection.
-  fxl::WeakPtr<bt::gatt::GATT> gatt_;
+  bt::gatt::GATT::WeakPtr gatt_;
 
   // Stores active GATT client FIDL servers. Only 1 client server per peer may exist.
   std::unordered_map<bt::PeerId, std::unique_ptr<GattClientServer>> gatt_client_servers_;

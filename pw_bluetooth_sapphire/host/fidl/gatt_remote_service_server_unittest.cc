@@ -31,7 +31,7 @@ class GattRemoteServiceServerTest : public bt::gatt::testing::FakeLayerTest {
 
   void SetUp() override {
     {
-      auto [svc, client] = gatt()->AddPeerService(
+      auto [svc, client] = fake_gatt()->AddPeerService(
           kPeerId, bt::gatt::ServiceData(bt::gatt::ServiceKind::PRIMARY, kServiceStartHandle,
                                          kServiceEndHandle, kServiceUuid));
       service_ = std::move(svc);
@@ -39,8 +39,8 @@ class GattRemoteServiceServerTest : public bt::gatt::testing::FakeLayerTest {
     }
 
     fidl::InterfaceHandle<fbgatt::RemoteService> handle;
-    server_ = std::make_unique<GattRemoteServiceServer>(service_, gatt()->AsWeakPtr(), kPeerId,
-                                                        handle.NewRequest());
+    server_ =
+        std::make_unique<GattRemoteServiceServer>(service_, gatt(), kPeerId, handle.NewRequest());
     proxy_.Bind(std::move(handle));
   }
 
@@ -53,9 +53,9 @@ class GattRemoteServiceServerTest : public bt::gatt::testing::FakeLayerTest {
   }
 
  protected:
-  bt::gatt::testing::FakeClient* fake_client() const {
-    BT_ASSERT(fake_client_);
-    return fake_client_.get();
+  const bt::gatt::testing::FakeClient::WeakPtr& fake_client() const {
+    BT_ASSERT(fake_client_.is_alive());
+    return fake_client_;
   }
 
   fbgatt::RemoteServicePtr& service_proxy() { return proxy_; }
@@ -64,8 +64,8 @@ class GattRemoteServiceServerTest : public bt::gatt::testing::FakeLayerTest {
   std::unique_ptr<GattRemoteServiceServer> server_;
 
   fbgatt::RemoteServicePtr proxy_;
-  fxl::WeakPtr<bt::gatt::RemoteService> service_;
-  fxl::WeakPtr<bt::gatt::testing::FakeClient> fake_client_;
+  bt::gatt::RemoteService::WeakPtr service_;
+  bt::gatt::testing::FakeClient::WeakPtr fake_client_;
 
   BT_DISALLOW_COPY_ASSIGN_AND_MOVE(GattRemoteServiceServerTest);
 };

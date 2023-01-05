@@ -51,12 +51,12 @@ bt::gap::LowEnergyConnectionOptions ConnectionOptionsFromFidl(
 
 LowEnergyCentralServer::LowEnergyCentralServer(bt::gap::Adapter::WeakPtr adapter,
                                                fidl::InterfaceRequest<Central> request,
-                                               fxl::WeakPtr<bt::gatt::GATT> gatt)
+                                               bt::gatt::GATT::WeakPtr gatt)
     : AdapterServerBase(std::move(adapter), this, std::move(request)),
       gatt_(std::move(gatt)),
       requesting_scan_deprecated_(false),
       weak_ptr_factory_(this) {
-  BT_ASSERT(gatt_);
+  BT_ASSERT(gatt_.is_alive());
 }
 
 LowEnergyCentralServer::~LowEnergyCentralServer() {

@@ -11,7 +11,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::gatt {
 namespace {
@@ -149,7 +148,7 @@ class LocalServiceManager::ServiceData final {
         read_handler_(std::forward<ReadHandler>(read_handler)),
         write_handler_(std::forward<WriteHandler>(write_handler)),
         ccc_callback_(std::forward<ClientConfigCallback>(ccc_callback)),
-        weak_ptr_factory_(this) {
+        weak_self_(this) {
     BT_DEBUG_ASSERT(read_handler_);
     BT_DEBUG_ASSERT(write_handler_);
     BT_DEBUG_ASSERT(ccc_callback_);
@@ -295,11 +294,11 @@ class LocalServiceManager::ServiceData final {
     IdType id = chrc->id();
     uint8_t props = chrc->properties();
     uint16_t ext_props = chrc->extended_properties();
-    auto self = weak_ptr_factory_.GetWeakPtr();
+    auto self = weak_self_.GetWeakPtr();
 
     auto read_handler = [self, id, props](PeerId peer_id, att::Handle handle, uint16_t offset,
                                           auto result_cb) {
-      if (!self) {
+      if (!self.is_alive()) {
         result_cb(fit::error(att::ErrorCode::kUnlikelyError), BufferView());
         return;
       }
@@ -317,7 +316,7 @@ class LocalServiceManager::ServiceData final {
 
     auto write_handler = [self, id, props](PeerId peer_id, att::Handle handle, uint16_t offset,
                                            const auto& value, auto result_cb) {
-      if (!self) {
+      if (!self.is_alive()) {
         if (result_cb)
           result_cb(fit::error(att::ErrorCode::kUnlikelyError));
         return;
@@ -372,10 +371,10 @@ class LocalServiceManager::ServiceData final {
   }
 
   void AddDescriptor(att::AttributeGrouping* grouping, DescriptorPtr desc) {
-    auto self = weak_ptr_factory_.GetWeakPtr();
+    auto self = weak_self_.GetWeakPtr();
     auto read_handler = [self, id = desc->id()](PeerId peer_id, att::Handle handle, uint16_t offset,
                                                 auto result_cb) {
-      if (!self) {
+      if (!self.is_alive()) {
         result_cb(fit::error(att::ErrorCode::kUnlikelyError), BufferView());
         return;
       }
@@ -391,7 +390,7 @@ class LocalServiceManager::ServiceData final {
       if (!result_cb)
         return;
 
-      if (!self) {
+      if (!self.is_alive()) {
         result_cb(fit::error(att::ErrorCode::kUnlikelyError));
         return;
       }
@@ -415,11 +414,11 @@ class LocalServiceManager::ServiceData final {
                                       /*authorization=*/false);
 
     IdType id = chrc.id();
-    auto self = weak_ptr_factory_.GetWeakPtr();
+    auto self = weak_self_.GetWeakPtr();
 
     auto read_handler = [self, id, chrc_handle](const auto& peer_id, att::Handle handle,
                                                 uint16_t offset, auto result_cb) {
-      if (!self) {
+      if (!self.is_alive()) {
         result_cb(fit::error(att::ErrorCode::kUnlikelyError), BufferView());
         return;
       }
@@ -430,7 +429,7 @@ class LocalServiceManager::ServiceData final {
     auto write_handler = [self, id, chrc_handle, props = chrc.properties()](
                              const auto& peer_id, att::Handle handle, uint16_t offset,
                              const auto& value, auto result_cb) {
-      if (!self) {
+      if (!self.is_alive()) {
         result_cb(fit::error(att::ErrorCode::kUnlikelyError));
         return;
       }
@@ -456,17 +455,17 @@ class LocalServiceManager::ServiceData final {
   // devices.
   std::unordered_map<IdType, CharacteristicConfig> chrc_configs_;
 
-  fxl::WeakPtrFactory<ServiceData> weak_ptr_factory_;
+  WeakSelf<ServiceData> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ServiceData);
 };
 
 LocalServiceManager::LocalServiceManager()
-    : db_(std::make_unique<att::Database>()), next_service_id_(1ull), weak_ptr_factory_(this) {
+    : WeakSelf(this), db_(std::make_unique<att::Database>()), next_service_id_(1ull) {
   BT_DEBUG_ASSERT(db_);
 }
 
-LocalServiceManager::~LocalServiceManager() {}
+LocalServiceManager::~LocalServiceManager() = default;
 
 IdType LocalServiceManager::RegisterService(ServicePtr service, ReadHandler read_handler,
                                             WriteHandler write_handler,

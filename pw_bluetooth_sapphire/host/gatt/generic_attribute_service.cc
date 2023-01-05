@@ -12,19 +12,18 @@
 
 namespace bt::gatt {
 
-GenericAttributeService::GenericAttributeService(
-    fxl::WeakPtr<LocalServiceManager> local_service_manager,
-    SendIndicationCallback send_indication_callback)
+GenericAttributeService::GenericAttributeService(LocalServiceManager::WeakPtr local_service_manager,
+                                                 SendIndicationCallback send_indication_callback)
     : local_service_manager_(std::move(local_service_manager)),
       send_indication_callback_(std::move(send_indication_callback)) {
-  BT_ASSERT(local_service_manager_);
+  BT_ASSERT(local_service_manager_.is_alive());
   BT_DEBUG_ASSERT(send_indication_callback_);
 
   Register();
 }
 
 GenericAttributeService::~GenericAttributeService() {
-  if (local_service_manager_ && service_id_ != kInvalidId) {
+  if (local_service_manager_.is_alive() && service_id_ != kInvalidId) {
     local_service_manager_->UnregisterService(service_id_);
   }
 }

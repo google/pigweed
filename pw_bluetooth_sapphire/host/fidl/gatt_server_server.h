@@ -21,7 +21,7 @@ class GattServerServer : public GattServerBase<fuchsia::bluetooth::gatt::Server>
  public:
   // |adapter_manager| is used to lazily request a handle to the corresponding
   // adapter. It MUST out-live this GattServerServer instance.
-  GattServerServer(fxl::WeakPtr<bt::gatt::GATT> gatt,
+  GattServerServer(bt::gatt::GATT::WeakPtr gatt,
                    fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Server> request);
 
   ~GattServerServer() override;

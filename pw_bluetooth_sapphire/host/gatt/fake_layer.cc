@@ -6,18 +6,20 @@
 
 #include <lib/async/default.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/gatt/remote_service.h"
+
 namespace bt::gatt::testing {
 
 FakeLayer::TestPeer::TestPeer() : fake_client(async_get_default_dispatcher()) {}
 
-std::pair<fxl::WeakPtr<RemoteService>, fxl::WeakPtr<FakeClient>> FakeLayer::AddPeerService(
+std::pair<RemoteService::WeakPtr, FakeClient::WeakPtr> FakeLayer::AddPeerService(
     PeerId peer_id, const ServiceData& info, bool notify) {
   auto [iter, _] = peers_.try_emplace(peer_id);
   auto& peer = iter->second;
 
   BT_ASSERT(info.range_start <= info.range_end);
-  auto service = std::make_unique<RemoteService>(info, peer.fake_client.AsWeakPtr());
-  fxl::WeakPtr<RemoteService> service_weak = service->GetWeakPtr();
+  auto service = std::make_unique<RemoteService>(info, peer.fake_client.GetWeakPtr());
+  RemoteService::WeakPtr service_weak = service->GetWeakPtr();
 
   std::vector<att::Handle> removed;
   ServiceList added;
@@ -148,7 +150,7 @@ void FakeLayer::InitializeClient(PeerId peer_id, std::vector<UUID> services_to_d
     return;
   }
 
-  std::vector<fxl::WeakPtr<RemoteService>> added;
+  std::vector<RemoteService::WeakPtr> added;
   if (uuids.empty()) {
     for (auto& svc_pair : iter->second.services) {
       added.push_back(svc_pair.second->GetWeakPtr());
@@ -203,14 +205,14 @@ void FakeLayer::ListServices(PeerId peer_id, std::vector<UUID> uuids,
   callback(list_services_status_, std::move(services));
 }
 
-fxl::WeakPtr<RemoteService> FakeLayer::FindService(PeerId peer_id, IdType service_id) {
+RemoteService::WeakPtr FakeLayer::FindService(PeerId peer_id, IdType service_id) {
   auto peer_iter = peers_.find(peer_id);
   if (peer_iter == peers_.end()) {
-    return nullptr;
+    return RemoteService::WeakPtr();
   }
   auto svc_iter = peer_iter->second.services.find(service_id);
   if (svc_iter == peer_iter->second.services.end()) {
-    return nullptr;
+    return RemoteService::WeakPtr();
   }
   return svc_iter->second->GetWeakPtr();
 }

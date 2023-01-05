@@ -16,7 +16,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_service.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/server.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/types.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
 
@@ -31,7 +30,7 @@ namespace gatt {
 //   * A single local attribute database
 //   * All client and server data bearers
 //   * L2CAP ATT fixed channels
-class GATT {
+class GATT : public WeakSelf<GATT> {
  public:
   using RemoteServiceWatcherId = uint64_t;
   using PeerMtuListenerId = uint64_t;
@@ -174,13 +173,9 @@ class GATT {
 
   // Connects the RemoteService with the given identifier found on the device with |peer_id|. A
   // pointer to the service will be returned if it exists, or nullptr will be returned otherwise.
-  virtual fxl::WeakPtr<RemoteService> FindService(PeerId peer_id, IdType service_id) = 0;
-
-  fxl::WeakPtr<GATT> AsWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
+  virtual RemoteService::WeakPtr FindService(PeerId peer_id, IdType service_id) = 0;
 
  private:
-  fxl::WeakPtrFactory<GATT> weak_ptr_factory_;
-
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GATT);
 };
 

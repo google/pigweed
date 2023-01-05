@@ -113,7 +113,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
         std::make_unique<LowEnergyDiscoveryManager>(scanner_.get(), peer_cache_.get());
     conn_mgr_ = std::make_unique<LowEnergyConnectionManager>(
         cmd_weak, &addr_delegate_, connector_.get(), peer_cache_.get(), l2cap_.get(),
-        gatt_->AsWeakPtr(), discovery_manager_->GetWeakPtr(),
+        gatt_->GetWeakPtr(), discovery_manager_->GetWeakPtr(),
         fit::bind_member<&TestSmFactory::CreateSm>(sm_factory_.get()));
 
     test_device()->set_connection_state_callback(

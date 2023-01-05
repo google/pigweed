@@ -25,7 +25,7 @@ class LowEnergyConnectionServerTest : public bthost::testing::AdapterTestFixture
     fidl::InterfaceHandle<fuchsia::bluetooth::le::Connection> handle;
     std::unique_ptr<bt::gap::LowEnergyConnectionHandle> connection = EstablishConnection();
     server_ = std::make_unique<LowEnergyConnectionServer>(
-        gatt()->AsWeakPtr(), std::move(connection), handle.NewRequest().TakeChannel(),
+        gatt()->GetWeakPtr(), std::move(connection), handle.NewRequest().TakeChannel(),
         /*closed_cb=*/[this] {
           server_closed_cb_called_ = true;
           server_.reset();

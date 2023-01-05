@@ -38,7 +38,7 @@ LowEnergyConnector::LowEnergyConnector(PeerId peer_id, LowEnergyConnectionOption
                                        hci::CommandChannel::WeakPtr cmd_channel,
                                        PeerCache* peer_cache,
                                        WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr,
-                                       l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt)
+                                       l2cap::ChannelManager* l2cap, gatt::GATT::WeakPtr gatt)
     : peer_id_(peer_id),
       peer_cache_(peer_cache),
       l2cap_(l2cap),
@@ -49,7 +49,7 @@ LowEnergyConnector::LowEnergyConnector(PeerId peer_id, LowEnergyConnectionOption
   BT_ASSERT(cmd_.is_alive());
   BT_ASSERT(peer_cache_);
   BT_ASSERT(l2cap_);
-  BT_ASSERT(gatt_);
+  BT_ASSERT(gatt_.is_alive());
   BT_ASSERT(le_connection_manager_.is_alive());
 
   auto peer = peer_cache_->FindById(peer_id_);

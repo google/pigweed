@@ -43,7 +43,7 @@ RemoteServiceManager::RemoteServiceManager(std::unique_ptr<Client> client,
     : gatt_dispatcher_(gatt_dispatcher),
       client_(std::move(client)),
       initialized_(false),
-      weak_ptr_factory_(this) {
+      weak_self_(this) {
   BT_DEBUG_ASSERT(gatt_dispatcher_);
   BT_DEBUG_ASSERT(client_);
 
@@ -68,14 +68,14 @@ RemoteServiceManager::~RemoteServiceManager() {
 void RemoteServiceManager::Initialize(att::ResultFunction<> cb,
                                       fit::callback<void(uint16_t)> mtu_cb,
                                       std::vector<UUID> services) {
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
 
   auto init_cb = [self, user_init_cb = std::move(cb)](att::Result<> status) mutable {
     TRACE_DURATION("bluetooth", "gatt::RemoteServiceManager::Initialize::init_cb");
     bt_log(DEBUG, "gatt", "RemoteServiceManager initialization complete");
 
     // The Client's Bearer may outlive this object.
-    if (!self) {
+    if (!self.is_alive()) {
       return;
     }
 
@@ -102,7 +102,7 @@ void RemoteServiceManager::Initialize(att::ResultFunction<> cb,
   client_->ExchangeMTU([self, init_cb = std::move(init_cb), mtu_cb = std::move(mtu_cb),
                         services = std::move(services)](att::Result<uint16_t> mtu_result) mutable {
     // The Client's Bearer may outlive this object.
-    if (!self) {
+    if (!self.is_alive()) {
       return;
     }
 
@@ -162,12 +162,12 @@ RemoteService* RemoteServiceManager::GattProfileService() {
 
 void RemoteServiceManager::ConfigureServiceChangedNotifications(RemoteService* gatt_profile_service,
                                                                 att::ResultFunction<> callback) {
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   gatt_profile_service->DiscoverCharacteristics(
       [self, callback = std::move(callback)](att::Result<> status,
                                              const CharacteristicMap& characteristics) mutable {
         // The Client's Bearer may outlive this object.
-        if (!self) {
+        if (!self.is_alive()) {
           return;
         }
 
@@ -198,7 +198,7 @@ void RemoteServiceManager::ConfigureServiceChangedNotifications(RemoteService* g
 
         auto notification_cb = [self](const ByteBuffer& value, bool /*maybe_truncated*/) {
           // The Client's Bearer may outlive this object.
-          if (self) {
+          if (self.is_alive()) {
             self->OnServiceChangedNotification(value);
           }
         };
@@ -207,7 +207,7 @@ void RemoteServiceManager::ConfigureServiceChangedNotifications(RemoteService* g
         auto status_cb = [self, callback = std::move(callback)](att::Result<> status,
                                                                 IdType /*handler_id*/) {
           // The Client's Bearer may outlive this object.
-          if (!self) {
+          if (!self.is_alive()) {
             return;
           }
 
@@ -228,10 +228,10 @@ void RemoteServiceManager::ConfigureServiceChangedNotifications(RemoteService* g
 }
 
 void RemoteServiceManager::InitializeGattProfileService(att::ResultFunction<> callback) {
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   DiscoverGattProfileService([self, callback = std::move(callback)](att::Result<> status) mutable {
     // The Client's Bearer may outlive this object.
-    if (!self) {
+    if (!self.is_alive()) {
       return;
     }
 
@@ -243,9 +243,9 @@ void RemoteServiceManager::InitializeGattProfileService(att::ResultFunction<> ca
     RemoteService* gatt_svc = self->GattProfileService();
     BT_ASSERT(gatt_svc);
     self->ConfigureServiceChangedNotifications(
-        std::move(gatt_svc), [self, callback = std::move(callback)](att::Result<> status) {
+        gatt_svc, [self, callback = std::move(callback)](att::Result<> status) {
           // The Client's Bearer may outlive this object.
-          if (!self) {
+          if (!self.is_alive()) {
             return;
           }
 
@@ -255,9 +255,9 @@ void RemoteServiceManager::InitializeGattProfileService(att::ResultFunction<> ca
 }
 
 void RemoteServiceManager::DiscoverGattProfileService(att::ResultFunction<> callback) {
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   auto status_cb = [self, callback = std::move(callback)](att::Result<> status) {
-    if (!self) {
+    if (!self.is_alive()) {
       return;
     }
 
@@ -305,7 +305,7 @@ void RemoteServiceManager::AddService(const ServiceData& service_data) {
     return;
   }
 
-  auto svc = std::make_unique<RemoteService>(service_data, client_->AsWeakPtr());
+  auto svc = std::make_unique<RemoteService>(service_data, client_->GetWeakPtr());
   if (!svc) {
     bt_log(DEBUG, "gatt", "failed to allocate RemoteService");
     return;
@@ -316,10 +316,10 @@ void RemoteServiceManager::AddService(const ServiceData& service_data) {
 
 void RemoteServiceManager::DiscoverServicesOfKind(ServiceKind kind, std::vector<UUID> service_uuids,
                                                   att::ResultFunction<> status_cb) {
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   ServiceCallback svc_cb = [self](const ServiceData& service_data) {
     // The Client's Bearer may outlive this object.
-    if (self) {
+    if (self.is_alive()) {
       self->AddService(service_data);
     }
   };
@@ -334,12 +334,12 @@ void RemoteServiceManager::DiscoverServicesOfKind(ServiceKind kind, std::vector<
 
 void RemoteServiceManager::DiscoverServices(std::vector<UUID> service_uuids,
                                             att::ResultFunction<> status_cb) {
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   auto status_cb_wrapper = [self, status_cb = std::move(status_cb)](att::Result<> status) {
     TRACE_DURATION("bluetooth", "gatt::RemoteServiceManager::DiscoverServices::status_cb_wrapper");
 
     // The Client's Bearer may outlive this object.
-    if (!self) {
+    if (!self.is_alive()) {
       status_cb(ToResult(HostError::kFailed));
       return;
     }
@@ -354,7 +354,7 @@ void RemoteServiceManager::DiscoverServices(std::vector<UUID> service_uuids,
 
   ServiceCallback svc_cb = [self](const ServiceData& service_data) {
     // The Client's Bearer may outlive this object.
-    if (self) {
+    if (self.is_alive()) {
       self->AddService(service_data);
     }
   };
@@ -367,10 +367,10 @@ void RemoteServiceManager::DiscoverServices(std::vector<UUID> service_uuids,
 void RemoteServiceManager::DiscoverPrimaryAndSecondaryServicesInRange(
     std::vector<UUID> service_uuids, att::Handle start, att::Handle end, ServiceCallback service_cb,
     att::ResultFunction<> status_cb) {
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   auto primary_discov_cb = [self, service_uuids, start, end, svc_cb = service_cb.share(),
                             status_cb = std::move(status_cb)](att::Result<> status) mutable {
-    if (!self || status.is_error()) {
+    if (!self.is_alive() || status.is_error()) {
       status_cb(status);
       return;
     }
@@ -418,9 +418,9 @@ void RemoteServiceManager::ListServices(const std::vector<UUID>& uuids,
   }
 }
 
-fxl::WeakPtr<RemoteService> RemoteServiceManager::FindService(att::Handle handle) {
+RemoteService::WeakPtr RemoteServiceManager::FindService(att::Handle handle) {
   auto iter = services_.find(handle);
-  return iter == services_.end() ? nullptr : iter->second->GetWeakPtr();
+  return iter == services_.end() ? RemoteService::WeakPtr() : iter->second->GetWeakPtr();
 }
 
 void RemoteServiceManager::OnNotification(bool /*indication*/, att::Handle value_handle,
@@ -502,9 +502,9 @@ void RemoteServiceManager::MaybeHandleNextServiceChangedNotification(
   current_service_change_ = ServiceChangedState{.value = queued_service_changes_.front()};
   queued_service_changes_.pop();
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   ServiceCallback svc_cb = [self](const ServiceData& service_data) {
-    if (self) {
+    if (self.is_alive()) {
       BT_ASSERT(self->current_service_change_.has_value());
       // gatt::Client verifies that service discovery results are in the requested range.
       BT_ASSERT(service_data.range_start >=
@@ -515,7 +515,7 @@ void RemoteServiceManager::MaybeHandleNextServiceChangedNotification(
   };
 
   att::ResultFunction<> status_cb = [self](att::Result<> status) mutable {
-    if (!self) {
+    if (!self.is_alive()) {
       return;
     }
 
@@ -575,7 +575,7 @@ void RemoteServiceManager::ProcessServiceChangedDiscoveryResults(
     service_iter->second->set_service_changed(true);
     service_iter->second.reset();
 
-    auto new_service = std::make_unique<RemoteService>(new_service_data, client_->AsWeakPtr());
+    auto new_service = std::make_unique<RemoteService>(new_service_data, client_->GetWeakPtr());
     BT_ASSERT(new_service->handle() == service_iter->first);
     modified_services.push_back(new_service->GetWeakPtr());
     service_iter->second = std::move(new_service);
@@ -584,7 +584,7 @@ void RemoteServiceManager::ProcessServiceChangedDiscoveryResults(
   ServiceList added_services;
   added_services.reserve(added_data.size());
   for (ServiceData service_data : added_data) {
-    auto service = std::make_unique<RemoteService>(service_data, client_->AsWeakPtr());
+    auto service = std::make_unique<RemoteService>(service_data, client_->GetWeakPtr());
     added_services.push_back(service->GetWeakPtr());
     auto [_, inserted] = services_.try_emplace(service->handle(), std::move(service));
     BT_ASSERT_MSG(inserted, "service with handle (%#.4x) already exists", service->handle());

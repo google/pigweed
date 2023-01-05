@@ -131,7 +131,7 @@ class Gatt2ServerServerTest : public bt::gatt::testing::FakeLayerTest {
   void SetUp() override {
     // Create and connect to production GATT2 Server implementation
     fidl::InterfaceHandle<fbg::Server> server_handle;
-    server_ = std::make_unique<Gatt2ServerServer>(gatt()->AsWeakPtr(), server_handle.NewRequest());
+    server_ = std::make_unique<Gatt2ServerServer>(gatt()->GetWeakPtr(), server_handle.NewRequest());
     server_ptr_ = server_handle.Bind();
   }
 
@@ -172,8 +172,8 @@ TEST_F(Gatt2ServerServerTest, PublishAndRemoveServiceWithTwoCharacteristicsSucce
                                std::move(cb));
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count, 1);
-  ASSERT_EQ(gatt()->local_services().size(), 1u);
-  bt::gatt::Service* service = gatt()->local_services().begin()->second.service.get();
+  ASSERT_EQ(fake_gatt()->local_services().size(), 1u);
+  bt::gatt::Service* service = fake_gatt()->local_services().begin()->second.service.get();
   EXPECT_EQ(service->type(), svc_type);
   EXPECT_TRUE(service->primary());
   ASSERT_EQ(service->characteristics().size(), 2u);
@@ -182,7 +182,7 @@ TEST_F(Gatt2ServerServerTest, PublishAndRemoveServiceWithTwoCharacteristicsSucce
 
   request.Close(ZX_ERR_PEER_CLOSED);
   RunLoopUntilIdle();
-  EXPECT_EQ(gatt()->local_services().size(), 0u);
+  EXPECT_EQ(fake_gatt()->local_services().size(), 0u);
 }
 
 TEST_F(Gatt2ServerServerTest, DestroyingServerUnregistersService) {
@@ -200,10 +200,10 @@ TEST_F(Gatt2ServerServerTest, DestroyingServerUnregistersService) {
   server_ptr()->PublishService(std::move(svc_info), std::move(local_service_handle), std::move(cb));
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count, 1);
-  ASSERT_EQ(gatt()->local_services().size(), 1u);
-  EXPECT_EQ(gatt()->local_services().begin()->second.service->type().value(), svc_type);
+  ASSERT_EQ(fake_gatt()->local_services().size(), 1u);
+  EXPECT_EQ(fake_gatt()->local_services().begin()->second.service->type().value(), svc_type);
   DestroyServer();
-  EXPECT_EQ(gatt()->local_services().size(), 0u);
+  EXPECT_EQ(fake_gatt()->local_services().size(), 0u);
 }
 
 TEST_F(Gatt2ServerServerTest, PublishServiceWithoutHandleFails) {
@@ -222,7 +222,7 @@ TEST_F(Gatt2ServerServerTest, PublishServiceWithoutHandleFails) {
   server_ptr()->PublishService(std::move(svc_info), std::move(local_service_handle), std::move(cb));
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count, 1);
-  EXPECT_EQ(gatt()->local_services().size(), 0u);
+  EXPECT_EQ(fake_gatt()->local_services().size(), 0u);
 }
 
 TEST_F(Gatt2ServerServerTest, PublishServiceWithoutTypeFails) {
@@ -241,7 +241,7 @@ TEST_F(Gatt2ServerServerTest, PublishServiceWithoutTypeFails) {
   server_ptr()->PublishService(std::move(svc_info), std::move(local_service_handle), std::move(cb));
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count, 1);
-  EXPECT_EQ(gatt()->local_services().size(), 0u);
+  EXPECT_EQ(fake_gatt()->local_services().size(), 0u);
 }
 
 TEST_F(Gatt2ServerServerTest, PublishServiceWithoutCharacteristicsFails) {
@@ -260,7 +260,7 @@ TEST_F(Gatt2ServerServerTest, PublishServiceWithoutCharacteristicsFails) {
   server_ptr()->PublishService(std::move(svc_info), std::move(local_service_handle), std::move(cb));
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count, 1);
-  EXPECT_EQ(gatt()->local_services().size(), 0u);
+  EXPECT_EQ(fake_gatt()->local_services().size(), 0u);
 }
 
 TEST_F(Gatt2ServerServerTest, PublishServiceWithReusedHandleFails) {
@@ -278,7 +278,7 @@ TEST_F(Gatt2ServerServerTest, PublishServiceWithReusedHandleFails) {
                                std::move(cb_0));
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count_0, 1);
-  EXPECT_EQ(gatt()->local_services().size(), 1u);
+  EXPECT_EQ(fake_gatt()->local_services().size(), 1u);
 
   fbg::ServiceInfo svc_info_1 = BuildSimpleService();
 
@@ -295,7 +295,7 @@ TEST_F(Gatt2ServerServerTest, PublishServiceWithReusedHandleFails) {
                                std::move(cb_1));
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count_1, 1);
-  EXPECT_EQ(gatt()->local_services().size(), 1u);
+  EXPECT_EQ(fake_gatt()->local_services().size(), 1u);
 }
 
 TEST_F(Gatt2ServerServerTest, PublishServiceWithReusedHandleAcrossTwoGattServersSuccceeds) {
@@ -315,7 +315,7 @@ TEST_F(Gatt2ServerServerTest, PublishServiceWithReusedHandleAcrossTwoGattServers
                                std::move(cb_0));
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count_0, 1);
-  EXPECT_EQ(gatt()->local_services().size(), 1u);
+  EXPECT_EQ(fake_gatt()->local_services().size(), 1u);
 
   fidl::InterfaceHandle<fbg::LocalService> local_service_handle_1;
   auto request_1 = local_service_handle_1.NewRequest();
@@ -329,14 +329,14 @@ TEST_F(Gatt2ServerServerTest, PublishServiceWithReusedHandleAcrossTwoGattServers
   // Create and connect to a second GATT Server implementation
   fidl::InterfaceHandle<fbg::Server> server_handle_1;
   auto server_1 =
-      std::make_unique<Gatt2ServerServer>(gatt()->AsWeakPtr(), server_handle_1.NewRequest());
+      std::make_unique<Gatt2ServerServer>(gatt()->GetWeakPtr(), server_handle_1.NewRequest());
   fidl::InterfacePtr<fuchsia::bluetooth::gatt2::Server> server_ptr_1 = server_handle_1.Bind();
   // Publish an identical service.
   server_ptr_1->PublishService(std::move(svc_info_1), std::move(local_service_handle_1),
                                std::move(cb_1));
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count_1, 1);
-  ASSERT_EQ(gatt()->local_services().size(), 2u);
+  ASSERT_EQ(fake_gatt()->local_services().size(), 2u);
 }
 
 TEST_F(Gatt2ServerServerTest, PublishTwoServicesSuccess) {
@@ -355,8 +355,8 @@ TEST_F(Gatt2ServerServerTest, PublishTwoServicesSuccess) {
                                std::move(cb_0));
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count_0, 1);
-  ASSERT_EQ(gatt()->local_services().size(), 1u);
-  bt::gatt::Service* service = gatt()->local_services().begin()->second.service.get();
+  ASSERT_EQ(fake_gatt()->local_services().size(), 1u);
+  bt::gatt::Service* service = fake_gatt()->local_services().begin()->second.service.get();
   EXPECT_EQ(service->type(), svc_type_0);
 
   bt::UInt128 svc_type_1 = {6};
@@ -374,8 +374,8 @@ TEST_F(Gatt2ServerServerTest, PublishTwoServicesSuccess) {
                                std::move(cb_1));
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count_1, 1);
-  ASSERT_EQ(gatt()->local_services().size(), 2u);
-  auto svc_iter = gatt()->local_services().begin();
+  ASSERT_EQ(fake_gatt()->local_services().size(), 2u);
+  auto svc_iter = fake_gatt()->local_services().begin();
   EXPECT_EQ(svc_iter->second.service->type(), svc_type_0);
   svc_iter++;
   EXPECT_EQ(svc_iter->second.service->type(), svc_type_1);
@@ -383,7 +383,7 @@ TEST_F(Gatt2ServerServerTest, PublishTwoServicesSuccess) {
   request_0.Close(ZX_ERR_PEER_CLOSED);
   request_1.Close(ZX_ERR_PEER_CLOSED);
   RunLoopUntilIdle();
-  EXPECT_EQ(gatt()->local_services().size(), 0u);
+  EXPECT_EQ(fake_gatt()->local_services().size(), 0u);
 }
 
 TEST_F(Gatt2ServerServerTest, PublishSecondaryService) {
@@ -402,8 +402,8 @@ TEST_F(Gatt2ServerServerTest, PublishSecondaryService) {
   server_ptr()->PublishService(std::move(svc_info), std::move(local_service_handle), std::move(cb));
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count, 1);
-  ASSERT_EQ(gatt()->local_services().size(), 1u);
-  auto svc_iter = gatt()->local_services().begin();
+  ASSERT_EQ(fake_gatt()->local_services().size(), 1u);
+  auto svc_iter = fake_gatt()->local_services().begin();
   EXPECT_EQ(svc_iter->second.service->type(), svc_type);
   EXPECT_FALSE(svc_iter->second.service->primary());
 }
@@ -434,8 +434,8 @@ TEST_F(Gatt2ServerServerTest, ReadSuccess) {
   server_ptr()->PublishService(std::move(svc_info), std::move(local_service_handle), std::move(cb));
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count, 1);
-  ASSERT_EQ(gatt()->local_services().size(), 1u);
-  auto svc_iter = gatt()->local_services().begin();
+  ASSERT_EQ(fake_gatt()->local_services().size(), 1u);
+  auto svc_iter = fake_gatt()->local_services().begin();
   ASSERT_EQ(svc_iter->second.service->characteristics().size(), 1u);
 
   bt::gatt::IdType svc_id = svc_iter->first;
@@ -491,8 +491,8 @@ TEST_F(Gatt2ServerServerTest, ReadErrorResponse) {
   server_ptr()->PublishService(std::move(svc_info), std::move(local_service_handle), std::move(cb));
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count, 1);
-  ASSERT_EQ(gatt()->local_services().size(), 1u);
-  auto svc_iter = gatt()->local_services().begin();
+  ASSERT_EQ(fake_gatt()->local_services().size(), 1u);
+  auto svc_iter = fake_gatt()->local_services().begin();
   ASSERT_EQ(svc_iter->second.service->characteristics().size(), 1u);
 
   bt::gatt::IdType svc_id = svc_iter->first;
@@ -545,8 +545,8 @@ TEST_F(Gatt2ServerServerTest, WriteSuccess) {
   server_ptr()->PublishService(std::move(svc_info), std::move(local_service_handle), std::move(cb));
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count, 1);
-  ASSERT_EQ(gatt()->local_services().size(), 1u);
-  auto svc_iter = gatt()->local_services().begin();
+  ASSERT_EQ(fake_gatt()->local_services().size(), 1u);
+  auto svc_iter = fake_gatt()->local_services().begin();
   ASSERT_EQ(svc_iter->second.service->characteristics().size(), 1u);
 
   bt::gatt::IdType svc_id = svc_iter->first;
@@ -606,8 +606,8 @@ TEST_F(Gatt2ServerServerTest, WriteError) {
   server_ptr()->PublishService(std::move(svc_info), std::move(local_service_handle), std::move(cb));
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count, 1);
-  ASSERT_EQ(gatt()->local_services().size(), 1u);
-  auto svc_iter = gatt()->local_services().begin();
+  ASSERT_EQ(fake_gatt()->local_services().size(), 1u);
+  auto svc_iter = fake_gatt()->local_services().begin();
   ASSERT_EQ(svc_iter->second.service->characteristics().size(), 1u);
 
   bt::gatt::IdType svc_id = svc_iter->first;
@@ -647,8 +647,8 @@ TEST_F(Gatt2ServerServerTest, ClientCharacteristicConfiguration) {
   server_ptr()->PublishService(std::move(svc_info), std::move(local_service_handle), std::move(cb));
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count, 1);
-  ASSERT_EQ(gatt()->local_services().size(), 1u);
-  auto svc_iter = gatt()->local_services().begin();
+  ASSERT_EQ(fake_gatt()->local_services().size(), 1u);
+  auto svc_iter = fake_gatt()->local_services().begin();
   bt::gatt::IdType svc_id = svc_iter->first;
 
   bt::PeerId peer_id(4);
@@ -683,8 +683,8 @@ TEST_F(Gatt2ServerServerTest, IndicateAllPeers) {
   server_ptr()->PublishService(std::move(svc_info), std::move(local_service_handle), std::move(cb));
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count, 1);
-  ASSERT_EQ(gatt()->local_services().size(), 1u);
-  auto svc_iter = gatt()->local_services().begin();
+  ASSERT_EQ(fake_gatt()->local_services().size(), 1u);
+  auto svc_iter = fake_gatt()->local_services().begin();
 
   fbg::ValueChangedParameters params_0;
   params_0.set_handle(fbg::Handle{chrc_handle});
@@ -754,8 +754,8 @@ TEST_F(Gatt2ServerServerTest, IndicateAllPeersError) {
   server_ptr()->PublishService(std::move(svc_info), std::move(local_service_handle), std::move(cb));
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count, 1);
-  ASSERT_EQ(gatt()->local_services().size(), 1u);
-  auto svc_iter = gatt()->local_services().begin();
+  ASSERT_EQ(fake_gatt()->local_services().size(), 1u);
+  auto svc_iter = fake_gatt()->local_services().begin();
 
   fbg::ValueChangedParameters params;
   params.set_handle(fbg::Handle{chrc_handle});
@@ -800,7 +800,7 @@ TEST_F(Gatt2ServerServerTest, IndicateValueChangedParametersMissingHandleClosesS
   server_ptr()->PublishService(std::move(svc_info), std::move(local_service_handle), std::move(cb));
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count, 1);
-  ASSERT_EQ(gatt()->local_services().size(), 1u);
+  ASSERT_EQ(fake_gatt()->local_services().size(), 1u);
   ASSERT_FALSE(local_svc.error());
 
   // No handle is set.
@@ -814,7 +814,7 @@ TEST_F(Gatt2ServerServerTest, IndicateValueChangedParametersMissingHandleClosesS
   RunLoopUntilIdle();
   ASSERT_TRUE(local_svc.error());
   EXPECT_EQ(local_svc.error().value(), ZX_ERR_PEER_CLOSED);
-  EXPECT_TRUE(gatt()->local_services().empty());
+  EXPECT_TRUE(fake_gatt()->local_services().empty());
   zx_signals_t observed;
   zx_status_t status = confirm_ours_0.wait_one(ZX_EVENTPAIR_PEER_CLOSED | ZX_EVENTPAIR_SIGNALED,
                                                /*deadline=*/zx::time(0), &observed);
@@ -838,7 +838,7 @@ TEST_F(Gatt2ServerServerTest, IndicateValueChangedParametersMissingValueClosesSe
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count, 1);
   ASSERT_FALSE(local_svc.error());
-  ASSERT_EQ(gatt()->local_services().size(), 1u);
+  ASSERT_EQ(fake_gatt()->local_services().size(), 1u);
 
   // No value is set.
   fbg::ValueChangedParameters params_1;
@@ -850,7 +850,7 @@ TEST_F(Gatt2ServerServerTest, IndicateValueChangedParametersMissingValueClosesSe
   RunLoopUntilIdle();
   ASSERT_TRUE(local_svc.error());
   EXPECT_EQ(local_svc.error().value(), ZX_ERR_PEER_CLOSED);
-  EXPECT_TRUE(gatt()->local_services().empty());
+  EXPECT_TRUE(fake_gatt()->local_services().empty());
   zx_signals_t observed;
   zx_status_t status = confirm_ours_1.wait_one(ZX_EVENTPAIR_PEER_CLOSED | ZX_EVENTPAIR_SIGNALED,
                                                /*deadline=*/zx::time(0), &observed);
@@ -873,8 +873,8 @@ TEST_F(Gatt2ServerServerTest, Indicate2PeersSuccess) {
   server_ptr()->PublishService(std::move(svc_info), std::move(local_service_handle), std::move(cb));
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count, 1);
-  ASSERT_EQ(gatt()->local_services().size(), 1u);
-  auto svc_iter = gatt()->local_services().begin();
+  ASSERT_EQ(fake_gatt()->local_services().size(), 1u);
+  auto svc_iter = fake_gatt()->local_services().begin();
 
   bt::PeerId peer_0(0);
   bt::PeerId peer_1(1);
@@ -931,8 +931,8 @@ TEST_F(Gatt2ServerServerTest, Indicate2PeersFirstOneFails) {
   server_ptr()->PublishService(std::move(svc_info), std::move(local_service_handle), std::move(cb));
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count, 1);
-  ASSERT_EQ(gatt()->local_services().size(), 1u);
-  auto svc_iter = gatt()->local_services().begin();
+  ASSERT_EQ(fake_gatt()->local_services().size(), 1u);
+  auto svc_iter = fake_gatt()->local_services().begin();
 
   fbg::ValueChangedParameters params;
   params.set_handle(fbg::Handle{chrc_handle});
@@ -975,8 +975,8 @@ TEST_F(Gatt2ServerServerTest, Indicate2PeersBothFail) {
   server_ptr()->PublishService(std::move(svc_info), std::move(local_service_handle), std::move(cb));
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count, 1);
-  ASSERT_EQ(gatt()->local_services().size(), 1u);
-  auto svc_iter = gatt()->local_services().begin();
+  ASSERT_EQ(fake_gatt()->local_services().size(), 1u);
+  auto svc_iter = fake_gatt()->local_services().begin();
 
   fbg::ValueChangedParameters params;
   params.set_handle(fbg::Handle{chrc_handle});
@@ -1019,8 +1019,8 @@ TEST_F(Gatt2ServerServerTest, NotifyAllPeers) {
   server_ptr()->PublishService(std::move(svc_info), std::move(local_service_handle), std::move(cb));
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count, 1);
-  ASSERT_EQ(gatt()->local_services().size(), 1u);
-  auto svc_iter = gatt()->local_services().begin();
+  ASSERT_EQ(fake_gatt()->local_services().size(), 1u);
+  auto svc_iter = fake_gatt()->local_services().begin();
 
   fbg::ValueChangedParameters params_0;
   params_0.set_handle(fbg::Handle{chrc_handle});
@@ -1062,8 +1062,8 @@ TEST_F(Gatt2ServerServerTest, NotifyTwoPeers) {
   server_ptr()->PublishService(std::move(svc_info), std::move(local_service_handle), std::move(cb));
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count, 1);
-  ASSERT_EQ(gatt()->local_services().size(), 1u);
-  auto svc_iter = gatt()->local_services().begin();
+  ASSERT_EQ(fake_gatt()->local_services().size(), 1u);
+  auto svc_iter = fake_gatt()->local_services().begin();
 
   fbg::ValueChangedParameters params_0;
   params_0.set_handle(fbg::Handle{chrc_handle});
@@ -1097,7 +1097,7 @@ TEST_F(Gatt2ServerServerTest, NotifyInvalidParametersMissingHandleClosesService)
   server_ptr()->PublishService(std::move(svc_info), std::move(local_service_handle), std::move(cb));
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count, 1);
-  ASSERT_EQ(gatt()->local_services().size(), 1u);
+  ASSERT_EQ(fake_gatt()->local_services().size(), 1u);
   ASSERT_FALSE(local_svc.error());
 
   // Missing handle.
@@ -1107,7 +1107,7 @@ TEST_F(Gatt2ServerServerTest, NotifyInvalidParametersMissingHandleClosesService)
   RunLoopUntilIdle();
   ASSERT_TRUE(local_svc.error());
   EXPECT_EQ(local_svc.error().value(), ZX_ERR_PEER_CLOSED);
-  EXPECT_TRUE(gatt()->local_services().empty());
+  EXPECT_TRUE(fake_gatt()->local_services().empty());
 }
 
 TEST_F(Gatt2ServerServerTest, NotifyInvalidParametersMissingValueClosesService) {
@@ -1125,7 +1125,7 @@ TEST_F(Gatt2ServerServerTest, NotifyInvalidParametersMissingValueClosesService) 
   server_ptr()->PublishService(std::move(svc_info), std::move(local_service_handle), std::move(cb));
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count, 1);
-  ASSERT_EQ(gatt()->local_services().size(), 1u);
+  ASSERT_EQ(fake_gatt()->local_services().size(), 1u);
   ASSERT_FALSE(local_svc.error());
 
   // Missing value.
@@ -1135,7 +1135,7 @@ TEST_F(Gatt2ServerServerTest, NotifyInvalidParametersMissingValueClosesService) 
   RunLoopUntilIdle();
   ASSERT_TRUE(local_svc.error());
   EXPECT_EQ(local_svc.error().value(), ZX_ERR_PEER_CLOSED);
-  EXPECT_TRUE(gatt()->local_services().empty());
+  EXPECT_TRUE(fake_gatt()->local_services().empty());
 }
 
 TEST_F(Gatt2ServerServerTest, ValueChangedFlowControl) {
@@ -1153,8 +1153,8 @@ TEST_F(Gatt2ServerServerTest, ValueChangedFlowControl) {
   server_ptr()->PublishService(std::move(svc_info), std::move(local_service_handle), std::move(cb));
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count, 1);
-  ASSERT_EQ(gatt()->local_services().size(), 1u);
-  auto svc_iter = gatt()->local_services().begin();
+  ASSERT_EQ(fake_gatt()->local_services().size(), 1u);
+  auto svc_iter = fake_gatt()->local_services().begin();
 
   for (size_t i = 0; i < 3 * fbg::INITIAL_VALUE_CHANGED_CREDITS; i++) {
     fbg::ValueChangedParameters params;
@@ -1211,7 +1211,7 @@ TEST_F(Gatt2ServerServerTest, PublishServiceWithInvalidCharacteristic) {
                                std::move(cb));
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count, 1);
-  ASSERT_EQ(gatt()->local_services().size(), 0u);
+  ASSERT_EQ(fake_gatt()->local_services().size(), 0u);
 }
 
 TEST_F(Gatt2ServerServerTest, PublishServiceReturnsInvalidId) {
@@ -1228,11 +1228,11 @@ TEST_F(Gatt2ServerServerTest, PublishServiceReturnsInvalidId) {
     EXPECT_EQ(res.err(), fbg::PublishServiceError::UNLIKELY_ERROR);
   };
 
-  gatt()->set_register_service_fails(true);
+  fake_gatt()->set_register_service_fails(true);
   server_ptr()->PublishService(std::move(svc_info), std::move(local_service_handle), std::move(cb));
   RunLoopUntilIdle();
   EXPECT_EQ(cb_count, 1);
-  ASSERT_EQ(gatt()->local_services().size(), 0u);
+  ASSERT_EQ(fake_gatt()->local_services().size(), 0u);
 }
 
 }  // namespace

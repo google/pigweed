@@ -11,7 +11,6 @@
 #include <memory>
 #include <vector>
 
-
 #include "src/connectivity/bluetooth/core/bt-host/att/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
@@ -59,7 +58,7 @@ class RemoteServiceManager final {
   // Returns the RemoteService with the requested range start |handle| or
   // nullptr if it is not recognized. This method may fail if called before or
   // during initialization.
-  fxl::WeakPtr<RemoteService> FindService(att::Handle handle);
+  RemoteService::WeakPtr FindService(att::Handle handle);
 
  private:
   using ServiceMap = std::map<att::Handle, std::unique_ptr<RemoteService>>;
@@ -174,7 +173,7 @@ class RemoteServiceManager final {
   // service changes have been processed.
   std::vector<fit::callback<void()>> service_changes_complete_callbacks_;
 
-  fxl::WeakPtrFactory<RemoteServiceManager> weak_ptr_factory_;
+  WeakSelf<RemoteServiceManager> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(RemoteServiceManager);
 };

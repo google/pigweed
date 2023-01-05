@@ -49,7 +49,7 @@ class AdapterImpl final : public Adapter {
   // There must be an async_t dispatcher registered as a default when an AdapterImpl
   // instance is created. The Adapter instance will use it for all of its
   // asynchronous tasks.
-  explicit AdapterImpl(hci::Transport::WeakPtr hci, fxl::WeakPtr<gatt::GATT> gatt,
+  explicit AdapterImpl(hci::Transport::WeakPtr hci, gatt::GATT::WeakPtr gatt,
                        std::unique_ptr<l2cap::ChannelManager> l2cap);
   ~AdapterImpl() override;
 
@@ -428,7 +428,7 @@ class AdapterImpl final : public Adapter {
 
   // The GATT profile. We use this reference to add and remove data bearers and
   // for service discovery.
-  fxl::WeakPtr<gatt::GATT> gatt_;
+  gatt::GATT::WeakPtr gatt_;
 
   // Objects that abstract the controller for connection and advertising
   // procedures.
@@ -460,7 +460,7 @@ class AdapterImpl final : public Adapter {
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdapterImpl);
 };
 
-AdapterImpl::AdapterImpl(hci::Transport::WeakPtr hci, fxl::WeakPtr<gatt::GATT> gatt,
+AdapterImpl::AdapterImpl(hci::Transport::WeakPtr hci, gatt::GATT::WeakPtr gatt,
                          std::unique_ptr<l2cap::ChannelManager> l2cap)
     : identifier_(Random<AdapterId>()),
       dispatcher_(async_get_default_dispatcher()),
@@ -472,7 +472,7 @@ AdapterImpl::AdapterImpl(hci::Transport::WeakPtr hci, fxl::WeakPtr<gatt::GATT> g
       weak_self_(this),
       weak_self_adapter_(this) {
   BT_DEBUG_ASSERT(hci_.is_alive());
-  BT_DEBUG_ASSERT(gatt_);
+  BT_DEBUG_ASSERT(gatt_.is_alive());
   BT_DEBUG_ASSERT_MSG(dispatcher_, "must create on a thread with a dispatcher");
 
   auto self = weak_self_.GetWeakPtr();
@@ -543,7 +543,7 @@ bool AdapterImpl::Initialize(InitializeCallback callback, fit::closure transport
       return;
     }
     init_seq_runner_ =
-      std::make_unique<hci::SequentialCommandRunner>(hci_->command_channel()->AsWeakPtr());
+        std::make_unique<hci::SequentialCommandRunner>(hci_->command_channel()->AsWeakPtr());
 
     InitializeStep1();
   });
@@ -1230,7 +1230,7 @@ bool AdapterImpl::IsLeRandomAddressChangeAllowed() {
          hci_le_connector_->AllowsRandomAddressChange();
 }
 
-std::unique_ptr<Adapter> Adapter::Create(hci::Transport::WeakPtr hci, fxl::WeakPtr<gatt::GATT> gatt,
+std::unique_ptr<Adapter> Adapter::Create(hci::Transport::WeakPtr hci, gatt::GATT::WeakPtr gatt,
                                          std::unique_ptr<l2cap::ChannelManager> l2cap) {
   return std::make_unique<AdapterImpl>(hci, gatt, std::move(l2cap));
 }

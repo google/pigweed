@@ -27,7 +27,7 @@ constexpr bt::UUID kChrcUuid(uint16_t{113u});
 
 // Factory function for tests of client-facing behavior that don't care about the server
 std::unique_ptr<Server> CreateMockServer(PeerId peer_id,
-                                         fxl::WeakPtr<LocalServiceManager> local_services) {
+                                         LocalServiceManager::WeakPtr local_services) {
   return std::make_unique<testing::MockServer>(peer_id, std::move(local_services));
 }
 
@@ -85,13 +85,13 @@ class GattTest : public ::gtest::TestLoopFixture {
 
   GATT* gatt() const { return gatt_.get(); }
 
-  fxl::WeakPtr<testing::FakeClient> fake_client() const { return fake_client_weak_; }
+  testing::FakeClient::WeakPtr fake_client() const { return fake_client_weak_; }
   std::unique_ptr<Client> take_client() { return std::move(client_); }
 
  private:
   std::unique_ptr<GATT> gatt_;
   std::unique_ptr<Client> client_;
-  fxl::WeakPtr<testing::FakeClient> fake_client_weak_;
+  testing::FakeClient::WeakPtr fake_client_weak_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GattTest);
 };
@@ -309,8 +309,8 @@ TEST_F(GattTest, MultipleRegisterRemoteServiceWatcherForPeers) {
 }
 
 TEST_F(GattTest, ServiceDiscoveryFailureShutsDownConnection) {
-  fxl::WeakPtr<testing::MockServer> mock_server;
-  auto mock_server_factory = [&](PeerId peer_id, fxl::WeakPtr<LocalServiceManager> local_services) {
+  testing::MockServer::WeakPtr mock_server;
+  auto mock_server_factory = [&](PeerId peer_id, LocalServiceManager::WeakPtr local_services) {
     auto unique_mock_server =
         std::make_unique<testing::MockServer>(peer_id, std::move(local_services));
     mock_server = unique_mock_server->AsMockWeakPtr();
@@ -319,7 +319,7 @@ TEST_F(GattTest, ServiceDiscoveryFailureShutsDownConnection) {
   fake_client()->set_discover_services_callback(
       [](ServiceKind kind) { return ToResult(att::ErrorCode::kRequestNotSupported); });
   gatt()->AddConnection(kPeerId, take_client(), std::move(mock_server_factory));
-  ASSERT_TRUE(mock_server);
+  ASSERT_TRUE(mock_server.is_alive());
   EXPECT_FALSE(mock_server->was_shut_down());
   gatt()->InitializeClient(kPeerId, std::vector<UUID>{});
   RunLoopUntilIdle();
@@ -338,15 +338,15 @@ TEST_F(GattTest, SendIndicationNoConnectionFails) {
 class GattTestBoolParam : public GattTest, public ::testing::WithParamInterface<bool> {};
 
 TEST_P(GattTestBoolParam, SendIndicationReceiveResponse) {
-  fxl::WeakPtr<testing::MockServer> mock_server;
-  auto mock_server_factory = [&](PeerId peer_id, fxl::WeakPtr<LocalServiceManager> local_services) {
+  testing::MockServer::WeakPtr mock_server;
+  auto mock_server_factory = [&](PeerId peer_id, LocalServiceManager::WeakPtr local_services) {
     auto unique_mock_server =
         std::make_unique<testing::MockServer>(peer_id, std::move(local_services));
     mock_server = unique_mock_server->AsMockWeakPtr();
     return unique_mock_server;
   };
   gatt()->AddConnection(kPeerId, take_client(), std::move(mock_server_factory));
-  ASSERT_TRUE(mock_server);
+  ASSERT_TRUE(mock_server.is_alive());
 
   // Configure how the mock server handles updates sent from the GATT object.
   IndicationCallback mock_ind_cb = nullptr;
@@ -394,15 +394,15 @@ TEST_F(GattTest, NotifyConnectedPeerWithConnectionDoesntCrash) {
   // Registering a service isn't strictly necessary, but makes for a more realistic test.
   IdType svc_id = RegisterArbitraryService();
 
-  fxl::WeakPtr<testing::MockServer> mock_server;
-  auto mock_server_factory = [&](PeerId peer_id, fxl::WeakPtr<LocalServiceManager> local_services) {
+  testing::MockServer::WeakPtr mock_server;
+  auto mock_server_factory = [&](PeerId peer_id, LocalServiceManager::WeakPtr local_services) {
     auto unique_mock_server =
         std::make_unique<testing::MockServer>(peer_id, std::move(local_services));
     mock_server = unique_mock_server->AsMockWeakPtr();
     return unique_mock_server;
   };
   gatt()->AddConnection(kPeerId, take_client(), std::move(mock_server_factory));
-  ASSERT_TRUE(mock_server);
+  ASSERT_TRUE(mock_server.is_alive());
 
   // Configure how the mock server handles updates sent from the GATT object.
   IndicationCallback mock_ind_cb = [](att::Result<>) {};  // no-op, but not-null
@@ -519,8 +519,8 @@ TEST_F(GattTest, MtuExchangeFailsListenersNotNotifiedConnectionShutdown) {
   fake_client()->set_exchange_mtu_status(ToResult(HostError::kFailed));
 
   // Track mock server
-  fxl::WeakPtr<testing::MockServer> mock_server;
-  auto mock_server_factory = [&](PeerId peer_id, fxl::WeakPtr<LocalServiceManager> local_services) {
+  testing::MockServer::WeakPtr mock_server;
+  auto mock_server_factory = [&](PeerId peer_id, LocalServiceManager::WeakPtr local_services) {
     auto unique_mock_server =
         std::make_unique<testing::MockServer>(peer_id, std::move(local_services));
     mock_server = unique_mock_server->AsMockWeakPtr();
@@ -532,7 +532,7 @@ TEST_F(GattTest, MtuExchangeFailsListenersNotNotifiedConnectionShutdown) {
   gatt()->InitializeClient(kPeerId0, {});
   RunLoopUntilIdle();
   EXPECT_FALSE(listener_invoked);
-  ASSERT_TRUE(mock_server);
+  ASSERT_TRUE(mock_server.is_alive());
   EXPECT_TRUE(mock_server->was_shut_down());
 }
 
@@ -545,8 +545,7 @@ class GattIndicateMultipleConnectedPeersTest : public GattTest {
     svc_id_ = RegisterArbitraryService();
 
     // Add first connection
-    auto mock_server_factory_0 = [&](PeerId peer_id,
-                                     fxl::WeakPtr<LocalServiceManager> local_services) {
+    auto mock_server_factory_0 = [&](PeerId peer_id, LocalServiceManager::WeakPtr local_services) {
       auto unique_mock_server =
           std::make_unique<testing::MockServer>(peer_id, std::move(local_services));
       mock_server_0_ = unique_mock_server->AsMockWeakPtr();
@@ -554,11 +553,10 @@ class GattIndicateMultipleConnectedPeersTest : public GattTest {
     };
     gatt()->AddConnection(kPeerId0, std::make_unique<testing::FakeClient>(dispatcher()),
                           std::move(mock_server_factory_0));
-    ASSERT_TRUE(mock_server_0_);
+    ASSERT_TRUE(mock_server_0_.is_alive());
 
     // Add second connection
-    auto mock_server_factory_1 = [&](PeerId peer_id,
-                                     fxl::WeakPtr<LocalServiceManager> local_services) {
+    auto mock_server_factory_1 = [&](PeerId peer_id, LocalServiceManager::WeakPtr local_services) {
       auto unique_mock_server =
           std::make_unique<testing::MockServer>(peer_id, std::move(local_services));
       mock_server_1_ = unique_mock_server->AsMockWeakPtr();
@@ -566,7 +564,7 @@ class GattIndicateMultipleConnectedPeersTest : public GattTest {
     };
     gatt()->AddConnection(kPeerId1, std::make_unique<testing::FakeClient>(dispatcher()),
                           std::move(mock_server_factory_1));
-    ASSERT_TRUE(mock_server_1_);
+    ASSERT_TRUE(mock_server_1_.is_alive());
 
     // Configure how the mock servers handle updates from the GATT object.
     testing::UpdateHandler handler_0 = [&](auto /*ignore*/, auto /*ignore*/,
@@ -587,8 +585,8 @@ class GattIndicateMultipleConnectedPeersTest : public GattTest {
   IndicationCallback indication_ack_cb_0_;
   IndicationCallback indication_ack_cb_1_;
   IdType svc_id_;
-  fxl::WeakPtr<testing::MockServer> mock_server_0_;
-  fxl::WeakPtr<testing::MockServer> mock_server_1_;
+  testing::MockServer::WeakPtr mock_server_0_;
+  testing::MockServer::WeakPtr mock_server_1_;
 };
 
 TEST_F(GattIndicateMultipleConnectedPeersTest, UpdateConnectedPeersWaitsTillAllCallbacksComplete) {

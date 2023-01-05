@@ -9,9 +9,8 @@ namespace bthost {
 namespace fbg = fuchsia::bluetooth::gatt2;
 
 LowEnergyConnectionServer::LowEnergyConnectionServer(
-    fxl::WeakPtr<bt::gatt::GATT> gatt,
-    std::unique_ptr<bt::gap::LowEnergyConnectionHandle> connection, zx::channel handle,
-    fit::callback<void()> closed_cb)
+    bt::gatt::GATT::WeakPtr gatt, std::unique_ptr<bt::gap::LowEnergyConnectionHandle> connection,
+    zx::channel handle, fit::callback<void()> closed_cb)
     : ServerBase(this, std::move(handle)),
       conn_(std::move(connection)),
       closed_handler_(std::move(closed_cb)),

@@ -16,7 +16,7 @@ namespace bt::gatt::internal {
 
 Connection::Connection(std::unique_ptr<Client> client, std::unique_ptr<Server> server,
                        RemoteServiceWatcher svc_watcher, async_dispatcher_t* gatt_dispatcher)
-    : server_(std::move(server)), weak_ptr_factory_(this) {
+    : server_(std::move(server)), weak_self_(this) {
   BT_ASSERT(svc_watcher);
 
   remote_service_manager_ =
@@ -29,8 +29,8 @@ void Connection::Initialize(std::vector<UUID> service_uuids, fit::callback<void(
 
   auto uuids_count = service_uuids.size();
   // status_cb must not capture att_ in order to prevent reference cycle.
-  auto status_cb = [self = weak_ptr_factory_.GetWeakPtr(), uuids_count](att::Result<> status) {
-    if (!self) {
+  auto status_cb = [self = weak_self_.GetWeakPtr(), uuids_count](att::Result<> status) {
+    if (!self.is_alive()) {
       return;
     }
 

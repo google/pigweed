@@ -30,7 +30,8 @@ class Client {
   // Returns a weak pointer to this Client. The weak pointer should be checked
   // on the data bearer's thread only as Client can only be accessed on that
   // thread.
-  virtual fxl::WeakPtr<Client> AsWeakPtr() = 0;
+  using WeakPtr = WeakSelf<Client>::WeakPtr;
+  virtual Client::WeakPtr GetWeakPtr() = 0;
 
   // Returns the current ATT MTU.
   virtual uint16_t mtu() const = 0;

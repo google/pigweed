@@ -23,8 +23,6 @@
 #define LOG_TAG "fidl"
 
 using bt::sm::BondableMode;
-using fuchsia::bluetooth::ErrorCode;
-using fuchsia::bluetooth::Status;
 namespace fble = fuchsia::bluetooth::le;
 
 namespace bthost {
@@ -192,7 +190,7 @@ zx_status_t LowEnergyPeripheralServer::AdvertisementInstanceDeprecated::Register
 }
 
 LowEnergyPeripheralServer::LowEnergyPeripheralServer(bt::gap::Adapter::WeakPtr adapter,
-                                                     fxl::WeakPtr<bt::gatt::GATT> gatt,
+                                                     bt::gatt::GATT::WeakPtr gatt,
                                                      fidl::InterfaceRequest<Peripheral> request)
     : AdapterServerBase(std::move(adapter), this, std::move(request)),
       gatt_(std::move(gatt)),

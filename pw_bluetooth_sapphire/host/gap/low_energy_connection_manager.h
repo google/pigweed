@@ -83,7 +83,7 @@ class LowEnergyConnectionManager final {
   LowEnergyConnectionManager(hci::CommandChannel::WeakPtr cmd_channel,
                              hci::LocalAddressDelegate* addr_delegate,
                              hci::LowEnergyConnector* connector, PeerCache* peer_cache,
-                             l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt,
+                             l2cap::ChannelManager* l2cap, gatt::GATT::WeakPtr gatt,
                              LowEnergyDiscoveryManager::WeakPtr discovery_manager,
                              sm::SecurityManagerFactory sm_creator);
   ~LowEnergyConnectionManager();
@@ -288,7 +288,7 @@ class LowEnergyConnectionManager final {
 
   // The GATT layer reference, used to add and remove ATT data bearers and
   // service discovery.
-  fxl::WeakPtr<gatt::GATT> gatt_;
+  gatt::GATT::WeakPtr gatt_;
 
   // Local GATT service registry.
   std::unique_ptr<gatt::LocalServiceManager> gatt_registry_;

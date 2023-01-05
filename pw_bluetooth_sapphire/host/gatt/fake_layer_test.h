@@ -22,10 +22,14 @@ class FakeLayerTest : public ::gtest::TestLoopFixture {
   void TearDown() override;
 
  protected:
-  FakeLayer* gatt() const {
-    auto* ptr = static_cast<FakeLayer*>(weak_gatt_.get());
-    BT_ASSERT_MSG(ptr, "fake GATT layer accessed after it was destroyed!");
-    return ptr;
+  const GATT::WeakPtr& gatt() const {
+    BT_ASSERT_MSG(weak_gatt_.is_alive(), "fake GATT layer accessed after it was destroyed!");
+    return weak_gatt_;
+  }
+
+  const FakeLayer::WeakPtr& fake_gatt() const {
+    BT_ASSERT_MSG(weak_fake_layer_.is_alive(), "fake GATT layer accessed after it was destroyed!");
+    return weak_fake_layer_;
   }
 
   std::unique_ptr<FakeLayer> TakeGatt() { return std::move(gatt_); }
@@ -34,7 +38,8 @@ class FakeLayerTest : public ::gtest::TestLoopFixture {
   // Store both an owning and a weak pointer to allow test code to acquire ownership of the layer
   // object for dependency injection.
   std::unique_ptr<FakeLayer> gatt_;
-  const fxl::WeakPtr<GATT> weak_gatt_;
+  const GATT::WeakPtr weak_gatt_;
+  const FakeLayer::WeakPtr weak_fake_layer_;
 
   BT_DISALLOW_COPY_ASSIGN_AND_MOVE(FakeLayerTest);
 };

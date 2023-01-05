@@ -4,6 +4,8 @@
 
 #include "gatt2_remote_service_server.h"
 
+#include <utility>
+
 #include <measure_tape/hlcpp/hlcpp_measure_tape_for_read_by_type_result.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
@@ -114,9 +116,9 @@ bt::gatt::ReliableMode ReliableModeFromFidl(const fbg::WriteMode& mode) {
 }  // namespace
 
 Gatt2RemoteServiceServer::Gatt2RemoteServiceServer(
-    fxl::WeakPtr<bt::gatt::RemoteService> service, fxl::WeakPtr<bt::gatt::GATT> gatt,
-    bt::PeerId peer_id, fidl::InterfaceRequest<fuchsia::bluetooth::gatt2::RemoteService> request)
-    : GattServerBase(gatt, this, std::move(request)),
+    bt::gatt::RemoteService::WeakPtr service, bt::gatt::GATT::WeakPtr gatt, bt::PeerId peer_id,
+    fidl::InterfaceRequest<fuchsia::bluetooth::gatt2::RemoteService> request)
+    : GattServerBase(std::move(gatt), this, std::move(request)),
       service_(std::move(service)),
       peer_id_(peer_id),
       weak_ptr_factory_(this) {}

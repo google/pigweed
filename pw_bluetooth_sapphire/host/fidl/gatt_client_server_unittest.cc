@@ -22,7 +22,8 @@ class GattClientServerTest : public bt::gatt::testing::FakeLayerTest {
 
   void SetUp() override {
     fidl::InterfaceHandle<fgatt::Client> handle;
-    server_ = std::make_unique<GattClientServer>(kPeerId, gatt()->AsWeakPtr(), handle.NewRequest());
+    server_ =
+        std::make_unique<GattClientServer>(kPeerId, gatt()->GetWeakPtr(), handle.NewRequest());
     proxy_.Bind(std::move(handle));
   }
 
@@ -38,8 +39,8 @@ class GattClientServerTest : public bt::gatt::testing::FakeLayerTest {
 TEST_F(GattClientServerTest, ListServices) {
   bt::gatt::ServiceData data1(bt::gatt::ServiceKind::PRIMARY, 1, 1, kHeartRate);
   bt::gatt::ServiceData data2(bt::gatt::ServiceKind::SECONDARY, 2, 2, kHid);
-  gatt()->AddPeerService(kPeerId, data1);
-  gatt()->AddPeerService(kPeerId, data2);
+  fake_gatt()->AddPeerService(kPeerId, data1);
+  fake_gatt()->AddPeerService(kPeerId, data2);
 
   std::vector<fgatt::ServiceInfo> results;
   proxy()->ListServices({}, [&](auto status, auto cb_results) {

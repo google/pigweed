@@ -17,7 +17,7 @@ class Gatt2ClientServer : public GattServerBase<fuchsia::bluetooth::gatt2::Clien
  public:
   // |error_cb| will be called if the FIDL client closed the protocol or an error occurs and
   // this server should be destroyed.
-  Gatt2ClientServer(bt::gatt::PeerId peer_id, fxl::WeakPtr<bt::gatt::GATT> weak_gatt,
+  Gatt2ClientServer(bt::gatt::PeerId peer_id, bt::gatt::GATT::WeakPtr weak_gatt,
                     fidl::InterfaceRequest<fuchsia::bluetooth::gatt2::Client> request,
                     fit::callback<void()> error_cb);
   ~Gatt2ClientServer() override;
@@ -28,7 +28,7 @@ class Gatt2ClientServer : public GattServerBase<fuchsia::bluetooth::gatt2::Clien
                          std::vector<::fuchsia::bluetooth::gatt2::Handle>)>;
   using WatchServicesRequest = WatchServicesCallbackOnce;
 
-  using ServiceMap = std::unordered_map<bt::att::Handle, fxl::WeakPtr<bt::gatt::RemoteService>>;
+  using ServiceMap = std::unordered_map<bt::att::Handle, bt::gatt::RemoteService::WeakPtr>;
 
   struct WatchServicesResult {
     std::unordered_set<bt::att::Handle> removed;

@@ -18,16 +18,15 @@ RemoteCharacteristic::PendingNotifyRequest::PendingNotifyRequest(ValueCallback v
   BT_DEBUG_ASSERT(status_callback);
 }
 
-RemoteCharacteristic::RemoteCharacteristic(fxl::WeakPtr<Client> client,
-                                           const CharacteristicData& info)
+RemoteCharacteristic::RemoteCharacteristic(Client::WeakPtr client, const CharacteristicData& info)
     : info_(info),
       discovery_error_(false),
       ccc_handle_(att::kInvalidHandle),
       ext_prop_handle_(att::kInvalidHandle),
       next_notify_handler_id_(1u),
       client_(std::move(client)),
-      weak_ptr_factory_(this) {
-  BT_DEBUG_ASSERT(client_);
+      weak_self_(this) {
+  BT_DEBUG_ASSERT(client_.is_alive());
 }
 
 RemoteCharacteristic::~RemoteCharacteristic() {
@@ -57,7 +56,7 @@ void RemoteCharacteristic::UpdateDataWithExtendedProperties(ExtendedProperties e
 
 void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
                                                att::ResultFunction<> callback) {
-  BT_DEBUG_ASSERT(client_);
+  BT_DEBUG_ASSERT(client_.is_alive());
   BT_DEBUG_ASSERT(callback);
   BT_DEBUG_ASSERT(range_end >= info().value_handle);
 
@@ -69,9 +68,9 @@ void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
     return;
   }
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   auto desc_cb = [self](const DescriptorData& desc) {
-    if (!self)
+    if (!self.is_alive())
       return;
 
     if (self->discovery_error_)
@@ -106,7 +105,7 @@ void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
   };
 
   auto status_cb = [self, cb = std::move(callback)](att::Result<> status) mutable {
-    if (!self) {
+    if (!self.is_alive()) {
       cb(ToResult(HostError::kFailed));
       return;
     }
@@ -158,7 +157,7 @@ void RemoteCharacteristic::DiscoverDescriptors(att::Handle range_end,
 
 void RemoteCharacteristic::EnableNotifications(ValueCallback value_callback,
                                                NotifyStatusCallback status_callback) {
-  BT_DEBUG_ASSERT(client_);
+  BT_DEBUG_ASSERT(client_.is_alive());
   BT_DEBUG_ASSERT(value_callback);
   BT_DEBUG_ASSERT(status_callback);
 
@@ -204,10 +203,10 @@ void RemoteCharacteristic::EnableNotifications(ValueCallback value_callback,
     ccc_value[0] = static_cast<uint8_t>(kCCCNotificationBit);
   }
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   auto ccc_write_cb = [self](att::Result<> status) {
     bt_log(DEBUG, "gatt", "CCC write status (enable): %s", bt_str(status));
-    if (self) {
+    if (self.is_alive()) {
       self->ResolvePendingNotifyRequests(status);
     }
   };
@@ -216,7 +215,7 @@ void RemoteCharacteristic::EnableNotifications(ValueCallback value_callback,
 }
 
 bool RemoteCharacteristic::DisableNotifications(IdType handler_id) {
-  BT_DEBUG_ASSERT(client_);
+  BT_DEBUG_ASSERT(client_.is_alive());
 
   auto handler_iter = notify_handlers_.find(handler_id);
   if (handler_iter == notify_handlers_.end()) {
@@ -244,7 +243,7 @@ void RemoteCharacteristic::DisableNotificationsInternal() {
     return;
   }
 
-  if (!client_) {
+  if (!client_.is_alive()) {
     bt_log(TRACE, "gatt", "client bearer invalid!");
     return;
   }
@@ -282,7 +281,7 @@ void RemoteCharacteristic::ResolvePendingNotifyRequests(att::Result<> status) {
 }
 
 void RemoteCharacteristic::HandleNotification(const ByteBuffer& value, bool maybe_truncated) {
-  BT_DEBUG_ASSERT(client_);
+  BT_DEBUG_ASSERT(client_.is_alive());
 
   notifying_handlers_ = true;
   for (auto& iter : notify_handlers_) {

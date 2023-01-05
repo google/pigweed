@@ -21,8 +21,8 @@ namespace bthost {
 // Implements the gatt::RemoteService FIDL interface.
 class GattRemoteServiceServer : public GattServerBase<fuchsia::bluetooth::gatt::RemoteService> {
  public:
-  GattRemoteServiceServer(fxl::WeakPtr<bt::gatt::RemoteService> service,
-                          fxl::WeakPtr<bt::gatt::GATT> gatt, bt::PeerId peer_id,
+  GattRemoteServiceServer(bt::gatt::RemoteService::WeakPtr service, bt::gatt::GATT::WeakPtr gatt,
+                          bt::PeerId peer_id,
                           fidl::InterfaceRequest<fuchsia::bluetooth::gatt::RemoteService> request);
   ~GattRemoteServiceServer() override;
 
@@ -50,7 +50,7 @@ class GattRemoteServiceServer : public GattServerBase<fuchsia::bluetooth::gatt::
                             NotifyCharacteristicCallback callback) override;
 
   // The remote GATT service that backs this service.
-  fxl::WeakPtr<bt::gatt::RemoteService> service_;
+  bt::gatt::RemoteService::WeakPtr service_;
 
   const bt::PeerId peer_id_;
 

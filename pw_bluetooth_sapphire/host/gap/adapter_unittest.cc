@@ -55,7 +55,7 @@ class AdapterTest : public TestingBase {
 
     auto l2cap = std::make_unique<l2cap::testing::FakeL2cap>();
     gatt_ = std::make_unique<gatt::testing::FakeLayer>();
-    adapter_ = Adapter::Create(transport()->GetWeakPtr(), gatt_->AsWeakPtr(), std::move(l2cap));
+    adapter_ = Adapter::Create(transport()->GetWeakPtr(), gatt_->GetWeakPtr(), std::move(l2cap));
   }
 
   void TearDown() override {
@@ -1179,7 +1179,7 @@ TEST_F(AdapterConstructorTest, GattCallbacks) {
   EXPECT_EQ(set_persist_cb_count, 0);
   EXPECT_EQ(set_retrieve_cb_count, 0);
 
-  auto adapter = Adapter::Create(transport()->GetWeakPtr(), gatt_->AsWeakPtr(), std::move(l2cap_));
+  auto adapter = Adapter::Create(transport()->GetWeakPtr(), gatt_->GetWeakPtr(), std::move(l2cap_));
 
   EXPECT_EQ(set_persist_cb_count, 1);
   EXPECT_EQ(set_retrieve_cb_count, 1);

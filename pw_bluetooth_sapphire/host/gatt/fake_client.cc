@@ -12,7 +12,7 @@
 namespace bt::gatt::testing {
 
 FakeClient::FakeClient(async_dispatcher_t* dispatcher)
-    : dispatcher_(dispatcher), weak_ptr_factory_(this) {
+    : dispatcher_(dispatcher), weak_self_(this), weak_fake_(this) {
   BT_DEBUG_ASSERT(dispatcher_);
 }
 

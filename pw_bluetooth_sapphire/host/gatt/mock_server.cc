@@ -11,8 +11,8 @@
 
 namespace bt::gatt::testing {
 
-MockServer::MockServer(PeerId peer_id, fxl::WeakPtr<LocalServiceManager> local_services)
-    : peer_id_(peer_id), local_services_(std::move(local_services)), weak_ptr_factory_(this) {}
+MockServer::MockServer(PeerId peer_id, LocalServiceManager::WeakPtr local_services)
+    : peer_id_(peer_id), local_services_(std::move(local_services)), weak_self_(this) {}
 
 void MockServer::SendUpdate(IdType service_id, IdType chrc_id, BufferView value,
                             IndicationCallback indicate_cb) {

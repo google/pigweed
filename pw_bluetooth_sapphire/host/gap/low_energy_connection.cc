@@ -29,7 +29,7 @@ std::unique_ptr<LowEnergyConnection> LowEnergyConnection::Create(
     Peer::WeakPtr peer, std::unique_ptr<hci::LowEnergyConnection> link,
     LowEnergyConnectionOptions connection_options, PeerDisconnectCallback peer_disconnect_cb,
     ErrorCallback error_cb, WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr,
-    l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt,
+    l2cap::ChannelManager* l2cap, gatt::GATT::WeakPtr gatt,
     hci::CommandChannel::WeakPtr cmd_channel) {
   // Catch any errors/disconnects during connection initialization so that they are reported by
   // returning a nullptr. This is less error-prone than calling the user's callbacks during
@@ -55,12 +55,14 @@ std::unique_ptr<LowEnergyConnection> LowEnergyConnection::Create(
   return connection;
 }
 
-LowEnergyConnection::LowEnergyConnection(
-    Peer::WeakPtr peer, std::unique_ptr<hci::LowEnergyConnection> link,
-    LowEnergyConnectionOptions connection_options, PeerDisconnectCallback peer_disconnect_cb,
-    ErrorCallback error_cb, WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr,
-    l2cap::ChannelManager* l2cap, fxl::WeakPtr<gatt::GATT> gatt,
-    hci::CommandChannel::WeakPtr cmd_channel)
+LowEnergyConnection::LowEnergyConnection(Peer::WeakPtr peer,
+                                         std::unique_ptr<hci::LowEnergyConnection> link,
+                                         LowEnergyConnectionOptions connection_options,
+                                         PeerDisconnectCallback peer_disconnect_cb,
+                                         ErrorCallback error_cb,
+                                         WeakSelf<LowEnergyConnectionManager>::WeakPtr conn_mgr,
+                                         l2cap::ChannelManager* l2cap, gatt::GATT::WeakPtr gatt,
+                                         hci::CommandChannel::WeakPtr cmd_channel)
     : peer_(std::move(peer)),
       link_(std::move(link)),
       connection_options_(connection_options),
@@ -76,7 +78,7 @@ LowEnergyConnection::LowEnergyConnection(
   BT_ASSERT(peer_.is_alive());
   BT_ASSERT(link_);
   BT_ASSERT(conn_mgr_.is_alive());
-  BT_ASSERT(gatt_);
+  BT_ASSERT(gatt_.is_alive());
   BT_ASSERT(cmd_.is_alive());
   BT_ASSERT(peer_disconnect_callback_);
   BT_ASSERT(error_callback_);
@@ -511,7 +513,7 @@ bool LowEnergyConnection::InitializeGatt(l2cap::Channel::WeakPtr att_channel,
   // Client objects. As such, they can safely take WeakPtrs to the Bearer.
   auto server_factory = [att_bearer = att_bearer_->GetWeakPtr()](
                             PeerId peer_id,
-                            fxl::WeakPtr<gatt::LocalServiceManager> local_services) mutable {
+                            gatt::LocalServiceManager::WeakPtr local_services) mutable {
     return gatt::Server::Create(peer_id, std::move(local_services), std::move(att_bearer));
   };
   std::unique_ptr<gatt::Client> gatt_client = gatt::Client::Create(att_bearer_->GetWeakPtr());

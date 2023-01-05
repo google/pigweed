@@ -58,7 +58,7 @@ class Connection final {
   std::unique_ptr<Server> server_;
   std::unique_ptr<RemoteServiceManager> remote_service_manager_;
 
-  fxl::WeakPtrFactory<Connection> weak_ptr_factory_;
+  WeakSelf<Connection> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Connection);
 };
