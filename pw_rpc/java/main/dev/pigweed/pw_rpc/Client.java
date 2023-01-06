@@ -94,6 +94,25 @@ public class Client {
   }
 
   /**
+   * Adds a new channel to this RPC client.
+   *
+   * @throws InvalidRpcChannelException if the channel's ID is already in use
+   */
+  public void openChannel(Channel channel) {
+    rpcs.openChannel(channel);
+  }
+
+  /**
+   * Closes a channel and aborts and RPCs using it.
+   *
+   * @param id the channel ID to close
+   * @return true if the channel was closed; false if the channel was not found
+   */
+  public boolean closeChannel(int id) {
+    return rpcs.closeChannel(id);
+  }
+
+  /**
    * Returns a MethodClient with the given name for the provided channelID
    *
    * @param channelId the ID for the channel through which to invoke the RPC

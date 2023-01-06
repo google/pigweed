@@ -362,4 +362,59 @@ public final class ClientTest {
     verify(mockChannelOutput)
         .send(requestPacket("pw.rpc.test1.TheTestService", "SomeUnary", payload).toByteArray());
   }
+
+  @Test
+  public void closeChannel_abortsExisting() throws Exception {
+    MethodClient serverStreamMethod =
+        client.method(CHANNEL_ID, "pw.rpc.test1.TheTestService", "SomeServerStreaming");
+
+    Call call1 = serverStreamMethod.invokeServerStreaming(REQUEST_PAYLOAD, observer);
+    Call call2 = client.method(CHANNEL_ID, "pw.rpc.test1.TheTestService", "SomeClientStreaming")
+                     .invokeClientStreaming(observer);
+    assertThat(call1.active()).isTrue();
+    assertThat(call2.active()).isTrue();
+
+    assertThat(client.closeChannel(CHANNEL_ID)).isTrue();
+
+    assertThat(call1.active()).isFalse();
+    assertThat(call2.active()).isFalse();
+
+    verify(observer, times(2)).onError(Status.ABORTED);
+
+    assertThrows(InvalidRpcChannelException.class,
+        () -> serverStreamMethod.invokeServerStreaming(REQUEST_PAYLOAD, observer));
+  }
+
+  @Test
+  public void closeChannel_noCalls() {
+    assertThat(client.closeChannel(CHANNEL_ID)).isTrue();
+  }
+
+  @Test
+  public void closeChannel_knownChannel() {
+    assertThat(client.closeChannel(CHANNEL_ID + 100)).isFalse();
+  }
+
+  @Test
+  public void openChannel_uniqueChannel() throws Exception {
+    int newChannelId = CHANNEL_ID + 100;
+    Channel.Output channelOutput = Mockito.mock(Channel.Output.class);
+    client.openChannel(new Channel(newChannelId, channelOutput));
+
+    client.method(newChannelId, "pw.rpc.test1.TheTestService", "SomeUnary")
+        .invokeUnary(REQUEST_PAYLOAD, observer);
+
+    verify(channelOutput)
+        .send(requestPacket("pw.rpc.test1.TheTestService", "SomeUnary", REQUEST_PAYLOAD)
+                  .toBuilder()
+                  .setChannelId(newChannelId)
+                  .build()
+                  .toByteArray());
+  }
+
+  @Test
+  public void openChannel_alreadyExists_throwsException() {
+    assertThrows(InvalidRpcChannelException.class,
+        () -> client.openChannel(new Channel(CHANNEL_ID, packet -> {})));
+  }
 }

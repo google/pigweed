@@ -142,6 +142,23 @@ class Endpoint {
     return true;
   }
 
+  public synchronized void openChannel(Channel channel) {
+    if (channels.putIfAbsent(channel.id(), channel) != null) {
+      throw InvalidRpcChannelException.duplicate(channel.id());
+    }
+  }
+
+  public synchronized boolean closeChannel(int id) {
+    if (channels.remove(id) == null) {
+      return false;
+    }
+    pending.values()
+        .stream()
+        .filter(call -> call.getChannelId() == id)
+        .forEach(call -> call.handleError(Status.ABORTED));
+    return true;
+  }
+
   public synchronized boolean handleNext(PendingRpc rpc, ByteString payload) {
     AbstractCall<?, ?> call = pending.get(rpc);
     if (call == null) {

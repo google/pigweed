@@ -19,6 +19,10 @@ public class InvalidRpcChannelException extends InvalidRpcStateException {
     return new InvalidRpcChannelException("Invalid or closed RPC channel " + channelId);
   }
 
+  static InvalidRpcChannelException duplicate(int channelId) {
+    return new InvalidRpcChannelException("A channel with ID " + channelId + " already exists!");
+  }
+
   private InvalidRpcChannelException(String message) {
     super(message);
   }

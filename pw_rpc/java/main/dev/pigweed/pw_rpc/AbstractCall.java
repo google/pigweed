@@ -75,6 +75,10 @@ abstract class AbstractCall<RequestT extends MessageLite, ResponseT extends Mess
     return rpcs.clientStreamEnd(this);
   }
 
+  final int getChannelId() {
+    return rpc.channel().id();
+  }
+
   final void sendPacket(byte[] packet) throws ChannelOutputException {
     rpc.channel().send(packet);
   }
