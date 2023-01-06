@@ -114,7 +114,7 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
 
   // Keep this as the last member to make sure that all weak pointers are invalidated before other
   // members get destroyed
-  fxl::WeakPtrFactory<ExtendedLowEnergyAdvertiser> weak_ptr_factory_;
+  WeakSelf<ExtendedLowEnergyAdvertiser> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ExtendedLowEnergyAdvertiser);
 };

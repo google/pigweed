@@ -15,8 +15,8 @@ LowEnergyConnection::LowEnergyConnection(hci_spec::ConnectionHandle handle,
                                          hci_spec::ConnectionRole role,
                                          const Transport::WeakPtr& hci)
     : AclConnection(handle, local_address, peer_address, role, hci),
-      parameters_(params),
-      weak_ptr_factory_(this) {
+      WeakSelf(this),
+      parameters_(params) {
   BT_ASSERT(local_address.type() != DeviceAddress::Type::kBREDR);
   BT_ASSERT(peer_address.type() != DeviceAddress::Type::kBREDR);
   BT_ASSERT(hci.is_alive());
@@ -58,9 +58,8 @@ bool LowEnergyConnection::StartEncryption() {
   params->encrypted_diversifier = htole16(ltk()->ediv());
   params->long_term_key = ltk()->value();
 
-  auto event_cb = [self = weak_ptr_factory_.GetWeakPtr(), handle = handle()](
-                      auto id, const EventPacket& event) {
-    if (!self) {
+  auto event_cb = [self = GetWeakPtr(), handle = handle()](auto id, const EventPacket& event) {
+    if (!self.is_alive()) {
       return;
     }
 

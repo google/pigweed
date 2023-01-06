@@ -12,10 +12,10 @@ namespace {
 
 template <
     CommandChannel::EventCallbackResult (AclConnection::*EventHandlerMethod)(const EventPacket&)>
-CommandChannel::EventCallback BindEventHandler(const fxl::WeakPtr<AclConnection>& conn) {
+CommandChannel::EventCallback BindEventHandler(const WeakSelf<AclConnection>::WeakPtr& conn) {
   return [conn](const auto& event) {
-    if (conn) {
-      return ((conn.get())->*EventHandlerMethod)(event);
+    if (conn.is_alive()) {
+      return (conn.get().*EventHandlerMethod)(event);
     }
     return CommandChannel::EventCallbackResult::kRemove;
   };
@@ -29,8 +29,8 @@ AclConnection::AclConnection(hci_spec::ConnectionHandle handle, const DeviceAddr
     : Connection(handle, local_address, peer_address, hci,
                  [handle, hci] { AclConnection::OnDisconnectionComplete(handle, hci); }),
       role_(role),
-      weak_ptr_factory_(this) {
-  auto self = weak_ptr_factory_.GetWeakPtr();
+      weak_self_(this) {
+  auto self = weak_self_.GetWeakPtr();
   enc_change_id_ = hci->command_channel()->AddEventHandler(
       hci_spec::kEncryptionChangeEventCode,
       BindEventHandler<&AclConnection::OnEncryptionChangeEvent>(self));

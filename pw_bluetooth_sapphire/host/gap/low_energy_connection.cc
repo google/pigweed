@@ -84,7 +84,7 @@ LowEnergyConnection::LowEnergyConnection(Peer::WeakPtr peer,
   BT_ASSERT(error_callback_);
 
   link_->set_peer_disconnect_callback(
-      [this](auto, auto reason) { peer_disconnect_callback_(reason); });
+      [this](const auto&, auto reason) { peer_disconnect_callback_(reason); });
 
   RegisterEventHandlers();
   StartConnectionPauseTimeout();

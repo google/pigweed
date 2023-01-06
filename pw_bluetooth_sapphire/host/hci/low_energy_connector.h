@@ -186,7 +186,7 @@ class LowEnergyConnector : public LocalAddressClient {
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.
-  fxl::WeakPtrFactory<LowEnergyConnector> weak_ptr_factory_;
+  WeakSelf<LowEnergyConnector> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyConnector);
 };

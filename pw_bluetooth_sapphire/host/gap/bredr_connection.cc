@@ -38,8 +38,10 @@ BrEdrConnection::BrEdrConnection(Peer::WeakPtr peer, std::unique_ptr<hci::BrEdrC
       disconnect_cb_(std::move(disconnect_cb)),
       peer_init_token_(request_->take_peer_init_token()),
       peer_conn_token_(peer_->MutBrEdr().RegisterConnection()) {
-  link_->set_peer_disconnect_callback([peer_disconnect_cb = std::move(on_peer_disconnect_cb)](
-                                          auto conn, auto /*reason*/) { peer_disconnect_cb(); });
+  link_->set_peer_disconnect_callback(
+      [peer_disconnect_cb = std::move(on_peer_disconnect_cb)](const auto& conn, auto /*reason*/) {
+        peer_disconnect_cb();
+      });
 }
 
 BrEdrConnection::~BrEdrConnection() {

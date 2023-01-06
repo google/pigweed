@@ -4,13 +4,8 @@
 
 #include "bredr_connection_request.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 
 namespace bt::hci {
 
@@ -58,13 +53,13 @@ void BrEdrConnectionRequest::CreateConnection(
   BT_DEBUG_ASSERT(timeout > zx::msec(0));
 
   // HCI Command Status Event will be sent as our completion callback.
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   auto complete_cb = [self, timeout, peer_id = peer_id_,
                       on_command_fail = std::move(on_command_fail)](auto,
                                                                     const EventPacket& event) {
     BT_DEBUG_ASSERT(event.event_code() == hci_spec::kCommandStatusEventCode);
 
-    if (!self)
+    if (!self.is_alive())
       return;
 
     Result<> status = event.ToResult();
@@ -100,7 +95,8 @@ Result<> BrEdrConnectionRequest::CompleteRequest(Result<> status) {
   if (status.is_error()) {
     if (state_ == RequestState::kTimedOut) {
       return ToResult(HostError::kTimedOut);
-    } else if (status == ToResult(hci_spec::StatusCode::UNKNOWN_CONNECTION_ID)) {
+    }
+    if (status == ToResult(hci_spec::StatusCode::UNKNOWN_CONNECTION_ID)) {
       // The "Unknown Connection Identifier" error code is returned if this
       // event was sent due to a successful cancellation via the
       // HCI_Create_Connection_Cancel command
@@ -126,7 +122,8 @@ bool BrEdrConnectionRequest::Cancel() {
   if (state_ == RequestState::kSuccess) {
     bt_log(DEBUG, "hci-bredr", "connection has already succeeded (peer: %s)", bt_str(peer_id_));
     return false;
-  } else if (state_ != RequestState::kPending) {
+  }
+  if (state_ != RequestState::kPending) {
     bt_log(WARN, "hci-bredr", "connection attempt already canceled! (peer: %s)", bt_str(peer_id_));
     return false;
   }

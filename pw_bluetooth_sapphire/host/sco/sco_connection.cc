@@ -22,7 +22,7 @@ ScoConnection::ScoConnection(
 
   handle_ = connection_->handle();
 
-  connection_->set_peer_disconnect_callback([this](auto, auto) {
+  connection_->set_peer_disconnect_callback([this](const auto&, auto) {
     // Notifies activator that this connection has been disconnected.
     // Activator will call Deactivate().
     Close();

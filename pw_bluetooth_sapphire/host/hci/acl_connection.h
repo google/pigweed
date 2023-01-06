@@ -74,7 +74,7 @@ class AclConnection : public Connection {
 
   ResultFunction<bool> encryption_change_callback_;
 
-  fxl::WeakPtrFactory<AclConnection> weak_ptr_factory_;
+  WeakSelf<AclConnection> weak_self_;
 };
 
 }  // namespace bt::hci

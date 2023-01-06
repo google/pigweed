@@ -13,15 +13,13 @@ namespace bt::hci {
 // BrEdrConnection represents a BR/EDR logical link connection to a peer. In addition to general
 // link lifetime and encryption procedures provided by AclConnection, BrEdrConnection manages
 // BR/EDR-specific encryption procedures.
-class BrEdrConnection : public AclConnection {
+class BrEdrConnection : public AclConnection, public WeakSelf<BrEdrConnection> {
  public:
   BrEdrConnection(hci_spec::ConnectionHandle handle, const DeviceAddress& local_address,
                   const DeviceAddress& peer_address, hci_spec::ConnectionRole role,
                   const Transport::WeakPtr& hci);
 
   bool StartEncryption() override;
-
-  fxl::WeakPtr<BrEdrConnection> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
   // Assigns a link key with its corresponding HCI type to this BR/EDR connection. This will be
   // used for bonding procedures and determines the resulting security properties of the link.
@@ -41,8 +39,6 @@ class BrEdrConnection : public AclConnection {
 
   // BR/EDR-specific type of the assigned link key.
   std::optional<hci_spec::LinkKeyType> ltk_type_;
-
-  fxl::WeakPtrFactory<BrEdrConnection> weak_ptr_factory_;
 };
 
 }  // namespace bt::hci

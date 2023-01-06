@@ -153,7 +153,7 @@ TEST_P(LinkTypeConnectionTest, Disconnect) {
   auto connection = NewConnection();
 
   size_t disconn_cb_count = 0;
-  auto disconn_complete_cb = [&](const Connection* cb_conn, auto reason) {
+  auto disconn_complete_cb = [&](const Connection& cb_conn, auto reason) {
     disconn_cb_count++;
     EXPECT_EQ(reason, hci_spec::StatusCode::CONNECTION_TERMINATED_BY_LOCAL_HOST);
   };
@@ -291,9 +291,8 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndRemoteDisconnection) {
   EXPECT_EQ(handle1_packet_count, 0u);
 
   size_t disconn_cb_count = 0;
-  auto disconn_complete_cb = [&](const Connection* cb_conn, auto /*reason*/) {
-    ASSERT_TRUE(cb_conn);
-    EXPECT_EQ(kHandle0, cb_conn->handle());
+  auto disconn_complete_cb = [&](const Connection& cb_conn, auto /*reason*/) {
+    EXPECT_EQ(kHandle0, cb_conn.handle());
     disconn_cb_count++;
   };
   conn0->set_peer_disconnect_callback(disconn_complete_cb);
@@ -630,8 +629,8 @@ TEST_P(LinkTypeConnectionTest, EncryptionChangeEvents) {
 TEST_F(ConnectionTest, EncryptionFailureNotifiesPeerDisconnectCallback) {
   bool peer_disconnect_callback_received = false;
   auto conn = NewLEConnection();
-  conn->set_peer_disconnect_callback([&](auto* self, auto /*reason*/) {
-    EXPECT_EQ(conn.get(), self);
+  conn->set_peer_disconnect_callback([&](const auto& self, auto /*reason*/) {
+    EXPECT_EQ(conn.get(), &self);
     peer_disconnect_callback_received = true;
   });
 
@@ -960,8 +959,7 @@ TEST_F(ConnectionTest, PeerDisconnectCallback) {
   auto conn = NewACLConnection(hci_spec::ConnectionRole::CENTRAL, kHandle);
 
   size_t cb_count = 0;
-  auto disconn_complete_cb = [&](const Connection* cb_conn, auto /*reason*/) {
-    ASSERT_TRUE(cb_conn);
+  auto disconn_complete_cb = [&](const Connection& cb_conn, auto /*reason*/) {
     cb_count++;
 
     // Should be safe to destroy connection from this callback, as a connection manager does.

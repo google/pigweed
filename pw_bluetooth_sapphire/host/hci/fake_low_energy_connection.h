@@ -19,7 +19,7 @@ class FakeLowEnergyConnection final : public LowEnergyConnection {
   void TriggerEncryptionChangeCallback(hci::Result<bool> result);
 
   void TriggerPeerDisconnectCallback() {
-    peer_disconnect_callback()(this, hci_spec::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
+    peer_disconnect_callback()(*this, hci_spec::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
   }
 
   // LowEnergyConnection overrides:

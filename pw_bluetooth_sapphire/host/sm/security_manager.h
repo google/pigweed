@@ -50,7 +50,7 @@ class SecurityManager {
   // |delegate|: Delegate which handles SMP interactions with the rest of the Bluetooth stack.
   // |bondable_mode|: the operating bondable mode of the device (see v5.2, Vol. 3, Part C 9.4).
   // |security_mode|: the security mode of this SecurityManager (see v5.2, Vol. 3, Part C 10.2).
-  static std::unique_ptr<SecurityManager> Create(fxl::WeakPtr<hci::LowEnergyConnection> link,
+  static std::unique_ptr<SecurityManager> Create(hci::LowEnergyConnection::WeakPtr link,
                                                  l2cap::Channel::WeakPtr smp,
                                                  IOCapability io_capability,
                                                  Delegate::WeakPtr delegate,

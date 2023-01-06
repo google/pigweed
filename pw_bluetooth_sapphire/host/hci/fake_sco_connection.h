@@ -15,7 +15,7 @@ class FakeScoConnection final : public ScoConnection {
                     const DeviceAddress& peer_address, const hci::Transport::WeakPtr& hci);
 
   void TriggerPeerDisconnectCallback() {
-    peer_disconnect_callback()(this, hci_spec::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
+    peer_disconnect_callback()(*this, hci_spec::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
   }
 
   // ScoConnection overrides:

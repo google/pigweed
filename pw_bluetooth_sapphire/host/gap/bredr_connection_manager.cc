@@ -14,6 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/bredr_connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
@@ -642,7 +643,7 @@ void BrEdrConnectionManager::CompleteConnectionSetup(Peer::WeakPtr peer,
   hci::BrEdrConnection* const connection = &conn_state.link();
 
   auto error_handler = [self, peer_id, connection = connection->GetWeakPtr(), handle] {
-    if (!self.is_alive() || !connection)
+    if (!self.is_alive() || !connection.is_alive())
       return;
     bt_log(WARN, "gap-bredr", "Link error received, closing connection (peer: %s, handle: %#.4x)",
            bt_str(peer_id), handle);

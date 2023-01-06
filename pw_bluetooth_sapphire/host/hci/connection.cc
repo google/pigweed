@@ -28,11 +28,11 @@ Connection::Connection(hci_spec::ConnectionHandle handle, const DeviceAddress& l
       peer_address_(peer_address),
       conn_state_(State::kConnected),
       hci_(hci),
-      weak_ptr_factory_(this) {
+      weak_self_(this) {
   BT_ASSERT(handle_);
   BT_ASSERT(hci_.is_alive());
 
-  auto disconn_complete_handler = [self = weak_ptr_factory_.GetWeakPtr(), handle, hci = hci_,
+  auto disconn_complete_handler = [self = weak_self_.GetWeakPtr(), handle, hci = hci_,
                                    on_disconnection_complete =
                                        std::move(on_disconnection_complete)](auto& event) mutable {
     return Connection::OnDisconnectionComplete(self, handle, event,
@@ -54,8 +54,8 @@ std::string Connection::ToString() const {
 }
 
 CommandChannel::EventCallbackResult Connection::OnDisconnectionComplete(
-    fxl::WeakPtr<Connection> self, hci_spec::ConnectionHandle handle, const EventPacket& event,
-    fit::callback<void()> on_disconnection_complete) {
+    const WeakSelf<Connection>::WeakPtr& self, hci_spec::ConnectionHandle handle,
+    const EventPacket& event, fit::callback<void()> on_disconnection_complete) {
   BT_ASSERT(event.event_code() == hci_spec::kDisconnectionCompleteEventCode);
 
   if (event.view().payload_size() != sizeof(hci_spec::DisconnectionCompleteEventParams)) {
@@ -75,12 +75,12 @@ CommandChannel::EventCallbackResult Connection::OnDisconnectionComplete(
          bt_str(event.ToResult()), handle, params.reason,
          hci_spec::StatusCodeToString(params.reason).c_str());
 
-  if (self) {
+  if (self.is_alive()) {
     self->conn_state_ = State::kDisconnected;
   }
 
   // Peer disconnect. Callback may destroy connection.
-  if (self && self->peer_disconnect_callback_) {
+  if (self.is_alive() && self->peer_disconnect_callback_) {
     self->peer_disconnect_callback_(self.get(), params.reason);
   }
 

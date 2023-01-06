@@ -66,7 +66,7 @@ class Connection {
 
   // Assigns a callback that will be run when the peer disconnects.
   using PeerDisconnectCallback =
-      fit::function<void(const Connection* connection, hci_spec::StatusCode reason)>;
+      fit::function<void(const Connection& connection, hci_spec::StatusCode reason)>;
   void set_peer_disconnect_callback(PeerDisconnectCallback callback) {
     peer_disconnect_callback_ = std::move(callback);
   }
@@ -93,8 +93,8 @@ class Connection {
   // This method is static so that it can be called in an event handler
   // after this object has been destroyed.
   static CommandChannel::EventCallbackResult OnDisconnectionComplete(
-      fxl::WeakPtr<Connection> self, hci_spec::ConnectionHandle handle, const EventPacket& event,
-      fit::callback<void()> on_disconnection_complete);
+      const WeakSelf<Connection>::WeakPtr& self, hci_spec::ConnectionHandle handle,
+      const EventPacket& event, fit::callback<void()> on_disconnection_complete);
 
   hci_spec::ConnectionHandle handle_;
 
@@ -108,7 +108,7 @@ class Connection {
 
   Transport::WeakPtr hci_;
 
-  fxl::WeakPtrFactory<Connection> weak_ptr_factory_;
+  WeakSelf<Connection> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Connection);
 };

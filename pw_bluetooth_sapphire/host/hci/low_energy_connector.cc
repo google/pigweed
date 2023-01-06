@@ -29,16 +29,16 @@ LowEnergyConnector::LowEnergyConnector(Transport::WeakPtr hci,
       hci_(std::move(hci)),
       local_addr_delegate_(local_addr_delegate),
       delegate_(std::move(delegate)),
-      weak_ptr_factory_(this) {
+      weak_self_(this) {
   BT_DEBUG_ASSERT(dispatcher_);
   BT_DEBUG_ASSERT(hci_.is_alive());
   BT_DEBUG_ASSERT(local_addr_delegate_);
   BT_DEBUG_ASSERT(delegate_);
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   event_handler_id_ = hci_->command_channel()->AddLEMetaEventHandler(
       hci_spec::kLEConnectionCompleteSubeventCode, [self](const auto& event) {
-        if (self) {
+        if (self.is_alive()) {
           return self->OnConnectionCompleteEvent(event);
         }
         return CommandChannel::EventCallbackResult::kRemove;
@@ -123,11 +123,11 @@ void LowEnergyConnector::CreateConnectionInternal(
   params->maximum_ce_length = 0x0000;
 
   // HCI Command Status Event will be sent as our completion callback.
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   auto complete_cb = [self, timeout](auto id, const EventPacket& event) {
     BT_DEBUG_ASSERT(event.event_code() == hci_spec::kCommandStatusEventCode);
 
-    if (!self)
+    if (!self.is_alive())
       return;
 
     Result<> result = event.ToResult();

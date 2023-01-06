@@ -12,7 +12,7 @@ BrEdrConnection::BrEdrConnection(hci_spec::ConnectionHandle handle,
                                  const DeviceAddress& local_address,
                                  const DeviceAddress& peer_address, hci_spec::ConnectionRole role,
                                  const Transport::WeakPtr& hci)
-    : AclConnection(handle, local_address, peer_address, role, hci), weak_ptr_factory_(this) {
+    : AclConnection(handle, local_address, peer_address, role, hci), WeakSelf(this) {
   BT_ASSERT(local_address.type() == DeviceAddress::Type::kBREDR);
   BT_ASSERT(peer_address.type() == DeviceAddress::Type::kBREDR);
   BT_ASSERT(hci.is_alive());
@@ -40,9 +40,9 @@ bool BrEdrConnection::StartEncryption() {
   params.connection_handle().Write(handle());
   params.encryption_enable().Write(hci_spec::GenericEnableParam::ENABLE);
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = GetWeakPtr();
   auto event_cb = [self, handle = handle()](auto id, const EventPacket& event) {
-    if (!self) {
+    if (!self.is_alive()) {
       return;
     }
 
@@ -67,8 +67,8 @@ bool BrEdrConnection::StartEncryption() {
 void BrEdrConnection::HandleEncryptionStatus(Result<bool> result, bool key_refreshed) {
   bool enabled = result.is_ok() && result.value() && !key_refreshed;
   if (enabled) {
-    ValidateEncryptionKeySize([self = weak_ptr_factory_.GetWeakPtr()](Result<> key_valid_status) {
-      if (self) {
+    ValidateEncryptionKeySize([self = GetWeakPtr()](Result<> key_valid_status) {
+      if (self.is_alive()) {
         self->HandleEncryptionStatusValidated(
             key_valid_status.is_ok() ? Result<bool>(fit::ok(true)) : key_valid_status.take_error());
       }
@@ -102,9 +102,9 @@ void BrEdrConnection::ValidateEncryptionKeySize(hci::ResultFunction<> key_size_v
   auto* params = cmd->mutable_payload<hci_spec::ReadEncryptionKeySizeParams>();
   params->connection_handle = htole16(handle());
 
-  auto event_cb = [self = weak_ptr_factory_.GetWeakPtr(),
-                   valid_cb = std::move(key_size_validity_cb)](auto, const EventPacket& event) {
-    if (!self) {
+  auto event_cb = [self = GetWeakPtr(), valid_cb = std::move(key_size_validity_cb)](
+                      auto, const EventPacket& event) {
+    if (!self.is_alive()) {
       return;
     }
 

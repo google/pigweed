@@ -11,7 +11,7 @@
 
 namespace bt::hci {
 
-class LowEnergyConnection : public AclConnection {
+class LowEnergyConnection : public AclConnection, public WeakSelf<LowEnergyConnection> {
  public:
   LowEnergyConnection(hci_spec::ConnectionHandle handle, const DeviceAddress& local_address,
                       const DeviceAddress& peer_address,
@@ -25,8 +25,6 @@ class LowEnergyConnection : public AclConnection {
   // the encryption change callback.  If the link layer procedure fails, the connection will be
   // disconnected. The encryption change callback will be notified of the failure.
   bool StartEncryption() override;
-
-  fxl::WeakPtr<LowEnergyConnection> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
 
   // Sets the active LE parameters of this connection.
   void set_low_energy_parameters(const hci_spec::LEConnectionParameters& params) {
@@ -48,8 +46,6 @@ class LowEnergyConnection : public AclConnection {
   CommandChannel::EventHandlerId le_ltk_request_id_;
 
   hci_spec::LEConnectionParameters parameters_;
-
-  fxl::WeakPtrFactory<LowEnergyConnection> weak_ptr_factory_;
 };
 
 }  // namespace bt::hci

@@ -9,11 +9,6 @@
 #include <lib/async/dispatcher.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/defaults.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 
@@ -56,7 +51,7 @@ class BrEdrConnectionRequest final {
         peer_id_(id),
         peer_address_(addr),
         timeout_task_(std::move(timeout_cb)),
-        weak_ptr_factory_(this) {}
+        weak_self_(this) {}
 
   ~BrEdrConnectionRequest();
 
@@ -99,7 +94,7 @@ class BrEdrConnectionRequest final {
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.
-  fxl::WeakPtrFactory<BrEdrConnectionRequest> weak_ptr_factory_;
+  WeakSelf<BrEdrConnectionRequest> weak_self_;
 };
 
 }  // namespace bt::hci

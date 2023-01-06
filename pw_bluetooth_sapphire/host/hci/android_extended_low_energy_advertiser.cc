@@ -18,11 +18,11 @@ AndroidExtendedLowEnergyAdvertiser::AndroidExtendedLowEnergyAdvertiser(
     : LowEnergyAdvertiser(std::move(hci_ptr)),
       max_advertisements_(max_advertisements),
       advertising_handle_map_(max_advertisements_),
-      weak_ptr_factory_(this) {
-  auto self = weak_ptr_factory_.GetWeakPtr();
+      weak_self_(this) {
+  auto self = weak_self_.GetWeakPtr();
   state_changed_event_handler_id_ = hci()->command_channel()->AddVendorEventHandler(
       hci_android::kLEMultiAdvtStateChangeSubeventCode, [self](const EventPacket& event_packet) {
-        if (self) {
+        if (self.is_alive()) {
           return self->OnAdvertisingStateChangedSubevent(event_packet);
         }
 

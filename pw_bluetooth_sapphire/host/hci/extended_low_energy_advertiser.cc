@@ -10,11 +10,11 @@
 namespace bt::hci {
 
 ExtendedLowEnergyAdvertiser::ExtendedLowEnergyAdvertiser(hci::Transport::WeakPtr hci_ptr)
-    : LowEnergyAdvertiser(std::move(hci_ptr)), weak_ptr_factory_(this) {
-  auto self = weak_ptr_factory_.GetWeakPtr();
+    : LowEnergyAdvertiser(std::move(hci_ptr)), weak_self_(this) {
+  auto self = weak_self_.GetWeakPtr();
   set_terminated_event_handler_id_ = hci()->command_channel()->AddLEMetaEventHandler(
       hci_spec::kLEAdvertisingSetTerminatedSubeventCode, [self](const EventPacket& event_packet) {
-        if (self) {
+        if (self.is_alive()) {
           return self->OnAdvertisingSetTerminatedEvent(event_packet);
         }
 
