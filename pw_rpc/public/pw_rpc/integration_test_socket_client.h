@@ -148,7 +148,7 @@ void SocketClientContext<kMaxTransmissionUnit>::ProcessPackets() {
       return;
     }
 
-    if (!read.ok() || read->size() == 0u) {
+    if (!read.ok() || read->empty()) {
       continue;
     }
 

@@ -418,10 +418,21 @@ if (current_toolchain != default_toolchain) {
     # Add target-specific images.
     deps += pw_TARGET_APPLICATIONS
 
-    # Add the pw_tool target to be built on host.
+    # Add host-only targets to the build.
     if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&
         pw_toolchain_SCOPE.is_host_toolchain) {
       deps += [ "$dir_pw_tool" ]
+
+      # TODO(b/240982565): Build integration tests on Windows and macOS when
+      #     SocketStream supports those platforms.
+      if (host_os == "linux") {
+        # Build the integration test binaries, but don't run them by default.
+        deps += [
+          "$dir_pw_rpc:client_integration_test",
+          "$dir_pw_rpc:test_rpc_server",
+          "$dir_pw_unit_test:test_rpc_server",
+        ]
+      }
     }
   }
 

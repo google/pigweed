@@ -114,6 +114,7 @@ TEST(NanopbRpcIntegrationTest, BidirectionalStreaming_MoveCalls) {
     pw::rpc::NanopbClientReaderWriter<pw_rpc_Payload, pw_rpc_Payload> new_call =
         std::move(call);
 
+    // NOLINTNEXTLINE(bugprone-use-after-move)
     EXPECT_EQ(Status::FailedPrecondition(), call.Write(Payload("Dello")));
 
     ASSERT_EQ(OkStatus(), new_call.Write(Payload("Dello")));
@@ -121,6 +122,7 @@ TEST(NanopbRpcIntegrationTest, BidirectionalStreaming_MoveCalls) {
 
     call = std::move(new_call);
 
+    // NOLINTNEXTLINE(bugprone-use-after-move)
     EXPECT_EQ(Status::FailedPrecondition(), new_call.Write(Payload("Dello")));
 
     ASSERT_EQ(OkStatus(), call.Write(Payload("???")));

@@ -117,6 +117,7 @@ TEST(PwpbRpcIntegrationTest, BidirectionalStreaming_MoveCalls) {
                                     pw::rpc::Payload::Message>
         new_call = std::move(call);
 
+    // NOLINTNEXTLINE(bugprone-use-after-move)
     EXPECT_EQ(Status::FailedPrecondition(), call.Write(Payload("Dello")));
 
     ASSERT_EQ(OkStatus(), new_call.Write(Payload("Dello")));
@@ -124,6 +125,7 @@ TEST(PwpbRpcIntegrationTest, BidirectionalStreaming_MoveCalls) {
 
     call = std::move(new_call);
 
+    // NOLINTNEXTLINE(bugprone-use-after-move)
     EXPECT_EQ(Status::FailedPrecondition(), new_call.Write(Payload("Dello")));
 
     ASSERT_EQ(OkStatus(), call.Write(Payload("???")));

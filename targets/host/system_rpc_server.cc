@@ -53,7 +53,7 @@ int GetServerSocketFd() { return socket_stream.connection_fd(); }
 void Init() {
   log_basic::SetOutput([](std::string_view log) {
     std::fprintf(stderr, "%.*s\n", static_cast<int>(log.size()), log.data());
-    hdlc::WriteUIFrame(1, as_bytes(span(log)), socket_stream)
+    hdlc::WriteUIFrame(1, as_bytes(span<const char>(log)), socket_stream)
         .IgnoreError();  // TODO(b/242598609): Handle Status properly
   });
 
