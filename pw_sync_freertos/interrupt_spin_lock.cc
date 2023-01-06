@@ -21,7 +21,7 @@
 namespace pw::sync {
 
 #if (INCLUDE_xTaskGetSchedulerState != 1) && (configUSE_TIMERS != 1)
-#error "xTaskGetScheduler is required for pw_sync_freertos:interrupt_spin_lock"
+#error "xTaskGetSchedulerState is required for pw::sync::InterruptSpinLock"
 #endif
 
 void InterruptSpinLock::lock() {

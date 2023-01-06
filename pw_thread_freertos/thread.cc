@@ -26,6 +26,11 @@ using pw::thread::freertos::Context;
 
 namespace pw::thread {
 namespace {
+
+#if (INCLUDE_xTaskGetSchedulerState != 1) && (configUSE_TIMERS != 1)
+#error "xTaskGetSchedulerState is required for pw::thread::Thread"
+#endif
+
 #if PW_THREAD_JOINING_ENABLED
 constexpr EventBits_t kThreadDoneBit = 1 << 0;
 #endif  // PW_THREAD_JOINING_ENABLED
@@ -188,27 +193,23 @@ Thread::Thread(const thread::Options& facade_options,
 void Thread::detach() {
   PW_CHECK(joinable());
 
-#if (INCLUDE_vTaskSuspend == 1) && (INCLUDE_xTaskGetSchedulerState == 1)
-  // No need to suspend extra tasks.
   if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) {
+#if (INCLUDE_vTaskSuspend == 1)
+    // No need to suspend extra tasks.
     vTaskSuspend(native_type_->task_handle());
-  }
 #else
-  // Safe to suspend all tasks while scheduler is not running.
-  vTaskSuspendAll();
+    vTaskSuspendAll();
 #endif  // INCLUDE_vTaskSuspend == 1
+  }
   native_type_->set_detached();
   const bool thread_done = native_type_->thread_done();
-#if (INCLUDE_vTaskSuspend == 1) && (INCLUDE_xTaskGetSchedulerState == 1)
-  // No need to suspend extra tasks, but only safe to call once scheduler is
-  // running.
   if (xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) {
+#if (INCLUDE_vTaskSuspend == 1)
     vTaskResume(native_type_->task_handle());
-  }
 #else
-  // Safe to resume all tasks while scheduler is not running.
-  xTaskResumeAll();
+    xTaskResumeAll();
 #endif  // INCLUDE_vTaskSuspend == 1
+  }
 
   if (thread_done) {
     // The task finished (hit end of Context::ThreadEntryPoint) before we

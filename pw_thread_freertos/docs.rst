@@ -16,6 +16,10 @@ Optional dynamic allocation for threads is supported using ``xTaskCreate()``.
 Optional joining support is enabled via an ``StaticEventGroup_t`` in each
 thread's context.
 
+.. Note::
+  Scheduler State API support is required in your FreeRTOS Configuration, i.e.
+  ``INCLUDE_xTaskGetSchedulerState == 1``.
+
 This backend always permits users to start threads where static contexts are
 passed in as an option. As a quick example, a detached thread can be created as
 follows:
