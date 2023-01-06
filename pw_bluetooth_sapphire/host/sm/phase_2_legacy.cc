@@ -28,10 +28,10 @@ bool IsSupportedLegacyMethod(PairingMethod method) {
 }
 }  // namespace
 
-Phase2Legacy::Phase2Legacy(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener,
-                           Role role, PairingFeatures features, const ByteBuffer& preq,
-                           const ByteBuffer& pres, const DeviceAddress& initiator_add,
-                           const DeviceAddress& responder_add, OnPhase2KeyGeneratedCallback cb)
+Phase2Legacy::Phase2Legacy(PairingChannel::WeakPtr chan, Listener::WeakPtr listener, Role role,
+                           PairingFeatures features, const ByteBuffer& preq, const ByteBuffer& pres,
+                           const DeviceAddress& initiator_add, const DeviceAddress& responder_add,
+                           OnPhase2KeyGeneratedCallback cb)
     : PairingPhase(std::move(chan), std::move(listener), role),
       sent_local_confirm_(false),
       sent_local_rand_(false),
@@ -44,14 +44,14 @@ Phase2Legacy::Phase2Legacy(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Liste
       initiator_addr_(initiator_add),
       responder_addr_(responder_add),
       on_stk_ready_(std::move(cb)),
-      weak_ptr_factory_(this) {
+      weak_self_(this) {
   // Cache |preq| and |pres|. These are used for confirm value generation.
   BT_ASSERT(preq.size() == preq_.size());
   BT_ASSERT(pres.size() == pres_.size());
   BT_ASSERT_MSG(IsSupportedLegacyMethod(features.method), "unsupported legacy pairing method!");
   preq.Copy(&preq_);
   pres.Copy(&pres_);
-  sm_chan().SetChannelHandler(weak_ptr_factory_.GetWeakPtr());
+  SetPairingChannelHandler(*this);
 }
 
 void Phase2Legacy::Start() {
@@ -68,12 +68,12 @@ void Phase2Legacy::Start() {
 void Phase2Legacy::MakeTemporaryKeyRequest() {
   bt_log(DEBUG, "sm", "TK request - method: %s",
          sm::util::PairingMethodToString(features_.method).c_str());
-  BT_ASSERT(listener());
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  BT_ASSERT(listener().is_alive());
+  auto self = weak_self_.GetWeakPtr();
   if (features_.method == sm::PairingMethod::kPasskeyEntryInput) {
     // The TK will be provided by the user.
     listener()->RequestPasskey([self](int64_t passkey) {
-      if (!self) {
+      if (!self.is_alive()) {
         return;
       }
       bool success = passkey >= 0;
@@ -90,7 +90,7 @@ void Phase2Legacy::MakeTemporaryKeyRequest() {
     passkey = passkey % 1000000;
     listener()->DisplayPasskey(
         passkey, Delegate::DisplayMethod::kPeerEntry, [passkey, self](bool confirm) {
-          if (!self) {
+          if (!self.is_alive()) {
             return;
           }
           self->HandleTemporaryKey(confirm ? std::optional<uint32_t>(passkey) : std::nullopt);
@@ -101,7 +101,7 @@ void Phase2Legacy::MakeTemporaryKeyRequest() {
   // TODO(fxbug.dev/601): Support providing a TK out of band.
   BT_ASSERT(features_.method == sm::PairingMethod::kJustWorks);
   listener()->ConfirmPairing([self](bool confirm) {
-    if (!self) {
+    if (!self.is_alive()) {
       return;
     }
     self->HandleTemporaryKey(confirm ? std::optional<uint32_t>(0) : std::nullopt);

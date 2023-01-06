@@ -8,13 +8,12 @@
 #include <gtest/gtest.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/sm/pairing_phase.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::sm {
 
 class FakeListener : public PairingPhase::Listener {
  public:
-  FakeListener() : weak_ptr_factory_(this) {}
+  FakeListener() : weak_self_(this) {}
   ~FakeListener() override = default;
 
   // PairingPhase::Listener override:
@@ -58,7 +57,7 @@ class FakeListener : public PairingPhase::Listener {
     last_error_ = error;
   }
 
-  fxl::WeakPtr<PairingPhase::Listener> as_weak_ptr() { return weak_ptr_factory_.GetWeakPtr(); }
+  PairingPhase::Listener::WeakPtr as_weak_ptr() { return weak_self_.GetWeakPtr(); }
 
   void set_identity_info(std::optional<IdentityInfo> value) { identity_info_ = value; }
   int identity_info_count() const { return identity_info_count_; }
@@ -90,7 +89,7 @@ class FakeListener : public PairingPhase::Listener {
   int pairing_error_count_ = 0;
   std::optional<Error> last_error_;
 
-  fxl::WeakPtrFactory<FakeListener> weak_ptr_factory_;
+  WeakSelf<PairingPhase::Listener> weak_self_;
 };
 
 }  // namespace bt::sm

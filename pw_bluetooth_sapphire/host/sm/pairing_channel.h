@@ -12,7 +12,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/scoped_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::sm {
 
@@ -28,6 +27,8 @@ class PairingChannel {
     virtual ~Handler() = default;
     virtual void OnRxBFrame(ByteBufferPtr) = 0;
     virtual void OnChannelClosed() = 0;
+
+    using WeakPtr = WeakSelf<Handler>::WeakPtr;
   };
 
   // Initializes this PairingChannel with the L2CAP SMP fixed channel that this class wraps and the
@@ -41,7 +42,7 @@ class PairingChannel {
   // For setting the new handler, expected to be used when switching phases. PairingChannel is not
   // fully initialized until SetChannelHandler has been called with a valid Handler. This two-phase
   // initialization exists because concrete Handlers are expected to depend on PairingChannels.
-  void SetChannelHandler(fxl::WeakPtr<Handler> new_handler);
+  void SetChannelHandler(Handler::WeakPtr new_handler);
 
   // Wrapper which encapsulates some of the boilerplate involved in sending an SMP object.
   template <typename PayloadType>
@@ -63,7 +64,8 @@ class PairingChannel {
     chan_->Send(std::move(pdu));
   }
 
-  fxl::WeakPtr<PairingChannel> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
+  using WeakPtr = WeakSelf<PairingChannel>::WeakPtr;
+  PairingChannel::WeakPtr GetWeakPtr() { return weak_self_.GetWeakPtr(); }
 
   bool SupportsSecureConnections() const {
     return chan_->max_rx_sdu_size() >= kLeSecureConnectionsMtu &&
@@ -88,9 +90,9 @@ class PairingChannel {
   fit::closure reset_timer_;
 
   // L2CAP channel events are delegated to this handler.
-  fxl::WeakPtr<Handler> handler_;
+  Handler::WeakPtr handler_;
 
-  fxl::WeakPtrFactory<PairingChannel> weak_ptr_factory_;
+  WeakSelf<PairingChannel> weak_self_;
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PairingChannel);
 };
 

@@ -21,7 +21,7 @@ namespace {
 
 class FakeChannelHandler : public PairingChannel::Handler {
  public:
-  FakeChannelHandler() : weak_ptr_factory_(this) {}
+  FakeChannelHandler() : weak_self_(this) {}
 
   void OnRxBFrame(ByteBufferPtr data) override {
     last_rx_data_ = std::move(data);
@@ -34,13 +34,13 @@ class FakeChannelHandler : public PairingChannel::Handler {
 
   int frames_received() const { return frames_received_; }
   int channel_closed_count() const { return channel_closed_count_; }
-  fxl::WeakPtr<PairingChannel::Handler> as_weak_handler() { return weak_ptr_factory_.GetWeakPtr(); }
+  PairingChannel::Handler::WeakPtr as_weak_handler() { return weak_self_.GetWeakPtr(); }
 
  private:
   ByteBufferPtr last_rx_data_ = nullptr;
   int frames_received_ = 0;
   int channel_closed_count_ = 0;
-  fxl::WeakPtrFactory<PairingChannel::Handler> weak_ptr_factory_;
+  WeakSelf<PairingChannel::Handler> weak_self_;
 };
 
 class PairingChannelTest : public l2cap::testing::MockChannelTest {

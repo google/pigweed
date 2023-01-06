@@ -8,7 +8,6 @@
 #include "lib/fit/function.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/sc_stage_1.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
@@ -27,9 +26,9 @@ uint8_t GetPasskeyBit(uint32_t passkey, size_t passkey_bit_location) {
 
 }  // namespace
 
-ScStage1Passkey::ScStage1Passkey(fxl::WeakPtr<PairingPhase::Listener> listener, Role role,
+ScStage1Passkey::ScStage1Passkey(PairingPhase::Listener::WeakPtr listener, Role role,
                                  UInt256 local_pub_key_x, UInt256 peer_pub_key_x,
-                                 PairingMethod method, fxl::WeakPtr<PairingChannel> sm_chan,
+                                 PairingMethod method, PairingChannel::WeakPtr sm_chan,
                                  Stage1CompleteCallback on_complete)
     : listener_(std::move(listener)),
       role_(role),
@@ -43,15 +42,15 @@ ScStage1Passkey::ScStage1Passkey(fxl::WeakPtr<PairingPhase::Listener> listener, 
       peer_rand_(std::nullopt),
       sm_chan_(std::move(sm_chan)),
       on_complete_(std::move(on_complete)),
-      weak_ptr_factory_(this) {
+      weak_self_(this) {
   BT_ASSERT(method == PairingMethod::kPasskeyEntryDisplay ||
             method == PairingMethod::kPasskeyEntryInput);
 }
 
 void ScStage1Passkey::Run() {
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   auto passkey_responder = [self](std::optional<uint32_t> passkey) {
-    if (!self) {
+    if (!self.is_alive()) {
       bt_log(TRACE, "sm", "passkey for expired callback");
       return;
     }

@@ -32,21 +32,18 @@ class Phase1 final : public PairingPhase, public PairingChannelHandler {
 
   // Returns a Phase 1 that starts pairing to |requested_level|. Note the lack of a `preq`
   // parameter: Phase 1 builds & sends the Pairing Request as initiator.
-  static std::unique_ptr<Phase1> CreatePhase1Initiator(fxl::WeakPtr<PairingChannel> chan,
-                                                       fxl::WeakPtr<Listener> listener,
-                                                       IOCapability io_capability,
-                                                       BondableMode bondable_mode,
-                                                       SecurityLevel requested_level,
-                                                       CompleteCallback on_complete);
+  static std::unique_ptr<Phase1> CreatePhase1Initiator(
+      PairingChannel::WeakPtr chan, Listener::WeakPtr listener, IOCapability io_capability,
+      BondableMode bondable_mode, SecurityLevel requested_level, CompleteCallback on_complete);
 
   // Returns a Phase 1 in the responder role. Note the `preq` parameter: Phase 1 is supplied the
   // Pairing Request from the remote as responder. See private ctor for parameter descriptions.
   static std::unique_ptr<Phase1> CreatePhase1Responder(
-      fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, PairingRequestParams preq,
+      PairingChannel::WeakPtr chan, Listener::WeakPtr listener, PairingRequestParams preq,
       IOCapability io_capability, BondableMode bondable_mode, SecurityLevel requested_level,
       CompleteCallback on_complete);
 
-  ~Phase1() override = default;
+  ~Phase1() override { InvalidatePairingChannelHandler(); }
 
   // Runs the Phase 1 state machine, performing the feature exchange.
   void Start() final;
@@ -61,7 +58,7 @@ class Phase1 final : public PairingPhase, public PairingChannelHandler {
   //                      Must be at least SecurityLevel::kEncrypted. If authenticated, the ctor
   //                      ASSERTs that |io_capabilities| can perform authenticated pairing.
   //   |on_complete|: called at the end of Phase 1 with the resulting features.
-  Phase1(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, Role role,
+  Phase1(PairingChannel::WeakPtr chan, Listener::WeakPtr listener, Role role,
          std::optional<PairingRequestParams> preq, IOCapability io_capability,
          BondableMode bondable_mode, SecurityLevel requested_level, CompleteCallback on_complete);
 
@@ -92,10 +89,6 @@ class Phase1 final : public PairingPhase, public PairingChannelHandler {
   void OnChannelClosed() final { PairingPhase::HandleChannelClosed(); }
 
   // PairingPhase overrides
-  fxl::WeakPtr<PairingChannelHandler> AsChannelHandler() final {
-    return weak_ptr_factory_.GetWeakPtr();
-  }
-
   std::string ToStringInternal() override {
     return bt_lib_cpp_string::StringPrintf(
         "Pairing Phase 1 (feature exchange) - pairing to %s security with \"%s\" IOCapabilities",
@@ -117,8 +110,6 @@ class Phase1 final : public PairingPhase, public PairingChannelHandler {
   BondableMode bondable_mode_;
 
   CompleteCallback on_complete_;
-
-  fxl::WeakPtrFactory<Phase1> weak_ptr_factory_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Phase1);
 };

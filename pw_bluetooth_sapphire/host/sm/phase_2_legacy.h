@@ -9,11 +9,10 @@
 #include <lib/fit/function.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/pairing_phase.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::sm {
 
@@ -33,11 +32,11 @@ class Phase2Legacy final : public PairingPhase, public PairingChannelHandler {
   // |initiator_addr|, |responder_addr|: 48-bit bd-address of the initiator and responder, used
   //                                     used for cryptographic hashing
   // |cb|: Callback that is notified when the Phase2 has negotiated a new encryption key.
-  Phase2Legacy(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, Role role,
+  Phase2Legacy(PairingChannel::WeakPtr chan, Listener::WeakPtr listener, Role role,
                PairingFeatures features, const ByteBuffer& preq, const ByteBuffer& pres,
                const DeviceAddress& initiator_addr, const DeviceAddress& responder_addr,
                OnPhase2KeyGeneratedCallback cb);
-  ~Phase2Legacy() override = default;
+  ~Phase2Legacy() override { InvalidatePairingChannelHandler(); }
 
   // Begin Phase 2 of LE legacy pairing. This is called after LE pairing features are exchanged
   // and results (asynchronously) in the generation and encryption of a link using the STK. Follows
@@ -72,10 +71,6 @@ class Phase2Legacy final : public PairingPhase, public PairingChannelHandler {
   void OnChannelClosed() final { PairingPhase::HandleChannelClosed(); }
 
   // PairingPhase overrides
-  fxl::WeakPtr<PairingChannelHandler> AsChannelHandler() final {
-    return weak_ptr_factory_.GetWeakPtr();
-  }
-
   std::string ToStringInternal() override {
     return bt_lib_cpp_string::StringPrintf(
         "Legacy Pairing Phase 2 (encryption key agreement) - pairing with %s method",
@@ -98,7 +93,7 @@ class Phase2Legacy final : public PairingPhase, public PairingChannelHandler {
 
   const OnPhase2KeyGeneratedCallback on_stk_ready_;
 
-  fxl::WeakPtrFactory<Phase2Legacy> weak_ptr_factory_;
+  WeakSelf<Phase2Legacy> weak_self_;
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Phase2Legacy);
 };
 

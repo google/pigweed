@@ -27,10 +27,9 @@
 namespace bt::sm {
 
 Phase2SecureConnections::Phase2SecureConnections(
-    fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, Role role,
-    PairingFeatures features, PairingRequestParams preq, PairingResponseParams pres,
-    const DeviceAddress& initiator_addr, const DeviceAddress& responder_addr,
-    OnPhase2KeyGeneratedCallback cb)
+    PairingChannel::WeakPtr chan, Listener::WeakPtr listener, Role role, PairingFeatures features,
+    PairingRequestParams preq, PairingResponseParams pres, const DeviceAddress& initiator_addr,
+    const DeviceAddress& responder_addr, OnPhase2KeyGeneratedCallback cb)
     : PairingPhase(std::move(chan), std::move(listener), role),
       sent_local_ecdh_(false),
       local_ecdh_(),
@@ -42,13 +41,13 @@ Phase2SecureConnections::Phase2SecureConnections(
       pres_(pres),
       initiator_addr_(initiator_addr),
       responder_addr_(responder_addr),
-      weak_ptr_factory_(this),
+      weak_self_(this),
       on_ltk_ready_(std::move(cb)) {
   BT_ASSERT(features_.secure_connections);
   local_ecdh_ = LocalEcdhKey::Create();
   BT_ASSERT_MSG(local_ecdh_.has_value(), "failed to generate ecdh key");
   BT_ASSERT(sm_chan().SupportsSecureConnections());
-  sm_chan().SetChannelHandler(weak_ptr_factory_.GetWeakPtr());
+  SetPairingChannelHandler(*this);
 }
 
 void Phase2SecureConnections::Start() {
@@ -127,9 +126,9 @@ void Phase2SecureConnections::OnPeerPublicKey(PairingPublicKeyParams peer_pub_ke
 
 void Phase2SecureConnections::StartAuthenticationStage1() {
   BT_ASSERT(peer_ecdh_);
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   auto complete_cb = [self](fit::result<ErrorCode, ScStage1::Output> result) {
-    if (self) {
+    if (self.is_alive()) {
       self->OnAuthenticationStage1Complete(result);
     }
   };

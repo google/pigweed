@@ -16,7 +16,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::sm {
 namespace {
@@ -25,19 +24,18 @@ using PairingChannelHandler = PairingChannel::Handler;
 
 class ConcretePairingPhase : public PairingPhase, public PairingChannelHandler {
  public:
-  ConcretePairingPhase(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener,
-                       Role role, size_t max_packet_size = sizeof(PairingPublicKeyParams))
-      : PairingPhase(std::move(chan), std::move(listener), role), weak_ptr_factory_(this) {
+  ConcretePairingPhase(PairingChannel::WeakPtr chan, Listener::WeakPtr listener, Role role,
+                       size_t max_packet_size = sizeof(PairingPublicKeyParams))
+      : PairingPhase(std::move(chan), std::move(listener), role), weak_handler_(this) {
     // All concrete pairing phases should set themselves as the pairing channel handler.
-    sm_chan().SetChannelHandler(weak_ptr_factory_.GetWeakPtr());
+    SetPairingChannelHandler(*this);
     last_rx_packet_ = DynamicByteBuffer(max_packet_size);
   }
 
-  // PairingPhase overrides.
-  fxl::WeakPtr<PairingChannelHandler> AsChannelHandler() final {
-    return weak_ptr_factory_.GetWeakPtr();
-  }
+  // All concrete pairing phases should invalidate the channel handler in their destructor.
+  ~ConcretePairingPhase() override { InvalidatePairingChannelHandler(); }
 
+  // PairingPhase overrides.
   std::string ToStringInternal() override { return ""; }
 
   // PairingPhase override, not tested as PairingPhase does not implement this pure virtual
@@ -51,7 +49,7 @@ class ConcretePairingPhase : public PairingPhase, public PairingChannelHandler {
   const ByteBuffer& last_rx_packet() { return last_rx_packet_; }
 
  private:
-  fxl::WeakPtrFactory<ConcretePairingPhase> weak_ptr_factory_;
+  WeakSelf<PairingChannelHandler> weak_handler_;
   DynamicByteBuffer last_rx_packet_;
 };
 

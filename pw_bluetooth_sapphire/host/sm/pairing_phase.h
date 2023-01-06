@@ -50,6 +50,8 @@ class PairingPhase {
     // Called when an on-going pairing procedure terminates with an error. This method should
     // destroy the Phase that calls it.
     virtual void OnPairingFailed(Error error) = 0;
+
+    using WeakPtr = WeakSelf<Listener>::WeakPtr;
   };
 
   virtual ~PairingPhase() = default;
@@ -79,22 +81,25 @@ class PairingPhase {
   //   - |chan|: The L2CAP SMP fixed channel.
   //   - |listener|: The class that will handle higher-level requests from the current phase.
   //   - |role|: The local connection role.
-  PairingPhase(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, Role role);
+  PairingPhase(PairingChannel::WeakPtr chan, Listener::WeakPtr listener, Role role);
 
   // For derived final classes to implement PairingChannel::Handler:
   void HandleChannelClosed();
 
   PairingChannel& sm_chan() const {
-    BT_ASSERT(sm_chan_);
-    return *sm_chan_;
+    BT_ASSERT(sm_chan_.is_alive());
+    return sm_chan_.get();
   }
 
-  fxl::WeakPtr<Listener> listener() const { return listener_; }
+  Listener::WeakPtr listener() const { return listener_; }
 
-  // Concrete classes of PairingPhase must be PairingChannelHandlers and set the channel's handler
-  // to a weak pointer to themselves. This abstract method forces concrete PairingPhases to vend
-  // weak pointers to help enforce this.
-  virtual fxl::WeakPtr<PairingChannel::Handler> AsChannelHandler() = 0;
+  // Concrete classes of PairingPhase must be PairingChannelHandlers and call this function when
+  // the phase is ready to handle requests.
+  void SetPairingChannelHandler(PairingChannelHandler& self);
+
+  // Invalidate handling requests to this phase.  This function should only be called once during
+  // destruction of the phase.
+  void InvalidatePairingChannelHandler();
 
   // To BT_ASSERT that methods are not called on a phase that has already failed.
   bool has_failed() const { return has_failed_; }
@@ -103,10 +108,11 @@ class PairingPhase {
   virtual std::string ToStringInternal() = 0;
 
  private:
-  fxl::WeakPtr<PairingChannel> sm_chan_;
-  fxl::WeakPtr<Listener> listener_;
+  PairingChannel::WeakPtr sm_chan_;
+  Listener::WeakPtr listener_;
   Role role_;
   bool has_failed_;
+  WeakSelf<PairingChannel::Handler> weak_channel_handler_;
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PairingPhase);
 };
 

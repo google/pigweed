@@ -40,7 +40,8 @@ class TestSecurityManager final : public SecurityManager {
   // Returns the most recent security upgrade request received by this SM, if one has been made.
   std::optional<SecurityLevel> last_requested_upgrade() const { return last_requested_upgrade_; }
 
-  fxl::WeakPtr<TestSecurityManager> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
+  using WeakPtr = WeakSelf<TestSecurityManager>::WeakPtr;
+  WeakPtr GetWeakPtr() { return weak_self_.GetWeakPtr(); }
 
  private:
   friend class TestSecurityManagerFactory;
@@ -50,7 +51,7 @@ class TestSecurityManager final : public SecurityManager {
   Role role_;
   std::optional<LTK> current_ltk_;
   std::optional<SecurityLevel> last_requested_upgrade_;
-  fxl::WeakPtrFactory<TestSecurityManager> weak_ptr_factory_;
+  WeakSelf<TestSecurityManager> weak_self_;
 };
 
 // TestSecurityManagerFactory provides a public factory method to create TestSecurityManagers for
@@ -77,11 +78,10 @@ class TestSecurityManagerFactory {
 
   // Obtain a reference to the TestSecurityManager associated with |conn_handle|'s connection for
   // use in test code.
-  fxl::WeakPtr<testing::TestSecurityManager> GetTestSm(hci_spec::ConnectionHandle conn_handle);
+  testing::TestSecurityManager::WeakPtr GetTestSm(hci_spec::ConnectionHandle conn_handle);
 
  private:
-  std::unordered_map<hci_spec::ConnectionHandle, fxl::WeakPtr<testing::TestSecurityManager>>
-      test_sms_;
+  std::unordered_map<hci_spec::ConnectionHandle, testing::TestSecurityManager::WeakPtr> test_sms_;
 };
 
 }  // namespace bt::sm::testing

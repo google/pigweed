@@ -10,15 +10,25 @@
 
 namespace bt::sm {
 
-PairingPhase::PairingPhase(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener,
-                           Role role)
-    : sm_chan_(std::move(chan)), listener_(std::move(listener)), role_(role), has_failed_(false) {}
+PairingPhase::PairingPhase(PairingChannel::WeakPtr chan, Listener::WeakPtr listener, Role role)
+    : sm_chan_(std::move(chan)),
+      listener_(std::move(listener)),
+      role_(role),
+      has_failed_(false),
+      weak_channel_handler_(nullptr) {}
+
+void PairingPhase::SetPairingChannelHandler(PairingChannelHandler &self) {
+  weak_channel_handler_ = WeakSelf(&self);
+  sm_chan().SetChannelHandler(weak_channel_handler_.GetWeakPtr());
+}
+
+void PairingPhase::InvalidatePairingChannelHandler() { weak_channel_handler_.InvalidatePtrs(); }
 
 void PairingPhase::OnFailure(Error error) {
   BT_ASSERT(!has_failed());
   bt_log(WARN, "sm", "pairing failed: %s", bt_str(error));
   has_failed_ = true;
-  BT_ASSERT(listener_);
+  BT_ASSERT(listener_.is_alive());
   listener_->OnPairingFailed(error);
 }
 

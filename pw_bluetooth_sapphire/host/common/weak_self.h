@@ -183,7 +183,8 @@ class DynamicWeakManager {
 // The first method is preferable if you expect to vend weak pointers outside the class, as the
 // WeakSelf::GetWeakPtr function is public. However, note that with the first method, members of the
 // class will be destroyed before the class is destroyed - it may be undesirable if during
-// destruction, the weak pointer should be considered dead.
+// destruction, the weak pointer should be considered dead.  This can be mitigated by using
+// InvalidatePtrs() to invalidate the weak pointers in the destructor.
 template <typename T, typename WeakPtrManager = DynamicWeakManager<T>>
 class WeakSelf {
  public:

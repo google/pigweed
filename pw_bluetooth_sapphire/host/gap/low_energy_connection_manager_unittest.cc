@@ -156,7 +156,7 @@ class LowEnergyConnectionManagerTest : public TestingBase {
     return std::move(last_remote_initiated_);
   }
 
-  fxl::WeakPtr<TestSm> TestSmByHandle(hci_spec::ConnectionHandle handle) {
+  TestSm::WeakPtr TestSmByHandle(hci_spec::ConnectionHandle handle) {
     return sm_factory_->GetTestSm(handle);
   }
 
@@ -1652,8 +1652,8 @@ TEST_F(LowEnergyConnectionManagerTest, PairWithBondableModes) {
   ASSERT_TRUE(peer->le());
 
   RunLoopUntilIdle();
-  fxl::WeakPtr<TestSm> mock_sm = TestSmByHandle(conn_handle->handle());
-  ASSERT_TRUE(mock_sm);
+  TestSm::WeakPtr mock_sm = TestSmByHandle(conn_handle->handle());
+  ASSERT_TRUE(mock_sm.is_alive());
 
   ASSERT_EQ(Peer::ConnectionState::kConnected, peer->le()->connection_state());
 
@@ -2767,8 +2767,8 @@ TEST_F(LowEnergyConnectionManagerTest, SetSecureConnectionsOnlyModeWorks) {
   conn_mgr()->Connect(existing_peer->identifier(),
                       MakeConnectionResultCallback(existing_conn_handle), kConnectionOptions);
   RunLoopUntilIdle();
-  fxl::WeakPtr<TestSm> existing_peer_sm = TestSmByHandle(existing_conn_handle->handle());
-  ASSERT_TRUE(existing_peer_sm);
+  TestSm::WeakPtr existing_peer_sm = TestSmByHandle(existing_conn_handle->handle());
+  ASSERT_TRUE(existing_peer_sm.is_alive());
   EXPECT_EQ(LESecurityMode::Mode1, existing_peer_sm->security_mode());
   EXPECT_EQ(1u, connected_peers().size());
 
@@ -2785,8 +2785,8 @@ TEST_F(LowEnergyConnectionManagerTest, SetSecureConnectionsOnlyModeWorks) {
   conn_mgr()->Connect(new_peer->identifier(), MakeConnectionResultCallback(new_conn_handle),
                       kConnectionOptions);
   RunLoopUntilIdle();
-  fxl::WeakPtr<TestSm> new_peer_sm = TestSmByHandle(new_conn_handle->handle());
-  ASSERT_TRUE(new_peer_sm);
+  TestSm::WeakPtr new_peer_sm = TestSmByHandle(new_conn_handle->handle());
+  ASSERT_TRUE(new_peer_sm.is_alive());
   EXPECT_EQ(2u, connected_peers().size());
 
   EXPECT_EQ(LESecurityMode::SecureConnectionsOnly, new_peer_sm->security_mode());

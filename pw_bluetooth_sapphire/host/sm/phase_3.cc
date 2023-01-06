@@ -22,7 +22,7 @@
 
 namespace bt::sm {
 
-Phase3::Phase3(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, Role role,
+Phase3::Phase3(PairingChannel::WeakPtr chan, Listener::WeakPtr listener, Role role,
                PairingFeatures features, SecurityProperties le_sec,
                Phase3CompleteCallback on_complete)
     : PairingPhase(std::move(chan), std::move(listener), role),
@@ -30,8 +30,7 @@ Phase3::Phase3(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listene
       le_sec_(le_sec),
       obtained_remote_keys_(0),
       sent_local_keys_(false),
-      on_complete_(std::move(on_complete)),
-      weak_ptr_factory_(this) {
+      on_complete_(std::move(on_complete)) {
   // LTKs may not be distributed during Secure Connections.
   BT_ASSERT_MSG(!(features_.secure_connections && (ShouldSendLtk() || ShouldReceiveLtk())),
                 "Phase 3 may not distribute the LTK in Secure Connections pairing");
@@ -39,7 +38,7 @@ Phase3::Phase3(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listene
   BT_ASSERT(HasKeysToDistribute(features_));
   // The link must be encrypted with at least an STK in order for Phase 3 to take place.
   BT_ASSERT(le_sec.level() != SecurityLevel::kNoSecurity);
-  sm_chan().SetChannelHandler(weak_ptr_factory_.GetWeakPtr());
+  SetPairingChannelHandler(*this);
 }
 
 void Phase3::Start() {

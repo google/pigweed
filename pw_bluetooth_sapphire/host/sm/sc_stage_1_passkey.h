@@ -9,13 +9,11 @@
 
 #include <cstdint>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/pairing_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/pairing_phase.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/sc_stage_1.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::sm {
 // ScStage1Passkey encapsulates Stage 1 of LE Secure Connections Pairing Phase 2, which takes care
@@ -25,9 +23,9 @@ namespace bt::sm {
 // callbacks will be run by the default dispatcher of a ScStage1Passkey's creation thread.
 class ScStage1Passkey final : public ScStage1 {
  public:
-  ScStage1Passkey(fxl::WeakPtr<PairingPhase::Listener> listener, Role role, UInt256 local_pub_key_x,
-                  UInt256 peer_pub_key_x, PairingMethod method,
-                  fxl::WeakPtr<PairingChannel> sm_chan, Stage1CompleteCallback on_complete);
+  ScStage1Passkey(PairingPhase::Listener::WeakPtr listener, Role role, UInt256 local_pub_key_x,
+                  UInt256 peer_pub_key_x, PairingMethod method, PairingChannel::WeakPtr sm_chan,
+                  Stage1CompleteCallback on_complete);
   void Run() override;
   void OnPairingConfirm(PairingConfirmValue confirm) override;
   void OnPairingRandom(PairingRandomValue rand) override;
@@ -45,7 +43,7 @@ class ScStage1Passkey final : public ScStage1 {
   // stage 1 after all bits are exchanged, or calls StartBitExchange if there are still more bits.
   void FinishBitExchange();
 
-  fxl::WeakPtr<PairingPhase::Listener> listener_;
+  PairingPhase::Listener::WeakPtr listener_;
   Role role_;
   UInt256 local_public_key_x_;
   UInt256 peer_public_key_x_;
@@ -65,9 +63,9 @@ class ScStage1Passkey final : public ScStage1 {
   // The presence of |peer_rand_| signals if we've received the peer's Pairing Random message.
   std::optional<PairingRandomValue> peer_rand_;
 
-  fxl::WeakPtr<PairingChannel> sm_chan_;
+  PairingChannel::WeakPtr sm_chan_;
   Stage1CompleteCallback on_complete_;
-  fxl::WeakPtrFactory<ScStage1Passkey> weak_ptr_factory_;
+  WeakSelf<ScStage1Passkey> weak_self_;
 };
 }  // namespace bt::sm
 

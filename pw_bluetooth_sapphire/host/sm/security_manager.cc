@@ -201,7 +201,9 @@ class SecurityManagerImpl final : public SecurityManager,
                Phase2SecureConnections, Phase3>
       current_phase_;
 
-  fxl::WeakPtrFactory<SecurityManagerImpl> weak_ptr_factory_;
+  WeakSelf<SecurityManagerImpl> weak_self_;
+  WeakSelf<PairingPhase::Listener> weak_listener_;
+  WeakSelf<PairingChannel::Handler> weak_handler_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SecurityManagerImpl);
 };
@@ -228,7 +230,9 @@ SecurityManagerImpl::SecurityManagerImpl(hci::LowEnergyConnection::WeakPtr link,
           smp, fit::bind_member<&SecurityManagerImpl::StartNewTimer>(this))),
       role_(le_link_->role() == hci_spec::ConnectionRole::CENTRAL ? Role::kInitiator
                                                                   : Role::kResponder),
-      weak_ptr_factory_(this) {
+      weak_self_(this),
+      weak_listener_(this),
+      weak_handler_(this) {
   BT_ASSERT(delegate_.is_alive());
   BT_ASSERT(le_link_.is_alive());
   BT_ASSERT(smp.is_alive());
@@ -240,7 +244,7 @@ SecurityManagerImpl::SecurityManagerImpl(hci::LowEnergyConnection::WeakPtr link,
   // Set up HCI encryption event.
   le_link_->set_encryption_change_callback(
       fit::bind_member<&SecurityManagerImpl::OnEncryptionChange>(this));
-  sm_chan_->SetChannelHandler(weak_ptr_factory_.GetWeakPtr());
+  sm_chan_->SetChannelHandler(weak_handler_.GetWeakPtr());
 }
 
 void SecurityManagerImpl::OnSecurityRequest(AuthReqField auth_req) {
@@ -332,7 +336,7 @@ void SecurityManagerImpl::OnPairingRequest(const PairingRequestParams& req_param
   }
 
   current_phase_ = Phase1::CreatePhase1Responder(
-      sm_chan_->GetWeakPtr(), weak_ptr_factory_.GetWeakPtr(), req_params, io_cap_, bondable_mode(),
+      sm_chan_->GetWeakPtr(), weak_listener_.GetWeakPtr(), req_params, io_cap_, bondable_mode(),
       required_level, fit::bind_member<&SecurityManagerImpl::OnFeatureExchange>(this));
   std::get<std::unique_ptr<Phase1>>(current_phase_)->Start();
 }
@@ -359,12 +363,12 @@ fit::result<ErrorCode> SecurityManagerImpl::RequestSecurityUpgrade(SecurityLevel
 
   if (role_ == Role::kInitiator) {
     current_phase_ = Phase1::CreatePhase1Initiator(
-        sm_chan_->GetWeakPtr(), weak_ptr_factory_.GetWeakPtr(), io_cap_, bondable_mode(), level,
+        sm_chan_->GetWeakPtr(), weak_listener_.GetWeakPtr(), io_cap_, bondable_mode(), level,
         fit::bind_member<&SecurityManagerImpl::OnFeatureExchange>(this));
     std::get<std::unique_ptr<Phase1>>(current_phase_)->Start();
   } else {
     current_phase_.emplace<SecurityRequestPhase>(
-        sm_chan_->GetWeakPtr(), weak_ptr_factory_.GetWeakPtr(), level, bondable_mode(),
+        sm_chan_->GetWeakPtr(), weak_listener_.GetWeakPtr(), level, bondable_mode(),
         fit::bind_member<&SecurityManagerImpl::OnPairingRequest>(this));
     std::get<SecurityRequestPhase>(current_phase_).Start();
   }
@@ -379,7 +383,7 @@ void SecurityManagerImpl::OnFeatureExchange(PairingFeatures features, PairingReq
   features_ = features;
 
   const auto [initiator_addr, responder_addr] = LEPairingAddresses();
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_listener_.GetWeakPtr();
   if (!features.secure_connections) {
     auto preq_pdu = util::NewPdu(sizeof(PairingRequestParams)),
          pres_pdu = util::NewPdu(sizeof(PairingResponseParams));
@@ -497,7 +501,7 @@ void SecurityManagerImpl::EndPhase2() {
     OnPairingComplete(PairingData());
     return;
   }
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_listener_.GetWeakPtr();
   current_phase_.emplace<Phase3>(sm_chan_->GetWeakPtr(), self, role_, *features_, security(),
                                  fit::bind_member<&SecurityManagerImpl::OnPairingComplete>(this));
   std::get<Phase3>(current_phase_).Start();
@@ -601,7 +605,7 @@ void SecurityManagerImpl::Reset(IOCapability io_capability) {
 void SecurityManagerImpl::ResetState() {
   StopTimer();
   features_.reset();
-  sm_chan_->SetChannelHandler(weak_ptr_factory_.GetWeakPtr());
+  sm_chan_->SetChannelHandler(weak_handler_.GetWeakPtr());
   current_phase_ = std::monostate{};
 }
 
@@ -656,9 +660,9 @@ std::optional<IdentityInfo> SecurityManagerImpl::OnIdentityRequest() {
 
 void SecurityManagerImpl::ConfirmPairing(ConfirmCallback confirm) {
   BT_ASSERT(delegate_.is_alive());
-  delegate_->ConfirmPairing([id = next_pairing_id_, self = weak_ptr_factory_.GetWeakPtr(),
+  delegate_->ConfirmPairing([id = next_pairing_id_, self = weak_self_.GetWeakPtr(),
                              cb = std::move(confirm)](bool confirm) {
-    if (!self || self->next_pairing_id_ != id) {
+    if (!self.is_alive() || self->next_pairing_id_ != id) {
       bt_log(TRACE, "sm", "ignoring user confirmation for expired pairing: id = %lu", id);
       return;
     }
@@ -670,9 +674,9 @@ void SecurityManagerImpl::DisplayPasskey(uint32_t passkey, Delegate::DisplayMeth
                                          ConfirmCallback confirm) {
   BT_ASSERT(delegate_.is_alive());
   delegate_->DisplayPasskey(passkey, method,
-                            [id = next_pairing_id_, self = weak_ptr_factory_.GetWeakPtr(), method,
+                            [id = next_pairing_id_, self = weak_self_.GetWeakPtr(), method,
                              cb = std::move(confirm)](bool confirm) {
-                              if (!self || self->next_pairing_id_ != id) {
+                              if (!self.is_alive() || self->next_pairing_id_ != id) {
                                 bt_log(TRACE, "sm",
                                        "ignoring %s response for expired pairing: id = %lu",
                                        util::DisplayMethodToString(method).c_str(), id);
@@ -684,9 +688,9 @@ void SecurityManagerImpl::DisplayPasskey(uint32_t passkey, Delegate::DisplayMeth
 
 void SecurityManagerImpl::RequestPasskey(PasskeyResponseCallback respond) {
   BT_ASSERT(delegate_.is_alive());
-  delegate_->RequestPasskey([id = next_pairing_id_, self = weak_ptr_factory_.GetWeakPtr(),
+  delegate_->RequestPasskey([id = next_pairing_id_, self = weak_self_.GetWeakPtr(),
                              cb = std::move(respond)](int64_t passkey) {
-    if (!self || self->next_pairing_id_ != id) {
+    if (!self.is_alive() || self->next_pairing_id_ != id) {
       bt_log(TRACE, "sm", "ignoring passkey input response for expired pairing: id = %lu", id);
       return;
     }

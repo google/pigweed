@@ -9,7 +9,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::sm::testing {
 
@@ -20,7 +19,7 @@ TestSecurityManager::TestSecurityManager(hci::LowEnergyConnection::WeakPtr link,
     : SecurityManager(bondable_mode, security_mode),
       role_(link->role() == hci_spec::ConnectionRole::CENTRAL ? Role::kInitiator
                                                               : Role::kResponder),
-      weak_ptr_factory_(this) {}
+      weak_self_(this) {}
 
 bool TestSecurityManager::AssignLongTermKey(const LTK& ltk) {
   current_ltk_ = ltk;
@@ -50,7 +49,7 @@ std::unique_ptr<SecurityManager> TestSecurityManagerFactory::CreateSm(
   return test_sm;
 }
 
-fxl::WeakPtr<TestSecurityManager> TestSecurityManagerFactory::GetTestSm(
+WeakSelf<TestSecurityManager>::WeakPtr TestSecurityManagerFactory::GetTestSm(
     hci_spec::ConnectionHandle conn_handle) {
   auto iter = test_sms_.find(conn_handle);
   BT_ASSERT(iter != test_sms_.end());

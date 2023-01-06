@@ -13,8 +13,8 @@
 namespace bt::sm {
 
 ScStage1JustWorksNumericComparison::ScStage1JustWorksNumericComparison(
-    fxl::WeakPtr<PairingPhase::Listener> listener, Role role, UInt256 local_pub_key_x,
-    UInt256 peer_pub_key_x, PairingMethod method, fxl::WeakPtr<PairingChannel> sm_chan,
+    PairingPhase::Listener::WeakPtr listener, Role role, UInt256 local_pub_key_x,
+    UInt256 peer_pub_key_x, PairingMethod method, PairingChannel::WeakPtr sm_chan,
     Stage1CompleteCallback on_complete)
     : listener_(std::move(listener)),
       role_(role),
@@ -27,7 +27,7 @@ ScStage1JustWorksNumericComparison::ScStage1JustWorksNumericComparison(
       peer_rand_(),
       sm_chan_(std::move(sm_chan)),
       on_complete_(std::move(on_complete)),
-      weak_ptr_factory_(this) {
+      weak_self_(this) {
   BT_ASSERT(method == PairingMethod::kJustWorks || method == PairingMethod::kNumericComparison);
 }
 
@@ -130,7 +130,7 @@ void ScStage1JustWorksNumericComparison::CompleteStage1() {
                         .responder_r = {0},
                         .initiator_rand = initiator_rand,
                         .responder_rand = responder_rand};
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   if (method_ == PairingMethod::kNumericComparison) {
     std::optional<uint32_t> g2_result =
         util::G2(initiator_pub_key_x, responder_pub_key_x, initiator_rand, responder_rand);
@@ -147,7 +147,7 @@ void ScStage1JustWorksNumericComparison::CompleteStage1() {
         [self, results](bool passkey_confirmed) {
           bt_log(INFO, "sm", "PairingDelegate %s SC numeric display pairing",
                  passkey_confirmed ? "accepted" : "rejected");
-          if (self) {
+          if (self.is_alive()) {
             passkey_confirmed ? self->on_complete_(fit::ok(results))
                               : self->on_complete_(fit::error(ErrorCode::kNumericComparisonFailed));
           }
@@ -156,7 +156,7 @@ void ScStage1JustWorksNumericComparison::CompleteStage1() {
     listener_->ConfirmPairing([self, results](bool user_confirmed) {
       bt_log(INFO, "sm", "PairingDelegate %s SC just works pairing",
              user_confirmed ? "accepted" : "rejected");
-      if (self) {
+      if (self.is_alive()) {
         user_confirmed ? self->on_complete_(fit::ok(results))
                        : self->on_complete_(fit::error(ErrorCode::kUnspecifiedReason));
       }

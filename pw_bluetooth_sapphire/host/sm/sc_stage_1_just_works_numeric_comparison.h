@@ -27,9 +27,9 @@ namespace bt::sm {
 // callbacks will be run by the default dispatcher of a Phase2SecureConnections's creation thread.
 class ScStage1JustWorksNumericComparison final : public ScStage1 {
  public:
-  ScStage1JustWorksNumericComparison(fxl::WeakPtr<PairingPhase::Listener> listener, Role role,
+  ScStage1JustWorksNumericComparison(PairingPhase::Listener::WeakPtr listener, Role role,
                                      UInt256 local_pub_key_x, UInt256 peer_pub_key_x,
-                                     PairingMethod method, fxl::WeakPtr<PairingChannel> sm_chan,
+                                     PairingMethod method, PairingChannel::WeakPtr sm_chan,
                                      Stage1CompleteCallback on_complete);
   void Run() override;
   void OnPairingConfirm(PairingConfirmValue confirm) override;
@@ -41,7 +41,7 @@ class ScStage1JustWorksNumericComparison final : public ScStage1 {
   // Called after all crypto messages have been exchanged
   void CompleteStage1();
 
-  fxl::WeakPtr<PairingPhase::Listener> listener_;
+  PairingPhase::Listener::WeakPtr listener_;
   Role role_;
   UInt256 local_public_key_x_;
   UInt256 peer_public_key_x_;
@@ -58,9 +58,9 @@ class ScStage1JustWorksNumericComparison final : public ScStage1 {
   // The presence of |peer_rand_| signals if we've received the peer's Pairing Random message.
   std::optional<PairingRandomValue> peer_rand_;
 
-  fxl::WeakPtr<PairingChannel> sm_chan_;
+  PairingChannel::WeakPtr sm_chan_;
   Stage1CompleteCallback on_complete_;
-  fxl::WeakPtrFactory<ScStage1JustWorksNumericComparison> weak_ptr_factory_;
+  WeakSelf<ScStage1JustWorksNumericComparison> weak_self_;
 };
 }  // namespace bt::sm
 

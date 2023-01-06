@@ -37,11 +37,11 @@ class Phase2SecureConnections final : public PairingPhase, public PairingChannel
   // |initiator_addr|, |responder_addr|: 48-bit bd-address of the initiator and responder, used
   //                                     used for cryptographic hashing
   // |cb|: Callback used to notify when the Phase2 has negotiated a new encryption key.
-  Phase2SecureConnections(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener,
-                          Role role, PairingFeatures features, PairingRequestParams preq,
+  Phase2SecureConnections(PairingChannel::WeakPtr chan, Listener::WeakPtr listener, Role role,
+                          PairingFeatures features, PairingRequestParams preq,
                           PairingResponseParams pres, const DeviceAddress& initiator_addr,
                           const DeviceAddress& responder_addr, OnPhase2KeyGeneratedCallback cb);
-  ~Phase2SecureConnections() override = default;
+  ~Phase2SecureConnections() override { InvalidatePairingChannelHandler(); }
 
   // Begin Phase 2 of LE Secure Connections pairing. This is called after LE pairing features are
   // exchanged and results (asynchronously) in the generation and encryption of a link using the
@@ -82,10 +82,6 @@ class Phase2SecureConnections final : public PairingPhase, public PairingChannel
   void OnChannelClosed() final { PairingPhase::HandleChannelClosed(); }
 
   // PairingPhase overrides.
-  fxl::WeakPtr<PairingChannelHandler> AsChannelHandler() final {
-    return weak_ptr_factory_.GetWeakPtr();
-  }
-
   std::string ToStringInternal() override {
     return bt_lib_cpp_string::StringPrintf(
         "Secure Connections Pairing Phase 2 (encryption key agreement) - pairing with %s method",
@@ -127,7 +123,7 @@ class Phase2SecureConnections final : public PairingPhase, public PairingChannel
   const DeviceAddress responder_addr_;
   std::optional<UInt128> ltk_;
 
-  fxl::WeakPtrFactory<Phase2SecureConnections> weak_ptr_factory_;
+  WeakSelf<Phase2SecureConnections> weak_self_;
 
   OnPhase2KeyGeneratedCallback on_ltk_ready_;
 

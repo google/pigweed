@@ -40,9 +40,9 @@ class Phase3 final : public PairingPhase, public PairingChannelHandler {
   //     some keys to distribute if Phase3 exists - construction will panic if both the local &
   //     remote key_distribution fields of features are 0.
   //   - |le_sec|: The current security properties of key encrypting the link.
-  Phase3(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, Role role,
+  Phase3(PairingChannel::WeakPtr chan, Listener::WeakPtr listener, Role role,
          PairingFeatures features, SecurityProperties le_sec, Phase3CompleteCallback on_complete);
-  ~Phase3() override = default;
+  ~Phase3() override { InvalidatePairingChannelHandler(); }
 
   // Performs the key distribution phase of pairing.
   void Start() final;
@@ -93,10 +93,6 @@ class Phase3 final : public PairingPhase, public PairingChannelHandler {
   bool ShouldSendIdentity() const;     // True if we should send identity info
 
   // PairingPhase override
-  fxl::WeakPtr<PairingChannelHandler> AsChannelHandler() final {
-    return weak_ptr_factory_.GetWeakPtr();
-  }
-
   std::string ToStringInternal() override {
     return bt_lib_cpp_string::StringPrintf(
         "Pairing Phase 3 (security key distribution) - paired with %s security properties, sending "
@@ -127,8 +123,6 @@ class Phase3 final : public PairingPhase, public PairingChannelHandler {
   std::optional<DeviceAddress> identity_address_;
 
   const Phase3CompleteCallback on_complete_;
-
-  fxl::WeakPtrFactory<Phase3> weak_ptr_factory_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Phase3);
 };

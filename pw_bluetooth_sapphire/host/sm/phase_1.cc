@@ -19,7 +19,7 @@
 namespace bt::sm {
 
 std::unique_ptr<Phase1> Phase1::CreatePhase1Initiator(
-    fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, IOCapability io_capability,
+    PairingChannel::WeakPtr chan, Listener::WeakPtr listener, IOCapability io_capability,
     BondableMode bondable_mode, SecurityLevel requested_level, CompleteCallback on_complete) {
   // Use `new` & unique_ptr constructor here instead of `std::make_unique` because the private
   // Phase1 constructor prevents std::make_unique from working (https://abseil.io/tips/134).
@@ -29,7 +29,7 @@ std::unique_ptr<Phase1> Phase1::CreatePhase1Initiator(
 }
 
 std::unique_ptr<Phase1> Phase1::CreatePhase1Responder(
-    fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, PairingRequestParams preq,
+    PairingChannel::WeakPtr chan, Listener::WeakPtr listener, PairingRequestParams preq,
     IOCapability io_capability, BondableMode bondable_mode, SecurityLevel minimum_allowed_level,
     CompleteCallback on_complete) {
   // Use `new` & unique_ptr constructor here instead of `std::make_unique` because the private
@@ -39,7 +39,7 @@ std::unique_ptr<Phase1> Phase1::CreatePhase1Responder(
                                             minimum_allowed_level, std::move(on_complete)));
 }
 
-Phase1::Phase1(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener, Role role,
+Phase1::Phase1(PairingChannel::WeakPtr chan, Listener::WeakPtr listener, Role role,
                std::optional<PairingRequestParams> preq, IOCapability io_capability,
                BondableMode bondable_mode, SecurityLevel requested_level,
                CompleteCallback on_complete)
@@ -49,15 +49,14 @@ Phase1::Phase1(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listene
       oob_available_(false),
       io_capability_(io_capability),
       bondable_mode_(bondable_mode),
-      on_complete_(std::move(on_complete)),
-      weak_ptr_factory_(this) {
+      on_complete_(std::move(on_complete)) {
   BT_ASSERT(!(role == Role::kInitiator && preq_.has_value()));
   BT_ASSERT(!(role == Role::kResponder && !preq_.has_value()));
   BT_ASSERT(requested_level_ >= SecurityLevel::kEncrypted);
   if (requested_level_ > SecurityLevel::kEncrypted) {
     BT_ASSERT(io_capability != IOCapability::kNoInputNoOutput);
   }
-  sm_chan().SetChannelHandler(weak_ptr_factory_.GetWeakPtr());
+  SetPairingChannelHandler(*this);
 }
 
 void Phase1::Start() {
@@ -135,7 +134,7 @@ LocalPairingParams Phase1::BuildPairingParameters() {
     // We always request identity information from the remote.
     local_params.remote_keys = KeyDistGen::kIdKey;
 
-    BT_ASSERT(listener());
+    BT_ASSERT(listener().is_alive());
     if (listener()->OnIdentityRequest().has_value()) {
       local_params.local_keys |= KeyDistGen::kIdKey;
     }

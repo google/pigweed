@@ -34,11 +34,11 @@ class SecurityRequestPhase final : public PairingPhase, public PairingChannelHan
   //   - |bondable_mode|: The operating bondable mode of the device (v5.2 Vol. 3 Part C 9.4).
   //   - |on_pairing_req|: Used to signal the owning class of an inbound Pairing Request triggered
   //                       by this Security Request.
-  SecurityRequestPhase(fxl::WeakPtr<PairingChannel> chan, fxl::WeakPtr<Listener> listener,
+  SecurityRequestPhase(PairingChannel::WeakPtr chan, Listener::WeakPtr listener,
                        SecurityLevel desired_level, BondableMode bondable_mode,
                        PairingRequestCallback on_pairing_req);
 
-  ~SecurityRequestPhase() override = default;
+  ~SecurityRequestPhase() override { InvalidatePairingChannelHandler(); }
 
   // PairingPhase override.
   void Start() final;
@@ -58,9 +58,6 @@ class SecurityRequestPhase final : public PairingPhase, public PairingChannelHan
   void OnChannelClosed() override { PairingPhase::HandleChannelClosed(); }
 
   // PairingPhase overrides
-  fxl::WeakPtr<PairingChannelHandler> AsChannelHandler() override {
-    return weak_ptr_factory_.GetWeakPtr();
-  }
   std::string ToStringInternal() override {
     return bt_lib_cpp_string::StringPrintf(
         "Security Request Phase  - pending security request for %s",
@@ -71,7 +68,6 @@ class SecurityRequestPhase final : public PairingPhase, public PairingChannelHan
   SecurityLevel pending_security_request_;
 
   PairingRequestCallback on_pairing_req_;
-  fxl::WeakPtrFactory<SecurityRequestPhase> weak_ptr_factory_;
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SecurityRequestPhase);
 };
 

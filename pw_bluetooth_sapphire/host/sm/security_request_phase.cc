@@ -15,16 +15,14 @@
 
 namespace bt::sm {
 
-SecurityRequestPhase::SecurityRequestPhase(fxl::WeakPtr<PairingChannel> chan,
-                                           fxl::WeakPtr<Listener> listener,
+SecurityRequestPhase::SecurityRequestPhase(PairingChannel::WeakPtr chan, Listener::WeakPtr listener,
                                            SecurityLevel desired_level, BondableMode bondable_mode,
                                            PairingRequestCallback on_pairing_req)
     : PairingPhase(std::move(chan), std::move(listener), Role::kResponder),
       bondable_mode_(bondable_mode),
       pending_security_request_(desired_level),
-      on_pairing_req_(std::move(on_pairing_req)),
-      weak_ptr_factory_(this) {
-  sm_chan().SetChannelHandler(weak_ptr_factory_.GetWeakPtr());
+      on_pairing_req_(std::move(on_pairing_req)) {
+  SetPairingChannelHandler(*this);
 }
 
 void SecurityRequestPhase::Start() {
