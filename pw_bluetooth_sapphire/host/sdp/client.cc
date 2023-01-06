@@ -9,8 +9,6 @@
 #include <functional>
 #include <optional>
 
-#include "src/lib/fxl/memory/weak_ptr.h"
-
 namespace bt::sdp {
 
 namespace {
@@ -23,7 +21,7 @@ class Impl final : public Client {
  public:
   explicit Impl(l2cap::Channel::WeakPtr channel);
 
-  virtual ~Impl() override;
+  ~Impl() override;
 
  private:
   void ServiceSearchAttributes(std::unordered_set<UUID> search_pattern,
@@ -45,7 +43,7 @@ class Impl final : public Client {
   };
 
   // Callbacks for l2cap::Channel
-  void OnRxFrame(ByteBufferPtr sdu);
+  void OnRxFrame(ByteBufferPtr data);
   void OnChannelClosed();
 
   // Finishes a pending transaction on this client, completing their callbacks.
@@ -67,28 +65,27 @@ class Impl final : public Client {
   // The channel that this client is running on.
   l2cap::ScopedChannel channel_;
   // THe next transaction id that we should use
-  TransactionId next_tid_;
+  TransactionId next_tid_ = 0;
   // Any transactions that are not completed.
   std::unordered_map<TransactionId, Transaction> pending_;
   // Timeout for the current transaction. false if none are waiting for a response.
   std::optional<async::TaskClosure> pending_timeout_;
 
-  fxl::WeakPtrFactory<Impl> weak_ptr_factory_;
+  WeakSelf<Impl> weak_self_{this};
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Impl);
 };
 
-Impl::Impl(l2cap::Channel::WeakPtr channel)
-    : channel_(std::move(channel)), next_tid_(0), weak_ptr_factory_(this) {
-  auto self = weak_ptr_factory_.GetWeakPtr();
+Impl::Impl(l2cap::Channel::WeakPtr channel) : channel_(std::move(channel)) {
+  auto self = weak_self_.GetWeakPtr();
   bool activated = channel_->Activate(
       [self](auto packet) {
-        if (self) {
+        if (self.is_alive()) {
           self->OnRxFrame(std::move(packet));
         }
       },
       [self] {
-        if (self) {
+        if (self.is_alive()) {
           self->OnChannelClosed();
         }
       });
@@ -173,7 +170,7 @@ void Impl::Finish(TransactionId id) {
   }
   BT_DEBUG_ASSERT_MSG(state.response.complete(), "Finished without complete response");
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
 
   size_t count = state.response.num_attribute_lists();
   for (size_t idx = 0; idx <= count; idx++) {
@@ -187,7 +184,7 @@ void Impl::Finish(TransactionId id) {
   }
 
   // Callbacks may have destroyed this object.
-  if (!self) {
+  if (!self.is_alive()) {
     return;
   }
 
@@ -204,9 +201,9 @@ void Impl::Cancel(TransactionId id, HostError reason) {
     return;
   }
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   node.mapped().callback(ToResult(reason).take_error());
-  if (!self) {
+  if (!self.is_alive()) {
     return;
   }
 

@@ -19,7 +19,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/trace.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 
 namespace bt::socket {
 
@@ -160,7 +160,7 @@ class SocketChannelRelay final {
   // TODO(fxbug.dev/709): We should set an upper bound on the size of this queue.
   std::deque<ByteBufferPtr> socket_write_queue_;
 
-  fxl::WeakPtrFactory<SocketChannelRelay> weak_ptr_factory_;  // Keep last.
+  WeakSelf<SocketChannelRelay> weak_self_;  // Keep last.
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SocketChannelRelay);
 };
@@ -180,7 +180,7 @@ SocketChannelRelay<ChannelT>::SocketChannelRelay(zx::socket socket,
       channel_tx_packet_count_(0u),
       socket_packet_sent_count_(0u),
       socket_packet_recv_count_(0u),
-      weak_ptr_factory_(this) {
+      weak_self_(this) {
   BT_ASSERT(dispatcher_);
   BT_ASSERT(socket_);
   BT_ASSERT(channel_.is_alive());
@@ -219,12 +219,12 @@ bool SocketChannelRelay<ChannelT>::Activate() {
     return false;
   }
 
-  const auto self = weak_ptr_factory_.GetWeakPtr();
+  const auto self = weak_self_.GetWeakPtr();
   const auto channel_id = channel_->id();
   const bool activate_success = channel_->Activate(
       [self, channel_id](ByteBufferPtr rx_data) {
         // Note: this lambda _may_ be invoked immediately for buffered packets.
-        if (self) {
+        if (self.is_alive()) {
           self->OnChannelDataReceived(std::move(rx_data));
         } else {
           bt_log(TRACE, "l2cap", "Ignoring data received on destroyed relay (channel_id=%#.4x)",
@@ -232,7 +232,7 @@ bool SocketChannelRelay<ChannelT>::Activate() {
         }
       },
       [self, channel_id] {
-        if (self) {
+        if (self.is_alive()) {
           self->OnChannelClosed();
         } else {
           bt_log(TRACE, "l2cap", "Ignoring channel closure on destroyed relay (channel_id=%#.4x)",
@@ -503,11 +503,11 @@ void SocketChannelRelay<ChannelT>::BindWait(zx_signals_t trigger, const char* wa
                                             fit::function<void(zx_status_t)> handler) {
   wait->set_object(socket_.get());
   wait->set_trigger(trigger);
-  wait->set_handler([self = weak_ptr_factory_.GetWeakPtr(), channel_id = channel_->id(), wait_name,
+  wait->set_handler([self = weak_self_.GetWeakPtr(), channel_id = channel_->id(), wait_name,
                      expected_wait = wait, handler = std::move(handler)](
                         async_dispatcher_t* actual_dispatcher, async::WaitBase* actual_wait,
                         zx_status_t status, const zx_packet_signal_t* signal) {
-    BT_ASSERT_MSG(self, "(%s, channel_id=%u)", wait_name, channel_id);
+    BT_ASSERT_MSG(self.is_alive(), "(%s, channel_id=%u)", wait_name, channel_id);
     BT_ASSERT_MSG(actual_dispatcher == self->dispatcher_, "(%s, channel_id=%u)", wait_name,
                   channel_id);
     BT_ASSERT_MSG(actual_wait == expected_wait, "(%s, channel_id=%u)", wait_name, channel_id);

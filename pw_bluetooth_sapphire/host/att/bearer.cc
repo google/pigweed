@@ -266,7 +266,7 @@ Bearer::Bearer(l2cap::Channel::WeakPtr chan)
     : chan_(std::move(chan)),
       next_remote_transaction_id_(1u),
       next_handler_id_(1u),
-      weak_ptr_factory_(this) {
+      weak_self_(this) {
   BT_DEBUG_ASSERT(chan_);
 
   if (chan_->link_type() == bt::LinkType::kLE) {
@@ -587,11 +587,11 @@ void Bearer::HandleEndTransaction(TransactionQueue* tq, const PacketReader& pack
          bt_str(error->first), sm::LevelToString(security_requirement));
   chan_->UpgradeSecurity(
       security_requirement,
-      [self = weak_ptr_factory_.GetWeakPtr(), error = *std::move(error), security_requirement,
+      [self = weak_self_.GetWeakPtr(), error = *std::move(error), security_requirement,
        t = std::move(transaction)](sm::Result<> status) mutable {
         // If the security upgrade failed or the bearer got destroyed, then
         // resolve the transaction with the original error.
-        if (!self || status.is_error()) {
+        if (!self.is_alive() || status.is_error()) {
           t->callback(fit::error(std::move(error)));
           return;
         }

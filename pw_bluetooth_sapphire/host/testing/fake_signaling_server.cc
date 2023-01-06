@@ -15,7 +15,6 @@ void FakeSignalingServer::RegisterWithL2cap(FakeL2cap* l2cap_) {
   auto cb = [&](auto conn, auto& sdu) { return HandleSdu(conn, sdu); };
   l2cap_->RegisterHandler(l2cap::kSignalingChannelId, cb);
   fake_l2cap_ = l2cap_;
-  return;
 }
 
 void FakeSignalingServer::HandleSdu(hci_spec::ConnectionHandle conn, const ByteBuffer& sdu) {
@@ -78,7 +77,7 @@ void FakeSignalingServer::ProcessConnectionRequest(hci_spec::ConnectionHandle co
                            l2cap::ConnectionStatus::kNoInfoAvailable);
     return;
   }
-  if (fake_l2cap_->FindDynamicChannelByRemoteId(conn, remote_cid)) {
+  if (fake_l2cap_->FindDynamicChannelByRemoteId(conn, remote_cid).is_alive()) {
     bt_log(ERROR, "l2cap-bredr",
            "Remote CID already in use; rejecting connection for PSM %#.4x from channel %#.4x", psm,
            remote_cid);
@@ -119,7 +118,7 @@ void FakeSignalingServer::ProcessConfigurationRequest(hci_spec::ConnectionHandle
   const l2cap::ChannelId local_cid =
       configuration_req.ReadMember<&l2cap::ConfigurationRequestPayload::dst_cid>();
   auto channel = fake_l2cap_->FindDynamicChannelByLocalId(conn, local_cid);
-  if (channel) {
+  if (channel.is_alive()) {
     channel->set_configuration_request_received();
     SendConfigurationResponse(conn, id, local_cid, l2cap::ConfigurationResult::kSuccess);
     if (channel->configuration_response_received() && channel->configuration_request_received()) {
@@ -130,7 +129,6 @@ void FakeSignalingServer::ProcessConfigurationRequest(hci_spec::ConnectionHandle
     bt_log(ERROR, "fake-hci", "No local channel at channel ID %#.4x", local_cid);
     SendConfigurationResponse(conn, id, local_cid, l2cap::ConfigurationResult::kRejected);
   }
-  return;
 }
 
 void FakeSignalingServer::ProcessConfigurationResponse(hci_spec::ConnectionHandle conn,
@@ -144,7 +142,7 @@ void FakeSignalingServer::ProcessConfigurationResponse(hci_spec::ConnectionHandl
     bt_log(ERROR, "fake-hci", "Failed to create local channel at channel ID %#.4x", local_cid);
   }
   auto channel = fake_l2cap_->FindDynamicChannelByLocalId(conn, local_cid);
-  if (channel) {
+  if (channel.is_alive()) {
     channel->set_configuration_response_received();
     if (channel->configuration_response_received() && channel->configuration_request_received()) {
       channel->set_opened();
@@ -160,7 +158,7 @@ void FakeSignalingServer::ProcessDisconnectionRequest(hci_spec::ConnectionHandle
   const l2cap::ChannelId local_cid = letoh16(disconn_req.dst_cid);
   const l2cap::ChannelId remote_cid = letoh16(disconn_req.src_cid);
   auto channel = fake_l2cap_->FindDynamicChannelByLocalId(conn, local_cid);
-  if (channel) {
+  if (channel.is_alive()) {
     fake_l2cap_->DeleteDynamicChannelByLocalId(conn, local_cid);
     return SendDisconnectionResponse(conn, id, local_cid, remote_cid);
   } else {

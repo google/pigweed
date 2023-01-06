@@ -10,9 +10,10 @@
 #include <memory>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 
 namespace bt::testing {
 
@@ -83,7 +84,8 @@ class FakeDynamicChannel {
   ChannelDeletedCallback& channel_deleted_callback() { return channel_deleted_callback_; }
 
   // Return a WeakPtr instance of this FakeDynamicChannel
-  fxl::WeakPtr<FakeDynamicChannel> AsWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
+  using WeakPtr = WeakSelf<FakeDynamicChannel>::WeakPtr;
+  FakeDynamicChannel::WeakPtr AsWeakPtr() { return weak_self_.GetWeakPtr(); }
 
  private:
   // ConnectionHandle associated with what
@@ -124,7 +126,7 @@ class FakeDynamicChannel {
 
   // Any management of FakeDynamicChannel instances outside of FakeL2cap
   // should be done through the use of WeakPtrs.
-  fxl::WeakPtrFactory<FakeDynamicChannel> weak_ptr_factory_;
+  WeakSelf<FakeDynamicChannel> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(FakeDynamicChannel);
 };

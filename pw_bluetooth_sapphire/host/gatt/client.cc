@@ -74,8 +74,8 @@ bool ProcessDescriptorDiscoveryResponse(att::Handle range_start, att::Handle ran
 
 class Impl final : public Client {
  public:
-  explicit Impl(fxl::WeakPtr<att::Bearer> bearer) : att_(std::move(bearer)), weak_self_(this) {
-    BT_DEBUG_ASSERT(att_);
+  explicit Impl(att::Bearer::WeakPtr bearer) : att_(std::move(bearer)), weak_self_(this) {
+    BT_DEBUG_ASSERT(att_.is_alive());
 
     auto handler = [this](auto txn_id, const att::PacketReader& pdu) {
       BT_DEBUG_ASSERT(pdu.opcode() == att::kNotification || pdu.opcode() == att::kIndication);
@@ -1074,7 +1074,7 @@ class Impl final : public Client {
     };
   }
 
-  fxl::WeakPtr<att::Bearer> att_;
+  att::Bearer::WeakPtr att_;
   att::Bearer::HandlerId not_handler_id_;
   att::Bearer::HandlerId ind_handler_id_;
 
@@ -1095,7 +1095,7 @@ class Impl final : public Client {
 };
 
 // static
-std::unique_ptr<Client> Client::Create(fxl::WeakPtr<att::Bearer> bearer) {
+std::unique_ptr<Client> Client::Create(att::Bearer::WeakPtr bearer) {
   return std::make_unique<Impl>(std::move(bearer));
 }
 

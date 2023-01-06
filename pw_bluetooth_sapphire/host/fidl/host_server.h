@@ -26,7 +26,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/pairing_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/lib/fidl/hanging_getter.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bthost {
 
@@ -213,7 +212,7 @@ class HostServer : public AdapterServerBase<fuchsia::bluetooth::host::Host>,
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.
-  fxl::WeakPtrFactory<HostServer> weak_ptr_factory_;
+  WeakSelf<HostServer> weak_self_;
 
   WeakSelf<PairingDelegate> weak_pairing_;
 

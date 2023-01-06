@@ -33,7 +33,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
 

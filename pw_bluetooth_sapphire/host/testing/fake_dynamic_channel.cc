@@ -15,6 +15,6 @@ FakeDynamicChannel::FakeDynamicChannel(hci_spec::ConnectionHandle conn, l2cap::P
       psm_(psm),
       local_cid_(local_cid),
       remote_cid_(remote_cid),
-      weak_ptr_factory_(this) {}
+      weak_self_(this) {}
 
 }  // namespace bt::testing

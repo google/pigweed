@@ -8,11 +8,6 @@
 #include <lib/fit/defer.h>
 #include <zircon/status.h>
 
-#include "pw_bluetooth/vendor.h"
-#include "slab_allocators.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
-
 namespace bt::hci {
 
 using pw::bluetooth::Controller;
@@ -27,7 +22,7 @@ class ScoDataChannelImpl final : public ScoDataChannel {
   ~ScoDataChannelImpl() override;
 
   // ScoDataChannel overrides:
-  void RegisterConnection(fxl::WeakPtr<ConnectionInterface> connection) override;
+  void RegisterConnection(ConnectionInterface::WeakPtr connection) override;
   void UnregisterConnection(hci_spec::ConnectionHandle handle) override;
   void ClearControllerPacketCount(hci_spec::ConnectionHandle handle) override;
   void OnOutboundPacketReadable() override;
@@ -40,7 +35,7 @@ class ScoDataChannelImpl final : public ScoDataChannel {
   };
 
   struct ConnectionData {
-    fxl::WeakPtr<ConnectionInterface> connection;
+    ConnectionInterface::WeakPtr connection;
     HciConfigState config_state = HciConfigState::kPending;
   };
 
@@ -67,7 +62,7 @@ class ScoDataChannelImpl final : public ScoDataChannel {
   CommandChannel::EventCallbackResult OnNumberOfCompletedPacketsEvent(const EventPacket& event);
 
   bool IsActiveConnectionConfigured() {
-    if (!active_connection_) {
+    if (!active_connection_.is_alive()) {
       return false;
     }
     auto iter = connections_.find(active_connection_->handle());
@@ -84,7 +79,7 @@ class ScoDataChannelImpl final : public ScoDataChannel {
   std::unordered_map<hci_spec::ConnectionHandle, ConnectionData> connections_;
 
   // Only 1 connection may send packets at a time.
-  fxl::WeakPtr<ConnectionInterface> active_connection_;
+  ConnectionInterface::WeakPtr active_connection_;
 
   // Stores per-connection counts of unacknowledged packets sent to the controller. Entries are
   // updated/removed on the HCI Number Of Completed Packets event and removed when a connection is
@@ -94,7 +89,7 @@ class ScoDataChannelImpl final : public ScoDataChannel {
   // The event handler ID for the Number Of Completed Packets event.
   CommandChannel::EventHandlerId num_completed_packets_event_handler_id_;
 
-  fxl::WeakPtrFactory<ScoDataChannelImpl> weak_ptr_factory_{this};
+  WeakSelf<ScoDataChannelImpl> weak_self_{this};
 };
 
 ScoDataChannelImpl::ScoDataChannelImpl(const DataBufferInfo& buffer_info,
@@ -119,7 +114,7 @@ ScoDataChannelImpl::~ScoDataChannelImpl() {
   command_channel_->RemoveEventHandler(num_completed_packets_event_handler_id_);
 }
 
-void ScoDataChannelImpl::RegisterConnection(fxl::WeakPtr<ConnectionInterface> connection) {
+void ScoDataChannelImpl::RegisterConnection(ConnectionInterface::WeakPtr connection) {
   BT_ASSERT(connection->parameters().view().output_data_path().Read() ==
             hci_spec::ScoDataPath::HCI);
   ConnectionData conn_data{.connection = connection};
@@ -279,7 +274,7 @@ size_t ScoDataChannelImpl::GetNumFreePackets() {
 }
 
 void ScoDataChannelImpl::MaybeUpdateActiveConnection() {
-  if (active_connection_ && connections_.count(active_connection_->handle())) {
+  if (active_connection_.is_alive() && connections_.count(active_connection_->handle())) {
     // Active connection is still registered.
     return;
   }
@@ -295,7 +290,7 @@ void ScoDataChannelImpl::MaybeUpdateActiveConnection() {
 }
 
 void ScoDataChannelImpl::ConfigureHci() {
-  if (!active_connection_) {
+  if (!active_connection_.is_alive()) {
     hci_->ResetSco([](pw::Status status) {
       bt_log(DEBUG, "hci", "ResetSco completed with status %s", pw_StatusString(status));
     });
@@ -350,8 +345,8 @@ void ScoDataChannelImpl::ConfigureHci() {
   auto conn = connections_.find(active_connection_->handle());
   BT_ASSERT(conn != connections_.end());
 
-  auto callback = [self = weak_ptr_factory_.GetWeakPtr(), handle = conn->first](pw::Status status) {
-    if (self) {
+  auto callback = [self = weak_self_.GetWeakPtr(), handle = conn->first](pw::Status status) {
+    if (self.is_alive()) {
       self->OnHciConfigured(handle, status);
     }
   };

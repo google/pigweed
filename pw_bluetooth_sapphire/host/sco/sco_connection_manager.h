@@ -50,7 +50,7 @@ class ScoConnectionManager final {
   // |kCanceled| if a connection was never attempted, or |kFailed| if establishing a connection
   // failed. Returns a handle that will cancel the request when dropped (if connection establishment
   // has not started).
-  using OpenConnectionResult = fit::result<HostError, fxl::WeakPtr<ScoConnection>>;
+  using OpenConnectionResult = fit::result<HostError, ScoConnection::WeakPtr>;
   using OpenConnectionCallback = fit::callback<void(OpenConnectionResult)>;
   RequestHandle OpenConnection(
       bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> parameters,
@@ -65,7 +65,7 @@ class ScoConnectionManager final {
   // cancel the request when destroyed (if connection establishment has not started).
   using AcceptConnectionResult =
       fit::result<HostError,
-                  std::pair<fxl::WeakPtr<ScoConnection>, size_t /*index of parameters used*/>>;
+                  std::pair<ScoConnection::WeakPtr, size_t /*index of parameters used*/>>;
   using AcceptConnectionCallback = fit::callback<void(AcceptConnectionResult)>;
   RequestHandle AcceptConnection(
       std::vector<bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>> parameters,
@@ -75,7 +75,7 @@ class ScoConnectionManager final {
   using ScoRequestId = uint64_t;
   using ConnectionResult =
       fit::result<HostError,
-                  std::pair<fxl::WeakPtr<ScoConnection>, size_t /*index of parameters used*/>>;
+                  std::pair<ScoConnection::WeakPtr, size_t /*index of parameters used*/>>;
   using ConnectionCallback = fit::callback<void(ConnectionResult)>;
 
   class ConnectionRequest final {

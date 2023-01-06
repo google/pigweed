@@ -14,8 +14,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::att {
 
@@ -26,7 +26,7 @@ namespace bt::att {
 // referenced handle ranges are distinct. While this class is primarily intended
 // to be used as a local ATT server database, it could also be used to represent
 // a remote attribute cache.
-class Database final {
+class Database final : public WeakSelf<Database> {
   using GroupingList = std::list<AttributeGrouping>;
 
  public:
@@ -144,8 +144,6 @@ class Database final {
   void ExecuteWriteQueue(PeerId peer_id, PrepareWriteQueue write_queue,
                          const sm::SecurityProperties& security, WriteCallback callback);
 
-  fxl::WeakPtr<Database> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
-
  private:
   Handle range_start_;
   Handle range_end_;
@@ -154,8 +152,6 @@ class Database final {
   // non-overlapping handle range. Successive groupings don't necessarily
   // represent contiguous handle ranges as any grouping can be removed.
   GroupingList groupings_;
-
-  fxl::WeakPtrFactory<Database> weak_ptr_factory_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Database);
 };

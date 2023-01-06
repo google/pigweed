@@ -23,13 +23,10 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_discovery_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
-#include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_address_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_discovery_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/util.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
-#include "src/lib/fxl/strings/join_strings.h"
-#include "src/lib/fxl/strings/string_number_conversions.h"
 
 namespace bthost {
 
@@ -99,36 +96,36 @@ HostServer::HostServer(zx::channel channel, const bt::gap::Adapter::WeakPtr& ada
       requesting_discoverable_(false),
       io_capability_(IOCapability::kNoInputNoOutput),
       watch_peers_getter_(adapter->peer_cache()),
-      weak_ptr_factory_(this),
+      weak_self_(this),
       weak_pairing_(this) {
   BT_ASSERT(gatt_.is_alive());
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   peer_updated_callback_id_ =
       adapter->peer_cache()->add_peer_updated_callback([self](const auto& peer) {
-        if (self) {
+        if (self.is_alive()) {
           self->OnPeerUpdated(peer);
         }
       });
   adapter->peer_cache()->set_peer_removed_callback([self](const auto& identifier) {
-    if (self) {
+    if (self.is_alive()) {
       self->OnPeerRemoved(identifier);
     }
   });
   adapter->peer_cache()->set_peer_bonded_callback([self](const auto& peer) {
-    if (self) {
+    if (self.is_alive()) {
       self->OnPeerBonded(peer);
     }
   });
   adapter->set_auto_connect_callback([self](auto conn_ref) {
-    if (self) {
+    if (self.is_alive()) {
       self->RegisterLowEnergyConnection(std::move(conn_ref), /*auto_connect=*/true);
     }
   });
 
   // Watch for changes in LE address.
   adapter->le()->register_address_changed_callback([self]() {
-    if (self) {
+    if (self.is_alive()) {
       self->NotifyInfoChange();
     }
   });
@@ -161,10 +158,10 @@ void HostServer::WatchPeers(WatchPeersCallback callback) {
 
 void HostServer::SetLocalName(::std::string local_name, SetLocalNameCallback callback) {
   BT_DEBUG_ASSERT(!local_name.empty());
-  adapter()->SetLocalName(std::move(local_name), [self = weak_ptr_factory_.GetWeakPtr(),
+  adapter()->SetLocalName(std::move(local_name), [self = weak_self_.GetWeakPtr(),
                                                   callback = std::move(callback)](auto status) {
     // Send adapter state update on success and if the connection is still open.
-    if (status.is_ok() && self) {
+    if (status.is_ok() && self.is_alive()) {
       self->NotifyInfoChange();
     }
     callback(ResultToFidl(status));
@@ -190,10 +187,10 @@ void HostServer::StartLEDiscovery(StartDiscoveryCallback callback) {
   }
   adapter()->le()->StartDiscovery(
       /*active=*/true,
-      [self = weak_ptr_factory_.GetWeakPtr(), callback = std::move(callback)](auto session) {
+      [self = weak_self_.GetWeakPtr(), callback = std::move(callback)](auto session) {
         // End the new session if this AdapterServer got destroyed in the
         // meantime (e.g. because the client disconnected).
-        if (!self) {
+        if (!self.is_alive()) {
           callback(fpromise::error(fsys::Error::FAILED));
           return;
         }
@@ -244,9 +241,9 @@ void HostServer::StartDiscovery(StartDiscoveryCallback callback) {
   }
   // TODO(jamuraa): start these in parallel instead of sequence
   adapter()->bredr()->RequestDiscovery(
-      [self = weak_ptr_factory_.GetWeakPtr(), callback = std::move(callback), func = __FUNCTION__](
+      [self = weak_self_.GetWeakPtr(), callback = std::move(callback), func = __FUNCTION__](
           bt::hci::Result<> result, auto session) mutable {
-        if (!self) {
+        if (!self.is_alive()) {
           callback(fpromise::error(fsys::Error::FAILED));
           return;
         }
@@ -372,8 +369,8 @@ void HostServer::RegisterLowEnergyConnection(
 
   bt_log(DEBUG, "fidl", "LE peer connected (%s): %s ", (auto_connect ? "auto" : "direct"),
          bt_str(id));
-  conn_ref->set_closed_callback([self = weak_ptr_factory_.GetWeakPtr(), id] {
-    if (self)
+  conn_ref->set_closed_callback([self = weak_self_.GetWeakPtr(), id] {
+    if (self.is_alive())
       self->le_connections_.erase(id);
   });
   le_connections_[id] = std::move(conn_ref);
@@ -399,9 +396,9 @@ void HostServer::SetDiscoverable(bool discoverable, SetDiscoverableCallback call
     return;
   }
   adapter()->bredr()->RequestDiscoverable(
-      [self = weak_ptr_factory_.GetWeakPtr(), callback = std::move(callback), func = __FUNCTION__](
+      [self = weak_self_.GetWeakPtr(), callback = std::move(callback), func = __FUNCTION__](
           bt::hci::Result<> result, auto session) {
-        if (!self) {
+        if (!self.is_alive()) {
           callback(fpromise::error(fsys::Error::FAILED));
           return;
         }
@@ -450,8 +447,8 @@ void HostServer::EnableBackgroundScan(bool enabled) {
 
   requesting_background_scan_ = true;
   adapter()->le()->StartDiscovery(
-      /*active=*/false, [self = weak_ptr_factory_.GetWeakPtr()](auto session) {
-        if (!self) {
+      /*active=*/false, [self = weak_self_.GetWeakPtr()](auto session) {
+        if (!self.is_alive()) {
           return;
         }
 
@@ -503,11 +500,11 @@ void HostServer::SetPairingDelegate(fsys::InputCapability input, fsys::OutputCap
          bt::sm::util::IOCapabilityToString(io_capability_).c_str());
 
   auto pairing = weak_pairing_.GetWeakPtr();
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   adapter()->SetPairingDelegate(pairing);
   pairing_delegate_.set_error_handler([self, func = __FUNCTION__](zx_status_t status) {
     bt_log(INFO, "fidl", "%s error handler: PairingDelegate disconnected", func);
-    if (self) {
+    if (self.is_alive()) {
       self->ResetPairingDelegate();
     }
   });
@@ -559,7 +556,7 @@ void HostServer::Disconnect(fbt::PeerId peer_id, DisconnectCallback callback) {
 }
 
 void HostServer::ConnectLowEnergy(PeerId peer_id, ConnectCallback callback) {
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   auto on_complete = [self, callback = std::move(callback), peer_id,
                       func = __FUNCTION__](auto result) {
     if (result.is_error()) {
@@ -576,7 +573,7 @@ void HostServer::ConnectLowEnergy(PeerId peer_id, ConnectCallback callback) {
 
     callback(fpromise::ok());
 
-    if (self)
+    if (self.is_alive())
       self->RegisterLowEnergyConnection(std::move(connection), /*auto_connect=*/false);
   };
 
@@ -719,10 +716,10 @@ void HostServer::RequestLowEnergyPeripheral(
 
 void HostServer::RequestGattServer(
     fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Server> server) {
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   auto server_ptr = std::make_unique<GattServerServer>(gatt_->GetWeakPtr(), std::move(server));
   server_ptr->set_error_handler([self, server = server_ptr.get()](zx_status_t status) {
-    if (self) {
+    if (self.is_alive()) {
       bt_log(DEBUG, "bt-host", "GATT server disconnected");
       self->servers_.erase(server);
     }
@@ -732,10 +729,10 @@ void HostServer::RequestGattServer(
 
 void HostServer::RequestGatt2Server(
     fidl::InterfaceRequest<fuchsia::bluetooth::gatt2::Server> server) {
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   auto server_ptr = std::make_unique<Gatt2ServerServer>(gatt_->GetWeakPtr(), std::move(server));
   server_ptr->set_error_handler([self, server = server_ptr.get()](zx_status_t status) {
-    if (self) {
+    if (self.is_alive()) {
       bt_log(DEBUG, "bt-host", "GATT2 server disconnected");
       self->servers_.erase(server);
     }
@@ -753,7 +750,7 @@ void HostServer::Close() {
 
   // Invalidate all weak pointers. This will guarantee that all pending tasks
   // that reference this HostServer will return early if they run in the future.
-  weak_ptr_factory_.InvalidateWeakPtrs();
+  weak_self_.InvalidatePtrs();
 
   // Destroy all FIDL bindings.
   servers_.clear();

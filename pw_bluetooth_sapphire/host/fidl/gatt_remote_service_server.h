@@ -14,7 +14,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bthost {
 
@@ -57,8 +56,7 @@ class GattRemoteServiceServer : public GattServerBase<fuchsia::bluetooth::gatt::
   using HandlerId = bt::gatt::IdType;
   std::unordered_map<bt::gatt::CharacteristicHandle, HandlerId> notify_handlers_;
 
-  WeakSelf<GattRemoteServiceServer> weak_ptr_factory_;
-
+  WeakSelf<GattRemoteServiceServer> weak_self_;
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GattRemoteServiceServer);
 };
 

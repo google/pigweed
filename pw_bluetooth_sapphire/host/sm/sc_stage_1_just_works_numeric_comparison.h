@@ -15,7 +15,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/pairing_phase.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/sc_stage_1.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::sm {
 

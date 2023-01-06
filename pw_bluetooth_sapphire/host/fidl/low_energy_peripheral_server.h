@@ -12,12 +12,12 @@
 #include <unordered_map>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/low_energy_connection_server.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_advertising_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_manager.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bthost {
 
@@ -94,7 +94,7 @@ class LowEnergyPeripheralServer : public AdapterServerBase<fuchsia::bluetooth::l
     // Callback used to send a response to the Advertise request that started this advertisement.
     AdvertiseCompleteCallback advertise_complete_cb_;
 
-    fxl::WeakPtrFactory<AdvertisementInstance> weak_ptr_factory_;
+    WeakSelf<AdvertisementInstance> weak_self_;
 
     BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AdvertisementInstance);
   };
@@ -168,7 +168,7 @@ class LowEnergyPeripheralServer : public AdapterServerBase<fuchsia::bluetooth::l
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.
-  fxl::WeakPtrFactory<LowEnergyPeripheralServer> weak_ptr_factory_;
+  WeakSelf<LowEnergyPeripheralServer> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyPeripheralServer);
 };

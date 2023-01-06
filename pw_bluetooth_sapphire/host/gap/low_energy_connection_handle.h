@@ -8,7 +8,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::gap {
 

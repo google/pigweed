@@ -10,7 +10,6 @@
 #include "fuchsia/bluetooth/cpp/fidl.h"
 #include "fuchsia/bluetooth/gatt2/cpp/fidl.h"
 #include "lib/fidl/cpp/interface_ptr.h"
-#include "lib/fit/defer.h"
 #include "lib/fit/function.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
@@ -44,7 +43,7 @@ namespace bthost {
 
 Gatt2ServerServer::Gatt2ServerServer(
     btg::GATT::WeakPtr gatt, fidl::InterfaceRequest<fuchsia::bluetooth::gatt2::Server> request)
-    : GattServerBase(std::move(gatt), this, std::move(request)), weak_ptr_factory_(this) {}
+    : GattServerBase(std::move(gatt), this, std::move(request)), weak_self_(this) {}
 
 Gatt2ServerServer::~Gatt2ServerServer() {
   // Remove all services from the local GATT host.
@@ -103,10 +102,10 @@ void Gatt2ServerServer::PublishService(ServiceInfo info,
     gatt_svc->AddCharacteristic(std::move(maybe_chrc));
   }
 
-  fxl::WeakPtr<Gatt2ServerServer> self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   auto id_cb = [self, service_handle = std::move(service), client_svc_id,
                 callback = std::move(callback)](btg::IdType raw_id) mutable {
-    if (!self) {
+    if (!self.is_alive()) {
       return;
     }
 

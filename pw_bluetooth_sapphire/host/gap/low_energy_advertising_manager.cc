@@ -86,7 +86,7 @@ class LowEnergyAdvertisingManager::ActiveAdvertisement final {
 
 LowEnergyAdvertisingManager::LowEnergyAdvertisingManager(
     hci::LowEnergyAdvertiser* advertiser, hci::LocalAddressDelegate* local_addr_delegate)
-    : advertiser_(advertiser), local_addr_delegate_(local_addr_delegate), weak_ptr_factory_(this) {
+    : advertiser_(advertiser), local_addr_delegate_(local_addr_delegate), weak_self_(this) {
   BT_DEBUG_ASSERT(advertiser_);
   BT_DEBUG_ASSERT(local_addr_delegate_);
 }
@@ -120,7 +120,7 @@ void LowEnergyAdvertisingManager::StartAdvertising(AdvertisingData data, Adverti
                                                        AdvFlag::kLEGeneralDiscoverableMode,
                                                        include_tx_power_level);
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
 
   // TODO(fxbug.dev/1335): The address used for legacy advertising must be
   // coordinated via |local_addr_delegate_| however a unique address can be

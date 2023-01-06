@@ -15,7 +15,8 @@ ScoConnection::ScoConnection(
       deactivated_cb_(std::move(deactivated_cb)),
       channel_(channel),
       parameters_(std::move(parameters)),
-      weak_ptr_factory_(this) {
+      weak_conn_interface_(this),
+      weak_self_(this) {
   BT_ASSERT(connection_);
   BT_ASSERT(!channel_ ||
             channel_->max_data_length() <= hci_spec::kMaxSynchronousDataPacketPayloadSize);
@@ -61,7 +62,7 @@ bool ScoConnection::Activate(fit::closure rx_callback, fit::closure closed_callb
   rx_callback_ = std::move(rx_callback);
   active_ = true;
   if (channel_ && parameters_.view().input_data_path().Read() == hci_spec::ScoDataPath::HCI) {
-    channel_->RegisterConnection(weak_ptr_factory_.GetWeakPtr());
+    channel_->RegisterConnection(weak_conn_interface_.GetWeakPtr());
   }
   return true;
 }

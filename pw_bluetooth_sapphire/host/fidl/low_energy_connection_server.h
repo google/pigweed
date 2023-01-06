@@ -12,7 +12,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/low_energy_connection_handle.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bthost {
 

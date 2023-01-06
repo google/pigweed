@@ -193,7 +193,7 @@ class GattServerServer::LocalServiceImpl
 
 GattServerServer::GattServerServer(bt::gatt::GATT::WeakPtr gatt,
                                    fidl::InterfaceRequest<fuchsia::bluetooth::gatt::Server> request)
-    : GattServerBase(gatt, this, std::move(request)), weak_ptr_factory_(this) {}
+    : GattServerBase(gatt, this, std::move(request)), weak_self_(this) {}
 
 GattServerServer::~GattServerServer() {
   // This will remove all of our services from their adapter.
@@ -250,12 +250,12 @@ void GattServerServer::PublishService(ServiceInfo service_info,
     }
   }
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
 
   // Set up event handlers.
   auto read_handler = [self](bt::PeerId /*ignore*/, auto svc_id, auto id, auto offset,
                              auto responder) mutable {
-    if (self) {
+    if (self.is_alive()) {
       self->OnReadRequest(svc_id, id, offset, std::move(responder));
     } else {
       responder(fit::error(bt::att::ErrorCode::kUnlikelyError), bt::BufferView());
@@ -263,7 +263,7 @@ void GattServerServer::PublishService(ServiceInfo service_info,
   };
   auto write_handler = [self](bt::PeerId /*ignore*/, auto svc_id, auto id, auto offset,
                               const auto& value, auto responder) mutable {
-    if (self) {
+    if (self.is_alive()) {
       self->OnWriteRequest(svc_id, id, offset, value, std::move(responder));
     } else {
       responder(fit::error(bt::att::ErrorCode::kUnlikelyError));
@@ -271,13 +271,13 @@ void GattServerServer::PublishService(ServiceInfo service_info,
   };
   auto ccc_callback = [self](auto svc_id, auto id, bt::gatt::PeerId peer_id, bool notify,
                              bool indicate) {
-    if (self)
+    if (self.is_alive())
       self->OnCharacteristicConfig(svc_id, id, peer_id, notify, indicate);
   };
 
   auto id_cb = [self, delegate = std::move(delegate), service_iface = std::move(service_iface),
                 callback = std::move(callback)](bt::gatt::IdType id) mutable {
-    if (!self)
+    if (!self.is_alive())
       return;
 
     if (!id) {
@@ -294,7 +294,7 @@ void GattServerServer::PublishService(ServiceInfo service_info,
     // closes.
     auto connection_error_cb = [self, id](zx_status_t status) {
       bt_log(DEBUG, "bt-host", "removing GATT service (id: %lu)", id);
-      if (self)
+      if (self.is_alive())
         self->RemoveService(id);
     };
 
@@ -302,7 +302,7 @@ void GattServerServer::PublishService(ServiceInfo service_info,
     delegate_ptr.set_error_handler(connection_error_cb);
 
     auto service_server = std::make_unique<LocalServiceImpl>(
-        self.get(), id, std::move(delegate_ptr), std::move(service_iface));
+        &self.get(), id, std::move(delegate_ptr), std::move(service_iface));
     service_server->set_error_handler(connection_error_cb);
     self->services_[id] = std::move(service_server);
 

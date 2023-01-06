@@ -13,7 +13,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/att/write_queue.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::gatt {
 
@@ -23,7 +22,7 @@ namespace bt::gatt {
 class Client {
  public:
   // Constructs a new Client. |bearer| must outlive this object.
-  static std::unique_ptr<Client> Create(fxl::WeakPtr<att::Bearer> bearer);
+  static std::unique_ptr<Client> Create(att::Bearer::WeakPtr bearer);
 
   virtual ~Client() = default;
 

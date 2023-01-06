@@ -13,7 +13,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/client.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_characteristic.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::gatt {
 

@@ -13,12 +13,12 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/emboss_control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/sco_data_packet.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::testing {
 
@@ -114,7 +114,7 @@ class ControllerTestDoubleBase : public pw::bluetooth::Controller {
 
   PwStatusCallback error_cb_;
 
-  fxl::WeakPtrFactory<ControllerTestDoubleBase> weak_ptr_factory_{this};
+  WeakSelf<ControllerTestDoubleBase> weak_self_{this};
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ControllerTestDoubleBase);
 };
 

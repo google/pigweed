@@ -48,7 +48,6 @@ static_library("fidl") {
     "//src/connectivity/bluetooth/core/bt-host:stack",
     "//src/connectivity/bluetooth/fidl:host_hlcpp",
     "//src/connectivity/bluetooth/lib/fidl",
-    "//src/lib/fxl",
     "//zircon/system/ulib/fbl",
     "//zircon/system/ulib/zx",
   ]

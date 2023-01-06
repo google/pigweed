@@ -67,7 +67,6 @@ source_set("testing") {
   public_deps = [
     ":gatt",
     "//src/connectivity/bluetooth/core/bt-host/common",
-    "//src/lib/fxl",
     "//src/lib/testing/loop_fixture",
     "//zircon/system/ulib/fbl",
   ]

@@ -11,7 +11,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bthost {
 
@@ -85,7 +84,7 @@ class Gatt2RemoteServiceServer : public GattServerBase<fuchsia::bluetooth::gatt2
   // The peer that is serving this service.
   bt::PeerId peer_id_;
 
-  fxl::WeakPtrFactory<Gatt2RemoteServiceServer> weak_ptr_factory_;
+  WeakSelf<Gatt2RemoteServiceServer> weak_self_;
 };
 
 }  // namespace bthost

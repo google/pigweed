@@ -412,7 +412,7 @@ class DatabaseIteratorManyTest : public ::testing::Test {
     grp4->set_active(true);
   }
 
-  fxl::WeakPtr<Database> db() const { return db_->GetWeakPtr(); }
+  Database::WeakPtr db() const { return db_->GetWeakPtr(); }
 
  private:
   std::unique_ptr<Database> db_;
@@ -583,7 +583,7 @@ class DatabaseExecuteWriteQueueTest : public ::testing::Test {
 
   const std::queue<PendingWrite>& pending_writes() const { return pending_writes_; }
 
-  fxl::WeakPtr<Database> db() { return db_->GetWeakPtr(); }
+  Database::WeakPtr db() { return db_->GetWeakPtr(); }
 
  private:
   void WriteHandler(PeerId peer_id, Handle handle, uint16_t offset, const ByteBuffer& value,

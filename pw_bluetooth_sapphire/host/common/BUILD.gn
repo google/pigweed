@@ -62,7 +62,6 @@ source_set("common") {
     "//src/connectivity/bluetooth/lib/cpp-type",
     "//src/devices/lib/driver",
     "//src/lib/ddk",
-    "//src/lib/fxl",
     "//third_party/pigweed:pw_assert",
     "//third_party/pigweed:pw_log",
     "//third_party/pigweed:pw_span",

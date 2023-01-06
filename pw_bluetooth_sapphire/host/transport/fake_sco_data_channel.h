@@ -12,7 +12,7 @@ namespace bt::hci {
 class FakeScoDataChannel final : public ScoDataChannel {
  public:
   struct RegisteredConnection {
-    fxl::WeakPtr<ConnectionInterface> connection;
+    ConnectionInterface::WeakPtr connection;
   };
 
   explicit FakeScoDataChannel(uint16_t max_data_length) : max_data_length_(max_data_length) {}
@@ -24,7 +24,7 @@ class FakeScoDataChannel final : public ScoDataChannel {
   uint16_t readable_count() const { return readable_count_; }
 
   // ScoDataChannel overrides:
-  void RegisterConnection(fxl::WeakPtr<ConnectionInterface> connection) override;
+  void RegisterConnection(ConnectionInterface::WeakPtr connection) override;
   void UnregisterConnection(hci_spec::ConnectionHandle handle) override;
   void OnOutboundPacketReadable() override;
   void ClearControllerPacketCount(hci_spec::ConnectionHandle handle) override {}

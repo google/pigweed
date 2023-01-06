@@ -20,7 +20,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
 #include "src/connectivity/bluetooth/core/bt-host/sco/sco.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
-#include "src/lib/fxl/strings/string_number_conversions.h"
 
 using fuchsia::bluetooth::Error;
 using fuchsia::bluetooth::ErrorCode;

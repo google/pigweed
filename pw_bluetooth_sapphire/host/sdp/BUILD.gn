@@ -40,7 +40,6 @@ static_library("sdp") {
     ":definitions",
     "//sdk/lib/stdcompat",
     "//src/connectivity/bluetooth/core/bt-host/l2cap",
-    "//src/lib/fxl",
   ]
 
   # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings

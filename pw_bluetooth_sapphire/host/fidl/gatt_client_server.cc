@@ -27,7 +27,7 @@ GattClientServer::GattClientServer(bt::gatt::PeerId peer_id, bt::gatt::GATT::Wea
                                    fidl::InterfaceRequest<Client> request)
     : GattServerBase(std::move(gatt), this, std::move(request)),
       peer_id_(peer_id),
-      weak_ptr_factory_(this) {}
+      weak_self_(this) {}
 
 void GattClientServer::ListServices(::fidl::VectorPtr<::std::string> fidl_uuids,
                                     ListServicesCallback callback) {
@@ -98,12 +98,12 @@ void GattClientServer::ConnectToService(uint64_t id,
 
   // Clean up the server if either the peer device or the FIDL client
   // disconnects.
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   const char* func = __FUNCTION__;
   auto error_cb = [self, id, peer_id = peer_id_, func] {
     bt_log(DEBUG, "fidl", "%s: service disconnected (service: %lu, peer: %s)", func, id,
            bt_str(peer_id));
-    if (self) {
+    if (self.is_alive()) {
       self->connected_services_.erase(id);
     }
   };

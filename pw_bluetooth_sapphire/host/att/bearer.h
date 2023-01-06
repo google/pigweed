@@ -18,10 +18,9 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/scoped_channel.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::att {
 
@@ -150,7 +149,8 @@ class Bearer final {
   // Ends a request transaction with an error response.
   bool ReplyWithError(TransactionId id, Handle handle, ErrorCode error_code);
 
-  fxl::WeakPtr<Bearer> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
+  using WeakPtr = WeakSelf<Bearer>::WeakPtr;
+  WeakPtr GetWeakPtr() { return weak_self_.GetWeakPtr(); }
 
  private:
   explicit Bearer(l2cap::Channel::WeakPtr chan);
@@ -301,7 +301,7 @@ class Bearer final {
   RemoteTransaction remote_request_;
   RemoteTransaction remote_indication_;
 
-  fxl::WeakPtrFactory<Bearer> weak_ptr_factory_;
+  WeakSelf<Bearer> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Bearer);
 };

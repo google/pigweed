@@ -17,7 +17,6 @@ source_set("socket") {
 
   public_deps = [
     "//sdk/lib/fit",
-    "//src/lib/fxl",
     "//zircon/system/ulib/zx",
   ]
 }

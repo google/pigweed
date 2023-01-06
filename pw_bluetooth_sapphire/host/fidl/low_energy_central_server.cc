@@ -55,7 +55,7 @@ LowEnergyCentralServer::LowEnergyCentralServer(bt::gap::Adapter::WeakPtr adapter
     : AdapterServerBase(std::move(adapter), this, std::move(request)),
       gatt_(std::move(gatt)),
       requesting_scan_deprecated_(false),
-      weak_ptr_factory_(this) {
+      weak_self_(this) {
   BT_ASSERT(gatt_.is_alive());
 }
 
@@ -176,7 +176,7 @@ LowEnergyCentralServer::ScanInstance::ScanInstance(
       scan_complete_callback_(std::move(cb)),
       central_server_(central_server),
       adapter_(std::move(adapter)),
-      weak_ptr_factory_(this) {
+      weak_self_(this) {
   std::transform(fidl_filters.begin(), fidl_filters.end(), std::back_inserter(filters_),
                  fidl_helpers::DiscoveryFilterFromFidl);
 
@@ -190,10 +190,10 @@ LowEnergyCentralServer::ScanInstance::ScanInstance(
   peer_updated_callback_id_ = adapter_->peer_cache()->add_peer_updated_callback(
       [this](const bt::gap::Peer& peer) { FilterAndAddPeers({peer.identifier()}); });
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   adapter_->le()->StartDiscovery(
       /*active=*/true, [self](auto session) {
-        if (!self) {
+        if (!self.is_alive()) {
           bt_log(TRACE, "fidl", "ignoring LE discovery session for canceled Scan");
           return;
         }
@@ -206,7 +206,7 @@ LowEnergyCentralServer::ScanInstance::ScanInstance(
         }
 
         session->set_error_callback([self] {
-          if (!self) {
+          if (!self.is_alive()) {
             bt_log(TRACE, "fidl", "ignoring LE discovery session error for canceled Scan");
             return;
           }
@@ -301,10 +301,10 @@ void LowEnergyCentralServer::Connect(fuchsia::bluetooth::PeerId id, fble::Connec
     return;
   }
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   auto conn_cb = [self, peer_id, request = std::move(request)](
                      bt::gap::Adapter::LowEnergy::ConnectionResult result) mutable {
-    if (!self)
+    if (!self.is_alive())
       return;
 
     auto conn_iter = self->connections_.find(peer_id);
@@ -323,7 +323,7 @@ void LowEnergyCentralServer::Connect(fuchsia::bluetooth::PeerId id, fble::Connec
     BT_ASSERT(peer_id == conn_ref->peer_identifier());
 
     auto closed_cb = [self, peer_id] {
-      if (self) {
+      if (self.is_alive()) {
         self->connections_.erase(peer_id);
       }
     };
@@ -378,11 +378,11 @@ void LowEnergyCentralServer::StartScan(ScanFilterPtr filter, StartScanCallback c
   }
 
   requesting_scan_deprecated_ = true;
-  adapter()->le()->StartDiscovery(/*active=*/true, [self = weak_ptr_factory_.GetWeakPtr(),
+  adapter()->le()->StartDiscovery(/*active=*/true, [self = weak_self_.GetWeakPtr(),
                                                     filter = std::move(filter),
                                                     callback = std::move(callback),
                                                     func = __FUNCTION__](auto session) {
-    if (!self)
+    if (!self.is_alive())
       return;
 
     self->requesting_scan_deprecated_ = false;
@@ -398,12 +398,12 @@ void LowEnergyCentralServer::StartScan(ScanFilterPtr filter, StartScanCallback c
       fidl_helpers::PopulateDiscoveryFilter(*filter, session->filter());
 
     session->SetResultCallback([self](const auto& peer) {
-      if (self)
+      if (self.is_alive())
         self->OnScanResult(peer);
     });
 
     session->set_error_callback([self] {
-      if (self) {
+      if (self.is_alive()) {
         // Clean up the session and notify the delegate.
         self->StopScan();
       }
@@ -453,10 +453,10 @@ void LowEnergyCentralServer::ConnectPeripheral(
     return;
   }
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   auto conn_cb = [self, callback = callback.share(), peer_id = *peer_id,
                   request = std::move(client_request), func = __FUNCTION__](auto result) mutable {
-    if (!self)
+    if (!self.is_alive())
       return;
 
     auto iter = self->connections_deprecated_.find(peer_id);
@@ -488,7 +488,7 @@ void LowEnergyCentralServer::ConnectPeripheral(
 
     auto server = std::make_unique<GattClientServer>(peer_id, self->gatt_, std::move(request));
     server->set_error_handler([self, peer_id](zx_status_t status) {
-      if (self) {
+      if (self.is_alive()) {
         bt_log(DEBUG, "bt-host", "GATT client disconnected");
         self->gatt_client_servers_.erase(peer_id);
       }
@@ -496,7 +496,7 @@ void LowEnergyCentralServer::ConnectPeripheral(
     self->gatt_client_servers_.emplace(peer_id, std::move(server));
 
     conn_ref->set_closed_callback([self, peer_id] {
-      if (self && self->connections_deprecated_.erase(peer_id) != 0) {
+      if (self.is_alive() && self->connections_deprecated_.erase(peer_id) != 0) {
         bt_log(INFO, "fidl", "peripheral connection closed (peer: %s)", bt_str(peer_id));
         self->gatt_client_servers_.erase(peer_id);
         self->NotifyPeripheralDisconnected(peer_id);

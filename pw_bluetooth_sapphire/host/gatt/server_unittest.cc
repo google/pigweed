@@ -93,7 +93,7 @@ class ServerTest : public l2cap::testing::MockChannelTest {
   }
   Server* server() const { return server_.get(); }
 
-  fxl::WeakPtr<att::Database> db() const { return local_services_->database(); }
+  att::Database::WeakPtr db() const { return local_services_->database(); }
 
   // TODO(armansito): Consider introducing a FakeBearer for testing (fxbug.dev/642).
   att::Bearer* att() const { return att_.get(); }

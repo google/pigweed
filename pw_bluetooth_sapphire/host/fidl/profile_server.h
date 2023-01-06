@@ -14,7 +14,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/server.h"
 #include "src/connectivity/bluetooth/core/bt-host/socket/socket_factory.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bthost {
 
@@ -68,7 +67,7 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
   class ScoConnectionServer final : public ServerBase<fuchsia::bluetooth::bredr::ScoConnection> {
    public:
     ScoConnectionServer(fidl::InterfaceRequest<fuchsia::bluetooth::bredr::ScoConnection> request,
-                        fxl::WeakPtr<bt::sco::ScoConnection> connection);
+                        bt::sco::ScoConnection::WeakPtr connection);
     ~ScoConnectionServer() override;
     void Activate(fit::callback<void()> on_closed);
     void Read(ReadCallback callback) override;
@@ -77,7 +76,7 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
    private:
     void TryRead();
     void Close(zx_status_t epitaph);
-    fxl::WeakPtr<bt::sco::ScoConnection> connection_;
+    bt::sco::ScoConnection::WeakPtr connection_;
     fit::callback<void()> on_closed_;
     // Non-null when a read request is waiting for an inbound packet.
     fit::callback<void(fuchsia::bluetooth::bredr::RxPacketStatus, std::vector<uint8_t>)> read_cb_;
@@ -218,7 +217,7 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.
-  fxl::WeakPtrFactory<ProfileServer> weak_ptr_factory_;
+  WeakSelf<ProfileServer> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ProfileServer);
 };

@@ -11,7 +11,6 @@
 #include "pw_string/format.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/lib/fxl/strings/string_number_conversions.h"
 
 namespace bt {
 namespace {

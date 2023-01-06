@@ -137,7 +137,7 @@ TEST_F(ScoConnectionManagerTest, OpenConnectionSuccess) {
   RunLoopUntilIdle();
   ASSERT_TRUE(conn_result.has_value());
   ASSERT_TRUE(conn_result->is_ok());
-  ASSERT_TRUE(conn_result->value());
+  ASSERT_TRUE(conn_result->value().is_alive());
   EXPECT_EQ(conn_result->value()->handle(), kScoConnectionHandle);
 
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kScoConnectionHandle));
@@ -290,13 +290,13 @@ TEST_F(ScoConnectionManagerTest, DestroyingManagerClosesConnections) {
   RunLoopUntilIdle();
   ASSERT_TRUE(conn_result.has_value());
   ASSERT_TRUE(conn_result->is_ok());
-  EXPECT_TRUE(conn_result->value());
+  EXPECT_TRUE(conn_result->value().is_alive());
 
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kScoConnectionHandle));
   DestroyManager();
   RunLoopUntilIdle();
   // WeakPtr should become invalid.
-  EXPECT_FALSE(conn_result->value());
+  EXPECT_FALSE(conn_result->value().is_alive());
 }
 
 TEST_F(ScoConnectionManagerTest, QueueThreeRequestsCancelsSecond) {
@@ -393,7 +393,7 @@ TEST_F(ScoConnectionManagerTest, HandleReuse) {
   RunLoopUntilIdle();
   ASSERT_TRUE(conn_result.has_value());
   ASSERT_TRUE(conn_result->is_ok());
-  fxl::WeakPtr<ScoConnection> conn = conn_result->value();
+  ScoConnection::WeakPtr conn = conn_result->value();
   EXPECT_EQ(conn->handle(), kScoConnectionHandle);
 
   auto disconn_status_packet =
@@ -936,7 +936,7 @@ TEST_F(ScoConnectionManagerTest,
   RunLoopUntilIdle();
   ASSERT_TRUE(conn_result_0.has_value());
   ASSERT_TRUE(conn_result_0->is_ok());
-  ASSERT_TRUE(conn_result_0->value());
+  ASSERT_TRUE(conn_result_0->value().is_alive());
   EXPECT_EQ(conn_result_0->value()->handle(), kScoConnectionHandle);
 
   test_device()->SendCommandChannelPacket(testing::DisconnectionCompletePacket(
@@ -959,7 +959,7 @@ TEST_F(ScoConnectionManagerTest,
   RunLoopUntilIdle();
   ASSERT_TRUE(conn_result_1.has_value());
   ASSERT_TRUE(conn_result_1->is_ok());
-  ASSERT_TRUE(conn_result_1->value());
+  ASSERT_TRUE(conn_result_1->value().is_alive());
   EXPECT_EQ(conn_result_1->value()->handle(), kScoConnectionHandle);
 
   EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(kScoConnectionHandle));

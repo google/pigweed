@@ -7,12 +7,11 @@
 
 #include <fuchsia/bluetooth/gatt/cpp/fidl.h>
 
-#include "lib/fidl/cpp/binding.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/local_service_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/types.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bthost {
 
@@ -60,7 +59,7 @@ class GattServerServer : public GattServerBase<fuchsia::bluetooth::gatt::Server>
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.
-  fxl::WeakPtrFactory<GattServerServer> weak_ptr_factory_;
+  WeakSelf<GattServerServer> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GattServerServer);
 };

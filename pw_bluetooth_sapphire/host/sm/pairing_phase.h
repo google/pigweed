@@ -11,7 +11,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/sm/pairing_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::sm {
 

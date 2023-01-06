@@ -73,7 +73,7 @@ class Gatt2ClientServer : public GattServerBase<fuchsia::bluetooth::gatt2::Clien
   bt::gatt::GATT::RemoteServiceWatcherId service_watcher_id_;
 
   // Must be the last member of this class.
-  fxl::WeakPtrFactory<Gatt2ClientServer> weak_ptr_factory_;
+  WeakSelf<Gatt2ClientServer> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Gatt2ClientServer);
 };

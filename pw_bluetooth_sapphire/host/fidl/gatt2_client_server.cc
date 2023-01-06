@@ -31,7 +31,7 @@ Gatt2ClientServer::Gatt2ClientServer(bt::gatt::PeerId peer_id, bt::gatt::GATT::W
     : GattServerBase(std::move(weak_gatt), /*impl=*/this, std::move(request)),
       peer_id_(peer_id),
       server_error_cb_(std::move(error_cb)),
-      weak_ptr_factory_(this) {
+      weak_self_(this) {
   set_error_handler([this](zx_status_t) {
     if (server_error_cb_) {
       server_error_cb_();
@@ -157,7 +157,7 @@ void Gatt2ClientServer::WatchServices(std::vector<fb::Uuid> fidl_uuids,
 
   watch_services_request_.emplace(std::move(callback));
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
 
   // Return a complete service snapshot on the first call, or on calls that use a new UUID filter
   // list.
@@ -166,7 +166,7 @@ void Gatt2ClientServer::WatchServices(std::vector<fb::Uuid> fidl_uuids,
     gatt()->ListServices(
         peer_id_, std::move(uuids_vector),
         [self](bt::att::Result<> status, const bt::gatt::ServiceList& services) {
-          if (!self) {
+          if (!self.is_alive()) {
             return;
           }
           if (bt_is_error(status, INFO, "fidl", "WatchServices: ListServices failed (peer: %s)",
@@ -225,9 +225,9 @@ void Gatt2ClientServer::ConnectToService(fbg::ServiceHandle handle,
   // this server is destroyed, since removed handlers are not unregistered. If the FIDL client
   // connects->disconnects->connects, it is possible for this handler to be called twice (the
   // second call should then do nothing).
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   fit::closure removed_handler = [self, service_handle] {
-    if (!self) {
+    if (!self.is_alive()) {
       return;
     }
     bt_log(DEBUG, "fidl", "service removed (peer: %s, handle: %#.4x)", bt_str(self->peer_id_),

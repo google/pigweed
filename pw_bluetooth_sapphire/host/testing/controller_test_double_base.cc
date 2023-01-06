@@ -31,9 +31,9 @@ zx_status_t ControllerTestDoubleBase::SendCommandChannelPacket(const ByteBuffer&
 
   // Post packet to simulate async behavior that many tests expect.
   DynamicByteBuffer buffer(packet);
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   async::PostTask(async_get_default_dispatcher(), [self, buffer = std::move(buffer)]() {
-    if (self) {
+    if (self.is_alive()) {
       self->event_cb_({reinterpret_cast<const std::byte*>(buffer.data()), buffer.size()});
     }
   });
@@ -47,9 +47,9 @@ zx_status_t ControllerTestDoubleBase::SendACLDataChannelPacket(const ByteBuffer&
 
   // Post packet to simulate async behavior that some tests expect.
   DynamicByteBuffer buffer(packet);
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   async::PostTask(async_get_default_dispatcher(), [self, buffer = std::move(buffer)]() {
-    if (self) {
+    if (self.is_alive()) {
       self->acl_cb_({reinterpret_cast<const std::byte*>(buffer.data()), buffer.size()});
     }
   });

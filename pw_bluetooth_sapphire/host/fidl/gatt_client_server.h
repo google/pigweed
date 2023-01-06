@@ -11,7 +11,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/gatt_remote_service_server.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bthost {
 
@@ -36,7 +35,7 @@ class GattClientServer : public GattServerBase<fuchsia::bluetooth::gatt::Client>
   // be null while a ConnectToService request is in progress.
   std::unordered_map<uint64_t, std::unique_ptr<GattRemoteServiceServer>> connected_services_;
 
-  fxl::WeakPtrFactory<GattClientServer> weak_ptr_factory_;
+  WeakSelf<GattClientServer> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(GattClientServer);
 };

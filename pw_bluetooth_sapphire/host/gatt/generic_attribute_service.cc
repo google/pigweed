@@ -8,7 +8,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
-#include "src/lib/fxl/strings/string_number_conversions.h"
 
 namespace bt::gatt {
 

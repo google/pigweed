@@ -60,7 +60,6 @@ source_set("sources") {
     # TODO(fxb/38132): Migrate to the new bind rules and delete the below
     "//sdk/lib/fit",
     "//src/lib/ddk:ddk-deprecated-binding-headers",
-    "//src/lib/fxl",
     "//zircon/system/ulib/fbl",
     "//zircon/system/ulib/trace",
     "//zircon/system/ulib/zx",

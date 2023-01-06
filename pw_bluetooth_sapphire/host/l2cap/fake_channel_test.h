@@ -41,7 +41,7 @@ class FakeChannelTest : public ::gtest::TestLoopFixture {
 
   void SetUp() override;
 
-  // Creates a new FakeChannel and returns it. A fxl::WeakPtr to the returned
+  // Creates a new FakeChannel and returns it. A WeakPtr to the returned
   // channel is stored internally so that the returned channel can be accessed
   // by tests even if its ownership is passed outside of the test harness.
   std::unique_ptr<FakeChannel> CreateFakeChannel(const ChannelOptions& options);

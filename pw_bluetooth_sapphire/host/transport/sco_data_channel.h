@@ -7,9 +7,8 @@
 
 #include <lib/zx/channel.h>
 
-#include <src/lib/fxl/memory/weak_ptr.h>
-
 #include "pw_bluetooth/controller.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/data_buffer_info.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/sco_data_packet.h"
@@ -49,6 +48,8 @@ class ScoDataChannel {
     // Called when there is an internal error and this connection has been unregistered.
     // Unregistering this connection is unnecessary, but harmless.
     virtual void OnHciError() = 0;
+
+    using WeakPtr = WeakSelf<ConnectionInterface>::WeakPtr;
   };
 
   static std::unique_ptr<ScoDataChannel> Create(const DataBufferInfo& buffer_info,
@@ -57,7 +58,7 @@ class ScoDataChannel {
   virtual ~ScoDataChannel() = default;
 
   // Register a connection. The connection must have a data path of hci_spec::ScoDataPath::kHci.
-  virtual void RegisterConnection(fxl::WeakPtr<ConnectionInterface> connection) = 0;
+  virtual void RegisterConnection(ConnectionInterface::WeakPtr connection) = 0;
 
   // Unregister a connection when it is disconnected.
   // |UnregisterConnection| does not clear the controller packet count, so

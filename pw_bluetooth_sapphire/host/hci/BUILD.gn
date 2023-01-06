@@ -54,7 +54,6 @@ static_library("hci") {
     "//src/connectivity/bluetooth/core/bt-host/transport",
     "//src/lib/ddk",
     "//src/lib/files",
-    "//src/lib/fxl",
     "//zircon/system/ulib/async-loop:async-loop-cpp",
     "//zircon/system/ulib/async-loop:async-loop-default",
     "//zircon/system/ulib/fbl",
@@ -81,8 +80,6 @@ source_set("testing") {
   ]
 
   public_deps = [ ":hci" ]
-
-  deps = [ "//src/lib/fxl" ]
 }
 
 source_set("tests") {

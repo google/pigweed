@@ -20,13 +20,13 @@ namespace bt::gatt {
 class AttBasedServer final : public Server {
  public:
   AttBasedServer(PeerId peer_id, LocalServiceManager::WeakPtr local_services,
-                 fxl::WeakPtr<att::Bearer> bearer)
+                 att::Bearer::WeakPtr bearer)
       : peer_id_(peer_id),
         local_services_(std::move(local_services)),
         att_(std::move(bearer)),
         weak_self_(this) {
     BT_ASSERT(local_services_.is_alive());
-    BT_DEBUG_ASSERT(att_);
+    BT_DEBUG_ASSERT(att_.is_alive());
 
     exchange_mtu_id_ = att_->RegisterHandler(
         att::kExchangeMTURequest, fit::bind_member<&AttBasedServer::OnExchangeMTU>(this));
@@ -69,7 +69,7 @@ class AttBasedServer final : public Server {
 
  private:
   // Convenience "alias"
-  inline fxl::WeakPtr<att::Database> db() { return local_services_->database(); }
+  inline att::Database::WeakPtr db() { return local_services_->database(); }
 
   // Server overrides:
   void SendUpdate(IdType service_id, IdType chrc_id, BufferView value,
@@ -862,7 +862,7 @@ class AttBasedServer final : public Server {
 
   PeerId peer_id_;
   LocalServiceManager::WeakPtr local_services_;
-  fxl::WeakPtr<att::Bearer> att_;
+  att::Bearer::WeakPtr att_;
 
   // The queue data structure used for queued writes (see Vol 3, Part F, 3.4.6).
   att::PrepareWriteQueue prepare_queue_;
@@ -890,7 +890,7 @@ class AttBasedServer final : public Server {
 
 // static
 std::unique_ptr<Server> Server::Create(PeerId peer_id, LocalServiceManager::WeakPtr local_services,
-                                       fxl::WeakPtr<att::Bearer> bearer) {
+                                       att::Bearer::WeakPtr bearer) {
   return std::make_unique<AttBasedServer>(peer_id, std::move(local_services), std::move(bearer));
 }
 }  // namespace bt::gatt

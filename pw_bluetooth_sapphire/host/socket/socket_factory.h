@@ -16,7 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 
 namespace bt::socket {
 
@@ -67,13 +67,13 @@ class SocketFactory final {
   // channel id is recycled. (See comment in LogicalLink::HandleRxPacket.)
   std::unordered_map<ChannelIdT, std::unique_ptr<RelayT>> channel_to_relay_;
 
-  fxl::WeakPtrFactory<SocketFactory> weak_ptr_factory_;  // Keep last.
+  WeakSelf<SocketFactory> weak_self_;  // Keep last.
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(SocketFactory);
 };
 
 template <typename ChannelT>
-SocketFactory<ChannelT>::SocketFactory() : weak_ptr_factory_(this) {}
+SocketFactory<ChannelT>::SocketFactory() : weak_self_(this) {}
 
 template <typename ChannelT>
 SocketFactory<ChannelT>::~SocketFactory() {}
@@ -101,9 +101,9 @@ zx::socket SocketFactory<ChannelT>::MakeSocketForChannel(typename ChannelT::Weak
 
   auto relay = std::make_unique<RelayT>(
       std::move(local_socket), channel,
-      typename RelayT::DeactivationCallback([self = weak_ptr_factory_.GetWeakPtr(), id = unique_id,
+      typename RelayT::DeactivationCallback([self = weak_self_.GetWeakPtr(), id = unique_id,
                                              closed_cb = std::move(closed_callback)]() mutable {
-        BT_DEBUG_ASSERT_MSG(self, "(unique_id=%u)", id);
+        BT_DEBUG_ASSERT_MSG(self.is_alive(), "(unique_id=%u)", id);
         size_t n_erased = self->channel_to_relay_.erase(id);
         BT_DEBUG_ASSERT_MSG(n_erased == 1, "(n_erased=%zu, unique_id=%u)", n_erased, id);
 

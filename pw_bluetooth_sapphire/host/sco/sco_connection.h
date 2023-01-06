@@ -65,7 +65,12 @@ class ScoConnection final : public hci::ScoDataChannel::ConnectionInterface {
   // If an inbound packet is ready to be read, returns the packet. Otherwise, returns nullptr.
   std::unique_ptr<hci::ScoDataPacket> Read();
 
-  fxl::WeakPtr<ScoConnection> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
+  using WeakPtr = WeakSelf<ScoConnection>::WeakPtr;
+  WeakPtr GetWeakPtr() { return weak_self_.GetWeakPtr(); }
+
+  ConnectionInterface::WeakPtr GetConnectionInterface() {
+    return weak_conn_interface_.GetWeakPtr();
+  }
 
   // ScoDataChannel overrides:
   bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> parameters() override;
@@ -105,7 +110,8 @@ class ScoConnection final : public hci::ScoDataChannel::ConnectionInterface {
 
   bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> parameters_;
 
-  fxl::WeakPtrFactory<ScoConnection> weak_ptr_factory_;
+  WeakSelf<ConnectionInterface> weak_conn_interface_;
+  WeakSelf<ScoConnection> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ScoConnection);
 };

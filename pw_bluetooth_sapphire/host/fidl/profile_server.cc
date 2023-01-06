@@ -203,7 +203,7 @@ ProfileServer::ProfileServer(bt::gap::Adapter::WeakPtr adapter,
       advertised_total_(0),
       searches_total_(0),
       adapter_(std::move(adapter)),
-      weak_ptr_factory_(this) {}
+      weak_self_(this) {}
 
 ProfileServer::~ProfileServer() {
   if (adapter().is_alive()) {
@@ -275,13 +275,13 @@ void ProfileServer::AudioOffloadExt::GetSupportedFeatures(GetSupportedFeaturesCa
 
 ProfileServer::ScoConnectionServer::ScoConnectionServer(
     fidl::InterfaceRequest<fuchsia::bluetooth::bredr::ScoConnection> request,
-    fxl::WeakPtr<bt::sco::ScoConnection> connection)
+    bt::sco::ScoConnection::WeakPtr connection)
     : ServerBase(this, std::move(request)), connection_(std::move(connection)) {
   binding()->set_error_handler([this](zx_status_t) { Close(ZX_ERR_CANCELED); });
 }
 
 ProfileServer::ScoConnectionServer::~ScoConnectionServer() {
-  if (connection_) {
+  if (connection_.is_alive()) {
     connection_->Deactivate();
   }
 }
@@ -453,7 +453,7 @@ void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id,
 
   fidlbredr::ChannelParameters parameters = std::move(*l2cap_params.mutable_parameters());
 
-  auto connected_cb = [self = weak_ptr_factory_.GetWeakPtr(), cb = callback.share(),
+  auto connected_cb = [self = weak_self_.GetWeakPtr(), cb = callback.share(),
                        id](bt::l2cap::Channel::WeakPtr chan) {
     if (!chan.is_alive()) {
       bt_log(INFO, "fidl", "Connect: Channel socket is empty, returning failed. (peer: %s)",
@@ -462,7 +462,7 @@ void ProfileServer::Connect(fuchsia::bluetooth::PeerId peer_id,
       return;
     }
 
-    if (!self) {
+    if (!self.is_alive()) {
       cb(fpromise::error(fuchsia::bluetooth::ErrorCode::FAILED));
       return;
     }
@@ -511,10 +511,10 @@ void ProfileServer::ConnectSco(fuchsia::bluetooth::PeerId fidl_peer_id, bool ini
   request->parameters = std::move(fidl_params);
 
   if (initiator) {
-    auto callback = [self = weak_ptr_factory_.GetWeakPtr(),
+    auto callback = [self = weak_self_.GetWeakPtr(),
                      request](bt::sco::ScoConnectionManager::OpenConnectionResult result) mutable {
       // The connection may complete after this server is destroyed.
-      if (!self) {
+      if (!self.is_alive()) {
         // Prevent leaking connections.
         if (result.is_ok()) {
           result.value()->Deactivate();
@@ -536,10 +536,10 @@ void ProfileServer::ConnectSco(fuchsia::bluetooth::PeerId fidl_peer_id, bool ini
         adapter()->bredr()->OpenScoConnection(peer_id, params.front(), std::move(callback));
     return;
   }
-  auto callback = [self = weak_ptr_factory_.GetWeakPtr(),
+  auto callback = [self = weak_self_.GetWeakPtr(),
                    request](bt::sco::ScoConnectionManager::AcceptConnectionResult result) mutable {
     // The connection may complete after this server is destroyed.
-    if (!self) {
+    if (!self.is_alive()) {
       // Prevent leaking connections.
       if (result.is_ok()) {
         result.value().first->Deactivate();
@@ -682,17 +682,17 @@ void ProfileServer::OnScoConnectionResult(
     return;
   }
 
-  fxl::WeakPtr<bt::sco::ScoConnection> connection = std::move(result.value().first);
+  bt::sco::ScoConnection::WeakPtr connection = std::move(result.value().first);
   const uint16_t max_tx_data_size = connection->max_tx_sdu_size();
 
   fidl::InterfaceHandle<fidlbredr::ScoConnection> sco_handle;
 
   std::unique_ptr<ScoConnectionServer> sco_server =
       std::make_unique<ScoConnectionServer>(sco_handle.NewRequest(), connection);
-  auto [server_iter, _] = sco_connection_servers_.emplace(connection.get(), std::move(sco_server));
+  auto [server_iter, _] = sco_connection_servers_.emplace(&connection.get(), std::move(sco_server));
 
   // Activate after adding the connection to the map in case on_closed is called synchronously.
-  auto on_closed = [this, conn = connection.get()] {
+  auto on_closed = [this, conn = &connection.get()] {
     auto iter = sco_connection_servers_.find(conn);
     BT_ASSERT(iter != sco_connection_servers_.end());
     sco_connection_servers_.erase(iter);

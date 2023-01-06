@@ -14,25 +14,24 @@ FakeSdpServer::FakeSdpServer()
     : l2cap_(std::make_unique<l2cap::testing::FakeL2cap>()), server_(l2cap_.get()) {}
 
 void FakeSdpServer::RegisterWithL2cap(FakeL2cap* l2cap_) {
-  auto channel_cb = [this](fxl::WeakPtr<FakeDynamicChannel> channel) {
+  auto channel_cb = [this](FakeDynamicChannel::WeakPtr channel) {
     auto handle_sdu = [this, channel](auto& request) {
-      if (channel) {
+      if (channel.is_alive()) {
         HandleSdu(channel, request);
       }
     };
     channel->set_packet_handler_callback(handle_sdu);
   };
   l2cap_->RegisterService(l2cap::kSDP, channel_cb);
-  return;
 }
 
-void FakeSdpServer::HandleSdu(fxl::WeakPtr<FakeDynamicChannel> channel, const ByteBuffer& sdu) {
+void FakeSdpServer::HandleSdu(FakeDynamicChannel::WeakPtr channel, const ByteBuffer& sdu) {
   BT_ASSERT(channel->opened());
   auto response =
       server()->HandleRequest(std::make_unique<DynamicByteBuffer>(sdu), l2cap::kDefaultMTU);
   if (response) {
     auto& callback = channel->send_packet_callback();
-    return callback(std::move(*response.value()));
+    return callback(*response.value());
   }
 }
 

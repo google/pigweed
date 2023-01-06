@@ -108,7 +108,7 @@ class FakeScoConnection : public ScoDataChannel::ConnectionInterface {
       : handle_(handle),
         params_(std::move(params)),
         data_channel_(data_channel),
-        weak_ptr_factory_(this) {}
+        weak_interface_(this) {}
 
   ~FakeScoConnection() override = default;
 
@@ -126,7 +126,7 @@ class FakeScoConnection : public ScoDataChannel::ConnectionInterface {
 
   uint16_t hci_error_count() const { return hci_error_count_; }
 
-  fxl::WeakPtr<FakeScoConnection> GetWeakPtr() { return weak_ptr_factory_.GetWeakPtr(); }
+  ConnectionInterface::WeakPtr GetWeakPtr() { return weak_interface_.GetWeakPtr(); }
 
   // ScoDataChannel::ConnectionInterface overrides:
 
@@ -158,7 +158,7 @@ class FakeScoConnection : public ScoDataChannel::ConnectionInterface {
   std::vector<std::unique_ptr<ScoDataPacket>> received_packets_;
   ScoDataChannel* data_channel_;
   uint16_t hci_error_count_ = 0;
-  fxl::WeakPtrFactory<FakeScoConnection> weak_ptr_factory_;
+  WeakSelf<ConnectionInterface> weak_interface_;
 };
 
 using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;

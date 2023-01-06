@@ -16,7 +16,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/remote_service.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::gatt {
 

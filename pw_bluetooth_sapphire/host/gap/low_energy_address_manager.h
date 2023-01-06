@@ -16,7 +16,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/local_address_delegate.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
 

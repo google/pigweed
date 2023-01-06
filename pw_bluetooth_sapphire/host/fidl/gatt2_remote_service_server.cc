@@ -121,7 +121,7 @@ Gatt2RemoteServiceServer::Gatt2RemoteServiceServer(
     : GattServerBase(std::move(gatt), this, std::move(request)),
       service_(std::move(service)),
       peer_id_(peer_id),
-      weak_ptr_factory_(this) {}
+      weak_self_(this) {}
 
 Gatt2RemoteServiceServer::~Gatt2RemoteServiceServer() {
   // Disable all notifications to prevent leaks.
@@ -157,10 +157,10 @@ void Gatt2RemoteServiceServer::ReadByType(::fuchsia::bluetooth::Uuid uuid,
                                           ReadByTypeCallback callback) {
   service_->ReadByType(
       fidl_helpers::UuidFromFidl(uuid),
-      [self = weak_ptr_factory_.GetWeakPtr(), cb = std::move(callback), func = __FUNCTION__](
+      [self = weak_self_.GetWeakPtr(), cb = std::move(callback), func = __FUNCTION__](
           bt::att::Result<> status,
           std::vector<bt::gatt::RemoteService::ReadByTypeResult> results) {
-        if (!self) {
+        if (!self.is_alive()) {
           return;
         }
 
@@ -339,11 +339,11 @@ void Gatt2RemoteServiceServer::RegisterCharacteristicNotifier(
     RegisterCharacteristicNotifierCallback callback) {
   bt::gatt::CharacteristicHandle char_handle(static_cast<bt::att::Handle>(fidl_handle.value));
   NotifierId notifier_id = next_notifier_id_++;
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
 
   auto value_cb = [self, notifier_id, fidl_handle](const bt::ByteBuffer& value,
                                                    bool maybe_truncated) {
-    if (!self) {
+    if (!self.is_alive()) {
       return;
     }
 
@@ -386,7 +386,7 @@ void Gatt2RemoteServiceServer::RegisterCharacteristicNotifier(
   auto status_cb = [self, service = service_, char_handle, notifier_id,
                     notifier_handle = std::move(notifier_handle), callback = std::move(callback)](
                        bt::att::Result<> status, bt::gatt::IdType handler_id) mutable {
-    if (!self) {
+    if (!self.is_alive()) {
       if (status.is_ok()) {
         // Disable this handler so it doesn't leak.
         service->DisableNotifications(char_handle, handler_id, [](auto /*status*/) {
@@ -440,9 +440,9 @@ void Gatt2RemoteServiceServer::MaybeNotifyNextValue(NotifierId notifier_id) {
   notifier.queued_values.pop();
 
   bt_log(DEBUG, "fidl", "Sending GATT notification value (handle: 0x%lX)", value.handle().value);
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   notifier.notifier->OnNotification(std::move(value), [self, notifier_id]() {
-    if (!self) {
+    if (!self.is_alive()) {
       return;
     }
 
@@ -458,9 +458,9 @@ void Gatt2RemoteServiceServer::MaybeNotifyNextValue(NotifierId notifier_id) {
 void Gatt2RemoteServiceServer::OnCharacteristicNotifierError(
     NotifierId notifier_id, bt::gatt::CharacteristicHandle char_handle,
     bt::gatt::IdType handler_id) {
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   service_->DisableNotifications(char_handle, handler_id, [self, notifier_id](auto /*status*/) {
-    if (!self) {
+    if (!self.is_alive()) {
       return;
     }
     // Clear the notifier regardless of status. Wait until this callback is called in order to

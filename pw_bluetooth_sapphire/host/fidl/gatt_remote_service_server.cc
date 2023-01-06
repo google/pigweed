@@ -65,7 +65,7 @@ GattRemoteServiceServer::GattRemoteServiceServer(
     : GattServerBase(gatt, this, std::move(request)),
       service_(std::move(service)),
       peer_id_(peer_id),
-      weak_ptr_factory_(this) {
+      weak_self_(this) {
   BT_DEBUG_ASSERT(service_.is_alive());
 }
 
@@ -231,7 +231,7 @@ void GattRemoteServiceServer::ReadByType(fuchsia::bluetooth::Uuid uuid,
                                          ReadByTypeCallback callback) {
   service_->ReadByType(
       fidl_helpers::UuidFromFidl(uuid),
-      [self = weak_ptr_factory_.GetWeakPtr(), cb = std::move(callback), func = __FUNCTION__](
+      [self = weak_self_.GetWeakPtr(), cb = std::move(callback), func = __FUNCTION__](
           bt::att::Result<> status,
           std::vector<bt::gatt::RemoteService::ReadByTypeResult> results) {
         if (!self.is_alive()) {
@@ -308,7 +308,7 @@ void GattRemoteServiceServer::NotifyCharacteristic(uint64_t id, bool enable,
   // Prevent any races and leaks by marking a notification is in progress
   notify_handlers_[handle] = bt::gatt::kInvalidId;
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   auto value_cb = [self, id](const ByteBuffer& value, bool /*maybe_truncated*/) {
     if (!self.is_alive())
       return;

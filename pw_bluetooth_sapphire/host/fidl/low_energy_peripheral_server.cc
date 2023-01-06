@@ -18,7 +18,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
-#include "src/lib/fxl/strings/string_number_conversions.h"
 
 #define LOG_TAG "fidl"
 
@@ -62,7 +61,7 @@ LowEnergyPeripheralServer::AdvertisementInstance::AdvertisementInstance(
       id_(id),
       parameters_(std::move(parameters)),
       advertise_complete_cb_(std::move(complete_cb)),
-      weak_ptr_factory_(this) {
+      weak_self_(this) {
   BT_ASSERT(advertise_complete_cb_);
   advertised_peripheral_.Bind(std::move(handle));
   advertised_peripheral_.set_error_handler([this, peripheral_server, id](zx_status_t /*status*/) {
@@ -78,9 +77,9 @@ LowEnergyPeripheralServer::AdvertisementInstance::~AdvertisementInstance() {
 }
 
 void LowEnergyPeripheralServer::AdvertisementInstance::StartAdvertising() {
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   auto status_cb = [self](auto adv_instance, bt::hci::Result<> status) {
-    if (!self) {
+    if (!self.is_alive()) {
       bt_log(DEBUG, LOG_TAG, "advertisement canceled before advertising started");
       // Destroying `adv_instance` will stop advertising.
       return;
@@ -137,9 +136,9 @@ void LowEnergyPeripheralServer::AdvertisementInstance::OnConnected(
       peripheral_server_->CreateConnectionServer(std::move(conn));
 
   // Restart advertising after the client acknowledges the connection.
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   auto on_connected_cb = [self] {
-    if (self) {
+    if (self.is_alive()) {
       self->StartAdvertising();
     }
   };
@@ -194,7 +193,7 @@ LowEnergyPeripheralServer::LowEnergyPeripheralServer(bt::gap::Adapter::WeakPtr a
                                                      fidl::InterfaceRequest<Peripheral> request)
     : AdapterServerBase(std::move(adapter), this, std::move(request)),
       gatt_(std::move(gatt)),
-      weak_ptr_factory_(this) {}
+      weak_self_(this) {}
 
 LowEnergyPeripheralServer::~LowEnergyPeripheralServer() { BT_ASSERT(adapter()->bredr()); }
 
@@ -252,11 +251,11 @@ void LowEnergyPeripheralServer::StartAdvertising(
   // Create an entry to mark that the request is in progress.
   advertisement_deprecated_.emplace(std::move(token));
 
-  auto self = weak_ptr_factory_.GetWeakPtr();
+  auto self = weak_self_.GetWeakPtr();
   auto status_cb = [self, callback = std::move(callback), func = __FUNCTION__](
                        auto instance, bt::hci::Result<> status) {
     // Advertising will be stopped when |instance| gets destroyed.
-    if (!self) {
+    if (!self.is_alive()) {
       return;
     }
 
@@ -409,11 +408,11 @@ void LowEnergyPeripheralServer::StartAdvertisingInternal(
   if (connectable) {
     connectable_params.emplace();
 
-    auto self = weak_ptr_factory_.GetWeakPtr();
+    auto self = weak_self_.GetWeakPtr();
     connectable_params->connection_cb = [self, advertisement_instance](
                                             bt::gap::AdvertisementId advertisement_id,
                                             bt::gap::Adapter::LowEnergy::ConnectionResult result) {
-      if (!self) {
+      if (!self.is_alive()) {
         return;
       }
 

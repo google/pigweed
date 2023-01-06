@@ -31,7 +31,7 @@ class FakeSdpServer {
 
   // Handle an inbound packet |sdu| using the production SDP server instance,
   // and then respond using the |channel| send_packet_callback.
-  void HandleSdu(fxl::WeakPtr<FakeDynamicChannel> channel, const ByteBuffer& sdu);
+  void HandleSdu(FakeDynamicChannel::WeakPtr channel, const ByteBuffer& sdu);
 
   // Return the production SDP server associated with this FakeSdpServer.
   sdp::Server* server() { return &server_; }

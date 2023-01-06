@@ -6,7 +6,7 @@
 
 namespace bt::hci {
 
-void FakeScoDataChannel::RegisterConnection(fxl::WeakPtr<ConnectionInterface> connection) {
+void FakeScoDataChannel::RegisterConnection(ConnectionInterface::WeakPtr connection) {
   auto [iter, inserted] =
       connections_.emplace(connection->handle(), RegisteredConnection{connection});
   BT_ASSERT(inserted);

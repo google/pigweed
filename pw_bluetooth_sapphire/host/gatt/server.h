@@ -12,7 +12,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/local_service_manager.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
 
@@ -38,7 +37,7 @@ class Server {
   // |local_services| will be used to resolve inbound/outbound transactions.
   // |bearer| is the ATT data bearer that this Server operates on. It must outlive this Server.
   static std::unique_ptr<Server> Create(PeerId peer_id, LocalServiceManager::WeakPtr local_services,
-                                        fxl::WeakPtr<att::Bearer> bearer);
+                                        att::Bearer::WeakPtr bearer);
   // Servers can be constructed without production att::Bearers (e.g. for testing), so the
   // FactoryFunction type reflects that.
   using FactoryFunction =

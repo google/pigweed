@@ -100,7 +100,7 @@ class LowEnergyCentralServer : public AdapterServerBase<fuchsia::bluetooth::le::
     std::vector<bt::gap::DiscoveryFilter> filters_;
     LowEnergyCentralServer* central_server_;
     bt::gap::Adapter::WeakPtr adapter_;
-    fxl::WeakPtrFactory<ScanInstance> weak_ptr_factory_;
+    WeakSelf<ScanInstance> weak_self_;
   };
 
   // fuchsia::bluetooth::le::Central overrides:
@@ -158,7 +158,7 @@ class LowEnergyCentralServer : public AdapterServerBase<fuchsia::bluetooth::le::
 
   // Keep this as the last member to make sure that all weak pointers are
   // invalidated before other members get destroyed.
-  fxl::WeakPtrFactory<LowEnergyCentralServer> weak_ptr_factory_;
+  WeakSelf<LowEnergyCentralServer> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LowEnergyCentralServer);
 };

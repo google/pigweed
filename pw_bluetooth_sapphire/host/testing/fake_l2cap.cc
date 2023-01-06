@@ -8,6 +8,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/fake_dynamic_channel.h"
 
 namespace bt::testing {
 
@@ -60,7 +61,7 @@ bool FakeL2cap::RegisterDynamicChannel(hci_spec::ConnectionHandle conn, l2cap::P
 bool FakeL2cap::RegisterDynamicChannelWithPsm(hci_spec::ConnectionHandle conn,
                                               l2cap::ChannelId local_cid) {
   auto channel = FindDynamicChannelByLocalId(conn, local_cid);
-  if (channel) {
+  if (channel.is_alive()) {
     BT_ASSERT(channel->opened());
     auto psm_iter = registered_services_.find(channel->psm());
     if (psm_iter == registered_services_.end()) {
@@ -105,31 +106,31 @@ l2cap::ChannelId FakeL2cap::FindAvailableDynamicChannelId(hci_spec::ConnectionHa
   return l2cap::kInvalidChannelId;
 }
 
-fxl::WeakPtr<FakeDynamicChannel> FakeL2cap::FindDynamicChannelByLocalId(
-    hci_spec::ConnectionHandle conn, l2cap::ChannelId local_cid) {
+FakeDynamicChannel::WeakPtr FakeL2cap::FindDynamicChannelByLocalId(hci_spec::ConnectionHandle conn,
+                                                                   l2cap::ChannelId local_cid) {
   auto channel_map = dynamic_channels_.find(conn);
   if (channel_map == dynamic_channels_.end()) {
-    return nullptr;
+    return FakeDynamicChannel::WeakPtr();
   }
   auto channel = channel_map->second.find(local_cid);
   if (channel == channel_map->second.end()) {
-    return nullptr;
+    return FakeDynamicChannel::WeakPtr();
   }
   return channel->second->AsWeakPtr();
 }
 
-fxl::WeakPtr<FakeDynamicChannel> FakeL2cap::FindDynamicChannelByRemoteId(
-    hci_spec::ConnectionHandle conn, l2cap::ChannelId remote_cid) {
+FakeDynamicChannel::WeakPtr FakeL2cap::FindDynamicChannelByRemoteId(hci_spec::ConnectionHandle conn,
+                                                                    l2cap::ChannelId remote_cid) {
   auto channel_map = dynamic_channels_.find(conn);
   if (channel_map == dynamic_channels_.end()) {
-    return nullptr;
+    return FakeDynamicChannel::WeakPtr();
   }
   for (auto& [id, channel_ptr] : channel_map->second) {
     if (channel_ptr->remote_cid() == remote_cid) {
       return channel_ptr->AsWeakPtr();
     }
   }
-  return nullptr;
+  return FakeDynamicChannel::WeakPtr();
 }
 
 void FakeL2cap::DeleteDynamicChannelByLocalId(hci_spec::ConnectionHandle conn,
@@ -172,7 +173,7 @@ void FakeL2cap::HandlePdu(hci_spec::ConnectionHandle conn, const ByteBuffer& pdu
     }
   } else {
     auto channel = FindDynamicChannelByLocalId(conn, cid);
-    if (channel) {
+    if (channel.is_alive()) {
       auto& callback = channel->packet_handler_callback();
       return callback(sdu);
     }

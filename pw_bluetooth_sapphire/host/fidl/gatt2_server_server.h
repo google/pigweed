@@ -10,10 +10,10 @@
 #include <fbl/macros.h>
 
 #include "lib/zx/eventpair.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/gatt2_server_ids.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bthost {
 
@@ -96,7 +96,7 @@ class Gatt2ServerServer : public GattServerBase<fuchsia::bluetooth::gatt2::Serve
 
   // Keep this as the last member to make sure that all weak pointers are invalidated before other
   // members get destroyed.
-  fxl::WeakPtrFactory<Gatt2ServerServer> weak_ptr_factory_;
+  WeakSelf<Gatt2ServerServer> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Gatt2ServerServer);
 };

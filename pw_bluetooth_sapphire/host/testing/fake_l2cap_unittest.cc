@@ -132,9 +132,9 @@ TEST_F(FakeL2capTest, DefaultSendPacketOnCustomChannel) {
   set_send_frame_callback(send_cb);
 
   // Configure the FakeService to use FakeL2cap's SendFrameCallback.
-  auto channel_cb = [](fxl::WeakPtr<FakeDynamicChannel> channel) {
+  auto channel_cb = [](FakeDynamicChannel::WeakPtr channel) {
     auto handle_sdu = [channel](auto& request) {
-      if (channel) {
+      if (channel.is_alive()) {
         auto& callback = channel->send_packet_callback();
         return callback(std::move(request));
       }

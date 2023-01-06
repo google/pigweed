@@ -157,7 +157,7 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnSynchronousConn
       in_progress_request_->parameters[in_progress_request_->current_param_index];
   auto conn = std::make_unique<ScoConnection>(std::move(link), std::move(deactivated_cb),
                                               conn_params, transport_->sco_data_channel());
-  fxl::WeakPtr<ScoConnection> conn_weak = conn->GetWeakPtr();
+  ScoConnection::WeakPtr conn_weak = conn->GetWeakPtr();
 
   auto [_, success] = connections_.try_emplace(connection_handle, std::move(conn));
   BT_ASSERT_MSG(success, "SCO connection already exists with handle %#.4x (peer: %s)",

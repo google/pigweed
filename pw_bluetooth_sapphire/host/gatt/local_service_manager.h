@@ -13,7 +13,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/types.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt::gatt {
 
@@ -102,7 +101,7 @@ class LocalServiceManager final : public WeakSelf<LocalServiceManager> {
     service_changed_callback_ = std::move(callback);
   }
 
-  inline fxl::WeakPtr<att::Database> database() { return db_->GetWeakPtr(); }
+  inline att::Database::WeakPtr database() { return db_->GetWeakPtr(); }
 
  private:
   class ServiceData;

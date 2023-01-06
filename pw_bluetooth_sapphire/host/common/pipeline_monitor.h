@@ -21,7 +21,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/retire_log.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 
 namespace bt {
 
@@ -53,7 +53,7 @@ class PipelineMonitor final {
     Token(Token&& other) noexcept : parent_(other.parent_) { *this = std::move(other); }
 
     Token& operator=(Token&& other) noexcept {
-      BT_ASSERT(parent_.get() == other.parent_.get());
+      BT_ASSERT(&parent_.get() == &other.parent_.get());
       id_ = std::exchange(other.id_, kInvalidTokenId);
       return *this;
     }
@@ -66,7 +66,7 @@ class PipelineMonitor final {
 
     // Explicitly retire to its monitor. This has no effect if the token has already been retired.
     void Retire() {
-      if (!bool{parent_}) {
+      if (!parent_.is_alive()) {
         return;
       }
       if (id_ != kInvalidTokenId) {
@@ -80,7 +80,7 @@ class PipelineMonitor final {
     // retirement logged. |bytes_to_take| must be no greater than the bytes issued for this token.
     // If |bytes_to_take| is exactly equal, this is effectively a token move.
     Token Split(size_t bytes_to_take) {
-      if (!bool{parent_}) {
+      if (!parent_.is_alive()) {
         return Token(parent_, kInvalidTokenId);
       }
       BT_ASSERT(id_ != kInvalidTokenId);
@@ -89,9 +89,10 @@ class PipelineMonitor final {
 
    private:
     friend class PipelineMonitor;
-    Token(fxl::WeakPtr<PipelineMonitor> parent, TokenId id) : parent_(std::move(parent)), id_(id) {}
+    Token(WeakSelf<PipelineMonitor>::WeakPtr parent, TokenId id)
+        : parent_(std::move(parent)), id_(id) {}
 
-    const fxl::WeakPtr<PipelineMonitor> parent_;
+    const WeakSelf<PipelineMonitor>::WeakPtr parent_;
     TokenId id_ = kInvalidTokenId;
   };
 
@@ -150,13 +151,13 @@ class PipelineMonitor final {
     // Process alerts.
     SignalAlertValue<MaxBytesInFlightAlert>(bytes_in_flight());
     SignalAlertValue<MaxTokensInFlightAlert>(tokens_in_flight());
-    return Token(weak_ptr_factory_.GetWeakPtr(), id);
+    return Token(weak_self_.GetWeakPtr(), id);
   }
 
   // Moves bytes tracked from one issued token to a new token, up to all of the bytes in |token|.
   [[nodiscard]] Token Split(Token* token, size_t bytes_to_take) {
     // For consistency, complete all token map and counter modifications before processing alerts.
-    BT_ASSERT(this == token->parent_.get());
+    BT_ASSERT(this == &token->parent_.get());
     auto iter = issued_tokens_.find(token->id_);
     BT_ASSERT(iter != issued_tokens_.end());
     TokenInfo& token_info = iter->second;
@@ -173,7 +174,7 @@ class PipelineMonitor final {
 
     // Process alerts.
     SignalAlertValue<MaxTokensInFlightAlert>(tokens_in_flight());
-    return Token(weak_ptr_factory_.GetWeakPtr(), id);
+    return Token(weak_self_.GetWeakPtr(), id);
   }
 
   // Subscribes to an alert that fires when the watched value strictly exceeds |threshold|. When
@@ -272,7 +273,7 @@ class PipelineMonitor final {
 
   void Retire(Token* token) {
     // For consistency, complete all token map and counter modifications before processing alerts.
-    BT_ASSERT(this == token->parent_.get());
+    BT_ASSERT(this == &token->parent_.get());
     auto node = issued_tokens_.extract(token->id_);
     BT_ASSERT(bool{node});
     const TokenInfo& token_info = node.mapped();
@@ -302,7 +303,7 @@ class PipelineMonitor final {
   // std::get (see GetAlertList).
   AlertRegistry<MaxBytesInFlightAlert, MaxTokensInFlightAlert, MaxAgeRetiredAlert> alert_registry_;
 
-  fxl::WeakPtrFactory<PipelineMonitor> weak_ptr_factory_{this};
+  WeakSelf<PipelineMonitor> weak_self_{this};
 };
 
 }  // namespace bt

@@ -19,7 +19,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/gap/discovery_filter.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/low_energy_scanner.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
 

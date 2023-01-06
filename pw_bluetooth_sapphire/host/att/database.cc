@@ -131,7 +131,7 @@ void Database::Iterator::Advance() {
 }
 
 Database::Database(Handle range_start, Handle range_end)
-    : range_start_(range_start), range_end_(range_end), weak_ptr_factory_(this) {
+    : WeakSelf(this), range_start_(range_start), range_end_(range_end) {
   BT_DEBUG_ASSERT(range_start_ < range_end_);
   BT_DEBUG_ASSERT(range_start_ >= kHandleMin);
   BT_DEBUG_ASSERT(range_end_ <= kHandleMax);

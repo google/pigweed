@@ -141,7 +141,7 @@ TEST(FakeDynamicChannelTest, ConnectOpenDisconnectChannel) {
       // Dest ID (2 bytes)
       LowerBits(src_id), UpperBits(src_id));
   EXPECT_TRUE(ContainersEqual(disconnection_response, *received_packet));
-  EXPECT_FALSE(fake_l2cap.FindDynamicChannelByLocalId(kConnectionHandle, src_id));
+  EXPECT_FALSE(fake_l2cap.FindDynamicChannelByLocalId(kConnectionHandle, src_id).is_alive());
 }
 
 TEST(FakeDynamicChannelTest, FailToRegisterChannelWithoutRegisteredService) {
@@ -173,7 +173,8 @@ TEST(FakeDynamicChannelTest, FailToRegisterChannelWithoutRegisteredService) {
   auto expected_response =
       expected_acl_response.view(sizeof(hci_spec::ACLDataHeader) + sizeof(l2cap::CommandHeader));
   EXPECT_TRUE(ContainersEqual(expected_response, *received_packet));
-  EXPECT_FALSE(fake_l2cap_without_service.FindDynamicChannelByLocalId(kConnectionHandle, src_id));
+  EXPECT_FALSE(
+      fake_l2cap_without_service.FindDynamicChannelByLocalId(kConnectionHandle, src_id).is_alive());
 }
 
 TEST(FakeDynamicChannelTest, FailToRegisterChannelWithInvalidCid) {
@@ -206,7 +207,7 @@ TEST(FakeDynamicChannelTest, FailToRegisterChannelWithInvalidCid) {
   auto expected_response =
       expected_acl_response.view(sizeof(hci_spec::ACLDataHeader) + sizeof(l2cap::CommandHeader));
   EXPECT_TRUE(ContainersEqual(expected_response, *received_packet));
-  EXPECT_FALSE(fake_l2cap.FindDynamicChannelByLocalId(kConnectionHandle, src_id));
+  EXPECT_FALSE(fake_l2cap.FindDynamicChannelByLocalId(kConnectionHandle, src_id).is_alive());
 }
 
 TEST(FakeDynamicChannelTest, FailToRegisterDuplicateRemoteId) {
@@ -370,7 +371,8 @@ TEST(FakeDynamicChannelTest, FailWhenOutOfIds) {
   auto expected_response =
       expected_acl_response.view(sizeof(hci_spec::ACLDataHeader) + sizeof(l2cap::CommandHeader));
   EXPECT_TRUE(ContainersEqual(expected_response, *received_packet));
-  EXPECT_FALSE(fewer_ids_fake_l2cap_.FindDynamicChannelByLocalId(kConnectionHandle, second_src_id));
+  EXPECT_FALSE(fewer_ids_fake_l2cap_.FindDynamicChannelByLocalId(kConnectionHandle, second_src_id)
+                   .is_alive());
 }
 
 }  // namespace

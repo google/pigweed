@@ -30,7 +30,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/server.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/service_discoverer.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
 

@@ -14,7 +14,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/sequential_command_runner.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
-#include "src/lib/fxl/memory/weak_ptr.h"
 
 namespace bt {
 namespace hci {
