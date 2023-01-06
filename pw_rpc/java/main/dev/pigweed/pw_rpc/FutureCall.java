@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
@@ -82,20 +83,14 @@ abstract class FutureCall<RequestT extends MessageLite, ResponseT extends Messag
     return future;
   }
 
-  void start(@Nullable RequestT request) {
-    try {
-      rpcManager().start(this, request);
-    } catch (ChannelOutputException e) {
-      // Stash the exception in the future and abort the call.
-      //
-      // In this instance, it's okay to modify the call's state from whichever thread is starting
-      // the call. This call never started, and so other threads have access to the object.
-      future.setException(e);
+  @Override
+  void handleExceptionOnInitialPacket(ChannelOutputException e) {
+    // Stash the exception in the future and abort the call.
+    future.setException(e);
 
-      // Set the status to mark the call completed. doHandleError() will have no effect since the
-      // exception was already set.
-      handleError(Status.ABORTED);
-    }
+    // Set the status to mark the call completed. doHandleError() will have no effect since the
+    // exception was already set.
+    handleError(Status.ABORTED);
   }
 
   @Override
@@ -109,9 +104,8 @@ abstract class FutureCall<RequestT extends MessageLite, ResponseT extends Messag
       implements ClientStreamingFuture<RequestT, ResponseT> {
     @Nullable ResponseT response = null;
 
-    UnaryResponseFuture(Endpoint rpcs, PendingRpc rpc, @Nullable RequestT request) {
+    UnaryResponseFuture(Endpoint rpcs, PendingRpc rpc) {
       super(rpcs, rpc);
-      start(request);
     }
 
     @Override
@@ -140,11 +134,15 @@ abstract class FutureCall<RequestT extends MessageLite, ResponseT extends Messag
       implements BidirectionalStreamingFuture<RequestT> {
     private final Consumer<ResponseT> onNext;
 
-    StreamResponseFuture(
-        Endpoint rpcs, PendingRpc rpc, Consumer<ResponseT> onNext, @Nullable RequestT request) {
+    static <RequestT extends MessageLite, ResponseT extends MessageLite>
+        BiFunction<Endpoint, PendingRpc, StreamResponseFuture<RequestT, ResponseT>> getFactory(
+            Consumer<ResponseT> onNext) {
+      return (rpcManager, pendingRpc) -> new StreamResponseFuture<>(rpcManager, pendingRpc, onNext);
+    }
+
+    private StreamResponseFuture(Endpoint rpcs, PendingRpc rpc, Consumer<ResponseT> onNext) {
       super(rpcs, rpc);
       this.onNext = onNext;
-      start(request);
     }
 
     @Override

@@ -18,6 +18,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.google.common.collect.ImmutableList;
 import dev.pigweed.pw_rpc.internal.Packet.PacketType;
 import dev.pigweed.pw_rpc.internal.Packet.RpcPacket;
 import org.junit.Before;
@@ -41,9 +42,8 @@ public final class StreamObserverCallTest {
   @Mock private StreamObserver<AnotherMessage> observer;
   @Mock private Channel.Output mockOutput;
 
-  private final Endpoint endpoint = new Endpoint();
-  private final PendingRpc rpc = PendingRpc.create(
-      new Channel(CHANNEL_ID, packet -> mockOutput.send(packet)), SERVICE, METHOD);
+  private final Channel channel = new Channel(CHANNEL_ID, packet -> mockOutput.send(packet));
+  private final Endpoint endpoint = new Endpoint(ImmutableList.of(channel));
   private StreamObserverCall<SomeMessage, AnotherMessage> streamObserverCall;
 
   private static byte[] cancel() {
@@ -63,7 +63,8 @@ public final class StreamObserverCallTest {
 
   @Before
   public void createCall() throws Exception {
-    streamObserverCall = StreamObserverCall.start(endpoint, rpc, observer, null);
+    streamObserverCall =
+        endpoint.invokeRpc(CHANNEL_ID, METHOD, StreamObserverCall.getFactory(observer), null);
   }
 
   @Test

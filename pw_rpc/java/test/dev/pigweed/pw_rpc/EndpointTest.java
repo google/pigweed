@@ -22,6 +22,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import com.google.common.collect.ImmutableList;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.MessageLite;
 import dev.pigweed.pw_rpc.internal.Packet.PacketType;
@@ -29,6 +30,7 @@ import dev.pigweed.pw_rpc.internal.Packet.RpcPacket;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
@@ -51,20 +53,8 @@ public final class EndpointTest {
 
   @Mock private Channel.Output mockOutput;
 
-  private final Endpoint manager = new Endpoint();
-  private final PendingRpc rpc =
-      PendingRpc.create(new Channel(CHANNEL_ID, bytes -> mockOutput.send(bytes)), SERVICE, METHOD);
-  private final AbstractCall<MessageLite, MessageLite> call =
-      new AbstractCall<MessageLite, MessageLite>(manager, rpc) {
-        @Override
-        void doHandleNext(MessageLite response) {}
-
-        @Override
-        void doHandleCompleted() {}
-
-        @Override
-        void doHandleError() {}
-      };
+  private final Channel channel = new Channel(CHANNEL_ID, bytes -> mockOutput.send(bytes));
+  private final Endpoint manager = new Endpoint(ImmutableList.of(channel));
 
   private static byte[] request(MessageLite payload) {
     return packetBuilder()
@@ -89,9 +79,24 @@ public final class EndpointTest {
         .setMethodId(METHOD.id());
   }
 
+  private static AbstractCall<MessageLite, MessageLite> createCall(
+      Endpoint endpoint, PendingRpc rpc) {
+    return new AbstractCall<MessageLite, MessageLite>(endpoint, rpc) {
+      @Override
+      void doHandleNext(MessageLite response) {}
+
+      @Override
+      void doHandleCompleted() {}
+
+      @Override
+      void doHandleError() {}
+    };
+  }
+
   @Test
   public void start_succeeds_rpcIsPending() throws Exception {
-    manager.start(call, REQUEST_PAYLOAD);
+    AbstractCall<MessageLite, MessageLite> call =
+        manager.invokeRpc(CHANNEL_ID, METHOD, EndpointTest::createCall, REQUEST_PAYLOAD);
 
     verify(mockOutput).send(REQUEST);
     assertThat(manager.abandon(call)).isTrue();
@@ -101,15 +106,16 @@ public final class EndpointTest {
   public void start_sendingFails_callsHandleError() throws Exception {
     doThrow(new ChannelOutputException()).when(mockOutput).send(any());
 
-    assertThrows(ChannelOutputException.class, () -> manager.start(call, REQUEST_PAYLOAD));
+    assertThrows(ChannelOutputException.class,
+        () -> manager.invokeRpc(CHANNEL_ID, METHOD, EndpointTest::createCall, REQUEST_PAYLOAD));
 
     verify(mockOutput).send(REQUEST);
-    assertThat(manager.abandon(call)).isFalse();
   }
 
   @Test
   public void abandon_rpcNoLongerPending() throws Exception {
-    manager.start(call, REQUEST_PAYLOAD);
+    AbstractCall<MessageLite, MessageLite> call =
+        manager.invokeRpc(CHANNEL_ID, METHOD, EndpointTest::createCall, REQUEST_PAYLOAD);
     assertThat(manager.abandon(call)).isTrue();
 
     assertThat(manager.abandon(call)).isFalse();
@@ -117,7 +123,8 @@ public final class EndpointTest {
 
   @Test
   public void abandon_sendsNoPackets() throws Exception {
-    manager.start(call, REQUEST_PAYLOAD);
+    AbstractCall<MessageLite, MessageLite> call =
+        manager.invokeRpc(CHANNEL_ID, METHOD, EndpointTest::createCall, REQUEST_PAYLOAD);
     verify(mockOutput).send(REQUEST);
     verifyNoMoreInteractions(mockOutput);
 
@@ -126,7 +133,8 @@ public final class EndpointTest {
 
   @Test
   public void cancel_rpcNoLongerPending() throws Exception {
-    manager.start(call, REQUEST_PAYLOAD);
+    AbstractCall<MessageLite, MessageLite> call =
+        manager.invokeRpc(CHANNEL_ID, METHOD, EndpointTest::createCall, REQUEST_PAYLOAD);
     assertThat(manager.cancel(call)).isTrue();
 
     assertThat(manager.abandon(call)).isFalse();
@@ -134,7 +142,8 @@ public final class EndpointTest {
 
   @Test
   public void cancel_sendsCancelPacket() throws Exception {
-    manager.start(call, REQUEST_PAYLOAD);
+    AbstractCall<MessageLite, MessageLite> call =
+        manager.invokeRpc(CHANNEL_ID, METHOD, EndpointTest::createCall, REQUEST_PAYLOAD);
     assertThat(manager.cancel(call)).isTrue();
 
     verify(mockOutput).send(cancel());
@@ -142,14 +151,19 @@ public final class EndpointTest {
 
   @Test
   public void open_sendsNoPacketsButRpcIsPending() {
-    manager.open(call);
+    AbstractCall<MessageLite, MessageLite> call =
+        manager.openRpc(CHANNEL_ID, METHOD, EndpointTest::createCall);
 
+    assertThat(call.active()).isTrue();
     assertThat(manager.abandon(call)).isTrue();
     verifyNoInteractions(mockOutput);
   }
 
   @Test
   public void ignoresActionsIfCallIsNotPending() throws Exception {
+    AbstractCall<MessageLite, MessageLite> call =
+        createCall(manager, PendingRpc.create(channel, METHOD));
+
     assertThat(manager.cancel(call)).isFalse();
     assertThat(manager.abandon(call)).isFalse();
     assertThat(manager.clientStream(call, REQUEST_PAYLOAD)).isFalse();
@@ -158,6 +172,9 @@ public final class EndpointTest {
 
   @Test
   public void ignoresPacketsIfCallIsNotPending() {
+    AbstractCall<MessageLite, MessageLite> call =
+        createCall(manager, PendingRpc.create(channel, METHOD));
+
     assertThat(manager.handleNext(call.rpc(), ByteString.EMPTY)).isFalse();
     assertThat(manager.handleUnaryCompleted(call.rpc(), ByteString.EMPTY, Status.OK)).isFalse();
     assertThat(manager.handleStreamCompleted(call.rpc(), Status.OK)).isFalse();

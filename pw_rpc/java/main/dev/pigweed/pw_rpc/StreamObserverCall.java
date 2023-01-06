@@ -15,7 +15,7 @@
 package dev.pigweed.pw_rpc;
 
 import com.google.protobuf.MessageLite;
-import javax.annotation.Nullable;
+import java.util.function.BiFunction;
 
 /**
  * Represents an ongoing RPC call.
@@ -31,24 +31,10 @@ final class StreamObserverCall<RequestT extends MessageLite, ResponseT extends M
     extends AbstractCall<RequestT, ResponseT> {
   private final StreamObserver<ResponseT> observer;
 
-  /** Invokes the specified RPC. */
   static <RequestT extends MessageLite, ResponseT extends MessageLite>
-      StreamObserverCall<RequestT, ResponseT> start(Endpoint rpcs,
-          PendingRpc rpc,
-          StreamObserver<ResponseT> observer,
-          @Nullable MessageLite request) throws ChannelOutputException {
-    StreamObserverCall<RequestT, ResponseT> call = new StreamObserverCall<>(rpcs, rpc, observer);
-    rpcs.start(call, request);
-    return call;
-  }
-
-  /** Open the specified RPC locally without sending any packets. */
-  static <RequestT extends MessageLite, ResponseT extends MessageLite>
-      StreamObserverCall<RequestT, ResponseT> open(
-          Endpoint rpcs, PendingRpc rpc, StreamObserver<ResponseT> observer) {
-    StreamObserverCall<RequestT, ResponseT> call = new StreamObserverCall<>(rpcs, rpc, observer);
-    rpcs.open(call);
-    return call;
+      BiFunction<Endpoint, PendingRpc, StreamObserverCall<RequestT, ResponseT>> getFactory(
+          StreamObserver<ResponseT> observer) {
+    return (endpoint, pendingRpc) -> new StreamObserverCall<>(endpoint, pendingRpc, observer);
   }
 
   private StreamObserverCall(Endpoint rpcs, PendingRpc rpc, StreamObserver<ResponseT> observer) {

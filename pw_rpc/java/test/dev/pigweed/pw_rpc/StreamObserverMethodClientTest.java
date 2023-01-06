@@ -21,7 +21,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.google.common.collect.ImmutableList;
 import com.google.protobuf.MessageLite;
+import dev.pigweed.pw_rpc.internal.Packet.PacketType;
+import dev.pigweed.pw_rpc.internal.Packet.RpcPacket;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -46,16 +49,15 @@ public final class StreamObserverMethodClientTest {
   // Wrap Channel.Output since channelOutput will be null when the channel is initialized.
   private final Channel channel = new Channel(1, bytes -> channelOutput.send(bytes));
 
-  private final PendingRpc UNARY_RPC =
-      PendingRpc.create(channel, SERVICE, SERVICE.method("SomeUnary"));
+  private final PendingRpc UNARY_RPC = PendingRpc.create(channel, SERVICE.method("SomeUnary"));
   private final PendingRpc SERVER_STREAMING_RPC =
-      PendingRpc.create(channel, SERVICE, SERVICE.method("SomeServerStreaming"));
+      PendingRpc.create(channel, SERVICE.method("SomeServerStreaming"));
   private final PendingRpc CLIENT_STREAMING_RPC =
-      PendingRpc.create(channel, SERVICE, SERVICE.method("SomeClientStreaming"));
+      PendingRpc.create(channel, SERVICE.method("SomeClientStreaming"));
   private final PendingRpc BIDIRECTIONAL_STREAMING_RPC =
-      PendingRpc.create(channel, SERVICE, SERVICE.method("SomeBidirectionalStreaming"));
+      PendingRpc.create(channel, SERVICE.method("SomeBidirectionalStreaming"));
 
-  private final Endpoint endpoint = new Endpoint();
+  private final Client client = Client.create(ImmutableList.of(channel), ImmutableList.of(SERVICE));
   private MethodClient unaryMethodClient;
   private MethodClient serverStreamingMethodClient;
   private MethodClient clientStreamingMethodClient;
@@ -63,11 +65,13 @@ public final class StreamObserverMethodClientTest {
 
   @Before
   public void createMethodClient() {
-    unaryMethodClient = new MethodClient(endpoint, UNARY_RPC, defaultObserver);
-    serverStreamingMethodClient = new MethodClient(endpoint, SERVER_STREAMING_RPC, defaultObserver);
-    clientStreamingMethodClient = new MethodClient(endpoint, CLIENT_STREAMING_RPC, defaultObserver);
-    bidirectionalStreamingMethodClient =
-        new MethodClient(endpoint, BIDIRECTIONAL_STREAMING_RPC, defaultObserver);
+    unaryMethodClient = new MethodClient(client, channel.id(), UNARY_RPC.method(), defaultObserver);
+    serverStreamingMethodClient =
+        new MethodClient(client, channel.id(), SERVER_STREAMING_RPC.method(), defaultObserver);
+    clientStreamingMethodClient =
+        new MethodClient(client, channel.id(), CLIENT_STREAMING_RPC.method(), defaultObserver);
+    bidirectionalStreamingMethodClient = new MethodClient(
+        client, channel.id(), BIDIRECTIONAL_STREAMING_RPC.method(), defaultObserver);
   }
 
   @Test
@@ -75,7 +79,7 @@ public final class StreamObserverMethodClientTest {
     unaryMethodClient.invokeUnary(SomeMessage.getDefaultInstance());
     AnotherMessage reply = AnotherMessage.newBuilder().setPayload("yo").build();
 
-    endpoint.handleNext(UNARY_RPC, reply.toByteString());
+    assertThat(client.processPacket(responsePacket(UNARY_RPC, reply))).isTrue();
 
     verify(defaultObserver).onNext(reply);
   }
@@ -84,7 +88,7 @@ public final class StreamObserverMethodClientTest {
   public void invoke_usesProvidedObserver() throws Exception {
     unaryMethodClient.invokeUnary(SomeMessage.getDefaultInstance(), observer);
     AnotherMessage reply = AnotherMessage.newBuilder().setPayload("yo").build();
-    endpoint.handleNext(UNARY_RPC, reply.toByteString());
+    assertThat(client.processPacket(responsePacket(UNARY_RPC, reply))).isTrue();
 
     verify(observer).onNext(reply);
   }
@@ -196,5 +200,51 @@ public final class StreamObserverMethodClientTest {
   public void invokeBidirectionalStreaming_clientStreamingRpc_throwsException() {
     assertThrows(UnsupportedOperationException.class,
         () -> clientStreamingMethodClient.invokeBidirectionalStreaming());
+  }
+
+  @Test
+  public void invalidChannel_throwsException() {
+    MethodClient methodClient =
+        new MethodClient(client, 999, CLIENT_STREAMING_RPC.method(), defaultObserver);
+    assertThrows(InvalidRpcChannelException.class, methodClient::invokeClientStreaming);
+  }
+
+  @Test
+  public void invalidService_throwsException() {
+    Service otherService = new Service("something.Else",
+        Service.clientStreamingMethod("ClientStream", SomeMessage.class, AnotherMessage.class));
+
+    MethodClient methodClient = new MethodClient(
+        client, channel.id(), otherService.method("ClientStream"), defaultObserver);
+    assertThrows(InvalidRpcServiceException.class, methodClient::invokeClientStreaming);
+  }
+
+  @Test
+  public void invalidMethod_throwsException() {
+    Service serviceWithDifferentUnaryMethod = new Service("pw.rpc.test1.TheTestService",
+        Service.unaryMethod("SomeUnary", AnotherMessage.class, AnotherMessage.class),
+        Service.serverStreamingMethod(
+            "SomeServerStreaming", SomeMessage.class, AnotherMessage.class),
+        Service.clientStreamingMethod(
+            "SomeClientStreaming", SomeMessage.class, AnotherMessage.class),
+        Service.bidirectionalStreamingMethod(
+            "SomeBidirectionalStreaming", SomeMessage.class, AnotherMessage.class));
+
+    MethodClient methodClient = new MethodClient(
+        client, 999, serviceWithDifferentUnaryMethod.method("SomeUnary"), defaultObserver);
+    assertThrows(InvalidRpcServiceMethodException.class,
+        () -> methodClient.invokeUnary(AnotherMessage.getDefaultInstance()));
+  }
+
+  private static byte[] responsePacket(PendingRpc rpc, MessageLite payload) {
+    return RpcPacket.newBuilder()
+        .setChannelId(1)
+        .setServiceId(rpc.service().id())
+        .setMethodId(rpc.method().id())
+        .setType(PacketType.RESPONSE)
+        .setStatus(Status.OK.code())
+        .setPayload(payload.toByteString())
+        .build()
+        .toByteArray();
   }
 }

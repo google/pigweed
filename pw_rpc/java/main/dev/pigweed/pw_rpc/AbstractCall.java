@@ -83,10 +83,6 @@ abstract class AbstractCall<RequestT extends MessageLite, ResponseT extends Mess
     return rpc;
   }
 
-  final Endpoint rpcManager() {
-    return rpcs;
-  }
-
   // The following functions change the call's state and may ONLY be called by the RpcManager!
 
   final void handleNext(ByteString payload) {
@@ -117,6 +113,10 @@ abstract class AbstractCall<RequestT extends MessageLite, ResponseT extends Mess
   }
 
   abstract void doHandleError();
+
+  void handleExceptionOnInitialPacket(ChannelOutputException e) throws ChannelOutputException {
+    throw e;
+  }
 
   @SuppressWarnings("unchecked")
   @Nullable

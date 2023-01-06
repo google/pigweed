@@ -23,6 +23,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.google.common.collect.ImmutableList;
 import com.google.protobuf.ByteString;
 import dev.pigweed.pw_rpc.Call.UnaryFuture;
 import dev.pigweed.pw_rpc.FutureCall.StreamResponseFuture;
@@ -49,14 +50,14 @@ public final class FutureCallTest {
 
   @Mock private Channel.Output mockOutput;
 
-  private final Endpoint endpoint = new Endpoint();
-  private final PendingRpc rpc = PendingRpc.create(
-      new Channel(CHANNEL_ID, packet -> mockOutput.send(packet)), SERVICE, METHOD);
+  private final Channel channel = new Channel(CHANNEL_ID, packet -> mockOutput.send(packet));
+  private final Endpoint endpoint = new Endpoint(ImmutableList.of(channel));
+  private final PendingRpc rpc = PendingRpc.create(channel, METHOD);
 
   @Test
   public void unaryFuture_response_setsValue() throws Exception {
-    UnaryResponseFuture<SomeMessage, AnotherMessage> call =
-        new UnaryResponseFuture<>(endpoint, rpc, SomeMessage.getDefaultInstance());
+    UnaryResponseFuture<SomeMessage, AnotherMessage> call = endpoint.invokeRpc(
+        CHANNEL_ID, METHOD, UnaryResponseFuture::new, SomeMessage.getDefaultInstance());
 
     AnotherMessage response = AnotherMessage.newBuilder().setResultValue(1138).build();
     call.handleUnaryCompleted(response.toByteString(), Status.CANCELLED);
@@ -66,9 +67,9 @@ public final class FutureCallTest {
   }
 
   @Test
-  public void unaryFuture_serverError_setsException() {
-    UnaryResponseFuture<SomeMessage, AnotherMessage> call =
-        new UnaryResponseFuture<>(endpoint, rpc, SomeMessage.getDefaultInstance());
+  public void unaryFuture_serverError_setsException() throws Exception {
+    UnaryResponseFuture<SomeMessage, AnotherMessage> call = endpoint.invokeRpc(
+        CHANNEL_ID, METHOD, UnaryResponseFuture::new, SomeMessage.getDefaultInstance());
 
     call.handleError(Status.NOT_FOUND);
 
@@ -84,8 +85,8 @@ public final class FutureCallTest {
 
   @Test
   public void unaryFuture_cancelOnCall_cancelsTheCallAndFuture() throws Exception {
-    UnaryFuture<SomeMessage> call =
-        new UnaryResponseFuture<>(endpoint, rpc, SomeMessage.getDefaultInstance());
+    UnaryFuture<SomeMessage> call = endpoint.invokeRpc(
+        CHANNEL_ID, METHOD, UnaryResponseFuture::new, SomeMessage.getDefaultInstance());
     assertThat(call.cancel()).isTrue();
     assertThat(call.isCancelled()).isTrue();
 
@@ -99,9 +100,9 @@ public final class FutureCallTest {
   }
 
   @Test
-  public void unaryFuture_cancelOnFuture_cancelsTheCallAndFuture() {
-    UnaryFuture<SomeMessage> call =
-        new UnaryResponseFuture<>(endpoint, rpc, SomeMessage.getDefaultInstance());
+  public void unaryFuture_cancelOnFuture_cancelsTheCallAndFuture() throws Exception {
+    UnaryFuture<SomeMessage> call = endpoint.invokeRpc(
+        CHANNEL_ID, METHOD, UnaryResponseFuture::new, SomeMessage.getDefaultInstance());
     assertThat(call.cancel(true)).isTrue();
     assertThat(call.isCancelled()).isTrue();
 
@@ -116,8 +117,8 @@ public final class FutureCallTest {
 
   @Test
   public void unaryFuture_cancelOnFutureSendFails_cancelsTheCallAndFuture() throws Exception {
-    UnaryFuture<SomeMessage> call =
-        new UnaryResponseFuture<>(endpoint, rpc, SomeMessage.getDefaultInstance());
+    UnaryFuture<SomeMessage> call = endpoint.invokeRpc(
+        CHANNEL_ID, METHOD, UnaryResponseFuture::new, SomeMessage.getDefaultInstance());
 
     doThrow(new ChannelOutputException()).when(mockOutput).send(any());
 
@@ -134,9 +135,9 @@ public final class FutureCallTest {
   }
 
   @Test
-  public void unaryFuture_multipleResponses_setsException() {
-    UnaryResponseFuture<SomeMessage, AnotherMessage> call =
-        new UnaryResponseFuture<>(endpoint, rpc, SomeMessage.getDefaultInstance());
+  public void unaryFuture_multipleResponses_setsException() throws Exception {
+    UnaryResponseFuture<SomeMessage, AnotherMessage> call = endpoint.invokeRpc(
+        CHANNEL_ID, METHOD, UnaryResponseFuture::new, SomeMessage.getDefaultInstance());
 
     AnotherMessage response = AnotherMessage.newBuilder().setResultValue(1138).build();
     call.doHandleNext(response);
@@ -148,9 +149,9 @@ public final class FutureCallTest {
   }
 
   @Test
-  public void unaryFuture_addListener_calledOnCompletion() {
-    UnaryResponseFuture<SomeMessage, AnotherMessage> call =
-        new UnaryResponseFuture<>(endpoint, rpc, SomeMessage.getDefaultInstance());
+  public void unaryFuture_addListener_calledOnCompletion() throws Exception {
+    UnaryResponseFuture<SomeMessage, AnotherMessage> call = endpoint.invokeRpc(
+        CHANNEL_ID, METHOD, UnaryResponseFuture::new, SomeMessage.getDefaultInstance());
 
     Runnable listener = mock(Runnable.class);
     call.addListener(listener, directExecutor());
@@ -166,8 +167,8 @@ public final class FutureCallTest {
     ChannelOutputException exceptionToThrow = new ChannelOutputException();
     doThrow(exceptionToThrow).when(mockOutput).send(any());
 
-    UnaryResponseFuture<SomeMessage, AnotherMessage> call =
-        new UnaryResponseFuture<>(endpoint, rpc, SomeMessage.getDefaultInstance());
+    UnaryResponseFuture<SomeMessage, AnotherMessage> call = endpoint.invokeRpc(
+        CHANNEL_ID, METHOD, UnaryResponseFuture::new, SomeMessage.getDefaultInstance());
 
     assertThat(call.error()).isEqualTo(Status.ABORTED);
     ExecutionException exception = assertThrows(ExecutionException.class, call::get);
@@ -179,8 +180,10 @@ public final class FutureCallTest {
   @Test
   public void bidirectionalStreamingFuture_responses_setsValue() throws Exception {
     List<AnotherMessage> responses = new ArrayList<>();
-    StreamResponseFuture<SomeMessage, AnotherMessage> call =
-        new StreamResponseFuture<>(endpoint, rpc, responses::add, null);
+    StreamResponseFuture<SomeMessage, AnotherMessage> call = endpoint.invokeRpc(CHANNEL_ID,
+        METHOD,
+        StreamResponseFuture.getFactory(responses::add),
+        SomeMessage.getDefaultInstance());
 
     AnotherMessage message = AnotherMessage.newBuilder().setResultValue(1138).build();
     call.doHandleNext(message);
@@ -194,9 +197,11 @@ public final class FutureCallTest {
   }
 
   @Test
-  public void bidirectionalStreamingFuture_serverError_setsException() {
-    StreamResponseFuture<SomeMessage, AnotherMessage> call =
-        new StreamResponseFuture<>(endpoint, rpc, (msg) -> {}, null);
+  public void bidirectionalStreamingFuture_serverError_setsException() throws Exception {
+    StreamResponseFuture<SomeMessage, AnotherMessage> call = endpoint.invokeRpc(CHANNEL_ID,
+        METHOD,
+        StreamResponseFuture.getFactory(msg -> {}),
+        SomeMessage.getDefaultInstance());
 
     call.handleError(Status.NOT_FOUND);
 

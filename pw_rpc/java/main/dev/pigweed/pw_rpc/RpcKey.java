@@ -1,4 +1,4 @@
-// Copyright 2021 The Pigweed Authors
+// Copyright 2022 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -15,29 +15,17 @@
 package dev.pigweed.pw_rpc;
 
 import com.google.auto.value.AutoValue;
-import java.util.Locale;
 
 /**
- * Represents an active RPC invocation: channel + service + method.
- *
- * TODO(hepler): Use call ID to support multiple simultaneous calls to the same RPC on one channel.
+ * Refers to a potential RPC invocation: channel ID and method.
  */
 @AutoValue
-abstract class PendingRpc {
-  public static PendingRpc create(Channel channel, Method method) {
-    return new AutoValue_PendingRpc(channel, method);
+abstract class RpcKey {
+  public static RpcKey create(int channelId, Method method) {
+    return new AutoValue_RpcKey(channelId, method);
   }
 
-  public abstract Channel channel();
-
-  public final Service service() {
-    return method().service();
-  }
+  public abstract int channelId();
 
   public abstract Method method();
-
-  @Override
-  public final String toString() {
-    return String.format(Locale.ENGLISH, "PendingRpc[%s|channel=%d]", method(), channel().id());
-  }
 }

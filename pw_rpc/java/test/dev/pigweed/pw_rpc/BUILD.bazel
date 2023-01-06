@@ -131,6 +131,7 @@ java_test(
     test_class = "dev.pigweed.pw_rpc.StreamObserverMethodClientTest",
     deps = [
         ":test_proto_java_proto_lite",
+        "//pw_rpc:packet_proto_java_lite",
         "//pw_rpc/java/main/dev/pigweed/pw_rpc:client",
         "@com_google_protobuf//java/lite",
         "@maven//:com_google_flogger_flogger_system_backend",

@@ -17,40 +17,45 @@ package dev.pigweed.pw_rpc;
 import com.google.protobuf.MessageLite;
 import dev.pigweed.pw_rpc.FutureCall.StreamResponseFuture;
 import dev.pigweed.pw_rpc.FutureCall.UnaryResponseFuture;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 
 /**
  * Represents a method ready to be invoked on a particular RPC channel.
  *
- * <p>The Client has the concrete MethodClient as a type parameter. This allows implementations to
- * fully define the interface and semantics for RPC calls.
+ * Invoking an RPC with a method client may throw exceptions:
+ *
+ * TODO(hepler): This class should be split into four types -- one for each method type. The call
+ *     type checks should be done when the object is created. Also, the client should be typed on
+ *     the request/response.
  */
 public class MethodClient {
-  protected final StreamObserver<? extends MessageLite> defaultObserver;
-  private final Endpoint rpcs;
-  private final PendingRpc rpc;
+  private final Client client;
+  private final int channelId;
+  private final Method method;
+  private final StreamObserver<? extends MessageLite> defaultObserver;
 
-  MethodClient(Endpoint rpcs, PendingRpc rpc, StreamObserver<MessageLite> defaultObserver) {
-    this.rpcs = rpcs;
-    this.rpc = rpc;
+  MethodClient(
+      Client client, int channelId, Method method, StreamObserver<MessageLite> defaultObserver) {
+    this.client = client;
+    this.channelId = channelId;
+    this.method = method;
     this.defaultObserver = defaultObserver;
   }
 
-  public final Method method() {
-    return rpc.method();
+  final Method method() {
+    return method;
   }
 
-  /** Gives implementations access to the RpcManager shared with the Client. */
-  protected final Endpoint rpcs() {
-    return rpcs;
-  }
-
-  /** Gives implementations access to the PendingRpc this MethodClient represents. */
-  protected final PendingRpc rpc() {
-    return rpc;
-  }
-
-  /** Invokes a unary RPC. Uses the default StreamObserver for RPC events. */
+  /**
+   * Invokes a unary RPC. Uses the default StreamObserver for RPC events.
+   *
+   * @throws InvalidRpcChannelException the client has no channel with this ID
+   * @throws InvalidRpcServiceException if the service was removed from the client
+   * @throws InvalidRpcServiceMethodException if the method was removed or changed since this
+   *     MethodClient was created
+   */
   public Call invokeUnary(MessageLite request) throws ChannelOutputException {
     return invokeUnary(request, defaultObserver());
   }
@@ -59,14 +64,14 @@ public class MethodClient {
   public Call invokeUnary(MessageLite request, StreamObserver<? extends MessageLite> observer)
       throws ChannelOutputException {
     checkCallType(Method.Type.UNARY);
-    return StreamObserverCall.start(rpcs(), rpc(), observer, request);
+    return client.invokeRpc(channelId, method, StreamObserverCall.getFactory(observer), request);
   }
 
   /** Invokes a unary RPC with a future that collects the response. */
   public <ResponseT extends MessageLite> Call.UnaryFuture<ResponseT> invokeUnaryFuture(
       MessageLite request) {
     checkCallType(Method.Type.UNARY);
-    return new UnaryResponseFuture<>(rpcs(), rpc(), request);
+    return invokeFuture(UnaryResponseFuture::new, request);
   }
 
   /**
@@ -78,16 +83,7 @@ public class MethodClient {
    */
   public Call openUnary(StreamObserver<? extends MessageLite> observer) {
     checkCallType(Method.Type.UNARY);
-    return StreamObserverCall.open(rpcs(), rpc(), observer);
-  }
-
-  /**
-   * @deprecated The request argument is deprecated and unused. Use the single-argument version.
-   */
-  @Deprecated
-  public Call openUnary(MessageLite unusedRequest, StreamObserver<? extends MessageLite> observer) {
-    checkCallType(Method.Type.UNARY);
-    return StreamObserverCall.open(rpcs(), rpc(), observer);
+    return client.openRpc(channelId, method, StreamObserverCall.getFactory(observer));
   }
 
   /** Invokes a server streaming RPC. Uses the default StreamObserver for RPC events. */
@@ -99,14 +95,14 @@ public class MethodClient {
   public Call invokeServerStreaming(MessageLite request,
       StreamObserver<? extends MessageLite> observer) throws ChannelOutputException {
     checkCallType(Method.Type.SERVER_STREAMING);
-    return StreamObserverCall.start(rpcs(), rpc(), observer, request);
+    return client.invokeRpc(channelId, method, StreamObserverCall.getFactory(observer), request);
   }
 
   /** Invokes a server streaming RPC with a future that collects the responses. */
   public Call.ServerStreamingFuture invokeServerStreamingFuture(
       MessageLite request, Consumer<? extends MessageLite> onNext) {
     checkCallType(Method.Type.SERVER_STREAMING);
-    return new StreamResponseFuture<>(rpcs(), rpc(), onNext, request);
+    return invokeFuture(StreamResponseFuture.getFactory(onNext), request);
   }
 
   /**
@@ -118,7 +114,7 @@ public class MethodClient {
    */
   public Call openServerStreaming(StreamObserver<? extends MessageLite> observer) {
     checkCallType(Method.Type.SERVER_STREAMING);
-    return StreamObserverCall.open(rpcs(), rpc(), observer);
+    return client.openRpc(channelId, method, StreamObserverCall.getFactory(observer));
   }
 
   /** Invokes a client streaming RPC. Uses the default StreamObserver for RPC events. */
@@ -131,14 +127,14 @@ public class MethodClient {
   public <RequestT extends MessageLite> Call.ClientStreaming<RequestT> invokeClientStreaming(
       StreamObserver<? extends MessageLite> observer) throws ChannelOutputException {
     checkCallType(Method.Type.CLIENT_STREAMING);
-    return StreamObserverCall.start(rpcs(), rpc(), observer, null);
+    return client.invokeRpc(channelId, method, StreamObserverCall.getFactory(observer), null);
   }
 
   /** Invokes a client streaming RPC with a future that collects the response. */
   public <RequestT extends MessageLite> Call.ClientStreaming<RequestT>
   invokeClientStreamingFuture() {
     checkCallType(Method.Type.CLIENT_STREAMING);
-    return new UnaryResponseFuture<>(rpcs(), rpc(), null);
+    return invokeFuture(UnaryResponseFuture::new, null);
   }
 
   /**
@@ -151,7 +147,7 @@ public class MethodClient {
   public <RequestT extends MessageLite> Call.ClientStreaming<RequestT> openClientStreaming(
       StreamObserver<? extends MessageLite> observer) {
     checkCallType(Method.Type.CLIENT_STREAMING);
-    return StreamObserverCall.open(rpcs(), rpc(), observer);
+    return client.openRpc(channelId, method, StreamObserverCall.getFactory(observer));
   }
 
   /** Invokes a bidirectional streaming RPC. Uses the default StreamObserver for RPC events. */
@@ -164,7 +160,7 @@ public class MethodClient {
   public <RequestT extends MessageLite> Call.ClientStreaming<RequestT> invokeBidirectionalStreaming(
       StreamObserver<? extends MessageLite> observer) throws ChannelOutputException {
     checkCallType(Method.Type.BIDIRECTIONAL_STREAMING);
-    return StreamObserverCall.start(rpcs(), rpc(), observer, null);
+    return client.invokeRpc(channelId, method, StreamObserverCall.getFactory(observer), null);
   }
 
   /** Invokes a bidirectional streaming RPC with a future that finishes when the RPC finishes. */
@@ -172,7 +168,7 @@ public class MethodClient {
       Call.BidirectionalStreamingFuture<RequestT> invokeBidirectionalStreamingFuture(
           Consumer<ResponseT> onNext) {
     checkCallType(Method.Type.BIDIRECTIONAL_STREAMING);
-    return new StreamResponseFuture<>(rpcs(), rpc(), onNext, null);
+    return invokeFuture(StreamResponseFuture.getFactory(onNext), null);
   }
 
   /**
@@ -185,7 +181,7 @@ public class MethodClient {
   public <RequestT extends MessageLite> Call.ClientStreaming<RequestT> openBidirectionalStreaming(
       StreamObserver<? extends MessageLite> observer) {
     checkCallType(Method.Type.BIDIRECTIONAL_STREAMING);
-    return StreamObserverCall.open(rpcs(), rpc(), observer);
+    return client.openRpc(channelId, method, StreamObserverCall.getFactory(observer));
   }
 
   @SuppressWarnings("unchecked")
@@ -193,13 +189,23 @@ public class MethodClient {
     return (StreamObserver<ResponseT>) defaultObserver;
   }
 
+  public <RequestT extends MessageLite, ResponseT extends MessageLite, CallT
+              extends FutureCall<RequestT, ResponseT, ?>> CallT
+  invokeFuture(BiFunction<Endpoint, PendingRpc, CallT> createCall, @Nullable MessageLite request) {
+    try {
+      return client.invokeRpc(channelId, method, createCall, request);
+    } catch (ChannelOutputException e) {
+      throw new AssertionError("Starting a future-based RPC call should never throw", e);
+    }
+  }
+
   private void checkCallType(Method.Type expected) {
-    if (!rpc().method().type().equals(expected)) {
+    if (!method.type().equals(expected)) {
       throw new UnsupportedOperationException(String.format(
           "%s is a %s method, but it was invoked as a %s method. RPCs must be invoked by the"
               + " appropriate invoke function.",
-          method().fullName(),
-          method().type().sentenceName(),
+          method.fullName(),
+          method.type().sentenceName(),
           expected.sentenceName()));
     }
   }

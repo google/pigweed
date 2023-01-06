@@ -26,7 +26,7 @@ public final class PacketsTest {
       new Service("Greetings", Service.unaryMethod("Hello", RpcPacket.class, RpcPacket.class));
 
   private static final PendingRpc RPC =
-      PendingRpc.create(new Channel(123, null), SERVICE, SERVICE.method("Hello"));
+      PendingRpc.create(new Channel(123, null), SERVICE.method("Hello"));
 
   private static final RpcPacket PACKET = RpcPacket.newBuilder()
                                               .setChannelId(123)
