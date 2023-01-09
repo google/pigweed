@@ -24,7 +24,7 @@ template("pico_executable") {
 
       # Link deps pulls in Pigweed things that don't fit in the 2nd stage
       # bootloader.
-      public_deps -= [ "$dir_pw_build:link_deps" ]
+      deps -= [ "$dir_pw_build:link_deps" ]
     }
   } else {
     _uf2_name = "${target_name}.uf2"

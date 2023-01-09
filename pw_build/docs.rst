@@ -71,15 +71,66 @@ Target types
   }
 
 Pigweed defines wrappers around the four basic GN binary types ``source_set``,
-``executable``, ``static_library``, and ``shared_library``. These wrappers apply
-default arguments to each target, as defined in ``pw_build/default.gni``.
-Arguments may be added or removed globally using the ``default_configs``,
-``default_public_deps``, and ``remove_default_configs`` build args.
-Additionally, arguments may be removed on a per-target basis with the
-``remove_configs`` and ``remove_public_deps`` variables. These target types may
-also be set to have restricted visibility by default via
-``pw_build_DEFAULT_VISIBILITY`` for when projects want to selectively control
-which Pigweed libraries are used and where.
+``executable``, ``static_library``, and ``shared_library``. These templates
+do several things:
+
+#. **Add default configs/deps**
+
+  Rather than binding the majority of compiler flags related to C++ standard,
+  cross-compilation, warning/error policy, etc. directly to toolchain
+  invocations, these flags are applied as configs to all ``pw_*`` C/C++ target
+  types. The primary motivations for this are to allow some targets to modify
+  the default set of flags when needed by specifying ``remove_configs``, and to
+  reduce the complexity of building novel toolchains.
+
+  Pigweed's global default configs are set in ``pw_build/default.gni``, and
+  individual platform-specific toolchains extend the list by appending to the
+  ``default_configs`` build argument.
+
+  Default deps were added to support polyfill, which has since been
+  deprecated. Default dependency functionality continues to exist for
+  backwards compatibility.
+
+#. **Optionally add link-time binding**
+
+  Some libraries like pw_assert and pw_log are borderline impossible to
+  implement well without introducing circular dependencies. One solution for
+  addressing this is to break apart the libraries into an interface with
+  minimal dependencies, and an implementation with the bulk of the
+  dependencies that would typically create dependency cycles. In order for the
+  implementation to be linked in, it must be added to the dependency tree of
+  linked artifacts (e.g. ``pw_executable``, ``pw_static_library``). Since
+  there's no way for the libraries themselves to just happily pull in the
+  implementation if someone depends on the interface, the implementation is
+  instead late-bound by adding it as a direct dependency of the final linked
+  artifact. This is all managed through ``pw_build_LINK_DEPS``, which is global
+  for each toolchain and applied to every ``pw_executable``,
+  ``pw_static_library``, and ``pw_shared_library``.
+
+#. **Apply a default visibility policy**
+
+  Projects can globally control the default visibility of pw_* target types by
+  specifying ``pw_build_DEFAULT_VISIBILITY``. This template applies that as the
+  default visibility for any pw_* targets that do not explicitly specify
+  a visibility.
+
+#. **Add source file names as metadata**
+
+  All source file names are collected as
+  `GN metadata <https://gn.googlesource.com/gn/+/main/docs/reference.md#metadata_collection>`_.
+  This list can be writen to a file at build time using ``generated_file``. The
+  primary use case for this is to generate a token database containing all the
+  source files. This allows PW_ASSERT to emit filename tokens even though it
+  can't add them to the elf file because of the reasons described at
+  :ref:`module-pw_assert-assert-api`.
+
+  .. note::
+    ``pw_source_files``, if not rebased will default to outputing module
+    relative paths from a ``generated_file`` target.  This is likely not
+    useful. Adding a ``rebase`` argument to ``generated_file`` such as
+    ``rebase = root_build_dir`` will result in usable paths.  For an example,
+    see ``//pw_tokenizer/database.gni``'s ``pw_tokenizer_filename_database``
+    template.
 
 The ``pw_executable`` template provides additional functionality around building
 complete binaries. As Pigweed is a collection of libraries, it does not know how
@@ -94,23 +145,6 @@ need to stamp out some ``pw_source_set``\s. Since a pw_executable template can't
 import ``$dir_pw_build/target_types.gni`` due to circular imports, it should
 import ``$dir_pw_build/cc_library.gni`` instead.
 
-Additionally ``pw_executable``, ``pw_source_set``, ``pw_static_library``, and
-``pw_shared_library`` track source files via the ``pw_source_files`` field the
-target's
-`GN metadata <https://gn.googlesource.com/gn/+/main/docs/reference.md#metadata_collection>`_.
-This list can be writen to a file at build time using ``generated_file``.  The
-primary use case for this is to generate a token database containing all the
-source files.  This allows PW_ASSERT to emit filename tokens even though it
-can't add them to the elf file because of the reasons described at
-:ref:`module-pw_assert-assert-api`.
-
-.. note::
-  ``pw_source_files``, if not rebased will default to outputing module relative
-  paths from a ``generated_file`` target.  This is likely not useful.  Adding
-  a ``rebase`` argument to ``generated_file`` such as
-  ``rebase = root_build_dir`` will result in usable paths.  For an example,
-  see `//pw_tokenizer/database.gni`'s `pw_tokenizer_filename_database` template.
-
 .. tip::
 
   Prefer to use ``pw_executable`` over plain ``executable`` targets to allow
@@ -118,8 +152,16 @@ can't add them to the elf file because of the reasons described at
 
 **Arguments**
 
-All of the ``pw_*`` target type overrides accept any arguments, as they simply
-forward them through to the underlying target.
+All of the ``pw_*`` target type overrides accept any arguments supported by
+the underlying native types, as they simply forward them through to the
+underlying target.
+
+Additionally, the following arguments are also supported:
+
+* **remove_configs**: (optional) A list of configs to remove from the set of
+  default configs specified by the current toolchain configuration.
+* **remove_public_deps**: (optional) A list of targets to remove from the set of
+  default public_deps specified by the current toolchain configuration.
 
 .. _module-pw_build-link-deps:
 

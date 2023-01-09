@@ -1,0 +1,147 @@
+# Copyright 2022 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+
+# This template is the underlying implementation that defines what makes
+# pw_source_set, pw_executable, pw_shared_library, and pw_static_library unique.
+# For more information, see the documentation at
+# https://pigweed.dev/pw_build/?highlight=pw_executable#target-types
+#
+# In addition to the arguments supported by the underlying native target types,
+# this template introduces the following arguments:
+#
+#  add_global_link_deps: (required) If true, adds global link dependencies as
+#    specified by the current toolchain via pw_build_LINK_DEPS as dependencies
+#    to all instantiations of the current target type.
+#  underlying_target_type: (required) The underlying target type to use for this
+#    template. This is done so different C/C++ build target types can share the
+#    same underlying wrapper implementation.
+#  target_type_file: (optional) If the underlying target type is not one of GN's
+#    builtin types, the path to the .gni file that defines the template
+#    referenced by underlying_target_type. This is exclusively to support
+#    pw_exeuctable's behavior that allows a pw_executable to be essentially
+#    aliased to a custom target type.
+#  remove_configs: (optional) A list of configs to remove from the set of
+#    default configs specified by the current toolchain configuration.
+#  remove_public_deps: (optional) A list of targets to remove from the set of
+#    default public_deps specified by the current toolchain configuration.
+template("pw_internal_c_language_build_target") {
+  assert(defined(invoker.underlying_target_type),
+         "Build targets using this template must specify a target type")
+  _pw_source_files = []
+  _supported_toolchain_defaults = [
+    "configs",
+    "public_deps",
+  ]
+
+  # Boilerplate for tracking target sources.  For more information see
+  # https://pigweed.dev/pw_build/#target-types
+  if (defined(invoker.sources)) {
+    foreach(path, invoker.sources) {
+      _pw_source_files += [ path ]
+    }
+  }
+  if (defined(invoker.public)) {
+    foreach(path, invoker.public) {
+      _pw_source_files += [ path ]
+    }
+  }
+
+  _builtin_target_types = [
+    "executable",
+    "source_set",
+    "shared_library",
+    "static_library",
+  ]
+  if (filter_include(_builtin_target_types,
+                     [ invoker.underlying_target_type ]) == []) {
+    assert(
+        defined(invoker.target_type_file) && invoker.target_type_file != "",
+        string_join(
+            ", ",
+            [
+              "Unknown target type ${invoker.underlying_target_type}",
+              "set target_type_file to the .gni file that defines this type.",
+            ]))
+    import(invoker.target_type_file)
+  }
+
+  target(invoker.underlying_target_type, target_name) {
+    # TODO(b/260111641): This import is terrible, and breaks typical Pigweed GN
+    # build arg naming patterns.
+    import("$dir_pw_build/defaults.gni")
+    forward_variables_from(
+        invoker,
+        "*",
+        _supported_toolchain_defaults + [ "target_type_file" ])
+
+    # Ensure that we don't overwrite metadata forwarded from the invoker above.
+    if (defined(metadata)) {
+      metadata.pw_source_files = _pw_source_files
+    } else {
+      metadata = {
+        pw_source_files = _pw_source_files
+      }
+    }
+
+    if (!defined(configs)) {
+      configs = []
+    }
+    if (defined(pw_build_defaults.configs)) {
+      configs += pw_build_defaults.configs
+    }
+    if (defined(remove_configs)) {
+      if (remove_configs != [] && remove_configs[0] == "*") {
+        configs = []
+      } else {
+        configs += remove_configs  # Add configs in case they aren't already
+        configs -= remove_configs  # present, then remove them.
+      }
+    }
+    if (defined(invoker.configs)) {
+      configs += invoker.configs
+    }
+
+    if (defined(pw_build_defaults.public_deps)) {
+      public_deps = pw_build_defaults.public_deps
+    } else {
+      public_deps = []
+    }
+    if (defined(remove_public_deps)) {
+      if (remove_public_deps != [] && remove_public_deps[0] == "*") {
+        public_deps = []
+      } else {
+        public_deps += remove_public_deps
+        public_deps -= remove_public_deps
+      }
+    }
+    if (defined(invoker.public_deps)) {
+      public_deps += invoker.public_deps
+    }
+
+    assert(defined(add_global_link_deps),
+           "All targets MUST specify whether or not to include link deps")
+    if (!defined(deps)) {
+      deps = []
+    }
+    if (add_global_link_deps) {
+      deps += [ "$dir_pw_build:link_deps" ]
+    }
+
+    if (defined(pw_build_defaults.visibility) && !defined(visibility)) {
+      visibility = pw_build_defaults.visibility
+    }
+  }
+}
