@@ -7,7 +7,6 @@
 
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
-#include <lib/zx/socket.h>
 #include <zircon/compiler.h>
 
 #include <atomic>
@@ -237,25 +236,6 @@ class Channel : public WeakSelf<Channel> {
   A2dpOffloadStatus a2dp_offload_status_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Channel);
-};
-
-// A socket connected to an L2cap channel and its parameters
-// params will be non-empty iff socket != ZX_INVALID_HANDLE
-struct ChannelSocket {
-  ChannelSocket() : socket(zx::socket()), params(std::nullopt) {}
-  ChannelSocket(zx::socket socket, std::optional<ChannelInfo> params)
-      : socket(std::move(socket)), params(params) {
-    BT_ASSERT(this->socket.is_valid() && this->params.has_value() ||
-              !this->socket.is_valid() && !this->params.has_value());
-  }
-  ChannelSocket(ChannelSocket&&) = default;
-
-  bool is_valid() const { return socket.is_valid(); }
-  explicit operator bool() const { return is_valid(); }
-  zx::socket socket;
-  std::optional<const ChannelInfo> params;
-
-  BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ChannelSocket);
 };
 
 namespace internal {
