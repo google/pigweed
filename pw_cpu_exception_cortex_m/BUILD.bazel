@@ -162,6 +162,7 @@ pw_cc_test(
         "exception_entry_test.cc",
     ],
     deps = [
+        ":config",
         ":cpu_exception",
         ":cpu_state",
     ],

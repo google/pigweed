@@ -33,3 +33,18 @@
 #if !defined(PW_ASSERT_CAPTURE_VALUES)
 #define PW_ASSERT_CAPTURE_VALUES 1
 #endif  // !defined(PW_ASSERT_CAPTURE_VALUES)
+
+// If 1, call C's standard abort() function on assert failure.
+#ifndef PW_ASSERT_BASIC_ABORT
+#define PW_ASSERT_BASIC_ABORT 1
+#endif  // PW_ASSERT_BASIC_ABORT
+
+// Whether to show the CRASH ASCII art banner.
+#ifndef PW_ASSERT_BASIC_SHOW_BANNER
+#define PW_ASSERT_BASIC_SHOW_BANNER 1
+#endif  // PW_ASSERT_BASIC_SHOW_BANNER
+
+// Whether to use ANSI colors.
+#ifndef PW_ASSERT_BASIC_USE_COLORS
+#define PW_ASSERT_BASIC_USE_COLORS 1
+#endif  // PW_ASSERT_BASIC_USE_COLORS

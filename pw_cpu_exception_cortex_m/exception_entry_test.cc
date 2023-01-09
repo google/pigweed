@@ -20,6 +20,7 @@
 #include "pw_cpu_exception/handler.h"
 #include "pw_cpu_exception/support.h"
 #include "pw_cpu_exception_cortex_m/cpu_state.h"
+#include "pw_cpu_exception_cortex_m_private/config.h"
 #include "pw_cpu_exception_cortex_m_private/cortex_m_constants.h"
 #include "pw_span/span.h"
 
@@ -87,17 +88,15 @@ inline void EndCriticalSection(uint32_t previous_state) {
 }
 
 void EnableFpu() {
-#if defined(PW_ARMV7M_ENABLE_FPU) && PW_ARMV7M_ENABLE_FPU == 1
-  // TODO(pwbug/17): Replace when Pigweed config system is added.
-  cortex_m_cpacr |= kFpuEnableMask;
-#endif  // defined(PW_ARMV7M_ENABLE_FPU) && PW_ARMV7M_ENABLE_FPU == 1
+  if (PW_ARMV7M_ENABLE_FPU == 1) {
+    cortex_m_cpacr |= kFpuEnableMask;
+  }
 }
 
 void DisableFpu() {
-#if defined(PW_ARMV7M_ENABLE_FPU) && PW_ARMV7M_ENABLE_FPU == 1
-  // TODO(pwbug/17): Replace when Pigweed config system is added.
-  cortex_m_cpacr &= ~kFpuEnableMask;
-#endif  // defined(PW_ARMV7M_ENABLE_FPU) && PW_ARMV7M_ENABLE_FPU == 1
+  if (PW_ARMV7M_ENABLE_FPU == 1) {
+    cortex_m_cpacr &= ~kFpuEnableMask;
+  }
 }
 
 // Counter that is incremented if the test's exception handler correctly handles
@@ -458,10 +457,9 @@ TEST(FaultEntry, NestedFault) {
             static_cast<uint32_t>(captured_states[0].base.lr));
 }
 
-// TODO(pwbug/17): Replace when Pigweed config system is added.
 // Disable tests that rely on hardware FPU if this module wasn't built with
 // hardware FPU support.
-#if defined(PW_ARMV7M_ENABLE_FPU) && PW_ARMV7M_ENABLE_FPU == 1
+#if PW_ARMV7M_ENABLE_FPU == 1
 
 // Populate some of the extended set of captured registers, then trigger
 // exception. This function uses floating point to validate float context
@@ -527,7 +525,7 @@ TEST(FaultEntry, FloatUnalignedStackFault) {
   EXPECT_EQ(float_test_value, kFloatTestPattern);
 }
 
-#endif  // defined(PW_ARMV7M_ENABLE_FPU) && PW_ARMV7M_ENABLE_FPU == 1
+#endif  // PW_ARMV7M_ENABLE_FPU == 1
 
 void TestingExceptionHandler(pw_cpu_exception_State* state) {
   if (++current_fault_depth > kMaxFaultDepth) {

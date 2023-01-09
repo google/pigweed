@@ -26,15 +26,6 @@
 #include "pw_string/string_builder.h"
 #include "pw_sys_io/sys_io.h"
 
-// If 1, call C's standard abort() function on assert failure.
-#ifndef PW_ASSERT_BASIC_ABORT
-#define PW_ASSERT_BASIC_ABORT 1
-#endif  // PW_ASSERT_BASIC_ABORT
-
-// TODO(pwbug/17): Expose these through the config system.
-#define PW_ASSERT_BASIC_SHOW_BANNER 1
-#define PW_ASSERT_BASIC_USE_COLORS 1
-
 // ANSI color constants to control the terminal. Not Windows compatible.
 // clang-format off
 #if PW_ASSERT_BASIC_USE_COLORS

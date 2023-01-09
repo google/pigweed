@@ -40,3 +40,9 @@
 #ifndef PW_CPU_EXCEPTION_CORTEX_M_EXTENDED_CFSR_DUMP
 #define PW_CPU_EXCEPTION_CORTEX_M_EXTENDED_CFSR_DUMP 0
 #endif  // PW_CPU_EXCEPTION_CORTEX_M_EXTENDED_CFSR_DUMP
+
+// Whether the floating-point unit is enabled.
+// TODO(b/264897542): This should be an Arm target trait.
+#ifndef PW_ARMV7M_ENABLE_FPU
+#define PW_ARMV7M_ENABLE_FPU 1
+#endif  // PW_ARMV7M_ENABLE_FPU

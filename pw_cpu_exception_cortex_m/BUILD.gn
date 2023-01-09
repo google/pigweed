@@ -215,6 +215,7 @@ pw_test("cpu_exception_entry_test") {
   enable_if = pw_cpu_exception_ENTRY_BACKEND ==
               "$dir_pw_cpu_exception_cortex_m:cpu_exception"
   deps = [
+    ":config",
     ":cortex_m_constants",
     ":cpu_exception",
     ":cpu_state",

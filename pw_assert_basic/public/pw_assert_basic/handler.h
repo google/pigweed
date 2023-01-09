@@ -17,8 +17,8 @@
 #include "pw_preprocessor/util.h"
 
 // This is needed for testing the basic crash handler.
-// TODO(pwbug/17): Replace when Pigweed config system is added.
 #define PW_ASSERT_BASIC_DISABLE_NORETURN 0
+
 #if PW_ASSERT_BASIC_DISABLE_NORETURN
 #define PW_ASSERT_NORETURN
 #else
