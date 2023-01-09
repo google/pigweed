@@ -233,11 +233,6 @@ struct IOCapabilityRequestReplyReturnParams {
 // User Confirmation Request Reply Command (v2.1 + EDR) (BR/EDR)
 constexpr OpCode kUserConfirmationRequestReply = LinkControlOpCode(0x002C);
 
-struct UserConfirmationRequestReplyCommandParams {
-  // The BD_ADDR of the remote device involved in the simple pairing process.
-  DeviceAddressBytes bd_addr;
-} __PACKED;
-
 // ======================================================================
 // User Confirmation Request Negative Reply Command (v2.1 + EDR) (BR/EDR)
 constexpr OpCode kUserConfirmationRequestNegativeReply = LinkControlOpCode(0x002D);

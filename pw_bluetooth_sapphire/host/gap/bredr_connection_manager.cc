@@ -1364,10 +1364,9 @@ void BrEdrConnectionManager::SendIoCapabilityRequestNegativeReply(DeviceAddressB
 
 void BrEdrConnectionManager::SendUserConfirmationRequestReply(DeviceAddressBytes bd_addr,
                                                               hci::ResultFunction<> cb) {
-  auto packet =
-      hci::CommandPacket::New(hci_spec::kUserConfirmationRequestReply,
-                              sizeof(hci_spec::UserConfirmationRequestReplyCommandParams));
-  packet->mutable_payload<hci_spec::UserConfirmationRequestReplyCommandParams>()->bd_addr = bd_addr;
+  auto packet = hci::EmbossCommandPacket::New<hci_spec::UserConfirmationRequestReplyCommandWriter>(
+      hci_spec::kUserConfirmationRequestReply);
+  packet.view_t().bd_addr().CopyFrom(bd_addr.view());
   SendCommandWithStatusCallback(std::move(packet), std::move(cb));
 }
 
