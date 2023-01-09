@@ -77,9 +77,9 @@ class ScStage1PasskeyTest : public l2cap::testing::FakeChannelTest {
     UInt128 confirm;
     UInt128 random;
   };
-  MatchingPair GenerateMatchingConfirmAndRandom(uint8_t r) const {
+  MatchingPair GenerateMatchingConfirmAndRandom(uint8_t r) {
     MatchingPair pair;
-    zx_cprng_draw(pair.random.data(), pair.random.size());
+    random_generator()->Get({reinterpret_cast<std::byte*>(pair.random.data()), pair.random.size()});
     // If the args_ has Role::kResponder, then we are testing responder flow, so the test code will
     // act in the initiator role, and vice versa if args_ has Role::kInitiator.
     pair.confirm = GenerateConfirmValue(pair.random, args_.role == Role::kResponder, r);

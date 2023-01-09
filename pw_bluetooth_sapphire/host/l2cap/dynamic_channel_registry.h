@@ -7,7 +7,6 @@
 
 #include <lib/fit/function.h>
 
-#include <random>
 #include <unordered_map>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
@@ -75,7 +74,8 @@ class DynamicChannelRegistry : public WeakSelf<DynamicChannelRegistry> {
   // deny the channel creation, |service_request_cb| should return a nullptr.
   //
   // If |random_channel_ids| is true then the channel IDs assigned will be randomized.
-  // Otherwise, they will be assigned starting at the lowest available dynamic channel id.
+  // Otherwise, they will be assigned starting at the lowest available dynamic channel id (for
+  // testing).
   DynamicChannelRegistry(uint16_t max_num_channels, DynamicChannelCallback close_cb,
                          ServiceRequestCallback service_request_cb, bool random_channel_ids);
 
@@ -144,7 +144,7 @@ class DynamicChannelRegistry : public WeakSelf<DynamicChannelRegistry> {
   using ChannelMap = std::unordered_map<ChannelId, DynamicChannelPtr>;
   ChannelMap channels_;
 
-  std::optional<std::default_random_engine> rng_;
+  bool random_channel_ids_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(DynamicChannelRegistry);
 };

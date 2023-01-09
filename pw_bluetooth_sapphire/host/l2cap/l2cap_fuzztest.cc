@@ -3,8 +3,10 @@
 // found in the LICENSE file.
 
 #include <fuzzer/FuzzedDataProvider.h>
+#include <pw_random/fuzzer.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
@@ -42,7 +44,9 @@ class FuzzerController : public ControllerTestDoubleBase, public WeakSelf<Fuzzer
 using TestingBase = ControllerTest<FuzzerController>;
 class DataFuzzTest : public TestingBase {
  public:
-  DataFuzzTest(const uint8_t* data, size_t size) : data_(data, size), connection_(false) {
+  DataFuzzTest(const uint8_t* data, size_t size)
+      : data_(data, size), rng_(&data_), connection_(false) {
+    set_random_generator(&rng_);
     TestingBase::SetUp();
     const auto bredr_buffer_info = hci::DataBufferInfo(kMaxDataPacketLength, kMaxPacketCount);
     InitializeACLDataChannel(bredr_buffer_info);
@@ -140,6 +144,7 @@ class DataFuzzTest : public TestingBase {
 
  private:
   FuzzedDataProvider data_;
+  pw::random::FuzzerRandomGenerator rng_;
   std::unique_ptr<l2cap::ChannelManager> channel_manager_;
   bool connection_;
   std::unordered_map<l2cap::ChannelId, l2cap::Channel::WeakPtr> channels_;

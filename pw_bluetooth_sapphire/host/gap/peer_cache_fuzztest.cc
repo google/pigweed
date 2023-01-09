@@ -6,7 +6,9 @@
 #include <lib/async-loop/default.h>
 
 #include <fuzzer/FuzzedDataProvider.h>
+#include <pw_random/fuzzer.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/peer_fuzzer.h"
 
@@ -14,6 +16,9 @@
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
   async::Loop loop(&kAsyncLoopConfigAttachToCurrentThread);
   FuzzedDataProvider fuzzed_data_provider(data, size);
+  pw::random::FuzzerRandomGenerator rng(&fuzzed_data_provider);
+  bt::set_random_generator(&rng);
+
   bt::gap::PeerCache peer_cache;
   bt::gap::Peer *const peer =
       peer_cache.NewPeer(bt::testing::MakePublicDeviceAddress(fuzzed_data_provider),

@@ -193,6 +193,7 @@ fuzzer("bredr_dynamic_channel_registry_fuzzer") {
     ":l2cap",
     ":testing",
     "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
+    "//third_party/pigweed:pw_random_fuzzer_generator",
   ]
 }
 
@@ -220,6 +221,7 @@ fuzzer("l2cap_fuzzer") {
     ":l2cap",
     "//src/connectivity/bluetooth/core/bt-host/testing",
     "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
+    "//third_party/pigweed:pw_random_fuzzer_generator",
   ]
 
   # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings

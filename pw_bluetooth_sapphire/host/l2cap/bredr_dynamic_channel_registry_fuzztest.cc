@@ -5,6 +5,7 @@
 #include <lib/async-testing/test_loop.h>
 
 #include <fuzzer/FuzzedDataProvider.h>
+#include <pw_random/fuzzer.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
@@ -30,6 +31,8 @@ bt::l2cap::ChannelParameters ConsumeChannelParameters(FuzzedDataProvider& provid
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   FuzzedDataProvider provider(data, size);
+  pw::random::FuzzerRandomGenerator rng(&provider);
+  bt::set_random_generator(&rng);
 
   // Sets dispatcher needed for signaling channel response timeout.
   async::TestLoop loop;

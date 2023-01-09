@@ -4,7 +4,7 @@
 
 #include "identifier.h"
 
-#include "random.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 
 namespace bt {
 

@@ -310,11 +310,12 @@ class MutableByteBuffer : public ByteBuffer {
   MutableBufferView mutable_view(size_t pos = 0,
                                  size_t size = std::numeric_limits<std::size_t>::max());
 
+  // Same as mutable_view(), but returns a mutable span instead of a MutableBufferView.
+  pw::span<std::byte> mutable_subspan(size_t pos = 0,
+                                      size_t size = std::numeric_limits<std::size_t>::max());
+
   // Sets the contents of the buffer to 0s.
   void SetToZeros() { Fill(0); }
-
-  // Fills the contents of the buffer with random bytes.
-  void FillWithRandomBytes();
 
   // Fills the contents of the buffer with the given value.
   virtual void Fill(uint8_t value) = 0;

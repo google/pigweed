@@ -75,9 +75,9 @@ class ScStage1JustWorksNumericComparisonTest : public l2cap::testing::FakeChanne
     UInt128 confirm;
     UInt128 random;
   };
-  MatchingPair GenerateMatchingConfirmAndRandom() const {
+  MatchingPair GenerateMatchingConfirmAndRandom() {
     MatchingPair pair;
-    zx_cprng_draw(pair.random.data(), pair.random.size());
+    random_generator()->Get({reinterpret_cast<std::byte*>(pair.random.data()), pair.random.size()});
     pair.confirm = GenerateConfirmValue(pair.random);
     return pair;
   }

@@ -66,11 +66,8 @@ void AdvertisementInstance::Reset() {
 
 class LowEnergyAdvertisingManager::ActiveAdvertisement final {
  public:
-  // TODO(fxbug.dev/863): Don't randomly generate the ID of an advertisement.
-  // Instead use a counter like other internal IDs once this ID is not visible
-  // outside of bt-host.
-  explicit ActiveAdvertisement(const DeviceAddress& address)
-      : address_(address), id_(RandomPeerId().value()) {}
+  explicit ActiveAdvertisement(const DeviceAddress& address, AdvertisementId id)
+      : address_(address), id_(id) {}
 
   ~ActiveAdvertisement() = default;
 
@@ -139,7 +136,8 @@ void LowEnergyAdvertisingManager::StartAdvertising(AdvertisingData data, Adverti
           return;
         }
 
-        auto ad_ptr = std::make_unique<ActiveAdvertisement>(address);
+        auto ad_ptr = std::make_unique<ActiveAdvertisement>(
+            address, AdvertisementId(self->next_advertisement_id_++));
         hci::LowEnergyAdvertiser::ConnectionCallback adv_conn_cb;
         if (connect_cb) {
           adv_conn_cb = [self, id = ad_ptr->id(), connect_cb = std::move(connect_cb)](auto link) {

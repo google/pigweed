@@ -15,6 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint256.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
@@ -328,7 +329,7 @@ DeviceAddress GenerateRpa(const UInt128& irk) {
   // least one bit is 0. We expect that zx_cprng_draw() satisfies these
   // requirements.
   // TODO(fxbug.dev/24810): Maybe generate within a range to enforce this?
-  prand_bytes.FillWithRandomBytes();
+  random_generator()->Get(prand_bytes.mutable_subspan());
 
   // Make sure that the highest two bits are 0 and 1 respectively.
   prand_bytes[2] |= 0b01000000;
@@ -354,7 +355,7 @@ DeviceAddress GenerateRandomAddress(bool is_static) {
   // least one bit is 0. We expect that zx_cprng_draw() satisfies these
   // requirements.
   // TODO(fxbug.dev/24810): Maybe generate within a range to enforce this?
-  addr_bytes.FillWithRandomBytes();
+  random_generator()->Get(addr_bytes.mutable_subspan());
 
   if (is_static) {
     // The highest two bits of a static random address are both 1 (see Vol 3,

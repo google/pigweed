@@ -34,6 +34,7 @@ class Identifier {
   static_assert(!std::is_pointer_v<std::decay<T>>);
 
  public:
+  using value_t = T;
   using Traits = IdentifierTraits<T>;
 
   constexpr explicit Identifier(const T& value) : value_(value) {}

@@ -62,11 +62,9 @@ void ScStage1Passkey::Run() {
     self->StartBitExchange();
   };
   if (method_ == PairingMethod::kPasskeyEntryDisplay) {
-    // Randomly generate a 6 digit passkey. TODO(fxbug.dev/50003): Avoid modulo biasing in passkey
-    // selection.
+    // Randomly generate a 6 digit passkey.
     uint32_t passkey;
-    zx_cprng_draw(&passkey, sizeof(passkey));
-    passkey = passkey % 1000000;
+    random_generator()->GetInt<uint32_t>(passkey, /*exclusive_upper_bound=*/1'000'000);
     listener_->DisplayPasskey(passkey, Delegate::DisplayMethod::kPeerEntry,
                               [responder = std::move(passkey_responder), passkey](bool confirm) {
                                 std::optional<uint32_t> passkey_response = passkey;

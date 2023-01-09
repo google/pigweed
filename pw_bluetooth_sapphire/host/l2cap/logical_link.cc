@@ -60,6 +60,7 @@ LogicalLink::LogicalLink(hci_spec::ConnectionHandle handle, bt::LinkType type,
                          QueryServiceCallback query_service_cb,
                          hci::AclDataChannel* acl_data_channel, hci::CommandChannel* cmd_channel,
                          bool random_channel_ids)
+
     : handle_(handle),
       type_(type),
       role_(role),

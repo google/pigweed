@@ -3,7 +3,9 @@
 // found in the LICENSE file.
 
 #include <fuzzer/FuzzedDataProvider.h>
+#include <pw_random/fuzzer.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/adapter_test_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/host_server.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/peer_fuzzer.h"
@@ -93,6 +95,10 @@ class HostServerFuzzTest final : public bthost::testing::AdapterTestFixture {
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
   FuzzedDataProvider fuzzed_data_provider(data, size);
+
+  pw::random::FuzzerRandomGenerator rng(&fuzzed_data_provider);
+  bt::set_random_generator(&rng);
+
   bthost::HostServerFuzzTest host_server_fuzz_test;
   host_server_fuzz_test.FuzzWatchPeers(fuzzed_data_provider);
   return 0;

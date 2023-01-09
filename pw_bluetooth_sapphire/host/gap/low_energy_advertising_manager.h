@@ -114,6 +114,9 @@ class LowEnergyAdvertisingManager {
  private:
   class ActiveAdvertisement;
 
+  // 0 is invalid, so we start at 1.
+  AdvertisementId::value_t next_advertisement_id_ = 1;
+
   // Active advertisements, indexed by id.
   // TODO(armansito): Use fbl::HashMap here (fxbug.dev/652) or move
   // ActiveAdvertisement definition here and store by value (it is a small

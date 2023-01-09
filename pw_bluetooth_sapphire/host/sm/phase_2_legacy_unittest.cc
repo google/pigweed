@@ -11,6 +11,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/device_address.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
@@ -126,9 +127,9 @@ class Phase2LegacyTest : public l2cap::testing::FakeChannelTest {
     UInt128 confirm;
     UInt128 random;
   };
-  MatchingPair GenerateMatchingConfirmAndRandom(uint32_t tk) const {
+  MatchingPair GenerateMatchingConfirmAndRandom(uint32_t tk) {
     MatchingPair pair;
-    zx_cprng_draw(pair.random.data(), pair.random.size());
+    random_generator()->Get({reinterpret_cast<std::byte*>(pair.random.data()), pair.random.size()});
     pair.confirm = GenerateConfirmValue(pair.random, tk);
     return pair;
   }

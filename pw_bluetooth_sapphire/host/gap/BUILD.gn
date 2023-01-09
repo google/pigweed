@@ -164,5 +164,6 @@ fuzzer("peer_cache_fuzzer") {
     ":gap",
     "//src/connectivity/bluetooth/core/bt-host/testing:fuzzing",
     "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
+    "//third_party/pigweed:pw_random_fuzzer_generator",
   ]
 }

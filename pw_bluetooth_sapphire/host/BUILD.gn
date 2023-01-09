@@ -45,6 +45,7 @@ source_set("sources") {
 
   deps = [
     "//src/devices/lib/driver",
+    "//third_party/pigweed/backends/pw_random:zircon_random_generator",
     "//zircon/system/ulib/inspect",
   ]
 

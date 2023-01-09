@@ -11,6 +11,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
@@ -362,7 +363,7 @@ TEST(AdvertisingDataTest, Copy) {
   UUID gatt(kGattUuid);
   UUID eddy(kEddystoneUuid);
   StaticByteBuffer<kRandomDataSize> rand_data;
-  rand_data.FillWithRandomBytes();
+  random_generator()->Get(rand_data.mutable_subspan());
 
   AdvertisingData source;
   EXPECT_TRUE(source.AddUri("http://fuchsia.cl"));
@@ -389,7 +390,7 @@ TEST(AdvertisingDataTest, Move) {
   UUID gatt(kGattUuid);
   UUID eddy(kEddystoneUuid);
   StaticByteBuffer<kRandomDataSize> rand_data;
-  rand_data.FillWithRandomBytes();
+  random_generator()->Get(rand_data.mutable_subspan());
 
   UUID heart_rate_uuid(kHeartRateServiceUuid);
   int8_t tx_power = 18;          // arbitrary TX power

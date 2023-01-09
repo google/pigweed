@@ -11,6 +11,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 
 namespace bt::testing {
@@ -21,7 +22,7 @@ void WriteRandomRSSI(int8_t* out_mem) {
   constexpr int8_t kRSSIMax = 20;
 
   int8_t rssi;
-  zx_cprng_draw(reinterpret_cast<unsigned char*>(&rssi), sizeof(rssi));
+  random_generator()->GetInt(rssi);
   rssi = (rssi % (kRSSIMax - kRSSIMin)) + kRSSIMin;
 
   *out_mem = rssi;

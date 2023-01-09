@@ -17,6 +17,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
+#include "third_party/pigweed/backends/pw_random/zircon_random_generator.h"
 
 namespace bthost {
 
@@ -60,6 +61,10 @@ class Host final : public fbl::RefCounted<Host> {
   static fbl::RefPtr<Host> Create(const bt_hci_protocol_t& hci_proto,
                                   std::optional<bt_vendor_protocol_t> vendor_proto);
 
+  // Does not override RNG
+  static fbl::RefPtr<Host> CreateForTesting(const bt_hci_protocol_t& hci_proto,
+                                            std::optional<bt_vendor_protocol_t> vendor_proto);
+
   // Shuts down all systems.
   void ShutDown();
 
@@ -73,11 +78,13 @@ class Host final : public fbl::RefCounted<Host> {
   friend class ::fbl::RefPtr<Host>;
 
   explicit Host(const bt_hci_protocol_t& hci_proto,
-                std::optional<bt_vendor_protocol_t> vendor_proto);
+                std::optional<bt_vendor_protocol_t> vendor_proto, bool initialize_rng);
   ~Host();
 
   bt_hci_protocol_t hci_proto_;
   std::optional<bt_vendor_protocol_t> vendor_proto_;
+
+  pw_random_zircon::ZirconRandomGenerator random_generator_;
 
   std::unique_ptr<bt::hci::Transport> hci_;
 

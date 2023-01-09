@@ -95,15 +95,15 @@ void MutableByteBuffer::Write(const uint8_t* data, size_t size, size_t pos) {
   from.Copy(&to);
 }
 
-void MutableByteBuffer::FillWithRandomBytes() {
-  if (size()) {
-    zx_cprng_draw(mutable_data(), size());
-  }
-}
-
 MutableBufferView MutableByteBuffer::mutable_view(size_t pos, size_t size) {
   BT_ASSERT_MSG(pos <= this->size(), "offset past buffer (pos: %zu, size: %zu)", pos, this->size());
   return MutableBufferView(mutable_data() + pos, std::min(size, this->size() - pos));
+}
+
+pw::span<std::byte> MutableByteBuffer::mutable_subspan(size_t pos, size_t size) {
+  BT_ASSERT_MSG(pos <= this->size(), "offset past buffer (pos: %zu, size: %zu)", pos, this->size());
+  return pw::span(reinterpret_cast<std::byte*>(mutable_data()) + pos,
+                  std::min(size, this->size() - pos));
 }
 
 DynamicByteBuffer::DynamicByteBuffer() = default;

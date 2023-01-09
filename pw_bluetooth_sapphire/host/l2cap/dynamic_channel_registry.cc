@@ -51,14 +51,12 @@ DynamicChannelRegistry::DynamicChannelRegistry(uint16_t max_num_channels,
     : WeakSelf(this),
       max_num_channels_(max_num_channels),
       close_cb_(std::move(close_cb)),
-      service_request_cb_(std::move(service_request_cb)) {
+      service_request_cb_(std::move(service_request_cb)),
+      random_channel_ids_(random_channel_ids) {
   BT_DEBUG_ASSERT(max_num_channels > 0);
   BT_DEBUG_ASSERT(max_num_channels < 65473);
   BT_DEBUG_ASSERT(close_cb_);
   BT_DEBUG_ASSERT(service_request_cb_);
-  if (random_channel_ids) {
-    rng_ = std::default_random_engine(Random<uint64_t>());
-  }
 }
 
 DynamicChannel* DynamicChannelRegistry::RequestService(PSM psm, ChannelId local_cid,
@@ -81,9 +79,8 @@ DynamicChannel* DynamicChannelRegistry::RequestService(PSM psm, ChannelId local_
 
 ChannelId DynamicChannelRegistry::FindAvailableChannelId() {
   uint16_t offset = 0;
-  if (rng_.has_value()) {
-    std::uniform_int_distribution<ChannelId> distribution(0, max_num_channels_);
-    offset = distribution(*rng_);
+  if (random_channel_ids_) {
+    random_generator()->GetInt(offset, max_num_channels_);
   }
   for (uint16_t i = 0; i < max_num_channels_; i++) {
     ChannelId id = kFirstDynamicChannelId + ((offset + i) % max_num_channels_);

@@ -6,6 +6,7 @@
 
 #include "fidl/host_server.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/controllers/banjo_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
@@ -13,15 +14,25 @@ using namespace bt;
 
 namespace bthost {
 
-Host::Host(const bt_hci_protocol_t& hci_proto, std::optional<bt_vendor_protocol_t> vendor_proto)
-    : hci_proto_(hci_proto), vendor_proto_(vendor_proto) {}
+Host::Host(const bt_hci_protocol_t& hci_proto, std::optional<bt_vendor_protocol_t> vendor_proto,
+           bool initialize_rng)
+    : hci_proto_(hci_proto), vendor_proto_(vendor_proto) {
+  if (initialize_rng) {
+    set_random_generator(&random_generator_);
+  }
+}
 
-Host::~Host() {}
+Host::~Host() { set_random_generator(nullptr); }
 
 // static
 fbl::RefPtr<Host> Host::Create(const bt_hci_protocol_t& hci_proto,
                                std::optional<bt_vendor_protocol_t> vendor_proto) {
-  return fbl::AdoptRef(new Host(hci_proto, vendor_proto));
+  return fbl::AdoptRef(new Host(hci_proto, vendor_proto, /*initialize_rng=*/true));
+}
+
+fbl::RefPtr<Host> Host::CreateForTesting(const bt_hci_protocol_t& hci_proto,
+                                         std::optional<bt_vendor_protocol_t> vendor_proto) {
+  return fbl::AdoptRef(new Host(hci_proto, vendor_proto, /*initialize_rng=*/false));
 }
 
 bool Host::Initialize(inspect::Node& root_node, InitCallback init_cb, ErrorCallback error_cb) {

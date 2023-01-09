@@ -192,7 +192,6 @@ class LowEnergyConnectionManagerTest : public TestingBase {
   }
 
   std::unique_ptr<l2cap::testing::FakeL2cap> l2cap_;
-
   hci::FakeLocalAddressDelegate addr_delegate_;
   std::unique_ptr<PeerCache> peer_cache_;
   std::unique_ptr<hci::LowEnergyConnector> connector_;

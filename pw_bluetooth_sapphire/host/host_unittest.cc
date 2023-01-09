@@ -32,7 +32,7 @@ class HostTest : public TestingBase {
   HostTest() = default;
   ~HostTest() override = default;
 
-  void SetUp() override { host_ = Host::Create(hci_proto(), std::nullopt); }
+  void SetUp() override { host_ = Host::CreateForTesting(hci_proto(), std::nullopt); }
 
   void TearDown() override {
     if (host_) {
