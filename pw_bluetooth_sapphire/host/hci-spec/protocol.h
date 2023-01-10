@@ -241,14 +241,6 @@ constexpr OpCode kUserConfirmationRequestNegativeReply = LinkControlOpCode(0x002
 // User Passkey Request Reply Command (v2.1 + EDR) (BR/EDR)
 constexpr OpCode kUserPasskeyRequestReply = LinkControlOpCode(0x002E);
 
-struct UserPasskeyRequestReplyCommandParams {
-  // The BD_ADDR of the remote device involved in the simple pairing process.
-  DeviceAddressBytes bd_addr;
-
-  // Numeric value (passkey) entered by user. Valid values are 0 - 999999.
-  uint32_t numeric_value;
-} __PACKED;
-
 // =================================================================
 // User Passkey Request Negative Reply Command (v2.1 + EDR) (BR/EDR)
 constexpr OpCode kUserPasskeyRequestNegativeReply = LinkControlOpCode(0x002F);

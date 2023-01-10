@@ -1382,11 +1382,11 @@ void BrEdrConnectionManager::SendUserConfirmationRequestNegativeReply(DeviceAddr
 void BrEdrConnectionManager::SendUserPasskeyRequestReply(DeviceAddressBytes bd_addr,
                                                          uint32_t numeric_value,
                                                          hci::ResultFunction<> cb) {
-  auto packet = hci::CommandPacket::New(hci_spec::kUserPasskeyRequestReply,
-                                        sizeof(hci_spec::UserPasskeyRequestReplyCommandParams));
-  auto params = packet->mutable_payload<hci_spec::UserPasskeyRequestReplyCommandParams>();
-  params->bd_addr = bd_addr;
-  params->numeric_value = htole32(numeric_value);
+  auto packet = hci::EmbossCommandPacket::New<hci_spec::UserPasskeyRequestReplyCommandWriter>(
+      hci_spec::kUserPasskeyRequestReply);
+  auto view = packet.view_t();
+  view.bd_addr().CopyFrom(bd_addr.view());
+  view.numeric_value().Write(numeric_value);
   SendCommandWithStatusCallback(std::move(packet), std::move(cb));
 }
 
