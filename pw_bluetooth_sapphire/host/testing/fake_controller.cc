@@ -1549,8 +1549,9 @@ void FakeController::OnUserConfirmationRequestReplyCommand(
 }
 
 void FakeController::OnUserConfirmationRequestNegativeReplyCommand(
-    const hci_spec::UserConfirmationRequestNegativeReplyCommandParams& params) {
-  FakePeer* peer = FindPeer(DeviceAddress(DeviceAddress::Type::kBREDR, params.bd_addr));
+    const hci_spec::UserConfirmationRequestNegativeReplyCommandView& params) {
+  FakePeer* peer =
+      FindPeer(DeviceAddress(DeviceAddress::Type::kBREDR, DeviceAddressBytes(params.bd_addr())));
   if (!peer) {
     RespondWithCommandStatus(hci_spec::kUserConfirmationRequestNegativeReply,
                              hci_spec::StatusCode::UNKNOWN_CONNECTION_ID);
@@ -1563,7 +1564,7 @@ void FakeController::OnUserConfirmationRequestNegativeReplyCommand(
                              hci_spec::StatusCode::SUCCESS);
 
   hci_spec::SimplePairingCompleteEventParams pairing_event;
-  pairing_event.bd_addr = params.bd_addr;
+  pairing_event.bd_addr = DeviceAddressBytes(params.bd_addr());
   pairing_event.status = hci_spec::StatusCode::AUTHENTICATION_FAILURE;
   SendEvent(hci_spec::kSimplePairingCompleteEventCode,
             BufferView(&pairing_event, sizeof(pairing_event)));
@@ -2952,12 +2953,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnLinkKeyRequestReplyCommandReceived(params);
       break;
     }
-    case hci_spec::kUserConfirmationRequestNegativeReply: {
-      const auto& params =
-          command_packet.payload<hci_spec::UserConfirmationRequestNegativeReplyCommandParams>();
-      OnUserConfirmationRequestNegativeReplyCommand(params);
-      break;
-    }
     case hci_spec::kReadEncryptionKeySize: {
       const auto& params = command_packet.payload<hci_spec::ReadEncryptionKeySizeParams>();
       OnReadEncryptionKeySizeCommand(params);
@@ -3000,7 +2995,8 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kWriteLocalName:
     case hci_spec::kWriteScanEnable:
     case hci_spec::kWritePageScanActivity:
-    case hci_spec::kUserConfirmationRequestReply: {
+    case hci_spec::kUserConfirmationRequestReply:
+    case hci_spec::kUserConfirmationRequestNegativeReply: {
       // This case is for packet types that have been migrated to the new Emboss architecture. Their
       // old version can be still be assembled from the HciEmulator channel, so here we repackage
       // and forward them as Emboss packets.
@@ -3130,6 +3126,12 @@ void FakeController::HandleReceivedCommandPacket(const hci::EmbossCommandPacket&
     case hci_spec::kUserConfirmationRequestReply: {
       const auto& params = command_packet.view<hci_spec::UserConfirmationRequestReplyCommandView>();
       OnUserConfirmationRequestReplyCommand(params);
+      break;
+    }
+    case hci_spec::kUserConfirmationRequestNegativeReply: {
+      const auto& params =
+          command_packet.view<hci_spec::UserConfirmationRequestNegativeReplyCommandView>();
+      OnUserConfirmationRequestNegativeReplyCommand(params);
       break;
     }
     default: {

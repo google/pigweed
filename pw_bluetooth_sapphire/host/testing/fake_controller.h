@@ -666,7 +666,7 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
 
   // Called when a HCI_User_Confirmation_Request_Negative_Reply command is received.
   void OnUserConfirmationRequestNegativeReplyCommand(
-      const hci_spec::UserConfirmationRequestNegativeReplyCommandParams& params);
+      const hci_spec::UserConfirmationRequestNegativeReplyCommandView& params);
 
   // Called when a HCI_Set_Connection_Encryption command is received.
   void OnSetConnectionEncryptionCommand(const hci_spec::SetConnectionEncryptionCommandView& params);
