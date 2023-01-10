@@ -61,6 +61,12 @@ class BorrowedPointer {
     return object_;
   }
 
+  // Const overload
+  const GuardedType* operator->() const {
+    PW_ASSERT(object_ != nullptr);  // Ensure this isn't a stale moved instance.
+    return object_;
+  }
+
   // Provides access to the borrowed object directly.
   //
   // NOTE: The member of pointer member access operator, operator->(), is
@@ -69,6 +75,12 @@ class BorrowedPointer {
   //
   // WARNING: Be careful not to leak references to the borrowed object!
   GuardedType& operator*() {
+    PW_ASSERT(object_ != nullptr);  // Ensure this isn't a stale moved instance.
+    return *object_;
+  }
+
+  // Const overload
+  const GuardedType& operator*() const {
     PW_ASSERT(object_ != nullptr);  // Ensure this isn't a stale moved instance.
     return *object_;
   }
