@@ -206,9 +206,9 @@ Class Hierarchy
   * Use a specific class in APIs to represent the requirements.
   * Extend the specific class that has the actual capabilities of the line.
 
-In the future, we may support additional for classes that describe lines with
-**optional** functionality. For example, ``DigitalInOptionalInterrupt`` could
-describe a line that supports input and optionally supports interrupts.
+In the future, we may add new classes that describe lines with **optional**
+functionality. For example, ``DigitalInOptionalInterrupt`` could describe a line
+that supports input and optionally supports interrupts.
 
 When using any classes with optional functionality, including
 ``DigitalIoOptional``, you must check that a functionality is available using
