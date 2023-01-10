@@ -29,10 +29,17 @@ namespace pw::spi {
 // Linux userspace implementation of the SPI Initiator
 class LinuxInitiator : public Initiator {
  public:
+  // This is deprecated. Use the constructor which takes a valid file
+  // descriptor.
   // Configure the Linux Initiator object for use with a bus specified by path,
   // with a maximum bus-speed (in hz).
-  constexpr LinuxInitiator(const char* path, uint32_t max_speed_hz)
+  [[deprecated]] constexpr LinuxInitiator(const char* path,
+                                          uint32_t max_speed_hz)
       : path_(path), max_speed_hz_(max_speed_hz), fd_(-1) {}
+  // Configure the Linux Initiator object for use with a bus file descriptor,
+  // and maximum bus-speed (in hz).
+  constexpr LinuxInitiator(int fd, uint32_t max_speed_hz)
+      : path_(nullptr), max_speed_hz_(max_speed_hz), fd_(fd) {}
   ~LinuxInitiator();
 
   // Implements pw::spi::Initiator
@@ -40,6 +47,8 @@ class LinuxInitiator : public Initiator {
   Status WriteRead(ConstByteSpan write_buffer, ByteSpan read_buffer) override;
 
  private:
+  // This is deprecated. Application code should initialize by opening the SPI
+  // bus, and inject the valid file descriptor to LinuxInitiator.
   Status LazyInit();
 
   const char* path_;

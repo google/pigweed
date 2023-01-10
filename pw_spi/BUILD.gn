@@ -119,16 +119,6 @@ pw_test("initiator_mock_test") {
   ]
 }
 
-# Linux tests currently only work on a target with spidev support and a SPI endpoint
-# mounted at /dev/spidev0.0
-pw_test("linux_spi_test") {
-  sources = [ "linux_spi_test.cc" ]
-  deps = [
-    ":device",
-    ":linux_spi",
-  ]
-}
-
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }
