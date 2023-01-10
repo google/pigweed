@@ -27,8 +27,9 @@ entries in the provided buffer.
   // Setting up buffers and attaching a reader.
   std::byte buffer[1024];
   std::byte read_buffer[256];
-  PrefixedEntryRingBuffer ring_buffer(buffer);
+  PrefixedEntryRingBuffer ring_buffer;
   PrefixedEntryRingBuffer::Reader reader;
+  ring_buffer.SetBuffer(buffer);
   ring_buffer.AttachReader(reader);
 
   // Insert some entries and process some entries.
@@ -43,7 +44,8 @@ entries in the provided buffer.
 
   // You can use a range-based for-loop to walk through all entries.
   for (auto entry : ring_buffer) {
-    PW_LOG_WARN("Read entry of size: %lu", entry.size());
+    PW_LOG_WARN("Read entry of size: %u",
+                static_cast<unsigned>(entry.buffer.size()));
   }
 
 In cases where a crash has caused the ring buffer to have corrupted data, the
@@ -60,7 +62,8 @@ indicating the reason the iterator reached it's end.
    // Hold the iterator outside any loops to inspect it later.
    iterator it = ring_buffer.begin();
    for (; it != it.end(); ++it) {
-     PW_LOG_WARN("Read entry of size: %lu", it->size());
+     PW_LOG_WARN("Read entry of size: %u",
+                static_cast<unsigned>(it->buffer.size()));
    }
 
    // Warn if there was a failure during iteration.
