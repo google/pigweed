@@ -928,9 +928,10 @@ void FakeController::OnInquiry(const hci_spec::InquiryCommandView& params) {
   async::PostDelayedTask(
       dispatcher(),
       [this] {
-        hci_spec::InquiryCompleteEventParams output;
-        output.status = hci_spec::StatusCode::SUCCESS;
-        SendEvent(hci_spec::kInquiryCompleteEventCode, BufferView(&output, sizeof(output)));
+        auto output = hci::EmbossEventPacket::New<hci_spec::InquiryCompleteEventWriter>(
+            hci_spec::kInquiryCompleteEventCode);
+        output.view_t().status().Write(hci_spec::StatusCode::SUCCESS);
+        SendCommandChannelPacket(output.data());
       },
       zx::msec(static_cast<int64_t>(params.inquiry_length().Read()) * 1280));
 }

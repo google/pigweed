@@ -126,7 +126,7 @@ hci::CommandChannel::EventHandlerId BrEdrConnectionManager::AddEventHandler(
     const hci_spec::EventCode& code, hci::CommandChannel::EventCallback cb) {
   auto self = weak_self_.GetWeakPtr();
   auto event_id = hci_->command_channel()->AddEventHandler(
-      code, [self, callback = std::move(cb)](const auto& event) {
+      code, [self, callback = std::move(cb)](const hci::EventPacket& event) {
         if (self.is_alive()) {
           return callback(event);
         }

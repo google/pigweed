@@ -100,7 +100,8 @@ ScoConnectionManager::RequestHandle ScoConnectionManager::AcceptConnection(
 hci::CommandChannel::EventHandlerId ScoConnectionManager::AddEventHandler(
     const hci_spec::EventCode& code, hci::CommandChannel::EventCallback cb) {
   auto event_id = transport_->command_channel()->AddEventHandler(
-      code, [self = weak_ptr_factory_.GetWeakPtr(), callback = std::move(cb)](const auto& event) {
+      code, [self = weak_ptr_factory_.GetWeakPtr(),
+             callback = std::move(cb)](const hci::EventPacket& event) {
         if (self.is_alive()) {
           return callback(event);
         }

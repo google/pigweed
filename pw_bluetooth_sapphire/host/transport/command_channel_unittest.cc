@@ -449,7 +449,7 @@ TEST_F(CommandChannelTest, AsynchronousCommands) {
   // Should not be able to register an event handler now, we're still waiting on the asynchronous
   // command.
   auto event_id0 = cmd_channel()->AddEventHandler(
-      kTestEventCode0, [](const auto&) { return EventCallbackResult::kContinue; });
+      kTestEventCode0, [](const EventPacket&) { return EventCallbackResult::kContinue; });
   EXPECT_EQ(0u, event_id0);
 
   // Finish out the commands.
@@ -533,7 +533,7 @@ TEST_F(CommandChannelTest, AsyncQueueWhenBlocked) {
 
   // This returns invalid because an async command is registered.
   auto invalid_id = cmd_channel()->AddEventHandler(
-      kTestEventCode0, [](const auto&) { return EventCallbackResult::kContinue; });
+      kTestEventCode0, [](const EventPacket&) { return EventCallbackResult::kContinue; });
 
   RunLoopUntilIdle();
 
@@ -1131,18 +1131,19 @@ TEST_F(CommandChannelTest, EventHandlerIdsDontCollide) {
                     [](const auto&) { return EventCallbackResult::kContinue; }));
   EXPECT_EQ(2u, cmd_channel()->AddEventHandler(
                     hci_spec::kDisconnectionCompleteEventCode,
-                    [](const auto&) { return EventCallbackResult::kContinue; }));
+                    [](const EventPacket&) { return EventCallbackResult::kContinue; }));
 }
 
 // Tests:
 //  - Can't register an event handler for CommandStatus or CommandComplete
 TEST_F(CommandChannelTest, EventHandlerRestrictions) {
-  auto id0 = cmd_channel()->AddEventHandler(hci_spec::kCommandStatusEventCode, [](const auto&) {
+  auto id0 = cmd_channel()->AddEventHandler(
+      hci_spec::kCommandStatusEventCode,
+      [](const EventPacket&) { return EventCallbackResult::kContinue; });
+  EXPECT_EQ(0u, id0);
+  id0 = cmd_channel()->AddEventHandler(hci_spec::kCommandCompleteEventCode, [](const EventPacket&) {
     return EventCallbackResult::kContinue;
   });
-  EXPECT_EQ(0u, id0);
-  id0 = cmd_channel()->AddEventHandler(hci_spec::kCommandCompleteEventCode,
-                                       [](const auto&) { return EventCallbackResult::kContinue; });
   EXPECT_EQ(0u, id0);
 }
 

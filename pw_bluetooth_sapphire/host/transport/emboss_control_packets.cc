@@ -28,4 +28,9 @@ hci_spec::EmbossCommandHeaderView EmbossCommandPacket::header_view() const {
   return view<hci_spec::EmbossCommandHeaderView>();
 }
 
+EmbossEventPacket::EmbossEventPacket(size_t packet_size) : DynamicPacket(packet_size) {
+  BT_ASSERT_MSG(packet_size >= hci_spec::EmbossEventHeader::IntrinsicSizeInBytes(),
+                "event packet size must be at least 2 bytes to accomodate header");
+}
+
 }  // namespace bt::hci

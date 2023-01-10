@@ -286,7 +286,14 @@ struct EmbossCommandHeader:
   0     [+2]  OpCodeBits  opcode
   $next [+1]  UInt        parameter_total_size
 
-# ======================== HCI Command payloads =========================
+
+struct EmbossEventHeader:
+  -- HCI Event packet header.
+  0     [+1] UInt  event_code
+  $next [+1] UInt  parameter_total_size
+
+# ========================= HCI Command packets =========================
+# Core Spec v5.3 Vol 4, Part E, Section 7
 
 
 struct InquiryCommand:
@@ -753,6 +760,17 @@ struct WritePageScanActivityCommand:
     -- Page_Scan_Window, in time slices
     -- Valid Range: MIN - MAX in PageScanWindow in this file
     [requires: 0x0011 <= this <= 0x1000]
+
+# ========================= HCI Event packets ===========================
+# Core Spec v5.3 Vol 4, Part E, Section 7.7
+
+
+struct InquiryCompleteEvent:
+  -- Inquiry Complete Event (v1.1) (BR/EDR)
+  let hdr_size = EmbossEventHeader.$size_in_bytes
+  0     [+hdr_size] EmbossEventHeader header
+
+  $next [+1]        StatusCode        status
 
 # ============================ Test packets =============================
 

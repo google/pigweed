@@ -25,9 +25,9 @@ class EmbossCommandPacket : public DynamicPacket {
     return New<T>(opcode, T::IntrinsicSizeInBytes().Read());
   }
 
-  // Construct an HCI Command packet of |packet_size| total bytes (header + payload) and initialize
-  // its header with the |opcode| and size. This constructor is meant for variable size packets, for
-  // which clients must calculate packet size manually.
+  // Construct an HCI Command packet from an Emboss view T of |packet_size| total bytes (header +
+  // payload) and initialize its header with the |opcode| and size. This constructor is meant for
+  // variable size packets, for which clients must calculate packet size manually.
   template <typename T>
   static EmbossCommandPacketT<T> New(hci_spec::OpCode opcode, size_t packet_size) {
     EmbossCommandPacketT<T> packet(opcode, packet_size);
@@ -59,6 +59,49 @@ class EmbossCommandPacketT : public EmbossCommandPacket {
 
   EmbossCommandPacketT(hci_spec::OpCode opcode, size_t packet_size)
       : EmbossCommandPacket(opcode, packet_size) {}
+};
+
+template <class ViewT>
+class EmbossEventPacketT;
+
+// EmbossEventPacket is the HCI Event packet specialization of DynamicPacket.
+class EmbossEventPacket : public DynamicPacket {
+ public:
+  // Construct an HCI Event packet from an Emboss view T of |packet_size| total bytes (header +
+  // payload).
+  template <typename T>
+  static EmbossEventPacketT<T> New(size_t packet_size) {
+    EmbossEventPacketT<T> packet(packet_size);
+    return packet;
+  }
+
+  // Construct an HCI Event packet from an Emboss view T and initialize its header with the
+  // |event_code| and size.
+  template <typename T>
+  static EmbossEventPacketT<T> New(hci_spec::EventCode event_code) {
+    EmbossEventPacketT<T> packet(T::IntrinsicSizeInBytes().Read());
+    auto header = packet.template view<hci_spec::EmbossEventHeaderWriter>();
+    header.event_code().Write(event_code);
+    header.parameter_total_size().Write(T::IntrinsicSizeInBytes().Read() -
+                                        hci_spec::EmbossEventHeader::IntrinsicSizeInBytes());
+    return packet;
+  }
+
+ protected:
+  explicit EmbossEventPacket(size_t packet_size);
+};
+
+// Helper subclass that remembers the view type it was constructed with. It is safe to slice
+// an EmbossEventPacketT into an EmbossEventPacket.
+template <class ViewT>
+class EmbossEventPacketT : public EmbossEventPacket {
+ public:
+  ViewT view_t() { return view<ViewT>(); }
+
+ private:
+  friend class EmbossEventPacket;
+
+  explicit EmbossEventPacketT(size_t packet_size) : EmbossEventPacket(packet_size) {}
 };
 
 }  // namespace bt::hci

@@ -142,9 +142,15 @@ class CommandChannel final {
     kRemove
   };
 
-  // Callback invoked to report generic HCI events excluding CommandComplete and CommandStatus
+  // Callbacks invoked to report generic HCI events excluding CommandComplete and CommandStatus
   // events.
+  //
+  // TODO(fxbug.dev/86811): Finish migration away from EventCallback and replace with
+  // EmbossEventCallback (renamed to EventCallback).
   using EventCallback = fit::function<EventCallbackResult(const EventPacket& event_packet)>;
+  using EmbossEventCallback =
+      fit::function<EventCallbackResult(const EmbossEventPacket& event_packet)>;
+  using EventCallbackVariant = std::variant<EventCallback, EmbossEventCallback>;
 
   // Registers an event handler for HCI events that match |event_code|. Incoming HCI event packets
   // that are not associated with a pending command sequence will be posted on the given
@@ -174,7 +180,8 @@ class CommandChannel final {
   // - HCI_Command_Status event code
   // - HCI_LE_Meta event code (use AddLEMetaEventHandler instead)
   // - HCI_Vendor_Debug event code (use AddVendorEventHandler instead)
-  EventHandlerId AddEventHandler(hci_spec::EventCode event_code, EventCallback event_callback);
+  EventHandlerId AddEventHandler(hci_spec::EventCode event_code,
+                                 EventCallbackVariant event_callback_variant);
 
   // Works just like AddEventHandler but the passed in event code is only valid within the LE Meta
   // Event sub-event code namespace. |event_callback| will get invoked whenever the controller sends
@@ -306,7 +313,7 @@ class CommandChannel final {
     // kNoOp if this is a static event handler.
     hci_spec::OpCode pending_opcode;
 
-    EventCallback event_callback;
+    EventCallbackVariant event_callback;
 
     // Returns true if handler is for async command transaction, or false if handler is a static
     // event handler.
@@ -337,7 +344,8 @@ class CommandChannel final {
   // should correspond to the event_type provided. For example, if event_type is kLEMetaEvent, then
   // event_code will be interpreted as a LE Meta Subevent code.
   EventHandlerId NewEventHandler(hci_spec::EventCode event_code, EventType event_type,
-                                 hci_spec::OpCode pending_opcode, EventCallback event_callback);
+                                 hci_spec::OpCode pending_opcode,
+                                 EventCallbackVariant event_callback_variant);
 
   // Notifies any matching event handler for |event|.
   void NotifyEventHandler(std::unique_ptr<EventPacket> event);

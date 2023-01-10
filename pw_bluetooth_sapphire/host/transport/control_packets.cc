@@ -6,6 +6,7 @@
 
 #include "slab_allocators.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/emboss_control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 
 namespace bt::hci {
@@ -44,6 +45,25 @@ bool StatusCodeFromEvent(const EventPacket& event, hci_spec::StatusCode* out_cod
     return false;
 
   *out_code = event.params<T>().status;
+  return true;
+}
+
+// For packet definitions that have been migrated to Emboss, parameterize this method over the
+// Emboss view.
+template <typename T>
+bool StatusCodeFromEmbossEvent(const EventPacket& event, hci_spec::StatusCode* out_code) {
+  BT_DEBUG_ASSERT(out_code);
+
+  auto emboss_packet = EmbossEventPacket::New<T>(event.view().size());
+  bt::MutableBufferView dest = emboss_packet.mutable_data();
+  event.view().data().Copy(&dest);
+
+  if (event.view().payload_size() <
+      T::IntrinsicSizeInBytes().Read() - hci_spec::EmbossEventHeader::IntrinsicSizeInBytes()) {
+    return false;
+  }
+
+  *out_code = emboss_packet.view_t().status().Read();
   return true;
 }
 
@@ -108,6 +128,10 @@ bool EventPacket::ToStatusCode(hci_spec::StatusCode* out_code) const {
   case hci_spec::k##event_name##EventCode: \
     return StatusCodeFromEvent<hci_spec::event_name##EventParams>(*this, out_code)
 
+#define CASE_EMBOSS_EVENT_STATUS(event_name) \
+  case hci_spec::k##event_name##EventCode:   \
+    return StatusCodeFromEmbossEvent<hci_spec::event_name##EventView>(*this, out_code)
+
 #define CASE_SUBEVENT_STATUS(subevent_name)      \
   case hci_spec::k##subevent_name##SubeventCode: \
     return StatusCodeFromSubevent<hci_spec::subevent_name##SubeventParams>(*this, out_code)
@@ -123,7 +147,6 @@ bool EventPacket::ToStatusCode(hci_spec::StatusCode* out_code) const {
     CASE_EVENT_STATUS(CommandStatus);
     CASE_EVENT_STATUS(ConnectionComplete);
     CASE_EVENT_STATUS(DisconnectionComplete);
-    CASE_EVENT_STATUS(InquiryComplete);
     CASE_EVENT_STATUS(EncryptionChange);
     CASE_EVENT_STATUS(EncryptionKeyRefreshComplete);
     CASE_EVENT_STATUS(RemoteNameRequestComplete);
@@ -133,6 +156,7 @@ bool EventPacket::ToStatusCode(hci_spec::StatusCode* out_code) const {
     CASE_EVENT_STATUS(RoleChange);
     CASE_EVENT_STATUS(SimplePairingComplete);
     CASE_EVENT_STATUS(SynchronousConnectionComplete);
+    CASE_EMBOSS_EVENT_STATUS(InquiryComplete);
     case hci_spec::kLEMetaEventCode: {
       auto subevent_code = params<hci_spec::LEMetaEventParams>().subevent_code;
       switch (subevent_code) {

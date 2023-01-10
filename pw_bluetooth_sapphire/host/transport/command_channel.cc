@@ -230,8 +230,8 @@ bool CommandChannel::RemoveQueuedCommand(TransactionId transaction_id) {
   return true;
 }
 
-CommandChannel::EventHandlerId CommandChannel::AddEventHandler(hci_spec::EventCode event_code,
-                                                               EventCallback event_callback) {
+CommandChannel::EventHandlerId CommandChannel::AddEventHandler(
+    hci_spec::EventCode event_code, EventCallbackVariant event_callback_variant) {
   if (event_code == hci_spec::kCommandStatusEventCode ||
       event_code == hci_spec::kCommandCompleteEventCode ||
       event_code == hci_spec::kLEMetaEventCode) {
@@ -245,8 +245,8 @@ CommandChannel::EventHandlerId CommandChannel::AddEventHandler(hci_spec::EventCo
     return 0u;
   }
 
-  EventHandlerId handler_id =
-      NewEventHandler(event_code, EventType::kHciEvent, hci_spec::kNoOp, std::move(event_callback));
+  EventHandlerId handler_id = NewEventHandler(event_code, EventType::kHciEvent, hci_spec::kNoOp,
+                                              std::move(event_callback_variant));
   event_code_handlers_.emplace(event_code, handler_id);
   return handler_id;
 }
@@ -455,12 +455,14 @@ void CommandChannel::MaybeAddTransactionHandler(TransactionData* data) {
   bt_log(TRACE, "hci", "async command %zu assigned handler %zu", data->id(), handler_id);
 }
 
-CommandChannel::EventHandlerId CommandChannel::NewEventHandler(hci_spec::EventCode event_code,
-                                                               EventType event_type,
-                                                               hci_spec::OpCode pending_opcode,
-                                                               EventCallback event_callback) {
+CommandChannel::EventHandlerId CommandChannel::NewEventHandler(
+    hci_spec::EventCode event_code, EventType event_type, hci_spec::OpCode pending_opcode,
+    EventCallbackVariant event_callback_variant) {
   BT_DEBUG_ASSERT(event_code);
-  BT_DEBUG_ASSERT(event_callback);
+  BT_DEBUG_ASSERT((std::holds_alternative<EventCallback>(event_callback_variant) &&
+                   std::get<EventCallback>(event_callback_variant)) ||
+                  (std::holds_alternative<EmbossEventCallback>(event_callback_variant) &&
+                   std::get<EmbossEventCallback>(event_callback_variant)));
 
   auto handler_id = next_event_handler_id_.value();
   next_event_handler_id_.Set(handler_id + 1);
@@ -469,7 +471,7 @@ CommandChannel::EventHandlerId CommandChannel::NewEventHandler(hci_spec::EventCo
   data.event_code = event_code;
   data.event_type = event_type;
   data.pending_opcode = pending_opcode;
-  data.event_callback = std::move(event_callback);
+  data.event_callback = std::move(event_callback_variant);
 
   bt_log(TRACE, "hci", "adding event handler %zu for %s event code %#.2x", handler_id,
          EventTypeToString(event_type).c_str(), event_code);
@@ -547,7 +549,7 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
 
 void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
   struct PendingCallback {
-    EventCallback callback;
+    EventCallbackVariant callback_variant;
     EventHandlerId handler_id;
   };
   std::vector<PendingCallback> pending_callbacks;
@@ -591,7 +593,11 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
     EventHandlerData& handler = handler_iter->second;
     BT_DEBUG_ASSERT(handler.event_code == event_code);
 
-    EventCallback callback = handler.event_callback.share();
+    std::visit(
+        [&pending_callbacks, event_id](auto& callback) {
+          pending_callbacks.push_back({callback.share(), event_id});
+        },
+        handler.event_callback);
 
     ++iter;  // Advance so we don't point to an invalid iterator.
     if (handler.is_async()) {
@@ -600,17 +606,26 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
       pending_transactions_.erase(handler.pending_opcode);
       RemoveEventHandlerInternal(event_id);  // |handler| is now dangling.
     }
-
-    pending_callbacks.push_back({std::move(callback), event_id});
   }
 
   // Process queue so callbacks can't add a handler if another queued command finishes on the same
   // event.
   TrySendQueuedCommands();
 
+  EventPacket& event_packet = *event;
   for (auto it = pending_callbacks.begin(); it != pending_callbacks.end(); ++it) {
-    // execute the event callback
-    EventCallbackResult result = it->callback(*event);
+    // Execute the event callback.
+    EventCallbackResult result = std::visit(
+        overloaded{[&event_packet](EventCallback& callback) { return callback(event_packet); },
+                   [&event_packet](EmbossEventCallback& callback) {
+                     auto emboss_packet = EmbossEventPacket::New<hci_spec::EmbossEventHeaderView>(
+                         event_packet.view().size());
+                     bt::MutableBufferView dest = emboss_packet.mutable_data();
+                     event_packet.view().data().Copy(&dest);
+                     return callback(emboss_packet);
+                   }},
+        it->callback_variant);
+
     if (result == EventCallbackResult::kRemove) {
       RemoveEventHandler(it->handler_id);
     }

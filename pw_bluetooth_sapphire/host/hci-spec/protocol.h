@@ -810,8 +810,6 @@ struct VendorEventParams {
 // Inquiry Complete Event (v1.1) (BR/EDR)
 constexpr EventCode kInquiryCompleteEventCode = 0x01;
 
-using InquiryCompleteEventParams = SimpleReturnParams;
-
 // ====================================
 // Inquiry Result Event (v1.1) (BR/EDR)
 constexpr EventCode kInquiryResultEventCode = 0x02;

@@ -32,12 +32,13 @@ Connection::Connection(hci_spec::ConnectionHandle handle, const DeviceAddress& l
   BT_ASSERT(handle_);
   BT_ASSERT(hci_.is_alive());
 
-  auto disconn_complete_handler = [self = weak_self_.GetWeakPtr(), handle, hci = hci_,
-                                   on_disconnection_complete =
-                                       std::move(on_disconnection_complete)](auto& event) mutable {
-    return Connection::OnDisconnectionComplete(self, handle, event,
-                                               std::move(on_disconnection_complete));
-  };
+  auto disconn_complete_handler =
+      [self = weak_self_.GetWeakPtr(), handle, hci = hci_,
+       on_disconnection_complete =
+           std::move(on_disconnection_complete)](const EventPacket& event) mutable {
+        return Connection::OnDisconnectionComplete(self, handle, event,
+                                                   std::move(on_disconnection_complete));
+      };
   hci_->command_channel()->AddEventHandler(hci_spec::kDisconnectionCompleteEventCode,
                                            std::move(disconn_complete_handler));
 }
