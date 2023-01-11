@@ -20,17 +20,17 @@ from typing import List, Tuple
 
 from google.protobuf import text_format
 
-from pw_protobuf_codegen_protos.options_pb2 import Options
+from pw_protobuf_codegen_protos.codegen_options_pb2 import CodegenOptions
 
 _MULTI_LINE_COMMENT_RE = re.compile(r'/\*.*?\*/', flags=re.MULTILINE)
 _SINGLE_LINE_COMMENT_RE = re.compile(r'//.*?$', flags=re.MULTILINE)
 _SHELL_STYLE_COMMENT_RE = re.compile(r'#.*?$', flags=re.MULTILINE)
 
-# A list of (proto field path, Options) tuples.
-FieldOptions = List[Tuple[str, Options]]
+# A list of (proto field path, CodegenOptions) tuples.
+ParsedOptions = List[Tuple[str, CodegenOptions]]
 
 
-def load_options_from(options: FieldOptions, options_file_name: Path):
+def load_options_from(options: ParsedOptions, options_file_name: Path):
     """Loads a single .options file for the given .proto"""
     with open(options_file_name) as options_file:
         # Read the options file and strip all styles of comments before parsing.
@@ -46,7 +46,7 @@ def load_options_from(options: FieldOptions, options_file_name: Path):
 
             # Parse as a name glob followed by a protobuf text format.
             try:
-                opts = Options()
+                opts = CodegenOptions()
                 text_format.Merge(parts[1], opts)
                 options.append((parts[0], opts))
             except:  # pylint: disable=bare-except
@@ -55,9 +55,9 @@ def load_options_from(options: FieldOptions, options_file_name: Path):
 
 def load_options(
     include_paths: List[Path], proto_file_name: Path
-) -> FieldOptions:
+) -> ParsedOptions:
     """Loads the .options for the given .proto."""
-    options: FieldOptions = []
+    options: ParsedOptions = []
 
     for include_path in include_paths:
         options_file_name = include_path / proto_file_name.with_suffix(
@@ -69,9 +69,9 @@ def load_options(
     return options
 
 
-def match_options(name: str, options: FieldOptions) -> Options:
+def match_options(name: str, options: ParsedOptions) -> CodegenOptions:
     """Return the matching options for a name."""
-    matched = Options()
+    matched = CodegenOptions()
     for name_glob, mask_options in options:
         if fnmatchcase(name, name_glob):
             matched.MergeFrom(mask_options)

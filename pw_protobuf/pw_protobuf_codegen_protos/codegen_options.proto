@@ -16,7 +16,7 @@ syntax = "proto3";
 
 package pw.protobuf;
 
-message Options {
+message CodegenOptions {
   // Maximum number of entries for repeated fields.
   int32 max_count = 1;
 

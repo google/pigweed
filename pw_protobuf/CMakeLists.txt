@@ -193,7 +193,7 @@ pw_proto_library(pw_protobuf.status_proto
 
 pw_proto_library(pw_protobuf.codegen_protos
   SOURCES
-    pw_protobuf_codegen_protos/options.proto
+    pw_protobuf_codegen_protos/codegen_options.proto
 )
 
 pw_proto_library(pw_protobuf.codegen_test_deps_protos

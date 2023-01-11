@@ -189,7 +189,7 @@ pw_cc_perf_test(
 proto_library(
     name = "codegen_protos",
     srcs = [
-        "pw_protobuf_codegen_protos/options.proto",
+        "pw_protobuf_codegen_protos/codegen_options.proto",
     ],
     strip_import_prefix = "//pw_protobuf",
 )
@@ -197,7 +197,7 @@ proto_library(
 py_proto_library(
     name = "codegen_protos_pb2",
     srcs = [
-        "pw_protobuf_codegen_protos/options.proto",
+        "pw_protobuf_codegen_protos/codegen_options.proto",
     ],
 )
 
