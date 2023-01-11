@@ -24,7 +24,7 @@ import java.util.Locale;
  */
 @AutoValue
 abstract class PendingRpc {
-  public static PendingRpc create(Channel channel, Method method) {
+  static PendingRpc create(Channel channel, Method method) {
     return new AutoValue_PendingRpc(channel, method);
   }
 

@@ -15,17 +15,27 @@
 package dev.pigweed.pw_rpc;
 
 import com.google.auto.value.AutoValue;
+import java.util.Locale;
 
 /**
- * Refers to a potential RPC invocation: channel ID and method.
+ * Represents a potential RPC invocation: channel ID, service, and method.
  */
 @AutoValue
-abstract class RpcKey {
-  public static RpcKey create(int channelId, Method method) {
+public abstract class RpcKey {
+  static RpcKey create(int channelId, Method method) {
     return new AutoValue_RpcKey(channelId, method);
   }
 
   public abstract int channelId();
 
+  public final Service service() {
+    return method().service();
+  }
+
   public abstract Method method();
+
+  @Override
+  public final String toString() {
+    return String.format(Locale.ENGLISH, "RpcKey[%s|channel=%d]", method(), channelId());
+  }
 }
