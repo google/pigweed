@@ -36,21 +36,7 @@ LinuxInitiator::~LinuxInitiator() {
   }
 }
 
-Status LinuxInitiator::LazyInit() {
-  if (fd_ >= 0) {
-    return OkStatus();
-  }
-  fd_ = open(path_, O_RDWR | O_EXCL);
-  if (fd_ < 0) {
-    PW_LOG_ERROR("Unable to open SPI device %s for read/write", path_);
-    return Status::Unavailable();
-  }
-  return OkStatus();
-}
-
 Status LinuxInitiator::Configure(const Config& config) {
-  PW_TRY(LazyInit());
-
   // Map clock polarity/phase to Linux userspace equivalents
   uint32_t mode = 0;
   if (config.polarity == ClockPolarity::kActiveLow) {
@@ -92,8 +78,6 @@ Status LinuxInitiator::Configure(const Config& config) {
 
 Status LinuxInitiator::WriteRead(ConstByteSpan write_buffer,
                                  ByteSpan read_buffer) {
-  PW_TRY(LazyInit());
-
   // Configure a full-duplex transfer using ioctl()
   struct spi_ioc_transfer transaction[2];
   memset(transaction, 0, sizeof(transaction));
