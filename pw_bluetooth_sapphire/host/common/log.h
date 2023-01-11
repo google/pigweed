@@ -116,7 +116,7 @@ void UsePrintf(LogSeverity min_severity);
 namespace internal {
 
 // No-op function used to check consistency between format string and arguments.
-[[gnu::format(printf, 1, 2)]] constexpr void CheckFormat([[maybe_unused]] const char* fmt, ...) {}
+PW_PRINTF_FORMAT(1, 2) constexpr void CheckFormat([[maybe_unused]] const char* fmt, ...) {}
 
 }  // namespace internal
 }  // namespace bt
@@ -125,9 +125,9 @@ namespace internal {
 // This macro should not wrap its contents in a lambda, as it breaks logs using __FUNCTION__.
 // TODO(fxbug.dev/1390): Due to limitations, |tag| is processed by printf-style formatters as a
 // format string, so check that |tag| does not specify any additional args.
-#define bt_log(level, tag, fmt...)                                                        \
-  PW_LOG(static_cast<int>(bt::LogSeverity::level), GetPwLogFlags(bt::LogSeverity::level), \
-         "[" tag "] " fmt);                                                               \
+#define bt_log(level, tag, fmt...)                                                             \
+  PW_LOG(static_cast<int>(bt::LogSeverity::level), tag, GetPwLogFlags(bt::LogSeverity::level), \
+         fmt);                                                                                 \
   ::bt::internal::CheckFormat(tag)
 
 #define BT_DECLARE_FAKE_DRIVER() zx_driver_rec_t __zircon_driver_rec__ = {}
