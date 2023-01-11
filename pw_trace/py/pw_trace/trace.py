@@ -52,7 +52,7 @@ class TraceEvent(NamedTuple):
     event_type: TraceType
     module: str
     label: str
-    timestamp_us: int
+    timestamp_us: float
     group: str = ""
     trace_id: int = 0
     flags: int = 0
