@@ -34,9 +34,9 @@ lazy-object-proxy==1.7.1
 MarkupSafe==2.0.1
 matplotlib-inline==0.1.3
 mccabe==0.6.1
-mypy==0.971
+mypy==0.991
 mypy-extensions==0.4.3
-mypy-protobuf==3.2.0
+mypy-protobuf==3.3.0
 packaging==21.3
 parameterized==0.8.1
 parso==0.8.3

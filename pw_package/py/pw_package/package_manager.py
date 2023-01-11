@@ -61,16 +61,22 @@ class Package:
         if os.path.exists(path):
             shutil.rmtree(path)
 
-    def status(self, path: pathlib.Path) -> bool:  # pylint: disable=no-self-use
+    def status(  # pylint: disable=no-self-use
+        self,
+        path: pathlib.Path,  # pylint: disable=unused-argument
+    ) -> bool:
         """Returns if package is installed at path and current.
 
         This method will be skipped if the directory does not exist.
         """
+        return False
 
-    def info(
-        self, path: pathlib.Path
-    ) -> Sequence[str]:  # pylint: disable=no-self-use
+    def info(  # pylint: disable=no-self-use
+        self,
+        path: pathlib.Path,  # pylint: disable=unused-argument
+    ) -> Sequence[str]:
         """Returns a short string explaining how to enable the package."""
+        return []
 
 
 _PACKAGES: Dict[str, Package] = {}

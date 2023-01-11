@@ -456,20 +456,22 @@ class TokenDatabaseTest(unittest.TestCase):
         db.mark_removed(_entries('MILK', 'CHEESE', 'pears'))
 
         # New strings are not added or re-added in mark_removed().
-        self.assertGreaterEqual(
-            db.token_to_entries[c_hash('MILK')][0].date_removed, date_1
-        )
-        self.assertGreaterEqual(
-            db.token_to_entries[c_hash('CHEESE')][0].date_removed, date_1
-        )
+        milk_date = db.token_to_entries[c_hash('MILK')][0].date_removed
+        assert milk_date is not None
+        self.assertGreaterEqual(milk_date, date_1)
+
+        cheese_date = db.token_to_entries[c_hash('CHEESE')][0].date_removed
+        assert cheese_date is not None
+        self.assertGreaterEqual(cheese_date, date_1)
 
         # These strings were removed.
-        self.assertGreaterEqual(
-            db.token_to_entries[c_hash('apples')][0].date_removed, now
-        )
-        self.assertGreaterEqual(
-            db.token_to_entries[c_hash('oranges')][0].date_removed, now
-        )
+        apples_date = db.token_to_entries[c_hash('apples')][0].date_removed
+        assert apples_date is not None
+        self.assertGreaterEqual(apples_date, now)
+
+        oranges_date = db.token_to_entries[c_hash('oranges')][0].date_removed
+        assert oranges_date is not None
+        self.assertGreaterEqual(oranges_date, now)
         self.assertIsNone(db.token_to_entries[c_hash('pears')][0].date_removed)
 
     def test_add(self) -> None:

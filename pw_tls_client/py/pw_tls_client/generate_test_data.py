@@ -199,8 +199,9 @@ def byte_array_declaration(data: bytes, name: str) -> str:
 class Codegen:
     """Base helper class for code generation"""
 
-    def generate_code(self) -> str:
+    def generate_code(self) -> str:  # pylint: disable=no-self-use
         """Generates C++ code for this object"""
+        return ''
 
 
 class PrivateKeyGen(Codegen):
