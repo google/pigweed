@@ -12,7 +12,8 @@ namespace {
 
 constexpr hci_spec::ConnectionHandle kTestHandle = 0x0001;
 constexpr uint8_t kTestCmdId = 97;
-constexpr hci_spec::ConnectionRole kDeviceRole = hci_spec::ConnectionRole::CENTRAL;
+constexpr pw::bluetooth::emboss::ConnectionRole kDeviceRole =
+    pw::bluetooth::emboss::ConnectionRole::CENTRAL;
 
 class BrEdrSignalingChannelTest : public testing::MockChannelTest {
  public:

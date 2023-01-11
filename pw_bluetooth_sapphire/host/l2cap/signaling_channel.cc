@@ -14,7 +14,8 @@
 
 namespace bt::l2cap::internal {
 
-SignalingChannel::SignalingChannel(Channel::WeakPtr chan, hci_spec::ConnectionRole role)
+SignalingChannel::SignalingChannel(Channel::WeakPtr chan,
+                                   pw::bluetooth::emboss::ConnectionRole role)
     : is_open_(true), chan_(std::move(chan)), role_(role), next_cmd_id_(0x01), weak_self_(this) {
   BT_DEBUG_ASSERT(chan_);
   BT_DEBUG_ASSERT(chan_->id() == kSignalingChannelId || chan_->id() == kLESignalingChannelId);

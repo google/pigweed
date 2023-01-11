@@ -215,7 +215,7 @@ void LowEnergyConnection::AttachInspect(inspect::Node& parent, std::string name)
 }
 
 void LowEnergyConnection::StartConnectionPauseTimeout() {
-  if (link_->role() == hci_spec::ConnectionRole::CENTRAL) {
+  if (link_->role() == pw::bluetooth::emboss::ConnectionRole::CENTRAL) {
     StartConnectionPauseCentralTimeout();
   } else {
     StartConnectionPausePeripheralTimeout();
@@ -281,7 +281,7 @@ bool LowEnergyConnection::OnL2capFixedChannelsOpened(
     // security information (LTK, EDIV, and Rand) distributed by the Peripheral in LE legacy [...]
     // to setup an encrypted session" (v5.3, Vol. 3 Part H 2.4.4.2). For Secure Connections peer_ltk
     // and local_ltk will be equal, so this check is unnecessary but correct.
-    ltk = (link()->role() == hci_spec::ConnectionRole::CENTRAL)
+    ltk = (link()->role() == pw::bluetooth::emboss::ConnectionRole::CENTRAL)
               ? peer_->le()->bond_data()->peer_ltk
               : peer_->le()->bond_data()->local_ltk;
   }
@@ -322,7 +322,7 @@ void LowEnergyConnection::OnNewLEConnectionParams(
 
 void LowEnergyConnection::RequestConnectionParameterUpdate(
     const hci_spec::LEPreferredConnectionParameters& params) {
-  BT_ASSERT_MSG(link_->role() == hci_spec::ConnectionRole::PERIPHERAL,
+  BT_ASSERT_MSG(link_->role() == pw::bluetooth::emboss::ConnectionRole::PERIPHERAL,
                 "tried to send connection parameter update request as central");
 
   BT_ASSERT(peer_.is_alive());
@@ -359,7 +359,7 @@ void LowEnergyConnection::HandleRequestConnectionParameterUpdateCommandStatus(
   // The next LE Connection Update complete event is for this command iff the command |status|
   // is success.
   if (status.is_error()) {
-    if (status == ToResult(hci_spec::StatusCode::UNSUPPORTED_REMOTE_FEATURE)) {
+    if (status == ToResult(pw::bluetooth::emboss::StatusCode::UNSUPPORTED_REMOTE_FEATURE)) {
       // Retry connection parameter update with l2cap if the peer doesn't support LL procedure.
       bt_log(
           INFO, "gap-le",
@@ -372,9 +372,10 @@ void LowEnergyConnection::HandleRequestConnectionParameterUpdateCommandStatus(
 
   // Note that this callback is for the Connection Update Complete event, not the Connection Update
   // status event, which is handled by the above code (see v5.2, Vol. 4, Part E 7.7.15 / 7.7.65.3).
-  le_conn_update_complete_command_callback_ = [this, params](hci_spec::StatusCode status) {
+  le_conn_update_complete_command_callback_ = [this,
+                                               params](pw::bluetooth::emboss::StatusCode status) {
     // Retry connection parameter update with l2cap if the peer doesn't support LL procedure.
-    if (status == hci_spec::StatusCode::UNSUPPORTED_REMOTE_FEATURE) {
+    if (status == pw::bluetooth::emboss::StatusCode::UNSUPPORTED_REMOTE_FEATURE) {
       bt_log(INFO, "gap-le",
              "peer does not support HCI LE Connection Update command, trying l2cap request "
              "(peer: %s)",
@@ -386,7 +387,7 @@ void LowEnergyConnection::HandleRequestConnectionParameterUpdateCommandStatus(
 
 void LowEnergyConnection::L2capRequestConnectionParameterUpdate(
     const hci_spec::LEPreferredConnectionParameters& params) {
-  BT_ASSERT_MSG(link_->role() == hci_spec::ConnectionRole::PERIPHERAL,
+  BT_ASSERT_MSG(link_->role() == pw::bluetooth::emboss::ConnectionRole::PERIPHERAL,
                 "tried to send l2cap connection parameter update request as central");
 
   bt_log(DEBUG, "gap-le", "sending l2cap connection parameter update request (peer: %s)",
@@ -458,7 +459,7 @@ void LowEnergyConnection::OnLEConnectionUpdateComplete(const hci::EventPacket& e
     le_conn_update_complete_command_callback_(payload->status);
   }
 
-  if (payload->status != hci_spec::StatusCode::SUCCESS) {
+  if (payload->status != pw::bluetooth::emboss::StatusCode::SUCCESS) {
     bt_log(WARN, "gap-le",
            "HCI LE Connection Update Complete event with error "
            "(peer: %s, status: %#.2hhx, handle: %#.4x)",
@@ -486,7 +487,7 @@ void LowEnergyConnection::MaybeUpdateConnectionParameters() {
 
   connection_parameters_update_requested_ = true;
 
-  if (link_->role() == hci_spec::ConnectionRole::CENTRAL) {
+  if (link_->role() == pw::bluetooth::emboss::ConnectionRole::CENTRAL) {
     // If the GAP service preferred connection parameters characteristic has not been read by now,
     // just use the default parameters.
     // TODO(fxbug.dev/66031): Wait for preferred connection parameters to be read.

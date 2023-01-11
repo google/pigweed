@@ -22,18 +22,20 @@ namespace bt::sm::util {
 namespace {
 
 TEST(UtilTest, ConvertSmIoCapabilityToHci) {
-  EXPECT_EQ(hci_spec::IoCapability::DISPLAY_ONLY, IOCapabilityForHci(IOCapability::kDisplayOnly));
-  EXPECT_EQ(hci_spec::IoCapability::DISPLAY_YES_NO,
+  EXPECT_EQ(pw::bluetooth::emboss::IoCapability::DISPLAY_ONLY,
+            IOCapabilityForHci(IOCapability::kDisplayOnly));
+  EXPECT_EQ(pw::bluetooth::emboss::IoCapability::DISPLAY_YES_NO,
             IOCapabilityForHci(IOCapability::kDisplayYesNo));
-  EXPECT_EQ(hci_spec::IoCapability::KEYBOARD_ONLY, IOCapabilityForHci(IOCapability::kKeyboardOnly));
-  EXPECT_EQ(hci_spec::IoCapability::NO_INPUT_NO_OUTPUT,
+  EXPECT_EQ(pw::bluetooth::emboss::IoCapability::KEYBOARD_ONLY,
+            IOCapabilityForHci(IOCapability::kKeyboardOnly));
+  EXPECT_EQ(pw::bluetooth::emboss::IoCapability::NO_INPUT_NO_OUTPUT,
             IOCapabilityForHci(IOCapability::kNoInputNoOutput));
-  EXPECT_EQ(hci_spec::IoCapability::DISPLAY_YES_NO,
+  EXPECT_EQ(pw::bluetooth::emboss::IoCapability::DISPLAY_YES_NO,
             IOCapabilityForHci(IOCapability::kKeyboardDisplay));
 
   // Test remaining invalid values for sm::IOCapability.
   for (int i = 0x05; i < 0xff; i++) {
-    EXPECT_EQ(hci_spec::IoCapability::NO_INPUT_NO_OUTPUT,
+    EXPECT_EQ(pw::bluetooth::emboss::IoCapability::NO_INPUT_NO_OUTPUT,
               IOCapabilityForHci(static_cast<IOCapability>(i)));
   }
 }

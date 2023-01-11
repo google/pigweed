@@ -46,10 +46,12 @@ class FakeL2cap final : public ChannelManager {
   void TriggerLinkError(hci_spec::ConnectionHandle handle);
 
   // L2cap overrides:
-  void AddACLConnection(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
+  void AddACLConnection(hci_spec::ConnectionHandle handle,
+                        pw::bluetooth::emboss::ConnectionRole role,
                         LinkErrorCallback link_error_callback,
                         SecurityUpgradeCallback security_callback) override;
-  LEFixedChannels AddLEConnection(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
+  LEFixedChannels AddLEConnection(hci_spec::ConnectionHandle handle,
+                                  pw::bluetooth::emboss::ConnectionRole role,
                                   LinkErrorCallback link_error_callback,
                                   LEConnectionParameterUpdateCallback conn_param_callback,
                                   SecurityUpgradeCallback security_callback) override;
@@ -106,7 +108,7 @@ class FakeL2cap final : public ChannelManager {
     // Expectations on links can be created before they are connected.
     bool connected;
     hci_spec::ConnectionHandle handle;
-    hci_spec::ConnectionRole role;
+    pw::bluetooth::emboss::ConnectionRole role;
     bt::LinkType type;
 
     async_dispatcher_t* dispatcher;
@@ -121,8 +123,9 @@ class FakeL2cap final : public ChannelManager {
     std::unordered_map<ChannelId, std::unique_ptr<FakeChannel>> channels_;
   };
 
-  LinkData* RegisterInternal(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
-                             bt::LinkType link_type, LinkErrorCallback link_error_callback);
+  LinkData* RegisterInternal(hci_spec::ConnectionHandle handle,
+                             pw::bluetooth::emboss::ConnectionRole role, bt::LinkType link_type,
+                             LinkErrorCallback link_error_callback);
 
   testing::FakeChannel::WeakPtr OpenFakeChannel(
       LinkData* link, ChannelId id, ChannelId remote_id,

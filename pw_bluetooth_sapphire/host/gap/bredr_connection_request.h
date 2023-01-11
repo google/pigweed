@@ -71,11 +71,13 @@ class BrEdrConnectionRequest final {
 
   // If a role change occurs while this request is still pending, set it here so that the correct
   // role is used when connection establishment completes.
-  void set_role_change(hci_spec::ConnectionRole role) { role_change_ = role; }
+  void set_role_change(pw::bluetooth::emboss::ConnectionRole role) { role_change_ = role; }
 
   // If the default role of the requested connection is changed during connection establishment, the
   // new role will be returned.
-  const std::optional<hci_spec::ConnectionRole>& role_change() const { return role_change_; }
+  const std::optional<pw::bluetooth::emboss::ConnectionRole>& role_change() const {
+    return role_change_;
+  }
 
   Peer::InitializingConnectionToken take_peer_init_token() {
     BT_ASSERT(peer_init_conn_token_);
@@ -87,7 +89,7 @@ class BrEdrConnectionRequest final {
   DeviceAddress address_;
   UintInspectable<std::list<OnComplete>> callbacks_;
   BoolInspectable<bool> has_incoming_;
-  std::optional<hci_spec::ConnectionRole> role_change_;
+  std::optional<pw::bluetooth::emboss::ConnectionRole> role_change_;
   // Used to determine whether an outbound connection request should be retried. If empty, no HCI
   // Create Connection Requests associated with this object have been made, otherwise stores the
   // time at which the first HCI request associated with this object was made.

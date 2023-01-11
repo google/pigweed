@@ -264,8 +264,9 @@ TEST_F(LowEnergyCentralServerTest, FailedConnectionCleanedUp) {
     status = std::move(cb_status);
   };
 
-  test_device()->SetDefaultCommandStatus(bt::hci_spec::kReadRemoteVersionInfo,
-                                         bt::hci_spec::StatusCode::CONNECTION_LIMIT_EXCEEDED);
+  test_device()->SetDefaultCommandStatus(
+      bt::hci_spec::kReadRemoteVersionInfo,
+      pw::bluetooth::emboss::StatusCode::CONNECTION_LIMIT_EXCEEDED);
 
   ASSERT_FALSE(server()->FindConnectionForTesting(peer->identifier()).has_value());
   central_proxy()->ConnectPeripheral(peer->identifier().ToString(), std::move(options),
@@ -940,7 +941,7 @@ TEST_F(LowEnergyCentralServerTest, DiscoveryStartJustAfterScanCanceledShouldBeIg
 
 TEST_F(LowEnergyCentralServerTest, ScanFailsToStart) {
   test_device()->SetDefaultResponseStatus(bt::hci_spec::kLESetScanEnable,
-                                          bt::hci_spec::StatusCode::CONTROLLER_BUSY);
+                                          pw::bluetooth::emboss::StatusCode::CONTROLLER_BUSY);
 
   fidl::InterfaceHandle<fble::ScanResultWatcher> result_watcher_handle;
   auto result_watcher_server = result_watcher_handle.NewRequest();
@@ -968,8 +969,8 @@ TEST_F(LowEnergyCentralServerTest, ScanSessionErrorCancelsScan) {
     // Then disable restarting scanning, so that an error is sent to sessions.
     if (scan_states.size() == 2u) {
       EXPECT_FALSE(enabled);
-      test_device()->SetDefaultResponseStatus(bt::hci_spec::kLESetScanEnable,
-                                              bt::hci_spec::StatusCode::COMMAND_DISALLOWED);
+      test_device()->SetDefaultResponseStatus(
+          bt::hci_spec::kLESetScanEnable, pw::bluetooth::emboss::StatusCode::COMMAND_DISALLOWED);
     }
   });
 

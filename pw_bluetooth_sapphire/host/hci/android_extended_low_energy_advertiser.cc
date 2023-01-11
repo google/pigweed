@@ -43,7 +43,7 @@ AndroidExtendedLowEnergyAdvertiser::~AndroidExtendedLowEnergyAdvertiser() {
 }
 
 std::unique_ptr<CommandPacket> AndroidExtendedLowEnergyAdvertiser::BuildEnablePacket(
-    const DeviceAddress& address, hci_spec::GenericEnableParam enable) {
+    const DeviceAddress& address, pw::bluetooth::emboss::GenericEnableParam enable) {
   std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.GetHandle(address);
   BT_ASSERT(handle);
 
@@ -171,7 +171,7 @@ std::unique_ptr<CommandPacket> AndroidExtendedLowEnergyAdvertiser::BuildRemoveAd
   packet->mutable_view()->mutable_payload_data().SetToZeros();
   auto payload = packet->mutable_payload<hci_android::LEMultiAdvtEnableCommandParams>();
   payload->opcode = hci_android::kLEMultiAdvtEnableSubopcode;
-  payload->enable = hci_spec::GenericEnableParam::DISABLE;
+  payload->enable = pw::bluetooth::emboss::GenericEnableParam::DISABLE;
   payload->adv_handle = handle.value();
   return packet;
 }
@@ -245,7 +245,7 @@ void AndroidExtendedLowEnergyAdvertiser::StopAdvertising(const DeviceAddress& ad
 }
 
 void AndroidExtendedLowEnergyAdvertiser::OnIncomingConnection(
-    hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
+    hci_spec::ConnectionHandle handle, pw::bluetooth::emboss::ConnectionRole role,
     const DeviceAddress& peer_address, const hci_spec::LEConnectionParameters& conn_params) {
   staged_connections_map_[handle] = {role, peer_address, conn_params};
 }

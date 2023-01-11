@@ -217,14 +217,14 @@ void ChannelImpl::SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
   // Channel may be inactive if this method is called before activation.
   if (!link_.is_alive()) {
     bt_log(DEBUG, "l2cap", "Ignoring %s on closed channel", __FUNCTION__);
-    callback(ToResult(hci_spec::StatusCode::COMMAND_DISALLOWED));
+    callback(ToResult(pw::bluetooth::emboss::StatusCode::COMMAND_DISALLOWED));
     return;
   }
 
   auto cb_wrapper = [self = GetWeakPtr(), this, cb = std::move(callback),
                      flush_timeout](auto result) mutable {
     if (!self.is_alive()) {
-      cb(ToResult(hci_spec::StatusCode::UNSPECIFIED_ERROR));
+      cb(ToResult(pw::bluetooth::emboss::StatusCode::UNSPECIFIED_ERROR));
       return;
     }
 

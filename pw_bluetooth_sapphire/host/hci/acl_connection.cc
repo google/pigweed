@@ -24,7 +24,8 @@ CommandChannel::EventCallback BindEventHandler(const WeakSelf<AclConnection>::We
 }  // namespace
 
 AclConnection::AclConnection(hci_spec::ConnectionHandle handle, const DeviceAddress& local_address,
-                             const DeviceAddress& peer_address, hci_spec::ConnectionRole role,
+                             const DeviceAddress& peer_address,
+                             pw::bluetooth::emboss::ConnectionRole role,
                              const Transport::WeakPtr& hci)
     : Connection(handle, local_address, peer_address, hci,
                  [handle, hci] { AclConnection::OnDisconnectionComplete(handle, hci); }),

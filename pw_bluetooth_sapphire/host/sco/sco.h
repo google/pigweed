@@ -34,7 +34,7 @@ enum class ScoPacketTypeBits : uint16_t {
 struct ParameterSet {
   uint16_t packet_types;
   uint32_t transmit_receive_bandwidth;
-  hci_spec::CodingFormat transmit_receive_format;
+  pw::bluetooth::emboss::CodingFormat transmit_receive_format;
   uint16_t max_latency_ms;
   hci_spec::ScoRetransmissionEffort retransmission_effort;
 };
@@ -44,7 +44,7 @@ constexpr ParameterSet kParameterSetMsbcT1{
                     static_cast<uint8_t>(ScoPacketTypeBits::kNot2Ev5) |
                     static_cast<uint8_t>(ScoPacketTypeBits::kNot3Ev5),
     .transmit_receive_bandwidth = 8000,
-    .transmit_receive_format = hci_spec::CodingFormat::TRANSPARENT,
+    .transmit_receive_format = pw::bluetooth::emboss::CodingFormat::TRANSPARENT,
     .max_latency_ms = 8,
     .retransmission_effort = hci_spec::ScoRetransmissionEffort::kQualityOptimized};
 
@@ -53,7 +53,7 @@ constexpr ParameterSet kParameterSetMsbcT2{
                     static_cast<uint8_t>(ScoPacketTypeBits::kNot2Ev5) |
                     static_cast<uint8_t>(ScoPacketTypeBits::kNot3Ev5),
     .transmit_receive_bandwidth = 8000,
-    .transmit_receive_format = hci_spec::CodingFormat::TRANSPARENT,
+    .transmit_receive_format = pw::bluetooth::emboss::CodingFormat::TRANSPARENT,
     .max_latency_ms = 13,
     .retransmission_effort = hci_spec::ScoRetransmissionEffort::kQualityOptimized};
 
@@ -65,7 +65,7 @@ constexpr ParameterSet kParameterSetCvsdS1{
                     static_cast<uint8_t>(ScoPacketTypeBits::kNot2Ev5) |
                     static_cast<uint8_t>(ScoPacketTypeBits::kNot3Ev5),
     .transmit_receive_bandwidth = 8000,
-    .transmit_receive_format = hci_spec::CodingFormat::CVSD,
+    .transmit_receive_format = pw::bluetooth::emboss::CodingFormat::CVSD,
     .max_latency_ms = 7,
     .retransmission_effort = hci_spec::ScoRetransmissionEffort::kPowerOptimized};
 
@@ -74,7 +74,7 @@ constexpr ParameterSet kParameterSetCvsdS2{
                     static_cast<uint8_t>(ScoPacketTypeBits::kNot2Ev5) |
                     static_cast<uint8_t>(ScoPacketTypeBits::kNot3Ev5),
     .transmit_receive_bandwidth = 8000,
-    .transmit_receive_format = hci_spec::CodingFormat::CVSD,
+    .transmit_receive_format = pw::bluetooth::emboss::CodingFormat::CVSD,
     .max_latency_ms = 7,
     .retransmission_effort = hci_spec::ScoRetransmissionEffort::kPowerOptimized};
 
@@ -83,7 +83,7 @@ constexpr ParameterSet kParameterSetCvsdS3{
                     static_cast<uint8_t>(ScoPacketTypeBits::kNot2Ev5) |
                     static_cast<uint8_t>(ScoPacketTypeBits::kNot3Ev5),
     .transmit_receive_bandwidth = 8000,
-    .transmit_receive_format = hci_spec::CodingFormat::CVSD,
+    .transmit_receive_format = pw::bluetooth::emboss::CodingFormat::CVSD,
     .max_latency_ms = 10,
     .retransmission_effort = hci_spec::ScoRetransmissionEffort::kPowerOptimized};
 
@@ -92,21 +92,21 @@ constexpr ParameterSet kParameterSetCvsdS4{
                     static_cast<uint8_t>(ScoPacketTypeBits::kNot2Ev5) |
                     static_cast<uint8_t>(ScoPacketTypeBits::kNot3Ev5),
     .transmit_receive_bandwidth = 8000,
-    .transmit_receive_format = hci_spec::CodingFormat::CVSD,
+    .transmit_receive_format = pw::bluetooth::emboss::CodingFormat::CVSD,
     .max_latency_ms = 12,
     .retransmission_effort = hci_spec::ScoRetransmissionEffort::kQualityOptimized};
 
 constexpr ParameterSet kParameterSetCvsdD0{
     .packet_types = static_cast<uint8_t>(ScoPacketTypeBits::kHv1),
     .transmit_receive_bandwidth = 8000,
-    .transmit_receive_format = hci_spec::CodingFormat::CVSD,
+    .transmit_receive_format = pw::bluetooth::emboss::CodingFormat::CVSD,
     .max_latency_ms = 0xFFFF,
     .retransmission_effort = hci_spec::ScoRetransmissionEffort::kDontCare};
 
 constexpr ParameterSet kParameterSetCvsdD1{
     .packet_types = static_cast<uint8_t>(ScoPacketTypeBits::kHv3),
     .transmit_receive_bandwidth = 8000,
-    .transmit_receive_format = hci_spec::CodingFormat::CVSD,
+    .transmit_receive_format = pw::bluetooth::emboss::CodingFormat::CVSD,
     .max_latency_ms = 0xFFFF,
     .retransmission_effort = hci_spec::ScoRetransmissionEffort::kDontCare};
 

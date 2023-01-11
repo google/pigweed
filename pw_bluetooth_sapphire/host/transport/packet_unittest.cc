@@ -139,7 +139,7 @@ TEST(PacketTest, EventPacketStatus) {
   packet->InitializeFromBuffer();
 
   Result<> status = packet->ToResult();
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::HARDWARE_FAILURE), status);
+  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE), status);
 }
 
 TEST(PacketTest, CommandCompleteEventStatus) {
@@ -160,7 +160,7 @@ TEST(PacketTest, CommandCompleteEventStatus) {
   packet->InitializeFromBuffer();
 
   Result<> status = packet->ToResult();
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::HARDWARE_FAILURE), status);
+  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE), status);
 }
 
 TEST(PacketTest, EventPacketMalformed) {

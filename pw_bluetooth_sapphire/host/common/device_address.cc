@@ -40,8 +40,8 @@ DeviceAddressBytes::DeviceAddressBytes(const ByteBuffer& bytes) {
   std::copy(bytes.cbegin(), bytes.cend(), bytes_.begin());
 }
 
-DeviceAddressBytes::DeviceAddressBytes(hci_spec::BdAddrView view) {
-  hci_spec::MakeBdAddrView(&bytes_).CopyFrom(view);
+DeviceAddressBytes::DeviceAddressBytes(pw::bluetooth::emboss::BdAddrView view) {
+  pw::bluetooth::emboss::MakeBdAddrView(&bytes_).CopyFrom(view);
 }
 
 std::string DeviceAddressBytes::ToString() const {

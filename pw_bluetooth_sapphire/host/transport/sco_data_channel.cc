@@ -116,7 +116,7 @@ ScoDataChannelImpl::~ScoDataChannelImpl() {
 
 void ScoDataChannelImpl::RegisterConnection(ConnectionInterface::WeakPtr connection) {
   BT_ASSERT(connection->parameters().view().output_data_path().Read() ==
-            hci_spec::ScoDataPath::HCI);
+            pw::bluetooth::emboss::ScoDataPath::HCI);
   ConnectionData conn_data{.connection = connection};
   auto [_, inserted] = connections_.emplace(connection->handle(), std::move(conn_data));
   BT_ASSERT_MSG(inserted, "connection with handle %#.4x already registered", connection->handle());
@@ -297,14 +297,16 @@ void ScoDataChannelImpl::ConfigureHci() {
     return;
   }
 
-  bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> params =
+  bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> params =
       active_connection_->parameters();
   auto view = params.view();
 
   ScoCodingFormat coding_format;
-  if (view.output_coding_format().coding_format().Read() == hci_spec::CodingFormat::MSBC) {
+  if (view.output_coding_format().coding_format().Read() ==
+      pw::bluetooth::emboss::CodingFormat::MSBC) {
     coding_format = ScoCodingFormat::kMsbc;
-  } else if (view.output_coding_format().coding_format().Read() == hci_spec::CodingFormat::CVSD) {
+  } else if (view.output_coding_format().coding_format().Read() ==
+             pw::bluetooth::emboss::CodingFormat::CVSD) {
     coding_format = ScoCodingFormat::kCvsd;
   } else {
     bt_log(WARN, "hci", "SCO connection has unsupported coding format, treating as CVSD");

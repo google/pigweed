@@ -94,13 +94,14 @@ void BrEdrConnection::OpenL2capChannel(l2cap::PSM psm, l2cap::ChannelParameters 
 }
 
 BrEdrConnection::ScoRequestHandle BrEdrConnection::OpenScoConnection(
-    bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> parameters,
+    bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> parameters,
     sco::ScoConnectionManager::OpenConnectionCallback callback) {
   return sco_manager_->OpenConnection(std::move(parameters), std::move(callback));
 }
 
 BrEdrConnection::ScoRequestHandle BrEdrConnection::AcceptScoConnection(
-    std::vector<bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>> parameters,
+    std::vector<bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>>
+        parameters,
     sco::ScoConnectionManager::AcceptConnectionCallback callback) {
   return sco_manager_->AcceptConnection(std::move(parameters), std::move(callback));
 }

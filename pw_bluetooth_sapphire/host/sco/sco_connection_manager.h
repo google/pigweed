@@ -53,7 +53,7 @@ class ScoConnectionManager final {
   using OpenConnectionResult = fit::result<HostError, ScoConnection::WeakPtr>;
   using OpenConnectionCallback = fit::callback<void(OpenConnectionResult)>;
   RequestHandle OpenConnection(
-      bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> parameters,
+      bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> parameters,
       OpenConnectionCallback callback);
 
   // Accept inbound connection requests using the parameters given in order. The parameters will be
@@ -68,7 +68,8 @@ class ScoConnectionManager final {
                   std::pair<ScoConnection::WeakPtr, size_t /*index of parameters used*/>>;
   using AcceptConnectionCallback = fit::callback<void(AcceptConnectionResult)>;
   RequestHandle AcceptConnection(
-      std::vector<bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>> parameters,
+      std::vector<bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>>
+          parameters,
       AcceptConnectionCallback callback);
 
  private:
@@ -80,10 +81,11 @@ class ScoConnectionManager final {
 
   class ConnectionRequest final {
    public:
-    ConnectionRequest(ScoRequestId id_arg, bool initiator_arg, bool received_request_arg,
-                      std::vector<bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>>
-                          parameters_arg,
-                      ConnectionCallback callback_arg)
+    ConnectionRequest(
+        ScoRequestId id_arg, bool initiator_arg, bool received_request_arg,
+        std::vector<bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>>
+            parameters_arg,
+        ConnectionCallback callback_arg)
         : id(id_arg),
           initiator(initiator_arg),
           received_request(received_request_arg),
@@ -102,7 +104,8 @@ class ScoConnectionManager final {
     bool initiator;
     bool received_request;
     size_t current_param_index = 0;
-    std::vector<bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>> parameters;
+    std::vector<bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>>
+        parameters;
     ConnectionCallback callback;
   };
 
@@ -122,7 +125,7 @@ class ScoConnectionManager final {
 
   ScoConnectionManager::RequestHandle QueueRequest(
       bool initiator,
-      std::vector<bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>>,
+      std::vector<bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>>,
       ConnectionCallback);
 
   void TryCreateNextConnection();
@@ -136,7 +139,8 @@ class ScoConnectionManager final {
   void SendCommandWithStatusCallback(hci::EmbossCommandPacket command_packet,
                                      hci::ResultFunction<> cb);
 
-  void SendRejectConnectionCommand(DeviceAddressBytes addr, hci_spec::StatusCode reason);
+  void SendRejectConnectionCommand(DeviceAddressBytes addr,
+                                   pw::bluetooth::emboss::StatusCode reason);
 
   // If either the queued or in progress request has the given id and can be cancelled, cancel it.
   // Called when a RequestHandle is dropped.

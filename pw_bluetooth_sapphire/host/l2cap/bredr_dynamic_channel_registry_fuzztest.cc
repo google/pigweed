@@ -41,8 +41,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
       bt::l2cap::kSignalingChannelId, bt::l2cap::kSignalingChannelId, kTestHandle,
       bt::LinkType::kACL);
 
-  bt::l2cap::internal::BrEdrSignalingChannel sig_chan(fake_chan->GetWeakPtr(),
-                                                      bt::hci_spec::ConnectionRole::CENTRAL);
+  bt::l2cap::internal::BrEdrSignalingChannel sig_chan(
+      fake_chan->GetWeakPtr(), pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   auto open_cb = [](auto chan) {};
   auto close_cb = [](auto chan) {};

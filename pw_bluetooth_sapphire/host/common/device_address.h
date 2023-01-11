@@ -27,7 +27,7 @@ class DeviceAddressBytes {
   // Initializes the contents from |bytes|.
   explicit DeviceAddressBytes(std::array<uint8_t, kDeviceAddressSize> bytes);
   explicit DeviceAddressBytes(const ByteBuffer& bytes);
-  explicit DeviceAddressBytes(hci_spec::BdAddrView view);
+  explicit DeviceAddressBytes(pw::bluetooth::emboss::BdAddrView view);
 
   // Returns a string representation of the device address. The bytes in
   // human-readable form will appear in big-endian byte order even though the
@@ -48,7 +48,9 @@ class DeviceAddressBytes {
   bool operator!=(const DeviceAddressBytes& other) const { return !(*this == other); }
   bool operator<(const DeviceAddressBytes& other) const { return bytes_ < other.bytes_; }
 
-  hci_spec::BdAddrView view() const { return hci_spec::MakeBdAddrView(&bytes_); }
+  pw::bluetooth::emboss::BdAddrView view() const {
+    return pw::bluetooth::emboss::MakeBdAddrView(&bytes_);
+  }
 
   // Returns a hash of the contents of this address.
   std::size_t Hash() const;

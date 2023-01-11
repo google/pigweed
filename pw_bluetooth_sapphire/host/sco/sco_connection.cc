@@ -8,7 +8,7 @@ namespace bt::sco {
 
 ScoConnection::ScoConnection(
     std::unique_ptr<hci::Connection> connection, fit::closure deactivated_cb,
-    bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> parameters,
+    bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> parameters,
     hci::ScoDataChannel* channel)
     : active_(false),
       connection_(std::move(connection)),
@@ -61,7 +61,8 @@ bool ScoConnection::Activate(fit::closure rx_callback, fit::closure closed_callb
   activator_closed_cb_ = std::move(closed_callback);
   rx_callback_ = std::move(rx_callback);
   active_ = true;
-  if (channel_ && parameters_.view().input_data_path().Read() == hci_spec::ScoDataPath::HCI) {
+  if (channel_ &&
+      parameters_.view().input_data_path().Read() == pw::bluetooth::emboss::ScoDataPath::HCI) {
     channel_->RegisterConnection(weak_conn_interface_.GetWeakPtr());
   }
   return true;
@@ -121,7 +122,8 @@ std::unique_ptr<hci::ScoDataPacket> ScoConnection::Read() {
   return packet;
 }
 
-bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> ScoConnection::parameters() {
+bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>
+ScoConnection::parameters() {
   return parameters_;
 }
 
@@ -164,7 +166,7 @@ void ScoConnection::OnHciError() {
 
 void ScoConnection::CleanUp() {
   if (active_ && channel_ &&
-      parameters_.view().input_data_path().Read() == hci_spec::ScoDataPath::HCI) {
+      parameters_.view().input_data_path().Read() == pw::bluetooth::emboss::ScoDataPath::HCI) {
     channel_->UnregisterConnection(handle_);
   }
   active_ = false;

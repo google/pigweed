@@ -503,7 +503,7 @@ void CommandChannel::UpdateTransaction(std::unique_ptr<EventPacket> event) {
         event->params<hci_spec::CommandStatusEventParams>();
     matching_opcode = le16toh(params.command_opcode);
     allowed_command_packets_.Set(params.num_hci_command_packets);
-    unregister_async_handler = params.status != hci_spec::StatusCode::SUCCESS;
+    unregister_async_handler = params.status != pw::bluetooth::emboss::StatusCode::SUCCESS;
   }
   bt_log(TRACE, "hci", "allowed packets update: %zu", allowed_command_packets_.value());
 
@@ -618,8 +618,9 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
     EventCallbackResult result = std::visit(
         overloaded{[&event_packet](EventCallback& callback) { return callback(event_packet); },
                    [&event_packet](EmbossEventCallback& callback) {
-                     auto emboss_packet = EmbossEventPacket::New<hci_spec::EmbossEventHeaderView>(
-                         event_packet.view().size());
+                     auto emboss_packet =
+                         EmbossEventPacket::New<pw::bluetooth::emboss::EventHeaderView>(
+                             event_packet.view().size());
                      bt::MutableBufferView dest = emboss_packet.mutable_data();
                      event_packet.view().data().Copy(&dest);
                      return callback(emboss_packet);

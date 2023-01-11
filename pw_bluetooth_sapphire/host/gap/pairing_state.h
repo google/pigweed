@@ -218,10 +218,10 @@ class PairingState final {
   // Capability Negative Reply.
   //
   // TODO(fxbug.dev/601): Indicate presence of out-of-band (OOB) data.
-  [[nodiscard]] std::optional<hci_spec::IoCapability> OnIoCapabilityRequest();
+  [[nodiscard]] std::optional<pw::bluetooth::emboss::IoCapability> OnIoCapabilityRequest();
 
   // Caller is not expected to send a response.
-  void OnIoCapabilityResponse(hci_spec::IoCapability peer_iocap);
+  void OnIoCapabilityResponse(pw::bluetooth::emboss::IoCapability peer_iocap);
 
   // |cb| is called with: true to send User Confirmation Request Reply, else
   // for to send User Confirmation Request Negative Reply. It may be called from
@@ -239,7 +239,7 @@ class PairingState final {
   void OnUserPasskeyNotification(uint32_t numeric_value);
 
   // Caller is not expected to send a response.
-  void OnSimplePairingComplete(hci_spec::StatusCode status_code);
+  void OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode status_code);
 
   // Caller should send the returned link key in a Link Key Request Reply (or Link Key Request
   // Negative Reply if the returned value is null).
@@ -249,7 +249,7 @@ class PairingState final {
   void OnLinkKeyNotification(const UInt128& link_key, hci_spec::LinkKeyType key_type);
 
   // Caller is not expected to send a response.
-  void OnAuthenticationComplete(hci_spec::StatusCode status_code);
+  void OnAuthenticationComplete(pw::bluetooth::emboss::StatusCode status_code);
 
   // Handler for hci::Connection::set_encryption_change_callback.
   void OnEncryptionChange(hci::Result<bool> result);
@@ -305,7 +305,7 @@ class PairingState final {
    public:
     static std::unique_ptr<Pairing> MakeInitiator(BrEdrSecurityRequirements security_requirements,
                                                   bool link_initiated);
-    static std::unique_ptr<Pairing> MakeResponder(hci_spec::IoCapability peer_iocap,
+    static std::unique_ptr<Pairing> MakeResponder(pw::bluetooth::emboss::IoCapability peer_iocap,
                                                   bool link_inititated);
     // Make a responder for a peer that has initiated a pairing (asked for our key while in idle)
     static std::unique_ptr<Pairing> MakeResponderForBonded();
@@ -326,10 +326,10 @@ class PairingState final {
     bool allow_automatic;
 
     // IO Capability obtained from the pairing delegate.
-    hci_spec::IoCapability local_iocap;
+    pw::bluetooth::emboss::IoCapability local_iocap;
 
     // IO Capability from peer through IO Capability Response.
-    hci_spec::IoCapability peer_iocap;
+    pw::bluetooth::emboss::IoCapability peer_iocap;
 
     // User interaction to perform after receiving HCI user event.
     PairingAction action;
@@ -442,13 +442,14 @@ class PairingState final {
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(PairingState);
 };
 
-PairingAction GetInitiatorPairingAction(hci_spec::IoCapability initiator_cap,
-                                        hci_spec::IoCapability responder_cap);
-PairingAction GetResponderPairingAction(hci_spec::IoCapability initiator_cap,
-                                        hci_spec::IoCapability responder_cap);
-hci_spec::EventCode GetExpectedEvent(hci_spec::IoCapability local_cap,
-                                     hci_spec::IoCapability peer_cap);
-bool IsPairingAuthenticated(hci_spec::IoCapability local_cap, hci_spec::IoCapability peer_cap);
+PairingAction GetInitiatorPairingAction(pw::bluetooth::emboss::IoCapability initiator_cap,
+                                        pw::bluetooth::emboss::IoCapability responder_cap);
+PairingAction GetResponderPairingAction(pw::bluetooth::emboss::IoCapability initiator_cap,
+                                        pw::bluetooth::emboss::IoCapability responder_cap);
+hci_spec::EventCode GetExpectedEvent(pw::bluetooth::emboss::IoCapability local_cap,
+                                     pw::bluetooth::emboss::IoCapability peer_cap);
+bool IsPairingAuthenticated(pw::bluetooth::emboss::IoCapability local_cap,
+                            pw::bluetooth::emboss::IoCapability peer_cap);
 
 // Get the Authentication Requirements for a locally-initiated pairing according
 // to Core Spec v5.0, Vol 2, Part E, Sec 7.1.29.
@@ -458,8 +459,8 @@ bool IsPairingAuthenticated(hci_spec::IoCapability local_cap, hci_spec::IoCapabi
 // kNoInputNoOutput, kGeneralBonding otherwise. This requests authentication
 // when possible (based on IO Capabilities), as we don't know the peer's
 // authentication requirements yet.
-hci_spec::AuthenticationRequirements GetInitiatorAuthenticationRequirements(
-    hci_spec::IoCapability local_cap);
+pw::bluetooth::emboss::AuthenticationRequirements GetInitiatorAuthenticationRequirements(
+    pw::bluetooth::emboss::IoCapability local_cap);
 
 // Get the Authentication Requirements for a peer-initiated pairing. This will
 // request MITM protection whenever possible to obtain an "authenticated" link
@@ -470,8 +471,8 @@ hci_spec::AuthenticationRequirements GetInitiatorAuthenticationRequirements(
 // Bonding over BR/EDR are not supported, so this always returns
 // kMITMGeneralBonding if this pairing can result in an authenticated link key,
 // kGeneralBonding otherwise.
-hci_spec::AuthenticationRequirements GetResponderAuthenticationRequirements(
-    hci_spec::IoCapability local_cap, hci_spec::IoCapability remote_cap);
+pw::bluetooth::emboss::AuthenticationRequirements GetResponderAuthenticationRequirements(
+    pw::bluetooth::emboss::IoCapability local_cap, pw::bluetooth::emboss::IoCapability remote_cap);
 
 }  // namespace bt::gap
 

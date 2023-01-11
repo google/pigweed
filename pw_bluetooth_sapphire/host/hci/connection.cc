@@ -45,7 +45,7 @@ Connection::Connection(hci_spec::ConnectionHandle handle, const DeviceAddress& l
 
 Connection::~Connection() {
   if (conn_state_ == Connection::State::kConnected) {
-    Disconnect(hci_spec::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
+    Disconnect(pw::bluetooth::emboss::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
   }
 }
 
@@ -94,7 +94,7 @@ CommandChannel::EventCallbackResult Connection::OnDisconnectionComplete(
   return CommandChannel::EventCallbackResult::kRemove;
 }
 
-void Connection::Disconnect(hci_spec::StatusCode reason) {
+void Connection::Disconnect(pw::bluetooth::emboss::StatusCode reason) {
   BT_ASSERT(conn_state_ == Connection::State::kConnected);
 
   conn_state_ = Connection::State::kWaitingForDisconnectionComplete;
@@ -105,7 +105,8 @@ void Connection::Disconnect(hci_spec::StatusCode reason) {
     hci_is_error(event, TRACE, "hci", "ignoring disconnection failure");
   };
 
-  auto disconn = EmbossCommandPacket::New<hci_spec::DisconnectCommandWriter>(hci_spec::kDisconnect);
+  auto disconn = EmbossCommandPacket::New<pw::bluetooth::emboss::DisconnectCommandWriter>(
+      hci_spec::kDisconnect);
   auto params = disconn.view_t();
   params.connection_handle().Write(handle());
   params.reason().Write(reason);

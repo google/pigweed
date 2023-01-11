@@ -47,7 +47,8 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   void StopAdvertising() override;
   void StopAdvertising(const DeviceAddress& address) override;
 
-  void OnIncomingConnection(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
+  void OnIncomingConnection(hci_spec::ConnectionHandle handle,
+                            pw::bluetooth::emboss::ConnectionRole role,
                             const DeviceAddress& peer_address,
                             const hci_spec::LEConnectionParameters& conn_params) override;
 
@@ -61,7 +62,7 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
 
  private:
   struct StagedConnectionParameters {
-    hci_spec::ConnectionRole role;
+    pw::bluetooth::emboss::ConnectionRole role;
     DeviceAddress peer_address;
     hci_spec::LEConnectionParameters conn_params;
   };
@@ -71,8 +72,8 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
     int8_t selected_tx_power_level = 0;
   };
 
-  std::unique_ptr<CommandPacket> BuildEnablePacket(const DeviceAddress& address,
-                                                   hci_spec::GenericEnableParam enable) override;
+  std::unique_ptr<CommandPacket> BuildEnablePacket(
+      const DeviceAddress& address, pw::bluetooth::emboss::GenericEnableParam enable) override;
 
   std::unique_ptr<CommandPacket> BuildSetAdvertisingParams(
       const DeviceAddress& address, hci_spec::LEAdvertisingType type,

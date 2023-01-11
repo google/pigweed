@@ -40,8 +40,8 @@ FakePeer::FakePeer(const DeviceAddress& address, bool connectable, bool scannabl
       advertising_enabled_(true),
       directed_(false),
       address_resolved_(false),
-      connect_status_(hci_spec::StatusCode::SUCCESS),
-      connect_response_(hci_spec::StatusCode::SUCCESS),
+      connect_status_(pw::bluetooth::emboss::StatusCode::SUCCESS),
+      connect_response_(pw::bluetooth::emboss::StatusCode::SUCCESS),
       force_pending_connect_(false),
       supports_ll_conn_update_procedure_(true),
       le_features_(hci_spec::LESupportedFeatures{0}),
@@ -88,7 +88,7 @@ DynamicByteBuffer FakePeer::CreateInquiryResponseEvent(hci_spec::InquiryMode mod
 
     auto inq_result = reinterpret_cast<hci_spec::InquiryResult*>(payload->responses);
     inq_result->bd_addr = address_.value();
-    inq_result->page_scan_repetition_mode = hci_spec::PageScanRepetitionMode::R0_;
+    inq_result->page_scan_repetition_mode = pw::bluetooth::emboss::PageScanRepetitionMode::R0_;
     inq_result->class_of_device = class_of_device_;
     inq_result->clock_offset = 0;
   } else {
@@ -98,7 +98,7 @@ DynamicByteBuffer FakePeer::CreateInquiryResponseEvent(hci_spec::InquiryMode mod
 
     auto inq_result = reinterpret_cast<hci_spec::InquiryResultRSSI*>(payload->responses);
     inq_result->bd_addr = address_.value();
-    inq_result->page_scan_repetition_mode = hci_spec::PageScanRepetitionMode::R0_;
+    inq_result->page_scan_repetition_mode = pw::bluetooth::emboss::PageScanRepetitionMode::R0_;
     inq_result->class_of_device = class_of_device_;
     inq_result->clock_offset = 0;
     inq_result->rssi = -30;

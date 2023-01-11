@@ -13,13 +13,13 @@ namespace bt::sco {
 namespace {
 
 bool ConnectionParametersSupportScoTransport(
-    bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>& params) {
+    bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>& params) {
   return params.view().packet_types().hv1().Read() || params.view().packet_types().hv2().Read() ||
          params.view().packet_types().hv3().Read();
 }
 
 bool ConnectionParametersSupportEscoTransport(
-    bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>& params) {
+    bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>& params) {
   return params.view().packet_types().ev3().Read() || params.view().packet_types().ev4().Read() ||
          params.view().packet_types().ev5().Read();
 }
@@ -78,7 +78,7 @@ ScoConnectionManager::~ScoConnectionManager() {
 }
 
 ScoConnectionManager::RequestHandle ScoConnectionManager::OpenConnection(
-    bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> parameters,
+    bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> parameters,
     OpenConnectionCallback callback) {
   return QueueRequest(/*initiator=*/true, {std::move(parameters)},
                       [cb = std::move(callback)](ConnectionResult result) mutable {
@@ -92,7 +92,8 @@ ScoConnectionManager::RequestHandle ScoConnectionManager::OpenConnection(
 }
 
 ScoConnectionManager::RequestHandle ScoConnectionManager::AcceptConnection(
-    std::vector<bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>> parameters,
+    std::vector<bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>>
+        parameters,
     AcceptConnectionCallback callback) {
   return QueueRequest(/*initiator=*/false, std::move(parameters), std::move(callback));
 }
@@ -154,7 +155,7 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnSynchronousConn
   fit::closure deactivated_cb = [this, connection_handle] {
     BT_ASSERT(connections_.erase(connection_handle));
   };
-  bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> conn_params =
+  bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> conn_params =
       in_progress_request_->parameters[in_progress_request_->current_param_index];
   auto conn = std::make_unique<ScoConnection>(std::move(link), std::move(deactivated_cb),
                                               conn_params, transport_->sco_data_channel());
@@ -191,7 +192,7 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnConnectionReque
     bt_log(INFO, "sco", "reject unexpected %s connection request (peer: %s)",
            hci_spec::LinkTypeToString(params.link_type).c_str(), bt_str(peer_id_));
     SendRejectConnectionCommand(params.bd_addr,
-                                hci_spec::StatusCode::CONNECTION_REJECTED_BAD_BD_ADDR);
+                                pw::bluetooth::emboss::StatusCode::CONNECTION_REJECTED_BAD_BD_ADDR);
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
@@ -205,8 +206,8 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnConnectionReque
            hci_spec::LinkTypeToString(params.link_type).c_str());
     // The controller will send an HCI Synchronous Connection Complete event, so the request will be
     // completed then.
-    SendRejectConnectionCommand(params.bd_addr,
-                                hci_spec::StatusCode::CONNECTION_REJECTED_LIMITED_RESOURCES);
+    SendRejectConnectionCommand(
+        params.bd_addr, pw::bluetooth::emboss::StatusCode::CONNECTION_REJECTED_LIMITED_RESOURCES);
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
@@ -215,7 +216,7 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnConnectionReque
          bt_str(peer_id_));
 
   auto accept = hci::EmbossCommandPacket::New<
-      hci_spec::EnhancedAcceptSynchronousConnectionRequestCommandWriter>(
+      pw::bluetooth::emboss::EnhancedAcceptSynchronousConnectionRequestCommandWriter>(
       hci_spec::kEnhancedAcceptSynchronousConnectionRequest);
   auto view = accept.view_t();
   view.bd_addr().CopyFrom(params.bd_addr.view());
@@ -244,7 +245,7 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnConnectionReque
 bool ScoConnectionManager::FindNextParametersThatSupportSco() {
   BT_ASSERT(in_progress_request_);
   while (in_progress_request_->current_param_index < in_progress_request_->parameters.size()) {
-    bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>& params =
+    bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>& params =
         in_progress_request_->parameters[in_progress_request_->current_param_index];
     if (ConnectionParametersSupportScoTransport(params)) {
       return true;
@@ -257,7 +258,7 @@ bool ScoConnectionManager::FindNextParametersThatSupportSco() {
 bool ScoConnectionManager::FindNextParametersThatSupportEsco() {
   BT_ASSERT(in_progress_request_);
   while (in_progress_request_->current_param_index < in_progress_request_->parameters.size()) {
-    bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>& params =
+    bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>& params =
         in_progress_request_->parameters[in_progress_request_->current_param_index];
     if (ConnectionParametersSupportEscoTransport(params)) {
       return true;
@@ -269,7 +270,8 @@ bool ScoConnectionManager::FindNextParametersThatSupportEsco() {
 
 ScoConnectionManager::RequestHandle ScoConnectionManager::QueueRequest(
     bool initiator,
-    std::vector<bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>> params,
+    std::vector<bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>>
+        params,
     ConnectionCallback cb) {
   BT_ASSERT(cb);
 
@@ -311,9 +313,9 @@ void ScoConnectionManager::TryCreateNextConnection() {
   if (in_progress_request_->initiator) {
     bt_log(DEBUG, "gap-sco", "Initiating SCO connection (peer: %s)", bt_str(peer_id_));
 
-    auto packet =
-        hci::EmbossCommandPacket::New<hci_spec::EnhancedSetupSynchronousConnectionCommandWriter>(
-            hci_spec::kEnhancedSetupSynchronousConnection);
+    auto packet = hci::EmbossCommandPacket::New<
+        pw::bluetooth::emboss::EnhancedSetupSynchronousConnectionCommandWriter>(
+        hci_spec::kEnhancedSetupSynchronousConnection);
     auto view = packet.view_t();
     view.connection_handle().Write(acl_handle_);
     view.connection_parameters().CopyFrom(
@@ -395,18 +397,18 @@ void ScoConnectionManager::SendCommandWithStatusCallback(hci::EmbossCommandPacke
 }
 
 void ScoConnectionManager::SendRejectConnectionCommand(DeviceAddressBytes addr,
-                                                       hci_spec::StatusCode reason) {
+                                                       pw::bluetooth::emboss::StatusCode reason) {
   // The reject command has a small range of allowed reasons (the controller sends "Invalid HCI
   // Command Parameters" for other reasons).
-  BT_ASSERT_MSG(reason == hci_spec::StatusCode::CONNECTION_REJECTED_LIMITED_RESOURCES ||
-                    reason == hci_spec::StatusCode::CONNECTION_REJECTED_SECURITY ||
-                    reason == hci_spec::StatusCode::CONNECTION_REJECTED_BAD_BD_ADDR,
-                "Tried to send invalid reject reason: %s",
-                hci_spec::StatusCodeToString(reason).c_str());
+  BT_ASSERT_MSG(
+      reason == pw::bluetooth::emboss::StatusCode::CONNECTION_REJECTED_LIMITED_RESOURCES ||
+          reason == pw::bluetooth::emboss::StatusCode::CONNECTION_REJECTED_SECURITY ||
+          reason == pw::bluetooth::emboss::StatusCode::CONNECTION_REJECTED_BAD_BD_ADDR,
+      "Tried to send invalid reject reason: %s", hci_spec::StatusCodeToString(reason).c_str());
 
-  auto reject =
-      hci::EmbossCommandPacket::New<hci_spec::RejectSynchronousConnectionRequestCommandWriter>(
-          hci_spec::kRejectSynchronousConnectionRequest);
+  auto reject = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::RejectSynchronousConnectionRequestCommandWriter>(
+      hci_spec::kRejectSynchronousConnectionRequest);
   auto reject_params = reject.view_t();
   reject_params.bd_addr().CopyFrom(addr.view());
   reject_params.reason().Write(reason);

@@ -30,6 +30,10 @@
 
 namespace bt::hci_spec {
 
+using pw::bluetooth::emboss::ConnectionRole;
+using pw::bluetooth::emboss::GenericEnableParam;
+using pw::bluetooth::emboss::StatusCode;
+
 // HCI opcode as used in command packets.
 using OpCode = uint16_t;
 
@@ -811,7 +815,7 @@ struct InquiryResult {
   DeviceAddressBytes bd_addr;
 
   // The Page Scan Repetition Mode being used by the remote device.
-  PageScanRepetitionMode page_scan_repetition_mode;
+  pw::bluetooth::emboss::PageScanRepetitionMode page_scan_repetition_mode;
 
   // Reserved (no meaning as of v1.2)
   uint8_t page_scan_period_mode;
@@ -1111,7 +1115,7 @@ struct InquiryResultRSSI {
   DeviceAddressBytes bd_addr;
 
   // The Page Scan Repetition Mode being used by the remote device.
-  PageScanRepetitionMode page_scan_repetition_mode;
+  pw::bluetooth::emboss::PageScanRepetitionMode page_scan_repetition_mode;
 
   // Reserved (no meaning as of v1.2)
   uint8_t page_scan_period_mode;
@@ -1196,7 +1200,7 @@ struct SynchronousConnectionCompleteEventParams {
   // zero for SCO links.
   uint16_t tx_packet_length;
 
-  CodingFormat air_coding_format;
+  pw::bluetooth::emboss::CodingFormat air_coding_format;
 } __PACKED;
 
 // =============================================
@@ -1213,7 +1217,7 @@ struct ExtendedInquiryResultEventParams {
   DeviceAddressBytes bd_addr;
 
   // The Page Scan Repetition Mode being used by the remote device.
-  PageScanRepetitionMode page_scan_repetition_mode;
+  pw::bluetooth::emboss::PageScanRepetitionMode page_scan_repetition_mode;
 
   // Reserved for future use
   uint8_t reserved;
@@ -1265,7 +1269,7 @@ struct IOCapabilityResponseEventParams {
   DeviceAddressBytes bd_addr;
 
   // IO Capabilities of the device
-  IoCapability io_capability;
+  pw::bluetooth::emboss::IoCapability io_capability;
 
   // Whether OOB Data is present.
   // Allowed values:
@@ -1275,7 +1279,7 @@ struct IOCapabilityResponseEventParams {
 
   // Authentication Requirements.
   // See AuthenticationRequirements in hci_constants.h
-  AuthenticationRequirements auth_requirements;
+  pw::bluetooth::emboss::AuthenticationRequirements auth_requirements;
 } __PACKED;
 
 // =====================================================

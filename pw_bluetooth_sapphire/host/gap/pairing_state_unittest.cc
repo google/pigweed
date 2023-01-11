@@ -22,11 +22,11 @@ namespace bt::gap {
 namespace {
 
 using hci::testing::FakeBrEdrConnection;
-using hci_spec::AuthenticationRequirements;
-using hci_spec::IoCapability;
 using hci_spec::kUserConfirmationRequestEventCode;
 using hci_spec::kUserPasskeyNotificationEventCode;
 using hci_spec::kUserPasskeyRequestEventCode;
+using pw::bluetooth::emboss::AuthenticationRequirements;
+using pw::bluetooth::emboss::IoCapability;
 
 const hci_spec::ConnectionHandle kTestHandle(0x0A0B);
 const DeviceAddress kLocalAddress(DeviceAddress::Type::kBREDR,
@@ -103,7 +103,7 @@ class PairingStateTest : public TestBase {
 
   std::unique_ptr<FakeBrEdrConnection> MakeFakeConnection() {
     return std::make_unique<FakeBrEdrConnection>(kTestHandle, kLocalAddress, kPeerAddress,
-                                                 hci_spec::ConnectionRole::CENTRAL,
+                                                 pw::bluetooth::emboss::ConnectionRole::CENTRAL,
                                                  transport()->GetWeakPtr());
   }
 
@@ -252,12 +252,12 @@ TEST_F(PairingStateTest, TestStatusHandlerTracksStatusCallbackInvocations) {
   EXPECT_FALSE(handler.status());
 
   status_cb(hci_spec::ConnectionHandle(0x0A0B),
-            ToResult(hci_spec::StatusCode::PAIRING_NOT_ALLOWED));
+            ToResult(pw::bluetooth::emboss::StatusCode::PAIRING_NOT_ALLOWED));
   EXPECT_EQ(1, handler.call_count());
   ASSERT_TRUE(handler.handle());
   EXPECT_EQ(hci_spec::ConnectionHandle(0x0A0B), *handler.handle());
   ASSERT_TRUE(handler.status());
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::PAIRING_NOT_ALLOWED), *handler.status());
+  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::PAIRING_NOT_ALLOWED), *handler.status());
 }
 
 TEST_F(PairingStateTest, InitiatingPairingAfterErrorTriggersStatusCallbackWithError) {
@@ -350,9 +350,9 @@ void AdvanceToEncryptionAsInitiator(PairingState* pairing_state) {
   static_cast<void>(pairing_state->OnIoCapabilityRequest());
   pairing_state->OnIoCapabilityResponse(kTestPeerIoCap);
   pairing_state->OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
-  pairing_state->OnSimplePairingComplete(hci_spec::StatusCode::SUCCESS);
+  pairing_state->OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
   pairing_state->OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType);
-  pairing_state->OnAuthenticationComplete(hci_spec::StatusCode::SUCCESS);
+  pairing_state->OnAuthenticationComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
 }
 
 TEST_F(PairingStateTest, SuccessfulEncryptionChangeTriggersStatusCallback) {
@@ -482,7 +482,7 @@ TEST_F(PairingStateTest, InitiatingPairingOnResponderWaitsForPairingToFinish) {
   EXPECT_FALSE(pairing_state.initiator());
 
   // Keep advancing state machine.
-  pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::SUCCESS);
+  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
   pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType);
 
   EXPECT_FALSE(pairing_state.initiator());
@@ -520,7 +520,7 @@ TEST_F(PairingStateTest, UnresolvedPairingCallbackIsCalledOnDestruction) {
     EXPECT_FALSE(pairing_state.initiator());
 
     // Keep advancing state machine.
-    pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::SUCCESS);
+    pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
     pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType);
 
     // as pairing_state falls out of scope, we expect additional pairing callbacks to be called
@@ -569,7 +569,7 @@ TEST_F(PairingStateTest, ResponderPairingStateRejectsIoCapReqWithoutPairingDeleg
                              MakeAuthRequestCallback(), status_handler.MakeStatusCallback());
 
   // Advance state machine to Responder Waiting IOCap Request
-  pairing_state.OnIoCapabilityResponse(hci_spec::IoCapability::DISPLAY_YES_NO);
+  pairing_state.OnIoCapabilityResponse(pw::bluetooth::emboss::IoCapability::DISPLAY_YES_NO);
   EXPECT_FALSE(pairing_state.initiator());
   EXPECT_EQ(0, status_handler.call_count());
 
@@ -595,7 +595,7 @@ TEST_F(PairingStateTest, UnexpectedLinkKeyAuthenticationRaisesError) {
   ASSERT_FALSE(pairing_state.initiator());
   static_cast<void>(pairing_state.OnIoCapabilityRequest());
   pairing_state.OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
-  pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::SUCCESS);
+  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   // Provide an authenticated link key when this should have resulted in an
   // unauthenticated link key.
@@ -621,7 +621,7 @@ TEST_F(PairingStateTest, LegacyPairingLinkKeyRaisesError) {
   ASSERT_FALSE(pairing_state.initiator());
   static_cast<void>(pairing_state.OnIoCapabilityRequest());
   pairing_state.OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
-  pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::SUCCESS);
+  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   // Provide a legacy pairing link key type.
   pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestLegacyLinkKeyType);
@@ -646,7 +646,7 @@ TEST_F(PairingStateTest, PairingSetsConnectionLinkKey) {
   ASSERT_FALSE(pairing_state.initiator());
   static_cast<void>(pairing_state.OnIoCapabilityRequest());
   pairing_state.OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
-  pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::SUCCESS);
+  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   ASSERT_FALSE(connection()->ltk());
   pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType);
@@ -689,7 +689,7 @@ TEST_F(PairingStateTest, NumericComparisonPairingComparesPasskeyOnInitiatorDispl
     EXPECT_EQ(peer()->identifier(), peer_id);
     EXPECT_EQ(fit::ok(), status);
   });
-  pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::SUCCESS);
+  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   EXPECT_EQ(0, status_handler.call_count());
 }
@@ -724,7 +724,7 @@ TEST_F(PairingStateTest, NumericComparisonPairingComparesPasskeyOnResponderDispl
     EXPECT_EQ(peer()->identifier(), peer_id);
     EXPECT_EQ(fit::ok(), status);
   });
-  pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::SUCCESS);
+  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   EXPECT_EQ(0, status_handler.call_count());
 }
@@ -760,7 +760,7 @@ TEST_F(PairingStateTest, NumericComparisonWithoutValueRequestsConsentFromDisplay
     EXPECT_EQ(peer()->identifier(), peer_id);
     EXPECT_EQ(fit::ok(), status);
   });
-  pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::SUCCESS);
+  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   EXPECT_EQ(0, status_handler.call_count());
 }
@@ -791,7 +791,7 @@ TEST_F(PairingStateTest, PasskeyEntryPairingDisplaysPasskeyToDisplayOnlySide) {
     EXPECT_EQ(peer()->identifier(), peer_id);
     EXPECT_EQ(fit::ok(), status);
   });
-  pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::SUCCESS);
+  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   EXPECT_EQ(0, status_handler.call_count());
 }
@@ -830,7 +830,7 @@ TEST_F(PairingStateTest, PasskeyEntryPairingRequestsPasskeyFromKeyboardOnlySide)
     EXPECT_EQ(peer()->identifier(), peer_id);
     EXPECT_EQ(fit::ok(), status);
   });
-  pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::SUCCESS);
+  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   EXPECT_EQ(0, status_handler.call_count());
 }
@@ -861,7 +861,7 @@ TEST_F(PairingStateTest, JustWorksPairingOutgoingConnectDoesNotRequestUserAction
     EXPECT_EQ(peer()->identifier(), peer_id);
     EXPECT_EQ(fit::ok(), status);
   });
-  pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::SUCCESS);
+  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   EXPECT_EQ(0, owner_status_handler.call_count());
   EXPECT_EQ(0, initiator_status_handler.call_count());
@@ -889,7 +889,7 @@ TEST_F(PairingStateTest, JustWorksPairingOutgoingConnectDoesNotRequestUserAction
     EXPECT_EQ(peer()->identifier(), peer_id);
     EXPECT_EQ(fit::ok(), status);
   });
-  pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::SUCCESS);
+  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   EXPECT_EQ(0, status_handler.call_count());
 }
@@ -922,11 +922,12 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationReje
     EXPECT_EQ(peer()->identifier(), peer_id);
     EXPECT_TRUE(status.is_error());
   });
-  pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::AUTHENTICATION_FAILURE);
+  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::AUTHENTICATION_FAILURE);
 
   EXPECT_EQ(1, status_handler.call_count());
   ASSERT_TRUE(status_handler.status());
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::AUTHENTICATION_FAILURE), *status_handler.status());
+  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::AUTHENTICATION_FAILURE),
+            *status_handler.status());
 }
 
 TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationRejectedInitiator) {
@@ -962,14 +963,15 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationReje
     EXPECT_EQ(peer()->identifier(), peer_id);
     EXPECT_TRUE(status.is_error());
   });
-  pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::AUTHENTICATION_FAILURE);
+  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::AUTHENTICATION_FAILURE);
 
   EXPECT_EQ(1, owner_status_handler.call_count());
   ASSERT_TRUE(owner_status_handler.status());
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::AUTHENTICATION_FAILURE), *owner_status_handler.status());
+  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::AUTHENTICATION_FAILURE),
+            *owner_status_handler.status());
   EXPECT_EQ(1, initiator_status_handler.call_count());
   ASSERT_TRUE(initiator_status_handler.status());
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::AUTHENTICATION_FAILURE),
+  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::AUTHENTICATION_FAILURE),
             *initiator_status_handler.status());
 }
 
@@ -1000,7 +1002,7 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationAcce
     EXPECT_EQ(peer()->identifier(), peer_id);
     EXPECT_EQ(fit::ok(), status);
   });
-  pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::SUCCESS);
+  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   EXPECT_EQ(0, status_handler.call_count());
 }
@@ -1037,7 +1039,7 @@ TEST_F(PairingStateTest, JustWorksPairingIncomingConnectRequiresConfirmationAcce
     EXPECT_EQ(peer()->identifier(), peer_id);
     EXPECT_EQ(fit::ok(), status);
   });
-  pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::SUCCESS);
+  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   EXPECT_EQ(0, owner_status_handler.call_count());
   EXPECT_EQ(0, initiator_status_handler.call_count());
@@ -1065,13 +1067,13 @@ void UserPasskeyNotification(PairingState* pairing_state) {
   pairing_state->OnUserPasskeyNotification(kTestPasskey);
 }
 void SimplePairingComplete(PairingState* pairing_state) {
-  pairing_state->OnSimplePairingComplete(hci_spec::StatusCode::SUCCESS);
+  pairing_state->OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
 }
 void LinkKeyNotification(PairingState* pairing_state) {
   pairing_state->OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType);
 }
 void AuthenticationComplete(PairingState* pairing_state) {
-  pairing_state->OnAuthenticationComplete(hci_spec::StatusCode::SUCCESS);
+  pairing_state->OnAuthenticationComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
 }
 
 // Test suite fixture that genericizes an injected pairing state event. The
@@ -1380,7 +1382,7 @@ TEST_P(HandlesEvent, InWaitLinkKeyState) {
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
   pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
-  pairing_state().OnSimplePairingComplete(hci_spec::StatusCode::SUCCESS);
+  pairing_state().OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
   EXPECT_EQ(0, connection()->start_encryption_count());
 
   RETURN_IF_FATAL(InjectEvent());
@@ -1401,7 +1403,7 @@ TEST_P(HandlesEvent, InInitiatorWaitAuthCompleteStateAfterSimplePairing) {
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
   pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
-  pairing_state().OnSimplePairingComplete(hci_spec::StatusCode::SUCCESS);
+  pairing_state().OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
   pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType);
   ASSERT_TRUE(pairing_state().initiator());
   EXPECT_EQ(0, connection()->start_encryption_count());
@@ -1424,9 +1426,9 @@ TEST_P(HandlesEvent, InWaitEncryptionStateAsInitiator) {
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
   pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
-  pairing_state().OnSimplePairingComplete(hci_spec::StatusCode::SUCCESS);
+  pairing_state().OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
   pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType);
-  pairing_state().OnAuthenticationComplete(hci_spec::StatusCode::SUCCESS);
+  pairing_state().OnAuthenticationComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
   ASSERT_TRUE(pairing_state().initiator());
 
   RETURN_IF_FATAL(InjectEvent());
@@ -1447,7 +1449,7 @@ TEST_P(HandlesEvent, InWaitEncryptionStateAsResponder) {
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
   pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
-  pairing_state().OnSimplePairingComplete(hci_spec::StatusCode::SUCCESS);
+  pairing_state().OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
   pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType);
   ASSERT_FALSE(pairing_state().initiator());
 
@@ -1495,9 +1497,9 @@ TEST_P(HandlesEvent, InIdleStateAfterOnePairing) {
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
   pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
-  pairing_state().OnSimplePairingComplete(hci_spec::StatusCode::SUCCESS);
+  pairing_state().OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
   pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType);
-  pairing_state().OnAuthenticationComplete(hci_spec::StatusCode::SUCCESS);
+  pairing_state().OnAuthenticationComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
   ASSERT_TRUE(pairing_state().initiator());
 
   // Successfully enabling encryption should allow pairing to start again.
@@ -1524,7 +1526,8 @@ TEST_P(HandlesEvent, InFailedStateAfterPairingFailed) {
   pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
 
   // Inject failure status.
-  pairing_state().OnSimplePairingComplete(hci_spec::StatusCode::AUTHENTICATION_FAILURE);
+  pairing_state().OnSimplePairingComplete(
+      pw::bluetooth::emboss::StatusCode::AUTHENTICATION_FAILURE);
   EXPECT_EQ(1, status_handler().call_count());
   ASSERT_TRUE(status_handler().status());
   EXPECT_FALSE(status_handler().status()->is_ok());
@@ -1542,11 +1545,12 @@ TEST_P(HandlesEvent, InFailedStateAfterAuthenticationFailed) {
   static_cast<void>(pairing_state().OnIoCapabilityRequest());
   pairing_state().OnIoCapabilityResponse(kTestPeerIoCap);
   pairing_state().OnUserConfirmationRequest(kTestPasskey, NoOpUserConfirmationCallback);
-  pairing_state().OnSimplePairingComplete(hci_spec::StatusCode::SUCCESS);
+  pairing_state().OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
   pairing_state().OnLinkKeyNotification(kTestLinkKeyValue, kTestUnauthenticatedLinkKeyType);
 
   // Inject failure status.
-  pairing_state().OnAuthenticationComplete(hci_spec::StatusCode::AUTHENTICATION_FAILURE);
+  pairing_state().OnAuthenticationComplete(
+      pw::bluetooth::emboss::StatusCode::AUTHENTICATION_FAILURE);
   EXPECT_EQ(1, status_handler().call_count());
   ASSERT_TRUE(status_handler().status());
   EXPECT_FALSE(status_handler().status()->is_ok());
@@ -1895,7 +1899,7 @@ TEST_F(PairingStateTest, SimplePairingCompleteWithErrorCodeReceivedEarlyFailsPai
   EXPECT_EQ(IoCapability::NO_INPUT_NO_OUTPUT, *pairing_state.OnIoCapabilityRequest());
   EXPECT_EQ(0, status_handler.call_count());
 
-  const auto status_code = hci_spec::StatusCode::PAIRING_NOT_ALLOWED;
+  const auto status_code = pw::bluetooth::emboss::StatusCode::PAIRING_NOT_ALLOWED;
   pairing_state.OnSimplePairingComplete(status_code);
   ASSERT_EQ(1, status_handler.call_count());
   EXPECT_EQ(ToResult(status_code), status_handler.status().value());
@@ -1930,7 +1934,7 @@ TEST_F(PairingStateTest, AuthenticationCompleteWithErrorCodeReceivedEarlyFailsPa
   EXPECT_EQ(std::nullopt, pairing_state.OnLinkKeyRequest());
   EXPECT_EQ(0, status_handler.call_count());
 
-  const auto status_code = hci_spec::StatusCode::AUTHENTICATION_FAILURE;
+  const auto status_code = pw::bluetooth::emboss::StatusCode::AUTHENTICATION_FAILURE;
   pairing_state.OnAuthenticationComplete(status_code);
   ASSERT_EQ(1, status_handler.call_count());
   EXPECT_EQ(ToResult(status_code), status_handler.status().value());
@@ -1960,7 +1964,7 @@ TEST_F(PairingStateTest,
   EXPECT_EQ(0, status_handler.call_count());
 
   // Peer says that they don't have a key.
-  pairing_state.OnAuthenticationComplete(hci_spec::StatusCode::PIN_OR_KEY_MISSING);
+  pairing_state.OnAuthenticationComplete(pw::bluetooth::emboss::StatusCode::PIN_OR_KEY_MISSING);
   ASSERT_EQ(0, status_handler.call_count());
   // We should retry the authentication request, this time pretending we don't have a key.
   EXPECT_EQ(2u, auth_request_count());
@@ -1988,7 +1992,7 @@ TEST_F(PairingStateTest,
 
   // The controller sends a SimplePairingComplete indicating the failure after we send a
   // Negative Confirmation.
-  const auto status_code = hci_spec::StatusCode::AUTHENTICATION_FAILURE;
+  const auto status_code = pw::bluetooth::emboss::StatusCode::AUTHENTICATION_FAILURE;
   pairing_state.OnSimplePairingComplete(status_code);
 
   // The bonding key should not have been touched.
@@ -2024,7 +2028,7 @@ TEST_F(PairingStateTest, ResponderSignalsCompletionOfPairing) {
 
   connection()->TriggerEncryptionChangeCallback(fit::ok(true));
 
-  auto expected_status = hci_spec::StatusCode::SUCCESS;
+  auto expected_status = pw::bluetooth::emboss::StatusCode::SUCCESS;
   EXPECT_EQ(1, status_handler.call_count());
   ASSERT_TRUE(status_handler.status().has_value());
   EXPECT_EQ(ToResult(expected_status), status_handler.status().value());
@@ -2062,7 +2066,7 @@ TEST_F(PairingStateTest,
   EXPECT_EQ(0, status_handler.call_count());
 
   // Peer says that they don't have a key.
-  pairing_state.OnAuthenticationComplete(hci_spec::StatusCode::PIN_OR_KEY_MISSING);
+  pairing_state.OnAuthenticationComplete(pw::bluetooth::emboss::StatusCode::PIN_OR_KEY_MISSING);
   ASSERT_EQ(0, status_handler.call_count());
   // We should retry the authentication request, this time pretending we don't have a key.
   EXPECT_EQ(2u, auth_request_count());
@@ -2091,14 +2095,14 @@ TEST_F(PairingStateTest,
   // The controller sends a SimplePairingComplete indicating the success, then the controller
   // sends us the new link key, and Authentication Complete.
   // Negative Confirmation.
-  auto status_code = hci_spec::StatusCode::SUCCESS;
+  auto status_code = pw::bluetooth::emboss::StatusCode::SUCCESS;
   pairing_state.OnSimplePairingComplete(status_code);
 
   const auto new_link_key_value = UInt128{0xC0, 0xDE, 0xFA, 0xCE, 0x00, 0x00, 0x00, 0x00,
                                           0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04};
 
   pairing_state.OnLinkKeyNotification(new_link_key_value, kTestUnauthenticatedLinkKeyType);
-  pairing_state.OnAuthenticationComplete(hci_spec::StatusCode::SUCCESS);
+  pairing_state.OnAuthenticationComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
   // then we request encryption, which when it finishes, completes pairing.
   ASSERT_EQ(1, connection()->start_encryption_count());
   connection()->TriggerEncryptionChangeCallback(fit::ok(true));
@@ -2250,7 +2254,7 @@ TEST_F(PairingStateTest, InitiatingPairingDuringAuthenticationWithExistingUnauth
   // Authenticate with link key.
   EXPECT_NE(std::nullopt, pairing_state.OnLinkKeyRequest());
   EXPECT_TRUE(connection()->ltk().has_value());
-  pairing_state.OnAuthenticationComplete(hci_spec::StatusCode::SUCCESS);
+  pairing_state.OnAuthenticationComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   EXPECT_EQ(0, status_handler.call_count());
   EXPECT_EQ(1, connection()->start_encryption_count());
@@ -2280,9 +2284,9 @@ TEST_F(PairingStateTest, InitiatingPairingDuringAuthenticationWithExistingUnauth
                                           [&confirmed](bool confirm) { confirmed = confirm; });
   EXPECT_TRUE(confirmed);
 
-  pairing_state.OnSimplePairingComplete(hci_spec::StatusCode::SUCCESS);
+  pairing_state.OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
   pairing_state.OnLinkKeyNotification(kTestLinkKeyValue, kTestAuthenticatedLinkKeyType);
-  pairing_state.OnAuthenticationComplete(hci_spec::StatusCode::SUCCESS);
+  pairing_state.OnAuthenticationComplete(pw::bluetooth::emboss::StatusCode::SUCCESS);
   EXPECT_EQ(2, connection()->start_encryption_count());
 
   connection()->TriggerEncryptionChangeCallback(fit::ok(true));

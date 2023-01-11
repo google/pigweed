@@ -22,7 +22,7 @@ TEST_F(FakeControllerTest, TestInquiryCommand) {
 
   int event_cb_count = 0;
   controller.SetEventFunction([&event_cb_count](pw::span<const std::byte> packet_bytes) {
-    auto header_view = hci_spec::MakeEmbossEventHeaderView(
+    auto header_view = pw::bluetooth::emboss::MakeEventHeaderView(
         reinterpret_cast<const uint8_t*>(packet_bytes.data()), packet_bytes.size());
 
     if (header_view.event_code().Read() == hci_spec::kCommandStatusEventCode) {
@@ -31,16 +31,16 @@ TEST_F(FakeControllerTest, TestInquiryCommand) {
       event->mutable_view()->mutable_data().Write(
           reinterpret_cast<const uint8_t*>(packet_bytes.data()), packet_bytes.size());
       event->InitializeFromBuffer();
-      hci_spec::StatusCode status;
+      pw::bluetooth::emboss::StatusCode status;
       event->ToStatusCode(&status);
-      EXPECT_EQ(status, hci_spec::StatusCode::SUCCESS);
+      EXPECT_EQ(status, pw::bluetooth::emboss::StatusCode::SUCCESS);
       ++event_cb_count;
     }
 
     else if (header_view.event_code().Read() == hci_spec::kInquiryCompleteEventCode) {
-      auto inquiry_complete_view = hci_spec::MakeInquiryCompleteEventView(
+      auto inquiry_complete_view = pw::bluetooth::emboss::MakeInquiryCompleteEventView(
           reinterpret_cast<const uint8_t*>(packet_bytes.data()), packet_bytes.size());
-      EXPECT_EQ(inquiry_complete_view.status().Read(), hci_spec::StatusCode::SUCCESS);
+      EXPECT_EQ(inquiry_complete_view.status().Read(), pw::bluetooth::emboss::StatusCode::SUCCESS);
       ++event_cb_count;
     }
 
@@ -49,9 +49,10 @@ TEST_F(FakeControllerTest, TestInquiryCommand) {
     }
   });
 
-  auto inquiry = hci::EmbossCommandPacket::New<hci_spec::InquiryCommandWriter>(hci_spec::kInquiry);
+  auto inquiry = hci::EmbossCommandPacket::New<pw::bluetooth::emboss::InquiryCommandWriter>(
+      hci_spec::kInquiry);
   auto view = inquiry.view_t();
-  view.lap().Write(hci_spec::InquiryAccessCode::GIAC);
+  view.lap().Write(pw::bluetooth::emboss::InquiryAccessCode::GIAC);
   view.inquiry_length().Write(8);
   view.num_responses().Write(0);
   controller.SendCommand(inquiry.data().subspan());

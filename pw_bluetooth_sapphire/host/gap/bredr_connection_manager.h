@@ -99,11 +99,13 @@ class BrEdrConnectionManager final {
   // the peer does not exist, returns nullopt.
   using ScoRequestHandle = BrEdrConnection::ScoRequestHandle;
   std::optional<ScoRequestHandle> OpenScoConnection(
-      PeerId peer_id, bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> parameters,
+      PeerId peer_id,
+      bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> parameters,
       sco::ScoConnectionManager::OpenConnectionCallback callback);
   std::optional<ScoRequestHandle> AcceptScoConnection(
       PeerId peer_id,
-      std::vector<bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>> parameters,
+      std::vector<bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>>
+          parameters,
       sco::ScoConnectionManager::AcceptConnectionCallback callback);
 
   // Add a service search to be performed on new connected remote peers.
@@ -156,7 +158,7 @@ class BrEdrConnectionManager final {
   struct ConnectionComplete {
     DeviceAddress addr;
     hci_spec::ConnectionHandle handle;
-    hci_spec::StatusCode status_code;
+    pw::bluetooth::emboss::StatusCode status_code;
     hci_spec::LinkType link_type;
 
     // Create from an hci ConnectionComplete event
@@ -227,7 +229,7 @@ class BrEdrConnectionManager final {
   // Initialize ACL connection state from |connection_handle| obtained from the controller and begin
   // interrogation. The connection will be initialized with the role |role|.
   void InitializeConnection(DeviceAddress addr, hci_spec::ConnectionHandle connection_handle,
-                            hci_spec::ConnectionRole role);
+                            pw::bluetooth::emboss::ConnectionRole role);
 
   // Called once interrogation completes to make connection identified by |handle| available to
   // upper layers and begin new connection procedures.
@@ -256,7 +258,7 @@ class BrEdrConnectionManager final {
     PeerId peer_id;
     DeviceAddress addr;
     std::optional<uint16_t> clock_offset;
-    std::optional<hci_spec::PageScanRepetitionMode> page_scan_repetition_mode;
+    std::optional<pw::bluetooth::emboss::PageScanRepetitionMode> page_scan_repetition_mode;
   };
 
   // Find the next valid Request that is available to begin connecting
@@ -280,12 +282,13 @@ class BrEdrConnectionManager final {
   // Helpers for sending commands on the command channel for this controller.
   // All callbacks will run on |dispatcher_|.
   void SendAuthenticationRequested(hci_spec::ConnectionHandle handle, hci::ResultFunction<> cb);
-  void SendIoCapabilityRequestReply(DeviceAddressBytes bd_addr,
-                                    hci_spec::IoCapability io_capability,
-                                    hci_spec::OobDataPresent oob_data_present,
-                                    hci_spec::AuthenticationRequirements auth_requirements,
-                                    hci::ResultFunction<> cb = nullptr);
-  void SendIoCapabilityRequestNegativeReply(DeviceAddressBytes bd_addr, hci_spec::StatusCode reason,
+  void SendIoCapabilityRequestReply(
+      DeviceAddressBytes bd_addr, pw::bluetooth::emboss::IoCapability io_capability,
+      pw::bluetooth::emboss::OobDataPresent oob_data_present,
+      pw::bluetooth::emboss::AuthenticationRequirements auth_requirements,
+      hci::ResultFunction<> cb = nullptr);
+  void SendIoCapabilityRequestNegativeReply(DeviceAddressBytes bd_addr,
+                                            pw::bluetooth::emboss::StatusCode reason,
                                             hci::ResultFunction<> cb = nullptr);
   void SendUserConfirmationRequestReply(DeviceAddressBytes bd_addr,
                                         hci::ResultFunction<> cb = nullptr);
@@ -300,9 +303,9 @@ class BrEdrConnectionManager final {
   void SendLinkKeyRequestReply(DeviceAddressBytes bd_addr, hci_spec::LinkKey link_key,
                                hci::ResultFunction<> cb = nullptr);
   void SendAcceptConnectionRequest(DeviceAddressBytes addr, hci::ResultFunction<> cb = nullptr);
-  void SendRejectConnectionRequest(DeviceAddress addr, hci_spec::StatusCode reason,
+  void SendRejectConnectionRequest(DeviceAddress addr, pw::bluetooth::emboss::StatusCode reason,
                                    hci::ResultFunction<> cb = nullptr);
-  void SendRejectSynchronousRequest(DeviceAddress addr, hci_spec::StatusCode reason,
+  void SendRejectSynchronousRequest(DeviceAddress addr, pw::bluetooth::emboss::StatusCode reason,
                                     hci::ResultFunction<> cb = nullptr);
 
   // Send the HCI command encoded in |command_packet|. If |cb| is not nullptr, the event returned

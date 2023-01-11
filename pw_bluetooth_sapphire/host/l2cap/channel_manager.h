@@ -67,7 +67,8 @@ class ChannelManager {
   // |security_callback| will be used to request an upgrade to the link security level. This can be
   // triggered by dynamic L2CAP channel creation or by a service-level client via
   // Channel::UpgradeSecurity().
-  virtual void AddACLConnection(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
+  virtual void AddACLConnection(hci_spec::ConnectionHandle handle,
+                                pw::bluetooth::emboss::ConnectionRole role,
                                 l2cap::LinkErrorCallback link_error_callback,
                                 l2cap::SecurityUpgradeCallback security_callback) = 0;
 
@@ -87,7 +88,7 @@ class ChannelManager {
   //
   // Returns the ATT and SMP fixed channels of this link.
   [[nodiscard]] virtual LEFixedChannels AddLEConnection(
-      hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
+      hci_spec::ConnectionHandle handle, pw::bluetooth::emboss::ConnectionRole role,
       l2cap::LinkErrorCallback link_error_callback,
       l2cap::LEConnectionParameterUpdateCallback conn_param_callback,
       l2cap::SecurityUpgradeCallback security_callback) = 0;

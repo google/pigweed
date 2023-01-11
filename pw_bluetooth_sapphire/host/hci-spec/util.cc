@@ -39,74 +39,74 @@ std::string HCIVersionToString(HCIVersion version) {
 }
 
 // clang-format off
-std::string StatusCodeToString(hci_spec::StatusCode code) {
+std::string StatusCodeToString(pw::bluetooth::emboss::StatusCode code) {
   switch (code) {
-    case hci_spec::StatusCode::SUCCESS: return "success";
-    case hci_spec::StatusCode::UNKNOWN_COMMAND: return "unknown command";
-    case hci_spec::StatusCode::UNKNOWN_CONNECTION_ID: return "unknown connection ID";
-    case hci_spec::StatusCode::HARDWARE_FAILURE: return "hardware failure";
-    case hci_spec::StatusCode::PAGE_TIMEOUT: return "page timeout";
-    case hci_spec::StatusCode::AUTHENTICATION_FAILURE: return "authentication failure";
-    case hci_spec::StatusCode::PIN_OR_KEY_MISSING: return "pin or key missing";
-    case hci_spec::StatusCode::MEMORY_CAPACITY_EXCEEDED: return "memory capacity exceeded";
-    case hci_spec::StatusCode::CONNECTION_TIMEOUT: return "connection timeout";
-    case hci_spec::StatusCode::CONNECTION_LIMIT_EXCEEDED: return "connection limit exceeded";
-    case hci_spec::StatusCode::SYNCHRONOUS_CONNECTION_LIMIT_EXCEEDED: return "synchronous connection limit exceeded";
-    case hci_spec::StatusCode::CONNECTION_ALREADY_EXISTS: return "connection already exists";
-    case hci_spec::StatusCode::COMMAND_DISALLOWED: return "command disallowed";
-    case hci_spec::StatusCode::CONNECTION_REJECTED_LIMITED_RESOURCES: return "connection rejected: limited resources";
-    case hci_spec::StatusCode::CONNECTION_REJECTED_SECURITY: return "connection rejected: security";
-    case hci_spec::StatusCode::CONNECTION_REJECTED_BAD_BD_ADDR: return "connection rejected: bad BD_ADDR";
-    case hci_spec::StatusCode::CONNECTION_ACCEPT_TIMEOUT_EXCEEDED: return "connection accept timeout exceeded";
-    case hci_spec::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER: return "unsupported feature or parameter";
-    case hci_spec::StatusCode::INVALID_HCI_COMMAND_PARAMETERS: return "invalid HCI command parameters";
-    case hci_spec::StatusCode::REMOTE_USER_TERMINATED_CONNECTION: return "remote user terminated connection";
-    case hci_spec::StatusCode::REMOTE_DEVICE_TERMINATED_CONNECTION_LOW_RESOURCES: return "remote device terminated connection: low resources";
-    case hci_spec::StatusCode::REMOTE_DEVICE_TERMINATED_CONNECTION_POWER_OFF: return "remote device terminated connection: power off";
-    case hci_spec::StatusCode::CONNECTION_TERMINATED_BY_LOCAL_HOST: return "connection terminated by local host";
-    case hci_spec::StatusCode::REPEATED_ATTEMPTS: return "repeated attempts";
-    case hci_spec::StatusCode::PAIRING_NOT_ALLOWED: return "pairing not allowed";
-    case hci_spec::StatusCode::UNKNOWN_LMP_PDU: return "unhci_spec::StatusCode::nown LMP PDU";
-    case hci_spec::StatusCode::UNSUPPORTED_REMOTE_FEATURE: return "unsupported remote feature";
-    case hci_spec::StatusCode::SCO_OFFSET_REJECTED: return "SCO offset rejected";
-    case hci_spec::StatusCode::SCO_INTERVAL_REJECTED: return "SCO interval rejected";
-    case hci_spec::StatusCode::SCO_AIRMODE_REJECTED: return "SCO air mode rejected";
-    case hci_spec::StatusCode::INVALID_LMP_OR_LL_PARAMETERS: return "invalid LMP or LL parameters";
-    case hci_spec::StatusCode::UNSPECIFIED_ERROR: return "unspecified error";
-    case hci_spec::StatusCode::UNSUPPORTED_LMP_OR_LL_PARAMETER_VALUE: return "unsupported LMP or LL parameter value";
-    case hci_spec::StatusCode::ROLE_CHANGE_NOT_ALLOWED: return "role change not allowed";
-    case hci_spec::StatusCode::LMP_OR_LL_RESPONSE_TIMEOUT: return "LMP or LL response timeout";
-    case hci_spec::StatusCode::LMP_ERROR_TRANSACTION_COLLISION: return "LMP error transaction collision";
-    case hci_spec::StatusCode::LMP_PDU_NOT_ALLOWED: return "LMP PDU not allowed";
-    case hci_spec::StatusCode::ENCRYPTION_MODE_NOT_ACCEPTABLE: return "encryption mode not acceptable";
-    case hci_spec::StatusCode::LINK_KEY_CANNOT_BE_CHANGED: return "link key cannot be changed";
-    case hci_spec::StatusCode::REQUESTED_QOS_NOT_SUPPORTED: return "requested QoS not supported";
-    case hci_spec::StatusCode::INSTANT_PASSED: return "instant passed";
-    case hci_spec::StatusCode::PAIRING_WITH_UNIT_KEY_NOT_SUPPORTED: return "pairing with unit key not supported";
-    case hci_spec::StatusCode::DIFFERENT_TRANSACTION_COLLISION: return "different transaction collision";
-    case hci_spec::StatusCode::QOS_UNACCEPTABLE_PARAMETER: return "QoS unacceptable parameter";
-    case hci_spec::StatusCode::QOS_REJECTED: return "QoS rejected";
-    case hci_spec::StatusCode::CHANNEL_CLASSIFICATION_NOT_SUPPORTED: return "channel classification not supported";
-    case hci_spec::StatusCode::INSUFFICIENT_SECURITY: return "insufficient security";
-    case hci_spec::StatusCode::PARAMETER_OUT_OF_MANDATORY_RANGE: return "parameter out of mandatory range";
-    case hci_spec::StatusCode::ROLE_SWITCH_PENDING: return "role switch pending";
-    case hci_spec::StatusCode::RESERVED_SLOT_VIOLATION: return "reserved slot violation";
-    case hci_spec::StatusCode::ROLE_SWITCH_FAILED: return "role switch failed";
-    case hci_spec::StatusCode::EXTENDED_INQUIRY_RESPONSE_TOO_LARGE: return "extended inquiry response too large";
-    case hci_spec::StatusCode::SECURE_SIMPLE_PAIRING_NOT_SUPPORTED_BY_HOST: return "secure simple pairing not supported by host";
-    case hci_spec::StatusCode::HOST_BUSY_PAIRING: return "host busy pairing";
-    case hci_spec::StatusCode::CONNECTION_REJECTED_NO_SUITABLE_CHANNEL_FOUND: return "connection rejected: no suitable channel found";
-    case hci_spec::StatusCode::CONTROLLER_BUSY: return "controller busy";
-    case hci_spec::StatusCode::UNACCEPTABLE_CONNECTION_PARAMETERS: return "unacceptable connection parameters";
-    case hci_spec::StatusCode::DIRECTED_ADVERTISING_TIMEOUT: return "directed advertising timeout";
-    case hci_spec::StatusCode::CONNECTION_TERMINATED_MIC_FAILURE: return "connection terminated: MIC failure";
-    case hci_spec::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED: return "connection failed to be established";
-    case hci_spec::StatusCode::MAC_CONNECTION_FAILED: return "MAC connection failed";
-    case hci_spec::StatusCode::COARSE_CLOCK_ADJUSTMENT_REJECTED: return "coarse clochci_spec::StatusCode:: adjustment rejected";
-    case hci_spec::StatusCode::TYPE_0_SUBMAP_NOT_DEFINED: return "type 0 submap not defined";
-    case hci_spec::StatusCode::UNKNOWN_ADVERTISING_IDENTIFIER: return "unknown advertising identifier";
-    case hci_spec::StatusCode::LIMIT_REACHED: return "limit reached";
-    case hci_spec::StatusCode::OPERATION_CANCELLED_BY_HOST: return "operation cancelled by host";
+    case pw::bluetooth::emboss::StatusCode::SUCCESS: return "success";
+    case pw::bluetooth::emboss::StatusCode::UNKNOWN_COMMAND: return "unknown command";
+    case pw::bluetooth::emboss::StatusCode::UNKNOWN_CONNECTION_ID: return "unknown connection ID";
+    case pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE: return "hardware failure";
+    case pw::bluetooth::emboss::StatusCode::PAGE_TIMEOUT: return "page timeout";
+    case pw::bluetooth::emboss::StatusCode::AUTHENTICATION_FAILURE: return "authentication failure";
+    case pw::bluetooth::emboss::StatusCode::PIN_OR_KEY_MISSING: return "pin or key missing";
+    case pw::bluetooth::emboss::StatusCode::MEMORY_CAPACITY_EXCEEDED: return "memory capacity exceeded";
+    case pw::bluetooth::emboss::StatusCode::CONNECTION_TIMEOUT: return "connection timeout";
+    case pw::bluetooth::emboss::StatusCode::CONNECTION_LIMIT_EXCEEDED: return "connection limit exceeded";
+    case pw::bluetooth::emboss::StatusCode::SYNCHRONOUS_CONNECTION_LIMIT_EXCEEDED: return "synchronous connection limit exceeded";
+    case pw::bluetooth::emboss::StatusCode::CONNECTION_ALREADY_EXISTS: return "connection already exists";
+    case pw::bluetooth::emboss::StatusCode::COMMAND_DISALLOWED: return "command disallowed";
+    case pw::bluetooth::emboss::StatusCode::CONNECTION_REJECTED_LIMITED_RESOURCES: return "connection rejected: limited resources";
+    case pw::bluetooth::emboss::StatusCode::CONNECTION_REJECTED_SECURITY: return "connection rejected: security";
+    case pw::bluetooth::emboss::StatusCode::CONNECTION_REJECTED_BAD_BD_ADDR: return "connection rejected: bad BD_ADDR";
+    case pw::bluetooth::emboss::StatusCode::CONNECTION_ACCEPT_TIMEOUT_EXCEEDED: return "connection accept timeout exceeded";
+    case pw::bluetooth::emboss::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER: return "unsupported feature or parameter";
+    case pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS: return "invalid HCI command parameters";
+    case pw::bluetooth::emboss::StatusCode::REMOTE_USER_TERMINATED_CONNECTION: return "remote user terminated connection";
+    case pw::bluetooth::emboss::StatusCode::REMOTE_DEVICE_TERMINATED_CONNECTION_LOW_RESOURCES: return "remote device terminated connection: low resources";
+    case pw::bluetooth::emboss::StatusCode::REMOTE_DEVICE_TERMINATED_CONNECTION_POWER_OFF: return "remote device terminated connection: power off";
+    case pw::bluetooth::emboss::StatusCode::CONNECTION_TERMINATED_BY_LOCAL_HOST: return "connection terminated by local host";
+    case pw::bluetooth::emboss::StatusCode::REPEATED_ATTEMPTS: return "repeated attempts";
+    case pw::bluetooth::emboss::StatusCode::PAIRING_NOT_ALLOWED: return "pairing not allowed";
+    case pw::bluetooth::emboss::StatusCode::UNKNOWN_LMP_PDU: return "unpw::bluetooth::emboss::StatusCode::nown LMP PDU";
+    case pw::bluetooth::emboss::StatusCode::UNSUPPORTED_REMOTE_FEATURE: return "unsupported remote feature";
+    case pw::bluetooth::emboss::StatusCode::SCO_OFFSET_REJECTED: return "SCO offset rejected";
+    case pw::bluetooth::emboss::StatusCode::SCO_INTERVAL_REJECTED: return "SCO interval rejected";
+    case pw::bluetooth::emboss::StatusCode::SCO_AIRMODE_REJECTED: return "SCO air mode rejected";
+    case pw::bluetooth::emboss::StatusCode::INVALID_LMP_OR_LL_PARAMETERS: return "invalid LMP or LL parameters";
+    case pw::bluetooth::emboss::StatusCode::UNSPECIFIED_ERROR: return "unspecified error";
+    case pw::bluetooth::emboss::StatusCode::UNSUPPORTED_LMP_OR_LL_PARAMETER_VALUE: return "unsupported LMP or LL parameter value";
+    case pw::bluetooth::emboss::StatusCode::ROLE_CHANGE_NOT_ALLOWED: return "role change not allowed";
+    case pw::bluetooth::emboss::StatusCode::LMP_OR_LL_RESPONSE_TIMEOUT: return "LMP or LL response timeout";
+    case pw::bluetooth::emboss::StatusCode::LMP_ERROR_TRANSACTION_COLLISION: return "LMP error transaction collision";
+    case pw::bluetooth::emboss::StatusCode::LMP_PDU_NOT_ALLOWED: return "LMP PDU not allowed";
+    case pw::bluetooth::emboss::StatusCode::ENCRYPTION_MODE_NOT_ACCEPTABLE: return "encryption mode not acceptable";
+    case pw::bluetooth::emboss::StatusCode::LINK_KEY_CANNOT_BE_CHANGED: return "link key cannot be changed";
+    case pw::bluetooth::emboss::StatusCode::REQUESTED_QOS_NOT_SUPPORTED: return "requested QoS not supported";
+    case pw::bluetooth::emboss::StatusCode::INSTANT_PASSED: return "instant passed";
+    case pw::bluetooth::emboss::StatusCode::PAIRING_WITH_UNIT_KEY_NOT_SUPPORTED: return "pairing with unit key not supported";
+    case pw::bluetooth::emboss::StatusCode::DIFFERENT_TRANSACTION_COLLISION: return "different transaction collision";
+    case pw::bluetooth::emboss::StatusCode::QOS_UNACCEPTABLE_PARAMETER: return "QoS unacceptable parameter";
+    case pw::bluetooth::emboss::StatusCode::QOS_REJECTED: return "QoS rejected";
+    case pw::bluetooth::emboss::StatusCode::CHANNEL_CLASSIFICATION_NOT_SUPPORTED: return "channel classification not supported";
+    case pw::bluetooth::emboss::StatusCode::INSUFFICIENT_SECURITY: return "insufficient security";
+    case pw::bluetooth::emboss::StatusCode::PARAMETER_OUT_OF_MANDATORY_RANGE: return "parameter out of mandatory range";
+    case pw::bluetooth::emboss::StatusCode::ROLE_SWITCH_PENDING: return "role switch pending";
+    case pw::bluetooth::emboss::StatusCode::RESERVED_SLOT_VIOLATION: return "reserved slot violation";
+    case pw::bluetooth::emboss::StatusCode::ROLE_SWITCH_FAILED: return "role switch failed";
+    case pw::bluetooth::emboss::StatusCode::EXTENDED_INQUIRY_RESPONSE_TOO_LARGE: return "extended inquiry response too large";
+    case pw::bluetooth::emboss::StatusCode::SECURE_SIMPLE_PAIRING_NOT_SUPPORTED_BY_HOST: return "secure simple pairing not supported by host";
+    case pw::bluetooth::emboss::StatusCode::HOST_BUSY_PAIRING: return "host busy pairing";
+    case pw::bluetooth::emboss::StatusCode::CONNECTION_REJECTED_NO_SUITABLE_CHANNEL_FOUND: return "connection rejected: no suitable channel found";
+    case pw::bluetooth::emboss::StatusCode::CONTROLLER_BUSY: return "controller busy";
+    case pw::bluetooth::emboss::StatusCode::UNACCEPTABLE_CONNECTION_PARAMETERS: return "unacceptable connection parameters";
+    case pw::bluetooth::emboss::StatusCode::DIRECTED_ADVERTISING_TIMEOUT: return "directed advertising timeout";
+    case pw::bluetooth::emboss::StatusCode::CONNECTION_TERMINATED_MIC_FAILURE: return "connection terminated: MIC failure";
+    case pw::bluetooth::emboss::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED: return "connection failed to be established";
+    case pw::bluetooth::emboss::StatusCode::MAC_CONNECTION_FAILED: return "MAC connection failed";
+    case pw::bluetooth::emboss::StatusCode::COARSE_CLOCK_ADJUSTMENT_REJECTED: return "coarse clocpw::bluetooth::emboss::StatusCode:: adjustment rejected";
+    case pw::bluetooth::emboss::StatusCode::TYPE_0_SUBMAP_NOT_DEFINED: return "type 0 submap not defined";
+    case pw::bluetooth::emboss::StatusCode::UNKNOWN_ADVERTISING_IDENTIFIER: return "unknown advertising identifier";
+    case pw::bluetooth::emboss::StatusCode::LIMIT_REACHED: return "limit reached";
+    case pw::bluetooth::emboss::StatusCode::OPERATION_CANCELLED_BY_HOST: return "operation cancelled by host";
     default: break;
   };
   return "unknown status";
@@ -126,11 +126,11 @@ std::string LinkTypeToString(hci_spec::LinkType link_type) {
   };
 }
 
-std::string ConnectionRoleToString(hci_spec::ConnectionRole role) {
+std::string ConnectionRoleToString(pw::bluetooth::emboss::ConnectionRole role) {
   switch (role) {
-    case hci_spec::ConnectionRole::CENTRAL:
+    case pw::bluetooth::emboss::ConnectionRole::CENTRAL:
       return "central";
-    case hci_spec::ConnectionRole::PERIPHERAL:
+    case pw::bluetooth::emboss::ConnectionRole::PERIPHERAL:
       return "peripheral";
     default:
       return "<unknown role>";

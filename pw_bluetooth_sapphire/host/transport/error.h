@@ -12,7 +12,7 @@
 namespace bt {
 namespace hci {
 
-using Error = Error<hci_spec::StatusCode>;
+using Error = Error<pw::bluetooth::emboss::StatusCode>;
 
 template <typename... V>
 using Result = fit::result<bt::hci::Error, V...>;
@@ -25,13 +25,13 @@ using ResultCallback = fit::callback<void(bt::hci::Result<V...> result)>;
 
 }  // namespace hci
 
-// Specializations for hci_spec::StatusCode.
+// Specializations for pw::bluetooth::emboss::StatusCode.
 template <>
-struct ProtocolErrorTraits<hci_spec::StatusCode> {
-  static std::string ToString(hci_spec::StatusCode ecode);
+struct ProtocolErrorTraits<pw::bluetooth::emboss::StatusCode> {
+  static std::string ToString(pw::bluetooth::emboss::StatusCode ecode);
 
-  static constexpr bool is_success(hci_spec::StatusCode ecode) {
-    return ecode == hci_spec::StatusCode::SUCCESS;
+  static constexpr bool is_success(pw::bluetooth::emboss::StatusCode ecode) {
+    return ecode == pw::bluetooth::emboss::StatusCode::SUCCESS;
   }
 };
 

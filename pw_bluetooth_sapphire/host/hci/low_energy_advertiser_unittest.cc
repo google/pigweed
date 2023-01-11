@@ -248,7 +248,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, ConnectionTest) {
 
   // Accept a connection and ensure that connection state is set up correctly
   link.reset();
-  this->advertiser()->OnIncomingConnection(kConnectionHandle, hci_spec::ConnectionRole::PERIPHERAL,
+  this->advertiser()->OnIncomingConnection(kConnectionHandle,
+                                           pw::bluetooth::emboss::ConnectionRole::PERIPHERAL,
                                            kRandomAddress, hci_spec::LEConnectionParameters());
   std::optional<hci_spec::AdvertisingHandle> handle = this->CurrentAdvertisingHandle();
   ASSERT_TRUE(handle);
@@ -263,7 +264,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, ConnectionTest) {
   EXPECT_FALSE(this->advertiser()->IsAdvertising(kPublicAddress));
 
   // Advertising state should get cleared on a disconnection
-  link->Disconnect(hci_spec::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
+  link->Disconnect(pw::bluetooth::emboss::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
   this->test_device()->SendDisconnectionCompleteEvent(link->handle());
   this->RunLoopUntilIdle();
   EXPECT_FALSE(this->GetControllerAdvertisingState().enabled);
@@ -278,7 +279,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, ConnectionTest) {
   // Accept a connection from kPublicAddress. The internal advertising state should get assigned
   // correctly with no remnants of the previous advertise.
   link.reset();
-  this->advertiser()->OnIncomingConnection(kConnectionHandle, hci_spec::ConnectionRole::PERIPHERAL,
+  this->advertiser()->OnIncomingConnection(kConnectionHandle,
+                                           pw::bluetooth::emboss::ConnectionRole::PERIPHERAL,
                                            kPublicAddress, hci_spec::LEConnectionParameters());
   handle = this->CurrentAdvertisingHandle();
   ASSERT_TRUE(handle);
@@ -322,7 +324,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, RestartInConnectionCallback) {
     }
   });
 
-  this->advertiser()->OnIncomingConnection(kConnectionHandle, hci_spec::ConnectionRole::PERIPHERAL,
+  this->advertiser()->OnIncomingConnection(kConnectionHandle,
+                                           pw::bluetooth::emboss::ConnectionRole::PERIPHERAL,
                                            kRandomAddress, hci_spec::LEConnectionParameters());
   std::optional<hci_spec::AdvertisingHandle> handle = this->CurrentAdvertisingHandle();
   ASSERT_TRUE(handle);
@@ -349,7 +352,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, IncomingConnectionWhenNotAdvertising) {
 
   auto fake_peer = std::make_unique<FakePeer>(kRandomAddress, true, true);
   this->test_device()->AddPeer(std::move(fake_peer));
-  this->test_device()->ConnectLowEnergy(kRandomAddress, hci_spec::ConnectionRole::PERIPHERAL);
+  this->test_device()->ConnectLowEnergy(kRandomAddress,
+                                        pw::bluetooth::emboss::ConnectionRole::PERIPHERAL);
   this->RunLoopUntilIdle();
 
   ASSERT_EQ(1u, connection_states.size());
@@ -358,7 +362,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, IncomingConnectionWhenNotAdvertising) {
 
   // Notify the advertiser of the incoming connection. It should reject it and the controller
   // should become disconnected.
-  this->advertiser()->OnIncomingConnection(handle, hci_spec::ConnectionRole::PERIPHERAL,
+  this->advertiser()->OnIncomingConnection(handle,
+                                           pw::bluetooth::emboss::ConnectionRole::PERIPHERAL,
                                            kRandomAddress, hci_spec::LEConnectionParameters());
   this->MaybeSendMultipleAdvertisingPostConnectionEvents(kConnectionHandle, 0);
   this->RunLoopUntilIdle();
@@ -389,7 +394,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, IncomingConnectionWhenNonConnectableAdvertis
 
   auto fake_peer = std::make_unique<FakePeer>(kRandomAddress, true, true);
   this->test_device()->AddPeer(std::move(fake_peer));
-  this->test_device()->ConnectLowEnergy(kRandomAddress, hci_spec::ConnectionRole::PERIPHERAL);
+  this->test_device()->ConnectLowEnergy(kRandomAddress,
+                                        pw::bluetooth::emboss::ConnectionRole::PERIPHERAL);
   this->RunLoopUntilIdle();
 
   ASSERT_EQ(1u, connection_states.size());
@@ -398,7 +404,8 @@ TYPED_TEST(LowEnergyAdvertiserTest, IncomingConnectionWhenNonConnectableAdvertis
 
   // Notify the advertiser of the incoming connection. It should reject it and the controller
   // should become disconnected.
-  this->advertiser()->OnIncomingConnection(handle, hci_spec::ConnectionRole::PERIPHERAL,
+  this->advertiser()->OnIncomingConnection(handle,
+                                           pw::bluetooth::emboss::ConnectionRole::PERIPHERAL,
                                            kRandomAddress, hci_spec::LEConnectionParameters());
   this->MaybeSendMultipleAdvertisingPostConnectionEvents(kConnectionHandle, 0);
   this->RunLoopUntilIdle();

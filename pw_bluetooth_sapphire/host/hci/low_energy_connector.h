@@ -48,7 +48,7 @@ class LowEnergyConnector : public LocalAddressClient {
   //
   //  - |conn_params|: Connection related parameters.
   using IncomingConnectionDelegate = fit::function<void(
-      hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
+      hci_spec::ConnectionHandle handle, pw::bluetooth::emboss::ConnectionRole role,
       const DeviceAddress& peer_address, const hci_spec::LEConnectionParameters& conn_params)>;
 
   // The constructor expects the following arguments:

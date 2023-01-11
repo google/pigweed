@@ -17,8 +17,8 @@ TestSecurityManager::TestSecurityManager(hci::LowEnergyConnection::WeakPtr link,
                                          Delegate::WeakPtr delegate, BondableMode bondable_mode,
                                          gap::LESecurityMode security_mode)
     : SecurityManager(bondable_mode, security_mode),
-      role_(link->role() == hci_spec::ConnectionRole::CENTRAL ? Role::kInitiator
-                                                              : Role::kResponder),
+      role_(link->role() == pw::bluetooth::emboss::ConnectionRole::CENTRAL ? Role::kInitiator
+                                                                           : Role::kResponder),
       weak_self_(this) {}
 
 bool TestSecurityManager::AssignLongTermKey(const LTK& ltk) {

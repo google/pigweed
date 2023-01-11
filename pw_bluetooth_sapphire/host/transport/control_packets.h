@@ -117,10 +117,10 @@ class Packet<hci_spec::EventHeader> : public PacketBase<hci_spec::EventHeader, E
   // make sure to add an entry to the implementation in control_packets.cc.
   //
   // TODO(armansito): Add more event entries here as needed.
-  bool ToStatusCode(hci_spec::StatusCode* out_code) const;
+  bool ToStatusCode(pw::bluetooth::emboss::StatusCode* out_code) const;
 
   // Returns a status if this event represents the result of an operation. See
-  // the documentation on Tohci_spec::StatusCode() as the same conditions apply to this
+  // the documentation on Topw::bluetooth::emboss::StatusCode() as the same conditions apply to this
   // method. Instead of a boolean, this returns a default status of type
   // HostError::kMalformedPacket.
   Result<> ToResult() const;

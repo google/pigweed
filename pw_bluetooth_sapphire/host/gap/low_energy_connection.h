@@ -47,7 +47,7 @@ class LowEnergyConnection final : public sm::Delegate {
   // |conn_mgr| is the LowEnergyConnectionManager that owns this connection.
   // |l2cap|, |gatt|, and |cmd_channel| are pointers to the interfaces of the corresponding layers.
   // Returns nullptr if connection initialization fails.
-  using PeerDisconnectCallback = fit::callback<void(hci_spec::StatusCode)>;
+  using PeerDisconnectCallback = fit::callback<void(pw::bluetooth::emboss::StatusCode)>;
   using ErrorCallback = fit::callback<void()>;
   static std::unique_ptr<LowEnergyConnection> Create(
       Peer::WeakPtr peer, std::unique_ptr<hci::LowEnergyConnection> link,
@@ -309,7 +309,7 @@ class LowEnergyConnection final : public sm::Delegate {
   // Called with the status of the next HCI LE Connection Update Complete event.
   // The HCI LE Connection Update command does not have its own complete event handler because the
   // HCI LE Connection Complete event can be generated for other reasons.
-  fit::callback<void(hci_spec::StatusCode)> le_conn_update_complete_command_callback_;
+  fit::callback<void(pw::bluetooth::emboss::StatusCode)> le_conn_update_complete_command_callback_;
 
   // Called after kLEConnectionPausePeripheral.
   std::optional<async::TaskClosure> conn_pause_peripheral_timeout_;

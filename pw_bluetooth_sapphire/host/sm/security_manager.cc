@@ -228,8 +228,8 @@ SecurityManagerImpl::SecurityManagerImpl(hci::LowEnergyConnection::WeakPtr link,
       io_cap_(io_capability),
       sm_chan_(std::make_unique<PairingChannel>(
           smp, fit::bind_member<&SecurityManagerImpl::StartNewTimer>(this))),
-      role_(le_link_->role() == hci_spec::ConnectionRole::CENTRAL ? Role::kInitiator
-                                                                  : Role::kResponder),
+      role_(le_link_->role() == pw::bluetooth::emboss::ConnectionRole::CENTRAL ? Role::kInitiator
+                                                                               : Role::kResponder),
       weak_self_(this),
       weak_listener_(this),
       weak_handler_(this) {
@@ -824,7 +824,8 @@ Result<> SecurityManagerImpl::ValidateExistingLocalLtk() {
   if (status.is_error()) {
     // SM does not own the link, so although the checks above should never fail, disconnecting the
     // link (vs. ASSERTing these checks) is safer against non-SM code potentially touching the key.
-    delegate_->OnAuthenticationFailure(ToResult(hci_spec::StatusCode::PIN_OR_KEY_MISSING));
+    delegate_->OnAuthenticationFailure(
+        ToResult(pw::bluetooth::emboss::StatusCode::PIN_OR_KEY_MISSING));
     sm_chan_->SignalLinkError();
   }
   return status;

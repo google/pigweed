@@ -100,7 +100,7 @@ class SignalingChannelInterface {
 // TODO(armansito): Implement flow control (RTX/ERTX timers).
 class SignalingChannel : public SignalingChannelInterface {
  public:
-  SignalingChannel(Channel::WeakPtr chan, hci_spec::ConnectionRole role);
+  SignalingChannel(Channel::WeakPtr chan, pw::bluetooth::emboss::ConnectionRole role);
   ~SignalingChannel() override = default;
 
   // SignalingChannelInterface overrides
@@ -160,7 +160,7 @@ class SignalingChannel : public SignalingChannelInterface {
   // intended for debug assertions.
 
   // Returns the logical link that signaling channel is operating on.
-  hci_spec::ConnectionRole role() const { return role_; }
+  pw::bluetooth::emboss::ConnectionRole role() const { return role_; }
 
   // Generates a command identifier in sequential order that is never
   // kInvalidId. The caller is responsible for bookkeeping when reusing command
@@ -245,7 +245,7 @@ class SignalingChannel : public SignalingChannelInterface {
 
   bool is_open_;
   l2cap::ScopedChannel chan_;
-  hci_spec::ConnectionRole role_;
+  pw::bluetooth::emboss::ConnectionRole role_;
   uint16_t mtu_;
   uint8_t next_cmd_id_;
 

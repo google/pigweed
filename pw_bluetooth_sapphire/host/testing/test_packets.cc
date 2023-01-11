@@ -31,7 +31,8 @@ DynamicByteBuffer EmptyCommandPacket(hci_spec::OpCode opcode) {
   return DynamicByteBuffer(StaticByteBuffer(LowerBits(opcode), UpperBits(opcode), /*length=*/0));
 }
 
-DynamicByteBuffer CommandCompletePacket(hci_spec::OpCode opcode, hci_spec::StatusCode status) {
+DynamicByteBuffer CommandCompletePacket(hci_spec::OpCode opcode,
+                                        pw::bluetooth::emboss::StatusCode status) {
   return DynamicByteBuffer(StaticByteBuffer(hci_spec::kCommandCompleteEventCode,
                                             0x04,  // size
                                             0x01,  // Num HCI command packets
@@ -50,7 +51,7 @@ DynamicByteBuffer AcceptConnectionRequestPacket(DeviceAddress address) {
 }
 
 DynamicByteBuffer RejectConnectionRequestPacket(DeviceAddress address,
-                                                hci_spec::StatusCode reason) {
+                                                pw::bluetooth::emboss::StatusCode reason) {
   const auto addr = address.value().bytes();
   return DynamicByteBuffer(StaticByteBuffer(
       LowerBits(hci_spec::kRejectConnectionRequest), UpperBits(hci_spec::kRejectConnectionRequest),
@@ -95,7 +96,7 @@ DynamicByteBuffer CreateConnectionPacket(DeviceAddress address) {
 }
 
 DynamicByteBuffer ConnectionCompletePacket(DeviceAddress address, hci_spec::ConnectionHandle conn,
-                                           hci_spec::StatusCode status) {
+                                           pw::bluetooth::emboss::StatusCode status) {
   auto addr = address.value().bytes();
   return DynamicByteBuffer(StaticByteBuffer(
       hci_spec::kConnectionCompleteEventCode,
@@ -108,7 +109,8 @@ DynamicByteBuffer ConnectionCompletePacket(DeviceAddress address, hci_spec::Conn
       ));
 }
 
-DynamicByteBuffer DisconnectPacket(hci_spec::ConnectionHandle conn, hci_spec::StatusCode reason) {
+DynamicByteBuffer DisconnectPacket(hci_spec::ConnectionHandle conn,
+                                   pw::bluetooth::emboss::StatusCode reason) {
   return DynamicByteBuffer(StaticByteBuffer(
       LowerBits(hci_spec::kDisconnect), UpperBits(hci_spec::kDisconnect),
       0x03,                              // parameter_total_size (3 bytes)
@@ -119,21 +121,21 @@ DynamicByteBuffer DisconnectPacket(hci_spec::ConnectionHandle conn, hci_spec::St
 
 DynamicByteBuffer DisconnectStatusResponsePacket() {
   return DynamicByteBuffer(
-      COMMAND_STATUS_RSP(hci_spec::kDisconnect, hci_spec::StatusCode::SUCCESS));
+      COMMAND_STATUS_RSP(hci_spec::kDisconnect, pw::bluetooth::emboss::StatusCode::SUCCESS));
 }
 
 DynamicByteBuffer DisconnectionCompletePacket(hci_spec::ConnectionHandle conn,
-                                              hci_spec::StatusCode reason) {
+                                              pw::bluetooth::emboss::StatusCode reason) {
   return DynamicByteBuffer(StaticByteBuffer(hci_spec::kDisconnectionCompleteEventCode,
                                             0x04,  // parameter_total_size (4 bytes)
-                                            hci_spec::StatusCode::SUCCESS,  // status
+                                            pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
                                             LowerBits(conn),
                                             UpperBits(conn),  // Little-Endian Connection_handle
                                             reason            // Reason
                                             ));
 }
 
-DynamicByteBuffer EncryptionChangeEventPacket(hci_spec::StatusCode status_code,
+DynamicByteBuffer EncryptionChangeEventPacket(pw::bluetooth::emboss::StatusCode status_code,
                                               hci_spec::ConnectionHandle conn,
                                               hci_spec::EncryptionStatus encryption_enabled) {
   return DynamicByteBuffer(StaticByteBuffer(
@@ -147,9 +149,9 @@ DynamicByteBuffer EncryptionChangeEventPacket(hci_spec::StatusCode status_code,
 
 DynamicByteBuffer EnhancedAcceptSynchronousConnectionRequestPacket(
     DeviceAddress peer_address,
-    bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> params) {
+    bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> params) {
   auto packet = hci::EmbossCommandPacket::New<
-      hci_spec::EnhancedAcceptSynchronousConnectionRequestCommandWriter>(
+      pw::bluetooth::emboss::EnhancedAcceptSynchronousConnectionRequestCommandWriter>(
       hci_spec::kEnhancedAcceptSynchronousConnectionRequest);
   auto view = packet.view_t();
 
@@ -161,10 +163,10 @@ DynamicByteBuffer EnhancedAcceptSynchronousConnectionRequestPacket(
 
 DynamicByteBuffer EnhancedSetupSynchronousConnectionPacket(
     hci_spec::ConnectionHandle conn,
-    bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> params) {
-  auto packet =
-      hci::EmbossCommandPacket::New<hci_spec::EnhancedSetupSynchronousConnectionCommandWriter>(
-          hci_spec::kEnhancedSetupSynchronousConnection);
+    bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> params) {
+  auto packet = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::EnhancedSetupSynchronousConnectionCommandWriter>(
+      hci_spec::kEnhancedSetupSynchronousConnection);
 
   auto view = packet.view_t();
   view.connection_handle().Write(conn);
@@ -181,7 +183,8 @@ DynamicByteBuffer NumberOfCompletedPacketsPacket(hci_spec::ConnectionHandle conn
       LowerBits(conn), UpperBits(conn), LowerBits(num_packets), UpperBits(num_packets)));
 }
 
-DynamicByteBuffer CommandStatusPacket(hci_spec::OpCode op_code, hci_spec::StatusCode status_code) {
+DynamicByteBuffer CommandStatusPacket(hci_spec::OpCode op_code,
+                                      pw::bluetooth::emboss::StatusCode status_code) {
   return DynamicByteBuffer(StaticByteBuffer(
       hci_spec::kCommandStatusEventCode,
       0x04,  // parameter size (4 bytes)
@@ -208,8 +211,8 @@ DynamicByteBuffer RemoteNameRequestCompletePacket(DeviceAddress address, const s
                                  sizeof(hci_spec::RemoteNameRequestCompleteEventParams));
   event.SetToZeros();
   const StaticByteBuffer header(hci_spec::kRemoteNameRequestCompleteEventCode,
-                                0xff,                           // parameter_total_size (255)
-                                hci_spec::StatusCode::SUCCESS,  // status
+                                0xff,  // parameter_total_size (255)
+                                pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
                                 addr[0], addr[1], addr[2], addr[3], addr[4],
                                 addr[5]  // peer address
   );
@@ -229,7 +232,7 @@ DynamicByteBuffer ReadRemoteVersionInfoPacket(hci_spec::ConnectionHandle conn) {
 DynamicByteBuffer ReadRemoteVersionInfoCompletePacket(hci_spec::ConnectionHandle conn) {
   return DynamicByteBuffer(StaticByteBuffer(hci_spec::kReadRemoteVersionInfoCompleteEventCode,
                                             0x08,  // parameter_total_size (8 bytes)
-                                            hci_spec::StatusCode::SUCCESS,  // status
+                                            pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
                                             LowerBits(conn),
                                             UpperBits(conn),  // Little-Endian Connection_handle
                                             hci_spec::HCIVersion::k4_2,  // lmp_version
@@ -250,9 +253,9 @@ DynamicByteBuffer ReadRemoteSupportedFeaturesCompletePacket(hci_spec::Connection
                                                             bool extended_features) {
   return DynamicByteBuffer(StaticByteBuffer(
       hci_spec::kReadRemoteSupportedFeaturesCompleteEventCode,
-      0x0B,                              // parameter_total_size (11 bytes)
-      hci_spec::StatusCode::SUCCESS,     // status
-      LowerBits(conn), UpperBits(conn),  // Little-Endian Connection_handle
+      0x0B,                                        // parameter_total_size (11 bytes)
+      pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
+      LowerBits(conn), UpperBits(conn),            // Little-Endian Connection_handle
       0xFF, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, (extended_features ? 0x80 : 0x00)
       // lmp_features
       // Set: 3 slot packets, 5 slot packets, Encryption, Timing Accuracy,
@@ -261,8 +264,8 @@ DynamicByteBuffer ReadRemoteSupportedFeaturesCompletePacket(hci_spec::Connection
       ));
 }
 
-DynamicByteBuffer RejectSynchronousConnectionRequest(DeviceAddress address,
-                                                     hci_spec::StatusCode status_code) {
+DynamicByteBuffer RejectSynchronousConnectionRequest(
+    DeviceAddress address, pw::bluetooth::emboss::StatusCode status_code) {
   auto addr_bytes = address.value().bytes();
   return DynamicByteBuffer(StaticByteBuffer(
       LowerBits(hci_spec::kRejectSynchronousConnectionRequest),
@@ -274,8 +277,9 @@ DynamicByteBuffer RejectSynchronousConnectionRequest(DeviceAddress address,
       ));
 }
 
-DynamicByteBuffer RoleChangePacket(DeviceAddress address, hci_spec::ConnectionRole role,
-                                   hci_spec::StatusCode status) {
+DynamicByteBuffer RoleChangePacket(DeviceAddress address,
+                                   pw::bluetooth::emboss::ConnectionRole role,
+                                   pw::bluetooth::emboss::StatusCode status) {
   auto addr_bytes = address.value().bytes();
   return DynamicByteBuffer(StaticByteBuffer(hci_spec::kRoleChangeEventCode,
                                             0x08,    // parameter_total_size
@@ -296,7 +300,7 @@ DynamicByteBuffer SetConnectionEncryption(hci_spec::ConnectionHandle conn, bool 
 DynamicByteBuffer SynchronousConnectionCompletePacket(hci_spec::ConnectionHandle conn,
                                                       DeviceAddress address,
                                                       hci_spec::LinkType link_type,
-                                                      hci_spec::StatusCode status) {
+                                                      pw::bluetooth::emboss::StatusCode status) {
   auto addr_bytes = address.value().bytes();
   return DynamicByteBuffer(StaticByteBuffer(
       hci_spec::kSynchronousConnectionCompleteEventCode,
@@ -325,7 +329,7 @@ DynamicByteBuffer LEReadRemoteFeaturesCompletePacket(hci_spec::ConnectionHandle 
   return DynamicByteBuffer(StaticByteBuffer(hci_spec::kLEMetaEventCode,
                                             0x0c,  // parameter total size (12 bytes)
                                             hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode,
-                                            hci_spec::StatusCode::SUCCESS,  // status
+                                            pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
                                             // Little-Endian connection handle
                                             LowerBits(conn), UpperBits(conn),
                                             // bit mask of LE features
@@ -360,11 +364,11 @@ DynamicByteBuffer ReadRemoteExtended1Packet(hci_spec::ConnectionHandle conn) {
 DynamicByteBuffer ReadRemoteExtended1CompletePacket(hci_spec::ConnectionHandle conn) {
   return DynamicByteBuffer(StaticByteBuffer(
       hci_spec::kReadRemoteExtendedFeaturesCompleteEventCode,
-      0x0D,                              // parameter_total_size (13 bytes)
-      hci_spec::StatusCode::SUCCESS,     // status
-      LowerBits(conn), UpperBits(conn),  // Little-Endian Connection_handle
-      0x01,                              // page_number
-      0x03,                              // max_page_number (3 pages)
+      0x0D,                                        // parameter_total_size (13 bytes)
+      pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
+      LowerBits(conn), UpperBits(conn),            // Little-Endian Connection_handle
+      0x01,                                        // page_number
+      0x03,                                        // max_page_number (3 pages)
       0x0F, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00
       // lmp_features (page 1)
       // Set: Secure Simple Pairing (Host Support), LE Supported (Host),
@@ -385,7 +389,7 @@ DynamicByteBuffer ReadRemoteExtended2Packet(hci_spec::ConnectionHandle conn) {
 DynamicByteBuffer ReadRemoteExtended2CompletePacket(hci_spec::ConnectionHandle conn) {
   return DynamicByteBuffer(StaticByteBuffer(hci_spec::kReadRemoteExtendedFeaturesCompleteEventCode,
                                             0x0D,  // parameter_total_size (13 bytes)
-                                            hci_spec::StatusCode::SUCCESS,  // status
+                                            pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
                                             LowerBits(conn),
                                             UpperBits(conn),  // Little-Endian Connection_handle
                                             0x02,             // page_number

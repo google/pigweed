@@ -35,7 +35,7 @@ ExtendedLowEnergyAdvertiser::~ExtendedLowEnergyAdvertiser() {
 }
 
 std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildEnablePacket(
-    const DeviceAddress& address, hci_spec::GenericEnableParam enable) {
+    const DeviceAddress& address, pw::bluetooth::emboss::GenericEnableParam enable) {
   // We only enable or disable a single address at a time. The multiply by 1 is set explicitly to
   // show that data[] within LESetExtendedAdvertisingEnableData is of size 1.
   constexpr size_t kPayloadSize = sizeof(hci_spec::LESetExtendedAdvertisingEnableCommandParams) +
@@ -107,7 +107,7 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetAdvertisingP
   payload->own_address_type = own_address_type;
   payload->adv_filter_policy = hci_spec::LEAdvFilterPolicy::kAllowAll;
   payload->adv_tx_power = hci_spec::kLEExtendedAdvertisingTxPowerNoPreference;
-  payload->scan_request_notification_enable = hci_spec::GenericEnableParam::DISABLE;
+  payload->scan_request_notification_enable = pw::bluetooth::emboss::GenericEnableParam::DISABLE;
 
   // TODO(fxbug.dev/81470): using legacy PDUs requires advertisements on the LE 1M PHY.
   payload->primary_adv_phy = hci_spec::LEPHY::kLE1M;
@@ -344,7 +344,7 @@ void ExtendedLowEnergyAdvertiser::StopAdvertising(const DeviceAddress& address) 
 }
 
 void ExtendedLowEnergyAdvertiser::OnIncomingConnection(
-    hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
+    hci_spec::ConnectionHandle handle, pw::bluetooth::emboss::ConnectionRole role,
     const DeviceAddress& peer_address, const hci_spec::LEConnectionParameters& conn_params) {
   // Core Spec Volume 4, Part E, Section 7.8.56: Incoming connections to LE Extended Advertising
   // occur through two events: HCI_LE_Connection_Complete and HCI_LE_Advertising_Set_Terminated.

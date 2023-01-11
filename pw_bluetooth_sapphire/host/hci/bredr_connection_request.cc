@@ -11,9 +11,9 @@ namespace bt::hci {
 
 EmbossCommandPacket CreateConnectionPacket(
     DeviceAddress address,
-    std::optional<hci_spec::PageScanRepetitionMode> page_scan_repetition_mode,
+    std::optional<pw::bluetooth::emboss::PageScanRepetitionMode> page_scan_repetition_mode,
     std::optional<uint16_t> clock_offset) {
-  auto request = EmbossCommandPacket::New<hci_spec::CreateConnectionCommandWriter>(
+  auto request = EmbossCommandPacket::New<pw::bluetooth::emboss::CreateConnectionCommandWriter>(
       hci_spec::kCreateConnection);
   auto params = request.view_t();
   params.bd_addr().CopyFrom(address.value().view());
@@ -25,7 +25,7 @@ EmbossCommandPacket CreateConnectionPacket(
   if (page_scan_repetition_mode) {
     params.page_scan_repetition_mode().Write(*page_scan_repetition_mode);
   } else {
-    params.page_scan_repetition_mode().Write(hci_spec::PageScanRepetitionMode::R2_);
+    params.page_scan_repetition_mode().Write(pw::bluetooth::emboss::PageScanRepetitionMode::R2_);
   }
 
   params.reserved().Write(0);  // Reserved, must be set to 0.
@@ -40,7 +40,7 @@ EmbossCommandPacket CreateConnectionPacket(
     params.clock_offset().valid().Write(false);
   }
 
-  params.allow_role_switch().Write(hci_spec::GenericEnableParam::DISABLE);
+  params.allow_role_switch().Write(pw::bluetooth::emboss::GenericEnableParam::DISABLE);
 
   return request;
 }
@@ -48,8 +48,8 @@ EmbossCommandPacket CreateConnectionPacket(
 void BrEdrConnectionRequest::CreateConnection(
     CommandChannel* command_channel, async_dispatcher_t* dispatcher,
     std::optional<uint16_t> clock_offset,
-    std::optional<hci_spec::PageScanRepetitionMode> page_scan_repetition_mode, zx::duration timeout,
-    OnCompleteDelegate on_command_fail) {
+    std::optional<pw::bluetooth::emboss::PageScanRepetitionMode> page_scan_repetition_mode,
+    zx::duration timeout, OnCompleteDelegate on_command_fail) {
   BT_DEBUG_ASSERT(timeout > zx::msec(0));
 
   // HCI Command Status Event will be sent as our completion callback.
@@ -96,7 +96,7 @@ Result<> BrEdrConnectionRequest::CompleteRequest(Result<> status) {
     if (state_ == RequestState::kTimedOut) {
       return ToResult(HostError::kTimedOut);
     }
-    if (status == ToResult(hci_spec::StatusCode::UNKNOWN_CONNECTION_ID)) {
+    if (status == ToResult(pw::bluetooth::emboss::StatusCode::UNKNOWN_CONNECTION_ID)) {
       // The "Unknown Connection Identifier" error code is returned if this
       // event was sent due to a successful cancellation via the
       // HCI_Create_Connection_Cancel command

@@ -98,7 +98,7 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
     hci_android::A2dpCodecType codec_type = hci_android::A2dpCodecType::kSbc;
     uint16_t max_latency = 0;
     hci_android::A2dpScmsTEnable scms_t_enable = {
-        hci_spec::GenericEnableParam::DISABLE,
+        pw::bluetooth::emboss::GenericEnableParam::DISABLE,
         0x0,
     };
     hci_android::A2dpSamplingFrequency sampling_frequency =
@@ -164,12 +164,12 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   void set_settings(const Settings& settings) { settings_ = settings; }
 
   // Always respond to the given command |opcode| with an Command Status event specifying |status|.
-  void SetDefaultCommandStatus(hci_spec::OpCode opcode, hci_spec::StatusCode status);
+  void SetDefaultCommandStatus(hci_spec::OpCode opcode, pw::bluetooth::emboss::StatusCode status);
   void ClearDefaultCommandStatus(hci_spec::OpCode opcode);
 
   // Tells the FakeController to always respond to the given command opcode with a Command Complete
   // event specifying the given HCI status code.
-  void SetDefaultResponseStatus(hci_spec::OpCode opcode, hci_spec::StatusCode status);
+  void SetDefaultResponseStatus(hci_spec::OpCode opcode, pw::bluetooth::emboss::StatusCode status);
   void ClearDefaultResponseStatus(hci_spec::OpCode opcode);
 
   // Returns the current LE scan state.
@@ -282,7 +282,8 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   // Sets up a LE link to the device with the given |addr|. FakeController will
   // report a connection event in which it is in the given |role|.
   void ConnectLowEnergy(const DeviceAddress& addr,
-                        hci_spec::ConnectionRole role = hci_spec::ConnectionRole::PERIPHERAL);
+                        pw::bluetooth::emboss::ConnectionRole role =
+                            pw::bluetooth::emboss::ConnectionRole::PERIPHERAL);
 
   // Sends an HCI Connection Request event.
   void SendConnectionRequest(const DeviceAddress& addr, hci_spec::LinkType link_type);
@@ -297,21 +298,23 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   // by LE central or spontaneously by the controller.
   void SendLEConnectionUpdateCompleteSubevent(
       hci_spec::ConnectionHandle handle, const hci_spec::LEConnectionParameters& params,
-      hci_spec::StatusCode status = hci_spec::StatusCode::SUCCESS);
+      pw::bluetooth::emboss::StatusCode status = pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   // Marks the FakePeer with address |address| as disconnected and sends a HCI
   // Disconnection Complete event for all of its links.
-  void Disconnect(
-      const DeviceAddress& addr,
-      hci_spec::StatusCode reason = hci_spec::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
+  void Disconnect(const DeviceAddress& addr,
+                  pw::bluetooth::emboss::StatusCode reason =
+                      pw::bluetooth::emboss::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
 
   // Send HCI Disconnection Complete event for |handle|.
   void SendDisconnectionCompleteEvent(
       hci_spec::ConnectionHandle handle,
-      hci_spec::StatusCode reason = hci_spec::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
+      pw::bluetooth::emboss::StatusCode reason =
+          pw::bluetooth::emboss::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
 
   // Send HCI encryption change event for |handle| with the given parameters.
-  void SendEncryptionChangeEvent(hci_spec::ConnectionHandle handle, hci_spec::StatusCode status,
+  void SendEncryptionChangeEvent(hci_spec::ConnectionHandle handle,
+                                 pw::bluetooth::emboss::StatusCode status,
                                  hci_spec::EncryptionStatus encryption_enabled);
 
   // Callback to invoke when a packet is received over the data channel. Care
@@ -423,7 +426,8 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   // NOTE: This method returns only a status field. Some HCI commands have multiple fields in their
   // return message. In those cases, it's better (and clearer) to use the other
   // RespondWithCommandComplete (ByteBuffer as second parameter) instead.
-  void RespondWithCommandComplete(hci_spec::OpCode opcode, hci_spec::StatusCode status);
+  void RespondWithCommandComplete(hci_spec::OpCode opcode,
+                                  pw::bluetooth::emboss::StatusCode status);
 
   // Sends a HCI_Command_Complete event in response to the command with |opcode| and using the given
   // data as the parameter payload.
@@ -431,7 +435,7 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
 
   // Sends a HCI_Command_Status event in response to the command with |opcode| and using the given
   // data as the parameter payload.
-  void RespondWithCommandStatus(hci_spec::OpCode opcode, hci_spec::StatusCode status);
+  void RespondWithCommandStatus(hci_spec::OpCode opcode, pw::bluetooth::emboss::StatusCode status);
 
   // If a default Command Status event status has been set for the given |opcode|, send a Command
   // Status event and returns true.
@@ -467,7 +471,8 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
                              bool connected, bool canceled = false);
 
   // Called when a HCI_Create_Connection command is received.
-  void OnCreateConnectionCommandReceived(const hci_spec::CreateConnectionCommandView& params);
+  void OnCreateConnectionCommandReceived(
+      const pw::bluetooth::emboss::CreateConnectionCommandView& params);
 
   // Notifies |le_conn_params_cb_|
   void NotifyLEConnectionParameters(const DeviceAddress& addr,
@@ -480,7 +485,7 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   void OnLEConnectionUpdateCommandReceived(const hci_spec::LEConnectionUpdateCommandParams& params);
 
   // Called when a HCI_Disconnect command is received.
-  void OnDisconnectCommandReceived(const hci_spec::DisconnectCommandView& params);
+  void OnDisconnectCommandReceived(const pw::bluetooth::emboss::DisconnectCommandView& params);
 
   // Called when a HCI_LE_Write_Host_Support command is received.
   void OnWriteLEHostSupportCommandReceived(const hci_spec::WriteLEHostSupportCommandParams& params);
@@ -489,7 +494,7 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   void OnReset();
 
   // Called when a HCI_Inquiry command is received.
-  void OnInquiry(const hci_spec::InquiryCommandView& params);
+  void OnInquiry(const pw::bluetooth::emboss::InquiryCommandView& params);
 
   // Called when a HCI_LE_Set_Scan_Enable command is received.
   void OnLESetScanEnable(const hci_spec::LESetScanEnableCommandParams& params);
@@ -501,7 +506,7 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   void OnReadLocalExtendedFeatures(const hci_spec::ReadLocalExtendedFeaturesCommandParams& params);
 
   // Called when a HCI_SetEventMask command is received.
-  void OnSetEventMask(const hci_spec::SetEventMaskCommandView& params);
+  void OnSetEventMask(const pw::bluetooth::emboss::SetEventMaskCommandView& params);
 
   // Called when a HCI_LE_Set_Event_Mask command is received.
   void OnLESetEventMask(const hci_spec::LESetEventMaskCommandParams& params);
@@ -543,13 +548,14 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   void OnWriteClassOfDevice(const hci_spec::WriteClassOfDeviceCommandParams& params);
 
   // Called when a HCI_Write_Page_Scan_Activity command is received.
-  void OnWritePageScanActivity(const hci_spec::WritePageScanActivityCommandView& params);
+  void OnWritePageScanActivity(
+      const pw::bluetooth::emboss::WritePageScanActivityCommandView& params);
 
   // Called when a HCI_Read_Page_Scan_Activity command is received.
   void OnReadPageScanActivity();
 
   // Called when a HCI_Write_Scan_Enable command is received.
-  void OnWriteScanEnable(const hci_spec::WriteScanEnableCommandView& params);
+  void OnWriteScanEnable(const pw::bluetooth::emboss::WriteScanEnableCommandView& params);
 
   // Called when a HCI_Read_Scan_Enable command is received.
   void OnReadScanEnable();
@@ -558,7 +564,7 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   void OnReadLocalName();
 
   // Called when a HCI_Write_Local_Name command is received.
-  void OnWriteLocalName(const hci_spec::WriteLocalNameCommandView& params);
+  void OnWriteLocalName(const pw::bluetooth::emboss::WriteLocalNameCommandView& params);
 
   // Called when a HCI_Create_Connection_Cancel command is received.
   void OnCreateConnectionCancel();
@@ -629,58 +635,61 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   // Interrogation command handlers:
 
   // Called when a HCI_Read_Remote_Name_Request command is received.
-  void OnReadRemoteNameRequestCommandReceived(const hci_spec::RemoteNameRequestCommandView& params);
+  void OnReadRemoteNameRequestCommandReceived(
+      const pw::bluetooth::emboss::RemoteNameRequestCommandView& params);
 
   // Called when a HCI_Read_Remote_Supported_Features command is received.
   void OnReadRemoteSupportedFeaturesCommandReceived(
-      const hci_spec::ReadRemoteSupportedFeaturesCommandView& params);
+      const pw::bluetooth::emboss::ReadRemoteSupportedFeaturesCommandView& params);
 
   // Called when a HCI_Read_Remote_Version_Information command is received.
   void OnReadRemoteVersionInfoCommandReceived(
-      const hci_spec::ReadRemoteVersionInfoCommandView& params);
+      const pw::bluetooth::emboss::ReadRemoteVersionInfoCommandView& params);
 
   // Called when a HCI_Read_Remote_Extended_Features command is received.
   void OnReadRemoteExtendedFeaturesCommandReceived(
-      const hci_spec::ReadRemoteExtendedFeaturesCommandView& params);
+      const pw::bluetooth::emboss::ReadRemoteExtendedFeaturesCommandView& params);
 
   // Pairing command handlers:
 
   // Called when a HCI_Authentication_Requested command is received.
   void OnAuthenticationRequestedCommandReceived(
-      const hci_spec::AuthenticationRequestedCommandView& params);
+      const pw::bluetooth::emboss::AuthenticationRequestedCommandView& params);
 
   // Called when a HCI_Link_Key_Request_Reply command is received.
-  void OnLinkKeyRequestReplyCommandReceived(const hci_spec::LinkKeyRequestReplyCommandView& params);
+  void OnLinkKeyRequestReplyCommandReceived(
+      const pw::bluetooth::emboss::LinkKeyRequestReplyCommandView& params);
 
   // Called when a HCI_Link_Key_Request_Negative_Reply command is received.
   void OnLinkKeyRequestNegativeReplyCommandReceived(
-      const hci_spec::LinkKeyRequestNegativeReplyCommandView& params);
+      const pw::bluetooth::emboss::LinkKeyRequestNegativeReplyCommandView& params);
 
   // Called when a HCI_IO_Capability_Request_Reply command is received.
   void OnIOCapabilityRequestReplyCommand(
-      const hci_spec::IoCapabilityRequestReplyCommandView& params);
+      const pw::bluetooth::emboss::IoCapabilityRequestReplyCommandView& params);
 
   // Called when a HCI_User_Confirmation_Request_Reply command is received.
   void OnUserConfirmationRequestReplyCommand(
-      const hci_spec::UserConfirmationRequestReplyCommandView& params);
+      const pw::bluetooth::emboss::UserConfirmationRequestReplyCommandView& params);
 
   // Called when a HCI_User_Confirmation_Request_Negative_Reply command is received.
   void OnUserConfirmationRequestNegativeReplyCommand(
-      const hci_spec::UserConfirmationRequestNegativeReplyCommandView& params);
+      const pw::bluetooth::emboss::UserConfirmationRequestNegativeReplyCommandView& params);
 
   // Called when a HCI_Set_Connection_Encryption command is received.
-  void OnSetConnectionEncryptionCommand(const hci_spec::SetConnectionEncryptionCommandView& params);
+  void OnSetConnectionEncryptionCommand(
+      const pw::bluetooth::emboss::SetConnectionEncryptionCommandView& params);
 
   // Called when a HCI_Read_Encryption_Key_Size command is received.
   void OnReadEncryptionKeySizeCommand(const hci_spec::ReadEncryptionKeySizeParams& params);
 
   // Called when a HCI_Enhanced_Accept_Synchronous_Connection_Request command is received.
   void OnEnhancedAcceptSynchronousConnectionRequestCommand(
-      const hci_spec::EnhancedAcceptSynchronousConnectionRequestCommandView& params);
+      const pw::bluetooth::emboss::EnhancedAcceptSynchronousConnectionRequestCommandView& params);
 
   // Called when a HCI_Enhanced_Setup_Synchronous_Connection command is received.
   void OnEnhancedSetupSynchronousConnectionCommand(
-      const hci_spec::EnhancedSetupSynchronousConnectionCommandView& params);
+      const pw::bluetooth::emboss::EnhancedSetupSynchronousConnectionCommandView& params);
 
   // Called when a HCI_LE_Read_Remote_Features_Command is received.
   void OnLEReadRemoteFeaturesCommand(const hci_spec::LEReadRemoteFeaturesCommandParams& params);
@@ -781,10 +790,11 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   int16_t inquiry_num_responses_left_;
 
   // Used to setup default Command Status event responses.
-  std::unordered_map<hci_spec::OpCode, hci_spec::StatusCode> default_command_status_map_;
+  std::unordered_map<hci_spec::OpCode, pw::bluetooth::emboss::StatusCode>
+      default_command_status_map_;
 
   // Used to setup default Command Complete event status responses (for simulating errors)
-  std::unordered_map<hci_spec::OpCode, hci_spec::StatusCode> default_status_map_;
+  std::unordered_map<hci_spec::OpCode, pw::bluetooth::emboss::StatusCode> default_status_map_;
 
   // The set of fake peers that are visible.
   std::unordered_map<DeviceAddress, std::unique_ptr<FakePeer>> peers_;

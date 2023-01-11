@@ -42,13 +42,14 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   // TODO(fxbug.dev/50542): Update documentation.
   void StopAdvertising(const DeviceAddress& address) override;
 
-  void OnIncomingConnection(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
+  void OnIncomingConnection(hci_spec::ConnectionHandle handle,
+                            pw::bluetooth::emboss::ConnectionRole role,
                             const DeviceAddress& peer_address,
                             const hci_spec::LEConnectionParameters& conn_params) override;
 
  private:
-  std::unique_ptr<CommandPacket> BuildEnablePacket(const DeviceAddress& address,
-                                                   hci_spec::GenericEnableParam enable) override;
+  std::unique_ptr<CommandPacket> BuildEnablePacket(
+      const DeviceAddress& address, pw::bluetooth::emboss::GenericEnableParam enable) override;
 
   std::unique_ptr<CommandPacket> BuildSetAdvertisingParams(
       const DeviceAddress& address, hci_spec::LEAdvertisingType type,

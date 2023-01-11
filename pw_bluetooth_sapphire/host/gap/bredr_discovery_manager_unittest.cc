@@ -25,7 +25,7 @@ using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
 #define COMMAND_COMPLETE_RSP(opcode)                                         \
   StaticByteBuffer(hci_spec::kCommandCompleteEventCode, 0x04, 0xF0, \
                                  LowerBits((opcode)), UpperBits((opcode)),   \
-                                 hci_spec::StatusCode::SUCCESS)
+                                 pw::bluetooth::emboss::StatusCode::SUCCESS)
 
 #define COMMAND_STATUS_RSP(opcode, statuscode)                       \
   StaticByteBuffer( hci_spec::kCommandStatusEventCode, 0x04, \
@@ -107,31 +107,31 @@ const StaticByteBuffer kInquiry(
 );
 
 const auto kWriteLocalNameRsp =
-    COMMAND_STATUS_RSP(hci_spec::kWriteLocalName, hci_spec::StatusCode::SUCCESS);
+    COMMAND_STATUS_RSP(hci_spec::kWriteLocalName, pw::bluetooth::emboss::StatusCode::SUCCESS);
 
 const auto kWriteLocalNameRspError =
-    COMMAND_STATUS_RSP(hci_spec::kWriteLocalName, hci_spec::StatusCode::HARDWARE_FAILURE);
+    COMMAND_STATUS_RSP(hci_spec::kWriteLocalName, pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE);
 
 const auto kWriteExtendedInquiryResponseRsp =
-    COMMAND_STATUS_RSP(hci_spec::kWriteExtendedInquiryResponse, hci_spec::StatusCode::SUCCESS);
+    COMMAND_STATUS_RSP(hci_spec::kWriteExtendedInquiryResponse, pw::bluetooth::emboss::StatusCode::SUCCESS);
 
 const auto kWriteExtendedInquiryResponseRspError =
-    COMMAND_STATUS_RSP(hci_spec::kWriteExtendedInquiryResponse, hci_spec::StatusCode::HARDWARE_FAILURE);
+    COMMAND_STATUS_RSP(hci_spec::kWriteExtendedInquiryResponse, pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE);
 
-const auto kInquiryRsp = COMMAND_STATUS_RSP(hci_spec::kInquiry, hci_spec::StatusCode::SUCCESS);
+const auto kInquiryRsp = COMMAND_STATUS_RSP(hci_spec::kInquiry, pw::bluetooth::emboss::StatusCode::SUCCESS);
 
-const auto kInquiryRspError = COMMAND_STATUS_RSP(hci_spec::kInquiry, hci_spec::StatusCode::HARDWARE_FAILURE);
+const auto kInquiryRspError = COMMAND_STATUS_RSP(hci_spec::kInquiry, pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE);
 
 const StaticByteBuffer kInquiryComplete(
   hci_spec::kInquiryCompleteEventCode,
   0x01, // parameter_total_size (1 bytes)
-  hci_spec::StatusCode::SUCCESS
+  pw::bluetooth::emboss::StatusCode::SUCCESS
 );
 
 const StaticByteBuffer kInquiryCompleteError(
   hci_spec::kInquiryCompleteEventCode,
   0x01, // parameter_total_size (1 bytes)
-  hci_spec::StatusCode::HARDWARE_FAILURE
+  pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE
 );
 
 #define BD_ADDR(addr1) addr1, 0x00, 0x00, 0x00, 0x00, 0x00
@@ -231,7 +231,7 @@ const auto kRemoteNameRequest3 = REMOTE_NAME_REQUEST(0x03)
 #undef REMOTE_NAME_REQUEST
 
 const auto kRemoteNameRequestRsp =
-    COMMAND_STATUS_RSP(hci_spec::kRemoteNameRequest, hci_spec::StatusCode::SUCCESS);
+    COMMAND_STATUS_RSP(hci_spec::kRemoteNameRequest, pw::bluetooth::emboss::StatusCode::SUCCESS);
 
 #undef COMMAND_STATUS_RSP
 
@@ -359,7 +359,7 @@ const StaticByteBuffer kWriteExtendedInquiryResponse(
   StaticByteBuffer(hci_spec::kCommandCompleteEventCode, 0x05, 0xF0, \
                                  LowerBits(hci_spec::kReadScanEnable),            \
                                  UpperBits(hci_spec::kReadScanEnable),            \
-                                 hci_spec::StatusCode::SUCCESS, (scan_enable))
+                                 pw::bluetooth::emboss::StatusCode::SUCCESS, (scan_enable))
 
 const auto kReadScanEnableRspNone = READ_SCAN_ENABLE_RSP(0x00);
 const auto kReadScanEnableRspInquiry = READ_SCAN_ENABLE_RSP(0x01);
@@ -637,7 +637,7 @@ TEST_F(BrEdrDiscoveryManagerTest, RequestDiscoveryError) {
   discovery_manager()->RequestDiscovery([](auto status, auto cb_session) {
     EXPECT_TRUE(status.is_error());
     EXPECT_FALSE(cb_session);
-    EXPECT_EQ(ToResult(hci_spec::StatusCode::HARDWARE_FAILURE), status);
+    EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE), status);
   });
 
   EXPECT_FALSE(discovery_manager()->discovering());
@@ -748,7 +748,7 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameShortenedSuccess) {
   EXPECT_CMD_PACKET_OUT(test_device(), kWriteLocalNameMaxLen, );
 
   // Set the status to be a dummy invalid status.
-  hci::Result<> result = ToResult(hci_spec::StatusCode::PAIRING_NOT_ALLOWED);
+  hci::Result<> result = ToResult(pw::bluetooth::emboss::StatusCode::PAIRING_NOT_ALLOWED);
   size_t callback_count = 0u;
   auto name_cb = [&result, &callback_count](const auto& status) {
     EXPECT_EQ(fit::ok(), status);
@@ -783,7 +783,7 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameShortenedSuccess) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(kNewName, discovery_manager()->local_name());
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::SUCCESS), result);
+  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), result);
   EXPECT_EQ(1u, callback_count);
 }
 
@@ -793,7 +793,7 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameSuccess) {
   EXPECT_CMD_PACKET_OUT(test_device(), kWriteLocalName, );
 
   // Set the status to be a dummy invalid status.
-  hci::Result<> result = ToResult(hci_spec::StatusCode::PAIRING_NOT_ALLOWED);
+  hci::Result<> result = ToResult(pw::bluetooth::emboss::StatusCode::PAIRING_NOT_ALLOWED);
   size_t callback_count = 0u;
   auto name_cb = [&result, &callback_count](const auto& status) {
     EXPECT_EQ(fit::ok(), status);
@@ -824,7 +824,7 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameSuccess) {
   RunLoopUntilIdle();
 
   EXPECT_EQ(kNewName, discovery_manager()->local_name());
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::SUCCESS), result);
+  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), result);
   EXPECT_EQ(1u, callback_count);
 }
 
@@ -834,7 +834,7 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameError) {
   EXPECT_CMD_PACKET_OUT(test_device(), kWriteLocalName, );
 
   // Set the status to be a dummy invalid status.
-  hci::Result<> result = ToResult(hci_spec::StatusCode::UNSUPPORTED_REMOTE_FEATURE);
+  hci::Result<> result = ToResult(pw::bluetooth::emboss::StatusCode::UNSUPPORTED_REMOTE_FEATURE);
   size_t callback_count = 0u;
   auto name_cb = [&result, &callback_count](const auto& status) {
     EXPECT_TRUE(status.is_error());
@@ -857,7 +857,7 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateLocalNameError) {
 
   // |local_name_| should not be updated, return status should be error.
   EXPECT_NE(kNewName, discovery_manager()->local_name());
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::HARDWARE_FAILURE), result);
+  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE), result);
   EXPECT_EQ(1u, callback_count);
 }
 
@@ -868,7 +868,7 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateEIRResponseDataError) {
   EXPECT_CMD_PACKET_OUT(test_device(), kWriteLocalName, );
 
   // Set the status to be a dummy invalid status.
-  hci::Result<> result = ToResult(hci_spec::StatusCode::UNSUPPORTED_REMOTE_FEATURE);
+  hci::Result<> result = ToResult(pw::bluetooth::emboss::StatusCode::UNSUPPORTED_REMOTE_FEATURE);
   size_t callback_count = 0u;
   auto name_cb = [&result, &callback_count](const auto& status) {
     EXPECT_TRUE(status.is_error());
@@ -902,7 +902,7 @@ TEST_F(BrEdrDiscoveryManagerTest, UpdateEIRResponseDataError) {
 
   // |local_name_| should not be updated, return status should be error.
   EXPECT_NE(kNewName, discovery_manager()->local_name());
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::HARDWARE_FAILURE), result);
+  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE), result);
   EXPECT_EQ(1u, callback_count);
 }
 

@@ -13,7 +13,7 @@ namespace bt::hci {
 namespace {
 
 TEST(StaticPacketTest, StaticPacketBasic) {
-  StaticPacket<hci_spec::TestCommandPacketWriter> packet;
+  StaticPacket<pw::bluetooth::emboss::TestCommandPacketWriter> packet;
   packet.view().header().opcode().BackingStorage().WriteUInt(1234);
   packet.view().header().parameter_total_size().Write(1);
   packet.view().payload().Write(13);
@@ -25,7 +25,7 @@ TEST(StaticPacketTest, StaticPacketBasic) {
 }
 
 TEST(EmbossCommandPacketTest, EmbossCommandPacketBasic) {
-  auto packet = EmbossCommandPacket::New<hci_spec::TestCommandPacketWriter>(1234);
+  auto packet = EmbossCommandPacket::New<pw::bluetooth::emboss::TestCommandPacketWriter>(1234);
   packet.view_t().payload().Write(13);
 
   EXPECT_EQ(packet.size(), 4u);
@@ -34,18 +34,20 @@ TEST(EmbossCommandPacketTest, EmbossCommandPacketBasic) {
   EXPECT_EQ(packet.opcode(), 1234);
   EXPECT_EQ(packet.ocf(), 1234 & 0x3FF);
   EXPECT_EQ(packet.ogf(), 1234 >> 10);
-  EXPECT_EQ(packet.view<hci_spec::TestCommandPacketView>().payload().Read(), 13);
+  EXPECT_EQ(packet.view<pw::bluetooth::emboss::TestCommandPacketView>().payload().Read(), 13);
 }
 
 TEST(EmbossCommandPacketTest, EmbossCommandPacketDeathTest) {
-  EmbossCommandPacket packet = EmbossCommandPacket::New<hci_spec::TestCommandPacketView>(1234);
+  EmbossCommandPacket packet =
+      EmbossCommandPacket::New<pw::bluetooth::emboss::TestCommandPacketView>(1234);
 
   // Try and fail to request view for struct larger than TestCommandPacket.
-  EXPECT_DEATH_IF_SUPPORTED(packet.view<hci_spec::InquiryCommandView>(),
+  EXPECT_DEATH_IF_SUPPORTED(packet.view<pw::bluetooth::emboss::InquiryCommandView>(),
                             "emboss packet buffer not large enough");
   // Try and fail to allocate 0 length packet (needs at least 3 bytes for the header).
-  EXPECT_DEATH_IF_SUPPORTED(EmbossCommandPacket::New<hci_spec::EmbossCommandHeaderView>(1234, 0),
-                            "command packet size must be at least 3 bytes");
+  EXPECT_DEATH_IF_SUPPORTED(
+      EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(1234, 0),
+      "command packet size must be at least 3 bytes");
 }
 
 }  // namespace

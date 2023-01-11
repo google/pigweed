@@ -56,7 +56,7 @@ constexpr bool IsValidBREDRFixedChannel(ChannelId id) {
 }  // namespace
 
 LogicalLink::LogicalLink(hci_spec::ConnectionHandle handle, bt::LinkType type,
-                         hci_spec::ConnectionRole role, size_t max_acl_payload_size,
+                         pw::bluetooth::emboss::ConnectionRole role, size_t max_acl_payload_size,
                          QueryServiceCallback query_service_cb,
                          hci::AclDataChannel* acl_data_channel, hci::CommandChannel* cmd_channel,
                          bool random_channel_ids)
@@ -528,7 +528,7 @@ void LogicalLink::SendConnectionParameterUpdateRequest(
     ConnectionParameterUpdateRequestCallback request_cb) {
   BT_ASSERT(signaling_channel_);
   BT_ASSERT(type_ == bt::LinkType::kLE);
-  BT_ASSERT(role_ == hci_spec::ConnectionRole::PERIPHERAL);
+  BT_ASSERT(role_ == pw::bluetooth::emboss::ConnectionRole::PERIPHERAL);
 
   LowEnergyCommandHandler cmd_handler(signaling_channel_.get());
   cmd_handler.SendConnectionParameterUpdateRequest(
@@ -563,7 +563,7 @@ void LogicalLink::SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
                                                 hci::ResultCallback<> callback) {
   if (type_ != bt::LinkType::kACL) {
     bt_log(ERROR, "l2cap", "attempt to set flush timeout on non-ACL logical link");
-    callback(ToResult(hci_spec::StatusCode::INVALID_HCI_COMMAND_PARAMETERS));
+    callback(ToResult(pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS));
     return;
   }
 
@@ -577,7 +577,7 @@ void LogicalLink::SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
 
   if (flush_timeout < zx::msec(1) || (flush_timeout > hci_spec::kMaxAutomaticFlushTimeoutDuration &&
                                       flush_timeout != zx::duration::infinite())) {
-    callback_wrapper(ToResult(hci_spec::StatusCode::INVALID_HCI_COMMAND_PARAMETERS));
+    callback_wrapper(ToResult(pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS));
     return;
   }
 
@@ -738,7 +738,7 @@ void LogicalLink::OnRxConnectionParameterUpdateRequest(
   // Only a LE peripheral can send this command. "If a Peripheral’s Host receives an
   // L2CAP_CONNECTION_PARAMETER_UPDATE_REQ packet it shall respond with an L2CAP_COMMAND_REJECT_RSP
   // packet with reason 0x0000 (Command not understood)." (v5.0, Vol 3, Part A, Section 4.20)
-  if (role_ == hci_spec::ConnectionRole::PERIPHERAL) {
+  if (role_ == pw::bluetooth::emboss::ConnectionRole::PERIPHERAL) {
     bt_log(DEBUG, "l2cap", "rejecting conn. param. update request from central");
     responder->RejectNotUnderstood();
     return;

@@ -86,8 +86,9 @@ void SetPageScanEnabled(bool enabled, hci::Transport::WeakPtr hci, async_dispatc
       scan_type &= ~static_cast<uint8_t>(hci_spec::ScanEnableBit::kPage);
     }
 
-    auto write_enable = hci::EmbossCommandPacket::New<hci_spec::WriteScanEnableCommandWriter>(
-        hci_spec::kWriteScanEnable);
+    auto write_enable =
+        hci::EmbossCommandPacket::New<pw::bluetooth::emboss::WriteScanEnableCommandWriter>(
+            hci_spec::kWriteScanEnable);
     auto write_enable_view = write_enable.view_t();
     write_enable_view.scan_enable().inquiry().Write(
         scan_type & static_cast<uint8_t>(hci_spec::ScanEnableBit::kInquiry));
@@ -352,7 +353,8 @@ bool BrEdrConnectionManager::RemoveServiceSearch(SearchId id) {
 }
 
 std::optional<BrEdrConnectionManager::ScoRequestHandle> BrEdrConnectionManager::OpenScoConnection(
-    PeerId peer_id, bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> parameters,
+    PeerId peer_id,
+    bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> parameters,
     sco::ScoConnectionManager::OpenConnectionCallback callback) {
   auto conn_pair = FindConnectionById(peer_id);
   if (!conn_pair) {
@@ -366,7 +368,8 @@ std::optional<BrEdrConnectionManager::ScoRequestHandle> BrEdrConnectionManager::
 
 std::optional<BrEdrConnectionManager::ScoRequestHandle> BrEdrConnectionManager::AcceptScoConnection(
     PeerId peer_id,
-    std::vector<bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>> parameters,
+    std::vector<bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>>
+        parameters,
     sco::ScoConnectionManager::AcceptConnectionCallback callback) {
   auto conn_pair = FindConnectionById(peer_id);
   if (!conn_pair) {
@@ -463,11 +466,11 @@ void BrEdrConnectionManager::WritePageTimeout(zx::duration page_timeout, hci::Re
   BT_ASSERT(page_timeout <= hci_spec::kMaxPageTimeoutDuration);
 
   const int64_t raw_page_timeout = page_timeout / hci_spec::kDurationPerPageTimeoutUnit;
-  BT_ASSERT(raw_page_timeout >= static_cast<uint16_t>(hci_spec::PageTimeout::MIN));
-  BT_ASSERT(raw_page_timeout <= static_cast<uint16_t>(hci_spec::PageTimeout::MAX));
+  BT_ASSERT(raw_page_timeout >= static_cast<uint16_t>(pw::bluetooth::emboss::PageTimeout::MIN));
+  BT_ASSERT(raw_page_timeout <= static_cast<uint16_t>(pw::bluetooth::emboss::PageTimeout::MAX));
 
   auto write_page_timeout_cmd =
-      hci::EmbossCommandPacket::New<hci_spec::WritePageTimeoutCommandWriter>(
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::WritePageTimeoutCommandWriter>(
           hci_spec::kWritePageTimeout);
   auto params = write_page_timeout_cmd.view_t();
   params.page_timeout().Write(raw_page_timeout);
@@ -487,8 +490,9 @@ void BrEdrConnectionManager::WritePageScanSettings(uint16_t interval, uint16_t w
     return;
   }
 
-  auto write_activity = hci::EmbossCommandPacket::New<hci_spec::WritePageScanActivityCommandWriter>(
-      hci_spec::kWritePageScanActivity);
+  auto write_activity =
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::WritePageScanActivityCommandWriter>(
+          hci_spec::kWritePageScanActivity);
   auto activity_params = write_activity.view_t();
   activity_params.page_scan_interval().Write(interval);
   activity_params.page_scan_window().Write(window);
@@ -562,7 +566,7 @@ Peer* BrEdrConnectionManager::FindOrInitPeer(DeviceAddress addr) {
 // this link but pairing is allowed before interrogation completes.
 void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
                                                   hci_spec::ConnectionHandle connection_handle,
-                                                  hci_spec::ConnectionRole role) {
+                                                  pw::bluetooth::emboss::ConnectionRole role) {
   auto link =
       std::make_unique<hci::BrEdrConnection>(connection_handle, local_address_, addr, role, hci_);
   Peer* const peer = FindOrInitPeer(addr);
@@ -700,7 +704,7 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnAuthenticatio
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
-  hci_spec::StatusCode status_code;
+  pw::bluetooth::emboss::StatusCode status_code;
   event.ToStatusCode(&status_code);
   iter->second.pairing_state().OnAuthenticationComplete(status_code);
   return hci::CommandChannel::EventCallbackResult::kContinue;
@@ -715,7 +719,8 @@ void BrEdrConnectionManager::OnConnectionRequest(ConnectionRequestEvent event) {
   if (deny_incoming_.contains(event.addr)) {
     bt_log(INFO, "gap-bredr", "rejecting incoming from peer (addr: %s) on cooldown",
            bt_str(event.addr));
-    SendRejectConnectionRequest(event.addr, hci_spec::StatusCode::CONNECTION_REJECTED_BAD_BD_ADDR);
+    SendRejectConnectionRequest(event.addr,
+                                pw::bluetooth::emboss::StatusCode::CONNECTION_REJECTED_BAD_BD_ADDR);
     return;
   }
   // Initialize the peer if it doesn't exist, to ensure we have allocated a PeerId
@@ -729,7 +734,8 @@ void BrEdrConnectionManager::OnConnectionRequest(ConnectionRequestEvent event) {
            "class: %s)",
            bt_str(peer_id), bt_str(event.addr), hci_spec::LinkTypeToString(event.link_type).c_str(),
            bt_str(event.class_of_device));
-    SendRejectConnectionRequest(event.addr, hci_spec::StatusCode::CONNECTION_REJECTED_BAD_BD_ADDR);
+    SendRejectConnectionRequest(event.addr,
+                                pw::bluetooth::emboss::StatusCode::CONNECTION_REJECTED_BAD_BD_ADDR);
     return;
   }
 
@@ -740,7 +746,8 @@ void BrEdrConnectionManager::OnConnectionRequest(ConnectionRequestEvent event) {
       bt_log(WARN, "gap-bredr",
              "rejecting incoming connection request; already connected (peer: %s, addr: %s)",
              bt_str(peer_id), bt_str(event.addr));
-      SendRejectConnectionRequest(event.addr, hci_spec::StatusCode::CONNECTION_ALREADY_EXISTS);
+      SendRejectConnectionRequest(event.addr,
+                                  pw::bluetooth::emboss::StatusCode::CONNECTION_ALREADY_EXISTS);
       return;
     }
 
@@ -787,13 +794,14 @@ void BrEdrConnectionManager::OnConnectionRequest(ConnectionRequestEvent event) {
         WARN, "gap-bredr",
         "rejecting (e)SCO connection request for peer that is not connected (peer: %s, addr: %s)",
         bt_str(peer_id), bt_str(event.addr));
-    SendRejectSynchronousRequest(event.addr,
-                                 hci_spec::StatusCode::UNACCEPTABLE_CONNECTION_PARAMETERS);
+    SendRejectSynchronousRequest(
+        event.addr, pw::bluetooth::emboss::StatusCode::UNACCEPTABLE_CONNECTION_PARAMETERS);
   } else {
     auto link_type = static_cast<unsigned int>(event.link_type);
     bt_log(WARN, "gap-bredr", "reject unsupported connection type %u (peer: %s, addr: %s)",
            link_type, bt_str(peer_id), bt_str(event.addr));
-    SendRejectConnectionRequest(event.addr, hci_spec::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
+    SendRejectConnectionRequest(
+        event.addr, pw::bluetooth::emboss::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
   }
 }
 
@@ -838,8 +846,9 @@ void BrEdrConnectionManager::CompleteRequest(PeerId peer_id, DeviceAddress addre
 
   const char* direction = completes_outgoing_request ? "outgoing" : "incoming";
   const char* result = status.is_ok() ? "complete" : "error";
-  hci_spec::ConnectionRole role = completes_outgoing_request ? hci_spec::ConnectionRole::CENTRAL
-                                                             : hci_spec::ConnectionRole::PERIPHERAL;
+  pw::bluetooth::emboss::ConnectionRole role =
+      completes_outgoing_request ? pw::bluetooth::emboss::ConnectionRole::CENTRAL
+                                 : pw::bluetooth::emboss::ConnectionRole::PERIPHERAL;
   if (request.role_change()) {
     role = request.role_change().value();
   }
@@ -847,8 +856,8 @@ void BrEdrConnectionManager::CompleteRequest(PeerId peer_id, DeviceAddress addre
   bt_log(INFO, "gap-bredr",
          "%s connection %s (status: %s, role: %s, peer: %s, addr: %s, handle: %#.4x)", direction,
          result, bt_str(status),
-         role == hci_spec::ConnectionRole::CENTRAL ? "central" : "peripheral", bt_str(peer_id),
-         bt_str(address), handle);
+         role == pw::bluetooth::emboss::ConnectionRole::CENTRAL ? "central" : "peripheral",
+         bt_str(peer_id), bt_str(address), handle);
 
   if (completes_outgoing_request) {
     // Determine the modified status in case of cancellation or timeout
@@ -943,27 +952,30 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnIoCapabilityR
   auto conn_pair = FindConnectionByAddress(params.bd_addr);
   if (!conn_pair) {
     bt_log(ERROR, "gap-bredr", "got %s for unconnected addr %s", __func__, bt_str(params.bd_addr));
-    SendIoCapabilityRequestNegativeReply(params.bd_addr, hci_spec::StatusCode::PAIRING_NOT_ALLOWED);
+    SendIoCapabilityRequestNegativeReply(params.bd_addr,
+                                         pw::bluetooth::emboss::StatusCode::PAIRING_NOT_ALLOWED);
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
   auto [handle, conn_ptr] = *conn_pair;
   auto reply = conn_ptr->pairing_state().OnIoCapabilityRequest();
 
   if (!reply) {
-    SendIoCapabilityRequestNegativeReply(params.bd_addr, hci_spec::StatusCode::PAIRING_NOT_ALLOWED);
+    SendIoCapabilityRequestNegativeReply(params.bd_addr,
+                                         pw::bluetooth::emboss::StatusCode::PAIRING_NOT_ALLOWED);
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
-  const hci_spec::IoCapability io_capability = *reply;
+  const pw::bluetooth::emboss::IoCapability io_capability = *reply;
 
   // TODO(fxbug.dev/601): Add OOB status from PeerCache.
-  const hci_spec::OobDataPresent oob_data_present = hci_spec::OobDataPresent::NOT_PRESENT;
+  const pw::bluetooth::emboss::OobDataPresent oob_data_present =
+      pw::bluetooth::emboss::OobDataPresent::NOT_PRESENT;
 
   // TODO(fxbug.dev/1249): Determine this based on the service requirements.
-  const hci_spec::AuthenticationRequirements auth_requirements =
-      io_capability == hci_spec::IoCapability::NO_INPUT_NO_OUTPUT
-          ? hci_spec::AuthenticationRequirements::GENERAL_BONDING
-          : hci_spec::AuthenticationRequirements::MITM_GENERAL_BONDING;
+  const pw::bluetooth::emboss::AuthenticationRequirements auth_requirements =
+      io_capability == pw::bluetooth::emboss::IoCapability::NO_INPUT_NO_OUTPUT
+          ? pw::bluetooth::emboss::AuthenticationRequirements::GENERAL_BONDING
+          : pw::bluetooth::emboss::AuthenticationRequirements::MITM_GENERAL_BONDING;
 
   SendIoCapabilityRequestReply(params.bd_addr, io_capability, oob_data_present, auth_requirements);
   return hci::CommandChannel::EventCallbackResult::kContinue;
@@ -1310,8 +1322,9 @@ void BrEdrConnectionManager::OnRequestTimeout() {
 }
 
 void BrEdrConnectionManager::SendCreateConnectionCancelCommand(DeviceAddress addr) {
-  auto cancel = hci::EmbossCommandPacket::New<hci_spec::CreateConnectionCancelCommandWriter>(
-      hci_spec::kCreateConnectionCancel);
+  auto cancel =
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::CreateConnectionCancelCommandWriter>(
+          hci_spec::kCreateConnectionCancel);
   auto params = cancel.view_t();
   params.bd_addr().CopyFrom(addr.value().view());
   hci_->command_channel()->SendCommand(std::move(cancel), [](auto, const hci::EventPacket& event) {
@@ -1321,8 +1334,9 @@ void BrEdrConnectionManager::SendCreateConnectionCancelCommand(DeviceAddress add
 
 void BrEdrConnectionManager::SendAuthenticationRequested(hci_spec::ConnectionHandle handle,
                                                          hci::ResultFunction<> cb) {
-  auto auth_request = hci::EmbossCommandPacket::New<hci_spec::AuthenticationRequestedCommandWriter>(
-      hci_spec::kAuthenticationRequested);
+  auto auth_request =
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::AuthenticationRequestedCommandWriter>(
+          hci_spec::kAuthenticationRequested);
   auth_request.view_t().connection_handle().Write(handle);
 
   // Complete on command status because Authentication Complete Event is already registered.
@@ -1337,11 +1351,12 @@ void BrEdrConnectionManager::SendAuthenticationRequested(hci_spec::ConnectionHan
 }
 
 void BrEdrConnectionManager::SendIoCapabilityRequestReply(
-    DeviceAddressBytes bd_addr, hci_spec::IoCapability io_capability,
-    hci_spec::OobDataPresent oob_data_present,
-    hci_spec::AuthenticationRequirements auth_requirements, hci::ResultFunction<> cb) {
-  auto packet = hci::EmbossCommandPacket::New<hci_spec::IoCapabilityRequestReplyCommandWriter>(
-      hci_spec::kIOCapabilityRequestReply);
+    DeviceAddressBytes bd_addr, pw::bluetooth::emboss::IoCapability io_capability,
+    pw::bluetooth::emboss::OobDataPresent oob_data_present,
+    pw::bluetooth::emboss::AuthenticationRequirements auth_requirements, hci::ResultFunction<> cb) {
+  auto packet =
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::IoCapabilityRequestReplyCommandWriter>(
+          hci_spec::kIOCapabilityRequestReply);
   auto params = packet.view_t();
   params.bd_addr().CopyFrom(bd_addr.view());
   params.io_capability().Write(io_capability);
@@ -1350,9 +1365,9 @@ void BrEdrConnectionManager::SendIoCapabilityRequestReply(
   SendCommandWithStatusCallback(std::move(packet), std::move(cb));
 }
 
-void BrEdrConnectionManager::SendIoCapabilityRequestNegativeReply(DeviceAddressBytes bd_addr,
-                                                                  hci_spec::StatusCode reason,
-                                                                  hci::ResultFunction<> cb) {
+void BrEdrConnectionManager::SendIoCapabilityRequestNegativeReply(
+    DeviceAddressBytes bd_addr, pw::bluetooth::emboss::StatusCode reason,
+    hci::ResultFunction<> cb) {
   auto packet =
       hci::CommandPacket::New(hci_spec::kIOCapabilityRequestNegativeReply,
                               sizeof(hci_spec::IOCapabilityRequestNegativeReplyCommandParams));
@@ -1364,7 +1379,8 @@ void BrEdrConnectionManager::SendIoCapabilityRequestNegativeReply(DeviceAddressB
 
 void BrEdrConnectionManager::SendUserConfirmationRequestReply(DeviceAddressBytes bd_addr,
                                                               hci::ResultFunction<> cb) {
-  auto packet = hci::EmbossCommandPacket::New<hci_spec::UserConfirmationRequestReplyCommandWriter>(
+  auto packet = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::UserConfirmationRequestReplyCommandWriter>(
       hci_spec::kUserConfirmationRequestReply);
   packet.view_t().bd_addr().CopyFrom(bd_addr.view());
   SendCommandWithStatusCallback(std::move(packet), std::move(cb));
@@ -1372,9 +1388,9 @@ void BrEdrConnectionManager::SendUserConfirmationRequestReply(DeviceAddressBytes
 
 void BrEdrConnectionManager::SendUserConfirmationRequestNegativeReply(DeviceAddressBytes bd_addr,
                                                                       hci::ResultFunction<> cb) {
-  auto packet =
-      hci::EmbossCommandPacket::New<hci_spec::UserConfirmationRequestNegativeReplyCommandWriter>(
-          hci_spec::kUserConfirmationRequestNegativeReply);
+  auto packet = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::UserConfirmationRequestNegativeReplyCommandWriter>(
+      hci_spec::kUserConfirmationRequestNegativeReply);
   packet.view_t().bd_addr().CopyFrom(bd_addr.view());
   SendCommandWithStatusCallback(std::move(packet), std::move(cb));
 }
@@ -1382,8 +1398,9 @@ void BrEdrConnectionManager::SendUserConfirmationRequestNegativeReply(DeviceAddr
 void BrEdrConnectionManager::SendUserPasskeyRequestReply(DeviceAddressBytes bd_addr,
                                                          uint32_t numeric_value,
                                                          hci::ResultFunction<> cb) {
-  auto packet = hci::EmbossCommandPacket::New<hci_spec::UserPasskeyRequestReplyCommandWriter>(
-      hci_spec::kUserPasskeyRequestReply);
+  auto packet =
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::UserPasskeyRequestReplyCommandWriter>(
+          hci_spec::kUserPasskeyRequestReply);
   auto view = packet.view_t();
   view.bd_addr().CopyFrom(bd_addr.view());
   view.numeric_value().Write(numeric_value);
@@ -1402,9 +1419,9 @@ void BrEdrConnectionManager::SendUserPasskeyRequestNegativeReply(DeviceAddressBy
 
 void BrEdrConnectionManager::SendLinkKeyRequestNegativeReply(DeviceAddressBytes bd_addr,
                                                              hci::ResultFunction<> cb) {
-  auto negative_reply =
-      hci::EmbossCommandPacket::New<hci_spec::LinkKeyRequestNegativeReplyCommandWriter>(
-          hci_spec::kLinkKeyRequestNegativeReply);
+  auto negative_reply = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::LinkKeyRequestNegativeReplyCommandWriter>(
+      hci_spec::kLinkKeyRequestNegativeReply);
   auto negative_reply_params = negative_reply.view_t();
   negative_reply_params.bd_addr().CopyFrom(bd_addr.view());
   SendCommandWithStatusCallback(std::move(negative_reply), std::move(cb));
@@ -1413,8 +1430,9 @@ void BrEdrConnectionManager::SendLinkKeyRequestNegativeReply(DeviceAddressBytes 
 void BrEdrConnectionManager::SendLinkKeyRequestReply(DeviceAddressBytes bd_addr,
                                                      hci_spec::LinkKey link_key,
                                                      hci::ResultFunction<> cb) {
-  auto reply = hci::EmbossCommandPacket::New<hci_spec::LinkKeyRequestReplyCommandWriter>(
-      hci_spec::kLinkKeyRequestReply);
+  auto reply =
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::LinkKeyRequestReplyCommandWriter>(
+          hci_spec::kLinkKeyRequestReply);
   auto reply_params = reply.view_t();
   reply_params.bd_addr().CopyFrom(bd_addr.view());
 
@@ -1438,13 +1456,14 @@ void BrEdrConnectionManager::SendCommandWithStatusCallback(T command_packet,
 
 void BrEdrConnectionManager::SendAcceptConnectionRequest(DeviceAddressBytes addr,
                                                          hci::ResultFunction<> cb) {
-  auto accept = hci::EmbossCommandPacket::New<hci_spec::AcceptConnectionRequestCommandWriter>(
-      hci_spec::kAcceptConnectionRequest);
+  auto accept =
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::AcceptConnectionRequestCommandWriter>(
+          hci_spec::kAcceptConnectionRequest);
   auto accept_params = accept.view_t();
   accept_params.bd_addr().CopyFrom(addr.view());
   // This role switch preference can fail. A HCI_Role_Change event will be generated if the role
   // switch is successful (Core Spec v5.2, Vol 2, Part F, Sec 3.1).
-  accept_params.role().Write(hci_spec::ConnectionRole::CENTRAL);
+  accept_params.role().Write(pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   hci::CommandChannel::CommandCallback command_cb;
   if (cb) {
@@ -1458,10 +1477,11 @@ void BrEdrConnectionManager::SendAcceptConnectionRequest(DeviceAddressBytes addr
 }
 
 void BrEdrConnectionManager::SendRejectConnectionRequest(DeviceAddress addr,
-                                                         hci_spec::StatusCode reason,
+                                                         pw::bluetooth::emboss::StatusCode reason,
                                                          hci::ResultFunction<> cb) {
-  auto reject = hci::EmbossCommandPacket::New<hci_spec::RejectConnectionRequestCommandWriter>(
-      hci_spec::kRejectConnectionRequest);
+  auto reject =
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::RejectConnectionRequestCommandWriter>(
+          hci_spec::kRejectConnectionRequest);
   auto reject_params = reject.view_t();
   reject_params.bd_addr().CopyFrom(addr.value().view());
   reject_params.reason().Write(reason);
@@ -1478,11 +1498,11 @@ void BrEdrConnectionManager::SendRejectConnectionRequest(DeviceAddress addr,
 }
 
 void BrEdrConnectionManager::SendRejectSynchronousRequest(DeviceAddress addr,
-                                                          hci_spec::StatusCode reason,
+                                                          pw::bluetooth::emboss::StatusCode reason,
                                                           hci::ResultFunction<> cb) {
-  auto reject =
-      hci::EmbossCommandPacket::New<hci_spec::RejectSynchronousConnectionRequestCommandWriter>(
-          hci_spec::kRejectSynchronousConnectionRequest);
+  auto reject = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::RejectSynchronousConnectionRequestCommandWriter>(
+      hci_spec::kRejectSynchronousConnectionRequest);
   auto reject_params = reject.view_t();
   reject_params.bd_addr().CopyFrom(addr.value().view());
   reject_params.reason().Write(reason);

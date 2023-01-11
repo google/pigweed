@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 [$default byte_order: "LittleEndian"]
-[(cpp) namespace: "bt::hci_spec"]
+[(cpp) namespace: "pw::bluetooth::emboss"]
 # =========================== Constants =================================
 
 
@@ -281,13 +281,13 @@ bits OpCodeBits:
   $next [+6]   UInt  ogf
 
 
-struct EmbossCommandHeader:
+struct CommandHeader:
   -- HCI Command packet header.
   0     [+2]  OpCodeBits  opcode
   $next [+1]  UInt        parameter_total_size
 
 
-struct EmbossEventHeader:
+struct EventHeader:
   -- HCI Event packet header.
   0     [+1] UInt  event_code
   $next [+1] UInt  parameter_total_size
@@ -303,9 +303,9 @@ struct InquiryCommand:
   -- inquiry to indicate it's completion. No Inquiry Complete event is sent if
   -- Inquiry is cancelled.
 
-  let hdr_size = EmbossCommandHeader.$size_in_bytes
+  let hdr_size = CommandHeader.$size_in_bytes
 
-  0     [+hdr_size]  EmbossCommandHeader  header
+  0     [+hdr_size]  CommandHeader  header
 
   $next [+3]         InquiryAccessCode    lap
     -- LAP (Lower Address Part)
@@ -324,8 +324,8 @@ struct InquiryCommand:
 struct InquiryCancelCommand:
   -- Inquiry Cancel Command (v1.1) (BR/EDR)
   -- No command parameters
-  let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0 [+hdr_size]  EmbossCommandHeader  header
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
 
 
 struct CreateConnectionCommand:
@@ -335,8 +335,8 @@ struct CreateConnectionCommand:
   -- Controller to indicate that this command has been completed. Instead, the
   -- Connection Complete event will indicate that this command has been
   -- completed.
-  let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size]               EmbossCommandHeader     header
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]               CommandHeader     header
   $next [+BdAddr.$size_in_bytes]  BdAddr                  bd_addr
     -- BD_ADDR of the device to be connected
 
@@ -369,8 +369,8 @@ struct DisconnectCommand:
   -- Controller to indicate that this command has been completed. Instead, the
   -- Disconnection Complete event will indicate that this command has been
   -- completed.
-  let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size]  EmbossCommandHeader  header
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader  header
   $next [+2]         UInt                 connection_handle
     -- Connection_Handle (only the lower 12-bits are meaningful).
     --   Range: 0x0000 to 0x0EFF
@@ -381,16 +381,16 @@ struct DisconnectCommand:
 
 struct CreateConnectionCancelCommand:
   -- Create Connection Cancel (v1.1) (BR/EDR)
-  let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size]               EmbossCommandHeader  header
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]               CommandHeader  header
   $next [+BdAddr.$size_in_bytes]  BdAddr               bd_addr
     -- BD_ADDR of the Create Connection Command request
 
 
 struct AcceptConnectionRequestCommand:
   -- Accept Connection Request (v1.1) (BR/EDR)
-  let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size]               EmbossCommandHeader  header
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]               CommandHeader  header
   $next [+BdAddr.$size_in_bytes]  BdAddr               bd_addr
     -- The 48-bit BD_ADDR of the remote device requesting the connection.
 
@@ -399,8 +399,8 @@ struct AcceptConnectionRequestCommand:
 
 struct RejectConnectionRequestCommand:
   -- Reject Connection Request (v1.1) (BR/EDR)
-  let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size]               EmbossCommandHeader  header
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]               CommandHeader  header
   $next [+BdAddr.$size_in_bytes]  BdAddr               bd_addr
     -- The 48-bit BD_ADDR of the remote device requesting the connection.
 
@@ -408,26 +408,26 @@ struct RejectConnectionRequestCommand:
     -- Must be one of CONNECTION_REJECTED* from StatusCode in this file
 
 
-struct EmbossLinkKey:
+struct LinkKey:
   0 [+16]  UInt:8[16]  value
 
 
 struct LinkKeyRequestReplyCommand:
   -- Link Key Request Reply Command (v1.1) (BR/EDR)
-  let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size]               EmbossCommandHeader  header
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]               CommandHeader  header
   $next [+BdAddr.$size_in_bytes]  BdAddr               bd_addr
     -- The 48-bit BD_ADDR of the remote device requesting the connection.
 
-  let bredr_link_key_size = EmbossLinkKey.$size_in_bytes
-  $next [+bredr_link_key_size]    EmbossLinkKey        link_key
+  let bredr_link_key_size = LinkKey.$size_in_bytes
+  $next [+bredr_link_key_size]    LinkKey        link_key
     -- Link key to use for the connection with the peer device.
 
 
 struct LinkKeyRequestNegativeReplyCommand:
   -- Link Key Request Negative Reply Command (v1.1) (BR/EDR)
-  let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size]               EmbossCommandHeader  header
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]               CommandHeader  header
   $next [+BdAddr.$size_in_bytes]  BdAddr               bd_addr
     -- BD_ADDR of the peer device that the host does not have a link key for.
 
@@ -439,8 +439,8 @@ struct AuthenticationRequestedCommand:
   -- Controller to indicate that this command has been completed. Instead, the
   -- Authentication Complete event will indicate that this command has been
   -- completed.
-  let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size]  EmbossCommandHeader  header
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader  header
   $next [+2]         UInt                 connection_handle
     -- Connection_Handle (only the lower 12-bits are meaningful).
     --   Range: 0x0000 to 0x0EFF
@@ -453,8 +453,8 @@ struct SetConnectionEncryptionCommand:
   -- NOTE on ReturnParams: No Command Complete event will be sent by the
   -- Controller to indicate that this command has been completed. Instead, the
   -- Encryption Change event will indicate that this command has been completed.
-  let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size]  EmbossCommandHeader  header
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader  header
   $next [+2]         UInt                 connection_handle
     -- Connection_Handle (only the lower 12-bits are meaningful).
     --   Range: 0x0000 to 0x0EFF
@@ -471,8 +471,8 @@ struct RemoteNameRequestCommand:
   -- Controller to indicate that this command has been completed. Instead, the
   -- Remote Name Request Complete event will indicate that this command has been
   -- completed.
-  let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size]               EmbossCommandHeader     header
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]               CommandHeader     header
   $next [+BdAddr.$size_in_bytes]  BdAddr                  bd_addr
     -- Address of the device whose name is to be requested.
 
@@ -495,8 +495,8 @@ struct ReadRemoteSupportedFeaturesCommand:
   -- Controller to indicate that this command has been completed. Instead, the
   -- Read Remote Supported Features Complete event will indicate that this
   -- command has been completed.
-  let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size]  EmbossCommandHeader  header
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader  header
   $next [+2]         UInt                 connection_handle
     -- Connection_Handle (only the lower 12-bits are meaningful).
     --   Range: 0x0000 to 0x0EFF
@@ -510,8 +510,8 @@ struct ReadRemoteExtendedFeaturesCommand:
   -- Controller to indicate that this command has been completed. Instead, the
   -- Read Remote Extended Features Complete event will indicate that this
   -- command has been completed.
-  let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size]  EmbossCommandHeader  header
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader  header
   $next [+2]         UInt                 connection_handle
     -- Connection_Handle (only the lower 12-bits are meaningful).
     --   Range: 0x0000 to 0x0EFF
@@ -531,8 +531,8 @@ struct ReadRemoteVersionInfoCommand:
   -- Controller to indicate that this command has been completed. Instead, the
   -- Read Remote Version Information Complete event will indicate that this
   -- command has been completed.
-  let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size]  EmbossCommandHeader  header
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader  header
   $next [+2]         UInt                 connection_handle
     -- Connection_Handle (only the lower 12-bits are meaningful).
     --   Range: 0x0000 to 0x0EFF
@@ -540,8 +540,8 @@ struct ReadRemoteVersionInfoCommand:
 
 struct RejectSynchronousConnectionRequestCommand:
   -- Reject Synchronous Connection Command (BR/EDR)
-  let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size]               EmbossCommandHeader  header
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]               CommandHeader  header
   $next [+BdAddr.$size_in_bytes]  BdAddr               bd_addr
     -- Address of the remote device that sent the request.
 
@@ -551,8 +551,8 @@ struct RejectSynchronousConnectionRequestCommand:
 
 struct IoCapabilityRequestReplyCommand:
   -- IO Capability Request Reply Command (v2.1 + EDR) (BR/EDR)
-  let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size]               EmbossCommandHeader         header
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]               CommandHeader         header
   $next [+BdAddr.$size_in_bytes]  BdAddr                      bd_addr
     -- The BD_ADDR of the remote device involved in simple pairing process
 
@@ -568,24 +568,24 @@ struct IoCapabilityRequestReplyCommand:
 
 struct UserConfirmationRequestReplyCommand:
   -- User Confirmation Request Reply Command (v2.1 + EDR) (BR/EDR)
-  let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size]               EmbossCommandHeader  header
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]               CommandHeader  header
   $next [+BdAddr.$size_in_bytes]  BdAddr               bd_addr
     -- The BD_ADDR of the remote device involved in simple pairing process
 
 
 struct UserConfirmationRequestNegativeReplyCommand:
   -- User Confirmation Request Negative Reply Command (v2.1 + EDR) (BR/EDR)
-  let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size]               EmbossCommandHeader  header
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]               CommandHeader  header
   $next [+BdAddr.$size_in_bytes]  BdAddr               bd_addr
     -- The BD_ADDR of the remote device involved in simple pairing process
 
 
 struct UserPasskeyRequestReplyCommand:
   -- User Passkey Request Reply Command (v2.1 + EDR) (BR/EDR)
-  let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size]               EmbossCommandHeader  header
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]               CommandHeader  header
   $next [+BdAddr.$size_in_bytes]  BdAddr               bd_addr
     -- The BD_ADDR of the remote device involved in simple pairing process
 
@@ -693,8 +693,8 @@ struct SynchronousConnectionParameters:
 
 
 struct EnhancedSetupSynchronousConnectionCommand:
-  let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size]  EmbossCommandHeader              header
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader              header
   $next [+2]         UInt                             connection_handle
     -- The connection handle of the associated ACL link if creating a new (e)SCO connection, or the
     -- handle of an existing eSCO link if updating connection parameters.
@@ -705,8 +705,8 @@ struct EnhancedSetupSynchronousConnectionCommand:
 
 struct EnhancedAcceptSynchronousConnectionRequestCommand:
   -- Enhanced Accept Synchronous Connection Request Command (CSA2) (BR/EDR)
-  let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size]               EmbossCommandHeader              header
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]               CommandHeader              header
   $next [+BdAddr.$size_in_bytes]  BdAddr                           bd_addr
     -- The 48-bit BD_ADDR of the remote device requesting the connection.
 
@@ -716,8 +716,8 @@ struct EnhancedAcceptSynchronousConnectionRequestCommand:
 
 struct SetEventMaskCommand:
   -- Set Event Mask Command (v1.1)
-  let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size]  EmbossCommandHeader  header
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader  header
   $next [+8]         UInt                 event_mask
     -- 64-bit Bit mask used to control which HCI events are generated by the HCI for the
     -- Host. See enum class EventMask in hci_constants.h
@@ -729,8 +729,8 @@ struct LocalName:
 
 struct WriteLocalNameCommand:
   -- Write Local Name Command (v1.1) (BR/EDR)
-  let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size]         EmbossCommandHeader  header
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]         CommandHeader  header
   let local_name_size = LocalName.$size_in_bytes
   $next [+local_name_size]  LocalName            local_name
     -- A UTF-8 encoded User Friendly Descriptive Name for the device.
@@ -742,8 +742,8 @@ struct WriteLocalNameCommand:
 
 struct WritePageTimeoutCommand:
   -- Write Page Timeout Command (v1.1) (BR/EDR)
-  let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size]  EmbossCommandHeader  header
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader  header
   $next [+2]         UInt                 page_timeout
     -- Page_Timeout, in time slices (0.625 ms)
     -- Range: From MIN to MAX in PageTimeout in this file
@@ -752,8 +752,8 @@ struct WritePageTimeoutCommand:
 
 struct WriteScanEnableCommand:
   -- Write Scan Enable Command (v1.1) (BR/EDR)
-  let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size]  EmbossCommandHeader  header
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader  header
   $next [+1]         ScanEnableBits       scan_enable
     -- Bit Mask of enabled scans. See enum class ScanEnableBits in this file
     -- for how to construct this bitfield.
@@ -761,8 +761,8 @@ struct WriteScanEnableCommand:
 
 struct WritePageScanActivityCommand:
   -- Write Page Scan Activity Command (v1.1) (BR/EDR)
-  let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size]  EmbossCommandHeader  header
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader  header
   $next [+2]         UInt                 page_scan_interval
     -- Page_Scan_Interval, in time slices (0.625ms)
     -- Valid Range: MIN - MAX in PageScanInterval in this file
@@ -779,8 +779,8 @@ struct WritePageScanActivityCommand:
 
 struct InquiryCompleteEvent:
   -- Inquiry Complete Event (v1.1) (BR/EDR)
-  let hdr_size = EmbossEventHeader.$size_in_bytes
-  0     [+hdr_size] EmbossEventHeader header
+  let hdr_size = EventHeader.$size_in_bytes
+  0     [+hdr_size] EventHeader header
 
   $next [+1]        StatusCode        status
 
@@ -789,6 +789,6 @@ struct InquiryCompleteEvent:
 
 struct TestCommandPacket:
   -- Test HCI Command packet with single byte payload.
-  let hdr_size = EmbossCommandHeader.$size_in_bytes
-  0     [+hdr_size]  EmbossCommandHeader  header
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader  header
   $next [+1]         UInt                 payload

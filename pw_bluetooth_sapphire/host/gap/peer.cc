@@ -354,9 +354,10 @@ void Peer::BrEdrData::OnConnectionStateMaybeChanged(ConnectionState previous) {
   }
 }
 
-void Peer::BrEdrData::SetInquiryData(DeviceClass device_class, uint16_t clock_offset,
-                                     hci_spec::PageScanRepetitionMode page_scan_rep_mode,
-                                     int8_t rssi, const BufferView& eir_data) {
+void Peer::BrEdrData::SetInquiryData(
+    DeviceClass device_class, uint16_t clock_offset,
+    pw::bluetooth::emboss::PageScanRepetitionMode page_scan_rep_mode, int8_t rssi,
+    const BufferView& eir_data) {
   peer_->UpdateExpiry();
 
   bool notify_listeners = false;

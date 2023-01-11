@@ -12,7 +12,7 @@ LowEnergyConnection::LowEnergyConnection(hci_spec::ConnectionHandle handle,
                                          const DeviceAddress& local_address,
                                          const DeviceAddress& peer_address,
                                          const hci_spec::LEConnectionParameters& params,
-                                         hci_spec::ConnectionRole role,
+                                         pw::bluetooth::emboss::ConnectionRole role,
                                          const Transport::WeakPtr& hci)
     : AclConnection(handle, local_address, peer_address, role, hci),
       WeakSelf(this),
@@ -41,7 +41,7 @@ bool LowEnergyConnection::StartEncryption() {
     bt_log(DEBUG, "hci", "connection closed; cannot start encryption");
     return false;
   }
-  if (role() != hci_spec::ConnectionRole::CENTRAL) {
+  if (role() != pw::bluetooth::emboss::ConnectionRole::CENTRAL) {
     bt_log(DEBUG, "hci", "only the central can start encryption");
     return false;
   }
@@ -84,7 +84,7 @@ void LowEnergyConnection::HandleEncryptionStatus(Result<bool> result, bool /*key
   // disconnected by the Link Layer." (HCI_LE_Start_Encryption, Vol 2, Part E,
   // 7.8.24). We make sure of this by telling the controller to disconnect.
   if (result.is_error()) {
-    Disconnect(hci_spec::StatusCode::AUTHENTICATION_FAILURE);
+    Disconnect(pw::bluetooth::emboss::StatusCode::AUTHENTICATION_FAILURE);
   }
 
   if (!encryption_change_callback()) {

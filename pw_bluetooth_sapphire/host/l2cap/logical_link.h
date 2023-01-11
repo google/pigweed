@@ -56,10 +56,10 @@ class LogicalLink final {
   // executed on this object's creation thread.
   // If |random_channel_ids| is true, assign dynamic channels randomly instead of
   // starting at the beginning of the dynamic channel range.
-  LogicalLink(hci_spec::ConnectionHandle handle, bt::LinkType type, hci_spec::ConnectionRole role,
-              size_t max_payload_size, QueryServiceCallback query_service_cb,
-              hci::AclDataChannel* acl_data_channel, hci::CommandChannel* cmd_channel,
-              bool random_channel_ids);
+  LogicalLink(hci_spec::ConnectionHandle handle, bt::LinkType type,
+              pw::bluetooth::emboss::ConnectionRole role, size_t max_payload_size,
+              QueryServiceCallback query_service_cb, hci::AclDataChannel* acl_data_channel,
+              hci::CommandChannel* cmd_channel, bool random_channel_ids);
 
   // When a logical link is destroyed it notifies all of its channels to close themselves. Data
   // packets will no longer be routed to the associated channels.
@@ -155,7 +155,7 @@ class LogicalLink final {
   void set_connection_parameter_update_callback(LEConnectionParameterUpdateCallback callback);
 
   bt::LinkType type() const { return type_; }
-  hci_spec::ConnectionRole role() const { return role_; }
+  pw::bluetooth::emboss::ConnectionRole role() const { return role_; }
   hci_spec::ConnectionHandle handle() const { return handle_; }
 
   const sm::SecurityProperties security() { return security_; }
@@ -233,7 +233,7 @@ class LogicalLink final {
   // Information about the underlying controller logical link.
   hci_spec::ConnectionHandle handle_;
   bt::LinkType type_;
-  hci_spec::ConnectionRole role_;
+  pw::bluetooth::emboss::ConnectionRole role_;
 
   // The duration after which BR/EDR packets are flushed from the controller.
   // By default, the flush timeout is infinite (no automatic flush).

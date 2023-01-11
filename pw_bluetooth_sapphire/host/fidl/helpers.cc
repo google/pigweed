@@ -1251,66 +1251,67 @@ bt::sco::ParameterSet FidlToScoParameterSet(const fbredr::HfpParameterSet param_
   }
 }
 
-bt::StaticPacket<bt::hci_spec::SynchronousConnectionParameters::VendorCodingFormatWriter>
+bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParameters::VendorCodingFormatWriter>
 FidlToScoCodingFormat(const fbredr::CodingFormat format) {
-  bt::StaticPacket<bt::hci_spec::SynchronousConnectionParameters::VendorCodingFormatWriter> out;
+  bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParameters::VendorCodingFormatWriter>
+      out;
   auto view = out.view();
   // Set to 0 since vendor specific coding formats are not supported.
   view.company_id().Write(0);
   view.vendor_codec_id().Write(0);
   switch (format) {
     case fbredr::CodingFormat::ALAW:
-      view.coding_format().Write(bt::hci_spec::CodingFormat::A_LAW);
+      view.coding_format().Write(pw::bluetooth::emboss::CodingFormat::A_LAW);
       break;
     case fbredr::CodingFormat::MULAW:
-      view.coding_format().Write(bt::hci_spec::CodingFormat::U_LAW);
+      view.coding_format().Write(pw::bluetooth::emboss::CodingFormat::U_LAW);
       break;
     case fbredr::CodingFormat::CVSD:
-      view.coding_format().Write(bt::hci_spec::CodingFormat::CVSD);
+      view.coding_format().Write(pw::bluetooth::emboss::CodingFormat::CVSD);
       break;
     case fbredr::CodingFormat::LINEAR_PCM:
-      view.coding_format().Write(bt::hci_spec::CodingFormat::LINEAR_PCM);
+      view.coding_format().Write(pw::bluetooth::emboss::CodingFormat::LINEAR_PCM);
       break;
     case fbredr::CodingFormat::MSBC:
-      view.coding_format().Write(bt::hci_spec::CodingFormat::MSBC);
+      view.coding_format().Write(pw::bluetooth::emboss::CodingFormat::MSBC);
       break;
     case fbredr::CodingFormat::TRANSPARENT:
-      view.coding_format().Write(bt::hci_spec::CodingFormat::TRANSPARENT);
+      view.coding_format().Write(pw::bluetooth::emboss::CodingFormat::TRANSPARENT);
       break;
   }
   return out;
 }
 
-fpromise::result<bt::hci_spec::PcmDataFormat> FidlToPcmDataFormat(
+fpromise::result<pw::bluetooth::emboss::PcmDataFormat> FidlToPcmDataFormat(
     const faudio::SampleFormat& format) {
   switch (format) {
     case faudio::SampleFormat::PCM_SIGNED:
-      return fpromise::ok(bt::hci_spec::PcmDataFormat::TWOS_COMPLEMENT);
+      return fpromise::ok(pw::bluetooth::emboss::PcmDataFormat::TWOS_COMPLEMENT);
     case faudio::SampleFormat::PCM_UNSIGNED:
-      return fpromise::ok(bt::hci_spec::PcmDataFormat::UNSIGNED);
+      return fpromise::ok(pw::bluetooth::emboss::PcmDataFormat::UNSIGNED);
     default:
       // Other sample formats are not supported by SCO.
       return fpromise::error();
   }
 }
 
-bt::hci_spec::ScoDataPath FidlToScoDataPath(const fbredr::DataPath& path) {
+pw::bluetooth::emboss::ScoDataPath FidlToScoDataPath(const fbredr::DataPath& path) {
   switch (path) {
     case fbredr::DataPath::HOST:
-      return bt::hci_spec::ScoDataPath::HCI;
+      return pw::bluetooth::emboss::ScoDataPath::HCI;
     case fbredr::DataPath::OFFLOAD: {
       // TODO(fxbug.dev/58458): Use path from stack configuration file instead of this hardcoded
       // value. "6" is the data path usually used in Broadcom controllers.
-      return static_cast<bt::hci_spec::ScoDataPath>(6);
+      return static_cast<pw::bluetooth::emboss::ScoDataPath>(6);
     }
     case fbredr::DataPath::TEST:
-      return bt::hci_spec::ScoDataPath::AUDIO_TEST_MODE;
+      return pw::bluetooth::emboss::ScoDataPath::AUDIO_TEST_MODE;
   }
 }
 
-fpromise::result<bt::StaticPacket<bt::hci_spec::SynchronousConnectionParametersWriter>>
+fpromise::result<bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>>
 FidlToScoParameters(const fbredr::ScoConnectionParameters& params) {
-  bt::StaticPacket<bt::hci_spec::SynchronousConnectionParametersWriter> out;
+  bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> out;
   auto view = out.view();
 
   if (!params.has_parameter_set()) {
@@ -1358,8 +1359,8 @@ FidlToScoParameters(const fbredr::ScoConnectionParameters& params) {
   view.input_coded_data_size_bits().Write(params.io_frame_size());
   view.output_coded_data_size_bits().Write(params.io_frame_size());
 
-  if (params.has_io_pcm_data_format() &&
-      view.input_coding_format().coding_format().Read() == bt::hci_spec::CodingFormat::LINEAR_PCM) {
+  if (params.has_io_pcm_data_format() && view.input_coding_format().coding_format().Read() ==
+                                             pw::bluetooth::emboss::CodingFormat::LINEAR_PCM) {
     auto io_pcm_format = FidlToPcmDataFormat(params.io_pcm_data_format());
     if (io_pcm_format.is_error()) {
       bt_log(WARN, "fidl", "Unsupported IO PCM data format in SCO parameters");
@@ -1369,17 +1370,18 @@ FidlToScoParameters(const fbredr::ScoConnectionParameters& params) {
     view.output_pcm_data_format().Write(io_pcm_format.value());
 
   } else if (view.input_coding_format().coding_format().Read() ==
-             bt::hci_spec::CodingFormat::LINEAR_PCM) {
+             pw::bluetooth::emboss::CodingFormat::LINEAR_PCM) {
     bt_log(WARN, "fidl",
            "SCO parameters missing io_pcm_data_format (required for linear PCM IO coding format)");
     return fpromise::error();
   } else {
-    view.input_pcm_data_format().Write(bt::hci_spec::PcmDataFormat::NOT_APPLICABLE);
-    view.output_pcm_data_format().Write(bt::hci_spec::PcmDataFormat::NOT_APPLICABLE);
+    view.input_pcm_data_format().Write(pw::bluetooth::emboss::PcmDataFormat::NOT_APPLICABLE);
+    view.output_pcm_data_format().Write(pw::bluetooth::emboss::PcmDataFormat::NOT_APPLICABLE);
   }
 
   if (params.has_io_pcm_sample_payload_msb_position() &&
-      view.input_coding_format().coding_format().Read() == bt::hci_spec::CodingFormat::LINEAR_PCM) {
+      view.input_coding_format().coding_format().Read() ==
+          pw::bluetooth::emboss::CodingFormat::LINEAR_PCM) {
     view.input_pcm_sample_payload_msb_position().Write(params.io_pcm_sample_payload_msb_position());
     view.output_pcm_sample_payload_msb_position().Write(
         params.io_pcm_sample_payload_msb_position());
@@ -1406,19 +1408,20 @@ FidlToScoParameters(const fbredr::ScoConnectionParameters& params) {
   view.max_latency_ms().Write(param_set.max_latency_ms);
   view.packet_types().BackingStorage().WriteUInt(param_set.packet_types);
   view.retransmission_effort().Write(
-      static_cast<bt::hci_spec::SynchronousConnectionParameters::ScoRetransmissionEffort>(
+      static_cast<pw::bluetooth::emboss::SynchronousConnectionParameters::ScoRetransmissionEffort>(
           param_set.retransmission_effort));
 
   return fpromise::ok(out);
 }
 
-fpromise::result<std::vector<bt::StaticPacket<bt::hci_spec::SynchronousConnectionParametersWriter>>>
+fpromise::result<
+    std::vector<bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>>>
 FidlToScoParametersVector(const std::vector<fbredr::ScoConnectionParameters>& params) {
-  std::vector<bt::StaticPacket<bt::hci_spec::SynchronousConnectionParametersWriter>> out;
+  std::vector<bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>> out;
   out.reserve(params.size());
   for (const fbredr::ScoConnectionParameters& param : params) {
-    fpromise::result<bt::StaticPacket<bt::hci_spec::SynchronousConnectionParametersWriter>> result =
-        FidlToScoParameters(param);
+    fpromise::result<bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>>
+        result = FidlToScoParameters(param);
     if (result.is_error()) {
       return fpromise::error();
     }

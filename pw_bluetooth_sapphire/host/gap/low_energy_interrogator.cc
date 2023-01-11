@@ -91,8 +91,9 @@ void LowEnergyInterrogator::QueueReadLERemoteFeatures() {
 }
 
 void LowEnergyInterrogator::QueueReadRemoteVersionInformation() {
-  auto packet = hci::EmbossCommandPacket::New<hci_spec::ReadRemoteVersionInfoCommandWriter>(
-      hci_spec::kReadRemoteVersionInfo);
+  auto packet =
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ReadRemoteVersionInfoCommandWriter>(
+          hci_spec::kReadRemoteVersionInfo);
   packet.view_t().connection_handle().Write(handle_);
 
   // It's safe to capture |this| instead of a weak ptr to self because |cmd_runner_| guarantees that

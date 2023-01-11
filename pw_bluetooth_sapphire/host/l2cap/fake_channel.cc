@@ -132,7 +132,7 @@ void FakeChannel::RequestAclPriority(pw::bluetooth::AclPriority priority,
 void FakeChannel::SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
                                                 hci::ResultCallback<> callback) {
   if (!flush_timeout_succeeds_) {
-    callback(ToResult(hci_spec::StatusCode::UNSPECIFIED_ERROR));
+    callback(ToResult(pw::bluetooth::emboss::StatusCode::UNSPECIFIED_ERROR));
     return;
   }
   info_.flush_timeout = flush_timeout;

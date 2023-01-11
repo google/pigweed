@@ -89,26 +89,26 @@ std::string IOCapabilityToString(IOCapability capability) {
   return "(unknown)";
 }
 
-hci_spec::IoCapability IOCapabilityForHci(IOCapability capability) {
+pw::bluetooth::emboss::IoCapability IOCapabilityForHci(IOCapability capability) {
   switch (capability) {
     case IOCapability::kDisplayOnly:
-      return hci_spec::IoCapability::DISPLAY_ONLY;
+      return pw::bluetooth::emboss::IoCapability::DISPLAY_ONLY;
     case IOCapability::kDisplayYesNo:
-      return hci_spec::IoCapability::DISPLAY_YES_NO;
+      return pw::bluetooth::emboss::IoCapability::DISPLAY_YES_NO;
     case IOCapability::kKeyboardOnly:
-      return hci_spec::IoCapability::KEYBOARD_ONLY;
+      return pw::bluetooth::emboss::IoCapability::KEYBOARD_ONLY;
     case IOCapability::kNoInputNoOutput:
-      return hci_spec::IoCapability::NO_INPUT_NO_OUTPUT;
+      return pw::bluetooth::emboss::IoCapability::NO_INPUT_NO_OUTPUT;
 
     // There's no dedicated HCI "Keyboard w/ Display" IO Capability. Use
     // DisplayYesNo for devices with keyboard input and numeric output. See Core
     // Spec v5.0 Vol 3, Part C, Section 5.2.2.5 (Table 5.5).
     case IOCapability::kKeyboardDisplay:
-      return hci_spec::IoCapability::DISPLAY_YES_NO;
+      return pw::bluetooth::emboss::IoCapability::DISPLAY_YES_NO;
     default:
       break;
   }
-  return hci_spec::IoCapability::NO_INPUT_NO_OUTPUT;
+  return pw::bluetooth::emboss::IoCapability::NO_INPUT_NO_OUTPUT;
 }
 
 std::string PairingMethodToString(PairingMethod method) {

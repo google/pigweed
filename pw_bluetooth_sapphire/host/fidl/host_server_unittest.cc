@@ -1212,7 +1212,7 @@ TEST_F(HostServerTest, DisableBackgroundScan) {
 
 TEST_F(HostServerTest, EnableBackgroundScanFailsToStart) {
   test_device()->SetDefaultCommandStatus(bt::hci_spec::kLESetScanEnable,
-                                         bt::hci_spec::StatusCode::CONTROLLER_BUSY);
+                                         pw::bluetooth::emboss::StatusCode::CONTROLLER_BUSY);
   host_server()->EnableBackgroundScan(true);
   EXPECT_FALSE(test_device()->le_scan_state().enabled);
 

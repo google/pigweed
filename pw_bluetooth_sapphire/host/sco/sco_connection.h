@@ -25,9 +25,10 @@ class ScoConnection final : public hci::ScoDataChannel::ConnectionInterface {
   // |connection| is the underlying connection and must have the link type kSCO or kESCO.
   // |deactivated_cb| will be called when the connection has been Deactivated and should be
   // destroyed.
-  ScoConnection(std::unique_ptr<hci::Connection> connection, fit::closure deactivated_cb,
-                bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> parameters,
-                hci::ScoDataChannel* channel);
+  ScoConnection(
+      std::unique_ptr<hci::Connection> connection, fit::closure deactivated_cb,
+      bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> parameters,
+      hci::ScoDataChannel* channel);
 
   // Destroying this object will disconnect the underlying HCI connection.
   ~ScoConnection() override = default;
@@ -73,7 +74,8 @@ class ScoConnection final : public hci::ScoDataChannel::ConnectionInterface {
   }
 
   // ScoDataChannel overrides:
-  bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> parameters() override;
+  bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> parameters()
+      override;
   std::unique_ptr<hci::ScoDataPacket> GetNextOutboundPacket() override;
   void ReceiveInboundPacket(std::unique_ptr<hci::ScoDataPacket> packet) override;
   void OnHciError() override;
@@ -108,7 +110,7 @@ class ScoConnection final : public hci::ScoDataChannel::ConnectionInterface {
   // This will be null if HCI SCO is not supported.
   hci::ScoDataChannel* channel_ = nullptr;
 
-  bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> parameters_;
+  bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> parameters_;
 
   WeakSelf<ConnectionInterface> weak_conn_interface_;
   WeakSelf<ScoConnection> weak_self_;

@@ -88,7 +88,7 @@ class LowEnergyConnector final {
 
   // Handle a disconnect during kInterrogating or
   // kAwaitingConnectionFailedToBeEstablishedDisconnect.
-  void OnPeerDisconnect(hci_spec::StatusCode status);
+  void OnPeerDisconnect(pw::bluetooth::emboss::StatusCode status);
 
   // Returns true if the connection is retried.
   //

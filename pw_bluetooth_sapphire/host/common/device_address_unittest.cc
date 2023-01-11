@@ -48,7 +48,7 @@ TEST(DeviceAddressBytesTest, CastFromBytes) {
 
 TEST(DeviceAddressBytesTest, FromView) {
   std::array<uint8_t, 6> buffer = {0xfe, 0xff, 0xff, 0xff, 0xff, 0xAA};
-  auto bdaddr_view = hci_spec::MakeBdAddrView(&buffer);
+  auto bdaddr_view = pw::bluetooth::emboss::MakeBdAddrView(&buffer);
   DeviceAddressBytes addr(bdaddr_view);
   EXPECT_EQ("AA:FF:FF:FF:FF:FE", addr.ToString());
 }

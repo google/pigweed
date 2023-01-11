@@ -118,14 +118,16 @@ class FakePeer {
 
   // The response status that will be returned when this device receives a LE
   // Create Connection command.
-  hci_spec::StatusCode connect_response() const { return connect_response_; }
-  void set_connect_response(hci_spec::StatusCode response) { connect_response_ = response; }
+  pw::bluetooth::emboss::StatusCode connect_response() const { return connect_response_; }
+  void set_connect_response(pw::bluetooth::emboss::StatusCode response) {
+    connect_response_ = response;
+  }
 
   // The status that will be returned in the Command Status event in response to
   // a LE Create Connection command. If this is set to anything other than
-  // hci_spec::StatusCode::SUCCESS, then connect_response() will have no effect.
-  hci_spec::StatusCode connect_status() const { return connect_status_; }
-  void set_connect_status(hci_spec::StatusCode status) { connect_status_ = status; }
+  // pw::bluetooth::emboss::StatusCode::SUCCESS, then connect_response() will have no effect.
+  pw::bluetooth::emboss::StatusCode connect_status() const { return connect_status_; }
+  void set_connect_status(pw::bluetooth::emboss::StatusCode status) { connect_status_ = status; }
 
   bool force_pending_connect() const { return force_pending_connect_; }
   void set_force_pending_connect(bool value) { force_pending_connect_ = value; }
@@ -185,8 +187,8 @@ class FakePeer {
   bool directed_;
   bool address_resolved_;
 
-  hci_spec::StatusCode connect_status_;
-  hci_spec::StatusCode connect_response_;
+  pw::bluetooth::emboss::StatusCode connect_status_;
+  pw::bluetooth::emboss::StatusCode connect_response_;
   bool force_pending_connect_;  // Causes connection requests to remain pending.
   std::optional<hci_spec::LinkType> last_connection_request_link_type_;
 

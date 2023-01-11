@@ -27,7 +27,7 @@ LegacyLowEnergyAdvertiser::~LegacyLowEnergyAdvertiser() {
 }
 
 std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildEnablePacket(
-    const DeviceAddress& address, hci_spec::GenericEnableParam enable) {
+    const DeviceAddress& address, pw::bluetooth::emboss::GenericEnableParam enable) {
   constexpr size_t kPayloadSize = sizeof(hci_spec::LESetAdvertisingEnableCommandParams);
   std::unique_ptr<CommandPacket> packet =
       CommandPacket::New(hci_spec::kLESetAdvertisingEnable, kPayloadSize);
@@ -109,7 +109,7 @@ std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildRemoveAdvertising
   constexpr size_t kPayloadSize = sizeof(hci_spec::LESetAdvertisingEnableCommandParams);
   auto packet = CommandPacket::New(hci_spec::kLESetAdvertisingEnable, kPayloadSize);
   auto params = packet->mutable_payload<hci_spec::LESetAdvertisingEnableCommandParams>();
-  params->advertising_enable = hci_spec::GenericEnableParam::DISABLE;
+  params->advertising_enable = pw::bluetooth::emboss::GenericEnableParam::DISABLE;
   return packet;
 }
 
@@ -251,7 +251,7 @@ void LegacyLowEnergyAdvertiser::StopAdvertising(const DeviceAddress& address) {
 }
 
 void LegacyLowEnergyAdvertiser::OnIncomingConnection(
-    hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
+    hci_spec::ConnectionHandle handle, pw::bluetooth::emboss::ConnectionRole role,
     const DeviceAddress& peer_address, const hci_spec::LEConnectionParameters& conn_params) {
   static DeviceAddress identity_address = DeviceAddress(DeviceAddress::Type::kLEPublic, {0});
 

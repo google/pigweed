@@ -94,7 +94,8 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
 
   void StopAdvertising(const DeviceAddress& address) override { ads_->erase(address); }
 
-  void OnIncomingConnection(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
+  void OnIncomingConnection(hci_spec::ConnectionHandle handle,
+                            pw::bluetooth::emboss::ConnectionRole role,
                             const DeviceAddress& peer_address,
                             const hci_spec::LEConnectionParameters& conn_params) override {
     // Right now, we call the first callback, because we can't call any other
@@ -114,7 +115,7 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
 
  private:
   std::unique_ptr<hci::CommandPacket> BuildEnablePacket(
-      const DeviceAddress& address, hci_spec::GenericEnableParam enable) override {
+      const DeviceAddress& address, pw::bluetooth::emboss::GenericEnableParam enable) override {
     return nullptr;
   }
 
@@ -322,7 +323,8 @@ TEST_F(LowEnergyAdvertisingManagerTest, RegisterUnregister) {
 
 //  - When the advertiser returns an error, we return an error
 TEST_F(LowEnergyAdvertisingManagerTest, AdvertiserError) {
-  advertiser()->ErrorOnNext(ToResult(hci_spec::StatusCode::INVALID_HCI_COMMAND_PARAMETERS));
+  advertiser()->ErrorOnNext(
+      ToResult(pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS));
 
   EXPECT_FALSE(adv_mgr()->advertising());
   adv_mgr()->StartAdvertising(CreateFakeAdvertisingData(), AdvertisingData(),
@@ -354,8 +356,8 @@ TEST_F(LowEnergyAdvertisingManagerTest, ConnectCallback) {
   advertised_id = last_ad_id();
 
   DeviceAddress peer_address(DeviceAddress::Type::kLEPublic, {3, 2, 1, 1, 2, 3});
-  advertiser()->OnIncomingConnection(1, hci_spec::ConnectionRole::PERIPHERAL, peer_address,
-                                     hci_spec::LEConnectionParameters());
+  advertiser()->OnIncomingConnection(1, pw::bluetooth::emboss::ConnectionRole::PERIPHERAL,
+                                     peer_address, hci_spec::LEConnectionParameters());
   RunLoopUntilIdle();
   ASSERT_TRUE(link);
 

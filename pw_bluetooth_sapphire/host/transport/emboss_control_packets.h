@@ -44,7 +44,7 @@ class EmbossCommandPacket : public DynamicPacket {
   explicit EmbossCommandPacket(hci_spec::OpCode opcode, size_t packet_size);
 
  private:
-  hci_spec::EmbossCommandHeaderView header_view() const;
+  pw::bluetooth::emboss::CommandHeaderView header_view() const;
 };
 
 // Helper subclass that remembers the view type it was constructed with. It is safe to slice
@@ -80,10 +80,10 @@ class EmbossEventPacket : public DynamicPacket {
   template <typename T>
   static EmbossEventPacketT<T> New(hci_spec::EventCode event_code) {
     EmbossEventPacketT<T> packet(T::IntrinsicSizeInBytes().Read());
-    auto header = packet.template view<hci_spec::EmbossEventHeaderWriter>();
+    auto header = packet.template view<pw::bluetooth::emboss::EventHeaderWriter>();
     header.event_code().Write(event_code);
     header.parameter_total_size().Write(T::IntrinsicSizeInBytes().Read() -
-                                        hci_spec::EmbossEventHeader::IntrinsicSizeInBytes());
+                                        pw::bluetooth::emboss::EventHeader::IntrinsicSizeInBytes());
     return packet;
   }
 

@@ -59,7 +59,8 @@ class ScoConnectionTest : public TestingBase {
       std::unique_ptr<hci::Connection> hci_conn) {
     return std::make_unique<ScoConnection>(
         std::move(hci_conn), [this] { OnDeactivated(); },
-        bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>(), /*channel=*/nullptr);
+        bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>(),
+        /*channel=*/nullptr);
   }
 
   void OnDeactivated() { deactivated_cb_count_++; }
@@ -80,9 +81,9 @@ class HciScoConnectionTest : public ScoConnectionTest {
  public:
   std::unique_ptr<ScoConnection> CreateScoConnection(
       std::unique_ptr<hci::Connection> hci_conn) override {
-    bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> hci_conn_params;
-    hci_conn_params.view().input_data_path().Write(hci_spec::ScoDataPath::HCI);
-    hci_conn_params.view().output_data_path().Write(hci_spec::ScoDataPath::HCI);
+    bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> hci_conn_params;
+    hci_conn_params.view().input_data_path().Write(pw::bluetooth::emboss::ScoDataPath::HCI);
+    hci_conn_params.view().output_data_path().Write(pw::bluetooth::emboss::ScoDataPath::HCI);
     return std::make_unique<ScoConnection>(
         std::move(hci_conn), [this] { OnDeactivated(); }, hci_conn_params,
         transport()->sco_data_channel());
@@ -95,9 +96,9 @@ class HciScoConnectionTestWithFakeScoChannel : public ScoConnectionTest {
       std::unique_ptr<hci::Connection> hci_conn) override {
     channel_ = std::make_unique<hci::FakeScoDataChannel>(/*mtu=*/kHciScoMtu);
 
-    bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> hci_conn_params;
-    hci_conn_params.view().input_data_path().Write(hci_spec::ScoDataPath::HCI);
-    hci_conn_params.view().output_data_path().Write(hci_spec::ScoDataPath::HCI);
+    bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> hci_conn_params;
+    hci_conn_params.view().input_data_path().Write(pw::bluetooth::emboss::ScoDataPath::HCI);
+    hci_conn_params.view().output_data_path().Write(pw::bluetooth::emboss::ScoDataPath::HCI);
     return std::make_unique<ScoConnection>(
         std::move(hci_conn), [this] { OnDeactivated(); }, hci_conn_params, channel_.get());
   }

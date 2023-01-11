@@ -33,17 +33,17 @@ class AclConnection : public Connection {
   }
 
   // Returns the role of the local device in the established connection.
-  hci_spec::ConnectionRole role() const { return role_; }
+  pw::bluetooth::emboss::ConnectionRole role() const { return role_; }
 
   // Update the role of the local device when a role change occurs.
-  void set_role(hci_spec::ConnectionRole role) { role_ = role; }
+  void set_role(pw::bluetooth::emboss::ConnectionRole role) { role_ = role; }
 
   // The current long term key of the connection.
   const std::optional<hci_spec::LinkKey>& ltk() const { return ltk_; }
 
  protected:
   AclConnection(hci_spec::ConnectionHandle handle, const DeviceAddress& local_address,
-                const DeviceAddress& peer_address, hci_spec::ConnectionRole role,
+                const DeviceAddress& peer_address, pw::bluetooth::emboss::ConnectionRole role,
                 const Transport::WeakPtr& hci);
 
   void set_ltk(const hci_spec::LinkKey& link_key) { ltk_ = link_key; }
@@ -70,7 +70,7 @@ class AclConnection : public Connection {
   // This connection's current link key.
   std::optional<hci_spec::LinkKey> ltk_;
 
-  hci_spec::ConnectionRole role_;
+  pw::bluetooth::emboss::ConnectionRole role_;
 
   ResultFunction<bool> encryption_change_callback_;
 

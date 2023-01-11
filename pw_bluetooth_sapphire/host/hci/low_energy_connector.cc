@@ -104,8 +104,9 @@ void LowEnergyConnector::CreateConnectionInternal(
   auto params = request->mutable_payload<hci_spec::LECreateConnectionCommandParams>();
   params->scan_interval = htole16(scan_interval);
   params->scan_window = htole16(scan_window);
-  params->initiator_filter_policy = use_accept_list ? hci_spec::GenericEnableParam::ENABLE
-                                                    : hci_spec::GenericEnableParam::DISABLE;
+  params->initiator_filter_policy = use_accept_list
+                                        ? pw::bluetooth::emboss::GenericEnableParam::ENABLE
+                                        : pw::bluetooth::emboss::GenericEnableParam::DISABLE;
 
   // TODO(armansito): Use the resolved address types for <5.0 LE Privacy.
   params->peer_address_type =
@@ -207,7 +208,7 @@ CommandChannel::EventCallbackResult LowEnergyConnector::OnConnectionCompleteEven
       // HCI_LE_Create_Connection_Cancel command (sent by Cancel()).
       if (pending_request_->timed_out) {
         result = ToResult(HostError::kTimedOut);
-      } else if (params->status == hci_spec::StatusCode::UNKNOWN_CONNECTION_ID) {
+      } else if (params->status == pw::bluetooth::emboss::StatusCode::UNKNOWN_CONNECTION_ID) {
         result = ToResult(HostError::kCanceled);
       }
       OnCreateConnectionComplete(result, nullptr);

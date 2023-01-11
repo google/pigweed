@@ -22,11 +22,12 @@ namespace bt::testing {
 
 DynamicByteBuffer EmptyCommandPacket(hci_spec::OpCode opcode);
 
-DynamicByteBuffer CommandCompletePacket(hci_spec::OpCode opcode, hci_spec::StatusCode);
+DynamicByteBuffer CommandCompletePacket(hci_spec::OpCode opcode, pw::bluetooth::emboss::StatusCode);
 
 DynamicByteBuffer AcceptConnectionRequestPacket(DeviceAddress address);
 
-DynamicByteBuffer RejectConnectionRequestPacket(DeviceAddress address, hci_spec::StatusCode reason);
+DynamicByteBuffer RejectConnectionRequestPacket(DeviceAddress address,
+                                                pw::bluetooth::emboss::StatusCode reason);
 
 DynamicByteBuffer AuthenticationRequestedPacket(hci_spec::ConnectionHandle conn);
 
@@ -35,32 +36,35 @@ DynamicByteBuffer ConnectionRequestPacket(DeviceAddress address,
 DynamicByteBuffer CreateConnectionPacket(DeviceAddress address);
 DynamicByteBuffer ConnectionCompletePacket(
     DeviceAddress address, hci_spec::ConnectionHandle conn,
-    hci_spec::StatusCode status = hci_spec::StatusCode::SUCCESS);
+    pw::bluetooth::emboss::StatusCode status = pw::bluetooth::emboss::StatusCode::SUCCESS);
 
 DynamicByteBuffer DisconnectPacket(
     hci_spec::ConnectionHandle conn,
-    hci_spec::StatusCode reason = hci_spec::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
+    pw::bluetooth::emboss::StatusCode reason =
+        pw::bluetooth::emboss::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
 DynamicByteBuffer DisconnectStatusResponsePacket();
 DynamicByteBuffer DisconnectionCompletePacket(
     hci_spec::ConnectionHandle conn,
-    hci_spec::StatusCode reason = hci_spec::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
+    pw::bluetooth::emboss::StatusCode reason =
+        pw::bluetooth::emboss::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
 
-DynamicByteBuffer EncryptionChangeEventPacket(hci_spec::StatusCode status_code,
+DynamicByteBuffer EncryptionChangeEventPacket(pw::bluetooth::emboss::StatusCode status_code,
                                               hci_spec::ConnectionHandle conn,
                                               hci_spec::EncryptionStatus encryption_enabled);
 
 DynamicByteBuffer EnhancedAcceptSynchronousConnectionRequestPacket(
     DeviceAddress peer_address,
-    bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> params);
+    bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> params);
 
 DynamicByteBuffer EnhancedSetupSynchronousConnectionPacket(
     hci_spec::ConnectionHandle conn,
-    bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> params);
+    bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> params);
 
 DynamicByteBuffer NumberOfCompletedPacketsPacket(hci_spec::ConnectionHandle conn,
                                                  uint16_t num_packets);
 
-DynamicByteBuffer CommandStatusPacket(hci_spec::OpCode op_code, hci_spec::StatusCode status_code);
+DynamicByteBuffer CommandStatusPacket(hci_spec::OpCode op_code,
+                                      pw::bluetooth::emboss::StatusCode status_code);
 
 DynamicByteBuffer RemoteNameRequestPacket(DeviceAddress address);
 DynamicByteBuffer RemoteNameRequestCompletePacket(DeviceAddress address,
@@ -74,17 +78,18 @@ DynamicByteBuffer ReadRemoteSupportedFeaturesCompletePacket(hci_spec::Connection
                                                             bool extended_features);
 
 DynamicByteBuffer RejectSynchronousConnectionRequest(DeviceAddress address,
-                                                     hci_spec::StatusCode status_code);
+                                                     pw::bluetooth::emboss::StatusCode status_code);
 
-DynamicByteBuffer RoleChangePacket(DeviceAddress address, hci_spec::ConnectionRole role,
-                                   hci_spec::StatusCode status = hci_spec::StatusCode::SUCCESS);
+DynamicByteBuffer RoleChangePacket(
+    DeviceAddress address, pw::bluetooth::emboss::ConnectionRole role,
+    pw::bluetooth::emboss::StatusCode status = pw::bluetooth::emboss::StatusCode::SUCCESS);
 
 DynamicByteBuffer SetConnectionEncryption(hci_spec::ConnectionHandle conn, bool enable);
 
 DynamicByteBuffer SynchronousConnectionCompletePacket(hci_spec::ConnectionHandle conn,
                                                       DeviceAddress address,
                                                       hci_spec::LinkType link_type,
-                                                      hci_spec::StatusCode status);
+                                                      pw::bluetooth::emboss::StatusCode status);
 
 DynamicByteBuffer LEReadRemoteFeaturesPacket(hci_spec::ConnectionHandle conn);
 DynamicByteBuffer LEReadRemoteFeaturesCompletePacket(hci_spec::ConnectionHandle conn,

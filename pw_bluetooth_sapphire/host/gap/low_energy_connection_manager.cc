@@ -45,13 +45,13 @@ namespace {
 // connecting to the peer until the next successful connection. We have only observed this issue
 // with the 0x3e "kConnectionFailedToBeEstablished" error in the field, but have included these
 // other errors based on their descriptions in v5.2 Vol. 1 Part F Section 2.
-bool ShouldStopAlwaysAutoConnecting(hci_spec::StatusCode err) {
+bool ShouldStopAlwaysAutoConnecting(pw::bluetooth::emboss::StatusCode err) {
   switch (err) {
-    case hci_spec::StatusCode::CONNECTION_TIMEOUT:
-    case hci_spec::StatusCode::CONNECTION_REJECTED_SECURITY:
-    case hci_spec::StatusCode::CONNECTION_ACCEPT_TIMEOUT_EXCEEDED:
-    case hci_spec::StatusCode::CONNECTION_TERMINATED_BY_LOCAL_HOST:
-    case hci_spec::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED:
+    case pw::bluetooth::emboss::StatusCode::CONNECTION_TIMEOUT:
+    case pw::bluetooth::emboss::StatusCode::CONNECTION_REJECTED_SECURITY:
+    case pw::bluetooth::emboss::StatusCode::CONNECTION_ACCEPT_TIMEOUT_EXCEEDED:
+    case pw::bluetooth::emboss::StatusCode::CONNECTION_TERMINATED_BY_LOCAL_HOST:
+    case pw::bluetooth::emboss::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED:
       return true;
     default:
       return false;
@@ -588,7 +588,7 @@ Peer* LowEnergyConnectionManager::UpdatePeerWithLink(const hci::LowEnergyConnect
 }
 
 void LowEnergyConnectionManager::OnPeerDisconnect(const hci::Connection* connection,
-                                                  hci_spec::StatusCode reason) {
+                                                  pw::bluetooth::emboss::StatusCode reason) {
   auto handle = connection->handle();
   if (test_disconn_cb_) {
     test_disconn_cb_(handle);

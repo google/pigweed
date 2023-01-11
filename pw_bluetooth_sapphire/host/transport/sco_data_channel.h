@@ -35,8 +35,9 @@ class ScoDataChannel {
 
     virtual hci_spec::ConnectionHandle handle() const = 0;
 
-    // These parameters must specify a data path of hci_spec::ScoDataPath::HCI.
-    virtual bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> parameters() = 0;
+    // These parameters must specify a data path of pw::bluetooth::emboss::ScoDataPath::HCI.
+    virtual bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>
+    parameters() = 0;
 
     // ScoDataChannel will call this method to get the next packet to send to the controller.
     // If no packet is available, return nullptr.
@@ -57,7 +58,8 @@ class ScoDataChannel {
                                                 pw::bluetooth::Controller* hci);
   virtual ~ScoDataChannel() = default;
 
-  // Register a connection. The connection must have a data path of hci_spec::ScoDataPath::kHci.
+  // Register a connection. The connection must have a data path of
+  // pw::bluetooth::emboss::ScoDataPath::kHci.
   virtual void RegisterConnection(ConnectionInterface::WeakPtr connection) = 0;
 
   // Unregister a connection when it is disconnected.

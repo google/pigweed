@@ -19,12 +19,12 @@ using AdvertisingEventBits = uint16_t;
 std::string HCIVersionToString(hci_spec::HCIVersion version);
 
 // Returns a user-friendly string representation of |status|.
-std::string StatusCodeToString(hci_spec::StatusCode code);
+std::string StatusCodeToString(pw::bluetooth::emboss::StatusCode code);
 
 // Returns a user-friendly string representation of |link_type|.
 std::string LinkTypeToString(hci_spec::LinkType link_type);
 
-std::string ConnectionRoleToString(hci_spec::ConnectionRole role);
+std::string ConnectionRoleToString(pw::bluetooth::emboss::ConnectionRole role);
 
 // Encode a legacy advertising interval to an extended advertising 3-octet interval, taking
 // endianness into account.

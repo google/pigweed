@@ -18,24 +18,25 @@ class AndroidVendorCapabilitiesTest : public ::testing::Test {
     hci_android::LEGetVendorCapabilitiesReturnParams params;
     std::memset(&params, 0, sizeof(params));
 
-    params.status = hci_spec::StatusCode::SUCCESS;
+    params.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
 
     // select values other than the zero value to ensure the results of std::memset don't propagate
     params.max_advt_instances = 1;
-    params.offloaded_rpa = hci_spec::GenericEnableParam::ENABLE;
+    params.offloaded_rpa = pw::bluetooth::emboss::GenericEnableParam::ENABLE;
     params.total_scan_results_storage = 2;
     params.max_irk_list_size = 3;
-    params.filtering_support = hci_spec::GenericEnableParam::ENABLE;
+    params.filtering_support = pw::bluetooth::emboss::GenericEnableParam::ENABLE;
     params.max_filter = 4;
-    params.activity_energy_info_support = hci_spec::GenericEnableParam::ENABLE;
+    params.activity_energy_info_support = pw::bluetooth::emboss::GenericEnableParam::ENABLE;
     params.version_supported_minor = 5;
     params.version_supported_major = 6;
     params.total_num_of_advt_tracked = 7;
-    params.extended_scan_support = hci_spec::GenericEnableParam::ENABLE;
-    params.debug_logging_supported = hci_spec::GenericEnableParam::ENABLE;
-    params.le_address_generation_offloading_support = hci_spec::GenericEnableParam::ENABLE;
+    params.extended_scan_support = pw::bluetooth::emboss::GenericEnableParam::ENABLE;
+    params.debug_logging_supported = pw::bluetooth::emboss::GenericEnableParam::ENABLE;
+    params.le_address_generation_offloading_support =
+        pw::bluetooth::emboss::GenericEnableParam::ENABLE;
     params.a2dp_source_offload_capability_mask = 8;
-    params.bluetooth_quality_report_support = hci_spec::GenericEnableParam::ENABLE;
+    params.bluetooth_quality_report_support = pw::bluetooth::emboss::GenericEnableParam::ENABLE;
     params.dynamic_audio_buffer_support = 9;
 
     vendor_capabilities_.Initialize(params);
@@ -74,7 +75,7 @@ TEST_F(AndroidVendorCapabilitiesTest, InitializeFailure) {
 
   hci_android::LEGetVendorCapabilitiesReturnParams params;
   std::memset(&params, 0, sizeof(params));
-  params.status = hci_spec::StatusCode::UNKNOWN_COMMAND;
+  params.status = pw::bluetooth::emboss::StatusCode::UNKNOWN_COMMAND;
   vendor_capabilities().Initialize(params);
 
   EXPECT_FALSE(vendor_capabilities().IsInitialized());

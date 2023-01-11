@@ -30,12 +30,12 @@ class ChannelManagerImpl final : public ChannelManager {
                      bool random_channel_ids);
   ~ChannelManagerImpl() override;
 
-  void AddACLConnection(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
-                        LinkErrorCallback link_error_cb,
+  void AddACLConnection(hci_spec::ConnectionHandle handle,
+                        pw::bluetooth::emboss::ConnectionRole role, LinkErrorCallback link_error_cb,
                         SecurityUpgradeCallback security_cb) override;
 
   [[nodiscard]] LEFixedChannels AddLEConnection(hci_spec::ConnectionHandle handle,
-                                                hci_spec::ConnectionRole role,
+                                                pw::bluetooth::emboss::ConnectionRole role,
                                                 LinkErrorCallback link_error_cb,
                                                 LEConnectionParameterUpdateCallback conn_param_cb,
                                                 SecurityUpgradeCallback security_cb) override;
@@ -73,7 +73,8 @@ class ChannelManagerImpl final : public ChannelManager {
   // Called by the various Register functions. Returns a pointer to the newly
   // added link.
   internal::LogicalLink* RegisterInternal(hci_spec::ConnectionHandle handle, bt::LinkType ll_type,
-                                          hci_spec::ConnectionRole role, size_t max_payload_size);
+                                          pw::bluetooth::emboss::ConnectionRole role,
+                                          size_t max_payload_size);
 
   // If a service (identified by |psm|) requested has been registered, return a ServiceInfo object
   // containing preferred channel parameters and a callback that passes an inbound channel to the
@@ -154,7 +155,7 @@ hci::ACLPacketHandler ChannelManagerImpl::MakeInboundDataHandler() {
 }
 
 void ChannelManagerImpl::AddACLConnection(hci_spec::ConnectionHandle handle,
-                                          hci_spec::ConnectionRole role,
+                                          pw::bluetooth::emboss::ConnectionRole role,
                                           LinkErrorCallback link_error_cb,
                                           SecurityUpgradeCallback security_cb) {
   bt_log(DEBUG, "l2cap", "register ACL link (handle: %#.4x)", handle);
@@ -165,7 +166,7 @@ void ChannelManagerImpl::AddACLConnection(hci_spec::ConnectionHandle handle,
 }
 
 ChannelManagerImpl::LEFixedChannels ChannelManagerImpl::AddLEConnection(
-    hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
+    hci_spec::ConnectionHandle handle, pw::bluetooth::emboss::ConnectionRole role,
     LinkErrorCallback link_error_cb, LEConnectionParameterUpdateCallback conn_param_cb,
     SecurityUpgradeCallback security_cb) {
   bt_log(DEBUG, "l2cap", "register LE link (handle: %#.4x)", handle);
@@ -323,10 +324,9 @@ void ChannelManagerImpl::OnACLDataReceived(hci::ACLDataPacketPtr packet) {
   iter->second->HandleRxPacket(std::move(packet));
 }
 
-internal::LogicalLink* ChannelManagerImpl::RegisterInternal(hci_spec::ConnectionHandle handle,
-                                                            bt::LinkType ll_type,
-                                                            hci_spec::ConnectionRole role,
-                                                            size_t max_payload_size) {
+internal::LogicalLink* ChannelManagerImpl::RegisterInternal(
+    hci_spec::ConnectionHandle handle, bt::LinkType ll_type,
+    pw::bluetooth::emboss::ConnectionRole role, size_t max_payload_size) {
   TRACE_DURATION("bluetooth", "ChannelManagerImpl::RegisterInternal", "handle", handle);
 
   // TODO(armansito): Return nullptr instead of asserting. Callers shouldn't

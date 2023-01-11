@@ -12,18 +12,20 @@ namespace bt::hci::testing {
 class FakeLowEnergyConnection final : public LowEnergyConnection {
  public:
   FakeLowEnergyConnection(hci_spec::ConnectionHandle handle, const DeviceAddress& local_address,
-                          const DeviceAddress& peer_address, hci_spec::ConnectionRole role,
+                          const DeviceAddress& peer_address,
+                          pw::bluetooth::emboss::ConnectionRole role,
                           const Transport::WeakPtr& hci);
 
   // Triggers the encryption change callback.
   void TriggerEncryptionChangeCallback(hci::Result<bool> result);
 
   void TriggerPeerDisconnectCallback() {
-    peer_disconnect_callback()(*this, hci_spec::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
+    peer_disconnect_callback()(
+        *this, pw::bluetooth::emboss::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
   }
 
   // LowEnergyConnection overrides:
-  void Disconnect(hci_spec::StatusCode reason) override {}
+  void Disconnect(pw::bluetooth::emboss::StatusCode reason) override {}
   bool StartEncryption() override;
 
   // Number of times StartEncryption() was called.

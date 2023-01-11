@@ -36,9 +36,9 @@ std::unique_ptr<CommandPacket> NewCommandPacket(size_t payload_size) {
 
 // Returns true and populates the |out_code| field with the status parameter.
 // Returns false if |event|'s payload is too small to hold a T. T must have a
-// |status| member of type hci_spec::StatusCode for this to compile.
+// |status| member of type pw::bluetooth::emboss::StatusCode for this to compile.
 template <typename T>
-bool StatusCodeFromEvent(const EventPacket& event, hci_spec::StatusCode* out_code) {
+bool StatusCodeFromEvent(const EventPacket& event, pw::bluetooth::emboss::StatusCode* out_code) {
   BT_DEBUG_ASSERT(out_code);
 
   if (event.view().payload_size() < sizeof(T))
@@ -51,7 +51,8 @@ bool StatusCodeFromEvent(const EventPacket& event, hci_spec::StatusCode* out_cod
 // For packet definitions that have been migrated to Emboss, parameterize this method over the
 // Emboss view.
 template <typename T>
-bool StatusCodeFromEmbossEvent(const EventPacket& event, hci_spec::StatusCode* out_code) {
+bool StatusCodeFromEmbossEvent(const EventPacket& event,
+                               pw::bluetooth::emboss::StatusCode* out_code) {
   BT_DEBUG_ASSERT(out_code);
 
   auto emboss_packet = EmbossEventPacket::New<T>(event.view().size());
@@ -59,7 +60,8 @@ bool StatusCodeFromEmbossEvent(const EventPacket& event, hci_spec::StatusCode* o
   event.view().data().Copy(&dest);
 
   if (event.view().payload_size() <
-      T::IntrinsicSizeInBytes().Read() - hci_spec::EmbossEventHeader::IntrinsicSizeInBytes()) {
+      T::IntrinsicSizeInBytes().Read() -
+          pw::bluetooth::emboss::EventHeader::IntrinsicSizeInBytes()) {
     return false;
   }
 
@@ -67,12 +69,12 @@ bool StatusCodeFromEmbossEvent(const EventPacket& event, hci_spec::StatusCode* o
   return true;
 }
 
-// As hci_spec::StatusCodeFromEvent, but for LEMetaEvent subevents.
+// As pw::bluetooth::emboss::StatusCodeFromEvent, but for LEMetaEvent subevents.
 // Returns true and populates the |out_code| field with the subevent status parameter.
 // Returns false if |event|'s payload is too small to hold a LEMetaEvent containing a T. T must have
-// a |status| member of type hci_spec::StatusCode for this to compile.
+// a |status| member of type pw::bluetooth::emboss::StatusCode for this to compile.
 template <typename T>
-bool StatusCodeFromSubevent(const EventPacket& event, hci_spec::StatusCode* out_code) {
+bool StatusCodeFromSubevent(const EventPacket& event, pw::bluetooth::emboss::StatusCode* out_code) {
   BT_ASSERT(out_code);
 
   if (event.view().payload_size() < sizeof(hci_spec::LEMetaEventParams) + sizeof(T))
@@ -84,8 +86,8 @@ bool StatusCodeFromSubevent(const EventPacket& event, hci_spec::StatusCode* out_
 
 // Specialization for the CommandComplete event.
 template <>
-bool StatusCodeFromEvent<hci_spec::CommandCompleteEventParams>(const EventPacket& event,
-                                                               hci_spec::StatusCode* out_code) {
+bool StatusCodeFromEvent<hci_spec::CommandCompleteEventParams>(
+    const EventPacket& event, pw::bluetooth::emboss::StatusCode* out_code) {
   BT_DEBUG_ASSERT(out_code);
 
   const auto* params = event.return_params<hci_spec::SimpleReturnParams>();
@@ -123,14 +125,14 @@ std::unique_ptr<EventPacket> EventPacket::New(size_t payload_size) {
   return std::make_unique<EventFixedSizedPacket>(payload_size);
 }
 
-bool EventPacket::ToStatusCode(hci_spec::StatusCode* out_code) const {
+bool EventPacket::ToStatusCode(pw::bluetooth::emboss::StatusCode* out_code) const {
 #define CASE_EVENT_STATUS(event_name)      \
   case hci_spec::k##event_name##EventCode: \
     return StatusCodeFromEvent<hci_spec::event_name##EventParams>(*this, out_code)
 
 #define CASE_EMBOSS_EVENT_STATUS(event_name) \
   case hci_spec::k##event_name##EventCode:   \
-    return StatusCodeFromEmbossEvent<hci_spec::event_name##EventView>(*this, out_code)
+    return StatusCodeFromEmbossEvent<pw::bluetooth::emboss::event_name##EventView>(*this, out_code)
 
 #define CASE_SUBEVENT_STATUS(subevent_name)      \
   case hci_spec::k##subevent_name##SubeventCode: \
@@ -190,7 +192,7 @@ bool EventPacket::ToStatusCode(hci_spec::StatusCode* out_code) const {
 }
 
 hci::Result<> EventPacket::ToResult() const {
-  hci_spec::StatusCode code;
+  pw::bluetooth::emboss::StatusCode code;
   if (!ToStatusCode(&code)) {
     return bt::ToResult(HostError::kPacketMalformed);
   }

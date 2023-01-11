@@ -13,8 +13,8 @@
 
 namespace bt::gap {
 
-using hci_spec::AuthenticationRequirements;
-using hci_spec::IoCapability;
+using pw::bluetooth::emboss::AuthenticationRequirements;
+using pw::bluetooth::emboss::IoCapability;
 using sm::util::IOCapabilityForHci;
 
 PairingState::PairingState(Peer::WeakPtr peer, hci::BrEdrConnection* link, bool link_initiated,
@@ -281,7 +281,7 @@ void PairingState::OnUserPasskeyNotification(uint32_t numeric_value) {
       peer_id(), numeric_value, PairingDelegate::DisplayMethod::kPeerEntry, std::move(confirm_cb));
 }
 
-void PairingState::OnSimplePairingComplete(hci_spec::StatusCode status_code) {
+void PairingState::OnSimplePairingComplete(pw::bluetooth::emboss::StatusCode status_code) {
   // The pairing process may fail early, which the controller will deliver as an Simple Pairing
   // Complete with a non-success status. Log and proxy the error code.
   if (const fit::result result = ToResult(status_code);
@@ -426,9 +426,9 @@ void PairingState::OnLinkKeyNotification(const UInt128& link_key, hci_spec::Link
   }
 }
 
-void PairingState::OnAuthenticationComplete(hci_spec::StatusCode status_code) {
+void PairingState::OnAuthenticationComplete(pw::bluetooth::emboss::StatusCode status_code) {
   if (is_pairing() && peer_->bredr() && peer_->bredr()->bonded() &&
-      status_code == hci_spec::StatusCode::PIN_OR_KEY_MISSING) {
+      status_code == pw::bluetooth::emboss::StatusCode::PIN_OR_KEY_MISSING) {
     // We have provided our link key, but the remote side says they don't have a key.
     // Pretend we don't have a link key, then start the pairing over.
     // We will get consent even if we are otherwise kAutomatic
@@ -499,7 +499,7 @@ std::unique_ptr<PairingState::Pairing> PairingState::Pairing::MakeInitiator(
 }
 
 std::unique_ptr<PairingState::Pairing> PairingState::Pairing::MakeResponder(
-    hci_spec::IoCapability peer_iocap, bool link_initiated) {
+    pw::bluetooth::emboss::IoCapability peer_iocap, bool link_initiated) {
   // Private ctor is inaccessible to std::make_unique.
   std::unique_ptr<Pairing> pairing(new Pairing(link_initiated));
   pairing->initiator = false;

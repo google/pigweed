@@ -73,13 +73,15 @@ void BrEdrInterrogator::Complete(hci::Result<> result) {
 }
 
 void BrEdrInterrogator::QueueRemoteNameRequest() {
-  hci_spec::PageScanRepetitionMode mode = hci_spec::PageScanRepetitionMode::R0_;
+  pw::bluetooth::emboss::PageScanRepetitionMode mode =
+      pw::bluetooth::emboss::PageScanRepetitionMode::R0_;
   if (peer_->bredr()->page_scan_repetition_mode()) {
     mode = *peer_->bredr()->page_scan_repetition_mode();
   }
 
-  auto packet = hci::EmbossCommandPacket::New<hci_spec::RemoteNameRequestCommandWriter>(
-      hci_spec::kRemoteNameRequest);
+  auto packet =
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::RemoteNameRequestCommandWriter>(
+          hci_spec::kRemoteNameRequest);
   auto params = packet.view_t();
   params.bd_addr().CopyFrom(peer_->address().value().view());
   params.page_scan_repetition_mode().Write(mode);
@@ -106,7 +108,8 @@ void BrEdrInterrogator::QueueRemoteNameRequest() {
 }
 
 void BrEdrInterrogator::QueueReadRemoteFeatures() {
-  auto packet = hci::EmbossCommandPacket::New<hci_spec::ReadRemoteSupportedFeaturesCommandWriter>(
+  auto packet = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::ReadRemoteSupportedFeaturesCommandWriter>(
       hci_spec::kReadRemoteSupportedFeatures);
   packet.view_t().connection_handle().Write(handle_);
 
@@ -131,8 +134,9 @@ void BrEdrInterrogator::QueueReadRemoteFeatures() {
 }
 
 void BrEdrInterrogator::QueueReadRemoteExtendedFeatures(uint8_t page) {
-  auto packet = hci::EmbossCommandPacket::New<hci_spec::ReadRemoteExtendedFeaturesCommandWriter>(
-      hci_spec::kReadRemoteExtendedFeatures);
+  auto packet =
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ReadRemoteExtendedFeaturesCommandWriter>(
+          hci_spec::kReadRemoteExtendedFeatures);
   auto params = packet.view_t();
   params.connection_handle().Write(handle_);
   params.page_number().Write(page);
@@ -173,8 +177,9 @@ void BrEdrInterrogator::QueueReadRemoteExtendedFeatures(uint8_t page) {
 }
 
 void BrEdrInterrogator::QueueReadRemoteVersionInformation() {
-  auto packet = hci::EmbossCommandPacket::New<hci_spec::ReadRemoteVersionInfoCommandWriter>(
-      hci_spec::kReadRemoteVersionInfo);
+  auto packet =
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ReadRemoteVersionInfoCommandWriter>(
+          hci_spec::kReadRemoteVersionInfo);
   packet.view_t().connection_handle().Write(handle_);
 
   auto cmd_cb = [this](const hci::EventPacket& event) {

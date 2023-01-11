@@ -245,7 +245,7 @@ auto OutboundDisconnectionRequest(CommandId id) {
 Channel::A2dpOffloadConfiguration BuildA2dpOffloadConfiguration(
     hci_android::A2dpCodecType codec = hci_android::A2dpCodecType::kSbc) {
   hci_android::A2dpScmsTEnable scms_t_enable;
-  scms_t_enable.enabled = hci_spec::GenericEnableParam::DISABLE;
+  scms_t_enable.enabled = pw::bluetooth::emboss::GenericEnableParam::DISABLE;
   scms_t_enable.header = 0x00;
 
   hci_android::A2dpOffloadCodecInformation codec_information;
@@ -329,7 +329,7 @@ class ChannelManagerTest : public TestingBase {
 
   // Helper functions for registering logical links with default arguments.
   [[nodiscard]] ChannelManager::LEFixedChannels RegisterLE(
-      hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
+      hci_spec::ConnectionHandle handle, pw::bluetooth::emboss::ConnectionRole role,
       LinkErrorCallback link_error_cb = DoNothing,
       LEConnectionParameterUpdateCallback cpuc = NopLeConnParamCallback,
       SecurityUpgradeCallback suc = NopSecurityCallback) {
@@ -343,7 +343,7 @@ class ChannelManagerTest : public TestingBase {
   };
 
   QueueRegisterACLRetVal QueueRegisterACL(hci_spec::ConnectionHandle handle,
-                                          hci_spec::ConnectionRole role,
+                                          pw::bluetooth::emboss::ConnectionRole role,
                                           LinkErrorCallback link_error_cb = DoNothing,
                                           SecurityUpgradeCallback suc = NopSecurityCallback) {
     QueueRegisterACLRetVal cmd_ids;
@@ -360,7 +360,7 @@ class ChannelManagerTest : public TestingBase {
     return cmd_ids;
   }
 
-  void RegisterACL(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
+  void RegisterACL(hci_spec::ConnectionHandle handle, pw::bluetooth::emboss::ConnectionRole role,
                    LinkErrorCallback link_error_cb = DoNothing,
                    SecurityUpgradeCallback suc = NopSecurityCallback) {
     chanmgr()->AddACLConnection(handle, role, std::move(link_error_cb), std::move(suc));
@@ -557,7 +557,8 @@ TEST_F(ChannelManagerTest, OpenFixedChannelErrorNoConn) {
   // This should fail as the ChannelManager has no entry for |kTestHandle1|.
   EXPECT_FALSE(ActivateNewFixedChannel(kATTChannelId).is_alive());
 
-  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  LEFixedChannels fixed_channels =
+      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   // This should fail as the ChannelManager has no entry for |kTestHandle2|.
   EXPECT_FALSE(ActivateNewFixedChannel(kATTChannelId, kTestHandle2).is_alive());
@@ -565,10 +566,11 @@ TEST_F(ChannelManagerTest, OpenFixedChannelErrorNoConn) {
 
 TEST_F(ChannelManagerTest, OpenFixedChannelErrorDisallowedId) {
   // LE-U link
-  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  LEFixedChannels fixed_channels =
+      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   // ACL-U link
-  QueueRegisterACL(kTestHandle2, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle2, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
 
   // This should fail as kSMPChannelId is ACL-U only.
@@ -579,7 +581,7 @@ TEST_F(ChannelManagerTest, OpenFixedChannelErrorDisallowedId) {
 }
 
 TEST_F(ChannelManagerTest, DeactivateDynamicChannelInvalidatesChannelPointer) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
 
   const auto conn_req_id = NextCommandId();
@@ -605,7 +607,8 @@ TEST_F(ChannelManagerTest, DeactivateDynamicChannelInvalidatesChannelPointer) {
 }
 
 TEST_F(ChannelManagerTest, DeactivateAttChannelInvalidatesChannelPointer) {
-  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  LEFixedChannels fixed_channels =
+      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   ASSERT_TRUE(fixed_channels.att->Activate(NopRxCallback, DoNothing));
   fixed_channels.att->Deactivate();
   ASSERT_FALSE(fixed_channels.att.is_alive());
@@ -613,7 +616,8 @@ TEST_F(ChannelManagerTest, DeactivateAttChannelInvalidatesChannelPointer) {
 
 TEST_F(ChannelManagerTest, OpenFixedChannelAndUnregisterLink) {
   // LE-U link
-  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  LEFixedChannels fixed_channels =
+      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   bool closed_called = false;
   auto closed_cb = [&closed_called] { closed_called = true; };
@@ -633,7 +637,8 @@ TEST_F(ChannelManagerTest, OpenFixedChannelAndUnregisterLink) {
 
 TEST_F(ChannelManagerTest, OpenFixedChannelAndCloseChannel) {
   // LE-U link
-  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  LEFixedChannels fixed_channels =
+      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   bool closed_called = false;
   auto closed_cb = [&closed_called] { closed_called = true; };
@@ -651,14 +656,16 @@ TEST_F(ChannelManagerTest, OpenFixedChannelAndCloseChannel) {
 }
 
 TEST_F(ChannelManagerTest, FixedChannelsUseBasicMode) {
-  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  LEFixedChannels fixed_channels =
+      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   ASSERT_TRUE(fixed_channels.att->Activate(NopRxCallback, DoNothing));
   EXPECT_EQ(ChannelMode::kBasic, fixed_channels.att->mode());
 }
 
 TEST_F(ChannelManagerTest, OpenAndCloseWithLinkMultipleFixedChannels) {
   // LE-U link
-  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  LEFixedChannels fixed_channels =
+      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   bool att_closed = false;
   auto att_closed_cb = [&att_closed] { att_closed = true; };
@@ -679,7 +686,8 @@ TEST_F(ChannelManagerTest, OpenAndCloseWithLinkMultipleFixedChannels) {
 
 TEST_F(ChannelManagerTest, SendingPacketsBeforeRemoveConnectionAndVerifyChannelClosed) {
   // LE-U link
-  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  LEFixedChannels fixed_channels =
+      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   bool closed_called = false;
   auto closed_cb = [&closed_called] { closed_called = true; };
@@ -712,7 +720,8 @@ TEST_F(ChannelManagerTest, SendingPacketsBeforeRemoveConnectionAndVerifyChannelC
 // Tests that destroying the ChannelManager cleanly shuts down all channels.
 TEST_F(ChannelManagerTest, DestroyingChannelManagerCleansUpChannels) {
   // LE-U link
-  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  LEFixedChannels fixed_channels =
+      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   bool closed_called = false;
   auto closed_cb = [&closed_called] { closed_called = true; };
@@ -745,7 +754,8 @@ TEST_F(ChannelManagerTest, DestroyingChannelManagerCleansUpChannels) {
 TEST_F(ChannelManagerTest, DeactivateDoesNotCrashOrHang) {
   // Tests that the clean up task posted to the LogicalLink does not crash when
   // a dynamic registry is not present (which is the case for LE links).
-  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  LEFixedChannels fixed_channels =
+      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   ASSERT_TRUE(fixed_channels.att.is_alive());
   ASSERT_TRUE(fixed_channels.att->Activate(NopRxCallback, DoNothing));
   fixed_channels.att->Deactivate();
@@ -755,7 +765,7 @@ TEST_F(ChannelManagerTest, DeactivateDoesNotCrashOrHang) {
 }
 
 TEST_F(ChannelManagerTest, CallingDeactivateFromClosedCallbackDoesNotCrashOrHang) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
 
   auto chan = chanmgr()->OpenFixedChannel(kTestHandle1, kSMPChannelId);
@@ -766,7 +776,8 @@ TEST_F(ChannelManagerTest, CallingDeactivateFromClosedCallbackDoesNotCrashOrHang
 
 TEST_F(ChannelManagerTest, ReceiveData) {
   // LE-U link
-  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  LEFixedChannels fixed_channels =
+      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   ASSERT_TRUE(fixed_channels.att.is_alive());
   ASSERT_TRUE(fixed_channels.smp.is_alive());
 
@@ -864,7 +875,8 @@ TEST_F(ChannelManagerTest, ReceiveDataBeforeRegisteringLink) {
   // Run the loop so all packets are received.
   RunLoopUntilIdle();
 
-  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  LEFixedChannels fixed_channels =
+      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   ASSERT_TRUE(fixed_channels.att->Activate(att_rx_cb, DoNothing));
   ASSERT_TRUE(fixed_channels.smp->Activate(smp_rx_cb, DoNothing));
 
@@ -878,7 +890,7 @@ TEST_F(ChannelManagerTest, ReceiveDataBeforeCreatingFixedChannel) {
   constexpr size_t kPacketCount = 10;
 
   // Register an ACL connection because LE connections create fixed channels immediately.
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
 
   StaticByteBuffer<255> buffer;
@@ -907,7 +919,8 @@ TEST_F(ChannelManagerTest, ReceiveDataBeforeCreatingFixedChannel) {
 TEST_F(ChannelManagerTest, ReceiveDataBeforeSettingRxHandler) {
   constexpr size_t kPacketCount = 10;
 
-  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  LEFixedChannels fixed_channels =
+      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   StaticByteBuffer<255> buffer;
 
@@ -955,7 +968,8 @@ TEST_F(ChannelManagerTest, ReceiveDataBeforeSettingRxHandler) {
 
 TEST_F(ChannelManagerTest, ActivateChannelProcessesCallbacksSynchronously) {
   // LE-U link
-  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  LEFixedChannels fixed_channels =
+      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   int att_rx_cb_count = 0;
   int smp_rx_cb_count = 0;
@@ -1007,14 +1021,16 @@ TEST_F(ChannelManagerTest, ActivateChannelProcessesCallbacksSynchronously) {
 }
 
 TEST_F(ChannelManagerTest, RemovingLinkInvalidatesChannelPointer) {
-  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  LEFixedChannels fixed_channels =
+      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   BT_ASSERT(fixed_channels.att->Activate(NopRxCallback, DoNothing));
   chanmgr()->RemoveConnection(kTestHandle1);
   EXPECT_FALSE(fixed_channels.att.is_alive());
 }
 
 TEST_F(ChannelManagerTest, SendBasicSdu) {
-  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  LEFixedChannels fixed_channels =
+      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   BT_ASSERT(fixed_channels.att->Activate(NopRxCallback, DoNothing));
 
   EXPECT_LE_PACKET_OUT(StaticByteBuffer(
@@ -1082,7 +1098,7 @@ TEST_F(ChannelManagerTest, SendBrEdrFragmentedSdus) {
           0x02, 0x00, LowerBits(static_cast<uint16_t>(InformationType::kFixedChannelsSupported)),
           UpperBits(static_cast<uint16_t>(InformationType::kFixedChannelsSupported))),
       kHighPriority);
-  RegisterACL(kTestHandle2, hci_spec::ConnectionRole::CENTRAL);
+  RegisterACL(kTestHandle2, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   auto sm_chan = ActivateNewFixedChannel(kSMPChannelId, kTestHandle2);
   ASSERT_TRUE(sm_chan.is_alive());
 
@@ -1117,7 +1133,8 @@ TEST_F(ChannelManagerTest, SendFragmentedSdus) {
   TearDown();
   SetUp(kMaxBrEdrDataSize, kMaxLEDataSize);
 
-  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  LEFixedChannels fixed_channels =
+      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   ASSERT_TRUE(fixed_channels.att->Activate(NopRxCallback, DoNothing));
 
   EXPECT_LE_PACKET_OUT(StaticByteBuffer(
@@ -1147,7 +1164,7 @@ TEST_F(ChannelManagerTest, LEChannelSignalLinkError) {
   bool link_error = false;
   auto link_error_cb = [&link_error] { link_error = true; };
   LEFixedChannels fixed_channels =
-      RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL, link_error_cb);
+      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL, link_error_cb);
 
   // Activate a new Attribute channel to signal the error.
   fixed_channels.att->Activate(NopRxCallback, DoNothing);
@@ -1161,7 +1178,7 @@ TEST_F(ChannelManagerTest, LEChannelSignalLinkError) {
 TEST_F(ChannelManagerTest, ACLChannelSignalLinkError) {
   bool link_error = false;
   auto link_error_cb = [&link_error] { link_error = true; };
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL, link_error_cb);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL, link_error_cb);
 
   // Activate a new Security Manager channel to signal the error.
   auto chan = ActivateNewFixedChannel(kSMPChannelId, kTestHandle1);
@@ -1183,7 +1200,7 @@ TEST_F(ChannelManagerTest, SignalLinkErrorDisconnectsChannels) {
     // Simulate closing the link.
     chanmgr()->RemoveConnection(kTestHandle1);
   };
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL, link_error_cb);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL, link_error_cb);
 
   const auto conn_req_id = NextCommandId();
   const auto config_req_id = NextCommandId();
@@ -1269,8 +1286,8 @@ TEST_F(ChannelManagerTest, LEConnectionParameterUpdateRequest) {
                             0x00, 0x00),
                         kHighPriority);
 
-  LEFixedChannels fixed_channels =
-      RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL, DoNothing, conn_param_cb);
+  LEFixedChannels fixed_channels = RegisterLE(
+      kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL, DoNothing, conn_param_cb);
 
   // clang-format off
   ReceiveAclDataPacket(StaticByteBuffer(
@@ -1311,7 +1328,7 @@ auto OutboundDisconnectionResponse(CommandId id) {
 }
 
 TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
 
   Channel::WeakPtr channel;
@@ -1415,7 +1432,7 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelLocalDisconnect) {
 }
 
 TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelRemoteDisconnect) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   Channel::WeakPtr channel;
   auto channel_cb = [&channel](l2cap::Channel::WeakPtr activated_chan) {
@@ -1521,7 +1538,7 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelRemoteDisconnect) {
 }
 
 TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelDataNotBuffered) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   Channel::WeakPtr channel;
   auto channel_cb = [&channel](l2cap::Channel::WeakPtr activated_chan) {
@@ -1593,7 +1610,7 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelDataNotBuffered) {
 }
 
 TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelRemoteRefused) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   bool channel_cb_called = false;
   auto channel_cb = [&channel_cb_called](l2cap::Channel::WeakPtr channel) {
@@ -1628,7 +1645,7 @@ TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelRemoteRefused) {
 }
 
 TEST_F(ChannelManagerTest, ACLOutboundDynamicChannelFailedConfiguration) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   bool channel_cb_called = false;
   auto channel_cb = [&channel_cb_called](l2cap::Channel::WeakPtr channel) {
@@ -1685,7 +1702,7 @@ TEST_F(ChannelManagerTest, ACLInboundDynamicChannelLocalDisconnect) {
   constexpr PSM kBadPsm0 = 0x0004;
   constexpr PSM kBadPsm1 = 0x0103;
 
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   bool closed_cb_called = false;
   auto closed_cb = [&closed_cb_called] { closed_cb_called = true; };
@@ -1770,7 +1787,8 @@ TEST_F(ChannelManagerTest, LinkSecurityProperties) {
 
   // Register a link and open a channel. The security properties should be
   // accessible using the channel.
-  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  LEFixedChannels fixed_channels =
+      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   ASSERT_TRUE(fixed_channels.att->Activate(NopRxCallback, DoNothing));
 
   // The channel should start out at the lowest level of security.
@@ -1786,7 +1804,8 @@ TEST_F(ChannelManagerTest, LinkSecurityProperties) {
 TEST_F(ChannelManagerTest, AssignLinkSecurityPropertiesOnClosedLinkDoesNothing) {
   // Register a link and open a channel. The security properties should be
   // accessible using the channel.
-  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  LEFixedChannels fixed_channels =
+      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   ASSERT_TRUE(fixed_channels.att->Activate(NopRxCallback, DoNothing));
 
   chanmgr()->RemoveConnection(kTestHandle1);
@@ -1821,8 +1840,8 @@ TEST_F(ChannelManagerTest, UpgradeSecurity) {
   };
 
   LEFixedChannels fixed_channels =
-      RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL, DoNothing, NopLeConnParamCallback,
-                 std::move(security_handler));
+      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL, DoNothing,
+                 NopLeConnParamCallback, std::move(security_handler));
   l2cap::Channel::WeakPtr att = std::move(fixed_channels.att);
   ASSERT_TRUE(att->Activate(NopRxCallback, DoNothing));
 
@@ -1851,7 +1870,7 @@ TEST_F(ChannelManagerTest, UpgradeSecurity) {
 }
 
 TEST_F(ChannelManagerTest, SignalingChannelDataPrioritizedOverDynamicChannelData) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   Channel::WeakPtr channel;
   auto channel_cb = [&channel](l2cap::Channel::WeakPtr activated_chan) {
@@ -1897,7 +1916,7 @@ TEST_F(ChannelManagerTest, MtuOutboundChannelConfiguration) {
   constexpr uint16_t kRemoteMtu = kDefaultMTU - 1;
   constexpr uint16_t kLocalMtu = kMaxMTU;
 
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   Channel::WeakPtr channel;
   auto channel_cb = [&channel](l2cap::Channel::WeakPtr activated_chan) {
@@ -1931,7 +1950,7 @@ TEST_F(ChannelManagerTest, MtuInboundChannelConfiguration) {
   constexpr uint16_t kRemoteMtu = kDefaultMTU - 1;
   constexpr uint16_t kLocalMtu = kMaxMTU;
 
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   Channel::WeakPtr channel;
   auto channel_cb = [&channel](l2cap::Channel::WeakPtr opened_chan) {
@@ -1965,7 +1984,8 @@ TEST_F(ChannelManagerTest, OutboundChannelConfigurationUsesChannelParameters) {
   chan_params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
   chan_params.max_rx_sdu_size = l2cap::kMinACLMTU;
 
-  const auto cmd_ids = QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  const auto cmd_ids =
+      QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   ReceiveAclDataPacket(testing::AclExtFeaturesInfoRsp(cmd_ids.extended_features_id, kTestHandle1,
                                                       kExtendedFeaturesBitEnhancedRetransmission));
 
@@ -2020,7 +2040,8 @@ TEST_F(ChannelManagerTest, InboundChannelConfigurationUsesChannelParameters) {
   chan_params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
   chan_params.max_rx_sdu_size = l2cap::kMinACLMTU;
 
-  const auto cmd_ids = QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  const auto cmd_ids =
+      QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   ReceiveAclDataPacket(testing::AclExtFeaturesInfoRsp(cmd_ids.extended_features_id, kTestHandle1,
                                                       kExtendedFeaturesBitEnhancedRetransmission));
   Channel::WeakPtr channel;
@@ -2071,14 +2092,14 @@ TEST_F(ChannelManagerTest, UnregisteringUnknownHandleClearsPendingPacketsAndDoes
   ReceiveAclDataPacket(testing::AclConnectionReq(1, kTestHandle1, kRemoteId, kTestPsm));
   chanmgr()->RemoveConnection(kTestHandle1);
 
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   // Since pending connection request packet was cleared, no response should be sent.
   RunLoopUntilIdle();
 }
 
 TEST_F(ChannelManagerTest,
        PacketsReceivedAfterChannelDeactivatedAndBeforeRemoveChannelCalledAreDropped) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   Channel::WeakPtr channel;
   auto channel_cb = [&channel](l2cap::Channel::WeakPtr opened_chan) {
@@ -2120,7 +2141,8 @@ TEST_F(ChannelManagerTest,
 }
 
 TEST_F(ChannelManagerTest, ReceiveFixedChannelsInformationResponseWithNotSupportedResult) {
-  const auto cmd_ids = QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  const auto cmd_ids =
+      QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   // Handler should check for result and not crash from reading mask or type.
   ReceiveAclDataPacket(testing::AclNotSupportedInformationResponse(
       cmd_ids.fixed_channels_supported_id, kTestHandle1));
@@ -2128,7 +2150,8 @@ TEST_F(ChannelManagerTest, ReceiveFixedChannelsInformationResponseWithNotSupport
 }
 
 TEST_F(ChannelManagerTest, ReceiveFixedChannelsInformationResponseWithInvalidResult) {
-  const auto cmd_ids = QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  const auto cmd_ids =
+      QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   // Handler should check for result and not crash from reading mask or type.
   StaticByteBuffer kPacket(
       // ACL data header (handle: |link_handle|, length: 12 bytes)
@@ -2147,7 +2170,8 @@ TEST_F(ChannelManagerTest, ReceiveFixedChannelsInformationResponseWithInvalidRes
 }
 
 TEST_F(ChannelManagerTest, ReceiveFixedChannelsInformationResponseWithIncorrectType) {
-  const auto cmd_ids = QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  const auto cmd_ids =
+      QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   // Handler should check type and not attempt to read fixed channel mask.
   ReceiveAclDataPacket(
       testing::AclExtFeaturesInfoRsp(cmd_ids.fixed_channels_supported_id, kTestHandle1, 0));
@@ -2155,7 +2179,8 @@ TEST_F(ChannelManagerTest, ReceiveFixedChannelsInformationResponseWithIncorrectT
 }
 
 TEST_F(ChannelManagerTest, ReceiveFixedChannelsInformationResponseWithRejectStatus) {
-  const auto cmd_ids = QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  const auto cmd_ids =
+      QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   // Handler should check status and not attempt to read fields.
   ReceiveAclDataPacket(
       testing::AclCommandRejectNotUnderstoodRsp(cmd_ids.fixed_channels_supported_id, kTestHandle1));
@@ -2174,8 +2199,9 @@ TEST_F(ChannelManagerTest,
   LEConnectionParameterUpdateCallback param_cb =
       [&params](const hci_spec::LEPreferredConnectionParameters& cb_params) { params = cb_params; };
 
-  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL,
-                                              /*link_error_cb=*/DoNothing, std::move(param_cb));
+  LEFixedChannels fixed_channels =
+      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL,
+                 /*link_error_cb=*/DoNothing, std::move(param_cb));
 
   constexpr CommandId kParamReqId = 4;  // random
 
@@ -2207,8 +2233,9 @@ TEST_F(ChannelManagerTest,
   LEConnectionParameterUpdateCallback param_cb =
       [&params](const hci_spec::LEPreferredConnectionParameters& cb_params) { params = cb_params; };
 
-  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::PERIPHERAL,
-                                              /*link_error_cb=*/DoNothing, std::move(param_cb));
+  LEFixedChannels fixed_channels =
+      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::PERIPHERAL,
+                 /*link_error_cb=*/DoNothing, std::move(param_cb));
 
   constexpr CommandId kParamReqId = 4;  // random
 
@@ -2233,8 +2260,9 @@ TEST_F(ChannelManagerTest,
 
   // Callback should not be called for request with invalid parameters.
   LEConnectionParameterUpdateCallback param_cb = [](auto /*params*/) { ADD_FAILURE(); };
-  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL,
-                                              /*link_error_cb=*/DoNothing, std::move(param_cb));
+  LEFixedChannels fixed_channels =
+      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL,
+                 /*link_error_cb=*/DoNothing, std::move(param_cb));
 
   constexpr CommandId kParamReqId = 4;  // random
 
@@ -2282,7 +2310,8 @@ TEST_F(ChannelManagerTest, RequestConnParamUpdateForUnknownLinkIsNoOp) {
 
 TEST_F(ChannelManagerTest,
        RequestConnParamUpdateAsPeripheralAndReceiveAcceptedAndRejectedResponses) {
-  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::PERIPHERAL);
+  LEFixedChannels fixed_channels =
+      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::PERIPHERAL);
 
   // Valid parameter values
   constexpr uint16_t kIntervalMin = 6;
@@ -2332,7 +2361,8 @@ TEST_F(ChannelManagerTest,
 }
 
 TEST_F(ChannelManagerTest, ConnParamUpdateRequestRejected) {
-  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::PERIPHERAL);
+  LEFixedChannels fixed_channels =
+      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::PERIPHERAL);
 
   // Valid parameter values
   constexpr uint16_t kIntervalMin = 6;
@@ -2362,7 +2392,7 @@ TEST_F(ChannelManagerTest, ConnParamUpdateRequestRejected) {
 }
 
 TEST_F(ChannelManagerTest, DestroyingChannelManagerReleasesLogicalLinkAndClosesChannels) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
   auto link = chanmgr()->LogicalLinkForTesting(kTestHandle1);
   ASSERT_TRUE(link.is_alive());
@@ -2388,7 +2418,7 @@ TEST_F(ChannelManagerTest, DestroyingChannelManagerReleasesLogicalLinkAndClosesC
 }
 
 TEST_F(ChannelManagerTest, RequestAclPriorityNormal) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
 
   auto channel = SetUpOutboundChannel();
@@ -2418,7 +2448,7 @@ TEST_F(ChannelManagerTest, RequestAclPriorityNormal) {
 }
 
 TEST_F(ChannelManagerTest, RequestAclPrioritySinkThenNormal) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
 
   auto channel = SetUpOutboundChannel();
@@ -2461,7 +2491,7 @@ TEST_F(ChannelManagerTest, RequestAclPrioritySinkThenNormal) {
 }
 
 TEST_F(ChannelManagerTest, RequestAclPrioritySinkThenDeactivateChannelAfterResult) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
 
   auto channel = SetUpOutboundChannel();
@@ -2493,7 +2523,7 @@ TEST_F(ChannelManagerTest, RequestAclPrioritySinkThenDeactivateChannelAfterResul
 }
 
 TEST_F(ChannelManagerTest, RequestAclPrioritySinkThenReceiveDisconnectRequest) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
 
   auto channel = SetUpOutboundChannel();
@@ -2530,7 +2560,7 @@ TEST_F(ChannelManagerTest, RequestAclPrioritySinkThenReceiveDisconnectRequest) {
 
 TEST_F(ChannelManagerTest,
        RequestAclPrioritySinkThenDeactivateChannelBeforeResultShouldResetPriorityOnDeactivate) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
 
   auto channel = SetUpOutboundChannel();
@@ -2564,7 +2594,7 @@ TEST_F(ChannelManagerTest,
 }
 
 TEST_F(ChannelManagerTest, RequestAclPrioritySinkFails) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
 
   auto channel = SetUpOutboundChannel();
@@ -2588,7 +2618,7 @@ TEST_F(ChannelManagerTest, RequestAclPrioritySinkFails) {
 }
 
 TEST_F(ChannelManagerTest, TwoChannelsRequestAclPrioritySinkAndDeactivate) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
 
   const auto kChannelIds0 = std::make_pair(ChannelId(0x40), ChannelId(0x41));
@@ -2640,7 +2670,7 @@ TEST_F(ChannelManagerTest, TwoChannelsRequestAclPrioritySinkAndDeactivate) {
 }
 
 TEST_F(ChannelManagerTest, TwoChannelsRequestConflictingAclPriorities) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
 
   const auto kChannelIds0 = std::make_pair(ChannelId(0x40), ChannelId(0x41));
@@ -2693,7 +2723,7 @@ TEST_F(ChannelManagerTest, TwoChannelsRequestConflictingAclPriorities) {
 // If two channels request ACL priorities before the first command completes, they should receive
 // responses as if they were handled strictly sequentially.
 TEST_F(ChannelManagerTest, TwoChannelsRequestAclPrioritiesAtSameTime) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
 
   const auto kChannelIds0 = std::make_pair(ChannelId(0x40), ChannelId(0x41));
@@ -2738,7 +2768,7 @@ TEST_F(ChannelManagerTest, TwoChannelsRequestAclPrioritiesAtSameTime) {
 }
 
 TEST_F(ChannelManagerTest, QueuedSinkAclPriorityForClosedChannelIsIgnored) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
 
   auto channel = SetUpOutboundChannel();
@@ -2803,7 +2833,7 @@ TEST_F(ChannelManagerTest, InspectHierarchy) {
             ChildrenMatch(ElementsAre(NodeMatches(AllOf(
                 NameMatches("service_0x0"), PropertyList(ElementsAre(StringIs("psm", "SDP"))))))));
 
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
 
   const auto conn_req_id = NextCommandId();
@@ -2854,7 +2884,7 @@ TEST_F(ChannelManagerTest, InspectHierarchy) {
 
 TEST_F(ChannelManagerTest,
        OutboundChannelWithFlushTimeoutInChannelParametersAndDelayedFlushTimeoutCallback) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
 
   EXPECT_CMD_PACKET_OUT(test_device(), bt::testing::WriteAutomaticFlushTimeoutPacket(
@@ -2876,7 +2906,7 @@ TEST_F(ChannelManagerTest,
 
   // Completing the command should cause the channel to be returned.
   const auto kCommandComplete = bt::testing::CommandCompletePacket(
-      hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::SUCCESS);
+      hci_spec::kWriteAutomaticFlushTimeout, pw::bluetooth::emboss::StatusCode::SUCCESS);
   test_device()->SendCommandChannelPacket(kCommandComplete);
   RunLoopUntilIdle();
   ASSERT_TRUE(channel.is_alive());
@@ -2897,11 +2927,11 @@ TEST_F(ChannelManagerTest,
 }
 
 TEST_F(ChannelManagerTest, OutboundChannelWithFlushTimeoutInChannelParametersFailure) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
 
   const auto kCommandCompleteError = bt::testing::CommandCompletePacket(
-      hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::UNSPECIFIED_ERROR);
+      hci_spec::kWriteAutomaticFlushTimeout, pw::bluetooth::emboss::StatusCode::UNSPECIFIED_ERROR);
   EXPECT_CMD_PACKET_OUT(
       test_device(),
       bt::testing::WriteAutomaticFlushTimeoutPacket(kTestHandle1, kExpectedFlushTimeoutParam),
@@ -2930,11 +2960,11 @@ TEST_F(ChannelManagerTest, OutboundChannelWithFlushTimeoutInChannelParametersFai
 }
 
 TEST_F(ChannelManagerTest, InboundChannelWithFlushTimeoutInChannelParameters) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
 
   const auto kCommandComplete = bt::testing::CommandCompletePacket(
-      hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::SUCCESS);
+      hci_spec::kWriteAutomaticFlushTimeout, pw::bluetooth::emboss::StatusCode::SUCCESS);
   EXPECT_CMD_PACKET_OUT(
       test_device(),
       bt::testing::WriteAutomaticFlushTimeoutPacket(kTestHandle1, kExpectedFlushTimeoutParam),
@@ -2983,13 +3013,13 @@ TEST_F(ChannelManagerTest, InboundChannelWithFlushTimeoutInChannelParameters) {
 }
 
 TEST_F(ChannelManagerTest, FlushableChannelAndNonFlushableChannelOnSameLink) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
   auto nonflushable_channel = SetUpOutboundChannel();
   auto flushable_channel = SetUpOutboundChannel(kLocalId + 1, kRemoteId + 1);
 
   const auto kCommandComplete = bt::testing::CommandCompletePacket(
-      hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::SUCCESS);
+      hci_spec::kWriteAutomaticFlushTimeout, pw::bluetooth::emboss::StatusCode::SUCCESS);
   EXPECT_CMD_PACKET_OUT(
       test_device(),
       bt::testing::WriteAutomaticFlushTimeoutPacket(kTestHandle1, kExpectedFlushTimeoutParam),
@@ -3029,19 +3059,20 @@ TEST_F(ChannelManagerTest, FlushableChannelAndNonFlushableChannelOnSameLink) {
 }
 
 TEST_F(ChannelManagerTest, SettingFlushTimeoutFails) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
   auto channel = SetUpOutboundChannel();
 
-  const auto kCommandComplete = bt::testing::CommandCompletePacket(
-      hci_spec::kWriteAutomaticFlushTimeout, hci_spec::StatusCode::UNKNOWN_CONNECTION_ID);
+  const auto kCommandComplete =
+      bt::testing::CommandCompletePacket(hci_spec::kWriteAutomaticFlushTimeout,
+                                         pw::bluetooth::emboss::StatusCode::UNKNOWN_CONNECTION_ID);
   EXPECT_CMD_PACKET_OUT(
       test_device(),
       bt::testing::WriteAutomaticFlushTimeoutPacket(kTestHandle1, kExpectedFlushTimeoutParam),
       &kCommandComplete);
 
   channel->SetBrEdrAutomaticFlushTimeout(kFlushTimeout, [](auto result) {
-    EXPECT_EQ(ToResult(hci_spec::StatusCode::UNKNOWN_CONNECTION_ID), result);
+    EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::UNKNOWN_CONNECTION_ID), result);
   });
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
@@ -3062,7 +3093,7 @@ class StartA2dpOffloadTest : public ChannelManagerTest,
                              public ::testing::WithParamInterface<hci_android::A2dpCodecType> {};
 
 TEST_P(StartA2dpOffloadTest, StartA2dpOffloadSuccess) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
 
   const hci_android::A2dpCodecType codec = GetParam();
@@ -3070,8 +3101,8 @@ TEST_P(StartA2dpOffloadTest, StartA2dpOffloadSuccess) {
 
   Channel::WeakPtr channel = SetUpOutboundChannel();
 
-  const auto command_complete = bt::testing::CommandCompletePacket(hci_android::kA2dpOffloadCommand,
-                                                                   hci_spec::StatusCode::SUCCESS);
+  const auto command_complete = bt::testing::CommandCompletePacket(
+      hci_android::kA2dpOffloadCommand, pw::bluetooth::emboss::StatusCode::SUCCESS);
   EXPECT_CMD_PACKET_OUT(
       test_device(),
       bt::testing::StartA2dpOffloadRequest(config, channel->link_handle(), channel->remote_id(),
@@ -3093,14 +3124,15 @@ INSTANTIATE_TEST_SUITE_P(ChannelManagerTest, StartA2dpOffloadTest,
                          ::testing::ValuesIn(kA2dpCodecTypeParams));
 
 TEST_F(ChannelManagerTest, StartA2dpOffloadInvalidConfiguration) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
 
   Channel::A2dpOffloadConfiguration config = BuildA2dpOffloadConfiguration();
   Channel::WeakPtr channel = SetUpOutboundChannel();
 
   const auto command_complete = bt::testing::CommandCompletePacket(
-      hci_android::kA2dpOffloadCommand, hci_spec::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
+      hci_android::kA2dpOffloadCommand,
+      pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
   EXPECT_CMD_PACKET_OUT(
       test_device(),
       bt::testing::StartA2dpOffloadRequest(config, channel->link_handle(), channel->remote_id(),
@@ -3109,7 +3141,7 @@ TEST_F(ChannelManagerTest, StartA2dpOffloadInvalidConfiguration) {
 
   std::optional<hci::Result<>> result_;
   channel->StartA2dpOffload(&config, [&result_](auto result) {
-    EXPECT_EQ(ToResult(hci_spec::StatusCode::INVALID_HCI_COMMAND_PARAMETERS), result);
+    EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS), result);
     result_ = result;
   });
   RunLoopUntilIdle();
@@ -3119,14 +3151,15 @@ TEST_F(ChannelManagerTest, StartA2dpOffloadInvalidConfiguration) {
 }
 
 TEST_F(ChannelManagerTest, StartA2dpOffloadAlreadyStarted) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
 
   Channel::A2dpOffloadConfiguration config = BuildA2dpOffloadConfiguration();
   Channel::WeakPtr channel = SetUpOutboundChannel();
 
   const auto command_complete = bt::testing::CommandCompletePacket(
-      hci_android::kA2dpOffloadCommand, hci_spec::StatusCode::CONNECTION_ALREADY_EXISTS);
+      hci_android::kA2dpOffloadCommand,
+      pw::bluetooth::emboss::StatusCode::CONNECTION_ALREADY_EXISTS);
   EXPECT_CMD_PACKET_OUT(
       test_device(),
       bt::testing::StartA2dpOffloadRequest(config, channel->link_handle(), channel->remote_id(),
@@ -3135,7 +3168,7 @@ TEST_F(ChannelManagerTest, StartA2dpOffloadAlreadyStarted) {
 
   std::optional<hci::Result<>> result_;
   channel->StartA2dpOffload(&config, [&result_](auto result) {
-    EXPECT_EQ(ToResult(hci_spec::StatusCode::CONNECTION_ALREADY_EXISTS), result);
+    EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::CONNECTION_ALREADY_EXISTS), result);
     result_ = result;
   });
   RunLoopUntilIdle();
@@ -3145,14 +3178,14 @@ TEST_F(ChannelManagerTest, StartA2dpOffloadAlreadyStarted) {
 }
 
 TEST_F(ChannelManagerTest, StartA2dpOffloadStatusStarted) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
 
   Channel::A2dpOffloadConfiguration config = BuildA2dpOffloadConfiguration();
   Channel::WeakPtr channel = SetUpOutboundChannel();
 
-  const auto command_complete = bt::testing::CommandCompletePacket(hci_android::kA2dpOffloadCommand,
-                                                                   hci_spec::StatusCode::SUCCESS);
+  const auto command_complete = bt::testing::CommandCompletePacket(
+      hci_android::kA2dpOffloadCommand, pw::bluetooth::emboss::StatusCode::SUCCESS);
   EXPECT_CMD_PACKET_OUT(
       test_device(),
       bt::testing::StartA2dpOffloadRequest(config, channel->link_handle(), channel->remote_id(),
@@ -3161,7 +3194,7 @@ TEST_F(ChannelManagerTest, StartA2dpOffloadStatusStarted) {
 
   std::optional<hci::Result<>> result_;
   channel->StartA2dpOffload(&config, [&result_](auto result) {
-    EXPECT_EQ(ToResult(hci_spec::StatusCode::SUCCESS), result);
+    EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), result);
     result_ = result;
   });
   RunLoopUntilIdle();
@@ -3180,14 +3213,14 @@ TEST_F(ChannelManagerTest, StartA2dpOffloadStatusStarted) {
 }
 
 TEST_F(ChannelManagerTest, StartA2dpOffloadChannelDisconnected) {
-  QueueRegisterACL(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
 
   Channel::A2dpOffloadConfiguration config = BuildA2dpOffloadConfiguration();
   Channel::WeakPtr channel = SetUpOutboundChannel();
 
-  const auto command_complete = bt::testing::CommandCompletePacket(hci_android::kA2dpOffloadCommand,
-                                                                   hci_spec::StatusCode::SUCCESS);
+  const auto command_complete = bt::testing::CommandCompletePacket(
+      hci_android::kA2dpOffloadCommand, pw::bluetooth::emboss::StatusCode::SUCCESS);
   EXPECT_CMD_PACKET_OUT(
       test_device(),
       bt::testing::StartA2dpOffloadRequest(config, channel->link_handle(), channel->remote_id(),
@@ -3196,7 +3229,7 @@ TEST_F(ChannelManagerTest, StartA2dpOffloadChannelDisconnected) {
 
   std::optional<hci::Result<>> result_;
   channel->StartA2dpOffload(&config, [&result_](auto result) {
-    EXPECT_EQ(ToResult(hci_spec::StatusCode::SUCCESS), result);
+    EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), result);
     result_ = result;
   });
 
@@ -3213,7 +3246,8 @@ TEST_F(ChannelManagerTest, StartA2dpOffloadChannelDisconnected) {
 
 TEST_F(ChannelManagerTest, SignalLinkErrorStopsDeliveryOfBufferedRxPackets) {
   // LE-U link
-  LEFixedChannels fixed_channels = RegisterLE(kTestHandle1, hci_spec::ConnectionRole::CENTRAL);
+  LEFixedChannels fixed_channels =
+      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   // Queue 2 packets to be delivers on channel activation.
   StaticByteBuffer payload_0(0x00);

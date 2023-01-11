@@ -163,9 +163,10 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
                       });
   }
 
-  auto inquiry = hci::EmbossCommandPacket::New<hci_spec::InquiryCommandWriter>(hci_spec::kInquiry);
+  auto inquiry = hci::EmbossCommandPacket::New<pw::bluetooth::emboss::InquiryCommandWriter>(
+      hci_spec::kInquiry);
   auto view = inquiry.view_t();
-  view.lap().Write(hci_spec::InquiryAccessCode::GIAC);
+  view.lap().Write(pw::bluetooth::emboss::InquiryAccessCode::GIAC);
   view.inquiry_length().Write(kInquiryLengthDefault);
   view.num_responses().Write(0);
 
@@ -218,7 +219,8 @@ void BrEdrDiscoveryManager::StopInquiry() {
   bt_log(TRACE, "gap-bredr", "cancelling inquiry");
 
   const hci::EmbossCommandPacket inq_cancel =
-      hci::EmbossCommandPacket::New<hci_spec::InquiryCancelCommandView>(hci_spec::kInquiryCancel);
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::InquiryCancelCommandView>(
+          hci_spec::kInquiryCancel);
   cmd_->SendCommand(std::move(inq_cancel), [](int64_t, const auto& event) {
     // Warn if the command failed.
     hci_is_error(event, WARN, "gap-bredr", "inquiry cancel failed");
@@ -312,8 +314,9 @@ void BrEdrDiscoveryManager::UpdateEIRResponseData(std::string name,
 void BrEdrDiscoveryManager::UpdateLocalName(std::string name, hci::ResultFunction<> callback) {
   auto self = weak_self_.GetWeakPtr();
 
-  auto write_name = hci::EmbossCommandPacket::New<hci_spec::WriteLocalNameCommandWriter>(
-      hci_spec::kWriteLocalName);
+  auto write_name =
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::WriteLocalNameCommandWriter>(
+          hci_spec::kWriteLocalName);
   auto write_name_view = write_name.view_t();
   auto local_name = write_name_view.local_name().BackingStorage();
   size_t name_size = std::min(name.size(), hci_spec::kMaxNameLength);
@@ -401,8 +404,9 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
     bt_log(WARN, "gap-bredr", "cannot request name, unknown peer: %s", bt_str(id));
     return;
   }
-  auto packet = hci::EmbossCommandPacket::New<hci_spec::RemoteNameRequestCommandWriter>(
-      hci_spec::kRemoteNameRequest);
+  auto packet =
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::RemoteNameRequestCommandWriter>(
+          hci_spec::kRemoteNameRequest);
   auto params = packet.view_t();
   BT_DEBUG_ASSERT(peer->bredr());
   BT_DEBUG_ASSERT(peer->bredr()->page_scan_repetition_mode());
@@ -516,8 +520,9 @@ void BrEdrDiscoveryManager::SetInquiryScan() {
       scan_type &= ~static_cast<uint8_t>(hci_spec::ScanEnableBit::kInquiry);
     }
 
-    auto write_enable = hci::EmbossCommandPacket::New<hci_spec::WriteScanEnableCommandWriter>(
-        hci_spec::kWriteScanEnable);
+    auto write_enable =
+        hci::EmbossCommandPacket::New<pw::bluetooth::emboss::WriteScanEnableCommandWriter>(
+            hci_spec::kWriteScanEnable);
     auto write_enable_view = write_enable.view_t();
     write_enable_view.scan_enable().inquiry().Write(
         scan_type & static_cast<uint8_t>(hci_spec::ScanEnableBit::kInquiry));

@@ -115,7 +115,7 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // connection that was not initiated locally. This object will determine if it was a result of an
   // active advertisement and route the connection accordingly.
   virtual void OnIncomingConnection(hci_spec::ConnectionHandle handle,
-                                    hci_spec::ConnectionRole role,
+                                    pw::bluetooth::emboss::ConnectionRole role,
                                     const DeviceAddress& peer_address,
                                     const hci_spec::LEConnectionParameters& conn_params) = 0;
 
@@ -136,8 +136,8 @@ class LowEnergyAdvertiser : public LocalAddressClient {
  protected:
   // Build the HCI command packet to enable advertising for the flavor of low energy advertising
   // being implemented.
-  virtual std::unique_ptr<CommandPacket> BuildEnablePacket(const DeviceAddress& address,
-                                                           hci_spec::GenericEnableParam enable) = 0;
+  virtual std::unique_ptr<CommandPacket> BuildEnablePacket(
+      const DeviceAddress& address, pw::bluetooth::emboss::GenericEnableParam enable) = 0;
 
   // Build the HCI command packet to set the advertising parameters for the flavor of low energy
   // advertising being implemented.
@@ -200,7 +200,8 @@ class LowEnergyAdvertiser : public LocalAddressClient {
 
   // Handle shared housekeeping tasks when an incoming connection is completed (e.g. clean up
   // internal state, call callbacks, etc)
-  void CompleteIncomingConnection(hci_spec::ConnectionHandle handle, hci_spec::ConnectionRole role,
+  void CompleteIncomingConnection(hci_spec::ConnectionHandle handle,
+                                  pw::bluetooth::emboss::ConnectionRole role,
                                   const DeviceAddress& local_address,
                                   const DeviceAddress& peer_address,
                                   const hci_spec::LEConnectionParameters& conn_params);

@@ -63,12 +63,12 @@ class SecurityManagerTest : public l2cap::testing::FakeChannelTest, public sm::D
                                 dispatcher());
 
     // Setup a fake logical link.
-    auto link_role = role == Role::kInitiator ? hci_spec::ConnectionRole::CENTRAL
-                                              : hci_spec::ConnectionRole::PERIPHERAL;
+    auto link_role = role == Role::kInitiator ? pw::bluetooth::emboss::ConnectionRole::CENTRAL
+                                              : pw::bluetooth::emboss::ConnectionRole::PERIPHERAL;
 
     if (fake_link_) {
-      auto status_event =
-          testing::CommandStatusPacket(hci_spec::kDisconnect, hci_spec::StatusCode::SUCCESS);
+      auto status_event = testing::CommandStatusPacket(hci_spec::kDisconnect,
+                                                       pw::bluetooth::emboss::StatusCode::SUCCESS);
       auto disconnect_complete = testing::DisconnectionCompletePacket(kConnectionHandle);
       EXPECT_CMD_PACKET_OUT(controller_, testing::DisconnectPacket(kConnectionHandle),
                             &status_event, &disconnect_complete);
@@ -1718,7 +1718,7 @@ TEST_F(InitiatorPairingTest, EncryptionWithSTKFails) {
   EXPECT_EQ(1, fake_link()->start_encryption_count());
 
   fake_link()->TriggerEncryptionChangeCallback(
-      ToResult(hci_spec::StatusCode::PIN_OR_KEY_MISSING).take_error());
+      ToResult(pw::bluetooth::emboss::StatusCode::PIN_OR_KEY_MISSING).take_error());
   RunLoopUntilIdle();
 
   EXPECT_EQ(1, pairing_failed_count());
@@ -1726,7 +1726,7 @@ TEST_F(InitiatorPairingTest, EncryptionWithSTKFails) {
   EXPECT_EQ(1, auth_failure_callback_count());
   EXPECT_EQ(ToResult(ErrorCode::kUnspecifiedReason), security_status());
   EXPECT_EQ(ErrorCode::kUnspecifiedReason, received_error_code());
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::PIN_OR_KEY_MISSING), auth_failure_status());
+  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::PIN_OR_KEY_MISSING), auth_failure_status());
 
   // No security property update should have been sent since the security
   // properties have not changed.
@@ -2753,7 +2753,7 @@ TEST_F(InitiatorPairingTest, ModifyAssignedLinkLtkBeforeSecurityRequestCausesDis
   RunLoopUntilIdle();
   ASSERT_TRUE(fake_chan()->link_error());
   ASSERT_EQ(1, auth_failure_callback_count());
-  ASSERT_EQ(ToResult(hci_spec::StatusCode::PIN_OR_KEY_MISSING), auth_failure_status());
+  ASSERT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::PIN_OR_KEY_MISSING), auth_failure_status());
 }
 
 TEST_F(ResponderPairingTest, SuccessfulPairAfterResetInProgressPairing) {
@@ -3354,7 +3354,7 @@ TEST_F(ResponderPairingTest, EncryptWithLinkKeyModifiedOutsideSmDisconnects) {
   RunLoopUntilIdle();
   ASSERT_TRUE(fake_chan()->link_error());
   ASSERT_EQ(1, auth_failure_callback_count());
-  ASSERT_EQ(ToResult(hci_spec::StatusCode::PIN_OR_KEY_MISSING), auth_failure_status());
+  ASSERT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::PIN_OR_KEY_MISSING), auth_failure_status());
 }
 
 TEST_F(ResponderPairingTest, EncryptWithLinkKeyButNoSmLtkDisconnects) {
@@ -3365,7 +3365,7 @@ TEST_F(ResponderPairingTest, EncryptWithLinkKeyButNoSmLtkDisconnects) {
   RunLoopUntilIdle();
   ASSERT_TRUE(fake_chan()->link_error());
   ASSERT_EQ(1, auth_failure_callback_count());
-  ASSERT_EQ(ToResult(hci_spec::StatusCode::PIN_OR_KEY_MISSING), auth_failure_status());
+  ASSERT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::PIN_OR_KEY_MISSING), auth_failure_status());
 }
 
 // As responder, we reject security requests, as the initiator should never send them.

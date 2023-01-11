@@ -315,7 +315,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryAndStopInCallback) {
 
 TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryFailure) {
   test_device()->SetDefaultResponseStatus(hci_spec::kLESetScanEnable,
-                                          hci_spec::StatusCode::COMMAND_DISALLOWED);
+                                          pw::bluetooth::emboss::StatusCode::COMMAND_DISALLOWED);
 
   // |session| should contain nullptr.
   discovery_manager()->StartDiscovery(/*active=*/true, [](auto session) { EXPECT_FALSE(session); });
@@ -451,7 +451,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryWhilePendingStop) {
 
 TEST_F(LowEnergyDiscoveryManagerTest, StartDiscoveryFailureManyPending) {
   test_device()->SetDefaultResponseStatus(hci_spec::kLESetScanEnable,
-                                          hci_spec::StatusCode::COMMAND_DISALLOWED);
+                                          pw::bluetooth::emboss::StatusCode::COMMAND_DISALLOWED);
 
   constexpr size_t kExpectedSessionCount = 5;
   size_t cb_count = 0u;
@@ -507,7 +507,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, ScanPeriodRestartFailure) {
   // disabled).
   set_scan_state_handler(kNumScanStates, [this] {
     test_device()->SetDefaultResponseStatus(hci_spec::kLESetScanEnable,
-                                            hci_spec::StatusCode::COMMAND_DISALLOWED);
+                                            pw::bluetooth::emboss::StatusCode::COMMAND_DISALLOWED);
   });
 
   RunLoopUntilIdle();
@@ -1388,7 +1388,7 @@ TEST_F(LowEnergyDiscoveryManagerTest, Inspect) {
 
   // Cause discovery to fail.
   test_device()->SetDefaultResponseStatus(hci_spec::kLESetScanEnable,
-                                          hci_spec::StatusCode::COMMAND_DISALLOWED);
+                                          pw::bluetooth::emboss::StatusCode::COMMAND_DISALLOWED);
   discovery_manager()->StartDiscovery(/*active=*/true, [](auto session) { EXPECT_FALSE(session); });
   RunLoopUntilIdle();
   EXPECT_THAT(InspectProperties(), ::testing::IsSupersetOf({UintIs("failed_count", 1u)}));

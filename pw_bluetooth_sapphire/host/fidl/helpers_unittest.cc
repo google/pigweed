@@ -717,9 +717,10 @@ TEST(HelpersTest, PeerToFidlOptionalFields) {
   bt::DeviceAddress addr(bt::DeviceAddress::Type::kLEPublic, {0, 1, 2, 3, 4, 5});
   auto* peer = cache.NewPeer(addr, /*connectable=*/true);
   peer->MutLe().SetAdvertisingData(kRssi, kAdv, zx::time());
-  peer->MutBrEdr().SetInquiryData(bt::hci_spec::InquiryResult{
-      bt::DeviceAddressBytes{{0, 1, 2, 3, 4, 5}}, bt::hci_spec::PageScanRepetitionMode::R0_, 0, 0,
-      bt::DeviceClass(bt::DeviceClass::MajorClass::kPeripheral), 0});
+  peer->MutBrEdr().SetInquiryData(
+      bt::hci_spec::InquiryResult{bt::DeviceAddressBytes{{0, 1, 2, 3, 4, 5}},
+                                  pw::bluetooth::emboss::PageScanRepetitionMode::R0_, 0, 0,
+                                  bt::DeviceClass(bt::DeviceClass::MajorClass::kPeripheral), 0});
   for (auto& service : kBrEdrServices) {
     peer->MutBrEdr().AddService(service);
   }
@@ -1192,17 +1193,19 @@ TEST_F(HelpersAdapterTest, FidlToScoParameters) {
   params.set_path(fbredr::DataPath::OFFLOAD);
   ASSERT_TRUE(FidlToScoParameters(params).is_ok());
 
-  bt::StaticPacket<bt::hci_spec::SynchronousConnectionParametersWriter> out =
+  bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> out =
       FidlToScoParameters(params).take_value();
   auto view = out.view();
   EXPECT_EQ(view.transmit_bandwidth().Read(), 8000u);
   EXPECT_EQ(view.receive_bandwidth().Read(), 8000u);
 
-  EXPECT_EQ(view.transmit_coding_format().coding_format().Read(), bt::hci_spec::CodingFormat::MSBC);
+  EXPECT_EQ(view.transmit_coding_format().coding_format().Read(),
+            pw::bluetooth::emboss::CodingFormat::MSBC);
   EXPECT_EQ(view.transmit_coding_format().company_id().Read(), 0u);
   EXPECT_EQ(view.transmit_coding_format().vendor_codec_id().Read(), 0u);
 
-  EXPECT_EQ(view.receive_coding_format().coding_format().Read(), bt::hci_spec::CodingFormat::MSBC);
+  EXPECT_EQ(view.receive_coding_format().coding_format().Read(),
+            pw::bluetooth::emboss::CodingFormat::MSBC);
   EXPECT_EQ(view.receive_coding_format().company_id().Read(), 0u);
   EXPECT_EQ(view.receive_coding_format().vendor_codec_id().Read(), 0u);
 
@@ -1213,26 +1216,28 @@ TEST_F(HelpersAdapterTest, FidlToScoParameters) {
   EXPECT_EQ(view.output_bandwidth().Read(), 32000u);
 
   EXPECT_EQ(view.input_coding_format().coding_format().Read(),
-            bt::hci_spec::CodingFormat::LINEAR_PCM);
+            pw::bluetooth::emboss::CodingFormat::LINEAR_PCM);
   EXPECT_EQ(view.input_coding_format().company_id().Read(), 0u);
   EXPECT_EQ(view.input_coding_format().vendor_codec_id().Read(), 0u);
 
   EXPECT_EQ(view.output_coding_format().coding_format().Read(),
-            bt::hci_spec::CodingFormat::LINEAR_PCM);
+            pw::bluetooth::emboss::CodingFormat::LINEAR_PCM);
   EXPECT_EQ(view.output_coding_format().company_id().Read(), 0u);
   EXPECT_EQ(view.output_coding_format().vendor_codec_id().Read(), 0u);
 
   EXPECT_EQ(view.input_coded_data_size_bits().Read(), 16u);
   EXPECT_EQ(view.output_coded_data_size_bits().Read(), 16u);
 
-  EXPECT_EQ(view.input_pcm_data_format().Read(), bt::hci_spec::PcmDataFormat::TWOS_COMPLEMENT);
-  EXPECT_EQ(view.output_pcm_data_format().Read(), bt::hci_spec::PcmDataFormat::TWOS_COMPLEMENT);
+  EXPECT_EQ(view.input_pcm_data_format().Read(),
+            pw::bluetooth::emboss::PcmDataFormat::TWOS_COMPLEMENT);
+  EXPECT_EQ(view.output_pcm_data_format().Read(),
+            pw::bluetooth::emboss::PcmDataFormat::TWOS_COMPLEMENT);
 
   EXPECT_EQ(view.input_pcm_sample_payload_msb_position().Read(), 3u);
   EXPECT_EQ(view.output_pcm_sample_payload_msb_position().Read(), 3u);
 
-  EXPECT_EQ(view.input_data_path().Read(), static_cast<bt::hci_spec::ScoDataPath>(6));
-  EXPECT_EQ(view.output_data_path().Read(), static_cast<bt::hci_spec::ScoDataPath>(6));
+  EXPECT_EQ(view.input_data_path().Read(), static_cast<pw::bluetooth::emboss::ScoDataPath>(6));
+  EXPECT_EQ(view.output_data_path().Read(), static_cast<pw::bluetooth::emboss::ScoDataPath>(6));
 
   EXPECT_EQ(view.input_transport_unit_size_bits().Read(), 0u);
   EXPECT_EQ(view.output_transport_unit_size_bits().Read(), 0u);
@@ -1240,9 +1245,10 @@ TEST_F(HelpersAdapterTest, FidlToScoParameters) {
   EXPECT_EQ(view.max_latency_ms().Read(), bt::sco::kParameterSetMsbcT2.max_latency_ms);
   EXPECT_EQ(view.packet_types().BackingStorage().ReadUInt(),
             bt::sco::kParameterSetMsbcT2.packet_types);
-  EXPECT_EQ(view.retransmission_effort().Read(),
-            static_cast<bt::hci_spec::SynchronousConnectionParameters::ScoRetransmissionEffort>(
-                bt::sco::kParameterSetMsbcT2.retransmission_effort));
+  EXPECT_EQ(
+      view.retransmission_effort().Read(),
+      static_cast<pw::bluetooth::emboss::SynchronousConnectionParameters::ScoRetransmissionEffort>(
+          bt::sco::kParameterSetMsbcT2.retransmission_effort));
 
   // When the IO coding format is Linear PCM, the PCM data format is required.
   params.clear_io_pcm_data_format();
@@ -1256,7 +1262,8 @@ TEST_F(HelpersAdapterTest, FidlToScoParameters) {
   params.set_io_coding_format(fbredr::CodingFormat::TRANSPARENT);
   ASSERT_TRUE(FidlToScoParameters(params).is_ok());
   out = FidlToScoParameters(params).value();
-  EXPECT_EQ(view.input_pcm_data_format().Read(), bt::hci_spec::PcmDataFormat::NOT_APPLICABLE);
+  EXPECT_EQ(view.input_pcm_data_format().Read(),
+            pw::bluetooth::emboss::PcmDataFormat::NOT_APPLICABLE);
   EXPECT_EQ(view.input_pcm_sample_payload_msb_position().Read(), 0u);
 }
 

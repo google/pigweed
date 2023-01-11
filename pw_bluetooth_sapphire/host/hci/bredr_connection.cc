@@ -10,7 +10,8 @@ namespace bt::hci {
 
 BrEdrConnection::BrEdrConnection(hci_spec::ConnectionHandle handle,
                                  const DeviceAddress& local_address,
-                                 const DeviceAddress& peer_address, hci_spec::ConnectionRole role,
+                                 const DeviceAddress& peer_address,
+                                 pw::bluetooth::emboss::ConnectionRole role,
                                  const Transport::WeakPtr& hci)
     : AclConnection(handle, local_address, peer_address, role, hci), WeakSelf(this) {
   BT_ASSERT(local_address.type() == DeviceAddress::Type::kBREDR);
@@ -34,11 +35,11 @@ bool BrEdrConnection::StartEncryption() {
     return false;
   }
 
-  auto cmd = EmbossCommandPacket::New<hci_spec::SetConnectionEncryptionCommandWriter>(
+  auto cmd = EmbossCommandPacket::New<pw::bluetooth::emboss::SetConnectionEncryptionCommandWriter>(
       hci_spec::kSetConnectionEncryption);
   auto params = cmd.view_t();
   params.connection_handle().Write(handle());
-  params.encryption_enable().Write(hci_spec::GenericEnableParam::ENABLE);
+  params.encryption_enable().Write(pw::bluetooth::emboss::GenericEnableParam::ENABLE);
 
   auto self = GetWeakPtr();
   auto event_cb = [self, handle = handle()](auto id, const EventPacket& event) {
@@ -84,7 +85,7 @@ void BrEdrConnection::HandleEncryptionStatusValidated(Result<bool> result) {
   // not specify actions to take after encryption failures. We'll choose to
   // disconnect ACL links after encryption failure.
   if (result.is_error()) {
-    Disconnect(hci_spec::StatusCode::AUTHENTICATION_FAILURE);
+    Disconnect(pw::bluetooth::emboss::StatusCode::AUTHENTICATION_FAILURE);
   }
 
   if (!encryption_change_callback()) {

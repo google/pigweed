@@ -337,7 +337,8 @@ class Peer final {
     const std::optional<DeviceClass>& device_class() const { return device_class_; }
 
     // Returns the page scan repetition mode of the peer, if known.
-    const std::optional<hci_spec::PageScanRepetitionMode>& page_scan_repetition_mode() const {
+    const std::optional<pw::bluetooth::emboss::PageScanRepetitionMode>& page_scan_repetition_mode()
+        const {
       return page_scan_rep_mode_;
     }
 
@@ -398,7 +399,7 @@ class Peer final {
     // All multi-byte fields must be in little-endian byte order as they were
     // received from the controller.
     void SetInquiryData(DeviceClass device_class, uint16_t clock_offset,
-                        hci_spec::PageScanRepetitionMode page_scan_rep_mode,
+                        pw::bluetooth::emboss::PageScanRepetitionMode page_scan_rep_mode,
                         int8_t rssi = hci_spec::kRSSIInvalid,
                         const BufferView& eir_data = BufferView());
 
@@ -414,7 +415,7 @@ class Peer final {
 
     DeviceAddress address_;
     std::optional<DeviceClass> device_class_;
-    std::optional<hci_spec::PageScanRepetitionMode> page_scan_rep_mode_;
+    std::optional<pw::bluetooth::emboss::PageScanRepetitionMode> page_scan_rep_mode_;
     std::optional<uint16_t> clock_offset_;
     // TODO(jamuraa): Parse more of the Extended Inquiry Response fields
     size_t eir_len_;

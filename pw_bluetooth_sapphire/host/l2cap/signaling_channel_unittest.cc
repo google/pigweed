@@ -27,7 +27,7 @@ const auto kTestResponseHandler = [](Status status, const ByteBuffer& rsp_payloa
 class TestSignalingChannel : public SignalingChannel {
  public:
   explicit TestSignalingChannel(Channel::WeakPtr chan)
-      : SignalingChannel(std::move(chan), hci_spec::ConnectionRole::CENTRAL) {
+      : SignalingChannel(std::move(chan), pw::bluetooth::emboss::ConnectionRole::CENTRAL) {
     set_mtu(kTestMTU);
   }
   ~TestSignalingChannel() override = default;

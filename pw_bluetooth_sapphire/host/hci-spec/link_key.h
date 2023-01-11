@@ -31,7 +31,7 @@ class LinkKey final {
     return value() == other.value() && rand() == other.rand() && ediv() == other.ediv();
   }
 
-  auto view() { return hci_spec::MakeEmbossLinkKeyView(&value_); }
+  auto view() { return pw::bluetooth::emboss::MakeLinkKeyView(&value_); }
 
  private:
   UInt128 value_;

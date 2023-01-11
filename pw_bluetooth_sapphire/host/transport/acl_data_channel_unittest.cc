@@ -1146,8 +1146,8 @@ TEST_P(AclPriorityTest, RequestAclPriority) {
       });
 
   auto cmd_complete = bt::testing::CommandCompletePacket(
-      op_code,
-      kExpectSuccess ? hci_spec::StatusCode::SUCCESS : hci_spec::StatusCode::UNKNOWN_COMMAND);
+      op_code, kExpectSuccess ? pw::bluetooth::emboss::StatusCode::SUCCESS
+                              : pw::bluetooth::emboss::StatusCode::UNKNOWN_COMMAND);
   EXPECT_CMD_PACKET_OUT(test_device(), kEncodedCommand, &cmd_complete);
 
   size_t request_cb_count = 0;

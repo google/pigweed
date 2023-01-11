@@ -35,16 +35,18 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
 
   StaticByteBuffer command_status_error_bytes(hci_spec::kCommandStatusEventCode,
                                               0x04,  // parameter_total_size (4 byte payload)
-                                              hci_spec::StatusCode::HARDWARE_FAILURE, 1, 0xFF,
-                                              0xFF);
+                                              pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE,
+                                              1, 0xFF, 0xFF);
 
   StaticByteBuffer command_cmpl_error_bytes(hci_spec::kCommandCompleteEventCode,
                                             0x04,  // parameter_total_size (4 byte payload)
-                                            1, 0xFF, 0xFF, hci_spec::StatusCode::RESERVED_0);
+                                            1, 0xFF, 0xFF,
+                                            pw::bluetooth::emboss::StatusCode::RESERVED_0);
 
-  auto command_cmpl_success_bytes = StaticByteBuffer(hci_spec::kCommandCompleteEventCode,
-                                                     0x04,  // parameter_total_size (4 byte payload)
-                                                     1, 0xFF, 0xFF, hci_spec::StatusCode::SUCCESS);
+  auto command_cmpl_success_bytes =
+      StaticByteBuffer(hci_spec::kCommandCompleteEventCode,
+                       0x04,  // parameter_total_size (4 byte payload)
+                       1, 0xFF, 0xFF, pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   // Here we perform multiple test sequences where we queue up several  commands
   // in each sequence. We expect each sequence to terminate differently after
@@ -104,7 +106,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
   EXPECT_EQ(1, cb_called);
   EXPECT_EQ(1, status_cb_called);
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::HARDWARE_FAILURE), status);
+  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE), status);
   cb_called = 0;
 
   // Sequence 2 (test)
@@ -122,7 +124,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
   EXPECT_EQ(1, cb_called);
   EXPECT_EQ(2, status_cb_called);
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::RESERVED_0), status);
+  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::RESERVED_0), status);
   cb_called = 0;
 
   // Sequence 3 (test)
@@ -141,7 +143,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunner) {
   EXPECT_FALSE(cmd_runner.HasQueuedCommands());
   EXPECT_EQ(2, cb_called);
   EXPECT_EQ(3, status_cb_called);
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::RESERVED_0), status);
+  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::RESERVED_0), status);
   cb_called = 0;
 
   // Sequence 4 (test)
@@ -185,11 +187,12 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
   auto command_cmpl_error_bytes =
       StaticByteBuffer(hci_spec::kCommandCompleteEventCode,
                        0x04,  // parameter_total_size (4 byte payload)
-                       1, 0xFF, 0xFF, hci_spec::StatusCode::HARDWARE_FAILURE);
+                       1, 0xFF, 0xFF, pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE);
 
-  auto command_cmpl_success_bytes = StaticByteBuffer(hci_spec::kCommandCompleteEventCode,
-                                                     0x04,  // parameter_total_size (4 byte payload)
-                                                     1, 0xFF, 0xFF, hci_spec::StatusCode::SUCCESS);
+  auto command_cmpl_success_bytes =
+      StaticByteBuffer(hci_spec::kCommandCompleteEventCode,
+                       0x04,  // parameter_total_size (4 byte payload)
+                       1, 0xFF, 0xFF, pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   // Sequence 1
   //   -> Command; <- success complete
@@ -303,7 +306,7 @@ TEST_F(SequentialCommandRunnerTest, SequentialCommandRunnerCancel) {
   EXPECT_EQ(1, cb_called);
   // The result callback should have been called with the failure result.
   EXPECT_EQ(2, status_cb_called);
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::HARDWARE_FAILURE), status);
+  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE), status);
 }
 
 TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
@@ -311,38 +314,40 @@ TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
   auto command_status_queue_increase =
       StaticByteBuffer(hci_spec::kCommandStatusEventCode,
                        0x04,  // parameter_total_size (4 byte payload)
-                       hci_spec::StatusCode::SUCCESS, 250, 0x00, 0x00);
+                       pw::bluetooth::emboss::StatusCode::SUCCESS, 250, 0x00, 0x00);
   // HCI command with custom opcode FFFF.
   StaticByteBuffer command_bytes(0xFF, 0xFF, 0x00);
   auto command_status_error_bytes =
       StaticByteBuffer(hci_spec::kCommandStatusEventCode,
                        0x04,  // parameter_total_size (4 byte payload)
-                       hci_spec::StatusCode::HARDWARE_FAILURE, 2, 0xFF, 0xFF);
+                       pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE, 2, 0xFF, 0xFF);
 
-  auto command_cmpl_error_bytes = StaticByteBuffer(hci_spec::kCommandCompleteEventCode,
-                                                   0x04,  // parameter_total_size (4 byte payload)
-                                                   2, 0xFF, 0xFF, hci_spec::StatusCode::RESERVED_0);
+  auto command_cmpl_error_bytes =
+      StaticByteBuffer(hci_spec::kCommandCompleteEventCode,
+                       0x04,  // parameter_total_size (4 byte payload)
+                       2, 0xFF, 0xFF, pw::bluetooth::emboss::StatusCode::RESERVED_0);
 
-  auto command_cmpl_success_bytes = StaticByteBuffer(hci_spec::kCommandCompleteEventCode,
-                                                     0x04,  // parameter_total_size (4 byte payload)
-                                                     2, 0xFF, 0xFF, hci_spec::StatusCode::SUCCESS);
+  auto command_cmpl_success_bytes =
+      StaticByteBuffer(hci_spec::kCommandCompleteEventCode,
+                       0x04,  // parameter_total_size (4 byte payload)
+                       2, 0xFF, 0xFF, pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   // HCI command with custom opcode F00F.
   StaticByteBuffer command2_bytes(0x0F, 0xF0, 0x00);
   auto command2_status_error_bytes =
       StaticByteBuffer(hci_spec::kCommandStatusEventCode,
                        0x04,  // parameter_total_size (4 byte payload)
-                       hci_spec::StatusCode::HARDWARE_FAILURE, 2, 0x0F, 0xF0);
+                       pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE, 2, 0x0F, 0xF0);
 
   auto command2_cmpl_error_bytes =
       StaticByteBuffer(hci_spec::kCommandCompleteEventCode,
                        0x04,  // parameter_total_size (4 byte payload)
-                       2, 0x0F, 0xF0, hci_spec::StatusCode::RESERVED_0);
+                       2, 0x0F, 0xF0, pw::bluetooth::emboss::StatusCode::RESERVED_0);
 
   auto command2_cmpl_success_bytes =
       StaticByteBuffer(hci_spec::kCommandCompleteEventCode,
                        0x04,  // parameter_total_size (4 byte payload)
-                       2, 0x0F, 0xF0, hci_spec::StatusCode::SUCCESS);
+                       2, 0x0F, 0xF0, pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   test_device()->SendCommandChannelPacket(command_status_queue_increase);
 
@@ -433,17 +438,17 @@ TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
   EXPECT_EQ(0, cb_1_called);
   EXPECT_EQ(0, cb_2_called);
   EXPECT_EQ(1, status_cb_called);
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::HARDWARE_FAILURE), status);
+  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE), status);
 }
 
 TEST_F(SequentialCommandRunnerTest, CommandCompletesOnStatusEvent) {
   auto command = bt::testing::EmptyCommandPacket(kTestOpCode);
   auto command0_status_event =
-      bt::testing::CommandStatusPacket(kTestOpCode, hci_spec::StatusCode::SUCCESS);
+      bt::testing::CommandStatusPacket(kTestOpCode, pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   auto command1 = bt::testing::EmptyCommandPacket(kTestOpCode2);
   auto command1_cmpl_event =
-      bt::testing::CommandCompletePacket(kTestOpCode2, hci_spec::StatusCode::SUCCESS);
+      bt::testing::CommandCompletePacket(kTestOpCode2, pw::bluetooth::emboss::StatusCode::SUCCESS);
 
   Result<> status = fit::ok();
   int status_cb_called = 0;
@@ -480,19 +485,19 @@ TEST_F(SequentialCommandRunnerTest, CommandCompletesOnStatusEvent) {
 
 TEST_F(SequentialCommandRunnerTest, AsyncCommands) {
   auto command = bt::testing::EmptyCommandPacket(hci_spec::kRemoteNameRequest);
-  auto command0_status_event =
-      bt::testing::CommandStatusPacket(hci_spec::kRemoteNameRequest, hci_spec::StatusCode::SUCCESS);
+  auto command0_status_event = bt::testing::CommandStatusPacket(
+      hci_spec::kRemoteNameRequest, pw::bluetooth::emboss::StatusCode::SUCCESS);
   auto command0_cmpl_event = bt::testing::RemoteNameRequestCompletePacket(DeviceAddress());
 
   auto command1 = bt::testing::EmptyCommandPacket(hci_spec::kLEReadRemoteFeatures);
-  auto command1_status_event = bt::testing::CommandStatusPacket(hci_spec::kLEReadRemoteFeatures,
-                                                                hci_spec::StatusCode::SUCCESS);
+  auto command1_status_event = bt::testing::CommandStatusPacket(
+      hci_spec::kLEReadRemoteFeatures, pw::bluetooth::emboss::StatusCode::SUCCESS);
   auto command1_cmpl_event = bt::testing::LEReadRemoteFeaturesCompletePacket(
       /*conn=*/0x0000, hci_spec::LESupportedFeatures{0});
 
   auto command2 = bt::testing::EmptyCommandPacket(hci_spec::kReadRemoteVersionInfo);
-  auto command2_status_event = bt::testing::CommandStatusPacket(hci_spec::kReadRemoteVersionInfo,
-                                                                hci_spec::StatusCode::SUCCESS);
+  auto command2_status_event = bt::testing::CommandStatusPacket(
+      hci_spec::kReadRemoteVersionInfo, pw::bluetooth::emboss::StatusCode::SUCCESS);
   auto command2_cmpl_event = bt::testing::ReadRemoteVersionInfoCompletePacket(/*conn=*/0x0000);
 
   Result<> status = fit::ok();
@@ -545,13 +550,13 @@ TEST_F(SequentialCommandRunnerTest, AsyncCommands) {
 
 TEST_F(SequentialCommandRunnerTest, ExclusiveAsyncCommands) {
   auto command = bt::testing::EmptyCommandPacket(hci_spec::kRemoteNameRequest);
-  auto command0_status_event =
-      bt::testing::CommandStatusPacket(hci_spec::kRemoteNameRequest, hci_spec::StatusCode::SUCCESS);
+  auto command0_status_event = bt::testing::CommandStatusPacket(
+      hci_spec::kRemoteNameRequest, pw::bluetooth::emboss::StatusCode::SUCCESS);
   auto command0_cmpl_event = bt::testing::RemoteNameRequestCompletePacket(DeviceAddress());
 
   auto command1 = bt::testing::EmptyCommandPacket(hci_spec::kReadRemoteVersionInfo);
-  auto command1_status_event = bt::testing::CommandStatusPacket(hci_spec::kReadRemoteVersionInfo,
-                                                                hci_spec::StatusCode::SUCCESS);
+  auto command1_status_event = bt::testing::CommandStatusPacket(
+      hci_spec::kReadRemoteVersionInfo, pw::bluetooth::emboss::StatusCode::SUCCESS);
   auto command1_cmpl_event = bt::testing::ReadRemoteVersionInfoCompletePacket(/*conn=*/0x0000);
 
   Result<> status = fit::ok();
@@ -599,13 +604,13 @@ TEST_F(SequentialCommandRunnerTest, ExclusiveAsyncCommands) {
 
 TEST_F(SequentialCommandRunnerTest, CommandRunnerDestroyedBeforeSecondEventCallbackCalled) {
   auto command = bt::testing::EmptyCommandPacket(hci_spec::kRemoteNameRequest);
-  auto command0_status_event =
-      bt::testing::CommandStatusPacket(hci_spec::kRemoteNameRequest, hci_spec::StatusCode::SUCCESS);
+  auto command0_status_event = bt::testing::CommandStatusPacket(
+      hci_spec::kRemoteNameRequest, pw::bluetooth::emboss::StatusCode::SUCCESS);
   auto command0_cmpl_event = bt::testing::RemoteNameRequestCompletePacket(DeviceAddress());
 
   auto command1 = bt::testing::EmptyCommandPacket(hci_spec::kLEReadRemoteFeatures);
-  auto command1_status_event = bt::testing::CommandStatusPacket(hci_spec::kLEReadRemoteFeatures,
-                                                                hci_spec::StatusCode::SUCCESS);
+  auto command1_status_event = bt::testing::CommandStatusPacket(
+      hci_spec::kLEReadRemoteFeatures, pw::bluetooth::emboss::StatusCode::SUCCESS);
   auto command1_cmpl_event = bt::testing::LEReadRemoteFeaturesCompletePacket(
       /*conn=*/0x0000, hci_spec::LESupportedFeatures{0});
 
@@ -682,19 +687,19 @@ TEST_F(SequentialCommandRunnerTest,
 
 TEST_F(SequentialCommandRunnerTest, QueueCommandsWhileAlreadyRunning) {
   auto command = bt::testing::EmptyCommandPacket(hci_spec::kRemoteNameRequest);
-  auto command0_status_event =
-      bt::testing::CommandStatusPacket(hci_spec::kRemoteNameRequest, hci_spec::StatusCode::SUCCESS);
+  auto command0_status_event = bt::testing::CommandStatusPacket(
+      hci_spec::kRemoteNameRequest, pw::bluetooth::emboss::StatusCode::SUCCESS);
   auto command0_cmpl_event = bt::testing::RemoteNameRequestCompletePacket(DeviceAddress());
 
   auto command1 = bt::testing::EmptyCommandPacket(hci_spec::kLEReadRemoteFeatures);
-  auto command1_status_event = bt::testing::CommandStatusPacket(hci_spec::kLEReadRemoteFeatures,
-                                                                hci_spec::StatusCode::SUCCESS);
+  auto command1_status_event = bt::testing::CommandStatusPacket(
+      hci_spec::kLEReadRemoteFeatures, pw::bluetooth::emboss::StatusCode::SUCCESS);
   auto command1_cmpl_event = bt::testing::LEReadRemoteFeaturesCompletePacket(
       /*conn=*/0x0000, hci_spec::LESupportedFeatures{0});
 
   auto command2 = bt::testing::EmptyCommandPacket(hci_spec::kReadRemoteVersionInfo);
-  auto command2_status_event = bt::testing::CommandStatusPacket(hci_spec::kReadRemoteVersionInfo,
-                                                                hci_spec::StatusCode::SUCCESS);
+  auto command2_status_event = bt::testing::CommandStatusPacket(
+      hci_spec::kReadRemoteVersionInfo, pw::bluetooth::emboss::StatusCode::SUCCESS);
   auto command2_cmpl_event = bt::testing::ReadRemoteVersionInfoCompletePacket(/*conn=*/0x0000);
 
   SequentialCommandRunner cmd_runner(cmd_channel()->AsWeakPtr());

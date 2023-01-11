@@ -32,9 +32,9 @@ namespace {
 
 using namespace inspect::testing;
 
-using bt::hci_spec::AuthenticationRequirements;
-using bt::hci_spec::IoCapability;
 using bt::testing::CommandTransaction;
+using pw::bluetooth::emboss::AuthenticationRequirements;
+using pw::bluetooth::emboss::IoCapability;
 
 using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
 
@@ -67,7 +67,7 @@ const StaticByteBuffer kReadScanEnable(LowerBits(hci_spec::kReadScanEnable),
 #define READ_SCAN_ENABLE_RSP(scan_enable)                                                      \
   StaticByteBuffer(hci_spec::kCommandCompleteEventCode, 0x05, 0xF0,                            \
                    LowerBits(hci_spec::kReadScanEnable), UpperBits(hci_spec::kReadScanEnable), \
-                   hci_spec::StatusCode::SUCCESS, (scan_enable))
+                   pw::bluetooth::emboss::StatusCode::SUCCESS, (scan_enable))
 
 const auto kReadScanEnableRspNone = READ_SCAN_ENABLE_RSP(0x00);
 const auto kReadScanEnableRspInquiry = READ_SCAN_ENABLE_RSP(0x01);
@@ -89,7 +89,7 @@ const auto kWriteScanEnableBoth = WRITE_SCAN_ENABLE_CMD(0x03);
 
 #define COMMAND_COMPLETE_RSP(opcode)                                                     \
   StaticByteBuffer(hci_spec::kCommandCompleteEventCode, 0x04, 0xF0, LowerBits((opcode)), \
-                   UpperBits((opcode)), hci_spec::StatusCode::SUCCESS)
+                   UpperBits((opcode)), pw::bluetooth::emboss::StatusCode::SUCCESS)
 
 const auto kWriteScanEnableRsp = COMMAND_COMPLETE_RSP(hci_spec::kWriteScanEnable);
 
@@ -120,32 +120,32 @@ const auto kConnectionRequest = testing::ConnectionRequestPacket(kTestDevAddr);
 
 const auto kAcceptConnectionRequest = testing::AcceptConnectionRequestPacket(kTestDevAddr);
 
-const auto kAcceptConnectionRequestRsp =
-    COMMAND_STATUS_RSP(hci_spec::kAcceptConnectionRequest, hci_spec::StatusCode::SUCCESS);
+const auto kAcceptConnectionRequestRsp = COMMAND_STATUS_RSP(
+    hci_spec::kAcceptConnectionRequest, pw::bluetooth::emboss::StatusCode::SUCCESS);
 
 const auto kConnectionComplete = testing::ConnectionCompletePacket(kTestDevAddr, kConnectionHandle);
 
 const auto kConnectionCompletePageTimeout = testing::ConnectionCompletePacket(
-    kTestDevAddr, kConnectionHandle, hci_spec::StatusCode::PAGE_TIMEOUT);
+    kTestDevAddr, kConnectionHandle, pw::bluetooth::emboss::StatusCode::PAGE_TIMEOUT);
 
 const StaticByteBuffer kConnectionCompleteError(
     hci_spec::kConnectionCompleteEventCode,
     0x0B,  // parameter_total_size (11 byte payload)
-    hci_spec::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED,  // status
-    0x00, 0x00,                                                 // connection_handle
-    TEST_DEV_ADDR_BYTES_LE,                                     // peer address
-    0x01,                                                       // link_type (ACL)
-    0x00                                                        // encryption not enabled
+    pw::bluetooth::emboss::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED,  // status
+    0x00, 0x00,                                                              // connection_handle
+    TEST_DEV_ADDR_BYTES_LE,                                                  // peer address
+    0x01,                                                                    // link_type (ACL)
+    0x00  // encryption not enabled
 );
 
 const StaticByteBuffer kConnectionCompleteCanceled(
     hci_spec::kConnectionCompleteEventCode,
-    0x0B,                                         // parameter_total_size (11 byte payload)
-    hci_spec::StatusCode::UNKNOWN_CONNECTION_ID,  // status
-    0x00, 0x00,                                   // connection_handle
-    TEST_DEV_ADDR_BYTES_LE,                       // peer address
-    0x01,                                         // link_type (ACL)
-    0x00                                          // encryption not enabled
+    0x0B,  // parameter_total_size (11 byte payload)
+    pw::bluetooth::emboss::StatusCode::UNKNOWN_CONNECTION_ID,  // status
+    0x00, 0x00,                                                // connection_handle
+    TEST_DEV_ADDR_BYTES_LE,                                    // peer address
+    0x01,                                                      // link_type (ACL)
+    0x00                                                       // encryption not enabled
 );
 
 const StaticByteBuffer kCreateConnection(
@@ -161,13 +161,14 @@ const StaticByteBuffer kCreateConnection(
 );
 
 const auto kCreateConnectionRsp =
-    COMMAND_STATUS_RSP(hci_spec::kCreateConnection, hci_spec::StatusCode::SUCCESS);
+    COMMAND_STATUS_RSP(hci_spec::kCreateConnection, pw::bluetooth::emboss::StatusCode::SUCCESS);
 
-const auto kCreateConnectionRspError = COMMAND_STATUS_RSP(
-    hci_spec::kCreateConnection, hci_spec::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED);
+const auto kCreateConnectionRspError =
+    COMMAND_STATUS_RSP(hci_spec::kCreateConnection,
+                       pw::bluetooth::emboss::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED);
 
 const auto kCreateConnectionRspAlready = COMMAND_STATUS_RSP(
-    hci_spec::kCreateConnection, hci_spec::StatusCode::CONNECTION_ALREADY_EXISTS);
+    hci_spec::kCreateConnection, pw::bluetooth::emboss::StatusCode::CONNECTION_ALREADY_EXISTS);
 
 const StaticByteBuffer kCreateConnectionCancel(LowerBits(hci_spec::kCreateConnectionCancel),
                                                UpperBits(hci_spec::kCreateConnectionCancel),
@@ -186,7 +187,7 @@ const StaticByteBuffer kRemoteNameRequest(LowerBits(hci_spec::kRemoteNameRequest
                                           0x00, 0x00               // clock_offset
 );
 const auto kRemoteNameRequestRsp =
-    COMMAND_STATUS_RSP(hci_spec::kRemoteNameRequest, hci_spec::StatusCode::SUCCESS);
+    COMMAND_STATUS_RSP(hci_spec::kRemoteNameRequest, pw::bluetooth::emboss::StatusCode::SUCCESS);
 
 const auto kRemoteNameRequestComplete = testing::RemoteNameRequestCompletePacket(
     kTestDevAddr, {'F',    'u',    'c',    'h',    's',    'i',    'a',    '\xF0', '\x9F',
@@ -201,17 +202,17 @@ const StaticByteBuffer kReadRemoteVersionInfo(LowerBits(hci_spec::kReadRemoteVer
                                               0xAA, 0x0B  // connection_handle
 );
 
-const auto kReadRemoteVersionInfoRsp =
-    COMMAND_STATUS_RSP(hci_spec::kReadRemoteVersionInfo, hci_spec::StatusCode::SUCCESS);
+const auto kReadRemoteVersionInfoRsp = COMMAND_STATUS_RSP(
+    hci_spec::kReadRemoteVersionInfo, pw::bluetooth::emboss::StatusCode::SUCCESS);
 
 const auto kRemoteVersionInfoComplete =
     StaticByteBuffer(hci_spec::kReadRemoteVersionInfoCompleteEventCode,
-                     0x08,                           // parameter_total_size (8 bytes)
-                     hci_spec::StatusCode::SUCCESS,  // status
-                     0xAA, 0x0B,                     // connection_handle
-                     hci_spec::HCIVersion::k4_2,     // lmp_version
-                     0xE0, 0x00,                     // manufacturer_name (Google)
-                     0xAD, 0xDE                      // lmp_subversion (anything)
+                     0x08,                                        // parameter_total_size (8 bytes)
+                     pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
+                     0xAA, 0x0B,                                  // connection_handle
+                     hci_spec::HCIVersion::k4_2,                  // lmp_version
+                     0xE0, 0x00,                                  // manufacturer_name (Google)
+                     0xAD, 0xDE                                   // lmp_subversion (anything)
     );
 
 const auto kReadRemoteSupportedFeatures =
@@ -221,14 +222,14 @@ const auto kReadRemoteSupportedFeatures =
                      0xAA, 0x0B  // connection_handle
     );
 
-const auto kReadRemoteSupportedFeaturesRsp =
-    COMMAND_STATUS_RSP(hci_spec::kReadRemoteSupportedFeatures, hci_spec::StatusCode::SUCCESS);
+const auto kReadRemoteSupportedFeaturesRsp = COMMAND_STATUS_RSP(
+    hci_spec::kReadRemoteSupportedFeatures, pw::bluetooth::emboss::StatusCode::SUCCESS);
 
 const auto kReadRemoteSupportedFeaturesComplete =
     StaticByteBuffer(hci_spec::kReadRemoteSupportedFeaturesCompleteEventCode,
-                     0x0B,                           // parameter_total_size (11 bytes)
-                     hci_spec::StatusCode::SUCCESS,  // status
-                     0xAA, 0x0B,                     // connection_handle,
+                     0x0B,                                        // parameter_total_size (11 bytes)
+                     pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
+                     0xAA, 0x0B,                                  // connection_handle,
                      0xFF, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x80
                      // lmp_features
                      // Set: 3 slot packets, 5 slot packets, Encryption, Timing Accuracy,
@@ -242,16 +243,16 @@ const auto kReadRemoteExtended1 = StaticByteBuffer(LowerBits(hci_spec::kReadRemo
                                                    0x01         // page_number (1)
 );
 
-const auto kReadRemoteExtendedFeaturesRsp =
-    COMMAND_STATUS_RSP(hci_spec::kReadRemoteExtendedFeatures, hci_spec::StatusCode::SUCCESS);
+const auto kReadRemoteExtendedFeaturesRsp = COMMAND_STATUS_RSP(
+    hci_spec::kReadRemoteExtendedFeatures, pw::bluetooth::emboss::StatusCode::SUCCESS);
 
 const auto kReadRemoteExtended1Complete =
     StaticByteBuffer(hci_spec::kReadRemoteExtendedFeaturesCompleteEventCode,
-                     0x0D,                           // parameter_total_size (13 bytes)
-                     hci_spec::StatusCode::SUCCESS,  // status
-                     0xAA, 0x0B,                     // connection_handle,
-                     0x01,                           // page_number
-                     0x03,                           // max_page_number (3 pages)
+                     0x0D,                                        // parameter_total_size (13 bytes)
+                     pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
+                     0xAA, 0x0B,                                  // connection_handle,
+                     0x01,                                        // page_number
+                     0x03,                                        // max_page_number (3 pages)
                      0x0F, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00
                      // lmp_features
                      // Set: Secure Simple Pairing (Host Support), LE Supported (Host),
@@ -267,11 +268,11 @@ const auto kReadRemoteExtended2 = StaticByteBuffer(LowerBits(hci_spec::kReadRemo
 
 const auto kReadRemoteExtended2Complete =
     StaticByteBuffer(hci_spec::kReadRemoteExtendedFeaturesCompleteEventCode,
-                     0x0D,                           // parameter_total_size (13 bytes)
-                     hci_spec::StatusCode::SUCCESS,  // status
-                     0xAA, 0x0B,                     // connection_handle,
-                     0x02,                           // page_number
-                     0x03,                           // max_page_number (3 pages)
+                     0x0D,                                        // parameter_total_size (13 bytes)
+                     pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
+                     0xAA, 0x0B,                                  // connection_handle,
+                     0x02,                                        // page_number
+                     0x03,                                        // max_page_number (3 pages)
                      0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0xFF, 0x00
                      // lmp_features  - All the bits should be ignored.
     );
@@ -279,27 +280,28 @@ const auto kReadRemoteExtended2Complete =
 const auto kDisconnect = testing::DisconnectPacket(kConnectionHandle);
 
 const auto kDisconnectRsp =
-    COMMAND_STATUS_RSP(hci_spec::kDisconnect, hci_spec::StatusCode::SUCCESS);
+    COMMAND_STATUS_RSP(hci_spec::kDisconnect, pw::bluetooth::emboss::StatusCode::SUCCESS);
 
 const auto kDisconnectionComplete = testing::DisconnectionCompletePacket(
-    kConnectionHandle, hci_spec::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
+    kConnectionHandle, pw::bluetooth::emboss::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
 
 const auto kAuthenticationRequested = testing::AuthenticationRequestedPacket(kConnectionHandle);
 
-const auto kAuthenticationRequestedStatus =
-    COMMAND_STATUS_RSP(hci_spec::kAuthenticationRequested, hci_spec::StatusCode::SUCCESS);
+const auto kAuthenticationRequestedStatus = COMMAND_STATUS_RSP(
+    hci_spec::kAuthenticationRequested, pw::bluetooth::emboss::StatusCode::SUCCESS);
 
-const auto kAuthenticationComplete = StaticByteBuffer(hci_spec::kAuthenticationCompleteEventCode,
-                                                      0x03,  // parameter_total_size (3 bytes)
-                                                      hci_spec::StatusCode::SUCCESS,  // status
-                                                      0xAA, 0x0B  // connection_handle
-);
+const auto kAuthenticationComplete =
+    StaticByteBuffer(hci_spec::kAuthenticationCompleteEventCode,
+                     0x03,                                        // parameter_total_size (3 bytes)
+                     pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
+                     0xAA, 0x0B                                   // connection_handle
+    );
 
 const auto kAuthenticationCompleteFailed =
     StaticByteBuffer(hci_spec::kAuthenticationCompleteEventCode,
-                     0x03,                                       // parameter_total_size (3 bytes)
-                     hci_spec::StatusCode::PAIRING_NOT_ALLOWED,  // status
-                     0xAA, 0x0B                                  // connection_handle
+                     0x03,  // parameter_total_size (3 bytes)
+                     pw::bluetooth::emboss::StatusCode::PAIRING_NOT_ALLOWED,  // status
+                     0xAA, 0x0B                                               // connection_handle
     );
 
 const StaticByteBuffer kLinkKeyRequest(hci_spec::kLinkKeyRequestEventCode,
@@ -318,8 +320,8 @@ const auto kLinkKeyRequestNegativeReplyRsp =
     StaticByteBuffer(hci_spec::kCommandCompleteEventCode, 0x0A, 0xF0,
                      LowerBits(hci_spec::kLinkKeyRequestNegativeReply),
                      UpperBits(hci_spec::kLinkKeyRequestNegativeReply),
-                     hci_spec::StatusCode::SUCCESS,  // status
-                     TEST_DEV_ADDR_BYTES_LE          // peer address
+                     pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
+                     TEST_DEV_ADDR_BYTES_LE                       // peer address
     );
 
 auto MakeIoCapabilityResponse(IoCapability io_cap, AuthenticationRequirements auth_req) {
@@ -346,11 +348,11 @@ auto MakeIoCapabilityRequestReply(IoCapability io_cap, AuthenticationRequirement
                           auth_req);
 }
 
-const StaticByteBuffer kIoCapabilityRequestReplyRsp(hci_spec::kCommandCompleteEventCode, 0x0A, 0xF0,
-                                                    LowerBits(hci_spec::kIOCapabilityRequestReply),
-                                                    UpperBits(hci_spec::kIOCapabilityRequestReply),
-                                                    hci_spec::StatusCode::SUCCESS,  // status
-                                                    TEST_DEV_ADDR_BYTES_LE          // peer address
+const StaticByteBuffer kIoCapabilityRequestReplyRsp(
+    hci_spec::kCommandCompleteEventCode, 0x0A, 0xF0, LowerBits(hci_spec::kIOCapabilityRequestReply),
+    UpperBits(hci_spec::kIOCapabilityRequestReply),
+    pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
+    TEST_DEV_ADDR_BYTES_LE                       // peer address
 );
 
 const auto kIoCapabilityRequestNegativeReply =
@@ -358,14 +360,14 @@ const auto kIoCapabilityRequestNegativeReply =
                      UpperBits(hci_spec::kIOCapabilityRequestNegativeReply),
                      0x07,                    // parameter_total_size (7 bytes)
                      TEST_DEV_ADDR_BYTES_LE,  // peer address
-                     hci_spec::StatusCode::PAIRING_NOT_ALLOWED);
+                     pw::bluetooth::emboss::StatusCode::PAIRING_NOT_ALLOWED);
 
 const auto kIoCapabilityRequestNegativeReplyRsp =
     StaticByteBuffer(hci_spec::kCommandCompleteEventCode, 0x0A, 0xF0,
                      LowerBits(hci_spec::kIOCapabilityRequestNegativeReply),
                      UpperBits(hci_spec::kIOCapabilityRequestNegativeReply),
-                     hci_spec::StatusCode::SUCCESS,  // status
-                     TEST_DEV_ADDR_BYTES_LE);        // peer address
+                     pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
+                     TEST_DEV_ADDR_BYTES_LE);                     // peer address
 
 auto MakeUserConfirmationRequest(uint32_t passkey) {
   const auto passkey_bytes = ToBytes(kPasskey);
@@ -433,11 +435,11 @@ const StaticByteBuffer kLinkKeyRequestReply(LowerBits(hci_spec::kLinkKeyRequestR
                                             0xfe  // link key
 );
 
-const StaticByteBuffer kLinkKeyRequestReplyRsp(hci_spec::kCommandCompleteEventCode, 0x0A, 0xF0,
-                                               LowerBits(hci_spec::kLinkKeyRequestReply),
-                                               UpperBits(hci_spec::kLinkKeyRequestReply),
-                                               hci_spec::StatusCode::SUCCESS,  // status
-                                               TEST_DEV_ADDR_BYTES_LE          // peer address
+const StaticByteBuffer kLinkKeyRequestReplyRsp(
+    hci_spec::kCommandCompleteEventCode, 0x0A, 0xF0, LowerBits(hci_spec::kLinkKeyRequestReply),
+    UpperBits(hci_spec::kLinkKeyRequestReply),
+    pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
+    TEST_DEV_ADDR_BYTES_LE                       // peer address
 );
 
 const auto kLinkKeyNotificationChanged =
@@ -465,8 +467,8 @@ const StaticByteBuffer kSetConnectionEncryption(LowerBits(hci_spec::kSetConnecti
                                                 0x01         // encryption enable
 );
 
-const auto kSetConnectionEncryptionRsp =
-    COMMAND_STATUS_RSP(hci_spec::kSetConnectionEncryption, hci_spec::StatusCode::SUCCESS);
+const auto kSetConnectionEncryptionRsp = COMMAND_STATUS_RSP(
+    hci_spec::kSetConnectionEncryption, pw::bluetooth::emboss::StatusCode::SUCCESS);
 
 const StaticByteBuffer kEncryptionChangeEvent(hci_spec::kEncryptionChangeEventCode,
                                               4,           // parameter total size
@@ -481,14 +483,14 @@ const StaticByteBuffer kReadEncryptionKeySize(LowerBits(hci_spec::kReadEncryptio
                                               0xAA, 0x0B  // connection handle
 );
 
-const StaticByteBuffer kReadEncryptionKeySizeRsp(hci_spec::kCommandCompleteEventCode,
-                                                 0x07,  // parameters total size
-                                                 0xFF,  // num command packets allowed (255)
-                                                 LowerBits(hci_spec::kReadEncryptionKeySize),
-                                                 UpperBits(hci_spec::kReadEncryptionKeySize),
-                                                 hci_spec::StatusCode::SUCCESS,  // status
-                                                 0xAA, 0x0B,  // connection handle
-                                                 0x10         // encryption key size: 16
+const StaticByteBuffer kReadEncryptionKeySizeRsp(
+    hci_spec::kCommandCompleteEventCode,
+    0x07,  // parameters total size
+    0xFF,  // num command packets allowed (255)
+    LowerBits(hci_spec::kReadEncryptionKeySize), UpperBits(hci_spec::kReadEncryptionKeySize),
+    pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
+    0xAA, 0x0B,                                  // connection handle
+    0x10                                         // encryption key size: 16
 );
 
 auto MakeUserPasskeyRequestReply(uint32_t passkey) {
@@ -502,11 +504,11 @@ auto MakeUserPasskeyRequestReply(uint32_t passkey) {
   );
 }
 
-const StaticByteBuffer kUserPasskeyRequestReplyRsp(hci_spec::kCommandCompleteEventCode, 0x0A, 0xF0,
-                                                   LowerBits(hci_spec::kUserPasskeyRequestReply),
-                                                   UpperBits(hci_spec::kUserPasskeyRequestReply),
-                                                   hci_spec::StatusCode::SUCCESS,  // status
-                                                   TEST_DEV_ADDR_BYTES_LE          // peer address
+const StaticByteBuffer kUserPasskeyRequestReplyRsp(
+    hci_spec::kCommandCompleteEventCode, 0x0A, 0xF0, LowerBits(hci_spec::kUserPasskeyRequestReply),
+    UpperBits(hci_spec::kUserPasskeyRequestReply),
+    pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
+    TEST_DEV_ADDR_BYTES_LE                       // peer address
 );
 
 auto MakeUserPasskeyNotification(uint32_t passkey) {
@@ -585,10 +587,10 @@ class BrEdrConnectionManagerTest : public TestingBase {
     l2cap_ = std::make_unique<l2cap::testing::FakeL2cap>();
 
     // Respond to BrEdrConnectionManager controller setup with success.
-    EXPECT_CMD_PACKET_OUT(
-        test_device(),
-        testing::WritePageTimeoutPacket(static_cast<uint16_t>(hci_spec::PageTimeout::DEFAULT)),
-        &kWritePageTimeoutRsp);
+    EXPECT_CMD_PACKET_OUT(test_device(),
+                          testing::WritePageTimeoutPacket(
+                              static_cast<uint16_t>(pw::bluetooth::emboss::PageTimeout::DEFAULT)),
+                          &kWritePageTimeoutRsp);
 
     connection_manager_ = std::make_unique<BrEdrConnectionManager>(
         transport()->GetWeakPtr(), peer_cache_.get(), kLocalDevAddr, l2cap_.get(), true);
@@ -642,7 +644,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
   // Expect an incoming connection that is accepted.
   void QueueSuccessfulAccept(
       DeviceAddress addr = kTestDevAddr, hci_spec::ConnectionHandle handle = kConnectionHandle,
-      std::optional<hci_spec::ConnectionRole> role_change = std::nullopt) const {
+      std::optional<pw::bluetooth::emboss::ConnectionRole> role_change = std::nullopt) const {
     const auto connection_complete = testing::ConnectionCompletePacket(addr, handle);
     if (role_change) {
       const auto role_change_event = testing::RoleChangePacket(addr, role_change.value());
@@ -659,7 +661,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
   // Results in kIncomingConnShortTransactions transaction.
   void QueueRepeatIncomingConn(
       DeviceAddress addr = kTestDevAddr, hci_spec::ConnectionHandle handle = kConnectionHandle,
-      std::optional<hci_spec::ConnectionRole> role_change = std::nullopt) const {
+      std::optional<pw::bluetooth::emboss::ConnectionRole> role_change = std::nullopt) const {
     QueueSuccessfulAccept(addr, handle, role_change);
     QueueShortInterrogation(handle);
   }
@@ -669,7 +671,7 @@ class BrEdrConnectionManagerTest : public TestingBase {
   //  Results in |kIncomingConnTransactions| transactions.
   void QueueSuccessfulIncomingConn(
       DeviceAddress addr = kTestDevAddr, hci_spec::ConnectionHandle handle = kConnectionHandle,
-      std::optional<hci_spec::ConnectionRole> role_change = std::nullopt) const {
+      std::optional<pw::bluetooth::emboss::ConnectionRole> role_change = std::nullopt) const {
     QueueSuccessfulAccept(addr, handle, role_change);
     QueueSuccessfulInterrogation(addr, handle);
   }
@@ -789,7 +791,8 @@ class BrEdrConnectionManagerTest : public TestingBase {
 
   void QueueDisconnection(
       hci_spec::ConnectionHandle conn,
-      hci_spec::StatusCode reason = hci_spec::StatusCode::REMOTE_USER_TERMINATED_CONNECTION) const {
+      pw::bluetooth::emboss::StatusCode reason =
+          pw::bluetooth::emboss::StatusCode::REMOTE_USER_TERMINATED_CONNECTION) const {
     const DynamicByteBuffer disconnect_complete =
         testing::DisconnectionCompletePacket(conn, reason);
     EXPECT_CMD_PACKET_OUT(test_device(), testing::DisconnectPacket(conn, reason), &kDisconnectRsp,
@@ -959,12 +962,12 @@ TEST_F(BrEdrConnectionManagerTest, RemoteDisconnect) {
 const auto kRemoteNameRequestCompleteFailed =
     StaticByteBuffer(hci_spec::kRemoteNameRequestCompleteEventCode,
                      0x01,  // parameter_total_size (1 bytes)
-                     hci_spec::StatusCode::HARDWARE_FAILURE);
+                     pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE);
 
 const auto kReadRemoteSupportedFeaturesCompleteFailed =
     StaticByteBuffer(hci_spec::kReadRemoteSupportedFeaturesCompleteEventCode,
                      0x01,  // parameter_total_size (1 bytes)
-                     hci_spec::StatusCode::HARDWARE_FAILURE);
+                     pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE);
 
 // Test: if the interrogation fails, we disconnect.
 //  - Receiving extra responses after a command fails will not fail
@@ -1107,8 +1110,8 @@ const auto kUserPasskeyRequestNegativeReplyRsp =
     StaticByteBuffer(hci_spec::kCommandCompleteEventCode, 0x0A, 0xF0,
                      LowerBits(hci_spec::kUserPasskeyRequestNegativeReply),
                      UpperBits(hci_spec::kUserPasskeyRequestNegativeReply),
-                     hci_spec::StatusCode::SUCCESS,  // status
-                     TEST_DEV_ADDR_BYTES_LE          // peer address
+                     pw::bluetooth::emboss::StatusCode::SUCCESS,  // status
+                     TEST_DEV_ADDR_BYTES_LE                       // peer address
     );
 
 // Test: Responds to Secure Simple Pairing as the input side of Passkey Entry association after the
@@ -2550,7 +2553,8 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerErrorStatus) {
   EXPECT_TRUE(IsInitializing(peer));
   RunLoopUntilIdle();
 
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED), status);
+  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED),
+            status);
   EXPECT_TRUE(IsNotConnected(peer));
 }
 
@@ -2577,7 +2581,8 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerFailure) {
 
   EXPECT_TRUE(callback_run);
 
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED), status);
+  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED),
+            status);
   EXPECT_TRUE(IsNotConnected(peer));
 }
 
@@ -2630,7 +2635,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeer) {
   EXPECT_EQ(fit::ok(), status);
   EXPECT_TRUE(HasConnectionTo(peer, conn_ref));
   EXPECT_FALSE(IsNotConnected(peer));
-  EXPECT_EQ(conn_ref->link().role(), hci_spec::ConnectionRole::CENTRAL);
+  EXPECT_EQ(conn_ref->link().role(), pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 }
 
 TEST_F(BrEdrConnectionManagerTest, ConnectSinglePeerFailedInterrogation) {
@@ -2880,7 +2885,7 @@ TEST_P(FirstLowEnergyOnlyPeer, ConnectToDualModePeerThatWasFirstLowEnergyOnly) {
   EXPECT_EQ(fit::ok(), status);
   EXPECT_TRUE(HasConnectionTo(peer, conn_ref));
   EXPECT_FALSE(IsNotConnected(peer));
-  EXPECT_EQ(conn_ref->link().role(), hci_spec::ConnectionRole::CENTRAL);
+  EXPECT_EQ(conn_ref->link().role(), pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 }
 
 INSTANTIATE_TEST_SUITE_P(BrEdrConnectionManagerTest, FirstLowEnergyOnlyPeer,
@@ -2930,7 +2935,7 @@ TEST_F(BrEdrConnectionManagerTest, SuccessfulHciRetriesAfterPageTimeout) {
   RunLoopUntilIdle();
   EXPECT_EQ(fit::ok(), status);
   EXPECT_TRUE(HasConnectionTo(peer, conn_ref));
-  EXPECT_EQ(conn_ref->link().role(), hci_spec::ConnectionRole::CENTRAL);
+  EXPECT_EQ(conn_ref->link().role(), pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 }
 
 TEST_F(BrEdrConnectionManagerTest, DontRetryAfterWindowClosed) {
@@ -2963,7 +2968,7 @@ TEST_F(BrEdrConnectionManagerTest, DontRetryAfterWindowClosed) {
   ASSERT_EQ(ZX_OK, test_device()->SendCommandChannelPacket(kConnectionCompletePageTimeout));
   RunLoopUntilIdle();
   // Create Connection will *not* be tried again as we are outside of the retry window.
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::PAGE_TIMEOUT), status);
+  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::PAGE_TIMEOUT), status);
 }
 
 TEST_F(BrEdrConnectionManagerTest, ConnectSecondPeerFirstFailsWithPageTimeoutAndDoesNotRetry) {
@@ -3008,7 +3013,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectSecondPeerFirstFailsWithPageTimeoutAnd
   RunLoopUntilIdle();
 
   // The Connect() request to peer_a should fail with the Page Timeout status code without retrying
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::PAGE_TIMEOUT), status_a);
+  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::PAGE_TIMEOUT), status_a);
   EXPECT_EQ(fit::ok(), status_b);
   EXPECT_TRUE(HasConnectionTo(peer_b, connection));
   EXPECT_TRUE(IsNotConnected(peer_a));
@@ -3060,9 +3065,9 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectCooldownIncoming) {
 
   // Peer tries to connect to us. We should reject the connection.
   auto status_event = testing::CommandStatusPacket(hci_spec::kRejectConnectionRequest,
-                                                   hci_spec::StatusCode::SUCCESS);
+                                                   pw::bluetooth::emboss::StatusCode::SUCCESS);
   auto reject_packet = testing::RejectConnectionRequestPacket(
-      kTestDevAddr, hci_spec::StatusCode::CONNECTION_REJECTED_BAD_BD_ADDR);
+      kTestDevAddr, pw::bluetooth::emboss::StatusCode::CONNECTION_REJECTED_BAD_BD_ADDR);
 
   EXPECT_CMD_PACKET_OUT(test_device(), reject_packet, &status_event);
 
@@ -3152,9 +3157,9 @@ TEST_F(GAP_BrEdrConnectionManagerTest, DisconnectCooldownCancelOnOutgoing) {
 
   // Peer tries to connect to us. We should reject the connection.
   auto status_event = testing::CommandStatusPacket(hci_spec::kRejectConnectionRequest,
-                                                   hci_spec::StatusCode::SUCCESS);
+                                                   pw::bluetooth::emboss::StatusCode::SUCCESS);
   auto reject_packet = testing::RejectConnectionRequestPacket(
-      kTestDevAddr, hci_spec::StatusCode::CONNECTION_REJECTED_BAD_BD_ADDR);
+      kTestDevAddr, pw::bluetooth::emboss::StatusCode::CONNECTION_REJECTED_BAD_BD_ADDR);
 
   EXPECT_CMD_PACKET_OUT(test_device(), reject_packet, &status_event);
 
@@ -3468,7 +3473,7 @@ TEST_F(BrEdrConnectionManagerTest, ConnectionCleanUpFollowingEncryptionFailure) 
   EXPECT_CMD_PACKET_OUT(test_device(), kCreateConnection, &kCreateConnectionRsp,
                         &kConnectionComplete);
   QueueSuccessfulInterrogation(peer->address(), kConnectionHandle);
-  QueueDisconnection(kConnectionHandle, hci_spec::StatusCode::AUTHENTICATION_FAILURE);
+  QueueDisconnection(kConnectionHandle, pw::bluetooth::emboss::StatusCode::AUTHENTICATION_FAILURE);
 
   // Initialize as error to verify that |callback| assigns success.
   hci::Result<> status = ToResult(HostError::kFailed);
@@ -3484,11 +3489,11 @@ TEST_F(BrEdrConnectionManagerTest, ConnectionCleanUpFollowingEncryptionFailure) 
   RunLoopUntilIdle();
   ASSERT_EQ(fit::ok(), status);
 
-  test_device()->SendCommandChannelPacket(
-      testing::EncryptionChangeEventPacket(hci_spec::StatusCode::CONNECTION_TERMINATED_MIC_FAILURE,
-                                           kConnectionHandle, hci_spec::EncryptionStatus::kOff));
+  test_device()->SendCommandChannelPacket(testing::EncryptionChangeEventPacket(
+      pw::bluetooth::emboss::StatusCode::CONNECTION_TERMINATED_MIC_FAILURE, kConnectionHandle,
+      hci_spec::EncryptionStatus::kOff));
   test_device()->SendCommandChannelPacket(testing::DisconnectionCompletePacket(
-      kConnectionHandle, hci_spec::StatusCode::CONNECTION_TERMINATED_MIC_FAILURE));
+      kConnectionHandle, pw::bluetooth::emboss::StatusCode::CONNECTION_TERMINATED_MIC_FAILURE));
   RunLoopUntilIdle();
 
   EXPECT_TRUE(IsNotConnected(peer));
@@ -3629,7 +3634,7 @@ TEST_F(BrEdrConnectionManagerTest, OpenScoConnectionWithoutExistingBrEdrConnecti
   std::optional<sco::ScoConnectionManager::OpenConnectionResult> conn_result;
   auto conn_cb = [&conn_result](auto result) { conn_result = std::move(result); };
   auto handle = connmgr()->OpenScoConnection(
-      PeerId(1), {bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>{}},
+      PeerId(1), {bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>{}},
       std::move(conn_cb));
   EXPECT_FALSE(handle.has_value());
   ASSERT_TRUE(conn_result.has_value());
@@ -3644,14 +3649,14 @@ TEST_F(BrEdrConnectionManagerTest, OpenScoConnectionInitiator) {
   auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
 
-  bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> kScoConnection;
+  bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> kScoConnection;
   kScoConnection.SetToZeros();
   constexpr hci_spec::ConnectionHandle kScoConnectionHandle = 0x41;
   auto setup_status_packet = testing::CommandStatusPacket(
-      hci_spec::kEnhancedSetupSynchronousConnection, hci_spec::StatusCode::SUCCESS);
+      hci_spec::kEnhancedSetupSynchronousConnection, pw::bluetooth::emboss::StatusCode::SUCCESS);
   auto conn_complete_packet = testing::SynchronousConnectionCompletePacket(
       kScoConnectionHandle, peer->address(), hci_spec::LinkType::kExtendedSCO,
-      hci_spec::StatusCode::SUCCESS);
+      pw::bluetooth::emboss::StatusCode::SUCCESS);
   EXPECT_CMD_PACKET_OUT(test_device(),
                         testing::EnhancedSetupSynchronousConnectionPacket(kConnectionHandle, {}),
                         &setup_status_packet, &conn_complete_packet);
@@ -3685,7 +3690,7 @@ TEST_P(ScoLinkTypesTest, OpenScoConnectionResponder) {
   auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
   ASSERT_TRUE(peer);
 
-  bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter> sco_conn_params;
+  bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> sco_conn_params;
   if (GetParam() == hci_spec::LinkType::kSCO) {
     sco_conn_params.view().packet_types().hv3().Write(true);
   } else {
@@ -3703,8 +3708,9 @@ TEST_P(ScoLinkTypesTest, OpenScoConnectionResponder) {
       testing::ConnectionRequestPacket(peer->address(), /*link_type=*/GetParam());
   test_device()->SendCommandChannelPacket(conn_req_packet);
 
-  auto accept_status_packet = testing::CommandStatusPacket(
-      hci_spec::kEnhancedAcceptSynchronousConnectionRequest, hci_spec::StatusCode::SUCCESS);
+  auto accept_status_packet =
+      testing::CommandStatusPacket(hci_spec::kEnhancedAcceptSynchronousConnectionRequest,
+                                   pw::bluetooth::emboss::StatusCode::SUCCESS);
   EXPECT_CMD_PACKET_OUT(
       test_device(),
       testing::EnhancedAcceptSynchronousConnectionRequestPacket(peer->address(), sco_conn_params),
@@ -3715,7 +3721,7 @@ TEST_P(ScoLinkTypesTest, OpenScoConnectionResponder) {
   constexpr hci_spec::ConnectionHandle kScoConnectionHandle = 0x41;
   test_device()->SendCommandChannelPacket(testing::SynchronousConnectionCompletePacket(
       kScoConnectionHandle, peer->address(), /*link_type=*/GetParam(),
-      hci_spec::StatusCode::SUCCESS));
+      pw::bluetooth::emboss::StatusCode::SUCCESS));
 
   RunLoopUntilIdle();
   ASSERT_TRUE(conn_result.has_value());
@@ -3740,13 +3746,15 @@ class UnconnectedLinkTypesTest : public BrEdrConnectionManagerTest,
 // Test that an unexpected SCO connection request is rejected for kUnacceptableConnectionParameters
 TEST_P(UnconnectedLinkTypesTest, RejectUnsupportedSCOConnectionRequests) {
   auto status_event = testing::CommandStatusPacket(hci_spec::kRejectSynchronousConnectionRequest,
-                                                   hci_spec::StatusCode::SUCCESS);
+                                                   pw::bluetooth::emboss::StatusCode::SUCCESS);
   auto complete_event = testing::ConnectionCompletePacket(
-      kTestDevAddr, kConnectionHandle, hci_spec::StatusCode::UNACCEPTABLE_CONNECTION_PARAMETERS);
-  EXPECT_CMD_PACKET_OUT(test_device(),
-                        testing::RejectSynchronousConnectionRequest(
-                            kTestDevAddr, hci_spec::StatusCode::UNACCEPTABLE_CONNECTION_PARAMETERS),
-                        &status_event, &complete_event);
+      kTestDevAddr, kConnectionHandle,
+      pw::bluetooth::emboss::StatusCode::UNACCEPTABLE_CONNECTION_PARAMETERS);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      testing::RejectSynchronousConnectionRequest(
+          kTestDevAddr, pw::bluetooth::emboss::StatusCode::UNACCEPTABLE_CONNECTION_PARAMETERS),
+      &status_event, &complete_event);
   test_device()->SendCommandChannelPacket(
       testing::ConnectionRequestPacket(kTestDevAddr, /*link_type=*/GetParam()));
   RunLoopUntilIdle();
@@ -3761,13 +3769,15 @@ INSTANTIATE_TEST_SUITE_P(BrEdrConnectionManagerTest, UnconnectedLinkTypesTest,
 TEST_F(BrEdrConnectionManagerTest, RejectUnsupportedConnectionRequest) {
   auto linktype = static_cast<hci_spec::LinkType>(0x09);
   auto status_event = testing::CommandStatusPacket(hci_spec::kRejectConnectionRequest,
-                                                   hci_spec::StatusCode::SUCCESS);
+                                                   pw::bluetooth::emboss::StatusCode::SUCCESS);
   auto complete_event = testing::ConnectionCompletePacket(
-      kTestDevAddr, kConnectionHandle, hci_spec::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
-  EXPECT_CMD_PACKET_OUT(test_device(),
-                        testing::RejectConnectionRequestPacket(
-                            kTestDevAddr, hci_spec::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER),
-                        &status_event, &complete_event);
+      kTestDevAddr, kConnectionHandle,
+      pw::bluetooth::emboss::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
+  EXPECT_CMD_PACKET_OUT(
+      test_device(),
+      testing::RejectConnectionRequestPacket(
+          kTestDevAddr, pw::bluetooth::emboss::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER),
+      &status_event, &complete_event);
   test_device()->SendCommandChannelPacket(testing::ConnectionRequestPacket(kTestDevAddr, linktype));
   RunLoopUntilIdle();
 }
@@ -3803,7 +3813,8 @@ TEST_F(BrEdrConnectionManagerTest, IncomingConnectionRacesOutgoing) {
   // First, the controller notifies us of the failed outgoing connection - as from its perspective,
   // we've already connected
   const auto complete_already = testing::ConnectionCompletePacket(
-      kTestDevAddr, kConnectionHandle, hci_spec::StatusCode::CONNECTION_ALREADY_EXISTS);
+      kTestDevAddr, kConnectionHandle,
+      pw::bluetooth::emboss::StatusCode::CONNECTION_ALREADY_EXISTS);
   test_device()->SendCommandChannelPacket(complete_already);
   // Then the controller notifies us of the successful incoming connection
   test_device()->SendCommandChannelPacket(kConnectionComplete);
@@ -3868,11 +3879,12 @@ TEST_F(BrEdrConnectionManagerTest, DuplicateIncomingConnectionsFromSamePeerRejec
   RunLoopUntilIdle();
 
   auto status_event = testing::CommandStatusPacket(hci_spec::kRejectConnectionRequest,
-                                                   hci_spec::StatusCode::SUCCESS);
+                                                   pw::bluetooth::emboss::StatusCode::SUCCESS);
   auto complete_error = testing::ConnectionCompletePacket(
-      kTestDevAddr, kConnectionHandle, hci_spec::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
+      kTestDevAddr, kConnectionHandle,
+      pw::bluetooth::emboss::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
   auto reject_packet = testing::RejectConnectionRequestPacket(
-      kTestDevAddr, hci_spec::StatusCode::CONNECTION_REJECTED_BAD_BD_ADDR);
+      kTestDevAddr, pw::bluetooth::emboss::StatusCode::CONNECTION_REJECTED_BAD_BD_ADDR);
 
   // Our second request should be rejected - we already have an incoming request
   EXPECT_CMD_PACKET_OUT(test_device(), reject_packet, &status_event);
@@ -4036,12 +4048,12 @@ TEST_F(BrEdrConnectionManagerTest, RoleChangeAfterInboundConnection) {
 
   EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
   ASSERT_TRUE(conn_ref);
-  EXPECT_EQ(conn_ref->link().role(), hci_spec::ConnectionRole::PERIPHERAL);
+  EXPECT_EQ(conn_ref->link().role(), pw::bluetooth::emboss::ConnectionRole::PERIPHERAL);
 
   test_device()->SendCommandChannelPacket(
-      testing::RoleChangePacket(kTestDevAddr, hci_spec::ConnectionRole::CENTRAL));
+      testing::RoleChangePacket(kTestDevAddr, pw::bluetooth::emboss::ConnectionRole::CENTRAL));
   RunLoopUntilIdle();
-  EXPECT_EQ(conn_ref->link().role(), hci_spec::ConnectionRole::CENTRAL);
+  EXPECT_EQ(conn_ref->link().role(), pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   QueueDisconnection(kConnectionHandle);
 }
@@ -4062,13 +4074,14 @@ TEST_F(BrEdrConnectionManagerTest, RoleChangeWithFailureStatusAfterInboundConnec
   auto callback = [&conn_ref](auto /*status*/, auto cb_conn_ref) { conn_ref = cb_conn_ref; };
   EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
   ASSERT_TRUE(conn_ref);
-  EXPECT_EQ(conn_ref->link().role(), hci_spec::ConnectionRole::PERIPHERAL);
+  EXPECT_EQ(conn_ref->link().role(), pw::bluetooth::emboss::ConnectionRole::PERIPHERAL);
 
-  test_device()->SendCommandChannelPacket(testing::RoleChangePacket(
-      kTestDevAddr, hci_spec::ConnectionRole::CENTRAL, hci_spec::StatusCode::UNSPECIFIED_ERROR));
+  test_device()->SendCommandChannelPacket(
+      testing::RoleChangePacket(kTestDevAddr, pw::bluetooth::emboss::ConnectionRole::CENTRAL,
+                                pw::bluetooth::emboss::StatusCode::UNSPECIFIED_ERROR));
   RunLoopUntilIdle();
   // The role should not change.
-  EXPECT_EQ(conn_ref->link().role(), hci_spec::ConnectionRole::PERIPHERAL);
+  EXPECT_EQ(conn_ref->link().role(), pw::bluetooth::emboss::ConnectionRole::PERIPHERAL);
 
   QueueDisconnection(kConnectionHandle);
 }
@@ -4077,7 +4090,7 @@ TEST_F(BrEdrConnectionManagerTest, RoleChangeDuringInboundConnectionProcedure) {
   EXPECT_EQ(kInvalidPeerId, connmgr()->GetPeerId(kConnectionHandle));
 
   QueueSuccessfulIncomingConn(kTestDevAddr, kConnectionHandle,
-                              /*role_change=*/hci_spec::ConnectionRole::CENTRAL);
+                              /*role_change=*/pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   test_device()->SendCommandChannelPacket(kConnectionRequest);
   RunLoopUntilIdle();
   auto* peer = peer_cache()->FindByAddress(kTestDevAddr);
@@ -4090,7 +4103,7 @@ TEST_F(BrEdrConnectionManagerTest, RoleChangeDuringInboundConnectionProcedure) {
   auto callback = [&conn_ref](auto /*status*/, auto cb_conn_ref) { conn_ref = cb_conn_ref; };
   EXPECT_TRUE(connmgr()->Connect(peer->identifier(), callback));
   ASSERT_TRUE(conn_ref);
-  EXPECT_EQ(conn_ref->link().role(), hci_spec::ConnectionRole::CENTRAL);
+  EXPECT_EQ(conn_ref->link().role(), pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   QueueDisconnection(kConnectionHandle);
 }

@@ -64,10 +64,11 @@ class BrEdrConnection final {
   // See ScoConnectionManager for documentation.
   using ScoRequestHandle = sco::ScoConnectionManager::RequestHandle;
   ScoRequestHandle OpenScoConnection(
-      bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>,
+      bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>,
       sco::ScoConnectionManager::OpenConnectionCallback callback);
   ScoRequestHandle AcceptScoConnection(
-      std::vector<bt::StaticPacket<hci_spec::SynchronousConnectionParametersWriter>> parameters,
+      std::vector<bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter>>
+          parameters,
       sco::ScoConnectionManager::AcceptConnectionCallback callback);
 
   // Attach connection inspect node as a child of |parent| named |name|.

@@ -9,7 +9,8 @@
 
 namespace bt::l2cap::internal {
 
-LESignalingChannel::LESignalingChannel(Channel::WeakPtr chan, hci_spec::ConnectionRole role)
+LESignalingChannel::LESignalingChannel(Channel::WeakPtr chan,
+                                       pw::bluetooth::emboss::ConnectionRole role)
     : SignalingChannel(std::move(chan), role) {
   set_mtu(kMinLEMTU);
 }

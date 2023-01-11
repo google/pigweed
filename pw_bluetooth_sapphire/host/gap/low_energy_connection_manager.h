@@ -161,7 +161,8 @@ class LowEnergyConnectionManager final {
 
   // Callback for hci::Connection, called when the peer disconnects.
   // |reason| is used to control retry logic.
-  void OnPeerDisconnect(const hci::Connection* connection, hci_spec::StatusCode reason);
+  void OnPeerDisconnect(const hci::Connection* connection,
+                        pw::bluetooth::emboss::StatusCode reason);
 
   // Initiates the pairing process. Expected to only be called during higher-level testing.
   //   |peer_id|: the peer to pair to - if the peer is not connected, |cb| is called with an error.

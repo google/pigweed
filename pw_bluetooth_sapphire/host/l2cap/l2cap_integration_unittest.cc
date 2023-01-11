@@ -141,7 +141,7 @@ class L2capIntegrationTest : public TestingBase {
 
   QueueAclConnectionRetVal QueueAclConnection(
       hci_spec::ConnectionHandle handle,
-      hci_spec::ConnectionRole role = hci_spec::ConnectionRole::CENTRAL) {
+      pw::bluetooth::emboss::ConnectionRole role = pw::bluetooth::emboss::ConnectionRole::CENTRAL) {
     QueueAclConnectionRetVal cmd_ids;
     cmd_ids.extended_features_id = NextCommandId();
     cmd_ids.fixed_channels_supported_id = NextCommandId();
@@ -162,7 +162,7 @@ class L2capIntegrationTest : public TestingBase {
   }
 
   ChannelManager::LEFixedChannels QueueLEConnection(hci_spec::ConnectionHandle handle,
-                                                    hci_spec::ConnectionRole role) {
+                                                    pw::bluetooth::emboss::ConnectionRole role) {
     acl_data_channel()->RegisterLink(handle, bt::LinkType::kLE);
     return l2cap()->AddLEConnection(
         handle, role, /*link_error_callback=*/[] {}, /*conn_param_callback=*/[](auto&) {},
@@ -599,7 +599,7 @@ TEST_F(L2capIntegrationTest, RequestConnectionParameterUpdateAndReceiveResponse)
                                                           kPeripheralLatency, kTimeoutMult);
 
   constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
-  QueueLEConnection(kLinkHandle, hci_spec::ConnectionRole::PERIPHERAL);
+  QueueLEConnection(kLinkHandle, pw::bluetooth::emboss::ConnectionRole::PERIPHERAL);
 
   std::optional<bool> accepted;
   auto request_cb = [&accepted](bool cb_accepted) { accepted = cb_accepted; };
@@ -638,7 +638,7 @@ TEST_F(L2capIntegrationTest, InspectHierarchy) {
 
 TEST_F(L2capIntegrationTest, AddLEConnectionReturnsFixedChannels) {
   constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
-  auto channels = QueueLEConnection(kLinkHandle, hci_spec::ConnectionRole::PERIPHERAL);
+  auto channels = QueueLEConnection(kLinkHandle, pw::bluetooth::emboss::ConnectionRole::PERIPHERAL);
   ASSERT_TRUE(channels.att.is_alive());
   EXPECT_EQ(l2cap::kATTChannelId, channels.att->id());
   ASSERT_TRUE(channels.smp.is_alive());
@@ -693,9 +693,9 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
   channel->Activate([](auto) {}, []() {});
 
   if (kPriority != AclPriority::kNormal) {
-    auto cmd_complete =
-        CommandCompletePacket(op_code, kExpectSuccess ? hci_spec::StatusCode::SUCCESS
-                                                      : hci_spec::StatusCode::UNKNOWN_COMMAND);
+    auto cmd_complete = CommandCompletePacket(
+        op_code, kExpectSuccess ? pw::bluetooth::emboss::StatusCode::SUCCESS
+                                : pw::bluetooth::emboss::StatusCode::UNKNOWN_COMMAND);
     EXPECT_CMD_PACKET_OUT(test_device(), kEncodedCommand, &cmd_complete);
   }
 
@@ -719,7 +719,7 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
   priority_from_encode_cb.reset();
 
   if (kPriority != AclPriority::kNormal && kExpectSuccess) {
-    auto cmd_complete = CommandCompletePacket(op_code, hci_spec::StatusCode::SUCCESS);
+    auto cmd_complete = CommandCompletePacket(op_code, pw::bluetooth::emboss::StatusCode::SUCCESS);
     EXPECT_CMD_PACKET_OUT(test_device(), kEncodedCommand, &cmd_complete);
   }
 

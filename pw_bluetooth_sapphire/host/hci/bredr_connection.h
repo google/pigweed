@@ -16,7 +16,7 @@ namespace bt::hci {
 class BrEdrConnection : public AclConnection, public WeakSelf<BrEdrConnection> {
  public:
   BrEdrConnection(hci_spec::ConnectionHandle handle, const DeviceAddress& local_address,
-                  const DeviceAddress& peer_address, hci_spec::ConnectionRole role,
+                  const DeviceAddress& peer_address, pw::bluetooth::emboss::ConnectionRole role,
                   const Transport::WeakPtr& hci);
 
   bool StartEncryption() override;

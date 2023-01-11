@@ -25,13 +25,13 @@ namespace bt {
 // Consider the following Emboss definition of the HCI Command packet header and Inquiry Command.
 //
 //  [(cpp) namespace: "bt::hci_spec"]
-//  struct EmbossCommandHeader:
+//  struct CommandHeader:
 //    0     [+2] OpCodeBits opcode
 //    $next [+1] UInt parameter_total_size
 //
 //  struct InquiryCommand:
-//    let hdr_size = EmbossCommandHeader.$size_in_bytes
-//    0     [+hdr_size] EmbossCommandHeader header
+//    let hdr_size = CommandHeader.$size_in_bytes
+//    0     [+hdr_size] CommandHeader header
 //    $next [+3] InquiryAccessCode lap
 //    $next [+1] UInt inquiry_length
 //    $next [+1] UInt num_responses
@@ -40,10 +40,10 @@ namespace bt {
 // it generates InquiryCommandView (read-only) and InquiryCommandWriter (read & writable). We can
 // parameterize StaticPacket over one of these views to read and/or write an Inquiry packet:
 //
-//  bt::StaticPacket<bt::hci_spec::InquiryCommandWriter> packet;
+//  bt::StaticPacket<pw::bluetooth::emboss::InquiryCommandWriter> packet;
 //  auto view = packet.view();
 //  view.inquiry_length().Write(100);
-//  view.lap().Write(bt::hci_spec::InquiryAccessCode::GIAC);
+//  view.lap().Write(pw::bluetooth::emboss::InquiryAccessCode::GIAC);
 //  cout << "inquiry_length = " << view.inquiry_length().Read();
 //
 // StaticPacket does not currently support packets with variable length.

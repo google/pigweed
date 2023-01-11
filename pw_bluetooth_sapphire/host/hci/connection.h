@@ -65,14 +65,14 @@ class Connection {
 
   // Assigns a callback that will be run when the peer disconnects.
   using PeerDisconnectCallback =
-      fit::function<void(const Connection& connection, hci_spec::StatusCode reason)>;
+      fit::function<void(const Connection& connection, pw::bluetooth::emboss::StatusCode reason)>;
   void set_peer_disconnect_callback(PeerDisconnectCallback callback) {
     peer_disconnect_callback_ = std::move(callback);
   }
 
   // Send HCI Disconnect and set state to closed. Must not be called on an already disconnected
   // connection.
-  virtual void Disconnect(hci_spec::StatusCode reason);
+  virtual void Disconnect(pw::bluetooth::emboss::StatusCode reason);
 
  protected:
   // |on_disconnection_complete| will be called when the disconnection complete event is received,

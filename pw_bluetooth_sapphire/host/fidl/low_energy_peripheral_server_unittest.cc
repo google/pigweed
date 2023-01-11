@@ -163,7 +163,7 @@ TEST_F(LowEnergyPeripheralServerTest, StartAdvertisingWhilePendingDoesNotCrash) 
 // Same as the test above but tests that an error status leaves the server in the expected state.
 TEST_F(LowEnergyPeripheralServerTest, StartAdvertisingWhilePendingDoesNotCrashWithControllerError) {
   test_device()->SetDefaultResponseStatus(bt::hci_spec::kLESetAdvertisingEnable,
-                                          bt::hci_spec::StatusCode::COMMAND_DISALLOWED);
+                                          pw::bluetooth::emboss::StatusCode::COMMAND_DISALLOWED);
   fble::AdvertisingParameters params1, params2, params3, params4;
   FidlAdvHandle token1, token2, token3, token4;
 
@@ -198,7 +198,7 @@ TEST_F(LowEnergyPeripheralServerTest, StartAdvertisingWhilePendingDoesNotCrashWi
 
 TEST_F(LowEnergyPeripheralServerTest, AdvertiseWhilePendingDoesNotCrashWithControllerError) {
   test_device()->SetDefaultResponseStatus(bt::hci_spec::kLESetAdvertisingEnable,
-                                          bt::hci_spec::StatusCode::COMMAND_DISALLOWED);
+                                          pw::bluetooth::emboss::StatusCode::COMMAND_DISALLOWED);
   fble::AdvertisingParameters params1, params2, params3, params4;
 
   fble::AdvertisedPeripheralHandle adv_peripheral_handle_1;
@@ -890,8 +890,9 @@ TEST_F(LowEnergyPeripheralServerTest, IncomingConnectionFailureContinuesAdvertis
 
   // Cause peer interrogation to fail. This will result in a connection error status to be
   // received. Advertising should be immediately resumed, allowing future connections.
-  test_device()->SetDefaultCommandStatus(bt::hci_spec::kReadRemoteVersionInfo,
-                                         bt::hci_spec::StatusCode::UNSUPPORTED_REMOTE_FEATURE);
+  test_device()->SetDefaultCommandStatus(
+      bt::hci_spec::kReadRemoteVersionInfo,
+      pw::bluetooth::emboss::StatusCode::UNSUPPORTED_REMOTE_FEATURE);
 
   test_device()->AddPeer(std::make_unique<FakePeer>(kTestAddr));
   test_device()->ConnectLowEnergy(kTestAddr);

@@ -199,7 +199,7 @@ TEST_F(AdapterTest, InitializeQueryAndroidExtensionsCapabilitiesFailureHandled) 
   test_device()->set_settings(settings);
 
   test_device()->SetDefaultResponseStatus(hci_android::kLEGetVendorCapabilities,
-                                          hci_spec::StatusCode::COMMAND_DISALLOWED);
+                                          pw::bluetooth::emboss::StatusCode::COMMAND_DISALLOWED);
   InitializeAdapter(std::move(init_cb));
   EXPECT_FALSE(success);
   EXPECT_EQ(1, init_cb_count);
@@ -246,7 +246,7 @@ TEST_F(AdapterTest, InitializeFailureHCICommandError) {
   settings.ApplyLEOnlyDefaults();
   test_device()->set_settings(settings);
   test_device()->SetDefaultResponseStatus(hci_spec::kLEReadLocalSupportedFeatures,
-                                          hci_spec::StatusCode::HARDWARE_FAILURE);
+                                          pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE);
 
   InitializeAdapter(std::move(init_cb));
   EXPECT_FALSE(success);
@@ -346,7 +346,7 @@ TEST_F(AdapterTest, SetNameError) {
   settings.ApplyDualModeDefaults();
   test_device()->set_settings(settings);
   test_device()->SetDefaultResponseStatus(hci_spec::kWriteLocalName,
-                                          hci_spec::StatusCode::HARDWARE_FAILURE);
+                                          pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE);
   ASSERT_TRUE(EnsureInitialized());
 
   hci::Result<> result = fit::ok();
@@ -356,7 +356,7 @@ TEST_F(AdapterTest, SetNameError) {
 
   RunLoopUntilIdle();
 
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::HARDWARE_FAILURE), result);
+  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::HARDWARE_FAILURE), result);
 }
 
 TEST_F(AdapterTest, SetNameSuccess) {
@@ -451,7 +451,7 @@ TEST_F(AdapterTest, BrEdrUpdateEIRResponseError) {
   test_device()->set_settings(settings);
   test_device()->SetDefaultResponseStatus(
       hci_spec::kWriteExtendedInquiryResponse,
-      hci_spec::StatusCode::CONNECTION_TERMINATED_BY_LOCAL_HOST);
+      pw::bluetooth::emboss::StatusCode::CONNECTION_TERMINATED_BY_LOCAL_HOST);
   ASSERT_TRUE(EnsureInitialized());
 
   hci::Result<> result = fit::ok();
@@ -462,7 +462,8 @@ TEST_F(AdapterTest, BrEdrUpdateEIRResponseError) {
   RunLoopUntilIdle();
 
   // kWriteLocalName will succeed, but kWriteExtendedInquiryResponse will fail
-  EXPECT_EQ(ToResult(hci_spec::StatusCode::CONNECTION_TERMINATED_BY_LOCAL_HOST), result);
+  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::CONNECTION_TERMINATED_BY_LOCAL_HOST),
+            result);
   // The |local_name_| should not be set.
   EXPECT_NE(kNewName, adapter()->state().local_name);
   EXPECT_NE(kNewName, adapter()->local_name());
