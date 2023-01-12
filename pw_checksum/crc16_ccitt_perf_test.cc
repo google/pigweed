@@ -17,7 +17,6 @@
 #include "pw_bytes/array.h"
 #include "pw_checksum/crc16_ccitt.h"
 #include "pw_perf_test/perf_test.h"
-#include "pw_span/internal/span_impl.h"
 #include "pw_span/span.h"
 
 namespace pw::checksum {

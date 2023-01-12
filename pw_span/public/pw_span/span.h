@@ -24,9 +24,8 @@
 
 // If the C++ library fully supports <span>, pw::span is an alias of std::span,
 // but only if PW_SPAN_ENABLE_ASSERTS is not enabled.
-#if !PW_SPAN_ENABLE_ASSERTS &&                               \
-    (defined(__cpp_lib_span) && __cpp_lib_span >= 202002L || \
-     defined(_PW_SPAN_POLYFILL_ENABLED))
+#if defined(__cpp_lib_span) && __cpp_lib_span >= 202002L && \
+    !PW_SPAN_ENABLE_ASSERTS
 
 #include <span>
 
