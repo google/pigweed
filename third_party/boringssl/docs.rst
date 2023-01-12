@@ -68,6 +68,11 @@ The GN variables needed are defined in
        }
      }
 
+#. Alternatively, set the GN ``pw_third_party_boringssl_ALIAS`` to your
+   boringssl build target if you would like to use your own build target instead
+   of the one provided by Pigweed. This should be used instead of
+   ``dir_pw_third_party_boringssl``. This fixes diamond dependency conflicts
+   caused by two build targets using the same source files.
 
 After this is done a ``pw_source_set`` for the BoringSSL library is created at
-``$dir_pw_third_party/borignssl``.
+``$dir_pw_third_party/boringssl``.

@@ -18,7 +18,13 @@ import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_third_party/boringssl/boringssl.gni")
 import("$dir_pw_unit_test/test.gni")
 
-if (dir_pw_third_party_boringssl != "") {
+if (pw_third_party_boringssl_ALIAS != "") {
+  assert(dir_pw_third_party_boringssl == "")
+
+  pw_source_set("boringssl") {
+    public_deps = [ pw_third_party_boringssl_ALIAS ]
+  }
+} else if (dir_pw_third_party_boringssl != "") {
   import("$dir_pw_third_party_boringssl/BUILD.generated.gni")
 
   config("public_config") {

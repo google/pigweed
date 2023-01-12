@@ -17,4 +17,10 @@ declare_args() {
   # boringssl source code. When set, a pw_source_set for the boringssl library is
   # created at "$dir_pw_third_party/boringssl".
   dir_pw_third_party_boringssl = ""
+
+  # Create a "$dir_pw_third_party/boringssl" target that aliases an existing
+  # target. This can be used to fix a diamond dependency conflict if a
+  # downstream project uses its own boringssl target and cannot be changed to
+  # use Pigweed's boringssl exclusively.
+  pw_third_party_boringssl_ALIAS = ""
 }
