@@ -55,7 +55,7 @@ class NanopbPayloadsView {
     // Access the payload (rather than packet) with operator*.
     Payload operator*() const {
       Payload payload{};
-      PW_ASSERT(serde_.Decode(Base::value(), &payload));
+      PW_ASSERT_OK(serde_.Decode(Base::value(), payload));
       return payload;
     }
 
@@ -71,7 +71,7 @@ class NanopbPayloadsView {
 
   Payload operator[](size_t index) const {
     Payload payload{};
-    PW_ASSERT(serde_.Decode(view_[index], &payload));
+    PW_ASSERT_OK(serde_.Decode(view_[index], payload));
     return payload;
   }
 

@@ -110,7 +110,7 @@ class NanopbUnaryResponseClientCall : public UnaryResponseClientCall {
 
           if (nanopb_on_completed_local) {
             Response response_struct{};
-            if (serde_->DecodeResponse(payload, &response_struct)) {
+            if (serde_->response().Decode(payload, &response_struct).ok()) {
               nanopb_on_completed_local(response_struct, status);
             } else {
               rpc_lock().lock();
@@ -205,7 +205,7 @@ class NanopbStreamResponseClientCall : public StreamResponseClientCall {
     internal::Call::set_on_next_locked([this](ConstByteSpan payload) {
       if (nanopb_on_next_) {
         Response response_struct{};
-        if (serde_->DecodeResponse(payload, &response_struct)) {
+        if (serde_->response().Decode(payload, &response_struct).ok()) {
           nanopb_on_next_(response_struct);
         } else {
           // TODO(hepler): This should send a DATA_LOSS error and call the

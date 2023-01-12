@@ -39,7 +39,7 @@ TEST(PwpbFakeChannelOutput, Requests) {
   std::byte payload_buffer[32] = {};
   constexpr Info::Request request{.integer = -100, .status_code = 5};
   const StatusWithSize payload =
-      Info::serde().EncodeRequest(request, payload_buffer);
+      Info::serde().request().Encode(request, payload_buffer);
   ASSERT_TRUE(payload.ok());
 
   std::array<std::byte, 128> buffer;
@@ -69,7 +69,7 @@ TEST(PwpbFakeChannelOutput, Responses) {
   std::byte payload_buffer[32] = {};
   const Info::Response response{.value = -9876};
   const StatusWithSize payload =
-      Info::serde().EncodeResponse(response, payload_buffer);
+      Info::serde().response().Encode(response, payload_buffer);
   ASSERT_TRUE(payload.ok());
 
   std::array<std::byte, 128> buffer;

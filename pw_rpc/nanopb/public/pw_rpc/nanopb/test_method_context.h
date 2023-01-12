@@ -122,8 +122,8 @@ class NanopbInvocationContext
   // Gives access to the RPC's most recent response.
   Response response() const {
     Response response{};
-    PW_ASSERT(kMethodInfo.serde().DecodeResponse(Base::responses().back(),
-                                                 &response));
+    PW_ASSERT_OK(kMethodInfo.serde().response().Decode(Base::responses().back(),
+                                                       response));
     return response;
   }
 
@@ -131,8 +131,8 @@ class NanopbInvocationContext
   // to parse the nanopb. Use this version when you need to set pb_callback_t
   // fields in the Response object before parsing.
   void response(Response& response) const {
-    PW_ASSERT(kMethodInfo.serde().DecodeResponse(Base::responses().back(),
-                                                 &response));
+    PW_ASSERT_OK(kMethodInfo.serde().response().Decode(Base::responses().back(),
+                                                       response));
   }
 
   NanopbPayloadsView<Response> responses() const {
@@ -155,7 +155,7 @@ class NanopbInvocationContext
   void SendClientStream(const Request& request) PW_LOCKS_EXCLUDED(rpc_lock()) {
     std::array<std::byte, kEncodingBufferSizeBytes> buffer;
     Base::SendClientStream(span(buffer).first(
-        kMethodInfo.serde().EncodeRequest(&request, buffer).size()));
+        kMethodInfo.serde().request().Encode(&request, buffer).size()));
   }
 
  private:

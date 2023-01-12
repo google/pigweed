@@ -144,7 +144,7 @@ class PwpbUnaryResponseClientCall : public UnaryResponseClientCall {
           if (pwpb_on_completed_local) {
             Response response{};
             const Status decode_status =
-                serde().DecodeResponse(payload, response);
+                serde().response().Decode(payload, response);
             if (decode_status.ok()) {
               pwpb_on_completed_local(response, status);
             } else {
@@ -271,7 +271,7 @@ class PwpbStreamResponseClientCall : public StreamResponseClientCall {
     Call::set_on_next_locked([this](ConstByteSpan payload) {
       if (pwpb_on_next_) {
         Response response{};
-        const Status status = serde().DecodeResponse(payload, response);
+        const Status status = serde().response().Decode(payload, response);
         if (status.ok()) {
           pwpb_on_next_(response);
         } else {

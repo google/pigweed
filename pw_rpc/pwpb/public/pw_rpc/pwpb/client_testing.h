@@ -68,7 +68,8 @@ class PwpbFakeServer : public FakeServer {
   static ConstByteSpan EncodeResponse(const Response<kMethod>& payload,
                                       ByteSpan buffer) {
     const StatusWithSize result =
-        internal::MethodInfo<kMethod>::serde().EncodeResponse(payload, buffer);
+        internal::MethodInfo<kMethod>::serde().response().Encode(payload,
+                                                                 buffer);
     PW_ASSERT(result.ok());
     return span(buffer).first(result.size());
   }

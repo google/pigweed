@@ -60,7 +60,7 @@ void NanopbMethod::CallUnaryRequest(const CallContext& context,
 bool NanopbMethod::DecodeRequest(const CallContext& context,
                                  const Packet& request,
                                  void* proto_struct) const {
-  if (serde_.DecodeRequest(request.payload(), proto_struct)) {
+  if (serde_.request().Decode(request.payload(), proto_struct).ok()) {
     return true;
   }
 

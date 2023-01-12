@@ -81,30 +81,6 @@ class PwpbMethodSerde {
   PwpbMethodSerde(const PwpbMethodSerde&) = delete;
   PwpbMethodSerde& operator=(const PwpbMethodSerde&) = delete;
 
-  // Encodes the pw_protobuf request struct to the serialized wire format.
-  template <typename Request>
-  StatusWithSize EncodeRequest(const Request& request, ByteSpan buffer) const {
-    return request_serde_.Encode(request, buffer);
-  }
-
-  // Encodes the pw_protobuf response struct to the serialized wire format.
-  template <typename Response>
-  StatusWithSize EncodeResponse(const Response& response,
-                                ByteSpan buffer) const {
-    return response_serde_.Encode(response, buffer);
-  }
-  // Decodes a serialized protobuf into the pw_protobuf request struct.
-  template <typename Request>
-  Status DecodeRequest(ConstByteSpan buffer, Request& request) const {
-    return request_serde_.Decode(buffer, request);
-  }
-
-  // Decodes a serialized protobuf into the pw_protobuf response struct.
-  template <typename Response>
-  Status DecodeResponse(ConstByteSpan buffer, Response& response) const {
-    return response_serde_.Decode(buffer, response);
-  }
-
   const PwpbSerde& request() const { return request_serde_; }
   const PwpbSerde& response() const { return response_serde_; }
 

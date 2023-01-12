@@ -170,7 +170,7 @@ class BasePwpbServerReader : public PwpbServerCall {
     Call::set_on_next_locked([this](ConstByteSpan payload) {
       if (pwpb_on_next_) {
         Request request{};
-        const Status status = serde().DecodeRequest(payload, request);
+        const Status status = serde().request().Decode(payload, request);
         if (status.ok()) {
           pwpb_on_next_(request);
         }

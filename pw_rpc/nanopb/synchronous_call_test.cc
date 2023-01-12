@@ -68,7 +68,7 @@ class SynchronousCallTest : public ::testing::Test {
     std::array<std::byte, 32> payload_buffer;
 
     StatusWithSize size_status =
-        MethodInfo::serde().EncodeResponse(&response_, payload_buffer);
+        MethodInfo::serde().response().Encode(&response_, payload_buffer);
     EXPECT_TRUE(size_status.ok());
 
     auto response =

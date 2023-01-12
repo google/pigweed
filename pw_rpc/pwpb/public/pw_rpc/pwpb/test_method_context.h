@@ -128,7 +128,8 @@ class PwpbInvocationContext
   Response response() const {
     Response response{};
     PW_ASSERT(kMethodInfo.serde()
-                  .DecodeResponse(Base::responses().back(), response)
+                  .response()
+                  .Decode(Base::responses().back(), response)
                   .ok());
     return response;
   }
@@ -138,7 +139,8 @@ class PwpbInvocationContext
   // fields in the Response object before parsing.
   void response(Response& response) const {
     PW_ASSERT(kMethodInfo.serde()
-                  .DecodeResponse(Base::responses().back(), response)
+                  .response()
+                  .Decode(Base::responses().back(), response)
                   .ok());
   }
 
@@ -164,7 +166,7 @@ class PwpbInvocationContext
     // Clang 10.0.1 issue requires separate span variable declaration.
     span buffer_span(buffer);
     Base::SendClientStream(buffer_span.first(
-        kMethodInfo.serde().EncodeRequest(request, buffer).size()));
+        kMethodInfo.serde().request().Encode(request, buffer).size()));
   }
 
  private:

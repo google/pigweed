@@ -73,10 +73,6 @@ class NanopbServerCall : public internal::ServerCall {
 
   Status SendServerStream(const void* payload) PW_LOCKS_EXCLUDED(rpc_lock());
 
-  bool DecodeRequest(ConstByteSpan payload, void* request_struct) const {
-    return serde_->DecodeRequest(payload, request_struct);
-  }
-
  private:
   const NanopbMethodSerde* serde_;
 };
@@ -122,7 +118,7 @@ class BaseNanopbServerReader : public NanopbServerCall {
     internal::Call::set_on_next_locked([this](ConstByteSpan payload) {
       if (nanopb_on_next_) {
         Request request_struct{};
-        if (DecodeRequest(payload, &request_struct)) {
+        if (serde().request().Decode(payload, &request_struct).ok()) {
           nanopb_on_next_(request_struct);
         }
       }

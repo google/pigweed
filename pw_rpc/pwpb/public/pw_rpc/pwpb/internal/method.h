@@ -282,7 +282,8 @@ class PwpbMethod : public Method {
                        const Packet& request,
                        Request& request_struct) const
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
-    const auto status = serde_.DecodeRequest(request.payload(), request_struct);
+    const auto status =
+        serde_.request().Decode(request.payload(), request_struct);
     if (status.ok()) {
       return status;
     }

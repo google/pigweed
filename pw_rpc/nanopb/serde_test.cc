@@ -47,7 +47,7 @@ TEST(NanopbSerde, Decode) {
   constexpr std::byte buffer[]{std::byte{1} << 3, std::byte{3}};
   pw_rpc_test_TestRequest proto = {};
 
-  EXPECT_TRUE(kTestRequest.Decode(buffer, &proto));
+  EXPECT_EQ(OkStatus(), kTestRequest.Decode(buffer, &proto));
 
   EXPECT_EQ(3, proto.integer);
   EXPECT_EQ(0u, proto.status_code);
