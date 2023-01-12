@@ -393,10 +393,7 @@ group("cpp14_compatibility") {
 # enabled than without.
 group("cpp20_compatibility") {
   _cpp20_tc = "$_internal_toolchains:pw_strict_host_clang_size_optimized_cpp20"
-  deps = [
-    ":apps($_cpp20_tc)",
-    ":pw_module_tests.run($_cpp20_tc)",
-  ]
+  deps = [ ":pigweed_default($_cpp20_tc)" ]
 }
 
 group("build_with_pw_minimal_cpp_stdlib") {
