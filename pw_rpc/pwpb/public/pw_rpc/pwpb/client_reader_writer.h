@@ -128,14 +128,26 @@ class PwpbUnaryResponseClientCall : public UnaryResponseClientCall {
     pwpb_on_completed_ = std::move(on_completed);
 
     UnaryResponseClientCall::set_on_completed_locked(
-        [this](ConstByteSpan payload, Status status)
-            PW_NO_LOCK_SAFETY_ANALYSIS {
-              DecodeToStructAndInvokeOnCompleted(
-                  payload, serde_->response(), pwpb_on_completed_, status);
-            });
+        [this](ConstByteSpan payload, Status status) {
+          rpc_lock().lock();
+          auto pwpb_on_completed_local = std::move(pwpb_on_completed_);
+          rpc_lock().unlock();
+
+          if (pwpb_on_completed_local) {
+            Response response{};
+            const Status decode_status =
+                serde_->response().Decode(payload, response);
+            if (decode_status.ok()) {
+              pwpb_on_completed_local(response, status);
+            } else {
+              rpc_lock().lock();
+              HandleError(Status::DataLoss());
+            }
+          }
+        });
   }
 
-  const PwpbMethodSerde* serde_ PW_GUARDED_BY(rpc_lock());
+  const PwpbMethodSerde* serde_;
   Function<void(const Response&, Status)> pwpb_on_completed_
       PW_GUARDED_BY(rpc_lock());
 };

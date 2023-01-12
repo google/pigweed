@@ -90,7 +90,15 @@ class UnaryResponseClientCall : public ClientCall {
   }
 
   void HandleCompleted(ConstByteSpan response, Status status)
-      PW_UNLOCK_FUNCTION(rpc_lock());
+      PW_UNLOCK_FUNCTION(rpc_lock()) {
+    UnregisterAndMarkClosed();
+    auto on_completed_local = std::move(on_completed_);
+    rpc_lock().unlock();
+
+    if (on_completed_local) {
+      on_completed_local(response, status);
+    }
+  }
 
  protected:
   constexpr UnaryResponseClientCall() = default;
@@ -162,7 +170,15 @@ class StreamResponseClientCall : public ClientCall {
     return call;
   }
 
-  void HandleCompleted(Status status) PW_UNLOCK_FUNCTION(rpc_lock());
+  void HandleCompleted(Status status) PW_UNLOCK_FUNCTION(rpc_lock()) {
+    UnregisterAndMarkClosed();
+    auto on_completed_local = std::move(on_completed_);
+    rpc_lock().unlock();
+
+    if (on_completed_local) {
+      on_completed_local(status);
+    }
+  }
 
  protected:
   constexpr StreamResponseClientCall() = default;

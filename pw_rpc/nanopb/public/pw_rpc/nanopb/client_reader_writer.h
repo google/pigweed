@@ -101,14 +101,24 @@ class NanopbUnaryResponseClientCall : public UnaryResponseClientCall {
     nanopb_on_completed_ = std::move(on_completed);
 
     UnaryResponseClientCall::set_on_completed_locked(
-        [this](ConstByteSpan payload, Status status)
-            PW_NO_LOCK_SAFETY_ANALYSIS {
-              DecodeToStructAndInvokeOnCompleted(
-                  payload, serde_->response(), nanopb_on_completed_, status);
-            });
+        [this](ConstByteSpan payload, Status status) {
+          rpc_lock().lock();
+          auto nanopb_on_completed_local = std::move(nanopb_on_completed_);
+          rpc_lock().unlock();
+
+          if (nanopb_on_completed_local) {
+            Response response_struct{};
+            if (serde_->response().Decode(payload, &response_struct).ok()) {
+              nanopb_on_completed_local(response_struct, status);
+            } else {
+              rpc_lock().lock();
+              HandleError(Status::DataLoss());
+            }
+          }
+        });
   }
 
-  const NanopbMethodSerde* serde_ PW_GUARDED_BY(rpc_lock());
+  const NanopbMethodSerde* serde_;
   Function<void(const Response&, Status)> nanopb_on_completed_
       PW_GUARDED_BY(rpc_lock());
 };

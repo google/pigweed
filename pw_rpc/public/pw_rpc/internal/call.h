@@ -336,39 +336,6 @@ class Call : public IntrusiveList<Call>::Item {
   constexpr operator Writer&();
   constexpr operator const Writer&() const;
 
-  bool proto_callbacks_are_wrapped() const
-      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
-    return properties_.callback_proto_type() == kProtoStruct;
-  }
-
-  // The call is already unregistered and closed.
-  template <typename Decoder, typename ProtoStruct>
-  void DecodeToStructAndInvokeOnCompleted(
-      ConstByteSpan payload,
-      const Decoder& decoder,
-      Function<void(const ProtoStruct&, Status)>& proto_on_completed,
-      Status status) PW_UNLOCK_FUNCTION(rpc_lock()) {
-    // Always move proto_on_completed so it goes out of scope in this function.
-    auto proto_on_completed_local = std::move(proto_on_completed);
-
-    // Move on_error in case an error occurs.
-    auto on_error_local = std::move(on_error_);
-
-    // Release the lock before decoding, since decoder is a global.
-    rpc_lock().unlock();
-
-    if (proto_on_completed_local == nullptr) {
-      return;
-    }
-
-    ProtoStruct proto_struct{};
-    if (decoder.Decode(payload, proto_struct).ok()) {
-      proto_on_completed_local(proto_struct, status);
-    } else if (on_error_local != nullptr) {
-      on_error_local(Status::DataLoss());
-    }
-  }
-
  private:
   // Common constructor for server & client calls.
   Call(LockedEndpoint& endpoint,
