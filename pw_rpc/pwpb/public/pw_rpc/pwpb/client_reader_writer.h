@@ -48,7 +48,7 @@ class PwpbUnaryResponseClientCall : public UnaryResponseClientCall {
     CallType call(
         client.ClaimLocked(), channel_id, service_id, method_id, serde);
 
-    call.set_on_completed_locked(std::move(on_completed));
+    call.set_pwpb_on_completed_locked(std::move(on_completed));
     call.set_on_error_locked(std::move(on_error));
 
     if constexpr (sizeof...(Request) == 0u) {
@@ -95,14 +95,14 @@ class PwpbUnaryResponseClientCall : public UnaryResponseClientCall {
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     MoveUnaryResponseClientCallFrom(other);
     serde_ = other.serde_;
-    set_on_completed_locked(std::move(other.pwpb_on_completed_));
+    set_pwpb_on_completed_locked(std::move(other.pwpb_on_completed_));
   }
 
   void set_on_completed(
       Function<void(const Response& response, Status)>&& on_completed)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
     LockGuard lock(rpc_lock());
-    set_on_completed_locked(std::move(on_completed));
+    set_pwpb_on_completed_locked(std::move(on_completed));
   }
 
   // Sends a streamed request.
@@ -122,7 +122,7 @@ class PwpbUnaryResponseClientCall : public UnaryResponseClientCall {
   }
 
  private:
-  void set_on_completed_locked(
+  void set_pwpb_on_completed_locked(
       Function<void(const Response& response, Status)>&& on_completed)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     pwpb_on_completed_ = std::move(on_completed);
@@ -175,7 +175,7 @@ class PwpbStreamResponseClientCall : public StreamResponseClientCall {
     CallType call(
         client.ClaimLocked(), channel_id, service_id, method_id, serde);
 
-    call.set_on_next_locked(std::move(on_next));
+    call.set_pwpb_on_next_locked(std::move(on_next));
     call.set_on_completed_locked(std::move(on_completed));
     call.set_on_error_locked(std::move(on_error));
 
@@ -222,13 +222,13 @@ class PwpbStreamResponseClientCall : public StreamResponseClientCall {
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     MoveStreamResponseClientCallFrom(other);
     serde_ = other.serde_;
-    set_on_next_locked(std::move(other.pwpb_on_next_));
+    set_pwpb_on_next_locked(std::move(other.pwpb_on_next_));
   }
 
   void set_on_next(Function<void(const Response& response)>&& on_next)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
     LockGuard lock(rpc_lock());
-    set_on_next_locked(std::move(on_next));
+    set_pwpb_on_next_locked(std::move(on_next));
   }
 
   // Sends a streamed request.
@@ -248,7 +248,8 @@ class PwpbStreamResponseClientCall : public StreamResponseClientCall {
   }
 
  private:
-  void set_on_next_locked(Function<void(const Response& response)>&& on_next)
+  void set_pwpb_on_next_locked(
+      Function<void(const Response& response)>&& on_next)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     pwpb_on_next_ = std::move(on_next);
 

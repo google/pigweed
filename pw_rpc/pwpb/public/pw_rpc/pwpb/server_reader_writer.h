@@ -155,17 +155,17 @@ class BasePwpbServerReader : public PwpbServerCall {
   void MoveBasePwpbServerReaderFrom(BasePwpbServerReader& other)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     MovePwpbServerCallFrom(other);
-    set_on_next_locked(std::move(other.pwpb_on_next_));
+    set_pwpb_on_next_locked(std::move(other.pwpb_on_next_));
   }
 
   void set_on_next(Function<void(const Request& request)>&& on_next)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
     LockGuard lock(rpc_lock());
-    set_on_next_locked(std::move(on_next));
+    set_pwpb_on_next_locked(std::move(on_next));
   }
 
  private:
-  void set_on_next_locked(Function<void(const Request& request)>&& on_next)
+  void set_pwpb_on_next_locked(Function<void(const Request& request)>&& on_next)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     pwpb_on_next_ = std::move(on_next);
 

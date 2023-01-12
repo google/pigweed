@@ -103,18 +103,19 @@ class BaseNanopbServerReader : public NanopbServerCall {
       PW_LOCKS_EXCLUDED(rpc_lock()) {
     internal::LockGuard lock(internal::rpc_lock());
     MoveNanopbServerCallFrom(other);
-    set_on_next_locked(std::move(other.nanopb_on_next_));
+    set_nanopb_on_next_locked(std::move(other.nanopb_on_next_));
     return *this;
   }
 
   void set_on_next(Function<void(const Request& request)>&& on_next)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
     internal::LockGuard lock(internal::rpc_lock());
-    set_on_next_locked(std::move(on_next));
+    set_nanopb_on_next_locked(std::move(on_next));
   }
 
  private:
-  void set_on_next_locked(Function<void(const Request& request)>&& on_next)
+  void set_nanopb_on_next_locked(
+      Function<void(const Request& request)>&& on_next)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     nanopb_on_next_ = std::move(on_next);
 
