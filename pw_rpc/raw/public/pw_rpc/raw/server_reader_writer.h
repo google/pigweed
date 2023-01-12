@@ -90,9 +90,12 @@ class RawServerReaderWriter : private internal::ServerCall {
 
  protected:
   RawServerReaderWriter(const internal::LockedCallContext& context,
-                        MethodType type = MethodType::kBidirectionalStreaming)
+                        MethodType type)
       PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
-      : internal::ServerCall(context, type) {}
+      : internal::ServerCall(
+            context,
+            internal::CallProperties(
+                type, internal::kServerCall, internal::kRawProto)) {}
 
   using internal::Call::CloseAndSendResponse;
 
@@ -101,6 +104,10 @@ class RawServerReaderWriter : private internal::ServerCall {
 
   template <typename, typename, uint32_t>
   friend class internal::test::InvocationContext;
+
+  // Private constructor for test use
+  RawServerReaderWriter(const internal::LockedCallContext& context)
+      : RawServerReaderWriter(context, MethodType::kBidirectionalStreaming) {}
 };
 
 // The RawServerReader is used to receive messages and send a response in a

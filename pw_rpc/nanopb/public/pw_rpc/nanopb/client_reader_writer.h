@@ -37,7 +37,8 @@ class NanopbUnaryResponseClientCall : public UnaryResponseClientCall {
                         const NanopbMethodSerde& serde,
                         Function<void(const Response&, Status)>&& on_completed,
                         Function<void(Status)>&& on_error,
-                        const Request&... request) {
+                        const Request&... request)
+      PW_LOCKS_EXCLUDED(rpc_lock()) {
     rpc_lock().lock();
     CallType call(
         client.ClaimLocked(), channel_id, service_id, method_id, serde);
@@ -64,7 +65,7 @@ class NanopbUnaryResponseClientCall : public UnaryResponseClientCall {
                                 const NanopbMethodSerde& serde)
       PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
       : UnaryResponseClientCall(
-            client, channel_id, service_id, method_id, type),
+            client, channel_id, service_id, method_id, StructCallProps(type)),
         serde_(&serde) {}
 
   NanopbUnaryResponseClientCall(NanopbUnaryResponseClientCall&& other)
@@ -137,7 +138,8 @@ class NanopbStreamResponseClientCall : public StreamResponseClientCall {
                         Function<void(const Response&)>&& on_next,
                         Function<void(Status)>&& on_completed,
                         Function<void(Status)>&& on_error,
-                        const Request&... request) {
+                        const Request&... request)
+      PW_LOCKS_EXCLUDED(rpc_lock()) {
     rpc_lock().lock();
     CallType call(
         client.ClaimLocked(), channel_id, service_id, method_id, serde);
@@ -179,7 +181,7 @@ class NanopbStreamResponseClientCall : public StreamResponseClientCall {
                                  const NanopbMethodSerde& serde)
       PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
       : StreamResponseClientCall(
-            client, channel_id, service_id, method_id, type),
+            client, channel_id, service_id, method_id, StructCallProps(type)),
         serde_(&serde) {}
 
   Status SendClientStream(const void* payload) {

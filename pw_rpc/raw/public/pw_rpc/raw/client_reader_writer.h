@@ -58,17 +58,20 @@ class RawClientReaderWriter : private internal::StreamResponseClientCall {
   using internal::Call::operator Writer&;
   using internal::Call::operator const Writer&;
 
- protected:
+ private:
   friend class internal::StreamResponseClientCall;
 
   RawClientReaderWriter(internal::LockedEndpoint& client,
                         uint32_t channel_id,
                         uint32_t service_id,
-                        uint32_t method_id,
-                        MethodType type = MethodType::kBidirectionalStreaming)
+                        uint32_t method_id)
       PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
       : StreamResponseClientCall(
-            client, channel_id, service_id, method_id, type) {}
+            client,
+            channel_id,
+            service_id,
+            method_id,
+            RawCallProps(MethodType::kBidirectionalStreaming)) {}
 };
 
 // Handles responses for a server streaming RPC.
@@ -100,7 +103,7 @@ class RawClientReader : private internal::StreamResponseClientCall {
                                  channel_id,
                                  service_id,
                                  method_id,
-                                 MethodType::kServerStreaming) {}
+                                 RawCallProps(MethodType::kServerStreaming)) {}
 };
 
 // Sends requests and handles the response for a client streaming RPC.
@@ -137,7 +140,7 @@ class RawClientWriter : private internal::UnaryResponseClientCall {
                                 channel_id,
                                 service_id,
                                 method_id,
-                                MethodType::kClientStreaming) {}
+                                RawCallProps(MethodType::kClientStreaming)) {}
 };
 
 // Handles the response for to unary RPC.
@@ -164,8 +167,11 @@ class RawUnaryReceiver : private internal::UnaryResponseClientCall {
                    uint32_t service_id,
                    uint32_t method_id)
       PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
-      : UnaryResponseClientCall(
-            client, channel_id, service_id, method_id, MethodType::kUnary) {}
+      : UnaryResponseClientCall(client,
+                                channel_id,
+                                service_id,
+                                method_id,
+                                RawCallProps(MethodType::kUnary)) {}
 };
 
 }  // namespace pw::rpc

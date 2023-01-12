@@ -46,9 +46,7 @@ pw_cc_library(
 
 pw_cc_library(
     name = "client_api",
-    hdrs = [
-        "public/pw_rpc/nanopb/client_reader_writer.h",
-    ],
+    hdrs = ["public/pw_rpc/nanopb/client_reader_writer.h"],
     includes = ["public"],
     deps = [
         ":common",

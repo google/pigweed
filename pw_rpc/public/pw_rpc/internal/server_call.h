@@ -57,9 +57,9 @@ class ServerCall : public Call {
   void MoveServerCallFrom(ServerCall& other)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
-  ServerCall(const LockedCallContext& context, MethodType type)
+  ServerCall(const LockedCallContext& context, CallProperties properties)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock())
-      : Call(context, type) {}
+      : Call(context, properties) {}
 
   // set_on_client_stream_end is templated so that it can be conditionally
   // disabled with a helpful static_assert message.

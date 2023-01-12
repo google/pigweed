@@ -61,7 +61,12 @@ class TestStreamCall : public internal::StreamResponseClientCall {
                  MethodType type)
       PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
       : StreamResponseClientCall(
-            client, channel_id, service_id, method_id, type),
+            client,
+            channel_id,
+            service_id,
+            method_id,
+            internal::CallProperties(
+                type, internal::kClientCall, internal::kRawProto)),
         payload(nullptr) {
     set_on_next_locked([this](ConstByteSpan string) {
       payload = reinterpret_cast<const char*>(string.data());
@@ -84,7 +89,12 @@ class TestUnaryCall : public internal::UnaryResponseClientCall {
                 MethodType type)
       PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
       : UnaryResponseClientCall(
-            client, channel_id, service_id, method_id, type),
+            client,
+            channel_id,
+            service_id,
+            method_id,
+            internal::CallProperties(
+                type, internal::kClientCall, internal::kRawProto)),
         payload(nullptr) {
     set_on_completed_locked([this](ConstByteSpan string, Status status) {
       payload = reinterpret_cast<const char*>(string.data());

@@ -45,6 +45,41 @@ using ::pw::rpc::internal::test::FakeServerWriter;
 using ::std::byte;
 using ::testing::Test;
 
+static_assert(sizeof(Call) ==
+                  // IntrusiveList::Item pointer
+                  sizeof(IntrusiveList<Call>::Item) +
+                      // Endpoint pointer
+                      sizeof(Endpoint*) +
+                      // call_id, channel_id, service_id, method_id
+                      4 * sizeof(uint32_t) +
+                      // Packed state and properties
+                      sizeof(void*) +
+                      // on_error and on_next callbacks
+                      2 * sizeof(Function<void(Status)>),
+              "Unexpected padding in Call!");
+
+static_assert(sizeof(CallProperties) == sizeof(uint8_t));
+
+TEST(CallProperties, ValuesMatch) {
+  constexpr CallProperties props_1(
+      MethodType::kBidirectionalStreaming, kClientCall, kRawProto);
+  static_assert(props_1.method_type() == MethodType::kBidirectionalStreaming);
+  static_assert(props_1.call_type() == kClientCall);
+  static_assert(props_1.callback_proto_type() == kRawProto);
+
+  constexpr CallProperties props_2(
+      MethodType::kClientStreaming, kServerCall, kProtoStruct);
+  static_assert(props_2.method_type() == MethodType::kClientStreaming);
+  static_assert(props_2.call_type() == kServerCall);
+  static_assert(props_2.callback_proto_type() == kProtoStruct);
+
+  constexpr CallProperties props_3(
+      MethodType::kUnary, kClientCall, kProtoStruct);
+  static_assert(props_3.method_type() == MethodType::kUnary);
+  static_assert(props_3.call_type() == kClientCall);
+  static_assert(props_3.callback_proto_type() == kProtoStruct);
+}
+
 class ServerWriterTest : public Test {
  public:
   ServerWriterTest() : context_(TestService::method.method()) {

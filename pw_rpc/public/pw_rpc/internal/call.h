@@ -41,10 +41,57 @@ class Endpoint;
 class LockedEndpoint;
 class Packet;
 
+// Whether a call object is associated with a server or a client.
+enum CallType : bool { kServerCall, kClientCall };
+
+// Whether callbacks that take a proto use the raw data directly or decode it
+// to a struct. The RPC lock is held when invoking callbacks that decode to a
+// struct.
+enum CallbackProtoType : bool { kRawProto, kProtoStruct };
+
+// Immutable properties of a call object. These do not change after an active
+// call is initialized.
+//
+// Bits
+//     0-1: MethodType
+//       2: CallType
+//       3: Bool for whether callbacks decode to proto structs
+//
+class CallProperties {
+ public:
+  constexpr CallProperties() : bits_(0u) {}
+
+  constexpr CallProperties(MethodType method_type,
+                           CallType call_type,
+                           CallbackProtoType callback_proto_type)
+      : bits_((static_cast<uint8_t>(method_type) << 0) |
+              (static_cast<uint8_t>(call_type) << 2) |
+              (static_cast<uint8_t>(callback_proto_type) << 3)) {}
+
+  constexpr CallProperties(const CallProperties&) = default;
+
+  constexpr CallProperties& operator=(const CallProperties&) = default;
+
+  constexpr MethodType method_type() const {
+    return static_cast<MethodType>(bits_ & 0b0011u);
+  }
+
+  constexpr CallType call_type() const {
+    return static_cast<CallType>((bits_ & 0b0100u) >> 2);
+  }
+
+  constexpr CallbackProtoType callback_proto_type() const {
+    return static_cast<CallbackProtoType>((bits_ & 0b1000u) >> 3);
+  }
+
+ private:
+  uint8_t bits_;
+};
+
 // Unrequested RPCs always use this call ID. When a subsequent request
 // or response is sent with a matching channel + service + method,
 // it will match a calls with this ID if one exists.
-constexpr uint32_t kOpenCallId = std::numeric_limits<uint32_t>::max();
+inline constexpr uint32_t kOpenCallId = std::numeric_limits<uint32_t>::max();
 
 // Internal RPC Call class. The Call is used to respond to any type of RPC.
 // Public classes like ServerWriters inherit from it with private inheritance
@@ -193,11 +240,11 @@ class Call : public IntrusiveList<Call>::Item {
   }
 
   bool has_client_stream() const PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
-    return HasClientStream(type_);
+    return HasClientStream(properties_.method_type());
   }
 
   bool has_server_stream() const PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
-    return HasServerStream(type_);
+    return HasServerStream(properties_.method_type());
   }
 
   bool client_stream_open() const PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
@@ -221,12 +268,11 @@ class Call : public IntrusiveList<Call>::Item {
         service_id_{},
         method_id_{},
         rpc_state_{},
-        type_{},
-        call_type_{},
-        client_stream_state_{} {}
+        client_stream_state_{},
+        properties_{} {}
 
   // Creates an active server-side Call.
-  Call(const LockedCallContext& context, MethodType type)
+  Call(const LockedCallContext& context, CallProperties properties)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   // Creates an active client-side Call.
@@ -234,7 +280,7 @@ class Call : public IntrusiveList<Call>::Item {
        uint32_t channel_id,
        uint32_t service_id,
        uint32_t method_id,
-       MethodType type) PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
+       CallProperties properties) PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   // This call must be in a closed state when this is called.
   void MoveFrom(Call& other) PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
@@ -286,16 +332,13 @@ class Call : public IntrusiveList<Call>::Item {
   constexpr operator const Writer&() const;
 
  private:
-  enum CallType : bool { kServerCall, kClientCall };
-
   // Common constructor for server & client calls.
   Call(LockedEndpoint& endpoint,
        uint32_t id,
        uint32_t channel_id,
        uint32_t service_id,
        uint32_t method_id,
-       MethodType type,
-       CallType call_type);
+       CallProperties properties);
 
   Packet MakePacket(pwpb::PacketType type,
                     ConstByteSpan payload,
@@ -348,12 +391,11 @@ class Call : public IntrusiveList<Call>::Item {
   uint32_t method_id_ PW_GUARDED_BY(rpc_lock());
 
   enum : bool { kInactive, kActive } rpc_state_ PW_GUARDED_BY(rpc_lock());
-  MethodType type_ PW_GUARDED_BY(rpc_lock());
-  CallType call_type_ PW_GUARDED_BY(rpc_lock());
   enum : bool {
     kClientStreamInactive,
     kClientStreamActive,
   } client_stream_state_ PW_GUARDED_BY(rpc_lock());
+  CallProperties properties_ PW_GUARDED_BY(rpc_lock());
 
   // Called when the RPC is terminated due to an error.
   Function<void(Status error)> on_error_ PW_GUARDED_BY(rpc_lock());

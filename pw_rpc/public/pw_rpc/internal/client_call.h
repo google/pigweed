@@ -38,14 +38,24 @@ class ClientCall : public Call {
   }
 
  protected:
+  // Initializes CallProperties for a struct-based client call impl.
+  static constexpr CallProperties StructCallProps(MethodType type) {
+    return CallProperties(type, kClientCall, kProtoStruct);
+  }
+
+  // Initializes CallProperties for a raw client call.
+  static constexpr CallProperties RawCallProps(MethodType type) {
+    return CallProperties(type, kClientCall, kRawProto);
+  }
+
   constexpr ClientCall() = default;
 
   ClientCall(LockedEndpoint& client,
              uint32_t channel_id,
              uint32_t service_id,
              uint32_t method_id,
-             MethodType type) PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock())
-      : Call(client, channel_id, service_id, method_id, type) {}
+             CallProperties properties) PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock())
+      : Call(client, channel_id, service_id, method_id, properties) {}
 
   // Sends CLIENT_STREAM_END if applicable, releases any held payload buffer,
   // and marks the call as closed.
@@ -97,9 +107,9 @@ class UnaryResponseClientCall : public ClientCall {
                           uint32_t channel_id,
                           uint32_t service_id,
                           uint32_t method_id,
-                          MethodType type)
+                          CallProperties properties)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock())
-      : ClientCall(client, channel_id, service_id, method_id, type) {}
+      : ClientCall(client, channel_id, service_id, method_id, properties) {}
 
   UnaryResponseClientCall(UnaryResponseClientCall&& other) {
     *this = std::move(other);
@@ -177,9 +187,9 @@ class StreamResponseClientCall : public ClientCall {
                            uint32_t channel_id,
                            uint32_t service_id,
                            uint32_t method_id,
-                           MethodType type)
+                           CallProperties properties)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock())
-      : ClientCall(client, channel_id, service_id, method_id, type) {}
+      : ClientCall(client, channel_id, service_id, method_id, properties) {}
 
   StreamResponseClientCall(StreamResponseClientCall&& other) {
     *this = std::move(other);

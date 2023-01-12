@@ -21,9 +21,8 @@ namespace pw::rpc::internal {
 NanopbServerCall::NanopbServerCall(const LockedCallContext& context,
                                    MethodType type)
     PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock())
-    : internal::ServerCall(context, type),
-      serde_(&static_cast<const internal::NanopbMethod&>(context.method())
-                  .serde()) {}
+    : ServerCall(context, CallProperties(type, kServerCall, kProtoStruct)),
+      serde_(&static_cast<const NanopbMethod&>(context.method()).serde()) {}
 
 Status NanopbServerCall::SendServerStream(const void* payload) {
   if (!active()) {

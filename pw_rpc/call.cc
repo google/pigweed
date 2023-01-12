@@ -25,46 +25,43 @@ namespace pw::rpc::internal {
 using pwpb::PacketType;
 
 // Creates an active server-side Call.
-Call::Call(const LockedCallContext& context, MethodType type)
+Call::Call(const LockedCallContext& context, CallProperties properties)
     : Call(context.server().ClaimLocked(),
            context.call_id(),
            context.channel_id(),
            UnwrapServiceId(context.service().service_id()),
            context.method().id(),
-           type,
-           kServerCall) {}
+           properties) {}
 
 // Creates an active client-side call, assigning it a new ID.
 Call::Call(LockedEndpoint& client,
            uint32_t channel_id,
            uint32_t service_id,
            uint32_t method_id,
-           MethodType type)
+           CallProperties properties)
     : Call(client,
            client.NewCallId(),
            channel_id,
            service_id,
            method_id,
-           type,
-           kClientCall) {}
+           properties) {}
 
 Call::Call(LockedEndpoint& endpoint_ref,
            uint32_t call_id,
            uint32_t channel_id,
            uint32_t service_id,
            uint32_t method_id,
-           MethodType type,
-           CallType call_type)
+           CallProperties properties)
     : endpoint_(&endpoint_ref),
       channel_id_(channel_id),
       id_(call_id),
       service_id_(service_id),
       method_id_(method_id),
       rpc_state_(kActive),
-      type_(type),
-      call_type_(call_type),
-      client_stream_state_(HasClientStream(type) ? kClientStreamActive
-                                                 : kClientStreamInactive) {
+      client_stream_state_(HasClientStream(properties.method_type())
+                               ? kClientStreamActive
+                               : kClientStreamInactive),
+      properties_(properties) {
   endpoint().RegisterCall(*this);
 }
 
@@ -98,9 +95,8 @@ void Call::MoveFrom(Call& other) {
   method_id_ = other.method_id_;
 
   rpc_state_ = other.rpc_state_;
-  type_ = other.type_;
-  call_type_ = other.call_type_;
   client_stream_state_ = other.client_stream_state_;
+  properties_ = other.properties_;
 
   on_error_ = std::move(other.on_error_);
   on_next_ = std::move(other.on_next_);
@@ -134,8 +130,9 @@ Status Call::CloseAndSendFinalPacketLocked(PacketType type,
 }
 
 Status Call::WriteLocked(ConstByteSpan payload) {
-  return SendPacket(call_type_ == kServerCall ? PacketType::SERVER_STREAM
-                                              : PacketType::CLIENT_STREAM,
+  return SendPacket(properties_.call_type() == kServerCall
+                        ? PacketType::SERVER_STREAM
+                        : PacketType::CLIENT_STREAM,
                     payload);
 }
 

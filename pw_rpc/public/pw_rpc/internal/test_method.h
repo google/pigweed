@@ -36,7 +36,7 @@ class TestMethod : public Method {
     constexpr FakeServerCall() = default;
     FakeServerCall(const LockedCallContext& context, MethodType type)
         PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock())
-        : ServerCall(context, type) {}
+        : ServerCall(context, CallProperties(type, kServerCall, kRawProto)) {}
 
     FakeServerCall(FakeServerCall&&) = default;
     FakeServerCall& operator=(FakeServerCall&&) = default;
