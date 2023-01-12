@@ -385,17 +385,6 @@ struct ReadInquiryScanActivityReturnParams {
 // Write Inquiry Scan Activity Command (v1.1) (BR/EDR)
 constexpr OpCode kWriteInquiryScanActivity = ControllerAndBasebandOpCode(0x001E);
 
-struct WriteInquiryScanActivityCommandParams {
-  // Inquiry_Scan_Interval, in time slices (0.625ms)
-  // Valid Range: kInquiryScanIntervalMin - kInquiryScanIntervalMax in
-  // hci_constants.h
-  uint16_t inquiry_scan_interval;
-
-  // Inquiry_Scan_Window, in time slices
-  // Valid Range: kInquiryScanWindowMin - kInquiryScanWindowMax in hci_constants.h
-  uint16_t inquiry_scan_window;
-} __PACKED;
-
 // ============================================
 // Read Class of Device Command (v1.1) (BR/EDR)
 constexpr OpCode kReadClassOfDevice = ControllerAndBasebandOpCode(0x0023);

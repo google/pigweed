@@ -14,6 +14,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/supplement_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/hci-protocol.emb.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/emboss_control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
@@ -553,12 +554,12 @@ void BrEdrDiscoveryManager::SetInquiryScan() {
 void BrEdrDiscoveryManager::WriteInquiryScanSettings(uint16_t interval, uint16_t window,
                                                      bool interlaced) {
   // TODO(jamuraa): add a callback for success or failure?
-  auto write_activity = hci::CommandPacket::New(
-      hci_spec::kWriteInquiryScanActivity, sizeof(hci_spec::WriteInquiryScanActivityCommandParams));
-  auto* activity_params =
-      write_activity->mutable_payload<hci_spec::WriteInquiryScanActivityCommandParams>();
-  activity_params->inquiry_scan_interval = htole16(interval);
-  activity_params->inquiry_scan_window = htole16(window);
+  auto write_activity =
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::WriteInquiryScanActivityCommandWriter>(
+          hci_spec::kWriteInquiryScanActivity);
+  auto activity_params = write_activity.view_t();
+  activity_params.inquiry_scan_interval().Write(interval);
+  activity_params.inquiry_scan_window().Write(window);
 
   cmd_->SendCommand(std::move(write_activity), [](auto id, const hci::EventPacket& event) {
     if (hci_is_error(event, WARN, "gap-bredr", "write inquiry scan activity failed")) {

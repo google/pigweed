@@ -73,17 +73,19 @@ enum PageTimeout:
   DEFAULT = 0x2000
 
 
-enum PageScanInterval:
-  -- The minimum and maximum range values for Page Scan Interval (in time slices)
-  -- (see Core Spec v5.0, Vol 2, Part E, Section 7.3.19)
+enum ScanInterval:
+  -- The minimum and maximum range values for Page and Inquiry Scan Interval (in time slices)
+  -- Page Scan Interval: (see Core Spec v5.0, Vol 2, Part E, Section 7.3.19)
+  -- Inquiry Scan Interval: (see Core Spec v5.0, Vol 2, Part E, Section 7.3.21)
   [maximum_bits: 16]
   MIN = 0x0012
   MAX = 0x1000
 
 
-enum PageScanWindow:
-  -- The minimum and maximum range valeus for Page Scan Window (in time slices)
-  -- (see Core Spec v5.0, Vol 2, Part E, Section 7.3.19)
+enum ScanWindow:
+  -- The minimum and maximum range valeus for Page and Inquiry Scan Window (in time slices)
+  -- Page Scan Window: (see Core Spec v5.0, Vol 2, Part E, Section 7.3.19)
+  -- Inquiry Scan Window: (see Core Spec v5.0, Vol 2, Part E, Section 7.3.21)
   [maximum_bits: 16]
   MIN = 0x0011
   MAX = 0x1000
@@ -765,12 +767,27 @@ struct WritePageScanActivityCommand:
   0     [+hdr_size]  CommandHeader  header
   $next [+2]         UInt                 page_scan_interval
     -- Page_Scan_Interval, in time slices (0.625ms)
-    -- Valid Range: MIN - MAX in PageScanInterval in this file
+    -- Valid Range: MIN - MAX in ScanInterval in this file
     [requires: 0x0012 <= this <= 0x1000]
 
   $next [+2]         UInt                 page_scan_window
     -- Page_Scan_Window, in time slices
-    -- Valid Range: MIN - MAX in PageScanWindow in this file
+    -- Valid Range: MIN - MAX in ScanWindow in this file
+    [requires: 0x0011 <= this <= 0x1000]
+
+
+struct WriteInquiryScanActivityCommand:
+  -- Write Inquiry Scan Activity Command (v1.1) (BR/EDR)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader  header
+  $next [+2]         UInt           inquiry_scan_interval
+    -- Inquiry_Scan_Interval, in time slices (0.625ms)
+    -- Valid Range: MIN - MAX in ScanInterval in this file
+    [requires: 0x0012 <= this <= 0x1000]
+
+  $next [+2]         UInt           inquiry_scan_window
+    -- Inquiry_Scan_Window, in time slices
+    -- Valid Range: MIN - MAX in ScanWindow in this file
     [requires: 0x0011 <= this <= 0x1000]
 
 # ========================= HCI Event packets ===========================

@@ -1347,16 +1347,6 @@ constexpr uint16_t kPageScanR1Window = 0x0011; // 10.625ms
 constexpr uint16_t kPageScanR2Interval = 0x1000; // 2.56s
 constexpr uint16_t kPageScanR2Window = 0x0011; // 10.625ms
 
-// The minimum and maximum range values for Inquiry Scan Interval (in time slices)
-// (see Core Spec v5.0, Vol 2, Part E, Section 7.3.21)
-constexpr uint16_t kInquiryScanIntervalMin = 0x0012;
-constexpr uint16_t kInquiryScanIntervalMax = 0x1000;
-
-// The minimum and maximum range values for Inquiry Scan Window (in time slices)
-// (see Core Spec v5.0, Vol 2, Part E, Section 7.3.21)
-constexpr uint16_t kInquiryScanWindowMin = 0x0011;
-constexpr uint16_t kInquiryScanWindowMax = 0x1000;
-
 enum class InquiryScanType : uint8_t {
   kStandardScan = 0x00, // Standard scan (default) (mandatory)
   kInterlacedScan = 0x01, // Interlaced scan
