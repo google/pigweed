@@ -27,6 +27,9 @@
 
 namespace pw::rpc::internal {
 
+// Forward declaration to avoid circular include.
+class PwpbServerCall;
+
 // Defines per-message struct type instance of the serializer/deserializer.
 template <PwpbMessageDescriptor kRequest, PwpbMessageDescriptor kResponse>
 constexpr PwpbMethodSerde kPwpbMethodSerde(kRequest, kResponse);
@@ -62,33 +65,22 @@ void PwpbSendInitialRequest(ClientCall& call,
 }
 
 // [Client/Server] Encodes and sends a client or server stream message.
-// active() must be true.
+// Returns FAILED_PRECONDITION if active() is false.
 template <typename Payload>
-Status PwpbSendStream(Call& call, const Payload& payload, PwpbSerde serde)
+Status PwpbSendStream(Call& call,
+                      const Payload& payload,
+                      const PwpbMethodSerde* serde)
     PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
-  Result<ByteSpan> buffer = PwpbEncodeToPayloadBuffer(payload, serde);
+  if (!call.active_locked()) {
+    return Status::FailedPrecondition();
+  }
+
+  Result<ByteSpan> buffer = PwpbEncodeToPayloadBuffer(
+      payload,
+      call.type() == kClientCall ? serde->request() : serde->response());
   PW_TRY(buffer);
 
   return call.WriteLocked(*buffer);
-}
-
-// [Server] Encodes and sends the final response message from an untyped
-// ConstByteSpan.
-// active() must be true.
-template <typename Response>
-Status PwpbSendFinalResponse(internal::ServerCall& call,
-                             const Response& response,
-                             Status status,
-                             PwpbSerde serde)
-    PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
-  PW_ASSERT(call.active_locked());
-
-  Result<ByteSpan> buffer = PwpbEncodeToPayloadBuffer(response, serde);
-  if (!buffer.ok()) {
-    return call.CloseAndSendServerErrorLocked(Status::Internal());
-  }
-
-  return call.CloseAndSendResponseLocked(*buffer, status);
 }
 
 }  // namespace pw::rpc::internal

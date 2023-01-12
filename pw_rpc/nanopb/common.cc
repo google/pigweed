@@ -114,13 +114,16 @@ void NanopbSendInitialRequest(ClientCall& call,
   }
 }
 
-Status NanopbSendStream(Call& call, const void* payload, NanopbSerde serde) {
-  LockGuard lock(rpc_lock());
+Status NanopbSendStream(Call& call,
+                        const void* payload,
+                        const NanopbMethodSerde* serde) {
   if (!call.active_locked()) {
     return Status::FailedPrecondition();
   }
 
-  Result<ByteSpan> result = EncodeToPayloadBuffer(payload, serde);
+  Result<ByteSpan> result = EncodeToPayloadBuffer(
+      payload,
+      call.type() == kClientCall ? serde->request() : serde->response());
 
   PW_TRY(result.status());
   return call.WriteLocked(*result);

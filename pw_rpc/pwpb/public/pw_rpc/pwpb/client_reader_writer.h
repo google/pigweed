@@ -60,10 +60,6 @@ class PwpbUnaryResponseClientCall : public UnaryResponseClientCall {
     return call;
   }
 
-  // Give access to the serializer/deserializer object for converting requests
-  // and responses between the wire format and pw_protobuf structs.
-  const PwpbMethodSerde& serde() const { return *serde_; }
-
  protected:
   // Derived classes allow default construction so that users can declare a
   // variable into which to move client reader/writers from RPC calls.
@@ -122,11 +118,7 @@ class PwpbUnaryResponseClientCall : public UnaryResponseClientCall {
   Status SendStreamRequest(const Request& request)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
     LockGuard lock(rpc_lock());
-    if (!active_locked()) {
-      return Status::FailedPrecondition();
-    }
-
-    return PwpbSendStream(*this, request, serde().request());
+    return PwpbSendStream(*this, request, serde_);
   }
 
  private:
@@ -136,26 +128,14 @@ class PwpbUnaryResponseClientCall : public UnaryResponseClientCall {
     pwpb_on_completed_ = std::move(on_completed);
 
     UnaryResponseClientCall::set_on_completed_locked(
-        [this](ConstByteSpan payload, Status status) {
-          rpc_lock().lock();
-          auto pwpb_on_completed_local = std::move(pwpb_on_completed_);
-          rpc_lock().unlock();
-
-          if (pwpb_on_completed_local) {
-            Response response{};
-            const Status decode_status =
-                serde().response().Decode(payload, response);
-            if (decode_status.ok()) {
-              pwpb_on_completed_local(response, status);
-            } else {
-              rpc_lock().lock();
-              HandleError(Status::DataLoss());
-            }
-          }
-        });
+        [this](ConstByteSpan payload, Status status)
+            PW_NO_LOCK_SAFETY_ANALYSIS {
+              DecodeToStructAndInvokeOnCompleted(
+                  payload, serde_->response(), pwpb_on_completed_, status);
+            });
   }
 
-  const PwpbMethodSerde* serde_;
+  const PwpbMethodSerde* serde_ PW_GUARDED_BY(rpc_lock());
   Function<void(const Response&, Status)> pwpb_on_completed_
       PW_GUARDED_BY(rpc_lock());
 };
@@ -194,10 +174,6 @@ class PwpbStreamResponseClientCall : public StreamResponseClientCall {
     }
     return call;
   }
-
-  // Give access to the serializer/deserializer object for converting requests
-  // and responses between the wire format and pw_protobuf structs.
-  const PwpbMethodSerde& serde() const { return *serde_; }
 
  protected:
   // Derived classes allow default construction so that users can declare a
@@ -256,11 +232,7 @@ class PwpbStreamResponseClientCall : public StreamResponseClientCall {
   Status SendStreamRequest(const Request& request)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
     LockGuard lock(rpc_lock());
-    if (!active_locked()) {
-      return Status::FailedPrecondition();
-    }
-
-    return PwpbSendStream(*this, request, serde().request());
+    return PwpbSendStream(*this, request, serde_);
   }
 
  private:
@@ -271,7 +243,7 @@ class PwpbStreamResponseClientCall : public StreamResponseClientCall {
     Call::set_on_next_locked([this](ConstByteSpan payload) {
       if (pwpb_on_next_) {
         Response response{};
-        const Status status = serde().response().Decode(payload, response);
+        const Status status = serde_->response().Decode(payload, response);
         if (status.ok()) {
           pwpb_on_next_(response);
         } else {

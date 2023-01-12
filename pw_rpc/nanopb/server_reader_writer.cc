@@ -24,11 +24,4 @@ NanopbServerCall::NanopbServerCall(const LockedCallContext& context,
     : ServerCall(context, CallProperties(type, kServerCall, kProtoStruct)),
       serde_(&static_cast<const NanopbMethod&>(context.method()).serde()) {}
 
-Status NanopbServerCall::SendServerStream(const void* payload) {
-  if (!active()) {
-    return Status::FailedPrecondition();
-  }
-  return NanopbSendStream(*this, payload, serde_->response());
-}
-
 }  // namespace pw::rpc::internal

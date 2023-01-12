@@ -39,7 +39,7 @@ class InvocationContext;
 
 }  // namespace test
 
-class NanopbServerCall : public internal::ServerCall {
+class NanopbServerCall : public ServerCall {
  public:
   constexpr NanopbServerCall() : serde_(nullptr) {}
 
@@ -71,7 +71,10 @@ class NanopbServerCall : public internal::ServerCall {
     serde_ = other.serde_;
   }
 
-  Status SendServerStream(const void* payload) PW_LOCKS_EXCLUDED(rpc_lock());
+  Status SendServerStream(const void* payload) PW_LOCKS_EXCLUDED(rpc_lock()) {
+    LockGuard lock(rpc_lock());
+    return NanopbSendStream(*this, payload, serde_);
+  }
 
  private:
   const NanopbMethodSerde* serde_;

@@ -41,7 +41,7 @@ class PwpbMethod;
 
 // internal::PwpbServerCall extends internal::ServerCall by adding a method
 // serializer/deserializer that is initialized based on the method context.
-class PwpbServerCall : public internal::ServerCall {
+class PwpbServerCall : public ServerCall {
  public:
   // Allow construction using a call context and method type which creates
   // a working server call.
@@ -65,17 +65,23 @@ class PwpbServerCall : public internal::ServerCall {
       return Status::FailedPrecondition();
     }
 
-    return PwpbSendFinalResponse(*this, response, status, serde().response());
-  }
+    Result<ByteSpan> buffer =
+        PwpbEncodeToPayloadBuffer(response, serde_->response());
+    if (!buffer.ok()) {
+      return CloseAndSendServerErrorLocked(Status::Internal());
+    }
 
-  // Give access to the serializer/deserializer object for converting requests
-  // and responses between the wire format and pw_protobuf structs.
-  const PwpbMethodSerde& serde() const { return *serde_; }
+    return CloseAndSendResponseLocked(*buffer, status);
+  }
 
  protected:
   // Derived classes allow default construction so that users can declare a
   // variable into which to move server reader/writers from RPC calls.
   constexpr PwpbServerCall() : serde_(nullptr) {}
+
+  // Give access to the serializer/deserializer object for converting requests
+  // and responses between the wire format and pw_protobuf structs.
+  const PwpbMethodSerde& serde() const { return *serde_; }
 
   // Allow derived classes to be constructed moving another instance.
   PwpbServerCall(PwpbServerCall&& other) PW_LOCKS_EXCLUDED(rpc_lock()) {
@@ -110,11 +116,7 @@ class PwpbServerCall : public internal::ServerCall {
   Status SendStreamResponse(const Response& response)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
     LockGuard lock(rpc_lock());
-    if (!active_locked()) {
-      return Status::FailedPrecondition();
-    }
-
-    return PwpbSendStream(*this, response, serde().response());
+    return PwpbSendStream(*this, response, serde_);
   }
 
  private:

@@ -23,4 +23,32 @@ void ClientCall::CloseClientCall() {
   UnregisterAndMarkClosed();
 }
 
+void UnaryResponseClientCall::HandleCompleted(
+    ConstByteSpan response, Status status) PW_NO_LOCK_SAFETY_ANALYSIS {
+  UnregisterAndMarkClosed();
+
+  auto on_completed_local = std::move(on_completed_);
+
+  // The lock is only released when calling into user code. If the callback is
+  // wrapped, this on_completed is an internal function that expects the lock to
+  // be held, and releases it before invoking user code.
+  if (!proto_callbacks_are_wrapped()) {
+    rpc_lock().unlock();
+  }
+
+  if (on_completed_local) {
+    on_completed_local(response, status);
+  }
+}
+
+void StreamResponseClientCall::HandleCompleted(Status status) {
+  UnregisterAndMarkClosed();
+  auto on_completed_local = std::move(on_completed_);
+  rpc_lock().unlock();
+
+  if (on_completed_local) {
+    on_completed_local(status);
+  }
+}
+
 }  // namespace pw::rpc::internal

@@ -96,8 +96,10 @@ void NanopbSendInitialRequest(ClientCall& call,
 
 // [Client/Server] Encodes and sends a client or server stream message.
 // active() must be true.
-Status NanopbSendStream(Call& call, const void* payload, NanopbSerde serde)
-    PW_LOCKS_EXCLUDED(rpc_lock());
+Status NanopbSendStream(Call& call,
+                        const void* payload,
+                        const NanopbMethodSerde* serde)
+    PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
 // [Server] Encodes and sends the final response message.
 // Returns Status::FailedPrecondition if active() is false.

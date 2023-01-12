@@ -90,10 +90,8 @@ class NanopbUnaryResponseClientCall : public UnaryResponseClientCall {
   }
 
   Status SendClientStream(const void* payload) PW_LOCKS_EXCLUDED(rpc_lock()) {
-    if (!active()) {
-      return Status::FailedPrecondition();
-    }
-    return NanopbSendStream(*this, payload, serde_->request());
+    LockGuard lock(rpc_lock());
+    return NanopbSendStream(*this, payload, serde_);
   }
 
  private:
@@ -103,24 +101,14 @@ class NanopbUnaryResponseClientCall : public UnaryResponseClientCall {
     nanopb_on_completed_ = std::move(on_completed);
 
     UnaryResponseClientCall::set_on_completed_locked(
-        [this](ConstByteSpan payload, Status status) {
-          rpc_lock().lock();
-          auto nanopb_on_completed_local = std::move(nanopb_on_completed_);
-          rpc_lock().unlock();
-
-          if (nanopb_on_completed_local) {
-            Response response_struct{};
-            if (serde_->response().Decode(payload, &response_struct).ok()) {
-              nanopb_on_completed_local(response_struct, status);
-            } else {
-              rpc_lock().lock();
-              HandleError(Status::DataLoss());
-            }
-          }
-        });
+        [this](ConstByteSpan payload, Status status)
+            PW_NO_LOCK_SAFETY_ANALYSIS {
+              DecodeToStructAndInvokeOnCompleted(
+                  payload, serde_->response(), nanopb_on_completed_, status);
+            });
   }
 
-  const NanopbMethodSerde* serde_;
+  const NanopbMethodSerde* serde_ PW_GUARDED_BY(rpc_lock());
   Function<void(const Response&, Status)> nanopb_on_completed_
       PW_GUARDED_BY(rpc_lock());
 };
@@ -184,11 +172,9 @@ class NanopbStreamResponseClientCall : public StreamResponseClientCall {
             client, channel_id, service_id, method_id, StructCallProps(type)),
         serde_(&serde) {}
 
-  Status SendClientStream(const void* payload) {
-    if (!active()) {
-      return Status::FailedPrecondition();
-    }
-    return NanopbSendStream(*this, payload, serde_->request());
+  Status SendClientStream(const void* payload) PW_LOCKS_EXCLUDED(rpc_lock()) {
+    LockGuard lock(rpc_lock());
+    return NanopbSendStream(*this, payload, serde_);
   }
 
   void set_on_next(Function<void(const Response& response)>&& on_next)
