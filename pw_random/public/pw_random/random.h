@@ -96,16 +96,17 @@ class RandomGenerator {
   template <class T>
   uint8_t CountLeadingZeros(T value) {
     if constexpr (std::is_same_v<T, unsigned>) {
-      return __builtin_clz(value);
+      return static_cast<uint8_t>(__builtin_clz(value));
     } else if constexpr (std::is_same_v<T, unsigned long>) {
-      return __builtin_clzl(value);
+      return static_cast<uint8_t>(__builtin_clzl(value));
     } else if constexpr (std::is_same_v<T, unsigned long long>) {
-      return __builtin_clzll(value);
+      return static_cast<uint8_t>(__builtin_clzll(value));
     } else {
       static_assert(sizeof(T) < sizeof(unsigned));
       // __builtin_clz returns the count of leading zeros in an unsigned , so we
       // need to subtract the size difference of T in bits.
-      return __builtin_clz(value) - ((sizeof(unsigned) - sizeof(T)) * CHAR_BIT);
+      return static_cast<uint8_t>(__builtin_clz(value) -
+                                  ((sizeof(unsigned) - sizeof(T)) * CHAR_BIT));
     }
   }
 };
