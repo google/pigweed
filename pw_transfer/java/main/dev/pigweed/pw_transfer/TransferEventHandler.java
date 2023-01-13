@@ -19,7 +19,6 @@ import dev.pigweed.pw_log.Logger;
 import dev.pigweed.pw_rpc.Call;
 import dev.pigweed.pw_rpc.ChannelOutputException;
 import dev.pigweed.pw_rpc.MethodClient;
-import dev.pigweed.pw_rpc.RpcError;
 import dev.pigweed.pw_rpc.Status;
 import dev.pigweed.pw_rpc.StreamObserver;
 import java.time.Instant;
