@@ -8,10 +8,11 @@
 #include <cstdint>
 #include <optional>
 
+#include <openssl/base.h>
+
 #include "fbl/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint256.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
-#include "third_party/boringssl/src/include/openssl/base.h"
 
 namespace bt::sm {
 
