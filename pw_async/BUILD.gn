@@ -1,0 +1,99 @@
+# Copyright 2022 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_async/async.gni")
+import("$dir_pw_chrono/backend.gni")
+import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_thread/backend.gni")
+import("$dir_pw_unit_test/test.gni")
+
+config("public_include_path") {
+  include_dirs = [ "public" ]
+}
+
+config("public_test_include_path") {
+  include_dirs = [ "public_test" ]
+}
+
+pw_source_set("task") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_containers:intrusive_list",
+    dir_pw_function,
+  ]
+  public = [ "public/pw_async/task.h" ]
+  visibility = [ ":*" ] + pw_async_EXPERIMENTAL_MODULE_VISIBILITY
+}
+
+pw_source_set("dispatcher") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ ":task" ]
+  public = [ "public/pw_async/dispatcher.h" ]
+  visibility = [ ":*" ] + pw_async_EXPERIMENTAL_MODULE_VISIBILITY
+}
+
+pw_source_set("test_dispatcher") {
+  public_configs = [ ":public_test_include_path" ]
+  public_deps = [
+    ":pw_dispatcher_basic",
+    dir_pw_log,
+  ]
+  public = [ "public_test/pw_async/test_dispatcher.h" ]
+  sources = [ "test_dispatcher.cc" ]
+  visibility = [ ":*" ] + pw_async_EXPERIMENTAL_MODULE_VISIBILITY
+}
+
+pw_source_set("pw_dispatcher_basic") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_async/dispatcher_basic.h" ]
+  public_deps = [
+    ":dispatcher",
+    "$dir_pw_sync:interrupt_spin_lock",
+    "$dir_pw_sync:timed_thread_notification",
+    "$dir_pw_thread:thread",
+    dir_pw_log,
+  ]
+  sources = [ "dispatcher_basic.cc" ]
+  visibility = [ ":*" ] + pw_async_EXPERIMENTAL_MODULE_VISIBILITY
+}
+
+pw_test("dispatcher_test") {
+  enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
+  deps = [ ":test_dispatcher" ]
+  sources = [ "dispatcher_test.cc" ]
+}
+
+pw_test("dispatcher_basic_test") {
+  enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != "" &&
+              pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread"
+  public_deps = [
+    ":pw_dispatcher_basic",
+    dir_pw_log,
+  ]
+  sources = [ "dispatcher_basic_test.cc" ]
+}
+
+pw_test_group("tests") {
+  tests = [
+    ":dispatcher_test",
+    ":dispatcher_basic_test",
+  ]
+}
+
+pw_doc_group("docs") {
+  sources = [ "docs.rst" ]
+}

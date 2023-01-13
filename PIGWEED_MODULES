@@ -8,6 +8,7 @@ pw_assert_basic
 pw_assert_log
 pw_assert_tokenized
 pw_assert_zephyr
+pw_async
 pw_base64
 pw_bloat
 pw_blob_store

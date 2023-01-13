@@ -37,6 +37,7 @@ declare_args() {
   dir_pw_assert_log = get_path_info("../pw_assert_log", "abspath")
   dir_pw_assert_tokenized = get_path_info("../pw_assert_tokenized", "abspath")
   dir_pw_assert_zephyr = get_path_info("../pw_assert_zephyr", "abspath")
+  dir_pw_async = get_path_info("../pw_async", "abspath")
   dir_pw_base64 = get_path_info("../pw_base64", "abspath")
   dir_pw_bloat = get_path_info("../pw_bloat", "abspath")
   dir_pw_blob_store = get_path_info("../pw_blob_store", "abspath")
@@ -181,6 +182,7 @@ declare_args() {
     dir_pw_assert_log,
     dir_pw_assert_tokenized,
     dir_pw_assert_zephyr,
+    dir_pw_async,
     dir_pw_base64,
     dir_pw_bloat,
     dir_pw_blob_store,
@@ -313,6 +315,7 @@ declare_args() {
     "$dir_pw_assert_log:tests",
     "$dir_pw_assert_tokenized:tests",
     "$dir_pw_assert_zephyr:tests",
+    "$dir_pw_async:tests",
     "$dir_pw_base64:tests",
     "$dir_pw_bloat:tests",
     "$dir_pw_blob_store:tests",
@@ -445,6 +448,7 @@ declare_args() {
     "$dir_pw_assert_log:docs",
     "$dir_pw_assert_tokenized:docs",
     "$dir_pw_assert_zephyr:docs",
+    "$dir_pw_async:docs",
     "$dir_pw_base64:docs",
     "$dir_pw_bloat:docs",
     "$dir_pw_blob_store:docs",
