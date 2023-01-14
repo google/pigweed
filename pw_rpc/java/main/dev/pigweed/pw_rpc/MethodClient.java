@@ -44,7 +44,7 @@ public class MethodClient {
     this.defaultObserver = defaultObserver;
   }
 
-  final Method method() {
+  public final Method method() {
     return method;
   }
 

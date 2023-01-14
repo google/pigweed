@@ -28,7 +28,12 @@ import javax.annotation.Nullable;
 
 /**
  * Call implementation that represents the call as a ListenableFuture.
+ *
+ * This class suppresses ShouldNotSubclass warnings from ListenableFuture. It implements
+ * ListenableFuture only because it cannot extend AbstractFuture since multiple inheritance is not
+ * supported. No Future funtionality is duplicated; FutureCall uses SettableFuture internally.
  */
+@SuppressWarnings("ShouldNotSubclass")
 abstract class FutureCall<RequestT extends MessageLite, ResponseT extends MessageLite, ResultT>
     extends AbstractCall<RequestT, ResponseT> implements ListenableFuture<ResultT> {
   private static final Logger logger = Logger.forClass(FutureCall.class);
