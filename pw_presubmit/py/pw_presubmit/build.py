@@ -594,11 +594,8 @@ class GnGenNinja(Check):
     ) -> PresubmitResult:
         with contextlib.ExitStack() as stack:
             for mgr in self.ninja_contexts:
-                # hasattr(x, '__enter__') can return True for types, so
-                # explicitly exclude them. Only non-type objects can be
-                # context managers.
-                if hasattr(mgr, '__enter__') and not isinstance(mgr, type):
-                    stack.enter_context(mgr)  # type: ignore
+                if isinstance(mgr, contextlib.AbstractContextManager):
+                    stack.enter_context(mgr)
                 else:
                     stack.enter_context(mgr(ctx))  # type: ignore
             ninja(ctx, *targets)
