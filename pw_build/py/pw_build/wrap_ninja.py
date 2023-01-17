@@ -224,7 +224,7 @@ class Ninja:
             env=env,
             stdin=subprocess.DEVNULL,
             stdout=ptty_child,
-            stderr=subprocess.DEVNULL,
+            stderr=ptty_child,
         )
         os.close(ptty_child)
 
@@ -446,6 +446,7 @@ def main() -> int:
     ninja = Ninja(ninja_args)
     interface = UI(ninja, args)
 
+    interface.update()
     while not ninja.exited:
         interface.update()
         time.sleep(args.ui_update_rate)
