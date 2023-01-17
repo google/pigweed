@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import("//build/fuzzing/fuzzer.gni")
+import("//build/fuzz.gni")
 import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
 
 # Basic target with protocol definitions and no logic, suitable for test
@@ -169,7 +169,7 @@ bt_gtest_package("bt-host-l2cap-tests") {
   deps = [ ":tests" ]
 }
 
-fuzzer("basic_mode_rx_engine_fuzzer") {
+fuchsia_library_fuzzer("basic_mode_rx_engine_fuzzer") {
   sources = [ "basic_mode_rx_engine_fuzztest.cc" ]
   deps = [
     ":l2cap",
@@ -178,7 +178,7 @@ fuzzer("basic_mode_rx_engine_fuzzer") {
   ]
 }
 
-fuzzer("enhanced_retransmission_mode_engines_fuzzer") {
+fuchsia_library_fuzzer("enhanced_retransmission_mode_engines_fuzzer") {
   sources = [ "enhanced_retransmission_mode_engines_fuzztest.cc" ]
   deps = [
     ":l2cap",
@@ -187,7 +187,7 @@ fuzzer("enhanced_retransmission_mode_engines_fuzzer") {
   ]
 }
 
-fuzzer("bredr_dynamic_channel_registry_fuzzer") {
+fuchsia_library_fuzzer("bredr_dynamic_channel_registry_fuzzer") {
   sources = [ "bredr_dynamic_channel_registry_fuzztest.cc" ]
   deps = [
     ":l2cap",
@@ -197,7 +197,7 @@ fuzzer("bredr_dynamic_channel_registry_fuzzer") {
   ]
 }
 
-fuzzer("channel_configuration_fuzzer") {
+fuchsia_library_fuzzer("channel_configuration_fuzzer") {
   sources = [ "channel_configuration_fuzztest.cc" ]
   deps = [
     ":l2cap",
@@ -206,7 +206,7 @@ fuzzer("channel_configuration_fuzzer") {
   ]
 }
 
-fuzzer("common_handler_fuzzer") {
+fuchsia_library_fuzzer("common_handler_fuzzer") {
   sources = [ "common_handler_fuzztest.cc" ]
   deps = [
     ":l2cap",
@@ -215,7 +215,7 @@ fuzzer("common_handler_fuzzer") {
   ]
 }
 
-fuzzer("l2cap_fuzzer") {
+fuchsia_library_fuzzer("l2cap_fuzzer") {
   sources = [ "l2cap_fuzztest.cc" ]
   deps = [
     ":l2cap",

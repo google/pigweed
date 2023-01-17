@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import("//build/fuzzing/fuzzer.gni")
+import("//build/fuzz.gni")
 import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
 
 # Basic target with protocol definitions and no logic, suitable for test
@@ -74,7 +74,7 @@ bt_gtest_package("bt-host-sdp-tests") {
   deps = [ ":tests" ]
 }
 
-fuzzer("data_element_fuzzer") {
+fuchsia_library_fuzzer("data_element_fuzzer") {
   sources = [ "data_element_fuzztest.cc" ]
   deps = [
     ":definitions",
@@ -82,7 +82,7 @@ fuzzer("data_element_fuzzer") {
   ]
 }
 
-fuzzer("pdu_fuzzer") {
+fuchsia_library_fuzzer("pdu_fuzzer") {
   sources = [ "pdu_fuzztest.cc" ]
   deps = [
     ":sdp",

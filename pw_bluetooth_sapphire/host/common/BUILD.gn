@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import("//build/fuzzing/fuzzer.gni")
+import("//build/fuzz.gni")
 import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
 
 source_set("common") {
@@ -113,7 +113,7 @@ bt_gtest_package("bt-host-common-tests") {
   deps = [ ":tests" ]
 }
 
-fuzzer("advertising_data_fuzzer") {
+fuchsia_library_fuzzer("advertising_data_fuzzer") {
   sources = [ "advertising_data_fuzztest.cc" ]
   deps = [
     ":common",

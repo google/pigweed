@@ -5,8 +5,7 @@
 import("//build/bind/bind.gni")
 import("//build/components.gni")
 import("//build/drivers.gni")
-import("//build/fuzzing/fuzzer.gni")
-import("//build/fuzzing/fuzzer_package.gni")
+import("//build/fuzz.gni")
 import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
 
 driver_bind_rules("bt_host_bind") {
@@ -94,21 +93,82 @@ fuchsia_driver_package("bt-host") {
 
 # See https://fuchsia.dev/fuchsia-src/development/testing/fuzzing/build-a-fuzzer?hl=en#fx-set
 # for instructions on building the fuzzers package.
-fuzzer_package("fuzzers") {
+fuchsia_fuzzer_component("advertising-data-fuzzer-component") {
+  manifest = "common/meta/advertising_data_fuzzer.cml"
+  deps = [ "common:advertising_data_fuzzer" ]
+}
+
+fuchsia_fuzzer_component("host-server-watch-peers-fuzzer-component") {
+  manifest = "fidl/meta/host_server_watch_peers_fuzzer.cml"
+  deps = [ "fidl:host_server_watch_peers_fuzzer" ]
+}
+
+fuchsia_fuzzer_component("peer-cache-fuzzer-component") {
+  manifest = "gap/meta/peer_cache_fuzzer.cml"
+  deps = [ "gap:peer_cache_fuzzer" ]
+}
+
+fuchsia_fuzzer_component("l2cap-fuzzer-component") {
+  manifest = "l2cap/meta/l2cap_fuzzer.cml"
+  deps = [ "l2cap:l2cap_fuzzer" ]
+}
+
+fuchsia_fuzzer_component("basic-mode-rx-engine-fuzzer-component") {
+  manifest = "l2cap/meta/basic_mode_rx_engine_fuzzer.cml"
+  deps = [ "l2cap:basic_mode_rx_engine_fuzzer" ]
+}
+
+fuchsia_fuzzer_component(
+    "enhanced-retransmission-mode-engines-fuzzer-component") {
+  manifest = "l2cap/meta/enhanced_retransmission_mode_engines_fuzzer.cml"
+  deps = [ "l2cap:enhanced_retransmission_mode_engines_fuzzer" ]
+}
+
+fuchsia_fuzzer_component("bredr-dynamic-channel-registry-fuzzer-component") {
+  manifest = "l2cap/meta/bredr_dynamic_channel_registry_fuzzer.cml"
+  deps = [ "l2cap:bredr_dynamic_channel_registry_fuzzer" ]
+}
+
+fuchsia_fuzzer_component("channel-configuration-fuzzer-component") {
+  manifest = "l2cap/meta/channel_configuration_fuzzer.cml"
+  deps = [ "l2cap:channel_configuration_fuzzer" ]
+}
+
+fuchsia_fuzzer_component("common-handler-fuzzer-component") {
+  manifest = "l2cap/meta/common_handler_fuzzer.cml"
+  deps = [ "l2cap:common_handler_fuzzer" ]
+}
+
+fuchsia_fuzzer_component("data-element-fuzzer-component") {
+  manifest = "sdp/meta/data_element_fuzzer.cml"
+  deps = [ "sdp:data_element_fuzzer" ]
+}
+
+fuchsia_fuzzer_component("pdu-fuzzer-component") {
+  manifest = "sdp/meta/pdu_fuzzer.cml"
+  deps = [ "sdp:pdu_fuzzer" ]
+}
+
+fuchsia_fuzzer_component("valid-packet-reader-fuzzer-component") {
+  manifest = "sm/meta/valid_packet_reader_fuzzer.cml"
+  deps = [ "sm:valid_packet_reader_fuzzer" ]
+}
+
+fuchsia_fuzzer_package("fuzzers") {
   package_name = "bt-host-fuzzers"
-  cpp_fuzzers = [
-    "common:advertising_data_fuzzer",
-    "fidl:host_server_watch_peers_fuzzer",
-    "gap:peer_cache_fuzzer",
-    "l2cap:l2cap_fuzzer",
-    "l2cap:basic_mode_rx_engine_fuzzer",
-    "l2cap:enhanced_retransmission_mode_engines_fuzzer",
-    "l2cap:bredr_dynamic_channel_registry_fuzzer",
-    "l2cap:channel_configuration_fuzzer",
-    "l2cap:common_handler_fuzzer",
-    "sdp:data_element_fuzzer",
-    "sdp:pdu_fuzzer",
-    "sm:valid_packet_reader_fuzzer",
+  cpp_fuzzer_components = [
+    ":advertising-data-fuzzer-component",
+    ":host-server-watch-peers-fuzzer-component",
+    ":peer-cache-fuzzer-component",
+    ":l2cap-fuzzer-component",
+    ":basic-mode-rx-engine-fuzzer-component",
+    ":enhanced-retransmission-mode-engines-fuzzer-component",
+    ":bredr-dynamic-channel-registry-fuzzer-component",
+    ":channel-configuration-fuzzer-component",
+    ":common-handler-fuzzer-component",
+    ":data-element-fuzzer-component",
+    ":pdu-fuzzer-component",
+    ":valid-packet-reader-fuzzer-component",
   ]
 }
 
