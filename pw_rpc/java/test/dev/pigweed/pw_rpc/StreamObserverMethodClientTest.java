@@ -49,12 +49,12 @@ public final class StreamObserverMethodClientTest {
   // Wrap Channel.Output since channelOutput will be null when the channel is initialized.
   private final Channel channel = new Channel(1, bytes -> channelOutput.send(bytes));
 
-  private final PendingRpc UNARY_RPC = PendingRpc.create(channel, SERVICE.method("SomeUnary"));
-  private final PendingRpc SERVER_STREAMING_RPC =
+  private final PendingRpc unary_rpc = PendingRpc.create(channel, SERVICE.method("SomeUnary"));
+  private final PendingRpc server_streaming_rpc =
       PendingRpc.create(channel, SERVICE.method("SomeServerStreaming"));
-  private final PendingRpc CLIENT_STREAMING_RPC =
+  private final PendingRpc client_streaming_rpc =
       PendingRpc.create(channel, SERVICE.method("SomeClientStreaming"));
-  private final PendingRpc BIDIRECTIONAL_STREAMING_RPC =
+  private final PendingRpc bidirectional_streaming_rpc =
       PendingRpc.create(channel, SERVICE.method("SomeBidirectionalStreaming"));
 
   private final Client client = Client.create(ImmutableList.of(channel), ImmutableList.of(SERVICE));
@@ -65,13 +65,13 @@ public final class StreamObserverMethodClientTest {
 
   @Before
   public void createMethodClient() {
-    unaryMethodClient = new MethodClient(client, channel.id(), UNARY_RPC.method(), defaultObserver);
+    unaryMethodClient = new MethodClient(client, channel.id(), unary_rpc.method(), defaultObserver);
     serverStreamingMethodClient =
-        new MethodClient(client, channel.id(), SERVER_STREAMING_RPC.method(), defaultObserver);
+        new MethodClient(client, channel.id(), server_streaming_rpc.method(), defaultObserver);
     clientStreamingMethodClient =
-        new MethodClient(client, channel.id(), CLIENT_STREAMING_RPC.method(), defaultObserver);
+        new MethodClient(client, channel.id(), client_streaming_rpc.method(), defaultObserver);
     bidirectionalStreamingMethodClient = new MethodClient(
-        client, channel.id(), BIDIRECTIONAL_STREAMING_RPC.method(), defaultObserver);
+        client, channel.id(), bidirectional_streaming_rpc.method(), defaultObserver);
   }
 
   @Test
@@ -79,7 +79,7 @@ public final class StreamObserverMethodClientTest {
     unaryMethodClient.invokeUnary(SomeMessage.getDefaultInstance());
     AnotherMessage reply = AnotherMessage.newBuilder().setPayload("yo").build();
 
-    assertThat(client.processPacket(responsePacket(UNARY_RPC, reply))).isTrue();
+    assertThat(client.processPacket(responsePacket(unary_rpc, reply))).isTrue();
 
     verify(defaultObserver).onNext(reply);
   }
@@ -88,7 +88,7 @@ public final class StreamObserverMethodClientTest {
   public void invoke_usesProvidedObserver() throws Exception {
     unaryMethodClient.invokeUnary(SomeMessage.getDefaultInstance(), observer);
     AnotherMessage reply = AnotherMessage.newBuilder().setPayload("yo").build();
-    assertThat(client.processPacket(responsePacket(UNARY_RPC, reply))).isTrue();
+    assertThat(client.processPacket(responsePacket(unary_rpc, reply))).isTrue();
 
     verify(observer).onNext(reply);
   }
@@ -205,7 +205,7 @@ public final class StreamObserverMethodClientTest {
   @Test
   public void invalidChannel_throwsException() {
     MethodClient methodClient =
-        new MethodClient(client, 999, CLIENT_STREAMING_RPC.method(), defaultObserver);
+        new MethodClient(client, 999, client_streaming_rpc.method(), defaultObserver);
     assertThrows(InvalidRpcChannelException.class, methodClient::invokeClientStreaming);
   }
 
