@@ -16,6 +16,7 @@
 
 import argparse
 import dataclasses
+import enum
 import os
 import pty
 import re
@@ -121,11 +122,38 @@ class NinjaAction:
             have multiple sub-actions that have the same name.
         start_time: The time that the Ninja action started. This is based on
             time.time, not Ninja's own stopwatch.
+        end_time: The time that the Ninja action finished, or None if it is
+            still running.
     """
 
     name: str
     jobs: int = 0
     start_time: float = dataclasses.field(default_factory=time.time)
+    end_time: Optional[float] = None
+
+
+class NinjaEventKind(enum.Enum):
+    """The kind of Ninja event."""
+
+    ACTION_STARTED = 1
+    ACTION_FINISHED = 2
+    ACTION_LOG = 3
+
+
+@dataclasses.dataclass
+class NinjaEvent:
+    """An event from the Ninja build.
+
+    Attributes:
+        kind: The kind of event.
+        action: The action this event relates to, if any.
+        message: The log message associated with this event, if it an
+            'ACTION_LOG' event.
+    """
+
+    kind: NinjaEventKind
+    action: Optional[NinjaAction] = None
+    log_message: Optional[str] = None
 
 
 class Ninja:
@@ -139,9 +167,7 @@ class Ninja:
         num_total: The (estimated) number of total actions in the build.
         actions: The currently-running actions, keyed by the action name.
         last_action_completed: The last action that Ninja finished building.
-        log_lines: The (non-status) lines that have been printed by Ninja. These
-            are unstructured messages from Ninja or output from completed
-            (and potentially failed) actions.
+        events: The events that have occured in the Ninja build.
         exited: Whether the Ninja subprocess has exited.
         lock: The lock guarding the rest of the attributes.
         process: The Python subprocess running Ninja.
@@ -152,7 +178,7 @@ class Ninja:
     num_total: int
     actions: Dict[str, NinjaAction]
     last_action_completed: Optional[NinjaAction]
-    log_lines: List[Tuple[Optional[NinjaAction], str]]
+    events: List[NinjaEvent]
     exited: bool
     lock: threading.Lock
     process: subprocess.Popen
@@ -166,7 +192,7 @@ class Ninja:
         self.num_total = 0
         self.actions = {}
         self.last_action_completed = None
-        self.log_lines = []
+        self.events = []
         self.exited = False
         self.lock = threading.Lock()
 
@@ -250,6 +276,10 @@ class Ninja:
 
                 if did_start:
                     action = self.actions.setdefault(name, NinjaAction(name))
+                    if action.jobs == 0:
+                        self.events.append(
+                            NinjaEvent(NinjaEventKind.ACTION_STARTED, action)
+                        )
                     action.jobs += 1
 
                 if did_finish and name in self.actions:
@@ -258,11 +288,82 @@ class Ninja:
                     if action.jobs <= 0:
                         self.actions.pop(name)
                         self.last_action_completed = action
+                        action.end_time = time.time()
+                        self.events.append(
+                            NinjaEvent(NinjaEventKind.ACTION_FINISHED, action)
+                        )
             else:
                 context_action = None
                 if not line.startswith('ninja: '):
                     context_action = self.last_action_completed
-                self.log_lines.append((context_action, line))
+                self.events.append(
+                    NinjaEvent(
+                        NinjaEventKind.ACTION_LOG,
+                        action=context_action,
+                        log_message=line,
+                    )
+                )
+
+
+class UI:
+    """Class to handle UI state and rendering."""
+
+    def __init__(self, ninja: Ninja, args: argparse.Namespace) -> None:
+        self._ninja = ninja
+        self._args = args
+        self._start_time = time.time()
+        self._renderer = ConsoleRenderer()
+        self._last_log_action: Optional[NinjaAction] = None
+
+    def _get_status_display(self) -> List[str]:
+        """Generates the status display. Must be called under the Ninja lock."""
+        actions = sorted(
+            self._ninja.actions.values(), key=lambda x: x.start_time
+        )
+        now = time.time()
+        total_elapsed = _format_duration(now - self._start_time)
+        lines = [
+            f'[{total_elapsed: >5}] '
+            f'Building [{self._ninja.num_finished}/{self._ninja.num_total}] ...'
+        ]
+        for action in actions[: self._args.ui_max_actions]:
+            elapsed = _format_duration(now - action.start_time)
+            lines.append(f'  [{elapsed: >5}] {action.name}')
+        if len(actions) > self._args.ui_max_actions:
+            remaining = len(actions) - self._args.ui_max_actions
+            lines.append(f'  ... and {remaining} more')
+        return lines
+
+    def _process_event(self, event: NinjaEvent) -> None:
+        """Processes a Ninja Event. Must be called under the Ninja lock."""
+        if event.kind == NinjaEventKind.ACTION_LOG:
+            if event.action and (event.action != self._last_log_action):
+                self._renderer.print_line(f'[{event.action.name}]')
+            self._last_log_action = event.action
+            assert event.log_message is not None
+            self._renderer.print_line(event.log_message)
+
+    def update(self) -> None:
+        """Updates and re-renders the UI."""
+        with self._ninja.lock:
+            for event in self._ninja.events:
+                self._process_event(event)
+            self._ninja.events = []
+
+            self._renderer.set_temporary_lines(self._get_status_display())
+
+        self._renderer.render()
+
+    def print_summary(self) -> None:
+        """Prints the summary line at the end of the build."""
+        total_time = _format_duration(time.time() - self._start_time)
+        num_finished = self._ninja.num_finished
+        num_total = self._ninja.num_total
+        self._renderer.print_line(
+            f'Built {num_finished}/{num_total} targets in {total_time}.'
+        )
+        self._renderer.set_temporary_lines([])
+        self._renderer.render()
 
 
 def _parse_args() -> Tuple[argparse.Namespace, List[str]]:
@@ -301,50 +402,16 @@ def main() -> int:
         return process.returncode
 
     ninja = Ninja(ninja_args)
-    start_time = time.time()
-    renderer = ConsoleRenderer()
-    last_action_logged = None
+    interface = UI(ninja, args)
 
-    while True:
-        with ninja.lock:
-            # Print non-status lines logged.
-            for action, line in ninja.log_lines:
-                if action != last_action_logged and action is not None:
-                    renderer.print_line(f'[{action.name}]')
-                last_action_logged = action
-                renderer.print_line(line)
-            ninja.log_lines = []
-
-            # Generate status display.
-            actions = sorted(ninja.actions.values(), key=lambda x: x.start_time)
-            now = time.time()
-            total_elapsed = _format_duration(now - start_time)
-            lines = [
-                f'[{total_elapsed: >5}] '
-                f'Building [{ninja.num_finished}/{ninja.num_total}] ...'
-            ]
-            for action in actions[: args.ui_max_actions]:
-                elapsed = _format_duration(now - action.start_time)
-                lines.append(f'  [{elapsed: >5}] {action.name}')
-            if len(actions) > args.ui_max_actions:
-                remaining = len(actions) - args.ui_max_actions
-                lines.append(f'  ... and {remaining} more')
-
-            if ninja.exited:
-                break
-
-        renderer.set_temporary_lines(lines)
-        renderer.render()
+    while not ninja.exited:
+        interface.update()
         time.sleep(args.ui_update_rate)
 
     # Output the final summary build line.
     ninja.process.wait()
-    total_time = _format_duration(time.time() - start_time)
-    renderer.print_line(
-        f'Built {ninja.num_finished}/{ninja.num_total} targets in {total_time}.'
-    )
-    renderer.set_temporary_lines([])
-    renderer.render()
+    interface.update()
+    interface.print_summary()
     return ninja.process.returncode
 
 
