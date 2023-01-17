@@ -336,12 +336,31 @@ class UI:
 
     def _process_event(self, event: NinjaEvent) -> None:
         """Processes a Ninja Event. Must be called under the Ninja lock."""
+        print_actions = self._args.log_actions
+
         if event.kind == NinjaEventKind.ACTION_LOG:
             if event.action and (event.action != self._last_log_action):
                 self._renderer.print_line(f'[{event.action.name}]')
             self._last_log_action = event.action
             assert event.log_message is not None
             self._renderer.print_line(event.log_message)
+
+        if event.kind == NinjaEventKind.ACTION_STARTED and print_actions:
+            assert event.action
+            self._renderer.print_line(
+                f'[{self._ninja.num_finished}/{self._ninja.num_total}] '
+                f'Started  [{event.action.name}]'
+            )
+
+        if event.kind == NinjaEventKind.ACTION_FINISHED and print_actions:
+            assert event.action and event.action.end_time is not None
+            duration = _format_duration(
+                event.action.end_time - event.action.start_time
+            )
+            self._renderer.print_line(
+                f'[{self._ninja.num_finished}/{self._ninja.num_total}] '
+                f'Finished [{event.action.name}] ({duration})'
+            )
 
     def update(self) -> None:
         """Updates and re-renders the UI."""
@@ -385,6 +404,11 @@ def _parse_args() -> Tuple[argparse.Namespace, List[str]]:
         help='maximum build actions to display at once',
         type=int,
         default=8,
+    )
+    parser.add_argument(
+        '--log-actions',
+        help='whether to log when actions start and finish',
+        action='store_true',
     )
     return parser.parse_known_args()
 
