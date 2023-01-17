@@ -336,26 +336,26 @@ gn_software_update_build = build.GnGenNinja(
     ninja_targets=_at_all_optimization_levels('host_clang'),
 )
 
-
-@_BUILD_FILE_FILTER.apply_to_check()
-def gn_pw_system_demo_build(ctx: PresubmitContext):
-    build.install_package(ctx, 'freertos')
-    build.install_package(ctx, 'nanopb')
-    build.install_package(ctx, 'stm32cube_f4')
-    build.install_package(ctx, 'pico_sdk')
-    build.gn_gen(
-        ctx,
-        dir_pw_third_party_freertos='"{}"'.format(
+gn_pw_system_demo_build = build.GnGenNinja(
+    name='gn_pw_system_demo_build',
+    path_filter=_BUILD_FILE_FILTER,
+    packages=('freertos', 'nanopb', 'stm32cube_f4', 'pico_sdk'),
+    gn_args={
+        'dir_pw_third_party_freertos': lambda ctx: '"{}"'.format(
             ctx.package_root / 'freertos'
         ),
-        dir_pw_third_party_nanopb='"{}"'.format(ctx.package_root / 'nanopb'),
-        dir_pw_third_party_stm32cube_f4='"{}"'.format(
+        'dir_pw_third_party_nanopb': lambda ctx: '"{}"'.format(
+            ctx.package_root / 'nanopb'
+        ),
+        'dir_pw_third_party_stm32cube_f4': lambda ctx: '"{}"'.format(
             ctx.package_root / 'stm32cube_f4'
         ),
-        PICO_SRC_DIR='"{}"'.format(str(ctx.package_root / 'pico_sdk')),
-    )
-    build.ninja(ctx, 'pw_system_demo')
-
+        'PICO_SRC_DIR': lambda ctx: '"{}"'.format(
+            str(ctx.package_root / 'pico_sdk')
+        ),
+    },
+    ninja_targets=('pw_system_demo',),
+)
 
 gn_docs_build = build.GnGenNinja(name='gn_docs_build', ninja_targets=('docs',))
 
