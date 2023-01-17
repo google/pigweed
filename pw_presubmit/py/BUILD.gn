@@ -34,6 +34,7 @@ pw_python_package("py") {
     "pw_presubmit/inclusive_language.py",
     "pw_presubmit/install_hook.py",
     "pw_presubmit/keep_sorted.py",
+    "pw_presubmit/module_owners.py",
     "pw_presubmit/ninja_parser.py",
     "pw_presubmit/npm_presubmit.py",
     "pw_presubmit/owners_checks.py",

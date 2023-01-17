@@ -315,6 +315,16 @@ for entire blocks by using "inclusive-language: disable" before the block and
 .. In case things get moved around in the previous paragraphs the enable line
 .. is repeated here: inclusive-language: enable.
 
+OWNERS
+^^^^^^
+There's a check that requires folders matching specific patterns contain
+``OWNERS`` files. It can be included by adding
+``module_owners.presubmit_check()`` to a presubmit program. This function takes
+a callable as an argument that indicates, for a given file, where a controlling
+``OWNERS`` file should be, or returns None if no ``OWNERS`` file is necessary.
+Formatting of ``OWNERS`` files is handled similary to formatting of other
+source files and is discussed in `Code Formatting`.
+
 pw_presubmit
 ------------
 .. automodule:: pw_presubmit
