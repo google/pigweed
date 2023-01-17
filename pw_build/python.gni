@@ -71,6 +71,11 @@ template("_pw_python_static_analysis_mypy") {
     args = [
       "--pretty",
       "--show-error-codes",
+
+      # TODO(b/265836842): Namespace packages are enabled by default starting in
+      #     mypy 0.991. This caused problems in some configurations, so return
+      #     to the prior behavior for now.
+      "--no-namespace-packages",
     ]
 
     if (defined(invoker.mypy_ini)) {
