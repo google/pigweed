@@ -1,0 +1,37 @@
+// Copyright 2022 The Pigweed Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not
+// use this file except in compliance with the License. You may obtain a copy of
+// the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations under
+// the License.
+syntax = "proto3";
+
+import "google/protobuf/descriptor.proto";
+
+package pw.protobuf;
+
+// Options supported for inline usage in .proto files.
+//
+// These options are for use when there are true limitations intended to be part
+// of the protocol specification and are not specific to any particular protobuf
+// code generator.
+message FieldOptions {
+  // Maximum number of entries for repeated fields.
+  optional int32 max_count = 1;
+
+  // Maximum size for bytes and string fields (excludes null terminator).
+  optional int32 max_size = 2;
+}
+
+extend google.protobuf.FieldOptions {
+  // Extension 1155 is reserved upstream for PW protobuf compiler.
+  // https://github.com/protocolbuffers/protobuf/blob/main/docs/options.md
+  optional FieldOptions pwpb = 1155;
+}

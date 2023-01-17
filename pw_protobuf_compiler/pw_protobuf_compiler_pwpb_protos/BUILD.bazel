@@ -37,6 +37,9 @@ pw_proto_filegroup(
 proto_library(
     name = "pwpb_test_proto",
     srcs = [":pwpb_test_proto_and_options_files"],
+    deps = [
+        "//pw_protobuf:field_options_proto",
+    ],
 )
 
 pw_proto_library(

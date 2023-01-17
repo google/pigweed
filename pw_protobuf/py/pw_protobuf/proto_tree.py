@@ -33,6 +33,7 @@ from google.protobuf import descriptor_pb2
 
 from pw_protobuf import options, symbol_name_mapping
 from pw_protobuf_codegen_protos.codegen_options_pb2 import CodegenOptions
+from pw_protobuf_protos.field_options_pb2 import pwpb as pwpb_field_options
 
 T = TypeVar('T')  # pylint: disable=invalid-name
 
@@ -667,6 +668,7 @@ def _add_message_fields(
         repeated = (
             field.label == descriptor_pb2.FieldDescriptorProto.LABEL_REPEATED
         )
+
         codegen_options = (
             options.match_options(
                 '.'.join((message.proto_path(), field.name)), proto_options
@@ -674,6 +676,26 @@ def _add_message_fields(
             if proto_options is not None
             else None
         )
+
+        field_options = (
+            options.create_from_field_options(
+                field.options.Extensions[pwpb_field_options]
+            )
+            if field.options.HasExtension(pwpb_field_options)
+            else None
+        )
+
+        merged_options = None
+
+        if field_options and codegen_options:
+            merged_options = options.merge_field_and_codegen_options(
+                field_options, codegen_options
+            )
+        elif field_options:
+            merged_options = field_options
+        elif codegen_options:
+            merged_options = codegen_options
+
         message.add_field(
             ProtoMessageField(
                 field.name,
@@ -682,7 +704,7 @@ def _add_message_fields(
                 type_node,
                 optional,
                 repeated,
-                codegen_options,
+                merged_options,
             )
         )
 

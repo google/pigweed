@@ -218,6 +218,7 @@ pw_proto_library("codegen_protos") {
 pw_proto_library("common_protos") {
   sources = [
     "pw_protobuf_protos/common.proto",
+    "pw_protobuf_protos/field_options.proto",
     "pw_protobuf_protos/status.proto",
   ]
 }

@@ -48,5 +48,14 @@ TEST(Pwpb, OptionsFilesAreApplied) {
       "The field `unspecified_length` should be a `pw::protobuf::Callback`.");
 }
 
+TEST(Pwpb, InlineOptionsAppliedAndOverridden) {
+  pw::protobuf_compiler::InlineOptionsExample::Message inline_options_example;
+
+  static_assert(
+      std::is_same_v<decltype(inline_options_example.ten_chars_inline),
+                     pw::InlineString<10>>,
+      "Field `ten_chars_inline` should be a `pw::InlineString<10>`.");
+}
+
 }  // namespace
 }  // namespace pw::protobuf_compiler

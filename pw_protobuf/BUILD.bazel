@@ -210,6 +210,27 @@ proto_library(
 )
 
 proto_library(
+    name = "field_options_proto",
+    srcs = [
+        "pw_protobuf_protos/field_options.proto",
+    ],
+    strip_import_prefix = "//pw_protobuf",
+    deps = [
+        "@com_google_protobuf//:descriptor_proto",
+    ],
+)
+
+py_proto_library(
+    name = "field_options_proto_pb2",
+    srcs = [
+        "pw_protobuf_protos/field_options.proto",
+    ],
+    deps = [
+        "@com_google_protobuf//:protobuf_python",
+    ],
+)
+
+proto_library(
     name = "status_proto",
     srcs = [
         "pw_protobuf_protos/status.proto",

@@ -37,6 +37,7 @@ py_library(
     imports = ["."],
     deps = [
         "//pw_protobuf:codegen_protos_pb2",
+        "//pw_protobuf:field_options_proto_pb2",
         "@com_google_protobuf//:protobuf_python",
     ],
 )

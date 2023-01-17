@@ -15,6 +15,8 @@ syntax = "proto3";
 
 package pw.protobuf_compiler;
 
+import "pw_protobuf_protos/field_options.proto";
+
 message Point {
   uint32 x = 1;
   uint32 y = 2;
@@ -29,3 +31,7 @@ message OptionsFileExample {
   string forty_two_chars = 2;
   string unspecified_length = 3;
 };
+
+message InlineOptionsExample {
+  string ten_chars_inline = 1 [(pw.protobuf.pwpb).max_size = 10];
+}

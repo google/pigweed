@@ -54,6 +54,7 @@ pw_test("pwpb_test") {
 pw_proto_library("pwpb_test_protos") {
   sources = [ "pw_protobuf_compiler_pwpb_protos/pwpb_test.proto" ]
   inputs = [ "pw_protobuf_compiler_pwpb_protos/pwpb_test.options" ]
+  deps = [ "$dir_pw_protobuf:common_protos" ]
 }
 
 pw_proto_library("test_protos") {

@@ -17,3 +17,5 @@ pw.protobuf_compiler.Point.name max_size:16
 pw.protobuf_compiler.OptionsFileExample.thirty_two_chars max_size:32
 pw.protobuf_compiler.OptionsFileExample.forty_two_chars max_size:42
 // The `max_size` of the string `unspecified_length` is of course unspecified.
+
+pw.protobuf_compiler.InlineOptionsExample.ten_chars_inline fixed_size:True

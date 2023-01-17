@@ -581,6 +581,33 @@ Configuration
   | 5 bytes           | 4,294,967,295 or < 4GiB (max uint32_t) |
   +-------------------+----------------------------------------+
 
+Field Options
+=============
+``pw_protobuf`` supports the following field options for specifying
+protocol-level limitations, rather than code generation parameters (although
+they do influence code generation):
+
+
+* ``max_count``:
+  Maximum number of entries for repeated fields.
+
+* ``max_size``:
+  Maximum size of `bytes` or `string` fields.
+
+Even though other proto codegen implementations do not respect these field
+options, they can still compile protos which use these options. This is
+especially useful for host builds using upstream protoc code generation, where
+host software can use the reflection API to query for the options and validate
+messages comply with the specified limitations.
+
+.. code::
+
+  import "pw_protobuf_protos/field_options.proto";
+
+  message Demo {
+    string size_limited_string = 1 [(pw.protobuf.pwpb).max_size = 16];
+  };
+
 Options Files
 =============
 Code generation can be configured using a separate ``.options`` file placed
