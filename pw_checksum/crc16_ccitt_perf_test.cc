@@ -27,13 +27,10 @@ constexpr std::string_view kString =
     "people very angry and been widely regarded as a bad move.";
 constexpr auto kBytes = bytes::Initialized<1000>([](size_t i) { return i; });
 
-void CcittCalculationTest(span<const std::byte> input) {
-  Crc16Ccitt::Calculate(input);
-}
+PW_PERF_TEST_SIMPLE(CcittCalculationBytes, Crc16Ccitt::Calculate, kBytes);
 
-PW_PERF_TEST_SIMPLE(CcittCalculationBytes, CcittCalculationTest, kBytes);
 PW_PERF_TEST_SIMPLE(CcittCalculationString,
-                    CcittCalculationTest,
+                    Crc16Ccitt::Calculate,
                     as_bytes(span(kString)));
 
 }  // namespace
