@@ -409,20 +409,6 @@ struct WriteClassOfDeviceCommandParams {
 
 constexpr OpCode kWriteAutomaticFlushTimeout = ControllerAndBasebandOpCode(0x0028);
 
-struct WriteAutomaticFlushTimeoutCommandParams {
-  // Connection_Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-
-  // The value for the Flush_Timeout configuration parameter (Core Spec v5.2, Vol 4, Part E,
-  // Sec 6.19).
-  // Range: 0x0000 to 0x07FF. 0x0000 indicated infinite flush timeout (no automatic
-  // flush).
-  // Time = flush_timeout * 0.625ms.
-  // Time Range: 0.625ms to 1279.375ms.
-  uint16_t flush_timeout;
-} __PACKED;
-
 // ===============================================================
 // Read Transmit Transmit Power Level Command (v1.1) (BR/EDR & LE)
 constexpr OpCode kReadTransmitPowerLevel = ControllerAndBasebandOpCode(0x002D);

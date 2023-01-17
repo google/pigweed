@@ -596,24 +596,26 @@ void LogicalLink::SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
     BT_ASSERT(converted_flush_timeout <= hci_spec::kMaxAutomaticFlushTimeoutCommandParameterValue);
   }
 
-  auto packet = hci::CommandPacket::New(hci_spec::kWriteAutomaticFlushTimeout,
-                                        sizeof(hci_spec::WriteAutomaticFlushTimeoutCommandParams));
-  auto packet_view = packet->mutable_payload<hci_spec::WriteAutomaticFlushTimeoutCommandParams>();
-  packet_view->connection_handle = htole16(handle_);
-  packet_view->flush_timeout = htole16(converted_flush_timeout);
+  auto write_timeout =
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::WriteAutomaticFlushTimeoutCommandWriter>(
+          hci_spec::kWriteAutomaticFlushTimeout);
+  auto write_timeout_view = write_timeout.view_t();
+  write_timeout_view.connection_handle().Write(handle_);
+  write_timeout_view.flush_timeout().Write(converted_flush_timeout);
 
-  cmd_channel_->SendCommand(std::move(packet), [cb = std::move(callback_wrapper), handle = handle_,
-                                                flush_timeout](
-                                                   auto, const hci::EventPacket& event) mutable {
-    if (event.ToResult().is_error()) {
-      bt_log(WARN, "hci", "WriteAutomaticFlushTimeout command failed (result: %s, handle: %#.4x)",
-             bt_str(event.ToResult()), handle);
-    } else {
-      bt_log(DEBUG, "hci", "automatic flush timeout updated (handle: %#.4x, timeout: %ld ms)",
-             handle, flush_timeout.to_msecs());
-    }
-    cb(event.ToResult());
-  });
+  cmd_channel_->SendCommand(
+      std::move(write_timeout), [cb = std::move(callback_wrapper), handle = handle_, flush_timeout](
+                                    auto, const hci::EventPacket& event) mutable {
+        if (event.ToResult().is_error()) {
+          bt_log(WARN, "hci",
+                 "WriteAutomaticFlushTimeout command failed (result: %s, handle: %#.4x)",
+                 bt_str(event.ToResult()), handle);
+        } else {
+          bt_log(DEBUG, "hci", "automatic flush timeout updated (handle: %#.4x, timeout: %ld ms)",
+                 handle, flush_timeout.to_msecs());
+        }
+        cb(event.ToResult());
+      });
 }
 
 void LogicalLink::AttachInspect(inspect::Node& parent, std::string name) {

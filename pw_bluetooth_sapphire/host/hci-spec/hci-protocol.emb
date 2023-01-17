@@ -270,6 +270,7 @@ bits ScanEnableBits:
 
   $next [+6]  UInt  padding
 
+
 # ========================= HCI packet headers ==========================
 
 
@@ -293,6 +294,7 @@ struct EventHeader:
   -- HCI Event packet header.
   0     [+1] UInt  event_code
   $next [+1] UInt  parameter_total_size
+
 
 # ========================= HCI Command packets =========================
 # Core Spec v5.3 Vol 4, Part E, Section 7
@@ -789,6 +791,24 @@ struct WriteInquiryScanActivityCommand:
     -- Inquiry_Scan_Window, in time slices
     -- Valid Range: MIN - MAX in ScanWindow in this file
     [requires: 0x0011 <= this <= 0x1000]
+
+
+struct WriteAutomaticFlushTimeoutCommand:
+  -- Write Automatic Flush Timeout Command (v1.1) (BR/EDR)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader        header
+  $next [+2]         UInt                 connection_handle
+    -- Connection_Handle (only the lower 12-bits are meaningful).
+    --   Range: 0x0000 to 0x0EFF
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next [+2]         UInt                 flush_timeout
+    -- The value for the Flush_Timeout configuration parameter (Core Spec v5.2, Vol 4, Part E, Sec 6.19).
+    -- Range: 0x0000 to 0x07FF. 0x0000 indicates infinite flush timeout (no automatic flush).
+    -- Time = flush_timeout * 0.625ms.
+    -- Time Range: 0.625ms to 1279.375ms.
+    [requires: 0x0000 <= this <= 0x07FF]
+
 
 # ========================= HCI Event packets ===========================
 # Core Spec v5.3 Vol 4, Part E, Section 7.7
