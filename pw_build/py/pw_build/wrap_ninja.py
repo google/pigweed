@@ -52,6 +52,12 @@ class ConsoleRenderer:
     the terminal once printed. Second, "temporary" printed lines follow the
     most recently printed permanent line, and get rewritten on each call
     to `render`.
+
+    Attributes:
+        smart_terminal: If true, will print a rich TUI using terminal control
+            codes. Otherwise, this class won't print temporary lines, and
+            permanent lines will be printed without any special control codes.
+            Defaults to true if stdout is connected to a TTY.
     """
 
     def __init__(self) -> None:
@@ -59,6 +65,9 @@ class ConsoleRenderer:
         self._queued_lines: List[str] = []
         self._temporary_lines: List[str] = []
         self._previous_line_count = 0
+
+        term = os.environ.get('TERM')
+        self.smart_terminal = term and (term != 'dumb') and sys.stdout.isatty()
 
     def print_line(self, line: str) -> None:
         """Queue a permanent line for printing during the next render."""
@@ -70,6 +79,14 @@ class ConsoleRenderer:
 
     def render(self) -> None:
         """Render the current state of the renderer."""
+
+        # If we can't use terminal codes, print out permanent lines and exit.
+        if not self.smart_terminal:
+            for line in self._queued_lines:
+                print(line)
+            self._queued_lines.clear()
+            sys.stdout.flush()
+            return
 
         # Go back to the end of the last permanent lines.
         for _ in range(self._previous_line_count):
@@ -336,7 +353,8 @@ class UI:
 
     def _process_event(self, event: NinjaEvent) -> None:
         """Processes a Ninja Event. Must be called under the Ninja lock."""
-        print_actions = self._args.log_actions
+        show_started = self._args.log_actions
+        show_ended = self._args.log_actions or not self._renderer.smart_terminal
 
         if event.kind == NinjaEventKind.ACTION_LOG:
             if event.action and (event.action != self._last_log_action):
@@ -345,14 +363,14 @@ class UI:
             assert event.log_message is not None
             self._renderer.print_line(event.log_message)
 
-        if event.kind == NinjaEventKind.ACTION_STARTED and print_actions:
+        if event.kind == NinjaEventKind.ACTION_STARTED and show_started:
             assert event.action
             self._renderer.print_line(
                 f'[{self._ninja.num_finished}/{self._ninja.num_total}] '
                 f'Started  [{event.action.name}]'
             )
 
-        if event.kind == NinjaEventKind.ACTION_FINISHED and print_actions:
+        if event.kind == NinjaEventKind.ACTION_FINISHED and show_ended:
             assert event.action and event.action.end_time is not None
             duration = _format_duration(
                 event.action.end_time - event.action.start_time
