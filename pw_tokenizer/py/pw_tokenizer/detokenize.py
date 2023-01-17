@@ -50,7 +50,6 @@ from typing import (
     Dict,
     List,
     Iterable,
-    IO,
     Iterator,
     Match,
     NamedTuple,
@@ -319,7 +318,27 @@ class Detokenizer:
         return decode_and_detokenize
 
 
-_PathOrFile = Union[IO, str, Path]
+_PathOrStr = Union[Path, str]
+
+# TODO(b/265334753): Reuse this function in database.py:LoadTokenDatabases
+def _parse_domain(path: _PathOrStr) -> Tuple[Path, Optional[Pattern[str]]]:
+    """Extracts an optional domain regex pattern suffix from a path"""
+
+    if isinstance(path, Path):
+        path = str(path)
+
+    delimiters = path.count('#')
+
+    if delimiters == 0:
+        return Path(path), None
+
+    if delimiters == 1:
+        path, domain = path.split('#')
+        return Path(path), re.compile(domain)
+
+    raise ValueError(
+        f'Too many # delimiters. Expected 0 or 1, found {delimiters}'
+    )
 
 
 class AutoUpdatingDetokenizer(Detokenizer):
@@ -328,18 +347,8 @@ class AutoUpdatingDetokenizer(Detokenizer):
     class _DatabasePath:
         """Tracks the modified time of a path or file object."""
 
-        def __init__(self, path: _PathOrFile) -> None:
-            self.path: Path
-            self.domain = None
-            if isinstance(path, str):
-                if path.count('#') == 1:
-                    path, domain = path.split('#')
-                    self.domain = re.compile(domain)
-                self.path = Path(path)
-            elif isinstance(path, Path):
-                self.path = path
-            else:
-                self.path = Path(path.name)
+        def __init__(self, path: _PathOrStr) -> None:
+            self.path, self.domain = _parse_domain(path)
             self._modified_time: Optional[float] = self._last_modified_time()
 
         def updated(self) -> bool:
@@ -368,7 +377,7 @@ class AutoUpdatingDetokenizer(Detokenizer):
                 return database.load_token_database()
 
     def __init__(
-        self, *paths_or_files: _PathOrFile, min_poll_period_s: float = 1.0
+        self, *paths_or_files: _PathOrStr, min_poll_period_s: float = 1.0
     ) -> None:
         self.paths = tuple(self._DatabasePath(path) for path in paths_or_files)
         self.min_poll_period_s = min_poll_period_s

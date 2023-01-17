@@ -507,7 +507,7 @@ class AutoUpdatingDetokenizerTest(unittest.TestCase):
                 file.close()
 
                 detok = detokenize.AutoUpdatingDetokenizer(
-                    file, min_poll_period_s=0
+                    file.name, min_poll_period_s=0
                 )
                 self.assertTrue(detok.detokenize(JELLO_WORLD_TOKEN).ok())
 
@@ -524,18 +524,35 @@ class AutoUpdatingDetokenizerTest(unittest.TestCase):
             finally:
                 os.unlink(file.name)
 
-    def test_token_domains(self, _):
-        """Tests that token domains can be parsed from input filename"""
-        filename_and_domain = f'{ELF_WITH_TOKENIZER_SECTIONS_PATH}#.*'
-        detok_with_domain = detokenize.AutoUpdatingDetokenizer(
-            filename_and_domain, min_poll_period_s=0
+    def test_token_domain_in_str(self, _) -> None:
+        """Tests a str containing a domain"""
+        detok = detokenize.AutoUpdatingDetokenizer(
+            f'{ELF_WITH_TOKENIZER_SECTIONS_PATH}#.*', min_poll_period_s=0
         )
         self.assertEqual(
-            len(detok_with_domain.database),
-            TOKENS_IN_ELF_WITH_TOKENIZER_SECTIONS,
+            len(detok.database), TOKENS_IN_ELF_WITH_TOKENIZER_SECTIONS
         )
+
+    def test_token_domain_in_path(self, _) -> None:
+        """Tests a Path() containing a domain"""
+        detok = detokenize.AutoUpdatingDetokenizer(
+            Path(f'{ELF_WITH_TOKENIZER_SECTIONS_PATH}#.*'), min_poll_period_s=0
+        )
+        self.assertEqual(
+            len(detok.database), TOKENS_IN_ELF_WITH_TOKENIZER_SECTIONS
+        )
+
+    def test_token_no_domain_in_str(self, _) -> None:
+        """Tests a str without a domain"""
         detok = detokenize.AutoUpdatingDetokenizer(
             str(ELF_WITH_TOKENIZER_SECTIONS_PATH), min_poll_period_s=0
+        )
+        self.assertEqual(len(detok.database), TOKENS_IN_ELF)
+
+    def test_token_no_domain_in_path(self, _) -> None:
+        """Tests a Path() without a domain"""
+        detok = detokenize.AutoUpdatingDetokenizer(
+            ELF_WITH_TOKENIZER_SECTIONS_PATH, min_poll_period_s=0
         )
         self.assertEqual(len(detok.database), TOKENS_IN_ELF)
 
