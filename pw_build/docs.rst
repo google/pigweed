@@ -828,8 +828,8 @@ on without an error.
 
 The templates for build time errors are defined in ``pw_build/error.gni``.
 
-Improved Ninja progress output
-------------------------------
+Improved Ninja interface
+------------------------
 Ninja includes a basic progress display, showing in a single line the number of
 targets finished, the total number of targets, and the name of the most recent
 target it has either started or finished.
@@ -863,6 +863,11 @@ target has been building for:
 This allows you to, at a glance, know what Ninja's currently building, which
 targets are bottlenecking the rest of the build, and which targets are taking
 an unusually long time to complete.
+
+``pw-wrap-ninja`` includes other useful functionality as well. The
+``--write-trace`` option writes a build trace to the specified path, which can
+be viewed in the `Perfetto UI <https://ui.perfetto.dev/>`_, or via Chrome's
+built-in ``chrome://tracing`` tool.
 
 CMake
 =====
