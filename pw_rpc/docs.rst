@@ -1,8 +1,8 @@
 .. _module-pw_rpc:
 
-------
+======
 pw_rpc
-------
+======
 The ``pw_rpc`` module provides a system for defining and invoking remote
 procedure calls (RPCs) on a device.
 
@@ -26,8 +26,9 @@ documents:
   This documentation is under construction. Many sections are outdated or
   incomplete. The content needs to be reorgnanized.
 
+---------------
 Implementations
-===============
+---------------
 Pigweed provides several client and server implementations of ``pw_rpc``.
 
 .. list-table::
@@ -47,7 +48,7 @@ Pigweed provides several client and server implementations of ``pw_rpc``.
     - ✅
   * - Java
     -
-    - in development
+    - ✅
   * - Python
     -
     - ✅
@@ -55,21 +56,53 @@ Pigweed provides several client and server implementations of ``pw_rpc``.
     -
     - in development
 
+-------------
 RPC semantics
-=============
+-------------
 The semantics of ``pw_rpc`` are similar to `gRPC
 <https://grpc.io/docs/what-is-grpc/core-concepts/>`_.
 
 RPC call lifecycle
-------------------
-In ``pw_rpc``, an RPC begins when the client sends a request packet. The server
-receives the request, looks up the relevant service method, then calls into the
-RPC function. The RPC is considered active until the server sends a response
-packet with the RPC's status. The client may terminate an ongoing RPC by
-cancelling it.
+==================
+In ``pw_rpc``, an RPC begins when the client sends an initial packet. The server
+receives the packet, looks up the relevant service method, then calls into the
+RPC function. The RPC is considered active until the server sends a status to
+finish the RPC. The client may terminate an ongoing RPC by cancelling it.
+
+Depending the type of RPC, the client and server exchange zero or more protobuf
+request or response payloads. There are four RPC types:
+
+* **Unary**. The client sends one request and the server sends one
+  response with a status.
+* **Server streaming**. The client sends one request and the server sends zero
+  or more responses followed by a status.
+* **Client streaming**. The client sends zero or more requests and the server
+  sends one response with a status.
+* **Bidirectional streaming**. The client sends zero or more requests and the
+  server sends zero or more responses followed by a status.
+
+Events
+------
+The key events in the RPC lifecycle are:
+
+* **Start**. The client initiates the RPC. The server's RPC body executes.
+* **Finish**. The server sends a status and completes the RPC. The client calls
+  a callback.
+* **Request**. The client sends a request protobuf. The server calls a callback
+  when it receives it. In unary and server streaming RPCs, there is only one
+  request and it is handled when the RPC starts.
+* **Response**. The server sends a response protobuf. The client calls a
+  callback when it receives it. In unary and client streaming RPCs, there is
+  only one response and it is handled when the RPC completes.
+* **Error**. The server or client terminates the RPC abnormally with a status.
+  The receiving endpoint calls a callback.
+* **Client stream end**. The client sends a message that it has finished sending
+  requests. The server calls a callback when it receives it. Some servers may
+  ignore the client stream end. The client stream end is only relevant for
+  client and bidirectional streaming RPCs.
 
 Status codes
-------------
+============
 ``pw_rpc`` call objects (``ClientReaderWriter``, ``ServerReaderWriter``, etc.)
 use certain status codes to indicate what occurred. These codes are returned
 from functions like ``Write()`` or ``Finish()``.
@@ -81,7 +114,7 @@ from functions like ``Write()`` or ``Finish()``.
   :cpp:func:`pw::rpc::ChannelOutput::Send` error.
 
 Unrequested responses
----------------------
+=====================
 ``pw_rpc`` supports sending responses to RPCs that have not yet been invoked by
 a client. This is useful in testing and in situations like an RPC that triggers
 reboot. After the reboot, the device opens the writer object and sends its
@@ -105,11 +138,12 @@ appropriate reader/writer class must be used.
   // Finish the RPC.
   CHECK_OK(writer.Finish(OkStatus()));
 
+---------------
 Creating an RPC
-===============
+---------------
 
 1. RPC service declaration
---------------------------
+==========================
 Pigweed RPCs are declared in a protocol buffer service definition.
 
 * `Protocol Buffer service documentation
@@ -180,7 +214,7 @@ This protocol buffer is declared in a ``BUILD.gn`` file as follows:
     }
 
 2. RPC code generation
-----------------------
+======================
 ``pw_rpc`` generates a C++ header file for each ``.proto`` file. This header is
 generated in the build output directory. Its exact location varies by build
 system and toolchain, but the C++ include path always matches the sources
@@ -206,7 +240,7 @@ generate the following base class for pw_protobuf:
 .. cpp:class:: template <typename Implementation> foo::bar::pw_rpc::pwpb::TheService::Service
 
 3. RPC service definition
--------------------------
+=========================
 The serivce class is implemented by inheriting from the generated RPC service
 base class and defining a method for each RPC. The methods must match the name
 and function signature for one of the supported protobuf implementations.
@@ -274,7 +308,7 @@ The pw_protobuf implementation would be declared in a ``BUILD.gn``:
   }
 
 4. Register the service with a server
--------------------------------------
+=====================================
 This example code sets up an RPC server with an :ref:`HDLC<module-pw_hdlc>`
 channel output and the example service.
 
@@ -315,8 +349,9 @@ channel output and the example service.
     pw::hdlc::ReadAndProcessPackets(server, input_buffer);
   }
 
+--------
 Channels
-========
+--------
 ``pw_rpc`` sends all of its packets over channels. These are logical,
 application-layer routes used to tell the RPC system where a packet should go.
 
@@ -358,7 +393,7 @@ output.
   }
 
 Adding and removing channels
-----------------------------
+============================
 New channels may be registered with the ``OpenChannel`` function. If dynamic
 allocation is enabled (:c:macro:`PW_RPC_DYNAMIC_ALLOCATION` is 1), any number of
 channels may be registered. If dynamic allocation is disabled, new channels may
@@ -376,8 +411,9 @@ with the ``ABORTED`` status.
   // on_error callbacks with ABORTED status.
   client->CloseChannel(1);
 
+--------
 Services
-========
+--------
 A service is a logical grouping of RPCs defined within a .proto file. ``pw_rpc``
 uses these .proto definitions to generate code for a base service, from which
 user-defined RPCs are implemented.
@@ -391,8 +427,9 @@ service and prevents future calls to them, until the service is re-registered.
 
 .. _module-pw_rpc-protobuf-library-apis:
 
+---------------------
 Protobuf library APIs
-=====================
+---------------------
 
 .. toctree::
   :maxdepth: 1
@@ -400,8 +437,9 @@ Protobuf library APIs
   pwpb/docs
   nanopb/docs
 
+----------------------------
 Testing a pw_rpc integration
-============================
+----------------------------
 After setting up a ``pw_rpc`` server in your project, you can test that it is
 working as intended by registering the provided ``EchoService``, defined in
 ``echo.proto``, which echoes back a message that it receives.
@@ -429,7 +467,7 @@ For example, in C++ with pw_protobuf:
   }
 
 Benchmarking and stress testing
--------------------------------
+===============================
 
 .. toctree::
   :maxdepth: 1
@@ -440,11 +478,12 @@ Benchmarking and stress testing
 ``pw_rpc`` provides an RPC service and Python module for stress testing and
 benchmarking a ``pw_rpc`` deployment. See :ref:`module-pw_rpc-benchmark`.
 
+------
 Naming
-======
+------
 
 Reserved names
---------------
+==============
 ``pw_rpc`` reserves a few service method names so they can be used for generated
 classes. The following names cannnot be used for service methods:
 
@@ -456,7 +495,7 @@ classes. The following names cannnot be used for service methods:
 reserved words in supported languages applies.
 
 Service naming style
---------------------
+====================
 ``pw_rpc`` service names should use capitalized camel case and should not use
 the term "Service". Appending "Service" to a service name is redundant, similar
 to appending "Class" or "Function" to a class or function name. The
@@ -494,8 +533,9 @@ For upstream Pigweed services, this naming style is a requirement. Note that
 some services created before this was established may use non-compliant
 names. For Pigweed users, this naming style is a suggestion.
 
+------------------------------
 C++ payload sizing limitations
-===============================
+------------------------------
 The individual size of each sent RPC request or response is limited by
 ``pw_rpc``'s ``PW_RPC_ENCODING_BUFFER_SIZE_BYTES`` configuration option when
 using Pigweed's C++ implementation. While multiple RPC messages can be enqueued
@@ -530,14 +570,15 @@ message payload size.
 
   }  // namespace pw::file
 
+--------------------
 Protocol description
-====================
+--------------------
 Pigweed RPC servers and clients communicate using ``pw_rpc`` packets. These
 packets are used to send requests and responses, control streams, cancel ongoing
 RPCs, and report errors.
 
 Packet format
--------------
+=============
 Pigweed RPC packets consist of a type and a set of fields. The packets are
 encoded as protocol buffers. The full packet format is described in
 ``pw_rpc/pw_rpc/internal/packet.proto``.
@@ -551,7 +592,7 @@ packet. Each packet type is only sent by either the client or the server.
 These tables describe the meaning of and fields included with each packet type.
 
 Client-to-server packets
-^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------
 +-------------------+-------------------------------------+
 | packet type       | description                         |
 +===================+=====================================+
@@ -620,7 +661,7 @@ status codes result in the same action by the server: aborting the RPC.
 * ``UNAVAILABLE`` -- Received a packet for an unknown channel.
 
 Server-to-client packets
-^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------
 +-------------------+-------------------------------------+
 | packet type       | description                         |
 +===================+=====================================+
@@ -682,7 +723,7 @@ status field indicates the type of error.
 * ``UNAVAILABLE`` -- Received a packet for an unknown channel.
 
 Inovking a service method
--------------------------
+=========================
 Calling an RPC requires a specific sequence of packets. This section describes
 the protocol for calling service methods of each type: unary, server streaming,
 client streaming, and bidirectional streaming.
@@ -703,7 +744,7 @@ packet with status ``CANCELLED``. The server may finish an ongoing RPC at any
 time by sending the ``RESPONSE`` packet.
 
 Unary RPC
-^^^^^^^^^
+---------
 In a unary RPC, the client sends a single request and the server sends a single
 response.
 
@@ -717,7 +758,7 @@ sends the response), it may not be possible to cancel the RPC.
 .. image:: unary_rpc_cancelled.svg
 
 Server streaming RPC
-^^^^^^^^^^^^^^^^^^^^
+--------------------
 In a server streaming RPC, the client sends a single request and the server
 sends any number of ``SERVER_STREAM`` packets followed by a ``RESPONSE`` packet.
 
@@ -729,7 +770,7 @@ packet with status ``CANCELLED``. The server sends no response.
 .. image:: server_streaming_rpc_cancelled.svg
 
 Client streaming RPC
-^^^^^^^^^^^^^^^^^^^^
+--------------------
 In a client streaming RPC, the client starts the RPC by sending a ``REQUEST``
 packet with no payload. It then sends any number of messages in
 ``CLIENT_STREAM`` packets, followed by a ``CLIENT_STREAM_END``. The server sends
@@ -745,7 +786,7 @@ terminate the RPC at any time by sending a ``CLIENT_ERROR`` packet with status
 .. image:: client_streaming_rpc_cancelled.svg
 
 Bidirectional streaming RPC
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+--------------------^^^^^^^
 In a bidirectional streaming RPC, the client sends any number of requests and
 the server sends any number of responses. The client invokes the RPC by sending
 a ``REQUEST`` with no payload. It sends a ``CLIENT_STREAM_END`` packet when it
@@ -760,6 +801,10 @@ terminate the RPC at any time by sending a ``CLIENT_ERROR`` packet with status
 ``CANCELLED``.
 
 .. image:: bidirectional_streaming_rpc_cancelled.svg
+
+-------
+C++ API
+-------
 
 RPC server
 ==========
@@ -804,12 +849,12 @@ Packet flow
 ^^^^^^^^^^^
 
 Requests
-~~~~~~~~
+........
 
 .. image:: request_packets.svg
 
 Responses
-~~~~~~~~~
+.........
 
 .. image:: response_packets.svg
 
@@ -865,19 +910,18 @@ please refer to the
 service client implementations can exist simulatenously and share the same
 ``Client`` class.
 
-When a call is made, a ``pw::rpc::ClientCall`` object is returned to the caller.
-This object tracks the ongoing RPC call, and can be used to manage it. An RPC
-call is only active as long as its ``ClientCall`` object is alive.
+When a call is made, a call object is returned to the caller. This object tracks
+the ongoing RPC call, and can be used to manage it. An RPC call is only active
+as long as its call object is alive.
 
 .. tip::
-  Use ``std::move`` when passing around ``ClientCall`` objects to keep RPCs
-  alive.
+  Use ``std::move`` when passing around call objects to keep RPCs alive.
 
 Example
 ^^^^^^^
 .. code-block:: c++
 
-  #include "pw_rpc/echo_service_pwpb.h"
+  #include "pw_rpc/echo_service_nanopb.h"
 
   namespace {
   // Generated clients are namespaced with their proto library.
@@ -886,11 +930,11 @@ Example
   // RPC channel ID on which to make client calls.
   constexpr uint32_t kDefaultChannelId = 1;
 
-  EchoClient::EchoCall echo_call;
+  pw::rpc::NanopbUnaryReceiver<pw_rpc_EchoMessage> echo_call;
 
   // Callback invoked when a response is received. This is called synchronously
   // from Client::ProcessPacket.
-  void EchoResponse(const EchoMessage::Message& response,
+  void EchoResponse(const pw_rpc_EchoMessage& response,
                     pw::Status status) {
     if (status.ok()) {
       PW_LOG_INFO("Received echo response: %s", response.msg);
@@ -906,10 +950,10 @@ Example
     // Create a client to call the EchoService.
     EchoClient echo_client(my_rpc_client, kDefaultChannelId);
 
-    EchoMessage::Message request{};
+    pw_rpc_EchoMessage request{};
     pw::string::Copy(message, request.msg);
 
-    // By assigning the returned ClientCall to the global echo_call, the RPC
+    // By assigning the returned call to the global echo_call, the RPC
     // call is kept alive until it completes. When a response is received, it
     // will be logged by the handler function and the call will complete.
     echo_call = echo_client.Echo(request, EchoResponse);
@@ -919,8 +963,98 @@ Example
     }
   }
 
+Call objects
+============
+An RPC call is represented by a call object. Server and client calls use the
+same base call class in C++, but the public API is different depending on the
+type of call (see `RPC call lifecycle`_) and whether it is being used by the
+server or client.
+
+The public call types are as follows:
+
+.. list-table::
+  :header-rows: 1
+
+  * - RPC Type
+    - Server call
+    - Client call
+  * - Unary
+    - ``(Raw|Nanopb|Pwpb)UnaryResponder``
+    - ``(Raw|Nanopb|Pwpb)UnaryReceiver``
+  * - Server streaming
+    - ``(Raw|Nanopb|Pwpb)ServerWriter``
+    - ``(Raw|Nanopb|Pwpb)ClientReader``
+  * - Client streaming
+    - ``(Raw|Nanopb|Pwpb)ServerReader``
+    - ``(Raw|Nanopb|Pwpb)ClientWriter``
+  * - Bidirectional streaming
+    - ``(Raw|Nanopb|Pwpb)ServerReaderWriter``
+    - ``(Raw|Nanopb|Pwpb)ClientReaderWriter``
+
+Callbacks
+---------
+The C++ call objects allow users to set callbacks that are invoked when RPC
+`events`_ occur.
+
+.. list-table::
+  :header-rows: 1
+
+  * - Name
+    - Stream signature
+    - Non-stream signature
+    - Server
+    - Client
+  * - ``on_error``
+    - ``void(pw::Status)``
+    - ``void(pw::Status)``
+    - ✅
+    - ✅
+  * - ``on_next``
+    - n/a
+    - ``void(const PayloadType&)``
+    - ✅
+    - ✅
+  * - ``on_completed``
+    - ``void(pw::Status)``
+    - ``void(const PayloadType&, pw::Status)``
+    -
+    - ✅
+  * - ``on_client_stream_end``
+    - ``void()``
+    - n/a
+    - ✅ (:c:macro:`optional <PW_RPC_CLIENT_STREAM_END_CALLBACK>`)
+    -
+
+Limitations and restrictions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RPC callbacks are free to perform most actions, including invoking new RPCs or
+cancelling pending calls. However, the C++ implementation imposes some
+limitations and restrictions that must be observed.
+
+* Callbacks must not destroy their call object. Attempting to do so will result
+  in deadlock. Another thread may destroy a call while its callback is running,
+  but that thread will block until all callbacks complete.
+* The ``on_next`` callback has additional restrictions:
+
+  * The ``on_next`` callback must not move its call object if it the call is
+    still active. It may move its call object after it is terminated first with
+    ``Finish()`` or ``Cancel()``. The ``on_next`` callback may move a different
+    callback into its call object, since moving closes the destination call.
+  * Other threads may move a call object while its ``on_next`` callback is
+    running, but they will block until the callback completes.
+  * Only one thread may execute the ``on_next`` callback for a specific service
+    method at a time. If a second thread calls ``ProcessPacket()`` with a stream
+    packet before the ``on_next`` callback for the previous packet completes,
+    the second packet will be dropped. The RPC endpoint logs a warning when this
+    occurs.
+
+.. important::
+
+  C++ RPC callbacks must respect the above `limitations and restrictions`_!
+  Otherwise, deadlocks may occur.
+
 RPC calls introspection
------------------------
+=======================
 ``pw_rpc`` provides ``pw_rpc/method_info.h`` header that allows to obtain
 information about the generated RPC method in compile time.
 
@@ -929,7 +1063,7 @@ For now it provides only two types: ``MethodRequestType<RpcMethod>`` and
 as a request and response respectively for the given RpcMethod.
 
 Example
-^^^^^^^
+-------
 We have an RPC service ``SpecialService`` with ``MyMethod`` method:
 
 .. code-block:: protobuf
@@ -965,7 +1099,7 @@ instantiate as:
   span.
 
 Client Synchronous Call wrappers
---------------------------------
+================================
 If synchronous behavior is desired when making client calls, users can use one
 of the ``SynchronousCall<RpcMethod>`` wrapper functions to make their RPC call.
 These wrappers effectively wrap the asynchronous Client RPC call with a timed
@@ -985,7 +1119,7 @@ methods.
 .. note:: Only nanopb and pw_protobuf Unary RPC methods are supported.
 
 Example
-^^^^^^^
+-------
 .. code-block:: c++
 
   #include "pw_rpc/synchronous_call.h"
@@ -1038,21 +1172,6 @@ error scenarios the same.
     HandleRoomInformation(response);
     return pw::OkStatus();
   }
-
-Client implementation details
------------------------------
-
-The ClientCall class
-^^^^^^^^^^^^^^^^^^^^
-``ClientCall`` stores the context of an active RPC, and serves as the user's
-interface to the RPC client. The core RPC library provides a base ``ClientCall``
-class with common functionality, which is then extended for RPC client
-implementations tied to different protobuf libraries to provide convenient
-interfaces for working with RPCs.
-
-The RPC server stores a list of all of active ``ClientCall`` objects. When an
-incoming packet is recieved, it dispatches to one of its active calls, which
-then decodes the payload and presents it to the user.
 
 ClientServer
 ============
