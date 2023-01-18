@@ -821,6 +821,15 @@ struct InquiryCompleteEvent:
 
   $next [+1]        StatusCode        status
 
+
+struct CommandCompleteEvent:
+  -- Core Spec v5.3 Vol 4, Part E, Section 7.7.14
+  -- EventHeader.opcode == 0xe
+  let hdr_size = EventHeader.$size_in_bytes
+  0     [+hdr_size]               EventHeader header
+  $next [+1]                      UInt        num_hci_command_packets
+  $next [+2]                      OpCodeBits  command_opcode
+
 # ============================ Test packets =============================
 
 
