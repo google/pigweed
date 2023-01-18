@@ -829,6 +829,8 @@ struct CommandCompleteEvent:
   0     [+hdr_size]               EventHeader header
   $next [+1]                      UInt        num_hci_command_packets
   $next [+2]                      OpCodeBits  command_opcode
+  let event_fixed_size = $size_in_bytes - hdr_size
+  let return_parameters_size = header.parameter_total_size - event_fixed_size
 
 # ============================ Test packets =============================
 
