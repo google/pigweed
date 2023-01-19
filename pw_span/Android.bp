@@ -21,8 +21,6 @@ cc_library_headers {
     vendor_available: true,
     cpp_std: "c++2a",
     export_include_dirs: ["public"],
-    header_libs: [
-        "pw_polyfill_headers",
-    ],
+    header_libs: [],
     host_supported: true,
 }

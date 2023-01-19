@@ -25,6 +25,7 @@ config("default_config") {
 pw_source_set("pw_varint") {
   public_configs = [ ":default_config" ]
   public_deps = [
+    dir_pw_polyfill,
     dir_pw_preprocessor,
     dir_pw_span,
   ]

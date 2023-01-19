@@ -32,7 +32,6 @@ pw_cc_library(
     includes = ["public"],
     deps = [
         # TODO(b/243851191): Depending on pw_assert causes a dependency cycle.
-        "//pw_polyfill",
     ],
 )
 
@@ -41,6 +40,7 @@ pw_cc_test(
     srcs = ["span_test.cc"],
     deps = [
         ":pw_span",
+        "//pw_polyfill",
         "//pw_unit_test",
     ],
 )
@@ -48,5 +48,8 @@ pw_cc_test(
 pw_cc_test(
     name = "compatibility_test",
     srcs = ["compatibility_test.cc"],
-    deps = [":pw_span"],
+    deps = [
+        ":pw_span",
+        "//pw_polyfill",
+    ],
 )

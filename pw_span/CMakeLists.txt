@@ -24,7 +24,6 @@ pw_add_library(pw_span INTERFACE
     public
   PUBLIC_DEPS
     pw_assert
-    pw_polyfill
     pw_polyfill.standard_library
 )
 
@@ -32,6 +31,7 @@ pw_add_test(pw_span.pw_span_test
   SOURCES
     span_test.cc
   PRIVATE_DEPS
+    pw_polyfill
     pw_span
   GROUPS
     modules
