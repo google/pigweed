@@ -85,7 +85,7 @@ pw_facade("time") {
 
 # The build time is obtained with a python script and put in a generated header
 # file. The header file is included in build_time.cc
-pw_python_action("generate_buid_time_header") {
+pw_python_action("generate_build_time_header") {
   header_output = "$target_gen_dir/$target_name/build_time.h"
   script = "generate_build_time_header.py"
   outputs = [
@@ -101,11 +101,11 @@ pw_python_action("generate_buid_time_header") {
 
 # The target provides a backend to :time that returns build time.
 pw_source_set("build_time") {
-  time_injection_outputs = get_target_outputs(":generate_buid_time_header")
+  time_injection_outputs = get_target_outputs(":generate_build_time_header")
   include_dirs = [ get_path_info(time_injection_outputs[0], "dir") ]
   sources = [ "build_time.cc" ]
   deps = [
-    ":generate_buid_time_header",
+    ":generate_build_time_header",
     ":time.facade",
   ]
 }
