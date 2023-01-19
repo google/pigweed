@@ -39,13 +39,7 @@ class Endpoint {
  public:
   ~Endpoint();
 
-  // Claims that `rpc_lock()` is held, returning a wrapped endpoint.
-  //
-  // This function should only be called in contexts in which it is clear that
-  // `rpc_lock()` is held. When calling this function from a constructor, the
-  // lock annotation will not result in errors, so care should be taken to
-  // ensure that `rpc_lock()` is held.
-  LockedEndpoint& ClaimLocked() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
+  // Public functions
 
   // Creates a channel with the provided ID and ChannelOutput, if a channel slot
   // is available or can be allocated (if PW_RPC_DYNAMIC_ALLOCATION is enabled).
@@ -68,14 +62,23 @@ class Endpoint {
   // called with the ABORTED status.
   Status CloseChannel(uint32_t channel_id) PW_LOCKS_EXCLUDED(rpc_lock());
 
-  // For internal use only: returns the number calls in the RPC calls list.
+  // Internal functions, hidden by the Client and Server classes
+
+  // Returns the number calls in the RPC calls list.
   size_t active_call_count() const PW_LOCKS_EXCLUDED(rpc_lock()) {
     LockGuard lock(rpc_lock());
     return calls_.size();
   }
 
-  // For internal use only: finds an internal::Channel with this ID or nullptr
-  // if none matches.
+  // Claims that `rpc_lock()` is held, returning a wrapped endpoint.
+  //
+  // This function should only be called in contexts in which it is clear that
+  // `rpc_lock()` is held. When calling this function from a constructor, the
+  // lock annotation will not result in errors, so care should be taken to
+  // ensure that `rpc_lock()` is held.
+  LockedEndpoint& ClaimLocked() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
+
+  // Finds an internal::Channel with this ID or nullptr if none matches.
   Channel* GetInternalChannel(uint32_t channel_id)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     return channels_.Get(channel_id);
@@ -152,6 +155,9 @@ class Endpoint {
                      uint32_t call_id) PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   ChannelList channels_ PW_GUARDED_BY(rpc_lock());
+
+  // List of all active calls associated with this endpoint. Calls are added to
+  // this list when they start and removed from it when they finish.
   IntrusiveList<Call> calls_ PW_GUARDED_BY(rpc_lock());
 
   uint32_t next_call_id_ PW_GUARDED_BY(rpc_lock()) = 0;

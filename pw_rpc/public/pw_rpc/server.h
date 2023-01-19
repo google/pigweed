@@ -163,6 +163,7 @@ class Server : public internal::Endpoint {
 
   // Remove these internal::Endpoint functions from the public interface.
   using Endpoint::active_call_count;
+  using Endpoint::ClaimLocked;
   using Endpoint::GetInternalChannel;
 
   IntrusiveList<Service> services_ PW_GUARDED_BY(internal::rpc_lock());

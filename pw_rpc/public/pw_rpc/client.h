@@ -53,6 +53,7 @@ class Client : public internal::Endpoint {
  private:
   // Remove these internal::Endpoint functions from the public interface.
   using Endpoint::active_call_count;
+  using Endpoint::ClaimLocked;
   using Endpoint::GetInternalChannel;
 };
 

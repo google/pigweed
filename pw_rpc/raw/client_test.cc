@@ -45,7 +45,7 @@ namespace {
 template <auto kMethod, typename Call, typename Context>
 Call MakeCall(Context& context)
     PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock()) {
-  return Call(context.client().ClaimLocked(),
+  return Call(static_cast<internal::Endpoint&>(context.client()).ClaimLocked(),
               context.channel().id(),
               internal::MethodInfo<kMethod>::kServiceId,
               internal::MethodInfo<kMethod>::kMethodId,
