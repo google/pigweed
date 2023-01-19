@@ -61,7 +61,6 @@ source_set("common") {
     "//src/connectivity/bluetooth/core/bt-host/hci-spec:hci-protocol",
     "//src/connectivity/bluetooth/lib/cpp-string",
     "//src/connectivity/bluetooth/lib/cpp-type",
-    "//src/devices/lib/driver",
     "//src/lib/ddk",
     "//third_party/pigweed:pw_assert",
     "//third_party/pigweed:pw_log",
@@ -70,8 +69,6 @@ source_set("common") {
     "//third_party/pigweed:pw_string",
     "//zircon/system/ulib/async:async-cpp",
     "//zircon/system/ulib/async-default",
-    "//zircon/system/ulib/fbl",
-    "//zircon/system/ulib/zx",
   ]
 }
 

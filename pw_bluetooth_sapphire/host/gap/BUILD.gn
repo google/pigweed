@@ -71,8 +71,6 @@ static_library("gap") {
 
   public_deps = [
     ":definitions",
-    "//sdk/banjo/fuchsia.hardware.bt.vendor:fuchsia.hardware.bt.vendor_banjo_cpp",
-    "//sdk/fidl/fuchsia.io:fuchsia.io_hlcpp",
     "//sdk/lib/fit",
     "//src/connectivity/bluetooth/core/bt-host/common",
     "//src/connectivity/bluetooth/core/bt-host/gatt",
@@ -83,8 +81,6 @@ static_library("gap") {
     "//src/connectivity/bluetooth/core/bt-host/sm",
     "//src/lib/uuid",
     "//third_party/pigweed:pw_bluetooth",
-    "//zircon/system/ulib/fbl",
-    "//zircon/system/ulib/zx",
   ]
 
   # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings

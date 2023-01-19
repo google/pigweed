@@ -41,7 +41,6 @@ static_library("gatt") {
 
   public_deps = [
     ":definitions",
-    "//sdk/lib/fidl/cpp",
     "//sdk/lib/fit",
     "//src/connectivity/bluetooth/core/bt-host/att",
   ]
@@ -68,7 +67,6 @@ source_set("testing") {
     ":gatt",
     "//src/connectivity/bluetooth/core/bt-host/common",
     "//src/lib/testing/loop_fixture",
-    "//zircon/system/ulib/fbl",
   ]
 }
 
