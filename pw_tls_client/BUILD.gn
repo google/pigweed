@@ -88,14 +88,7 @@ pw_facade("time") {
 pw_python_action("generate_build_time_header") {
   header_output = "$target_gen_dir/$target_name/build_time.h"
   script = "generate_build_time_header.py"
-  outputs = [
-    header_output,
-
-    # A output file that is never generated so that this action is always
-    # re-run. This is to make sure that the build time in the header is always
-    # up-to-date.
-    "$target_gen_dir/non_exists",
-  ]
+  outputs = [ header_output ]
   args = [ rebase_path(header_output) ]
 }
 
