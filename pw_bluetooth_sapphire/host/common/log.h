@@ -5,8 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_LOG_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_LOG_H_
 
-#include <lib/ddk/driver.h>
-
 #include <cstddef>
 #include <string>
 
@@ -74,9 +72,9 @@
 // to build dependency reasons) users of these utilities will need to link a
 // symbol for |__zircon_driver_rec__|. While this symbol will remain unused in
 // printf-mode it is needed to pass compilation if the target is not a driver.
-// Use the BT_DECLARE_FAKE_DRIVER macro for this purpose:
+// Use the PW_LOG_DECLARE_FAKE_DRIVER macro for this purpose:
 //
-//    BT_DECLARE_FAKE_DRIVER();
+//    PW_LOG_DECLARE_FAKE_DRIVER();
 //
 //    int main() {
 //      bt::UsePrintf(bt::LogSeverity::TRACE);
@@ -129,7 +127,5 @@ PW_PRINTF_FORMAT(1, 2) constexpr void CheckFormat([[maybe_unused]] const char* f
   PW_LOG(static_cast<int>(bt::LogSeverity::level), tag, GetPwLogFlags(bt::LogSeverity::level), \
          fmt);                                                                                 \
   ::bt::internal::CheckFormat(tag)
-
-#define BT_DECLARE_FAKE_DRIVER() zx_driver_rec_t __zircon_driver_rec__ = {}
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_LOG_H_

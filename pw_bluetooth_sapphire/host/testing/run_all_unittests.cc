@@ -2,8 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include <lib/ddk/driver.h>
-
 #include <cstdlib>
 
 #include <gtest/gtest.h>
@@ -17,7 +15,9 @@
 #include "src/lib/fxl/log_settings_command_line.h"
 #include "src/lib/fxl/test/test_settings.h"
 
-BT_DECLARE_FAKE_DRIVER();
+#ifdef PW_LOG_DECLARE_FAKE_DRIVER
+PW_LOG_DECLARE_FAKE_DRIVER();
+#endif
 
 using bt::LogSeverity;
 
