@@ -553,7 +553,6 @@ fsys::HostInfo HostInfoToFidl(const bt::gap::Adapter& adapter) {
   fsys::HostInfo info;
   info.set_id(fbt::HostId{adapter.identifier().value()});
   info.set_technology(TechnologyTypeToFidl(adapter.state().type()));
-  info.set_address(AddressToFidl(fbt::AddressType::PUBLIC, adapter.state().controller_address));
   info.set_local_name(adapter.local_name());
   info.set_discoverable(adapter.IsDiscoverable());
   info.set_discovering(adapter.IsDiscovering());

@@ -1285,7 +1285,6 @@ TEST_F(HelpersTestFakeAdapter, HostInfoToFidl) {
   auto host_info = HostInfoToFidl(*adapter());
   ASSERT_TRUE(host_info.has_id());
   ASSERT_TRUE(host_info.has_technology());
-  ASSERT_TRUE(host_info.has_address());
   ASSERT_TRUE(host_info.has_local_name());
   ASSERT_TRUE(host_info.has_discoverable());
   ASSERT_TRUE(host_info.has_discovering());
@@ -1293,14 +1292,12 @@ TEST_F(HelpersTestFakeAdapter, HostInfoToFidl) {
 
   EXPECT_EQ(adapter()->identifier().value(), host_info.id().value);
   EXPECT_EQ(fsys::TechnologyType::DUAL_MODE, host_info.technology());
-  EXPECT_EQ(fbt::AddressType::PUBLIC, host_info.address().type);
-  EXPECT_TRUE(
-      ContainersEqual(adapter()->state().controller_address.bytes(), host_info.address().bytes));
   EXPECT_EQ("", host_info.local_name());
   EXPECT_TRUE(host_info.discoverable());
   EXPECT_TRUE(host_info.discovering());
   // Since privacy is not enabled by default, only the public address should be reported.
   ASSERT_EQ(host_info.addresses().size(), 1u);
+  EXPECT_EQ(fbt::AddressType::PUBLIC, host_info.addresses()[0].type);
   EXPECT_TRUE(ContainersEqual(adapter()->state().controller_address.bytes(),
                               host_info.addresses()[0].bytes));
 }
@@ -1312,9 +1309,6 @@ TEST_F(HelpersTestFakeAdapter, HostInfoWithLEAddressToFidl) {
   auto host_info = HostInfoToFidl(*adapter());
   EXPECT_EQ(adapter()->identifier().value(), host_info.id().value);
   EXPECT_EQ(fsys::TechnologyType::DUAL_MODE, host_info.technology());
-  EXPECT_EQ(fbt::AddressType::PUBLIC, host_info.address().type);
-  EXPECT_TRUE(
-      ContainersEqual(adapter()->state().controller_address.bytes(), host_info.address().bytes));
   EXPECT_EQ("", host_info.local_name());
   EXPECT_TRUE(host_info.discoverable());
   EXPECT_TRUE(host_info.discovering());

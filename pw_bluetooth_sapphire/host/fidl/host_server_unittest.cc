@@ -533,7 +533,6 @@ TEST_F(HostServerTest, WatchState) {
   ASSERT_TRUE(info.has_value());
   ASSERT_TRUE(info->has_id());
   ASSERT_TRUE(info->has_technology());
-  ASSERT_TRUE(info->has_address());
   ASSERT_TRUE(info->has_local_name());
   ASSERT_TRUE(info->has_discoverable());
   ASSERT_TRUE(info->has_discovering());
@@ -541,12 +540,10 @@ TEST_F(HostServerTest, WatchState) {
 
   EXPECT_EQ(adapter()->identifier().value(), info->id().value);
   EXPECT_EQ(fsys::TechnologyType::DUAL_MODE, info->technology());
-  EXPECT_EQ(fbt::AddressType::PUBLIC, info->address().type);
-  EXPECT_TRUE(
-      ContainersEqual(adapter()->state().controller_address.bytes(), info->address().bytes));
   EXPECT_EQ("fuchsia", info->local_name());
   EXPECT_FALSE(info->discoverable());
   EXPECT_FALSE(info->discovering());
+  EXPECT_EQ(fbt::AddressType::PUBLIC, info->addresses()[0].type);
   EXPECT_TRUE(
       ContainersEqual(adapter()->state().controller_address.bytes(), info->addresses()[0].bytes));
 }
