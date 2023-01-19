@@ -53,6 +53,7 @@ declare_args() {
 # Args:
 #   cc: (required) String indicating the C compiler to use.
 #   cxx: (required) String indicating the C++ compiler to use.
+#   clang_tidy_path: (optional) String indicating clang-tidy bin to use.
 template("pw_static_analysis_toolchain") {
   invoker_toolchain_args = invoker.defaults
 
@@ -71,6 +72,11 @@ template("pw_static_analysis_toolchain") {
   foreach(pattern, pw_toolchain_STATIC_ANALYSIS_SKIP_INCLUDE_PATHS) {
     _skip_include_path =
         _skip_include_path + " --skip-include-path '${pattern}'"
+  }
+  _clang_tidy_path = ""
+  if (defined(invoker.clang_tidy_path)) {
+    _clang_tidy_path =
+        "--clang-tidy " + rebase_path(invoker.clang_tidy_path, root_build_dir)
   }
 
   toolchain(target_name) {
@@ -98,6 +104,7 @@ template("pw_static_analysis_toolchain") {
                               _clang_tidy_py,
                               _source_exclude,
                               _skip_include_path,
+                              _clang_tidy_path,
                               "--source-file {{source}}",
                               "--source-root '${_source_root}'",
                               "--export-fixes {{output}}.yaml",
@@ -126,6 +133,7 @@ template("pw_static_analysis_toolchain") {
                               _clang_tidy_py,
                               _source_exclude,
                               _skip_include_path,
+                              _clang_tidy_path,
                               "--source-file {{source}}",
                               "--source-root '${_source_root}'",
                               "--export-fixes {{output}}.yaml",
