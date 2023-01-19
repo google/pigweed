@@ -503,7 +503,8 @@ void RemoteService::SendLongWriteRequest(att::Handle handle, uint16_t offset, Bu
   // Divide up the long write into it's constituent PreparedWrites and add them
   // to the queue.
   while (bytes_written < value.size()) {
-    uint16_t part_value_size = std::min(client_->mtu() - header_ln, value.size() - bytes_written);
+    uint16_t part_value_size =
+        static_cast<uint16_t>(std::min(client_->mtu() - header_ln, value.size() - bytes_written));
     auto part_buffer = value.view(bytes_written, part_value_size);
 
     long_write_queue.push(att::QueuedWrite(handle, offset, part_buffer));
@@ -563,8 +564,8 @@ void RemoteService::ReadLongHelper(att::Handle value_handle, uint16_t offset,
     }
 
     // We have more bytes to read. Read the next blob.
-    self->ReadLongHelper(value_handle, offset + blob.size(), std::move(buffer), bytes_read,
-                         std::move(cb));
+    self->ReadLongHelper(value_handle, static_cast<uint16_t>(offset + blob.size()),
+                         std::move(buffer), bytes_read, std::move(cb));
   };
 
   // "To read the complete Characteristic Value an ATT_READ_REQ PDU should be used for the first

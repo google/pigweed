@@ -226,7 +226,7 @@ class Impl final : public GATT {
       // Connection not found.
       return RemoteService::WeakPtr();
     }
-    return iter->second.remote_service_manager()->FindService(service_id);
+    return iter->second.remote_service_manager()->FindService(static_cast<att::Handle>(service_id));
   }
 
  private:
