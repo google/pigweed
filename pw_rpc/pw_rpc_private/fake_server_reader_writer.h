@@ -67,6 +67,9 @@ class FakeServerReaderWriter : private ServerCall {
 
   // Expose a few additional methods for test use.
   ServerCall& as_server_call() { return *this; }
+  using Call::channel_id_locked;
+  using Call::id;
+  using Call::set_id;
 };
 
 class FakeServerWriter : private FakeServerReaderWriter {

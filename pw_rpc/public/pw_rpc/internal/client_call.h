@@ -57,8 +57,7 @@ class ClientCall : public Call {
              CallProperties properties) PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock())
       : Call(client, channel_id, service_id, method_id, properties) {}
 
-  // Sends CLIENT_STREAM_END if applicable, releases any held payload buffer,
-  // and marks the call as closed.
+  // Sends CLIENT_STREAM_END if applicable and marks the call as closed.
   void CloseClientCall() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   void MoveClientCallFrom(ClientCall& other)

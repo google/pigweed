@@ -102,8 +102,7 @@ void Call::MoveFrom(Call& other) {
   on_next_ = std::move(other.on_next_);
 
   // Mark the other call inactive, unregister it, and register this one.
-  other.rpc_state_ = kInactive;
-  other.client_stream_state_ = kClientStreamInactive;
+  other.MarkClosed();
 
   endpoint().UnregisterCall(other);
   endpoint().RegisterUniqueCall(*this);

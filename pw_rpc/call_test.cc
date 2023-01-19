@@ -293,6 +293,32 @@ TEST_F(ServerReaderWriterTest, Move_MovesCallbacks) {
   EXPECT_EQ(calls, 2 + PW_RPC_CLIENT_STREAM_END_CALLBACK);
 }
 
+TEST_F(ServerReaderWriterTest, Move_ClearsCallAndChannelId) {
+  rpc_lock().lock();
+  reader_writer_.set_id(999);
+  EXPECT_NE(reader_writer_.channel_id_locked(), 0u);
+  rpc_lock().unlock();
+
+  FakeServerReaderWriter destination(std::move(reader_writer_));
+
+  LockGuard lock(rpc_lock());
+  EXPECT_EQ(reader_writer_.id(), 0u);
+  EXPECT_EQ(reader_writer_.channel_id_locked(), 0u);
+}
+
+TEST_F(ServerReaderWriterTest, Close_ClearsCallAndChannelId) {
+  rpc_lock().lock();
+  reader_writer_.set_id(999);
+  EXPECT_NE(reader_writer_.channel_id_locked(), 0u);
+  rpc_lock().unlock();
+
+  EXPECT_EQ(OkStatus(), reader_writer_.Finish());
+
+  LockGuard lock(rpc_lock());
+  EXPECT_EQ(reader_writer_.id(), 0u);
+  EXPECT_EQ(reader_writer_.channel_id_locked(), 0u);
+}
+
 }  // namespace
 }  // namespace internal
 }  // namespace pw::rpc
