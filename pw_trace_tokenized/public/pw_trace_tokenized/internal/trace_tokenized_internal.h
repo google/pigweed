@@ -17,9 +17,11 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include "pw_preprocessor/arguments.h"
+#include "pw_preprocessor/util.h"
 
 // Because __FUNCTION__ is not a string literal to the preprocessor it can't be
 // tokenized. So this backend redefines the implementation to instead use the
@@ -47,6 +49,7 @@
 #define PW_TRACE_TYPE_ASYNC_END PW_TRACE_EVENT_TYPE_ASYNC_END
 
 PW_EXTERN_C_START
+
 typedef enum {
   PW_TRACE_EVENT_TYPE_INVALID = 0,
   PW_TRACE_EVENT_TYPE_INSTANT = 1,
@@ -59,6 +62,16 @@ typedef enum {
   PW_TRACE_EVENT_TYPE_DURATION_GROUP_START = 8,
   PW_TRACE_EVENT_TYPE_DURATION_GROUP_END = 9,
 } pw_trace_EventType;
+
+typedef struct {
+  uint32_t trace_token;
+  pw_trace_EventType event_type;
+  const char* module;
+  uint8_t flags;
+  uint32_t trace_id;
+  size_t data_size;
+  const void* data_buffer;
+} pw_trace_tokenized_TraceEvent;
 
 // This should not be called directly, instead use the PW_TRACE_* macros.
 void pw_trace_TraceEvent(uint32_t trace_token,

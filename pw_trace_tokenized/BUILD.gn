@@ -36,6 +36,19 @@ pw_source_set("config") {
   public = [ "public/pw_trace_tokenized/config.h" ]
 }
 
+config("linux_include_config_overrides") {
+  cflags = [
+    "-include",
+    rebase_path("linux_config_overrides.h", root_build_dir),
+  ]
+  visibility = [ ":*" ]
+}
+
+pw_source_set("linux_config_overrides") {
+  public_configs = [ ":linux_include_config_overrides" ]
+  sources = [ "linux_config_overrides.h" ]
+}
+
 pw_test_group("tests") {
   tests = [
     ":trace_tokenized_test",
@@ -54,8 +67,9 @@ pw_source_set("pw_trace_tokenized") {
     ":core",
     "$dir_pw_tokenizer",
   ]
+  deps = []
   if (pw_trace_tokenizer_time != "") {
-    deps = [ "$pw_trace_tokenizer_time" ]
+    deps += [ "$pw_trace_tokenizer_time" ]
   }
 
   public = [ "public_overrides/pw_trace_backend/trace_backend.h" ]
@@ -162,6 +176,7 @@ pw_source_set("core") {
     ":public_include_path",
   ]
   public_deps = [
+    "$dir_pw_log",
     "$dir_pw_status",
     "$dir_pw_tokenizer",
     dir_pw_span,
@@ -241,6 +256,20 @@ if (dir_pw_third_party_nanopb == "") {
       "$dir_pw_rpc/system_server",
       "$dir_pw_trace",
       "$dir_pw_trace:trace_sample_app",
+    ]
+  }
+}
+
+if (current_os != "linux") {
+  group("trace_tokenized_example_linux_group_by_tid") {
+  }
+} else {
+  pw_executable("trace_tokenized_example_linux_group_by_tid") {
+    sources = [ "example/linux_group_by_tid.cc" ]
+    deps = [
+      ":trace_example_to_file",
+      "$dir_pw_log",
+      "$dir_pw_trace",
     ]
   }
 }

@@ -20,7 +20,6 @@
 
 #include <fstream>
 
-#include "pw_trace/example/sample_app.h"
 #include "pw_trace_tokenized/trace_callback.h"
 
 namespace pw {

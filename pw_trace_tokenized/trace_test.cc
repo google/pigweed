@@ -88,21 +88,16 @@ class TraceTestInterface {
   // buffer_ in the TraceSink callback, that way it only gets added to the
   // buffer if tracing is enabled and the sample was not surpressed.
   static pw_trace_TraceEventReturnFlags TraceEventCallback(
-      void* user_data,
-      uint32_t trace_ref,
-      pw_trace_EventType event_type,
-      const char* module,
-      uint32_t trace_id,
-      uint8_t /* flags */) {
+      void* user_data, pw_trace_tokenized_TraceEvent* event) {
     TraceTestInterface* test_interface =
         reinterpret_cast<TraceTestInterface*>(user_data);
     pw_trace_TraceEventReturnFlags ret = 0;
     if (test_interface->action_ != ActionOnEvent::None &&
-        (test_interface->event_match_.trace_ref == trace_ref ||
-         test_interface->event_match_.event_type == event_type ||
-         test_interface->event_match_.module == module ||
-         (trace_id != PW_TRACE_TRACE_ID_DEFAULT &&
-          test_interface->event_match_.trace_id == trace_id))) {
+        (test_interface->event_match_.trace_ref == event->trace_token ||
+         test_interface->event_match_.event_type == event->event_type ||
+         test_interface->event_match_.module == event->module ||
+         (event->trace_id != PW_TRACE_TRACE_ID_DEFAULT &&
+          test_interface->event_match_.trace_id == event->trace_id))) {
       if (test_interface->action_ == ActionOnEvent::Skip) {
         ret |= PW_TRACE_EVENT_RETURN_FLAGS_SKIP_EVENT;
       } else if (test_interface->action_ == ActionOnEvent::Enable) {
@@ -114,8 +109,8 @@ class TraceTestInterface {
       }
     }
 
-    test_interface->current_trace_event_ =
-        TraceInfo{trace_ref, event_type, module, trace_id};
+    test_interface->current_trace_event_ = TraceInfo{
+        event->trace_token, event->event_type, event->module, event->trace_id};
     return ret;
   }
 

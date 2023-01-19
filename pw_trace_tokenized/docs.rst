@@ -70,27 +70,35 @@ The tokenized trace module adds both event callbacks and data sinks which
 provide hooks into tracing.
 
 The *event callbacks* are called when trace events occur, with the trace event
-data. Using the return flags, these callbacks can be used to adjust the trace
-behaviour at runtime in response to specific events. If requested (using
-``called_on_every_event``) the callback will be called on every trace event
-regardless if tracing is currently enabled or not. Using this, the application
-can trigger tracing on or off when specific traces or patterns of traces are
-observed, or can selectively filter traces to preserve the trace buffer.
+data, before the event is encoded or sent to the sinks. The callbacks may
+modify the run-time fields of the trace event, i.e. ``trace_id``,
+``data_buffer`` and ``data_size``. Using the return flags, these callbacks can
+be used to adjust the trace behaviour at runtime in response to specific events.
 
-The event callback is a single function which is provided the details of the
-trace as arguments, and returns ``pw_trace_TraceEventReturnFlags``, which can be
-used to change how the trace is handled.
+If requested (using ``called_on_every_event``) the callback will be called on
+every trace event regardless if tracing is currently enabled or not. Using this,
+the application can trigger tracing on or off when specific traces or patterns
+of traces are observed, or can selectively filter traces to preserve the trace
+buffer.
+
+The event callback is called in the context of the traced task. It must be
+ISR-safe to support tracing within ISRs. It must be lightweight to prevent
+performance issues in the trace tasks.
+
+The return flags ``pw_trace_TraceEventReturnFlags`` support the following
+behaviors:
+
+* ``PW_TRACE_EVENT_RETURN_FLAGS_SKIP_EVENT`` can be set true to skip this
+  sample.
+* ``PW_TRACE_EVENT_RETURN_FLAGS_DISABLE_AFTER_PROCESSING`` can be set true to
+  disable tracing after this sample.
 
 .. cpp:function:: pw_trace_TraceEventReturnFlags pw_trace_EventCallback( \
-    void* user_data, \
-    uint32_t trace_ref, \
-    pw_trace_EventType event_type, \
-    const char* module, \
-    uint32_t trace_id, \
-    uint8_t flags)
+    void* user_data,  \
+    pw_trace_tokenized_TraceEvent* event)
 .. cpp:function:: pw_Status pw_trace_RegisterEventCallback( \
     pw_trace_EventCallback callback, \
-    bool called_on_every_event, \
+    pw_trace_EventCallbackFlags flags, \
     void* user_data, \
     pw_trace_EventCallbackHandle* handle)
 .. cpp:function:: pw_Status pw_trace_UnregisterEventCallback( \

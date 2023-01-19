@@ -64,12 +64,7 @@ typedef uint32_t pw_trace_TraceEventReturnFlags;
 
 typedef size_t pw_trace_EventCallbackHandle;
 typedef pw_trace_TraceEventReturnFlags (*pw_trace_EventCallback)(
-    void* user_data,
-    uint32_t trace_ref,
-    pw_trace_EventType event_type,
-    const char* module,
-    uint32_t trace_id,
-    uint8_t flags);
+    void* user_data, pw_trace_tokenized_TraceEvent* event);
 
 pw_Status pw_trace_RegisterEventCallback(
     pw_trace_EventCallback callback,
@@ -142,6 +137,7 @@ class CallbacksImpl {
   };
   using EventCallback = pw_trace_EventCallback;
   using EventCallbackHandle = pw_trace_EventCallbackHandle;
+  using TraceEvent = pw_trace_tokenized_TraceEvent;
   struct EventCallbacks {
     void* user_data;
     EventCallback callback;
@@ -167,12 +163,7 @@ class CallbacksImpl {
   pw::Status UnregisterAllEventCallbacks();
   EventCallbacks* GetEventCallback(EventCallbackHandle handle);
   pw_trace_TraceEventReturnFlags CallEventCallbacks(
-      CallOnEveryEvent called_on_every_event,
-      uint32_t trace_ref,
-      EventType event_type,
-      const char* module,
-      uint32_t trace_id,
-      uint8_t flags);
+      CallOnEveryEvent called_on_every_event, TraceEvent* event);
   size_t GetCalledOnEveryEventCount() const {
     return called_on_every_event_count_;
   }

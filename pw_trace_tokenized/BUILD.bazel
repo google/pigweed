@@ -44,6 +44,12 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "linux_config_overrides",
+    hdrs = ["linux_config_overrides.h"],
+    tags = ["manual"],
+)
+
+pw_cc_library(
     name = "pw_trace_tokenized",
     srcs = [
         "trace.cc",
@@ -266,5 +272,16 @@ pw_cc_library(
         "//pw_rpc/system_server",
         "//pw_trace",
         "//pw_trace:pw_trace_sample_app",
+    ],
+)
+
+pw_cc_library(
+    name = "trace_tokenized_example_linux_group_by_tid",
+    srcs = ["example/linux_group_by_tid.cc"],
+    tags = ["manual"],
+    deps = [
+        ":pw_trace_example_to_file",
+        "//pw_log",
+        "//pw_trace",
     ],
 )
