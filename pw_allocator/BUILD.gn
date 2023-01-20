@@ -90,13 +90,20 @@ pw_test_group("tests") {
 
 pw_test("block_test") {
   configs = [ ":enable_heap_poison" ]
-  deps = [ ":block" ]
+  deps = [
+    ":block",
+    dir_pw_span,
+  ]
   sources = [ "block_test.cc" ]
 }
 
 pw_test("freelist_test") {
   configs = [ ":enable_heap_poison" ]
-  deps = [ ":freelist" ]
+  deps = [
+    ":freelist",
+    dir_pw_span,
+    dir_pw_status,
+  ]
   sources = [ "freelist_test.cc" ]
 }
 
