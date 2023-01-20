@@ -117,11 +117,11 @@ class OnlyTwoStaticManager {
   explicit OnlyTwoStaticManager(StaticTester *self_ptr) : obj_ptr_(self_ptr) {}
   ~OnlyTwoStaticManager() { InvalidateAll(); }
 
-  using RefType = RecyclingWeakRef<StaticTester>;
+  using RefType = RecyclingWeakRef;
 
   std::optional<fbl::RefPtr<RefType>> GetWeakRef() {
     for (auto &ptr : OnlyTwoStaticManager::pointers_) {
-      if (ptr.is_alive() && &ptr.get() == obj_ptr_) {
+      if (ptr.is_alive() && ptr.get() == obj_ptr_) {
         // Already adopted, add another refptr pointing to it.
         return fbl::RefPtr(&ptr);
       }
@@ -141,7 +141,7 @@ class OnlyTwoStaticManager {
 
  private:
   StaticTester *obj_ptr_;
-  inline static RecyclingWeakRef<StaticTester> pointers_[2];
+  inline static RecyclingWeakRef pointers_[2];
 };
 
 class StaticTester : public WeakSelf<StaticTester, OnlyTwoStaticManager> {
@@ -210,6 +210,42 @@ TEST_F(WeakSelfTest, StaticDeathWhenExhausted) {
   EXPECT_FALSE(ptr2.is_alive());
 
   EXPECT_DEATH_IF_SUPPORTED(test3.GetWeakPtr(), ".*");
+}
+
+class BaseClass {
+ public:
+  BaseClass() = default;
+  virtual ~BaseClass() = default;
+
+  void set_value(int value) { value_ = value; }
+
+  int value() const { return value_; }
+
+ private:
+  int value_ = 0;
+};
+
+class ChildClass : public BaseClass, public WeakSelf<ChildClass> {
+ public:
+  ChildClass() : BaseClass(), WeakSelf<ChildClass>(this) {}
+};
+
+TEST_F(WeakSelfTest, Upcast) {
+  ChildClass obj;
+
+  WeakPtr<ChildClass> child_weak = obj.GetWeakPtr();
+  child_weak->set_value(1);
+  EXPECT_EQ(child_weak->value(), 1);
+
+  WeakPtr<BaseClass> base_weak_copy(child_weak);
+  EXPECT_TRUE(child_weak.is_alive());
+  base_weak_copy->set_value(2);
+  EXPECT_EQ(base_weak_copy->value(), 2);
+
+  WeakPtr<BaseClass> base_weak_move(std::move(child_weak));
+  EXPECT_FALSE(child_weak.is_alive());
+  base_weak_move->set_value(3);
+  EXPECT_EQ(base_weak_move->value(), 3);
 }
 
 }  // namespace

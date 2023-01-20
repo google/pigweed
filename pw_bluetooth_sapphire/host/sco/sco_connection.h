@@ -69,10 +69,6 @@ class ScoConnection final : public hci::ScoDataChannel::ConnectionInterface {
   using WeakPtr = WeakSelf<ScoConnection>::WeakPtr;
   WeakPtr GetWeakPtr() { return weak_self_.GetWeakPtr(); }
 
-  ConnectionInterface::WeakPtr GetConnectionInterface() {
-    return weak_conn_interface_.GetWeakPtr();
-  }
-
   // ScoDataChannel overrides:
   bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> parameters()
       override;
@@ -112,7 +108,6 @@ class ScoConnection final : public hci::ScoDataChannel::ConnectionInterface {
 
   bt::StaticPacket<pw::bluetooth::emboss::SynchronousConnectionParametersWriter> parameters_;
 
-  WeakSelf<ConnectionInterface> weak_conn_interface_;
   WeakSelf<ScoConnection> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ScoConnection);

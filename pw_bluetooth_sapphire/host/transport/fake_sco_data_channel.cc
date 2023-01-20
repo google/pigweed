@@ -6,9 +6,9 @@
 
 namespace bt::hci {
 
-void FakeScoDataChannel::RegisterConnection(ConnectionInterface::WeakPtr connection) {
+void FakeScoDataChannel::RegisterConnection(WeakPtr<ConnectionInterface> connection) {
   auto [iter, inserted] =
-      connections_.emplace(connection->handle(), RegisteredConnection{connection});
+      connections_.emplace(connection->handle(), RegisteredConnection{std::move(connection)});
   BT_ASSERT(inserted);
 }
 

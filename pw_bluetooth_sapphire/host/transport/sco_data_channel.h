@@ -49,8 +49,6 @@ class ScoDataChannel {
     // Called when there is an internal error and this connection has been unregistered.
     // Unregistering this connection is unnecessary, but harmless.
     virtual void OnHciError() = 0;
-
-    using WeakPtr = WeakSelf<ConnectionInterface>::WeakPtr;
   };
 
   static std::unique_ptr<ScoDataChannel> Create(const DataBufferInfo& buffer_info,
@@ -60,7 +58,7 @@ class ScoDataChannel {
 
   // Register a connection. The connection must have a data path of
   // pw::bluetooth::emboss::ScoDataPath::kHci.
-  virtual void RegisterConnection(ConnectionInterface::WeakPtr connection) = 0;
+  virtual void RegisterConnection(WeakPtr<ConnectionInterface> connection) = 0;
 
   // Unregister a connection when it is disconnected.
   // |UnregisterConnection| does not clear the controller packet count, so

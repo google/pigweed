@@ -22,8 +22,7 @@ class DynamicWeakManager;
 //
 // This is not thread-safe: get() must be used on the thread the WeakPtr was created on
 // (but can be passed through other threads while not being used)
-template <typename T>
-class WeakRef : public fbl::RefCounted<WeakRef<T>> {
+class WeakRef : public fbl::RefCounted<WeakRef> {
  public:
   ~WeakRef() = default;
 
@@ -32,24 +31,30 @@ class WeakRef : public fbl::RefCounted<WeakRef<T>> {
   bool is_alive() { return !!ptr_; }
 
   // Get a reference to the alive object.
-  T& get() {
+  void* get() {
     BT_ASSERT_MSG(ptr_, "attempted to get a destroyed ptr");
-    return *ptr_;
+    return ptr_;
   }
 
-  void set(T* p) { ptr_ = p; }
+  void set(void* p) { ptr_ = p; }
 
- private:
-  explicit WeakRef(T* ptr) : ptr_(ptr) {}
-
-  void maybe_unset(const T* doomed) {
+  void maybe_unset(const void* doomed) {
     if (ptr_ == doomed) {
       ptr_ = nullptr;
     }
   }
-  // Pointer to the existent object if it is alive, otherwise a nullptr.
-  T* ptr_;
-  friend class DynamicWeakManager<T>;
+
+ private:
+  template <class T>
+  friend class DynamicWeakManager;
+
+  explicit WeakRef(void* ptr) : ptr_(ptr) {}
+
+  // Pointer to the existent object if it is alive, otherwise a nullptr. We use a void* to avoid
+  // templating and to avoid having separate variables for the flag and the pointer. Avoiding
+  // templating enables us to support upcasting, as WeakRef type remains the same for the upcasted
+  // WeakPtr.
+  void* ptr_;
 };
 
 // RecyclingWeakRef is a version of WeakRef which avoids deletion after the last count is
@@ -61,10 +66,9 @@ class WeakRef : public fbl::RefCounted<WeakRef<T>> {
 // We disable the Adoption Validator of RefCounted so that this pointer can be adopted multiple
 // times. Otherwise RefCountedBase gets mad as us for not resetting the count to the sentinel (which
 // is not possible).
-template <typename T>
 class RecyclingWeakRef
-    : public fbl::Recyclable<RecyclingWeakRef<T>>,
-      public fbl::RefCounted<RecyclingWeakRef<T>, /*EnableAdoptionValidator=*/false> {
+    : public fbl::Recyclable<RecyclingWeakRef>,
+      public fbl::RefCounted<RecyclingWeakRef, /*EnableAdoptionValidator=*/false> {
  public:
   RecyclingWeakRef() : ptr_(nullptr) {}
   ~RecyclingWeakRef() = default;
@@ -78,27 +82,27 @@ class RecyclingWeakRef
   // This can return true while is_alive returns false.
   bool is_in_use() { return in_use_; }
 
-  T& get() {
+  void* get() {
     BT_ASSERT_MSG(in_use_, "shouldn't get an unallocated ptr");
     BT_ASSERT_MSG(ptr_, "attempted to get a destroyed ptr");
-    return *ptr_;
+    return ptr_;
   }
 
-  fbl::RefPtr<RecyclingWeakRef<T>> alloc(T* p) {
+  fbl::RefPtr<RecyclingWeakRef> alloc(void* p) {
     BT_ASSERT(!in_use_);
     in_use_ = true;
     ptr_ = p;
     return fbl::AdoptRef(this);
   }
 
-  void maybe_unset(const T* doomed) {
+  void maybe_unset(const void* doomed) {
     if (in_use_ && ptr_ == doomed) {
       ptr_ = nullptr;
     }
   }
 
  private:
-  friend class fbl::Recyclable<RecyclingWeakRef<T>>;
+  friend class fbl::Recyclable<RecyclingWeakRef>;
   // This method is called by Recyclable on the last reference drop.
   void fbl_recycle() {
     ptr_ = nullptr;
@@ -109,7 +113,7 @@ class RecyclingWeakRef
   bool in_use_ = false;
 
   // Pointer to the existent object if it is alive, otherwise a nullptr.
-  T* ptr_;
+  void* ptr_;
 };
 
 // Default Manager for Weak Pointers. Each object that derives from WeakSelf holds one manager
@@ -123,7 +127,7 @@ class DynamicWeakManager {
  public:
   explicit DynamicWeakManager(T* self_ptr) : self_ptr_(self_ptr), weak_ptr_ref_(nullptr) {}
 
-  using RefType = WeakRef<T>;
+  using RefType = WeakRef;
 
   ~DynamicWeakManager() { InvalidateAll(); }
 
@@ -142,7 +146,48 @@ class DynamicWeakManager {
 
  private:
   T* self_ptr_;
-  fbl::RefPtr<WeakRef<T>> weak_ptr_ref_;
+  fbl::RefPtr<WeakRef> weak_ptr_ref_;
+};
+
+template <typename T, typename WeakPtrManager>
+class WeakSelf;
+
+template <typename T, typename WeakPtrManager = DynamicWeakManager<T>>
+class WeakPtr {
+ public:
+  // Default-constructed WeakPtrs point nowhere and aren't alive.
+  WeakPtr() : ptr_(nullptr) {}
+  explicit WeakPtr(std::nullptr_t) : WeakPtr() {}
+
+  // Implicit upcast via copy construction.
+  template <typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
+  WeakPtr(const WeakPtr<U>& r) : WeakPtr(r.ptr_) {}
+
+  // Implicit upcast via move construction.
+  template <typename U, typename = std::enable_if_t<std::is_convertible_v<U*, T*>>>
+  WeakPtr(WeakPtr<U>&& r) : WeakPtr(std::move(r.ptr_)) {}
+
+  bool is_alive() const { return ptr_ && ptr_->is_alive(); }
+  T& get() const {
+    BT_ASSERT_MSG(ptr_, "tried to get never-assigned weak pointer");
+    return *static_cast<T*>(ptr_->get());
+  }
+
+  T* operator->() const { return &get(); }
+
+  void reset() { ptr_ = nullptr; }
+
+ private:
+  // Allow accessing WeakPtr<U>'s member variables when upcasting.
+  template <typename U, typename RefType>
+  friend class WeakPtr;
+
+  // Only WeakSelf<T> should have access to the constructor.
+  friend class WeakSelf<T, WeakPtrManager>;
+
+  explicit WeakPtr(fbl::RefPtr<typename WeakPtrManager::RefType> ptr) : ptr_(ptr) {}
+
+  fbl::RefPtr<typename WeakPtrManager::RefType> ptr_;
 };
 
 // WeakSelf is a class used to create pointers to an object that must be checked before
@@ -191,28 +236,7 @@ class WeakSelf {
   explicit WeakSelf(T* self_ptr) : manager_(self_ptr) {}
   ~WeakSelf() = default;
 
-  class WeakPtr {
-   public:
-    // Default-constructed WeakPtrs point nowhere and aren't alive.
-    WeakPtr() : ptr_(nullptr) {}
-    explicit WeakPtr(std::nullptr_t) : WeakPtr() {}
-
-    bool is_alive() const { return ptr_ && ptr_->is_alive(); }
-    T& get() const {
-      BT_ASSERT_MSG(ptr_, "tried to get never-assigned weak pointer");
-      return ptr_->get();
-    }
-    T* operator->() const { return &get(); }
-
-    void reset() { ptr_ = nullptr; }
-
-   private:
-    explicit WeakPtr(fbl::RefPtr<typename WeakPtrManager::RefType> ptr) : ptr_(ptr) {}
-
-    fbl::RefPtr<typename WeakPtrManager::RefType> ptr_;
-
-    friend WeakSelf<T, WeakPtrManager>;
-  };
+  using WeakPtr = WeakPtr<T, WeakPtrManager>;
 
   // Invalidates all the WeakPtrs that have been vended before now (they will return false for
   // is_alive) and prevents any new pointers from being vended.  This is effectively the same as

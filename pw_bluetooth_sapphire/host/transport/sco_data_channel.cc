@@ -22,7 +22,7 @@ class ScoDataChannelImpl final : public ScoDataChannel {
   ~ScoDataChannelImpl() override;
 
   // ScoDataChannel overrides:
-  void RegisterConnection(ConnectionInterface::WeakPtr connection) override;
+  void RegisterConnection(WeakPtr<ConnectionInterface> connection) override;
   void UnregisterConnection(hci_spec::ConnectionHandle handle) override;
   void ClearControllerPacketCount(hci_spec::ConnectionHandle handle) override;
   void OnOutboundPacketReadable() override;
@@ -35,7 +35,7 @@ class ScoDataChannelImpl final : public ScoDataChannel {
   };
 
   struct ConnectionData {
-    ConnectionInterface::WeakPtr connection;
+    WeakPtr<ConnectionInterface> connection;
     HciConfigState config_state = HciConfigState::kPending;
   };
 
@@ -79,7 +79,7 @@ class ScoDataChannelImpl final : public ScoDataChannel {
   std::unordered_map<hci_spec::ConnectionHandle, ConnectionData> connections_;
 
   // Only 1 connection may send packets at a time.
-  ConnectionInterface::WeakPtr active_connection_;
+  WeakPtr<ConnectionInterface> active_connection_;
 
   // Stores per-connection counts of unacknowledged packets sent to the controller. Entries are
   // updated/removed on the HCI Number Of Completed Packets event and removed when a connection is
@@ -114,7 +114,7 @@ ScoDataChannelImpl::~ScoDataChannelImpl() {
   command_channel_->RemoveEventHandler(num_completed_packets_event_handler_id_);
 }
 
-void ScoDataChannelImpl::RegisterConnection(ConnectionInterface::WeakPtr connection) {
+void ScoDataChannelImpl::RegisterConnection(WeakPtr<ConnectionInterface> connection) {
   BT_ASSERT(connection->parameters().view().output_data_path().Read() ==
             pw::bluetooth::emboss::ScoDataPath::HCI);
   ConnectionData conn_data{.connection = connection};

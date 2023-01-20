@@ -128,7 +128,7 @@ class FakeScoConnection : public ScoDataChannel::ConnectionInterface {
 
   uint16_t hci_error_count() const { return hci_error_count_; }
 
-  ConnectionInterface::WeakPtr GetWeakPtr() { return weak_interface_.GetWeakPtr(); }
+  WeakPtr<ConnectionInterface> GetWeakPtr() { return weak_interface_.GetWeakPtr(); }
 
   // ScoDataChannel::ConnectionInterface overrides:
 
