@@ -278,7 +278,7 @@ AclDataChannelImpl::AclDataChannelImpl(Transport* transport, pw::bluetooth::Cont
       fit::bind_member<&AclDataChannelImpl::DataBufferOverflowCallback>(this));
   BT_DEBUG_ASSERT(data_buffer_overflow_event_handler_id_);
 
-  bt_log(INFO, "hci", "initialized");
+  bt_log(DEBUG, "hci", "initialized");
 }
 
 AclDataChannelImpl::~AclDataChannelImpl() {

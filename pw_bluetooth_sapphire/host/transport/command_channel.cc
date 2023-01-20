@@ -117,7 +117,7 @@ CommandChannel::CommandChannel(pw::bluetooth::Controller* hci)
       weak_ptr_factory_(this) {
   hci_->SetEventFunction(fit::bind_member<&CommandChannel::OnEvent>(this));
 
-  bt_log(INFO, "hci", "CommandChannel initialized");
+  bt_log(DEBUG, "hci", "CommandChannel initialized");
 }
 
 CommandChannel::~CommandChannel() {

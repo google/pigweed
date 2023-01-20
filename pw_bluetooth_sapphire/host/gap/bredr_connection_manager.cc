@@ -330,7 +330,6 @@ BrEdrConnectionManager::SearchId BrEdrConnectionManager::AddServiceSearch(
     connection.OpenL2capChannel(
         l2cap::kSDP, l2cap::ChannelParameters(),
         [self, peer_id = connection.peer_id(), search_id = new_id](auto channel) {
-          bt_log(ERROR, "gap", "connecting l2cap channel");
           if (!self.is_alive()) {
             return;
           }
@@ -571,7 +570,7 @@ void BrEdrConnectionManager::InitializeConnection(DeviceAddress addr,
       std::make_unique<hci::BrEdrConnection>(connection_handle, local_address_, addr, role, hci_);
   Peer* const peer = FindOrInitPeer(addr);
   auto peer_id = peer->identifier();
-  bt_log(INFO, "gap-bredr", "Beginning interrogation for peer %s", bt_str(peer_id));
+  bt_log(DEBUG, "gap-bredr", "Beginning interrogation for peer %s", bt_str(peer_id));
 
   // We should never have more than one link to a given peer
   BT_DEBUG_ASSERT(!FindConnectionById(peer_id));
