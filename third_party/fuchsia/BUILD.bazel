@@ -60,6 +60,7 @@ pw_cc_library(
         "repo/sdk/lib/stdcompat/include/lib/stdcompat/memory.h",
     ],
     hdrs = [
+        "repo/sdk/lib/stdcompat/include/lib/stdcompat/functional.h",
         "repo/sdk/lib/stdcompat/include/lib/stdcompat/internal/bit.h",
         "repo/sdk/lib/stdcompat/include/lib/stdcompat/optional.h",
         "repo/sdk/lib/stdcompat/include/lib/stdcompat/type_traits.h",

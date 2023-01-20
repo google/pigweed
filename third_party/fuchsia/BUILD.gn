@@ -68,6 +68,7 @@ pw_source_set("stdcompat") {
   public_configs = [ ":stdcompat_public_include_path" ]
   public = [
     "repo/sdk/lib/stdcompat/include/lib/stdcompat/bit.h",
+    "repo/sdk/lib/stdcompat/include/lib/stdcompat/functional.h",
     "repo/sdk/lib/stdcompat/include/lib/stdcompat/memory.h",
     "repo/sdk/lib/stdcompat/include/lib/stdcompat/optional.h",
     "repo/sdk/lib/stdcompat/include/lib/stdcompat/type_traits.h",

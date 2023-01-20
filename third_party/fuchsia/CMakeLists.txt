@@ -34,6 +34,7 @@ pw_add_library(pw_third_party.fuchsia.fit INTERFACE
 pw_add_library(pw_third_party.fuchsia.stdcompat INTERFACE
   HEADERS
     repo/sdk/lib/stdcompat/include/lib/stdcompat/bit.h
+    repo/sdk/lib/stdcompat/include/lib/stdcompat/functional.h
     repo/sdk/lib/stdcompat/include/lib/stdcompat/memory.h
     repo/sdk/lib/stdcompat/include/lib/stdcompat/optional.h
     repo/sdk/lib/stdcompat/include/lib/stdcompat/type_traits.h

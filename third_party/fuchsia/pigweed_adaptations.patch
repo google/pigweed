@@ -1,4 +1,4 @@
-# Copyright 2022 The Pigweed Authors
+# Copyright 2023 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -114,7 +114,7 @@ diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/nullable.h b/t
 diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/result.h b/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/result.h
 --- a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/result.h
 +++ b/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/result.h
-@@ -54,6 +54,8 @@
+@@ -55,6 +55,8 @@
  //                               // fit::result with a different "success" vluae type (or
  //                               // fit::result<E>).
 
@@ -123,19 +123,7 @@ diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/result.h b/thi
  namespace fit {
 
  // Convenience type to indicate failure without elaboration.
-@@ -248,7 +250,10 @@ class LIB_FIT_NODISCARD result<E, T> {
-
-   // Implicit conversion from fit::failed. This overload is only enabled when the error type E is
-   // fit::failed.
--  constexpr result(failed_or_none) : storage_{::fit::internal::error_v, failed{}} {}
-+  constexpr result(failed_or_none) : storage_ {
-+    ::fit::internal::error_v, failed {}
-+  }
-+  {}
-
-   // Implicit conversion from success<U>, where T is constructible from U.
-   template <typename U, ::fit::internal::requires_conditions<std::is_constructible<T, U>> = true>
-@@ -279,25 +284,25 @@ class LIB_FIT_NODISCARD result<E, T> {
+@@ -280,25 +282,25 @@ class LIB_FIT_NODISCARD result<E, T> {
      if (is_error()) {
        return storage_.error_or_value.error;
      }
@@ -165,7 +153,7 @@ diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/result.h b/thi
    }
 
    // Moves the underlying error and returns it as an instance of fit::error, simplifying
-@@ -308,7 +313,7 @@ class LIB_FIT_NODISCARD result<E, T> {
+@@ -309,7 +311,7 @@ class LIB_FIT_NODISCARD result<E, T> {
      if (is_error()) {
        return error<E>(std::move(storage_.error_or_value.error));
      }
@@ -174,7 +162,7 @@ diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/result.h b/thi
    }
 
    // Accessors for the underlying value.
-@@ -318,25 +323,25 @@ class LIB_FIT_NODISCARD result<E, T> {
+@@ -319,25 +321,25 @@ class LIB_FIT_NODISCARD result<E, T> {
      if (is_ok()) {
        return storage_.error_or_value.value;
      }
@@ -204,7 +192,7 @@ diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/result.h b/thi
    }
 
    // Moves the underlying value and returns it as an instance of fit::success, simplifying
-@@ -347,7 +352,7 @@ class LIB_FIT_NODISCARD result<E, T> {
+@@ -348,7 +350,7 @@ class LIB_FIT_NODISCARD result<E, T> {
      if (is_ok()) {
        return success<T>(std::move(storage_.error_or_value.value));
      }
@@ -213,7 +201,7 @@ diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/result.h b/thi
    }
 
    // Contingent accessors for the underlying value.
-@@ -376,13 +381,13 @@ class LIB_FIT_NODISCARD result<E, T> {
+@@ -377,13 +379,13 @@ class LIB_FIT_NODISCARD result<E, T> {
      if (is_ok()) {
        return ::fit::internal::arrow_operator<T>::forward(storage_.error_or_value.value);
      }
@@ -229,7 +217,7 @@ diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/result.h b/thi
    }
 
    // Accessors for the underlying value. This is a syntax sugar for value().
-@@ -405,7 +410,7 @@ class LIB_FIT_NODISCARD result<E, T> {
+@@ -406,7 +408,7 @@ class LIB_FIT_NODISCARD result<E, T> {
        storage_.error_or_value.error += std::move(error.value_);
        return *this;
      }
@@ -237,20 +225,8 @@ diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/result.h b/thi
 +    PW_ASSERT(false);
    }
 
-   constexpr void swap(result& other) {
-@@ -453,7 +458,10 @@ class LIB_FIT_NODISCARD result<E> {
-
-   // Implicit conversion from fit::failure. This overload is only enabled when the error type E is
-   // fit::failed.
--  constexpr result(failure_or_none) : storage_{::fit::internal::error_v, failed{}} {}
-+  constexpr result(failure_or_none) : storage_ {
-+    ::fit::internal::error_v, failed {}
-+  }
-+  {}
-
-   // Implicit conversion from fit::success<>.
-   constexpr result(success<>) : storage_{::fit::internal::value_v} {}
-@@ -478,25 +486,25 @@ class LIB_FIT_NODISCARD result<E> {
+   // Maps a result<E, T> to a result<E2, T> by transforming the error through
+@@ -517,25 +519,25 @@ class LIB_FIT_NODISCARD result<E> {
      if (is_error()) {
        return storage_.error_or_value.error;
      }
@@ -280,7 +256,7 @@ diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/result.h b/thi
    }
 
    // Moves the underlying error and returns it as an instance of fit::error, simplifying
-@@ -507,7 +515,7 @@ class LIB_FIT_NODISCARD result<E> {
+@@ -546,7 +548,7 @@ class LIB_FIT_NODISCARD result<E> {
      if (is_error()) {
        return error<E>(std::move(storage_.error_or_value.error));
      }
@@ -289,7 +265,7 @@ diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/result.h b/thi
    }
 
    // Augments the error value of the result with the given value. The operator E::operator+=(F) must
-@@ -521,7 +529,7 @@ class LIB_FIT_NODISCARD result<E> {
+@@ -560,7 +562,7 @@ class LIB_FIT_NODISCARD result<E> {
        storage_.error_or_value.error += std::move(error.value_);
        return *this;
      }
@@ -297,4 +273,4 @@ diff --git a/third_party/fuchsia/repo/sdk/lib/fit/include/lib/fit/result.h b/thi
 +    PW_ASSERT(false);
    }
 
-   constexpr void swap(result& other) {
+   // Maps a result<E, T> to a result<E2, T> by transforming the error through

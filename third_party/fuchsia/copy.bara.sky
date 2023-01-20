@@ -26,6 +26,7 @@ fuchsia_repo_files = [
     "sdk/lib/fit/test/function_tests.cc",
     # stdcompat
     "sdk/lib/stdcompat/include/lib/stdcompat/bit.h",
+    "sdk/lib/stdcompat/include/lib/stdcompat/functional.h",
     "sdk/lib/stdcompat/include/lib/stdcompat/memory.h",
     "sdk/lib/stdcompat/include/lib/stdcompat/optional.h",
     "sdk/lib/stdcompat/include/lib/stdcompat/type_traits.h",
