@@ -327,25 +327,27 @@ class Vector<T, vector_impl::kGeneric>
 
   void clear() noexcept;
 
-  // TODO(hepler): insert, emplace, and erase are not yet implemented.
-  //    Currently, items can only be added to or removed from the end.
-  iterator insert(const_iterator index, const T& value);
+  iterator insert(const_iterator index, size_type count, const T& value);
+
+  iterator insert(const_iterator index, const T& value) {
+    return insert(index, 1, value);
+  }
 
   iterator insert(const_iterator index, T&& value);
-
-  iterator insert(const_iterator index, size_type count, const T& value);
 
   template <typename Iterator>
   iterator insert(const_iterator index, Iterator first, Iterator last);
 
-  iterator insert(const_iterator index, std::initializer_list<T> list);
+  iterator insert(const_iterator index, std::initializer_list<T> list) {
+    return insert(index, list.begin(), list.end());
+  }
 
   template <typename... Args>
   iterator emplace(const_iterator index, Args&&... args);
 
-  iterator erase(const_iterator index);
-
   iterator erase(const_iterator first, const_iterator last);
+
+  iterator erase(const_iterator index) { return erase(index, index + 1); }
 
   void push_back(const T& value) { emplace_back(value); }
 
@@ -446,8 +448,10 @@ bool operator>=(const Vector<T, kLhsSize>& lhs,
 
 template <typename T>
 void Vector<T, vector_impl::kGeneric>::clear() noexcept {
-  for (auto& item : *this) {
-    item.~T();
+  if constexpr (!std::is_trivially_destructible_v<value_type>) {
+    for (auto& item : *this) {
+      item.~T();
+    }
   }
   size_ = 0;
 }
@@ -464,7 +468,9 @@ void Vector<T, vector_impl::kGeneric>::emplace_back(Args&&... args) {
 template <typename T>
 void Vector<T, vector_impl::kGeneric>::pop_back() {
   if (!empty()) {
-    back().~T();
+    if constexpr (!std::is_trivially_destructible_v<value_type>) {
+      back().~T();
+    }
     size_ -= 1;
   }
 }
@@ -479,6 +485,110 @@ void Vector<T, vector_impl::kGeneric>::resize(size_type new_size,
       pop_back();
     }
   }
+}
+
+template <typename T>
+typename Vector<T>::iterator Vector<T>::insert(Vector<T>::const_iterator index,
+                                               T&& value) {
+  PW_DASSERT(index >= cbegin());
+  PW_DASSERT(index <= cend());
+  PW_DASSERT(!full());
+
+  iterator insertion_point = begin() + std::distance(cbegin(), index);
+  if (insertion_point == end()) {
+    emplace_back(std::move(value));
+    return insertion_point;
+  }
+
+  std::move_backward(insertion_point, end(), end() + 1);
+  *insertion_point = std::move(value);
+  ++size_;
+
+  // Return an iterator pointing to the inserted value.
+  return insertion_point;
+}
+
+template <typename T>
+template <typename Iterator>
+typename Vector<T>::iterator Vector<T>::insert(Vector<T>::const_iterator index,
+                                               Iterator first,
+                                               Iterator last) {
+  PW_DASSERT(index >= cbegin());
+  PW_DASSERT(index <= cend());
+  PW_DASSERT(!full());
+
+  iterator insertion_point = begin() + std::distance(cbegin(), index);
+
+  const size_t insertion_count = std::distance(first, last);
+  if (insertion_count == 0) {
+    return insertion_point;
+  }
+  PW_DASSERT(size() + insertion_count <= max_size());
+
+  iterator return_value = insertion_point;
+
+  if (insertion_point != end()) {
+    std::move_backward(insertion_point, end(), end() + insertion_count);
+  }
+
+  while (first != last) {
+    *insertion_point = *first;
+    ++first;
+    ++insertion_point;
+  }
+  size_ += insertion_count;
+
+  // Return an iterator pointing to the first element inserted.
+  return return_value;
+}
+
+template <typename T>
+typename Vector<T>::iterator Vector<T>::insert(Vector<T>::const_iterator index,
+                                               size_type count,
+                                               const T& value) {
+  PW_DASSERT(index >= cbegin());
+  PW_DASSERT(index <= cend());
+  PW_DASSERT(size() + count <= max_size());
+
+  iterator insertion_point = begin() + std::distance(cbegin(), index);
+  if (count == size_type{}) {
+    return insertion_point;
+  }
+
+  if (insertion_point != end()) {
+    std::move_backward(insertion_point, end(), end() + count);
+  }
+
+  iterator return_value = insertion_point;
+
+  for (size_type final_count = size_ + count; size_ != final_count; ++size_) {
+    *insertion_point = value;
+    ++insertion_point;
+  }
+
+  // Return an iterator pointing to the first element inserted.
+  return return_value;
+}
+
+template <typename T>
+typename Vector<T>::iterator Vector<T>::erase(Vector<T>::const_iterator first,
+                                              Vector<T>::const_iterator last) {
+  iterator source = begin() + std::distance(cbegin(), last);
+  if (first == last) {
+    return source;
+  }
+
+  if constexpr (!std::is_trivially_destructible_v<T>) {
+    std::destroy(first, last);
+  }
+
+  iterator destination = begin() + std::distance(cbegin(), first);
+  iterator new_end = std::move(source, end(), destination);
+
+  size_ = std::distance(begin(), new_end);
+
+  // Return an iterator following the last removed element.
+  return new_end;
 }
 
 template <typename T>
