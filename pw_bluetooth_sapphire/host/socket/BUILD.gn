@@ -26,14 +26,17 @@ source_set("tests") {
 
   sources = [
     "socket_channel_relay_unittest.cc",
+    "socket_factory_l2cap_integration_unittest.cc",
     "socket_factory_unittest.cc",
   ]
 
   deps = [
     ":socket",
     "//src/connectivity/bluetooth/core/bt-host/gap",
+    "//src/connectivity/bluetooth/core/bt-host/l2cap:channel_manager_mock_controller_test_fixture",
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
     "//src/connectivity/bluetooth/core/bt-host/testing",
+    "//src/connectivity/bluetooth/core/bt-host/transport:testing",
     "//src/lib/testing/loop_fixture",
     "//third_party/googletest:gtest",
   ]
