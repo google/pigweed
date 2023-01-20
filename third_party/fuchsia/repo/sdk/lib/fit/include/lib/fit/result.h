@@ -34,7 +34,8 @@
 //
 //   bool is_ok()
 //   bool is_error()
-//   T value_or(default_value)   // Returns value on success, or default on failure.
+//   T value_or(default_value)    // Returns value on success, or default on failure.
+//   result<E[, V]> map_error(fn) // Transforms the error value of the result using fn.
 //
 // Available only when is_ok() (will assert otherwise).
 //
@@ -410,6 +411,44 @@ class LIB_FIT_NODISCARD result<E, T> {
     PW_ASSERT(false);
   }
 
+  // Maps a result<E, T> to a result<E2, T> by transforming the error through
+  // fn, where E2 is the result of invoking fn on E. Success values will be
+  // passed through untouched.
+  //
+  // Note that map_error is not necessary if E2 is constructible from E.
+  // In that case, result<E2, T> will be constructible from result<E, T>.
+  //
+  // If the current object is an r-value, errors and successes in the current
+  // result object will be moved.
+  template <typename Fn>
+  constexpr result<std::invoke_result_t<Fn, E>, T> map_error(Fn&& fn) & {
+    if (is_error()) {
+      return error<std::invoke_result_t<Fn, E>>(std::forward<Fn>(fn)(error_value()));
+    }
+    return success<T>(value());
+  }
+  template <typename Fn>
+  constexpr result<std::invoke_result_t<Fn, E>, T> map_error(Fn&& fn) const& {
+    if (is_error()) {
+      return error<std::invoke_result_t<Fn, E>>(std::forward<Fn>(fn)(error_value()));
+    }
+    return success<T>(value());
+  }
+  template <typename Fn>
+  constexpr result<std::invoke_result_t<Fn, E>, T> map_error(Fn&& fn) && {
+    if (is_error()) {
+      return error<std::invoke_result_t<Fn, E>>(std::forward<Fn>(fn)(std::move(error_value())));
+    }
+    return take_value();
+  }
+  template <typename Fn>
+  constexpr result<std::invoke_result_t<Fn, E>, T> map_error(Fn&& fn) const&& {
+    if (is_error()) {
+      return error<std::invoke_result_t<Fn, E>>(std::forward<Fn>(fn)(std::move(error_value())));
+    }
+    return success<T>(value());
+  }
+
   constexpr void swap(result& other) {
     if (&other != this) {
       using std::swap;
@@ -524,6 +563,44 @@ class LIB_FIT_NODISCARD result<E> {
       return *this;
     }
     PW_ASSERT(false);
+  }
+
+  // Maps a result<E, T> to a result<E2, T> by transforming the error through
+  // fn, where E2 is the result of invoking fn on E. Success values will be
+  // passed through untouched.
+  //
+  // Note that map_error is not necessary if E2 is constructible from E.
+  // In that case, result<E2, T> will be constructible from result<E, T>.
+  //
+  // If the current object is an r-value, errors in the current result object
+  // will be moved.
+  template <typename Fn>
+  constexpr result<std::invoke_result_t<Fn, E>> map_error(Fn&& fn) & {
+    if (is_error()) {
+      return error<std::invoke_result_t<Fn, E>>(std::forward<Fn>(fn)(error_value()));
+    }
+    return success<>();
+  }
+  template <typename Fn>
+  constexpr result<std::invoke_result_t<Fn, E>> map_error(Fn&& fn) const& {
+    if (is_error()) {
+      return error<std::invoke_result_t<Fn, E>>(std::forward<Fn>(fn)(error_value()));
+    }
+    return success<>();
+  }
+  template <typename Fn>
+  constexpr result<std::invoke_result_t<Fn, E>> map_error(Fn&& fn) && {
+    if (is_error()) {
+      return error<std::invoke_result_t<Fn, E>>(std::forward<Fn>(fn)(std::move(error_value())));
+    }
+    return success<>();
+  }
+  template <typename Fn>
+  constexpr result<std::invoke_result_t<Fn, E>> map_error(Fn&& fn) const&& {
+    if (is_error()) {
+      return error<std::invoke_result_t<Fn, E>>(std::forward<Fn>(fn)(std::move(error_value())));
+    }
+    return success<>();
   }
 
   constexpr void swap(result& other) {

@@ -37,6 +37,11 @@ struct arrow_operator {
   static constexpr const T* forward(const T& value) { return &value; }
 };
 template <typename T>
+struct arrow_operator<T, std::enable_if_t<cpp17::is_pointer_v<T>>> {
+  static constexpr T& forward(T& value) { return value; }
+  static constexpr const T& forward(const T& value) { return value; }
+};
+template <typename T>
 struct arrow_operator<T, cpp17::void_t<decltype(std::declval<T>().operator->())>> {
   static constexpr T& forward(T& value) { return value; }
   static constexpr const T& forward(const T& value) { return value; }

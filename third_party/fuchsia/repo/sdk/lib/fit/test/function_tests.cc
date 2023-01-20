@@ -1075,3 +1075,18 @@ TEST(FunctionTests, closure_fit_inline_function_Closure_HugeCallableSize) {
 TEST(FunctionTests, binary_op_fit_inline_function_BinaryOp_HugeCallableSize) {
   binary_op<fit::inline_function<BinaryOp, HugeCallableSize>>();
 }
+
+TEST(FunctionTests, bind_return_reference) {
+  struct TestClass {
+    int& member() { return member_; }
+    int member_ = 0;
+  };
+
+  TestClass instance;
+  // Ensure that references to the original values are returned, not copies.
+  fit::function<int&()> func = fit::bind_member<&TestClass::member>(&instance);
+  EXPECT_EQ(&func(), &instance.member_);
+
+  fit::function<int&()> func_deprecated = fit::bind_member(&instance, &TestClass::member);
+  EXPECT_EQ(&func_deprecated(), &instance.member_);
+}

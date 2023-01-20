@@ -505,7 +505,8 @@ bool operator!=(decltype(nullptr),
 // supported on C++17 and up. On C++14, a plain lambda should be used instead.
 template <typename R, typename T, typename... Args>
 auto bind_member(T* instance, R (T::*fn)(Args...)) {
-  return [instance, fn](Args... args) { return (instance->*fn)(std::forward<Args>(args)...); };
+  // Use explicit type on the return to ensure perfect forwarding of references.
+  return [instance, fn](Args... args) -> R { return (instance->*fn)(std::forward<Args>(args)...); };
 }
 
 // C++17 due to use of 'auto' template parameters and lambda parameters.
@@ -515,7 +516,8 @@ namespace internal {
 // This ensure that the correct overload of |method| is called.
 template <auto method, typename T, typename... Args>
 auto make_the_call(T* instance, parameter_pack<Args...>) {
-  return [instance](Args... args) {
+  // Use decltype(auto) on the return to ensure perfect forwarding of references.
+  return [instance](Args... args) -> decltype(auto) {
     return (instance->*method)(std::forward<decltype(args)>(args)...);
   };
 }
