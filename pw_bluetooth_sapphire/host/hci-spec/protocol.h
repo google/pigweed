@@ -463,11 +463,6 @@ struct ReadInquiryScanTypeReturnParams {
 // Write Inquiry Scan Type (v1.2) (BR/EDR)
 constexpr OpCode kWriteInquiryScanType = ControllerAndBasebandOpCode(0x0043);
 
-struct WriteInquiryScanTypeCommandParams {
-  // See enum class InquiryScanType in hci_constants.h for possible values.
-  InquiryScanType inquiry_scan_type;
-} __PACKED;
-
 // =================================
 // Read Inquiry Mode (v1.2) (BR/EDR)
 constexpr OpCode kReadInquiryMode = ControllerAndBasebandOpCode(0x0044);

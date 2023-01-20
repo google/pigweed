@@ -271,6 +271,13 @@ bits ScanEnableBits:
   $next [+6]  UInt  padding
 
 
+enum InquiryScanType:
+  [maximum_bits: 8]
+  STANDARD = 0x00
+    -- Standard scan (Default) (Mandatory)
+  INTERLACED = 0x01
+
+
 # ========================= HCI packet headers ==========================
 
 
@@ -808,6 +815,15 @@ struct WriteAutomaticFlushTimeoutCommand:
     -- Time = flush_timeout * 0.625ms.
     -- Time Range: 0.625ms to 1279.375ms.
     [requires: 0x0000 <= this <= 0x07FF]
+
+
+struct WriteInquiryScanTypeCommand:
+  -- Write Inquiry Scan Type (v1.2) (BR/EDR)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader        header
+
+  $next [+1]         InquiryScanType      inquiry_scan_type
+    -- See enum class InquiryScanType in this file for possible values
 
 
 # ========================= HCI Event packets ===========================

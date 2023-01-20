@@ -568,11 +568,13 @@ void BrEdrDiscoveryManager::WriteInquiryScanSettings(uint16_t interval, uint16_t
     bt_log(TRACE, "gap-bredr", "inquiry scan activity updated");
   });
 
-  auto write_type = hci::CommandPacket::New(hci_spec::kWriteInquiryScanType,
-                                            sizeof(hci_spec::WriteInquiryScanTypeCommandParams));
-  auto* type_params = write_type->mutable_payload<hci_spec::WriteInquiryScanTypeCommandParams>();
-  type_params->inquiry_scan_type = (interlaced ? hci_spec::InquiryScanType::kInterlacedScan
-                                               : hci_spec::InquiryScanType::kStandardScan);
+  auto write_type =
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::WriteInquiryScanTypeCommandWriter>(
+          hci_spec::kWriteInquiryScanType);
+  auto type_params = write_type.view_t();
+  type_params.inquiry_scan_type().Write(interlaced
+                                            ? pw::bluetooth::emboss::InquiryScanType::INTERLACED
+                                            : pw::bluetooth::emboss::InquiryScanType::STANDARD);
 
   cmd_->SendCommand(std::move(write_type), [](auto id, const hci::EventPacket& event) {
     if (hci_is_error(event, WARN, "gap-bredr", "write inquiry scan type failed")) {
