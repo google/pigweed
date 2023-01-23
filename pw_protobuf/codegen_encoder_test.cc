@@ -551,5 +551,26 @@ TEST(Codegen, OverlayConversion) {
             0);
 }
 
+TEST(Codegen, EnumToString) {
+  EXPECT_STREQ(test::pwpb::BoolToString(test::pwpb::Bool::kTrue), "TRUE");
+  EXPECT_STREQ(test::pwpb::BoolToString(test::pwpb::Bool::kFalse), "FALSE");
+  EXPECT_STREQ(test::pwpb::BoolToString(test::pwpb::Bool::kFileNotFound),
+               "FILE_NOT_FOUND");
+  EXPECT_STREQ(test::pwpb::BoolToString(static_cast<test::pwpb::Bool>(12893)),
+               "");
+}
+
+TEST(Codegen, NestedEnumToString) {
+  EXPECT_STREQ(test::pwpb::Pigweed::Pigweed::BinaryToString(
+                   test::pwpb::Pigweed::Pigweed::Binary::kZero),
+               "ZERO");
+  EXPECT_STREQ(test::pwpb::Pigweed::Pigweed::BinaryToString(
+                   test::pwpb::Pigweed::Pigweed::Binary::kOne),
+               "ONE");
+  EXPECT_STREQ(test::pwpb::Pigweed::Pigweed::BinaryToString(
+                   static_cast<test::pwpb::Pigweed::Pigweed::Binary>(12893)),
+               "");
+}
+
 }  // namespace
 }  // namespace pw::protobuf

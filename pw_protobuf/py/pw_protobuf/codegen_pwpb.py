@@ -2273,7 +2273,7 @@ def generate_code_for_enum(
 def generate_function_for_enum(
     proto_enum: ProtoEnum, root: ProtoNode, output: OutputFile
 ) -> None:
-    """Creates a C++ validation function for for a proto enum."""
+    """Creates a C++ validation function for a proto enum."""
     assert proto_enum.type() == ProtoNode.Type.ENUM
 
     enum_name = proto_enum.cpp_namespace(root=root)
@@ -2286,6 +2286,30 @@ def generate_function_for_enum(
             for name, _ in proto_enum.values():
                 output.write_line(f'case {enum_name}::{name}: return true;')
             output.write_line('default: return false;')
+        output.write_line('}')
+    output.write_line('}')
+
+
+def generate_to_string_for_enum(
+    proto_enum: ProtoEnum, root: ProtoNode, output: OutputFile
+) -> None:
+    """Creates a C++ to string function for a proto enum."""
+    assert proto_enum.type() == ProtoNode.Type.ENUM
+
+    enum_name = proto_enum.cpp_namespace(root=root)
+    output.write_line(
+        f'// Returns string names for {enum_name}; '
+        'returns "" for invalid enum values.'
+    )
+    output.write_line(
+        f'constexpr const char* {enum_name}ToString({enum_name} value) {{'
+    )
+    with output.indent():
+        output.write_line('switch (value) {')
+        with output.indent():
+            for name, _ in proto_enum.values():
+                output.write_line(f'case {enum_name}::{name}: return "{name}";')
+            output.write_line('default: return "";')
         output.write_line('}')
     output.write_line('}')
 
@@ -2325,6 +2349,8 @@ def forward_declare(
             generate_code_for_enum(cast(ProtoEnum, child), node, output)
             output.write_line()
             generate_function_for_enum(cast(ProtoEnum, child), node, output)
+            output.write_line()
+            generate_to_string_for_enum(cast(ProtoEnum, child), node, output)
 
     output.write_line(f'}}  // namespace {namespace}')
 
@@ -2576,6 +2602,8 @@ def generate_code_for_package(
             generate_code_for_enum(cast(ProtoEnum, node), package, output)
             output.write_line()
             generate_function_for_enum(cast(ProtoEnum, node), package, output)
+            output.write_line()
+            generate_to_string_for_enum(cast(ProtoEnum, node), package, output)
 
     # Run through all messages, generating structs and classes for each.
     messages = []

@@ -1723,15 +1723,24 @@ generated API, and the second is implemented by hand.
 
 Enumerations
 ============
-Enumerations are read using code generated ``ReadEnum`` methods that return the
-code generated enumeration as the appropriate type.
+``pw_protobuf`` generates a few functions for working with enumerations.
+Most importantly, enumerations are read using generated ``ReadEnum`` methods
+that return the enumeration as the appropriate generated type.
 
 .. cpp:function:: Result<MyProto::Enum> MyProto::StreamDecoder::ReadEnum()
 
-To validate the value encoded in the wire format against the known set of
-enumerates, a function is generated that you can use:
+   Decodes an enum from the stream.
 
-.. cpp:function:: bool MyProto::IsValidEnum(MyProto::Enum)
+.. cpp:function:: constexpr bool MyProto::IsValidEnum(MyProto::Enum value)
+
+  Validates the value encoded in the wire format against the known set of
+  enumerates.
+
+.. cpp:function:: constexpr const char* MyProto::EnumToString(MyProto::Enum value)
+
+  Returns the string representation of the enum value. For example,
+  ``FooToString(Foo::kBarBaz)`` returns ``"BAR_BAZ"``. Returns the empty string
+  if the value is not a valid value.
 
 To read enumerations with the lower-level API, you would need to cast the
 retured value from the ``uint32_t``.
@@ -1739,14 +1748,14 @@ retured value from the ``uint32_t``.
 The following two code blocks are equivalent, where the first is using the code
 generated API, and the second implemented by hand.
 
-.. code:: c++
+.. code-block:: c++
 
   pw::Result<MyProto::Award> award = my_proto_decoder.ReadAward();
   if (!MyProto::IsValidAward(award)) {
     PW_LOG_DBG("Unknown award");
   }
 
-.. code:: c++
+.. code-block:: c++
 
   PW_ASSERT(my_proto_decoder.FieldNumber().value() ==
       static_cast<uint32_t>(MyProto::Fields::AWARD));
