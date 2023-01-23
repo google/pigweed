@@ -98,7 +98,7 @@ http_archive(
 # Used in modules: All cc targets.
 git_repository(
     name = "rules_cc_toolchain",
-    commit = "d9a0905534f06a05c4b59b3e929778c1a97859c3",
+    commit = "16554e29b63641ad0c6ce9caa12910548dfb6506",
     remote = "https://github.com/bazelembedded/rules_cc_toolchain.git",
 )
 
