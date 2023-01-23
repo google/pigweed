@@ -696,7 +696,7 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   void OnLEStartEncryptionCommand(const hci_spec::LEStartEncryptionCommandParams& params);
 
   void OnWriteSynchronousFlowControlEnableCommand(
-      const hci_spec::WriteSynchronousFlowControlEnableParams& params);
+      const pw::bluetooth::emboss::WriteSynchronousFlowControlEnableCommandView& params);
 
   void OnAndroidLEGetVendorCapabilities();
 

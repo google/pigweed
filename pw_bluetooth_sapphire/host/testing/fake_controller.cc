@@ -1722,7 +1722,7 @@ void FakeController::OnLEStartEncryptionCommand(
 }
 
 void FakeController::OnWriteSynchronousFlowControlEnableCommand(
-    const hci_spec::WriteSynchronousFlowControlEnableParams& params) {
+    const pw::bluetooth::emboss::WriteSynchronousFlowControlEnableCommandView& params) {
   constexpr size_t flow_control_enable_octet = 10;
   bool supported =
       settings_.supported_commands[flow_control_enable_octet] &
@@ -3018,12 +3018,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnLEStartEncryptionCommand(params);
       break;
     }
-    case hci_spec::kWriteSynchronousFlowControlEnable: {
-      const auto& params =
-          command_packet.payload<hci_spec::WriteSynchronousFlowControlEnableParams>();
-      OnWriteSynchronousFlowControlEnableCommand(params);
-      break;
-    }
     case hci_spec::kInquiry:
     case hci_spec::kEnhancedAcceptSynchronousConnectionRequest:
     case hci_spec::kEnhancedSetupSynchronousConnection:
@@ -3042,7 +3036,8 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kWriteScanEnable:
     case hci_spec::kWritePageScanActivity:
     case hci_spec::kUserConfirmationRequestReply:
-    case hci_spec::kUserConfirmationRequestNegativeReply: {
+    case hci_spec::kUserConfirmationRequestNegativeReply:
+    case hci_spec::kWriteSynchronousFlowControlEnable: {
       // This case is for packet types that have been migrated to the new Emboss architecture. Their
       // old version can be still be assembled from the HciEmulator channel, so here we repackage
       // and forward them as Emboss packets.
@@ -3193,6 +3188,13 @@ void FakeController::HandleReceivedCommandPacket(const hci::EmbossCommandPacket&
           command_packet
               .view<pw::bluetooth::emboss::UserConfirmationRequestNegativeReplyCommandView>();
       OnUserConfirmationRequestNegativeReplyCommand(params);
+      break;
+    }
+    case hci_spec::kWriteSynchronousFlowControlEnable: {
+      const auto& params =
+          command_packet
+              .view<pw::bluetooth::emboss::WriteSynchronousFlowControlEnableCommandView>();
+      OnWriteSynchronousFlowControlEnableCommand(params);
       break;
     }
     default: {

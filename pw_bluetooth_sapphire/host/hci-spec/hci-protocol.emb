@@ -817,6 +817,15 @@ struct WriteAutomaticFlushTimeoutCommand:
     [requires: 0x0000 <= this <= 0x07FF]
 
 
+struct WriteSynchronousFlowControlEnableCommand:
+  -- Write Synchonous Flow Control Enable Command (BR/EDR)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader        header
+  $next [+1]         GenericEnableParam   synchronous_flow_control_enable
+    -- If enabled, HCI_Number_Of_Completed_Packets events shall be sent from the controller
+    -- for synchronous connection handles.
+
+
 struct WriteInquiryScanTypeCommand:
   -- Write Inquiry Scan Type (v1.2) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes

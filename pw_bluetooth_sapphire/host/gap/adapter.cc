@@ -903,14 +903,13 @@ void AdapterImpl::InitializeStep3() {
       /*octet=*/10, hci_spec::SupportedCommand::kWriteSynchronousFlowControlEnable);
   if (state_.sco_buffer_info.IsAvailable() && sco_flow_control_supported) {
     // Enable SCO flow control.
-    auto cmd_packet =
-        hci::CommandPacket::New(hci_spec::kWriteSynchronousFlowControlEnable,
-                                sizeof(hci_spec::WriteSynchronousFlowControlEnableParams));
-    auto* flow_control_params =
-        cmd_packet->mutable_payload<hci_spec::WriteSynchronousFlowControlEnableParams>();
-    flow_control_params->synchronous_flow_control_enable =
-        pw::bluetooth::emboss::GenericEnableParam::ENABLE;
-    init_seq_runner_->QueueCommand(std::move(cmd_packet), [this](const auto& event) {
+    auto sync_flow_control = hci::EmbossCommandPacket::New<
+        pw::bluetooth::emboss::WriteSynchronousFlowControlEnableCommandWriter>(
+        hci_spec::kWriteSynchronousFlowControlEnable);
+    auto flow_control_params = sync_flow_control.view_t();
+    flow_control_params.synchronous_flow_control_enable().Write(
+        pw::bluetooth::emboss::GenericEnableParam::ENABLE);
+    init_seq_runner_->QueueCommand(std::move(sync_flow_control), [this](const auto& event) {
       if (hci_is_error(event, ERROR, "gap",
                        "Write synchronous flow control enable failed, proceeding without HCI "
                        "SCO support")) {
