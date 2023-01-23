@@ -95,7 +95,7 @@ proto_library(
     name = "cpu_state_protos",
     srcs = ["pw_cpu_exception_cortex_m_protos/cpu_state.proto"],
     import_prefix = "pw_cpu_exception_cortex_m_protos",
-    strip_import_prefix = "//pw_cpu_exception_cortex_m/pw_cpu_exception_cortex_m_protos",
+    strip_import_prefix = "/pw_cpu_exception_cortex_m/pw_cpu_exception_cortex_m_protos",
 )
 
 py_proto_library(

@@ -104,7 +104,7 @@ proto_library(
         "chrono.proto",
     ],
     import_prefix = "pw_chrono_protos",
-    strip_import_prefix = "//pw_chrono",
+    strip_import_prefix = "/pw_chrono",
 )
 
 py_proto_library(

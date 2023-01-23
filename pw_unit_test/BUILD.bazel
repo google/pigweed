@@ -154,7 +154,7 @@ pw_cc_binary(
 proto_library(
     name = "unit_test_proto",
     srcs = ["pw_unit_test_proto/unit_test.proto"],
-    strip_import_prefix = "//pw_unit_test",
+    strip_import_prefix = "/pw_unit_test",
 )
 
 py_proto_library(

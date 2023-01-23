@@ -47,7 +47,7 @@ proto_library(
         "pw_snapshot_protos/snapshot_metadata.proto",
     ],
     import_prefix = "pw_snapshot_metadata_proto",
-    strip_import_prefix = "//pw_snapshot/pw_snapshot_protos",
+    strip_import_prefix = "/pw_snapshot/pw_snapshot_protos",
     deps = [
         "//pw_tokenizer:tokenizer_proto",
     ],
@@ -66,7 +66,7 @@ proto_library(
         "pw_snapshot_protos/snapshot.proto",
     ],
     import_prefix = "pw_snapshot_protos",
-    strip_import_prefix = "//pw_snapshot/pw_snapshot_protos",
+    strip_import_prefix = "/pw_snapshot/pw_snapshot_protos",
     deps = [
         ":metadata_proto",
         "//pw_chrono:chrono_proto",

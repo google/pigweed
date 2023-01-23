@@ -126,7 +126,7 @@ proto_library(
         "options.proto",
     ],
     import_prefix = "pw_tokenizer/proto",
-    strip_import_prefix = "//pw_tokenizer",
+    strip_import_prefix = "/pw_tokenizer",
     deps = [
         "@com_google_protobuf//:descriptor_proto",
     ],

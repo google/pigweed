@@ -191,7 +191,7 @@ proto_library(
     srcs = [
         "pw_protobuf_codegen_protos/codegen_options.proto",
     ],
-    strip_import_prefix = "//pw_protobuf",
+    strip_import_prefix = "/pw_protobuf",
 )
 
 py_proto_library(
@@ -206,7 +206,7 @@ proto_library(
     srcs = [
         "pw_protobuf_protos/common.proto",
     ],
-    strip_import_prefix = "//pw_protobuf",
+    strip_import_prefix = "/pw_protobuf",
 )
 
 proto_library(
@@ -214,7 +214,7 @@ proto_library(
     srcs = [
         "pw_protobuf_protos/field_options.proto",
     ],
-    strip_import_prefix = "//pw_protobuf",
+    strip_import_prefix = "/pw_protobuf",
     deps = [
         "@com_google_protobuf//:descriptor_proto",
     ],
@@ -235,7 +235,7 @@ proto_library(
     srcs = [
         "pw_protobuf_protos/status.proto",
     ],
-    strip_import_prefix = "//pw_protobuf",
+    strip_import_prefix = "/pw_protobuf",
 )
 
 py_proto_library(
@@ -250,7 +250,7 @@ proto_library(
     srcs = [
         "pw_protobuf_test_deps_protos/imported.proto",
     ],
-    strip_import_prefix = "//pw_protobuf",
+    strip_import_prefix = "/pw_protobuf",
 )
 
 proto_library(
@@ -265,7 +265,7 @@ proto_library(
         "pw_protobuf_test_protos/repeated.proto",
         "pw_protobuf_test_protos/size_report.proto",
     ],
-    strip_import_prefix = "//pw_protobuf",
+    strip_import_prefix = "/pw_protobuf",
     deps = [
         ":codegen_test_deps_protos",
         ":common_proto",

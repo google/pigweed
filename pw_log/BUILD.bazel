@@ -89,7 +89,7 @@ proto_library(
         "log.proto",
     ],
     import_prefix = "pw_log/proto",
-    strip_import_prefix = "//pw_log",
+    strip_import_prefix = "/pw_log",
     deps = [
         "//pw_protobuf:common_proto",
         "//pw_tokenizer:tokenizer_proto",

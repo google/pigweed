@@ -386,7 +386,7 @@ proto_library(
         "pw_rpc_test_protos/no_package.proto",
         "pw_rpc_test_protos/test.proto",
     ],
-    strip_import_prefix = "//pw_rpc",
+    strip_import_prefix = "/pw_rpc",
 )
 
 pw_proto_library(

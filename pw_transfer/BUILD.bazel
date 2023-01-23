@@ -266,7 +266,7 @@ proto_library(
         "test_server.proto",
     ],
     import_prefix = "pw_transfer_test",
-    strip_import_prefix = "//pw_transfer",
+    strip_import_prefix = "/pw_transfer",
     deps = [
         "//pw_protobuf:common_proto",
     ],

@@ -14,7 +14,6 @@
 
 workspace(
     name = "pigweed",
-    managed_directories = {"@npm": ["node_modules"]},
 )
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
@@ -29,10 +28,13 @@ load(
 # Set up Bazel platforms.
 # Required by: pigweed.
 # Used in modules: //pw_build, (Assorted modules via select statements).
-git_repository(
+http_archive(
     name = "platforms",
-    commit = "380c85cc2c7b126c6e354f517dc16d89fe760c9f",
-    remote = "https://github.com/bazelbuild/platforms.git",
+    sha256 = "5308fc1d8865406a49427ba24a9ab53087f17f5266a7aabbfc28823f3916e1ca",
+    urls = [
+        "https://mirror.bazel.build/github.com/bazelbuild/platforms/releases/download/0.0.6/platforms-0.0.6.tar.gz",
+        "https://github.com/bazelbuild/platforms/releases/download/0.0.6/platforms-0.0.6.tar.gz",
+    ],
 )
 
 # Setup CIPD client and packages.
@@ -69,12 +71,10 @@ http_archive(
 # in an older version of bazel_skylib. However io_bazel_rules_go requires a
 # newer version.
 http_archive(
-    name = "bazel_skylib",
-    sha256 = "1c531376ac7e5a180e0237938a2536de0c54d93f5c278634818e0efc952dd56c",
-    urls = [
-        "https://github.com/bazelbuild/bazel-skylib/releases/download/1.0.3/bazel-skylib-1.0.3.tar.gz",
-        "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.0.3/bazel-skylib-1.0.3.tar.gz",
-    ],
+    name = "bazel_skylib",  # 2022-09-01
+    sha256 = "4756ab3ec46d94d99e5ed685d2d24aece484015e45af303eb3a11cab3cdc2e71",
+    strip_prefix = "bazel-skylib-1.3.0",
+    urls = ["https://github.com/bazelbuild/bazel-skylib/archive/refs/tags/1.3.0.zip"],
 )
 
 load("@bazel_skylib//:workspace.bzl", "bazel_skylib_workspace")
@@ -86,11 +86,10 @@ bazel_skylib_workspace()
 # Used in modules: //pw_analog, //pw_i2c.
 http_archive(
     name = "com_google_googletest",
-    sha256 = "9dc9157a9a1551ec7a7e43daea9a694a0bb5fb8bec81235d8a1e6ef64c716dcb",
-    strip_prefix = "googletest-release-1.10.0",
+    sha256 = "ad7fdba11ea011c1d925b3289cf4af2c66a352e18d4c7264392fead75e919363",
+    strip_prefix = "googletest-1.13.0",
     urls = [
-        "https://mirror.bazel.build/github.com/google/googletest/archive/release-1.10.0.tar.gz",
-        "https://github.com/google/googletest/archive/release-1.10.0.tar.gz",
+        "https://github.com/google/googletest/archive/refs/tags/v1.13.0.tar.gz",
     ],
 )
 
@@ -278,9 +277,9 @@ pigweed_config(
 # Used in modules: //pw_protobuf, //pw_tokenizer, //pw_fuzzer.
 http_archive(
     name = "rules_fuzzing",
-    sha256 = "94f25c7a18db0502ace26a3ef7d0a25fd7c195c4e9770ddd1b1ec718e8936091",
-    strip_prefix = "rules_fuzzing-0.1.3",
-    urls = ["https://github.com/bazelbuild/rules_fuzzing/archive/v0.1.3.zip"],
+    sha256 = "d9002dd3cd6437017f08593124fdd1b13b3473c7b929ceb0e60d317cb9346118",
+    strip_prefix = "rules_fuzzing-0.3.2",
+    urls = ["https://github.com/bazelbuild/rules_fuzzing/archive/v0.3.2.zip"],
 )
 
 load("@rules_fuzzing//fuzzing:repositories.bzl", "rules_fuzzing_dependencies")

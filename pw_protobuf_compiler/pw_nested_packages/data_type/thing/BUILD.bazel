@@ -21,7 +21,7 @@ proto_library(
     name = "type_of_thing",
     srcs = ["type_of_thing.proto"],
     import_prefix = "proto_root",
-    strip_import_prefix = "//pw_protobuf_compiler/pw_nested_packages",
+    strip_import_prefix = "/pw_protobuf_compiler/pw_nested_packages",
 )
 
 pw_proto_library(
@@ -35,7 +35,7 @@ proto_library(
     name = "thing",
     srcs = ["thing.proto"],
     import_prefix = "proto_root",
-    strip_import_prefix = "//pw_protobuf_compiler/pw_nested_packages",
+    strip_import_prefix = "/pw_protobuf_compiler/pw_nested_packages",
     deps = [
         ":type_of_thing",
         "//pw_protobuf_compiler/pw_nested_packages/data_type/id",

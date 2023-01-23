@@ -24,7 +24,7 @@ proto_library(
         "internal/id_internal.proto",
     ],
     import_prefix = "proto_root",
-    strip_import_prefix = "//pw_protobuf_compiler/pw_nested_packages",
+    strip_import_prefix = "/pw_protobuf_compiler/pw_nested_packages",
 )
 
 pw_proto_library(

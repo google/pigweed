@@ -357,7 +357,7 @@ pw_cc_test(
 proto_library(
     name = "thread_proto",
     srcs = ["pw_thread_protos/thread.proto"],
-    strip_import_prefix = "//pw_thread",
+    strip_import_prefix = "/pw_thread",
     deps = [
         "//pw_tokenizer:tokenizer_proto",
     ],
@@ -373,7 +373,7 @@ py_proto_library(
 proto_library(
     name = "thread_snapshot_service_proto",
     srcs = ["pw_thread_protos/thread_snapshot_service.proto"],
-    strip_import_prefix = "//pw_thread",
+    strip_import_prefix = "/pw_thread",
     deps = [
         ":thread_proto",
     ],
