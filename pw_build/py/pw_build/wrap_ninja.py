@@ -21,11 +21,12 @@ import json
 import os
 import pty
 import re
+import signal
 import subprocess
 import sys
 import threading
 import time
-from typing import Dict, IO, List, Tuple, Optional
+from typing import Any, Dict, IO, List, Tuple, Optional
 
 # The status formatting string for Ninja to use. Includes a sentinel prefix.
 _NINJA_STATUS = '@@!!@@%s,%f,%t>'
@@ -43,6 +44,26 @@ _TERM_MOVE_PREVIOUS_LINE: str = '\x1B[1A'
 _TERM_DISABLE_WRAP: str = '\x1B[?7l'
 # Terminal code for enabling line wrapping.
 _TERM_ENABLE_WRAP: str = '\x1B[?7h'
+
+
+class SignalFlag:
+    """Helper class for intercepting signals and setting a flag to allow
+    gracefully handling them.
+
+    Attributes:
+        signaled: Initially False, becomes True when the process receives a
+          SIGTERM.
+    """
+
+    def __init__(self) -> None:
+        """Initializes the signal handler."""
+        self.signaled = False
+        signal.signal(signal.SIGTERM, self._signal_handler)
+
+    # pylint: disable=unused-argument
+    def _signal_handler(self, signal_number: int, stack_frame: Any) -> None:
+        """Sets the signaled flag, called when signaled."""
+        self.signaled = True
 
 
 class ConsoleRenderer:
@@ -453,6 +474,23 @@ class UI:
         self._renderer.set_temporary_lines([])
         self._renderer.render()
 
+    def dump_running_actions(self) -> None:
+        """Prints a list of actions that are currently running."""
+        actions = sorted(
+            self._ninja.running_actions.values(), key=lambda x: x.start_time
+        )
+        now = time.time()
+        self._renderer.print_line(f'{len(actions)} running actions:')
+        for action in actions:
+            elapsed = _format_duration(now - action.start_time)
+            self._renderer.print_line(f'  [{elapsed: >5}] {action.name}')
+        self._renderer.set_temporary_lines([])
+        self._renderer.render()
+
+    def print_line(self, line: str) -> None:
+        """Print a line to the interface output."""
+        self._renderer.print_line(line)
+
 
 def _parse_args() -> Tuple[argparse.Namespace, List[str]]:
     """Parses CLI arguments.
@@ -499,12 +537,18 @@ def main() -> int:
         process = subprocess.run(['ninja'] + ninja_args)
         return process.returncode
 
+    signal_flag = SignalFlag()
     ninja = Ninja(ninja_args)
     interface = UI(ninja, args)
 
-    interface.update()
-    while not ninja.exited:
+    while True:
         interface.update()
+        if signal_flag.signaled:
+            interface.print_line('Got SIGTERM, exiting...')
+            ninja.process.terminate()
+            break
+        if ninja.exited:
+            break
         time.sleep(args.ui_update_rate)
 
     # Finish up the build output.
@@ -515,6 +559,9 @@ def main() -> int:
     if args.write_trace is not None:
         ninja.write_trace(args.write_trace)
         print(f'Wrote trace to {args.write_trace.name}')
+
+    if signal_flag.signaled:
+        interface.dump_running_actions()
 
     return ninja.process.returncode
 
