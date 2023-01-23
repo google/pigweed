@@ -472,6 +472,7 @@ pw_test("callback_test") {
     "$dir_pw_sync:binary_semaphore",
     "$dir_pw_thread:sleep",
     "$dir_pw_thread:test_threads",
+    "$dir_pw_thread:yield",
     "$dir_pw_thread_stl:test_threads",
     "raw:client_testing",
   ]

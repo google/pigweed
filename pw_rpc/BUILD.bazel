@@ -270,6 +270,7 @@ pw_cc_test(
         "//pw_sync:binary_semaphore",
         "//pw_thread:sleep",
         "//pw_thread:test_threads_header",
+        "//pw_thread:yield",
         "//pw_thread_stl:test_threads",
     ],
 )
