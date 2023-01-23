@@ -299,8 +299,8 @@ struct CommandHeader:
 
 struct EventHeader:
   -- HCI Event packet header.
-  0     [+1] UInt  event_code
-  $next [+1] UInt  parameter_total_size
+  0     [+1]  UInt  event_code
+  $next [+1]  UInt  parameter_total_size
 
 
 # ========================= HCI Command packets =========================
@@ -316,18 +316,18 @@ struct InquiryCommand:
 
   let hdr_size = CommandHeader.$size_in_bytes
 
-  0     [+hdr_size]  CommandHeader  header
+  0     [+hdr_size]  CommandHeader      header
 
-  $next [+3]         InquiryAccessCode    lap
+  $next [+3]         InquiryAccessCode  lap
     -- LAP (Lower Address Part)
     -- In the range 0x9E8B00 - 0x9E8B3F, defined by the Bluetooth SIG in
     -- Baseband Assigned Numbers.
 
-  $next [+1]         UInt                 inquiry_length
+  $next [+1]         UInt               inquiry_length
     -- Time before the inquiry is halted. Defined in 1.28s units.
     -- Range: 0x01 to kInquiryLengthMax in hci_constants.h
 
-  $next [+1]         UInt                 num_responses
+  $next [+1]         UInt               num_responses
     -- Maximum number of responses before inquiry is halted.
     -- Set to 0x00 for unlimited.
 
@@ -347,7 +347,7 @@ struct CreateConnectionCommand:
   -- Connection Complete event will indicate that this command has been
   -- completed.
   let hdr_size = CommandHeader.$size_in_bytes
-  0     [+hdr_size]               CommandHeader     header
+  0     [+hdr_size]               CommandHeader           header
   $next [+BdAddr.$size_in_bytes]  BdAddr                  bd_addr
     -- BD_ADDR of the device to be connected
 
@@ -382,11 +382,11 @@ struct DisconnectCommand:
   -- completed.
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
-  $next [+2]         UInt                 connection_handle
+  $next [+2]         UInt           connection_handle
     -- Connection_Handle (only the lower 12-bits are meaningful).
     --   Range: 0x0000 to 0x0EFF
 
-  $next [+1]         StatusCode           reason
+  $next [+1]         StatusCode     reason
     -- Reason for the disconnect.
 
 
@@ -394,28 +394,28 @@ struct CreateConnectionCancelCommand:
   -- Create Connection Cancel (v1.1) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]               CommandHeader  header
-  $next [+BdAddr.$size_in_bytes]  BdAddr               bd_addr
+  $next [+BdAddr.$size_in_bytes]  BdAddr         bd_addr
     -- BD_ADDR of the Create Connection Command request
 
 
 struct AcceptConnectionRequestCommand:
   -- Accept Connection Request (v1.1) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
-  0     [+hdr_size]               CommandHeader  header
-  $next [+BdAddr.$size_in_bytes]  BdAddr               bd_addr
+  0     [+hdr_size]               CommandHeader   header
+  $next [+BdAddr.$size_in_bytes]  BdAddr          bd_addr
     -- The 48-bit BD_ADDR of the remote device requesting the connection.
 
-  $next [+1]                      ConnectionRole       role
+  $next [+1]                      ConnectionRole  role
 
 
 struct RejectConnectionRequestCommand:
   -- Reject Connection Request (v1.1) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]               CommandHeader  header
-  $next [+BdAddr.$size_in_bytes]  BdAddr               bd_addr
+  $next [+BdAddr.$size_in_bytes]  BdAddr         bd_addr
     -- The 48-bit BD_ADDR of the remote device requesting the connection.
 
-  $next [+1]                      StatusCode           reason
+  $next [+1]                      StatusCode     reason
     -- Must be one of CONNECTION_REJECTED* from StatusCode in this file
 
 
@@ -427,7 +427,7 @@ struct LinkKeyRequestReplyCommand:
   -- Link Key Request Reply Command (v1.1) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]               CommandHeader  header
-  $next [+BdAddr.$size_in_bytes]  BdAddr               bd_addr
+  $next [+BdAddr.$size_in_bytes]  BdAddr         bd_addr
     -- The 48-bit BD_ADDR of the remote device requesting the connection.
 
   let bredr_link_key_size = LinkKey.$size_in_bytes
@@ -439,7 +439,7 @@ struct LinkKeyRequestNegativeReplyCommand:
   -- Link Key Request Negative Reply Command (v1.1) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]               CommandHeader  header
-  $next [+BdAddr.$size_in_bytes]  BdAddr               bd_addr
+  $next [+BdAddr.$size_in_bytes]  BdAddr         bd_addr
     -- BD_ADDR of the peer device that the host does not have a link key for.
 
 
@@ -452,7 +452,7 @@ struct AuthenticationRequestedCommand:
   -- completed.
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
-  $next [+2]         UInt                 connection_handle
+  $next [+2]         UInt           connection_handle
     -- Connection_Handle (only the lower 12-bits are meaningful).
     --   Range: 0x0000 to 0x0EFF
     -- Must be the handle of a connected ACL-U logical link.
@@ -465,13 +465,13 @@ struct SetConnectionEncryptionCommand:
   -- Controller to indicate that this command has been completed. Instead, the
   -- Encryption Change event will indicate that this command has been completed.
   let hdr_size = CommandHeader.$size_in_bytes
-  0     [+hdr_size]  CommandHeader  header
-  $next [+2]         UInt                 connection_handle
+  0     [+hdr_size]  CommandHeader       header
+  $next [+2]         UInt                connection_handle
     -- Connection_Handle (only the lower 12-bits are meaningful).
     --   Range: 0x0000 to 0x0EFF
     -- Must be the handle of a connected ACL-U logical link.
 
-  $next [+1]         GenericEnableParam   encryption_enable
+  $next [+1]         GenericEnableParam  encryption_enable
     -- Whether link level encryption should be turned on or off.
 
 
@@ -483,7 +483,7 @@ struct RemoteNameRequestCommand:
   -- Remote Name Request Complete event will indicate that this command has been
   -- completed.
   let hdr_size = CommandHeader.$size_in_bytes
-  0     [+hdr_size]               CommandHeader     header
+  0     [+hdr_size]               CommandHeader           header
   $next [+BdAddr.$size_in_bytes]  BdAddr                  bd_addr
     -- Address of the device whose name is to be requested.
 
@@ -508,7 +508,7 @@ struct ReadRemoteSupportedFeaturesCommand:
   -- command has been completed.
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
-  $next [+2]         UInt                 connection_handle
+  $next [+2]         UInt           connection_handle
     -- Connection_Handle (only the lower 12-bits are meaningful).
     --   Range: 0x0000 to 0x0EFF
     -- Must be the handle of a connected ACL-U logical link.
@@ -523,12 +523,12 @@ struct ReadRemoteExtendedFeaturesCommand:
   -- command has been completed.
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
-  $next [+2]         UInt                 connection_handle
+  $next [+2]         UInt           connection_handle
     -- Connection_Handle (only the lower 12-bits are meaningful).
     --   Range: 0x0000 to 0x0EFF
     -- Must be the handle of a connected ACL-U logical link.
 
-  $next [+1]         UInt                 page_number
+  $next [+1]         UInt           page_number
     -- Page of features to read.
     -- Values:
     --  - 0x00 standard features as if requested by Read Remote Supported Features
@@ -544,7 +544,7 @@ struct ReadRemoteVersionInfoCommand:
   -- command has been completed.
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
-  $next [+2]         UInt                 connection_handle
+  $next [+2]         UInt           connection_handle
     -- Connection_Handle (only the lower 12-bits are meaningful).
     --   Range: 0x0000 to 0x0EFF
 
@@ -553,17 +553,17 @@ struct RejectSynchronousConnectionRequestCommand:
   -- Reject Synchronous Connection Command (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]               CommandHeader  header
-  $next [+BdAddr.$size_in_bytes]  BdAddr               bd_addr
+  $next [+BdAddr.$size_in_bytes]  BdAddr         bd_addr
     -- Address of the remote device that sent the request.
 
-  $next [+1]                      StatusCode           reason
+  $next [+1]                      StatusCode     reason
     -- Reason the connection request was rejected.
 
 
 struct IoCapabilityRequestReplyCommand:
   -- IO Capability Request Reply Command (v2.1 + EDR) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
-  0     [+hdr_size]               CommandHeader         header
+  0     [+hdr_size]               CommandHeader               header
   $next [+BdAddr.$size_in_bytes]  BdAddr                      bd_addr
     -- The BD_ADDR of the remote device involved in simple pairing process
 
@@ -581,7 +581,7 @@ struct UserConfirmationRequestReplyCommand:
   -- User Confirmation Request Reply Command (v2.1 + EDR) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]               CommandHeader  header
-  $next [+BdAddr.$size_in_bytes]  BdAddr               bd_addr
+  $next [+BdAddr.$size_in_bytes]  BdAddr         bd_addr
     -- The BD_ADDR of the remote device involved in simple pairing process
 
 
@@ -589,7 +589,7 @@ struct UserConfirmationRequestNegativeReplyCommand:
   -- User Confirmation Request Negative Reply Command (v2.1 + EDR) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]               CommandHeader  header
-  $next [+BdAddr.$size_in_bytes]  BdAddr               bd_addr
+  $next [+BdAddr.$size_in_bytes]  BdAddr         bd_addr
     -- The BD_ADDR of the remote device involved in simple pairing process
 
 
@@ -597,10 +597,10 @@ struct UserPasskeyRequestReplyCommand:
   -- User Passkey Request Reply Command (v2.1 + EDR) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]               CommandHeader  header
-  $next [+BdAddr.$size_in_bytes]  BdAddr               bd_addr
+  $next [+BdAddr.$size_in_bytes]  BdAddr         bd_addr
     -- The BD_ADDR of the remote device involved in simple pairing process
 
-  $next [+4]                      UInt                 numeric_value
+  $next [+4]                      UInt           numeric_value
     -- Numeric value (passkey) entered by user.
     [requires: 0 <= this <= 999999]
 
@@ -705,7 +705,7 @@ struct SynchronousConnectionParameters:
 
 struct EnhancedSetupSynchronousConnectionCommand:
   let hdr_size = CommandHeader.$size_in_bytes
-  0     [+hdr_size]  CommandHeader              header
+  0     [+hdr_size]  CommandHeader                    header
   $next [+2]         UInt                             connection_handle
     -- The connection handle of the associated ACL link if creating a new (e)SCO connection, or the
     -- handle of an existing eSCO link if updating connection parameters.
@@ -717,7 +717,7 @@ struct EnhancedSetupSynchronousConnectionCommand:
 struct EnhancedAcceptSynchronousConnectionRequestCommand:
   -- Enhanced Accept Synchronous Connection Request Command (CSA2) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
-  0     [+hdr_size]               CommandHeader              header
+  0     [+hdr_size]               CommandHeader                    header
   $next [+BdAddr.$size_in_bytes]  BdAddr                           bd_addr
     -- The 48-bit BD_ADDR of the remote device requesting the connection.
 
@@ -729,7 +729,7 @@ struct SetEventMaskCommand:
   -- Set Event Mask Command (v1.1)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
-  $next [+8]         UInt                 event_mask
+  $next [+8]         UInt           event_mask
     -- 64-bit Bit mask used to control which HCI events are generated by the HCI for the
     -- Host. See enum class EventMask in hci_constants.h
 
@@ -743,7 +743,7 @@ struct WriteLocalNameCommand:
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]         CommandHeader  header
   let local_name_size = LocalName.$size_in_bytes
-  $next [+local_name_size]  LocalName            local_name
+  $next [+local_name_size]  LocalName      local_name
     -- A UTF-8 encoded User Friendly Descriptive Name for the device.
     -- If the name contained in the parameter is shorter than 248 octets, the end
     -- of the name is indicated by a NULL octet (0x00), and the following octets
@@ -755,7 +755,7 @@ struct WritePageTimeoutCommand:
   -- Write Page Timeout Command (v1.1) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
-  $next [+2]         UInt                 page_timeout
+  $next [+2]         UInt           page_timeout
     -- Page_Timeout, in time slices (0.625 ms)
     -- Range: From MIN to MAX in PageTimeout in this file
     [requires: 0x0001 <= this <= 0xFFFF]
@@ -764,8 +764,8 @@ struct WritePageTimeoutCommand:
 struct WriteScanEnableCommand:
   -- Write Scan Enable Command (v1.1) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
-  0     [+hdr_size]  CommandHeader  header
-  $next [+1]         ScanEnableBits       scan_enable
+  0     [+hdr_size]  CommandHeader   header
+  $next [+1]         ScanEnableBits  scan_enable
     -- Bit Mask of enabled scans. See enum class ScanEnableBits in this file
     -- for how to construct this bitfield.
 
@@ -774,12 +774,12 @@ struct WritePageScanActivityCommand:
   -- Write Page Scan Activity Command (v1.1) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
-  $next [+2]         UInt                 page_scan_interval
+  $next [+2]         UInt           page_scan_interval
     -- Page_Scan_Interval, in time slices (0.625ms)
     -- Valid Range: MIN - MAX in ScanInterval in this file
     [requires: 0x0012 <= this <= 0x1000]
 
-  $next [+2]         UInt                 page_scan_window
+  $next [+2]         UInt           page_scan_window
     -- Page_Scan_Window, in time slices
     -- Valid Range: MIN - MAX in ScanWindow in this file
     [requires: 0x0011 <= this <= 0x1000]
@@ -830,12 +830,20 @@ struct WriteInquiryScanTypeCommand:
 # Core Spec v5.3 Vol 4, Part E, Section 7.7
 
 
+struct VendorDebugEvent:
+  -- This opcode is reserved for vendor-specific debugging events.
+  -- See Core Spec v5.3 Vol 4, Part E, Section 5.4.4.
+  let hdr_size = EventHeader.$size_in_bytes
+  0     [+hdr_size]  EventHeader  header
+  $next [+1]         UInt         subevent_code
+    -- The event code for the vendor subevent.
+
+
 struct InquiryCompleteEvent:
   -- Inquiry Complete Event (v1.1) (BR/EDR)
   let hdr_size = EventHeader.$size_in_bytes
-  0     [+hdr_size] EventHeader header
-
-  $next [+1]        StatusCode        status
+  0     [+hdr_size]  EventHeader  header
+  $next [+1]         StatusCode   status
 
 
 struct CommandCompleteEvent:
@@ -855,4 +863,11 @@ struct TestCommandPacket:
   -- Test HCI Command packet with single byte payload.
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
-  $next [+1]         UInt                 payload
+  $next [+1]         UInt           payload
+
+
+struct TestEventPacket:
+  -- Test HCI Event packet with single byte payload.
+  let hdr_size = EventHeader.$size_in_bytes
+  0     [+hdr_size]  EventHeader  header
+  $next [+1]         UInt         payload

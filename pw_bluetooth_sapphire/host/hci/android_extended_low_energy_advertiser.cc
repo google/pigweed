@@ -4,6 +4,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/android_extended_low_energy_advertiser.h"
 
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/vendor-protocol.emb.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/vendor_protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
@@ -21,7 +22,8 @@ AndroidExtendedLowEnergyAdvertiser::AndroidExtendedLowEnergyAdvertiser(
       weak_self_(this) {
   auto self = weak_self_.GetWeakPtr();
   state_changed_event_handler_id_ = hci()->command_channel()->AddVendorEventHandler(
-      hci_android::kLEMultiAdvtStateChangeSubeventCode, [self](const EventPacket& event_packet) {
+      hci_android::kLEMultiAdvtStateChangeSubeventCode,
+      [self](const EmbossEventPacket& event_packet) {
         if (self.is_alive()) {
           return self->OnAdvertisingStateChangedSubevent(event_packet);
         }
@@ -254,9 +256,10 @@ void AndroidExtendedLowEnergyAdvertiser::OnIncomingConnection(
 // advertising handle. After the LE multi-advertising state change subevent, we have all the
 // information necessary to create a connection object within the Host layer.
 CommandChannel::EventCallbackResult
-AndroidExtendedLowEnergyAdvertiser::OnAdvertisingStateChangedSubevent(const EventPacket& event) {
+AndroidExtendedLowEnergyAdvertiser::OnAdvertisingStateChangedSubevent(
+    const EmbossEventPacket& event) {
   BT_ASSERT(event.event_code() == hci_spec::kVendorDebugEventCode);
-  BT_ASSERT(event.params<hci_spec::VendorEventParams>().subevent_code ==
+  BT_ASSERT(event.view<pw::bluetooth::emboss::VendorDebugEventView>().subevent_code().Read() ==
             hci_android::kLEMultiAdvtStateChangeSubeventCode);
 
   Result<> result = event.ToResult();
@@ -265,20 +268,19 @@ AndroidExtendedLowEnergyAdvertiser::OnAdvertisingStateChangedSubevent(const Even
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
-  auto params = event.subevent_params<hci_android::LEMultiAdvtStateChangeSubeventParams>();
-  BT_ASSERT(params);
+  auto view = event.view<pw::bluetooth::emboss::LEMultiAdvtStateChangeSubeventView>();
 
-  hci_spec::ConnectionHandle connection_handle = params->connection_handle;
+  hci_spec::ConnectionHandle connection_handle = view.connection_handle().Read();
   auto staged_parameters_node = staged_connections_map_.extract(connection_handle);
 
   if (staged_parameters_node.empty()) {
     bt_log(ERROR, "hci-le",
            "advertising state change event, staged params not available (handle: %d)",
-           params->adv_handle);
+           view.advertising_handle().Read());
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
-  hci_spec::AdvertisingHandle adv_handle = params->adv_handle;
+  hci_spec::AdvertisingHandle adv_handle = view.advertising_handle().Read();
   std::optional<DeviceAddress> opt_local_address = advertising_handle_map_.GetAddress(adv_handle);
 
   // We use the identity address as the local address if we aren't advertising or otherwise don't

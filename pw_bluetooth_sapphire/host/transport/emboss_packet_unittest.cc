@@ -8,6 +8,8 @@
 #include "emboss_control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/hci-protocol.emb.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/vendor-protocol.emb.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/vendor_protocol.h"
 
 namespace bt::hci {
 namespace {
@@ -34,7 +36,7 @@ TEST(EmbossCommandPacketTest, EmbossCommandPacketBasic) {
   EXPECT_EQ(packet.opcode(), 1234);
   EXPECT_EQ(packet.ocf(), 1234 & 0x3FF);
   EXPECT_EQ(packet.ogf(), 1234 >> 10);
-  EXPECT_EQ(packet.view<pw::bluetooth::emboss::TestCommandPacketView>().payload().Read(), 13);
+  EXPECT_EQ(packet.view_t().payload().Read(), 13);
 }
 
 TEST(EmbossCommandPacketTest, EmbossCommandPacketDeathTest) {
@@ -48,6 +50,40 @@ TEST(EmbossCommandPacketTest, EmbossCommandPacketDeathTest) {
   EXPECT_DEATH_IF_SUPPORTED(
       EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(1234, 0),
       "command packet size must be at least 3 bytes");
+}
+
+TEST(EmbossEventPacketTest, EmbossEventPacketBasic) {
+  auto packet = EmbossEventPacket::New<pw::bluetooth::emboss::TestEventPacketWriter>(123);
+  packet.view_t().payload().Write(13);
+
+  EXPECT_EQ(packet.size(), 3u);
+  EXPECT_EQ(packet.data(), BufferView({0x7B, 0x01, 0x0D}));
+  EXPECT_EQ(packet.mutable_data(), packet.data());
+  EXPECT_EQ(packet.event_code(), 123);
+  EXPECT_EQ(packet.view_t().payload().Read(), 13);
+}
+
+TEST(EmbossEventPacketTest, EmbossEventPacketDeathTest) {
+  EmbossEventPacket packet =
+      EmbossEventPacket::New<pw::bluetooth::emboss::TestEventPacketView>(123);
+
+  // Try and fail to allocate 0 length packet (needs at least 2 bytes for the header).
+  EXPECT_DEATH_IF_SUPPORTED(EmbossEventPacket::New(0),
+                            "event packet size must be at least 2 bytes");
+}
+
+TEST(EmbossEventPacketTest, StatusCode) {
+  // Confirm status can be read from vendor subevent.
+  auto packet = EmbossEventPacket::New<pw::bluetooth::emboss::LEMultiAdvtStateChangeSubeventWriter>(
+      hci_spec::kVendorDebugEventCode);
+  auto view = packet.view_t();
+  view.status().Write(hci_spec::StatusCode::OPERATION_CANCELLED_BY_HOST);
+  view.vendor_event().subevent_code().Write(
+      hci_spec::vendor::android::kLEMultiAdvtStateChangeSubeventCode);
+
+  ASSERT_TRUE(packet.StatusCode().has_value());
+  EXPECT_EQ(packet.StatusCode().value(), hci_spec::StatusCode::OPERATION_CANCELLED_BY_HOST);
+  EXPECT_EQ(packet.ToResult(), ToResult(hci_spec::StatusCode::OPERATION_CANCELLED_BY_HOST));
 }
 
 }  // namespace

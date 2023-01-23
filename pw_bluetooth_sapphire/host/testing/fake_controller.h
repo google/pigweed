@@ -262,9 +262,6 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   // Sends a LE Meta event with the given parameters.
   void SendLEMetaEvent(hci_spec::EventCode subevent_code, const ByteBuffer& payload);
 
-  // Sends a Vendor (e.g. Microsoft or Android vendor extensions) event with the given parameters.
-  void SendVendorEvent(hci_spec::EventCode subevent_code, const ByteBuffer& payload);
-
   // Sends an ACL data packet with the given parameters.
   void SendACLPacket(hci_spec::ConnectionHandle handle, const ByteBuffer& payload);
 

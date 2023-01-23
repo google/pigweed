@@ -138,10 +138,6 @@ bool EventPacket::ToStatusCode(pw::bluetooth::emboss::StatusCode* out_code) cons
   case hci_spec::k##subevent_name##SubeventCode: \
     return StatusCodeFromSubevent<hci_spec::subevent_name##SubeventParams>(*this, out_code)
 
-#define CASE_ANDROID_SUBEVENT_STATUS(subevent_name) \
-  case hci_android::k##subevent_name##SubeventCode: \
-    return StatusCodeFromSubevent<hci_android::subevent_name##SubeventParams>(*this, out_code)
-
   switch (event_code()) {
     CASE_EVENT_STATUS(AuthenticationComplete);
     CASE_EVENT_STATUS(ChangeConnectionLinkKeyComplete);
@@ -167,15 +163,6 @@ bool EventPacket::ToStatusCode(pw::bluetooth::emboss::StatusCode* out_code) cons
         CASE_SUBEVENT_STATUS(LEReadRemoteFeaturesComplete);
         default:
           BT_PANIC("LE subevent (%#.2x) not implemented!", subevent_code);
-          break;
-      }
-    }
-    case hci_spec::kVendorDebugEventCode: {
-      auto subevent_code = params<hci_spec::VendorEventParams>().subevent_code;
-      switch (subevent_code) {
-        CASE_ANDROID_SUBEVENT_STATUS(LEMultiAdvtStateChange);
-        default:
-          BT_PANIC("Vendor subevent (%#.2x) not implemented!", subevent_code);
           break;
       }
     }

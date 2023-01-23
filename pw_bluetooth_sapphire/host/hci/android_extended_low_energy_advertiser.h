@@ -89,7 +89,8 @@ class AndroidExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   void OnCurrentOperationComplete() override;
 
   // Event handler for the LE multi-advertising state change sub-event
-  CommandChannel::EventCallbackResult OnAdvertisingStateChangedSubevent(const EventPacket& event);
+  CommandChannel::EventCallbackResult OnAdvertisingStateChangedSubevent(
+      const EmbossEventPacket& event);
   CommandChannel::EventHandlerId state_changed_event_handler_id_;
 
   uint8_t max_advertisements_ = 0;

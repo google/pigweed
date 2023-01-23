@@ -15,6 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/vendor-protocol.emb.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/vendor_protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
@@ -291,13 +292,6 @@ void FakeController::SendLEMetaEvent(hci_spec::EventCode subevent_code, const By
   buffer[0] = subevent_code;
   buffer.Write(payload, 1);
   SendEvent(hci_spec::kLEMetaEventCode, buffer);
-}
-
-void FakeController::SendVendorEvent(hci_spec::EventCode subevent_code, const ByteBuffer& payload) {
-  DynamicByteBuffer buffer(sizeof(hci_spec::VendorEventParams) + payload.size());
-  buffer[0] = subevent_code;
-  buffer.Write(payload, 1);
-  SendEvent(hci_spec::kVendorDebugEventCode, buffer);
 }
 
 void FakeController::SendACLPacket(hci_spec::ConnectionHandle handle, const ByteBuffer& payload) {
@@ -2249,12 +2243,15 @@ void FakeController::SendLEAdvertisingSetTerminatedEvent(hci_spec::ConnectionHan
 
 void FakeController::SendAndroidLEMultipleAdvertisingStateChangeSubevent(
     hci_spec::ConnectionHandle conn_handle, hci_spec::AdvertisingHandle adv_handle) {
-  hci_android::LEMultiAdvtStateChangeSubeventParams params;
-  params.adv_handle = adv_handle;
-  params.status = pw::bluetooth::emboss::StatusCode::SUCCESS;  // Connection received
-  params.connection_handle = conn_handle;
-  SendVendorEvent(hci_android::kLEMultiAdvtStateChangeSubeventCode,
-                  BufferView(&params, sizeof(params)));
+  auto packet =
+      hci::EmbossEventPacket::New<pw::bluetooth::emboss::LEMultiAdvtStateChangeSubeventWriter>(
+          hci_spec::kVendorDebugEventCode);
+  auto view = packet.view_t();
+  view.vendor_event().subevent_code().Write(hci_android::kLEMultiAdvtStateChangeSubeventCode);
+  view.advertising_handle().Write(adv_handle);
+  view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  view.connection_handle().Write(conn_handle);
+  SendCommandChannelPacket(packet.data());
 }
 
 void FakeController::OnCommandPacketReceived(

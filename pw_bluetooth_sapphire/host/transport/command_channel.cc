@@ -268,7 +268,7 @@ CommandChannel::EventHandlerId CommandChannel::AddLEMetaEventHandler(
 }
 
 CommandChannel::EventHandlerId CommandChannel::AddVendorEventHandler(
-    hci_spec::EventCode vendor_subevent_code, EventCallback event_callback) {
+    hci_spec::EventCode vendor_subevent_code, EventCallbackVariant event_callback) {
   CommandChannel::EventHandlerData* handler = FindVendorEventHandler(vendor_subevent_code);
   if (handler && handler->is_async()) {
     bt_log(ERROR, "hci",
@@ -566,7 +566,10 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
       break;
     case hci_spec::kVendorDebugEventCode:
       event_type = EventType::kVendorEvent;
-      event_code = event->params<hci_spec::VendorEventParams>().subevent_code;
+      event_code = pw::bluetooth::emboss::MakeVendorDebugEventView(event->view().data().data(),
+                                                                   event->view().size())
+                       .subevent_code()
+                       .Read();
       event_handlers = &vendor_subevent_code_handlers_;
       break;
     default:
@@ -618,9 +621,7 @@ void CommandChannel::NotifyEventHandler(std::unique_ptr<EventPacket> event) {
     EventCallbackResult result = std::visit(
         overloaded{[&event_packet](EventCallback& callback) { return callback(event_packet); },
                    [&event_packet](EmbossEventCallback& callback) {
-                     auto emboss_packet =
-                         EmbossEventPacket::New<pw::bluetooth::emboss::EventHeaderView>(
-                             event_packet.view().size());
+                     auto emboss_packet = EmbossEventPacket::New(event_packet.view().size());
                      bt::MutableBufferView dest = emboss_packet.mutable_data();
                      event_packet.view().data().Copy(&dest);
                      return callback(emboss_packet);

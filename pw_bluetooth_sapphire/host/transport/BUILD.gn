@@ -37,6 +37,7 @@ static_library("transport") {
     "//sdk/lib/fit",
     "//src/connectivity/bluetooth/core/bt-host/common",
     "//src/connectivity/bluetooth/core/bt-host/hci-spec",
+    "//src/connectivity/bluetooth/core/bt-host/hci-spec:vendor-protocol",
     "//third_party/pigweed:pw_bluetooth",
     "//zircon/system/ulib/async-loop:async-loop-cpp",
     "//zircon/system/ulib/async-loop:async-loop-default",

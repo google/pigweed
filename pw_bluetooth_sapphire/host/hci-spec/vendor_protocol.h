@@ -463,19 +463,6 @@ struct LEMultiAdvtEnableReturnParams {
 // LE multi-advertising state change sub-event
 constexpr EventCode kLEMultiAdvtStateChangeSubeventCode = 0x55;
 
-struct LEMultiAdvtStateChangeSubeventParams {
-  // Handle used to identify an advertising set.
-  AdvertisingHandle adv_handle;
-
-  // Reason for state change. Currently will always be 0x00.
-  // 0x00: Connection received
-  StatusCode status;
-
-  // Handle used to identify the connection that caused the state change (i.e. advertising
-  // instance to be disabled). Value will be 0xFFFF if invalid.
-  ConnectionHandle connection_handle;
-} __PACKED;
-
 }  // namespace bt::hci_spec::vendor::android
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_VENDOR_PROTOCOL_H_

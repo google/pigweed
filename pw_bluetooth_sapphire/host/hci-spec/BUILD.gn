@@ -44,3 +44,9 @@ bt_gtest_package("bt-host-hci-spec-tests") {
 emboss_cc_library("hci-protocol") {
   source = "hci-protocol.emb"
 }
+
+emboss_cc_library("vendor-protocol") {
+  source = "vendor-protocol.emb"
+  imports = [ "hci-protocol.emb" ]
+  deps = [ ":hci-protocol" ]
+}

@@ -193,7 +193,7 @@ class CommandChannel final {
   // debugging events. The event_callback will get invoked whenever the controller sends one of
   // these vendor debugging events with a matching subevent code.
   EventHandlerId AddVendorEventHandler(hci_spec::EventCode vendor_subevent_code,
-                                       EventCallback event_callback);
+                                       EventCallbackVariant event_callback);
 
   // Removes a previously registered event handler. Does nothing if an event handler with the given
   // |id| could not be found.

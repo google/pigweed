@@ -1014,18 +1014,20 @@ TEST_F(CommandChannelTest, VendorEventHandler) {
       StaticByteBuffer(hci_spec::kVendorDebugEventCode, 0x01, kTestSubeventCode1);
 
   int event_count0 = 0;
-  auto event_cb0 = [&event_count0, kTestSubeventCode0](const EventPacket& event) {
+  auto event_cb0 = [&event_count0, kTestSubeventCode0](const EmbossEventPacket& event) {
     event_count0++;
     EXPECT_EQ(hci_spec::kVendorDebugEventCode, event.event_code());
-    EXPECT_EQ(kTestSubeventCode0, event.params<hci_spec::VendorEventParams>().subevent_code);
+    EXPECT_EQ(kTestSubeventCode0,
+              event.view<pw::bluetooth::emboss::VendorDebugEventView>().subevent_code().Read());
     return EventCallbackResult::kContinue;
   };
 
   int event_count1 = 0;
-  auto event_cb1 = [&event_count1, kTestSubeventCode1](const EventPacket& event) {
+  auto event_cb1 = [&event_count1, kTestSubeventCode1](const EmbossEventPacket& event) {
     event_count1++;
     EXPECT_EQ(hci_spec::kVendorDebugEventCode, event.event_code());
-    EXPECT_EQ(kTestSubeventCode1, event.params<hci_spec::VendorEventParams>().subevent_code);
+    EXPECT_EQ(kTestSubeventCode1,
+              event.view<pw::bluetooth::emboss::VendorDebugEventView>().subevent_code().Read());
     return EventCallbackResult::kContinue;
   };
 
