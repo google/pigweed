@@ -14,22 +14,13 @@
 """Pigweed Project Builder Common argparse."""
 
 import argparse
+from pathlib import Path
 
 
 def add_project_builder_arguments(
     parser: argparse.ArgumentParser,
 ) -> argparse.ArgumentParser:
     """Add ProjectBuilder.main specific arguments."""
-    parser.add_argument(
-        '-k',
-        '--keep-going',
-        action='store_true',
-        help=(
-            'Keep building past the first failure. This is '
-            'equivalent to passing "-k 0" to ninja.'
-        ),
-    )
-
     parser.add_argument(
         'default_build_targets',
         nargs='*',
@@ -59,26 +50,58 @@ def add_project_builder_arguments(
         ),
     )
 
-    parser.add_argument(
+    build_options_group = parser.add_argument_group(
+        title='Build system control options'
+    )
+    build_options_group.add_argument(
         '-j',
         '--jobs',
         type=int,
-        help="Number of cores to use; defaults to Ninja's default",
+        help="Specify the number of cores to use for each build system.",
+    )
+    build_options_group.add_argument(
+        '-k',
+        '--keep-going',
+        action='store_true',
+        help=(
+            'Keep building past the first failure. This is equivalent to '
+            'running "ninja -k 0" or "bazel build -k".'
+        ),
     )
 
-    parser.add_argument(
-        '--debug-logging', action='store_true', help='Enable debug logging.'
+    logfile_group = parser.add_argument_group(title='Log file options')
+    logfile_group.add_argument(
+        '--logfile',
+        type=Path,
+        help='Global build output log file.',
     )
+
+    logfile_group.add_argument(
+        '--separate-logfiles',
+        action='store_true',
+        help=(
+            'Create separate log files per build directory. Requires setting '
+            'the --logfile option.'
+        ),
+    )
+
+    logfile_group.add_argument(
+        '--debug-logging',
+        action='store_true',
+        help='Enable Python build execution tool debug logging.',
+    )
+
+    output_group = parser.add_argument_group(title='Display output options')
 
     # TODO(b/248257406) Use argparse.BooleanOptionalAction when Python 3.8 is
     # no longer supported.
-    parser.add_argument(
+    output_group.add_argument(
         '--banners',
         action='store_true',
         default=True,
         help='Show pass/fail banners.',
     )
-    parser.add_argument(
+    output_group.add_argument(
         '--no-banners',
         action='store_false',
         dest='banners',
@@ -87,13 +110,13 @@ def add_project_builder_arguments(
 
     # TODO(b/248257406) Use argparse.BooleanOptionalAction when Python 3.8 is
     # no longer supported.
-    parser.add_argument(
+    output_group.add_argument(
         '--colors',
         action='store_true',
         default=True,
         help='Force color output from ninja.',
     )
-    parser.add_argument(
+    output_group.add_argument(
         '--no-colors',
         action='store_false',
         dest='colors',
@@ -107,7 +130,7 @@ def add_project_builder_arguments(
         default=[],
         dest='build_system_commands',
         metavar=('directory', 'command'),
-        help='Build system command.',
+        help='Build system command for . Default: ninja',
     )
 
     parser.add_argument(
@@ -115,7 +138,7 @@ def add_project_builder_arguments(
         action='append',
         default=[],
         help=(
-            'Additional build commands to run. These are run before any -C '
+            'Additional commands to run. These are run before any -C '
             'arguments and may be repeated. For example: '
             "--run-command 'bazel build //pw_cli/...'"
             "--run-command 'bazel test //pw_cli/...'"

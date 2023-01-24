@@ -85,7 +85,10 @@ class TestProjectBuilderPrefs(unittest.TestCase):
         changed_args = {
             'jobs': 8,
             'colors': False,
-            'build_system_commands': [['default', 'bazel']],
+            'build_system_commands': [
+                ['out', 'bazel build'],
+                ['out', 'bazel test'],
+            ],
         }
         args_dict.update(changed_args)
 
@@ -94,7 +97,13 @@ class TestProjectBuilderPrefs(unittest.TestCase):
         # apply_command_line_args modifies build_system_commands to match the
         # prefs dict format.
         changed_args['build_system_commands'] = {
-            'default': {'command': 'bazel'}
+            'default': {'commands': [{'command': 'ninja', 'extra_args': []}]},
+            'out': {
+                'commands': [
+                    {'command': 'bazel', 'extra_args': ['build']},
+                    {'command': 'bazel', 'extra_args': ['test']},
+                ],
+            },
         }
 
         # Check that only args changed from their defaults are applied.

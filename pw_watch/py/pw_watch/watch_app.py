@@ -20,7 +20,7 @@ from pathlib import Path
 import re
 import sys
 import time
-from typing import Callable, Dict, List, NoReturn, Optional
+from typing import Callable, Dict, Iterable, List, NoReturn, Optional
 
 from prompt_toolkit.application import Application
 from prompt_toolkit.clipboard.pyperclip import PyperclipClipboard
@@ -160,8 +160,7 @@ class WatchAppPrefs(ProjectBuilderPrefs):
         return self._config.get('show_python_logger', False)
 
 
-_NINJA_LOG = logging.getLogger('pw_watch_ninja_output')
-_LOG = logging.getLogger('pw_watch')
+_LOG = logging.getLogger('pw_build.watch')
 
 
 class WatchWindowManager(WindowManager):
@@ -184,7 +183,6 @@ class WatchApp(PluginMixin):
         self,
         event_handler,
         prefs: WatchAppPrefs,
-        debug_logging: bool = False,
         log_file_name: Optional[str] = None,
     ):
 
@@ -215,49 +213,25 @@ class WatchApp(PluginMixin):
         self.log_ui_update_frequency = 0.1  # 10 FPS
         self._last_ui_update_time = time.time()
 
-        self.ninja_log_pane = LogPane(
-            application=self, pane_title='Pigweed Watch'
+        debug_logging = (
+            event_handler.project_builder.default_log_level == logging.DEBUG
         )
-        self.ninja_log_pane.add_log_handler(_NINJA_LOG, level_name='INFO')
-        self.ninja_log_pane.add_log_handler(
-            _LOG, level_name=('DEBUG' if debug_logging else 'INFO')
-        )
-        # Set python log format to just the message itself.
-        self.ninja_log_pane.log_view.log_store.formatter = logging.Formatter(
-            '%(message)s'
-        )
-        self.ninja_log_pane.table_view = False
-        # Disable line wrapping for improved error visibility.
-        if self.ninja_log_pane.wrap_lines:
-            self.ninja_log_pane.toggle_wrap_lines()
-        # Blank right side toolbar text
-        self.ninja_log_pane._pane_subtitle = ' '
-        self.ninja_log_view = self.ninja_log_pane.log_view
+        level_name = 'DEBUG' if debug_logging else 'INFO'
+        if event_handler.separate_logfiles:
+            for recipe in reversed(event_handler.project_builder.build_recipes):
+                self.add_build_log_pane(
+                    recipe.display_name,
+                    recipe.log,
+                    level_name=level_name,
+                )
 
-        # Make tab and shift-tab search for next and previous error
-        next_error_bindings = KeyBindings()
-
-        @next_error_bindings.add('s-tab')
-        def _previous_error(_event):
-            self.jump_to_error(backwards=True)
-
-        @next_error_bindings.add('tab')
-        def _next_error(_event):
-            self.jump_to_error()
-
-        existing_log_bindings: Optional[
-            KeyBindingsBase
-        ] = self.ninja_log_pane.log_content_control.key_bindings
-
-        key_binding_list: List[KeyBindingsBase] = []
-        if existing_log_bindings:
-            key_binding_list.append(existing_log_bindings)
-        key_binding_list.append(next_error_bindings)
-        self.ninja_log_pane.log_content_control.key_bindings = (
-            merge_key_bindings(key_binding_list)
+        self.add_build_log_pane(
+            'Pigweed Watch',
+            _LOG,
+            level_name=level_name,
         )
 
-        self.window_manager.add_pane(self.ninja_log_pane)
+        self.ninja_log_pane = list(self.all_log_panes())[0]
 
         self.time_waster = Twenty48Pane(include_resize_handle=True)
         self.time_waster.application = self
@@ -358,7 +332,8 @@ class WatchApp(PluginMixin):
         )
 
         self.layout = Layout(
-            self.root_container, focused_element=self.ninja_log_pane
+            self.root_container,
+            focused_element=self.ninja_log_pane,
         )
 
         self.application: Application = Application(
@@ -383,6 +358,52 @@ class WatchApp(PluginMixin):
             plugin_callback_frequency=0.5,
             plugin_logger_name='pw_watch_stdout_checker',
         )
+
+    def add_build_log_pane(
+        self, title: str, logger: logging.Logger, level_name: str
+    ) -> None:
+        """Setup a new build log pane."""
+        new_log_pane = LogPane(application=self, pane_title=title)
+        new_log_pane.add_log_handler(logger, level_name=level_name)
+
+        # Set python log format to just the message itself.
+        new_log_pane.log_view.log_store.formatter = logging.Formatter(
+            '%(message)s'
+        )
+
+        new_log_pane.table_view = False
+
+        # Disable line wrapping for improved error visibility.
+        if new_log_pane.wrap_lines:
+            new_log_pane.toggle_wrap_lines()
+
+        # Blank right side toolbar text
+        new_log_pane._pane_subtitle = ' '  # pylint: disable=protected-access
+
+        # Make tab and shift-tab search for next and previous error
+        next_error_bindings = KeyBindings()
+
+        @next_error_bindings.add('s-tab')
+        def _previous_error(_event):
+            self.jump_to_error(backwards=True)
+
+        @next_error_bindings.add('tab')
+        def _next_error(_event):
+            self.jump_to_error()
+
+        existing_log_bindings: Optional[
+            KeyBindingsBase
+        ] = new_log_pane.log_content_control.key_bindings
+
+        key_binding_list: List[KeyBindingsBase] = []
+        if existing_log_bindings:
+            key_binding_list.append(existing_log_bindings)
+        key_binding_list.append(next_error_bindings)
+        new_log_pane.log_content_control.key_bindings = merge_key_bindings(
+            key_binding_list
+        )
+
+        self.window_manager.add_pane(new_log_pane)
 
     def logs_redraw(self):
         emit_time = time.time()
@@ -445,13 +466,19 @@ class WatchApp(PluginMixin):
         # pylint: disable=no-self-use
         return False
 
+    def all_log_panes(self) -> Iterable[LogPane]:
+        for pane in self.window_manager.active_panes():
+            if isinstance(pane, LogPane):
+                yield pane
+
     def clear_ninja_log(self) -> None:
-        self.ninja_log_view.log_store.clear_logs()
-        self.ninja_log_view._restart_filtering()  # pylint: disable=protected-access
-        self.ninja_log_view.view_mode_changed()
-        # Re-enable follow if needed
-        if not self.ninja_log_view.follow:
-            self.ninja_log_view.toggle_follow()
+        for pane in self.all_log_panes():
+            pane.log_view.log_store.clear_logs()
+            pane.log_view._restart_filtering()  # pylint: disable=protected-access
+            pane.log_view.view_mode_changed()
+            # Re-enable follow if needed
+            if not pane.log_view.follow:
+                pane.log_view.toggle_follow()
 
     def run_build(self):
         """Manually trigger a rebuild."""
@@ -459,8 +486,9 @@ class WatchApp(PluginMixin):
         self.event_handler.rebuild()
 
     def rebuild_on_filechange(self):
-        self.ninja_log_view.log_store.clear_logs()
-        self.ninja_log_view.view_mode_changed()
+        for pane in self.all_log_panes():
+            pane.log_view.log_store.clear_logs()
+            pane.log_view.view_mode_changed()
 
     def get_statusbar_text(self):
         status = self.event_handler.status_message

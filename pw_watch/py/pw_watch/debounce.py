@@ -18,7 +18,7 @@ import logging
 import threading
 from abc import ABC, abstractmethod
 
-_LOG = logging.getLogger('pw_watch')
+_LOG = logging.getLogger('pw_build.watch')
 
 
 class DebouncedFunction(ABC):

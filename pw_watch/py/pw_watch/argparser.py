@@ -53,7 +53,11 @@ def add_parser_arguments(
     parser: argparse.ArgumentParser,
 ) -> argparse.ArgumentParser:
     """Sets up an argument parser for pw watch."""
-    parser.add_argument(
+    parser = add_project_builder_arguments(parser)
+
+    watch_group = parser.add_argument_group(title='Watch options')
+
+    watch_group.add_argument(
         '--patterns',
         help=(
             WATCH_PATTERN_DELIMITER + '-delimited list of globs to '
@@ -62,7 +66,7 @@ def add_parser_arguments(
         default=WATCH_PATTERN_DELIMITER.join(WATCH_PATTERNS),
     )
 
-    parser.add_argument(
+    watch_group.add_argument(
         '--ignore_patterns',
         dest='ignore_patterns_string',
         help=(
@@ -71,7 +75,7 @@ def add_parser_arguments(
         ),
     )
 
-    parser.add_argument(
+    watch_group.add_argument(
         '--exclude_list',
         nargs='+',
         type=Path,
@@ -79,14 +83,12 @@ def add_parser_arguments(
         default=[],
     )
 
-    parser.add_argument(
+    watch_group.add_argument(
         '--no-restart',
         dest='restart',
         action='store_false',
         help='do not restart ongoing builds if files change',
     )
-
-    parser = add_project_builder_arguments(parser)
 
     parser.add_argument(
         '--serve-docs',
@@ -110,7 +112,7 @@ def add_parser_arguments(
         '--serve-docs-path',
         dest='serve_docs_path',
         type=Path,
-        default="docs/gen/docs",
+        default='docs/gen/docs',
         help='Set the path for the docs to serve. Default to docs/gen/docs'
         ' in the build directory.',
     )

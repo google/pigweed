@@ -14,6 +14,7 @@
 """Tests for pw_watch.build_recipe"""
 
 from pathlib import Path
+import shlex
 import unittest
 
 from parameterized import parameterized  # type: ignore
@@ -63,7 +64,7 @@ class TestBuildRecipe(unittest.TestCase):
                 'cmake shell command',
                 BuildCommand(
                     build_dir=Path('outcmake'),
-                    command_string='cmake -G Ninja -S ./ -B outcmake',
+                    command=shlex.split('cmake -G Ninja -S ./ -B outcmake'),
                 ),
                 # result
                 ['cmake', '-G', 'Ninja', '-S', './', '-B', 'outcmake'],
@@ -72,7 +73,7 @@ class TestBuildRecipe(unittest.TestCase):
                 'gn shell command',
                 BuildCommand(
                     build_dir=Path('out'),
-                    command_string='gn gen out --export-compile-commands',
+                    command=shlex.split('gn gen out --export-compile-commands'),
                 ),
                 # result
                 ['gn', 'gen', 'out', '--export-compile-commands'],
@@ -81,10 +82,21 @@ class TestBuildRecipe(unittest.TestCase):
                 'python shell command',
                 BuildCommand(
                     build_dir=Path('outpytest'),
-                    command_string='python pw_build/py/build_recipe_test.py',
+                    command=shlex.split(
+                        'python pw_build/py/build_recipe_test.py'
+                    ),
                 ),
                 # result
                 ['python', 'pw_build/py/build_recipe_test.py'],
+            ),
+            (
+                'gn shell command with a list',
+                BuildCommand(
+                    build_dir=Path('out'),
+                    command=['gn', 'gen', 'out', '--export-compile-commands'],
+                ),
+                # result
+                ['gn', 'gen', 'out', '--export-compile-commands'],
             ),
         ]
     )
