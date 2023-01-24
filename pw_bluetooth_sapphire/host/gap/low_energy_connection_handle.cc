@@ -21,7 +21,6 @@ LowEnergyConnectionHandle::LowEnergyConnectionHandle(
       bondable_cb_(std::move(bondable_cb)),
       security_cb_(std::move(security_cb)) {
   BT_ASSERT(peer_id_.IsValid());
-  BT_ASSERT(handle_);
 }
 
 LowEnergyConnectionHandle::~LowEnergyConnectionHandle() {

@@ -19,9 +19,7 @@ FakeChannel::FakeChannel(ChannelId id, ChannelId remote_id, hci_spec::Connection
       activate_fails_(false),
       link_error_(false),
       acl_priority_fails_(false),
-      weak_fake_chan_(this) {
-  BT_DEBUG_ASSERT(handle_);
-}
+      weak_fake_chan_(this) {}
 
 void FakeChannel::Receive(const ByteBuffer& data) {
   auto pdu = fragmenter_.BuildFrame(id(), data, FrameCheckSequenceOption::kNoFcs);

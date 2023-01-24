@@ -92,7 +92,6 @@ OutboundFrame::FrameCheckSequenceBuffer OutboundFrame::MakeFcs() const {
 
 Fragmenter::Fragmenter(hci_spec::ConnectionHandle connection_handle, uint16_t max_acl_payload_size)
     : connection_handle_(connection_handle), max_acl_payload_size_(max_acl_payload_size) {
-  BT_ASSERT(connection_handle_);
   BT_ASSERT(connection_handle_ <= hci_spec::kConnectionHandleMax);
   BT_ASSERT(max_acl_payload_size_);
   BT_ASSERT(max_acl_payload_size_ >= sizeof(BasicHeader));

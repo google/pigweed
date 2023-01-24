@@ -29,7 +29,6 @@ Connection::Connection(hci_spec::ConnectionHandle handle, const DeviceAddress& l
       conn_state_(State::kConnected),
       hci_(hci),
       weak_self_(this) {
-  BT_ASSERT(handle_);
   BT_ASSERT(hci_.is_alive());
 
   auto disconn_complete_handler =
