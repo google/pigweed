@@ -185,7 +185,7 @@ class TestRunner:
             total = str(len(self._tests))
             test_counter = f'Test {idx:{len(total)}}/{total}'
 
-            _LOG.info('%s: [ RUN] %s', test_counter, test.name)
+            _LOG.debug('%s: [ RUN] %s', test_counter, test.name)
 
             # Convert POSIX to native directory seperators as GN produces '/'
             # but the Windows test runner needs '\\'.
