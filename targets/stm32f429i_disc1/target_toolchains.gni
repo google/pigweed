@@ -60,6 +60,7 @@ _target_config = {
   pw_sync_INTERRUPT_SPIN_LOCK_BACKEND =
       "$dir_pw_sync_baremetal:interrupt_spin_lock"
   pw_sync_MUTEX_BACKEND = "$dir_pw_sync_baremetal:mutex"
+  pw_rpc_CONFIG = "$dir_pw_rpc:disable_global_mutex"
   pw_log_BACKEND = dir_pw_log_basic
   pw_sys_io_BACKEND = dir_pw_sys_io_baremetal_stm32f429
   pw_rpc_system_server_BACKEND = "$dir_pw_hdlc:hdlc_sys_io_system_server"

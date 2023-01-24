@@ -35,7 +35,10 @@ config("public_include_path") {
 }
 
 config("disable_global_mutex_config") {
-  defines = [ "PW_RPC_USE_GLOBAL_MUTEX=0" ]
+  defines = [
+    "PW_RPC_USE_GLOBAL_MUTEX=0",
+    "PW_RPC_YIELD_MODE=PW_RPC_YIELD_MODE_BUSY_LOOP",
+  ]
   visibility = [ ":*" ]
 }
 
@@ -168,6 +171,16 @@ pw_source_set("common") {
     ":log_config",
     dir_pw_log,
   ]
+
+  # pw_rpc needs a way to yield the current thread. Depending on its
+  # configuration, it may need either pw_thread:sleep or pw_thread:yield.
+  if (pw_thread_SLEEP_BACKEND != "") {
+    deps += [ "$dir_pw_thread:sleep" ]
+  }
+  if (pw_thread_YIELD_BACKEND != "") {
+    deps += [ "$dir_pw_thread:yield" ]
+  }
+
   public = [
     "public/pw_rpc/channel.h",
     "public/pw_rpc/method_id.h",

@@ -44,6 +44,7 @@ _target_config = {
   pw_sync_INTERRUPT_SPIN_LOCK_BACKEND =
       "$dir_pw_sync_baremetal:interrupt_spin_lock"
   pw_sync_MUTEX_BACKEND = "$dir_pw_sync_baremetal:mutex"
+  pw_rpc_CONFIG = "$dir_pw_rpc:disable_global_mutex"
 
   # pw_cpu_exception_armv7m tests do not work as expected in QEMU. It does not
   # appear the divide-by-zero traps as expected when enabled, which prevents the

@@ -22,11 +22,69 @@
 #include "pw_rpc/internal/lock.h"
 #include "pw_toolchain/no_destructor.h"
 
+#if PW_RPC_YIELD_MODE == PW_RPC_YIELD_MODE_BUSY_LOOP
+
+static_assert(
+    PW_RPC_USE_GLOBAL_MUTEX == 0,
+    "The RPC global mutex is enabled, but no pw_rpc yield mode is selected! "
+    "Because the global mutex is in use, pw_rpc may be used from multiple "
+    "threads. This could result in thread starvation. To fix this, set "
+    "PW_RPC_YIELD to PW_RPC_YIELD_MODE_SLEEP and add a dependency on "
+    "pw_thread:sleep.");
+
+#elif PW_RPC_YIELD_MODE == PW_RPC_YIELD_MODE_SLEEP
+
+#if !__has_include("pw_thread/sleep.h")
+
+static_assert(false,
+              "PW_RPC_YIELD_MODE is PW_RPC_YIELD_MODE_SLEEP "
+              "(pw::this_thread::sleep_for()), but no backend is set for "
+              "pw_thread:sleep. Set a pw_thread:sleep backend or use a "
+              "different PW_RPC_YIELD_MODE setting.");
+
+#endif  // !__has_include("pw_thread/sleep.h")
+
+#include "pw_thread/sleep.h"
+
+#elif PW_RPC_YIELD_MODE == PW_RPC_YIELD_MODE_YIELD
+
+#if !__has_include("pw_thread/yield.h")
+
+static_assert(false,
+              "PW_RPC_YIELD_MODE is PW_RPC_YIELD_MODE_YIELD "
+              "(pw::this_thread::yield()), but no backend is set for "
+              "pw_thread:yield. Set a pw_thread:yield backend or use a "
+              "different PW_RPC_YIELD_MODE setting.");
+
+#endif  // !__has_include("pw_thread/yield.h")
+
+#include "pw_thread/yield.h"
+
+#else
+
+static_assert(
+    false,
+    "PW_RPC_YIELD_MODE macro must be set to PW_RPC_YIELD_MODE_BUSY_LOOP, "
+    "PW_RPC_YIELD_MODE_SLEEP (pw::this_thread::sleep_for()), or "
+    "PW_RPC_YIELD_MODE_YIELD (pw::this_thread::yield())");
+
+#endif  // PW_RPC_YIELD_MODE
+
 namespace pw::rpc::internal {
 
 RpcLock& rpc_lock() {
   static NoDestructor<RpcLock> lock;
   return *lock;
+}
+
+void YieldRpcLock() {
+  rpc_lock().unlock();
+#if PW_RPC_YIELD_MODE == PW_RPC_YIELD_MODE_SLEEP
+  this_thread::sleep_for(chrono::SystemClock::duration(1));
+#elif PW_RPC_YIELD_MODE == PW_RPC_YIELD_MODE_YIELD
+  this_thread::yield();
+#endif  // PW_RPC_YIELD_MODE
+  rpc_lock().lock();
 }
 
 Endpoint::~Endpoint() {

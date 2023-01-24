@@ -49,6 +49,28 @@
 #define PW_RPC_USE_GLOBAL_MUTEX 1
 #endif  // PW_RPC_USE_GLOBAL_MUTEX
 
+// pw_rpc must yield the current thread when waiting for a callback to complete
+// in a different thread. PW_RPC_YIELD_MODE determines how to yield. There are
+// three supported settings:
+//
+//   PW_RPC_YIELD_MODE_BUSY_LOOP - Do nothing. Release and reacquire the RPC
+//       lock in a busy loop. PW_RPC_USE_GLOBAL_MUTEX must be 0.
+//   PW_RPC_YIELD_MODE_SLEEP - Yield with 1-tick calls to
+//       pw::this_thread::sleep_for(). A backend must be configured for
+//       pw_thread:sleep.
+//   PW_RPC_YIELD_MODE_YIELD - Yield with pw::this_thread::yield(). A backend
+//       must be configured for pw_thread:yield. IMPORTANT: On some platforms,
+//       pw::this_thread::yield() does not yield to lower priority tasks and
+//       should not be used here.
+//
+#define PW_RPC_YIELD_MODE_BUSY_LOOP 100
+#define PW_RPC_YIELD_MODE_SLEEP 101
+#define PW_RPC_YIELD_MODE_YIELD 102
+
+#ifndef PW_RPC_YIELD_MODE
+#define PW_RPC_YIELD_MODE PW_RPC_YIELD_MODE_SLEEP
+#endif  // PW_RPC_YIELD_MODE
+
 // Whether pw_rpc should use dynamic memory allocation internally. If enabled,
 // pw_rpc dynamically allocates channels and its encoding buffers. RPC users may
 // use dynamic allocation independently of this option (e.g. to allocate pw_rpc

@@ -122,6 +122,7 @@ pw_cc_library(
         "//pw_status",
         "//pw_sync:lock_annotations",
         "//pw_sync:mutex",
+        "//pw_thread:sleep",
         "//pw_toolchain:no_destructor",
     ],
 )

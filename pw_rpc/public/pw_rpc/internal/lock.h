@@ -53,4 +53,7 @@ class PW_SCOPED_LOCKABLE LockGuard {
 
 RpcLock& rpc_lock();
 
+// Releases the RPC lock, yields, and reacquires it.
+void YieldRpcLock() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
+
 }  // namespace pw::rpc::internal
