@@ -33,7 +33,8 @@ import("python_action.gni")
 # standalone target.
 #
 # Args:
-#   files: List of file paths to scan for expressions.
+#   files: List of scopes containing `source` and `dest` files. `source` is
+#          scanned for expressions, and the result is written to `dest`.
 #
 # Example:
 #
@@ -42,15 +43,21 @@ import("python_action.gni")
 #       sources = invoker.sources
 #     }
 #
-#     _artifacts_file = "$target_gen_dir/${target_name}_artifacts.json"
+#     _artifacts_input = "$target_gen_dir/${target_name}_artifacts.json.in"
+#     _artifacts_output = "$target_gen_dir/${target_name}_artifacts.json"
 #     _artifacts = {
 #       binary = "<TARGET_FILE(:${target_name}.exe)>"
 #       objects = "<TARGET_OBJECTS(:${target_name}.exe)>"
 #     }
-#     write_file(_artifacts_file, _artifacts, "json")
+#     write_file(_artifacts_input, _artifacts, "json")
 #
 #     pw_evaluate_path_expressions("${target_name}.evaluate") {
-#       files = [ _artifacts_file ]
+#       files = [
+#         {
+#           source = _artifacts_input
+#           dest = _artifacts_output
+#         },
+#       ]
 #     }
 #
 #     group(target_name) {
@@ -76,14 +83,20 @@ template("pw_evaluate_path_expressions") {
     current_toolchain,
   ]
 
+  _inputs = []
+  _outputs = []
+
   foreach(_file, invoker.files) {
-    _script_args += [ rebase_path(_file) ]
+    _inputs += [ _file.source ]
+    _outputs += [ _file.dest ]
+    _arg = rebase_path(_file.source) + ":" + rebase_path(_file.dest)
+    _script_args += [ _arg ]
   }
 
   pw_python_action(target_name) {
     script = "$dir_pw_build/py/pw_build/gn_resolver.py"
-    inputs = invoker.files
+    inputs = _inputs
+    outputs = _outputs
     args = _script_args
-    stamp = true
   }
 }

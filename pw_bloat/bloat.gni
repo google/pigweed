@@ -86,8 +86,11 @@ template("pw_size_report") {
     ]
 
     _file_name = "${target_name}_single_binary.json"
-    _args_path = rebase_path("$target_gen_dir/${_file_name}")
-    write_file(_args_path,
+
+    _args_src = "$target_gen_dir/${_file_name}.in"
+    _args_path = "$target_gen_dir/${_file_name}"
+
+    write_file(_args_src,
                {
                  binaries = _binary_args
                  target_name = target_name
@@ -100,12 +103,17 @@ template("pw_size_report") {
                "json")
 
     pw_evaluate_path_expressions("${target_name}.evaluate") {
-      files = [ _args_path ]
+      files = [
+        {
+          source = _args_src
+          dest = _args_path
+        },
+      ]
     }
 
     _bloat_script_args = [
       "--gn-arg-path",
-      _args_path,
+      rebase_path(_args_path, root_build_dir),
       "--single-report",
     ]
 
@@ -286,8 +294,9 @@ template("pw_size_diff") {
     }
 
     _file_name = "${target_name}_binaries.json"
-    _diff_path = rebase_path("$target_gen_dir/${_file_name}")
-    write_file(_diff_path,
+    _diff_source = "$target_gen_dir/${_file_name}.in"
+    _diff_path = "$target_gen_dir/${_file_name}"
+    write_file(_diff_source,
                {
                  binaries = _binaries_args
                  target_name = target_name
@@ -300,12 +309,17 @@ template("pw_size_diff") {
                "json")
 
     pw_evaluate_path_expressions("${target_name}.evaluate") {
-      files = [ _diff_path ]
+      files = [
+        {
+          source = _diff_source
+          dest = _diff_path
+        },
+      ]
     }
 
     _bloat_script_args = [
       "--gn-arg-path",
-      _diff_path,
+      rebase_path(_diff_path, root_build_dir),
     ]
 
     # TODO(brandonvu): Remove once all downstream projects are updated

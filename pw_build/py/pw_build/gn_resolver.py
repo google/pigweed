@@ -416,6 +416,8 @@ def expand_expressions(paths: GnPaths, arg: str) -> Iterable[str]:
 
 
 def _parse_args() -> argparse.Namespace:
+    file_pair = lambda s: tuple(Path(p) for p in s.split(':'))
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         '--gn-root',
@@ -442,15 +444,14 @@ def _parse_args() -> argparse.Namespace:
         'files',
         metavar='FILE',
         nargs='+',
-        type=Path,
-        help='Files to scan for expressions to evaluate',
+        type=file_pair,
+        help='Pairs of src:dest files to scan for expressions to evaluate',
     )
     return parser.parse_args()
 
 
-def _resolve_expressions_in_file(file: Path, paths: GnPaths):
-    source = file.read_text()
-    file.write_text(''.join(expand_expressions(paths, source)))
+def _resolve_expressions_in_file(src: Path, dst: Path, paths: GnPaths):
+    dst.write_text(''.join(expand_expressions(paths, src.read_text())))
 
 
 def main(
@@ -458,7 +459,7 @@ def main(
     current_path: Path,
     default_toolchain: str,
     current_toolchain: str,
-    files: Iterable[Path],
+    files: Iterable[Tuple[Path, Path]],
 ) -> int:
     """Evaluates GN target expressions within a list of files.
 
@@ -472,11 +473,11 @@ def main(
         toolchain=tool,
     )
 
-    for file in files:
+    for src, dst in files:
         try:
-            _resolve_expressions_in_file(file, paths)
+            _resolve_expressions_in_file(src, dst, paths)
         except ExpressionError as err:
-            _LOG.error('Error evaluating expressions in %s:', file)
+            _LOG.error('Error evaluating expressions in %s:', src)
             _LOG.error('  %s', err)
             return 1
 

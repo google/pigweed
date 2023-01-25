@@ -493,7 +493,8 @@ section for the list of supported expressions.
 
 **Arguments**
 
-* ``files``: A list of file paths to process.
+* ``files``: A list of scopes, each containing a ``source`` file to process and
+  a ``dest`` file to which to write the result.
 
 **Example**
 
@@ -513,15 +514,21 @@ the list of object files from which it was compiled, making use of
       }
     }
 
-    _artifacts_file = "$target_gen_dir/${target_name}_artifacts.json"
+    _artifacts_input = "$target_gen_dir/${target_name}_artifacts.json.in"
+    _artifacts_output = "$target_gen_dir/${target_name}_artifacts.json"
     _artifacts = {
       binary = "<TARGET_FILE(:${target_name}.exe)>"
       objects = "<TARGET_OBJECTS(:${target_name}.exe)>"
     }
-    write_file(_artifacts_file, _artifacts, "json")
+    write_file(_artifacts_input, _artifacts, "json")
 
     pw_evaluate_path_expressions("${target_name}.evaluate") {
-      files = [ _artifacts_file ]
+      files = [
+        {
+          source = _artifacts_input
+          dest = _artifacts_output
+        },
+      ]
     }
 
     group(target_name) {
