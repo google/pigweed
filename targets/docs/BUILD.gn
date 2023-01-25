@@ -20,6 +20,7 @@ import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_third_party/nanopb/nanopb.gni")
 import("$dir_pw_toolchain/arm_gcc/toolchains.gni")
 import("$dir_pw_toolchain/generate_toolchain.gni")
+import("$dir_pw_toolchain/traits.gni")
 
 if (current_toolchain != default_toolchain) {
   pw_source_set("tokenized_log_handler") {
@@ -55,6 +56,8 @@ generate_toolchain("docs") {
     pw_log_BACKEND = dir_pw_log_tokenized
     pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND =
         get_path_info(":tokenized_log_handler", "abspath")
+
+    pw_toolchain_CXX_STANDARD = pw_toolchain_STANDARD.CXX20
   }
 }
 

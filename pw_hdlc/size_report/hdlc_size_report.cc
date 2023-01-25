@@ -90,7 +90,7 @@ void HdlcSizeReport() {
   Result<hdlc::Frame> frame = decoder.Process(std::byte('~'));
   // Force use of nodiscard frame.
   if (frame.ok()) {
-    get_size++;
+    get_size = get_size + 1;
   }
   decoder.Clear();
 #endif

@@ -34,7 +34,7 @@ void pw_boot_PreStaticMemoryInit() {
   // Memory mapped register to enable FPU. (ARMv7-M Section B3.2.2, Table B3-4)
   volatile uint32_t& arm_v7m_cpacr =
       *reinterpret_cast<volatile uint32_t*>(0xE000ED88u);
-  arm_v7m_cpacr |= kFpuEnableMask;
+  arm_v7m_cpacr = arm_v7m_cpacr | kFpuEnableMask;
 
   // Ensure the FPU configuration is committed and enabled before continuing and
   // potentially executing any FPU instructions, however rare that may be during
