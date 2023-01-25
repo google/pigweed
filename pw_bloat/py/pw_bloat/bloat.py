@@ -116,15 +116,14 @@ class NoMemoryRegions(Exception):
 
 def memory_regions_size_report(
     elf: Path,
-    additional_data_sources: Iterable[str] = (),
+    data_sources: Iterable[str] = (),
     extra_args: Iterable[str] = (),
 ) -> Iterable[str]:
     """Runs a size report on an ELF file using pw_bloat memory region symbols.
 
     Arguments:
         elf: The ELF binary on which to run.
-        additional_data_sources: Optional hierarchical data sources to display
-            following the root memory regions.
+        data_sources: Hierarchical data sources to display.
         extra_args: Additional command line arguments forwarded to bloaty.
 
     Returns:
@@ -151,7 +150,7 @@ def memory_regions_size_report(
             run_bloaty(
                 str(elf.resolve()),
                 bloaty_config.name,
-                data_sources=('memoryregions', *additional_data_sources),
+                data_sources=data_sources,
                 extra_args=extra_args,
             )
             .decode('utf-8')

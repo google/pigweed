@@ -39,9 +39,9 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         '-d',
         '--data-sources',
-        help='Comma-separated list of additional Bloaty data sources to report',
+        help='Comma-separated list of Bloaty data sources to report',
         type=lambda s: s.split(','),
-        default=(),
+        default=('memoryregions,sections'),
     )
     parser.add_argument(
         '--diff',
@@ -72,7 +72,7 @@ def _run_size_report(
     """
 
     bloaty_tsv = bloat.memory_regions_size_report(
-        elf, additional_data_sources=data_sources, extra_args=('--tsv',)
+        elf, data_sources=data_sources, extra_args=('--tsv',)
     )
 
     return DataSourceMap.from_bloaty_tsv(bloaty_tsv)
