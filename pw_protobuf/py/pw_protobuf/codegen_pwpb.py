@@ -256,7 +256,8 @@ class ReadMethod(ProtoMethod):
         Result<{ctype}> ReadFoo({params...}) {
           Result<uint32_t> field_number = FieldNumber();
           PW_ASSERT(field_number.ok());
-          PW_ASSERT(field_number.value() == static_cast<uint32_t>(Fields::FOO));
+          PW_ASSERT(field_number.value() ==
+                    static_cast<uint32_t>(Fields::kFoo));
           return decoder_->Read{type}({params...});
         }
 
@@ -2315,7 +2316,10 @@ def generate_to_string_for_enum(
 
 
 def forward_declare(
-    node: ProtoMessage, root: ProtoNode, output: OutputFile
+    node: ProtoMessage,
+    root: ProtoNode,
+    output: OutputFile,
+    exclude_legacy_snake_case_field_name_enums: bool,
 ) -> None:
     """Generates code forward-declaring entities in a message's namespace."""
     namespace = node.cpp_namespace(root=root)
@@ -2327,6 +2331,14 @@ def forward_declare(
     with output.indent():
         for field in node.fields():
             output.write_line(f'{field.enum_name()} = {field.number()},')
+
+        # Migration support from SNAKE_CASE to kConstantCase.
+        if not exclude_legacy_snake_case_field_name_enums:
+            for field in node.fields():
+                output.write_line(
+                    f'{field.legacy_enum_name()} = {field.number()},'
+                )
+
     output.write_line('};')
 
     # Declare the message's message struct.
@@ -2551,6 +2563,7 @@ def generate_code_for_package(
     package: ProtoNode,
     output: OutputFile,
     suppress_legacy_namespace: bool,
+    exclude_legacy_snake_case_field_name_enums: bool,
 ) -> None:
     """Generates code for a single .pb.h file corresponding to a .proto file."""
 
@@ -2593,7 +2606,12 @@ def generate_code_for_package(
 
     for node in package:
         if node.type() == ProtoNode.Type.MESSAGE:
-            forward_declare(cast(ProtoMessage, node), package, output)
+            forward_declare(
+                cast(ProtoMessage, node),
+                package,
+                output,
+                exclude_legacy_snake_case_field_name_enums,
+            )
 
     # Define all top-level enums.
     for node in package.children():
@@ -2677,7 +2695,10 @@ def generate_code_for_package(
 
 
 def process_proto_file(
-    proto_file, proto_options, suppress_legacy_namespace: bool
+    proto_file,
+    proto_options,
+    suppress_legacy_namespace: bool,
+    exclude_legacy_snake_case_field_name_enums: bool,
 ) -> Iterable[OutputFile]:
     """Generates code for a single .proto file."""
 
@@ -2690,7 +2711,11 @@ def process_proto_file(
     output_filename = _proto_filename_to_generated_header(proto_file.name)
     output_file = OutputFile(output_filename)
     generate_code_for_package(
-        proto_file, package_root, output_file, suppress_legacy_namespace
+        proto_file,
+        package_root,
+        output_file,
+        suppress_legacy_namespace,
+        exclude_legacy_snake_case_field_name_enums,
     )
 
     return [output_file]

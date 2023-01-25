@@ -53,6 +53,12 @@ def parse_parameter_options(parameter: str) -> Namespace:
         help='If set, suppresses `using namespace` declarations, which '
         'disallows use of the legacy non-prefixed namespace',
     )
+    parser.add_argument(
+        '--exclude-legacy-snake-case-field-name-enums',
+        dest='exclude_legacy_snake_case_field_name_enums',
+        action='store_true',
+        help='Do not generate legacy SNAKE_CASE names for field name enums.',
+    )
 
     # protoc passes the custom arguments in shell quoted form, separated by
     # commas. Use shlex to split them, correctly handling quoted sections, with
@@ -87,6 +93,9 @@ def process_proto_request(
             proto_file,
             proto_options,
             suppress_legacy_namespace=args.no_legacy_namespace,
+            exclude_legacy_snake_case_field_name_enums=(
+                args.exclude_legacy_snake_case_field_name_enums
+            ),
         )
         for output_file in output_files:
             fd = res.file.add()

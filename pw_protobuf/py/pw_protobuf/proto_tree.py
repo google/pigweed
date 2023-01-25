@@ -505,6 +505,9 @@ class ProtoMessageField:
         return self._field_name
 
     def enum_name(self) -> str:
+        return 'k' + self.name()
+
+    def legacy_enum_name(self) -> str:
         return self.upper_snake_case(
             symbol_name_mapping.fix_cc_enum_value_name(self._field_name)
         )

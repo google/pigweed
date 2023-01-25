@@ -20,4 +20,10 @@ declare_args() {
   # in a single toolchain to avoid unnecessary duplication in the build.
   pw_protobuf_compiler_TOOLCHAIN =
       "$dir_pw_protobuf_compiler/toolchain:protocol_buffer"
+
+  # pwpb previously generated field enum names in SNAKE_CASE rather than
+  # kConstantCase. Set this variable to temporarily enable legacy SNAKE_CASE
+  # support while you migrate your codebase to kConstantCase.
+  # b/266298474
+  pw_protobuf_compiler_GENERATE_LEGACY_ENUM_SNAKE_CASE_NAMES = true
 }

@@ -85,17 +85,21 @@ template("_pw_invoke_protoc") {
         deps += invoker.other_deps
       }
 
-      args = [
-               "--language",
-               invoker.language,
-               "--include-file",
-               _includes[0],
-               "--compile-dir",
-               rebase_path(invoker.compile_dir, root_build_dir),
-               "--out-dir",
-               rebase_path(_out_dir, root_build_dir),
-               "--sources",
-             ] + rebase_path(invoker.sources, root_build_dir)
+      args = []
+      if (!pw_protobuf_compiler_GENERATE_LEGACY_ENUM_SNAKE_CASE_NAMES) {
+        args += [ "--exclude-pwpb-legacy-snake-case-field-name-enums" ]
+      }
+      args += [
+                "--language",
+                invoker.language,
+                "--include-file",
+                _includes[0],
+                "--compile-dir",
+                rebase_path(invoker.compile_dir, root_build_dir),
+                "--out-dir",
+                rebase_path(_out_dir, root_build_dir),
+                "--sources",
+              ] + rebase_path(invoker.sources, root_build_dir)
 
       if (defined(invoker.plugin)) {
         inputs = [ invoker.plugin ]

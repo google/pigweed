@@ -373,15 +373,15 @@ complex than encoding or using the message structure.
 
     while ((status = decoder.Next()).ok()) {
       switch (decoder.Field().value()) {
-        case Customer::Fields::AGE: {
+        case Customer::Fields::kAge: {
           PW_TRY_ASSIGN(age, decoder.ReadAge());
           break;
         }
-        case Customer::Fields::NAME: {
+        case Customer::Fields::kName: {
           PW_TRY(decoder.ReadName(name));
           break;
         }
-        case Customer::Fields::STATUS: {
+        case Customer::Fields::kStatus: {
           PW_TRY_ASSIGN(status, decoder.ReadStatus());
           break;
         }
@@ -390,6 +390,15 @@ complex than encoding or using the message structure.
 
     return status.IsOutOfRange() ? OkStatus() : status;
   }
+
+.. warning:: ``Fields::SNAKE_CASE`` is deprecated. Use ``Fields::kCamelCase``.
+
+  Transitional support for ``Fields::SNAKE_CASE`` will soon only be available by
+  explicitly setting the following GN variable in your project:
+  ``pw_protobuf_compiler_GENERATE_LEGACY_ENUM_SNAKE_CASE_NAMES=true``
+
+  This support will be removed after downstream projects have been migrated.
+
 
 Direct Writers and Readers
 ==========================
@@ -432,12 +441,12 @@ cast the enumerated type.
   #include "example_protos/customer.pwpb.h"
 
   Status EncodeCustomer(pw::protobuf::StreamEncoder& encoder) {
-    PW_TRY(encoder.WriteInt32(static_cast<uint32_t>(Customer::Fields::AGE),
+    PW_TRY(encoder.WriteInt32(static_cast<uint32_t>(Customer::Fields::kAge),
                               33));
-    PW_TRY(encoder.WriteString(static_cast<uint32_t>(Customer::Fields::NAME),
+    PW_TRY(encoder.WriteString(static_cast<uint32_t>(Customer::Fields::kName),
                                "Joe Bloggs"sv));
     PW_TRY(encoder.WriteUint32(
-        static_cast<uint32_t>(Customer::Fields::STATUS),
+        static_cast<uint32_t>(Customer::Fields::kStatus),
         static_cast<uint32_t>(Customer::Status::INACTIVE)));
   }
 
@@ -475,15 +484,15 @@ through the fields and checking the field numbers, along with casting types.
 
     while ((status = decoder.Next()).ok()) {
       switch (decoder.FieldNumber().value()) {
-        case static_cast<uint32_t>(Customer::Fields::AGE): {
+        case static_cast<uint32_t>(Customer::Fields::kAge): {
           PW_TRY_ASSIGN(age, decoder.ReadInt32());
           break;
         }
-        case static_cast<uint32_t>(Customer::Fields::NAME): {
+        case static_cast<uint32_t>(Customer::Fields::kName): {
           PW_TRY(decoder.ReadString(name));
           break;
         }
-        case static_cast<uint32_t>(Customer::Fields::STATUS): {
+        case static_cast<uint32_t>(Customer::Fields::kStatus): {
           uint32_t status_value;
           PW_TRY_ASSIGN(status_value, decoder.ReadUint32());
           status = static_cast<Customer::Status>(status_value);
@@ -1318,7 +1327,7 @@ code generated API, and the second implemented by hand.
 .. code:: c++
 
   my_proto_encoder.WriteAge(42);
-  my_proto_encoder.WriteInt32(static_cast<uint32_t>(MyProto::Fields::AGE), 42);
+  my_proto_encoder.WriteInt32(static_cast<uint32_t>(MyProto::Fields::kAge), 42);
 
 Repeated Fields
 ---------------
@@ -1371,7 +1380,7 @@ code generated API, and the second implemented by hand.
 
   my_proto_encoder.WriteNumbers(numbers);
   my_proto_encoder.WritePackedInt32(
-      static_cast<uint32_t>(MyProto::Fields::NUMBERS),
+      static_cast<uint32_t>(MyProto::Fields::kNumbers),
       numbers);
 
 Enumerations
@@ -1392,7 +1401,7 @@ and the second implemented by hand.
 
   my_proto_encoder.WriteAward(MyProto::Award::SILVER);
   my_proto_encoder.WriteUint32(
-      static_cast<uint32_t>(MyProto::Fields::AWARD),
+      static_cast<uint32_t>(MyProto::Fields::kAward),
       static_cast<uint32_t>(MyProto::Award::SILVER));
 
 Repeated Fields
@@ -1530,11 +1539,11 @@ as a typed ``Fields`` enumeration member, while the lower-level API provides a
       // However, Field() is guaranteed to be valid after a call to Next()
       // that returns OK, so the value can be used directly here.
       switch (decoder.Field().value()) {
-        case MyProto::Fields::AGE: {
+        case MyProto::Fields::kAge: {
           PW_TRY_ASSIGN(age, decoder.ReadAge());
           break;
         }
-        case MyProto::Fields::NAME:
+        case MyProto::Fields::kName:
           // The string field is copied into the provided buffer. If the buffer
           // is too small to fit the string, RESOURCE_EXHAUSTED is returned and
           // the decoder is not advanced, allowing the field to be re-read.
@@ -1566,7 +1575,7 @@ calling ``Read()`` on a nested decoder.
 
     Store::Message store{};
     store.employees.SetDecoder([](Store::StreamDecoder& decoder) {
-      PW_ASSERT(decoder.Field().value() == Store::Fields::EMPLOYEES);
+      PW_ASSERT(decoder.Field().value() == Store::Fields::kEmployees);
 
       Employee::Message employee{};
       // Set any callbacks on `employee`.
@@ -1604,7 +1613,7 @@ lower-level API methods. This can be moved to a typed decoder later.
 
 .. code:: c++
 
-  case Owner::Fields::PET: {
+  case Owner::Fields::kPet: {
     // Note that the parent decoder, owner_decoder, cannot be used until the
     // nested decoder, pet_decoder, has been destroyed.
     Animal::StreamDecoder pet_decoder = owner_decoder.GetPetDecoder();
@@ -1652,7 +1661,7 @@ generated API, and the second implemented by hand.
 .. code:: c++
 
   PW_ASSERT(my_proto_decoder.FieldNumber().value() ==
-      static_cast<uint32_t>(MyProto::Fields::AGE));
+      static_cast<uint32_t>(MyProto::Fields::kAge));
   pw::Result<int32_t> my_proto_decoder.ReadInt32();
 
 Repeated Fields
@@ -1718,7 +1727,7 @@ generated API, and the second is implemented by hand.
   pw::Vector<int32_t, 8> numbers;
 
   PW_ASSERT(my_proto_decoder.FieldNumber().value() ==
-      static_cast<uint32_t>(MyProto::Fields::NUMBERS));
+      static_cast<uint32_t>(MyProto::Fields::kNumbers));
   my_proto_decoder.ReadRepeatedInt32(numbers);
 
 Enumerations
@@ -1758,7 +1767,7 @@ generated API, and the second implemented by hand.
 .. code-block:: c++
 
   PW_ASSERT(my_proto_decoder.FieldNumber().value() ==
-      static_cast<uint32_t>(MyProto::Fields::AWARD));
+      static_cast<uint32_t>(MyProto::Fields::kAward));
   pw::Result<uint32_t> award_value = my_proto_decoder.ReadUint32();
   if (award_value.ok()) {
     MyProto::Award award = static_cast<MyProto::Award>(award_value);
