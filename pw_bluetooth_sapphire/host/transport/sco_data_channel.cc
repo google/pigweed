@@ -26,7 +26,9 @@ class ScoDataChannelImpl final : public ScoDataChannel {
   void UnregisterConnection(hci_spec::ConnectionHandle handle) override;
   void ClearControllerPacketCount(hci_spec::ConnectionHandle handle) override;
   void OnOutboundPacketReadable() override;
-  uint16_t max_data_length() const override { return buffer_info_.max_data_length(); }
+  uint16_t max_data_length() const override {
+    return static_cast<uint16_t>(buffer_info_.max_data_length());
+  }
 
  private:
   enum class HciConfigState {
@@ -156,7 +158,7 @@ void ScoDataChannelImpl::OnRxPacket(pw::span<const std::byte> buffer) {
   }
 
   const size_t payload_size = buffer.size() - sizeof(hci_spec::SynchronousDataHeader);
-  std::unique_ptr<ScoDataPacket> packet = ScoDataPacket::New(payload_size);
+  std::unique_ptr<ScoDataPacket> packet = ScoDataPacket::New(static_cast<uint8_t>(payload_size));
   packet->mutable_view()->mutable_data().Write(reinterpret_cast<const uint8_t*>(buffer.data()),
                                                buffer.size());
   packet->InitializeFromBuffer();
@@ -226,7 +228,7 @@ CommandChannel::EventCallbackResult ScoDataChannelImpl::OnNumberOfCompletedPacke
       // undercounts the true number of pending packets, this branch will be reached again when
       // the controller sends an updated Number of Completed Packets event. However, ScoDataChannel
       // may overflow the controller's buffer in the meantime!
-      comp_packets = iter->second;
+      comp_packets = static_cast<uint16_t>(iter->second);
     }
 
     iter->second -= comp_packets;

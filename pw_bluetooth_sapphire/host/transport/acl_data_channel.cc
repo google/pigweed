@@ -552,7 +552,7 @@ CommandChannel::EventCallbackResult AclDataChannelImpl::NumberOfCompletedPackets
       // undercounts the true number of pending packets, this branch will be reached again when
       // the controller sends an updated Number of Completed Packets event. However, AclDataChannel
       // may overflow the controller's buffer in the meantime!
-      comp_packets = iter->second.count;
+      comp_packets = static_cast<uint16_t>(iter->second.count);
     }
 
     iter->second.count -= comp_packets;
@@ -767,7 +767,7 @@ void AclDataChannelImpl::OnRxPacket(pw::span<const std::byte> buffer) {
 
   const size_t payload_size = buffer.size() - sizeof(hci_spec::ACLDataHeader);
 
-  ACLDataPacketPtr packet = ACLDataPacket::New(payload_size);
+  ACLDataPacketPtr packet = ACLDataPacket::New(static_cast<uint16_t>(payload_size));
   packet->mutable_view()->mutable_data().Write(reinterpret_cast<const uint8_t*>(buffer.data()),
                                                buffer.size());
   packet->InitializeFromBuffer();

@@ -55,7 +55,7 @@ bool StatusCodeFromEmbossEvent(const EventPacket& event,
                                pw::bluetooth::emboss::StatusCode* out_code) {
   BT_DEBUG_ASSERT(out_code);
 
-  auto emboss_packet = EmbossEventPacket::New<T>(event.view().size());
+  auto emboss_packet = EmbossEventPacket::New<T>(event.event_code());
   bt::MutableBufferView dest = emboss_packet.mutable_data();
   event.view().data().Copy(&dest);
 
