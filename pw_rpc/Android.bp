@@ -217,6 +217,25 @@ genrule_defaults {
     ],
 }
 
+// Generate the header raw RPC file.
+// The output file name is based on the srcs file name with a .raw_rpc.pb.h extension.
+genrule_defaults {
+    name: "pw_rpc_generate_raw_rpc_header",
+    cmd: "python3 $(location pw_protobuf_compiler_py) " +
+         "--plugin-path=$(location pw_rpc_plugin_rawpb_py) " +
+         "--out-dir=$(genDir) " +
+         "--compile-dir=$$(dirname $(in)) " +
+         "--language raw_rpc " +
+         "--sources $(in) " +
+         "--no-experimental-proto3-optional " +
+         "--protoc=$(location aprotoc)",
+    tools: [
+        "aprotoc",
+        "pw_protobuf_compiler_py",
+        "pw_rpc_plugin_rawpb_py",
+    ],
+}
+
 python_library_host {
     name: "pw_rpc_internal_packet_py_lib",
     srcs: [
