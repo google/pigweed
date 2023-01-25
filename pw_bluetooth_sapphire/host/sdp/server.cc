@@ -460,8 +460,7 @@ void Server::OnChannelClosed(l2cap::Channel::UniqueId channel_id) { channels_.er
 std::optional<ByteBufferPtr> Server::HandleRequest(ByteBufferPtr sdu, uint16_t max_tx_sdu_size) {
   BT_DEBUG_ASSERT(sdu);
   TRACE_DURATION("bluetooth", "sdp::Server::HandleRequest");
-  uint16_t length = sdu->size();
-  if (length < sizeof(Header)) {
+  if (sdu->size() < sizeof(Header)) {
     bt_log(DEBUG, "sdp", "PDU too short; dropping");
     return std::nullopt;
   }

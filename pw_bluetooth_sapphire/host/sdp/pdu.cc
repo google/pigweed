@@ -155,7 +155,7 @@ Request::Request() { cont_state_.Fill(0); }
 
 void Request::SetContinuationState(const ByteBuffer& buf) {
   BT_DEBUG_ASSERT(buf.size() < kMaxContStateLength);
-  cont_state_[0] = buf.size();
+  cont_state_[0] = static_cast<uint8_t>(buf.size());
   if (cont_state_[0] == 0) {
     return;
   }
@@ -254,7 +254,9 @@ ByteBufferPtr ServiceSearchRequest::GetPDU(TransactionId tid) const {
   if (!valid()) {
     return nullptr;
   }
-  size_t size = sizeof(uint16_t) + sizeof(uint8_t) + cont_info_size();
+
+  // MaximumServiceRecordCount + continuation state count + continuation state size
+  uint16_t size = sizeof(uint16_t) + sizeof(uint8_t) + cont_info_size();
 
   std::vector<DataElement> pattern(service_search_pattern_.size());
   size_t i = 0;
@@ -264,7 +266,10 @@ ByteBufferPtr ServiceSearchRequest::GetPDU(TransactionId tid) const {
   }
   DataElement search_pattern(std::move(pattern));
 
+  // The maximum number of service UUIDs in the service is 12 (checked by valid() above), so |size|
+  // shouldn't be anywhere near the max PDU size.
   size += search_pattern.WriteSize();
+
   auto buf = BuildNewPdu(kServiceSearchRequest, tid, size);
   size_t written = sizeof(Header);
 
@@ -378,7 +383,9 @@ MutableByteBufferPtr ServiceSearchResponse::GetPDU(uint16_t req_max, Transaction
   uint16_t current_record_count = response_record_count - start_idx;
 
   // Minimum size is zero records with no continuation state.
-  size_t min_size = (2 * sizeof(uint16_t)) + sizeof(uint8_t) + sizeof(uint16_t) + sizeof(Header);
+  // Header + TotalServiceRecordCount(uint16_t) +
+  // CurrentServiceRecordCount(uint16_t) + ContinuationState count (uint8_t)
+  constexpr uint16_t min_size = sizeof(Header) + (2 * sizeof(uint16_t)) + sizeof(uint8_t);
 
   if (max_size < min_size) {
     // Can't generate a PDU, it's too small to hold even no records.
@@ -386,18 +393,21 @@ MutableByteBufferPtr ServiceSearchResponse::GetPDU(uint16_t req_max, Transaction
   }
 
   // The most records we can send in a packet of max_size (including a continuation and Header)
-  size_t max_records = (max_size - min_size) / sizeof(ServiceHandle);
+  const uint16_t max_records = (max_size - min_size) / sizeof(ServiceHandle);
 
   uint8_t info_length = 0;
   if (max_records < current_record_count) {
-    bt_log(TRACE, "sdp", "Max Size limits to %zu/%d records", max_records, current_record_count);
+    bt_log(TRACE, "sdp", "Max Size limits to %hu/%d records", max_records, current_record_count);
     current_record_count = max_records;
     info_length = sizeof(uint16_t);
   }
 
-  // Note: we remove the header & param size from size here
-  size_t size = (2 * sizeof(uint16_t)) + (current_record_count * sizeof(ServiceHandle)) +
-                sizeof(uint8_t) + info_length;
+  // Note: we exclude Header from size here
+  // TotalServiceRecordCount(uint16_t) + CurrentServiceRecordCount(uint16_t) +
+  // ServiceRecordHandleList (CurrentServiceRecordCount * ServiceHandle) + ContinuationState count
+  // (uint8_t)
+  const uint16_t size = (2 * sizeof(uint16_t)) + (current_record_count * sizeof(ServiceHandle)) +
+                        sizeof(uint8_t) + info_length;
 
   auto buf = BuildNewPdu(kServiceSearchResponse, tid, size);
   if (!buf) {
@@ -464,7 +474,8 @@ ServiceAttributeRequest::ServiceAttributeRequest(const ByteBuffer& params) {
 
 bool ServiceAttributeRequest::valid() const {
   return (max_attribute_byte_count_ >= kMinMaximumAttributeByteCount) &&
-         (attribute_ranges_.size() > 0);
+         (attribute_ranges_.size() > 0) &&
+         (attribute_ranges_.size() <= kMaxAttributeRangesInRequest);
 }
 
 ByteBufferPtr ServiceAttributeRequest::GetPDU(TransactionId tid) const {
@@ -490,7 +501,9 @@ ByteBufferPtr ServiceAttributeRequest::GetPDU(TransactionId tid) const {
   DataElement attribute_list_elem(std::move(attribute_list));
   size += attribute_list_elem.WriteSize();
 
-  auto buf = BuildNewPdu(kServiceAttributeRequest, tid, size);
+  // valid() ensures that |size| can't overflow due to too many attribute ranges.
+  BT_DEBUG_ASSERT(size <= std::numeric_limits<uint16_t>::max());
+  auto buf = BuildNewPdu(kServiceAttributeRequest, tid, static_cast<uint16_t>(size));
 
   size_t written = sizeof(Header);
 
@@ -663,7 +676,7 @@ MutableByteBufferPtr ServiceAttributeResponse::GetPDU(uint16_t req_max, Transact
   }
 
   // Minimum size is header, byte_count, 2 attribute bytes, and a zero length continuation state
-  size_t min_size = sizeof(Header) + sizeof(uint16_t) + 2 + sizeof(uint8_t);
+  constexpr uint16_t min_size = sizeof(Header) + sizeof(uint16_t) + 2 + sizeof(uint8_t);
 
   if (min_size > max_size) {
     // Can't make a PDU because we don't have enough space.
@@ -671,25 +684,28 @@ MutableByteBufferPtr ServiceAttributeResponse::GetPDU(uint16_t req_max, Transact
   }
 
   uint8_t info_length = 0;
-  uint16_t attribute_list_byte_count = write_size - bytes_skipped;
+  size_t attribute_list_byte_count = write_size - bytes_skipped;
 
-  size_t max_attribute_byte_count =
-      max_size - min_size + 2;  // Two attribute bytes counted in the min_size
+  // Two attribute bytes counted in the min_size are excluded
+  const uint16_t max_attribute_byte_count = max_size - min_size + 2;
   if (attribute_list_byte_count > max_attribute_byte_count) {
     info_length = sizeof(uint32_t);
-    bt_log(TRACE, "sdp", "Max size limits attribute size to %zu of %d",
+    bt_log(TRACE, "sdp", "Max size limits attribute size to %hu of %zu",
            max_attribute_byte_count - info_length, attribute_list_byte_count);
     attribute_list_byte_count = max_attribute_byte_count - info_length;
   }
 
   if (attribute_list_byte_count > req_max) {
-    bt_log(TRACE, "sdp", "Requested size limits attribute size to %d of %d", req_max,
+    bt_log(TRACE, "sdp", "Requested size limits attribute size to %d of %zu", req_max,
            attribute_list_byte_count);
     attribute_list_byte_count = req_max;
     info_length = sizeof(uint32_t);
   }
 
-  size_t size = sizeof(uint16_t) + attribute_list_byte_count + sizeof(uint8_t) + info_length;
+  // Casting to uint16_t is safe as attribute_list_byte_count was limited to
+  // max_attribute_byte_count above.
+  uint16_t size = static_cast<uint16_t>(sizeof(uint16_t) + attribute_list_byte_count +
+                                        sizeof(uint8_t) + info_length);
   auto buf = BuildNewPdu(kServiceAttributeResponse, tid, size);
 
   size_t written = sizeof(Header);
@@ -780,7 +796,8 @@ bool ServiceSearchAttributeRequest::valid() const {
   return (max_attribute_byte_count_ > kMinMaximumAttributeByteCount) &&
          (service_search_pattern_.size() > 0) &&
          (service_search_pattern_.size() <= kMaxServiceSearchSize) &&
-         (attribute_ranges_.size() > 0);
+         (attribute_ranges_.size() > 0) &&
+         (attribute_ranges_.size() <= kMaxAttributeRangesInRequest);
 }
 
 ByteBufferPtr ServiceSearchAttributeRequest::GetPDU(TransactionId tid) const {
@@ -789,7 +806,7 @@ ByteBufferPtr ServiceSearchAttributeRequest::GetPDU(TransactionId tid) const {
   }
 
   // Size of fixed length components: MaxAttributesByteCount, continuation info
-  size_t size = sizeof(max_attribute_byte_count_) + cont_info_size() + 1;
+  uint16_t size = sizeof(max_attribute_byte_count_) + cont_info_size() + 1;
 
   std::vector<DataElement> attribute_list(attribute_ranges_.size());
   size_t idx = 0;
@@ -805,6 +822,7 @@ ByteBufferPtr ServiceSearchAttributeRequest::GetPDU(TransactionId tid) const {
   }
 
   DataElement attribute_list_elem(std::move(attribute_list));
+  // The valid() check above prevents the attribute list from being long enough to overflow |size|.
   size += attribute_list_elem.WriteSize();
 
   std::vector<DataElement> pattern(service_search_pattern_.size());
@@ -928,21 +946,22 @@ fit::result<Error<>> ServiceSearchAttributeResponse::Parse(const ByteBuffer& buf
   }
   bt_log(TRACE, "sdp", "parsed AttributeLists: %s", attribute_lists.ToString().c_str());
 
-  // Data Element sequence containing alternating attribute id and attribute
-  // value pairs.  Only the requested attributes that are present are included.
-  // They are sorted in ascenting attribute ID order.
+  // Data Element sequence containing alternating attribute id and attribute value pairs. Only the
+  // requested attributes that are present are included. They are sorted in ascenting attribute ID
+  // order.
   size_t list_idx = 0;
-  for (auto* list_it = attribute_lists.At(0); list_it != nullptr;
-       list_it = attribute_lists.At(++list_idx)) {
-    if ((list_it->type() != DataElement::Type::kSequence)) {
+  for (auto* src_list_it = attribute_lists.At(0); src_list_it != nullptr;
+       src_list_it = attribute_lists.At(++list_idx)) {
+    if ((src_list_it->type() != DataElement::Type::kSequence)) {
       bt_log(TRACE, "sdp", "list %zu wasn't a sequence", list_idx);
       return ToResult(HostError::kPacketMalformed);
     }
-    attribute_lists_.emplace(list_idx, std::map<AttributeId, DataElement>());
+    auto [dest_list_it, _] =
+        attribute_lists_.emplace(list_idx, std::map<AttributeId, DataElement>());
     AttributeId last_id = 0;
     size_t idx = 0;
-    for (auto* it = list_it->At(0); it != nullptr; it = list_it->At(idx)) {
-      auto* val = list_it->At(idx + 1);
+    for (const DataElement* it = src_list_it->At(0); it != nullptr; it = src_list_it->At(idx)) {
+      const DataElement* val = src_list_it->At(idx + 1);
       std::optional<AttributeId> id = it->Get<uint16_t>();
       if (!id || (val == nullptr)) {
         attribute_lists_.clear();
@@ -953,7 +972,7 @@ fit::result<Error<>> ServiceSearchAttributeResponse::Parse(const ByteBuffer& buf
       if (*id < last_id) {
         bt_log(INFO, "sdp", "attribute ids are in wrong order, ignoring for compat");
       }
-      auto [_, inserted] = attribute_lists_.at(list_idx).emplace(*id, val->Clone());
+      auto [_, inserted] = (*dest_list_it).second.emplace(*id, val->Clone());
       if (!inserted) {
         attribute_lists_.clear();
         bt_log(WARN, "sdp", "attribute was duplicated in attribute response");
@@ -1015,7 +1034,7 @@ MutableByteBufferPtr ServiceSearchAttributeResponse::GetPDU(uint16_t req_max, Tr
   }
 
   // Minimum size is header, byte_count, 2 attribute bytes, and a zero length continuation state
-  size_t min_size = sizeof(Header) + sizeof(uint16_t) + 2 + sizeof(uint8_t);
+  constexpr uint16_t min_size = sizeof(Header) + sizeof(uint16_t) + 2 + sizeof(uint8_t);
 
   if (min_size > max_size) {
     // Can't make a PDU because we don't have enough space.
@@ -1023,25 +1042,28 @@ MutableByteBufferPtr ServiceSearchAttributeResponse::GetPDU(uint16_t req_max, Tr
   }
 
   uint8_t info_length = 0;
-  uint16_t attribute_lists_byte_count = write_size - bytes_skipped;
+  size_t attribute_lists_byte_count = write_size - bytes_skipped;
 
-  size_t max_attribute_byte_count =
-      max_size - min_size + 2;  // Two attribute bytes counted in the min_size
+  // Two attribute bytes counted in the min_size excluded
+  uint16_t max_attribute_byte_count = max_size - min_size + 2;
   if (attribute_lists_byte_count > max_attribute_byte_count) {
     info_length = sizeof(uint32_t);
-    bt_log(TRACE, "sdp", "Max size limits attribute size to %zu of %d",
+    bt_log(TRACE, "sdp", "Max size limits attribute size to %hu of %zu",
            max_attribute_byte_count - info_length, attribute_lists_byte_count);
     attribute_lists_byte_count = max_attribute_byte_count - info_length;
   }
 
   if (attribute_lists_byte_count > req_max) {
-    bt_log(TRACE, "sdp", "Requested size limits attribute size to %d of %d", req_max,
+    bt_log(TRACE, "sdp", "Requested size limits attribute size to %d of %zu", req_max,
            attribute_lists_byte_count);
     attribute_lists_byte_count = req_max;
     info_length = sizeof(uint32_t);
   }
 
-  size_t size = sizeof(uint16_t) + attribute_lists_byte_count + sizeof(uint8_t) + info_length;
+  // Safe to case to uint16_t as attribute_lists_byte_count was limited to max_attribute_byte_count
+  // above.
+  uint16_t size = static_cast<uint16_t>(sizeof(uint16_t) + attribute_lists_byte_count +
+                                        sizeof(uint8_t) + info_length);
   auto buf = BuildNewPdu(kServiceSearchAttributeResponse, tid, size);
 
   size_t written = sizeof(Header);
@@ -1058,7 +1080,12 @@ MutableByteBufferPtr ServiceSearchAttributeResponse::GetPDU(uint16_t req_max, Tr
   buf->WriteObj(info_length, written);
   written += sizeof(uint8_t);
   if (info_length > 0) {
-    bytes_skipped = bytes_skipped + attribute_lists_byte_count;
+    // Safe to cast because the value is constrained by the number of local attributes, which will
+    // be much less than UINT32_MAX. bytes_skipped (an untrusted value) is checked for out-of-range
+    // above.
+    BT_DEBUG_ASSERT(bytes_skipped + attribute_lists_byte_count <
+                    std::numeric_limits<uint32_t>::max());
+    bytes_skipped = static_cast<uint32_t>(bytes_skipped + attribute_lists_byte_count);
     buf->WriteObj(htobe32(bytes_skipped), written);
     written += sizeof(uint32_t);
   }

@@ -178,7 +178,11 @@ void Impl::Finish(TransactionId id) {
       state.callback(fit::error(Error(HostError::kNotFound)));
       break;
     }
-    if (!state.callback(fit::ok(std::cref(state.response.attributes(idx))))) {
+    // |count| and |idx| are at most std::numeric_limits<uint32_t>::max() + 1, which is caught by
+    // the above if statement.
+    BT_DEBUG_ASSERT(idx <= std::numeric_limits<uint32_t>::max());
+    if (!state.callback(
+            fit::ok(std::cref(state.response.attributes(static_cast<uint32_t>(idx)))))) {
       break;
     }
   }

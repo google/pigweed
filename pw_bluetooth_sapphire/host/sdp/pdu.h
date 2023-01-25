@@ -22,6 +22,10 @@ constexpr size_t kMaxContStateLength = 17;
 // ServiceAttribute and ServiceSearchAttribute requests
 constexpr size_t kMinMaximumAttributeByteCount = 0x0007;
 
+// Selected to be larger than FIDL limit of 512. Prevent poor performance in worst case scenarios.
+// Clients should use larger ranges if they need anywhere near this number of attributes.
+constexpr size_t kMaxAttributeRangesInRequest = 520;
+
 class Request {
  public:
   Request();

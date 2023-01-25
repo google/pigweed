@@ -585,6 +585,19 @@ TEST(PDUTest, ServiceAttributeRequestGetPDU) {
   EXPECT_TRUE(ContainersEqual(kExpected, *pdu));
 }
 
+TEST(PDUTest, ServiceAttributeRequestGetPDUFailsTooManyAttributes) {
+  ServiceAttributeRequest req;
+  // Skip attributes to prevent them from being combined into a range.
+  for (AttributeId attr = 0x0000; attr <= kMaxAttributeRangesInRequest * 2; attr += 2) {
+    req.AddAttribute(attr);
+  }
+
+  req.set_service_record_handle(0xEFFECACE);
+  req.set_max_attribute_byte_count(32);
+
+  EXPECT_EQ(req.GetPDU(0x1234), nullptr);
+}
+
 TEST(PDUTest, ServiceAttributeResponseParse) {
   const StaticByteBuffer kValidResponseEmpty(0x00, 0x02,  // AttributeListByteCount (2
                                                           // bytes) Attribute List
@@ -917,6 +930,19 @@ TEST(PDUTest, ServiceSearchAttributeRequestGetPDU) {
 
   auto pdu = req.GetPDU(0x1234);
   EXPECT_TRUE(MatchesOneOf(kExpected, kExpected2, *pdu));
+}
+
+TEST(PDUTest, ServiceSearchAttributeRequestGetPDUTooManyAttributes) {
+  ServiceSearchAttributeRequest req;
+  // Skip attributes to prevent them from being combined into a range.
+  for (AttributeId attr = 0x0000; attr <= kMaxAttributeRangesInRequest * 2; attr += 2) {
+    req.AddAttribute(attr);
+  }
+
+  req.set_search_pattern({protocol::kATT, protocol::kL2CAP});
+  req.set_max_attribute_byte_count(32);
+
+  EXPECT_EQ(req.GetPDU(0x1234), nullptr);
 }
 
 TEST(PDUTest, ServiceSearchAttributeResponseParse) {
