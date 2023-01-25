@@ -62,6 +62,7 @@ from pw_console.style import get_theme_colors
 import pw_console.widgets.border
 
 from pw_build.project_builder_prefs import ProjectBuilderPrefs
+from pw_build.project_builder_context import get_project_builder_context
 
 
 class WatchAppPrefs(ProjectBuilderPrefs):
@@ -536,6 +537,7 @@ class WatchApp(PluginMixin):
                 print('Logs saved to: {}'.format(log_file.resolve()))
             sys.exit(future.result())
 
+        get_project_builder_context().terminate_and_wait()
         if self.application.future:
             self.application.future.add_done_callback(_really_exit)
         self.application.exit(result=exit_code)

@@ -42,6 +42,7 @@ Usage examples:
 """
 
 import argparse
+import concurrent.futures
 import errno
 import http.server
 import logging
@@ -78,12 +79,14 @@ from prompt_toolkit.formatted_text import StyleAndTextTuples
 from pw_build.build_recipe import BuildRecipe, create_build_recipes
 from pw_build.project_builder import (
     ProjectBuilder,
+    execute_command_no_logging,
     execute_command_with_logging,
     log_build_recipe_start,
     log_build_recipe_finish,
     ASCII_CHARSET,
     EMOJI_CHARSET,
 )
+from pw_build.project_builder_context import get_project_builder_context
 import pw_cli.branding
 import pw_cli.color
 import pw_cli.env
@@ -159,6 +162,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         banners: bool = True,
         use_logfile: bool = False,
         separate_logfiles: bool = False,
+        parallel: bool = False,
     ):
         super().__init__()
 
@@ -171,6 +175,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         self.patterns = patterns
         self.ignore_patterns = ignore_patterns
         self.project_builder = project_builder
+        self.parallel_workers = len(project_builder) if parallel else 1
 
         self.restart_on_changes = restart
         self.fullscreen_enabled = fullscreen
@@ -178,9 +183,8 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
 
         self.use_logfile = use_logfile
         self.separate_logfiles = separate_logfiles
-
-        # Initialize self._current_build to an empty subprocess.
-        self._current_build = subprocess.Popen('', shell=True, errors='replace')
+        if self.parallel_workers > 1:
+            self.separate_logfiles = True
 
         self.debouncer = Debouncer(self)
 
@@ -196,8 +200,6 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
 
     def rebuild(self):
         """Rebuild command triggered from watch app."""
-        self._current_build.terminate()
-        self._current_build.wait()
         self.debouncer.press('Manual build requested')
 
     def _wait_for_enter(self) -> NoReturn:
@@ -209,8 +211,6 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         # Ctrl-Z on Windows generates EOFError
         except (KeyboardInterrupt, EOFError):
             # Force stop any running ninja builds.
-            if self._current_build:
-                self._current_build.terminate()
             _exit_due_to_interrupt()
 
     def _path_matches(self, path: Path) -> bool:
@@ -265,7 +265,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
     # than on the main thread that's watching file events. This enables the
     # watcher to continue receiving file change events during a build.
     def run(self) -> None:
-        """Run all the builds in serial and capture pass/fail for each."""
+        """Run all the builds and capture pass/fail for each."""
 
         # Clear the screen and show a banner indicating the build is starting.
         self._clear_screen()
@@ -307,13 +307,24 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         # Force Ninja to output ANSI colors
         env['CLICOLOR_FORCE'] = '1'
 
-        # Reset status messages
+        # Reset status
+        get_project_builder_context().set_building()
+
         for cfg in self.project_builder:
             cfg.reset_status()
         self.create_result_message()
 
-        for i, cfg in enumerate(self.project_builder, 1):
-            self.run_recipe(i, cfg, env)
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=self.parallel_workers
+        ) as executor:
+            futures = []
+            for i, cfg in enumerate(self.project_builder, 1):
+                futures.append(executor.submit(self.run_recipe, i, cfg, env))
+
+            for future in concurrent.futures.as_completed(futures):
+                future.result()
+
+        get_project_builder_context().set_idle()
 
     def run_recipe(self, index: int, cfg: BuildRecipe, env) -> None:
         num_builds = len(self.project_builder)
@@ -361,13 +372,13 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
                         'Failed'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH),
                     )
                 )
-            # NOTE: This condition assumes each build dir is run in serial
             elif first_building_target_found:
                 self.result_message.append(
                     ('', ''.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH))
                 )
             else:
-                first_building_target_found = True
+                if self.parallel_workers == 1:
+                    first_building_target_found = True
                 self.result_message.append(
                     (
                         'class:theme-fg-yellow',
@@ -401,19 +412,13 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
             return execute_command_with_logging(
                 command, env, recipe, logger=recipe.log
             )
+
         if self.use_logfile:
             return execute_command_with_logging(
                 command, env, recipe, logger=_LOG
             )
 
-        print()
-        self._current_build = subprocess.Popen(
-            command, env=env, errors='replace'
-        )
-        returncode = self._current_build.wait()
-        print()
-        recipe.status.return_code = returncode
-        return returncode == 0
+        return execute_command_no_logging(command, env, recipe)
 
     def _execute_command_watch_app(
         self,
@@ -450,8 +455,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
     # Implementation of DebouncedFunction.cancel()
     def cancel(self) -> bool:
         if self.restart_on_changes:
-            self._current_build.terminate()
-            self._current_build.wait()
+            get_project_builder_context().terminate_and_wait()
             return True
 
         return False
@@ -513,6 +517,7 @@ def _exit_due_to_interrupt() -> NoReturn:
     # a '^C' from the keyboard interrupt, add a newline before the log.
     print('')
     _LOG.info('Got Ctrl-C; exiting...')
+    get_project_builder_context().terminate_and_wait()
     _exit(0)
 
 
@@ -767,6 +772,7 @@ def watch_setup(  # pylint: disable=too-many-locals
     banners: bool = True,
     logfile: Optional[Path] = None,
     separate_logfiles: bool = False,
+    parallel: bool = False,
     # pylint: disable=unused-argument
     default_build_targets: Optional[List[str]] = None,
     build_directories: Optional[List[str]] = None,
@@ -823,6 +829,14 @@ def watch_setup(  # pylint: disable=too-many-locals
         else []
     )
 
+    # Add project_builder logfiles to ignore_patterns
+    if project_builder.default_logfile:
+        ignore_patterns.append(str(project_builder.default_logfile))
+    if project_builder.separate_build_file_logging:
+        for recipe in project_builder:
+            if recipe.logfile:
+                ignore_patterns.append(str(recipe.logfile))
+
     event_handler = PigweedBuildWatcher(
         project_builder=project_builder,
         patterns=patterns.split(WATCH_PATTERN_DELIMITER),
@@ -832,6 +846,7 @@ def watch_setup(  # pylint: disable=too-many-locals
         banners=banners,
         use_logfile=bool(logfile),
         separate_logfiles=bool(separate_logfiles),
+        parallel=parallel,
     )
 
     project_builder.execute_command = event_handler.execute_command
@@ -935,6 +950,11 @@ def main() -> None:
     else:
         charset = ASCII_CHARSET
 
+    # Force separate-logfiles for split window panes if running in parallel.
+    separate_logfiles = args.separate_logfiles
+    if args.parallel:
+        separate_logfiles = True
+
     project_builder = ProjectBuilder(
         build_recipes=build_recipes,
         jobs=args.jobs,
@@ -942,7 +962,7 @@ def main() -> None:
         keep_going=args.keep_going,
         colors=args.colors,
         charset=charset,
-        separate_build_file_logging=args.separate_logfiles,
+        separate_build_file_logging=separate_logfiles,
         root_logfile=args.logfile,
         root_logger=_LOG,
         log_level=logging.DEBUG if args.debug_logging else logging.INFO,

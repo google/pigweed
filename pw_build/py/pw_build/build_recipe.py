@@ -207,6 +207,9 @@ class BuildRecipeStatus:
             return self.return_code != 0
         return False
 
+    def set_passed(self) -> None:
+        self.return_code = 0
+
     def passed(self) -> bool:
         if self.return_code is not None:
             return self.return_code == 0
@@ -248,6 +251,9 @@ class BuildRecipe:
     build_dir: Path
     steps: List[BuildCommand] = field(default_factory=list)
     title: Optional[str] = None
+
+    def __hash__(self):
+        return hash((self.build_dir, self.title, len(self.steps)))
 
     def __post_init__(self) -> None:
         # Update all included steps to use this recipe's build_dir.

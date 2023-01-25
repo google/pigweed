@@ -46,6 +46,7 @@ import re
 import shlex
 import sys
 import subprocess
+import time
 from typing import (
     Callable,
     Dict,
@@ -57,15 +58,17 @@ from typing import (
     NamedTuple,
 )
 
-
-import pw_cli.log
 import pw_cli.env
+import pw_cli.log
+
 from pw_build.build_recipe import BuildRecipe, create_build_recipes
-from pw_build.project_builder_prefs import ProjectBuilderPrefs
 from pw_build.project_builder_argparse import add_project_builder_arguments
+from pw_build.project_builder_context import get_project_builder_context
+from pw_build.project_builder_prefs import ProjectBuilderPrefs
 
 _COLOR = pw_cli.color.colors()
 _LOG = logging.getLogger('pw_build')
+
 
 PASS_MESSAGE = """
   ██████╗  █████╗ ███████╗███████╗██╗
@@ -115,6 +118,7 @@ def _exit_due_to_interrupt() -> NoReturn:
     # a '^C' from the keyboard interrupt, add a newline before the log.
     print()
     _LOG.info('Got Ctrl-C; exiting...')
+    get_project_builder_context().terminate_and_wait()
     sys.exit(1)
 
 
@@ -135,10 +139,18 @@ def execute_command_no_logging(
     # pylint: enable=unused-argument
 ) -> bool:
     print()
-    current_build = subprocess.run(command, env=env, errors='replace')
+    proc = subprocess.Popen(command, env=env, errors='replace')
+    get_project_builder_context().register_process(recipe, proc)
+    returncode = None
+    while returncode is None:
+        if get_project_builder_context().should_abort():
+            proc.terminate()
+        returncode = proc.poll()
+        time.sleep(0.05)
     print()
-    recipe.status.return_code = current_build.returncode
-    return current_build.returncode == 0
+    recipe.status.return_code = returncode
+
+    return proc.returncode == 0
 
 
 def execute_command_with_logging(
@@ -159,6 +171,7 @@ def execute_command_with_logging(
         stderr=subprocess.STDOUT,
         errors='replace',
     ) as proc:
+        get_project_builder_context().register_process(recipe, proc)
         # Empty line at the start.
         logger.info('')
 
@@ -211,6 +224,9 @@ def execute_command_with_logging(
 
             if line_processed_callback:
                 line_processed_callback(recipe)
+
+            if get_project_builder_context().should_abort():
+                proc.terminate()
 
         recipe.status.return_code = returncode
         # Empty line at the end.
@@ -323,22 +339,17 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
         else:
             self.extra_bazel_args.append('--color=no')
 
-        if separate_build_file_logging and not root_logfile:
-            raise MissingGlobalLogfile(
-                '\n\nA logfile must be specified if using separate logs per '
-                'build directory.'
-            )
-
         self.separate_build_file_logging = separate_build_file_logging
         self.default_log_level = log_level
         self.default_logfile = root_logfile
 
-        if root_logfile:
-            timestamp_fmt = _COLOR.black_on_white('%(asctime)s') + ' '
-            formatter = logging.Formatter(
-                timestamp_fmt + '%(levelname)s %(message)s', '%Y%m%d %H:%M:%S'
-            )
+        timestamp_fmt = _COLOR.black_on_white('%(asctime)s') + ' '
+        formatter = logging.Formatter(
+            timestamp_fmt + '%(levelname)s %(message)s', '%Y%m%d %H:%M:%S'
+        )
 
+        # Create a root logfile to save what is normally logged to stdout.
+        if root_logfile:
             self.execute_command = execute_command_with_logging
 
             build_log_filehandler = logging.FileHandler(
@@ -348,32 +359,45 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
             build_log_filehandler.setFormatter(formatter)
             root_logger.addHandler(build_log_filehandler)
 
-            if not separate_build_file_logging:
-                for recipe in self.build_recipes:
-                    recipe.set_logger(root_logger)
-            else:
-                for recipe in self.build_recipes:
-                    new_logger = logging.getLogger(
-                        f'{root_logger.name}.{recipe.display_name}'
-                    )
-                    new_logger.setLevel(log_level)
-                    new_logger.propagate = False
-                    new_logfile = root_logfile.parent / (
-                        root_logfile.stem
-                        + '_'
-                        + recipe.display_name.replace(' ', '_')
-                        + root_logfile.suffix
+        if not separate_build_file_logging:
+            # Set each recipe to use the root logger.
+            for recipe in self.build_recipes:
+                recipe.set_logger(root_logger)
+        else:
+            # Create separate logfiles in out/log.txt
+            self.execute_command = execute_command_with_logging
+            for recipe in self.build_recipes:
+                new_logger = logging.getLogger(
+                    f'{root_logger.name}.{recipe.display_name}'
+                )
+                new_logger.setLevel(log_level)
+                new_logger.propagate = False
+
+                new_logfile_dir = recipe.build_dir
+                new_logfile_name = Path('log.txt')
+                new_logfile_postfix = ''
+                if root_logfile:
+                    new_logfile_dir = root_logfile.parent
+                    new_logfile_name = root_logfile
+                    new_logfile_postfix = '_' + recipe.display_name.replace(
+                        ' ', '_'
                     )
 
-                    new_log_filehandler = logging.FileHandler(
-                        new_logfile, encoding='utf-8'
-                    )
-                    new_log_filehandler.setLevel(log_level)
-                    new_log_filehandler.setFormatter(formatter)
-                    new_logger.addHandler(new_log_filehandler)
+                new_logfile = new_logfile_dir / (
+                    new_logfile_name.stem
+                    + new_logfile_postfix
+                    + new_logfile_name.suffix
+                )
 
-                    recipe.set_logger(new_logger)
-                    recipe.set_logfile(new_logfile)
+                new_log_filehandler = logging.FileHandler(
+                    new_logfile, encoding='utf-8'
+                )
+                new_log_filehandler.setLevel(log_level)
+                new_log_filehandler.setFormatter(formatter)
+                new_logger.addHandler(new_log_filehandler)
+
+                recipe.set_logger(new_logger)
+                recipe.set_logfile(new_logfile)
 
     def __len__(self) -> int:
         return len(self.build_recipes)
@@ -441,6 +465,11 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
             if not build_succeded:
                 break
 
+        # If all steps were skipped the return code will not be set. Force
+        # status to passed in this case.
+        if build_succeded and not cfg.status.passed():
+            cfg.status.set_passed()
+
         return build_succeded
 
     def print_build_summary(
@@ -495,20 +524,17 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
 
 def run_recipe(
     index: int, project_builder: ProjectBuilder, cfg: BuildRecipe, env
-) -> None:
+) -> bool:
     num_builds = len(project_builder)
     index_message = f'[{index}/{num_builds}]'
 
     log_build_recipe_start(index_message, project_builder, cfg)
 
-    try:
-        project_builder.run_build(cfg, env, index_message=index_message)
-    # Ctrl-C on Unix generates KeyboardInterrupt
-    # Ctrl-Z on Windows generates EOFError
-    except (KeyboardInterrupt, EOFError):
-        _exit_due_to_interrupt()
+    result = project_builder.run_build(cfg, env, index_message=index_message)
 
     log_build_recipe_finish(index_message, project_builder, cfg)
+
+    return result
 
 
 def run_builds(project_builder: ProjectBuilder, workers: int = 1) -> None:
@@ -527,23 +553,47 @@ def run_builds(project_builder: ProjectBuilder, workers: int = 1) -> None:
     # Print status before starting
     project_builder.print_build_summary()
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
-        future_to_index = {}
-        for i, cfg in enumerate(project_builder, 1):
-            future_to_index[
-                executor.submit(run_recipe, i, project_builder, cfg, env)
-            ] = i
+    if workers > 1 and not project_builder.separate_build_file_logging:
+        _LOG.warning(
+            _COLOR.yellow(
+                'Running in parallel without --separate-logfiles; All build '
+                'output will be interleaved.'
+            )
+        )
 
+    get_project_builder_context().set_building()
+
+    if workers == 1:
         try:
-            for future in concurrent.futures.as_completed(future_to_index):
-                future.result()
+            for i, cfg in enumerate(project_builder, 1):
+                run_recipe(i, project_builder, cfg, env)
         # Ctrl-C on Unix generates KeyboardInterrupt
         # Ctrl-Z on Windows generates EOFError
         except (KeyboardInterrupt, EOFError):
             _exit_due_to_interrupt()
 
+    else:
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=workers
+        ) as executor:
+            future_to_index = {}
+            for i, cfg in enumerate(project_builder, 1):
+                future_to_index[
+                    executor.submit(run_recipe, i, project_builder, cfg, env)
+                ] = i
+
+            try:
+                for future in concurrent.futures.as_completed(future_to_index):
+                    future.result()
+            # Ctrl-C on Unix generates KeyboardInterrupt
+            # Ctrl-Z on Windows generates EOFError
+            except (KeyboardInterrupt, EOFError):
+                _exit_due_to_interrupt()
+
     # Print status when finished
     project_builder.print_build_summary()
+
+    get_project_builder_context().set_idle()
 
 
 def main() -> None:
@@ -588,7 +638,8 @@ def main() -> None:
         log_level=log_level,
     )
 
-    run_builds(project_builder)
+    workers = len(project_builder) if args.parallel else 1
+    run_builds(project_builder, workers)
 
 
 if __name__ == '__main__':

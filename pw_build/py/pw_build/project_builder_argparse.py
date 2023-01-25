@@ -79,10 +79,7 @@ def add_project_builder_arguments(
     logfile_group.add_argument(
         '--separate-logfiles',
         action='store_true',
-        help=(
-            'Create separate log files per build directory. Requires setting '
-            'the --logfile option.'
-        ),
+        help='Create separate log files per build directory.',
     )
 
     logfile_group.add_argument(
@@ -144,6 +141,12 @@ def add_project_builder_arguments(
             "--run-command 'bazel test //pw_cli/...'"
             "-C out python.lint python.test"
         ),
+    )
+
+    parser.add_argument(
+        '--parallel',
+        action='store_true',
+        help='Run all builds in parallel.',
     )
 
     return parser
