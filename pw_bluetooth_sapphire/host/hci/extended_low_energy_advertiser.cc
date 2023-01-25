@@ -150,7 +150,7 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetAdvertisingD
   payload->fragment_preference = hci_spec::LEExtendedAdvFragmentPreference::kShouldNotFragment;
 
   // advertising data
-  payload->adv_data_length = block_size;
+  payload->adv_data_length = static_cast<uint8_t>(block_size);
   MutableBufferView data_view(payload->adv_data, payload->adv_data_length);
   adv_data.WriteBlock(&data_view, flags);
 
@@ -205,7 +205,7 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetScanResponse
   payload->fragment_preference = hci_spec::LEExtendedAdvFragmentPreference::kShouldNotFragment;
 
   // scan response data
-  payload->scan_rsp_data_length = block_size;
+  payload->scan_rsp_data_length = static_cast<uint8_t>(block_size);
   MutableBufferView scan_rsp_view(payload->scan_rsp_data, payload->scan_rsp_data_length);
   scan_rsp.WriteBlock(&scan_rsp_view, std::nullopt);
 

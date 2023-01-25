@@ -43,7 +43,7 @@ std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildSetAdvertisingDat
   packet->mutable_view()->mutable_payload_data().SetToZeros();
 
   auto params = packet->mutable_payload<hci_spec::LESetAdvertisingDataCommandParams>();
-  params->adv_data_length = data.CalculateBlockSize(/*include_flags=*/true);
+  params->adv_data_length = static_cast<uint8_t>(data.CalculateBlockSize(/*include_flags=*/true));
 
   MutableBufferView adv_view(params->adv_data, params->adv_data_length);
   data.WriteBlock(&adv_view, flags);
@@ -58,7 +58,7 @@ std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildSetScanResponse(
   packet->mutable_view()->mutable_payload_data().SetToZeros();
 
   auto params = packet->mutable_payload<hci_spec::LESetScanResponseDataCommandParams>();
-  params->scan_rsp_data_length = scan_rsp.CalculateBlockSize();
+  params->scan_rsp_data_length = static_cast<uint8_t>(scan_rsp.CalculateBlockSize());
 
   MutableBufferView scan_data_view(params->scan_rsp_data, sizeof(params->scan_rsp_data));
   scan_rsp.WriteBlock(&scan_data_view, std::nullopt);

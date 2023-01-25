@@ -101,7 +101,7 @@ std::unique_ptr<CommandPacket> AndroidExtendedLowEnergyAdvertiser::BuildSetAdver
   auto payload = packet->mutable_payload<hci_android::LEMultiAdvtSetAdvtDataCommandParams>();
 
   payload->opcode = hci_android::kLEMultiAdvtSetAdvtDataSubopcode;
-  payload->adv_data_length = data.CalculateBlockSize(/*include_flags=*/true);
+  payload->adv_data_length = static_cast<uint8_t>(data.CalculateBlockSize(/*include_flags=*/true));
   payload->adv_handle = handle.value();
 
   MutableBufferView data_view(payload->adv_data, payload->adv_data_length);
@@ -138,7 +138,7 @@ std::unique_ptr<CommandPacket> AndroidExtendedLowEnergyAdvertiser::BuildSetScanR
   auto payload = packet->mutable_payload<hci_android::LEMultiAdvtSetScanRespCommandParams>();
 
   payload->opcode = hci_android::kLEMultiAdvtSetScanRespSubopcode;
-  payload->scan_rsp_data_length = scan_rsp.CalculateBlockSize();
+  payload->scan_rsp_data_length = static_cast<uint8_t>(scan_rsp.CalculateBlockSize());
   payload->adv_handle = handle.value();
 
   MutableBufferView scan_rsp_view(payload->scan_rsp_data, payload->scan_rsp_data_length);
