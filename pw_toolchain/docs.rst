@@ -64,17 +64,25 @@ toolchain ``${target_name}.static_analysis`` using
 Excluding files from checks
 ===========================
 The build argument ``pw_toolchain_STATIC_ANALYSIS_SKIP_SOURCES_RES`` is used
-used to exclude source files from the analysis. The list must contain regular
+to exclude source files from the analysis. The list must contain regular
 expressions matching individual files, rather than directories. For example,
 provide ``"the_path/.*"`` to exclude all files in all directories under
 ``the_path``.
 
 The build argument ``pw_toolchain_STATIC_ANALYSIS_SKIP_INCLUDE_PATHS`` is used
 used to exclude header files from the analysis. This argument must be a list of
-POSIX-style path suffixes for include paths, or regular expressions. For
-example, passing ``the_path/include`` excludes all header files that are
-accessed from include paths ending in ``the_path/include``, while passing
-``.*/third_party/.*`` excludes all third-party header files.
+POSIX-style path suffixes for include paths, or regular expressions matching
+include paths. For example, passing ``the_path/include`` excludes all header
+files that are accessed from include paths ending in ``the_path/include``,
+while passing ``.*/third_party/.*`` excludes all third-party header files.
+
+Note that ``pw_toolchain_STATIC_ANALYSIS_SKIP_INCLUDE_PATHS`` operates on
+include paths, not header file paths. For example, say your compile commands
+include ``-Idrivers``, and this results in a file at ``drivers/public/i2c.h``
+being included. You can skip this header by adding ``drivers`` or ``drivers.*``
+to ``pw_toolchain_STATIC_ANALYSIS_SKIP_INCLUDE_PATHS``, but *not* by adding
+``drivers/.*``: this last regex matches the header file path, but not the
+include path.
 
 Provided toolchains
 ===================
