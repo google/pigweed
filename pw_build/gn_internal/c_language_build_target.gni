@@ -106,8 +106,7 @@ template("pw_internal_c_language_build_target") {
       if (remove_configs != [] && remove_configs[0] == "*") {
         configs = []
       } else {
-        configs += remove_configs  # Add configs in case they aren't already
-        configs -= remove_configs  # present, then remove them.
+        configs -= filter_include(configs, remove_configs)
       }
     }
     if (defined(invoker.configs)) {

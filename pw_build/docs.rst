@@ -158,8 +158,9 @@ underlying target.
 
 Additionally, the following arguments are also supported:
 
-* **remove_configs**: (optional) A list of configs to remove from the set of
-  default configs specified by the current toolchain configuration.
+* **remove_configs**: (optional) A list of configs / config patterns to remove
+  from the set of default configs specified by the current toolchain
+  configuration.
 * **remove_public_deps**: (optional) A list of targets to remove from the set of
   default public_deps specified by the current toolchain configuration.
 
