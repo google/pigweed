@@ -25,13 +25,13 @@
   "[==========] Done running all tests."
 
 #define PW_UNIT_TEST_GOOGLETEST_PASSED_SUMMARY "[  PASSED  ] %d test(s)."
-#define PW_UNIT_TEST_GOOGLETEST_SKIPPED_SUMMARY "[  SKIPPED ] %d test(s)."
+#define PW_UNIT_TEST_GOOGLETEST_DISABLED_SUMMARY "[ DISABLED ] %d test(s)."
 #define PW_UNIT_TEST_GOOGLETEST_FAILED_SUMMARY "[  FAILED  ] %d test(s)."
 
 #define PW_UNIT_TEST_GOOGLETEST_CASE_START "[ RUN      ] %s.%s"
 #define PW_UNIT_TEST_GOOGLETEST_CASE_OK "[       OK ] %s.%s"
 #define PW_UNIT_TEST_GOOGLETEST_CASE_FAILED "[  FAILED  ] %s.%s"
-#define PW_UNIT_TEST_GOOGLETEST_CASE_SKIPPED "[  SKIPPED ] %s.%s"
+#define PW_UNIT_TEST_GOOGLETEST_CASE_DISABLED "[ DISABLED ] %s.%s"
 
 namespace pw {
 namespace unit_test {

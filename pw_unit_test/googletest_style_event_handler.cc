@@ -29,7 +29,7 @@ void GoogleTestStyleEventHandler::RunAllTestsEnd(
   WriteLine(PW_UNIT_TEST_GOOGLETEST_PASSED_SUMMARY,
             run_tests_summary.passed_tests);
   if (run_tests_summary.skipped_tests) {
-    WriteLine(PW_UNIT_TEST_GOOGLETEST_SKIPPED_SUMMARY,
+    WriteLine(PW_UNIT_TEST_GOOGLETEST_DISABLED_SUMMARY,
               run_tests_summary.skipped_tests);
   }
   if (run_tests_summary.failed_tests) {
@@ -59,7 +59,7 @@ void GoogleTestStyleEventHandler::TestCaseEnd(const TestCase& test_case,
                 test_case.test_name);
       break;
     case TestResult::kSkipped:
-      WriteLine(PW_UNIT_TEST_GOOGLETEST_CASE_SKIPPED,
+      WriteLine(PW_UNIT_TEST_GOOGLETEST_CASE_DISABLED,
                 test_case.suite_name,
                 test_case.test_name);
       break;
