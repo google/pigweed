@@ -123,6 +123,7 @@ cc_library_static {
         "channel_list.cc",
         "client.cc",
         "client_call.cc",
+        "client_server.cc",
         "endpoint.cc",
         "packet.cc",
         "packet_meta.cc",
