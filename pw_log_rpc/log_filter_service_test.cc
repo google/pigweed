@@ -122,10 +122,10 @@ Result<ConstByteSpan> EncodeFilterRequest(const Filter& filter,
   std::byte encode_buffer[256];
   protobuf::StreamEncoder encoder(writer, encode_buffer);
   PW_TRY(encoder.WriteBytes(
-      static_cast<uint32_t>(SetFilterRequest::Fields::FILTER_ID), filter.id()));
+      static_cast<uint32_t>(SetFilterRequest::Fields::kFilterId), filter.id()));
   {
     log::pwpb::Filter::StreamEncoder filter_encoder = encoder.GetNestedEncoder(
-        static_cast<uint32_t>(SetFilterRequest::Fields::FILTER));
+        static_cast<uint32_t>(SetFilterRequest::Fields::kFilter));
     PW_TRY(EncodeFilter(filter, filter_encoder));
   }  // Let the StreamEncoder destructor finalize the data.
   return ConstByteSpan(writer.data(), writer.bytes_written());
@@ -327,7 +327,7 @@ void VerifyFilterRule(protobuf::Decoder& decoder,
   ASSERT_TRUE(decoder.Next().ok());
   ASSERT_EQ(
       decoder.FieldNumber(),
-      static_cast<uint32_t>(FilterRule::Fields::LEVEL_GREATER_THAN_OR_EQUAL));
+      static_cast<uint32_t>(FilterRule::Fields::kLevelGreaterThanOrEqual));
   FilterRule::Level level_greater_than_or_equal;
   ASSERT_EQ(decoder.ReadUint32(
                 reinterpret_cast<uint32_t*>(&level_greater_than_or_equal)),
@@ -337,7 +337,7 @@ void VerifyFilterRule(protobuf::Decoder& decoder,
 
   ASSERT_TRUE(decoder.Next().ok());
   ASSERT_EQ(decoder.FieldNumber(),
-            static_cast<uint32_t>(FilterRule::Fields::MODULE_EQUALS));
+            static_cast<uint32_t>(FilterRule::Fields::kModuleEquals));
   ConstByteSpan module_equals;
   ASSERT_EQ(decoder.ReadBytes(&module_equals), OkStatus());
   ASSERT_EQ(module_equals.size(), expected_rule.module_equals.size());
@@ -348,14 +348,14 @@ void VerifyFilterRule(protobuf::Decoder& decoder,
 
   ASSERT_TRUE(decoder.Next().ok());
   ASSERT_EQ(decoder.FieldNumber(),
-            static_cast<uint32_t>(FilterRule::Fields::ANY_FLAGS_SET));
+            static_cast<uint32_t>(FilterRule::Fields::kAnyFlagsSet));
   uint32_t any_flags_set;
   ASSERT_EQ(decoder.ReadUint32(&any_flags_set), OkStatus());
   EXPECT_EQ(any_flags_set, expected_rule.any_flags_set);
 
   ASSERT_TRUE(decoder.Next().ok());
   ASSERT_EQ(decoder.FieldNumber(),
-            static_cast<uint32_t>(FilterRule::Fields::ACTION));
+            static_cast<uint32_t>(FilterRule::Fields::kAction));
   Filter::Rule::Action action;
   ASSERT_EQ(decoder.ReadUint32(reinterpret_cast<uint32_t*>(&action)),
             OkStatus());
@@ -363,7 +363,7 @@ void VerifyFilterRule(protobuf::Decoder& decoder,
 
   ASSERT_TRUE(decoder.Next().ok());
   ASSERT_EQ(decoder.FieldNumber(),
-            static_cast<uint32_t>(FilterRule::Fields::THREAD_EQUALS));
+            static_cast<uint32_t>(FilterRule::Fields::kThreadEquals));
   ConstByteSpan thread;
   ASSERT_EQ(decoder.ReadBytes(&thread), OkStatus());
   ASSERT_EQ(thread.size(), expected_rule.thread_equals.size());

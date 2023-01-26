@@ -52,7 +52,7 @@ void TryEncodeDropMessage(
   if (drop_message.size() + RpcLogDrain::kLogEntriesEncodeFrameSize <
       entries_encoder.ConservativeWriteLimit()) {
     PW_CHECK_OK(entries_encoder.WriteBytes(
-        static_cast<uint32_t>(log::pwpb::LogEntries::Fields::ENTRIES),
+        static_cast<uint32_t>(log::pwpb::LogEntries::Fields::kEntries),
         drop_message));
     drop_count = 0;
   }
@@ -248,7 +248,7 @@ RpcLogDrain::LogDrainState RpcLogDrain::EncodeOutgoingPacket(
 
     // Encode the entry and remove it from multisink.
     PW_CHECK_OK(encoder.WriteBytes(
-        static_cast<uint32_t>(log::pwpb::LogEntries::Fields::ENTRIES),
+        static_cast<uint32_t>(log::pwpb::LogEntries::Fields::kEntries),
         possible_entry.value().entry()));
     PW_CHECK_OK(PopEntry(possible_entry.value()));
     ++packed_entry_count_out;

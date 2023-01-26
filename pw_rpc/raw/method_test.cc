@@ -142,10 +142,10 @@ class FakeService : public FakeServiceBase<FakeService> {
           static_cast<TestRequest::Fields>(decoder.FieldNumber());
 
       switch (field) {
-        case TestRequest::Fields::INTEGER:
+        case TestRequest::Fields::kInteger:
           ASSERT_EQ(OkStatus(), decoder.ReadInt64(&last_request.integer));
           break;
-        case TestRequest::Fields::STATUS_CODE:
+        case TestRequest::Fields::kStatusCode:
           ASSERT_EQ(OkStatus(), decoder.ReadUint32(&last_request.status_code));
           break;
       }

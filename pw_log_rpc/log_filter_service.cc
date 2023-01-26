@@ -28,7 +28,7 @@ Status FilterService::SetFilterImpl(ConstByteSpan request) {
   protobuf::Decoder decoder(request);
   PW_TRY(decoder.Next());
   if (static_cast<SetFilterRequest::Fields>(decoder.FieldNumber()) !=
-      SetFilterRequest::Fields::FILTER_ID) {
+      SetFilterRequest::Fields::kFilterId) {
     return Status::InvalidArgument();
   }
   ConstByteSpan filter_id;
@@ -41,7 +41,7 @@ Status FilterService::SetFilterImpl(ConstByteSpan request) {
   PW_TRY(decoder.Next());
   ConstByteSpan filter_buffer;
   if (static_cast<SetFilterRequest::Fields>(decoder.FieldNumber()) !=
-      SetFilterRequest::Fields::FILTER) {
+      SetFilterRequest::Fields::kFilter) {
     return Status::InvalidArgument();
   }
   PW_TRY(decoder.ReadBytes(&filter_buffer));
@@ -54,7 +54,7 @@ StatusWithSize FilterService::GetFilterImpl(ConstByteSpan request,
   protobuf::Decoder decoder(request);
   PW_TRY_WITH_SIZE(decoder.Next());
   if (static_cast<GetFilterRequest::Fields>(decoder.FieldNumber()) !=
-      GetFilterRequest::Fields::FILTER_ID) {
+      GetFilterRequest::Fields::kFilterId) {
     return StatusWithSize::InvalidArgument();
   }
   ConstByteSpan filter_id;

@@ -337,7 +337,7 @@ void BundledUpdateService::DoApply() {
   for (pw::protobuf::Message file_name : target_files) {
     std::array<std::byte, MAX_TARGET_NAME_LENGTH> buf = {};
     protobuf::String name = file_name.AsString(static_cast<uint32_t>(
-        pw::software_update::TargetFile::Fields::FILE_NAME));
+        pw::software_update::TargetFile::Fields::kFileName));
     PW_CHECK_OK(name.status());
     const Result<ByteSpan> read_result = name.GetBytesReader().Read(buf);
     PW_CHECK_OK(read_result.status());

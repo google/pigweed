@@ -33,15 +33,15 @@ class Packet {
   // of enums is properly accounted for and when `status` is changed from a
   // uint32 to a StatusCode.
   static constexpr size_t kMinEncodedSizeWithoutPayload =
-      protobuf::SizeOfFieldEnum(pwpb::RpcPacket::Fields::TYPE, 7) +
-      protobuf::SizeOfFieldUint32(pwpb::RpcPacket::Fields::CHANNEL_ID) +
-      protobuf::SizeOfFieldFixed32(pwpb::RpcPacket::Fields::SERVICE_ID) +
-      protobuf::SizeOfFieldFixed32(pwpb::RpcPacket::Fields::METHOD_ID) +
+      protobuf::SizeOfFieldEnum(pwpb::RpcPacket::Fields::kType, 7) +
+      protobuf::SizeOfFieldUint32(pwpb::RpcPacket::Fields::kChannelId) +
+      protobuf::SizeOfFieldFixed32(pwpb::RpcPacket::Fields::kServiceId) +
+      protobuf::SizeOfFieldFixed32(pwpb::RpcPacket::Fields::kMethodId) +
       protobuf::SizeOfDelimitedFieldWithoutValue(
-          pwpb::RpcPacket::Fields::PAYLOAD) +
-      protobuf::SizeOfFieldUint32(pwpb::RpcPacket::Fields::STATUS,
+          pwpb::RpcPacket::Fields::kPayload) +
+      protobuf::SizeOfFieldUint32(pwpb::RpcPacket::Fields::kStatus,
                                   Status::Unauthenticated().code()) +
-      protobuf::SizeOfFieldUint32(pwpb::RpcPacket::Fields::CALL_ID);
+      protobuf::SizeOfFieldUint32(pwpb::RpcPacket::Fields::kCallId);
 
   // Parses a packet from a protobuf message. Missing or malformed fields take
   // their default values.

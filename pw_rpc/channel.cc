@@ -40,7 +40,7 @@ Result<uint32_t> ExtractChannelId(ConstByteSpan packet) {
 
   while (decoder.Next().ok()) {
     if (static_cast<internal::pwpb::RpcPacket::Fields>(decoder.FieldNumber()) !=
-        internal::pwpb::RpcPacket::Fields::CHANNEL_ID) {
+        internal::pwpb::RpcPacket::Fields::kChannelId) {
       continue;
     }
     uint32_t channel_id;

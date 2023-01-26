@@ -60,21 +60,21 @@ pw::protobuf::Decoder generic_decoder(decode_buffer);
 PW_NO_INLINE void BasicDecode() {
   while (generic_decoder.Next().ok()) {
     switch (generic_decoder.FieldNumber()) {
-      case static_cast<uint32_t>(pwpb::ItemInfo::Fields::OFFSET): {
+      case static_cast<uint32_t>(pwpb::ItemInfo::Fields::kOffset): {
         uint64_t value;
         if (generic_decoder.ReadUint64(&value).ok()) {
           ConsumeValue(value);
         }
         break;
       }
-      case static_cast<uint32_t>(pwpb::ItemInfo::Fields::SIZE): {
+      case static_cast<uint32_t>(pwpb::ItemInfo::Fields::kSize): {
         uint32_t value;
         if (generic_decoder.ReadUint32(&value).ok()) {
           ConsumeValue(value);
         }
         break;
       }
-      case static_cast<uint32_t>(pwpb::ItemInfo::Fields::ACCESS_LEVEL): {
+      case static_cast<uint32_t>(pwpb::ItemInfo::Fields::kAccessLevel): {
         uint32_t value;
 
         if (generic_decoder.ReadUint32(&value).ok()) {
@@ -113,21 +113,21 @@ PW_NO_INLINE void BasicDecode() {
     }
 
     switch (field.value()) {
-      case pwpb::ItemInfo::Fields::OFFSET: {
+      case pwpb::ItemInfo::Fields::kOffset: {
         pw::Result<uint64_t> value = decoder.ReadOffset();
         if (value.ok()) {
           ConsumeValue(value);
         }
         break;
       }
-      case pwpb::ItemInfo::Fields::SIZE: {
+      case pwpb::ItemInfo::Fields::kSize: {
         pw::Result<uint32_t> value = decoder.ReadSize();
         if (value.ok()) {
           ConsumeValue(value);
         }
         break;
       }
-      case pwpb::ItemInfo::Fields::ACCESS_LEVEL: {
+      case pwpb::ItemInfo::Fields::kAccessLevel: {
         pw::Result<pwpb::ItemInfo::Access> value = decoder.ReadAccessLevel();
         if (value.ok()) {
           ConsumeValue(value);

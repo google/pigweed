@@ -32,7 +32,7 @@ Result<Packet> Packet::FromBuffer(ConstByteSpan data) {
         static_cast<RpcPacket::Fields>(decoder.FieldNumber());
 
     switch (field) {
-      case RpcPacket::Fields::TYPE: {
+      case RpcPacket::Fields::kType: {
         uint32_t value;
         // A decode error will propagate from Next() and terminate the loop.
         decoder.ReadUint32(&value).IgnoreError();
@@ -40,27 +40,27 @@ Result<Packet> Packet::FromBuffer(ConstByteSpan data) {
         break;
       }
 
-      case RpcPacket::Fields::CHANNEL_ID:
+      case RpcPacket::Fields::kChannelId:
         // A decode error will propagate from Next() and terminate the loop.
         decoder.ReadUint32(&packet.channel_id_).IgnoreError();
         break;
 
-      case RpcPacket::Fields::SERVICE_ID:
+      case RpcPacket::Fields::kServiceId:
         // A decode error will propagate from Next() and terminate the loop.
         decoder.ReadFixed32(&packet.service_id_).IgnoreError();
         break;
 
-      case RpcPacket::Fields::METHOD_ID:
+      case RpcPacket::Fields::kMethodId:
         // A decode error will propagate from Next() and terminate the loop.
         decoder.ReadFixed32(&packet.method_id_).IgnoreError();
         break;
 
-      case RpcPacket::Fields::PAYLOAD:
+      case RpcPacket::Fields::kPayload:
         // A decode error will propagate from Next() and terminate the loop.
         decoder.ReadBytes(&packet.payload_).IgnoreError();
         break;
 
-      case RpcPacket::Fields::STATUS: {
+      case RpcPacket::Fields::kStatus: {
         uint32_t value;
         // A decode error will propagate from Next() and terminate the loop.
         decoder.ReadUint32(&value).IgnoreError();
@@ -68,7 +68,7 @@ Result<Packet> Packet::FromBuffer(ConstByteSpan data) {
         break;
       }
 
-      case RpcPacket::Fields::CALL_ID:
+      case RpcPacket::Fields::kCallId:
         // A decode error will propagate from Next() and terminate the loop.
         decoder.ReadUint32(&packet.call_id_).IgnoreError();
         break;

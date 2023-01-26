@@ -89,21 +89,21 @@ PW_NO_INLINE void DecodeItemInfo(pw::ConstByteSpan data) {
   pw::protobuf::Decoder submessage_decoder(data);
   while (submessage_decoder.Next().ok()) {
     switch (submessage_decoder.FieldNumber()) {
-      case static_cast<uint32_t>(ItemInfo::Fields::OFFSET): {
+      case static_cast<uint32_t>(ItemInfo::Fields::kOffset): {
         uint64_t value;
         if (submessage_decoder.ReadUint64(&value).ok()) {
           ConsumeValue(value);
         }
         break;
       }
-      case static_cast<uint32_t>(ItemInfo::Fields::SIZE): {
+      case static_cast<uint32_t>(ItemInfo::Fields::kSize): {
         uint32_t value;
         if (submessage_decoder.ReadUint32(&value).ok()) {
           ConsumeValue(value);
         }
         break;
       }
-      case static_cast<uint32_t>(ItemInfo::Fields::ACCESS_LEVEL): {
+      case static_cast<uint32_t>(ItemInfo::Fields::kAccessLevel): {
         uint32_t value;
 
         if (submessage_decoder.ReadUint32(&value).ok()) {
@@ -126,7 +126,7 @@ PW_NO_INLINE void BasicDecode() {
 
   while (decoder.Next().ok()) {
     switch (decoder.FieldNumber()) {
-      case static_cast<uint32_t>(ResponseInfo::Fields::KEY_STRING): {
+      case static_cast<uint32_t>(ResponseInfo::Fields::kKeyString): {
         which_key = KeyType::KEY_STRING;
         std::string_view value;
         if (decoder.ReadString(&value).ok()) {
@@ -134,7 +134,7 @@ PW_NO_INLINE void BasicDecode() {
         }
         break;
       }
-      case static_cast<uint32_t>(ResponseInfo::Fields::KEY_TOKEN): {
+      case static_cast<uint32_t>(ResponseInfo::Fields::kKeyToken): {
         which_key = KeyType::KEY_TOKEN;
         uint32_t value;
         if (decoder.ReadUint32(&value).ok()) {
@@ -142,7 +142,7 @@ PW_NO_INLINE void BasicDecode() {
         }
         break;
       }
-      case static_cast<uint32_t>(ResponseInfo::Fields::TIMESTAMP): {
+      case static_cast<uint32_t>(ResponseInfo::Fields::kTimestamp): {
         uint64_t value;
         has_timestamp = true;
         if (decoder.ReadUint64(&value).ok()) {
@@ -150,7 +150,7 @@ PW_NO_INLINE void BasicDecode() {
         }
         break;
       }
-      case static_cast<uint32_t>(ResponseInfo::Fields::HAS_VALUE): {
+      case static_cast<uint32_t>(ResponseInfo::Fields::kHasValue): {
         bool value;
         has_has_value = true;
         if (decoder.ReadBool(&value).ok()) {
@@ -158,7 +158,7 @@ PW_NO_INLINE void BasicDecode() {
         }
         break;
       }
-      case static_cast<uint32_t>(ResponseInfo::Fields::ITEM_INFO): {
+      case static_cast<uint32_t>(ResponseInfo::Fields::kItemInfo): {
         pw::ConstByteSpan value;
         if (decoder.ReadBytes(&value).ok()) {
           DecodeItemInfo(value);
@@ -224,21 +224,21 @@ PW_NO_INLINE void DecodeItemInfo(ItemInfo::StreamDecoder& submessage_decoder) {
     }
 
     switch (field.value()) {
-      case ItemInfo::Fields::OFFSET: {
+      case ItemInfo::Fields::kOffset: {
         pw::Result<uint64_t> value = submessage_decoder.ReadOffset();
         if (value.ok()) {
           ConsumeValue(value);
         }
         break;
       }
-      case ItemInfo::Fields::SIZE: {
+      case ItemInfo::Fields::kSize: {
         pw::Result<uint32_t> value = submessage_decoder.ReadSize();
         if (value.ok()) {
           ConsumeValue(value);
         }
         break;
       }
-      case ItemInfo::Fields::ACCESS_LEVEL: {
+      case ItemInfo::Fields::kAccessLevel: {
         pw::Result<ItemInfo::Access> value =
             submessage_decoder.ReadAccessLevel();
         if (value.ok()) {
@@ -268,7 +268,7 @@ PW_NO_INLINE void BasicDecode() {
       }
 
       switch (field.value()) {
-        case ResponseInfo::Fields::KEY_STRING: {
+        case ResponseInfo::Fields::kKeyString: {
           which_key = KeyType::KEY_STRING;
           std::array<char, 8> value;
           pw::StatusWithSize status = decoder.ReadKeyString(value);
@@ -277,7 +277,7 @@ PW_NO_INLINE void BasicDecode() {
           }
           break;
         }
-        case ResponseInfo::Fields::KEY_TOKEN: {
+        case ResponseInfo::Fields::kKeyToken: {
           which_key = KeyType::KEY_TOKEN;
           pw::Result<uint32_t> value = decoder.ReadKeyToken();
           if (value.ok()) {
@@ -285,7 +285,7 @@ PW_NO_INLINE void BasicDecode() {
           }
           break;
         }
-        case ResponseInfo::Fields::TIMESTAMP: {
+        case ResponseInfo::Fields::kTimestamp: {
           has_timestamp = true;
           pw::Result<int64_t> value = decoder.ReadTimestamp();
           if (value.ok()) {
@@ -293,7 +293,7 @@ PW_NO_INLINE void BasicDecode() {
           }
           break;
         }
-        case ResponseInfo::Fields::HAS_VALUE: {
+        case ResponseInfo::Fields::kHasValue: {
           has_has_value = true;
           pw::Result<bool> value = decoder.ReadHasValue();
           if (value.ok()) {
@@ -301,7 +301,7 @@ PW_NO_INLINE void BasicDecode() {
           }
           break;
         }
-        case ResponseInfo::Fields::ITEM_INFO: {
+        case ResponseInfo::Fields::kItemInfo: {
           ItemInfo::StreamDecoder submessage_decoder =
               decoder.GetItemInfoDecoder();
           DecodeItemInfo(submessage_decoder);

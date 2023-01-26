@@ -89,7 +89,7 @@ Status DecodeThreadName(ConstByteSpan serialized_path,
   Status status;
   while (decoder.Next().ok()) {
     switch (decoder.FieldNumber()) {
-      case static_cast<uint32_t>(Thread::Fields::NAME): {
+      case static_cast<uint32_t>(Thread::Fields::kName): {
         status.Update(decoder.ReadBytes(&thread_name));
       }
     }

@@ -52,25 +52,26 @@ class FilterService final
   static constexpr size_t kMinSupportedFilters = 4;
 
   static constexpr size_t kFilterResponseBufferSize =
-      protobuf::TagSizeBytes(log::pwpb::Filter::Fields::RULE) +
+      protobuf::TagSizeBytes(log::pwpb::Filter::Fields::kRule) +
       protobuf::kMaxSizeOfLength +
       kMinSupportedFilters *
           (protobuf::SizeOfFieldEnum(
-               log::pwpb::FilterRule::Fields::LEVEL_GREATER_THAN_OR_EQUAL, 7) +
+               log::pwpb::FilterRule::Fields::kLevelGreaterThanOrEqual, 7) +
            protobuf::SizeOfFieldBytes(
-               log::pwpb::FilterRule::Fields::MODULE_EQUALS,
+               log::pwpb::FilterRule::Fields::kModuleEquals,
                cfg::kMaxModuleNameBytes) +
            protobuf::SizeOfFieldUint32(
-               log::pwpb::FilterRule::Fields::ANY_FLAGS_SET, 1) +
-           protobuf::SizeOfFieldEnum(log::pwpb::FilterRule::Fields::ACTION, 2) +
+               log::pwpb::FilterRule::Fields::kAnyFlagsSet, 1) +
+           protobuf::SizeOfFieldEnum(log::pwpb::FilterRule::Fields::kAction,
+                                     2) +
            protobuf::SizeOfFieldBytes(
-               log::pwpb::FilterRule::Fields::THREAD_EQUALS,
+               log::pwpb::FilterRule::Fields::kThreadEquals,
                cfg::kMaxThreadNameBytes));
 
   static constexpr size_t kFilterIdsResponseBufferSize =
       kMinSupportedFilters *
       protobuf::SizeOfFieldBytes(
-          log::pwpb::FilterIdListResponse::Fields::FILTER_ID, 4);
+          log::pwpb::FilterIdListResponse::Fields::kFilterId, 4);
 
   Status SetFilterImpl(ConstByteSpan request);
   StatusWithSize GetFilterImpl(ConstByteSpan request, ByteSpan response);

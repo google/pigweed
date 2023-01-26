@@ -33,7 +33,7 @@ bool EncodedThreadExists(ConstByteSpan serialized_thread_buffer,
   protobuf::Decoder decoder(serialized_thread_buffer);
   while (decoder.Next().ok()) {
     switch (decoder.FieldNumber()) {
-      case static_cast<uint32_t>(proto::SnapshotThreadInfo::Fields::THREADS): {
+      case static_cast<uint32_t>(proto::SnapshotThreadInfo::Fields::kThreads): {
         ConstByteSpan thread_buffer;
         EXPECT_EQ(OkStatus(), decoder.ReadBytes(&thread_buffer));
         ConstByteSpan encoded_name;

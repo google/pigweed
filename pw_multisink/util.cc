@@ -26,8 +26,8 @@ Status UnsafeDumpMultiSinkLogs(MultiSink& sink,
                                size_t max_num_entries) {
   auto callback = [&encoder](ConstByteSpan entry) {
     encoder
-        .WriteBytes(static_cast<uint32_t>(pw::log::LogEntries::Fields::ENTRIES),
-                    entry)
+        .WriteBytes(
+            static_cast<uint32_t>(pw::log::LogEntries::Fields::kEntries), entry)
         .IgnoreError();
   };
   return sink.UnsafeForEachEntry(callback, max_num_entries);

@@ -79,7 +79,7 @@ class FlatFileSystemService
                                                   size_t minimum_entries = 1) {
     return minimum_entries *
            protobuf::SizeOfDelimitedField(
-               pwpb::ListResponse::Fields::PATHS,
+               pwpb::ListResponse::Fields::kPaths,
                EncodedPathProtoSizeBytes(max_file_name_length));
   }
 
@@ -113,12 +113,12 @@ class FlatFileSystemService
   // Returns the maximum size of a single encoded Path proto.
   static constexpr size_t EncodedPathProtoSizeBytes(
       size_t max_file_name_length) {
-    return protobuf::SizeOfFieldString(pwpb::Path::Fields::PATH,
+    return protobuf::SizeOfFieldString(pwpb::Path::Fields::kPath,
                                        max_file_name_length) +
-           protobuf::SizeOfFieldEnum(pwpb::Path::Fields::PERMISSIONS,
+           protobuf::SizeOfFieldEnum(pwpb::Path::Fields::kPermissions,
                                      pwpb::Path::Permissions::READ_AND_WRITE) +
-           protobuf::SizeOfFieldUint32(pwpb::Path::Fields::SIZE_BYTES) +
-           protobuf::SizeOfFieldUint32(pwpb::Path::Fields::FILE_ID);
+           protobuf::SizeOfFieldUint32(pwpb::Path::Fields::kSizeBytes) +
+           protobuf::SizeOfFieldUint32(pwpb::Path::Fields::kFileId);
   }
 
   Result<Entry*> FindFile(std::string_view file_name);

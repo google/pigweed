@@ -87,7 +87,7 @@ void FlatFileSystemService::List(ConstByteSpan request,
   // If a file name was provided, try and find and enumerate the file.
   while (decoder.Next().ok()) {
     if (decoder.FieldNumber() !=
-        static_cast<uint32_t>(pwpb::ListRequest::Fields::PATH)) {
+        static_cast<uint32_t>(pwpb::ListRequest::Fields::kPath)) {
       continue;
     }
 
@@ -129,7 +129,7 @@ void FlatFileSystemService::Delete(ConstByteSpan request,
   protobuf::Decoder decoder(request);
   while (decoder.Next().ok()) {
     if (decoder.FieldNumber() !=
-        static_cast<uint32_t>(pwpb::DeleteRequest::Fields::PATH)) {
+        static_cast<uint32_t>(pwpb::DeleteRequest::Fields::kPath)) {
       continue;
     }
 

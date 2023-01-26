@@ -35,12 +35,12 @@ void UnitTestService::Run(ConstByteSpan request, RawServerWriter& writer) {
   Status status;
   while ((status = decoder.Next()).ok()) {
     switch (static_cast<TestRunRequest::Fields>(decoder.FieldNumber())) {
-      case TestRunRequest::Fields::REPORT_PASSED_EXPECTATIONS:
+      case TestRunRequest::Fields::kReportPassedExpectations:
         decoder.ReadBool(&verbose_)
             .IgnoreError();  // TODO(b/242598609): Handle Status properly
         break;
 
-      case TestRunRequest::Fields::TEST_SUITE: {
+      case TestRunRequest::Fields::kTestSuite: {
         std::string_view suite_name;
         if (!decoder.ReadString(&suite_name).ok()) {
           break;

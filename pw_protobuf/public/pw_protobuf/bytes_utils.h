@@ -32,7 +32,7 @@ namespace pw::protobuf {
 //     //  HANDLE ERROR.
 //   }
 //   if (static_cast<MyProtoMessage::Fields>(decoder.FieldNumber()) !=
-//       MyProtoMessage::Fields::MY_FIELD) {
+//       MyProtoMessage::Fields::kMyFields) {
 //     //  HANDLE ERROR.
 //   }
 //   Result<uint32_t> result = DecodeBytesToUint32(decoder);

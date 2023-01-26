@@ -244,18 +244,18 @@ class TrickleTest : public ::testing::Test {
   static constexpr uint64_t kSampleTimestamp = 9000;
   static constexpr std::string_view kSampleThreadName = "thread";
   static constexpr size_t kBasicLogSizeWithoutPayload =
-      protobuf::SizeOfFieldBytes(log::pwpb::LogEntry::Fields::MESSAGE, 0) +
+      protobuf::SizeOfFieldBytes(log::pwpb::LogEntry::Fields::kMessage, 0) +
       protobuf::SizeOfFieldUint32(
-          log::pwpb::LogEntry::Fields::LINE_LEVEL,
+          log::pwpb::LogEntry::Fields::kLineLevel,
           log::PackLineLevel(kSampleMetadata.line_number(),
                              kSampleMetadata.level())) +
-      protobuf::SizeOfFieldUint32(log::pwpb::LogEntry::Fields::FLAGS,
+      protobuf::SizeOfFieldUint32(log::pwpb::LogEntry::Fields::kFlags,
                                   kSampleMetadata.flags()) +
-      protobuf::SizeOfFieldInt64(log::pwpb::LogEntry::Fields::TIMESTAMP,
+      protobuf::SizeOfFieldInt64(log::pwpb::LogEntry::Fields::kTimestamp,
                                  kSampleTimestamp) +
-      protobuf::SizeOfFieldBytes(log::pwpb::LogEntry::Fields::MODULE,
+      protobuf::SizeOfFieldBytes(log::pwpb::LogEntry::Fields::kModule,
                                  sizeof(kSampleMetadata.module())) +
-      protobuf::SizeOfFieldBytes(log::pwpb::LogEntry::Fields::THREAD,
+      protobuf::SizeOfFieldBytes(log::pwpb::LogEntry::Fields::kThread,
                                  kSampleThreadName.size());
   static constexpr size_t kDrainEncodeBufferSize =
       kBasicLogSizeWithoutPayload + kMaxMessageSize;

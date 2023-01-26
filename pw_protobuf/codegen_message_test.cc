@@ -258,9 +258,9 @@ TEST(CodegenMessage, FixReservedIdentifiers) {
   // - `SIGNED_` has an underscore to match the corresponding `signed_` field.
   // - `NULL_` has an underscore to avoid a collision with `NULL` (even though
   //   the field `null` doesn't have or need an underscore).
-  std::ignore = IntegerMetadata::Fields::BITS;
-  std::ignore = IntegerMetadata::Fields::SIGNED_;
-  std::ignore = IntegerMetadata::Fields::NULL_;
+  std::ignore = IntegerMetadata::Fields::kBits;
+  std::ignore = IntegerMetadata::Fields::kSigned;
+  std::ignore = IntegerMetadata::Fields::kNull;
 
   // Make sure that the `ReservedWord` enum values were renamed as expected.
   // Specifically, only enum-value names that are reserved in UPPER_SNAKE_CASE
@@ -293,12 +293,12 @@ TEST(CodegenMessage, FixReservedIdentifiers) {
   };
 
   // Check for expected values of `enum class Function::Fields`:
-  std::ignore = Function::Fields::DESCRIPTION;
-  std::ignore = Function::Fields::DOMAIN_FIELD;
-  std::ignore = Function::Fields::CODOMAIN_FIELD;
+  std::ignore = Function::Fields::kDescription;
+  std::ignore = Function::Fields::kDomainField;
+  std::ignore = Function::Fields::kCodomainField;
 
   // Check for expected values of `enum class Function::Message_::Fields`:
-  std::ignore = Function::Message_::Fields::CONTENT;
+  std::ignore = Function::Message_::Fields::kContent;
 
   // Check for expected values of `enum class Function::Fields_`:
   std::ignore = Function::Fields_::NONE;
@@ -522,7 +522,7 @@ TEST(CodegenMessage, ReadPackedScalarCallback) {
   // callback to be decoded.
   RepeatedTest::Message message{};
   message.sint32s.SetDecoder([](RepeatedTest::StreamDecoder& decoder) {
-    EXPECT_EQ(decoder.Field().value(), RepeatedTest::Fields::SINT32S);
+    EXPECT_EQ(decoder.Field().value(), RepeatedTest::Fields::kSint32s);
 
     pw::Vector<int32_t, 8> sint32s{};
     const auto status = decoder.ReadSint32s(sint32s);
@@ -710,7 +710,7 @@ TEST(CodegenMessage, ReadStringCallback) {
   // set to read the value if present.
   Pigweed::Message message{};
   message.description.SetDecoder([](Pigweed::StreamDecoder& decoder) {
-    EXPECT_EQ(decoder.Field().value(), Pigweed::Fields::DESCRIPTION);
+    EXPECT_EQ(decoder.Field().value(), Pigweed::Fields::kDescription);
 
     constexpr std::string_view kExpectedDescription{
         "an open source collection of embedded-targeted libraries-or as we "
@@ -785,7 +785,7 @@ TEST(CodegenMessage, ReadRepeatedStrings) {
   RepeatedTest::Message message{};
   int i = 0;
   message.strings.SetDecoder([&i](RepeatedTest::StreamDecoder& decoder) {
-    EXPECT_EQ(decoder.Field().value(), RepeatedTest::Fields::STRINGS);
+    EXPECT_EQ(decoder.Field().value(), RepeatedTest::Fields::kStrings);
 
     constexpr std::string_view kExpectedStrings[] = {
         {"if music be the food of love, play on"},
@@ -824,7 +824,7 @@ TEST(CodegenMessage, ReadForcedCallback) {
   // callback even though it's a simple scalar.
   Pigweed::Message message{};
   message.special_property.SetDecoder([](Pigweed::StreamDecoder& decoder) {
-    EXPECT_EQ(decoder.Field().value(), Pigweed::Fields::SPECIAL_PROPERTY);
+    EXPECT_EQ(decoder.Field().value(), Pigweed::Fields::kSpecialProperty);
 
     pw::Result<uint32_t> result = decoder.ReadSpecialProperty();
     EXPECT_EQ(result.status(), OkStatus());
@@ -1016,7 +1016,7 @@ TEST(CodegenMessage, ReadNestedRepeated) {
   RepeatedTest::Message message{};
   int i = 0;
   message.structs.SetDecoder([&i](RepeatedTest::StreamDecoder& decoder) {
-    EXPECT_EQ(decoder.Field().value(), RepeatedTest::Fields::STRUCTS);
+    EXPECT_EQ(decoder.Field().value(), RepeatedTest::Fields::kStructs);
 
     Struct::Message structs_message{};
     auto structs_decoder = decoder.GetStructsDecoder();
@@ -1055,7 +1055,7 @@ TEST(CodegenMessage, ReadNestedForcedCallback) {
   // pigweed.device_info has use_callback=true to force the use of a callback.
   Pigweed::Message message{};
   message.device_info.SetDecoder([](Pigweed::StreamDecoder& decoder) {
-    EXPECT_EQ(decoder.Field().value(), Pigweed::Fields::DEVICE_INFO);
+    EXPECT_EQ(decoder.Field().value(), Pigweed::Fields::kDeviceInfo);
 
     DeviceInfo::Message device_info{};
     DeviceInfo::StreamDecoder device_info_decoder =
@@ -1900,7 +1900,7 @@ class StringChecker {
 
  private:
   Status CheckOne(RepeatedTest::StreamDecoder& decoder) {
-    EXPECT_EQ(decoder.Field().value(), RepeatedTest::Fields::STRINGS);
+    EXPECT_EQ(decoder.Field().value(), RepeatedTest::Fields::kStrings);
 
     std::array<char, 40> strings{};
     const StatusWithSize sws = decoder.ReadStrings(strings);
@@ -1962,7 +1962,7 @@ struct CustomMessage : RepeatedTest::Message {
 
  private:
   Status ParseStrings(RepeatedTest::StreamDecoder& decoder) {
-    PW_ASSERT(decoder.Field().value() == RepeatedTest::Fields::STRINGS);
+    PW_ASSERT(decoder.Field().value() == RepeatedTest::Fields::kStrings);
 
     std::array<char, 40> one_strings{};
     const auto sws = decoder.ReadStrings(one_strings);

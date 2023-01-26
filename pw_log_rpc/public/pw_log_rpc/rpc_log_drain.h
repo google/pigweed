@@ -66,13 +66,13 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
   // dropped field is not accounted since a dropped message has all other fields
   // unset.
   static constexpr size_t kMinEntrySizeWithoutPayload =
-      protobuf::SizeOfFieldBytes(log::pwpb::LogEntry::Fields::MESSAGE, 0) +
-      protobuf::SizeOfFieldUint32(log::pwpb::LogEntry::Fields::LINE_LEVEL) +
-      protobuf::SizeOfFieldUint32(log::pwpb::LogEntry::Fields::FLAGS) +
-      protobuf::SizeOfFieldInt64(log::pwpb::LogEntry::Fields::TIMESTAMP) +
-      protobuf::SizeOfFieldBytes(log::pwpb::LogEntry::Fields::MODULE, 0) +
-      protobuf::SizeOfFieldBytes(log::pwpb::LogEntry::Fields::FILE, 0) +
-      protobuf::SizeOfFieldBytes(log::pwpb::LogEntry::Fields::THREAD, 0);
+      protobuf::SizeOfFieldBytes(log::pwpb::LogEntry::Fields::kMessage, 0) +
+      protobuf::SizeOfFieldUint32(log::pwpb::LogEntry::Fields::kLineLevel) +
+      protobuf::SizeOfFieldUint32(log::pwpb::LogEntry::Fields::kFlags) +
+      protobuf::SizeOfFieldInt64(log::pwpb::LogEntry::Fields::kTimestamp) +
+      protobuf::SizeOfFieldBytes(log::pwpb::LogEntry::Fields::kModule, 0) +
+      protobuf::SizeOfFieldBytes(log::pwpb::LogEntry::Fields::kFile, 0) +
+      protobuf::SizeOfFieldBytes(log::pwpb::LogEntry::Fields::kThread, 0);
 
   // Error messages sent when logs are dropped.
   static constexpr std::string_view kIngressErrorMessage{
@@ -101,10 +101,10 @@ class RpcLogDrain : public multisink::MultiSink::Drain {
   // bytes added to the encoded LogEntry. This constant and kMinEntryBufferSize
   // can be used to calculate the minimum RPC ChannelOutput buffer size.
   static constexpr size_t kLogEntriesEncodeFrameSize =
-      protobuf::TagSizeBytes(log::pwpb::LogEntries::Fields::ENTRIES) +
+      protobuf::TagSizeBytes(log::pwpb::LogEntries::Fields::kEntries) +
       protobuf::kMaxSizeOfLength +
       protobuf::SizeOfFieldUint32(
-          log::pwpb::LogEntries::Fields::FIRST_ENTRY_SEQUENCE_ID);
+          log::pwpb::LogEntries::Fields::kFirstEntrySequenceId);
 
   // Creates a closed log stream with a writer that can be set at a later time.
   // The provided buffer must be large enough to hold the largest transmittable

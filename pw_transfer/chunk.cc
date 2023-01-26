@@ -33,16 +33,16 @@ Result<Chunk::Identifier> Chunk::ExtractIdentifier(ConstByteSpan message) {
     ProtoChunk::Fields field =
         static_cast<ProtoChunk::Fields>(decoder.FieldNumber());
 
-    if (field == ProtoChunk::Fields::TRANSFER_ID) {
+    if (field == ProtoChunk::Fields::kTransferId) {
       // Interpret a legacy transfer_id field as a session ID if an explicit
       // session_id field has not already been seen.
       if (session_id == 0) {
         PW_TRY(decoder.ReadUint32(&session_id));
       }
-    } else if (field == ProtoChunk::Fields::SESSION_ID) {
+    } else if (field == ProtoChunk::Fields::kSessionId) {
       // A session_id field always takes precedence over transfer_id.
       PW_TRY(decoder.ReadUint32(&session_id));
-    } else if (field == ProtoChunk::Fields::RESOURCE_ID) {
+    } else if (field == ProtoChunk::Fields::kResourceId) {
       PW_TRY(decoder.ReadUint32(&resource_id));
     }
   }
@@ -83,7 +83,7 @@ Result<Chunk> Chunk::Parse(ConstByteSpan message) {
         static_cast<ProtoChunk::Fields>(decoder.FieldNumber());
 
     switch (field) {
-      case ProtoChunk::Fields::TRANSFER_ID:
+      case ProtoChunk::Fields::kTransferId:
         // transfer_id is a legacy field. session_id will always take precedence
         // over it, so it should only be read if session_id has not yet been
         // encountered.
@@ -92,7 +92,7 @@ Result<Chunk> Chunk::Parse(ConstByteSpan message) {
         }
         break;
 
-      case ProtoChunk::Fields::SESSION_ID:
+      case ProtoChunk::Fields::kSessionId:
         // The existence of a session_id field indicates that a newer protocol
         // is running. Update the deduced protocol unless it was explicitly
         // specified.
@@ -103,57 +103,57 @@ Result<Chunk> Chunk::Parse(ConstByteSpan message) {
         PW_TRY(decoder.ReadUint32(&chunk.session_id_));
         break;
 
-      case ProtoChunk::Fields::PENDING_BYTES:
+      case ProtoChunk::Fields::kPendingBytes:
         PW_TRY(decoder.ReadUint32(&pending_bytes));
         break;
 
-      case ProtoChunk::Fields::MAX_CHUNK_SIZE_BYTES:
+      case ProtoChunk::Fields::kMaxChunkSizeBytes:
         PW_TRY(decoder.ReadUint32(&value));
         chunk.set_max_chunk_size_bytes(value);
         break;
 
-      case ProtoChunk::Fields::MIN_DELAY_MICROSECONDS:
+      case ProtoChunk::Fields::kMinDelayMicroseconds:
         PW_TRY(decoder.ReadUint32(&value));
         chunk.set_min_delay_microseconds(value);
         break;
 
-      case ProtoChunk::Fields::OFFSET:
+      case ProtoChunk::Fields::kOffset:
         PW_TRY(decoder.ReadUint32(&chunk.offset_));
         break;
 
-      case ProtoChunk::Fields::DATA:
+      case ProtoChunk::Fields::kData:
         PW_TRY(decoder.ReadBytes(&chunk.payload_));
         break;
 
-      case ProtoChunk::Fields::REMAINING_BYTES: {
+      case ProtoChunk::Fields::kRemainingBytes: {
         uint64_t remaining_bytes;
         PW_TRY(decoder.ReadUint64(&remaining_bytes));
         chunk.set_remaining_bytes(remaining_bytes);
         break;
       }
 
-      case ProtoChunk::Fields::STATUS:
+      case ProtoChunk::Fields::kStatus:
         PW_TRY(decoder.ReadUint32(&value));
         chunk.set_status(static_cast<Status::Code>(value));
         break;
 
-      case ProtoChunk::Fields::WINDOW_END_OFFSET:
+      case ProtoChunk::Fields::kWindowEndOffset:
         PW_TRY(decoder.ReadUint32(&chunk.window_end_offset_));
         break;
 
-      case ProtoChunk::Fields::TYPE: {
+      case ProtoChunk::Fields::kType: {
         uint32_t type;
         PW_TRY(decoder.ReadUint32(&type));
         chunk.type_ = static_cast<Chunk::Type>(type);
         break;
       }
 
-      case ProtoChunk::Fields::RESOURCE_ID:
+      case ProtoChunk::Fields::kResourceId:
         PW_TRY(decoder.ReadUint32(&value));
         chunk.set_resource_id(value);
         break;
 
-      case ProtoChunk::Fields::PROTOCOL_VERSION:
+      case ProtoChunk::Fields::kProtocolVersion:
         // The protocol_version field is added as part of the initial handshake
         // starting from version 2. If provided, it should override any deduced
         // protocol version.
@@ -271,16 +271,16 @@ size_t Chunk::EncodedSize() const {
 
   if (session_id_ != 0) {
     if (protocol_version_ >= ProtocolVersion::kVersionTwo) {
-      size += protobuf::SizeOfVarintField(ProtoChunk::Fields::SESSION_ID,
+      size += protobuf::SizeOfVarintField(ProtoChunk::Fields::kSessionId,
                                           session_id_);
     }
 
     if (ShouldEncodeLegacyFields()) {
       if (resource_id_.has_value()) {
-        size += protobuf::SizeOfVarintField(ProtoChunk::Fields::TRANSFER_ID,
+        size += protobuf::SizeOfVarintField(ProtoChunk::Fields::kTransferId,
                                             resource_id_.value());
       } else {
-        size += protobuf::SizeOfVarintField(ProtoChunk::Fields::TRANSFER_ID,
+        size += protobuf::SizeOfVarintField(ProtoChunk::Fields::kTransferId,
                                             session_id_);
       }
     }
@@ -288,60 +288,59 @@ size_t Chunk::EncodedSize() const {
 
   if (IsInitialHandshakeChunk()) {
     size +=
-        protobuf::SizeOfVarintField(ProtoChunk::Fields::PROTOCOL_VERSION,
+        protobuf::SizeOfVarintField(ProtoChunk::Fields::kProtocolVersion,
                                     static_cast<uint32_t>(protocol_version_));
   }
 
   if (protocol_version_ >= ProtocolVersion::kVersionTwo) {
     if (resource_id_.has_value()) {
-      size += protobuf::SizeOfVarintField(ProtoChunk::Fields::RESOURCE_ID,
+      size += protobuf::SizeOfVarintField(ProtoChunk::Fields::kResourceId,
                                           resource_id_.value());
     }
   }
 
   if (offset_ != 0) {
-    size += protobuf::SizeOfVarintField(ProtoChunk::Fields::OFFSET, offset_);
+    size += protobuf::SizeOfVarintField(ProtoChunk::Fields::kOffset, offset_);
   }
 
   if (window_end_offset_ != 0) {
-    size += protobuf::SizeOfVarintField(ProtoChunk::Fields::WINDOW_END_OFFSET,
+    size += protobuf::SizeOfVarintField(ProtoChunk::Fields::kWindowEndOffset,
                                         window_end_offset_);
 
     if (ShouldEncodeLegacyFields()) {
-      size += protobuf::SizeOfVarintField(ProtoChunk::Fields::PENDING_BYTES,
+      size += protobuf::SizeOfVarintField(ProtoChunk::Fields::kPendingBytes,
                                           window_end_offset_ - offset_);
     }
   }
 
   if (type_.has_value()) {
-    size += protobuf::SizeOfVarintField(ProtoChunk::Fields::TYPE,
+    size += protobuf::SizeOfVarintField(ProtoChunk::Fields::kType,
                                         static_cast<uint32_t>(type_.value()));
   }
 
   if (has_payload()) {
-    size += protobuf::SizeOfDelimitedField(ProtoChunk::Fields::DATA,
+    size += protobuf::SizeOfDelimitedField(ProtoChunk::Fields::kData,
                                            payload_.size());
   }
 
   if (max_chunk_size_bytes_.has_value()) {
-    size +=
-        protobuf::SizeOfVarintField(ProtoChunk::Fields::MAX_CHUNK_SIZE_BYTES,
-                                    max_chunk_size_bytes_.value());
+    size += protobuf::SizeOfVarintField(ProtoChunk::Fields::kMaxChunkSizeBytes,
+                                        max_chunk_size_bytes_.value());
   }
 
   if (min_delay_microseconds_.has_value()) {
     size +=
-        protobuf::SizeOfVarintField(ProtoChunk::Fields::MIN_DELAY_MICROSECONDS,
+        protobuf::SizeOfVarintField(ProtoChunk::Fields::kMinDelayMicroseconds,
                                     min_delay_microseconds_.value());
   }
 
   if (remaining_bytes_.has_value()) {
-    size += protobuf::SizeOfVarintField(ProtoChunk::Fields::REMAINING_BYTES,
+    size += protobuf::SizeOfVarintField(ProtoChunk::Fields::kRemainingBytes,
                                         remaining_bytes_.value());
   }
 
   if (status_.has_value()) {
-    size += protobuf::SizeOfVarintField(ProtoChunk::Fields::STATUS,
+    size += protobuf::SizeOfVarintField(ProtoChunk::Fields::kStatus,
                                         status_.value().code());
   }
 

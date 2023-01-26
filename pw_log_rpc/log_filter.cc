@@ -72,11 +72,11 @@ Status Filter::UpdateRulesFromProto(ConstByteSpan buffer) {
     protobuf::Decoder rule_decoder(rule_buffer);
     while ((status = rule_decoder.Next()).ok()) {
       switch (static_cast<FilterRule::Fields>(rule_decoder.FieldNumber())) {
-        case FilterRule::Fields::LEVEL_GREATER_THAN_OR_EQUAL:
+        case FilterRule::Fields::kLevelGreaterThanOrEqual:
           PW_TRY(rule_decoder.ReadUint32(reinterpret_cast<uint32_t*>(
               &rules_[i].level_greater_than_or_equal)));
           break;
-        case FilterRule::Fields::MODULE_EQUALS: {
+        case FilterRule::Fields::kModuleEquals: {
           ConstByteSpan module;
           PW_TRY(rule_decoder.ReadBytes(&module));
           if (module.size() > rules_[i].module_equals.max_size()) {
@@ -84,14 +84,14 @@ Status Filter::UpdateRulesFromProto(ConstByteSpan buffer) {
           }
           rules_[i].module_equals.assign(module.begin(), module.end());
         } break;
-        case FilterRule::Fields::ANY_FLAGS_SET:
+        case FilterRule::Fields::kAnyFlagsSet:
           PW_TRY(rule_decoder.ReadUint32(&rules_[i].any_flags_set));
           break;
-        case FilterRule::Fields::ACTION:
+        case FilterRule::Fields::kAction:
           PW_TRY(rule_decoder.ReadUint32(
               reinterpret_cast<uint32_t*>(&rules_[i].action)));
           break;
-        case FilterRule::Fields::THREAD_EQUALS: {
+        case FilterRule::Fields::kThreadEquals: {
           ConstByteSpan thread;
           PW_TRY(rule_decoder.ReadBytes(&thread));
           if (thread.size() > rules_[i].thread_equals.max_size()) {
@@ -118,18 +118,18 @@ bool Filter::ShouldDropLog(ConstByteSpan entry) const {
   while (decoder.Next().ok()) {
     const auto field_num = static_cast<LogEntry::Fields>(decoder.FieldNumber());
 
-    if (field_num == LogEntry::Fields::LINE_LEVEL) {
+    if (field_num == LogEntry::Fields::kLineLevel) {
       if (decoder.ReadUint32(&log_level).ok()) {
         log_level &= PW_LOG_LEVEL_BITMASK;
       }
 
-    } else if (field_num == LogEntry::Fields::MODULE) {
+    } else if (field_num == LogEntry::Fields::kModule) {
       decoder.ReadBytes(&log_module).IgnoreError();
 
-    } else if (field_num == LogEntry::Fields::FLAGS) {
+    } else if (field_num == LogEntry::Fields::kFlags) {
       decoder.ReadUint32(&log_flags).IgnoreError();
 
-    } else if (field_num == LogEntry::Fields::THREAD) {
+    } else if (field_num == LogEntry::Fields::kThread) {
       decoder.ReadBytes(&log_thread).IgnoreError();
     }
   }

@@ -153,11 +153,7 @@ message Overlay {
 // Ensure that reserved words are suffixed with underscores.
 message IntegerMetadata {
   int32 bits = 1;
-  // `signed` should become `signed_` in the C++ code.
   bool signed = 2;
-  // The field name `null` shouldn't be modified in the C++ code, but the enum
-  // value used for internally referring to the field should be generated as
-  // `IntegerMetadata::Fields::NULL_` to avoid conflicting with `NULL`.
   bool null = 3;
 }
 
