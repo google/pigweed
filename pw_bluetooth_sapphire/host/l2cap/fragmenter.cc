@@ -144,8 +144,9 @@ PDU Fragmenter::BuildFrame(ChannelId channel_id, const ByteBuffer& data,
                                : hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable));
 
     // TODO(armansito): allow passing Active Peripheral Broadcast flag when we support it.
-    auto acl_packet = hci::ACLDataPacket::New(
-        connection_handle_, pbf, hci_spec::ACLBroadcastFlag::kPointToPoint, fragment_size);
+    auto acl_packet =
+        hci::ACLDataPacket::New(connection_handle_, pbf, hci_spec::ACLBroadcastFlag::kPointToPoint,
+                                static_cast<uint16_t>(fragment_size));
     BT_DEBUG_ASSERT(acl_packet);
 
     frame.WriteToFragment(acl_packet->mutable_view()->mutable_payload_data(), processed);

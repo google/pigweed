@@ -208,7 +208,7 @@ DynamicByteBuffer ChannelConfiguration::UnknownOption::Encode() const {
   DynamicByteBuffer buffer(size());
   MutablePacketView<ConfigurationOption> option(&buffer, payload_.size());
   option.mutable_header()->type = type_;
-  option.mutable_header()->length = payload_.size();
+  option.mutable_header()->length = static_cast<uint8_t>(payload_.size());
 
   // Raw data is already in little endian
   option.mutable_payload_data().Write(payload_);

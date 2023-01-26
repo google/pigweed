@@ -12,7 +12,7 @@ class RemainderTable {
  public:
   constexpr RemainderTable() {
     for (unsigned i = 0; i < sizeof(remainders_) / sizeof(remainders_[0]); i++) {
-      remainders_[i] = ComputeRemainderForOctet(i);
+      remainders_[i] = ComputeRemainderForOctet(static_cast<uint8_t>(i));
     }
   }
 
@@ -67,7 +67,7 @@ FrameCheckSequence ComputeFcs(BufferView view, FrameCheckSequence initial_value)
   // Each iteration operates the LFSR for eight cycles, shifting in an octet of message.
   for (const uint8_t byte : view) {
     // Add the remainder to the next eight bits of message.
-    const uint8_t dividend = byte ^ remainder;
+    const uint8_t dividend = static_cast<uint8_t>(byte ^ remainder);
 
     // Because only the least significant eight bits are fed back into the LFSR, the other bits can
     // be shifted within the accumulation register without modification.

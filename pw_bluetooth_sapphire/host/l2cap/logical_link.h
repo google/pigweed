@@ -57,7 +57,7 @@ class LogicalLink final {
   // If |random_channel_ids| is true, assign dynamic channels randomly instead of
   // starting at the beginning of the dynamic channel range.
   LogicalLink(hci_spec::ConnectionHandle handle, bt::LinkType type,
-              pw::bluetooth::emboss::ConnectionRole role, size_t max_payload_size,
+              pw::bluetooth::emboss::ConnectionRole role, uint16_t max_payload_size,
               QueryServiceCallback query_service_cb, hci::AclDataChannel* acl_data_channel,
               hci::CommandChannel* cmd_channel, bool random_channel_ids);
 

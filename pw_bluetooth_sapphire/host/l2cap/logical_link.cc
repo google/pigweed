@@ -56,7 +56,7 @@ constexpr bool IsValidBREDRFixedChannel(ChannelId id) {
 }  // namespace
 
 LogicalLink::LogicalLink(hci_spec::ConnectionHandle handle, bt::LinkType type,
-                         pw::bluetooth::emboss::ConnectionRole role, size_t max_acl_payload_size,
+                         pw::bluetooth::emboss::ConnectionRole role, uint16_t max_acl_payload_size,
                          QueryServiceCallback query_service_cb,
                          hci::AclDataChannel* acl_data_channel, hci::CommandChannel* cmd_channel,
                          bool random_channel_ids)
@@ -340,7 +340,7 @@ void LogicalLink::SignalError() {
 
   bt_log(INFO, "l2cap", "Upper layer error on link %#.4x; closing all channels", handle());
 
-  uint16_t num_channels_closing = channels_.size();
+  size_t num_channels_closing = channels_.size();
 
   if (signaling_channel_) {
     BT_ASSERT(channels_.count(kSignalingChannelId) || channels_.count(kLESignalingChannelId));

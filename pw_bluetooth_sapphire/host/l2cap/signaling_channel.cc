@@ -62,7 +62,7 @@ bool SignalingChannel::SendRequest(CommandCode req_code, const ByteBuffer& paylo
 
   auto command_packet = BuildPacket(req_code, id, payload);
 
-  auto response_code = req_code + 1;
+  CommandCode response_code = req_code + 1;
   EnqueueResponse(*command_packet, id, response_code, std::move(cb));
 
   return Send(std::move(command_packet));

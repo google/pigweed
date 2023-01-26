@@ -77,11 +77,7 @@ static_library("l2cap") {
     "//sdk/lib/fit",
     "//src/connectivity/bluetooth/core/bt-host/hci",
     "//src/connectivity/bluetooth/core/bt-host/transport",
-    "//zircon/system/ulib/inspect",
   ]
-
-  # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings
-  configs += [ "//build/config:Wno-conversion" ]
 }
 
 # Separate from :testing to avoid a dependency cycle.
@@ -125,9 +121,6 @@ source_set("testing") {
     "//third_party/googletest:gtest",
     "//third_party/pigweed:pw_bluetooth",
   ]
-
-  # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings
-  configs += [ "//build/config:Wno-conversion" ]
 }
 
 source_set("tests") {
@@ -172,9 +165,6 @@ source_set("tests") {
     "//third_party/googletest:gmock",
     "//third_party/googletest:gtest",
   ]
-
-  # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings
-  configs += [ "//build/config:Wno-conversion" ]
 }
 
 bt_gtest_package("bt-host-l2cap-tests") {
@@ -236,7 +226,4 @@ fuchsia_library_fuzzer("l2cap_fuzzer") {
     "//src/connectivity/bluetooth/core/bt-host/testing:fuzztest_driver",
     "//third_party/pigweed:pw_random_fuzzer_generator",
   ]
-
-  # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings
-  configs += [ "//build/config:Wno-conversion" ]
 }

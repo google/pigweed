@@ -318,8 +318,8 @@ DynamicByteBuffer AclSFrame(hci_spec::ConnectionHandle link_handle, l2cap::Chann
 DynamicByteBuffer AclIFrame(hci_spec::ConnectionHandle link_handle, l2cap::ChannelId channel_id,
                             uint8_t receive_seq_num, uint8_t tx_seq, bool is_poll_response,
                             const ByteBuffer& payload) {
-  const uint16_t l2cap_size =
-      sizeof(internal::SimpleInformationFrameHeader) + payload.size() + sizeof(FrameCheckSequence);
+  const uint16_t l2cap_size = static_cast<uint16_t>(sizeof(internal::SimpleInformationFrameHeader) +
+                                                    payload.size() + sizeof(FrameCheckSequence));
   const uint16_t acl_size = l2cap_size + sizeof(BasicHeader);
   StaticByteBuffer headers(
       // ACL data header (handle: |link handle|, length)
