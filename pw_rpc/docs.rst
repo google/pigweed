@@ -1099,27 +1099,55 @@ RPC callbacks are free to perform most actions, including invoking new RPCs or
 cancelling pending calls. However, the C++ implementation imposes some
 limitations and restrictions that must be observed.
 
+Destructors & moves wait for callbacks to complete
+...................................................
 * Callbacks must not destroy their call object. Attempting to do so will result
-  in deadlock. Another thread may destroy a call while its callback is running,
-  but that thread will block until all callbacks complete.
-* The ``on_next`` callback has additional restrictions:
+  in deadlock.
+* Other threads may destroy a call while its callback is running, but that
+  thread will block until all callbacks complete.
+* Callbacks must not move their call object if it the call is still active. They
+  may move their call object after it has terminated. Callbacks may move a
+  different call into their call object, since moving closes the destination
+  call.
+* Other threads may move a call object while it has a callback running, but they
+  will block until the callback completes if the call is still active.
 
-  * The ``on_next`` callback must not move its call object if it the call is
-    still active. It may move its call object after it is terminated first with
-    ``Finish()`` or ``Cancel()``. The ``on_next`` callback may move a different
-    callback into its call object, since moving closes the destination call.
-  * Other threads may move a call object while its ``on_next`` callback is
-    running, but they will block until the callback completes.
-  * Only one thread may execute the ``on_next`` callback for a specific service
-    method at a time. If a second thread calls ``ProcessPacket()`` with a stream
-    packet before the ``on_next`` callback for the previous packet completes,
-    the second packet will be dropped. The RPC endpoint logs a warning when this
-    occurs.
+.. warning::
 
-.. important::
+ Deadlocks or crashes occur if a callback:
 
-  C++ RPC callbacks must respect the above `limitations and restrictions`_!
-  Otherwise, deadlocks may occur.
+ - attempts to destroy its call object
+ - attempts to move its call object while the call is still active
+ - never returns
+
+If ``pw_rpc`` a callback violates these restrictions, a crash may occur,
+depending on the value of :c:macro:`PW_RPC_CALLBACK_TIMEOUT_TICKS`. These
+crashes have a message like the following:
+
+.. code-block:: text
+
+  A callback for RPC 1:cc0f6de0/31e616ce has not finished after 10000 ticks.
+  This may indicate that an RPC callback attempted to destroy or move its own
+  call object, which is not permitted. Fix this condition or change the value of
+  PW_RPC_CALLBACK_TIMEOUT_TICKS to avoid this crash.
+
+  See https://pigweed.dev/pw_rpc#destructors-moves-wait-for-callbacks-to-complete
+  for details.
+
+Only one thread at a time may execute ``on_next``
+.................................................
+Only one thread may execute the ``on_next`` callback for a specific service
+method at a time. If a second thread calls ``ProcessPacket()`` with a stream
+packet before the ``on_next`` callback for the previous packet completes, the
+second packet will be dropped. The RPC endpoint logs a warning when this occurs.
+
+Example warning for a dropped stream packet:
+
+.. code-block:: text
+
+  WRN  Received stream packet for 1:cc0f6de0/31e616ce before the callback for
+       a previous packet completed! This packet will be dropped. This can be
+       avoided by handling packets for a particular RPC on only one thread.
 
 RPC calls introspection
 =======================
@@ -1547,6 +1575,24 @@ more details.
     A backend must be configured for pw_thread:yield. IMPORTANT: On some
     platforms, :cpp:func:`pw::this_thread::yield` does not yield to lower
     priority tasks and should not be used here.
+
+.. c:macro:: PW_RPC_CALLBACK_TIMEOUT_TICKS
+
+  pw_rpc call objects wait for their callbacks to complete before they are moved
+  or destoyed. Deadlocks occur if a callback:
+
+  - attempts to destroy its call object,
+  - attempts to move its call object while the call is still active, or
+  - never returns.
+
+  If ``PW_RPC_CALLBACK_TIMEOUT_TICKS`` is greater than 0, then ``PW_CRASH`` is
+  invoked if a thread waits for an RPC callback to complete for more than the
+  specified tick count.
+
+  A "tick" in this context is one iteration of a loop that yields releases the
+  RPC lock and yields the thread according to :c:macro:`PW_RPC_YIELD_MODE`. By
+  default, the thread yields with a 1-tick call to
+  :cpp:func:`pw::this_thread::sleep_for`.
 
 .. c:macro:: PW_RPC_DYNAMIC_ALLOCATION
 
