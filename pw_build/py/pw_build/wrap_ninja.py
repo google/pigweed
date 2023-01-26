@@ -19,7 +19,6 @@ import dataclasses
 import enum
 import json
 import os
-import pty
 import re
 import signal
 import subprocess
@@ -27,6 +26,9 @@ import sys
 import threading
 import time
 from typing import Any, Dict, IO, List, Tuple, Optional
+
+if sys.platform != 'win32':
+    import pty
 
 # The status formatting string for Ninja to use. Includes a sentinel prefix.
 _NINJA_STATUS = '@@!!@@%s,%f,%t>'
@@ -241,7 +243,8 @@ class Ninja:
         self.lock = threading.Lock()
 
         # Launch ninja and configure pseudo-tty.
-        ptty_parent, ptty_child = pty.openpty()  # pylint: disable=no-member
+        # pylint: disable-next=no-member,undefined-variable
+        ptty_parent, ptty_child = pty.openpty()  # type: ignore
         ptty_file = os.fdopen(ptty_parent, 'r')
         env = dict(os.environ)
         env['NINJA_STATUS'] = _NINJA_STATUS
