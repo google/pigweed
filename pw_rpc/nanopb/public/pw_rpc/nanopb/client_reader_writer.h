@@ -249,8 +249,17 @@ class NanopbClientReaderWriter
         &request);
   }
 
+  // Notifies the server that no further client stream messages will be sent.
+  using internal::ClientCall::CloseClientStream;
+
+  // Cancels this RPC. Closes the call locally and sends a CANCELLED error to
+  // the server.
   using internal::Call::Cancel;
-  using internal::Call::CloseClientStream;
+
+  // Closes this RPC locally. Sends a CLIENT_STREAM_END, but no cancellation
+  // packet. Future packets for this RPC are dropped, and the client sends a
+  // FAILED_PRECONDITION error in response because the call is not active.
+  using internal::ClientCall::Abandon;
 
   // Functions for setting RPC event callbacks.
   using internal::Call::set_on_error;
@@ -297,6 +306,7 @@ class NanopbClientReader
   using internal::StreamResponseClientCall::set_on_completed;
 
   using internal::Call::Cancel;
+  using internal::ClientCall::Abandon;
 
  private:
   friend class internal::NanopbStreamResponseClientCall<Response>;
@@ -342,6 +352,7 @@ class NanopbClientWriter
 
   using internal::Call::Cancel;
   using internal::Call::CloseClientStream;
+  using internal::ClientCall::Abandon;
 
  private:
   friend class internal::NanopbUnaryResponseClientCall<Response>;
@@ -381,6 +392,7 @@ class NanopbUnaryReceiver
   using internal::Call::set_on_error;
 
   using internal::Call::Cancel;
+  using internal::ClientCall::Abandon;
 
  private:
   friend class internal::NanopbUnaryResponseClientCall<Response>;

@@ -991,6 +991,74 @@ The public call types are as follows:
     - ``(Raw|Nanopb|Pwpb)ServerReaderWriter``
     - ``(Raw|Nanopb|Pwpb)ClientReaderWriter``
 
+Client call API
+---------------
+Client call objects provide a few common methods.
+
+.. cpp:class:: pw::rpc::ClientCallType
+
+  The ``ClientCallType`` will be one of the following types:
+
+  - ``(Raw|Nanopb|Pwpb)UnaryReceiver`` for unary
+  - ``(Raw|Nanopb|Pwpb)ClientReader`` for server streaming
+  - ``(Raw|Nanopb|Pwpb)ClientWriter`` for client streaming
+  - ``(Raw|Nanopb|Pwpb)ClientReaderWriter`` for bidirectional streaming
+
+  .. cpp:function:: bool active() const
+
+    Returns true if the call is active.
+
+  .. cpp:function:: uint32_t channel_id() const
+
+    Returns the channel ID of this call, which is 0 if the call is inactive.
+
+  .. cpp:function:: uint32_t id() const
+
+    Returns the call ID, a unique identifier for this call.
+
+  .. cpp:function:: void Write(RequestType)
+
+    Only available on client and bidirectional streaming calls. Sends a stream
+    request. Returns:
+
+    - ``OK`` - the request was successfully sent
+    - ``FAILED_PRECONDITION`` - the writer is closed
+    - ``INTERNAL`` - pw_rpc was unable to encode message; does not apply to raw
+      calls
+    - other errors - the :cpp:class:`ChannelOutput` failed to send the packet;
+      the error codes are determined by the :cpp:class:`ChannelOutput`
+      implementation
+
+  .. cpp:function:: pw::Status CloseClientStream()
+
+    Only available on client and bidirectional streaming calls. Notifies the
+    server that no further client stream messages will be sent.
+
+  .. cpp:function:: pw::Status Cancel()
+
+    Cancels this RPC. Closes the call and sends a ``CANCELLED`` error to the
+    server. Return statuses are the same as :cpp:func:`Write`.
+
+  .. cpp:function:: void Abandon()
+
+    Closes this RPC locally. Sends a ``CLIENT_STREAM_END``, but no cancellation
+    packet. Future packets for this RPC are dropped, and the client sends a
+    ``FAILED_PRECONDITION`` error in response because the call is not active.
+
+  .. cpp:function:: void set_on_completed(pw::Function<void(ResponseTypeIfUnaryOnly, pw::Status)>)
+
+    Sets the callback that is called when the RPC completes normally. The
+    signature depends on whether the call has a unary or stream response.
+
+  .. cpp:function:: void set_on_error(pw::Function<void(pw::Status)>)
+
+    Sets the callback that is called when the RPC is terminated due to an error.
+
+  .. cpp:function:: void set_on_next(pw::Function<void(ResponseType)>)
+
+    Only available on server and bidirectional streaming calls. Sets the callback
+    that is called for each stream response.
+
 Callbacks
 ---------
 The C++ call objects allow users to set callbacks that are invoked when RPC
