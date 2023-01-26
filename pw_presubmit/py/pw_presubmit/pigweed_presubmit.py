@@ -647,7 +647,7 @@ _GN_SOURCES_IN_BUILD = (
 SOURCE_FILES_FILTER = presubmit.FileFilter(
     endswith=_GN_SOURCES_IN_BUILD,
     suffix=('.bazel', '.bzl', '.gn', '.gni'),
-    exclude=(r'zephyr.*/', r'android.*/', r'^pyproject.toml'),
+    exclude=(r'zephyr.*/', r'android.*/', r'^(.black|pyproject).toml'),
 )
 
 

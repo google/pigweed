@@ -39,6 +39,7 @@ from typing import (
     NamedTuple,
     Optional,
     Pattern,
+    Sequence,
     TextIO,
     Tuple,
     Union,
@@ -283,22 +284,37 @@ def fix_py_format_yapf(ctx: _Context) -> Dict[Path, str]:
     return {}
 
 
-_BLACK_OPTS = (
-    '--skip-string-normalization',
-    '--line-length',
-    '80',
-    '--target-version',
-    'py310',
-    '--include',
-    r'\.pyi?$',
-)
+BLACK = 'black'
+
+
+def _enumerate_black_configs() -> Iterable[Path]:
+    if directory := os.environ.get('PW_PROJECT_ROOT'):
+        yield Path(directory, '.black.toml')
+        yield Path(directory, 'pyproject.toml')
+
+    if directory := os.environ.get('PW_ROOT'):
+        yield Path(directory, '.black.toml')
+        yield Path(directory, 'pyproject.toml')
+
+
+def _black_config_args() -> Sequence[Union[str, Path]]:
+    config = None
+    for config_location in _enumerate_black_configs():
+        if config_location.is_file():
+            config = config_location
+            break
+
+    config_args: Sequence[Union[str, Path]] = ()
+    if config:
+        config_args = ('--config', config)
+    return config_args
 
 
 def _black_multiple_files(ctx: _Context) -> Tuple[str, ...]:
     changed_paths: List[str] = []
     for line in (
         log_run(
-            ['black', '--check', *_BLACK_OPTS, *ctx.paths],
+            [BLACK, '--check', *_black_config_args(), *ctx.paths],
             capture_output=True,
         )
         .stderr.decode()
@@ -325,7 +341,10 @@ def check_py_format_black(ctx: _Context) -> Dict[Path, str]:
             build = Path(temp) / os.path.basename(path)
             build.write_bytes(data)
 
-            proc = log_run(['black', *_BLACK_OPTS, build], capture_output=True)
+            proc = log_run(
+                [BLACK, *_black_config_args(), build],
+                capture_output=True,
+            )
             if proc.returncode:
                 stderr = proc.stderr.decode(errors='replace')
                 stderr = stderr.replace(str(build), str(path))
@@ -352,7 +371,10 @@ def fix_py_format_black(ctx: _Context) -> Dict[Path, str]:
         if not str(path).endswith(paths):
             continue
 
-        proc = log_run(['black', *_BLACK_OPTS, path], capture_output=True)
+        proc = log_run(
+            [BLACK, *_black_config_args(), path],
+            capture_output=True,
+        )
         if proc.returncode:
             errors[path] = proc.stderr.decode()
     return errors

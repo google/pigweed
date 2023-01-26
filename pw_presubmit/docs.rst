@@ -171,7 +171,7 @@ Formatting checks for a variety of languages are available from
 ``pw_presubmit.format_code``. These include C/C++, Java, Go, Python, GN, and
 others. All of these checks can be included by adding
 ``pw_presubmit.format_code.presubmit_checks()`` to a presubmit program. These
-all use language-specific formatters like clang-format or yapf.
+all use language-specific formatters like clang-format or black.
 
 These will suggest fixes using ``pw format --fix``.
 
