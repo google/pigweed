@@ -224,7 +224,6 @@ TEST_F(TransferThreadTest, StartTransferExhausted_Server) {
       3,
       10);
   transfer_thread_.WaitUntilEventIsProcessed();
-  transfer_thread_.WaitUntilEventIsProcessed();
 
   // First transfer starts correctly.
   EXPECT_TRUE(handler3.prepare_read_called);
