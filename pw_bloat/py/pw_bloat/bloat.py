@@ -28,7 +28,7 @@ from typing import Iterable, Optional
 import pw_cli.log
 
 from pw_bloat.bloaty_config import generate_bloaty_config
-from pw_bloat.label import DataSourceMap
+from pw_bloat.label import DataSourceMap, Label
 from pw_bloat.label_output import (
     BloatTableOutput,
     LineCharset,
@@ -39,6 +39,7 @@ from pw_bloat.label_output import (
 _LOG = logging.getLogger(__name__)
 
 MAX_COL_WIDTH = 50
+BINARY_SIZES_EXTENSION = '.binary_sizes.json'
 
 
 def parse_args() -> argparse.Namespace:
@@ -165,6 +166,22 @@ def write_file(filename: str, contents: str, out_dir_file: str) -> None:
     _LOG.debug('Output written to %s', path)
 
 
+def create_binary_sizes_json(binary_name: str, labels: Iterable[Label]) -> str:
+    """Creates a binary_sizes.json file content from a list of labels.
+
+    Args:
+      binary_name: the single binary name to attribute segment sizes to.
+      labels: the label.Label content to include
+
+    Returns:
+      a string of content to write to binary_sizes.json file.
+    """
+    json_content = {
+        f'{binary_name} {label.name}': label.size for label in labels
+    }
+    return json.dumps(json_content, sort_keys=True, indent=2)
+
+
 def single_target_output(
     target: str,
     bloaty_config: str,
@@ -192,8 +209,9 @@ def single_target_output(
         DataSourceMap.from_bloaty_tsv(single_tsv), MAX_COL_WIDTH, LineCharset
     )
 
+    data_source_map = DataSourceMap.from_bloaty_tsv(single_tsv)
     rst_single_report = BloatTableOutput(
-        DataSourceMap.from_bloaty_tsv(single_tsv),
+        data_source_map,
         MAX_COL_WIDTH,
         AsciiCharset,
         True,
@@ -201,9 +219,19 @@ def single_target_output(
 
     single_report_table = single_report.create_table()
 
+    # Generates contents for top level summary for binary_sizes.json
+    binary_json_content = create_binary_sizes_json(
+        target, data_source_map.labels(ds_index=0)
+    )
+
     print(single_report_table)
     write_file(target_out_file, rst_single_report.create_table(), out_dir)
     write_file(f'{target_out_file}.txt', single_report_table, out_dir)
+    write_file(
+        f'{target_out_file}{BINARY_SIZES_EXTENSION}',
+        binary_json_content,
+        out_dir,
+    )
 
     return 0
 

@@ -118,6 +118,7 @@ template("pw_size_report") {
     ]
 
     _doc_rst_output = "$target_gen_dir/${target_name}"
+    _binary_sizes_output = "$target_gen_dir/${target_name}.binary_sizes.json"
 
     if (host_os == "win") {
       # Bloaty is not yet packaged for Windows systems; display a message
@@ -153,6 +154,7 @@ template("pw_size_report") {
         ]
         outputs = [
           "${_doc_rst_output}.txt",
+          _binary_sizes_output,
           _doc_rst_output,
         ]
         deps = _all_target_dependencies + [ ":${target_name}.evaluate" ]
