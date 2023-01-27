@@ -248,6 +248,8 @@ class Ninja:
         ptty_file = os.fdopen(ptty_parent, 'r')
         env = dict(os.environ)
         env['NINJA_STATUS'] = _NINJA_STATUS
+        if 'TERM' not in env:
+            env['TERM'] = 'vt100'
         command = ['ninja'] + args
         self.process = subprocess.Popen(
             command,
