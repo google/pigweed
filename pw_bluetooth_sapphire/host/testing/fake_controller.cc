@@ -1080,10 +1080,10 @@ void FakeController::OnWriteExtendedInquiryResponse(
 }
 
 void FakeController::OnWriteSimplePairingMode(
-    const hci_spec::WriteSimplePairingModeCommandParams& params) {
+    const pw::bluetooth::emboss::WriteSimplePairingModeCommandView& params) {
   // "A host shall not set the Simple Pairing Mode to 'disabled'"
   // Spec 5.0 Vol 2 Part E Sec 7.3.59
-  if (params.simple_pairing_mode != pw::bluetooth::emboss::GenericEnableParam::ENABLE) {
+  if (params.simple_pairing_mode().Read() != pw::bluetooth::emboss::GenericEnableParam::ENABLE) {
     RespondWithCommandComplete(hci_spec::kWriteSimplePairingMode,
                                pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
@@ -2927,11 +2927,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnReadSimplePairingMode();
       break;
     }
-    case hci_spec::kWriteSimplePairingMode: {
-      const auto& params = command_packet.payload<hci_spec::WriteSimplePairingModeCommandParams>();
-      OnWriteSimplePairingMode(params);
-      break;
-    }
     case hci_spec::kWriteExtendedInquiryResponse: {
       const auto& params = command_packet.payload<hci_spec::WriteExtendedInquiryResponseParams>();
       OnWriteExtendedInquiryResponse(params);
@@ -3037,7 +3032,8 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kWritePageScanActivity:
     case hci_spec::kUserConfirmationRequestReply:
     case hci_spec::kUserConfirmationRequestNegativeReply:
-    case hci_spec::kWriteSynchronousFlowControlEnable: {
+    case hci_spec::kWriteSynchronousFlowControlEnable:
+    case hci_spec::kWriteSimplePairingMode: {
       // This case is for packet types that have been migrated to the new Emboss architecture. Their
       // old version can be still be assembled from the HciEmulator channel, so here we repackage
       // and forward them as Emboss packets.
@@ -3195,6 +3191,12 @@ void FakeController::HandleReceivedCommandPacket(const hci::EmbossCommandPacket&
           command_packet
               .view<pw::bluetooth::emboss::WriteSynchronousFlowControlEnableCommandView>();
       OnWriteSynchronousFlowControlEnableCommand(params);
+      break;
+    }
+    case hci_spec::kWriteSimplePairingMode: {
+      const auto& params =
+          command_packet.view<pw::bluetooth::emboss::WriteSimplePairingModeCommandView>();
+      OnWriteSimplePairingMode(params);
       break;
     }
     default: {

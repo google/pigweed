@@ -527,11 +527,6 @@ struct ReadSimplePairingModeReturnParams {
 // Write Simple Pairing Mode (v2.1 + EDR) (BR/EDR)
 constexpr OpCode kWriteSimplePairingMode = ControllerAndBasebandOpCode(0x0056);
 
-struct WriteSimplePairingModeCommandParams {
-  // Simple Pairing Mode.
-  GenericEnableParam simple_pairing_mode;
-} __PACKED;
-
 // =========================================
 // Set Event Mask Page 2 Command (v3.0 + HS)
 constexpr OpCode kSetEventMaskPage2 = ControllerAndBasebandOpCode(0x0063);

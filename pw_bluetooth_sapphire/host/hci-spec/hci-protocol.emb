@@ -835,6 +835,14 @@ struct WriteInquiryScanTypeCommand:
     -- See enum class InquiryScanType in this file for possible values
 
 
+struct WriteSimplePairingModeCommand:
+  -- Write Simple Pairing Mode (v2.1 + EDR) (BR/EDR)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader        header
+
+  $next [+1]         GenericEnableParam   simple_pairing_mode
+
+
 # ========================= HCI Event packets ===========================
 # Core Spec v5.3 Vol 4, Part E, Section 7.7
 

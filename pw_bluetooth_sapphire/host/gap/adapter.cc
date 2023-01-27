@@ -827,11 +827,12 @@ void AdapterImpl::InitializeStep2() {
 
   if (state_.features.HasBit(0u, hci_spec::LMPFeature::kSecureSimplePairing)) {
     // HCI_Write_Simple_Pairing_Mode
-    auto write_ssp = hci::CommandPacket::New(hci_spec::kWriteSimplePairingMode,
-                                             sizeof(hci_spec::WriteSimplePairingModeCommandParams));
-    write_ssp->mutable_payload<hci_spec::WriteSimplePairingModeCommandParams>()
-        ->simple_pairing_mode = pw::bluetooth::emboss::GenericEnableParam::ENABLE;
-    init_seq_runner_->QueueCommand(std::move(write_ssp), [](const auto& event) {
+    auto write_spm =
+        hci::EmbossCommandPacket::New<pw::bluetooth::emboss::WriteSimplePairingModeCommandWriter>(
+            hci_spec::kWriteSimplePairingMode);
+    auto write_ssp_params = write_spm.view_t();
+    write_ssp_params.simple_pairing_mode().Write(pw::bluetooth::emboss::GenericEnableParam::ENABLE);
+    init_seq_runner_->QueueCommand(std::move(write_spm), [](const auto& event) {
       // Warn if the command failed
       hci_is_error(event, WARN, "gap", "write simple pairing mode failed");
     });

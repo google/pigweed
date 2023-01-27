@@ -524,7 +524,8 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   void OnWriteExtendedInquiryResponse(const hci_spec::WriteExtendedInquiryResponseParams& params);
 
   // Called when a HCI_Write_Simple_PairingMode command is received.
-  void OnWriteSimplePairingMode(const hci_spec::WriteSimplePairingModeCommandParams& params);
+  void OnWriteSimplePairingMode(
+      const pw::bluetooth::emboss::WriteSimplePairingModeCommandView& params);
 
   // Called when a HCI_Read_Simple_Pairing_Mode command is received.
   void OnReadSimplePairingMode();
