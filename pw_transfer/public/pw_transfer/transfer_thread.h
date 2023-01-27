@@ -114,20 +114,23 @@ class TransferThread : public thread::ThreadCore {
         EventType::kServerEndTransfer, session_id, status, send_status_chunk);
   }
 
+  // Move the read/write streams on this thread instead of the transfer thread.
+  // RPC call objects are synchronized by pw_rpc, so this move will be atomic
+  // with respect to the transfer thread.
   void SetClientReadStream(rpc::RawClientReaderWriter& read_stream) {
-    SetClientStream(TransferStream::kClientRead, read_stream);
+    client_read_stream_ = std::move(read_stream);
   }
 
   void SetClientWriteStream(rpc::RawClientReaderWriter& write_stream) {
-    SetClientStream(TransferStream::kClientWrite, write_stream);
+    client_write_stream_ = std::move(write_stream);
   }
 
   void SetServerReadStream(rpc::RawServerReaderWriter& read_stream) {
-    SetServerStream(TransferStream::kServerRead, read_stream);
+    server_read_stream_ = std::move(read_stream);
   }
 
   void SetServerWriteStream(rpc::RawServerReaderWriter& write_stream) {
-    SetServerStream(TransferStream::kServerWrite, write_stream);
+    server_write_stream_ = std::move(write_stream);
   }
 
   void AddTransferHandler(Handler& handler) {
@@ -260,9 +263,6 @@ class TransferThread : public thread::ThreadCore {
                    Status status,
                    bool send_status_chunk);
 
-  void SetClientStream(TransferStream type, rpc::RawClientReaderWriter& stream);
-  void SetServerStream(TransferStream type, rpc::RawServerReaderWriter& stream);
-
   void TransferHandlerEvent(EventType type, Handler& handler);
 
   void HandleEvent(const Event& event);
@@ -275,8 +275,6 @@ class TransferThread : public thread::ThreadCore {
 
   Event next_event_;
   Function<void(Status)> staged_on_completion_;
-  rpc::RawClientReaderWriter staged_client_stream_;
-  rpc::RawServerReaderWriter staged_server_stream_;
 
   rpc::RawClientReaderWriter client_read_stream_;
   rpc::RawClientReaderWriter client_write_stream_;

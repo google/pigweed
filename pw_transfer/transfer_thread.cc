@@ -221,30 +221,6 @@ void TransferThread::EndTransfer(EventType type,
   event_notification_.release();
 }
 
-void TransferThread::SetClientStream(TransferStream type,
-                                     rpc::RawClientReaderWriter& stream) {
-  // Block until the last event has been processed.
-  next_event_ownership_.acquire();
-
-  next_event_.type = EventType::kSetTransferStream;
-  next_event_.set_transfer_stream = type;
-  staged_client_stream_ = std::move(stream);
-
-  event_notification_.release();
-}
-
-void TransferThread::SetServerStream(TransferStream type,
-                                     rpc::RawServerReaderWriter& stream) {
-  // Block until the last event has been processed.
-  next_event_ownership_.acquire();
-
-  next_event_.type = EventType::kSetTransferStream;
-  next_event_.set_transfer_stream = type;
-  staged_server_stream_ = std::move(stream);
-
-  event_notification_.release();
-}
-
 void TransferThread::TransferHandlerEvent(EventType type, Handler& handler) {
   // Block until the last event has been processed.
   next_event_ownership_.acquire();
@@ -298,26 +274,6 @@ void TransferThread::HandleEvent(const internal::Event& event) {
     case EventType::kSendStatusChunk:
       SendStatusChunk(event.send_status_chunk);
       break;
-
-    case EventType::kSetTransferStream:
-      switch (event.set_transfer_stream) {
-        case TransferStream::kClientRead:
-          client_read_stream_ = std::move(staged_client_stream_);
-          break;
-
-        case TransferStream::kClientWrite:
-          client_write_stream_ = std::move(staged_client_stream_);
-          break;
-
-        case TransferStream::kServerRead:
-          server_read_stream_ = std::move(staged_server_stream_);
-          break;
-
-        case TransferStream::kServerWrite:
-          server_write_stream_ = std::move(staged_server_stream_);
-          break;
-      }
-      return;
 
     case EventType::kAddTransferHandler:
       handlers_.push_front(*event.add_transfer_handler);
@@ -423,7 +379,6 @@ Context* TransferThread::FindContextForEvent(
                                           event.end_transfer.session_id);
 
     case EventType::kSendStatusChunk:
-    case EventType::kSetTransferStream:
     case EventType::kAddTransferHandler:
     case EventType::kRemoveTransferHandler:
     case EventType::kTerminate:

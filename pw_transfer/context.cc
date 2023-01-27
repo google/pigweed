@@ -75,7 +75,6 @@ void Context::HandleEvent(const Event& event) {
       return;
 
     case EventType::kSendStatusChunk:
-    case EventType::kSetTransferStream:
     case EventType::kAddTransferHandler:
     case EventType::kRemoveTransferHandler:
     case EventType::kTerminate:

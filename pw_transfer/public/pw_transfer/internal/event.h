@@ -55,9 +55,6 @@ enum class EventType {
   // transfer context's completion handler; it is for out-of-band termination.
   kSendStatusChunk,
 
-  // Updates one of the transfer thread's RPC streams.
-  kSetTransferStream,
-
   // Manages the list of transfer handlers for a transfer service.
   kAddTransferHandler,
   kRemoveTransferHandler,
@@ -126,7 +123,6 @@ struct Event {
     ChunkEvent chunk;
     EndTransferEvent end_transfer;
     SendStatusChunkEvent send_status_chunk;
-    TransferStream set_transfer_stream;
     Handler* add_transfer_handler;
     Handler* remove_transfer_handler;
   };
