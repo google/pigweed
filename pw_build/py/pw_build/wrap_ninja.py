@@ -190,11 +190,17 @@ class NinjaEvent:
         action: The action this event relates to, if any.
         message: The log message associated with this event, if it an
             'ACTION_LOG' event.
+        num_started: The number of started actions when this event occurred.
+        num_finished: The number of finished actions when this event occurred.
+        num_total: The total number of actions when this event occurred.
     """
 
     kind: NinjaEventKind
     action: Optional[NinjaAction] = None
     log_message: Optional[str] = None
+    num_started: int = 0
+    num_finished: int = 0
+    num_total: int = 0
 
 
 class Ninja:
@@ -329,7 +335,7 @@ class Ninja:
                 if actions_started == 1 and actions_finished == 0:
                     for action in self.running_actions.values():
                         action.end_time = time.time()
-                        self.events.append(
+                        self._add_event(
                             NinjaEvent(NinjaEventKind.ACTION_FINISHED, action)
                         )
                     self.running_actions = {}
@@ -341,7 +347,7 @@ class Ninja:
                     )
                     if action.jobs == 0:
                         self.actions.append(action)
-                        self.events.append(
+                        self._add_event(
                             NinjaEvent(NinjaEventKind.ACTION_STARTED, action)
                         )
                     action.jobs += 1
@@ -353,20 +359,27 @@ class Ninja:
                         self.running_actions.pop(name)
                         self.last_action_completed = action
                         action.end_time = time.time()
-                        self.events.append(
+                        self._add_event(
                             NinjaEvent(NinjaEventKind.ACTION_FINISHED, action)
                         )
             else:
                 context_action = None
                 if not line.startswith('ninja: '):
                     context_action = self.last_action_completed
-                self.events.append(
+                self._add_event(
                     NinjaEvent(
                         NinjaEventKind.ACTION_LOG,
                         action=context_action,
                         log_message=line,
                     )
                 )
+
+    def _add_event(self, event: NinjaEvent) -> None:
+        """Add a new event to the event queue."""
+        event.num_started = self.num_started
+        event.num_finished = self.num_finished
+        event.num_total = self.num_total
+        self.events.append(event)
 
     def write_trace(self, file: IO[str]) -> None:
         """Write a Chromium trace_event-formatted trace to a file."""
@@ -449,7 +462,7 @@ class UI:
         if event.kind == NinjaEventKind.ACTION_STARTED and show_started:
             assert event.action
             self._renderer.print_line(
-                f'[{self._ninja.num_finished}/{self._ninja.num_total}] '
+                f'[{event.num_finished}/{event.num_total}] '
                 f'Started  [{event.action.name}]'
             )
 
@@ -459,7 +472,7 @@ class UI:
                 event.action.end_time - event.action.start_time
             )
             self._renderer.print_line(
-                f'[{self._ninja.num_finished}/{self._ninja.num_total}] '
+                f'[{event.num_finished}/{event.num_total}] '
                 f'Finished [{event.action.name}] ({duration})'
             )
 
