@@ -52,6 +52,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import time
@@ -1138,6 +1139,7 @@ def call(*args, **kwargs) -> None:
     _LOG.debug('[RUN] %s\n%s', attributes, command)
 
     tee = kwargs.pop('tee', None)
+    propagate_sigterm = kwargs.pop('propagate_sigterm', False)
 
     env = pw_cli.env.pigweed_environment()
     kwargs['stdout'] = subprocess.PIPE
@@ -1145,6 +1147,17 @@ def call(*args, **kwargs) -> None:
 
     process = subprocess.Popen(args, **kwargs)
     assert process.stdout
+
+    # Set up signal handler if requested.
+    signaled = False
+    if propagate_sigterm:
+
+        def signal_handler(_signal_number: int, _stack_frame: Any) -> None:
+            nonlocal signaled
+            signaled = True
+            process.terminate()
+
+        previous_signal_handler = signal.signal(signal.SIGTERM, signal_handler)
 
     if env.PW_PRESUBMIT_DISABLE_SUBPROCESS_CAPTURE:
         while True:
@@ -1168,6 +1181,12 @@ def call(*args, **kwargs) -> None:
     )
     if stdout:
         logfunc('[OUTPUT]\n%s', stdout.decode(errors='backslashreplace'))
+
+    if propagate_sigterm:
+        signal.signal(signal.SIGTERM, previous_signal_handler)
+        if signaled:
+            _LOG.warning('Exiting due to SIGTERM.')
+            sys.exit(1)
 
     if process.returncode:
         raise PresubmitFailure

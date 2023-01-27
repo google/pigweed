@@ -23,6 +23,7 @@ from pathlib import Path
 import re
 import subprocess
 from shutil import which
+import sys
 from typing import (
     Any,
     Callable,
@@ -241,14 +242,21 @@ def ninja(
     ninja_stdout = ctx.output_dir / 'ninja.stdout'
     try:
         with ninja_stdout.open('w') as outs:
+            if sys.platform == 'win32':
+                # Windows doesn't support pw-wrap-ninja.
+                ninja_command = ['ninja']
+            else:
+                ninja_command = ['pw-wrap-ninja', '--log-actions']
+
             call(
-                'ninja',
+                *ninja_command,
                 '-C',
                 ctx.output_dir,
                 *num_jobs,
                 *keep_going,
                 *args,
                 tee=outs,
+                propagate_sigterm=True,
                 **kwargs,
             )
 
