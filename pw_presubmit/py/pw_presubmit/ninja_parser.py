@@ -49,4 +49,5 @@ def parse_ninja_stdout(ninja_stdout: Path) -> str:
                     failure_lines.extend([last_line, line])
             last_line = line
 
-    return '\n'.join(failure_lines)
+    result = '\n'.join(failure_lines)
+    return re.sub(r'\n+', '\n', result)

@@ -55,7 +55,8 @@ def parse_bazel_stdout(bazel_stdout: Path) -> str:
 
                 error_lines.append(line)
 
-    return '\n'.join(error_lines)
+    result = '\n'.join(error_lines)
+    return re.sub(r'\n+', '\n', result)
 
 
 if __name__ == '__main__':

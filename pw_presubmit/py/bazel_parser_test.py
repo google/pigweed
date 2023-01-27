@@ -65,7 +65,6 @@ FAILED: Build did NOT complete successfully
 _REAL_TEST_SUMMARY = """
 ERROR: /usr/local/google/home/mohrr/pigweed/pigweed/pw_kvs/BUILD.bazel:25:14: Compiling pw_kvs/entry.cc failed: (Exit 1): gcc failed: error executing command
 # Execution platform: @local_config_platform//:host
-
 pw_kvs/entry.cc:49:20: error: no member named 'Dat' in 'pw::Status'
     return Status::Dat aLoss();
            ~~~~~~~~^
