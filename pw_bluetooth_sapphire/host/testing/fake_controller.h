@@ -521,7 +521,8 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   void OnLECreateConnectionCancel();
 
   // Called when a HCI_Write_Extended_Inquiry_Response command is received.
-  void OnWriteExtendedInquiryResponse(const hci_spec::WriteExtendedInquiryResponseParams& params);
+  void OnWriteExtendedInquiryResponse(
+      const pw::bluetooth::emboss::WriteExtendedInquiryResponseCommandView& params);
 
   // Called when a HCI_Write_Simple_PairingMode command is received.
   void OnWriteSimplePairingMode(

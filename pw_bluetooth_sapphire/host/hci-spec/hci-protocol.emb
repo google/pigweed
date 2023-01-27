@@ -278,6 +278,14 @@ enum InquiryScanType:
   INTERLACED = 0x01
 
 
+struct LocalName:
+  0 [+248]  UInt:8[248]  local_name
+
+
+struct ExtendedInquiryResponse:
+  0 [+240]  UInt:8[240]  extended_inquiry_response
+
+
 # ========================= HCI packet headers ==========================
 
 
@@ -734,10 +742,6 @@ struct SetEventMaskCommand:
     -- Host. See enum class EventMask in hci_constants.h
 
 
-struct LocalName:
-  0 [+248]  UInt:8[248]  local_name
-
-
 struct WriteLocalNameCommand:
   -- Write Local Name Command (v1.1) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
@@ -833,6 +837,19 @@ struct WriteInquiryScanTypeCommand:
 
   $next [+1]         InquiryScanType      inquiry_scan_type
     -- See enum class InquiryScanType in this file for possible values
+
+
+struct WriteExtendedInquiryResponseCommand:
+  -- Write Extended Inquiry Response (v1.2) (BR/EDR)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader        header
+
+  $next [+1]         UInt                 fec_required
+    -- If FEC Encoding is required. (v1.2) (7.3.56)
+
+  let eir_size = ExtendedInquiryResponse.$size_in_bytes
+  $next [+eir_size]  ExtendedInquiryResponse      extended_inquiry_response
+    -- Extended inquiry response data as defined in Vol 3, Part C, Sec 8
 
 
 struct WriteSimplePairingModeCommand:

@@ -9,12 +9,15 @@
 #include <lib/fit/defer.h>
 #include <lib/stdcompat/functional.h>
 
+#include "runtime/cpp/emboss_memory_util.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/supplement_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer_cache.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/hci-protocol.emb.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/emboss_control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 
@@ -291,18 +294,23 @@ void BrEdrDiscoveryManager::UpdateEIRResponseData(std::string name,
     name_size = hci_spec::kExtendedInquiryResponseMaxNameBytes;
   }
   auto self = weak_self_.GetWeakPtr();
-  auto eir_packet = hci::CommandPacket::New(hci_spec::kWriteExtendedInquiryResponse,
-                                            sizeof(hci_spec::WriteExtendedInquiryResponseParams));
-  eir_packet->mutable_payload<hci_spec::WriteExtendedInquiryResponseParams>()->fec_required = 0x00;
-  auto eir_response_buf =
-      MutableBufferView(eir_packet->mutable_payload<hci_spec::WriteExtendedInquiryResponseParams>()
-                            ->extended_inquiry_response,
-                        hci_spec::kExtendedInquiryResponseBytes);
+
+  auto write_eir = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::WriteExtendedInquiryResponseCommandWriter>(
+      hci_spec::kWriteExtendedInquiryResponse);
+  auto write_eir_params = write_eir.view_t();
+  write_eir_params.fec_required().Write(0x00);
+
+  // Create MutableBufferView of BackingStorage
+  unsigned char* eir_data = write_eir_params.extended_inquiry_response().BackingStorage().data();
+  MutableBufferView eir_response_buf =
+      MutableBufferView(eir_data, hci_spec::kExtendedInquiryResponseBytes);
   eir_response_buf.Fill(0);
   eir_response_buf[0] = name_size + 1;
   eir_response_buf[1] = static_cast<uint8_t>(name_type);
   eir_response_buf.mutable_view(2).Write(reinterpret_cast<const uint8_t*>(name.data()), name_size);
-  self->cmd_->SendCommand(std::move(eir_packet),
+
+  self->cmd_->SendCommand(std::move(write_eir),
                           [self, name = std::move(name), cb = std::move(callback)](
                               auto, const hci::EventPacket& event) mutable {
                             if (!hci_is_error(event, WARN, "gap", "write EIR failed")) {
@@ -325,8 +333,8 @@ void BrEdrDiscoveryManager::UpdateLocalName(std::string name, hci::ResultFunctio
   // Use ContiguousBuffer instead of constructing LocalName view in case of invalid view being
   // created when name is not large enough for the view
   auto name_buf = emboss::support::ReadOnlyContiguousBuffer(&name);
-
   local_name.CopyFrom(name_buf, name_size);
+
   cmd_->SendCommand(std::move(write_name), [self, name = std::move(name), cb = std::move(callback)](
                                                auto, const hci::EventPacket& event) mutable {
     if (hci_is_error(event, WARN, "gap", "set local name failed")) {

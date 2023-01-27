@@ -1068,9 +1068,9 @@ void FakeController::OnLECreateConnectionCancel() {
 }
 
 void FakeController::OnWriteExtendedInquiryResponse(
-    const hci_spec::WriteExtendedInquiryResponseParams& params) {
+    const pw::bluetooth::emboss::WriteExtendedInquiryResponseCommandView& params) {
   // As of now, we don't support FEC encoding enabled.
-  if (params.fec_required != 0x00) {
+  if (params.fec_required().Read() != 0x00) {
     RespondWithCommandStatus(hci_spec::kWriteExtendedInquiryResponse,
                              pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
   }
@@ -2927,11 +2927,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnReadSimplePairingMode();
       break;
     }
-    case hci_spec::kWriteExtendedInquiryResponse: {
-      const auto& params = command_packet.payload<hci_spec::WriteExtendedInquiryResponseParams>();
-      OnWriteExtendedInquiryResponse(params);
-      break;
-    }
     case hci_spec::kLEConnectionUpdate: {
       const auto& params = command_packet.payload<hci_spec::LEConnectionUpdateCommandParams>();
       OnLEConnectionUpdateCommandReceived(params);
@@ -3033,6 +3028,7 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kUserConfirmationRequestReply:
     case hci_spec::kUserConfirmationRequestNegativeReply:
     case hci_spec::kWriteSynchronousFlowControlEnable:
+    case hci_spec::kWriteExtendedInquiryResponse:
     case hci_spec::kWriteSimplePairingMode: {
       // This case is for packet types that have been migrated to the new Emboss architecture. Their
       // old version can be still be assembled from the HciEmulator channel, so here we repackage
@@ -3193,6 +3189,12 @@ void FakeController::HandleReceivedCommandPacket(const hci::EmbossCommandPacket&
       OnWriteSynchronousFlowControlEnableCommand(params);
       break;
     }
+    case hci_spec::kWriteExtendedInquiryResponse: {
+      const auto& params =
+          command_packet.view<pw::bluetooth::emboss::WriteExtendedInquiryResponseCommandView>();
+      OnWriteExtendedInquiryResponse(params);
+      break;
+    }
     case hci_spec::kWriteSimplePairingMode: {
       const auto& params =
           command_packet.view<pw::bluetooth::emboss::WriteSimplePairingModeCommandView>();
@@ -3200,11 +3202,7 @@ void FakeController::HandleReceivedCommandPacket(const hci::EmbossCommandPacket&
       break;
     }
     default: {
-      bt_log(WARN, "fake-hci",
-             "received Emboss command either unimplemented or not yet migrated to Emboss, with "
-             "opcode: %#.4x",
-             opcode);
-      RespondWithCommandComplete(opcode, pw::bluetooth::emboss::StatusCode::UNKNOWN_COMMAND);
+      bt_log(WARN, "fake-hci", "opcode: %#.4x", opcode);
       break;
     }
   }
