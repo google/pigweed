@@ -286,6 +286,18 @@ struct ExtendedInquiryResponse:
   0 [+240]  UInt:8[240]  extended_inquiry_response
 
 
+enum LEExtendedDuplicateFilteringOption:
+  -- Possible values that can be used for the |filter_duplicates| parameter in a
+  -- HCI_LE_Set_Extended_Scan_Enable command.
+  [maximum_bits: 8]
+  DISABLED = 0x00
+  ENABLED = 0x01
+  ENABLED_RESET_FOR_EACH_SCAN_PERIOD = 0x02
+    -- Duplicate advertisements in a single scan period should not be sent to the
+    -- Host in advertising report events; this setting shall only be used if the
+    -- Period parameter is non-zero.
+
+
 # ========================= HCI packet headers ==========================
 
 
@@ -858,6 +870,32 @@ struct WriteSimplePairingModeCommand:
   0     [+hdr_size]  CommandHeader        header
 
   $next [+1]         GenericEnableParam   simple_pairing_mode
+
+
+struct LESetExtendedScanEnableCommand:
+  -- LE Set Extended Scan Enable Command (v5.0) (LE)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader                        header
+
+  $next [+1]         GenericEnableParam                   scanning_enabled
+
+  $next [+1]         LEExtendedDuplicateFilteringOption   filter_duplicates
+    -- See enum class LEExtendedDuplicateFilteringOption in this file for possible values
+
+  $next [+2]         UInt                                 duration
+    -- Possible values:
+    --   0x0000: Scan continuously until explicitly disabled
+    --   0x0001-0xFFFF: Scan duration, where:
+    --     Time = N * 10 ms
+    --     Time Range: 10 ms to 655.35 s
+
+  $next [+2]         UInt                                 period
+    -- Possible values:
+    --   0x0000: Periodic scanning disabled (scan continuously)
+    --   0x0001-0xFFFF: Time interval from when the Controller started its last
+    --   Scan_Duration until it begins the subsequent Scan_Duration, where:
+    --     Time = N * 1.28 sec
+    --     Time Range: 1.28 s to 83,884.8 s
 
 
 # ========================= HCI Event packets ===========================

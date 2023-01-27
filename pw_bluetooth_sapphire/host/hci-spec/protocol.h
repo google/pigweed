@@ -3060,27 +3060,6 @@ struct LESetExtendedScanParametersCommandParams {
 // LE Set Extended Scan Enable Command (v5.0) (LE)
 constexpr OpCode kLESetExtendedScanEnable = LEControllerCommandOpCode(0x0042);
 
-struct LESetExtendedScanEnableCommandParams {
-  GenericEnableParam scanning_enabled;
-  LEExtendedDuplicateFilteringOption filter_duplicates;
-
-  // Possible values:
-  //   0x0000: Scan continuously until explicitly disabled
-  //   0x0001-0xFFFF: Scan duration, where:
-  //     Time = N * 10 ms
-  //     Time Range: 10 ms to 655.35 s
-  uint16_t duration;
-
-  // Possible values:
-  //   0x0000: Periodic scanning disabled
-  //   0xXXXX: Time interval from when the Controller started its last
-  //   Scan_Duration until it begins the subsequent Scan_Duration, where:
-  //     Range: 0x0001 – 0xFFFF
-  //     Time = N * 1.28 sec
-  //     Time Range: 1.28 s to 83,884.8 s
-  uint16_t period;
-} __PACKED;
-
 // =================================================
 // LE Extended Create Connection Command (v5.0) (LE)
 constexpr OpCode kLEExtendedCreateConnection = LEControllerCommandOpCode(0x0043);

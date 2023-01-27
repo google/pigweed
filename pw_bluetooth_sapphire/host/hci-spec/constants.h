@@ -1086,18 +1086,6 @@ enum class LEScanFilterPolicy : uint8_t {
   kUseFilterAcceptListWithPrivacy = 0x03,
 };
 
-// Possible values that can be used for the |filter_duplicates| parameter in a
-// HCI_LE_Set_Extended_Scan_Enable command.
-enum class LEExtendedDuplicateFilteringOption : uint8_t {
-  kDisabled = 0x00,
-  kEnabled = 0x01,
-
-  // Duplicate advertisements in a single scan period should not be sent to the
-  // Host in advertising report events; this setting shall only be used if the
-  // Period parameter is non-zero.
-  kEnabledResetForEachScanPeriod = 0x02,
-};
-
 // The PHY bitfield values that can be used in HCI_LE_Set_PHY and
 // HCI_LE_Set_Default_PHY commands that can be used for the TX_PHYS and RX_PHYS
 // parameters.
