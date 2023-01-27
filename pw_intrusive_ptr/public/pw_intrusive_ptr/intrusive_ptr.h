@@ -14,6 +14,7 @@
 #pragma once
 
 #include <cstddef>
+#include <type_traits>
 #include <utility>
 
 #include "pw_intrusive_ptr/internal/ref_counted_base.h"
