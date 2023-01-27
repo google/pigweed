@@ -290,6 +290,9 @@ class Ninja:
                     self._process_output(''.join(buffer))
                     buffer = []
                     continue
+                if char == '':
+                    # End of file.
+                    break
 
                 # Look for the end of a status line, ignoring partial matches.
                 if char == '\x1B' and ninja_status:
@@ -307,7 +310,10 @@ class Ninja:
 
                 buffer.append(char)
         except OSError:
-            self.exited = True
+            pass
+
+        self._process_output(''.join(buffer))
+        self.exited = True
 
     def _process_output(self, line: str) -> None:
         """Process a line of output from Ninja, updating the internal state."""
