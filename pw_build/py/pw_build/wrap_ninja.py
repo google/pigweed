@@ -312,6 +312,12 @@ class Ninja:
                 actions_total = int(match.group(3))
                 name = match.group(4)
 
+                # Sometimes Ninja delimits lines without \r, which prevents
+                # _monitor_thread from stripping out the final control code,
+                # so just remove it here if it's present.
+                if name.endswith('\x1B[K'):
+                    name = name[:-3]
+
                 did_start = actions_started > self.num_started
                 did_finish = actions_finished > self.num_finished
                 self.num_started = actions_started
