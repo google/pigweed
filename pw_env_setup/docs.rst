@@ -431,7 +431,8 @@ never need to set these.
 
 ``PW_ENVIRONMENT_ROOT``
   Location to which packages are installed. Defaults to ``environment`` folder
-  within the checkout root.
+  within the checkout root. This variable is cleared after environment setup is
+  complete.
 
 ``PW_ENVSETUP_DISABLE_SPINNER``
   Disable the spinner during env setup. Intended to be used when the output is
