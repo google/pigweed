@@ -13,6 +13,7 @@
 # the License.
 
 import("//build_overrides/pigweed.gni")
+import("$dir_pw_build/python.gni")
 
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_third_party/emboss/emboss.gni")
@@ -37,8 +38,12 @@ source_set("cpp_utils") {
   ]
 }
 
-group("runner") {
-  deps = [ "embossc_runner.py" ]
+# Exists solely to satisfy presubmit. embossc_runner.py is used for real in
+# build_defs.gni.
+action("embossc_runner") {
+  script = "embossc_runner.py"
+  visibility = []
+  outputs = [ "$target_gen_dir/foo" ]
 }
 
 pw_doc_group("docs") {

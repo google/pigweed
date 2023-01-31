@@ -13,33 +13,53 @@
 # the License.
 
 import("//build_overrides/pigweed.gni")
-
+import("$dir_pw_build/python_action.gni")
 import("$dir_pw_third_party/emboss/emboss.gni")
 
+# Compiles a .emb file into a .h file.
+# $dir_pw_third_party_emboss must be set to the path of your Emboss
+# installation.
+#
+# Parameters
+#
+#   source (required)
+#     [path] The path to the .emb file that is to be compiled.
+#
+#   import_dirs (optional)
+#     [list of paths] The list of directories to search for imported .emb files,
+#     in the order they should be searched. The directory that `source` is in is
+#     always searched first.
+#
+#   imports (optional)
+#     [list of paths] Paths to any imported .emb files, including those imported
+#     resursively.
+#
+#   deps (optional)
+#     [list of targets] Paths to other emboss_cc_library targets that are
+#     imported by this target.
 template("emboss_cc_library") {
   assert(defined(invoker.source), "Need source arg for emboss_cc_library")
   assert(
       "$dir_pw_third_party_emboss" != "",
       "\$dir_pw_third_party_emboss must be set to the path of your Emboss installation")
-  source = get_path_info(invoker.source, "file")
 
   # The --output-path arg to the embossc script only specifies the
   # prefix of the path at which the generated header is placed. To this
   # prefix, the script appends the entire path of the input Emboss source,
-  # which is provided as rebase_path(source, root_build_dir).
+  # which is provided as rebase_path(invoker.source, root_build_dir).
 
-  # rebase_path(source, root_build_dir) will always start with a number
+  # rebase_path(invoker.source, root_build_dir) will always start with a number
   # of updirs (e.g. "../../../").
 
-  # In order for the compiled header path in the embossc script to resolve
-  # to $target_gen_dir as we desire, we must provide an --output-path arg
-  # that resolves to $target_gen_dir after rebase_path(source, root_build_dir)
-  # is appended to it. To achieve this, we specify output-path to be
-  # $root_gen_dir followed by a number of fake directories needed to cancel
-  # out these starting updirs.
-  compiled_header_path = "$target_gen_dir/" + source + ".h"
+  # In order for the compiled header path in the embossc script to resolve to
+  # $target_gen_dir as we desire, we must provide an --output-path arg that
+  # resolves to $target_gen_dir after rebase_path(invoker.source,
+  # root_build_dir) is appended to it. To achieve this, we specify output-path
+  # to be $root_gen_dir followed by a number of fake directories needed to
+  # cancel out these starting updirs.
+  compiled_header_path = "$target_gen_dir/" + invoker.source + ".h"
   path_sep = "/"
-  elements = string_split(rebase_path(source, root_build_dir), path_sep)
+  elements = string_split(rebase_path(invoker.source, root_build_dir), path_sep)
   updirs = filter_include(elements, [ ".." ])
 
   fakedirs = []
@@ -48,19 +68,34 @@ template("emboss_cc_library") {
   }
   output_path = root_gen_dir + path_sep + string_join(path_sep, fakedirs)
 
-  action(target_name + "_header") {
+  # Look for imports in the same directory as invoker.source by default.
+  default_import_dir = get_path_info(invoker.source, "abspath")
+  default_import_dir = get_path_info(default_import_dir, "dir")
+  default_import_dir = rebase_path(default_import_dir, root_build_dir)
+
+  pw_python_action(target_name + "_header") {
     script = "$dir_pw_third_party/emboss/embossc_runner.py"
+
     args = [
       rebase_path("$dir_pw_third_party_emboss/embossc", root_build_dir),
       "--generate",
       "cc",
+      "--import-dir",
+      default_import_dir,
       "--output-path",
       rebase_path(output_path, root_build_dir),
-      rebase_path(source, root_build_dir),
+      rebase_path(invoker.source, root_build_dir),
     ]
-    inputs = [
-      source,
-      "$dir_pw_third_party_emboss/embossc",
+    if (defined(invoker.import_dirs)) {
+      foreach(dir, invoker.import_dirs) {
+        args += [
+          "--import-dir",
+          dir,
+        ]
+      }
+    }
+
+    sources = [
       "$dir_pw_third_party_emboss/compiler/back_end/__init__.py",
       "$dir_pw_third_party_emboss/compiler/back_end/cpp/__init__.py",
       "$dir_pw_third_party_emboss/compiler/back_end/cpp/emboss_codegen_cpp.py",
@@ -95,11 +130,19 @@ template("emboss_cc_library") {
       "$dir_pw_third_party_emboss/compiler/util/parser_types.py",
       "$dir_pw_third_party_emboss/compiler/util/simple_memoizer.py",
       "$dir_pw_third_party_emboss/compiler/util/traverse_ir.py",
+      "$dir_pw_third_party_emboss/embossc",
+      invoker.source,
     ]
+
+    # TODO(benlawson): Use a depfile for adding imports to inputs (https://github.com/google/emboss/issues/68).
+    if (defined(invoker.imports)) {
+      inputs = invoker.imports
+    }
+
     outputs = [ compiled_header_path ]
   }
 
-  config("emboss_config") {
+  config(target_name + "_emboss_config") {
     include_dirs = [
       "$dir_pw_third_party_emboss",
       root_gen_dir,
@@ -107,9 +150,19 @@ template("emboss_cc_library") {
   }
 
   source_set(target_name) {
+    forward_variables_from(invoker, "*")
+
     sources = [ compiled_header_path ]
-    deps = [ "$dir_pw_third_party/emboss:cpp_utils" ]
+
+    if (!defined(invoker.deps)) {
+      deps = []
+    }
+    deps += [ "$dir_pw_third_party/emboss:cpp_utils" ]
     public_deps = [ ":" + target_name + "_header" ]
-    public_configs = [ ":emboss_config" ]
+
+    if (!defined(invoker.public_configs)) {
+      public_configs = []
+    }
+    public_configs += [ ":" + target_name + "_emboss_config" ]
   }
 }
