@@ -14,6 +14,8 @@
 
 #include "pw_rpc/raw/client_reader_writer.h"
 
+#include <optional>
+
 #include "gtest/gtest.h"
 #include "pw_rpc/raw/client_testing.h"
 #include "pw_rpc/writer.h"
@@ -308,6 +310,18 @@ TEST(RawUnaryReceiver, Move_ActiveToActive) {
   // NOLINTNEXTLINE(bugprone-use-after-move)
   EXPECT_FALSE(active_call_1.active());
   EXPECT_TRUE(active_call_2.active());
+}
+
+TEST(RawUnaryReceiver, InvalidChannelId) {
+  RawClientTestContext ctx;
+  std::optional<Status> error;
+
+  RawUnaryReceiver call = TestService::TestUnaryRpc(
+      ctx.client(), 1290341, {}, {}, [&error](Status status) {
+        error = status;
+      });
+  EXPECT_FALSE(call.active());
+  EXPECT_EQ(error, Status::Unavailable());
 }
 
 TEST(RawClientReader, NoClientStream_OutOfScope_SilentlyCloses) {

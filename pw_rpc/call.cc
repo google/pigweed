@@ -62,6 +62,10 @@ Call::Call(LockedEndpoint& endpoint_ref,
                                ? kClientStreamActive
                                : kClientStreamInactive),
       properties_(properties) {
+  PW_CHECK_UINT_NE(channel_id,
+                   Channel::kUnassignedChannelId,
+                   "Calls cannot be created with channel ID 0 "
+                   "(Channel::kUnassignedChannelId)");
   endpoint().RegisterCall(*this);
 }
 

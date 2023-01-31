@@ -927,7 +927,8 @@ Example
   // Generated clients are namespaced with their proto library.
   using EchoClient = pw_rpc::nanopb::EchoService::Client;
 
-  // RPC channel ID on which to make client calls.
+  // RPC channel ID on which to make client calls. RPC calls cannot be made on
+  // channel 0 (Channel::kUnassignedChannelId).
   constexpr uint32_t kDefaultChannelId = 1;
 
   pw::rpc::NanopbUnaryReceiver<pw_rpc_EchoMessage> echo_call;
@@ -1191,8 +1192,8 @@ instantiate as:
   ``MethodRequestType<RpcMethod>``/``MethodResponseType<RpcMethod>``. Raw has
   them both set as ``void``. In reality, they are ``pw::ConstByteSpan``. Any
   helper/trait that wants to use this types for raw methods should do a custom
-  implemenation that copies the bytes under the span instead of copying just the
-  span.
+  implementation that copies the bytes under the span instead of copying just
+  the span.
 
 Client Synchronous Call wrappers
 ================================
