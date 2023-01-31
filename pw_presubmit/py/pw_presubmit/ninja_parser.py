@@ -25,6 +25,8 @@ _FAILED_END_RE = re.compile(r'^\s*ninja: build stopped:.*')
 
 
 def parse_ninja_stdout(ninja_stdout: Path) -> str:
+    """Extract an error summary from ninja output."""
+
     failure_begins = False
     failure_lines = []
     last_line = ''
@@ -48,6 +50,15 @@ def parse_ninja_stdout(ninja_stdout: Path) -> str:
                     failure_begins = True
                     failure_lines.extend([last_line, line])
             last_line = line
+
+    # Remove "Requirement already satisfied:" lines since many of those might
+    # be printed during Python installation, and they usually have no relevance
+    # to the actual error.
+    failure_lines = [
+        x
+        for x in failure_lines
+        if not x.lstrip().startswith('Requirement already satisfied:')
+    ]
 
     result = '\n'.join(failure_lines)
     return re.sub(r'\n+', '\n', result)
