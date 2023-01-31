@@ -86,7 +86,7 @@ pw_cc_test(
         "result_test.cc",
     ],
     deps = [
-        "pw_bluetooth",
+        ":pw_bluetooth",
     ],
 )
 
@@ -96,6 +96,6 @@ pw_cc_test(
         "uuid_test.cc",
     ],
     deps = [
-        "pw_bluetooth",
+        ":pw_bluetooth",
     ],
 )

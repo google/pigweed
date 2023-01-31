@@ -83,6 +83,8 @@ class Uuid {
   // all 16-bit and 32-bit short UUIDs.
   static constexpr const Uuid& BluetoothBase();
 
+  constexpr Uuid() : uuid_() {}
+
   // Create a UUID combining 96-bits from a base UUID with a 16-bit or 32-bit
   // value. 16-bit values will be extended to 32-bit ones, meaning the that the
   // 16 most significant bits will be set to 0 regardless of the value on the

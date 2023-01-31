@@ -14,6 +14,7 @@ pw_bloat
 pw_blob_store
 pw_bluetooth
 pw_bluetooth_hci
+pw_bluetooth_profiles
 pw_boot
 pw_boot_cortex_m
 pw_build
