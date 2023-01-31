@@ -95,8 +95,8 @@ class ShellVisitor(_BaseShellVisitor):
     def visit_remove(self, remove):
         value = self._apply_replacements(remove)
         self._outs.write(
-            '# Remove \n#   {value}\n# from\n#   {value}\n# '
-            'before adding it back.\n'
+            '# Remove \n#   {value}\n# from {name} before adding it '
+            'back.\n'.format(value=remove.value, name=remove.name)
         )
         self._outs.write(self._remove_value_from_path(remove.name, value))
 
