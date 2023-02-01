@@ -40,9 +40,6 @@ source_set("tests") {
     "//src/lib/testing/loop_fixture",
     "//third_party/googletest:gtest",
   ]
-
-  # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings
-  configs += [ "//build/config:Wno-conversion" ]
 }
 
 bt_gtest_package("bt-host-socket-tests") {
