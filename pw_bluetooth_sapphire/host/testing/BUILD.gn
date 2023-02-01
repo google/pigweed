@@ -148,9 +148,6 @@ source_set("fake_controller") {
     "//zircon/system/ulib/fbl",
     "//zircon/system/ulib/zx",
   ]
-
-  # TODO(https://fxbug.dev/58162): delete the below and fix compiler warnings
-  configs += [ "//build/config:Wno-conversion" ]
 }
 
 # Main entry point for host library unittests.
