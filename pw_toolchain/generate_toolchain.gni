@@ -377,13 +377,22 @@ template("generate_toolchain") {
           _outfile = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
 
           description = "rustc {{output}}"
+          depfile = "{{output}}.d"
           command =
               string_join(" ",
                           [
                             # TODO(b/234872510): Ensure this works with Windows.
                             "RUST_BACKTRACE=1",
+                            "{{rustenv}}",
                             invoker.rustc,
                             "{{source}}",
+                            "--crate-name {{crate_name}}",
+                            "--crate-type {{crate_type}}",
+                            "{{rustflags}}",
+                            "{{rustdeps}}",
+                            "{{externs}}",
+                            "--emit=dep-info=$depfile,link",
+                            "-Zdep-info-omit-d-target",
                             "-o $_outfile",
                             "--color always",
                             "-D warnings",
