@@ -10,7 +10,6 @@
 #include <set>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/lib/uuid/uuid.h"
 
 namespace bt::sdp {
 
@@ -32,11 +31,7 @@ void AddAllUUIDs(const DataElement& elem, std::unordered_set<UUID>* out) {
 
 }  // namespace
 
-ServiceRecord::ServiceRecord() {
-  UUID service_uuid;
-  StringToUuid(uuid::Generate(), &service_uuid);
-  SetAttribute(kServiceId, DataElement(service_uuid));
-}
+ServiceRecord::ServiceRecord() { SetAttribute(kServiceId, DataElement(UUID::Generate())); }
 
 void ServiceRecord::SetAttribute(AttributeId id, DataElement value) {
   attributes_.erase(id);

@@ -26,6 +26,9 @@ class UUID final {
   // an unsupported size.
   static bool FromBytes(const ByteBuffer& bytes, UUID* out_uuid);
 
+  // Returns a random (Version 4) UUID.
+  static UUID Generate();
+
   // The default constructor initializes all values to zero.
   constexpr UUID() = default;
 

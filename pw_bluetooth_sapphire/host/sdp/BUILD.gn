@@ -18,10 +18,7 @@ source_set("definitions") {
     "service_record.h",
   ]
 
-  public_deps = [
-    "//src/connectivity/bluetooth/core/bt-host/common",
-    "//src/lib/uuid",
-  ]
+  public_deps = [ "//src/connectivity/bluetooth/core/bt-host/common" ]
 }
 
 static_library("sdp") {

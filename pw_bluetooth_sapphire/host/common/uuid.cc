@@ -11,6 +11,7 @@
 #include "pw_string/format.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/random.h"
 
 namespace bt {
 namespace {
@@ -81,6 +82,20 @@ bool UUID::FromBytes(const ByteBuffer& bytes, UUID* out_uuid) {
   }
 
   return false;
+}
+
+UUID UUID::Generate() {
+  // We generate a 128-bit random UUID in the form of version 4 as described in ITU-T Rec.
+  // X.667(10/2012) Sec 15.1. This is the same as RFC 4122.
+  UInt128 uuid = Random<UInt128>();
+  //  Set the four most significant bits (bits 15 through 12) of the "VersionAndTimeHigh" field
+  //  to 4.
+  constexpr uint8_t version_number = 0b0100'0000;
+  uuid[6] = (uuid[6] & 0b0000'1111) | version_number;
+  // Set the two most significant bits (bits 7 and 6) of the "VariantAndClockSeqHigh" field to 1 and
+  // 0, respectively.
+  uuid[8] = (uuid[8] & 0b0011'1111) | 0b1000'0000;
+  return UUID(uuid);
 }
 
 UUID::UUID(const ByteBuffer& bytes) {

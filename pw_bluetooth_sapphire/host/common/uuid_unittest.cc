@@ -316,5 +316,13 @@ TEST(UUIDTest, Hash) {
   EXPECT_EQ(uuid1.Hash(), uuid2.Hash());
 }
 
+TEST(UUIDTest, Generate) {
+  for (int i = 0; i < 50; i++) {
+    UUID uuid = UUID::Generate();
+    EXPECT_EQ(uuid.value()[6] & 0b1111'0000, 0b0100'0000);
+    EXPECT_EQ(uuid.value()[8] & 0b1100'0000, 0b1000'0000);
+  }
+}
+
 }  // namespace
 }  // namespace bt
