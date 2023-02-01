@@ -220,6 +220,14 @@ template("pw_static_analysis_toolchain") {
       forward_variables_from(_copy, "*")
     }
 
+    tool("rust_bin") {
+      _output = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
+      command = pw_universal_stamp.command
+      description = "rustc {{output}}"
+      outputs = [ _output ]
+      default_output_dir = "{{target_out_dir}}/bin"
+    }
+
     # Build arguments to be overridden when compiling cross-toolchain:
     #
     #   pw_toolchain_defaults: A scope setting defaults to apply to GN targets
