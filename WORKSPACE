@@ -100,6 +100,7 @@ git_repository(
     name = "rules_cc_toolchain",
     commit = "16554e29b63641ad0c6ce9caa12910548dfb6506",
     remote = "https://github.com/bazelembedded/rules_cc_toolchain.git",
+    shallow_since = "1671221856 -0800",
 )
 
 load("@rules_cc_toolchain//:rules_cc_toolchain_deps.bzl", "rules_cc_toolchain_deps")
@@ -117,6 +118,7 @@ git_repository(
     name = "io_bazel_stardoc",
     commit = "2b801dc9b93f73812948ee4e505805511b0f55dc",
     remote = "https://github.com/bazelbuild/stardoc.git",
+    shallow_since = "1651081130 -0400",
 )
 
 # Set up tools to build custom GRPC rules.
@@ -160,6 +162,7 @@ git_repository(
     name = "com_github_nanopb_nanopb",
     commit = "e601fca6d9ed7fb5c09e2732452753b2989f128b",
     remote = "https://github.com/nanopb/nanopb.git",
+    shallow_since = "1641373017 +0800",
 )
 
 load("@com_github_nanopb_nanopb//:nanopb_deps.bzl", "nanopb_deps")
@@ -228,6 +231,7 @@ git_repository(
     name = "bazel_embedded",
     commit = "17c93d5fa52c4c78860b8bbd327325fba6c85555",
     remote = "https://github.com/bazelembedded/bazel-embedded.git",
+    shallow_since = "1631751909 +0800",
 )
 
 # Configure bazel_embedded toolchains and platforms.
@@ -332,6 +336,7 @@ new_git_repository(
     build_file = "//:third_party/micro_ecc/BUILD.micro_ecc",
     commit = "b335ee812bfcca4cd3fb0e2a436aab39553a555a",
     remote = "https://github.com/kmackay/micro-ecc.git",
+    shallow_since = "1648504566 -0700",
 )
 
 git_repository(
@@ -342,4 +347,5 @@ git_repository(
     # polyfill implementation.
     patches = ["//third_party/boringssl:cc_version.patch"],
     remote = "https://boringssl.googlesource.com/boringssl",
+    shallow_since = "1637714942 +0000",
 )
