@@ -1,4 +1,4 @@
-# Copyright 2022 The Pigweed Authors
+# Copyright 2023 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -171,6 +171,51 @@ template("pw_size_report") {
   }
 }
 
+# Aggregates JSON size report data from several pw_size_report targets into a
+# single output file.
+#
+# Args:
+#   deps: List of pw_size_report targets whose data to collect.
+#   output: Path to the output JSON file.
+#
+# Example:
+#   pw_size_report_aggregation("image_sizes") {
+#      deps = [
+#        ":app_image_size_report",
+#        ":bootloader_image_size_report",
+#      ]
+#      output = "$root_gen_dir/artifacts/image_sizes.json"
+#   }
+#
+template("pw_size_report_aggregation") {
+  assert(defined(invoker.deps) && invoker.deps != [],
+         "pw_size_report_aggregation requires size report dependencies")
+  assert(defined(invoker.output),
+         "pw_size_report_aggregation requires an output file path")
+
+  _input_json_files = []
+
+  foreach(_dep, invoker.deps) {
+    _gen_dir = get_label_info(_dep, "target_gen_dir")
+    _dep_name = get_label_info(_dep, "name")
+    _input_json_files +=
+        [ rebase_path("$_gen_dir/${_dep_name}.binary_sizes.json",
+                      root_build_dir) ]
+  }
+
+  pw_python_action(target_name) {
+    script = "$dir_pw_bloat/py/pw_bloat/binary_size_aggregator.py"
+    python_deps = [ "$dir_pw_bloat/py" ]
+    args = [
+             "--output",
+             rebase_path(invoker.output, root_build_dir),
+           ] + _input_json_files
+    outputs = [ invoker.output ]
+    deps = invoker.deps
+    forward_variables_from(invoker, [ "visibility" ])
+  }
+}
+
 # Creates a target which runs a size report diff on a set of executables.
 #
 # Args:
@@ -190,7 +235,7 @@ template("pw_size_report") {
 #         Overrides global source_filter argument.
 #       data_sources: Optional List of datasources from bloaty config file
 #         Overrides global data_sources argument.
-
+#
 #
 # Example:
 #   pw_size_diff("foo_bloat") {

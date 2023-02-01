@@ -231,6 +231,35 @@ output if desired. To enable this in the GN build
 (``pigweed/pw_bloat/bloat.gni``), set the ``pw_bloat_SHOW_SIZE_REPORTS``
 build arg to ``true``.
 
+Collecting size report data
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Each ``pw_size_report`` target outputs a JSON file containing the sizes of all
+top-level labels in the binary. (By default, this represents "segments", i.e.
+ELF program headers.) If a build produces multiple images, it may be useful to
+collect all of their sizes into a single file to provide a snapshot of sizes at
+some point in time --- for example, to display per-commit size deltas through
+CI.
+
+The ``pw_size_report_aggregation`` template is provided to collect multiple size
+reports' data into a single JSON file.
+
+**Arguments**
+
+* ``deps``: List of ``pw_size_report`` targets whose data to collect.
+* ``output``: Path to the output JSON file.
+
+.. code::
+
+  import("$dir_pw_bloat/bloat.gni")
+
+  pw_size_report_aggregation("image_sizes") {
+     deps = [
+       ":app_image_size_report",
+       ":bootloader_image_size_report",
+     ]
+     output = "$root_gen_dir/artifacts/image_sizes.json"
+  }
+
 Documentation integration
 =========================
 Bloat reports are easy to add to documentation files. All ``pw_size_diff``

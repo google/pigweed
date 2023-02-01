@@ -25,6 +25,7 @@ pw_python_package("py") {
   sources = [
     "pw_bloat/__init__.py",
     "pw_bloat/__main__.py",
+    "pw_bloat/binary_size_aggregator.py",
     "pw_bloat/bloat.py",
     "pw_bloat/bloaty_config.py",
     "pw_bloat/label.py",
