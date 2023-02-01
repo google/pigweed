@@ -474,6 +474,14 @@ tests, static analysis is only run when files or their dependencies change.
 
 Packages may opt out of static analysis as necessary.
 
+In addition to user specified ``mypy.ini`` files some arguments are always
+passed to ``mypy`` by default. They can be seen in this excerpt of
+``//pw_build/python.gni`` below:
+
+.. literalinclude:: pw_build/python.gni
+   :start-after: [default-mypy-args]
+   :end-before: [default-mypy-args]
+
 Building Python wheels
 ^^^^^^^^^^^^^^^^^^^^^^
 `Wheels <https://wheel.readthedocs.io/en/stable/>`_ are the standard format for

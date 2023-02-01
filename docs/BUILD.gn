@@ -35,6 +35,7 @@ pw_doc_group("core_docs") {
     "images/pw_watch_on_device_demo.gif",
     "images/pw_watch_test_demo.gif",
     "images/stm32f429i-disc1_connected.jpg",
+    "$dir_pw_build/python.gni",
   ]
   sources = [
     "code_of_conduct.rst",

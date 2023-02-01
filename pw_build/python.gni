@@ -68,6 +68,8 @@ template("_pw_create_aliases_if_name_matches_directory") {
 template("_pw_python_static_analysis_mypy") {
   pw_python_action(target_name) {
     module = "mypy"
+
+    # DOCSTAG: [default-mypy-args]
     args = [
       "--pretty",
       "--show-error-codes",
@@ -76,7 +78,18 @@ template("_pw_python_static_analysis_mypy") {
       #     mypy 0.991. This caused problems in some configurations, so return
       #     to the prior behavior for now.
       "--no-namespace-packages",
+
+      # Use a mypy cache dir for this target only to avoid cache conflicts in
+      # parallel mypy invocations.
+      "--cache-dir",
+      rebase_path(target_out_dir, root_build_dir) + "/.mypy_cache",
     ]
+
+    # Use this environment variable to force mypy to colorize output.
+    # See https://github.com/python/mypy/issues/7771
+    environment = [ "MYPY_FORCE_COLOR=1" ]
+
+    # DOCSTAG: [default-mypy-args]
 
     if (defined(invoker.mypy_ini)) {
       args +=
@@ -85,10 +98,6 @@ template("_pw_python_static_analysis_mypy") {
     }
 
     args += rebase_path(invoker.sources, root_build_dir)
-
-    # Use this environment variable to force mypy to colorize output.
-    # See https://github.com/python/mypy/issues/7771
-    environment = [ "MYPY_FORCE_COLOR=1" ]
 
     stamp = true
 
