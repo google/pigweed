@@ -50,7 +50,7 @@ Pointer and size arguments can be replaced with a :cpp:class:`pw::span`:
 .. tip::
 
   Use ``pw::span<std::byte>`` or ``pw::span<const std::byte>`` to represent
-  spans of binary data. Use ``pw::as_bytes`` or ``pw::as_writeable_bytes`` to
+  spans of binary data. Use ``pw::as_bytes`` or ``pw::as_writable_bytes`` to
   convert any span to a byte span.
 
   .. code-block:: cpp
