@@ -226,7 +226,6 @@ const StaticByteBuffer kRSSIInquiryResult(
 
 const auto kRemoteNameRequest1 = REMOTE_NAME_REQUEST(0x01)
 const auto kRemoteNameRequest2 = REMOTE_NAME_REQUEST(0x02)
-const auto kRemoteNameRequest3 = REMOTE_NAME_REQUEST(0x03)
 
 #undef REMOTE_NAME_REQUEST
 
@@ -279,13 +278,6 @@ const StaticByteBuffer kExtendedInquiryResult(
 );
 
 #undef BD_ADDR
-
-const StaticByteBuffer kInqCancel(
-  LowerBits(hci_spec::kInquiryCancel), UpperBits(hci_spec::kInquiryCancel),  // opcode
-  0x00                                   // parameter_total_size
-);
-
-const auto kInqCancelRsp = COMMAND_COMPLETE_RSP(hci_spec::kInquiryCancel);
 
 const StaticByteBuffer kSetExtendedMode(
     LowerBits(hci_spec::kWriteInquiryMode), UpperBits(hci_spec::kWriteInquiryMode),

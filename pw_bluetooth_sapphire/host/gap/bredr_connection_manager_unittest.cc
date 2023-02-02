@@ -167,9 +167,6 @@ const auto kCreateConnectionRspError =
     COMMAND_STATUS_RSP(hci_spec::kCreateConnection,
                        pw::bluetooth::emboss::StatusCode::CONNECTION_FAILED_TO_BE_ESTABLISHED);
 
-const auto kCreateConnectionRspAlready = COMMAND_STATUS_RSP(
-    hci_spec::kCreateConnection, pw::bluetooth::emboss::StatusCode::CONNECTION_ALREADY_EXISTS);
-
 const StaticByteBuffer kCreateConnectionCancel(LowerBits(hci_spec::kCreateConnectionCancel),
                                                UpperBits(hci_spec::kCreateConnectionCancel),
                                                0x06,  // parameter_total_size (6 bytes)
@@ -213,13 +210,6 @@ const auto kRemoteVersionInfoComplete =
                      hci_spec::HCIVersion::k4_2,                  // lmp_version
                      0xE0, 0x00,                                  // manufacturer_name (Google)
                      0xAD, 0xDE                                   // lmp_subversion (anything)
-    );
-
-const auto kReadRemoteSupportedFeatures =
-    StaticByteBuffer(LowerBits(hci_spec::kReadRemoteSupportedFeatures),
-                     UpperBits(hci_spec::kReadRemoteSupportedFeatures),
-                     0x02,       // parameter_total_size (2 bytes)
-                     0xAA, 0x0B  // connection_handle
     );
 
 const auto kReadRemoteSupportedFeaturesRsp = COMMAND_STATUS_RSP(
@@ -450,15 +440,6 @@ const auto kLinkKeyNotificationChanged =
                      0x0d, 0x0a, 0xd5,  // link key
                      0x06               // key type (Changed Combination Key)
     );
-
-const StaticByteBuffer kLinkKeyRequestReplyChanged(LowerBits(hci_spec::kLinkKeyRequestReply),
-                                                   UpperBits(hci_spec::kLinkKeyRequestReply),
-                                                   0x16,  // parameter_total_size (22 bytes)
-                                                   TEST_DEV_ADDR_BYTES_LE,  // peer address
-                                                   0xfa, 0xce, 0xb0, 0x0c, 0xa5, 0x1c, 0xcd, 0x15,
-                                                   0xea, 0x5e, 0xfe, 0xdb, 0x1d, 0x0d, 0x0a,
-                                                   0xd5  // link key
-);
 
 const StaticByteBuffer kSetConnectionEncryption(LowerBits(hci_spec::kSetConnectionEncryption),
                                                 UpperBits(hci_spec::kSetConnectionEncryption),

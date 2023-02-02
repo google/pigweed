@@ -299,13 +299,6 @@ const StaticByteBuffer kInboundConfigReq(
     // Flags
     0x00, 0x00);
 
-const StaticByteBuffer kInboundConfigReq2(
-    // Destination CID
-    LowerBits(kLocalCId2), UpperBits(kLocalCId2),
-
-    // Flags
-    0x00, 0x00);
-
 // Use plausible ERTM parameters that do not necessarily match values in production. See Core Spec
 // v5.0 Vol 3, Part A, Sec 5.4 for meanings.
 constexpr uint8_t kErtmNFramesInTxWindow = 32;
