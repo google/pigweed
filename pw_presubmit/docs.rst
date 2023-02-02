@@ -132,6 +132,7 @@ The ``luci`` member is of type ``LuciContext`` and has the following members:
 * ``builder``: The builder being run
 * ``swarming_task_id``: The swarming task id of this build
 * ``pipeline``: Information about the build pipeline, if applicable.
+* ``triggers``: Information about triggering commits, if applicable.
 
 The ``pipeline`` member, if present, is of type ``LuciPipeline`` and has the
 following members:
@@ -139,6 +140,19 @@ following members:
 * ``round``: The zero-indexed round number.
 * ``builds_from_previous_iteration``: A list of the buildbucket ids from the
   previous round, if any.
+
+The ``triggers`` member is a sequence of ``LuciTrigger`` objects, which have the
+following members:
+
+* ``number``: The number of the change in Gerrit.
+* ``patchset``: The number of the patchset of the change.
+* ``remote``: The full URL of the remote.
+* ``branch``: The name of the branch on which this change is being/was
+  submitted.
+* ``ref``: The ``refs/changes/..`` path that can be used to reference the
+  patch for unsubmitted changes and the hash for submitted changes.
+* ``gerrit_name``: The name of the googlesource.com Gerrit host.
+* ``submitted``: Whether the change has been submitted or is still pending.
 
 Additional members can be added by subclassing ``PresubmitContext`` and
 ``Presubmit``. Then override ``Presubmit._create_presubmit_context()`` to

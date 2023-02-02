@@ -216,6 +216,24 @@ class LuciPipeline:
     round: int
     builds_from_previous_iteration: Sequence[int]
 
+    @staticmethod
+    def create(bbid: int) -> Optional['LuciPipeline']:
+        pipeline_props = (
+            get_buildbucket_info(bbid)
+            .get('input', {})
+            .get('properties', {})
+            .get('$pigweed/pipeline', {})
+        )
+        if not pipeline_props.get('inside_a_pipeline', False):
+            return None
+
+        return LuciPipeline(
+            round=int(pipeline_props['round']),
+            builds_from_previous_iteration=[
+                int(x) for x in pipeline_props['builds_from_previous_iteration']
+            ],
+        )
+
 
 def get_buildbucket_info(bbid) -> Dict[str, Any]:
     if not bbid or not shutil.which('bb'):
@@ -225,6 +243,52 @@ def get_buildbucket_info(bbid) -> Dict[str, Any]:
         ['bb', 'get', '-json', '-p', f'{bbid}'], text=True
     )
     return json.loads(output)
+
+
+@dataclasses.dataclass
+class LuciTrigger:
+    """Details the pending change or submitted commit triggering the build."""
+
+    number: int
+    remote: str
+    branch: str
+    ref: str
+    gerrit_name: str
+    submitted: bool
+
+    @property
+    def gerrit_url(self):
+        if not self.number:
+            return self.gitiles_url
+        return 'https://{}-review.googlesource.com/c/{}'.format(
+            self.gerrit_name, self.number
+        )
+
+    @property
+    def gitiles_url(self):
+        return '{}/+/{}'.format(self.remote, self.ref)
+
+    @staticmethod
+    def create_from_environment(
+        env: Optional[Dict[str, str]] = None,
+    ) -> Sequence['LuciTrigger']:
+        if not env:
+            env = os.environ.copy()
+        raw_path = env.get('TRIGGERING_CHANGES_JSON')
+        if not raw_path:
+            return ()
+        path = Path(raw_path)
+        if not path.is_file():
+            return ()
+
+        result = []
+        with open(path, 'r') as ins:
+            for trigger in json.load(ins):
+                keys = set('number remote branch ref gerrit_name submitted')
+                if keys <= trigger.keys():
+                    result.append(LuciTrigger(**{x: trigger[x] for x in keys}))
+
+        return tuple(result)
 
 
 @dataclasses.dataclass
@@ -238,55 +302,49 @@ class LuciContext:
     builder: str
     swarming_task_id: str
     pipeline: Optional[LuciPipeline]
+    triggers: Sequence[LuciTrigger] = dataclasses.field(default_factory=tuple)
 
     @staticmethod
-    def create_from_environment():
+    def create_from_environment(
+        env: Optional[Dict[str, str]] = None
+    ) -> Optional['LuciContext']:
         """Create a LuciContext from the environment."""
+
+        if not env:
+            env = os.environ.copy()
+
         luci_vars = [
             'BUILDBUCKET_ID',
             'BUILDBUCKET_NAME',
             'BUILD_NUMBER',
             'SWARMING_TASK_ID',
         ]
-        if any(x for x in luci_vars if x not in os.environ):
+        if any(x for x in luci_vars if x not in env):
             return None
 
-        project, bucket, builder = os.environ['BUILDBUCKET_NAME'].split(':')
+        project, bucket, builder = env['BUILDBUCKET_NAME'].split(':')
 
         bbid: int = 0
         pipeline: Optional[LuciPipeline] = None
         try:
-            bbid = int(os.environ['BUILDBUCKET_ID'])
-
-            pipeline_props = (
-                get_buildbucket_info(bbid)
-                .get('input', {})
-                .get('properties', {})
-                .get('$pigweed/pipeline', {})
-            )
-            if pipeline_props.get('inside_a_pipeline', False):
-                pipeline = LuciPipeline(
-                    round=int(pipeline_props['round']),
-                    builds_from_previous_iteration=[
-                        int(x)
-                        for x in pipeline_props[
-                            'builds_from_previous_iteration'
-                        ]
-                    ],
-                )
+            bbid = int(env['BUILDBUCKET_ID'])
+            pipeline = LuciPipeline.create(bbid)
 
         except ValueError:
             pass
 
-        return LuciContext(
+        result = LuciContext(
             buildbucket_id=bbid,
-            build_number=int(os.environ['BUILD_NUMBER']),
+            build_number=int(env['BUILD_NUMBER']),
             project=project,
             bucket=bucket,
             builder=builder,
-            swarming_task_id=os.environ['SWARMING_TASK_ID'],
+            swarming_task_id=env['SWARMING_TASK_ID'],
             pipeline=pipeline,
+            triggers=LuciTrigger.create_from_environment(env),
         )
+        _LOG.debug('%r', result)
+        return result
 
 
 @dataclasses.dataclass
