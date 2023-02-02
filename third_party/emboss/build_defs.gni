@@ -13,7 +13,6 @@
 # the License.
 
 import("//build_overrides/pigweed.gni")
-import("$dir_pw_build/python_action.gni")
 import("$dir_pw_third_party/emboss/emboss.gni")
 
 # Compiles a .emb file into a .h file.
@@ -73,7 +72,7 @@ template("emboss_cc_library") {
   default_import_dir = get_path_info(default_import_dir, "dir")
   default_import_dir = rebase_path(default_import_dir, root_build_dir)
 
-  pw_python_action(target_name + "_header") {
+  action(target_name + "_header") {
     script = "$dir_pw_third_party/emboss/embossc_runner.py"
 
     args = [
