@@ -186,15 +186,21 @@ def gn_arm_build(ctx: PresubmitContext):
     build.ninja(ctx, *_at_all_optimization_levels('stm32f429i'))
 
 
-@_BUILD_FILE_FILTER.apply_to_check()
-def stm32f429i(ctx: PresubmitContext):
-    build.gn_gen(
-        ctx,
-        pw_use_test_server=True,
-        pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
-    )
-    with build.test_server('stm32f429i_disc1_test_server', ctx.output_dir):
-        build.ninja(ctx, *_at_all_optimization_levels('stm32f429i'))
+stm32f429i = build.GnGenNinja(
+    name='stm32f429i',
+    path_filter=_BUILD_FILE_FILTER,
+    gn_args={
+        'pw_use_test_server': True,
+        'pw_C_OPTIMIZATION_LEVELS': _OPTIMIZATION_LEVELS,
+    },
+    ninja_contexts=(
+        lambda ctx: build.test_server(
+            'stm32f429i_disc1_test_server',
+            ctx.output_dir,
+        ),
+    ),
+    ninja_targets=_at_all_optimization_levels('stm32f429i'),
+)
 
 
 gn_nanopb_build = build.GnGenNinja(
