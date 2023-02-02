@@ -28,11 +28,6 @@ class BasicDispatcher final : public Dispatcher, public thread::ThreadCore {
 
   void RequestStop() override PW_LOCKS_EXCLUDED(lock_);
 
-  // Returns the current time as viewed by the BasicDispatcher.
-  chrono::SystemClock::time_point Now() override {
-    return chrono::SystemClock::now();
-  }
-
   // Post caller owned |task|.
   void PostTask(Task& task) override;
 
@@ -67,6 +62,13 @@ class BasicDispatcher final : public Dispatcher, public thread::ThreadCore {
   // that come due before then.
   void RunUntil(chrono::SystemClock::time_point end_time) override;
   void RunFor(chrono::SystemClock::duration duration) override;
+
+  // VirtualSystemClock overrides:
+
+  // Returns the current time as viewed by the BasicDispatcher.
+  chrono::SystemClock::time_point now() override {
+    return chrono::SystemClock::now();
+  }
 
  private:
   // TestDispatcher uses BasicDispatcher methods operating on Task state.

@@ -141,7 +141,7 @@ TEST(TestDispatcher, PeriodicTasks) {
   TestPrimitives tp;
 
   Task periodic_task([&tp]([[maybe_unused]] Context& c) { ++tp.count; });
-  dispatcher.SchedulePeriodicTask(periodic_task, 20ms, dispatcher.Now() + 50ms);
+  dispatcher.SchedulePeriodicTask(periodic_task, 20ms, dispatcher.now() + 50ms);
 
   // Cancel periodic task after it has run thrice, at +50ms, +70ms, and +90ms.
   Task cancel_task(

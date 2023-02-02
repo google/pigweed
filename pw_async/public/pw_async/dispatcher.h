@@ -14,19 +14,22 @@
 #pragma once
 
 #include "pw_async/task.h"
+#include "pw_chrono/system_clock.h"
 
 namespace pw::async {
 
 // Asynchronous Dispatcher abstract class. A default implementation is provided
 // in dispatcher_basic.h.
-class Dispatcher {
+//
+// Dispatcher implements VirtualSystemClock so the Dispatcher's time can be
+// injected into other modules under test. This is useful for consistently
+// simulating time when using TestDispatcher (rather than using
+// chrono::SimulatedSystemClock separately).
+class Dispatcher : public chrono::VirtualSystemClock {
  public:
-  virtual ~Dispatcher() = default;
+  ~Dispatcher() override = default;
 
   virtual void RequestStop() = 0;
-
-  // Returns the current time as viewed by the Dispatcher.
-  virtual chrono::SystemClock::time_point Now() = 0;
 
   // Post caller owned |task|.
   virtual void PostTask(Task& task) = 0;

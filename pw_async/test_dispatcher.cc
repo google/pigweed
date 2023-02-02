@@ -42,12 +42,12 @@ void TestDispatcher::RunUntil(chrono::SystemClock::time_point end_time) {
 }
 
 void TestDispatcher::RunFor(chrono::SystemClock::duration duration) {
-  RunUntil(Now() + duration);
+  RunUntil(now() + duration);
 }
 
 void TestDispatcher::RunLoopOnce() {
   while (!task_queue_.empty() &&
-         BasicDispatcher::DueTime(task_queue_.front()) <= Now()) {
+         BasicDispatcher::DueTime(task_queue_.front()) <= now()) {
     Task& task = task_queue_.front();
     task_queue_.pop_front();
 
@@ -67,11 +67,11 @@ void TestDispatcher::RequestStop() {
   task_queue_.clear();
 }
 
-void TestDispatcher::PostTask(Task& task) { PostTaskForTime(task, Now()); }
+void TestDispatcher::PostTask(Task& task) { PostTaskForTime(task, now()); }
 
 void TestDispatcher::PostDelayedTask(Task& task,
                                      chrono::SystemClock::duration delay) {
-  PostTaskForTime(task, Now() + delay);
+  PostTaskForTime(task, now() + delay);
 }
 
 void TestDispatcher::PostTaskForTime(Task& task,
@@ -82,7 +82,7 @@ void TestDispatcher::PostTaskForTime(Task& task,
 
 void TestDispatcher::SchedulePeriodicTask(
     Task& task, chrono::SystemClock::duration interval) {
-  SchedulePeriodicTask(task, interval, Now());
+  SchedulePeriodicTask(task, interval, now());
 }
 
 void TestDispatcher::SchedulePeriodicTask(

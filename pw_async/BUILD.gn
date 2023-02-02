@@ -41,7 +41,10 @@ pw_source_set("task") {
 
 pw_source_set("dispatcher") {
   public_configs = [ ":public_include_path" ]
-  public_deps = [ ":task" ]
+  public_deps = [
+    ":task",
+    "$dir_pw_chrono:system_clock",
+  ]
   public = [ "public/pw_async/dispatcher.h" ]
   visibility = [ ":*" ] + pw_async_EXPERIMENTAL_MODULE_VISIBILITY
 }

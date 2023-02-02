@@ -39,23 +39,23 @@ void BasicDispatcher::RunUntilIdle() {
 
 void BasicDispatcher::RunUntil(chrono::SystemClock::time_point end_time) {
   lock_.lock();
-  while (end_time < Now()) {
+  while (end_time < now()) {
     RunLoopOnce();
   }
   lock_.unlock();
 }
 
 void BasicDispatcher::RunFor(chrono::SystemClock::duration duration) {
-  RunUntil(Now() + duration);
+  RunUntil(now() + duration);
 }
 
 void BasicDispatcher::RunLoopOnce() {
-  if (task_queue_.empty() || DueTime(task_queue_.front()) > Now()) {
+  if (task_queue_.empty() || DueTime(task_queue_.front()) > now()) {
     // Sleep until a notification is received or until the due time of the
     // next task. Notifications are sent when tasks are posted or 'stop' is
     // requested.
     chrono::SystemClock::time_point wake_time =
-        task_queue_.empty() ? Now() + SLEEP_DURATION
+        task_queue_.empty() ? now() + SLEEP_DURATION
                             : DueTime(task_queue_.front());
 
     lock_.unlock();
@@ -66,7 +66,7 @@ void BasicDispatcher::RunLoopOnce() {
     return;
   }
 
-  while (!task_queue_.empty() && DueTime(task_queue_.front()) <= Now()) {
+  while (!task_queue_.empty() && DueTime(task_queue_.front()) <= now()) {
     Task& task = task_queue_.front();
     task_queue_.pop_front();
 
@@ -90,11 +90,11 @@ void BasicDispatcher::RequestStop() {
   timed_notification_.release();
 }
 
-void BasicDispatcher::PostTask(Task& task) { PostTaskForTime(task, Now()); }
+void BasicDispatcher::PostTask(Task& task) { PostTaskForTime(task, now()); }
 
 void BasicDispatcher::PostDelayedTask(Task& task,
                                       chrono::SystemClock::duration delay) {
-  PostTaskForTime(task, Now() + delay);
+  PostTaskForTime(task, now() + delay);
 }
 
 void BasicDispatcher::PostTaskForTime(Task& task,
@@ -107,7 +107,7 @@ void BasicDispatcher::PostTaskForTime(Task& task,
 
 void BasicDispatcher::SchedulePeriodicTask(
     Task& task, chrono::SystemClock::duration interval) {
-  SchedulePeriodicTask(task, interval, Now());
+  SchedulePeriodicTask(task, interval, now());
 }
 
 void BasicDispatcher::SchedulePeriodicTask(

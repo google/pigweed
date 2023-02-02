@@ -22,8 +22,6 @@ class TestDispatcher final : public Dispatcher {
   explicit TestDispatcher() {}
   ~TestDispatcher() override { RequestStop(); }
 
-  chrono::SystemClock::time_point Now() override { return now_; }
-
   void RequestStop() override;
 
   // Post caller owned |task|.
@@ -63,6 +61,10 @@ class TestDispatcher final : public Dispatcher {
   // Run the Dispatcher until `duration` has elapsed, executing all tasks that
   // come due in that period.
   void RunFor(chrono::SystemClock::duration duration) override;
+
+  // VirtualSystemClock overrides:
+
+  chrono::SystemClock::time_point now() override { return now_; }
 
  private:
   // Insert |task| into task_queue_ maintaining its min-heap property, keyed by
