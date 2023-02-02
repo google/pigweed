@@ -318,9 +318,9 @@ def run(  # pylint: disable=too-many-arguments
         final_program = program[0]
     else:
         steps: List[presubmit.Check] = []
+        steps.extend(step)
         for prog in program:
             steps.extend(prog)
-        steps.extend(step)
         final_program = presubmit.Program('', steps)
 
     if substep and len(final_program) > 1:
