@@ -214,16 +214,7 @@ class Call : public IntrusiveList<Call>::Item {
   // Whenever a payload arrives (in a server/client stream or in a response),
   // call the on_next_ callback.
   // Precondition: rpc_lock() must be held.
-  void HandlePayload(ConstByteSpan message) const
-      PW_UNLOCK_FUNCTION(rpc_lock()) {
-    const bool invoke = on_next_ != nullptr;
-    // TODO(b/234876851): Ensure on_next_ is properly guarded.
-    rpc_lock().unlock();
-
-    if (invoke) {
-      on_next_(message);
-    }
-  }
+  void HandlePayload(ConstByteSpan payload) PW_UNLOCK_FUNCTION(rpc_lock());
 
   // Handles an error condition for the call. This closes the call and calls the
   // on_error callback, if set.
@@ -268,6 +259,7 @@ class Call : public IntrusiveList<Call>::Item {
         method_id_{},
         rpc_state_{},
         client_stream_state_{},
+        callbacks_executing_{},
         properties_{} {}
 
   // Creates an active server-side Call.
@@ -280,6 +272,14 @@ class Call : public IntrusiveList<Call>::Item {
        uint32_t service_id,
        uint32_t method_id,
        CallProperties properties) PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
+
+  void CallbackStarted() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+    callbacks_executing_ += 1;
+  }
+
+  void CallbackFinished() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+    callbacks_executing_ -= 1;
+  }
 
   // This call must be in a closed state when this is called.
   void MoveFrom(Call& other) PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
@@ -340,6 +340,85 @@ class Call : public IntrusiveList<Call>::Item {
   constexpr operator Writer&();
   constexpr operator const Writer&() const;
 
+  // Indicates if the on_next and unary on_completed callbacks are internal
+  // wrappers that decode the raw proto before invoking the user's callback. If
+  // they are, the lock must be held when they are invoked.
+  bool hold_lock_while_invoking_callback_with_payload() const
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+    return properties_.callback_proto_type() == kProtoStruct;
+  }
+
+  // Decodes a raw protobuf into a proto struct (pwpb or Nanopb) and invokes the
+  // pwpb or Nanopb version of the on_next callback.
+  //
+  // This must ONLY be called from derived classes the wrap the on_next
+  // callback. These classes MUST indicate that they call calls in their
+  // constructor.
+  template <typename Decoder, typename ProtoStruct>
+  void DecodeToStructAndInvokeOnNext(
+      ConstByteSpan payload,
+      const Decoder& decoder,
+      Function<void(const ProtoStruct&)>& proto_on_next)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+    if (proto_on_next == nullptr) {
+      return;
+    }
+
+    ProtoStruct proto_struct{};
+
+    if (!decoder.Decode(payload, proto_struct).ok()) {
+      HandleError(Status::DataLoss());
+      rpc_lock().lock();
+      return;
+    }
+
+    const uint32_t original_id = id();
+    auto proto_on_next_local = std::move(proto_on_next);
+
+    rpc_lock().unlock();
+    proto_on_next_local(proto_struct);
+    rpc_lock().lock();
+
+    // Restore the original callback if the original call is still active and
+    // the callback has not been replaced.
+    // NOLINTNEXTLINE(bugprone-use-after-move)
+    if (active_locked() && id() == original_id && proto_on_next == nullptr) {
+      proto_on_next = std::move(proto_on_next_local);
+    }
+  }
+
+  // The call is already unregistered and closed.
+  template <typename Decoder, typename ProtoStruct>
+  void DecodeToStructAndInvokeOnCompleted(
+      ConstByteSpan payload,
+      const Decoder& decoder,
+      Function<void(const ProtoStruct&, Status)>& proto_on_completed,
+      Status status) PW_UNLOCK_FUNCTION(rpc_lock()) {
+    // Always move proto_on_completed so it goes out of scope in this function.
+    auto proto_on_completed_local = std::move(proto_on_completed);
+
+    // Move on_error in case an error occurs.
+    auto on_error_local = std::move(on_error_);
+
+    // Release the lock before decoding, since decoder is a global.
+    rpc_lock().unlock();
+
+    if (proto_on_completed_local == nullptr) {
+      return;
+    }
+
+    ProtoStruct proto_struct{};
+    if (decoder.Decode(payload, proto_struct).ok()) {
+      proto_on_completed_local(proto_struct, status);
+    } else if (on_error_local != nullptr) {
+      on_error_local(Status::DataLoss());
+    }
+  }
+
+  // An active call cannot be moved if its callbacks are running. This function
+  // must be called on the call being moved before updating any state.
+  void WaitUntilReadyToBeMoved() const PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
+
  private:
   // Common constructor for server & client calls.
   Call(LockedEndpoint& endpoint,
@@ -371,14 +450,7 @@ class Call : public IntrusiveList<Call>::Item {
 
   // Calls the on_error callback without closing the RPC. This is used when the
   // call has already completed.
-  void CallOnError(Status error) PW_UNLOCK_FUNCTION(rpc_lock()) {
-    auto on_error_local = std::move(on_error_);
-
-    rpc_lock().unlock();
-    if (on_error_local) {
-      on_error_local(error);
-    }
-  }
+  void CallOnError(Status error) PW_UNLOCK_FUNCTION(rpc_lock());
 
   // Sends a payload with the specified type. The payload may either be in a
   // previously acquired buffer or in a standalone buffer.
@@ -394,6 +466,10 @@ class Call : public IntrusiveList<Call>::Item {
                                        Status status)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
+  bool CallbacksAreRunning() const PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+    return callbacks_executing_ != 0u;
+  }
+
   internal::Endpoint* endpoint_ PW_GUARDED_BY(rpc_lock());
   uint32_t channel_id_ PW_GUARDED_BY(rpc_lock());
   uint32_t id_ PW_GUARDED_BY(rpc_lock());
@@ -405,6 +481,11 @@ class Call : public IntrusiveList<Call>::Item {
     kClientStreamInactive,
     kClientStreamActive,
   } client_stream_state_ PW_GUARDED_BY(rpc_lock());
+
+  // Tracks how many of this call's callbacks are running. Must be 0 for the
+  // call to be destroyed.
+  uint8_t callbacks_executing_ PW_GUARDED_BY(rpc_lock());
+
   CallProperties properties_ PW_GUARDED_BY(rpc_lock());
 
   // Called when the RPC is terminated due to an error.
@@ -412,7 +493,7 @@ class Call : public IntrusiveList<Call>::Item {
 
   // Called when a request is received. Only used for RPCs with client streams.
   // The raw payload buffer is passed to the callback.
-  Function<void(ConstByteSpan payload)> on_next_;
+  Function<void(ConstByteSpan payload)> on_next_ PW_GUARDED_BY(rpc_lock());
 };
 
 }  // namespace internal

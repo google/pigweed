@@ -81,7 +81,9 @@ class PwpbServerCall : public ServerCall {
 
   // Give access to the serializer/deserializer object for converting requests
   // and responses between the wire format and pw_protobuf structs.
-  const PwpbMethodSerde& serde() const { return *serde_; }
+  const PwpbMethodSerde& serde() const PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+    return *serde_;
+  }
 
   // Allow derived classes to be constructed moving another instance.
   PwpbServerCall(PwpbServerCall&& other) PW_LOCKS_EXCLUDED(rpc_lock()) {
@@ -120,7 +122,7 @@ class PwpbServerCall : public ServerCall {
   }
 
  private:
-  const PwpbMethodSerde* serde_;
+  const PwpbMethodSerde* serde_ PW_GUARDED_BY(rpc_lock());
 };
 
 // internal::BasePwpbServerReader extends internal::PwpbServerCall further by
@@ -169,18 +171,14 @@ class BasePwpbServerReader : public PwpbServerCall {
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     pwpb_on_next_ = std::move(on_next);
 
-    Call::set_on_next_locked([this](ConstByteSpan payload) {
-      if (pwpb_on_next_) {
-        Request request{};
-        const Status status = serde().request().Decode(payload, request);
-        if (status.ok()) {
-          pwpb_on_next_(request);
-        }
-      }
-    });
+    Call::set_on_next_locked(
+        [this](ConstByteSpan payload) PW_NO_LOCK_SAFETY_ANALYSIS {
+          DecodeToStructAndInvokeOnNext(
+              payload, serde().request(), pwpb_on_next_);
+        });
   }
 
-  Function<void(const Request&)> pwpb_on_next_;
+  Function<void(const Request&)> pwpb_on_next_ PW_GUARDED_BY(rpc_lock());
 };
 
 }  // namespace internal

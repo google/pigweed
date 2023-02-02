@@ -18,6 +18,8 @@
 #include "pw_rpc/internal/endpoint.h"
 // clang-format on
 
+#include <chrono>
+
 #include "pw_log/log.h"
 #include "pw_rpc/internal/lock.h"
 #include "pw_toolchain/no_destructor.h"
@@ -80,7 +82,9 @@ RpcLock& rpc_lock() {
 void YieldRpcLock() {
   rpc_lock().unlock();
 #if PW_RPC_YIELD_MODE == PW_RPC_YIELD_MODE_SLEEP
-  this_thread::sleep_for(chrono::SystemClock::duration(1));
+  static constexpr chrono::SystemClock::duration kSleepDuration =
+      PW_RPC_YIELD_SLEEP_DURATION;
+  this_thread::sleep_for(kSleepDuration);
 #elif PW_RPC_YIELD_MODE == PW_RPC_YIELD_MODE_YIELD
   this_thread::yield();
 #endif  // PW_RPC_YIELD_MODE
@@ -126,9 +130,9 @@ void Endpoint::RegisterCall(Call& call) {
   calls_.push_front(call);
 
   if (existing_call != nullptr) {
-    // TODO(b/234876851): Ensure call object is locked when calling callback.
-    //     For on_error, could potentially move the callback and call it after
-    //     the lock is released.
+    // TODO(b/260922913): The HandleError() call needs to be deferred to avoid
+    //   releasing the lock before finishing state updates. Could move the call
+    //   to the planned calls_to_abort list and clean up later.
     existing_call->HandleError(Status::Cancelled());
     rpc_lock().lock();
   }

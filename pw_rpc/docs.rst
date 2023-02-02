@@ -1569,13 +1569,21 @@ more details.
 
   - ``PW_RPC_YIELD_MODE_BUSY_LOOP``. Do nothing. Release and reacquire the RPC
     lock in a busy loop. :c:macro:`PW_RPC_USE_GLOBAL_MUTEX` must be 0 as well.
-  - ``PW_RPC_YIELD_MODE_SLEEP``. Yield with 1-tick calls to
+  - ``PW_RPC_YIELD_MODE_SLEEP``. Yield with repeated
+    :c:macro:`PW_RPC_YIELD_SLEEP_DURATION`-length calls to
     :cpp:func:`pw::this_thread::sleep_for`. A backend must be configured for
     pw_thread:sleep.
   - ``PW_RPC_YIELD_MODE_YIELD``. Yield with :cpp:func:`pw::this_thread::yield`.
     A backend must be configured for pw_thread:yield. IMPORTANT: On some
     platforms, :cpp:func:`pw::this_thread::yield` does not yield to lower
     priority tasks and should not be used here.
+
+.. c:macro:: PW_RPC_YIELD_SLEEP_DURATION
+
+  If :c:macro:`PW_RPC_YIELD_MODE` is :c:macro:`PW_RPC_YIELD_MODE_SLEEP`,
+  ``PW_RPC_YIELD_SLEEP_DURATION`` sets how long to sleep during each iteration
+  of the yield loop. The value must be a constant expression that converts to a
+  :cpp:type:`pw::chrono::SystemClock::duration`.
 
 .. c:macro:: PW_RPC_CALLBACK_TIMEOUT_TICKS
 

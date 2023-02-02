@@ -117,6 +117,7 @@ pw_cc_library(
         "//pw_containers:intrusive_list",
         "//pw_function",
         "//pw_log",
+        "//pw_preprocessor",
         "//pw_result",
         "//pw_span",
         "//pw_status",

@@ -15,10 +15,34 @@
 #include "pw_rpc/internal/call.h"
 
 #include "pw_assert/check.h"
+#include "pw_log/log.h"
+#include "pw_preprocessor/util.h"
 #include "pw_rpc/client.h"
 #include "pw_rpc/internal/endpoint.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/server.h"
+
+// If the callback timeout is enabled, count the number of iterations of the
+// waiting loop and crash if it exceeds PW_RPC_CALLBACK_TIMEOUT_TICKS.
+#if PW_RPC_CALLBACK_TIMEOUT_TICKS > 0
+#define PW_RPC_CHECK_FOR_DEADLOCK(timeout_source) \
+  iterations += 1;                                \
+  PW_CHECK(                                                                  \
+      iterations < PW_RPC_CALLBACK_TIMEOUT_TICKS,                            \
+      "A callback for RPC %u:%08x/%08x has not finished after "              \
+      PW_STRINGIFY(PW_RPC_CALLBACK_TIMEOUT_TICKS)                            \
+      " ticks. This may indicate that an RPC callback attempted to "         \
+      timeout_source                                                         \
+      " its own call object, which is not permitted. Fix this condition or " \
+      "change the value of PW_RPC_CALLBACK_TIMEOUT_TICKS to avoid this "     \
+      "crash. See https://pigweed.dev/pw_rpc"                                \
+      "#destructors-moves-wait-for-callbacks-to-complete for details.",      \
+      static_cast<unsigned>(channel_id_),                                    \
+      static_cast<unsigned>(service_id_),                                    \
+      static_cast<unsigned>(method_id_))
+#else
+#define PW_RPC_CHECK_FOR_DEADLOCK(timeout_source) static_cast<void>(iterations)
+#endif  // PW_RPC_CALLBACK_TIMEOUT_TICKS > 0
 
 namespace pw::rpc::internal {
 
@@ -61,6 +85,7 @@ Call::Call(LockedEndpoint& endpoint_ref,
       client_stream_state_(HasClientStream(properties.method_type())
                                ? kClientStreamActive
                                : kClientStreamInactive),
+      callbacks_executing_(0),
       properties_(properties) {
   PW_CHECK_UINT_NE(channel_id,
                    Channel::kUnassignedChannelId,
@@ -82,6 +107,14 @@ Call::~Call() {
   if (active_locked()) {
     endpoint().UnregisterCall(*this);
   }
+
+  // Help prevent dangling references in callbacks by waiting for callbacks to
+  // complete before deleting this call.
+  int iterations = 0;
+  while (CallbacksAreRunning()) {
+    PW_RPC_CHECK_FOR_DEADLOCK("destroy");
+    YieldRpcLock();
+  }
 }
 
 void Call::MoveFrom(Call& other) {
@@ -90,6 +123,10 @@ void Call::MoveFrom(Call& other) {
   if (!other.active_locked()) {
     return;  // Nothing else to do; this call is already closed.
   }
+
+  // An active call with an executing callback cannot be moved. Derived call
+  // classes must wait for callbacks to finish before calling MoveFrom.
+  PW_DCHECK(!other.CallbacksAreRunning());
 
   // Copy all members from the other call.
   endpoint_ = other.endpoint_;
@@ -102,6 +139,9 @@ void Call::MoveFrom(Call& other) {
   client_stream_state_ = other.client_stream_state_;
   properties_ = other.properties_;
 
+  // callbacks_executing_ is not moved since it is associated with the object in
+  // memory, not the call.
+
   on_error_ = std::move(other.on_error_);
   on_next_ = std::move(other.on_next_);
 
@@ -110,6 +150,29 @@ void Call::MoveFrom(Call& other) {
 
   endpoint().UnregisterCall(other);
   endpoint().RegisterUniqueCall(*this);
+}
+
+void Call::WaitUntilReadyToBeMoved() const {
+  int iterations = 0;
+  while (CallbacksAreRunning() && active_locked()) {
+    PW_RPC_CHECK_FOR_DEADLOCK("move");
+    YieldRpcLock();
+  }
+}
+
+void Call::CallOnError(Status error) {
+  auto on_error_local = std::move(on_error_);
+
+  CallbackStarted();
+
+  rpc_lock().unlock();
+  if (on_error_local) {
+    on_error_local(error);
+  }
+
+  // This mutex lock could be avoided by making callbacks_executing_ atomic.
+  LockGuard lock(rpc_lock());
+  CallbackFinished();
 }
 
 Status Call::SendPacket(PacketType type, ConstByteSpan payload, Status status) {
@@ -137,6 +200,53 @@ Status Call::WriteLocked(ConstByteSpan payload) {
                         ? PacketType::SERVER_STREAM
                         : PacketType::CLIENT_STREAM,
                     payload);
+}
+
+void Call::HandlePayload(ConstByteSpan payload) {
+  // pw_rpc only supports handling packets for a particular RPC one at a time.
+  // Check if any callbacks are running and drop the packet if they are.
+  //
+  // The on_next callback cannot support multiple packets at once since it is
+  // moved before it is invoked. on_error and on_completed are only called
+  // after the call is closed.
+  if (CallbacksAreRunning()) {
+    PW_LOG_WARN(
+        "Received stream packet for %u:%08x/%08x before the callback for a "
+        "previous packet completed! This packet will be dropped. This can be "
+        "avoided by handling packets for a particular RPC on only one thread.",
+        static_cast<unsigned>(channel_id_),
+        static_cast<unsigned>(service_id_),
+        static_cast<unsigned>(method_id_));
+    rpc_lock().unlock();
+    return;
+  }
+
+  if (on_next_ == nullptr) {
+    rpc_lock().unlock();
+    return;
+  }
+
+  const uint32_t original_id = id();
+  auto on_next_local = std::move(on_next_);
+  CallbackStarted();
+
+  if (hold_lock_while_invoking_callback_with_payload()) {
+    on_next_local(payload);
+  } else {
+    rpc_lock().unlock();
+    on_next_local(payload);
+    rpc_lock().lock();
+  }
+
+  CallbackFinished();
+
+  // Restore the original callback if the original call is still active and
+  // the callback has not been replaced.
+  // NOLINTNEXTLINE(bugprone-use-after-move)
+  if (active_locked() && id() == original_id && on_next_ == nullptr) {
+    on_next_ = std::move(on_next_local);
+  }
+  rpc_lock().unlock();
 }
 
 void Call::UnregisterAndMarkClosed() {

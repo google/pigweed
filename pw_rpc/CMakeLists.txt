@@ -154,6 +154,7 @@ pw_add_library(pw_rpc.common STATIC
     packet_meta.cc
   PRIVATE_DEPS
     pw_log
+    pw_preprocessor
     pw_rpc.log_config
 )
 if(NOT "${pw_sync.mutex_BACKEND}" STREQUAL "")

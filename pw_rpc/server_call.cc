@@ -17,6 +17,8 @@
 namespace pw::rpc::internal {
 
 void ServerCall::MoveServerCallFrom(ServerCall& other) {
+  other.WaitUntilReadyToBeMoved();
+
   // If this call is active, finish it first.
   if (active_locked()) {
     CloseAndSendResponseLocked(OkStatus()).IgnoreError();

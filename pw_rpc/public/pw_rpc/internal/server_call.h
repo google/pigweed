@@ -28,13 +28,17 @@ class ServerCall : public Call {
 
 #if PW_RPC_CLIENT_STREAM_END_CALLBACK
     auto on_client_stream_end_local = std::move(on_client_stream_end_);
+    CallbackStarted();
     rpc_lock().unlock();
+
     if (on_client_stream_end_local) {
       on_client_stream_end_local();
     }
-#else
-    rpc_lock().unlock();
+
+    rpc_lock().lock();
+    CallbackFinished();
 #endif  // PW_RPC_CLIENT_STREAM_END_CALLBACK
+    rpc_lock().unlock();
   }
 
  protected:

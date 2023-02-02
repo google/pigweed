@@ -51,7 +51,10 @@ class NanopbServerCall : public ServerCall {
     return SendFinalResponse(*this, payload, status);
   }
 
-  const NanopbMethodSerde& serde() const { return *serde_; }
+  const NanopbMethodSerde& serde() const
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+    return *serde_;
+  }
 
  protected:
   NanopbServerCall(NanopbServerCall&& other) PW_LOCKS_EXCLUDED(rpc_lock()) {
@@ -77,7 +80,7 @@ class NanopbServerCall : public ServerCall {
   }
 
  private:
-  const NanopbMethodSerde* serde_;
+  const NanopbMethodSerde* serde_ PW_GUARDED_BY(rpc_lock());
 };
 
 // The BaseNanopbServerReader serves as the base for the ServerReader and
@@ -119,17 +122,14 @@ class BaseNanopbServerReader : public NanopbServerCall {
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     nanopb_on_next_ = std::move(on_next);
 
-    internal::Call::set_on_next_locked([this](ConstByteSpan payload) {
-      if (nanopb_on_next_) {
-        Request request_struct{};
-        if (serde().request().Decode(payload, &request_struct).ok()) {
-          nanopb_on_next_(request_struct);
-        }
-      }
-    });
+    Call::set_on_next_locked(
+        [this](ConstByteSpan payload) PW_NO_LOCK_SAFETY_ANALYSIS {
+          DecodeToStructAndInvokeOnNext(
+              payload, serde().request(), nanopb_on_next_);
+        });
   }
 
-  Function<void(const Request&)> nanopb_on_next_;
+  Function<void(const Request&)> nanopb_on_next_ PW_GUARDED_BY(rpc_lock());
 };
 
 }  // namespace internal

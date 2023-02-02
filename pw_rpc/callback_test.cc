@@ -46,7 +46,7 @@ class CallbacksTest : public ::testing::Test {
 
   ~CallbacksTest() override {
     EXPECT_FALSE(callback_thread_.joinable());  // Tests must join the thread!
-    EXPECT_TRUE(callback_executed_);
+    EXPECT_GT(callback_executed_, 0);
   }
 
   void RespondToCall(const RawClientReaderWriter& call) {
@@ -60,7 +60,7 @@ class CallbacksTest : public ::testing::Test {
   thread::Thread callback_thread_;
 
   // Must be set to true by the RPC callback in each test.
-  volatile bool callback_executed_ = false;
+  volatile int callback_executed_ = 0;
 
   // Variables optionally used by tests. These are in this object so lambads
   // only need to capture [this] to access them.
@@ -81,7 +81,7 @@ class CallbacksTest : public ::testing::Test {
   const RawClientReaderWriter* respond_to_call_ = &call_1_;
 };
 
-TEST_F(CallbacksTest, DISABLED_DestructorWaitsUntilCallbacksComplete) {
+TEST_F(CallbacksTest, DestructorWaitsUntilCallbacksComplete) {
   {
     RawClientReaderWriter local_call = TestService::TestBidirectionalStreamRpc(
         context_.client(), context_.channel().id());
@@ -99,7 +99,7 @@ TEST_F(CallbacksTest, DISABLED_DestructorWaitsUntilCallbacksComplete) {
       // block in the call's destructor until this callback completes.
       EXPECT_TRUE(call_is_in_scope_);
 
-      callback_executed_ = true;
+      callback_executed_ = callback_executed_ + 1;
     });
 
     // Start the callback thread so it can invoke the callback.
@@ -116,17 +116,17 @@ TEST_F(CallbacksTest, DISABLED_DestructorWaitsUntilCallbacksComplete) {
   // Wait for the callback thread to finish.
   callback_thread_.join();
 
-  EXPECT_TRUE(callback_executed_);
+  EXPECT_EQ(callback_executed_, 1);
 }
 
-TEST_F(CallbacksTest, DISABLED_MoveActiveCall_WaitsForCallbackToComplete) {
+TEST_F(CallbacksTest, MoveActiveCall_WaitsForCallbackToComplete) {
   call_1_ = TestService::TestBidirectionalStreamRpc(
       context_.client(), context_.channel().id(), [this](ConstByteSpan) {
         main_thread_sem_.release();  // Confirm that this thread started
 
         YieldToOtherThread();
 
-        callback_executed_ = true;
+        callback_executed_ = callback_executed_ + 1;
       });
 
   // Start the callback thread so it can invoke the callback.
@@ -142,7 +142,7 @@ TEST_F(CallbacksTest, DISABLED_MoveActiveCall_WaitsForCallbackToComplete) {
 
   // The callback should already have finished. This thread should have waited
   // for it to finish during the move.
-  EXPECT_TRUE(callback_executed_);
+  EXPECT_EQ(callback_executed_, 1);
   EXPECT_FALSE(call_1_.active());
   EXPECT_TRUE(call_2_.active());
 
@@ -156,7 +156,7 @@ TEST_F(CallbacksTest, MoveOtherCallIntoOwnCallInCallback) {
 
         call_1_ = std::move(call_2_);
 
-        callback_executed_ = true;
+        callback_executed_ = callback_executed_ + 1;
       });
 
   call_2_ = TestService::TestBidirectionalStreamRpc(context_.client(),
@@ -184,7 +184,7 @@ TEST_F(CallbacksTest, MoveOwnCallInCallback) {
         EXPECT_EQ(OkStatus(), call_1_.Cancel());
         call_2_ = std::move(call_1_);
 
-        callback_executed_ = true;
+        callback_executed_ = callback_executed_ + 1;
       });
 
   call_2_ = TestService::TestBidirectionalStreamRpc(context_.client(),
@@ -199,6 +199,34 @@ TEST_F(CallbacksTest, MoveOwnCallInCallback) {
 
   EXPECT_FALSE(call_1_.active());
   EXPECT_FALSE(call_2_.active());
+}
+
+TEST_F(CallbacksTest, PacketDroppedIfOnNextIsBusy) {
+  call_1_ = TestService::TestBidirectionalStreamRpc(
+      context_.client(), context_.channel().id(), [this](ConstByteSpan) {
+        main_thread_sem_.release();  // Confirm that this thread started
+
+        callback_thread_sem_.acquire();  // Wait for the main thread to release
+
+        callback_executed_ = callback_executed_ + 1;
+      });
+
+  // Start the callback thread.
+  callback_thread_sem_.release();
+
+  main_thread_sem_.acquire();  // Confirm that the callback is running
+
+  // Handle a few packets for this call, which should be dropped.
+  for (int i = 0; i < 5; ++i) {
+    context_.server().SendServerStream<TestService::TestBidirectionalStreamRpc>(
+        {}, call_1_.id());
+  }
+
+  // Wait for the callback thread to finish.
+  callback_thread_sem_.release();
+  callback_thread_.join();
+
+  EXPECT_EQ(callback_executed_, 1);
 }
 
 }  // namespace

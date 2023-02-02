@@ -71,6 +71,45 @@
 #define PW_RPC_YIELD_MODE PW_RPC_YIELD_MODE_SLEEP
 #endif  // PW_RPC_YIELD_MODE
 
+// If PW_RPC_YIELD_MODE == PW_RPC_YIELD_MODE_SLEEP, PW_RPC_YIELD_SLEEP_DURATION
+// sets how long to sleep during each iteration of the yield loop. The value
+// must be a constant expression that converts to a
+// pw::chrono::SystemClock::duration.
+#ifndef PW_RPC_YIELD_SLEEP_DURATION
+
+// When building for a desktop operating system, use a 1ms sleep by default.
+// 1-tick duration sleeps can result in spurious timeouts.
+#if defined(_WIN32) || defined(__APPLE__) || defined(__linux__)
+#define PW_RPC_YIELD_SLEEP_DURATION std::chrono::milliseconds(1)
+#else
+#define PW_RPC_YIELD_SLEEP_DURATION pw::chrono::SystemClock::duration(1)
+#endif  // defined(_WIN32) || defined(__APPLE__) || defined(__linux__)
+
+#endif  // PW_RPC_YIELD_SLEEP_DURATION
+
+// PW_RPC_YIELD_SLEEP_DURATION is not needed for non-sleep yield modes.
+#if PW_RPC_YIELD_MODE != PW_RPC_YIELD_MODE_SLEEP
+#undef PW_RPC_YIELD_SLEEP_DURATION
+#endif  // PW_RPC_YIELD_MODE != PW_RPC_YIELD_MODE_SLEEP
+
+// pw_rpc call objects wait for their callbacks to complete before they are
+// moved or destoyed. Deadlocks occur if a callback:
+//
+//   - attempts to destroy its call object,
+//   - attempts to move its call object while the call is still active, or
+//   - never returns.
+//
+// If PW_RPC_CALLBACK_TIMEOUT_TICKS is greater than 0, then PW_CRASH is invoked
+// if a thread waits for an RPC callback to complete for more than the specified
+// tick count.
+//
+// A "tick" in this context is one iteration of a loop that yields releases the
+// RPC lock and yields the thread according to PW_RPC_YIELD_MODE. By default,
+// the thread yields with a 1-tick call to pw::this_thread::sleep_for.
+#ifndef PW_RPC_CALLBACK_TIMEOUT_TICKS
+#define PW_RPC_CALLBACK_TIMEOUT_TICKS 10000
+#endif  // PW_RPC_CALLBACK_TIMEOUT_TICKS
+
 // Whether pw_rpc should use dynamic memory allocation internally. If enabled,
 // pw_rpc dynamically allocates channels and its encoding buffers. RPC users may
 // use dynamic allocation independently of this option (e.g. to allocate pw_rpc

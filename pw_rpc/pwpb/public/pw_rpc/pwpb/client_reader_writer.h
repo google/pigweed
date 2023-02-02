@@ -128,26 +128,14 @@ class PwpbUnaryResponseClientCall : public UnaryResponseClientCall {
     pwpb_on_completed_ = std::move(on_completed);
 
     UnaryResponseClientCall::set_on_completed_locked(
-        [this](ConstByteSpan payload, Status status) {
-          rpc_lock().lock();
-          auto pwpb_on_completed_local = std::move(pwpb_on_completed_);
-          rpc_lock().unlock();
-
-          if (pwpb_on_completed_local) {
-            Response response{};
-            const Status decode_status =
-                serde_->response().Decode(payload, response);
-            if (decode_status.ok()) {
-              pwpb_on_completed_local(response, status);
-            } else {
-              rpc_lock().lock();
-              HandleError(Status::DataLoss());
-            }
-          }
-        });
+        [this](ConstByteSpan payload, Status status)
+            PW_NO_LOCK_SAFETY_ANALYSIS {
+              DecodeToStructAndInvokeOnCompleted(
+                  payload, serde_->response(), pwpb_on_completed_, status);
+            });
   }
 
-  const PwpbMethodSerde* serde_;
+  const PwpbMethodSerde* serde_ PW_GUARDED_BY(rpc_lock());
   Function<void(const Response&, Status)> pwpb_on_completed_
       PW_GUARDED_BY(rpc_lock());
 };
@@ -253,22 +241,15 @@ class PwpbStreamResponseClientCall : public StreamResponseClientCall {
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     pwpb_on_next_ = std::move(on_next);
 
-    Call::set_on_next_locked([this](ConstByteSpan payload) {
-      if (pwpb_on_next_) {
-        Response response{};
-        const Status status = serde_->response().Decode(payload, response);
-        if (status.ok()) {
-          pwpb_on_next_(response);
-        } else {
-          rpc_lock().lock();
-          HandleError(Status::DataLoss());
-        }
-      }
-    });
+    Call::set_on_next_locked(
+        [this](ConstByteSpan payload) PW_NO_LOCK_SAFETY_ANALYSIS {
+          DecodeToStructAndInvokeOnNext(
+              payload, serde_->response(), pwpb_on_next_);
+        });
   }
 
-  const PwpbMethodSerde* serde_;
-  Function<void(const Response&)> pwpb_on_next_;
+  const PwpbMethodSerde* serde_ PW_GUARDED_BY(rpc_lock());
+  Function<void(const Response&)> pwpb_on_next_ PW_GUARDED_BY(rpc_lock());
 };
 
 }  // namespace internal

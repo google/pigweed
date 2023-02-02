@@ -23,4 +23,49 @@ void ClientCall::CloseClientCall() {
   UnregisterAndMarkClosed();
 }
 
+void ClientCall::MoveClientCallFrom(ClientCall& other)
+    PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+  other.WaitUntilReadyToBeMoved();
+  CloseClientCall();
+  MoveFrom(other);
+}
+
+void UnaryResponseClientCall::HandleCompleted(
+    ConstByteSpan response, Status status) PW_NO_LOCK_SAFETY_ANALYSIS {
+  UnregisterAndMarkClosed();
+
+  auto on_completed_local = std::move(on_completed_);
+  CallbackStarted();
+
+  // The lock is only released when calling into user code. If the callback is
+  // wrapped, this on_completed is an internal function that expects the lock to
+  // be held, and releases it before invoking user code.
+  if (!hold_lock_while_invoking_callback_with_payload()) {
+    rpc_lock().unlock();
+  }
+
+  if (on_completed_local) {
+    on_completed_local(response, status);
+  }
+
+  // This mutex lock could be avoided by making callbacks_executing_ atomic.
+  LockGuard lock(rpc_lock());
+  CallbackFinished();
+}
+
+void StreamResponseClientCall::HandleCompleted(Status status) {
+  UnregisterAndMarkClosed();
+  auto on_completed_local = std::move(on_completed_);
+  CallbackStarted();
+  rpc_lock().unlock();
+
+  if (on_completed_local) {
+    on_completed_local(status);
+  }
+
+  // This mutex lock could be avoided by making callbacks_executing_ atomic.
+  LockGuard lock(rpc_lock());
+  CallbackFinished();
+}
+
 }  // namespace pw::rpc::internal
