@@ -31,6 +31,12 @@ pw_source_set("pw_intrusive_ptr") {
   ]
   sources = [ "ref_counted_base.cc" ]
   deps = [ "$dir_pw_assert" ]
+  public_deps = [ ":pw_recyclable" ]
+}
+
+pw_source_set("pw_recyclable") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_intrusive_ptr/recyclable.h" ]
 }
 
 pw_doc_group("docs") {
@@ -43,6 +49,14 @@ pw_test_group("tests") {
 
 pw_test("intrusive_ptr_test") {
   sources = [ "intrusive_ptr_test.cc" ]
+  deps = [ ":pw_intrusive_ptr" ]
+
+  # TODO(b/260624583): Fix this for //targets/rp2040
+  enable_if = pw_build_EXECUTABLE_TARGET_TYPE != "pico_executable"
+}
+
+pw_test("recyclable_test") {
+  sources = [ "recyclable_test.cc" ]
   deps = [ ":pw_intrusive_ptr" ]
 
   # TODO(b/260624583): Fix this for //targets/rp2040

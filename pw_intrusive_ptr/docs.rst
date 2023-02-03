@@ -4,6 +4,8 @@
 pw_intrusive_ptr
 ----------------
 
+IntrusivePtr
+------------
 ``pw::IntrusivePtr`` is a smart shared pointer that relies on the pointed-at
 object to do the reference counting. Its API is based on ``std::shared_ptr`` but
 requires the pointed-at class to provide ``AddRef()`` and ``ReleaseRef()``
@@ -53,3 +55,29 @@ clang-tidy checks suggest.
 it can be returned by const reference is the trivial getter for the object
 field. When returning locally created ``IntrusivePtr`` or a pointer that was
 casted to the base class it MUST be returned by value.
+
+Recyclable
+----------
+``pw::Recyclable`` is a mixin that can be used with supported smart pointers
+like ``pw::IntrusivePtr`` to specify a custom memory cleanup routine instead
+of `delete`. The cleanup routine is specified as a method with the signature
+``void pw_recycle()``. For example:
+
+.. code-block:: cpp
+
+  class Foo : public pw::Recyclable<Foo>, public pw::IntrusivePtr<Foo> {
+  public:
+    // public implementation here
+  private:
+    friend class pw::Recyclable<Foo>;
+    void pw_recycle() {
+      if (should_recycle())) {
+        do_recycle_stuff();
+      } else {
+        delete this;
+      }
+    }
+  };
+
+``Recyclable`` can be used to avoid heap allocation when using smart pointers,
+as the recycle routine can return memory to a memory pool.

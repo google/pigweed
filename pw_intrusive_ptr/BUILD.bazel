@@ -30,11 +30,32 @@ pw_cc_library(
         "public/pw_intrusive_ptr/intrusive_ptr.h",
     ],
     includes = ["public"],
-    deps = ["//pw_assert"],
+    deps = [
+        ":pw_recyclable",
+        "//pw_assert",
+    ],
+)
+
+pw_cc_library(
+    name = "pw_recyclable",
+    hdrs = [
+        "public/pw_intrusive_ptr/recyclable.h",
+    ],
+    includes = ["public"],
 )
 
 pw_cc_test(
     name = "intrusive_ptr_test",
-    srcs = ["intrusive_ptr_test.cc"],
+    srcs = [
+        "intrusive_ptr_test.cc",
+    ],
+    deps = [":pw_intrusive_ptr"],
+)
+
+pw_cc_test(
+    name = "recyclable_test",
+    srcs = [
+        "recyclable_test.cc",
+    ],
     deps = [":pw_intrusive_ptr"],
 )
