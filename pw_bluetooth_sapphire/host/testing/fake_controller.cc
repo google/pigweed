@@ -15,10 +15,11 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/defaults.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/vendor-protocol.emb.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/vendor_protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
+
+#include <pw_bluetooth/vendor.emb.h>
 
 namespace bt::testing {
 namespace {

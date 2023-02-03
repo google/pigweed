@@ -8,7 +8,8 @@
 #include <cstdint>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/hci-protocol.emb.h"
+
+#include <pw_bluetooth/hci.emb.h>
 
 namespace bt::hci_spec {
 

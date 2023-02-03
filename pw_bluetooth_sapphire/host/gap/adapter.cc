@@ -18,7 +18,6 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/metrics.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/hci-protocol.emb.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/util.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/android_extended_low_energy_advertiser.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
@@ -30,6 +29,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/emboss_control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
+
+#include <pw_bluetooth/hci.emb.h>
 
 namespace bt::gap {
 

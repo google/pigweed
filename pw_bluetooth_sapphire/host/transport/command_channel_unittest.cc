@@ -7,7 +7,6 @@
 #include <lib/async/cpp/task.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/hci-protocol.emb.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
@@ -15,6 +14,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
+
+#include <pw_bluetooth/hci.emb.h>
 
 namespace bt::hci {
 namespace {

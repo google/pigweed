@@ -58,7 +58,6 @@ source_set("common") {
   public_deps = [
     "//sdk/lib/fit",
     "//sdk/lib/sys/inspect/cpp",
-    "//src/connectivity/bluetooth/core/bt-host/hci-spec:hci-protocol",
     "//src/connectivity/bluetooth/lib/cpp-string",
     "//src/connectivity/bluetooth/lib/cpp-type",
     "//third_party/pigweed:pw_assert",
@@ -66,6 +65,7 @@ source_set("common") {
     "//third_party/pigweed:pw_random",
     "//third_party/pigweed:pw_span",
     "//third_party/pigweed:pw_string",
+    "//third_party/pigweed/src/pw_bluetooth:emboss_hci",
     "//zircon/system/ulib/async:async-cpp",
     "//zircon/system/ulib/async-default",
   ]

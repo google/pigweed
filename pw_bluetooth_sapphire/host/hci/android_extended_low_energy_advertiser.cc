@@ -4,9 +4,10 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/hci/android_extended_low_energy_advertiser.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/vendor-protocol.emb.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/vendor_protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
+
+#include <pw_bluetooth/vendor.emb.h>
 
 namespace bt::hci {
 

@@ -7,9 +7,10 @@
 
 #include "emboss_control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/hci-protocol.emb.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/vendor-protocol.emb.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/vendor_protocol.h"
+
+#include <pw_bluetooth/hci.emb.h>
+#include <pw_bluetooth/vendor.emb.h>
 
 namespace bt::hci {
 namespace {

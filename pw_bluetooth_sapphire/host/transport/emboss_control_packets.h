@@ -9,7 +9,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/emboss_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 
-#include <src/connectivity/bluetooth/core/bt-host/hci-spec/hci-protocol.emb.h>
+#include <pw_bluetooth/hci.emb.h>
 
 namespace bt::hci {
 

@@ -16,7 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/transport.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
-#include <src/connectivity/bluetooth/core/bt-host/hci-spec/hci-protocol.emb.h>
+#include <pw_bluetooth/hci.emb.h>
 
 namespace bt::hci {
 

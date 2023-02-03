@@ -16,7 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/uint128.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 
-#include <src/connectivity/bluetooth/core/bt-host/hci-spec/hci-protocol.emb.h>
+#include <pw_bluetooth/hci.emb.h>
 
 // This file contains general opcode/number and static packet definitions for
 // the Bluetooth Host-Controller Interface. Each packet payload structure
