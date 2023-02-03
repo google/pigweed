@@ -341,9 +341,7 @@ group("host_tools") {
   ]
 
   if (pw_rust_ENABLE_EXPERIMENTAL_BUILD) {
-    deps += [
-      "$dir_pw_rust/example:hello($dir_pigweed/targets/host:host_clang_debug)",
-    ]
+    deps += [ "$dir_pw_rust/examples/host_executable:hello($dir_pigweed/targets/host:host_clang_debug)" ]
   }
 }
 

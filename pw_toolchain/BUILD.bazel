@@ -17,6 +17,7 @@ load(
     "pw_cc_library",
     "pw_cc_test",
 )
+load(":rust_toolchain.bzl", "pw_rust_toolchain")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -42,4 +43,23 @@ pw_cc_library(
     srcs = ["wrap_abort.cc"],
     linkopts = ["-Wl,--wrap=abort"],
     deps = ["//pw_assert"],
+)
+
+# Define rust toolchains that are compatable with @bazel_embedded.
+pw_rust_toolchain(
+    name = "thumbv7m_rust_linux_x86_64",
+    exec_cpu = "x86_64",
+    exec_os = "linux",
+    exec_triple = "x86_64-unknown-linux-gnu",
+    rust_target_triple = "thumbv7m-none-eabi",
+    target_cpu = "armv7-m",
+)
+
+pw_rust_toolchain(
+    name = "thumbv6m_rust_linux_x86_64",
+    exec_cpu = "x86_64",
+    exec_os = "linux",
+    exec_triple = "x86_64-unknown-linux-gnu",
+    rust_target_triple = "thumbv6m-none-eabi",
+    target_cpu = "armv6-m",
 )

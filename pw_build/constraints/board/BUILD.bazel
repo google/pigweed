@@ -28,3 +28,8 @@ constraint_value(
     name = "mimxrt595_evk",
     constraint_setting = ":board",
 )
+
+constraint_value(
+    name = "microbit",
+    constraint_setting = ":board",
+)

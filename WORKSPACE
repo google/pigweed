@@ -265,6 +265,72 @@ load(
 
 register_gcc_arm_none_toolchain()
 
+# Rust Support
+#
+
+git_repository(
+    name = "rules_rust",
+    # Pulls in the main branch with https://github.com/bazelbuild/rules_rust/pull/1803
+    # merged.  Once a release is cut with that commit, we should switch to
+    # using a release tarbal.
+    commit = "a5853fd37053b65ee30ba4f8064b9db67c90d53f",
+    remote = "https://github.com/bazelbuild/rules_rust",
+    shallow_since = "1675302817 -0800",
+)
+
+load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_analyzer_toolchain_repository", "rust_repository_set")
+
+rules_rust_dependencies()
+
+# Here we pull in a specific toolchain.  Unfortunately `rust_repository_set`
+# does not provide a way to add `target_compatible_with` options which are
+# needed to be compatible with `@bazel_embedded` (specifically
+# `@bazel_embedded//constraints/fpu:none` which is specified in
+# `//platforms`)
+#
+# See `//toolchain:rust_linux_x86_64` for how this is used.
+#
+# Note: This statement creates name mangled remotes of the form:
+# `@{name}__{triplet}_tools`
+# (example: `@rust_linux_x86_64__thumbv7m-none-eabi_tools/`)
+rust_repository_set(
+    name = "rust_linux_x86_64",
+    edition = "2021",
+    exec_triple = "x86_64-unknown-linux-gnu",
+    extra_target_triples = [
+        "thumbv7m-none-eabi",
+        "thumbv6m-none-eabi",
+    ],
+    versions = ["1.67.0"],
+)
+
+# Registers our Rust toolchains that are compatable with `@bazel_embedded`.
+register_toolchains(
+    "//pw_toolchain:thumbv7m_rust_linux_x86_64",
+    "//pw_toolchain:thumbv6m_rust_linux_x86_64",
+)
+
+# Allows creation of a `rust-project.json` file to allow rust analyzer to work.
+load("@rules_rust//tools/rust_analyzer:deps.bzl", "rust_analyzer_dependencies")
+
+# Since we do not use rust_register_toolchains, we need to define a
+# rust_analyzer_toolchain.
+register_toolchains(rust_analyzer_toolchain_repository(
+    name = "rust_analyzer_toolchain",
+    # This should match the currently registered toolchain.
+    version = "1.67.0",
+))
+
+rust_analyzer_dependencies()
+
+# Vendored third party rust crates.
+git_repository(
+    name = "rust_crates",
+    commit = "c39c1d1d4e4bdf2d8145beb8882af6f6e4e6dbbc",
+    remote = "https://pigweed.googlesource.com/third_party/rust_crates",
+    shallow_since = "1675359057 +0000",
+)
+
 # Registers platforms for use with toolchain resolution
 register_execution_platforms("//pw_build/platforms:all")
 

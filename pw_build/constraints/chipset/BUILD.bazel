@@ -28,3 +28,8 @@ constraint_value(
     name = "lm3s6965evb",
     constraint_setting = ":chipset",
 )
+
+constraint_value(
+    name = "nrf52833",
+    constraint_setting = ":chipset",
+)

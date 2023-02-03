@@ -99,9 +99,21 @@ platform(
     parents = [":cortex_m3"],
 )
 
+platform(
+    name = "nrf52833",
+    constraint_values = ["//pw_build/constraints/chipset:nrf52833"],
+    parents = [":cortex_m0"],
+)
+
 # --- Boards ---
 platform(
     name = "stm32f429i-disc1",
     constraint_values = ["//pw_build/constraints/board:stm32f429i-disc1"],
     parents = [":stm32f429"],
+)
+
+platform(
+    name = "microbit",
+    constraint_values = ["//pw_build/constraints/board:microbit"],
+    parents = [":nrf52833"],
 )
