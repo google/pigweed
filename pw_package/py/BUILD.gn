@@ -31,6 +31,7 @@ pw_python_package("py") {
     "pw_package/packages/boringssl.py",
     "pw_package/packages/chromium_verifier.py",
     "pw_package/packages/crlset.py",
+    "pw_package/packages/emboss.py",
     "pw_package/packages/freertos.py",
     "pw_package/packages/googletest.py",
     "pw_package/packages/mbedtls.py",

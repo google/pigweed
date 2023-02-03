@@ -22,6 +22,7 @@ from pw_package.packages import arduino_core
 from pw_package.packages import boringssl
 from pw_package.packages import chromium_verifier
 from pw_package.packages import crlset
+from pw_package.packages import emboss
 from pw_package.packages import freertos
 from pw_package.packages import googletest
 from pw_package.packages import mbedtls
