@@ -20,6 +20,37 @@ behavior.
   intended mostly for ease of initial bringup. We encourage teams to use
   tokenized asserts since they are much smaller both in terms of ROM and RAM.
 
+----------------------------
+Module Configuration Options
+----------------------------
+The following configurations can be adjusted via compile-time configuration of
+this module, see the
+:ref:`module documentation <module-structure-compile-time-configuration>` for
+more details.
+
+.. c:macro:: PW_ASSERT_BASIC_ACTION
+
+  Controls what happens after an assert failure. Should be set to one of the
+  following options:
+
+  - PW_ASSERT_BASIC_ACTION_ABORT: Call std::abort()
+  - PW_ASSERT_BASIC_ACTION_EXIT: Call std::_Exit(-1)
+  - PW_ASSERT_BASIC_ACTION_LOOP: Loop forever
+
+  Defaults to abort.
+
+.. c:macro:: PW_ASSERT_BASIC_SHOW_BANNER
+
+  Controls whether ASCII art banner is printed on assert failure.
+
+  This defaults to enabled.
+
+.. c:macro:: PW_ASSERT_BASIC_USE_COLORS
+
+  Controls whether colors are used in assert message printed to console.
+
+  This defaults to enabled.
+
 .. _module-pw_assert_basic-custom_handler:
 
 Custom handler backend example

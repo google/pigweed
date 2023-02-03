@@ -34,10 +34,23 @@
 #define PW_ASSERT_CAPTURE_VALUES 1
 #endif  // !defined(PW_ASSERT_CAPTURE_VALUES)
 
-// If 1, call C's standard abort() function on assert failure.
-#ifndef PW_ASSERT_BASIC_ABORT
-#define PW_ASSERT_BASIC_ABORT 1
+// Modes available for how to end an assert failure for pw_assert_basic.
+#define PW_ASSERT_BASIC_ACTION_ABORT 100
+#define PW_ASSERT_BASIC_ACTION_EXIT 101
+#define PW_ASSERT_BASIC_ACTION_LOOP 102
+
+#ifdef PW_ASSERT_BASIC_ABORT
+#error PW_ASSERT_BASIC_ABORT is deprecated! Use PW_ASSERT_BASIC_ACTION instead.
 #endif  // PW_ASSERT_BASIC_ABORT
+
+// Set to one of the following to define how pw_basic_assert should act after an
+// assert failure:
+// - PW_ASSERT_BASIC_ACTION_ABORT: Call std::abort()
+// - PW_ASSERT_BASIC_ACTION_EXIT: Call std::_Exit(-1)
+// - PW_ASSERT_BASIC_ACTION_LOOP: Loop forever
+#ifndef PW_ASSERT_BASIC_ACTION
+#define PW_ASSERT_BASIC_ACTION PW_ASSERT_BASIC_ACTION_ABORT
+#endif  // PW_ASSERT_BASIC_ACTION
 
 // Whether to show the CRASH ASCII art banner.
 #ifndef PW_ASSERT_BASIC_SHOW_BANNER
