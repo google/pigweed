@@ -24,15 +24,15 @@ void TestDispatcher::RunUntilIdle() {
   while (!task_queue_.empty()) {
     // Only advance to the due time of the next task because new tasks can be
     // scheduled in the next task.
-    now_ = BasicDispatcher::DueTime(task_queue_.front());
+    now_ = BasicDispatcher::GetDueTime(task_queue_.front());
     RunLoopOnce();
   }
 }
 
 void TestDispatcher::RunUntil(chrono::SystemClock::time_point end_time) {
   while (!task_queue_.empty() &&
-         BasicDispatcher::DueTime(task_queue_.front()) <= end_time) {
-    now_ = BasicDispatcher::DueTime(task_queue_.front());
+         BasicDispatcher::GetDueTime(task_queue_.front()) <= end_time) {
+    now_ = BasicDispatcher::GetDueTime(task_queue_.front());
     RunLoopOnce();
   }
 
@@ -47,14 +47,14 @@ void TestDispatcher::RunFor(chrono::SystemClock::duration duration) {
 
 void TestDispatcher::RunLoopOnce() {
   while (!task_queue_.empty() &&
-         BasicDispatcher::DueTime(task_queue_.front()) <= now()) {
+         BasicDispatcher::GetDueTime(task_queue_.front()) <= now()) {
     Task& task = task_queue_.front();
     task_queue_.pop_front();
 
     if (BasicDispatcher::IsPeriodic(task)) {
-      PostTaskInternal(
-          task,
-          BasicDispatcher::DueTime(task) + BasicDispatcher::SetInterval(task));
+      PostTaskInternal(task,
+                       BasicDispatcher::GetDueTime(task) +
+                           BasicDispatcher::GetInterval(task));
     }
 
     Context ctx{this, &task};
@@ -101,7 +101,7 @@ void TestDispatcher::PostTaskInternal(
   auto it_front = task_queue_.begin();
   auto it_behind = task_queue_.before_begin();
   while (it_front != task_queue_.end() &&
-         time_due > BasicDispatcher::DueTime(*it_front)) {
+         time_due > BasicDispatcher::GetDueTime(*it_front)) {
     ++it_front;
     ++it_behind;
   }

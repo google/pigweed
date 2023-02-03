@@ -108,7 +108,7 @@ class BasicDispatcher final : public Dispatcher, public thread::ThreadCore {
   static constexpr uint8_t kPeriodicityOffset =
       kIntervalOffset + sizeof(chrono::SystemClock::duration);
 
-  static chrono::SystemClock::time_point DueTime(Task& task) {
+  static chrono::SystemClock::time_point GetDueTime(Task& task) {
     chrono::SystemClock::time_point time;
     memcpy(static_cast<void*>(&time),
            task.State() + kDueTimeOffset,
@@ -121,7 +121,7 @@ class BasicDispatcher final : public Dispatcher, public thread::ThreadCore {
            sizeof(chrono::SystemClock::time_point));
   }
 
-  static chrono::SystemClock::duration SetInterval(Task& task) {
+  static chrono::SystemClock::duration GetInterval(Task& task) {
     chrono::SystemClock::duration duration;
     memcpy(static_cast<void*>(&duration),
            task.State() + kIntervalOffset,

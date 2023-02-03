@@ -50,13 +50,13 @@ void BasicDispatcher::RunFor(chrono::SystemClock::duration duration) {
 }
 
 void BasicDispatcher::RunLoopOnce() {
-  if (task_queue_.empty() || DueTime(task_queue_.front()) > now()) {
+  if (task_queue_.empty() || GetDueTime(task_queue_.front()) > now()) {
     // Sleep until a notification is received or until the due time of the
     // next task. Notifications are sent when tasks are posted or 'stop' is
     // requested.
     chrono::SystemClock::time_point wake_time =
         task_queue_.empty() ? now() + SLEEP_DURATION
-                            : DueTime(task_queue_.front());
+                            : GetDueTime(task_queue_.front());
 
     lock_.unlock();
     PW_LOG_DEBUG("no task due; waiting for signal");
@@ -66,12 +66,12 @@ void BasicDispatcher::RunLoopOnce() {
     return;
   }
 
-  while (!task_queue_.empty() && DueTime(task_queue_.front()) <= now()) {
+  while (!task_queue_.empty() && GetDueTime(task_queue_.front()) <= now()) {
     Task& task = task_queue_.front();
     task_queue_.pop_front();
 
     if (IsPeriodic(task)) {
-      PostTaskInternal(task, DueTime(task) + SetInterval(task));
+      PostTaskInternal(task, GetDueTime(task) + GetInterval(task));
     }
 
     lock_.unlock();
@@ -129,7 +129,7 @@ void BasicDispatcher::PostTaskInternal(
   SetDueTime(task, time_due);
   auto it_front = task_queue_.begin();
   auto it_behind = task_queue_.before_begin();
-  while (it_front != task_queue_.end() && time_due > DueTime(*it_front)) {
+  while (it_front != task_queue_.end() && time_due > GetDueTime(*it_front)) {
     ++it_front;
     ++it_behind;
   }
