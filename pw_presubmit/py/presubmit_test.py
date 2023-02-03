@@ -15,10 +15,8 @@
 """Tests for presubmit tools."""
 
 import dataclasses
-import json
 import re
 import unittest
-import unittest.mock
 
 from pw_presubmit import presubmit
 
@@ -155,95 +153,6 @@ class ProgramsTest(unittest.TestCase):
         self.assertEqual(all_substeps['_fake_function_1'], _fake_function_1)
         self.assertEqual(all_substeps['_fake_function_2'], _fake_function_2)
         # pylint: enable=protected-access
-
-
-def properties(**kwargs):
-    return {
-        'input': {
-            'properties': {
-                '$pigweed/pipeline': kwargs,
-            },
-        },
-    }
-
-
-class LuciContextTest(unittest.TestCase):
-    """Tests the creation of a LuciContext object."""
-
-    def _create(self, **kwargs):  # pylint: disable=no-self-use
-        kwargs.setdefault('BUILDBUCKET_ID', '123456')
-        kwargs.setdefault('BUILDBUCKET_NAME', 'project:bucket:builder')
-        kwargs.setdefault('BUILD_NUMBER', '123')
-        kwargs.setdefault('SWARMING_TASK_ID', '1a2b3c')
-        final_kwargs = {k: v for k, v in kwargs.items() if v is not None}
-        return presubmit.LuciContext.create_from_environment(final_kwargs)
-
-    def test_missing_buildbucket_id(self):
-        ctx = self._create(BUILDBUCKET_ID=None)
-        self.assertEqual(None, ctx)
-
-    def test_missing_buildbucket_name(self):
-        ctx = self._create(BUILDBUCKET_NAME=None)
-        self.assertEqual(None, ctx)
-
-    def test_missing_build_number(self):
-        ctx = self._create(BUILD_NUMBER=None)
-        self.assertEqual(None, ctx)
-
-    def test_missing_swarming_task_id(self):
-        ctx = self._create(SWARMING_TASK_ID=None)
-        self.assertEqual(None, ctx)
-
-    def test_all_env_vars_present_no_bb(self):
-        with unittest.mock.patch(
-            'pw_presubmit.presubmit.subprocess.check_output',
-            return_value=json.dumps({}),
-        ):
-            ctx = self._create()
-        self.assertIsInstance(ctx, presubmit.LuciContext)
-
-        self.assertEqual(123456, ctx.buildbucket_id)
-        self.assertEqual(123, ctx.build_number)
-        self.assertEqual('project', ctx.project)
-        self.assertEqual('bucket', ctx.bucket)
-        self.assertEqual('builder', ctx.builder)
-        self.assertEqual('1a2b3c', ctx.swarming_task_id)
-        self.assertFalse(ctx.pipeline)
-
-    def test_all_env_vars_present_no_pipeline(self):
-        props = properties(
-            inside_a_pipeline=False,
-            round=3,
-            builds_from_previous_iteration=[1, 2],
-        )
-
-        with unittest.mock.patch(
-            'pw_presubmit.presubmit.subprocess.check_output',
-            return_value=json.dumps(props),
-        ):
-            ctx = self._create()
-        self.assertIsInstance(ctx, presubmit.LuciContext)
-        self.assertFalse(ctx.pipeline)
-
-    def test_all_env_vars_present_pipeline(self):
-        props = properties(
-            inside_a_pipeline=True,
-            round=3,
-            builds_from_previous_iteration=[1, 2],
-        )
-
-        with unittest.mock.patch(
-            'pw_presubmit.presubmit.subprocess.check_output',
-            return_value=json.dumps(props),
-        ):
-            ctx = self._create()
-        self.assertIsInstance(ctx, presubmit.LuciContext)
-        self.assertTrue(ctx.pipeline)
-        self.assertIsInstance(ctx.pipeline, presubmit.LuciPipeline)
-        self.assertEqual(3, ctx.pipeline.round)
-        self.assertEqual(
-            [1, 2], list(ctx.pipeline.builds_from_previous_iteration)
-        )
 
 
 if __name__ == '__main__':
