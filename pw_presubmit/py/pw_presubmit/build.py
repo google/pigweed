@@ -41,7 +41,6 @@ from typing import (
     Union,
 )
 
-from pw_package import package_manager
 from pw_presubmit import (
     bazel_parser,
     call,
@@ -49,6 +48,7 @@ from pw_presubmit import (
     FileFilter,
     filter_paths,
     format_code,
+    install_package,
     Iterator,
     log_run,
     ninja_parser,
@@ -102,23 +102,6 @@ def bazel(ctx: PresubmitContext, cmd: str, *args: str) -> None:
                 outs.write(failure)
 
         raise exc
-
-
-def install_package(
-    ctx: PresubmitContext, name: str, force: bool = False
-) -> None:
-    """Install package with given name in given path."""
-    root = ctx.package_root
-    mgr = package_manager.PackageManager(root)
-
-    if not mgr.list():
-        raise PresubmitFailure(
-            'no packages configured, please import your pw_package '
-            'configuration module'
-        )
-
-    if not mgr.status(name) or force:
-        mgr.install(name, force=force)
 
 
 def _gn_value(value) -> str:

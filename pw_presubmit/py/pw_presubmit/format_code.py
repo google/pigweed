@@ -21,7 +21,6 @@ code. These tools must be available on the path when this script is invoked!
 
 import argparse
 import collections
-import dataclasses
 import difflib
 import logging
 import os
@@ -56,35 +55,18 @@ except ImportError:
 import pw_cli.color
 import pw_cli.env
 from pw_presubmit.presubmit import FileFilter
-from pw_presubmit import cli, git_repo, owners_checks, PresubmitContext
+from pw_presubmit import (
+    cli,
+    FormatContext,
+    git_repo,
+    owners_checks,
+    PresubmitContext,
+)
 from pw_presubmit.tools import exclude_paths, file_summary, log_run, plural
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 _COLOR = pw_cli.color.colors()
 _DEFAULT_PATH = Path('out', 'format')
-
-
-@dataclasses.dataclass
-class FormatContext:
-    """Context passed into formatting helpers.
-
-    This class is a subset of PresubmitContext (from presubmit.py) containing
-    only what's needed by this function.
-
-    For full documentation on the members see the PresubmitContext section of
-    pw_presubmit/docs.rst.
-
-    Args:
-        root: Source checkout root directory
-        output_dir: Output directory for this specific language
-        paths: Modified files for the presubmit step to check (often used in
-            formatting steps but ignored in compile steps)
-    """
-
-    root: Optional[Path]
-    output_dir: Path
-    paths: Tuple[Path, ...]
-
 
 _Context = Union[PresubmitContext, FormatContext]
 
@@ -663,11 +645,13 @@ class CodeFormatter:
         files: Iterable[Path],
         output_dir: Path,
         code_formats: Collection[CodeFormat] = CODE_FORMATS_WITH_YAPF,
+        package_root: Optional[Path] = None,
     ):
         self.root = root
         self.paths = list(files)
         self._formats: Dict[CodeFormat, List] = collections.defaultdict(list)
         self.root_output_dir = output_dir
+        self.package_root = package_root or output_dir / 'packages'
 
         for path in self.paths:
             for code_format in code_formats:
@@ -688,6 +672,7 @@ class CodeFormatter:
             root=self.root,
             output_dir=outdir,
             paths=tuple(self._formats[code_format]),
+            package_root=self.package_root,
         )
 
     def check(self) -> Dict[Path, str]:
@@ -735,6 +720,7 @@ def format_paths_in_repo(
     base: str,
     code_formats: Collection[CodeFormat] = CODE_FORMATS_WITH_YAPF,
     output_directory: Optional[Path] = None,
+    package_root: Optional[Path] = None,
 ) -> int:
     """Checks or fixes formatting for files in a Git repo."""
 
@@ -778,6 +764,7 @@ def format_paths_in_repo(
         repo=repo,
         code_formats=code_formats,
         output_directory=output_directory,
+        package_root=package_root,
     )
 
 
@@ -787,6 +774,7 @@ def format_files(
     repo: Optional[Path] = None,
     code_formats: Collection[CodeFormat] = CODE_FORMATS,
     output_directory: Optional[Path] = None,
+    package_root: Optional[Path] = None,
 ) -> int:
     """Checks or fixes formatting for the specified files."""
 
@@ -813,6 +801,7 @@ def format_files(
         code_formats=code_formats,
         root=root,
         output_dir=output_dir,
+        package_root=package_root,
     )
 
     _LOG.info('Checking formatting for %s', plural(formatter.paths, 'file'))
@@ -894,6 +883,13 @@ def arguments(
         type=Path,
         help=f"Output directory (default: {'<repo root>' / _DEFAULT_PATH})",
     )
+    parser.add_argument(
+        '--package-root',
+        type=Path,
+        default=Path(os.environ['PW_PACKAGE_ROOT']),
+        help='Package root directory',
+    )
+
     return parser
 
 

@@ -75,6 +75,7 @@ from typing import (
 
 import pw_cli.color
 import pw_cli.env
+from pw_package import package_manager
 from pw_presubmit import git_repo, tools
 from pw_presubmit.tools import plural
 
@@ -345,6 +346,30 @@ class LuciContext:
         )
         _LOG.debug('%r', result)
         return result
+
+
+@dataclasses.dataclass
+class FormatContext:
+    """Context passed into formatting helpers.
+
+    This class is a subset of PresubmitContext containing only what's needed by
+    formatters.
+
+    For full documentation on the members see the PresubmitContext section of
+    pw_presubmit/docs.rst.
+
+    Args:
+        root: Source checkout root directory
+        output_dir: Output directory for this specific language
+        paths: Modified files for the presubmit step to check (often used in
+            formatting steps but ignored in compile steps)
+        package_root: Root directory for pw package installations
+    """
+
+    root: Optional[Path]
+    output_dir: Path
+    paths: Tuple[Path, ...]
+    package_root: Path
 
 
 @dataclasses.dataclass
@@ -1248,3 +1273,22 @@ def call(*args, **kwargs) -> None:
 
     if process.returncode:
         raise PresubmitFailure
+
+
+def install_package(
+    ctx: Union[FormatContext, PresubmitContext],
+    name: str,
+    force: bool = False,
+) -> None:
+    """Install package with given name in given path."""
+    root = ctx.package_root
+    mgr = package_manager.PackageManager(root)
+
+    if not mgr.list():
+        raise PresubmitFailure(
+            'no packages configured, please import your pw_package '
+            'configuration module'
+        )
+
+    if not mgr.status(name) or force:
+        mgr.install(name, force=force)
