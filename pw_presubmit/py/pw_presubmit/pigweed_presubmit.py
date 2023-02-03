@@ -67,7 +67,14 @@ pw_package.pigweed_packages.initialize()
 
 # Trigger builds if files with these extensions change.
 _BUILD_FILE_FILTER = presubmit.FileFilter(
-    suffix=(*format_code.C_FORMAT.extensions, '.py', '.rst', '.gn', '.gni')
+    suffix=(
+        *format_code.C_FORMAT.extensions,
+        '.py',
+        '.rst',
+        '.gn',
+        '.gni',
+        '.emb',
+    )
 )
 
 _OPTIMIZATION_LEVELS = 'debug', 'size_optimized', 'speed_optimized'
@@ -202,6 +209,18 @@ stm32f429i = build.GnGenNinja(
     ninja_targets=_at_all_optimization_levels('stm32f429i'),
 )
 
+
+gn_emboss_build = build.GnGenNinja(
+    name='gn_emboss_build',
+    packages=('emboss',),
+    gn_args=dict(
+        dir_pw_third_party_emboss=lambda ctx: '"{}"'.format(
+            ctx.package_root / 'emboss'
+        ),
+        pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
+    ),
+    ninja_targets=(*_at_all_optimization_levels(f'host_{_HOST_COMPILER}'),),
+)
 
 gn_nanopb_build = build.GnGenNinja(
     name='gn_nanopb_build',
@@ -911,6 +930,7 @@ OTHER_CHECKS = (
 # program block CQ on Linux.
 MISC = (
     # keep-sorted: start
+    gn_emboss_build,
     gn_nanopb_build,
     gn_pico_build,
     gn_pw_system_demo_build,
