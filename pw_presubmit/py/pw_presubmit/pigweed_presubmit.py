@@ -429,7 +429,7 @@ def cmake_gcc(ctx: PresubmitContext):
     endswith=(*format_code.C_FORMAT.extensions, '.bazel', '.bzl', 'BUILD')
 )
 def bazel_test(ctx: PresubmitContext) -> None:
-    """Runs bazel test on each bazel compatible module."""
+    """Runs bazel test on the entire repo."""
     build.bazel(
         ctx,
         'test',
@@ -440,16 +440,42 @@ def bazel_test(ctx: PresubmitContext) -> None:
 
 
 @filter_paths(
-    endswith=(*format_code.C_FORMAT.extensions, '.bazel', '.bzl', 'BUILD')
+    endswith=(
+        *format_code.C_FORMAT.extensions,
+        '.bazel',
+        '.bzl',
+        '.py',
+        '.rs',
+        'BUILD',
+    )
 )
 def bazel_build(ctx: PresubmitContext) -> None:
-    """Runs Bazel build on each Bazel compatible module."""
+    """Runs Bazel build for each supported platform."""
     build.bazel(
         ctx,
         'build',
         '--',
         '//...',
     )
+
+    # Mapping from Bazel platforms to targets which should be built for those
+    # platforms.
+    targets_for_platform = {
+        "//pw_build/platforms:lm3s6965evb": [
+            "//pw_rust/examples/embedded_hello:hello",
+        ],
+        "//pw_build/platforms:microbit": [
+            "//pw_rust/examples/embedded_hello:hello",
+        ],
+    }
+
+    for platform, targets in targets_for_platform.items():
+        build.bazel(
+            ctx,
+            'build',
+            f'--platforms={platform}',
+            *targets,
+        )
 
 
 def pw_transfer_integration_test(ctx: PresubmitContext) -> None:
