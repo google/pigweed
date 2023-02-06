@@ -98,9 +98,9 @@ http_archive(
 # Used in modules: All cc targets.
 git_repository(
     name = "rules_cc_toolchain",
-    commit = "16554e29b63641ad0c6ce9caa12910548dfb6506",
-    remote = "https://github.com/bazelembedded/rules_cc_toolchain.git",
-    shallow_since = "1671221856 -0800",
+    commit = "9f209fda87414285bc66accd3612575b29760fba",
+    remote = "https://github.com/bazelembedded/rules_cc_toolchain",
+    shallow_since = "1675385535 -0800",
 )
 
 load("@rules_cc_toolchain//:rules_cc_toolchain_deps.bzl", "rules_cc_toolchain_deps")
@@ -122,13 +122,16 @@ git_repository(
 )
 
 # Set up tools to build custom GRPC rules.
+#
+# We use a fork that silences some zlib compilation warnings.
+#
 # Required by: pigweed.
 # Used in modules: //pw_protobuf.
-http_archive(
+git_repository(
     name = "rules_proto_grpc",
-    sha256 = "7954abbb6898830cd10ac9714fbcacf092299fda00ed2baf781172f545120419",
-    strip_prefix = "rules_proto_grpc-3.1.1",
-    urls = ["https://github.com/rules-proto-grpc/rules_proto_grpc/archive/3.1.1.tar.gz"],
+    commit = "2fbf774a5553b773372f7b91f9b1dc06ee0da2d3",
+    remote = "https://github.com/tpudlik/rules_proto_grpc.git",
+    shallow_since = "1675375991 -0800",
 )
 
 load(
@@ -340,6 +343,18 @@ load("//pw_build:target_config.bzl", "pigweed_config")
 pigweed_config(
     name = "pigweed_config",
     build_file = "//targets:default_config.BUILD",
+)
+
+# Required by: rules_fuzzing.
+#
+# Provided here explicitly to override an old version of absl that
+# rules_fuzzing_dependencies attempts to pull in. That version has
+# many compiler warnings on newer clang versions.
+http_archive(
+    name = "com_google_absl",
+    sha256 = "3ea49a7d97421b88a8c48a0de16c16048e17725c7ec0f1d3ea2683a2a75adc21",
+    strip_prefix = "abseil-cpp-20230125.0",
+    urls = ["https://github.com/abseil/abseil-cpp/archive/refs/tags/20230125.0.tar.gz"],
 )
 
 # Set up rules for fuzz testing.
