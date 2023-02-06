@@ -285,7 +285,14 @@ class LuciTrigger:
         result = []
         with open(path, 'r') as ins:
             for trigger in json.load(ins):
-                keys = set('number remote branch ref gerrit_name submitted')
+                keys = {
+                    'number',
+                    'remote',
+                    'branch',
+                    'ref',
+                    'gerrit_name',
+                    'submitted',
+                }
                 if keys <= trigger.keys():
                     result.append(LuciTrigger(**{x: trigger[x] for x in keys}))
 
