@@ -117,9 +117,11 @@ Suppose you'd like to propose a new Pigweed RPC Over Smoke Signals protocol.
    at your convenience.
 
 #. At any point, you may claim a SEED number by opening the
-   `SEED index <0000-index>`_ and taking the next available number by inserting
+   `SEED index`_ and taking the next available number by inserting
    a row into the ``toctree`` table. Link the entry to the WIP change for your
    SEED.
+
+   .. _SEED index: https://cs.opensource.google/pigweed/pigweed/+/main:seed/0000-index.rst
 
    .. code-block:: rst
 
