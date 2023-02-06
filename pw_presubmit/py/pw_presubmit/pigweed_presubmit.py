@@ -814,7 +814,9 @@ def commit_message_format(_: PresubmitContext):
         errors += 1
 
     # Check that the first line matches the expected pattern.
-    match = re.match(r'^[\w*/]+(?:{[\w* ,]+})?[\w*/]*: (?P<desc>.+)$', lines[0])
+    match = re.match(
+        r'^(?:[\w*/]+(?:{[\w* ,]+})?[\w*/]*|SEED-\d+): (?P<desc>.+)$', lines[0]
+    )
     if not match:
         _LOG.warning('The first line does not match the expected format')
         _LOG.warning(
