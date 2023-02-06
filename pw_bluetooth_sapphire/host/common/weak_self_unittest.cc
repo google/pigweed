@@ -119,11 +119,11 @@ class OnlyTwoStaticManager {
 
   using RefType = RecyclingWeakRef;
 
-  std::optional<fbl::RefPtr<RefType>> GetWeakRef() {
+  std::optional<pw::IntrusivePtr<RefType>> GetWeakRef() {
     for (auto &ptr : OnlyTwoStaticManager::pointers_) {
       if (ptr.is_alive() && ptr.get() == obj_ptr_) {
         // Already adopted, add another refptr pointing to it.
-        return fbl::RefPtr(&ptr);
+        return pw::IntrusivePtr(&ptr);
       }
     }
     for (auto &ptr : OnlyTwoStaticManager::pointers_) {

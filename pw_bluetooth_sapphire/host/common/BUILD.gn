@@ -61,6 +61,7 @@ source_set("common") {
     "//src/connectivity/bluetooth/lib/cpp-string",
     "//src/connectivity/bluetooth/lib/cpp-type",
     "//third_party/pigweed:pw_assert",
+    "//third_party/pigweed:pw_intrusive_ptr",
     "//third_party/pigweed:pw_log",
     "//third_party/pigweed:pw_random",
     "//third_party/pigweed:pw_span",

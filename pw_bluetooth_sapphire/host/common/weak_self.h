@@ -7,9 +7,7 @@
 
 #include <optional>
 
-#include <fbl/recycler.h>
-#include <fbl/ref_counted.h>
-#include <fbl/ref_ptr.h>
+#include <pw_intrusive_ptr/intrusive_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 
@@ -22,7 +20,7 @@ class DynamicWeakManager;
 //
 // This is not thread-safe: get() must be used on the thread the WeakPtr was created on
 // (but can be passed through other threads while not being used)
-class WeakRef : public fbl::RefCounted<WeakRef> {
+class WeakRef : public pw::RefCounted<WeakRef> {
  public:
   ~WeakRef() = default;
 
@@ -62,13 +60,8 @@ class WeakRef : public fbl::RefCounted<WeakRef> {
 // maintains a pool of RecyclingWeakRefs for static memory usage.
 //
 // For an example, see OnlyTwoStaticManager in the unit tests for WeakSelf.
-//
-// We disable the Adoption Validator of RefCounted so that this pointer can be adopted multiple
-// times. Otherwise RefCountedBase gets mad as us for not resetting the count to the sentinel (which
-// is not possible).
-class RecyclingWeakRef
-    : public fbl::Recyclable<RecyclingWeakRef>,
-      public fbl::RefCounted<RecyclingWeakRef, /*EnableAdoptionValidator=*/false> {
+class RecyclingWeakRef : public pw::Recyclable<RecyclingWeakRef>,
+                         public pw::RefCounted<RecyclingWeakRef> {
  public:
   RecyclingWeakRef() : ptr_(nullptr) {}
   ~RecyclingWeakRef() = default;
@@ -88,11 +81,11 @@ class RecyclingWeakRef
     return ptr_;
   }
 
-  fbl::RefPtr<RecyclingWeakRef> alloc(void* p) {
+  pw::IntrusivePtr<RecyclingWeakRef> alloc(void* p) {
     BT_ASSERT(!in_use_);
     in_use_ = true;
     ptr_ = p;
-    return fbl::AdoptRef(this);
+    return pw::IntrusivePtr<RecyclingWeakRef>(this);
   }
 
   void maybe_unset(const void* doomed) {
@@ -102,9 +95,9 @@ class RecyclingWeakRef
   }
 
  private:
-  friend class fbl::Recyclable<RecyclingWeakRef>;
+  friend class pw::Recyclable<RecyclingWeakRef>;
   // This method is called by Recyclable on the last reference drop.
-  void fbl_recycle() {
+  void pw_recycle() {
     ptr_ = nullptr;
     in_use_ = false;
   }
@@ -131,9 +124,9 @@ class DynamicWeakManager {
 
   ~DynamicWeakManager() { InvalidateAll(); }
 
-  std::optional<fbl::RefPtr<RefType>> GetWeakRef() {
+  std::optional<pw::IntrusivePtr<RefType>> GetWeakRef() {
     if (weak_ptr_ref_ == nullptr) {
-      weak_ptr_ref_ = fbl::AdoptRef(new RefType(self_ptr_));
+      weak_ptr_ref_ = pw::IntrusivePtr(new RefType(self_ptr_));
     }
     return weak_ptr_ref_;
   }
@@ -146,7 +139,7 @@ class DynamicWeakManager {
 
  private:
   T* self_ptr_;
-  fbl::RefPtr<WeakRef> weak_ptr_ref_;
+  pw::IntrusivePtr<WeakRef> weak_ptr_ref_;
 };
 
 template <typename T, typename WeakPtrManager>
@@ -185,9 +178,9 @@ class WeakPtr {
   // Only WeakSelf<T> should have access to the constructor.
   friend class WeakSelf<T, WeakPtrManager>;
 
-  explicit WeakPtr(fbl::RefPtr<typename WeakPtrManager::RefType> ptr) : ptr_(ptr) {}
+  explicit WeakPtr(pw::IntrusivePtr<typename WeakPtrManager::RefType> ptr) : ptr_(std::move(ptr)) {}
 
-  fbl::RefPtr<typename WeakPtrManager::RefType> ptr_;
+  pw::IntrusivePtr<typename WeakPtrManager::RefType> ptr_;
 };
 
 // WeakSelf is a class used to create pointers to an object that must be checked before
