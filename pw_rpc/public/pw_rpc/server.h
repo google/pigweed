@@ -84,7 +84,7 @@ class Server : public internal::Endpoint {
  private:
   friend class internal::Call;
 
-  // Give call classes access to OpenContext.
+  // Give call classes access to OpenCall.
   friend class RawServerReaderWriter;
   friend class RawServerWriter;
   friend class RawServerReader;
@@ -108,16 +108,23 @@ class Server : public internal::Endpoint {
   template <typename>
   friend class PwpbUnaryResponder;
 
-  // Creates a call context for a particular RPC. Unlike the CallContext
-  // constructor, this function checks the type of RPC at compile time.
-  template <auto kMethod,
+  // Opens a call object for an unrequested RPC. Calls created with OpenCall
+  // use a special call ID and will adopt the call ID from the first packet for
+  // their channel, service, and method. Only one call object may be opened in
+  // this fashion at a time.
+  //
+  // This function checks the type of RPC at compile time.
+  template <typename CallType,
+            auto kMethod,
             MethodType kExpected,
             typename ServiceImpl,
             typename MethodImpl>
-  internal::CallContext OpenContext(uint32_t channel_id,
-                                    ServiceImpl& service,
-                                    const MethodImpl& method)
-      PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock()) {
+  [[nodiscard]] CallType OpenCall(uint32_t channel_id,
+                                  ServiceImpl& service,
+                                  const MethodImpl& method)
+      PW_LOCKS_EXCLUDED(internal::rpc_lock()) {
+    internal::rpc_lock().lock();
+
     using Info = internal::MethodInfo<kMethod>;
     if constexpr (kExpected == MethodType::kUnary) {
       static_assert(
@@ -137,8 +144,11 @@ class Server : public internal::Endpoint {
                     "streaming RPCs.");
     }
 
-    return internal::CallContext(
-        *this, channel_id, service, method, internal::kOpenCallId);
+    CallType call(internal::CallContext(
+                      *this, channel_id, service, method, internal::kOpenCallId)
+                      .ClaimLocked());
+    internal::rpc_lock().unlock();
+    return call;
   }
 
   std::tuple<Service*, const internal::Method*> FindMethod(

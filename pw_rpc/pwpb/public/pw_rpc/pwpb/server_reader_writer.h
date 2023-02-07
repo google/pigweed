@@ -197,7 +197,8 @@ class PwpbServerReaderWriter : private internal::BasePwpbServerReader<Request> {
   template <auto kMethod, typename ServiceImpl>
   [[nodiscard]] static PwpbServerReaderWriter Open(Server& server,
                                                    uint32_t channel_id,
-                                                   ServiceImpl& service) {
+                                                   ServiceImpl& service)
+      PW_LOCKS_EXCLUDED(internal::rpc_lock()) {
     using MethodInfo = internal::MethodInfo<kMethod>;
     static_assert(std::is_same_v<Request, typename MethodInfo::Request>,
                   "The request type of a PwpbServerReaderWriter must match "
@@ -205,15 +206,13 @@ class PwpbServerReaderWriter : private internal::BasePwpbServerReader<Request> {
     static_assert(std::is_same_v<Response, typename MethodInfo::Response>,
                   "The response type of a PwpbServerReaderWriter must match "
                   "the method.");
-    internal::LockGuard lock(internal::rpc_lock());
-    return {
-        server
-            .OpenContext<kMethod, MethodType::kBidirectionalStreaming>(
-                channel_id,
-                service,
-                internal::MethodLookup::GetPwpbMethod<ServiceImpl,
-                                                      MethodInfo::kMethodId>())
-            .ClaimLocked()};
+    return server.OpenCall<PwpbServerReaderWriter,
+                           kMethod,
+                           MethodType::kBidirectionalStreaming>(
+        channel_id,
+        service,
+        internal::MethodLookup::GetPwpbMethod<ServiceImpl,
+                                              MethodInfo::kMethodId>());
   }
 
   // Allow default construction so that users can declare a variable into
@@ -248,10 +247,11 @@ class PwpbServerReaderWriter : private internal::BasePwpbServerReader<Request> {
   }
 
  private:
+  friend class internal::PwpbMethod;
+  friend class Server;
+
   template <typename, typename, uint32_t>
   friend class internal::test::InvocationContext;
-
-  friend class internal::PwpbMethod;
 
   PwpbServerReaderWriter(const internal::LockedCallContext& context,
                          MethodType type = MethodType::kBidirectionalStreaming)
@@ -273,7 +273,8 @@ class PwpbServerReader : private internal::BasePwpbServerReader<Request> {
   template <auto kMethod, typename ServiceImpl>
   [[nodiscard]] static PwpbServerReader Open(Server& server,
                                              uint32_t channel_id,
-                                             ServiceImpl& service) {
+                                             ServiceImpl& service)
+      PW_LOCKS_EXCLUDED(internal::rpc_lock()) {
     using MethodInfo = internal::MethodInfo<kMethod>;
     static_assert(std::is_same_v<Request, typename MethodInfo::Request>,
                   "The request type of a PwpbServerReader must match "
@@ -281,15 +282,12 @@ class PwpbServerReader : private internal::BasePwpbServerReader<Request> {
     static_assert(std::is_same_v<Response, typename MethodInfo::Response>,
                   "The response type of a PwpbServerReader must match "
                   "the method.");
-    internal::LockGuard lock(internal::rpc_lock());
-    return {
-        server
-            .OpenContext<kMethod, MethodType::kClientStreaming>(
-                channel_id,
-                service,
-                internal::MethodLookup::GetPwpbMethod<ServiceImpl,
-                                                      MethodInfo::kMethodId>())
-            .ClaimLocked()};
+    return server
+        .OpenCall<PwpbServerReader, kMethod, MethodType::kClientStreaming>(
+            channel_id,
+            service,
+            internal::MethodLookup::GetPwpbMethod<ServiceImpl,
+                                                  MethodInfo::kMethodId>());
   }
 
   // Allow default construction so that users can declare a variable into
@@ -320,10 +318,11 @@ class PwpbServerReader : private internal::BasePwpbServerReader<Request> {
   }
 
  private:
+  friend class internal::PwpbMethod;
+  friend class Server;
+
   template <typename, typename, uint32_t>
   friend class internal::test::InvocationContext;
-
-  friend class internal::PwpbMethod;
 
   PwpbServerReader(const internal::LockedCallContext& context)
       PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
@@ -345,20 +344,18 @@ class PwpbServerWriter : private internal::PwpbServerCall {
   template <auto kMethod, typename ServiceImpl>
   [[nodiscard]] static PwpbServerWriter Open(Server& server,
                                              uint32_t channel_id,
-                                             ServiceImpl& service) {
+                                             ServiceImpl& service)
+      PW_LOCKS_EXCLUDED(internal::rpc_lock()) {
     using MethodInfo = internal::MethodInfo<kMethod>;
     static_assert(std::is_same_v<Response, typename MethodInfo::Response>,
                   "The response type of a PwpbServerWriter must match "
                   "the method.");
-    internal::LockGuard lock(internal::rpc_lock());
-    return {
-        server
-            .OpenContext<kMethod, MethodType::kServerStreaming>(
-                channel_id,
-                service,
-                internal::MethodLookup::GetPwpbMethod<ServiceImpl,
-                                                      MethodInfo::kMethodId>())
-            .ClaimLocked()};
+    return server
+        .OpenCall<PwpbServerWriter, kMethod, MethodType::kServerStreaming>(
+            channel_id,
+            service,
+            internal::MethodLookup::GetPwpbMethod<ServiceImpl,
+                                                  MethodInfo::kMethodId>());
   }
 
   // Allow default construction so that users can declare a variable into
@@ -392,10 +389,11 @@ class PwpbServerWriter : private internal::PwpbServerCall {
   }
 
  private:
+  friend class internal::PwpbMethod;
+  friend class Server;
+
   template <typename, typename, uint32_t>
   friend class internal::test::InvocationContext;
-
-  friend class internal::PwpbMethod;
 
   PwpbServerWriter(const internal::LockedCallContext& context)
       PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
@@ -416,20 +414,18 @@ class PwpbUnaryResponder : private internal::PwpbServerCall {
   template <auto kMethod, typename ServiceImpl>
   [[nodiscard]] static PwpbUnaryResponder Open(Server& server,
                                                uint32_t channel_id,
-                                               ServiceImpl& service) {
+                                               ServiceImpl& service)
+      PW_LOCKS_EXCLUDED(internal::rpc_lock()) {
     using MethodInfo = internal::MethodInfo<kMethod>;
     static_assert(std::is_same_v<Response, typename MethodInfo::Response>,
                   "The response type of a PwpbUnaryResponder must match "
                   "the method.");
-    internal::LockGuard lock(internal::rpc_lock());
-    return {
-        server
-            .OpenContext<kMethod, MethodType::kUnary>(
-                channel_id,
-                service,
-                internal::MethodLookup::GetPwpbMethod<ServiceImpl,
-                                                      MethodInfo::kMethodId>())
-            .ClaimLocked()};
+    return server
+        .OpenCall<PwpbUnaryResponder<Response>, kMethod, MethodType::kUnary>(
+            channel_id,
+            service,
+            internal::MethodLookup::GetPwpbMethod<ServiceImpl,
+                                                  MethodInfo::kMethodId>());
   }
 
   // Allow default construction so that users can declare a variable into
@@ -459,10 +455,11 @@ class PwpbUnaryResponder : private internal::PwpbServerCall {
   }
 
  private:
+  friend class internal::PwpbMethod;
+  friend class Server;
+
   template <typename, typename, uint32_t>
   friend class internal::test::InvocationContext;
-
-  friend class internal::PwpbMethod;
 
   PwpbUnaryResponder(const internal::LockedCallContext& context)
       PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
