@@ -73,6 +73,7 @@ from typing import (
     Tuple,
     Union,
 )
+import urllib
 
 import pw_cli.color
 import pw_cli.env
@@ -333,7 +334,9 @@ class LuciContext:
     project: str
     bucket: str
     builder: str
+    swarming_server: str
     swarming_task_id: str
+    cas_instance: str
     pipeline: Optional[LuciPipeline]
     triggers: Sequence[LuciTrigger] = dataclasses.field(default_factory=tuple)
 
@@ -352,6 +355,7 @@ class LuciContext:
             'BUILDBUCKET_NAME',
             'BUILD_NUMBER',
             'SWARMING_TASK_ID',
+            'SWARMING_SERVER',
         ]
         if any(x for x in luci_vars if x not in env):
             return None
@@ -367,13 +371,21 @@ class LuciContext:
         except ValueError:
             pass
 
+        # Logic to identify cas instance from swarming server is derived from
+        # https://chromium.googlesource.com/infra/luci/recipes-py/+/main/recipe_modules/cas/api.py
+        swarm_server = env['SWARMING_SERVER']
+        cas_project = urllib.parse.urlparse(swarm_server).netloc.split('.')[0]
+        cas_instance = f'projects/{cas_project}/instances/default_instance'
+
         result = LuciContext(
             buildbucket_id=bbid,
             build_number=int(env['BUILD_NUMBER']),
             project=project,
             bucket=bucket,
             builder=builder,
+            swarming_server=env['SWARMING_SERVER'],
             swarming_task_id=env['SWARMING_TASK_ID'],
+            cas_instance=cas_instance,
             pipeline=pipeline,
             triggers=LuciTrigger.create_from_environment(env),
         )
@@ -386,6 +398,7 @@ class LuciContext:
             'BUILDBUCKET_ID': '881234567890',
             'BUILDBUCKET_NAME': 'pigweed:bucket.try:builder-name',
             'BUILD_NUMBER': '123',
+            'SWARMING_SERVER': 'https://chromium-swarm.appspot.com',
             'SWARMING_TASK_ID': 'cd2dac62d2',
         }
         return LuciContext.create_from_environment(env, {})

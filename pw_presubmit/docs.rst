@@ -130,7 +130,9 @@ The ``luci`` member is of type ``LuciContext`` and has the following members:
 * ``bucket``: The LUCI bucket under which this build is running (often ends
   with ``ci`` or ``try``)
 * ``builder``: The builder being run
+* ``swarming_server``: The swarming server on which this build is running
 * ``swarming_task_id``: The swarming task id of this build
+* ``cas_instance``: The CAS instance accessible from this build
 * ``pipeline``: Information about the build pipeline, if applicable.
 * ``triggers``: Information about triggering commits, if applicable.
 
