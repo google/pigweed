@@ -13,6 +13,8 @@
 // the License.
 #pragma once
 
+#include <utility>
+
 #include "pw_chrono/system_clock.h"
 #include "pw_rpc/client.h"
 #include "pw_rpc/internal/method_info.h"
@@ -60,55 +62,53 @@ namespace internal {
 
 template <typename Response>
 struct SynchronousCallState {
+  auto OnCompletedCallback() {
+    return [this](const Response& response, Status status) {
+      result = SynchronousCallResult<Response>(status, response);
+      notify.release();
+    };
+  }
+
+  auto OnRpcErrorCallback() {
+    return [this](Status status) {
+      result = SynchronousCallResult<Response>::RpcError(status);
+      notify.release();
+    };
+  }
+
   SynchronousCallResult<Response> result;
-  pw::sync::TimedThreadNotification notify;
+  sync::TimedThreadNotification notify;
 };
-
-template <typename Response>
-auto CreateOnCompletedCallback(SynchronousCallState<Response>& call_state) {
-  return [&call_state](const Response& response, Status status) {
-    call_state.result = SynchronousCallResult<Response>(status, response);
-    call_state.notify.release();
-  };
-}
-
-template <typename Response>
-auto CreateOnRpcErrorCallback(SynchronousCallState<Response>& call_state) {
-  return [&call_state](Status status) {
-    call_state.result = SynchronousCallResult<Response>::RpcError(status);
-    call_state.notify.release();
-  };
-}
 
 }  // namespace internal
 
 // SynchronousCall
 //
 // Template arguments:
-//   RpcMethod: The RPC Method to invoke
+//   kRpcMethod: The RPC Method to invoke
 //
 // Arguments:
 //   client: The pw::rpc::Client to use for the call
 //   channel_id: The ID of the RPC channel to make the call on
 //   request: The proto struct to send as the request
-template <auto RpcMethod>
-SynchronousCallResult<typename internal::MethodInfo<RpcMethod>::Response>
+template <auto kRpcMethod>
+SynchronousCallResult<typename internal::MethodInfo<kRpcMethod>::Response>
 SynchronousCall(
     Client& client,
     uint32_t channel_id,
-    const typename internal::MethodInfo<RpcMethod>::Request& request) {
-  using Info = internal::MethodInfo<RpcMethod>;
+    const typename internal::MethodInfo<kRpcMethod>::Request& request) {
+  using Info = internal::MethodInfo<kRpcMethod>;
   using Response = typename Info::Response;
   static_assert(Info::kType == MethodType::kUnary,
                 "Only unary methods can be used with synchronous calls");
 
   internal::SynchronousCallState<Response> call_state;
 
-  auto call = RpcMethod(client,
-                        channel_id,
-                        request,
-                        internal::CreateOnCompletedCallback(call_state),
-                        internal::CreateOnRpcErrorCallback(call_state));
+  auto call = kRpcMethod(client,
+                         channel_id,
+                         request,
+                         call_state.OnCompletedCallback(),
+                         call_state.OnRpcErrorCallback());
 
   call_state.notify.acquire();
 
@@ -118,17 +118,17 @@ SynchronousCall(
 // SynchronousCall
 //
 // Template arguments:
-//   RpcMethod: The RPC Method to invoke
+//   kRpcMethod: The RPC Method to invoke
 //
 // Arguments:
 //   client: The service Client to use for the call
 //   request: The proto struct to send as the request
-template <auto RpcMethod>
-SynchronousCallResult<typename internal::MethodInfo<RpcMethod>::Response>
+template <auto kRpcMethod>
+SynchronousCallResult<typename internal::MethodInfo<kRpcMethod>::Response>
 SynchronousCall(
-    const typename internal::MethodInfo<RpcMethod>::GeneratedClient& client,
-    const typename internal::MethodInfo<RpcMethod>::Request& request) {
-  using Info = internal::MethodInfo<RpcMethod>;
+    const typename internal::MethodInfo<kRpcMethod>::GeneratedClient& client,
+    const typename internal::MethodInfo<kRpcMethod>::Request& request) {
+  using Info = internal::MethodInfo<kRpcMethod>;
   using Response = typename Info::Response;
   static_assert(Info::kType == MethodType::kUnary,
                 "Only unary methods can be used with synchronous calls");
@@ -138,10 +138,9 @@ SynchronousCall(
 
   internal::SynchronousCallState<Response> call_state;
 
-  auto call =
-      (client.*Function)(request,
-                         internal::CreateOnCompletedCallback(call_state),
-                         internal::CreateOnRpcErrorCallback(call_state));
+  auto call = (client.*Function)(request,
+                                 call_state.OnCompletedCallback(),
+                                 call_state.OnRpcErrorCallback());
 
   call_state.notify.acquire();
 
@@ -151,32 +150,32 @@ SynchronousCall(
 // SynchronousCallFor
 //
 // Template arguments:
-//   RpcMethod: The RPC Method to invoke
+//   kRpcMethod: The RPC Method to invoke
 //
 // Arguments:
 //   client: The pw::rpc::Client to use for the call
 //   channel_id: The ID of the RPC channel to make the call on
 //   request: The proto struct to send as the request
 //   timeout: Duration to block for before returning with Timeout
-template <auto RpcMethod>
-SynchronousCallResult<typename internal::MethodInfo<RpcMethod>::Response>
+template <auto kRpcMethod>
+SynchronousCallResult<typename internal::MethodInfo<kRpcMethod>::Response>
 SynchronousCallFor(
     Client& client,
     uint32_t channel_id,
-    const typename internal::MethodInfo<RpcMethod>::Request& request,
+    const typename internal::MethodInfo<kRpcMethod>::Request& request,
     chrono::SystemClock::duration timeout) {
-  using Info = internal::MethodInfo<RpcMethod>;
+  using Info = internal::MethodInfo<kRpcMethod>;
   using Response = typename Info::Response;
   static_assert(Info::kType == MethodType::kUnary,
                 "Only unary methods can be used with synchronous calls");
 
   internal::SynchronousCallState<Response> call_state;
 
-  auto call = RpcMethod(client,
-                        channel_id,
-                        request,
-                        internal::CreateOnCompletedCallback(call_state),
-                        internal::CreateOnRpcErrorCallback(call_state));
+  auto call = kRpcMethod(client,
+                         channel_id,
+                         request,
+                         call_state.OnCompletedCallback(),
+                         call_state.OnRpcErrorCallback());
 
   if (!call_state.notify.try_acquire_for(timeout)) {
     return SynchronousCallResult<Response>::Timeout();
@@ -188,19 +187,19 @@ SynchronousCallFor(
 // SynchronousCallFor
 //
 // Template arguments:
-//   RpcMethod: The RPC Method to invoke
+//   kRpcMethod: The RPC Method to invoke
 //
 // Arguments:
 //   client: The service Client to use for the call
 //   request: The proto struct to send as the request
 //   timeout: Duration to block for before returning with Timeout
-template <auto RpcMethod>
-SynchronousCallResult<typename internal::MethodInfo<RpcMethod>::Response>
+template <auto kRpcMethod>
+SynchronousCallResult<typename internal::MethodInfo<kRpcMethod>::Response>
 SynchronousCallFor(
-    const typename internal::MethodInfo<RpcMethod>::GeneratedClient& client,
-    const typename internal::MethodInfo<RpcMethod>::Request& request,
+    const typename internal::MethodInfo<kRpcMethod>::GeneratedClient& client,
+    const typename internal::MethodInfo<kRpcMethod>::Request& request,
     chrono::SystemClock::duration timeout) {
-  using Info = internal::MethodInfo<RpcMethod>;
+  using Info = internal::MethodInfo<kRpcMethod>;
   using Response = typename Info::Response;
   static_assert(Info::kType == MethodType::kUnary,
                 "Only unary methods can be used with synchronous calls");
@@ -210,10 +209,9 @@ SynchronousCallFor(
 
   internal::SynchronousCallState<Response> call_state;
 
-  auto call =
-      (client.*Function)(request,
-                         internal::CreateOnCompletedCallback(call_state),
-                         internal::CreateOnRpcErrorCallback(call_state));
+  auto call = (client.*Function)(request,
+                                 call_state.OnCompletedCallback(),
+                                 call_state.OnRpcErrorCallback());
 
   if (!call_state.notify.try_acquire_for(timeout)) {
     return SynchronousCallResult<Response>::Timeout();
@@ -225,32 +223,32 @@ SynchronousCallFor(
 // SynchronousCallUntil
 //
 // Template arguments:
-//   RpcMethod: The RPC Method to invoke
+//   kRpcMethod: The RPC Method to invoke
 //
 // Arguments:
 //   client: The pw::rpc::Client to use for the call
 //   channel_id: The ID of the RPC channel to make the call on
 //   request: The proto struct to send as the request
 //   deadline: Timepoint to block until before returning with Timeout
-template <auto RpcMethod>
-SynchronousCallResult<typename internal::MethodInfo<RpcMethod>::Response>
+template <auto kRpcMethod>
+SynchronousCallResult<typename internal::MethodInfo<kRpcMethod>::Response>
 SynchronousCallUntil(
     Client& client,
     uint32_t channel_id,
-    const typename internal::MethodInfo<RpcMethod>::Request& request,
+    const typename internal::MethodInfo<kRpcMethod>::Request& request,
     chrono::SystemClock::time_point deadline) {
-  using Info = internal::MethodInfo<RpcMethod>;
+  using Info = internal::MethodInfo<kRpcMethod>;
   using Response = typename Info::Response;
   static_assert(Info::kType == MethodType::kUnary,
                 "Only unary methods can be used with synchronous calls");
 
   internal::SynchronousCallState<Response> call_state;
 
-  auto call = RpcMethod(client,
-                        channel_id,
-                        request,
-                        internal::CreateOnCompletedCallback(call_state),
-                        internal::CreateOnRpcErrorCallback(call_state));
+  auto call = kRpcMethod(client,
+                         channel_id,
+                         request,
+                         call_state.OnCompletedCallback(),
+                         call_state.OnRpcErrorCallback());
 
   if (!call_state.notify.try_acquire_until(deadline)) {
     return SynchronousCallResult<Response>::Timeout();
@@ -262,19 +260,19 @@ SynchronousCallUntil(
 // SynchronousCallUntil
 //
 // Template arguments:
-//   RpcMethod: The RPC Method to invoke
+//   kRpcMethod: The RPC Method to invoke
 //
 // Arguments:
 //   client: The service Client to use for the call
 //   request: The proto struct to send as the request
 //   deadline: Timepoint to block until before returning with Timeout
-template <auto RpcMethod>
-SynchronousCallResult<typename internal::MethodInfo<RpcMethod>::Response>
+template <auto kRpcMethod>
+SynchronousCallResult<typename internal::MethodInfo<kRpcMethod>::Response>
 SynchronousCallUntil(
-    const typename internal::MethodInfo<RpcMethod>::GeneratedClient& client,
-    const typename internal::MethodInfo<RpcMethod>::Request& request,
+    const typename internal::MethodInfo<kRpcMethod>::GeneratedClient& client,
+    const typename internal::MethodInfo<kRpcMethod>::Request& request,
     chrono::SystemClock::time_point deadline) {
-  using Info = internal::MethodInfo<RpcMethod>;
+  using Info = internal::MethodInfo<kRpcMethod>;
   using Response = typename Info::Response;
   static_assert(Info::kType == MethodType::kUnary,
                 "Only unary methods can be used with synchronous calls");
@@ -284,10 +282,9 @@ SynchronousCallUntil(
 
   internal::SynchronousCallState<Response> call_state;
 
-  auto call =
-      (client.*Function)(request,
-                         internal::CreateOnCompletedCallback(call_state),
-                         internal::CreateOnRpcErrorCallback(call_state));
+  auto call = (client.*Function)(request,
+                                 call_state.OnCompletedCallback(),
+                                 call_state.OnRpcErrorCallback());
 
   if (!call_state.notify.try_acquire_until(deadline)) {
     return SynchronousCallResult<Response>::Timeout();
