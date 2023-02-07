@@ -39,8 +39,8 @@ STRICT_WARNINGS_COPTS = [
     "-Wno-error=deprecated-declarations",  # [[deprecated]] attribute
 ]
 
-CPP17_COPTS = [
-    "-std=c++17",
+CPP20_COPTS = [
+    "-std=c++20",
     "-fno-rtti",
     "-Wnon-virtual-dtor",
     # Allow uses of the register keyword, which may appear in C headers.
@@ -102,7 +102,7 @@ def default_cc_and_c_kwargs(kwargs):
 
     cc = dict(kwargs.items())
     cc["srcs"] = [src for src in kwargs["srcs"] if not src.endswith(".c")]
-    cc["copts"] = cc["copts"] + CPP17_COPTS
+    cc["copts"] = cc["copts"] + CPP20_COPTS
 
     c_srcs = [src for src in kwargs["srcs"] if src.endswith(".c")]
 

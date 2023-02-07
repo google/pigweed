@@ -33,7 +33,6 @@ static_assert(kMaxTransmissionUnit ==
 
 // Used to write HDLC data to pw::sys_io.
 stream::SysIoWriter writer;
-stream::SysIoReader reader;
 
 // Set up the output channel for the pw_rpc server to use.
 hdlc::FixedMtuChannelOutput<kMaxTransmissionUnit> hdlc_channel_output(
@@ -47,7 +46,7 @@ void Init() {
   // Send log messages to HDLC address 1. This prevents logs from interfering
   // with pw_rpc communications.
   pw::log_basic::SetOutput([](std::string_view log) {
-    pw::hdlc::WriteUIFrame(1, as_bytes(span(log)), writer);
+    pw::hdlc::WriteUIFrame(1, as_bytes(span<const char>(log)), writer);
   });
 }
 
