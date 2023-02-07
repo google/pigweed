@@ -55,6 +55,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import tempfile
 import time
 import types
 from typing import (
@@ -218,13 +219,20 @@ class LuciPipeline:
     builds_from_previous_iteration: Sequence[int]
 
     @staticmethod
-    def create(bbid: int) -> Optional['LuciPipeline']:
-        pipeline_props = (
-            get_buildbucket_info(bbid)
-            .get('input', {})
-            .get('properties', {})
-            .get('$pigweed/pipeline', {})
-        )
+    def create(
+        bbid: int,
+        fake_pipeline_props: Optional[Dict[str, Any]] = None,
+    ) -> Optional['LuciPipeline']:
+        pipeline_props: Dict[str, Any]
+        if fake_pipeline_props is not None:
+            pipeline_props = fake_pipeline_props
+        else:
+            pipeline_props = (
+                get_buildbucket_info(bbid)
+                .get('input', {})
+                .get('properties', {})
+                .get('$pigweed/pipeline', {})
+            )
         if not pipeline_props.get('inside_a_pipeline', False):
             return None
 
@@ -298,6 +306,23 @@ class LuciTrigger:
 
         return tuple(result)
 
+    @staticmethod
+    def create_for_testing():
+        change = {
+            'number': 123456,
+            'remote': 'https://pigweed.googlesource.com/pigweed/pigweed',
+            'branch': 'main',
+            'ref': 'refs/changes/56/123456/1',
+            'gerrit_name': 'pigweed',
+            'submitted': True,
+        }
+        with tempfile.TemporaryDirectory() as tempdir:
+            changes_json = Path(tempdir) / 'changes.json'
+            with changes_json.open('w') as outs:
+                json.dump([change], outs)
+            env = {'TRIGGERING_CHANGES_JSON': changes_json}
+            return LuciTrigger.create_from_environment(env)
+
 
 @dataclasses.dataclass
 class LuciContext:
@@ -314,7 +339,8 @@ class LuciContext:
 
     @staticmethod
     def create_from_environment(
-        env: Optional[Dict[str, str]] = None
+        env: Optional[Dict[str, str]] = None,
+        fake_pipeline_props: Optional[Dict[str, Any]] = None,
     ) -> Optional['LuciContext']:
         """Create a LuciContext from the environment."""
 
@@ -336,7 +362,7 @@ class LuciContext:
         pipeline: Optional[LuciPipeline] = None
         try:
             bbid = int(env['BUILDBUCKET_ID'])
-            pipeline = LuciPipeline.create(bbid)
+            pipeline = LuciPipeline.create(bbid, fake_pipeline_props)
 
         except ValueError:
             pass
@@ -353,6 +379,16 @@ class LuciContext:
         )
         _LOG.debug('%r', result)
         return result
+
+    @staticmethod
+    def create_for_testing():
+        env = {
+            'BUILDBUCKET_ID': '881234567890',
+            'BUILDBUCKET_NAME': 'pigweed:bucket.try:builder-name',
+            'BUILD_NUMBER': '123',
+            'SWARMING_TASK_ID': 'cd2dac62d2',
+        }
+        return LuciContext.create_from_environment(env, {})
 
 
 @dataclasses.dataclass
@@ -431,6 +467,22 @@ class PresubmitContext:
         """
         _LOG.warning('%s', PresubmitFailure(description, path, line))
         self._failed = True
+
+    @staticmethod
+    def create_for_testing():
+        parsed_env = pw_cli.env.pigweed_environment()
+        root = Path(parsed_env.PW_PROJECT_ROOT)
+        presubmit_root = root / 'out' / 'presubmit'
+        return PresubmitContext(
+            root=root,
+            repos=(root,),
+            output_dir=presubmit_root / 'test',
+            failure_summary_log=presubmit_root / 'failure-summary.log',
+            paths=(root / 'foo.cc', root / 'foo.py'),
+            package_root=root / 'environment' / 'packages',
+            luci=None,
+            override_gn_args={},
+        )
 
 
 class FileFilter:

@@ -155,5 +155,16 @@ class ProgramsTest(unittest.TestCase):
         # pylint: enable=protected-access
 
 
+class ContextTest(unittest.TestCase):
+    def test_presubmitcontext(self):  # pylint: disable=no-self-use
+        _ = presubmit.PresubmitContext.create_for_testing()
+
+    def test_lucicontext(self):  # pylint: disable=no-self-use
+        _ = presubmit.LuciContext.create_for_testing()
+
+    def test_lucitrigger(self):  # pylint: disable=no-self-use
+        _ = presubmit.LuciTrigger.create_for_testing()
+
+
 if __name__ == '__main__':
     unittest.main()
