@@ -858,7 +858,7 @@ Python style
 ------------
 Pigweed uses the standard Python style: PEP8, which is available on the web at
 https://www.python.org/dev/peps/pep-0008/. All Pigweed Python code should pass
-``yapf`` when configured for PEP8 style.
+``pw format``, which invokes ``black`` with a couple options.
 
 Python versions
 ===============
