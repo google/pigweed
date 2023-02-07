@@ -34,17 +34,50 @@ def zigzag_decode(value: int) -> int:
 
 
 class FormatSpec:
-    """Represents a format specifier parsed from a printf-style string."""
+    """Represents a format specifier parsed from a printf-style string.
+
+    This implementation is designed to align with the C99 specification,
+    section 7.19.6
+    (https://www.dii.uchile.cl/~daespino/files/Iso_C_1999_definition.pdf).
+    Notably, this specification is slightly different than what is implemented
+    in most compilers due to each compiler choosing to interpret undefined
+    behavior in slightly different ways. Treat the following description as the
+    source of truth.
+
+    This implementation supports:
+    - Overall Format: `%[flags][width][.precision][length][specifier]`
+    - Flags (Zero or More)
+      - TODO(gregpataky): Finish.
+    - Width (Optional)
+      - TODO(gregpataky): Finish.
+    - Precision (Optional)
+      - TODO(gregpataky): Finish.
+    - Length (Optional)
+      - TODO(gregpataky): Finish.
+    - Specifiers (Required)
+      - TODO(gregpataky): Finish.
+
+    Underspecified details:
+    - `p` is implementation defined. For this implementation, it will print
+      with a `0x` prefix and then the pointer value was printed using `%08X`.
+
+    Non-conformant details:
+    - `n` specifier: We do not support the `n` specifier since it is impossible
+                     for us to retroactively tell the original program how many
+                     characters have been printed since this implementation is
+                     mainly meant to decode RPC logs.
+    """
 
     # Regular expression for finding format specifiers.
     FORMAT_SPEC = re.compile(
-        r'%(?:(?P<flags>[+\- #0]*\d*(?:\.\d+)?)'
+        r'%(?P<flags>[+\- #0]+)?'
+        r'(?P<width>\d+|\*)?'
+        r'(?P<precision>\.(?:\d*|\*))?'
         r'(?P<length>hh|h|ll|l|j|z|t|L)?'
-        r'(?P<type>[csdioxXufFeEaAgGnp])|%)'
+        r'(?P<type>[csdioxXufFeEaAgGnp%])'
     )
 
     # Conversions to make format strings Python compatible.
-    _UNSUPPORTED_LENGTH = frozenset(['hh', 'll', 'j', 'z', 't'])
     _REMAP_TYPE = {'a': 'f', 'A': 'F'}
 
     # Conversion specifiers by type; n is not supported.
@@ -74,26 +107,40 @@ class FormatSpec:
         self.specifier: str = self.match.group()
 
         self.flags: str = self.match.group('flags') or ''
+        self.width: str = self.match.group('width') or ''
+        self.precision: str = self.match.group('precision') or ''
         self.length: str = self.match.group('length') or ''
+        self.type: str = self.match.group('type')
 
-        # If there is no type, the format spec is %%.
-        self.type: str = self.match.group('type') or '%'
+        self.error = None
 
-        # %p prints as 0xFEEDBEEF; other specs may need length/type switched
         if self.type == 'p':
+            # %p prints as 0xFEEDBEEF.
             self.compatible = '0x%08X'
+        elif self.type == 'n':
+            self.error = 'Unsupported conversion specifier n'
         else:
+            # N.B.: The Python %-format machinery never requires the length
+            # modifier to work correctly, and it doesn't support all of the
+            # C99 length format specifiers anyway. We remove it from the
+            # python-compaitble format string.
             self.compatible = ''.join(
                 [
                     '%',
                     self.flags,
-                    '' if self.length in self._UNSUPPORTED_LENGTH else '',
+                    self.width,
+                    self.precision,
                     self._REMAP_TYPE.get(self.type, self.type),
                 ]
             )
 
     def decode(self, encoded_arg: bytes) -> 'DecodedArg':
         """Decodes the provided data according to this format specifier."""
+        if self.error is not None:
+            return DecodedArg(
+                self, None, b'', DecodedArg.DECODE_ERROR, self.error
+            )
+
         if self.type == '%':  # literal %
             return DecodedArg(
                 self, (), b''
@@ -114,14 +161,8 @@ class FormatSpec:
         if self.type in self._FLOATING_POINT:
             return self._decode_float(encoded_arg)
 
-        # Unsupported specifier (e.g. %n)
-        return DecodedArg(
-            self,
-            None,
-            b'',
-            DecodedArg.DECODE_ERROR,
-            'Unsupported conversion specifier "{}"'.format(self.type),
-        )
+        # Should be unreachable.
+        assert False, f'Unhandled format specifier: {self.type}'
 
     def _decode_signed_integer(self, encoded: bytes) -> 'DecodedArg':
         """Decodes a signed variable-length integer."""
@@ -152,8 +193,8 @@ class FormatSpec:
         )
 
     def _decode_unsigned_integer(self, encoded: bytes) -> 'DecodedArg':
+        """Decodes an unsigned variable-length integer."""
         arg = self._decode_signed_integer(encoded)
-
         # Since ZigZag encoding is used, unsigned integers must be masked off to
         # their original bit length.
         if arg.value is not None:
