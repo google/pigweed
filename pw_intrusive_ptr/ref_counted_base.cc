@@ -22,8 +22,8 @@
 namespace pw::internal {
 
 RefCountedBase::~RefCountedBase() {
-  // Reset the ref-count back to the pre-adopt sentinel value so that we
-  // have the best chance of catching a use-after-free situation.
+  // Set the ref count to a poison value so that we have the best chance of
+  // catching a use-after-free situation.
   //
   // The value is chosen specifically to be negative when stored as an int32_t,
   // and as far away from becoming positive (via either addition or subtraction)

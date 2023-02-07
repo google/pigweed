@@ -101,8 +101,11 @@ class IntrusivePtr final {
   }
 
   ~IntrusivePtr() {
-    if (ptr_ && ptr_->ReleaseRef()) {
-      recycle_or_delete(ptr_);
+    T* ptr = ptr_;
+    // Clear ptr_ to help detect re-entrancy in ~T.
+    ptr_ = nullptr;
+    if (ptr && ptr->ReleaseRef()) {
+      recycle_or_delete(ptr);
     }
   }
 
