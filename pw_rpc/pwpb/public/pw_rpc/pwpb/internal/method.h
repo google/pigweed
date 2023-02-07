@@ -81,7 +81,7 @@ class PwpbMethod : public Method {
     //
     // This wrapper is stored generically in the Function union, defined below.
     // In optimized builds, the compiler inlines the user-defined function into
-    // this wrapper, elminating any overhead.
+    // this wrapper, eliminating any overhead.
     constexpr SynchronousUnaryFunction wrapper =
         [](Service& service, const void* request, void* response) {
           return CallMethodImplFunction<kMethod>(
@@ -108,7 +108,7 @@ class PwpbMethod : public Method {
     //
     // This wrapper is stored generically in the Function union, defined below.
     // In optimized builds, the compiler inlines the user-defined function into
-    // this wrapper, elminating any overhead.
+    // this wrapper, eliminating any overhead.
     constexpr UnaryRequestFunction wrapper =
         [](Service& service,
            const void* request,
@@ -134,7 +134,7 @@ class PwpbMethod : public Method {
     //
     // This wrapper is stored generically in the Function union, defined below.
     // In optimized builds, the compiler inlines the user-defined function into
-    // this wrapper, elminating any overhead.
+    // this wrapper, eliminating any overhead.
     constexpr UnaryRequestFunction wrapper =
         [](Service& service,
            const void* request,
@@ -160,7 +160,7 @@ class PwpbMethod : public Method {
     //
     // This wrapper is stored generically in the Function union, defined below.
     // In optimized builds, the compiler inlines the user-defined function into
-    // this wrapper, elminating any overhead.
+    // this wrapper, eliminating any overhead.
     constexpr StreamRequestFunction wrapper = [](Service& service,
                                                  internal::PwpbServerCall&
                                                      reader) {
@@ -185,7 +185,7 @@ class PwpbMethod : public Method {
     //
     // This wrapper is stored generically in the Function union, defined below.
     // In optimized builds, the compiler inlines the user-defined function into
-    // this wrapper, elminating any overhead.
+    // this wrapper, eliminating any overhead.
     constexpr StreamRequestFunction wrapper =
         [](Service& service, internal::PwpbServerCall& reader_writer) {
           return CallMethodImplFunction<kMethod>(

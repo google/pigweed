@@ -173,7 +173,7 @@ class NanopbMethod : public Method {
     // generically in the Function union, defined below.
     //
     // In optimized builds, the compiler inlines the user-defined function into
-    // this wrapper, elminating any overhead.
+    // this wrapper, eliminating any overhead.
     constexpr SynchronousUnaryFunction wrapper =
         [](Service& service, const void* req, void* resp) {
           return CallMethodImplFunction<kMethod>(
@@ -198,7 +198,7 @@ class NanopbMethod : public Method {
     // generically in the Function union, defined below.
     //
     // In optimized builds, the compiler inlines the user-defined function into
-    // this wrapper, elminating any overhead.
+    // this wrapper, eliminating any overhead.
     constexpr UnaryRequestFunction wrapper =
         [](Service& service, const void* req, NanopbServerCall& resp) {
           return CallMethodImplFunction<kMethod>(
