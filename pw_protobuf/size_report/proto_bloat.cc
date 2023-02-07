@@ -200,7 +200,7 @@ void CodeToPullInProtoEncoder() {
     child.WritePackedBool(8, GetBoolArray());
     child.WriteRepeatedBool(8, GetBoolVector());
 
-    encoder.WriteBytes(93, as_bytes(span(GetDoubleArray())));
+    encoder.WriteBytes(93, as_bytes(span<const double>(GetDoubleArray())));
     encoder.WriteString(21343, kTestString);
   }
 
