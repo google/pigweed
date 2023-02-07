@@ -20,6 +20,7 @@ import unittest
 import tokenized_string_decoding_test_data as tokenized_string
 import varint_test_data
 from pw_tokenizer import decode
+from pw_tokenizer import encode
 
 
 def error(msg, value=None) -> str:
@@ -117,7 +118,7 @@ class TestFormattedString(unittest.TestCase):
         self.assertEqual(result.score(), (True, True, 0, 0, datetime.max))
 
     def test_one_arg(self) -> None:
-        result = decode.FormatString('%d').format(b'\0')
+        result = decode.FormatString('%d').format(encode.encode_args(0))
 
         self.assertTrue(result.ok())
         self.assertEqual(result.score(), (True, True, 0, 1, datetime.max))
@@ -133,10 +134,18 @@ class TestFormattedString(unittest.TestCase):
         )
 
     def test_compare_score(self) -> None:
-        all_args_ok = decode.FormatString('%d%d%d').format(b'\0\0\0')
-        missing_one_arg = decode.FormatString('%d%d%d').format(b'\0\0')
-        missing_two_args = decode.FormatString('%d%d%d').format(b'\0')
-        all_args_extra_data = decode.FormatString('%d%d%d').format(b'\0\0\0\1')
+        all_args_ok = decode.FormatString('%d%d%d').format(
+            encode.encode_args(0, 0, 0)
+        )
+        missing_one_arg = decode.FormatString('%d%d%d').format(
+            encode.encode_args(0, 0)
+        )
+        missing_two_args = decode.FormatString('%d%d%d').format(
+            encode.encode_args(0)
+        )
+        all_args_extra_data = decode.FormatString('%d%d%d').format(
+            encode.encode_args(0, 0, 0, 1)
+        )
         missing_one_arg_extra_data = decode.FormatString('%d%d%d').format(
             b'\0' + b'\x80' * 100
         )

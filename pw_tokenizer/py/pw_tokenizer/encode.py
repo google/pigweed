@@ -59,23 +59,10 @@ def _encode_string(arg: bytes) -> bytes:
     return struct.pack('B', size_byte) + arg[:127]
 
 
-def encode_token_and_args(
-    token: int, *args: Union[int, float, bytes, str]
-) -> bytes:
-    """Encodes a tokenized message given its token and arguments.
+def encode_args(*args: Union[int, float, bytes, str]) -> bytes:
+    """Encodes a list of arguments to their on-wire representation."""
 
-    This function assumes that the token represents a format string with
-    conversion specifiers that correspond with the provided argument types.
-    Currently, only 32-bit integers are supported.
-    """
-
-    if token < 0 or token > _UINT32_MAX:
-        raise ValueError(
-            f'The token ({token}) must be an unsigned 32-bit integer'
-        )
-
-    data = bytearray(struct.pack('<I', token))
-
+    data = bytearray(b'')
     for arg in args:
         if isinstance(arg, int):
             if arg.bit_length() > 32:
@@ -93,8 +80,25 @@ def encode_token_and_args(
             raise ValueError(
                 f'{arg} has type {type(arg)}, which is not supported'
             )
-
     return bytes(data)
+
+
+def encode_token_and_args(
+    token: int, *args: Union[int, float, bytes, str]
+) -> bytes:
+    """Encodes a tokenized message given its token and arguments.
+
+    This function assumes that the token represents a format string with
+    conversion specifiers that correspond with the provided argument types.
+    Currently, only 32-bit integers are supported.
+    """
+
+    if token < 0 or token > _UINT32_MAX:
+        raise ValueError(
+            f'The token ({token}) must be an unsigned 32-bit integer'
+        )
+
+    return struct.pack('<I', token) + encode_args(*args)
 
 
 def prefixed_base64(data: bytes, prefix: str = '$') -> str:
