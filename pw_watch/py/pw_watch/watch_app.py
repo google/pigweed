@@ -16,9 +16,8 @@
 
 import asyncio
 import logging
-from pathlib import Path
+import os
 import re
-import sys
 import time
 from typing import Callable, Dict, Iterable, List, NoReturn, Optional
 
@@ -36,7 +35,6 @@ from prompt_toolkit.key_binding import (
     merge_key_bindings,
 )
 from prompt_toolkit.layout import (
-    Dimension,
     DynamicContainer,
     Float,
     FloatContainer,
@@ -46,23 +44,114 @@ from prompt_toolkit.layout import (
     Window,
 )
 from prompt_toolkit.layout.controls import BufferControl
-from prompt_toolkit.styles import DynamicStyle, merge_styles, Style
+from prompt_toolkit.styles import (
+    DynamicStyle,
+    merge_styles,
+    Style,
+    style_from_pygments_cls,
+)
 from prompt_toolkit.formatted_text import StyleAndTextTuples
+from prompt_toolkit.mouse_events import MouseEvent, MouseEventType
+from prompt_toolkit.lexers import PygmentsLexer
+from pygments.lexers.markup import MarkdownLexer  # type: ignore
 
 from pw_console.console_app import get_default_colordepth
 from pw_console.get_pw_console_app import PW_CONSOLE_APP_CONTEXTVAR
+from pw_console.help_window import HelpWindow
 from pw_console.key_bindings import DEFAULT_KEY_BINDINGS
 from pw_console.log_pane import LogPane
 from pw_console.plugin_mixin import PluginMixin
-from pw_console.plugins.twenty48_pane import Twenty48Pane
+import pw_console.python_logging
 from pw_console.quit_dialog import QuitDialog
+from pw_console.style import generate_styles, get_theme_colors
+from pw_console.pigweed_code_style import PigweedCodeStyle
+from pw_console.widgets import (
+    FloatingWindowPane,
+    ToolbarButton,
+    WindowPaneToolbar,
+    create_border,
+)
+from pw_console.window_list import DisplayMode
 from pw_console.window_manager import WindowManager
-import pw_console.style
-from pw_console.style import get_theme_colors
-import pw_console.widgets.border
 
 from pw_build.project_builder_prefs import ProjectBuilderPrefs
 from pw_build.project_builder_context import get_project_builder_context
+
+
+_LOG = logging.getLogger('pw_build.watch')
+
+BUILDER_CONTEXT = get_project_builder_context()
+
+_HELP_TEXT = """
+Mouse Keys
+==========
+
+- Click on a line in the bottom progress bar to switch to that tab.
+- Click on any tab, or button to activate.
+- Scroll wheel in the the log windows moves back through the history.
+
+
+Global Keys
+===========
+
+Quit with confirmation dialog. --------------------  Ctrl-D
+Quit without confirmation. ------------------------  Ctrl-X Ctrl-C
+Toggle user guide window. -------------------------  F1
+Trigger a rebuild. --------------------------------  Enter
+
+
+Window Management Keys
+======================
+
+Switch focus to the next window pane or tab. ------  Ctrl-Alt-N
+Switch focus to the previous window pane or tab. --  Ctrl-Alt-P
+Move window pane left. ----------------------------  Ctrl-Alt-Left
+Move window pane right. ---------------------------  Ctrl-Alt-Right
+Move window pane down. ----------------------------  Ctrl-Alt-Down
+Move window pane up. ------------------------------  Ctrl-Alt-Up
+Balance all window sizes. -------------------------  Ctrl-U
+
+
+Copying Text
+============
+
+- Click drag will select whole lines in the log windows.
+- `Ctrl-c` will copy selected lines to your system clipboard.
+
+If running over SSH you will need to use your terminal's built in text
+selection.
+
+Linux
+-----
+
+- Holding `Shift` and dragging the mouse in most terminals.
+
+Mac
+---
+
+- Apple Terminal:
+
+  Hold `Fn` and drag the mouse
+
+- iTerm2:
+
+  Hold `Cmd+Option` and drag the mouse
+
+Windows
+-------
+
+- Git CMD (included in `Git for Windows)
+
+  1. Click on the Git window icon in the upper left of the title bar
+  2. Click `Edit` then `Mark`
+  3. Drag the mouse to select text and press Enter to copy.
+
+- Windows Terminal
+
+  1. Hold `Shift` and drag the mouse to select text
+  2. Press `Ctrl-Shift-C` to copy.
+
+"""
 
 
 class WatchAppPrefs(ProjectBuilderPrefs):
@@ -77,6 +166,7 @@ class WatchAppPrefs(ProjectBuilderPrefs):
         self.default_config.update(
             {
                 'key_bindings': DEFAULT_KEY_BINDINGS,
+                'show_python_logger': True,
             }
         )
         self.reset_config()
@@ -130,7 +220,7 @@ class WatchAppPrefs(ProjectBuilderPrefs):
 
     @property
     def window_column_split_method(self) -> str:
-        return 'horizontal'
+        return 'vertical'
 
     @property
     def hide_date_from_log_time(self) -> bool:
@@ -161,12 +251,41 @@ class WatchAppPrefs(ProjectBuilderPrefs):
         return self._config.get('show_python_logger', False)
 
 
-_LOG = logging.getLogger('pw_build.watch')
-
-
 class WatchWindowManager(WindowManager):
     def update_root_container_body(self):
         self.application.window_manager_container = self.create_root_container()
+
+
+class StatusBarControl(FormattedTextControl):
+    """Handles switching build tabs in the UI on mouse click."""
+
+    def __init__(self, watch_app: 'WatchApp', *args, **kwargs) -> None:
+        self.watch_app = watch_app
+        super().__init__(*args, **kwargs)
+
+    def mouse_handler(self, mouse_event: MouseEvent):
+        """Mouse handler for this control."""
+        _click_x = mouse_event.position.x
+        _click_y = mouse_event.position.y
+
+        # On left click
+        if mouse_event.event_type == MouseEventType.MOUSE_UP:
+            tab_index = _click_y
+            pane = self.watch_app.recipe_index_to_log_pane.get(tab_index, None)
+            if not pane:
+                return NotImplemented
+
+            (
+                window_list,
+                pane_index,
+            ) = self.watch_app.window_manager.find_window_list_and_pane_index(
+                pane
+            )
+            window_list.switch_to_tab(pane_index)
+            return None
+
+        # Mouse event not handled, return NotImplemented.
+        return NotImplemented
 
 
 class WatchApp(PluginMixin):
@@ -184,14 +303,10 @@ class WatchApp(PluginMixin):
         self,
         event_handler,
         prefs: WatchAppPrefs,
-        log_file_name: Optional[str] = None,
     ):
 
         self.event_handler = event_handler
 
-        self.external_logfile: Optional[Path] = (
-            Path(log_file_name) if log_file_name else None
-        )
         self.color_depth = get_default_colordepth()
 
         # Necessary for some of pw_console's window manager features to work
@@ -206,38 +321,50 @@ class WatchApp(PluginMixin):
 
         self.window_manager = WatchWindowManager(self)
 
-        pw_console.python_logging.setup_python_logging()
-
         self._build_error_count = 0
         self._errors_in_output = False
 
         self.log_ui_update_frequency = 0.1  # 10 FPS
         self._last_ui_update_time = time.time()
 
+        self.recipe_name_to_log_pane: Dict[str, LogPane] = {}
+        self.recipe_index_to_log_pane: Dict[int, LogPane] = {}
+
         debug_logging = (
             event_handler.project_builder.default_log_level == logging.DEBUG
         )
         level_name = 'DEBUG' if debug_logging else 'INFO'
+
+        no_propagation_loggers = []
+
         if event_handler.separate_logfiles:
+            pane_index = len(event_handler.project_builder.build_recipes) - 1
             for recipe in reversed(event_handler.project_builder.build_recipes):
-                self.add_build_log_pane(
+                log_pane = self.add_build_log_pane(
                     recipe.display_name,
-                    recipe.log,
+                    loggers=[recipe.log],
                     level_name=level_name,
                 )
+                if recipe.log.propagate is False:
+                    no_propagation_loggers.append(recipe.log)
 
-        self.add_build_log_pane(
-            'Pigweed Watch',
-            _LOG,
+                self.recipe_name_to_log_pane[recipe.display_name] = log_pane
+                self.recipe_index_to_log_pane[pane_index] = log_pane
+                pane_index -= 1
+
+        pw_console.python_logging.setup_python_logging(
+            loggers_with_no_propagation=no_propagation_loggers
+        )
+
+        self.root_log_pane = self.add_build_log_pane(
+            'Root Log',
+            loggers=[
+                logging.getLogger('pw_build'),
+            ],
             level_name=level_name,
         )
 
-        self.ninja_log_pane = list(self.all_log_panes())[0]
-
-        self.time_waster = Twenty48Pane(include_resize_handle=True)
-        self.time_waster.application = self
-        self.time_waster.show_pane = False
-        self.window_manager.add_pane(self.time_waster)
+        self.window_manager.window_lists[0].display_mode = DisplayMode.TABBED
 
         self.window_manager_container = (
             self.window_manager.create_root_container()
@@ -245,42 +372,81 @@ class WatchApp(PluginMixin):
 
         self.status_bar_border_style = 'class:command-runner-border'
 
+        self.status_bar_control = StatusBarControl(
+            self, self.get_status_bar_text
+        )
+
+        self.status_bar_container = create_border(
+            HSplit(
+                [
+                    # Result Toolbar.
+                    Window(
+                        content=self.status_bar_control,
+                        height=len(self.event_handler.project_builder),
+                        wrap_lines=False,
+                        style='class:pane_active',
+                    ),
+                ]
+            ),
+            content_height=len(self.event_handler.project_builder),
+            title=BUILDER_CONTEXT.get_title_bar_text,
+            border_style=(BUILDER_CONTEXT.get_title_style),
+            base_style='class:pane_active',
+            left_margin_columns=1,
+            right_margin_columns=1,
+        )
+
+        self.floating_window_plugins: List[FloatingWindowPane] = []
+
+        self.user_guide_window = HelpWindow(
+            self,  # type: ignore
+            title='Pigweed Watch',
+            disable_ctrl_c=True,
+        )
+        self.user_guide_window.set_help_text(
+            _HELP_TEXT, lexer=PygmentsLexer(MarkdownLexer)
+        )
+
+        self.help_toolbar = WindowPaneToolbar(
+            title='Pigweed Watch',
+            include_resize_handle=False,
+            focus_action_callable=self.switch_to_root_log,
+            click_to_focus_text='',
+        )
+        self.help_toolbar.add_button(
+            ToolbarButton('F1', 'Help', self.user_guide_window.toggle_display)
+        )
+        self.help_toolbar.add_button(ToolbarButton('Ctrl-d', 'Quit', self.exit))
+        self.help_toolbar.add_button(
+            ToolbarButton(
+                'Ctrl-Alt-n', 'Next Tab', self.window_manager.focus_next_pane
+            )
+        )
+        self.help_toolbar.add_button(
+            ToolbarButton(
+                'Ctrl-Alt-p',
+                'Previous Tab',
+                self.window_manager.focus_previous_pane,
+            )
+        )
+
         self.root_container = FloatContainer(
             HSplit(
                 [
-                    pw_console.widgets.border.create_border(
-                        HSplit(
-                            [
-                                # The top toolbar.
-                                Window(
-                                    content=FormattedTextControl(
-                                        self.get_statusbar_text
-                                    ),
-                                    height=Dimension.exact(1),
-                                    style='class:toolbar_inactive',
-                                ),
-                                # Result Toolbar.
-                                Window(
-                                    content=FormattedTextControl(
-                                        self.get_resultbar_text
-                                    ),
-                                    height=lambda: len(
-                                        self.event_handler.project_builder
-                                    ),
-                                    style='class:toolbar_inactive',
-                                ),
-                            ]
-                        ),
-                        border_style=lambda: self.status_bar_border_style,
-                        base_style='class:toolbar_inactive',
-                        left_margin_columns=1,
-                        right_margin_columns=1,
-                    ),
-                    # The main content.
+                    # Window pane content:
                     DynamicContainer(lambda: self.window_manager_container),
+                    self.status_bar_container,
+                    self.help_toolbar,
                 ]
             ),
             floats=[
+                Float(
+                    content=self.user_guide_window,
+                    top=2,
+                    left=4,
+                    bottom=4,
+                    width=self.user_guide_window.content_width,
+                ),
                 Float(
                     content=self.quit_dialog,
                     top=2,
@@ -296,13 +462,6 @@ class WatchApp(PluginMixin):
             "Rebuild."
             self.run_build()
 
-        @key_bindings.add('c-t', filter=self.input_box_not_focused())
-        def _pass_time(_event):
-            "Rebuild."
-            self.time_waster.show_pane = not self.time_waster.show_pane
-            self.refresh_layout()
-            self.window_manager.focus_first_visible_pane()
-
         register = self.prefs.register_keybinding
 
         @register('global.exit-no-confirmation', key_bindings)
@@ -316,6 +475,15 @@ class WatchApp(PluginMixin):
             """Quit with confirmation dialog."""
             self.quit_dialog.open_dialog()
 
+        @register(
+            'global.open-user-guide',
+            key_bindings,
+            filter=Condition(lambda: not self.modal_window_is_open()),
+        )
+        def _show_help(_event):
+            """Toggle user guide window."""
+            self.user_guide_window.toggle_display()
+
         self.key_bindings = merge_key_bindings(
             [
                 self.window_manager.key_bindings,
@@ -323,18 +491,17 @@ class WatchApp(PluginMixin):
             ]
         )
 
-        self.current_theme = pw_console.style.generate_styles(
-            self.prefs.ui_theme
-        )
+        self.current_theme = generate_styles(self.prefs.ui_theme)
         self.style_overrides = Style.from_dict(
             {
                 # 'search': 'bg:ansired ansiblack',
             }
         )
+        self.code_theme = style_from_pygments_cls(PigweedCodeStyle)
 
         self.layout = Layout(
             self.root_container,
-            focused_element=self.ninja_log_pane,
+            focused_element=self.root_log_pane,
         )
 
         self.application: Application = Application(
@@ -348,6 +515,7 @@ class WatchApp(PluginMixin):
                     [
                         self.current_theme,
                         self.style_overrides,
+                        self.code_theme,
                     ]
                 )
             ),
@@ -361,11 +529,12 @@ class WatchApp(PluginMixin):
         )
 
     def add_build_log_pane(
-        self, title: str, logger: logging.Logger, level_name: str
-    ) -> None:
+        self, title: str, loggers: List[logging.Logger], level_name: str
+    ) -> LogPane:
         """Setup a new build log pane."""
         new_log_pane = LogPane(application=self, pane_title=title)
-        new_log_pane.add_log_handler(logger, level_name=level_name)
+        for logger in loggers:
+            new_log_pane.add_log_handler(logger, level_name=level_name)
 
         # Set python log format to just the message itself.
         new_log_pane.log_view.log_store.formatter = logging.Formatter(
@@ -404,7 +573,21 @@ class WatchApp(PluginMixin):
             key_binding_list
         )
 
+        # Only show a few buttons in the log pane toolbars.
+        new_buttons = []
+        for button in new_log_pane.bottom_toolbar.buttons:
+            if button.description in [
+                'Search',
+                'Save',
+                'Follow',
+                'Wrap',
+                'Clear',
+            ]:
+                new_buttons.append(button)
+        new_log_pane.bottom_toolbar.buttons = new_buttons
+
         self.window_manager.add_pane(new_log_pane)
+        return new_log_pane
 
     def logs_redraw(self):
         emit_time = time.time()
@@ -417,19 +600,19 @@ class WatchApp(PluginMixin):
             self.redraw_ui()
 
     def jump_to_error(self, backwards: bool = False) -> None:
-        if not self.ninja_log_pane.log_view.search_text:
-            self.ninja_log_pane.log_view.set_search_regex(
+        if not self.root_log_pane.log_view.search_text:
+            self.root_log_pane.log_view.set_search_regex(
                 '^FAILED: ', False, None
             )
         if backwards:
-            self.ninja_log_pane.log_view.search_backwards()
+            self.root_log_pane.log_view.search_backwards()
         else:
-            self.ninja_log_pane.log_view.search_forwards()
-        self.ninja_log_pane.log_view.log_screen.reset_logs(
-            log_index=self.ninja_log_pane.log_view.log_index
+            self.root_log_pane.log_view.search_forwards()
+        self.root_log_pane.log_view.log_screen.reset_logs(
+            log_index=self.root_log_pane.log_view.log_index
         )
 
-        self.ninja_log_pane.log_view.move_selected_line_to_top()
+        self.root_log_pane.log_view.move_selected_line_to_top()
 
     def refresh_layout(self) -> None:
         self.window_manager.update_root_container_body()
@@ -463,6 +646,15 @@ class WatchApp(PluginMixin):
         instead."""
         self.window_manager.focus_first_visible_pane()
 
+    def switch_to_root_log(self):
+        (
+            window_list,
+            pane_index,
+        ) = self.window_manager.find_window_list_and_pane_index(
+            self.root_log_pane
+        )
+        window_list.switch_to_tab(pane_index)
+
     def command_runner_is_open(self) -> bool:
         # pylint: disable=no-self-use
         return False
@@ -491,53 +683,71 @@ class WatchApp(PluginMixin):
             pane.log_view.log_store.clear_logs()
             pane.log_view.view_mode_changed()
 
-    def get_statusbar_text(self):
-        status = self.event_handler.status_message
-        fragments = [('class:logo', 'Pigweed Watch')]
-        is_building = False
-        if status:
-            fragments = [status]
-            is_building = status[1].endswith('Building')
-        separator = ('', '  ')
-        self.status_bar_border_style = 'class:theme-fg-green'
+    def get_status_bar_text(self) -> StyleAndTextTuples:
+        """Return formatted text for build status bar."""
+        formatted_text: StyleAndTextTuples = []
 
-        if is_building:
-            percent = self.event_handler.current_build_percent
-            percent *= 100
-            fragments.append(separator)
-            fragments.append(('ansicyan', '{:.0f}%'.format(percent)))
-            self.status_bar_border_style = 'class:theme-fg-yellow'
+        separator = ('', ' ')
+        name_width = self.event_handler.project_builder.max_name_width
 
-        if self.event_handler.current_build_errors > 0:
-            fragments.append(separator)
-            fragments.append(('', 'Errors:'))
-            fragments.append(
-                ('ansired', str(self.event_handler.current_build_errors))
+        # pylint: disable=protected-access
+        (
+            _window_list,
+            pane,
+        ) = self.window_manager._get_active_window_list_and_pane()
+        # pylint: enable=protected-access
+
+        for cfg in self.event_handler.project_builder:
+            # The build directory
+            name_style = ''
+            if pane and pane.pane_title() == cfg.display_name:
+                name_style = 'class:theme-fg-cyan'
+            formatted_text.append(
+                (
+                    name_style,
+                    f'{cfg.display_name}'.ljust(name_width),
+                )
             )
-            self.status_bar_border_style = 'class:theme-fg-red'
+            formatted_text.append(separator)
+            # Status
+            formatted_text.append(cfg.status.status_slug())
+            formatted_text.append(separator)
+            # Current stdout line
+            formatted_text.extend(cfg.status.current_step_formatted())
+            formatted_text.append(('', '\n'))
 
-        if is_building:
-            fragments.append(separator)
-            fragments.append(('', self.event_handler.current_build_step))
+        if not formatted_text:
+            formatted_text = [('', 'Loading...')]
 
-        return fragments
+        self.set_tab_bar_colors()
 
-    def get_resultbar_text(self) -> StyleAndTextTuples:
-        result = self.event_handler.result_message
-        if not result:
-            result = [('', 'Loading...')]
-        return result
+        return formatted_text
 
-    def exit(self, exit_code: int = 0) -> None:
-        log_file = self.external_logfile
+    def set_tab_bar_colors(self) -> None:
+        for cfg in BUILDER_CONTEXT.recipes:
+            pane = self.recipe_name_to_log_pane.get(cfg.display_name, None)
+            if not pane:
+                continue
 
+            pane.extra_tab_style = None
+            if cfg.status.failed():
+                pane.extra_tab_style = 'class:theme-fg-red'
+
+    def exit(
+        self,
+        exit_code: int = 0,
+        log_after_shutdown: Optional[Callable[[], None]] = None,
+    ) -> None:
+        _LOG.info('Exiting...')
+
+        # Shut everything down after the prompt_toolkit app exits.
         def _really_exit(future: asyncio.Future) -> NoReturn:
-            if log_file:
-                # Print a message showing where logs were saved to.
-                print('Logs saved to: {}'.format(log_file.resolve()))
-            sys.exit(future.result())
+            BUILDER_CONTEXT.restore_stdout_logging()
+            if log_after_shutdown:
+                log_after_shutdown()
+            BUILDER_CONTEXT.terminate_and_wait()
+            os._exit(future.result())  # pylint: disable=protected-access
 
-        get_project_builder_context().terminate_and_wait()
         if self.application.future:
             self.application.future.add_done_callback(_really_exit)
         self.application.exit(result=exit_code)
@@ -577,3 +787,15 @@ class WatchApp(PluginMixin):
             )
 
         return _test
+
+    def modal_window_is_open(self):
+        """Return true if any modal window or dialog is open."""
+        floating_window_is_open = (
+            self.user_guide_window.show_window or self.quit_dialog.show_dialog
+        )
+
+        floating_plugin_is_open = any(
+            plugin.show_pane for plugin in self.floating_window_plugins
+        )
+
+        return floating_window_is_open or floating_plugin_is_open

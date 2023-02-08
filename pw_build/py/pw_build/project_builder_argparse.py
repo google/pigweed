@@ -57,7 +57,10 @@ def add_project_builder_arguments(
         '-j',
         '--jobs',
         type=int,
-        help="Specify the number of cores to use for each build system.",
+        help=(
+            'Specify the number of cores to use for each build system.'
+            'This is passed to ninja, bazel and make as "-j"'
+        ),
     )
     build_options_group.add_argument(
         '-k',
@@ -147,6 +150,15 @@ def add_project_builder_arguments(
         '--parallel',
         action='store_true',
         help='Run all builds in parallel.',
+    )
+    parser.add_argument(
+        '--parallel-workers',
+        default=0,
+        type=int,
+        help=(
+            'How many builds may run at the same time when --parallel is '
+            'enabled. Default: 0 meaning run all in parallel.'
+        ),
     )
 
     return parser

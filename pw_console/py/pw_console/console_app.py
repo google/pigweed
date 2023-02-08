@@ -252,7 +252,7 @@ class ConsoleApp:
             additional_help_text=help_text,
             title=(self.app_title + ' Help'),
         )
-        self.app_help_window.generate_help_text()
+        self.app_help_window.generate_keybind_help_text()
 
         self.prefs_file_window = HelpWindow(self, title='.pw_console.yaml')
         self.prefs_file_window.load_yaml_text(
@@ -1092,7 +1092,7 @@ class ConsoleApp:
                         help_section_title, key_bindings
                     )
 
-        self.keybind_help_window.generate_help_text()
+        self.keybind_help_window.generate_keybind_help_text()
 
     def toggle_log_line_wrapping(self):
         """Menu item handler to toggle line wrapping of all log panes."""

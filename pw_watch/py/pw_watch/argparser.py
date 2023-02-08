@@ -105,7 +105,7 @@ def add_parser_arguments(
         dest='serve_docs_port',
         type=int,
         default=8000,
-        help='Set the port for the docs webserver. Default to 8000.',
+        help='Set the port for the docs webserver. Default: 8000.',
     )
 
     parser.add_argument(
@@ -113,7 +113,7 @@ def add_parser_arguments(
         dest='serve_docs_path',
         type=Path,
         default='docs/gen/docs',
-        help='Set the path for the docs to serve. Default to docs/gen/docs'
+        help='Set the path for the docs to serve. Default: docs/gen/docs'
         ' in the build directory.',
     )
 

@@ -135,32 +135,34 @@ class WindowPaneToolbar:
         """Return formatted text tokens for display."""
         fragments = []
         if not has_focus(self.focus_check_container.__pt_container__())():
-            fragments.append(
-                (
-                    'class:toolbar-button-inactive '
-                    'class:toolbar-button-decoration',
-                    ' ',
-                    self.focus_mouse_handler,
+            if self.click_to_focus_text:
+                fragments.append(
+                    (
+                        'class:toolbar-button-inactive '
+                        'class:toolbar-button-decoration',
+                        ' ',
+                        self.focus_mouse_handler,
+                    )
                 )
-            )
-            fragments.append(
-                (
-                    'class:toolbar-button-inactive class:keyhelp',
-                    'click to focus',
-                    self.focus_mouse_handler,
+                fragments.append(
+                    (
+                        'class:toolbar-button-inactive class:keyhelp',
+                        self.click_to_focus_text,
+                        self.focus_mouse_handler,
+                    )
                 )
-            )
-            fragments.append(
-                (
-                    'class:toolbar-button-inactive '
-                    'class:toolbar-button-decoration',
-                    ' ',
-                    self.focus_mouse_handler,
+                fragments.append(
+                    (
+                        'class:toolbar-button-inactive '
+                        'class:toolbar-button-decoration',
+                        ' ',
+                        self.focus_mouse_handler,
+                    )
                 )
+        if self.subtitle:
+            fragments.append(
+                ('', '  {} '.format(self.subtitle()), self.focus_mouse_handler)
             )
-        fragments.append(
-            ('', '  {} '.format(self.subtitle()), self.focus_mouse_handler)
-        )
         return fragments
 
     def get_resize_handle(self):
@@ -180,11 +182,13 @@ class WindowPaneToolbar:
         focus_action_callable: Optional[Callable] = None,
         center_section_align: WindowAlign = WindowAlign.LEFT,
         include_resize_handle: bool = True,
+        click_to_focus_text: str = 'click to focus',
     ):
 
         self.parent_window_pane = parent_window_pane
         self.title = title
         self.subtitle = subtitle
+        self.click_to_focus_text = click_to_focus_text
 
         # Assume check this container for focus
         self.focus_check_container = self

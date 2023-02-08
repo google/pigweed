@@ -28,7 +28,7 @@ def create_border(
     # pylint: disable=too-many-arguments
     content: AnyContainer,
     content_height: Optional[int] = None,
-    title: str = '',
+    title: Union[Callable[[], str], str] = '',
     border_style: Union[Callable[[], str], str] = '',
     base_style: Union[Callable[[], str], str] = '',
     top: bool = True,
@@ -54,9 +54,12 @@ def create_border(
 
     title_text = None
     if title:
-        title_text = FormattedTextControl(
-            [('', f'{horizontal_char}{horizontal_char} {title} ')]
-        )
+        if isinstance(title, str):
+            title_text = FormattedTextControl(
+                [('', f'{horizontal_char}{horizontal_char} {title} ')]
+            )
+        else:
+            title_text = FormattedTextControl(title)
 
     top_border_items.append(
         Window(

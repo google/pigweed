@@ -73,8 +73,6 @@ from watchdog.events import FileSystemEventHandler  # type: ignore[import]
 from watchdog.observers import Observer  # type: ignore[import]
 
 from prompt_toolkit import prompt
-from prompt_toolkit.formatted_text.base import OneStyleAndTextTuple
-from prompt_toolkit.formatted_text import StyleAndTextTuples
 
 from pw_build.build_recipe import BuildRecipe, create_build_recipes
 from pw_build.project_builder import (
@@ -113,6 +111,8 @@ _FSEVENTS_LOG = logging.getLogger('fsevents')
 _FSEVENTS_LOG.setLevel(logging.WARNING)
 
 _FULLSCREEN_STATUS_COLUMN_WIDTH = 10
+
+BUILDER_CONTEXT = get_project_builder_context()
 
 
 def git_ignored(file: Path) -> bool:
@@ -162,20 +162,18 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         banners: bool = True,
         use_logfile: bool = False,
         separate_logfiles: bool = False,
-        parallel: bool = False,
+        parallel_workers: int = 1,
     ):
         super().__init__()
 
         self.banners = banners
-        self.status_message: Optional[OneStyleAndTextTuple] = None
-        self.result_message: Optional[StyleAndTextTuples] = None
         self.current_build_step = ''
         self.current_build_percent = 0.0
         self.current_build_errors = 0
         self.patterns = patterns
         self.ignore_patterns = ignore_patterns
         self.project_builder = project_builder
-        self.parallel_workers = len(project_builder) if parallel else 1
+        self.parallel_workers = parallel_workers
 
         self.restart_on_changes = restart
         self.fullscreen_enabled = fullscreen
@@ -192,7 +190,10 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         # due to the split between dispatch(), run(), and on_complete().
         self.matching_path: Optional[Path] = None
 
-        if not self.fullscreen_enabled:
+        if (
+            not self.fullscreen_enabled
+            and not self.project_builder.should_use_progress_bars()
+        ):
             self.wait_for_keypress_thread = threading.Thread(
                 None, self._wait_for_enter
             )
@@ -256,6 +257,9 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
     def _clear_screen(self) -> None:
         if self.fullscreen_enabled:
             return
+        if self.project_builder.should_use_progress_bars():
+            BUILDER_CONTEXT.clear_progress_scrollback()
+            return
         print('\033c', end='')  # TODO(pwbug/38): Not Windows compatible.
         sys.stdout.flush()
 
@@ -271,60 +275,66 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         self._clear_screen()
 
         if self.fullscreen_enabled:
-            self.create_result_message()
             _LOG.info(
-                _COLOR.green(
+                self.project_builder.color.green(
                     'Watching for changes. Ctrl-d to exit; enter to rebuild'
                 )
             )
         else:
-            for line in pw_cli.branding.banner().splitlines():
-                _LOG.info(line)
+            if self.banners:
+                for line in pw_cli.branding.banner().splitlines():
+                    _LOG.info(line)
             _LOG.info(
-                _COLOR.green(
-                    '  Watching for changes. Ctrl-C to exit; enter to rebuild'
+                self.project_builder.color.green(
+                    'Watching for changes. Ctrl-C to exit; enter to rebuild'
                 )
             )
         if self.matching_path:
             _LOG.info('')
             _LOG.info('Change detected: %s', self.matching_path)
 
-        self._clear_screen()
-
         num_builds = len(self.project_builder)
         _LOG.info('Starting build with %d directories', num_builds)
 
         if self.project_builder.default_logfile:
             _LOG.info(
-                '%s: %s',
-                _COLOR.yellow('Logging to'),
+                '%s %s',
+                self.project_builder.color.blue('Root logfile:'),
                 self.project_builder.default_logfile.resolve(),
             )
 
         env = os.environ.copy()
-        # Force colors in Pigweed subcommands run through the watcher.
-        env['PW_USE_COLOR'] = '1'
-        # Force Ninja to output ANSI colors
-        env['CLICOLOR_FORCE'] = '1'
+        if self.project_builder.colors:
+            # Force colors in Pigweed subcommands run through the watcher.
+            env['PW_USE_COLOR'] = '1'
+            # Force Ninja to output ANSI colors
+            env['CLICOLOR_FORCE'] = '1'
 
         # Reset status
-        get_project_builder_context().set_building()
+        BUILDER_CONTEXT.set_project_builder(self.project_builder)
+        BUILDER_CONTEXT.set_enter_callback(self.rebuild)
+        BUILDER_CONTEXT.set_building()
 
         for cfg in self.project_builder:
             cfg.reset_status()
-        self.create_result_message()
 
         with concurrent.futures.ThreadPoolExecutor(
             max_workers=self.parallel_workers
         ) as executor:
             futures = []
-            for i, cfg in enumerate(self.project_builder, 1):
+            if (
+                not self.fullscreen_enabled
+                and self.project_builder.should_use_progress_bars()
+            ):
+                BUILDER_CONTEXT.add_progress_bars()
+
+            for i, cfg in enumerate(self.project_builder, start=1):
                 futures.append(executor.submit(self.run_recipe, i, cfg, env))
 
             for future in concurrent.futures.as_completed(futures):
                 future.result()
 
-        get_project_builder_context().set_idle()
+        BUILDER_CONTEXT.set_idle()
 
     def run_recipe(self, index: int, cfg: BuildRecipe, env) -> None:
         num_builds = len(self.project_builder)
@@ -347,48 +357,6 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
             logger=_LOG,
         )
 
-        self.create_result_message()
-
-    def create_result_message(self):
-        """Update the prompt_toolkit formatted build result message."""
-        if not self.fullscreen_enabled:
-            return
-
-        self.result_message = []
-        first_building_target_found = False
-        for cfg in self.project_builder:
-            # Add the status
-            if cfg.status.passed():
-                self.result_message.append(
-                    (
-                        'class:theme-fg-green',
-                        'OK'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH),
-                    )
-                )
-            elif cfg.status.failed():
-                self.result_message.append(
-                    (
-                        'class:theme-fg-red',
-                        'Failed'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH),
-                    )
-                )
-            elif first_building_target_found:
-                self.result_message.append(
-                    ('', ''.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH))
-                )
-            else:
-                if self.parallel_workers == 1:
-                    first_building_target_found = True
-                self.result_message.append(
-                    (
-                        'class:theme-fg-yellow',
-                        'Building'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH),
-                    )
-                )
-
-            # Add the build directory
-            self.result_message.append(('', f'  {cfg.display_name}\n'))
-
     def execute_command(
         self,
         command: list,
@@ -400,11 +368,6 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         # pylint: enable=unused-argument
     ) -> bool:
         """Runs a command with a blank before/after for visual separation."""
-        self.status_message = (
-            'class:theme-fg-yellow',
-            'Building'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH),
-        )
-
         if self.fullscreen_enabled:
             return self._execute_command_watch_app(command, env, recipe)
 
@@ -455,7 +418,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
     # Implementation of DebouncedFunction.cancel()
     def cancel(self) -> bool:
         if self.restart_on_changes:
-            get_project_builder_context().terminate_and_wait()
+            BUILDER_CONTEXT.terminate_and_wait()
             return True
 
         return False
@@ -464,30 +427,18 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
     def on_complete(self, cancelled: bool = False) -> None:
         # First, use the standard logging facilities to report build status.
         if cancelled:
-            self.status_message = (
-                '',
-                'Cancelled'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH),
-            )
             _LOG.error('Finished; build was interrupted')
 
         elif all(recipe.status.passed() for recipe in self.project_builder):
-            self.status_message = (
-                'class:theme-fg-green',
-                'Succeeded'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH),
-            )
             _LOG.info('Finished; all successful')
         else:
-            self.status_message = (
-                'class:theme-fg-red',
-                'Failed'.rjust(_FULLSCREEN_STATUS_COLUMN_WIDTH),
-            )
             _LOG.info('Finished; some builds failed')
 
-        # Show individual build results for fullscreen app
-        if self.fullscreen_enabled:
-            self.create_result_message()
         # For non-fullscreen pw watch
-        else:
+        if (
+            not self.fullscreen_enabled
+            and not self.project_builder.should_use_progress_bars()
+        ):
             # Show a more distinct colored banner.
             self.project_builder.print_build_summary(
                 cancelled=cancelled, logger=_LOG
@@ -503,6 +454,8 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
 
 
 def _exit(code: int) -> NoReturn:
+    # Flush all log handlers
+    logging.shutdown()
     # Note: The "proper" way to exit is via observer.stop(), then
     # running a join. However it's slower, so just exit immediately.
     #
@@ -517,43 +470,55 @@ def _exit_due_to_interrupt() -> NoReturn:
     # a '^C' from the keyboard interrupt, add a newline before the log.
     print('')
     _LOG.info('Got Ctrl-C; exiting...')
-    get_project_builder_context().terminate_and_wait()
+    BUILDER_CONTEXT.exit()
     _exit(0)
 
 
-def _exit_due_to_inotify_watch_limit():
+def _log_inotify_watch_limit_reached():
     # Show information and suggested commands in OSError: inotify limit reached.
     _LOG.error(
         'Inotify watch limit reached: run this in your terminal if '
-        'you are in Linux to temporarily increase inotify limit.  \n'
+        'you are in Linux to temporarily increase inotify limit.'
     )
+    _LOG.info('')
     _LOG.info(
         _COLOR.green(
-            '        sudo sysctl fs.inotify.max_user_watches=' '$NEW_LIMIT$\n'
+            '        sudo sysctl fs.inotify.max_user_watches=' '$NEW_LIMIT$'
         )
     )
+    _LOG.info('')
     _LOG.info(
         '  Change $NEW_LIMIT$ with an integer number, '
         'e.g., 20000 should be enough.'
     )
+
+
+def _exit_due_to_inotify_watch_limit():
+    _log_inotify_watch_limit_reached()
     _exit(0)
 
 
-def _exit_due_to_inotify_instance_limit():
+def _log_inotify_instance_limit_reached():
     # Show information and suggested commands in OSError: inotify limit reached.
     _LOG.error(
         'Inotify instance limit reached: run this in your terminal if '
-        'you are in Linux to temporarily increase inotify limit.  \n'
+        'you are in Linux to temporarily increase inotify limit.'
     )
+    _LOG.info('')
     _LOG.info(
         _COLOR.green(
-            '        sudo sysctl fs.inotify.max_user_instances=' '$NEW_LIMIT$\n'
+            '        sudo sysctl fs.inotify.max_user_instances=' '$NEW_LIMIT$'
         )
     )
+    _LOG.info('')
     _LOG.info(
         '  Change $NEW_LIMIT$ with an integer number, '
         'e.g., 20000 should be enough.'
     )
+
+
+def _exit_due_to_inotify_instance_limit():
+    _log_inotify_instance_limit_reached()
     _exit(0)
 
 
@@ -733,12 +698,12 @@ def _serve_docs(
     threading.Thread(None, server_thread, 'pw_docs_server').start()
 
 
-def watch_logging_init(log_level: int, fullscreen: bool) -> None:
+def watch_logging_init(log_level: int, fullscreen: bool, colors: bool) -> None:
     # Logging setup
     if not fullscreen:
         pw_cli.log.install(
             level=log_level,
-            use_color=True,
+            use_color=colors,
             hide_timestamp=False,
         )
         return
@@ -746,14 +711,12 @@ def watch_logging_init(log_level: int, fullscreen: bool) -> None:
     watch_logfile = pw_console.python_logging.create_temp_log_file(
         prefix=__package__
     )
+
     pw_cli.log.install(
         level=logging.DEBUG,
-        use_color=True,
+        use_color=colors,
         hide_timestamp=False,
         log_file=watch_logfile,
-    )
-    pw_console.python_logging.setup_python_logging(
-        last_resort_filename=watch_logfile
     )
 
 
@@ -773,6 +736,7 @@ def watch_setup(  # pylint: disable=too-many-locals
     logfile: Optional[Path] = None,
     separate_logfiles: bool = False,
     parallel: bool = False,
+    parallel_workers: int = 0,
     # pylint: disable=unused-argument
     default_build_targets: Optional[List[str]] = None,
     build_directories: Optional[List[str]] = None,
@@ -787,8 +751,17 @@ def watch_setup(  # pylint: disable=too-many-locals
 ) -> Tuple[PigweedBuildWatcher, List[Path]]:
     """Watches files and runs Ninja commands when they change."""
     watch_logging_init(
-        log_level=project_builder.default_log_level, fullscreen=fullscreen
+        log_level=project_builder.default_log_level,
+        fullscreen=fullscreen,
+        colors=colors,
     )
+
+    # Update the project_builder log formatters since pw_cli.log.install may
+    # have changed it.
+    project_builder.apply_root_log_formatting()
+
+    if project_builder.should_use_progress_bars():
+        project_builder.use_stdout_proxy()
 
     _LOG.info('Starting Pigweed build watcher')
 
@@ -812,7 +785,7 @@ def watch_setup(  # pylint: disable=too-many-locals
         if isinstance(cfg.build_dir, Path)
     )
 
-    for i, build_recipe in enumerate(build_recipes, 1):
+    for i, build_recipe in enumerate(build_recipes, start=1):
         _LOG.info('Will build [%d/%d]: %s', i, len(build_recipes), build_recipe)
 
     _LOG.debug('Patterns: %s', patterns)
@@ -837,6 +810,16 @@ def watch_setup(  # pylint: disable=too-many-locals
             if recipe.logfile:
                 ignore_patterns.append(str(recipe.logfile))
 
+    workers = 1
+    if parallel:
+        # If parallel is requested and parallel_workers is set to 0 run all
+        # recipes in parallel. That is, use the number of recipes as the worker
+        # count.
+        if parallel_workers == 0:
+            workers = len(project_builder)
+        else:
+            workers = parallel_workers
+
     event_handler = PigweedBuildWatcher(
         project_builder=project_builder,
         patterns=patterns.split(WATCH_PATTERN_DELIMITER),
@@ -845,8 +828,8 @@ def watch_setup(  # pylint: disable=too-many-locals
         fullscreen=fullscreen,
         banners=banners,
         use_logfile=bool(logfile),
-        separate_logfiles=bool(separate_logfiles),
-        parallel=parallel,
+        separate_logfiles=separate_logfiles,
+        parallel_workers=workers,
     )
 
     project_builder.execute_command = event_handler.execute_command
@@ -896,9 +879,27 @@ def watch(
         _exit_due_to_interrupt()
     except OSError as err:
         if err.args[0] == _ERRNO_INOTIFY_LIMIT_REACHED:
-            _exit_due_to_inotify_watch_limit()
+            if event_handler.watch_app:
+                event_handler.watch_app.exit(
+                    log_after_shutdown=_log_inotify_watch_limit_reached
+                )
+            elif event_handler.project_builder.should_use_progress_bars():
+                BUILDER_CONTEXT.exit(
+                    log_after_shutdown=_log_inotify_watch_limit_reached
+                )
+            else:
+                _exit_due_to_inotify_watch_limit()
         if err.errno == errno.EMFILE:
-            _exit_due_to_inotify_instance_limit()
+            if event_handler.watch_app:
+                event_handler.watch_app.exit(
+                    log_after_shutdown=_log_inotify_instance_limit_reached
+                )
+            elif event_handler.project_builder.should_use_progress_bars():
+                BUILDER_CONTEXT.exit(
+                    log_after_shutdown=_log_inotify_instance_limit_reached
+                )
+            else:
+                _exit_due_to_inotify_instance_limit()
         raise err
 
 

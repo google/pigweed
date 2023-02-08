@@ -236,6 +236,7 @@ class WindowList:
         return focused_pane
 
     def get_pane_titles(self, omit_subtitles=False, use_menu_title=True):
+        """Return formatted text for the window pane tab bar."""
         fragments = []
         separator = ('', ' ')
         fragments.append(separator)
@@ -246,14 +247,18 @@ class WindowList:
             if omit_subtitles:
                 text = f' {title} '
 
+            tab_style = (
+                'class:window-tab-active'
+                if pane_index == self.focused_pane_index
+                else 'class:window-tab-inactive'
+            )
+            if pane.extra_tab_style:
+                tab_style += ' ' + pane.extra_tab_style
+
             fragments.append(
                 (
                     # Style
-                    (
-                        'class:window-tab-active'
-                        if pane_index == self.focused_pane_index
-                        else 'class:window-tab-inactive'
-                    ),
+                    tab_style,
                     # Text
                     text,
                     # Mouse handler

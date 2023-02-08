@@ -17,7 +17,7 @@ import functools
 import importlib.resources
 import inspect
 import logging
-from typing import Dict, TYPE_CHECKING
+from typing import Dict, Optional, TYPE_CHECKING
 
 from prompt_toolkit.document import Document
 from prompt_toolkit.filters import Condition
@@ -87,10 +87,12 @@ class HelpWindow(ConditionalContainer):
             """Close the current dialog window."""
             self.toggle_display()
 
-        @register('help-window.copy-all', key_bindings)
-        def _copy_all(_event: KeyPressEvent) -> None:
-            """Close the current dialog window."""
-            self.copy_all_text()
+        if not self.disable_ctrl_c:
+
+            @register('help-window.copy-all', key_bindings)
+            def _copy_all(_event: KeyPressEvent) -> None:
+                """Close the current dialog window."""
+                self.copy_all_text()
 
         help_text_area.control.key_bindings = key_bindings
         return help_text_area
@@ -101,12 +103,14 @@ class HelpWindow(ConditionalContainer):
         preamble: str = '',
         additional_help_text: str = '',
         title: str = '',
+        disable_ctrl_c: bool = False,
     ) -> None:
         # Dict containing key = section title and value = list of key bindings.
         self.application: 'ConsoleApp' = application
         self.show_window: bool = False
         self.help_text_sections: Dict[str, Dict] = {}
         self._pane_title: str = title
+        self.disable_ctrl_c = disable_ctrl_c
 
         # Tracks the last focused container, to enable restoring focus after
         # closing the dialog.
@@ -140,15 +144,17 @@ class HelpWindow(ConditionalContainer):
         toolbar_title += self.pane_title()
 
         buttons = []
-        buttons.extend(
-            to_keybind_indicator(
-                'Ctrl-c',
-                'Copy All',
-                copy_mouse_handler,
-                base_style='class:toolbar-button-active',
+        if not self.disable_ctrl_c:
+            buttons.extend(
+                to_keybind_indicator(
+                    'Ctrl-c',
+                    'Copy All',
+                    copy_mouse_handler,
+                    base_style='class:toolbar-button-active',
+                )
             )
-        )
-        buttons.append(('', '  '))
+            buttons.append(('', '  '))
+
         buttons.extend(
             to_keybind_indicator(
                 'q',
@@ -297,12 +303,21 @@ class HelpWindow(ConditionalContainer):
             text=content,
         )
 
-    def generate_help_text(self):
+    def set_help_text(
+        self, text: str, lexer: Optional[PygmentsLexer] = None
+    ) -> None:
+        self.help_text_area = self._create_help_text_area(
+            lexer=lexer,
+            text=text,
+        )
+        self._update_help_text_area(text)
+
+    def generate_keybind_help_text(self) -> str:
         """Generate help text based on added key bindings."""
 
         template = self.application.get_template('keybind_list.jinja')
 
-        self.help_text = template.render(
+        text = template.render(
             sections=self.help_text_sections,
             max_additional_help_text_width=self.max_additional_help_text_width,
             max_description_width=self.max_description_width,
@@ -311,6 +326,12 @@ class HelpWindow(ConditionalContainer):
             additional_help_text=self.additional_help_text,
         )
 
+        self._update_help_text_area(text)
+        return text
+
+    def _update_help_text_area(self, text: str) -> None:
+        self.help_text = text
+
         # Find the longest line in the rendered template.
         self.max_line_length = _longest_line_length(self.help_text)
 
@@ -318,8 +339,6 @@ class HelpWindow(ConditionalContainer):
         self.help_text_area.buffer.document = Document(
             text=self.help_text, cursor_position=0
         )
-
-        return self.help_text
 
     def add_custom_keybinds_help_text(self, section_name, key_bindings: Dict):
         """Add hand written key_bindings."""

@@ -92,6 +92,8 @@ class WindowPane(ABC):
         self._pane_title = pane_title
         self._pane_subtitle: str = ''
 
+        self.extra_tab_style: Optional[str] = None
+
         # Default width and height to 10 lines each. They will be resized by the
         # WindowManager later.
         self.height = height if height else Dimension(preferred=10)

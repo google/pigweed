@@ -80,7 +80,7 @@ class TestHelpWindow(unittest.TestCase):
             },
         )
 
-    def test_generate_help_text(self) -> None:
+    def test_generate_keybind_help_text(self) -> None:
         """Test keybind list template generation."""
         global_bindings = KeyBindings()
 
@@ -120,7 +120,7 @@ class TestHelpWindow(unittest.TestCase):
         )
         help_window.add_keybind_help_text('Global', global_bindings)
         help_window.add_keybind_help_text('Focus', focus_bindings)
-        help_window.generate_help_text()
+        help_window.generate_keybind_help_text()
 
         self.assertIn(
             inspect.cleandoc(

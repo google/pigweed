@@ -168,7 +168,7 @@ class TestWindowManager(unittest.TestCase):
             (
                 result_window_list,
                 result_pane_index,
-            ) = window_manager._find_window_list_and_pane_index(target_pane)
+            ) = window_manager.find_window_list_and_pane_index(target_pane)
             self.assertEqual(
                 (result_window_list, result_pane_index),
                 (window_manager.window_lists[2], 0),

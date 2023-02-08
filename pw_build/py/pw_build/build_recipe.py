@@ -18,10 +18,16 @@ from dataclasses import dataclass, field
 import logging
 from pathlib import Path
 import shlex
-from typing import Callable, List, Optional, TYPE_CHECKING
+from typing import Callable, Dict, List, Optional, TYPE_CHECKING
+
+from prompt_toolkit.formatted_text import ANSI, StyleAndTextTuples
+from prompt_toolkit.formatted_text.base import OneStyleAndTextTuple
 
 if TYPE_CHECKING:
+    from pw_build.project_builder import ProjectBuilder
     from pw_build.project_builder_prefs import ProjectBuilderPrefs
+
+_LOG = logging.getLogger('pw_build.watch')
 
 
 class UnknownBuildSystem(Exception):
@@ -157,12 +163,18 @@ class BuildCommand:
             return True
         return False
 
+    def bazel_clean_command(self) -> bool:
+        if self.bazel_command() and 'clean' in self.build_system_extra_args:
+            return True
+        return False
+
     def get_args(
         self,
         additional_ninja_args: Optional[List[str]] = None,
         additional_bazel_args: Optional[List[str]] = None,
         additional_bazel_build_args: Optional[List[str]] = None,
     ) -> List[str]:
+        """Return all args required to launch this BuildCommand."""
         # If this is a plain command step, return self._expanded_args as-is.
         if not self.build_system_command:
             return self._resolve_expanded_args()
@@ -179,12 +191,16 @@ class BuildCommand:
         if additional_bazel_args and self.bazel_command():
             extra_args.extend(additional_bazel_args)
 
+        build_system_target_args = []
+        if not self.bazel_clean_command():
+            build_system_target_args = self._get_build_system_args()
+
         # Construct the build system command args.
         command = [
             self.build_system_command,
             *self._get_starting_build_system_args(),
             *extra_args,
-            *self._get_build_system_args(),
+            *build_system_target_args,
         ]
         return command
 
@@ -194,10 +210,16 @@ class BuildCommand:
 
 @dataclass
 class BuildRecipeStatus:
+    """Stores the status of a build recipe."""
+
+    recipe: 'BuildRecipe'
     current_step: str = ''
     percent: float = 0.0
     error_count: int = 0
     return_code: Optional[int] = None
+    flag_done: bool = False
+    flag_started: bool = False
+    error_lines: Dict[int, List[str]] = field(default_factory=dict)
 
     def pending(self) -> bool:
         return self.return_code is None
@@ -207,11 +229,143 @@ class BuildRecipeStatus:
             return self.return_code != 0
         return False
 
+    def append_failure_line(self, line: str) -> None:
+        lines = self.error_lines.get(self.error_count, [])
+        lines.append(line)
+        self.error_lines[self.error_count] = lines
+
+    def increment_error_count(self, count: int = 1) -> None:
+        self.error_count += count
+        if self.error_count not in self.error_lines:
+            self.error_lines[self.error_count] = []
+
+    def should_log_failures(self) -> bool:
+        return (
+            self.recipe.project_builder is not None
+            and self.recipe.project_builder.separate_build_file_logging
+            and (not self.recipe.project_builder.send_recipe_logs_to_root)
+        )
+
+    def log_last_failure(self) -> None:
+        """Log the last ninja error if available."""
+        if not self.should_log_failures():
+            return
+
+        logger = self.recipe.error_logger
+        if not logger:
+            return
+
+        _color = self.recipe.project_builder.color  # type: ignore
+
+        lines = self.error_lines.get(self.error_count, [])
+        _LOG.error('')
+        _LOG.error(' ╔════════════════════════════════════')
+        _LOG.error(
+            ' ║  START %s Failure #%d:',
+            _color.cyan(self.recipe.display_name),
+            self.error_count,
+        )
+
+        logger.error('')
+        for line in lines:
+            logger.error(line)
+        logger.error('')
+
+        _LOG.error(
+            ' ║  END %s Failure #%d',
+            _color.cyan(self.recipe.display_name),
+            self.error_count,
+        )
+        _LOG.error(" ╚════════════════════════════════════")
+        _LOG.error('')
+
+    def log_entire_recipe_logfile(self) -> None:
+        """Log the entire build logfile if no ninja errors available."""
+        if not self.should_log_failures():
+            return
+
+        recipe_logfile = self.recipe.logfile
+        if not recipe_logfile:
+            return
+
+        _color = self.recipe.project_builder.color  # type: ignore
+
+        logfile_path = str(recipe_logfile.resolve())
+
+        _LOG.error('')
+        _LOG.error(' ╔════════════════════════════════════')
+        _LOG.error(
+            ' ║  %s Failure; Entire log below:',
+            _color.cyan(self.recipe.display_name),
+        )
+        _LOG.error(' ║  %s %s', _color.yellow('START'), logfile_path)
+
+        logger = self.recipe.error_logger
+        if not logger:
+            return
+
+        logger.error('')
+        for line in recipe_logfile.read_text(
+            encoding='utf-8', errors='ignore'
+        ).splitlines():
+            logger.error(line)
+        logger.error('')
+
+        _LOG.error(' ║  %s %s', _color.yellow('END'), logfile_path)
+        _LOG.error(" ╚════════════════════════════════════")
+        _LOG.error('')
+
+    def status_slug(self) -> OneStyleAndTextTuple:
+        status = ('', '')
+        if self.done:
+            if self.passed():
+                status = ('fg:ansigreen', 'OK      ')
+            elif self.failed():
+                status = ('fg:ansired', 'FAIL    ')
+        elif self.started:
+            status = ('fg:ansiyellow', 'Building')
+        else:
+            status = ('fg:ansigray', 'Waiting ')
+
+        return status
+
+    def current_step_formatted(self) -> StyleAndTextTuples:
+        formatted_text: StyleAndTextTuples = []
+        if self.passed():
+            return formatted_text
+
+        if self.current_step:
+            if '\x1b' in self.current_step:
+                formatted_text = ANSI(self.current_step).__pt_formatted_text__()
+            else:
+                formatted_text = [('', self.current_step)]
+
+        return formatted_text
+
+    @property
+    def done(self) -> bool:
+        return self.flag_done
+
+    @property
+    def started(self) -> bool:
+        return self.flag_started
+
+    def mark_done(self) -> None:
+        self.flag_done = True
+
+    def mark_started(self) -> None:
+        self.flag_started = True
+
+    def set_failed(self) -> None:
+        self.flag_done = True
+        self.return_code = -1
+
     def set_passed(self) -> None:
+        self.flag_done = True
         self.return_code = 0
 
     def passed(self) -> bool:
-        if self.return_code is not None:
+        if self.done and self.return_code is not None:
             return self.return_code == 0
         return False
 
@@ -263,8 +417,13 @@ class BuildRecipe:
 
         # Set logging variables
         self._logger: Optional[logging.Logger] = None
+        self.error_logger: Optional[logging.Logger] = None
         self._logfile: Optional[Path] = None
-        self._status: BuildRecipeStatus = BuildRecipeStatus()
+        self._status: BuildRecipeStatus = BuildRecipeStatus(self)
+        self.project_builder: Optional['ProjectBuilder'] = None
+
+    def set_project_builder(self, project_builder) -> None:
+        self.project_builder = project_builder
 
     def set_targets(self, new_targets: List[str]) -> None:
         """Reset all build step targets."""
@@ -274,11 +433,14 @@ class BuildRecipe:
     def set_logger(self, logger: logging.Logger) -> None:
         self._logger = logger
 
+    def set_error_logger(self, logger: logging.Logger) -> None:
+        self.error_logger = logger
+
     def set_logfile(self, log_file: Path) -> None:
         self._logfile = log_file
 
     def reset_status(self) -> None:
-        self._status = BuildRecipeStatus()
+        self._status = BuildRecipeStatus(self)
 
     @property
     def status(self) -> BuildRecipeStatus:
