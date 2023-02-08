@@ -517,7 +517,7 @@ template("pw_python_package") {
           inputs += invoker.inputs
         }
 
-        deps = _python_deps + _other_deps
+        public_deps = _python_deps + _other_deps
       }
     }
 
