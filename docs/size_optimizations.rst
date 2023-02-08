@@ -592,16 +592,63 @@ to recommend considering this for simple functions which are 10 lines or less.
 
 Link Time Optimization (LTO)
 ============================
-Consider using LTO to further reduce the size of the binary if needed. This
-tends to be very effective at devirtualization.
+**Summary: LTO can decrase your binary size, at a cost: LTO makes debugging
+harder, interacts poorly with linker scripts, and makes crash reports less
+informative. We advise only enabling LTO when absolutely necessary.**
 
-Unfortunately, the aggressive inlining done by LTO can make it much more
-difficult to triage bugs. In addition, it can significantly increase the total
-build time.
+Link time optimization (LTO) moves some optimizations from the individual
+compile steps to the final link step, to enable optimizing across translation
+unit boundaries.
 
-On GCC and Clang this can be enabled by passing ``-flto`` to both the compiler
-and the linker. In addition, on GCC ``-fdevirtualize-at-ltrans`` can be
-optionally used to devirtualize more aggressively.
+LTO can both increase performance and reduce binary size for embedded projects.
+This appears to be a strict improvement; and one might think enabling LTO at
+all times is the best approach. However, this is not the case; in practice, LTO
+is a trade-off.
+
+**LTO benefits**
+
+* **Reduces binary size** - When compiling with size-shrinking flags like
+  ``-Oz``, some function call overhead can be eliminated, and code paths might
+  be eliminated by the optimizer after inlining. This can include critical
+  abstraction removal like devirtualization.
+* **Improves performance** - When code is inlined, the optimizer can better
+  reduce the number of instructions. When code is smaller, the instruction
+  cache has better hit ratio leading to better performance. In some cases,
+  entire function calls are eliminated.
+
+**LTO costs**
+
+* **LTO interacts poorly with linker scripts** - Production embedded projects
+  often have complicated linker scripts to control the physical layout of code
+  and data on the device. For example, you may want to put performance critical
+  audio codec functions into the fast tightly coupled (TCM) memory region.
+  However, LTO can interact with linker script requirements in strange ways,
+  like inappropriately inlining code that was manually placed into other
+  functions in the wrong region; leading to hard-to-understand bugs.
+* **Debugging LTO binaries is harder** - LTO increases the differences between
+  the machine code and the source code. This makes stepping through source code
+  in a debugger confusing, since the instruction pointer can hop around in
+  confusing ways.
+* **Crash reports for LTO binaries can be misleading** - Just as with
+  debugging, LTO'd binaries can produce confusing stacks in crash reports.
+* **LTO significantly increases build times** - The compilation model is
+  different when LTO is enabled, since individual translation unit compilations
+  (`.cc` --> `.o`) files now produce LLVM- or GCC- IR instead of native machine
+  code; machine code is only generated at the link phase. This makes the final
+  link step take significantly longer. Since any source changes will result in
+  a link step, developer velocity is reduced due to the slow compile time.
+
+How to enable LTO
+-----------------
+On GCC and Clang LTO is enabled by passing ``-flto`` to both the compiler
+and the linker. On GCC ``-fdevirtualize-at-ltrans`` enables more aggressive
+devirtualization.
+
+Our recommendation
+------------------
+* Disable LTO unless absolutely necessary; e.g. due to lack of space.
+* When enabling LTO, carefully and thoroughly test the resulting binary.
+* Check that crash reports are still useful under LTO for your product.
 
 Disabling Scoped Static Initialization Locks
 ============================================
