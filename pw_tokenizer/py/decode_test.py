@@ -15,6 +15,7 @@
 """Tests the tokenized string decode module."""
 
 from datetime import datetime
+import math
 import unittest
 
 import tokenized_string_decoding_test_data as tokenized_string
@@ -84,9 +85,49 @@ class TestDecodeTokenized(unittest.TestCase):
             '0x00000001<[%d ERROR]><[%d SKIPPED]>',
         )
 
+    def test_nothing_printed_fails(self) -> None:
+        result = decode.FormatString('%n').format(b'')
+        self.assertFalse(result.ok())
+
 
 class TestIntegerDecoding(unittest.TestCase):
     """Tests decoding variable-length integers."""
+
+    def test_signed_integer_i(self) -> None:
+        result = decode.FormatString('%i').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '-10')
+        self.assertEqual(result.remaining, b'')
+
+    def test_signed_integer_d(self) -> None:
+        result = decode.FormatString('%d').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '-10')
+        self.assertEqual(result.remaining, b'')
+
+    def test_unsigned_integer(self) -> None:
+        result = decode.FormatString('%u').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '10')
+        self.assertEqual(result.remaining, b'')
+
+    def test_octal_integer(self) -> None:
+        result = decode.FormatString('%o').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '12')
+        self.assertEqual(result.remaining, b'')
+
+    def test_lowercase_hex_integer(self) -> None:
+        result = decode.FormatString('%x').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'a')
+        self.assertEqual(result.remaining, b'')
+
+    def test_uppercase_hex_integer(self) -> None:
+        result = decode.FormatString('%X').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'A')
+        self.assertEqual(result.remaining, b'')
 
     def test_decode_generated_data(self) -> None:
         test_data = varint_test_data.TEST_DATA
@@ -106,6 +147,90 @@ class TestIntegerDecoding(unittest.TestCase):
                 .decode(bytearray(encoded))
                 .value,
             )
+
+
+class TestFloatDecoding(unittest.TestCase):
+    """Tests decoding floating-point values."""
+
+    def test_lowercase_float(self) -> None:
+        result = decode.FormatString('%f').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000')
+        self.assertEqual(result.remaining, b'')
+
+    def test_lowercase_float_non_number(self) -> None:
+        result = decode.FormatString('%f').format(encode.encode_args(math.inf))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'inf')
+        self.assertEqual(result.remaining, b'')
+
+    def test_uppercase_float(self) -> None:
+        result = decode.FormatString('%F').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000')
+        self.assertEqual(result.remaining, b'')
+
+    def test_uppercase_float_non_number(self) -> None:
+        result = decode.FormatString('%F').format(encode.encode_args(math.inf))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'INF')
+        self.assertEqual(result.remaining, b'')
+
+    def test_lowercase_exponential(self) -> None:
+        result = decode.FormatString('%e').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000e+00')
+        self.assertEqual(result.remaining, b'')
+
+    def test_uppercase_exponential(self) -> None:
+        result = decode.FormatString('%E').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000E+00')
+        self.assertEqual(result.remaining, b'')
+
+    def test_lowercase_shortest_take_normal(self) -> None:
+        result = decode.FormatString('%g').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.2')
+        self.assertEqual(result.remaining, b'')
+
+    def test_lowercase_shortest_take_exponential(self) -> None:
+        result = decode.FormatString('%g').format(encode.encode_args(1048580.0))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '1.04858e+06')
+        self.assertEqual(result.remaining, b'')
+
+    def test_uppercase_shortest_take_normal(self) -> None:
+        result = decode.FormatString('%G').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.2')
+        self.assertEqual(result.remaining, b'')
+
+    def test_uppercase_shortest_take_exponential(self) -> None:
+        result = decode.FormatString('%G').format(encode.encode_args(1048580.0))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '1.04858E+06')
+        self.assertEqual(result.remaining, b'')
+
+
+class TestCharDecoding(unittest.TestCase):
+    """Tests decoding character values."""
+
+    def test_char(self) -> None:
+        result = decode.FormatString('%c').format(encode.encode_args(ord('c')))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'c')
+        self.assertEqual(result.remaining, b'')
+
+
+class TestStringDecoding(unittest.TestCase):
+    """Tests decoding string values."""
+
+    def test_string(self) -> None:
+        result = decode.FormatString('%s').format(encode.encode_args('hello'))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'hello')
+        self.assertEqual(result.remaining, b'')
 
 
 class TestPointerDecoding(unittest.TestCase):

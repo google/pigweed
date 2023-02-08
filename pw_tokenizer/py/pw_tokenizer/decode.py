@@ -55,6 +55,50 @@ class FormatSpec:
     - Length (Optional)
       - TODO(gregpataky): Finish.
     - Specifiers (Required)
+      - `d` / `i`: Used for signed decimal integers.
+      - `u`: Used for unsigned decimal integers.
+      - `o`: Used for unsigned decimal integers and specifies formatting should
+             be as an octal number.
+      - `x`: Used for unsigned decimal integers and specifies formatting should
+             be as a hexadecimal number using all lowercase letters.
+      - `X`: Used for unsigned decimal integers and specifies formatting should
+             be as a hexadecimal number using all uppercase letters.
+      - `f`: Used for floating-point values and specifies to use lowercase,
+             decimal floating point formatting.
+        - Default precision is 6 decimal places unless explicitly specified.
+      - `F`: Used for floating-point values and specifies to use uppercase,
+             decimal floating point formatting.
+        - Default precision is 6 decimal places unless explicitly specified.
+      - `e`: Used for floating-point values and specifies to use lowercase,
+             exponential (scientific) formatting.
+        - Default precision is 6 decimal places unless explicitly specified.
+      - `E`: Used for floating-point values and specifies to use uppercase,
+             exponential (scientific) formatting.
+        - Default precision is 6 decimal places unless explicitly specified.
+      - `g`: Used for floating-point values and specified to use `f` or `e`
+             formatting depending on which would be the shortest representation.
+        - Precision specifies the number of significant digits, not just digits
+          after the decimal place.
+        - If the precision is specified as 0, it is interpreted to mean 1.
+        - `e` formatting is used if the the exponent would be less than -4 or
+          is greater than or equal to the precision.
+        - Trailing zeros are removed unless the `#` flag is set.
+        - A decimal point only appears if it is followed by a digit.
+        - `NaN` or infinities always follow `f` formatting.
+      - `G`: Used for floating-point values and specified to use `f` or `e`
+             formatting depending on which would be the shortest representation.
+        - Precision specifies the number of significant digits, not just digits
+          after the decimal place.
+        - If the precision is specified as 0, it is interpreted to mean 1.
+        - `E` formatting is used if the the exponent would be less than -4 or is
+          greater than or equal to the precision.
+        - Trailing zeros are removed unless the `#` flag is set.
+        - A decimal point only appears if it is followed by a digit.
+        - `NaN` or infinities always follow `F` formatting.
+      - `c`: Used for formatting a `char` value.
+      - `s`: Used for formatting a string of `char` values.
+        - If precision is specified, no more `char`s than that value will be
+          written from the string (padding is used to fill additional width).
       - `p`: Used for formatting a pointer address.
       - TODO(gregpataky): Finish.
 
