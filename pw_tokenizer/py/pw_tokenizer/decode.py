@@ -55,11 +55,17 @@ class FormatSpec:
     - Length (Optional)
       - TODO(gregpataky): Finish.
     - Specifiers (Required)
+      - `p`: Used for formatting a pointer address.
       - TODO(gregpataky): Finish.
 
     Underspecified details:
     - `p` is implementation defined. For this implementation, it will print
       with a `0x` prefix and then the pointer value was printed using `%08X`.
+      `p` supports the `+`, `-`, and ` ` flags, but not the `#` or `0` flags.
+      None of the length modifiers are usable with `p`. This implementation will
+      try to adhere to user-specified width (assuming the width provided is
+      larger than the guaranteed minimum of 10). Specifying precision for `p` is
+      considered an error.
 
     Non-conformant details:
     - `n` specifier: We do not support the `n` specifier since it is impossible
@@ -78,7 +84,7 @@ class FormatSpec:
     )
 
     # Conversions to make format strings Python compatible.
-    _REMAP_TYPE = {'a': 'f', 'A': 'F'}
+    _REMAP_TYPE = {'a': 'f', 'A': 'F', 'p': 'X'}
 
     # Conversion specifiers by type; n is not supported.
     _SIGNED_INT = 'di'
@@ -113,26 +119,56 @@ class FormatSpec:
         self.type: str = self.match.group('type')
 
         self.error = None
-
-        if self.type == 'p':
-            # %p prints as 0xFEEDBEEF.
-            self.compatible = '0x%08X'
-        elif self.type == 'n':
+        if self.type == 'n':
             self.error = 'Unsupported conversion specifier n'
-        else:
-            # N.B.: The Python %-format machinery never requires the length
-            # modifier to work correctly, and it doesn't support all of the
-            # C99 length format specifiers anyway. We remove it from the
-            # python-compaitble format string.
-            self.compatible = ''.join(
-                [
-                    '%',
-                    self.flags,
-                    self.width,
-                    self.precision,
-                    self._REMAP_TYPE.get(self.type, self.type),
-                ]
-            )
+
+        # If we are going to add additional characters to the output, we add to
+        # width_bias to ensure user-provided widths are reduced by that amount.
+        self._width_bias = 0
+        # Some of our machinery requires that we maintain a minimum precision
+        # width to ensure a certain amount of digits gets printed. This
+        # increases the user-provided precision in these cases if it was not
+        # enough.
+        self._minimum_precision = 0
+        if self.type == 'p':
+            self._width_bias = 2
+            self._minimum_precision = 8
+
+        # If we have a concrete width, we reduce it by any width bias.
+        # Otherwise, we either have no width or width is *, where the decoding
+        # logic will handle the width bias.
+        parsed_width = int(self.width.replace('*', '') or '0')
+        if parsed_width > self._width_bias:
+            self.width = f'{parsed_width - self._width_bias}'
+
+        # N.B.: Python %-operator does not support `.` without a
+        # trailing number. `.` is defined to be equivalent to `.0`.
+        if self.precision == '.':
+            self.precision = '.0'
+
+        # If we have a concrete precision that is not *, we check that it is at
+        # least minimum precision. If it is *, other parts of decoding will
+        # ensure the minimum is upheld.
+        if (
+            self.precision != '.*'
+            and int(self.precision.replace('.', '') or '0')
+            < self._minimum_precision
+        ):
+            self.precision = f'.{self._minimum_precision}'
+
+        # N.B.: The Python %-format machinery never requires the length
+        # modifier to work correctly, and it doesn't support all of the
+        # C99 length format specifiers anyway. We remove it from the
+        # python-compaitble format string.
+        self.compatible = ''.join(
+            [
+                '%',
+                self.flags,
+                self.width,
+                self.precision,
+                self._REMAP_TYPE.get(self.type, self.type),
+            ]
+        )
 
     def decode(self, encoded_arg: bytes) -> 'DecodedArg':
         """Decodes the provided data according to this format specifier."""
@@ -317,7 +353,20 @@ class DecodedArg:
 
         if self.ok():
             try:
-                return self.specifier.compatible % self.value
+                result = self.specifier.compatible % self.value
+                if self.specifier.type == 'p':
+                    # Find index of the first non-space, non-plus, and non-zero
+                    # character (unless we hit the first of the 8 required hex
+                    # digits).
+                    counter = 0
+                    for i, value in enumerate(result[:-7]):
+                        if value not in [' ', '+', '0'] or i == len(result) - 8:
+                            counter = i
+                            break
+                    # Insert the pointer 0x prefix in after the leading `+`,
+                    # space, or `0`
+                    return result[:counter] + '0x' + result[counter:]
+                return result
             except (OverflowError, TypeError, ValueError) as err:
                 self.status |= self.DECODE_ERROR
                 self.error = err

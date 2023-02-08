@@ -108,6 +108,26 @@ class TestIntegerDecoding(unittest.TestCase):
             )
 
 
+class TestPointerDecoding(unittest.TestCase):
+    """Tests decoding pointer values."""
+
+    def test_pointer(self) -> None:
+        result = decode.FormatString('%p').format(
+            encode.encode_args(0xDEADBEEF)
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '0xDEADBEEF')
+        self.assertEqual(result.remaining, b'')
+
+    def test_pointer_0_padding(self) -> None:
+        result = decode.FormatString('%p').format(
+            encode.encode_args(0x00000000)
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '0x00000000')
+        self.assertEqual(result.remaining, b'')
+
+
 class TestFormattedString(unittest.TestCase):
     """Tests scoring how successfully a formatted string decoded."""
 
