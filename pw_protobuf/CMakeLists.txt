@@ -46,6 +46,7 @@ pw_add_library(pw_protobuf STATIC
     pw_bytes.bit
     pw_containers.vector
     pw_function
+    pw_preprocessor
     pw_protobuf.config
     pw_result
     pw_span

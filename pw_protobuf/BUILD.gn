@@ -54,6 +54,7 @@ pw_source_set("pw_protobuf") {
     dir_pw_bytes,
     dir_pw_function,
     dir_pw_log,
+    dir_pw_preprocessor,
     dir_pw_result,
     dir_pw_span,
     dir_pw_status,

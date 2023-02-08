@@ -64,6 +64,7 @@ pw_cc_library(
         "//pw_bytes:bit",
         "//pw_containers:vector",
         "//pw_function",
+        "//pw_preprocessor",
         "//pw_result",
         "//pw_span",
         "//pw_status",
