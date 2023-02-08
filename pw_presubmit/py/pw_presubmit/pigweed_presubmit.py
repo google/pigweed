@@ -469,13 +469,15 @@ def bazel_build(ctx: PresubmitContext) -> None:
         ],
     }
 
-    for platform, targets in targets_for_platform.items():
-        build.bazel(
-            ctx,
-            'build',
-            f'--platforms={platform}',
-            *targets,
-        )
+    for cxxversion in ('c++17', 'c++20'):
+        for platform, targets in targets_for_platform.items():
+            build.bazel(
+                ctx,
+                'build',
+                f'--platforms={platform}',
+                f"--cxxopt='-std={cxxversion}'",
+                *targets,
+            )
 
 
 def pw_transfer_integration_test(ctx: PresubmitContext) -> None:

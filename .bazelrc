@@ -35,6 +35,9 @@ build --incompatible_strict_action_env
 # (https://github.com/bazelembedded/rules_cc_toolchain/issues/46).
 build --features=external_include_paths
 
+# By default build with C++20.
+build --cxxopt='-std=c++20'
+
 # This leaks the PATH variable into the Bazel build environment, which
 # enables the Python pw_protobuf plugins to find the Python version
 # via CIPD and pw_env_setup. This is a partial fix for pwbug/437,
