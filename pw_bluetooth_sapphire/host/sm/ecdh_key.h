@@ -10,7 +10,6 @@
 
 #include <openssl/base.h>
 
-#include "fbl/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uint256.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
 

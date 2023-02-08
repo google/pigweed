@@ -6,7 +6,6 @@
 
 #include <gtest/gtest.h>
 
-#include "fbl/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"

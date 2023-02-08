@@ -14,6 +14,7 @@
 #include <memory>
 
 #include <fbl/ref_counted.h>
+#include <fbl/ref_ptr.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/gap/adapter.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"

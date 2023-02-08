@@ -11,7 +11,6 @@
 
 #include <list>
 
-#include "fbl/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/identifier.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/peer.h"

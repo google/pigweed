@@ -9,8 +9,6 @@
 
 #include <list>
 
-#include <fbl/intrusive_double_list.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
