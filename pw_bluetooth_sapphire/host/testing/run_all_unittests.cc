@@ -11,35 +11,26 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/random.h"
-#include "src/lib/fxl/command_line.h"
-#include "src/lib/fxl/log_settings_command_line.h"
-#include "src/lib/fxl/test/test_settings.h"
+#include "src/connectivity/bluetooth/core/bt-host/testing/parse_args.h"
 
 #ifdef PW_LOG_DECLARE_FAKE_DRIVER
 PW_LOG_DECLARE_FAKE_DRIVER();
 #endif
 
 using bt::LogSeverity;
+using bt::testing::GetArgValue;
 
 namespace {
 
-LogSeverity FxlLogToBtLogLevel(syslog::LogSeverity severity) {
-  switch (severity) {
-    case syslog::LOG_ERROR:
-      return LogSeverity::ERROR;
-    case syslog::LOG_WARNING:
-      return LogSeverity::WARN;
-    case syslog::LOG_INFO:
-      return LogSeverity::INFO;
-    case syslog::LOG_DEBUG:
-      return LogSeverity::DEBUG;
-    case syslog::LOG_TRACE:
-      return LogSeverity::TRACE;
-    default:
-      break;
-  }
-  if (severity < 0) {
-    return LogSeverity::TRACE;
+constexpr LogSeverity LogSeverityFromString(std::string_view str) {
+  if (str == "DEBUG") {
+    return LogSeverity::DEBUG;
+  } else if (str == "INFO") {
+    return LogSeverity::INFO;
+  } else if (str == "WARN") {
+    return LogSeverity::WARN;
+  } else if (str == "ERROR") {
+    return LogSeverity::ERROR;
   }
   return LogSeverity::ERROR;
 }
@@ -64,19 +55,15 @@ int32_t GenerateRandomSeed() {
 }  // namespace
 
 int main(int argc, char** argv) {
-  fxl::CommandLine cl = fxl::CommandLineFromArgcArgv(argc, argv);
-  if (!fxl::SetTestSettings(cl)) {
-    return EXIT_FAILURE;
+  LogSeverity log_severity = LogSeverity::ERROR;
+
+  std::optional<std::string_view> severity_arg_value = GetArgValue("severity", argc, argv);
+  if (severity_arg_value) {
+    log_severity = LogSeverityFromString(*severity_arg_value);
   }
 
-  syslog::LogSettings log_settings;
-  log_settings.min_log_level = syslog::LOG_ERROR;
-  if (!fxl::ParseLogSettings(cl, &log_settings)) {
-    return EXIT_FAILURE;
-  }
-
-  // Set all library log messages to use printf instead ddk logging.
-  bt::UsePrintf(FxlLogToBtLogLevel(log_settings.min_log_level));
+  // Set all library log messages to use printf.
+  bt::UsePrintf(log_severity);
 
   // If --gtest_random_seed is not specified, then GoogleTest calculates a seed based on time. To
   // avoid using different seeds, we need to tell GoogleTest what seed we are using.
@@ -86,9 +73,14 @@ int main(int argc, char** argv) {
   // GoogleTest doesn't initialize the random seed (UnitTest::random_seed()) until RUN_ALL_TESTS, so
   // we need to parse it now to avoid configuring the random generator in every test suite.
   int32_t random_seed = 0;
-  std::string seed_value;
-  if (cl.GetOptionValue("gtest_random_seed", &seed_value)) {
-    random_seed = stoi(seed_value);
+  std::optional<std::string_view> seed_arg_value = GetArgValue("gtest_random_seed", argc, argv);
+  if (seed_arg_value) {
+    std::from_chars_result result = std::from_chars(
+        seed_arg_value->data(), seed_arg_value->data() + seed_arg_value->size(), random_seed);
+    if (result.ec != std::errc()) {
+      fprintf(stderr, "\nERROR: Invalid gtest_random_seed value\n");
+      return 1;
+    }
     random_seed = NormalizeRandomSeed(random_seed);
   } else {
     random_seed = GenerateRandomSeed();

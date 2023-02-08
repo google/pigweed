@@ -12,6 +12,8 @@ source_set("testing") {
     "inspect.h",
     "inspect_util.cc",
     "inspect_util.h",
+    "parse_args.cc",
+    "parse_args.h",
     "test_packets.cc",
     "test_packets.h",
   ]
@@ -57,6 +59,7 @@ source_set("tests") {
     "fake_sdp_server_unittest.cc",
     "fake_signaling_server_unittest.cc",
     "inspect_util_unittest.cc",
+    "parse_args_unittest.cc",
   ]
 
   deps = [
@@ -84,7 +87,6 @@ source_set("controller_test_double_base") {
     "//third_party/pigweed:pw_bluetooth",
     "//zircon/system/ulib/async:async-cpp",
     "//zircon/system/ulib/async-default",
-    "//zircon/system/ulib/zx",
   ]
 }
 
@@ -141,12 +143,9 @@ source_set("fake_controller") {
     "//src/connectivity/bluetooth/core/bt-host/l2cap:definitions",
     "//src/connectivity/bluetooth/core/bt-host/l2cap:testing",
     "//src/connectivity/bluetooth/core/bt-host/sdp",
-    "//src/lib/files",
     "//third_party/pigweed/src/pw_bluetooth:emboss_vendor",
     "//zircon/system/ulib/async:async-cpp",
     "//zircon/system/ulib/async-default",
-    "//zircon/system/ulib/fbl",
-    "//zircon/system/ulib/zx",
   ]
 }
 
@@ -157,10 +156,8 @@ source_set("gtest_main") {
   sources = [ "run_all_unittests.cc" ]
 
   deps = [
+    ":testing",
     "//src/connectivity/bluetooth/core/bt-host/common",
-    "//src/devices/lib/driver",
-    "//src/lib/fsl",
-    "//src/lib/fxl/test:test_settings",
   ]
 
   public_deps = [ "//third_party/googletest:gtest" ]
