@@ -28,6 +28,18 @@ import "hci.emb" as hci
 # Documentation: https://source.android.com/devices/bluetooth/hci_requirements
 
 
+# ============ Commands ============
+
+
+struct LEMultiAdvtEnableCommand:
+  -- LE multi-advertising enable command.
+  let hdr_size = hci.CommandHeader.$size_in_bytes
+  0      [+hdr_size]  hci.CommandHeader       header
+  $next  [+1]         UInt                    opcode
+  $next  [+1]         hci.GenericEnableParam  enable
+  $next  [+1]         UInt                    advertising_handle
+
+
 # ============ Events ============
 
 
