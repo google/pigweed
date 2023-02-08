@@ -762,7 +762,7 @@ TEST_F(HostServerTest, WatchPeersHandlesNonEnumeratedAppearanceInPeer) {
   ASSERT_TRUE(peer);
   bt::AdvertisingData adv_data;
 
-  // TODO(fxbug.dev/66358): fuchsia.bluetooth.Appearance can not store this value.
+  // Invalid appearance.
   adv_data.SetAppearance(0xFFFFu);
   bt::DynamicByteBuffer write_buf(adv_data.CalculateBlockSize(/*include_flags=*/true));
   ASSERT_TRUE(adv_data.WriteBlock(&write_buf, bt::AdvFlag::kLEGeneralDiscoverableMode));
