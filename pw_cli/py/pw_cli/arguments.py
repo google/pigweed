@@ -26,7 +26,7 @@ _HELP_HEADER = '''The Pigweed command line interface (CLI).
 
 Example uses:
     pw logdemo
-    pw --loglevel debug watch out/clang
+    pw --loglevel debug watch -C out
 '''
 
 
@@ -87,7 +87,7 @@ def _parser() -> argparse.ArgumentParser:
     argparser.add_argument(
         '--debug-log',
         help=(
-            'Additional log with level set to debug, does not affect '
+            'Additionally log to this file at debug level; does not affect '
             'terminal output'
         ),
     )
