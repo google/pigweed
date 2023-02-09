@@ -446,7 +446,7 @@ def keep_sorted_in_repo(
         base = 'HEAD~1'
 
     # If this is a Git repo, list the original paths with git ls-files or diff.
-    project_root = Path(pw_cli.env.pigweed_environment().PW_PROJECT_ROOT)
+    project_root = pw_cli.env.pigweed_environment().PW_PROJECT_ROOT
     if repo:
         _LOG.info(
             'Sorting %s',
@@ -466,17 +466,19 @@ def keep_sorted_in_repo(
         )
         return 1
 
-    if not output_directory:
-        if repo:
-            output_directory = repo / DEFAULT_PATH
-        else:
-            output_directory = project_root / DEFAULT_PATH
+    outdir: Path
+    if output_directory:
+        outdir = output_directory
+    elif repo:
+        outdir = repo / DEFAULT_PATH
+    else:
+        outdir = project_root / DEFAULT_PATH
 
     ctx = KeepSortedContext(
         paths=files,
         fix=fix,
-        output_dir=output_directory,
-        failure_summary_log=output_directory / 'failure-summary.log',
+        output_dir=outdir,
+        failure_summary_log=outdir / 'failure-summary.log',
     )
     errors = _process_files(ctx)
 

@@ -484,7 +484,7 @@ class PresubmitContext:
     @staticmethod
     def create_for_testing():
         parsed_env = pw_cli.env.pigweed_environment()
-        root = Path(parsed_env.PW_PROJECT_ROOT)
+        root = parsed_env.PW_PROJECT_ROOT
         presubmit_root = root / 'out' / 'presubmit'
         return PresubmitContext(
             root=root,

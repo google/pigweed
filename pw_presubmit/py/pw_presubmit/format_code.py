@@ -739,7 +739,7 @@ def format_paths_in_repo(
 
     # If this is a Git repo, list the original paths with git ls-files or diff.
     if repo:
-        project_root = Path(pw_cli.env.pigweed_environment().PW_PROJECT_ROOT)
+        project_root = pw_cli.env.pigweed_environment().PW_PROJECT_ROOT
         _LOG.info(
             'Formatting %s',
             git_repo.describe_files(
