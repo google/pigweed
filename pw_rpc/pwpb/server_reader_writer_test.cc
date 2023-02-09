@@ -14,6 +14,8 @@
 
 #include "pw_rpc/pwpb/server_reader_writer.h"
 
+#include <optional>
+
 #include "gtest/gtest.h"
 #include "pw_rpc/pwpb/fake_channel_output.h"
 #include "pw_rpc/pwpb/test_method_context.h"
@@ -261,6 +263,32 @@ TEST(RawServerReaderWriter, Open_UnknownChannel) {
   EXPECT_EQ(OkStatus(), call.Finish());
   EXPECT_FALSE(call.active());
   EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+}
+
+TEST(RawServerReaderWriter, Open_MultipleTimes_CancelsPrevious) {
+  ReaderWriterTestContext<TestService::TestBidirectionalStreamRpc> ctx;
+
+  PwpbServerReaderWriter one =
+      PwpbServerReaderWriter<TestRequest::Message,
+                             TestStreamResponse::Message>::
+          Open<TestService::TestBidirectionalStreamRpc>(
+              ctx.server, ctx.kChannelId, ctx.service);
+
+  std::optional<Status> error;
+  one.set_on_error([&error](Status status) { error = status; });
+
+  ASSERT_TRUE(one.active());
+
+  PwpbServerReaderWriter two =
+      PwpbServerReaderWriter<TestRequest::Message,
+                             TestStreamResponse::Message>::
+          Open<TestService::TestBidirectionalStreamRpc>(
+              ctx.server, ctx.kChannelId, ctx.service);
+
+  EXPECT_FALSE(one.active());
+  EXPECT_TRUE(two.active());
+
+  EXPECT_EQ(Status::Cancelled(), error);
 }
 
 TEST(PwpbServerReader, CallbacksMoveCorrectly) {

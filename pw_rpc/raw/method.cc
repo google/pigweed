@@ -24,7 +24,7 @@ namespace pw::rpc::internal {
 void RawMethod::AsynchronousUnaryInvoker(const CallContext& context,
                                          const Packet& request) {
   RawUnaryResponder responder(context.ClaimLocked());
-  rpc_lock().unlock();
+  context.server().CleanUpCalls();
   static_cast<const RawMethod&>(context.method())
       .function_.asynchronous_unary(
           context.service(), request.payload(), responder);
@@ -33,7 +33,7 @@ void RawMethod::AsynchronousUnaryInvoker(const CallContext& context,
 void RawMethod::ServerStreamingInvoker(const CallContext& context,
                                        const Packet& request) {
   RawServerWriter server_writer(context.ClaimLocked());
-  rpc_lock().unlock();
+  context.server().CleanUpCalls();
   static_cast<const RawMethod&>(context.method())
       .function_.server_streaming(
           context.service(), request.payload(), server_writer);
@@ -42,7 +42,7 @@ void RawMethod::ServerStreamingInvoker(const CallContext& context,
 void RawMethod::ClientStreamingInvoker(const CallContext& context,
                                        const Packet&) {
   RawServerReader reader(context.ClaimLocked());
-  rpc_lock().unlock();
+  context.server().CleanUpCalls();
   static_cast<const RawMethod&>(context.method())
       .function_.stream_request(context.service(), reader);
 }
@@ -50,7 +50,7 @@ void RawMethod::ClientStreamingInvoker(const CallContext& context,
 void RawMethod::BidirectionalStreamingInvoker(const CallContext& context,
                                               const Packet&) {
   RawServerReaderWriter reader_writer(context.ClaimLocked());
-  rpc_lock().unlock();
+  context.server().CleanUpCalls();
   static_cast<const RawMethod&>(context.method())
       .function_.stream_request(context.service(), reader_writer);
 }

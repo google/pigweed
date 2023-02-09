@@ -123,53 +123,60 @@ Result<Packet> Endpoint::ProcessPacket(span<const std::byte> data,
   return result;
 }
 
-void Endpoint::RegisterCall(Call& call) {
-  Call* const existing_call = FindCallById(
-      call.channel_id_locked(), call.service_id(), call.method_id(), call.id());
-
-  calls_.push_front(call);
-
-  if (existing_call != nullptr) {
-    // TODO(b/260922913): The HandleError() call needs to be deferred to avoid
-    //   releasing the lock before finishing state updates. Could move the call
-    //   to the planned calls_to_abort list and clean up later.
-    existing_call->HandleError(Status::Cancelled());
-    rpc_lock().lock();
+void Endpoint::RegisterCall(Call& new_call) {
+  // Mark any exisitng duplicate calls as cancelled.
+  auto [before_call, call] = FindIteratorsForCall(new_call);
+  if (call != calls_.end()) {
+    CloseCallAndMarkForCleanup(before_call, call, Status::Cancelled());
   }
+
+  // Register the new call.
+  calls_.push_front(new_call);
 }
 
-Call* Endpoint::FindCallById(uint32_t channel_id,
-                             uint32_t service_id,
-                             uint32_t method_id,
-                             uint32_t call_id) {
-  for (Call& call : calls_) {
-    if (channel_id == call.channel_id_locked() &&
-        service_id == call.service_id() && method_id == call.method_id()) {
-      if (call_id == call.id() || call_id == kOpenCallId) {
-        return &call;
+std::tuple<IntrusiveList<Call>::iterator, IntrusiveList<Call>::iterator>
+Endpoint::FindIteratorsForCall(uint32_t channel_id,
+                               uint32_t service_id,
+                               uint32_t method_id,
+                               uint32_t call_id) {
+  auto previous = calls_.before_begin();
+  auto call = calls_.begin();
+
+  while (call != calls_.end()) {
+    if (channel_id == call->channel_id_locked() &&
+        service_id == call->service_id() && method_id == call->method_id()) {
+      if (call_id == call->id() || call_id == kOpenCallId) {
+        break;
       }
-      if (call.id() == kOpenCallId) {
+      if (call->id() == kOpenCallId) {
         // Calls with ID of `kOpenCallId` were unrequested, and
         // are updated to have the call ID of the first matching request.
-        call.set_id(call_id);
-        return &call;
+        call->set_id(call_id);
+        break;
       }
     }
+    previous = call;
+    ++call;
   }
-  return nullptr;
+
+  return {previous, call};
 }
 
 Status Endpoint::CloseChannel(uint32_t channel_id) {
-  LockGuard lock(rpc_lock());
+  rpc_lock().lock();
 
   Channel* channel = channels_.Get(channel_id);
   if (channel == nullptr) {
+    rpc_lock().unlock();
     return Status::NotFound();
   }
   channel->Close();
 
   // Close pending calls on the channel that's going away.
   AbortCalls(AbortIdType::kChannel, channel_id);
+
+  CleanUpCalls();
+
   return OkStatus();
 }
 
@@ -180,12 +187,36 @@ void Endpoint::AbortCalls(AbortIdType type, uint32_t id) {
   while (current != calls_.end()) {
     if (id == (type == AbortIdType::kChannel ? current->channel_id_locked()
                                              : current->service_id())) {
-      current->Abort();
-      current = calls_.erase_after(previous);  // previous stays the same
+      current =
+          CloseCallAndMarkForCleanup(previous, current, Status::Aborted());
     } else {
       previous = current;
       ++current;
     }
+  }
+}
+
+void Endpoint::CleanUpCalls() {
+  if (to_cleanup_.empty()) {
+    rpc_lock().unlock();
+    return;
+  }
+
+  // Drain the to_cleanup_ list. This while loop is structured to avoid
+  // unnecessarily acquiring the lock after popping the last call.
+  while (true) {
+    Call& call = to_cleanup_.front();
+    to_cleanup_.pop_front();
+
+    const bool done = to_cleanup_.empty();
+
+    call.CleanUpFromEndpoint();
+
+    if (done) {
+      return;
+    }
+
+    rpc_lock().lock();
   }
 }
 

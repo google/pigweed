@@ -13,6 +13,9 @@
 // the License.
 #pragma once
 
+#include <tuple>
+
+#include "pw_assert/assert.h"
 #include "pw_containers/intrusive_list.h"
 #include "pw_result/result.h"
 #include "pw_rpc/internal/call.h"
@@ -84,6 +87,20 @@ class Endpoint {
     return channels_.Get(channel_id);
   }
 
+  // Loops until the list of calls to clean up is empty. Releases the RPC lock.
+  //
+  // This must be called after operations that potentially put calls in the
+  // awaiting cleanup state:
+  //
+  // - Creating a new call object, either from handling a request on the server
+  //   or starting a new call on the client.
+  // - Processing a stream message, since decoding to Nanopb or pwpb could fail,
+  //   and the RPC mutex should not be released yet.
+  // - Calls to CloseChannel() or UnregisterService(), which may need to cancel
+  //   multiple calls before the mutex is released.
+  //
+  void CleanUpCalls() PW_UNLOCK_FUNCTION(rpc_lock());
+
  protected:
   _PW_RPC_CONSTEXPR Endpoint() = default;
 
@@ -102,17 +119,50 @@ class Endpoint {
       PW_LOCKS_EXCLUDED(rpc_lock());
 
   // Finds a call object for an ongoing call associated with this packet, if
-  // any. Returns nullptr if no matching call exists.
-  Call* FindCall(const Packet& packet) PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
-    return FindCallById(packet.channel_id(),
-                        packet.service_id(),
-                        packet.method_id(),
-                        packet.call_id());
+  // any. The iterator will be calls_end() if no match was found.
+  IntrusiveList<Call>::iterator FindCall(const Packet& packet)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+    return std::get<1>(FindIteratorsForCall(packet.channel_id(),
+                                            packet.service_id(),
+                                            packet.method_id(),
+                                            packet.call_id()));
   }
 
+  // Used to check if a call iterator is valid or not.
+  IntrusiveList<Call>::const_iterator calls_end() const
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+    return calls_.end();
+  }
+
+  // Aborts calls associated with a particular service. Calls to
+  // AbortCallsForService() must be followed by a call to CleanUpCalls().
   void AbortCallsForService(const Service& service)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     AbortCalls(AbortIdType::kService, UnwrapServiceId(service.service_id()));
+  }
+
+  // Marks an active call as awaiting cleanup, moving it from the active calls_
+  // list to the to_cleanup_ list.
+  //
+  // This method is protected so it can be exposed in tests.
+  void CloseCallAndMarkForCleanup(Call& call, Status error)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+    call.CloseAndMarkForCleanupFromEndpoint(error);
+    calls_.remove(call);
+    to_cleanup_.push_front(call);
+  }
+
+  // Iterator version of CloseCallAndMarkForCleanup. Returns the iterator to the
+  // item after the closed call.
+  IntrusiveList<Call>::iterator CloseCallAndMarkForCleanup(
+      IntrusiveList<Call>::iterator before_call,
+      IntrusiveList<Call>::iterator call_iterator,
+      Status error) PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+    Call& call = *call_iterator;
+    call.CloseAndMarkForCleanupFromEndpoint(error);
+    auto next = calls_.erase_after(before_call);
+    to_cleanup_.push_front(call);
+    return next;
   }
 
  private:
@@ -121,7 +171,8 @@ class Endpoint {
 
   enum class AbortIdType : bool { kChannel, kService };
 
-  // Aborts calls for a particular channel or service.
+  // Aborts calls for a particular channel or service and enqueues them for
+  // cleanup. AbortCalls() must be followed by a call to CleanUpCalls().
   void AbortCalls(AbortIdType type, uint32_t id)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
@@ -134,7 +185,7 @@ class Endpoint {
   }
 
   // Adds a call to the internal call registry. If a matching call already
-  // exists, it is cancelled locally (on_error called, no packet sent).
+  // exists, it is cancelled. CleanUpCalls() must be called after RegisterCall.
   void RegisterCall(Call& call) PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   // Registers a call that is known to be unique. The calls list is NOT checked
@@ -143,22 +194,46 @@ class Endpoint {
     calls_.push_front(call);
   }
 
+  void CleanUpCall(Call& call) PW_UNLOCK_FUNCTION(rpc_lock()) {
+    const bool removed_call_to_cleanup = to_cleanup_.remove(call);
+    PW_DASSERT(removed_call_to_cleanup);  // Should have been awaiting cleanup
+    call.CleanUpFromEndpoint();
+  }
+
   // Removes the provided call from the call registry.
   void UnregisterCall(const Call& call)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
-    calls_.remove(call);
+    bool closed_call_was_in_list = calls_.remove(call);
+    PW_DASSERT(closed_call_was_in_list);
   }
 
-  Call* FindCallById(uint32_t channel_id,
-                     uint32_t service_id,
-                     uint32_t method_id,
-                     uint32_t call_id) PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
+  std::tuple<IntrusiveList<Call>::iterator, IntrusiveList<Call>::iterator>
+  FindIteratorsForCall(uint32_t channel_id,
+                       uint32_t service_id,
+                       uint32_t method_id,
+                       uint32_t call_id)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
+
+  std::tuple<IntrusiveList<Call>::iterator, IntrusiveList<Call>::iterator>
+  FindIteratorsForCall(const Call& call)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+    return FindIteratorsForCall(call.channel_id_locked(),
+                                call.service_id(),
+                                call.method_id(),
+                                call.id());
+  }
 
   ChannelList channels_ PW_GUARDED_BY(rpc_lock());
 
   // List of all active calls associated with this endpoint. Calls are added to
   // this list when they start and removed from it when they finish.
   IntrusiveList<Call> calls_ PW_GUARDED_BY(rpc_lock());
+
+  // List of all inactive calls that need to have their on_error callbacks
+  // called. Calling on_error requires releasing the RPC lock, so calls are
+  // added to this list in situations where releasing the mutex could be
+  // problematic.
+  IntrusiveList<Call> to_cleanup_ PW_GUARDED_BY(rpc_lock());
 
   uint32_t next_call_id_ PW_GUARDED_BY(rpc_lock()) = 0;
 };

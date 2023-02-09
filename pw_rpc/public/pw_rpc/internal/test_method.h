@@ -22,6 +22,7 @@
 #include "pw_rpc/internal/packet.h"
 #include "pw_rpc/internal/server_call.h"
 #include "pw_rpc/method_type.h"
+#include "pw_rpc/server.h"
 #include "pw_span/span.h"
 #include "pw_status/status_with_size.h"
 
@@ -73,7 +74,7 @@ class TestMethod : public Method {
     // Create a call object so it registers / unregisters with the server.
     FakeServerCall fake_call(context.ClaimLocked(), kType);
 
-    rpc_lock().unlock();
+    context.server().CleanUpCalls();
 
     if (test_method.move_to_call_ != nullptr) {
       *test_method.move_to_call_ = std::move(fake_call);

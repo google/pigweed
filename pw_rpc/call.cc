@@ -25,8 +25,8 @@
 // If the callback timeout is enabled, count the number of iterations of the
 // waiting loop and crash if it exceeds PW_RPC_CALLBACK_TIMEOUT_TICKS.
 #if PW_RPC_CALLBACK_TIMEOUT_TICKS > 0
-#define PW_RPC_CHECK_FOR_DEADLOCK(timeout_source) \
-  iterations += 1;                                \
+#define PW_RPC_CHECK_FOR_DEADLOCK(timeout_source, call) \
+  iterations += 1;                                      \
   PW_CHECK(                                                                  \
       iterations < PW_RPC_CALLBACK_TIMEOUT_TICKS,                            \
       "A callback for RPC %u:%08x/%08x has not finished after "              \
@@ -37,11 +37,12 @@
       "change the value of PW_RPC_CALLBACK_TIMEOUT_TICKS to avoid this "     \
       "crash. See https://pigweed.dev/pw_rpc"                                \
       "#destructors-moves-wait-for-callbacks-to-complete for details.",      \
-      static_cast<unsigned>(channel_id_),                                    \
-      static_cast<unsigned>(service_id_),                                    \
-      static_cast<unsigned>(method_id_))
+      static_cast<unsigned>((call).channel_id_),                             \
+      static_cast<unsigned>((call).service_id_),                             \
+      static_cast<unsigned>((call).method_id_))
 #else
-#define PW_RPC_CHECK_FOR_DEADLOCK(timeout_source) static_cast<void>(iterations)
+#define PW_RPC_CHECK_FOR_DEADLOCK(timeout_source, call) \
+  static_cast<void>(iterations)
 #endif  // PW_RPC_CALLBACK_TIMEOUT_TICKS > 0
 
 namespace pw::rpc::internal {
@@ -81,10 +82,10 @@ Call::Call(LockedEndpoint& endpoint_ref,
       id_(call_id),
       service_id_(service_id),
       method_id_(method_id),
-      rpc_state_(kActive),
-      client_stream_state_(HasClientStream(properties.method_type())
-                               ? kClientStreamActive
-                               : kClientStreamInactive),
+      state_(kActive | (HasClientStream(properties.method_type())
+                            ? static_cast<uint8_t>(kClientStreamActive)
+                            : 0u)),
+      awaiting_cleanup_(OkStatus().code()),
       callbacks_executing_(0),
       properties_(properties) {
   PW_CHECK_UINT_NE(channel_id,
@@ -108,17 +109,22 @@ Call::~Call() {
     endpoint().UnregisterCall(*this);
   }
 
+  do {
+    int iterations = 0;
+    while (CallbacksAreRunning()) {
+      PW_RPC_CHECK_FOR_DEADLOCK("destroy", *this);
+      YieldRpcLock();
+    }
+
+  } while (CleanUpIfRequired());
+
   // Help prevent dangling references in callbacks by waiting for callbacks to
   // complete before deleting this call.
-  int iterations = 0;
-  while (CallbacksAreRunning()) {
-    PW_RPC_CHECK_FOR_DEADLOCK("destroy");
-    YieldRpcLock();
-  }
 }
 
 void Call::MoveFrom(Call& other) {
   PW_DCHECK(!active_locked());
+  PW_DCHECK(!awaiting_cleanup() && !other.awaiting_cleanup());
 
   if (!other.active_locked()) {
     return;  // Nothing else to do; this call is already closed.
@@ -135,8 +141,10 @@ void Call::MoveFrom(Call& other) {
   service_id_ = other.service_id_;
   method_id_ = other.method_id_;
 
-  rpc_state_ = other.rpc_state_;
-  client_stream_state_ = other.client_stream_state_;
+  state_ = other.state_;
+
+  // No need to move awaiting_cleanup_, since it is 0 in both calls here.
+
   properties_ = other.properties_;
 
   // callbacks_executing_ is not moved since it is associated with the object in
@@ -152,12 +160,19 @@ void Call::MoveFrom(Call& other) {
   endpoint().RegisterUniqueCall(*this);
 }
 
-void Call::WaitUntilReadyToBeMoved() const {
-  int iterations = 0;
-  while (CallbacksAreRunning() && active_locked()) {
-    PW_RPC_CHECK_FOR_DEADLOCK("move");
-    YieldRpcLock();
-  }
+void Call::WaitUntilReadyForMove(Call& destination, Call& source) {
+  do {
+    // Wait for the source's callbacks to finish if it is active.
+    int iterations = 0;
+    while (source.active_locked() && source.CallbacksAreRunning()) {
+      PW_RPC_CHECK_FOR_DEADLOCK("move", source);
+      YieldRpcLock();
+    }
+
+    // At this point, no callbacks are running in the source call. If cleanup
+    // is required for the destination call, perform it and retry since
+    // cleanup releases and reacquires the RPC lock.
+  } while (source.CleanUpIfRequired() || destination.CleanUpIfRequired());
 }
 
 void Call::CallOnError(Status error) {
@@ -173,6 +188,15 @@ void Call::CallOnError(Status error) {
   // This mutex lock could be avoided by making callbacks_executing_ atomic.
   LockGuard lock(rpc_lock());
   CallbackFinished();
+}
+
+bool Call::CleanUpIfRequired() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+  if (!awaiting_cleanup()) {
+    return false;
+  }
+  endpoint_->CleanUpCall(*this);
+  rpc_lock().lock();
+  return true;
 }
 
 Status Call::SendPacket(PacketType type, ConstByteSpan payload, Status status) {
@@ -200,6 +224,12 @@ Status Call::WriteLocked(ConstByteSpan payload) {
                         ? PacketType::SERVER_STREAM
                         : PacketType::CLIENT_STREAM,
                     payload);
+}
+
+// This definition is in the .cc file because the Endpoint class is not defined
+// in the Call header, due to circular dependencies between the two.
+void Call::CloseAndMarkForCleanup(Status error) {
+  endpoint_->CloseCallAndMarkForCleanup(*this, error);
 }
 
 void Call::HandlePayload(ConstByteSpan payload) {
@@ -246,7 +276,9 @@ void Call::HandlePayload(ConstByteSpan payload) {
   if (active_locked() && id() == original_id && on_next_ == nullptr) {
     on_next_ = std::move(on_next_local);
   }
-  rpc_lock().unlock();
+
+  // Clean up calls in case decoding failed.
+  endpoint_->CleanUpCalls();
 }
 
 void Call::UnregisterAndMarkClosed() {

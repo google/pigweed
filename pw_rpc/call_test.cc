@@ -18,6 +18,7 @@
 #include <array>
 #include <cstdint>
 #include <cstring>
+#include <optional>
 
 #include "gtest/gtest.h"
 #include "pw_rpc/internal/test_method.h"
@@ -113,30 +114,29 @@ TEST_F(ServerWriterTest, DefaultConstruct_Closed) {
 
 TEST_F(ServerWriterTest, Construct_RegistersWithServer) {
   LockGuard lock(rpc_lock());
-  Call* call = context_.server().FindCall(kPacket);
-  ASSERT_NE(call, nullptr);
-  EXPECT_EQ(static_cast<void*>(call), static_cast<void*>(&writer_));
+  IntrusiveList<Call>::iterator call = context_.server().FindCall(kPacket);
+  ASSERT_NE(call, context_.server().calls_end());
+  EXPECT_EQ(static_cast<void*>(&*call), static_cast<void*>(&writer_));
 }
 
 TEST_F(ServerWriterTest, Destruct_RemovesFromServer) {
-  ServerContextForTest<TestService> context(TestService::method.method());
   {
     // Note `lock_guard` cannot be used here, because while the constructor
     // of `FakeServerWriter` requires the lock be held, the destructor acquires
     // it!
     rpc_lock().lock();
-    FakeServerWriter writer(context.get().ClaimLocked());
+    FakeServerWriter writer(context_.get().ClaimLocked());
     rpc_lock().unlock();
   }
 
   LockGuard lock(rpc_lock());
-  EXPECT_EQ(context.server().FindCall(kPacket), nullptr);
+  EXPECT_EQ(context_.server().FindCall(kPacket), context_.server().calls_end());
 }
 
 TEST_F(ServerWriterTest, Finish_RemovesFromServer) {
   EXPECT_EQ(OkStatus(), writer_.Finish());
   LockGuard lock(rpc_lock());
-  EXPECT_EQ(context_.server().FindCall(kPacket), nullptr);
+  EXPECT_EQ(context_.server().FindCall(kPacket), context_.server().calls_end());
 }
 
 TEST_F(ServerWriterTest, Finish_SendsResponse) {
@@ -304,6 +304,55 @@ TEST_F(ServerReaderWriterTest, Move_ClearsCallAndChannelId) {
   LockGuard lock(rpc_lock());
   EXPECT_EQ(reader_writer_.id(), 0u);
   EXPECT_EQ(reader_writer_.channel_id_locked(), 0u);
+}
+
+TEST_F(ServerReaderWriterTest, Move_SourceAwaitingCleanup_CleansUpCalls) {
+  std::optional<Status> on_error_cb;
+  reader_writer_.set_on_error([&on_error_cb](Status error) {
+    ASSERT_FALSE(on_error_cb.has_value());
+    on_error_cb = error;
+  });
+
+  rpc_lock().lock();
+  context_.server().CloseCallAndMarkForCleanup(reader_writer_.as_server_call(),
+                                               Status::NotFound());
+  rpc_lock().unlock();
+
+  FakeServerReaderWriter destination(std::move(reader_writer_));
+
+  EXPECT_EQ(Status::NotFound(), on_error_cb);
+}
+
+TEST_F(ServerReaderWriterTest, Move_BothAwaitingCleanup_CleansUpCalls) {
+  rpc_lock().lock();
+  // Use call ID 123 so this call is distinct from the other.
+  FakeServerReaderWriter destination(context_.get(123).ClaimLocked());
+  rpc_lock().unlock();
+
+  std::optional<Status> destination_on_error_cb;
+  destination.set_on_error([&destination_on_error_cb](Status error) {
+    ASSERT_FALSE(destination_on_error_cb.has_value());
+    destination_on_error_cb = error;
+  });
+
+  std::optional<Status> source_on_error_cb;
+  reader_writer_.set_on_error([&source_on_error_cb](Status error) {
+    ASSERT_FALSE(source_on_error_cb.has_value());
+    source_on_error_cb = error;
+  });
+
+  // Simulate these two calls being closed by another thread.
+  rpc_lock().lock();
+  context_.server().CloseCallAndMarkForCleanup(destination.as_server_call(),
+                                               Status::NotFound());
+  context_.server().CloseCallAndMarkForCleanup(reader_writer_.as_server_call(),
+                                               Status::Unauthenticated());
+  rpc_lock().unlock();
+
+  destination = std::move(reader_writer_);
+
+  EXPECT_EQ(Status::NotFound(), destination_on_error_cb);
+  EXPECT_EQ(Status::Unauthenticated(), source_on_error_cb);
 }
 
 TEST_F(ServerReaderWriterTest, Close_ClearsCallAndChannelId) {

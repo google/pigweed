@@ -122,7 +122,12 @@ class Call : public IntrusiveList<Call>::Item {
 
   [[nodiscard]] bool active_locked() const
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
-    return rpc_state_ == kActive;
+    return (state_ & kActive) != 0;
+  }
+
+  [[nodiscard]] bool awaiting_cleanup() const
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+    return awaiting_cleanup_ != OkStatus().code();
   }
 
   uint32_t id() const PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) { return id_; }
@@ -186,7 +191,7 @@ class Call : public IntrusiveList<Call>::Item {
 
   // Internal function that closes the client stream.
   Status CloseClientStreamLocked() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
-    client_stream_state_ = kClientStreamInactive;
+    MarkClientStreamCompleted();
     return SendPacket(pwpb::PacketType::CLIENT_STREAM_END, {}, {});
   }
 
@@ -202,14 +207,15 @@ class Call : public IntrusiveList<Call>::Item {
   // Sends the initial request for a client call. If the request fails, the call
   // is closed.
   void SendInitialClientRequest(ConstByteSpan payload)
-      PW_UNLOCK_FUNCTION(rpc_lock()) {
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     if (const Status status = SendPacket(pwpb::PacketType::REQUEST, payload);
         !status.ok()) {
-      HandleError(status);
-    } else {
-      rpc_lock().unlock();
+      CloseAndMarkForCleanup(status);
     }
   }
+
+  void CloseAndMarkForCleanup(Status error)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   // Whenever a payload arrives (in a server/client stream or in a response),
   // call the on_next_ callback.
@@ -223,18 +229,21 @@ class Call : public IntrusiveList<Call>::Item {
     CallOnError(status);
   }
 
-  // Aborts the RPC because of a change in the endpoint (e.g. channel closed,
-  // service unregistered). Does NOT unregister the call! The calls must be
-  // removed when iterating over the list in the endpoint.
-  void Abort() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
-    // TODO(b/260922913): Locking here is problematic because CallOnError
-    //     releases rpc_lock().
+  // Closes the RPC, but does NOT unregister the call or call on_error. The
+  // call must be moved to the endpoint's to_cleanup_ list and have its
+  // CleanUp() method called at a later time. Only for use by the Endpoint.
+  void CloseAndMarkForCleanupFromEndpoint(Status error)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     MarkClosed();
+    awaiting_cleanup_ = error.code();
+  }
 
-    CallOnError(Status::Aborted());
-
-    // Re-lock rpc_lock().
-    rpc_lock().lock();
+  // Clears the awaiting_cleanup_ variable and calls the on_error callback. Only
+  // for use by the Endpoint, which will unlist the call.
+  void CleanUpFromEndpoint() PW_UNLOCK_FUNCTION(rpc_lock()) {
+    const Status status(static_cast<Status::Code>(awaiting_cleanup_));
+    awaiting_cleanup_ = OkStatus().code();
+    CallOnError(status);
   }
 
   bool has_client_stream() const PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
@@ -246,7 +255,7 @@ class Call : public IntrusiveList<Call>::Item {
   }
 
   bool client_stream_open() const PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
-    return client_stream_state_ == kClientStreamActive;
+    return (state_ & kClientStreamActive) != 0;
   }
 
  protected:
@@ -257,8 +266,8 @@ class Call : public IntrusiveList<Call>::Item {
         id_{},
         service_id_{},
         method_id_{},
-        rpc_state_{},
-        client_stream_state_{},
+        state_{},
+        awaiting_cleanup_{},
         callbacks_executing_{},
         properties_{} {}
 
@@ -315,7 +324,7 @@ class Call : public IntrusiveList<Call>::Item {
   }
 
   void MarkClientStreamCompleted() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
-    client_stream_state_ = kClientStreamInactive;
+    state_ &= ~kClientStreamActive;
   }
 
   Status CloseAndSendResponseLocked(Status status)
@@ -367,8 +376,7 @@ class Call : public IntrusiveList<Call>::Item {
     ProtoStruct proto_struct{};
 
     if (!decoder.Decode(payload, proto_struct).ok()) {
-      HandleError(Status::DataLoss());
-      rpc_lock().lock();
+      CloseAndMarkForCleanup(Status::DataLoss());
       return;
     }
 
@@ -417,9 +425,15 @@ class Call : public IntrusiveList<Call>::Item {
 
   // An active call cannot be moved if its callbacks are running. This function
   // must be called on the call being moved before updating any state.
-  void WaitUntilReadyToBeMoved() const PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
+  static void WaitUntilReadyForMove(Call& destination, Call& source)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
  private:
+  enum State : uint8_t {
+    kActive = 0b01,
+    kClientStreamActive = 0b10,
+  };
+
   // Common constructor for server & client calls.
   Call(LockedEndpoint& endpoint,
        uint32_t id,
@@ -444,13 +458,17 @@ class Call : public IntrusiveList<Call>::Item {
   void MarkClosed() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     channel_id_ = Channel::kUnassignedChannelId;
     id_ = 0;
-    rpc_state_ = kInactive;
-    client_stream_state_ = kClientStreamInactive;
+    state_ = 0;
   }
 
   // Calls the on_error callback without closing the RPC. This is used when the
   // call has already completed.
   void CallOnError(Status error) PW_UNLOCK_FUNCTION(rpc_lock());
+
+  // If required, removes this call from the endpoint's to_cleanup_ list and
+  // calls CleanUp(). Returns true if cleanup was required, which means the lock
+  // was released.
+  bool CleanUpIfRequired() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   // Sends a payload with the specified type. The payload may either be in a
   // previously acquired buffer or in a standalone buffer.
@@ -476,11 +494,16 @@ class Call : public IntrusiveList<Call>::Item {
   uint32_t service_id_ PW_GUARDED_BY(rpc_lock());
   uint32_t method_id_ PW_GUARDED_BY(rpc_lock());
 
-  enum : bool { kInactive, kActive } rpc_state_ PW_GUARDED_BY(rpc_lock());
-  enum : bool {
-    kClientStreamInactive,
-    kClientStreamActive,
-  } client_stream_state_ PW_GUARDED_BY(rpc_lock());
+  // State of call and client stream.
+  //
+  //   bit 0: call is active
+  //   bit 1: client stream is active
+  //
+  uint8_t state_ PW_GUARDED_BY(rpc_lock());
+
+  // If non-OK, indicates that the call was closed and needs to have its
+  // on_error called with this Status code. Uses a uint8_t for compactness.
+  uint8_t awaiting_cleanup_ PW_GUARDED_BY(rpc_lock());
 
   // Tracks how many of this call's callbacks are running. Must be 0 for the
   // call to be destroyed.

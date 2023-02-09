@@ -93,6 +93,10 @@ TEST(RawUnaryReceiver, Cancel) {
                                                     FailIfCalled);
   ASSERT_EQ(OkStatus(), call.Cancel());
 
+  // Additional calls should do nothing and return FAILED_PRECONDITION.
+  ASSERT_EQ(Status::FailedPrecondition(), call.Cancel());
+  ASSERT_EQ(Status::FailedPrecondition(), call.Cancel());
+
   ASSERT_FALSE(call.active());
   EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
 

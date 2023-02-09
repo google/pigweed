@@ -25,7 +25,7 @@ void ClientCall::CloseClientCall() {
 
 void ClientCall::MoveClientCallFrom(ClientCall& other)
     PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
-  other.WaitUntilReadyToBeMoved();
+  WaitUntilReadyForMove(*this, other);
   CloseClientCall();
   MoveFrom(other);
 }

@@ -36,8 +36,7 @@ Status Client::ProcessPacket(ConstByteSpan data) {
 
   // Find an existing call for this RPC, if any.
   internal::rpc_lock().lock();
-  internal::ClientCall* call =
-      static_cast<internal::ClientCall*>(FindCall(packet));
+  IntrusiveList<internal::Call>::iterator call = FindCall(packet);
 
   internal::Channel* channel = GetInternalChannel(packet.channel_id());
 
@@ -47,7 +46,7 @@ Status Client::ProcessPacket(ConstByteSpan data) {
     return Status::Unavailable();
   }
 
-  if (call == nullptr) {
+  if (call == calls_end()) {
     // The call for the packet does not exist. If the packet is a server stream
     // message, notify the server so that it can kill the stream. Otherwise,
     // silently drop the packet (as it would terminate the RPC anyway).

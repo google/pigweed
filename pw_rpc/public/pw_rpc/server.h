@@ -66,8 +66,9 @@ class Server : public internal::Endpoint {
   template <typename... OtherServices>
   void UnregisterService(Service& service, OtherServices&... services)
       PW_LOCKS_EXCLUDED(internal::rpc_lock()) {
-    internal::LockGuard lock(internal::rpc_lock());
+    internal::rpc_lock().lock();
     UnregisterServiceLocked(service, static_cast<Service&>(services)...);
+    CleanUpCalls();
   }
 
   // Processes an RPC packet. The packet may contain an RPC request or a control
@@ -147,7 +148,7 @@ class Server : public internal::Endpoint {
     CallType call(internal::CallContext(
                       *this, channel_id, service, method, internal::kOpenCallId)
                       .ClaimLocked());
-    internal::rpc_lock().unlock();
+    CleanUpCalls();
     return call;
   }
 
@@ -157,16 +158,15 @@ class Server : public internal::Endpoint {
 
   void HandleClientStreamPacket(const internal::Packet& packet,
                                 internal::Channel& channel,
-                                internal::ServerCall* call) const
-      PW_UNLOCK_FUNCTION(internal::rpc_lock());
+                                IntrusiveList<internal::Call>::iterator call)
+      const PW_UNLOCK_FUNCTION(internal::rpc_lock());
 
   template <typename... OtherServices>
   void UnregisterServiceLocked(Service& service, OtherServices&... services)
       PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock()) {
     services_.remove(service);
-    AbortCallsForService(service);
-
     UnregisterServiceLocked(services...);
+    AbortCallsForService(service);
   }
 
   void UnregisterServiceLocked() {}  // Base case; nothing left to do.
@@ -174,6 +174,7 @@ class Server : public internal::Endpoint {
   // Remove these internal::Endpoint functions from the public interface.
   using Endpoint::active_call_count;
   using Endpoint::ClaimLocked;
+  using Endpoint::CleanUpCalls;
   using Endpoint::GetInternalChannel;
 
   IntrusiveList<Service> services_ PW_GUARDED_BY(internal::rpc_lock());

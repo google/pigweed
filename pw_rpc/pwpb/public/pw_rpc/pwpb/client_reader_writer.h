@@ -57,6 +57,7 @@ class PwpbUnaryResponseClientCall : public UnaryResponseClientCall {
       PwpbSendInitialRequest(call, serde.request(), request...);
     }
 
+    client.CleanUpCalls();
     return call;
   }
 
@@ -172,6 +173,7 @@ class PwpbStreamResponseClientCall : public StreamResponseClientCall {
     } else {
       PwpbSendInitialRequest(call, serde.request(), request...);
     }
+    client.CleanUpCalls();
     return call;
   }
 

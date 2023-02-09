@@ -92,7 +92,7 @@ class NanopbServerCall;
 void NanopbSendInitialRequest(ClientCall& call,
                               NanopbSerde serde,
                               const void* payload)
-    PW_UNLOCK_FUNCTION(rpc_lock());
+    PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
 // [Client/Server] Encodes and sends a client or server stream message.
 // active() must be true.

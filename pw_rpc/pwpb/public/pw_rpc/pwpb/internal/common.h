@@ -53,14 +53,14 @@ template <typename Request>
 void PwpbSendInitialRequest(ClientCall& call,
                             PwpbSerde serde,
                             const Request& request)
-    PW_UNLOCK_FUNCTION(rpc_lock()) {
+    PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
   PW_ASSERT(call.active_locked());
 
   Result<ByteSpan> buffer = PwpbEncodeToPayloadBuffer(request, serde);
   if (buffer.ok()) {
     call.SendInitialClientRequest(*buffer);
   } else {
-    call.HandleError(buffer.status());
+    call.CloseAndMarkForCleanup(buffer.status());
   }
 }
 

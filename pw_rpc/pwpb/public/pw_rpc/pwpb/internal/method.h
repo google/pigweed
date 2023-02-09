@@ -247,13 +247,13 @@ class PwpbMethod : public Method {
                             Response& response_struct) const
       PW_UNLOCK_FUNCTION(rpc_lock()) {
     if (!DecodeRequest(context, request, request_struct).ok()) {
-      rpc_lock().unlock();
+      context.server().CleanUpCalls();
       return;
     }
 
     internal::PwpbServerCall responder(context.ClaimLocked(),
                                        MethodType::kUnary);
-    rpc_lock().unlock();
+    context.server().CleanUpCalls();
     const Status status = function_.synchronous_unary(
         context.service(), &request_struct, &response_struct);
     responder.SendUnaryResponse(response_struct, status).IgnoreError();
@@ -266,12 +266,12 @@ class PwpbMethod : public Method {
                         Request& request_struct) const
       PW_UNLOCK_FUNCTION(rpc_lock()) {
     if (!DecodeRequest(context, request, request_struct).ok()) {
-      rpc_lock().unlock();
+      context.server().CleanUpCalls();
       return;
     }
 
     internal::PwpbServerCall server_writer(context.ClaimLocked(), method_type);
-    rpc_lock().unlock();
+    context.server().CleanUpCalls();
     function_.unary_request(context.service(), &request_struct, server_writer);
   }
 
@@ -340,7 +340,7 @@ class PwpbMethod : public Method {
       PW_UNLOCK_FUNCTION(rpc_lock()) {
     internal::BasePwpbServerReader<Request> reader(
         context.ClaimLocked(), MethodType::kClientStreaming);
-    rpc_lock().unlock();
+    context.server().CleanUpCalls();
     static_cast<const PwpbMethod&>(context.method())
         .function_.stream_request(context.service(), reader);
   }
@@ -352,7 +352,7 @@ class PwpbMethod : public Method {
       PW_UNLOCK_FUNCTION(rpc_lock()) {
     internal::BasePwpbServerReader<Request> reader_writer(
         context.ClaimLocked(), MethodType::kBidirectionalStreaming);
-    rpc_lock().unlock();
+    context.server().CleanUpCalls();
     static_cast<const PwpbMethod&>(context.method())
         .function_.stream_request(context.service(), reader_writer);
   }

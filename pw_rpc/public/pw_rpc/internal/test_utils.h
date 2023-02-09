@@ -35,6 +35,8 @@ namespace pw::rpc::internal {
 // Version of the Server with extra methods exposed for testing.
 class TestServer : public Server {
  public:
+  using Server::calls_end;
+  using Server::CloseCallAndMarkForCleanup;
   using Server::FindCall;
 };
 
@@ -48,8 +50,7 @@ class ServerContextForTest {
       : channel_(Channel::Create<kChannelId>(&output_)),
         server_(span(&channel_, 1)),
         service_(kServiceId),
-        context_(
-            static_cast<Server&>(server_), channel_.id(), service_, method, 0) {
+        context_(server_, channel_.id(), service_, method, 0) {
     server_.RegisterService(service_);
   }
 
@@ -92,7 +93,14 @@ class ServerContextForTest {
                             payload);
   }
 
-  const internal::CallContext& get() { return context_; }
+  CallContext get(uint32_t id = 0) const {
+    return CallContext(context_.server(),
+                       context_.channel_id(),
+                       context_.service(),
+                       context_.method(),
+                       id);
+  }
+
   internal::test::FakeChannelOutput& output() { return output_; }
   TestServer& server() { return static_cast<TestServer&>(server_); }
   Service& service() { return service_; }

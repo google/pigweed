@@ -110,7 +110,7 @@ void NanopbSendInitialRequest(ClientCall& call,
   if (result.ok()) {
     call.SendInitialClientRequest(*result);
   } else {
-    call.HandleError(result.status());
+    call.CloseAndMarkForCleanup(result.status());
   }
 }
 

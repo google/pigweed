@@ -43,13 +43,19 @@ struct internal::MethodInfo<BidirectionalStreamMethod> {
 namespace {
 
 template <auto kMethod, typename Call, typename Context>
-Call MakeCall(Context& context)
-    PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock()) {
-  return Call(static_cast<internal::Endpoint&>(context.client()).ClaimLocked(),
-              context.channel().id(),
-              internal::MethodInfo<kMethod>::kServiceId,
-              internal::MethodInfo<kMethod>::kMethodId,
-              internal::MethodInfo<kMethod>::kType);
+Call StartCall(Context& context,
+               std::optional<uint32_t> channel_id = std::nullopt)
+    PW_LOCKS_EXCLUDED(internal::rpc_lock()) {
+  internal::rpc_lock().lock();
+  Call call(static_cast<internal::Endpoint&>(context.client()).ClaimLocked(),
+            channel_id.value_or(context.channel().id()),
+            internal::MethodInfo<kMethod>::kServiceId,
+            internal::MethodInfo<kMethod>::kMethodId,
+            internal::MethodInfo<kMethod>::kType);
+  call.SendInitialClientRequest({});
+  // As in the real implementations, immediately clean up aborted calls.
+  static_cast<internal::Endpoint&>(context.client()).CleanUpCalls();
+  return call;
 }
 
 class TestStreamCall : public internal::StreamResponseClientCall {
@@ -82,6 +88,8 @@ class TestStreamCall : public internal::StreamResponseClientCall {
 
 class TestUnaryCall : public internal::UnaryResponseClientCall {
  public:
+  TestUnaryCall() = default;
+
   TestUnaryCall(internal::LockedEndpoint& client,
                 uint32_t channel_id,
                 uint32_t service_id,
@@ -103,9 +111,8 @@ class TestUnaryCall : public internal::UnaryResponseClientCall {
     set_on_error_locked([this](Status status) { error = status; });
   }
 
-  void clear_on_completed() PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock()) {
-    set_on_completed_locked(nullptr);
-  }
+  using Call::set_on_error;
+  using UnaryResponseClientCall::set_on_completed;
 
   const char* payload;
   std::optional<Status> completed;
@@ -114,9 +121,7 @@ class TestUnaryCall : public internal::UnaryResponseClientCall {
 
 TEST(Client, ProcessPacket_InvokesUnaryCallbacks) {
   RawClientTestContext context;
-  internal::rpc_lock().lock();
-  TestUnaryCall call = MakeCall<UnaryMethod, TestUnaryCall>(context);
-  call.SendInitialClientRequest({});
+  TestUnaryCall call = StartCall<UnaryMethod, TestUnaryCall>(context);
 
   ASSERT_NE(call.completed, OkStatus());
 
@@ -131,10 +136,8 @@ TEST(Client, ProcessPacket_InvokesUnaryCallbacks) {
 
 TEST(Client, ProcessPacket_NoCallbackSet) {
   RawClientTestContext context;
-  internal::rpc_lock().lock();
-  TestUnaryCall call = MakeCall<UnaryMethod, TestUnaryCall>(context);
-  call.clear_on_completed();
-  call.SendInitialClientRequest({});
+  TestUnaryCall call = StartCall<UnaryMethod, TestUnaryCall>(context);
+  call.set_on_completed(nullptr);
 
   ASSERT_NE(call.completed, OkStatus());
 
@@ -145,9 +148,7 @@ TEST(Client, ProcessPacket_NoCallbackSet) {
 
 TEST(Client, ProcessPacket_InvokesStreamCallbacks) {
   RawClientTestContext context;
-  internal::rpc_lock().lock();
-  auto call = MakeCall<BidirectionalStreamMethod, TestStreamCall>(context);
-  call.SendInitialClientRequest({});
+  auto call = StartCall<BidirectionalStreamMethod, TestStreamCall>(context);
 
   context.server().SendServerStream<BidirectionalStreamMethod>(
       as_bytes(span("<=>")));
@@ -160,11 +161,26 @@ TEST(Client, ProcessPacket_InvokesStreamCallbacks) {
   EXPECT_EQ(call.completed, Status::NotFound());
 }
 
+TEST(Client, ProcessPacket_UnassignedChannelId_ReturnsDataLoss) {
+  RawClientTestContext context;
+  auto call = StartCall<BidirectionalStreamMethod, TestStreamCall>(context);
+
+  std::byte encoded[64];
+  Result<span<const std::byte>> result =
+      internal::Packet(
+          internal::pwpb::PacketType::kResponse,
+          Channel::kUnassignedChannelId,
+          internal::MethodInfo<BidirectionalStreamMethod>::kServiceId,
+          internal::MethodInfo<BidirectionalStreamMethod>::kMethodId)
+          .Encode(encoded);
+  ASSERT_TRUE(result.ok());
+
+  EXPECT_EQ(context.client().ProcessPacket(*result), Status::DataLoss());
+}
+
 TEST(Client, ProcessPacket_InvokesErrorCallback) {
   RawClientTestContext context;
-  internal::rpc_lock().lock();
-  auto call = MakeCall<BidirectionalStreamMethod, TestStreamCall>(context);
-  call.SendInitialClientRequest({});
+  auto call = StartCall<BidirectionalStreamMethod, TestStreamCall>(context);
 
   context.server().SendServerError<BidirectionalStreamMethod>(
       Status::Aborted());
@@ -231,9 +247,7 @@ TEST(Client, CloseChannel_UnknownChannel) {
 
 TEST(Client, CloseChannel_CallsErrorCallback) {
   RawClientTestContext ctx;
-  internal::rpc_lock().lock();
-  TestUnaryCall call = MakeCall<UnaryMethod, TestUnaryCall>(ctx);
-  call.SendInitialClientRequest({});
+  TestUnaryCall call = StartCall<UnaryMethod, TestUnaryCall>(ctx);
 
   ASSERT_NE(call.completed, OkStatus());
   ASSERT_EQ(1u,
@@ -244,6 +258,66 @@ TEST(Client, CloseChannel_CallsErrorCallback) {
   EXPECT_EQ(0u,
             static_cast<internal::Endpoint&>(ctx.client()).active_call_count());
   ASSERT_EQ(call.error, Status::Aborted());  // set by the on_error callback
+}
+
+TEST(Client, CloseChannel_ErrorCallbackReusesCallObjectForCallOnClosedChannel) {
+  struct {
+    RawClientTestContext<> ctx;
+    TestUnaryCall call;
+  } context;
+
+  context.call = StartCall<UnaryMethod, TestUnaryCall>(context.ctx);
+  context.call.set_on_error([&context](Status error) {
+    context.call = StartCall<UnaryMethod, TestUnaryCall>(context.ctx, 1);
+    context.call.error = error;
+  });
+
+  EXPECT_EQ(OkStatus(), context.ctx.client().CloseChannel(1));
+  EXPECT_EQ(context.call.error, Status::Aborted());
+
+  EXPECT_FALSE(context.call.active());
+  EXPECT_EQ(0u,
+            static_cast<internal::Endpoint&>(context.ctx.client())
+                .active_call_count());
+}
+
+TEST(Client, CloseChannel_ErrorCallbackReusesCallObjectForActiveCall) {
+  class ContextWithTwoChannels {
+   public:
+    ContextWithTwoChannels()
+        : channels_{Channel::Create<1>(&channel_output_),
+                    Channel::Create<2>(&channel_output_)},
+          client_(channels_),
+          packet_buffer{},
+          fake_server_(channel_output_, client_, 1, packet_buffer) {}
+
+    Channel& channel() { return channels_[0]; }
+    Client& client() { return client_; }
+    TestUnaryCall& call() { return call_; }
+
+   private:
+    RawFakeChannelOutput<10, 256> channel_output_;
+    Channel channels_[2];
+    Client client_;
+    std::byte packet_buffer[64];
+    FakeServer fake_server_;
+
+    TestUnaryCall call_;
+  } context;
+
+  context.call() = StartCall<UnaryMethod, TestUnaryCall>(context, 1);
+  context.call().set_on_error([&context](Status error) {
+    context.call() = StartCall<UnaryMethod, TestUnaryCall>(context, 2);
+    context.call().error = error;
+  });
+
+  EXPECT_EQ(OkStatus(), context.client().CloseChannel(1));
+  EXPECT_EQ(context.call().error, Status::Aborted());
+
+  EXPECT_TRUE(context.call().active());
+  EXPECT_EQ(
+      1u,
+      static_cast<internal::Endpoint&>(context.client()).active_call_count());
 }
 
 TEST(Client, OpenChannel_UnusedSlot) {

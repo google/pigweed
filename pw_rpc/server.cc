@@ -70,22 +70,24 @@ Status Server::ProcessPacket(ConstByteSpan packet_data) {
     return OkStatus();  // OK since the packet was handled.
   }
 
-  internal::ServerCall* const call =
-      static_cast<internal::ServerCall*>(FindCall(packet));
+  // Handle request packets separately to avoid an unnecessary call lookup. The
+  // Call constructor looks up and cancels any duplicate calls.
+  if (packet.type() == PacketType::REQUEST) {
+    const internal::CallContext context(
+        *this, packet.channel_id(), *service, *method, packet.call_id());
+    method->Invoke(context, packet);
+    return OkStatus();
+  }
+
+  IntrusiveList<internal::Call>::iterator call = FindCall(packet);
 
   switch (packet.type()) {
-    case PacketType::REQUEST: {
-      const internal::CallContext context(
-          *this, channel->id(), *service, *method, packet.call_id());
-      method->Invoke(context, packet);
-      break;
-    }
     case PacketType::CLIENT_STREAM:
       HandleClientStreamPacket(packet, *channel, call);
       break;
     case PacketType::CLIENT_ERROR:
     case PacketType::DEPRECATED_CANCEL:
-      if (call != nullptr) {
+      if (call != calls_end()) {
         call->HandleError(packet.status());
       } else {
         internal::rpc_lock().unlock();
@@ -94,6 +96,7 @@ Status Server::ProcessPacket(ConstByteSpan packet_data) {
     case PacketType::CLIENT_STREAM_END:
       HandleClientStreamPacket(packet, *channel, call);
       break;
+    case PacketType::REQUEST:  // Handled above
     case PacketType::RESPONSE:
     case PacketType::DEPRECATED_SERVER_STREAM_END:
     case PacketType::SERVER_ERROR:
@@ -121,10 +124,11 @@ std::tuple<Service*, const internal::Method*> Server::FindMethod(
   return {&(*service), service->FindMethod(packet.method_id())};
 }
 
-void Server::HandleClientStreamPacket(const internal::Packet& packet,
-                                      internal::Channel& channel,
-                                      internal::ServerCall* call) const {
-  if (call == nullptr) {
+void Server::HandleClientStreamPacket(
+    const internal::Packet& packet,
+    internal::Channel& channel,
+    IntrusiveList<internal::Call>::iterator call) const {
+  if (call == calls_end()) {
     channel.Send(Packet::ServerError(packet, Status::FailedPrecondition()))
         .IgnoreError();  // Errors are logged in Channel::Send.
     internal::rpc_lock().unlock();
@@ -165,7 +169,7 @@ void Server::HandleClientStreamPacket(const internal::Packet& packet,
   if (packet.type() == PacketType::CLIENT_STREAM) {
     call->HandlePayload(packet.payload());
   } else {  // Handle PacketType::CLIENT_STREAM_END.
-    call->HandleClientStreamEnd();
+    static_cast<internal::ServerCall&>(*call).HandleClientStreamEnd();
   }
 }
 

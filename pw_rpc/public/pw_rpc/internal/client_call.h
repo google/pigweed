@@ -71,6 +71,7 @@ class ClientCall : public Call {
 // on_completed callback. The on_next callback is not used.
 class UnaryResponseClientCall : public ClientCall {
  public:
+  // Start call for raw unary response RPCs.
   template <typename CallType>
   static CallType Start(Endpoint& client,
                         uint32_t channel_id,
@@ -85,6 +86,7 @@ class UnaryResponseClientCall : public ClientCall {
     call.set_on_error_locked(std::move(on_error));
 
     call.SendInitialClientRequest(request);
+    client.CleanUpCalls();
     return call;
   }
 
@@ -141,6 +143,7 @@ class UnaryResponseClientCall : public ClientCall {
 // callback. Payloads are sent through the on_next callback.
 class StreamResponseClientCall : public ClientCall {
  public:
+  // Start call for raw stream response RPCs.
   template <typename CallType>
   static CallType Start(Endpoint& client,
                         uint32_t channel_id,
@@ -158,6 +161,7 @@ class StreamResponseClientCall : public ClientCall {
     call.set_on_error_locked(std::move(on_error));
 
     call.SendInitialClientRequest(request);
+    client.CleanUpCalls();
     return call;
   }
 

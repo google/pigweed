@@ -14,6 +14,8 @@
 
 #include "pw_rpc/nanopb/server_reader_writer.h"
 
+#include <optional>
+
 #include "gtest/gtest.h"
 #include "pw_rpc/nanopb/fake_channel_output.h"
 #include "pw_rpc/nanopb/test_method_context.h"
@@ -264,6 +266,32 @@ TEST(RawServerReaderWriter, Open_UnknownChannel) {
   EXPECT_EQ(OkStatus(), call.Finish());
   EXPECT_FALSE(call.active());
   EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
+}
+
+TEST(RawServerReaderWriter, Open_MultipleTimes_CancelsPrevious) {
+  ReaderWriterTestContext<TestService::TestBidirectionalStreamRpc> ctx;
+
+  NanopbServerReaderWriter one =
+      NanopbServerReaderWriter<pw_rpc_test_TestRequest,
+                               pw_rpc_test_TestStreamResponse>::
+          Open<TestService::TestBidirectionalStreamRpc>(
+              ctx.server, ctx.kChannelId, ctx.service);
+
+  std::optional<Status> error;
+  one.set_on_error([&error](Status status) { error = status; });
+
+  ASSERT_TRUE(one.active());
+
+  NanopbServerReaderWriter two =
+      NanopbServerReaderWriter<pw_rpc_test_TestRequest,
+                               pw_rpc_test_TestStreamResponse>::
+          Open<TestService::TestBidirectionalStreamRpc>(
+              ctx.server, ctx.kChannelId, ctx.service);
+
+  EXPECT_FALSE(one.active());
+  EXPECT_TRUE(two.active());
+
+  EXPECT_EQ(Status::Cancelled(), error);
 }
 
 TEST(NanopbServerReader, CallbacksMoveCorrectly) {

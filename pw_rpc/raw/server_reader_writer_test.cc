@@ -14,6 +14,8 @@
 
 #include "pw_rpc/raw/server_reader_writer.h"
 
+#include <optional>
+
 #include "gtest/gtest.h"
 #include "pw_rpc/internal/lock.h"
 #include "pw_rpc/raw/fake_channel_output.h"
@@ -205,6 +207,9 @@ TEST(RawUnaryResponder, Open_MultipleTimes_CancelsPrevious) {
   RawUnaryResponder one = RawUnaryResponder::Open<TestService::TestUnaryRpc>(
       ctx.server, ctx.channel.id(), ctx.service);
 
+  std::optional<Status> error;
+  one.set_on_error([&error](Status status) { error = status; });
+
   ASSERT_TRUE(one.active());
 
   RawUnaryResponder two = RawUnaryResponder::Open<TestService::TestUnaryRpc>(
@@ -212,6 +217,8 @@ TEST(RawUnaryResponder, Open_MultipleTimes_CancelsPrevious) {
 
   ASSERT_FALSE(one.active());
   ASSERT_TRUE(two.active());
+
+  EXPECT_EQ(Status::Cancelled(), error);
 }
 
 TEST(RawServerWriter, Open_ReturnsUsableWriter) {

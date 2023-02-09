@@ -51,6 +51,7 @@ class NanopbUnaryResponseClientCall : public UnaryResponseClientCall {
     } else {
       NanopbSendInitialRequest(call, serde.request(), &request...);
     }
+    client.CleanUpCalls();
     return call;
   }
 
@@ -141,6 +142,7 @@ class NanopbStreamResponseClientCall : public StreamResponseClientCall {
     } else {
       NanopbSendInitialRequest(call, serde.request(), &request...);
     }
+    client.CleanUpCalls();
     return call;
   }
 
