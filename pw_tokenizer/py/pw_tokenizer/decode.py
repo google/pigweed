@@ -21,6 +21,7 @@ in the resulting string with an error message.
 """
 
 from datetime import datetime
+import math
 import re
 import struct
 from typing import Iterable, List, NamedTuple, Match, Optional, Sequence, Tuple
@@ -47,7 +48,21 @@ class FormatSpec:
     This implementation supports:
     - Overall Format: `%[flags][width][.precision][length][specifier]`
     - Flags (Zero or More)
-      - TODO(gregpataky): Finish.
+      - `-`: Left-justify within the given field width; Right justification is
+             the default (see Width modifier).
+      - `+`: Forces to preceed the result with a plus or minus sign (`+` or `-`)
+             even for positive numbers. By default, only negative numbers are
+             preceded with a `-` sign.
+      - ` ` (space): If no sign is going to be written, a blank space is
+                     inserted before the value.
+      - `#`: Used with `o`, `x` or `X` specifiers the value is preceeded with
+             `0`, `0x` or `0X`, respectively, for values different than zero.
+             Used with `a`, `A`, `e`, `E`, `f`, `F`, `g`, or `G` it forces the
+             written output to contain a decimal point even if no more digits
+             follow. By default, if no digits follow, no decimal point is
+             written.
+      - `0`: Left-pads the number with zeroes (0) instead of spaces when
+             padding is specified (see width sub-specifier).
     - Width (Optional)
       - TODO(gregpataky): Finish.
     - Precision (Optional)
@@ -104,6 +119,12 @@ class FormatSpec:
              precision, or length modifiers).
 
     Underspecified details:
+    - If both `+` and ` ` flags appear, the ` ` is ignored.
+    - The `+` and ` ` flags will error if used with `c` or `s`.
+    - The `#` flag will error if used with `d`, `i`, `u`, `c`, `s`, or `p`.
+    - The `0` flag will error if used with `c`, `s`, or `p`.
+    - Both `+` and ` ` can work with the unsigned integer specifiers `u`, `o`,
+      `x`, and `X`.
     - `p` is implementation defined. For this implementation, it will print
       with a `0x` prefix and then the pointer value was printed using `%08X`.
       `p` supports the `+`, `-`, and ` ` flags, but not the `#` or `0` flags.
@@ -135,9 +156,9 @@ class FormatSpec:
     _REMAP_TYPE = {'a': 'f', 'A': 'F', 'p': 'X'}
 
     # Conversion specifiers by type; n is not supported.
-    _SIGNED_INT = 'di'
-    _UNSIGNED_INT = frozenset('oxXup')
-    _FLOATING_POINT = frozenset('fFeEaAgG')
+    SIGNED_INT = frozenset('di')
+    UNSIGNED_INT = frozenset('oxXup')
+    FLOATING_POINT = frozenset('fFeEaAgG')
 
     _PACKED_FLOAT = struct.Struct('<f')
 
@@ -175,6 +196,21 @@ class FormatSpec:
                     '%% does not support any flags, width, precision,'
                     'or length modifiers.'
                 )
+        elif self.type in 'csdiup' and '#' in self.flags:
+            self.error = (
+                '# is only supported with o, x, X, f, F, e, E, a, A, '
+                'g, and G specifiers.'
+            )
+        elif self.type in 'csp' and '0' in self.flags:
+            self.error = (
+                '0 is only supported with d, i, o, u, x, X, a, A, e, '
+                'E, f, F, g, and G specifiers.'
+            )
+        elif self.type in 'cs' and ('+' in self.flags or ' ' in self.flags):
+            self.error = (
+                '+ and space are only available for d, i, o, u, x, X,'
+                'a, A, e, E, f, F, g, and G specifiers.'
+            )
 
         # If we are going to add additional characters to the output, we add to
         # width_bias to ensure user-provided widths are reduced by that amount.
@@ -184,6 +220,11 @@ class FormatSpec:
         # increases the user-provided precision in these cases if it was not
         # enough.
         self._minimum_precision = 0
+        # Python's handling of %#o is non-standard and prepends a 0o
+        # instead of single 0.
+        if self.type == 'o' and '#' in self.flags:
+            self._width_bias = 1
+        # Python does not support %p natively.
         if self.type == 'p':
             self._width_bias = 2
             self._minimum_precision = 8
@@ -195,7 +236,7 @@ class FormatSpec:
         if parsed_width > self._width_bias:
             self.width = f'{parsed_width - self._width_bias}'
 
-        # N.B.: Python %-operator does not support `.` without a
+        # Python %-operator does not support `.` without a
         # trailing number. `.` is defined to be equivalent to `.0`.
         if self.precision == '.':
             self.precision = '.0'
@@ -210,7 +251,7 @@ class FormatSpec:
         ):
             self.precision = f'.{self._minimum_precision}'
 
-        # N.B.: The Python %-format machinery never requires the length
+        # The Python %-format machinery never requires the length
         # modifier to work correctly, and it doesn't support all of the
         # C99 length format specifiers anyway. We remove it from the
         # python-compaitble format string.
@@ -242,13 +283,13 @@ class FormatSpec:
         if self.type == 'c':  # character
             return self._decode_char(encoded_arg)
 
-        if self.type in self._SIGNED_INT:
+        if self.type in self.SIGNED_INT:
             return self._decode_signed_integer(encoded_arg)
 
-        if self.type in self._UNSIGNED_INT:
+        if self.type in self.UNSIGNED_INT:
             return self._decode_unsigned_integer(encoded_arg)
 
-        if self.type in self._FLOATING_POINT:
+        if self.type in self.FLOATING_POINT:
             return self._decode_float(encoded_arg)
 
         # Should be unreachable.
@@ -407,20 +448,23 @@ class DecodedArg:
 
         if self.ok():
             try:
-                result = self.specifier.compatible % self.value
+                # Python has a nonstandard alternative octal form.
+                if self.specifier.type == 'o' and '#' in self.specifier.flags:
+                    return self._format_alternative_octal()
+
+                # Python doesn't pad zeros correctly for inf/nan.
+                if self.specifier.type in FormatSpec.FLOATING_POINT and (
+                    self.value == math.inf
+                    or self.value == -math.inf
+                    or self.value == math.nan
+                ):
+                    return self._format_text_float()
+
+                # Python doesn't have a native pointer formatter.
                 if self.specifier.type == 'p':
-                    # Find index of the first non-space, non-plus, and non-zero
-                    # character (unless we hit the first of the 8 required hex
-                    # digits).
-                    counter = 0
-                    for i, value in enumerate(result[:-7]):
-                        if value not in [' ', '+', '0'] or i == len(result) - 8:
-                            counter = i
-                            break
-                    # Insert the pointer 0x prefix in after the leading `+`,
-                    # space, or `0`
-                    return result[:counter] + '0x' + result[counter:]
-                return result
+                    return self._format_pointer()
+
+                return self.specifier.compatible % self.value
             except (OverflowError, TypeError, ValueError) as err:
                 self._status |= self.DECODE_ERROR
                 self.error = err
@@ -440,6 +484,51 @@ class DecodedArg:
             return '<[{}]>'.format(message)
 
         return '<[{} ({})]>'.format(message, self.value)
+
+    def _format_alternative_octal(self) -> str:
+        """Formats an alternative octal specifier.
+
+        This potentially throws OverflowError, TypeError, or ValueError.
+        """
+        compatible_specifier = self.specifier.compatible.replace('#', '')
+        result = compatible_specifier % self.value
+
+        # Find index of the first non-space, non-plus, and non-zero
+        # character. If we cannot find anything, we will simply
+        # prepend a 0 to the formatted string.
+        counter = 0
+        for i, value in enumerate(result):
+            if value not in ' +0':
+                counter = i
+                break
+        return result[:counter] + '0' + result[counter:]
+
+    def _format_text_float(self) -> str:
+        """Formats a float specifier with txt value (e.g. NAN, INF).
+
+        This potentially throws OverflowError, TypeError, or ValueError.
+        """
+        return self.specifier.compatible.replace('0', ' ') % self.value
+
+    def _format_pointer(self) -> str:
+        """Formats a pointer specifier.
+
+        This potentially throws OverflowError, TypeError, or ValueError.
+        """
+        result = self.specifier.compatible % self.value
+
+        # Find index of the first non-space, non-plus, and non-zero
+        # character (unless we hit the first of the 8 required hex
+        # digits).
+        counter = 0
+        for i, value in enumerate(result[:-7]):
+            if value not in ' +0' or i == len(result) - 8:
+                counter = i
+                break
+
+        # Insert the pointer 0x prefix in after the leading `+`,
+        # space, or `0`
+        return result[:counter] + '0x' + result[counter:]
 
     def __str__(self) -> str:
         return self.format()
