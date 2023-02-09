@@ -82,7 +82,25 @@ class FormatSpec:
              additional integer value argument preceding the argument that has
              to be formatted.
     - Precision (Optional)
-      - TODO(gregpataky): Finish.
+      - `.(number)`
+        - For `d`, `i`, `o`, `u`, `x`, `X`, specifies the minimum number of
+          digits to be written. If the value to be written is shorter than this
+          number, the result is padded with leading zeros. The value is not
+          truncated even if the result is longer.
+          - A precision of `0` means that no character is written for the value
+            `0`.
+        - For `a`, `A`, `e`, `E`, `f`, and `F`, specifies the number of digits
+          to be printed after the decimal point. By default, this is `6`.
+        - For `g` and `G`, specifies the maximum number of significant digits to
+          be printed.
+        - For `s`, specifies the maximum number of characters to be printed. By
+          default all characters are printed until the ending null character is
+          encountered.
+        - If the period is specified without an explicit value for precision,
+          `0` is assumed.
+      - `.*`: The precision is not specified in the format string, but as an
+              additional integer value argument preceding the argument that has
+              to be formatted.
     - Length (Optional)
       - `hh`: Usable with `d`, `i`, `o`, `u`, `x`, or `X` specifiers to convey
               the argument will be a `signed char` or `unsigned char`. However,
@@ -193,6 +211,13 @@ class FormatSpec:
       present between `%`, but ignore any for the output.
     - If a width is specified with the `0` flag for a negative value, the padded
       `0`s will appear after the `-` symbol.
+    - A precision of `0` for `d`, `i`, `u`, `o`, `x`, or `X` means that no
+      character is written for the value `0`.
+    - Precision cannot be specified for `c`.
+    - Using `*` or fixed precision with the `s` specifier still requires the
+      string argument to be null-terminated. This is due to argument encoding
+      happening on the C/C++-side while the precision value is not read or
+      otherwise used until decoding happens in this Python code.
 
     Non-conformant details:
     - `n` specifier: We do not support the `n` specifier since it is impossible
@@ -269,6 +294,9 @@ class FormatSpec:
                 '+ and space are only available for d, i, o, u, x, X,'
                 'a, A, e, E, f, F, g, and G specifiers.'
             )
+        elif self.type == 'c':
+            if self.precision != '':
+                self.error = 'Precision is not supported for specifier c.'
         elif self.type == 'p':
             if self.length != '':
                 self.error = 'p does not support any length modifiers.'
@@ -340,6 +368,11 @@ class FormatSpec:
             width = FormatSpec.from_string('%d').decode(encoded_arg)
             encoded_arg = encoded_arg[len(width.raw_data) :]
 
+        precision = None
+        if self.precision == '.*':
+            precision = FormatSpec.from_string('%d').decode(encoded_arg)
+            encoded_arg = encoded_arg[len(precision.raw_data) :]
+
         if self.type == '%':
             return DecodedArg(
                 self, (), b''
@@ -347,27 +380,27 @@ class FormatSpec:
 
         if self.type == 's':
             return self._merge_decoded_args(
-                width, self._decode_string(encoded_arg)
+                width, precision, self._decode_string(encoded_arg)
             )
 
         if self.type == 'c':
             return self._merge_decoded_args(
-                width, self._decode_char(encoded_arg)
+                width, precision, self._decode_char(encoded_arg)
             )
 
         if self.type in self.SIGNED_INT:
             return self._merge_decoded_args(
-                width, self._decode_signed_integer(encoded_arg)
+                width, precision, self._decode_signed_integer(encoded_arg)
             )
 
         if self.type in self.UNSIGNED_INT:
             return self._merge_decoded_args(
-                width, self._decode_unsigned_integer(encoded_arg)
+                width, precision, self._decode_unsigned_integer(encoded_arg)
             )
 
         if self.type in self.FLOATING_POINT:
             return self._merge_decoded_args(
-                width, self._decode_float(encoded_arg)
+                width, precision, self._decode_float(encoded_arg)
             )
 
         # Should be unreachable.
@@ -385,10 +418,26 @@ class FormatSpec:
         )
 
     def _merge_decoded_args(
-        self, width: Optional['DecodedArg'], main: 'DecodedArg'
+        self,
+        width: Optional['DecodedArg'],
+        precision: Optional['DecodedArg'],
+        main: 'DecodedArg',
     ) -> 'DecodedArg':
         def merge_optional_str(*args: Optional[str]) -> Optional[str]:
             return ' '.join(a for a in args if a) or None
+
+        if width is not None and precision is not None:
+            return DecodedArg(
+                main.specifier,
+                (
+                    width.value - self._width_bias,
+                    max(precision.value, self._minimum_precision),
+                    main.value,
+                ),
+                width.raw_data + precision.raw_data + main.raw_data,
+                width.status | precision.status | main.status,
+                merge_optional_str(width.error, precision.error, main.error),
+            )
 
         if width is not None:
             return DecodedArg(
@@ -397,6 +446,15 @@ class FormatSpec:
                 width.raw_data + main.raw_data,
                 width.status | main.status,
                 merge_optional_str(width.error, main.error),
+            )
+
+        if precision is not None:
+            return DecodedArg(
+                main.specifier,
+                (max(precision.value, self._minimum_precision), main.value),
+                precision.raw_data + main.raw_data,
+                precision.status | main.status,
+                merge_optional_str(precision.error, main.error),
             )
 
         return main
@@ -422,6 +480,7 @@ class FormatSpec:
                     self,
                     zigzag_decode(result),
                     encoded[:count],
+                    DecodedArg.OK,
                 )
 
             shift += 7
@@ -560,6 +619,23 @@ class DecodedArg:
             return self.specifier.compatible % (self.value + '[...]')
 
         if self.ok():
+            # Check if we are effectively .0{diuoxX} with a 0 value (this
+            # includes .* with (0, 0)). C standard says a value of 0 with 0
+            # precision produces an empty string.
+            is_integer_specifier_type = self.specifier.type in 'diuoxX'
+            is_simple_0_precision_with_0_value = self.value == 0 and (
+                self.specifier.precision == '.0'
+                or self.specifier.precision == '.'
+            )
+            is_star_0_precision_with_0_value = (
+                self.value == (0, 0) and self.specifier.precision == '.*'
+            )
+            if is_integer_specifier_type and (
+                is_simple_0_precision_with_0_value
+                or is_star_0_precision_with_0_value
+            ):
+                return ''
+
             try:
                 # Python has a nonstandard alternative octal form.
                 if self.specifier.type == 'o' and '#' in self.specifier.flags:

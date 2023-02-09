@@ -171,6 +171,18 @@ class TestPercentLiteralDecoding(unittest.TestCase):
         result = decode.FormatString('%*%').format(b'')
         self.assertFalse(result.ok())
 
+    def test_percent_with_precision(self):
+        result = decode.FormatString('%.5%').format(b'')
+        self.assertFalse(result.ok())
+
+    def test_percent_with_multidigit_precision(self):
+        result = decode.FormatString('%.10%').format(b'')
+        self.assertFalse(result.ok())
+
+    def test_percent_with_star_precision(self):
+        result = decode.FormatString('%.*%').format(b'')
+        self.assertFalse(result.ok())
+
 
 # pylint: disable=too-many-public-methods
 class TestIntegerDecoding(unittest.TestCase):
@@ -284,6 +296,79 @@ class TestIntegerDecoding(unittest.TestCase):
     def test_signed_integer_d_with_missing_width_or_value(self) -> None:
         result = decode.FormatString('%*d').format(encode.encode_args(-10))
         self.assertFalse(result.ok())
+
+    def test_signed_integer_d_with_precision(self) -> None:
+        result = decode.FormatString('%.5d').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '-00010')
+
+    def test_signed_integer_d_with_multidigit_precision(self) -> None:
+        result = decode.FormatString('%.10d').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '-0000000010')
+
+    def test_signed_integer_d_with_star_precision(self) -> None:
+        result = decode.FormatString('%.*d').format(encode.encode_args(10, -10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '-0000000010')
+
+    def test_signed_integer_d_with_zero_precision(self) -> None:
+        result = decode.FormatString('%.0d').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '-10')
+
+    def test_signed_integer_d_with_empty_precision(self) -> None:
+        result = decode.FormatString('%.d').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '-10')
+
+    def test_zero_with_zero_precision(self) -> None:
+        result = decode.FormatString('%.0d').format(encode.encode_args(0))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '')
+
+    def test_zero_with_empty_precision(self) -> None:
+        result = decode.FormatString('%.d').format(encode.encode_args(0))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '')
+
+    def test_signed_integer_d_with_width_and_precision(self) -> None:
+        result = decode.FormatString('%10.5d').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '    -00010')
+
+    def test_signed_integer_d_with_star_width_and_precision(self) -> None:
+        result = decode.FormatString('%*.*d').format(
+            encode.encode_args(15, 10, -10)
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '    -0000000010')
+
+    def test_signed_integer_d_with_missing_precision_or_value(self) -> None:
+        result = decode.FormatString('%.*d').format(encode.encode_args(-10))
+        self.assertFalse(result.ok())
+
+    def test_64_bit_specifier_workaround(self) -> None:
+        result = decode.FormatString('%.u%.*lu%0*lu').format(
+            encode.encode_args(0, 0, 0, 0, 0)
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '0')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%.u%.*lu%0*lu').format(
+            encode.encode_args(0, 0, 1, 9, 0)
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '1000000000')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%.u%.*lu%0*lu').format(
+            encode.encode_args(1, 9, 0, 9, 0)
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '1000000000000000000')
+        self.assertEqual(result.remaining, b'')
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -781,6 +866,43 @@ class TestFloatDecoding(unittest.TestCase):
         self.assertEqual(result.value, 'inf')
         self.assertEqual(result.remaining, b'')
 
+    def test_lowercase_float_with_precision(self) -> None:
+        result = decode.FormatString('%.4f').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.2000')
+
+    def test_lowercase_float_with_multidigit_precision(self) -> None:
+        result = decode.FormatString('%.10f').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.2000000477')
+
+    def test_lowercase_float_with_star_preision(self) -> None:
+        result = decode.FormatString('%.*f').format(encode.encode_args(10, 2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.2000000477')
+
+    def test_lowercase_float_with_zero_precision(self) -> None:
+        result = decode.FormatString('%.0f').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2')
+
+    def test_lowercase_float_with_empty_precision(self) -> None:
+        result = decode.FormatString('%.f').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2')
+
+    def test_lowercase_float_with_width_and_precision(self) -> None:
+        result = decode.FormatString('%10.0f').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '         2')
+
+    def test_lowercase_float_with_star_width_and_star_precision(self) -> None:
+        result = decode.FormatString('%*.*f').format(
+            encode.encode_args(20, 10, 2.2)
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '        2.2000000477')
+
     def test_lowercase_float_non_number_with_minus(self) -> None:
         result = decode.FormatString('%-5f').format(
             encode.encode_args(math.inf)
@@ -850,6 +972,60 @@ class TestFloatDecoding(unittest.TestCase):
         )
         self.assertTrue(result.ok())
         self.assertEqual(result.value, '       inf')
+
+    def test_lowercase_float_non_number_with_precision(self) -> None:
+        result = decode.FormatString('%.4f').format(
+            encode.encode_args(math.inf)
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'inf')
+
+    def test_lowercase_float_non_number_with_multidigit_precision(self) -> None:
+        result = decode.FormatString('%.10f').format(
+            encode.encode_args(math.inf)
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'inf')
+
+    def test_lowercase_float_non_number_with_star_preision(self) -> None:
+        result = decode.FormatString('%.*f').format(
+            encode.encode_args(10, math.inf)
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'inf')
+
+    def test_lowercase_float_non_number_with_zero_precision(self) -> None:
+        result = decode.FormatString('%.0f').format(
+            encode.encode_args(math.inf)
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'inf')
+
+    def test_lowercase_float_non_number_with_empty_precision(self) -> None:
+        result = decode.FormatString('%.f').format(encode.encode_args(math.inf))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'inf')
+
+    def test_lowercase_float_non_number_with_width_and_precision(self) -> None:
+        result = decode.FormatString('%10.0f').format(
+            encode.encode_args(math.inf)
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '       inf')
+
+    def test_lowercase_float_non_number_with_star_width_and_star_precision(
+        self,
+    ) -> None:
+        result = decode.FormatString('%*.*f').format(
+            encode.encode_args(10, 0, math.inf)
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '       inf')
+
+    def test_zero_with_zero_precision(self) -> None:
+        result = decode.FormatString('%.0f').format(encode.encode_args(0.0))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '0')
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -1220,6 +1396,12 @@ class TestCharDecoding(unittest.TestCase):
         self.assertTrue(result.ok())
         self.assertEqual(result.value, '         c')
 
+    def test_char_with_precision(self) -> None:
+        result = decode.FormatString('%.4c').format(
+            encode.encode_args(ord('c'))
+        )
+        self.assertFalse(result.ok())
+
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
     def test_long_char(self) -> None:
@@ -1337,6 +1519,39 @@ class TestStringDecoding(unittest.TestCase):
         )
         self.assertTrue(result.ok())
         self.assertEqual(result.value, '     hello')
+
+    def test_string_with_precision(self) -> None:
+        result = decode.FormatString('%.3s').format(encode.encode_args('hello'))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'hel')
+
+    def test_string_with_multidigit_precision(self) -> None:
+        result = decode.FormatString('%.10s').format(
+            encode.encode_args('hello')
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'hello')
+
+    def test_string_with_star_precision(self) -> None:
+        result = decode.FormatString('%.*s').format(
+            encode.encode_args(3, 'hello')
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'hel')
+
+    def test_string_with_width_and_precision(self) -> None:
+        result = decode.FormatString('%10.3s').format(
+            encode.encode_args('hello')
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '       hel')
+
+    def test_string_with_star_with_and_star_precision(self) -> None:
+        result = decode.FormatString('%*.*s').format(
+            encode.encode_args(10, 3, 'hello')
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '       hel')
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
