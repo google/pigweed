@@ -149,6 +149,12 @@ class BasicServer : public ::testing::Test {
   }
 };
 
+TEST_F(BasicServer, IsServiceRegistered) {
+  TestService unregisteredService(0);
+  EXPECT_FALSE(server_.IsServiceRegistered(unregisteredService));
+  EXPECT_TRUE(server_.IsServiceRegistered(service_1_));
+}
+
 TEST_F(BasicServer, ProcessPacket_ValidMethodInService1_InvokesMethod) {
   EXPECT_EQ(
       OkStatus(),

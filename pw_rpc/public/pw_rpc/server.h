@@ -63,6 +63,23 @@ class Server : public internal::Endpoint {
     (services_.push_front(services), ...);
   }
 
+  // Returns whether a service is registered.
+  //
+  // Calling RegisterService with a registered service will assert. So depending
+  // on your logic you might want to check if a service is currently registered.
+  bool IsServiceRegistered(const Service& service) const
+      PW_LOCKS_EXCLUDED(internal::rpc_lock()) {
+    internal::LockGuard lock(internal::rpc_lock());
+
+    for (const Service& svc : services_) {
+      if (&svc == &service) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   template <typename... OtherServices>
   void UnregisterService(Service& service, OtherServices&... services)
       PW_LOCKS_EXCLUDED(internal::rpc_lock()) {
