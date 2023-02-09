@@ -93,34 +93,69 @@ class TestDecodeTokenized(unittest.TestCase):
 class TestPercentLiteralDecoding(unittest.TestCase):
     """Tests decoding the %-literal in various invalid situations."""
 
-    def test_percent(self):
+    def test_percent(self) -> None:
         result = decode.FormatString('%%').format(b'')
         self.assertTrue(result.ok())
         self.assertEqual(result.value, '%')
         self.assertEqual(result.remaining, b'')
 
-    def test_percent_with_leading_plus_fails(self):
+    def test_percent_with_leading_plus_fails(self) -> None:
         result = decode.FormatString('%+%').format(b'')
         self.assertFalse(result.ok())
         self.assertEqual(result.remaining, b'')
 
-    def test_percent_with_leading_negative(self):
+    def test_percent_with_leading_negative(self) -> None:
         result = decode.FormatString('%-%').format(b'')
         self.assertFalse(result.ok())
         self.assertEqual(result.remaining, b'')
 
-    def test_percent_with_leading_space(self):
+    def test_percent_with_leading_space(self) -> None:
         result = decode.FormatString('% %').format(b'')
         self.assertFalse(result.ok())
         self.assertEqual(result.remaining, b'')
 
-    def test_percent_with_leading_hashtag(self):
+    def test_percent_with_leading_hashtag(self) -> None:
         result = decode.FormatString('%#%').format(b'')
         self.assertFalse(result.ok())
         self.assertEqual(result.remaining, b'')
 
-    def test_percent_with_leading_zero(self):
+    def test_percent_with_leading_zero(self) -> None:
         result = decode.FormatString('%0%').format(b'')
+        self.assertFalse(result.ok())
+        self.assertEqual(result.remaining, b'')
+
+    def test_percent_with_length(self) -> None:
+        """Test that all length prefixes fail to decode with %."""
+
+        result = decode.FormatString('%hh%').format(b'')
+        self.assertFalse(result.ok())
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%h%').format(b'')
+        self.assertFalse(result.ok())
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%l%').format(b'')
+        self.assertFalse(result.ok())
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%ll%').format(b'')
+        self.assertFalse(result.ok())
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%L%').format(b'')
+        self.assertFalse(result.ok())
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%j%').format(b'')
+        self.assertFalse(result.ok())
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%z%').format(b'')
+        self.assertFalse(result.ok())
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%t%').format(b'')
         self.assertFalse(result.ok())
         self.assertEqual(result.remaining, b'')
 
@@ -176,6 +211,43 @@ class TestIntegerDecoding(unittest.TestCase):
         self.assertEqual(result.value, '00010')
         self.assertEqual(result.remaining, b'')
 
+    def test_signed_integer_i_with_length(self) -> None:
+        """Tests that length modifiers do not affect signed integer decoding."""
+        result = decode.FormatString('%hhi').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '-10')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%hi').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '-10')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%li').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '-10')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%lli').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '-10')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%ji').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '-10')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%zi').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '-10')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%ti').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '-10')
+        self.assertEqual(result.remaining, b'')
+
     def test_signed_integer_d(self) -> None:
         result = decode.FormatString('%d').format(encode.encode_args(-10))
         self.assertTrue(result.ok())
@@ -223,6 +295,43 @@ class TestIntegerDecoding(unittest.TestCase):
         self.assertEqual(result.value, '00010')
         self.assertEqual(result.remaining, b'')
 
+    def test_signed_integer_d_with_length(self) -> None:
+        """Tests that length modifiers do not affect signed integer decoding."""
+        result = decode.FormatString('%hhd').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '-10')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%hd').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '-10')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%ld').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '-10')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%lld').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '-10')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%jd').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '-10')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%zd').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '-10')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%td').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '-10')
+        self.assertEqual(result.remaining, b'')
+
     def test_unsigned_integer(self) -> None:
         result = decode.FormatString('%u').format(encode.encode_args(10))
         self.assertTrue(result.ok())
@@ -232,6 +341,48 @@ class TestIntegerDecoding(unittest.TestCase):
     def test_unsigned_integer_with_hashtag(self) -> None:
         result = decode.FormatString('%#u').format(encode.encode_args(10))
         self.assertFalse(result.ok())
+
+    def test_unsigned_integer_with_length(self) -> None:
+        """Tests that length modifiers pass unsigned integer decoding."""
+        result = decode.FormatString('%hhu').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '10')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%hu').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '10')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%lu').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '10')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%llu').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '10')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%ju').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '10')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%zu').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '10')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%tu').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '10')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%Lu').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '10')
+        self.assertEqual(result.remaining, b'')
 
     def test_octal_integer(self) -> None:
         result = decode.FormatString('%o').format(encode.encode_args(10))
@@ -289,6 +440,48 @@ class TestIntegerDecoding(unittest.TestCase):
         self.assertEqual(result.value, '+012')
         self.assertEqual(result.remaining, b'')
 
+    def test_octal_integer_with_length(self) -> None:
+        """Tests that length modifiers do not affect octal integer decoding."""
+        result = decode.FormatString('%hho').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '12')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%ho').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '12')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%lo').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '12')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%llo').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '12')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%jo').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '12')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%zo').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '12')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%to').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '12')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%Lo').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '12')
+        self.assertEqual(result.remaining, b'')
+
     def test_lowercase_hex_integer(self) -> None:
         result = decode.FormatString('%x').format(encode.encode_args(10))
         self.assertTrue(result.ok())
@@ -301,6 +494,48 @@ class TestIntegerDecoding(unittest.TestCase):
         self.assertEqual(result.value, '0xa')
         self.assertEqual(result.remaining, b'')
 
+    def test_lowercase_hex_integer_with_length(self) -> None:
+        """Tests that length modifiers do not affect lowercase hex decoding."""
+        result = decode.FormatString('%hhx').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'a')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%hx').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'a')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%lx').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'a')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%llx').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'a')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%jx').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'a')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%zx').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'a')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%tx').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'a')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%Lx').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'a')
+        self.assertEqual(result.remaining, b'')
+
     def test_uppercase_hex_integer(self) -> None:
         result = decode.FormatString('%X').format(encode.encode_args(10))
         self.assertTrue(result.ok())
@@ -311,6 +546,48 @@ class TestIntegerDecoding(unittest.TestCase):
         result = decode.FormatString('%#X').format(encode.encode_args(10))
         self.assertTrue(result.ok())
         self.assertEqual(result.value, '0XA')
+        self.assertEqual(result.remaining, b'')
+
+    def test_uppercase_hex_integer_with_length(self) -> None:
+        """Tests that length modifiers do not affect uppercase hex decoding."""
+        result = decode.FormatString('%hhX').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'A')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%hX').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'A')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%lX').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'A')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%llX').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'A')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%jX').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'A')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%zX').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'A')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%tX').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'A')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%LX').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'A')
         self.assertEqual(result.remaining, b'')
 
     def test_decode_generated_data(self) -> None:
@@ -390,6 +667,48 @@ class TestFloatDecoding(unittest.TestCase):
         self.assertEqual(result.value, '002.200000')
         self.assertEqual(result.remaining, b'')
 
+    def test_lowercase_float_with_length(self) -> None:
+        """Tests that length modifiers do not affect f decoding."""
+        result = decode.FormatString('%hhf').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%hf').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%lf').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%llf').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%jf').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%zf').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%tf').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%Lf').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000')
+        self.assertEqual(result.remaining, b'')
+
     def test_lowercase_float_non_number(self) -> None:
         result = decode.FormatString('%f').format(encode.encode_args(math.inf))
         self.assertTrue(result.ok())
@@ -453,6 +772,48 @@ class TestFloatDecoding(unittest.TestCase):
         self.assertEqual(result.value, '2.200000')
         self.assertEqual(result.remaining, b'')
 
+    def test_uppercase_float_with_length(self) -> None:
+        """Tests that length modifiers do not affect F decoding."""
+        result = decode.FormatString('%hhF').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%hF').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%lF').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%llF').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%jF').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%zF').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000')
+
+        result = decode.FormatString('%tF').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000')
+        self.assertEqual(result.remaining, b'')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%LF').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000')
+        self.assertEqual(result.remaining, b'')
+
     def test_uppercase_float_non_number(self) -> None:
         result = decode.FormatString('%F').format(encode.encode_args(math.inf))
         self.assertTrue(result.ok())
@@ -465,8 +826,96 @@ class TestFloatDecoding(unittest.TestCase):
         self.assertEqual(result.value, '2.200000e+00')
         self.assertEqual(result.remaining, b'')
 
+    def test_lowercase_exponential_with_length(self) -> None:
+        """Tests that length modifiers do not affect e decoding."""
+        result = decode.FormatString('%hhe').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000e+00')
+        self.assertEqual(result.remaining, b'')
+
+        # inclusive-language: disable
+        result = decode.FormatString('%he').format(encode.encode_args(2.2))
+        # inclusive-language: enable
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000e+00')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%le').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000e+00')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%lle').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000e+00')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%je').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000e+00')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%ze').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000e+00')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%te').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000e+00')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%Le').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000e+00')
+        self.assertEqual(result.remaining, b'')
+
     def test_uppercase_exponential(self) -> None:
         result = decode.FormatString('%E').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000E+00')
+        self.assertEqual(result.remaining, b'')
+
+    def test_uppercase_exponential_with_length(self) -> None:
+        """Tests that length modifiers do not affect E decoding."""
+        result = decode.FormatString('%hhE').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000E+00')
+        self.assertEqual(result.remaining, b'')
+
+        # inclusive-language: disable
+        result = decode.FormatString('%hE').format(encode.encode_args(2.2))
+        # inclusive-language: enable
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000E+00')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%lE').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000E+00')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%llE').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000E+00')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%jE').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000E+00')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%zE').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000E+00')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%tE').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.200000E+00')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%LE').format(encode.encode_args(2.2))
         self.assertTrue(result.ok())
         self.assertEqual(result.value, '2.200000E+00')
         self.assertEqual(result.remaining, b'')
@@ -483,6 +932,48 @@ class TestFloatDecoding(unittest.TestCase):
         self.assertEqual(result.value, '1.04858e+06')
         self.assertEqual(result.remaining, b'')
 
+    def test_lowercase_shortest_with_length(self) -> None:
+        """Tests that length modifiers do not affect g decoding."""
+        result = decode.FormatString('%hhg').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.2')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%hg').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.2')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%lg').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.2')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%llg').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.2')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%jg').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.2')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%zg').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.2')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%tg').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.2')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%Lg').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.2')
+        self.assertEqual(result.remaining, b'')
+
     def test_uppercase_shortest_take_normal(self) -> None:
         result = decode.FormatString('%G').format(encode.encode_args(2.2))
         self.assertTrue(result.ok())
@@ -493,6 +984,48 @@ class TestFloatDecoding(unittest.TestCase):
         result = decode.FormatString('%G').format(encode.encode_args(1048580.0))
         self.assertTrue(result.ok())
         self.assertEqual(result.value, '1.04858E+06')
+        self.assertEqual(result.remaining, b'')
+
+    def test_uppercase_shortest_with_length(self) -> None:
+        """Tests that length modifiers do not affect G decoding."""
+        result = decode.FormatString('%hhG').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.2')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%hG').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.2')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%lG').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.2')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%llG').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.2')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%jG').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.2')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%zG').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.2')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%tG').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.2')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%LG').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '2.2')
         self.assertEqual(result.remaining, b'')
 
 
@@ -529,6 +1062,70 @@ class TestCharDecoding(unittest.TestCase):
         result = decode.FormatString('%0c').format(encode.encode_args(ord('c')))
         self.assertFalse(result.ok())
 
+    def test_char_with_length(self) -> None:
+        """Tests that length modifiers do not affectchar decoding."""
+        result = decode.FormatString('%hhc').format(
+            encode.encode_args(ord('c'))
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'c')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%hc').format(encode.encode_args(ord('c')))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'c')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%lc').format(encode.encode_args(ord('c')))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'c')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%llc').format(
+            encode.encode_args(ord('c'))
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'c')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%jc').format(encode.encode_args(ord('c')))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'c')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%zc').format(encode.encode_args(ord('c')))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'c')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%tc').format(encode.encode_args(ord('c')))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'c')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%Lc').format(encode.encode_args(ord('c')))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'c')
+        self.assertEqual(result.remaining, b'')
+
+    def test_long_char(self) -> None:
+        result = decode.FormatString('%lc').format(encode.encode_args(ord('c')))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'c')
+        self.assertEqual(result.remaining, b'')
+
+    def test_long_char_with_hashtag(self) -> None:
+        result = decode.FormatString('%#lc').format(
+            encode.encode_args(ord('c'))
+        )
+        self.assertFalse(result.ok())
+
+    def test_long_char_with_zero(self) -> None:
+        result = decode.FormatString('%0lc').format(
+            encode.encode_args(ord('c'))
+        )
+        self.assertFalse(result.ok())
+
 
 class TestStringDecoding(unittest.TestCase):
     """Tests decoding string values."""
@@ -560,6 +1157,64 @@ class TestStringDecoding(unittest.TestCase):
     def test_string_with_zero(self) -> None:
         result = decode.FormatString('%0s').format(encode.encode_args('hello'))
         self.assertFalse(result.ok())
+
+    def test_string_with_length(self) -> None:
+        """Tests that length modifiers do not affect string values (s)."""
+        result = decode.FormatString('%hhs').format(encode.encode_args('hello'))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'hello')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%hs').format(encode.encode_args('hello'))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'hello')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%ls').format(encode.encode_args('hello'))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'hello')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%lls').format(encode.encode_args('hello'))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'hello')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%js').format(encode.encode_args('hello'))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'hello')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%zs').format(encode.encode_args('hello'))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'hello')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%ts').format(encode.encode_args('hello'))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'hello')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%Ls').format(encode.encode_args('hello'))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'hello')
+        self.assertEqual(result.remaining, b'')
+
+    def test_long_string(self) -> None:
+        result = decode.FormatString('%ls').format(encode.encode_args('hello'))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'hello')
+        self.assertEqual(result.remaining, b'')
+
+    def test_long_string_with_hashtag(self) -> None:
+        result = decode.FormatString('%#ls').format(encode.encode_args('hello'))
+        self.assertFalse(result.ok())
+        self.assertEqual(result.remaining, encode.encode_args('hello'))
+
+    def test_long_string_with_zero(self) -> None:
+        result = decode.FormatString('%0ls').format(encode.encode_args('hello'))
+        self.assertFalse(result.ok())
+        self.assertEqual(result.remaining, encode.encode_args('hello'))
 
 
 class TestPointerDecoding(unittest.TestCase):
@@ -614,6 +1269,56 @@ class TestPointerDecoding(unittest.TestCase):
 
     def test_pointer_with_zero(self) -> None:
         result = decode.FormatString('%0p').format(
+            encode.encode_args(0xDEADBEEF)
+        )
+        self.assertFalse(result.ok())
+        self.assertEqual(result.remaining, encode.encode_args(0xDEADBEEF))
+
+    def test_pointer_with_length(self) -> None:
+        """Tests that length modifiers do not affect decoding pointers (p)."""
+        result = decode.FormatString('%hhp').format(
+            encode.encode_args(0xDEADBEEF)
+        )
+        self.assertFalse(result.ok())
+        self.assertEqual(result.remaining, encode.encode_args(0xDEADBEEF))
+
+        result = decode.FormatString('%hp').format(
+            encode.encode_args(0xDEADBEEF)
+        )
+        self.assertFalse(result.ok())
+        self.assertEqual(result.remaining, encode.encode_args(0xDEADBEEF))
+
+        result = decode.FormatString('%lp').format(
+            encode.encode_args(0xDEADBEEF)
+        )
+        self.assertFalse(result.ok())
+        self.assertEqual(result.remaining, encode.encode_args(0xDEADBEEF))
+
+        result = decode.FormatString('%llp').format(
+            encode.encode_args(0xDEADBEEF)
+        )
+        self.assertFalse(result.ok())
+        self.assertEqual(result.remaining, encode.encode_args(0xDEADBEEF))
+
+        result = decode.FormatString('%jp').format(
+            encode.encode_args(0xDEADBEEF)
+        )
+        self.assertFalse(result.ok())
+        self.assertEqual(result.remaining, encode.encode_args(0xDEADBEEF))
+
+        result = decode.FormatString('%zp').format(
+            encode.encode_args(0xDEADBEEF)
+        )
+        self.assertFalse(result.ok())
+        self.assertEqual(result.remaining, encode.encode_args(0xDEADBEEF))
+
+        result = decode.FormatString('%tp').format(
+            encode.encode_args(0xDEADBEEF)
+        )
+        self.assertFalse(result.ok())
+        self.assertEqual(result.remaining, encode.encode_args(0xDEADBEEF))
+
+        result = decode.FormatString('%Lp').format(
             encode.encode_args(0xDEADBEEF)
         )
         self.assertFalse(result.ok())

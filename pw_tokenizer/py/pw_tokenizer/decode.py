@@ -68,7 +68,41 @@ class FormatSpec:
     - Precision (Optional)
       - TODO(gregpataky): Finish.
     - Length (Optional)
-      - TODO(gregpataky): Finish.
+      - `hh`: Usable with `d`, `i`, `o`, `u`, `x`, or `X` specifiers to convey
+              the argument will be a `signed char` or `unsigned char`. However,
+              this is largely ignored in the implementation due to it not being
+              necessary for Python or argument decoding (since the argument is
+              always encoded at least as a 32-bit integer).
+      - `h`: Usable with `d`, `i`, `o`, `u`, `x`, or `X` specifiers to convey
+             the argument will be a `signed short int` or `unsigned short int`.
+             However, this is largely ignored in the implementation due to it
+             not being necessary for Python or argument decoding (since the
+             argument is always encoded at least as a 32-bit integer).
+      - `l`: Usable with `d`, `i`, `o`, `u`, `x`, or `X` specifiers to convey
+             the argument will be a `signed long int` or `unsigned long int`.
+             Also is usable with `c` and `s` to specify that the arguments will
+             be encoded with `wchar_t` values (which isn't different from normal
+             `char` values). However, this is largely ignored in the
+             implementation due to it not being necessary for Python or argument
+             decoding (since the argument is always encoded at least as a 32-bit
+             integer).
+      - `ll`: Usable with `d`, `i`, `o`, `u`, `x`, or `X` specifiers to convey
+              the argument will be a `signed long long int` or
+              `unsigned long long int`. This is required to properly decode the
+              argument as a 64-bit integer.
+      - `L`: Usable with `a`, `A`, `e`, `E`, `f`, `F`, `g`, or `G` conversion
+             specifiers applies to a long double argument. However, this is
+             ignored in the implementation due to floating point value encoded
+             that is unaffected by bit width.
+      - `j`: Usable with `d`, `i`, `o`, `u`, `x`, or `X` specifiers to convey
+             the argument will be a `intmax_t` or `uintmax_t`.
+      - `z`: Usable with `d`, `i`, `o`, `u`, `x`, or `X` specifiers to convey
+             the argument will be a `size_t`. This will force the argument to be
+             decoded as an unsigned integer.
+      - `t`: Usable with `d`, `i`, `o`, `u`, `x`, or `X` specifiers to convey
+             the argument will be a `ptrdiff_t`.
+      - If a length modifier is provided for an incorrect specifier, it is
+        ignored.
     - Specifiers (Required)
       - `d` / `i`: Used for signed decimal integers.
       - `u`: Used for unsigned decimal integers.
@@ -125,6 +159,10 @@ class FormatSpec:
     - The `0` flag will error if used with `c`, `s`, or `p`.
     - Both `+` and ` ` can work with the unsigned integer specifiers `u`, `o`,
       `x`, and `X`.
+    - If a length modifier is provided for an incorrect specifier, it is
+      ignored.
+    - The `z` length modifier will decode arugments as signed as long as `d` or
+      `i` is used.
     - `p` is implementation defined. For this implementation, it will print
       with a `0x` prefix and then the pointer value was printed using `%08X`.
       `p` supports the `+`, `-`, and ` ` flags, but not the `#` or `0` flags.
@@ -211,6 +249,8 @@ class FormatSpec:
                 '+ and space are only available for d, i, o, u, x, X,'
                 'a, A, e, E, f, F, g, and G specifiers.'
             )
+        elif self.type == 'p' and self.length != '':
+            self.error = 'p does not support any length modifiers.'
 
         # If we are going to add additional characters to the output, we add to
         # width_bias to ensure user-provided widths are reduced by that amount.
