@@ -21,8 +21,6 @@ google-crc32c==1.3.0
 google-resumable-media==2.3.2
 googleapis-common-protos==1.56.2
 graphlib-backport==1.0.3; python_version < "3.9"
-grpcio==1.43.0
-grpcio-tools==1.43.0
 humanfriendly==10.0
 idna==3.3
 imagesize==1.3.0
