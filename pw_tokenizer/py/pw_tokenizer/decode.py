@@ -100,7 +100,8 @@ class FormatSpec:
         - If precision is specified, no more `char`s than that value will be
           written from the string (padding is used to fill additional width).
       - `p`: Used for formatting a pointer address.
-      - TODO(gregpataky): Finish.
+      - `%`: Prints a single `%`. Only valid as `%%` (supports no flags, width,
+             precision, or length modifiers).
 
     Underspecified details:
     - `p` is implementation defined. For this implementation, it will print
@@ -110,6 +111,9 @@ class FormatSpec:
       try to adhere to user-specified width (assuming the width provided is
       larger than the guaranteed minimum of 10). Specifying precision for `p` is
       considered an error.
+    - Only `%%` is allowed with no other modifiers. Things like `%+%` will fail
+      to decode. Some C stdlib implementations support any modifiers being
+      present between `%`, but ignore any for the output.
 
     Non-conformant details:
     - `n` specifier: We do not support the `n` specifier since it is impossible
@@ -164,7 +168,13 @@ class FormatSpec:
 
         self.error = None
         if self.type == 'n':
-            self.error = 'Unsupported conversion specifier n'
+            self.error = 'Unsupported conversion specifier n.'
+        elif self.type == '%':
+            if self.flags or self.width or self.precision or self.length:
+                self.error = (
+                    '%% does not support any flags, width, precision,'
+                    'or length modifiers.'
+                )
 
         # If we are going to add additional characters to the output, we add to
         # width_bias to ensure user-provided widths are reduced by that amount.
@@ -412,7 +422,7 @@ class DecodedArg:
                     return result[:counter] + '0x' + result[counter:]
                 return result
             except (OverflowError, TypeError, ValueError) as err:
-                self.status |= self.DECODE_ERROR
+                self._status |= self.DECODE_ERROR
                 self.error = err
 
         if self.status & self.SKIPPED:

@@ -90,6 +90,41 @@ class TestDecodeTokenized(unittest.TestCase):
         self.assertFalse(result.ok())
 
 
+class TestPercentLiteralDecoding(unittest.TestCase):
+    """Tests decoding the %-literal in various invalid situations."""
+
+    def test_percent(self):
+        result = decode.FormatString('%%').format(b'')
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '%')
+        self.assertEqual(result.remaining, b'')
+
+    def test_percent_with_leading_plus_fails(self):
+        result = decode.FormatString('%+%').format(b'')
+        self.assertFalse(result.ok())
+        self.assertEqual(result.remaining, b'')
+
+    def test_percent_with_leading_negative(self):
+        result = decode.FormatString('%-%').format(b'')
+        self.assertFalse(result.ok())
+        self.assertEqual(result.remaining, b'')
+
+    def test_percent_with_leading_space(self):
+        result = decode.FormatString('% %').format(b'')
+        self.assertFalse(result.ok())
+        self.assertEqual(result.remaining, b'')
+
+    def test_percent_with_leading_hashtag(self):
+        result = decode.FormatString('%#%').format(b'')
+        self.assertFalse(result.ok())
+        self.assertEqual(result.remaining, b'')
+
+    def test_percent_with_leading_zero(self):
+        result = decode.FormatString('%0%').format(b'')
+        self.assertFalse(result.ok())
+        self.assertEqual(result.remaining, b'')
+
+
 class TestIntegerDecoding(unittest.TestCase):
     """Tests decoding variable-length integers."""
 
