@@ -24,7 +24,15 @@ from datetime import datetime
 import math
 import re
 import struct
-from typing import Iterable, List, NamedTuple, Match, Optional, Sequence, Tuple
+from typing import (
+    Iterable,
+    List,
+    NamedTuple,
+    Match,
+    Optional,
+    Sequence,
+    Tuple,
+)
 
 
 def zigzag_decode(value: int) -> int:
@@ -64,7 +72,15 @@ class FormatSpec:
       - `0`: Left-pads the number with zeroes (0) instead of spaces when
              padding is specified (see width sub-specifier).
     - Width (Optional)
-      - TODO(gregpataky): Finish.
+      - (number): Minimum number of characters to be printed. If the value to
+                  be printed is shorter than this number, the result is padded
+                  with blank spaces or `0` if the `0` flag is present. The value
+                  is not truncated even if the result is larger. If the value is
+                  negative and the `0` flag is present, the `0`s are padded
+                  after the `-` symbol.
+      - `*`: The width is not specified in the format string, but as an
+             additional integer value argument preceding the argument that has
+             to be formatted.
     - Precision (Optional)
       - TODO(gregpataky): Finish.
     - Length (Optional)
@@ -146,6 +162,8 @@ class FormatSpec:
         - `NaN` or infinities always follow `F` formatting.
       - `c`: Used for formatting a `char` value.
       - `s`: Used for formatting a string of `char` values.
+        - If width is specified, the null terminator character is included as a
+          character for width count.
         - If precision is specified, no more `char`s than that value will be
           written from the string (padding is used to fill additional width).
       - `p`: Used for formatting a pointer address.
@@ -173,6 +191,8 @@ class FormatSpec:
     - Only `%%` is allowed with no other modifiers. Things like `%+%` will fail
       to decode. Some C stdlib implementations support any modifiers being
       present between `%`, but ignore any for the output.
+    - If a width is specified with the `0` flag for a negative value, the padded
+      `0`s will appear after the `-` symbol.
 
     Non-conformant details:
     - `n` specifier: We do not support the `n` specifier since it is impossible
@@ -249,8 +269,11 @@ class FormatSpec:
                 '+ and space are only available for d, i, o, u, x, X,'
                 'a, A, e, E, f, F, g, and G specifiers.'
             )
-        elif self.type == 'p' and self.length != '':
-            self.error = 'p does not support any length modifiers.'
+        elif self.type == 'p':
+            if self.length != '':
+                self.error = 'p does not support any length modifiers.'
+            elif self.precision != '':
+                self.error = 'p does not support precision modifiers.'
 
         # If we are going to add additional characters to the output, we add to
         # width_bias to ensure user-provided widths are reduced by that amount.
@@ -312,30 +335,76 @@ class FormatSpec:
                 self, None, b'', DecodedArg.DECODE_ERROR, self.error
             )
 
-        if self.type == '%':  # literal %
+        width = None
+        if self.width == '*':
+            width = FormatSpec.from_string('%d').decode(encoded_arg)
+            encoded_arg = encoded_arg[len(width.raw_data) :]
+
+        if self.type == '%':
             return DecodedArg(
                 self, (), b''
             )  # Use () as the value for % formatting.
 
-        if self.type == 's':  # string
-            return self._decode_string(encoded_arg)
+        if self.type == 's':
+            return self._merge_decoded_args(
+                width, self._decode_string(encoded_arg)
+            )
 
-        if self.type == 'c':  # character
-            return self._decode_char(encoded_arg)
+        if self.type == 'c':
+            return self._merge_decoded_args(
+                width, self._decode_char(encoded_arg)
+            )
 
         if self.type in self.SIGNED_INT:
-            return self._decode_signed_integer(encoded_arg)
+            return self._merge_decoded_args(
+                width, self._decode_signed_integer(encoded_arg)
+            )
 
         if self.type in self.UNSIGNED_INT:
-            return self._decode_unsigned_integer(encoded_arg)
+            return self._merge_decoded_args(
+                width, self._decode_unsigned_integer(encoded_arg)
+            )
 
         if self.type in self.FLOATING_POINT:
-            return self._decode_float(encoded_arg)
+            return self._merge_decoded_args(
+                width, self._decode_float(encoded_arg)
+            )
 
         # Should be unreachable.
         assert False, f'Unhandled format specifier: {self.type}'
 
-    def _decode_signed_integer(self, encoded: bytes) -> 'DecodedArg':
+    def text_float_safe_compatible(self) -> str:
+        return ''.join(
+            [
+                '%',
+                self.flags.replace('0', ' '),
+                self.width,
+                self.precision,
+                self._REMAP_TYPE.get(self.type, self.type),
+            ]
+        )
+
+    def _merge_decoded_args(
+        self, width: Optional['DecodedArg'], main: 'DecodedArg'
+    ) -> 'DecodedArg':
+        def merge_optional_str(*args: Optional[str]) -> Optional[str]:
+            return ' '.join(a for a in args if a) or None
+
+        if width is not None:
+            return DecodedArg(
+                main.specifier,
+                (width.value - self._width_bias, main.value),
+                width.raw_data + main.raw_data,
+                width.status | main.status,
+                merge_optional_str(width.error, main.error),
+            )
+
+        return main
+
+    def _decode_signed_integer(
+        self,
+        encoded: bytes,
+    ) -> 'DecodedArg':
         """Decodes a signed variable-length integer."""
         if not encoded:
             return DecodedArg.missing(self)
@@ -349,7 +418,11 @@ class FormatSpec:
             result |= (byte & 0x7F) << shift
 
             if not byte & 0x80:
-                return DecodedArg(self, zigzag_decode(result), encoded[:count])
+                return DecodedArg(
+                    self,
+                    zigzag_decode(result),
+                    encoded[:count],
+                )
 
             shift += 7
             if shift >= 64:
@@ -548,7 +621,7 @@ class DecodedArg:
 
         This potentially throws OverflowError, TypeError, or ValueError.
         """
-        return self.specifier.compatible.replace('0', ' ') % self.value
+        return self.specifier.text_float_safe_compatible() % self.value
 
     def _format_pointer(self) -> str:
         """Formats a pointer specifier.

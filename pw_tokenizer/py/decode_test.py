@@ -159,94 +159,22 @@ class TestPercentLiteralDecoding(unittest.TestCase):
         self.assertFalse(result.ok())
         self.assertEqual(result.remaining, b'')
 
+    def test_percent_with_width(self):
+        result = decode.FormatString('%9%').format(b'')
+        self.assertFalse(result.ok())
+
+    def test_percent_with_multidigit_width(self):
+        result = decode.FormatString('%10%').format(b'')
+        self.assertFalse(result.ok())
+
+    def test_percent_with_star_width(self):
+        result = decode.FormatString('%*%').format(b'')
+        self.assertFalse(result.ok())
+
 
 # pylint: disable=too-many-public-methods
 class TestIntegerDecoding(unittest.TestCase):
     """Tests decoding variable-length integers."""
-
-    def test_signed_integer_i(self) -> None:
-        result = decode.FormatString('%i').format(encode.encode_args(-10))
-        self.assertTrue(result.ok())
-        self.assertEqual(result.value, '-10')
-        self.assertEqual(result.remaining, b'')
-
-    def test_signed_integer_i_with_minus(self) -> None:
-        result = decode.FormatString('%-5i').format(encode.encode_args(10))
-        self.assertTrue(result.ok())
-        self.assertEqual(result.value, '10   ')
-        self.assertEqual(result.remaining, b'')
-
-    def test_signed_integer_i_with_plus(self) -> None:
-        result = decode.FormatString('%+i').format(encode.encode_args(10))
-        self.assertTrue(result.ok())
-        self.assertEqual(result.value, '+10')
-        self.assertEqual(result.remaining, b'')
-
-    def test_signed_integer_i_with_blank_space(self) -> None:
-        result = decode.FormatString('% i').format(encode.encode_args(10))
-        self.assertTrue(result.ok())
-        self.assertEqual(result.value, ' 10')
-        self.assertEqual(result.remaining, b'')
-
-    def test_signed_integer_i_with_plus_and_blank_space_ignores_blank_space(
-        self,
-    ) -> None:
-        result = decode.FormatString('%+ i').format(encode.encode_args(10))
-        self.assertTrue(result.ok())
-        self.assertEqual(result.value, '+10')
-        self.assertEqual(result.remaining, b'')
-
-        result = decode.FormatString('% +i').format(encode.encode_args(10))
-        self.assertTrue(result.ok())
-        self.assertEqual(result.value, '+10')
-        self.assertEqual(result.remaining, b'')
-
-    def test_signed_integer_i_with_hashtag(self) -> None:
-        result = decode.FormatString('%#i').format(encode.encode_args(10))
-        self.assertFalse(result.ok())
-
-    def test_signed_integer_i_with_zero(self) -> None:
-        result = decode.FormatString('%05i').format(encode.encode_args(10))
-        self.assertTrue(result.ok())
-        self.assertEqual(result.value, '00010')
-        self.assertEqual(result.remaining, b'')
-
-    def test_signed_integer_i_with_length(self) -> None:
-        """Tests that length modifiers do not affect signed integer decoding."""
-        result = decode.FormatString('%hhi').format(encode.encode_args(-10))
-        self.assertTrue(result.ok())
-        self.assertEqual(result.value, '-10')
-        self.assertEqual(result.remaining, b'')
-
-        result = decode.FormatString('%hi').format(encode.encode_args(-10))
-        self.assertTrue(result.ok())
-        self.assertEqual(result.value, '-10')
-        self.assertEqual(result.remaining, b'')
-
-        result = decode.FormatString('%li').format(encode.encode_args(-10))
-        self.assertTrue(result.ok())
-        self.assertEqual(result.value, '-10')
-        self.assertEqual(result.remaining, b'')
-
-        result = decode.FormatString('%lli').format(encode.encode_args(-10))
-        self.assertTrue(result.ok())
-        self.assertEqual(result.value, '-10')
-        self.assertEqual(result.remaining, b'')
-
-        result = decode.FormatString('%ji').format(encode.encode_args(-10))
-        self.assertTrue(result.ok())
-        self.assertEqual(result.value, '-10')
-        self.assertEqual(result.remaining, b'')
-
-        result = decode.FormatString('%zi').format(encode.encode_args(-10))
-        self.assertTrue(result.ok())
-        self.assertEqual(result.value, '-10')
-        self.assertEqual(result.remaining, b'')
-
-        result = decode.FormatString('%ti').format(encode.encode_args(-10))
-        self.assertTrue(result.ok())
-        self.assertEqual(result.value, '-10')
-        self.assertEqual(result.remaining, b'')
 
     def test_signed_integer_d(self) -> None:
         result = decode.FormatString('%d').format(encode.encode_args(-10))
@@ -332,6 +260,120 @@ class TestIntegerDecoding(unittest.TestCase):
         self.assertEqual(result.value, '-10')
         self.assertEqual(result.remaining, b'')
 
+    def test_signed_integer_d_with_width(self) -> None:
+        result = decode.FormatString('%5d').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '  -10')
+        self.assertEqual(result.remaining, b'')
+
+    def test_signed_integer_d_with_width_and_0_flag(self) -> None:
+        result = decode.FormatString('%05d').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '-0010')
+
+    def test_signed_integer_d_with_multidigit_width(self) -> None:
+        result = decode.FormatString('%10d').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '       -10')
+
+    def test_signed_integer_d_with_star_width(self) -> None:
+        result = decode.FormatString('%*d').format(encode.encode_args(10, -10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '       -10')
+
+    def test_signed_integer_d_with_missing_width_or_value(self) -> None:
+        result = decode.FormatString('%*d').format(encode.encode_args(-10))
+        self.assertFalse(result.ok())
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+    def test_signed_integer_i(self) -> None:
+        result = decode.FormatString('%i').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '-10')
+        self.assertEqual(result.remaining, b'')
+
+    def test_signed_integer_i_with_minus(self) -> None:
+        result = decode.FormatString('%-5i').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '10   ')
+        self.assertEqual(result.remaining, b'')
+
+    def test_signed_integer_i_with_plus(self) -> None:
+        result = decode.FormatString('%+i').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '+10')
+        self.assertEqual(result.remaining, b'')
+
+    def test_signed_integer_i_with_blank_space(self) -> None:
+        result = decode.FormatString('% i').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, ' 10')
+        self.assertEqual(result.remaining, b'')
+
+    def test_signed_integer_i_with_plus_and_blank_space_ignores_blank_space(
+        self,
+    ) -> None:
+        result = decode.FormatString('%+ i').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '+10')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('% +i').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '+10')
+        self.assertEqual(result.remaining, b'')
+
+    def test_signed_integer_i_with_hashtag(self) -> None:
+        result = decode.FormatString('%#i').format(encode.encode_args(10))
+        self.assertFalse(result.ok())
+        self.assertEqual(result.remaining, encode.encode_args(10))
+
+    def test_signed_integer_i_with_zero(self) -> None:
+        result = decode.FormatString('%05i').format(encode.encode_args(10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '00010')
+        self.assertEqual(result.remaining, b'')
+
+    def test_signed_integer_i_with_length(self) -> None:
+        """Tests that length modifiers do not affect signed integer decoding."""
+        result = decode.FormatString('%hhi').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '-10')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%hi').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '-10')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%li').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '-10')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%lli').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '-10')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%ji').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '-10')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%zi').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '-10')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%ti').format(encode.encode_args(-10))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '-10')
+        self.assertEqual(result.remaining, b'')
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
     def test_unsigned_integer(self) -> None:
         result = decode.FormatString('%u').format(encode.encode_args(10))
         self.assertTrue(result.ok())
@@ -383,6 +425,8 @@ class TestIntegerDecoding(unittest.TestCase):
         self.assertTrue(result.ok())
         self.assertEqual(result.value, '10')
         self.assertEqual(result.remaining, b'')
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
     def test_octal_integer(self) -> None:
         result = decode.FormatString('%o').format(encode.encode_args(10))
@@ -482,6 +526,8 @@ class TestIntegerDecoding(unittest.TestCase):
         self.assertEqual(result.value, '12')
         self.assertEqual(result.remaining, b'')
 
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
     def test_lowercase_hex_integer(self) -> None:
         result = decode.FormatString('%x').format(encode.encode_args(10))
         self.assertTrue(result.ok())
@@ -535,6 +581,8 @@ class TestIntegerDecoding(unittest.TestCase):
         self.assertTrue(result.ok())
         self.assertEqual(result.value, 'a')
         self.assertEqual(result.remaining, b'')
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
     def test_uppercase_hex_integer(self) -> None:
         result = decode.FormatString('%X').format(encode.encode_args(10))
@@ -590,6 +638,8 @@ class TestIntegerDecoding(unittest.TestCase):
         self.assertEqual(result.value, 'A')
         self.assertEqual(result.remaining, b'')
 
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
     def test_decode_generated_data(self) -> None:
         test_data = varint_test_data.TEST_DATA
         self.assertGreater(len(test_data), 100)
@@ -610,8 +660,9 @@ class TestIntegerDecoding(unittest.TestCase):
             )
 
 
+# pylint: disable=too-many-public-methods
 class TestFloatDecoding(unittest.TestCase):
-    """Tests decoding floating-point values."""
+    """Tests decoding floating-point values using f or F."""
 
     def test_lowercase_float(self) -> None:
         result = decode.FormatString('%f').format(encode.encode_args(2.2))
@@ -709,6 +760,21 @@ class TestFloatDecoding(unittest.TestCase):
         self.assertEqual(result.value, '2.200000')
         self.assertEqual(result.remaining, b'')
 
+    def test_lowercase_float_with_width(self) -> None:
+        result = decode.FormatString('%9f').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, ' 2.200000')
+
+    def test_lowercase_float_with_multidigit_width(self) -> None:
+        result = decode.FormatString('%10f').format(encode.encode_args(2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '  2.200000')
+
+    def test_lowercase_float_with_star_width(self) -> None:
+        result = decode.FormatString('%*f').format(encode.encode_args(10, 2.2))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '  2.200000')
+
     def test_lowercase_float_non_number(self) -> None:
         result = decode.FormatString('%f').format(encode.encode_args(math.inf))
         self.assertTrue(result.ok())
@@ -765,6 +831,27 @@ class TestFloatDecoding(unittest.TestCase):
         self.assertTrue(result.ok())
         self.assertEqual(result.value, '  inf')
         self.assertEqual(result.remaining, b'')
+
+    def test_lowercase_float_non_number_with_width(self) -> None:
+        result = decode.FormatString('%9f').format(encode.encode_args(math.inf))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '      inf')
+
+    def test_lowercase_float_non_number_with_multidigit_width(self) -> None:
+        result = decode.FormatString('%10f').format(
+            encode.encode_args(math.inf)
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '       inf')
+
+    def test_lowercase_float_non_number_with_star_width(self) -> None:
+        result = decode.FormatString('%*f').format(
+            encode.encode_args(10, math.inf)
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '       inf')
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
     def test_uppercase_float(self) -> None:
         result = decode.FormatString('%F').format(encode.encode_args(2.2))
@@ -870,6 +957,8 @@ class TestFloatDecoding(unittest.TestCase):
         self.assertEqual(result.value, '2.200000e+00')
         self.assertEqual(result.remaining, b'')
 
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
     def test_uppercase_exponential(self) -> None:
         result = decode.FormatString('%E').format(encode.encode_args(2.2))
         self.assertTrue(result.ok())
@@ -919,6 +1008,8 @@ class TestFloatDecoding(unittest.TestCase):
         self.assertTrue(result.ok())
         self.assertEqual(result.value, '2.200000E+00')
         self.assertEqual(result.remaining, b'')
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
     def test_lowercase_shortest_take_normal(self) -> None:
         result = decode.FormatString('%g').format(encode.encode_args(2.2))
@@ -973,6 +1064,8 @@ class TestFloatDecoding(unittest.TestCase):
         self.assertTrue(result.ok())
         self.assertEqual(result.value, '2.2')
         self.assertEqual(result.remaining, b'')
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
     def test_uppercase_shortest_take_normal(self) -> None:
         result = decode.FormatString('%G').format(encode.encode_args(2.2))
@@ -1108,6 +1201,27 @@ class TestCharDecoding(unittest.TestCase):
         self.assertEqual(result.value, 'c')
         self.assertEqual(result.remaining, b'')
 
+    def test_char_with_width(self) -> None:
+        result = decode.FormatString('%5c').format(encode.encode_args(ord('c')))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '    c')
+
+    def test_char_with_multidigit_width(self) -> None:
+        result = decode.FormatString('%10c').format(
+            encode.encode_args(ord('c'))
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '         c')
+
+    def test_char_with_star_width(self) -> None:
+        result = decode.FormatString('%*c').format(
+            encode.encode_args(10, ord('c'))
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '         c')
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
     def test_long_char(self) -> None:
         result = decode.FormatString('%lc').format(encode.encode_args(ord('c')))
         self.assertTrue(result.ok())
@@ -1200,6 +1314,32 @@ class TestStringDecoding(unittest.TestCase):
         self.assertEqual(result.value, 'hello')
         self.assertEqual(result.remaining, b'')
 
+    def test_string_with_width(self) -> None:
+        result = decode.FormatString('%6s').format(encode.encode_args('hello'))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, ' hello')
+
+    def test_string_with_width_does_not_pad_a_string_with_same_length(
+        self,
+    ) -> None:
+        result = decode.FormatString('%5s').format(encode.encode_args('hello'))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, 'hello')
+
+    def test_string_with_multidigit_width(self) -> None:
+        result = decode.FormatString('%10s').format(encode.encode_args('hello'))
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '     hello')
+
+    def test_string_with_star_width(self) -> None:
+        result = decode.FormatString('%*s').format(
+            encode.encode_args(10, 'hello')
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '     hello')
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
     def test_long_string(self) -> None:
         result = decode.FormatString('%ls').format(encode.encode_args('hello'))
         self.assertTrue(result.ok())
@@ -1226,14 +1366,6 @@ class TestPointerDecoding(unittest.TestCase):
         )
         self.assertTrue(result.ok())
         self.assertEqual(result.value, '0xDEADBEEF')
-        self.assertEqual(result.remaining, b'')
-
-    def test_pointer_0_padding(self) -> None:
-        result = decode.FormatString('%p').format(
-            encode.encode_args(0x00000000)
-        )
-        self.assertTrue(result.ok())
-        self.assertEqual(result.value, '0x00000000')
         self.assertEqual(result.remaining, b'')
 
     def test_pointer_with_minus(self) -> None:
@@ -1323,6 +1455,85 @@ class TestPointerDecoding(unittest.TestCase):
         )
         self.assertFalse(result.ok())
         self.assertEqual(result.remaining, encode.encode_args(0xDEADBEEF))
+
+    def test_pointer_with_width(self) -> None:
+        result = decode.FormatString('%9p').format(
+            encode.encode_args(0xDEADBEEF)
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '0xDEADBEEF')
+        self.assertEqual(result.remaining, b'')
+
+    def test_pointer_with_multidigit_width(self) -> None:
+        result = decode.FormatString('%11p').format(
+            encode.encode_args(0xDEADBEEF)
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, ' 0xDEADBEEF')
+        self.assertEqual(result.remaining, b'')
+
+    def test_pointer_with_star_width(self) -> None:
+        result = decode.FormatString('%*p').format(
+            encode.encode_args(10, 0xDEADBEEF)
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '0xDEADBEEF')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%*p').format(
+            encode.encode_args(15, 0xDEADBEEF)
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '     0xDEADBEEF')
+        self.assertEqual(result.remaining, b'')
+
+    def test_pointer_with_precision(self) -> None:
+        result = decode.FormatString('%.10p').format(
+            encode.encode_args(0xDEADBEEF)
+        )
+        self.assertFalse(result.ok())
+        self.assertEqual(result.remaining, encode.encode_args(0xDEADBEEF))
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+    def test_pointer_0_padding(self) -> None:
+        result = decode.FormatString('%p').format(
+            encode.encode_args(0x00000000)
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '0x00000000')
+        self.assertEqual(result.remaining, b'')
+
+    def test_pointer_0_with_width(self) -> None:
+        result = decode.FormatString('%9p').format(
+            encode.encode_args(0x00000000)
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '0x00000000')
+        self.assertEqual(result.remaining, b'')
+
+    def test_pointer_0_with_multidigit_width(self) -> None:
+        result = decode.FormatString('%11p').format(
+            encode.encode_args(0x00000000)
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, ' 0x00000000')
+        self.assertEqual(result.remaining, b'')
+
+    def test_pointer_0_with_star_width(self) -> None:
+        result = decode.FormatString('%*p').format(
+            encode.encode_args(10, 0x00000000)
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '0x00000000')
+        self.assertEqual(result.remaining, b'')
+
+        result = decode.FormatString('%*p').format(
+            encode.encode_args(15, 0x00000000)
+        )
+        self.assertTrue(result.ok())
+        self.assertEqual(result.value, '     0x00000000')
+        self.assertEqual(result.remaining, b'')
 
 
 class TestFormattedString(unittest.TestCase):
