@@ -50,6 +50,7 @@ void Framework::RegisterTest(TestInfo* new_test) const {
 }
 
 int Framework::RunAllTests() {
+  exit_status_ = 0;
   run_tests_summary_.passed_tests = 0;
   run_tests_summary_.failed_tests = 0;
   run_tests_summary_.skipped_tests = 0;
