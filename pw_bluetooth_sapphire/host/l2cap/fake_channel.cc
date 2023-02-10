@@ -80,6 +80,9 @@ void FakeChannel::Deactivate() {
 }
 
 void FakeChannel::SignalLinkError() {
+  if (link_error_) {
+    return;
+  }
   link_error_ = true;
 
   if (link_err_cb_) {

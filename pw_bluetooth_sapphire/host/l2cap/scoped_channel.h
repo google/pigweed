@@ -16,6 +16,7 @@ class ScopedChannel final {
  public:
   explicit ScopedChannel(Channel::WeakPtr channel);
   ScopedChannel() = default;
+  ScopedChannel(ScopedChannel&& other);
   ~ScopedChannel();
 
   // Returns true if there is an open underlying channel.

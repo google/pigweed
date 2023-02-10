@@ -8,6 +8,8 @@ namespace bt::l2cap {
 
 ScopedChannel::ScopedChannel(Channel::WeakPtr chan) : chan_(std::move(chan)) {}
 
+ScopedChannel::ScopedChannel(ScopedChannel&& other) : chan_(std::move(other.chan_)) {}
+
 ScopedChannel::~ScopedChannel() { Close(); }
 
 void ScopedChannel::Reset(Channel::WeakPtr new_channel) {

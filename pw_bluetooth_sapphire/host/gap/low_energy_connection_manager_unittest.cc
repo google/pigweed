@@ -1497,8 +1497,42 @@ TEST_F(LowEnergyConnectionManagerTest, L2CAPSignalLinkError) {
   auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
   ASSERT_TRUE(peer);
 
+  l2cap::testing::FakeChannel::WeakPtr smp_chan;
+  auto l2cap_chan_cb = [&smp_chan](auto chan) { smp_chan = chan; };
+  fake_l2cap()->set_channel_callback(l2cap_chan_cb);
+
+  std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
+  auto conn_cb = [&conn_handle](auto result) {
+    ASSERT_EQ(fit::ok(), result);
+    conn_handle = std::move(result).value();
+  };
+  conn_mgr()->Connect(peer->identifier(), conn_cb, kConnectionOptions);
+
+  RunLoopUntilIdle();
+  ASSERT_TRUE(conn_handle);
+  ASSERT_TRUE(smp_chan.is_alive());
+  ASSERT_EQ(1u, connected_peers().size());
+
+  // Signaling a link error through the channel should disconnect the link.
+  smp_chan->SignalLinkError();
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(connected_peers().empty());
+}
+
+TEST_F(LowEnergyConnectionManagerTest, AttBearerSignalsLinkError) {
+  // Set up a fake peer and a connection over which to process the L2CAP
+  // request.
+  test_device()->AddPeer(std::make_unique<FakePeer>(kAddress0));
+  auto* peer = peer_cache()->NewPeer(kAddress0, /*connectable=*/true);
+  ASSERT_TRUE(peer);
+
   l2cap::testing::FakeChannel::WeakPtr att_chan;
-  auto l2cap_chan_cb = [&att_chan](auto chan) { att_chan = chan; };
+  auto l2cap_chan_cb = [&att_chan](l2cap::testing::FakeChannel::WeakPtr chan) {
+    if (chan->id() == l2cap::kATTChannelId) {
+      att_chan = std::move(chan);
+    }
+  };
   fake_l2cap()->set_channel_callback(l2cap_chan_cb);
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
@@ -1513,10 +1547,13 @@ TEST_F(LowEnergyConnectionManagerTest, L2CAPSignalLinkError) {
   ASSERT_TRUE(att_chan.is_alive());
   ASSERT_EQ(1u, connected_peers().size());
 
-  // Signaling a link error through the channel should disconnect the link.
-  att_chan->SignalLinkError();
+  // Receiving an invalid SDU should cause att::Bearer to signal a link error.
+  DynamicByteBuffer too_large_att_sdu(att::kLEMaxMTU + 1);
+  too_large_att_sdu.Fill(0x00);
+  att_chan->Receive(too_large_att_sdu);
 
   RunLoopUntilIdle();
+  ASSERT_FALSE(att_chan.is_alive());
   EXPECT_TRUE(connected_peers().empty());
 }
 

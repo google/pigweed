@@ -307,23 +307,24 @@ void Bearer::ShutDownInternal(bool due_to_timeout) {
 
   bt_log(DEBUG, "att", "bearer shutting down");
 
-  // This will have no effect if the channel is already closed (e.g. if
-  // ShutDown() was called by OnChannelClosed()).
-  chan_->SignalLinkError();
-  chan_ = nullptr;
-
-  // Move the contents to temporaries. This prevents a potential memory
-  // corruption in InvokeErrorAll if the Bearer gets deleted by one of the
-  // invoked error callbacks.
+  // Move the contents to temporaries. This prevents a potential memory corruption in InvokeErrorAll
+  // if the Bearer gets deleted by one of the invoked error callbacks.
   TransactionQueue req_queue(std::move(request_queue_));
   TransactionQueue ind_queue(std::move(indication_queue_));
 
-  if (closed_cb_) {
-    closed_cb_();
+  fit::closure closed_cb = std::move(closed_cb_);
+
+  l2cap::ScopedChannel chan = std::move(chan_);
+  // SignalLinkError may delete the Bearer! Nothing below this line should access |this|.
+  chan->SignalLinkError();
+  chan = nullptr;
+
+  if (closed_cb) {
+    closed_cb();
   }
 
-  // Terminate all remaining procedures with an error. This is safe even if
-  // the bearer got deleted by |closed_cb_|.
+  // Terminate all remaining procedures with an error. This is safe even if the bearer got deleted
+  // by |closed_cb_|.
   Error error(due_to_timeout ? HostError::kTimedOut : HostError::kFailed);
   req_queue.InvokeErrorAll(error);
   ind_queue.InvokeErrorAll(error);

@@ -110,6 +110,7 @@ class FakeL2cap final : public ChannelManager {
     hci_spec::ConnectionHandle handle;
     pw::bluetooth::emboss::ConnectionRole role;
     bt::LinkType type;
+    bool link_error_signaled = false;
 
     async_dispatcher_t* dispatcher;
 

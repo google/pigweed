@@ -81,6 +81,18 @@ bool FakeL2cap::TriggerInboundL2capChannel(hci_spec::ConnectionHandle handle, l2
 
 void FakeL2cap::TriggerLinkError(hci_spec::ConnectionHandle handle) {
   LinkData& link_data = ConnectedLinkData(handle);
+
+  // Safely handle re-entrancy.
+  if (link_data.link_error_signaled) {
+    return;
+  }
+  link_data.link_error_signaled = true;
+
+  for (auto chan_iter = link_data.channels_.begin(); chan_iter != link_data.channels_.end();) {
+    auto& [id, channel] = *chan_iter++;
+    channel->Close();
+    link_data.channels_.erase(id);
+  }
   link_data.link_error_cb();
 }
 
@@ -200,7 +212,7 @@ FakeChannel::WeakPtr FakeL2cap::OpenFakeChannel(LinkData* link, l2cap::ChannelId
   if (!simulate_open_channel_failure_) {
     auto channel = std::make_unique<FakeChannel>(id, remote_id, link->handle, link->type, info);
     chan = channel->AsWeakPtr();
-    channel->SetLinkErrorCallback(link->link_error_cb.share());
+    channel->SetLinkErrorCallback([this, handle = link->handle] { TriggerLinkError(handle); });
     link->channels_.emplace(id, std::move(channel));
   }
 
