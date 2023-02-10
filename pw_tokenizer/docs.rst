@@ -749,7 +749,20 @@ compared with the CSV database's 211 B.
 
 Directory database format
 -------------------------
-The directory format is a collection of CSV format databases in a directory.
+pw_tokenizer can consume directories of CSV databases. A directory database
+will be searched recursively for files with a `.pw_tokenizer.csv` suffix, all
+of which will be used for subsequent detokenization lookups.
+
+An example directory database might look something like this:
+
+.. code-block:: text
+
+   token_database
+   ├── chuck_e_cheese.pw_tokenizer.csv
+   ├── fungi_ble.pw_tokenizer.csv
+   └── some_more
+       └── arcade.pw_tokenizer.csv
+
 This format is optimized for storage in a Git repository alongside source code.
 The token database commands randomly generate unique file names for the CSVs in
 the database to prevent merge conflicts. Running ``mark_removed`` or ``purge``
