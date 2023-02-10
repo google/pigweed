@@ -28,8 +28,8 @@ if [ ! -z "${1-}" ]; then
 fi
 
 CONSTRAINTS_ARG=""
-if [ -f ${CONSTRAINTS_PATH} ]; then
-    CONSTRAINTS_ARG="-c ${CONSTRAINTS_PATH}"
+if [ -f "${CONSTRAINTS_PATH}" ]; then
+    CONSTRAINTS_ARG="-c""${CONSTRAINTS_PATH}"
 fi
 
 PY_MAJOR_VERSION=$(${PY_TO_TEST} -c "import sys; print(sys.version_info[0])")
@@ -43,23 +43,26 @@ fi
 
 if [ ! -d "${VENV}" ]
 then
-    ${PY_TO_TEST} -m venv ${VENV}
+    ${PY_TO_TEST} -m venv "${VENV}"
 fi
 
-${VENV}/bin/python -m pip install --upgrade pip
+"${VENV}/bin/python" -m pip install --upgrade pip
 
 # Uninstall wheels first, in case installing over an existing venv. This is a
 # faster and less destructive approach than --force-reinstall to ensure wheels
 # whose version numbers haven't incremented still get reinstalled.
-for wheel in $(ls ${DIR}/python_wheels/*.whl)
+IFS_BACKUP="$IFS"
+IFS=$'\n'
+for wheel in $(ls "${DIR}/python_wheels/"*.whl)
 do
-    ${VENV}/bin/python -m pip uninstall --yes $wheel
+    "${VENV}/bin/python" -m pip uninstall --yes "$wheel"
 done
 
-for wheel in $(ls ${DIR}/python_wheels/*.whl)
+for wheel in $(ls "${DIR}/python_wheels/"*.whl)
 do
-    ${VENV}/bin/python -m pip install \
-    --upgrade --find-links=${DIR}/python_wheels ${CONSTRAINTS_ARG} $wheel
+    "${VENV}/bin/python" -m pip install \
+    --upgrade --find-links="${DIR}/python_wheels" ${CONSTRAINTS_ARG} "$wheel"
 done
+IFS="$IFS_BACKUP"
 
 exit 0
