@@ -777,8 +777,10 @@ def run_recipe(
     return result
 
 
-def run_builds(project_builder: ProjectBuilder, workers: int = 1) -> None:
-    """Execute build steps in the ProjectBuilder and print a summary."""
+def run_builds(project_builder: ProjectBuilder, workers: int = 1) -> int:
+    """Execute build steps in the ProjectBuilder and print a summary.
+
+    Returns: 1 for a failed build, 0 for success."""
     num_builds = len(project_builder)
     _LOG.info('Starting build with %d directories', num_builds)
     if project_builder.default_logfile:
@@ -850,8 +852,10 @@ def run_builds(project_builder: ProjectBuilder, workers: int = 1) -> None:
             finally:
                 _cleanup()
 
+    return BUILDER_CONTEXT.exit_code()
 
-def main() -> None:
+
+def main() -> int:
     """Build a Pigweed Project."""
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -906,8 +910,8 @@ def main() -> None:
         else:
             workers = args.parallel_workers
 
-    run_builds(project_builder, workers)
+    return run_builds(project_builder, workers)
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

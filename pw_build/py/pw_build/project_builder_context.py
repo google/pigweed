@@ -226,6 +226,13 @@ class ProjectBuilderContext:  # pylint: disable=too-many-instance-attributes
 
         return style
 
+    def exit_code(self) -> int:
+        """Returns a 0 for success, 1 for fail."""
+        for cfg in self.recipes:
+            if cfg.status.failed():
+                return 1
+        return 0
+
     def get_title_bar_text(
         self, include_separators: bool = True
     ) -> StyleAndTextTuples:
