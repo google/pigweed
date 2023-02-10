@@ -143,14 +143,6 @@ def pw_plugins(ctx: DoctorContext):
 
 def unames_are_equivalent(uname_actual: str, uname_expected: str) -> bool:
     """Determine if uname values are equivalent for this tool's purposes."""
-
-    # Support `mac-arm64` through Rosetta until `mac-arm64` binaries are ready
-    # Expected and actual unames will not literally match on M1 Macs because
-    # they pretend to be Intel Macs for the purpose of environment setup. But
-    # that's intentional and doesn't require any user action.
-    if "Darwin" in uname_expected and "arm64" in uname_expected:
-        uname_expected = uname_expected.replace("arm64", "x86_64")
-
     return uname_actual == uname_expected
 
 
