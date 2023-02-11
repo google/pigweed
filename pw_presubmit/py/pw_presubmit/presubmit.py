@@ -55,7 +55,7 @@ import shutil
 import signal
 import subprocess
 import sys
-import tempfile
+import tempfile as tf
 import time
 import types
 from typing import (
@@ -255,6 +255,89 @@ def get_buildbucket_info(bbid) -> Dict[str, Any]:
     return json.loads(output)
 
 
+def download_cas_artifact(
+    ctx: PresubmitContext, digest: str, output_dir: str
+) -> None:
+    """Downloads the given digest to the given outputdirectory
+
+    Args:
+        ctx: the presubmit context
+        digest:
+        a string digest in the form "<digest hash>/<size bytes>"
+        i.e 693a04e41374150d9d4b645fccb49d6f96e10b527c7a24b1e17b331f508aa73b/86
+        output_dir: the directory we want to download the artifacts to
+    """
+    if ctx.luci is None:
+        raise PresubmitFailure('Lucicontext is None')
+    cmd = [
+        'cas',
+        'download',
+        '-cas-instance',
+        ctx.luci.cas_instance,
+        '-digest',
+        digest,
+        '-dir',
+        output_dir,
+    ]
+    try:
+        subprocess.check_call(cmd)
+    except subprocess.CalledProcessError as failure:
+        raise PresubmitFailure('cas download failed') from failure
+
+
+def archive_cas_artifact(
+    ctx: PresubmitContext, root: str, upload_paths: List[str]
+) -> str:
+    """Uploads the given artifacts into cas
+
+    Args:
+        ctx: the presubmit context
+        root: root directory of archived tree, should be absolutepath.
+        paths: path to archived files/dirs, should be absolute path.
+            If empty, [root] will be used.
+
+    Returns:
+        A string digest in the form "<digest hash>/<size bytes>"
+        i.e 693a04e41374150d9d4b645fccb49d6f96e10b527c7a24b1e17b331f508aa73b/86
+    """
+    if ctx.luci is None:
+        raise PresubmitFailure('Lucicontext is None')
+    assert os.path.abspath(root)
+    if not upload_paths:
+        upload_paths = [root]
+    for path in upload_paths:
+        assert os.path.abspath(path)
+
+    with tf.NamedTemporaryFile() as digest, tf.NamedTemporaryFile() as paths:
+        json_paths = json.dumps(
+            [
+                [str(root), str(os.path.relpath(path, root))]
+                for path in upload_paths
+            ]
+        )
+        with open(paths, "w") as outfile:
+            outfile.write(json_paths)
+
+        cmd = [
+            'cas',
+            'archive',
+            '-cas-instance',
+            ctx.luci.cas_instance,
+            '-paths-json',
+            paths.name,
+            '-dump-digest',
+            digest.name,
+        ]
+        try:
+            subprocess.check_call(cmd)
+        except subprocess.CalledProcessError as failure:
+            raise PresubmitFailure('cas archive failed') from failure
+        uploaded_digest = ''
+        with open(digest, "r") as cas_digest_file:
+            uploaded_digest = cas_digest_file.read()
+        return uploaded_digest
+
+
 @dataclasses.dataclass
 class LuciTrigger:
     """Details the pending change or submitted commit triggering the build."""
@@ -317,7 +400,7 @@ class LuciTrigger:
             'gerrit_name': 'pigweed',
             'submitted': True,
         }
-        with tempfile.TemporaryDirectory() as tempdir:
+        with tf.TemporaryDirectory() as tempdir:
             changes_json = Path(tempdir) / 'changes.json'
             with changes_json.open('w') as outs:
                 json.dump([change], outs)
