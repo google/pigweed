@@ -30,7 +30,7 @@ One-time contributor setup
    Account email or an Alternate email for the Google account used to sign
    the CLA (Manage Google account → Personal Info → email).
 #. Obtain a login cookie from Gerrit's
-   `new-password <https://pigweed-review.googlesource.com/new-password>`_ page
+   `new-password <https://pigweed.googlesource.com/new-password>`_ page
 #. Install the Gerrit commit hook to automatically add a ``Change-Id: ...``
    line to your commit.
 #. Install the Pigweed presubmit check hook with ``pw presubmit --install``.
