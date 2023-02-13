@@ -53,13 +53,10 @@ source_set("sources") {
     "fidl",
     "//sdk/banjo/fuchsia.hardware.bt.vendor:fuchsia.hardware.bt.vendor_banjo_cpp",
     "//sdk/fidl/fuchsia.hardware.bluetooth:fuchsia.hardware.bluetooth_cpp_wire",
+    "//sdk/lib/fit",
     "//src/connectivity/bluetooth/fidl:host_hlcpp",
     "//src/connectivity/bluetooth/lib/fidl",
     "//src/lib/ddk",
-
-    # TODO(fxb/38132): Migrate to the new bind rules and delete the below
-    "//sdk/lib/fit",
-    "//src/lib/ddk:ddk-deprecated-binding-headers",
     "//zircon/system/ulib/fbl",
     "//zircon/system/ulib/trace",
     "//zircon/system/ulib/zx",
