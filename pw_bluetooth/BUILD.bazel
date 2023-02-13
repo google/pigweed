@@ -99,3 +99,12 @@ pw_cc_test(
         ":pw_bluetooth",
     ],
 )
+
+# Bazel support for Emboss has not been configured yet, but we need to satisfy
+# presubmit.
+filegroup(
+    name = "emboss_files",
+    srcs = [
+        "emboss_test.cc",
+    ],
+)

@@ -94,6 +94,7 @@ pw_test_group("tests") {
     ":api_test",
     ":result_test",
     ":uuid_test",
+    ":emboss_test",
   ]
 }
 
@@ -115,4 +116,14 @@ pw_test("result_test") {
 pw_test("uuid_test") {
   sources = [ "uuid_test.cc" ]
   deps = [ ":pw_bluetooth" ]
+}
+
+pw_test("emboss_test") {
+  enable_if = dir_pw_third_party_emboss != ""
+  configs = [ "$dir_pigweed/third_party/emboss:flags" ]
+  sources = [ "emboss_test.cc" ]
+  deps = [
+    ":emboss_hci",
+    ":emboss_vendor",
+  ]
 }

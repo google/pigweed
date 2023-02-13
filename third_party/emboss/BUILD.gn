@@ -49,3 +49,10 @@ action("embossc_runner") {
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }
+
+# Flags that are needed to compile targets that depend on Emboss.
+# TODO(benlawson): Fix Emboss upstream so this can be removed
+# (https://github.com/google/emboss/issues/69)
+config("flags") {
+  cflags = [ "-Wno-unused-parameter" ]
+}
