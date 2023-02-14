@@ -1242,11 +1242,11 @@ void FakeController::OnReadBRADDR() {
 }
 
 void FakeController::OnLESetAdvertisingEnable(
-    const hci_spec::LESetAdvertisingEnableCommandParams& params) {
+    const pw::bluetooth::emboss::LESetAdvertisingEnableCommandView& params) {
   // TODO(fxbug.dev/81444): if own address type is random, check that a random address is set
 
   legacy_advertising_state_.enabled =
-      params.advertising_enable == pw::bluetooth::emboss::GenericEnableParam::ENABLE;
+      params.advertising_enable().Read() == pw::bluetooth::emboss::GenericEnableParam::ENABLE;
   RespondWithCommandComplete(hci_spec::kLESetAdvertisingEnable,
                              pw::bluetooth::emboss::StatusCode::SUCCESS);
   NotifyAdvertisingState();
@@ -2052,13 +2052,15 @@ void FakeController::OnLESetExtendedScanResponseData(
   NotifyAdvertisingState();
 }
 void FakeController::OnLESetExtendedAdvertisingEnable(
-    const hci_spec::LESetExtendedAdvertisingEnableCommandParams& params) {
+    const pw::bluetooth::emboss::LESetExtendedAdvertisingEnableCommandView& params) {
+  uint8_t num_sets = params.num_sets().Read();
+
   // do some preliminary checks before making any state changes
-  if (params.number_of_sets != 0) {
+  if (num_sets != 0) {
     std::unordered_set<hci_spec::AdvertisingHandle> handles;
 
-    for (uint8_t i = 0; i < params.number_of_sets; i++) {
-      hci_spec::AdvertisingHandle handle = params.data[i].adv_handle;
+    for (uint8_t i = 0; i < num_sets; i++) {
+      hci_spec::AdvertisingHandle handle = params.data()[i].advertising_handle().Read();
 
       if (!IsValidAdvertisingHandle(handle)) {
         bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
@@ -2089,15 +2091,15 @@ void FakeController::OnLESetExtendedAdvertisingEnable(
     }
   }
 
-  if (params.enable == pw::bluetooth::emboss::GenericEnableParam::DISABLE) {
-    if (params.number_of_sets == 0) {
-      // if params.enable == kDisable and params.number_of_sets == 0, spec asks we disable all
+  if (params.enable().Read() == pw::bluetooth::emboss::GenericEnableParam::DISABLE) {
+    if (num_sets == 0) {
+      // if params.enable == kDisable and params.num_sets == 0, spec asks we disable all
       for (auto& element : extended_advertising_states_) {
         element.second.enabled = false;
       }
     } else {
-      for (int i = 0; i < params.number_of_sets; i++) {
-        hci_spec::AdvertisingHandle handle = params.data[i].adv_handle;
+      for (int i = 0; i < num_sets; i++) {
+        hci_spec::AdvertisingHandle handle = params.data()[i].advertising_handle().Read();
         extended_advertising_states_[handle].enabled = false;
       }
     }
@@ -2109,23 +2111,23 @@ void FakeController::OnLESetExtendedAdvertisingEnable(
   }
 
   // rest of the function deals with enabling advertising for a given set of advertising sets
-  BT_ASSERT(params.enable == pw::bluetooth::emboss::GenericEnableParam::ENABLE);
+  BT_ASSERT(params.enable().Read() == pw::bluetooth::emboss::GenericEnableParam::ENABLE);
 
-  if (params.number_of_sets == 0) {
+  if (num_sets == 0) {
     bt_log(INFO, "fake-hci", "cannot enable with an empty advertising set list");
     RespondWithCommandComplete(hci_spec::kLESetExtendedAdvertisingEnable,
                                pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
   }
 
-  for (uint8_t i = 0; i < params.number_of_sets; i++) {
+  for (uint8_t i = 0; i < num_sets; i++) {
     // FakeController currently doesn't support testing with duration and max events. When those are
     // used in the host, these checks will fail and remind us to add the necessary code to
     // FakeController.
-    BT_ASSERT(params.data[i].duration == 0);
-    BT_ASSERT(params.data[i].max_extended_adv_events == 0);
+    BT_ASSERT(params.data()[i].duration().Read() == 0);
+    BT_ASSERT(params.data()[i].max_extended_advertising_events().Read() == 0);
 
-    hci_spec::AdvertisingHandle handle = params.data[i].adv_handle;
+    hci_spec::AdvertisingHandle handle = params.data()[i].advertising_handle().Read();
     LEAdvertisingState& state = extended_advertising_states_[handle];
 
     if (state.IsDirectedAdvertising() && state.data_length == 0) {
@@ -2825,11 +2827,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnLESetScanResponseData(params);
       break;
     }
-    case hci_spec::kLESetAdvertisingEnable: {
-      const auto& params = command_packet.payload<hci_spec::LESetAdvertisingEnableCommandParams>();
-      OnLESetAdvertisingEnable(params);
-      break;
-    }
     case hci_spec::kLESetAdvertisingSetRandomAddress: {
       const auto& params =
           command_packet.payload<hci_spec::LESetAdvertisingSetRandomAddressCommandParams>();
@@ -2852,12 +2849,6 @@ void FakeController::HandleReceivedCommandPacket(
       const auto& params =
           command_packet.payload<hci_spec::LESetExtendedScanResponseDataCommandParams>();
       OnLESetExtendedScanResponseData(params);
-      break;
-    }
-    case hci_spec::kLESetExtendedAdvertisingEnable: {
-      const auto& params =
-          command_packet.payload<hci_spec::LESetExtendedAdvertisingEnableCommandParams>();
-      OnLESetExtendedAdvertisingEnable(params);
       break;
     }
     case hci_spec::kLERemoveAdvertisingSet: {
@@ -3015,6 +3006,8 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kCreateConnection:
     case hci_spec::kDisconnect:
     case hci_spec::kLinkKeyRequestNegativeReply:
+    case hci_spec::kLESetAdvertisingEnable:
+    case hci_spec::kLESetExtendedAdvertisingEnable:
     case hci_spec::kAuthenticationRequested:
     case hci_spec::kSetConnectionEncryption:
     case hci_spec::kRemoteNameRequest:
@@ -3099,6 +3092,18 @@ void FakeController::HandleReceivedCommandPacket(const hci::EmbossCommandPacket&
     case hci_spec::kDisconnect: {
       const auto params = command_packet.view<pw::bluetooth::emboss::DisconnectCommandView>();
       OnDisconnectCommandReceived(params);
+      break;
+    }
+    case hci_spec::kLESetAdvertisingEnable: {
+      const auto params =
+          command_packet.view<pw::bluetooth::emboss::LESetAdvertisingEnableCommandView>();
+      OnLESetAdvertisingEnable(params);
+      break;
+    }
+    case hci_spec::kLESetExtendedAdvertisingEnable: {
+      const auto params =
+          command_packet.view<pw::bluetooth::emboss::LESetExtendedAdvertisingEnableCommandView>();
+      OnLESetExtendedAdvertisingEnable(params);
       break;
     }
     case hci_spec::kLinkKeyRequestNegativeReply: {

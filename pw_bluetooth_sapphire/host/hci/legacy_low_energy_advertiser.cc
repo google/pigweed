@@ -26,13 +26,13 @@ LegacyLowEnergyAdvertiser::~LegacyLowEnergyAdvertiser() {
   StopAdvertising();
 }
 
-std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildEnablePacket(
+std::optional<EmbossCommandPacket> LegacyLowEnergyAdvertiser::BuildEnablePacket(
     const DeviceAddress& address, pw::bluetooth::emboss::GenericEnableParam enable) {
-  constexpr size_t kPayloadSize = sizeof(hci_spec::LESetAdvertisingEnableCommandParams);
-  std::unique_ptr<CommandPacket> packet =
-      CommandPacket::New(hci_spec::kLESetAdvertisingEnable, kPayloadSize);
-  packet->mutable_payload<hci_spec::LESetAdvertisingEnableCommandParams>()->advertising_enable =
-      enable;
+  auto packet =
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::LESetAdvertisingEnableCommandWriter>(
+          hci_spec::kLESetAdvertisingEnable);
+  auto packet_view = packet.view_t();
+  packet_view.advertising_enable().Write(enable);
   return packet;
 }
 
@@ -104,12 +104,13 @@ std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildUnsetScanResponse
   return packet;
 }
 
-std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
+std::optional<EmbossCommandPacket> LegacyLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
     const DeviceAddress& address) {
-  constexpr size_t kPayloadSize = sizeof(hci_spec::LESetAdvertisingEnableCommandParams);
-  auto packet = CommandPacket::New(hci_spec::kLESetAdvertisingEnable, kPayloadSize);
-  auto params = packet->mutable_payload<hci_spec::LESetAdvertisingEnableCommandParams>();
-  params->advertising_enable = pw::bluetooth::emboss::GenericEnableParam::DISABLE;
+  auto packet =
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::LESetAdvertisingEnableCommandWriter>(
+          hci_spec::kLESetAdvertisingEnable);
+  auto packet_view = packet.view_t();
+  packet_view.advertising_enable().Write(pw::bluetooth::emboss::GenericEnableParam::DISABLE);
   return packet;
 }
 

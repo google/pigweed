@@ -34,34 +34,27 @@ ExtendedLowEnergyAdvertiser::~ExtendedLowEnergyAdvertiser() {
   StopAdvertising();
 }
 
-std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildEnablePacket(
+std::optional<EmbossCommandPacket> ExtendedLowEnergyAdvertiser::BuildEnablePacket(
     const DeviceAddress& address, pw::bluetooth::emboss::GenericEnableParam enable) {
   // We only enable or disable a single address at a time. The multiply by 1 is set explicitly to
   // show that data[] within LESetExtendedAdvertisingEnableData is of size 1.
-  constexpr size_t kPayloadSize = sizeof(hci_spec::LESetExtendedAdvertisingEnableCommandParams) +
-                                  1 * sizeof(hci_spec::LESetExtendedAdvertisingEnableData);
-  std::unique_ptr<CommandPacket> packet =
-      CommandPacket::New(hci_spec::kLESetExtendedAdvertisingEnable, kPayloadSize);
-  packet->mutable_view()->mutable_payload_data().SetToZeros();
-
-  auto payload = packet->mutable_payload<hci_spec::LESetExtendedAdvertisingEnableCommandParams>();
-  payload->enable = enable;
-  payload->number_of_sets = 1;
+  constexpr size_t kPacketSize =
+      pw::bluetooth::emboss::LESetExtendedAdvertisingEnableCommand::MinSizeInBytes() +
+      (1 * pw::bluetooth::emboss::LESetExtendedAdvertisingEnableData::IntrinsicSizeInBytes());
+  auto packet = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::LESetExtendedAdvertisingEnableCommandWriter>(
+      hci_spec::kLESetExtendedAdvertisingEnable, kPacketSize);
+  auto packet_view = packet.view_t();
+  packet_view.enable().Write(enable);
+  packet_view.num_sets().Write(1);
 
   std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.GetHandle(address);
   BT_ASSERT(handle);
 
-  // TODO(fxbug.dev/77614): advertising currently continues until disabled. We should provide
-  // options to the user to advertise only a set amount of times. Duration can already be controlled
-  // via the client closing the FIDL protocol after a set amount of time. We don't want to
-  // support a second way to enable duration.
-  hci_spec::LESetExtendedAdvertisingEnableData enable_data;
-  enable_data.adv_handle = handle.value();
-  enable_data.max_extended_adv_events = hci_spec::kNoMaxExtendedAdvertisingEvents;
-  enable_data.duration = hci_spec::kNoAdvertisingDuration;
-
-  auto buffer = packet->mutable_view()->mutable_payload_data().mutable_view();
-  buffer.WriteObj(enable_data, sizeof(hci_spec::LESetExtendedAdvertisingEnableCommandParams));
+  packet_view.data()[0].advertising_handle().Write(handle.value());
+  packet_view.data()[0].duration().Write(hci_spec::kNoAdvertisingDuration);
+  packet_view.data()[0].max_extended_advertising_events().Write(
+      hci_spec::kNoMaxExtendedAdvertisingEvents);
 
   return packet;
 }
@@ -234,15 +227,15 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildUnsetScanRespon
   return packet;
 }
 
-std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
+std::optional<EmbossCommandPacket> ExtendedLowEnergyAdvertiser::BuildRemoveAdvertisingSet(
     const DeviceAddress& address) {
-  auto packet = CommandPacket::New(hci_spec::kLERemoveAdvertisingSet,
-                                   sizeof(hci_spec::LERemoveAdvertisingSetCommandParams));
-  auto payload = packet->mutable_payload<hci_spec::LERemoveAdvertisingSetCommandParams>();
-
   std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.GetHandle(address);
   BT_ASSERT(handle);
-  payload->adv_handle = handle.value();
+  auto packet =
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::LERemoveAdvertisingSetCommandWriter>(
+          hci_spec::kLERemoveAdvertisingSet);
+  auto packet_view = packet.view_t();
+  packet_view.advertising_handle().Write(handle.value());
 
   return packet;
 }

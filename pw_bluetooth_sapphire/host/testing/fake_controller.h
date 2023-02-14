@@ -575,7 +575,8 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   void OnReadBRADDR();
 
   // Called when a HCI_LE_Set_Advertising_Enable command is received.
-  void OnLESetAdvertisingEnable(const hci_spec::LESetAdvertisingEnableCommandParams& params);
+  void OnLESetAdvertisingEnable(
+      const pw::bluetooth::emboss::LESetAdvertisingEnableCommandView& params);
 
   // Called when a HCI_LE_Set_Scan_Response_Data command is received.
   void OnLESetScanResponseData(const hci_spec::LESetScanResponseDataCommandParams& params);
@@ -608,7 +609,7 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
 
   // Called when a HCI_LE_Set_Extended_Advertising_Enable command is received.
   void OnLESetExtendedAdvertisingEnable(
-      const hci_spec::LESetExtendedAdvertisingEnableCommandParams& params);
+      const pw::bluetooth::emboss::LESetExtendedAdvertisingEnableCommandView& params);
 
   // Called when a HCI_LE_Read_Maximum_Advertising_Data_Length command is received.
   void OnLEReadMaximumAdvertisingDataLength();

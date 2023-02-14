@@ -114,9 +114,9 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
   void ErrorOnNext(hci::Result<> error_status) { pending_error_ = error_status; }
 
  private:
-  std::unique_ptr<hci::CommandPacket> BuildEnablePacket(
+  std::optional<hci::EmbossCommandPacket> BuildEnablePacket(
       const DeviceAddress& address, pw::bluetooth::emboss::GenericEnableParam enable) override {
-    return nullptr;
+    return std::nullopt;
   }
 
   std::unique_ptr<hci::CommandPacket> BuildSetAdvertisingParams(
@@ -147,9 +147,9 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
     return nullptr;
   }
 
-  std::unique_ptr<hci::CommandPacket> BuildRemoveAdvertisingSet(
+  std::optional<hci::EmbossCommandPacket> BuildRemoveAdvertisingSet(
       const DeviceAddress& address) override {
-    return nullptr;
+    return std::nullopt;
   }
 
   size_t max_ad_size_;

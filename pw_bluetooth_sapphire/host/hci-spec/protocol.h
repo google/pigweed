@@ -2017,10 +2017,6 @@ struct LESetScanResponseDataCommandParams {
 // LE Set Advertising Enable Command (v4.0) (LE)
 constexpr OpCode kLESetAdvertisingEnable = LEControllerCommandOpCode(0x000A);
 
-struct LESetAdvertisingEnableCommandParams {
-  GenericEnableParam advertising_enable;
-} __PACKED;
-
 // ==========================================
 // LE Set Scan Parameters Command (v4.0) (LE)
 constexpr OpCode kLESetScanParameters = LEControllerCommandOpCode(0x000B);
@@ -2893,42 +2889,6 @@ struct LESetExtendedScanResponseDataCommandParams {
 // ======================================================
 // LE Set Extended Advertising Enable Command (v5.0) (LE)
 constexpr OpCode kLESetExtendedAdvertisingEnable = LEControllerCommandOpCode(0x0039);
-
-struct LESetExtendedAdvertisingEnableData {
-  // Handle used to identify an advertising set.
-  AdvertisingHandle adv_handle;
-
-  // Possible values:
-  //   0x0000: No advertising duration. Advertising to continue until the Host
-  //   disables it. 0x0001-0xFFFF: Advertising duration, where:
-  //     Time = N * 10 ms
-  //     Time Range: 10 ms to 655,350 ms
-  uint16_t duration;
-
-  // Possible values:
-  //   0x00: No maximum number of advertising events.
-  //   0xXX: Maximum number of extended advertising events the Controller shall
-  //   attempt to send
-  //         prior to terminating the extended advertising
-  uint8_t max_extended_adv_events;
-} __PACKED;
-
-struct LESetExtendedAdvertisingEnableCommandParams {
-  LESetExtendedAdvertisingEnableCommandParams() = delete;
-  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(LESetExtendedAdvertisingEnableCommandParams);
-
-  // Enable or Disable extended advertising.
-  GenericEnableParam enable;
-
-  // The number of advertising sets contained in the parameter arrays. If Enable
-  // and Number_of_Sets are both set to 0x00, then all advertising sets are
-  // disabled.
-  uint8_t number_of_sets;
-
-  // The parameter array containing |number_of_sets| entries for each
-  // advertising set included in this command.
-  LESetExtendedAdvertisingEnableData data[];
-} __PACKED;
 
 // ===========================================================
 // LE Read Maximum Advertising Data Length Command (v5.0) (LE)

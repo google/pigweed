@@ -66,7 +66,7 @@ class AndroidExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
     hci_spec::LEConnectionParameters conn_params;
   };
 
-  std::unique_ptr<CommandPacket> BuildEnablePacket(
+  std::optional<EmbossCommandPacket> BuildEnablePacket(
       const DeviceAddress& address, pw::bluetooth::emboss::GenericEnableParam enable) override;
 
   std::unique_ptr<CommandPacket> BuildSetAdvertisingParams(
@@ -84,7 +84,8 @@ class AndroidExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
 
   std::unique_ptr<CommandPacket> BuildUnsetScanResponse(const DeviceAddress& address) override;
 
-  std::unique_ptr<CommandPacket> BuildRemoveAdvertisingSet(const DeviceAddress& address) override;
+  std::optional<EmbossCommandPacket> BuildRemoveAdvertisingSet(
+      const DeviceAddress& address) override;
 
   void OnCurrentOperationComplete() override;
 

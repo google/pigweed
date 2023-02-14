@@ -48,15 +48,16 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
     hci::ResultFunction<> result_callback) {
   if (IsAdvertising(address)) {
     // Temporarily disable advertising so we can tweak the parameters
-    std::unique_ptr<CommandPacket> packet =
+    std::optional<EmbossCommandPacket> packet =
         BuildEnablePacket(address, pw::bluetooth::emboss::GenericEnableParam::DISABLE);
+
     if (!packet) {
       bt_log(WARN, "hci-le", "cannot build HCI disable packet for %s", bt_str(address));
       result_callback(ToResult(HostError::kCanceled));
       return;
     }
 
-    hci_cmd_runner_->QueueCommand(std::move(packet));
+    hci_cmd_runner_->QueueCommand(*packet);
   }
 
   // Set advertising parameters
@@ -129,8 +130,9 @@ bool LowEnergyAdvertiser::StartAdvertisingInternalStep2(const DeviceAddress& add
     return false;
   }
 
-  PacketPtr enable_packet =
+  std::optional<EmbossCommandPacket> enable_packet =
       BuildEnablePacket(address, pw::bluetooth::emboss::GenericEnableParam::ENABLE);
+
   if (!enable_packet) {
     bt_log(WARN, "hci-le", "cannot build HCI enable packet for %s", bt_str(address));
     return false;
@@ -138,7 +140,7 @@ bool LowEnergyAdvertiser::StartAdvertisingInternalStep2(const DeviceAddress& add
 
   hci_cmd_runner_->QueueCommand(std::move(set_adv_data_packet));
   hci_cmd_runner_->QueueCommand(std::move(set_scan_rsp_packet));
-  hci_cmd_runner_->QueueCommand(std::move(enable_packet));
+  hci_cmd_runner_->QueueCommand(*enable_packet);
 
   staged_parameters_.reset();
   hci_cmd_runner_->RunCommands(
@@ -210,7 +212,7 @@ void LowEnergyAdvertiser::StopAdvertisingInternal(const DeviceAddress& address) 
 }
 
 bool LowEnergyAdvertiser::EnqueueStopAdvertisingCommands(const DeviceAddress& address) {
-  std::unique_ptr<CommandPacket> disable_packet =
+  std::optional<EmbossCommandPacket> disable_packet =
       BuildEnablePacket(address, pw::bluetooth::emboss::GenericEnableParam::DISABLE);
   if (!disable_packet) {
     bt_log(WARN, "hci-le", "cannot build HCI disable packet for %s", bt_str(address));
@@ -230,16 +232,16 @@ bool LowEnergyAdvertiser::EnqueueStopAdvertisingCommands(const DeviceAddress& ad
     return false;
   }
 
-  std::unique_ptr<CommandPacket> remove_packet = BuildRemoveAdvertisingSet(address);
+  std::optional<EmbossCommandPacket> remove_packet = BuildRemoveAdvertisingSet(address);
   if (!remove_packet) {
     bt_log(WARN, "hci-le", "cannot build HCI remove packet for %s", bt_str(address));
     return false;
   }
 
-  hci_cmd_runner_->QueueCommand(std::move(disable_packet));
+  hci_cmd_runner_->QueueCommand(*disable_packet);
   hci_cmd_runner_->QueueCommand(std::move(unset_scan_rsp_packet));
   hci_cmd_runner_->QueueCommand(std::move(unset_adv_data_packet));
-  hci_cmd_runner_->QueueCommand(std::move(remove_packet));
+  hci_cmd_runner_->QueueCommand(*remove_packet);
   return true;
 }
 
