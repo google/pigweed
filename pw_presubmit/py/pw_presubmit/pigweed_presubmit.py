@@ -700,17 +700,30 @@ _GN_SOURCES_IN_BUILD = (
 SOURCE_FILES_FILTER = presubmit.FileFilter(
     endswith=_GN_SOURCES_IN_BUILD,
     suffix=('.bazel', '.bzl', '.gn', '.gni'),
-    exclude=(r'zephyr.*/', r'android.*/', r'^(.black|pyproject).toml'),
+    exclude=(
+        r'zephyr.*',
+        r'android.*',
+        r'\.black.toml',
+        r'pyproject.toml',
+    ),
 )
 
 
 @SOURCE_FILES_FILTER.apply_to_check()
 def source_is_in_build_files(ctx: PresubmitContext):
     """Checks that source files are in the GN and Bazel builds."""
+
+    # SOURCE_FILES_FILTER is used above to decide whether this check should be
+    # run. Once it's running, we use ctx.all_paths instead of ctx.paths since we
+    # want to check that all files are in the build, not just changed files. We
+    # need to run ctx.all_paths through the same filter to properly ignore
+    # files.
+    paths = SOURCE_FILES_FILTER.filter(ctx.all_paths)
+
     missing = build.check_builds_for_files(
         _BAZEL_SOURCES_IN_BUILD,
         _GN_SOURCES_IN_BUILD,
-        ctx.paths,
+        paths,
         bazel_dirs=[ctx.root],
         gn_build_files=git_repo.list_files(
             pathspecs=['BUILD.gn', '*BUILD.gn'], repo_path=ctx.root
@@ -724,7 +737,7 @@ def source_is_in_build_files(ctx: PresubmitContext):
     _run_cmake(ctx)
     cmake_missing = build.check_compile_commands_for_files(
         ctx.output_dir / 'compile_commands.json',
-        (f for f in ctx.paths if f.suffix in ('.c', '.cc')),
+        (f for f in paths if f.suffix in ('.c', '.cc')),
     )
     if cmake_missing:
         _LOG.warning('The CMake build is missing %d files', len(cmake_missing))

@@ -512,7 +512,7 @@ class FormatContext:
 
 
 @dataclasses.dataclass
-class PresubmitContext:
+class PresubmitContext:  # pylint: disable=too-many-instance-attributes
     """Context passed into presubmit checks.
 
     For full documentation on the members see pw_presubmit/docs.rst.
@@ -526,6 +526,7 @@ class PresubmitContext:
             any failures encountered for use by other tooling.
         paths: Modified files for the presubmit step to check (often used in
             formatting steps but ignored in compile steps)
+        all_paths: All files in the tree.
         package_root: Root directory for pw package installations
         override_gn_args: Additional GN args processed by build.gn_gen()
         luci: Information about the LUCI build or None if not running in LUCI
@@ -539,6 +540,7 @@ class PresubmitContext:
     output_dir: Path
     failure_summary_log: Path
     paths: Tuple[Path, ...]
+    all_paths: Tuple[Path, ...]
     package_root: Path
     luci: Optional[LuciContext]
     override_gn_args: Dict[str, str]
@@ -575,6 +577,7 @@ class PresubmitContext:
             output_dir=presubmit_root / 'test',
             failure_summary_log=presubmit_root / 'failure-summary.log',
             paths=(root / 'foo.cc', root / 'foo.py'),
+            all_paths=(root / 'BUILD.gn', root / 'foo.cc', root / 'foo.py'),
             package_root=root / 'environment' / 'packages',
             luci=None,
             override_gn_args={},
@@ -642,6 +645,9 @@ class FileFilter:
             or any(posix_path.endswith(end) for end in self.endswith)
         )
 
+    def filter(self, paths: Sequence[Union[str, Path]]) -> Sequence[Path]:
+        return [Path(x) for x in paths if self.matches(x)]
+
     def apply_to_check(self, always_run: bool = False) -> Callable:
         def wrapper(func: Callable) -> Check:
             if isinstance(func, Check):
@@ -683,6 +689,7 @@ class Presubmit:
         repos: Sequence[Path],
         output_directory: Path,
         paths: Sequence[Path],
+        all_paths: Sequence[Path],
         package_root: Path,
         override_gn_args: Dict[str, str],
         continue_after_build_error: bool,
@@ -691,6 +698,7 @@ class Presubmit:
         self._repos = tuple(repos)
         self._output_directory = output_directory.resolve()
         self._paths = tuple(paths)
+        self._all_paths = tuple(all_paths)
         self._relative_paths = tuple(
             tools.relative_paths(self._paths, self._root)
         )
@@ -846,6 +854,7 @@ class Presubmit:
                 output_dir=output_directory,
                 failure_summary_log=failure_summary_log,
                 paths=filtered_check.paths,
+                all_paths=self._all_paths,
                 package_root=self._package_root,
                 override_gn_args=self._override_gn_args,
                 continue_after_build_error=self._continue_after_build_error,
@@ -977,22 +986,38 @@ def run(  # pylint: disable=too-many-arguments,too-many-locals
 
     pathspecs_by_repo = _process_pathspecs(repos, paths)
 
-    files: List[Path] = []
-    list_steps_data: List = []
+    all_files: List[Path] = []
+    modified_files: List[Path] = []
+    list_steps_data: Dict[str, Any] = {}
 
     if list_steps_file:
         with list_steps_file.open() as ins:
             list_steps_data = json.load(ins)
-        for step in list_steps_data:
-            files.extend(Path(x) for x in step.get("paths", ()))
-        files = sorted(set(files))
-        _LOG.info('Loaded %d paths from file %s', len(files), list_steps_file)
+        all_files.extend(list_steps_data['all_files'])
+        for step in list_steps_data['steps']:
+            modified_files.extend(Path(x) for x in step.get("paths", ()))
+        modified_files = sorted(set(modified_files))
+        _LOG.info(
+            'Loaded %d paths from file %s',
+            len(modified_files),
+            list_steps_file,
+        )
 
     else:
         for repo, pathspecs in pathspecs_by_repo.items():
-            files += tools.exclude_paths(
-                exclude, git_repo.list_files(base, pathspecs, repo), root
+            all_files_repo = tuple(
+                tools.exclude_paths(
+                    exclude, git_repo.list_files(None, pathspecs, repo), root
+                )
             )
+            all_files += all_files_repo
+
+            if base is None:
+                modified_files += all_files_repo
+            else:
+                modified_files += tools.exclude_paths(
+                    exclude, git_repo.list_files(base, pathspecs, repo), root
+                )
 
             _LOG.info(
                 'Checking %s',
@@ -1011,7 +1036,8 @@ def run(  # pylint: disable=too-many-arguments,too-many-locals
         root=root,
         repos=repos,
         output_directory=output_directory,
-        paths=files,
+        paths=modified_files,
+        all_paths=all_files,
         package_root=package_root,
         override_gn_args=dict(override_gn_args or {}),
         continue_after_build_error=continue_after_build_error,
@@ -1028,7 +1054,12 @@ def run(  # pylint: disable=too-many-arguments,too-many-locals
             if len(substeps) > 1:
                 step['substeps'] = [x.name for x in substeps]
             steps.append(step)
-        json.dump(steps, sys.stdout, indent=2)
+
+        list_steps_data = {
+            'steps': steps,
+            'all_files': [str(x) for x in all_files],
+        }
+        json.dump(list_steps_data, sys.stdout, indent=2)
         sys.stdout.write('\n')
         return True
 

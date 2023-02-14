@@ -113,6 +113,7 @@ such as a quick program for local use and a full program for automated use. The
   of any failures
 * ``paths``: Modified files for the presubmit step to check (often used in
   formatting steps but ignored in compile steps)
+* ``all_paths``: All files in the repository tree.
 * ``package_root``: Root directory for ``pw package`` installations
 * ``override_gn_args``: Additional GN args processed by ``build.gn_gen()``
 * ``luci``: Information about the LUCI build or None if not running in LUCI
