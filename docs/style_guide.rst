@@ -110,7 +110,6 @@ Permitted Headers
    * ``<optional>``
    * ``<random>``
    * ``<ratio>``
-   * ``<span>``
    * ``<string_view>``
    * ``<tuple>``
    * ``<type_traits>``
@@ -124,8 +123,10 @@ Permitted Headers
    * ``<algorithm>`` -- be wary of potential memory allocation
    * ``<atomic>`` -- not all MCUs natively support atomic operations
    * ``<bitset>`` -- conversions to or from strings are disallowed
-   * ``<functional>`` -- do **not** use ``std::function``
-   * ``<mutex>`` -- can use ``std::lock_guard``, prefer :ref:`module-pw_sync`
+   * ``<functional>`` -- do **not** use ``std::function``; use
+     :ref:`module-pw_function`
+   * ``<mutex>`` -- can use ``std::lock_guard``, use :ref:`module-pw_sync` for
+     mutexes
    * ``<new>`` -- for placement new
    * ``<numeric>`` -- be wary of code size with multiple template instantiations
 
@@ -133,15 +134,17 @@ Permitted Headers
    :class: error
 
    * Dynamic containers (``<list>``, ``<map>``, ``<set>``, ``<vector>``, etc.)
-   * Streams (``<iostream>``, ``<ostream>``, ``<fstream>``, etc.)
-   * ``<exception>``
-   * ``<future>``, ``<thread>``
-   * ``<memory>``
+   * Streams (``<iostream>``, ``<ostream>``, ``<fstream>``, ``<sstream>`` etc.)
+     -- in some cases :ref:`module-pw_stream` can work instead
+   * ``<span>`` -- use :ref:`module-pw_span` instead. Downstream projects may
+     want to directly use ``std::span`` if it is available, but upstream must
+     use the ``pw::span`` version for compatability
+   * ``<string>`` -- can use :ref:`module-pw_string`
+   * ``<thread>`` -- can use :ref:`module-pw_thread`
+   * ``<future>`` -- eventually :ref:`module-pw_async` will offer this
+   * ``<exception>``, ``<stdexcept>`` -- no exceptions
+   * ``<memory>``, ``<scoped_allocator>`` -- no allocations
    * ``<regex>``
-   * ``<scoped_allocator>``
-   * ``<sstream>``
-   * ``<stdexcept>``
-   * ``<string>``
    * ``<valarray>``
 
 Headers not listed here should be carefully evaluated before they are used.
