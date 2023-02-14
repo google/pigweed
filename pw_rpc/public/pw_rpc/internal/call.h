@@ -258,6 +258,14 @@ class Call : public IntrusiveList<Call>::Item {
     return (state_ & kClientStreamActive) != 0;
   }
 
+  // Closes a call without doing anything else. Called from the Endpoint
+  // destructor.
+  void CloseFromDeletedEndpoint() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
+    MarkClosed();
+    awaiting_cleanup_ = OkStatus().code();
+    endpoint_ = nullptr;
+  }
+
  protected:
   // Creates an inactive Call.
   constexpr Call()
@@ -455,6 +463,8 @@ class Call : public IntrusiveList<Call>::Item {
                   status);
   }
 
+  // Marks a call object closed without doing anything else. The call is not
+  // removed from the calls list and no callbacks are called.
   void MarkClosed() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     channel_id_ = Channel::kUnassignedChannelId;
     id_ = 0;

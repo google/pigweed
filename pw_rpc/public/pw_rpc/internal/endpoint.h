@@ -40,7 +40,9 @@ class LockedEndpoint;
 // Server or Client object, which derive from Endpoint.
 class Endpoint {
  public:
-  ~Endpoint();
+  // If an endpoint is deleted, all calls using it are closed without notifying
+  // the other endpoint.
+  ~Endpoint() PW_LOCKS_EXCLUDED(rpc_lock()) { RemoveAllCalls(); }
 
   // Public functions
 
@@ -222,6 +224,17 @@ class Endpoint {
                                 call.method_id(),
                                 call.id());
   }
+
+  // Silently closes all calls. Called by the destructor. This is a
+  // non-destructor function so that Clang's lock safety analysis applies.
+  //
+  // Endpoints are not deleted in normal RPC use, and especially would not be
+  // deleted before the calls that use them. To handle this unusual case, all
+  // calls are closed without invoking on_error callbacks. If cleanup tasks are
+  // required, users should perform them before deleting the Endpoint. Cleanup
+  // could be done individually for each call or by closing channels with
+  // CloseChannel.
+  void RemoveAllCalls() PW_LOCKS_EXCLUDED(rpc_lock());
 
   ChannelList channels_ PW_GUARDED_BY(rpc_lock());
 

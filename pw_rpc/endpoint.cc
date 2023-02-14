@@ -91,14 +91,6 @@ void YieldRpcLock() {
   rpc_lock().lock();
 }
 
-Endpoint::~Endpoint() {
-  // Since the calls remove themselves from the Endpoint in
-  // CloseAndSendResponse(), close responders until no responders remain.
-  while (!calls_.empty()) {
-    calls_.front().CloseAndSendResponse(OkStatus()).IgnoreError();
-  }
-}
-
 Result<Packet> Endpoint::ProcessPacket(span<const std::byte> data,
                                        Packet::Destination destination) {
   Result<Packet> result = Packet::FromBuffer(data);
@@ -217,6 +209,21 @@ void Endpoint::CleanUpCalls() {
     }
 
     rpc_lock().lock();
+  }
+}
+
+void Endpoint::RemoveAllCalls() {
+  LockGuard lock(rpc_lock());
+
+  // Close all calls without invoking on_error callbacks, since the calls should
+  // have been closed before the Endpoint was deleted.
+  while (!calls_.empty()) {
+    calls_.front().CloseFromDeletedEndpoint();
+    calls_.pop_front();
+  }
+  while (!to_cleanup_.empty()) {
+    to_cleanup_.front().CloseFromDeletedEndpoint();
+    to_cleanup_.pop_front();
   }
 }
 
