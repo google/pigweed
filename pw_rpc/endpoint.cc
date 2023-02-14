@@ -18,8 +18,6 @@
 #include "pw_rpc/internal/endpoint.h"
 // clang-format on
 
-#include <chrono>
-
 #include "pw_log/log.h"
 #include "pw_rpc/internal/lock.h"
 #include "pw_toolchain/no_destructor.h"
@@ -35,6 +33,8 @@ static_assert(
     "pw_thread:sleep.");
 
 #elif PW_RPC_YIELD_MODE == PW_RPC_YIELD_MODE_SLEEP
+
+#include <chrono>
 
 #if !__has_include("pw_thread/sleep.h")
 
