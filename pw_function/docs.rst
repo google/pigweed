@@ -3,11 +3,10 @@
 -----------
 pw_function
 -----------
-The function module provides a standard, general-purpose API for wrapping
-callable objects.
-
-.. note::
-  This module is under construction and its API is not complete.
+The ``pw_function`` module provides a standard, general-purpose API for
+wrapping callable objects. ``pw_function`` is similar in spirit and API to
+``std::function``, but doesn't allocate, and uses several tricks to prevent
+code bloat.
 
 Overview
 ========
@@ -40,7 +39,7 @@ Functions are nullable. Invoking a null function triggers a runtime assert.
 
 .. code-block:: c++
 
-  // A function intialized without a callable is implicitly null.
+  // A function initialized without a callable is implicitly null.
   pw::Function<void()> null_function;
 
   // Null functions may also be explicitly created or set.
