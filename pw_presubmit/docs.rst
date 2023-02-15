@@ -342,6 +342,14 @@ a callable as an argument that indicates, for a given file, where a controlling
 Formatting of ``OWNERS`` files is handled similary to formatting of other
 source files and is discussed in `Code Formatting`.
 
+Source in Build
+^^^^^^^^^^^^^^^
+Pigweed provides checks that source files are configured as part of the build
+for GN, Bazel, and CMake. These can be included by adding
+``source_in_build.gn(filter)`` and similar functions to a presubmit check. The
+CMake check additionally requires a callable that invokes CMake with appropriate
+options.
+
 pw_presubmit
 ------------
 .. automodule:: pw_presubmit

@@ -13,7 +13,6 @@
 # the License.
 """Functions for building code during presubmit checks."""
 
-import collections
 import contextlib
 import itertools
 import json
@@ -369,6 +368,95 @@ def check_compile_commands_for_files(
     return [f for f in files if f not in compiled and f.suffix in extensions]
 
 
+def check_bazel_build_for_files(
+    bazel_extensions_to_check: Container[str],
+    files: Iterable[Path],
+    bazel_dirs: Iterable[Path] = (),
+) -> List[Path]:
+    """Checks that source files are in the Bazel builds.
+
+    Args:
+        bazel_extensions_to_check: which file suffixes to look for in Bazel
+        files: the files that should be checked
+        bazel_dirs: directories in which to run bazel query
+
+    Returns:
+        a list of missing files; will be empty if there were no missing files
+    """
+
+    # Collect all paths in the Bazel builds.
+    bazel_builds: Set[Path] = set()
+    for directory in bazel_dirs:
+        bazel_builds.update(
+            _get_paths_from_command(
+                directory, 'bazel', 'query', 'kind("source file", //...:*)'
+            )
+        )
+
+    missing: List[Path] = []
+
+    if bazel_dirs:
+        for path in (p for p in files if p.suffix in bazel_extensions_to_check):
+            if path not in bazel_builds:
+                # TODO(b/234883555) Replace this workaround for fuzzers.
+                if 'fuzz' not in str(path):
+                    missing.append(path)
+
+    if missing:
+        _LOG.warning(
+            '%s missing from the Bazel build:\n%s',
+            plural(missing, 'file', are=True),
+            '\n'.join(str(x) for x in missing),
+        )
+
+    return missing
+
+
+def check_gn_build_for_files(
+    gn_extensions_to_check: Container[str],
+    files: Iterable[Path],
+    gn_dirs: Iterable[Tuple[Path, Path]] = (),
+    gn_build_files: Iterable[Path] = (),
+) -> List[Path]:
+    """Checks that source files are in the GN build.
+
+    Args:
+        gn_extensions_to_check: which file suffixes to look for in GN
+        files: the files that should be checked
+        gn_dirs: (source_dir, output_dir) tuples with which to run gn desc
+        gn_build_files: paths to BUILD.gn files to directly search for paths
+
+    Returns:
+        a list of missing files; will be empty if there were no missing files
+    """
+
+    # Collect all paths in GN builds.
+    gn_builds: Set[Path] = set()
+
+    for source_dir, output_dir in gn_dirs:
+        gn_builds.update(
+            _get_paths_from_command(source_dir, 'gn', 'desc', output_dir, '*')
+        )
+
+    gn_builds.update(_search_files_for_paths(gn_build_files))
+
+    missing: List[Path] = []
+
+    if gn_dirs or gn_build_files:
+        for path in (p for p in files if p.suffix in gn_extensions_to_check):
+            if path not in gn_builds:
+                missing.append(path)
+
+    if missing:
+        _LOG.warning(
+            '%s missing from the GN build:\n%s',
+            plural(missing, 'file', are=True),
+            '\n'.join(str(x) for x in missing),
+        )
+
+    return missing
+
+
 def check_builds_for_files(
     bazel_extensions_to_check: Container[str],
     gn_extensions_to_check: Container[str],
@@ -392,48 +480,24 @@ def check_builds_for_files(
         files; will be empty if there were no missing files
     """
 
-    # Collect all paths in the Bazel builds.
-    bazel_builds: Set[Path] = set()
-    for directory in bazel_dirs:
-        bazel_builds.update(
-            _get_paths_from_command(
-                directory, 'bazel', 'query', 'kind("source file", //...:*)'
-            )
-        )
+    bazel_missing = check_bazel_build_for_files(
+        bazel_extensions_to_check=bazel_extensions_to_check,
+        files=files,
+        bazel_dirs=bazel_dirs,
+    )
+    gn_missing = check_gn_build_for_files(
+        gn_extensions_to_check=gn_extensions_to_check,
+        files=files,
+        gn_dirs=gn_dirs,
+        gn_build_files=gn_build_files,
+    )
 
-    # Collect all paths in GN builds.
-    gn_builds: Set[Path] = set()
-
-    for source_dir, output_dir in gn_dirs:
-        gn_builds.update(
-            _get_paths_from_command(source_dir, 'gn', 'desc', output_dir, '*')
-        )
-
-    gn_builds.update(_search_files_for_paths(gn_build_files))
-
-    missing: Dict[str, List[Path]] = collections.defaultdict(list)
-
-    if bazel_dirs:
-        for path in (p for p in files if p.suffix in bazel_extensions_to_check):
-            if path not in bazel_builds:
-                # TODO(b/234883555) Replace this workaround for fuzzers.
-                if 'fuzz' not in str(path):
-                    missing['Bazel'].append(path)
-
-    if gn_dirs or gn_build_files:
-        for path in (p for p in files if p.suffix in gn_extensions_to_check):
-            if path not in gn_builds:
-                missing['GN'].append(path)
-
-    for builder, paths in missing.items():
-        _LOG.warning(
-            '%s missing from the %s build:\n%s',
-            plural(paths, 'file', are=True),
-            builder,
-            '\n'.join(str(x) for x in paths),
-        )
-
-    return missing
+    result = {}
+    if bazel_missing:
+        result['Bazel'] = bazel_missing
+    if gn_missing:
+        result['GN'] = gn_missing
+    return result
 
 
 @contextlib.contextmanager
