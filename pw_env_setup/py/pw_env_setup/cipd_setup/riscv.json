@@ -1,0 +1,15 @@
+{
+  "packages": [
+    {
+      "path": "pigweed/third_party/riscv64-unknown-elf/${platform}",
+      "platforms": [
+        "linux-amd64",
+        "mac-amd64",
+        "windows-amd64"
+      ],
+      "tags": [
+        "version:10.2.0-2020.12.8"
+      ]
+    }
+  ]
+}
