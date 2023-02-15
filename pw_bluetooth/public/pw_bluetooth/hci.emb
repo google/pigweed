@@ -484,55 +484,62 @@ enum HealthMinorDeviceClass:
 bits ClassOfDevice:
   -- Defined in Assigned Numbers for the Baseband
   -- https://www.bluetooth.com/specifications/assigned-numbers/baseband
-  0     [+2]    UInt                          zero
+  0     [+2]    UInt                         zero
     [requires: this == 0]
 
   if major_device_class == MajorDeviceClass.COMPUTER:
-    2     [+6]  ComputerMinorDeviceClass      computer_minor_device_class
+    2     [+6]  ComputerMinorDeviceClass     computer_minor_device_class
 
   if major_device_class == MajorDeviceClass.PHONE:
-    2     [+6]  PhoneMinorDeviceClass         phone_minor_device_class
+    2     [+6]  PhoneMinorDeviceClass        phone_minor_device_class
 
   if major_device_class == MajorDeviceClass.LAN:
-    2     [+6]  LANMinorDeviceClass           lan_minor_device_class
+    2     [+6]  LANMinorDeviceClass          lan_minor_device_class
 
   if major_device_class == MajorDeviceClass.AUDIO_VIDEO:
-    2     [+6]  AudioVideoMinorDeviceClass    audio_video_minor_device_class
+    2     [+6]  AudioVideoMinorDeviceClass   audio_video_minor_device_class
 
   if major_device_class == MajorDeviceClass.PERIPHERAL:
-    2     [+6]  PeripheralMinorDeviceClass    peripheral_minor_device_class
+    2     [+6]  PeripheralMinorDeviceClass   peripheral_minor_device_class
 
   if major_device_class == MajorDeviceClass.IMAGING:
-    2     [+6]  ImagingMinorDeviceClassBits   imaging_minor_device_class
+    2     [+6]  ImagingMinorDeviceClassBits  imaging_minor_device_class
 
   if major_device_class == MajorDeviceClass.WEARABLE:
-    2     [+6]  WearableMinorDeviceClass  wearable_minor_device_class
+    2     [+6]  WearableMinorDeviceClass     wearable_minor_device_class
 
   if major_device_class == MajorDeviceClass.TOY:
-    2     [+6]  ToyMinorDeviceClass       toy_minor_device_class
+    2     [+6]  ToyMinorDeviceClass          toy_minor_device_class
 
   if major_device_class == MajorDeviceClass.HEALTH:
-    2     [+6]  HealthMinorDeviceClass    health_minor_device_class
+    2     [+6]  HealthMinorDeviceClass       health_minor_device_class
 
-  8     [+5]    MajorDeviceClass              major_device_class
-  $next [+11]   MajorServiceClasses           major_service_classes
+  8     [+5]    MajorDeviceClass             major_device_class
+  $next [+11]   MajorServiceClasses          major_service_classes
 
 
 enum LEAddressType:
   -- Possible values that can be reported for the |address_type| parameter in a LE
   -- Advertising Report event.
+
   [maximum_bits: 8]
+
   PUBLIC            = 0x00
     -- Public device address (default)
+
   RANDOM            = 0x01
     -- Random device address
+
   PUBLIC_IDENTITY   = 0x02
     -- Public Identity Address (Corresponds to Resolved Private Address)
+
   RANDOM_IDENTITY   = 0x03
     -- Random (static) Identity Address (Corresponds to Resolved Private Address)
+
   RANDOM_UNRESOLVED = 0xFE
     -- This is a special value used in LE Extended Advertising Report events to
     -- indicate a random address that the controller was unable to resolve.
+
   ANONYMOUS         = 0xFF
     -- This is a special value that is only used in LE Directed Advertising Report
     -- events.
@@ -554,8 +561,30 @@ enum LEPrivacyMode:
   [maximum_bits: 8]
   NETWORK = 0x00
     -- Use Network Privacy Mode for this peer device (default).
+
   DEVICE  = 0x01
     -- Use Device Privacy Mode for this peer device.
+
+
+enum InquiryMode:
+  [maximum_bits: 8]
+  STANDARD = 0x00
+    -- Standard Inquiry Result format (default)
+
+  RSSI     = 0x01
+    -- Inquiry Result format with RSSI
+
+  EXTENDED = 0x02
+    -- Inquiry Result format with RSSI or EIR format
+
+
+enum PageScanType:
+  [maximum_bits: 8]
+  STANDARD_SCAN   = 0x00
+    -- Standard scan (default) (mandatory)
+
+  INTERLACED_SCAN = 0x01
+    -- Interlaced scan (optional)
 
 # ========================= HCI packet headers ==========================
 
@@ -1194,60 +1223,54 @@ struct UserPasskeyRequestNegativeReplyCommand:
     -- The BD_ADDR of the remote device involved in the simple pairing process.
 
 
-struct IOCapabilityRequestNegativeReplyCommand:
+struct IoCapabilityRequestNegativeReplyCommand:
   -- IO Capability Request Negative Reply Command (v2.1 + EDR) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]               CommandHeader  header
   $next [+BdAddr.$size_in_bytes]  BdAddr         bd_addr
     -- The BD_ADDR of the remote device involved in the simple pairing process.
 
-  $next [+1]                      StatusCode     status
+  $next [+1]                      StatusCode     reason
     -- Reason that Simple Pairing was rejected. See 7.1.36 for valid error codes.
 
 
-struct EnhancedAcceptSynchronousConnectionRequest:
-  -- Enhanced Accept Synchronous Connection Request Command (BR/EDR)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0 [+hdr_size]  CommandHeader  header
-
-
-struct Reset:
+struct ResetCommand:
   -- Reset Command (v1.1)
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
-struct ReadLocalName:
+struct ReadLocalNameCommand:
   -- Read Local Name Command (v1.1) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
-struct ReadScanEnable:
+struct ReadScanEnableCommand:
   -- Read Scan Enable Command (v1.1) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
-struct ReadPageScanActivity:
+struct ReadPageScanActivityCommand:
   -- Read Page Scan Activity Command (v1.1) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
-struct ReadInquiryScanActivity:
+struct ReadInquiryScanActivityCommand:
   -- Read Inquiry Scan Activity Command (v1.1) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
-struct ReadClassOfDevice:
+struct ReadClassOfDeviceCommand:
   -- Read Class of Device Command (v1.1) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
-struct WriteClassOfDevice:
+struct WriteClassOfDeviceCommand:
   -- Write Class Of Device Command (v1.1) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
@@ -1257,14 +1280,16 @@ struct WriteClassOfDevice:
 struct LEAddDeviceToPeriodicAdvertiserListCommand:
   -- LE Add Device To Periodic Advertiser List command (v5.0) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
-  0      [+hdr_size]               CommandHeader  header
-  $next  [+1]                      LEAddressType  advertiser_address_type
+  0     [+hdr_size]               CommandHeader  header
+  $next [+1]                      LEAddressType  advertiser_address_type
     -- Address type of the advertiser. The LEAddressType::kPublicIdentity and
     -- LEAddressType::kRandomIdentity values are excluded for this command.
-  $next  [+BdAddr.$size_in_bytes]  BdAddr         advertiser_address
+
+  $next [+BdAddr.$size_in_bytes]  BdAddr         advertiser_address
     -- Public Device Address, Random Device Address, Public Identity Address, or
     -- Random (static) Identity Address of the advertiser.
-  $next  [+1]                      UInt           advertising_sid
+
+  $next [+1]                      UInt           advertising_sid
     -- Advertising SID subfield in the ADI field used to identify the Periodic
     -- Advertising.
 
@@ -1272,14 +1297,16 @@ struct LEAddDeviceToPeriodicAdvertiserListCommand:
 struct LERemoveDeviceFromPeriodicAdvertiserListCommand:
   -- LE Remove Device From Periodic Advertiser List command (v5.0) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
-  0  [+hdr_size]  CommandHeader  header
-  $next  [+1]                      UInt    advertiser_address_type
+  0     [+hdr_size]               CommandHeader  header
+  $next [+1]                      UInt           advertiser_address_type
     -- Address type of the advertiser. The LEAddressType::kPublicIdentity and
     -- LEAddressType::kRandomIdentity values are excluded for this command.
-  $next  [+BdAddr.$size_in_bytes]  BdAddr  advertiser_address
+
+  $next [+BdAddr.$size_in_bytes]  BdAddr         advertiser_address
     -- Public Device Address, Random Device Address, Public Identity Address, or
     -- Random (static) Identity Address of the advertiser.
-  $next  [+1]                      UInt    advertising_sid
+
+  $next [+1]                      UInt           advertising_sid
     -- Advertising SID subfield in the ADI field used to identify the Periodic
     -- Advertising.
 
@@ -1288,28 +1315,28 @@ struct LEClearPeriodicAdvertiserListCommand:
   -- LE Clear Periodic Advertiser List command (v5.0) (LE)
   -- Note that this command has no arguments
   let hdr_size = CommandHeader.$size_in_bytes
-  0  [+hdr_size]  CommandHeader  header
+  0 [+hdr_size]  CommandHeader  header
 
 
 struct LEReadPeriodicAdvertiserListSizeCommand:
   -- LE Read Periodic Advertiser List Size command (v5.0) (LE)
   -- Note that this command has no arguments
   let hdr_size = CommandHeader.$size_in_bytes
-  0  [+hdr_size]  CommandHeader  header
+  0 [+hdr_size]  CommandHeader  header
 
 
 struct LEReadTransmitPowerCommand:
   -- LE Read Transmit Power command (v5.0) (LE)
   -- Note that this command has no arguments
   let hdr_size = CommandHeader.$size_in_bytes
-  0  [+hdr_size]  CommandHeader  header
+  0 [+hdr_size]  CommandHeader  header
 
 
 struct LEReadRFPathCompensationCommand:
   -- LE Read RF Path Compensation command (v5.0) (LE)
   -- Note that this command has no arguments
   let hdr_size = CommandHeader.$size_in_bytes
-  0  [+hdr_size]  CommandHeader  header
+  0 [+hdr_size]  CommandHeader  header
 
 
 struct LEWriteRFPathCompensationCommand:
@@ -1318,25 +1345,60 @@ struct LEWriteRFPathCompensationCommand:
   --   Range: -128.0 dB (0xFB00) ≤ N ≤ 128.0 dB (0x0500)
   --   Units: 0.1 dB
   let hdr_size = CommandHeader.$size_in_bytes
-  0      [+hdr_size]  CommandHeader  header
-  $next  [+2]         Int            rf_tx_path_compensation_value
-         [requires: -1280 <= this <= 1280]
-  $next  [+2]         Int            rf_rx_path_compensation_value
-         [requires: -1280 <= this <= 1280]
+  0     [+hdr_size]  CommandHeader  header
+  $next [+2]         Int            rf_tx_path_compensation_value
+    [requires: -1280 <= this <= 1280]
+
+  $next [+2]         Int            rf_rx_path_compensation_value
+    [requires: -1280 <= this <= 1280]
 
 
 struct LESetPrivacyModeCommand:
   -- LE Set Privacy Mode command (v5.0) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
-  0      [+hdr_size]               CommandHeader      header
-  $next  [+1]                      LEPeerAddressType  peer_identity_address_type
+  0     [+hdr_size]               CommandHeader      header
+  $next [+1]                      LEPeerAddressType  peer_identity_address_type
     -- The peer identity address type (either Public Identity or Private
     -- Identity).
-  $next  [+BdAddr.$size_in_bytes]  BdAddr             peer_identity_address
+
+  $next [+BdAddr.$size_in_bytes]  BdAddr             peer_identity_address
     -- Public Identity Address or Random (static) Identity Address of the
     -- advertiser.
-  $next  [+1]                      LEPrivacyMode      privacy_mode
+
+  $next [+1]                      LEPrivacyMode      privacy_mode
     -- The privacy mode to be used for the given entry on the resolving list.
+
+
+struct ReadInquiryModeCommand:
+  -- Read Inquiry Mode (v1.2) (BR/EDR)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
+struct WriteInquiryModeCommand:
+  -- Write Inquiry Mode (v1.2) (BR/EDR)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader  header
+  $next [+1]         InquiryMode    inquiry_mode
+
+
+struct ReadPageScanTypeCommand:
+  -- Read Page Scan Type (v1.2) (BR/EDR)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
+struct WritePageScanTypeCommand:
+  -- Write Page Scan Type (v1.2) (BR/EDR)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader  header
+  $next [+1]         PageScanType   page_scan_type
+
+
+struct ReadSimplePairingModeCommand:
+  -- Read Simple Pairing Mode (v2.1 + EDR) (BR/EDR)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
 
 # ========================= HCI Event packets ===========================
 # Core Spec v5.3 Vol 4, Part E, Section 7.7
