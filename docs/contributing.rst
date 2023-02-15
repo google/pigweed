@@ -30,10 +30,11 @@ One-time contributor setup
    Account email or an Alternate email for the Google account used to sign
    the CLA (Manage Google account → Personal Info → email).
 #. Obtain a login cookie from Gerrit's
-   `new-password <https://pigweed.googlesource.com/new-password>`_ page
-#. Install the Gerrit commit hook to automatically add a ``Change-Id: ...``
-   line to your commit.
+   `new-password <https://pigweed.googlesource.com/new-password>`_ page.
+#. Install the :ref:`gerrit-commit-hook` to automatically add a
+   ``Change-Id: ...`` line to your commit.
 #. Install the Pigweed presubmit check hook with ``pw presubmit --install``.
+   Remember to :ref:`activate-pigweed-environment` first!
 
 Change submission process
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -63,6 +64,8 @@ You generally only need to submit a CLA once, so if you've already submitted one
 (even if it was for a different project), you probably don't need to do it
 again.
 
+.. _gerrit-commit-hook:
+
 Gerrit Commit Hook
 ------------------
 Gerrit requires all changes to have a ``Change-Id`` tag at the bottom of each
@@ -70,6 +73,9 @@ commit message. You should set this up to be done automatically using the
 instructions below.
 
 **Linux/macOS**
+
+The command below assumes that your current working directory is the root
+of your Pigweed repository.
 
 .. code:: bash
 

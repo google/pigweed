@@ -185,8 +185,10 @@ Below is a real-time demo with roughly what you should expect to see as output:
 
 Congratulations, you are now set up to start using Pigweed!
 
-Pigweed Environment
-===================
+.. _activate-pigweed-environment:
+
+Activate your Pigweed Environment
+=================================
 After going through the initial setup process, your current terminal will be in
 the Pigweed development environment that provides all the tools you should need
 to develop on Pigweed. If you leave that session, you can activate the
