@@ -1196,16 +1196,6 @@ enum class LEAdvertisingDataStatus : uint16_t {
 // HCI_LE_Set_Periodic_Advertising_Parameters command.
 constexpr uint16_t kLEPeriodicAdvPropBitIncludeTxPower = (1 << 6);
 
-// Potential values for the Privacy_Mode parameter in a HCI_LE_Set_Privacy_Mode
-// command.
-enum class LEPrivacyMode : uint8_t {
-  // Use Network Privacy Mode for this peer device (default).
-  kNetwork = 0x00,
-
-  // Use Device Privacy Mode for this peer device.
-  kDevice = 0x01,
-};
-
 // The maximum length of LE data packets when the LE Data Packet Length Extension
 // feature is supported. See v5.0, Vol 6, Part B, 4.5.10, Table 4.3.
 constexpr size_t kMaxLEExtendedDataLength = 251;

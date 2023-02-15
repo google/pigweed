@@ -3136,37 +3136,9 @@ struct LEPeriodicAdvertisingTerminateSyncCommandParams {
 // LE Add Device To Periodic Advertiser List Command (v5.0) (LE)
 constexpr OpCode kLEAddDeviceToPeriodicAdvertiserList = LEControllerCommandOpCode(0x0047);
 
-struct LEAddDeviceToPeriodicAdvertiserListCommandParams {
-  // Address type of the advertiser. The LEAddressType::kPublicIdentity and
-  // LEAddressType::kRandomIdentity values are excluded for this command.
-  LEAddressType advertiser_address_type;
-
-  // Public Device Address, Random Device Address, Public Identity Address, or
-  // Random (static) Identity Address of the advertiser.
-  DeviceAddressBytes advertiser_address;
-
-  // Advertising SID subfield in the ADI field used to identify the Periodic
-  // Advertising.
-  uint8_t advertising_sid;
-} __PACKED;
-
 // ==================================================================
 // LE Remove Device From Periodic Advertiser List Command (v5.0) (LE)
 constexpr OpCode kLERemoveDeviceFromPeriodicAdvertiserList = LEControllerCommandOpCode(0x0048);
-
-struct LERemoveDeviceFromPeriodicAdvertiserListCommandParams {
-  // Address type of the advertiser. The LEAddressType::kPublicIdentity and
-  // LEAddressType::kRandomIdentity values are excluded for this command.
-  LEAddressType advertiser_address_type;
-
-  // Public Device Address, Random Device Address, Public Identity Address, or
-  // Random (static) Identity Address of the advertiser.
-  DeviceAddressBytes advertiser_address;
-
-  // Advertising SID subfield in the ADI field used to identify the Periodic
-  // Advertising.
-  uint8_t advertising_sid;
-} __PACKED;
 
 // =====================================================
 // LE Clear Periodic Advertiser List Command (v5.0) (LE)
@@ -3219,31 +3191,9 @@ struct LEReadRFPathCompensationReturnParams {
 // LE Write RF Path Compensation Command (v5.0) (LE)
 constexpr OpCode kLEWriteRFPathCompensation = LEControllerCommandOpCode(0x004D);
 
-struct LEWriteRFPathCompensationCommandParams {
-  // The RF Path Compensation Values parameters used in the Tx Power Level and
-  // RSSI calculation.
-  //   Range: -128.0 dB (0xFB00) ≤ N ≤ 128.0 dB (0x0500)
-  //   Units: 0.1 dB
-  int16_t rf_tx_path_comp_value;
-  int16_t rf_rx_path_comp_value;
-} __PACKED;
-
 // =======================================
 // LE Set Privacy Mode Command (v5.0) (LE)
 constexpr OpCode kLESetPrivacyMode = LEControllerCommandOpCode(0x004E);
-
-struct LESetPrivacyModeCommandParams {
-  // The peer identity address type (either Public Identity or Private
-  // Identity).
-  LEPeerAddressType peer_identity_address_type;
-
-  // Public Identity Address or Random (static) Identity Address of the
-  // advertiser.
-  DeviceAddressBytes peer_identity_address;
-
-  // The privacy mode to be used for the given entry on the resolving list.
-  LEPrivacyMode privacy_mode;
-} __PACKED;
 
 // ======= Vendor Command =======
 // The OGF of 0x3F is reserved for vendor-specific debug commands (see Core Spec
