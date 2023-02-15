@@ -23,12 +23,24 @@ pw_toolchain_STANDARD = {
   CXX20 = 202002
 }
 
-declare_args() {
-  # Specifies the C++ standard this toolchain is compiling for. The value must
-  # be an integer that matches the value of the __cplusplus macro when compiling
-  # with that standard. Use the pw_toolchain_CXX_STANDARD_## constants to set
-  # this value.
-  pw_toolchain_CXX_STANDARD = pw_toolchain_STANDARD.CXX17
+if (defined(is_fuchsia_tree) && is_fuchsia_tree) {
+  # In the Fuchsia build, this must align with how code is actually being
+  # compiled in that build, which is controlled by Fuchsia's build argument.
+  import("//build/config/fuchsia_cxx_version.gni")
+
+  # This is not a GN build argument at all when Pigweed is integrated into the
+  # Fuchsia build, just a reflection of the Fuchsia build's configuration.
+  # **NOTE:** This line will blow up if the value isn't one of the supported
+  # ones listed above.
+  pw_toolchain_CXX_STANDARD = pw_toolchain_STANDARD["CXX$fuchsia_cxx_version"]
+} else {
+  declare_args() {
+    # Specifies the C++ standard this toolchain is compiling for. The value
+    # must be an integer that matches the value of the __cplusplus macro when
+    # compiling with that standard. Use the pw_toolchain_CXX_STANDARD_##
+    # constants to set this value.
+    pw_toolchain_CXX_STANDARD = pw_toolchain_STANDARD.CXX17
+  }
 }
 
 assert(
