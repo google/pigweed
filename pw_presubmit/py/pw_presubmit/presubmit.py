@@ -308,7 +308,7 @@ def archive_cas_artifact(
     for path in upload_paths:
         assert os.path.abspath(path)
 
-    with tf.NamedTemporaryFile() as tmp_digest_file:
+    with tf.NamedTemporaryFile(mode='w+t') as tmp_digest_file:
         with tf.NamedTemporaryFile(mode='w+t') as tmp_paths_file:
             json_paths = json.dumps(
                 [
@@ -317,7 +317,7 @@ def archive_cas_artifact(
                 ]
             )
             tmp_paths_file.write(json_paths)
-
+            tmp_paths_file.seek(0)
             cmd = [
                 'cas',
                 'archive',
@@ -332,9 +332,9 @@ def archive_cas_artifact(
                 subprocess.check_call(cmd)
             except subprocess.CalledProcessError as failure:
                 raise PresubmitFailure('cas archive failed') from failure
-            uploaded_digest = ''
-            with open(tmp_digest_file, "r") as cas_digest_file:
-                uploaded_digest = cas_digest_file.read()
+
+            tmp_digest_file.seek(0)
+            uploaded_digest = tmp_digest_file.read()
             return uploaded_digest
 
 
