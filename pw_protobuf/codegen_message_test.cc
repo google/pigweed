@@ -1,4 +1,4 @@
-// Copyright 2022 The Pigweed Authors
+// Copyright 2023 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -205,6 +205,12 @@ TEST(CodegenMessage, Inequality) {
   };
 
   EXPECT_FALSE(one == two);
+}
+
+TEST(CodegenMessage, TriviallyComparable) {
+  static_assert(IsTriviallyComparable<IntegerMetadata::Message>());
+  static_assert(IsTriviallyComparable<KeyValuePair::Message>());
+  static_assert(!IsTriviallyComparable<Pigweed::Message>());
 }
 
 TEST(CodegenMessage, ConstCopyable) {

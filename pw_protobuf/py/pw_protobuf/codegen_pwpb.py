@@ -2522,6 +2522,30 @@ def generate_sizes_for_message(
     output.write_line(f'}}  // namespace {namespace}')
 
 
+def generate_is_trivially_comparable_specialization(
+    message: ProtoMessage, root: ProtoNode, output: OutputFile
+) -> None:
+    is_trivially_comparable = True
+    for field in message.fields():
+        for property_class in PROTO_FIELD_PROPERTIES[field.type()]:
+            prop = property_class(field, message, root)
+            if not prop.should_appear():
+                continue
+
+            if prop.use_callback():
+                is_trivially_comparable = False
+                break
+
+    qualified_message = f'{message.cpp_namespace()}::Message'
+
+    output.write_line('template <>')
+    output.write_line(
+        'constexpr bool IsTriviallyComparable' f'<{qualified_message}>() {{'
+    )
+    output.write_line(f'  return {str(is_trivially_comparable).lower()};')
+    output.write_line('}')
+
+
 def _proto_filename_to_generated_header(proto_file: str) -> str:
     """Returns the generated C++ header name for a .proto file."""
     return os.path.splitext(proto_file)[0] + PROTO_H_EXTENSION
@@ -2692,6 +2716,18 @@ def generate_code_for_package(
         output.write_line(f'namespace {external_lookup_namespace} {{')
         output.write_line(f'using namespace ::{package.cpp_namespace()};')
         output.write_line(f'}}  // namespace {external_lookup_namespace}')
+
+    if messages:
+        proto_namespace = PROTOBUF_NAMESPACE.lstrip(':')
+        output.write_line()
+        output.write_line(f'namespace {proto_namespace} {{')
+
+        for message in messages:
+            generate_is_trivially_comparable_specialization(
+                message, package, output
+            )
+
+        output.write_line(f'}}  // namespace {proto_namespace}')
 
 
 def process_proto_file(

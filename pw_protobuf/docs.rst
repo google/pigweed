@@ -118,6 +118,53 @@ The encoder and decoder code is generic and implemented in the core C++ module.
 A small overhead for each message type used in your code describes the structure
 to the generic encoder and decoders.
 
+Message comparison
+------------------
+Message structures implement ``operator==`` and ``operator!=`` for equality and
+inequality comparisons. However, these can only work on trivial scalar fields
+and fixed-size strings within the message. Fields using a callback are not
+considered in the comparison.
+
+To check if the equality operator of a generated message covers all fields,
+``pw_protobuf`` provides an ``IsTriviallyComparable`` function.
+
+.. code-block:: c++
+
+  template <typename Message>
+  constexpr bool IsTriviallyComparable<Message>();
+
+For example, given the following protobuf definitions:
+
+.. code-block::
+
+  message Point {
+    int32 x = 1;
+    int32 y = 2;
+  }
+
+  message Label {
+    Point point = 1;
+    string label = 2;
+  }
+
+And the accompanying options file:
+
+.. code-block::
+
+  Label.label use_callback:true
+
+The ``Point`` message can be fully compared for equality, but ``Label`` cannot.
+``Label`` still defines an ``operator==``, but it ignores the ``label`` string.
+
+.. code-block:: c++
+
+   Point::Message one = {.x = 5, .y = 11};
+   Point::Message two = {.x = 5, .y = 11};
+
+   static_assert(pw::protobuf::IsTriviallyComparable<Point::Message>());
+   ASSERT_EQ(one, two);
+   static_assert(!pw::protobuf::IsTriviallyComparable<Label::Message>());
+
 Buffer Sizes
 ------------
 Initializing a ``MemoryEncoder`` requires that you specify the size of the

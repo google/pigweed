@@ -1,4 +1,4 @@
-// Copyright 2022 The Pigweed Authors
+// Copyright 2023 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -171,6 +171,9 @@ class MessageField {
 static_assert(sizeof(MessageField) <= sizeof(size_t) * 4,
               "MessageField should be four words or less");
 
+template <typename...>
+constexpr std::false_type kInvalidMessageStruct{};
+
 }  // namespace internal
 
 // Callback for a structure member that cannot be represented by a data type.
@@ -229,6 +232,13 @@ union Callback {
   Function<Status(StreamEncoder& encoder)> encode_;
   Function<Status(StreamDecoder& decoder)> decode_;
 };
+
+template <typename T>
+constexpr bool IsTriviallyComparable() {
+  static_assert(internal::kInvalidMessageStruct<T>,
+                "Not a generated message struct");
+  return false;
+}
 
 }  // namespace pw::protobuf
 
