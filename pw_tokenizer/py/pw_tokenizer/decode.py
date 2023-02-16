@@ -63,21 +63,21 @@ class FormatSpec:
              preceded with a `-` sign.
       - ` ` (space): If no sign is going to be written, a blank space is
                      inserted before the value.
-      - `#`: Used with `o`, `x` or `X` specifiers the value is preceeded with
-             `0`, `0x` or `0X`, respectively, for values different than zero.
-             Used with `a`, `A`, `e`, `E`, `f`, `F`, `g`, or `G` it forces the
-             written output to contain a decimal point even if no more digits
-             follow. By default, if no digits follow, no decimal point is
-             written.
-      - `0`: Left-pads the number with zeroes (0) instead of spaces when
+      - `#`: Specifies an alternative print syntax should be used.
+        - Used with `o`, `x` or `X` specifiers the value is preceeded with `0`,
+          `0x`, or `0X`, respectively, for values different than zero.
+        - Used with `a`, `A`, `e`, `E`, `f`, `F`, `g`, or `G` it forces the
+          written output to contain a decimal point even if no more digits
+          follow. By default, if no digits follow, no decimal point is written.
+      - `0`: Left-pads the number with zeroes (`0`) instead of spaces when
              padding is specified (see width sub-specifier).
     - Width (Optional)
-      - (number): Minimum number of characters to be printed. If the value to
-                  be printed is shorter than this number, the result is padded
-                  with blank spaces or `0` if the `0` flag is present. The value
-                  is not truncated even if the result is larger. If the value is
-                  negative and the `0` flag is present, the `0`s are padded
-                  after the `-` symbol.
+      - ``(number)``: Minimum number of characters to be printed. If the value
+                      to be printed is shorter than this number, the result is
+                      padded with blank spaces or `0` if the `0` flag is
+                      present. The value is not truncated even if the result is
+                      larger. If the value is negative and the `0` flag is
+                      present, the `0`s are padded after the `-` symbol.
       - `*`: The width is not specified in the format string, but as an
              additional integer value argument preceding the argument that has
              to be formatted.
@@ -137,7 +137,7 @@ class FormatSpec:
              the argument will be a `ptrdiff_t`.
       - If a length modifier is provided for an incorrect specifier, it is
         ignored.
-    - Specifiers (Required)
+    - Specifier (Required)
       - `d` / `i`: Used for signed decimal integers.
       - `u`: Used for unsigned decimal integers.
       - `o`: Used for unsigned decimal integers and specifies formatting should
@@ -148,22 +148,22 @@ class FormatSpec:
              be as a hexadecimal number using all uppercase letters.
       - `f`: Used for floating-point values and specifies to use lowercase,
              decimal floating point formatting.
-        - Default precision is 6 decimal places unless explicitly specified.
+        - Default precision is `6` decimal places unless explicitly specified.
       - `F`: Used for floating-point values and specifies to use uppercase,
              decimal floating point formatting.
-        - Default precision is 6 decimal places unless explicitly specified.
+        - Default precision is `6` decimal places unless explicitly specified.
       - `e`: Used for floating-point values and specifies to use lowercase,
              exponential (scientific) formatting.
-        - Default precision is 6 decimal places unless explicitly specified.
+        - Default precision is `6` decimal places unless explicitly specified.
       - `E`: Used for floating-point values and specifies to use uppercase,
              exponential (scientific) formatting.
-        - Default precision is 6 decimal places unless explicitly specified.
+        - Default precision is `6` decimal places unless explicitly specified.
       - `g`: Used for floating-point values and specified to use `f` or `e`
              formatting depending on which would be the shortest representation.
         - Precision specifies the number of significant digits, not just digits
           after the decimal place.
-        - If the precision is specified as 0, it is interpreted to mean 1.
-        - `e` formatting is used if the the exponent would be less than -4 or
+        - If the precision is specified as `0`, it is interpreted to mean `1`.
+        - `e` formatting is used if the the exponent would be less than `-4` or
           is greater than or equal to the precision.
         - Trailing zeros are removed unless the `#` flag is set.
         - A decimal point only appears if it is followed by a digit.
@@ -172,9 +172,9 @@ class FormatSpec:
              formatting depending on which would be the shortest representation.
         - Precision specifies the number of significant digits, not just digits
           after the decimal place.
-        - If the precision is specified as 0, it is interpreted to mean 1.
-        - `E` formatting is used if the the exponent would be less than -4 or is
-          greater than or equal to the precision.
+        - If the precision is specified as `0`, it is interpreted to mean `1`.
+        - `E` formatting is used if the the exponent would be less than `-4` or
+          is greater than or equal to the precision.
         - Trailing zeros are removed unless the `#` flag is set.
         - A decimal point only appears if it is followed by a digit.
         - `NaN` or infinities always follow `F` formatting.
@@ -222,8 +222,9 @@ class FormatSpec:
     Non-conformant details:
     - `n` specifier: We do not support the `n` specifier since it is impossible
                      for us to retroactively tell the original program how many
-                     characters have been printed since this implementation is
-                     mainly meant to decode RPC logs.
+                     characters have been printed since this decoding happens a
+                     great deal of time after the device sent it, usually on a
+                     separate processing device entirely.
     """
 
     # Regular expression for finding format specifiers.

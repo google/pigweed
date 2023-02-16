@@ -946,6 +946,236 @@ determine the correct method to detokenize and always provide a printable
 string. For more information on this feature, see
 :ref:`module-pw_tokenizer-proto`.
 
+C99 ``printf`` Compatibility Notes
+----------------------------------
+This implementation is designed to align with the
+`C99 specification, section 7.19.6
+<https://www.dii.uchile.cl/~daespino/files/Iso_C_1999_definition.pdf>`_.
+Notably, this specification is slightly different than what is implemented
+in most compilers due to each compiler choosing to interpret undefined
+behavior in slightly different ways. Treat the following description as the
+source of truth.
+
+This implementation supports:
+
+- Overall Format: ``%[flags][width][.precision][length][specifier]``
+- Flags (Zero or More)
+   - ``-``: Left-justify within the given field width; Right justification is
+     the default (see Width modifier).
+   - ``+``: Forces to preceed the result with a plus or minus sign (``+`` or
+     ``-``) even for positive numbers. By default, only negative numbers are
+     preceded with a ``-`` sign.
+   - (space): If no sign is going to be written, a blank space is inserted
+     before the value.
+   - ``#``: Specifies an alternative print syntax should be used.
+      - Used with ``o``, ``x`` or ``X`` specifiers the value is preceeded with
+        ``0``, ``0x`` or ``0X``, respectively, for values different than zero.
+      - Used with ``a``, ``A``, ``e``, ``E``, ``f``, ``F``, ``g``, or ``G`` it
+        forces the written output to contain a decimal point even if no more
+        digits follow. By default, if no digits follow, no decimal point is
+        written.
+   - ``0``: Left-pads the number with zeroes (``0``) instead of spaces when
+     padding is specified (see width sub-specifier).
+- Width (Optional)
+   - ``(number)``: Minimum number of characters to be printed. If the value to
+     be printed is shorter than this number, the result is padded with blank
+     spaces or ``0`` if the ``0`` flag is present. The value is not truncated
+     even if the result is larger. If the value is negative and the ``0`` flag
+     is present, the ``0``\s are padded after the ``-`` symbol.
+   - ``*``: The width is not specified in the format string, but as an
+     additional integer value argument preceding the argument that has to be
+     formatted.
+- Precision (Optional)
+   - ``.(number)``
+      - For ``d``, ``i``, ``o``, ``u``, ``x``, ``X``, specifies the minimum
+        number of digits to be written. If the value to be written is shorter
+        than this number, the result is padded with leading zeros. The value is
+        not truncated even if the result is longer.
+
+        - A precision of ``0`` means that no character is written for the value
+          ``0``.
+
+      - For ``a``, ``A``, ``e``, ``E``, ``f``, and ``F``, specifies the number
+        of digits to be printed after the decimal point. By default, this is
+        ``6``.
+
+      - For ``g`` and ``G``, specifies the maximum number of significant digits
+        to be printed.
+
+      - For ``s``, specifies the maximum number of characters to be printed. By
+        default all characters are printed until the ending null character is
+        encountered.
+
+      - If the period is specified without an explicit value for precision,
+        ``0`` is assumed.
+   - ``.*``: The precision is not specified in the format string, but as an
+     additional integer value argument preceding the argument that has to be
+     formatted.
+- Length (Optional)
+   - ``hh``: Usable with ``d``, ``i``, ``o``, ``u``, ``x``, or ``X`` specifiers
+     to convey the argument will be a ``signed char`` or ``unsigned char``.
+     However, this is largely ignored in the implementation due to it not being
+     necessary for Python or argument decoding (since the argument is always
+     encoded at least as a 32-bit integer).
+   - ``h``: Usable with ``d``, ``i``, ``o``, ``u``, ``x``, or ``X`` specifiers
+     to convey the argument will be a ``signed short int`` or
+     ``unsigned short int``. However, this is largely ignored in the
+     implementation due to it not being necessary for Python or argument
+     decoding (since the argument is always encoded at least as a 32-bit
+     integer).
+   - ``l``: Usable with ``d``, ``i``, ``o``, ``u``, ``x``, or ``X`` specifiers
+     to convey the argument will be a ``signed long int`` or
+     ``unsigned long int``. Also is usable with ``c`` and ``s`` to specify that
+     the arguments will be encoded with ``wchar_t`` values (which isn't
+     different from normal ``char`` values). However, this is largely ignored in
+     the implementation due to it not being necessary for Python or argument
+     decoding (since the argument is always encoded at least as a 32-bit
+     integer).
+   - ``ll``: Usable with ``d``, ``i``, ``o``, ``u``, ``x``, or ``X`` specifiers
+     to convey the argument will be a ``signed long long int`` or
+     ``unsigned long long int``. This is required to properly decode the
+     argument as a 64-bit integer.
+   - ``L``: Usable with ``a``, ``A``, ``e``, ``E``, ``f``, ``F``, ``g``, or
+     ``G`` conversion specifiers applies to a long double argument. However,
+     this is ignored in the implementation due to floating point value encoded
+     that is unaffected by bit width.
+   - ``j``: Usable with ``d``, ``i``, ``o``, ``u``, ``x``, or ``X`` specifiers
+     to convey the argument will be a ``intmax_t`` or ``uintmax_t``.
+   - ``z``: Usable with ``d``, ``i``, ``o``, ``u``, ``x``, or ``X`` specifiers
+     to convey the argument will be a ``size_t``. This will force the argument
+     to be decoded as an unsigned integer.
+   - ``t``: Usable with ``d``, ``i``, ``o``, ``u``, ``x``, or ``X`` specifiers
+     to convey the argument will be a ``ptrdiff_t``.
+   - If a length modifier is provided for an incorrect specifier, it is ignored.
+- Specifier (Required)
+   - ``d`` / ``i``: Used for signed decimal integers.
+
+   - ``u``: Used for unsigned decimal integers.
+
+   - ``o``: Used for unsigned decimal integers and specifies formatting should
+     be as an octal number.
+
+   - ``x``: Used for unsigned decimal integers and specifies formatting should
+     be as a hexadecimal number using all lowercase letters.
+
+   - ``X``: Used for unsigned decimal integers and specifies formatting should
+     be as a hexadecimal number using all uppercase letters.
+
+   - ``f``: Used for floating-point values and specifies to use lowercase,
+     decimal floating point formatting.
+
+     - Default precision is ``6`` decimal places unless explicitly specified.
+
+   - ``F``: Used for floating-point values and specifies to use uppercase,
+     decimal floating point formatting.
+
+     - Default precision is ``6`` decimal places unless explicitly specified.
+
+   - ``e``: Used for floating-point values and specifies to use lowercase,
+     exponential (scientific) formatting.
+
+     - Default precision is ``6`` decimal places unless explicitly specified.
+
+   - ``E``: Used for floating-point values and specifies to use uppercase,
+     exponential (scientific) formatting.
+
+     - Default precision is ``6`` decimal places unless explicitly specified.
+
+   - ``g``: Used for floating-point values and specified to use ``f`` or ``e``
+     formatting depending on which would be the shortest representation.
+
+     - Precision specifies the number of significant digits, not just digits
+       after the decimal place.
+
+     - If the precision is specified as ``0``, it is interpreted to mean ``1``.
+
+     - ``e`` formatting is used if the the exponent would be less than ``-4`` or
+       is greater than or equal to the precision.
+
+     - Trailing zeros are removed unless the ``#`` flag is set.
+
+     - A decimal point only appears if it is followed by a digit.
+
+     - ``NaN`` or infinities always follow ``f`` formatting.
+
+   - ``G``: Used for floating-point values and specified to use ``f`` or ``e``
+     formatting depending on which would be the shortest representation.
+
+     - Precision specifies the number of significant digits, not just digits
+       after the decimal place.
+
+     - If the precision is specified as ``0``, it is interpreted to mean ``1``.
+
+     - ``E`` formatting is used if the the exponent would be less than ``-4`` or
+       is greater than or equal to the precision.
+
+     - Trailing zeros are removed unless the ``#`` flag is set.
+
+     - A decimal point only appears if it is followed by a digit.
+
+     - ``NaN`` or infinities always follow ``F`` formatting.
+
+   - ``c``: Used for formatting a ``char`` value.
+
+   - ``s``: Used for formatting a string of ``char`` values.
+
+     - If width is specified, the null terminator character is included as a
+       character for width count.
+
+     - If precision is specified, no more ``char``\s than that value will be
+       written from the string (padding is used to fill additional width).
+
+   - ``p``: Used for formatting a pointer address.
+
+   - ``%``: Prints a single ``%``. Only valid as ``%%`` (supports no flags,
+     width, precision, or length modifiers).
+
+Underspecified details:
+
+- If both ``+`` and (space) flags appear, the (space) is ignored.
+- The ``+`` and (space) flags will error if used with ``c`` or ``s``.
+- The ``#`` flag will error if used with ``d``, ``i``, ``u``, ``c``, ``s``, or
+  ``p``.
+- The ``0`` flag will error if used with ``c``, ``s``, or ``p``.
+- Both ``+`` and (space) can work with the unsigned integer specifiers ``u``,
+  ``o``, ``x``, and ``X``.
+- If a length modifier is provided for an incorrect specifier, it is ignored.
+- The ``z`` length modifier will decode arugments as signed as long as ``d`` or
+  ``i`` is used.
+- ``p`` is implementation defined.
+
+  - For this implementation, it will print with a ``0x`` prefix and then the
+    pointer value was printed using ``%08X``.
+
+  - ``p`` supports the ``+``, ``-``, and (space) flags, but not the ``#`` or
+    ``0`` flags.
+
+  - None of the length modifiers are usable with ``p``.
+
+  - This implementation will try to adhere to user-specified width (assuming the
+    width provided is larger than the guaranteed minimum of ``10``).
+
+  - Specifying precision for ``p`` is considered an error.
+- Only ``%%`` is allowed with no other modifiers. Things like ``%+%`` will fail
+  to decode. Some C stdlib implementations support any modifiers being
+  present between ``%``, but ignore any for the output.
+- If a width is specified with the ``0`` flag for a negative value, the padded
+  ``0``\s will appear after the ``-`` symbol.
+- A precision of ``0`` for ``d``, ``i``, ``u``, ``o``, ``x``, or ``X`` means
+  that no character is written for the value ``0``.
+- Precision cannot be specified for ``c``.
+- Using ``*`` or fixed precision with the ``s`` specifier still requires the
+  string argument to be null-terminated. This is due to argument encoding
+  happening on the C/C++-side while the precision value is not read or
+  otherwise used until decoding happens in this Python code.
+
+Non-conformant details:
+
+- ``n`` specifier: We do not support the ``n`` specifier since it is impossible
+  for us to retroactively tell the original program how many characters have
+  been printed since this decoding happens a great deal of time after the
+  device sent it, usually on a separate processing device entirely.
+
 C++
 ===
 The C++ detokenization libraries can be used in C++ or any language that can
