@@ -15,11 +15,23 @@
 
 load(
     "//pw_build/bazel_internal:pigweed_internal.bzl",
-    _add_cc_and_c_targets = "add_cc_and_c_targets",
+    _add_defaults = "add_defaults",
     _has_pw_assert_dep = "has_pw_assert_dep",
 )
 
 def pw_cc_binary(**kwargs):
+    """Wrapper for cc_binary providing some defaults.
+
+    Specifically, this wrapper,
+
+    *  Adds default copts.
+    *  Adds a dep on //pw_assert, if not already present.
+    *  Sets "linkstatic" to True.
+    *  Disables header modules (via the feature -use_header_modules).
+
+    Args:
+      **kwargs: Passed to cc_binary.
+    """
     kwargs["deps"] = kwargs.get("deps", [])
 
     # TODO(b/234877642): Remove this implicit dependency once we have a better
@@ -27,12 +39,39 @@ def pw_cc_binary(**kwargs):
     # the build.
     if not _has_pw_assert_dep(kwargs["deps"]):
         kwargs["deps"] = kwargs["deps"] + ["@pigweed//pw_assert"]
-    _add_cc_and_c_targets(native.cc_binary, kwargs)
+    _add_defaults(kwargs)
+    native.cc_binary(**kwargs)
 
 def pw_cc_library(**kwargs):
-    _add_cc_and_c_targets(native.cc_library, kwargs)
+    """Wrapper for cc_library providing some defaults.
+
+    Specifically, this wrapper,
+
+    *  Adds default copts.
+    *  Adds a dep on //pw_assert, if not already present.
+    *  Sets "linkstatic" to True.
+    *  Disables header modules (via the feature -use_header_modules).
+
+    Args:
+      **kwargs: Passed to cc_library.
+    """
+    _add_defaults(kwargs)
+    native.cc_library(**kwargs)
 
 def pw_cc_test(**kwargs):
+    """Wrapper for cc_test providing some defaults.
+
+    Specifically, this wrapper,
+
+    *  Adds default copts.
+    *  Adds a dep on //pw_assert, if not already present.
+    *  Adds a dep on //pw_unit_test:simple_printing_main
+    *  Sets "linkstatic" to True.
+    *  Disables header modules (via the feature -use_header_modules).
+
+    Args:
+      **kwargs: Passed to cc_test.
+    """
     kwargs["deps"] = kwargs.get("deps", []) + \
                      ["@pigweed//pw_unit_test:simple_printing_main"]
 
@@ -41,15 +80,30 @@ def pw_cc_test(**kwargs):
     # the build.
     if not _has_pw_assert_dep(kwargs["deps"]):
         kwargs["deps"] = kwargs["deps"] + ["@pigweed//pw_assert"]
-    _add_cc_and_c_targets(native.cc_test, kwargs)
+    _add_defaults(kwargs)
+    native.cc_test(**kwargs)
 
 def pw_cc_perf_test(**kwargs):
+    """A Pigweed performance test.
+
+    This macro produces a cc_binary and,
+
+    *  Adds default copts.
+    *  Adds a dep on //pw_assert, if not already present.
+    *  Adds a dep on //pw_perf_test:logging_main
+    *  Sets "linkstatic" to True.
+    *  Disables header modules (via the feature -use_header_modules).
+
+    Args:
+      **kwargs: Passed to cc_binary.
+    """
     kwargs["deps"] = kwargs.get("deps", []) + \
                      ["@pigweed//pw_perf_test:logging_main"]
 
     if not _has_pw_assert_dep(kwargs["deps"]):
         kwargs["deps"] = kwargs["deps"] + ["@pigweed//pw_assert"]
-    _add_cc_and_c_targets(native.cc_binary, kwargs)
+    _add_defaults(kwargs)
+    native.cc_binary(**kwargs)
 
 def pw_cc_facade(**kwargs):
     # Bazel facades should be source only cc_library's this is to simplify
@@ -61,4 +115,5 @@ def pw_cc_facade(**kwargs):
     if "srcs" in kwargs.keys():
         fail("'srcs' attribute does not exist in pw_cc_facade, please use \
         main implementing target.")
-    _add_cc_and_c_targets(native.cc_library, kwargs)
+    _add_defaults(kwargs)
+    native.cc_library(**kwargs)

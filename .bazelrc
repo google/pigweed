@@ -37,6 +37,11 @@ build --features=external_include_paths
 
 # By default build with C++20.
 build --cxxopt='-std=c++20'
+# TODO(b/269204725): Move the following flags to the toolchain configuration.
+build --cxxopt="-fno-rtti"
+build --cxxopt="-Wnon-virtual-dtor"
+# Allow uses of the register keyword, which may appear in C headers.
+build --cxxopt="-Wno-register"
 
 # This leaks the PATH variable into the Bazel build environment, which
 # enables the Python pw_protobuf plugins to find the Python version

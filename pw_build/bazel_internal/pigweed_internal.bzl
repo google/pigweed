@@ -39,13 +39,6 @@ STRICT_WARNINGS_COPTS = [
     "-Wno-error=deprecated-declarations",  # [[deprecated]] attribute
 ]
 
-CPP_COPTS = [
-    "-fno-rtti",
-    "-Wnon-virtual-dtor",
-    # Allow uses of the register keyword, which may appear in C headers.
-    "-Wno-register",
-]
-
 DISABLE_PENDING_WORKAROUND_COPTS = [
     "-Wno-private-header",
 ]
@@ -61,8 +54,6 @@ KYTHE_COPTS = [
     "-Wno-unknown-warning-option",
 ]
 
-PW_DEFAULT_LINKOPTS = []
-
 def add_defaults(kwargs):
     """Adds default arguments suitable for both C and C++ code to kwargs.
 
@@ -75,7 +66,6 @@ def add_defaults(kwargs):
         "@pigweed//pw_build:kythe": copts + KYTHE_COPTS,
         "//conditions:default": copts,
     })
-    kwargs["linkopts"] = kwargs.get("linkopts", []) + PW_DEFAULT_LINKOPTS
 
     # Set linkstatic to avoid building .so files.
     kwargs["linkstatic"] = True
@@ -86,48 +76,6 @@ def add_defaults(kwargs):
     # don't work with -fno-rtti. Note: this is not a command-line argument,
     # it's "minus use_header_modules".
     kwargs["features"].append("-use_header_modules")
-
-def default_cc_and_c_kwargs(kwargs):
-    """Splits kwargs into C and C++ arguments adding defaults.
-
-    Args:
-        kwargs: cc_* arguments to be modified.
-
-    Returns:
-        A tuple of (cc_cxx_kwargs cc_c_kwargs)
-    """
-    add_defaults(kwargs)
-    kwargs.setdefault("srcs", [])
-
-    cc = dict(kwargs.items())
-    cc["srcs"] = [src for src in kwargs["srcs"] if not src.endswith(".c")]
-    cc["copts"] = cc["copts"] + CPP_COPTS
-
-    c_srcs = [src for src in kwargs["srcs"] if src.endswith(".c")]
-
-    if c_srcs:
-        c = dict(kwargs.items())
-        c["name"] += "_c"
-        c["srcs"] = c_srcs + [src for src in kwargs["srcs"] if src.endswith(".h")]
-
-        cc["deps"] = cc.get("deps", []) + [":" + c["name"]]
-        return cc, c
-
-    return cc, None
-
-def add_cc_and_c_targets(target, kwargs):  # buildifier: disable=unnamed-macro
-    """Splits target into C and C++ targets adding defaults.
-
-    Args:
-        target: cc_* target to be split.
-        kwargs: cc_* arguments to be modified.
-    """
-    cc_kwargs, c_kwargs = default_cc_and_c_kwargs(kwargs)
-
-    if c_kwargs:
-        native.cc_library(**c_kwargs)
-
-    target(**cc_kwargs)
 
 def has_pw_assert_dep(deps):
     """Checks if the given deps contain a pw_assert dependency

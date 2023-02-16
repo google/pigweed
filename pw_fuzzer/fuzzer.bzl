@@ -16,7 +16,7 @@
 load("@rules_fuzzing//fuzzing:cc_defs.bzl", "cc_fuzz_test")
 load(
     "//pw_build/bazel_internal:pigweed_internal.bzl",
-    _add_cc_and_c_targets = "add_cc_and_c_targets",
+    _add_defaults = "add_defaults",
     _has_pw_assert_dep = "has_pw_assert_dep",
 )
 
@@ -26,4 +26,5 @@ def pw_cc_fuzz_test(**kwargs):
     # the build.
     if not _has_pw_assert_dep(kwargs["deps"]):
         kwargs["deps"].append("@pigweed//pw_assert")
-    _add_cc_and_c_targets(cc_fuzz_test, kwargs)
+    _add_defaults(kwargs)
+    cc_fuzz_test(**kwargs)
