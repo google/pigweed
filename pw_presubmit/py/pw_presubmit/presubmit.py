@@ -308,34 +308,34 @@ def archive_cas_artifact(
     for path in upload_paths:
         assert os.path.abspath(path)
 
-    with tf.NamedTemporaryFile() as digest, tf.NamedTemporaryFile() as paths:
-        json_paths = json.dumps(
-            [
-                [str(root), str(os.path.relpath(path, root))]
-                for path in upload_paths
-            ]
-        )
-        with open(paths, "w") as outfile:
-            outfile.write(json_paths)
+    with tf.NamedTemporaryFile() as tmp_digest_file:
+        with tf.NamedTemporaryFile(mode='w+t') as tmp_paths_file:
+            json_paths = json.dumps(
+                [
+                    [str(root), str(os.path.relpath(path, root))]
+                    for path in upload_paths
+                ]
+            )
+            tmp_paths_file.write(json_paths)
 
-        cmd = [
-            'cas',
-            'archive',
-            '-cas-instance',
-            ctx.luci.cas_instance,
-            '-paths-json',
-            paths.name,
-            '-dump-digest',
-            digest.name,
-        ]
-        try:
-            subprocess.check_call(cmd)
-        except subprocess.CalledProcessError as failure:
-            raise PresubmitFailure('cas archive failed') from failure
-        uploaded_digest = ''
-        with open(digest, "r") as cas_digest_file:
-            uploaded_digest = cas_digest_file.read()
-        return uploaded_digest
+            cmd = [
+                'cas',
+                'archive',
+                '-cas-instance',
+                ctx.luci.cas_instance,
+                '-paths-json',
+                tmp_paths_file.name,
+                '-dump-digest',
+                tmp_digest_file.name,
+            ]
+            try:
+                subprocess.check_call(cmd)
+            except subprocess.CalledProcessError as failure:
+                raise PresubmitFailure('cas archive failed') from failure
+            uploaded_digest = ''
+            with open(tmp_digest_file, "r") as cas_digest_file:
+                uploaded_digest = cas_digest_file.read()
+            return uploaded_digest
 
 
 @dataclasses.dataclass
