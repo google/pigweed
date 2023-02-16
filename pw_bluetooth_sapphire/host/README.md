@@ -30,9 +30,9 @@ to the Fuchsia system.
 
 ### Usage
 
-To query the current state of the `bt-host` Inspect hierarchy through `fx` tooling, run
+To query the current state of the `bt-host` Inspect hierarchy through `ffx` tooling, run
 
-`fx iquery show-file /dev/diagnostics/class/bt-host/000.inspect`
+`ffx inspect show bootstrap/driver_manager --file class/bt-host/000.inspect`
 
 ### Hierarchy
 ```
