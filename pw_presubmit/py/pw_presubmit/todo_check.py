@@ -61,6 +61,7 @@ def _process_file(ctx: PresubmitContext, todo_pattern: re.Pattern, path: Path):
         prev = ''
 
         try:
+            summary = []
             for i, line in enumerate(ins, 1):
                 if _DISABLE in line:
                     enabled = False
@@ -76,8 +77,16 @@ def _process_file(ctx: PresubmitContext, todo_pattern: re.Pattern, path: Path):
                         # todo-check: ignore
                         ctx.fail(f'Bad TODO on line {i}:', path)
                         ctx.fail(f'    {line.strip()}')
+                        summary.append(
+                            f'{path.relative_to(ctx.root)}:{i}:{line.strip()}'
+                        )
 
                 prev = line
+
+            if summary:
+                with ctx.failure_summary_log.open('w') as outs:
+                    for line in summary:
+                        print(line, file=outs)
 
         except UnicodeDecodeError:
             # File is not text, like a gif.
