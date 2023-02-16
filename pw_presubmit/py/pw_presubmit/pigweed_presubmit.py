@@ -904,7 +904,7 @@ def owners_lint_checks(ctx: PresubmitContext):
 
 SOURCE_FILES_FILTER = presubmit.FileFilter(
     endswith=_BUILD_FILE_FILTER.endswith,
-    suffix=('.bazel', '.bzl', '.gn', '.gni'),
+    suffix=('.bazel', '.bzl', '.gn', '.gni', *_BUILD_FILE_FILTER.suffix),
     exclude=(
         r'zephyr.*',
         r'android.*',
