@@ -16,31 +16,69 @@ package {
     default_applicable_licenses: ["external_pigweed_license"],
 }
 
-cc_library_static {
-    name: "pw_rpc_nanopb",
-    cpp_std: "c++2a",
-    vendor_available: true,
-    export_include_dirs: [
-        "public",
-    ],
-    static_libs: [
-        "libprotobuf-c-nano",
-        "pw_rpc_raw",
-        "pw_rpc",
-    ],
-    export_static_lib_headers: [
-        "pw_rpc_raw",
-        "pw_rpc",
-    ],
+filegroup {
+    name: "pw_rpc_nanopb_src_files",
     srcs: [
         "common.cc",
         "method.cc",
         "server_reader_writer.cc",
     ],
-    cflags: [
-        "-DPW_RPC_USE_GLOBAL_MUTEX=0",
-        "-DPW_RPC_CLIENT_STREAM_END_CALLBACK",
-        "-DPW_RPC_DYNAMIC_ALLOCATION",
+}
+
+cc_library_headers {
+    name: "pw_rpc_nanopb_include_dirs",
+    export_include_dirs: [
+        "public",
+    ],
+    vendor_available: true,
+    host_supported: true,
+}
+
+// This rule must be instantiated, i.e.
+//
+//   cc_library_static {
+//       name: "pw_rpc_nanopb_<instance_name>",
+//       defaults: [
+//           "pw_rpc_cflags_<instance_name>",
+//           "pw_rpc_nanopb_defaults",
+//       ],
+//       static_libs: [
+//           "pw_rpc_raw_<instance_name>",
+//           "pw_rpc_<instance_name>",
+//       ],
+//       export_static_lib_headers: [
+//           "pw_rpc_raw_<instance_name>",
+//           "pw_rpc_<instance_name>",
+//       ],
+//   }
+//
+// where pw_rpc_cflags_<instance_name> defines your flags, i.e.
+//
+//   cc_defaults {
+//       name: "pw_rpc_cflags_<instance_name>",
+//       cflags: [
+//           "-DPW_RPC_USE_GLOBAL_MUTEX=0",
+//           "-DPW_RPC_CLIENT_STREAM_END_CALLBACK",
+//           "-DPW_RPC_DYNAMIC_ALLOCATION",
+//       ],
+//   }
+//
+// see pw_rpc_defaults, pw_rpc_raw_defaults
+cc_defaults {
+    name: "pw_rpc_nanopb_defaults",
+    cpp_std: "c++2a",
+    static_libs: [
+        "libprotobuf-c-nano",
+    ],
+    header_libs: [
+        "pw_rpc_nanopb_include_dirs",
+    ],
+    export_header_lib_headers: [
+        "pw_rpc_nanopb_include_dirs",
+    ],
+    srcs: [
+        ":pw_rpc_nanopb_src_files",
     ],
     host_supported: true,
+    vendor_available: true,
 }

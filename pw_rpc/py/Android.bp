@@ -29,6 +29,7 @@ python_binary_host {
         "pw_rpc_internal_packet_py_lib",
         "pw_status_py_lib",
     ],
+}
 
 python_binary_host {
     name: "pw_rpc_plugin_rawpb_py",

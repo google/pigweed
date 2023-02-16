@@ -54,13 +54,13 @@ cc_library_static {
 
 genrule {
     name: "pw_protobuf_codegen_protos_py",
-    srcs: ["pw_protobuf_codegen_protos/options.proto"],
+    srcs: ["pw_protobuf_codegen_protos/codegen_options.proto"],
     cmd: "$(location aprotoc) " +
          "-I$$(dirname $(in)) " +
          "--python_out=$(genDir) " +
          "$(in)",
     out: [
-        "options_pb2.py",
+        "codegen_options_pb2.py",
     ],
     tools: [
         "aprotoc",
@@ -73,4 +73,35 @@ python_library_host {
         ":pw_protobuf_codegen_protos_py",
     ],
     pkg_path: "pw_protobuf_codegen_protos",
+}
+
+genrule {
+    name: "pw_protobuf_protos_py",
+    srcs: [
+        "pw_protobuf_protos/common.proto",
+        "pw_protobuf_protos/field_options.proto",
+        "pw_protobuf_protos/status.proto",
+        ":libprotobuf-internal-descriptor-proto",
+    ],
+    cmd: "$(location aprotoc) " +
+         "-I$$(dirname $(location pw_protobuf_protos/common.proto)) " +
+         "-Iexternal/protobuf/src/ " +
+         "--python_out=$(genDir) " +
+         "$(in)",
+    out: [
+        "common_pb2.py",
+        "field_options_pb2.py",
+        "status_pb2.py",
+    ],
+    tools: [
+        "aprotoc",
+    ],
+}
+
+python_library_host {
+    name: "pw_protobuf_protos_py_lib",
+    srcs: [
+        ":pw_protobuf_protos_py",
+    ],
+    pkg_path: "pw_protobuf_protos",
 }
