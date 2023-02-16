@@ -518,6 +518,55 @@ bits ClassOfDevice:
   $next [+11]   MajorServiceClasses          major_service_classes
 
 
+enum LEPeriodicAdvertisingCreateSyncUseParams:
+  [maximum_bits: 1]
+  USE_PARAMS                   = 0x00
+    -- Use the Advertising_SID, Advertiser_Address_Type, and Adertiser_Address parameters to
+    -- determine which advertiser to listen to.
+  USE_PERIODIC_ADVERTISER_LIST = 0x01
+    -- Use the Periodic Advertiser List to determine which advertiser to listen to.
+
+
+bits LEPeriodicAdvertisingCreateSyncOptions:
+  -- First parameter to the LE Periodic Advertising Create Sync command
+  0      [+1]  LEPeriodicAdvertisingCreateSyncUseParams  advertiser_source
+  $next  [+1]  Flag                                      enable_reporting
+    -- 0: Reporting initially enabled
+    -- 1: Reporting initially disabled
+  $next  [+1]  Flag                                      enable_duplicate_filtering
+    -- 0: Duplicate filtering initially disabled
+    -- 1: Duplicate filtering initially enabled
+  $next  [+5]  UInt                                      padding
+    -- Reserved for future use
+
+
+enum LEPeriodicAdvertisingAddressType:
+  -- Possible values that can be specified for the |advertiser_address_type| in an LE Periodic
+  -- Advertising Create Sync command.
+  [maximum_bits: 8]
+  PUBLIC = 0x00
+    -- Public Device Address or Public Identity Address
+  RANDOM = 0x01
+    -- Random Device Address or Random (static) Identity Address
+
+
+bits LEPeriodicAdvertisingSyncCTEType:
+  -- Bit definitions for a |sync_cte_type| field in an LE Periodic Advertising Create Sync command
+  0     [+1]  Flag  dont_sync_aoa
+    -- Do not sync to packets with an AoA Constant Tone Extension
+  $next [+1]  Flag  dont_sync_aod_1us
+    -- Do not sync to packets with an AoD Constant Tone Extension with 1 microsecond slots
+  $next [+1]  Flag  dont_sync_aod_2us
+    -- Do not sync to packets with an AoD Constant Tone Extension with 2 microsecond slots
+  $next [+1]  Flag  dont_sync_type_3
+    -- Do not sync to packets with a typoe 3 Constant Tone Extension (currently reserved for future
+    -- use)
+  $next [+1]  Flag  dont_sync_without_cte
+    -- Do not sync to packets without a Constant Tone Extension
+  $next [+3]  UInt  padding
+    -- Reserved for future use
+
+
 enum LEAddressType:
   -- Possible values that can be reported for the |address_type| parameter in a LE
   -- Advertising Report event.
@@ -1275,6 +1324,47 @@ struct WriteClassOfDeviceCommand:
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
   $next [+3]         ClassOfDevice  class_of_device
+
+
+struct LEPeriodicAdvertisingCreateSyncCommand:
+  -- LE Periodic Advertising Create Sync Command (v5.0) (LE)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0      [+hdr_size]               CommandHeader                           header
+  $next  [+1]                      LEPeriodicAdvertisingCreateSyncOptions  options
+  $next  [+1]                      UInt                                    advertising_sid
+    -- Advertising SID subfield in the ADI field used to identify the Periodic Advertising
+    [requires: 0x00 <= this <= 0x0F]
+  $next  [+1]                      LEPeriodicAdvertisingAddressType        advertiser_address_type
+  $next  [+BdAddr.$size_in_bytes]  BdAddr                                  advertiser_address
+    -- Public Device Address, Random Device Address, Public Identity Address, or Random (static)
+    -- Identity Address of the advertiser
+  $next  [+2]                      UInt                                    skip
+    -- The maximum number of periodic advertising events that can be skipped after a successful
+    -- receive
+    [requires: 0x0000 <= this <= 0x01F3]
+  $next  [+2]                      UInt                                    sync_timeout
+    -- Synchronization timeout for the periodic advertising.
+    -- Time = N * 10 ms
+    -- Time Range: 100 ms to 163.84 s
+    [requires: 0x000A <= this <= 0x4000]
+  $next  [+1]                      LEPeriodicAdvertisingSyncCTEType        sync_cte_type
+    -- Constant Tone Extension sync options
+
+
+struct LEPeriodicAdvertisingCreateSyncCancel:
+  -- LE Periodic Advertising Create Sync Cancel Command (v5.0) (LE)
+  -- Note that this command has no arguments
+  let hdr_size = CommandHeader.$size_in_bytes
+  0      [+hdr_size]  CommandHeader  header
+
+
+struct LEPeriodicAdvertisingTerminateSyncCommand:
+  -- LE Periodic Advertising Terminate Sync Command (v5.0) (LE)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0      [+hdr_size]  CommandHeader  header
+  $next  [+2]         UInt  sync_handle
+    -- Identifies the periodic advertising train
+    [requires: 0x0000 <= this <= 0x0EFF]
 
 
 struct LEAddDeviceToPeriodicAdvertiserListCommand:
