@@ -87,7 +87,7 @@ INVALID_CSV = """\
 2,this is totally invalid,"Whoa there!"
 3,,"This one's OK"
 ,,"Also broken"
-5,1845-2-2,"I'm %s fine"
+5,1845-02-02,"I'm %s fine"
 6,"Missing fields"
 """
 
@@ -178,7 +178,7 @@ class TokenDatabaseTest(unittest.TestCase):
         db = read_db_from_csv('')
         self.assertEqual(str(db), '')
 
-        db = read_db_from_csv('abc123,2048-4-1,Fake string\n')
+        db = read_db_from_csv('abc123,2048-04-01,Fake string\n')
         self.assertEqual(str(db), '00abc123,2048-04-01,"Fake string"\n')
 
         db = read_db_from_csv(

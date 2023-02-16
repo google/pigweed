@@ -41,7 +41,6 @@ from typing import (
 )
 from uuid import uuid4
 
-DATE_FORMAT = '%Y-%m-%d'
 DEFAULT_DOMAIN = ''
 
 # The default hash length to use for C-style hashes. This value only applies
@@ -355,24 +354,26 @@ class Database:
 
 def parse_csv(fd: TextIO) -> Iterable[TokenizedStringEntry]:
     """Parses TokenizedStringEntries from a CSV token database file."""
+    entries = []
     for line in csv.reader(fd):
         try:
             token_str, date_str, string_literal = line
 
             token = int(token_str, 16)
             date = (
-                datetime.strptime(date_str, DATE_FORMAT)
-                if date_str.strip()
-                else None
+                datetime.fromisoformat(date_str) if date_str.strip() else None
             )
 
-            yield TokenizedStringEntry(
-                token, string_literal, DEFAULT_DOMAIN, date
+            entries.append(
+                TokenizedStringEntry(
+                    token, string_literal, DEFAULT_DOMAIN, date
+                )
             )
         except (ValueError, UnicodeDecodeError) as err:
             _LOG.error(
                 'Failed to parse tokenized string entry %s: %s', line, err
             )
+    return entries
 
 
 def write_csv(database: Database, fd: BinaryIO) -> None:
@@ -388,9 +389,7 @@ def _write_csv_line(fd: BinaryIO, entry: TokenizedStringEntry):
     fd.write(
         '{:08x},{:10},"{}"\n'.format(
             entry.token,
-            entry.date_removed.strftime(DATE_FORMAT)
-            if entry.date_removed
-            else '',
+            entry.date_removed.date().isoformat() if entry.date_removed else '',
             entry.string.replace('"', '""'),
         ).encode()
     )  # escape " as ""

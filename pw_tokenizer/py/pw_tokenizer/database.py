@@ -507,7 +507,7 @@ def _parse_args():
         if value == 'today':
             return datetime.now()
 
-        return datetime.strptime(value, tokens.DATE_FORMAT)
+        return datetime.fromisoformat(value)
 
     year_month_day.__name__ = 'year-month-day (YYYY-MM-DD)'
 
