@@ -41,4 +41,23 @@ class NullStream final : public SeekableReaderWriter {
   Status DoSeek(ptrdiff_t, Whence) final { return OkStatus(); }
 };
 
+// Same as NullStream, but tracks the number of bytes written.
+class CountingNullStream final : public SeekableReaderWriter {
+ public:
+  constexpr CountingNullStream() : bytes_written_(0) {}
+
+  size_t bytes_written() const { return bytes_written_; }
+
+ private:
+  Status DoWrite(ConstByteSpan data) final {
+    bytes_written_ += data.size();
+    return OkStatus();
+  }
+
+  StatusWithSize DoRead(ByteSpan) final { return StatusWithSize::OutOfRange(); }
+  Status DoSeek(ptrdiff_t, Whence) final { return OkStatus(); }
+
+  size_t bytes_written_;
+};
+
 }  // namespace pw::stream

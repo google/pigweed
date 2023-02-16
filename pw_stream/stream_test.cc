@@ -17,7 +17,6 @@
 #include <limits>
 
 #include "gtest/gtest.h"
-#include "pw_stream/null_stream.h"
 
 namespace pw::stream {
 namespace {
@@ -192,27 +191,6 @@ TEST(Stream, RelativeSeekableReaderWriter) {
 
 TEST(Stream, SeekableReaderWriter) {
   TestStreamImpl<TestSeekableReaderWriter, kReadable, kWritable, kSeekable>();
-}
-
-TEST(NullStream, DefaultConservativeWriteLimit) {
-  NullStream stream;
-  EXPECT_EQ(stream.ConservativeWriteLimit(), Stream::kUnlimited);
-}
-
-TEST(NullStream, DefaultConservativeReadLimit) {
-  NullStream stream;
-  EXPECT_EQ(stream.ConservativeReadLimit(), Stream::kUnlimited);
-}
-
-TEST(NullStream, DefaultConservativeReadWriteLimit) {
-  NullStream stream;
-  EXPECT_EQ(stream.ConservativeWriteLimit(), Stream::kUnlimited);
-  EXPECT_EQ(stream.ConservativeReadLimit(), Stream::kUnlimited);
-}
-
-TEST(NullStream, DefaultTell) {
-  NullStream stream;
-  EXPECT_EQ(stream.Tell(), Stream::kUnknownPosition);
 }
 
 }  // namespace

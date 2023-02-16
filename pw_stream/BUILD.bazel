@@ -93,6 +93,15 @@ pw_cc_test(
 )
 
 pw_cc_test(
+    name = "null_stream_test",
+    srcs = ["null_stream_test.cc"],
+    deps = [
+        ":pw_stream",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
     name = "std_file_stream_test",
     srcs = ["std_file_stream_test.cc"],
     deps = [

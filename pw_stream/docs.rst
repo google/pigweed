@@ -399,11 +399,20 @@ Implementations
   The ``MemoryReader`` class implements the :cpp:class:`Reader` interface by
   backing the data source with an **externally-provided** memory buffer.
 
-.. cpp:class:: NullReaderWriter : public SeekableReaderWriter
+.. cpp:class:: NullStream : public SeekableReaderWriter
 
-  ``NullReaderWriter`` is a no-op stream implementation, similar to
-  ``/dev/null``. Writes are always dropped. Reads always return
-  ``OUT_OF_RANGE``. Seeks have no effect.
+  ``NullStream`` is a no-op stream implementation, similar to ``/dev/null``.
+  Writes are always dropped. Reads always return ``OUT_OF_RANGE``. Seeks have no
+  effect.
+
+.. cpp:class:: CountingNullStream : public SeekableReaderWriter
+
+  ``CountingNullStream`` is a no-op stream implementation, like
+  :cpp:class:`NullStream`, that counts the number of bytes written.
+
+  .. cpp:function:: size_t bytes_written() const
+
+    Returns the number of bytes provided to previous ``Write()`` calls.
 
 .. cpp:class:: StdFileWriter : public SeekableWriter
 

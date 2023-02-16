@@ -93,6 +93,16 @@ pw_add_test(pw_stream.memory_stream_test
     pw_stream
 )
 
+pw_add_test(pw_stream.null_stream_test
+  SOURCES
+    null_stream_test.cc
+  PRIVATE_DEPS
+    pw_stream
+  GROUPS
+    modules
+    pw_stream
+)
+
 pw_add_test(pw_stream.seek_test
   SOURCES
     seek_test.cc

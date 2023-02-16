@@ -87,6 +87,7 @@ pw_test_group("tests") {
   tests = [
     ":interval_reader_test",
     ":memory_stream_test",
+    ":null_stream_test",
     ":seek_test",
     ":stream_test",
   ]
@@ -99,6 +100,11 @@ pw_test_group("tests") {
 
 pw_test("memory_stream_test") {
   sources = [ "memory_stream_test.cc" ]
+  deps = [ ":pw_stream" ]
+}
+
+pw_test("null_stream_test") {
+  sources = [ "null_stream_test.cc" ]
   deps = [ ":pw_stream" ]
 }
 
