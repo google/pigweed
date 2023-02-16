@@ -190,7 +190,7 @@ template("_pw_python_static_analysis_pylint") {
 #       all tools. The supported tools are "mypy" and "pylint".
 #   pylintrc: Path to a pylintrc configuration file to use. If not
 #       provided, Pylint's default rcfile search is used. As this may
-#       use the the local user's configuration file, it is highly
+#       use the local user's configuration file, it is highly
 #       recommended to pass this option to specify the rcfile explicitly.
 #   mypy_ini: Optional path to a mypy configuration file to use. If not
 #       provided, mypy's default configuration file search is used. mypy is

@@ -163,7 +163,7 @@ class FormatSpec:
         - Precision specifies the number of significant digits, not just digits
           after the decimal place.
         - If the precision is specified as 0, it is interpreted to mean 1.
-        - `e` formatting is used if the the exponent would be less than -4 or
+        - `e` formatting is used if the exponent would be less than -4 or
           is greater than or equal to the precision.
         - Trailing zeros are removed unless the `#` flag is set.
         - A decimal point only appears if it is followed by a digit.
@@ -173,7 +173,7 @@ class FormatSpec:
         - Precision specifies the number of significant digits, not just digits
           after the decimal place.
         - If the precision is specified as 0, it is interpreted to mean 1.
-        - `E` formatting is used if the the exponent would be less than -4 or is
+        - `E` formatting is used if the exponent would be less than -4 or is
           greater than or equal to the precision.
         - Trailing zeros are removed unless the `#` flag is set.
         - A decimal point only appears if it is followed by a digit.

@@ -599,14 +599,14 @@ class LogView:
         latest_total = self.log_store.get_total_count()
 
         if self.filtering_on:
-            # Scan newly arived log lines
+            # Scan newly arrived log lines
             for i in range(self._last_log_store_index, latest_total):
                 if self.filter_scan(self.log_store.logs[i]):
                     self.filtered_logs.append(self.log_store.logs[i])
 
         if self.search_filter:
             last_matched_log: Optional[int] = None
-            # Scan newly arived log lines
+            # Scan newly arrived log lines
             for i in range(self._last_log_store_index, latest_total):
                 if self.search_filter.matches(self.log_store.logs[i]):
                     self.save_search_matched_line(i)

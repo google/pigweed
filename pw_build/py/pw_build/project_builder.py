@@ -580,7 +580,7 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
 
     def apply_root_log_formatting(self) -> None:
         """Inherit user defined formatting from the root_logger."""
-        # Use the the existing root logger formatter if one exists.
+        # Use the existing root logger formatter if one exists.
         for handler in logging.getLogger().handlers:
             if handler.formatter:
                 self.default_log_formatter = handler.formatter

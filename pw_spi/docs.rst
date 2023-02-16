@@ -48,7 +48,7 @@ object dependencies and configuration data; where ``MyDevice`` and
 and ``pw::spi::ChipSelector`` interfaces, respectively.
 
 The use of ``pw::sync::Borrowable`` in the interface provides a
-mutual-exclusion wrapper for the the injected ``pw::spi::Initiator``, ensuring
+mutual-exclusion wrapper for the injected ``pw::spi::Initiator``, ensuring
 that transactions cannot be interrupted or corrupted by other concurrent
 workloads making use of the same SPI bus.
 

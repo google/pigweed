@@ -105,7 +105,7 @@ class Endpoint {
   _PW_RPC_CONSTEXPR Endpoint() = default;
 
   // Initializes the endpoint with a span of channels. This is a template to
-  // avoid requiring an iterator constructor on the the underlying channels
+  // avoid requiring an iterator constructor on the underlying channels
   // container.
   template <typename Span>
   _PW_RPC_CONSTEXPR Endpoint(Span&& channels)

@@ -112,4 +112,4 @@ You are now up and running!
 
    The :ref:`module-pw_console`
    :bdg-ref-primary-line:`module-pw_console-user_guide` for more info on using
-   the the pw_console UI.
+   the pw_console UI.

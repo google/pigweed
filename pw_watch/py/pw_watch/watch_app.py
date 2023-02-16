@@ -88,7 +88,7 @@ Mouse Keys
 
 - Click on a line in the bottom progress bar to switch to that tab.
 - Click on any tab, or button to activate.
-- Scroll wheel in the the log windows moves back through the history.
+- Scroll wheel in the log windows moves back through the history.
 
 
 Global Keys

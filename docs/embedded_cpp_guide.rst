@@ -178,7 +178,7 @@ Dealing with ``nodiscard`` return values
 ----------------------------------------
 There are rare circumstances where a ``nodiscard`` return value from a function
 call needs to be discarded.  For ``pw::Status`` value ``.IgnoreError()`` can be
-appended to the the function call.  For other instances, ``std::ignore`` can be
+appended to the function call.  For other instances, ``std::ignore`` can be
 used.
 
 .. code-block:: cpp

@@ -49,7 +49,7 @@ class TimedThreadNotification : public ThreadNotification {
   //
   // Clears the notification latch.
   //
-  // Returns true if the thread was notified, meaning the the internal latch was
+  // Returns true if the thread was notified, meaning the internal latch was
   // reset successfully.
   //
   // IMPORTANT: This should only be used by a single consumer thread.
@@ -61,7 +61,7 @@ class TimedThreadNotification : public ThreadNotification {
   //
   // Clears the notification latch.
   //
-  // Returns true if the thread was notified, meaning the the internal latch was
+  // Returns true if the thread was notified, meaning the internal latch was
   // reset successfully.
   //
   // IMPORTANT: This should only be used by a single consumer thread.

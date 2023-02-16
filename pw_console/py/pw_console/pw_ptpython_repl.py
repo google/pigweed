@@ -398,7 +398,7 @@ class PwPtPythonRepl(
         if _user_input_is_a_shell_command(repl_input_text):
             self.repl_pane.application.setup_command_runner_log_pane()
 
-        # Execute the repl code in the the separate user_code thread loop.
+        # Execute the repl code in the separate user_code thread loop.
         future = asyncio.run_coroutine_threadsafe(
             # This function will be executed in a separate thread.
             self._run_user_code(repl_input_text, temp_stdout, temp_stderr),

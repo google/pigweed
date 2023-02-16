@@ -217,7 +217,7 @@ message FilterConfig {
 
 message ProxyConfig {
   // Filters are listed in order of execution.  I.e. the first filter listed
-  // will get the received data first then pass it on the the second listed
+  // will get the received data first then pass it on the second listed
   // filter. That process repeats until the last filter send the data to the
   // other side of the proxy.
   repeated FilterConfig client_filter_stack = 1;
