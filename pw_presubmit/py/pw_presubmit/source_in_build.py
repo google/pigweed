@@ -62,6 +62,11 @@ def bazel(
         )
 
         if missing:
+            with ctx.failure_summary_log.open('w') as outs:
+                print('Missing files:', file=outs)
+                for miss in missing:
+                    print(miss, file=outs)
+
             _LOG.warning('All source files must appear in BUILD files')
             raise PresubmitFailure
 
@@ -105,6 +110,11 @@ def gn(  # pylint: disable=invalid-name
         )
 
         if missing:
+            with ctx.failure_summary_log.open('w') as outs:
+                print('Missing files:', file=outs)
+                for miss in missing:
+                    print(miss, file=outs)
+
             _LOG.warning('All source files must appear in BUILD.gn files')
             raise PresubmitFailure
 
@@ -142,7 +152,13 @@ def cmake(
             ctx.output_dir / 'compile_commands.json',
             (f for f in paths if str(f).endswith(to_check)),
         )
+
         if missing:
+            with ctx.failure_summary_log.open('w') as outs:
+                print('Missing files:', file=outs)
+                for miss in missing:
+                    print(miss, file=outs)
+
             _LOG.warning(
                 'Files missing from CMake:\n%s',
                 '\n'.join(str(f) for f in missing),
