@@ -28,6 +28,13 @@ class RpcEventHandler : public EventHandler {
   RpcEventHandler(UnitTestService& service);
   void ExecuteTests(span<std::string_view> suites_to_run);
 
+  void TestProgramStart(const ProgramSummary&) override {}
+  void EnvironmentsSetUpEnd() override {}
+  void TestSuiteStart(const TestSuite&) override {}
+  void TestSuiteEnd(const TestSuite&) override {}
+  void EnvironmentsTearDownEnd() override {}
+  void TestProgramEnd(const ProgramSummary&) override {}
+
   void RunAllTestsStart() override;
   void RunAllTestsEnd(const RunTestsSummary& run_tests_summary) override;
   void TestCaseStart(const TestCase& test_case) override;

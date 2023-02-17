@@ -24,6 +24,23 @@
 #define PW_UNIT_TEST_GOOGLETEST_RUN_ALL_TESTS_END \
   "[==========] Done running all tests."
 
+#define PW_UNIT_TEST_GOOGLETEST_TEST_PROGRAM_START \
+  "[==========] Running %d tests from %d test suite%s."
+
+#define PW_UNIT_TEST_GOOGLETEST_TEST_PROGRAM_END \
+  "[==========] %d / %d tests from %d test suite%s ran."
+
+#define PW_UNIT_TEST_GOOGLETEST_ENVIRONMENTS_SETUP_END \
+  "[----------] Global test environments setup."
+
+#define PW_UNIT_TEST_GOOGLETEST_ENVIRONMENTS_TEAR_DOWN_END \
+  "[----------] Global test environments tear-down."
+
+#define PW_UNIT_TEST_GOOGLETEST_TEST_SUITE_START \
+  "[----------] %d tests from %s."
+
+#define PW_UNIT_TEST_GOOGLETEST_TEST_SUITE_END "[----------] %d tests from %s."
+
 #define PW_UNIT_TEST_GOOGLETEST_PASSED_SUMMARY "[  PASSED  ] %d test(s)."
 #define PW_UNIT_TEST_GOOGLETEST_DISABLED_SUMMARY "[ DISABLED ] %d test(s)."
 #define PW_UNIT_TEST_GOOGLETEST_FAILED_SUMMARY "[  FAILED  ] %d test(s)."
@@ -39,6 +56,13 @@ namespace unit_test {
 // Renders the test results in Google Test style.
 class GoogleTestStyleEventHandler : public EventHandler {
  public:
+  void TestProgramStart(const ProgramSummary& program_summary) override;
+  void EnvironmentsSetUpEnd() override;
+  void TestSuiteStart(const TestSuite& test_suite) override;
+  void TestSuiteEnd(const TestSuite& test_suite) override;
+  void EnvironmentsTearDownEnd() override;
+  void TestProgramEnd(const ProgramSummary& program_summary) override;
+
   void RunAllTestsStart() override;
   void RunAllTestsEnd(const RunTestsSummary& run_tests_summary) override;
   void TestCaseStart(const TestCase& test_case) override;

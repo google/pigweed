@@ -21,6 +21,57 @@
 
 namespace pw::unit_test {
 
+void LoggingEventHandler::TestProgramStart(
+    const ProgramSummary& program_summary) {
+  PW_LOG_INFO(PW_UNIT_TEST_GOOGLETEST_TEST_PROGRAM_START,
+              program_summary.tests_to_run,
+              program_summary.test_suites,
+              program_summary.test_suites != 1 ? "s" : "");
+}
+
+void LoggingEventHandler::EnvironmentsSetUpEnd() {
+  PW_LOG_INFO(PW_UNIT_TEST_GOOGLETEST_ENVIRONMENTS_SETUP_END);
+}
+
+void LoggingEventHandler::TestSuiteStart(const TestSuite& test_suite) {
+  PW_LOG_INFO(PW_UNIT_TEST_GOOGLETEST_TEST_SUITE_START,
+              test_suite.test_to_run_count,
+              test_suite.name);
+}
+
+void LoggingEventHandler::TestSuiteEnd(const TestSuite& test_suite) {
+  PW_LOG_INFO(PW_UNIT_TEST_GOOGLETEST_TEST_SUITE_END,
+              test_suite.test_to_run_count,
+              test_suite.name);
+}
+
+void LoggingEventHandler::EnvironmentsTearDownEnd() {
+  PW_LOG_INFO(PW_UNIT_TEST_GOOGLETEST_ENVIRONMENTS_TEAR_DOWN_END);
+}
+
+void LoggingEventHandler::TestProgramEnd(
+    const ProgramSummary& program_summary) {
+  PW_LOG_INFO(PW_UNIT_TEST_GOOGLETEST_TEST_PROGRAM_END,
+              program_summary.tests_to_run -
+                  program_summary.tests_summary.skipped_tests -
+                  program_summary.tests_summary.disabled_tests,
+              program_summary.tests_to_run,
+              program_summary.test_suites,
+              program_summary.test_suites != 1 ? "s" : "");
+  PW_LOG_INFO(PW_UNIT_TEST_GOOGLETEST_PASSED_SUMMARY,
+              program_summary.tests_summary.passed_tests);
+  if (program_summary.tests_summary.skipped_tests ||
+      program_summary.tests_summary.disabled_tests) {
+    PW_LOG_WARN(PW_UNIT_TEST_GOOGLETEST_DISABLED_SUMMARY,
+                program_summary.tests_summary.skipped_tests +
+                    program_summary.tests_summary.disabled_tests);
+  }
+  if (program_summary.tests_summary.failed_tests) {
+    PW_LOG_ERROR(PW_UNIT_TEST_GOOGLETEST_FAILED_SUMMARY,
+                 program_summary.tests_summary.failed_tests);
+  }
+}
+
 void LoggingEventHandler::RunAllTestsStart() {
   PW_LOG_INFO(PW_UNIT_TEST_GOOGLETEST_RUN_ALL_TESTS_START);
 }

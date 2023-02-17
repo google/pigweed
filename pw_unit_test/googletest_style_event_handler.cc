@@ -19,6 +19,57 @@
 namespace pw {
 namespace unit_test {
 
+void GoogleTestStyleEventHandler::TestProgramStart(
+    const ProgramSummary& program_summary) {
+  WriteLine(PW_UNIT_TEST_GOOGLETEST_TEST_PROGRAM_START,
+            program_summary.tests_to_run,
+            program_summary.test_suites,
+            program_summary.test_suites > 1 ? "s" : "");
+}
+
+void GoogleTestStyleEventHandler::EnvironmentsSetUpEnd() {
+  WriteLine(PW_UNIT_TEST_GOOGLETEST_ENVIRONMENTS_SETUP_END);
+}
+
+void GoogleTestStyleEventHandler::TestSuiteStart(const TestSuite& test_suite) {
+  WriteLine(PW_UNIT_TEST_GOOGLETEST_TEST_SUITE_START,
+            test_suite.test_to_run_count,
+            test_suite.name);
+}
+
+void GoogleTestStyleEventHandler::TestSuiteEnd(const TestSuite& test_suite) {
+  WriteLine(PW_UNIT_TEST_GOOGLETEST_TEST_SUITE_END,
+            test_suite.test_to_run_count,
+            test_suite.name);
+}
+
+void GoogleTestStyleEventHandler::EnvironmentsTearDownEnd() {
+  WriteLine(PW_UNIT_TEST_GOOGLETEST_ENVIRONMENTS_TEAR_DOWN_END);
+}
+
+void GoogleTestStyleEventHandler::TestProgramEnd(
+    const ProgramSummary& program_summary) {
+  WriteLine(PW_UNIT_TEST_GOOGLETEST_TEST_PROGRAM_END,
+            program_summary.tests_to_run -
+                program_summary.tests_summary.skipped_tests -
+                program_summary.tests_summary.disabled_tests,
+            program_summary.tests_to_run,
+            program_summary.test_suites,
+            program_summary.test_suites > 1 ? "s" : "");
+  WriteLine(PW_UNIT_TEST_GOOGLETEST_PASSED_SUMMARY,
+            program_summary.tests_summary.passed_tests);
+  if (program_summary.tests_summary.skipped_tests ||
+      program_summary.tests_summary.disabled_tests) {
+    WriteLine(PW_UNIT_TEST_GOOGLETEST_DISABLED_SUMMARY,
+              program_summary.tests_summary.skipped_tests +
+                  program_summary.tests_summary.disabled_tests);
+  }
+  if (program_summary.tests_summary.failed_tests) {
+    WriteLine(PW_UNIT_TEST_GOOGLETEST_FAILED_SUMMARY,
+              program_summary.tests_summary.failed_tests);
+  }
+}
+
 void GoogleTestStyleEventHandler::RunAllTestsStart() {
   WriteLine(PW_UNIT_TEST_GOOGLETEST_RUN_ALL_TESTS_START);
 }

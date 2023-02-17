@@ -23,6 +23,12 @@ class LoggingEventHandler : public EventHandler {
  public:
   // If verbose is set, expectations values are always displayed.
   LoggingEventHandler(bool verbose = false) : verbose_(verbose) {}
+  void TestProgramStart(const ProgramSummary& program_summary) override;
+  void EnvironmentsSetUpEnd() override;
+  void TestSuiteStart(const TestSuite& test_suite) override;
+  void TestSuiteEnd(const TestSuite& test_suite) override;
+  void EnvironmentsTearDownEnd() override;
+  void TestProgramEnd(const ProgramSummary& program_summary) override;
 
   void RunAllTestsStart() override;
   void RunAllTestsEnd(const RunTestsSummary& run_tests_summary) override;
