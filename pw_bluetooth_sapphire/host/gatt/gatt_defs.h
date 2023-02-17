@@ -188,13 +188,13 @@ struct CharacteristicDeclarationAttributeValue {
   Properties properties;
   att::Handle value_handle;
   att::AttributeType<Format> value_uuid;
-} __PACKED;
+} __attribute__((packed));
 
 // Service Changed Characteristic attribute value (Core Spec v5.2, Vol 3, Part G, Sec 7.1).
 struct ServiceChangedCharacteristicValue {
   att::Handle range_start_handle;
   att::Handle range_end_handle;
-} __PACKED;
+} __attribute__((packed));
 
 }  // namespace bt::gatt
 

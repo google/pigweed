@@ -5,8 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_PROTOCOL_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_HCI_SPEC_PROTOCOL_H_
 
-#include <zircon/compiler.h>
-
 #include <array>
 #include <cstdint>
 
@@ -71,12 +69,12 @@ constexpr OpCode DefineOpCode(const uint8_t ogf, const uint16_t ocf) {
 struct CommandHeader {
   uint16_t opcode;
   uint8_t parameter_total_size;
-} __PACKED;
+} __attribute__((packed));
 
 struct EventHeader {
   uint8_t event_code;
   uint8_t parameter_total_size;
-} __PACKED;
+} __attribute__((packed));
 
 struct ACLDataHeader {
   // The first 16-bits contain the following fields, in order:
@@ -87,7 +85,7 @@ struct ACLDataHeader {
 
   // Length of data following the header.
   uint16_t data_total_length;
-} __PACKED;
+} __attribute__((packed));
 
 struct SynchronousDataHeader {
   // The first 16-bits contain the following fields, in order:
@@ -98,7 +96,7 @@ struct SynchronousDataHeader {
 
   // Length of the data following the header.
   uint8_t data_total_length;
-} __PACKED;
+} __attribute__((packed));
 
 // Generic return parameter struct for commands that only return a status. This
 // can also be used to check the status of HCI commands with more complex return
@@ -106,7 +104,7 @@ struct SynchronousDataHeader {
 struct SimpleReturnParams {
   // See enum StatusCode in hci_constants.h.
   StatusCode status;
-} __PACKED;
+} __attribute__((packed));
 
 // ============= HCI Command and Event (op)code and payloads =============
 
@@ -157,7 +155,7 @@ struct CreateConnectionCancelReturnParams {
 
   // BD_ADDR of the Create Connection Command Request
   DeviceAddressBytes bd_addr;
-} __PACKED;
+} __attribute__((packed));
 
 // =========================================
 // Accept Connection Request (v1.1) (BR/EDR)
@@ -179,7 +177,7 @@ struct LinkKeyRequestReplyReturnParams {
 
   // BD_ADDR of the device whose Link Key Request was fulfilled.
   DeviceAddressBytes bd_addr;
-} __PACKED;
+} __attribute__((packed));
 
 // =======================================================
 // Link Key Request Negative Reply Command (v1.1) (BR/EDR)
@@ -191,7 +189,7 @@ struct LinkKeyRequestNegativeReplyReturnParams {
 
   // BD_ADDR of the device whose Link Key Request was denied.
   DeviceAddressBytes bd_addr;
-} __PACKED;
+} __attribute__((packed));
 
 // ================================================
 // Authentication Requested Command (v1.1) (BR/EDR)
@@ -231,7 +229,7 @@ struct IOCapabilityRequestReplyReturnParams {
 
   // BD_ADDR of the remote device involved in simple pairing process
   DeviceAddressBytes bd_addr;
-} __PACKED;
+} __attribute__((packed));
 
 // =============================================================
 // User Confirmation Request Reply Command (v2.1 + EDR) (BR/EDR)
@@ -252,7 +250,7 @@ constexpr OpCode kUserPasskeyRequestNegativeReply = LinkControlOpCode(0x002F);
 struct UserPasskeyRequestNegativeReplyCommandParams {
   // The BD_ADDR of the remote device involved in the simple pairing process.
   DeviceAddressBytes bd_addr;
-} __PACKED;
+} __attribute__((packed));
 
 // ==================================================================
 // IO Capability Request Negative Reply Command (v2.1 + EDR) (BR/EDR)
@@ -264,7 +262,7 @@ struct IOCapabilityRequestNegativeReplyCommandParams {
 
   // Reason that Simple Pairing was rejected. See 7.1.36 for valid error codes.
   StatusCode reason;
-} __PACKED;
+} __attribute__((packed));
 
 struct IOCapabilityRequestNegativeReplyReturnParams {
   // See enum StatusCode in hci_constants.h.
@@ -272,7 +270,7 @@ struct IOCapabilityRequestNegativeReplyReturnParams {
 
   // BD_ADDR of the remote device involved in simple pairing process
   DeviceAddressBytes bd_addr;
-} __PACKED;
+} __attribute__((packed));
 
 // ======================================================
 // Enhanced Setup Synchronous Connection Command (BR/EDR)
@@ -315,7 +313,7 @@ struct ReadLocalNameReturnParams {
   // (to fill up 248 octets, which is the length of the parameter) do not have
   // valid values.
   uint8_t local_name[kMaxNameLength];
-} __PACKED;
+} __attribute__((packed));
 
 // ==========================================
 // Write Page Timeout Command (v1.1) (BR/EDR)
@@ -324,7 +322,7 @@ constexpr OpCode kWritePageTimeout = ControllerAndBasebandOpCode(0x0018);
 struct WritePageTimeoutReturnParams {
   // See enum StatusCode in hci_constants.h.
   StatusCode status;
-} __PACKED;
+} __attribute__((packed));
 
 // ========================================
 // Read Scan Enable Command (v1.1) (BR/EDR)
@@ -337,7 +335,7 @@ struct ReadScanEnableReturnParams {
   // Bit Mask of enabled scans. See enum class ScanEnableBit in hci_constants.h
   // for how to interpret this bitfield.
   ScanEnableType scan_enable;
-} __PACKED;
+} __attribute__((packed));
 
 // =========================================
 // Write Scan Enable Command (v1.1) (BR/EDR)
@@ -358,7 +356,7 @@ struct ReadPageScanActivityReturnParams {
   // Page_Scan_Window, in time slices
   // Range: kPageScanWindowMin - kPageScanWindowMax in hci_constants.h
   uint16_t page_scan_window;
-} __PACKED;
+} __attribute__((packed));
 
 // ================================================
 // Write Page Scan Activity Command (v1.1) (BR/EDR)
@@ -379,7 +377,7 @@ struct ReadInquiryScanActivityReturnParams {
   // Inquiry_Scan_Window, in time slices
   // Range: kInquiryScanWindowMin - kInquiryScanWindowMax in hci_constants.h
   uint16_t inquiry_scan_window;
-} __PACKED;
+} __attribute__((packed));
 
 // ================================================
 // Write Inquiry Scan Activity Command (v1.1) (BR/EDR)
@@ -394,7 +392,7 @@ struct ReadClassOfDeviceReturnParams {
   StatusCode status;
 
   DeviceClass class_of_device;
-} __PACKED;
+} __attribute__((packed));
 
 // =============================================
 // Write Class Of Device Command (v1.1) (BR/EDR)
@@ -402,7 +400,7 @@ constexpr OpCode kWriteClassOfDevice = ControllerAndBasebandOpCode(0x0024);
 
 struct WriteClassOfDeviceCommandParams {
   DeviceClass class_of_device;
-} __PACKED;
+} __attribute__((packed));
 
 // =============================================
 // Write Automatic Flush Timeout Command (v1.1) (BR/EDR)
@@ -420,7 +418,7 @@ struct ReadTransmitPowerLevelCommandParams {
 
   // The type of transmit power level to read.
   ReadTransmitPowerType type;
-} __PACKED;
+} __attribute__((packed));
 
 struct ReadTransmitPowerLevelReturnParams {
   // See enum StatusCode in hci_constants.h.
@@ -435,7 +433,7 @@ struct ReadTransmitPowerLevelReturnParams {
   //   Range: -30 ≤ N ≤ 20
   //   Units: dBm
   int8_t tx_power_level;
-} __PACKED;
+} __attribute__((packed));
 
 // ===============================================================
 // Write Synchonous Flow Control Enable Command (BR/EDR)
@@ -451,7 +449,7 @@ struct ReadInquiryScanTypeReturnParams {
 
   // See enum class InquiryScanType in hci_constants.h for possible values.
   InquiryScanType inquiry_scan_type;
-} __PACKED;
+} __attribute__((packed));
 
 // ====================================
 // Write Inquiry Scan Type (v1.2) (BR/EDR)
@@ -467,7 +465,7 @@ struct ReadInquiryModeReturnParams {
 
   // See enum InquiryMode in hci_constants.h
   InquiryMode inquiry_mode;
-} __PACKED;
+} __attribute__((packed));
 
 // ==================================
 // Write Inquiry Mode (v1.2) (BR/EDR)
@@ -476,7 +474,7 @@ constexpr OpCode kWriteInquiryMode = ControllerAndBasebandOpCode(0x0045);
 struct WriteInquiryModeCommandParams {
   // See enum InquiryMode in hci_constants.h
   InquiryMode inquiry_mode;
-} __PACKED;
+} __attribute__((packed));
 
 // ===================================
 // Read Page Scan Type (v1.2) (BR/EDR)
@@ -488,7 +486,7 @@ struct ReadPageScanTypeReturnParams {
 
   // See enum class PageScanType in hci_constants.h for possible values.
   PageScanType page_scan_type;
-} __PACKED;
+} __attribute__((packed));
 
 // ====================================
 // Write Page Scan Type (v1.2) (BR/EDR)
@@ -497,7 +495,7 @@ constexpr OpCode kWritePageScanType = ControllerAndBasebandOpCode(0x0047);
 struct WritePageScanTypeCommandParams {
   // See enum class PageScanType in hci_constants.h for possible values.
   PageScanType page_scan_type;
-} __PACKED;
+} __attribute__((packed));
 
 // =================================
 // Write Extended Inquiry Response (v1.2) (BR/EDR)
@@ -513,7 +511,7 @@ struct ReadSimplePairingModeReturnParams {
 
   // Simple pairing Mode.
   GenericEnableParam simple_pairing_mode;
-} __PACKED;
+} __attribute__((packed));
 
 // ===============================================
 // Write Simple Pairing Mode (v2.1 + EDR) (BR/EDR)
@@ -527,7 +525,7 @@ struct SetEventMaskPage2CommandParams {
   // Bit mask used to control which HCI events are generated by the HCI for the
   // Host. See enum class EventMaskPage2 in hci_constants.h
   uint64_t event_mask;
-} __PACKED;
+} __attribute__((packed));
 
 // =========================================================
 // Read Flow Control Mode Command (v3.0 + HS) (BR/EDR & AMP)
@@ -539,7 +537,7 @@ struct ReadFlowControlModeReturnParams {
 
   // See enum class FlowControlMode in hci_constants.h for possible values.
   FlowControlMode flow_control_mode;
-} __PACKED;
+} __attribute__((packed));
 
 // ==========================================================
 // Write Flow Control Mode Command (v3.0 + HS) (BR/EDR & AMP)
@@ -548,7 +546,7 @@ constexpr OpCode kWriteFlowControlMode = ControllerAndBasebandOpCode(0x0067);
 struct WriteFlowControlModeCommandParams {
   // See enum class FlowControlMode in hci_constants.h for possible values.
   FlowControlMode flow_control_mode;
-} __PACKED;
+} __attribute__((packed));
 
 // ============================================
 // Read LE Host Support Command (v4.0) (BR/EDR)
@@ -563,7 +561,7 @@ struct ReadLEHostSupportReturnParams {
   // Core Spec v5.0, Vol 2, Part E, Section 6.35: This value is set to "disabled
   // (0x00)" by default and "shall be ignored".
   uint8_t simultaneous_le_host;
-} __PACKED;
+} __attribute__((packed));
 
 // =============================================
 // Write LE Host Support Command (v4.0) (BR/EDR)
@@ -575,7 +573,7 @@ struct WriteLEHostSupportCommandParams {
   // Core Spec v5.0, Vol 2, Part E, Section 6.35: This value is set to "disabled
   // (0x00)" by default and "shall be ignored".
   uint8_t simultaneous_le_host;
-} __PACKED;
+} __attribute__((packed));
 
 // ===============================================================
 // Read Authenticated Payload Timeout Command (v4.1) (BR/EDR & LE)
@@ -585,7 +583,7 @@ struct ReadAuthenticatedPayloadTimeoutCommandParams {
   // Connection_Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
   ConnectionHandle connection_handle;
-} __PACKED;
+} __attribute__((packed));
 
 struct ReadAuthenticatedPayloadTimeoutReturnParams {
   // See enum StatusCode in hci_constants.h.
@@ -600,7 +598,7 @@ struct ReadAuthenticatedPayloadTimeoutReturnParams {
   // Time = N * 10 ms
   // Time Range: 10 ms to 655,350 ms
   uint16_t authenticated_payload_timeout;
-} __PACKED;
+} __attribute__((packed));
 
 // ================================================================
 // Write Authenticated Payload Timeout Command (v4.1) (BR/EDR & LE)
@@ -616,7 +614,7 @@ struct WriteAuthenticatedPayloadTimeoutCommandParams {
   // Time = N * 10 ms
   // Time Range: 10 ms to 655,350 ms
   uint16_t authenticated_payload_timeout;
-} __PACKED;
+} __attribute__((packed));
 
 struct WriteAuthenticatedPayloadTimeoutReturnParams {
   // See enum StatusCode in hci_constants.h.
@@ -625,7 +623,7 @@ struct WriteAuthenticatedPayloadTimeoutReturnParams {
   // Connection_Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
   ConnectionHandle connection_handle;
-} __PACKED;
+} __attribute__((packed));
 
 // ======= Informational Parameters =======
 // Core Spec v5.0 Vol 2, Part E, Section 7.4
@@ -649,7 +647,7 @@ struct ReadLocalVersionInfoReturnParams {
   uint8_t lmp_pal_version;
   uint16_t manufacturer_name;
   uint16_t lmp_pal_subversion;
-} __PACKED;
+} __attribute__((packed));
 
 // ============================================
 // Read Local Supported Commands Command (v1.2)
@@ -662,7 +660,7 @@ struct ReadLocalSupportedCommandsReturnParams {
   // See enum class SupportedCommand in hci_constants.h for how to interpret
   // this bitfield.
   uint8_t supported_commands[64];
-} __PACKED;
+} __attribute__((packed));
 
 // ============================================
 // Read Local Supported Features Command (v1.1)
@@ -675,7 +673,7 @@ struct ReadLocalSupportedFeaturesReturnParams {
   // Bit Mask List of LMP features. See enum class LMPFeature in hci_constants.h
   // for how to interpret this bitfield.
   uint64_t lmp_features;
-} __PACKED;
+} __attribute__((packed));
 
 // ====================================================
 // Read Local Extended Features Command (v1.2) (BR/EDR)
@@ -687,7 +685,7 @@ struct ReadLocalExtendedFeaturesCommandParams {
   //
   // - 0x01-0xFF: Return the corresponding page of features.
   uint8_t page_number;
-} __PACKED;
+} __attribute__((packed));
 
 struct ReadLocalExtendedFeaturesReturnParams {
   // See enum StatusCode in hci_constants.h.
@@ -695,7 +693,7 @@ struct ReadLocalExtendedFeaturesReturnParams {
   uint8_t page_number;
   uint8_t maximum_page_number;
   uint64_t extended_lmp_features;
-} __PACKED;
+} __attribute__((packed));
 
 // ===============================
 // Read Buffer Size Command (v1.1)
@@ -709,7 +707,7 @@ struct ReadBufferSizeReturnParams {
   uint8_t hc_synchronous_data_packet_length;
   uint16_t hc_total_num_acl_data_packets;
   uint16_t hc_total_num_synchronous_data_packets;
-} __PACKED;
+} __attribute__((packed));
 
 // ========================================
 // Read BD_ADDR Command (v1.1) (BR/EDR, LE)
@@ -720,7 +718,7 @@ struct ReadBDADDRReturnParams {
   StatusCode status;
 
   DeviceAddressBytes bd_addr;
-} __PACKED;
+} __attribute__((packed));
 
 // =======================================================
 // Read Data Block Size Command (v3.0 + HS) (BR/EDR & AMP)
@@ -733,7 +731,7 @@ struct ReadDataBlockSizeReturnParams {
   uint16_t max_acl_data_packet_length;
   uint16_t data_block_length;
   uint16_t total_num_data_blocks;
-} __PACKED;
+} __attribute__((packed));
 
 // ======= Events =======
 // Core Spec v5.0 Vol 2, Part E, Section 7.7
@@ -770,7 +768,7 @@ struct InquiryResult {
   // the 15 lower bits represent bits 16-2 of CLKNPeripheral-CLK
   // the most significant bit is reserved
   uint16_t clock_offset;
-} __PACKED;
+} __attribute__((packed));
 
 struct InquiryResultEventParams {
   InquiryResultEventParams() = default;
@@ -780,7 +778,7 @@ struct InquiryResultEventParams {
   uint8_t num_responses;
 
   InquiryResult responses[];
-} __PACKED;
+} __attribute__((packed));
 
 // =========================================
 // Connection Complete Event (v1.1) (BR/EDR)
@@ -803,7 +801,7 @@ struct ConnectionCompleteEventParams {
   // Whether Link level encryption is enabled
   // Valid values are 0x00 (not enabled) and 0x01 (enabled)
   uint8_t encryption_enabled;
-} __PACKED;
+} __attribute__((packed));
 
 // ========================================
 // Connection Request Event (v1.1) (BR/EDR)
@@ -818,7 +816,7 @@ struct ConnectionRequestEventParams {
 
   // See enum LinkType in hci_constants.h
   LinkType link_type;
-} __PACKED;
+} __attribute__((packed));
 
 // =================================================
 // Disconnection Complete Event (v1.1) (BR/EDR & LE)
@@ -834,7 +832,7 @@ struct DisconnectionCompleteEventParams {
 
   // Reason for the disconnect.
   StatusCode reason;
-} __PACKED;
+} __attribute__((packed));
 
 // =============================================
 // Authentication Complete Event (v1.1) (BR/EDR)
@@ -847,7 +845,7 @@ struct AuthenticationCompleteEventParams {
   // Connection_Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
   ConnectionHandle connection_handle;
-} __PACKED;
+} __attribute__((packed));
 
 // ==================================================
 // Remote Name Request Complete Event (v1.1) (BR/EDR)
@@ -864,7 +862,7 @@ struct RemoteNameRequestCompleteEventParams {
   // If the name is less than 248 characters, it is null terminated and
   // the remaining bytes are not valid.
   uint8_t remote_name[kMaxNameLength];
-} __PACKED;
+} __attribute__((packed));
 
 // ============================================
 // Encryption Change Event (v1.1) (BR/EDR & LE)
@@ -880,7 +878,7 @@ struct EncryptionChangeEventParams {
 
   // Current Link Level Encryption status.
   EncryptionStatus encryption_enabled;
-} __PACKED;
+} __attribute__((packed));
 
 // =========================================================
 // Change Connection Link Key Complete Event (v1.1) (BR/EDR)
@@ -893,7 +891,7 @@ struct ChangeConnectionLinkKeyCompleteEventParams {
   // Connection_Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
   ConnectionHandle connection_handle;
-} __PACKED;
+} __attribute__((packed));
 
 // =============================================================
 // Read Remote Supported Features Complete Event (v1.1) (BR/EDR)
@@ -910,7 +908,7 @@ struct ReadRemoteSupportedFeaturesCompleteEventParams {
   // Bit Mask List of LMP features. See enum class LMPFeature in hci_constants.h
   // for how to interpret this bitfield.
   uint64_t lmp_features;
-} __PACKED;
+} __attribute__((packed));
 
 // ===================================================================
 // Read Remote Version Information Complete Event (v1.1) (BR/EDR & LE)
@@ -930,7 +928,7 @@ struct ReadRemoteVersionInfoCompleteEventParams {
   uint16_t manufacturer_name;
   // See Spec 5.0 Vol 2, Part C, Sec 5.2. Defined by each company.
   uint16_t lmp_subversion;
-} __PACKED;
+} __attribute__((packed));
 
 // =============================
 // Command Complete Event (v1.1)
@@ -952,7 +950,7 @@ struct CommandCompleteEventParams {
   // v5.0, Vol 2, Part E for each command’s definition for the list of return
   // parameters associated with that command.
   uint8_t return_parameters[];
-} __PACKED;
+} __attribute__((packed));
 
 // ===========================
 // Command Status Event (v1.1)
@@ -969,7 +967,7 @@ struct CommandStatusEventParams {
 
   // OpCode of the command which caused this event and is pending completion.
   uint16_t command_opcode;
-} __PACKED;
+} __attribute__((packed));
 
 // ===========================
 // Hardware Error Event (v1.1)
@@ -979,7 +977,7 @@ struct HardwareErrorEventParams {
   // These Hardware_Codes will be implementation-specific, and can be assigned
   // to indicate various hardware problems.
   uint8_t hardware_code;
-} __PACKED;
+} __attribute__((packed));
 
 // ========================================
 // Role Change Event (BR/EDR) (v1.1)
@@ -994,7 +992,7 @@ struct RoleChangeEventParams {
 
   // The new role for the specified address.
   ConnectionRole new_role;
-} __PACKED;
+} __attribute__((packed));
 
 // ========================================
 // Number Of Completed Packets Event (v1.1)
@@ -1003,7 +1001,7 @@ constexpr EventCode kNumberOfCompletedPacketsEventCode = 0x13;
 struct NumberOfCompletedPacketsEventData {
   uint16_t connection_handle;
   uint16_t hc_num_of_completed_packets;
-} __PACKED;
+} __attribute__((packed));
 
 struct NumberOfCompletedPacketsEventParams {
   NumberOfCompletedPacketsEventParams() = delete;
@@ -1011,7 +1009,7 @@ struct NumberOfCompletedPacketsEventParams {
 
   uint8_t number_of_handles;
   NumberOfCompletedPacketsEventData data[];
-} __PACKED;
+} __attribute__((packed));
 
 // ======================================
 // Link Key Request Event (v1.1) (BR/EDR)
@@ -1020,7 +1018,7 @@ constexpr EventCode kLinkKeyRequestEventCode = 0x17;
 struct LinkKeyRequestParams {
   // The address for the device that a host-stored link key is being requested.
   DeviceAddressBytes bd_addr;
-} __PACKED;
+} __attribute__((packed));
 
 // ===========================================
 // Link Key Notification Event (v1.1) (BR/EDR)
@@ -1035,7 +1033,7 @@ struct LinkKeyNotificationEventParams {
 
   // Type of key used when pairing.
   uint8_t key_type;
-} __PACKED;
+} __attribute__((packed));
 
 // ===========================================
 // Data Buffer Overflow Event (v1.1) (BR/EDR & LE)
@@ -1044,7 +1042,7 @@ constexpr EventCode kDataBufferOverflowEventCode = 0x1A;
 struct DataBufferOverflowEventParams {
   // The type of data that caused the overflow.
   LinkType ll_type;
-} __PACKED;
+} __attribute__((packed));
 
 // ==============================================
 // Inquiry Result with RSSI Event (v1.2) (BR/EDR)
@@ -1071,7 +1069,7 @@ struct InquiryResultRSSI {
   // RSSI
   // Valid range: -127 to +20
   int8_t rssi;
-} __PACKED;
+} __attribute__((packed));
 
 struct InquiryResultWithRSSIEventParams {
   InquiryResultWithRSSIEventParams() = default;
@@ -1081,7 +1079,7 @@ struct InquiryResultWithRSSIEventParams {
   uint8_t num_responses;
 
   InquiryResultRSSI responses[];
-} __PACKED;
+} __attribute__((packed));
 
 // ============================================================
 // Read Remote Extended Features Complete Event (v1.1) (BR/EDR)
@@ -1106,7 +1104,7 @@ struct ReadRemoteExtendedFeaturesCompleteEventParams {
   // Bit Mask List of LMP features. See enum class LMPFeature in hci_constants.h
   // for how to interpret this bitfield.
   uint64_t lmp_features;
-} __PACKED;
+} __attribute__((packed));
 
 // ============================================================
 // Synchronous Connection Complete Event (BR/EDR)
@@ -1141,7 +1139,7 @@ struct SynchronousConnectionCompleteEventParams {
   uint16_t tx_packet_length;
 
   pw::bluetooth::emboss::CodingFormat air_coding_format;
-} __PACKED;
+} __attribute__((packed));
 
 // =============================================
 // Extended Inquiry Result Event (v1.2) (BR/EDR)
@@ -1176,7 +1174,7 @@ struct ExtendedInquiryResultEventParams {
 
   // Extended inquiey response data as defined in Vol 3, Part C, Sec 8
   uint8_t extended_inquiry_response[kExtendedInquiryResponseBytes];
-} __PACKED;
+} __attribute__((packed));
 
 // ================================================================
 // Encryption Key Refresh Complete Event (v2.1 + EDR) (BR/EDR & LE)
@@ -1189,7 +1187,7 @@ struct EncryptionKeyRefreshCompleteEventParams {
   // Connection_Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
   ConnectionHandle connection_handle;
-} __PACKED;
+} __attribute__((packed));
 
 // =================================================
 // IO Capability Request Event (v2.1 + EDR) (BR/EDR)
@@ -1198,7 +1196,7 @@ constexpr EventCode kIOCapabilityRequestEventCode = 0x31;
 struct IOCapabilityRequestEventParams {
   // The address of the remote device involved in the simple pairing process
   DeviceAddressBytes bd_addr;
-} __PACKED;
+} __attribute__((packed));
 
 // ==================================================
 // IO Capability Response Event (v2.1 + EDR) (BR/EDR)
@@ -1220,7 +1218,7 @@ struct IOCapabilityResponseEventParams {
   // Authentication Requirements.
   // See AuthenticationRequirements in hci_constants.h
   pw::bluetooth::emboss::AuthenticationRequirements auth_requirements;
-} __PACKED;
+} __attribute__((packed));
 
 // =====================================================
 // User Confirmation Request Event (v2.1 + EDR) (BR/EDR)
@@ -1232,7 +1230,7 @@ struct UserConfirmationRequestEventParams {
 
   // Numeric value to be displayed. Valid values are 0 - 999999.
   uint32_t numeric_value;
-} __PACKED;
+} __attribute__((packed));
 
 // ================================================
 // User Passkey Request Event (v2.1 + EDR) (BR/EDR)
@@ -1241,7 +1239,7 @@ constexpr EventCode kUserPasskeyRequestEventCode = 0x34;
 struct UserPasskeyRequestEventParams {
   // Address of the device involved in simple pairing process
   DeviceAddressBytes bd_addr;
-} __PACKED;
+} __attribute__((packed));
 
 // ===================================================
 // Simple Pairing Complete Event (v2.1 + EDR) (BR/EDR)
@@ -1253,7 +1251,7 @@ struct SimplePairingCompleteEventParams {
 
   // Address of the device involved in simple pairing process
   DeviceAddressBytes bd_addr;
-} __PACKED;
+} __attribute__((packed));
 
 // =====================================================
 // User Passkey Notification Event (v2.1 + EDR) (BR/EDR)
@@ -1265,7 +1263,7 @@ struct UserPasskeyNotificationEventParams {
 
   // Numeric value (passkey) entered by user. Valid values are 0 - 999999.
   uint32_t numeric_value;
-} __PACKED;
+} __attribute__((packed));
 
 // =========================
 // LE Meta Event (v4.0) (LE)
@@ -1280,7 +1278,7 @@ struct LEMetaEventParams {
 
   // Beginning of parameters that are specific to the LE subevent.
   uint8_t subevent_parameters[];
-} __PACKED;
+} __attribute__((packed));
 
 // LE Connection Complete Event (v4.0) (LE)
 constexpr EventCode kLEConnectionCompleteSubeventCode = 0x01;
@@ -1315,7 +1313,7 @@ struct LEConnectionCompleteSubeventParams {
   // The Central_Clock_Accuracy parameter is only valid for a peripheral. On a central, this
   // parameter shall be set to 0x00.
   LEClockAccuracy central_clock_accuracy;
-} __PACKED;
+} __attribute__((packed));
 
 // LE Advertising Report Event (v4.0) (LE)
 constexpr EventCode kLEAdvertisingReportSubeventCode = 0x02;
@@ -1350,7 +1348,7 @@ struct LEAdvertisingReportData {
   //   If N == 127: RSSI is not available.
   //
   // int8_t rssi;
-} __PACKED;
+} __attribute__((packed));
 
 struct LEAdvertisingReportSubeventParams {
   LEAdvertisingReportSubeventParams() = delete;
@@ -1364,7 +1362,7 @@ struct LEAdvertisingReportSubeventParams {
   // variable length, the contents of |reports| this is declared as an array of
   // uint8_t.
   uint8_t reports[];
-} __PACKED;
+} __attribute__((packed));
 
 // LE Connection Update Complete Event (v4.0) (LE)
 constexpr EventCode kLEConnectionUpdateCompleteSubeventCode = 0x03;
@@ -1389,7 +1387,7 @@ struct LEConnectionUpdateCompleteSubeventParams {
   // Time: N * 10 ms
   // Time Range: 100 ms to 32 s
   uint16_t supervision_timeout;
-} __PACKED;
+} __attribute__((packed));
 
 // LE Read Remote Features Complete Event (v4.0) (LE)
 constexpr EventCode kLEReadRemoteFeaturesCompleteSubeventCode = 0x04;
@@ -1405,7 +1403,7 @@ struct LEReadRemoteFeaturesCompleteSubeventParams {
   // Bit Mask List of supported LE features. See enum class LEFeatures in
   // hci_constants.h.
   uint64_t le_features;
-} __PACKED;
+} __attribute__((packed));
 
 // LE Long Term Key Request Event (v4.0) (LE)
 constexpr EventCode kLELongTermKeyRequestSubeventCode = 0x05;
@@ -1420,7 +1418,7 @@ struct LELongTermKeyRequestSubeventParams {
 
   // 16-bit encrypted diversifier.
   uint16_t encrypted_diversifier;
-} __PACKED;
+} __attribute__((packed));
 
 // LE Remote Connection Parameter Request Event (v4.1) (LE)
 constexpr EventCode kLERemoteConnectionParameterRequestSubeventCode = 0x06;
@@ -1443,7 +1441,7 @@ struct LERemoteConnectionParameterRequestSubeventParams {
   // Time: N * 10 ms
   // Time Range: 100 ms to 32 s
   uint16_t timeout;
-} __PACKED;
+} __attribute__((packed));
 
 // LE Data Length Change Event (v4.2) (LE)
 constexpr EventCode kLEDataLengthChangeSubeventCode = 0x07;
@@ -1464,7 +1462,7 @@ struct LEDataLengthChangeSubeventParams {
 
   // Range: see kLEMaxTxTime[Min|Max] in hci_constants.h
   uint16_t max_rx_time;
-} __PACKED;
+} __attribute__((packed));
 
 // LE Read Local P-256 Public Key Complete Event (v4.2) (LE)
 constexpr EventCode kLEReadLocalP256PublicKeyCompleteSubeventCode = 0x08;
@@ -1475,7 +1473,7 @@ struct LEReadLOcalP256PublicKeyCompleteSubeventParams {
 
   // Local P-256 public key.
   uint8_t local_p256_public_key[64];
-} __PACKED;
+} __attribute__((packed));
 
 // LE Generate DHKey Complete Event (v4.2) (LE)
 constexpr EventCode kLEGenerateDHKeyCompleteSubeventCode = 0x09;
@@ -1486,7 +1484,7 @@ struct LEGenerateDHKeyCompleteSubeventParams {
 
   // Diffie Hellman Key.
   uint8_t dh_key[32];
-} __PACKED;
+} __attribute__((packed));
 
 // LE Enhanced Connection Complete Event (v4.2) (LE)
 constexpr EventCode kLEEnhancedConnectionCompleteSubeventCode = 0x0A;
@@ -1525,7 +1523,7 @@ struct LEEnhancedConnectionCompleteSubeventParams {
   // The Central_Clock_Accuracy parameter is only valid for a peripheral. On a central, this
   // parameter shall be set to 0x00.
   LEClockAccuracy central_clock_accuracy;
-} __PACKED;
+} __attribute__((packed));
 
 // LE Directed Advertising Report Event (v4.2) (LE)
 constexpr EventCode kLEDirectedAdvertisingReportSubeventCode = 0x0B;
@@ -1551,7 +1549,7 @@ struct LEDirectedAdvertisingReportData {
   // Units: dBm
   // If N == 127: RSSI is not available.
   int8_t rssi;
-} __PACKED;
+} __attribute__((packed));
 
 struct LEDirectedAdvertisingReportSubeventParams {
   LEDirectedAdvertisingReportSubeventParams() = delete;
@@ -1563,7 +1561,7 @@ struct LEDirectedAdvertisingReportSubeventParams {
 
   // The report array parameters.
   LEDirectedAdvertisingReportData reports[];
-} __PACKED;
+} __attribute__((packed));
 
 // LE PHY Update Complete Event (v5.0) (LE)
 constexpr EventCode kLEPHYUpdateCompleteSubeventCode = 0x0C;
@@ -1581,7 +1579,7 @@ struct LEPHYUpdateCompleteSubeventParams {
 
   // The receiver PHY.
   LEPHY rx_phy;
-} __PACKED;
+} __attribute__((packed));
 
 // LE Extended Advertising Report Event (v5.0) (LE)
 constexpr EventCode kLEExtendedAdvertisingReportSubeventCode = 0x0D;
@@ -1645,7 +1643,7 @@ struct LEExtendedAdvertisingReportData {
   // The beginning of |data_length| octets of advertising or scan response data
   // formatted as defined in Core Spec v5.0, Vol 3, Part C, Section 11.
   uint8_t data[];
-} __PACKED;
+} __attribute__((packed));
 
 struct LEExtendedAdvertisingReportSubeventParams {
   LEExtendedAdvertisingReportSubeventParams() = delete;
@@ -1658,7 +1656,7 @@ struct LEExtendedAdvertisingReportSubeventParams {
   // has a variable length, the contents of |reports| this is declared as an
   // array of uint8_t.
   uint8_t reports[];
-} __PACKED;
+} __attribute__((packed));
 
 // LE Periodic Advertising Sync Established Event (v5.0) (LE)
 constexpr EventCode kLEPeriodicAdvertisingSyncEstablishedSubeventCode = 0x0E;
@@ -1691,7 +1689,7 @@ struct LEPeriodicAdvertisingSyncEstablishedSubeventParams {
 
   // Advertiser_Clock_Accuracy.
   LEClockAccuracy advertiser_clock_accuracy;
-} __PACKED;
+} __attribute__((packed));
 
 // LE Periodic Advertising Report Event (v5.0) (LE)
 constexpr EventCode kLEPeriodicAdvertisingReportSubeventCode = 0x0F;
@@ -1725,7 +1723,7 @@ struct LEPeriodicAdvertisingReportSubeventParams {
 
   // |data_length| octets of data received from a Periodic Advertising packet.
   uint8_t data[];
-} __PACKED;
+} __attribute__((packed));
 
 // LE Periodic Advertising Sync Lost Event (v5.0) (LE)
 constexpr EventCode kLEPeriodicAdvertisingSyncLostSubeventCode = 0x10;
@@ -1734,7 +1732,7 @@ struct LEPeriodicAdvertisingSyncLostSubeventParams {
   // Used to identify the periodic advertiser (only the lower 12 bits are
   // meaningful).
   PeriodicAdvertiserHandle sync_handle;
-} __PACKED;
+} __attribute__((packed));
 
 // LE Scan Timeout Event (v5.0) (LE)
 constexpr EventCode kLEScanTimeoutSubeventCode = 0x11;
@@ -1755,7 +1753,7 @@ struct LEAdvertisingSetTerminatedSubeventParams {
   // Number of completed extended advertising events transmitted by the
   // Controller.
   uint8_t num_completed_extended_adv_events;
-} __PACKED;
+} __attribute__((packed));
 
 // LE Scan Request Received Event (v5.0) (LE)
 constexpr EventCode kLEScanRequestReceivedSubeventCode = 0x13;
@@ -1770,7 +1768,7 @@ struct LEScanRequestReceivedSubeventParams {
   // Public Device Address, Random Device Address, Public Identity Address or
   // Random (static) Identity Address of the scanning device.
   DeviceAddressBytes scanner_address;
-} __PACKED;
+} __attribute__((packed));
 
 // LE Channel Selection Algorithm Event (v5.0) (LE)
 constexpr EventCode kLEChannelSelectionAlgorithmSubeventCode = 0x014;
@@ -1782,7 +1780,7 @@ struct LEChannelSelectionAlgorithmSubeventParams {
 
   // Channel selection algorithm is used on the data channel connection.
   LEChannelSelectionAlgorithm channel_selection_algorithm;
-} __PACKED;
+} __attribute__((packed));
 
 // ================================================================
 // Number Of Completed Data Blocks Event (v3.0 + HS) (BR/EDR & AMP)
@@ -1794,7 +1792,7 @@ struct NumberOfCompletedDataBlocksEventData {
   uint16_t handle;
   uint16_t num_of_completed_packets;
   uint16_t num_of_completed_blocks;
-} __PACKED;
+} __attribute__((packed));
 
 struct NumberOfCompletedDataBlocksEventParams {
   NumberOfCompletedDataBlocksEventParams() = delete;
@@ -1803,7 +1801,7 @@ struct NumberOfCompletedDataBlocksEventParams {
   uint16_t total_num_data_blocks;
   uint8_t number_of_handles;
   NumberOfCompletedDataBlocksEventData data[];
-} __PACKED;
+} __attribute__((packed));
 
 // ================================================================
 // Authenticated Payload Timeout Expired Event (v4.1) (BR/EDR & LE)
@@ -1813,7 +1811,7 @@ struct AuthenticatedPayloadTimeoutExpiredEventParams {
   // Connection_Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
   ConnectionHandle connection_handle;
-} __PACKED;
+} __attribute__((packed));
 
 // ======= Status Parameters =======
 // Core Spec v5.0, Vol 2, Part E, Section 7.5
@@ -1831,7 +1829,7 @@ struct ReadRSSICommandParams {
   // lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
   ConnectionHandle handle;
-} __PACKED;
+} __attribute__((packed));
 
 struct ReadRSSIReturnParams {
   // See enum StatusCode in hci_constants.h.
@@ -1856,7 +1854,7 @@ struct ReadRSSIReturnParams {
   //     Range: -127 to 20, 127 (signed integer)
   //     Units: dBm
   int8_t rssi;
-} __PACKED;
+} __attribute__((packed));
 
 // ========================================
 // Read Encryption Key Size (v1.1) (BR/EDR)
@@ -1865,7 +1863,7 @@ constexpr OpCode kReadEncryptionKeySize = StatusParamsOpCode(0x0008);
 struct ReadEncryptionKeySizeParams {
   // Identifies an active ACL link (only the lower 12 bits are meaningful).
   ConnectionHandle connection_handle;
-} __PACKED;
+} __attribute__((packed));
 
 struct ReadEncryptionKeySizeReturnParams {
   // See enum StatusCode in hci_constants.h.
@@ -1876,7 +1874,7 @@ struct ReadEncryptionKeySizeReturnParams {
 
   // Encryption key size. See v5.0 Vol 2 Part C, Section 5.2.
   uint8_t key_size;
-} __PACKED;
+} __attribute__((packed));
 
 // ======= LE Controller Commands =======
 // Core Spec v5.0 Vol 2, Part E, Section 7.8
@@ -1895,7 +1893,7 @@ constexpr OpCode kLESetEventMask = LEControllerCommandOpCode(0x0001);
 struct LESetEventMaskCommandParams {
   // See enum LEEventMask in hci_constants.h for possible values.
   uint64_t le_event_mask;
-} __PACKED;
+} __attribute__((packed));
 
 // =======================================
 // LE Read Buffer Size Command (v4.0) (LE)
@@ -1907,7 +1905,7 @@ struct LEReadBufferSizeReturnParams {
 
   uint16_t hc_le_acl_data_packet_length;
   uint8_t hc_total_num_le_acl_data_packets;
-} __PACKED;
+} __attribute__((packed));
 
 // ====================================================
 // LE Read Local Supported Features Command (v4.0) (LE)
@@ -1920,7 +1918,7 @@ struct LEReadLocalSupportedFeaturesReturnParams {
   // Bit Mask List of supported LE features. See enum class LESupportedFeature
   // in hci_constants.h.
   uint64_t le_features;
-} __PACKED;
+} __attribute__((packed));
 
 // =========================================
 // LE Set Random Address Command (v4.0) (LE)
@@ -1928,7 +1926,7 @@ constexpr OpCode kLESetRandomAddress = LEControllerCommandOpCode(0x0005);
 
 struct LESetRandomAddressCommandParams {
   DeviceAddressBytes random_address;
-} __PACKED;
+} __attribute__((packed));
 
 // =================================================
 // LE Set Advertising Parameters Command (v4.0) (LE)
@@ -1965,7 +1963,7 @@ struct LESetAdvertisingParametersCommandParams {
   // This parameter shall be ignored when directed advertising is enabled (see
   // hci_constants.h for possible values).
   LEAdvFilterPolicy adv_filter_policy;
-} __PACKED;
+} __attribute__((packed));
 
 // ========================================================
 // LE Read Advertising Channel Tx Power Command (v4.0) (LE)
@@ -1981,7 +1979,7 @@ struct LEReadAdvertisingChannelTxPowerReturnParams {
   //   Units: dBm
   //   Accuracy: +/- 4 dB
   int8_t tx_power;
-} __PACKED;
+} __attribute__((packed));
 
 // ===========================================
 // LE Set Advertising Data Command (v4.0) (LE)
@@ -1996,7 +1994,7 @@ struct LESetAdvertisingDataCommandParams {
   //
   // Default: All octets zero.
   uint8_t adv_data[kMaxLEAdvertisingDataLength];
-} __PACKED;
+} __attribute__((packed));
 
 // =============================================
 // LE Set Scan Response Data Command (v4.0) (LE)
@@ -2011,7 +2009,7 @@ struct LESetScanResponseDataCommandParams {
   //
   // Default: All octets zero.
   uint8_t scan_rsp_data[kMaxLEAdvertisingDataLength];
-} __PACKED;
+} __attribute__((packed));
 
 // =============================================
 // LE Set Advertising Enable Command (v4.0) (LE)
@@ -2034,7 +2032,7 @@ struct LESetScanParametersCommandParams {
 
   LEOwnAddressType own_address_type;
   LEScanFilterPolicy filter_policy;
-} __PACKED;
+} __attribute__((packed));
 
 // ======================================
 // LE Set Scan Enable Command (v4.0) (LE)
@@ -2045,7 +2043,7 @@ struct LESetScanEnableCommandParams {
 
   // (See Core Spec v5.0, Vol 6, Part B, Section 4.4.3.5)
   GenericEnableParam filter_duplicates;
-} __PACKED;
+} __attribute__((packed));
 
 // ========================================
 // LE Create Connection Command (v4.0) (LE)
@@ -2085,7 +2083,7 @@ struct LECreateConnectionCommandParams {
   // Time: N * 0x625 ms
   uint16_t minimum_ce_length;
   uint16_t maximum_ce_length;
-} __PACKED;
+} __attribute__((packed));
 
 // NOTE on ReturnParams: No Command Complete event is sent by the Controller to
 // indicate that this command has been completed. Instead, the LE Connection
@@ -2104,7 +2102,7 @@ struct LEReadFilterAcceptListSizeReturnParams {
   // See enum StatusCode in hci_constants.h.
   StatusCode status;
   uint8_t filter_accept_list_size;
-} __PACKED;
+} __attribute__((packed));
 
 // =======================================
 // LE Clear Filter Accept List Command (v4.0) (LE)
@@ -2122,7 +2120,7 @@ struct LEAddDeviceToFilterAcceptListCommandParams {
   // Public Device Address or Random Device Address of the device to be added to
   // the Filter Accept List
   DeviceAddressBytes address;
-} __PACKED;
+} __attribute__((packed));
 
 // ====================================================
 // LE Remove Device From Filter Accept List Command (v4.0) (LE)
@@ -2136,7 +2134,7 @@ struct LERemoveDeviceFromFilterAcceptListCommandParams {
   // Public Device Address or Random Device Address of the device to be removed
   // from the Filter Accept List
   DeviceAddressBytes address;
-} __PACKED;
+} __attribute__((packed));
 
 // ========================================
 // LE Connection Update Command (v4.0) (LE)
@@ -2165,7 +2163,7 @@ struct LEConnectionUpdateCommandParams {
   // Time: N * 0x625 ms
   uint16_t minimum_ce_length;
   uint16_t maximum_ce_length;
-} __PACKED;
+} __attribute__((packed));
 
 // NOTE on Return Params: A Command Complete event is not sent by the Controller
 // to indicate that this command has been completed. Instead, the LE Connection
@@ -2189,7 +2187,7 @@ struct LESetHostChannelClassificationCommandParams {
   //
   // At least one channel shall be marked as unknown.
   uint8_t channel_map[5];
-} __PACKED;
+} __attribute__((packed));
 
 // =======================================
 // LE Read Channel Map Command (v4.0) (LE)
@@ -2199,7 +2197,7 @@ struct LEReadChannelMapCommandParams {
   // Connection Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
   ConnectionHandle connection_handle;
-} __PACKED;
+} __attribute__((packed));
 
 struct LEReadChannelMapReturnParams {
   // See enum StatusCode in hci_constants.h.
@@ -2222,7 +2220,7 @@ struct LEReadChannelMapReturnParams {
   //
   // At least one channel shall be marked as unknown.
   uint8_t channel_map[5];
-} __PACKED;
+} __attribute__((packed));
 
 // ===========================================
 // LE Read Remote Features Command (v4.0) (LE)
@@ -2232,7 +2230,7 @@ struct LEReadRemoteFeaturesCommandParams {
   // Connection Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
   ConnectionHandle connection_handle;
-} __PACKED;
+} __attribute__((packed));
 
 // Note on ReturnParams: A Command Complete event is not sent by the Controller
 // to indicate that this command has been completed. Instead, the LE Read Remote
@@ -2248,7 +2246,7 @@ struct LEEncryptCommandParams {
 
   // 128 bit data block that is requested to be encrypted.
   uint8_t plaintext_data[16];
-} __PACKED;
+} __attribute__((packed));
 
 struct LEEncryptReturnParams {
   // See enum StatusCode in hci_constants.h.
@@ -2256,7 +2254,7 @@ struct LEEncryptReturnParams {
 
   // 128 bit encrypted data block.
   uint8_t encrypted_data[16];
-} __PACKED;
+} __attribute__((packed));
 
 // ===========================
 // LE Rand Command (v4.0) (LE)
@@ -2268,7 +2266,7 @@ struct LERandReturnParams {
 
   // Random Number
   uint64_t random_number;
-} __PACKED;
+} __attribute__((packed));
 
 // =======================================
 // LE Start Encryption Command (v4.0) (LE)
@@ -2289,7 +2287,7 @@ struct LEStartEncryptionCommandParams {
 
   // 128-bit long-term key (LTK).
   UInt128 long_term_key;
-} __PACKED;
+} __attribute__((packed));
 
 // NOTE on Return Params: A Command Complete event is not sent by the Controller
 // to indicate that this command has been completed. Instead, the Encryption
@@ -2307,7 +2305,7 @@ struct LELongTermKeyRequestReplyCommandParams {
 
   // 128-bit long term key for the current connection.
   UInt128 long_term_key;
-} __PACKED;
+} __attribute__((packed));
 
 struct LELongTermKeyRequestReplyReturnParams {
   // See enum StatusCode in hci_constants.h.
@@ -2316,7 +2314,7 @@ struct LELongTermKeyRequestReplyReturnParams {
   // Connection Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
   ConnectionHandle connection_handle;
-} __PACKED;
+} __attribute__((packed));
 
 // ===========================================================
 // LE Long Term Key Request Negative Reply Command (v4.0) (LE)
@@ -2326,7 +2324,7 @@ struct LELongTermKeyRequestNegativeReplyCommandParams {
   // Connection Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
   ConnectionHandle connection_handle;
-} __PACKED;
+} __attribute__((packed));
 
 struct LELongTermKeyRequestNegativeReplyReturnParams {
   // See enum StatusCode in hci_constants.h.
@@ -2335,7 +2333,7 @@ struct LELongTermKeyRequestNegativeReplyReturnParams {
   // Connection Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
   ConnectionHandle connection_handle;
-} __PACKED;
+} __attribute__((packed));
 
 // ============================================
 // LE Read Supported States Command (v4.0) (LE)
@@ -2348,7 +2346,7 @@ struct LEReadSupportedStatesReturnParams {
   // Bit-mask of supported state or state combinations. See Core Spec v4.2,
   // Volume 2, Part E, Section 7.8.27 "LE Read Supported States Command".
   uint64_t le_states;
-} __PACKED;
+} __attribute__((packed));
 
 // ====================================
 // LE Receiver Test Command (v4.0) (LE)
@@ -2358,7 +2356,7 @@ struct LEReceiverTestCommandParams {
   // N = (F - 2402) / 2
   // Range: 0x00 - 0x27. Frequency Range : 2402 MHz to 2480 MHz.
   uint8_t rx_channel;
-} __PACKED;
+} __attribute__((packed));
 
 // ======================================
 // LE Transmitter Test Command (v4.0) (LE)
@@ -2375,7 +2373,7 @@ struct LETransmitterTestCommandParams {
   // The packet payload sequence. See Core Spec 5.0, Vol 2, Part E,
   // Section 7.8.29 for a description of possible values.
   uint8_t packet_payload;
-} __PACKED;
+} __attribute__((packed));
 
 // ===============================
 // LE Test End Command (v4.0) (LE)
@@ -2387,7 +2385,7 @@ struct LETestEndReturnParams {
 
   // Number of packets received
   uint16_t number_of_packets;
-} __PACKED;
+} __attribute__((packed));
 
 // ================================================================
 // LE Remote Connection Parameter Request Reply Command (v4.1) (LE)
@@ -2416,7 +2414,7 @@ struct LERemoteConnectionParameterRequestReplyCommandParams {
   // Time: N * 0x625 ms
   uint16_t minimum_ce_length;
   uint16_t maximum_ce_length;
-} __PACKED;
+} __attribute__((packed));
 
 struct LERemoteConnectionParameterRequestReplyReturnParams {
   // See enum StatusCode in hci_constants.h.
@@ -2425,7 +2423,7 @@ struct LERemoteConnectionParameterRequestReplyReturnParams {
   // Connection Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
   ConnectionHandle connection_handle;
-} __PACKED;
+} __attribute__((packed));
 
 // =========================================================================
 // LE Remote Connection Parameter Request Negative Reply Command (v4.1) (LE)
@@ -2439,7 +2437,7 @@ struct LERemoteConnectionParamReqNegativeReplyCommandParams {
 
   // Reason that the connection parameter request was rejected.
   StatusCode reason;
-} __PACKED;
+} __attribute__((packed));
 
 struct LERemoteConnectionParamReqNegativeReplyReturnParams {
   // See enum StatusCode in hci_constants.h.
@@ -2448,7 +2446,7 @@ struct LERemoteConnectionParamReqNegativeReplyReturnParams {
   // Connection Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
   ConnectionHandle connection_handle;
-} __PACKED;
+} __attribute__((packed));
 
 // ======================================
 // LE Set Data Length Command (v4.2) (LE)
@@ -2464,7 +2462,7 @@ struct LESetDataLengthCommandParams {
 
   // Range: see kLEMaxTxTime[Min|Max] in hci_constants.h
   uint16_t tx_time;
-} __PACKED;
+} __attribute__((packed));
 
 struct LESetDataLengthReturnParams {
   // See enum StatusCode in hci_constants.h.
@@ -2473,7 +2471,7 @@ struct LESetDataLengthReturnParams {
   // Connection Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
   ConnectionHandle connection_handle;
-} __PACKED;
+} __attribute__((packed));
 
 // =========================================================
 // LE Read Suggested Default Data Length Command (v4.2) (LE)
@@ -2488,7 +2486,7 @@ struct LEReadSuggestedDefaultDataLengthReturnParams {
 
   // Range: see kLEMaxTxTime[Min|Max] in hci_constants.h
   uint16_t suggested_max_tx_time;
-} __PACKED;
+} __attribute__((packed));
 
 // ==========================================================
 // LE Write Suggested Default Data Length Command (v4.2) (LE)
@@ -2500,7 +2498,7 @@ struct LEWriteSuggestedDefaultDataLengthCommandParams {
 
   // Range: see kLEMaxTxTime[Min|Max] in hci_constants.h
   uint16_t suggested_max_tx_time;
-} __PACKED;
+} __attribute__((packed));
 
 // ==================================================
 // LE Read Local P-256 Public Key Command (v4.2) (LE)
@@ -2525,7 +2523,7 @@ struct LEGenerateDHKeyCommandParams {
   //   Octets 31-0: X co-ordinate
   //   Octets 63-32: Y co-ordinate Little Endian Format
   uint8_t remote_p256_public_key[64];
-} __PACKED;
+} __attribute__((packed));
 
 // NOTE on ReturnParams: When the Controller receives the LE_Generate_DHKey
 // command, the Controller shall send the Command Status event to the Host. When
@@ -2551,7 +2549,7 @@ struct LEAddDeviceToResolvingListCommandParams {
 
   // IRK (Identity Resolving Key) of the local device
   UInt128 local_irk;
-} __PACKED;
+} __attribute__((packed));
 
 // ========================================================
 // LE Remove Device From Resolving List Command (v4.2) (LE)
@@ -2563,7 +2561,7 @@ struct LERemoveDeviceFromResolvingListCommandParams {
 
   // Public or Random (static) Identity address of the peer device
   DeviceAddressBytes peer_identity_address;
-} __PACKED;
+} __attribute__((packed));
 
 // ===========================================
 // LE Clear Resolving List Command (v4.2) (LE)
@@ -2579,7 +2577,7 @@ struct LEReadResolvingListReturnParams {
 
   // Number of address translation entries in the resolving list.
   uint8_t resolving_list_size;
-} __PACKED;
+} __attribute__((packed));
 
 // ===================================================
 // LE Read Peer Resolvable Address Command (v4.2) (LE)
@@ -2591,7 +2589,7 @@ struct LEReadPeerResolvableAddressCommandParams {
 
   // Public or Random (static) Identity address of the peer device.
   DeviceAddressBytes peer_identity_address;
-} __PACKED;
+} __attribute__((packed));
 
 struct LEReadPeerResolvableAddressReturnParams {
   // See enum StatusCode in hci_constants.h.
@@ -2599,7 +2597,7 @@ struct LEReadPeerResolvableAddressReturnParams {
 
   // Resolvable Private Address being used by the peer device.
   DeviceAddressBytes peer_resolvable_address;
-} __PACKED;
+} __attribute__((packed));
 
 // ====================================================
 // LE Read Local Resolvable Address Command (v4.2) (LE)
@@ -2611,7 +2609,7 @@ struct LEReadLocalResolvableAddressCommandParams {
 
   // Public or Random (static) Identity address of the peer device
   DeviceAddressBytes peer_identity_address;
-} __PACKED;
+} __attribute__((packed));
 
 struct LEReadLocalResolvableAddressReturnParams {
   // See enum StatusCode in hci_constants.h.
@@ -2619,7 +2617,7 @@ struct LEReadLocalResolvableAddressReturnParams {
 
   // Resolvable Private Address being used by the local device.
   DeviceAddressBytes local_resolvable_address;
-} __PACKED;
+} __attribute__((packed));
 
 // ====================================================
 // LE Set Address Resolution Enable Command (v4.2) (LE)
@@ -2627,7 +2625,7 @@ constexpr OpCode kLESetAddressResolutionEnable = LEControllerCommandOpCode(0x002
 
 struct LESetAddressResolutionEnableCommandParams {
   GenericEnableParam address_resolution_enable;
-} __PACKED;
+} __attribute__((packed));
 
 // =============================================================
 // LE Set Resolvable Private Address Timeout Command (v4.2) (LE)
@@ -2637,7 +2635,7 @@ struct LESetResolvablePrivateAddressTimeoutCommandParams {
   // Range: See kLERPATimeout[Min|Max] in hci_constants.h
   // Default: See kLERPATimeoutDefault in hci_constants.h
   uint16_t rpa_timeout;
-} __PACKED;
+} __attribute__((packed));
 
 // ===============================================
 // LE Read Maximum Data Length Command (v4.2) (LE)
@@ -2658,7 +2656,7 @@ struct LEReadMaximumDataLengthReturnParams {
 
   // Range: see kLEMaxTxTime[Min|Max] in hci_constants.h
   uint16_t supported_max_rx_time;
-} __PACKED;
+} __attribute__((packed));
 
 // ===============================
 // LE Read PHY Command (v5.0) (LE)
@@ -2668,7 +2666,7 @@ struct LEReadPHYCommandParams {
   // Connection Handle (only the lower 12-bits are meaningful).
   //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
   ConnectionHandle connection_handle;
-} __PACKED;
+} __attribute__((packed));
 
 struct LEReadPHYReturnParams {
   // See enum StatusCode in hci_constants.h.
@@ -2683,7 +2681,7 @@ struct LEReadPHYReturnParams {
 
   // The receiver PHY.
   LEPHY rx_phy;
-} __PACKED;
+} __attribute__((packed));
 
 // ======================================
 // LE Set Default PHY Command (v5.0) (LE)
@@ -2701,7 +2699,7 @@ struct LESetDefaultPHYCommandParams {
   // See the kLEPHYBit* constants in hci_constants.h for possible bitfield
   // values.
   uint8_t rx_phys;
-} __PACKED;
+} __attribute__((packed));
 
 // ==============================
 // LE Set PHY Command (v5.0) (LE)
@@ -2725,7 +2723,7 @@ struct LESetPHYCommandParams {
   uint8_t rx_phys;
 
   LEPHYOptions phy_options;
-} __PACKED;
+} __attribute__((packed));
 
 // NOTE on ReturnParams: A Command Complete event is not sent by the Controller
 // to indicate that this command has been completed. Instead, the LE PHY Update
@@ -2746,7 +2744,7 @@ struct LEEnhancedReceiverTestCommandParams {
 
   // Transmitter modulation index that should be assumed.
   LETestModulationIndex modulation_index;
-} __PACKED;
+} __attribute__((packed));
 
 // ================================================
 // LE Enhanced Transmitter Test Command (v5.0) (LE)
@@ -2766,7 +2764,7 @@ struct LEEnhancedTransmitterTestCommandParams {
 
   // Transmitter PHY.
   LEPHY phy;
-} __PACKED;
+} __attribute__((packed));
 
 // =========================================================
 // LE Set Advertising Set Random Address Command (v5.0) (LE)
@@ -2778,7 +2776,7 @@ struct LESetAdvertisingSetRandomAddressCommandParams {
 
   // Random Device Address.
   DeviceAddressBytes adv_random_address;
-} __PACKED;
+} __attribute__((packed));
 
 // ==========================================================
 // LE Set Extended Advertising Parameters Command (v5.0) (LE)
@@ -2823,13 +2821,13 @@ struct LESetExtendedAdvertisingParametersCommandParams {
   LEPHY secondary_adv_phy;
   uint8_t advertising_sid;
   GenericEnableParam scan_request_notification_enable;
-} __PACKED;
+} __attribute__((packed));
 
 struct LESetExtendedAdvertisingParametersReturnParams {
   // See enum StatusCode in hci_constants.h.
   StatusCode status;
   int8_t selected_tx_power;
-} __PACKED;
+} __attribute__((packed));
 
 // ====================================================
 // LE Set Extended Advertising Data Command (v5.0) (LE)
@@ -2857,7 +2855,7 @@ struct LESetExtendedAdvertisingDataCommandParams {
 
   // Variable length advertising data.
   uint8_t adv_data[];
-} __PACKED;
+} __attribute__((packed));
 
 // ======================================================
 // LE Set Extended Scan Response Data Command (v5.0) (LE)
@@ -2884,7 +2882,7 @@ struct LESetExtendedScanResponseDataCommandParams {
 
   // Variable length scan response data.
   uint8_t scan_rsp_data[];
-} __PACKED;
+} __attribute__((packed));
 
 // ======================================================
 // LE Set Extended Advertising Enable Command (v5.0) (LE)
@@ -2899,7 +2897,7 @@ struct LEReadMaxAdvertisingDataLengthReturnParams {
   StatusCode status;
 
   uint16_t max_adv_data_length;
-} __PACKED;
+} __attribute__((packed));
 
 // ================================================================
 // LE Read Number of Supported Advertising Sets Command (v5.0) (LE)
@@ -2910,7 +2908,7 @@ struct LEReadNumSupportedAdvertisingSetsReturnParams {
   StatusCode status;
 
   uint8_t num_supported_adv_sets;
-} __PACKED;
+} __attribute__((packed));
 
 // =============================================
 // LE Remove Advertising Set Command (v5.0) (LE)
@@ -2919,7 +2917,7 @@ constexpr OpCode kLERemoveAdvertisingSet = LEControllerCommandOpCode(0x003C);
 struct LERemoveAdvertisingSetCommandParams {
   // Handle used to identify an advertising set.
   AdvertisingHandle adv_handle;
-} __PACKED;
+} __attribute__((packed));
 
 // =============================================
 // LE Clear Advertising Sets Command (v5.0) (LE)
@@ -2943,7 +2941,7 @@ struct LESetPeriodicAdvertisingParametersCommandParams {
   // See the kLEPeriodicAdvPropBit* constants in hci_constants.h for possible
   // bit values.
   uint16_t periodic_adv_properties;
-} __PACKED;
+} __attribute__((packed));
 
 // ====================================================
 // LE Set Periodic Advertising Data Command (v5.0) (LE)
@@ -2966,7 +2964,7 @@ struct LESetPeriodicAdvertisingDataCommandParams {
 
   // Variable length advertising data.
   uint8_t adv_data[];
-} __PACKED;
+} __attribute__((packed));
 
 // ======================================================
 // LE Set Periodic Advertising Enable Command (v5.0) (LE)
@@ -2978,7 +2976,7 @@ struct LESetPeriodicAdvertisingEnableCommandParams {
 
   // Handle used to identify an advertising set.
   AdvertisingHandle adv_handle;
-} __PACKED;
+} __attribute__((packed));
 
 // ===================================================
 // LE Set Extended Scan Parameters Command (v5.0) (LE)
@@ -2993,7 +2991,7 @@ struct LESetExtendedScanParametersData {
   // Time Range: 2.5 ms to 40.959375 s
   uint16_t scan_interval;
   uint16_t scan_window;
-} __PACKED;
+} __attribute__((packed));
 
 struct LESetExtendedScanParametersCommandParams {
   LESetExtendedScanParametersCommandParams() = delete;
@@ -3014,7 +3012,7 @@ struct LESetExtendedScanParametersCommandParams {
   // The number of array elements is determined by the number of bits set in the scan_phys
   // parameter.
   LESetExtendedScanParametersData data[];
-} __PACKED;
+} __attribute__((packed));
 
 // ===============================================
 // LE Set Extended Scan Enable Command (v5.0) (LE)
@@ -3049,7 +3047,7 @@ struct LEExtendedCreateConnectionData {
   // Time: N * 0x625 ms
   uint16_t minimum_ce_length;
   uint16_t maximum_ce_length;
-} __PACKED;
+} __attribute__((packed));
 
 struct LEExtendedCreateConnectionCommandParams {
   LEExtendedCreateConnectionCommandParams() = delete;
@@ -3070,7 +3068,7 @@ struct LEExtendedCreateConnectionCommandParams {
   // The number of array elements is determined by the number of bits set in the
   // |initiating_phys| parameter.
   LEExtendedCreateConnectionData data[];
-} __PACKED;
+} __attribute__((packed));
 
 // NOTE on ReturnParams: No Command Complete event is sent by the Controller to
 // indicate that this command has been completed. Instead, the LE Enhanced
@@ -3111,7 +3109,7 @@ struct LEPeriodicAdvertisingCreateSyncCommandParams {
   // As of Core Spec v5.0 this parameter is intended to be used in a future
   // feature. The Host must set this value to 0x00.
   uint8_t unused;
-} __PACKED;
+} __attribute__((packed));
 
 // NOTE on ReturnParams: No Command Complete event is sent by the Controller to
 // indicate that this command has been completed. Instead, the LE Periodic
@@ -3130,7 +3128,7 @@ struct LEPeriodicAdvertisingTerminateSyncCommandParams {
   // Handle used to identify the periodic advertiser (only the lower 12 bits are
   // meaningful).
   PeriodicAdvertiserHandle sync_handle;
-} __PACKED;
+} __attribute__((packed));
 
 // =============================================================
 // LE Add Device To Periodic Advertiser List Command (v5.0) (LE)
@@ -3155,7 +3153,7 @@ struct LEReadPeriodicAdvertiserListSizeReturnParams {
   // Total number of Periodic Advertiser list entries that can be stored in the
   // Controller.
   uint8_t periodic_advertiser_list_size;
-} __PACKED;
+} __attribute__((packed));
 
 // ==========================================
 // LE Read Transmit Power Command (v5.0) (LE)
@@ -3169,7 +3167,7 @@ struct LEReadTransmitPowerReturnParams {
   // Units: dBm
   int8_t min_tx_power;
   int8_t max_tx_power;
-} __PACKED;
+} __attribute__((packed));
 
 // ================================================
 // LE Read RF Path Compensation Command (v5.0) (LE)
@@ -3185,7 +3183,7 @@ struct LEReadRFPathCompensationReturnParams {
   //   Units: 0.1 dB
   int16_t rf_tx_path_comp_value;
   int16_t rf_rx_path_comp_value;
-} __PACKED;
+} __attribute__((packed));
 
 // =================================================
 // LE Write RF Path Compensation Command (v5.0) (LE)

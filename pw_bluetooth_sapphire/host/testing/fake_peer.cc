@@ -5,7 +5,6 @@
 #include "fake_peer.h"
 
 #include <endian.h>
-#include <zircon/syscalls.h>
 
 #include "fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"

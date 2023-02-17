@@ -4,6 +4,7 @@
 
 #include "security_manager.h"
 
+// TODO(fxbug.dev/100594): Remove once migration to pw_async is complete.
 #include <zircon/status.h>
 
 #include <memory>

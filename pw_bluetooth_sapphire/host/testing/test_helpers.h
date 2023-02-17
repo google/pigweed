@@ -11,7 +11,6 @@
 #include <type_traits>
 
 #include "gmock/gmock.h"
-#include "lib/zx/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
@@ -117,8 +116,6 @@ constexpr std::array<uint8_t, sizeof(T)> ToBytes(T x) {
 // Returns the Upper/Lower bits of a uint16_t
 constexpr uint8_t UpperBits(const uint16_t x) { return ToBytes(x).back(); }
 constexpr uint8_t LowerBits(const uint16_t x) { return ToBytes(x).front(); }
-
-bool IsChannelPeerClosed(const zx::channel& channel);
 
 // Wraps ContainerEq, which doesn't support comparing different ByteBuffer types
 MATCHER_P(BufferEq, b, "") {

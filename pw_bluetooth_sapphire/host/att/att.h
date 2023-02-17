@@ -5,8 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_ATT_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_ATT_ATT_H_
 
-#include <zircon/compiler.h>
-
 #include <cstddef>
 #include <cstdint>
 #include <type_traits>
@@ -76,7 +74,7 @@ enum class MethodType {
 
 struct Header {
   OpCode opcode;
-} __PACKED;
+} __attribute__((packed));
 
 enum class ErrorCode : uint8_t {
   kInvalidHandle = 0x01,
@@ -125,7 +123,7 @@ struct AttributeData {
 
   Handle handle;
   uint8_t value[];
-} __PACKED;
+} __attribute__((packed));
 
 // ============== ATT PDUs ==============
 constexpr OpCode kInvalidOpCode = 0x00;
@@ -137,7 +135,7 @@ struct ErrorResponseParams {
   OpCode request_opcode;
   Handle attribute_handle;
   ErrorCode error_code;
-} __PACKED;
+} __attribute__((packed));
 
 // ============
 // MTU Exchange
@@ -146,11 +144,11 @@ constexpr OpCode kExchangeMTUResponse = 0x03;
 
 struct ExchangeMTURequestParams {
   uint16_t client_rx_mtu;
-} __PACKED;
+} __attribute__((packed));
 
 struct ExchangeMTUResponseParams {
   uint16_t server_rx_mtu;
-} __PACKED;
+} __attribute__((packed));
 
 // ================
 // Find Information
@@ -160,7 +158,7 @@ constexpr OpCode kFindInformationResponse = 0x05;
 struct FindInformationRequestParams {
   Handle start_handle;
   Handle end_handle;
-} __PACKED;
+} __attribute__((packed));
 
 struct FindInformationResponseParams {
   UUIDType format;
@@ -171,13 +169,13 @@ struct FindInformationResponseParams {
   //
   // If type == InformationDataFormat::kUUID28:
   // InformationData128 information_data[];
-} __PACKED;
+} __attribute__((packed));
 
 template <UUIDType Format>
 struct InformationData {
   Handle handle;
   AttributeType<Format> uuid;
-} __PACKED;
+} __attribute__((packed));
 
 using InformationData16 = InformationData<UUIDType::k16Bit>;
 using InformationData128 = InformationData<UUIDType::k128Bit>;
@@ -195,17 +193,17 @@ struct FindByTypeValueRequestParams {
   Handle end_handle;
   AttributeType16 type;
   uint8_t value[];
-} __PACKED;
+} __attribute__((packed));
 
 struct HandlesInformationList {
   Handle handle;
   Handle group_end_handle;
-} __PACKED;
+} __attribute__((packed));
 
 struct FindByTypeValueResponseParams {
   // Contains at least 1 entry
   HandlesInformationList handles_information_list[1];
-} __PACKED;
+} __attribute__((packed));
 
 // ============
 // Read By Type
@@ -220,7 +218,7 @@ struct ReadByTypeRequestParams {
   Handle start_handle;
   Handle end_handle;
   AttributeType<Format> type;
-} __PACKED;
+} __attribute__((packed));
 
 using ReadByTypeRequestParams16 = ReadByTypeRequestParams<UUIDType::k16Bit>;
 using ReadByTypeRequestParams128 = ReadByTypeRequestParams<UUIDType::k128Bit>;
@@ -231,7 +229,7 @@ struct ReadByTypeResponseParams {
 
   uint8_t length;
   AttributeData attribute_data_list[];
-} __PACKED;
+} __attribute__((packed));
 
 // ====
 // Read
@@ -240,7 +238,7 @@ constexpr OpCode kReadResponse = 0x0B;
 
 struct ReadRequestParams {
   Handle handle;
-} __PACKED;
+} __attribute__((packed));
 
 // The Read Response PDU contains the attribute value requested.
 
@@ -252,7 +250,7 @@ constexpr OpCode kReadBlobResponse = 0x0D;
 struct ReadBlobRequestParams {
   Handle handle;
   uint16_t offset;
-} __PACKED;
+} __attribute__((packed));
 
 // The Read Blob Response PDU contains the partial attribute value requested.
 
@@ -284,7 +282,7 @@ struct AttributeGroupDataEntry {
   Handle start_handle;
   Handle group_end_handle;
   uint8_t value[];
-} __PACKED;
+} __attribute__((packed));
 
 struct ReadByGroupTypeResponseParams {
   ReadByGroupTypeResponseParams() = default;
@@ -292,7 +290,7 @@ struct ReadByGroupTypeResponseParams {
 
   uint8_t length;
   AttributeGroupDataEntry attribute_data_list[];
-} __PACKED;
+} __attribute__((packed));
 
 // =====
 // Write
@@ -315,7 +313,7 @@ struct PrepareWriteRequestParams {
   Handle handle;
   uint16_t offset;
   uint8_t part_value[];
-} __PACKED;
+} __attribute__((packed));
 
 using PrepareWriteResponseParams = PrepareWriteRequestParams;
 
@@ -326,7 +324,7 @@ constexpr OpCode kExecuteWriteResponse = 0x19;
 
 struct ExecuteWriteRequestParams {
   ExecuteWriteFlag flags;
-} __PACKED;
+} __attribute__((packed));
 
 // =========================
 // Handle Value Notification

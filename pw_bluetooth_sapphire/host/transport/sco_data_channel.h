@@ -5,8 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_SCO_DATA_CHANNEL_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_SCO_DATA_CHANNEL_H_
 
-#include <lib/zx/channel.h>
-
 #include "pw_bluetooth/controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"

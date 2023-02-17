@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #include <endian.h>
-#include <zircon/compiler.h>
 
 #include <array>
 #include <cstdint>
@@ -25,7 +24,7 @@ constexpr hci_spec::EventCode kTestEventCode = 0xFF;
 
 struct TestPayload {
   uint8_t foo;
-} __PACKED;
+} __attribute__((packed));
 
 TEST(PacketTest, CommandPacket) {
   constexpr size_t kPayloadSize = sizeof(TestPayload);

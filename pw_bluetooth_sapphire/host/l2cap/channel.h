@@ -7,7 +7,6 @@
 
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
-#include <zircon/compiler.h>
 
 #include <atomic>
 #include <climits>

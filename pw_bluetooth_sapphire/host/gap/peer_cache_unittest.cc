@@ -92,7 +92,7 @@ class PeerCacheTest : public ::gtest::TestLoopFixture {
 
  protected:
   // Creates a new Peer, and caches a pointer to that peer.
-  __WARN_UNUSED_RESULT bool NewPeer(const DeviceAddress& addr, bool connectable) {
+  [[nodiscard]] bool NewPeer(const DeviceAddress& addr, bool connectable) {
     auto* peer = cache()->NewPeer(addr, connectable);
     if (!peer) {
       return false;

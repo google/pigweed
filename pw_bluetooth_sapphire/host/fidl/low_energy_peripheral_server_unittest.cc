@@ -18,6 +18,12 @@
 namespace bthost {
 namespace {
 
+bool IsChannelPeerClosed(const zx::channel& channel) {
+  zx_signals_t ignored;
+  return ZX_OK == channel.wait_one(/*signals=*/ZX_CHANNEL_PEER_CLOSED,
+                                   /*deadline=*/zx::time(ZX_TIME_INFINITE_PAST), &ignored);
+}
+
 namespace fble = fuchsia::bluetooth::le;
 const bt::DeviceAddress kTestAddr(bt::DeviceAddress::Type::kLEPublic, {0x01, 0, 0, 0, 0, 0});
 const bt::DeviceAddress kTestAddr2(bt::DeviceAddress::Type::kLEPublic, {0x02, 0, 0, 0, 0, 0});
@@ -525,7 +531,7 @@ TEST_F(LowEnergyPeripheralServerTest, RestartStartAdvertisingDuringInboundConnKe
   // Advertising shouldn't complete until we trigger the above closure
   EXPECT_FALSE(result.has_value());
   // The first AdvertisingHandle should be closed, as we have started a second advertisement.
-  EXPECT_TRUE(bt::IsChannelPeerClosed(first_token.channel()));
+  EXPECT_TRUE(IsChannelPeerClosed(first_token.channel()));
 
   // Allow interrogation to complete, enabling the connection process to proceed.
   complete_interrogation();
@@ -540,7 +546,7 @@ TEST_F(LowEnergyPeripheralServerTest, RestartStartAdvertisingDuringInboundConnKe
   ASSERT_TRUE(result.has_value());
   EXPECT_TRUE(result->is_ok());
   // The second advertising handle should still be active.
-  EXPECT_FALSE(bt::IsChannelPeerClosed(second_token.channel()));
+  EXPECT_FALSE(IsChannelPeerClosed(second_token.channel()));
 }
 
 // Ensures that a connection to a canceled advertisement received after the advertisement is

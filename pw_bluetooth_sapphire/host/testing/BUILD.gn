@@ -35,10 +35,7 @@ source_set("testing") {
 source_set("test_helpers") {
   testonly = true
 
-  sources = [
-    "test_helpers.cc",
-    "test_helpers.h",
-  ]
+  sources = [ "test_helpers.h" ]
 
   deps = [
     "//src/connectivity/bluetooth/core/bt-host/common",

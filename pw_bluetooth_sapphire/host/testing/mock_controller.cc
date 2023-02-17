@@ -7,7 +7,6 @@
 #include <endian.h>
 #include <lib/async/cpp/task.h>
 #include <lib/async/default.h>
-#include <zircon/status.h>
 
 #include <cstdint>
 
@@ -178,8 +177,8 @@ void MockController::OnCommandReceived(const ByteBuffer& data) {
   }
 
   while (!transaction.replies().empty()) {
-    auto& reply = transaction.replies().front();
-    auto status = SendCommandChannelPacket(reply);
+    DynamicByteBuffer& reply = transaction.replies().front();
+    zx_status_t status = SendCommandChannelPacket(reply);
     ASSERT_EQ(ZX_OK, status) << "Failed to send reply: " << zx_status_get_string(status);
     transaction.replies().pop();
   }

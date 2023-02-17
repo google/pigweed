@@ -5,9 +5,8 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_CONTROLLER_TEST_DOUBLE_BASE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_CONTROLLER_TEST_DOUBLE_BASE_H_
 
-#include <lib/async/cpp/wait.h>
-#include <lib/zx/channel.h>
-#include <zircon/device/bt-hci.h>
+// TODO(fxbug.dev/122084): Remove dependency on Zircon
+#include <zircon/status.h>
 
 #include "pw_bluetooth/controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"

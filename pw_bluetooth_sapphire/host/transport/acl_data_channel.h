@@ -9,7 +9,6 @@
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
 #include <lib/zx/channel.h>
-#include <zircon/compiler.h>
 
 #include <list>
 #include <map>

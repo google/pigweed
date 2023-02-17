@@ -5,8 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_SMP_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SM_SMP_H_
 
-#include <zircon/compiler.h>
-
 #include <cstdint>
 
 #include "lib/zx/time.h"
@@ -41,7 +39,7 @@ using Code = uint8_t;
 
 struct Header {
   Code code;
-} __PACKED;
+} __attribute__((packed));
 
 // Supported pairing methods.
 enum class PairingMethod {
@@ -216,7 +214,7 @@ struct PairingRequestParams {
 
   // The keys that the responder requests to distribute/generate.
   KeyDistGenField responder_key_dist_gen;
-} __PACKED;
+} __attribute__((packed));
 
 // =======================================
 // Pairing Response (Core Spec v5.3, Vol 3, Part H, 3.5.2)
@@ -251,7 +249,7 @@ constexpr Code kCentralIdentification = 0x07;
 struct CentralIdentificationParams {
   uint16_t ediv;
   uint64_t rand;
-} __PACKED;
+} __attribute__((packed));
 
 // ===========================================
 // Identity Information (Core Spec v5.3, Vol 3, Part H, 3.6.4)
@@ -264,7 +262,7 @@ constexpr Code kIdentityAddressInformation = 0x09;
 struct IdentityAddressInformationParams {
   AddressType type;
   DeviceAddressBytes bd_addr;
-} __PACKED;
+} __attribute__((packed));
 
 // ==========================================
 // Signing Information (Core Spec v5.3, Vol 3, Part H, 3.6.6)
@@ -284,7 +282,7 @@ constexpr Code kPairingPublicKey = 0x0C;
 struct PairingPublicKeyParams {
   uint8_t x[32];
   uint8_t y[32];
-} __PACKED;
+} __attribute__((packed));
 
 // ======================================================================
 // Pairing DHKey Check (LE Secure Connections only; Core Spec v5.3, Vol 3,

@@ -1399,7 +1399,7 @@ void FakeController::OnReadRemoteNameRequestCommandReceived(
     pw::bluetooth::emboss::StatusCode status;
     DeviceAddressBytes bd_addr;
     uint8_t remote_name[hci_spec::kMaxNameLength];
-  } __PACKED;
+  } __attribute__((packed));
   RemoteNameRequestCompleteEventParams response = {};
   response.bd_addr = DeviceAddressBytes(params.bd_addr());
   std::strncpy((char*)response.remote_name, peer->name().c_str(), hci_spec::kMaxNameLength);

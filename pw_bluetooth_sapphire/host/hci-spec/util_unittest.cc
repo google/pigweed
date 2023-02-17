@@ -4,8 +4,6 @@
 
 #include "util.h"
 
-#include <endian.h>
-
 #include <gtest/gtest.h>
 
 namespace bt::hci_spec {
@@ -17,7 +15,7 @@ TEST(UtilTest, EncodeLegacyAdvertisingInterval) {
   EncodeLegacyAdvertisingInterval(input, actual);
 
   uint8_t expected[3] = {0};
-  if (__BYTE_ORDER == __BIG_ENDIAN) {
+  if (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) {
     expected[1] = 0xff;
   } else {
     expected[0] = 0xff;
@@ -37,7 +35,7 @@ TEST(UtilTest, DecodeExtendedAdvertisingInterval) {
   uint32_t actual = DecodeExtendedAdvertisingInterval(input);
 
   uint32_t expected = 0;
-  if (__BYTE_ORDER == __BIG_ENDIAN) {
+  if (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__) {
     expected = (0xaa << 24) | (0xbb << 16) | (0xcc << 8) | (0x00 << 0);
   } else {
     expected = (0x00 << 24) | (0xcc << 16) | (0xbb << 8) | (0xaa << 0);

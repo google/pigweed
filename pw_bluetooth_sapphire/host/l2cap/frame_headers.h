@@ -6,7 +6,6 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_FRAME_HEADERS_H_
 
 #include <endian.h>
-#include <zircon/compiler.h>
 
 #include <cstdint>
 #include <type_traits>
@@ -90,7 +89,7 @@ struct EnhancedControlField {
 
  protected:
   uint16_t raw_value;  // In protocol byte-order (little-endian).
-} __PACKED;
+} __attribute__((packed));
 
 // For Enhanced Retransmission and Streaming Modes _with_ Extended Window
 // Size. (Vol 3, Part A, Secs 3.3.2 and 5.7. Feature 2/39.)
@@ -115,7 +114,7 @@ struct SimpleInformationFrameHeader : public EnhancedControlField {
     BT_DEBUG_ASSERT(!designates_supervisory_frame());
     return (le16toh(raw_value) & (0b0111'1110)) >> 1;
   }
-} __PACKED;
+} __attribute__((packed));
 
 // Represents an I-frame header for:
 // * a channel operating in Enhanced Retransmission or
@@ -132,7 +131,7 @@ struct SimpleStartOfSduFrameHeader : public SimpleInformationFrameHeader {
     set_segmentation_status(SegmentationStatus::FirstSegment);
   }
   uint16_t sdu_len;
-} __PACKED;
+} __attribute__((packed));
 
 // See Vol 3, Part A, Sec 3.3.2, Table 3.5.
 enum class SupervisoryFunction {
@@ -171,11 +170,11 @@ struct SimpleSupervisoryFrame : public EnhancedControlField {
     // See Vol 3, Part A, Sec 3.3.2, Table 3.2.
     raw_value = htole16(le16toh(raw_value) | 0b1'0000);
   }
-} __PACKED;
+} __attribute__((packed));
 
 struct SimpleReceiverReadyFrame : public SimpleSupervisoryFrame {
   SimpleReceiverReadyFrame() : SimpleSupervisoryFrame(SupervisoryFunction::ReceiverReady) {}
-} __PACKED;
+} __attribute__((packed));
 
 }  // namespace bt::l2cap::internal
 

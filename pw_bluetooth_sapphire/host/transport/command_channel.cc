@@ -7,7 +7,6 @@
 #include <endian.h>
 #include <lib/async/default.h>
 #include <lib/fit/defer.h>
-#include <zircon/status.h>
 
 #include "slab_allocators.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"

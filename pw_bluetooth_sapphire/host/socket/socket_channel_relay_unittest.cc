@@ -6,7 +6,6 @@
 
 #include <lib/async-loop/cpp/loop.h>
 #include <lib/async-loop/default.h>
-#include <zircon/compiler.h>
 
 #include <memory>
 #include <type_traits>
@@ -45,7 +44,7 @@ class SocketChannelRelayTest : public ::testing::Test {
   // Writes data on |local_socket| until the socket is full, or an error occurs.
   // Returns the number of bytes written if the socket fills, and zero
   // otherwise.
-  __WARN_UNUSED_RESULT size_t StuffSocket() {
+  [[nodiscard]] size_t StuffSocket() {
     size_t n_total_bytes_written = 0;
     zx_status_t write_res;
     // Fill the socket buffer completely, while minimzing the number of
@@ -73,7 +72,7 @@ class SocketChannelRelayTest : public ::testing::Test {
   // |n_bytes| were successfully discarded. (The actual number of discarded
   // bytes is not known, as a pending datagram may be larger than our read
   // buffer.)
-  __WARN_UNUSED_RESULT bool DiscardFromSocket(size_t n_bytes_requested) {
+  [[nodiscard]] bool DiscardFromSocket(size_t n_bytes_requested) {
     DynamicByteBuffer received_data(n_bytes_requested);
     zx_status_t read_res;
     size_t n_total_bytes_read = 0;

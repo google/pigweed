@@ -8,7 +8,6 @@
 #include <lib/async/cpp/time.h>
 #include <lib/async/default.h>
 #include <lib/fit/defer.h>
-#include <zircon/status.h>
 
 #include <iterator>
 #include <numeric>

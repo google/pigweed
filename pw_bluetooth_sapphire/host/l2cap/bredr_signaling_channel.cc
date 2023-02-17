@@ -4,8 +4,6 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/bredr_signaling_channel.h"
 
-#include <zircon/compiler.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
 namespace bt::l2cap::internal {

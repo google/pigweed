@@ -68,7 +68,7 @@ class SocketChannelRelay final {
   // Activate() is guaranteed _not_ to invoke |deactivation_cb|, even in the
   // event of failure. Instead, in the failure case, the caller should dispose
   // of |this| directly.
-  __WARN_UNUSED_RESULT bool Activate();
+  [[nodiscard]] bool Activate();
 
  private:
   enum class RelayState {
@@ -106,7 +106,7 @@ class SocketChannelRelay final {
   // block for data on |socket_|, and does not retry failed writes to
   // |channel_|. Returns true if we should attempt to read from this socket
   // again, and false otherwise.
-  __WARN_UNUSED_RESULT bool CopyFromSocketToChannel();
+  [[nodiscard]] bool CopyFromSocketToChannel();
 
   // Copies any data pending in |socket_write_queue_| to |socket_|.
   void ServiceSocketWriteQueue();

@@ -5,8 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_BYTE_BUFFER_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_BYTE_BUFFER_H_
 
-#include <zircon/syscalls.h>
-
 #include <array>
 #include <cstdint>
 #include <cstring>

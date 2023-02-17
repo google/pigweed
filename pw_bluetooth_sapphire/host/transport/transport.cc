@@ -4,10 +4,6 @@
 
 #include "transport.h"
 
-#include <lib/async/default.h>
-#include <lib/zx/channel.h>
-#include <zircon/status.h>
-
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"

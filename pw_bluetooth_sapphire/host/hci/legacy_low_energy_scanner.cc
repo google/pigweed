@@ -271,7 +271,7 @@ CommandChannel::EventCallbackResult LegacyLowEnergyScanner::OnAdvertisingReportE
         break;
       case hci_spec::LEAdvertisingEventType::kAdvInd:
         connectable = true;
-        __FALLTHROUGH;
+        [[fallthrough]];
       case hci_spec::LEAdvertisingEventType::kAdvScanInd:
         if (IsActiveScanning()) {
           needs_scan_rsp = true;

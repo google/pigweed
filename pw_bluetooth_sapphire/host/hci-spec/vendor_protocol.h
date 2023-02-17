@@ -155,7 +155,7 @@ struct LEGetVendorCapabilitiesReturnParams {
   // Bitmask: codec types supported in dynamic audio buffer within the Bluetooth controller (see
   // A2dpCodecType for bitmask values)
   uint32_t dynamic_audio_buffer_support;
-} __PACKED;
+} __attribute__((packed));
 
 // ============================================================================
 // A2DP Offload Commands
@@ -169,7 +169,7 @@ constexpr uint16_t kLdacCodecId = 0x00AA;
 struct A2dpScmsTEnable {
   GenericEnableParam enabled;
   uint8_t header;
-} __PACKED;
+} __attribute__((packed));
 
 struct SbcCodecInformation {
   // Bitmask: block length | subbands | allocation method
@@ -189,7 +189,7 @@ struct SbcCodecInformation {
 
   // Bytes 4 - 31 are reserved
   uint8_t reserved[28];
-} __PACKED;
+} __attribute__((packed));
 
 static_assert(sizeof(SbcCodecInformation) == 32,
               "SbcCodecInformation must take up exactly 32 bytes");
@@ -202,7 +202,7 @@ struct AacCodecInformation {
 
   // Bytes 2 - 31 are reserved
   uint8_t reserved[30];
-} __PACKED;
+} __attribute__((packed));
 
 static_assert(sizeof(AacCodecInformation) == 32,
               "AacCodecInformation must take up exactly 32 bytes");
@@ -223,7 +223,7 @@ struct LdacCodecInformation {
 
   // Bytes 8 - 31 are reserved
   uint8_t reserved[24];
-} __PACKED;
+} __attribute__((packed));
 
 static_assert(sizeof(LdacCodecInformation) == 32,
               "LdacCodecInformation must take up exactly 32 bytes");
@@ -231,7 +231,7 @@ static_assert(sizeof(LdacCodecInformation) == 32,
 struct AptxCodecInformation {
   // Bits 0 - 31 are reserved
   uint8_t reserved[32];
-} __PACKED;
+} __attribute__((packed));
 
 static_assert(sizeof(AptxCodecInformation) == 32,
               "AptxCodecInformation must take up exactly 32 bytes");
@@ -241,7 +241,7 @@ union A2dpOffloadCodecInformation {
   AacCodecInformation aac;
   LdacCodecInformation ldac;
   AptxCodecInformation aptx;
-} __PACKED;
+} __attribute__((packed));
 
 static_assert(sizeof(A2dpOffloadCodecInformation) == 32,
               "A2dpOffloadCodecInformation must take up exactly 32 bytes");
@@ -284,21 +284,21 @@ struct StartA2dpOffloadCommandParams {
 
   // Codec-specific information
   A2dpOffloadCodecInformation codec_information;
-} __PACKED;
+} __attribute__((packed));
 
 struct StartA2dpOffloadCommandReturnParams {
   StatusCode status;
 
   // Will always be set to kStartA2dpOffloadCommandSubopcode
   uint8_t opcode;
-} __PACKED;
+} __attribute__((packed));
 
 struct StopA2dpOffloadCommandReturnParams {
   StatusCode status;
 
   // Will always be set to kStopA2dpOffloadCommandSubopcode
   uint8_t opcode;
-} __PACKED;
+} __attribute__((packed));
 
 // ============================================================================
 // Multiple Advertising
@@ -355,14 +355,14 @@ struct LEMultiAdvtSetAdvtParamCommandParams {
   // Transmit_Power, Unit: dBm
   // Range (-70 to +20)
   int8_t adv_tx_power;
-} __PACKED;
+} __attribute__((packed));
 
 struct LEMultiAdvtSetAdvtParamReturnParams {
   StatusCode status;
 
   // Will always be set to kLEMultiAdvtSetAdvtParametersSubopcode
   uint8_t opcode;
-} __PACKED;
+} __attribute__((packed));
 
 // =======================================
 // LE Multiple Advertising Set Advertising Data
@@ -381,14 +381,14 @@ struct LEMultiAdvtSetAdvtDataCommandParams {
 
   // Handle used to identify an advertising set.
   AdvertisingHandle adv_handle;
-} __PACKED;
+} __attribute__((packed));
 
 struct LEMultiAdvtSetAdvtDataReturnParams {
   StatusCode status;
 
   // Will always be set to kLEMultiAdvtSetAdvtDataSubopcode
   uint8_t opcode;
-} __PACKED;
+} __attribute__((packed));
 
 // =======================================
 // LE Multiple Advertising Set Scan Response
@@ -407,14 +407,14 @@ struct LEMultiAdvtSetScanRespCommandParams {
 
   // Handle used to identify an advertising set.
   AdvertisingHandle adv_handle;
-} __PACKED;
+} __attribute__((packed));
 
 struct LEMultiAdvtSetScanRespReturnParams {
   StatusCode status;
 
   // Will always be set to kLEMultiAdvtSetScanRespSubopcode
   uint8_t opcode;
-} __PACKED;
+} __attribute__((packed));
 
 // =======================================
 // LE Multiple Advertising Set Random Address
@@ -428,14 +428,14 @@ struct LEMultiAdvtSetRandomAddrCommandParams {
 
   // Handle used to identify an advertising set.
   AdvertisingHandle adv_handle;
-} __PACKED;
+} __attribute__((packed));
 
 struct LEMultiAdvtSetRandomAddrReturnParams {
   StatusCode status;
 
   // Will always be set to kLEMultiAdvtSetRandomAddrSubopcode
   uint8_t opcode;
-} __PACKED;
+} __attribute__((packed));
 
 // =======================================
 // LE Multiple Advertising Set Advertising Enable
@@ -449,14 +449,14 @@ struct LEMultiAdvtEnableCommandParams {
 
   // Handle used to identify an advertising set.
   AdvertisingHandle adv_handle;
-} __PACKED;
+} __attribute__((packed));
 
 struct LEMultiAdvtEnableReturnParams {
   StatusCode status;
 
   // Will always be set to kLEMultiAdvtSetRandomAddrSubopcode
   uint8_t opcode;
-} __PACKED;
+} __attribute__((packed));
 
 // ======= Events =======
 

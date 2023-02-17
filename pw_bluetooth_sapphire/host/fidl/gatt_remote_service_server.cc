@@ -4,8 +4,6 @@
 
 #include "gatt_remote_service_server.h"
 
-#include <zircon/errors.h>
-
 #include <algorithm>
 
 #include "helpers.h"

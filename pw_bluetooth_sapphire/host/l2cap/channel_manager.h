@@ -6,7 +6,6 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_L2CAP_CHANNEL_MANAGER_H_
 
 #include <lib/async/dispatcher.h>
-#include <zircon/compiler.h>
 
 #include <memory>
 #include <unordered_map>

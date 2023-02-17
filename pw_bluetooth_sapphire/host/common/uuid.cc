@@ -150,7 +150,7 @@ UUIDElemSize UUID::CompactSize(bool allow_32bit) const {
         return UUIDElemSize::k32Bit;
 
       // Fall through if 32-bit UUIDs are not allowed.
-      __FALLTHROUGH;
+      [[fallthrough]];
     case Type::k128Bit:
       return UUIDElemSize::k128Bit;
   };

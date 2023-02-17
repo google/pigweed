@@ -5,8 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SDP_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SDP_H_
 
-#include <zircon/compiler.h>
-
 #include <list>
 #include <map>
 #include <optional>
@@ -51,7 +49,7 @@ struct Header {
   OpCode pdu_id;
   TransactionId tid;
   uint16_t param_length;
-} __PACKED;
+} __attribute__((packed));
 
 // v5.0, Vol 3, Part B, 4.4.1
 enum class ErrorCode : uint16_t {

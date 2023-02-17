@@ -5,8 +5,6 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_RANDOM_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_COMMON_RANDOM_H_
 
-#include <zircon/syscalls.h>
-
 #include "pw_random/random.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 

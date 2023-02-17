@@ -120,7 +120,7 @@ class PacketViewBase {
 //     uint8_t byte_field;
 //     uint16_t uint16_field;
 //     uint8_t array_field[];
-//   } __PACKED;
+//   } __attribute__((packed));
 //
 //   MutablePacketView<MyHeaderType> packet(&buffer, sizeof(MyPayloadType) + 2);
 //   packet.mutable_payload<MyPayloadType>().byte_field = 0xFF;

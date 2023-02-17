@@ -159,7 +159,7 @@ struct PeripheralPreferredConnectionParametersCharacteristicValue {
   uint16_t max_interval;
   uint16_t max_latency;
   uint16_t supervision_timeout;
-} __PACKED;
+} __attribute__((packed));
 
 }  // namespace bt::gap
 

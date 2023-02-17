@@ -6,7 +6,6 @@
 
 #include <lib/async/default.h>
 #include <lib/fit/defer.h>
-#include <zircon/status.h>
 
 namespace bt::hci {
 

@@ -6,8 +6,6 @@
 
 #include <lib/async/cpp/task.h>
 #include <lib/async/default.h>
-#include <zircon/device/bt-hci.h>
-#include <zircon/status.h>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"

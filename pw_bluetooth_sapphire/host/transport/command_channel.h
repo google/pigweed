@@ -6,11 +6,8 @@
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TRANSPORT_COMMAND_CHANNEL_H_
 
 #include <lib/async/cpp/task.h>
-#include <lib/async/cpp/wait.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
-#include <lib/zx/channel.h>
-#include <zircon/compiler.h>
 
 #include <list>
 #include <memory>

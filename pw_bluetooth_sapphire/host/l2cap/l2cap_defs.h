@@ -12,7 +12,7 @@
 #include <string>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
-#include <zircon/compiler.h>
+
 
 #include "lib/zx/time.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/frame_headers.h"
@@ -83,13 +83,13 @@ constexpr ChannelId kLastLEDynamicChannelId = 0x007F;
 struct BasicHeader {
   uint16_t length;
   ChannelId channel_id;
-} __PACKED;
+} __attribute__((packed));
 
 // Frame Check Sequence (FCS) footer. This is computed for S- and I-frames per Core Spec v5.0, Vol
 // 3, Part A, Section 3.3.5.
 struct FrameCheckSequence {
   uint16_t fcs;
-} __PACKED;
+} __attribute__((packed));
 
 // Initial state of the FCS generating circuit is all zeroes per v5.0, Vol 3, Part A, Section 3.3.5,
 // Figure 3.5.
@@ -314,7 +314,7 @@ struct CommandHeader {
   CommandCode code;
   CommandId id;
   uint16_t length;  // Length of the remaining payload
-} __PACKED;
+} __attribute__((packed));
 
 // ACL-U & LE-U
 constexpr CommandCode kCommandRejectCode = 0x01;
@@ -324,7 +324,7 @@ struct CommandRejectPayload {
   uint16_t reason;
 
   // Followed by up to 4 octets of optional data (see Vol 3, Part A, Section 4.1)
-} __PACKED;
+} __attribute__((packed));
 
 // Payload of Command Reject (see Vol 3, Part A, Section 4.1).
 struct InvalidCIDPayload {
@@ -333,14 +333,14 @@ struct InvalidCIDPayload {
 
   // Destination CID (relative to rejecter)
   ChannelId dst_cid;
-} __PACKED;
+} __attribute__((packed));
 
 // ACL-U
 constexpr CommandCode kConnectionRequest = 0x02;
 struct ConnectionRequestPayload {
   uint16_t psm;
   ChannelId src_cid;
-} __PACKED;
+} __attribute__((packed));
 
 // ACL-U
 constexpr CommandCode kConnectionResponse = 0x03;
@@ -349,7 +349,7 @@ struct ConnectionResponsePayload {
   ChannelId src_cid;
   ConnectionResult result;
   ConnectionStatus status;
-} __PACKED;
+} __attribute__((packed));
 
 // ACL-U
 constexpr CommandCode kConfigurationRequest = 0x04;
@@ -361,18 +361,18 @@ struct ConfigurationOption {
   uint8_t length;
 
   // Followed by configuration option-specific data
-} __PACKED;
+} __attribute__((packed));
 
 // Payload of Configuration Option (see Vol 3, Part A, Section 5.1)
 struct MtuOptionPayload {
   uint16_t mtu;
-} __PACKED;
+} __attribute__((packed));
 
 
 // Payload of Configuration Option (see Vol 3, Part A, Section 5.2)
 struct FlushTimeoutOptionPayload {
   uint16_t flush_timeout;
-} __PACKED;
+} __attribute__((packed));
 
 // Payload of Configuration Option (see Vol 3, Part A, Section 5.4)
 struct RetransmissionAndFlowControlOptionPayload {
@@ -382,14 +382,14 @@ struct RetransmissionAndFlowControlOptionPayload {
   uint16_t rtx_timeout;
   uint16_t monitor_timeout;
   uint16_t mps;
-} __PACKED;
+} __attribute__((packed));
 
 struct ConfigurationRequestPayload {
   ChannelId dst_cid;
   uint16_t flags;
 
   // Followed by zero or more configuration options of varying length
-} __PACKED;
+} __attribute__((packed));
 
 // ACL-U
 constexpr CommandCode kConfigurationResponse = 0x05;
@@ -399,21 +399,21 @@ struct ConfigurationResponsePayload {
   ConfigurationResult result;
 
   // Followed by zero or more configuration options of varying length
-} __PACKED;
+} __attribute__((packed));
 
 // ACL-U & LE-U
 constexpr CommandCode kDisconnectionRequest = 0x06;
 struct DisconnectionRequestPayload {
   ChannelId dst_cid;
   ChannelId src_cid;
-} __PACKED;
+} __attribute__((packed));
 
 // ACL-U & LE-U
 constexpr CommandCode kDisconnectionResponse = 0x07;
 struct DisconnectionResponsePayload {
   ChannelId dst_cid;
   ChannelId src_cid;
-} __PACKED;
+} __attribute__((packed));
 
 // ACL-U
 constexpr CommandCode kEchoRequest = 0x08;
@@ -425,7 +425,7 @@ constexpr CommandCode kEchoResponse = 0x09;
 constexpr CommandCode kInformationRequest = 0x0A;
 struct InformationRequestPayload {
   InformationType type;
-} __PACKED;
+} __attribute__((packed));
 
 // ACL-U
 constexpr CommandCode kInformationResponse = 0x0B;
@@ -435,7 +435,7 @@ struct InformationResponsePayload {
   InformationResult result;
 
   // Up to 8 octets of optional data (see Vol 3, Part A, Section 4.11)
-} __PACKED;
+} __attribute__((packed));
 
 // LE-U
 constexpr CommandCode kConnectionParameterUpdateRequest = 0x12;
@@ -444,13 +444,13 @@ struct ConnectionParameterUpdateRequestPayload {
   uint16_t interval_max;
   uint16_t peripheral_latency;
   uint16_t timeout_multiplier;
-} __PACKED;
+} __attribute__((packed));
 
 // LE-U
 constexpr CommandCode kConnectionParameterUpdateResponse = 0x13;
 struct ConnectionParameterUpdateResponsePayload {
   ConnectionParameterUpdateResult result;
-} __PACKED;
+} __attribute__((packed));
 
 // LE-U
 constexpr CommandCode kLECreditBasedConnectionRequest = 0x14;
@@ -460,7 +460,7 @@ struct LECreditBasedConnectionRequestPayload {
   uint16_t mtu;  // Max. SDU size
   uint16_t mps;  // Max. PDU size
   uint16_t initial_credits;
-} __PACKED;
+} __attribute__((packed));
 
 // LE-U
 constexpr CommandCode kLECreditBasedConnectionResponse = 0x15;
@@ -470,14 +470,14 @@ struct LECreditBasedConnectionResponsePayload {
   uint16_t mps;  // Max. PDU size
   uint16_t initial_credits;
   LECreditBasedConnectionResult result;
-} __PACKED;
+} __attribute__((packed));
 
 // LE-U
 constexpr CommandCode kLEFlowControlCredit = 0x16;
 struct LEFlowControlCreditParams {
   ChannelId cid;
   uint16_t credits;
-} __PACKED;
+} __attribute__((packed));
 
 }  // namespace bt
 

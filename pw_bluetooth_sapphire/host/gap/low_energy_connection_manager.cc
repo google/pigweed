@@ -7,7 +7,6 @@
 #include <lib/async/cpp/task.h>
 #include <lib/async/default.h>
 #include <lib/async/time.h>
-#include <zircon/syscalls.h>
 
 #include <optional>
 #include <vector>
