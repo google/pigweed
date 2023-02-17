@@ -44,65 +44,65 @@ whichever object is the current tail.
 
 That means two key things:
 
- - An instantiated ``IntrusiveList<T>::Item`` will be removed from its
-   corresponding ``IntrusiveList`` when it goes out of scope.
- - A linked list item CANNOT be included in two lists. Attempting to do so
-   results in an assert failure.
+- An instantiated ``IntrusiveList<T>::Item`` will be removed from its
+  corresponding ``IntrusiveList`` when it goes out of scope.
+- A linked list item CANNOT be included in two lists. Attempting to do so
+  results in an assert failure.
 
 .. code-block:: cpp
 
-  class Square
-     : public pw::IntrusiveList<Square>::Item {
-   public:
-    Square(unsigned int side_length) : side_length(side_length) {}
-    unsigned long Area() { return side_length * side_length; }
+   class Square
+      : public pw::IntrusiveList<Square>::Item {
+    public:
+     Square(unsigned int side_length) : side_length(side_length) {}
+     unsigned long Area() { return side_length * side_length; }
 
-   private:
-    unsigned int side_length;
-  };
+    private:
+     unsigned int side_length;
+   };
 
-  pw::IntrusiveList<Square> squares;
+   pw::IntrusiveList<Square> squares;
 
-  Square small(1);
-  Square large(4000);
-  // These elements are not copied into the linked list, the original objects
-  // are just chained together and can be accessed via
-  // `IntrusiveList<Square> squares`.
-  squares.push_back(small);
-  squares.push_back(large);
+   Square small(1);
+   Square large(4000);
+   // These elements are not copied into the linked list, the original objects
+   // are just chained together and can be accessed via
+   // `IntrusiveList<Square> squares`.
+   squares.push_back(small);
+   squares.push_back(large);
 
-  {
-    // When different_scope goes out of scope, it removes itself from the list.
-    Square different_scope = Square(5);
-    squares.push_back(&different_scope);
-  }
+   {
+     // When different_scope goes out of scope, it removes itself from the list.
+     Square different_scope = Square(5);
+     squares.push_back(&different_scope);
+   }
 
-  for (const auto& square : squares) {
-    PW_LOG_INFO("Found a square with an area of %lu", square.Area());
-  }
+   for (const auto& square : squares) {
+     PW_LOG_INFO("Found a square with an area of %lu", square.Area());
+   }
 
-  // Like std::forward_list, an iterator is invalidated when the item it refers
-  // to is removed. It is *NOT* safe to remove items from a list while iterating
-  // over it in a range-based for loop.
-  for (const auto& square_bad_example : squares) {
-    if (square_bad_example.verticies() != 4) {
-      // BAD EXAMPLE of how to remove matching items from a singly linked list.
-      squares.remove(square_bad_example);  // NEVER DO THIS! THIS IS A BUG!
-    }
-  }
+   // Like std::forward_list, an iterator is invalidated when the item it refers
+   // to is removed. It is *NOT* safe to remove items from a list while iterating
+   // over it in a range-based for loop.
+   for (const auto& square_bad_example : squares) {
+     if (square_bad_example.verticies() != 4) {
+       // BAD EXAMPLE of how to remove matching items from a singly linked list.
+       squares.remove(square_bad_example);  // NEVER DO THIS! THIS IS A BUG!
+     }
+   }
 
-  // To remove items while iterating, use an iterator to the previous item.
-  auto previous = squares.before_begin();
-  auto current = squares.begin();
+   // To remove items while iterating, use an iterator to the previous item.
+   auto previous = squares.before_begin();
+   auto current = squares.begin();
 
-  while (current != squares.end()) {
-    if (current->verticies() != 4) {
-      current = squares.erase_after(previous);
-    } else {
-      previous = current;
-      ++current;
-    }
-  }
+   while (current != squares.end()) {
+     if (current->verticies() != 4) {
+       current = squares.erase_after(previous);
+     } else {
+       previous = current;
+       ++current;
+     }
+   }
 
 pw::containers::FlatMap
 =======================
@@ -125,11 +125,11 @@ a lambda or class that implements ``operator()`` for the container's value type.
 
 .. code-block:: cpp
 
-  std::array<int, 99> kNumbers = {3, 1, 4, 1, ...};
+   std::array<int, 99> kNumbers = {3, 1, 4, 1, ...};
 
-  for (int even : FilteredView(kNumbers, [](int n) { return n % 2 == 0; })) {
-    PW_LOG_INFO("This number is even: %d", even);
-  }
+   for (int even : FilteredView(kNumbers, [](int n) { return n % 2 == 0; })) {
+     PW_LOG_INFO("This number is even: %d", even);
+   }
 
 pw::containers::WrappedIterator
 ===============================
@@ -147,24 +147,24 @@ values in an array by 2.
 
 .. code-block:: cpp
 
-  // Divides values in a std::array by two.
-  class DoubleIterator
-      : public pw::containers::WrappedIterator<DoubleIterator, const int*, int> {
-   public:
-    constexpr DoubleIterator(const int* it) : WrappedIterator(it) {}
+   // Divides values in a std::array by two.
+   class DoubleIterator
+       : public pw::containers::WrappedIterator<DoubleIterator, const int*, int> {
+    public:
+     constexpr DoubleIterator(const int* it) : WrappedIterator(it) {}
 
-    int operator*() const { return value() * 2; }
+     int operator*() const { return value() * 2; }
 
-    // Don't define operator-> since this iterator returns by value.
-  };
+     // Don't define operator-> since this iterator returns by value.
+   };
 
-  constexpr std::array<int, 6> kArray{0, 1, 2, 3, 4, 5};
+   constexpr std::array<int, 6> kArray{0, 1, 2, 3, 4, 5};
 
-  void SomeFunction {
-    for (DoubleIterator it(kArray.begin()); it != DoubleIterator(kArray.end()); ++it) {
-      // The iterator yields 0, 2, 4, 6, 8, 10 instead of the original values.
-    }
-  };
+   void SomeFunction {
+     for (DoubleIterator it(kArray.begin()); it != DoubleIterator(kArray.end()); ++it) {
+       // The iterator yields 0, 2, 4, 6, 8, 10 instead of the original values.
+     }
+   };
 
 ``WrappedIterator`` may be used in concert with ``FilteredView`` to create a
 view that iterates over a matching values in a container and applies a
@@ -196,122 +196,124 @@ within the C++ standard library, based on a subset of
 
 .. cpp:function:: bool pw::containers::AllOf()
 
-  Container-based version of the <algorithm> ``std::all_of()`` function to
-  test if all elements within a container satisfy a condition.
+   Container-based version of the <algorithm> ``std::all_of()`` function to
+   test if all elements within a container satisfy a condition.
 
 
 .. cpp:function:: bool pw::containers::AnyOf()
 
-  Container-based version of the <algorithm> ``std::any_of()`` function to
-  test if any element in a container fulfills a condition.
+   Container-based version of the <algorithm> ``std::any_of()`` function to
+   test if any element in a container fulfills a condition.
 
 
 .. cpp:function:: bool pw::containers::NoneOf()
 
-  Container-based version of the <algorithm> ``std::none_of()`` function to
-  test if no elements in a container fulfill a condition.
+   Container-based version of the <algorithm> ``std::none_of()`` function to
+   test if no elements in a container fulfill a condition.
 
 
 .. cpp:function:: pw::containers::ForEach()
 
-  Container-based version of the <algorithm> ``std::for_each()`` function to
-  apply a function to a container's elements.
+   Container-based version of the <algorithm> ``std::for_each()`` function to
+   apply a function to a container's elements.
 
 
 .. cpp:function:: pw::containers::Find()
 
-  Container-based version of the <algorithm> ``std::find()`` function to find
-  the first element containing the passed value within a container value.
+   Container-based version of the <algorithm> ``std::find()`` function to find
+   the first element containing the passed value within a container value.
 
 
 .. cpp:function:: pw::containers::FindIf()
 
-  Container-based version of the <algorithm> ``std::find_if()`` function to find
-  the first element in a container matching the given condition.
+   Container-based version of the <algorithm> ``std::find_if()`` function to find
+   the first element in a container matching the given condition.
 
 
 .. cpp:function:: pw::containers::FindIfNot()
 
-  Container-based version of the <algorithm> ``std::find_if_not()`` function to
-  find the first element in a container not matching the given condition.
+   Container-based version of the <algorithm> ``std::find_if_not()`` function to
+   find the first element in a container not matching the given condition.
 
 
 .. cpp:function:: pw::containers::FindEnd()
 
-  Container-based version of the <algorithm> ``std::find_end()`` function to
-  find the last subsequence within a container.
+   Container-based version of the <algorithm> ``std::find_end()`` function to
+   find the last subsequence within a container.
 
 
 .. cpp:function:: pw::containers::FindFirstOf()
 
-  Container-based version of the <algorithm> ``std::find_first_of()`` function
-  to find the first element within the container that is also within the options
-  container.
+   Container-based version of the <algorithm> ``std::find_first_of()`` function
+   to find the first element within the container that is also within the options
+   container.
 
 
 .. cpp:function:: pw::containers::AdjacentFind()
 
-  Container-based version of the <algorithm> ``std::adjacent_find()`` function
-  to find equal adjacent elements within a container.
+   Container-based version of the <algorithm> ``std::adjacent_find()`` function
+   to find equal adjacent elements within a container.
 
 
 .. cpp:function:: pw::containers::Count()
 
-  Container-based version of the <algorithm> ``std::count()`` function to count
-  values that match within a container.
+   Container-based version of the <algorithm> ``std::count()`` function to count
+   values that match within a container.
 
 
 .. cpp:function:: pw::containers::CountIf()
 
-  Container-based version of the <algorithm> ``std::count_if()`` function to
-  count values matching a condition within a container.
+   Container-based version of the <algorithm> ``std::count_if()`` function to
+   count values matching a condition within a container.
 
 
 .. cpp:function:: pw::containers::Mismatch()
 
-  Container-based version of the <algorithm> ``std::mismatch()`` function to
-  return the first element where two ordered containers differ. Applies ``==``
-  to the first ``N`` elements of ``c1`` and ``c2``, where
-  ``N = min(size(c1), size(c2)).`` the function's test condition. Applies
-  ``pred`` to the first N elements of ``c1``  and ``c2``, where
-  ``N = min(size(c1), size(c2))``.
+   Container-based version of the <algorithm> ``std::mismatch()`` function to
+   return the first element where two ordered containers differ. Applies ``==``
+   to the first ``N`` elements of ``c1`` and ``c2``, where
+   ``N = min(size(c1), size(c2)).`` the function's test condition. Applies
+   ``pred`` to the first N elements of ``c1``  and ``c2``, where
+   ``N = min(size(c1), size(c2))``.
 
 
 .. cpp:function:: bool pw::containers::Equal()
 
-  Container-based version of the <algorithm> ``std::equal()`` function to
-  test whether two containers are equal.
+   Container-based version of the <algorithm> ``std::equal()`` function to
+   test whether two containers are equal.
 
-  .. Note:: The semantics of ``Equal()`` are slightly different than those of
-    ``std::equal()``: while the latter iterates over the second container only
-    up to the size of the first container, ``Equal()`` also checks whether the
-    container sizes are equal.  This better matches expectations about
-    ``Equal()`` based on its signature.
+   .. note::
+
+      The semantics of ``Equal()`` are slightly different than those of
+      ``std::equal()``: while the latter iterates over the second container only
+      up to the size of the first container, ``Equal()`` also checks whether the
+      container sizes are equal.  This better matches expectations about
+      ``Equal()`` based on its signature.
 
 .. cpp:function:: bool pw::containers::IsPermutation()
 
-  Container-based version of the <algorithm> ``std::is_permutation()`` function
-  to test whether a container is a permutation of another.
+   Container-based version of the <algorithm> ``std::is_permutation()`` function
+   to test whether a container is a permutation of another.
 
 
 .. cpp:function:: pw::containers::Search()
 
-  Container-based version of the <algorithm> ``std::search()`` function to
-  search a container for a subsequence.
+   Container-based version of the <algorithm> ``std::search()`` function to
+   search a container for a subsequence.
 
 
 .. cpp:function:: pw::containers::SearchN()
 
-  Container-based version of the <algorithm> ``std::search_n()`` function to
-  search a container for the first sequence of N elements.
+   Container-based version of the <algorithm> ``std::search_n()`` function to
+   search a container for the first sequence of N elements.
 
 Compatibility
 =============
-* C++17
+- C++17
 
 Dependencies
 ============
-* ``pw_span``
+- :bdg-ref-primary-line:`module-pw_span`
 
 Zephyr
 ======

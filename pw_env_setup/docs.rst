@@ -7,12 +7,13 @@ A classic problem in the embedded space is reducing the time from git clone
 to having a binary executing on a device. The issue is that an entire suite
 of tools is needed for non-trivial production embedded projects. For example:
 
- - A C++ compiler for your target device, and also for your host
- - A build system or three; for example, GN, Ninja, CMake, Bazel
- - A code formatting program like clang-format
- - A debugger like OpenOCD to flash and debug your embedded device (OpenOCD support removed for Windows)
- - A known Python version with known modules installed for scripting
- - A Go compiler for the Go-based command line tools
+- A C++ compiler for your target device, and also for your host
+- A build system or three; for example, GN, Ninja, CMake, Bazel
+- A code formatting program like clang-format
+- A debugger like OpenOCD to flash and debug your embedded device (OpenOCD
+  support removed for Windows)
+- A known Python version with known modules installed for scripting
+- A Go compiler for the Go-based command line tools
 
 ...and so on
 
@@ -37,15 +38,17 @@ command reinitializes a previously configured environment, and if none is found,
 runs bootstrap.
 
 .. note::
-  On Windows the scripts used to set up the environment are ``bootstrap.bat``
-  and ``activate.bat``. For simplicity they will be referred to with the ``.sh``
-  endings unless the distinction is relevant.
+
+   On Windows the scripts used to set up the environment are ``bootstrap.bat``
+   and ``activate.bat``. For simplicity they will be referred to with the
+   ``.sh`` endings unless the distinction is relevant.
 
 .. warning::
-  At this time ``pw_env_setup`` works for us, but isn’t well tested. We don’t
-  suggest relying on it just yet. However, we are interested in experience
-  reports; if you give it a try, please `send us a note`_ about your
-  experience.
+
+   At this time ``pw_env_setup`` works for us, but isn’t well tested. We don’t
+   suggest relying on it just yet. However, we are interested in experience
+   reports; if you give it a try, please `send us a note`_ about your
+   experience.
 
 .. _send us a note: pigweed@googlegroups.com
 
@@ -68,30 +71,30 @@ assumes `bootstrap.sh` is at the top level of your repository.
 
 .. code-block:: bash
 
-  # Do not include a "#!" line, this must be sourced and not executed.
+   # Do not include a "#!" line, this must be sourced and not executed.
 
-  # This assumes the user is sourcing this file from it's parent directory. See
-  # below for a more flexible way to handle this.
-  PROJ_SETUP_SCRIPT_PATH="$(pwd)/bootstrap.sh"
+   # This assumes the user is sourcing this file from it's parent directory. See
+   # below for a more flexible way to handle this.
+   PROJ_SETUP_SCRIPT_PATH="$(pwd)/bootstrap.sh"
 
-  export PW_PROJECT_ROOT="$(_python_abspath "$(dirname "$PROJ_SETUP_SCRIPT_PATH")")"
+   export PW_PROJECT_ROOT="$(_python_abspath "$(dirname "$PROJ_SETUP_SCRIPT_PATH")")"
 
-  # You may wish to check if the user is attempting to execute this script
-  # instead of sourcing it. See below for an example of how to handle that
-  # situation.
+   # You may wish to check if the user is attempting to execute this script
+   # instead of sourcing it. See below for an example of how to handle that
+   # situation.
 
-  # Source Pigweed's bootstrap utility script.
-  # Using '.' instead of 'source' for POSIX compatibility. Since users don't use
-  # dash directly, using 'source' in most documentation so users don't get
-  # confused and try to `./bootstrap.sh`.
-  . "$PW_PROJECT_ROOT/third_party/pigweed/pw_env_setup/util.sh"
+   # Source Pigweed's bootstrap utility script.
+   # Using '.' instead of 'source' for POSIX compatibility. Since users don't use
+   # dash directly, using 'source' in most documentation so users don't get
+   # confused and try to `./bootstrap.sh`.
+   . "$PW_PROJECT_ROOT/third_party/pigweed/pw_env_setup/util.sh"
 
-  pw_check_root "$PW_ROOT"
-  _PW_ACTUAL_ENVIRONMENT_ROOT="$(pw_get_env_root)"
-  export _PW_ACTUAL_ENVIRONMENT_ROOT
-  SETUP_SH="$_PW_ACTUAL_ENVIRONMENT_ROOT/activate.sh"
-  pw_bootstrap --args...  # See below for details about args.
-  pw_finalize bootstrap "$SETUP_SH"
+   pw_check_root "$PW_ROOT"
+   _PW_ACTUAL_ENVIRONMENT_ROOT="$(pw_get_env_root)"
+   export _PW_ACTUAL_ENVIRONMENT_ROOT
+   SETUP_SH="$_PW_ACTUAL_ENVIRONMENT_ROOT/activate.sh"
+   pw_bootstrap --args...  # See below for details about args.
+   pw_finalize bootstrap "$SETUP_SH"
 
 
 Bazel Usage
@@ -101,31 +104,30 @@ rather than using `bootstrap.sh`. e.g.
 
 .. code:: python
 
-  # WORKSPACE
+   # WORKSPACE
 
-  load("//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl", "pigweed_deps")
+   load("//pw_env_setup/bazel/cipd_setup:cipd_rules.bzl", "pigweed_deps")
 
-  # Setup CIPD client and packages.
-  # Required by: pigweed.
-  # Used by modules: all.
-  pigweed_deps()
+   # Setup CIPD client and packages.
+   # Required by: pigweed.
+   # Used by modules: all.
+   pigweed_deps()
 
-  load("@cipd_deps//:cipd_init.bzl", "cipd_init")
+   load("@cipd_deps//:cipd_init.bzl", "cipd_init")
 
-  cipd_init()
+   cipd_init()
 
 
-This will make the entire set of Pigweeds remote repositories available
-to your project. Though these repositories will only be donwloaded if
-you use them. To get a full list of the remote repositories that this
-configures, run:
+This will make the entire set of Pigweeds remote repositories available to your
+project. Though these repositories will only be donwloaded if you use them. To
+get a full list of the remote repositories that this configures, run:
 
 .. code:: sh
 
-  bazel query //external:all | grep cipd_
+   bazel query //external:all | grep cipd_
 
-All files and executables in each CIPD remote repository is exported
-and visible either directely (`@cipd_<dep>//:<file>`) or from 'all' filegroup
+All files and executables in each CIPD remote repository is exported and visible
+either directely (`@cipd_<dep>//:<file>`) or from 'all' filegroup
 (`@cipd_<dep>//:all`).
 
 From here it is possible to get access to the Bloaty binaries using the
@@ -133,8 +135,8 @@ following command. For example;
 
 .. code:: sh
 
-  bazel run @cipd_pigweed_third_party_bloaty_embedded_linux_amd64//:bloaty \
-   -- --help
+   bazel run @cipd_pigweed_third_party_bloaty_embedded_linux_amd64//:bloaty \
+    -- --help
 
 User-Friendliness
 -----------------
@@ -144,31 +146,31 @@ that case you'll need the following at the top of `bootstrap.sh`.
 
 .. code-block:: bash
 
-  _python_abspath () {
-    python -c "import os.path; print(os.path.abspath('$@'))"
-  }
+   _python_abspath () {
+     python -c "import os.path; print(os.path.abspath('$@'))"
+   }
 
-  # Use this code from Pigweed's bootstrap to find the path to this script when
-  # sourced. This should work with common shells. PW_CHECKOUT_ROOT is only used in
-  # presubmit tests with strange setups, and can be omitted if you're not using
-  # Pigweed's automated testing infrastructure.
-  if test -n "$PW_CHECKOUT_ROOT"; then
-    PROJ_SETUP_SCRIPT_PATH="$(_python_abspath "$PW_CHECKOUT_ROOT/bootstrap.sh")"
-    unset PW_CHECKOUT_ROOT
-  # Shell: bash.
-  elif test -n "$BASH"; then
-    PROJ_SETUP_SCRIPT_PATH="$(_python_abspath "$BASH_SOURCE")"
-  # Shell: zsh.
-  elif test -n "$ZSH_NAME"; then
-    PROJ_SETUP_SCRIPT_PATH="$(_python_abspath "${(%):-%N}")"
-  # Shell: dash.
-  elif test ${0##*/} = dash; then
-    PROJ_SETUP_SCRIPT_PATH="$(_python_abspath \
-      "$(lsof -p $$ -Fn0 | tail -1 | sed 's#^[^/]*##;')")"
-  # If everything else fails, try $0. It could work.
-  else
-    PROJ_SETUP_SCRIPT_PATH="$(_python_abspath "$0")"
-  fi
+   # Use this code from Pigweed's bootstrap to find the path to this script when
+   # sourced. This should work with common shells. PW_CHECKOUT_ROOT is only used in
+   # presubmit tests with strange setups, and can be omitted if you're not using
+   # Pigweed's automated testing infrastructure.
+   if test -n "$PW_CHECKOUT_ROOT"; then
+     PROJ_SETUP_SCRIPT_PATH="$(_python_abspath "$PW_CHECKOUT_ROOT/bootstrap.sh")"
+     unset PW_CHECKOUT_ROOT
+   # Shell: bash.
+   elif test -n "$BASH"; then
+     PROJ_SETUP_SCRIPT_PATH="$(_python_abspath "$BASH_SOURCE")"
+   # Shell: zsh.
+   elif test -n "$ZSH_NAME"; then
+     PROJ_SETUP_SCRIPT_PATH="$(_python_abspath "${(%):-%N}")"
+   # Shell: dash.
+   elif test ${0##*/} = dash; then
+     PROJ_SETUP_SCRIPT_PATH="$(_python_abspath \
+       "$(lsof -p $$ -Fn0 | tail -1 | sed 's#^[^/]*##;')")"
+   # If everything else fails, try $0. It could work.
+   else
+     PROJ_SETUP_SCRIPT_PATH="$(_python_abspath "$0")"
+   fi
 
 You may also wish to check if the user is attempting to execute `bootstrap.sh`
 instead of sourcing it. Executing `bootstrap.sh` would download everything
@@ -177,31 +179,30 @@ process. To check for this add the following.
 
 .. code-block:: bash
 
-  # Check if this file is being executed or sourced.
-  _pw_sourced=0
-  # If not running in Pigweed's automated testing infrastructure the
-  # SWARMING_BOT_ID check is unnecessary.
-  if [ -n "$SWARMING_BOT_ID" ]; then
-    # If set we're running on swarming and don't need this check.
-    _pw_sourced=1
-  elif [ -n "$ZSH_EVAL_CONTEXT" ]; then
-    case $ZSH_EVAL_CONTEXT in *:file) _pw_sourced=1;; esac
-  elif [ -n "$KSH_VERSION" ]; then
-    [ "$(cd $(dirname -- $0) && pwd -P)/$(basename -- $0)" != \
-      "$(cd $(dirname -- ${.sh.file}) && pwd -P)/$(basename -- ${.sh.file})" ] \
-      && _pw_sourced=1
-  elif [ -n "$BASH_VERSION" ]; then
-    (return 0 2>/dev/null) && _pw_sourced=1
-  else  # All other shells: examine $0 for known shell binary filenames
-    # Detects `sh` and `dash`; add additional shell filenames as needed.
-    case ${0##*/} in sh|dash) _pw_sourced=1;; esac
-  fi
+   # Check if this file is being executed or sourced.
+   _pw_sourced=0
+   # If not running in Pigweed's automated testing infrastructure the
+   # SWARMING_BOT_ID check is unnecessary.
+   if [ -n "$SWARMING_BOT_ID" ]; then
+     # If set we're running on swarming and don't need this check.
+     _pw_sourced=1
+   elif [ -n "$ZSH_EVAL_CONTEXT" ]; then
+     case $ZSH_EVAL_CONTEXT in *:file) _pw_sourced=1;; esac
+   elif [ -n "$KSH_VERSION" ]; then
+     [ "$(cd $(dirname -- $0) && pwd -P)/$(basename -- $0)" != \
+       "$(cd $(dirname -- ${.sh.file}) && pwd -P)/$(basename -- ${.sh.file})" ] \
+       && _pw_sourced=1
+   elif [ -n "$BASH_VERSION" ]; then
+     (return 0 2>/dev/null) && _pw_sourced=1
+   else  # All other shells: examine $0 for known shell binary filenames
+     # Detects `sh` and `dash`; add additional shell filenames as needed.
+     case ${0##*/} in sh|dash) _pw_sourced=1;; esac
+   fi
 
-  _pw_eval_sourced "$_pw_sourced"
+   _pw_eval_sourced "$_pw_sourced"
 
 Downstream Projects Using Different Packages
 ********************************************
-
 Projects depending on Pigweed but using additional or different packages should
 copy the Pigweed `sample project`'s ``bootstrap.sh`` and ``config.json`` and
 update the call to ``pw_bootstrap``. Search for "downstream" for other places
@@ -227,27 +228,27 @@ here.
 
 .. code-block:: json
 
-  {
-    "included_files": [
-      "foo.json"
-    ],
-    "packages": [
-      {
-        "path": "infra/3pp/tools/go/${platform}",
-        "platforms": [
-            "linux-amd64",
-            "linux-arm64",
-            "mac-amd64",
-            "windows-amd64"
-        ],
-        "subdir": "pa/th",
-        "tags": [
-          "version:2@1.16.3"
-        ],
-        "version_file": ".versions/go.cipd_version"
-      }
-    ]
-  }
+   {
+     "included_files": [
+       "foo.json"
+     ],
+     "packages": [
+       {
+         "path": "infra/3pp/tools/go/${platform}",
+         "platforms": [
+             "linux-amd64",
+             "linux-arm64",
+             "mac-amd64",
+             "windows-amd64"
+         ],
+         "subdir": "pa/th",
+         "tags": [
+           "version:2@1.16.3"
+         ],
+         "version_file": ".versions/go.cipd_version"
+       }
+     ]
+   }
 
 ``virtualenv.gn_args``
   Any necessary GN args to be used when installing Python packages.
@@ -311,29 +312,29 @@ An example of a config file is below.
 
 .. code-block:: json
 
-  {
-    "root_variable": "EXAMPLE_ROOT",
-    "cipd_package_files": [
-      "pigweed/pw_env_setup/py/pw_env_setup/cipd_setup/pigweed.json",
-      "pigweed/pw_env_setup/py/pw_env_setup/cipd_setup/luci.json"
-      "tools/myprojectname.json"
-    ],
-    "virtualenv": {
-      "gn_root": ".",
-      "gn_targets": [
-        ":python.install",
-      ],
-      "system_packages": false
-    },
-    "pw_packages": [],
-    "optional_submodules": [
-      "optional/submodule/one",
-      "optional/submodule/two"
-    ],
-    "gni_file": "tools/environment.gni",
-    "json_file": "tools/environment.json",
-    "rosetta": "allow"
-  }
+   {
+     "root_variable": "EXAMPLE_ROOT",
+     "cipd_package_files": [
+       "pigweed/pw_env_setup/py/pw_env_setup/cipd_setup/pigweed.json",
+       "pigweed/pw_env_setup/py/pw_env_setup/cipd_setup/luci.json"
+       "tools/myprojectname.json"
+     ],
+     "virtualenv": {
+       "gn_root": ".",
+       "gn_targets": [
+         ":python.install",
+       ],
+       "system_packages": false
+     },
+     "pw_packages": [],
+     "optional_submodules": [
+       "optional/submodule/one",
+       "optional/submodule/two"
+     ],
+     "gni_file": "tools/environment.gni",
+     "json_file": "tools/environment.json",
+     "rosetta": "allow"
+   }
 
 Only the packages necessary for almost all projects based on Pigweed are
 included in the ``pigweed.json`` file. A number of other files are present in
@@ -342,14 +343,15 @@ projects using LUCI should at least include ``luci.json``.
 
 In case the CIPD packages need to be referenced from other scripts, variables
 like ``PW_${BASENAME}_CIPD_INSTALL_DIR`` point to the CIPD install directories,
-where ``${BASENAME}`` is "PIGWEED" for
-"pigweed/pw_env_setup/py/pw_env_setup/cipd_setup/pigweed.json" and "LUCI" for
-"pigweed/pw_env_setup/py/pw_env_setup/cipd_setup/luci.json". This example would
-set the following environment variables.
+where ``${BASENAME}`` is ``"PIGWEED"`` for
+``"pigweed/pw_env_setup/py/pw_env_setup/cipd_setup/pigweed.json"`` and
+``"LUCI"`` for
+``"pigweed/pw_env_setup/py/pw_env_setup/cipd_setup/luci.json"``. This example
+would set the following environment variables.
 
- - ``PW_LUCI_CIPD_INSTALL_DIR``
- - ``PW_MYPROJECTNAME_CIPD_INSTALL_DIR``
- - ``PW_PIGWEED_CIPD_INSTALL_DIR``
+- ``PW_LUCI_CIPD_INSTALL_DIR``
+- ``PW_MYPROJECTNAME_CIPD_INSTALL_DIR``
+- ``PW_PIGWEED_CIPD_INSTALL_DIR``
 
 These directories are also referenced in the gni_file specified by the
 environment config file as ``dir_cipd_${BASENAME}``. This allows the GN build to
@@ -497,59 +499,58 @@ and modify. An example ``actions.json`` is shown below. The "append" and
 
 .. code-block:: json
 
-  {
-      "modify": {
-          "PATH": {
-              "append": [],
-              "prepend": [
-                  "<pigweed-root>/environment/cipd",
-                  "<pigweed-root>/environment/cipd/pigweed",
-                  "<pigweed-root>/environment/cipd/pigweed/bin",
-                  "<pigweed-root>/environment/cipd/luci",
-                  "<pigweed-root>/environment/cipd/luci/bin",
-                  "<pigweed-root>/environment/pigweed-venv/bin",
-                  "<pigweed-root>/out/host/host_tools"
-              ],
-              "remove": []
-          }
-      },
-      "set": {
-          "PW_PROJECT_ROOT": "<pigweed-root>",
-          "PW_ROOT": "<pigweed-root>",
-          "_PW_ACTUAL_ENVIRONMENT_ROOT": "<pigweed-root>/environment",
-          "PW_CIPD_INSTALL_DIR": "<pigweed-root>/environment/cipd",
-          "CIPD_CACHE_DIR": "<home>/.cipd-cache-dir",
-          "PW_PIGWEED_CIPD_INSTALL_DIR": "<pigweed-root>/environment/cipd/pigweed",
-          "PW_LUCI_CIPD_INSTALL_DIR": "<pigweed-root>/environment/cipd/luci",
-          "VIRTUAL_ENV": "<pigweed-root>/environment/pigweed-venv",
-          "PYTHONHOME": null,
-          "__PYVENV_LAUNCHER__": null
-      }
-  }
+   {
+       "modify": {
+           "PATH": {
+               "append": [],
+               "prepend": [
+                   "<pigweed-root>/environment/cipd",
+                   "<pigweed-root>/environment/cipd/pigweed",
+                   "<pigweed-root>/environment/cipd/pigweed/bin",
+                   "<pigweed-root>/environment/cipd/luci",
+                   "<pigweed-root>/environment/cipd/luci/bin",
+                   "<pigweed-root>/environment/pigweed-venv/bin",
+                   "<pigweed-root>/out/host/host_tools"
+               ],
+               "remove": []
+           }
+       },
+       "set": {
+           "PW_PROJECT_ROOT": "<pigweed-root>",
+           "PW_ROOT": "<pigweed-root>",
+           "_PW_ACTUAL_ENVIRONMENT_ROOT": "<pigweed-root>/environment",
+           "PW_CIPD_INSTALL_DIR": "<pigweed-root>/environment/cipd",
+           "CIPD_CACHE_DIR": "<home>/.cipd-cache-dir",
+           "PW_PIGWEED_CIPD_INSTALL_DIR": "<pigweed-root>/environment/cipd/pigweed",
+           "PW_LUCI_CIPD_INSTALL_DIR": "<pigweed-root>/environment/cipd/luci",
+           "VIRTUAL_ENV": "<pigweed-root>/environment/pigweed-venv",
+           "PYTHONHOME": null,
+           "__PYVENV_LAUNCHER__": null
+       }
+   }
 
 Many of these variables are directly exposed to the GN build as well, through
 the GNI file specified in the environment config file.
 
 .. code-block::
 
-  declare_args() {
-    pw_env_setup_CIPD_PIGWEED = "<environment-root>/cipd/packages/pigweed"
-    pw_env_setup_CIPD_LUCI = "<environment-root>/cipd/packages/luci"
-    pw_env_setup_VIRTUAL_ENV = "<environment-root>/pigweed-venv"
-    pw_env_setup_PACKAGE_ROOT = "<environment-root>/packages"
-  }
+   declare_args() {
+     pw_env_setup_CIPD_PIGWEED = "<environment-root>/cipd/packages/pigweed"
+     pw_env_setup_CIPD_LUCI = "<environment-root>/cipd/packages/luci"
+     pw_env_setup_VIRTUAL_ENV = "<environment-root>/pigweed-venv"
+     pw_env_setup_PACKAGE_ROOT = "<environment-root>/packages"
+   }
 
 It's straightforward to use these variables.
 
 .. code-block:: cpp
 
-    import("//build_overrides/pigweed_environment.gni")
+   import("//build_overrides/pigweed_environment.gni")
 
-    deps = [ "$pw_env_setup_CIPD_PIGWEED/..." ]
+   deps = [ "$pw_env_setup_CIPD_PIGWEED/..." ]
 
 Implementation
 **************
-
 The environment is set up by installing CIPD and Python packages in
 ``PW_ENVIRONMENT_ROOT`` or ``<checkout>/environment``, and saving modifications
 to environment variables in setup scripts in those directories. To support

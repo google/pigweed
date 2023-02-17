@@ -69,27 +69,27 @@ of getting started using ``pw_unit_test:light``. All event handlers provide for
 GoogleTest-style output using the shared
 :cpp:class:`pw::unit_test::GoogleTestStyleEventHandler` base.
 
-  .. code-block::
+.. code-block::
 
-    [==========] Running all tests.
-    [ RUN      ] Status.Default
-    [       OK ] Status.Default
-    [ RUN      ] Status.ConstructWithStatusCode
-    [       OK ] Status.ConstructWithStatusCode
-    [ RUN      ] Status.AssignFromStatusCode
-    [       OK ] Status.AssignFromStatusCode
-    [ RUN      ] Status.CompareToStatusCode
-    [       OK ] Status.CompareToStatusCode
-    [ RUN      ] Status.Ok_OkIsTrue
-    [       OK ] Status.Ok_OkIsTrue
-    [ RUN      ] Status.NotOk_OkIsFalse
-    [       OK ] Status.NotOk_OkIsFalse
-    [ RUN      ] Status.KnownString
-    [       OK ] Status.KnownString
-    [ RUN      ] Status.UnknownString
-    [       OK ] Status.UnknownString
-    [==========] Done running all tests.
-    [  PASSED  ] 8 test(s).
+   [==========] Running all tests.
+   [ RUN      ] Status.Default
+   [       OK ] Status.Default
+   [ RUN      ] Status.ConstructWithStatusCode
+   [       OK ] Status.ConstructWithStatusCode
+   [ RUN      ] Status.AssignFromStatusCode
+   [       OK ] Status.AssignFromStatusCode
+   [ RUN      ] Status.CompareToStatusCode
+   [       OK ] Status.CompareToStatusCode
+   [ RUN      ] Status.Ok_OkIsTrue
+   [       OK ] Status.Ok_OkIsTrue
+   [ RUN      ] Status.NotOk_OkIsFalse
+   [       OK ] Status.NotOk_OkIsFalse
+   [ RUN      ] Status.KnownString
+   [       OK ] Status.KnownString
+   [ RUN      ] Status.UnknownString
+   [       OK ] Status.UnknownString
+   [==========] Done running all tests.
+   [  PASSED  ] 8 test(s).
 
 .. cpp:namespace-push:: pw::unit_test
 
@@ -100,17 +100,17 @@ GoogleTest-style output using the shared
 
 .. cpp:class:: SimplePrintingEventHandler : public GoogleTestStyleEventHandler
 
-  An event handler that writes GoogleTest-style output to a specified sink.
+   An event handler that writes GoogleTest-style output to a specified sink.
 
 .. cpp:class:: LoggingEventHandler : public GoogleTestStyleEventHandler
 
-  An event handler which uses the ``pw_log`` module to output test results, to
-  integrate with the system's existing logging setup.
+   An event handler which uses the ``pw_log`` module to output test results, to
+   integrate with the system's existing logging setup.
 
 .. cpp:class:: PrintfEventHandler : public GoogleTestStyleEventHandler
 
-  A C++14-compatible event handler that uses ``std::printf`` to output test
-  results.
+   A C++14-compatible event handler that uses ``std::printf`` to output test
+   results.
 
 .. cpp:namespace-pop::
 
@@ -124,7 +124,8 @@ Currently, only a test suite filter is supported. This is set by calling
 ``pw::unit_test::SetTestSuitesToRun`` with a list of suite names.
 
 .. note::
-  Test filtering is only supported in C++17.
+
+   Test filtering is only supported in C++17.
 
 Tests in static libraries
 =========================
@@ -140,12 +141,12 @@ in a static library.
 
 .. c:macro:: PW_UNIT_TEST_LINK_FILE_CONTAINING_TEST(test_suite_name, test_name)
 
-  Ensures tests in a static library are linked and executed. Provide the test
-  suite name and test name for one test in the file linked into a static
-  library. Any test in the file may be used, but it is recommended to use the
-  first for consistency. The test must be in a static library that is a
-  dependency of this target. Referring to a test that does not exist causes a
-  linker error.
+   Ensures tests in a static library are linked and executed. Provide the test
+   suite name and test name for one test in the file linked into a static
+   library. Any test in the file may be used, but it is recommended to use the
+   first for consistency. The test must be in a static library that is a
+   dependency of this target. Referring to a test that does not exist causes a
+   linker error.
 
 .. _running-tests:
 
@@ -161,24 +162,24 @@ The following example shows how to write a main function that runs
 
 .. code-block:: cpp
 
-  #include "gtest/gtest.h"
+   #include "gtest/gtest.h"
 
-  // pw_unit_test:light requires an event handler to be configured.
-  #include "pw_unit_test/simple_printing_event_handler.h"
+   // pw_unit_test:light requires an event handler to be configured.
+   #include "pw_unit_test/simple_printing_event_handler.h"
 
-  void WriteString(const std::string_view& string, bool newline) {
-    printf("%s", string.data());
-    if (newline) {
-      printf("\n");
-    }
-  }
+   void WriteString(const std::string_view& string, bool newline) {
+     printf("%s", string.data());
+     if (newline) {
+       printf("\n");
+     }
+   }
 
-  int main() {
-    // Since we are using pw_unit_test:light, set up an event handler.
-    pw::unit_test::SimplePrintingEventHandler handler(WriteString);
-    pw::unit_test::RegisterEventHandler(&handler);
-    return RUN_ALL_TESTS();
-  }
+   int main() {
+     // Since we are using pw_unit_test:light, set up an event handler.
+     pw::unit_test::SimplePrintingEventHandler handler(WriteString);
+     pw::unit_test::RegisterEventHandler(&handler);
+     return RUN_ALL_TESTS();
+   }
 
 Build system integration
 ========================
@@ -186,14 +187,14 @@ Build system integration
 
 The ``pw_unit_test`` module provides a few optional libraries to simplify setup:
 
- - ``simple_printing_event_handler``: When running tests, output test results
-   as plain text over ``pw_sys_io``.
- - ``simple_printing_main``: Implements a ``main()`` function that simply runs
-   tests using the ``simple_printing_event_handler``.
- - ``logging_event_handler``: When running tests, log test results as
-   plain text using pw_log (ensure your target has set a ``pw_log`` backend).
- - ``logging_main``: Implements a ``main()`` function that simply runs tests
-   using the ``logging_event_handler``.
+- ``simple_printing_event_handler``: When running tests, output test results
+  as plain text over ``pw_sys_io``.
+- ``simple_printing_main``: Implements a ``main()`` function that simply runs
+  tests using the ``simple_printing_event_handler``.
+- ``logging_event_handler``: When running tests, log test results as
+  plain text using pw_log (ensure your target has set a ``pw_log`` backend).
+- ``logging_main``: Implements a ``main()`` function that simply runs tests
+  using the ``logging_event_handler``.
 
 
 GN
@@ -205,11 +206,11 @@ test code.
 
 .. code-block::
 
-  import("$dir_pw_unit_test/test.gni")
+   import("$dir_pw_unit_test/test.gni")
 
-  pw_test("foo_test") {
-    sources = [ "foo_test.cc" ]
-  }
+   pw_test("foo_test") {
+     sources = [ "foo_test.cc" ]
+   }
 
 pw_test template
 ````````````````
@@ -237,12 +238,12 @@ pw_test template
 
 .. code::
 
-  import("$dir_pw_unit_test/test.gni")
+   import("$dir_pw_unit_test/test.gni")
 
-  pw_test("large_test") {
-    sources = [ "large_test.cc" ]
-    enable_if = device_has_1m_flash
-  }
+   pw_test("large_test") {
+     sources = [ "large_test.cc" ]
+     enable_if = device_has_1m_flash
+   }
 
 pw_test_group template
 ``````````````````````
@@ -271,22 +272,22 @@ several sub-targets:
 
 .. code::
 
-  import("$dir_pw_unit_test/test.gni")
+   import("$dir_pw_unit_test/test.gni")
 
-  pw_test_group("tests") {
-    tests = [
-      ":bar_test",
-      ":foo_test",
-    ]
-  }
+   pw_test_group("tests") {
+     tests = [
+       ":bar_test",
+       ":foo_test",
+     ]
+   }
 
-  pw_test("foo_test") {
-    # ...
-  }
+   pw_test("foo_test") {
+     # ...
+   }
 
-  pw_test("bar_test") {
-    # ...
-  }
+   pw_test("bar_test") {
+     # ...
+   }
 
 pw_facade_test template
 ```````````````````````
@@ -312,99 +313,99 @@ Build arguments
 ```````````````
 .. option:: pw_unit_test_GOOGLETEST_BACKEND <source_set>
 
-  The GoogleTest implementation to use for Pigweed unit tests. This library
-  provides "gtest/gtest.h" and related headers. Defaults to pw_unit_test:light,
-  which implements a subset of GoogleTest.
+   The GoogleTest implementation to use for Pigweed unit tests. This library
+   provides "gtest/gtest.h" and related headers. Defaults to pw_unit_test:light,
+   which implements a subset of GoogleTest.
 
-  Type: string (GN path to a source set)
-  Usage: toolchain-controlled only
+   Type: string (GN path to a source set)
+   Usage: toolchain-controlled only
 
 .. option:: pw_unit_test_MAIN <source_set>
 
-  Implementation of a main function for ``pw_test`` unit test binaries.
+   Implementation of a main function for ``pw_test`` unit test binaries.
 
-  Type: string (GN path to a source set)
-  Usage: toolchain-controlled only
+   Type: string (GN path to a source set)
+   Usage: toolchain-controlled only
 
 .. option:: pw_unit_test_AUTOMATIC_RUNNER <executable>
 
-  Path to a test runner to automatically run unit tests after they are built.
+   Path to a test runner to automatically run unit tests after they are built.
 
-  If set, a ``pw_test`` target's ``<target_name>.run`` action will invoke the
-  test runner specified by this argument, passing the path to the unit test to
-  run. If this is unset, the ``pw_test`` target's ``<target_name>.run`` step
-  will do nothing.
+   If set, a ``pw_test`` target's ``<target_name>.run`` action will invoke the
+   test runner specified by this argument, passing the path to the unit test to
+   run. If this is unset, the ``pw_test`` target's ``<target_name>.run`` step
+   will do nothing.
 
-  Targets that don't support parallelized execution of tests (e.g. a on-device
-  test runner that must flash a device and run the test in serial) should
-  set pw_unit_test_POOL_DEPTH to 1.
+   Targets that don't support parallelized execution of tests (e.g. a on-device
+   test runner that must flash a device and run the test in serial) should set
+   pw_unit_test_POOL_DEPTH to 1.
 
-  Type: string (name of an executable on the PATH, or path to an executable)
-  Usage: toolchain-controlled only
+   Type: string (name of an executable on the PATH, or path to an executable)
+   Usage: toolchain-controlled only
 
 .. option:: pw_unit_test_AUTOMATIC_RUNNER_ARGS <args>
 
-  An optional list of strings to pass as args to the test runner specified
-  by pw_unit_test_AUTOMATIC_RUNNER.
+   An optional list of strings to pass as args to the test runner specified by
+   pw_unit_test_AUTOMATIC_RUNNER.
 
-  Type: list of strings (args to pass to pw_unit_test_AUTOMATIC_RUNNER)
-  Usage: toolchain-controlled only
+   Type: list of strings (args to pass to pw_unit_test_AUTOMATIC_RUNNER)
+   Usage: toolchain-controlled only
 
 .. option:: pw_unit_test_AUTOMATIC_RUNNER_TIMEOUT <timeout_seconds>
 
-  An optional timeout to apply when running the automatic runner. Timeout is
-  in seconds. Defaults to empty which means no timeout.
+   An optional timeout to apply when running the automatic runner. Timeout is
+   in seconds. Defaults to empty which means no timeout.
 
-  Type: string (number of seconds to wait before killing test runner)
-  Usage: toolchain-controlled only
+   Type: string (number of seconds to wait before killing test runner)
+   Usage: toolchain-controlled only
 
 .. option:: pw_unit_test_POOL_DEPTH <pool_depth>
 
-  The maximum number of unit tests that may be run concurrently for the
-  current toolchain. Setting this to 0 disables usage of a pool, allowing
-  unlimited parallelization.
+   The maximum number of unit tests that may be run concurrently for the
+   current toolchain. Setting this to 0 disables usage of a pool, allowing
+   unlimited parallelization.
 
-  Note: A single target with two toolchain configurations (e.g. release/debug)
-        will use two separate test runner pools by default. Set
-        pw_unit_test_POOL_TOOLCHAIN to the same toolchain for both targets to
-        merge the pools and force serialization.
+   Note: A single target with two toolchain configurations (e.g. release/debug)
+         will use two separate test runner pools by default. Set
+         pw_unit_test_POOL_TOOLCHAIN to the same toolchain for both targets to
+         merge the pools and force serialization.
 
-  Type: integer
-  Usage: toolchain-controlled only
+   Type: integer
+   Usage: toolchain-controlled only
 
 .. option:: pw_unit_test_POOL_TOOLCHAIN <toolchain>
 
-  The toolchain to use when referring to the pw_unit_test runner pool. When
-  this is disabled, the current toolchain is used. This means that every
-  toolchain will use its own pool definition. If two toolchains should share
-  the same pool, this argument should be by one of the toolchains to the GN
-  path of the other toolchain.
+   The toolchain to use when referring to the pw_unit_test runner pool. When
+   this is disabled, the current toolchain is used. This means that every
+   toolchain will use its own pool definition. If two toolchains should share
+   the same pool, this argument should be by one of the toolchains to the GN
+   path of the other toolchain.
 
-  Type: string (GN path to a toolchain)
-  Usage: toolchain-controlled only
+   Type: string (GN path to a toolchain)
+   Usage: toolchain-controlled only
 
 .. option:: pw_unit_test_EXECUTABLE_TARGET_TYPE <template name>
 
-  The name of the GN target type used to build pw_unit_test executables.
+   The name of the GN target type used to build pw_unit_test executables.
 
-  Type: string (name of a GN template)
-  Usage: toolchain-controlled only
+   Type: string (name of a GN template)
+   Usage: toolchain-controlled only
 
 .. option:: pw_unit_test_EXECUTABLE_TARGET_TYPE_FILE <gni file path>
 
-  The path to the .gni file that defines pw_unit_test_EXECUTABLE_TARGET_TYPE.
+   The path to the .gni file that defines pw_unit_test_EXECUTABLE_TARGET_TYPE.
 
-  If pw_unit_test_EXECUTABLE_TARGET_TYPE is not the default of
-  `pw_executable`, this .gni file is imported to provide the template
-  definition.
+   If pw_unit_test_EXECUTABLE_TARGET_TYPE is not the default of
+   `pw_executable`, this .gni file is imported to provide the template
+   definition.
 
-  Type: string (path to a .gni file)
-  Usage: toolchain-controlled only
+   Type: string (path to a .gni file)
+   Usage: toolchain-controlled only
 
 .. option:: pw_unit_test_FACADE_TESTS_ENABLED <boolean>
 
-  Controls whether to build and run facade tests. Facade tests add considerably
-  to build time, so they are disabled by default.
+   Controls whether to build and run facade tests. Facade tests add considerably
+   to build time, so they are disabled by default.
 
 CMake
 -----
@@ -440,14 +441,14 @@ sub-targets.
 
 .. code::
 
-  include($ENV{PW_ROOT}/pw_unit_test/test.cmake)
+   include($ENV{PW_ROOT}/pw_unit_test/test.cmake)
 
-  pw_add_test(my_module.foo_test
-    SOURCES
-      foo_test.cc
-    PRIVATE_DEPS
-      my_module.foo
-  )
+   pw_add_test(my_module.foo_test
+     SOURCES
+       foo_test.cc
+     PRIVATE_DEPS
+       my_module.foo
+   )
 
 pw_add_test_group function
 ``````````````````````````
@@ -480,77 +481,77 @@ creates several sub-targets:
 
 .. code::
 
-  include($ENV{PW_ROOT}/pw_unit_test/test.cmake)
+   include($ENV{PW_ROOT}/pw_unit_test/test.cmake)
 
-  pw_add_test_group(tests
-    TESTS
-      bar_test
-      foo_test
-  )
+   pw_add_test_group(tests
+     TESTS
+       bar_test
+       foo_test
+   )
 
-  pw_add_test(foo_test
-    # ...
-  )
+   pw_add_test(foo_test
+     # ...
+   )
 
-  pw_add_test(bar_test
-    # ...
-  )
+   pw_add_test(bar_test
+     # ...
+   )
 
 Build arguments
 ```````````````
 .. option:: pw_unit_test_GOOGLETEST_BACKEND <target>
 
-  The GoogleTest implementation to use for Pigweed unit tests. This library
-  provides "gtest/gtest.h" and related headers. Defaults to pw_unit_test.light,
-  which implements a subset of GoogleTest.
+   The GoogleTest implementation to use for Pigweed unit tests. This library
+   provides "gtest/gtest.h" and related headers. Defaults to pw_unit_test.light,
+   which implements a subset of GoogleTest.
 
-  Type: string (CMake target name)
-  Usage: toolchain-controlled only
+   Type: string (CMake target name)
+   Usage: toolchain-controlled only
 
 .. option:: pw_unit_test_AUTOMATIC_RUNNER <executable>
 
-  Path to a test runner to automatically run unit tests after they are built.
+   Path to a test runner to automatically run unit tests after they are built.
 
-  If set, a ``pw_test`` target's ``${NAME}`` and ``${NAME}.run`` targets will
-  invoke the test runner specified by this argument, passing the path to the
-  unit test to run. If this is unset, the ``pw_test`` target's ``${NAME}`` will
-  only build the unit test(s) and ``${NAME}.run`` will fail to build.
+   If set, a ``pw_test`` target's ``${NAME}`` and ``${NAME}.run`` targets will
+   invoke the test runner specified by this argument, passing the path to the
+   unit test to run. If this is unset, the ``pw_test`` target's ``${NAME}`` will
+   only build the unit test(s) and ``${NAME}.run`` will fail to build.
 
-  Type: string (name of an executable on the PATH, or path to an executable)
-  Usage: toolchain-controlled only
+   Type: string (name of an executable on the PATH, or path to an executable)
+   Usage: toolchain-controlled only
 
 .. option:: pw_unit_test_AUTOMATIC_RUNNER_ARGS <args>
 
-  An optional list of strings to pass as args to the test runner specified
-  by pw_unit_test_AUTOMATIC_RUNNER.
+   An optional list of strings to pass as args to the test runner specified
+   by pw_unit_test_AUTOMATIC_RUNNER.
 
-  Type: list of strings (args to pass to pw_unit_test_AUTOMATIC_RUNNER)
-  Usage: toolchain-controlled only
+   Type: list of strings (args to pass to pw_unit_test_AUTOMATIC_RUNNER)
+   Usage: toolchain-controlled only
 
 .. option:: pw_unit_test_AUTOMATIC_RUNNER_TIMEOUT_SECONDS <timeout_seconds>
 
-  An optional timeout to apply when running the automatic runner. Timeout is
-  in seconds. Defaults to empty which means no timeout.
+   An optional timeout to apply when running the automatic runner. Timeout is
+   in seconds. Defaults to empty which means no timeout.
 
-  Type: string (number of seconds to wait before killing test runner)
-  Usage: toolchain-controlled only
+   Type: string (number of seconds to wait before killing test runner)
+   Usage: toolchain-controlled only
 
 .. option:: pw_unit_test_ADD_EXECUTABLE_FUNCTION <function name>
 
-  The name of the CMake function used to build pw_unit_test executables. The
-  provided function must take a ``NAME`` and a ``TEST_LIB`` argument which are
-  the expected name of the executable target and the target which provides the
-  unit test(s).
+   The name of the CMake function used to build pw_unit_test executables. The
+   provided function must take a ``NAME`` and a ``TEST_LIB`` argument which are
+   the expected name of the executable target and the target which provides the
+   unit test(s).
 
-  Type: string (name of a CMake function)
-  Usage: toolchain-controlled only
+   Type: string (name of a CMake function)
+   Usage: toolchain-controlled only
 
 .. option:: pw_unit_test_ADD_EXECUTABLE_FUNCTION_FILE <cmake file path>
 
-  The path to the .cmake file that defines pw_unit_test_ADD_EXECUTABLE_FUNCTION.
+   The path to the .cmake file that defines pw_unit_test_ADD_EXECUTABLE_FUNCTION.
 
-  Type: string (path to a .cmake file)
-  Usage: toolchain-controlled only
+   Type: string (path to a .cmake file)
+   Usage: toolchain-controlled only
 
 
 RPC service
@@ -569,20 +570,20 @@ To set up RPC-based unit tests in your application, instantiate a
 
 .. code:: c++
 
-  #include "pw_rpc/server.h"
-  #include "pw_unit_test/unit_test_service.h"
+   #include "pw_rpc/server.h"
+   #include "pw_unit_test/unit_test_service.h"
 
-  // Server setup; refer to pw_rpc docs for more information.
-  pw::rpc::Channel channels[] = {
-   pw::rpc::Channel::Create<1>(&my_output),
-  };
-  pw::rpc::Server server(channels);
+   // Server setup; refer to pw_rpc docs for more information.
+   pw::rpc::Channel channels[] = {
+    pw::rpc::Channel::Create<1>(&my_output),
+   };
+   pw::rpc::Server server(channels);
 
-  pw::unit_test::UnitTestService unit_test_service;
+   pw::unit_test::UnitTestService unit_test_service;
 
-  void RegisterServices() {
-    server.RegisterService(unit_test_services);
-  }
+   void RegisterServices() {
+     server.RegisterService(unit_test_services);
+   }
 
 All tests flashed to an attached device can be run via python by calling
 ``pw_unit_test.rpc.run_tests()`` with a RPC client services object that has
@@ -591,19 +592,19 @@ logging.
 
 .. code:: python
 
-  from pw_hdlc.rpc import HdlcRpcClient
-  from pw_unit_test.rpc import run_tests
+   from pw_hdlc.rpc import HdlcRpcClient
+   from pw_unit_test.rpc import run_tests
 
-  PROTO = Path(os.environ['PW_ROOT'],
-               'pw_unit_test/pw_unit_test_proto/unit_test.proto')
+   PROTO = Path(os.environ['PW_ROOT'],
+                'pw_unit_test/pw_unit_test_proto/unit_test.proto')
 
-  client = HdlcRpcClient(serial.Serial(device, baud), PROTO)
-  run_tests(client.rpcs())
+   client = HdlcRpcClient(serial.Serial(device, baud), PROTO)
+   run_tests(client.rpcs())
 
 pw_unit_test.rpc
 ----------------
 .. automodule:: pw_unit_test.rpc
-  :members: EventHandler, run_tests
+   :members: EventHandler, run_tests
 
 Module Configuration Options
 ============================
@@ -612,14 +613,14 @@ this module.
 
 .. c:macro:: PW_UNIT_TEST_CONFIG_EVENT_BUFFER_SIZE
 
-  The size of the event buffer that the UnitTestService contains.
-  This buffer is used to encode events.  By default this is set to
-  128 bytes.
+   The size of the event buffer that the UnitTestService contains.
+   This buffer is used to encode events.  By default this is set to
+   128 bytes.
 
 .. c:macro:: PW_UNIT_TEST_CONFIG_MEMORY_POOL_SIZE
 
-  The size of the memory pool to use for test fixture instances. By default this
-  is set to 16K.
+   The size of the memory pool to use for test fixture instances. By default this
+   is set to 16K.
 
 Using upstream GoogleTest
 =========================

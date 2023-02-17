@@ -42,10 +42,10 @@ STM32L452 or the Nordic nRF52832.
 
 .. attention::
 
-  Pigweed is in **early access**; though many modules are shipping in
-  production already. If you're interested in using Pigweed, please reach out
-  in our `chat room <https://discord.gg/M9NSeTA>`_ or on the `mailing list
-  <https://groups.google.com/forum/#!forum/pigweed>`_.
+   Pigweed is in **early access**; though many modules are shipping in
+   production already. If you're interested in using Pigweed, please reach out
+   in our `chat room <https://discord.gg/M9NSeTA>`_ or on the `mailing list
+   <https://groups.google.com/forum/#!forum/pigweed>`_.
 
 Getting Started
 ---------------
@@ -124,8 +124,8 @@ workspace, and makes no changes to your system. This tooling is designed to be
 reused by any project.
 
 .. image:: docs/images/pw_env_setup_demo.gif
-  :width: 800
-  :alt: pw environment setup demo
+   :width: 800
+   :alt: pw environment setup demo
 
 ``pw_unit_test`` - Embedded testing for MCUs
 --------------------------------------------
@@ -144,33 +144,33 @@ developing code on your desktop (with tests), then running the same tests
 on-device.
 
 .. image:: docs/images/pw_status_test.png
-  :width: 800
-  :alt: pw_status test run natively on host
+   :width: 800
+   :alt: pw_status test run natively on host
 
 And more!
 ---------
 Here is a selection of interesting modules:
 
- - :ref:`module-pw_cpu_exception_cortex_m` - Robust low level hardware fault
-   handler for ARM Cortex-M; the handler even has unit tests written in
-   assembly to verify nested-hardware-fault handling!
+- :ref:`module-pw_cpu_exception_cortex_m` - Robust low level hardware fault
+  handler for ARM Cortex-M; the handler even has unit tests written in assembly
+  to verify nested-hardware-fault handling!
 
- - :ref:`module-pw_polyfill` - Similar to JavaScript “polyfill” libraries, this
-   module provides selected C++17 standard library components that are
-   compatible with C++14.
+- :ref:`module-pw_polyfill` - Similar to JavaScript “polyfill” libraries, this
+  module provides selected C++17 standard library components that are compatible
+  with C++14.
 
- - :ref:`module-pw_tokenizer` - Replace string literals from log statements
-   with 32-bit tokens, to reduce flash use, reduce logging bandwidth, and save
-   formatting cycles from log statements at runtime.
+- :ref:`module-pw_tokenizer` - Replace string literals from log statements with
+  32-bit tokens, to reduce flash use, reduce logging bandwidth, and save
+  formatting cycles from log statements at runtime.
 
- - :ref:`module-pw_kvs` - A key-value-store implementation for flash-backed
-   persistent storage with integrated wear levelling. This is a lightweight
-   alternative to a file system for embedded devices.
+- :ref:`module-pw_kvs` - A key-value-store implementation for flash-backed
+  persistent storage with integrated wear levelling. This is a lightweight
+  alternative to a file system for embedded devices.
 
- - :ref:`module-pw_protobuf` - An early preview of our wire-format-oriented
-   protocol buffer implementation. This protobuf compiler makes a different set
-   of implementation tradeoffs than the most popular protocol buffer library in
-   this space, nanopb.
+- :ref:`module-pw_protobuf` - An early preview of our wire-format-oriented
+  protocol buffer implementation. This protobuf compiler makes a different set
+  of implementation tradeoffs than the most popular protocol buffer library in
+  this space, nanopb.
 
 See the :ref:`docs-module-guides` for the complete list of modules and their
 documentation.

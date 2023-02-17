@@ -1115,25 +1115,25 @@ Destructors & moves wait for callbacks to complete
 
 .. warning::
 
- Deadlocks or crashes occur if a callback:
+   Deadlocks or crashes occur if a callback:
 
- - attempts to destroy its call object
- - attempts to move its call object while the call is still active
- - never returns
+   - attempts to destroy its call object
+   - attempts to move its call object while the call is still active
+   - never returns
 
-If ``pw_rpc`` a callback violates these restrictions, a crash may occur,
-depending on the value of :c:macro:`PW_RPC_CALLBACK_TIMEOUT_TICKS`. These
-crashes have a message like the following:
+   If ``pw_rpc`` a callback violates these restrictions, a crash may occur,
+   depending on the value of :c:macro:`PW_RPC_CALLBACK_TIMEOUT_TICKS`. These
+   crashes have a message like the following:
 
-.. code-block:: text
+   .. code-block:: text
 
-  A callback for RPC 1:cc0f6de0/31e616ce has not finished after 10000 ticks.
-  This may indicate that an RPC callback attempted to destroy or move its own
-  call object, which is not permitted. Fix this condition or change the value of
-  PW_RPC_CALLBACK_TIMEOUT_TICKS to avoid this crash.
+      A callback for RPC 1:cc0f6de0/31e616ce has not finished after 10000 ticks.
+      This may indicate that an RPC callback attempted to destroy or move its own
+      call object, which is not permitted. Fix this condition or change the value of
+      PW_RPC_CALLBACK_TIMEOUT_TICKS to avoid this crash.
 
-  See https://pigweed.dev/pw_rpc#destructors-moves-wait-for-callbacks-to-complete
-  for details.
+      See https://pigweed.dev/pw_rpc#destructors-moves-wait-for-callbacks-to-complete
+      for details.
 
 Only one thread at a time may execute ``on_next``
 .................................................
