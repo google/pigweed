@@ -53,9 +53,28 @@ declare_args() {
 # Args:
 #   cc: (required) String indicating the C compiler to use.
 #   cxx: (required) String indicating the C++ compiler to use.
-#   clang_tidy_path: (optional) String indicating clang-tidy bin to use.
+#   static_analysis: (required) A scope defining args to apply to the
+#     static_analysis toolchain.
+#   static_analysis.enabled: (required) Bool used to indicate whether
+#       static_analysis should be enabled for the toolchain where scope is
+#       applied to. Note that static_analysis.enabled must be set in order to
+#       use this toolchain.
+#   static_analysis.clang_tidy_path: (optional) String indicating clang-tidy bin
+#       to use.
+#   static_analysis.cc_post: (optional) String defining additional commands to
+#       append to cc tool's command list (i.e command(s) to run after cc command
+#       chain).
+#   static_analysis.cxx_post: (optional) String defining additional commands to
+#       append to cxx tool's command list (i.e command(s) to run after cxx
+#       command chain).
 template("pw_static_analysis_toolchain") {
   invoker_toolchain_args = invoker.defaults
+  assert(defined(invoker.static_analysis), "static_analysis scope missing.")
+  _static_analysis_args = invoker.static_analysis
+  assert(defined(_static_analysis_args.enabled),
+         "static_analysis.enabled is missing")
+  assert(_static_analysis_args.enabled,
+         "static_analysis.enabled must be true to use this toolchain.")
 
   # Clang tidy is invoked by a wrapper script which implements the missing
   # option --source-filter.
@@ -74,9 +93,10 @@ template("pw_static_analysis_toolchain") {
         _skip_include_path + " --skip-include-path '${pattern}'"
   }
   _clang_tidy_path = ""
-  if (defined(invoker.clang_tidy_path)) {
+  if (defined(_static_analysis_args.clang_tidy_path)) {
     _clang_tidy_path =
-        "--clang-tidy " + rebase_path(invoker.clang_tidy_path, root_build_dir)
+        "--clang-tidy " +
+        rebase_path(_static_analysis_args.clang_tidy_path, root_build_dir)
   }
 
   toolchain(target_name) {
@@ -98,6 +118,12 @@ template("pw_static_analysis_toolchain") {
 
     assert(defined(invoker.cc), "toolchain is missing 'cc'")
     tool("cc") {
+      _post_command_hook = ""
+      if (defined(_static_analysis_args.cc_post) &&
+          _static_analysis_args.cc_post != "") {
+        _post_command_hook += " && " + _static_analysis_args.cc_post
+      }
+
       depfile = "{{output}}.d"
       command = string_join(" ",
                             [
@@ -118,7 +144,7 @@ template("pw_static_analysis_toolchain") {
                               "{{include_dirs}}",
                               "-c {{source}}",
                               "-o {{output}}",
-                            ]) + " && touch {{output}}"
+                            ]) + " && touch {{output}}" + _post_command_hook
       depsformat = "gcc"
       description = "clang-tidy {{source}}"
       outputs =
@@ -127,6 +153,12 @@ template("pw_static_analysis_toolchain") {
 
     assert(defined(invoker.cxx), "toolchain is missing 'cxx'")
     tool("cxx") {
+      _post_command_hook = ""
+      if (defined(_static_analysis_args.cxx_post) &&
+          _static_analysis_args.cxx_post != "") {
+        _post_command_hook += " && " + _static_analysis_args.cxx_post
+      }
+
       depfile = "{{output}}.d"
       command = string_join(" ",
                             [
@@ -147,7 +179,7 @@ template("pw_static_analysis_toolchain") {
                               "{{include_dirs}}",
                               "-c {{source}}",
                               "-o {{output}}",
-                            ]) + " && touch {{output}}"
+                            ]) + " && touch {{output}}" + _post_command_hook
       depsformat = "gcc"
       description = "clang-tidy {{source}}"
       outputs =

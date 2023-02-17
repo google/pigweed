@@ -53,10 +53,44 @@ the ``pw_static_analysis_toolchain`` template. This template creates toolchains
 that execute ``clang-tidy`` for C/C++ sources, and mock implementations of
 the ``link``, ``alink`` and ``solink`` tools.
 
-Additionally, ``generate_toolchain`` implements a boolean flag
-``static_analysis`` (default ``false``) which generates the derived
-toolchain ``${target_name}.static_analysis`` using
+In addition to the standard toolchain requirements (`cc`, `cxx`, etc..), the
+``pw_static_analysis_toolchain`` template requires a scope ``static_analysis``
+to be defined on the invoker.
+
+.. code-block::
+
+   static_analysis = {
+    # Configure whether static_analysis should be enabled for invoker toolchain.
+    # This is must be set true if using pw_static_analysis_toolchain.
+    enabled = true
+    # Optionally override clang-tidy binary to use by setting to proper path.
+    clang_tidy_path = ""
+    # Optionally specify additional command(s) to run as part of cc tool.
+    cc_post = ""
+    # Optionally specify additional command(s) to run as part of cxx tool.
+    cxx_post = ""
+   }
+
+The ``generate_toolchain`` supports the above mentioned ``static_analysis``
+scope, which if specified must at the very least define the bool ``enabled``
+within the scope. If the ``static_analysis`` scope is provided and
+``static_analysis.enabled = true``, the derived toolchain
+``${target_name}.static_analysis`` will be generated using
 ``pw_generate_static_analysis_toolchain`` and the toolchain options.
+
+An example on the utility of the ``static_analysis`` scope args is shown in the
+snippet below where we enable clang-tidy caching and add ``//.clang-tidy`` as a
+dependency to the generated ``.d`` files for the
+``pw_static_analysis_toolchain``.
+
+.. code-block::
+
+     static_analysis = {
+      clang_tidy_path = "//third_party/ctcache/clang-tidy"
+      _clang_tidy_cfg_path = rebase_path("//.clang-tidy", root_build_dir)
+      cc_post = "echo '-: $_clang_tidy_cfg_path' >> {{output}}.d"
+      cxx_post = "echo '-: $_clang_tidy_cfg_path' >> {{output}}.d"
+     }
 
 Excluding files from checks
 ===========================
@@ -102,7 +136,9 @@ For example, to run ``clang-tidy`` on all source dependencies of the
 
    generate_toolchain("my_toolchain") {
      ..
-     static_analysis = true
+     static_analysis = {
+      enabled = true
+     }
    }
 
    group("static_analysis") {

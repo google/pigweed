@@ -52,6 +52,11 @@ declare_args() {
 #     default_toolchain.
 #   defaults: (required) A scope setting GN build arg values to apply to GN
 #     targets in this toolchain. These take precedence over args.gni settings.
+#   static_analysis: (optional) A scope defining args to apply to the
+#     static_analysis toolchain. If the scope is not defined, static analysis
+#     will be disabled. If provided, static_analysis will be enabled iff
+#     required enabled field in scope is declared true. See
+#     static_analysis_toolchain.gni for more information on scope members.
 #
 # The defaults scope should contain values for builtin GN arguments:
 #   current_cpu: The CPU of the toolchain.
@@ -404,9 +409,13 @@ template("generate_toolchain") {
       }
     }
 
-    _generate_static_analysis_toolchain =
-        defined(invoker.static_analysis) && invoker.static_analysis
-
+    _generate_static_analysis_toolchain = false
+    if (defined(invoker.static_analysis)) {
+      _static_analysis_args = invoker.static_analysis
+      assert(defined(_static_analysis_args.enabled),
+             "static_analysis.enabled missing from scope.")
+      _generate_static_analysis_toolchain = _static_analysis_args.enabled
+    }
     if (_generate_static_analysis_toolchain) {
       pw_static_analysis_toolchain(target_name + ".static_analysis") {
         forward_variables_from(invoker, "*")

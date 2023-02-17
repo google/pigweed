@@ -47,9 +47,11 @@ _host_clang_toolchain = {
 
   is_host_toolchain = true
 
-  # Enable static analysis for host clang based toolchains,
-  # even with OSS-Fuzz enabled.
-  static_analysis = true
+  static_analysis = {
+    # Enable static analysis for host clang based toolchains,
+    # even with OSS-Fuzz enabled.
+    enabled = true
+  }
 }
 
 # Common default scope shared by all host Clang toolchains.

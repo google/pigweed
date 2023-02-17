@@ -23,7 +23,9 @@ _arm_clang_toolchain = {
   link_whole_archive = true
 
   # Enable static analysis for arm clang based toolchains.
-  static_analysis = true
+  static_analysis = {
+    enabled = true
+  }
 }
 
 # Configs specific to different architectures.
