@@ -628,3 +628,29 @@ Upstream `GoogleTest`_ may be used as the backend for ``pw_unit_test``. A clone
 of the GoogleTest repository is required. See the
 :ref:`third_party/googletest documentation <module-pw_third_party_googletest>`
 for details.
+
+When using upstream `GoogleTest`_ as the backend, the
+:cpp:class:`pw::unit_test::GoogleTestHandlerAdapter` can be used in conjunction
+with the above mentioned `EventHandler Interface <#the-eventhandler-interface>`_
+and `Predefined event handlers`_. An example of how you can use the adapter in
+conjunction with an ``EventHandler`` is shown below.
+
+  .. code-block:: c++
+
+    testing::InitGoogleTest();
+    auto* unit_test = testing::UnitTest::GetInstance();
+
+    pw::unit_test::LoggingEventHandler logger;
+    pw::unit_test::GoogleTestHandlerAdapter listener_adapter(logger);
+    unit_test->listeners().Append(&listener_adapter);
+
+    const auto status = RUN_ALL_TESTS();
+
+.. cpp:namespace-push:: pw::unit_test
+
+.. cpp:class:: GoogleTestHandlerAdapter
+
+  A GoogleTest Event Listener that fires GoogleTest emitted events to an
+  appropriate ``EventHandler``.
+
+.. cpp::namespace-pop::

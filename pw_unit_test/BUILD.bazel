@@ -254,8 +254,10 @@ filegroup(
 # GTest is not yet supported in the Bazel build. This filegroup silences
 # warnings about these files not being included in the Bazel build.
 filegroup(
-    name = "gtest_rpc_support",
+    name = "gtest_support",
     srcs = [
+        "googletest_handler_adapter.cc",
+        "public/pw_unit_test/googletest_handler_adapter.h",
         "rpc_gtest_event_handler.cc",
         "rpc_gtest_public/pw_unit_test/internal/rpc_event_handler.h",
     ],

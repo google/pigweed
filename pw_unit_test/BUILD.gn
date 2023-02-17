@@ -103,6 +103,17 @@ pw_source_set("googletest_style_event_handler") {
   sources = [ "googletest_style_event_handler.cc" ]
 }
 
+pw_source_set("googletest_handler_adapter") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    ":logging_event_handler",
+    "$dir_pw_third_party/googletest",
+    dir_pw_preprocessor,
+  ]
+  public = [ "public/pw_unit_test/googletest_handler_adapter.h" ]
+  sources = [ "googletest_handler_adapter.cc" ]
+}
+
 # Library providing an event handler which outputs human-readable text.
 pw_source_set("simple_printing_event_handler") {
   public_deps = [
