@@ -2902,14 +2902,14 @@ TEST_F(BrEdrConnectionManagerTest, SuccessfulHciRetriesAfterPageTimeout) {
   ASSERT_TRUE(peer->bredr());
   // Cause the initial Create Connection to wait for 14s for Connection Complete
   RunLoopFor(zx::sec(14));
-  ASSERT_EQ(ZX_OK, test_device()->SendCommandChannelPacket(kConnectionCompletePageTimeout));
+  ASSERT_TRUE(test_device()->SendCommandChannelPacket(kConnectionCompletePageTimeout));
   // Verify higher layers have not been notified of failure.
   EXPECT_EQ(ToResult(HostError::kFailed), status);
   // Cause the first retry Create Connection to wait for 14s for Connection Complete - now 28s since
   // the first Create Connection, bumping up on the retry window limit of 30s.
   RunLoopFor(zx::sec(14));
   // Cause a second retry.
-  ASSERT_EQ(ZX_OK, test_device()->SendCommandChannelPacket(kConnectionCompletePageTimeout));
+  ASSERT_TRUE(test_device()->SendCommandChannelPacket(kConnectionCompletePageTimeout));
   // Verify higher layers have not been notified of failure until the Connection Complete propagates
   EXPECT_EQ(ToResult(HostError::kFailed), status);
 
@@ -2942,11 +2942,11 @@ TEST_F(BrEdrConnectionManagerTest, DontRetryAfterWindowClosed) {
   RunLoopFor(zx::sec(15));
   // Higher layers should not be notified yet.
   EXPECT_EQ(fit::ok(), status);
-  ASSERT_EQ(ZX_OK, test_device()->SendCommandChannelPacket(kConnectionCompletePageTimeout));
+  ASSERT_TRUE(test_device()->SendCommandChannelPacket(kConnectionCompletePageTimeout));
 
   // Create Connection will retry, and it hangs for 16s before ConnectionCompletePageTimeout
   RunLoopFor(zx::sec(16));
-  ASSERT_EQ(ZX_OK, test_device()->SendCommandChannelPacket(kConnectionCompletePageTimeout));
+  ASSERT_TRUE(test_device()->SendCommandChannelPacket(kConnectionCompletePageTimeout));
   RunLoopUntilIdle();
   // Create Connection will *not* be tried again as we are outside of the retry window.
   EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::PAGE_TIMEOUT), status);

@@ -5,19 +5,10 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_CONTROLLER_TEST_DOUBLE_BASE_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_TESTING_CONTROLLER_TEST_DOUBLE_BASE_H_
 
-// TODO(fxbug.dev/122084): Remove dependency on Zircon
-#include <zircon/status.h>
-
 #include "pw_bluetooth/controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_packet.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/emboss_control_packets.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/sco_data_packet.h"
 
 namespace bt::testing {
 
@@ -42,20 +33,20 @@ class ControllerTestDoubleBase : public pw::bluetooth::Controller {
 
   // Sends the given packet over this FakeController's command channel endpoint.
   // Returns the result of the write operation on the command channel.
-  zx_status_t SendCommandChannelPacket(const ByteBuffer& packet);
+  bool SendCommandChannelPacket(const ByteBuffer& packet);
 
   // Sends the given packet over this FakeController's ACL data channel
   // endpoint.
   // Returns the result of the write operation on the channel.
-  zx_status_t SendACLDataChannelPacket(const ByteBuffer& packet);
+  bool SendACLDataChannelPacket(const ByteBuffer& packet);
 
   // Sends the given packet over this ControllerTestDouble's SCO data channel
   // endpoint.
   // Returns the result of the write operation on the channel.
-  zx_status_t SendScoDataChannelPacket(const ByteBuffer& packet);
+  bool SendScoDataChannelPacket(const ByteBuffer& packet);
 
   // Wrapper around SignalError() to support old test code.
-  void Stop(zx_status_t = ZX_ERR_PEER_CLOSED) { SignalError(pw::Status::Aborted()); }
+  void Stop() { SignalError(pw::Status::Aborted()); }
 
   void SignalError(pw::Status status) {
     if (error_cb_) {

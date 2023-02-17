@@ -7,10 +7,6 @@
 #include <lib/async/cpp/task.h>
 #include <lib/async/default.h>
 
-#include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
-#include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_packet.h"
-
 namespace bt::testing {
 
 ControllerTestDoubleBase::ControllerTestDoubleBase() {}
@@ -22,9 +18,9 @@ ControllerTestDoubleBase::~ControllerTestDoubleBase() {
   // virtual methods of this class.
 }
 
-zx_status_t ControllerTestDoubleBase::SendCommandChannelPacket(const ByteBuffer& packet) {
+bool ControllerTestDoubleBase::SendCommandChannelPacket(const ByteBuffer& packet) {
   if (!event_cb_) {
-    return ZX_ERR_IO_NOT_PRESENT;
+    return false;
   }
 
   // Post packet to simulate async behavior that many tests expect.
@@ -35,12 +31,12 @@ zx_status_t ControllerTestDoubleBase::SendCommandChannelPacket(const ByteBuffer&
       self->event_cb_({reinterpret_cast<const std::byte*>(buffer.data()), buffer.size()});
     }
   });
-  return PW_STATUS_OK;
+  return true;
 }
 
-zx_status_t ControllerTestDoubleBase::SendACLDataChannelPacket(const ByteBuffer& packet) {
+bool ControllerTestDoubleBase::SendACLDataChannelPacket(const ByteBuffer& packet) {
   if (!acl_cb_) {
-    return ZX_ERR_IO_NOT_PRESENT;
+    return false;
   }
 
   // Post packet to simulate async behavior that some tests expect.
@@ -51,16 +47,16 @@ zx_status_t ControllerTestDoubleBase::SendACLDataChannelPacket(const ByteBuffer&
       self->acl_cb_({reinterpret_cast<const std::byte*>(buffer.data()), buffer.size()});
     }
   });
-  return PW_STATUS_OK;
+  return true;
 }
 
-zx_status_t ControllerTestDoubleBase::SendScoDataChannelPacket(const ByteBuffer& packet) {
+bool ControllerTestDoubleBase::SendScoDataChannelPacket(const ByteBuffer& packet) {
   if (!sco_cb_) {
-    return ZX_ERR_IO_NOT_PRESENT;
+    return false;
   }
 
   sco_cb_({reinterpret_cast<const std::byte*>(packet.data()), packet.size()});
-  return PW_STATUS_OK;
+  return true;
 }
 
 void ControllerTestDoubleBase::Initialize(PwStatusCallback complete_callback,

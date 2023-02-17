@@ -73,7 +73,7 @@ TEST_F(TransportTest, HciErrorClosesTransportWithSco) {
       DataBufferInfo(/*max_data_length=*/1, /*max_num_packets=*/1)));
   RunLoopUntilIdle();
 
-  test_device()->Stop(ZX_ERR_PEER_CLOSED);
+  test_device()->Stop();
   RunLoopUntilIdle();
   EXPECT_EQ(closed_cb_count, 1u);
 }

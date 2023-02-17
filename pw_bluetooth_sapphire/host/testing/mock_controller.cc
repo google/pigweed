@@ -178,8 +178,7 @@ void MockController::OnCommandReceived(const ByteBuffer& data) {
 
   while (!transaction.replies().empty()) {
     DynamicByteBuffer& reply = transaction.replies().front();
-    zx_status_t status = SendCommandChannelPacket(reply);
-    ASSERT_EQ(ZX_OK, status) << "Failed to send reply: " << zx_status_get_string(status);
+    ASSERT_TRUE(SendCommandChannelPacket(reply)) << "Failed to send reply";
     transaction.replies().pop();
   }
   cmd_transactions_.pop();
@@ -204,8 +203,7 @@ void MockController::OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) 
 
     while (!expected.replies().empty()) {
       auto& reply = expected.replies().front();
-      auto status = SendACLDataChannelPacket(reply);
-      ASSERT_EQ(ZX_OK, status) << "Failed to send reply: " << zx_status_get_string(status);
+      ASSERT_TRUE(SendACLDataChannelPacket(reply)) << "Failed to send reply";
       expected.replies().pop();
     }
     data_transactions_.pop();
