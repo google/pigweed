@@ -10,26 +10,26 @@
   Home <self>
   docs/getting_started
   docs/concepts/index
+  module_guides
   docs/release_notes/index
-  Source Code <https://cs.pigweed.dev/pigweed>
-  Code Reviews <https://pigweed-review.googlesource.com>
   Mailing List <https://groups.google.com/forum/#!forum/pigweed>
   Chat Room <https://discord.gg/M9NSeTA>
+  docs/os_abstraction_layers
+  docs/size_optimizations
+  FAQ <docs/faq>
+  third_party_support
+  Source Code <https://cs.pigweed.dev/pigweed>
+  Code Reviews <https://pigweed-review.googlesource.com>
   Issue Tracker <https://issues.pigweed.dev/issues?q=status:open>
   docs/contributing
   docs/code_of_conduct
   docs/embedded_cpp_guide
   Style Guide <docs/style_guide>
   Automated Analysis <automated_analysis>
-  docs/os_abstraction_layers
   targets
   Build System <build_system>
-  docs/size_optimizations
-  FAQ <docs/faq>
   SEEDs <seed/0000-index>
   docs/module_structure
-  module_guides
-  third_party_support
 
 =======
 Pigweed
