@@ -64,7 +64,7 @@ from pathlib import Path
 import shlex
 import subprocess
 import sys
-from typing import Dict, Optional
+from typing import cast, Dict, Optional
 
 # This expects this file to be in the Python module. If it ever moves
 # (e.g. to the root of the repository), this will need to change.
@@ -75,7 +75,14 @@ _PW_PROJECT_PATH = Path(
 )
 
 
-def assumed_environment_root() -> Path:
+def assumed_environment_root() -> Optional[Path]:
+    """Infer the path to the Pigweed environment directory.
+
+    First we look at the environment variable that should contain the path if
+    we're operating in an activated Pigweed environment. If we don't find the
+    path there, we check a few known locations. If we don't find an environment
+    directory in any of those locations, we return None.
+    """
     actual_environment_root = os.environ.get('_PW_ACTUAL_ENVIRONMENT_ROOT')
     if (
         actual_environment_root is not None
@@ -91,12 +98,22 @@ def assumed_environment_root() -> Path:
     if default_dot_environment.exists():
         return default_dot_environment.absolute()
 
-    raise RuntimeError(
-        'This must be run from a bootstrapped Pigweed directory!'
-    )
+    return None
 
 
-_DEFAULT_CONFIG_FILE_PATH = assumed_environment_root() / 'actions.json'
+# We're looking for the `actions.json` file that allows us to activate the
+# Pigweed environment. That file is located in the Pigweed environment
+# directory, so if we found an environment directory, this variable will
+# have the path to `actions.json`. If it doesn't find an environment directory
+# (e.g., this isn't being executed in the context of a Pigweed project), this
+# will be None. Note that this is the "default" config file path because
+# callers of functions that need this path can provide their own paths to an
+# `actions.json` file.
+_DEFAULT_CONFIG_FILE_PATH = (
+    None
+    if assumed_environment_root() is None
+    else cast(Path, assumed_environment_root()) / 'actions.json'
+)
 
 
 def _sanitize_path(
@@ -207,11 +224,16 @@ class ShellModifier(ABC):
 
     def modify_env(
         self,
-        config_file_path: Path = _DEFAULT_CONFIG_FILE_PATH,
+        config_file_path: Optional[Path] = _DEFAULT_CONFIG_FILE_PATH,
         sanitize: bool = False,
     ) -> 'ShellModifier':
         """Modify the current shell state per the actions.json file provided."""
         json_file_options = {}
+
+        if config_file_path is None:
+            raise RuntimeError(
+                'This must be run from a bootstrapped Pigweed directory!'
+            )
 
         with config_file_path.open('r') as json_file:
             json_file_options = json.loads(json_file.read())
@@ -310,6 +332,13 @@ def _build_argument_parser() -> argparse.ArgumentParser:
         description=doc,
     )
 
+    default_config_file_path = None
+
+    if _DEFAULT_CONFIG_FILE_PATH is not None:
+        default_config_file_path = _DEFAULT_CONFIG_FILE_PATH.relative_to(
+            Path.cwd()
+        )
+
     parser.add_argument(
         '-c',
         '--config-file',
@@ -318,7 +347,7 @@ def _build_argument_parser() -> argparse.ArgumentParser:
         help='Path to actions.json config file, which defines '
         'the modifications to the shell environment '
         'needed to activate Pigweed. '
-        f'Default: {_DEFAULT_CONFIG_FILE_PATH.relative_to(Path.cwd())}',
+        f'Default: {default_config_file_path}',
     )
 
     default_shell = Path(os.environ['SHELL']).name
