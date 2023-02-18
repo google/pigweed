@@ -197,6 +197,8 @@ texinfo_documents = [
     ),
 ]
 
+exclude_patterns = ['docs/templates/**']
+
 
 def do_not_skip_init(app, what, name, obj, would_skip, options):
     if name == "__init__":

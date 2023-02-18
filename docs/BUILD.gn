@@ -59,6 +59,19 @@ pw_doc_group("release_notes") {
   ]
 }
 
+pw_doc_group("templates") {
+  sources = [
+    "templates/docs/api.rst",
+    "templates/docs/cli.rst",
+    "templates/docs/codelabs/index.rst",
+    "templates/docs/concepts.rst",
+    "templates/docs/design.rst",
+    "templates/docs/gui.rst",
+    "templates/docs/guides.rst",
+    "templates/docs/index.rst",
+  ]
+}
+
 # Documentation for upstream Pigweed targets.
 group("target_docs") {
   deps = [
@@ -112,6 +125,7 @@ pw_doc_gen("docs") {
     ":release_notes",
     ":static_assets",
     ":target_docs",
+    ":templates",
     ":third_party_docs",
     "$dir_pigweed/seed:docs",
     "$dir_pw_env_setup:python.install",
