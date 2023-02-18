@@ -16,7 +16,7 @@
 Run arbitrary commands or invoke build systems (Ninja, Bazel and make) on one or
 more build directories.
 
-Usage examples:
+Examples:
 
   # Build the default target in out/ using ninja.
   python -m pw_build.project_builder -C out

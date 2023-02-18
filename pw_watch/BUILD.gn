@@ -18,7 +18,10 @@ import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 
 pw_doc_group("docs") {
-  inputs = [ "doc_resources/pw_watch_on_device_demo.gif" ]
+  inputs = [
+    "doc_resources/pw_watch_on_device_demo.gif",
+    "doc_resources/pw_watch_test_demo2.gif",
+  ]
   sources = [ "docs.rst" ]
 }
 

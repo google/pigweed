@@ -21,37 +21,63 @@ def add_project_builder_arguments(
     parser: argparse.ArgumentParser,
 ) -> argparse.ArgumentParser:
     """Add ProjectBuilder.main specific arguments."""
-    parser.add_argument(
-        'default_build_targets',
-        nargs='*',
-        metavar='target',
-        default=[],
-        help=(
-            'Automatically locate a build directory and build these '
-            'targets. For example, `host docs` searches for a Ninja '
-            'build directory at out/ and builds the `host` and `docs` '
-            'targets. To specify one or more directories, use the '
-            '-C / --build_directory option.'
-        ),
+    build_dir_group = parser.add_argument_group(
+        title='Build Directory and Command Options'
     )
-
-    parser.add_argument(
+    build_dir_group.add_argument(
         '-C',
-        '--build_directory',
+        '--build-directory',
         dest='build_directories',
         nargs='+',
         action='append',
         default=[],
         metavar=('directory', 'target'),
         help=(
-            'Specify a build directory and optionally targets to '
-            'build. `pw watch -C out tgt` is equivalent to `ninja '
-            '-C out tgt`'
+            "Specify a build directory and optionally targets to "
+            "build. `pw watch -C out target1 target2` is equivalent to 'ninja "
+            "-C out taret1 target2'. The 'out' directory will be used if no "
+            "others are provided."
+        ),
+    )
+
+    build_dir_group.add_argument(
+        'default_build_targets',
+        nargs='*',
+        metavar='target',
+        default=[],
+        help=(
+            "Default build targets. For example if the build directory is "
+            "'out' then, 'ninja -C out taret1 target2' will be run. To "
+            "specify one or more directories, use the "
+            "``-C / --build-directory`` option."
+        ),
+    )
+
+    build_dir_group.add_argument(
+        '--build-system-command',
+        nargs=2,
+        action='append',
+        default=[],
+        dest='build_system_commands',
+        metavar=('directory', 'command'),
+        help='Build system command for . Default: ninja',
+    )
+
+    build_dir_group.add_argument(
+        '--run-command',
+        action='append',
+        default=[],
+        help=(
+            'Additional commands to run. These are run before any -C '
+            'arguments and may be repeated. For example: '
+            "--run-command 'bazel build //pw_cli/...'"
+            "--run-command 'bazel test //pw_cli/...'"
+            "-C out python.lint python.test"
         ),
     )
 
     build_options_group = parser.add_argument_group(
-        title='Build system control options'
+        title='Build Execution Options'
     )
     build_options_group.add_argument(
         '-j',
@@ -71,8 +97,22 @@ def add_project_builder_arguments(
             'running "ninja -k 0" or "bazel build -k".'
         ),
     )
+    build_options_group.add_argument(
+        '--parallel',
+        action='store_true',
+        help='Run all builds in parallel.',
+    )
+    build_options_group.add_argument(
+        '--parallel-workers',
+        default=0,
+        type=int,
+        help=(
+            'How many builds may run at the same time when --parallel is '
+            'enabled. Default: 0 meaning run all in parallel.'
+        ),
+    )
 
-    logfile_group = parser.add_argument_group(title='Log file options')
+    logfile_group = parser.add_argument_group(title='Log File Options')
     logfile_group.add_argument(
         '--logfile',
         type=Path,
@@ -91,7 +131,7 @@ def add_project_builder_arguments(
         help='Enable Python build execution tool debug logging.',
     )
 
-    output_group = parser.add_argument_group(title='Display output options')
+    output_group = parser.add_argument_group(title='Display Output Options')
 
     # TODO(b/248257406) Use argparse.BooleanOptionalAction when Python 3.8 is
     # no longer supported.
@@ -121,44 +161,6 @@ def add_project_builder_arguments(
         action='store_false',
         dest='colors',
         help="Don't force ninja to use color output.",
-    )
-
-    parser.add_argument(
-        '--build-system-command',
-        nargs=2,
-        action='append',
-        default=[],
-        dest='build_system_commands',
-        metavar=('directory', 'command'),
-        help='Build system command for . Default: ninja',
-    )
-
-    parser.add_argument(
-        '--run-command',
-        action='append',
-        default=[],
-        help=(
-            'Additional commands to run. These are run before any -C '
-            'arguments and may be repeated. For example: '
-            "--run-command 'bazel build //pw_cli/...'"
-            "--run-command 'bazel test //pw_cli/...'"
-            "-C out python.lint python.test"
-        ),
-    )
-
-    parser.add_argument(
-        '--parallel',
-        action='store_true',
-        help='Run all builds in parallel.',
-    )
-    parser.add_argument(
-        '--parallel-workers',
-        default=0,
-        type=int,
-        help=(
-            'How many builds may run at the same time when --parallel is '
-            'enabled. Default: 0 meaning run all in parallel.'
-        ),
     )
 
     return parser

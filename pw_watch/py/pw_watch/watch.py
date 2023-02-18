@@ -17,7 +17,7 @@
 Run arbitrary commands or invoke build systems (Ninja, Bazel and make) on one or
 more build directories whenever source files change.
 
-Usage examples:
+Examples:
 
   # Build the default target in out/ using ninja.
   pw watch -C out
@@ -274,6 +274,9 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         # Clear the screen and show a banner indicating the build is starting.
         self._clear_screen()
 
+        if self.banners:
+            for line in pw_cli.branding.banner().splitlines():
+                _LOG.info(line)
         if self.fullscreen_enabled:
             _LOG.info(
                 self.project_builder.color.green(
@@ -281,9 +284,6 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
                 )
             )
         else:
-            if self.banners:
-                for line in pw_cli.branding.banner().splitlines():
-                    _LOG.info(line)
             _LOG.info(
                 self.project_builder.color.green(
                     'Watching for changes. Ctrl-C to exit; enter to rebuild'
@@ -393,6 +393,8 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         if not self.watch_app:
             return False
 
+        self.watch_app.redraw_ui()
+
         def new_line_callback(recipe: BuildRecipe) -> None:
             self.current_build_step = recipe.status.current_step
             self.current_build_percent = recipe.status.percent
@@ -412,6 +414,8 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
             logger=desired_logger,
             line_processed_callback=new_line_callback,
         )
+
+        self.watch_app.redraw_ui()
 
         return result
 
@@ -932,13 +936,18 @@ def run_watch(
         watch(event_handler, exclude_list)
 
 
-def main() -> None:
-    """Watch files for changes and rebuild."""
+def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser = add_parser_arguments(parser)
+    return parser
+
+
+def main() -> None:
+    """Watch files for changes and rebuild."""
+    parser = get_parser()
     args = parser.parse_args()
 
     prefs = WatchAppPrefs(load_argparse_arguments=add_parser_arguments)
@@ -956,6 +965,9 @@ def main() -> None:
     if args.parallel:
         separate_logfiles = True
 
+    def _recipe_abort(*args) -> None:
+        _LOG.critical(*args)
+
     project_builder = ProjectBuilder(
         build_recipes=build_recipes,
         jobs=args.jobs,
@@ -967,6 +979,7 @@ def main() -> None:
         root_logfile=args.logfile,
         root_logger=_LOG,
         log_level=logging.DEBUG if args.debug_logging else logging.INFO,
+        abort_callback=_recipe_abort,
     )
 
     event_handler, exclude_list = watch_setup(project_builder, **vars(args))

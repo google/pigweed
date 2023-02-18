@@ -55,31 +55,28 @@ def add_parser_arguments(
     """Sets up an argument parser for pw watch."""
     parser = add_project_builder_arguments(parser)
 
-    watch_group = parser.add_argument_group(title='Watch options')
+    watch_group = parser.add_argument_group(title='Watch Options')
 
     watch_group.add_argument(
         '--patterns',
-        help=(
-            WATCH_PATTERN_DELIMITER + '-delimited list of globs to '
-            'watch to trigger recompile'
-        ),
+        help=('Comma delimited list of globs to watch to trigger recompile.'),
         default=WATCH_PATTERN_DELIMITER.join(WATCH_PATTERNS),
     )
 
     watch_group.add_argument(
-        '--ignore_patterns',
+        '--ignore-patterns',
         dest='ignore_patterns_string',
-        help=(
-            WATCH_PATTERN_DELIMITER + '-delimited list of globs to '
-            'ignore events from'
-        ),
+        help=('Comma delimited list of globs to ignore events from.'),
     )
 
     watch_group.add_argument(
-        '--exclude_list',
+        '--exclude-list',
         nargs='+',
         type=Path,
-        help='directories to ignore during pw watch',
+        help=(
+            'Directories to ignore during pw watch. This option may be '
+            'repeated. Directories are passed as separate arguments.'
+        ),
         default=[],
     )
 
@@ -90,7 +87,7 @@ def add_parser_arguments(
         help='do not restart ongoing builds if files change',
     )
 
-    parser.add_argument(
+    watch_group.add_argument(
         '--serve-docs',
         dest='serve_docs',
         action='store_true',
@@ -100,7 +97,7 @@ def add_parser_arguments(
         ' Defaults to http://127.0.0.1:8000',
     )
 
-    parser.add_argument(
+    watch_group.add_argument(
         '--serve-docs-port',
         dest='serve_docs_port',
         type=int,
@@ -108,7 +105,7 @@ def add_parser_arguments(
         help='Set the port for the docs webserver. Default: 8000.',
     )
 
-    parser.add_argument(
+    watch_group.add_argument(
         '--serve-docs-path',
         dest='serve_docs_path',
         type=Path,
@@ -117,7 +114,7 @@ def add_parser_arguments(
         ' in the build directory.',
     )
 
-    parser.add_argument(
+    watch_group.add_argument(
         '-f',
         '--fullscreen',
         action='store_true',

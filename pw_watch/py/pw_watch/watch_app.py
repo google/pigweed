@@ -680,6 +680,7 @@ class WatchApp(PluginMixin):
 
     def rebuild_on_filechange(self):
         for pane in self.all_log_panes():
+            pane.log_view.clear_visual_selection()
             pane.log_view.log_store.clear_logs()
             pane.log_view.view_mode_changed()
 
