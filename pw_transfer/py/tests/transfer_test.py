@@ -16,6 +16,7 @@
 
 import enum
 import math
+import os
 import unittest
 from typing import Iterable, List
 
@@ -1411,4 +1412,11 @@ class ProgressStatsTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    # TODO(b/265975025): Only run this test in upstream Pigweed until the
+    #     occasional hangs are fixed.
+    if os.environ.get('PW_ROOT') and os.environ.get(
+        'PW_ROOT'
+    ) == os.environ.get('PW_PROJECT_ROOT'):
+        unittest.main()
+    else:
+        print('Skipping transfer_test.py due to possible hangs (b/265975025).')
