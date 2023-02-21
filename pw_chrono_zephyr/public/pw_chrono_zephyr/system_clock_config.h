@@ -13,7 +13,7 @@
 // the License.
 #pragma once
 
-#include <kernel.h>
+#include <zephyr/kernel.h>
 
 // Use the Zephyr config's tick rate.
 #define PW_CHRONO_SYSTEM_CLOCK_PERIOD_SECONDS_NUMERATOR 1

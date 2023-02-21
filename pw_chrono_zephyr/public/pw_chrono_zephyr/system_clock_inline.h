@@ -13,7 +13,7 @@
 // the License.
 #pragma once
 
-#include <kernel.h>
+#include <zephyr/kernel.h>
 
 #include "pw_chrono/system_clock.h"
 
