@@ -616,8 +616,6 @@ class EditorSettingsManager(Generic[_TSettingsType]):
     def delete_all_active_settings(self) -> None:
         """Delete all active settings files."""
         for settings_type in self._settings_types:
-            self.project(settings_type).delete()
-            self.user(settings_type).delete()
             self.active(settings_type).delete()
 
     def delete_all_backups(self) -> None:
