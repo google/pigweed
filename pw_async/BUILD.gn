@@ -15,88 +15,67 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_async/async.gni")
+import("$dir_pw_async/backend.gni")
+import("$dir_pw_async/fake_dispatcher_test.gni")
+import("$dir_pw_build/facade.gni")
+import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
 import("$dir_pw_docgen/docs.gni")
-import("$dir_pw_thread/backend.gni")
-import("$dir_pw_unit_test/test.gni")
 
 config("public_include_path") {
   include_dirs = [ "public" ]
 }
 
-config("public_test_include_path") {
-  include_dirs = [ "public_test" ]
-}
-
-pw_source_set("task") {
-  public_configs = [ ":public_include_path" ]
-  public_deps = [
-    "$dir_pw_chrono:system_clock",
-    "$dir_pw_containers:intrusive_list",
-    dir_pw_function,
-  ]
-  public = [ "public/pw_async/task.h" ]
-  visibility = [ ":*" ] + pw_async_EXPERIMENTAL_MODULE_VISIBILITY
-}
-
 pw_source_set("dispatcher") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
-    ":task",
     "$dir_pw_chrono:system_clock",
+    dir_pw_function,
   ]
   public = [ "public/pw_async/dispatcher.h" ]
-  visibility = [ ":*" ] + pw_async_EXPERIMENTAL_MODULE_VISIBILITY
+  visibility = [
+                 ":*",
+                 "$dir_pw_async_basic:*",
+               ] + pw_async_EXPERIMENTAL_MODULE_VISIBILITY
 }
 
-pw_source_set("test_dispatcher") {
-  public_configs = [ ":public_test_include_path" ]
-  public_deps = [
-    ":pw_dispatcher_basic",
-    dir_pw_log,
-  ]
-  public = [ "public_test/pw_async/test_dispatcher.h" ]
-  sources = [ "test_dispatcher.cc" ]
-  visibility = [ ":*" ] + pw_async_EXPERIMENTAL_MODULE_VISIBILITY
-}
-
-pw_source_set("pw_dispatcher_basic") {
+pw_facade("task") {
+  backend = pw_async_TASK_BACKEND
   public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_async/dispatcher_basic.h" ]
   public_deps = [
-    ":dispatcher",
-    "$dir_pw_sync:interrupt_spin_lock",
-    "$dir_pw_sync:timed_thread_notification",
-    "$dir_pw_thread:thread",
-    dir_pw_log,
+    "$dir_pw_chrono:system_clock",
+    dir_pw_function,
   ]
-  sources = [ "dispatcher_basic.cc" ]
-  visibility = [ ":*" ] + pw_async_EXPERIMENTAL_MODULE_VISIBILITY
+  public = [
+    "public/pw_async/internal/types.h",
+    "public/pw_async/task.h",
+  ]
+  visibility = [
+                 ":*",
+                 "$dir_pw_async_basic:*",
+               ] + pw_async_EXPERIMENTAL_MODULE_VISIBILITY
 }
 
-pw_test("dispatcher_test") {
-  enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
-  deps = [ ":test_dispatcher" ]
-  sources = [ "dispatcher_test.cc" ]
-}
-
-pw_test("dispatcher_basic_test") {
-  enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != "" &&
-              pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread"
-  public_deps = [
-    ":pw_dispatcher_basic",
-    dir_pw_log,
-  ]
-  sources = [ "dispatcher_basic_test.cc" ]
+pw_facade("fake_dispatcher") {
+  backend = pw_async_FAKE_DISPATCHER_BACKEND
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_async/fake_dispatcher.h" ]
+  public_deps = [ ":dispatcher" ]
+  visibility = [
+                 ":*",
+                 "$dir_pw_async_basic:*",
+               ] + pw_async_EXPERIMENTAL_MODULE_VISIBILITY
 }
 
 pw_test_group("tests") {
-  tests = [
-    ":dispatcher_test",
-    ":dispatcher_basic_test",
-  ]
 }
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
+}
+
+# Satisfy source_is_in_build_files presubmit step
+pw_source_set("fake_dispatcher_test") {
+  sources = [ "fake_dispatcher_test.cc" ]
+  visibility = []
 }

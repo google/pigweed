@@ -1,4 +1,4 @@
-// Copyright 2022 The Pigweed Authors
+// Copyright 2023 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -11,10 +11,9 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
-#include "pw_async/dispatcher_basic.h"
+#include "pw_async_basic/dispatcher.h"
 
 #include "gtest/gtest.h"
-#include "public/pw_async/dispatcher_basic.h"
 #include "pw_log/log.h"
 #include "pw_sync/thread_notification.h"
 #include "pw_thread/thread.h"
@@ -77,13 +76,13 @@ TEST(DispatcherBasic, ChainedTasks) {
     c.dispatcher->PostTask(tp.task_a);
   });
 
-  tp.task_a.SetFunction([&tp](Context& c) {
+  tp.task_a.set_function([&tp](Context& c) {
     ++tp.count;
 
     c.dispatcher->PostTask(tp.task_b);
   });
 
-  tp.task_b.SetFunction([&tp]([[maybe_unused]] Context& c) {
+  tp.task_b.set_function([&tp]([[maybe_unused]] Context& c) {
     ++tp.count;
     tp.notification.release();
   });

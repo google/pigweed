@@ -11,15 +11,16 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations under
 // the License.
+#include "pw_async/fake_dispatcher.h"
+
 #include "gtest/gtest.h"
-#include "pw_async/test_dispatcher.h"
 #include "pw_sync/thread_notification.h"
 #include "pw_thread/thread.h"
 #include "pw_thread_stl/options.h"
 
 using namespace std::chrono_literals;
 
-namespace pw::async {
+namespace pw::async::test {
 
 // Lambdas can only capture one ptr worth of memory without allocating, so we
 // group the data we want to share between tasks and their containing tests
@@ -29,8 +30,8 @@ struct TestPrimitives {
   sync::ThreadNotification notification;
 };
 
-TEST(TestDispatcher, PostTasks) {
-  TestDispatcher dispatcher;
+TEST(FakeDispatcher, PostTasks) {
+  FakeDispatcher dispatcher;
 
   TestPrimitives tp;
   auto inc_count = [&tp]([[maybe_unused]] Context& c) { ++tp.count; };
@@ -57,8 +58,8 @@ struct TaskPair {
   sync::ThreadNotification notification;
 };
 
-TEST(TestDispatcher, DelayedTasks) {
-  TestDispatcher dispatcher;
+TEST(FakeDispatcher, DelayedTasks) {
+  FakeDispatcher dispatcher;
   TaskPair tp;
 
   Task task0(
@@ -74,10 +75,10 @@ TEST(TestDispatcher, DelayedTasks) {
 
   dispatcher.PostDelayedTask(task1, 100ms);
 
-  tp.task_a.SetFunction(
+  tp.task_a.set_function(
       [&tp]([[maybe_unused]] Context& c) { tp.count = tp.count * 10 + 3; });
 
-  tp.task_b.SetFunction(
+  tp.task_b.set_function(
       [&tp]([[maybe_unused]] Context& c) { tp.count = tp.count * 10 + 2; });
 
   dispatcher.RunUntilIdle();
@@ -86,8 +87,8 @@ TEST(TestDispatcher, DelayedTasks) {
   ASSERT_TRUE(tp.count == 1234);
 }
 
-TEST(TestDispatcher, CancelTasks) {
-  TestDispatcher dispatcher;
+TEST(FakeDispatcher, CancelTasks) {
+  FakeDispatcher dispatcher;
 
   TestPrimitives tp;
   auto inc_count = [&tp]([[maybe_unused]] Context& c) { ++tp.count; };
@@ -113,8 +114,8 @@ TEST(TestDispatcher, CancelTasks) {
 }
 
 // Test RequestStop() from inside task.
-TEST(TestDispatcher, RequestStopInsideTask) {
-  TestDispatcher dispatcher;
+TEST(FakeDispatcher, RequestStopInsideTask) {
+  FakeDispatcher dispatcher;
 
   TestPrimitives tp;
   auto inc_count = [&tp]([[maybe_unused]] Context& c) { ++tp.count; };
@@ -135,8 +136,8 @@ TEST(TestDispatcher, RequestStopInsideTask) {
   ASSERT_TRUE(tp.count == 1);
 }
 
-TEST(TestDispatcher, PeriodicTasks) {
-  TestDispatcher dispatcher;
+TEST(FakeDispatcher, PeriodicTasks) {
+  FakeDispatcher dispatcher;
 
   TestPrimitives tp;
 
@@ -154,4 +155,4 @@ TEST(TestDispatcher, PeriodicTasks) {
   ASSERT_TRUE(tp.count == 3);
 }
 
-}  // namespace pw::async
+}  // namespace pw::async::test

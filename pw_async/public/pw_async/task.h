@@ -13,48 +13,49 @@
 // the License.
 #pragma once
 
-#include <array>
+#include <optional>
 
+#include "pw_async/internal/types.h"
+#include "pw_async_backend/task.h"
 #include "pw_chrono/system_clock.h"
-#include "pw_containers/intrusive_list.h"
-#include "pw_function/function.h"
 
 namespace pw::async {
 
-constexpr size_t kTaskStateBytes = sizeof(void*) * 4;
+namespace test {
+class FakeDispatcher;
+}
 
-class Dispatcher;
-class Task;
-
-// Task functions take a `Context` as their argument. Before executing a Task,
-// the Dispatcher sets the pointer to itself and to the Task in `Context`.
-struct Context {
-  Dispatcher* dispatcher;
-  Task* task;
-};
-
-// TODO(saeedali): Remove IntrusiveList from here.
-class Task : public IntrusiveList<Task>::Item {
+// A Task represents a unit of work (TaskFunction) that can be executed on a
+// Dispatcher. To support various Dispatcher backends, it wraps a
+// backend::NativeTask, which contains backend-specific state.
+class Task final {
  public:
-  using TaskFunction = Function<void(Context&)>;
+  Task() = default;
 
-  Task() { state_.fill(static_cast<std::byte>(0)); }
-  explicit Task(TaskFunction&& f) {
-    state_.fill(static_cast<std::byte>(0));
-    SetFunction(std::move(f));
+  // Constructs a Task that calls `f` when executed on a Dispatcher.
+  explicit Task(TaskFunction&& f) : native_type_(std::move(f)) {}
+
+  Task(const Task&) = delete;
+  Task& operator=(const Task&) = delete;
+  Task(Task&&) = delete;
+  Task& operator=(Task&&) = delete;
+
+  // Configure the TaskFunction after construction. This MUST NOT be called
+  // while this Task is pending in a Dispatcher.
+  void set_function(TaskFunction&& f) {
+    native_type_.set_function(std::move(f));
   }
 
-  void SetFunction(TaskFunction&& f) { f_ = std::move(f); }
+  // Executes this task.
+  void operator()(Context& ctx) { native_type_(ctx); }
 
-  void operator()(Context& ctx) { f_(ctx); }
-
-  std::byte* State() { return state_.data(); }
+  // Returns the inner NativeTask containing backend-specific state. Only
+  // Dispatcher backends or non-portable code should call these methods!
+  backend::NativeTask& native_type() { return native_type_; }
+  const backend::NativeTask& native_type() const { return native_type_; }
 
  private:
-  // Dispatchers use `state_` to store per Task information. Unused space can be
-  // used by clients to store custom information in their Tasks.
-  std::array<std::byte, kTaskStateBytes> state_;
-  TaskFunction f_;
+  backend::NativeTask native_type_;
 };
 
 }  // namespace pw::async

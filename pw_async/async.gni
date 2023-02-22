@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("//build_overrides/pigweed.gni")
+
 declare_args() {
   # To depend on pw_async, add targets to this list.
   #

@@ -1,4 +1,4 @@
-// Copyright 2022 The Pigweed Authors
+// Copyright 2023 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -14,74 +14,64 @@
 #pragma once
 
 #include "pw_async/dispatcher.h"
+#include "pw_async/task.h"
+#include "pw_sync/interrupt_spin_lock.h"
+#include "pw_sync/lock_annotations.h"
+#include "pw_sync/timed_thread_notification.h"
+#include "pw_thread/thread_core.h"
 
 namespace pw::async {
 
-class TestDispatcher final : public Dispatcher {
+class BasicDispatcher final : public Dispatcher, public thread::ThreadCore {
  public:
-  explicit TestDispatcher() {}
-  ~TestDispatcher() override { RequestStop(); }
+  explicit BasicDispatcher() : stop_requested_(false) {}
+  ~BasicDispatcher() override { RequestStop(); }
 
-  void RequestStop() override;
-
-  // Post caller owned |task|.
+  // Dispatcher overrides:
+  void RequestStop() override PW_LOCKS_EXCLUDED(lock_);
   void PostTask(Task& task) override;
-
-  // Post caller owned |task| to be run after |delay|.
   void PostDelayedTask(Task& task,
                        chrono::SystemClock::duration delay) override;
-
-  // Post caller owned |task| to be run at |time|.
   void PostTaskForTime(Task& task,
                        chrono::SystemClock::time_point time) override;
-
-  // Post caller owned |task| to be run immediately then rerun at a regular
-  // |interval|.
   void SchedulePeriodicTask(Task& task,
                             chrono::SystemClock::duration interval) override;
-  // Post caller owned |task| to be run at |start_time| then rerun at a regular
-  // |interval|.
   void SchedulePeriodicTask(
       Task& task,
       chrono::SystemClock::duration interval,
       chrono::SystemClock::time_point start_time) override;
-
-  // Returns true if |task| is succesfully canceled.
-  // If cancelation fails, the task may be running or completed.
-  // Periodic tasks may run once more after they are canceled.
-  bool Cancel(Task& task) override;
-
-  // Execute tasks until the Dispatcher enters a state where none are queued.
+  bool Cancel(Task& task) override PW_LOCKS_EXCLUDED(lock_);
   void RunUntilIdle() override;
-
-  // Run the Dispatcher until Now() has reached `end_time`, executing all tasks
-  // that come due before then.
   void RunUntil(chrono::SystemClock::time_point end_time) override;
-
-  // Run the Dispatcher until `duration` has elapsed, executing all tasks that
-  // come due in that period.
   void RunFor(chrono::SystemClock::duration duration) override;
 
   // VirtualSystemClock overrides:
-
-  chrono::SystemClock::time_point now() override { return now_; }
+  chrono::SystemClock::time_point now() override {
+    return chrono::SystemClock::now();
+  }
 
  private:
+  void Run() override PW_LOCKS_EXCLUDED(lock_);
+
   // Insert |task| into task_queue_ maintaining its min-heap property, keyed by
-  // |time_due|.
-  void PostTaskInternal(Task& task, chrono::SystemClock::time_point time_due);
+  // |time_due|. Must be holding lock_ when calling this function.
+  void PostTaskInternal(backend::NativeTask& task,
+                        chrono::SystemClock::time_point time_due)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(lock_);
 
   // If no tasks are due, sleeps until a notification is received or until the
   // due time of the next task.
   //
   // If at least one task is due, dequeues and runs each task that is due.
-  void RunLoopOnce();
+  //
+  // Must be holding lock_ when calling this function.
+  void RunLoopOnce() PW_EXCLUSIVE_LOCKS_REQUIRED(lock_);
 
+  sync::InterruptSpinLock lock_;
+  sync::TimedThreadNotification timed_notification_;
+  bool stop_requested_ PW_GUARDED_BY(lock_);
   // A priority queue of scheduled Tasks sorted by earliest due times first.
-  IntrusiveList<Task> task_queue_;
-
-  // Tracks the current time as viewed by the test dispatcher.
-  chrono::SystemClock::time_point now_;
+  IntrusiveList<backend::NativeTask> task_queue_ PW_GUARDED_BY(lock_);
 };
 
 }  // namespace pw::async
