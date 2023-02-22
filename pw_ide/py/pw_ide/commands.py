@@ -322,7 +322,7 @@ def cmd_setup(
     _make_working_dir(reporter, pw_ide_settings)
 
     if pw_ide_settings.editor_enabled('vscode'):
-        cmd_vscode(no_override=True)
+        cmd_vscode()
 
     for command in pw_ide_settings.setup:
         subprocess.run(shlex.split(command))
