@@ -18,7 +18,7 @@
 
    :octicon:`calendar` Proposal Date: 2023-02-10
 
-   :octicon:`code-review` CL: `pwrev/128811 <https://pigweed-review.git.corp.google.com/c/pigweed/pigweed/+/128811>`_
+   :octicon:`code-review` CL: `pwrev/128811 <https://pigweed-review.git.corp.google.com/c/pigweed/pigweed/+/128811>`_, `pwrev/130410 <https://pigweed-review.git.corp.google.com/c/pigweed/pigweed/+/130410>`_
 
 -------
 Summary
@@ -64,7 +64,7 @@ Pigweed's needs:
    :widths: 10, 20, 20
 
    , "**Serve our study**", "**Serve our work**"
-   "**Practical steps**", "Codelabs (`learning-oriented <https://diataxis.fr/tutorials/>`_)", "Guides (`task-oriented <https://diataxis.fr/how-to-guides/>`_)"
+   "**Practical steps**", "Tutorials (`learning-oriented <https://diataxis.fr/tutorials/>`_)", "Guides (`task-oriented <https://diataxis.fr/how-to-guides/>`_)"
    "**Theoretical knowledge**", "Concept & design docs (`understanding-oriented <https://diataxis.fr/explanation/>`_)", "Interface reference (`information-oriented <https://diataxis.fr/reference/>`_)"
 
 Pigweed needs a framework that ensures modules have coverage across these four
@@ -107,13 +107,13 @@ Proposal
 This change would require each module to have a ``docs`` subdirectory matching
 this structure::
 
-  docs/
-  ├── index.rst
+  module root directory/
+  ├── docs.rst
   ├── concepts.rst [or concepts/...] [when needed]
   ├── design.rst [or design/...] [when needed]
   ├── guides.rst [or guides/...] [when needed]
   │
-  ├── codelabs/ [aspirational]
+  ├── tutorials/ [aspirational]
   │   ├── index.rst
   │   └── ...
   │
@@ -125,14 +125,11 @@ Fundamental module docs
 -----------------------
 These three documents are the minimum required of every Pigweed module.
 
-The basics: ``index.rst``
-^^^^^^^^^^^^^^^^^^^^^^^^^
+The basics: ``docs.rst``
+^^^^^^^^^^^^^^^^^^^^^^^^
 Basic, structured information about the module, including what it does, what
 problems it's designed solve, and information that lets a user quickly evaluate
 if the module is useful to them.
-
-This document replaces any pre-existing ``docs.rst`` file in the module guides
-index.
 
 How it works and why: ``design.rst`` & ``concepts.rst`` (understanding-oriented)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -186,9 +183,9 @@ If the module provides a graphical user interface (GUI) (including text mode
 interfaces and web front-ends), its documentation should be included in
 ``gui.rst``.
 
-Codelabs (learning-oriented)
-----------------------------
-We keep these as separate files in ``codelabs``. These take considerable effort
+Tutorials (learning-oriented)
+-----------------------------
+We keep these as separate files in ``tutorials``. These take considerable effort
 to develop, so they aren't *required*, but we aspire to develop them for all but
 the most trivial modules.
 

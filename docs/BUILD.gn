@@ -63,12 +63,12 @@ pw_doc_group("templates") {
   sources = [
     "templates/docs/api.rst",
     "templates/docs/cli.rst",
-    "templates/docs/codelabs/index.rst",
     "templates/docs/concepts.rst",
     "templates/docs/design.rst",
+    "templates/docs/docs.rst",
     "templates/docs/gui.rst",
     "templates/docs/guides.rst",
-    "templates/docs/index.rst",
+    "templates/docs/tutorials/index.rst",
   ]
 }
 

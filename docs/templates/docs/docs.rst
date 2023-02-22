@@ -113,4 +113,4 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   codelabs/index
+   tutorials/index
