@@ -68,6 +68,10 @@ class DeviceClass {
 
   const Bytes& bytes() const { return bytes_; }
 
+  // Converts the DeviceClass into an integer with host-endianness. Only the lower 24 bits are used,
+  // and the highest 8 bits will be 0.
+  uint32_t to_int() const;
+
   // Sets the major service classes of this.
   // Clears any service classes that are not set.
   void SetServiceClasses(const std::unordered_set<ServiceClass>& classes);

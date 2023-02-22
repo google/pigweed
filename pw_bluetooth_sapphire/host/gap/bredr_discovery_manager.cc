@@ -79,13 +79,14 @@ BrEdrDiscoverableSession::BrEdrDiscoverableSession(BrEdrDiscoveryManager::WeakPt
 BrEdrDiscoverableSession::~BrEdrDiscoverableSession() { manager_->RemoveDiscoverableSession(this); }
 
 BrEdrDiscoveryManager::BrEdrDiscoveryManager(hci::CommandChannel::WeakPtr cmd,
-                                             hci_spec::InquiryMode mode, PeerCache* peer_cache)
+                                             pw::bluetooth::emboss::InquiryMode mode,
+                                             PeerCache* peer_cache)
     : cmd_(std::move(cmd)),
       dispatcher_(async_get_default_dispatcher()),
       cache_(peer_cache),
       result_handler_id_(0u),
       desired_inquiry_mode_(mode),
-      current_inquiry_mode_(hci_spec::InquiryMode::kStandard),
+      current_inquiry_mode_(pw::bluetooth::emboss::InquiryMode::STANDARD),
       weak_self_(this) {
   BT_DEBUG_ASSERT(cache_);
   BT_DEBUG_ASSERT(cmd_.is_alive());
@@ -151,10 +152,10 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
 
   auto self = weak_self_.GetWeakPtr();
   if (desired_inquiry_mode_ != current_inquiry_mode_) {
-    auto packet = hci::CommandPacket::New(hci_spec::kWriteInquiryMode,
-                                          sizeof(hci_spec::WriteInquiryModeCommandParams));
-    packet->mutable_payload<hci_spec::WriteInquiryModeCommandParams>()->inquiry_mode =
-        desired_inquiry_mode_;
+    auto packet =
+        hci::EmbossCommandPacket::New<pw::bluetooth::emboss::WriteInquiryModeCommandWriter>(
+            hci_spec::kWriteInquiryMode);
+    packet.view_t().inquiry_mode().Write(desired_inquiry_mode_);
     cmd_->SendCommand(std::move(packet),
                       [self, mode = desired_inquiry_mode_](auto /*unused*/, const auto& event) {
                         if (!self.is_alive()) {
@@ -555,7 +556,9 @@ void BrEdrDiscoveryManager::SetInquiryScan() {
     });
   };
 
-  auto read_enable = hci::CommandPacket::New(hci_spec::kReadScanEnable);
+  auto read_enable =
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ReadScanEnableCommandWriter>(
+          hci_spec::kReadScanEnable);
   cmd_->SendCommand(std::move(read_enable), std::move(scan_enable_cb));
 }
 

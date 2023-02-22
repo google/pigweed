@@ -532,19 +532,19 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   void OnReadSimplePairingMode();
 
   // Called when a HCI_Write_Page_Scan_Type command is received.
-  void OnWritePageScanType(const hci_spec::WritePageScanTypeCommandParams& params);
+  void OnWritePageScanType(const pw::bluetooth::emboss::WritePageScanTypeCommandView& params);
 
   // Called when a HCI_Read_Page_Scan_Type command is received.
   void OnReadPageScanType();
 
   // Called when a HCI_Write_Inquiry_Mode command is received.
-  void OnWriteInquiryMode(const hci_spec::WriteInquiryModeCommandParams& params);
+  void OnWriteInquiryMode(const pw::bluetooth::emboss::WriteInquiryModeCommandView& params);
 
   // Called when a HCI_Read_Inquiry_Mode command is received.
   void OnReadInquiryMode();
 
   // Called when a HCI_Write_Class_OfDevice command is received.
-  void OnWriteClassOfDevice(const hci_spec::WriteClassOfDeviceCommandParams& params);
+  void OnWriteClassOfDevice(const pw::bluetooth::emboss::WriteClassOfDeviceCommandView& params);
 
   // Called when a HCI_Write_Page_Scan_Activity command is received.
   void OnWritePageScanActivity(
@@ -748,7 +748,8 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
 
   // Used for BR/EDR Scans
   uint8_t bredr_scan_state_;
-  hci_spec::PageScanType page_scan_type_ = hci_spec::PageScanType::kStandardScan;
+  pw::bluetooth::emboss::PageScanType page_scan_type_ =
+      pw::bluetooth::emboss::PageScanType::STANDARD_SCAN;
   uint16_t page_scan_interval_ = 0x800;
   uint16_t page_scan_window_ = 0x0012;
 
@@ -780,7 +781,7 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
 
   // The Inquiry Mode that the controller is in.  Determines what types of
   // events are faked when a hci_spec::kInquiry is started.
-  hci_spec::InquiryMode inquiry_mode_;
+  pw::bluetooth::emboss::InquiryMode inquiry_mode_;
 
   // The maximum number of advertising sets supported by the controller
   uint8_t num_supported_advertising_sets_ = 1;

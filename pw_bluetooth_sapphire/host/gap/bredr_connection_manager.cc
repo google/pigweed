@@ -70,7 +70,9 @@ std::string ReasonAsString(DisconnectReason reason) {
 void SetPageScanEnabled(bool enabled, hci::Transport::WeakPtr hci, async_dispatcher_t* dispatcher,
                         hci::ResultFunction<> cb) {
   BT_DEBUG_ASSERT(cb);
-  auto read_enable = hci::CommandPacket::New(hci_spec::kReadScanEnable);
+  auto read_enable =
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ReadScanEnableCommandWriter>(
+          hci_spec::kReadScanEnable);
   auto finish_enable_cb = [enabled, hci, finish_cb = std::move(cb)](
                               auto, const hci::EventPacket& event) mutable {
     if (hci_is_error(event, WARN, "gap-bredr", "read scan enable failed")) {
@@ -509,22 +511,24 @@ void BrEdrConnectionManager::WritePageScanSettings(uint16_t interval, uint16_t w
         bt_log(TRACE, "gap-bredr", "page scan activity updated");
       });
 
-  auto write_type = hci::CommandPacket::New(hci_spec::kWritePageScanType,
-                                            sizeof(hci_spec::WritePageScanTypeCommandParams));
-  auto* type_params = write_type->mutable_payload<hci_spec::WritePageScanTypeCommandParams>();
-  type_params->page_scan_type = (interlaced ? hci_spec::PageScanType::kInterlacedScan
-                                            : hci_spec::PageScanType::kStandardScan);
+  const pw::bluetooth::emboss::PageScanType scan_type =
+      interlaced ? pw::bluetooth::emboss::PageScanType::INTERLACED_SCAN
+                 : pw::bluetooth::emboss::PageScanType::STANDARD_SCAN;
+
+  auto write_type =
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::WritePageScanTypeCommandWriter>(
+          hci_spec::kWritePageScanType);
+  auto type_params = write_type.view_t();
+  type_params.page_scan_type().Write(scan_type);
 
   hci_cmd_runner_->QueueCommand(std::move(write_type), [self,
-                                                        interlaced](const hci::EventPacket& event) {
+                                                        scan_type](const hci::EventPacket& event) {
     if (!self.is_alive() || hci_is_error(event, WARN, "gap-bredr", "write page scan type failed")) {
       return;
     }
 
-    self->page_scan_type_ = (interlaced ? hci_spec::PageScanType::kInterlacedScan
-                                        : hci_spec::PageScanType::kStandardScan);
-
     bt_log(TRACE, "gap-bredr", "page scan type updated");
+    self->page_scan_type_ = scan_type;
   });
 
   hci_cmd_runner_->RunCommands(std::move(cb));
@@ -1367,12 +1371,12 @@ void BrEdrConnectionManager::SendIoCapabilityRequestReply(
 void BrEdrConnectionManager::SendIoCapabilityRequestNegativeReply(
     DeviceAddressBytes bd_addr, pw::bluetooth::emboss::StatusCode reason,
     hci::ResultFunction<> cb) {
-  auto packet =
-      hci::CommandPacket::New(hci_spec::kIOCapabilityRequestNegativeReply,
-                              sizeof(hci_spec::IOCapabilityRequestNegativeReplyCommandParams));
-  auto params = packet->mutable_payload<hci_spec::IOCapabilityRequestNegativeReplyCommandParams>();
-  params->bd_addr = bd_addr;
-  params->reason = reason;
+  auto packet = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::IoCapabilityRequestNegativeReplyCommandWriter>(
+      hci_spec::kIOCapabilityRequestNegativeReply);
+  auto params = packet.view_t();
+  params.bd_addr().CopyFrom(bd_addr.view());
+  params.reason().Write(reason);
   SendCommandWithStatusCallback(std::move(packet), std::move(cb));
 }
 
@@ -1408,11 +1412,10 @@ void BrEdrConnectionManager::SendUserPasskeyRequestReply(DeviceAddressBytes bd_a
 
 void BrEdrConnectionManager::SendUserPasskeyRequestNegativeReply(DeviceAddressBytes bd_addr,
                                                                  hci::ResultFunction<> cb) {
-  auto packet =
-      hci::CommandPacket::New(hci_spec::kUserPasskeyRequestNegativeReply,
-                              sizeof(hci_spec::UserPasskeyRequestNegativeReplyCommandParams));
-  packet->mutable_payload<hci_spec::UserPasskeyRequestNegativeReplyCommandParams>()->bd_addr =
-      bd_addr;
+  auto packet = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::UserPasskeyRequestNegativeReplyCommandWriter>(
+      hci_spec::kUserPasskeyRequestNegativeReply);
+  packet.view_t().bd_addr().CopyFrom(bd_addr.view());
   SendCommandWithStatusCallback(std::move(packet), std::move(cb));
 }
 

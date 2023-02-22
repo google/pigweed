@@ -247,22 +247,9 @@ constexpr OpCode kUserPasskeyRequestReply = LinkControlOpCode(0x002E);
 // User Passkey Request Negative Reply Command (v2.1 + EDR) (BR/EDR)
 constexpr OpCode kUserPasskeyRequestNegativeReply = LinkControlOpCode(0x002F);
 
-struct UserPasskeyRequestNegativeReplyCommandParams {
-  // The BD_ADDR of the remote device involved in the simple pairing process.
-  DeviceAddressBytes bd_addr;
-} __attribute__((packed));
-
 // ==================================================================
 // IO Capability Request Negative Reply Command (v2.1 + EDR) (BR/EDR)
 constexpr OpCode kIOCapabilityRequestNegativeReply = LinkControlOpCode(0x0034);
-
-struct IOCapabilityRequestNegativeReplyCommandParams {
-  // The BD_ADDR of the remote device involved in simple pairing process
-  DeviceAddressBytes bd_addr;
-
-  // Reason that Simple Pairing was rejected. See 7.1.36 for valid error codes.
-  StatusCode reason;
-} __attribute__((packed));
 
 struct IOCapabilityRequestNegativeReplyReturnParams {
   // See enum StatusCode in hci_constants.h.
@@ -398,10 +385,6 @@ struct ReadClassOfDeviceReturnParams {
 // Write Class Of Device Command (v1.1) (BR/EDR)
 constexpr OpCode kWriteClassOfDevice = ControllerAndBasebandOpCode(0x0024);
 
-struct WriteClassOfDeviceCommandParams {
-  DeviceClass class_of_device;
-} __attribute__((packed));
-
 // =============================================
 // Write Automatic Flush Timeout Command (v1.1) (BR/EDR)
 
@@ -463,18 +446,12 @@ struct ReadInquiryModeReturnParams {
   // See enum StatusCode in hci_constants.h.
   StatusCode status;
 
-  // See enum InquiryMode in hci_constants.h
-  InquiryMode inquiry_mode;
-} __attribute__((packed));
+  pw::bluetooth::emboss::InquiryMode inquiry_mode;
+} __PACKED;
 
 // ==================================
 // Write Inquiry Mode (v1.2) (BR/EDR)
 constexpr OpCode kWriteInquiryMode = ControllerAndBasebandOpCode(0x0045);
-
-struct WriteInquiryModeCommandParams {
-  // See enum InquiryMode in hci_constants.h
-  InquiryMode inquiry_mode;
-} __attribute__((packed));
 
 // ===================================
 // Read Page Scan Type (v1.2) (BR/EDR)
@@ -485,17 +462,12 @@ struct ReadPageScanTypeReturnParams {
   StatusCode status;
 
   // See enum class PageScanType in hci_constants.h for possible values.
-  PageScanType page_scan_type;
-} __attribute__((packed));
+  pw::bluetooth::emboss::PageScanType page_scan_type;
+} __PACKED;
 
 // ====================================
 // Write Page Scan Type (v1.2) (BR/EDR)
 constexpr OpCode kWritePageScanType = ControllerAndBasebandOpCode(0x0047);
-
-struct WritePageScanTypeCommandParams {
-  // See enum class PageScanType in hci_constants.h for possible values.
-  PageScanType page_scan_type;
-} __attribute__((packed));
 
 // =================================
 // Write Extended Inquiry Response (v1.2) (BR/EDR)

@@ -615,10 +615,10 @@ void AdapterImpl::SetLocalName(std::string name, hci::ResultFunction<> callback)
 }
 
 void AdapterImpl::SetDeviceClass(DeviceClass dev_class, hci::ResultFunction<> callback) {
-  auto write_dev_class = hci::CommandPacket::New(hci_spec::kWriteClassOfDevice,
-                                                 sizeof(hci_spec::WriteClassOfDeviceCommandParams));
-  write_dev_class->mutable_payload<hci_spec::WriteClassOfDeviceCommandParams>()->class_of_device =
-      dev_class;
+  auto write_dev_class =
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::WriteClassOfDeviceCommandWriter>(
+          hci_spec::kWriteClassOfDevice);
+  write_dev_class.view_t().class_of_device().BackingStorage().WriteUInt(dev_class.to_int());
   hci_->command_channel()->SendCommand(
       std::move(write_dev_class), [cb = std::move(callback)](auto, const hci::EventPacket& event) {
         hci_is_error(event, WARN, "gap", "set device class failed");
@@ -670,7 +670,9 @@ void AdapterImpl::InitializeStep1() {
   // deleted.
 
   // HCI_Reset
-  init_seq_runner_->QueueCommand(hci::CommandPacket::New(hci_spec::kReset));
+  auto reset_command =
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ResetCommandWriter>(hci_spec::kReset);
+  init_seq_runner_->QueueCommand(std::move(reset_command));
 
   // HCI_Read_Local_Version_Information
   init_seq_runner_->QueueCommand(
@@ -1062,11 +1064,11 @@ void AdapterImpl::InitializeStep4() {
         state_.features.HasBit(0, hci_spec::LMPFeature::kInterlacedPageScan));
     bredr_connection_manager_->AttachInspect(adapter_node_, kInspectBrEdrConnectionManagerNodeName);
 
-    hci_spec::InquiryMode mode = hci_spec::InquiryMode::kStandard;
+    pw::bluetooth::emboss::InquiryMode mode = pw::bluetooth::emboss::InquiryMode::STANDARD;
     if (state_.features.HasBit(0, hci_spec::LMPFeature::kExtendedInquiryResponse)) {
-      mode = hci_spec::InquiryMode::kExtended;
+      mode = pw::bluetooth::emboss::InquiryMode::EXTENDED;
     } else if (state_.features.HasBit(0, hci_spec::LMPFeature::kRSSIwithInquiryResults)) {
-      mode = hci_spec::InquiryMode::kRSSI;
+      mode = pw::bluetooth::emboss::InquiryMode::RSSI;
     }
 
     bredr_discovery_manager_ = std::make_unique<BrEdrDiscoveryManager>(

@@ -60,6 +60,12 @@ TEST(DeviceClassTest, ConstructFromUInt32) {
   EXPECT_EQ(srvs_expected, class_of_device.GetServiceClasses());
 }
 
+TEST(DeviceClassTest, ConvertToUInt32) {
+  uint32_t raw = 0x240304;
+  DeviceClass class_of_device(raw);
+  EXPECT_EQ(class_of_device.to_int(), raw);
+}
+
 TEST(DeviceClassTest, GetBytes) {
   DeviceClass class_of_device(0x240404);
   EXPECT_EQ(class_of_device.bytes(), (DeviceClass::Bytes{{0x04, 0x04, 0x24}}));

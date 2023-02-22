@@ -59,7 +59,7 @@ class BrEdrDiscoveryManagerTest : public TestingBase {
   void SetUp() override {
     TestingBase::SetUp();
 
-    NewDiscoveryManager(hci_spec::InquiryMode::kStandard);
+    NewDiscoveryManager(pw::bluetooth::emboss::InquiryMode::STANDARD);
   }
 
   void TearDown() override {
@@ -67,7 +67,7 @@ class BrEdrDiscoveryManagerTest : public TestingBase {
     TestingBase::TearDown();
   }
 
-  void NewDiscoveryManager(hci_spec::InquiryMode mode) {
+  void NewDiscoveryManager(pw::bluetooth::emboss::InquiryMode mode) {
     // We expect to set the Inquiry Scan and the Type when we start.
     EXPECT_CMD_PACKET_OUT(test_device(), kWriteInquiryActivity, &kWriteInquiryActivityRsp);
     EXPECT_CMD_PACKET_OUT(test_device(), kWriteInquiryType, &kWriteInquiryTypeRsp);
@@ -1012,7 +1012,7 @@ TEST_F(BrEdrDiscoveryManagerTest, DiscoverableRequestWhileStopping) {
 // inquiry mode is set.
 // Test: extended inquiry is stored in the remote peer
 TEST_F(BrEdrDiscoveryManagerTest, ExtendedInquiry) {
-  NewDiscoveryManager(hci_spec::InquiryMode::kExtended);
+  NewDiscoveryManager(pw::bluetooth::emboss::InquiryMode::EXTENDED);
 
   EXPECT_CMD_PACKET_OUT(test_device(), kSetExtendedMode, &kSetExtendedModeRsp);
   EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp, &kExtendedInquiryResult,
@@ -1089,7 +1089,7 @@ TEST_F(BrEdrDiscoveryManagerTest, ExtendedInquiryResultUpgradesKnownLowEnergyPee
   ASSERT_TRUE(peer);
   ASSERT_EQ(TechnologyType::kLowEnergy, peer->technology());
 
-  NewDiscoveryManager(hci_spec::InquiryMode::kExtended);
+  NewDiscoveryManager(pw::bluetooth::emboss::InquiryMode::EXTENDED);
 
   EXPECT_CMD_PACKET_OUT(test_device(), kSetExtendedMode, &kSetExtendedModeRsp);
   EXPECT_CMD_PACKET_OUT(test_device(), kInquiry, &kInquiryRsp, &kExtendedInquiryResult,

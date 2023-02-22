@@ -350,7 +350,7 @@ class BrEdrConnectionManager final {
   // Set to 0 when non-connectable.
   uint16_t page_scan_interval_;
   uint16_t page_scan_window_;
-  hci_spec::PageScanType page_scan_type_;
+  pw::bluetooth::emboss::PageScanType page_scan_type_;
   bool use_interlaced_scan_;
 
   // Outstanding connection requests based on remote peer ID.

@@ -1108,8 +1108,9 @@ void FakeController::OnReadSimplePairingMode() {
   RespondWithCommandComplete(hci_spec::kReadSimplePairingMode, BufferView(&params, sizeof(params)));
 }
 
-void FakeController::OnWritePageScanType(const hci_spec::WritePageScanTypeCommandParams& params) {
-  page_scan_type_ = params.page_scan_type;
+void FakeController::OnWritePageScanType(
+    const pw::bluetooth::emboss::WritePageScanTypeCommandView& params) {
+  page_scan_type_ = params.page_scan_type().Read();
   RespondWithCommandComplete(hci_spec::kWritePageScanType,
                              pw::bluetooth::emboss::StatusCode::SUCCESS);
 }
@@ -1121,8 +1122,9 @@ void FakeController::OnReadPageScanType() {
   RespondWithCommandComplete(hci_spec::kReadPageScanType, BufferView(&params, sizeof(params)));
 }
 
-void FakeController::OnWriteInquiryMode(const hci_spec::WriteInquiryModeCommandParams& params) {
-  inquiry_mode_ = params.inquiry_mode;
+void FakeController::OnWriteInquiryMode(
+    const pw::bluetooth::emboss::WriteInquiryModeCommandView& params) {
+  inquiry_mode_ = params.inquiry_mode().Read();
   RespondWithCommandComplete(hci_spec::kWriteInquiryMode,
                              pw::bluetooth::emboss::StatusCode::SUCCESS);
 }
@@ -1134,8 +1136,9 @@ void FakeController::OnReadInquiryMode() {
   RespondWithCommandComplete(hci_spec::kReadInquiryMode, BufferView(&params, sizeof(params)));
 }
 
-void FakeController::OnWriteClassOfDevice(const hci_spec::WriteClassOfDeviceCommandParams& params) {
-  device_class_ = params.class_of_device;
+void FakeController::OnWriteClassOfDevice(
+    const pw::bluetooth::emboss::WriteClassOfDeviceCommandView& params) {
+  device_class_ = DeviceClass(params.class_of_device().BackingStorage().ReadUInt());
   NotifyControllerParametersChanged();
   RespondWithCommandComplete(hci_spec::kWriteClassOfDevice,
                              pw::bluetooth::emboss::StatusCode::SUCCESS);
@@ -2892,27 +2895,12 @@ void FakeController::HandleReceivedCommandPacket(
       OnReadPageScanActivity();
       break;
     }
-    case hci_spec::kWriteClassOfDevice: {
-      const auto& params = command_packet.payload<hci_spec::WriteClassOfDeviceCommandParams>();
-      OnWriteClassOfDevice(params);
-      break;
-    }
     case hci_spec::kReadInquiryMode: {
       OnReadInquiryMode();
       break;
     }
-    case hci_spec::kWriteInquiryMode: {
-      const auto& params = command_packet.payload<hci_spec::WriteInquiryModeCommandParams>();
-      OnWriteInquiryMode(params);
-      break;
-    };
     case hci_spec::kReadPageScanType: {
       OnReadPageScanType();
-      break;
-    }
-    case hci_spec::kWritePageScanType: {
-      const auto& params = command_packet.payload<hci_spec::WritePageScanTypeCommandParams>();
-      OnWritePageScanType(params);
       break;
     }
     case hci_spec::kReadSimplePairingMode: {
@@ -3023,7 +3011,10 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kUserConfirmationRequestNegativeReply:
     case hci_spec::kWriteSynchronousFlowControlEnable:
     case hci_spec::kWriteExtendedInquiryResponse:
-    case hci_spec::kWriteSimplePairingMode: {
+    case hci_spec::kWriteSimplePairingMode:
+    case hci_spec::kWriteClassOfDevice:
+    case hci_spec::kWriteInquiryMode:
+    case hci_spec::kWritePageScanType: {
       // This case is for packet types that have been migrated to the new Emboss architecture. Their
       // old version can be still be assembled from the HciEmulator channel, so here we repackage
       // and forward them as Emboss packets.
@@ -3205,6 +3196,24 @@ void FakeController::HandleReceivedCommandPacket(const hci::EmbossCommandPacket&
       const auto& params =
           command_packet.view<pw::bluetooth::emboss::WriteSimplePairingModeCommandView>();
       OnWriteSimplePairingMode(params);
+      break;
+    }
+    case hci_spec::kWriteClassOfDevice: {
+      const auto& params =
+          command_packet.view<pw::bluetooth::emboss::WriteClassOfDeviceCommandView>();
+      OnWriteClassOfDevice(params);
+      break;
+    }
+    case hci_spec::kWriteInquiryMode: {
+      const auto& params =
+          command_packet.view<pw::bluetooth::emboss::WriteInquiryModeCommandView>();
+      OnWriteInquiryMode(params);
+      break;
+    };
+    case hci_spec::kWritePageScanType: {
+      const auto& params =
+          command_packet.view<pw::bluetooth::emboss::WritePageScanTypeCommandView>();
+      OnWritePageScanType(params);
       break;
     }
     default: {

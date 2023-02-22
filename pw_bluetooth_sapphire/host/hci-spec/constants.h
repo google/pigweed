@@ -1311,11 +1311,6 @@ enum class ScanEnableBit : uint8_t {
 
 using ScanEnableType = uint8_t;
 
-enum class PageScanType : uint8_t {
-  kStandardScan = 0x00, // Standard scan (default) (mandatory)
-  kInterlacedScan = 0x01, // Interlaced scan
-};
-
 // Constant values for common scanning modes
 // See Spec 5.0, Vol 3, Part C, Section 4.2.2.1, Table 4.2
 constexpr uint16_t kPageScanR0Interval = 0x0800; // 1.28s
@@ -1335,12 +1330,6 @@ enum class LinkType : uint8_t {
   kSCO = 0x00,         // SCO
   kACL = 0x01,         // ACL (data channel)
   kExtendedSCO = 0x02, // eSCO
-};
-
-enum class InquiryMode : uint8_t {
-  kStandard = 0x00, // Standard Inquiry Result format (default)
-  kRSSI = 0x01, // Inquiry Result format with RSSI
-  kExtended = 0x02, // Inquiry Result format with RSSI or EIR format
 };
 
 // Length of the Extended Inquiry Response data. (Vol 3, Part C, Section 8)

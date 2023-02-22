@@ -43,7 +43,7 @@ class BrEdrDiscoverableSession;
 class BrEdrDiscoveryManager final {
  public:
   // |peer_cache| MUST out-live this BrEdrDiscoveryManager.
-  BrEdrDiscoveryManager(hci::CommandChannel::WeakPtr cmd, hci_spec::InquiryMode mode,
+  BrEdrDiscoveryManager(hci::CommandChannel::WeakPtr cmd, pw::bluetooth::emboss::InquiryMode mode,
                         PeerCache* peer_cache);
 
   ~BrEdrDiscoveryManager();
@@ -196,9 +196,9 @@ class BrEdrDiscoveryManager final {
   hci::CommandChannel::EventHandlerId eir_handler_id_;
 
   // The inquiry mode that we should use.
-  hci_spec::InquiryMode desired_inquiry_mode_;
+  pw::bluetooth::emboss::InquiryMode desired_inquiry_mode_;
   // The current inquiry mode.
-  hci_spec::InquiryMode current_inquiry_mode_;
+  pw::bluetooth::emboss::InquiryMode current_inquiry_mode_;
 
   WeakSelf<BrEdrDiscoveryManager> weak_self_;
 

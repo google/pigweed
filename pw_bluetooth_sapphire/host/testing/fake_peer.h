@@ -71,7 +71,7 @@ class FakePeer {
 
   // Generates a Inquiry Response Event payload containing a inquiry result
   // response.
-  DynamicByteBuffer CreateInquiryResponseEvent(hci_spec::InquiryMode mode) const;
+  DynamicByteBuffer CreateInquiryResponseEvent(pw::bluetooth::emboss::InquiryMode mode) const;
 
   const DeviceAddress& address() const { return address_; }
 
