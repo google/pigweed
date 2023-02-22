@@ -159,7 +159,7 @@ use case.
 
 This content can start in the "Getting started" section of the index, and grow
 into this separate document as the module matures. If that document becomes too
-larged, it can be replaced with a ``guides`` subdirectory containing more than
+large, it can be replaced with a ``guides`` subdirectory containing more than
 one doc.
 
 Interface docs (information-oriented)
