@@ -252,6 +252,16 @@ group("docs") {
   deps = [ "$dir_pigweed/docs($dir_pigweed/targets/docs)" ]
 }
 
+# Tests that are run as host actions, such as tests of the build system.
+#
+# These are distinguished from `integration_tests` in that they are short
+# unit tests of specific functionality that should be tested in the default
+# build.
+group("action_tests") {
+  _default_tc = _default_toolchain_prefix + pw_DEFAULT_C_OPTIMIZATION_LEVEL
+  deps = [ "$dir_pw_unit_test:test_group_metadata_test.action($_default_tc)" ]
+}
+
 # Tests larger than unit tests, typically run in a specific configuration.
 group("integration_tests") {
   _default_tc = _default_toolchain_prefix + pw_DEFAULT_C_OPTIMIZATION_LEVEL
@@ -363,6 +373,9 @@ group("pigweed_default") {
 
     # Add performance tests to the automatic build
     deps += [ ":pw_perf_tests" ]
+
+    # Add action tests to the automatic build
+    deps += [ ":action_tests" ]
 
     # Trace examples currently only support running on non-windows host
     if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&

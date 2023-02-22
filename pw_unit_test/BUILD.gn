@@ -239,6 +239,29 @@ pw_doc_group("docs") {
   sources = [ "docs.rst" ]
 }
 
+pw_test("metadata_only_test") {
+  extra_metadata = {
+    extra_key = "extra_value"
+  }
+}
+
+# pw_test_group produces the metadata file for its tests.
+pw_test_group("metadata_only_group") {
+  tests = [ ":metadata_only_test" ]
+}
+
+pw_python_script("test_group_metadata_test") {
+  sources = [ "py/test_group_metadata_test.py" ]
+  action = {
+    args = [
+      "--stamp-path",
+      "<TARGET_FILE(:metadata_only_group)>",
+    ]
+    deps = [ ":metadata_only_group" ]
+    stamp = true
+  }
+}
+
 pw_test("framework_test") {
   sources = [ "framework_test.cc" ]
   deps = [ dir_pw_assert ]

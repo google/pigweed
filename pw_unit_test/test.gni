@@ -177,6 +177,9 @@ template("pw_internal_disableable_target") {
 #         disabled test can still be built and run with the
 #         <target_name>.DISABLED and <target_name>.DISABLED.run targets.
 #         Defaults to true (enable_if).
+#   - extra_metadata: (optional) Extra metadata to include in test group
+#         metadata output. This can be used to pass information about this test
+#         to later build tasks.
 #   - All of the regular "executable" target args are accepted.
 #
 template("pw_test") {
@@ -199,6 +202,12 @@ template("pw_test") {
   _test_output_dir = "${target_out_dir}/test"
   if (defined(invoker.output_dir)) {
     _test_output_dir = invoker.output_dir
+  }
+
+  _extra_metadata = {
+  }
+  if (defined(invoker.extra_metadata)) {
+    _extra_metadata = invoker.extra_metadata
   }
 
   _test_main = pw_unit_test_MAIN
@@ -237,6 +246,7 @@ template("pw_test") {
           type = "test"
           test_name = _test_target_name
           test_directory = rebase_path(_test_output_dir, root_build_dir)
+          extra_metadata = _extra_metadata
         },
       ]
 
