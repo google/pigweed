@@ -12,4 +12,3 @@ Shell, Batch and Python.
   :glob:
 
   */docs
-  */docs/index

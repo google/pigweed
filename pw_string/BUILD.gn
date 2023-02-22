@@ -172,10 +172,10 @@ pw_test("util_test") {
 
 pw_doc_group("docs") {
   sources = [
-    "docs/api.rst",
-    "docs/design.rst",
-    "docs/guide.rst",
-    "docs/index.rst",
+    "api.rst",
+    "design.rst",
+    "docs.rst",
+    "guide.rst",
   ]
   report_deps = [
     ":format_size_report",
