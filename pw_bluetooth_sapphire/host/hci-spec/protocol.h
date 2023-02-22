@@ -3078,39 +3078,6 @@ struct LEExtendedCreateConnectionCommandParams {
 // LE Periodic Advertising Create Sync Command (v5.0) (LE)
 constexpr OpCode kLEPeriodicAdvertisingCreateSync = LEControllerCommandOpCode(0x0044);
 
-struct LEPeriodicAdvertisingCreateSyncCommandParams {
-  LEPeriodicAdvFilterPolicy filter_policy;
-
-  // Advertising SID subfield in the ADI field used to identify the Periodic
-  // Advertising.
-  uint8_t advertising_sid;
-
-  // Address type of the advertiser. The LEAddressType::kPublicIdentity and
-  // LEAddressType::kRandomIdentity values are excluded for this command.
-  LEAddressType advertiser_address_type;
-
-  // Public Device Address, Random Device Address, Public Identity Address, or
-  // Random (static) Identity Address of the advertiser.
-  DeviceAddressBytes advertiser_address;
-
-  // The number of periodic advertising packets that can be skipped after a
-  // successful receive.
-  //
-  //   Range: 0x0000 to 0x01F3
-  uint16_t skip;
-
-  // Synchronization timeout for the periodic advertising.
-  //
-  //   Range: 0x000A to 0x4000
-  //   Time = N * 10 ms
-  //   Time Range: 100 ms to 163.84 s
-  uint16_t sync_timeout;
-
-  // As of Core Spec v5.0 this parameter is intended to be used in a future
-  // feature. The Host must set this value to 0x00.
-  uint8_t unused;
-} __attribute__((packed));
-
 // NOTE on ReturnParams: No Command Complete event is sent by the Controller to
 // indicate that this command has been completed. Instead, the LE Periodic
 // Advertising Sync Established event indicates that this command has been
@@ -3123,12 +3090,6 @@ constexpr OpCode kLEPeriodicAdvertisingCreateSyncCancel = LEControllerCommandOpC
 // ==========================================================
 // LE Periodic Advertising Terminate Sync Command (v5.0) (LE)
 constexpr OpCode kLEPeriodicAdvertisingTerminateSync = LEControllerCommandOpCode(0x0046);
-
-struct LEPeriodicAdvertisingTerminateSyncCommandParams {
-  // Handle used to identify the periodic advertiser (only the lower 12 bits are
-  // meaningful).
-  PeriodicAdvertiserHandle sync_handle;
-} __attribute__((packed));
 
 // =============================================================
 // LE Add Device To Periodic Advertiser List Command (v5.0) (LE)
