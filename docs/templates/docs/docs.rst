@@ -8,6 +8,7 @@ MODULE_NAME
   clearly convey what the module does.
 
 .. card::
+
    :octicon:`comment-discussion` Status:
    :bdg-primary:`Experimental`
    :octicon:`chevron-right`
