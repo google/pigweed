@@ -545,8 +545,7 @@ class DatabaseFile(Database):
 
         # Read the path as a CSV file.
         _check_that_file_is_csv_database(path)
-        with path.open('r', newline='', encoding='utf-8') as csv_fd:
-            return _CSVDatabase(path, csv_fd)
+        return _CSVDatabase(path)
 
     @abstractmethod
     def write_to_file(self, *, rewrite: bool = False) -> None:
@@ -585,8 +584,9 @@ class _BinaryDatabase(DatabaseFile):
 
 
 class _CSVDatabase(DatabaseFile):
-    def __init__(self, path: Path, fd: TextIO) -> None:
-        super().__init__(path, parse_csv(fd))
+    def __init__(self, path: Path) -> None:
+        with path.open('r', newline='', encoding='utf-8') as csv_fd:
+            super().__init__(path, parse_csv(csv_fd))
 
     def write_to_file(self, *, rewrite: bool = False) -> None:
         """Exports in the CSV format to the original path."""
@@ -613,8 +613,7 @@ _DIR_DB_GLOB = '*' + DIR_DB_SUFFIX
 def _parse_directory(directory: Path) -> Iterable[TokenizedStringEntry]:
     """Parses TokenizedStringEntries tokenizer CSV files in the directory."""
     for path in directory.glob(_DIR_DB_GLOB):
-        with path.open() as fd:
-            yield from parse_csv(fd)
+        yield from _CSVDatabase(path).entries()
 
 
 def _most_recently_modified_file(paths: Iterable[Path]) -> Path:

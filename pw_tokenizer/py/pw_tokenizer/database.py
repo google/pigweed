@@ -203,7 +203,7 @@ def _load_token_database(  # pylint: disable=too-many-return-statements
 
         # Generate a database from JSON.
         if str(db).endswith('.json'):
-            with open(db, 'r') as json_fd:
+            with open(db, 'r', encoding='utf-8') as json_fd:
                 return _database_from_json(json_fd)
 
         # Read the path as a packed binary or CSV file.
