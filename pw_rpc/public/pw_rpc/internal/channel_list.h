@@ -17,27 +17,39 @@
 #include "pw_rpc/internal/config.h"
 #include "pw_span/span.h"
 
+// With dynamic allocation enabled, include the specified header and don't
+// require the constructor to be constexpr.
 #if PW_RPC_DYNAMIC_ALLOCATION
+
 #include PW_RPC_DYNAMIC_CONTAINER_INCLUDE
+
+#define _PW_RPC_CONSTEXPR
+
+#else  // Otherwise, channels are stored in a constexpr constructible span.
+
+#define _PW_RPC_CONSTEXPR constexpr
+
 #endif  // PW_RPC_DYNAMIC_ALLOCATION
 
 namespace pw::rpc::internal {
-
-#if PW_RPC_DYNAMIC_ALLOCATION && !defined(__cpp_lib_constexpr_vector)
-#define _PW_RPC_CONSTEXPR
-#else
-#define _PW_RPC_CONSTEXPR constexpr
-#endif  // PW_RPC_DYNAMIC_ALLOCATION && !defined(__cpp_lib_constexpr_vector)
 
 class ChannelList {
  public:
   _PW_RPC_CONSTEXPR ChannelList() = default;
 
-  // Make this a template so it is only instantiated if it is referred to. This
-  // avoids requiring an iterator constructor on the underlying container.
-  template <typename Span>
-  _PW_RPC_CONSTEXPR ChannelList(Span&& channels_span)
-      : channels_(std::begin(channels_span), std::end(channels_span)) {}
+  _PW_RPC_CONSTEXPR ChannelList(span<Channel> channels)
+  // If dynamic allocation is enabled, channels aren't typically allocated
+  // beforehand, though they can be. If they are, push them one-by-one to the
+  // vector to avoid requiring a constructor that does that.
+#if PW_RPC_DYNAMIC_ALLOCATION
+  {
+    for (const Channel& channel : channels) {
+      channels_.emplace_back(channel);
+    }
+#else   // Without dynamic allocation, simply initialize the span.
+      : channels_(channels) {
+#endif  // PW_RPC_DYNAMIC_ALLOCATION
+  }
 
   // Returns the first channel with the matching ID or nullptr if none match.
   // Except for Channel::kUnassignedChannelId, there should be no duplicate

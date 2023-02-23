@@ -34,9 +34,7 @@ class Client : public internal::Endpoint {
 
   // Creates a client that uses a set of RPC channels. Channels can be shared
   // between multiple clients and servers.
-  template <typename Span>
-  _PW_RPC_CONSTEXPR Client(Span&& channels)
-      : Endpoint(std::forward<Span>(channels)) {}
+  _PW_RPC_CONSTEXPR Client(span<Channel> channels) : Endpoint(channels) {}
 
   // Processes an incoming RPC packet. The packet may be an RPC response or a
   // control packet, the result of which is processed in this function. Returns

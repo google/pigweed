@@ -127,8 +127,8 @@
 //
 // If dynamic allocation is enabled, an span of channels may be passed to the
 // endpoint at construction, but these channels are only used to initialize its
-// internal std::vector of channels. External channel objects are NOT used by
-// the endpoint cannot be updated if dynamic allocation is enabled. No
+// internal channels container. External channel objects are NOT used by the
+// endpoint and cannot be updated if dynamic allocation is enabled. No
 // unassigned channels should be passed to the endpoint; they will be ignored.
 // Any number of channels may be added to the endpoint, without closing existing
 // channels, but adding channels will use more memory.
@@ -136,19 +136,28 @@
 #define PW_RPC_DYNAMIC_ALLOCATION 0
 #endif  // PW_RPC_DYNAMIC_ALLOCATION
 
+#if defined(PW_RPC_DYNAMIC_CONTAINER) || \
+    defined(PW_RPC_DYNAMIC_CONTAINER_INCLUDE)
+static_assert(
+    PW_RPC_DYNAMIC_ALLOCATION == 1,
+    "PW_RPC_DYNAMIC_ALLOCATION is disabled, so PW_RPC_DYNAMIC_CONTAINER and "
+    "PW_RPC_DYNAMIC_CONTAINER_INCLUDE have no effect and should not be set.");
+#endif  // PW_RPC_DYNAMIC_CONTAINER || PW_RPC_DYNAMIC_CONTAINER_INCLUDE
+
 // If PW_RPC_DYNAMIC_ALLOCATION is enabled, this macro must expand to a
 // container capable of storing objects of the provided type. This container
 // will be used internally be pw_rpc. Defaults to std::vector<type>, but may be
 // set to any type that supports the following std::vector operations:
 //
-//   - Construction from iterators
+//   - Default construction
 //   - emplace_back()
 //   - pop_back()
-//   - Range-based for loop iteration
+//   - back()
+//   - Range-based for loop iteration (begin(), end())
 //
 #ifndef PW_RPC_DYNAMIC_CONTAINER
 #define PW_RPC_DYNAMIC_CONTAINER(type) std::vector<type>
-#endif  // PW_RPC_DYNAMIC_CHANNEL_CONTAINER
+#endif  // PW_RPC_DYNAMIC_CONTAINER
 
 // If PW_RPC_DYNAMIC_ALLOCATION is enabled, this header file is included in
 // files that use PW_RPC_DYNAMIC_CONTAINER. Defaults to <vector>, but may be set
@@ -156,15 +165,11 @@
 // type for dynamic allocations in pw_rpc.
 #ifndef PW_RPC_DYNAMIC_CONTAINER_INCLUDE
 #define PW_RPC_DYNAMIC_CONTAINER_INCLUDE <vector>
-#endif  // PW_RPC_DYNAMIC_CHANNEL_CONTAINER
+#endif  // PW_RPC_DYNAMIC_CONTAINER_INCLUDE
 
-#if PW_RPC_DYNAMIC_ALLOCATION && defined(PW_RPC_ENCODING_BUFFER_SIZE_BYTES)
-static_assert(false,
-              "PW_RPC_ENCODING_BUFFER_SIZE_BYTES cannot be set if "
-              "PW_RPC_DYNAMIC_ALLOCATION is enabled");
-#endif  // PW_RPC_DYNAMIC_ALLOCATION && PW_RPC_ENCODING_BUFFER_SIZE_BYTES
-
-// Size of the global RPC packet encoding buffer in bytes.
+// Size of the global RPC packet encoding buffer in bytes. If dynamic allocation
+// is enabled, this value is only used for test helpers that allocate RPC
+// encoding buffers.
 #ifndef PW_RPC_ENCODING_BUFFER_SIZE_BYTES
 #define PW_RPC_ENCODING_BUFFER_SIZE_BYTES 512
 #endif  // PW_RPC_ENCODING_BUFFER_SIZE_BYTES

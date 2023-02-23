@@ -22,6 +22,12 @@ namespace pw::rpc {
 // a device needs to function as both.
 class ClientServer {
  public:
+  // If dynamic allocation is supported, it is not necessary to preallocate a
+  // channels list.
+#if PW_RPC_DYNAMIC_ALLOCATION
+  _PW_RPC_CONSTEXPR ClientServer() = default;
+#endif  // PW_RPC_DYNAMIC_ALLOCATION
+
   _PW_RPC_CONSTEXPR ClientServer(span<Channel> channels)
       : client_(channels), server_(channels) {}
 

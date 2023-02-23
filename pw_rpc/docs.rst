@@ -1618,11 +1618,11 @@ more details.
 
   If dynamic allocation is enabled, an span of channels may be passed to the
   endpoint at construction, but these channels are only used to initialize its
-  internal ``std::vector`` of channels. External channel objects are NOT used by
-  the endpoint cannot be updated if dynamic allocation is enabled. No
-  unassigned channels should be passed to the endpoint; they will be ignored.
-  Any number of channels may be added to the endpoint, without closing existing
-  channels, but adding channels will use more memory.
+  internal channels container. External channel objects are NOT used by the
+  endpoint and cannot be updated if dynamic allocation is enabled. No unassigned
+  channels should be passed to the endpoint; they will be ignored. Any number of
+  channels may be added to the endpoint, without closing existing channels, but
+  adding channels will use more memory.
 
 .. c:macro:: PW_RPC_DYNAMIC_CONTAINER(type)
 
@@ -1695,7 +1695,9 @@ minimal overhead, ``pw_rpc`` uses a single, global mutex (when
 
 Because ``pw_rpc`` uses a global mutex, it also uses a global buffer to encode
 outgoing packets. The size of the buffer is set with
-``PW_RPC_ENCODING_BUFFER_SIZE_BYTES``, which defaults to 512 B.
+``PW_RPC_ENCODING_BUFFER_SIZE_BYTES``, which defaults to 512 B. If dynamic
+allocation is enabled, this size does not affect how large RPC messages can be,
+but it is still used for sizing buffers in test utilities.
 
 Users of ``pw_rpc`` must implement the :cpp:class:`pw::rpc::ChannelOutput`
 interface.

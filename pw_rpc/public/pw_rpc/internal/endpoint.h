@@ -106,13 +106,10 @@ class Endpoint {
  protected:
   _PW_RPC_CONSTEXPR Endpoint() = default;
 
-  // Initializes the endpoint with a span of channels. This is a template to
-  // avoid requiring an iterator constructor on the the underlying channels
-  // container.
-  template <typename Span>
-  _PW_RPC_CONSTEXPR Endpoint(Span&& channels)
-      : channels_(span(static_cast<internal::Channel*>(std::data(channels)),
-                       std::size(channels))) {}
+  // Initializes the endpoint from a span of channels.
+  _PW_RPC_CONSTEXPR Endpoint(span<rpc::Channel> channels)
+      : channels_(span(static_cast<internal::Channel*>(channels.data()),
+                       channels.size())) {}
 
   // Parses an RPC packet and sets ongoing_call to the matching call, if any.
   // Returns the parsed packet or an error.
