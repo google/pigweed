@@ -310,6 +310,12 @@ TEST(RawServerWriter, Write_Closed_ReturnsFailedPrecondition) {
 }
 
 TEST(RawServerWriter, Write_PayloadTooLargeForEncodingBuffer_ReturnsInternal) {
+  // The payload is never too large for the encoding buffer when dynamic
+  // allocation is enabled.
+#if PW_RPC_DYNAMIC_ALLOCATION
+  GTEST_SKIP();
+#endif  // !PW_RPC_DYNAMIC_ALLOCATION
+
   ServerContextForTest<FakeService> context(kServerStream);
   rpc_lock().lock();
   kServerStream.Invoke(context.get(), context.request({}));

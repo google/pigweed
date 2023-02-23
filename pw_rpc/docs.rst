@@ -1606,7 +1606,7 @@ more details.
 .. c:macro:: PW_RPC_DYNAMIC_ALLOCATION
 
   Whether pw_rpc should use dynamic memory allocation internally. If enabled,
-  pw_rpc dynamically allocates channels and its encoding buffers. RPC users may
+  pw_rpc dynamically allocates channels and its encoding buffer. RPC users may
   use dynamic allocation independently of this option (e.g. to allocate pw_rpc
   call objects).
 

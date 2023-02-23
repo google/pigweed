@@ -18,6 +18,7 @@
 #include "pw_log/log.h"
 #include "pw_preprocessor/util.h"
 #include "pw_rpc/client.h"
+#include "pw_rpc/internal/encoding_buffer.h"
 #include "pw_rpc/internal/endpoint.h"
 #include "pw_rpc/internal/method.h"
 #include "pw_rpc/server.h"
@@ -201,11 +202,13 @@ bool Call::CleanUpIfRequired() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
 
 Status Call::SendPacket(PacketType type, ConstByteSpan payload, Status status) {
   if (!active_locked()) {
+    encoding_buffer.ReleaseIfAllocated();
     return Status::FailedPrecondition();
   }
 
   Channel* channel = endpoint_->GetInternalChannel(channel_id_);
   if (channel == nullptr) {
+    encoding_buffer.ReleaseIfAllocated();
     return Status::Unavailable();
   }
   return channel->Send(MakePacket(type, payload, status));
