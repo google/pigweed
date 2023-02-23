@@ -15,6 +15,7 @@
 
 import logging
 from pathlib import Path
+import sys
 from typing import NamedTuple, Optional, Union, Iterator
 
 from pw_cli.color import colors as pw_cli_colors
@@ -151,11 +152,19 @@ def install(
         timestamp_fmt = colors.black_on_white('%(asctime)s') + ' '
 
     formatter = logging.Formatter(fmt=timestamp_fmt + message_format)
+
     formatter.default_time_format = time_format
     if include_msec:
         formatter.default_msec_format = msec_format
     else:
-        formatter.default_msec_format = ''
+        # Python 3.8 and lower does not check if default_msec_format is set.
+        # https://github.com/python/cpython/blob/3.8/Lib/logging/__init__.py#L611
+        # https://github.com/python/cpython/blob/3.9/Lib/logging/__init__.py#L605
+        if sys.version_info >= (
+            3,
+            9,
+        ):
+            formatter.default_msec_format = ''
 
     # Set the log level on the root logger to NOTSET, so that all logs
     # propagated from child loggers are handled.
