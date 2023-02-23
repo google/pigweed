@@ -375,36 +375,46 @@ template("generate_toolchain") {
         }
         forward_variables_from(invoker_toolchain_args, "*")
       }
+
       _generate_rust_tools = defined(invoker.rustc)
-
       if (_generate_rust_tools) {
+        _rustc_command = string_join(
+                " ",
+                [
+                  # TODO(b/234872510): Ensure this works with Windows.
+                  "RUST_BACKTRACE=1",
+                  "{{rustenv}}",
+                  invoker.rustc,
+                  "{{source}}",
+                  "--crate-name {{crate_name}}",
+                  "--crate-type {{crate_type}}",
+                  "{{externs}}",
+                  "{{rustdeps}}",
+                  "{{rustflags}}",
+                  "-D warnings",
+                  "--color always",
+                  "--emit=dep-info={{output}}.d,link",
+                  "-o {{output_dir}}/{{target_output_name}}{{output_extension}}",
+                ])
+
+        _output = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
+
         tool("rust_bin") {
-          _outfile = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
-
           description = "rustc {{output}}"
-          depfile = "{{output}}.d"
-          command =
-              string_join(" ",
-                          [
-                            # TODO(b/234872510): Ensure this works with Windows.
-                            "RUST_BACKTRACE=1",
-                            "{{rustenv}}",
-                            invoker.rustc,
-                            "{{source}}",
-                            "--crate-name {{crate_name}}",
-                            "--crate-type {{crate_type}}",
-                            "{{rustflags}}",
-                            "{{rustdeps}}",
-                            "{{externs}}",
-                            "--emit=dep-info=$depfile,link",
-                            "-Zdep-info-omit-d-target",
-                            "-o $_outfile",
-                            "--color always",
-                            "-D warnings",
-                          ])
-
-          outputs = [ _outfile ]
           default_output_dir = "{{target_out_dir}}/bin"
+          depfile = "{{output}}.d"
+          command = _rustc_command
+          outputs = [ _output ]
+        }
+
+        tool("rust_rlib") {
+          description = "rustc {{output}}"
+          default_output_dir = "{{target_out_dir}}/lib"
+          depfile = "{{output}}.d"
+          output_prefix = "lib"
+          default_output_extension = ".rlib"
+          command = _rustc_command
+          outputs = [ _output ]
         }
       }
     }
