@@ -15,7 +15,7 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/cc_library.gni")
-import("$dir_pw_build/gn_internal/c_language_build_target.gni")
+import("$dir_pw_build/gn_internal/build_target.gni")
 
 # Note: In general, prefer to import target_types.gni rather than this file.
 # cc_executable.gni and cc_library.gni are both provided by target_types.gni.
@@ -62,7 +62,7 @@ declare_args() {
 #    default public_deps specified by the current toolchain configuration.
 
 template("pw_executable") {
-  pw_internal_c_language_build_target(target_name) {
+  pw_internal_build_target(target_name) {
     forward_variables_from(invoker, "*")
     if (!defined(output_dir)) {
       output_dir = "${target_out_dir}/bin"
