@@ -13,19 +13,12 @@
 // the License.
 #pragma once
 
-#include "pw_assert/assert.h"
-#include "pw_bytes/span.h"
 #include "pw_rpc/channel.h"
 #include "pw_rpc/internal/lock.h"
 #include "pw_rpc/internal/packet.h"
-#include "pw_span/span.h"
 #include "pw_status/status.h"
 
 namespace pw::rpc::internal {
-
-// Returns a portion of the encoding buffer that may be used to encode an
-// outgoing payload.
-ByteSpan GetPayloadBuffer() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
 class Channel : public rpc::Channel {
  public:

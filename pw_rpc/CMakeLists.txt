@@ -122,6 +122,7 @@ pw_add_library(pw_rpc.common STATIC
     public/pw_rpc/internal/call_context.h
     public/pw_rpc/internal/channel.h
     public/pw_rpc/internal/channel_list.h
+    public/pw_rpc/internal/encoding_buffer.h
     public/pw_rpc/internal/endpoint.h
     public/pw_rpc/internal/lock.h
     public/pw_rpc/internal/method_info.h

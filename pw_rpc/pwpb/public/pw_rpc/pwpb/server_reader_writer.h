@@ -66,7 +66,7 @@ class PwpbServerCall : public ServerCall {
     }
 
     Result<ByteSpan> buffer =
-        PwpbEncodeToPayloadBuffer(response, serde_->response());
+        EncodeToPayloadBuffer(response, serde_->response());
     if (!buffer.ok()) {
       return CloseAndSendServerErrorLocked(Status::Internal());
     }

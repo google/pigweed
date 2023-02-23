@@ -24,6 +24,7 @@
 #include "pw_log/log.h"
 #include "pw_result/result.h"
 #include "pw_rpc/internal/client_call.h"
+#include "pw_rpc/internal/encoding_buffer.h"
 #include "pw_rpc/nanopb/server_reader_writer.h"
 #include "pw_status/try.h"
 
@@ -42,16 +43,6 @@ struct NanopbTraits<bool(pb_istream_t*, FieldsType, void*)> {
 };
 
 using Fields = typename NanopbTraits<decltype(pb_decode)>::Fields;
-
-Result<ByteSpan> EncodeToPayloadBuffer(const void* payload, NanopbSerde serde)
-    PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
-  ByteSpan payload_buffer = GetPayloadBuffer();
-  StatusWithSize result = serde.Encode(payload, payload_buffer);
-  if (!result.ok()) {
-    return result.status();
-  }
-  return payload_buffer.first(result.size());
-}
 
 }  // namespace
 

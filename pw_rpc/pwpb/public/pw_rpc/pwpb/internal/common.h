@@ -19,6 +19,7 @@
 #include "pw_protobuf/internal/codegen.h"
 #include "pw_protobuf/stream_decoder.h"
 #include "pw_rpc/internal/client_call.h"
+#include "pw_rpc/internal/encoding_buffer.h"
 #include "pw_rpc/internal/server_call.h"
 #include "pw_rpc/pwpb/serde.h"
 #include "pw_span/span.h"
@@ -34,19 +35,6 @@ class PwpbServerCall;
 template <PwpbMessageDescriptor kRequest, PwpbMessageDescriptor kResponse>
 constexpr PwpbMethodSerde kPwpbMethodSerde(kRequest, kResponse);
 
-// Encodes a message struct into a payload buffer.
-template <typename Payload>
-Result<ByteSpan> PwpbEncodeToPayloadBuffer(const Payload& payload,
-                                           PwpbSerde serde)
-    PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
-  ByteSpan buffer = GetPayloadBuffer();
-  const StatusWithSize sws = serde.Encode(payload, buffer);
-  if (!sws.ok()) {
-    return sws.status();
-  }
-  return buffer.first(sws.size());
-}
-
 // [Client] Encodes and sends the initial request message for the call.
 // active() must be true.
 template <typename Request>
@@ -56,7 +44,7 @@ void PwpbSendInitialRequest(ClientCall& call,
     PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
   PW_ASSERT(call.active_locked());
 
-  Result<ByteSpan> buffer = PwpbEncodeToPayloadBuffer(request, serde);
+  Result<ByteSpan> buffer = EncodeToPayloadBuffer(request, serde);
   if (buffer.ok()) {
     call.SendInitialClientRequest(*buffer);
   } else {
@@ -75,7 +63,7 @@ Status PwpbSendStream(Call& call,
     return Status::FailedPrecondition();
   }
 
-  Result<ByteSpan> buffer = PwpbEncodeToPayloadBuffer(
+  Result<ByteSpan> buffer = EncodeToPayloadBuffer(
       payload,
       call.type() == kClientCall ? serde->request() : serde->response());
   PW_TRY(buffer);
