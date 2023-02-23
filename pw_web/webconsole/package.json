@@ -19,7 +19,7 @@
     "codemirror": "^6.0.1",
     "next": "12.2.3",
     "object-path": "^0.11.8",
-    "pigweedjs": "file:../../",
+    "pigweedjs": "latest",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-virtualized": "^9.22.3",
