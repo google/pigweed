@@ -843,10 +843,11 @@ plug-in enabled Pigweed can help you enforce consistent styling on those files
 and also detects some errors.
 
 The styling follows these rules.
+
 #. Content is grouped by type of line (Access grant, include, etc).
 #. Each grouping is sorted alphabetically.
 #. Groups are placed the following order with a blank line separating each
-grouping.
+   grouping.
 
     * "set noparent" line
     * "include" lines
