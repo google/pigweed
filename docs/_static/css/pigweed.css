@@ -125,3 +125,10 @@ h4, h5, h6 {
   -webkit-mask-image: var(--icon--check-circle-fill);
           mask-image: var(--icon--check-circle-fill);
 }
+
+/* Sub sections in breathe doxygen output.
+   E.g 'Public Functions' or 'Public Static Functions' in a class. */
+.breathe-sectiondef > p.breathe-sectiondef-title {
+  font-weight: bold;
+  font-size: var(--font-size--normal);
+}

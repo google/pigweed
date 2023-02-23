@@ -18,14 +18,16 @@
 
 namespace pw::sync {
 
-// The VirtualBasicLockable is a virtual lock abstraction for locks which meet
-// the C++ named BasicLockable requirements of lock() and unlock().
-//
-// This virtual indirection is useful in case you need configurable lock
-// selection in a portable module where the final type is not defined upstream
-// and ergo module configuration cannot be used or in case the lock type is not
-// fixed at compile time, for example to support run time and crash time use of
-// an object without incurring the code size hit for templating the object.
+/// @class VirtualBasicLockable
+///
+/// The VirtualBasicLockable is a virtual lock abstraction for locks which meet
+/// the C++ named BasicLockable requirements of lock() and unlock().
+///
+/// This virtual indirection is useful in case you need configurable lock
+/// selection in a portable module where the final type is not defined upstream
+/// and ergo module configuration cannot be used or in case the lock type is not
+/// fixed at compile time, for example to support run time and crash time use of
+/// an object without incurring the code size hit for templating the object.
 class PW_LOCKABLE("pw::sync::VirtualBasicLockable") VirtualBasicLockable {
  public:
   void lock() PW_EXCLUSIVE_LOCK_FUNCTION() {
@@ -43,13 +45,15 @@ class PW_LOCKABLE("pw::sync::VirtualBasicLockable") VirtualBasicLockable {
   };
 
  private:
-  // Uses a single virtual method with an enum to minimize the vtable cost per
-  // implementation of VirtualBasicLockable.
+  /// Uses a single virtual method with an enum to minimize the vtable cost per
+  /// implementation of VirtualBasicLockable.
   virtual void DoLockOperation(Operation operation) = 0;
 };
 
-// The NoOpLock is a type of VirtualBasicLockable that does nothing, i.e. lock
-// operations are no-ops.
+/// @class NoOpLock
+///
+/// The NoOpLock is a type of VirtualBasicLockable that does nothing, i.e. lock
+/// operations are no-ops.
 class PW_LOCKABLE("pw::sync::NoOpLock") NoOpLock final
     : public VirtualBasicLockable {
  public:
@@ -59,8 +63,8 @@ class PW_LOCKABLE("pw::sync::NoOpLock") NoOpLock final
   NoOpLock& operator=(const NoOpLock&) = delete;
   NoOpLock& operator=(NoOpLock&&) = delete;
 
-  // Gives access to a global NoOpLock instance. It is not necessary to have
-  // multiple NoOpLock instances since they have no state and do nothing.
+  /// Gives access to a global NoOpLock instance. It is not necessary to have
+  /// multiple NoOpLock instances since they have no state and do nothing.
   static NoOpLock& Instance() {
     PW_CONSTINIT static NoOpLock lock;
     return lock;

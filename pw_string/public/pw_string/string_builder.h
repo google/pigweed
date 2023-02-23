@@ -30,50 +30,59 @@
 
 namespace pw {
 
-// StringBuilder facilitates building formatted strings in a fixed-size buffer.
-// StringBuilders are always null terminated (unless they are constructed with
-// an empty buffer) and never overflow. Status is tracked for each operation and
-// an overall status is maintained, which reflects the most recent error.
-//
-// A StringBuilder does not own the buffer it writes to. It can be used to write
-// strings to any buffer. The StringBuffer template class, defined below,
-// allocates a buffer alongside a StringBuilder.
-//
-// StringBuilder supports C++-style << output, similar to std::ostringstream. It
-// also supports std::string-like append functions and printf-style output.
-//
-// Support for custom types is added by overloading operator<< in the same
-// namespace as the custom type. For example:
-//
-//   namespace my_project {
-//
-//   struct MyType {
-//     int foo;
-//     const char* bar;
-//   };
-//
-//   pw::StringBuilder& operator<<(pw::StringBuilder& sb, const MyType& value) {
-//     return sb << "MyType(" << value.foo << ", " << value.bar << ')';
-//   }
-//
-//   }  // namespace my_project
-//
-// The ToString template function can be specialized to support custom types
-// with StringBuilder, though overloading operator<< is generally preferred. For
-// example:
-//
-//   namespace pw {
-//
-//   template <>
-//   StatusWithSize ToString<MyStatus>(MyStatus value, span<char> buffer) {
-//     return Copy(MyStatusString(value), buffer);
-//   }
-//
-//   }  // namespace pw
-//
+/// @class StringBuilder
+///
+/// `StringBuilder` facilitates building formatted strings in a fixed-size
+/// buffer. StringBuilders are always null terminated (unless they are
+/// constructed with an empty buffer) and never overflow. Status is tracked for
+/// each operation and an overall status is maintained, which reflects the most
+/// recent error.
+///
+/// A `StringBuilder` does not own the buffer it writes to. It can be used to
+/// write strings to any buffer. The StringBuffer template class, defined below,
+/// allocates a buffer alongside a `StringBuilder`.
+///
+/// `StringBuilder` supports C++-style << output, similar to
+/// `std::ostringstream`. It also supports std::string-like append functions and
+/// printf-style output.
+///
+/// Support for custom types is added by overloading `operator<<` in the same
+/// namespace as the custom type. For example:
+///
+/// @code
+///   namespace my_project {
+///
+///   struct MyType {
+///     int foo;
+///     const char* bar;
+///   };
+///
+///   pw::StringBuilder& operator<<(pw::StringBuilder& sb, const MyType& value)
+///   {
+///     return sb << "MyType(" << value.foo << ", " << value.bar << ')';
+///   }
+///
+///   }  // namespace my_project
+/// @endcode
+///
+/// The ToString template function can be specialized to support custom types
+/// with `StringBuilder`, though overloading `operator<<` is generally
+/// preferred. For example:
+///
+/// @code
+///   namespace pw {
+///
+///   template <>
+///   StatusWithSize ToString<MyStatus>(MyStatus value, span<char> buffer) {
+///     return Copy(MyStatusString(value), buffer);
+///   }
+///
+///   }  // namespace pw
+/// @endcode
+///
 class StringBuilder {
  public:
-  // Creates an empty StringBuilder.
+  /// Creates an empty StringBuilder.
   explicit constexpr StringBuilder(span<char> buffer)
       : buffer_(buffer), size_(&inline_size_), inline_size_(0) {
     NullTerminate();
@@ -88,114 +97,118 @@ class StringBuilder {
         size_(&string.length_),
         inline_size_(0) {}
 
-  // Disallow copy/assign to avoid confusion about where the string is actually
-  // stored. StringBuffers may be copied into one another.
+  /// Disallow copy/assign to avoid confusion about where the string is actually
+  /// stored. StringBuffers may be copied into one another.
   StringBuilder(const StringBuilder&) = delete;
 
   StringBuilder& operator=(const StringBuilder&) = delete;
 
-  // Returns the contents of the string buffer. Always null-terminated.
+  /// @fn data
+  /// @fn c_str
+  ///
+  /// Returns the contents of the string buffer. Always null-terminated.
   const char* data() const { return buffer_.data(); }
   const char* c_str() const { return data(); }
 
-  // Returns a std::string_view of the contents of this StringBuilder. The
-  // std::string_view is invalidated if the StringBuilder contents change.
+  /// Returns a std::string_view of the contents of this StringBuilder. The
+  /// std::string_view is invalidated if the StringBuilder contents change.
   std::string_view view() const { return std::string_view(data(), size()); }
 
-  // Allow implicit conversions to std::string_view so StringBuilders can be
-  // passed into functions that take a std::string_view.
+  /// Allow implicit conversions to std::string_view so StringBuilders can be
+  /// passed into functions that take a std::string_view.
   operator std::string_view() const { return view(); }
 
-  // Returns a span<const std::byte> representation of this StringBuffer.
+  /// Returns a span<const std::byte> representation of this StringBuffer.
   span<const std::byte> as_bytes() const {
     return span(reinterpret_cast<const std::byte*>(buffer_.data()), size());
   }
 
-  // Returns the StringBuilder's status, which reflects the most recent error
-  // that occurred while updating the string. After an update fails, the status
-  // remains non-OK until it is cleared with clear() or clear_status(). Returns:
-  //
-  //     OK if no errors have occurred
-  //     RESOURCE_EXHAUSTED if output to the StringBuilder was truncated
-  //     INVALID_ARGUMENT if printf-style formatting failed
-  //     OUT_OF_RANGE if an operation outside the buffer was attempted
-  //
+  /// Returns the StringBuilder's status, which reflects the most recent error
+  /// that occurred while updating the string. After an update fails, the status
+  /// remains non-OK until it is cleared with clear() or clear_status().
+  /// Returns:
+  ///
+  ///     OK if no errors have occurred
+  ///     RESOURCE_EXHAUSTED if output to the StringBuilder was truncated
+  ///     INVALID_ARGUMENT if printf-style formatting failed
+  ///     OUT_OF_RANGE if an operation outside the buffer was attempted
+  ///
   Status status() const { return static_cast<Status::Code>(status_); }
 
-  // Returns status() and size() as a StatusWithSize.
+  /// Returns status() and size() as a StatusWithSize.
   StatusWithSize status_with_size() const {
     return StatusWithSize(status(), size());
   }
 
-  // The status from the last operation. May be OK while status() is not OK.
+  /// The status from the last operation. May be OK while status() is not OK.
   Status last_status() const { return static_cast<Status::Code>(last_status_); }
 
-  // True if status() is OkStatus().
+  /// True if status() is OkStatus().
   bool ok() const { return status().ok(); }
 
-  // True if the string is empty.
+  /// True if the string is empty.
   bool empty() const { return size() == 0u; }
 
-  // Returns the current length of the string, excluding the null terminator.
+  /// Returns the current length of the string, excluding the null terminator.
   size_t size() const { return *size_; }
 
-  // Returns the maximum length of the string, excluding the null terminator.
+  /// Returns the maximum length of the string, excluding the null terminator.
   size_t max_size() const { return buffer_.empty() ? 0u : buffer_.size() - 1; }
 
-  // Clears the string and resets its error state.
+  /// Clears the string and resets its error state.
   void clear();
 
-  // Sets the statuses to OkStatus();
+  /// Sets the statuses to OkStatus();
   void clear_status() {
     status_ = static_cast<unsigned char>(OkStatus().code());
     last_status_ = static_cast<unsigned char>(OkStatus().code());
   }
 
-  // Appends a single character. Stets the status to RESOURCE_EXHAUSTED if the
-  // character cannot be added because the buffer is full.
+  /// Appends a single character. Stets the status to RESOURCE_EXHAUSTED if the
+  /// character cannot be added because the buffer is full.
   void push_back(char ch) { append(1, ch); }
 
-  // Removes the last character. Sets the status to OUT_OF_RANGE if the buffer
-  // is empty (in which case the unsigned overflow is intentional).
+  /// Removes the last character. Sets the status to OUT_OF_RANGE if the buffer
+  /// is empty (in which case the unsigned overflow is intentional).
   void pop_back() PW_NO_SANITIZE("unsigned-integer-overflow") {
     resize(size() - 1);
   }
 
-  // Appends the provided character count times.
+  /// Appends the provided character count times.
   StringBuilder& append(size_t count, char ch);
 
-  // Appends count characters from str to the end of the StringBuilder. If count
-  // exceeds the remaining space in the StringBuffer, max_size() - size()
-  // characters are appended and the status is set to RESOURCE_EXHAUSTED.
-  //
-  // str is not considered null-terminated and may contain null characters.
+  /// Appends count characters from str to the end of the StringBuilder. If
+  /// count exceeds the remaining space in the StringBuffer, max_size() - size()
+  /// characters are appended and the status is set to RESOURCE_EXHAUSTED.
+  ///
+  /// str is not considered null-terminated and may contain null characters.
   StringBuilder& append(const char* str, size_t count);
 
-  // Appends characters from the null-terminated string to the end of the
-  // StringBuilder. If the string's length exceeds the remaining space in the
-  // buffer, max_size() - size() characters are copied and the status is set to
-  // RESOURCE_EXHAUSTED.
-  //
-  // This function uses string::Length instead of std::strlen to avoid unbounded
-  // reads if the string is not null terminated.
+  /// Appends characters from the null-terminated string to the end of the
+  /// StringBuilder. If the string's length exceeds the remaining space in the
+  /// buffer, max_size() - size() characters are copied and the status is set to
+  /// RESOURCE_EXHAUSTED.
+  ///
+  /// This function uses string::Length instead of std::strlen to avoid
+  /// unbounded reads if the string is not null terminated.
   StringBuilder& append(const char* str);
 
-  // Appends a std::string_view to the end of the StringBuilder.
+  /// Appends a std::string_view to the end of the StringBuilder.
   StringBuilder& append(const std::string_view& str);
 
-  // Appends a substring from the std::string_view to the StringBuilder. Copies
-  // up to count characters starting from pos to the end of the StringBuilder.
-  // If pos > str.size(), sets the status to OUT_OF_RANGE.
+  /// Appends a substring from the std::string_view to the StringBuilder. Copies
+  /// up to count characters starting from pos to the end of the StringBuilder.
+  /// If pos > str.size(), sets the status to OUT_OF_RANGE.
   StringBuilder& append(const std::string_view& str,
                         size_t pos,
                         size_t count = std::string_view::npos);
 
-  // Appends to the end of the StringBuilder using the << operator. This enables
-  // C++ stream-style formatted to StringBuilders.
+  /// Appends to the end of the StringBuilder using the << operator. This
+  /// enables C++ stream-style formatted to StringBuilders.
   template <typename T>
   StringBuilder& operator<<(const T& value) {
-    // For std::string_view-compatible types, use the append function, which
-    // gives smaller code size.
+    /// For std::string_view-compatible types, use the append function, which
+    /// gives smaller code size.
     if constexpr (std::is_convertible_v<T, std::string_view>) {
       append(value);
     } else if constexpr (std::is_convertible_v<T, span<const std::byte>>) {
@@ -206,7 +219,7 @@ class StringBuilder {
     return *this;
   }
 
-  // Provide a few additional operator<< overloads that reduce code size.
+  /// Provide a few additional operator<< overloads that reduce code size.
   StringBuilder& operator<<(bool value) {
     return append(value ? "true" : "false");
   }
@@ -222,27 +235,33 @@ class StringBuilder {
 
   StringBuilder& operator<<(Status status) { return *this << status.str(); }
 
-  // Appends a printf-style string to the end of the StringBuilder. If the
-  // formatted string does not fit, the results are truncated and the status is
-  // set to RESOURCE_EXHAUSTED.
-  //
-  // Internally, calls string::Format, which calls std::vsnprintf.
+  /// @fn pw::StringBuilder::Format
+  /// Appends a printf-style string to the end of the StringBuilder. If the
+  /// formatted string does not fit, the results are truncated and the status is
+  /// set to RESOURCE_EXHAUSTED.
+  ///
+  /// @param format The format string
+  /// @param ... Arguments for format specification
+  ///
+  /// @return StringBuilder&
+  ///
+  /// @note Internally, calls string::Format, which calls std::vsnprintf.
   PW_PRINTF_FORMAT(2, 3) StringBuilder& Format(const char* format, ...);
 
-  // Appends a vsnprintf-style string with va_list arguments to the end of the
-  // StringBuilder. If the formatted string does not fit, the results are
-  // truncated and the status is set to RESOURCE_EXHAUSTED.
-  //
-  // Internally, calls string::Format, which calls std::vsnprintf.
+  /// Appends a vsnprintf-style string with va_list arguments to the end of the
+  /// StringBuilder. If the formatted string does not fit, the results are
+  /// truncated and the status is set to RESOURCE_EXHAUSTED.
+  ///
+  /// Internally, calls string::Format, which calls std::vsnprintf.
   PW_PRINTF_FORMAT(2, 0)
   StringBuilder& FormatVaList(const char* format, va_list args);
 
-  // Sets the StringBuilder's size. This function only truncates; if
-  // new_size > size(), it sets status to OUT_OF_RANGE and does nothing.
+  /// Sets the StringBuilder's size. This function only truncates; if
+  /// new_size > size(), it sets status to OUT_OF_RANGE and does nothing.
   void resize(size_t new_size);
 
  protected:
-  // Functions to support StringBuffer copies.
+  /// Functions to support StringBuffer copies.
   constexpr StringBuilder(span<char> buffer, const StringBuilder& other)
       : buffer_(buffer),
         size_(&inline_size_),
@@ -253,7 +272,7 @@ class StringBuilder {
   void CopySizeAndStatus(const StringBuilder& other);
 
  private:
-  // Statuses are stored as an unsigned char so they pack into a single word.
+  /// Statuses are stored as an unsigned char so they pack into a single word.
   static constexpr unsigned char StatusCode(Status status) {
     return static_cast<unsigned char>(status.code());
   }
@@ -276,9 +295,9 @@ class StringBuilder {
 
   InlineString<>::size_type* size_;
 
-  // Place the inline_size_, status_, and last_status_ members together and use
-  // unsigned char for the status codes so these members can be packed into a
-  // single word.
+  /// Place the inline_size_, status_, and last_status_ members together and use
+  /// unsigned char for the status codes so these members can be packed into a
+  /// single word.
   InlineString<>::size_type inline_size_;
   unsigned char status_ = StatusCode(OkStatus());
   unsigned char last_status_ = StatusCode(OkStatus());

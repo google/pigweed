@@ -25,16 +25,22 @@
 
 namespace pw::sync {
 
-// The Mutex is a synchronization primitive that can be used to protect
-// shared data from being simultaneously accessed by multiple threads.
-// It offers exclusive, non-recursive ownership semantics where priority
-// inheritance is used to solve the classic priority-inversion problem.
-// This is thread safe, but NOT IRQ safe.
-//
-// WARNING: In order to support global statically constructed Mutexes, the user
-// and/or backend MUST ensure that any initialization required in your
-// environment is done prior to the creation and/or initialization of the native
-// synchronization primitives (e.g. kernel initialization).
+/// @class Mutex
+///
+/// The Mutex is a synchronization primitive that can be used to protect shared
+/// data from being simultaneously accessed by multiple threads.  It offers
+/// exclusive, non-recursive ownership semantics where priority inheritance is
+/// used to solve the classic priority-inversion problem.  This is thread safe,
+/// but NOT IRQ safe.
+///
+/// @rst
+/// .. warning::
+///
+///    In order to support global statically constructed Mutexes, the user
+///    and/or backend MUST ensure that any initialization required in your
+///    environment is done prior to the creation and/or initialization of the
+///    native synchronization primitives (e.g. kernel initialization).
+/// @endrst
 class PW_LOCKABLE("pw::sync::Mutex") Mutex {
  public:
   using native_handle_type = backend::NativeMutexHandle;
@@ -46,38 +52,38 @@ class PW_LOCKABLE("pw::sync::Mutex") Mutex {
   Mutex& operator=(const Mutex&) = delete;
   Mutex& operator=(Mutex&&) = delete;
 
-  // Locks the mutex, blocking indefinitely. Failures are fatal.
-  //
-  // PRECONDITION:
-  //   The lock isn't already held by this thread. Recursive locking is
-  //   undefined behavior.
+  /// Locks the mutex, blocking indefinitely. Failures are fatal.
+  ///
+  /// @b PRECONDITION:
+  ///   The lock isn't already held by this thread. Recursive locking is
+  ///   undefined behavior.
   void lock() PW_EXCLUSIVE_LOCK_FUNCTION();
 
-  // Attempts to lock the mutex in a non-blocking manner.
-  // Returns true if the mutex was successfully acquired.
-  //
-  // PRECONDITION:
-  //   The lock isn't already held by this thread. Recursive locking is
-  //   undefined behavior.
+  /// Attempts to lock the mutex in a non-blocking manner.
+  /// Returns true if the mutex was successfully acquired.
+  ///
+  /// @b PRECONDITION:
+  ///   The lock isn't already held by this thread. Recursive locking is
+  ///   undefined behavior.
   bool try_lock() PW_EXCLUSIVE_TRYLOCK_FUNCTION(true);
 
-  // Unlocks the mutex. Failures are fatal.
-  //
-  // PRECONDITION:
-  //   The mutex is held by this thread.
+  /// Unlocks the mutex. Failures are fatal.
+  ///
+  /// @b PRECONDITION:
+  ///   The mutex is held by this thread.
   void unlock() PW_UNLOCK_FUNCTION();
 
   native_handle_type native_handle();
 
  protected:
-  // Expose the NativeMutex directly to derived classes (TimedMutex) in
-  // case implementations use different types for backend::NativeMutex and
-  // native_handle().
+  /// Expose the NativeMutex directly to derived classes (TimedMutex) in case
+  /// implementations use different types for backend::NativeMutex and
+  /// native_handle().
   backend::NativeMutex& native_type() { return native_type_; }
   const backend::NativeMutex& native_type() const { return native_type_; }
 
  private:
-  // This may be a wrapper around a native type with additional members.
+  /// This may be a wrapper around a native type with additional members.
   backend::NativeMutex native_type_;
 };
 
@@ -123,8 +129,19 @@ typedef struct pw_sync_Mutex pw_sync_Mutex;
 
 PW_EXTERN_C_START
 
+/// @fn pw_sync_Mutex_Lock
+///
+/// Invokes the `Mutex::lock` member function on the given `mutex`.
 void pw_sync_Mutex_Lock(pw_sync_Mutex* mutex) PW_NO_LOCK_SAFETY_ANALYSIS;
+
+/// @fn pw_sync_Mutex_TryLock
+///
+/// Invokes the `Mutex::try_lock` member function on the given `mutex`.
 bool pw_sync_Mutex_TryLock(pw_sync_Mutex* mutex) PW_NO_LOCK_SAFETY_ANALYSIS;
+
+/// @fn pw_sync_Mutex_Unlock
+///
+/// Invokes the `Mutex::unlock` member function on the given `mutex`.
 void pw_sync_Mutex_Unlock(pw_sync_Mutex* mutex) PW_NO_LOCK_SAFETY_ANALYSIS;
 
 PW_EXTERN_C_END

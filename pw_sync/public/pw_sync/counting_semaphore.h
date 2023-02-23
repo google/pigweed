@@ -25,20 +25,25 @@
 
 namespace pw::sync {
 
-// The CountingSemaphore is a synchronization primitive that can be used for
-// counting events and/or resource management where receiver(s) can block on
-// acquire until notifier(s) signal by invoking release.
-// Note that unlike Mutexes, priority inheritance is not used by semaphores
-// meaning semaphores are subject to unbounded priority inversions.
-// Pigweed does not recommend semaphores for mutual exclusion. The entire API is
-// thread safe but only a subset is IRQ safe.
-//
-// WARNING: In order to support global statically constructed CountingSemaphores
-// the user and/or backend MUST ensure that any initialization required in your
-// environment is done prior to the creation and/or initialization of the native
-// synchronization primitives (e.g. kernel initialization).
-//
-// The CountingSemaphore is initialized to being empty or having no tokens.
+/// @class CountingSemaphore
+///
+/// The CountingSemaphore is a synchronization primitive that can be used for
+/// counting events and/or resource management where receiver(s) can block on
+/// acquire until notifier(s) signal by invoking release.
+/// Note that unlike Mutexes, priority inheritance is not used by semaphores
+/// meaning semaphores are subject to unbounded priority inversions.
+/// Pigweed does not recommend semaphores for mutual exclusion. The entire API
+/// is thread safe but only a subset is IRQ safe.
+///
+/// @rst
+/// .. WARNING::
+///    In order to support global statically constructed CountingSemaphores the
+///    user and/or backend MUST ensure that any initialization required in your
+///    environment is done prior to the creation and/or initialization of the
+///    native synchronization primitives (e.g. kernel initialization).
+///
+/// The CountingSemaphore is initialized to being empty or having no tokens.
+/// @endrst
 class CountingSemaphore {
  public:
   using native_handle_type = backend::NativeCountingSemaphoreHandle;
@@ -50,38 +55,45 @@ class CountingSemaphore {
   CountingSemaphore& operator=(const CountingSemaphore&) = delete;
   CountingSemaphore& operator=(CountingSemaphore&&) = delete;
 
-  // Atomically increments the internal counter by the value of update.
-  // Any thread(s) waiting for the counter to be greater than 0, i.e. blocked
-  // in acquire, will subsequently be unblocked.
-  // This is IRQ safe.
-  //
-  // Precondition: update >= 0
-  // Precondition: update <= max() - counter
+  /// Atomically increments the internal counter by the value of update.
+  /// Any thread(s) waiting for the counter to be greater than 0, i.e. blocked
+  /// in acquire, will subsequently be unblocked.
+  /// This is IRQ safe.
+  ///
+  /// @b Precondition: update >= 0
+  ///
+  /// @b Precondition: update <= max() - counter
   void release(ptrdiff_t update = 1);
 
-  // Decrements the internal counter by 1 or blocks indefinitely until it can.
-  // This is thread safe, but not IRQ safe.
+  /// Decrements the internal counter by 1 or blocks indefinitely until it can.
+  ///
+  /// This is thread safe, but not IRQ safe.
   void acquire();
 
-  // Tries to decrement by the internal counter by 1 without blocking.
-  // Returns true if the internal counter was decremented successfully.
-  // This is IRQ safe.
+  /// Tries to decrement by the internal counter by 1 without blocking.
+  /// Returns true if the internal counter was decremented successfully.
+  ///
+  /// This is IRQ safe.
   bool try_acquire() noexcept;
 
-  // Tries to decrement the internal counter by 1. Blocks until the specified
-  // timeout has elapsed or the counter was decremented by 1, whichever comes
-  // first.
-  // Returns true if the internal counter was decremented successfully.
-  // This is thread safe, but not IRQ safe.
+  /// Tries to decrement the internal counter by 1. Blocks until the specified
+  /// timeout has elapsed or the counter was decremented by 1, whichever comes
+  /// first.
+  ///
+  /// Returns true if the internal counter was decremented successfully.
+  /// This is thread safe, but not IRQ safe.
   bool try_acquire_for(chrono::SystemClock::duration timeout);
 
-  // Tries to decrement the internal counter by 1. Blocks until the specified
-  // deadline has been reached or the counter was decremented by 1, whichever
-  // comes first.
-  // Returns true if the internal counter was decremented successfully.
-  // This is thread safe, but not IRQ safe.
+  /// Tries to decrement the internal counter by 1. Blocks until the specified
+  /// deadline has been reached or the counter was decremented by 1, whichever
+  /// comes first.
+  ///
+  /// Returns true if the internal counter was decremented successfully.
+  ///
+  /// This is thread safe, but not IRQ safe.
   bool try_acquire_until(chrono::SystemClock::time_point deadline);
 
+  /// Returns the internal counter's maximum possible value.
   static constexpr ptrdiff_t max() noexcept {
     return backend::kCountingSemaphoreMaxValue;
   }
@@ -89,7 +101,7 @@ class CountingSemaphore {
   native_handle_type native_handle();
 
  private:
-  // This may be a wrapper around a native type with additional members.
+  /// This may be a wrapper around a native type with additional members.
   backend::NativeCountingSemaphore native_type_;
 };
 

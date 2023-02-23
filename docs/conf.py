@@ -47,6 +47,7 @@ extensions = [
     'sphinxcontrib.mermaid',
     'sphinx_design',
     'myst_parser',
+    'breathe',
 ]
 
 myst_enable_extensions = [
@@ -198,6 +199,38 @@ texinfo_documents = [
 ]
 
 exclude_patterns = ['docs/templates/**']
+
+breathe_projects = {
+    # Assuming doxygen output is at out/docs/doxygen/
+    # This dir should be relative to out/docs/gen/docs/pw_docgen_tree/
+    "Pigweed": "./../../../doxygen/xml/",
+}
+
+breathe_default_project = "Pigweed"
+
+breathe_debug_trace_directives = True
+
+# Treat these as valid attributes in function signatures.
+cpp_id_attributes = [
+    "PW_EXTERN_C_START",
+    "PW_NO_LOCK_SAFETY_ANALYSIS",
+]
+# This allows directives like this to work:
+# .. cpp:function:: inline bool try_lock_for(
+#     chrono::SystemClock::duration timeout) PW_EXCLUSIVE_TRYLOCK_FUNCTION(true)
+cpp_paren_attributes = [
+    "PW_EXCLUSIVE_TRYLOCK_FUNCTION",
+    "PW_EXCLUSIVE_LOCK_FUNCTION",
+    "PW_UNLOCK_FUNCTION",
+    "PW_NO_SANITIZE",
+]
+# inclusive-language: disable
+# Info on cpp_id_attributes and cpp_paren_attributes
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-cpp_id_attributes
+# inclusive-language: enable
+
+# Disable Python type hints
+# autodoc_typehints = 'none'
 
 
 def do_not_skip_init(app, what, name, obj, would_skip, options):

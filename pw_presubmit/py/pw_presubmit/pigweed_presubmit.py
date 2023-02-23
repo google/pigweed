@@ -562,6 +562,7 @@ def edit_compile_commands(
 _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     # Configuration
     # keep-sorted: start
+    r'\bDoxyfile$',
     r'\bPW_PLUGINS$',
     r'\bconstraint.list$',
     r'^(?:.+/)?\..+$',

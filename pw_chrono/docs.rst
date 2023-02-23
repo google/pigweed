@@ -8,7 +8,7 @@ leveraging many pieces of STL's the ``std::chrono`` library but with a focus
 on portability for constrained embedded devices and maintaining correctness.
 
 .. note::
-  This module is still under construction, the API is not yet stable.
+   This module is still under construction, the API is not yet stable.
 
 -------------------------------
 ``duration`` and ``time_point``
@@ -47,41 +47,41 @@ following simplified model, ignoring most of their member functions:
 
 .. code-block:: cpp
 
-  namespace std::chrono {
+   namespace std::chrono {
 
-  template<class Rep, class Period = std::ratio<1, 1>>
-  class duration {
-   public:
-    using rep = Rep;
-    using period = Period;
+   template<class Rep, class Period = std::ratio<1, 1>>
+   class duration {
+    public:
+     using rep = Rep;
+     using period = Period;
 
-    constexpr rep count() const { return tick_count_; }
+     constexpr rep count() const { return tick_count_; }
 
-    static constexpr duration zero() noexcept {
-      return duration(0);
-    }
+     static constexpr duration zero() noexcept {
+       return duration(0);
+     }
 
-    // Other member functions...
+     // Other member functions...
 
-   private:
-    rep tick_count_;
-  };
+    private:
+     rep tick_count_;
+   };
 
-  template<class Clock, class Duration = typename Clock::duration>
-  class time_point {
-   public:
-    using duration = Duration;
-    using rep = Duration::rep;
-    using period = Duration::period;
-    using clock = Clock;
+   template<class Clock, class Duration = typename Clock::duration>
+   class time_point {
+    public:
+     using duration = Duration;
+     using rep = Duration::rep;
+     using period = Duration::period;
+     using clock = Clock;
 
-    constexpr duration time_since_epoch() const { return time_since_epoch_; }
+     constexpr duration time_since_epoch() const { return time_since_epoch_; }
 
-    // Other member functions...
+     // Other member functions...
 
-   private:
-    duration time_since_epoch_;
-  };
+    private:
+     duration time_since_epoch_;
+   };
 
   }  // namespace std::chrono
 
@@ -107,11 +107,11 @@ With this guidance one can avoid common pitfalls like ``uint32_t`` millisecond
 tick rollover bugs when using RTOSes every 49.7 days.
 
 .. warning::
-  We recommend avoiding the ``duration<>::min()`` and ``duration<>::max()``
-  helper member functions where possible as they exceed the ±292 years duration
-  limit assumption. There's an immediate risk of integer underflow or overflow
-  for any arithmetic operations. Consider using ``std::optional`` instead of
-  priming a variable with a value at the limit.
+   We recommend avoiding the ``duration<>::min()`` and ``duration<>::max()``
+   helper member functions where possible as they exceed the ±292 years duration
+   limit assumption. There's an immediate risk of integer underflow or overflow
+   for any arithmetic operations. Consider using ``std::optional`` instead of
+   priming a variable with a value at the limit.
 
 Helper duration types and literals
 ==================================
@@ -129,11 +129,11 @@ As an example you can use these as follows:
 
 .. code-block:: cpp
 
-  #include <chrono>
+   #include <chrono>
 
-  void Foo() {
-    Bar(std::chrono::milliseconds(42));
-  }
+   void Foo() {
+     Bar(std::chrono::milliseconds(42));
+   }
 
 In addition, the inline namespace ``std::literals::chrono_literals`` includes:
 
@@ -148,12 +148,12 @@ As an example you can use these as follows:
 
 .. code-block:: cpp
 
-  using std::literals::chrono_literals::ms;
-  // Or if you want them all: using namespace std::chrono_literals;
+   using std::literals::chrono_literals::ms;
+   // Or if you want them all: using namespace std::chrono_literals;
 
-  void Foo() {
-    Bar(42ms);
-  }
+   void Foo() {
+     Bar(42ms);
+   }
 
 For these helper duration types to be compatible with API's that take a
 `SystemClock::duration` either an :ref:`implicit<Implicit lossless conversions>`
@@ -167,29 +167,29 @@ a 1kHz RTOS tick period and you would like to express a timeout duration:
 
 .. code-block:: cpp
 
-  // Instead of using ticks which are not portable between RTOS configurations,
-  // as the tick period may be different:
-  constexpr uint32_t kFooNotificationTimeoutTicks = 42;
-  bool TryGetNotificationFor(uint32_t ticks);
+   // Instead of using ticks which are not portable between RTOS configurations,
+   // as the tick period may be different:
+   constexpr uint32_t kFooNotificationTimeoutTicks = 42;
+   bool TryGetNotificationFor(uint32_t ticks);
 
-  // And instead of using a time unit which is prone to accidental conversion
-  // errors as all variables must maintain the time units:
-  constexpr uint32_t kFooNotificationTimeoutMs = 42;
-  bool TryGetNotificationFor(uint32_t milliseconds);
+   // And instead of using a time unit which is prone to accidental conversion
+   // errors as all variables must maintain the time units:
+   constexpr uint32_t kFooNotificationTimeoutMs = 42;
+   bool TryGetNotificationFor(uint32_t milliseconds);
 
-  // We can instead use a defined clock and its duration for the kernel and rely
-  // on implicit lossless conversions:
-  #include <chrono>
-  #include "pw_chrono/system_clock.h"
-  constexpr SystemClock::duration kFooNotificationTimeout =
-      std::chrono::milliseconds(42);
-  bool TryGetNotificationFor(SystemClock::duration timeout);
+   // We can instead use a defined clock and its duration for the kernel and rely
+   // on implicit lossless conversions:
+   #include <chrono>
+   #include "pw_chrono/system_clock.h"
+   constexpr SystemClock::duration kFooNotificationTimeout =
+       std::chrono::milliseconds(42);
+   bool TryGetNotificationFor(SystemClock::duration timeout);
 
-  void MaybeProcessNotification() {
-    if (TryGetNotificationFor(kFooNotificationTimeout)) {
-      ProcessNotification();
-    }
-  }
+   void MaybeProcessNotification() {
+     if (TryGetNotificationFor(kFooNotificationTimeout)) {
+       ProcessNotification();
+     }
+   }
 
 .. _Implicit lossless conversions:
 
@@ -213,15 +213,15 @@ some values like ``0``, ``1000``, etc.
 
 .. code-block:: cpp
 
-  #include <chrono>
+   #include <chrono>
 
-  constexpr std::chrono::milliseconds this_compiles =
-      std::chrono::seconds(42);
+   constexpr std::chrono::milliseconds this_compiles =
+       std::chrono::seconds(42);
 
-  // This cannot compile, because for some duration values it is lossy even
-  // though this particular value can be in theory converted to whole seconds.
-  // constexpr std::chrono::seconds this_does_not_compile =
-  //    std::chrono::milliseconds(1000);
+   // This cannot compile, because for some duration values it is lossy even
+   // though this particular value can be in theory converted to whole seconds.
+   // constexpr std::chrono::seconds this_does_not_compile =
+   //    std::chrono::milliseconds(1000);
 
 .. _Explicit lossy conversions:
 
@@ -246,41 +246,41 @@ recommends explicitly using:
   as a more explicit form of std::chrono::ceil.
 
 .. Note::
-  Pigweed does not recommend using ``std::chrono::duration_cast<>`` which
-  truncates dowards zero like ``static_cast``. This is typically not the desired
-  rounding behavior when dealing with time units. Instead, where possible we
-  recommend the more explicit, self-documenting ``std::chrono::floor``,
-  ``std::chrono::round``, and ``std::chrono::ceil``.
+   Pigweed does not recommend using ``std::chrono::duration_cast<>`` which
+   truncates dowards zero like ``static_cast``. This is typically not the desired
+   rounding behavior when dealing with time units. Instead, where possible we
+   recommend the more explicit, self-documenting ``std::chrono::floor``,
+   ``std::chrono::round``, and ``std::chrono::ceil``.
 
 Now knowing this, the previous example could be portably and correctly handled
 as follows:
 
 .. code-block:: cpp
 
-  #include <chrono>
+   #include <chrono>
 
-  #include "pw_chrono/system_clock.h"
+   #include "pw_chrono/system_clock.h"
 
-  // We want to round up to ensure we block for at least the specified duration,
-  // instead of rounding down. Imagine for example the extreme case where you
-  // may round down to zero or one, you would definitely want to at least block.
-  constexpr SystemClock::duration kFooNotificationTimeout =
-      std::chrono::ceil(std::chrono::milliseconds(42));
-  bool TryGetNotificationFor(SystemClock::duration timeout);
+   // We want to round up to ensure we block for at least the specified duration,
+   // instead of rounding down. Imagine for example the extreme case where you
+   // may round down to zero or one, you would definitely want to at least block.
+   constexpr SystemClock::duration kFooNotificationTimeout =
+       std::chrono::ceil(std::chrono::milliseconds(42));
+   bool TryGetNotificationFor(SystemClock::duration timeout);
 
-  void MaybeProcessNotification() {
-    if (TryGetNotificationFor(kFooNotificationTimeout)) {
-      ProcessNotification();
-    }
-  }
+   void MaybeProcessNotification() {
+     if (TryGetNotificationFor(kFooNotificationTimeout)) {
+       ProcessNotification();
+     }
+   }
 
 This code is lossless if the clock period is 1kHz and it's correct using a
 division which rounds up when the clock period is 128Hz.
 
 .. Note::
-  When using ``pw::chrono::SystemClock::duration`` for timeouts we recommend
-  using its ``SystemClock::for_at_least()`` to round up timeouts in a more
-  explicit, self documenting manner which uses ``std::chrono::ceil`` internally.
+   When using ``pw::chrono::SystemClock::duration`` for timeouts we recommend
+   using its ``SystemClock::for_at_least()`` to round up timeouts in a more
+   explicit, self documenting manner which uses ``std::chrono::ceil`` internally.
 
 Use of ``count()`` and ``time_since_epoch()``
 =============================================
@@ -317,10 +317,10 @@ This same risk exists if a continuously running hardware timer is used for a
 software timer service.
 
 .. Note::
-  When calculating deadlines based on a timeout when using
-  ``pw::chrono::SystemClock::timeout``, we recommend using its
-  ``SystemClock::TimePointAfterAtLeast()`` which adds an extra tick for you
-  internally.
+   When calculating deadlines based on a timeout when using
+   ``pw::chrono::SystemClock::timeout``, we recommend using its
+   ``SystemClock::TimePointAfterAtLeast()`` which adds an extra tick for you
+   internally.
 
 ------
 Clocks
@@ -425,91 +425,26 @@ scheduler in Pigweed including pw_sync, pw_thread, etc.
 
 C++
 ---
-
-.. cpp:class:: pw::chrono::SystemClock
-
-  .. cpp:type:: rep = int64_t;
-
-  .. cpp:type:: period = std::ratio<PW_CHRONO_SYSTEM_CLOCK_PERIOD_SECONDS_NUMBERATOR, PW_CHRONO_SYSTEM_CLOCK_PERIOD_SECONDS_DENOMINATOR>;
-
-    The period is specified by the backend.
-
-  .. cpp:type:: duration = std::chrono::duration<rep, period>;
-
-  .. cpp:type:: time_point = std::chrono::time_point<SystemClock>;
-
-  .. cpp:member:: static constexpr Epoch epoch = backend::kSystemClockEpoch;
-
-    The epoch must be provided by the backend.
-
-  .. cpp:member:: static constexpr bool is_monotonic = true;
-
-    The time points of this clock cannot decrease.
-
-  .. cpp:member:: static constexpr bool is_steady = false;
-
-    However, the time between ticks of this clock may slightly vary due to sleep
-    modes. The duration during sleep may be ignored or backfilled with another
-    clock.
-
-  .. cpp:member:: static constexpr bool is_free_running = backend::kSystemClockFreeRunning;
-
-    The now() function may not move forward while in a critical section or
-    interrupt. This must be provided by the backend.
-
-  .. cpp:member:: static constexpr bool is_stopped_in_halting_debug_mode = true;
-
-    The clock must stop while in halting debug mode.
-
-  .. cpp:member:: static constexpr bool is_always_enabled = true;
-
-    The now() function can be invoked at any time.
-
-  .. cpp:member:: static constexpr bool is_nmi_safe = backend::kSystemClockNmiSafe;
-
-    The now() function may work in non-masking interrupts, depending on the
-    backend. This must be provided by the backend.
-
-  .. cpp:function:: static time_point now() noexcept;
-
-    This is thread and IRQ safe.
-
-  .. cpp:function:: template <class Rep, class Period> static constexpr duration for_at_least(std::chrono::duration<Rep, Period> d);
-
-    This is purely a helper, identical to directly using std::chrono::ceil, to
-    convert a duration type which cannot be implicitly converted where the
-    result is rounded up.
-
-  .. cpp:function:: static time_point TimePointAfterAtLeast(duration after_at_least);
-
-    Computes the nearest time_point after the specified duration has elapsed.
-
-    This is useful for translating delay or timeout durations into deadlines.
-
-    The time_point is computed based on now() plus the specified duration
-    where a singular clock tick is added to handle partial ticks. This ensures
-    that a duration of at least 1 tick does not result in [0,1] ticks and
-    instead in [1,2] ticks.
-
+.. doxygenstruct:: pw::chrono::SystemClock
+   :members:
 
 Example in C++
 --------------
-
 .. code-block:: cpp
 
-  #include <chrono>
+   #include <chrono>
 
-  #include "pw_chrono/system_clock.h"
+   #include "pw_chrono/system_clock.h"
 
-  void Foo() {
-    const SystemClock::time_point before = SystemClock::now();
-    TakesALongTime();
-    const SystemClock::duration time_taken = SystemClock::now() - before;
-    bool took_way_too_long = false;
-    if (time_taken > std::chrono::seconds(42)) {
-      took_way_too_long = true;
-    }
-  }
+   void Foo() {
+     const SystemClock::time_point before = SystemClock::now();
+     TakesALongTime();
+     const SystemClock::duration time_taken = SystemClock::now() - before;
+     bool took_way_too_long = false;
+     if (time_taken > std::chrono::seconds(42)) {
+       took_way_too_long = true;
+     }
+   }
 
 Protobuf
 ========
@@ -553,116 +488,66 @@ The ExpiryCallback is either invoked from a high priority thread or an
 interrupt. Ergo ExpiryCallbacks should be treated as if they are executed by an
 interrupt, meaning:
 
- * Processing inside of the callback should be kept to a minimum.
+* Processing inside of the callback should be kept to a minimum.
 
- * Callbacks should never attempt to block.
+* Callbacks should never attempt to block.
 
- * APIs which are not interrupt safe such as pw::sync::Mutex should not be used!
+* APIs which are not interrupt safe such as pw::sync::Mutex should not be used!
 
 C++
 ---
-.. cpp:class:: pw::chrono::SystemTimer
+.. doxygenclass:: pw::chrono::SystemTimer
+   :members:
 
-  .. cpp:function:: SystemTimer(ExpiryCallback callback)
+.. cpp:namespace-push:: pw::chrono::SystemTimer
 
-    Constructs the SystemTimer based on the user provided
-    ``pw::Function<void(SystemClock::time_point expired_deadline)>``. Note that
-    The ExpiryCallback is either invoked from a high priority thread or an
-    interrupt.
+.. list-table::
+   :widths: 70 10 10 10
+   :header-rows: 1
 
-    .. note::
-      For a given timer instance, its ExpiryCallback will not preempt itself.
-      This makes it appear like there is a single executor of a timer instance's
-      ExpiryCallback.
+   * - Safe to use in context
+     - Thread
+     - Interrupt
+     - NMI
+   * - :cpp:func:`pw::chrono::SystemTimer::SystemTimer`
+     - ✔
+     -
+     -
+   * - :cpp:func:`pw::chrono::SystemTimer::~SystemTimer`
+     - ✔
+     -
+     -
+   * - :cpp:func:`InvokeAfter`
+     - ✔
+     -
+     -
+   * - :cpp:func:`InvokeAt`
+     - ✔
+     -
+     -
+   * - :cpp:func:`Cancel`
+     - ✔
+     -
+     -
 
-  .. cpp:function:: ~SystemTimer()
-
-    Cancels the timer and blocks if necssary if the callback is already being
-    processed.
-
-    **Postcondition:** The expiry callback is not in progress and will not be
-    called in the future.
-
-  .. cpp:function:: void InvokeAfter(chrono::SystemClock::duration delay)
-
-    Invokes the expiry callback as soon as possible after at least the
-    specified duration.
-
-    Scheduling a callback cancels the existing callback (if pending).
-    If the callback is already being executed while you reschedule it, it will
-    finish callback execution to completion. You are responsible for any
-    critical section locks which may be needed for timer coordination.
-
-    This is thread safe, it may not be IRQ safe.
-
-  .. cpp:function:: void InvokeAt(chrono::SystemClock::time_point timestamp)
-
-    Invokes the expiry callback as soon as possible starting at the specified
-    time_point.
-
-    Scheduling a callback cancels the existing callback (if pending).
-    If the callback is already being executed while you reschedule it, it will
-    finish callback execution to completion. You are responsible for any
-    critical section locks which may be needed for timer coordination.
-
-    This is thread safe, it may not be IRQ safe.
-
-  .. cpp:function:: void Cancel()
-
-    Cancels the software timer expiry callback if pending.
-
-    Canceling a timer which isn't scheduled does nothing.
-
-    If the callback is already being executed while you cancel it, it will
-    finish callback execution to completion. You are responsible for any
-    synchronization which is needed for thread safety.
-
-    This is thread safe, it may not be IRQ safe.
-
-  .. list-table::
-
-    * - *Safe to use in context*
-      - *Thread*
-      - *Interrupt*
-      - *NMI*
-    * - ``SystemTimer::SystemTimer``
-      - ✔
-      -
-      -
-    * - ``SystemTimer::~SystemTimer``
-      - ✔
-      -
-      -
-    * - ``void SystemTimer::InvokeAfter``
-      - ✔
-      -
-      -
-    * - ``void SystemTimer::InvokeAt``
-      - ✔
-      -
-      -
-    * - ``void SystemTimer::Cancel``
-      - ✔
-      -
-      -
+.. cpp:namespace-pop::
 
 Example in C++
 --------------
-
 .. code-block:: cpp
 
-  #include "pw_chrono/system_clock.h"
-  #include "pw_chrono/system_timer.h"
-  #include "pw_log/log.h"
+   #include "pw_chrono/system_clock.h"
+   #include "pw_chrono/system_timer.h"
+   #include "pw_log/log.h"
 
-  using namespace std::chrono_literals;
+   using namespace std::chrono_literals;
 
-  void DoFoo(pw::chrono::SystemClock::time_point expired_deadline) {
-    PW_LOG_INFO("Timer callback invoked!");
-  }
+   void DoFoo(pw::chrono::SystemClock::time_point expired_deadline) {
+     PW_LOG_INFO("Timer callback invoked!");
+   }
 
-  pw::chrono::SystemTimer foo_timer(DoFoo);
+   pw::chrono::SystemTimer foo_timer(DoFoo);
 
-  void DoFooLater() {
-    foo_timer.InvokeAfter(42ms);  // DoFoo will be invoked after 42ms.
-  }
+   void DoFooLater() {
+     foo_timer.InvokeAfter(42ms);  // DoFoo will be invoked after 42ms.
+   }

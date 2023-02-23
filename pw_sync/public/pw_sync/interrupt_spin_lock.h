@@ -25,26 +25,28 @@
 
 namespace pw::sync {
 
-// The InterruptSpinLock is a synchronization primitive that can be used to
-// protect shared data from being simultaneously accessed by multiple threads
-// and/or interrupts as a targeted global lock, with the exception of
-// Non-Maskable Interrupts (NMIs).
-// It offers exclusive, non-recursive ownership semantics where IRQs up to a
-// backend defined level of "NMIs" will be masked to solve priority-inversion.
-//
-// NOTE: This InterruptSpinLock relies on built-in local interrupt masking to
-// make it interrupt safe without requiring the caller to separately mask and
-// unmask interrupts when using this primitive.
-//
-// Unlike global interrupt locks, this also works safely and efficiently on SMP
-// systems. On systems which are not SMP, spinning is not required and it's
-// possible that only interrupt masking occurs but some state may still be used
-// to detect recursion.
-//
-// This entire API is IRQ safe, but NOT NMI safe.
-//
-// Precondition: Code that holds a specific InterruptSpinLock must not try to
-// re-acquire it. However, it is okay to nest distinct spinlocks.
+/// @class InterruptSpinLock
+///
+/// The InterruptSpinLock is a synchronization primitive that can be used to
+/// protect shared data from being simultaneously accessed by multiple threads
+/// and/or interrupts as a targeted global lock, with the exception of
+/// Non-Maskable Interrupts (NMIs).
+/// It offers exclusive, non-recursive ownership semantics where IRQs up to a
+/// backend defined level of "NMIs" will be masked to solve priority-inversion.
+///
+/// @note This InterruptSpinLock relies on built-in local interrupt masking to
+///       make it interrupt safe without requiring the caller to separately mask
+///       and unmask interrupts when using this primitive.
+///
+/// Unlike global interrupt locks, this also works safely and efficiently on SMP
+/// systems. On systems which are not SMP, spinning is not required and it's
+/// possible that only interrupt masking occurs but some state may still be used
+/// to detect recursion.
+///
+/// This entire API is IRQ safe, but NOT NMI safe.
+///
+/// @b Precondition: Code that holds a specific InterruptSpinLock must not try
+/// to re-acquire it. However, it is okay to nest distinct spinlocks.
 class PW_LOCKABLE("pw::sync::InterruptSpinLock") InterruptSpinLock {
  public:
   using native_handle_type = backend::NativeInterruptSpinLockHandle;
@@ -56,27 +58,27 @@ class PW_LOCKABLE("pw::sync::InterruptSpinLock") InterruptSpinLock {
   InterruptSpinLock& operator=(const InterruptSpinLock&) = delete;
   InterruptSpinLock& operator=(InterruptSpinLock&&) = delete;
 
-  // Locks the spinlock, blocking indefinitely. Failures are fatal.
-  //
-  // Precondition: Recursive locking is undefined behavior.
+  /// Locks the spinlock, blocking indefinitely. Failures are fatal.
+  ///
+  /// @b Precondition: Recursive locking is undefined behavior.
   void lock() PW_EXCLUSIVE_LOCK_FUNCTION();
 
-  // Tries to lock the spinlock in a non-blocking manner.
-  // Returns true if the spinlock was successfully acquired.
-  //
-  // Precondition: Recursive locking is undefined behavior.
+  /// Tries to lock the spinlock in a non-blocking manner.
+  /// Returns true if the spinlock was successfully acquired.
+  ///
+  /// @b Precondition: Recursive locking is undefined behavior.
   bool try_lock() PW_EXCLUSIVE_TRYLOCK_FUNCTION(true);
 
-  // Unlocks the spinlock. Failures are fatal.
-  //
-  // PRECONDITION:
-  //   The spinlock is held by the caller.
+  /// Unlocks the spinlock. Failures are fatal.
+  ///
+  /// @b Precondition:
+  ///   The spinlock is held by the caller.
   void unlock() PW_UNLOCK_FUNCTION();
 
   native_handle_type native_handle();
 
  private:
-  // This may be a wrapper around a native type with additional members.
+  /// This may be a wrapper around a native type with additional members.
   backend::NativeInterruptSpinLock native_type_;
 };
 
@@ -122,10 +124,24 @@ typedef struct pw_sync_InterruptSpinLock pw_sync_InterruptSpinLock;
 
 PW_EXTERN_C_START
 
+/// @fn pw_sync_InterruptSpinLock_Lock
+///
+/// Invokes the `InterruptSpinLock::lock` member function on the given
+/// `interrupt_spin_lock`.
 void pw_sync_InterruptSpinLock_Lock(pw_sync_InterruptSpinLock* spin_lock)
     PW_NO_LOCK_SAFETY_ANALYSIS;
+
+/// @fn pw_sync_InterruptSpinLock_TryLock
+///
+/// Invokes the `InterruptSpinLock::try_lock` member function on the given
+/// `interrupt_spin_lock`.
 bool pw_sync_InterruptSpinLock_TryLock(pw_sync_InterruptSpinLock* spin_lock)
     PW_NO_LOCK_SAFETY_ANALYSIS;
+
+/// @fn pw_sync_InterruptSpinLock_Unlock
+///
+/// Invokes the `InterruptSpinLock::unlock` member function on the given
+/// `interrupt_spin_lock`.
 void pw_sync_InterruptSpinLock_Unlock(pw_sync_InterruptSpinLock* spin_lock)
     PW_NO_LOCK_SAFETY_ANALYSIS;
 

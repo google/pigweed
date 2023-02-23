@@ -13,6 +13,7 @@ coverage==6.3
 cryptography==36.0.1
 decorator==5.1.1
 docutils==0.17.1
+breathe==4.34.0
 google-api-core==2.7.1
 google-auth==2.6.3
 google-cloud-core==2.2.3

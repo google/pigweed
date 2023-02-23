@@ -18,22 +18,25 @@
 
 namespace pw::sync {
 
-// The TimedThreadNotification is a synchronization primitive that can be used
-// to permit a SINGLE thread to block and consume a latching, saturating
-// notification from  multiple notifiers.
-//
-// IMPORTANT: This is a single consumer/waiter, multiple producer/notifier API!
-// The acquire APIs must only be invoked by a single consuming thread. As a
-// result, having multiple threads receiving notifications via the acquire API
-// is unsupported.
-//
-// This is effectively a subset of a binary semaphore API, except that only a
-// single thread can be notified and block at a time.
-//
-// The single consumer aspect of the API permits the use of a smaller and/or
-// faster native APIs such as direct thread signaling.
-//
-// The TimedThreadNotification is initialized to being empty (latch is not set).
+/// @class TimedThreadNotification
+///
+/// The TimedThreadNotification is a synchronization primitive that can be used
+/// to permit a SINGLE thread to block and consume a latching, saturating
+/// notification from  multiple notifiers.
+///
+/// @b IMPORTANT: This is a single consumer/waiter, multiple producer/notifier
+/// API!  The acquire APIs must only be invoked by a single consuming thread. As
+/// a result, having multiple threads receiving notifications via the acquire
+/// API is unsupported.
+///
+/// This is effectively a subset of a binary semaphore API, except that only a
+/// single thread can be notified and block at a time.
+///
+/// The single consumer aspect of the API permits the use of a smaller and/or
+/// faster native APIs such as direct thread signaling.
+///
+/// The TimedThreadNotification is initialized to being empty (latch is not
+/// set).
 class TimedThreadNotification : public ThreadNotification {
  public:
   TimedThreadNotification() = default;
@@ -43,28 +46,28 @@ class TimedThreadNotification : public ThreadNotification {
   TimedThreadNotification& operator=(const TimedThreadNotification&) = delete;
   TimedThreadNotification& operator=(TimedThreadNotification&&) = delete;
 
-  // Blocks until the specified timeout duration has elapsed or the thread
-  // has been notified (i.e. notification latch can be cleared because it was
-  // set), whichever comes first.
-  //
-  // Clears the notification latch.
-  //
-  // Returns true if the thread was notified, meaning the the internal latch was
-  // reset successfully.
-  //
-  // IMPORTANT: This should only be used by a single consumer thread.
+  /// Blocks until the specified timeout duration has elapsed or the thread
+  /// has been notified (i.e. notification latch can be cleared because it was
+  /// set), whichever comes first.
+  ///
+  /// Clears the notification latch.
+  ///
+  /// Returns true if the thread was notified, meaning the the internal latch
+  /// was reset successfully.
+  ///
+  /// @b IMPORTANT: This should only be used by a single consumer thread.
   bool try_acquire_for(chrono::SystemClock::duration timeout);
 
-  // Blocks until the specified deadline time has been reached the thread has
-  // been notified (i.e. notification latch can be cleared because it was set),
-  // whichever comes first.
-  //
-  // Clears the notification latch.
-  //
-  // Returns true if the thread was notified, meaning the the internal latch was
-  // reset successfully.
-  //
-  // IMPORTANT: This should only be used by a single consumer thread.
+  /// Blocks until the specified deadline time has been reached the thread has
+  /// been notified (i.e. notification latch can be cleared because it was set),
+  /// whichever comes first.
+  ///
+  /// Clears the notification latch.
+  ///
+  /// Returns true if the thread was notified, meaning the the internal latch
+  /// was reset successfully.
+  ///
+  /// @b IMPORTANT: This should only be used by a single consumer thread.
   bool try_acquire_until(chrono::SystemClock::time_point deadline);
 };
 

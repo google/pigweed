@@ -15,6 +15,7 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/python.gni")
+import("$dir_pw_build/python_action.gni")
 import("$dir_pw_docgen/docs.gni")
 
 pw_doc_group("static_assets") {
@@ -29,6 +30,7 @@ pw_doc_group("static_assets") {
 # split out from the overall docgen target below.
 pw_doc_group("core_docs") {
   inputs = [
+    "$dir_pw_build/python.gni",
     "images/pw_env_setup_demo.gif",
     "images/pw_status_test.png",
     "images/pw_watch_build_demo.gif",
@@ -36,7 +38,7 @@ pw_doc_group("core_docs") {
     "images/pw_watch_test_demo.gif",
     "images/pw_watch_test_demo2.gif",
     "images/stm32f429i-disc1_connected.jpg",
-    "$dir_pw_build/python.gni",
+    "run_doxygen.py",
   ]
   sources = [
     "code_of_conduct.rst",
@@ -105,6 +107,47 @@ group("third_party_docs") {
   ]
 }
 
+_doxygen_input_files = [
+  # All sources with doxygen comment blocks.
+  "$dir_pw_chrono/public/pw_chrono/system_clock.h",
+  "$dir_pw_chrono/public/pw_chrono/system_timer.h",
+  "$dir_pw_string/public/pw_string/string_builder.h",
+  "$dir_pw_sync/public/pw_sync/binary_semaphore.h",
+  "$dir_pw_sync/public/pw_sync/borrow.h",
+  "$dir_pw_sync/public/pw_sync/counting_semaphore.h",
+  "$dir_pw_sync/public/pw_sync/inline_borrowable.h",
+  "$dir_pw_sync/public/pw_sync/interrupt_spin_lock.h",
+  "$dir_pw_sync/public/pw_sync/lock_annotations.h",
+  "$dir_pw_sync/public/pw_sync/mutex.h",
+  "$dir_pw_sync/public/pw_sync/thread_notification.h",
+  "$dir_pw_sync/public/pw_sync/timed_mutex.h",
+  "$dir_pw_sync/public/pw_sync/timed_thread_notification.h",
+  "$dir_pw_sync/public/pw_sync/virtual_basic_lockable.h",
+]
+
+pw_python_action("generate_doxygen") {
+  _output_dir = "docs/doxygen"
+  script = "run_doxygen.py"
+  inputs = [
+    "//PIGWEED_MODULES",
+    "Doxyfile",
+  ]
+  inputs += _doxygen_input_files
+  args = [
+    "--gn-root",
+    rebase_path("//", root_build_dir),
+    "--pigweed-modules-file",
+    rebase_path("//PIGWEED_MODULES", root_build_dir),
+    "--output-dir",
+    _output_dir,
+    "--doxygen-config",
+    rebase_path("Doxyfile", root_build_dir),
+    "--include-paths",
+  ]
+  args += rebase_path(_doxygen_input_files, root_build_dir)
+  outputs = [ "$root_build_dir/$_output_dir/xml/index.xml" ]
+}
+
 pw_doc_gen("docs") {
   conf = "conf.py"
   sources = [
@@ -121,6 +164,7 @@ pw_doc_gen("docs") {
   output_directory = target_gen_dir
   deps = [
     ":core_docs",
+    ":generate_doxygen",
     ":module_docs",
     ":release_notes",
     ":static_assets",

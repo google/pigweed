@@ -26,17 +26,22 @@
 
 namespace pw::sync {
 
-// The TimedMutex is a synchronization primitive that can be used to protect
-// shared data from being simultaneously accessed by multiple threads with
-// timeouts and deadlines, extending the Mutex.
-// It offers exclusive, non-recursive ownership semantics where priority
-// inheritance is used to solve the classic priority-inversion problem.
-// This is thread safe, but NOT IRQ safe.
-//
-// WARNING: In order to support global statically constructed TimedMutexes, the
-// user and/or backend MUST ensure that any initialization required in your
-// environment is done prior to the creation and/or initialization of the native
-// synchronization primitives (e.g. kernel initialization).
+/// @class TimedMutex
+///
+/// The TimedMutex is a synchronization primitive that can be used to protect
+/// shared data from being simultaneously accessed by multiple threads with
+/// timeouts and deadlines, extending the Mutex.  It offers exclusive,
+/// non-recursive ownership semantics where priority inheritance is used to
+/// solve the classic priority-inversion problem.  This is thread safe, but NOT
+/// IRQ safe.
+///
+/// @rst
+/// .. warning::
+///    In order to support global statically constructed TimedMutexes, the user
+///    and/or backend MUST ensure that any initialization required in your
+///    environment is done prior to the creation and/or initialization of the
+///    native synchronization primitives (e.g. kernel initialization).
+/// @endrst
 class TimedMutex : public Mutex {
  public:
   TimedMutex() = default;
@@ -46,23 +51,23 @@ class TimedMutex : public Mutex {
   TimedMutex& operator=(const TimedMutex&) = delete;
   TimedMutex& operator=(TimedMutex&&) = delete;
 
-  // Tries to lock the mutex. Blocks until specified the timeout has elapsed or
-  // the lock is acquired, whichever comes first.
-  // Returns true if the mutex was successfully acquired.
-  //
-  // PRECONDITION:
-  //   The lock isn't already held by this thread. Recursive locking is
-  //   undefined behavior.
+  /// Tries to lock the mutex. Blocks until specified the timeout has elapsed or
+  /// the lock is acquired, whichever comes first.
+  /// Returns true if the mutex was successfully acquired.
+  ///
+  /// @b PRECONDITION:
+  ///   The lock isn't already held by this thread. Recursive locking is
+  ///   undefined behavior.
   bool try_lock_for(chrono::SystemClock::duration timeout)
       PW_EXCLUSIVE_TRYLOCK_FUNCTION(true);
 
-  // Tries to lock the mutex. Blocks until specified deadline has been reached
-  // or the lock is acquired, whichever comes first.
-  // Returns true if the mutex was successfully acquired.
-  //
-  // PRECONDITION:
-  //   The lock isn't already held by this thread. Recursive locking is
-  //   undefined behavior.
+  /// Tries to lock the mutex. Blocks until specified deadline has been reached
+  /// or the lock is acquired, whichever comes first.
+  /// Returns true if the mutex was successfully acquired.
+  ///
+  /// @b PRECONDITION:
+  ///   The lock isn't already held by this thread. Recursive locking is
+  ///   undefined behavior.
   bool try_lock_until(chrono::SystemClock::time_point deadline)
       PW_EXCLUSIVE_TRYLOCK_FUNCTION(true);
 };
@@ -109,16 +114,26 @@ typedef struct pw_sync_TimedMutex pw_sync_TimedMutex;
 
 PW_EXTERN_C_START
 
+/// Invokes the `TimedMutex::lock` member function on the given `mutex`.
 void pw_sync_TimedMutex_Lock(pw_sync_TimedMutex* mutex)
     PW_NO_LOCK_SAFETY_ANALYSIS;
+
+/// Invokes the `TimedMutex::try_lock` member function on the given `mutex`.
 bool pw_sync_TimedMutex_TryLock(pw_sync_TimedMutex* mutex)
     PW_NO_LOCK_SAFETY_ANALYSIS;
+
+/// Invokes the `TimedMutex::try_lock_for` member function on the given `mutex`.
 bool pw_sync_TimedMutex_TryLockFor(pw_sync_TimedMutex* mutex,
                                    pw_chrono_SystemClock_Duration timeout)
     PW_NO_LOCK_SAFETY_ANALYSIS;
+
+/// Invokes the `TimedMutex::try_lock_until` member function on the given
+/// `mutex`.
 bool pw_sync_TimedMutex_TryLockUntil(pw_sync_TimedMutex* mutex,
                                      pw_chrono_SystemClock_TimePoint deadline)
     PW_NO_LOCK_SAFETY_ANALYSIS;
+
+/// Invokes the `TimedMutex::unlock` member function on the given `mutex`.
 void pw_sync_TimedMutex_Unlock(pw_sync_TimedMutex* mutex)
     PW_NO_LOCK_SAFETY_ANALYSIS;
 

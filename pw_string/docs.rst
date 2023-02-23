@@ -69,15 +69,21 @@ reference.
 
 pw::StringBuilder
 -----------------
-.. cpp:class:: pw::StringBuilder
+.. cpp:namespace-push:: pw::StringBuilder
 
-  ``pw::StringBuilder`` facilitates creating formatted strings in a fixed-sized
-  buffer or :cpp:type:`pw::InlineString`. It is designed to give the flexibility
-  of ``std::ostringstream``, but with a small footprint.
+:cpp:class:`StringBuilder` facilitates creating formatted strings in a
+fixed-sized buffer or :cpp:type:`pw::InlineString`. It is designed to give the
+flexibility of ``std::ostringstream``, but with a small footprint.
 
-  ``pw::StringBuilder`` supports C++ ``<<``-style output, printf formatting, and
-  a few ``std::string`` functions (``append()``, ``push_back()``,
-  ``pop_back()``.
+:cpp:class:`StringBuilder` supports C++ ``<<``-style output, printf formatting,
+and a few ``std::string`` functions (:cpp:func:`append()`,
+:cpp:func:`push_back()`, :cpp:func:`pop_back`.
+
+.. cpp:namespace-pop::
+
+.. doxygenclass:: pw::StringBuilder
+   :members:
+
 
 pw::string::PrintableCopy
 -------------------------

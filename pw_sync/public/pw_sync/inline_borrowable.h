@@ -23,13 +23,15 @@
 
 namespace pw::sync {
 
-// InlineBorrowable holds an object of GuardedType and a Lock that guards
-// access to the object. It should be used when an object should be guarded for
-// its entire lifecycle by a single lock.
-//
-// This object should be shared with other componetns as a reference of type
-// Borrowable<GuardedType, LockInterface>.
-//
+/// @class InlineBorrowable
+///
+/// InlineBorrowable holds an object of GuardedType and a Lock that guards
+/// access to the object. It should be used when an object should be guarded for
+/// its entire lifecycle by a single lock.
+///
+/// This object should be shared with other componetns as a reference of type
+/// Borrowable<GuardedType, LockInterface>.
+///
 template <typename GuardedType,
           typename Lock = pw::sync::VirtualMutex,
           typename LockInterface = pw::sync::VirtualBasicLockable>
@@ -39,40 +41,46 @@ class InlineBorrowable : private internal::BorrowableStorage<GuardedType, Lock>,
   using Base = Borrowable<GuardedType, LockInterface>;
 
  public:
-  // Construct the guarded object and lock using their default constructors.
+  /// Construct the guarded object and lock using their default constructors.
   constexpr InlineBorrowable()
       : Storage(std::in_place), Base(Storage::object_, Storage::lock_) {}
 
-  // Construct the guarded object by providing its constructor arguments inline.
-  //
-  // This constructor supports list initialization for arrays, structs, and
-  // other objects such as std::array.
-  //
-  // Example:
-  //
-  //   InlineBorrowable<Foo> foo(std::in_place, foo_arg1, foo_arg2);
-  //
-  //   InlineBorrowable<std::array<int, 2>> foo_array(std::in_place, 1, 2);
-  //
+  /// Construct the guarded object by providing its constructor arguments
+  /// inline. The lock is constructed using its default constructor.
+  ///
+  /// This constructor supports list initialization for arrays, structs, and
+  /// other objects such as `std::array`.
+  ///
+  /// Example:
+  ///
+  /// @code
+  ///   InlineBorrowable<Foo> foo(std::in_place, foo_arg1, foo_arg2);
+  ///
+  ///   InlineBorrowable<std::array<int, 2>> foo_array(std::in_place, 1, 2);
+  /// @endcode
+  ///
   template <typename... Args>
   constexpr explicit InlineBorrowable(std::in_place_t, Args&&... args)
       : Storage(std::in_place, std::forward<Args>(args)...),
         Base(Storage::object_, Storage::lock_) {}
 
-  // Construct the guarded object and lock by providing their construction
-  // parameters using separate tuples.
-  //
-  // Example:
-  //
-  //   InlineBorrowable<Foo> foo(std::forward_as_tuple(foo_arg1, foo_arg2));
-  //
-  //   InlineBorrowable<Foo, MyLock> foo_lock(
-  //       std::forward_as_tuple(foo_arg1, foo_arg2),
-  //       std::forward_as_tuple(lock_arg1, lock_arg2));
-  //
-  // Note: this constructor only supports list initialization with C++20 or
-  // later, because it requires https://wg21.link/p0960.
-  //
+  /// Construct the guarded object and lock by providing their construction
+  /// parameters using separate tuples. The 2nd tuple can be ommitted to
+  /// construct the lock using its default constructor.
+  ///
+  /// Example:
+  ///
+  /// @code
+  ///   InlineBorrowable<Foo> foo(std::forward_as_tuple(foo_arg1, foo_arg2));
+  ///
+  ///   InlineBorrowable<Foo, MyLock> foo_lock(
+  ///       std::forward_as_tuple(foo_arg1, foo_arg2),
+  ///       std::forward_as_tuple(lock_arg1, lock_arg2));
+  /// @endcode
+  ///
+  /// @note This constructor only supports list initialization with C++20 or
+  /// later, because it requires https://wg21.link/p0960.
+  ///
   template <typename... ObjectArgs, typename... LockArgs>
   constexpr explicit InlineBorrowable(
       std::tuple<ObjectArgs...>&& object_args,
@@ -81,16 +89,20 @@ class InlineBorrowable : private internal::BorrowableStorage<GuardedType, Lock>,
                 std::forward<std::tuple<LockArgs...>>(lock_args)),
         Base(Storage::object_, Storage::lock_) {}
 
-  // Construct the guarded object and lock by providing factory functions.
-  //
-  // Example:
-  //
-  //    InlineBorrowable<Foo> foo([&]{ return Foo{foo_arg1, foo_arg2}; });
-  //
-  //    InlineBorrowable<Foo, MyLock> foo_lock(
-  //        [&]{ return Foo{foo_arg1, foo_arg2}; }
-  //        [&]{ return MyLock{lock_arg1, lock_arg2}; }
-  //
+  /// Construct the guarded object and lock by providing factory functions. The
+  /// 2nd callable can be ommitted to construct the lock using its default
+  /// constructor.
+  ///
+  /// Example:
+  ///
+  /// @code
+  ///    InlineBorrowable<Foo> foo([&]{ return Foo{foo_arg1, foo_arg2}; });
+  ///
+  ///    InlineBorrowable<Foo, MyLock> foo_lock(
+  ///        [&]{ return Foo{foo_arg1, foo_arg2}; }
+  ///        [&]{ return MyLock{lock_arg1, lock_arg2}; }
+  /// @endcode
+  ///
   template <typename ObjectConstructor,
             typename LockConstructor = Lock(),
             typename = std::enable_if_t<

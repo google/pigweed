@@ -17,22 +17,24 @@
 
 namespace pw::sync {
 
-// The ThreadNotification is a synchronization primitive that can be used to
-// permit a SINGLE thread to block and consume a latching, saturating
-// notification from multiple notifiers.
-//
-// IMPORTANT: This is a single consumer/waiter, multiple producer/notifier API!
-// The acquire APIs must only be invoked by a single consuming thread. As a
-// result, having multiple threads receiving notifications via the acquire API
-// is unsupported.
-//
-// This is effectively a subset of a binary semaphore API, except that only a
-// single thread can be notified and block at a time.
-//
-// The single consumer aspect of the API permits the use of a smaller and/or
-// faster native APIs such as direct thread signaling.
-//
-// The ThreadNotification is initialized to being empty (latch is not set).
+/// @class ThreadNotification
+///
+/// The ThreadNotification is a synchronization primitive that can be used to
+/// permit a SINGLE thread to block and consume a latching, saturating
+/// notification from multiple notifiers.
+///
+/// IMPORTANT: This is a single consumer/waiter, multiple producer/notifier API!
+/// The acquire APIs must only be invoked by a single consuming thread. As a
+/// result, having multiple threads receiving notifications via the acquire API
+/// is unsupported.
+///
+/// This is effectively a subset of a binary semaphore API, except that only a
+/// single thread can be notified and block at a time.
+///
+/// The single consumer aspect of the API permits the use of a smaller and/or
+/// faster native APIs such as direct thread signaling.
+///
+/// The ThreadNotification is initialized to being empty (latch is not set).
 class ThreadNotification {
  public:
   using native_handle_type = backend::NativeThreadNotificationHandle;
@@ -44,39 +46,40 @@ class ThreadNotification {
   ThreadNotification& operator=(const ThreadNotification&) = delete;
   ThreadNotification& operator=(ThreadNotification&&) = delete;
 
-  // Blocks indefinitely until the thread is notified, i.e. until the
-  // notification latch can be cleared because it was set.
-  //
-  // Clears the notification latch.
-  //
-  // IMPORTANT: This should only be used by a single consumer thread.
+  /// Blocks indefinitely until the thread is notified, i.e. until the
+  /// notification latch can be cleared because it was set.
+  ///
+  /// Clears the notification latch.
+  ///
+  /// @b IMPORTANT: This should only be used by a single consumer thread.
   void acquire();
 
-  // Returns whether the thread has been notified, i.e. whether the notificion
-  // latch was set and resets the latch regardless.
-  //
-  // Clears the notification latch.
-  //
-  // Returns true if the thread was notified, meaning the the internal latch was
-  // reset successfully.
-  //
-  // IMPORTANT: This should only be used by a single consumer thread.
+  /// Returns whether the thread has been notified, i.e. whether the notificion
+  /// latch was set and resets the latch regardless.
+  ///
+  /// Clears the notification latch.
+  ///
+  /// Returns true if the thread was notified, meaning the the internal latch
+  /// was reset successfully.
+  ///
+  /// @b IMPORTANT: This should only be used by a single consumer thread.
   bool try_acquire();
 
-  // Notifies the thread in a saturating manner, setting the notification latch.
-  //
-  // Raising the notification multiple time without it being acquired by the
-  // consuming thread is equivalent to raising the notification once to the
-  // thread. The notification is latched in case the thread was not waiting at
-  // the time.
-  //
-  // This is IRQ and thread safe.
+  /// Notifies the thread in a saturating manner, setting the notification
+  /// latch.
+  ///
+  /// Raising the notification multiple time without it being acquired by the
+  /// consuming thread is equivalent to raising the notification once to the
+  /// thread. The notification is latched in case the thread was not waiting at
+  /// the time.
+  ///
+  /// This is IRQ and thread safe.
   void release();
 
   native_handle_type native_handle();
 
  private:
-  // This may be a wrapper around a native type with additional members.
+  /// This may be a wrapper around a native type with additional members.
   backend::NativeThreadNotification native_type_;
 };
 

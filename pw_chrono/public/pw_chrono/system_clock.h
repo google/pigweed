@@ -36,127 +36,139 @@
 namespace pw::chrono {
 namespace backend {
 
-// The ARM AEBI does not permit the opaque 'time_point' to be passed via
-// registers, ergo the underlying fundamental type is forward declared.
-// A SystemCLock tick has the units of one SystemClock::period duration.
-// This must be thread and IRQ safe and provided by the backend.
+/// @var GetSystemClockTickCount
+///
+/// The ARM AEBI does not permit the opaque 'time_point' to be passed via
+/// registers, ergo the underlying fundamental type is forward declared.
+/// A SystemCLock tick has the units of one SystemClock::period duration.
+/// This must be thread and IRQ safe and provided by the backend.
+///
 int64_t GetSystemClockTickCount();
 
 }  // namespace backend
 
-// The SystemClock represents an unsteady, monotonic clock.
-//
-// The epoch of this clock is unspecified and may not be related to wall time
-// (for example, it can be time since boot). The time between ticks of this
-// clock may vary due to sleep modes and potential interrupt handling.
-// SystemClock meets the requirements of C++'s TrivialClock and Pigweed's
-// PigweedClock.
-//
-// SystemClock is compatible with C++'s Clock & TrivialClock including:
-//   SystemClock::rep
-//   SystemClock::period
-//   SystemClock::duration
-//   SystemClock::time_point
-//   SystemClock::is_steady
-//   SystemClock::now()
-//
-// Example:
-//
-//   SystemClock::time_point before = SystemClock::now();
-//   TakesALongTime();
-//   SystemClock::duration time_taken = SystemClock::now() - before;
-//   bool took_way_too_long = false;
-//   if (time_taken > std::chrono::seconds(42)) {
-//     took_way_too_long = true;
-//   }
-//
-// This code is thread & IRQ safe, it may be NMI safe depending on is_nmi_safe.
+/// @struct SystemClock
+///
+/// The `SystemClock` represents an unsteady, monotonic clock.
+///
+/// The epoch of this clock is unspecified and may not be related to wall time
+/// (for example, it can be time since boot). The time between ticks of this
+/// clock may vary due to sleep modes and potential interrupt handling.
+/// `SystemClock` meets the requirements of C++'s `TrivialClock` and Pigweed's
+/// `PigweedClock.`
+///
+/// `SystemClock` is compatible with C++'s `Clock` & `TrivialClock` including:
+/// - `SystemClock::rep`
+/// - `SystemClock::period`
+/// - `SystemClock::duration`
+/// - `SystemClock::time_point`
+/// - `SystemClock::is_steady`
+/// - `SystemClock::now()`
+///
+/// Example:
+///
+/// @code
+///   SystemClock::time_point before = SystemClock::now();
+///   TakesALongTime();
+///   SystemClock::duration time_taken = SystemClock::now() - before;
+///   bool took_way_too_long = false;
+///   if (time_taken > std::chrono::seconds(42)) {
+///     took_way_too_long = true;
+///   }
+/// @endcode
+///
+/// This code is thread & IRQ safe, it may be NMI safe depending on is_nmi_safe.
+///
 struct SystemClock {
   using rep = int64_t;
-  // The period must be provided by the backend.
+  /// The period must be provided by the backend.
   using period = std::ratio<PW_CHRONO_SYSTEM_CLOCK_PERIOD_SECONDS_NUMERATOR,
                             PW_CHRONO_SYSTEM_CLOCK_PERIOD_SECONDS_DENOMINATOR>;
   using duration = std::chrono::duration<rep, period>;
   using time_point = std::chrono::time_point<SystemClock>;
-  // The epoch must be provided by the backend.
+  /// The epoch must be provided by the backend.
   static constexpr Epoch epoch = backend::kSystemClockEpoch;
 
-  // The time points of this clock cannot decrease, however the time between
-  // ticks of this clock may slightly vary due to sleep modes. The duration
-  // during sleep may be ignored or backfilled with another clock.
+  /// The time points of this clock cannot decrease, however the time between
+  /// ticks of this clock may slightly vary due to sleep modes. The duration
+  /// during sleep may be ignored or backfilled with another clock.
   static constexpr bool is_monotonic = true;
   static constexpr bool is_steady = false;
 
-  // The now() function may not move forward while in a critical section or
-  // interrupt. This must be provided by the backend.
+  /// The now() function may not move forward while in a critical section or
+  /// interrupt. This must be provided by the backend.
   static constexpr bool is_free_running = backend::kSystemClockFreeRunning;
 
-  // The clock must stop while in halting debug mode.
+  /// The clock must stop while in halting debug mode.
   static constexpr bool is_stopped_in_halting_debug_mode = true;
 
-  // The now() function can be invoked at any time.
+  /// The now() function can be invoked at any time.
   static constexpr bool is_always_enabled = true;
 
-  // The now() function may work in non-masking interrupts, depending on the
-  // backend. This must be provided by the backend.
+  /// The now() function may work in non-masking interrupts, depending on the
+  /// backend. This must be provided by the backend.
   static constexpr bool is_nmi_safe = backend::kSystemClockNmiSafe;
 
-  // This is thread and IRQ safe. This must be provided by the backend.
+  /// This is thread and IRQ safe. This must be provided by the backend.
   static time_point now() noexcept {
     return time_point(duration(backend::GetSystemClockTickCount()));
   }
 
-  // This is purely a helper, identical to directly using std::chrono::ceil, to
-  // convert a duration type which cannot be implicitly converted where the
-  // result is rounded up.
+  /// This is purely a helper, identical to directly using std::chrono::ceil, to
+  /// convert a duration type which cannot be implicitly converted where the
+  /// result is rounded up.
   template <class Rep, class Period>
   static constexpr duration for_at_least(std::chrono::duration<Rep, Period> d) {
     return std::chrono::ceil<duration>(d);
   }
 
-  // Computes the nearest time_point after the specified duration has elapsed.
-  //
-  // This is useful for translating delay or timeout durations into deadlines.
-  //
-  // The time_point is computed based on now() plus the specified duration
-  // where a singular clock tick is added to handle partial ticks. This ensures
-  // that a duration of at least 1 tick does not result in [0,1] ticks and
-  // instead in [1,2] ticks.
+  /// Computes the nearest time_point after the specified duration has elapsed.
+  ///
+  /// This is useful for translating delay or timeout durations into deadlines.
+  ///
+  /// The time_point is computed based on now() plus the specified duration
+  /// where a singular clock tick is added to handle partial ticks. This ensures
+  /// that a duration of at least 1 tick does not result in [0,1] ticks and
+  /// instead in [1,2] ticks.
   static time_point TimePointAfterAtLeast(duration after_at_least) {
     return now() + after_at_least + duration(1);
   }
 };
 
-// An abstract interface representing a SystemClock.
-//
-// This interface allows decoupling code that uses time from the code that
-// creates a point in time. You can use this to your advantage by injecting
-// Clocks into interfaces rather than having implementations call
-// SystemClock::now() directly. However, this comes at a cost of a vtable per
-// implementation and more importantly passing and maintaining references to the
-// VirtualSystemCLock for all of the users.
-//
-// The VirtualSystemClock::RealClock() function returns a reference to the
-// real global SystemClock.
-//
-// Example:
-//
-//  void DoFoo(VirtualSystemClock& system_clock) {
-//    SystemClock::time_point now = clock.now();
-//    // ... Code which consumes now.
-//  }
-//
-//  // Production code:
-//  DoFoo(VirtualSystemCLock::RealClock);
-//
-//  // Test code:
-//  MockClock test_clock();
-//  DoFoo(test_clock);
-//
-// This interface is thread and IRQ safe.
+/// @class VirtualSystemCLock
+///
+/// An abstract interface representing a SystemClock.
+///
+/// This interface allows decoupling code that uses time from the code that
+/// creates a point in time. You can use this to your advantage by injecting
+/// Clocks into interfaces rather than having implementations call
+/// `SystemClock::now()` directly. However, this comes at a cost of a vtable per
+/// implementation and more importantly passing and maintaining references to
+/// the VirtualSystemCLock for all of the users.
+///
+/// The `VirtualSystemClock::RealClock()` function returns a reference to the
+/// real global SystemClock.
+///
+/// Example:
+///
+/// @code
+///   void DoFoo(VirtualSystemClock& system_clock) {
+///     SystemClock::time_point now = clock.now();
+///     // ... Code which consumes now.
+///   }
+///
+///   // Production code:
+///   DoFoo(VirtualSystemCLock::RealClock);
+///
+///   // Test code:
+///   MockClock test_clock();
+///   DoFoo(test_clock);
+/// @endcode
+///
+/// This interface is thread and IRQ safe.
 class VirtualSystemClock {
  public:
-  // Returns a reference to the real system clock to aid instantiation.
+  /// Returns a reference to the real system clock to aid instantiation.
   static VirtualSystemClock& RealClock();
 
   virtual ~VirtualSystemClock() = default;

@@ -25,19 +25,21 @@
 
 namespace pw::sync {
 
-// BinarySemaphore is a specialization of CountingSemaphore with an arbitrary
-// token limit of 1. Note that that max() is >= 1, meaning it may be
-// released up to max() times but only acquired once for those N releases.
-// Implementations of BinarySemaphore are typically more efficient than the
-// default implementation of CountingSemaphore. The entire API is thread safe
-// but only a subset is IRQ safe.
-//
-// WARNING: In order to support global statically constructed BinarySemaphores,
-// the user and/or backend MUST ensure that any initialization required in your
-// environment is done prior to the creation and/or initialization of the native
-// synchronization primitives (e.g. kernel initialization).
-//
-// The BinarySemaphore is initialized to being empty or having no tokens.
+/// @class BinarySemaphore
+///
+/// BinarySemaphore is a specialization of CountingSemaphore with an arbitrary
+/// token limit of 1. Note that that max() is >= 1, meaning it may be
+/// released up to max() times but only acquired once for those N releases.
+/// Implementations of BinarySemaphore are typically more efficient than the
+/// default implementation of CountingSemaphore. The entire API is thread safe
+/// but only a subset is IRQ safe.
+///
+/// WARNING: In order to support global statically constructed BinarySemaphores,
+/// the user and/or backend MUST ensure that any initialization required in your
+/// environment is done prior to the creation and/or initialization of the
+/// native synchronization primitives (e.g. kernel initialization).
+///
+/// The BinarySemaphore is initialized to being empty or having no tokens.
 class BinarySemaphore {
  public:
   using native_handle_type = backend::NativeBinarySemaphoreHandle;
@@ -49,41 +51,50 @@ class BinarySemaphore {
   BinarySemaphore& operator=(const BinarySemaphore&) = delete;
   BinarySemaphore& operator=(BinarySemaphore&&) = delete;
 
-  // Atomically increments the internal counter by 1.
-  // Any thread(s) waiting for the counter to be greater than 0, i.e.
-  // blocked in acquire, will subsequently be unblocked.
-  // This is thread and IRQ safe.
-  //
-  // There exists an overflow risk if one releases more than max() times
-  // between acquires because many RTOS implementations internally
-  // increment the counter past one where it is only cleared when acquired.
-  //
-  // Precondition: 1 <= max() - counter
+  /// Atomically increments the internal counter by 1.
+  /// Any thread(s) waiting for the counter to be greater than 0, i.e.
+  /// blocked in acquire, will subsequently be unblocked.
+  /// This is thread and IRQ safe.
+  ///
+  /// There exists an overflow risk if one releases more than max() times
+  /// between acquires because many RTOS implementations internally
+  /// increment the counter past one where it is only cleared when acquired.
+  ///
+  /// @b PRECONDITION: `1 <= max() - counter`
   void release();
 
-  // Decrements the internal counter to 0 or blocks indefinitely until it can.
-  // This is thread safe, but not IRQ safe.
+  /// Decrements the internal counter to 0 or blocks indefinitely until it can.
+  ///
+  /// This is thread safe, but not IRQ safe.
   void acquire();
 
-  // Tries to decrement by the internal counter to 0 without blocking.
-  // Returns true if the internal counter was reset successfully.
-  // This is thread and IRQ safe.
+  /// Tries to decrement by the internal counter to 0 without blocking.
+  ///
+  /// @retval true if the internal counter was reset successfully.
+  ///
+  /// This is thread and IRQ safe.
   bool try_acquire() noexcept;
 
-  // Tries to decrement the internal counter to 0. Blocks until the specified
-  // timeout has elapsed or the counter was decremented to 0, whichever comes
-  // first.
-  // Returns true if the internal counter was decremented successfully.
-  // This is thread safe, but not IRQ safe.
+  /// Tries to decrement the internal counter to 0. Blocks until the specified
+  /// timeout has elapsed or the counter was decremented to 0, whichever comes
+  /// first.
+  ///
+  /// @retval true if the internal counter was decremented successfully.
+  ///
+  /// This is thread safe, but not IRQ safe.
   bool try_acquire_for(chrono::SystemClock::duration timeout);
 
-  // Tries to decrement the internal counter to 0. Blocks until the specified
-  // deadline has been reached or the counter was decremented to 0, whichever
-  // comes first.
-  // Returns true if the internal counter was decremented successfully.
-  // This is thread safe, but not IRQ safe.
+  /// Tries to decrement the internal counter to 0. Blocks until the specified
+  /// deadline has been reached or the counter was decremented to 0, whichever
+  /// comes first.
+  ///
+  /// @retval true if the internal counter was decremented successfully.
+  ///
+  /// This is thread safe, but not IRQ safe.
   bool try_acquire_until(chrono::SystemClock::time_point deadline);
 
+  /// @retval backend::kBinarySemaphoreMaxValue the internal counter's maximum
+  ///                                           possible value.
   static constexpr ptrdiff_t max() noexcept {
     return backend::kBinarySemaphoreMaxValue;
   }
@@ -91,7 +102,7 @@ class BinarySemaphore {
   native_handle_type native_handle();
 
  private:
-  // This may be a wrapper around a native type with additional members.
+  /// This may be a wrapper around a native type with additional members.
   backend::NativeBinarySemaphore native_type_;
 };
 

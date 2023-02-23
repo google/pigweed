@@ -3,6 +3,7 @@
     "bazel.json",
     "cmake.json",
     "default.json",
+    "doxygen.json",
     "go.json",
     "host_tools.json",
     "kythe.json",

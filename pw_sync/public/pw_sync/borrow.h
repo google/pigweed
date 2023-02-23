@@ -23,23 +23,25 @@
 
 namespace pw::sync {
 
-// The BorrowedPointer is an RAII handle which wraps a pointer to a borrowed
-// object along with a held lock which is guarding the object. When destroyed,
-// the lock is released.
+/// @class BorrowedPointer
+///
+/// The BorrowedPointer is an RAII handle which wraps a pointer to a borrowed
+/// object along with a held lock which is guarding the object. When destroyed,
+/// the lock is released.
 template <typename GuardedType, typename Lock = pw::sync::VirtualBasicLockable>
 class BorrowedPointer {
  public:
-  // Release the lock on destruction.
+  /// Release the lock on destruction.
   ~BorrowedPointer() {
     if (lock_ != nullptr) {
       lock_->unlock();
     }
   }
 
-  // This object is moveable, but not copyable.
-  //
-  // Postcondition: The other BorrowedPointer is no longer valid and will assert
-  //     if the GuardedType is accessed.
+  /// This object is moveable, but not copyable.
+  ///
+  /// @b Postcondition: The other BorrowedPointer is no longer valid and will
+  ///     assert if the GuardedType is accessed.
   BorrowedPointer(BorrowedPointer&& other)
       : lock_(other.lock_), object_(other.object_) {
     other.lock_ = nullptr;
@@ -55,38 +57,42 @@ class BorrowedPointer {
   BorrowedPointer(const BorrowedPointer&) = delete;
   BorrowedPointer& operator=(const BorrowedPointer&) = delete;
 
-  // Provides access to the borrowed object's members.
+  /// Provides access to the borrowed object's members.
   GuardedType* operator->() {
     PW_ASSERT(object_ != nullptr);  // Ensure this isn't a stale moved instance.
     return object_;
   }
 
-  // Const overload
+  /// Const overload
   const GuardedType* operator->() const {
     PW_ASSERT(object_ != nullptr);  // Ensure this isn't a stale moved instance.
     return object_;
   }
 
-  // Provides access to the borrowed object directly.
-  //
-  // NOTE: The member of pointer member access operator, operator->(), is
-  // recommended over this API as this is prone to leaking references. However,
-  // this is sometimes necessary.
-  //
-  // WARNING: Be careful not to leak references to the borrowed object!
+  /// Provides access to the borrowed object directly.
+  ///
+  /// @rst
+  /// .. note::
+  ///    The member of pointer member access operator, operator->(), is
+  ///    recommended over this API as this is prone to leaking references.
+  ///    However, this is sometimes necessary.
+  ///
+  /// .. warning:
+  ///    Be careful not to leak references to the borrowed object!
+  /// @endrst
   GuardedType& operator*() {
     PW_ASSERT(object_ != nullptr);  // Ensure this isn't a stale moved instance.
     return *object_;
   }
 
-  // Const overload
+  /// Const overload
   const GuardedType& operator*() const {
     PW_ASSERT(object_ != nullptr);  // Ensure this isn't a stale moved instance.
     return *object_;
   }
 
  private:
-  // Allow BorrowedPointer creation inside of Borrowable's acquire methods.
+  /// Allow BorrowedPointer creation inside of Borrowable's acquire methods.
   template <typename G, typename L>
   friend class Borrowable;
 
@@ -97,14 +103,16 @@ class BorrowedPointer {
   GuardedType* object_;
 };
 
-// The Borrowable is a helper construct that enables callers to borrow an object
-// which is guarded by a lock.
-//
-// Users who need access to the guarded object can ask to acquire a
-// BorrowedPointer which permits access while the lock is held.
-//
-// This class is compatible with locks which comply with BasicLockable,
-// Lockable, and TimedLockable C++ named requirements.
+/// @class Borrowable
+///
+/// The Borrowable is a helper construct that enables callers to borrow an
+/// object which is guarded by a lock.
+///
+/// Users who need access to the guarded object can ask to acquire a
+/// BorrowedPointer which permits access while the lock is held.
+///
+/// This class is compatible with locks which comply with BasicLockable,
+/// Lockable, and TimedLockable C++ named requirements.
 template <typename GuardedType, typename Lock = pw::sync::VirtualBasicLockable>
 class Borrowable {
  public:
@@ -116,14 +124,14 @@ class Borrowable {
   Borrowable(Borrowable&& other) = default;
   Borrowable& operator=(Borrowable&& other) = default;
 
-  // Blocks indefinitely until the object can be borrowed. Failures are fatal.
+  /// Blocks indefinitely until the object can be borrowed. Failures are fatal.
   BorrowedPointer<GuardedType, Lock> acquire() PW_NO_LOCK_SAFETY_ANALYSIS {
     lock_->lock();
     return BorrowedPointer<GuardedType, Lock>(*lock_, *object_);
   }
 
-  // Tries to borrow the object in a non-blocking manner. Returns a
-  // BorrowedPointer on success, otherwise std::nullopt (nothing).
+  /// Tries to borrow the object in a non-blocking manner. Returns a
+  /// BorrowedPointer on success, otherwise `std::nullopt` (nothing).
   std::optional<BorrowedPointer<GuardedType, Lock>> try_acquire() {
     if (!lock_->try_lock()) {
       return std::nullopt;
@@ -131,9 +139,9 @@ class Borrowable {
     return BorrowedPointer<GuardedType, Lock>(*lock_, *object_);
   }
 
-  // Tries to borrow the object. Blocks until the specified timeout has elapsed
-  // or the object has been borrowed, whichever comes first. Returns a
-  // BorrowedPointer on success, otherwise std::nullopt (nothing).
+  /// Tries to borrow the object. Blocks until the specified timeout has elapsed
+  /// or the object has been borrowed, whichever comes first. Returns a
+  /// BorrowedPointer on success, otherwise `std::nullopt` (nothing).
   template <class Rep, class Period>
   std::optional<BorrowedPointer<GuardedType, Lock>> try_acquire_for(
       std::chrono::duration<Rep, Period> timeout) {
@@ -143,9 +151,9 @@ class Borrowable {
     return BorrowedPointer<GuardedType, Lock>(*lock_, *object_);
   }
 
-  // Tries to borrow the object. Blocks until the specified deadline has passed
-  // or the object has been borrowed, whichever comes first. Returns a
-  // BorrowedPointer on success, otherwise std::nullopt (nothing).
+  /// Tries to borrow the object. Blocks until the specified deadline has passed
+  /// or the object has been borrowed, whichever comes first. Returns a
+  /// BorrowedPointer on success, otherwise `std::nullopt` (nothing).
   template <class Clock, class Duration>
   std::optional<BorrowedPointer<GuardedType, Lock>> try_acquire_until(
       std::chrono::time_point<Clock, Duration> deadline) {

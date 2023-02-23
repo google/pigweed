@@ -3,11 +3,19 @@
 ===========
 Style Guide
 ===========
+- :ref:`cpp-style`
+- :ref:`owners-style`
+- :ref:`python-style`
+- :ref:`documentation-style`
+- :ref:`commit-style`
+
 .. tip::
-  Pigweed runs ``pw format`` as part of ``pw presubmit`` to perform some code
-  formatting checks. To speed up the review process, consider adding ``pw
-  presubmit`` as a git push hook using the following command:
-  ``pw presubmit --install``
+   Pigweed runs ``pw format`` as part of ``pw presubmit`` to perform some code
+   formatting checks. To speed up the review process, consider adding ``pw
+   presubmit`` as a git push hook using the following command:
+   ``pw presubmit --install``
+
+.. _cpp-style:
 
 ---------
 C++ style
@@ -834,6 +842,8 @@ interacting with a POSIX API in intentionally non-portable code. Never use
 POSIX functions with suitable standard or Pigweed alternatives, such as
 ``strnlen`` (use ``pw::string::NullTerminatedLength`` instead).
 
+.. _owners-style:
+
 --------------------
 Code Owners (OWNERS)
 --------------------
@@ -856,6 +866,8 @@ The styling follows these rules.
     * "per-file:" lines
 
 This plugin will, by default, act upon any file named "OWNERS".
+
+.. _python-style:
 
 ------------
 Python style
@@ -937,6 +949,8 @@ ambiguity with other build systems or tooling.
 
 Pigweed's Bazel files follow the `Bazel style guide
 <https://docs.bazel.build/versions/main/skylark/build-style.html>`_.
+
+.. _documentation-style:
 
 -------------
 Documentation
@@ -1120,11 +1134,238 @@ Consider using ``.. list-table::`` syntax, which is more maintainable and
 easier to edit for complex tables (`details
 <https://docutils.sourceforge.io/docs/ref/rst/directives.html#list-table>`_).
 
+Code Blocks
+===========
+Use code blocks from actual source code files wherever possible. This helps keep
+documentation fresh and removes duplicate code examples. There are a few ways to
+do this with Sphinx.
+
+Snippets
+--------
+The `literalinclude`_ directive creates a code blocks from source files. Entire
+files can be included or a just a subsection. The best way to do this is with
+the ``:start-after:`` and ``:end-before:`` options.
+
+Example:
+
+.. card::
+
+   Documentation Source (``.rst`` file)
+   ^^^
+
+   .. code-block:: rst
+
+      .. literalinclude:: run_doxygen.py
+         :start-after: [doxygen-environment-variables]
+         :end-before: [doxygen-environment-variables]
+
+.. card::
+
+   Source File
+   ^^^
+
+   .. code-block::
+
+      # DOCSTAG: [doxygen-environment-variables]
+      env = os.environ.copy()
+      env['PW_DOXYGEN_OUTPUT_DIRECTORY'] = str(output_dir.resolve())
+      env['PW_DOXYGEN_INPUT'] = ' '.join(pw_module_list)
+      env['PW_DOXYGEN_PROJECT_NAME'] = 'Pigweed'
+      # DOCSTAG: [doxygen-environment-variables]
+
+.. card::
+
+   Rendered Output
+   ^^^
+
+   .. code-block::
+
+      env = os.environ.copy()
+      env['PW_DOXYGEN_OUTPUT_DIRECTORY'] = str(output_dir.resolve())
+      env['PW_DOXYGEN_INPUT'] = ' '.join(pw_module_list)
+      env['PW_DOXYGEN_PROJECT_NAME'] = 'Pigweed'
+
+Python
+------
+Include Python API documentation from docstrings with `autodoc directives`_.
+Example:
+
+.. code-block:: rst
+
+   .. automodule:: pw_cli.log
+      :members:
+
+   .. automodule:: pw_console.embed
+      :members: PwConsoleEmbed
+      :undoc-members:
+      :show-inheritance:
+
+   .. autoclass:: pw_console.log_store.LogStore
+      :members: __init__
+      :undoc-members:
+      :show-inheritance:
+
+Include argparse command line help with the `argparse
+<https://sphinx-argparse.readthedocs.io/en/latest/usage.html>`_
+directive. Example:
+
+.. code-block:: rst
+
+   .. argparse::
+      :module: pw_watch.watch
+      :func: get_parser
+      :prog: pw watch
+      :nodefaultconst:
+      :nodescription:
+      :noepilog:
+
+
+Doxygen
+-------
+Doxygen comments in C, C++, and Java are surfaced in Sphinx using `Breathe
+<https://breathe.readthedocs.io/en/latest/index.html>`_.
+
+.. note::
+
+   Sources with doxygen comment blocks must be added to the
+   ``_doxygen_input_files`` list in ``//docs/BUILD.gn`` to be processed.
+
+doxygenclass
+^^^^^^^^^^^^
+To document the members of a class use the `doxygenclass
+<https://breathe.readthedocs.io/en/latest/directives.html#doxygenclass>`_
+directive.
+
+.. code-block:: rst
+
+   .. doxygenclass:: pw::sync::BinarySemaphore
+      :members:
+
+Create cross reference links elsewhere in the document to functions in the above
+output with ``:cpp:class:`` or ``:cpp:func:``.
+
+.. code-block:: rst
+
+   - :cpp:class:`pw::sync::BinarySemaphore::BinarySemaphore`
+   - :cpp:func:`pw::sync::BinarySemaphore::try_acquire`
+
+.. seealso::
+   - `Breathe directives to use in rst files <https://breathe.readthedocs.io/en/latest/directives.html>`_
+   - `C++ cross reference link syntax`_
+   - `C cross reference link syntax`_
+   - `Python cross reference link syntax`_
+
+Example Doxygen Comment Block
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Start a Doxygen comment block using ``///`` (three forward slashes).
+
+.. code-block:: cpp
+
+   /// @def PW_LOCK_RETURNED
+   ///
+   /// Documents a function that returns a lock without acquiring it.  For example,
+   /// a public getter method that returns a pointer to a private lock should
+   /// be annotated with `PW_LOCK_RETURNED()`.
+   ///
+   /// @param[out] dest The memory area to copy to.
+   /// @param[in]  src  The memory area to copy from.
+   /// @param[in]  n    The number of bytes to copy
+   ///
+   /// @retval OK         KVS successfully initialized.
+   /// @retval DATA_LOSS  KVS initialized and is usable, but contains corrupt data.
+   /// @retval UNKNOWN    Unknown error. KVS is not initialized.
+   ///
+   /// @rst
+   /// The ``@rst`` and ``@endrst`` commands form a block block of
+   /// reStructuredText that is rendered in Sphinx.
+   ///
+   /// .. warning::
+   ///    this is a warning admonition
+   ///
+   /// .. code-block:: cpp
+   ///
+   ///    void release(ptrdiff_t update = 1);
+   /// @endrst
+   ///
+   /// Example code block using Doxygen markup below. To override the language
+   /// use `@code{.cpp}`
+   ///
+   /// @code
+   ///   class Foo {
+   ///    public:
+   ///     Mutex* mu() PW_LOCK_RETURNED(mu) { return &mu; }
+   ///
+   ///    private:
+   ///     Mutex mu;
+   ///   };
+   /// @endcode
+   ///
+   /// @b The first word in this sentence is bold (The).
+   ///
+   #define PW_LOCK_RETURNED(x) __attribute__((lock_returned(x)))
+
+Doxygen Syntax
+^^^^^^^^^^^^^^
+Pigweed prefers to use rst wherever possible but there are a few Doxygen
+syntatic elements that may be needed.
+
+`Structural commands
+<https://doxygen.nl/manual/docblocks.html#structuralcommands>`_ for the first
+line of a Doxygen comment block.
+
+To group multiple things into a single comment block put them both at the
+start on their own lines. For example:
+
+- ``@class`` to document a Class.
+- ``@struct`` to document a C-struct.
+- ``@union`` to document a union.
+- ``@enum`` to document an enumeration type.
+- ``@fn`` to document a function.
+- ``@var`` to document a variable or typedef or enum value.
+- ``@def`` to document a #define.
+- ``@typedef`` to document a type definition.
+- ``@file`` to document a file.
+- ``@namespace`` to document a namespace.
+- ``@package`` to document a Java package.
+- ``@interface`` to document an IDL interface.
+
+.. code-block:: cpp
+
+   /// @def PW_ASSERT_EXCLUSIVE_LOCK
+   /// @def PW_ASSERT_SHARED_LOCK
+   ///
+   /// Documents functions that dynamically check to see if a lock is held, and
+   /// fail if it is not held.
+
+Common Doxygen commands for use within a comment block.
+
+- ``@rst`` To start a reStructuredText block. This is an alias for
+  ``\verbatim embed:rst:leading-asterisk``.
+- `@code <https://www.doxygen.nl/manual/commands.html#cmdcode>`_ Start a code block.
+- `@param <https://www.doxygen.nl/manual/commands.html#cmdparam>`_ Document
+  parameters, this may be repeated.
+- `@pre <https://www.doxygen.nl/manual/commands.html#cmdpre>`_ Starts a
+  paragraph where the precondition of an entity can be described.
+- `@return <https://www.doxygen.nl/manual/commands.html#cmdreturn>`_ Single
+  paragraph to describe return value(s).
+- `@retval <https://www.doxygen.nl/manual/commands.html#cmdretval>`_ Document
+  return values by name. This is rendered as a definition list.
+- `@note <https://www.doxygen.nl/manual/commands.html#cmdnote>`_ Add a note
+  admonition to the end of documentation.
+- `@b <https://www.doxygen.nl/manual/commands.html#cmdb>`_ To bold one word.
+
+.. seealso:: `All Doxygen commands <https://www.doxygen.nl/manual/commands.html>`_
+
 .. _Sphinx: https://www.sphinx-doc.org/
 
 .. inclusive-language: disable
 
 .. _reStructuredText Primer: https://www.sphinx-doc.org/en/master/usage/restructuredtext/basics.html
+.. _literalinclude: https://www.sphinx-doc.org/en/master/usage/restructuredtext/directives.html#directive-literalinclude
+.. _C++ cross reference link syntax: https://www.sphinx-doc.org/en/master/usage/restructuredtext/domains.html#cross-referencing
+.. _C cross reference link syntax: https://www.sphinx-doc.org/en/master/usage/restructuredtext/domains.html#cross-referencing-c-constructs
+.. _Python cross reference link syntax: https://www.sphinx-doc.org/en/master/usage/restructuredtext/domains.html#cross-referencing-python-objects
+.. _autodoc directives: https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#directives
 
 .. inclusive-language: enable
 
