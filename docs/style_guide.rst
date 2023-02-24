@@ -1230,30 +1230,25 @@ Doxygen comments in C, C++, and Java are surfaced in Sphinx using `Breathe
    Sources with doxygen comment blocks must be added to the
    ``_doxygen_input_files`` list in ``//docs/BUILD.gn`` to be processed.
 
-doxygenclass
-^^^^^^^^^^^^
-To document the members of a class use the `doxygenclass
-<https://breathe.readthedocs.io/en/latest/directives.html#doxygenclass>`_
-directive.
+Breathe provides various `directives
+<https://breathe.readthedocs.io/en/latest/directives.html>`_ for bringing
+Doxygen comments into Sphinx. These include the following:
 
-.. code-block:: rst
+- `doxygenfile
+  <https://breathe.readthedocs.io/en/latest/directives.html#doxygenfile>`_ --
+  Documents everything in a source file.
+- `doxygenclass
+  <https://breathe.readthedocs.io/en/latest/directives.html#doxygenclass>`_ --
+  Documents a class and its members.
 
-   .. doxygenclass:: pw::sync::BinarySemaphore
-      :members:
+  .. code-block:: rst
 
-Create cross reference links elsewhere in the document to functions in the above
-output with ``:cpp:class:`` or ``:cpp:func:``.
+     .. doxygenclass:: pw::sync::BinarySemaphore
+        :members:
 
-.. code-block:: rst
+.. admonition:: See also
 
-   - :cpp:class:`pw::sync::BinarySemaphore::BinarySemaphore`
-   - :cpp:func:`pw::sync::BinarySemaphore::try_acquire`
-
-.. seealso::
-   - `Breathe directives to use in rst files <https://breathe.readthedocs.io/en/latest/directives.html>`_
-   - `C++ cross reference link syntax`_
-   - `C cross reference link syntax`_
-   - `Python cross reference link syntax`_
+  `Breathe directives to use in rst files <https://breathe.readthedocs.io/en/latest/directives.html>`_
 
 Example Doxygen Comment Block
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1261,11 +1256,14 @@ Start a Doxygen comment block using ``///`` (three forward slashes).
 
 .. code-block:: cpp
 
-   /// @def PW_LOCK_RETURNED
+   /// This is the documentation comment for the `PW_LOCK_RETURNED()` macro. It
+   /// describes how to use the macro.
    ///
-   /// Documents a function that returns a lock without acquiring it.  For example,
-   /// a public getter method that returns a pointer to a private lock should
-   /// be annotated with `PW_LOCK_RETURNED()`.
+   /// Doxygen comments can refer to other symbols using Sphinx cross
+   /// references. For example, @cpp_class{pw::InlineBasicString}, which is
+   /// shorthand for @crossref{cpp,class,pw::InlineBasicString}, links to a C++
+   /// class. @crossref{py,func,pw_tokenizer.proto.detokenize_fields} links to a
+   /// Python function.
    ///
    /// @param[out] dest The memory area to copy to.
    /// @param[in]  src  The memory area to copy from.
@@ -1355,6 +1353,62 @@ Common Doxygen commands for use within a comment block.
 - `@b <https://www.doxygen.nl/manual/commands.html#cmdb>`_ To bold one word.
 
 .. seealso:: `All Doxygen commands <https://www.doxygen.nl/manual/commands.html>`_
+
+Cross-references
+^^^^^^^^^^^^^^^^
+Pigweed provides Doxygen aliases for creating Sphinx cross references within
+Doxygen comments. These should be used when referring to other symbols, such as
+functions, classes, or macros.
+
+.. inclusive-language: disable
+
+The basic alias is ``@crossref``, which supports any `Sphinx domain
+<https://www.sphinx-doc.org/en/master/usage/restructuredtext/domains.html>`_.
+For readability, aliases for commonnly used types are provided.
+
+.. inclusive-language: enable
+
+- ``@crossref{domain,type,identifier}`` Inserts a cross reference of any type in
+  any Sphinx domain. For example, ``@crossref{c,func,foo}`` is equivalent to
+  ``:c:func:`foo``` and links to the documentation for the C function ``foo``,
+  if it exists.
+- ``@c_macro{identifier}`` Equivalent to ``:c:macro:`identifier```.
+- ``@cpp_func{identifier}`` Equivalent to ``:cpp:func:`identifier```.
+- ``@cpp_class{identifier}`` Equivalent to ``:cpp:class:`identifier```.
+- ``@cpp_type{identifier}`` Equivalent to ``:cpp:type:`identifier```.
+
+.. note::
+
+   Use the `@` aliases described above for all cross references. Doxygen
+   provides other methods for cross references, but Sphinx cross references
+   offer several advantages:
+
+   - Sphinx cross references work for all identifiers known to Sphinx, including
+     those documented with e.g. ``.. cpp:class::`` or extracted from Python.
+     Doxygen references can only refer to identifiers known to Doxygen.
+   - Sphinx cross references always use consistent formatting. Doxygen cross
+     references sometimes render as plain text instead of code-style monospace,
+     or include ``()`` in macros that shouldn't have them.
+   - Sphinx cross references can refer to symbols that have not yet been
+     documented. They will be formatted correctly and become links once the
+     symbols are documented.
+   - Using Sphinx cross references in Doxygen comments makes cross reference
+     syntax more consistent within Doxygen comments and between RST and
+     Doxygen.
+
+Create cross reference links elsewhere in the document to symbols documented
+with Doxygen using standard Sphinx cross references, such as ``:cpp:class:`` and
+``:cpp:func:``.
+
+.. code-block:: rst
+
+   - :cpp:class:`pw::sync::BinarySemaphore::BinarySemaphore`
+   - :cpp:func:`pw::sync::BinarySemaphore::try_acquire`
+
+.. seealso::
+   - `C++ cross reference link syntax`_
+   - `C cross reference link syntax`_
+   - `Python cross reference link syntax`_
 
 .. _Sphinx: https://www.sphinx-doc.org/
 

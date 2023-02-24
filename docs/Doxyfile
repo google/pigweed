@@ -285,7 +285,12 @@ TAB_SIZE               = 4
 
 ALIASES                = "rst=^^\verbatim embed:rst:leading-asterisk^^" \
                          "endrst=\endverbatim" \
-                         "rstref{1}=\verbatim embed:rst:inline :ref:`\1` \endverbatim"
+                         "rstref{1}=\verbatim embed:rst:inline :ref:`\1` \endverbatim" \
+                         "crossref{3}=\verbatim embed:rst:inline :\1:\2:`\3` \endverbatim" \
+                         "c_macro{1}=@crossref{c,macro,\1}" \
+                         "cpp_class{1}=@crossref{cpp,class,\1}" \
+                         "cpp_func{1}=@crossref{cpp,func,\1}" \
+                         "cpp_type{1}=@crossref{cpp,type,\1}"
 
 # Set the OPTIMIZE_OUTPUT_FOR_C tag to YES if your project consists of C sources
 # only. Doxygen will then generate output that is more tailored for C. For
