@@ -104,8 +104,7 @@ maintainers of their modules' docs.
 --------
 Proposal
 --------
-This change would require each module to have a ``docs`` subdirectory matching
-this structure::
+This change would require each module directory to match this structure::
 
   module root directory/
   ├── docs.rst
