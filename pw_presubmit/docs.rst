@@ -142,7 +142,7 @@ following members:
 
 * ``round``: The zero-indexed round number.
 * ``builds_from_previous_iteration``: A list of the buildbucket ids from the
-  previous round, if any.
+  previous round, if any, encoded as strs.
 
 The ``triggers`` member is a sequence of ``LuciTrigger`` objects, which have the
 following members:

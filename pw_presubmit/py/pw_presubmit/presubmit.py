@@ -217,7 +217,7 @@ class Programs(collections.abc.Mapping):
 @dataclasses.dataclass
 class LuciPipeline:
     round: int
-    builds_from_previous_iteration: Sequence[int]
+    builds_from_previous_iteration: Sequence[str]
 
     @staticmethod
     def create(
@@ -239,9 +239,9 @@ class LuciPipeline:
 
         return LuciPipeline(
             round=int(pipeline_props['round']),
-            builds_from_previous_iteration=[
-                int(x) for x in pipeline_props['builds_from_previous_iteration']
-            ],
+            builds_from_previous_iteration=list(
+                pipeline_props['builds_from_previous_iteration']
+            ),
         )
 
 
