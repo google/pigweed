@@ -184,13 +184,6 @@ _DEFAULT_SETTINGS: EditorSettingsDict = OrderedDict(
         "[proto3]": OrderedDict(
             {"editor.defaultFormatter": "zxh404.vscode-proto3"}
         ),
-        "[restructuredtext]": OrderedDict(
-            {
-                "editor.quickSuggestions": OrderedDict(
-                    {"comments": "off", "strings": "off", "other": "off"}
-                )
-            }
-        ),
     }
 )
 
@@ -277,10 +270,13 @@ _DEFAULT_EXTENSIONS: EditorSettingsDict = OrderedDict(
             "msedge-dev.gnls",
             "zxh404.vscode-proto3",
             "josetr.cmake-language-support-vscode",
+            "swyddfa.esbonio",
         ],
         "unwantedRecommendations": [
             "ms-vscode.cpptools",
             "persidskiy.vscode-gnformat",
+            "lextudio.restructuredtext",
+            "trond-snekvik.simple-rst",
         ],
     }
 )

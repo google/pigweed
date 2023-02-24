@@ -102,6 +102,16 @@ to the virtual environment on your system with:
 
   pw ide python --venv
 
+Docs Code Intelligence
+----------------------
+The `esbonio <https://github.com/swyddfa/esbonio>`_ language server will provide
+code intelligence for RestructuredText and Sphinx. It works well with Pigweed
+projects as long as it is pointed to Pigweed's Python virtual environment. For
+Visual Studio Code, simply install the esbonio extension, which will be
+recommended to you after setting up ``pw_ide``. Once it's installed, a prompt
+will ask if you want to automatically install esbonio in your Pigweed Python
+environment. After that, give esbonio some time to index, then you're done!
+
 Command-Line Interface Reference
 --------------------------------
 .. argparse::
