@@ -37,8 +37,9 @@ final class StreamObserverCall<RequestT extends MessageLite, ResponseT extends M
     return (endpoint, pendingRpc) -> new StreamObserverCall<>(endpoint, pendingRpc, observer);
   }
 
-  private StreamObserverCall(Endpoint rpcs, PendingRpc rpc, StreamObserver<ResponseT> observer) {
-    super(rpcs, rpc);
+  private StreamObserverCall(
+      Endpoint endpoint, PendingRpc rpc, StreamObserver<ResponseT> observer) {
+    super(endpoint, rpc);
     this.observer = observer;
   }
 

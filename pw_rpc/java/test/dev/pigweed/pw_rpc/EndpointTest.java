@@ -23,7 +23,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.google.common.collect.ImmutableList;
-import com.google.protobuf.ByteString;
 import com.google.protobuf.MessageLite;
 import dev.pigweed.pw_rpc.internal.Packet.PacketType;
 import dev.pigweed.pw_rpc.internal.Packet.RpcPacket;
@@ -48,12 +47,15 @@ public final class EndpointTest {
   private static final SomeMessage REQUEST_PAYLOAD =
       SomeMessage.newBuilder().setMagicNumber(1337).build();
   private static final byte[] REQUEST = request(REQUEST_PAYLOAD);
+  private static final AnotherMessage RESPONSE_PAYLOAD =
+      AnotherMessage.newBuilder().setPayload("hello").build();
   private static final int CHANNEL_ID = 555;
 
   @Mock private Channel.Output mockOutput;
+  @Mock private StreamObserver<MessageLite> callEvents;
 
   private final Channel channel = new Channel(CHANNEL_ID, bytes -> mockOutput.send(bytes));
-  private final Endpoint manager = new Endpoint(ImmutableList.of(channel));
+  private final Endpoint endpoint = new Endpoint(ImmutableList.of(channel));
 
   private static byte[] request(MessageLite payload) {
     return packetBuilder()
@@ -78,27 +80,17 @@ public final class EndpointTest {
         .setMethodId(METHOD.id());
   }
 
-  private static AbstractCall<MessageLite, MessageLite> createCall(
-      Endpoint endpoint, PendingRpc rpc) {
-    return new AbstractCall<MessageLite, MessageLite>(endpoint, rpc) {
-      @Override
-      void doHandleNext(MessageLite response) {}
-
-      @Override
-      void doHandleCompleted() {}
-
-      @Override
-      void doHandleError() {}
-    };
+  private AbstractCall<MessageLite, MessageLite> createCall(Endpoint endpoint, PendingRpc rpc) {
+    return StreamObserverCall.getFactory(callEvents).apply(endpoint, rpc);
   }
 
   @Test
   public void start_succeeds_rpcIsPending() throws Exception {
     AbstractCall<MessageLite, MessageLite> call =
-        manager.invokeRpc(CHANNEL_ID, METHOD, EndpointTest::createCall, REQUEST_PAYLOAD);
+        endpoint.invokeRpc(CHANNEL_ID, METHOD, this::createCall, REQUEST_PAYLOAD);
 
     verify(mockOutput).send(REQUEST);
-    assertThat(manager.abandon(call)).isTrue();
+    assertThat(endpoint.abandon(call)).isTrue();
   }
 
   @Test
@@ -106,7 +98,7 @@ public final class EndpointTest {
     doThrow(new ChannelOutputException()).when(mockOutput).send(any());
 
     assertThrows(ChannelOutputException.class,
-        () -> manager.invokeRpc(CHANNEL_ID, METHOD, EndpointTest::createCall, REQUEST_PAYLOAD));
+        () -> endpoint.invokeRpc(CHANNEL_ID, METHOD, this::createCall, REQUEST_PAYLOAD));
 
     verify(mockOutput).send(REQUEST);
   }
@@ -114,36 +106,36 @@ public final class EndpointTest {
   @Test
   public void abandon_rpcNoLongerPending() throws Exception {
     AbstractCall<MessageLite, MessageLite> call =
-        manager.invokeRpc(CHANNEL_ID, METHOD, EndpointTest::createCall, REQUEST_PAYLOAD);
-    assertThat(manager.abandon(call)).isTrue();
+        endpoint.invokeRpc(CHANNEL_ID, METHOD, this::createCall, REQUEST_PAYLOAD);
+    assertThat(endpoint.abandon(call)).isTrue();
 
-    assertThat(manager.abandon(call)).isFalse();
+    assertThat(endpoint.abandon(call)).isFalse();
   }
 
   @Test
   public void abandon_sendsNoPackets() throws Exception {
     AbstractCall<MessageLite, MessageLite> call =
-        manager.invokeRpc(CHANNEL_ID, METHOD, EndpointTest::createCall, REQUEST_PAYLOAD);
+        endpoint.invokeRpc(CHANNEL_ID, METHOD, this::createCall, REQUEST_PAYLOAD);
     verify(mockOutput).send(REQUEST);
     verifyNoMoreInteractions(mockOutput);
 
-    assertThat(manager.abandon(call)).isTrue();
+    assertThat(endpoint.abandon(call)).isTrue();
   }
 
   @Test
   public void cancel_rpcNoLongerPending() throws Exception {
     AbstractCall<MessageLite, MessageLite> call =
-        manager.invokeRpc(CHANNEL_ID, METHOD, EndpointTest::createCall, REQUEST_PAYLOAD);
-    assertThat(manager.cancel(call)).isTrue();
+        endpoint.invokeRpc(CHANNEL_ID, METHOD, this::createCall, REQUEST_PAYLOAD);
+    assertThat(endpoint.cancel(call)).isTrue();
 
-    assertThat(manager.abandon(call)).isFalse();
+    assertThat(endpoint.abandon(call)).isFalse();
   }
 
   @Test
   public void cancel_sendsCancelPacket() throws Exception {
     AbstractCall<MessageLite, MessageLite> call =
-        manager.invokeRpc(CHANNEL_ID, METHOD, EndpointTest::createCall, REQUEST_PAYLOAD);
-    assertThat(manager.cancel(call)).isTrue();
+        endpoint.invokeRpc(CHANNEL_ID, METHOD, this::createCall, REQUEST_PAYLOAD);
+    assertThat(endpoint.cancel(call)).isTrue();
 
     verify(mockOutput).send(cancel());
   }
@@ -151,32 +143,67 @@ public final class EndpointTest {
   @Test
   public void open_sendsNoPacketsButRpcIsPending() {
     AbstractCall<MessageLite, MessageLite> call =
-        manager.openRpc(CHANNEL_ID, METHOD, EndpointTest::createCall);
+        endpoint.openRpc(CHANNEL_ID, METHOD, this::createCall);
 
     assertThat(call.active()).isTrue();
-    assertThat(manager.abandon(call)).isTrue();
+    assertThat(endpoint.abandon(call)).isTrue();
     verifyNoInteractions(mockOutput);
   }
 
   @Test
   public void ignoresActionsIfCallIsNotPending() throws Exception {
     AbstractCall<MessageLite, MessageLite> call =
-        createCall(manager, PendingRpc.create(channel, METHOD));
+        createCall(endpoint, PendingRpc.create(channel, METHOD));
 
-    assertThat(manager.cancel(call)).isFalse();
-    assertThat(manager.abandon(call)).isFalse();
-    assertThat(manager.clientStream(call, REQUEST_PAYLOAD)).isFalse();
-    assertThat(manager.clientStreamEnd(call)).isFalse();
+    assertThat(endpoint.cancel(call)).isFalse();
+    assertThat(endpoint.abandon(call)).isFalse();
+    assertThat(endpoint.clientStream(call, REQUEST_PAYLOAD)).isFalse();
+    assertThat(endpoint.clientStreamEnd(call)).isFalse();
   }
 
   @Test
-  public void ignoresPacketsIfCallIsNotPending() {
+  public void ignoresPacketsIfCallIsNotPending() throws Exception {
     AbstractCall<MessageLite, MessageLite> call =
-        createCall(manager, PendingRpc.create(channel, METHOD));
+        createCall(endpoint, PendingRpc.create(channel, METHOD));
 
-    assertThat(manager.handleNext(call.rpc(), ByteString.EMPTY)).isFalse();
-    assertThat(manager.handleUnaryCompleted(call.rpc(), ByteString.EMPTY, Status.OK)).isFalse();
-    assertThat(manager.handleStreamCompleted(call.rpc(), Status.OK)).isFalse();
-    assertThat(manager.handleError(call.rpc(), Status.INVALID_ARGUMENT)).isFalse();
+    assertThat(endpoint.cancel(call)).isFalse();
+    assertThat(endpoint.abandon(call)).isFalse();
+
+    assertThat(endpoint.processClientPacket(call.rpc().method(),
+                   packetBuilder()
+                       .setType(PacketType.SERVER_STREAM)
+                       .setPayload(RESPONSE_PAYLOAD.toByteString())
+                       .build()))
+        .isTrue();
+    assertThat(endpoint.processClientPacket(call.rpc().method(),
+                   packetBuilder()
+                       .setType(PacketType.RESPONSE)
+                       .setPayload(RESPONSE_PAYLOAD.toByteString())
+                       .build()))
+        .isTrue();
+    assertThat(endpoint.processClientPacket(call.rpc().method(),
+                   packetBuilder()
+                       .setType(PacketType.SERVER_ERROR)
+                       .setStatus(Status.ABORTED.code())
+                       .build()))
+        .isTrue();
+
+    assertThat(endpoint.processClientPacket(call.rpc().method(),
+                   packetBuilder()
+                       .setType(PacketType.CLIENT_STREAM)
+                       .setPayload(REQUEST_PAYLOAD.toByteString())
+                       .build()))
+        .isTrue();
+    assertThat(endpoint.processClientPacket(call.rpc().method(),
+                   packetBuilder().setType(PacketType.CLIENT_STREAM_END).build()))
+        .isTrue();
+    assertThat(endpoint.processClientPacket(call.rpc().method(),
+                   packetBuilder()
+                       .setType(PacketType.CLIENT_ERROR)
+                       .setStatus(Status.ABORTED.code())
+                       .build()))
+        .isTrue();
+
+    verifyNoInteractions(callEvents);
   }
 }

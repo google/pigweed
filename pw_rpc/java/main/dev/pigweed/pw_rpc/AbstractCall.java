@@ -32,14 +32,14 @@ abstract class AbstractCall<RequestT extends MessageLite, ResponseT extends Mess
     implements Call, ClientStreaming<RequestT> {
   private static final Logger logger = Logger.forClass(StreamObserverCall.class);
 
-  private final Endpoint rpcs;
+  private final Endpoint endpoint;
   private final PendingRpc rpc;
 
   @Nullable private Status status = null;
   @Nullable private Status error = null;
 
-  AbstractCall(Endpoint rpcs, PendingRpc rpc) {
-    this.rpcs = rpcs;
+  AbstractCall(Endpoint endpoint, PendingRpc rpc) {
+    this.endpoint = endpoint;
     this.rpc = rpc;
   }
 
@@ -57,22 +57,22 @@ abstract class AbstractCall<RequestT extends MessageLite, ResponseT extends Mess
 
   @Override
   public final boolean cancel() throws ChannelOutputException {
-    return rpcs.cancel(this);
+    return endpoint.cancel(this);
   }
 
   @Override
   public final boolean abandon() {
-    return rpcs.abandon(this);
+    return endpoint.abandon(this);
   }
 
   @Override
   public final boolean write(RequestT request) throws ChannelOutputException {
-    return rpcs.clientStream(this, request);
+    return endpoint.clientStream(this, request);
   }
 
   @Override
   public final boolean finish() throws ChannelOutputException {
-    return rpcs.clientStreamEnd(this);
+    return endpoint.clientStreamEnd(this);
   }
 
   final int getChannelId() {

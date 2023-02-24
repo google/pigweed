@@ -28,7 +28,7 @@ import javax.annotation.Nullable;
 /**
  * Tracks the state of service method invocations.
  *
- * The RPC manager handles all RPC-related events and actions. It synchronizes interactions between
+ * The RPC endpoint handles all RPC-related events and actions. It synchronizes interactions between
  * the endpoint and any threads interacting with RPC call objects.
  */
 class Endpoint {
@@ -159,7 +159,7 @@ class Endpoint {
     return true;
   }
 
-  public synchronized boolean handleNext(PendingRpc rpc, ByteString payload) {
+  private boolean handleNext(PendingRpc rpc, ByteString payload) {
     AbstractCall<?, ?> call = pending.get(rpc);
     if (call == null) {
       return false;
@@ -169,8 +169,7 @@ class Endpoint {
     return true;
   }
 
-  public synchronized boolean handleUnaryCompleted(
-      PendingRpc rpc, ByteString payload, Status status) {
+  private boolean handleUnaryCompleted(PendingRpc rpc, ByteString payload, Status status) {
     AbstractCall<?, ?> call = pending.remove(rpc);
     if (call == null) {
       return false;
@@ -181,7 +180,7 @@ class Endpoint {
     return true;
   }
 
-  public synchronized boolean handleStreamCompleted(PendingRpc rpc, Status status) {
+  private boolean handleStreamCompleted(PendingRpc rpc, Status status) {
     AbstractCall<?, ?> call = pending.remove(rpc);
     if (call == null) {
       return false;
@@ -191,7 +190,7 @@ class Endpoint {
     return true;
   }
 
-  public synchronized boolean handleError(PendingRpc rpc, Status status) {
+  private boolean handleError(PendingRpc rpc, Status status) {
     AbstractCall<?, ?> call = pending.remove(rpc);
     if (call == null) {
       return false;

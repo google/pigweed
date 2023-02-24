@@ -36,7 +36,7 @@ public class Client {
   private static final Logger logger = Logger.forClass(Client.class);
 
   private final Map<Integer, Service> services;
-  private final Endpoint rpcs;
+  private final Endpoint endpoint;
 
   private final Map<RpcKey, MethodClient> methodClients = new HashMap<>();
 
@@ -52,7 +52,7 @@ public class Client {
       List<Service> services,
       Function<RpcKey, StreamObserver<MessageLite>> defaultObserverFactory) {
     this.services = services.stream().collect(Collectors.toMap(Service::id, s -> s));
-    this.rpcs = new Endpoint(channels);
+    this.endpoint = new Endpoint(channels);
 
     this.defaultObserverFactory = defaultObserverFactory;
   }
@@ -99,7 +99,7 @@ public class Client {
    * @throws InvalidRpcChannelException if the channel's ID is already in use
    */
   public void openChannel(Channel channel) {
-    rpcs.openChannel(channel);
+    endpoint.openChannel(channel);
   }
 
   /**
@@ -109,7 +109,7 @@ public class Client {
    * @return true if the channel was closed; false if the channel was not found
    */
   public boolean closeChannel(int id) {
-    return rpcs.closeChannel(id);
+    return endpoint.closeChannel(id);
   }
 
   /**
@@ -163,12 +163,12 @@ public class Client {
       Method method,
       BiFunction<Endpoint, PendingRpc, CallT> createCall,
       @Nullable MessageLite request) throws ChannelOutputException {
-    return rpcs.invokeRpc(channelId, checkMethod(method), createCall, request);
+    return endpoint.invokeRpc(channelId, checkMethod(method), createCall, request);
   }
 
   synchronized<CallT extends AbstractCall<?, ?>> CallT openRpc(
       int channelId, Method method, BiFunction<Endpoint, PendingRpc, CallT> createCall) {
-    return rpcs.openRpc(channelId, checkMethod(method), createCall);
+    return endpoint.openRpc(channelId, checkMethod(method), createCall);
   }
 
   private Method checkMethod(Method method) {
@@ -233,6 +233,6 @@ public class Client {
     } catch (InvalidRpcStateException e) {
       method = null;
     }
-    return rpcs.processClientPacket(method, packet);
+    return endpoint.processClientPacket(method, packet);
   }
 }
