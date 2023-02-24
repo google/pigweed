@@ -62,6 +62,7 @@ pw_cc_library(
         "//pw_log:facade",
         "//pw_log:proto_utils",
         "//pw_log_string:handler_facade",
+        "//pw_log_tokenized:handler_facade",
         "//pw_log_tokenized:headers",
         "//pw_metric:global",
         "//pw_multisink",

@@ -16,6 +16,7 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pigweed/targets/stm32f429i_disc1/target_toolchains.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_log_tokenized/backend.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_third_party/nanopb/nanopb.gni")
 import("$dir_pw_toolchain/arm_gcc/toolchains.gni")
@@ -26,8 +27,8 @@ if (current_toolchain != default_toolchain) {
   pw_source_set("tokenized_log_handler") {
     deps = [
       "$dir_pw_bytes",
+      "$dir_pw_log_tokenized:handler.facade",
       "$dir_pw_sys_io",
-      "$dir_pw_tokenizer:global_handler_with_payload.facade",
     ]
     sources = [ "tokenized_log_handler.cc" ]
   }
@@ -54,7 +55,7 @@ generate_toolchain("docs") {
 
     pw_assert_BACKEND = dir_pw_assert_log
     pw_log_BACKEND = dir_pw_log_tokenized
-    pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND =
+    pw_log_tokenized_HANDLER_BACKEND =
         get_path_info(":tokenized_log_handler", "abspath")
 
     pw_toolchain_CXX_STANDARD = pw_toolchain_STANDARD.CXX20

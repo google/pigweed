@@ -302,7 +302,7 @@ to create custom tokenization macros.
 The most efficient way to use ``pw_tokenizer`` is to pass tokenized data to a
 global handler function. A project's custom tokenization macro can handle
 tokenized data in a function of their choosing. The following example implements
-a custom tokenization macro for use with :ref:`module-pw_log_tokenized`.
+a custom tokenization macro similar to :ref:`module-pw_log_tokenized`.
 
 .. code-block:: cpp
 
@@ -312,7 +312,7 @@ a custom tokenization macro for use with :ref:`module-pw_log_tokenized`.
    extern "C" {
    #endif
 
-   void EncodeTokenizedMessage(pw_tokenizer_Payload metadata,
+   void EncodeTokenizedMessage(uint32_t metadata,
                                pw_tokenizer_Token token,
                                pw_tokenizer_ArgTypes types,
                                ...);
@@ -345,7 +345,7 @@ transmitted or stored as needed.
    void HandleTokenizedMessage(pw::log_tokenized::Metadata metadata,
                                pw::span<std::byte> message);
 
-   extern "C" void EncodeTokenizedMessage(const pw_tokenizer_Payload metadata,
+   extern "C" void EncodeTokenizedMessage(const uint32_t metadata,
                                           const pw_tokenizer_Token token,
                                           const pw_tokenizer_ArgTypes types,
                                           ...) {
@@ -388,92 +388,10 @@ Tokenize a message with arguments to a buffer
    logging macro, because it will result in larger code size than passing the
    tokenized data to a function.
 
-Tokenize to a global handler function (deprecated)
---------------------------------------------------
-``pw_tokenizer`` provides the ``PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD``
-macro that tokenizes to a global handler function. This macro is deprecated and
-should not be used in new code. Create a :ref:`custom macro
-<module-pw_tokenizer-custom-macro>` instead.
-
-``PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD`` passes a ``uintptr_t`` argument
-along with the tokenized data. Values like a log level can be packed into the
-``uintptr_t``. The tokenized string is encoded to a buffer on the stack. The
-size of the buffer is set with ``PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES``.
-
-This macro is provided by the ``pw_tokenizer:global_handler_with_payload``
-facade. The backend for this facade must define the
-``pw_tokenizer_HandleEncodedMessageWithPayload`` C-linkage function.
-
-.. code-block:: cpp
-
-   PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD(payload,
-                                              format_string_literal,
-                                              arguments...);
-
-   void pw_tokenizer_HandleEncodedMessageWithPayload(
-       uintptr_t payload, const uint8_t encoded_message[], size_t size_bytes);
-
-.. admonition:: Why use this macro
-
-   This macro is deprecated and should not be used. To invoke a global function,
-   create a :ref:`custom tokenization macro<module-pw_tokenizer-custom-macro>`.
-
 Binary logging with pw_tokenizer
 ================================
-String tokenization is perfect for logging. Consider the following log macro,
-which gathers the file, line number, and log message. It calls the ``RecordLog``
-function, which formats the log string, collects a timestamp, and transmits the
-result.
-
-.. code-block:: cpp
-
-   #define LOG_INFO(format, ...) \
-       RecordLog(LogLevel_INFO, __FILE_NAME__, __LINE__, format, ##__VA_ARGS__)
-
-   void RecordLog(LogLevel level, const char* file, int line, const char* format,
-                  ...) {
-     if (level < current_log_level) {
-       return;
-     }
-
-     int bytes = snprintf(buffer, sizeof(buffer), "%s:%d ", file, line);
-
-     va_list args;
-     va_start(args, format);
-     bytes += vsnprintf(&buffer[bytes], sizeof(buffer) - bytes, format, args);
-     va_end(args);
-
-     TransmitLog(TimeSinceBootMillis(), buffer, size);
-   }
-
-It is trivial to convert this to a binary log using the tokenizer. The
-``RecordLog`` call is replaced with a
-``PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD`` invocation. The
-``pw_tokenizer_HandleEncodedMessageWithPayload`` implementation collects the
-timestamp and transmits the message with ``TransmitLog``.
-
-.. code-block:: cpp
-
-   #define LOG_INFO(format, ...)                   \
-       PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD( \
-           (pw_tokenizer_Payload)LogLevel_INFO,    \
-           __FILE_NAME__ ":%d " format,            \
-           __LINE__,                               \
-           __VA_ARGS__);                           \
-
-   extern "C" void pw_tokenizer_HandleEncodedMessageWithPayload(
-       uintptr_t level, const uint8_t encoded_message[], size_t size_bytes) {
-     if (static_cast<LogLevel>(level) >= current_log_level) {
-       TransmitLog(TimeSinceBootMillis(), encoded_message, size_bytes);
-     }
-   }
-
-Note that the ``__FILE_NAME__`` string is directly included in the log format
-string. Since the string is tokenized, this has no effect on binary size. A
-``%d`` for the line number is added to the format string, so that changing the
-line of the log message does not generate a new token. There is no overhead for
-additional tokens, but it may not be desirable to fill a token database with
-duplicate log lines.
+String tokenization can be used to convert plain text logs to a compact,
+efficient binary format. See :ref:`module-pw_log_tokenized`.
 
 Tokenizing function names
 =========================
@@ -489,10 +407,6 @@ tokenized while compiling C++ with GCC or Clang.
    // Tokenize the special function name variables.
    constexpr uint32_t function = PW_TOKENIZE_STRING(__func__);
    constexpr uint32_t pretty_function = PW_TOKENIZE_STRING(__PRETTY_FUNCTION__);
-
-   // Tokenize the function name variables to a handler function.
-   PW_TOKENIZE_TO_GLOBAL_HANDLER(__func__)
-   PW_TOKENIZE_TO_GLOBAL_HANDLER(__PRETTY_FUNCTION__)
 
 Note that ``__func__`` and ``__PRETTY_FUNCTION__`` are not string literals.
 They are defined as static character arrays, so they cannot be implicitly
@@ -1315,7 +1229,7 @@ string's token is 0x4b016e66.
 
 .. code-block:: text
 
-   Source code: PW_TOKENIZE_TO_GLOBAL_HANDLER("This is an example: %d!", -1);
+   Source code: PW_LOG("This is an example: %d!", -1);
 
     Plain text: This is an example: -1! [23 bytes]
 
@@ -1331,8 +1245,8 @@ in the tokenizer handler function. For example,
 
 .. code-block:: cpp
 
-   void pw_tokenizer_HandleEncodedMessage(const uint8_t encoded_message[],
-                                          size_t size_bytes) {
+   void TokenizedMessageHandler(const uint8_t encoded_message[],
+                                size_t size_bytes) {
      pw::InlineBasicString base64 = pw::tokenizer::PrefixedBase64Encode(
          pw::span(encoded_message, size_bytes));
 
@@ -1455,13 +1369,12 @@ insights.
 Firmware deployment
 ===================
 * In the project's logging macro, calls to the underlying logging function were
-  replaced with a ``PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD`` invocation.
+  replaced with a tokenized log macro invocation.
 * The log level was passed as the payload argument to facilitate runtime log
   level control.
 * For this project, it was necessary to encode the log messages as text. In
-  ``pw_tokenizer_HandleEncodedMessageWithPayload``, the log messages were
-  encoded in the $-prefixed `Base64 format`_, then dispatched as normal log
-  messages.
+  the handler function the log messages were encoded in the $-prefixed `Base64
+  format`_, then dispatched as normal log messages.
 * Asserts were tokenized a callback-based API that has been removed (a
   :ref:`custom macro <module-pw_tokenizer-custom-macro>` is a better
   alternative).
@@ -1621,7 +1534,7 @@ argument to the string represented by the integer.
 
    constexpr uint32_t answer_token = PW_TOKENIZE_STRING("Uh, who is there");
 
-   PW_TOKENIZE_TO_GLOBAL_HANDLER("Knock knock: %" PW_TOKEN_ARG "?", answer_token);
+   PW_TOKENIZE_STRING("Knock knock: %" PW_TOKEN_ARG "?", answer_token);
 
 Strings with arguments could be encoded to a buffer, but since printf strings
 are null-terminated, a binary encoding would not work. These strings can be

@@ -13,11 +13,12 @@
 // the License.
 
 #include "pw_bytes/span.h"
+#include "pw_log_tokenized/handler.h"
 #include "pw_sys_io/sys_io.h"
-#include "pw_tokenizer/tokenize_to_global_handler_with_payload.h"
 
-extern "C" void pw_tokenizer_HandleEncodedMessageWithPayload(
-    pw_tokenizer_Payload, const uint8_t encoded_message[], size_t size_bytes) {
+extern "C" void pw_log_tokenized_HandleLog(uint32_t,
+                                           const uint8_t encoded_message[],
+                                           size_t size_bytes) {
   pw::sys_io::WriteBytes(pw::ConstByteSpan(
       reinterpret_cast<const std::byte*>(encoded_message), size_bytes));
 }

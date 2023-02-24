@@ -40,6 +40,4 @@ void pw_tokenizer_ToCallbackTest_SequentialZigZag(
 
 void pw_tokenizer_ToBufferTest_Requires8(void* buffer, size_t* buffer_size);
 
-void pw_tokenizer_ToGlobalHandlerWithPayloadTest_SequentialZigZag(void);
-
 PW_EXTERN_C_END

@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2023 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -13,9 +13,6 @@
 # the License.
 
 declare_args() {
-  # This variable is deprecated. It is only used for pw_log_tokenized, and is
-  # provided for backwards compatibility. Set pw_log_tokenized_HANDLER_BACKEND
-  # instead.
-  # TODO(hepler): Remove this variable after migrating projects.
-  pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND = ""
+  # Backend for the pw_log_tokenized log handler.
+  pw_log_tokenized_HANDLER_BACKEND = ""
 }

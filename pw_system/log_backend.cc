@@ -20,6 +20,7 @@
 #include "pw_chrono/system_clock.h"
 #include "pw_log/proto_utils.h"
 #include "pw_log_string/handler.h"
+#include "pw_log_tokenized/handler.h"
 #include "pw_log_tokenized/metadata.h"
 #include "pw_metric/global.h"
 #include "pw_multisink/multisink.h"
@@ -29,7 +30,6 @@
 #include "pw_sync/lock_annotations.h"
 #include "pw_system/config.h"
 #include "pw_system_private/log.h"
-#include "pw_tokenizer/tokenize_to_global_handler_with_payload.h"
 
 namespace pw::system {
 namespace {
@@ -62,8 +62,9 @@ int64_t GetTimestamp() {
 
 // Implementation for tokenized log handling. This will be optimized out for
 // devices that only use string logging.
-extern "C" void pw_tokenizer_HandleEncodedMessageWithPayload(
-    pw_tokenizer_Payload payload, const uint8_t message[], size_t size_bytes) {
+extern "C" void pw_log_tokenized_HandleLog(uint32_t payload,
+                                           const uint8_t message[],
+                                           size_t size_bytes) {
   log_tokenized::Metadata metadata = payload;
   const int64_t timestamp = GetTimestamp();
 

@@ -13,7 +13,7 @@
 # the License.
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
-include($ENV{PW_ROOT}/pw_tokenizer/backend.cmake)
+include($ENV{PW_ROOT}/pw_log_tokenized/backend.cmake)
 
 pw_add_module_config(pw_log_tokenized_CONFIG)
 
@@ -27,7 +27,7 @@ pw_add_library(pw_log_tokenized.config INTERFACE
     ${pw_log_tokenized_CONFIG}
 )
 
-pw_add_library(pw_log_tokenized INTERFACE
+pw_add_library(pw_log_tokenized STATIC
   HEADERS
     public/pw_log_tokenized/log_tokenized.h
     public_overrides/pw_log_backend/log_backend.h
@@ -36,9 +36,11 @@ pw_add_library(pw_log_tokenized INTERFACE
     public_overrides
   PUBLIC_DEPS
     pw_log_tokenized.config
+    pw_log_tokenized.handler
     pw_log_tokenized.metadata
     pw_tokenizer
-    pw_tokenizer.global_handler_with_payload
+  SOURCES
+    log_tokenized.cc
 )
 
 pw_add_library(pw_log_tokenized.metadata INTERFACE
@@ -48,6 +50,17 @@ pw_add_library(pw_log_tokenized.metadata INTERFACE
     public
   PUBLIC_DEPS
     pw_log_tokenized.config
+)
+
+pw_add_facade(pw_log_tokenized.handler INTERFACE
+  BACKEND
+    pw_log_tokenized.handler_BACKEND
+  HEADERS
+    public/pw_log_tokenized/handler.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_preprocessor
 )
 
 # This target provides a backend for pw_tokenizer that encodes tokenized logs as
@@ -61,10 +74,10 @@ pw_add_library(pw_log_tokenized.base64_over_hdlc STATIC
     base64_over_hdlc.cc
   PRIVATE_DEPS
     pw_hdlc.encoder
+    pw_log_tokenized.handler
     pw_span
     pw_stream.sys_io_stream
     pw_tokenizer.base64
-    pw_tokenizer.global_handler_with_payload.facade
 )
 
 if(NOT "${pw_tokenizer.global_handler_with_payload_BACKEND}" STREQUAL "")

@@ -14,7 +14,6 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 include($ENV{PW_ROOT}/pw_protobuf_compiler/proto.cmake)
-include($ENV{PW_ROOT}/pw_tokenizer/backend.cmake)
 
 pw_add_module_config(pw_tokenizer_CONFIG)
 
@@ -103,20 +102,6 @@ pw_add_library(pw_tokenizer.decoder STATIC
     pw_varint
 )
 
-pw_add_facade(pw_tokenizer.global_handler_with_payload STATIC
-  BACKEND
-    pw_tokenizer.global_handler_with_payload_BACKEND
-  HEADERS
-    public/pw_tokenizer/tokenize_to_global_handler_with_payload.h
-  PUBLIC_INCLUDES
-    public
-  PUBLIC_DEPS
-    pw_preprocessor
-    pw_tokenizer
-  SOURCES
-    tokenize_to_global_handler_with_payload.cc
-)
-
 pw_proto_library(pw_tokenizer.proto
   SOURCES
     options.proto
@@ -183,21 +168,6 @@ pw_add_test(pw_tokenizer.detokenize_test
     modules
     pw_tokenizer
 )
-
-if((NOT "${pw_tokenizer.global_handler_with_payload_BACKEND}" STREQUAL "") AND
-   (NOT "${pw_tokenizer.global_handler_BACKEND}" STREQUAL ""))
-  pw_add_test(pw_tokenizer.global_handlers_test
-    SOURCES
-      global_handlers_test_c.c
-      global_handlers_test.cc
-    PRIVATE_DEPS
-      pw_tokenizer.global_handler
-      pw_tokenizer.global_handler_with_payload
-    GROUPS
-      modules
-      pw_tokenizer
-  )
-endif()
 
 pw_add_test(pw_tokenizer.hash_test
   SOURCES

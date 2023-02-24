@@ -41,10 +41,6 @@
 #define PW_LOG_TOKENIZED_LEVEL_BITS PW_LOG_LEVEL_BITS
 #endif  // PW_LOG_TOKENIZED_LEVEL_BITS
 
-// Bits to allocate for the line number. Defaults to 11 (up to line 2047). If
-// the line number is too large to be represented by this field, line is
-// reported as 0.
-//
 // Including the line number can slightly increase code size. Without the line
 // number, the log metadata argument is the same for all logs with the same
 // level and flags. With the line number, each metadata value is unique and must
@@ -72,11 +68,3 @@
 static_assert((PW_LOG_TOKENIZED_LEVEL_BITS + PW_LOG_TOKENIZED_LINE_BITS +
                PW_LOG_TOKENIZED_FLAG_BITS + PW_LOG_TOKENIZED_MODULE_BITS) == 32,
               "Log metadata fields must use 32 bits");
-
-// The macro to use to tokenize the log and its arguments. Defaults to
-// PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD. Projects may define their own
-// version of this macro that uses a different underlying function, if desired.
-#ifndef PW_LOG_TOKENIZED_ENCODE_MESSAGE
-#define PW_LOG_TOKENIZED_ENCODE_MESSAGE \
-  PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD
-#endif  // PW_LOG_TOKENIZED_ENCODE_MESSAGE

@@ -142,8 +142,7 @@ pw_system_target("emcraft_sf2_som") {
 
   build_args = {
     pw_log_BACKEND = dir_pw_log_tokenized
-    pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND =
-        "$dir_pw_system:log_backend.impl"
+    pw_log_tokenized_HANDLER_BACKEND = "$dir_pw_system:log_backend.impl"
     pw_third_party_freertos_CONFIG =
         "$dir_pigweed/targets/emcraft_sf2_som:sf2_freertos_config"
     pw_third_party_freertos_PORT = "$dir_pw_third_party/freertos:arm_cm3"
@@ -163,8 +162,7 @@ pw_system_target("emcraft_sf2_som_debug") {
 
   build_args = {
     pw_log_BACKEND = dir_pw_log_tokenized
-    pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND =
-        "$dir_pw_system:log_backend.impl"
+    pw_log_tokenized_HANDLER_BACKEND = "$dir_pw_system:log_backend.impl"
     pw_third_party_freertos_CONFIG =
         "$dir_pigweed/targets/emcraft_sf2_som:sf2_freertos_config"
     pw_third_party_freertos_PORT = "$dir_pw_third_party/freertos:arm_cm3"

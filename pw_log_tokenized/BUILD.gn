@@ -14,10 +14,12 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_log/backend.gni")
+import("$dir_pw_log_tokenized/backend.gni")
 import("$dir_pw_tokenizer/backend.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -46,13 +48,70 @@ pw_source_set("pw_log_tokenized") {
   ]
   public_deps = [
     ":config",
+    ":handler.facade",  # Depend on the facade to avoid circular dependencies.
     ":metadata",
-    "$dir_pw_tokenizer:global_handler_with_payload.facade",
+    dir_pw_tokenizer,
   ]
   public = [
     "public/pw_log_tokenized/log_tokenized.h",
     "public_overrides/pw_log_backend/log_backend.h",
   ]
+
+  sources = [ "log_tokenized.cc" ]
+}
+
+config("backwards_compatibility_config") {
+  defines = [ "_PW_LOG_TOKENIZED_GLOBAL_HANDLER_BACKWARDS_COMPAT" ]
+  visibility = [ ":*" ]
+}
+
+# The old pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND backend may still be
+# in use by projects that have not switched to the new pw_log_tokenized facade.
+# Use the old backend as a stand-in for the new backend if it is set.
+_old_backend_is_set = pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND != ""
+_new_backend_is_set = pw_log_tokenized_HANDLER_BACKEND != ""
+
+pw_facade("handler") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    # TODO(hepler): Remove this dependency when all projects have migrated to
+    #     the new pw_log_tokenized handler.
+    "$dir_pw_tokenizer:global_handler_with_payload",
+    dir_pw_preprocessor,
+  ]
+
+  public = [ "public/pw_log_tokenized/handler.h" ]
+
+  # If the global handler backend is set, redirect the new facade to the old
+  # facade. If no backend is set, the old facade may still be in use through
+  # link deps, so provide the compatibility layer.
+  #
+  # TODO(hepler): Remove these backwards compatibility workarounds when projects
+  #     have migrated.
+  if (_old_backend_is_set || (!_old_backend_is_set && !_new_backend_is_set)) {
+    assert(pw_log_tokenized_HANDLER_BACKEND == "",
+           "pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND is deprecated; " +
+               "only pw_log_tokenized_HANDLER_BACKEND should be set")
+
+    backend = pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND
+
+    # There is only one pw_log_tokenized backend in Pigweed, and it has been
+    # updated to the new API.
+    if (_old_backend_is_set &&
+        get_label_info(pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND,
+                       "label_no_toolchain") ==
+        get_label_info(":base64_over_hdlc", "label_no_toolchain")) {
+      defines = [ "PW_LOG_TOKENIZED_BACKEND_USES_NEW_API=1" ]
+    } else {
+      defines = [ "PW_LOG_TOKENIZED_BACKEND_USES_NEW_API=0" ]
+    }
+
+    public_configs += [ ":backwards_compatibility_config" ]
+    deps = [ dir_pw_tokenizer ]
+    sources = [ "compatibility.cc" ]
+  } else {
+    backend = pw_log_tokenized_HANDLER_BACKEND
+  }
 }
 
 pw_source_set("metadata") {
@@ -74,10 +133,11 @@ pw_source_set("config") {
 # pw_log is so ubiquitous. These deps are kept separate so they can be
 # depended on from elsewhere.
 pw_source_set("pw_log_tokenized.impl") {
-  deps = [
-    ":pw_log_tokenized",
-    "$dir_pw_tokenizer:global_handler_with_payload",
-  ]
+  deps = [ ":pw_log_tokenized" ]
+
+  if (_new_backend_is_set || _old_backend_is_set) {
+    deps += [ ":handler" ]
+  }
 }
 
 # This target provides a backend for pw_tokenizer that encodes tokenized logs as
@@ -87,19 +147,25 @@ pw_source_set("base64_over_hdlc") {
   public = [ "public/pw_log_tokenized/base64_over_hdlc.h" ]
   sources = [ "base64_over_hdlc.cc" ]
   deps = [
+    ":handler.facade",
     "$dir_pw_hdlc:encoder",
     "$dir_pw_stream:sys_io_stream",
     "$dir_pw_tokenizer:base64",
-    "$dir_pw_tokenizer:global_handler_with_payload.facade",
     dir_pw_span,
   ]
 }
 
 pw_test_group("tests") {
-  tests = [
-    ":log_tokenized_test",
-    ":metadata_test",
-  ]
+  tests = [ ":metadata_test" ]
+
+  # TODO(b/269354373): The Windows MinGW compiler fails to link
+  #   log_tokenized_test.cc because log_tokenized.cc refers to the log handler,
+  #   which is not defined, even though _pw_log_tokenized_EncodeTokenizedLog is
+  #   never called. Remove this check when the Windows build is consistent with
+  #   other builds.
+  if (current_os != "win" || _new_backend_is_set || _old_backend_is_set) {
+    tests += [ ":log_tokenized_test" ]
+  }
 }
 
 pw_test("log_tokenized_test") {

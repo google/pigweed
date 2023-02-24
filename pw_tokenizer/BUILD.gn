@@ -16,7 +16,6 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_arduino_build/arduino.gni")
 import("$dir_pw_bloat/bloat.gni")
-import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
@@ -102,32 +101,6 @@ pw_source_set("pw_tokenizer") {
   friend = [ ":*" ]
 }
 
-# As a temporary workaround, if no backend is set, use an empty test backend so
-# that the test can define the handler function.
-# TODO(hepler): Switch this to a facade test when available.
-if (pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND == "") {
-  # This is an empty library to use as the backend for global_handler and
-  # global_handler_with_payload tests.
-  pw_source_set("test_backend") {
-    visibility = [ ":*" ]
-  }
-
-  pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND = ":test_backend"
-
-  enable_global_handler_test = true
-} else {
-  enable_global_handler_test = false
-}
-
-pw_facade("global_handler_with_payload") {
-  backend = pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND
-
-  public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_tokenizer/tokenize_to_global_handler_with_payload.h" ]
-  sources = [ "tokenize_to_global_handler_with_payload.cc" ]
-  public_deps = [ ":pw_tokenizer" ]
-}
-
 pw_source_set("base64") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_tokenizer/base64.h" ]
@@ -138,6 +111,13 @@ pw_source_set("base64") {
     dir_pw_base64,
     dir_pw_preprocessor,
   ]
+}
+
+# TODO(hepler): Remove this backwards compatibility header after projects have
+#     migrated.
+pw_source_set("global_handler_with_payload") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_tokenizer/tokenize_to_global_handler_with_payload.h" ]
 }
 
 pw_source_set("decoder") {
@@ -190,7 +170,6 @@ pw_test_group("tests") {
     ":decode_test",
     ":detokenize_fuzzer",
     ":detokenize_test",
-    ":global_handlers_test",
     ":hash_test",
     ":simple_tokenize_test",
     ":token_database_fuzzer",
@@ -246,18 +225,6 @@ pw_test("detokenize_test") {
   enable_if = pw_build_EXECUTABLE_TARGET_TYPE != "arduino_executable"
 }
 
-pw_test("global_handlers_test") {
-  sources = [
-    "global_handlers_test.cc",
-    "global_handlers_test_c.c",
-    "pw_tokenizer_private/tokenize_test.h",
-  ]
-  deps = [ ":global_handler_with_payload" ]
-
-  # TODO(hepler): Switch this to a facade test when available.
-  enable_if = enable_global_handler_test
-}
-
 pw_test("hash_test") {
   sources = [
     "hash_test.cc",
@@ -268,10 +235,7 @@ pw_test("hash_test") {
 
 pw_test("simple_tokenize_test") {
   sources = [ "simple_tokenize_test.cc" ]
-  deps = [
-    ":global_handler_with_payload",
-    ":pw_tokenizer",
-  ]
+  deps = [ ":pw_tokenizer" ]
 }
 
 pw_test("token_database_test") {

@@ -67,8 +67,7 @@ pw_system_target("rp2040_pw_system") {
                       "abspath")
 
     pw_log_BACKEND = dir_pw_log_tokenized
-    pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND =
-        "$dir_pw_system:log_backend.impl"
+    pw_log_tokenized_HANDLER_BACKEND = "$dir_pw_system:log_backend.impl"
 
     pw_third_party_freertos_CONFIG =
         "$dir_pigweed/targets/rp2040_pw_system:rp2040_freertos_config"

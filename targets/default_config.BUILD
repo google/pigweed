@@ -37,6 +37,11 @@ label_flag(
 )
 
 label_flag(
+    name = "pw_log_tokenized_handler_backend",
+    build_setting_default = "@pigweed//pw_log_tokenized:base64_over_hdlc",
+)
+
+label_flag(
     name = "pw_assert_backend",
     build_setting_default = "@pigweed//pw_assert:backend_multiplexer",
 )
@@ -134,16 +139,6 @@ label_flag(
 label_flag(
     name = "pw_thread_yield_backend",
     build_setting_default = "@pigweed//pw_thread:yield_backend_multiplexer",
-)
-
-label_flag(
-    name = "pw_tokenizer_global_handler_backend",
-    build_setting_default = "@pigweed//pw_tokenizer:test_backend",
-)
-
-label_flag(
-    name = "pw_tokenizer_global_handler_with_payload_backend",
-    build_setting_default = "@pigweed//pw_tokenizer:test_backend",
 )
 
 label_flag(

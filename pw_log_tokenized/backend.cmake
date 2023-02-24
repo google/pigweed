@@ -1,4 +1,4 @@
-# Copyright 2022 The Pigweed Authors
+# Copyright 2023 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -15,5 +15,5 @@ include_guard(GLOBAL)
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-# Backend for the pw_tokenizer:global_handler_with_payload facade.
-pw_add_backend_variable(pw_tokenizer.global_handler_with_payload_BACKEND)
+# Backend for the pw_log_tokenized handler.
+pw_add_backend_variable(pw_log_tokenized.handler_BACKEND)

@@ -52,11 +52,11 @@ static_assert(PW_TOKENIZER_CFG_ARG_TYPES_SIZE_BYTES == 4 ||
 #define PW_TOKENIZER_CFG_C_HASH_LENGTH 128
 #endif  // PW_TOKENIZER_CFG_C_HASH_LENGTH
 
-// The size of the stack-allocated argument encoding buffer to use. This only
-// affects tokenization macros that stack-allocate the encoding buffer
-// (PW_TOKENIZE_TO_CALLBACK and PW_TOKENIZE_TO_GLOBAL_HANDLER). A buffer of this
-// size is allocated and used for the 4-byte token and for encoding all
-// arguments. It must be at least large enough for the token (4 bytes).
+// The size of the stack-allocated argument encoding buffer to use by default.
+// This only affects tokenization macros that use the
+// pw::tokenizer::EncodedMessage class. A buffer of this size is allocated and
+// used for the 4-byte token and for encoding all arguments. It must be at least
+// large enough for the token (4 bytes).
 //
 // This buffer does not need to be large to accommodate a good number of
 // tokenized string arguments. Integer arguments are usually encoded smaller

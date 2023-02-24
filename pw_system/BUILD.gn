@@ -81,7 +81,6 @@ pw_source_set("log_backend.impl") {
     "$dir_pw_log:proto_utils",
     "$dir_pw_log:pw_log.facade",
     "$dir_pw_log_string:handler.facade",
-    "$dir_pw_log_tokenized:metadata",
     "$dir_pw_metric:global",
     "$dir_pw_multisink",
     "$dir_pw_result",
@@ -89,7 +88,6 @@ pw_source_set("log_backend.impl") {
     "$dir_pw_sync:interrupt_spin_lock",
     "$dir_pw_sync:lock_annotations",
     "$dir_pw_tokenizer",
-    "$dir_pw_tokenizer:global_handler_with_payload.facade",
   ]
 }
 

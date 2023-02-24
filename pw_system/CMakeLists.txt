@@ -54,13 +54,13 @@ pw_add_library(pw_system.log_backend STATIC
     pw_log.facade
     pw_log.proto_utils
     pw_log_string.handler.facade
+    pw_log_tokenized.handler
     pw_log_tokenized.metadata
     pw_multisink
     pw_result
     pw_sync.interrupt_spin_lock
     pw_sync.lock_annotations
     pw_tokenizer
-    pw_tokenizer.global_handler_with_payload.facade
   SOURCES
     log_backend.cc
 )

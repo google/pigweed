@@ -9,19 +9,24 @@ connects ``pw_log`` to ``pw_tokenizer``.
 C++ backend
 ===========
 ``pw_log_tokenized`` provides a backend for ``pw_log`` that tokenizes log
-messages with the ``pw_tokenizer`` module. By default, log messages are
-tokenized with the ``PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD`` macro.
-The log level, 16-bit tokenized module name, and flags bits are passed through
-the payload argument. The macro eventually passes logs to the
-``pw_tokenizer_HandleEncodedMessageWithPayload`` function, which must be
-implemented by the application.
+messages with the ``pw_tokenizer`` module. The log level, 16-bit tokenized
+module name, and flags bits are passed through the payload argument. The macro
+eventually passes logs to the ``pw_log_tokenized_HandleLog`` function, which
+must be implemented by the application.
+
+.. c:function: void pw_log_tokenized_HandleLog(uint32_t metadata, const uint8_t[] message, size_t size_bytes)
+
+  Function that is called for each log message. The metadata uint32_t can be
+  converted to a :cpp:class`pw::log::tokenized::Metadata`. The message is passed
+  as a pointer to a buffer and a size. The pointer is invalidated after this
+  function returns, so the buffer must be copied.
 
 Example implementation:
 
 .. code-block:: cpp
 
-   extern "C" void pw_tokenizer_HandleEncodedMessageWithPayload(
-       pw_tokenizer_Payload payload, const uint8_t message[], size_t size) {
+   extern "C" void pw_log_tokenized_HandleLog(
+       uint32_t payload, const uint8_t message[], size_t size) {
      // The metadata object provides the log level, module token, and flags.
      // These values can be recorded and used for runtime filtering.
      pw::log_tokenized::Metadata metadata(payload);
@@ -138,13 +143,13 @@ templatization of ``GenericMetadata`` by pulling from this module's
 configuration options. In most cases, it's recommended to use ``Metadata`` to
 create or read metadata payloads.
 
-A ``Metadata`` object can be created from a ``pw_tokenizer_Payload`` allowing
+A ``Metadata`` object can be created from a ``uint32_t`` allowing
 various peices of metadata to be read from the payload as seen below:
 
 .. code-block:: cpp
 
-  extern "C" void pw_tokenizer_HandleEncodedMessageWithPayload(
-      pw_tokenizer_Payload payload,
+  extern "C" void pw_log_tokenized_HandleLog((
+      uint32_t payload,
       const uint8_t message[],
       size_t size_bytes) {
     pw::log_tokenized::Metadata metadata = payload;
@@ -157,49 +162,25 @@ various peices of metadata to be read from the payload as seen below:
     // ...
   }
 
-It's also possible to construct a ``pw_tokenizer_Payload`` using the
-``Metadata`` class:
+It's also possible to get a ``uint32_t`` representation of a ``Metadata``
+object:
 
 .. code-block:: cpp
 
   // Logs an explicitly created string token.
   void LogToken(uint32_t token, int level, int line_number, int module) {
-    const pw_tokenizer_Payload payload =
+    const uint32_t payload =
         log_tokenized::Metadata(
             level, module, PW_LOG_FLAGS, line_number)
             .value();
     std::array<std::byte, sizeof(token)> token_buffer =
         pw::bytes::CopyInOrder(endian::little, token);
 
-    pw_tokenizer_HandleEncodedMessageWithPayload(
+    pw_log_tokenized_HandleLog(
         payload,
         reinterpret_cast<const uint8_t*>(token_buffer.data()),
         token_buffer.size());
   }
-
-Using a custom macro
---------------------
-Applications may use their own macro instead of
-``PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD`` by setting the
-``PW_LOG_TOKENIZED_ENCODE_MESSAGE`` config macro. This macro should take
-arguments equivalent to ``PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD``:
-
-.. c:macro:: PW_LOG_TOKENIZED_ENCODE_MESSAGE(log_metadata, message, ...)
-
-  :param log_metadata:
-
-    Packed metadata for the log message. See the Metadata_ class for how to
-    unpack the details.
-
-  :type log_metadata: pw_tokenizer_Payload
-
-  :param message: The log message format string (untokenized)
-  :type message: :c:texpr:`const char*`
-
-  .. _Metadata: https://cs.pigweed.dev/pigweed/+/HEAD:pw_log_tokenized/public/pw_log_tokenized/log_tokenized.h;l=113
-
-For instructions on how to implement a custom tokenization macro, see
-:ref:`module-pw_tokenizer-custom-macro`.
 
 Build targets
 -------------
@@ -207,8 +188,8 @@ The GN build for ``pw_log_tokenized`` has two targets: ``pw_log_tokenized`` and
 ``log_backend``. The ``pw_log_tokenized`` target provides the
 ``pw_log_tokenized/log_tokenized.h`` header. The ``log_backend`` target
 implements the backend for the ``pw_log`` facade. ``pw_log_tokenized`` invokes
-the ``pw_tokenizer:global_handler_with_payload`` facade, which must be
-implemented by the user of ``pw_log_tokenized``.
+the ``pw_log_tokenized:handler`` facade, which must be implemented by the user
+of ``pw_log_tokenized``.
 
 Python package
 ==============

@@ -93,8 +93,8 @@ for encoding tokenized logs and string-based logs.
 
    #include "pw_log/proto_utils.h"
 
-   extern "C" void pw_tokenizer_HandleEncodedMessageWithPayload(
-       pw_tokenizer_Payload payload, const uint8_t data[], size_t size) {
+   extern "C" void pw_log_tokenized_HandleLog((
+       uint32_t payload, const uint8_t data[], size_t size) {
      pw::log_tokenized::Metadata metadata(payload);
      std::byte log_buffer[kLogBufferSize];
 

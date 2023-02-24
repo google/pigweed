@@ -1,4 +1,4 @@
-# Copyright 2020 The Pigweed Authors
+# Copyright 2023 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -62,14 +62,12 @@ pw_cc_library(
     visibility = ["@pigweed_config//:__pkg__"],
 )
 
+# This header is only provided for backwards compatibility and is not used in
+# the Bazel build.
 pw_cc_library(
     name = "global_handler_with_payload",
-    srcs = ["tokenize_to_global_handler_with_payload.cc"],
     hdrs = ["public/pw_tokenizer/tokenize_to_global_handler_with_payload.h"],
-    deps = [
-        ":pw_tokenizer",
-        "@pigweed_config//:pw_tokenizer_global_handler_with_payload_backend",
-    ],
+    visibility = ["//pw_log_tokenized:__pkg__"],
 )
 
 pw_cc_library(
@@ -215,16 +213,6 @@ pw_cc_fuzz_test(
 )
 
 pw_cc_test(
-    name = "global_handlers_test",
-    srcs = [
-        "global_handlers_test.cc",
-        "global_handlers_test_c.c",
-        "pw_tokenizer_private/tokenize_test.h",
-    ],
-    deps = [":global_handler_with_payload"],
-)
-
-pw_cc_test(
     name = "hash_test",
     srcs = [
         "hash_test.cc",
@@ -243,7 +231,6 @@ pw_cc_test(
         "simple_tokenize_test.cc",
     ],
     deps = [
-        ":global_handler_with_payload",
         ":pw_tokenizer",
         "//pw_unit_test",
     ],

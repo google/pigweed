@@ -125,7 +125,7 @@ being foundational infrastructure.
     link_deps = [ "$dir_pigweed/targets/emcraft_sf2_som:pre_init" ]
     build_args = {
       pw_log_BACKEND = dir_pw_log_basic #dir_pw_log_tokenized
-      pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND = "//pw_system:log"
+      pw_log_tokenized_HANDLER_BACKEND = "//pw_system:log"
       pw_third_party_freertos_CONFIG = "$dir_pigweed/targets/emcraft_sf2_som:sf2_freertos_config"
       pw_third_party_freertos_PORT = "$dir_pw_third_party/freertos:arm_cm3"
       pw_sys_io_BACKEND = dir_pw_sys_io_emcraft_sf2
