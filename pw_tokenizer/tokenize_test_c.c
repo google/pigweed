@@ -53,26 +53,6 @@ void pw_tokenizer_ToBufferTest_SequentialZigZag(void* buffer,
                         (signed char)-7);
 }
 
-void pw_tokenizer_ToCallbackTest_SequentialZigZag(
-    void (*callback)(const uint8_t* buffer, size_t size)) {
-  PW_TOKENIZE_TO_CALLBACK(callback,
-                          TEST_FORMAT_SEQUENTIAL_ZIG_ZAG,
-                          0u,
-                          -1,
-                          1u,
-                          (unsigned)-2,
-                          (unsigned short)2u,
-                          (signed char)-3,
-                          3,
-                          -4l,
-                          4ul,
-                          -5ll,
-                          5ull,
-                          (signed char)-6,
-                          (char)6,
-                          (signed char)-7);
-}
-
 void pw_tokenizer_ToBufferTest_Requires8(void* buffer, size_t* buffer_size) {
   PW_TOKENIZE_TO_BUFFER(buffer, buffer_size, TEST_FORMAT_REQUIRES_8, "hi", -7);
 }

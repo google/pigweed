@@ -103,20 +103,6 @@ pw_add_library(pw_tokenizer.decoder STATIC
     pw_varint
 )
 
-pw_add_facade(pw_tokenizer.global_handler STATIC
-  BACKEND
-    pw_tokenizer.global_handler_BACKEND
-  HEADERS
-    public/pw_tokenizer/tokenize_to_global_handler.h
-  PUBLIC_INCLUDES
-    public
-  PUBLIC_DEPS
-    pw_preprocessor
-    pw_tokenizer
-  SOURCES
-    tokenize_to_global_handler.cc
-)
-
 pw_add_facade(pw_tokenizer.global_handler_with_payload STATIC
   BACKEND
     pw_tokenizer.global_handler_with_payload_BACKEND

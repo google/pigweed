@@ -168,106 +168,123 @@ Adding tokenization to a project is simple. To tokenize a string, include
 
 Tokenize a string literal
 -------------------------
-The ``PW_TOKENIZE_STRING`` macro converts a string literal to a ``uint32_t``
-token.
+``pw_tokenizer`` provides macros for tokenizing string literals with no
+arguments.
 
-.. code-block:: cpp
+.. c:macro:: PW_TOKENIZE_STRING(string_literal)
 
-   constexpr uint32_t token = PW_TOKENIZE_STRING("Any string literal!");
+  Converts a string literal to a ``uint32_t`` token in a standalone statement.
+  C and C++ compatible.
 
-.. admonition:: When to use this macro
+  .. code-block:: cpp
 
-   Use ``PW_TOKENIZE_STRING`` to tokenize string literals that do not have
-   %-style arguments.
+     constexpr uint32_t token = PW_TOKENIZE_STRING("Any string literal!");
 
-Tokenize to a handler function
-------------------------------
-``PW_TOKENIZE_TO_GLOBAL_HANDLER`` is the most efficient tokenization function,
-since it takes the fewest arguments. It encodes a tokenized string to a
-buffer on the stack. The size of the buffer is set with
-``PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES``.
+.. c:macro:: PW_TOKENIZE_STRING_DOMAIN(domain, string_literal)
 
-This macro is provided by the ``pw_tokenizer:global_handler`` facade. The
-backend for this facade must define the ``pw_tokenizer_HandleEncodedMessage``
-C-linkage function.
+  Tokenizes a string literal in a standalone statement using the specified
+  :ref:`domain <module-pw_tokenizer-domains>`. C and C++ compatible.
 
-.. code-block:: cpp
+.. c:macro:: PW_TOKENIZE_STRING_MASK(domain, mask, string_literal)
 
-   PW_TOKENIZE_TO_GLOBAL_HANDLER(format_string_literal, arguments...);
+  Tokenizes a string literal in a standalone stateemnt using the specified
+  :ref:`domain <module-pw_tokenizer-domains>` and :ref:`bit mask
+  <module-pw_tokenizer-masks>`. C and C++ compatible.
 
-   void pw_tokenizer_HandleEncodedMessage(const uint8_t encoded_message[],
-                                          size_t size_bytes);
+The tokenization macros above cannot be used inside other expressions.
 
-``PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD`` is similar, but passes a
-``uintptr_t`` argument to the global handler function. Values like a log level
-can be packed into the ``uintptr_t``.
+.. admonition:: **Yes**: Assign :c:macro:`PW_TOKENIZE_STRING` to a ``constexpr`` variable.
+  :class: checkmark
 
-This macro is provided by the ``pw_tokenizer:global_handler_with_payload``
-facade. The backend for this facade must define the
-``pw_tokenizer_HandleEncodedMessageWithPayload`` C-linkage function.
+  .. code:: cpp
 
-.. code-block:: cpp
+    constexpr uint32_t kGlobalToken = PW_TOKENIZE_STRING("Wowee Zowee!");
 
-   PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD(payload,
-                                              format_string_literal,
-                                              arguments...);
+    void Function() {
+      constexpr uint32_t local_token = PW_TOKENIZE_STRING("Wowee Zowee?");
+    }
 
-   void pw_tokenizer_HandleEncodedMessageWithPayload(
-       uintptr_t payload, const uint8_t encoded_message[], size_t size_bytes);
+.. admonition:: **No**: Use :c:macro:`PW_TOKENIZE_STRING` in another expression.
+  :class: error
+
+  .. code:: cpp
+
+   void BadExample() {
+     ProcessToken(PW_TOKENIZE_STRING("This won't compile!"));
+   }
+
+  Use :c:macro:`PW_TOKENIZE_STRING_EXPR` instead.
+
+An alternate set of macros are provided for use inside expressions. These make
+use of lambda functions, so while they can be used inside expressions, they
+require C++ and cannot be assigned to constexpr variables or be used with
+special function variables like ``__func__``.
+
+.. c:macro:: PW_TOKENIZE_STRING_EXPR(string_literal)
+
+  Converts a string literal to a ``uint32_t`` token within an expression.
+  Requires C++.
+
+  .. code-block:: cpp
+
+     DoSomething(PW_TOKENIZE_STRING_EXPR("Succeed"));
+
+.. c:macro:: PW_TOKENIZE_STRING_DOMAIN_EXPR(domain, string_literal)
+
+  Tokenizes a string literal using the specified :ref:`domain
+  <module-pw_tokenizer-domains>` within an expression. Requires C++.
+
+.. c:macro:: PW_TOKENIZE_STRING_MASK_EXPR(domain, mask, string_literal)
+
+  Tokenizes a string literal using the specified :ref:`domain
+  <module-pw_tokenizer-domains>` and :ref:`bit mask
+  <module-pw_tokenizer-masks>` within an expression. Requires C++.
 
 .. admonition:: When to use these macros
 
-   Use anytime a global handler is sufficient, particularly for widely expanded
-   macros, like a logging macro. ``PW_TOKENIZE_TO_GLOBAL_HANDLER`` or
-   ``PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD`` are the most efficient macros
-   for tokenizing printf-style strings.
+  Use :c:macro:`PW_TOKENIZE_STRING` and related macros to tokenize string
+  literals that do not need %-style arguments encoded.
 
-Tokenize to a callback
-----------------------
-``PW_TOKENIZE_TO_CALLBACK`` tokenizes to a buffer on the stack and calls a
-``void(const uint8_t* buffer, size_t buffer_size)`` callback that is provided at
-the call site. The size of the buffer is set with
-``PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES``.
+.. admonition:: **Yes**: Use :c:macro:`PW_TOKENIZE_STRING_EXPR` within other expressions.
+  :class: checkmark
 
-.. code-block:: cpp
+  .. code:: cpp
 
-   PW_TOKENIZE_TO_CALLBACK(HandlerFunction, "Format string: %x", arguments...);
+    void GoodExample() {
+      ProcessToken(PW_TOKENIZE_STRING_EXPR("This will compile!"));
+    }
 
-.. admonition:: When to use this macro
+.. admonition:: **No**: Assign :c:macro:`PW_TOKENIZE_STRING_EXPR` to a ``constexpr`` variable.
+  :class: error
 
-   Use ``PW_TOKENIZE_TO_CALLBACK`` if the global handler version is already in
-   use for another purpose or more flexibility is needed.
+  .. code:: cpp
 
-Tokenize to a buffer
---------------------
-The most flexible tokenization macro is ``PW_TOKENIZE_TO_BUFFER``, which encodes
-to a caller-provided buffer.
+     constexpr uint32_t wont_work = PW_TOKENIZE_STRING_EXPR("This won't compile!"));
 
-.. code-block:: cpp
+  Instead, use :c:macro:`PW_TOKENIZE_STRING` to assign to a ``constexpr`` variable.
 
-   uint8_t buffer[BUFFER_SIZE];
-   size_t size_bytes = sizeof(buffer);
-   PW_TOKENIZE_TO_BUFFER(buffer, &size_bytes, format_string_literal, arguments...);
+.. admonition:: **No**: Tokenize ``__func__`` in :c:macro:`PW_TOKENIZE_STRING_EXPR`.
+  :class: error
 
-While ``PW_TOKENIZE_TO_BUFFER`` is maximally flexible, it takes more arguments
-than the other macros, so its per-use code size overhead is larger.
+  .. code:: cpp
 
-.. admonition:: When to use this macro
+    void BadExample() {
+      // This compiles, but __func__ will not be the outer function's name, and
+      // there may be compiler warnings.
+      constexpr uint32_t wont_work = PW_TOKENIZE_STRING_EXPR(__func__);
+    }
 
-   Use ``PW_TOKENIZE_TO_BUFFER`` to encode to a custom-sized buffer or if the
-   other macros are insufficient. Avoid using ``PW_TOKENIZE_TO_BUFFER`` in
-   widely expanded macros, such as a logging macro, because it will result in
-   larger code size than its alternatives.
+  Instead, use :c:macro:`PW_TOKENIZE_STRING` to tokenize ``__func__`` or similar macros.
 
 .. _module-pw_tokenizer-custom-macro:
 
-Tokenize with a custom macro
-----------------------------
-Projects may need more flexbility than the standard ``pw_tokenizer`` macros
-provide. To support this, projects may define custom tokenization macros. This
-requires the use of two low-level ``pw_tokenizer`` macros:
+Tokenize a message with arguments in a custom macro
+---------------------------------------------------
+Projects can leverage the tokenization machinery in whichever way best suits
+their needs. ``pw_tokenizer`` provides two low-level macros for projects to use
+to create custom tokenization macros.
 
-.. c:macro:: PW_TOKENIZE_FORMAT_STRING(domain, mask, format, ...)
+.. c:macro:: PW_TOKENIZE_FORMAT_STRING(domain, mask, format_string, ...)
 
    Tokenizes a format string and sets the ``_pw_tokenizer_token`` variable to the
    token. Must be used in its own scope, since the same variable is used in every
@@ -282,9 +299,10 @@ requires the use of two low-level ``pw_tokenizer`` macros:
    Converts a series of arguments to a compact format that replaces the format
    string literal.
 
-Use these two macros within the custom tokenization macro to call a function
-that does the encoding. The following example implements a custom tokenization
-macro for use with :ref:`module-pw_log_tokenized`.
+The most efficient way to use ``pw_tokenizer`` is to pass tokenized data to a
+global handler function. A project's custom tokenization macro can handle
+tokenized data in a function of their choosing. The following example implements
+a custom tokenization macro for use with :ref:`module-pw_log_tokenized`.
 
 .. code-block:: cpp
 
@@ -339,14 +357,66 @@ transmitted or stored as needed.
      HandleTokenizedMessage(metadata, encoded_message);
    }
 
-.. admonition:: When to use a custom macro
+.. admonition:: Why use a custom macro
 
-   Use existing tokenization macros whenever possible. A custom macro may be
-   needed to support use cases like the following:
+   - Optimal code size. Invoking a free function with the tokenized data results
+     in the smallest possible call site.
+   - Pass additional arguments, such as metadata, with the tokenized message.
+   - Integrate ``pw_tokenizer`` with other systems.
 
-   * Variations of ``PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD`` that take
-     different arguments.
-   * Supporting global handler macros that use different handler functions.
+Tokenize a message with arguments to a buffer
+---------------------------------------------
+.. c:macro:: PW_TOKENIZE_TO_BUFFER(buffer_pointer, buffer_size_pointer, format_string, arguments...)
+
+  ``PW_TOKENIZE_TO_BUFFER`` encodes to a caller-provided buffer.
+
+  .. code-block:: cpp
+
+     uint8_t buffer[BUFFER_SIZE];
+     size_t size_bytes = sizeof(buffer);
+     PW_TOKENIZE_TO_BUFFER(buffer, &size_bytes, format_string_literal, arguments...);
+
+  While ``PW_TOKENIZE_TO_BUFFER`` is very flexible, it must be passed a buffer,
+  which increases its call site overhead.
+
+.. admonition:: Why use this macro
+
+   - Encode a tokenized message for consumption within a function.
+   - Encode a tokenized message into an existing buffer.
+
+   Avoid using ``PW_TOKENIZE_TO_BUFFER`` in widely expanded macros, such as a
+   logging macro, because it will result in larger code size than passing the
+   tokenized data to a function.
+
+Tokenize to a global handler function (deprecated)
+--------------------------------------------------
+``pw_tokenizer`` provides the ``PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD``
+macro that tokenizes to a global handler function. This macro is deprecated and
+should not be used in new code. Create a :ref:`custom macro
+<module-pw_tokenizer-custom-macro>` instead.
+
+``PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD`` passes a ``uintptr_t`` argument
+along with the tokenized data. Values like a log level can be packed into the
+``uintptr_t``. The tokenized string is encoded to a buffer on the stack. The
+size of the buffer is set with ``PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES``.
+
+This macro is provided by the ``pw_tokenizer:global_handler_with_payload``
+facade. The backend for this facade must define the
+``pw_tokenizer_HandleEncodedMessageWithPayload`` C-linkage function.
+
+.. code-block:: cpp
+
+   PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD(payload,
+                                              format_string_literal,
+                                              arguments...);
+
+   void pw_tokenizer_HandleEncodedMessageWithPayload(
+       uintptr_t payload, const uint8_t encoded_message[], size_t size_bytes);
+
+.. admonition:: Why use this macro
+
+   This macro is deprecated and should not be used. To invoke a global function,
+   create a :ref:`custom tokenization macro<module-pw_tokenizer-custom-macro>`.
 
 Binary logging with pw_tokenizer
 ================================
@@ -552,6 +622,8 @@ example, the following reads strings in ``some_domain`` from ``my_image.elf``.
 See `Managing token databases`_ for information about the ``database.py``
 command line tool.
 
+.. _module-pw_tokenizer-masks:
+
 Smaller tokens with masking
 ===========================
 ``pw_tokenizer`` uses 32-bit tokens. On 32-bit or 64-bit architectures, using
@@ -651,32 +723,6 @@ Keep this table in mind when masking tokens (see `Smaller tokens with
 masking`_). 16 bits might be acceptable when tokenizing a small set of strings,
 such as module names, but won't be suitable for large sets of strings, like log
 messages.
-
-Using tokenization in expressions
-=================================
-The tokenization macros above cannot be used inside expressions. For example,
-the following code snippet will fail to compile:
-
-.. code-block:: cpp
-
-   DoSomething(PW_TOKENIZE_STRING("Fail"));
-
-An alternate set of macros are provided for use inside expressions. These make
-use of lambda functions, so while they can be used inside expressions, they
-cannot be assigned to constexpr variables or be used with special function
-variables like ``__func__``.
-
-The following tokenization macros may be used inside epxressions:
-
-* ``PW_TOKENIZE_STRING_EXPR``
-* ``PW_TOKENIZE_STRING_DOMAIN_EXPR``
-* ``PW_TOKENIZE_STRING_MASK_EXPR``
-
-For example, the following code snippet will work:
-
-.. code-block:: cpp
-
-   DoSomething(PW_TOKENIZE_STRING_EXPR("Succeed"));
 
 ---------------
 Token databases
@@ -1416,7 +1462,9 @@ Firmware deployment
   ``pw_tokenizer_HandleEncodedMessageWithPayload``, the log messages were
   encoded in the $-prefixed `Base64 format`_, then dispatched as normal log
   messages.
-* Asserts were tokenized using ``PW_TOKENIZE_TO_CALLBACK``.
+* Asserts were tokenized a callback-based API that has been removed (a
+  :ref:`custom macro <module-pw_tokenizer-custom-macro>` is a better
+  alternative).
 
 .. attention::
   Do not encode line numbers in tokenized strings. This results in a huge

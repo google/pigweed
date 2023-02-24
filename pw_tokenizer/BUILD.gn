@@ -105,29 +105,18 @@ pw_source_set("pw_tokenizer") {
 # As a temporary workaround, if no backend is set, use an empty test backend so
 # that the test can define the handler function.
 # TODO(hepler): Switch this to a facade test when available.
-if (pw_tokenizer_GLOBAL_HANDLER_BACKEND == "" &&
-    pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND == "") {
+if (pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND == "") {
   # This is an empty library to use as the backend for global_handler and
   # global_handler_with_payload tests.
   pw_source_set("test_backend") {
     visibility = [ ":*" ]
   }
 
-  pw_tokenizer_GLOBAL_HANDLER_BACKEND = ":test_backend"
   pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND = ":test_backend"
 
   enable_global_handler_test = true
 } else {
   enable_global_handler_test = false
-}
-
-pw_facade("global_handler") {
-  backend = pw_tokenizer_GLOBAL_HANDLER_BACKEND
-
-  public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_tokenizer/tokenize_to_global_handler.h" ]
-  sources = [ "tokenize_to_global_handler.cc" ]
-  public_deps = [ ":pw_tokenizer" ]
 }
 
 pw_facade("global_handler_with_payload") {
@@ -263,10 +252,7 @@ pw_test("global_handlers_test") {
     "global_handlers_test_c.c",
     "pw_tokenizer_private/tokenize_test.h",
   ]
-  deps = [
-    ":global_handler",
-    ":global_handler_with_payload",
-  ]
+  deps = [ ":global_handler_with_payload" ]
 
   # TODO(hepler): Switch this to a facade test when available.
   enable_if = enable_global_handler_test
@@ -283,7 +269,6 @@ pw_test("hash_test") {
 pw_test("simple_tokenize_test") {
   sources = [ "simple_tokenize_test.cc" ]
   deps = [
-    ":global_handler",
     ":global_handler_with_payload",
     ":pw_tokenizer",
   ]

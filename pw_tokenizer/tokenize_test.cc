@@ -540,91 +540,6 @@ TEST_F(TokenizeToBuffer, AsArgumentToAnotherMacro) {
   EXPECT_EQ(std::memcmp(expected.data(), buffer_, expected.size()), 0);
 }
 
-class TokenizeToCallback : public ::testing::Test {
- public:
-  static void SetMessage(const uint8_t* message, size_t size) {
-    ASSERT_LE(size, sizeof(message_));
-    std::memcpy(message_, message, size);
-    message_size_bytes_ = size;
-  }
-
- protected:
-  TokenizeToCallback() {
-    std::memset(message_, 0, sizeof(message_));
-    message_size_bytes_ = 0;
-  }
-
-  static uint8_t message_[256];
-  static size_t message_size_bytes_;
-};
-
-uint8_t TokenizeToCallback::message_[256] = {};
-size_t TokenizeToCallback::message_size_bytes_ = 0;
-
-TEST_F(TokenizeToCallback, Variety) {
-  PW_TOKENIZE_TO_CALLBACK(
-      SetMessage, "%s there are %x (%.2f) of them%c", "Now", 2u, 2.0f, '.');
-  const auto expected =  // clang-format off
-      ExpectedData<3, 'N', 'o', 'w',        // string "Now"
-                   0x04,                    // unsigned 2 (zig-zag encoded)
-                   0x00, 0x00, 0x00, 0x40,  // float 2.0
-                   0x5C                     // char '.' (0x2E, zig-zag encoded)
-                   >("%s there are %x (%.2f) of them%c");
-  // clang-format on
-  ASSERT_EQ(expected.size(), message_size_bytes_);
-  EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
-}
-
-TEST_F(TokenizeToCallback, Strings) {
-  PW_TOKENIZE_TO_CALLBACK(SetMessage, "The answer is: %s", "5432!");
-  constexpr std::array<uint8_t, 10> expected =
-      ExpectedData<5, '5', '4', '3', '2', '!'>("The answer is: %s");
-  ASSERT_EQ(expected.size(), message_size_bytes_);
-  EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
-}
-
-TEST_F(TokenizeToCallback, Domain_Strings) {
-  PW_TOKENIZE_TO_CALLBACK_DOMAIN(
-      "TEST_DOMAIN", SetMessage, "The answer is: %s", "5432!");
-  constexpr std::array<uint8_t, 10> expected =
-      ExpectedData<5, '5', '4', '3', '2', '!'>("The answer is: %s");
-  ASSERT_EQ(expected.size(), message_size_bytes_);
-  EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
-}
-
-TEST_F(TokenizeToCallback, Mask) {
-  PW_TOKENIZE_TO_CALLBACK_MASK(
-      "TEST_DOMAIN", 0x00000FFF, SetMessage, "The answer is: %s", "5432!");
-  constexpr std::array<uint8_t, 10> expected =
-      ExpectedData<5, '5', '4', '3', '2', '!'>("The answer is: %s", 0x00000FFF);
-  ASSERT_EQ(expected.size(), message_size_bytes_);
-  EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
-}
-
-TEST_F(TokenizeToCallback, CharArray) {
-  PW_TOKENIZE_TO_CALLBACK(SetMessage, __func__);
-  constexpr auto expected = ExpectedData(__func__);
-  ASSERT_EQ(expected.size(), message_size_bytes_);
-  EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
-}
-
-TEST_F(TokenizeToCallback, C_SequentialZigZag) {
-  pw_tokenizer_ToCallbackTest_SequentialZigZag(SetMessage);
-
-  constexpr std::array<uint8_t, 18> expected =
-      ExpectedData<0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13>(
-          TEST_FORMAT_SEQUENTIAL_ZIG_ZAG);
-  ASSERT_EQ(expected.size(), message_size_bytes_);
-  EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
-}
-
-TEST_F(TokenizeToCallback, AsArgumentToAnotherMacro) {
-  MACRO_THAT_CALLS_ANOTHER_MACRO(PW_TOKENIZE_TO_CALLBACK(SetMessage, __func__));
-  constexpr auto expected = ExpectedData(__func__);
-  ASSERT_EQ(expected.size(), message_size_bytes_);
-  EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
-}
-
 #undef MACRO_THAT_CALLS_ANOTHER_MACRO
 #undef ANOTHER_MACRO
 
@@ -656,27 +571,6 @@ TEST_F(TokenizeToBuffer, Domain_Specified) {
       "._.", buffer_, &message_size, "The answer is: %s", "5432!");
 
   EXPECT_STREQ(tokenizer_domain, "._.");
-  EXPECT_STREQ(string_literal, "The answer is: %s");
-}
-
-TEST_F(TokenizeToCallback, Domain_Default) {
-  const char* tokenizer_domain = nullptr;
-  const char* string_literal = nullptr;
-
-  PW_TOKENIZE_TO_CALLBACK(SetMessage, "The answer is: %s", "5432!");
-
-  EXPECT_STREQ(tokenizer_domain, PW_TOKENIZER_DEFAULT_DOMAIN);
-  EXPECT_STREQ(string_literal, "The answer is: %s");
-}
-
-TEST_F(TokenizeToCallback, Domain_Specified) {
-  const char* tokenizer_domain = nullptr;
-  const char* string_literal = nullptr;
-
-  PW_TOKENIZE_TO_CALLBACK_DOMAIN(
-      "ThisIsTheDomain", SetMessage, "The answer is: %s", "5432!");
-
-  EXPECT_STREQ(tokenizer_domain, "ThisIsTheDomain");
   EXPECT_STREQ(string_literal, "The answer is: %s");
 }
 

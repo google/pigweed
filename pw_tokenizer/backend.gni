@@ -13,8 +13,6 @@
 # the License.
 
 declare_args() {
-  # Backends for the pw_tokenizer:global_handler and
-  # pw_tokenizer:global_handler_with_payload facades.
-  pw_tokenizer_GLOBAL_HANDLER_BACKEND = ""
+  # Backend for the pw_tokenizer:global_handler_with_payload facade.
   pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND = ""
 }

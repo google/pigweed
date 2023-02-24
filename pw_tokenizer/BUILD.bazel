@@ -63,16 +63,6 @@ pw_cc_library(
 )
 
 pw_cc_library(
-    name = "global_handler",
-    srcs = ["tokenize_to_global_handler.cc"],
-    hdrs = ["public/pw_tokenizer/tokenize_to_global_handler.h"],
-    deps = [
-        ":pw_tokenizer",
-        "@pigweed_config//:pw_tokenizer_global_handler_backend",
-    ],
-)
-
-pw_cc_library(
     name = "global_handler_with_payload",
     srcs = ["tokenize_to_global_handler_with_payload.cc"],
     hdrs = ["public/pw_tokenizer/tokenize_to_global_handler_with_payload.h"],
@@ -231,10 +221,7 @@ pw_cc_test(
         "global_handlers_test_c.c",
         "pw_tokenizer_private/tokenize_test.h",
     ],
-    deps = [
-        ":global_handler",
-        ":global_handler_with_payload",
-    ],
+    deps = [":global_handler_with_payload"],
 )
 
 pw_cc_test(
@@ -256,7 +243,6 @@ pw_cc_test(
         "simple_tokenize_test.cc",
     ],
     deps = [
-        ":global_handler",
         ":global_handler_with_payload",
         ":pw_tokenizer",
         "//pw_unit_test",

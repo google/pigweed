@@ -15,7 +15,5 @@ include_guard(GLOBAL)
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-# Backends for the pw_tokenizer:global_handler and
-# pw_tokenizer:global_handler_with_payload facades
-pw_add_backend_variable(pw_tokenizer.global_handler_BACKEND)
+# Backend for the pw_tokenizer:global_handler_with_payload facade.
 pw_add_backend_variable(pw_tokenizer.global_handler_with_payload_BACKEND)

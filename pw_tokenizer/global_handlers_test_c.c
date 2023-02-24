@@ -15,7 +15,6 @@
 // This function tests the C implementation of tokenization API. These functions
 // are called from the main C++ test file.
 
-#include "pw_tokenizer/tokenize_to_global_handler.h"
 #include "pw_tokenizer/tokenize_to_global_handler_with_payload.h"
 #include "pw_tokenizer_private/tokenize_test.h"
 
@@ -26,23 +25,6 @@
 // This test invokes the tokenization API with a variety of types. To simplify
 // validating the encoded data, numbers that are sequential when zig-zag encoded
 // are used as arguments.
-void pw_tokenizer_ToGlobalHandlerTest_SequentialZigZag(void) {
-  PW_TOKENIZE_TO_GLOBAL_HANDLER(TEST_FORMAT_SEQUENTIAL_ZIG_ZAG,
-                                0u,
-                                -1,
-                                1u,
-                                (unsigned)-2,
-                                (unsigned short)2u,
-                                (signed char)-3,
-                                3,
-                                -4l,
-                                4ul,
-                                -5ll,
-                                5ull,
-                                (signed char)-6,
-                                (char)6,
-                                (signed char)-7);
-}
 
 void pw_tokenizer_ToGlobalHandlerWithPayloadTest_SequentialZigZag(void) {
   PW_TOKENIZE_TO_GLOBAL_HANDLER_WITH_PAYLOAD((pw_tokenizer_Payload)600613,

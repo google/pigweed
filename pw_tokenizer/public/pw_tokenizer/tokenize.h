@@ -157,53 +157,6 @@ typedef uint32_t pw_tokenizer_Token;
                                PW_COMMA_ARGS(__VA_ARGS__));       \
   } while (0)
 
-// Encodes a tokenized string and arguments to a buffer on the stack. The
-// provided callback is called with the encoded data. The size of the
-// stack-allocated argument encoding buffer is set with the
-// PW_TOKENIZER_CFG_ENCODING_BUFFER_SIZE_BYTES option.
-//
-// The macro's arguments are equivalent to the following function signature:
-//
-//   TokenizeToCallback(void (*callback)(const uint8_t* data, size_t size),
-//                      const char* format,
-//                      ...);  /* printf-style arguments */
-//
-// For example, the following encodes a tokenized string with a sensor name and
-// floating point data. The encoded message is passed directly to the
-// MyProject_EnqueueMessageForUart function, which the caller provides as a
-// callback.
-//
-//   void MyProject_EnqueueMessageForUart(const uint8_t* buffer,
-//                                        size_t size_bytes) {
-//     uart_queue_write(uart_instance, buffer, size_bytes);
-//   }
-//
-//   void LogSensorValue(const char* sensor_name, float value) {
-//     PW_TOKENIZE_TO_CALLBACK(MyProject_EnqueueMessageForUart,
-//                             "%s: %f",
-//                             sensor_name,
-//                             value);
-//   }
-//
-#define PW_TOKENIZE_TO_CALLBACK(callback, format, ...) \
-  PW_TOKENIZE_TO_CALLBACK_DOMAIN(                      \
-      PW_TOKENIZER_DEFAULT_DOMAIN, callback, format, __VA_ARGS__)
-
-// Same as PW_TOKENIZE_TO_CALLBACK, but tokenizes to the specified domain.
-#define PW_TOKENIZE_TO_CALLBACK_DOMAIN(domain, callback, format, ...) \
-  PW_TOKENIZE_TO_CALLBACK_MASK(                                       \
-      domain, UINT32_MAX, callback, format, __VA_ARGS__)
-
-// Same as PW_TOKENIZE_TO_CALLBACK_DOMAIN, but applies a mask to the token.
-#define PW_TOKENIZE_TO_CALLBACK_MASK(domain, mask, callback, format, ...) \
-  do {                                                                    \
-    PW_TOKENIZE_FORMAT_STRING(domain, mask, format, __VA_ARGS__);         \
-    _pw_tokenizer_ToCallback(callback,                                    \
-                             _pw_tokenizer_token,                         \
-                             PW_TOKENIZER_ARG_TYPES(__VA_ARGS__)          \
-                                 PW_COMMA_ARGS(__VA_ARGS__));             \
-  } while (0)
-
 PW_EXTERN_C_START
 
 // These functions encode the tokenized strings. These should not be called
@@ -213,12 +166,6 @@ void _pw_tokenizer_ToBuffer(void* buffer,
                             pw_tokenizer_Token token,
                             pw_tokenizer_ArgTypes types,
                             ...);
-
-void _pw_tokenizer_ToCallback(void (*callback)(const uint8_t* encoded_message,
-                                               size_t size_bytes),
-                              pw_tokenizer_Token token,
-                              pw_tokenizer_ArgTypes types,
-                              ...);
 
 // This empty function allows the compiler to check the format string.
 static inline void pw_tokenizer_CheckFormatString(const char* format, ...)

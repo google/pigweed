@@ -49,10 +49,11 @@ Setup
 #. Set ``pw_assert_BACKEND = "$dir_pw_assert_tokenized:check_backend"`` and
    ``pw_assert_LITE_BACKEND = "$dir_pw_assert_tokenized:assert_backend"`` in
    your target configuration.
-#. Ensure your target provides ``pw_tokenizer_GLOBAL_HANDLER_BACKEND``. By
-   default, pw_assert_tokenized will forward assert failures to the tokenizer
-   handler as logs. The tokenizer handler should check for ``LOG_LEVEL_FATAL``
-   and properly divert to a crash handler.
+#. Ensure your target provides
+   ``pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND``. By default,
+   pw_assert_tokenized will forward assert failures to the tokenizer handler as
+   logs. The tokenizer handler should check for ``LOG_LEVEL_FATAL`` and properly
+   divert to a crash handler.
 #. Add file name tokens to your token database. pw_assert_tokenized can't create
    file name tokens that can be parsed out of the final compiled binary. The
    ``pw_relative_source_file_names``

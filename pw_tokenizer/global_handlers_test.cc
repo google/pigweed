@@ -17,7 +17,6 @@
 #include <cstring>
 
 #include "gtest/gtest.h"
-#include "pw_tokenizer/tokenize_to_global_handler.h"
 #include "pw_tokenizer/tokenize_to_global_handler_with_payload.h"
 #include "pw_tokenizer_private/tokenize_test.h"
 
@@ -64,58 +63,6 @@ template <typename Impl>
 uint8_t GlobalMessage<Impl>::message_[256] = {};
 template <typename Impl>
 size_t GlobalMessage<Impl>::message_size_bytes_ = 0;
-
-class TokenizeToGlobalHandler : public GlobalMessage<TokenizeToGlobalHandler> {
-};
-
-TEST_F(TokenizeToGlobalHandler, Variety) {
-  PW_TOKENIZE_TO_GLOBAL_HANDLER("%x%lld%1.2f%s", 0, 0ll, -0.0, "");
-  const auto expected =
-      ExpectedData<0, 0, 0x00, 0x00, 0x00, 0x80, 0>("%x%lld%1.2f%s");
-  ASSERT_EQ(expected.size(), message_size_bytes_);
-  EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
-}
-
-TEST_F(TokenizeToGlobalHandler, Strings) {
-  PW_TOKENIZE_TO_GLOBAL_HANDLER("The answer is: %s", "5432!");
-  constexpr std::array<uint8_t, 10> expected =
-      ExpectedData<5, '5', '4', '3', '2', '!'>("The answer is: %s");
-  ASSERT_EQ(expected.size(), message_size_bytes_);
-  EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
-}
-
-TEST_F(TokenizeToGlobalHandler, Domain_Strings) {
-  PW_TOKENIZE_TO_GLOBAL_HANDLER_DOMAIN(
-      "TEST_DOMAIN", "The answer is: %s", "5432!");
-  constexpr std::array<uint8_t, 10> expected =
-      ExpectedData<5, '5', '4', '3', '2', '!'>("The answer is: %s");
-  ASSERT_EQ(expected.size(), message_size_bytes_);
-  EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
-}
-
-TEST_F(TokenizeToGlobalHandler, Mask) {
-  PW_TOKENIZE_TO_GLOBAL_HANDLER_MASK(
-      "TEST_DOMAIN", 0x00FFF000, "The answer is: %s", "5432!");
-  constexpr std::array<uint8_t, 10> expected =
-      ExpectedData<5, '5', '4', '3', '2', '!'>("The answer is: %s", 0x00FFF000);
-  ASSERT_EQ(expected.size(), message_size_bytes_);
-  EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
-}
-
-TEST_F(TokenizeToGlobalHandler, C_SequentialZigZag) {
-  pw_tokenizer_ToGlobalHandlerTest_SequentialZigZag();
-
-  constexpr std::array<uint8_t, 18> expected =
-      ExpectedData<0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13>(
-          TEST_FORMAT_SEQUENTIAL_ZIG_ZAG);
-  ASSERT_EQ(expected.size(), message_size_bytes_);
-  EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
-}
-
-extern "C" void pw_tokenizer_HandleEncodedMessage(
-    const uint8_t* encoded_message, size_t size_bytes) {
-  TokenizeToGlobalHandler::SetMessage(encoded_message, size_bytes);
-}
 
 class TokenizeToGlobalHandlerWithPayload
     : public GlobalMessage<TokenizeToGlobalHandlerWithPayload> {
@@ -252,26 +199,6 @@ extern "C" void pw_tokenizer_HandleEncodedMessageWithPayload(
 #define _PW_TOKENIZER_RECORD_ORIGINAL_STRING(token, domain, string) \
   tokenizer_domain = domain;                                        \
   string_literal = string
-
-TEST_F(TokenizeToGlobalHandler, Domain_Default) {
-  const char* tokenizer_domain = nullptr;
-  const char* string_literal = nullptr;
-
-  PW_TOKENIZE_TO_GLOBAL_HANDLER("404");
-
-  EXPECT_STREQ(tokenizer_domain, PW_TOKENIZER_DEFAULT_DOMAIN);
-  EXPECT_STREQ(string_literal, "404");
-}
-
-TEST_F(TokenizeToGlobalHandler, Domain_Specified) {
-  const char* tokenizer_domain = nullptr;
-  const char* string_literal = nullptr;
-
-  PW_TOKENIZE_TO_GLOBAL_HANDLER_DOMAIN("www.google.com", "404");
-
-  EXPECT_STREQ(tokenizer_domain, "www.google.com");
-  EXPECT_STREQ(string_literal, "404");
-}
 
 TEST_F(TokenizeToGlobalHandlerWithPayload, Domain_Default) {
   const char* tokenizer_domain = nullptr;

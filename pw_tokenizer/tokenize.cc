@@ -87,18 +87,5 @@ extern "C" void _pw_tokenizer_ToBuffer(void* buffer,
   *buffer_size_bytes = sizeof(token) + encoded_bytes;
 }
 
-extern "C" void _pw_tokenizer_ToCallback(
-    void (*callback)(const uint8_t* encoded_message, size_t size_bytes),
-    Token token,
-    pw_tokenizer_ArgTypes types,
-    ...) {
-  va_list args;
-  va_start(args, types);
-  EncodedMessage encoded(token, types, args);
-  va_end(args);
-
-  callback(encoded.data_as_uint8(), encoded.size());
-}
-
 }  // namespace tokenizer
 }  // namespace pw

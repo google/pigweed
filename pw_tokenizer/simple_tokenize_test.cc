@@ -18,7 +18,6 @@
 
 #include "gtest/gtest.h"
 #include "pw_tokenizer/tokenize.h"
-#include "pw_tokenizer/tokenize_to_global_handler.h"
 #include "pw_tokenizer/tokenize_to_global_handler_with_payload.h"
 
 namespace pw {
@@ -101,8 +100,6 @@ uint8_t GlobalMessage<Impl>::message_[256] = {};
 template <typename Impl>
 size_t GlobalMessage<Impl>::message_size_bytes_ = 0;
 
-class TokenizeToCallback : public GlobalMessage<TokenizeToCallback> {};
-
 template <uint8_t... kData, size_t kSize>
 std::array<uint8_t, sizeof(uint32_t) + sizeof...(kData)> ExpectedData(
     const char (&format)[kSize]) {
@@ -113,36 +110,6 @@ std::array<uint8_t, sizeof(uint32_t) + sizeof...(kData)> ExpectedData(
       static_cast<uint8_t>(value >> 16 & 0xff),
       static_cast<uint8_t>(value >> 24 & 0xff),
       kData...};
-}
-
-TEST_F(TokenizeToCallback, Variety) {
-  PW_TOKENIZE_TO_CALLBACK(
-      SetMessage, "%s there are %x (%.2f) of them%c", "Now", 2u, 2.0f, '.');
-  const auto expected =  // clang-format off
-      ExpectedData<3, 'N', 'o', 'w',        // string "Now"
-                   0x04,                    // unsigned 2 (zig-zag encoded)
-                   0x00, 0x00, 0x00, 0x40,  // float 2.0
-                   0x5C                     // char '.' (0x2E, zig-zag encoded)
-                   >("%s there are %x (%.2f) of them%c");
-  // clang-format on
-  ASSERT_EQ(expected.size(), message_size_bytes_);
-  EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
-}
-
-class TokenizeToGlobalHandler : public GlobalMessage<TokenizeToGlobalHandler> {
-};
-
-TEST_F(TokenizeToGlobalHandler, Variety) {
-  PW_TOKENIZE_TO_GLOBAL_HANDLER("%x%lld%1.2f%s", 0, 0ll, -0.0, "");
-  const auto expected =
-      ExpectedData<0, 0, 0x00, 0x00, 0x00, 0x80, 0>("%x%lld%1.2f%s");
-  ASSERT_EQ(expected.size(), message_size_bytes_);
-  EXPECT_EQ(std::memcmp(expected.data(), message_, expected.size()), 0);
-}
-
-extern "C" void pw_tokenizer_HandleEncodedMessage(
-    const uint8_t* encoded_message, size_t size_bytes) {
-  TokenizeToGlobalHandler::SetMessage(encoded_message, size_bytes);
 }
 
 class TokenizeToGlobalHandlerWithPayload
