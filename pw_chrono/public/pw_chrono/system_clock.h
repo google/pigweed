@@ -84,6 +84,7 @@ struct SystemClock {
   /// The period must be provided by the backend.
   using period = std::ratio<PW_CHRONO_SYSTEM_CLOCK_PERIOD_SECONDS_NUMERATOR,
                             PW_CHRONO_SYSTEM_CLOCK_PERIOD_SECONDS_DENOMINATOR>;
+  /// Alias for durations representable with this clock.
   using duration = std::chrono::duration<rep, period>;
   using time_point = std::chrono::time_point<SystemClock>;
   /// The epoch must be provided by the backend.
