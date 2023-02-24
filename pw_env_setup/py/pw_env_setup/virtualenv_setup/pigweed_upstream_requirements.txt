@@ -15,6 +15,7 @@
 # Pigweed upstream specific depenencies:
 # pigweed.dev Sphinx themes
 furo==2022.12.7
+sphinx-copybutton==0.5.1
 sphinx-design==0.3.0
 myst-parser==0.18.1
 breathe==4.34.0

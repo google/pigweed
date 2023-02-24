@@ -48,6 +48,7 @@ extensions = [
     'sphinx_design',
     'myst_parser',
     'breathe',
+    'sphinx_copybutton',  # Copy-to-clipboard button on code blocks
 ]
 
 myst_enable_extensions = [
@@ -63,6 +64,10 @@ myst_enable_extensions = [
     # "substitution",
     # "tasklist",
 ]
+
+# When a user clicks the copy-to-clipboard button the `$ ` prompt should not be
+# copied: https://sphinx-copybutton.readthedocs.io/en/latest/use.html
+copybutton_prompt_text = "$ "
 
 _DIAG_HTML_IMAGE_FORMAT = 'SVG'
 blockdiag_html_image_format = _DIAG_HTML_IMAGE_FORMAT

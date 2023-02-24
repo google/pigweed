@@ -1562,3 +1562,17 @@ relatively rarely useful.
 .. _Chromium CQ footers: https://chromium.googlesource.com/chromium/src/+/refs/heads/main/docs/infra/cq.md#options
 .. _git footers: https://commondatastorage.googleapis.com/chrome-infra-docs/flat/depot_tools/docs/html/git-footers.html
 
+Copy-to-clipboard feature on code blocks
+========================================
+
+.. _sphinx-copybutton: https://sphinx-copybutton.readthedocs.io/en/latest/
+.. _Remove copybuttons using a CSS selector: https://sphinx-copybutton.readthedocs.io/en/latest/use.html#remove-copybuttons-using-a-css-selector
+
+The copy-to-clipboard feature on code blocks is powered by `sphinx-copybutton`_.
+
+``sphinx-copybutton`` recognizes ``$`` as an input prompt and automatically
+removes it.
+
+There is a workflow for manually removing the copy-to-clipboard button for a
+particular code block but it has not been implemented yet. See
+`Remove copybuttons using a CSS selector`_.
