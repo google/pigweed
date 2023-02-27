@@ -276,7 +276,7 @@ with the following contents:
   // Contents of my_app/threads.h
   #pragma once
 
-  #include "pw_thread/options.h"
+  #include "pw_thread/thread.h"
 
   namespace my_app {
 
