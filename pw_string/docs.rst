@@ -1,11 +1,45 @@
 .. _module-pw_string:
 
-===========
+=========
 pw_string
-===========
-..
-  A short description of the module. Aim for three sentences at most that clearly
-  convey what the module does.
+=========
+- **Efficient**: No memory allocation, no pointer indirection.
+- **Easy**: Use the string API you already know.
+- **Safe**: Never worry about buffer overruns or undefined behavior.
+
+*Pick three!*
+
+If you know how to use ``std::string``, just use ``pw::InlineString`` in the
+same way:
+
+.. code:: cpp
+
+   // Create a string from a C-style char array; storage is pre-allocated!
+   pw::InlineString<16> my_string = "Literally";
+
+   // We have some space left, so let's add to the string.
+   // std::string has an append method, and so does pw::InlineString.
+   my_string.append('?', 3);  // "Literally???"
+
+   // Let's try something evil and extend this past its capacity 😈
+   my_string.append('!', 8);
+   // Our efforts are foiled by a crash!
+   // No mysterious bugs or undefined behavior.
+
+Need to build up a string? ``pw::StringBuilder`` works like
+``std::ostringstream``, but with most of the efficiency and memory benefits of
+``pw::InlineString``:
+
+.. code:: cpp
+
+   // Create a pw::StringBuilder with a built-in buffer
+   pw::StringBuffer<32> my_string_builder = "Is it really this easy?";
+
+   // Add to it with idiomatic C++
+   my_string << " YES!";
+
+   // Use it like any other string
+   PW_LOG_DEBUG("%s", my_string_builder.c_str());
 
 .. card::
 
