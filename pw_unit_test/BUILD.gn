@@ -182,6 +182,7 @@ config("rpc_service_backend_gtest") {
 pw_source_set("rpc_service") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
+    ":event_handler",
     ":pw_unit_test",
     ":unit_test_proto.pwpb",
     ":unit_test_proto.raw_rpc",
