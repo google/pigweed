@@ -68,6 +68,7 @@ pw_source_set("log_filter_service") {
   public = [ "public/pw_log_rpc/log_filter_service.h" ]
   sources = [ "log_filter_service.cc" ]
   deps = [
+    "$dir_pw_log",
     "$dir_pw_log:protos.pwpb",
     "$dir_pw_protobuf",
   ]
@@ -85,15 +86,13 @@ pw_source_set("log_filter") {
     "public/pw_log_rpc/log_filter_map.h",
   ]
   sources = [ "log_filter.cc" ]
-  deps = [
-    "$dir_pw_log",
-    "$dir_pw_protobuf",
-  ]
+  deps = [ "$dir_pw_log" ]
   public_deps = [
     ":config",
     "$dir_pw_assert",
     "$dir_pw_bytes",
     "$dir_pw_containers:vector",
+    "$dir_pw_log",
     "$dir_pw_log:protos.pwpb",
     "$dir_pw_protobuf",
     "$dir_pw_status",
@@ -198,6 +197,7 @@ pw_test("log_filter_test") {
   sources = [ "log_filter_test.cc" ]
   deps = [
     ":log_filter",
+    "$dir_pw_log",
     "$dir_pw_log:proto_utils",
     "$dir_pw_log:protos.pwpb",
     "$dir_pw_log_tokenized:metadata",
