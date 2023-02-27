@@ -118,6 +118,7 @@ pw_source_set("base64") {
 pw_source_set("global_handler_with_payload") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_tokenizer/tokenize_to_global_handler_with_payload.h" ]
+  public_deps = [ dir_pw_preprocessor ]
 }
 
 pw_source_set("decoder") {
