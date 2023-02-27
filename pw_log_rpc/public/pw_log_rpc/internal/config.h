@@ -65,7 +65,7 @@
 #define PW_LOG_RPC_SLOW_DRAIN_MSG "Slow drain"
 #endif  // PW_LOG_RPC_SLOW_DRAIN_MSG
 
-// Message for when a is too too large to fit in the outbound buffer, so it is
+// Message for when a log is too large to fit in the outbound buffer, so it is
 // dropped.
 #ifndef PW_LOG_RPC_SMALL_OUTBOUND_BUFFER_MSG
 #define PW_LOG_RPC_SMALL_OUTBOUND_BUFFER_MSG "Outbound log buffer too small"
