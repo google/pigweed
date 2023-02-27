@@ -52,7 +52,7 @@ extern "C" void _pw_tokenizer_ToGlobalHandlerWithPayload(
     ...) {
   va_list args;
   va_start(args, types);
-  pw::tokenizer::EncodedMessage encoded_message(token, types, args);
+  pw::tokenizer::EncodedMessage<> encoded_message(token, types, args);
   va_end(args);
 
   pw_log_tokenized_HandleLog(

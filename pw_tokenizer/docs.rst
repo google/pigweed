@@ -281,7 +281,11 @@ special function variables like ``__func__``.
 Tokenize a message with arguments in a custom macro
 ---------------------------------------------------
 Projects can leverage the tokenization machinery in whichever way best suits
-their needs. ``pw_tokenizer`` provides two low-level macros for projects to use
+their needs. The most efficient way to use ``pw_tokenizer`` is to pass tokenized
+data to a global handler function. A project's custom tokenization macro can
+handle tokenized data in a function of their choosing.
+
+``pw_tokenizer`` provides two low-level macros for projects to use
 to create custom tokenization macros.
 
 .. c:macro:: PW_TOKENIZE_FORMAT_STRING(domain, mask, format_string, ...)
@@ -297,12 +301,21 @@ to create custom tokenization macros.
 .. c:macro:: PW_TOKENIZER_ARG_TYPES(...)
 
    Converts a series of arguments to a compact format that replaces the format
-   string literal.
+   string literal. Evaluates to a ``pw_tokenizer_ArgTypes`` value.
 
-The most efficient way to use ``pw_tokenizer`` is to pass tokenized data to a
-global handler function. A project's custom tokenization macro can handle
-tokenized data in a function of their choosing. The following example implements
-a custom tokenization macro similar to :ref:`module-pw_log_tokenized`.
+The outputs of these macros are typically passed to an encoding function. That
+function encodes the token, argument types, and argument data to a buffer using
+helpers provided by ``pw_tokenizer/encode_args.h``.
+
+.. doxygenfunction:: pw::tokenizer::EncodeArgs
+
+.. doxygenclass:: pw::tokenizer::EncodedMessage
+   :members:
+
+Example
+^^^^^^^
+The following example implements a custom tokenization macro similar to
+:ref:`module-pw_log_tokenized`.
 
 .. code-block:: cpp
 
@@ -333,9 +346,10 @@ a custom tokenization macro similar to :ref:`module-pw_log_tokenized`.
 
 In this example, the ``EncodeTokenizedMessage`` function would handle encoding
 and processing the message. Encoding is done by the
-``pw::tokenizer::EncodedMessage`` class or ``pw::tokenizer::EncodeArgs``
-function from ``pw_tokenizer/encode_args.h``. The encoded message can then be
-transmitted or stored as needed.
+:cpp:class:`pw::tokenizer::EncodedMessage` class or
+:cpp:func:`pw::tokenizer::EncodeArgs` function from
+``pw_tokenizer/encode_args.h``. The encoded message can then be transmitted or
+stored as needed.
 
 .. code-block:: cpp
 
@@ -351,7 +365,7 @@ transmitted or stored as needed.
                                           ...) {
      va_list args;
      va_start(args, types);
-     pw::tokenizer::EncodedMessage encoded_message(token, types, args);
+     pw::tokenizer::EncodedMessage<> encoded_message(token, types, args);
      va_end(args);
 
      HandleTokenizedMessage(metadata, encoded_message);
