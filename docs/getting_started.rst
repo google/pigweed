@@ -400,9 +400,9 @@ after the desired GN build step label as seen in the example below.
 .. code:: none
 
   $ gn outputs out "//pw_status:status_test.run(//targets/host/pigweed_internal:pw_strict_host_clang_debug)"
-  pw_strict_host_clang_debug/gen/pw_status/status_test.run.pw_pystamp
+  pw_strict_host_clang_debug/obj/pw_status/status_test.run.pw_pystamp
 
-  $ ninja -C out pw_strict_host_clang_debug/gen/pw_status/status_test.run.pw_pystamp
+  $ ninja -C out pw_strict_host_clang_debug/obj/pw_status/status_test.run.pw_pystamp
   ninja: Entering directory `out'
   [4/4] ACTION //pw_status:status_test.run(//targets/host/pigweed_internal:pw_strict_host_clang_debug)
 
