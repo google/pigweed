@@ -199,6 +199,15 @@ Currently the included python tool supports a few different options for
   can be used to either provide a single value type, or provide multiple
   different values with a variety of types. Options for format string types can
   be found here: https://docs.python.org/3/library/struct.html#format-characters
+- *@pw_py_map_fmt:* - Interprets the string after the ":" as a dictionary
+  relating the data field name to the python struct format string. Once
+  collected, the format strings are concatenated and used to unpack the data
+  elements as above::
+
+    // Example
+    data_format_string = "@pw_py_map_fmt:{Field: l, Field2: l }"
+    data = 0x14000000000000001400000000000000 (little endian)
+    args = {Field: 20, Field2:20}
 
 .. tip::
 
