@@ -13,13 +13,20 @@
 // the License.
 #pragma once
 
-#include <cstdarg>
-#include <cstddef>
+#include <stdarg.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#include "pw_polyfill/standard.h"
+#include "pw_preprocessor/util.h"
+#include "pw_tokenizer/internal/argument_types.h"
+
+#if PW_CXX_STANDARD_IS_SUPPORTED(17)
+
 #include <cstring>
 
 #include "pw_span/span.h"
 #include "pw_tokenizer/config.h"
-#include "pw_tokenizer/internal/argument_types.h"
 #include "pw_tokenizer/tokenize.h"
 
 namespace pw {
@@ -92,3 +99,15 @@ class EncodedMessage {
 
 }  // namespace tokenizer
 }  // namespace pw
+
+#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
+
+PW_EXTERN_C_START
+
+/// C function that encodes arguments to a tokenized buffer. Use the
+/// @cpp_func{pw::tokenizer::EncodeArgs} function from C++.
+size_t pw_tokenizer_EncodeArgs(pw_tokenizer_ArgTypes types,
+                               va_list args,
+                               void* output_buffer,
+                               size_t output_buffer_size);
+PW_EXTERN_C_END

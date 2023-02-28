@@ -312,6 +312,8 @@ helpers provided by ``pw_tokenizer/encode_args.h``.
 .. doxygenclass:: pw::tokenizer::EncodedMessage
    :members:
 
+.. doxygenfunction:: pw_tokenizer_EncodeArgs
+
 Example
 ^^^^^^^
 The following example implements a custom tokenization macro similar to

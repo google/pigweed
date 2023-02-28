@@ -126,5 +126,15 @@ size_t EncodeArgs(pw_tokenizer_ArgTypes types,
   return encoded_bytes;
 }
 
+extern "C" size_t pw_tokenizer_EncodeArgs(pw_tokenizer_ArgTypes types,
+                                          va_list args,
+                                          void* output_buffer,
+                                          size_t output_buffer_size) {
+  return EncodeArgs(types,
+                    args,
+                    span<std::byte>(static_cast<std::byte*>(output_buffer),
+                                    output_buffer_size));
+}
+
 }  // namespace tokenizer
 }  // namespace pw
