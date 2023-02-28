@@ -49,8 +49,12 @@ STM32L452 or the Nordic nRF52832.
 
 Getting Started
 ---------------
-If you'd like to get set up with Pigweed, please visit the
-:ref:`docs-getting-started` guide.
+Check out `Pigweed Sample Project <https://pigweed.googlesource.com/pigweed/sample_project/+/main/README.md>`_
+to see how to use Pigweed as a library in your broader project.
+
+Visit the :ref:`docs-getting-started` guide to learn how to bootstrap and
+activate a Pigweed environment, build Pigweed for a specific host or device,
+run tests, and more.
 
 What does Pigweed offer?
 ------------------------
