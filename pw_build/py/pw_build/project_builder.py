@@ -116,13 +116,13 @@ def _exit(*args) -> NoReturn:
     sys.exit(1)
 
 
-def _exit_due_to_interrupt() -> NoReturn:
+def _exit_due_to_interrupt() -> None:
+    """Abort function called when not using progress bars."""
     # To keep the log lines aligned with each other in the presence of
     # a '^C' from the keyboard interrupt, add a newline before the log.
     print()
     _LOG.info('Got Ctrl-C; exiting...')
-    BUILDER_CONTEXT.terminate_and_wait()
-    sys.exit(1)
+    BUILDER_CONTEXT.ctrl_c_interrupt()
 
 
 _NINJA_BUILD_STEP = re.compile(
@@ -146,7 +146,7 @@ def execute_command_no_logging(
     BUILDER_CONTEXT.register_process(recipe, proc)
     returncode = None
     while returncode is None:
-        if BUILDER_CONTEXT.should_abort():
+        if BUILDER_CONTEXT.build_stopping():
             proc.terminate()
         returncode = proc.poll()
         time.sleep(0.05)
@@ -196,7 +196,7 @@ def execute_command_with_logging(
 
             line_match_result = _NINJA_BUILD_STEP.match(output)
             if line_match_result:
-                if failure_line:
+                if failure_line and not BUILDER_CONTEXT.build_stopping():
                     recipe.status.log_last_failure()
                 failure_line = False
                 matches = line_match_result.groupdict()
@@ -208,7 +208,7 @@ def execute_command_with_logging(
             logger_method = logger.info
             if output.startswith(_NINJA_FAILURE_TEXT):
                 logger_method = logger.error
-                if failure_line:
+                if failure_line and not BUILDER_CONTEXT.build_stopping():
                     recipe.status.log_last_failure()
                 recipe.status.increment_error_count()
                 failure_line = True
@@ -238,13 +238,13 @@ def execute_command_with_logging(
             if line_processed_callback:
                 line_processed_callback(recipe)
 
-            if BUILDER_CONTEXT.should_abort():
+            if BUILDER_CONTEXT.build_stopping():
                 proc.terminate()
 
         recipe.status.return_code = returncode
 
         # Log the last failure if not done already
-        if failure_line:
+        if failure_line and not BUILDER_CONTEXT.build_stopping():
             recipe.status.log_last_failure()
 
         # Empty line at the end.
@@ -302,7 +302,10 @@ def log_build_recipe_finish(
 
     BUILDER_CONTEXT.mark_progress_done(cfg)
 
-    if cfg.status.failed():
+    if BUILDER_CONTEXT.interrupted():
+        level = logging.WARNING
+        tag = project_builder.color.yellow('(ABORT)')
+    elif cfg.status.failed():
         level = logging.ERROR
         tag = project_builder.color.red('(FAIL)')
     else:
@@ -325,7 +328,11 @@ def log_build_recipe_finish(
     if cfg.logfile:
         cfg.log.log(*build_finish_msg)
 
-    if cfg.status.failed() and cfg.status.error_count == 0:
+    if (
+        not BUILDER_CONTEXT.build_stopping()
+        and cfg.status.failed()
+        and cfg.status.error_count == 0
+    ):
         cfg.status.log_entire_recipe_logfile()
 
 
@@ -647,7 +654,7 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
         index_message: Optional[str] = '',
     ) -> bool:
         """Run a single build config."""
-        if BUILDER_CONTEXT.should_abort():
+        if BUILDER_CONTEXT.build_stopping():
             return False
 
         if self.colors:
@@ -712,6 +719,31 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
 
         return build_succeded
 
+    def print_pass_fail_banner(
+        self,
+        cancelled: bool = False,
+        logger: logging.Logger = _LOG,
+    ) -> None:
+        # Check conditions where banners should not be shown:
+        # Banner flag disabled.
+        if not self.banners:
+            return
+        # If restarting or interrupted.
+        if BUILDER_CONTEXT.interrupted():
+            _LOG.info(self.color.yellow('Exited due to keyboard interrupt.'))
+            return
+        # If any build is still pending.
+        if any(recipe.status.pending() for recipe in self):
+            return
+
+        # Show a large color banner for the overall result.
+        if all(recipe.status.passed() for recipe in self) and not cancelled:
+            for line in PASS_MESSAGE.splitlines():
+                logger.info(self.color.green(line))
+        else:
+            for line in FAIL_MESSAGE.splitlines():
+                logger.info(self.color.red(line))
+
     def print_build_summary(
         self,
         cancelled: bool = False,
@@ -752,21 +784,14 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
             logger.info(' ║')
             logger.info(" ╚════════════════════════════════════")
 
-        # Show a large color banner for the overall result.
-        if self.banners and not any(recipe.status.pending() for recipe in self):
-            if all(recipe.status.passed() for recipe in self) and not cancelled:
-                for line in PASS_MESSAGE.splitlines():
-                    logger.info(self.color.green(line))
-            else:
-                for line in FAIL_MESSAGE.splitlines():
-                    logger.info(self.color.red(line))
-
 
 def run_recipe(
     index: int, project_builder: ProjectBuilder, cfg: BuildRecipe, env
 ) -> bool:
     num_builds = len(project_builder)
     index_message = f'[{index}/{num_builds}]'
+
+    result = False
 
     log_build_recipe_start(index_message, project_builder, cfg)
 
@@ -795,6 +820,7 @@ def run_builds(project_builder: ProjectBuilder, workers: int = 1) -> int:
     # Print status before starting
     if not project_builder.should_use_progress_bars():
         project_builder.print_build_summary()
+    project_builder.print_pass_fail_banner()
 
     if workers > 1 and not project_builder.separate_build_file_logging:
         _LOG.warning(
@@ -810,6 +836,7 @@ def run_builds(project_builder: ProjectBuilder, workers: int = 1) -> int:
     def _cleanup() -> None:
         if not project_builder.should_use_progress_bars():
             project_builder.print_build_summary()
+        project_builder.print_pass_fail_banner()
         project_builder.flush_log_handlers()
         BUILDER_CONTEXT.set_idle()
         BUILDER_CONTEXT.exit_progress()
@@ -852,6 +879,7 @@ def run_builds(project_builder: ProjectBuilder, workers: int = 1) -> int:
             finally:
                 _cleanup()
 
+    project_builder.flush_log_handlers()
     return BUILDER_CONTEXT.exit_code()
 
 

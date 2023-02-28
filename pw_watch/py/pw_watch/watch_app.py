@@ -304,7 +304,6 @@ class WatchApp(PluginMixin):
         event_handler,
         prefs: WatchAppPrefs,
     ):
-
         self.event_handler = event_handler
 
         self.color_depth = get_default_colordepth()
@@ -736,17 +735,15 @@ class WatchApp(PluginMixin):
 
     def exit(
         self,
-        exit_code: int = 0,
+        exit_code: int = 1,
         log_after_shutdown: Optional[Callable[[], None]] = None,
     ) -> None:
         _LOG.info('Exiting...')
+        BUILDER_CONTEXT.ctrl_c_pressed = True
 
         # Shut everything down after the prompt_toolkit app exits.
         def _really_exit(future: asyncio.Future) -> NoReturn:
-            BUILDER_CONTEXT.restore_stdout_logging()
-            if log_after_shutdown:
-                log_after_shutdown()
-            BUILDER_CONTEXT.terminate_and_wait()
+            BUILDER_CONTEXT.restore_logging_and_shutdown(log_after_shutdown)
             os._exit(future.result())  # pylint: disable=protected-access
 
         if self.application.future:

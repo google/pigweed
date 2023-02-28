@@ -18,6 +18,10 @@ import logging
 import threading
 from abc import ABC, abstractmethod
 
+from pw_build.project_builder_context import get_project_builder_context
+
+BUILDER_CONTEXT = get_project_builder_context()
+
 _LOG = logging.getLogger('pw_build.watch')
 
 
@@ -97,14 +101,17 @@ class Debouncer:
             # When the function is already running but we get an incoming
             # event, go into the INTERRUPTED state to signal that we should
             # re-try running afterwards.
+            error_message = ['Event while running: %s', event_description]
+            if BUILDER_CONTEXT.using_progress_bars():
+                _LOG.error(*error_message)
+            else:
+                # Push an empty line to flush ongoing I/O in subprocess.
+                print('')
 
-            # Push an empty line to flush ongoing I/O in subprocess.
-            _LOG.error('')
-
-            # Surround the error message with newlines to make it stand out.
-            _LOG.error('')
-            _LOG.error('Event while running: %s', event_description)
-            _LOG.error('')
+                # Surround the error message with newlines to make it stand out.
+                print('')
+                _LOG.error(*error_message)
+                print('')
 
             self.function.cancel()
             self._transition(State.INTERRUPTED)
