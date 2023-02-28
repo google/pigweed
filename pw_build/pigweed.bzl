@@ -16,7 +16,6 @@
 load(
     "//pw_build/bazel_internal:pigweed_internal.bzl",
     _add_defaults = "add_defaults",
-    _has_pw_assert_dep = "has_pw_assert_dep",
 )
 
 def pw_cc_binary(**kwargs):
@@ -25,7 +24,7 @@ def pw_cc_binary(**kwargs):
     Specifically, this wrapper,
 
     *  Adds default copts.
-    *  Adds a dep on //pw_assert, if not already present.
+    *  Adds a dep on the pw_assert backend.
     *  Sets "linkstatic" to True.
     *  Disables header modules (via the feature -use_header_modules).
 
@@ -37,8 +36,7 @@ def pw_cc_binary(**kwargs):
     # TODO(b/234877642): Remove this implicit dependency once we have a better
     # way to handle the facades without introducing a circular dependency into
     # the build.
-    if not _has_pw_assert_dep(kwargs["deps"]):
-        kwargs["deps"] = kwargs["deps"] + ["@pigweed//pw_assert"]
+    kwargs["deps"] = kwargs["deps"] + ["@pigweed_config//:pw_assert_backend"]
     _add_defaults(kwargs)
     native.cc_binary(**kwargs)
 
@@ -48,7 +46,6 @@ def pw_cc_library(**kwargs):
     Specifically, this wrapper,
 
     *  Adds default copts.
-    *  Adds a dep on //pw_assert, if not already present.
     *  Sets "linkstatic" to True.
     *  Disables header modules (via the feature -use_header_modules).
 
@@ -64,7 +61,7 @@ def pw_cc_test(**kwargs):
     Specifically, this wrapper,
 
     *  Adds default copts.
-    *  Adds a dep on //pw_assert, if not already present.
+    *  Adds a dep on the pw_assert backend.
     *  Adds a dep on //pw_unit_test:simple_printing_main
     *  Sets "linkstatic" to True.
     *  Disables header modules (via the feature -use_header_modules).
@@ -78,8 +75,7 @@ def pw_cc_test(**kwargs):
     # TODO(b/234877642): Remove this implicit dependency once we have a better
     # way to handle the facades without introducing a circular dependency into
     # the build.
-    if not _has_pw_assert_dep(kwargs["deps"]):
-        kwargs["deps"] = kwargs["deps"] + ["@pigweed//pw_assert"]
+    kwargs["deps"] = kwargs["deps"] + ["@pigweed_config//:pw_assert_backend"]
     _add_defaults(kwargs)
     native.cc_test(**kwargs)
 
@@ -89,7 +85,7 @@ def pw_cc_perf_test(**kwargs):
     This macro produces a cc_binary and,
 
     *  Adds default copts.
-    *  Adds a dep on //pw_assert, if not already present.
+    *  Adds a dep on the pw_assert backend.
     *  Adds a dep on //pw_perf_test:logging_main
     *  Sets "linkstatic" to True.
     *  Disables header modules (via the feature -use_header_modules).
@@ -99,9 +95,7 @@ def pw_cc_perf_test(**kwargs):
     """
     kwargs["deps"] = kwargs.get("deps", []) + \
                      ["@pigweed//pw_perf_test:logging_main"]
-
-    if not _has_pw_assert_dep(kwargs["deps"]):
-        kwargs["deps"] = kwargs["deps"] + ["@pigweed//pw_assert"]
+    kwargs["deps"] = kwargs["deps"] + ["@pigweed_config//:pw_assert_backend"]
     _add_defaults(kwargs)
     native.cc_binary(**kwargs)
 

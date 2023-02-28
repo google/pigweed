@@ -77,22 +77,6 @@ def add_defaults(kwargs):
     # it's "minus use_header_modules".
     kwargs["features"].append("-use_header_modules")
 
-def has_pw_assert_dep(deps):
-    """Checks if the given deps contain a pw_assert dependency
-
-    Args:
-        deps: List of dependencies
-
-    Returns:
-        True if the list contains a pw_assert dependency.
-    """
-    pw_assert_targets = ["//pw_assert", "//pw_assert:pw_assert"]
-    pw_assert_targets.extend(["@pigweed" + t for t in pw_assert_targets])
-    for dep in deps:
-        if dep in pw_assert_targets:
-            return True
-    return False
-
 def _preprocess_linker_script_impl(ctx):
     cc_toolchain = find_cpp_toolchain(ctx)
     output_script = ctx.actions.declare_file(ctx.label.name + ".ld")

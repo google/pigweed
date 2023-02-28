@@ -13,7 +13,6 @@
 # the License.
 
 load(":pigweed_internal.bzl", "pw_linker_script")
-load(":pigweed_internal_test.bzl", "pigweed_internal_test_suite")
 
 pw_linker_script(
     name = "linker_script_test",
@@ -37,8 +36,4 @@ cc_binary(
     srcs = ["test.cc"],
     additional_linker_inputs = [":linker_script_test"],
     linkopts = ["-T $(location :linker_script_test)"],
-)
-
-pigweed_internal_test_suite(
-    name = "pigweed_internal_tests",
 )

@@ -53,6 +53,7 @@ pw_cc_library(
 pw_cc_library(
     name = "config",
     hdrs = ["public/pw_assert/config.h"],
+    includes = ["public"],
 )
 
 pw_cc_library(
