@@ -29,10 +29,10 @@
 
 namespace pw::thread::proto {
 
-Status ProtoEncodeThreadInfo(SnapshotThreadInfo::StreamEncoder& encoder,
+Status ProtoEncodeThreadInfo(pwpb::SnapshotThreadInfo::StreamEncoder& encoder,
                              const ThreadInfo& thread_info) {
   // Grab the next available Thread slot to write to in the response.
-  Thread::StreamEncoder proto_encoder = encoder.GetThreadsEncoder();
+  pwpb::Thread::StreamEncoder proto_encoder = encoder.GetThreadsEncoder();
   if (thread_info.thread_name().has_value()) {
     PW_TRY(proto_encoder.WriteName(thread_info.thread_name().value()));
   } else {
@@ -89,7 +89,7 @@ Status DecodeThreadName(ConstByteSpan serialized_path,
   Status status;
   while (decoder.Next().ok()) {
     switch (decoder.FieldNumber()) {
-      case static_cast<uint32_t>(Thread::Fields::kName): {
+      case static_cast<uint32_t>(pwpb::Thread::Fields::kName): {
         status.Update(decoder.ReadBytes(&thread_name));
       }
     }
@@ -102,7 +102,7 @@ void ThreadSnapshotService::GetPeakStackUsage(
   // For now, ignore the request and just stream all the thread information
   // back.
   struct IterationInfo {
-    SnapshotThreadInfo::MemoryEncoder encoder;
+    pwpb::SnapshotThreadInfo::MemoryEncoder encoder;
     Status status;
     ConstByteSpan name;
 
@@ -120,7 +120,7 @@ void ThreadSnapshotService::GetPeakStackUsage(
   }
 
   IterationInfo iteration_info{
-      SnapshotThreadInfo::MemoryEncoder(encode_buffer_),
+      pwpb::SnapshotThreadInfo::MemoryEncoder(encode_buffer_),
       OkStatus(),
       name_request,
       thread_proto_indices_};

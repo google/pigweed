@@ -24,15 +24,15 @@
 
 namespace pw::thread::proto {
 
-Status ProtoEncodeThreadInfo(proto::SnapshotThreadInfo::StreamEncoder& encoder,
+Status ProtoEncodeThreadInfo(pwpb::SnapshotThreadInfo::StreamEncoder& encoder,
                              const ThreadInfo& thread_info);
 
 // Calculates encoded buffer size based on code gen constants.
 constexpr size_t RequiredServiceBufferSize(
     size_t num_threads = PW_THREAD_MAXIMUM_THREADS) {
   constexpr size_t kSizeOfResponse =
-      proto::SnapshotThreadInfo::kMaxEncodedSizeBytes +
-      Thread::kMaxEncodedSizeBytes;
+      pwpb::SnapshotThreadInfo::kMaxEncodedSizeBytes +
+      pwpb::Thread::kMaxEncodedSizeBytes;
   return kSizeOfResponse * num_threads;
 }
 
