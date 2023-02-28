@@ -3,32 +3,38 @@
 =======================
 pw_string API reference
 =======================
-..
-  If a module includes a developer-facing API, this is the place to include API
-  documentation.
 
-  Note that Pigweed does not favor fully-automated API documentation generation.
-  While we welcome generating documentation from code, curation and thoughtful
-  developer intent are necessary. Some guidance:
-
-  * Only include API documentation for parts of the API that are valuable to
-    expose in documentation.
-
-  * Do not include generated API data for any functions, classes, etc., that lack
-    their own documentation, like docstrings or additional surrounding commentary
-    in the containing doc.
-
-  A module may have APIs for multiple languages. If so, replace this file with an
-  `api` directory and an `index.rst` file that links to separate docs for each
-  supported language.
+.. _pw_inlinebasicstring-api:
 
 ---------------------
 pw::InlineBasicString
 ---------------------
+:cpp:class:`pw::InlineBasicString` and :cpp:type:`pw::InlineString` are
+C++14-compatible, fixed-capacity, null-terminated string classes. They are
+equivalent to ``std::basic_string<T>`` and ``std::string``, but store the string
+contents inline and use no dynamic memory.
+
+:cpp:type:`pw::InlineString` takes the fixed capacity as a template argument,
+but may be used generically without specifying the capacity. The capacity value
+is stored in a member variable, which the generic ``pw::InlineString<>`` /
+``pw::InlineBasicString<T>`` specialization uses in place of the template
+parameter.
+
+:cpp:type:`pw::InlineString` is efficient and compact. The current size and
+capacity are stored in a single word. Accessing the contents of a
+:cpp:type:`pw::InlineString` is a simple array access within the object, with no
+pointer indirection, even when working from a generic ``pw::InlineString<>``
+reference.
+
 .. cpp:class:: template <typename T, unsigned short kCapacity> pw::InlineBasicString
 
    Represents a fixed-capacity string of a generic character type. Equivalent to
    ``std::basic_string<T>``. Always null (``T()``) terminated.
+
+----------------
+pw::InlineString
+----------------
+See also :ref:`pw_inlinebasicstring-api`.
 
 .. cpp:type:: template <unsigned short kCapacity> pw::InlineString = pw::InlineBasicString<char, kCapacity>
 
@@ -66,6 +72,10 @@ pw::string::ClampedCString
 
 pw::string::Copy
 ----------------
+The ``pw::string::Copy`` functions provide a safer alternative to
+``std::strncpy`` as it always null-terminates whenever the destination
+buffer has a non-zero size.
+
 .. cpp:function:: StatusWithSize Copy(const std::string_view& source, span<char> dest)
 .. cpp:function:: StatusWithSize Copy(const char* source, span<char> dest)
 .. cpp:function:: StatusWithSize Copy(const char* source, char* dest, size_t num)
@@ -104,8 +114,26 @@ pw::string::NullTerminatedLength
 
 pw::string::PrintableCopy
 -------------------------
+The ``pw::string::PrintableCopy`` function provides a safe printable copy of a
+string. It functions with the same safety of ``pw::string::Copy`` while also
+converting any non-printable characters to a ``.`` char.
+
 .. cpp:function:: StatusWithSize PrintableCopy(const std::string_view& source, span<char> dest)
 
+-----------------
 pw::StringBuilder
 -----------------
+.. cpp:namespace-push:: pw::StringBuilder
 
+:cpp:class:`StringBuilder` facilitates creating formatted strings in a
+fixed-sized buffer or :cpp:type:`pw::InlineString`. It is designed to give the
+flexibility of ``std::ostringstream``, but with a small footprint.
+
+:cpp:class:`StringBuilder` supports C++ ``<<``-style output, printf formatting,
+and a few ``std::string`` functions (:cpp:func:`append()`,
+:cpp:func:`push_back()`, :cpp:func:`pop_back`.
+
+.. cpp:namespace-pop::
+
+.. doxygenclass:: pw::StringBuilder
+   :members:

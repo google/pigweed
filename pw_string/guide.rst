@@ -34,8 +34,8 @@ The following shows basic use of a :cpp:class:`pw::StringBuilder`.
     return sb.status();
   }
 
-Constructing :cpp:type:`pw::InlineString` objects
--------------------------------------------------
+Constructing pw::InlineString objects
+-------------------------------------
 :cpp:type:`pw::InlineString` objects must be constructed by specifying a fixed
 capacity for the string.
 
@@ -140,8 +140,8 @@ Building strings
 :cpp:class:`pw::StringBuilder` may be used to build a string in a
 :cpp:type:`pw::InlineString`.
 
-Deducing class template arguments with :cpp:type:`pw::InlineBasicString`
-------------------------------------------------------------------------
+Deducing class template arguments with pw::InlineBasicString
+------------------------------------------------------------
 :cpp:type:`pw::InlineBasicString` supports class template argument deduction
 (CTAD) in C++17 and newer. Since :cpp:type:`pw::InlineString` is an alias, CTAD
 is not supported until C++20.

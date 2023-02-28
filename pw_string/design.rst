@@ -57,6 +57,6 @@ return a length if the string is null-terminated.
 Exceeding the capacity
 ----------------------
 Any :cpp:type:`pw::InlineString` operations that exceed the string's capacity
-fail an assertion, resulting in a crash. Heplers are provided in
+fail an assertion, resulting in a crash. Helpers are provided in
 ``pw_string/util.h`` that return ``pw::Status::ResourceExhausted()`` instead of
 failing an assert when the capacity would be exceeded.
