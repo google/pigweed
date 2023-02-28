@@ -15,6 +15,7 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pigweed/third_party/emboss/build_defs.gni")
+import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
 import("$dir_pw_docgen/docs.gni")
@@ -27,6 +28,11 @@ config("public_include_path") {
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
+
+  report_deps = [
+    ":emboss_size_report",
+    ":emboss_size_report_diff",
+  ]
 }
 
 pw_source_set("pw_bluetooth") {
@@ -126,4 +132,50 @@ pw_test("emboss_test") {
     ":emboss_hci",
     ":emboss_vendor",
   ]
+}
+
+if (dir_pw_third_party_emboss != "") {
+  pw_size_diff("emboss_size_report") {
+    title = "pw_bluetooth Emboss Size Report"
+    base = "$dir_pw_bloat:bloat_base"
+    binaries = [
+      {
+        target = "size_report:make_view_and_write"
+        label = "Make view and write field"
+      },
+    ]
+  }
+
+  pw_size_diff("emboss_size_report_diff") {
+    title = "pw_bluetooth Emboss Size Report diff"
+    base = "size_report:make_view_and_write"
+    binaries = [
+      {
+        target = "size_report:make_2_views_and_write"
+        label = "Size difference when adding a second view"
+      },
+    ]
+  }
+} else {
+  pw_size_diff("emboss_size_report") {
+    title = "pw_bluetooth Emboss Size Report"
+    base = "$dir_pw_bloat:bloat_base"
+    binaries = [
+      {
+        target = "$dir_pw_bloat:bloat_base"
+        label = "Emboss not configured."
+      },
+    ]
+  }
+
+  pw_size_diff("emboss_size_report_diff") {
+    title = "pw_bluetooth Emboss Size Report diff"
+    base = "$dir_pw_bloat:bloat_base"
+    binaries = [
+      {
+        target = "$dir_pw_bloat:bloat_base"
+        label = "Emboss not configured."
+      },
+    ]
+  }
 }

@@ -106,5 +106,7 @@ filegroup(
     name = "emboss_files",
     srcs = [
         "emboss_test.cc",
+        "size_report/make_2_views_and_write.cc",
+        "size_report/make_view_and_write.cc",
     ],
 )
