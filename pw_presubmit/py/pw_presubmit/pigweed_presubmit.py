@@ -453,6 +453,7 @@ def bazel_test(ctx: PresubmitContext) -> None:
 )
 def bazel_build(ctx: PresubmitContext) -> None:
     """Runs Bazel build for each supported platform."""
+    # Build everything with the default flags.
     build.bazel(
         ctx,
         'build',
@@ -472,6 +473,15 @@ def bazel_build(ctx: PresubmitContext) -> None:
     }
 
     for cxxversion in ('c++17', 'c++20'):
+        # Explicitly build for each supported C++ version.
+        build.bazel(
+            ctx,
+            'build',
+            f"--cxxopt=-std={cxxversion}",
+            '--',
+            '//...',
+        )
+
         for platform, targets in targets_for_platform.items():
             build.bazel(
                 ctx,
