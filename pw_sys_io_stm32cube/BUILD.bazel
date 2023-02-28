@@ -33,7 +33,7 @@ pw_cc_library(
     deps = [
         "//pw_preprocessor",
         "//pw_status",
-        "//pw_sys_io",
+        "//pw_sys_io:facade",
         "//third_party/stm32cube",
     ],
 )
