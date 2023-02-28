@@ -78,7 +78,7 @@ void BasicDispatcher::RunLoopOnce() {
 
     lock_.unlock();
     PW_LOG_DEBUG("running task");
-    Context ctx{this, reinterpret_cast<Task*>(&task)};
+    Context ctx{this, &task.task_};
     task(ctx);
     lock_.lock();
   }

@@ -59,7 +59,7 @@ void NativeFakeDispatcher::RunLoopOnce() {
       PostTaskInternal(task, task.due_time() + task.interval().value());
     }
 
-    Context ctx{&dispatcher_, reinterpret_cast<Task*>(&task)};
+    Context ctx{&dispatcher_, &task.task_};
     task(ctx);
   }
 }

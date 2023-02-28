@@ -30,10 +30,10 @@ class FakeDispatcher;
 // backend::NativeTask, which contains backend-specific state.
 class Task final {
  public:
-  Task() = default;
+  Task() : native_type_(*this) {}
 
   // Constructs a Task that calls `f` when executed on a Dispatcher.
-  explicit Task(TaskFunction&& f) : native_type_(std::move(f)) {}
+  explicit Task(TaskFunction&& f) : native_type_(*this, std::move(f)) {}
 
   Task(const Task&) = delete;
   Task& operator=(const Task&) = delete;

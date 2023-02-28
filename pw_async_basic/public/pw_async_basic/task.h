@@ -33,8 +33,9 @@ class NativeTask final : public IntrusiveList<NativeTask>::Item {
   friend class ::pw::async::BasicDispatcher;
   friend class ::pw::async::test::backend::NativeFakeDispatcher;
 
-  NativeTask() = default;
-  explicit NativeTask(TaskFunction&& f) { func_ = std::move(f); }
+  NativeTask(::pw::async::Task& task) : task_(task) {}
+  explicit NativeTask(::pw::async::Task& task, TaskFunction&& f)
+      : func_(std::move(f)), task_(task) {}
   void operator()(Context& ctx) { func_(ctx); }
   void set_function(TaskFunction&& f) { func_ = std::move(f); }
 
@@ -57,6 +58,11 @@ class NativeTask final : public IntrusiveList<NativeTask>::Item {
   }
 
   TaskFunction func_ = nullptr;
+  // task_ is placed after func_ to take advantage of the padding that would
+  // otherwise be added here. On 32-bit systems, func_ and due_time_ have an
+  // alignment of 8, but func_ has a size of 12 by default. Thus, 4 bytes of
+  // padding would be added here, which is just enough for a pointer.
+  Task& task_;
   pw::chrono::SystemClock::time_point due_time_;
   // A duration of 0 indicates that the task is not periodic.
   chrono::SystemClock::duration interval_ =
