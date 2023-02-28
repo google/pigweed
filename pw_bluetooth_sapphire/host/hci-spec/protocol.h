@@ -2954,38 +2954,6 @@ struct LESetPeriodicAdvertisingEnableCommandParams {
 // LE Set Extended Scan Parameters Command (v5.0) (LE)
 constexpr OpCode kLESetExtendedScanParameters = LEControllerCommandOpCode(0x0041);
 
-struct LESetExtendedScanParametersData {
-  // Controls the type of scan to perform.
-  LEScanType scan_type;
-
-  // Range: see kLEExtendedScanInterval[Min|Max] in hci_constants.h
-  // Time: N * 0.625 ms
-  // Time Range: 2.5 ms to 40.959375 s
-  uint16_t scan_interval;
-  uint16_t scan_window;
-} __attribute__((packed));
-
-struct LESetExtendedScanParametersCommandParams {
-  LESetExtendedScanParametersCommandParams() = delete;
-  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(LESetExtendedScanParametersCommandParams);
-
-  // Indicates the type of address being used in the scan request packets (for
-  // active scanning).
-  LEOwnAddressType own_address_type;
-
-  // The LE filter accept list and privacy filter policy that should be used while scanning for
-  // directed and undirected advertisements.
-  LEScanFilterPolicy filter_policy;
-
-  // See kLEPHYBit* constants in hci_constants.h for possible values. kLEPHYBit2M is excluded for
-  // this command.
-  uint8_t scan_phys;
-
-  // The number of array elements is determined by the number of bits set in the scan_phys
-  // parameter.
-  LESetExtendedScanParametersData data[];
-} __attribute__((packed));
-
 // ===============================================
 // LE Set Extended Scan Enable Command (v5.0) (LE)
 constexpr OpCode kLESetExtendedScanEnable = LEControllerCommandOpCode(0x0042);
