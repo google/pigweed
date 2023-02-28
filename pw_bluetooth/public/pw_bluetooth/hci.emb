@@ -595,6 +595,22 @@ enum LEAddressType:
     -- Meaning: No address provided (anonymous advertisement)
 
 
+enum LEOwnAddressType:
+  -- Possible values that can be used for the |own_address_type| parameter in various HCI commands
+  [maximum_bits: 8]
+  PUBLIC                    = 0x00
+    -- Public Device Address
+  RANDOM                    = 0x01
+    -- Random Device Address
+  PRIVATE_DEFAULT_TO_PUBLIC = 0x02
+    -- Controller generates the Resolvable Private Address based on the local IRK from the resolving
+    -- list. If the resolving list contains no matching entry, then use the public address.
+  PRIVATE_DEFAULT_TO_RANDOM = 0x03
+    -- Controller generates the Resolvable Private Address based on the local IRK from the resolving
+    -- list. If the resolving list contains no matching entry, then use the random address from
+    -- LE_Set_Random_Address.
+
+
 enum LEPeerAddressType:
   -- Possible values that can be used for the address_type parameters in various
   -- HCI commands
@@ -603,6 +619,34 @@ enum LEPeerAddressType:
   RANDOM    = 0x01
   ANONYMOUS = 0xFF
 
+
+enum LEScanType:
+  -- Possible values that can be used for the |scan_type| parameter in various LE HCI commands.
+  [maximum_bits: 8]
+  PASSIVE = 0x00
+    -- Passive Scanning. No scanning PDUs shall be sent (default)
+  ACTIVE  = 0x01
+    -- Active scanning. Scanning PDUs may be sent.
+
+
+enum LEScanFilterPolicy:
+  -- Possible values that can be used for the |filter_policy| parameter in various LE HCI commands
+  [maximum_bits: 8]
+  BASIC_UNFILTERED    = 0x00
+  BASIC_FILTERED      = 0x01
+  EXTENDED_UNFILTERED = 0x02
+  EXTENDED_FILTERED   = 0x03
+
+
+bits LEPHYBits:
+  0      [+1]  Flag  le_1m
+    -- Scan advertisements on the LE 1M PHY
+  $next  [+1]  Flag  padding1
+    -- Reserved for future use
+  $next  [+1]  Flag  le_coded
+    -- Scan advertisements on the LE Coded PHY
+  $next  [+5]  UInt  padding2
+    -- Reserved for future use
 
 enum LEPrivacyMode:
   -- Possible values for the |privacy_mode| parameter in an LE Set Privacy Mode
@@ -1234,6 +1278,36 @@ struct LERemoveAdvertisingSetCommand:
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
   $next [+1]         UInt           advertising_handle
+
+
+struct LESetExtendedScanParametersData:
+  -- Data fields for variable-length portion of an LE Set Extneded Scan Parameters command
+  0      [+1]  LEScanType  scan_type
+  $next  [+2]  UInt        scan_interval
+    -- Time interval from when the Controller started its last scan until it begins the subsequent
+    -- scan on the primary advertising physical channel.
+    -- Time = N × 0.625 ms
+    -- Time Range: 2.5 ms to 40.959375 s
+    [requires: 0x0004 <= this]
+  $next  [+2]  UInt        scan_window
+    -- Duration of the scan on the primary advertising physical channel.
+    -- Time = N × 0.625 ms
+    -- Time Range: 2.5 ms to 40.959375 s
+    [requires: 0x0004 <= this]
+
+
+struct LESetExtendedScanParametersCommand(num_entries: UInt:8):
+  -- LE Set Extended Scan Parameters Command (v5.0) (LE)
+  -- num_entries corresponds to the number of bits set in the |scanning_phys| field
+  let hdr_size = CommandHeader.$size_in_bytes
+  0      [+hdr_size]                        CommandHeader                     header
+  $next  [+1]                               LEOwnAddressType                  own_address_type
+  $next  [+1]                               LEScanFilterPolicy                scanning_filter_policy
+  $next  [+1]                               LEPHYBits                         scanning_phys
+  let single_entry_size = LESetExtendedScanParametersData.$size_in_bytes
+  let total_entries_size = num_entries * single_entry_size
+  $next  [+total_entries_size]  LESetExtendedScanParametersData[num_entries]  data
+    -- Indicates the type of address being used in the scan request packets (for active scanning).
 
 
 struct LESetExtendedScanEnableCommand:
