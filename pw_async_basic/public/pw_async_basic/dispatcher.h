@@ -50,9 +50,10 @@ class BasicDispatcher final : public Dispatcher, public thread::ThreadCore {
     return chrono::SystemClock::now();
   }
 
- private:
+  // ThreadCore overrides:
   void Run() override PW_LOCKS_EXCLUDED(lock_);
 
+ private:
   // Insert |task| into task_queue_ maintaining its min-heap property, keyed by
   // |time_due|. Must be holding lock_ when calling this function.
   void PostTaskInternal(backend::NativeTask& task,

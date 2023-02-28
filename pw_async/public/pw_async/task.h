@@ -17,7 +17,6 @@
 
 #include "pw_async/internal/types.h"
 #include "pw_async_backend/task.h"
-#include "pw_chrono/system_clock.h"
 
 namespace pw::async {
 
@@ -25,14 +24,16 @@ namespace test {
 class FakeDispatcher;
 }
 
-// A Task represents a unit of work (TaskFunction) that can be executed on a
-// Dispatcher. To support various Dispatcher backends, it wraps a
-// backend::NativeTask, which contains backend-specific state.
+/// A Task represents a unit of work (TaskFunction) that can be executed on a
+/// Dispatcher. To support various Dispatcher backends, it wraps a
+/// `backend::NativeTask`, which contains backend-specific state and methods.
 class Task final {
  public:
+  /// The default constructor creates a Task without a function.
+  /// `set_function()` must be called before posting the Task.
   Task() : native_type_(*this) {}
 
-  // Constructs a Task that calls `f` when executed on a Dispatcher.
+  /// Constructs a Task that calls `f` when executed on a Dispatcher.
   explicit Task(TaskFunction&& f) : native_type_(*this, std::move(f)) {}
 
   Task(const Task&) = delete;
@@ -40,17 +41,17 @@ class Task final {
   Task(Task&&) = delete;
   Task& operator=(Task&&) = delete;
 
-  // Configure the TaskFunction after construction. This MUST NOT be called
-  // while this Task is pending in a Dispatcher.
+  /// Configure the TaskFunction after construction. This MUST NOT be called
+  /// while this Task is pending in a Dispatcher.
   void set_function(TaskFunction&& f) {
     native_type_.set_function(std::move(f));
   }
 
-  // Executes this task.
+  /// Executes this task.
   void operator()(Context& ctx) { native_type_(ctx); }
 
-  // Returns the inner NativeTask containing backend-specific state. Only
-  // Dispatcher backends or non-portable code should call these methods!
+  /// Returns the inner NativeTask containing backend-specific state. Only
+  /// Dispatcher backends or non-portable code should call these methods!
   backend::NativeTask& native_type() { return native_type_; }
   const backend::NativeTask& native_type() const { return native_type_; }
 

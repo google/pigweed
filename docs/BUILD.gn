@@ -109,6 +109,8 @@ group("third_party_docs") {
 
 _doxygen_input_files = [
   # All sources with doxygen comment blocks.
+  "$dir_pw_async/public/pw_async/dispatcher.h",
+  "$dir_pw_async/public/pw_async/task.h",
   "$dir_pw_chrono/public/pw_chrono/system_clock.h",
   "$dir_pw_chrono/public/pw_chrono/system_timer.h",
   "$dir_pw_string/public/pw_string/string_builder.h",

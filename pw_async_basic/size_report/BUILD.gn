@@ -12,18 +12,22 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-filegroup(
-    name = "pw_async_files",
-    srcs = [
-        "dispatcher.cc",
-        "dispatcher_test.cc",
-        "fake_dispatcher.cc",
-        "public/pw_async_basic/dispatcher.h",
-        "public/pw_async_basic/fake_dispatcher.h",
-        "public/pw_async_basic/task.h",
-        "public_overrides/pw_async_backend/fake_dispatcher.h",
-        "public_overrides/pw_async_backend/task.h",
-        "size_report/post_1_task.cc",
-        "size_report/task.cc",
-    ],
-)
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_build/target_types.gni")
+
+pw_executable("post_1_task") {
+  sources = [ "post_1_task.cc" ]
+  deps = [
+    "$dir_pw_async_basic:dispatcher",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+}
+
+pw_executable("task") {
+  sources = [ "task.cc" ]
+  deps = [
+    "$dir_pw_async_basic:task",
+    "$dir_pw_bloat:bloat_this_binary",
+  ]
+}

@@ -14,6 +14,8 @@
 
 import("//build_overrides/pigweed.gni")
 import("$dir_pw_chrono/backend.gni")
+import("$dir_pw_sync/backend.gni")
+import("$dir_pw_thread/backend.gni")
 import("$dir_pw_unit_test/test.gni")
 
 # Creates a test target that tests a FakeDispatcher backend using a common
@@ -25,7 +27,9 @@ import("$dir_pw_unit_test/test.gni")
 #     [target] The FakeDispatcher backend to test.
 template("fake_dispatcher_test") {
   pw_test(target_name) {
-    enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
+    enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != "" &&
+                pw_sync_TIMED_THREAD_NOTIFICATION_BACKEND != "" &&
+                pw_thread_THREAD_BACKEND != ""
     deps = [
       "$dir_pw_sync:timed_thread_notification",
       "$dir_pw_thread:thread",

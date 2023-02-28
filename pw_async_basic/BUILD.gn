@@ -16,9 +16,11 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_async/async.gni")
 import("$dir_pw_async/fake_dispatcher_test.gni")
+import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_sync/backend.gni")
 import("$dir_pw_thread/backend.gni")
 import("$dir_pw_unit_test/test.gni")
 
@@ -31,6 +33,7 @@ config("backend_config") {
   visibility = [ ":*" ]
 }
 
+# Backend for //pw_async:task
 pw_source_set("task") {
   public_configs = [
     ":public_include_path",
@@ -48,9 +51,11 @@ pw_source_set("task") {
   visibility = [
                  ":*",
                  "$dir_pw_async:*",
+                 "size_report:*",
                ] + pw_async_EXPERIMENTAL_MODULE_VISIBILITY
 }
 
+# Backend for //pw_async:fake_dispatcher
 pw_source_set("fake_dispatcher") {
   public_configs = [
     ":public_include_path",
@@ -86,10 +91,13 @@ pw_source_set("dispatcher") {
     "$dir_pw_containers:intrusive_list",
     "$dir_pw_sync:interrupt_spin_lock",
     "$dir_pw_sync:timed_thread_notification",
-    "$dir_pw_thread:thread",
+    "$dir_pw_thread:thread_core",
     dir_pw_log,
   ]
-  visibility = [ ":*" ] + pw_async_EXPERIMENTAL_MODULE_VISIBILITY
+  visibility = [
+                 ":*",
+                 "size_report:*",
+               ] + pw_async_EXPERIMENTAL_MODULE_VISIBILITY
 }
 
 pw_test("dispatcher_test") {
@@ -97,6 +105,7 @@ pw_test("dispatcher_test") {
               pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread"
   public_deps = [
     ":dispatcher",
+    "$dir_pw_thread:thread",
     dir_pw_log,
   ]
   sources = [ "dispatcher_test.cc" ]
@@ -111,4 +120,51 @@ pw_test_group("tests") {
 
 pw_doc_group("docs") {
   sources = [ "docs.rst" ]
+  report_deps = [ ":docs_size_report" ]
+}
+
+pw_size_diff("docs_size_report") {
+  title = "pw_async_basic Docs Size Report"
+  base = "$dir_pw_bloat:bloat_base"
+
+  binaries = []
+
+  if (pw_chrono_SYSTEM_CLOCK_BACKEND != "") {
+    binaries += [
+      {
+        target = "size_report:task"
+        label = "Construct a Task"
+      },
+    ]
+  }
+
+  if (binaries == []) {
+    binaries += [
+      {
+        target = "$dir_pw_bloat:bloat_base"
+        label = "No backend is selected."
+      },
+    ]
+  }
+}
+
+# This size report can't be included in docs because the docs build target uses
+# the target-stm32f429i-disc1 toolchain, which does not support timed thread
+# notifications (mutex & condition_variable headers are not available).
+pw_size_diff("size_report") {
+  title = "pw_async_basic Size Report"
+  base = "$dir_pw_bloat:bloat_base"
+
+  binaries = []
+
+  if (pw_chrono_SYSTEM_CLOCK_BACKEND != "" &&
+      pw_sync_THREAD_NOTIFICATION_BACKEND != "" &&
+      pw_sync_TIMED_THREAD_NOTIFICATION_BACKEND != "") {
+    binaries += [
+      {
+        target = "size_report:post_1_task"
+        label = "Post 1 Task to BasicDispatcher"
+      },
+    ]
+  }
 }
