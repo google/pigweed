@@ -26,7 +26,7 @@
 namespace pw::rpc::internal::test {
 
 void FakeChannelOutput::clear() {
-  LockGuard lock(mutex_);
+  std::lock_guard lock(mutex_);
   payloads_.clear();
   packets_.clear();
   send_status_ = OkStatus();
@@ -108,7 +108,7 @@ void FakeChannelOutput::CopyPayloadToBuffer(Packet& packet) {
 }
 
 void FakeChannelOutput::LogPackets() const {
-  LockGuard lock(mutex_);
+  std::lock_guard lock(mutex_);
 
   PW_LOG_INFO("%u packets have been sent through this FakeChannelOutput",
               static_cast<unsigned>(packets_.size()));

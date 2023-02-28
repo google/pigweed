@@ -53,7 +53,7 @@ class Server : public internal::Endpoint {
   template <typename... OtherServices>
   void RegisterService(Service& service, OtherServices&... services)
       PW_LOCKS_EXCLUDED(internal::rpc_lock()) {
-    internal::LockGuard lock(internal::rpc_lock());
+    internal::RpcLockGuard lock;
     services_.push_front(service);  // Register the first service
 
     // Register any additional services by expanding the parameter pack. This
@@ -67,7 +67,7 @@ class Server : public internal::Endpoint {
   // on your logic you might want to check if a service is currently registered.
   bool IsServiceRegistered(const Service& service) const
       PW_LOCKS_EXCLUDED(internal::rpc_lock()) {
-    internal::LockGuard lock(internal::rpc_lock());
+    internal::RpcLockGuard lock;
 
     for (const Service& svc : services_) {
       if (&svc == &service) {

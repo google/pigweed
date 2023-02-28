@@ -46,7 +46,6 @@ class CallbacksTest : public ::testing::Test {
 
   ~CallbacksTest() override {
     EXPECT_FALSE(callback_thread_.joinable());  // Tests must join the thread!
-    EXPECT_GT(callback_executed_, 0);
   }
 
   void RespondToCall(const RawClientReaderWriter& call) {
@@ -82,6 +81,13 @@ class CallbacksTest : public ::testing::Test {
 };
 
 TEST_F(CallbacksTest, DestructorWaitsUntilCallbacksComplete) {
+  // Skip this test if locks are disabled because the thread can't yield.
+  if (PW_RPC_USE_GLOBAL_MUTEX == 0) {
+    callback_thread_sem_.release();
+    callback_thread_.join();
+    GTEST_SKIP();
+  }
+
   {
     RawClientReaderWriter local_call = TestService::TestBidirectionalStreamRpc(
         context_.client(), context_.channel().id());
@@ -120,6 +126,13 @@ TEST_F(CallbacksTest, DestructorWaitsUntilCallbacksComplete) {
 }
 
 TEST_F(CallbacksTest, MoveActiveCall_WaitsForCallbackToComplete) {
+  // Skip this test if locks are disabled because the thread can't yield.
+  if (PW_RPC_USE_GLOBAL_MUTEX == 0) {
+    callback_thread_sem_.release();
+    callback_thread_.join();
+    GTEST_SKIP();
+  }
+
   call_1_ = TestService::TestBidirectionalStreamRpc(
       context_.client(), context_.channel().id(), [this](ConstByteSpan) {
         main_thread_sem_.release();  // Confirm that this thread started
@@ -169,6 +182,7 @@ TEST_F(CallbacksTest, MoveOtherCallIntoOwnCallInCallback) {
   callback_thread_sem_.release();
   callback_thread_.join();
 
+  EXPECT_EQ(callback_executed_, 1);
   EXPECT_TRUE(call_1_.active());
   EXPECT_FALSE(call_2_.active());
 }
@@ -197,6 +211,7 @@ TEST_F(CallbacksTest, MoveOwnCallInCallback) {
   callback_thread_sem_.release();
   callback_thread_.join();
 
+  EXPECT_EQ(callback_executed_, 1);
   EXPECT_FALSE(call_1_.active());
   EXPECT_FALSE(call_2_.active());
 }

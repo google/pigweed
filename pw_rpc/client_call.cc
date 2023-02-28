@@ -49,7 +49,7 @@ void UnaryResponseClientCall::HandleCompleted(
   }
 
   // This mutex lock could be avoided by making callbacks_executing_ atomic.
-  LockGuard lock(rpc_lock());
+  RpcLockGuard lock;
   CallbackFinished();
 }
 
@@ -64,7 +64,7 @@ void StreamResponseClientCall::HandleCompleted(Status status) {
   }
 
   // This mutex lock could be avoided by making callbacks_executing_ atomic.
-  LockGuard lock(rpc_lock());
+  RpcLockGuard lock;
   CallbackFinished();
 }
 

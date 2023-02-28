@@ -29,7 +29,7 @@ class ClientCall : public Call {
   ~ClientCall() PW_LOCKS_EXCLUDED(rpc_lock()) { Abandon(); }
 
   uint32_t id() const PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
+    RpcLockGuard lock;
     return Call::id();
   }
 
@@ -56,7 +56,7 @@ class ClientCall : public Call {
   // Public function that closes a call client-side without cancelling it on the
   // server.
   void Abandon() PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
+    RpcLockGuard lock;
     CloseClientCall();
   }
 
@@ -110,7 +110,7 @@ class UnaryResponseClientCall : public ClientCall {
 
   UnaryResponseClientCall& operator=(UnaryResponseClientCall&& other)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
+    RpcLockGuard lock;
     MoveUnaryResponseClientCallFrom(other);
     return *this;
   }
@@ -123,7 +123,7 @@ class UnaryResponseClientCall : public ClientCall {
 
   void set_on_completed(Function<void(ConstByteSpan, Status)>&& on_completed)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
+    RpcLockGuard lock;
     set_on_completed_locked(std::move(on_completed));
   }
 
@@ -184,7 +184,7 @@ class StreamResponseClientCall : public ClientCall {
 
   StreamResponseClientCall& operator=(StreamResponseClientCall&& other)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
+    RpcLockGuard lock;
     MoveStreamResponseClientCallFrom(other);
     return *this;
   }
@@ -197,7 +197,7 @@ class StreamResponseClientCall : public ClientCall {
 
   void set_on_completed(Function<void(Status)>&& on_completed)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
+    RpcLockGuard lock;
     set_on_completed_locked(std::move(on_completed));
   }
 

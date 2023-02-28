@@ -102,7 +102,7 @@ Call::~Call() {
   // Removing this explicit registration would result in unsynchronized
   // modification of the endpoint call list via the destructor of the
   // superclass `IntrusiveList<Call>::Item`.
-  LockGuard lock(rpc_lock());
+  RpcLockGuard lock;
 
   // This `active_locked()` guard is necessary to ensure that `endpoint()` is
   // still valid.
@@ -187,7 +187,7 @@ void Call::CallOnError(Status error) {
   }
 
   // This mutex lock could be avoided by making callbacks_executing_ atomic.
-  LockGuard lock(rpc_lock());
+  RpcLockGuard lock;
   CallbackFinished();
 }
 

@@ -63,7 +63,7 @@ class NanopbServerCall : public ServerCall {
 
   NanopbServerCall& operator=(NanopbServerCall&& other)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    internal::LockGuard lock(internal::rpc_lock());
+    RpcLockGuard lock;
     MoveNanopbServerCallFrom(other);
     return *this;
   }
@@ -75,7 +75,7 @@ class NanopbServerCall : public ServerCall {
   }
 
   Status SendServerStream(const void* payload) PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
+    RpcLockGuard lock;
     return NanopbSendStream(*this, payload, serde_);
   }
 
@@ -89,9 +89,8 @@ class NanopbServerCall : public ServerCall {
 template <typename Request>
 class BaseNanopbServerReader : public NanopbServerCall {
  public:
-  BaseNanopbServerReader(const internal::LockedCallContext& context,
-                         MethodType type)
-      PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
+  BaseNanopbServerReader(const LockedCallContext& context, MethodType type)
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock())
       : NanopbServerCall(context, type) {}
 
  protected:
@@ -104,7 +103,7 @@ class BaseNanopbServerReader : public NanopbServerCall {
 
   BaseNanopbServerReader& operator=(BaseNanopbServerReader&& other)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    internal::LockGuard lock(internal::rpc_lock());
+    RpcLockGuard lock;
     MoveNanopbServerCallFrom(other);
     set_nanopb_on_next_locked(std::move(other.nanopb_on_next_));
     return *this;
@@ -112,7 +111,7 @@ class BaseNanopbServerReader : public NanopbServerCall {
 
   void set_on_next(Function<void(const Request& request)>&& on_next)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    internal::LockGuard lock(internal::rpc_lock());
+    RpcLockGuard lock;
     set_nanopb_on_next_locked(std::move(on_next));
   }
 

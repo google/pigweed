@@ -227,7 +227,7 @@ TEST(Client, ProcessPacket_ReturnsInvalidArgumentOnServerPacket) {
 }
 
 const Channel* GetChannel(internal::Endpoint& endpoint, uint32_t id) {
-  internal::LockGuard lock(internal::rpc_lock());
+  internal::RpcLockGuard lock;
   return endpoint.GetInternalChannel(id);
 }
 

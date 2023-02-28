@@ -123,7 +123,7 @@ Status NanopbSendStream(Call& call,
 Status SendFinalResponse(NanopbServerCall& call,
                          const void* payload,
                          const Status status) {
-  LockGuard lock(rpc_lock());
+  RpcLockGuard lock;
   if (!call.active_locked()) {
     return Status::FailedPrecondition();
   }

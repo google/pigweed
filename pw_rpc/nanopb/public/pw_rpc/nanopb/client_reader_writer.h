@@ -58,13 +58,13 @@ class NanopbUnaryResponseClientCall : public UnaryResponseClientCall {
  protected:
   constexpr NanopbUnaryResponseClientCall() = default;
 
-  NanopbUnaryResponseClientCall(internal::LockedEndpoint& client,
+  NanopbUnaryResponseClientCall(LockedEndpoint& client,
                                 uint32_t channel_id,
                                 uint32_t service_id,
                                 uint32_t method_id,
                                 MethodType type,
                                 const NanopbMethodSerde& serde)
-      PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock())
       : UnaryResponseClientCall(
             client, channel_id, service_id, method_id, StructCallProps(type)),
         serde_(&serde) {}
@@ -76,7 +76,7 @@ class NanopbUnaryResponseClientCall : public UnaryResponseClientCall {
 
   NanopbUnaryResponseClientCall& operator=(
       NanopbUnaryResponseClientCall&& other) PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
+    RpcLockGuard lock;
     MoveUnaryResponseClientCallFrom(other);
     serde_ = other.serde_;
     set_nanopb_on_completed_locked(std::move(other.nanopb_on_completed_));
@@ -86,12 +86,12 @@ class NanopbUnaryResponseClientCall : public UnaryResponseClientCall {
   void set_on_completed(
       Function<void(const Response& response, Status)>&& on_completed)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
+    RpcLockGuard lock;
     set_nanopb_on_completed_locked(std::move(on_completed));
   }
 
   Status SendClientStream(const void* payload) PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
+    RpcLockGuard lock;
     return NanopbSendStream(*this, payload, serde_);
   }
 
@@ -156,32 +156,32 @@ class NanopbStreamResponseClientCall : public StreamResponseClientCall {
 
   NanopbStreamResponseClientCall& operator=(
       NanopbStreamResponseClientCall&& other) PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
+    RpcLockGuard lock;
     MoveStreamResponseClientCallFrom(other);
     serde_ = other.serde_;
     set_nanopb_on_next_locked(std::move(other.nanopb_on_next_));
     return *this;
   }
 
-  NanopbStreamResponseClientCall(internal::LockedEndpoint& client,
+  NanopbStreamResponseClientCall(LockedEndpoint& client,
                                  uint32_t channel_id,
                                  uint32_t service_id,
                                  uint32_t method_id,
                                  MethodType type,
                                  const NanopbMethodSerde& serde)
-      PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock())
       : StreamResponseClientCall(
             client, channel_id, service_id, method_id, StructCallProps(type)),
         serde_(&serde) {}
 
   Status SendClientStream(const void* payload) PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
+    RpcLockGuard lock;
     return NanopbSendStream(*this, payload, serde_);
   }
 
   void set_on_next(Function<void(const Response& response)>&& on_next)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
+    RpcLockGuard lock;
     set_nanopb_on_next_locked(std::move(on_next));
   }
 

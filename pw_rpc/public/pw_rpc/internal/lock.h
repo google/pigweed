@@ -15,10 +15,9 @@
 
 #include "pw_rpc/internal/config.h"
 #include "pw_sync/lock_annotations.h"
+#include "pw_toolchain/no_destructor.h"
 
 #if PW_RPC_USE_GLOBAL_MUTEX
-
-#include <mutex>
 
 #include "pw_sync/mutex.h"  // nogncheck
 
@@ -29,7 +28,6 @@ namespace pw::rpc::internal {
 #if PW_RPC_USE_GLOBAL_MUTEX
 
 using RpcLock = sync::Mutex;
-using LockGuard = std::lock_guard<RpcLock>;
 
 #else
 
@@ -39,19 +37,19 @@ class PW_LOCKABLE("pw::rpc::internal::RpcLock") RpcLock {
   constexpr void unlock() PW_UNLOCK_FUNCTION() {}
 };
 
-class PW_SCOPED_LOCKABLE LockGuard {
- public:
-  // [[maybe_unused]] needs to be after the parameter to workaround a gcc bug
-  // context: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=81429
-  constexpr LockGuard(RpcLock& mutex [[maybe_unused]])
-      PW_EXCLUSIVE_LOCK_FUNCTION(mutex) {}
-
-  ~LockGuard() PW_UNLOCK_FUNCTION() = default;
-};
-
 #endif  // PW_RPC_USE_GLOBAL_MUTEX
 
-RpcLock& rpc_lock();
+inline RpcLock& rpc_lock() {
+  static NoDestructor<RpcLock> lock;
+  return *lock;
+}
+
+class PW_SCOPED_LOCKABLE RpcLockGuard {
+ public:
+  RpcLockGuard() PW_EXCLUSIVE_LOCK_FUNCTION(rpc_lock()) { rpc_lock().lock(); }
+
+  ~RpcLockGuard() PW_UNLOCK_FUNCTION(rpc_lock()) { rpc_lock().unlock(); }
+};
 
 // Releases the RPC lock, yields, and reacquires it.
 void YieldRpcLock() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());

@@ -14,6 +14,7 @@
 #pragma once
 
 #include <cstddef>
+#include <mutex>
 
 #include "pw_containers/wrapped_iterator.h"
 #include "pw_rpc/internal/fake_channel_output.h"
@@ -170,7 +171,7 @@ class PwpbFakeChannelOutput final
 
   template <auto kMethod>
   Response<kMethod> last_response() const {
-    internal::LockGuard lock(internal::test::FakeChannelOutput::mutex());
+    std::lock_guard lock(internal::test::FakeChannelOutput::mutex());
     PwpbPayloadsView<Response<kMethod>> payloads = responses<kMethod>();
     PW_ASSERT(!payloads.empty());
     return payloads.back();

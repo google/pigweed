@@ -18,6 +18,8 @@
 #include "pw_rpc/raw/client_testing.h"
 // clang-format on
 
+#include <mutex>
+
 #include "pw_assert/check.h"
 #include "pw_log/log.h"
 #include "pw_rpc/client.h"
@@ -55,7 +57,7 @@ Status FakeServer::ProcessPacket(internal::pwpb::PacketType type,
                                  ConstByteSpan payload,
                                  Status status) const {
   if (!call_id.has_value()) {
-    internal::LockGuard lock(output_.mutex_);
+    std::lock_guard lock(output_.mutex_);
     auto view = internal::test::PacketsView(
         output_.packets(),
         internal::test::PacketFilter(internal::pwpb::PacketType::REQUEST,

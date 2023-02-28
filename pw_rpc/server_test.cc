@@ -324,7 +324,7 @@ TEST_F(BasicServer, ProcessPacket_Cancel_MethodNotActive_SendsNothing) {
 }
 
 const Channel* GetChannel(internal::Endpoint& endpoint, uint32_t id) {
-  internal::LockGuard lock(internal::rpc_lock());
+  internal::RpcLockGuard lock;
   return endpoint.GetInternalChannel(id);
 }
 
@@ -600,7 +600,7 @@ TEST_F(BidiMethod, ClientStream_CallsOpenIdOnCallWithDifferentId) {
   EXPECT_EQ(output_.total_packets(), 0u);
   EXPECT_STREQ(span_as_cstr(data), "hello");
 
-  internal::LockGuard lock(internal::rpc_lock());
+  internal::RpcLockGuard lock;
   EXPECT_EQ(responder_.as_server_call().id(), kSecondCallId);
 }
 

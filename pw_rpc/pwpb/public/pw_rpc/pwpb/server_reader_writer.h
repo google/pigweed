@@ -46,7 +46,7 @@ class PwpbServerCall : public ServerCall {
   // Allow construction using a call context and method type which creates
   // a working server call.
   PwpbServerCall(const LockedCallContext& context, MethodType type)
-      PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock());
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   // Sends a unary response.
   // Returns the following Status codes:
@@ -60,7 +60,7 @@ class PwpbServerCall : public ServerCall {
   template <typename Response>
   Status SendUnaryResponse(const Response& response, Status status = OkStatus())
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
+    RpcLockGuard lock;
     if (!active_locked()) {
       return Status::FailedPrecondition();
     }
@@ -93,7 +93,7 @@ class PwpbServerCall : public ServerCall {
   // Allow derived classes to use move assignment from another instance.
   PwpbServerCall& operator=(PwpbServerCall&& other)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
+    RpcLockGuard lock;
     MovePwpbServerCallFrom(other);
     return *this;
   }
@@ -117,7 +117,7 @@ class PwpbServerCall : public ServerCall {
   template <typename Response>
   Status SendStreamResponse(const Response& response)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
+    RpcLockGuard lock;
     return PwpbSendStream(*this, response, serde_);
   }
 
@@ -148,7 +148,7 @@ class BasePwpbServerReader : public PwpbServerCall {
   // Allow derived classes to use move assignment from another instance.
   BasePwpbServerReader& operator=(BasePwpbServerReader&& other)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
+    RpcLockGuard lock;
     MoveBasePwpbServerReaderFrom(other);
     return *this;
   }
@@ -162,7 +162,7 @@ class BasePwpbServerReader : public PwpbServerCall {
 
   void set_on_next(Function<void(const Request& request)>&& on_next)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
+    RpcLockGuard lock;
     set_pwpb_on_next_locked(std::move(on_next));
   }
 

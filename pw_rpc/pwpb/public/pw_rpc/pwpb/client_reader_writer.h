@@ -66,13 +66,13 @@ class PwpbUnaryResponseClientCall : public UnaryResponseClientCall {
   // variable into which to move client reader/writers from RPC calls.
   constexpr PwpbUnaryResponseClientCall() = default;
 
-  PwpbUnaryResponseClientCall(internal::LockedEndpoint& client,
+  PwpbUnaryResponseClientCall(LockedEndpoint& client,
                               uint32_t channel_id,
                               uint32_t service_id,
                               uint32_t method_id,
                               MethodType type,
                               const PwpbMethodSerde& serde)
-      PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock())
       : UnaryResponseClientCall(
             client, channel_id, service_id, method_id, StructCallProps(type)),
         serde_(&serde) {}
@@ -86,7 +86,7 @@ class PwpbUnaryResponseClientCall : public UnaryResponseClientCall {
   // Allow derived classes to use move assignment from another instance.
   PwpbUnaryResponseClientCall& operator=(PwpbUnaryResponseClientCall&& other)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
+    RpcLockGuard lock;
     MovePwpbUnaryResponseClientCallFrom(other);
     return *this;
   }
@@ -102,7 +102,7 @@ class PwpbUnaryResponseClientCall : public UnaryResponseClientCall {
   void set_on_completed(
       Function<void(const Response& response, Status)>&& on_completed)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
+    RpcLockGuard lock;
     set_pwpb_on_completed_locked(std::move(on_completed));
   }
 
@@ -118,7 +118,7 @@ class PwpbUnaryResponseClientCall : public UnaryResponseClientCall {
   template <typename Request>
   Status SendStreamRequest(const Request& request)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
+    RpcLockGuard lock;
     return PwpbSendStream(*this, request, serde_);
   }
 
@@ -182,13 +182,13 @@ class PwpbStreamResponseClientCall : public StreamResponseClientCall {
   // variable into which to move client reader/writers from RPC calls.
   constexpr PwpbStreamResponseClientCall() = default;
 
-  PwpbStreamResponseClientCall(internal::LockedEndpoint& client,
+  PwpbStreamResponseClientCall(LockedEndpoint& client,
                                uint32_t channel_id,
                                uint32_t service_id,
                                uint32_t method_id,
                                MethodType type,
                                const PwpbMethodSerde& serde)
-      PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock())
+      PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock())
       : StreamResponseClientCall(
             client, channel_id, service_id, method_id, StructCallProps(type)),
         serde_(&serde) {}
@@ -202,7 +202,7 @@ class PwpbStreamResponseClientCall : public StreamResponseClientCall {
   // Allow derived classes to use move assignment from another instance.
   PwpbStreamResponseClientCall& operator=(PwpbStreamResponseClientCall&& other)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
+    RpcLockGuard lock;
     MovePwpbStreamResponseClientCallFrom(other);
     return *this;
   }
@@ -217,7 +217,7 @@ class PwpbStreamResponseClientCall : public StreamResponseClientCall {
 
   void set_on_next(Function<void(const Response& response)>&& on_next)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
+    RpcLockGuard lock;
     set_pwpb_on_next_locked(std::move(on_next));
   }
 
@@ -233,7 +233,7 @@ class PwpbStreamResponseClientCall : public StreamResponseClientCall {
   template <typename Request>
   Status SendStreamRequest(const Request& request)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
+    RpcLockGuard lock;
     return PwpbSendStream(*this, request, serde_);
   }
 

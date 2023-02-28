@@ -58,7 +58,7 @@ class Endpoint {
   //
   Status OpenChannel(uint32_t id, ChannelOutput& interface)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
+    RpcLockGuard lock;
     return channels_.Add(id, interface);
   }
 
@@ -71,7 +71,7 @@ class Endpoint {
 
   // Returns the number calls in the RPC calls list.
   size_t active_call_count() const PW_LOCKS_EXCLUDED(rpc_lock()) {
-    LockGuard lock(rpc_lock());
+    RpcLockGuard lock;
     return calls_.size();
   }
 

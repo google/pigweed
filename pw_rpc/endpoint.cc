@@ -20,7 +20,6 @@
 
 #include "pw_log/log.h"
 #include "pw_rpc/internal/lock.h"
-#include "pw_toolchain/no_destructor.h"
 
 #if PW_RPC_YIELD_MODE == PW_RPC_YIELD_MODE_BUSY_LOOP
 
@@ -73,11 +72,6 @@ static_assert(
 #endif  // PW_RPC_YIELD_MODE
 
 namespace pw::rpc::internal {
-
-RpcLock& rpc_lock() {
-  static NoDestructor<RpcLock> lock;
-  return *lock;
-}
 
 void YieldRpcLock() {
   rpc_lock().unlock();
@@ -213,7 +207,7 @@ void Endpoint::CleanUpCalls() {
 }
 
 void Endpoint::RemoveAllCalls() {
-  LockGuard lock(rpc_lock());
+  RpcLockGuard lock;
 
   // Close all calls without invoking on_error callbacks, since the calls should
   // have been closed before the Endpoint was deleted.

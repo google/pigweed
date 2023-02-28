@@ -14,6 +14,7 @@
 #pragma once
 
 #include <cinttypes>
+#include <mutex>
 
 #include "pw_rpc/channel.h"
 #include "pw_rpc/client_server.h"
@@ -66,7 +67,7 @@ class ForwardingChannelOutput : public ChannelOutput {
 
   virtual Result<ConstByteSpan> EncodeNextUnsentPacket(
       std::array<std::byte, kPayloadsBufferSizeBytes>& packet_buffer) {
-    pw::rpc::internal::LockGuard lock(output_.mutex_);
+    std::lock_guard lock(output_.mutex_);
     const auto& packets = output_.packets();
     if (packets.size() <= sent_packets_) {
       return Status::NotFound();
