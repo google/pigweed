@@ -13,7 +13,6 @@
 // the License.
 
 #include "FreeRTOS.h"
-#include "pw_system/init.h"
 #include "pw_thread/detached_thread.h"
 #include "pw_thread/thread.h"
 #include "pw_thread_freertos/context.h"
