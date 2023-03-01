@@ -1,0 +1,19 @@
+// Copyright 2023 The Fuchsia Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+{
+    include: [
+        "//sdk/lib/driver/compat/compat.shard.cml",
+        "inspect/client.shard.cml",
+        "syslog/client.shard.cml",
+    ],
+    program: {
+        runner: "driver",
+        bind: "meta/bind/bt_host_bind.bindbc",
+        colocate: "true",
+        compat: "driver/bt-host.so",
+        default_dispatcher_opts: [ "allow_sync_calls" ],
+        fallback: "false",
+    },
+    use: [],
+}
