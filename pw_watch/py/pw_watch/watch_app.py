@@ -696,6 +696,7 @@ class WatchApp(PluginMixin):
             pane,
         ) = self.window_manager._get_active_window_list_and_pane()
         # pylint: enable=protected-access
+        restarting = BUILDER_CONTEXT.restart_flag
 
         for cfg in self.event_handler.project_builder:
             # The build directory
@@ -710,7 +711,7 @@ class WatchApp(PluginMixin):
             )
             formatted_text.append(separator)
             # Status
-            formatted_text.append(cfg.status.status_slug())
+            formatted_text.append(cfg.status.status_slug(restarting=restarting))
             formatted_text.append(separator)
             # Current stdout line
             formatted_text.extend(cfg.status.current_step_formatted())
@@ -724,13 +725,15 @@ class WatchApp(PluginMixin):
         return formatted_text
 
     def set_tab_bar_colors(self) -> None:
+        restarting = BUILDER_CONTEXT.restart_flag
+
         for cfg in BUILDER_CONTEXT.recipes:
             pane = self.recipe_name_to_log_pane.get(cfg.display_name, None)
             if not pane:
                 continue
 
             pane.extra_tab_style = None
-            if cfg.status.failed():
+            if not restarting and cfg.status.failed():
                 pane.extra_tab_style = 'class:theme-fg-red'
 
     def exit(

@@ -92,7 +92,9 @@ class BuildStatus(Formatter):
                 continue
 
             build_status: StyleAndTextTuples = []
-            build_status.append(cfg.status.status_slug())
+            build_status.append(
+                cfg.status.status_slug(restarting=self.ctx.restart_flag)
+            )
             build_status.append(('', ' '))
             build_status.extend(cfg.status.current_step_formatted())
 
@@ -230,16 +232,14 @@ class ProjectBuilderContext:  # pylint: disable=too-many-instance-attributes,too
             self.progress_bar.invalidate()
 
     def get_title_style(self) -> str:
+        if self.restart_flag:
+            return 'fg:ansiyellow'
+
+        # Assume passing
         style = 'fg:ansigreen'
 
         if self.current_state == ProjectBuilderState.BUILDING:
             style = 'fg:ansiyellow'
-
-        if (
-            self.current_state != ProjectBuilderState.IDLE
-            and self.interrupted()
-        ):
-            return 'fg:ansiyellow'
 
         for cfg in self.recipes:
             if cfg.status.failed():
@@ -267,10 +267,7 @@ class ProjectBuilderContext:  # pylint: disable=too-many-instance-attributes,too
             if cfg.status.done:
                 done_count += 1
 
-        if (
-            self.current_state != ProjectBuilderState.IDLE
-            and self.interrupted()
-        ):
+        if self.restart_flag:
             title = 'INTERRUPT'
         elif fail_count > 0:
             title = f'FAILED ({fail_count})'

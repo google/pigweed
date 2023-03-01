@@ -103,14 +103,14 @@ class Debouncer:
             # re-try running afterwards.
             error_message = ['Event while running: %s', event_description]
             if BUILDER_CONTEXT.using_progress_bars():
-                _LOG.error(*error_message)
+                _LOG.warning(*error_message)
             else:
                 # Push an empty line to flush ongoing I/O in subprocess.
                 print('')
 
                 # Surround the error message with newlines to make it stand out.
                 print('')
-                _LOG.error(*error_message)
+                _LOG.warning(*error_message)
                 print('')
 
             self.function.cancel()

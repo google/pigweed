@@ -340,6 +340,9 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         BUILDER_CONTEXT.set_idle()
 
     def run_recipe(self, index: int, cfg: BuildRecipe, env) -> None:
+        if BUILDER_CONTEXT.interrupted():
+            return
+
         num_builds = len(self.project_builder)
         index_message = f'[{index}/{num_builds}]'
 

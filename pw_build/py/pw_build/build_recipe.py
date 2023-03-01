@@ -315,8 +315,9 @@ class BuildRecipeStatus:
         _LOG.error(" ╚════════════════════════════════════")
         _LOG.error('')
 
-    def status_slug(self) -> OneStyleAndTextTuple:
+    def status_slug(self, restarting: bool = False) -> OneStyleAndTextTuple:
         status = ('', '')
+        waiting = False
         if self.done:
             if self.passed():
                 status = ('fg:ansigreen', 'OK      ')
@@ -325,8 +326,12 @@ class BuildRecipeStatus:
         elif self.started:
             status = ('fg:ansiyellow', 'Building')
         else:
+            waiting = True
             status = ('fg:ansigray', 'Waiting ')
 
+        # Only show Aborting if the process is building (or has failures).
+        if restarting and not waiting and not self.passed():
+            status = ('fg:ansiyellow', 'Aborting')
         return status
 
     def current_step_formatted(self) -> StyleAndTextTuples:
