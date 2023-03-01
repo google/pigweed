@@ -421,8 +421,10 @@ class UnaryTest(_CallbackClientImplTestBase):
             self.assertTrue(call.cancel())
             self.assertFalse(call.cancel())  # Already cancelled, returns False
 
-            # Unary RPCs do not send a cancel request to the server.
-            self.assertFalse(self.requests)
+            self.assertEqual(
+                self.last_request().type, packet_pb2.PacketType.CLIENT_ERROR
+            )
+            self.assertEqual(self.last_request().status, Status.CANCELLED.value)
 
         callback.assert_not_called()
 

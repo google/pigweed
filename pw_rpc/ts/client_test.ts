@@ -361,6 +361,9 @@ describe('RPC', () => {
         requests = [];
 
         expect(call.cancel()).toBe(true);
+        expect(lastRequest().getType()).toEqual(PacketType.CLIENT_ERROR);
+        expect(lastRequest().getStatus()).toEqual(Status.CANCELLED);
+
         expect(call.cancel()).toBe(false);
         expect(onNext).not.toHaveBeenCalled();
       }

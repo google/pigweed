@@ -151,20 +151,17 @@ class PendingRpcs:
             packets.encode_client_stream_end(rpc)
         )
 
-    def cancel(self, rpc: PendingRpc) -> Optional[bytes]:
-        """Cancels the RPC. Returns the CANCEL packet to send.
+    def cancel(self, rpc: PendingRpc) -> bytes:
+        """Cancels the RPC.
 
         Returns:
-          True if the RPC was cancelled; False if it was not pending
+          The CANCEL packet to send.
 
         Raises:
           KeyError if the RPC is not pending
         """
         _LOG.debug('Cancelling %s', rpc)
         del self._pending[rpc]
-
-        if rpc.method.type is Method.Type.UNARY:
-            return None
 
         return packets.encode_cancel(rpc)
 
