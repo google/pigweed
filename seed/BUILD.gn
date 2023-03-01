@@ -21,6 +21,7 @@ pw_doc_group("docs") {
   group_deps = [
     ":0001",
     ":0002",
+    ":0101",
     ":0102",
   ]
 }
@@ -32,6 +33,10 @@ pw_doc_group("0001") {
 
 pw_doc_group("0002") {
   sources = [ "0002-template.rst" ]
+}
+
+pw_doc_group("0101") {
+  sources = [ "0101-pigweed.json.rst" ]
 }
 
 pw_doc_group("0102") {
