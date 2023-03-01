@@ -520,23 +520,29 @@ bits ClassOfDevice:
 
 enum LEPeriodicAdvertisingCreateSyncUseParams:
   [maximum_bits: 1]
+
   USE_PARAMS                   = 0x00
     -- Use the Advertising_SID, Advertiser_Address_Type, and Adertiser_Address parameters to
     -- determine which advertiser to listen to.
+
   USE_PERIODIC_ADVERTISER_LIST = 0x01
     -- Use the Periodic Advertiser List to determine which advertiser to listen to.
 
 
 bits LEPeriodicAdvertisingCreateSyncOptions:
   -- First parameter to the LE Periodic Advertising Create Sync command
-  0      [+1]  LEPeriodicAdvertisingCreateSyncUseParams  advertiser_source
-  $next  [+1]  Flag                                      enable_reporting
+
+  0     [+1]  LEPeriodicAdvertisingCreateSyncUseParams  advertiser_source
+
+  $next [+1]  Flag                                      enable_reporting
     -- 0: Reporting initially enabled
     -- 1: Reporting initially disabled
-  $next  [+1]  Flag                                      enable_duplicate_filtering
+
+  $next [+1]  Flag                                      enable_duplicate_filtering
     -- 0: Duplicate filtering initially disabled
     -- 1: Duplicate filtering initially enabled
-  $next  [+5]  UInt                                      padding
+
+  $next [+5]  UInt                                      padding
     -- Reserved for future use
 
 
@@ -546,23 +552,30 @@ enum LEPeriodicAdvertisingAddressType:
   [maximum_bits: 8]
   PUBLIC = 0x00
     -- Public Device Address or Public Identity Address
+
   RANDOM = 0x01
     -- Random Device Address or Random (static) Identity Address
 
 
 bits LEPeriodicAdvertisingSyncCTEType:
   -- Bit definitions for a |sync_cte_type| field in an LE Periodic Advertising Create Sync command
+
   0     [+1]  Flag  dont_sync_aoa
     -- Do not sync to packets with an AoA Constant Tone Extension
+
   $next [+1]  Flag  dont_sync_aod_1us
     -- Do not sync to packets with an AoD Constant Tone Extension with 1 microsecond slots
+
   $next [+1]  Flag  dont_sync_aod_2us
     -- Do not sync to packets with an AoD Constant Tone Extension with 2 microsecond slots
+
   $next [+1]  Flag  dont_sync_type_3
     -- Do not sync to packets with a typoe 3 Constant Tone Extension (currently reserved for future
     -- use)
+
   $next [+1]  Flag  dont_sync_without_cte
     -- Do not sync to packets without a Constant Tone Extension
+
   $next [+3]  UInt  padding
     -- Reserved for future use
 
@@ -678,6 +691,45 @@ enum PageScanType:
 
   INTERLACED_SCAN = 0x01
     -- Interlaced scan (optional)
+
+
+bits LEEventMask:
+  0     [+1]  Flag  le_connection_complete
+  $next [+1]  Flag  le_advertising_report
+  $next [+1]  Flag  le_connection_update_complete
+  $next [+1]  Flag  le_read_remote_features_complete
+  $next [+1]  Flag  le_long_term_key_request
+  $next [+1]  Flag  le_remote_connection_parameter_request
+  $next [+1]  Flag  le_data_length_change
+  $next [+1]  Flag  le_read_local_p256_public_key_complete
+  $next [+1]  Flag  le_generate_dhkey_complete
+  $next [+1]  Flag  le_enhanced_connection_complete
+  $next [+1]  Flag  le_directed_advertising_report
+  $next [+1]  Flag  le_phy_update_complete
+  $next [+1]  Flag  le_extended_advertising_report
+  $next [+1]  Flag  le_periodic_advertising_sync_established
+  $next [+1]  Flag  le_periodic_advertising_report
+  $next [+1]  Flag  le_periodic_advertising_sync_lost
+  $next [+1]  Flag  le_extended_scan_timeout
+  $next [+1]  Flag  le_extended_advertising_set_terminated
+  $next [+1]  Flag  le_scan_request_received
+  $next [+1]  Flag  le_channel_selection_algorithm
+  $next [+1]  Flag  le_connectionless_iq_report
+  $next [+1]  Flag  le_connection_iq_report
+  $next [+1]  Flag  le_cte_request_failed
+  $next [+1]  Flag  le_periodic_advertising_sync_transfer_received_event
+  $next [+1]  Flag  le_cis_established_event
+  $next [+1]  Flag  le_cis_request_event
+  $next [+1]  Flag  le_create_big_complete_event
+  $next [+1]  Flag  le_terminate_big_complete_event
+  $next [+1]  Flag  le_big_sync_established_event
+  $next [+1]  Flag  le_big_sync_lost_event
+  $next [+1]  Flag  le_request_peer_sca_complete_event
+  $next [+1]  Flag  le_path_loss_threshold_event
+  $next [+1]  Flag  le_transmit_power_reporting_event
+  $next [+1]  Flag  le_biginfo_advertising_report_event
+  $next [+1]  Flag  le_subrate_change_event
+  $next [+29] UInt  padding
 
 # ========================= HCI packet headers ==========================
 
@@ -1402,26 +1454,35 @@ struct WriteClassOfDeviceCommand:
 
 struct LEPeriodicAdvertisingCreateSyncCommand:
   -- LE Periodic Advertising Create Sync Command (v5.0) (LE)
+
   let hdr_size = CommandHeader.$size_in_bytes
-  0      [+hdr_size]               CommandHeader                           header
-  $next  [+1]                      LEPeriodicAdvertisingCreateSyncOptions  options
-  $next  [+1]                      UInt                                    advertising_sid
+
+  0     [+hdr_size]               CommandHeader                           header
+
+  $next [+1]                      LEPeriodicAdvertisingCreateSyncOptions  options
+
+  $next [+1]                      UInt                                    advertising_sid
     -- Advertising SID subfield in the ADI field used to identify the Periodic Advertising
     [requires: 0x00 <= this <= 0x0F]
-  $next  [+1]                      LEPeriodicAdvertisingAddressType        advertiser_address_type
-  $next  [+BdAddr.$size_in_bytes]  BdAddr                                  advertiser_address
+
+  $next [+1]                      LEPeriodicAdvertisingAddressType        advertiser_address_type
+
+  $next [+BdAddr.$size_in_bytes]  BdAddr                                  advertiser_address
     -- Public Device Address, Random Device Address, Public Identity Address, or Random (static)
     -- Identity Address of the advertiser
-  $next  [+2]                      UInt                                    skip
+
+  $next [+2]                      UInt                                    skip
     -- The maximum number of periodic advertising events that can be skipped after a successful
     -- receive
     [requires: 0x0000 <= this <= 0x01F3]
-  $next  [+2]                      UInt                                    sync_timeout
+
+  $next [+2]                      UInt                                    sync_timeout
     -- Synchronization timeout for the periodic advertising.
     -- Time = N * 10 ms
     -- Time Range: 100 ms to 163.84 s
     [requires: 0x000A <= this <= 0x4000]
-  $next  [+1]                      LEPeriodicAdvertisingSyncCTEType        sync_cte_type
+
+  $next [+1]                      LEPeriodicAdvertisingSyncCTEType        sync_cte_type
     -- Constant Tone Extension sync options
 
 
@@ -1429,14 +1490,14 @@ struct LEPeriodicAdvertisingCreateSyncCancel:
   -- LE Periodic Advertising Create Sync Cancel Command (v5.0) (LE)
   -- Note that this command has no arguments
   let hdr_size = CommandHeader.$size_in_bytes
-  0      [+hdr_size]  CommandHeader  header
+  0 [+hdr_size]  CommandHeader  header
 
 
 struct LEPeriodicAdvertisingTerminateSyncCommand:
   -- LE Periodic Advertising Terminate Sync Command (v5.0) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
-  0      [+hdr_size]  CommandHeader  header
-  $next  [+2]         UInt  sync_handle
+  0     [+hdr_size]  CommandHeader  header
+  $next [+2]         UInt           sync_handle
     -- Identifies the periodic advertising train
     [requires: 0x0000 <= this <= 0x0EFF]
 
@@ -1563,6 +1624,69 @@ struct ReadSimplePairingModeCommand:
   -- Read Simple Pairing Mode (v2.1 + EDR) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
+
+
+struct WriteLEHostSupportCommand:
+  -- Write LE Host Support Command (v4.0) (BR/EDR)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader       header
+  $next [+1]         GenericEnableParam  le_supported_host
+    -- Sets the LE Supported (Host) Link Manager Protocol feature bit.
+
+  $next [+1]         UInt                unused
+    -- Core Spec v5.0, Vol 2, Part E, Section 6.35: This parameter was named
+    -- "Simultaneous_LE_Host" and the value is set to "disabled(0x00)" and
+    -- "shall be ignored".
+    -- Core Spec v5.3, Vol 4, Part E, Section 7.3.79: This parameter was renamed
+    -- to "Unused" and "shall be ignored by the controller".
+
+
+struct ReadLocalVersionInformationCommand:
+  -- Read Local Version Information Command (v1.1)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
+struct ReadLocalSupportedCommandsCommand:
+  -- Read Local Supported Commands Command (v1.2)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
+struct ReadBufferSizeCommand:
+  -- Read Buffer Size Command (v1.1)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
+struct ReadBdAddrCommand:
+  -- Read BD_ADDR Command (v1.1) (BR/EDR, LE)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
+struct ReadLocalSupportedFeaturesCommand:
+  -- Read Local Supported Features Command (v1.1)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
+struct ReadEncryptionKeySizeCommand:
+  -- Read Encryption Key Size (v1.1) (BR/EDR)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader  header
+  $next [+2]         UInt           connection_handle
+    -- Identifies an active ACL link (only the lower 12 bits are meaningful).
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+
+struct LESetEventMaskCommand:
+  -- LE Set Event Mask Command (v4.0) (LE)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader  header
+  $next [+8]         LEEventMask    le_event_mask
+    -- Bitmask that indicates which LE events are generated by the HCI for the
+    -- Host.
 
 # ========================= HCI Event packets ===========================
 # Core Spec v5.3 Vol 4, Part E, Section 7.7
