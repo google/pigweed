@@ -4,3 +4,8 @@
 environment
 node_modules
 out
+bazel-bin
+bazel-out
+bazel-pigweed
+bazel-testlogs
+outbazel

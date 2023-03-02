@@ -2,6 +2,7 @@
 compile_commands.json
 out/
 bazel-*
+outbazel/
 .presubmit/
 docs/_build
 
