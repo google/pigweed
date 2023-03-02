@@ -239,6 +239,17 @@ template("pw_test") {
     target_type = pw_unit_test_EXECUTABLE_TARGET_TYPE
     enable_if = _test_is_enabled
 
+    # Include configs, deps, etc. from the pw_test in the executable as well as
+    # the library to ensure that linker flags propagate to the executable.
+    forward_variables_from(invoker,
+                           "*",
+                           [
+                             "extra_metadata",
+                             "metadata",
+                             "sources",
+                             "public",
+                           ])
+
     # Metadata for this test when used as part of a pw_test_group target.
     metadata = {
       tests = [
@@ -263,7 +274,10 @@ template("pw_test") {
       }
     }
 
-    deps = [ ":$_test_target_name.lib" ]
+    if (!defined(deps)) {
+      deps = []
+    }
+    deps += [ ":$_test_target_name.lib" ]
     if (_test_main != "") {
       deps += [ _test_main ]
     }
