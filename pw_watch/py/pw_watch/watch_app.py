@@ -45,9 +45,11 @@ from prompt_toolkit.layout import (
 )
 from prompt_toolkit.layout.controls import BufferControl
 from prompt_toolkit.styles import (
+    ConditionalStyleTransformation,
     DynamicStyle,
+    SwapLightAndDarkStyleTransformation,
+    merge_style_transformations,
     merge_styles,
-    Style,
     style_from_pygments_cls,
 )
 from prompt_toolkit.formatted_text import StyleAndTextTuples
@@ -163,13 +165,12 @@ class WatchAppPrefs(ProjectBuilderPrefs):
         self.registered_commands = DEFAULT_KEY_BINDINGS
         self.registered_commands.update(self.user_key_bindings)
 
-        self.default_config.update(
-            {
-                'key_bindings': DEFAULT_KEY_BINDINGS,
-                'show_python_logger': True,
-            }
-        )
-        self.reset_config()
+        new_config_settings = {
+            'key_bindings': DEFAULT_KEY_BINDINGS,
+            'show_python_logger': True,
+        }
+        self.default_config.update(new_config_settings)
+        self._update_config(new_config_settings)
 
     # Required pw_console preferences for key bindings and themes
     @property
@@ -187,6 +188,10 @@ class WatchAppPrefs(ProjectBuilderPrefs):
     @property
     def theme_colors(self):
         return get_theme_colors(self.ui_theme)
+
+    @property
+    def swap_light_and_dark(self) -> bool:
+        return self._config.get('swap_light_and_dark', False)
 
     def get_function_keys(self, name: str) -> List:
         """Return the keys for the named function."""
@@ -491,11 +496,16 @@ class WatchApp(PluginMixin):
         )
 
         self.current_theme = generate_styles(self.prefs.ui_theme)
-        self.style_overrides = Style.from_dict(
-            {
-                # 'search': 'bg:ansired ansiblack',
-            }
+
+        self.style_transformation = merge_style_transformations(
+            [
+                ConditionalStyleTransformation(
+                    SwapLightAndDarkStyleTransformation(),
+                    filter=Condition(lambda: self.prefs.swap_light_and_dark),
+                ),
+            ]
         )
+
         self.code_theme = style_from_pygments_cls(PigweedCodeStyle)
 
         self.layout = Layout(
@@ -513,11 +523,11 @@ class WatchApp(PluginMixin):
                 lambda: merge_styles(
                     [
                         self.current_theme,
-                        self.style_overrides,
                         self.code_theme,
                     ]
                 )
             ),
+            style_transformation=self.style_transformation,
             full_screen=True,
         )
 

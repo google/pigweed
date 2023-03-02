@@ -46,7 +46,10 @@ class TestProjectBuilderPrefs(unittest.TestCase):
     def test_load_no_existing_files(self) -> None:
         # Create a prefs instance with no loaded config.
         prefs = ProjectBuilderPrefs(
-            load_argparse_arguments=add_project_builder_arguments
+            load_argparse_arguments=add_project_builder_arguments,
+            project_file=False,
+            project_user_file=False,
+            user_file=False,
         )
         # Construct an expected result config.
         expected_config: Dict[Any, Any] = {}
@@ -68,7 +71,10 @@ class TestProjectBuilderPrefs(unittest.TestCase):
 
         # Create a prefs instance with the test config file.
         prefs = ProjectBuilderPrefs(
-            load_argparse_arguments=add_project_builder_arguments
+            load_argparse_arguments=add_project_builder_arguments,
+            project_file=False,
+            project_user_file=False,
+            user_file=False,
         )
 
         # Construct an expected result config.

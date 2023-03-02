@@ -16,9 +16,10 @@
 import argparse
 import copy
 import shlex
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Tuple, Union
 
-from pw_cli.toml_config_loader_mixin import TomlConfigLoaderMixin
+from pw_cli.toml_config_loader_mixin import YamlConfigLoaderMixin
 
 _DEFAULT_CONFIG: Dict[Any, Any] = {
     # Config settings not available as a command line options go here.
@@ -33,6 +34,10 @@ _DEFAULT_CONFIG: Dict[Any, Any] = {
         },
     },
 }
+
+_DEFAULT_PROJECT_FILE = Path('$PW_PROJECT_ROOT/.pw_build.yaml')
+_DEFAULT_PROJECT_USER_FILE = Path('$PW_PROJECT_ROOT/.pw_build.user.yaml')
+_DEFAULT_USER_FILE = Path('$HOME/.pw_build.yaml')
 
 
 def load_defaults_from_argparse(
@@ -51,7 +56,7 @@ def load_defaults_from_argparse(
     return defaults_flags
 
 
-class ProjectBuilderPrefs(TomlConfigLoaderMixin):
+class ProjectBuilderPrefs(YamlConfigLoaderMixin):
     """Pigweed Watch preferences storage class."""
 
     def __init__(
@@ -59,15 +64,17 @@ class ProjectBuilderPrefs(TomlConfigLoaderMixin):
         load_argparse_arguments: Callable[
             [argparse.ArgumentParser], argparse.ArgumentParser
         ],
+        project_file: Union[Path, bool] = _DEFAULT_PROJECT_FILE,
+        project_user_file: Union[Path, bool] = _DEFAULT_PROJECT_USER_FILE,
+        user_file: Union[Path, bool] = _DEFAULT_USER_FILE,
     ) -> None:
         self.load_argparse_arguments = load_argparse_arguments
 
         self.config_init(
             config_section_title='pw_build',
-            # Don't load any config files
-            project_file=False,
-            project_user_file=False,
-            user_file=False,
+            project_file=project_file,
+            project_user_file=project_user_file,
+            user_file=user_file,
             default_config=_DEFAULT_CONFIG,
             environment_var='PW_BUILD_CONFIG_FILE',
         )
