@@ -232,7 +232,7 @@ browser_repositories(
 # Used in modules: //pw_polyfill, //pw_build (all pw_cc* targets).
 git_repository(
     name = "bazel_embedded",
-    commit = "17c93d5fa52c4c78860b8bbd327325fba6c85555",
+    commit = "91dcc13ebe5df755ca2fe896ff6f7884a971d05b",
     remote = "https://github.com/bazelembedded/bazel-embedded.git",
     shallow_since = "1631751909 +0800",
 )
