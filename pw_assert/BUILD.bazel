@@ -57,6 +57,23 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "libc_assert",
+    hdrs = [
+        "libc_assert_public_overrides/assert.h",
+        "libc_assert_public_overrides/cassert",
+        "public/pw_assert/internal/libc_assert.h",
+    ],
+    includes = [
+        "libc_assert_public_overrides",
+        "public",
+    ],
+    deps = [
+        "//pw_assert",
+        "//pw_preprocessor",
+    ],
+)
+
+pw_cc_library(
     name = "print_and_abort",
     hdrs = ["public/pw_assert/internal/print_and_abort.h"],
     includes = ["public"],

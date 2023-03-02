@@ -769,6 +769,15 @@ Compatibility
 -------------
 The facade is compatible with both C and C++.
 
+---------------------------------------
+C Standard Library `assert` Replacement
+---------------------------------------
+An optional replacement of the C standard Library's `assert` macro is provided
+through the `libc_assert` target which fully implements replacement `assert.h`
+and `cassert` headers using `PW_ASSERT`. While this is effective for porting
+external code to microcontrollers, we do not advise embedded projects use the
+`assert` macro unless absolutely necessary.
+
 ----------------
 Roadmap & Status
 ----------------

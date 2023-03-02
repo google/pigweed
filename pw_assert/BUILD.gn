@@ -37,6 +37,11 @@ config("assert_backend_overrides") {
   visibility = [ ":*" ]
 }
 
+config("libc_assert_overrides") {
+  include_dirs = [ "libc_assert_public_overrides" ]
+  visibility = [ ":*" ]
+}
+
 config("print_and_abort_check_backend_overrides") {
   include_dirs = [ "print_and_abort_check_public_overrides" ]
   visibility = [ ":*" ]
@@ -115,6 +120,19 @@ pw_source_set("assert_compatibility_backend") {
 }
 
 group("assert_compatibility_backend.impl") {
+}
+
+pw_source_set("libc_assert") {
+  public_configs = [ ":public_include_path" ]
+  public = [
+    "libc_assert_public_overrides/assert.h",
+    "libc_assert_public_overrides/cassert",
+    "public/pw_assert/internal/libc_assert.h",
+  ]
+  public_deps = [
+    ":assert",
+    dir_pw_preprocessor,
+  ]
 }
 
 pw_source_set("print_and_abort") {

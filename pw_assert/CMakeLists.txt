@@ -69,6 +69,19 @@ pw_add_library(pw_assert.assert_compatibility_backend INTERFACE
     pw_preprocessor
 )
 
+pw_add_library(pw_assert.libc_assert INTERFACE
+  HEADERS
+    libc_assert_public_overrides/assert.h
+    libc_assert_public_overrides/cassert
+    public/pw_assert/internal/libc_assert.h
+  PUBLIC_INCLUDES
+    public
+    libc_assert_public_overrides
+  PUBLIC_DEPS
+    pw_assert.assert
+    pw_preprocessor
+)
+
 pw_add_library(pw_assert.print_and_abort INTERFACE
   HEADERS
     public/pw_assert/internal/print_and_abort.h
