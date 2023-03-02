@@ -17,6 +17,76 @@ The headers in `public/pw_bluetooth` constitute a Bluetooth Host API. `host.h`
 is the entry point from which all other APIs are exposed. Currently, only Low
 Energy APIs exist.
 
+Host
+====
+.. doxygenclass:: pw::bluetooth::Host
+   :members:
+
+low_energy::Central
+===================
+.. doxygenclass:: pw::bluetooth::low_energy::Central
+   :members:
+
+low_energy::Peripheral
+======================
+.. doxygenclass:: pw::bluetooth::low_energy::Peripheral
+   :members:
+
+low_energy::AdvertisedPeripheral
+================================
+.. doxygenclass:: pw::bluetooth::low_energy::AdvertisedPeripheral
+   :members:
+
+low_energy::Connection
+======================
+.. doxygenclass:: pw::bluetooth::low_energy::Connection
+   :members:
+
+low_energy::ConnectionOptions
+=============================
+.. doxygenstruct:: pw::bluetooth::low_energy::ConnectionOptions
+   :members:
+
+low_energy::RequestedConnectionParameters
+=========================================
+.. doxygenstruct:: pw::bluetooth::low_energy::RequestedConnectionParameters
+   :members:
+
+low_energy::ConnectionParameters
+================================
+.. doxygenstruct:: pw::bluetooth::low_energy::ConnectionParameters
+   :members:
+
+gatt::Server
+============
+.. doxygenclass:: pw::bluetooth::gatt::Server
+   :members:
+
+gatt::LocalServiceInfo
+======================
+.. doxygenstruct:: pw::bluetooth::gatt::LocalServiceInfo
+   :members:
+
+gatt::LocalService
+==================
+.. doxygenclass:: pw::bluetooth::gatt::LocalService
+   :members:
+
+gatt::LocalServiceDelegate
+==========================
+.. doxygenclass:: pw::bluetooth::gatt::LocalServiceDelegate
+   :members:
+
+gatt::Client
+============
+.. doxygenclass:: pw::bluetooth::gatt::Client
+   :members:
+
+gatt::RemoteService
+===================
+.. doxygenclass:: pw::bluetooth::gatt::RemoteService
+   :members:
+
 Callbacks
 =========
 This module contains callback-heavy APIs. Callbacks must not call back into the
