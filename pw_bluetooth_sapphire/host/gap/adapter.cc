@@ -676,7 +676,8 @@ void AdapterImpl::InitializeStep1() {
 
   // HCI_Read_Local_Version_Information
   init_seq_runner_->QueueCommand(
-      hci::CommandPacket::New(hci_spec::kReadLocalVersionInfo),
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ReadLocalVersionInformationCommandView>(
+          hci_spec::kReadLocalVersionInfo),
       [this](const hci::EventPacket& cmd_complete) {
         if (hci_is_error(cmd_complete, WARN, "gap", "read local version info failed")) {
           return;
@@ -687,7 +688,8 @@ void AdapterImpl::InitializeStep1() {
 
   // HCI_Read_Local_Supported_Commands
   init_seq_runner_->QueueCommand(
-      hci::CommandPacket::New(hci_spec::kReadLocalSupportedCommands),
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ReadLocalSupportedCommandsCommandView>(
+          hci_spec::kReadLocalSupportedCommands),
       [this](const hci::EventPacket& cmd_complete) {
         if (hci_is_error(cmd_complete, WARN, "gap", "read local supported commands failed")) {
           return;
@@ -700,7 +702,8 @@ void AdapterImpl::InitializeStep1() {
 
   // HCI_Read_Local_Supported_Features
   init_seq_runner_->QueueCommand(
-      hci::CommandPacket::New(hci_spec::kReadLocalSupportedFeatures),
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ReadLocalSupportedFeaturesCommandView>(
+          hci_spec::kReadLocalSupportedFeatures),
       [this](const hci::EventPacket& cmd_complete) {
         if (hci_is_error(cmd_complete, WARN, "gap", "read local supported features failed")) {
           return;
@@ -712,7 +715,9 @@ void AdapterImpl::InitializeStep1() {
 
   // HCI_Read_BD_ADDR
   init_seq_runner_->QueueCommand(
-      hci::CommandPacket::New(hci_spec::kReadBDADDR), [this](const hci::EventPacket& cmd_complete) {
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ReadBdAddrCommandView>(
+          hci_spec::kReadBDADDR),
+      [this](const hci::EventPacket& cmd_complete) {
         if (hci_is_error(cmd_complete, WARN, "gap", "read BR_ADDR failed")) {
           return;
         }
@@ -771,7 +776,8 @@ void AdapterImpl::InitializeStep2() {
   if (state_.IsCommandSupported(14, hci_spec::SupportedCommand::kReadBufferSize)) {
     // HCI_Read_Buffer_Size
     init_seq_runner_->QueueCommand(
-        hci::CommandPacket::New(hci_spec::kReadBufferSize),
+        hci::EmbossCommandPacket::New<pw::bluetooth::emboss::ReadBufferSizeCommandView>(
+            hci_spec::kReadBufferSize),
         [this](const hci::EventPacket& cmd_complete) {
           if (hci_is_error(cmd_complete, WARN, "gap", "read buffer size failed")) {
             return;
@@ -792,7 +798,8 @@ void AdapterImpl::InitializeStep2() {
 
   // HCI_LE_Read_Local_Supported_Features
   init_seq_runner_->QueueCommand(
-      hci::CommandPacket::New(hci_spec::kLEReadLocalSupportedFeatures),
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::LEReadLocalSupportedFeaturesCommandView>(
+          hci_spec::kLEReadLocalSupportedFeatures),
       [this](const hci::EventPacket& cmd_complete) {
         if (hci_is_error(cmd_complete, WARN, "gap", "LE read local supported features failed")) {
           return;
@@ -815,7 +822,8 @@ void AdapterImpl::InitializeStep2() {
 
   // HCI_LE_Read_Buffer_Size
   init_seq_runner_->QueueCommand(
-      hci::CommandPacket::New(hci_spec::kLEReadBufferSize),
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::LEReadBufferSizeCommandV1View>(
+          hci_spec::kLEReadBufferSizeV1),
       [this](const hci::EventPacket& cmd_complete) {
         if (hci_is_error(cmd_complete, WARN, "gap", "LE read buffer size failed")) {
           return;
@@ -961,10 +969,10 @@ void AdapterImpl::InitializeStep3() {
   // HCI_LE_Set_Event_Mask
   {
     uint64_t event_mask = BuildLEEventMask();
-    auto cmd_packet = hci::CommandPacket::New(hci_spec::kLESetEventMask,
-                                              sizeof(hci_spec::LESetEventMaskCommandParams));
-    cmd_packet->mutable_payload<hci_spec::LESetEventMaskCommandParams>()->le_event_mask =
-        htole64(event_mask);
+    auto cmd_packet =
+        hci::EmbossCommandPacket::New<pw::bluetooth::emboss::LESetEventMaskCommandWriter>(
+            hci_spec::kLESetEventMask);
+    cmd_packet.view_t().le_event_mask().BackingStorage().WriteUInt(event_mask);
     init_seq_runner_->QueueCommand(std::move(cmd_packet), [](const auto& event) {
       hci_is_error(event, WARN, "gap", "LE set event mask failed");
     });
@@ -974,11 +982,11 @@ void AdapterImpl::InitializeStep3() {
   // the controller supports this command.
   if (!state_.features.HasBit(1, hci_spec::LMPFeature::kLESupportedHost) &&
       state_.IsCommandSupported(24, hci_spec::SupportedCommand::kWriteLEHostSupport)) {
-    auto cmd_packet = hci::CommandPacket::New(hci_spec::kWriteLEHostSupport,
-                                              sizeof(hci_spec::WriteLEHostSupportCommandParams));
-    auto params = cmd_packet->mutable_payload<hci_spec::WriteLEHostSupportCommandParams>();
-    params->le_supported_host = pw::bluetooth::emboss::GenericEnableParam::ENABLE;
-    params->simultaneous_le_host = 0x00;  // note: ignored
+    auto cmd_packet =
+        hci::EmbossCommandPacket::New<pw::bluetooth::emboss::WriteLEHostSupportCommandWriter>(
+            hci_spec::kWriteLEHostSupport);
+    auto params = cmd_packet.view_t();
+    params.le_supported_host().Write(pw::bluetooth::emboss::GenericEnableParam::ENABLE);
     init_seq_runner_->QueueCommand(std::move(cmd_packet), [](const auto& event) {
       hci_is_error(event, WARN, "gap", "write LE host support failed");
     });

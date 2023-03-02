@@ -91,10 +91,9 @@ void LowEnergyAddressManager::TryRefreshRandomAddress() {
     random_addr = sm::util::GenerateRandomAddress(/*is_static=*/false);
   }
 
-  auto cmd = hci::CommandPacket::New(hci_spec::kLESetRandomAddress,
-                                     sizeof(hci_spec::LESetRandomAddressCommandParams));
-  auto params = cmd->mutable_payload<hci_spec::LESetRandomAddressCommandParams>();
-  params->random_address = random_addr.value();
+  auto cmd = hci::EmbossCommandPacket::New<pw::bluetooth::emboss::LESetRandomAddressCommandWriter>(
+      hci_spec::kLESetRandomAddress);
+  cmd.view_t().random_address().CopyFrom(random_addr.value().view());
 
   auto self = weak_self_.GetWeakPtr();
   auto cmd_complete_cb = [self, this, random_addr](auto id, const hci::EventPacket& event) {

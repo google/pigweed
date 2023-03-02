@@ -1767,7 +1767,7 @@ TEST_F(CommandChannelTest, SendingSecondLECommandWithSameSubeventShouldWaitForFi
   // Commands have different op codes but same subevent code so that second command is not blocked
   // because of matching op codes (which would not test LE command handling).
   constexpr hci_spec::OpCode kOpCode0 = hci_spec::kLEReadRemoteFeatures;
-  constexpr hci_spec::OpCode kOpCode1 = hci_spec::kLEReadBufferSize;
+  constexpr hci_spec::OpCode kOpCode1 = hci_spec::kLEReadBufferSizeV1;
   constexpr hci_spec::EventCode kSubeventCode = hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode;
 
   auto cmd0 = StaticByteBuffer(LowerBits(kOpCode0), UpperBits(kOpCode0),

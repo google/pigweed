@@ -539,14 +539,6 @@ struct ReadLEHostSupportReturnParams {
 // Write LE Host Support Command (v4.0) (BR/EDR)
 constexpr OpCode kWriteLEHostSupport = ControllerAndBasebandOpCode(0x006D);
 
-struct WriteLEHostSupportCommandParams {
-  GenericEnableParam le_supported_host;
-
-  // Core Spec v5.0, Vol 2, Part E, Section 6.35: This value is set to "disabled
-  // (0x00)" by default and "shall be ignored".
-  uint8_t simultaneous_le_host;
-} __attribute__((packed));
-
 // ===============================================================
 // Read Authenticated Payload Timeout Command (v4.1) (BR/EDR & LE)
 constexpr OpCode kReadAuthenticatedPayloadTimeout = ControllerAndBasebandOpCode(0x007B);
@@ -1832,11 +1824,6 @@ struct ReadRSSIReturnParams {
 // Read Encryption Key Size (v1.1) (BR/EDR)
 constexpr OpCode kReadEncryptionKeySize = StatusParamsOpCode(0x0008);
 
-struct ReadEncryptionKeySizeParams {
-  // Identifies an active ACL link (only the lower 12 bits are meaningful).
-  ConnectionHandle connection_handle;
-} __attribute__((packed));
-
 struct ReadEncryptionKeySizeReturnParams {
   // See enum StatusCode in hci_constants.h.
   StatusCode status;
@@ -1862,14 +1849,9 @@ inline bool IsLECommand(OpCode opcode) { return GetOGF(opcode) == kLEControllerC
 // LE Set Event Mask Command (v4.0) (LE)
 constexpr OpCode kLESetEventMask = LEControllerCommandOpCode(0x0001);
 
-struct LESetEventMaskCommandParams {
-  // See enum LEEventMask in hci_constants.h for possible values.
-  uint64_t le_event_mask;
-} __attribute__((packed));
-
 // =======================================
 // LE Read Buffer Size Command (v4.0) (LE)
-constexpr OpCode kLEReadBufferSize = LEControllerCommandOpCode(0x0002);
+constexpr OpCode kLEReadBufferSizeV1 = LEControllerCommandOpCode(0x0002);
 
 struct LEReadBufferSizeReturnParams {
   // See enum StatusCode in hci_constants.h.

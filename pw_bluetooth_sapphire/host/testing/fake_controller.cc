@@ -886,8 +886,8 @@ void FakeController::OnDisconnectCommandReceived(
 }
 
 void FakeController::OnWriteLEHostSupportCommandReceived(
-    const hci_spec::WriteLEHostSupportCommandParams& params) {
-  if (params.le_supported_host == pw::bluetooth::emboss::GenericEnableParam::ENABLE) {
+    const pw::bluetooth::emboss::WriteLEHostSupportCommandView& params) {
+  if (params.le_supported_host().Read() == pw::bluetooth::emboss::GenericEnableParam::ENABLE) {
     SetBit(&settings_.lmp_features_page1, hci_spec::LMPFeature::kLESupportedHost);
   } else {
     UnsetBit(&settings_.lmp_features_page1, hci_spec::LMPFeature::kLESupportedHost);
@@ -1012,17 +1012,18 @@ void FakeController::OnSetEventMask(const pw::bluetooth::emboss::SetEventMaskCom
   RespondWithCommandComplete(hci_spec::kSetEventMask, pw::bluetooth::emboss::StatusCode::SUCCESS);
 }
 
-void FakeController::OnLESetEventMask(const hci_spec::LESetEventMaskCommandParams& params) {
-  settings_.le_event_mask = le64toh(params.le_event_mask);
+void FakeController::OnLESetEventMask(
+    const pw::bluetooth::emboss::LESetEventMaskCommandView& params) {
+  settings_.le_event_mask = params.le_event_mask().BackingStorage().ReadUInt();
   RespondWithCommandComplete(hci_spec::kLESetEventMask, pw::bluetooth::emboss::StatusCode::SUCCESS);
 }
 
-void FakeController::OnLEReadBufferSize() {
+void FakeController::OnLEReadBufferSizeV1() {
   hci_spec::LEReadBufferSizeReturnParams params;
   params.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
   params.hc_le_acl_data_packet_length = htole16(settings_.le_acl_data_packet_length);
   params.hc_total_num_le_acl_data_packets = settings_.le_total_num_acl_data_packets;
-  RespondWithCommandComplete(hci_spec::kLEReadBufferSize, BufferView(&params, sizeof(params)));
+  RespondWithCommandComplete(hci_spec::kLEReadBufferSizeV1, BufferView(&params, sizeof(params)));
 }
 
 void FakeController::OnLEReadSupportedStates() {
@@ -1344,7 +1345,8 @@ void FakeController::OnLESetAdvertisingParameters(
   NotifyAdvertisingState();
 }
 
-void FakeController::OnLESetRandomAddress(const hci_spec::LESetRandomAddressCommandParams& params) {
+void FakeController::OnLESetRandomAddress(
+    const pw::bluetooth::emboss::LESetRandomAddressCommandView& params) {
   if (legacy_advertising_state().enabled || le_scan_state().enabled) {
     bt_log(INFO, "fake-hci", "cannot set LE random address while scanning or advertising");
     RespondWithCommandComplete(hci_spec::kLESetRandomAddress,
@@ -1353,7 +1355,7 @@ void FakeController::OnLESetRandomAddress(const hci_spec::LESetRandomAddressComm
   }
 
   legacy_advertising_state_.random_address =
-      DeviceAddress(DeviceAddress::Type::kLERandom, params.random_address);
+      DeviceAddress(DeviceAddress::Type::kLERandom, DeviceAddressBytes(params.random_address()));
   RespondWithCommandComplete(hci_spec::kLESetRandomAddress,
                              pw::bluetooth::emboss::StatusCode::SUCCESS);
 }
@@ -1621,10 +1623,10 @@ void FakeController::OnSetConnectionEncryptionCommand(
 }
 
 void FakeController::OnReadEncryptionKeySizeCommand(
-    const hci_spec::ReadEncryptionKeySizeParams& params) {
+    const pw::bluetooth::emboss::ReadEncryptionKeySizeCommandView& params) {
   hci_spec::ReadEncryptionKeySizeReturnParams response;
   response.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-  response.connection_handle = params.connection_handle;
+  response.connection_handle = params.connection_handle().Read();
   response.key_size = 16;
   RespondWithCommandComplete(hci_spec::kReadEncryptionKeySize,
                              BufferView(&response, sizeof(response)));
@@ -2809,11 +2811,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnReadLocalSupportedFeatures();
       break;
     }
-    case hci_spec::kLESetRandomAddress: {
-      const auto& params = command_packet.payload<hci_spec::LESetRandomAddressCommandParams>();
-      OnLESetRandomAddress(params);
-      break;
-    }
     case hci_spec::kLESetAdvertisingParameters: {
       const auto& params =
           command_packet.payload<hci_spec::LESetAdvertisingParametersCommandParams>();
@@ -2929,13 +2926,8 @@ void FakeController::HandleReceivedCommandPacket(
       OnLEReadSupportedStates();
       break;
     }
-    case hci_spec::kLEReadBufferSize: {
-      OnLEReadBufferSize();
-      break;
-    }
-    case hci_spec::kLESetEventMask: {
-      const auto& params = command_packet.payload<hci_spec::LESetEventMaskCommandParams>();
-      OnLESetEventMask(params);
+    case hci_spec::kLEReadBufferSizeV1: {
+      OnLEReadBufferSizeV1();
       break;
     }
     case hci_spec::kReadLocalExtendedFeatures: {
@@ -2958,20 +2950,10 @@ void FakeController::HandleReceivedCommandPacket(
       OnReset();
       break;
     }
-    case hci_spec::kWriteLEHostSupport: {
-      const auto& params = command_packet.payload<hci_spec::WriteLEHostSupportCommandParams>();
-      OnWriteLEHostSupportCommandReceived(params);
-      break;
-    }
     case hci_spec::kLinkKeyRequestReply: {
       const auto& params =
           command_packet.payload<pw::bluetooth::emboss::LinkKeyRequestReplyCommandView>();
       OnLinkKeyRequestReplyCommandReceived(params);
-      break;
-    }
-    case hci_spec::kReadEncryptionKeySize: {
-      const auto& params = command_packet.payload<hci_spec::ReadEncryptionKeySizeParams>();
-      OnReadEncryptionKeySizeCommand(params);
       break;
     }
     case hci_spec::kLEReadRemoteFeatures: {
@@ -3014,7 +2996,11 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kWriteSimplePairingMode:
     case hci_spec::kWriteClassOfDevice:
     case hci_spec::kWriteInquiryMode:
-    case hci_spec::kWritePageScanType: {
+    case hci_spec::kWritePageScanType:
+    case hci_spec::kWriteLEHostSupport:
+    case hci_spec::kReadEncryptionKeySize:
+    case hci_spec::kLESetEventMask:
+    case hci_spec::kLESetRandomAddress: {
       // This case is for packet types that have been migrated to the new Emboss architecture. Their
       // old version can be still be assembled from the HciEmulator channel, so here we repackage
       // and forward them as Emboss packets.
@@ -3214,6 +3200,29 @@ void FakeController::HandleReceivedCommandPacket(const hci::EmbossCommandPacket&
       const auto& params =
           command_packet.view<pw::bluetooth::emboss::WritePageScanTypeCommandView>();
       OnWritePageScanType(params);
+      break;
+    }
+    case hci_spec::kWriteLEHostSupport: {
+      const auto& params =
+          command_packet.view<pw::bluetooth::emboss::WriteLEHostSupportCommandView>();
+      OnWriteLEHostSupportCommandReceived(params);
+      break;
+    }
+    case hci_spec::kReadEncryptionKeySize: {
+      const auto& params =
+          command_packet.view<pw::bluetooth::emboss::ReadEncryptionKeySizeCommandView>();
+      OnReadEncryptionKeySizeCommand(params);
+      break;
+    }
+    case hci_spec::kLESetEventMask: {
+      const auto& params = command_packet.view<pw::bluetooth::emboss::LESetEventMaskCommandView>();
+      OnLESetEventMask(params);
+      break;
+    }
+    case hci_spec::kLESetRandomAddress: {
+      const auto& params =
+          command_packet.view<pw::bluetooth::emboss::LESetRandomAddressCommandView>();
+      OnLESetRandomAddress(params);
       break;
     }
     default: {

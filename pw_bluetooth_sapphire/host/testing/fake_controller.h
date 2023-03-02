@@ -485,7 +485,8 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   void OnDisconnectCommandReceived(const pw::bluetooth::emboss::DisconnectCommandView& params);
 
   // Called when a HCI_LE_Write_Host_Support command is received.
-  void OnWriteLEHostSupportCommandReceived(const hci_spec::WriteLEHostSupportCommandParams& params);
+  void OnWriteLEHostSupportCommandReceived(
+      const pw::bluetooth::emboss::WriteLEHostSupportCommandView& params);
 
   // Called when a HCI_Reset command is received.
   void OnReset();
@@ -506,10 +507,10 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   void OnSetEventMask(const pw::bluetooth::emboss::SetEventMaskCommandView& params);
 
   // Called when a HCI_LE_Set_Event_Mask command is received.
-  void OnLESetEventMask(const hci_spec::LESetEventMaskCommandParams& params);
+  void OnLESetEventMask(const pw::bluetooth::emboss::LESetEventMaskCommandView& params);
 
   // Called when a HCI_LE_Read_Buffer_Size command is received.
-  void OnLEReadBufferSize();
+  void OnLEReadBufferSizeV1();
 
   // Called when a HCI_LE_Read_Supported_States command is received.
   void OnLEReadSupportedStates();
@@ -589,7 +590,7 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
       const hci_spec::LESetAdvertisingParametersCommandParams& params);
 
   // Called when a HCI_LE_Set_Random_Address command is received.
-  void OnLESetRandomAddress(const hci_spec::LESetRandomAddressCommandParams& params);
+  void OnLESetRandomAddress(const pw::bluetooth::emboss::LESetRandomAddressCommandView& params);
 
   // Called when a HCI_LE_Set_Advertising_Set_Random_Address command is received.
   void OnLESetAdvertisingSetRandomAddress(
@@ -681,7 +682,8 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
       const pw::bluetooth::emboss::SetConnectionEncryptionCommandView& params);
 
   // Called when a HCI_Read_Encryption_Key_Size command is received.
-  void OnReadEncryptionKeySizeCommand(const hci_spec::ReadEncryptionKeySizeParams& params);
+  void OnReadEncryptionKeySizeCommand(
+      const pw::bluetooth::emboss::ReadEncryptionKeySizeCommandView& params);
 
   // Called when a HCI_Enhanced_Accept_Synchronous_Connection_Request command is received.
   void OnEnhancedAcceptSynchronousConnectionRequestCommand(

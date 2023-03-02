@@ -98,10 +98,9 @@ void BrEdrConnection::HandleEncryptionStatusValidated(Result<bool> result) {
 void BrEdrConnection::ValidateEncryptionKeySize(hci::ResultFunction<> key_size_validity_cb) {
   BT_ASSERT(state() == Connection::State::kConnected);
 
-  auto cmd = CommandPacket::New(hci_spec::kReadEncryptionKeySize,
-                                sizeof(hci_spec::ReadEncryptionKeySizeParams));
-  auto* params = cmd->mutable_payload<hci_spec::ReadEncryptionKeySizeParams>();
-  params->connection_handle = htole16(handle());
+  auto cmd = EmbossCommandPacket::New<pw::bluetooth::emboss::ReadEncryptionKeySizeCommandWriter>(
+      hci_spec::kReadEncryptionKeySize);
+  cmd.view_t().connection_handle().Write(handle());
 
   auto event_cb = [self = GetWeakPtr(), valid_cb = std::move(key_size_validity_cb)](
                       auto, const EventPacket& event) {
