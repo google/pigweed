@@ -211,6 +211,62 @@ class TestTraceGenerateJson(unittest.TestCase):
             },
         )
 
+    def test_generate_error_json_data_struct_invalid_small_buffer(self):
+        event = trace.TraceEvent(
+            event_type=trace.TraceType.INSTANTANEOUS,
+            module="module",
+            label="counter",
+            timestamp_us=10,
+            has_data=True,
+            data_fmt="@pw_py_struct_fmt:Hl",
+            data=struct.pack("H", 5),
+        )
+        json_lines = trace.generate_trace_json([event])
+        self.assertEqual(1, len(json_lines))
+        self.assertEqual(
+            json.loads(json_lines[0]),
+            {
+                "ph": "I",
+                "pid": "module",
+                "name": "counter",
+                "ts": 10,
+                "s": "p",
+                "args": {
+                    "error": f"Mismatched struct/data format {event.data_fmt} "
+                    f"expected data len {struct.calcsize('Hl')} data "
+                    f"{event.data.hex()} data len {len(event.data)}"
+                },
+            },
+        )
+
+    def test_generate_error_json_data_struct_invalid_large_buffer(self):
+        event = trace.TraceEvent(
+            event_type=trace.TraceType.INSTANTANEOUS,
+            module="module",
+            label="counter",
+            timestamp_us=10,
+            has_data=True,
+            data_fmt="@pw_py_struct_fmt:Hl",
+            data=struct.pack("Hll", 5, 2, 5),
+        )
+        json_lines = trace.generate_trace_json([event])
+        self.assertEqual(1, len(json_lines))
+        self.assertEqual(
+            json.loads(json_lines[0]),
+            {
+                "ph": "I",
+                "pid": "module",
+                "name": "counter",
+                "ts": 10,
+                "s": "p",
+                "args": {
+                    "error": f"Mismatched struct/data format {event.data_fmt} "
+                    f"expected data len {struct.calcsize('Hl')} data "
+                    f"{event.data.hex()} data len {len(event.data)}"
+                },
+            },
+        )
+
     def test_generate_json_data_map_fmt_single(self):
         event = trace.TraceEvent(
             event_type=trace.TraceType.INSTANTANEOUS,

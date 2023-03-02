@@ -69,6 +69,26 @@ def event_has_trace_id(event_type):
     }
 
 
+def decode_struct_fmt_args(event):
+    """Decodes the trace's event data for struct-formatted data"""
+    args = {}
+    struct_fmt = event.data_fmt[len("@pw_py_struct_fmt:") :]
+    try:
+        # needed in case the buffer is larger than expected
+        assert struct.calcsize(struct_fmt) == len(event.data)
+        items = struct.unpack_from(struct_fmt, event.data)
+        for i, item in enumerate(items):
+            args["data_" + str(i)] = item
+    except (AssertionError, struct.error):
+        args["error"] = (
+            f"Mismatched struct/data format {event.data_fmt} "
+            f"expected data len {struct.calcsize(struct_fmt)} "
+            f"data {event.data.hex()} "
+            f"data len {len(event.data)}"
+        )
+    return args
+
+
 def decode_map_fmt_args(event):
     """Decodes the trace's event data for map-formatted data"""
     args = {}
@@ -171,13 +191,7 @@ def generate_trace_json(events: Iterable[TraceEvent]):
                     line["name"]: int.from_bytes(event.data, "little")
                 }
             elif event.data_fmt.startswith("@pw_py_struct_fmt:"):
-                items = struct.unpack_from(
-                    event.data_fmt[len("@pw_py_struct_fmt:") :], event.data
-                )
-                args = {}
-                for i, item in enumerate(items):
-                    args["data_" + str(i)] = item
-                line["args"] = args
+                line["args"] = decode_struct_fmt_args(event)
             elif event.data_fmt.startswith("@pw_py_map_fmt:"):
                 line["args"] = decode_map_fmt_args(event)
             else:
