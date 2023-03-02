@@ -793,6 +793,8 @@ def run_recipe(
 ) -> bool:
     if BUILDER_CONTEXT.interrupted():
         return False
+    if not cfg.enabled:
+        return False
 
     num_builds = len(project_builder)
     index_message = f'[{index}/{num_builds}]'
