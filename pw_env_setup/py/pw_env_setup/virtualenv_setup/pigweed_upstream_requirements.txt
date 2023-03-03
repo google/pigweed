@@ -20,5 +20,5 @@ sphinx-design==0.3.0
 myst-parser==0.18.1
 breathe==4.34.0
 # Renode requirements
-psutil==5.9.1
+psutil==5.9.4
 robotframework==5.0.1
