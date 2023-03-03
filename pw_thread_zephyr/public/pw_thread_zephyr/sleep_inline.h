@@ -1,4 +1,4 @@
-// Copyright 2021 The Pigweed Authors
+// Copyright 2023 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -14,14 +14,15 @@
 #pragma once
 
 #include <zephyr/kernel.h>
+#include <zephyr/sys/util.h>
 
 #include "pw_chrono/system_clock.h"
+#include "pw_thread/sleep.h"
 
-namespace pw::chrono::zephyr {
+namespace pw::this_thread {
 
-// Max timeout to be used by users of the Zephyr pw::chrono::SystemClock
-// backend provided by this module.
-inline constexpr SystemClock::duration kMaxTimeout =
-    SystemClock::duration(K_FOREVER.ticks - 1);
+inline void sleep_for(chrono::SystemClock::duration sleep_duration) {
+  sleep_until(chrono::SystemClock::TimePointAfterAtLeast(sleep_duration));
+}
 
-}  // namespace pw::chrono::zephyr
+}  // namespace pw::this_thread
