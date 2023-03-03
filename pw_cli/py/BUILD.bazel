@@ -51,10 +51,10 @@ py_binary(
 )
 
 py_test(
-    name = "envparse_test",
+    name = "plugins_test",
     size = "small",
     srcs = [
-        "envparse_test.py",
+        "plugins_test.py",
     ],
     deps = [
         ":pw_cli",
@@ -62,10 +62,10 @@ py_test(
 )
 
 py_test(
-    name = "plugins_test",
+    name = "envparse_test",
     size = "small",
     srcs = [
-        "plugins_test.py",
+        "envparse_test.py",
     ],
     deps = [
         ":pw_cli",

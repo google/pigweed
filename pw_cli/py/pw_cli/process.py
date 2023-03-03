@@ -23,9 +23,6 @@ from typing import Dict, IO, Tuple, Union, Optional
 import pw_cli.color
 import pw_cli.log
 
-import psutil  # type: ignore
-
-
 _COLOR = pw_cli.color.colors()
 _LOG = logging.getLogger(__name__)
 
@@ -35,12 +32,7 @@ PW_SUBPROCESS_ENV = 'PW_SUBPROCESS'
 
 
 class CompletedProcess:
-    """Information about a process executed in run_async.
-
-    Attributes:
-        pid: The process identifier.
-        returncode: The return code of the process.
-    """
+    """Information about a process executed in run_async."""
 
     def __init__(
         self,
@@ -92,56 +84,6 @@ async def _run_and_log(program: str, args: Tuple[str, ...], env: dict):
     return process, bytes(output)
 
 
-async def _kill_process_and_children(
-    process: 'asyncio.subprocess.Process',
-) -> None:
-    """Kills child processes of a process with PID `pid`."""
-    # Look up child processes before sending the kill signal to the parent,
-    # as otherwise the child lookup would fail.
-    pid = process.pid
-    try:
-        process_util = psutil.Process(pid=pid)
-        kill_list = list(process_util.children(recursive=True))
-    except psutil.NoSuchProcess:
-        # Creating the kill list raced with parent process completion.
-        #
-        # Don't bother cleaning up child processes of parent processes that
-        # exited on their own.
-        kill_list = []
-
-    for proc in kill_list:
-        try:
-            proc.kill()
-        except psutil.NoSuchProcess:
-            pass
-
-    def wait_for_all() -> None:
-        for proc in kill_list:
-            try:
-                proc.wait()
-            except psutil.NoSuchProcess:
-                pass
-
-    # Wait for process completion on the executor to avoid blocking the
-    # event loop.
-    loop = asyncio.get_event_loop()
-    wait_for_children = loop.run_in_executor(None, wait_for_all)
-
-    # Send a kill signal to the main process before waiting for the children
-    # to complete.
-    try:
-        process.kill()
-        await process.wait()
-    except ProcessLookupError:
-        _LOG.debug(
-            'Process completed before it could be killed. '
-            'This may have been caused by the killing one of its '
-            'child subprocesses.',
-        )
-
-    await wait_for_children
-
-
 async def run_async(
     program: str,
     *args: str,
@@ -150,20 +92,6 @@ async def run_async(
     timeout: Optional[float] = None,
 ) -> CompletedProcess:
     """Runs a command, capturing and optionally logging its output.
-
-    Args:
-      program: The program to run in a new process.
-      args: The arguments to pass to the program.
-      env: An optional mapping of environment variables within which to run
-        the process.
-      log_output: Whether to log stdout and stderr of the process to this
-        process's stdout (prefixed with the PID of the subprocess from which
-        the output originated). If unspecified, the child process's stdout
-        and stderr will be captured, and both will be stored in the returned
-        `CompletedProcess`'s  output`.
-      timeout: An optional floating point number of seconds to allow the
-        subprocess to run before killing it and its children. If unspecified,
-        the subprocess will be allowed to continue exiting until it completes.
 
     Returns a CompletedProcess with details from the process.
     """
@@ -195,12 +123,13 @@ async def run_async(
         await asyncio.wait_for(process.wait(), timeout)
     except asyncio.TimeoutError:
         _LOG.error('%s timed out after %d seconds', program, timeout)
-        await _kill_process_and_children(process)
+        process.kill()
+        await process.wait()
 
     if process.returncode:
         _LOG.error('%s exited with status %d', program, process.returncode)
     else:
-        _LOG.error('%s exited successfully', program)
+        _LOG.debug('%s exited successfully', program)
 
     return CompletedProcess(process, output)
 

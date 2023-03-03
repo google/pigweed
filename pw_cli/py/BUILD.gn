@@ -46,15 +46,3 @@ pw_python_package("py") {
   pylintrc = "$dir_pigweed/.pylintrc"
   mypy_ini = "$dir_pigweed/.mypy.ini"
 }
-
-pw_python_script("process_integration_test") {
-  sources = [ "process_integration_test.py" ]
-  python_deps = [ ":py" ]
-
-  pylintrc = "$dir_pigweed/.pylintrc"
-  mypy_ini = "$dir_pigweed/.mypy.ini"
-
-  action = {
-    stamp = true
-  }
-}
