@@ -27,16 +27,16 @@ extern "C++" {
 #endif  // __cplusplus
 
 // Provide static_assert() on >=C11
-#if (defined __USE_ISOC11 ||                                   \
-     defined __STDC_VERSION && __STDC_VERSION__ >= 201112L) && \
-    !defined __cplusplus
+#if (defined(__USE_ISOC11) ||                                       \
+     defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)) && \
+    !defined(__cplusplus)
 #define static_assert _Static_assert
 #endif  // C11 or newer
 
 // Provide assert()
 #undef assert
-#if defined NDEBUG  // Required by ANSI C standard.
+#if defined(NDEBUG)  // Required by ANSI C standard.
 #define assert(condition) ((void)0)
 #else
 #define assert(condition) PW_ASSERT(condition)
-#endif  // defined NDEBUG
+#endif  // defined(NDEBUG)
