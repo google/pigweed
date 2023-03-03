@@ -1274,13 +1274,14 @@ void FakeController::OnLESetScanResponseData(
 }
 
 void FakeController::OnLESetAdvertisingData(
-    const hci_spec::LESetAdvertisingDataCommandParams& params) {
-  legacy_advertising_state_.data_length = params.adv_data_length;
+    const pw::bluetooth::emboss::LESetAdvertisingDataCommandView& params) {
+  legacy_advertising_state_.data_length = params.advertising_data_length().Read();
 
-  if (params.adv_data_length == 0) {
+  if (params.advertising_data_length().Read() == 0) {
     std::memset(legacy_advertising_state_.data, 0, sizeof(legacy_advertising_state_.data));
   } else {
-    std::memcpy(legacy_advertising_state_.data, params.adv_data, params.adv_data_length);
+    std::memcpy(legacy_advertising_state_.data, params.advertising_data().BackingStorage().data(),
+                params.advertising_data_length().Read());
   }
 
   RespondWithCommandComplete(hci_spec::kLESetAdvertisingData,
@@ -2817,11 +2818,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnLESetAdvertisingParameters(params);
       break;
     }
-    case hci_spec::kLESetAdvertisingData: {
-      const auto& params = command_packet.payload<hci_spec::LESetAdvertisingDataCommandParams>();
-      OnLESetAdvertisingData(params);
-      break;
-    }
     case hci_spec::kLESetScanResponseData: {
       const auto& params = command_packet.payload<hci_spec::LESetScanResponseDataCommandParams>();
       OnLESetScanResponseData(params);
@@ -3000,7 +2996,8 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kWriteLEHostSupport:
     case hci_spec::kReadEncryptionKeySize:
     case hci_spec::kLESetEventMask:
-    case hci_spec::kLESetRandomAddress: {
+    case hci_spec::kLESetRandomAddress:
+    case hci_spec::kLESetAdvertisingData: {
       // This case is for packet types that have been migrated to the new Emboss architecture. Their
       // old version can be still be assembled from the HciEmulator channel, so here we repackage
       // and forward them as Emboss packets.
@@ -3223,6 +3220,12 @@ void FakeController::HandleReceivedCommandPacket(const hci::EmbossCommandPacket&
       const auto& params =
           command_packet.view<pw::bluetooth::emboss::LESetRandomAddressCommandView>();
       OnLESetRandomAddress(params);
+      break;
+    }
+    case hci_spec::kLESetAdvertisingData: {
+      const auto& params =
+          command_packet.view<pw::bluetooth::emboss::LESetAdvertisingDataCommandView>();
+      OnLESetAdvertisingData(params);
       break;
     }
     default: {

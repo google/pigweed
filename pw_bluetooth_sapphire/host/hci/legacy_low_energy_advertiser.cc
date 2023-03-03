@@ -36,16 +36,15 @@ std::optional<EmbossCommandPacket> LegacyLowEnergyAdvertiser::BuildEnablePacket(
   return packet;
 }
 
-std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildSetAdvertisingData(
+CommandChannel::CommandPacketVariant LegacyLowEnergyAdvertiser::BuildSetAdvertisingData(
     const DeviceAddress& address, const AdvertisingData& data, AdvFlags flags) {
-  auto packet = CommandPacket::New(hci_spec::kLESetAdvertisingData,
-                                   sizeof(hci_spec::LESetAdvertisingDataCommandParams));
-  packet->mutable_view()->mutable_payload_data().SetToZeros();
+  auto packet = EmbossCommandPacket::New<pw::bluetooth::emboss::LESetAdvertisingDataCommandWriter>(
+      hci_spec::kLESetAdvertisingData);
+  auto params = packet.view_t();
+  const uint8_t data_length = static_cast<uint8_t>(data.CalculateBlockSize(/*include_flags=*/true));
+  params.advertising_data_length().Write(data_length);
 
-  auto params = packet->mutable_payload<hci_spec::LESetAdvertisingDataCommandParams>();
-  params->adv_data_length = static_cast<uint8_t>(data.CalculateBlockSize(/*include_flags=*/true));
-
-  MutableBufferView adv_view(params->adv_data, params->adv_data_length);
+  MutableBufferView adv_view(params.advertising_data().BackingStorage().data(), data_length);
   data.WriteBlock(&adv_view, flags);
 
   return packet;
@@ -114,10 +113,10 @@ std::optional<EmbossCommandPacket> LegacyLowEnergyAdvertiser::BuildRemoveAdverti
   return packet;
 }
 
-static std::unique_ptr<CommandPacket> BuildReadAdvertisingTxPower() {
-  std::unique_ptr<CommandPacket> packet =
-      CommandPacket::New(hci_spec::kLEReadAdvertisingChannelTxPower);
-  return packet;
+static EmbossCommandPacket BuildReadAdvertisingTxPower() {
+  return EmbossCommandPacket::New<
+      pw::bluetooth::emboss::LEReadAdvertisingChannelTxPowerCommandView>(
+      hci_spec::kLEReadAdvertisingChannelTxPower);
 }
 
 void LegacyLowEnergyAdvertiser::StartAdvertising(const DeviceAddress& address,

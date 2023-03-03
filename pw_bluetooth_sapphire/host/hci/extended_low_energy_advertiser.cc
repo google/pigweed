@@ -117,7 +117,7 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetAdvertisingP
   return packet;
 }
 
-std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
+CommandChannel::CommandPacketVariant ExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
     const DeviceAddress& address, const AdvertisingData& data, AdvFlags flags) {
   AdvertisingData adv_data;
   data.Copy(&adv_data);

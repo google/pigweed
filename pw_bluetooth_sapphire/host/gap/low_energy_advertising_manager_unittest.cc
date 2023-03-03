@@ -124,10 +124,10 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
     return nullptr;
   }
 
-  std::unique_ptr<hci::CommandPacket> BuildSetAdvertisingData(const DeviceAddress& address,
-                                                              const AdvertisingData& data,
-                                                              AdvFlags flags) override {
-    return nullptr;
+  hci::CommandChannel::CommandPacketVariant BuildSetAdvertisingData(const DeviceAddress& address,
+                                                                    const AdvertisingData& data,
+                                                                    AdvFlags flags) override {
+    return std::unique_ptr<hci::CommandPacket>();
   }
 
   std::unique_ptr<hci::CommandPacket> BuildUnsetAdvertisingData(

@@ -79,9 +79,9 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
       const DeviceAddress& address, hci_spec::LEAdvertisingType type,
       hci_spec::LEOwnAddressType own_address_type, AdvertisingIntervalRange interval) override;
 
-  std::unique_ptr<CommandPacket> BuildSetAdvertisingData(const DeviceAddress& address,
-                                                         const AdvertisingData& data,
-                                                         AdvFlags flags) override;
+  CommandChannel::CommandPacketVariant BuildSetAdvertisingData(const DeviceAddress& address,
+                                                               const AdvertisingData& data,
+                                                               AdvFlags flags) override;
 
   std::unique_ptr<CommandPacket> BuildUnsetAdvertisingData(const DeviceAddress& address) override;
 

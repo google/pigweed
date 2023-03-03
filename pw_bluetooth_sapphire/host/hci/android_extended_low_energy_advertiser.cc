@@ -91,7 +91,7 @@ std::unique_ptr<CommandPacket> AndroidExtendedLowEnergyAdvertiser::BuildSetAdver
   return packet;
 }
 
-std::unique_ptr<CommandPacket> AndroidExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
+CommandChannel::CommandPacketVariant AndroidExtendedLowEnergyAdvertiser::BuildSetAdvertisingData(
     const DeviceAddress& address, const AdvertisingData& data, AdvFlags flags) {
   std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.GetHandle(address);
   BT_ASSERT(handle);

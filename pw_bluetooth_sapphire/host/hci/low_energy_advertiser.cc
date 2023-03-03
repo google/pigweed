@@ -117,8 +117,10 @@ bool LowEnergyAdvertiser::StartAdvertisingInternalStep2(const DeviceAddress& add
                                                         hci::ResultFunction<> result_callback) {
   using PacketPtr = std::unique_ptr<CommandPacket>;
 
-  PacketPtr set_adv_data_packet = BuildSetAdvertisingData(address, staged_parameters_.data, flags);
-  if (!set_adv_data_packet) {
+  CommandChannel::CommandPacketVariant set_adv_data_packet =
+      BuildSetAdvertisingData(address, staged_parameters_.data, flags);
+  if (std::holds_alternative<PacketPtr>(set_adv_data_packet) &&
+      !std::get<PacketPtr>(set_adv_data_packet)) {
     bt_log(WARN, "hci-le", "cannot build HCI set advertising data packet for %s", bt_str(address));
     return false;
   }
