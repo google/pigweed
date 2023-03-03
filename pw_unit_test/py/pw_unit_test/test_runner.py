@@ -306,6 +306,7 @@ class TestRunner:
                 % self._result_sink['auth_token'],
             },
             data=json.dumps({'testResults': [test_result]}),
+            timeout=5.0,
         ).raise_for_status()
 
 

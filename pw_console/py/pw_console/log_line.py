@@ -43,7 +43,9 @@ class LogLine:
         """Parse log metadata fields from various sources."""
 
         # 1. Parse any metadata from the message itself.
-        self.metadata = FormatStringWithMetadata(str(self.record.message))
+        self.metadata = FormatStringWithMetadata(
+            str(self.record.message)  # pylint: disable=no-member
+        )  # pylint: disable=no-member
         self.formatted_log = self.formatted_log.replace(
             self.metadata.raw_string, self.metadata.message
         )
@@ -65,9 +67,9 @@ class LogLine:
         # See:
         # https://docs.python.org/3/library/logging.html#logging.debug
         if hasattr(self.record, 'extra_metadata_fields') and (
-            self.record.extra_metadata_fields  # type: ignore
+            self.record.extra_metadata_fields  # type: ignore  # pylint: disable=no-member
         ):
-            fields = self.record.extra_metadata_fields  # type: ignore
+            fields = self.record.extra_metadata_fields  # type: ignore  # pylint: disable=no-member
             for key, value in fields.items():
                 self.metadata.fields[key] = value
 

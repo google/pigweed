@@ -123,14 +123,14 @@ class Json5FileFormat(_StructuredFileFormat):
 
 # Allows constraining to dicts and dict subclasses, while also constraining to
 # the *same* dict subclass.
-_TDictLike = TypeVar('_TDictLike', bound=Dict)
+_DictLike = TypeVar('_DictLike', bound=Dict)
 
 
 def dict_deep_merge(
-    src: _TDictLike,
-    dest: _TDictLike,
-    ctor: Optional[Callable[[], _TDictLike]] = None,
-) -> _TDictLike:
+    src: _DictLike,
+    dest: _DictLike,
+    ctor: Optional[Callable[[], _DictLike]] = None,
+) -> _DictLike:
     """Deep merge dict-like `src` into dict-like `dest`.
 
     `dest` is mutated in place and also returned.
@@ -480,20 +480,20 @@ SettingsFilePrefixes = Dict[SettingsLevel, str]
 # name of that settings file, without the extension.
 # TODO(chadnorvell): Would be great to constrain this to enums, but bound=
 # doesn't do what we want with Enum or EnumMeta.
-_TSettingsType = TypeVar('_TSettingsType')
+_SettingsTypeT = TypeVar('_SettingsTypeT')
 
 # Maps each settings type with the callback that generates the default settings
 # for that settings type.
-EditorSettingsTypesWithDefaults = Dict[_TSettingsType, DefaultSettingsCallback]
+EditorSettingsTypesWithDefaults = Dict[_SettingsTypeT, DefaultSettingsCallback]
 
 
-class EditorSettingsManager(Generic[_TSettingsType]):
+class EditorSettingsManager(Generic[_SettingsTypeT]):
     """Manages all settings for a particular editor.
 
     This is where you interact with an editor's settings (actually in a
     subclass of this class, not here). Initializing this class sets up access
     to one or more settings files for an editor (determined by
-    ``_TSettingsType``, fulfilled by an enum that defines each of an editor's
+    ``_SettingsTypeT``, fulfilled by an enum that defines each of an editor's
     settings files), along with the cascading settings levels.
     """
 
@@ -509,7 +509,7 @@ class EditorSettingsManager(Generic[_TSettingsType]):
     # These must be overridden in child classes.
     default_settings_dir: Path = None  # type: ignore
     file_format: _StructuredFileFormat = _StructuredFileFormat()
-    types_with_defaults: EditorSettingsTypesWithDefaults[_TSettingsType] = {}
+    types_with_defaults: EditorSettingsTypesWithDefaults[_SettingsTypeT] = {}
 
     def __init__(
         self,
@@ -517,7 +517,7 @@ class EditorSettingsManager(Generic[_TSettingsType]):
         settings_dir: Optional[Path] = None,
         file_format: Optional[_StructuredFileFormat] = None,
         types_with_defaults: Optional[
-            EditorSettingsTypesWithDefaults[_TSettingsType]
+            EditorSettingsTypesWithDefaults[_SettingsTypeT]
         ] = None,
     ):
         if SettingsLevel.ACTIVE in self.__class__.prefixes:
@@ -564,7 +564,7 @@ class EditorSettingsManager(Generic[_TSettingsType]):
         # each settings type. Those settings definitions may be stored in files
         # or not.
         self._settings_definitions: Dict[
-            SettingsLevel, Dict[_TSettingsType, EditorSettingsDefinition]
+            SettingsLevel, Dict[_SettingsTypeT, EditorSettingsDefinition]
         ] = {}
 
         self._settings_types = tuple(self._types_with_defaults.keys())
@@ -597,19 +597,19 @@ class EditorSettingsManager(Generic[_TSettingsType]):
                     self._settings_dir, name, self._file_format
                 )
 
-    def default(self, settings_type: _TSettingsType):
+    def default(self, settings_type: _SettingsTypeT):
         """Default settings for the provided settings type."""
         return self._settings_definitions[SettingsLevel.DEFAULT][settings_type]
 
-    def project(self, settings_type: _TSettingsType):
+    def project(self, settings_type: _SettingsTypeT):
         """Project settings for the provided settings type."""
         return self._settings_definitions[SettingsLevel.PROJECT][settings_type]
 
-    def user(self, settings_type: _TSettingsType):
+    def user(self, settings_type: _SettingsTypeT):
         """User settings for the provided settings type."""
         return self._settings_definitions[SettingsLevel.USER][settings_type]
 
-    def active(self, settings_type: _TSettingsType):
+    def active(self, settings_type: _SettingsTypeT):
         """Active settings for the provided settings type."""
         return self._settings_definitions[SettingsLevel.ACTIVE][settings_type]
 

@@ -594,7 +594,7 @@ def _parse_args():
     def replacement(value: str) -> Tuple[Pattern, 'str']:
         try:
             find, sub = unescaped_slash.split(value, 1)
-        except ValueError as err:
+        except ValueError as _err:
             raise argparse.ArgumentTypeError(
                 'replacements must be specified as "search_regex/replacement"'
             )

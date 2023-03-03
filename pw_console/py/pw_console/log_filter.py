@@ -92,7 +92,7 @@ class LogFilter:
     field: Optional[str] = None
 
     def pattern(self):
-        return self.regex.pattern
+        return self.regex.pattern  # pylint: disable=no-member
 
     def matches(self, log: LogLine):
         field = log.ansi_stripped_log
@@ -110,7 +110,7 @@ class LogFilter:
             elif self.field == 'time':
                 field = log.record.asctime
 
-        match = self.regex.search(field)
+        match = self.regex.search(field)  # pylint: disable=no-member
 
         if self.invert:
             return not match
@@ -143,7 +143,9 @@ class LogFilter:
                 apply_highlighting(exploded_fragments, i)
         else:
             # Highlight each non-overlapping search match.
-            for match in self.regex.finditer(line_text):
+            for match in self.regex.finditer(  # pylint: disable=no-member
+                line_text
+            ):  # pylint: disable=no-member
                 for fragment_i in range(match.start(), match.end()):
                     apply_highlighting(exploded_fragments, fragment_i)
 

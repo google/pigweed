@@ -205,7 +205,7 @@ class ProjectBuilderContext:  # pylint: disable=too-many-instance-attributes,too
             bottom_toolbar=self.bottom_toolbar,
             cancel_callback=self.ctrl_c_interrupt,
         )
-        self.progress_bar.__enter__()
+        self.progress_bar.__enter__()  # pylint: disable=unnecessary-dunder-call
 
         self.create_title_bar_container()
         self.progress_bar.app.layout.container.children[  # type: ignore
@@ -216,7 +216,7 @@ class ProjectBuilderContext:  # pylint: disable=too-many-instance-attributes,too
     def exit_progress(self) -> None:
         if not self.progress_bar:
             return
-        self.progress_bar.__exit__()
+        self.progress_bar.__exit__()  # pylint: disable=unnecessary-dunder-call
 
     def clear_progress_scrollback(self) -> None:
         if not self.progress_bar:

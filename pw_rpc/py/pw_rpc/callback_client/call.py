@@ -46,17 +46,17 @@ class UseDefault(enum.Enum):
     VALUE = 0
 
 
-CallType = TypeVar(
-    'CallType',
+CallTypeT = TypeVar(
+    'CallTypeT',
     'UnaryCall',
     'ServerStreamingCall',
     'ClientStreamingCall',
     'BidirectionalStreamingCall',
 )
 
-OnNextCallback = Callable[[CallType, Any], Any]
-OnCompletedCallback = Callable[[CallType, Any], Any]
-OnErrorCallback = Callable[[CallType, Any], Any]
+OnNextCallback = Callable[[CallTypeT, Any], Any]
+OnCompletedCallback = Callable[[CallTypeT, Any], Any]
+OnErrorCallback = Callable[[CallTypeT, Any], Any]
 
 OptionalTimeout = Union[UseDefault, float, None]
 

@@ -280,11 +280,11 @@ def parse_args():
     return parser.parse_args()
 
 
+# TODO(b/237580538): Refactor the code so that each test bundle generation
+# is done in a separate function or script.
+# pylint: disable=too-many-locals
 def main() -> int:
     """Main"""
-    # TODO(b/237580538): Refactor the code so that each test bundle generation
-    # is done in a separate function or script.
-    # pylint: disable=too-many-locals
     args = parse_args()
 
     test_bundle = Bundle()
@@ -515,10 +515,12 @@ def main() -> int:
         ],
         check=True,
     )
-    # TODO(b/237580538): Refactor the code so that each test bundle generation
-    # is done in a separate function or script.
-    # pylint: enable=too-many-locals
     return 0
+
+
+# TODO(b/237580538): Refactor the code so that each test bundle generation
+# is done in a separate function or script.
+# pylint: enable=too-many-locals
 
 
 if __name__ == "__main__":

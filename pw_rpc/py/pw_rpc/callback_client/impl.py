@@ -28,7 +28,7 @@ from pw_rpc.descriptors import Channel, Method, Service
 from pw_rpc.callback_client.call import (
     UseDefault,
     OptionalTimeout,
-    CallType,
+    CallTypeT,
     UnaryResponse,
     StreamResponse,
     Call,
@@ -106,14 +106,14 @@ class _MethodClient:
 
     def _start_call(
         self,
-        call_type: Type[CallType],
+        call_type: Type[CallTypeT],
         request: Optional[Message],
         timeout_s: OptionalTimeout,
         on_next: Optional[OnNextCallback],
         on_completed: Optional[OnCompletedCallback],
         on_error: Optional[OnErrorCallback],
         ignore_errors: bool = False,
-    ) -> CallType:
+    ) -> CallTypeT:
         """Creates the Call object and invokes the RPC using it."""
         if timeout_s is UseDefault.VALUE:
             timeout_s = self.default_timeout_s
@@ -125,8 +125,8 @@ class _MethodClient:
         return call
 
     def _client_streaming_call_type(
-        self, base: Type[CallType]
-    ) -> Type[CallType]:
+        self, base: Type[CallTypeT]
+    ) -> Type[CallTypeT]:
         """Creates a client or bidirectional stream call type.
 
         Applies the signature from the request protobuf to the send method.

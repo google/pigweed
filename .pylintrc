@@ -1,10 +1,5 @@
 [MASTER]  # inclusive-language: ignore
 
-# A comma-separated list of package or module names from where C extensions may
-# be loaded. Extensions are loading into the active Python interpreter and may
-# run arbitrary code.
-extension-pkg-allowlist=mypy
-
 # Add files or directories to the blocklist. They should be base names, not
 # paths.
 ignore=CVS
@@ -28,7 +23,7 @@ limit-inference-results=100
 
 # List of plugins (as comma separated values of python module names) to load,
 # usually to register additional checkers.
-load-plugins=
+load-plugins=pylint.extensions.no_self_use
 
 # Pickle collected data for later comparisons.
 persistent=yes
@@ -60,11 +55,23 @@ confidence=
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use "--disable=all --enable=classes
 # --disable=W".
-disable=bad-continuation,  # Rely on yapf for formatting
+disable=broad-exception-raised,
+        consider-iterating-dictionary,
+        consider-using-f-string,
+        consider-using-generator,
+        consider-using-in,
         consider-using-with,
         fixme,
-        subprocess-run-check,
+        implicit-str-concat,
         raise-missing-from,
+        redundant-u-string-prefix,
+        subprocess-run-check,
+        superfluous-parens,
+        unnecessary-lambda-assignment,
+        unspecified-encoding,
+        use-dict-literal,
+        use-list-literal,
+
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -131,13 +138,6 @@ max-line-length=80
 # Maximum number of lines in a module.
 max-module-lines=9999
 
-# List of optional constructs for which whitespace checking is disabled. `dict-
-# separator` is used to allow tabulation in dicts, etc.: {1  : 1,\n222: 2}.
-# `trailing-comma` allows a space between comma and closing bracket: (a, ).
-# `empty-line` allows space-only lines.
-no-space-check=trailing-comma,
-               dict-separator
-
 # Allow the body of a class to be on the same line as the declaration if body
 # contains single statement.
 single-line-class-stmt=no
@@ -161,7 +161,7 @@ allow-global-unused-variables=yes
 callbacks=cb_,
           _cb
 
-# A regular expression matching the name of placeholder variables (i.e. 
+# A regular expression matching the name of placeholder variables (i.e.
 # expected to not be used). # inclusive-language: ignore
 dummy-variables-rgx=_+$|(_[a-zA-Z0-9_]*[a-zA-Z0-9]+?$)|dummy|^ignored_|^unused_
 
@@ -309,7 +309,7 @@ good-names=i,
            _
 
 # Include a hint for the correct naming format with invalid-name.
-include-naming-hint=no
+include-naming-hint=yes
 
 # Naming style matching correct inline iteration names.
 inlinevar-naming-style=any
@@ -511,5 +511,5 @@ preferred-modules=
 
 # Exceptions that will emit a warning when being caught. Defaults to
 # "BaseException, Exception".
-overgeneral-exceptions=BaseException,
-                       Exception
+overgeneral-exceptions=builtins.BaseException,
+                       builtins.Exception

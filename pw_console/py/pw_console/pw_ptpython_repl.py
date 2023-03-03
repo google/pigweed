@@ -279,7 +279,7 @@ class PwPtPythonRepl(
         # Trigger a prompt_toolkit application redraw.
         self.repl_pane.application.application.invalidate()
 
-    async def _run_system_command(
+    async def _run_system_command(  # pylint: disable=no-self-use
         self, text, stdout_proxy, _stdin_proxy
     ) -> int:
         """Run a shell command and print results to the repl."""

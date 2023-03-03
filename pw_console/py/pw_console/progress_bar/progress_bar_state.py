@@ -76,7 +76,7 @@ class ProgressBarState:
             # Shut down the ProgressBar prompt_toolkit application
             prog_bar = self.instance
             if prog_bar is not None and hasattr(prog_bar, '__exit__'):
-                prog_bar.__exit__()
+                prog_bar.__exit__()  # pylint: disable=unnecessary-dunder-call
             raise KeyboardInterrupt
 
         signal.signal(signal.SIGINT, handle_sigint)
@@ -95,7 +95,7 @@ class ProgressBarState:
                 )
                 # Start the ProgressBar prompt_toolkit application in a separate
                 # thread.
-                prog_bar.__enter__()
+                prog_bar.__enter__()  # pylint: disable=unnecessary-dunder-call
             self.instance = prog_bar
         return self.instance
 

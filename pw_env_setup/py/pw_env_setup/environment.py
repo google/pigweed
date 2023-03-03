@@ -483,6 +483,7 @@ class Environment(object):
 
         Yields the new environment object.
         """
+        orig_env = {}
         try:
             if export:
                 orig_env = os.environ.copy()

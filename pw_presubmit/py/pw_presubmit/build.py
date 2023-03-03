@@ -520,7 +520,7 @@ def test_server(executable: str, output_dir: Path):
             yield
 
         finally:
-            proc.terminate()
+            proc.terminate()  # pylint: disable=used-before-assignment
 
 
 @filter_paths(

@@ -112,27 +112,22 @@ class ManualPacketFilter(LossController):
     def next_packet_duplicated(self) -> bool:
         return False
 
-    @staticmethod
-    def next_packet_out_of_order() -> bool:
+    def next_packet_out_of_order(self) -> bool:
         return False
 
-    @staticmethod
-    def next_packet_delayed() -> bool:
+    def next_packet_delayed(self) -> bool:
         return False
 
     def next_packet_dropped(self) -> bool:
         return not self.keep_packet()
 
-    @staticmethod
-    def next_packet_delay() -> int:
+    def next_packet_delay(self) -> int:
         return 0
 
-    @staticmethod
-    def next_num_dupes() -> int:
+    def next_num_dupes(self) -> int:
         return 0
 
-    @staticmethod
-    def choose_out_of_order_packet(max_idx) -> int:
+    def choose_out_of_order_packet(self, max_idx) -> int:
         return 0
 
 

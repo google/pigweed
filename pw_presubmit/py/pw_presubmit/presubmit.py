@@ -1296,7 +1296,7 @@ class Check:
                 _LOG.warning('%s', failure)
             return PresubmitResult.FAIL
 
-        except Exception as failure:  # pylint: disable=broad-except
+        except Exception as _failure:  # pylint: disable=broad-except
             _LOG.exception('Presubmit check %s failed!', self.name)
             return PresubmitResult.FAIL
 
