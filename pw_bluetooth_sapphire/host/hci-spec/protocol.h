@@ -1939,31 +1939,9 @@ struct LEReadAdvertisingChannelTxPowerReturnParams {
 // LE Set Advertising Data Command (v4.0) (LE)
 constexpr OpCode kLESetAdvertisingData = LEControllerCommandOpCode(0x0008);
 
-struct LESetAdvertisingDataCommandParams {
-  // The number of significant octets in |adv_data|.
-  uint8_t adv_data_length;
-
-  // 31 octets of advertising data formatted as defined in Core Spec v5.0, Vol
-  // 3, Part C, Section 11.
-  //
-  // Default: All octets zero.
-  uint8_t adv_data[kMaxLEAdvertisingDataLength];
-} __attribute__((packed));
-
 // =============================================
 // LE Set Scan Response Data Command (v4.0) (LE)
 constexpr OpCode kLESetScanResponseData = LEControllerCommandOpCode(0x0009);
-
-struct LESetScanResponseDataCommandParams {
-  // The number of significant octets in |scan_rsp_data|.
-  uint8_t scan_rsp_data_length;
-
-  // 31 octets of Scan Response Data formatted as defined in Core Spec v5.0, Vol
-  // 3, Part C, Section 11.
-  //
-  // Default: All octets zero.
-  uint8_t scan_rsp_data[kMaxLEAdvertisingDataLength];
-} __attribute__((packed));
 
 // =============================================
 // LE Set Advertising Enable Command (v4.0) (LE)

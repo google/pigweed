@@ -77,12 +77,14 @@ class AndroidExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
                                                                const AdvertisingData& data,
                                                                AdvFlags flags) override;
 
-  std::unique_ptr<CommandPacket> BuildUnsetAdvertisingData(const DeviceAddress& address) override;
+  CommandChannel::CommandPacketVariant BuildUnsetAdvertisingData(
+      const DeviceAddress& address) override;
 
-  std::unique_ptr<CommandPacket> BuildSetScanResponse(const DeviceAddress& address,
-                                                      const AdvertisingData& scan_rsp) override;
+  CommandChannel::CommandPacketVariant BuildSetScanResponse(
+      const DeviceAddress& address, const AdvertisingData& scan_rsp) override;
 
-  std::unique_ptr<CommandPacket> BuildUnsetScanResponse(const DeviceAddress& address) override;
+  CommandChannel::CommandPacketVariant BuildUnsetScanResponse(
+      const DeviceAddress& address) override;
 
   std::optional<EmbossCommandPacket> BuildRemoveAdvertisingSet(
       const DeviceAddress& address) override;

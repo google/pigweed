@@ -111,7 +111,7 @@ CommandChannel::CommandPacketVariant AndroidExtendedLowEnergyAdvertiser::BuildSe
   return packet;
 }
 
-std::unique_ptr<CommandPacket> AndroidExtendedLowEnergyAdvertiser::BuildUnsetAdvertisingData(
+CommandChannel::CommandPacketVariant AndroidExtendedLowEnergyAdvertiser::BuildUnsetAdvertisingData(
     const DeviceAddress& address) {
   std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.GetHandle(address);
   BT_ASSERT(handle);
@@ -128,7 +128,7 @@ std::unique_ptr<CommandPacket> AndroidExtendedLowEnergyAdvertiser::BuildUnsetAdv
   return packet;
 }
 
-std::unique_ptr<CommandPacket> AndroidExtendedLowEnergyAdvertiser::BuildSetScanResponse(
+CommandChannel::CommandPacketVariant AndroidExtendedLowEnergyAdvertiser::BuildSetScanResponse(
     const DeviceAddress& address, const AdvertisingData& scan_rsp) {
   std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.GetHandle(address);
   BT_ASSERT(handle);
@@ -147,7 +147,7 @@ std::unique_ptr<CommandPacket> AndroidExtendedLowEnergyAdvertiser::BuildSetScanR
   return packet;
 }
 
-std::unique_ptr<CommandPacket> AndroidExtendedLowEnergyAdvertiser::BuildUnsetScanResponse(
+CommandChannel::CommandPacketVariant AndroidExtendedLowEnergyAdvertiser::BuildUnsetScanResponse(
     const DeviceAddress& address) {
   std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.GetHandle(address);
   BT_ASSERT(handle);

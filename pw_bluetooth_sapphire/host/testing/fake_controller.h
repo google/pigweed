@@ -580,7 +580,8 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
       const pw::bluetooth::emboss::LESetAdvertisingEnableCommandView& params);
 
   // Called when a HCI_LE_Set_Scan_Response_Data command is received.
-  void OnLESetScanResponseData(const hci_spec::LESetScanResponseDataCommandParams& params);
+  void OnLESetScanResponseData(
+      const pw::bluetooth::emboss::LESetScanResponseDataCommandView& params);
 
   // Called when a HCI_LE_Set_Advertising_Data command is received.
   void OnLESetAdvertisingData(const pw::bluetooth::emboss::LESetAdvertisingDataCommandView& params);

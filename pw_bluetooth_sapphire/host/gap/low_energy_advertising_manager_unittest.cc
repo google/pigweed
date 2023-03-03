@@ -130,19 +130,19 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
     return std::unique_ptr<hci::CommandPacket>();
   }
 
-  std::unique_ptr<hci::CommandPacket> BuildUnsetAdvertisingData(
+  hci::CommandChannel::CommandPacketVariant BuildUnsetAdvertisingData(
       const DeviceAddress& address) override {
-    return nullptr;
+    return std::unique_ptr<hci::CommandPacket>();
   }
 
-  std::unique_ptr<hci::CommandPacket> BuildSetScanResponse(
+  hci::CommandChannel::CommandPacketVariant BuildSetScanResponse(
       const DeviceAddress& address, const AdvertisingData& scan_rsp) override {
-    return nullptr;
+    return std::unique_ptr<hci::CommandPacket>();
   }
 
-  std::unique_ptr<hci::CommandPacket> BuildUnsetScanResponse(
+  hci::CommandChannel::CommandPacketVariant BuildUnsetScanResponse(
       const DeviceAddress& address) override {
-    return nullptr;
+    return std::unique_ptr<hci::CommandPacket>();
   }
 
   std::optional<hci::EmbossCommandPacket> BuildRemoveAdvertisingSet(

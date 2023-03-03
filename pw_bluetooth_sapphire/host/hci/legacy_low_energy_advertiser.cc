@@ -50,17 +50,17 @@ CommandChannel::CommandPacketVariant LegacyLowEnergyAdvertiser::BuildSetAdvertis
   return packet;
 }
 
-std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildSetScanResponse(
+CommandChannel::CommandPacketVariant LegacyLowEnergyAdvertiser::BuildSetScanResponse(
     const DeviceAddress& address, const AdvertisingData& scan_rsp) {
-  auto packet = CommandPacket::New(hci_spec::kLESetScanResponseData,
-                                   sizeof(hci_spec::LESetScanResponseDataCommandParams));
-  packet->mutable_view()->mutable_payload_data().SetToZeros();
+  auto packet = EmbossCommandPacket::New<pw::bluetooth::emboss::LESetScanResponseDataCommandWriter>(
+      hci_spec::kLESetScanResponseData);
+  auto params = packet.view_t();
+  const uint8_t data_length = static_cast<uint8_t>(scan_rsp.CalculateBlockSize());
+  params.scan_response_data_length().Write(data_length);
 
-  auto params = packet->mutable_payload<hci_spec::LESetScanResponseDataCommandParams>();
-  params->scan_rsp_data_length = static_cast<uint8_t>(scan_rsp.CalculateBlockSize());
-
-  MutableBufferView scan_data_view(params->scan_rsp_data, sizeof(params->scan_rsp_data));
-  scan_rsp.WriteBlock(&scan_data_view, std::nullopt);
+  MutableBufferView scan_data_view(params.scan_response_data().BackingStorage().data(),
+                                   data_length);
+  scan_rsp.WriteBlock(&scan_data_view, /*flags=*/std::nullopt);
 
   return packet;
 }
@@ -87,19 +87,16 @@ std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildSetAdvertisingPar
   return packet;
 }
 
-std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildUnsetAdvertisingData(
+CommandChannel::CommandPacketVariant LegacyLowEnergyAdvertiser::BuildUnsetAdvertisingData(
     const DeviceAddress& address) {
-  auto packet = CommandPacket::New(hci_spec::kLESetAdvertisingData,
-                                   sizeof(hci_spec::LESetAdvertisingDataCommandParams));
-  packet->mutable_view()->mutable_payload_data().SetToZeros();
-  return packet;
+  return EmbossCommandPacket::New<pw::bluetooth::emboss::LESetAdvertisingDataCommandWriter>(
+      hci_spec::kLESetAdvertisingData);
 }
 
-std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildUnsetScanResponse(
+CommandChannel::CommandPacketVariant LegacyLowEnergyAdvertiser::BuildUnsetScanResponse(
     const DeviceAddress& address) {
-  auto packet = CommandPacket::New(hci_spec::kLESetScanResponseData,
-                                   sizeof(hci_spec::LESetScanResponseDataCommandParams));
-  packet->mutable_view()->mutable_payload_data().SetToZeros();
+  auto packet = EmbossCommandPacket::New<pw::bluetooth::emboss::LESetScanResponseDataCommandWriter>(
+      hci_spec::kLESetScanResponseData);
   return packet;
 }
 

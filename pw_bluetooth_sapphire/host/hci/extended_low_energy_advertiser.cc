@@ -150,7 +150,7 @@ CommandChannel::CommandPacketVariant ExtendedLowEnergyAdvertiser::BuildSetAdvert
   return packet;
 }
 
-std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildUnsetAdvertisingData(
+CommandChannel::CommandPacketVariant ExtendedLowEnergyAdvertiser::BuildUnsetAdvertisingData(
     const DeviceAddress& address) {
   std::unique_ptr<CommandPacket> packet =
       CommandPacket::New(hci_spec::kLESetExtendedAdvertisingData,
@@ -172,7 +172,7 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildUnsetAdvertisin
   return packet;
 }
 
-std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetScanResponse(
+CommandChannel::CommandPacketVariant ExtendedLowEnergyAdvertiser::BuildSetScanResponse(
     const DeviceAddress& address, const AdvertisingData& data) {
   AdvertisingData scan_rsp;
   data.Copy(&scan_rsp);
@@ -205,7 +205,7 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetScanResponse
   return packet;
 }
 
-std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildUnsetScanResponse(
+CommandChannel::CommandPacketVariant ExtendedLowEnergyAdvertiser::BuildUnsetScanResponse(
     const DeviceAddress& address) {
   std::unique_ptr<CommandPacket> packet =
       CommandPacket::New(hci_spec::kLESetExtendedScanResponseData,

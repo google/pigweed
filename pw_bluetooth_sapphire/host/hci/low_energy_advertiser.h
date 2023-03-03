@@ -154,17 +154,18 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // Build the HCI command packet to delete the advertising parameters from the controller for the
   // flavor of low energy advertising being implemented. This method is used when stopping an
   // advertisement.
-  virtual std::unique_ptr<CommandPacket> BuildUnsetAdvertisingData(
+  virtual CommandChannel::CommandPacketVariant BuildUnsetAdvertisingData(
       const DeviceAddress& address) = 0;
 
   // Build the HCI command packet to set the data sent in a scan response (if requested) for the
   // flavor of low energy advertising being implemented.
-  virtual std::unique_ptr<CommandPacket> BuildSetScanResponse(const DeviceAddress& address,
-                                                              const AdvertisingData& scan_rsp) = 0;
+  virtual CommandChannel::CommandPacketVariant BuildSetScanResponse(
+      const DeviceAddress& address, const AdvertisingData& scan_rsp) = 0;
 
   // Build the HCI command packet to delete the advertising parameters from the controller for the
   // flavor of low energy advertising being implemented.
-  virtual std::unique_ptr<CommandPacket> BuildUnsetScanResponse(const DeviceAddress& address) = 0;
+  virtual CommandChannel::CommandPacketVariant BuildUnsetScanResponse(
+      const DeviceAddress& address) = 0;
 
   // Build the HCI command packet to remove the advertising set entirely from the controller's
   // memory for the flavor of low energy advertising being implemented.

@@ -125,8 +125,10 @@ bool LowEnergyAdvertiser::StartAdvertisingInternalStep2(const DeviceAddress& add
     return false;
   }
 
-  PacketPtr set_scan_rsp_packet = BuildSetScanResponse(address, staged_parameters_.scan_rsp);
-  if (!set_scan_rsp_packet) {
+  CommandChannel::CommandPacketVariant set_scan_rsp_packet =
+      BuildSetScanResponse(address, staged_parameters_.scan_rsp);
+  if (std::holds_alternative<PacketPtr>(set_scan_rsp_packet) &&
+      !std::get<PacketPtr>(set_scan_rsp_packet)) {
     bt_log(WARN, "hci-le", "cannot build HCI set scan response data packet for %s",
            bt_str(address));
     return false;
@@ -221,14 +223,19 @@ bool LowEnergyAdvertiser::EnqueueStopAdvertisingCommands(const DeviceAddress& ad
     return false;
   }
 
-  std::unique_ptr<CommandPacket> unset_scan_rsp_packet = BuildUnsetScanResponse(address);
-  if (!unset_scan_rsp_packet) {
+  using PacketPtr = std::unique_ptr<hci::CommandPacket>;
+
+  hci::CommandChannel::CommandPacketVariant unset_scan_rsp_packet = BuildUnsetScanResponse(address);
+  if (std::holds_alternative<PacketPtr>(unset_scan_rsp_packet) &&
+      !std::get<PacketPtr>(unset_scan_rsp_packet)) {
     bt_log(WARN, "hci-le", "cannot build HCI unset scan rsp packet for %s", bt_str(address));
     return false;
   }
 
-  std::unique_ptr<CommandPacket> unset_adv_data_packet = BuildUnsetAdvertisingData(address);
-  if (!unset_adv_data_packet) {
+  hci::CommandChannel::CommandPacketVariant unset_adv_data_packet =
+      BuildUnsetAdvertisingData(address);
+  if (std::holds_alternative<PacketPtr>(unset_adv_data_packet) &&
+      !std::get<PacketPtr>(unset_adv_data_packet)) {
     bt_log(WARN, "hci-le", "cannot build HCI unset advertising data packet for %s",
            bt_str(address));
     return false;
