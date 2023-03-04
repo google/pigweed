@@ -1762,6 +1762,119 @@ struct LESetScanResponseDataCommand:
     -- v5.3, Vol 3, Part C, Section 11.
     -- Default: All octets zero
 
+
+struct LESetScanParametersCommand:
+  -- LE Set Scan Parameters Command (v4.0) (LE)
+
+  [requires: le_scan_window <= le_scan_interval]
+
+  let hdr_size = CommandHeader.$size_in_bytes
+
+  0     [+hdr_size]  CommandHeader       header
+
+  $next [+1]         LEScanType          le_scan_type
+    -- Controls the type of scan to perform.
+
+  $next [+2]         UInt                le_scan_interval
+    -- Default: 0x0010 (10ms)
+    -- Time: N * 0.625 ms
+    -- Time Range: 2.5 ms to 10.24 s
+    [requires: 0x0004 <= this <= 0x4000]
+
+  $next [+2]         UInt                le_scan_window
+    -- Default: 0x0010 (10ms)
+    -- Time: N * 0.625 ms
+    -- Time Range: 2.5ms to 10.24 s
+    [requires: 0x0004 <= this <= 0x4000]
+
+  $next [+1]         LEOwnAddressType    own_address_type
+    -- The type of address being used in the scan request packets.
+
+  $next [+1]         LEScanFilterPolicy  scanning_filter_policy
+
+
+struct LESetScanEnableCommand:
+  -- LE Set Scan Enable Command (v4.0) (LE)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader       header
+  $next [+1]         GenericEnableParam  le_scan_enable
+  $next [+1]         GenericEnableParam  filter_duplicates
+    -- Controls whether the Link Layer should filter out duplicate advertising
+    -- reports to the Host, or if the Link Layer should generate advertising
+    -- reports for each packet received. Ignored if le_scan_enable is set to
+    -- disabled.
+    -- See Core Spec v5.3, Vol 6, Part B, Section 4.4.3.5
+
+
+struct LECreateConnectionCommand:
+  -- LE Create Connection Command (v4.0) (LE)
+
+  [requires: le_scan_window <= le_scan_interval && connection_interval_min <= connection_interval_max]
+
+  let hdr_size = CommandHeader.$size_in_bytes
+
+  0     [+hdr_size]               CommandHeader       header
+
+  $next [+2]                      UInt                le_scan_interval
+    -- The time interval from when the Controller started the last LE scan until
+    -- it begins the subsequent LE scan.
+    -- Time: N * 0.625 ms
+    -- Time Range: 2.5 ms to 10.24 s
+    [requires: 0x0004 <= this <= 0x4000]
+
+  $next [+2]                      UInt                le_scan_window
+    -- Amount of time for the duration of the LE scan.
+    -- Time: N * 0.625 ms
+    -- Time Range: 2.5 ms to 10.24 s
+    [requires: 0x0004 <= this <= 0x4000]
+
+  $next [+1]                      GenericEnableParam  initiator_filter_policy
+
+  $next [+1]                      LEAddressType       peer_address_type
+
+  $next [+BdAddr.$size_in_bytes]  BdAddr              peer_address
+
+  $next [+1]                      LEOwnAddressType    own_address_type
+
+  $next [+2]                      UInt                connection_interval_min
+    -- Time: N * 1.25 ms
+    -- Time Range: 7.5 ms to 4 s.
+    [requires: 0x0006 <= this <= 0x0C80]
+
+  $next [+2]                      UInt                connection_interval_max
+    -- Time: N * 1.25 ms
+    -- Time Range: 7.5 ms to 4 s.
+    [requires: 0x0006 <= this <= 0x0C80]
+
+  $next [+2]                      UInt                max_latency
+    -- Maximum Peripheral latency for the connection in number of connection
+    -- events.
+    [requires: 0x0000 <= this <= 0x01F3]
+
+  $next [+2]                      UInt                supervision_timeout
+    -- See Core Spec v5.3, Vol 6, Part B, Section 4.5.2.
+    -- Time: N * 10 ms
+    -- Time Range: 100 ms to 32 s
+    [requires: 0x000A <= this <= 0x0C80]
+
+  $next [+2]                      UInt                min_connection_event_length
+    -- Time: N * 0.625 ms
+
+  $next [+2]                      UInt                max_connection_event_length
+    -- Time: N * 0.625 ms
+
+
+struct LECreateConnectionCancelCommand:
+  -- LE Create Connection Cancel Command (v4.0) (LE)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
+struct LEClearFilterAcceptListCommand:
+  -- LE Clear Filter Accept List Command (v4.0) (LE)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
 # ========================= HCI Event packets ===========================
 # Core Spec v5.3 Vol 4, Part E, Section 7.7
 
