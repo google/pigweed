@@ -23,7 +23,7 @@
 #include "pw_preprocessor/arguments.h"
 
 #define PW_PERF_TEST(name, function, ...)                             \
-  ::pw::perf_test::internal::TestInfo PwPerfTest_##name(              \
+  const ::pw::perf_test::internal::TestInfo PwPerfTest_##name(        \
       #name, [](::pw::perf_test::State& pw_perf_test_state) {         \
         static_cast<void>(                                            \
             function(pw_perf_test_state PW_COMMA_ARGS(__VA_ARGS__))); \
@@ -59,6 +59,7 @@ class Framework {
       : event_handler_(nullptr),
         tests_(nullptr),
         run_info_{.total_tests = 0, .default_iterations = kDefaultIterations} {}
+
   static Framework& Get() { return framework_; }
 
   void RegisterEventHandler(EventHandler& event_handler) {
@@ -84,7 +85,7 @@ class Framework {
 
 class TestInfo {
  public:
-  constexpr TestInfo(const char* test_name, void (*function_body)(State&))
+  TestInfo(const char* test_name, void (*function_body)(State&))
       : run_(function_body), test_name_(test_name) {
     // Once a TestInfo object is created by the macro, this adds itself to the
     // list of registered tests
