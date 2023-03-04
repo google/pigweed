@@ -52,7 +52,7 @@ class MultiSinkTest : public ::testing::Test {
   static constexpr size_t kEntryBufferSize = 1024;
   static constexpr size_t kBufferSize = 5 * kEntryBufferSize;
 
-  MultiSinkTest() : multisink_(buffer_) {}
+  MultiSinkTest() : buffer_{}, multisink_(buffer_) {}
 
   // Expects the peeked or popped message to equal the provided non-empty
   // message, and the drop count to match. If `expected_message` is empty, the

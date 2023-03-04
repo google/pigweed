@@ -21,10 +21,7 @@ namespace pw::build {
 namespace {
 
 static_assert(test::ns::kFirstBlob0123.size() == 4);
-static_assert(test::ns::kFirstBlob0123.data() != nullptr);
-
 static_assert(test::ns::kSecondBlob0123.size() == 4);
-static_assert(test::ns::kSecondBlob0123.data() != nullptr);
 
 TEST(CcBlobLibraryTest, FirstBlobContentsMatch) {
   EXPECT_EQ(test::ns::kFirstBlob0123[0], std::byte{0});

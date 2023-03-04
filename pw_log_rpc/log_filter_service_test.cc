@@ -41,7 +41,6 @@ class FilterServiceTest : public ::testing::Test {
   FilterServiceTest() : filter_map_(filters_) {}
 
  protected:
-  FilterMap filter_map_;
   static constexpr size_t kMaxFilterRules = 4;
   std::array<Filter::Rule, kMaxFilterRules> rules1_;
   std::array<Filter::Rule, kMaxFilterRules> rules2_;
@@ -58,6 +57,7 @@ class FilterServiceTest : public ::testing::Test {
       Filter(filter_id2_, rules2_),
       Filter(filter_id3_, rules3_),
   };
+  FilterMap filter_map_;
 };
 
 TEST_F(FilterServiceTest, GetFilterIds) {

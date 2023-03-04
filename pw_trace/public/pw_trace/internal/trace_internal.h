@@ -242,8 +242,10 @@ static inline void _pw_trace_disabled(int x, ...) { (void)x; }
     object_name(object_name&&) = delete;                                     \
     object_name& operator=(const object_name&) = delete;                     \
     object_name& operator=(object_name&&) = delete;                          \
-    object_name(uint32_t trace_id = PW_TRACE_TRACE_ID_DEFAULT)               \
-        : trace_id_(trace_id) {                                              \
+                                                                             \
+    object_name(uint32_t PW_CONCAT(object_name,                              \
+                                   _trace_id) = PW_TRACE_TRACE_ID_DEFAULT)   \
+        : trace_id_(PW_CONCAT(object_name, _trace_id)) {                     \
       _PW_TRACE_IF_ENABLED(event_type_start, flag, label, group, trace_id_); \
     }                                                                        \
     ~object_name() {                                                         \
