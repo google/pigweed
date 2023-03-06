@@ -435,13 +435,21 @@ class ProjectBuilderContext:  # pylint: disable=too-many-instance-attributes,too
     ) -> None:
         """Exit function called when the user presses ctrl-c."""
 
+        # Note: The correct way to exit Python is via sys.exit() however this
+        # takes a number of seconds when running pw_watch with multiple parallel
+        # builds. Instead, this function calls os._exit() to shutdown
+        # immediately. This is similar to `pw_watch.watch._exit`:
+        # https://cs.opensource.google/pigweed/pigweed/+/main:pw_watch/py/pw_watch/watch.py?q=_exit.code
+
         if not self.progress_bar:
             self.restore_logging_and_shutdown(log_after_shutdown)
+            logging.shutdown()
             os._exit(exit_code)  # pylint: disable=protected-access
 
         # Shut everything down after the progress_bar exits.
         def _really_exit(future: asyncio.Future) -> NoReturn:
             self.restore_logging_and_shutdown(log_after_shutdown)
+            logging.shutdown()
             os._exit(future.result())  # pylint: disable=protected-access
 
         if self.progress_bar.app.future:

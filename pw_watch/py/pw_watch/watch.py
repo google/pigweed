@@ -252,7 +252,7 @@ class PigweedBuildWatcher(FileSystemEventHandler, DebouncedFunction):
         log_message = f'File change detected: {os.path.relpath(matching_path)}'
         if self.restart_on_changes:
             if self.fullscreen_enabled and self.watch_app:
-                self.watch_app.rebuild_on_filechange()
+                self.watch_app.clear_log_panes()
             self.debouncer.press(f'{log_message} Triggering build...')
         else:
             _LOG.info('%s ; not rebuilding', log_message)

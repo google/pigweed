@@ -116,6 +116,33 @@ Move window pane up. ------------------------------  Ctrl-Alt-Up
 Balance all window sizes. -------------------------  Ctrl-U
 
 
+Bottom Toolbar Controls
+=======================
+
+Rebuild Enter --------------- Click or press Enter to trigger a rebuild.
+[x] Auto Rebuild ------------ Click to globaly enable or disable automatic
+                              rebuilding when files change.
+Help F1 --------------------- Click or press F1 to open this help window.
+Quit Ctrl-d ----------------- Click or press Ctrl-d to quit pw_watch.
+Next Tab Ctrl-Alt-n --------- Switch to the next log tab.
+Previous Tab Ctrl-Alt-p ----- Switch to the previous log tab.
+
+
+Build Status Bar
+================
+
+The build status bar shows the current status of all build directories outlined
+in a colored frame.
+
+  ┏━━ BUILDING ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+  ┃ [✓] out_directory  Building  Last line of standard out.                ┃
+  ┃ [✓] out_dir2       Waiting   Last line of standard out.                ┃
+  ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+Each checkbox on the far left controls whether that directory is built when
+files change and manual builds are run.
+
+
 Copying Text
 ============
 
@@ -389,6 +416,14 @@ class WatchApp(PluginMixin):
             ToolbarButton('Enter', 'Rebuild', self.run_build)
         )
         self.help_toolbar.add_button(
+            ToolbarButton(
+                description='Auto Rebuild',
+                mouse_handler=self.toggle_restart_on_filechange,
+                is_checkbox=True,
+                checked=lambda: self.restart_on_changes,
+            )
+        )
+        self.help_toolbar.add_button(
             ToolbarButton('F1', 'Help', self.user_guide_window.toggle_display)
         )
         self.help_toolbar.add_button(ToolbarButton('Ctrl-d', 'Quit', self.exit))
@@ -655,25 +690,34 @@ class WatchApp(PluginMixin):
             if isinstance(pane, LogPane):
                 yield pane
 
-    def clear_ninja_log(self) -> None:
+    def clear_log_panes(self) -> None:
+        """Erase all log pane content and turn on follow.
+
+        This is called whenever rebuilds occur. Either a manual build from
+        self.run_build or on file changes called from
+        pw_watch._handle_matched_event."""
         for pane in self.all_log_panes():
+            pane.log_view.clear_visual_selection()
+            pane.log_view.clear_filters()
             pane.log_view.log_store.clear_logs()
-            pane.log_view._restart_filtering()  # pylint: disable=protected-access
             pane.log_view.view_mode_changed()
             # Re-enable follow if needed
             if not pane.log_view.follow:
                 pane.log_view.toggle_follow()
 
-    def run_build(self):
-        """Manually trigger a rebuild."""
-        self.clear_ninja_log()
+    def run_build(self) -> None:
+        """Manually trigger a rebuild from the UI."""
+        self.clear_log_panes()
         self.event_handler.rebuild()
 
-    def rebuild_on_filechange(self):
-        for pane in self.all_log_panes():
-            pane.log_view.clear_visual_selection()
-            pane.log_view.log_store.clear_logs()
-            pane.log_view.view_mode_changed()
+    @property
+    def restart_on_changes(self) -> bool:
+        return self.event_handler.restart_on_changes
+
+    def toggle_restart_on_filechange(self) -> None:
+        self.event_handler.restart_on_changes = (
+            not self.event_handler.restart_on_changes
+        )
 
     def get_status_bar_text(self) -> StyleAndTextTuples:
         """Return formatted text for build status bar."""
