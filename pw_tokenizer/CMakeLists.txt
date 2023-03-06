@@ -169,6 +169,16 @@ pw_add_test(pw_tokenizer.detokenize_test
     pw_tokenizer
 )
 
+pw_add_test(pw_tokenizer.encode_args_test
+  SOURCES
+    encode_args_test.cc
+  PRIVATE_DEPS
+    pw_tokenizer
+  GROUPS
+    modules
+    pw_tokenizer
+)
+
 pw_add_test(pw_tokenizer.hash_test
   SOURCES
     hash_test.cc

@@ -213,6 +213,15 @@ pw_cc_fuzz_test(
 )
 
 pw_cc_test(
+    name = "encode_args_test",
+    srcs = ["encode_args_test.cc"],
+    deps = [
+        ":pw_tokenizer",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
     name = "hash_test",
     srcs = [
         "hash_test.cc",

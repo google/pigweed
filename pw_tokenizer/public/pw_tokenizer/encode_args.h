@@ -25,12 +25,52 @@
 
 #include <cstring>
 
+#include "pw_polyfill/standard.h"
 #include "pw_span/span.h"
 #include "pw_tokenizer/config.h"
 #include "pw_tokenizer/tokenize.h"
 
-namespace pw {
-namespace tokenizer {
+namespace pw::tokenizer {
+namespace internal {
+
+// Returns the maximum encoded size of an argument of the specified type.
+template <typename T>
+constexpr size_t ArgEncodedSizeBytes() {
+  constexpr pw_tokenizer_ArgTypes kType = VarargsType<T>();
+  if constexpr (kType == PW_TOKENIZER_ARG_TYPE_DOUBLE) {
+    return sizeof(float);
+  } else if constexpr (kType == PW_TOKENIZER_ARG_TYPE_STRING) {
+    return 1;  // Size of the length byte only
+  } else if constexpr (kType == PW_TOKENIZER_ARG_TYPE_INT64) {
+    return 10;  // Max size of a varint-encoded 64-bit integer
+  } else if constexpr (kType == PW_TOKENIZER_ARG_TYPE_INT) {
+    return sizeof(T) + 1;  // Max size of zig-zag varint integer <= 32-bits
+  } else {
+    static_assert(sizeof(T) != sizeof(T), "Unsupported argument type");
+  }
+}
+
+}  // namespace internal
+
+/// Calculates the minimum buffer size to allocate that is guaranteed to support
+/// encoding the specified arguments.
+///
+/// The contents of strings are NOT included in this total. The string's
+/// length/status byte is guaranteed to fit, but the string contents may be
+/// truncated. Encoding is considered to succeed as long as the string's
+/// length/status byte is written, even if the actual string is truncated.
+///
+/// Examples:
+///
+/// - Message with no arguments:
+///       `MinEncodingBufferSizeBytes() == 4`
+/// - Message with an int argument
+///       `MinEncodingBufferSizeBytes<int>() == 9 (4 + 5)`
+template <typename... ArgTypes>
+constexpr size_t MinEncodingBufferSizeBytes() {
+  return (sizeof(pw_tokenizer_Token) + ... +
+          internal::ArgEncodedSizeBytes<ArgTypes>());
+}
 
 /// Encodes a tokenized string's arguments to a buffer. The
 /// @cpp_type{pw_tokenizer_ArgTypes} parameter specifies the argument types, in
@@ -97,8 +137,7 @@ class EncodedMessage {
   size_t size_;
 };
 
-}  // namespace tokenizer
-}  // namespace pw
+}  // namespace pw::tokenizer
 
 #endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 

@@ -171,6 +171,7 @@ pw_test_group("tests") {
     ":decode_test",
     ":detokenize_fuzzer",
     ":detokenize_test",
+    ":encode_args_test",
     ":hash_test",
     ":simple_tokenize_test",
     ":token_database_fuzzer",
@@ -224,6 +225,11 @@ pw_test("detokenize_test") {
   # TODO(tonymd): This fails on Teensyduino 1.54 beta core. It may be related to
   # linking in stl functions. Will debug when 1.54 is released.
   enable_if = pw_build_EXECUTABLE_TARGET_TYPE != "arduino_executable"
+}
+
+pw_test("encode_args_test") {
+  sources = [ "encode_args_test.cc" ]
+  deps = [ ":pw_tokenizer" ]
 }
 
 pw_test("hash_test") {

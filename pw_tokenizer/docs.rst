@@ -424,6 +424,10 @@ Arguments are encoded as follows:
    arguments short or avoid encoding them as strings (e.g. encode an enum as an
    integer instead of a string). See also `Tokenized strings as %s arguments`_.
 
+Buffer sizing helper
+--------------------
+.. doxygenfunction:: pw::tokenizer::MinEncodingBufferSizeBytes
+
 Encoding command line utility
 -----------------------------
 The ``pw_tokenizer.encode`` command line tool can be used to encode tokenized
