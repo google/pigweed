@@ -139,6 +139,7 @@ cc_defaults {
         "pw_span_headers",
         "pw_sync_baremetal_headers",
         "pw_sync_headers",
+        "pw_toolchain",
     ],
     static_libs: [
         "pw_bytes",
