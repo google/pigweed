@@ -45,7 +45,7 @@ pexpect==4.8.0
 platformdirs==3.0.0
 pickleshare==0.7.5
 prompt-toolkit==3.0.36
-protobuf==3.20.1
+protobuf==3.20.2
 ptpython==3.0.22
 ptyprocess==0.7.0
 pyasn1==0.4.8
