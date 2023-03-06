@@ -161,6 +161,8 @@ Tokenization converts a string literal to a token. If it's a printf-style
 string, its arguments are encoded along with it. The results of tokenization can
 be sent off device or stored in place of a full string.
 
+.. doxygentypedef:: pw_tokenizer_Token
+
 Tokenization macros
 ===================
 Adding tokenization to a project is simple. To tokenize a string, include
@@ -171,25 +173,9 @@ Tokenize a string literal
 ``pw_tokenizer`` provides macros for tokenizing string literals with no
 arguments.
 
-.. c:macro:: PW_TOKENIZE_STRING(string_literal)
-
-  Converts a string literal to a ``uint32_t`` token in a standalone statement.
-  C and C++ compatible.
-
-  .. code-block:: cpp
-
-     constexpr uint32_t token = PW_TOKENIZE_STRING("Any string literal!");
-
-.. c:macro:: PW_TOKENIZE_STRING_DOMAIN(domain, string_literal)
-
-  Tokenizes a string literal in a standalone statement using the specified
-  :ref:`domain <module-pw_tokenizer-domains>`. C and C++ compatible.
-
-.. c:macro:: PW_TOKENIZE_STRING_MASK(domain, mask, string_literal)
-
-  Tokenizes a string literal in a standalone stateemnt using the specified
-  :ref:`domain <module-pw_tokenizer-domains>` and :ref:`bit mask
-  <module-pw_tokenizer-masks>`. C and C++ compatible.
+.. doxygendefine:: PW_TOKENIZE_STRING
+.. doxygendefine:: PW_TOKENIZE_STRING_DOMAIN
+.. doxygendefine:: PW_TOKENIZE_STRING_MASK
 
 The tokenization macros above cannot be used inside other expressions.
 
@@ -220,25 +206,9 @@ use of lambda functions, so while they can be used inside expressions, they
 require C++ and cannot be assigned to constexpr variables or be used with
 special function variables like ``__func__``.
 
-.. c:macro:: PW_TOKENIZE_STRING_EXPR(string_literal)
-
-  Converts a string literal to a ``uint32_t`` token within an expression.
-  Requires C++.
-
-  .. code-block:: cpp
-
-     DoSomething(PW_TOKENIZE_STRING_EXPR("Succeed"));
-
-.. c:macro:: PW_TOKENIZE_STRING_DOMAIN_EXPR(domain, string_literal)
-
-  Tokenizes a string literal using the specified :ref:`domain
-  <module-pw_tokenizer-domains>` within an expression. Requires C++.
-
-.. c:macro:: PW_TOKENIZE_STRING_MASK_EXPR(domain, mask, string_literal)
-
-  Tokenizes a string literal using the specified :ref:`domain
-  <module-pw_tokenizer-domains>` and :ref:`bit mask
-  <module-pw_tokenizer-masks>` within an expression. Requires C++.
+.. doxygendefine:: PW_TOKENIZE_STRING_EXPR
+.. doxygendefine:: PW_TOKENIZE_STRING_DOMAIN_EXPR
+.. doxygendefine:: PW_TOKENIZE_STRING_MASK_EXPR
 
 .. admonition:: When to use these macros
 
@@ -288,30 +258,16 @@ handle tokenized data in a function of their choosing.
 ``pw_tokenizer`` provides two low-level macros for projects to use
 to create custom tokenization macros.
 
-.. c:macro:: PW_TOKENIZE_FORMAT_STRING(domain, mask, format_string, ...)
-
-   Tokenizes a format string and sets the ``_pw_tokenizer_token`` variable to the
-   token. Must be used in its own scope, since the same variable is used in every
-   invocation.
-
-   The tokenized string uses the specified :ref:`tokenization domain
-   <module-pw_tokenizer-domains>`.  Use ``PW_TOKENIZER_DEFAULT_DOMAIN`` for the
-   default. The token also may be masked; use ``UINT32_MAX`` to keep all bits.
-
-.. c:macro:: PW_TOKENIZER_ARG_TYPES(...)
-
-   Converts a series of arguments to a compact format that replaces the format
-   string literal. Evaluates to a ``pw_tokenizer_ArgTypes`` value.
+.. doxygendefine:: PW_TOKENIZE_FORMAT_STRING
+.. doxygendefine:: PW_TOKENIZER_ARG_TYPES
 
 The outputs of these macros are typically passed to an encoding function. That
 function encodes the token, argument types, and argument data to a buffer using
 helpers provided by ``pw_tokenizer/encode_args.h``.
 
 .. doxygenfunction:: pw::tokenizer::EncodeArgs
-
 .. doxygenclass:: pw::tokenizer::EncodedMessage
    :members:
-
 .. doxygenfunction:: pw_tokenizer_EncodeArgs
 
 Example
@@ -382,18 +338,9 @@ stored as needed.
 
 Tokenize a message with arguments to a buffer
 ---------------------------------------------
-.. c:macro:: PW_TOKENIZE_TO_BUFFER(buffer_pointer, buffer_size_pointer, format_string, arguments...)
-
-  ``PW_TOKENIZE_TO_BUFFER`` encodes to a caller-provided buffer.
-
-  .. code-block:: cpp
-
-     uint8_t buffer[BUFFER_SIZE];
-     size_t size_bytes = sizeof(buffer);
-     PW_TOKENIZE_TO_BUFFER(buffer, &size_bytes, format_string_literal, arguments...);
-
-  While ``PW_TOKENIZE_TO_BUFFER`` is very flexible, it must be passed a buffer,
-  which increases its call site overhead.
+.. doxygendefine:: PW_TOKENIZE_TO_BUFFER
+.. doxygendefine:: PW_TOKENIZE_TO_BUFFER_DOMAIN
+.. doxygendefine:: PW_TOKENIZE_TO_BUFFER_MASK
 
 .. admonition:: Why use this macro
 

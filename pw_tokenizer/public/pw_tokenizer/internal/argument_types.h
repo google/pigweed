@@ -174,14 +174,4 @@ constexpr pw_tokenizer_ArgTypes VarargsType() {
 
 #endif  // __cplusplus
 
-// Encodes the types of the provided arguments as a pw_tokenizer_ArgTypes
-// value. Depending on the size of pw_tokenizer_ArgTypes, the bottom 4 or 6
-// bits store the number of arguments and the remaining bits store the types,
-// two bits per type.
-//
-// The arguments are not evaluated; only their types are used to
-// select the set their corresponding PW_TOKENIZER_ARG_TYPEs.
-#define PW_TOKENIZER_ARG_TYPES(...) \
-  PW_DELEGATE_BY_ARG_COUNT(_PW_TOKENIZER_TYPES_, __VA_ARGS__)
-
 #define _PW_TOKENIZER_TYPES_0() ((pw_tokenizer_ArgTypes)0)

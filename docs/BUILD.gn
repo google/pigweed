@@ -133,6 +133,7 @@ _doxygen_input_files = [
   "$dir_pw_sync/public/pw_sync/virtual_basic_lockable.h",
   "$dir_pw_rpc/public/pw_rpc/internal/config.h",
   "$dir_pw_tokenizer/public/pw_tokenizer/encode_args.h",
+  "$dir_pw_tokenizer/public/pw_tokenizer/tokenize.h",
 ]
 
 pw_python_action("generate_doxygen") {

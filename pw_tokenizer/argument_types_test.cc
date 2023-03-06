@@ -18,6 +18,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_preprocessor/concat.h"
+#include "pw_tokenizer/tokenize.h"
 #include "pw_tokenizer_private/argument_types_test.h"
 
 namespace pw::tokenizer {

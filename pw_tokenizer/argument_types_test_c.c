@@ -18,6 +18,7 @@
 #include <assert.h>
 #include <stddef.h>
 
+#include "pw_tokenizer/tokenize.h"
 #include "pw_tokenizer_private/argument_types_test.h"
 
 #ifdef __cplusplus
