@@ -267,10 +267,10 @@ class MutableByteBuffer : public ByteBuffer {
   // The buffer is allowed to be larger than T. The user is responsible for checking that the first
   // sizeof(T) bytes represents a valid instance of T.
   template <typename T>
-  T& AsMutable() __attribute__((no_sanitize("alignment"))) {
-    static_assert(std::is_trivially_copyable_v<T>, "Can not reinterpret bytes");
+  T* AsMutable() {
+    static_assert(std::is_trivially_copyable_v<T>);
     BT_ASSERT(size() >= sizeof(T));
-    return *reinterpret_cast<T*>(mutable_data());
+    return reinterpret_cast<T*>(mutable_data());
   }
 
   // Writes the contents of |data| into this buffer starting at |pos|.

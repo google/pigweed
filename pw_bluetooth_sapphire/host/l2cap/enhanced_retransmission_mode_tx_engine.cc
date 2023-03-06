@@ -310,7 +310,7 @@ uint8_t Engine::NumUnackedFrames() {
 
 void Engine::SendPdu(PendingPdu* pdu) {
   BT_DEBUG_ASSERT(pdu);
-  pdu->buf.AsMutable<SimpleInformationFrameHeader>().set_receive_seq_num(req_seqnum_);
+  pdu->buf.AsMutable<SimpleInformationFrameHeader>()->set_receive_seq_num(req_seqnum_);
 
   // Prevent tx_count from overflowing to zero, as that would be indistinguishable from "never
   // transmitted." This is only possible when configured for infinite retransmissions, so there is
@@ -363,7 +363,7 @@ bool Engine::RetransmitUnackedData(std::optional<uint8_t> only_with_seq,
     }
 
     if (set_is_poll_response) {
-      cur_frame->buf.AsMutable<EnhancedControlField>().set_is_poll_response();
+      cur_frame->buf.AsMutable<EnhancedControlField>()->set_is_poll_response();
 
       // Per "Retransmit-I-frames" of Core Spec v5.0 Vol 3, Part A, Sec 8.6.5.6, "[t]he F-bit of all
       // other [than the first] unacknowledged I-frames sent shall be 0," so clear this for
@@ -373,7 +373,7 @@ bool Engine::RetransmitUnackedData(std::optional<uint8_t> only_with_seq,
 
     // TODO(fxbug.dev/1453): If the task is already running, we should not restart it.
     SendPdu(&*cur_frame);
-    cur_frame->buf.AsMutable<EnhancedControlField>() = control_field;
+    *cur_frame->buf.AsMutable<EnhancedControlField>() = control_field;
   }
 
   return true;

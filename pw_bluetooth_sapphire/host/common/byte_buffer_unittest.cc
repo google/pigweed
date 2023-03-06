@@ -546,7 +546,7 @@ TEST(ByteBufferTest, ByteBufferReadMemberOfUnalignedArrayType) {
 
 TEST(ByteBufferTest, MutableByteBufferAsMutableFundamental) {
   StaticByteBuffer data(10, 12);
-  ++data.AsMutable<uint8_t>();
+  ++*data.AsMutable<uint8_t>();
   EXPECT_EQ(11, data[0]);
 }
 
@@ -556,8 +556,8 @@ TEST(ByteBufferTest, MutableByteBufferAsMutableStruct) {
     uint8_t x;
     uint8_t y;
   };
-  ++data.AsMutable<point>().x;
-  ++data.AsMutable<point>().y;
+  ++data.AsMutable<point>()->x;
+  ++data.AsMutable<point>()->y;
 
   const StaticByteBuffer expected_data(11, 13);
   EXPECT_EQ(expected_data, data);
@@ -565,7 +565,7 @@ TEST(ByteBufferTest, MutableByteBufferAsMutableStruct) {
 
 TEST(ByteBufferTest, MutableByteBufferAsMutableArray) {
   StaticByteBuffer buf(10, 12);
-  auto array = buf.AsMutable<uint8_t[2]>();
+  uint8_t(&array)[2] = *buf.AsMutable<uint8_t[2]>();
   ++array[0];
   ++array[1];
 

@@ -44,8 +44,7 @@ class FuzzerController : public ControllerTestDoubleBase, public WeakSelf<Fuzzer
 using TestingBase = ControllerTest<FuzzerController>;
 class DataFuzzTest : public TestingBase {
  public:
-  DataFuzzTest(const uint8_t* data, size_t size)
-      : data_(data, size), rng_(&data_), connection_(false) {
+  DataFuzzTest(const uint8_t* data, size_t size) : data_(data, size), rng_(&data_) {
     set_random_generator(&rng_);
     TestingBase::SetUp();
     const auto bredr_buffer_info = hci::DataBufferInfo(kMaxDataPacketLength, kMaxPacketCount);
@@ -100,7 +99,7 @@ class DataFuzzTest : public TestingBase {
     MutableBufferView packet_view(packet_data.data(), packet_data.size());
 
     // Use correct length so packets aren't rejected for invalid length.
-    packet_view.AsMutable<hci_spec::ACLDataHeader>().data_total_length =
+    packet_view.AsMutable<hci_spec::ACLDataHeader>()->data_total_length =
         htole16(packet_view.size() - sizeof(hci_spec::ACLDataHeader));
 
     // Use correct connection handle so packets aren't rejected/queued for invalid handle.
@@ -108,7 +107,7 @@ class DataFuzzTest : public TestingBase {
         packet_view.ReadMember<&hci_spec::ACLDataHeader::handle_and_flags>();
     handle_and_flags &= 0xF000;  // Keep flags, clear handle.
     handle_and_flags |= kHandle;
-    packet_view.AsMutable<hci_spec::ACLDataHeader>().handle_and_flags = handle_and_flags;
+    packet_view.AsMutable<hci_spec::ACLDataHeader>()->handle_and_flags = handle_and_flags;
 
     BT_ASSERT(test_device()->SendACLDataChannelPacket(packet_view));
     return true;
@@ -145,7 +144,7 @@ class DataFuzzTest : public TestingBase {
   FuzzedDataProvider data_;
   pw::random::FuzzerRandomGenerator rng_;
   std::unique_ptr<l2cap::ChannelManager> channel_manager_;
-  bool connection_;
+  bool connection_ = false;
   std::unordered_map<l2cap::ChannelId, l2cap::Channel::WeakPtr> channels_;
 };
 

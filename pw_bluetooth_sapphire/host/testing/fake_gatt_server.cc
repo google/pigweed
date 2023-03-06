@@ -95,9 +95,9 @@ void FakeGattServer::HandleReadByGrpType(hci_spec::ConnectionHandle conn, const 
   for (auto& [_, service] : services_) {
     // FakeGattServer only supports 16bit UUIDs currently.
     BT_ASSERT(service.type.CompactSize(/*allow_32bit=*/false) == UUIDElemSize::k16Bit);
-    att::AttributeGroupDataEntry& entry = next_entry.AsMutable<att::AttributeGroupDataEntry>();
-    entry.start_handle = htole16(service.start_handle);
-    entry.group_end_handle = htole16(service.end_handle);
+    att::AttributeGroupDataEntry* entry = next_entry.AsMutable<att::AttributeGroupDataEntry>();
+    entry->start_handle = htole16(service.start_handle);
+    entry->group_end_handle = htole16(service.end_handle);
     next_entry.Write(service.type.CompactView(/*allow_32bit=*/false),
                      sizeof(att::AttributeGroupDataEntry));
     next_entry = next_entry.mutable_view(entry_size);
