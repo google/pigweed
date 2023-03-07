@@ -28,9 +28,8 @@ Set up the :ref:`module-pw_log_tokenized` log backend.
 3. Connect the tokenized logging handler to the MultiSink
 ---------------------------------------------------------
 Create a :ref:`MultiSink <module-pw_multisink>` instance to buffer log entries.
-Then, make the log backend handler, :cpp:func:`pw_log_tokenized_HandleLog`,
-encode log entries in the ``log::LogEntry`` format, and add them to the
-``MultiSink``.
+Then, make the log backend handler, :c:func:`pw_log_tokenized_HandleLog`, encode
+log entries in the ``log::LogEntry`` format, and add them to the ``MultiSink``.
 
 4. Create log drains and filters
 --------------------------------

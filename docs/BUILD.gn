@@ -119,6 +119,8 @@ _doxygen_input_files = [
   "$dir_pw_bluetooth/public/pw_bluetooth/gatt/server.h",
   "$dir_pw_chrono/public/pw_chrono/system_clock.h",
   "$dir_pw_chrono/public/pw_chrono/system_timer.h",
+  "$dir_pw_log_tokenized/public/pw_log_tokenized/handler.h",
+  "$dir_pw_log_tokenized/public/pw_log_tokenized/metadata.h",
   "$dir_pw_string/public/pw_string/string_builder.h",
   "$dir_pw_sync/public/pw_sync/binary_semaphore.h",
   "$dir_pw_sync/public/pw_sync/borrow.h",

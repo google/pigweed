@@ -20,7 +20,7 @@ namespace pw::log_tokenized {
 namespace {
 
 TEST(Metadata, NoLineBits) {
-  using NoLineBits = internal::GenericMetadata<6, 0, 10, 16>;
+  using NoLineBits = GenericMetadata<6, 0, 10, 16>;
 
   constexpr NoLineBits test1 = NoLineBits::Set<0, 0, 0>();
   static_assert(test1.level() == 0);
@@ -42,7 +42,7 @@ TEST(Metadata, NoLineBits) {
 }
 
 TEST(Metadata, NoFlagBits) {
-  using NoFlagBits = internal::GenericMetadata<3, 13, 0, 16>;
+  using NoFlagBits = GenericMetadata<3, 13, 0, 16>;
 
   constexpr NoFlagBits test1 = NoFlagBits::Set<0, 0, 0, 0>();
   static_assert(test1.level() == 0);

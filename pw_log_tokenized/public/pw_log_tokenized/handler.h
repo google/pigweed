@@ -20,6 +20,10 @@
 
 PW_EXTERN_C_START
 
+/// Function that is called for each log message. The metadata `uint32_t` can be
+/// converted to a @cpp_type{pw::log_tokenized::Metadata}. The message is passed
+/// as a pointer to a buffer and a size. The pointer is invalidated after this
+/// function returns, so the buffer must be copied.
 void pw_log_tokenized_HandleLog(uint32_t metadata,
                                 const uint8_t encoded_message[],
                                 size_t size_bytes);

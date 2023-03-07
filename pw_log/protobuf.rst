@@ -89,11 +89,14 @@ Encoding logs to the ``log.proto`` format can be performed using the helpers
 provided in the ``pw_log/proto_utils.h`` header. Separate helpers are provided
 for encoding tokenized logs and string-based logs.
 
+The following example shows a :c:func:`pw_log_tokenized_HandleLog`
+implementation that encodes the results to a protobuf.
+
 .. code-block:: cpp
 
    #include "pw_log/proto_utils.h"
 
-   extern "C" void pw_log_tokenized_HandleLog((
+   extern "C" void pw_log_tokenized_HandleLog(
        uint32_t payload, const uint8_t data[], size_t size) {
      pw::log_tokenized::Metadata metadata(payload);
      std::byte log_buffer[kLogBufferSize];

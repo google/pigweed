@@ -11,15 +11,10 @@ C++ backend
 ``pw_log_tokenized`` provides a backend for ``pw_log`` that tokenizes log
 messages with the ``pw_tokenizer`` module. The log level, 16-bit tokenized
 module name, and flags bits are passed through the payload argument. The macro
-eventually passes logs to the ``pw_log_tokenized_HandleLog`` function, which
-must be implemented by the application.
+eventually passes logs to the :c:func:`pw_log_tokenized_HandleLog` function,
+which must be implemented by the application.
 
-.. c:function: void pw_log_tokenized_HandleLog(uint32_t metadata, const uint8_t[] message, size_t size_bytes)
-
-  Function that is called for each log message. The metadata uint32_t can be
-  converted to a :cpp:class`pw::log::tokenized::Metadata`. The message is passed
-  as a pointer to a buffer and a size. The pointer is invalidated after this
-  function returns, so the buffer must be copied.
+.. doxygenfunction:: pw_log_tokenized_HandleLog
 
 Example implementation:
 
@@ -135,20 +130,18 @@ bits allocated is excluded from the log metadata.
 
 Creating and reading Metadata payloads
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-A C++ class is provided to facilitate the creation and interpretation of packed
-log metadata payloads. The ``GenericMetadata`` class allows flags, log level,
-line number, and a module identifier to be packed into bit fields of
-configurable size. The ``Metadata`` class simplifies the bit field width
-templatization of ``GenericMetadata`` by pulling from this module's
-configuration options. In most cases, it's recommended to use ``Metadata`` to
-create or read metadata payloads.
+``pw_log_tokenized`` provides a C++ class to facilitate the creation and
+interpretation of packed log metadata payloads.
 
-A ``Metadata`` object can be created from a ``uint32_t`` allowing
-various peices of metadata to be read from the payload as seen below:
+.. doxygenclass:: pw::log_tokenized::GenericMetadata
+.. doxygentypedef:: pw::log_tokenized::Metadata
+
+The following example shows that a ``Metadata`` object can be created from a
+``uint32_t`` log metadata payload.
 
 .. code-block:: cpp
 
-  extern "C" void pw_log_tokenized_HandleLog((
+  extern "C" void pw_log_tokenized_HandleLog(
       uint32_t payload,
       const uint8_t message[],
       size_t size_bytes) {
