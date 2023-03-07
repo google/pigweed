@@ -992,7 +992,6 @@ _LINTFORMAT = (
     cpp_checks.pragma_once,
     build.bazel_lint,
     owners_lint_checks,
-    source_in_build.bazel(SOURCE_FILES_FILTER),
     source_in_build.gn(SOURCE_FILES_FILTER),
     source_is_in_cmake_build_warn_only,
     shell_checks.shellcheck if shutil.which('shellcheck') else (),
@@ -1002,6 +1001,11 @@ _LINTFORMAT = (
 
 LINTFORMAT = (
     _LINTFORMAT,
+    # This check is excluded from _LINTFORMAT because it's not quick: it issues
+    # a bazel query that pulls in all of Pigweed's external dependencies
+    # (https://stackoverflow.com/q/71024130/1224002). These are cached, but
+    # after a roll it can be quite slow.
+    source_in_build.bazel(SOURCE_FILES_FILTER),
     pw_presubmit.python_checks.check_python_versions,
     pw_presubmit.python_checks.gn_python_lint,
 )
