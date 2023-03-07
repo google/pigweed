@@ -65,10 +65,12 @@ class LocalServiceDelegate {
   /// the peer GATT client changes the configuration.
   ///
   /// The Bluetooth stack maintains the state of each peer's configuration
-  /// across reconnections. As such, this method will also be called when a peer
-  /// connects for each characteristic with the initial, persisted state of the
-  /// newly-connected peer's configuration. However, clients should not rely on
-  /// this state being persisted indefinitely by the Bluetooth stack.
+  /// across reconnections. As such, this method will be called with both
+  /// `notify` and `indicate` set to false for each characteristic when a peer
+  /// disconnects. Also, when a peer reconnects this method will be called again
+  /// with the initial, persisted state of the newly-connected peer's
+  /// configuration. However, clients should not rely on this state being
+  /// persisted indefinitely by the Bluetooth stack.
   ///
   /// @param peer_id The PeerId of the GATT client associated with this
   /// particular CCC.
@@ -118,9 +120,12 @@ class LocalServiceDelegate {
                           Function<void(Result<Error>)>&& status_callback) = 0;
 
   /// Called when the MTU of a peer is updated. Also called for peers that are
-  /// already connected when the server is published. This method is safe to
-  /// ignore if you do not care about the MTU. It is intended for use cases
-  /// where throughput needs to be optimized.
+  /// already connected when the server is published.
+  ///
+  /// Notifications and indications must fit in a single packet including both
+  /// the 3-byte notification/indication header and the user-provided payload.
+  /// If these are not used, the MTU can be safely ignored as it is intended for
+  /// use cases where the throughput needs to be optimized.
   virtual void MtuUpdate(PeerId peer_id, uint16_t mtu) = 0;
 };
 
@@ -142,6 +147,15 @@ class LocalService {
     span<const std::byte> value;
   };
 
+  /// The Result type for a ValueChanged indication or notification message. The
+  /// error can be locally generated for notifications and either locally or
+  /// remotely generated for indications.
+  using ValueChangedResult = Result<Error>;
+
+  /// The callback type for a ValueChanged indication or notification
+  /// completion.
+  using ValueChangedCallback = Function<void(ValueChangedResult)>;
+
   virtual ~LocalService() = default;
 
   /// Sends a notification to peers. Notifications should be used instead of
@@ -149,16 +163,27 @@ class LocalService {
   /// update.
   ///
   /// Notifications should not be sent to peers which have not enabled
-  /// notifications on a particular characteristic - if they are sent, they will
-  /// not be propagated. The Bluetooth stack will track this configuration for
-  /// the lifetime of the service.
+  /// notifications on a particular characteristic or that have disconnected
+  /// since - if they are sent, they will not be propagated and the
+  /// `completion_callback` will be called with an error condition. The
+  /// Bluetooth stack will track this configuration for the lifetime of the
+  /// service.
+  ///
+  /// The maximum size of the `parameters.value` field depends on the MTU
+  /// negotiated with the peer. A 3-byte header plus the value contents must fit
+  /// in a packet of MTU bytes.
   ///
   /// @param parameters The parameters associated with the changed
   /// characteristic.
-  /// @param completion_callback Called when the notification has been sent.
-  /// Additional values should not be notified until this callback is called.
+  /// @param completion_callback Called when the notification has been sent to
+  /// all peers or an error is produced when trying to send the notification to
+  /// any of the peers. This function is called only once when all associated
+  /// work is done, if the implementation wishes to receive a call on a
+  /// per-peer basis, they should send this event with a single PeerId in
+  /// `parameters.peer_ids`. Additional values should not be notified until
+  /// this callback is called.
   virtual void NotifyValue(const ValueChangedParameters& parameters,
-                           Closure&& completion_callback) = 0;
+                           ValueChangedCallback&& completion_callback) = 0;
 
   /// Sends an indication to peers. Indications should be used instead of
   /// notifications when the service *does* require peer confirmation of the
@@ -169,10 +194,14 @@ class LocalService {
   /// propagated. The Bluetooth stack will track this configuration for the
   /// lifetime of the service.
   ///
-  /// If any of the peers in `update.peer_ids` fails to confirm the indication
-  /// within the ATT transaction timeout (30 seconds per Bluetooth 5.2 Vol. 4
-  /// Part G 3.3.3), the link between the peer and the local adapter will be
-  /// closed.
+  /// If any of the peers in `parameters.peer_ids` fails to confirm the
+  /// indication within the ATT transaction timeout (30 seconds per
+  /// Bluetooth 5.2 Vol. 4 Part G 3.3.3), the link between the peer and the
+  /// local adapter will be closed.
+  ///
+  /// The maximum size of the `parameters.value` field depends on the MTU
+  /// negotiated with the peer. A 3-byte header plus the value contents must fit
+  /// in a packet of MTU bytes.
   ///
   /// @param parameters The parameters associated with the changed
   /// characteristic.
@@ -183,7 +212,7 @@ class LocalService {
   /// `parameters.peer_ids`. Additional values should not be indicated until
   /// this callback is called.
   virtual void IndicateValue(const ValueChangedParameters& parameters,
-                             Function<void(Result<Error>)>&& confirmation) = 0;
+                             ValueChangedCallback&& confirmation) = 0;
 
  private:
   /// Unpublish the local service. This method is called by the

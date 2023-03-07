@@ -53,8 +53,9 @@ class FakeGattServer final : public bluetooth::gatt::Server {
         : fake_server_(fake_server) {}
 
     // LocalService overrides:
-    void NotifyValue(const ValueChangedParameters& /* parameters */,
-                     Closure&& /* completion_callback */) override {
+    void NotifyValue(
+        const ValueChangedParameters& /* parameters */,
+        ValueChangedCallback&& /* completion_callback */) override {
       FAIL();  // Unimplemented
     }
     void IndicateValue(
