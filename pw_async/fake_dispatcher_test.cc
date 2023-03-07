@@ -45,6 +45,10 @@ TEST(FakeDispatcher, PostTasks) {
   Task task3([&tp]([[maybe_unused]] Context& c) { ++tp.count; });
   dispatcher.PostTask(task3);
 
+  // Should not run; RunUntilIdle() does not advance time.
+  Task task4([&tp]([[maybe_unused]] Context& c) { ++tp.count; });
+  dispatcher.PostDelayedTask(task4, 1ms);
+
   dispatcher.RunUntilIdle();
   dispatcher.RequestStop();
 
@@ -81,7 +85,7 @@ TEST(FakeDispatcher, DelayedTasks) {
   tp.task_b.set_function(
       [&tp]([[maybe_unused]] Context& c) { tp.count = tp.count * 10 + 2; });
 
-  dispatcher.RunUntilIdle();
+  dispatcher.RunFor(200ms);
   dispatcher.RequestStop();
 
   ASSERT_TRUE(tp.count == 1234);
@@ -149,7 +153,7 @@ TEST(FakeDispatcher, PeriodicTasks) {
       [&periodic_task](Context& c) { c.dispatcher->Cancel(periodic_task); });
   dispatcher.PostDelayedTask(cancel_task, 100ms);
 
-  dispatcher.RunUntilIdle();
+  dispatcher.RunFor(300ms);
   dispatcher.RequestStop();
 
   ASSERT_TRUE(tp.count == 3);

@@ -26,19 +26,12 @@ NativeFakeDispatcher::NativeFakeDispatcher(Dispatcher& dispatcher)
 
 NativeFakeDispatcher::~NativeFakeDispatcher() { RequestStop(); }
 
-void NativeFakeDispatcher::RunUntilIdle() {
-  while (!task_queue_.empty()) {
-    // Only advance to the due time of the next task because new tasks can be
-    // scheduled in the next task.
-    now_ = task_queue_.front().due_time();
-    RunLoopOnce();
-  }
-}
+void NativeFakeDispatcher::RunUntilIdle() { ExecuteDueTasks(); }
 
 void NativeFakeDispatcher::RunUntil(chrono::SystemClock::time_point end_time) {
   while (!task_queue_.empty() && task_queue_.front().due_time() <= end_time) {
     now_ = task_queue_.front().due_time();
-    RunLoopOnce();
+    ExecuteDueTasks();
   }
 
   if (now_ < end_time) {
@@ -50,7 +43,7 @@ void NativeFakeDispatcher::RunFor(chrono::SystemClock::duration duration) {
   RunUntil(now() + duration);
 }
 
-void NativeFakeDispatcher::RunLoopOnce() {
+void NativeFakeDispatcher::ExecuteDueTasks() {
   while (!task_queue_.empty() && task_queue_.front().due_time() <= now()) {
     ::pw::async::backend::NativeTask& task = task_queue_.front();
     task_queue_.pop_front();

@@ -55,18 +55,17 @@ class BasicDispatcher final : public Dispatcher, public thread::ThreadCore {
 
  private:
   // Insert |task| into task_queue_ maintaining its min-heap property, keyed by
-  // |time_due|. Must be holding lock_ when calling this function.
+  // |time_due|.
   void PostTaskInternal(backend::NativeTask& task,
                         chrono::SystemClock::time_point time_due)
       PW_EXCLUSIVE_LOCKS_REQUIRED(lock_);
 
-  // If no tasks are due, sleeps until a notification is received or until the
-  // due time of the next task.
-  //
-  // If at least one task is due, dequeues and runs each task that is due.
-  //
-  // Must be holding lock_ when calling this function.
-  void RunLoopOnce() PW_EXCLUSIVE_LOCKS_REQUIRED(lock_);
+  // If no tasks are due, sleep until a notification is received, the next task
+  // comes due, or a timeout elapses; whichever occurs first.
+  void MaybeSleep() PW_EXCLUSIVE_LOCKS_REQUIRED(lock_);
+
+  // Dequeue and run each task that is due.
+  void ExecuteDueTasks() PW_EXCLUSIVE_LOCKS_REQUIRED(lock_);
 
   sync::InterruptSpinLock lock_;
   sync::TimedThreadNotification timed_notification_;

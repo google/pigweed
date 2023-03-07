@@ -20,7 +20,7 @@ namespace pw::async {
 class Task;
 
 /// Asynchronous Dispatcher abstract class. A default implementation is provided
-/// in dispatcher_basic.h.
+/// in pw_async_basic.
 ///
 /// Dispatcher implements VirtualSystemClock so the Dispatcher's time can be
 /// injected into other modules under test. This is useful for consistently
@@ -60,7 +60,7 @@ class Dispatcher : public chrono::VirtualSystemClock {
   /// Periodic tasks may be posted once more after they are canceled.
   virtual bool Cancel(Task& task) = 0;
 
-  /// Execute tasks until the Dispatcher enters a state where none are queued.
+  /// Execute all runnable tasks and return without waiting.
   virtual void RunUntilIdle() = 0;
 
   /// Run the Dispatcher until Now() has reached `end_time`, executing all tasks

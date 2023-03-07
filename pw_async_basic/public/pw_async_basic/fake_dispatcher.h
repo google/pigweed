@@ -53,8 +53,8 @@ class NativeFakeDispatcher final {
   void PostTaskInternal(::pw::async::backend::NativeTask& task,
                         chrono::SystemClock::time_point time_due);
 
-  // Executes all pending tasks with a due time <= now().
-  void RunLoopOnce();
+  // Dequeue and run each task that is due.
+  void ExecuteDueTasks();
 
   Dispatcher& dispatcher_;
 

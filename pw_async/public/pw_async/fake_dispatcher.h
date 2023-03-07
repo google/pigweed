@@ -66,7 +66,7 @@ class FakeDispatcher final : public Dispatcher {
   // Periodic tasks may run once more after they are canceled.
   bool Cancel(Task& task) override { return native_dispatcher_.Cancel(task); }
 
-  // Execute tasks until the Dispatcher enters a state where none are queued.
+  // Execute all runnable tasks and return without advancing simulated time.
   void RunUntilIdle() override { native_dispatcher_.RunUntilIdle(); }
 
   // Run the Dispatcher until Now() has reached `end_time`, executing all tasks

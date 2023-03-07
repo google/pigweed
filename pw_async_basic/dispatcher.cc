@@ -26,23 +26,23 @@ const chrono::SystemClock::duration SLEEP_DURATION = 5s;
 void BasicDispatcher::Run() {
   lock_.lock();
   while (!stop_requested_) {
-    RunLoopOnce();
+    MaybeSleep();
+    ExecuteDueTasks();
   }
   lock_.unlock();
 }
 
 void BasicDispatcher::RunUntilIdle() {
   lock_.lock();
-  while (!task_queue_.empty()) {
-    RunLoopOnce();
-  }
+  ExecuteDueTasks();
   lock_.unlock();
 }
 
 void BasicDispatcher::RunUntil(chrono::SystemClock::time_point end_time) {
   lock_.lock();
   while (end_time < now()) {
-    RunLoopOnce();
+    MaybeSleep();
+    ExecuteDueTasks();
   }
   lock_.unlock();
 }
@@ -51,7 +51,7 @@ void BasicDispatcher::RunFor(chrono::SystemClock::duration duration) {
   RunUntil(now() + duration);
 }
 
-void BasicDispatcher::RunLoopOnce() {
+void BasicDispatcher::MaybeSleep() {
   if (task_queue_.empty() || task_queue_.front().due_time_ > now()) {
     // Sleep until a notification is received or until the due time of the
     // next task. Notifications are sent when tasks are posted or 'stop' is
@@ -64,10 +64,10 @@ void BasicDispatcher::RunLoopOnce() {
     PW_LOG_DEBUG("no task due; waiting for signal");
     timed_notification_.try_acquire_until(wake_time);
     lock_.lock();
-
-    return;
   }
+}
 
+void BasicDispatcher::ExecuteDueTasks() {
   while (!task_queue_.empty() && task_queue_.front().due_time_ <= now()) {
     backend::NativeTask& task = task_queue_.front();
     task_queue_.pop_front();
@@ -126,7 +126,6 @@ bool BasicDispatcher::Cancel(Task& task) {
   return task_queue_.remove(task.native_type());
 }
 
-// Ensure lock_ is held when invoking this function.
 void BasicDispatcher::PostTaskInternal(
     backend::NativeTask& task, chrono::SystemClock::time_point time_due) {
   task.due_time_ = time_due;
