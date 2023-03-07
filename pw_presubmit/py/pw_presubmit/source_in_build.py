@@ -11,7 +11,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
-"""Check that source files are in the build."""
+"""Checks that source files are listed in build files, such as BUILD.bazel."""
 
 import logging
 from typing import Callable, Sequence
@@ -67,7 +67,7 @@ def bazel(
                 for miss in missing:
                     print(miss, file=outs)
 
-            _LOG.warning('All source files must appear in BUILD files')
+            _LOG.warning('All source files must appear in BUILD.bazel files')
             raise PresubmitFailure
 
     return source_is_in_bazel_build
