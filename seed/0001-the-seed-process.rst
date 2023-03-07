@@ -8,11 +8,11 @@
    :fas:`seedling` SEED-0001: :ref:`The SEED Process<seed-0001>`
 
    :octicon:`comment-discussion` Status:
-   :bdg-primary:`Open for Comments`
+   :bdg-secondary-line:`Open for Comments`
    :octicon:`chevron-right`
    :bdg-secondary-line:`Last Call`
    :octicon:`chevron-right`
-   :bdg-secondary-line:`Accepted`
+   :bdg-primary:`Accepted`
    :octicon:`kebab-horizontal`
    :bdg-secondary-line:`Rejected`
 

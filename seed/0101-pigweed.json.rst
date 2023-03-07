@@ -8,11 +8,11 @@
    :fas:`seedling` SEED-0101: :ref:`pigweed.json<seed-0101>`
 
    :octicon:`comment-discussion` Status:
-   :bdg-primary:`Open for Comments`
+   :bdg-secondary-line:`Open for Comments`
    :octicon:`chevron-right`
    :bdg-secondary-line:`Last Call`
    :octicon:`chevron-right`
-   :bdg-secondary-line:`Accepted`
+   :bdg-primary:`Accepted`
    :octicon:`kebab-horizontal`
    :bdg-secondary-line:`Rejected`
 
