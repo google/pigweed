@@ -91,6 +91,11 @@ if (dir_pw_third_party_emboss != "") {
     imports = [ "public/pw_bluetooth/hci.emb" ]
     deps = [ ":emboss_hci" ]
   }
+} else {
+  group("emboss_hci") {
+  }
+  group("emboss_vendor") {
+  }
 }
 
 pw_test_group("tests") {
