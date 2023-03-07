@@ -263,26 +263,18 @@ pw_cc_library(
     ],
 )
 
-# TODO(b/234877642): This is broken out into a separate pw_cc_library target as
-# a workaround for pw_cc_binary not supporting `select` in its deps.
-pw_cc_library(
-    name = "boot",
-    deps = select({
-        "//pw_build/constraints/rtos:freertos": [],
-        "//conditions:default": ["//targets/host_device_simulator:boot"],
-    }),
-)
-
 pw_cc_binary(
     name = "system_example",
     srcs = ["example_user_app_init.cc"],
     deps = [
-        ":boot",
         ":init",
         ":io",
         ":target_hooks",
         "//pw_stream",
         "//pw_stream:sys_io_stream",
         "//pw_unit_test:rpc_service",
-    ],
+    ] + select({
+        "//pw_build/constraints/rtos:freertos": [],
+        "//conditions:default": ["//targets/host_device_simulator:boot"],
+    }),
 )
