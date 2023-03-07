@@ -704,42 +704,85 @@ enum PageScanType:
 
 
 bits LEEventMask:
-  0     [+1]   Flag  le_connection_complete
-  $next [+1]   Flag  le_advertising_report
-  $next [+1]   Flag  le_connection_update_complete
-  $next [+1]   Flag  le_read_remote_features_complete
-  $next [+1]   Flag  le_long_term_key_request
-  $next [+1]   Flag  le_remote_connection_parameter_request
-  $next [+1]   Flag  le_data_length_change
-  $next [+1]   Flag  le_read_local_p256_public_key_complete
-  $next [+1]   Flag  le_generate_dhkey_complete
-  $next [+1]   Flag  le_enhanced_connection_complete
-  $next [+1]   Flag  le_directed_advertising_report
-  $next [+1]   Flag  le_phy_update_complete
-  $next [+1]   Flag  le_extended_advertising_report
-  $next [+1]   Flag  le_periodic_advertising_sync_established
-  $next [+1]   Flag  le_periodic_advertising_report
-  $next [+1]   Flag  le_periodic_advertising_sync_lost
-  $next [+1]   Flag  le_extended_scan_timeout
-  $next [+1]   Flag  le_extended_advertising_set_terminated
-  $next [+1]   Flag  le_scan_request_received
-  $next [+1]   Flag  le_channel_selection_algorithm
-  $next [+1]   Flag  le_connectionless_iq_report
-  $next [+1]   Flag  le_connection_iq_report
-  $next [+1]   Flag  le_cte_request_failed
-  $next [+1]   Flag  le_periodic_advertising_sync_transfer_received_event
-  $next [+1]   Flag  le_cis_established_event
-  $next [+1]   Flag  le_cis_request_event
-  $next [+1]   Flag  le_create_big_complete_event
-  $next [+1]   Flag  le_terminate_big_complete_event
-  $next [+1]   Flag  le_big_sync_established_event
-  $next [+1]   Flag  le_big_sync_lost_event
-  $next [+1]   Flag  le_request_peer_sca_complete_event
-  $next [+1]   Flag  le_path_loss_threshold_event
-  $next [+1]   Flag  le_transmit_power_reporting_event
-  $next [+1]   Flag  le_biginfo_advertising_report_event
-  $next [+1]   Flag  le_subrate_change_event
-  $next [+29]  UInt  padding
+  0     [+1]  Flag  le_connection_complete
+  $next [+1]  Flag  le_advertising_report
+  $next [+1]  Flag  le_connection_update_complete
+  $next [+1]  Flag  le_read_remote_features_complete
+  $next [+1]  Flag  le_long_term_key_request
+  $next [+1]  Flag  le_remote_connection_parameter_request
+  $next [+1]  Flag  le_data_length_change
+  $next [+1]  Flag  le_read_local_p256_public_key_complete
+  $next [+1]  Flag  le_generate_dhkey_complete
+  $next [+1]  Flag  le_enhanced_connection_complete
+  $next [+1]  Flag  le_directed_advertising_report
+  $next [+1]  Flag  le_phy_update_complete
+  $next [+1]  Flag  le_extended_advertising_report
+  $next [+1]  Flag  le_periodic_advertising_sync_established
+  $next [+1]  Flag  le_periodic_advertising_report
+  $next [+1]  Flag  le_periodic_advertising_sync_lost
+  $next [+1]  Flag  le_extended_scan_timeout
+  $next [+1]  Flag  le_extended_advertising_set_terminated
+  $next [+1]  Flag  le_scan_request_received
+  $next [+1]  Flag  le_channel_selection_algorithm
+  $next [+1]  Flag  le_connectionless_iq_report
+  $next [+1]  Flag  le_connection_iq_report
+  $next [+1]  Flag  le_cte_request_failed
+  $next [+1]  Flag  le_periodic_advertising_sync_transfer_received_event
+  $next [+1]  Flag  le_cis_established_event
+  $next [+1]  Flag  le_cis_request_event
+  $next [+1]  Flag  le_create_big_complete_event
+  $next [+1]  Flag  le_terminate_big_complete_event
+  $next [+1]  Flag  le_big_sync_established_event
+  $next [+1]  Flag  le_big_sync_lost_event
+  $next [+1]  Flag  le_request_peer_sca_complete_event
+  $next [+1]  Flag  le_path_loss_threshold_event
+  $next [+1]  Flag  le_transmit_power_reporting_event
+  $next [+1]  Flag  le_biginfo_advertising_report_event
+  $next [+1]  Flag  le_subrate_change_event
+
+
+enum LEAdvertisingType:
+  [maximum_bits: 8]
+  CONNECTABLE_AND_SCANNABLE_UNDIRECTED = 0x00
+    -- ADV_IND
+
+  CONNECTABLE_HIGH_DUTY_CYCLE_DIRECTED = 0x01
+    -- ADV_DIRECT_IND
+
+  SCANNABLE_UNDIRECTED                 = 0x02
+    -- ADV_SCAN_IND
+
+  NOT_CONNECTABLE_UNDIRECTED           = 0x03
+    -- ADV_NONCONN_IND
+
+  CONNECTABLE_LOW_DUTY_CYCLE_DIRECTED  = 0x04
+    -- ADV_DIRECT_IND
+
+
+bits LEAdvertisingChannels:
+  0     [+1]  Flag  channel_37
+  $next [+1]  Flag  channel_38
+  $next [+1]  Flag  channel_39
+
+
+enum LEAdvertisingFilterPolicy:
+  [maximum_bits: 8]
+
+  ALLOW_ALL                                                  = 0x00
+    -- Process scan and connection requests from all devices (i.e., the Filter
+    -- Accept List is not in use) (default).
+
+  ALLOW_ALL_CONNECTIONS_AND_USE_FILTER_ACCEPT_LIST_FOR_SCANS = 0x01
+    -- Process connection requests from all devices and scan requests only from
+    -- devices that are in the Filter Accept List.
+
+  ALLOW_ALL_SCANS_AND_USE_FILTER_ACCEPT_LIST_FOR_CONNECTIONS = 0x02
+    -- Process scan requests from all devices and connection requests only from
+    -- devices that are in the Filter Accept List.
+
+  ALLOW_FILTER_ACCEPT_LIST_ONLY                              = 0x03
+    -- Process scan and connection requests only from devices in the Filter
+    -- Accept List.
 
 # ========================= HCI packet headers ==========================
 
@@ -1684,6 +1727,16 @@ struct ReadLocalSupportedFeaturesCommand:
   0 [+hdr_size]  CommandHeader  header
 
 
+struct ReadLocalExtendedFeaturesCommand:
+  -- Read Local Extended Features Command (v1.2) (BR/EDR)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader  header
+  $next [+1]         UInt           page_number
+    -- 0x00: Requests the normal LMP features as returned by
+    -- Read_Local_Supported_Features.
+    -- 0x01-0xFF: Return the corresponding page of features.
+
+
 struct ReadEncryptionKeySizeCommand:
   -- Read Encryption Key Size (v1.1) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
@@ -1697,9 +1750,9 @@ struct LESetEventMaskCommand:
   -- LE Set Event Mask Command (v4.0) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
-  $next [+8]         LEEventMask    le_event_mask
-    -- Bitmask that indicates which LE events are generated by the HCI for the
-    -- Host.
+  $next [+8]  bits:
+    0     [+35]      LEEventMask    le_event_mask
+      -- Bitmask that indicates which LE events are generated by the HCI for the Host.
 
 
 struct LEReadBufferSizeCommandV1:
@@ -1727,6 +1780,51 @@ struct LESetRandomAddressCommand:
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]               CommandHeader  header
   $next [+BdAddr.$size_in_bytes]  BdAddr         random_address
+
+
+struct LESetAdvertisingParametersCommand:
+  -- LE Set Advertising Parameters Command (v4.0) (LE)
+
+  [requires: advertising_interval_min <= advertising_interval_max]
+
+  let hdr_size = CommandHeader.$size_in_bytes
+
+  0     [+hdr_size]               CommandHeader              header
+
+  $next [+2]                      UInt                       advertising_interval_min
+    -- Default: 0x0800 (1.28 s)
+    -- Time: N * 0.625 ms
+    -- Time Range: 20 ms to 10.24 s
+    [requires: 0x0020 <= this <= 0x4000]
+
+  $next [+2]                      UInt                       advertising_interval_max
+    -- Default: 0x0800 (1.28 s)
+    -- Time: N * 0.625 ms
+    -- Time Range: 20 ms to 10.24 s
+    [requires: 0x0020 <= this <= 0x4000]
+
+  $next [+1]                      LEAdvertisingType          adv_type
+    -- Used to determine the packet type that is used for advertising when
+    -- advertising is enabled.
+
+  $next [+1]                      LEOwnAddressType           own_address_type
+
+  $next [+1]                      LEPeerAddressType          peer_address_type
+    -- ANONYMOUS address type not allowed.
+
+  $next [+BdAddr.$size_in_bytes]  BdAddr                     peer_address
+    -- Public Device Address, Random Device Address, Public Identity Address, or
+    -- Random (static) Identity Address of the device to be connected.
+
+  $next [+1]  bits:
+
+    0     [+3]                    LEAdvertisingChannels      advertising_channel_map
+      -- Indicates the advertising channels that shall be used when transmitting
+      -- advertising packets. At least 1 channel must be enabled.
+      -- Default: all channels enabled
+
+  $next [+1]                      LEAdvertisingFilterPolicy  advertising_filter_policy
+    -- This parameter shall be ignored when directed advertising is enabled.
 
 
 struct LEReadAdvertisingChannelTxPowerCommand:
@@ -1874,6 +1972,90 @@ struct LEClearFilterAcceptListCommand:
   -- LE Clear Filter Accept List Command (v4.0) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
+
+
+struct LEAddDeviceToFilterAcceptListCommand:
+  -- LE Add Device To Filter Accept List Command (v4.0) (LE)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]               CommandHeader      header
+  $next [+1]                      LEPeerAddressType  address_type
+    -- The address type of the peer.
+
+  $next [+BdAddr.$size_in_bytes]  BdAddr             address
+    -- Public Device Address or Random Device Address of the device to be added
+    -- to the Filter Accept List. Ignored if `address_type` is ANONYMOUS.
+
+
+struct LERemoveDeviceFromFilterAcceptListCommand:
+  -- LE Remove Device From Filter Accept List Command (v4.0) (LE)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]               CommandHeader      header
+  $next [+1]                      LEPeerAddressType  address_type
+    -- The address type of the peer.
+
+  $next [+BdAddr.$size_in_bytes]  BdAddr             address
+    -- Public Device Address or Random Device Address of the device to be added
+    -- to the Filter Accept List. Ignored if `address_type` is ANONYMOUS.
+
+
+struct LEConnectionUpdateCommand:
+  -- LE Connection Update Command (v4.0) (LE)
+
+  [requires: connection_interval_min <= connection_interval_max && min_connection_event_length <= max_connection_event_length]
+
+  let hdr_size = CommandHeader.$size_in_bytes
+
+  0     [+hdr_size]  CommandHeader  header
+
+  $next [+2]         UInt           connection_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next [+2]         UInt           connection_interval_min
+    -- Time: N * 1.25 ms
+    -- Time Range: 7.5 ms to 4 s.
+    [requires: 0x0006 <= this <= 0x0C80]
+
+  $next [+2]         UInt           connection_interval_max
+    -- Time: N * 1.25 ms
+    -- Time Range: 7.5 ms to 4 s.
+    [requires: 0x0006 <= this <= 0x0C80]
+
+  $next [+2]         UInt           max_latency
+    -- Maximum Peripheral latency for the connection in number of subrated
+    -- connection events.
+    [requires: 0x0000 <= this <= 0x01F3]
+
+  $next [+2]         UInt           supervision_timeout
+    -- See Core Spec v5.3, Vol 6, Part B, Section 4.5.2.
+    -- Time: N * 10 ms
+    -- Time Range: 100 ms to 32 s
+    [requires: 0x000A <= this <= 0x0C80]
+
+  $next [+2]         UInt           min_connection_event_length
+    -- Time: N * 0.625 ms
+
+  $next [+2]         UInt           max_connection_event_length
+    -- Time: N * 0.625 ms
+
+
+struct LEReadRemoteFeaturesCommand:
+  -- LE Read Remote Features Command (v4.0) (LE)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader  header
+  $next [+2]         UInt           connection_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+
+struct LEEnableEncryptionCommand:
+  -- LE Enable Encryption Command (v4.0) (LE)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]                CommandHeader  header
+  $next [+2]                       UInt           connection_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next [+8]                       UInt           random_number
+  $next [+2]                       UInt           encrypted_diversifier
+  $next [+LinkKey.$size_in_bytes]  LinkKey        long_term_key
 
 # ========================= HCI Event packets ===========================
 # Core Spec v5.3 Vol 4, Part E, Section 7.7
