@@ -143,3 +143,12 @@ pw_cc_test(
         "//pw_unit_test",
     ],
 )
+
+pw_cc_test(
+    name = "socket_stream_test",
+    srcs = ["socket_stream_test.cc"],
+    deps = [
+        ":socket_stream",
+        "//pw_unit_test",
+    ],
+)

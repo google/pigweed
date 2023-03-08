@@ -95,6 +95,11 @@ pw_test_group("tests") {
   if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&
       pw_toolchain_SCOPE.is_host_toolchain) {
     tests += [ ":std_file_stream_test" ]
+
+    # socket_stream_test only compiles on Linux.
+    if (host_os == "linux") {
+      tests += [ ":socket_stream_test" ]
+    }
   }
 }
 
@@ -135,4 +140,9 @@ pw_test("stream_test") {
 pw_test("interval_reader_test") {
   sources = [ "interval_reader_test.cc" ]
   deps = [ ":interval_reader" ]
+}
+
+pw_test("socket_stream_test") {
+  sources = [ "socket_stream_test.cc" ]
+  deps = [ ":socket_stream" ]
 }

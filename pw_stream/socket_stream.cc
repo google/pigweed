@@ -24,7 +24,7 @@
 namespace pw::stream {
 namespace {
 
-constexpr uint32_t kMaxConcurrentUser = 1;
+constexpr uint32_t kServerBacklogLength = 1;
 constexpr const char* kLocalhostAddress = "127.0.0.1";
 
 }  // namespace
@@ -65,7 +65,7 @@ Status SocketStream::Serve(uint16_t port) {
     return Status::Unknown();
   }
 
-  if (listen(socket_fd_, kMaxConcurrentUser) < 0) {
+  if (listen(socket_fd_, kServerBacklogLength) < 0) {
     PW_LOG_ERROR("Failed to listen to socket: %s", std::strerror(errno));
     return Status::Unknown();
   }
@@ -154,6 +154,75 @@ StatusWithSize SocketStream::DoRead(ByteSpan dest) {
     return StatusWithSize::Unknown();
   }
   return StatusWithSize(bytes_rcvd);
+}
+
+// Listen for connections on the given port.
+// If port is 0, a random unused port is chosen and can be retrieved with
+// port().
+Status ServerSocket::Listen(uint16_t port) {
+  socket_fd_ = socket(AF_INET, SOCK_STREAM, 0);
+  if (socket_fd_ == kInvalidFd) {
+    return Status::Unknown();
+  }
+
+  if (port != 0) {
+    // When specifying an explicit port, allow binding to an address that may
+    // still be in use by a closed socket.
+    constexpr int value = 1;
+    setsockopt(socket_fd_, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(int));
+
+    struct sockaddr_in addr = {};
+    socklen_t addr_len = sizeof(addr);
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+    addr.sin_addr.s_addr = INADDR_ANY;
+    if (bind(socket_fd_, reinterpret_cast<sockaddr*>(&addr), addr_len) < 0) {
+      return Status::Unknown();
+    }
+  }
+
+  if (listen(socket_fd_, kServerBacklogLength) < 0) {
+    return Status::Unknown();
+  }
+
+  // Find out which port the socket is listening on, and fill in port_.
+  struct sockaddr_in addr = {};
+  socklen_t addr_len = sizeof(addr);
+  if (getsockname(socket_fd_, reinterpret_cast<sockaddr*>(&addr), &addr_len) <
+          0 ||
+      addr_len > sizeof(addr)) {
+    close(socket_fd_);
+    return Status::Unknown();
+  }
+
+  port_ = ntohs(addr.sin_port);
+
+  return OkStatus();
+}
+
+// Accept a connection. Blocks until after a client is connected.
+// On success, returns a SocketStream connected to the new client.
+Result<SocketStream> ServerSocket::Accept() {
+  struct sockaddr_in sockaddr_client_ = {};
+  socklen_t len = sizeof(sockaddr_client_);
+
+  int connection_fd =
+      accept(socket_fd_, reinterpret_cast<sockaddr*>(&sockaddr_client_), &len);
+  if (connection_fd == kInvalidFd) {
+    return Status::Unknown();
+  }
+
+  SocketStream client_stream;
+  client_stream.connection_fd_ = connection_fd;
+  return client_stream;
+}
+
+// Close the server socket, preventing further connections.
+void ServerSocket::Close() {
+  if (socket_fd_ != kInvalidFd) {
+    close(socket_fd_);
+    socket_fd_ = kInvalidFd;
+  }
 }
 
 }  // namespace pw::stream
