@@ -4,6 +4,46 @@
       "format": {
         "python_formatter": "black"
       }
+    },
+    "pw_cli": {
+      "plugins": {
+        "console": {
+          "module": "pw_console.__main__",
+          "function": "main"
+        },
+        "format": {
+          "module": "pw_presubmit.format_code",
+          "function": "_pigweed_upstream_main"
+        },
+        "heap-viewer": {
+          "module": "pw_allocator.heap_viewer",
+          "function": "main"
+        },
+        "ide": {
+          "module": "pw_ide.__main__",
+          "function": "main"
+        },
+        "package": {
+          "module": "pw_package.pigweed_packages",
+          "function": "main"
+        },
+        "presubmit": {
+          "module": "pw_presubmit.pigweed_presubmit",
+          "function": "main"
+        },
+        "requires": {
+          "module": "pw_cli.requires",
+          "function": "main"
+        },
+        "rpc": {
+          "module": "pw_hdlc.rpc_console",
+          "function": "main"
+        },
+        "update": {
+          "module": "pw_software_update.cli",
+          "function": "main"
+        }
+      }
     }
   }
 }

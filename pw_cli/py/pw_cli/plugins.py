@@ -318,6 +318,33 @@ class Registry(collections.abc.Mapping):
 
         return plugin
 
+    def register_config(
+        self,
+        config: Dict,
+        path: Optional[Path] = None,
+    ) -> None:
+        """Registers plugins from a Pigweed config.
+
+        Any exceptions raised from parsing the file are caught and logged.
+        """
+        plugins = config.get('pw', {}).get('pw_cli', {}).get('plugins', {})
+        for name, location in plugins.items():
+            module = location.pop('module')
+            function = location.pop('function')
+            if location:
+                raise ValueError(f'unrecognized plugin options: {location}')
+
+            try:
+                self.register_by_name(name, module, function, path)
+            except Error as err:
+                self._errors[name].append(err)
+                _LOG.error(
+                    '%s Failed to register plugin "%s": %s',
+                    path,
+                    name,
+                    err,
+                )
+
     def register_file(self, path: Path) -> None:
         """Registers plugins from a plugins file.
 
@@ -356,34 +383,6 @@ class Registry(collections.abc.Mapping):
                     )
 
         self._sources.add(path)
-
-    def register_directory(
-        self,
-        directory: Path,
-        file_name: str,
-        restrict_to: Optional[Path] = None,
-    ) -> None:
-        """Finds and registers plugins from plugins files in a directory.
-
-        Args:
-          directory: The directory from which to start searching up.
-          file_name: The name of plugins files to look for.
-          restrict_to: If provided, do not search higher than this directory.
-        """
-        for path in find_all_in_parents(file_name, directory):
-            if not path.is_file():
-                continue
-
-            if restrict_to is not None and restrict_to not in path.parents:
-                _LOG.debug(
-                    "Skipping plugins file %s because it's outside of %s",
-                    path,
-                    restrict_to,
-                )
-                continue
-
-            _LOG.debug('Found plugins file %s', path)
-            self.register_file(path)
 
     def short_help(self) -> str:
         """Returns a help string for the registered plugins."""
