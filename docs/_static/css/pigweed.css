@@ -132,3 +132,47 @@ h4, h5, h6 {
   font-weight: bold;
   font-size: var(--font-size--normal);
 }
+
+/* Support taglines inline with page titles */
+section.with-subtitle > h1 {
+  display: inline;
+}
+
+/* Restore the padding to the top of the page that was removed by making the
+   h1 element inline */
+section.with-subtitle {
+  padding-top: 1.5em;
+}
+
+.section-subtitle {
+  display: inline;
+  font-size: larger;
+  font-weight: bold;
+}
+
+/* Styling for module doc section buttons */
+ul.pw-module-section-buttons {
+  display: flex;
+  justify-content: center;
+  padding: 0;
+}
+
+li.pw-module-section-button {
+  display: inline;
+  list-style-type: none;
+  padding: 0 4px;
+}
+
+li.pw-module-section-button p {
+  display: inline;
+}
+
+li.pw-module-section-button p a {
+  background-color: var(--color-section-button) !important;
+  border-color: var(--color-section-button) !important;
+}
+
+li.pw-module-section-button p a:hover {
+  background-color: var(--color-section-button-hover) !important;
+  border-color: var(--color-section-button-hover) !important;
+}

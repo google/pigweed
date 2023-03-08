@@ -41,6 +41,7 @@ pygments_dark_style = 'pw_console.pigweed_code_style.PigweedCodeStyle'
 
 extensions = [
     'pw_docgen.sphinx.google_analytics',  # Enables optional Google Analytics
+    'pw_docgen.sphinx.module_metadata',
     'sphinx.ext.autodoc',  # Automatic documentation for Python code
     'sphinx.ext.napoleon',  # Parses Google-style docstrings
     'sphinxarg.ext',  # Automatic documentation of Python argparse
@@ -151,6 +152,8 @@ html_theme_options = {
         'color-highlight-on-target': '#ffffcc',
         # Background color emphasized code lines.
         'color-code-hll-background': '#ffffcc',
+        'color-section-button': '#b529aa',
+        'color-section-button-hover': '#fb71fe',
     },
     'dark_css_variables': {
         'color-sidebar-brand-text': '#fb71fe',
@@ -178,6 +181,8 @@ html_theme_options = {
         'color-highlight-on-target': '#ffc55140',
         # Background color emphasized code lines.
         'color-code-hll-background': '#ffc55140',
+        'color-section-button': '#fb71fe',
+        'color-section-button-hover': '#b529aa',
     },
 }
 
