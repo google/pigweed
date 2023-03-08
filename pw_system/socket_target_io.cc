@@ -29,11 +29,15 @@ constexpr uint16_t kPort = PW_SYSTEM_SOCKET_IO_PORT;
 stream::SocketStream& GetStream() {
   static bool running = false;
   static std::mutex socket_open_lock;
+  static stream::ServerSocket server_socket;
   static stream::SocketStream socket_stream;
   std::lock_guard guard(socket_open_lock);
   if (!running) {
     printf("Awaiting connection on port %d\n", static_cast<int>(kPort));
-    PW_CHECK_OK(socket_stream.Serve(kPort));
+    PW_CHECK_OK(server_socket.Listen(kPort));
+    auto accept_result = server_socket.Accept();
+    PW_CHECK_OK(accept_result.status());
+    socket_stream = *std::move(accept_result);
     printf("Client connected\n");
     running = true;
   }

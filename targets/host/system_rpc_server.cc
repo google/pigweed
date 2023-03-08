@@ -35,6 +35,7 @@ uint16_t socket_port = 33000;
 static_assert(kMaxTransmissionUnit ==
               hdlc::MaxEncodedFrameSize(rpc::cfg::kEncodingBufferSizeBytes));
 
+stream::ServerSocket server_socket;
 stream::SocketStream socket_stream;
 
 hdlc::FixedMtuChannelOutput<kMaxTransmissionUnit> hdlc_channel_output(
@@ -58,7 +59,10 @@ void Init() {
   });
 
   PW_LOG_INFO("Starting pw_rpc server on port %d", socket_port);
-  PW_CHECK_OK(socket_stream.Serve(socket_port));
+  PW_CHECK_OK(server_socket.Listen(socket_port));
+  auto accept_result = server_socket.Accept();
+  PW_CHECK_OK(accept_result.status());
+  socket_stream = *std::move(accept_result);
 }
 
 rpc::Server& Server() { return server; }
