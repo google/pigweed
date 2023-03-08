@@ -961,29 +961,6 @@ enum class LEAddressType : uint8_t {
   kAnonymous = 0xFF,
 };
 
-// Possible values that can be used for the |own_address_type| parameter in a
-// HCI_LE_Set_Advertising_Parameters or a HCI_LE_Set_Scan_Parameters command.
-// (see Core Spec v5.0, Vol 2, Part E, Sections 7.8.5 and 7.8.10)
-enum class LEOwnAddressType : uint8_t {
-  // Public device address (default)
-  kPublic = 0x00,
-
-  // Random device address
-  kRandom = 0x01,
-
-  // Controller generates Resolvable Private Address based on the local IRK from
-  // the resolving list. If the resolving list contains no matching entry, use
-  // the public address.
-  kPrivateDefaultToPublic = 0x02,
-
-  // Controller generates Resolvable Private Address based on the local IRK from
-  // the resolving list. If the resolving list contains no matching entry, use
-  // the random address from LE_Set_Random_Address.
-  kPrivateDefaultToRandom = 0x03,
-
-  // The rest is reserved for future use
-};
-
 // Possible values that can be used for the |peer_address_type| parameter in a
 // HCI_LE_Set_Advertising_Parameters command.
 // (see Core Spec v5.0, Vol 2, Part E, Section 7.8.5)
@@ -1040,50 +1017,6 @@ enum class LEPeriodicAdvFilterPolicy : uint8_t {
 
   // Use the Periodic Advertiser List to determine which advertiser to listen to.
   kUsePeriodicAdvList = 0x01,
-};
-
-// Possible values that can be used for the |scan_type| parameter in a
-// LE_Set_Scan_Parameters command.
-// (see Core Spec v5.0, Vol 2, Part E, Section 7.8.10)
-enum class LEScanType : uint8_t {
-  // Passive Scanning. No scanning PDUs shall be sent (default)
-  kPassive = 0x00,
-
-  // Active scanning. Scanning PDUs may be sent.
-  kActive = 0x01,
-
-  // The rest is reserved for future use.
-};
-
-// Possible values that can be used for the |filter_policy| parameter
-// in a HCI_LE_Set_Scan_Parameters command.
-// (see Core Spec v5.0, Vol 2, Part E, Section 7.8.10)
-enum class LEScanFilterPolicy : uint8_t {
-  // Accept all advertising packets except directed advertising packets not
-  // addressed to this device (default).
-  kNoFilterAcceptList = 0x00,
-
-  // Accept only advertising packets from devices where the advertiser’s address is in the Filter
-  // Accept List. Directed advertising packets which are not addressed to this device shall be
-  // ignored.
-  kUseFilterAcceptList = 0x01,
-
-  // Accept all advertising packets except directed advertising packets where the initiator's
-  // identity address does not address this device. Note: Directed advertising packets where the
-  // initiator's address is a resolvable private address that cannot be resolved are also accepted.
-  kNoFilterAcceptListWithPrivacy = 0x02,
-
-  // Accept all advertising packets except:
-  //
-  //   - advertising packets where the advertiser's identity address is not in the Filter Accept
-  //   List; and
-  //
-  //   - directed advertising packets where the initiator's identity address does not address this
-  //   device
-  //
-  // Note: Directed advertising packets where the initiator's address is a resolvable private
-  // address that cannot be resolved are also accepted.
-  kUseFilterAcceptListWithPrivacy = 0x03,
 };
 
 // The PHY bitfield values that can be used in HCI_LE_Set_PHY and

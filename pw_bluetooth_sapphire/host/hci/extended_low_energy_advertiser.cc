@@ -61,7 +61,7 @@ std::optional<EmbossCommandPacket> ExtendedLowEnergyAdvertiser::BuildEnablePacke
 
 std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
     const DeviceAddress& address, hci_spec::LEAdvertisingType type,
-    hci_spec::LEOwnAddressType own_address_type, AdvertisingIntervalRange interval) {
+    pw::bluetooth::emboss::LEOwnAddressType own_address_type, AdvertisingIntervalRange interval) {
   constexpr size_t kPayloadSize = sizeof(hci_spec::LESetExtendedAdvertisingParametersCommandParams);
   std::unique_ptr<CommandPacket> packet =
       CommandPacket::New(hci_spec::kLESetExtendedAdvertisingParameters, kPayloadSize);

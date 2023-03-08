@@ -115,12 +115,14 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   // Current device low energy scan state.
   struct LEScanState final {
     bool enabled = false;
-    hci_spec::LEScanType scan_type = hci_spec::LEScanType::kPassive;
+    pw::bluetooth::emboss::LEScanType scan_type = pw::bluetooth::emboss::LEScanType::PASSIVE;
     uint16_t scan_interval = 0;
     uint16_t scan_window = 0;
     bool filter_duplicates = false;
-    hci_spec::LEOwnAddressType own_address_type = hci_spec::LEOwnAddressType::kPublic;
-    hci_spec::LEScanFilterPolicy filter_policy = hci_spec::LEScanFilterPolicy::kNoFilterAcceptList;
+    pw::bluetooth::emboss::LEOwnAddressType own_address_type =
+        pw::bluetooth::emboss::LEOwnAddressType::PUBLIC;
+    pw::bluetooth::emboss::LEScanFilterPolicy filter_policy =
+        pw::bluetooth::emboss::LEScanFilterPolicy::BASIC_UNFILTERED;
   };
 
   // Current device basic advertising state
@@ -136,7 +138,8 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
     hci_spec::LEAdvertisingType adv_type = hci_spec::LEAdvertisingType::kAdvInd;
 
     std::optional<DeviceAddress> random_address;
-    hci_spec::LEOwnAddressType own_address_type = hci_spec::LEOwnAddressType::kPublic;
+    pw::bluetooth::emboss::LEOwnAddressType own_address_type =
+        pw::bluetooth::emboss::LEOwnAddressType::PUBLIC;
 
     uint32_t interval_min = 0;
     uint32_t interval_max = 0;
@@ -151,7 +154,7 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   struct LEConnectParams final {
     LEConnectParams() = default;
 
-    hci_spec::LEOwnAddressType own_address_type;
+    pw::bluetooth::emboss::LEOwnAddressType own_address_type;
     DeviceAddress peer_address;
   };
 
@@ -498,7 +501,7 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   void OnLESetScanEnable(const hci_spec::LESetScanEnableCommandParams& params);
 
   // Called when a HCI_LE_Set_Scan_Parameters command is received.
-  void OnLESetScanParamaters(const hci_spec::LESetScanParametersCommandParams& params);
+  void OnLESetScanParamaters(const pw::bluetooth::emboss::LESetScanParametersCommandView& params);
 
   // Called when a HCI_Read_Local_Extended_Features command is received.
   void OnReadLocalExtendedFeatures(const hci_spec::ReadLocalExtendedFeaturesCommandParams& params);

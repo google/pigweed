@@ -172,7 +172,8 @@ class LowEnergyScanner : public LocalAddressClient {
 
     // Determines the type of filtering the controller should perform to limit the number of
     // advertising reports.
-    hci_spec::LEScanFilterPolicy filter_policy = hci_spec::LEScanFilterPolicy::kNoFilterAcceptList;
+    pw::bluetooth::emboss::LEScanFilterPolicy filter_policy =
+        pw::bluetooth::emboss::LEScanFilterPolicy::BASIC_UNFILTERED;
 
     // Determines the length of the software defined scan period. If the value is kPeriodInfinite,
     // then the scan will remain enabled until StopScan() gets called. For all other values, the

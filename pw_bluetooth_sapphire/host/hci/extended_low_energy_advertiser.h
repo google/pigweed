@@ -77,7 +77,8 @@ class ExtendedLowEnergyAdvertiser final : public LowEnergyAdvertiser {
 
   std::unique_ptr<CommandPacket> BuildSetAdvertisingParams(
       const DeviceAddress& address, hci_spec::LEAdvertisingType type,
-      hci_spec::LEOwnAddressType own_address_type, AdvertisingIntervalRange interval) override;
+      pw::bluetooth::emboss::LEOwnAddressType own_address_type,
+      AdvertisingIntervalRange interval) override;
 
   CommandChannel::CommandPacketVariant BuildSetAdvertisingData(const DeviceAddress& address,
                                                                const AdvertisingData& data,

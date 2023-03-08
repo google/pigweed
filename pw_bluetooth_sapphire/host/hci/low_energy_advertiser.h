@@ -143,7 +143,8 @@ class LowEnergyAdvertiser : public LocalAddressClient {
   // advertising being implemented.
   virtual std::unique_ptr<CommandPacket> BuildSetAdvertisingParams(
       const DeviceAddress& address, hci_spec::LEAdvertisingType type,
-      hci_spec::LEOwnAddressType own_address_type, AdvertisingIntervalRange interval) = 0;
+      pw::bluetooth::emboss::LEOwnAddressType own_address_type,
+      AdvertisingIntervalRange interval) = 0;
 
   // Build the HCI command packet to set the advertising data for the flavor of low energy
   // advertising being implemented.

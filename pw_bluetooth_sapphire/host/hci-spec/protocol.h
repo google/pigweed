@@ -1903,7 +1903,7 @@ struct LESetAdvertisingParametersCommandParams {
   // advertising is enabled (see hci_constants.h)
   LEAdvertisingType adv_type;
 
-  LEOwnAddressType own_address_type;
+  pw::bluetooth::emboss::LEOwnAddressType own_address_type;
   LEPeerAddressType peer_address_type;
 
   // Public Device Address, Random Device Address, Public Identity Address, or
@@ -1951,21 +1951,6 @@ constexpr OpCode kLESetAdvertisingEnable = LEControllerCommandOpCode(0x000A);
 // LE Set Scan Parameters Command (v4.0) (LE)
 constexpr OpCode kLESetScanParameters = LEControllerCommandOpCode(0x000B);
 
-struct LESetScanParametersCommandParams {
-  // Controls the type of scan to perform.
-  LEScanType scan_type;
-
-  // Range: see kLEScanInterval[Min|Max] in hci_constants.h
-  // Default: N = kLEScanIntervalDefault (see hci_constants.h)
-  // Time: N * 0.625 ms
-  // Time Range: 2.5 ms to 10.24 s
-  uint16_t scan_interval;
-  uint16_t scan_window;
-
-  LEOwnAddressType own_address_type;
-  LEScanFilterPolicy filter_policy;
-} __attribute__((packed));
-
 // ======================================
 // LE Set Scan Enable Command (v4.0) (LE)
 constexpr OpCode kLESetScanEnable = LEControllerCommandOpCode(0x000C);
@@ -1995,7 +1980,7 @@ struct LECreateConnectionCommandParams {
   GenericEnableParam initiator_filter_policy;
   LEAddressType peer_address_type;
   DeviceAddressBytes peer_address;
-  LEOwnAddressType own_address_type;
+  pw::bluetooth::emboss::LEOwnAddressType own_address_type;
 
   // Range: see kLEConnectionInterval[Min|Max] in hci_constants.h
   // Time: N * 1.25 ms
@@ -2732,7 +2717,7 @@ struct LESetExtendedAdvertisingParametersCommandParams {
   // values).
   uint8_t primary_adv_channel_map;
 
-  LEOwnAddressType own_address_type;
+  pw::bluetooth::emboss::LEOwnAddressType own_address_type;
   LEPeerAddressType peer_address_type;
 
   // Public Device Address, Random Device Address, Public Identity Address, or
@@ -2954,7 +2939,7 @@ struct LEExtendedCreateConnectionCommandParams {
   BT_DISALLOW_COPY_ASSIGN_AND_MOVE(LEExtendedCreateConnectionCommandParams);
 
   GenericEnableParam initiator_filter_policy;
-  LEOwnAddressType own_address_type;
+  pw::bluetooth::emboss::LEOwnAddressType own_address_type;
   LEPeerAddressType peer_address_type;
 
   // Public Device Address, Random Device Address, Public Identity Address, or

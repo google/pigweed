@@ -433,7 +433,7 @@ TEST_F(LowEnergyConnectorTest, ConnectUsingPublicAddress) {
       hci_spec::defaults::kLEScanWindow, kTestParams, [](auto, auto) {}, kConnectTimeout);
   RunLoopUntilIdle();
   ASSERT_TRUE(test_device()->le_connect_params());
-  EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic,
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC,
             test_device()->le_connect_params()->own_address_type);
 }
 
@@ -447,7 +447,7 @@ TEST_F(LowEnergyConnectorTest, ConnectUsingRandomAddress) {
       hci_spec::defaults::kLEScanWindow, kTestParams, [](auto, auto) {}, kConnectTimeout);
   RunLoopUntilIdle();
   ASSERT_TRUE(test_device()->le_connect_params());
-  EXPECT_EQ(hci_spec::LEOwnAddressType::kRandom,
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::RANDOM,
             test_device()->le_connect_params()->own_address_type);
 }
 
@@ -497,7 +497,7 @@ TEST_F(LowEnergyConnectorTest, UseLocalIdentityAddress) {
   ASSERT_TRUE(test_device()->le_connect_params());
 
   // The public address should have been used.
-  EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic,
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC,
             test_device()->le_connect_params()->own_address_type);
 }
 

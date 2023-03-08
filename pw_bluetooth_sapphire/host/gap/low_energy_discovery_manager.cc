@@ -459,7 +459,7 @@ void LowEnergyDiscoveryManager::StartScan(bool active) {
   hci::LowEnergyScanner::ScanOptions options{
       .active = active,
       .filter_duplicates = true,
-      .filter_policy = hci_spec::LEScanFilterPolicy::kNoFilterAcceptList,
+      .filter_policy = pw::bluetooth::emboss::LEScanFilterPolicy::BASIC_UNFILTERED,
       .period = scan_period_,
       .scan_response_timeout = kLEScanResponseTimeout,
   };

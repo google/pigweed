@@ -113,8 +113,9 @@ void LowEnergyConnector::CreateConnectionInternal(
       peer_address.IsPublic() ? hci_spec::LEAddressType::kPublic : hci_spec::LEAddressType::kRandom;
   params->peer_address = peer_address.value();
 
-  params->own_address_type = local_address.IsPublic() ? hci_spec::LEOwnAddressType::kPublic
-                                                      : hci_spec::LEOwnAddressType::kRandom;
+  params->own_address_type = local_address.IsPublic()
+                                 ? pw::bluetooth::emboss::LEOwnAddressType::PUBLIC
+                                 : pw::bluetooth::emboss::LEOwnAddressType::RANDOM;
 
   params->conn_interval_min = htole16(initial_parameters.min_interval());
   params->conn_interval_max = htole16(initial_parameters.max_interval());

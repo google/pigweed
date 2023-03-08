@@ -189,7 +189,7 @@ TEST_F(LegacyLowEnergyScannerTest, StartScanHCIErrors) {
   EXPECT_EQ(LowEnergyScanner::ScanStatus::kFailed, last_scan_status());
   EXPECT_EQ(hci_spec::defaults::kLEScanInterval, test_device()->le_scan_state().scan_interval);
   EXPECT_EQ(hci_spec::defaults::kLEScanWindow, test_device()->le_scan_state().scan_window);
-  EXPECT_EQ(hci_spec::LEScanFilterPolicy::kNoFilterAcceptList,
+  EXPECT_EQ(pw::bluetooth::emboss::LEScanFilterPolicy::BASIC_UNFILTERED,
             test_device()->le_scan_state().filter_policy);
   EXPECT_FALSE(test_device()->le_scan_state().enabled);
   EXPECT_TRUE(scanner()->IsIdle());
@@ -209,9 +209,9 @@ TEST_F(LegacyLowEnergyScannerTest, StartScan) {
   EXPECT_EQ(LowEnergyScanner::ScanStatus::kActive, last_scan_status());
   EXPECT_EQ(hci_spec::defaults::kLEScanInterval, test_device()->le_scan_state().scan_interval);
   EXPECT_EQ(hci_spec::defaults::kLEScanWindow, test_device()->le_scan_state().scan_window);
-  EXPECT_EQ(hci_spec::LEScanFilterPolicy::kNoFilterAcceptList,
+  EXPECT_EQ(pw::bluetooth::emboss::LEScanFilterPolicy::BASIC_UNFILTERED,
             test_device()->le_scan_state().filter_policy);
-  EXPECT_EQ(hci_spec::LEScanType::kActive, test_device()->le_scan_state().scan_type);
+  EXPECT_EQ(pw::bluetooth::emboss::LEScanType::ACTIVE, test_device()->le_scan_state().scan_type);
   EXPECT_TRUE(test_device()->le_scan_state().filter_duplicates);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
   EXPECT_EQ(LowEnergyScanner::State::kActiveScanning, scanner()->state());
@@ -648,7 +648,8 @@ TEST_F(LegacyLowEnergyScannerTest, ScanUsingPublicAddress) {
   EXPECT_TRUE(StartScan(false));
   RunLoopUntilIdle();
   EXPECT_TRUE(scanner()->IsPassiveScanning());
-  EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic, test_device()->le_scan_state().own_address_type);
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC,
+            test_device()->le_scan_state().own_address_type);
 }
 
 TEST_F(LegacyLowEnergyScannerTest, ScanUsingRandomAddress) {
@@ -656,7 +657,8 @@ TEST_F(LegacyLowEnergyScannerTest, ScanUsingRandomAddress) {
   EXPECT_TRUE(StartScan(false));
   RunLoopUntilIdle();
   EXPECT_TRUE(scanner()->IsPassiveScanning());
-  EXPECT_EQ(hci_spec::LEOwnAddressType::kRandom, test_device()->le_scan_state().own_address_type);
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::RANDOM,
+            test_device()->le_scan_state().own_address_type);
 }
 
 TEST_F(LegacyLowEnergyScannerTest, StopScanWhileWaitingForLocalAddress) {

@@ -1150,7 +1150,7 @@ TEST_F(HostServerTest, EnableBackgroundScan) {
 
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
-  EXPECT_EQ(bt::hci_spec::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
+  EXPECT_EQ(pw::bluetooth::emboss::LEScanType::PASSIVE, test_device()->le_scan_state().scan_type);
 
   host_server()->EnableBackgroundScan(false);
   RunLoopUntilIdle();
@@ -1164,7 +1164,7 @@ TEST_F(HostServerTest, EnableBackgroundScanTwiceAtSameTime) {
 
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
-  EXPECT_EQ(bt::hci_spec::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
+  EXPECT_EQ(pw::bluetooth::emboss::LEScanType::PASSIVE, test_device()->le_scan_state().scan_type);
 
   host_server()->EnableBackgroundScan(false);
   RunLoopUntilIdle();
@@ -1177,12 +1177,12 @@ TEST_F(HostServerTest, EnableBackgroundScanTwiceSequentially) {
 
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
-  EXPECT_EQ(bt::hci_spec::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
+  EXPECT_EQ(pw::bluetooth::emboss::LEScanType::PASSIVE, test_device()->le_scan_state().scan_type);
 
   host_server()->EnableBackgroundScan(true);
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
-  EXPECT_EQ(bt::hci_spec::LEScanType::kPassive, test_device()->le_scan_state().scan_type);
+  EXPECT_EQ(pw::bluetooth::emboss::LEScanType::PASSIVE, test_device()->le_scan_state().scan_type);
 
   host_server()->EnableBackgroundScan(false);
   RunLoopUntilIdle();

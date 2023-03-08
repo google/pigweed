@@ -553,7 +553,7 @@ void FakeController::SendSingleAdvertisingReport(const FakePeer& peer) {
   // We want to send scan response packets only during an active scan and if
   // the peer is scannable.
   bool need_scan_rsp =
-      (le_scan_state().scan_type == hci_spec::LEScanType::kActive) && peer.scannable();
+      (le_scan_state().scan_type == pw::bluetooth::emboss::LEScanType::ACTIVE) && peer.scannable();
   SendCommandChannelPacket(
       peer.CreateAdvertisingReportEvent(need_scan_rsp && peer.should_batch_reports()));
 
@@ -962,18 +962,18 @@ void FakeController::OnLESetScanEnable(const hci_spec::LESetScanEnableCommandPar
 }
 
 void FakeController::OnLESetScanParamaters(
-    const hci_spec::LESetScanParametersCommandParams& params) {
+    const pw::bluetooth::emboss::LESetScanParametersCommandView& params) {
   pw::bluetooth::emboss::StatusCode status = pw::bluetooth::emboss::StatusCode::SUCCESS;
 
   if (le_scan_state_.enabled) {
     status = pw::bluetooth::emboss::StatusCode::COMMAND_DISALLOWED;
   } else {
     status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-    le_scan_state_.scan_type = params.scan_type;
-    le_scan_state_.scan_interval = le16toh(params.scan_interval);
-    le_scan_state_.scan_window = le16toh(params.scan_window);
-    le_scan_state_.own_address_type = params.own_address_type;
-    le_scan_state_.filter_policy = params.filter_policy;
+    le_scan_state_.scan_type = params.le_scan_type().Read();
+    le_scan_state_.scan_interval = params.le_scan_interval().Read();
+    le_scan_state_.scan_window = params.le_scan_window().Read();
+    le_scan_state_.own_address_type = params.own_address_type().Read();
+    le_scan_state_.filter_policy = params.scanning_filter_policy().Read();
   }
 
   RespondWithCommandComplete(hci_spec::kLESetScanParameters, status);
@@ -2928,11 +2928,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnReadLocalExtendedFeatures(params);
       break;
     }
-    case hci_spec::kLESetScanParameters: {
-      const auto& params = command_packet.payload<hci_spec::LESetScanParametersCommandParams>();
-      OnLESetScanParamaters(params);
-      break;
-    }
     case hci_spec::kLESetScanEnable: {
       const auto& params = command_packet.payload<hci_spec::LESetScanEnableCommandParams>();
       OnLESetScanEnable(params);
@@ -2994,7 +2989,8 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kLESetEventMask:
     case hci_spec::kLESetRandomAddress:
     case hci_spec::kLESetAdvertisingData:
-    case hci_spec::kLESetScanResponseData: {
+    case hci_spec::kLESetScanResponseData:
+    case hci_spec::kLESetScanParameters: {
       // This case is for packet types that have been migrated to the new Emboss architecture. Their
       // old version can be still be assembled from the HciEmulator channel, so here we repackage
       // and forward them as Emboss packets.
@@ -3229,6 +3225,12 @@ void FakeController::HandleReceivedCommandPacket(const hci::EmbossCommandPacket&
       const auto& params =
           command_packet.view<pw::bluetooth::emboss::LESetScanResponseDataCommandView>();
       OnLESetScanResponseData(params);
+      break;
+    }
+    case hci_spec::kLESetScanParameters: {
+      const auto& params =
+          command_packet.view<pw::bluetooth::emboss::LESetScanParametersCommandView>();
+      OnLESetScanParamaters(params);
       break;
     }
     default: {

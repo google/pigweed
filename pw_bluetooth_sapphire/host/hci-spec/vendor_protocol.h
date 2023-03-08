@@ -335,7 +335,7 @@ struct LEMultiAdvtSetAdvtParamCommandParams {
   // hci_constants.h)
   LEAdvertisingType adv_type;
 
-  LEOwnAddressType own_address_type;
+  pw::bluetooth::emboss::LEOwnAddressType own_address_type;
   LEPeerAddressType peer_address_type;
 
   // Public Device Address, Random Device Address, Public Identity Address, or Random (static)

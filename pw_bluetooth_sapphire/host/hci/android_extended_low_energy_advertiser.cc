@@ -62,7 +62,7 @@ std::optional<EmbossCommandPacket> AndroidExtendedLowEnergyAdvertiser::BuildEnab
 
 std::unique_ptr<CommandPacket> AndroidExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
     const DeviceAddress& address, hci_spec::LEAdvertisingType type,
-    hci_spec::LEOwnAddressType own_address_type, AdvertisingIntervalRange interval) {
+    pw::bluetooth::emboss::LEOwnAddressType own_address_type, AdvertisingIntervalRange interval) {
   std::unique_ptr<CommandPacket> packet = CommandPacket::New(
       hci_android::kLEMultiAdvt, sizeof(hci_android::LEMultiAdvtSetAdvtParamCommandParams));
   packet->mutable_view()->mutable_payload_data().SetToZeros();

@@ -189,8 +189,8 @@ TYPED_TEST(LowEnergyMultipleAdvertisingTest, SimultaneousAdvertisements) {
 
   EXPECT_TRUE(public_addr_state.enabled);
   EXPECT_TRUE(random_addr_state.enabled);
-  EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic, public_addr_state.own_address_type);
-  EXPECT_EQ(hci_spec::LEOwnAddressType::kRandom, random_addr_state.own_address_type);
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC, public_addr_state.own_address_type);
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::RANDOM, random_addr_state.own_address_type);
   EXPECT_EQ(hci_spec::kLEAdvertisingIntervalMin, public_addr_state.interval_min);
   EXPECT_EQ(hci_spec::kLEAdvertisingIntervalMax, public_addr_state.interval_max);
   EXPECT_EQ(hci_spec::kLEAdvertisingIntervalMin + 1u, random_addr_state.interval_min);

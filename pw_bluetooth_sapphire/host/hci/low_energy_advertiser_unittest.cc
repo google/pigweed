@@ -460,7 +460,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertisingParameters) {
   EXPECT_EQ(kTestInterval.max(), state->interval_max);
   EXPECT_EQ(expected_ad, state->advertised_view());
   EXPECT_EQ(expected_scan_data, state->scan_rsp_view());
-  EXPECT_EQ(hci_spec::LEOwnAddressType::kRandom, state->own_address_type);
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::RANDOM, state->own_address_type);
 
   // Restart advertising with a public address and verify that the configured
   // local address type is correct.
@@ -475,7 +475,7 @@ TYPED_TEST(LowEnergyAdvertiserTest, AdvertisingParameters) {
   state = this->GetControllerAdvertisingState();
   EXPECT_TRUE(state);
   EXPECT_TRUE(state->enabled);
-  EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic, state->own_address_type);
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC, state->own_address_type);
 }
 
 // Tests that advertising interval values are capped within the allowed range.

@@ -125,32 +125,34 @@ void LegacyLowEnergyScanner::StartScanInternal(const DeviceAddress& local_addres
          options.interval, options.window);
 
   // HCI_LE_Set_Scan_Parameters
-  auto command = CommandPacket::New(hci_spec::kLESetScanParameters,
-                                    sizeof(hci_spec::LESetScanParametersCommandParams));
-  auto scan_params = command->mutable_payload<hci_spec::LESetScanParametersCommandParams>();
-  scan_params->scan_type =
-      options.active ? hci_spec::LEScanType::kActive : hci_spec::LEScanType::kPassive;
-  scan_params->scan_interval = htole16(options.interval);
-  scan_params->scan_window = htole16(options.window);
-  scan_params->filter_policy = options.filter_policy;
+  auto scan_params_command =
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::LESetScanParametersCommandWriter>(
+          hci_spec::kLESetScanParameters);
+  auto scan_params = scan_params_command.view_t();
+  scan_params.le_scan_type().Write(options.active ? pw::bluetooth::emboss::LEScanType::ACTIVE
+                                                  : pw::bluetooth::emboss::LEScanType::PASSIVE);
+  scan_params.le_scan_interval().Write(options.interval);
+  scan_params.le_scan_window().Write(options.window);
+  scan_params.scanning_filter_policy().Write(options.filter_policy);
 
   if (local_address.type() == DeviceAddress::Type::kLERandom) {
-    scan_params->own_address_type = hci_spec::LEOwnAddressType::kRandom;
+    scan_params.own_address_type().Write(pw::bluetooth::emboss::LEOwnAddressType::RANDOM);
   } else {
-    scan_params->own_address_type = hci_spec::LEOwnAddressType::kPublic;
+    scan_params.own_address_type().Write(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC);
   }
-  hci_cmd_runner()->QueueCommand(std::move(command));
+  hci_cmd_runner()->QueueCommand(std::move(scan_params_command));
 
   // HCI_LE_Set_Scan_Enable
-  command = CommandPacket::New(hci_spec::kLESetScanEnable,
-                               sizeof(hci_spec::LESetScanEnableCommandParams));
-  auto enable_params = command->mutable_payload<hci_spec::LESetScanEnableCommandParams>();
+  auto scan_enable_command = CommandPacket::New(hci_spec::kLESetScanEnable,
+                                                sizeof(hci_spec::LESetScanEnableCommandParams));
+  auto enable_params =
+      scan_enable_command->mutable_payload<hci_spec::LESetScanEnableCommandParams>();
   enable_params->scanning_enabled = pw::bluetooth::emboss::GenericEnableParam::ENABLE;
   enable_params->filter_duplicates = options.filter_duplicates
                                          ? pw::bluetooth::emboss::GenericEnableParam::ENABLE
                                          : pw::bluetooth::emboss::GenericEnableParam::DISABLE;
 
-  hci_cmd_runner()->QueueCommand(std::move(command));
+  hci_cmd_runner()->QueueCommand(std::move(scan_enable_command));
   hci_cmd_runner()->RunCommands([this, period = options.period](Result<> status) {
     BT_DEBUG_ASSERT(scan_cb_);
     BT_DEBUG_ASSERT(state() == State::kInitiating);

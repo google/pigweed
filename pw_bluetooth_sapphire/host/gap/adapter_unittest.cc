@@ -613,7 +613,7 @@ TEST_F(AdapterTest, LocalAddressForLegacyAdvertising) {
       /*include_tx_power_level=*/false, /*connectable=*/std::nullopt, adv_cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
-  EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic,
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC,
             test_device()->legacy_advertising_state().own_address_type);
 
   // Enable privacy. The random address should not get configured while
@@ -636,7 +636,7 @@ TEST_F(AdapterTest, LocalAddressForLegacyAdvertising) {
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->legacy_advertising_state().random_address);
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
-  EXPECT_EQ(hci_spec::LEOwnAddressType::kRandom,
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::RANDOM,
             test_device()->legacy_advertising_state().own_address_type);
 
   // Advance time to force the random address to refresh. The update should be
@@ -652,7 +652,7 @@ TEST_F(AdapterTest, LocalAddressForLegacyAdvertising) {
       /*include_tx_power_level=*/false, /*connectable=*/std::nullopt, adv_cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
-  EXPECT_EQ(hci_spec::LEOwnAddressType::kRandom,
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::RANDOM,
             test_device()->legacy_advertising_state().own_address_type);
   EXPECT_TRUE(test_device()->legacy_advertising_state().random_address);
   EXPECT_NE(last_random_addr, test_device()->legacy_advertising_state().random_address);
@@ -666,7 +666,7 @@ TEST_F(AdapterTest, LocalAddressForLegacyAdvertising) {
       /*include_tx_power_level=*/false, /*connectable=*/std::nullopt, adv_cb);
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);
-  EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic,
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC,
             test_device()->legacy_advertising_state().own_address_type);
 }
 
@@ -691,7 +691,8 @@ TEST_F(AdapterTest, LocalAddressForDiscovery) {
   RunLoopUntilIdle();
   ASSERT_TRUE(session);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
-  EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic, test_device()->le_scan_state().own_address_type);
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC,
+            test_device()->le_scan_state().own_address_type);
 
   // Enable privacy. The random address should not get configured while a scan
   // is in progress.
@@ -711,7 +712,8 @@ TEST_F(AdapterTest, LocalAddressForDiscovery) {
   RunLoopUntilIdle();
   ASSERT_TRUE(session);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
-  EXPECT_EQ(hci_spec::LEOwnAddressType::kRandom, test_device()->le_scan_state().own_address_type);
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::RANDOM,
+            test_device()->le_scan_state().own_address_type);
 
   // Advance time to force the random address to refresh. The update should be
   // deferred while still scanning.
@@ -724,7 +726,8 @@ TEST_F(AdapterTest, LocalAddressForDiscovery) {
   // random address.
   RunLoopFor(kTestDelay);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
-  EXPECT_EQ(hci_spec::LEOwnAddressType::kRandom, test_device()->le_scan_state().own_address_type);
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::RANDOM,
+            test_device()->le_scan_state().own_address_type);
   ASSERT_TRUE(test_device()->legacy_advertising_state().random_address);
   EXPECT_NE(last_random_addr, test_device()->legacy_advertising_state().random_address);
 
@@ -733,7 +736,8 @@ TEST_F(AdapterTest, LocalAddressForDiscovery) {
   adapter()->le()->EnablePrivacy(false);
   RunLoopFor(kTestScanPeriod);
   EXPECT_TRUE(test_device()->le_scan_state().enabled);
-  EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic, test_device()->le_scan_state().own_address_type);
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC,
+            test_device()->le_scan_state().own_address_type);
 }
 
 TEST_F(AdapterTest, LocalAddressForConnections) {
@@ -763,7 +767,7 @@ TEST_F(AdapterTest, LocalAddressForConnections) {
   EXPECT_FALSE(test_device()->legacy_advertising_state().random_address);
   ASSERT_TRUE(conn_ref);
   ASSERT_TRUE(test_device()->le_connect_params());
-  EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic,
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC,
             test_device()->le_connect_params()->own_address_type);
 
   // Create a new connection. The second attempt should use a random address.
@@ -778,7 +782,7 @@ TEST_F(AdapterTest, LocalAddressForConnections) {
   // TODO(fxbug.dev/63123): The current policy is to use a public address when initiating
   // connections. Change this test to expect a random address once RPAs for central connections are
   // re-enabled.
-  EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic,
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC,
             test_device()->le_connect_params()->own_address_type);
 
   // Disable privacy. The next connection attempt should use a public address.
@@ -786,7 +790,7 @@ TEST_F(AdapterTest, LocalAddressForConnections) {
   conn_ref = nullptr;
   adapter()->le()->Connect(peer->identifier(), connect_cb, LowEnergyConnectionOptions());
   RunLoopUntilIdle();
-  EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic,
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC,
             test_device()->le_connect_params()->own_address_type);
 }
 
@@ -828,7 +832,7 @@ TEST_F(AdapterTest, LocalAddressDuringHangingConnect) {
   adapter()->le()->Connect(peer->identifier(), connect_cb, LowEnergyConnectionOptions());
   RunLoopUntilIdle();
   ASSERT_TRUE(test_device()->le_connect_params());
-  EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic,
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC,
             test_device()->le_connect_params()->own_address_type);
 
   // Enable privacy. The random address should not get configured while a
@@ -851,7 +855,7 @@ TEST_F(AdapterTest, LocalAddressDuringHangingConnect) {
   // TODO(fxbug.dev/63123): The current policy is to use a public address when initiating
   // connections. Change this test to expect a random address once RPAs for central connections are
   // re-enabled.
-  EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic,
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC,
             test_device()->le_connect_params()->own_address_type);
 
   // Advance the time to cause the random address to refresh. The update should
@@ -876,7 +880,7 @@ TEST_F(AdapterTest, LocalAddressDuringHangingConnect) {
   // TODO(fxbug.dev/63123): The current policy is to use a public address when initiating
   // connections. Change this test to expect a random address once RPAs for central connections are
   // re-enabled.
-  EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic,
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC,
             test_device()->le_connect_params()->own_address_type);
 }
 
@@ -904,7 +908,7 @@ TEST_F(AdapterTest, ExistingConnectionDoesNotPreventLocalAddressChange) {
   // TODO(fxbug.dev/63123): The current policy is to use a public address when initiating
   // connections. Change this test to expect a random address once RPAs for central connections are
   // re-enabled.
-  EXPECT_EQ(hci_spec::LEOwnAddressType::kPublic,
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::PUBLIC,
             test_device()->le_connect_params()->own_address_type);
 
   // Expire the private address. The address should refresh without interference

@@ -152,7 +152,7 @@ TEST_F(LegacyLowEnergyAdvertiserTest, NoAdvertiseTwice) {
   ad.WriteBlock(&expected_ad, kDefaultNoAdvFlags);
   EXPECT_TRUE(
       ContainersEqual(test_device()->legacy_advertising_state().advertised_view(), expected_ad));
-  EXPECT_EQ(hci_spec::LEOwnAddressType::kRandom,
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::RANDOM,
             test_device()->legacy_advertising_state().own_address_type);
 
   uint16_t new_appearance = 0x6789;
@@ -162,7 +162,7 @@ TEST_F(LegacyLowEnergyAdvertiserTest, NoAdvertiseTwice) {
   RunLoopUntilIdle();
 
   // Should still be using the random address.
-  EXPECT_EQ(hci_spec::LEOwnAddressType::kRandom,
+  EXPECT_EQ(pw::bluetooth::emboss::LEOwnAddressType::RANDOM,
             test_device()->legacy_advertising_state().own_address_type);
   EXPECT_TRUE(MoveLastStatus());
   EXPECT_TRUE(test_device()->legacy_advertising_state().enabled);

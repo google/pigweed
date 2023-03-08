@@ -68,11 +68,11 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
     type = hci_spec::LEAdvertisingType::kAdvScanInd;
   }
 
-  hci_spec::LEOwnAddressType own_addr_type;
+  pw::bluetooth::emboss::LEOwnAddressType own_addr_type;
   if (address.type() == DeviceAddress::Type::kLEPublic) {
-    own_addr_type = hci_spec::LEOwnAddressType::kPublic;
+    own_addr_type = pw::bluetooth::emboss::LEOwnAddressType::PUBLIC;
   } else {
-    own_addr_type = hci_spec::LEOwnAddressType::kRandom;
+    own_addr_type = pw::bluetooth::emboss::LEOwnAddressType::RANDOM;
   }
 
   data.Copy(&staged_parameters_.data);
