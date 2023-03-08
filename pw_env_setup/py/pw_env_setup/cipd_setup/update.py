@@ -133,13 +133,8 @@ def check_auth(cipd, package_files, cipd_service_account, spin):
     return True
 
 
-def platform(rosetta=None):
+def platform(rosetta=False):
     """Return the CIPD platform string of the current system."""
-    # If running inside a bootstrapped environment we can use the env var.
-    # Otherwise, require rosetta be set.
-    if rosetta is None:
-        rosetta = os.environ['_PW_ROSETTA']
-
     osname = {
         'darwin': 'mac',
         'linux': 'linux',
