@@ -1,64 +1,57 @@
 .. _module-pw_string:
 
+.. rst-class:: with-subtitle
+
 =========
 pw_string
 =========
-.. card::
 
-   :octicon:`comment-discussion` Status:
-   :bdg-secondary-line:`Experimental`
-   :octicon:`chevron-right`
-   :bdg-secondary-line:`Unstable`
-   :octicon:`chevron-right`
-   :bdg-primary:`Stable`
-   :octicon:`kebab-horizontal`
-   :bdg-primary:`Current`
-   :octicon:`chevron-right`
-   :bdg-secondary-line:`Deprecated`
+.. pigweed-module::
+   :name: pw_string
+   :tagline: Efficient, easy, and safe string manipulation
+   :status: stable
+   :languages: C++14, C++17
+   :code-size-impact: 500 to 1500 bytes
+   :get-started: module-pw_string-get-started
+   :design: module-pw_string-design
+   :guides: module-pw_string-guide
+   :api: module-pw_string-api
 
-Compatibility: C++17 (C++14 for :cpp:type:`pw::InlineString`)
+   - **Efficient**: No memory allocation, no pointer indirection.
+   - **Easy**: Use the string API you already know.
+   - **Safe**: Never worry about buffer overruns or undefined behavior.
 
-`API reference </pw_string/api.html>`_ | `Guide </pw_string/guide.html>`_ | `Design </pw_string/design.html>`_
+   *Pick three!* If you know how to use ``std::string``, just use
+   :cpp:type:`pw::InlineString` in the same way:
 
----------------------------------------------
-Efficient, easy, and safe string manipulation
----------------------------------------------
-- **Efficient**: No memory allocation, no pointer indirection.
-- **Easy**: Use the string API you already know.
-- **Safe**: Never worry about buffer overruns or undefined behavior.
+   .. code:: cpp
 
-*Pick three!* If you know how to use ``std::string``, just use
-:cpp:type:`pw::InlineString` in the same way:
+      // Create a string from a C-style char array; storage is pre-allocated!
+      pw::InlineString<16> my_string = "Literally";
 
-.. code:: cpp
+      // We have some space left, so let's add to the string.
+      my_string.append('?', 3);  // "Literally???"
 
-   // Create a string from a C-style char array; storage is pre-allocated!
-   pw::InlineString<16> my_string = "Literally";
+      // Let's try something evil and extend this past its capacity 😈
+      my_string.append('!', 8);
+      // Foiled by a crash! No mysterious bugs or undefined behavior.
 
-   // We have some space left, so let's add to the string.
-   my_string.append('?', 3);  // "Literally???"
+   Need to build up a string? :cpp:type:`pw::StringBuilder` works like
+   ``std::ostringstream``, but with most of the efficiency and memory benefits
+   of :cpp:type:`pw::InlineString`:
 
-   // Let's try something evil and extend this past its capacity 😈
-   my_string.append('!', 8);
-   // Foiled by a crash! No mysterious bugs or undefined behavior.
+   .. code:: cpp
 
-Need to build up a string? :cpp:type:`pw::StringBuilder` works like
-``std::ostringstream``, but with most of the efficiency and memory benefits of
-:cpp:type:`pw::InlineString`:
+      // Create a pw::StringBuilder with a built-in buffer
+      pw::StringBuffer<32> my_string_builder = "Is it really this easy?";
 
-.. code:: cpp
+      // Add to it with idiomatic C++
+      my_string << " YES!";
 
-   // Create a pw::StringBuilder with a built-in buffer
-   pw::StringBuffer<32> my_string_builder = "Is it really this easy?";
+      // Use it like any other string
+      PW_LOG_DEBUG("%s", my_string_builder.c_str());
 
-   // Add to it with idiomatic C++
-   my_string << " YES!";
-
-   // Use it like any other string
-   PW_LOG_DEBUG("%s", my_string_builder.c_str());
-
-
-Check out :ref:`module-pw_string-guide` for more code samples.
+   Check out :ref:`module-pw_string-guide` for more code samples.
 
 ----------
 Background
@@ -114,6 +107,39 @@ cost. However, relative to equivalent ``std::snprintf`` calls, there is no
 incremental code size cost to using ``pw::string::Format``.
 
 .. include:: format_size_report
+
+Roadmap
+-------
+* StringBuilder's fixed size cost can be dramatically reduced by limiting
+  support for 64-bit integers.
+* Consider integrating with the tokenizer module.
+
+---------------
+Who this is for
+---------------
+..
+  Highlight the use cases that are appropriate for this module. This is the place
+  to make the sales pitch-why should developers use this module, and what makes
+  this module stand out from alternative solutions that try to address this
+  problem.
+
+--------------------
+Is it right for you?
+--------------------
+..
+  This module may not solve all problems or be appropriate for all circumstances.
+  This is the place to add those caveats. Highly-experimental modules that are
+  under very active development might be a poor fit for any developer right now.
+  If so, mention that here.
+
+..
+  https://issues.pigweed.dev/issues/269671709
+
+Compatibility
+-------------
+C++17, C++14 (:cpp:type:`pw::InlineString`)
+
+.. _module-pw_string-get-started:
 
 ---------------
 Getting started
