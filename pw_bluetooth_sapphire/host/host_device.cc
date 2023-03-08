@@ -164,7 +164,7 @@ void HostDevice::Open(OpenRequestView request, OpenCompleter::Sync& completer) {
 
   // Tell Host to start processing messages on this handle.
   async::PostTask(loop_.dispatcher(), [host = host_, chan = std::move(request->channel)]() mutable {
-    host->BindHostInterface(std::move(chan));
+    host->BindHostInterface(chan.TakeChannel());
   });
 }
 
