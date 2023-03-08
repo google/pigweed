@@ -180,53 +180,6 @@ load("@com_github_nanopb_nanopb//:nanopb_workspace.bzl", "nanopb_workspace")
 
 nanopb_workspace()
 
-# Set up NodeJs rules.
-# Required by: pigweed.
-# Used in modules: //pw_web.
-http_archive(
-    name = "build_bazel_rules_nodejs",
-    sha256 = "b32a4713b45095e9e1921a7fcb1adf584bc05959f3336e7351bcf77f015a2d7c",
-    urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/4.1.0/rules_nodejs-4.1.0.tar.gz"],
-)
-
-# Get the latest LTS version of Node.
-load(
-    "@build_bazel_rules_nodejs//:index.bzl",
-    "node_repositories",
-    "yarn_install",
-)
-
-node_repositories(package_json = ["//:package.json"])
-
-yarn_install(
-    name = "npm",
-    package_json = "//:package.json",
-    yarn_lock = "//:yarn.lock",
-)
-
-# Set up web-testing rules.
-# Required by: pigweed.
-# Used in modules: //pw_web.
-http_archive(
-    name = "io_bazel_rules_webtesting",
-    sha256 = "9bb461d5ef08e850025480bab185fd269242d4e533bca75bfb748001ceb343c3",
-    urls = ["https://github.com/bazelbuild/rules_webtesting/releases/download/0.3.3/rules_webtesting.tar.gz"],
-)
-
-load("@io_bazel_rules_webtesting//web:repositories.bzl", "web_test_repositories")
-
-web_test_repositories()
-
-load(
-    "@io_bazel_rules_webtesting//web/versioned:browsers-0.3.2.bzl",
-    "browser_repositories",
-)
-
-browser_repositories(
-    chromium = True,
-    firefox = True,
-)
-
 # Set up embedded C/C++ toolchains.
 # Required by: pigweed.
 # Used in modules: //pw_polyfill, //pw_build (all pw_cc* targets).
@@ -374,11 +327,6 @@ rules_fuzzing_dependencies()
 load("@rules_fuzzing//fuzzing:init.bzl", "rules_fuzzing_init")
 
 rules_fuzzing_init()
-
-# esbuild setup
-load("@build_bazel_rules_nodejs//toolchains/esbuild:esbuild_repositories.bzl", "esbuild_repositories")
-
-esbuild_repositories(npm_repository = "npm")  # Note, npm is the default value for npm_repository
 
 RULES_JVM_EXTERNAL_TAG = "2.8"
 
