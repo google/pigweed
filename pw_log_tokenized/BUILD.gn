@@ -42,20 +42,12 @@ config("backend_config") {
 
 # This target provides the backend for pw_log.
 pw_source_set("pw_log_tokenized") {
-  public_configs = [
-    ":backend_config",
-    ":public_include_path",
-  ]
+  public_configs = [ ":backend_config" ]
   public_deps = [
-    ":config",
     ":handler.facade",  # Depend on the facade to avoid circular dependencies.
-    ":metadata",
-    dir_pw_tokenizer,
+    ":headers",
   ]
-  public = [
-    "public/pw_log_tokenized/log_tokenized.h",
-    "public_overrides/pw_log_backend/log_backend.h",
-  ]
+  public = [ "public_overrides/pw_log_backend/log_backend.h" ]
 
   sources = [ "log_tokenized.cc" ]
 }
@@ -63,6 +55,22 @@ pw_source_set("pw_log_tokenized") {
 config("backwards_compatibility_config") {
   defines = [ "_PW_LOG_TOKENIZED_GLOBAL_HANDLER_BACKWARDS_COMPAT" ]
   visibility = [ ":*" ]
+}
+
+pw_source_set("headers") {
+  visibility = [ ":*" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    ":config",
+    ":metadata",
+
+    # TODO(hepler): Remove this dependency when all projects have migrated to
+    #     the new pw_log_tokenized handler.
+    "$dir_pw_tokenizer:global_handler_with_payload",
+    dir_pw_preprocessor,
+    dir_pw_tokenizer,
+  ]
+  public = [ "public/pw_log_tokenized/log_tokenized.h" ]
 }
 
 # The old pw_tokenizer_GLOBAL_HANDLER_WITH_PAYLOAD_BACKEND backend may still be
@@ -156,16 +164,10 @@ pw_source_set("base64_over_hdlc") {
 }
 
 pw_test_group("tests") {
-  tests = [ ":metadata_test" ]
-
-  # TODO(b/269354373): The Windows MinGW compiler fails to link
-  #   log_tokenized_test.cc because log_tokenized.cc refers to the log handler,
-  #   which is not defined, even though _pw_log_tokenized_EncodeTokenizedLog is
-  #   never called. Remove this check when the Windows build is consistent with
-  #   other builds.
-  if (current_os != "win" || _new_backend_is_set || _old_backend_is_set) {
-    tests += [ ":log_tokenized_test" ]
-  }
+  tests = [
+    ":log_tokenized_test",
+    ":metadata_test",
+  ]
 }
 
 pw_test("log_tokenized_test") {
@@ -175,7 +177,7 @@ pw_test("log_tokenized_test") {
     "pw_log_tokenized_private/test_utils.h",
   ]
   deps = [
-    ":pw_log_tokenized",
+    ":headers",
     dir_pw_preprocessor,
   ]
 }
