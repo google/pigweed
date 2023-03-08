@@ -96,8 +96,8 @@ pw_test_group("tests") {
       pw_toolchain_SCOPE.is_host_toolchain) {
     tests += [ ":std_file_stream_test" ]
 
-    # socket_stream_test only compiles on Linux.
-    if (host_os == "linux") {
+    # socket_stream_test doesn't compile on Windows.
+    if (host_os != "win") {
       tests += [ ":socket_stream_test" ]
     }
   }

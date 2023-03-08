@@ -27,6 +27,18 @@ namespace {
 constexpr uint32_t kServerBacklogLength = 1;
 constexpr const char* kLocalhostAddress = "127.0.0.1";
 
+// Set necessary options on a socket file descriptor.
+void ConfigureSocket([[maybe_unused]] int socket) {
+#if defined(__APPLE__)
+  // Use SO_NOSIGPIPE to avoid getting a SIGPIPE signal when the remote peer
+  // drops the connection. This is supported on macOS only.
+  constexpr int value = 1;
+  if (setsockopt(socket, SOL_SOCKET, SO_NOSIGPIPE, &value, sizeof(int)) < 0) {
+    PW_LOG_WARN("Failed to set SO_NOSIGPIPE: %s", std::strerror(errno));
+  }
+#endif  // defined(__APPLE__)
+}
+
 }  // namespace
 
 // TODO(b/240982565): Implement SocketStream for Windows.
@@ -77,11 +89,13 @@ Status SocketStream::Serve(uint16_t port) {
   if (connection_fd_ < 0) {
     return Status::Unknown();
   }
+  ConfigureSocket(connection_fd_);
   return OkStatus();
 }
 
 Status SocketStream::SocketStream::Connect(const char* host, uint16_t port) {
   connection_fd_ = socket(AF_INET, SOCK_STREAM, 0);
+  ConfigureSocket(connection_fd_);
 
   sockaddr_in addr;
   addr.sin_family = AF_INET;
@@ -120,10 +134,15 @@ void SocketStream::Close() {
 }
 
 Status SocketStream::DoWrite(span<const std::byte> data) {
+  int send_flags = 0;
+#if defined(__linux__)
   // Use MSG_NOSIGNAL to avoid getting a SIGPIPE signal when the remote
-  // peer drops the connection.
+  // peer drops the connection. This is supported on Linux only.
+  send_flags |= MSG_NOSIGNAL;
+#endif  // defined(__linux__)
+
   ssize_t bytes_sent =
-      send(connection_fd_, data.data(), data.size_bytes(), MSG_NOSIGNAL);
+      send(connection_fd_, data.data(), data.size_bytes(), send_flags);
 
   if (bytes_sent < 0 || static_cast<size_t>(bytes_sent) != data.size()) {
     if (errno == EPIPE) {
@@ -211,6 +230,7 @@ Result<SocketStream> ServerSocket::Accept() {
   if (connection_fd == kInvalidFd) {
     return Status::Unknown();
   }
+  ConfigureSocket(connection_fd);
 
   SocketStream client_stream;
   client_stream.connection_fd_ = connection_fd;
