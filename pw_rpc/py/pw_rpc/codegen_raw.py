@@ -185,7 +185,6 @@ class StubGenerator(codegen.StubGenerator):
     def server_streaming_signature(
         self, method: ProtoServiceMethod, prefix: str
     ) -> str:
-
         return (
             f'void {prefix}{method.name()}('
             'pw::ConstByteSpan request, RawServerWriter& writer)'

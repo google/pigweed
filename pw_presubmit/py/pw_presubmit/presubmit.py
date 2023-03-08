@@ -139,7 +139,6 @@ class PresubmitFailure(Exception):
 
 
 class PresubmitResult(enum.Enum):
-
     PASS = 'PASSED'  # Check completed successfully.
     FAIL = 'FAILED'  # Check failed.
     CANCEL = 'CANCEL'  # Check didn't complete.

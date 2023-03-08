@@ -396,7 +396,6 @@ def _main():
     if args.setupcfg_common_file or (
         args.setupcfg_override_name and args.setupcfg_override_version
     ):
-
         config = load_common_config(
             common_config=args.setupcfg_common_file,
             package_name_override=args.setupcfg_override_name,

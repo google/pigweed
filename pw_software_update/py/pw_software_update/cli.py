@@ -198,7 +198,7 @@ def add_file_to_bundle_handler(arg) -> None:
 
         arg.bundle.write_bytes(updated_bundle.SerializeToString())
 
-    except (IOError) as error:
+    except IOError as error:
         print(error)
 
 

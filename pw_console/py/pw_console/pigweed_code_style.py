@@ -119,7 +119,6 @@ def swap_light_dark(color: str) -> str:
 
 
 class PigweedCodeStyle(Style):
-
     background_color = '#2e2e2e'
     default_style = ''
 
@@ -127,7 +126,6 @@ class PigweedCodeStyle(Style):
 
 
 class PigweedCodeLightStyle(Style):
-
     background_color = '#f8f8f8'
     default_style = ''
 

@@ -953,7 +953,6 @@ class WindowManager:
         for logger_name, logger_options in window_options.get(
             'loggers', {}
         ).items():
-
             log_level_name = logger_options.get('level', None)
             new_pane.add_log_handler(logger_name, level_name=log_level_name)
         return new_pane

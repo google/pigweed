@@ -483,7 +483,6 @@ class ReplPane(WindowPane):
         exception_text='',
         result_object=None,
     ):
-
         code = self._get_executed_code(future)
         if code:
             code.output = result_text

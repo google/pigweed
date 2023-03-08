@@ -228,7 +228,6 @@ class LogScreen:
         # Loop through a copy of the line_buffer in case it is mutated before
         # this function is complete.
         for i, line in enumerate(list(self.line_buffer)):
-
             # Is this line the cursor_position? Apply line highlighting
             if (
                 i == self.cursor_position

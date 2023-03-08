@@ -173,7 +173,7 @@ class BloatTableOutput:
         if old_labels is None:
             return new_labels
         diff_list = []
-        for (new_lb, old_lb) in zip(new_labels, old_labels):
+        for new_lb, old_lb in zip(new_labels, old_labels):
             if (new_lb.name == old_lb.name) and (new_lb.size == old_lb.size):
                 diff_list.append(self._LabelContent('', 0, ''))
             else:
@@ -248,7 +248,6 @@ class BloatTableOutput:
                 if (len(self._ascii_table_rows) > 5) and (
                     self._ascii_table_rows[-1][0] != '+'
                 ):
-
                     self._ascii_table_rows.append(
                         self._row_divider(
                             len(self._col_names), self._cs.H.value

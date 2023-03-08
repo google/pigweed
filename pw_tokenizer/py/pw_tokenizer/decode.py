@@ -787,7 +787,7 @@ class FormatString:
         # Start with the part of the format string up to the first specifier.
         string_pieces = [self.format_string[: spec_spans[0][0]]]
 
-        for ((_, end1), (start2, _)) in zip(spec_spans[:-1], spec_spans[1:]):
+        for (_, end1), (start2, _) in zip(spec_spans[:-1], spec_spans[1:]):
             string_pieces.append(self.format_string[end1:start2])
 
         # Append the format string segment after the last format specifier.

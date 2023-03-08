@@ -95,7 +95,6 @@ class PwPtPythonRepl(
         extra_completers: Optional[Iterable] = None,
         **ptpython_kwargs,
     ):
-
         completer = None
         if extra_completers:
             # Create the default python completer used by

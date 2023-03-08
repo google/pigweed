@@ -374,7 +374,6 @@ class Twenty48Pane(FloatingWindowPane, PluginMixin):
     """
 
     def __init__(self, include_resize_handle: bool = True, **kwargs):
-
         super().__init__(
             pane_title='2048',
             height=Dimension(preferred=17),

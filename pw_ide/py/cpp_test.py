@@ -808,7 +808,6 @@ class TestCppIdeFeaturesState(PwIdeTestCase):
             with self.make_temp_file(compdb_symlink_path), self.make_temp_file(
                 cache_symlink_path
             ):
-
                 # Set the second target, which should replace the symlinks
                 CppIdeFeaturesState(settings).current_target = targets[1]
 
@@ -868,7 +867,6 @@ class TestCppIdeFeaturesState(PwIdeTestCase):
             with self.make_temp_file(compdb_symlink_path), self.make_temp_file(
                 cache_symlink_path
             ):
-
                 # Set the second target, which should replace the symlinks
                 CppIdeFeaturesState(settings).current_target = targets[1]
 

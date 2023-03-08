@@ -773,7 +773,7 @@ class ProjectBuilder:  # pylint: disable=too-many-instance-attributes
             logger.info(' ╔════════════════════════════════════')
             logger.info(' ║')
 
-            for (slug, cmd) in zip(build_status, build_descriptions):
+            for slug, cmd in zip(build_status, build_descriptions):
                 logger.info(' ║   %s  %s', slug, cmd)
 
             logger.info(' ║')

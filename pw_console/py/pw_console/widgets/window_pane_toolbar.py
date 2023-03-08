@@ -184,7 +184,6 @@ class WindowPaneToolbar:
         include_resize_handle: bool = True,
         click_to_focus_text: str = 'click to focus',
     ):
-
         self.parent_window_pane = parent_window_pane
         self.title = title
         self.subtitle = subtitle

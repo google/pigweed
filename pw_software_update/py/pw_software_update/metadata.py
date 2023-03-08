@@ -54,7 +54,6 @@ def gen_common_metadata(
 def gen_target_file(
     file_name: str, file_contents: bytes, hash_funcs=DEFAULT_HASHES
 ) -> TargetFile:
-
     return TargetFile(
         file_name=file_name,
         length=len(file_contents),

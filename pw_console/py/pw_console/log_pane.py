@@ -290,7 +290,6 @@ class LogContentControl(UIControl):
             mouse_event.event_type == MouseEventType.MOUSE_UP
             and mouse_event.button == MouseButton.LEFT
         ):
-
             # If a drag was in progress and this is the first mouse release
             # press, set the stop flag.
             if (

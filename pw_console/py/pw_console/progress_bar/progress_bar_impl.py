@@ -59,7 +59,6 @@ class TextIfNotHidden(Text):
     ) -> AnyFormattedText:
         formatted_text = super().format(progress_bar, progress, width)
         if hasattr(progress, 'hide_eta') and progress.hide_eta:  # type: ignore
-
             formatted_text = [('', ' ' * width)]
         return formatted_text
 
@@ -99,7 +98,6 @@ class ProgressBarImpl:
         formatters: Optional[Sequence[Formatter]] = None,
         style: Optional[BaseStyle] = None,
     ) -> None:
-
         self.title = title
         self.formatters = formatters or create_default_formatters()
         self.counters: List[ProgressBarCounter[object]] = []

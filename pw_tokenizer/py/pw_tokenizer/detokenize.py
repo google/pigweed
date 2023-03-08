@@ -320,6 +320,7 @@ class Detokenizer:
 
 _PathOrStr = Union[Path, str]
 
+
 # TODO(b/265334753): Reuse this function in database.py:LoadTokenDatabases
 def _parse_domain(path: _PathOrStr) -> Tuple[Path, Optional[Pattern[str]]]:
     """Extracts an optional domain regex pattern suffix from a path"""
