@@ -30,8 +30,8 @@ Running...
 {% endif %}
 {% if code.exception_text %}
 {{ code.exception_text }}
-{% elif code.result_object %}
-{{ result_format(code.result_object) }}
+{% elif code.result_str %}
+{{ code.result_str }}
 {% elif code.output %}
 {{ code.output }}
 {% endif %}

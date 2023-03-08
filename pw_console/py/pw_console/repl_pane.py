@@ -21,6 +21,7 @@ import pprint
 from dataclasses import dataclass
 from typing import (
     Any,
+    Awaitable,
     Callable,
     Dict,
     List,
@@ -82,8 +83,9 @@ class UserCodeExecution:
     output: str
     stdout: str
     stderr: str
-    stdout_check_task: Optional[concurrent.futures.Future] = None
+    stdout_check_task: Optional[Awaitable] = None
     result_object: Optional[Any] = None
+    result_str: Optional[str] = None
     exception_text: Optional[str] = None
 
     @property
@@ -112,7 +114,7 @@ class ReplPane(WindowPane):
     ) -> None:
         super().__init__(application, pane_title)
 
-        self.executed_code: List = []
+        self.executed_code: List[UserCodeExecution] = []
         self.application = application
 
         self.pw_ptpython_repl = python_repl
@@ -489,10 +491,14 @@ class ReplPane(WindowPane):
             code.stderr = stderr_text
             code.exception_text = exception_text
             code.result_object = result_object
+            if result_object is not None:
+                code.result_str = self._format_result_object(result_object)
+
         self._log_executed_code(code, prefix='FINISH')
         self.update_output_buffer('repl_pane.append_result_to_executed_code')
 
-    def get_output_buffer_text(self, code_items=None, show_index=True):
+    def _format_result_object(self, result_object: Any) -> str:
+        """Pretty print format a Python object respecting the window width."""
         content_width = (
             self.current_pane_width if self.current_pane_width else 80
         )
@@ -500,12 +506,19 @@ class ReplPane(WindowPane):
             indent=2, width=content_width
         ).pformat
 
+        return pprint_respecting_width(result_object)
+
+    def get_output_buffer_text(
+        self,
+        code_items: Optional[List[UserCodeExecution]] = None,
+        show_index: bool = True,
+    ):
         executed_code = code_items or self.executed_code
 
         template = self.application.get_template('repl_output.jinja')
+
         return template.render(
             code_items=executed_code,
-            result_format=pprint_respecting_width,
             show_index=show_index,
         )
 

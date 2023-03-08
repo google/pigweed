@@ -731,23 +731,36 @@ Python Repl & Output
 
    * - 5
      - | Enter the following text and press :kbd:`Enter` to run
-       | ``globals()``
+       | ``locals()``
      - | The results should appear pretty printed
      - |checkbox|
 
    * - 6
+     - | Enter the following text and press :kbd:`Enter` to run
+       | ``zzzz = 'test'``
+     - | No new results are shown
+       | The previous ``locals()`` output does not show ``'zzzz': 'test'``
+     - |checkbox|
+
+   * - 7
+     - | Enter the following text and press :kbd:`Enter` to run
+       | ``locals()``
+     - | The output ends with ``'zzzz': 'test'}``
+     - |checkbox|
+
+   * - 8
      - | With the cursor over the Python Results,
        | use the mouse wheel to scroll up and down.
      - | The output window should be able to scroll all
        | the way to the beginning and end of the buffer.
      - |checkbox|
 
-   * - 7
+   * - 9
      - Click empty whitespace in the ``Python Repl`` window
      - Python Repl pane is focused
      - |checkbox|
 
-   * - 8
+   * - 10
      - | Enter the following text and press :kbd:`Enter` to run
        | ``!ls``
      - | 1. Shell output of running the ``ls`` command should appear in the
