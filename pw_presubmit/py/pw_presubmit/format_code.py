@@ -58,6 +58,7 @@ from pw_presubmit.presubmit import FileFilter
 from pw_presubmit import (
     cli,
     FormatContext,
+    FormatOptions,
     git_repo,
     owners_checks,
     PresubmitContext,
@@ -266,9 +267,6 @@ def fix_py_format_yapf(ctx: _Context) -> Dict[Path, str]:
     return {}
 
 
-BLACK = 'black'
-
-
 def _enumerate_black_configs() -> Iterable[Path]:
     if directory := os.environ.get('PW_PROJECT_ROOT'):
         yield Path(directory, '.black.toml')
@@ -293,10 +291,11 @@ def _black_config_args() -> Sequence[Union[str, Path]]:
 
 
 def _black_multiple_files(ctx: _Context) -> Tuple[str, ...]:
+    black = ctx.format_options.black_path
     changed_paths: List[str] = []
     for line in (
         log_run(
-            [BLACK, '--check', *_black_config_args(), *ctx.paths],
+            [black, '--check', *_black_config_args(), *ctx.paths],
             capture_output=True,
         )
         .stderr.decode()
@@ -324,7 +323,7 @@ def check_py_format_black(ctx: _Context) -> Dict[Path, str]:
             build.write_bytes(data)
 
             proc = log_run(
-                [BLACK, *_black_config_args(), build],
+                [ctx.format_options.black_path, *_black_config_args(), build],
                 capture_output=True,
             )
             if proc.returncode:
@@ -354,12 +353,28 @@ def fix_py_format_black(ctx: _Context) -> Dict[Path, str]:
             continue
 
         proc = log_run(
-            [BLACK, *_black_config_args(), path],
+            [ctx.format_options.black_path, *_black_config_args(), path],
             capture_output=True,
         )
         if proc.returncode:
             errors[path] = proc.stderr.decode()
     return errors
+
+
+def check_py_format(ctx: _Context) -> Dict[Path, str]:
+    if ctx.format_options.python_formatter == 'black':
+        return check_py_format_black(ctx)
+    if ctx.format_options.python_formatter == 'yapf':
+        return check_py_format_yapf(ctx)
+    raise ValueError(ctx.format_options.python_formatter)
+
+
+def fix_py_format(ctx: _Context) -> Dict[Path, str]:
+    if ctx.format_options.python_formatter == 'black':
+        return fix_py_format_black(ctx)
+    if ctx.format_options.python_formatter == 'yapf':
+        return fix_py_format_yapf(ctx)
+    raise ValueError(ctx.format_options.python_formatter)
 
 
 _TRAILING_SPACE = re.compile(rb'[ \t]+$', flags=re.MULTILINE)
@@ -484,19 +499,11 @@ GO_FORMAT: CodeFormat = CodeFormat(
     'Go', FileFilter(endswith=('.go',)), check_go_format, fix_go_format
 )
 
-# TODO(b/259595799) Remove yapf support.
-PYTHON_FORMAT_YAPF: CodeFormat = CodeFormat(
+PYTHON_FORMAT: CodeFormat = CodeFormat(
     'Python',
     FileFilter(endswith=('.py',)),
-    check_py_format_yapf,
-    fix_py_format_yapf,
-)
-
-PYTHON_FORMAT_BLACK: CodeFormat = CodeFormat(
-    'Python',
-    FileFilter(endswith=('.py',)),
-    check_py_format_black,
-    fix_py_format_black,
+    check_py_format,
+    fix_py_format,
 )
 
 GN_FORMAT: CodeFormat = CodeFormat(
@@ -546,7 +553,7 @@ OWNERS_CODE_FORMAT = CodeFormat(
     fix=fix_owners_format,
 )
 
-_CODE_FORMATS_WITHOUT_PYTHON: Tuple[CodeFormat, ...] = (
+CODE_FORMATS: Tuple[CodeFormat, ...] = (
     # keep-sorted: start
     BAZEL_FORMAT,
     CMAKE_FORMAT,
@@ -559,23 +566,14 @@ _CODE_FORMATS_WITHOUT_PYTHON: Tuple[CodeFormat, ...] = (
     MARKDOWN_FORMAT,
     OWNERS_CODE_FORMAT,
     PROTO_FORMAT,
+    PYTHON_FORMAT,
     RST_FORMAT,
     # keep-sorted: end
 )
 
-# TODO(b/259595799) Remove yapf support.
-CODE_FORMATS_WITH_YAPF: Tuple[CodeFormat, ...] = (
-    *_CODE_FORMATS_WITHOUT_PYTHON,
-    PYTHON_FORMAT_YAPF,
-)
-
-CODE_FORMATS_WITH_BLACK: Tuple[CodeFormat, ...] = (
-    *_CODE_FORMATS_WITHOUT_PYTHON,
-    PYTHON_FORMAT_BLACK,
-)
-
-# TODO(b/259595799) For downstream compatibility only.
-CODE_FORMATS = CODE_FORMATS_WITH_YAPF
+# TODO(b/264578594) Remove these lines when these globals aren't referenced.
+CODE_FORMATS_WITH_BLACK: Tuple[CodeFormat, ...] = CODE_FORMATS
+CODE_FORMATS_WITH_YAPF: Tuple[CodeFormat, ...] = CODE_FORMATS
 
 
 def presubmit_check(
@@ -624,7 +622,7 @@ def presubmit_check(
 def presubmit_checks(
     *,
     exclude: Collection[Union[str, Pattern[str]]] = (),
-    code_formats: Collection[CodeFormat] = CODE_FORMATS_WITH_YAPF,
+    code_formats: Collection[CodeFormat] = CODE_FORMATS,
 ) -> Tuple[Callable, ...]:
     """Returns a tuple with all supported code format presubmit checks.
 
@@ -673,6 +671,7 @@ class CodeFormatter:
             output_dir=outdir,
             paths=tuple(self._formats[code_format]),
             package_root=self.package_root,
+            format_options=FormatOptions.load(),
         )
 
     def check(self) -> Dict[Path, str]:
@@ -718,7 +717,7 @@ def format_paths_in_repo(
     exclude: Collection[Pattern[str]],
     fix: bool,
     base: str,
-    code_formats: Collection[CodeFormat] = CODE_FORMATS_WITH_YAPF,
+    code_formats: Collection[CodeFormat] = CODE_FORMATS,
     output_directory: Optional[Path] = None,
     package_root: Optional[Path] = None,
 ) -> int:
@@ -833,10 +832,7 @@ def format_files(
     return 0
 
 
-def arguments(
-    git_paths: bool,
-    use_black: bool = False,
-) -> argparse.ArgumentParser:
+def arguments(git_paths: bool) -> argparse.ArgumentParser:
     """Creates an argument parser for format_files or format_paths_in_repo."""
 
     parser = argparse.ArgumentParser(description=__doc__)
@@ -866,18 +862,6 @@ def arguments(
         '--fix', action='store_true', help='Apply formatting fixes in place.'
     )
 
-    # TODO(b/259595799, b/261025545) Remove --code-formats option when
-    # downstream projects have switched away from yapf.
-    default_code_formats = CODE_FORMATS_WITH_YAPF
-    if use_black:
-        default_code_formats = CODE_FORMATS_WITH_BLACK
-    parser.add_argument(
-        '--code-formats',
-        choices=(CODE_FORMATS_WITH_YAPF, CODE_FORMATS_WITH_BLACK),
-        default=default_code_formats,
-        help=argparse.SUPPRESS,
-    )
-
     parser.add_argument(
         '--output-directory',
         type=Path,
@@ -903,7 +887,7 @@ def _pigweed_upstream_main() -> int:
 
     Excludes third party sources.
     """
-    args = arguments(git_paths=True, use_black=True).parse_args()
+    args = arguments(git_paths=True).parse_args()
 
     # Exclude paths with third party code from formatting.
     args.exclude.append(re.compile('^third_party/fuchsia/repo/'))

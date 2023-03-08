@@ -77,6 +77,7 @@ import urllib
 
 import pw_cli.color
 import pw_cli.env
+import pw_env_setup.config_file
 from pw_package import package_manager
 from pw_presubmit import git_repo, tools
 from pw_presubmit.tools import plural
@@ -212,6 +213,25 @@ class Programs(collections.abc.Mapping):
 
     def __len__(self) -> int:
         return len(self._programs)
+
+
+@dataclasses.dataclass(frozen=True)
+class FormatOptions:
+    python_formatter: Optional[str] = 'yapf'
+    black_path: Optional[str] = 'black'
+
+    # TODO(b/264578594) Add exclude to pigweed.json file.
+    # exclude: Sequence[re.Pattern] = dataclasses.field(default_factory=list)
+
+    @staticmethod
+    def load() -> 'FormatOptions':
+        config = pw_env_setup.config_file.load()
+        fmt = config.get('pw', {}).get('pw_presubmit', {}).get('format', {})
+        return FormatOptions(
+            python_formatter=fmt.get('python_formatter', 'yapf'),
+            black_path=fmt.get('black_path', 'black'),
+            # exclude=tuple(re.compile(x) for x in fmt.get('exclude', ())),
+        )
 
 
 @dataclasses.dataclass
@@ -503,12 +523,14 @@ class FormatContext:
         paths: Modified files for the presubmit step to check (often used in
             formatting steps but ignored in compile steps)
         package_root: Root directory for pw package installations
+        format_options: Formatting options, derived from pigweed.json
     """
 
     root: Optional[Path]
     output_dir: Path
     paths: Tuple[Path, ...]
     package_root: Path
+    format_options: FormatOptions
 
 
 @dataclasses.dataclass
@@ -530,6 +552,7 @@ class PresubmitContext:  # pylint: disable=too-many-instance-attributes
         package_root: Root directory for pw package installations
         override_gn_args: Additional GN args processed by build.gn_gen()
         luci: Information about the LUCI build or None if not running in LUCI
+        format_options: Formatting options, derived from pigweed.json
         num_jobs: Number of jobs to run in parallel
         continue_after_build_error: For steps that compile, don't exit on the
             first compilation error
@@ -544,6 +567,7 @@ class PresubmitContext:  # pylint: disable=too-many-instance-attributes
     package_root: Path
     luci: Optional[LuciContext]
     override_gn_args: Dict[str, str]
+    format_options: FormatOptions
     num_jobs: Optional[int] = None
     continue_after_build_error: bool = False
     _failed: bool = False
@@ -581,6 +605,7 @@ class PresubmitContext:  # pylint: disable=too-many-instance-attributes
             package_root=root / 'environment' / 'packages',
             luci=None,
             override_gn_args={},
+            format_options=FormatOptions(),
         )
 
 
@@ -859,6 +884,7 @@ class Presubmit:
                 override_gn_args=self._override_gn_args,
                 continue_after_build_error=self._continue_after_build_error,
                 luci=LuciContext.create_from_environment(),
+                format_options=FormatOptions.load(),
             )
 
         finally:

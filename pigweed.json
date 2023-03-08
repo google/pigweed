@@ -1,0 +1,9 @@
+{
+  "pw": {
+    "pw_presubmit": {
+      "format": {
+        "python_formatter": "black"
+      }
+    }
+  }
+}
