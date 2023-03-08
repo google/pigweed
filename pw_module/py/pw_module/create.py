@@ -899,7 +899,7 @@ def _create_module(
             root=project_root,
             modules_list=modules_file,
             modules_gni_file=modules_gni_file,
-            warn_only=None,
+            mode=generate_modules_lists.Mode.UPDATE,
         )
         print('  modify  ' + str(modules_gni_file.relative_to(Path.cwd())))
 

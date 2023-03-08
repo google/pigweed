@@ -145,6 +145,7 @@ def gn_full_qemu_check(ctx: PresubmitContext):
 
 def _gn_combined_build_check_targets() -> Sequence[str]:
     build_targets = [
+        'check_modules',
         *_at_all_optimization_levels('stm32f429i'),
         *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'),
         'python.tests',

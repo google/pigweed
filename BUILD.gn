@@ -86,7 +86,6 @@ assert(pw_toolchain_SUPPORTED_C_OPTIMIZATION_LEVELS +
 # exclusively to facilitate easy upstream development and testing.
 group("default") {
   deps = [
-    ":check_modules",
     ":docs",
     ":host",
     ":pi_pico",
@@ -94,6 +93,7 @@ group("default") {
     ":python.tests",
     ":static_analysis",
     ":stm32f429i",
+    ":warn_if_modules_out_of_date",
   ]
 }
 
@@ -126,11 +126,22 @@ pool("module_check_pool") {
   depth = 1
 }
 
-# Check that PIGWEED_MODULES is up-to-date and sorted.
-action("check_modules") {
+# Warns if PIGWEED_MODULES is not up-to-date and sorted.
+action("warn_if_modules_out_of_date") {
   forward_variables_from(_update_or_check_modules_lists, "*")
   outputs = [ "$target_gen_dir/$target_name.passed" ]
-  args += [ "--warn-only" ] + rebase_path(outputs, root_build_dir)
+  args += [
+            "--mode=WARN",
+            "--stamp",
+          ] + rebase_path(outputs, root_build_dir)
+  pool = ":module_check_pool"
+}
+
+# Fails if PIGWEED_MODULES is not up-to-date and sorted.
+action("check_modules") {
+  forward_variables_from(_update_or_check_modules_lists, "*")
+  outputs = [ "$target_gen_dir/$target_name.ALWAYS_RERUN" ]  # Never created
+  args += [ "--mode=CHECK" ]
   pool = ":module_check_pool"
 }
 
@@ -139,6 +150,7 @@ action("check_modules") {
 action("update_modules") {
   forward_variables_from(_update_or_check_modules_lists, "*")
   outputs = [ "$target_gen_dir/$target_name.ALWAYS_RERUN" ]  # Never created
+  args += [ "--mode=UPDATE" ]
   pool = ":module_check_pool"
 }
 

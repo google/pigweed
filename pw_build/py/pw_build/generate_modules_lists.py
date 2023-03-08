@@ -23,6 +23,7 @@ Used by modules.gni to generate:
 
 import argparse
 import difflib
+import enum
 import io
 import os
 from pathlib import Path
@@ -181,6 +182,12 @@ def _missing_modules(root: Path, modules: Sequence[str]) -> Sequence[str]:
     )
 
 
+class Mode(enum.Enum):
+    WARN = 0  # Warn if anything is out of date
+    CHECK = 1  # Fail if anything is out of date
+    UPDATE = 2  # Update the generated modules lists
+
+
 def _parse_args() -> dict:
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -190,11 +197,13 @@ def _parse_args() -> dict:
     parser.add_argument('modules_list', type=Path, help='Input modules list')
     parser.add_argument('modules_gni_file', type=Path, help='Output .gni file')
     parser.add_argument(
-        '--warn-only',
-        type=Path,
-        help='Only check PIGWEED_MODULES; takes a path to a stamp file to use',
+        '--mode', type=Mode.__getitem__, choices=Mode, required=True
     )
-
+    parser.add_argument(
+        '--stamp',
+        type=Path,
+        help='Stamp file for operations that should only run once (warn)',
+    )
     return vars(parser.parse_args())
 
 
@@ -202,7 +211,8 @@ def main(
     root: Path,
     modules_list: Path,
     modules_gni_file: Path,
-    warn_only: Optional[Path],
+    mode: Mode,
+    stamp: Optional[Path] = None,
 ) -> int:
     """Manages the list of Pigweed modules."""
     prefix = Path(os.path.relpath(root, modules_gni_file.parent))
@@ -215,7 +225,7 @@ def main(
     modules.sort()  # Sort in case the modules list in case it wasn't sorted.
 
     # Check if the contents of the .gni file are out of date.
-    if warn_only:
+    if mode in (Mode.WARN, Mode.CHECK):
         text = io.StringIO()
         for line in _generate_modules_gni(prefix, modules):
             print(line, file=text)
@@ -252,7 +262,7 @@ def main(
             errors.append('\n'.join(diff))
             errors.append('\n')
 
-    elif not warnings:  # Update the modules .gni file.
+    elif mode is Mode.UPDATE:  # Update the modules .gni file
         with modules_gni_file.open('w', encoding='utf-8') as file:
             for line in _generate_modules_gni(prefix, modules):
                 print(line, file=file)
@@ -270,14 +280,19 @@ def main(
 
         # Delete the stamp so this always reruns. Deleting is necessary since
         # some of the checks do not depend on input files.
-        if warn_only and warn_only.exists():
-            warn_only.unlink()
+        if stamp and stamp.exists():
+            stamp.unlink()
 
-        # Warnings are non-fatal if warn_only is True.
-        return 1 if errors or not warn_only else 0
+        if mode is Mode.WARN:
+            return 0
 
-    if warn_only:
-        warn_only.touch()
+        if mode is Mode.CHECK:
+            return 1
+
+        return 1 if errors else 0  # Allow warnings but not errors when updating
+
+    if stamp:
+        stamp.touch()
 
     return 0
 
