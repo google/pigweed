@@ -2467,6 +2467,24 @@ def generate_table_for_message(
             f'inline constexpr pw::span<const {_INTERNAL_NAMESPACE}::'
             'MessageField> kMessageFields = _kMessageFields;'
         )
+
+        member_list = ', '.join(
+            [f'message.{prop.struct_member()[1]}' for prop in properties]
+        )
+
+        # Generate std::tuple for Message fields.
+        output.write_line(
+            'inline constexpr auto ToTuple(const Message &message) {'
+        )
+        output.write_line(f'  return std::tie({member_list});')
+        output.write_line('}')
+
+        # Generate mutable std::tuple for Message fields.
+        output.write_line(
+            'inline constexpr auto ToMutableTuple(Message &message) {'
+        )
+        output.write_line(f'  return std::tie({member_list});')
+        output.write_line('}')
     else:
         output.write_line(
             f'inline constexpr pw::span<const {_INTERNAL_NAMESPACE}::'
