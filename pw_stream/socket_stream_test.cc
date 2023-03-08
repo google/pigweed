@@ -23,7 +23,8 @@
 namespace pw::stream {
 namespace {
 
-TEST(SocketStreamTest, Connect) {
+// Helper function to create a ServerSocket and connect to it via loopback.
+void RunConnectTest(const char* hostname) {
   ServerSocket server;
   EXPECT_EQ(server.Listen(), OkStatus());
 
@@ -31,7 +32,7 @@ TEST(SocketStreamTest, Connect) {
   auto accept_thread = std::thread{[&]() { server_stream = server.Accept(); }};
 
   SocketStream client;
-  EXPECT_EQ(client.Connect("localhost", server.port()), OkStatus());
+  EXPECT_EQ(client.Connect(hostname, server.port()), OkStatus());
 
   accept_thread.join();
   EXPECT_EQ(server_stream.status(), OkStatus());
@@ -40,6 +41,10 @@ TEST(SocketStreamTest, Connect) {
   server.Close();
   client.Close();
 }
+
+TEST(SocketStreamTest, ConnectIpv4) { RunConnectTest("127.0.0.1"); }
+
+TEST(SocketStreamTest, ConnectIpv6) { RunConnectTest("::1"); }
 
 TEST(SocketStreamTest, ConnectSpecificPort) {
   // We want to test the "listen on a specific port" functionality,

@@ -51,6 +51,7 @@ pw_cc_library(
     deps = [
         ":pw_stream",
         "//pw_log",
+        "//pw_string",
         "//pw_sys_io",
     ],
 )

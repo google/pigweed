@@ -56,8 +56,9 @@ class SocketStream : public NonSeekableReaderWriter {
   // TODO(b/271323032): Remove when this method is no longer used.
   Status Serve(uint16_t port);
 
-  // Connect to a local or remote endpoint. Host must be an IPv4 address. If
-  // host is nullptr then the locahost address is used instead.
+  // Connect to a local or remote endpoint. Host may be either an IPv4 or IPv6
+  // address. If host is nullptr then the IPv4 localhost address is used
+  // instead.
   Status Connect(const char* host, uint16_t port);
 
   // Close the socket stream and release all resources

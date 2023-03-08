@@ -47,6 +47,7 @@ pw_add_library(pw_stream.socket_stream STATIC
     socket_stream.cc
   PRIVATE_DEPS
     pw_log
+    pw_string
 )
 
 pw_add_library(pw_stream.sys_io_stream INTERFACE

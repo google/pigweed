@@ -15,11 +15,17 @@
 #include "pw_stream/socket_stream.h"
 
 #include <arpa/inet.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include <cstring>
 
+#include "pw_assert/check.h"
 #include "pw_log/log.h"
+#include "pw_string/to_string.h"
 
 namespace pw::stream {
 namespace {
@@ -94,25 +100,31 @@ Status SocketStream::Serve(uint16_t port) {
 }
 
 Status SocketStream::SocketStream::Connect(const char* host, uint16_t port) {
-  connection_fd_ = socket(AF_INET, SOCK_STREAM, 0);
-  ConfigureSocket(connection_fd_);
-
-  sockaddr_in addr;
-  addr.sin_family = AF_INET;
-  addr.sin_port = htons(port);
-
   if (host == nullptr || std::strcmp(host, "localhost") == 0) {
     host = kLocalhostAddress;
   }
 
-  if (inet_pton(AF_INET, host, &addr.sin_addr) <= 0) {
+  struct addrinfo hints = {};
+  struct addrinfo* res;
+  char port_buffer[6];
+  PW_CHECK(ToString(port, port_buffer).ok());
+  hints.ai_family = AF_UNSPEC;
+  hints.ai_socktype = SOCK_STREAM;
+  hints.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV | AI_PASSIVE;
+  if (getaddrinfo(host, port_buffer, &hints, &res) != 0) {
     PW_LOG_ERROR("Failed to configure connection address for socket");
     return Status::InvalidArgument();
   }
 
-  if (connect(connection_fd_,
-              reinterpret_cast<sockaddr*>(&addr),
-              sizeof(addr)) < 0) {
+  connection_fd_ = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+  ConfigureSocket(connection_fd_);
+  if (connect(connection_fd_, res->ai_addr, res->ai_addrlen) < 0) {
+    close(connection_fd_);
+    connection_fd_ = kInvalidFd;
+  }
+  freeaddrinfo(res);
+
+  if (connection_fd_ == kInvalidFd) {
     PW_LOG_ERROR(
         "Failed to connect to %s:%d: %s", host, port, std::strerror(errno));
     return Status::Unknown();
@@ -179,7 +191,7 @@ StatusWithSize SocketStream::DoRead(ByteSpan dest) {
 // If port is 0, a random unused port is chosen and can be retrieved with
 // port().
 Status ServerSocket::Listen(uint16_t port) {
-  socket_fd_ = socket(AF_INET, SOCK_STREAM, 0);
+  socket_fd_ = socket(AF_INET6, SOCK_STREAM, 0);
   if (socket_fd_ == kInvalidFd) {
     return Status::Unknown();
   }
@@ -190,11 +202,11 @@ Status ServerSocket::Listen(uint16_t port) {
     constexpr int value = 1;
     setsockopt(socket_fd_, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(int));
 
-    struct sockaddr_in addr = {};
+    struct sockaddr_in6 addr = {};
     socklen_t addr_len = sizeof(addr);
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(port);
-    addr.sin_addr.s_addr = INADDR_ANY;
+    addr.sin6_family = AF_INET6;
+    addr.sin6_port = htons(port);
+    addr.sin6_addr = in6addr_any;
     if (bind(socket_fd_, reinterpret_cast<sockaddr*>(&addr), addr_len) < 0) {
       return Status::Unknown();
     }
@@ -205,7 +217,7 @@ Status ServerSocket::Listen(uint16_t port) {
   }
 
   // Find out which port the socket is listening on, and fill in port_.
-  struct sockaddr_in addr = {};
+  struct sockaddr_in6 addr = {};
   socklen_t addr_len = sizeof(addr);
   if (getsockname(socket_fd_, reinterpret_cast<sockaddr*>(&addr), &addr_len) <
           0 ||
@@ -214,7 +226,7 @@ Status ServerSocket::Listen(uint16_t port) {
     return Status::Unknown();
   }
 
-  port_ = ntohs(addr.sin_port);
+  port_ = ntohs(addr.sin6_port);
 
   return OkStatus();
 }
@@ -222,7 +234,7 @@ Status ServerSocket::Listen(uint16_t port) {
 // Accept a connection. Blocks until after a client is connected.
 // On success, returns a SocketStream connected to the new client.
 Result<SocketStream> ServerSocket::Accept() {
-  struct sockaddr_in sockaddr_client_ = {};
+  struct sockaddr_in6 sockaddr_client_ = {};
   socklen_t len = sizeof(sockaddr_client_);
 
   int connection_fd =

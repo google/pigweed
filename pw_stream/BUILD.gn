@@ -46,7 +46,11 @@ pw_source_set("pw_stream") {
 pw_source_set("socket_stream") {
   public_configs = [ ":public_include_path" ]
   public_deps = [ ":pw_stream" ]
-  deps = [ dir_pw_log ]
+  deps = [
+    dir_pw_assert,
+    dir_pw_log,
+    dir_pw_string,
+  ]
   sources = [ "socket_stream.cc" ]
   public = [ "public/pw_stream/socket_stream.h" ]
 }
