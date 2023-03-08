@@ -448,10 +448,12 @@ class TestProtoRepr(unittest.TestCase):
     def test_wrap_multiple_lines(self):
         self.assertEqual(
             """\
-pw.test3.Message(optional_int=0,
-                 optional_bytes=b'',
-                 optional_string='',
-                 optional_enum=pw.test3.Enum.ZERO)""",
+pw.test3.Message(
+    optional_int=0,
+    optional_bytes=b'',
+    optional_string='',
+    optional_enum=pw.test3.Enum.ZERO,
+)""",
             proto_repr(
                 self.message(
                     optional_int=0,

@@ -36,36 +36,16 @@ from typing import (
     Union,
 )
 
-# Temporarily set the root logger level to critical while importing yapf.
-# This silences INFO level messages from
-# environment/cipd/packages/python/lib/python3.9/lib2to3/driver.py
-# when it writes Grammar3.*.pickle and PatternGrammar3.*.pickle files.
-_original_level = 0
-for handler in logging.getLogger().handlers:
-    # pylint: disable=unidiomatic-typecheck
-    if type(handler) == logging.StreamHandler:
-        if handler.level > _original_level:
-            _original_level = handler.level
-        handler.level = logging.CRITICAL
-    # pylint: enable=unidiomatic-typecheck
-
 try:
     # pylint: disable=wrong-import-position
-    from yapf.yapflib import yapf_api  # type: ignore[import]
+    import black
+
+    black_mode: Optional[black.Mode] = black.Mode(string_normalization=False)
 
     # pylint: enable=wrong-import-position
 except ImportError:
-    yapf_api = None
-
-# Restore the original stderr/out log handler level.
-for handler in logging.getLogger().handlers:
-    # Must use type() check here since isinstance returns True for FileHandlers
-    # and StreamHandler: isinstance(logging.FileHandler, logging.StreamHandler)
-    # pylint: disable=unidiomatic-typecheck
-    if type(handler) == logging.StreamHandler:
-        handler.level = _original_level
-    # pylint: enable=unidiomatic-typecheck
-del _original_level
+    black = None  # type: ignore
+    black_mode = None
 
 _LOG = logging.getLogger(__name__)
 
@@ -471,12 +451,12 @@ def proto_repr(message, *, wrap: bool = True) -> str:
 
     Args:
       message: The protobuf message to format
-      wrap: If true and YAPF is available, the output is wrapped according to
-          PEP8 using YAPF.
+      wrap: If true and black is available, the output is wrapped according to
+          PEP8 using black.
     """
     raw = f'{message.DESCRIPTOR.full_name}({", ".join(_proto_repr(message))})'
 
-    if wrap and yapf_api is not None:
-        return yapf_api.FormatCode(raw, style_config='PEP8')[0].rstrip()
+    if wrap and black is not None and black_mode is not None:
+        return black.format_str(raw, mode=black_mode).strip()
 
     return raw
