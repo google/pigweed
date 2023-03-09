@@ -358,6 +358,9 @@ target. Additionally, it has some of its own arguments:
 * ``working_directory``: Optional file path. When provided the current working
   directory will be set to this location before the Python module or script is
   run.
+* ``command_launcher``: Optional string. Arguments to prepend to the Python
+  command, e.g. ``'/usr/bin/fakeroot --'`` will run the Python script within a
+  fakeroot environment.
 * ``venv``: Optional gn target of the pw_python_venv that should be used to run
   this action.
 

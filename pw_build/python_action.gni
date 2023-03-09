@@ -53,6 +53,10 @@ import("$dir_pw_build/python_gn_args.gni")
 #   working_directory  Switch to the provided working directory before running
 #                      the Python script or action.
 #
+#   command_launcher   Arguments to prepend to the Python command, e.g.
+#                      '/usr/bin/fakeroot --' to run the Python script within a
+#                      fakeroot environment.
+#
 #   venv            Optional gn target of the pw_python_venv that should be used
 #                   to run this action.
 #
@@ -142,6 +146,13 @@ template("pw_python_action") {
     _script_args += [
       "--working-directory",
       invoker.working_directory,
+    ]
+  }
+
+  if (defined(invoker.command_launcher)) {
+    _script_args += [
+      "--command-launcher",
+      invoker.command_launcher,
     ]
   }
 

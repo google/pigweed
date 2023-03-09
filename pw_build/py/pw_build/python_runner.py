@@ -110,6 +110,9 @@ def _parse_args() -> argparse.Namespace:
         help='Path to a virtualenv json config to use for this action.',
     )
     parser.add_argument(
+        '--command-launcher', help='Arguments to prepend to Python command'
+    )
+    parser.add_argument(
         'original_cmd',
         nargs=argparse.REMAINDER,
         help='Python script with arguments to run',
@@ -200,6 +203,7 @@ def main(  # pylint: disable=too-many-arguments,too-many-branches,too-many-local
     capture_output: bool,
     touch: Optional[Path],
     working_directory: Optional[Path],
+    command_launcher: Optional[str],
     lockfile: Optional[Path],
 ) -> int:
     """Script entry point."""
@@ -257,6 +261,9 @@ def main(  # pylint: disable=too-many-arguments,too-many-branches,too-many-local
 
     if python_interpreter is not None:
         command = [str(root_build_dir / python_interpreter)]
+
+    if command_launcher is not None:
+        command = shlex.split(command_launcher) + command
 
     if module is not None:
         command += ['-m', module]
