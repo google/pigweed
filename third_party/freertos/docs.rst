@@ -10,8 +10,8 @@ FreeRTOS, including Pigweed backend modules which depend on FreeRTOS.
 -------------
 Build Support
 -------------
-This module provides support to compile FreeRTOS with GN and CMake. This is
-required when compiling backends modules for FreeRTOS.
+This module provides support to compile FreeRTOS with GN, CMake, and Bazel.
+This is required when compiling backends modules for FreeRTOS.
 
 GN
 ==
@@ -39,6 +39,25 @@ In order to use this you are expected to set the following variables from
 #. Set ``pw_third_party_freertos_PORT`` to a library target which provides
    the FreeRTOS port specific includes and sources.
 
+Bazel
+=====
+In Bazel, the FreeRTOS build is configured through `constraint_settings
+<https://bazel.build/reference/be/platform#constraint_setting>`_. The `platform
+<https://bazel.build/extending/platforms>`_ you are building for must specify
+values for the following settings:
+
+*   ``//third_party/freertos:port``, to set which FreeRTOS port to use. You can
+    select a value from those defined in ``third_party/freertos/BUILD.bazel``.
+*   ``//third_party/freertos:disable_task_statics_setting``, to determine
+    whether statics should be disabled during compilation of the tasks.c source
+    file (see next section). This setting has only two possible values, also
+    defined in ``third_party/freertos/BUILD.bazel``.
+
+In addition, you need to set the ``@pigweed_config//:freertos_config`` label
+flag to point to the library target providing the FreeRTOS config header.  See
+:ref:`docs-build_system-bazel_configuration` for a discussion of how to work
+with ``@pigweed_config``.
+
 
 .. _third_party-freertos_disable_task_statics:
 
@@ -48,10 +67,12 @@ In order to link against internal kernel data structures through the use of
 extern "C", statics can be optionally disabled for the tasks.c source file
 to enable use of things like pw_thread_freertos/util.h's ``ForEachThread``.
 
-To facilitate this, Pigweed offers an opt-in option which can be enabled by
-configuring GN through
-``pw_third_party_freertos_DISABLE_TASKS_STATICS = true`` or CMake through
-``set(pw_third_party_freertos_DISABLE_TASKS_STATICS ON CACHE BOOL "" FORCE)``.
+To facilitate this, Pigweed offers an opt-in option which can be enabled,
+
+*  in GN through ``pw_third_party_freertos_DISABLE_TASKS_STATICS = true``,
+*  in CMake through ``set(pw_third_party_freertos_DISABLE_TASKS_STATICS ON CACHE BOOL "" FORCE)``,
+*  in Bazel through ``//third_party/freertos:disable_task_statics``.
+
 This redefines ``static`` to nothing for the ``Source/tasks.c`` FreeRTOS source
 file when building through ``$dir_pw_third_party/freertos`` in GN and through
 ``pw_third_party.freertos`` in CMake.

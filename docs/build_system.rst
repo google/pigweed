@@ -766,9 +766,10 @@ however it is possible to override this from the command line. e.g.
 
 .. _Bazel config reference: https://docs.bazel.build/versions/main/skylark/config.html
 
+.. _docs-build_system-bazel_configuration:
 
-Pigweeds configuration
-^^^^^^^^^^^^^^^^^^^^^^
+Pigweed's Bazel configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Pigweeds Bazel configuration API is designed to be distributed across the
 Pigweed repository and/or your downstream repository. If you are coming from
 GN's centralized configuration API it might be useful to think about

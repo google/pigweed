@@ -141,6 +141,7 @@ pw_cc_facade(
     includes = ["public"],
     deps = [
         ":id_facade",
+        ":thread_core",
     ],
 )
 

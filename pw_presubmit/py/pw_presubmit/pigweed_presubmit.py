@@ -492,6 +492,27 @@ def bazel_build(ctx: PresubmitContext) -> None:
                 *targets,
             )
 
+    # Provide some coverage of the FreeRTOS build.
+    #
+    # This is just a minimal presubmit intended to ensure we don't break what
+    # support we have.
+    #
+    # TODO(b/271465588): Eventually just build the entire repo for this
+    # platform.
+    build.bazel(
+        ctx,
+        'build',
+        # Designated initializers produce a warning-treated-as-error when
+        # compiled with -std=c++17.
+        #
+        # TODO(b/271299438): Remove this.
+        '--copt=-Wno-pedantic',
+        '--platforms=//pw_build/platforms:testonly_freertos',
+        '//pw_sync/...',
+        '//pw_thread/...',
+        '//pw_thread_freertos/...',
+    )
+
 
 def pw_transfer_integration_test(ctx: PresubmitContext) -> None:
     """Runs the pw_transfer cross-language integration test only.

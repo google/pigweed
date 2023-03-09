@@ -170,3 +170,8 @@ label_flag(
     name = "pw_trace_backend",
     build_setting_default = "@pigweed//pw_trace:backend_multiplexer",
 )
+
+label_flag(
+    name = "freertos_config",
+    build_setting_default = "@pigweed//third_party/freertos:freertos_config",
+)

@@ -85,9 +85,9 @@ pw_cc_library(
         "public_overrides",
     ],
     target_compatible_with = ["@platforms//os:none"],
-    visibility = ["//visibility:private"],
+    visibility = ["//pw_sync:__pkg__"],
     deps = [
         "//pw_assert",
-        "//pw_sync:recursive_mutex",
+        "//pw_sync:recursive_mutex_facade",
     ],
 )

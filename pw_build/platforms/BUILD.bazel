@@ -71,7 +71,7 @@ platform(
 platform(
     name = "cortex_m4_fpu",
     constraint_values = ["@pigweed_config//:target_rtos"],
-    parents = ["@bazel_embedded//platforms:cortex_m4"],
+    parents = ["@bazel_embedded//platforms:cortex_m4_fpu"],
 )
 
 platform(
@@ -116,4 +116,29 @@ platform(
     name = "microbit",
     constraint_values = ["//pw_build/constraints/board:microbit"],
     parents = [":nrf52833"],
+)
+
+# --- Test platforms ---
+
+# This is a platform for compilation testing of freertos backends. This is not
+# a complete specification of any real target platform.
+platform(
+    name = "testonly_freertos",
+    constraint_values = [
+        # Use FreeRTOS backends.
+        "//pw_build/constraints/rtos:freertos",
+        # Use the FreeRTOS config file for stm32f429i_disc1_stm32cube.
+        "//targets/stm32f429i_disc1_stm32cube:freertos_config_cv",
+        # Use the ARM_CM4F port of FreeRTOS.
+        "@freertos//:port_ARM_CM4F",
+        # Specify this chipset to use the baremetal pw_sys_io backend (because
+        # the default pw_sys_io_stdio backend is not compatible with FreeRTOS).
+        "//pw_build/constraints/chipset:stm32f429",
+        # os:none means, we're not building for any host platform (Windows,
+        # Linux, or Mac). The pw_sys_io_baremetal_stm32f429 backend is only
+        # compatible with os:none.
+        "@platforms//os:none",
+    ],
+    # Inherit from cortex_m4_fpu to use the appropriate Arm toolchain.
+    parents = [":cortex_m4_fpu"],
 )

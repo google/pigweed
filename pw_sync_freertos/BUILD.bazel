@@ -37,11 +37,10 @@ pw_cc_library(
         "//pw_build/constraints/rtos:freertos",
     ],
     deps = [
-        # TODO(b/234876414): This should depend on FreeRTOS but our third parties currently
-        # do not have Bazel support.
         "//pw_assert",
         "//pw_chrono:system_clock",
         "//pw_chrono_freertos:system_clock_headers",
+        "@freertos",
     ],
 )
 
@@ -77,12 +76,11 @@ pw_cc_library(
         "//pw_build/constraints/rtos:freertos",
     ],
     deps = [
-        # TODO(b/234876414): This should depend on FreeRTOS but our third parties currently
-        # do not have Bazel support.
         "//pw_assert",
-        "//pw_sync:counting_semaphore_facade",
         "//pw_chrono:system_clock",
         "//pw_chrono_freertos:system_clock_headers",
+        "//pw_sync:counting_semaphore_facade",
+        "@freertos",
     ],
 )
 
@@ -91,9 +89,17 @@ pw_cc_library(
     srcs = [
         "counting_semaphore.cc",
     ],
-    target_compatible_with = [
-        "//pw_build/constraints/rtos:freertos",
-    ],
+    target_compatible_with = select({
+        # Not compatible with this FreeRTOS config, because it does not enable
+        # FreeRTOS counting semaphores. We mark it explicitly incompatible to
+        # that this library is skipped when you
+        # `bazel build //pw_sync_freertos/...` for a platform using that
+        # config.
+        "//targets/stm32f429i_disc1_stm32cube:freertos_config_cv": ["@platforms//:incompatible"],
+        "//conditions:default": [
+            "//pw_build/constraints/rtos:freertos",
+        ],
+    }),
     deps = [
         ":counting_semaphore_headers",
         "//pw_assert",
@@ -118,9 +124,9 @@ pw_cc_library(
         "//pw_build/constraints/rtos:freertos",
     ],
     deps = [
-        # TODO(b/234876414): This should depend on FreeRTOS but our third parties currently
-        # do not have Bazel support.
         "//pw_assert",
+        "//pw_interrupt:context",
+        "@freertos",
     ],
 )
 
@@ -153,12 +159,11 @@ pw_cc_library(
     ],
     deps = [
         "//pw_assert",
-        # TODO(b/234876414): This should depend on FreeRTOS but our third parties
-        # currently do not have Bazel support.
         "//pw_interrupt:context",
         "//pw_polyfill",
         "//pw_sync:interrupt_spin_lock",
         "//pw_sync:lock_annotations",
+        "@freertos",
     ],
 )
 
@@ -192,10 +197,9 @@ pw_cc_library(
         "//pw_build/constraints/rtos:freertos",
     ],
     deps = [
-        # TODO(b/234876414): This should depend on FreeRTOS but our third parties
-        # currently do not have Bazel support.
         "//pw_chrono:system_clock",
         "//pw_sync:timed_thread_notification_facade",
+        "@freertos",
     ],
 )
 
@@ -230,10 +234,9 @@ pw_cc_library(
         "//pw_build/constraints/rtos:freertos",
     ],
     deps = [
-        # TODO(b/234876414): This should depend on FreeRTOS but our third parties
-        # currently do not have Bazel support.
         "//pw_chrono:system_clock",
         "//pw_sync:timed_mutex_facade",
+        "@freertos",
     ],
 )
 
@@ -246,6 +249,7 @@ pw_cc_library(
         "//pw_build/constraints/rtos:freertos",
     ],
     deps = [
+        ":mutex_headers",
         ":timed_mutex_headers",
         "//pw_assert",
         "//pw_chrono_freertos:system_clock_headers",
@@ -269,8 +273,9 @@ pw_cc_library(
     target_compatible_with = [
         "//pw_build/constraints/rtos:freertos",
     ],
-    # TODO(b/234876414): This should depend on FreeRTOS but our third parties
-    # currently do not have Bazel support.
+    deps = [
+        "@freertos",
+    ],
 )
 
 pw_cc_library(

@@ -20,7 +20,7 @@ the specified output path.
 import argparse
 import re
 import sys
-from typing import TextIO
+from typing import Optional, TextIO
 from pathlib import Path
 
 _GENERATED_HEADER = """\
@@ -40,7 +40,18 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         '--freertos-src-dir',
         type=Path,
-        help='Path to the FreeRTOS source directory.',
+        help=(
+            'Path to the FreeRTOS source directory. Required unless'
+            ' --freertos-tasks-c is provided.'
+        ),
+    )
+    parser.add_argument(
+        '--freertos-tasks-c',
+        type=Path,
+        help=(
+            'Path to the tasks.c file in the FreeRTOS source directory. '
+            'Required unless --freertos-src-dir is provided.'
+        ),
     )
     parser.add_argument(
         '--output',
@@ -62,8 +73,15 @@ def _extract_struct(tasks_src: str):
     raise ValueError('Could not find tskTCB struct in tasks.c')
 
 
-def _main(freertos_src_dir: Path, output: TextIO):
-    with open(freertos_src_dir / 'tasks.c', 'r') as tasks_c:
+def _main(
+    freertos_src_dir: Optional[Path],
+    freertos_tasks_c: Optional[Path],
+    output: TextIO,
+):
+    if freertos_tasks_c is None or not freertos_tasks_c.is_file():
+        assert freertos_src_dir is not None
+        freertos_tasks_c = freertos_src_dir / 'tasks.c'
+    with open(freertos_tasks_c, 'r') as tasks_c:
         output.write(_GENERATED_HEADER)
         output.write(_extract_struct(tasks_c.read()))
 
