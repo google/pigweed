@@ -25,13 +25,11 @@
 
 namespace pw::sync {
 
-/// @class Mutex
-///
-/// The Mutex is a synchronization primitive that can be used to protect shared
-/// data from being simultaneously accessed by multiple threads.  It offers
-/// exclusive, non-recursive ownership semantics where priority inheritance is
-/// used to solve the classic priority-inversion problem.  This is thread safe,
-/// but NOT IRQ safe.
+/// The `Mutex` is a synchronization primitive that can be used to protect
+/// shared data from being simultaneously accessed by multiple threads.  It
+/// offers exclusive, non-recursive ownership semantics where priority
+/// inheritance is used to solve the classic priority-inversion problem.  This
+/// is thread safe, but NOT IRQ safe.
 ///
 /// @rst
 /// .. warning::
@@ -129,18 +127,12 @@ typedef struct pw_sync_Mutex pw_sync_Mutex;
 
 PW_EXTERN_C_START
 
-/// @fn pw_sync_Mutex_Lock
-///
 /// Invokes the `Mutex::lock` member function on the given `mutex`.
 void pw_sync_Mutex_Lock(pw_sync_Mutex* mutex) PW_NO_LOCK_SAFETY_ANALYSIS;
 
-/// @fn pw_sync_Mutex_TryLock
-///
 /// Invokes the `Mutex::try_lock` member function on the given `mutex`.
 bool pw_sync_Mutex_TryLock(pw_sync_Mutex* mutex) PW_NO_LOCK_SAFETY_ANALYSIS;
 
-/// @fn pw_sync_Mutex_Unlock
-///
 /// Invokes the `Mutex::unlock` member function on the given `mutex`.
 void pw_sync_Mutex_Unlock(pw_sync_Mutex* mutex) PW_NO_LOCK_SAFETY_ANALYSIS;
 

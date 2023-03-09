@@ -1248,7 +1248,7 @@ Doxygen comments into Sphinx. These include the following:
 
 .. admonition:: See also
 
-  `Breathe directives to use in rst files <https://breathe.readthedocs.io/en/latest/directives.html>`_
+  `Breathe directives to use in RST files <https://breathe.readthedocs.io/en/latest/directives.html>`_
 
 Example Doxygen Comment Block
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1304,28 +1304,39 @@ Start a Doxygen comment block using ``///`` (three forward slashes).
 
 Doxygen Syntax
 ^^^^^^^^^^^^^^
-Pigweed prefers to use rst wherever possible but there are a few Doxygen
+Pigweed prefers to use RST wherever possible, but there are a few Doxygen
 syntatic elements that may be needed.
 
-`Structural commands
-<https://doxygen.nl/manual/docblocks.html#structuralcommands>`_ for the first
-line of a Doxygen comment block.
+Common Doxygen commands for use within a comment block:
 
-To group multiple things into a single comment block put them both at the
-start on their own lines. For example:
+- ``@rst`` To start a reStructuredText block. This is a custom alias for
+  ``\verbatim embed:rst:leading-asterisk``.
+- `@code <https://www.doxygen.nl/manual/commands.html#cmdcode>`_ Start a code
+  block.
+- `@param <https://www.doxygen.nl/manual/commands.html#cmdparam>`_ Document
+  parameters, this may be repeated.
+- `@pre <https://www.doxygen.nl/manual/commands.html#cmdpre>`_ Starts a
+  paragraph where the precondition of an entity can be described.
+- `@post <https://www.doxygen.nl/manual/commands.html#cmdpost>`_ Starts a
+  paragraph where the postcondition of an entity can be described.
+- `@return <https://www.doxygen.nl/manual/commands.html#cmdreturn>`_ Single
+  paragraph to describe return value(s).
+- `@retval <https://www.doxygen.nl/manual/commands.html#cmdretval>`_ Document
+  return values by name. This is rendered as a definition list.
+- `@note <https://www.doxygen.nl/manual/commands.html#cmdnote>`_ Add a note
+  admonition to the end of documentation.
+- `@b <https://www.doxygen.nl/manual/commands.html#cmdb>`_ To bold one word.
 
-- ``@class`` to document a Class.
-- ``@struct`` to document a C-struct.
-- ``@union`` to document a union.
-- ``@enum`` to document an enumeration type.
-- ``@fn`` to document a function.
-- ``@var`` to document a variable or typedef or enum value.
-- ``@def`` to document a #define.
-- ``@typedef`` to document a type definition.
-- ``@file`` to document a file.
-- ``@namespace`` to document a namespace.
-- ``@package`` to document a Java package.
-- ``@interface`` to document an IDL interface.
+Doxygen provides `structural commands
+<https://doxygen.nl/manual/docblocks.html#structuralcommands>`_ that associate a
+comment block with a particular symbol. Example of these include ``@class``,
+``@struct``, ``@def``, ``@fn``, and ``@file``. Do not use these unless
+necessary, since they are redundant with the declarations themselves.
+
+One case where structural commands are necessary is when a single comment block
+describes multiple symbols. To group multiple symbols into a single comment
+block, include a structural commands for each symbol on its own line. For
+example, the following comment documents two macros:
 
 .. code-block:: cpp
 
@@ -1334,23 +1345,6 @@ start on their own lines. For example:
    ///
    /// Documents functions that dynamically check to see if a lock is held, and
    /// fail if it is not held.
-
-Common Doxygen commands for use within a comment block.
-
-- ``@rst`` To start a reStructuredText block. This is an alias for
-  ``\verbatim embed:rst:leading-asterisk``.
-- `@code <https://www.doxygen.nl/manual/commands.html#cmdcode>`_ Start a code block.
-- `@param <https://www.doxygen.nl/manual/commands.html#cmdparam>`_ Document
-  parameters, this may be repeated.
-- `@pre <https://www.doxygen.nl/manual/commands.html#cmdpre>`_ Starts a
-  paragraph where the precondition of an entity can be described.
-- `@return <https://www.doxygen.nl/manual/commands.html#cmdreturn>`_ Single
-  paragraph to describe return value(s).
-- `@retval <https://www.doxygen.nl/manual/commands.html#cmdretval>`_ Document
-  return values by name. This is rendered as a definition list.
-- `@note <https://www.doxygen.nl/manual/commands.html#cmdnote>`_ Add a note
-  admonition to the end of documentation.
-- `@b <https://www.doxygen.nl/manual/commands.html#cmdb>`_ To bold one word.
 
 .. seealso:: `All Doxygen commands <https://www.doxygen.nl/manual/commands.html>`_
 

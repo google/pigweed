@@ -18,10 +18,8 @@
 
 namespace pw::sync {
 
-/// @class VirtualBasicLockable
-///
-/// The VirtualBasicLockable is a virtual lock abstraction for locks which meet
-/// the C++ named BasicLockable requirements of lock() and unlock().
+/// The `VirtualBasicLockable` is a virtual lock abstraction for locks which
+/// meet the C++ named BasicLockable requirements of lock() and unlock().
 ///
 /// This virtual indirection is useful in case you need configurable lock
 /// selection in a portable module where the final type is not defined upstream
@@ -46,14 +44,12 @@ class PW_LOCKABLE("pw::sync::VirtualBasicLockable") VirtualBasicLockable {
 
  private:
   /// Uses a single virtual method with an enum to minimize the vtable cost per
-  /// implementation of VirtualBasicLockable.
+  /// implementation of `VirtualBasicLockable`.
   virtual void DoLockOperation(Operation operation) = 0;
 };
 
-/// @class NoOpLock
-///
-/// The NoOpLock is a type of VirtualBasicLockable that does nothing, i.e. lock
-/// operations are no-ops.
+/// The `NoOpLock` is a type of `VirtualBasicLockable` that does nothing, i.e.
+/// lock operations are no-ops.
 class PW_LOCKABLE("pw::sync::NoOpLock") NoOpLock final
     : public VirtualBasicLockable {
  public:

@@ -36,8 +36,6 @@
 namespace pw::chrono {
 namespace backend {
 
-/// @var GetSystemClockTickCount
-///
 /// The ARM AEBI does not permit the opaque 'time_point' to be passed via
 /// registers, ergo the underlying fundamental type is forward declared.
 /// A SystemCLock tick has the units of one SystemClock::period duration.
@@ -47,8 +45,6 @@ int64_t GetSystemClockTickCount();
 
 }  // namespace backend
 
-/// @struct SystemClock
-///
 /// The `SystemClock` represents an unsteady, monotonic clock.
 ///
 /// The epoch of this clock is unspecified and may not be related to wall time
@@ -136,8 +132,6 @@ struct SystemClock {
   }
 };
 
-/// @class VirtualSystemCLock
-///
 /// An abstract interface representing a SystemClock.
 ///
 /// This interface allows decoupling code that uses time from the code that

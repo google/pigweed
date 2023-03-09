@@ -17,9 +17,7 @@
 
 namespace pw::sync {
 
-/// @class ThreadNotification
-///
-/// The ThreadNotification is a synchronization primitive that can be used to
+/// The `ThreadNotification` is a synchronization primitive that can be used to
 /// permit a SINGLE thread to block and consume a latching, saturating
 /// notification from multiple notifiers.
 ///
@@ -34,7 +32,7 @@ namespace pw::sync {
 /// The single consumer aspect of the API permits the use of a smaller and/or
 /// faster native APIs such as direct thread signaling.
 ///
-/// The ThreadNotification is initialized to being empty (latch is not set).
+/// The `ThreadNotification` is initialized to being empty (latch is not set).
 class ThreadNotification {
  public:
   using native_handle_type = backend::NativeThreadNotificationHandle;

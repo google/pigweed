@@ -19,14 +19,12 @@
 
 namespace pw::chrono {
 
-/// @class SystemTimer
+/// The `SystemTimer` allows an `ExpiryCallback` be executed at a set time in
+/// the future.
 ///
-/// The SystemTimer allows an ExpiryCallback be executed at a set time in the
-/// future.
-///
-/// The base SystemTimer only supports a one-shot style timer with a callback.
+/// The base `SystemTimer` only supports a one-shot style timer with a callback.
 /// A periodic timer can be implemented by rescheduling the timer in the
-/// callback through InvokeAt(kDesiredPeriod + expired_deadline).
+/// callback through `InvokeAt(kDesiredPeriod + expired_deadline)`.
 ///
 /// When implementing a periodic layer on top, the user should be mindful of
 /// handling missed periodic callbacks. They could opt to invoke the callback
@@ -38,12 +36,12 @@ class SystemTimer {
  public:
   using native_handle_type = backend::NativeSystemTimerHandle;
 
-  /// The ExpiryCallback is either invoked from a high priority thread or an
+  /// The `ExpiryCallback` is either invoked from a high priority thread or an
   /// interrupt.
   ///
-  /// For a given timer instance, its ExpiryCallback will not preempt itself.
+  /// For a given timer instance, its `ExpiryCallback` will not preempt itself.
   /// This makes it appear like there is a single executor of a timer instance's
-  /// ExpiryCallback.
+  /// `ExpiryCallback`.
   ///
   /// Ergo ExpiryCallbacks should be treated as if they are executed by an
   /// interrupt, meaning:
@@ -56,7 +54,7 @@ class SystemTimer {
 
   /// Constructs the SystemTimer based on the user provided
   /// `pw::Function<void(SystemClock::time_point expired_deadline)>`. Note that
-  /// The ExpiryCallback is either invoked from a high priority thread or an
+  /// The `ExpiryCallback` is either invoked from a high priority thread or an
   /// interrupt.
   SystemTimer(ExpiryCallback&& callback);
 

@@ -23,14 +23,12 @@
 
 namespace pw::sync {
 
-/// @class InlineBorrowable
-///
-/// InlineBorrowable holds an object of GuardedType and a Lock that guards
+/// `InlineBorrowable` holds an object of `GuardedType` and a Lock that guards
 /// access to the object. It should be used when an object should be guarded for
 /// its entire lifecycle by a single lock.
 ///
 /// This object should be shared with other componetns as a reference of type
-/// Borrowable<GuardedType, LockInterface>.
+/// `Borrowable<GuardedType, LockInterface>`.
 ///
 template <typename GuardedType,
           typename Lock = pw::sync::VirtualMutex,

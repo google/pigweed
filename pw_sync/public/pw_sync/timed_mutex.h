@@ -26,13 +26,11 @@
 
 namespace pw::sync {
 
-/// @class TimedMutex
-///
-/// The TimedMutex is a synchronization primitive that can be used to protect
+/// The `TimedMutex` is a synchronization primitive that can be used to protect
 /// shared data from being simultaneously accessed by multiple threads with
-/// timeouts and deadlines, extending the Mutex.  It offers exclusive,
+/// timeouts and deadlines, extending the `Mutex`. It offers exclusive,
 /// non-recursive ownership semantics where priority inheritance is used to
-/// solve the classic priority-inversion problem.  This is thread safe, but NOT
+/// solve the classic priority-inversion problem. This is thread safe, but NOT
 /// IRQ safe.
 ///
 /// @rst

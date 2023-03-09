@@ -33,8 +33,9 @@ The critical section lock primitives provided by this module comply with
 relevant
 `TimedLockable <https://en.cppreference.com/w/cpp/named_req/TimedLockable>`_ C++
 named requirements. This means that they are compatible with existing helpers in
-the STL's ``<mutex>`` thread support library. For example `std::lock_guard <https://en.cppreference.com/w/cpp/thread/lock_guard>`_
-and `std::unique_lock <https://en.cppreference.com/w/cpp/thread/unique_lock>`_ can be directly used.
+the STL's ``<mutex>`` thread support library. For example `std::lock_guard
+<https://en.cppreference.com/w/cpp/thread/lock_guard>`_ and `std::unique_lock
+<https://en.cppreference.com/w/cpp/thread/unique_lock>`_ can be directly used.
 
 Mutex
 =====
@@ -186,20 +187,24 @@ Example in C
 
 TimedMutex
 ==========
-The TimedMutex is an extension of the Mutex which offers timeout and deadline
-based semantics.
+.. cpp:namespace-push:: pw::sync
 
-The TimedMutex's API is C++11 STL
+The :cpp:class:`TimedMutex` is an extension of the Mutex which offers timeout
+and deadline based semantics.
+
+The :cpp:class:`TimedMutex`'s API is C++11 STL
 `std::timed_mutex <https://en.cppreference.com/w/cpp/thread/timed_mutex>`_ like,
 meaning it is a
 `BasicLockable <https://en.cppreference.com/w/cpp/named_req/BasicLockable>`_,
 `Lockable <https://en.cppreference.com/w/cpp/named_req/Lockable>`_, and
 `TimedLockable <https://en.cppreference.com/w/cpp/named_req/TimedLockable>`_.
 
-Note that the ``TimedMutex`` is a derived ``Mutex`` class, meaning that
-a ``TimedMutex`` can be used by someone who needs the basic ``Mutex``. This is
-in contrast to the C++ STL's
+Note that the :cpp:class:`TimedMutex` is a derived :cpp:class:`Mutex` class,
+meaning that a :cpp:class:`TimedMutex` can be used by someone who needs the
+basic :cpp:class:`Mutex`. This is in contrast to the C++ STL's
 `std::timed_mutex <https://en.cppreference.com/w/cpp/thread/timed_mutex>`_.
+
+.. cpp:namespace-pop::
 
 .. list-table::
    :header-rows: 1
@@ -1028,19 +1033,22 @@ efficiently as possible for the platform that it is used on.
 This simpler but highly portable class of signaling primitives is intended to
 ensure that a portability efficiency tradeoff does not have to be made up front.
 Today this is class of simpler signaling primitives is limited to the
-``pw::sync::ThreadNotification`` and ``pw::sync::TimedThreadNotification``.
+:cpp:class:`pw::sync::ThreadNotification` and
+:cpp:class:`pw::sync::TimedThreadNotification`.
 
 ThreadNotification
 ==================
-The ThreadNotification is a synchronization primitive that can be used to
+.. cpp:namespace-push:: pw::sync
+
+The :cpp:class:`ThreadNotification` is a synchronization primitive that can be used to
 permit a SINGLE thread to block and consume a latching, saturating
 notification from multiple notifiers.
 
 .. Note::
-   Although only a single thread can block on a ThreadNotification at a time,
-   many instances may be used by a single thread just like binary semaphores.
-   This is in contrast to some native RTOS APIs, such as direct task
-   notifications, which re-use the same state within a thread's context.
+   Although only a single thread can block on a :cpp:class:`ThreadNotification`
+   at a time, many instances may be used by a single thread just like binary
+   semaphores.  This is in contrast to some native RTOS APIs, such as direct
+   task notifications, which re-use the same state within a thread's context.
 
 .. Warning::
    This is a single consumer/waiter, multiple producer/notifier API!
@@ -1048,7 +1056,7 @@ notification from multiple notifiers.
    result, having multiple threads receiving notifications via the acquire API
    is unsupported.
 
-This is effectively a subset of the ``pw::sync::BinarySemaphore`` API, except
+This is effectively a subset of the :cpp:class:`BinarySemaphore` API, except
 that only a single thread can be notified and block at a time.
 
 The single consumer aspect of the API permits the use of a smaller and/or
@@ -1057,13 +1065,17 @@ backed by the most efficient native primitive for a target, regardless of
 whether that is a semaphore, event flag group, condition variable, or something
 else.
 
-The ThreadNotification is initialized to being empty (latch is not set).
+The :cpp:class:`ThreadNotification` is initialized to being empty (latch is not
+set).
+
+.. cpp:namespace-pop::
 
 Generic BinarySemaphore-based Backend
 -------------------------------------
-This module provides a generic backend for ``pw::sync::ThreadNotification`` via
+This module provides a generic backend for
+:cpp:class:`pw::sync::ThreadNotification` via
 ``pw_sync:binary_semaphore_thread_notification`` which uses a
-``pw::sync::BinarySemaphore`` as the backing primitive. See
+:cpp:class:`pw::sync::BinarySemaphore` as the backing primitive. See
 :ref:`BinarySemaphore <module-pw_sync-binary-semaphore>` for backend
 availability.
 
@@ -1157,10 +1169,12 @@ Examples in C++
 
 TimedThreadNotification
 =======================
-The TimedThreadNotification is an extension of the ThreadNotification which
-offers timeout and deadline based semantics.
+The :cpp:class:`TimedThreadNotification` is an extension of the
+:cpp:class:`ThreadNotification` which offers timeout and deadline based
+semantics.
 
-The TimedThreadNotification is initialized to being empty (latch is not set).
+The :cpp:class:`TimedThreadNotification` is initialized to being empty (latch is
+not set).
 
 .. Warning::
    This is a single consumer/waiter, multiple producer/notifier API!  The
@@ -1170,9 +1184,10 @@ The TimedThreadNotification is initialized to being empty (latch is not set).
 
 Generic BinarySemaphore-based Backend
 -------------------------------------
-This module provides a generic backend for ``pw::sync::TimedThreadNotification``
-via ``pw_sync:binary_semaphore_timed_thread_notification`` which uses a
-``pw::sync::BinarySemaphore`` as the backing primitive. See
+This module provides a generic backend for
+:cpp:class:`pw::sync::TimedThreadNotification` via
+``pw_sync:binary_semaphore_timed_thread_notification`` which uses a
+:cpp:class:`pw::sync::BinarySemaphore` as the backing primitive. See
 :ref:`BinarySemaphore <module-pw_sync-binary-semaphore>` for backend
 availability.
 
@@ -1274,22 +1289,27 @@ Examples in C++
 
 CountingSemaphore
 =================
-The CountingSemaphore is a synchronization primitive that can be used for
-counting events and/or resource management where receiver(s) can block on
-acquire until notifier(s) signal by invoking release.
+.. cpp:namespace-push:: pw::sync
 
-Note that unlike Mutexes, priority inheritance is not used by semaphores meaning
-semaphores are subject to unbounded priority inversions. Due to this, Pigweed
-does not recommend semaphores for mutual exclusion.
+The :cpp:class:`CountingSemaphore` is a synchronization primitive that can be
+used for counting events and/or resource management where receiver(s) can block
+on acquire until notifier(s) signal by invoking release.
 
-The CountingSemaphore is initialized to being empty or having no tokens.
+Note that unlike :cpp:class:`Mutex`, priority inheritance is not used by
+semaphores meaning semaphores are subject to unbounded priority inversions. Due
+to this, Pigweed does not recommend semaphores for mutual exclusion.
+
+The :cpp:class:`CountingSemaphore` is initialized to being empty or having no
+tokens.
 
 The entire API is thread safe, but only a subset is interrupt safe.
 
 .. Note::
    If there is only a single consuming thread, we recommend using a
-   ThreadNotification instead which can be much more efficient on some RTOSes
-   such as FreeRTOS.
+   :cpp:class:`ThreadNotification` instead which can be much more efficient on
+   some RTOSes such as FreeRTOS.
+
+.. cpp:namespace-pop::
 
 .. Warning::
    Releasing multiple tokens is often not natively supported, meaning you may
@@ -1407,14 +1427,19 @@ you detect whether you ever fall behind.
 
 BinarySemaphore
 ===============
-BinarySemaphore is a specialization of CountingSemaphore with an arbitrary token
-limit of 1. Note that that ``max()`` is >= 1, meaning it may be released up to
-``max()`` times but only acquired once for those N releases.
+.. cpp:namespace-push:: pw::sync
 
-Implementations of BinarySemaphore are typically more efficient than the
-default implementation of CountingSemaphore.
+:cpp:class:`BinarySemaphore` is a specialization of CountingSemaphore with an
+arbitrary token limit of 1. Note that that ``max()`` is >= 1, meaning it may be
+released up to ``max()`` times but only acquired once for those N releases.
 
-The BinarySemaphore is initialized to being empty or having no tokens.
+Implementations of :cpp:class:`BinarySemaphore` are typically more
+efficient than the default implementation of :cpp:class:`CountingSemaphore`.
+
+The :cpp:class:`BinarySemaphore` is initialized to being empty or having no
+tokens.
+
+.. cpp:namespace-pop::
 
 The entire API is thread safe, but only a subset is interrupt safe.
 
@@ -1523,7 +1548,8 @@ Examples in C++
 
 Conditional Variables
 =====================
-``pw::sync::ConditionVariable`` provides a condition variable implementation
-that provides semantics and an API very similar to `std::condition_variable
+:cpp:class:`pw::sync::ConditionVariable` provides a condition variable
+implementation that provides semantics and an API very similar to
+`std::condition_variable
 <https://en.cppreference.com/w/cpp/thread/condition_variable>`_ in the C++
 Standard Library.

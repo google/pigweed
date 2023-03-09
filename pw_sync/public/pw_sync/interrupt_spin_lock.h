@@ -25,16 +25,14 @@
 
 namespace pw::sync {
 
-/// @class InterruptSpinLock
-///
-/// The InterruptSpinLock is a synchronization primitive that can be used to
+/// The `InterruptSpinLock` is a synchronization primitive that can be used to
 /// protect shared data from being simultaneously accessed by multiple threads
 /// and/or interrupts as a targeted global lock, with the exception of
 /// Non-Maskable Interrupts (NMIs).
 /// It offers exclusive, non-recursive ownership semantics where IRQs up to a
 /// backend defined level of "NMIs" will be masked to solve priority-inversion.
 ///
-/// @note This InterruptSpinLock relies on built-in local interrupt masking to
+/// @note This `InterruptSpinLock` relies on built-in local interrupt masking to
 ///       make it interrupt safe without requiring the caller to separately mask
 ///       and unmask interrupts when using this primitive.
 ///
@@ -45,7 +43,7 @@ namespace pw::sync {
 ///
 /// This entire API is IRQ safe, but NOT NMI safe.
 ///
-/// @b Precondition: Code that holds a specific InterruptSpinLock must not try
+/// @b Precondition: Code that holds a specific `InterruptSpinLock` must not try
 /// to re-acquire it. However, it is okay to nest distinct spinlocks.
 class PW_LOCKABLE("pw::sync::InterruptSpinLock") InterruptSpinLock {
  public:
@@ -124,22 +122,16 @@ typedef struct pw_sync_InterruptSpinLock pw_sync_InterruptSpinLock;
 
 PW_EXTERN_C_START
 
-/// @fn pw_sync_InterruptSpinLock_Lock
-///
 /// Invokes the `InterruptSpinLock::lock` member function on the given
 /// `interrupt_spin_lock`.
 void pw_sync_InterruptSpinLock_Lock(pw_sync_InterruptSpinLock* spin_lock)
     PW_NO_LOCK_SAFETY_ANALYSIS;
 
-/// @fn pw_sync_InterruptSpinLock_TryLock
-///
 /// Invokes the `InterruptSpinLock::try_lock` member function on the given
 /// `interrupt_spin_lock`.
 bool pw_sync_InterruptSpinLock_TryLock(pw_sync_InterruptSpinLock* spin_lock)
     PW_NO_LOCK_SAFETY_ANALYSIS;
 
-/// @fn pw_sync_InterruptSpinLock_Unlock
-///
 /// Invokes the `InterruptSpinLock::unlock` member function on the given
 /// `interrupt_spin_lock`.
 void pw_sync_InterruptSpinLock_Unlock(pw_sync_InterruptSpinLock* spin_lock)

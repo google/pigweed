@@ -25,9 +25,7 @@
 
 namespace pw::sync {
 
-/// @class CountingSemaphore
-///
-/// The CountingSemaphore is a synchronization primitive that can be used for
+/// The `CountingSemaphore` is a synchronization primitive that can be used for
 /// counting events and/or resource management where receiver(s) can block on
 /// acquire until notifier(s) signal by invoking release.
 /// Note that unlike Mutexes, priority inheritance is not used by semaphores
@@ -37,13 +35,13 @@ namespace pw::sync {
 ///
 /// @rst
 /// .. WARNING::
-///    In order to support global statically constructed CountingSemaphores the
-///    user and/or backend MUST ensure that any initialization required in your
-///    environment is done prior to the creation and/or initialization of the
-///    native synchronization primitives (e.g. kernel initialization).
-///
-/// The CountingSemaphore is initialized to being empty or having no tokens.
+///    In order to support global statically constructed ``CountingSemaphores``
+///    the user and/or backend MUST ensure that any initialization required in
+///    your environment is done prior to the creation and/or initialization of
+///    the native synchronization primitives (e.g. kernel initialization).
 /// @endrst
+///
+/// The `CountingSemaphore` is initialized to being empty or having no tokens.
 class CountingSemaphore {
  public:
   using native_handle_type = backend::NativeCountingSemaphoreHandle;

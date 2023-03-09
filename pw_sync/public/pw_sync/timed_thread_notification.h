@@ -18,10 +18,8 @@
 
 namespace pw::sync {
 
-/// @class TimedThreadNotification
-///
-/// The TimedThreadNotification is a synchronization primitive that can be used
-/// to permit a SINGLE thread to block and consume a latching, saturating
+/// The `TimedThreadNotification` is a synchronization primitive that can be
+/// used to permit a SINGLE thread to block and consume a latching, saturating
 /// notification from  multiple notifiers.
 ///
 /// @b IMPORTANT: This is a single consumer/waiter, multiple producer/notifier
@@ -35,7 +33,7 @@ namespace pw::sync {
 /// The single consumer aspect of the API permits the use of a smaller and/or
 /// faster native APIs such as direct thread signaling.
 ///
-/// The TimedThreadNotification is initialized to being empty (latch is not
+/// The `TimedThreadNotification` is initialized to being empty (latch is not
 /// set).
 class TimedThreadNotification : public ThreadNotification {
  public:
