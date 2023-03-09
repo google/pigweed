@@ -12,6 +12,10 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 #pragma once
+/// @file pw_string/util.h
+///
+/// @brief The `pw::string::*` functions provide safer alternatives to
+/// C++ standard library string functions.
 
 #include <cctype>
 #include <cstddef>
@@ -46,11 +50,11 @@ PW_CONSTEXPR_CPP20 inline StatusWithSize CopyToSpan(
 
 }  // namespace internal
 
-// Safe alternative to the string_view constructor to avoid the risk of an
-// unbounded implicit or explicit use of strlen.
-//
-// This is strongly recommended over using something like C11's strnlen_s as
-// a string_view does not require null-termination.
+/// @brief Safe alternative to the `string_view` constructor that avoids the
+/// risk of an unbounded implicit or explicit use of `strlen`.
+///
+/// This is strongly recommended over using something like C11's `strnlen_s` as
+/// a `string_view` does not require null-termination.
 constexpr std::string_view ClampedCString(span<const char> str) {
   return std::string_view(str.data(),
                           internal::ClampedLength(str.data(), str.size()));
@@ -60,15 +64,16 @@ constexpr std::string_view ClampedCString(const char* str, size_t max_len) {
   return ClampedCString(span<const char>(str, max_len));
 }
 
-// Safe alternative to strlen to calculate the null-terminated length of the
-// string within the specified span, excluding the null terminator. Like C11's
-// strnlen_s, the scan for the null-terminator is bounded.
-//
-// Returns:
-//   null-terminated length of the string excluding the null terminator.
-//   OutOfRange - if the string is not null-terminated.
-//
-// Precondition: The string shall be at a valid pointer.
+/// @brief `pw::string::NullTerminatedLength` is a safer alternative to
+/// `strlen` for calculating the null-terminated length of the
+/// string within the specified span, excluding the null terminator.
+///
+/// Like `strnlen_s` in C11, the scan for the null-terminator is bounded.
+///
+/// @pre The string shall be at a valid pointer.
+///
+/// @returns the null-terminated length of the string excluding the null
+/// terminator or `OutOfRange` if the string is not null-terminated.
 constexpr Result<size_t> NullTerminatedLength(span<const char> str) {
   PW_DASSERT(str.data() != nullptr);
 
@@ -84,14 +89,17 @@ constexpr Result<size_t> NullTerminatedLength(const char* str, size_t max_len) {
   return NullTerminatedLength(span<const char>(str, max_len));
 }
 
-// Copies the source string to the dest, truncating if the full string does not
-// fit. Always null terminates if dest.size() or num > 0.
-//
-// Returns the number of characters written, excluding the null terminator. If
-// the string is truncated, the status is ResourceExhausted.
-//
-// Precondition: The destination and source shall not overlap.
-// Precondition: The source shall be a valid pointer.
+/// @brief `pw::string::Copy` is a safer alternative to `std::strncpy` as it
+/// always null-terminates whenever the destination buffer has a non-zero size.
+///
+/// Copies the `source` string to the `dest`, truncating if the full string does
+/// not fit. Always null terminates if `dest.size()` or `num` is greater than 0.
+///
+/// @pre The destination and source shall not overlap. The source
+/// shall be a valid pointer.
+///
+/// @returns the number of characters written, excluding the null terminator. If
+/// the string is truncated, the status is `RESOURCE_EXHAUSTED`.
 template <typename Span>
 PW_CONSTEXPR_CPP20 inline StatusWithSize Copy(const std::string_view& source,
                                               Span&& dest) {
@@ -116,13 +124,14 @@ PW_CONSTEXPR_CPP20 inline StatusWithSize Copy(const char* source,
   return Copy(source, span<char>(dest, num));
 }
 
-// Assigns a std::string_view to a pw::InlineString, truncating if it does not
-// fit. pw::InlineString's assign() function asserts if the string's requested
-// size exceeds its capacity; pw::string::Assign() returns a Status instead.
-//
-// Returns:
-//    OK - the entire std::string_view was copied to the end of the InlineString
-//    RESOURCE_EXHAUSTED - the std::string_view was truncated to fit
+/// Assigns a `std::string_view` to a `pw::InlineString`, truncating if it does
+/// not fit. The `assign()` function of `pw::InlineString` asserts if the
+/// string's requested size exceeds its capacity; `pw::string::Assign()`
+/// returns a `Status` instead.
+///
+/// @return `OK` if the entire `std::string_view` was copied to the end of the
+/// `pw::InlineString`. `RESOURCE_EXHAUSTED` if the `std::string_view` was
+/// truncated to fit.
 inline Status Assign(InlineString<>& string, const std::string_view& view) {
   const size_t chars_copied =
       std::min(view.size(), static_cast<size_t>(string.capacity()));
@@ -136,13 +145,13 @@ inline Status Assign(InlineString<>& string, const char* c_string) {
   return Assign(string, ClampedCString(c_string, string.capacity() + 1));
 }
 
-// Appends a std::string_view to a pw::InlineString, truncating if it does not
-// fit. pw::InlineString's append() function asserts if the string's requested
-// size exceeds its capacity; pw::string::Append() returns a Status instead.
-//
-// Returns:
-//    OK - the entire std::string_view was assigned
-//    RESOURCE_EXHAUSTED - the std::string_view was truncated to fit
+/// Appends a `std::string_view` to a `pw::InlineString`, truncating if it
+/// does not fit. The `append()` function of `pw::InlineString` asserts if the
+/// string's requested size exceeds its capacity; `pw::string::Append()` returns
+/// a `Status` instead.
+///
+/// @return `OK` if the entire `std::string_view` was assigned.
+/// `RESOURCE_EXHAUSTED` if the `std::string_view` was truncated to fit.
 inline Status Append(InlineString<>& string, const std::string_view& view) {
   const size_t chars_copied = std::min(
       view.size(), static_cast<size_t>(string.capacity() - string.size()));
@@ -156,8 +165,11 @@ inline Status Append(InlineString<>& string, const char* c_string) {
   return Append(string, ClampedCString(c_string, string.capacity() + 1));
 }
 
-// Copies source string to the dest with same behavior as Copy, with the
-// difference that any non-printable characters are changed to '.'.
+/// @brief Provides a safe, printable copy of a string.
+///
+/// Copies the `source` string to the `dest` string with same behavior as
+/// `pw::string::Copy`, with the difference that any non-printable characters
+/// are changed to `.`.
 PW_CONSTEXPR_CPP20 inline StatusWithSize PrintableCopy(
     const std::string_view& source, span<char> dest) {
   StatusWithSize copy_result = Copy(source, dest);

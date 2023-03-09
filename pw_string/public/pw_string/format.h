@@ -29,22 +29,24 @@
 
 namespace pw::string {
 
-// Writes a printf-style formatted string to the provided buffer, similarly to
-// std::snprintf. Returns the number of characters written, excluding the null
-// terminator. The buffer is always null-terminated unless it is empty.
-//
-// The status is
-//
-//   OkStatus() if the operation succeeded,
-//   Status::ResourceExhausted() if the buffer was too small to fit the output,
-//   Status::InvalidArgument() if there was a formatting error.
-//
+/// @brief Writes a printf-style formatted string to the provided buffer,
+/// similarly to `std::snprintf()`.
+///
+/// The `std::snprintf()` return value is awkward to interpret, and
+/// misinterpreting it can lead to serious bugs.
+///
+/// @returns The number of characters written, excluding the null
+/// terminator. The buffer is always null-terminated unless it is empty.
+/// The status is `OkStatus()` if the operation succeeded,
+/// `Status::ResourceExhausted()` if the buffer was too small to fit the output,
+/// or `Status::InvalidArgument()` if there was a formatting error.
 PW_PRINTF_FORMAT(2, 3)
 StatusWithSize Format(span<char> buffer, const char* format, ...);
 
-// Writes a printf-style formatted string with va_list-packed arguments to the
-// provided buffer, similarly to std::vsnprintf. The return value is the same as
-// above.
+/// @brief Writes a printf-style formatted string with va_list-packed arguments
+/// to the provided buffer, similarly to `std::vsnprintf()`.
+///
+/// @returns See `pw::string::Format()`.
 PW_PRINTF_FORMAT(2, 0)
 StatusWithSize FormatVaList(span<char> buffer,
                             const char* format,

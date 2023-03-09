@@ -13,6 +13,11 @@
 // the License.
 #pragma once
 
+/// @file pw_string/string.h
+///
+/// @brief `pw::InlineBasicString` and `pw::InlineString` are safer alternatives
+/// to `std::basic_string` and `std::string`.
+
 #include <cstddef>
 #include <initializer_list>
 #include <iterator>
@@ -36,21 +41,23 @@
 
 namespace pw {
 
-// pw::InlineBasicString<T, kCapacity> is a fixed-capacity version of
-// std::basic_string. It implements mostly the same API as std::basic_string,
-// but the capacity of the string is fixed at construction and cannot grow.
-// Attempting to increase the size beyond the capacity triggers an assert.
-//
-// A pw::InlineString alias of pw::InlineBasicString<char>, equivalent to
-// std::string, is defined below.
-//
-// pw::InlineBasicString has a template parameter for the capacity, but the
-// capacity does not have to be known to use the string. The
-// pw::InlineBasicString template inherits from a pw::InlineBasicString
-// specialization with capacity of the reserved value pw::InlineString<>::npos.
-// The actual capacity is stored in a single word alongside the size. This
-// allows code to work with strings of any capacity through a pw::InlineString<>
-// or pw::InlineBasicString<T> reference.
+/// @brief `pw::InlineBasicString` is a fixed-capacity version of
+/// `std::basic_string`.
+///
+/// It is C++14-compatible and null-terminated. It stores the string contents
+/// inline and uses no dynamic memory. It implements mostly the same API as
+/// `std::basic_string`, but the capacity of the string is fixed at construction
+/// and cannot grow. Attempting to increase the size beyond the capacity
+/// triggers an assert. `pw::InlineBasicString` has a template parameter for the
+/// capacity, but the capacity does not have to be known to use the string. The
+/// `pw::InlineBasicString` template inherits from a `pw::InlineBasicString`
+/// specialization with capacity of the reserved value
+/// `pw::InlineString<>::npos`. The actual capacity is stored in a single word
+/// alongside the size. This allows code to work with strings of any capacity
+/// through a `pw::InlineString<>` or `pw::InlineBasicString<T>` reference.
+///
+/// See also `pw::InlineString`, which is an alias of
+/// `pw::InlineBasicString<char>` and is equivalent to `std::string`.
 template <typename T, string_impl::size_type kCapacity = string_impl::kGeneric>
 class InlineBasicString final
     : public InlineBasicString<T, string_impl::kGeneric> {
@@ -566,6 +573,20 @@ constexpr bool operator>=(const T* lhs,
 // TODO(b/239996007): Implement other comparison operator overloads.
 
 // Aliases
+
+/// @brief `pw::InlineString` is an alias of `pw::InlineBasicString<char>` and
+/// is equivalent to `std::string`.
+///
+/// `pw::InlineString` takes the fixed capacity as a template argument, but may
+/// be used generically without specifying the capacity. The capacity value is
+/// stored in a member variable, which the generic `pw::InlineString<>` /
+/// `pw::InlineBasicString<T>` specialization uses in place of the template
+/// parameter.
+///
+/// `pw::InlineString` is efficient and compact. The current size and capacity
+/// are stored in a single word. Accessing the contents of a `pw::InlineString`
+/// is a simple array access within the object, with no pointer indirection,
+/// even when working from a generic `pw::InlineString<>` reference.
 template <string_impl::size_type kCapacity = string_impl::kGeneric>
 using InlineString = InlineBasicString<char, kCapacity>;
 
