@@ -693,7 +693,7 @@ void FakeController::OnCreateConnectionCommandReceived(
 }
 
 void FakeController::OnLECreateConnectionCommandReceived(
-    const hci_spec::LECreateConnectionCommandParams& params) {
+    const pw::bluetooth::emboss::LECreateConnectionCommandView& params) {
   le_create_connection_command_count_++;
   if (le_create_connection_cb_) {
     le_create_connection_cb_(params);
@@ -706,10 +706,10 @@ void FakeController::OnLECreateConnectionCommandReceived(
     return;
   }
 
-  DeviceAddress::Type addr_type = hci::AddressTypeFromHCI(params.peer_address_type);
+  DeviceAddress::Type addr_type = hci::AddressTypeFromHCI(params.peer_address_type().Read());
   BT_DEBUG_ASSERT(addr_type != DeviceAddress::Type::kBREDR);
 
-  const DeviceAddress peer_address(addr_type, params.peer_address);
+  const DeviceAddress peer_address(addr_type, DeviceAddressBytes(params.peer_address()));
   pw::bluetooth::emboss::StatusCode status = pw::bluetooth::emboss::StatusCode::SUCCESS;
 
   // Find the peer that matches the requested address.
@@ -733,7 +733,7 @@ void FakeController::OnLECreateConnectionCommandReceived(
     le_connect_params_ = LEConnectParams();
   }
 
-  le_connect_params_->own_address_type = params.own_address_type;
+  le_connect_params_->own_address_type = params.own_address_type().Read();
   le_connect_params_->peer_address = peer_address;
 
   // The procedure was initiated successfully but the peer cannot be connected
@@ -754,21 +754,21 @@ void FakeController::OnLECreateConnectionCommandReceived(
   std::memset(&response, 0, sizeof(response));
 
   response.status = status;
-  response.peer_address = params.peer_address;
+  response.peer_address = DeviceAddressBytes(params.peer_address());
   response.peer_address_type = ToPeerAddrType(addr_type);
 
   if (status == pw::bluetooth::emboss::StatusCode::SUCCESS) {
-    uint16_t interval_min = le16toh(params.conn_interval_min);
-    uint16_t interval_max = le16toh(params.conn_interval_max);
+    uint16_t interval_min = params.connection_interval_min().UncheckedRead();
+    uint16_t interval_max = params.connection_interval_max().UncheckedRead();
     uint16_t interval = interval_min + ((interval_max - interval_min) / 2);
 
-    hci_spec::LEConnectionParameters conn_params(interval, le16toh(params.conn_latency),
-                                                 le16toh(params.supervision_timeout));
+    hci_spec::LEConnectionParameters conn_params(interval, params.max_latency().UncheckedRead(),
+                                                 params.supervision_timeout().UncheckedRead());
     peer->set_le_params(conn_params);
 
-    response.conn_latency = params.conn_latency;
-    response.conn_interval = le16toh(interval);
-    response.supervision_timeout = params.supervision_timeout;
+    response.conn_latency = htole16(params.max_latency().UncheckedRead());
+    response.conn_interval = htole16(interval);
+    response.supervision_timeout = htole16(params.supervision_timeout().UncheckedRead());
 
     response.role = pw::bluetooth::emboss::ConnectionRole::CENTRAL;
 
@@ -2902,11 +2902,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnLEConnectionUpdateCommandReceived(params);
       break;
     }
-    case hci_spec::kLECreateConnection: {
-      const auto& params = command_packet.payload<hci_spec::LECreateConnectionCommandParams>();
-      OnLECreateConnectionCommandReceived(params);
-      break;
-    }
     case hci_spec::kLECreateConnectionCancel: {
       OnLECreateConnectionCancel();
       break;
@@ -2987,7 +2982,8 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kLESetAdvertisingData:
     case hci_spec::kLESetScanResponseData:
     case hci_spec::kLESetScanParameters:
-    case hci_spec::kLESetScanEnable: {
+    case hci_spec::kLESetScanEnable:
+    case hci_spec::kLECreateConnection: {
       // This case is for packet types that have been migrated to the new Emboss architecture. Their
       // old version can be still be assembled from the HciEmulator channel, so here we repackage
       // and forward them as Emboss packets.
@@ -3233,6 +3229,12 @@ void FakeController::HandleReceivedCommandPacket(const hci::EmbossCommandPacket&
     case hci_spec::kLESetScanEnable: {
       const auto& params = command_packet.view<pw::bluetooth::emboss::LESetScanEnableCommandView>();
       OnLESetScanEnable(params);
+      break;
+    }
+    case hci_spec::kLECreateConnection: {
+      const auto& params =
+          command_packet.view<pw::bluetooth::emboss::LECreateConnectionCommandView>();
+      OnLECreateConnectionCommandReceived(params);
       break;
     }
     default: {

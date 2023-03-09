@@ -50,6 +50,14 @@ namespace bt {
 template <typename T>
 class StaticPacket {
  public:
+  StaticPacket() = default;
+
+  // Copy this packet from another view.
+  template <typename U>
+  explicit StaticPacket(const U& other) {
+    view().CopyFrom(other);
+  }
+
   // Returns an Emboss view over the buffer. Emboss views consist of two pointers and a length, so
   // they are cheap to construct on-demand.
   T view() {

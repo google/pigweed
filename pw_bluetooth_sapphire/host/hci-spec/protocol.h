@@ -1959,42 +1959,6 @@ constexpr OpCode kLESetScanEnable = LEControllerCommandOpCode(0x000C);
 // LE Create Connection Command (v4.0) (LE)
 constexpr OpCode kLECreateConnection = LEControllerCommandOpCode(0x000D);
 
-struct LECreateConnectionCommandParams {
-  // Range: see kLEScanInterval[Min|Max] in hci_constants.h
-  // Time: N * 0.625 ms
-  // Time Range: 2.5 ms to 10.24 s
-  uint16_t scan_interval;
-
-  // Range: see kLEScanInterval[Min|Max] in hci_constants.h
-  // Time: N * 0.625 ms
-  // Time Range: 2.5 ms to 10.24 s
-  uint16_t scan_window;
-
-  GenericEnableParam initiator_filter_policy;
-  LEAddressType peer_address_type;
-  DeviceAddressBytes peer_address;
-  pw::bluetooth::emboss::LEOwnAddressType own_address_type;
-
-  // Range: see kLEConnectionInterval[Min|Max] in hci_constants.h
-  // Time: N * 1.25 ms
-  // Time Range: 7.5 ms to 4 s.
-  uint16_t conn_interval_min;
-  uint16_t conn_interval_max;
-
-  // Range: 0x0000 to kLEConnectionLatencyMax in hci_constants.h
-  uint16_t conn_latency;
-
-  // Range: see kLEConnectionSupervisionTimeout[Min|Max] in hci_constants.h
-  // Time: N * 10 ms
-  // Time Range: 100 ms to 32 s
-  uint16_t supervision_timeout;
-
-  // Range: 0x0000 - 0xFFFF
-  // Time: N * 0x625 ms
-  uint16_t minimum_ce_length;
-  uint16_t maximum_ce_length;
-} __attribute__((packed));
-
 // NOTE on ReturnParams: No Command Complete event is sent by the Controller to
 // indicate that this command has been completed. Instead, the LE Connection
 // Complete or LE Enhanced Connection Complete event indicates that this command

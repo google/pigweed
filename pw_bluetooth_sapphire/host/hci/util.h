@@ -23,6 +23,7 @@ bool DeviceAddressFromAdvReport(const hci_spec::LEAdvertisingReportData& report,
 // Convert HCI LE device address type to our stack type.
 DeviceAddress::Type AddressTypeFromHCI(hci_spec::LEAddressType type);
 DeviceAddress::Type AddressTypeFromHCI(hci_spec::LEPeerAddressType type);
+DeviceAddress::Type AddressTypeFromHCI(pw::bluetooth::emboss::LEAddressType type);
 
 // Convert our stack LE address type to HCI type. |type| cannot be kBREDR.
 hci_spec::LEAddressType AddressTypeToHCI(DeviceAddress::Type type);

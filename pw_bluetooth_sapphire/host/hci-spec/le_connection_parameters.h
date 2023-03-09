@@ -15,7 +15,7 @@ namespace bt::hci_spec {
 // All LE connection parameters in this file are given in terms of a
 // "multiplier" that to controller uses to calculate actual duration values.
 // The exact value calculations and ranges depend on the context in which these
-// values are used (e.g. see LECreateConnectionCommandParams in hci.h).
+// values are used (e.g. see LECreateConnectionCommand).
 //
 // See the specification section referenced above each LEConnectionParameters
 // getter below. See hci_constants.h for min/max allowed ranges for each

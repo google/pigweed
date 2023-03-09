@@ -431,9 +431,13 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeer) {
   auto fake_peer = std::make_unique<FakePeer>(kAddress0);
   test_device()->AddPeer(std::move(fake_peer));
 
-  std::optional<hci_spec::LECreateConnectionCommandParams> connect_params;
+  // Use a StaticPacket so that the packet is copied.
+  std::optional<StaticPacket<pw::bluetooth::emboss::LECreateConnectionCommandWriter>>
+      connect_params;
   test_device()->set_le_create_connection_command_callback(
-      [&](auto params) { connect_params = params; });
+      [&](pw::bluetooth::emboss::LECreateConnectionCommandView params) {
+        connect_params.emplace(params);
+      });
 
   std::unique_ptr<LowEnergyConnectionHandle> conn_handle;
   auto callback = [&conn_handle](auto result) {
@@ -458,8 +462,8 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectSinglePeer) {
   EXPECT_FALSE(peer->temporary());
   EXPECT_EQ(Peer::ConnectionState::kConnected, peer->le()->connection_state());
   ASSERT_TRUE(connect_params);
-  EXPECT_EQ(letoh16(connect_params->scan_interval), kLEScanFastInterval);
-  EXPECT_EQ(letoh16(connect_params->scan_window), kLEScanFastWindow);
+  EXPECT_EQ(connect_params->view().le_scan_interval().Read(), kLEScanFastInterval);
+  EXPECT_EQ(connect_params->view().le_scan_window().Read(), kLEScanFastWindow);
 }
 
 struct TestObject final {

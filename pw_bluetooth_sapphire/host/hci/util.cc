@@ -79,6 +79,25 @@ DeviceAddress::Type AddressTypeFromHCI(hci_spec::LEPeerAddressType type) {
   return result;
 }
 
+DeviceAddress::Type AddressTypeFromHCI(pw::bluetooth::emboss::LEAddressType type) {
+  DeviceAddress::Type result;
+  switch (type) {
+    case pw::bluetooth::emboss::LEAddressType::PUBLIC:
+    case pw::bluetooth::emboss::LEAddressType::PUBLIC_IDENTITY:
+      result = DeviceAddress::Type::kLEPublic;
+      break;
+    case pw::bluetooth::emboss::LEAddressType::RANDOM:
+    case pw::bluetooth::emboss::LEAddressType::RANDOM_IDENTITY:
+    case pw::bluetooth::emboss::LEAddressType::RANDOM_UNRESOLVED:
+      result = DeviceAddress::Type::kLERandom;
+      break;
+    case pw::bluetooth::emboss::LEAddressType::ANONYMOUS:
+      result = DeviceAddress::Type::kLEAnonymous;
+      break;
+  }
+  return result;
+}
+
 hci_spec::LEAddressType AddressTypeToHCI(DeviceAddress::Type type) {
   hci_spec::LEAddressType result = hci_spec::LEAddressType::kPublic;
   switch (type) {

@@ -99,30 +99,31 @@ void LowEnergyConnector::CreateConnectionInternal(
   pending_request_->initiating = true;
   pending_request_->local_address = local_address;
 
-  auto request = CommandPacket::New(hci_spec::kLECreateConnection,
-                                    sizeof(hci_spec::LECreateConnectionCommandParams));
-  auto params = request->mutable_payload<hci_spec::LECreateConnectionCommandParams>();
-  params->scan_interval = htole16(scan_interval);
-  params->scan_window = htole16(scan_window);
-  params->initiator_filter_policy = use_accept_list
-                                        ? pw::bluetooth::emboss::GenericEnableParam::ENABLE
-                                        : pw::bluetooth::emboss::GenericEnableParam::DISABLE;
+  auto request = EmbossCommandPacket::New<pw::bluetooth::emboss::LECreateConnectionCommandWriter>(
+      hci_spec::kLECreateConnection);
+  auto params = request.view_t();
+  params.le_scan_interval().UncheckedWrite(scan_interval);
+  params.le_scan_window().UncheckedWrite(scan_window);
+  params.initiator_filter_policy().Write(use_accept_list
+                                             ? pw::bluetooth::emboss::GenericEnableParam::ENABLE
+                                             : pw::bluetooth::emboss::GenericEnableParam::DISABLE);
 
   // TODO(armansito): Use the resolved address types for <5.0 LE Privacy.
-  params->peer_address_type =
-      peer_address.IsPublic() ? hci_spec::LEAddressType::kPublic : hci_spec::LEAddressType::kRandom;
-  params->peer_address = peer_address.value();
+  params.peer_address_type().Write(peer_address.IsPublic()
+                                       ? pw::bluetooth::emboss::LEAddressType::PUBLIC
+                                       : pw::bluetooth::emboss::LEAddressType::RANDOM);
+  params.peer_address().CopyFrom(peer_address.value().view());
 
-  params->own_address_type = local_address.IsPublic()
-                                 ? pw::bluetooth::emboss::LEOwnAddressType::PUBLIC
-                                 : pw::bluetooth::emboss::LEOwnAddressType::RANDOM;
+  params.own_address_type().Write(local_address.IsPublic()
+                                      ? pw::bluetooth::emboss::LEOwnAddressType::PUBLIC
+                                      : pw::bluetooth::emboss::LEOwnAddressType::RANDOM);
 
-  params->conn_interval_min = htole16(initial_parameters.min_interval());
-  params->conn_interval_max = htole16(initial_parameters.max_interval());
-  params->conn_latency = htole16(initial_parameters.max_latency());
-  params->supervision_timeout = htole16(initial_parameters.supervision_timeout());
-  params->minimum_ce_length = 0x0000;
-  params->maximum_ce_length = 0x0000;
+  params.connection_interval_min().UncheckedWrite(initial_parameters.min_interval());
+  params.connection_interval_max().UncheckedWrite(initial_parameters.max_interval());
+  params.max_latency().UncheckedWrite(initial_parameters.max_latency());
+  params.supervision_timeout().UncheckedWrite(initial_parameters.supervision_timeout());
+  params.min_connection_event_length().Write(0x0000);
+  params.max_connection_event_length().Write(0x0000);
 
   // HCI Command Status Event will be sent as our completion callback.
   auto self = weak_self_.GetWeakPtr();

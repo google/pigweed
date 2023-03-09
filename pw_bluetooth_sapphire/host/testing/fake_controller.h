@@ -211,13 +211,13 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   int le_create_connection_command_count() const { return le_create_connection_command_count_; }
   int acl_create_connection_command_count() const { return acl_create_connection_command_count_; }
 
-  // Setting this callback allows test code to introspect the LECreateConnectionCommandParams
-  // passed into the LECreateConnectionCommand by bt-host, but does not affect FakeController's
-  // handling of the command (i.e. this method exists solely for introspection). To change how
-  // FakeController responds to an LECreateConnectionCommand, use the FakePeer::set_connect_status
-  // or FakePeer::set_connect_response methods.
+  // Setting this callback allows test code to introspect the LECreateConnectionCommand from
+  // bt-host, but does not affect FakeController's handling of the command (i.e. this method exists
+  // solely for introspection). To change how FakeController responds to an
+  // LECreateConnectionCommand, use the FakePeer::set_connect_status or
+  // FakePeer::set_connect_response methods.
   void set_le_create_connection_command_callback(
-      fit::function<void(hci_spec::LECreateConnectionCommandParams)> callback) {
+      fit::function<void(pw::bluetooth::emboss::LECreateConnectionCommandView)> callback) {
     le_create_connection_cb_ = std::move(callback);
   }
 
@@ -479,7 +479,8 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
                                     const hci_spec::LEConnectionParameters& params);
 
   // Called when a HCI_LE_Create_Connection command is received.
-  void OnLECreateConnectionCommandReceived(const hci_spec::LECreateConnectionCommandParams& params);
+  void OnLECreateConnectionCommandReceived(
+      const pw::bluetooth::emboss::LECreateConnectionCommandView& params);
 
   // Called when a HCI_LE_Connection_Update command is received.
   void OnLEConnectionUpdateCommandReceived(const hci_spec::LEConnectionUpdateCommandParams& params);
@@ -810,7 +811,8 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   int le_create_connection_command_count_ = 0;
   int acl_create_connection_command_count_ = 0;
 
-  fit::function<void(hci_spec::LECreateConnectionCommandParams)> le_create_connection_cb_;
+  fit::function<void(pw::bluetooth::emboss::LECreateConnectionCommandView)>
+      le_create_connection_cb_;
   fit::closure controller_parameters_cb_;
   ScanStateCallback scan_state_cb_;
   fit::closure advertising_state_cb_;
