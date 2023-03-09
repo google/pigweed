@@ -125,9 +125,10 @@ it easy to find programmatically too.
 Detailed design
 ---------------
 The ``pw_env_setup`` Python module will provide an API to retrieve a parsed
-``pigweed.json`` file. ``pw_env_setup`` is the correct location because it can't
-depend on anything else, but other modules can depend on it. Code in other
-languages does not yet depend on configuration files.
+``pigweed.json`` file from the root of the checkout. ``pw_env_setup`` is the
+correct location because it can't depend on anything else, but other modules can
+depend on it. Code in other languages does not yet depend on configuration
+files.
 
 A ``pigweed.json`` file might look like the following. Individual option names
 and structures are not final but will evolve as those options are
