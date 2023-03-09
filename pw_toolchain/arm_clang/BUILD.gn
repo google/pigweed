@@ -40,6 +40,12 @@ cortex_m_hardware_fpu_v5_flags =
 cortex_m_hardware_fpu_v5_sp_flags =
     cortex_m_hardware_fpu_flags_common + [ "-mfpu=fpv5-sp-d16" ]
 
+# Default config added to all the ARM cortex M targets to link `nosys` library.
+config("nosys") {
+  # TODO(prabhukr): libs = ["nosys"] did not work as expected (pwrev/133110).
+  ldflags = [ "-lnosys" ]
+}
+
 config("enable_float_printf") {
   ldflags = [ "-Wl,-u_printf_float" ]
 }

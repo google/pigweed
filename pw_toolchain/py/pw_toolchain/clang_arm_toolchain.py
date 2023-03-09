@@ -169,7 +169,6 @@ def get_crt_objs(compiler_info: Dict[str, str]) -> Tuple[str, ...]:
 
 def get_ldflags(compiler_info: Dict[str, str]) -> List[str]:
     ldflags: List[str] = [
-        '-lnosys',
         # Add library search paths.
         '-L' + compiler_info['gcc_libs_dir'],
         '-L'

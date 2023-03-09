@@ -29,21 +29,45 @@ _arm_clang_toolchain = {
 }
 
 # Configs specific to different architectures.
-_cortex_m0plus = [ "$dir_pw_toolchain/arm_clang:cortex_m0plus" ]
+_cortex_m0plus = [
+  "$dir_pw_toolchain/arm_clang:nosys",
+  "$dir_pw_toolchain/arm_clang:cortex_m0plus",
+]
 
-_cortex_m3 = [ "$dir_pw_toolchain/arm_clang:cortex_m3" ]
+_cortex_m3 = [
+  "$dir_pw_toolchain/arm_clang:nosys",
+  "$dir_pw_toolchain/arm_clang:cortex_m3",
+]
 
-_cortex_m4 = [ "$dir_pw_toolchain/arm_clang:cortex_m4" ]
+_cortex_m4 = [
+  "$dir_pw_toolchain/arm_clang:nosys",
+  "$dir_pw_toolchain/arm_clang:cortex_m4",
+]
 
-_cortex_m4f = [ "$dir_pw_toolchain/arm_clang:cortex_m4f" ]
+_cortex_m4f = [
+  "$dir_pw_toolchain/arm_clang:nosys",
+  "$dir_pw_toolchain/arm_clang:cortex_m4f",
+]
 
-_cortex_m7 = [ "$dir_pw_toolchain/arm_clang:cortex_m7" ]
+_cortex_m7 = [
+  "$dir_pw_toolchain/arm_clang:nosys",
+  "$dir_pw_toolchain/arm_clang:cortex_m7",
+]
 
-_cortex_m7f = [ "$dir_pw_toolchain/arm_clang:cortex_m7f" ]
+_cortex_m7f = [
+  "$dir_pw_toolchain/arm_clang:nosys",
+  "$dir_pw_toolchain/arm_clang:cortex_m7f",
+]
 
-_cortex_m33 = [ "$dir_pw_toolchain/arm_clang:cortex_m33" ]
+_cortex_m33 = [
+  "$dir_pw_toolchain/arm_clang:nosys",
+  "$dir_pw_toolchain/arm_clang:cortex_m33",
+]
 
-_cortex_m33f = [ "$dir_pw_toolchain/arm_clang:cortex_m33f" ]
+_cortex_m33f = [
+  "$dir_pw_toolchain/arm_clang:nosys",
+  "$dir_pw_toolchain/arm_clang:cortex_m33f",
+]
 
 # Describes ARM clang toolchains for specific targets.
 pw_toolchain_arm_clang = {
