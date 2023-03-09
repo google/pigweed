@@ -105,7 +105,7 @@ pw_check_root() {
     pw_error_info "  Pigweed's Python environment currently requires Pigweed to"
     pw_error_info "  be at a path without spaces. Please checkout Pigweed in a"
     pw_error_info "  directory without spaces and retry running bootstrap."
-    return
+    return -1
   fi
 }
 

@@ -63,9 +63,13 @@ export PW_PROJECT_ROOT
 
 . "$PW_ROOT/pw_env_setup/util.sh"
 
+# Check environment properties
 pw_deactivate
 pw_eval_sourced "$_pw_sourced" "$_PW_BOOTSTRAP_PATH"
-pw_check_root "$PW_ROOT"
+if ! pw_check_root "$PW_ROOT"; then
+  return
+fi
+
 _PW_ACTUAL_ENVIRONMENT_ROOT="$(pw_get_env_root)"
 export _PW_ACTUAL_ENVIRONMENT_ROOT
 SETUP_SH="$_PW_ACTUAL_ENVIRONMENT_ROOT/activate.sh"
