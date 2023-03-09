@@ -143,14 +143,14 @@ void LegacyLowEnergyScanner::StartScanInternal(const DeviceAddress& local_addres
   hci_cmd_runner()->QueueCommand(std::move(scan_params_command));
 
   // HCI_LE_Set_Scan_Enable
-  auto scan_enable_command = CommandPacket::New(hci_spec::kLESetScanEnable,
-                                                sizeof(hci_spec::LESetScanEnableCommandParams));
-  auto enable_params =
-      scan_enable_command->mutable_payload<hci_spec::LESetScanEnableCommandParams>();
-  enable_params->scanning_enabled = pw::bluetooth::emboss::GenericEnableParam::ENABLE;
-  enable_params->filter_duplicates = options.filter_duplicates
-                                         ? pw::bluetooth::emboss::GenericEnableParam::ENABLE
-                                         : pw::bluetooth::emboss::GenericEnableParam::DISABLE;
+  auto scan_enable_command =
+      EmbossCommandPacket::New<pw::bluetooth::emboss::LESetScanEnableCommandWriter>(
+          hci_spec::kLESetScanEnable);
+  auto enable_params = scan_enable_command.view_t();
+  enable_params.le_scan_enable().Write(pw::bluetooth::emboss::GenericEnableParam::ENABLE);
+  enable_params.filter_duplicates().Write(options.filter_duplicates
+                                              ? pw::bluetooth::emboss::GenericEnableParam::ENABLE
+                                              : pw::bluetooth::emboss::GenericEnableParam::DISABLE);
 
   hci_cmd_runner()->QueueCommand(std::move(scan_enable_command));
   hci_cmd_runner()->RunCommands([this, period = options.period](Result<> status) {
@@ -228,11 +228,11 @@ void LegacyLowEnergyScanner::StopScanInternal(bool stopped) {
   BT_DEBUG_ASSERT(hci_cmd_runner()->IsReady());
 
   // Tell the controller to stop scanning.
-  auto command = CommandPacket::New(hci_spec::kLESetScanEnable,
-                                    sizeof(hci_spec::LESetScanEnableCommandParams));
-  auto enable_params = command->mutable_payload<hci_spec::LESetScanEnableCommandParams>();
-  enable_params->scanning_enabled = pw::bluetooth::emboss::GenericEnableParam::DISABLE;
-  enable_params->filter_duplicates = pw::bluetooth::emboss::GenericEnableParam::DISABLE;
+  auto command = EmbossCommandPacket::New<pw::bluetooth::emboss::LESetScanEnableCommandWriter>(
+      hci_spec::kLESetScanEnable);
+  auto enable_params = command.view_t();
+  enable_params.le_scan_enable().Write(pw::bluetooth::emboss::GenericEnableParam::DISABLE);
+  enable_params.filter_duplicates().Write(pw::bluetooth::emboss::GenericEnableParam::DISABLE);
 
   hci_cmd_runner()->QueueCommand(std::move(command));
   hci_cmd_runner()->RunCommands([this, stopped](Result<> status) {

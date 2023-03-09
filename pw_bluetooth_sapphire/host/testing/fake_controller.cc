@@ -940,11 +940,12 @@ void FakeController::OnInquiry(const pw::bluetooth::emboss::InquiryCommandView& 
       zx::msec(static_cast<int64_t>(params.inquiry_length().Read()) * 1280));
 }
 
-void FakeController::OnLESetScanEnable(const hci_spec::LESetScanEnableCommandParams& params) {
+void FakeController::OnLESetScanEnable(
+    const pw::bluetooth::emboss::LESetScanEnableCommandView& params) {
   le_scan_state_.enabled =
-      (params.scanning_enabled == pw::bluetooth::emboss::GenericEnableParam::ENABLE);
+      (params.le_scan_enable().Read() == pw::bluetooth::emboss::GenericEnableParam::ENABLE);
   le_scan_state_.filter_duplicates =
-      (params.filter_duplicates == pw::bluetooth::emboss::GenericEnableParam::ENABLE);
+      (params.filter_duplicates().Read() == pw::bluetooth::emboss::GenericEnableParam::ENABLE);
 
   // Post the scan state update before scheduling the HCI Command Complete
   // event. This guarantees that single-threaded unit tests receive the scan
@@ -2928,11 +2929,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnReadLocalExtendedFeatures(params);
       break;
     }
-    case hci_spec::kLESetScanEnable: {
-      const auto& params = command_packet.payload<hci_spec::LESetScanEnableCommandParams>();
-      OnLESetScanEnable(params);
-      break;
-    }
     case hci_spec::kReset: {
       OnReset();
       break;
@@ -2990,7 +2986,8 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kLESetRandomAddress:
     case hci_spec::kLESetAdvertisingData:
     case hci_spec::kLESetScanResponseData:
-    case hci_spec::kLESetScanParameters: {
+    case hci_spec::kLESetScanParameters:
+    case hci_spec::kLESetScanEnable: {
       // This case is for packet types that have been migrated to the new Emboss architecture. Their
       // old version can be still be assembled from the HciEmulator channel, so here we repackage
       // and forward them as Emboss packets.
@@ -3231,6 +3228,11 @@ void FakeController::HandleReceivedCommandPacket(const hci::EmbossCommandPacket&
       const auto& params =
           command_packet.view<pw::bluetooth::emboss::LESetScanParametersCommandView>();
       OnLESetScanParamaters(params);
+      break;
+    }
+    case hci_spec::kLESetScanEnable: {
+      const auto& params = command_packet.view<pw::bluetooth::emboss::LESetScanEnableCommandView>();
+      OnLESetScanEnable(params);
       break;
     }
     default: {

@@ -498,7 +498,7 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   void OnInquiry(const pw::bluetooth::emboss::InquiryCommandView& params);
 
   // Called when a HCI_LE_Set_Scan_Enable command is received.
-  void OnLESetScanEnable(const hci_spec::LESetScanEnableCommandParams& params);
+  void OnLESetScanEnable(const pw::bluetooth::emboss::LESetScanEnableCommandView& params);
 
   // Called when a HCI_LE_Set_Scan_Parameters command is received.
   void OnLESetScanParamaters(const pw::bluetooth::emboss::LESetScanParametersCommandView& params);

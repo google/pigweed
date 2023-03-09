@@ -1955,13 +1955,6 @@ constexpr OpCode kLESetScanParameters = LEControllerCommandOpCode(0x000B);
 // LE Set Scan Enable Command (v4.0) (LE)
 constexpr OpCode kLESetScanEnable = LEControllerCommandOpCode(0x000C);
 
-struct LESetScanEnableCommandParams {
-  GenericEnableParam scanning_enabled;
-
-  // (See Core Spec v5.0, Vol 6, Part B, Section 4.4.3.5)
-  GenericEnableParam filter_duplicates;
-} __attribute__((packed));
-
 // ========================================
 // LE Create Connection Command (v4.0) (LE)
 constexpr OpCode kLECreateConnection = LEControllerCommandOpCode(0x000D);
