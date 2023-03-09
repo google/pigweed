@@ -15,8 +15,8 @@
 # the License.
 """ An internal set of tools for creating embedded CC targets. """
 
+load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain", "use_cpp_toolchain")
 load("@rules_cc//cc:action_names.bzl", "C_COMPILE_ACTION_NAME")
-load("@rules_cc//cc:toolchain_utils.bzl", "find_cpp_toolchain")
 
 DEBUGGING = [
     "-g",
@@ -139,6 +139,6 @@ pw_linker_script = rule(
         ),
         "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
     },
-    toolchains = ["@bazel_tools//tools/cpp:toolchain_type"],
+    toolchains = use_cpp_toolchain(),
     fragments = ["cpp"],
 )
