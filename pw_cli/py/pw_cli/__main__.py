@@ -38,7 +38,7 @@ def main() -> NoReturn:
     _LOG.debug('Executing the pw command from %s', args.directory)
     os.chdir(args.directory)
 
-    pw_command_plugins.register()
+    pw_command_plugins.register(args.directory)
 
     if args.help or args.command is None:
         print(pw_command_plugins.format_help(), file=sys.stderr)

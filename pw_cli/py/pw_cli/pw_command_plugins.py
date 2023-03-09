@@ -14,12 +14,12 @@
 """This module manages the global plugin registry for pw_cli."""
 
 import argparse
+import os
 from pathlib import Path
 import sys
 from typing import Iterable
 
-from pw_cli import arguments, env, plugins
-import pw_env_setup.config_file
+from pw_cli import arguments, plugins
 
 _plugin_registry = plugins.Registry(validator=plugins.callable_with_no_args)
 REGISTRY_FILE = 'PW_PLUGINS'
@@ -60,18 +60,11 @@ def _help_command():
         print(line, file=sys.stderr)
 
 
-def register() -> None:
+def register(directory: Path) -> None:
     _register_builtin_plugins(_plugin_registry)
-    parsed_env = env.pigweed_environment()
-    pw_plugins_file: Path = parsed_env.PW_PROJECT_ROOT / REGISTRY_FILE
-
-    if pw_plugins_file.is_file():
-        _plugin_registry.register_file(pw_plugins_file)
-    else:
-        _plugin_registry.register_config(
-            config=pw_env_setup.config_file.load(),
-            path=pw_env_setup.config_file.path(),
-        )
+    _plugin_registry.register_directory(
+        directory, REGISTRY_FILE, Path(os.environ.get('PW_PROJECT_ROOT', ''))
+    )
 
 
 def errors() -> dict:

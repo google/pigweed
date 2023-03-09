@@ -49,56 +49,43 @@ Here are some example invocations of ``pw``:
 Registering ``pw`` plugins
 ==========================
 Projects can register their own Python scripts as ``pw`` commands. ``pw``
-plugins are registered by providing the command name, module, and function in
-the ``pigweed.json`` file. ``pigweed.json`` files can add new commands or
-override built-in commands. Since they are accessed by module name, plugins must
-be defined in Python packages that are installed in the Pigweed virtual
+plugins are registered by providing the command name, module, and function in a
+``PW_PLUGINS`` file. ``PW_PLUGINS`` files can add new commands or override
+built-in commands. Since they are accessed by module name, plugins must be
+defined in Python packages that are installed in the Pigweed virtual
 environment.
 
-pigweed.json file format
----------------------------
-``pigweed.json`` contains plugin entries in the following format:
+Plugin registrations in a ``PW_PLUGINS`` file apply to the their directory and
+all subdirectories, similarly to configuration files like ``.clang-format``.
+Registered plugins appear as commands in the ``pw`` tool when ``pw`` is run from
+those directories.
 
-.. code-block::
+Projects that wish to register commands might place a ``PW_PLUGINS`` file in the
+root of their repo. Multiple ``PW_PLUGINS`` files may be applied, but the ``pw``
+tool gives precedence to a ``PW_PLUGINS`` file in the current working directory
+or the nearest parent directory.
 
-  {
-    "pw": {
-      "pw_cli": {
-        "plugins": {
-          "<plugin name>": {
-            "module": "<module containing plugin>",
-            "function": "<entry point for plugin>"
-          },
-          ...
-        }
-      }
-    }
-  }
+PW_PLUGINS file format
+----------------------
+``PW_PLUGINS`` contains one plugin entry per line in the following format:
+
+.. code-block:: python
+
+  # Lines that start with a # are ignored.
+  <command name> <Python module> <function>
 
 The following example registers three commands:
 
-.. code-block::
+.. code-block:: python
 
-  {
-    "pw": {
-      "pw_cli": {
-        "plugins": {
-          "presubmit": {
-            "module": "my_cool_project.tools",
-            "function": "run_presubmit"
-          },
-          "test": {
-            "module": "my_cool_project.testing",
-            "function": "run_test"
-          },
-          "flash": {
-            "module": "my_cool_project.flash",
-            "function": "main"
-          }
-        }
-      }
-    }
-  }
+  # Register the presubmit script as pw presubmit
+  presubmit my_cool_project.tools run_presubmit
+
+  # Override the pw test command with a custom version
+  test my_cool_project.testing run_test
+
+  # Add a custom command
+  flash my_cool_project.flash main
 
 Defining a plugin function
 --------------------------
