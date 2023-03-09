@@ -885,7 +885,6 @@ _EXCLUDE_FROM_TODO_CHECK = (
     r'\bpw_doctor/py/pw_doctor/doctor.py',
     r'\bpw_env_setup/util.sh',
     r'\bpw_fuzzer/fuzzer.gni',
-    r'\bpw_fuzzer/oss_fuzz.gni',
     r'\bpw_i2c/BUILD.gn',
     r'\bpw_i2c/public/pw_i2c/register_device.h',
     r'\bpw_kvs/flash_memory.cc',

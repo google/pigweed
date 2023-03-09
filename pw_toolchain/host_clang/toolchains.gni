@@ -37,6 +37,9 @@ declare_args() {
 # Specifies the tools used by host Clang toolchains.
 _host_clang_toolchain = {
   if (pw_toolchain_OSS_FUZZ_ENABLED) {
+    # OSS-Fuzz sets compiler and linker paths. See
+    # google.github.io/oss-fuzz/getting-started/new-project-guide/#Requirements.
+
     # Just use the "llvm-ar" on the system path.
     ar = "llvm-ar"
     cc = getenv("CC")
@@ -130,6 +133,9 @@ pw_toolchain_host_clang = {
       # Always disable coverage generation.
       pw_toolchain_COVERAGE_ENABLED = false
 
+      # Instrument the code for fuzzing.
+      default_configs += [ "$dir_pw_fuzzer:instrumentation" ]
+
       # Fuzz faster.
       default_configs += [ "$dir_pw_build:optimize_speed" ]
 
@@ -140,10 +146,6 @@ pw_toolchain_host_clang = {
       foreach(sanitizer, pw_toolchain_SANITIZERS) {
         default_configs +=
             [ "$dir_pw_toolchain/host_clang:sanitize_$sanitizer" ]
-      }
-
-      if (pw_toolchain_OSS_FUZZ_ENABLED) {
-        default_configs += [ "$dir_pw_fuzzer:oss_fuzz_extra" ]
       }
     }
   }

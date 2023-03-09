@@ -17,32 +17,39 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_fuzzer/fuzzer.gni")
-import("$dir_pw_fuzzer/oss_fuzz.gni")
 
 config("public_include_path") {
   include_dirs = [ "public" ]
   visibility = [ ":*" ]
 }
 
-# This is added automatically by the `pw_fuzzer` template.
-config("fuzzing") {
-  common_flags = [ "-fsanitize=fuzzer" ]
-  cflags = common_flags
-  ldflags = common_flags
+# Add flags for adding LLVM sanitizer coverage for fuzzing. This is added by
+# the host_clang_fuzz toolchains.
+config("instrumentation") {
+  if (pw_toolchain_OSS_FUZZ_ENABLED) {
+    # OSS-Fuzz manipulates compiler flags directly. See
+    # google.github.io/oss-fuzz/getting-started/new-project-guide/#Requirements.
+    cflags_c = string_split(getenv("CFLAGS"))
+    cflags_cc = string_split(getenv("CXXFLAGS"))
+
+    # OSS-Fuzz sets "-stdlib=libc++", which conflicts with the "-nostdinc++" set
+    # by `pw_minimal_cpp_stdlib`.
+    cflags_cc += [ "-Wno-unused-command-line-argument" ]
+  } else {
+    cflags = [ "-fsanitize=fuzzer-no-link" ]
+  }
 }
 
-# OSS-Fuzz needs to be able to specify its own compilers and add flags.
-config("oss_fuzz") {
-  # OSS-Fuzz doesn't always link with -fsanitize=fuzzer, sometimes it uses
-  #-fsanitize=fuzzer-no-link and provides the fuzzing engine explicitly to be
-  # passed to the linker.
-  ldflags = [ getenv("LIB_FUZZING_ENGINE") ]
-}
-
-config("oss_fuzz_extra") {
-  cflags_c = oss_fuzz_extra_cflags_c
-  cflags_cc = oss_fuzz_extra_cflags_cc
-  ldflags = oss_fuzz_extra_ldflags
+# Add flags for linking against compiler-rt's libFuzzer. This is added
+# automatically by `pw_fuzzer`.
+config("engine") {
+  if (pw_toolchain_OSS_FUZZ_ENABLED) {
+    # OSS-Fuzz manipulates linker flags directly. See
+    # google.github.io/oss-fuzz/getting-started/new-project-guide/#Requirements.
+    ldflags = string_split(getenv("LDFLAGS")) + [ getenv("LIB_FUZZING_ENGINE") ]
+  } else {
+    ldflags = [ "-fsanitize=fuzzer" ]
+  }
 }
 
 pw_source_set("pw_fuzzer") {

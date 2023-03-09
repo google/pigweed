@@ -95,9 +95,22 @@ To build a fuzzer, do the following:
 
   $ gn gen out --args='pw_toolchain_SANITIZERS=["address"]'
 
-3. Build normally, e.g. using ``pw watch``.
+3. Build using a fuzzer toolchain.
 
-.. _run:
+.. code:: sh
+
+  $ ninja -C out '//my_module:tests(host_clang_fuzz)'
+
+4. To build all fuzzers, add a top-level fuzzers target. For example, the
+   following could be built using `ninja -C out fuzzers`:
+
+.. code::
+
+  group("fuzzers") {
+    deps = [ ":tests($dir_pigweed/targets/host:host_clang_fuzz)" ]
+  }
+
+.. _bazel:
 
 Building and running fuzzers with Bazel
 =======================================
@@ -141,6 +154,8 @@ To build a fuzzer, do the following:
 .. code::
 
   bazel test //my_module:my_fuzz_test --config asan-libfuzzer
+
+.. _run:
 
 Running fuzzers locally
 =======================
