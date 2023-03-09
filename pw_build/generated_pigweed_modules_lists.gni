@@ -28,6 +28,7 @@
 # Declare a build arg for each module.
 declare_args() {
   dir_docker = get_path_info("../docker", "abspath")
+  dir_pw_alignment = get_path_info("../pw_alignment", "abspath")
   dir_pw_allocator = get_path_info("../pw_allocator", "abspath")
   dir_pw_analog = get_path_info("../pw_analog", "abspath")
   dir_pw_android_toolchain = get_path_info("../pw_android_toolchain", "abspath")
@@ -177,6 +178,7 @@ declare_args() {
   # A list with paths to all Pigweed module. DO NOT SET THIS BUILD ARGUMENT!
   pw_modules = [
     dir_docker,
+    dir_pw_alignment,
     dir_pw_allocator,
     dir_pw_analog,
     dir_pw_android_toolchain,
@@ -313,6 +315,7 @@ declare_args() {
   # A list with all Pigweed module test groups. DO NOT SET THIS BUILD ARGUMENT!
   pw_module_tests = [
     "$dir_docker:tests",
+    "$dir_pw_alignment:tests",
     "$dir_pw_allocator:tests",
     "$dir_pw_analog:tests",
     "$dir_pw_android_toolchain:tests",
@@ -449,6 +452,7 @@ declare_args() {
   # A list with all Pigweed modules docs groups. DO NOT SET THIS BUILD ARGUMENT!
   pw_module_docs = [
     "$dir_docker:docs",
+    "$dir_pw_alignment:docs",
     "$dir_pw_allocator:docs",
     "$dir_pw_analog:docs",
     "$dir_pw_android_toolchain:docs",

@@ -1,4 +1,5 @@
 docker
+pw_alignment
 pw_allocator
 pw_analog
 pw_android_toolchain
