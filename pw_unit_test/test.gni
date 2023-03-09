@@ -219,7 +219,60 @@ template("pw_test") {
   pw_internal_disableable_target("$target_name.lib") {
     target_type = "pw_source_set"
     enable_if = _test_is_enabled
-    forward_variables_from(invoker, "*", [ "metadata" ])
+
+    # It is possible that the executable target type has been overriden by
+    # pw_unit_test_EXECUTABLE_TARGET_TYPE, which may allow for additional
+    # variables to be specified on the executable template. As such, we cannot
+    # forward all variables ("*") from the invoker to source_set library, as
+    # those additional variables would not be used and GN gen would error.
+    _source_set_relevant_variables = [
+      # GN source_set variables
+      # https://gn.googlesource.com/gn/+/main/docs/reference.md#target-declarations-source_set_declare-a-source-set-target-variables
+      "asmflags",
+      "cflags",
+      "cflags_c",
+      "cflags_cc",
+      "cflags_objc",
+      "cflags_objcc",
+      "defines",
+      "include_dirs",
+      "inputs",
+      "ldflags",
+      "lib_dirs",
+      "libs",
+      "precompiled_header",
+      "precompiled_source",
+      "rustenv",
+      "rustflags",
+      "swiftflags",
+      "testonly",
+      "assert_no_deps",
+      "data_deps",
+      "deps",
+      "public_deps",
+      "runtime_deps",
+      "write_runtime_deps",
+      "all_dependent_configs",
+      "public_configs",
+      "check_includes",
+      "configs",
+      "data",
+      "friend",
+      "inputs",
+      "metadata",
+      "output_extension",
+      "output_name",
+      "public",
+      "sources",
+      "testonly",
+      "visibility",
+
+      # pw_source_set variables
+      # https://pigweed.dev/pw_build/?highlight=pw_executable#target-types
+      "remove_configs",
+      "remove_public_deps",
+    ]
+    forward_variables_from(invoker, _source_set_relevant_variables)
 
     if (!defined(deps)) {
       deps = []
