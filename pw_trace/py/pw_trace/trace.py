@@ -28,6 +28,7 @@ import struct
 from typing import Iterable, NamedTuple
 
 _LOG = logging.getLogger('pw_trace')
+_ORDERING_CHARS = ("@", "=", "<", ">", "!")
 
 
 class TraceType(Enum):
@@ -72,7 +73,10 @@ def event_has_trace_id(event_type):
 def decode_struct_fmt_args(event):
     """Decodes the trace's event data for struct-formatted data"""
     args = {}
+    # we assume all data is packed, little-endian ordering if not specified
     struct_fmt = event.data_fmt[len("@pw_py_struct_fmt:") :]
+    if not struct_fmt.startswith(_ORDERING_CHARS):
+        struct_fmt = "<" + struct_fmt
     try:
         # needed in case the buffer is larger than expected
         assert struct.calcsize(struct_fmt) == len(event.data)
@@ -92,14 +96,21 @@ def decode_struct_fmt_args(event):
 def decode_map_fmt_args(event):
     """Decodes the trace's event data for map-formatted data"""
     args = {}
-    fmt_list = event.data_fmt[len("@pw_py_map_fmt:") :].strip("{}").split(",")
-    fmt_bytes = ''
-    fields = []
+    fmt = event.data_fmt[len("@pw_py_map_fmt:") :]
+
+    # we assume all data is packed, little-endian ordering if not specified
+    if not fmt.startswith(_ORDERING_CHARS):
+        fmt = '<' + fmt
+
     try:
+        (fmt_bytes, fmt_list) = fmt.split("{")
+        fmt_list = fmt_list.strip("}").split(",")
+
+        names = []
         for pair in fmt_list:
-            (field, value) = (s.strip() for s in pair.split(":"))
-            fields.append(field)
-            fmt_bytes += value
+            (name, fmt_char) = (s.strip() for s in pair.split(":"))
+            names.append(name)
+            fmt_bytes += fmt_char
     except ValueError:
         args["error"] = f"Invalid map format {event.data_fmt}"
     else:
@@ -108,11 +119,13 @@ def decode_map_fmt_args(event):
             assert struct.calcsize(fmt_bytes) == len(event.data)
             items = struct.unpack_from(fmt_bytes, event.data)
             for i, item in enumerate(items):
-                args[fields[i]] = item
+                args[names[i]] = item
         except (AssertionError, struct.error):
             args["error"] = (
-                f"Mismatched struct/data format {event.data_fmt}"
-                f" data {event.data.hex()}"
+                f"Mismatched map/data format {event.data_fmt} "
+                f"expected data len {struct.calcsize(fmt_bytes)} "
+                f"data {event.data.hex()} "
+                f"data len {len(event.data)}"
             )
     return args
 
