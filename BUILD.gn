@@ -278,6 +278,7 @@ group("action_tests") {
 group("integration_tests") {
   _default_tc = _default_toolchain_prefix + pw_DEFAULT_C_OPTIMIZATION_LEVEL
   deps = [
+    "$dir_pw_cli/py:process_integration_test.action($_default_tc)",
     "$dir_pw_rpc:cpp_client_server_integration_test($_default_tc)",
     "$dir_pw_rpc/py:python_client_cpp_server_test.action($_default_tc)",
     "$dir_pw_unit_test/py:rpc_service_test.action($_default_tc)",
