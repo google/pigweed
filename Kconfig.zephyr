@@ -13,7 +13,7 @@
 # the License.
 
 config ZEPHYR_PIGWEED_MODULE
-    select LIB_CPLUSPLUS
+    select REQUIRES_FULL_LIBCPP
     depends on STD_CPP17 || STD_CPP2A || STD_CPP20 || STD_CPP2B
 
 if ZEPHYR_PIGWEED_MODULE
