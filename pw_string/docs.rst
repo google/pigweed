@@ -56,46 +56,62 @@ pw_string
 ----------
 Background
 ----------
-String manipulation is a very common operation, but the standard C and C++
-string libraries have drawbacks. The C++ functions are easy-to-use and powerful,
-but require too much flash and memory for many embedded projects. The C string
-functions are lighter weight, but can be difficult to use correctly. Mishandling
-of null terminators or buffer sizes can result in serious bugs.
+String manipulation on embedded systems can be surprisingly challenging.
+C strings are light weight but come with many pitfalls for those who don't know
+the standard library deeply. C++ provides string classes that are safe and easy
+to use, but they consume way too much code space and are designed to be used
+with dynamic memory allocation.
+
+Embedded systems need string functionality that is both safe and suitable for
+resource-constrained platforms.
 
 ------------
 Our solution
 ------------
-The ``pw_string`` module provides the flexibility, ease-of-use, and safety of
-C++-style string manipulation, but with no dynamic memory allocation and a much
-smaller binary size impact. Using ``pw_string`` in place of the standard C
-functions eliminates issues related to buffer overflow or missing null
-terminators.
+``pw_string`` provides safe string handling functionality with an API that
+closely matches that of ``std::string``, but without dynamic memory allocation
+and with a *much* smaller :ref:`binary size impact <module-pw_string-size-reports>`.
 
 ---------------
 Who this is for
 ---------------
-``pw_string`` is potentially useful for anyone who is working with strings in
-C++.
+``pw_string`` is useful any time you need to handle strings in embedded C++.
 
+--------------------
 Is it right for you?
 --------------------
+If your project written in C, ``pw_string`` is not a good fit since we don't
+currently expose a C API.
+
+For larger platforms where code space isn't in short supply and dynamic memory
+allocation isn't a problem, you may find that ``std::string`` meets your needs.
+
+.. tip::
+   ``pw_string`` works just as well on larger embedded platforms and host
+   systems. Using ``pw_string`` even when you might get away with ``std:string``
+   gives you the flexibility to move to smaller platforms later with much less
+   rework.
+
 Here are some size reports that may affect whether ``pw_string`` is right for
 you.
 
+.. _module-pw_string-size-reports:
+
 Size comparison: snprintf versus pw::StringBuilder
 --------------------------------------------------
-:cpp:type:`pw::StringBuilder` is safe, flexible, and results in much smaller code size than
-using ``std::ostringstream``. However, applications sensitive to code size
-should use :cpp:type:`pw::StringBuilder` with care.
+:cpp:type:`pw::StringBuilder` is safe, flexible, and results in much smaller
+code size than using ``std::ostringstream``. However, applications sensitive to
+code size should use :cpp:type:`pw::StringBuilder` with care.
 
-The fixed code size cost of :cpp:type:`pw::StringBuilder` is significant, though smaller than
-``std::snprintf``. Using :cpp:type:`pw::StringBuilder`'s ``<<`` and ``append`` methods exclusively in
-place of ``snprintf`` reduces code size, but ``snprintf`` may be difficult to
-avoid.
+The fixed code size cost of :cpp:type:`pw::StringBuilder` is significant, though
+smaller than ``std::snprintf``. Using :cpp:type:`pw::StringBuilder`'s ``<<`` and
+``append`` methods exclusively in place of ``snprintf`` reduces code size, but
+``snprintf`` may be difficult to avoid.
 
-The incremental code size cost of :cpp:type:`pw::StringBuilder` is comparable to ``snprintf`` if
-errors are handled. Each argument to :cpp:type:`pw::StringBuilder`'s ``<<`` method expands to a
-function call, but one or two :cpp:type:`pw::StringBuilder` appends may have a smaller code size
+The incremental code size cost of :cpp:type:`pw::StringBuilder` is comparable to
+``snprintf`` if errors are handled. Each argument to
+:cpp:type:`pw::StringBuilder`'s ``<<`` method expands to a function call, but
+one or two :cpp:type:`pw::StringBuilder` appends may have a smaller code size
 impact than a single ``snprintf`` call.
 
 .. include:: string_builder_size_report
@@ -113,27 +129,6 @@ Roadmap
 * StringBuilder's fixed size cost can be dramatically reduced by limiting
   support for 64-bit integers.
 * Consider integrating with the tokenizer module.
-
----------------
-Who this is for
----------------
-..
-  Highlight the use cases that are appropriate for this module. This is the place
-  to make the sales pitch-why should developers use this module, and what makes
-  this module stand out from alternative solutions that try to address this
-  problem.
-
---------------------
-Is it right for you?
---------------------
-..
-  This module may not solve all problems or be appropriate for all circumstances.
-  This is the place to add those caveats. Highly-experimental modules that are
-  under very active development might be a poor fit for any developer right now.
-  If so, mention that here.
-
-..
-  https://issues.pigweed.dev/issues/269671709
 
 Compatibility
 -------------
@@ -169,25 +164,15 @@ Zephyr
 ------
 Add ``CONFIG_PIGWEED_STRING=y`` to the Zephyr project's configuration.
 
----------------------
-Design considerations
----------------------
-``pw_string`` is designed to prioritize safety and static allocation. It matches
-the ``std::string`` API as closely as possible, but isn't intended to provide
-complete API compatibility. See :ref:`module-pw_string-design` for more
-details.
-
 -------
 Roadmap
 -------
-* The fixed size cost of :cpp:type:`pw::StringBuilder` can be dramatically reduced by
-  limiting support for 64-bit integers.
+* The fixed size cost of :cpp:type:`pw::StringBuilder` can be dramatically
+  reduced by limiting support for 64-bit integers.
 * ``pw_string`` may be integrated with :ref:`module-pw_tokenizer`.
 
-----------
-Learn more
-----------
 .. toctree::
+   :hidden:
    :maxdepth: 1
 
    design

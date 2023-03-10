@@ -3,10 +3,9 @@
 ================
 pw_string design
 ================
-..
-  This doc provides background on how a module works internally, the assumptions
-  inherent in its design, why this particular design was chosen over others, and
-  other topics of that nature.
+``pw_string`` is designed to prioritize safety and static allocation. It matches
+the ``std::string`` API as closely as possible, but isn't intended to provide
+complete API compatibility.
 
 :cpp:type:`pw::InlineString` / :cpp:class:`pw::InlineBasicString` follows the
 ``std::string`` / ``std::basic_string<T>`` API, with a few variations:
