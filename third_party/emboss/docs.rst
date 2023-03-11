@@ -18,7 +18,7 @@ Git submodule:
 
 .. code-block:: sh
 
-  git submodule add https://github.com/google/emboss.git third_party/emboss/src
+   git submodule add https://github.com/google/emboss.git third_party/emboss/src
 
 Next, set the GN variable ``dir_pw_third_party_emboss`` to the path of your Emboss
 installation. If using the submodule path from above, add the following to the
@@ -26,7 +26,19 @@ installation. If using the submodule path from above, add the following to the
 
 .. code-block::
 
-  dir_pw_third_party_emboss = "//third_party/emboss/src"
+   dir_pw_third_party_emboss = "//third_party/emboss/src"
+
+..
+   inclusive-language: disable
+
+Optionally, configure the Emboss defines documented at
+`dir_pw_third_party_emboss/runtime/cpp/emboss_defines.h
+<https://github.com/google/emboss/blob/master/runtime/cpp/emboss_defines.h>`_
+by setting the ``pw_third_party_emboss_CONFIG`` variable to a config that
+overrides the defines. By default, checks will use PW_DCHECK.
+
+..
+   inclusive-language: enable
 
 ------------
 Using Emboss

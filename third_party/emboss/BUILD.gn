@@ -18,7 +18,20 @@ import("$dir_pw_build/python.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_third_party/emboss/emboss.gni")
 
+config("default_config") {
+  # EMBOSS_DCHECK is used as an assert() for logic embedded in Emboss, where
+  # EMBOSS_CHECK is used to check preconditions on application logic (e.g.
+  # Write() checks the [requires: ...] attribute).
+  defines = [
+    "EMBOSS_CHECK=PW_DCHECK",
+    "EMBOSS_CHECK_ABORTS",
+    "EMBOSS_DCHECK=PW_DCHECK",
+    "EMBOSS_DCHECK_ABORTS",
+  ]
+}
+
 source_set("cpp_utils") {
+  public_configs = [ pw_third_party_emboss_CONFIG ]
   sources = [
     "$dir_pw_third_party_emboss/runtime/cpp/emboss_arithmetic.h",
     "$dir_pw_third_party_emboss/runtime/cpp/emboss_arithmetic_all_known_generated.h",

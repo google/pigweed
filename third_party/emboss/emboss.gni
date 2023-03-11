@@ -12,8 +12,14 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+import("//build_overrides/pigweed.gni")
+
 declare_args() {
   # If compiling with Emboss, this variable is set to the path to the Emboss
   # source code.
   dir_pw_third_party_emboss = ""
+
+  # config target for overriding Emboss defines (e.g. EMBOSS_CHECK).
+  pw_third_party_emboss_CONFIG =
+      "$dir_pigweed/third_party/emboss:default_config"
 }
