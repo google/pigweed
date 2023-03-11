@@ -6,6 +6,7 @@
 
 #include <stdarg.h>
 
+#include <atomic>
 #include <memory>
 #include <string_view>
 
