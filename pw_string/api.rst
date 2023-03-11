@@ -1,22 +1,41 @@
 .. _module-pw_string-api:
 
-=======================
-pw_string API reference
-=======================
+=============
+API Reference
+=============
 
 --------
 Overview
 --------
-.. doxygenfile:: pw_string/string.h
-   :sections: briefdescription
-.. doxygenfile:: pw_string/util.h
-   :sections: briefdescription
+This module provides two types of strings, and utility functions for working
+with strings.
+
+**pw::StringBuilder**
+
 .. doxygenfile:: pw_string/string_builder.h
    :sections: briefdescription
 
----------------------
-pw::InlineBasicString
----------------------
+**pw::InlineString**
+
+.. doxygenfile:: pw_string/string.h
+   :sections: briefdescription
+
+**String utility functions**
+
+.. doxygenfile:: pw_string/util.h
+   :sections: briefdescription
+
+-----------------
+pw::StringBuilder
+-----------------
+.. doxygenfile:: pw_string/string_builder.h
+   :sections: briefdescription
+.. doxygenclass:: pw::StringBuilder
+   :members:
+
+----------------
+pw::InlineString
+----------------
 .. doxygenfile:: pw_string/string.h
    :sections: detaileddescription
 
@@ -25,9 +44,9 @@ pw::InlineBasicString
 
 .. doxygentypedef:: pw::InlineString
 
-----------
-pw::string
-----------
+------------------------
+String utility functions
+------------------------
 
 pw::string::Assign()
 --------------------
@@ -70,11 +89,3 @@ pw::string::NullTerminatedLength()
 pw::string::PrintableCopy()
 ---------------------------
 .. doxygenfunction:: pw::string::PrintableCopy(const std::string_view& source, span<char> dest)
-
------------------
-pw::StringBuilder
------------------
-.. doxygenfile:: pw_string/string_builder.h
-   :sections: briefdescription
-.. doxygenclass:: pw::StringBuilder
-   :members:

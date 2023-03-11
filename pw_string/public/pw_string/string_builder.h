@@ -15,8 +15,8 @@
 /// @file pw_string/string_builder.h
 ///
 /// @brief `pw::StringBuilder` facilitates creating formatted strings in a
-/// fixed-sized buffer or `pw::InlineString`. It is designed to give the
-/// flexibility of `std::ostringstream`, but with a small footprint.
+/// fixed-sized buffer or in a `pw::InlineString`. It is designed to give the
+/// flexibility of std::ostringstream, but with a small footprint.
 
 #include <algorithm>
 #include <cstdarg>
