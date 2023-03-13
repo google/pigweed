@@ -51,3 +51,21 @@ pw_add_test(pw_function.function_test
     modules
     pw_function
 )
+
+pw_add_library(pw_function.scope_guard INTERFACE
+  HEADERS
+    public/pw_function/scope_guard.h
+  PUBLIC_INCLUDES
+    public
+)
+
+pw_add_test(pw_function.scope_guard_test
+  SOURCES
+    scope_guard_test.cc
+  PRIVATE_DEPS
+    pw_function
+    pw_function.scope_guard
+  GROUPS
+    modules
+    pw_function
+)

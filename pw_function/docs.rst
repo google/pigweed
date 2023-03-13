@@ -220,6 +220,11 @@ once. After a ``pw::Callback`` is called, the target function is destroyed. A
 ``pw::Callback`` in the "already called" state has the same state as a
 ``pw::Callback`` that has been assigned to nullptr.
 
+ScopeGuard
+==========
+.. doxygenclass:: pw::ScopeGuard
+    :members:
+
 Size reports
 ============
 
