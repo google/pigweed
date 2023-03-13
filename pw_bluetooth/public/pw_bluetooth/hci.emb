@@ -784,6 +784,39 @@ enum LEAdvertisingFilterPolicy:
     -- Process scan and connection requests only from devices in the Filter
     -- Accept List.
 
+
+enum LESetExtendedAdvDataOp:
+  -- Potential values for the Operation parameter in a HCI_LE_Set_Extended_Advertising_Data command.
+  [maximum_bits: 8]
+
+  INTERMEDIATE_FRAGMENT  = 0x00
+    -- Intermediate fragment of fragmented extended advertising data.
+
+  FIRST_FRAGMENT         = 0x01
+    -- First fragment of fragmented extended advertising data.
+
+  LAST_FRAGMENT          = 0x02
+    -- Last fragment of fragmented extended advertising data.
+
+  COMPLETE               = 0x03
+    -- Complete extended advertising data.
+
+  UNCHANGED_DATA         = 0x04
+    -- Unchanged data (just update the Advertising DID)
+
+
+enum LEExtendedAdvFragmentPreference:
+  -- Potential values for the Fragment_Preference parameter in a
+  -- HCI_LE_Set_Extended_Advertising_Data command.
+  [maximum_bits: 8]
+
+  MAY_FRAGMENT         = 0x00
+    -- The Controller may fragment all Host advertising data
+
+  SHOULD_NOT_FRAGMENT  = 0x01
+    -- The Controller should not fragment or should minimize fragmentation of Host advertising data
+
+
 # ========================= HCI packet headers ==========================
 
 
@@ -1368,6 +1401,42 @@ struct LESetExtendedAdvertisingEnableData:
   $next [+1]  UInt  max_extended_advertising_events
 
 
+struct LESetExtendedAdvertisingDataCommand:
+  -- LE Set Extended Advertising Data Command (v5.0) (LE)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader                    header
+  $next [+1]         UInt                             advertising_handle
+    -- Handle used to identify an advertising set.
+  $next [+1]         LESetExtendedAdvDataOp           operation
+  $next [+1]         LEExtendedAdvFragmentPreference  fragment_preference
+    -- Provides a hint to the Controller as to whether advertising data should be fragmented.
+  $next [+1]         UInt                             advertising_data_length (sz)
+    -- Length of the advertising data included in this command packet, up to
+    -- kMaxLEExtendedAdvertisingDataLength bytes. If the advertising set uses legacy advertising
+    -- PDUs that support advertising data then this shall not exceed kMaxLEAdvertisingDataLength
+    -- bytes.
+    [requires: 0 <= this <= 251]
+  $next [+sz]        UInt:8[sz]                       advertising_data
+    -- Variable length advertising data.
+
+
+struct LESetExtendedScanResponseDataCommand:
+  -- LE Set Extended Scan Response Data Command (v5.0) (LE)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader                    header
+  $next [+1]         UInt                             advertising_handle
+    -- Used to identify an advertising set
+    [requires: 0x00 <= this <= 0xEF]
+  $next [+1]         LESetExtendedAdvDataOp           operation
+  $next [+1]         LEExtendedAdvFragmentPreference  fragment_preference
+    -- Provides a hint to the controller as to whether advertising data should be fragmented
+  $next [+1]         UInt                             scan_response_data_length (sz)
+    -- The number of octets in the scan_response_data parameter
+    [requires: 0 <= this <= 251]
+  $next [+sz]        UInt:8[sz]                       scan_response_data
+    -- Scan response data formatted as defined in Core Spec v5.4, Vol 3, Part C, Section 11
+
+
 struct LESetExtendedAdvertisingEnableCommand:
   -- LE Set Extended Advertising Enable command (v5.0) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
@@ -1378,11 +1447,32 @@ struct LESetExtendedAdvertisingEnableCommand:
   $next [+single_data_size*num_sets]  LESetExtendedAdvertisingEnableData[]  data
 
 
+struct LEReadMaxAdvertisingDataLengthCommand:
+  -- LE Read Maximum Advertising Data Length Command (v5.0) (LE)
+  -- This command has no parameters
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
+struct LEReadNumSupportedAdvertisingSetsCommand:
+  -- LE Read Number of Supported Advertising Sets Command (v5.0) (LE)
+  -- This command has no parameters
+  let hdr_size = CommandHeader.$size_in_bytes
+  0  [+hdr_size]  CommandHeader  header
+
+
 struct LERemoveAdvertisingSetCommand:
   -- LE Remove Advertising Set command (v5.0) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
   $next [+1]         UInt           advertising_handle
+
+
+struct LEClearAdvertisingSetsCommand:
+  -- LE Clear Advertising Sets Command (v5.0) (LE)
+  -- This command has no parameters
+  let hdr_size = CommandHeader.$size_in_bytes
+  0  [+hdr_size]  CommandHeader  header
 
 
 struct LESetExtendedScanParametersData:
