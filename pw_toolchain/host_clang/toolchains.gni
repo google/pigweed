@@ -28,6 +28,10 @@ declare_args() {
   # of the test binary itself cannot generate coverage reports.
   pw_toolchain_COVERAGE_ENABLED = false
 
+  # Indicates if this toolchain supports building fuzzers. This is typically
+  # set by individual toolchains and not by GN args.
+  pw_toolchain_FUZZING_ENABLED = false
+
   # Indicates if this build is a part of OSS-Fuzz, which needs to be able to
   # provide its own compiler and flags. This violates the build hermeticisim and
   # should only be used for OSS-Fuzz.
@@ -130,11 +134,11 @@ pw_toolchain_host_clang = {
     defaults = {
       forward_variables_from(_defaults, "*")
 
+      pw_toolchain_FUZZING_ENABLED = true
+      default_configs += [ "$dir_pw_fuzzer:instrumentation" ]
+
       # Always disable coverage generation.
       pw_toolchain_COVERAGE_ENABLED = false
-
-      # Instrument the code for fuzzing.
-      default_configs += [ "$dir_pw_fuzzer:instrumentation" ]
 
       # Fuzz faster.
       default_configs += [ "$dir_pw_build:optimize_speed" ]

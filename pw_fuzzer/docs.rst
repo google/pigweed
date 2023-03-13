@@ -95,7 +95,9 @@ To build a fuzzer, do the following:
 
   $ gn gen out --args='pw_toolchain_SANITIZERS=["address"]'
 
-3. Build using a fuzzer toolchain.
+3. Build using a fuzzer toolchain. Fuzzer toolchains are those with
+   ``pw_toolchain_FUZZING_ENABLED`` set to true. Examples include
+   ``host_clang_fuzz`` and any toolchains that extend it.
 
 .. code:: sh
 

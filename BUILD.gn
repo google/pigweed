@@ -285,7 +285,7 @@ group("integration_tests") {
   ]
 }
 
-# OSS-Fuzz uses this target to build fuzzers alone.
+# Build-only target for fuzzers.
 group("fuzzers") {
   # Fuzzing is only supported on Linux and MacOS using clang.
   if (host_os != "win") {

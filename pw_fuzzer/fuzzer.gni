@@ -26,23 +26,7 @@ import("$dir_pw_unit_test/test.gni")
 #   https://llvm.org/docs/LibFuzzer.html
 #
 template("pw_fuzzer") {
-  # This currently is ONLY supported on Linux and Mac using clang (debug).
-  # TODO(pwbug/179): Add Windows here after testing.
-  fuzzing_platforms = [
-    "linux",
-    "mac",
-  ]
-
-  fuzzing_toolchains =
-      [ get_path_info("$dir_pigweed/targets/host:host_clang_fuzz", "abspath") ]
-
-  # This is how GN says 'elem in list':
-  can_fuzz = fuzzing_platforms + [ host_os ] - [ host_os ] != fuzzing_platforms
-
-  can_fuzz = fuzzing_toolchains + [ current_toolchain ] -
-             [ current_toolchain ] != fuzzing_toolchains && can_fuzz
-
-  if (can_fuzz && pw_toolchain_SANITIZERS != []) {
+  if (pw_toolchain_FUZZING_ENABLED && pw_toolchain_SANITIZERS != []) {
     # Build the actual fuzzer using the fuzzing config.
     pw_executable(target_name) {
       forward_variables_from(invoker, "*", [ "visibility" ])
