@@ -788,20 +788,19 @@ enum LEAdvertisingFilterPolicy:
 enum LESetExtendedAdvDataOp:
   -- Potential values for the Operation parameter in a HCI_LE_Set_Extended_Advertising_Data command.
   [maximum_bits: 8]
-
-  INTERMEDIATE_FRAGMENT  = 0x00
+  INTERMEDIATE_FRAGMENT = 0x00
     -- Intermediate fragment of fragmented extended advertising data.
 
-  FIRST_FRAGMENT         = 0x01
+  FIRST_FRAGMENT        = 0x01
     -- First fragment of fragmented extended advertising data.
 
-  LAST_FRAGMENT          = 0x02
+  LAST_FRAGMENT         = 0x02
     -- Last fragment of fragmented extended advertising data.
 
-  COMPLETE               = 0x03
+  COMPLETE              = 0x03
     -- Complete extended advertising data.
 
-  UNCHANGED_DATA         = 0x04
+  UNCHANGED_DATA        = 0x04
     -- Unchanged data (just update the Advertising DID)
 
 
@@ -809,13 +808,33 @@ enum LEExtendedAdvFragmentPreference:
   -- Potential values for the Fragment_Preference parameter in a
   -- HCI_LE_Set_Extended_Advertising_Data command.
   [maximum_bits: 8]
-
-  MAY_FRAGMENT         = 0x00
+  MAY_FRAGMENT        = 0x00
     -- The Controller may fragment all Host advertising data
 
-  SHOULD_NOT_FRAGMENT  = 0x01
+  SHOULD_NOT_FRAGMENT = 0x01
     -- The Controller should not fragment or should minimize fragmentation of Host advertising data
 
+
+enum FlowControlMode:
+  [maximum_bits: 8]
+  PACKET_BASED     = 0x00
+  DATA_BLOCK_BASED = 0x01
+
+
+bits EventMaskPage2:
+  8  [+1]  Flag  number_of_completed_data_blocks_event
+  14 [+1]  Flag  triggered_clock_capture_event
+  15 [+1]  Flag  synchronization_train_complete_event
+  16 [+1]  Flag  synchronization_train_received_event
+  17 [+1]  Flag  connectionless_peripheral_broadcast_receive_event
+  18 [+1]  Flag  connectionless_peripheral_broadcast_timeout_event
+  19 [+1]  Flag  truncated_page_complete_event
+  20 [+1]  Flag  peripheral_page_response_timeout_event
+  21 [+1]  Flag  connectionless_peripheral_broadcast_channel_map_event
+  22 [+1]  Flag  inquiry_response_notification_event
+  23 [+1]  Flag  authenticated_payload_timeout_expired_event
+  24 [+1]  Flag  sam_status_change_event
+  25 [+1]  Flag  encryption_change_event_v2
 
 # ========================= HCI packet headers ==========================
 
@@ -1403,19 +1422,26 @@ struct LESetExtendedAdvertisingEnableData:
 
 struct LESetExtendedAdvertisingDataCommand:
   -- LE Set Extended Advertising Data Command (v5.0) (LE)
+
   let hdr_size = CommandHeader.$size_in_bytes
+
   0     [+hdr_size]  CommandHeader                    header
+
   $next [+1]         UInt                             advertising_handle
     -- Handle used to identify an advertising set.
+
   $next [+1]         LESetExtendedAdvDataOp           operation
+
   $next [+1]         LEExtendedAdvFragmentPreference  fragment_preference
     -- Provides a hint to the Controller as to whether advertising data should be fragmented.
+
   $next [+1]         UInt                             advertising_data_length (sz)
     -- Length of the advertising data included in this command packet, up to
     -- kMaxLEExtendedAdvertisingDataLength bytes. If the advertising set uses legacy advertising
     -- PDUs that support advertising data then this shall not exceed kMaxLEAdvertisingDataLength
     -- bytes.
     [requires: 0 <= this <= 251]
+
   $next [+sz]        UInt:8[sz]                       advertising_data
     -- Variable length advertising data.
 
@@ -1427,12 +1453,15 @@ struct LESetExtendedScanResponseDataCommand:
   $next [+1]         UInt                             advertising_handle
     -- Used to identify an advertising set
     [requires: 0x00 <= this <= 0xEF]
+
   $next [+1]         LESetExtendedAdvDataOp           operation
   $next [+1]         LEExtendedAdvFragmentPreference  fragment_preference
     -- Provides a hint to the controller as to whether advertising data should be fragmented
+
   $next [+1]         UInt                             scan_response_data_length (sz)
     -- The number of octets in the scan_response_data parameter
     [requires: 0 <= this <= 251]
+
   $next [+sz]        UInt:8[sz]                       scan_response_data
     -- Scan response data formatted as defined in Core Spec v5.4, Vol 3, Part C, Section 11
 
@@ -1458,7 +1487,7 @@ struct LEReadNumSupportedAdvertisingSetsCommand:
   -- LE Read Number of Supported Advertising Sets Command (v5.0) (LE)
   -- This command has no parameters
   let hdr_size = CommandHeader.$size_in_bytes
-  0  [+hdr_size]  CommandHeader  header
+  0 [+hdr_size]  CommandHeader  header
 
 
 struct LERemoveAdvertisingSetCommand:
@@ -1472,7 +1501,7 @@ struct LEClearAdvertisingSetsCommand:
   -- LE Clear Advertising Sets Command (v5.0) (LE)
   -- This command has no parameters
   let hdr_size = CommandHeader.$size_in_bytes
-  0  [+hdr_size]  CommandHeader  header
+  0 [+hdr_size]  CommandHeader  header
 
 
 struct LESetExtendedScanParametersData:
@@ -2146,6 +2175,88 @@ struct LEEnableEncryptionCommand:
   $next [+8]                       UInt           random_number
   $next [+2]                       UInt           encrypted_diversifier
   $next [+LinkKey.$size_in_bytes]  LinkKey        long_term_key
+
+
+struct LELongTermKeyRequestNegativeReplyCommand:
+  -- LE Long Term Key Request Negative Reply Command (v4.0) (LE)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader  header
+  $next [+2]         UInt           connection_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+
+struct LEReadSupportedStatesCommand:
+  -- LE Read Supported States Command (v4.0) (LE)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
+struct LEClearResolvingListCommand:
+  -- LE Clear Resolving List Command (v4.2) (LE)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
+struct LESetAddressResolutionEnableCommand:
+  -- LE Set Address Resolution Enable Command (v4.2) (LE)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader       header
+  $next [+1]         GenericEnableParam  address_resolution_enable
+
+
+struct LESetAdvertisingSetRandomAddressCommand:
+  -- LE Set Advertising Set Random Address Command (v5.0) (LE)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]               CommandHeader  header
+  $next [+1]                      UInt           advertising_handle
+    -- Handle used to identify an advertising set.
+
+  $next [+BdAddr.$size_in_bytes]  BdAddr         random_address
+    -- The random address to use in the advertising PDUs.
+
+
+struct WriteAuthenticatedPayloadTimeoutCommand:
+  -- Write Authenticated Payload Timeout Command (v4.1) (BR/EDR & LE)
+  0     [+CommandHeader.$size_in_bytes]  CommandHeader  header
+  $next [+2]                             UInt           connection_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next [+2]                             UInt           authenticated_payload_timeout
+    -- Default = 0x0BB8 (30 s)
+    -- Time = N * 10 ms
+    -- Time Range: 10 ms to 655,350 ms
+    [requires: 0x0001 <= this <= 0xFFFF]
+
+
+struct ReadAuthenticatedPayloadTimeoutCommand:
+  -- Read Authenticated Payload Timeout Command (v4.1) (BR/EDR & LE)
+  0     [+CommandHeader.$size_in_bytes]  CommandHeader  header
+  $next [+2]                             UInt           connection_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+
+struct ReadLEHostSupportCommand:
+  -- Read LE Host Support Command (v4.0) (BR/EDR)
+  0 [+CommandHeader.$size_in_bytes]  CommandHeader  header
+
+
+struct ReadFlowControlModeCommand:
+  -- Read Flow Control Mode Command (v3.0 + HS) (BR/EDR)
+  0 [+CommandHeader.$size_in_bytes]  CommandHeader  header
+
+
+struct WriteFlowControlModeCommand:
+  -- Write Flow Control Mode Command (v3.0 + HS) (BR/EDR)
+  0     [+CommandHeader.$size_in_bytes]  CommandHeader    header
+  $next [+1]                             FlowControlMode  flow_control_mode
+
+
+struct SetEventMaskPage2Command:
+  -- Set Event Mask Page 2 Command (v3.0 + HS)
+  0     [+CommandHeader.$size_in_bytes]  CommandHeader   header
+  $next [+8]  bits:
+    0     [+26]                          EventMaskPage2  event_mask_page_2
+      -- Bit mask used to control which HCI events are generated by the HCI for the Host.
 
 # ========================= HCI Event packets ===========================
 # Core Spec v5.3 Vol 4, Part E, Section 7.7
