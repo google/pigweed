@@ -14,27 +14,24 @@
 #include "pw_async/fake_dispatcher.h"
 
 #include "gtest/gtest.h"
-#include "pw_sync/thread_notification.h"
 #include "pw_thread/thread.h"
 #include "pw_thread_stl/options.h"
+
+#define ASSERT_OK(status) ASSERT_EQ(OkStatus(), status)
+#define ASSERT_CANCELLED(status) ASSERT_EQ(Status::Cancelled(), status)
 
 using namespace std::chrono_literals;
 
 namespace pw::async::test {
 
-// Lambdas can only capture one ptr worth of memory without allocating, so we
-// group the data we want to share between tasks and their containing tests
-// inside one struct.
-struct TestPrimitives {
-  int count = 0;
-  sync::ThreadNotification notification;
-};
-
 TEST(FakeDispatcher, PostTasks) {
   FakeDispatcher dispatcher;
 
-  TestPrimitives tp;
-  auto inc_count = [&tp]([[maybe_unused]] Context& c) { ++tp.count; };
+  int count = 0;
+  auto inc_count = [&count]([[maybe_unused]] Context& c, Status status) {
+    ASSERT_OK(status);
+    ++count;
+  };
 
   Task task(inc_count);
   dispatcher.PostTask(task);
@@ -42,121 +39,178 @@ TEST(FakeDispatcher, PostTasks) {
   Task task2(inc_count);
   dispatcher.PostTask(task2);
 
-  Task task3([&tp]([[maybe_unused]] Context& c) { ++tp.count; });
+  Task task3(inc_count);
   dispatcher.PostTask(task3);
 
   // Should not run; RunUntilIdle() does not advance time.
-  Task task4([&tp]([[maybe_unused]] Context& c) { ++tp.count; });
+  Task task4([&count]([[maybe_unused]] Context& c, Status status) {
+    ASSERT_CANCELLED(status);
+    ++count;
+  });
   dispatcher.PostDelayedTask(task4, 1ms);
 
   dispatcher.RunUntilIdle();
   dispatcher.RequestStop();
-
-  ASSERT_TRUE(tp.count == 3);
+  dispatcher.RunUntilIdle();
+  ASSERT_EQ(count, 4);
 }
 
+// Lambdas can only capture one ptr worth of memory without allocating, so we
+// group the data we want to share between tasks and their containing tests
+// inside one struct.
 struct TaskPair {
   Task task_a;
   Task task_b;
   int count = 0;
-  sync::ThreadNotification notification;
 };
 
 TEST(FakeDispatcher, DelayedTasks) {
   FakeDispatcher dispatcher;
   TaskPair tp;
 
-  Task task0(
-      [&tp]([[maybe_unused]] Context& c) { tp.count = tp.count * 10 + 4; });
-
+  Task task0([&tp]([[maybe_unused]] Context& c, Status status) {
+    ASSERT_OK(status);
+    tp.count = tp.count * 10 + 4;
+  });
   dispatcher.PostDelayedTask(task0, 200ms);
 
-  Task task1([&tp]([[maybe_unused]] Context& c) {
+  Task task1([&tp]([[maybe_unused]] Context& c, Status status) {
+    ASSERT_OK(status);
     tp.count = tp.count * 10 + 1;
     c.dispatcher->PostDelayedTask(tp.task_a, 50ms);
     c.dispatcher->PostDelayedTask(tp.task_b, 25ms);
   });
-
   dispatcher.PostDelayedTask(task1, 100ms);
 
-  tp.task_a.set_function(
-      [&tp]([[maybe_unused]] Context& c) { tp.count = tp.count * 10 + 3; });
-
-  tp.task_b.set_function(
-      [&tp]([[maybe_unused]] Context& c) { tp.count = tp.count * 10 + 2; });
+  tp.task_a.set_function([&tp]([[maybe_unused]] Context& c, Status status) {
+    ASSERT_OK(status);
+    tp.count = tp.count * 10 + 3;
+  });
+  tp.task_b.set_function([&tp]([[maybe_unused]] Context& c, Status status) {
+    ASSERT_OK(status);
+    tp.count = tp.count * 10 + 2;
+  });
 
   dispatcher.RunFor(200ms);
   dispatcher.RequestStop();
-
-  ASSERT_TRUE(tp.count == 1234);
+  dispatcher.RunUntilIdle();
+  ASSERT_EQ(tp.count, 1234);
 }
 
 TEST(FakeDispatcher, CancelTasks) {
   FakeDispatcher dispatcher;
 
-  TestPrimitives tp;
-  auto inc_count = [&tp]([[maybe_unused]] Context& c) { ++tp.count; };
+  auto shouldnt_run = []([[maybe_unused]] Context& c,
+                         [[maybe_unused]] Status status) { FAIL(); };
 
-  // This task gets canceled in the last task.
-  Task task0(inc_count);
-  dispatcher.PostDelayedTask(task0, 40ms);
+  TaskPair tp;
+  // This task gets canceled in cancel_task.
+  tp.task_a.set_function(shouldnt_run);
+  dispatcher.PostDelayedTask(tp.task_a, 40ms);
 
   // This task gets canceled immediately.
-  Task task1(inc_count);
+  Task task1(shouldnt_run);
   dispatcher.PostDelayedTask(task1, 10ms);
   ASSERT_TRUE(dispatcher.Cancel(task1));
 
   // This task cancels the first task.
-  Task cancel_task(
-      [&task0](Context& c) { ASSERT_TRUE(c.dispatcher->Cancel(task0)); });
+  Task cancel_task([&tp](Context& c, Status status) {
+    ASSERT_OK(status);
+    ASSERT_TRUE(c.dispatcher->Cancel(tp.task_a));
+    ++tp.count;
+  });
   dispatcher.PostDelayedTask(cancel_task, 20ms);
 
-  dispatcher.RunUntilIdle();
+  dispatcher.RunFor(50ms);
   dispatcher.RequestStop();
-
-  ASSERT_TRUE(tp.count == 0);
+  dispatcher.RunUntilIdle();
+  ASSERT_EQ(tp.count, 1);
 }
 
 // Test RequestStop() from inside task.
 TEST(FakeDispatcher, RequestStopInsideTask) {
   FakeDispatcher dispatcher;
 
-  TestPrimitives tp;
-  auto inc_count = [&tp]([[maybe_unused]] Context& c) { ++tp.count; };
+  int count = 0;
+  auto cancelled_cb = [&count]([[maybe_unused]] Context& c, Status status) {
+    ASSERT_CANCELLED(status);
+    ++count;
+  };
 
   // These tasks are never executed and cleaned up in RequestStop().
-  Task task0(inc_count), task1(inc_count);
+  Task task0(cancelled_cb), task1(cancelled_cb);
   dispatcher.PostDelayedTask(task0, 20ms);
   dispatcher.PostDelayedTask(task1, 21ms);
 
-  Task stop_task([&tp]([[maybe_unused]] Context& c) {
-    ++tp.count;
+  Task stop_task([&count]([[maybe_unused]] Context& c, Status status) {
+    ASSERT_OK(status);
+    ++count;
     c.dispatcher->RequestStop();
+    c.dispatcher->RunUntilIdle();
   });
   dispatcher.PostTask(stop_task);
 
   dispatcher.RunUntilIdle();
-
-  ASSERT_TRUE(tp.count == 1);
+  ASSERT_EQ(count, 3);
 }
 
 TEST(FakeDispatcher, PeriodicTasks) {
   FakeDispatcher dispatcher;
 
-  TestPrimitives tp;
-
-  Task periodic_task([&tp]([[maybe_unused]] Context& c) { ++tp.count; });
+  int count = 0;
+  Task periodic_task([&count]([[maybe_unused]] Context& c, Status status) {
+    ASSERT_OK(status);
+    ++count;
+  });
   dispatcher.SchedulePeriodicTask(periodic_task, 20ms, dispatcher.now() + 50ms);
 
   // Cancel periodic task after it has run thrice, at +50ms, +70ms, and +90ms.
-  Task cancel_task(
-      [&periodic_task](Context& c) { c.dispatcher->Cancel(periodic_task); });
+  Task cancel_task([&periodic_task](Context& c, Status status) {
+    ASSERT_OK(status);
+    c.dispatcher->Cancel(periodic_task);
+  });
   dispatcher.PostDelayedTask(cancel_task, 100ms);
 
   dispatcher.RunFor(300ms);
   dispatcher.RequestStop();
+  dispatcher.RunUntilIdle();
+  ASSERT_EQ(count, 3);
+}
 
-  ASSERT_TRUE(tp.count == 3);
+TEST(FakeDispatcher, TasksCancelledByDispatcherDestructor) {
+  int count = 0;
+  auto inc_count = [&count]([[maybe_unused]] Context& c, Status status) {
+    ASSERT_CANCELLED(status);
+    ++count;
+  };
+  Task task0(inc_count), task1(inc_count), task2(inc_count);
+
+  {
+    FakeDispatcher dispatcher;
+    dispatcher.PostDelayedTask(task0, 10s);
+    dispatcher.PostDelayedTask(task1, 10s);
+    dispatcher.PostDelayedTask(task2, 10s);
+  }
+
+  ASSERT_EQ(count, 3);
+}
+
+TEST(DispatcherBasic, TasksCancelledByRunFor) {
+  int count = 0;
+  auto inc_count = [&count]([[maybe_unused]] Context& c, Status status) {
+    ASSERT_CANCELLED(status);
+    ++count;
+  };
+  Task task0(inc_count), task1(inc_count), task2(inc_count);
+
+  FakeDispatcher dispatcher;
+  dispatcher.PostDelayedTask(task0, 10s);
+  dispatcher.PostDelayedTask(task1, 10s);
+  dispatcher.PostDelayedTask(task2, 10s);
+
+  dispatcher.RequestStop();
+  dispatcher.RunFor(5s);
+  ASSERT_EQ(count, 3);
 }
 
 }  // namespace pw::async::test

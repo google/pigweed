@@ -30,7 +30,10 @@ class Dispatcher : public chrono::VirtualSystemClock {
  public:
   ~Dispatcher() override = default;
 
-  /// Stop processing tasks and break out of the task loop.
+  /// Stop processing tasks. If the Dispatcher is serving a task loop, break out
+  /// of the loop, dequeue all waiting tasks, and call their TaskFunctions with
+  /// a PW_STATUS_CANCELLED status. If no task loop is being served, execute the
+  /// dequeueing procedure the next time the Dispatcher is run.
   virtual void RequestStop() = 0;
 
   /// Post caller owned |task|.

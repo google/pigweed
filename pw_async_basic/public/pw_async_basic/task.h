@@ -36,7 +36,7 @@ class NativeTask final : public IntrusiveList<NativeTask>::Item {
   NativeTask(::pw::async::Task& task) : task_(task) {}
   explicit NativeTask(::pw::async::Task& task, TaskFunction&& f)
       : func_(std::move(f)), task_(task) {}
-  void operator()(Context& ctx) { func_(ctx); }
+  void operator()(Context& ctx, Status status) { func_(ctx, status); }
   void set_function(TaskFunction&& f) { func_ = std::move(f); }
 
   pw::chrono::SystemClock::time_point due_time() const { return due_time_; }

@@ -45,6 +45,7 @@ pw_facade("task") {
   public_deps = [
     "$dir_pw_chrono:system_clock",
     dir_pw_function,
+    dir_pw_status,
   ]
   public = [
     "public/pw_async/internal/types.h",

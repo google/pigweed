@@ -19,6 +19,9 @@
 #include "pw_thread/thread.h"
 #include "pw_thread_stl/options.h"
 
+#define ASSERT_OK(status) ASSERT_EQ(OkStatus(), status)
+#define ASSERT_CANCELLED(status) ASSERT_EQ(Status::Cancelled(), status)
+
 using namespace std::chrono_literals;
 
 namespace pw::async {
@@ -36,7 +39,10 @@ TEST(DispatcherBasic, PostTasks) {
   thread::Thread work_thread(thread::stl::Options(), dispatcher);
 
   TestPrimitives tp;
-  auto inc_count = [&tp]([[maybe_unused]] Context& c) { ++tp.count; };
+  auto inc_count = [&tp]([[maybe_unused]] Context& c, Status status) {
+    ASSERT_OK(status);
+    ++tp.count;
+  };
 
   Task task(inc_count);
   dispatcher.PostTask(task);
@@ -44,7 +50,8 @@ TEST(DispatcherBasic, PostTasks) {
   Task task2(inc_count);
   dispatcher.PostTask(task2);
 
-  Task task3([&tp]([[maybe_unused]] Context& c) {
+  Task task3([&tp]([[maybe_unused]] Context& c, Status status) {
+    ASSERT_OK(status);
     ++tp.count;
     tp.notification.release();
   });
@@ -53,8 +60,7 @@ TEST(DispatcherBasic, PostTasks) {
   tp.notification.acquire();
   dispatcher.RequestStop();
   work_thread.join();
-
-  ASSERT_TRUE(tp.count == 3);
+  ASSERT_EQ(tp.count, 3);
 }
 
 struct TaskPair {
@@ -68,32 +74,26 @@ TEST(DispatcherBasic, ChainedTasks) {
   BasicDispatcher dispatcher;
   thread::Thread work_thread(thread::stl::Options(), dispatcher);
 
-  TaskPair tp;
-
-  Task task0([&tp](Context& c) {
-    ++tp.count;
-
-    c.dispatcher->PostTask(tp.task_a);
+  sync::ThreadNotification notification;
+  Task task1([&notification]([[maybe_unused]] Context& c, Status status) {
+    ASSERT_OK(status);
+    notification.release();
   });
 
-  tp.task_a.set_function([&tp](Context& c) {
-    ++tp.count;
-
-    c.dispatcher->PostTask(tp.task_b);
+  Task task2([&task1](Context& c, Status status) {
+    ASSERT_OK(status);
+    c.dispatcher->PostTask(task1);
   });
 
-  tp.task_b.set_function([&tp]([[maybe_unused]] Context& c) {
-    ++tp.count;
-    tp.notification.release();
+  Task task3([&task2](Context& c, Status status) {
+    ASSERT_OK(status);
+    c.dispatcher->PostTask(task2);
   });
+  dispatcher.PostTask(task3);
 
-  dispatcher.PostTask(task0);
-
-  tp.notification.acquire();
+  notification.acquire();
   dispatcher.RequestStop();
   work_thread.join();
-
-  ASSERT_TRUE(tp.count == 3);
 }
 
 // Test RequestStop() from inside task.
@@ -101,25 +101,100 @@ TEST(DispatcherBasic, RequestStopInsideTask) {
   BasicDispatcher dispatcher;
   thread::Thread work_thread(thread::stl::Options(), dispatcher);
 
-  TestPrimitives tp;
-  auto inc_count = [&tp]([[maybe_unused]] Context& c) { ++tp.count; };
+  int count = 0;
+  auto inc_count = [&count]([[maybe_unused]] Context& c, Status status) {
+    ASSERT_CANCELLED(status);
+    ++count;
+  };
 
   // These tasks are never executed and cleaned up in RequestStop().
   Task task0(inc_count), task1(inc_count);
   dispatcher.PostDelayedTask(task0, 20ms);
   dispatcher.PostDelayedTask(task1, 21ms);
 
-  Task stop_task([&tp]([[maybe_unused]] Context& c) {
-    ++tp.count;
+  Task stop_task([&count]([[maybe_unused]] Context& c, Status status) {
+    ASSERT_OK(status);
+    ++count;
     c.dispatcher->RequestStop();
-    tp.notification.release();
   });
   dispatcher.PostTask(stop_task);
 
-  tp.notification.acquire();
   work_thread.join();
+  ASSERT_EQ(count, 3);
+}
 
-  ASSERT_TRUE(tp.count == 1);
+TEST(DispatcherBasic, TasksCancelledByRequestStopInDifferentThread) {
+  BasicDispatcher dispatcher;
+  thread::Thread work_thread(thread::stl::Options(), dispatcher);
+
+  int count = 0;
+  auto inc_count = [&count]([[maybe_unused]] Context& c, Status status) {
+    ASSERT_CANCELLED(status);
+    ++count;
+  };
+
+  Task task0(inc_count), task1(inc_count), task2(inc_count);
+  dispatcher.PostDelayedTask(task0, 10s);
+  dispatcher.PostDelayedTask(task1, 10s);
+  dispatcher.PostDelayedTask(task2, 10s);
+
+  dispatcher.RequestStop();
+  work_thread.join();
+  ASSERT_EQ(count, 3);
+}
+
+TEST(DispatcherBasic, TasksCancelledByDispatcherDestructor) {
+  int count = 0;
+  auto inc_count = [&count]([[maybe_unused]] Context& c, Status status) {
+    ASSERT_CANCELLED(status);
+    ++count;
+  };
+  Task task0(inc_count), task1(inc_count), task2(inc_count);
+
+  {
+    BasicDispatcher dispatcher;
+    dispatcher.PostDelayedTask(task0, 10s);
+    dispatcher.PostDelayedTask(task1, 10s);
+    dispatcher.PostDelayedTask(task2, 10s);
+  }
+
+  ASSERT_EQ(count, 3);
+}
+
+TEST(DispatcherBasic, TasksCancelledByRunUntilIdle) {
+  int count = 0;
+  auto inc_count = [&count]([[maybe_unused]] Context& c, Status status) {
+    ASSERT_CANCELLED(status);
+    ++count;
+  };
+  Task task0(inc_count), task1(inc_count), task2(inc_count);
+
+  BasicDispatcher dispatcher;
+  dispatcher.PostDelayedTask(task0, 10s);
+  dispatcher.PostDelayedTask(task1, 10s);
+  dispatcher.PostDelayedTask(task2, 10s);
+
+  dispatcher.RequestStop();
+  dispatcher.RunUntilIdle();
+  ASSERT_EQ(count, 3);
+}
+
+TEST(DispatcherBasic, TasksCancelledByRunFor) {
+  int count = 0;
+  auto inc_count = [&count]([[maybe_unused]] Context& c, Status status) {
+    ASSERT_CANCELLED(status);
+    ++count;
+  };
+  Task task0(inc_count), task1(inc_count), task2(inc_count);
+
+  BasicDispatcher dispatcher;
+  dispatcher.PostDelayedTask(task0, 10s);
+  dispatcher.PostDelayedTask(task1, 10s);
+  dispatcher.PostDelayedTask(task2, 10s);
+
+  dispatcher.RequestStop();
+  dispatcher.RunFor(5s);
+  ASSERT_EQ(count, 3);
 }
 
 }  // namespace pw::async

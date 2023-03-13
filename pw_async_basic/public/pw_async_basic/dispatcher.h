@@ -24,8 +24,8 @@ namespace pw::async {
 
 class BasicDispatcher final : public Dispatcher, public thread::ThreadCore {
  public:
-  explicit BasicDispatcher() : stop_requested_(false) {}
-  ~BasicDispatcher() override { RequestStop(); }
+  explicit BasicDispatcher() = default;
+  ~BasicDispatcher() override;
 
   // Dispatcher overrides:
   void RequestStop() override PW_LOCKS_EXCLUDED(lock_);
@@ -67,9 +67,13 @@ class BasicDispatcher final : public Dispatcher, public thread::ThreadCore {
   // Dequeue and run each task that is due.
   void ExecuteDueTasks() PW_EXCLUSIVE_LOCKS_REQUIRED(lock_);
 
+  // Dequeue each task and call each TaskFunction with a PW_STATUS_CANCELLED
+  // status.
+  void DrainTaskQueue() PW_EXCLUSIVE_LOCKS_REQUIRED(lock_);
+
   sync::InterruptSpinLock lock_;
   sync::TimedThreadNotification timed_notification_;
-  bool stop_requested_ PW_GUARDED_BY(lock_);
+  bool stop_requested_ PW_GUARDED_BY(lock_) = false;
   // A priority queue of scheduled Tasks sorted by earliest due times first.
   IntrusiveList<backend::NativeTask> task_queue_ PW_GUARDED_BY(lock_);
 };

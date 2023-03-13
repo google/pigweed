@@ -29,6 +29,9 @@ class FakeDispatcher final : public Dispatcher {
  public:
   FakeDispatcher() : native_dispatcher_(*this) {}
 
+  // Stop processing tasks. After calling RequestStop(), the next time the
+  // Dispatcher is run, all waiting Tasks will be dequeued and their
+  // TaskFunctions called with a PW_STATUS_CANCELLED status.
   void RequestStop() override { native_dispatcher_.RequestStop(); }
 
   // Post caller owned |task|.

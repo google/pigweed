@@ -24,14 +24,28 @@ namespace pw::async::test::backend {
 NativeFakeDispatcher::NativeFakeDispatcher(Dispatcher& dispatcher)
     : dispatcher_(dispatcher) {}
 
-NativeFakeDispatcher::~NativeFakeDispatcher() { RequestStop(); }
+NativeFakeDispatcher::~NativeFakeDispatcher() {
+  RequestStop();
+  DrainTaskQueue();
+}
 
-void NativeFakeDispatcher::RunUntilIdle() { ExecuteDueTasks(); }
+void NativeFakeDispatcher::RunUntilIdle() {
+  ExecuteDueTasks();
+  if (stop_requested_) {
+    DrainTaskQueue();
+  }
+}
 
 void NativeFakeDispatcher::RunUntil(chrono::SystemClock::time_point end_time) {
-  while (!task_queue_.empty() && task_queue_.front().due_time() <= end_time) {
+  while (!task_queue_.empty() && task_queue_.front().due_time() <= end_time &&
+         !stop_requested_) {
     now_ = task_queue_.front().due_time();
     ExecuteDueTasks();
+  }
+
+  if (stop_requested_) {
+    DrainTaskQueue();
+    return;
   }
 
   if (now_ < end_time) {
@@ -44,7 +58,8 @@ void NativeFakeDispatcher::RunFor(chrono::SystemClock::duration duration) {
 }
 
 void NativeFakeDispatcher::ExecuteDueTasks() {
-  while (!task_queue_.empty() && task_queue_.front().due_time() <= now()) {
+  while (!task_queue_.empty() && task_queue_.front().due_time() <= now() &&
+         !stop_requested_) {
     ::pw::async::backend::NativeTask& task = task_queue_.front();
     task_queue_.pop_front();
 
@@ -53,13 +68,24 @@ void NativeFakeDispatcher::ExecuteDueTasks() {
     }
 
     Context ctx{&dispatcher_, &task.task_};
-    task(ctx);
+    task(ctx, OkStatus());
   }
 }
 
 void NativeFakeDispatcher::RequestStop() {
   PW_LOG_DEBUG("stop requested");
-  task_queue_.clear();
+  stop_requested_ = true;
+}
+
+void NativeFakeDispatcher::DrainTaskQueue() {
+  while (!task_queue_.empty()) {
+    ::pw::async::backend::NativeTask& task = task_queue_.front();
+    task_queue_.pop_front();
+
+    PW_LOG_DEBUG("running cancelled task");
+    Context ctx{&dispatcher_, &task.task_};
+    task(ctx, Status::Cancelled());
+  }
 }
 
 void NativeFakeDispatcher::PostTask(Task& task) {

@@ -56,7 +56,12 @@ class NativeFakeDispatcher final {
   // Dequeue and run each task that is due.
   void ExecuteDueTasks();
 
+  // Dequeue each task and run each TaskFunction with a PW_STATUS_CANCELLED
+  // status.
+  void DrainTaskQueue();
+
   Dispatcher& dispatcher_;
+  bool stop_requested_ = false;
 
   // A priority queue of scheduled tasks sorted by earliest due times first.
   IntrusiveList<::pw::async::backend::NativeTask> task_queue_;

@@ -23,26 +23,40 @@ namespace pw::async {
 
 const chrono::SystemClock::duration SLEEP_DURATION = 5s;
 
+BasicDispatcher::~BasicDispatcher() {
+  RequestStop();
+  lock_.lock();
+  DrainTaskQueue();
+  lock_.unlock();
+}
+
 void BasicDispatcher::Run() {
   lock_.lock();
   while (!stop_requested_) {
     MaybeSleep();
     ExecuteDueTasks();
   }
+  DrainTaskQueue();
   lock_.unlock();
 }
 
 void BasicDispatcher::RunUntilIdle() {
   lock_.lock();
   ExecuteDueTasks();
+  if (stop_requested_) {
+    DrainTaskQueue();
+  }
   lock_.unlock();
 }
 
 void BasicDispatcher::RunUntil(chrono::SystemClock::time_point end_time) {
   lock_.lock();
-  while (end_time < now()) {
+  while (end_time < now() && !stop_requested_) {
     MaybeSleep();
     ExecuteDueTasks();
+  }
+  if (stop_requested_) {
+    DrainTaskQueue();
   }
   lock_.unlock();
 }
@@ -68,7 +82,8 @@ void BasicDispatcher::MaybeSleep() {
 }
 
 void BasicDispatcher::ExecuteDueTasks() {
-  while (!task_queue_.empty() && task_queue_.front().due_time_ <= now()) {
+  while (!task_queue_.empty() && task_queue_.front().due_time_ <= now() &&
+         !stop_requested_) {
     backend::NativeTask& task = task_queue_.front();
     task_queue_.pop_front();
 
@@ -79,7 +94,7 @@ void BasicDispatcher::ExecuteDueTasks() {
     lock_.unlock();
     PW_LOG_DEBUG("running task");
     Context ctx{this, &task.task_};
-    task(ctx);
+    task(ctx, OkStatus());
     lock_.lock();
   }
 }
@@ -88,8 +103,21 @@ void BasicDispatcher::RequestStop() {
   std::lock_guard lock(lock_);
   PW_LOG_DEBUG("stop requested");
   stop_requested_ = true;
-  task_queue_.clear();
   timed_notification_.release();
+}
+
+void BasicDispatcher::DrainTaskQueue() {
+  PW_LOG_DEBUG("draining task queue");
+  while (!task_queue_.empty()) {
+    backend::NativeTask& task = task_queue_.front();
+    task_queue_.pop_front();
+
+    lock_.unlock();
+    PW_LOG_DEBUG("running cancelled task");
+    Context ctx{this, &task.task_};
+    task(ctx, Status::Cancelled());
+    lock_.lock();
+  }
 }
 
 void BasicDispatcher::PostTask(Task& task) { PostTaskForTime(task, now()); }

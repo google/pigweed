@@ -48,7 +48,7 @@ class Task final {
   }
 
   /// Executes this task.
-  void operator()(Context& ctx) { native_type_(ctx); }
+  void operator()(Context& ctx, Status status) { native_type_(ctx, status); }
 
   /// Returns the inner NativeTask containing backend-specific state. Only
   /// Dispatcher backends or non-portable code should call these methods!
