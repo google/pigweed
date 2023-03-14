@@ -115,7 +115,7 @@ export class Detokenizer {
       data.byteOffset,
       4
     ).getUint32(0, true);
-    const args = new Uint8Array(data.buffer.slice(4));
+    const args = new Uint8Array(data.buffer.slice(data.byteOffset + 4));
 
     return {token, args};
   }

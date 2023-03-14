@@ -75,6 +75,7 @@
   "dependencies": {
     "@protobuf-ts/protoc": "^2.7.0",
     "google-protobuf": "^3.17.3",
+    "long": "^5.2.1",
     "object-path": "^0.11.8",
     "ts-protoc-gen": "^0.15.0"
   },
