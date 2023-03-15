@@ -86,7 +86,6 @@ Status Server::ProcessPacket(ConstByteSpan packet_data) {
       HandleClientStreamPacket(packet, *channel, call);
       break;
     case PacketType::CLIENT_ERROR:
-    case PacketType::DEPRECATED_CANCEL:
       if (call != calls_end()) {
         call->HandleError(packet.status());
       } else {
@@ -98,7 +97,6 @@ Status Server::ProcessPacket(ConstByteSpan packet_data) {
       break;
     case PacketType::REQUEST:  // Handled above
     case PacketType::RESPONSE:
-    case PacketType::DEPRECATED_SERVER_STREAM_END:
     case PacketType::SERVER_ERROR:
     case PacketType::SERVER_STREAM:
     default:

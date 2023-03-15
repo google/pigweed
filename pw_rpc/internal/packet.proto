@@ -33,10 +33,6 @@ enum PacketType {
   // The client received a packet for an RPC it did not request.
   CLIENT_ERROR = 4;
 
-  // Deprecated, do not use. Send a CLIENT_ERROR with status CANCELLED instead.
-  // TODO(b/234879973): Remove this packet type.
-  DEPRECATED_CANCEL = 6;
-
   // A client stream has completed.
   CLIENT_STREAM_END = 8;
 
@@ -45,16 +41,15 @@ enum PacketType {
   // The RPC has finished.
   RESPONSE = 1;
 
-  // Deprecated, do not use. Formerly was used as the last packet in a server
-  // stream.
-  // TODO(b/234879973): Remove this packet type.
-  DEPRECATED_SERVER_STREAM_END = 3;
-
   // The server was unable to process a request.
   SERVER_ERROR = 5;
 
   // A message in a server stream.
   SERVER_STREAM = 7;
+
+  // Reserve field numbers for deprecated PacketTypes.
+  reserved 3;  // SERVER_STREAM_END (equivalent to RESPONSE now)
+  reserved 6;  // CANCEL (replaced by CLIENT_ERROR with status CANCELLED)
 }
 
 message RpcPacket {

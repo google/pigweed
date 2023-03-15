@@ -70,8 +70,6 @@ Status FakeChannelOutput::HandlePacket(span<const std::byte> buffer) {
       return OkStatus();
     case pwpb::PacketType::CLIENT_STREAM:
       return OkStatus();
-    case pwpb::PacketType::DEPRECATED_SERVER_STREAM_END:
-      PW_CRASH("Deprecated PacketType %d", static_cast<int>(packet.type()));
     case pwpb::PacketType::CLIENT_ERROR:
       PW_LOG_WARN("FakeChannelOutput received client error: %s",
                   packet.status().str());
@@ -80,7 +78,6 @@ Status FakeChannelOutput::HandlePacket(span<const std::byte> buffer) {
       PW_LOG_WARN("FakeChannelOutput received server error: %s",
                   packet.status().str());
       return OkStatus();
-    case pwpb::PacketType::DEPRECATED_CANCEL:
     case pwpb::PacketType::SERVER_STREAM:
     case pwpb::PacketType::CLIENT_STREAM_END:
       return OkStatus();

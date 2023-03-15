@@ -112,7 +112,7 @@ export class PendingCalls {
     rpc.channel.send(packets.encodeClientStreamEnd(rpc.idSet));
   }
 
-  /** Cancels the RPC. Returns the CANCEL packet to send. */
+  /** Cancels the RPC. Returns the CLIENT_ERROR packet to send. */
   cancel(rpc: Rpc): Uint8Array {
     console.debug(`Cancelling ${rpc}`);
     this.pending.delete(rpc.idString);

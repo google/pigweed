@@ -87,9 +87,7 @@ Status Client::ProcessPacket(ConstByteSpan data) {
 
     case PacketType::REQUEST:
     case PacketType::CLIENT_STREAM:
-    case PacketType::DEPRECATED_SERVER_STREAM_END:
     case PacketType::CLIENT_ERROR:
-    case PacketType::DEPRECATED_CANCEL:
     case PacketType::CLIENT_STREAM_END:
     default:
       internal::rpc_lock().unlock();

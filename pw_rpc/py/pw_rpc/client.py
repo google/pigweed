@@ -155,7 +155,7 @@ class PendingRpcs:
         """Cancels the RPC.
 
         Returns:
-          The CANCEL packet to send.
+          The CLIENT_ERROR packet to send.
 
         Raises:
           KeyError if the RPC is not pending
@@ -395,12 +395,6 @@ def _update_for_backwards_compatibility(
     """Adapts server streaming RPC packets to the updated protocol if needed."""
     # The protocol changes only affect server streaming RPCs.
     if rpc.method.type is not Method.Type.SERVER_STREAMING:
-        return
-
-    # SERVER_STREAM_END packets are deprecated. They are equivalent to a
-    # RESPONSE packet.
-    if packet.type == PacketType.DEPRECATED_SERVER_STREAM_END:
-        packet.type = PacketType.RESPONSE
         return
 
     # Prior to the introduction of SERVER_STREAM packets, RESPONSE packets with
