@@ -115,7 +115,7 @@ TEST(DispatcherBasic, RequestStopInsideTask) {
   Task stop_task([&count]([[maybe_unused]] Context& c, Status status) {
     ASSERT_OK(status);
     ++count;
-    c.dispatcher->RequestStop();
+    static_cast<BasicDispatcher*>(c.dispatcher)->RequestStop();
   });
   dispatcher.Post(stop_task);
 

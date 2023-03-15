@@ -167,6 +167,8 @@ class VirtualSystemClock {
   static VirtualSystemClock& RealClock();
 
   virtual ~VirtualSystemClock() = default;
+
+  /// Returns the current time.
   virtual SystemClock::time_point now() = 0;
 };
 

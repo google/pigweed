@@ -113,6 +113,7 @@ _doxygen_input_files = [
   "$dir_pw_async/public/pw_async/dispatcher.h",
   "$dir_pw_async/public/pw_async/fake_dispatcher_fixture.h",
   "$dir_pw_async/public/pw_async/task.h",
+  "$dir_pw_async_basic/public/pw_async_basic/dispatcher.h",
   "$dir_pw_bluetooth/public/pw_bluetooth/gatt/client.h",
   "$dir_pw_bluetooth/public/pw_bluetooth/gatt/server.h",
   "$dir_pw_bluetooth/public/pw_bluetooth/host.h",

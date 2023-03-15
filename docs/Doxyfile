@@ -2387,7 +2387,10 @@ PREDEFINED             = __cplusplus \
                          PW_UNLOCK_FUNCTION(...)= \
                          PW_NO_LOCK_SAFETY_ANALYSIS= \
                          PW_CXX_STANDARD_IS_SUPPORTED(...)=1 \
-                         PW_EXTERN_C_START=
+                         PW_EXTERN_C_START= \
+                         PW_LOCKS_EXCLUDED(...)= \
+                         PW_EXCLUSIVE_LOCKS_REQUIRED(...)= \
+                         PW_GUARDED_BY(...)= \
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then this
 # tag can be used to specify a list of macro names that should be expanded. The

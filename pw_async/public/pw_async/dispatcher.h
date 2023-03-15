@@ -30,12 +30,6 @@ class Dispatcher : public chrono::VirtualSystemClock {
  public:
   ~Dispatcher() override = default;
 
-  /// Stop processing tasks. If the Dispatcher is serving a task loop, break out
-  /// of the loop, dequeue all waiting tasks, and call their TaskFunctions with
-  /// a PW_STATUS_CANCELLED status. If no task loop is being served, execute the
-  /// dequeueing procedure the next time the Dispatcher is run.
-  virtual void RequestStop() = 0;
-
   /// Post caller owned |task|.
   virtual void Post(Task& task) = 0;
 
@@ -59,17 +53,6 @@ class Dispatcher : public chrono::VirtualSystemClock {
   /// If cancelation fails, the task may be running or completed.
   /// Periodic tasks may be posted once more after they are canceled.
   virtual bool Cancel(Task& task) = 0;
-
-  /// Execute all runnable tasks and return without waiting.
-  virtual void RunUntilIdle() = 0;
-
-  /// Run the Dispatcher until Now() has reached `end_time`, executing all tasks
-  /// that come due before then.
-  virtual void RunUntil(chrono::SystemClock::time_point end_time) = 0;
-
-  /// Run the Dispatcher until `duration` has elapsed, executing all tasks that
-  /// come due in that period.
-  virtual void RunFor(chrono::SystemClock::duration duration) = 0;
 };
 
 }  // namespace pw::async

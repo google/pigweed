@@ -22,13 +22,37 @@
 
 namespace pw::async {
 
+/// BasicDispatcher is a generic implementation of Dispatcher.
 class BasicDispatcher final : public Dispatcher, public thread::ThreadCore {
  public:
   explicit BasicDispatcher() = default;
   ~BasicDispatcher() override;
 
+  /// Execute all runnable tasks and return without waiting.
+  void RunUntilIdle();
+
+  /// Run the dispatcher until Now() has reached `end_time`, executing all tasks
+  /// that come due before then.
+  void RunUntil(chrono::SystemClock::time_point end_time);
+
+  /// Run the dispatcher until `duration` has elapsed, executing all tasks that
+  /// come due in that period.
+  void RunFor(chrono::SystemClock::duration duration);
+
+  /// Stop processing tasks. If the dispatcher is serving a task loop, break out
+  /// of the loop, dequeue all waiting tasks, and call their TaskFunctions with
+  /// a PW_STATUS_CANCELLED status. If no task loop is being served, execute the
+  /// dequeueing procedure the next time the Dispatcher is run.
+  void RequestStop() PW_LOCKS_EXCLUDED(lock_);
+
+  // ThreadCore overrides:
+
+  /// Run the dispatcher until RequestStop() is called. Overrides
+  /// ThreadCore::Run() so that BasicDispatcher is compatible with
+  /// pw::thread::Thread.
+  void Run() override PW_LOCKS_EXCLUDED(lock_);
+
   // Dispatcher overrides:
-  void RequestStop() override PW_LOCKS_EXCLUDED(lock_);
   void Post(Task& task) override;
   void PostAfter(Task& task, chrono::SystemClock::duration delay) override;
   void PostAt(Task& task, chrono::SystemClock::time_point time) override;
@@ -38,17 +62,11 @@ class BasicDispatcher final : public Dispatcher, public thread::ThreadCore {
                       chrono::SystemClock::duration interval,
                       chrono::SystemClock::time_point start_time) override;
   bool Cancel(Task& task) override PW_LOCKS_EXCLUDED(lock_);
-  void RunUntilIdle() override;
-  void RunUntil(chrono::SystemClock::time_point end_time) override;
-  void RunFor(chrono::SystemClock::duration duration) override;
 
   // VirtualSystemClock overrides:
   chrono::SystemClock::time_point now() override {
     return chrono::SystemClock::now();
   }
-
-  // ThreadCore overrides:
-  void Run() override PW_LOCKS_EXCLUDED(lock_);
 
  private:
   // Insert |task| into task_queue_ maintaining its min-heap property, keyed by
