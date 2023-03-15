@@ -12,17 +12,41 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-menuconfig PIGWEED_LOG
-    bool "Enable Pigweed logging library (pw_log)"
+choice PIGWEED_LOG
+    prompt "Logging backend used"
+    help
+      The type of Zephyr pw_log backend to use.
+
+config PIGWEED_LOG_ZEPHYR
+    bool "Zephyr logging for PW_LOG_* statements"
     select PIGWEED_PREPROCESSOR
     help
       Once the Pigweed logging is enabled, all Pigweed logs via PW_LOG_*() will
-      go to the "pigweed" Zephyr logging module.
+      be routed to the Zephyr logging system. This means that:
+      - PW_LOG_LEVEL_DEBUG maps to Zephyr's LOG_LEVEL_DBG
+      - PW_LOG_LEVEL_INFO maps to Zephyr's LOG_LEVEL_INF
+      - PW_LOG_LEVEL_WARN maps to Zephyr's LOG_LEVEL_WRN
+      - PW_LOG_LEVEL_ERROR maps to Zephyr's LOG_LEVEL_ERR
+      - PW_LOG_LEVEL_CRITICAL maps to Zephyr's LOG_LEVEL_ERR
+      - PW_LOG_LEVEL_FATAL maps to Zephyr's LOG_LEVEL_ERR
 
-if PIGWEED_LOG
+config PIGWEED_LOG_TOKENIZED
+    bool "Maps all Zephyr log macros to tokenized PW_LOG_* macros"
+    select PIGWEED_PREPROCESSOR
+    select PIGWEED_TOKENIZER
+    select LOG_CUSTOM_HEADER
+    help
+      Map all the Zephyr log macros to use Pigweed's then use the
+      'pw_log_tokenized' target as the logging backend in order to
+      automatically tokenize all the logging strings. This means that Pigweed
+      will also tokenize all of Zephyr's logging statements.
+
+endchoice
+
+if PIGWEED_LOG_ZEPHYR || PIGWEED_LOG_TOKENIZED
 
 module = PIGWEED
 module-str = "pigweed"
 source "subsys/logging/Kconfig.template.log_config"
 
-endif # PIGWEED_LOG
+endif # PIGWEED_LOG_ZEPHYR || PIGWEED_LOG_TOKENIZED

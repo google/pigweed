@@ -37,7 +37,11 @@ config("public_include_path") {
 }
 
 config("linker_script") {
-  inputs = [ "pw_tokenizer_linker_sections.ld" ]
+  inputs = [
+    "pw_tokenizer_linker_sections.ld",
+    "pw_tokenizer_linker_rules.ld",
+  ]
+  lib_dirs = [ "." ]
 
   # Automatically add the tokenizer linker sections when cross-compiling or
   # building for Linux. macOS and Windows executables are not supported.
@@ -56,7 +60,6 @@ config("linker_script") {
       rebase_path("add_tokenizer_sections_to_default_script.ld",
                   root_build_dir),
     ]
-    lib_dirs = [ "." ]
 
     inputs += [ "add_tokenizer_sections_to_default_script.ld" ]
   }

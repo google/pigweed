@@ -1,17 +1,31 @@
 .. _module-pw_log_zephyr:
 
-================
+=============
 pw_log_zephyr
-================
+=============
 
 --------
 Overview
 --------
-This interrupt backend implements the ``pw_log`` facade. To enable, set
-``CONFIG_PIGWEED_LOG=y``. After that, logging can be controlled via the standard
-`Kconfig options <https://docs.zephyrproject.org/latest/reference/logging/index.html#global-kconfig-options>`_.
-All logs made through `PW_LOG_*` are logged to the Zephyr logging module
-``pigweed``.
+This interrupt backend implements the ``pw_log`` facade. Currently, two
+separate Pigweed backends are implemented. One that uses the plain Zephyr
+logging framework and routes Pigweed's logs to Zephyr. While another maps
+the Zephyr logging macros to Pigweed's tokenized logging.
+
+Using Zephyr logging
+--------------------
+To enable, set ``CONFIG_PIGWEED_LOG_ZEPHYR=y``. After that, logging can be
+controlled via the standard `Kconfig options`_. All logs made through
+`PW_LOG_*` are logged to the Zephyr logging module ``pigweed``. In this
+model, the Zephyr logging is set as ``pw_log``'s backend.
+
+Using Pigweed tokenized logging
+-------------------------------
+Using the pigweed logging can be done by enabling
+``CONFIG_PIGWEED_LOG_TOKENIZED=y``. At that point ``pw_log_tokenized`` is set
+as the backedn for ``pw_log`` and all Zephyr logs are routed to Pigweed's
+logging facade. This means that any logging statements made in Zephyr itself
+are also tokenized.
 
 Setting the log level
 ---------------------
@@ -37,3 +51,5 @@ levels to their closest Zephyr counterparts:
 
 Alternatively, it is also possible to set the Zephyr logging level directly via
 ``CONFIG_PIGWEED_LOG_LEVEL``.
+
+.. _`Kconfig options`: https://docs.zephyrproject.org/latest/reference/logging/index.html#global-kconfig-options

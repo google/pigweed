@@ -154,6 +154,11 @@ Once enabled, the tokenizer headers can be included like any Zephyr headers:
 
    #include <pw_tokenizer/tokenize.h>
 
+.. note::
+  Zephyr handles the additional linker sections via
+  ``pw_tokenizer_linker_rules.ld`` which is added to the end of the linker file
+  via a call to ``zephyr_linker_sources(SECTIONS ...)``.
+
 ------------
 Tokenization
 ------------
