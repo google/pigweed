@@ -1,4 +1,4 @@
-# Copyright 2019 The Pigweed Authors
+# Copyright 2023 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -18,26 +18,21 @@ import("$dir_pw_sync/backend.gni")
 import("$dir_pw_thread/backend.gni")
 import("$dir_pw_unit_test/test.gni")
 
-# Creates a test target that tests a FakeDispatcher backend using a common
-# test suite.
+# Creates a pw_source_set that provides a concrete FakeDispatcherFixture.
 #
 # Parameters
 #
 #   backend (required)
-#     [target] The FakeDispatcher backend to test.
-template("fake_dispatcher_test") {
+#     [target] The FakeDispatcher backend to use.
+template("fake_dispatcher_fixture") {
   assert(defined(invoker.backend))
 
-  pw_test(target_name) {
-    enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != "" &&
-                pw_sync_TIMED_THREAD_NOTIFICATION_BACKEND != "" &&
-                pw_thread_THREAD_BACKEND != ""
-    deps = [
-      "$dir_pw_sync:timed_thread_notification",
-      "$dir_pw_thread:thread",
-      dir_pw_log,
+  pw_source_set(target_name) {
+    public = [ "$dir_pw_async/public/pw_async/fake_dispatcher_fixture.h" ]
+    public_deps = [
+      "$dir_pw_unit_test",
       invoker.backend,
     ]
-    sources = [ "$dir_pw_async/fake_dispatcher_test.cc" ]
+    forward_variables_from(invoker, [ "visibility" ])
   }
 }

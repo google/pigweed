@@ -111,6 +111,7 @@ group("third_party_docs") {
 _doxygen_input_files = [
   # All sources with doxygen comment blocks.
   "$dir_pw_async/public/pw_async/dispatcher.h",
+  "$dir_pw_async/public/pw_async/fake_dispatcher_fixture.h",
   "$dir_pw_async/public/pw_async/task.h",
   "$dir_pw_bluetooth/public/pw_bluetooth/gatt/client.h",
   "$dir_pw_bluetooth/public/pw_bluetooth/gatt/server.h",

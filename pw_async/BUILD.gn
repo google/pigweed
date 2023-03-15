@@ -16,6 +16,7 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_async/async.gni")
 import("$dir_pw_async/backend.gni")
+import("$dir_pw_async/fake_dispatcher_fixture.gni")
 import("$dir_pw_async/fake_dispatcher_test.gni")
 import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/target_types.gni")
@@ -68,6 +69,14 @@ pw_facade("fake_dispatcher") {
                ] + pw_async_EXPERIMENTAL_MODULE_VISIBILITY
 }
 
+fake_dispatcher_fixture("fake_dispatcher_fixture") {
+  backend = ":fake_dispatcher"
+  visibility = [
+                 ":*",
+                 "$dir_pw_async_basic:*",
+               ] + pw_async_EXPERIMENTAL_MODULE_VISIBILITY
+}
+
 pw_test_group("tests") {
 }
 
@@ -77,6 +86,9 @@ pw_doc_group("docs") {
 
 # Satisfy source_is_in_build_files presubmit step
 pw_source_set("fake_dispatcher_test") {
-  sources = [ "fake_dispatcher_test.cc" ]
+  sources = [
+    "fake_dispatcher_test.cc",
+    "public/pw_async/fake_dispatcher_fixture.h",
+  ]
   visibility = []
 }

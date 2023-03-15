@@ -15,6 +15,7 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_async/async.gni")
+import("$dir_pw_async/fake_dispatcher_fixture.gni")
 import("$dir_pw_async/fake_dispatcher_test.gni")
 import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/target_types.gni")
@@ -81,6 +82,16 @@ fake_dispatcher_test("fake_dispatcher_test") {
   backend = ":fake_dispatcher"
 }
 
+fake_dispatcher_fixture("fake_dispatcher_fixture") {
+  backend = ":fake_dispatcher"
+}
+
+pw_test("fake_dispatcher_fixture_test") {
+  enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != ""
+  sources = [ "fake_dispatcher_fixture_test.cc" ]
+  deps = [ ":fake_dispatcher_fixture" ]
+}
+
 pw_source_set("dispatcher") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_async_basic/dispatcher.h" ]
@@ -115,6 +126,7 @@ pw_test_group("tests") {
   tests = [
     ":dispatcher_test",
     ":fake_dispatcher_test",
+    ":fake_dispatcher_fixture_test",
   ]
 }
 
