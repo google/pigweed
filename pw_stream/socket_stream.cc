@@ -196,12 +196,11 @@ Status ServerSocket::Listen(uint16_t port) {
     return Status::Unknown();
   }
 
-  if (port != 0) {
-    // When specifying an explicit port, allow binding to an address that may
-    // still be in use by a closed socket.
-    constexpr int value = 1;
-    setsockopt(socket_fd_, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(int));
+  // Allow binding to an address that may still be in use by a closed socket.
+  constexpr int value = 1;
+  setsockopt(socket_fd_, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(int));
 
+  if (port != 0) {
     struct sockaddr_in6 addr = {};
     socklen_t addr_len = sizeof(addr);
     addr.sin6_family = AF_INET6;

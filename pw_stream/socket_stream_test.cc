@@ -167,5 +167,28 @@ TEST(SocketStreamTest, MultipleClients) {
   server.Close();
 }
 
+TEST(SocketStreamTest, ReuseAutomaticServerPort) {
+  uint16_t server_port = 0;
+  SocketStream client_stream;
+  ServerSocket server;
+
+  EXPECT_EQ(server.Listen(0), OkStatus());
+  server_port = server.port();
+  EXPECT_NE(server_port, 0);
+
+  Result<SocketStream> server_stream = Status::Unavailable();
+  auto accept_thread = std::thread{[&]() { server_stream = server.Accept(); }};
+
+  EXPECT_EQ(client_stream.Connect(nullptr, server_port), OkStatus());
+  accept_thread.join();
+  ASSERT_EQ(server_stream.status(), OkStatus());
+
+  server_stream->Close();
+  server.Close();
+
+  ServerSocket server2;
+  EXPECT_EQ(server2.Listen(server_port), OkStatus());
+}
+
 }  // namespace
 }  // namespace pw::stream
