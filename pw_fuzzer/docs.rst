@@ -68,8 +68,7 @@ Building fuzzers with GN
 
 To build a fuzzer, do the following:
 
-1. Add the GN target using ``pw_fuzzer`` GN template, and add it to your the
-   test group of the module:
+1. Add the GN target to the module using ``pw_fuzzer`` GN template.
 
 .. code::
 
@@ -81,36 +80,59 @@ To build a fuzzer, do the following:
     deps = [ ":my_lib" ]
   }
 
+2. Add the generated unit test to the module's test group. This helps verify the
+   fuzzer can build and run, even when not being built in a fuzzing toolchain.
+
+.. code::
+
+  # In $dir_my_module/BUILD.gn
   pw_test_group("tests") {
     tests = [
-      ":existing_tests", ...
-      ":my_fuzzer",     # <- Added!
+      ...
+      ":my_fuzzer_test",
     ]
   }
 
-2. Select your choice of sanitizers ("address" is also the current default).
+3. If your module does not already have a group of fuzzers, add it and include
+   it in the top level fuzzers target. Depending on your project, the specific
+   toolchain may differ. Fuzzer toolchains are those with
+   ``pw_toolchain_FUZZING_ENABLED`` set to true. Examples include
+   ``host_clang_fuzz`` and any toolchains that extend it.
+
+.. code::
+
+  # In //BUILD.gn
+  group("fuzzers") {
+    deps = [
+      ...
+      "$dir_my_module:fuzzers($dir_pigweed/targets/host:host_clang_fuzz)",
+    ]
+  }
+
+4. Add your fuzzer to the module's group of fuzzers.
+
+.. code::
+
+  group("fuzzers") {
+    deps = [
+      ...
+      ":my_fuzzer",
+    ]
+  }
+
+5. If desired, select a sanitizer runtime. By default,
+   `//targets/host:host_clang_fuzz` uses "address" if no sanitizer is specified.
    See LLVM for `valid options`_.
 
 .. code:: sh
 
   $ gn gen out --args='pw_toolchain_SANITIZERS=["address"]'
 
-3. Build using a fuzzer toolchain. Fuzzer toolchains are those with
-   ``pw_toolchain_FUZZING_ENABLED`` set to true. Examples include
-   ``host_clang_fuzz`` and any toolchains that extend it.
+6. Build the fuzzers!
 
 .. code:: sh
 
-  $ ninja -C out '//my_module:tests(host_clang_fuzz)'
-
-4. To build all fuzzers, add a top-level fuzzers target. For example, the
-   following could be built using `ninja -C out fuzzers`:
-
-.. code::
-
-  group("fuzzers") {
-    deps = [ ":tests($dir_pigweed/targets/host:host_clang_fuzz)" ]
-  }
+  $ ninja -C out fuzzers
 
 .. _bazel:
 

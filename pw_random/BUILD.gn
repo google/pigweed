@@ -48,8 +48,12 @@ pw_source_set("fuzzer_generator") {
 pw_test_group("tests") {
   tests = [
     ":xor_shift_star_test",
-    ":get_int_bounded_fuzzer",
+    ":get_int_bounded_fuzzer_test",
   ]
+}
+
+group("fuzzers") {
+  deps = [ ":get_int_bounded_fuzzer" ]
 }
 
 pw_test("xor_shift_star_test") {

@@ -95,5 +95,9 @@ pw_fuzzer("toy_fuzzer") {
 }
 
 pw_test_group("tests") {
-  tests = [ ":toy_fuzzer" ]
+  tests = [ ":toy_fuzzer_test" ]
+}
+
+group("fuzzers") {
+  deps = [ ":toy_fuzzer" ]
 }

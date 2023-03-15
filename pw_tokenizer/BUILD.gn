@@ -172,16 +172,23 @@ pw_test_group("tests") {
     ":argument_types_test",
     ":base64_test",
     ":decode_test",
-    ":detokenize_fuzzer",
+    ":detokenize_fuzzer_test",
     ":detokenize_test",
     ":encode_args_test",
     ":hash_test",
     ":simple_tokenize_test",
-    ":token_database_fuzzer",
+    ":token_database_fuzzer_test",
     ":token_database_test",
     ":tokenize_test",
   ]
   group_deps = [ "$dir_pw_preprocessor:tests" ]
+}
+
+group("fuzzers") {
+  deps = [
+    ":detokenize_fuzzer",
+    ":token_database_fuzzer",
+  ]
 }
 
 pw_test("argument_types_test") {

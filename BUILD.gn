@@ -289,7 +289,13 @@ group("integration_tests") {
 group("fuzzers") {
   # Fuzzing is only supported on Linux and MacOS using clang.
   if (host_os != "win") {
-    deps = [ ":pw_module_tests($dir_pigweed/targets/host:host_clang_fuzz)" ]
+    deps = [
+      "$dir_pw_bluetooth_hci:fuzzers($dir_pigweed/targets/host:host_clang_fuzz)",
+      "$dir_pw_fuzzer:fuzzers($dir_pigweed/targets/host:host_clang_fuzz)",
+      "$dir_pw_protobuf:fuzzers($dir_pigweed/targets/host:host_clang_fuzz)",
+      "$dir_pw_random:fuzzers($dir_pigweed/targets/host:host_clang_fuzz)",
+      "$dir_pw_tokenizer:fuzzers($dir_pigweed/targets/host:host_clang_fuzz)",
+    ]
   }
 }
 

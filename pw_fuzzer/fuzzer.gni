@@ -14,10 +14,11 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_build/error.gni")
 import("$dir_pw_toolchain/host_clang/toolchains.gni")
 import("$dir_pw_unit_test/test.gni")
 
-# Creates a libFuzzer-based fuzzer executable target.
+# Creates a libFuzzer-based fuzzer executable target and unit test
 #
 # This will link `sources` and `deps` with the libFuzzer compiler runtime. The
 # `sources` and `deps` should include a definition of the standard LLVM fuzz
@@ -25,62 +26,40 @@ import("$dir_pw_unit_test/test.gni")
 #   //pw_fuzzer/docs.rst
 #   https://llvm.org/docs/LibFuzzer.html
 #
+# Additionally, this creates a unit test that does not generate fuzzer inputs
+# and simply executes the fuzz target function with fixed inputs. This is useful
+# for verifying the fuzz target function compiles, links, and runs even when not
+# using a fuzzing-capable host or toolchain.
+#
 template("pw_fuzzer") {
-  if (pw_toolchain_FUZZING_ENABLED && pw_toolchain_SANITIZERS != []) {
-    # Build the actual fuzzer using the fuzzing config.
-    pw_executable(target_name) {
-      forward_variables_from(invoker, "*", [ "visibility" ])
-      forward_variables_from(invoker, [ "visibility" ])
-
-      if (!defined(deps)) {
-        deps = []
-      }
-      deps += [ dir_pw_fuzzer ]
-
-      if (!defined(configs)) {
-        configs = []
-      }
-      configs += [ "$dir_pw_fuzzer:engine" ]
-
-      _fuzzer_output_dir = "${target_out_dir}/bin"
-      if (defined(invoker.output_dir)) {
-        _fuzzer_output_dir = invoker.output_dir
-      }
-      output_dir = _fuzzer_output_dir
-
-      # Metadata for this fuzzer when used as part of a pw_test_group target.
-      metadata = {
-        tests = [
-          {
-            type = "fuzzer"
-            test_name = target_name
-            test_directory = rebase_path(output_dir, root_build_dir)
-          },
-        ]
-      }
+  if (!pw_toolchain_FUZZING_ENABLED) {
+    pw_error(target_name) {
+      message_lines = [ "Toolchain does not enable fuzzing." ]
     }
-
-    # No-op target to satisfy `pw_test_group`. It is empty as we don't want to
-    # automatically run fuzzers.
-    group(target_name + ".run") {
+    not_needed(invoker, "*")
+  } else if (pw_toolchain_SANITIZERS == []) {
+    pw_error(target_name) {
+      message_lines = [ "No sanitizer runtime set." ]
     }
-
-    # No-op target to satisfy `pw_test`. It is empty as we don't need a separate
-    # lib target.
-    group(target_name + ".lib") {
-    }
+    not_needed(invoker, "*")
   } else {
-    # Build a unit test that exercise the fuzz target function.
-    pw_test(target_name) {
-      # TODO(b/234891784): Re-enable when there's better configurability for
-      # on-device fuzz testing.
-      enable_if = false
-      sources = []
+    pw_executable(target_name) {
+      configs = []
       deps = []
       forward_variables_from(invoker, "*", [ "visibility" ])
       forward_variables_from(invoker, [ "visibility" ])
-      sources += [ "$dir_pw_fuzzer/pw_fuzzer_disabled.cc" ]
-      deps += [ "$dir_pw_fuzzer:run_as_unit_test" ]
+      configs += [ "$dir_pw_fuzzer:engine" ]
+      deps += [ dir_pw_fuzzer ]
     }
+  }
+
+  pw_test("${target_name}_test") {
+    # TODO(b/234891784): Re-enable when there's better configurability for
+    # on-device fuzz testing.
+    enable_if = false
+    deps = []
+    forward_variables_from(invoker, "*", [ "visibility" ])
+    forward_variables_from(invoker, [ "visibility" ])
+    deps += [ "$dir_pw_fuzzer:run_as_unit_test" ]
   }
 }
