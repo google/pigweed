@@ -29,17 +29,14 @@ class BasicDispatcher final : public Dispatcher, public thread::ThreadCore {
 
   // Dispatcher overrides:
   void RequestStop() override PW_LOCKS_EXCLUDED(lock_);
-  void PostTask(Task& task) override;
-  void PostDelayedTask(Task& task,
-                       chrono::SystemClock::duration delay) override;
-  void PostTaskForTime(Task& task,
-                       chrono::SystemClock::time_point time) override;
-  void SchedulePeriodicTask(Task& task,
-                            chrono::SystemClock::duration interval) override;
-  void SchedulePeriodicTask(
-      Task& task,
-      chrono::SystemClock::duration interval,
-      chrono::SystemClock::time_point start_time) override;
+  void Post(Task& task) override;
+  void PostAfter(Task& task, chrono::SystemClock::duration delay) override;
+  void PostAt(Task& task, chrono::SystemClock::time_point time) override;
+  void PostPeriodic(Task& task,
+                    chrono::SystemClock::duration interval) override;
+  void PostPeriodicAt(Task& task,
+                      chrono::SystemClock::duration interval,
+                      chrono::SystemClock::time_point start_time) override;
   bool Cancel(Task& task) override PW_LOCKS_EXCLUDED(lock_);
   void RunUntilIdle() override;
   void RunUntil(chrono::SystemClock::time_point end_time) override;

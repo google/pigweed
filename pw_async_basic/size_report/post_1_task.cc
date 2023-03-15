@@ -21,7 +21,7 @@ int main() {
   pw::async::BasicDispatcher dispatcher;
   pw::async::Task task(
       [](pw::async::Context& /*ctx*/) { printf("hello world\n"); });
-  dispatcher.PostTask(task);
+  dispatcher.Post(task);
   dispatcher.Run();
   return 0;
 }

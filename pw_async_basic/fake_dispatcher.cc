@@ -88,32 +88,30 @@ void NativeFakeDispatcher::DrainTaskQueue() {
   }
 }
 
-void NativeFakeDispatcher::PostTask(Task& task) {
-  PostTaskForTime(task, now());
+void NativeFakeDispatcher::Post(Task& task) { PostAt(task, now()); }
+
+void NativeFakeDispatcher::PostAfter(Task& task,
+                                     chrono::SystemClock::duration delay) {
+  PostAt(task, now() + delay);
 }
 
-void NativeFakeDispatcher::PostDelayedTask(
-    Task& task, chrono::SystemClock::duration delay) {
-  PostTaskForTime(task, now() + delay);
-}
-
-void NativeFakeDispatcher::PostTaskForTime(
-    Task& task, chrono::SystemClock::time_point time) {
+void NativeFakeDispatcher::PostAt(Task& task,
+                                  chrono::SystemClock::time_point time) {
   PW_LOG_DEBUG("posting task");
   PostTaskInternal(task.native_type(), time);
 }
 
-void NativeFakeDispatcher::SchedulePeriodicTask(
+void NativeFakeDispatcher::PostPeriodic(
     Task& task, chrono::SystemClock::duration interval) {
-  SchedulePeriodicTask(task, interval, now());
+  PostPeriodicAt(task, interval, now());
 }
 
-void NativeFakeDispatcher::SchedulePeriodicTask(
+void NativeFakeDispatcher::PostPeriodicAt(
     Task& task,
     chrono::SystemClock::duration interval,
     chrono::SystemClock::time_point start_time) {
   task.native_type().set_interval(interval);
-  PostTaskForTime(task, start_time);
+  PostAt(task, start_time);
 }
 
 bool NativeFakeDispatcher::Cancel(Task& task) {

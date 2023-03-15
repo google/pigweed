@@ -37,26 +37,23 @@ class Dispatcher : public chrono::VirtualSystemClock {
   virtual void RequestStop() = 0;
 
   /// Post caller owned |task|.
-  virtual void PostTask(Task& task) = 0;
+  virtual void Post(Task& task) = 0;
 
   /// Post caller owned |task| to be run after |delay|.
-  virtual void PostDelayedTask(Task& task,
-                               chrono::SystemClock::duration delay) = 0;
+  virtual void PostAfter(Task& task, chrono::SystemClock::duration delay) = 0;
 
   /// Post caller owned |task| to be run at |time|.
-  virtual void PostTaskForTime(Task& task,
-                               chrono::SystemClock::time_point time) = 0;
+  virtual void PostAt(Task& task, chrono::SystemClock::time_point time) = 0;
 
   /// Post caller owned |task| to be run immediately then rerun at a regular
   /// |interval|.
-  virtual void SchedulePeriodicTask(Task& task,
-                                    chrono::SystemClock::duration interval) = 0;
-  /// Post caller owned |task| to be run at |start_time| then rerun at a regular
+  virtual void PostPeriodic(Task& task,
+                            chrono::SystemClock::duration interval) = 0;
+  /// Post caller owned |task| to be run at |time| then rerun at a regular
   /// |interval|. |interval| must not be zero.
-  virtual void SchedulePeriodicTask(
-      Task& task,
-      chrono::SystemClock::duration interval,
-      chrono::SystemClock::time_point start_time) = 0;
+  virtual void PostPeriodicAt(Task& task,
+                              chrono::SystemClock::duration interval,
+                              chrono::SystemClock::time_point time) = 0;
 
   /// Returns true if |task| is succesfully canceled.
   /// If cancelation fails, the task may be running or completed.

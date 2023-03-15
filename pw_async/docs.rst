@@ -119,7 +119,7 @@ Next, instantiate the Dispatcher and post a task:
      });
 
      // Execute `task` in 5 seconds.
-     dispatcher.PostDelayedTask(task, 5s);
+     dispatcher.PostAfter(task, 5s);
 
      // Blocks until `task` runs.
      work_thread.join();
@@ -141,7 +141,7 @@ the current/main thread:
      });
 
      // Execute `task` in 5 seconds.
-     dispatcher.PostDelayedTask(task, 5s);
+     dispatcher.PostAfter(task, 5s);
 
      dispatcher.Run();
      return 0;

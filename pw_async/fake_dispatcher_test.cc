@@ -34,20 +34,20 @@ TEST(FakeDispatcher, PostTasks) {
   };
 
   Task task(inc_count);
-  dispatcher.PostTask(task);
+  dispatcher.Post(task);
 
   Task task2(inc_count);
-  dispatcher.PostTask(task2);
+  dispatcher.Post(task2);
 
   Task task3(inc_count);
-  dispatcher.PostTask(task3);
+  dispatcher.Post(task3);
 
   // Should not run; RunUntilIdle() does not advance time.
   Task task4([&count]([[maybe_unused]] Context& c, Status status) {
     ASSERT_CANCELLED(status);
     ++count;
   });
-  dispatcher.PostDelayedTask(task4, 1ms);
+  dispatcher.PostAfter(task4, 1ms);
 
   dispatcher.RunUntilIdle();
   dispatcher.RequestStop();
@@ -72,15 +72,15 @@ TEST(FakeDispatcher, DelayedTasks) {
     ASSERT_OK(status);
     tp.count = tp.count * 10 + 4;
   });
-  dispatcher.PostDelayedTask(task0, 200ms);
+  dispatcher.PostAfter(task0, 200ms);
 
   Task task1([&tp]([[maybe_unused]] Context& c, Status status) {
     ASSERT_OK(status);
     tp.count = tp.count * 10 + 1;
-    c.dispatcher->PostDelayedTask(tp.task_a, 50ms);
-    c.dispatcher->PostDelayedTask(tp.task_b, 25ms);
+    c.dispatcher->PostAfter(tp.task_a, 50ms);
+    c.dispatcher->PostAfter(tp.task_b, 25ms);
   });
-  dispatcher.PostDelayedTask(task1, 100ms);
+  dispatcher.PostAfter(task1, 100ms);
 
   tp.task_a.set_function([&tp]([[maybe_unused]] Context& c, Status status) {
     ASSERT_OK(status);
@@ -106,11 +106,11 @@ TEST(FakeDispatcher, CancelTasks) {
   TaskPair tp;
   // This task gets canceled in cancel_task.
   tp.task_a.set_function(shouldnt_run);
-  dispatcher.PostDelayedTask(tp.task_a, 40ms);
+  dispatcher.PostAfter(tp.task_a, 40ms);
 
   // This task gets canceled immediately.
   Task task1(shouldnt_run);
-  dispatcher.PostDelayedTask(task1, 10ms);
+  dispatcher.PostAfter(task1, 10ms);
   ASSERT_TRUE(dispatcher.Cancel(task1));
 
   // This task cancels the first task.
@@ -119,7 +119,7 @@ TEST(FakeDispatcher, CancelTasks) {
     ASSERT_TRUE(c.dispatcher->Cancel(tp.task_a));
     ++tp.count;
   });
-  dispatcher.PostDelayedTask(cancel_task, 20ms);
+  dispatcher.PostAfter(cancel_task, 20ms);
 
   dispatcher.RunFor(50ms);
   dispatcher.RequestStop();
@@ -139,8 +139,8 @@ TEST(FakeDispatcher, RequestStopInsideTask) {
 
   // These tasks are never executed and cleaned up in RequestStop().
   Task task0(cancelled_cb), task1(cancelled_cb);
-  dispatcher.PostDelayedTask(task0, 20ms);
-  dispatcher.PostDelayedTask(task1, 21ms);
+  dispatcher.PostAfter(task0, 20ms);
+  dispatcher.PostAfter(task1, 21ms);
 
   Task stop_task([&count]([[maybe_unused]] Context& c, Status status) {
     ASSERT_OK(status);
@@ -148,7 +148,7 @@ TEST(FakeDispatcher, RequestStopInsideTask) {
     c.dispatcher->RequestStop();
     c.dispatcher->RunUntilIdle();
   });
-  dispatcher.PostTask(stop_task);
+  dispatcher.Post(stop_task);
 
   dispatcher.RunUntilIdle();
   ASSERT_EQ(count, 3);
@@ -162,14 +162,14 @@ TEST(FakeDispatcher, PeriodicTasks) {
     ASSERT_OK(status);
     ++count;
   });
-  dispatcher.SchedulePeriodicTask(periodic_task, 20ms, dispatcher.now() + 50ms);
+  dispatcher.PostPeriodicAt(periodic_task, 20ms, dispatcher.now() + 50ms);
 
   // Cancel periodic task after it has run thrice, at +50ms, +70ms, and +90ms.
   Task cancel_task([&periodic_task](Context& c, Status status) {
     ASSERT_OK(status);
     c.dispatcher->Cancel(periodic_task);
   });
-  dispatcher.PostDelayedTask(cancel_task, 100ms);
+  dispatcher.PostAfter(cancel_task, 100ms);
 
   dispatcher.RunFor(300ms);
   dispatcher.RequestStop();
@@ -187,9 +187,9 @@ TEST(FakeDispatcher, TasksCancelledByDispatcherDestructor) {
 
   {
     FakeDispatcher dispatcher;
-    dispatcher.PostDelayedTask(task0, 10s);
-    dispatcher.PostDelayedTask(task1, 10s);
-    dispatcher.PostDelayedTask(task2, 10s);
+    dispatcher.PostAfter(task0, 10s);
+    dispatcher.PostAfter(task1, 10s);
+    dispatcher.PostAfter(task2, 10s);
   }
 
   ASSERT_EQ(count, 3);
@@ -204,9 +204,9 @@ TEST(DispatcherBasic, TasksCancelledByRunFor) {
   Task task0(inc_count), task1(inc_count), task2(inc_count);
 
   FakeDispatcher dispatcher;
-  dispatcher.PostDelayedTask(task0, 10s);
-  dispatcher.PostDelayedTask(task1, 10s);
-  dispatcher.PostDelayedTask(task2, 10s);
+  dispatcher.PostAfter(task0, 10s);
+  dispatcher.PostAfter(task1, 10s);
+  dispatcher.PostAfter(task2, 10s);
 
   dispatcher.RequestStop();
   dispatcher.RunFor(5s);

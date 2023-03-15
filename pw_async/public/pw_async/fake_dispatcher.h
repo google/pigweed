@@ -35,33 +35,30 @@ class FakeDispatcher final : public Dispatcher {
   void RequestStop() override { native_dispatcher_.RequestStop(); }
 
   // Post caller owned |task|.
-  void PostTask(Task& task) override { native_dispatcher_.PostTask(task); }
+  void Post(Task& task) override { native_dispatcher_.Post(task); }
 
   // Post caller owned |task| to be run after |delay|.
-  void PostDelayedTask(Task& task,
-                       chrono::SystemClock::duration delay) override {
-    native_dispatcher_.PostDelayedTask(task, delay);
+  void PostAfter(Task& task, chrono::SystemClock::duration delay) override {
+    native_dispatcher_.PostAfter(task, delay);
   }
 
   // Post caller owned |task| to be run at |time|.
-  void PostTaskForTime(Task& task,
-                       chrono::SystemClock::time_point time) override {
-    native_dispatcher_.PostTaskForTime(task, time);
+  void PostAt(Task& task, chrono::SystemClock::time_point time) override {
+    native_dispatcher_.PostAt(task, time);
   }
 
   // Post caller owned |task| to be run immediately then rerun at a regular
   // |interval|.
-  void SchedulePeriodicTask(Task& task,
-                            chrono::SystemClock::duration interval) override {
-    native_dispatcher_.SchedulePeriodicTask(task, interval);
+  void PostPeriodic(Task& task,
+                    chrono::SystemClock::duration interval) override {
+    native_dispatcher_.PostPeriodic(task, interval);
   }
   // Post caller owned |task| to be run at |start_time| then rerun at a regular
   // |interval|.
-  void SchedulePeriodicTask(
-      Task& task,
-      chrono::SystemClock::duration interval,
-      chrono::SystemClock::time_point start_time) override {
-    native_dispatcher_.SchedulePeriodicTask(task, interval, start_time);
+  void PostPeriodicAt(Task& task,
+                      chrono::SystemClock::duration interval,
+                      chrono::SystemClock::time_point start_time) override {
+    native_dispatcher_.PostPeriodicAt(task, interval, start_time);
   }
 
   // Returns true if |task| is succesfully canceled.

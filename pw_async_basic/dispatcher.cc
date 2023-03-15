@@ -120,33 +120,32 @@ void BasicDispatcher::DrainTaskQueue() {
   }
 }
 
-void BasicDispatcher::PostTask(Task& task) { PostTaskForTime(task, now()); }
+void BasicDispatcher::Post(Task& task) { PostAt(task, now()); }
 
-void BasicDispatcher::PostDelayedTask(Task& task,
-                                      chrono::SystemClock::duration delay) {
-  PostTaskForTime(task, now() + delay);
+void BasicDispatcher::PostAfter(Task& task,
+                                chrono::SystemClock::duration delay) {
+  PostAt(task, now() + delay);
 }
 
-void BasicDispatcher::PostTaskForTime(Task& task,
-                                      chrono::SystemClock::time_point time) {
+void BasicDispatcher::PostAt(Task& task, chrono::SystemClock::time_point time) {
   lock_.lock();
   PW_LOG_DEBUG("posting task");
   PostTaskInternal(task.native_type(), time);
   lock_.unlock();
 }
 
-void BasicDispatcher::SchedulePeriodicTask(
-    Task& task, chrono::SystemClock::duration interval) {
-  SchedulePeriodicTask(task, interval, now());
+void BasicDispatcher::PostPeriodic(Task& task,
+                                   chrono::SystemClock::duration interval) {
+  PostPeriodicAt(task, interval, now());
 }
 
-void BasicDispatcher::SchedulePeriodicTask(
+void BasicDispatcher::PostPeriodicAt(
     Task& task,
     chrono::SystemClock::duration interval,
     chrono::SystemClock::time_point start_time) {
   PW_DCHECK(interval != chrono::SystemClock::duration::zero());
   task.native_type().set_interval(interval);
-  PostTaskForTime(task, start_time);
+  PostAt(task, start_time);
 }
 
 bool BasicDispatcher::Cancel(Task& task) {

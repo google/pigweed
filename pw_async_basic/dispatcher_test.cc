@@ -45,17 +45,17 @@ TEST(DispatcherBasic, PostTasks) {
   };
 
   Task task(inc_count);
-  dispatcher.PostTask(task);
+  dispatcher.Post(task);
 
   Task task2(inc_count);
-  dispatcher.PostTask(task2);
+  dispatcher.Post(task2);
 
   Task task3([&tp]([[maybe_unused]] Context& c, Status status) {
     ASSERT_OK(status);
     ++tp.count;
     tp.notification.release();
   });
-  dispatcher.PostTask(task3);
+  dispatcher.Post(task3);
 
   tp.notification.acquire();
   dispatcher.RequestStop();
@@ -82,14 +82,14 @@ TEST(DispatcherBasic, ChainedTasks) {
 
   Task task2([&task1](Context& c, Status status) {
     ASSERT_OK(status);
-    c.dispatcher->PostTask(task1);
+    c.dispatcher->Post(task1);
   });
 
   Task task3([&task2](Context& c, Status status) {
     ASSERT_OK(status);
-    c.dispatcher->PostTask(task2);
+    c.dispatcher->Post(task2);
   });
-  dispatcher.PostTask(task3);
+  dispatcher.Post(task3);
 
   notification.acquire();
   dispatcher.RequestStop();
@@ -109,15 +109,15 @@ TEST(DispatcherBasic, RequestStopInsideTask) {
 
   // These tasks are never executed and cleaned up in RequestStop().
   Task task0(inc_count), task1(inc_count);
-  dispatcher.PostDelayedTask(task0, 20ms);
-  dispatcher.PostDelayedTask(task1, 21ms);
+  dispatcher.PostAfter(task0, 20ms);
+  dispatcher.PostAfter(task1, 21ms);
 
   Task stop_task([&count]([[maybe_unused]] Context& c, Status status) {
     ASSERT_OK(status);
     ++count;
     c.dispatcher->RequestStop();
   });
-  dispatcher.PostTask(stop_task);
+  dispatcher.Post(stop_task);
 
   work_thread.join();
   ASSERT_EQ(count, 3);
@@ -134,9 +134,9 @@ TEST(DispatcherBasic, TasksCancelledByRequestStopInDifferentThread) {
   };
 
   Task task0(inc_count), task1(inc_count), task2(inc_count);
-  dispatcher.PostDelayedTask(task0, 10s);
-  dispatcher.PostDelayedTask(task1, 10s);
-  dispatcher.PostDelayedTask(task2, 10s);
+  dispatcher.PostAfter(task0, 10s);
+  dispatcher.PostAfter(task1, 10s);
+  dispatcher.PostAfter(task2, 10s);
 
   dispatcher.RequestStop();
   work_thread.join();
@@ -153,9 +153,9 @@ TEST(DispatcherBasic, TasksCancelledByDispatcherDestructor) {
 
   {
     BasicDispatcher dispatcher;
-    dispatcher.PostDelayedTask(task0, 10s);
-    dispatcher.PostDelayedTask(task1, 10s);
-    dispatcher.PostDelayedTask(task2, 10s);
+    dispatcher.PostAfter(task0, 10s);
+    dispatcher.PostAfter(task1, 10s);
+    dispatcher.PostAfter(task2, 10s);
   }
 
   ASSERT_EQ(count, 3);
@@ -170,9 +170,9 @@ TEST(DispatcherBasic, TasksCancelledByRunUntilIdle) {
   Task task0(inc_count), task1(inc_count), task2(inc_count);
 
   BasicDispatcher dispatcher;
-  dispatcher.PostDelayedTask(task0, 10s);
-  dispatcher.PostDelayedTask(task1, 10s);
-  dispatcher.PostDelayedTask(task2, 10s);
+  dispatcher.PostAfter(task0, 10s);
+  dispatcher.PostAfter(task1, 10s);
+  dispatcher.PostAfter(task2, 10s);
 
   dispatcher.RequestStop();
   dispatcher.RunUntilIdle();
@@ -188,9 +188,9 @@ TEST(DispatcherBasic, TasksCancelledByRunFor) {
   Task task0(inc_count), task1(inc_count), task2(inc_count);
 
   BasicDispatcher dispatcher;
-  dispatcher.PostDelayedTask(task0, 10s);
-  dispatcher.PostDelayedTask(task1, 10s);
-  dispatcher.PostDelayedTask(task2, 10s);
+  dispatcher.PostAfter(task0, 10s);
+  dispatcher.PostAfter(task1, 10s);
+  dispatcher.PostAfter(task2, 10s);
 
   dispatcher.RequestStop();
   dispatcher.RunFor(5s);

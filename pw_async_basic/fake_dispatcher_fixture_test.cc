@@ -25,7 +25,7 @@ TEST_F(FakeDispatcherFixture, PostTasks) {
   auto inc_count = [&count](Context& /*c*/, Status /*status*/) { ++count; };
 
   Task task(inc_count);
-  dispatcher().PostTask(task);
+  dispatcher().Post(task);
 
   ASSERT_EQ(count, 0);
   RunUntilIdle();
