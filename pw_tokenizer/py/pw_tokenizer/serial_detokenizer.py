@@ -21,7 +21,7 @@ import argparse
 import sys
 from typing import BinaryIO, Iterable
 
-import serial  # type: ignore
+import serial
 from pw_tokenizer import database, detokenize, tokens
 
 
@@ -80,7 +80,7 @@ def _parse_args():
 
 def _detokenize_serial(
     databases: Iterable,
-    device: serial.Serial,
+    device: str,
     baudrate: int,
     show_errors: bool,
     output: BinaryIO,

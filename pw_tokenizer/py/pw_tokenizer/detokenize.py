@@ -73,6 +73,8 @@ ENCODED_TOKEN = struct.Struct('<I')
 BASE64_PREFIX = encode.BASE64_PREFIX.encode()
 DEFAULT_RECURSION = 9
 
+_RawIO = Union[io.RawIOBase, BinaryIO]
+
 
 class DetokenizedString:
     """A detokenized string, with all results if there are collisions."""
@@ -264,7 +266,7 @@ class Detokenizer:
 
     def detokenize_base64_live(
         self,
-        input_file: BinaryIO,
+        input_file: _RawIO,
         output: BinaryIO,
         prefix: Union[str, bytes] = BASE64_PREFIX,
         recursion: int = DEFAULT_RECURSION,
@@ -428,16 +430,14 @@ class PrefixedMessageDecoder:
 
         self.data = bytearray()
 
-    def _read_next(self, fd: BinaryIO) -> Tuple[bytes, int]:
+    def _read_next(self, fd: _RawIO) -> Tuple[bytes, int]:
         """Returns the next character and its index."""
-        char = fd.read(1)
+        char = fd.read(1) or b''
         index = len(self.data)
         self.data += char
         return char, index
 
-    def read_messages(
-        self, binary_fd: BinaryIO
-    ) -> Iterator[Tuple[bool, bytes]]:
+    def read_messages(self, binary_fd: _RawIO) -> Iterator[Tuple[bool, bytes]]:
         """Parses prefixed messages; yields (is_message, contents) chunks."""
         message_start = None
 
@@ -464,7 +464,7 @@ class PrefixedMessageDecoder:
                 yield False, char
 
     def transform(
-        self, binary_fd: BinaryIO, transform: Callable[[bytes], bytes]
+        self, binary_fd: _RawIO, transform: Callable[[bytes], bytes]
     ) -> Iterator[bytes]:
         """Yields the file with a transformation applied to the messages."""
         for is_message, chunk in self.read_messages(binary_fd):

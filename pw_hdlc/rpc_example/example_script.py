@@ -18,7 +18,7 @@ import argparse
 import os
 from pathlib import Path
 
-import serial  # type: ignore
+import serial
 
 from pw_hdlc.rpc import HdlcRpcClient, default_channels
 

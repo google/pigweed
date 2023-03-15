@@ -33,7 +33,7 @@ import socket
 import sys
 from typing import Collection, Iterable, Iterator
 
-import serial  # type: ignore
+import serial
 from pw_tokenizer import database
 from pw_trace import trace
 from pw_hdlc.rpc import HdlcRpcClient, default_channels

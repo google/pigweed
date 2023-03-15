@@ -51,7 +51,7 @@ from typing import (
 )
 import socket
 
-import serial  # type: ignore
+import serial
 import IPython  # type: ignore
 
 from pw_cli import log as pw_cli_log

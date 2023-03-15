@@ -12,14 +12,19 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 """Wrapers for pyserial classes to log read and write data."""
+from __future__ import annotations
 
 from contextvars import ContextVar
 import logging
 import textwrap
+from typing import TYPE_CHECKING
 
-import serial  # type: ignore
+import serial
 
 from pw_console.widgets.event_count_history import EventCountHistory
+
+if TYPE_CHECKING:
+    from _typeshed import ReadableBuffer
 
 _LOG = logging.getLogger('pw_console.serial_debug_logger')
 
@@ -87,8 +92,8 @@ class SerialWithLogging(serial.Serial):  # pylint: disable=too-many-ancestors
         super().__init__(*args, **kwargs)
         self.pw_bps_history = BANDWIDTH_HISTORY_CONTEXTVAR.get()
 
-    def read(self, *args, **kwargs):
-        data = super().read(*args, **kwargs)
+    def read(self, size: int = 1) -> bytes:
+        data = super().read(size)
         self.pw_bps_history['read'].log(len(data))
         self.pw_bps_history['total'].log(len(data))
 
@@ -126,11 +131,11 @@ class SerialWithLogging(serial.Serial):  # pylint: disable=too-many-ancestors
 
         return data
 
-    def write(self, data: bytes, *args, **kwargs):
-        self.pw_bps_history['write'].log(len(data))
-        self.pw_bps_history['total'].log(len(data))
+    def write(self, data: ReadableBuffer) -> None:
+        if isinstance(data, bytes) and len(data) > 0:
+            self.pw_bps_history['write'].log(len(data))
+            self.pw_bps_history['total'].log(len(data))
 
-        if len(data) > 0:
             prefix = 'Write %2d B: ' % len(data)
             _LOG.debug(
                 '%s%s',
@@ -162,4 +167,4 @@ class SerialWithLogging(serial.Serial):  # pylint: disable=too-many-ancestors
                     ),
                 )
 
-        super().write(data, *args, **kwargs)
+        super().write(data)

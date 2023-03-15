@@ -25,8 +25,8 @@ import time
 from pathlib import Path
 from typing import List
 
-import serial  # type: ignore
-import serial.tools.list_ports  # type: ignore
+import serial
+import serial.tools.list_ports
 import pw_arduino_build.log
 from pw_arduino_build import teensy_detector
 from pw_arduino_build.file_operations import decode_file_json
