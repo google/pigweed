@@ -60,8 +60,8 @@ std::optional<EmbossCommandPacket> AndroidExtendedLowEnergyAdvertiser::BuildEnab
   return packet;
 }
 
-std::unique_ptr<CommandPacket> AndroidExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
-    const DeviceAddress& address, hci_spec::LEAdvertisingType type,
+CommandChannel::CommandPacketVariant AndroidExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
+    const DeviceAddress& address, pw::bluetooth::emboss::LEAdvertisingType type,
     pw::bluetooth::emboss::LEOwnAddressType own_address_type, AdvertisingIntervalRange interval) {
   std::unique_ptr<CommandPacket> packet = CommandPacket::New(
       hci_android::kLEMultiAdvt, sizeof(hci_android::LEMultiAdvtSetAdvtParamCommandParams));
@@ -72,7 +72,7 @@ std::unique_ptr<CommandPacket> AndroidExtendedLowEnergyAdvertiser::BuildSetAdver
   if (!handle) {
     bt_log(WARN, "hci-le", "could not (al)locate advertising handle for address: %s",
            bt_str(address));
-    return nullptr;
+    return std::unique_ptr<CommandPacket>();
   }
 
   payload->opcode = hci_android::kLEMultiAdvtSetAdvtParamSubopcode;

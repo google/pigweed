@@ -51,8 +51,8 @@ class LegacyLowEnergyAdvertiser final : public LowEnergyAdvertiser {
   std::optional<EmbossCommandPacket> BuildEnablePacket(
       const DeviceAddress& address, pw::bluetooth::emboss::GenericEnableParam enable) override;
 
-  std::unique_ptr<CommandPacket> BuildSetAdvertisingParams(
-      const DeviceAddress& address, hci_spec::LEAdvertisingType type,
+  CommandChannel::CommandPacketVariant BuildSetAdvertisingParams(
+      const DeviceAddress& address, pw::bluetooth::emboss::LEAdvertisingType type,
       pw::bluetooth::emboss::LEOwnAddressType own_address_type,
       AdvertisingIntervalRange interval) override;
 

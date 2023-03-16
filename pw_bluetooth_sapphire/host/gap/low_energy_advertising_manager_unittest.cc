@@ -117,11 +117,11 @@ class FakeLowEnergyAdvertiser final : public hci::LowEnergyAdvertiser {
     return std::nullopt;
   }
 
-  std::unique_ptr<hci::CommandPacket> BuildSetAdvertisingParams(
-      const DeviceAddress& address, hci_spec::LEAdvertisingType type,
+  hci::CommandChannel::CommandPacketVariant BuildSetAdvertisingParams(
+      const DeviceAddress& address, pw::bluetooth::emboss::LEAdvertisingType type,
       pw::bluetooth::emboss::LEOwnAddressType own_address_type,
       hci::AdvertisingIntervalRange interval) override {
-    return nullptr;
+    return std::unique_ptr<hci::CommandPacket>();
   }
 
   hci::CommandChannel::CommandPacketVariant BuildSetAdvertisingData(const DeviceAddress& address,

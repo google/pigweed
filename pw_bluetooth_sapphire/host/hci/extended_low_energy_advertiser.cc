@@ -59,8 +59,8 @@ std::optional<EmbossCommandPacket> ExtendedLowEnergyAdvertiser::BuildEnablePacke
   return packet;
 }
 
-std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
-    const DeviceAddress& address, hci_spec::LEAdvertisingType type,
+CommandChannel::CommandPacketVariant ExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
+    const DeviceAddress& address, pw::bluetooth::emboss::LEAdvertisingType type,
     pw::bluetooth::emboss::LEOwnAddressType own_address_type, AdvertisingIntervalRange interval) {
   constexpr size_t kPayloadSize = sizeof(hci_spec::LESetExtendedAdvertisingParametersCommandParams);
   std::unique_ptr<CommandPacket> packet =
@@ -75,15 +75,15 @@ std::unique_ptr<CommandPacket> ExtendedLowEnergyAdvertiser::BuildSetAdvertisingP
     bt_log(WARN, "hci-le",
            "could not allocate a new advertising handle for address: %s (all in use)",
            bt_str(address));
-    return nullptr;
+    return std::unique_ptr<CommandPacket>();
   }
   payload->adv_handle = handle.value();
 
   // advertising event properties
-  std::optional<hci_spec::AdvertisingEventBits> bits = AdvertisingTypeToEventBits(type);
+  std::optional<hci_spec::AdvertisingEventBits> bits = hci_spec::AdvertisingTypeToEventBits(type);
   if (!bits) {
     bt_log(WARN, "hci-le", "could not generate event bits for type: %hhu", type);
-    return nullptr;
+    return std::unique_ptr<CommandPacket>();
   }
   payload->adv_event_properties = bits.value();
 

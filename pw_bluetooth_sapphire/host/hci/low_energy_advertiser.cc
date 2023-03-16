@@ -61,11 +61,12 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
   }
 
   // Set advertising parameters
-  hci_spec::LEAdvertisingType type = hci_spec::LEAdvertisingType::kAdvNonConnInd;
+  pw::bluetooth::emboss::LEAdvertisingType type =
+      pw::bluetooth::emboss::LEAdvertisingType::NOT_CONNECTABLE_UNDIRECTED;
   if (connect_callback) {
-    type = hci_spec::LEAdvertisingType::kAdvInd;
+    type = pw::bluetooth::emboss::LEAdvertisingType::CONNECTABLE_AND_SCANNABLE_UNDIRECTED;
   } else if (scan_rsp.CalculateBlockSize() > 0) {
-    type = hci_spec::LEAdvertisingType::kAdvScanInd;
+    type = pw::bluetooth::emboss::LEAdvertisingType::SCANNABLE_UNDIRECTED;
   }
 
   pw::bluetooth::emboss::LEOwnAddressType own_addr_type;
@@ -78,9 +79,12 @@ void LowEnergyAdvertiser::StartAdvertisingInternal(
   data.Copy(&staged_parameters_.data);
   scan_rsp.Copy(&staged_parameters_.scan_rsp);
 
-  std::unique_ptr<CommandPacket> set_adv_params_packet =
+  using PacketPtr = std::unique_ptr<CommandPacket>;
+
+  CommandChannel::CommandPacketVariant set_adv_params_packet =
       BuildSetAdvertisingParams(address, type, own_addr_type, interval);
-  if (!set_adv_params_packet) {
+  if (std::holds_alternative<PacketPtr>(set_adv_params_packet) &&
+      !std::get<PacketPtr>(set_adv_params_packet)) {
     bt_log(WARN, "hci-le", "cannot build HCI set params packet for %s", bt_str(address));
     result_callback(ToResult(HostError::kCanceled));
     return;

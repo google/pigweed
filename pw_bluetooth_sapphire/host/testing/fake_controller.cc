@@ -1290,7 +1290,7 @@ void FakeController::OnLESetAdvertisingData(
 }
 
 void FakeController::OnLESetAdvertisingParameters(
-    const hci_spec::LESetAdvertisingParametersCommandParams& params) {
+    const pw::bluetooth::emboss::LESetAdvertisingParametersCommandView& params) {
   if (legacy_advertising_state_.enabled) {
     bt_log(INFO, "fake-hci", "cannot set advertising parameters while advertising enabled");
     RespondWithCommandComplete(hci_spec::kLESetAdvertisingParameters,
@@ -1298,13 +1298,14 @@ void FakeController::OnLESetAdvertisingParameters(
     return;
   }
 
-  uint16_t interval_min = le16toh(params.adv_interval_min);
-  uint16_t interval_max = le16toh(params.adv_interval_max);
+  uint16_t interval_min = params.advertising_interval_min().UncheckedRead();
+  uint16_t interval_max = params.advertising_interval_max().UncheckedRead();
 
   // Core Spec Volume 4, Part E, Section 7.8.5: For high duty cycle directed advertising, the
   // Advertising_Interval_Min and Advertising_Interval_Max parameters are not used and shall be
   // ignored.
-  if (params.adv_type != hci_spec::LEAdvertisingType::kAdvDirectIndHighDutyCycle) {
+  if (params.adv_type().Read() !=
+      pw::bluetooth::emboss::LEAdvertisingType::CONNECTABLE_HIGH_DUTY_CYCLE_DIRECTED) {
     if (interval_min >= interval_max) {
       bt_log(INFO, "fake-hci", "advertising interval min (%d) not strictly less than max (%d)",
              interval_min, interval_max);
@@ -1335,8 +1336,9 @@ void FakeController::OnLESetAdvertisingParameters(
 
   legacy_advertising_state_.interval_min = interval_min;
   legacy_advertising_state_.interval_max = interval_max;
-  legacy_advertising_state_.adv_type = params.adv_type;
-  legacy_advertising_state_.own_address_type = params.own_address_type;
+  legacy_advertising_state_.adv_type =
+      static_cast<pw::bluetooth::emboss::LEAdvertisingType>(params.adv_type().Read());
+  legacy_advertising_state_.own_address_type = params.own_address_type().Read();
 
   bt_log(INFO, "fake-hci", "start advertising using address type: %hhd",
          legacy_advertising_state_.own_address_type);
@@ -1818,22 +1820,22 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
   constexpr uint16_t prop_bits_adv_scan_ind = legacy_pdu | hci_spec::kLEAdvEventPropBitScannable;
   constexpr uint16_t prop_bits_adv_nonconn_ind = legacy_pdu;
 
-  hci_spec::LEAdvertisingType adv_type;
+  pw::bluetooth::emboss::LEAdvertisingType adv_type;
   switch (params.adv_event_properties) {
     case prop_bits_adv_ind:
-      adv_type = hci_spec::LEAdvertisingType::kAdvInd;
+      adv_type = pw::bluetooth::emboss::LEAdvertisingType::CONNECTABLE_AND_SCANNABLE_UNDIRECTED;
       break;
     case prop_bits_adv_direct_ind_high_duty_cycle:
-      adv_type = hci_spec::LEAdvertisingType::kAdvDirectIndHighDutyCycle;
+      adv_type = pw::bluetooth::emboss::LEAdvertisingType::CONNECTABLE_HIGH_DUTY_CYCLE_DIRECTED;
       break;
     case prop_bits_adv_direct_ind_low_duty_cycle:
-      adv_type = hci_spec::LEAdvertisingType::kAdvDirectIndLowDutyCycle;
+      adv_type = pw::bluetooth::emboss::LEAdvertisingType::CONNECTABLE_LOW_DUTY_CYCLE_DIRECTED;
       break;
     case prop_bits_adv_scan_ind:
-      adv_type = hci_spec::LEAdvertisingType::kAdvScanInd;
+      adv_type = pw::bluetooth::emboss::LEAdvertisingType::SCANNABLE_UNDIRECTED;
       break;
     case prop_bits_adv_nonconn_ind:
-      adv_type = hci_spec::LEAdvertisingType::kAdvNonConnInd;
+      adv_type = pw::bluetooth::emboss::LEAdvertisingType::NOT_CONNECTABLE_UNDIRECTED;
       break;
     default:
       bt_log(INFO, "fake-hci", "invalid bit combination: %d", params.adv_event_properties);
@@ -2813,12 +2815,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnReadLocalSupportedFeatures();
       break;
     }
-    case hci_spec::kLESetAdvertisingParameters: {
-      const auto& params =
-          command_packet.payload<hci_spec::LESetAdvertisingParametersCommandParams>();
-      OnLESetAdvertisingParameters(params);
-      break;
-    }
     case hci_spec::kLESetAdvertisingSetRandomAddress: {
       const auto& params =
           command_packet.payload<hci_spec::LESetAdvertisingSetRandomAddressCommandParams>();
@@ -2969,7 +2965,8 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kLECreateConnection:
     case hci_spec::kLEConnectionUpdate:
     case hci_spec::kLEStartEncryption:
-    case hci_spec::kReadLocalExtendedFeatures: {
+    case hci_spec::kReadLocalExtendedFeatures:
+    case hci_spec::kLESetAdvertisingParameters: {
       // This case is for packet types that have been migrated to the new Emboss architecture. Their
       // old version can be still be assembled from the HciEmulator channel, so here we repackage
       // and forward them as Emboss packets.
@@ -3241,6 +3238,12 @@ void FakeController::HandleReceivedCommandPacket(const hci::EmbossCommandPacket&
       OnReadLocalExtendedFeatures(params);
       break;
     }
+    case hci_spec::kLESetAdvertisingParameters: {
+      const auto& params =
+          command_packet.view<pw::bluetooth::emboss::LESetAdvertisingParametersCommandView>();
+      OnLESetAdvertisingParameters(params);
+      break;
+    }
     default: {
       bt_log(WARN, "fake-hci", "opcode: %#.4x", opcode);
       break;
@@ -3315,18 +3318,22 @@ void FakeController::ClearDataCallback() {
 }
 
 bool FakeController::LEAdvertisingState::IsDirectedAdvertising() const {
-  return adv_type == hci_spec::LEAdvertisingType::kAdvDirectIndHighDutyCycle ||
-         adv_type == hci_spec::LEAdvertisingType::kAdvDirectIndLowDutyCycle;
+  return adv_type ==
+             pw::bluetooth::emboss::LEAdvertisingType::CONNECTABLE_HIGH_DUTY_CYCLE_DIRECTED ||
+         adv_type == pw::bluetooth::emboss::LEAdvertisingType::CONNECTABLE_LOW_DUTY_CYCLE_DIRECTED;
 }
 
 bool FakeController::LEAdvertisingState::IsScannableAdvertising() const {
-  return adv_type == hci_spec::LEAdvertisingType::kAdvInd ||
-         adv_type == hci_spec::LEAdvertisingType::kAdvScanInd;
+  return adv_type ==
+             pw::bluetooth::emboss::LEAdvertisingType::CONNECTABLE_AND_SCANNABLE_UNDIRECTED ||
+         adv_type == pw::bluetooth::emboss::LEAdvertisingType::SCANNABLE_UNDIRECTED;
 }
 
 bool FakeController::LEAdvertisingState::IsConnectableAdvertising() const {
-  return adv_type == hci_spec::LEAdvertisingType::kAdvInd ||
-         adv_type == hci_spec::LEAdvertisingType::kAdvDirectIndHighDutyCycle ||
-         adv_type == hci_spec::LEAdvertisingType::kAdvDirectIndLowDutyCycle;
+  return adv_type ==
+             pw::bluetooth::emboss::LEAdvertisingType::CONNECTABLE_AND_SCANNABLE_UNDIRECTED ||
+         adv_type ==
+             pw::bluetooth::emboss::LEAdvertisingType::CONNECTABLE_HIGH_DUTY_CYCLE_DIRECTED ||
+         adv_type == pw::bluetooth::emboss::LEAdvertisingType::CONNECTABLE_LOW_DUTY_CYCLE_DIRECTED;
 }
 }  // namespace bt::testing

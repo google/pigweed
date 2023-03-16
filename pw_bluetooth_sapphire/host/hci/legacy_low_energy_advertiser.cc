@@ -65,21 +65,20 @@ CommandChannel::CommandPacketVariant LegacyLowEnergyAdvertiser::BuildSetScanResp
   return packet;
 }
 
-std::unique_ptr<CommandPacket> LegacyLowEnergyAdvertiser::BuildSetAdvertisingParams(
-    const DeviceAddress& address, hci_spec::LEAdvertisingType type,
+CommandChannel::CommandPacketVariant LegacyLowEnergyAdvertiser::BuildSetAdvertisingParams(
+    const DeviceAddress& address, pw::bluetooth::emboss::LEAdvertisingType type,
     pw::bluetooth::emboss::LEOwnAddressType own_address_type, AdvertisingIntervalRange interval) {
-  std::unique_ptr<CommandPacket> packet =
-      CommandPacket::New(hci_spec::kLESetAdvertisingParameters,
-                         sizeof(hci_spec::LESetAdvertisingParametersCommandParams));
-  packet->mutable_view()->mutable_payload_data().SetToZeros();
-
-  auto params = packet->mutable_payload<hci_spec::LESetAdvertisingParametersCommandParams>();
-  params->adv_interval_min = htole16(interval.min());
-  params->adv_interval_max = htole16(interval.max());
-  params->adv_type = type;
-  params->own_address_type = own_address_type;
-  params->adv_channel_map = hci_spec::kLEAdvertisingChannelAll;
-  params->adv_filter_policy = hci_spec::LEAdvFilterPolicy::kAllowAll;
+  auto packet =
+      EmbossCommandPacket::New<pw::bluetooth::emboss::LESetAdvertisingParametersCommandWriter>(
+          hci_spec::kLESetAdvertisingParameters);
+  auto params = packet.view_t();
+  params.advertising_interval_min().UncheckedWrite(interval.min());
+  params.advertising_interval_max().UncheckedWrite(interval.max());
+  params.adv_type().Write(type);
+  params.own_address_type().Write(own_address_type);
+  params.advertising_channel_map().BackingStorage().WriteUInt(hci_spec::kLEAdvertisingChannelAll);
+  params.advertising_filter_policy().Write(
+      pw::bluetooth::emboss::LEAdvertisingFilterPolicy::ALLOW_ALL);
 
   // We don't support directed advertising yet, so leave peer_address and peer_address_type as 0x00
   // (|packet| parameters are initialized to zero above).

@@ -135,7 +135,8 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
     bool IsConnectableAdvertising() const;
 
     bool enabled = false;
-    hci_spec::LEAdvertisingType adv_type = hci_spec::LEAdvertisingType::kAdvInd;
+    pw::bluetooth::emboss::LEAdvertisingType adv_type =
+        pw::bluetooth::emboss::LEAdvertisingType::CONNECTABLE_AND_SCANNABLE_UNDIRECTED;
 
     std::optional<DeviceAddress> random_address;
     pw::bluetooth::emboss::LEOwnAddressType own_address_type =
@@ -594,7 +595,7 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
 
   // Called when a HCI_LE_Set_Advertising_Parameters command is received.
   void OnLESetAdvertisingParameters(
-      const hci_spec::LESetAdvertisingParametersCommandParams& params);
+      const pw::bluetooth::emboss::LESetAdvertisingParametersCommandView& params);
 
   // Called when a HCI_LE_Set_Random_Address command is received.
   void OnLESetRandomAddress(const pw::bluetooth::emboss::LESetRandomAddressCommandView& params);

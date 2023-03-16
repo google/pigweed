@@ -333,7 +333,7 @@ struct LEMultiAdvtSetAdvtParamCommandParams {
 
   // Used to determine the packet type that is used for advertising when advertising is enabled (see
   // hci_constants.h)
-  LEAdvertisingType adv_type;
+  pw::bluetooth::emboss::LEAdvertisingType adv_type;
 
   pw::bluetooth::emboss::LEOwnAddressType own_address_type;
   LEPeerAddressType peer_address_type;

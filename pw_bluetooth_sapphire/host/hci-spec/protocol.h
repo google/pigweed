@@ -1878,39 +1878,6 @@ struct LESetRandomAddressCommandParams {
 // LE Set Advertising Parameters Command (v4.0) (LE)
 constexpr OpCode kLESetAdvertisingParameters = LEControllerCommandOpCode(0x0006);
 
-struct LESetAdvertisingParametersCommandParams {
-  // Range: see kLEAdvertisingInterval[Min|Max] in hci_constants.h
-  // Default: N = kLEAdvertisingIntervalDefault (see hci_constants.h)
-  // Time: N * 0.625 ms
-  // Time Range: 20 ms to 10.24 s
-  uint16_t adv_interval_min;
-
-  // Range: see kLEAdvertisingInterval[Min|Max] in hci_constants.h
-  // Default: N = kLEAdvertisingIntervalDefault (see hci_constants.h)
-  // Time: N * 0.625 ms
-  // Time Range: 20 ms to 10.24 s
-  uint16_t adv_interval_max;
-
-  // Used to determine the packet type that is used for advertising when
-  // advertising is enabled (see hci_constants.h)
-  LEAdvertisingType adv_type;
-
-  pw::bluetooth::emboss::LEOwnAddressType own_address_type;
-  LEPeerAddressType peer_address_type;
-
-  // Public Device Address, Random Device Address, Public Identity Address, or
-  // Random (static) Identity Address of the device to be connected.
-  DeviceAddressBytes peer_address;
-
-  // (See the constants kLEAdvertisingChannel* in hci_constants.h for possible
-  // values).
-  uint8_t adv_channel_map;
-
-  // This parameter shall be ignored when directed advertising is enabled (see
-  // hci_constants.h for possible values).
-  LEAdvFilterPolicy adv_filter_policy;
-} __attribute__((packed));
-
 // ========================================================
 // LE Read Advertising Channel Tx Power Command (v4.0) (LE)
 constexpr OpCode kLEReadAdvertisingChannelTxPower = LEControllerCommandOpCode(0x0007);

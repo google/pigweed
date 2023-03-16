@@ -167,7 +167,8 @@ uint32_t DecodeExtendedAdvertisingInterval(const uint8_t (&input)[3]) {
   return letoh32(result);
 }
 
-std::optional<AdvertisingEventBits> AdvertisingTypeToEventBits(LEAdvertisingType type) {
+std::optional<AdvertisingEventBits> AdvertisingTypeToEventBits(
+    pw::bluetooth::emboss::LEAdvertisingType type) {
   // TODO(fxbug.dev/81470): for backwards compatibility and because supporting extended advertising
   // PDUs is a much larger project, we currently only support legacy PDUs. Without using legacy
   // PDUs, non-Bluetooth 5 devices will not be able to discover extended advertisements.
@@ -176,23 +177,23 @@ std::optional<AdvertisingEventBits> AdvertisingTypeToEventBits(LEAdvertisingType
   // Bluetooth Spec Volume 4, Part E, Section 7.8.53, Table 7.2 defines the mapping of legacy PDU
   // types to the corresponding bits within adv_event_properties.
   switch (type) {
-    case LEAdvertisingType::kAdvInd:
+    case pw::bluetooth::emboss::LEAdvertisingType::CONNECTABLE_AND_SCANNABLE_UNDIRECTED:
       adv_event_properties |= kLEAdvEventPropBitConnectable;
       adv_event_properties |= kLEAdvEventPropBitScannable;
       break;
-    case LEAdvertisingType::kAdvDirectIndLowDutyCycle:
+    case pw::bluetooth::emboss::LEAdvertisingType::CONNECTABLE_LOW_DUTY_CYCLE_DIRECTED:
       adv_event_properties |= kLEAdvEventPropBitConnectable;
       adv_event_properties |= kLEAdvEventPropBitDirected;
       break;
-    case LEAdvertisingType::kAdvDirectIndHighDutyCycle:
+    case pw::bluetooth::emboss::LEAdvertisingType::CONNECTABLE_HIGH_DUTY_CYCLE_DIRECTED:
       adv_event_properties |= kLEAdvEventPropBitConnectable;
       adv_event_properties |= kLEAdvEventPropBitDirected;
       adv_event_properties |= kLEAdvEventPropBitHighDutyCycleDirectedConnectable;
       break;
-    case LEAdvertisingType::kAdvScanInd:
+    case pw::bluetooth::emboss::LEAdvertisingType::SCANNABLE_UNDIRECTED:
       adv_event_properties |= kLEAdvEventPropBitScannable;
       break;
-    case LEAdvertisingType::kAdvNonConnInd:
+    case pw::bluetooth::emboss::LEAdvertisingType::NOT_CONNECTABLE_UNDIRECTED:
       // no extra bits to set
       break;
     default:

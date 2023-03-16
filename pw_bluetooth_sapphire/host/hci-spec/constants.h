@@ -893,28 +893,6 @@ constexpr uint8_t kMaxAdvertisingHandle = 0xEF;
 constexpr uint8_t kNoMaxExtendedAdvertisingEvents = 0;
 constexpr uint8_t kNoAdvertisingDuration = 0;
 
-// LE advertising types (see Core Spec v5.0, Vol 2, Part E, Section 7.8.5).
-enum class LEAdvertisingType : uint8_t {
-  // ADV_IND: Connectable and scannable undirected advertising (the default
-  // value used by the controller).
-  kAdvInd = 0x00,
-
-  // ADV_DIRECT_IND (high duty cycle): Connectable high duty cycle directed
-  // advertising.
-  kAdvDirectIndHighDutyCycle = 0x01,
-
-  // ADV_SCAN_IND: Scannable undirected advertising.
-  kAdvScanInd = 0x02,
-
-  // ADV_NONCONN_IND: Non-connectable undirected advertising.
-  kAdvNonConnInd = 0x03,
-
-  // ADV_DIRECT_IND (low duty cycle): Connectable low duty cycle advertising.
-  kAdvDirectIndLowDutyCycle = 0x04,
-
-  // The rest is reserved for future use
-};
-
 // LE Advertising event types that can be reported in a LE Advertising Report
 // event.
 enum class LEAdvertisingEventType : uint8_t {
