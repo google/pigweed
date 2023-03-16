@@ -483,7 +483,8 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
       const pw::bluetooth::emboss::LECreateConnectionCommandView& params);
 
   // Called when a HCI_LE_Connection_Update command is received.
-  void OnLEConnectionUpdateCommandReceived(const hci_spec::LEConnectionUpdateCommandParams& params);
+  void OnLEConnectionUpdateCommandReceived(
+      const pw::bluetooth::emboss::LEConnectionUpdateCommandView& params);
 
   // Called when a HCI_Disconnect command is received.
   void OnDisconnectCommandReceived(const pw::bluetooth::emboss::DisconnectCommandView& params);
@@ -505,7 +506,8 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   void OnLESetScanParamaters(const pw::bluetooth::emboss::LESetScanParametersCommandView& params);
 
   // Called when a HCI_Read_Local_Extended_Features command is received.
-  void OnReadLocalExtendedFeatures(const hci_spec::ReadLocalExtendedFeaturesCommandParams& params);
+  void OnReadLocalExtendedFeatures(
+      const pw::bluetooth::emboss::ReadLocalExtendedFeaturesCommandView& params);
 
   // Called when a HCI_SetEventMask command is received.
   void OnSetEventMask(const pw::bluetooth::emboss::SetEventMaskCommandView& params);
@@ -703,7 +705,8 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
 
   // Called when a HCI_LE_Enable_Encryption command is received, responds with a successful
   // encryption change event.
-  void OnLEStartEncryptionCommand(const hci_spec::LEStartEncryptionCommandParams& params);
+  void OnLEStartEncryptionCommand(
+      const pw::bluetooth::emboss::LEEnableEncryptionCommandView& params);
 
   void OnWriteSynchronousFlowControlEnableCommand(
       const pw::bluetooth::emboss::WriteSynchronousFlowControlEnableCommandView& params);

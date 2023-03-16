@@ -1970,6 +1970,9 @@ TEST_F(LowEnergyConnectionManagerTest,
                                      char_value_handle,
                                      kPeripheralPreferredConnectionParametersCharacteristic);
   service_client->set_characteristics({char_data});
+
+  // TODO(fxbug.dev/123377): These parameters are invalid, but this test passes because we fail to
+  // validate them before sending them to the controller.
   StaticByteBuffer char_value(0x01, 0x00,   // min interval
                               0x02, 0x00,   // max interval
                               0x03, 0x00,   // max latency

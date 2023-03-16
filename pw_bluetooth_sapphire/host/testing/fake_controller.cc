@@ -808,8 +808,8 @@ void FakeController::OnLECreateConnectionCommandReceived(
 }
 
 void FakeController::OnLEConnectionUpdateCommandReceived(
-    const hci_spec::LEConnectionUpdateCommandParams& params) {
-  hci_spec::ConnectionHandle handle = le16toh(params.connection_handle);
+    const pw::bluetooth::emboss::LEConnectionUpdateCommandView& params) {
+  hci_spec::ConnectionHandle handle = params.connection_handle().Read();
   FakePeer* peer = FindByConnHandle(handle);
   if (!peer) {
     RespondWithCommandStatus(hci_spec::kLEConnectionUpdate,
@@ -819,10 +819,10 @@ void FakeController::OnLEConnectionUpdateCommandReceived(
 
   BT_DEBUG_ASSERT(peer->connected());
 
-  uint16_t min_interval = le16toh(params.conn_interval_min);
-  uint16_t max_interval = le16toh(params.conn_interval_max);
-  uint16_t max_latency = le16toh(params.conn_latency);
-  uint16_t supv_timeout = le16toh(params.supervision_timeout);
+  uint16_t min_interval = params.connection_interval_min().UncheckedRead();
+  uint16_t max_interval = params.connection_interval_max().UncheckedRead();
+  uint16_t max_latency = params.max_latency().UncheckedRead();
+  uint16_t supv_timeout = params.supervision_timeout().UncheckedRead();
 
   if (min_interval > max_interval) {
     RespondWithCommandStatus(hci_spec::kLEConnectionUpdate,
@@ -840,13 +840,13 @@ void FakeController::OnLEConnectionUpdateCommandReceived(
   hci_spec::LEConnectionUpdateCompleteSubeventParams reply;
   if (peer->supports_ll_conn_update_procedure()) {
     reply.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-    reply.connection_handle = params.connection_handle;
+    reply.connection_handle = htole16(params.connection_handle().Read());
     reply.conn_interval = htole16(conn_params.interval());
-    reply.conn_latency = params.conn_latency;
-    reply.supervision_timeout = params.supervision_timeout;
+    reply.conn_latency = htole16(params.max_latency().UncheckedRead());
+    reply.supervision_timeout = htole16(params.supervision_timeout().UncheckedRead());
   } else {
     reply.status = pw::bluetooth::emboss::StatusCode::UNSUPPORTED_REMOTE_FEATURE;
-    reply.connection_handle = params.connection_handle;
+    reply.connection_handle = htole16(params.connection_handle().Read());
     reply.conn_interval = 0;
     reply.conn_latency = 0;
     reply.supervision_timeout = 0;
@@ -981,27 +981,25 @@ void FakeController::OnLESetScanParamaters(
 }
 
 void FakeController::OnReadLocalExtendedFeatures(
-    const hci_spec::ReadLocalExtendedFeaturesCommandParams& params) {
+    const pw::bluetooth::emboss::ReadLocalExtendedFeaturesCommandView& params) {
   hci_spec::ReadLocalExtendedFeaturesReturnParams out_params;
-  out_params.page_number = params.page_number;
+  out_params.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
+  out_params.page_number = params.page_number().Read();
   out_params.maximum_page_number = 2;
+  out_params.extended_lmp_features = 0;
 
-  if (params.page_number > 2) {
-    out_params.status = pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS;
-  } else {
-    out_params.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-
-    switch (params.page_number) {
-      case 0:
-        out_params.extended_lmp_features = htole64(settings_.lmp_features_page0);
-        break;
-      case 1:
-        out_params.extended_lmp_features = htole64(settings_.lmp_features_page1);
-        break;
-      case 2:
-        out_params.extended_lmp_features = htole64(settings_.lmp_features_page2);
-        break;
-    }
+  switch (params.page_number().Read()) {
+    case 0:
+      out_params.extended_lmp_features = htole64(settings_.lmp_features_page0);
+      break;
+    case 1:
+      out_params.extended_lmp_features = htole64(settings_.lmp_features_page1);
+      break;
+    case 2:
+      out_params.extended_lmp_features = htole64(settings_.lmp_features_page2);
+      break;
+    default:
+      out_params.status = pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS;
   }
 
   RespondWithCommandComplete(hci_spec::kReadLocalExtendedFeatures,
@@ -1723,10 +1721,11 @@ void FakeController::OnLEReadRemoteFeaturesCommand(
 }
 
 void FakeController::OnLEStartEncryptionCommand(
-    const hci_spec::LEStartEncryptionCommandParams& params) {
+    const pw::bluetooth::emboss::LEEnableEncryptionCommandView& params) {
   RespondWithCommandStatus(hci_spec::kLEStartEncryption,
                            pw::bluetooth::emboss::StatusCode::SUCCESS);
-  SendEncryptionChangeEvent(params.connection_handle, pw::bluetooth::emboss::StatusCode::SUCCESS,
+  SendEncryptionChangeEvent(params.connection_handle().Read(),
+                            pw::bluetooth::emboss::StatusCode::SUCCESS,
                             hci_spec::EncryptionStatus::kOn);
 }
 
@@ -2897,11 +2896,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnReadSimplePairingMode();
       break;
     }
-    case hci_spec::kLEConnectionUpdate: {
-      const auto& params = command_packet.payload<hci_spec::LEConnectionUpdateCommandParams>();
-      OnLEConnectionUpdateCommandReceived(params);
-      break;
-    }
     case hci_spec::kLECreateConnectionCancel: {
       OnLECreateConnectionCancel();
       break;
@@ -2916,12 +2910,6 @@ void FakeController::HandleReceivedCommandPacket(
     }
     case hci_spec::kLEReadBufferSizeV1: {
       OnLEReadBufferSizeV1();
-      break;
-    }
-    case hci_spec::kReadLocalExtendedFeatures: {
-      const auto& params =
-          command_packet.payload<hci_spec::ReadLocalExtendedFeaturesCommandParams>();
-      OnReadLocalExtendedFeatures(params);
       break;
     }
     case hci_spec::kReset: {
@@ -2941,11 +2929,6 @@ void FakeController::HandleReceivedCommandPacket(
     }
     case hci_spec::kLEReadAdvertisingChannelTxPower: {
       OnLEReadAdvertisingChannelTxPower();
-      break;
-    }
-    case hci_spec::kLEStartEncryption: {
-      const auto& params = command_packet.payload<hci_spec::LEStartEncryptionCommandParams>();
-      OnLEStartEncryptionCommand(params);
       break;
     }
     case hci_spec::kInquiry:
@@ -2983,7 +2966,10 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kLESetScanResponseData:
     case hci_spec::kLESetScanParameters:
     case hci_spec::kLESetScanEnable:
-    case hci_spec::kLECreateConnection: {
+    case hci_spec::kLECreateConnection:
+    case hci_spec::kLEConnectionUpdate:
+    case hci_spec::kLEStartEncryption:
+    case hci_spec::kReadLocalExtendedFeatures: {
       // This case is for packet types that have been migrated to the new Emboss architecture. Their
       // old version can be still be assembled from the HciEmulator channel, so here we repackage
       // and forward them as Emboss packets.
@@ -3235,6 +3221,24 @@ void FakeController::HandleReceivedCommandPacket(const hci::EmbossCommandPacket&
       const auto& params =
           command_packet.view<pw::bluetooth::emboss::LECreateConnectionCommandView>();
       OnLECreateConnectionCommandReceived(params);
+      break;
+    }
+    case hci_spec::kLEConnectionUpdate: {
+      const auto& params =
+          command_packet.view<pw::bluetooth::emboss::LEConnectionUpdateCommandView>();
+      OnLEConnectionUpdateCommandReceived(params);
+      break;
+    }
+    case hci_spec::kLEStartEncryption: {
+      const auto& params =
+          command_packet.view<pw::bluetooth::emboss::LEEnableEncryptionCommandView>();
+      OnLEStartEncryptionCommand(params);
+      break;
+    }
+    case hci_spec::kReadLocalExtendedFeatures: {
+      const auto& params =
+          command_packet.view<pw::bluetooth::emboss::ReadLocalExtendedFeaturesCommandView>();
+      OnReadLocalExtendedFeatures(params);
       break;
     }
     default: {

@@ -414,17 +414,19 @@ void LowEnergyConnection::L2capRequestConnectionParameterUpdate(
 void LowEnergyConnection::UpdateConnectionParams(
     const hci_spec::LEPreferredConnectionParameters& params, StatusCallback status_cb) {
   bt_log(DEBUG, "gap-le", "updating connection parameters (peer: %s)", bt_str(peer_id()));
-  auto command = hci::CommandPacket::New(hci_spec::kLEConnectionUpdate,
-                                         sizeof(hci_spec::LEConnectionUpdateCommandParams));
-  auto event_params = command->mutable_payload<hci_spec::LEConnectionUpdateCommandParams>();
-
-  event_params->connection_handle = htole16(handle());
-  event_params->conn_interval_min = htole16(params.min_interval());
-  event_params->conn_interval_max = htole16(params.max_interval());
-  event_params->conn_latency = htole16(params.max_latency());
-  event_params->supervision_timeout = htole16(params.supervision_timeout());
-  event_params->minimum_ce_length = 0x0000;
-  event_params->maximum_ce_length = 0x0000;
+  auto command =
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::LEConnectionUpdateCommandWriter>(
+          hci_spec::kLEConnectionUpdate);
+  auto view = command.view_t();
+  view.connection_handle().Write(handle());
+  // TODO(fxbug.dev/123377): Handle invalid connection parameters before sending them to the
+  // controller.
+  view.connection_interval_min().UncheckedWrite(params.min_interval());
+  view.connection_interval_max().UncheckedWrite(params.max_interval());
+  view.max_latency().UncheckedWrite(params.max_latency());
+  view.supervision_timeout().UncheckedWrite(params.supervision_timeout());
+  view.min_connection_event_length().Write(0x0000);
+  view.max_connection_event_length().Write(0x0000);
 
   auto status_cb_wrapper = [handle = handle(), cb = std::move(status_cb)](
                                auto id, const hci::EventPacket& event) mutable {

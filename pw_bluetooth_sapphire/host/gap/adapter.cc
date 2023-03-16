@@ -856,13 +856,11 @@ void AdapterImpl::InitializeStep2() {
     max_lmp_feature_page_index_ = 1;
 
     // HCI_Read_Local_Extended_Features
-    auto cmd_packet =
-        hci::CommandPacket::New(hci_spec::kReadLocalExtendedFeatures,
-                                sizeof(hci_spec::ReadLocalExtendedFeaturesCommandParams));
-
+    auto cmd_packet = hci::EmbossCommandPacket::New<
+        pw::bluetooth::emboss::ReadLocalExtendedFeaturesCommandWriter>(
+        hci_spec::kReadLocalExtendedFeatures);
     // Try to read page 1.
-    cmd_packet->mutable_payload<hci_spec::ReadLocalExtendedFeaturesCommandParams>()->page_number =
-        1;
+    cmd_packet.view_t().page_number().Write(1);
 
     init_seq_runner_->QueueCommand(
         std::move(cmd_packet), [this](const hci::EventPacket& cmd_complete) {
@@ -995,13 +993,11 @@ void AdapterImpl::InitializeStep3() {
   // If we know that Page 2 of the extended features bitfield is available, then
   // request it.
   if (max_lmp_feature_page_index_ > 1) {
-    auto cmd_packet =
-        hci::CommandPacket::New(hci_spec::kReadLocalExtendedFeatures,
-                                sizeof(hci_spec::ReadLocalExtendedFeaturesCommandParams));
-
+    auto cmd_packet = hci::EmbossCommandPacket::New<
+        pw::bluetooth::emboss::ReadLocalExtendedFeaturesCommandWriter>(
+        hci_spec::kReadLocalExtendedFeatures);
     // Try to read page 2.
-    cmd_packet->mutable_payload<hci_spec::ReadLocalExtendedFeaturesCommandParams>()->page_number =
-        2;
+    cmd_packet.view_t().page_number().Write(2);
 
     // HCI_Read_Local_Extended_Features
     init_seq_runner_->QueueCommand(

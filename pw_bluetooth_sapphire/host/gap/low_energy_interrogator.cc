@@ -66,10 +66,10 @@ void LowEnergyInterrogator::Complete(hci::Result<> result) {
 }
 
 void LowEnergyInterrogator::QueueReadLERemoteFeatures() {
-  auto packet = hci::CommandPacket::New(hci_spec::kLEReadRemoteFeatures,
-                                        sizeof(hci_spec::LEReadRemoteFeaturesCommandParams));
-  auto params = packet->mutable_payload<hci_spec::LEReadRemoteFeaturesCommandParams>();
-  params->connection_handle = htole16(handle_);
+  auto packet =
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::LEReadRemoteFeaturesCommandWriter>(
+          hci_spec::kLEReadRemoteFeatures);
+  packet.view_t().connection_handle().Write(handle_);
 
   // It's safe to capture |this| instead of a weak ptr to self because |cmd_runner_| guarantees that
   // |cmd_cb| won't be invoked if |cmd_runner_| is destroyed, and |this| outlives |cmd_runner_|.

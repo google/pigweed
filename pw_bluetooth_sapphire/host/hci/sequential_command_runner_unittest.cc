@@ -518,7 +518,8 @@ TEST_F(SequentialCommandRunnerTest, AsyncCommands) {
                           hci_spec::kRemoteNameRequestCompleteEventCode);
 
   EXPECT_CMD_PACKET_OUT(test_device(), command1, &command1_status_event);
-  cmd_runner.QueueLeAsyncCommand(CommandPacket::New(hci_spec::kLEReadRemoteFeatures),
+  cmd_runner.QueueLeAsyncCommand(EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
+                                     hci_spec::kLEReadRemoteFeatures),
                                  hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode, cb,
                                  /*wait=*/false);
 

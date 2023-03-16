@@ -50,13 +50,13 @@ bool LowEnergyConnection::StartEncryption() {
     return false;
   }
 
-  auto cmd = CommandPacket::New(hci_spec::kLEStartEncryption,
-                                sizeof(hci_spec::LEStartEncryptionCommandParams));
-  auto* params = cmd->mutable_payload<hci_spec::LEStartEncryptionCommandParams>();
-  params->connection_handle = htole16(handle());
-  params->random_number = htole64(ltk()->rand());
-  params->encrypted_diversifier = htole16(ltk()->ediv());
-  params->long_term_key = ltk()->value();
+  auto cmd = EmbossCommandPacket::New<pw::bluetooth::emboss::LEEnableEncryptionCommandWriter>(
+      hci_spec::kLEStartEncryption);
+  auto params = cmd.view_t();
+  params.connection_handle().Write(handle());
+  params.random_number().Write(ltk()->rand());
+  params.encrypted_diversifier().Write(ltk()->ediv());
+  params.long_term_key().CopyFrom(pw::bluetooth::emboss::LinkKeyView(&ltk()->value()));
 
   auto event_cb = [self = GetWeakPtr(), handle = handle()](auto id, const EventPacket& event) {
     if (!self.is_alive()) {
