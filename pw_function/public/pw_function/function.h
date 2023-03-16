@@ -18,33 +18,34 @@
 
 namespace pw {
 
-// pw::Function is a wrapper for an arbitrary callable object. It can be used by
-// callback-based APIs to allow callers to provide any type of callable.
-//
-// Example:
-//
-//   template <typename T>
-//   bool All(const pw::Vector<T>& items,
-//            pw::Function<bool(const T& item)> predicate) {
-//     for (const T& item : items) {
-//       if (!predicate(item)) {
-//         return false;
-//       }
-//     }
-//     return true;
-//   }
-//
-//   bool ElementsArePositive(const pw::Vector<int>& items) {
-//     return All(items, [](const int& i) { return i > 0; });
-//   }
-//
-//   bool IsEven(const int& i) { return i % 2 == 0; }
-//
-//   bool ElementsAreEven(const pw::Vector<int>& items) {
-//     return All(items, IsEven);
-//   }
-//
-
+/// `pw::Function` is a wrapper for an arbitrary callable object. It can be used
+/// by callback-based APIs to allow callers to provide any type of callable.
+///
+/// Example:
+/// @code{.cpp}
+///
+///   template <typename T>
+///   bool All(const pw::Vector<T>& items,
+///            pw::Function<bool(const T& item)> predicate) {
+///     for (const T& item : items) {
+///       if (!predicate(item)) {
+///         return false;
+///       }
+///     }
+///     return true;
+///   }
+///
+///   bool ElementsArePositive(const pw::Vector<int>& items) {
+///     return All(items, [](const int& i) { return i > 0; });
+///   }
+///
+///   bool IsEven(const int& i) { return i % 2 == 0; }
+///
+///   bool ElementsAreEven(const pw::Vector<int>& items) {
+///     return All(items, IsEven);
+///   }
+///
+/// @endcode
 template <typename Callable,
           size_t inline_target_size =
               function_internal::config::kInlineCallableSize>
@@ -53,14 +54,14 @@ using Function = fit::function_impl<
     /*require_inline=*/!function_internal::config::kEnableDynamicAllocation,
     Callable>;
 
-// Always inlined version of pw::Function.
-//
-// IMPORTANT: If pw::Function is configured to allow dynamic allocations then
-// any attempt to convert `pw::InlineFunction` to `pw::Function` will ALWAYS
-// allocate.
-//
+/// Version of `pw::Function` that exclusively uses inline storage.
+///
+/// IMPORTANT: If `pw::Function` is configured to allow dynamic allocations then
+/// any attempt to convert `pw::InlineFunction` to `pw::Function` will ALWAYS
+/// allocate.
+///
 // TODO(b/252852651): Remove warning above when conversion from
-// fit::inline_function to fit::function doesn't allocate anymore.
+// `fit::inline_function` to `fit::function` doesn't allocate anymore.
 template <typename Callable,
           size_t inline_target_size =
               function_internal::config::kInlineCallableSize>
@@ -68,16 +69,16 @@ using InlineFunction = fit::inline_function<Callable, inline_target_size>;
 
 using Closure = Function<void()>;
 
-// pw::Callback is identical to pw::Function except:
-//
-// 1) On the first call to invoke a `pw::Callback`, the target function held
-//    by the `pw::Callback` cannot be called again.
-// 2) When a `pw::Callback` is invoked for the first time, the target function
-//    is released and destructed, along with any resources owned by that
-//    function (typically the objects captured by a lambda).
-
-// A `pw::Callback` in the "already called" state has the same state as a
-// `pw::Callback` that has been assigned to `nullptr`.
+/// `pw::Callback` is identical to @cpp_type{pw::Function} except:
+///
+/// 1. On the first call to invoke a `pw::Callback`, the target function held
+///    by the `pw::Callback` cannot be called again.
+/// 2. When a `pw::Callback` is invoked for the first time, the target function
+///    is released and destructed, along with any resources owned by that
+///    function (typically the objects captured by a lambda).
+///
+/// A `pw::Callback` in the "already called" state has the same state as a
+/// `pw::Callback` that has been assigned to `nullptr`.
 template <typename Callable,
           size_t inline_target_size =
               function_internal::config::kInlineCallableSize>
@@ -86,6 +87,7 @@ using Callback = fit::callback_impl<
     /*require_inline=*/!function_internal::config::kEnableDynamicAllocation,
     Callable>;
 
+/// Version of `pw::Callback` that exclusively uses inline storage.
 template <typename Callable,
           size_t inline_target_size =
               function_internal::config::kInlineCallableSize>

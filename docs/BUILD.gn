@@ -128,6 +128,7 @@ _doxygen_input_files = [
   "$dir_pw_rpc/public/pw_rpc/internal/config.h",
   "$dir_pw_string/public/pw_string/format.h",
   "$dir_pw_string/public/pw_string/string.h",
+  "$dir_pw_function/public/pw_function/function.h",
   "$dir_pw_string/public/pw_string/string_builder.h",
   "$dir_pw_string/public/pw_string/util.h",
   "$dir_pw_sync/public/pw_sync/binary_semaphore.h",

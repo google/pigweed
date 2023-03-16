@@ -24,7 +24,7 @@
 ///
 /// This option controls whether or not include a callback that is called when
 /// the client stream ends. The callback is included in all ServerReader/Writer
-/// objects as a @cpp_class{pw::Function}, so may have a significant cost.
+/// objects as a @cpp_type{pw::Function}, so may have a significant cost.
 ///
 /// This is disabled by default.
 #ifndef PW_RPC_CLIENT_STREAM_END_CALLBACK

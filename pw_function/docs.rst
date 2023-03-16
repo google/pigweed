@@ -1,19 +1,20 @@
 .. _module-pw_function:
 
------------
+===========
 pw_function
------------
+===========
 The ``pw_function`` module provides a standard, general-purpose API for
 wrapping callable objects. ``pw_function`` is similar in spirit and API to
 ``std::function``, but doesn't allocate, and uses several tricks to prevent
 code bloat.
 
+--------
 Overview
-========
+--------
 
 Basic usage
------------
-``pw_function`` defines the ``pw::Function`` class. A ``Function`` is a
+===========
+``pw_function`` defines the :cpp:type:`pw::Function` class. A ``Function`` is a
 move-only callable wrapper constructable from any callable object. Functions
 are templated on the signature of the callable they store.
 
@@ -53,9 +54,9 @@ Functions are nullable. Invoking a null function triggers a runtime assert.
     function();
   }
 
-``pw::Function``'s default constructor is ``constexpr``, so default-constructed
-functions may be used in classes with ``constexpr`` constructors and in
-``constinit`` expressions.
+:cpp:type:`pw::Function`'s default constructor is ``constexpr``, so
+default-constructed functions may be used in classes with ``constexpr``
+constructors and in ``constinit`` expressions.
 
 .. code-block:: c++
 
@@ -71,16 +72,16 @@ functions may be used in classes with ``constexpr`` constructors and in
   constinit MyClass instance;
 
 Storage
--------
+=======
 By default, a ``Function`` stores its callable inline within the object. The
 inline storage size defaults to the size of two pointers, but is configurable
 through the build system. The size of a ``Function`` object is equivalent to its
 inline storage size.
 
-The ``pw::InlineFunction`` alias is similar to ``pw::Function``, but is always
-inlined. That is, even if dynamic allocation is enabled for ``pw::Function``  -
-``pw::InlineFunction`` will fail to compile if the callable  is larger than the
-inline storage size.
+The :cpp:type:`pw::InlineFunction` alias is similar to :cpp:type:`pw::Function`,
+but is always inlined. That is, even if dynamic allocation is enabled for
+:cpp:type:`pw::Function`, :cpp:type:`pw::InlineFunction` will fail to compile if
+the callable is larger than the inline storage size.
 
 Attempting to construct a function from a callable larger than its inline size
 is a compile-time error unless dynamic allocation is enabled.
@@ -117,15 +118,23 @@ is a compile-time error unless dynamic allocation is enabled.
   ``pw::InlineFunction`` can be used.
 
 .. warning::
-  If ``PW_FUNCTION_ENABLE_DYNAMIC_ALLOCATION`` is enabled then attempt to cast
-  from ``pw::InlineFunction`` to a regular ``pw::Function`` will **ALWAYS**
-  allocate memory.
+   If ``PW_FUNCTION_ENABLE_DYNAMIC_ALLOCATION`` is enabled then attempts to cast
+   from `:cpp:type:`pw::InlineFunction` to a regular :cpp:type:`pw::Function`
+   will **ALWAYS** allocate memory.
 
+---------
 API usage
-=========
+---------
 
-``pw::Function`` function parameters
-------------------------------------
+Reference
+=========
+.. doxygentypedef:: pw::Function
+.. doxygentypedef:: pw::InlineFunction
+.. doxygentypedef:: pw::Callback
+.. doxygentypedef:: pw::InlineCallback
+
+``pw::Function`` as a function parameter
+========================================
 When implementing an API which takes a callback, a ``Function`` can be used in
 place of a function pointer or equivalent callable.
 
@@ -138,12 +147,13 @@ place of a function pointer or equivalent callable.
   // signature template for clarity.
   void DoTheThing(int arg, const pw::Function<void(int result)>& callback);
 
-``pw::Function`` is movable, but not copyable, so APIs must accept
-``pw::Function`` objects either by const reference (``const
+:cpp:type:`pw::Function` is movable, but not copyable, so APIs must accept
+:cpp:type:`pw::Function` objects either by const reference (``const
 pw::Function<void()>&``) or rvalue reference (``const pw::Function<void()>&&``).
-If the ``pw::Function`` simply needs to be called, it should be passed by const
-reference. If the ``pw::Function`` needs to be stored, it should be passed as an
-rvalue reference and moved into a ``pw::Function`` variable as appropriate.
+If the :cpp:type:`pw::Function` simply needs to be called, it should be passed
+by const reference. If the :cpp:type:`pw::Function` needs to be stored, it
+should be passed as an rvalue reference and moved into a
+:cpp:type:`pw::Function` variable as appropriate.
 
 .. code-block:: c++
 
@@ -159,38 +169,40 @@ rvalue reference and moved into a ``pw::Function`` variable as appropriate.
     stored_callback_ = std::move(callback);
   }
 
-.. admonition:: Rules of thumb for passing a ``pw::Function`` to a function
+.. admonition:: Rules of thumb for passing a :cpp:type:`pw::Function` to a function
 
    * **Pass by value**: Never.
 
-     This results in unnecessary ``pw::Function`` instances and move operations.
+     This results in unnecessary :cpp:type:`pw::Function` instances and move
+     operations.
    * **Pass by const reference** (``const pw::Function&``): When the
-     ``pw::Function`` is only invoked.
+     :cpp:type:`pw::Function` is only invoked.
 
-     When a ``pw::Function`` is called or inspected, but not moved, take a const
-     reference to avoid copies and support temporaries.
+     When a :cpp:type:`pw::Function` is called or inspected, but not moved, take
+     a const reference to avoid copies and support temporaries.
    * **Pass by rvalue reference** (``pw::Function&&``): When the
-     ``pw::Function`` is moved.
+     :cpp:type:`pw::Function` is moved.
 
-     When the function takes ownership of the ``pw::Function`` object, always
-     use an rvalue reference (``pw::Function<void()>&&``) instead of a mutable
-     lvalue reference (``pw::Function<void()>&``). An rvalue reference forces
-     the caller to ``std::move`` when passing a preexisting ``pw::Function``
-     variable, which makes the transfer of ownership explicit. It is possible to
-     move-assign from an lvalue reference, but this fails to make it obvious to
-     the caller that the object is no longer valid.
+     When the function takes ownership of the :cpp:type:`pw::Function` object,
+     always use an rvalue reference (``pw::Function<void()>&&``) instead of a
+     mutable lvalue reference (``pw::Function<void()>&``). An rvalue reference
+     forces the caller to ``std::move`` when passing a preexisting
+     :cpp:type:`pw::Function` variable, which makes the transfer of ownership
+     explicit. It is possible to move-assign from an lvalue reference, but this
+     fails to make it obvious to the caller that the object is no longer valid.
    * **Pass by non-const reference** (``pw::Function&``): Rarely, when modifying
      a variable.
 
      Non-const references are only necessary when modifying an existing
-     ``pw::Function`` variable. Use an rvalue reference instead if the
-     ``pw::Function`` is moved into another variable.
+     :cpp:type:`pw::Function` variable. Use an rvalue reference instead if the
+     :cpp:type:`pw::Function` is moved into another variable.
 
 Calling functions that use ``pw::Function``
--------------------------------------------
-A ``pw::Function`` can be implicitly constructed from any callback object. When
-calling an API that takes a ``pw::Function``, simply pass the callable object.
-There is no need to create an intermediate ``pw::Function`` object.
+===========================================
+A :cpp:type:`pw::Function` can be implicitly constructed from any callback
+object. When calling an API that takes a :cpp:type:`pw::Function`, simply pass
+the callable object.  There is no need to create an intermediate
+:cpp:type:`pw::Function` object.
 
 .. code-block:: c++
 
@@ -200,10 +212,10 @@ There is no need to create an intermediate ``pw::Function`` object.
   // Implicitly creates a pw::Function from a capturing lambda and stores it.
   StoreTheCallback([this](int result) { result_ = result; });
 
-When working with an existing ``pw::Function`` variable, the variable can be
-passed directly to functions that take a const reference. If the function takes
-ownership of the ``pw::Function``, move the ``pw::Function`` variable at the
-call site.
+When working with an existing :cpp:type:`pw::Function` variable, the variable
+can be passed directly to functions that take a const reference. If the function
+takes ownership of the :cpp:type:`pw::Function`, move the
+:cpp:type:`pw::Function` variable at the call site.
 
 .. code-block:: c++
 
@@ -213,47 +225,49 @@ call site.
   // Takes ownership of the pw::Function.
   void StoreTheCallback(std::move(my_function));
 
-Use ``pw::Callback`` for one-shot functions
--------------------------------------------
-``pw::Callback`` is a specialization of ``pw::Function`` that can only be called
-once. After a ``pw::Callback`` is called, the target function is destroyed. A
-``pw::Callback`` in the "already called" state has the same state as a
-``pw::Callback`` that has been assigned to nullptr.
+``pw::Callback`` for one-shot functions
+=======================================
+:cpp:type:`pw::Callback` is a specialization of :cpp:type:`pw::Function` that
+can only be called once. After a :cpp:type:`pw::Callback` is called, the target
+function is destroyed. A :cpp:type:`pw::Callback` in the "already called" state
+has the same state as a :cpp:type:`pw::Callback` that has been assigned to
+nullptr.
 
+----------
 ScopeGuard
-==========
+----------
 .. doxygenclass:: pw::ScopeGuard
     :members:
 
+------------
 Size reports
-============
+------------
 
 Function class
---------------
-The following size report compares an API using a ``pw::Function`` to a
+==============
+The following size report compares an API using a :cpp:type:`pw::Function` to a
 traditional function pointer.
 
 .. include:: function_size
 
 Callable sizes
---------------
+==============
 The table below demonstrates typical sizes of various callable types, which can
 be used as a reference when sizing external buffers for ``Function`` objects.
 
 .. include:: callable_size
 
+------
 Design
-======
-``pw::Function`` is an alias of
-`fit::function <https://cs.opensource.google/fuchsia/fuchsia/+/main:sdk/lib/fit/include/lib/fit/function.h;drc=f66f54fca0c11a1168d790bcc3d8a5a3d940218d>`_
-.
+------
+:cpp:type:`pw::Function` is an alias of
+`fit::function <https://cs.opensource.google/fuchsia/fuchsia/+/main:sdk/lib/fit/include/lib/fit/function.h;drc=f66f54fca0c11a1168d790bcc3d8a5a3d940218d>`_.
 
+:cpp:type:`pw::Callback` is an alias of
+`fit::callback <https://cs.opensource.google/fuchsia/fuchsia/+/main:sdk/lib/fit/include/lib/fit/function.h;drc=f66f54fca0c11a1168d790bcc3d8a5a3d940218d>`_.
 
-``pw::Callback`` is an alias of
-`fit::callback <https://cs.opensource.google/fuchsia/fuchsia/+/main:sdk/lib/fit/include/lib/fit/function.h;drc=f66f54fca0c11a1168d790bcc3d8a5a3d940218d>`_
-.
-
+------
 Zephyr
-======
+------
 To enable ``pw_function` for Zephyr add ``CONFIG_PIGWEED_FUNCTION=y`` to the
 project's configuration.
