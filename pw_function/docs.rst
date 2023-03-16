@@ -233,6 +233,16 @@ function is destroyed. A :cpp:type:`pw::Callback` in the "already called" state
 has the same state as a :cpp:type:`pw::Callback` that has been assigned to
 nullptr.
 
+Invoking ``pw::Function`` from a C-style API
+============================================
+.. doxygenfile:: pw_function/pointer.h
+   :sections: detaileddescription
+
+.. doxygenfunction:: GetFunctionPointer()
+.. doxygenfunction:: GetFunctionPointer(const FunctionType&)
+.. doxygenfunction:: GetFunctionPointerContextFirst()
+.. doxygenfunction:: GetFunctionPointerContextFirst(const FunctionType&)
+
 ----------
 ScopeGuard
 ----------

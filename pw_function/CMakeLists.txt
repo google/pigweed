@@ -52,6 +52,25 @@ pw_add_test(pw_function.function_test
     pw_function
 )
 
+pw_add_library(pw_function.pointer INTERFACE
+  HEADERS
+    public/pw_function/pointer.h
+    public/pw_function/internal/static_invoker.h
+  PUBLIC_INCLUDES
+    public
+)
+
+pw_add_test(pw_function.pointer_test
+  SOURCES
+    pointer_test.cc
+  PRIVATE_DEPS
+    pw_function
+    pw_function.pointer
+  GROUPS
+    modules
+    pw_function
+)
+
 pw_add_library(pw_function.scope_guard INTERFACE
   HEADERS
     public/pw_function/scope_guard.h

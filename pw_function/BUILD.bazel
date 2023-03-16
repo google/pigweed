@@ -50,6 +50,22 @@ pw_cc_test(
 )
 
 pw_cc_library(
+    name = "pointer",
+    srcs = ["public/pw_function/internal/static_invoker.h"],
+    hdrs = ["public/pw_function/pointer.h"],
+    includes = ["public"],
+)
+
+pw_cc_test(
+    name = "pointer_test",
+    srcs = ["pointer_test.cc"],
+    deps = [
+        ":pointer",
+        ":pw_function",
+    ],
+)
+
+pw_cc_library(
     name = "scope_guard",
     hdrs = ["public/pw_function/scope_guard.h"],
     includes = ["public"],

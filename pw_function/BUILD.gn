@@ -50,6 +50,12 @@ pw_source_set("pw_function") {
   public = [ "public/pw_function/function.h" ]
 }
 
+pw_source_set("pointer") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_function/pointer.h" ]
+  sources = [ "public/pw_function/internal/static_invoker.h" ]
+}
+
 pw_source_set("scope_guard") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_function/scope_guard.h" ]
@@ -66,6 +72,7 @@ pw_doc_group("docs") {
 pw_test_group("tests") {
   tests = [
     ":function_test",
+    ":pointer_test",
     ":scope_guard_test",
     "$dir_pw_third_party/fuchsia:function_tests",
   ]
@@ -78,6 +85,14 @@ pw_test("function_test") {
   ]
   sources = [ "function_test.cc" ]
   negative_compilation_tests = true
+}
+
+pw_test("pointer_test") {
+  deps = [
+    ":pointer",
+    ":pw_function",
+  ]
+  sources = [ "pointer_test.cc" ]
 }
 
 pw_test("scope_guard_test") {
