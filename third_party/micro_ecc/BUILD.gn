@@ -46,7 +46,7 @@ if (dir_pw_third_party_micro_ecc != "") {
     defines = [ "uECC_VLI_NATIVE_LITTLE_ENDIAN=1" ]
   }
 
-  pw_source_set("micro_ecc_big_endian") {
+  pw_source_set("micro_ecc") {
     public_configs = [
       ":big_endian_config",
       ":public_config",

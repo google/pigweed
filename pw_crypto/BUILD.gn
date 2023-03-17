@@ -190,7 +190,7 @@ pw_source_set("ecdsa_uecc") {
   sources = [ "ecdsa_uecc.cc" ]
   deps = [
     "$dir_pw_log",
-    "$dir_pw_third_party/micro_ecc:micro_ecc_big_endian",
+    "$dir_pw_third_party/micro_ecc",
   ]
   public_deps = [ ":ecdsa.facade" ]
 }
