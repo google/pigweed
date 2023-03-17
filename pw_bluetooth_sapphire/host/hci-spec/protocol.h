@@ -2111,12 +2111,6 @@ struct LELongTermKeyRequestReplyReturnParams {
 // LE Long Term Key Request Negative Reply Command (v4.0) (LE)
 constexpr OpCode kLELongTermKeyRequestNegativeReply = LEControllerCommandOpCode(0x001B);
 
-struct LELongTermKeyRequestNegativeReplyCommandParams {
-  // Connection Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-} __attribute__((packed));
-
 struct LELongTermKeyRequestNegativeReplyReturnParams {
   // See enum StatusCode in hci_constants.h.
   StatusCode status;

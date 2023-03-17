@@ -113,7 +113,7 @@ CommandChannel::EventCallbackResult LowEnergyConnection::OnLELongTermKeyRequestE
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
-  std::unique_ptr<CommandPacket> cmd;
+  CommandChannel::CommandPacketVariant cmd;
 
   uint64_t rand = le64toh(params->random_number);
   uint16_t ediv = le16toh(params->encrypted_diversifier);
@@ -122,17 +122,20 @@ CommandChannel::EventCallbackResult LowEnergyConnection::OnLELongTermKeyRequestE
   if (ltk() && ltk()->rand() == rand && ltk()->ediv() == ediv) {
     cmd = CommandPacket::New(hci_spec::kLELongTermKeyRequestReply,
                              sizeof(hci_spec::LELongTermKeyRequestReplyCommandParams));
-    auto* params = cmd->mutable_payload<hci_spec::LELongTermKeyRequestReplyCommandParams>();
+    auto* params = std::get<std::unique_ptr<CommandPacket>>(cmd)
+                       ->mutable_payload<hci_spec::LELongTermKeyRequestReplyCommandParams>();
 
     params->connection_handle = htole16(handle);
     params->long_term_key = ltk()->value();
   } else {
     bt_log(DEBUG, "hci-le", "LTK request rejected");
 
-    cmd = CommandPacket::New(hci_spec::kLELongTermKeyRequestNegativeReply,
-                             sizeof(hci_spec::LELongTermKeyRequestNegativeReplyCommandParams));
-    auto* params = cmd->mutable_payload<hci_spec::LELongTermKeyRequestNegativeReplyCommandParams>();
-    params->connection_handle = htole16(handle);
+    cmd = EmbossCommandPacket::New<
+        pw::bluetooth::emboss::LELongTermKeyRequestNegativeReplyCommandWriter>(
+        hci_spec::kLELongTermKeyRequestNegativeReply);
+    auto view = std::get<EmbossCommandPacket>(cmd)
+                    .view<pw::bluetooth::emboss::LELongTermKeyRequestNegativeReplyCommandWriter>();
+    view.connection_handle().Write(handle);
   }
 
   auto status_cb = [](auto id, const EventPacket& event) {
