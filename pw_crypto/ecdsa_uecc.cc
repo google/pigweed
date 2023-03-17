@@ -42,26 +42,29 @@ Status VerifyP256Signature(ConstByteSpan public_key,
     return Status::InvalidArgument();
   }
 
-#if uECC_VLI_NATIVE_LITTLE_ENDIAN
-  // VerifyP256Signature always assume big endian input. If the library is
-  // configured to expect native little endian, we need to convert the input
-  // into little endian.
-  uint8_t signature_bytes[kP256SignatureSize]
-      __attribute__((__aligned__(sizeof(uint64_t))));
+#if defined(uECC_VLI_NATIVE_LITTLE_ENDIAN) && uECC_VLI_NATIVE_LITTLE_ENDIAN
+  // uECC_VLI_NATIVE_LITTLE_ENDIAN is defined with a non-zero value when
+  // pw_crypto_ECDSA_BACKEND is set to "//pw_crypto:ecdsa_uecc_little_endian".
+  //
+  // Since pw_crypto APIs are big endian only (standard practice), here we
+  // need to convert input parameters to little endian.
+  //
+  // Additionally uECC requires these little endian buffers to be word aligned
+  // in case unaligned accesses are not supported by the hardware. We choose
+  // the maximum 8-byte alignment to avoid referrencing internal uECC headers.
+  alignas(8) uint8_t signature_bytes[kP256SignatureSize];
   memcpy(signature_bytes, signature.data(), sizeof(signature_bytes));
   std::reverse(signature_bytes, signature_bytes + kP256CurveOrderBytes);  // r
   std::reverse(signature_bytes + kP256CurveOrderBytes,
                signature_bytes + sizeof(signature_bytes));  // s
 
-  uint8_t public_key_bytes[kP256PublicKeySize - 1]
-      __attribute__((__aligned__(sizeof(uint64_t))));
+  alignas(8) uint8_t public_key_bytes[kP256PublicKeySize - 1];
   memcpy(public_key_bytes, public_key.data() + 1, sizeof(public_key_bytes));
   std::reverse(public_key_bytes, public_key_bytes + kP256CurveOrderBytes);  // X
   std::reverse(public_key_bytes + kP256CurveOrderBytes,
                public_key_bytes + sizeof(public_key_bytes));  // Y
 
-  uint8_t digest_bytes[kP256CurveOrderBytes]
-      __attribute__((__aligned__(sizeof(uint64_t))));
+  alignas(8) uint8_t digest_bytes[kP256CurveOrderBytes];
   memcpy(digest_bytes, digest.data(), sizeof(digest_bytes));
   std::reverse(digest_bytes, digest_bytes + sizeof(digest_bytes));
 #else
@@ -70,7 +73,7 @@ Status VerifyP256Signature(ConstByteSpan public_key,
   const uint8_t* digest_bytes = reinterpret_cast<const uint8_t*>(digest.data());
   const uint8_t* signature_bytes =
       reinterpret_cast<const uint8_t*>(signature.data());
-#endif
+#endif  // uECC_VLI_NATIVE_LITTLE_ENDIAN
 
   uECC_Curve curve = uECC_secp256r1();
   // Make sure the public key is on the curve.

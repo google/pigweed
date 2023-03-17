@@ -29,8 +29,37 @@ if (dir_pw_third_party_micro_ecc != "") {
     defines = [ "uECC_SUPPORT_COMPRESSED_POINT=0" ]
   }
 
-  pw_source_set("micro_ecc") {
-    public_configs = [ ":public_config" ]
+  # Endianess is a public configuration for uECC as it determines how large
+  # integers are interpreted in uECC public APIs.
+  #
+  # Big endian is a lot more common and thus is recommended unless you are
+  # really resource-constrained or another uECC client expects little
+  # endian.
+  config("big_endian_config") {
+    defines = [ "uECC_VLI_NATIVE_LITTLE_ENDIAN=0" ]
+  }
+
+  # Little endian can reduce call stack usage in native little endian
+  # execution environments (as determined by processor state, memory
+  # access config etc.)
+  config("little_endian_config") {
+    defines = [ "uECC_VLI_NATIVE_LITTLE_ENDIAN=1" ]
+  }
+
+  pw_source_set("micro_ecc_big_endian") {
+    public_configs = [
+      ":big_endian_config",
+      ":public_config",
+    ]
+    configs = [ ":internal_config" ]
+    sources = [ "$dir_pw_third_party_micro_ecc/uECC.c" ]
+  }
+
+  pw_source_set("micro_ecc_little_endian") {
+    public_configs = [
+      ":little_endian_config",
+      ":public_config",
+    ]
     configs = [ ":internal_config" ]
     sources = [ "$dir_pw_third_party_micro_ecc/uECC.c" ]
   }

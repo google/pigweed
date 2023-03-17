@@ -19,6 +19,7 @@ import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_crypto/backend.gni")
 import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_third_party/micro_ecc/micro_ecc.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("default_config") {
@@ -83,6 +84,7 @@ pw_test_group("tests") {
     ":sha256_test",
     ":sha256_mock_test",
     ":ecdsa_test",
+    ":ecdsa_uecc_little_endian_test",
   ]
 }
 
@@ -188,13 +190,33 @@ pw_source_set("ecdsa_uecc") {
   sources = [ "ecdsa_uecc.cc" ]
   deps = [
     "$dir_pw_log",
-    "$dir_pw_third_party/micro_ecc",
+    "$dir_pw_third_party/micro_ecc:micro_ecc_big_endian",
   ]
   public_deps = [ ":ecdsa.facade" ]
 }
 
+pw_source_set("ecdsa_uecc_little_endian") {
+  sources = [ "ecdsa_uecc.cc" ]
+  deps = [
+    "$dir_pw_log",
+    "$dir_pw_third_party/micro_ecc:micro_ecc_little_endian",
+  ]
+  public_deps = [ ":ecdsa.facade" ]
+}
+
+# This test targets the specific backend pointed to by
+# pw_crypto_ECDSA_BACKEND.
 pw_test("ecdsa_test") {
   enable_if = pw_crypto_ECDSA_BACKEND != ""
   deps = [ ":ecdsa" ]
   sources = [ "ecdsa_test.cc" ]
+}
+
+# This test targets the micro_ecc little endian backend specifically.
+#
+# TODO(b/273819841) deduplicate all backend tests.
+pw_test("ecdsa_uecc_little_endian_test") {
+  enable_if = dir_pw_third_party_micro_ecc != ""
+  sources = [ "ecdsa_test.cc" ]
+  deps = [ ":ecdsa_uecc_little_endian" ]
 }
