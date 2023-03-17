@@ -265,6 +265,7 @@ pw_fuzzer("encoder_fuzzer") {
     "fuzz.h",
   ]
   deps = [ ":pw_protobuf" ]
+  enable_test_if = false
 }
 
 pw_fuzzer("decoder_fuzzer") {
@@ -273,4 +274,5 @@ pw_fuzzer("decoder_fuzzer") {
     "fuzz.h",
   ]
   deps = [ ":pw_protobuf" ]
+  enable_test_if = false
 }

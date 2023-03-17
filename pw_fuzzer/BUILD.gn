@@ -92,6 +92,7 @@ pw_fuzzer("toy_fuzzer") {
     dir_pw_span,
     dir_pw_string,
   ]
+  enable_test_if = false
 }
 
 pw_test_group("tests") {

@@ -280,6 +280,7 @@ pw_fuzzer("token_database_fuzzer") {
     "$dir_pw_preprocessor",
     dir_pw_span,
   ]
+  enable_test_if = false
 }
 
 pw_fuzzer("detokenize_fuzzer") {

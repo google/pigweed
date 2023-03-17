@@ -31,6 +31,10 @@ import("$dir_pw_unit_test/test.gni")
 # for verifying the fuzz target function compiles, links, and runs even when not
 # using a fuzzing-capable host or toolchain.
 #
+# Args:
+#   - enable_test_if: (optional) Passed as `enable_if` to the unit test.
+#   Remaining arguments are the same as `pw_executable`.
+#
 template("pw_fuzzer") {
   if (!pw_toolchain_FUZZING_ENABLED) {
     pw_error(target_name) {
@@ -46,7 +50,12 @@ template("pw_fuzzer") {
     pw_executable(target_name) {
       configs = []
       deps = []
-      forward_variables_from(invoker, "*", [ "visibility" ])
+      forward_variables_from(invoker,
+                             "*",
+                             [
+                               "enable_test_if",
+                               "visibility",
+                             ])
       forward_variables_from(invoker, [ "visibility" ])
       configs += [ "$dir_pw_fuzzer:engine" ]
       deps += [ dir_pw_fuzzer ]
@@ -54,12 +63,10 @@ template("pw_fuzzer") {
   }
 
   pw_test("${target_name}_test") {
-    # TODO(b/234891784): Re-enable when there's better configurability for
-    # on-device fuzz testing.
-    enable_if = false
     deps = []
     forward_variables_from(invoker, "*", [ "visibility" ])
     forward_variables_from(invoker, [ "visibility" ])
     deps += [ "$dir_pw_fuzzer:run_as_unit_test" ]
+    enable_if = !defined(enable_test_if) || enable_test_if
   }
 }

@@ -68,7 +68,9 @@ Building fuzzers with GN
 
 To build a fuzzer, do the following:
 
-1. Add the GN target to the module using ``pw_fuzzer`` GN template.
+1. Add the GN target to the module using ``pw_fuzzer`` GN template. If you wish
+   to limit when the generated unit test is run, you can set `enable_test_if` in
+   the same manner as `enable_if` for `pw_test`:
 
 .. code::
 
@@ -78,10 +80,12 @@ To build a fuzzer, do the following:
   pw_fuzzer("my_fuzzer") {
     sources = [ "my_fuzzer.cc" ]
     deps = [ ":my_lib" ]
+    enable_test_if = device_has_1m_flash
   }
 
-2. Add the generated unit test to the module's test group. This helps verify the
-   fuzzer can build and run, even when not being built in a fuzzing toolchain.
+2. Add the generated unit test to the module's test group. This test verifies
+   the fuzzer can build and run, even when not being built in a fuzzing
+   toolchain.
 
 .. code::
 
