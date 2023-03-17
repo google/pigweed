@@ -192,6 +192,11 @@ pw_proto_library(pw_protobuf.status_proto
     pw_protobuf_protos/status.proto
 )
 
+pw_proto_library(pw_protobuf.field_options_proto
+  SOURCES
+    pw_protobuf_protos/field_options.proto
+)
+
 pw_proto_library(pw_protobuf.codegen_protos
   SOURCES
     pw_protobuf_codegen_protos/codegen_options.proto
