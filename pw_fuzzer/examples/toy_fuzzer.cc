@@ -21,70 +21,32 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <cstring>
+#include <string_view>
 
-#include "pw_result/result.h"
-#include "pw_span/span.h"
-#include "pw_string/util.h"
+#include "pw_fuzzer/fuzzed_data_provider.h"
+#include "pw_status/status.h"
 
+namespace pw::fuzzer::example {
 namespace {
 
 // The code to fuzz. This would normally be in separate library.
-void toy_example(const char* word1, const char* word2) {
-  bool greeted = false;
-  if (word1[0] == 'h') {
-    if (word1[1] == 'e') {
-      if (word1[2] == 'l') {
-        if (word1[3] == 'l') {
-          if (word1[4] == 'o') {
-            greeted = true;
-          }
-        }
-      }
+Status SomeAPI(std::string_view s1, std::string_view s2) {
+  if (s1 == "hello") {
+    if (s2 == "world") {
+      abort();
     }
   }
-  if (word2[0] == 'w') {
-    if (word2[1] == 'o') {
-      if (word2[2] == 'r') {
-        if (word2[3] == 'l') {
-          if (word2[4] == 'd') {
-            if (greeted) {
-              // Our "defect", simulating a crash.
-              __builtin_trap();
-            }
-          }
-        }
-      }
-    }
-  }
+  return OkStatus();
 }
 
 }  // namespace
+}  // namespace pw::fuzzer::example
 
 // The fuzz target function
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
-  // We want to split our input into two strings.
-  const pw::span<const char> input(reinterpret_cast<const char*>(data), size);
-
-  // If that's not feasible, toss this input. The fuzzer will quickly learn that
-  // inputs without null-terminators are uninteresting.
-  const pw::Result<size_t> possible_word1_size =
-      pw::string::NullTerminatedLength(input);
-  if (!possible_word1_size.ok()) {
-    return 0;
-  }
-  const pw::span<const char> word1 =
-      input.first(possible_word1_size.value() + 1);
-
-  // Actually, inputs without TWO null terminators are uninteresting.
-  pw::span<const char> remaining_input = input.subspan(word1.size());
-  if (!pw::string::NullTerminatedLength(remaining_input).ok()) {
-    return 0;
-  }
-
-  // Call the code we're targeting!
-  toy_example(word1.data(), remaining_input.data());
-
-  // By convention, the fuzzer always returns zero.
+  FuzzedDataProvider provider(data, size);
+  std::string s1 = provider.ConsumeRandomLengthString();
+  std::string s2 = provider.ConsumeRemainingBytesAsString();
+  pw::fuzzer::example::SomeAPI(s1, s2).IgnoreError();
   return 0;
 }
