@@ -836,6 +836,103 @@ bits EventMaskPage2:
   24 [+1]  Flag  sam_status_change_event
   25 [+1]  Flag  encryption_change_event_v2
 
+
+enum LinkType:
+  [maximum_bits: 8]
+  SCO  = 0x00
+  ACL  = 0x01
+  ESCO = 0x02
+
+
+enum EncryptionStatus:
+  OFF                                = 0x00
+  ON_WITH_E0_FOR_BREDR_OR_AES_FOR_LE = 0x01
+  ON_WITH_AES_FOR_BREDR              = 0x03
+
+
+bits LmpFeatures(page: UInt:8):
+  -- Bit mask of Link Manager Protocol features.
+  if page == 0:
+    0  [+1]  Flag  three_slot_packets
+    1  [+1]  Flag  five_slot_packets
+    2  [+1]  Flag  encryption
+    3  [+1]  Flag  slot_offset
+    4  [+1]  Flag  timing_accuracy
+    5  [+1]  Flag  role_switch
+    6  [+1]  Flag  hold_mode
+    7  [+1]  Flag  sniff_mode
+    # 8: previously used
+    9  [+1]  Flag  power_control_requests
+    10 [+1]  Flag  channel_quality_driven_data_rate
+    11 [+1]  Flag  sco_link
+    12 [+1]  Flag  hv2_packets
+    13 [+1]  Flag  hv3_packets
+    14 [+1]  Flag  mu_law_log_synchronous_data
+    15 [+1]  Flag  a_law_log_synchronous_data
+    16 [+1]  Flag  cvsd_synchronous_data
+    17 [+1]  Flag  paging_parameter_negotiation
+    18 [+1]  Flag  power_control
+    19 [+1]  Flag  transparent_synchronous_data
+    20 [+3]  UInt  flow_control_lag
+    23 [+1]  Flag  broadcast_encryption
+    # 24: reserved for future use
+    25 [+1]  Flag  enhanced_data_rate_acl_2_mbs_mode
+    26 [+1]  Flag  enhanced_data_rate_acl_3_mbs_mode
+    27 [+1]  Flag  enhanced_inquiry_scan
+    28 [+1]  Flag  interlaced_inquiry_scan
+    29 [+1]  Flag  interlaced_page_scan
+    30 [+1]  Flag  rssi_with_inquiry_results
+    31 [+1]  Flag  extended_sco_link_ev3_packets
+    32 [+1]  Flag  ev4_packets
+    33 [+1]  Flag  ev5_packets
+    # 34: reserved for future use
+    35 [+1]  Flag  afh_capable_peripheral
+    36 [+1]  Flag  afh_classification_peripheral
+    37 [+1]  Flag  bredr_not_supported
+    38 [+1]  Flag  le_supported_controller
+    39 [+1]  Flag  three_slot_enhanced_data_rate_acl_packets
+    40 [+1]  Flag  five_slot_enhanced_data_rate_acl_packets
+    41 [+1]  Flag  sniff_subrating
+    42 [+1]  Flag  pause_encryption
+    43 [+1]  Flag  afh_capable_central
+    44 [+1]  Flag  afh_classification_central
+    45 [+1]  Flag  enhanced_data_rate_esco_2_mbs_mode
+    46 [+1]  Flag  enhanced_data_rate_esco_3_mbs_mode
+    47 [+1]  Flag  three_slot_enhanced_data_rate_esco_packets
+    48 [+1]  Flag  extended_inquiry_response
+    49 [+1]  Flag  simultaneous_le_and_bredr_to_same_device_capable_controller
+    # 50: reserved for future use
+    51 [+1]  Flag  secure_simple_pairing_controller_support
+    52 [+1]  Flag  encapsulated_pdu
+    53 [+1]  Flag  erroneous_data_reporting
+    54 [+1]  Flag  non_flushable_packet_boundary_flag
+    # 55: reserved for future use
+    56 [+1]  Flag  hci_link_supervision_timeout_changed_event
+    57 [+1]  Flag  variable_inquiry_tx_power_level
+    58 [+1]  Flag  enhanced_power_control
+    # 59-62: reserved for future use
+    63 [+1]  Flag  extended_features
+
+  if page == 1:
+    0  [+1]  Flag  secure_simple_pairing_host_support
+    1  [+1]  Flag  le_supported_host
+    # 2: previously used
+    3  [+1]  Flag  secure_connection_host_support
+
+  if page == 2:
+    0  [+1]  Flag  connectionless_peripheral_broadcast_transmitter_operation
+    1  [+1]  Flag  connectionless_peripheral_broadcast_receiver_operation
+    2  [+1]  Flag  synchronization_train
+    3  [+1]  Flag  synchronization_scan
+    4  [+1]  Flag  hci_inquiry_response_notification_event
+    5  [+1]  Flag  generalized_interlaced_scan
+    6  [+1]  Flag  coarse_clock_adjustment
+    # 7: reserved for future use
+    8  [+1]  Flag  secure_connections_controller_support
+    9  [+1]  Flag  ping
+    10 [+1]  Flag  slot_availability_mask
+    11 [+1]  Flag  train_nudging
+
 # ========================= HCI packet headers ==========================
 
 
@@ -2287,6 +2384,97 @@ struct CommandCompleteEvent:
   $next [+2]         OpCodeBits   command_opcode
   let event_fixed_size = $size_in_bytes-hdr_size
   let return_parameters_size = header.parameter_total_size-event_fixed_size
+
+
+struct ConnectionCompleteEvent:
+  -- Connection Complete Event (v1.1) (BR/EDR)
+  let hdr_size = EventHeader.$size_in_bytes
+  0     [+hdr_size]               EventHeader         header
+  $next [+1]                      StatusCode          status
+  $next [+2]                      UInt                connection_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next [+BdAddr.$size_in_bytes]  BdAddr              bd_addr
+    -- The address of the connected device
+
+  $next [+1]                      LinkType            link_type
+  $next [+1]                      GenericEnableParam  encryption_enabled
+
+
+struct ConnectionRequestEvent:
+  -- Connection Request Event (v1.1) (BR/EDR)
+  let hdr_size = EventHeader.$size_in_bytes
+  0     [+hdr_size]               EventHeader    header
+  $next [+BdAddr.$size_in_bytes]  BdAddr         bd_addr
+    -- The address of the device that's requesting the connection.
+
+  $next [+3]                      ClassOfDevice  class_of_device
+    -- The Class of Device of the device which requests the connection.
+
+  $next [+1]                      LinkType       link_type
+
+
+struct DisconnectionCompleteEvent:
+  -- Disconnection Complete Event (v1.1) (BR/EDR & LE)
+  let hdr_size = EventHeader.$size_in_bytes
+  0     [+hdr_size]  EventHeader  header
+  $next [+1]         StatusCode   status
+  $next [+2]         UInt         connection_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next [+1]         StatusCode   reason
+
+
+struct AuthenticationCompleteEvent:
+  -- Authentication Complete Event (v1.1) (BR/EDR)
+  let hdr_size = EventHeader.$size_in_bytes
+  0     [+hdr_size]  EventHeader  header
+  $next [+1]         StatusCode   status
+  $next [+2]         UInt         connection_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+
+struct RemoteNameRequestCompleteEvent:
+  -- Remote Name Request Complete Event (v1.1) (BR/EDR)
+  let hdr_size = EventHeader.$size_in_bytes
+  0     [+hdr_size]               EventHeader  header
+  $next [+1]                      StatusCode   status
+  $next [+BdAddr.$size_in_bytes]  BdAddr       bd_addr
+  $next [+248]                    UInt:8[248]  remote_name
+    -- UTF-8 encoded friendly name. If the name is less than 248 characters, it
+    -- is null terminated and the remaining bytes are not valid.
+
+
+struct EncryptionChangeEventV1:
+  -- Encryption Change Event (v1.1) (BR/EDR & LE)
+  let hdr_size = EventHeader.$size_in_bytes
+  0     [+hdr_size]  EventHeader       header
+  $next [+1]         StatusCode        status
+  $next [+2]         UInt              connection_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next [+1]         EncryptionStatus  encryption_enabled
+
+
+struct ChangeConnectionLinkKeyCompleteEvent:
+  -- Change Connection Link Key Complete Event (v1.1) (BR/EDR)
+  let hdr_size = EventHeader.$size_in_bytes
+  0     [+hdr_size]  EventHeader  header
+  $next [+1]         StatusCode   status
+  $next [+2]         UInt         connection_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+
+struct ReadRemoteSupportedFeaturesCompleteEvent:
+  -- Read Remote Supported Features Complete Event (v1.1) (BR/EDR)
+  let hdr_size = EventHeader.$size_in_bytes
+  0     [+hdr_size]  EventHeader     header
+  $next [+1]         StatusCode      status
+  $next [+2]         UInt            connection_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next [+8]         LmpFeatures(0)  lmp_features
+    -- Page 0 of the LMP features.
 
 # ============================ Test packets =============================
 
