@@ -2624,56 +2624,9 @@ struct LESetExtendedAdvertisingParametersReturnParams {
 // LE Set Extended Advertising Data Command (v5.0) (LE)
 constexpr OpCode kLESetExtendedAdvertisingData = LEControllerCommandOpCode(0x0037);
 
-struct LESetExtendedAdvertisingDataCommandParams {
-  LESetExtendedAdvertisingDataCommandParams() = delete;
-  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(LESetExtendedAdvertisingDataCommandParams);
-
-  // Handle used to identify an advertising set.
-  AdvertisingHandle adv_handle;
-
-  // See hci_constants.h for possible values.
-  LESetExtendedAdvDataOp operation;
-
-  // The Fragment_Preference parameter provides a hint to the Controller as to
-  // whether advertising data should be fragmented.
-  LEExtendedAdvFragmentPreference fragment_preference;
-
-  // Length of the advertising data included in this command packet, up to
-  // kMaxLEExtendedAdvertisingDataLength bytes. If the advertising set uses
-  // legacy advertising PDUs that support advertising data then this shall not
-  // exceed kMaxLEAdvertisingDataLength bytes.
-  uint8_t adv_data_length;
-
-  // Variable length advertising data.
-  uint8_t adv_data[];
-} __attribute__((packed));
-
 // ======================================================
 // LE Set Extended Scan Response Data Command (v5.0) (LE)
 constexpr OpCode kLESetExtendedScanResponseData = LEControllerCommandOpCode(0x0038);
-
-struct LESetExtendedScanResponseDataCommandParams {
-  LESetExtendedScanResponseDataCommandParams() = delete;
-  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(LESetExtendedScanResponseDataCommandParams);
-
-  // Handle used to identify an advertising set.
-  AdvertisingHandle adv_handle;
-
-  // See hci_constants.h for possible values.
-  // LESetExtendedAdvDataOp::kUnchangedData is excluded for scan response data.
-  LESetExtendedAdvDataOp operation;
-
-  LEExtendedAdvFragmentPreference fragment_preference;
-
-  // Length of the scan response data included in this command packet, up to
-  // kMaxLEExtendedAdvertisingDataLength bytes. If the advertising set uses
-  // scannable legacy advertising PDUs then this shall not exceed
-  // kMaxLEAdvertisingDataLength bytes.
-  uint8_t scan_rsp_data_length;
-
-  // Variable length scan response data.
-  uint8_t scan_rsp_data[];
-} __attribute__((packed));
 
 // ======================================================
 // LE Set Extended Advertising Enable Command (v5.0) (LE)

@@ -1939,14 +1939,14 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
 }
 
 void FakeController::OnLESetExtendedAdvertisingData(
-    const hci_spec::LESetExtendedAdvertisingDataCommandParams& params) {
+    const pw::bluetooth::emboss::LESetExtendedAdvertisingDataCommandView& params) {
   // controller currently doesn't support fragmented advertising, assert so we fail if we ever use
   // it in host code without updating the controller for tests
-  BT_ASSERT(params.operation == hci_spec::LESetExtendedAdvDataOp::kComplete);
-  BT_ASSERT(params.fragment_preference ==
-            hci_spec::LEExtendedAdvFragmentPreference::kShouldNotFragment);
+  BT_ASSERT(params.operation().Read() == pw::bluetooth::emboss::LESetExtendedAdvDataOp::COMPLETE);
+  BT_ASSERT(params.fragment_preference().Read() ==
+            pw::bluetooth::emboss::LEExtendedAdvFragmentPreference::SHOULD_NOT_FRAGMENT);
 
-  hci_spec::AdvertisingHandle handle = params.adv_handle;
+  hci_spec::AdvertisingHandle handle = params.advertising_handle().Read();
 
   if (!IsValidAdvertisingHandle(handle)) {
     bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
@@ -1965,7 +1965,8 @@ void FakeController::OnLESetExtendedAdvertisingData(
   LEAdvertisingState& state = extended_advertising_states_[handle];
 
   // removing advertising data entirely doesn't require us to check for error conditions
-  if (params.adv_data_length == 0) {
+  size_t advertising_data_length = params.advertising_data_length().Read();
+  if (advertising_data_length == 0) {
     state.data_length = 0;
     std::memset(state.data, 0, sizeof(state.data));
     RespondWithCommandComplete(hci_spec::kLESetExtendedAdvertisingData,
@@ -1984,30 +1985,31 @@ void FakeController::OnLESetExtendedAdvertisingData(
 
   // For backwards compatibility with older devices, the host currently uses legacy advertising
   // PDUs. The advertising data cannot exceed the legacy advertising PDU limit.
-  if (params.adv_data_length > hci_spec::kMaxLEAdvertisingDataLength) {
-    bt_log(INFO, "fake-hci", "data length (%d bytes) larger than legacy PDU size limit",
-           params.adv_data_length);
+  if (advertising_data_length > hci_spec::kMaxLEAdvertisingDataLength) {
+    bt_log(INFO, "fake-hci", "data length (%zu bytes) larger than legacy PDU size limit",
+           advertising_data_length);
     RespondWithCommandComplete(hci_spec::kLESetExtendedAdvertisingData,
                                pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
   }
 
-  state.data_length = params.adv_data_length;
-  std::memcpy(state.data, params.adv_data, params.adv_data_length);
+  state.data_length = advertising_data_length;
+  std::memcpy(state.data, params.advertising_data().BackingStorage().data(),
+              advertising_data_length);
   RespondWithCommandComplete(hci_spec::kLESetExtendedAdvertisingData,
                              pw::bluetooth::emboss::StatusCode::SUCCESS);
   NotifyAdvertisingState();
 }
 
 void FakeController::OnLESetExtendedScanResponseData(
-    const hci_spec::LESetExtendedScanResponseDataCommandParams& params) {
+    const pw::bluetooth::emboss::LESetExtendedScanResponseDataCommandView& params) {
   // controller currently doesn't support fragmented advertising, assert so we fail if we ever use
   // it in host code without updating the controller for tests
-  BT_ASSERT(params.operation == hci_spec::LESetExtendedAdvDataOp::kComplete);
-  BT_ASSERT(params.fragment_preference ==
-            hci_spec::LEExtendedAdvFragmentPreference::kShouldNotFragment);
+  BT_ASSERT(params.operation().Read() == pw::bluetooth::emboss::LESetExtendedAdvDataOp::COMPLETE);
+  BT_ASSERT(params.fragment_preference().Read() ==
+            pw::bluetooth::emboss::LEExtendedAdvFragmentPreference::SHOULD_NOT_FRAGMENT);
 
-  hci_spec::AdvertisingHandle handle = params.adv_handle;
+  hci_spec::AdvertisingHandle handle = params.advertising_handle().Read();
 
   if (!IsValidAdvertisingHandle(handle)) {
     bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
@@ -2026,7 +2028,7 @@ void FakeController::OnLESetExtendedScanResponseData(
   LEAdvertisingState& state = extended_advertising_states_[handle];
 
   // removing scan response data entirely doesn't require us to check for error conditions
-  if (params.scan_rsp_data_length == 0) {
+  if (params.scan_response_data_length().Read() == 0) {
     state.scan_rsp_length = 0;
     std::memset(state.scan_rsp_data, 0, sizeof(state.scan_rsp_data));
     RespondWithCommandComplete(hci_spec::kLESetExtendedScanResponseData,
@@ -2045,21 +2047,23 @@ void FakeController::OnLESetExtendedScanResponseData(
 
   // For backwards compatibility with older devices, the host currently uses legacy advertising
   // PDUs. The scan response data cannot exceed the legacy advertising PDU limit.
-  if (params.scan_rsp_data_length > hci_spec::kMaxLEAdvertisingDataLength) {
+  if (params.scan_response_data_length().Read() > hci_spec::kMaxLEAdvertisingDataLength) {
     bt_log(INFO, "fake-hci", "data length (%d bytes) larger than legacy PDU size limit",
-           params.scan_rsp_data_length);
+           params.scan_response_data_length().Read());
     RespondWithCommandComplete(hci_spec::kLESetExtendedScanResponseData,
                                pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
   }
 
-  state.scan_rsp_length = params.scan_rsp_data_length;
-  std::memcpy(state.scan_rsp_data, params.scan_rsp_data, params.scan_rsp_data_length);
+  state.scan_rsp_length = params.scan_response_data_length().Read();
+  std::memcpy(state.scan_rsp_data, params.scan_response_data().BackingStorage().data(),
+              params.scan_response_data_length().Read());
 
   RespondWithCommandComplete(hci_spec::kLESetExtendedScanResponseData,
                              pw::bluetooth::emboss::StatusCode::SUCCESS);
   NotifyAdvertisingState();
 }
+
 void FakeController::OnLESetExtendedAdvertisingEnable(
     const pw::bluetooth::emboss::LESetExtendedAdvertisingEnableCommandView& params) {
   uint8_t num_sets = params.num_sets().Read();
@@ -2827,33 +2831,9 @@ void FakeController::HandleReceivedCommandPacket(
       OnLESetExtendedAdvertisingParameters(params);
       break;
     }
-    case hci_spec::kLESetExtendedAdvertisingData: {
-      const auto& params =
-          command_packet.payload<hci_spec::LESetExtendedAdvertisingDataCommandParams>();
-      OnLESetExtendedAdvertisingData(params);
-      break;
-    }
-    case hci_spec::kLESetExtendedScanResponseData: {
-      const auto& params =
-          command_packet.payload<hci_spec::LESetExtendedScanResponseDataCommandParams>();
-      OnLESetExtendedScanResponseData(params);
-      break;
-    }
     case hci_spec::kLERemoveAdvertisingSet: {
       const auto& params = command_packet.payload<hci_spec::LERemoveAdvertisingSetCommandParams>();
       OnLERemoveAdvertisingSet(params);
-      break;
-    }
-    case hci_spec::kLEReadMaxAdvertisingDataLength: {
-      OnLEReadMaximumAdvertisingDataLength();
-      break;
-    }
-    case hci_spec::kLEReadNumSupportedAdvertisingSets: {
-      OnLEReadNumberOfSupportedAdvertisingSets();
-      break;
-    }
-    case hci_spec::kLEClearAdvertisingSets: {
-      OnLEClearAdvertisingSets();
       break;
     }
     case hci_spec::kReadBDADDR: {
@@ -2966,7 +2946,12 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kLEConnectionUpdate:
     case hci_spec::kLEStartEncryption:
     case hci_spec::kReadLocalExtendedFeatures:
-    case hci_spec::kLESetAdvertisingParameters: {
+    case hci_spec::kLESetAdvertisingParameters:
+    case hci_spec::kLEReadMaxAdvertisingDataLength:
+    case hci_spec::kLEReadNumSupportedAdvertisingSets:
+    case hci_spec::kLEClearAdvertisingSets:
+    case hci_spec::kLESetExtendedAdvertisingData:
+    case hci_spec::kLESetExtendedScanResponseData: {
       // This case is for packet types that have been migrated to the new Emboss architecture. Their
       // old version can be still be assembled from the HciEmulator channel, so here we repackage
       // and forward them as Emboss packets.
@@ -3242,6 +3227,30 @@ void FakeController::HandleReceivedCommandPacket(const hci::EmbossCommandPacket&
       const auto& params =
           command_packet.view<pw::bluetooth::emboss::LESetAdvertisingParametersCommandView>();
       OnLESetAdvertisingParameters(params);
+      break;
+    }
+    case hci_spec::kLESetExtendedAdvertisingData: {
+      const auto& params =
+          command_packet.view<pw::bluetooth::emboss::LESetExtendedAdvertisingDataCommandView>();
+      OnLESetExtendedAdvertisingData(params);
+      break;
+    }
+    case hci_spec::kLESetExtendedScanResponseData: {
+      const auto& params =
+          command_packet.view<pw::bluetooth::emboss::LESetExtendedScanResponseDataCommandView>();
+      OnLESetExtendedScanResponseData(params);
+      break;
+    }
+    case hci_spec::kLEReadMaxAdvertisingDataLength: {
+      OnLEReadMaximumAdvertisingDataLength();
+      break;
+    }
+    case hci_spec::kLEReadNumSupportedAdvertisingSets: {
+      OnLEReadNumberOfSupportedAdvertisingSets();
+      break;
+    }
+    case hci_spec::kLEClearAdvertisingSets: {
+      OnLEClearAdvertisingSets();
       break;
     }
     default: {

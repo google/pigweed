@@ -126,25 +126,29 @@ CommandChannel::CommandPacketVariant ExtendedLowEnergyAdvertiser::BuildSetAdvert
   }
   size_t block_size = adv_data.CalculateBlockSize(/*include_flags=*/true);
 
-  size_t kPayloadSize = sizeof(hci_spec::LESetExtendedAdvertisingDataCommandParams) + block_size;
-  std::unique_ptr<CommandPacket> packet =
-      CommandPacket::New(hci_spec::kLESetExtendedAdvertisingData, kPayloadSize);
-  packet->mutable_view()->mutable_payload_data().SetToZeros();
-  auto payload = packet->mutable_payload<hci_spec::LESetExtendedAdvertisingDataCommandParams>();
+  size_t kPayloadSize =
+      pw::bluetooth::emboss::LESetExtendedAdvertisingDataCommandView::MinSizeInBytes().Read() +
+      block_size;
+  auto packet =
+      EmbossCommandPacket::New<pw::bluetooth::emboss::LESetExtendedAdvertisingDataCommandWriter>(
+          hci_spec::kLESetExtendedAdvertisingData, kPayloadSize);
+  auto params = packet.view_t();
 
   // advertising handle
   std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.GetHandle(address);
   BT_ASSERT(handle);
-  payload->adv_handle = handle.value();
+  params.advertising_handle().Write(handle.value());
 
   // TODO(fxbug.dev/81470): We support only legacy PDUs and do not support fragmented extended
   // advertising data at this time.
-  payload->operation = hci_spec::LESetExtendedAdvDataOp::kComplete;
-  payload->fragment_preference = hci_spec::LEExtendedAdvFragmentPreference::kShouldNotFragment;
+  params.operation().Write(pw::bluetooth::emboss::LESetExtendedAdvDataOp::COMPLETE);
+  params.fragment_preference().Write(
+      pw::bluetooth::emboss::LEExtendedAdvFragmentPreference::SHOULD_NOT_FRAGMENT);
 
   // advertising data
-  payload->adv_data_length = static_cast<uint8_t>(block_size);
-  MutableBufferView data_view(payload->adv_data, payload->adv_data_length);
+  params.advertising_data_length().Write(static_cast<uint8_t>(block_size));
+  MutableBufferView data_view(params.advertising_data().BackingStorage().data(),
+                              params.advertising_data_length().Read());
   adv_data.WriteBlock(&data_view, flags);
 
   return packet;
@@ -152,22 +156,24 @@ CommandChannel::CommandPacketVariant ExtendedLowEnergyAdvertiser::BuildSetAdvert
 
 CommandChannel::CommandPacketVariant ExtendedLowEnergyAdvertiser::BuildUnsetAdvertisingData(
     const DeviceAddress& address) {
-  std::unique_ptr<CommandPacket> packet =
-      CommandPacket::New(hci_spec::kLESetExtendedAdvertisingData,
-                         sizeof(hci_spec::LESetExtendedAdvertisingDataCommandParams));
-  packet->mutable_view()->mutable_payload_data().SetToZeros();
-  auto payload = packet->mutable_payload<hci_spec::LESetExtendedAdvertisingDataCommandParams>();
+  constexpr size_t kPacketSize =
+      pw::bluetooth::emboss::LESetExtendedAdvertisingDataCommandView::MinSizeInBytes().Read();
+  auto packet =
+      EmbossCommandPacket::New<pw::bluetooth::emboss::LESetExtendedAdvertisingDataCommandWriter>(
+          hci_spec::kLESetExtendedAdvertisingData, kPacketSize);
+  auto payload = packet.view_t();
 
   // advertising handle
   std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.GetHandle(address);
   BT_ASSERT(handle);
-  payload->adv_handle = handle.value();
+  payload.advertising_handle().Write(handle.value());
 
   // TODO(fxbug.dev/81470): We support only legacy PDUs and do not support fragmented extended
   // advertising data at this time.
-  payload->operation = hci_spec::LESetExtendedAdvDataOp::kComplete;
-  payload->fragment_preference = hci_spec::LEExtendedAdvFragmentPreference::kShouldNotFragment;
-  payload->adv_data_length = 0;
+  payload.operation().Write(pw::bluetooth::emboss::LESetExtendedAdvDataOp::COMPLETE);
+  payload.fragment_preference().Write(
+      pw::bluetooth::emboss::LEExtendedAdvFragmentPreference::SHOULD_NOT_FRAGMENT);
+  payload.advertising_data_length().Write(0);
 
   return packet;
 }
@@ -181,25 +187,29 @@ CommandChannel::CommandPacketVariant ExtendedLowEnergyAdvertiser::BuildSetScanRe
   }
   size_t block_size = scan_rsp.CalculateBlockSize();
 
-  size_t kPayloadSize = sizeof(hci_spec::LESetExtendedScanResponseDataCommandParams) + block_size;
-  std::unique_ptr<CommandPacket> packet =
-      CommandPacket::New(hci_spec::kLESetExtendedScanResponseData, kPayloadSize);
-  packet->mutable_view()->mutable_payload_data().SetToZeros();
-  auto payload = packet->mutable_payload<hci_spec::LESetExtendedScanResponseDataCommandParams>();
+  size_t kPayloadSize =
+      pw::bluetooth::emboss::LESetExtendedScanResponseDataCommandView::MinSizeInBytes().Read() +
+      block_size;
+  auto packet =
+      EmbossCommandPacket::New<pw::bluetooth::emboss::LESetExtendedScanResponseDataCommandWriter>(
+          hci_spec::kLESetExtendedScanResponseData, kPayloadSize);
+  auto params = packet.view_t();
 
   // advertising handle
   std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.GetHandle(address);
   BT_ASSERT(handle);
-  payload->adv_handle = handle.value();
+  params.advertising_handle().Write(handle.value());
 
   // TODO(fxbug.dev/81470): We support only legacy PDUs and do not support fragmented extended
   // advertising data at this time.
-  payload->operation = hci_spec::LESetExtendedAdvDataOp::kComplete;
-  payload->fragment_preference = hci_spec::LEExtendedAdvFragmentPreference::kShouldNotFragment;
+  params.operation().Write(pw::bluetooth::emboss::LESetExtendedAdvDataOp::COMPLETE);
+  params.fragment_preference().Write(
+      pw::bluetooth::emboss::LEExtendedAdvFragmentPreference::SHOULD_NOT_FRAGMENT);
 
   // scan response data
-  payload->scan_rsp_data_length = static_cast<uint8_t>(block_size);
-  MutableBufferView scan_rsp_view(payload->scan_rsp_data, payload->scan_rsp_data_length);
+  params.scan_response_data_length().Write(static_cast<uint8_t>(block_size));
+  MutableBufferView scan_rsp_view(params.scan_response_data().BackingStorage().data(),
+                                  params.scan_response_data_length().Read());
   scan_rsp.WriteBlock(&scan_rsp_view, std::nullopt);
 
   return packet;
@@ -207,22 +217,24 @@ CommandChannel::CommandPacketVariant ExtendedLowEnergyAdvertiser::BuildSetScanRe
 
 CommandChannel::CommandPacketVariant ExtendedLowEnergyAdvertiser::BuildUnsetScanResponse(
     const DeviceAddress& address) {
-  std::unique_ptr<CommandPacket> packet =
-      CommandPacket::New(hci_spec::kLESetExtendedScanResponseData,
-                         sizeof(hci_spec::LESetExtendedScanResponseDataCommandParams));
-  packet->mutable_view()->mutable_payload_data().SetToZeros();
-  auto payload = packet->mutable_payload<hci_spec::LESetExtendedScanResponseDataCommandParams>();
+  constexpr size_t kPacketSize =
+      pw::bluetooth::emboss::LESetExtendedScanResponseDataCommandView::MinSizeInBytes().Read();
+  auto packet =
+      EmbossCommandPacket::New<pw::bluetooth::emboss::LESetExtendedScanResponseDataCommandWriter>(
+          hci_spec::kLESetExtendedScanResponseData, kPacketSize);
+  auto payload = packet.view_t();
 
   // advertising handle
   std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.GetHandle(address);
   BT_ASSERT(handle);
-  payload->adv_handle = handle.value();
+  payload.advertising_handle().Write(handle.value());
 
   // TODO(fxbug.dev/81470): We support only legacy PDUs and do not support fragmented extended
   // advertising data at this time.
-  payload->operation = hci_spec::LESetExtendedAdvDataOp::kComplete;
-  payload->fragment_preference = hci_spec::LEExtendedAdvFragmentPreference::kShouldNotFragment;
-  payload->scan_rsp_data_length = 0;
+  payload.operation().Write(pw::bluetooth::emboss::LESetExtendedAdvDataOp::COMPLETE);
+  payload.fragment_preference().Write(
+      pw::bluetooth::emboss::LEExtendedAdvFragmentPreference::SHOULD_NOT_FRAGMENT);
+  payload.scan_response_data_length().Write(0);
 
   return packet;
 }

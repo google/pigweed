@@ -610,11 +610,11 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
 
   // Called when a HCI_LE_Set_Extended_Advertising_Data command is received.
   void OnLESetExtendedAdvertisingData(
-      const hci_spec::LESetExtendedAdvertisingDataCommandParams& params);
+      const pw::bluetooth::emboss::LESetExtendedAdvertisingDataCommandView& params);
 
   // Called when a HCI_LE_Set_Extended_Scan_Response_Data command is received.
   void OnLESetExtendedScanResponseData(
-      const hci_spec::LESetExtendedScanResponseDataCommandParams& params);
+      const pw::bluetooth::emboss::LESetExtendedScanResponseDataCommandView& params);
 
   // Called when a HCI_LE_Set_Extended_Advertising_Enable command is received.
   void OnLESetExtendedAdvertisingEnable(
