@@ -602,7 +602,7 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
 
   // Called when a HCI_LE_Set_Advertising_Set_Random_Address command is received.
   void OnLESetAdvertisingSetRandomAddress(
-      const hci_spec::LESetAdvertisingSetRandomAddressCommandParams& params);
+      const pw::bluetooth::emboss::LESetAdvertisingSetRandomAddressCommandView& params);
 
   // Called when a HCI_LE_Set_Extended_Advertising_Data command is received.
   void OnLESetExtendedAdvertisingParameters(

@@ -2555,14 +2555,6 @@ struct LEEnhancedTransmitterTestCommandParams {
 // LE Set Advertising Set Random Address Command (v5.0) (LE)
 constexpr OpCode kLESetAdvertisingSetRandomAddress = LEControllerCommandOpCode(0x0035);
 
-struct LESetAdvertisingSetRandomAddressCommandParams {
-  // Handle used to identify an advertising set.
-  AdvertisingHandle adv_handle;
-
-  // Random Device Address.
-  DeviceAddressBytes adv_random_address;
-} __attribute__((packed));
-
 // ==========================================================
 // LE Set Extended Advertising Parameters Command (v5.0) (LE)
 constexpr OpCode kLESetExtendedAdvertisingParameters = LEControllerCommandOpCode(0x0036);

@@ -811,7 +811,8 @@ void AdapterImpl::InitializeStep2() {
 
   // HCI_LE_Read_Supported_States
   init_seq_runner_->QueueCommand(
-      hci::CommandPacket::New(hci_spec::kLEReadSupportedStates),
+      hci::EmbossCommandPacket::New<pw::bluetooth::emboss::LEReadSupportedStatesCommandView>(
+          hci_spec::kLEReadSupportedStates),
       [this](const hci::EventPacket& cmd_complete) {
         if (hci_is_error(cmd_complete, WARN, "gap", "LE read local supported states failed")) {
           return;
