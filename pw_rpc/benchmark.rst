@@ -49,3 +49,23 @@ Example
     server.RegisterService(benchmark_service);
   }
 
+Stress Test
+===========
+.. attention::
+   This section is experimental and liable to change.
+
+The Benchmark service is also used as part of a stress test of the ``pw_rpc``
+module. This stress test is implemented as an unguided fuzzer that uses
+multiple worker threads to perform generated sequences of actions using RPC
+``Call`` objects. The test is included as an integration test, and can found and
+be run locally using GN:
+
+.. code-block:: bash
+
+     $ gn desc out //:integration_tests deps | grep fuzz
+     //pw_rpc/fuzz:cpp_client_server_fuzz_test(//targets/host/pigweed_internal:pw_strict_host_clang_debug)
+
+     $ gn outputs out '//pw_rpc/fuzz:cpp_client_server_fuzz_test(//targets/host/pigweed_internal:pw_strict_host_clang_debug)'
+     pw_strict_host_clang_debug/gen/pw_rpc/fuzz/cpp_client_server_fuzz_test.pw_pystamp
+
+     $ ninja -C out pw_strict_host_clang_debug/gen/pw_rpc/fuzz/cpp_client_server_fuzz_test.pw_pystamp

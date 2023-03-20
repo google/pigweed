@@ -287,9 +287,18 @@ group("integration_tests") {
 
 # Build-only target for fuzzers.
 group("fuzzers") {
-  # Fuzzing is only supported on Linux and MacOS using clang.
+  deps = []
+
+  # TODO(b/274437709): The client_fuzzer encounters build errors on macos. Limit
+  # it to Linux hosts for now.
+  if (host_os == "linux") {
+    _default_tc = _default_toolchain_prefix + pw_DEFAULT_C_OPTIMIZATION_LEVEL
+    deps += [ "$dir_pw_rpc/fuzz:client_fuzzer($_default_tc)" ]
+  }
+
   if (host_os != "win") {
-    deps = [
+    # Coverage-guided fuzzing is only supported on Linux and MacOS using clang.
+    deps += [
       "$dir_pw_bluetooth_hci:fuzzers($dir_pigweed/targets/host:host_clang_fuzz)",
       "$dir_pw_fuzzer:fuzzers($dir_pigweed/targets/host:host_clang_fuzz)",
       "$dir_pw_protobuf:fuzzers($dir_pigweed/targets/host:host_clang_fuzz)",

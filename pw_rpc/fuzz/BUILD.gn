@@ -1,0 +1,140 @@
+# Copyright 2023 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_build/target_types.gni")
+import("$dir_pw_chrono/backend.gni")
+import("$dir_pw_rpc/internal/integration_test_ports.gni")
+import("$dir_pw_thread/backend.gni")
+import("$dir_pw_unit_test/test.gni")
+
+config("public_include_path") {
+  include_dirs = [
+    "public",
+    "$dir_pw_rpc/public",
+  ]
+  visibility = [ ":*" ]
+}
+
+pw_source_set("alarm_timer") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_rpc/fuzz/alarm_timer.h" ]
+  public_deps = [
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_chrono:system_timer",
+  ]
+  visibility = [ ":*" ]
+}
+
+pw_test("alarm_timer_test") {
+  enable_if = pw_chrono_SYSTEM_TIMER_BACKEND != ""
+  sources = [ "alarm_timer_test.cc" ]
+  deps = [
+    ":alarm_timer",
+    "$dir_pw_sync:binary_semaphore",
+  ]
+}
+
+pw_source_set("argparse") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_rpc/fuzz/argparse.h" ]
+  sources = [ "argparse.cc" ]
+  public_deps = [
+    "$dir_pw_containers:vector",
+    dir_pw_status,
+  ]
+  deps = [
+    "$dir_pw_string:builder",
+    dir_pw_assert,
+    dir_pw_log,
+  ]
+  visibility = [ ":*" ]
+}
+
+pw_test("argparse_test") {
+  sources = [ "argparse_test.cc" ]
+  deps = [ ":argparse" ]
+}
+
+pw_source_set("engine") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_rpc/fuzz/engine.h" ]
+  sources = [ "engine.cc" ]
+  public_deps = [
+    ":alarm_timer",
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_rpc:benchmark",
+    "$dir_pw_rpc:log_config",
+    "$dir_pw_rpc:protos.raw_rpc",
+    "$dir_pw_string:format",
+    "$dir_pw_sync:condition_variable",
+    "$dir_pw_sync:timed_mutex",
+    "$dir_pw_thread:thread",
+    dir_pw_random,
+  ]
+  deps = [ "$dir_pw_rpc:client" ]
+  visibility = [ ":*" ]
+}
+
+pw_test("engine_test") {
+  enable_if =
+      pw_chrono_SYSTEM_TIMER_BACKEND == "$dir_pw_chrono_stl:system_timer" &&
+      pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread"
+  sources = [ "engine_test.cc" ]
+  deps = [
+    ":engine",
+    "$dir_pw_rpc:client_server_testing_threaded",
+    "$dir_pw_thread:test_threads",
+    "$dir_pw_thread_stl:test_threads",
+    dir_pw_log,
+    pw_chrono_SYSTEM_TIMER_BACKEND,
+  ]
+}
+
+pw_executable("client_fuzzer") {
+  sources = [ "client_fuzzer.cc" ]
+  deps = [
+    ":argparse",
+    ":engine",
+    "$dir_pw_rpc:client",
+    "$dir_pw_rpc:integration_testing",
+  ]
+}
+
+pw_python_action("cpp_client_server_fuzz_test") {
+  script = "../py/pw_rpc/testing.py"
+  args = [
+    "--server",
+    "<TARGET_FILE($dir_pw_rpc:test_rpc_server)>",
+    "--client",
+    "<TARGET_FILE(:client_fuzzer)>",
+    "--",
+    "$pw_rpc_CPP_CLIENT_FUZZER_TEST_PORT",
+  ]
+  deps = [
+    ":client_fuzzer",
+    "$dir_pw_rpc:test_rpc_server",
+  ]
+
+  stamp = true
+}
+
+pw_test_group("tests") {
+  tests = [
+    ":argparse_test",
+    ":alarm_timer_test",
+    ":engine_test",
+  ]
+}

@@ -14,6 +14,7 @@
 """Utilities for testing pw_rpc."""
 
 import argparse
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -68,8 +69,22 @@ def _parse_subprocess_integration_test_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description='Executes a test between two subprocesses'
     )
-    parser.add_argument('--client', required=True, help='Client binary to run')
-    parser.add_argument('--server', required=True, help='Server binary to run')
+    parser.add_argument(
+        '--client',
+        required=True,
+        help=(
+            'Client command to run. '
+            'Use quotes and whitespace to pass client-specifc arguments.'
+        ),
+    )
+    parser.add_argument(
+        '--server',
+        required=True,
+        help=(
+            'Server command to run. '
+            'Use quotes and whitespace to pass client-specifc arguments.'
+        ),
+    )
     parser.add_argument(
         'common_args',
         metavar='-- ...',
@@ -96,6 +111,7 @@ def execute_integration_test(
     common_args: Sequence[str],
     setup_time_s: float = 0.2,
 ) -> int:
+    """Runs an RPC server and client as part of an integration test."""
     temp_dir: Optional[tempfile.TemporaryDirectory] = None
 
     if TEMP_DIR_MARKER in common_args:
@@ -105,11 +121,17 @@ def execute_integration_test(
         ]
 
     try:
-        server_process = subprocess.Popen([server, *common_args])
+        server_cmdline = shlex.split(server)
+        client_cmdline = shlex.split(client)
+        if common_args:
+            server_cmdline += [*common_args]
+            client_cmdline += [*common_args]
+
+        server_process = subprocess.Popen(server_cmdline)
         # TODO(b/234879791): Replace this delay with some sort of IPC.
         time.sleep(setup_time_s)
 
-        result = subprocess.run([client, *common_args]).returncode
+        result = subprocess.run(client_cmdline).returncode
 
         server_process.terminate()
         server_process.communicate()
