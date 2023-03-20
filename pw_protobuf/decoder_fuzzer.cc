@@ -27,10 +27,11 @@
 #include "pw_stream/memory_stream.h"
 #include "pw_stream/stream.h"
 
+namespace pw::protobuf::fuzz {
 namespace {
 
 void recursive_fuzzed_decode(FuzzedDataProvider& provider,
-                             pw::protobuf::StreamDecoder& decoder,
+                             StreamDecoder& decoder,
                              uint32_t depth = 0) {
   constexpr size_t kMaxRepeatedRead = 1024;
   constexpr size_t kMaxDepth = 3;
@@ -191,22 +192,28 @@ void recursive_fuzzed_decode(FuzzedDataProvider& provider,
         }
       } break;
       case kPush: {
-        pw::protobuf::StreamDecoder nested_decoder = decoder.GetNestedDecoder();
+        StreamDecoder nested_decoder = decoder.GetNestedDecoder();
         recursive_fuzzed_decode(provider, nested_decoder, depth + 1);
 
       } break;
     }
   }
 }
-}  // namespace
 
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
-  FuzzedDataProvider provider(data, size);
+void TestOneInput(FuzzedDataProvider& provider) {
   constexpr size_t kMaxFuzzedProtoSize = 4096;
   std::vector<std::byte> proto_message_data = provider.ConsumeBytes<std::byte>(
       provider.ConsumeIntegralInRange<size_t>(0, kMaxFuzzedProtoSize));
-  pw::stream::MemoryReader memory_reader(proto_message_data);
-  pw::protobuf::StreamDecoder decoder(memory_reader);
+  stream::MemoryReader memory_reader(proto_message_data);
+  StreamDecoder decoder(memory_reader);
   recursive_fuzzed_decode(provider, decoder);
+}
+
+}  // namespace
+}  // namespace pw::protobuf::fuzz
+
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
+  FuzzedDataProvider provider(data, size);
+  pw::protobuf::fuzz::TestOneInput(provider);
   return 0;
 }

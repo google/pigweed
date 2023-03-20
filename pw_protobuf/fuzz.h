@@ -13,7 +13,9 @@
 // the License.
 #pragma once
 
-namespace {
+#include <cstdint>
+
+namespace pw::protobuf::fuzz {
 
 // Encodable values. The fuzzer will iteratively choose different field types to
 // generate and encode.
@@ -49,4 +51,4 @@ enum FieldType : uint8_t {
   kMaxValue = kPush,
 };
 
-}  // namespace
+}  // namespace pw::protobuf::fuzz

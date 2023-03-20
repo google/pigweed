@@ -259,13 +259,27 @@ pw_proto_library("codegen_test_protos") {
   ]
 }
 
+# The tests below have a large amount of global and static data.
+# TODO(b/234883746): Replace this with a better size-based check.
+_small_executable_target_types = [
+  "stm32f429i_executable",
+  "lm3s6965evb_executable",
+]
+_supports_large_tests =
+    _small_executable_target_types + [ pw_build_EXECUTABLE_TARGET_TYPE ] -
+    _small_executable_target_types != []
+
 pw_fuzzer("encoder_fuzzer") {
   sources = [
     "encoder_fuzzer.cc",
     "fuzz.h",
   ]
-  deps = [ ":pw_protobuf" ]
-  enable_test_if = false
+  deps = [
+    ":pw_protobuf",
+    dir_pw_fuzzer,
+    dir_pw_span,
+  ]
+  enable_test_if = _supports_large_tests
 }
 
 pw_fuzzer("decoder_fuzzer") {
@@ -273,6 +287,12 @@ pw_fuzzer("decoder_fuzzer") {
     "decoder_fuzzer.cc",
     "fuzz.h",
   ]
-  deps = [ ":pw_protobuf" ]
-  enable_test_if = false
+  deps = [
+    ":pw_protobuf",
+    dir_pw_fuzzer,
+    dir_pw_span,
+    dir_pw_status,
+    dir_pw_stream,
+  ]
+  enable_test_if = _supports_large_tests
 }
