@@ -27,6 +27,17 @@ import "hci.emb" as hci
 # ======================= Android HCI extensions ========================
 # Documentation: https://source.android.com/devices/bluetooth/hci_requirements
 
+enum Capability:
+  [maximum_bits: 8]
+  NOT_CAPABLE = 0x00
+  CAPABLE     = 0x01
+
+bits AudioCodecSupportMask:
+  0 [+1] Flag sbc
+  1 [+1] Flag aac
+  2 [+1] Flag aptx
+  3 [+1] Flag aptx_hd
+  4 [+1] Flag ldac
 
 # ============ Commands ============
 
@@ -38,6 +49,10 @@ struct LEMultiAdvtEnableCommand:
   $next  [+1]         UInt                    opcode
   $next  [+1]         hci.GenericEnableParam  enable
   $next  [+1]         UInt                    advertising_handle
+
+struct LEGetVendorCapabilitiesCommand:
+  let hdr_size = hci.CommandHeader.$size_in_bytes
+  0      [+hdr_size]  hci.CommandHeader       header
 
 
 # ============ Events ============
@@ -56,3 +71,42 @@ struct LEMultiAdvtStateChangeSubevent:
   $next [+2]                                    UInt                  connection_handle
     -- Handle used to identify the connection that caused the state change (i.e.
     -- advertising instance to be disabled). Value will be 0xFFFF if invalid.
+
+struct LEGetVendorCapabilitiesCommandCompleteEvent:
+  let hdr_size = hci.CommandCompleteEvent.$size_in_bytes
+  0 [+hdr_size] hci.CommandCompleteEvent command_complete
+  $next [+1]                                    hci.StatusCode        status
+  $next [+1] UInt max_advt_instances
+    -- Number of advertisement instances supported
+    -- Deprecated in Google feature spec v0.98 and higher
+  $next [+1] Capability offloaded_resolution_of_private_address
+    -- BT chip capability of RPA
+    -- Deprecated in Google feature spec v0.98 and higher
+  $next [+2] UInt total_scan_results_storage
+    -- Storage for scan results in bytes
+  $next [+1] UInt max_irk_list_sz
+    -- Number of IRK entries supported in the firmware
+  $next [+1] Capability filtering_support
+    -- Support for filtering in the controller
+  $next [+1] UInt max_filter
+    -- Number of filters supported
+  $next [+1] Capability activity_energy_info_support
+    -- Supports reporting of activity and energy information
+  $next [+2] bits version_supported:
+    -- Specifies the version of the Google feature spec supported
+    0 [+8] UInt major_number
+    $next [+8] UInt minor_number
+  $next [+2] UInt total_num_of_advt_tracked
+    -- Total number of advertisers tracked for OnLost/OnFound purposes
+  $next [+1] Capability extended_scan_support
+    -- Supports extended scan window and interval
+  $next [+1] Capability debug_logging_supported
+    -- Supports logging of binary debug information from controller
+  $next [+1] Capability le_address_generation_offloading_support
+    -- Deprecated in Google feature spec v0.98 and higher
+  $next [+4] bits:
+    0 [+5] AudioCodecSupportMask a2dp_source_offload_capability_mask
+  $next [+1] Capability bluetooth_quality_report_support
+    -- Supports reporting of Bluetooth Quality events
+  $next [+4] bits:
+    0 [+5] AudioCodecSupportMask dynamic_audio_buffer_support
