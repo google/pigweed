@@ -16,6 +16,33 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
 
-pw_executable("hello") {
-  sources = [ "main.rs" ]
+pw_rust_executable("hello") {
+  sources = [
+    "main.rs",
+    "other.rs",
+  ]
+
+  deps = [
+    ":a",
+    ":c",
+  ]
+}
+
+# The dep chain hello->a->b will exercise the functionality of both direct and
+# transitive deps for A
+pw_rust_library("a") {
+  crate_root = "a/lib.rs"
+  sources = [ "a/lib.rs" ]
+  deps = [ ":b" ]
+}
+
+pw_rust_library("b") {
+  crate_root = "b/lib.rs"
+  sources = [ "b/lib.rs" ]
+  deps = [ ":c" ]
+}
+
+pw_rust_library("c") {
+  crate_root = "c/lib.rs"
+  sources = [ "c/lib.rs" ]
 }

@@ -24,21 +24,6 @@ import("$dir_pw_build/gn_internal/build_target.gni")
 # templates may need to create pw_source_set targets internally, and can't
 # import target_types.gni because it creates a circular import path.
 
-declare_args() {
-  # The name of the GN target type used to build Pigweed executables.
-  #
-  # If this is a custom template, the .gni file containing the template must
-  # be imported at the top of the target configuration file to make it globally
-  # available.
-  pw_build_EXECUTABLE_TARGET_TYPE = "executable"
-
-  # The path to the .gni file that defines pw_build_EXECUTABLE_TARGET_TYPE.
-  #
-  # If pw_build_EXECUTABLE_TARGET_TYPE is not the default of `executable`, this
-  # .gni file is imported to provide the template definition.
-  pw_build_EXECUTABLE_TARGET_TYPE_FILE = ""
-}
-
 # This template wraps a configurable target type specified by the current
 # toolchain to be used for all pw_executable targets. This allows projects to
 # stamp out unique build logic for each pw_executable target, such as generating

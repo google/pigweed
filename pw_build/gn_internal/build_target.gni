@@ -14,6 +14,29 @@
 
 import("//build_overrides/pigweed.gni")
 
+declare_args() {
+  # Additional build targets to add as dependencies for pw_executable,
+  # pw_static_library, and pw_shared_library targets. The
+  # $dir_pw_build:link_deps target pulls in these libraries.
+  #
+  # pw_build_LINK_DEPS can be used to break circular dependencies for low-level
+  # libraries such as pw_assert.
+  pw_build_LINK_DEPS = []
+
+  # The name of the GN target type used to build Pigweed executables.
+  #
+  # If this is a custom template, the .gni file containing the template must
+  # be imported at the top of the target configuration file to make it globally
+  # available.
+  pw_build_EXECUTABLE_TARGET_TYPE = "executable"
+
+  # The path to the .gni file that defines pw_build_EXECUTABLE_TARGET_TYPE.
+  #
+  # If pw_build_EXECUTABLE_TARGET_TYPE is not the default of `executable`, this
+  # .gni file is imported to provide the template definition.
+  pw_build_EXECUTABLE_TARGET_TYPE_FILE = ""
+}
+
 # This template is the underlying implementation that defines what makes
 # pw_source_set, pw_executable, pw_shared_library, and pw_static_library unique.
 # For more information, see the documentation at
@@ -61,6 +84,7 @@ template("pw_internal_build_target") {
 
   _builtin_target_types = [
     "executable",
+    "rust_library",
     "shared_library",
     "source_set",
     "static_library",

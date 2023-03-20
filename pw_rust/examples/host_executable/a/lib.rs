@@ -14,29 +14,9 @@
 
 #![warn(clippy::all)]
 
-mod other;
+use b::RequiredB;
 
-fn main() {
-    println!("Hello, Pigweed!");
-
-    // ensure we can run code from other modules in the main crate
-    println!("{}", other::foo());
-
-    // ensure we can run code from dependent libraries
-    println!("{}", a::RequiredA::default().required_b.value);
-    println!("{}", c::value());
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn test_simple() {
-        let x = 3.14;
-        assert!(x > 0.0);
-    }
-
-    #[test]
-    fn test_other_module() {
-        assert!(a::RequiredA::default().required_b.value == 0);
-    }
+#[derive(Copy, Clone, Default)]
+pub struct RequiredA {
+    pub required_b: RequiredB,
 }

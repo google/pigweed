@@ -88,6 +88,18 @@ config("reduced_size") {
   }
 }
 
+config("rust_edition_2015") {
+  rustflags = [ "--edition=2015" ]
+}
+
+config("rust_edition_2018") {
+  rustflags = [ "--edition=2018" ]
+}
+
+config("rust_edition_2021") {
+  rustflags = [ "--edition=2021" ]
+}
+
 config("strict_warnings") {
   cflags = [
     "-Wall",

@@ -12,31 +12,7 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#![warn(clippy::all)]
-
-mod other;
-
-fn main() {
-    println!("Hello, Pigweed!");
-
-    // ensure we can run code from other modules in the main crate
-    println!("{}", other::foo());
-
-    // ensure we can run code from dependent libraries
-    println!("{}", a::RequiredA::default().required_b.value);
-    println!("{}", c::value());
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn test_simple() {
-        let x = 3.14;
-        assert!(x > 0.0);
-    }
-
-    #[test]
-    fn test_other_module() {
-        assert!(a::RequiredA::default().required_b.value == 0);
-    }
+#[allow(unused)]
+pub fn foo() -> i32 {
+    return 42;
 }

@@ -23,16 +23,6 @@ import("$dir_pw_build/gn_internal/build_target.gni")
 # templates may need to create pw_source_set targets internally, and can't
 # import target_types.gni because it creates a circular import path.
 
-declare_args() {
-  # Additional build targets to add as dependencies for pw_executable,
-  # pw_static_library, and pw_shared_library targets. The
-  # $dir_pw_build:link_deps target pulls in these libraries.
-  #
-  # pw_build_LINK_DEPS can be used to break circular dependencies for low-level
-  # libraries such as pw_assert.
-  pw_build_LINK_DEPS = []
-}
-
 # These templates are wrappers for GN's built-in source_set, static_library,
 # and shared_library targets.
 #

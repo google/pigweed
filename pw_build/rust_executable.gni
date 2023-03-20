@@ -1,0 +1,56 @@
+# Copyright 2023 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_build/gn_internal/build_target.gni")
+
+# Note: In general, prefer to import target_types.gni rather than this file.
+#
+# This template wraps a configurable target type specified by the current
+# toolchain to be used for all pw_rust_executable targets. This allows projects
+# to stamp out unique build logic for each pw_rust_executable target.
+# This wrapper is analogous to pw_executable with additions to support rust
+# specific parameters such as rust edition and cargo config features.
+#
+# Default configs, default visibility, and link deps are applied to the target
+# before forwarding to the underlying type as specified by
+# pw_build_EXECUTABLE_TARGET_TYPE.
+#
+# For more information on the features provided by this template, see the full
+# docs at https://pigweed.dev/pw_build/?highlight=pw_rust_executable.
+template("pw_rust_executable") {
+  pw_internal_build_target(target_name) {
+    forward_variables_from(invoker, "*")
+
+    _edition = "2021"
+    if (defined(invoker.edition)) {
+      _edition = invoker.edition
+    }
+    assert(_edition == "2015" || _edition == "2018" || _edition == "2021",
+           "edition ${_edition} is not supported")
+
+    if (defined(invoker.configs)) {
+      configs = invoker.configs
+    } else {
+      configs = []
+    }
+    configs += [ "$dir_pw_build:rust_edition_${_edition}" ]
+
+    underlying_target_type = pw_build_EXECUTABLE_TARGET_TYPE
+    target_type_file = pw_build_EXECUTABLE_TARGET_TYPE_FILE
+    output_dir = "${target_out_dir}/bin"
+    add_global_link_deps = true
+  }
+}
