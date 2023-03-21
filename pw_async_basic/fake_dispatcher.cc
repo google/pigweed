@@ -106,6 +106,13 @@ void NativeFakeDispatcher::PostPeriodic(
   PostPeriodicAt(task, interval, now());
 }
 
+void NativeFakeDispatcher::PostPeriodicAfter(
+    Task& task,
+    chrono::SystemClock::duration interval,
+    chrono::SystemClock::duration delay) {
+  PostPeriodicAt(task, interval, now() + delay);
+}
+
 void NativeFakeDispatcher::PostPeriodicAt(
     Task& task,
     chrono::SystemClock::duration interval,

@@ -53,11 +53,7 @@ class BasicDispatcher final : public Dispatcher, public thread::ThreadCore {
   void Run() override PW_LOCKS_EXCLUDED(lock_);
 
   // Dispatcher overrides:
-  void Post(Task& task) override;
-  void PostAfter(Task& task, chrono::SystemClock::duration delay) override;
   void PostAt(Task& task, chrono::SystemClock::time_point time) override;
-  void PostPeriodic(Task& task,
-                    chrono::SystemClock::duration interval) override;
   void PostPeriodicAt(Task& task,
                       chrono::SystemClock::duration interval,
                       chrono::SystemClock::time_point start_time) override;

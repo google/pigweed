@@ -33,6 +33,11 @@ class NativeFakeDispatcher final {
   void PostAt(Task& task, chrono::SystemClock::time_point time);
 
   void PostPeriodic(Task& task, chrono::SystemClock::duration interval);
+
+  void PostPeriodicAfter(Task& task,
+                         chrono::SystemClock::duration interval,
+                         chrono::SystemClock::duration delay);
+
   void PostPeriodicAt(Task& task,
                       chrono::SystemClock::duration interval,
                       chrono::SystemClock::time_point start_time);

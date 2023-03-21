@@ -120,23 +120,11 @@ void BasicDispatcher::DrainTaskQueue() {
   }
 }
 
-void BasicDispatcher::Post(Task& task) { PostAt(task, now()); }
-
-void BasicDispatcher::PostAfter(Task& task,
-                                chrono::SystemClock::duration delay) {
-  PostAt(task, now() + delay);
-}
-
 void BasicDispatcher::PostAt(Task& task, chrono::SystemClock::time_point time) {
   lock_.lock();
   PW_LOG_DEBUG("posting task");
   PostTaskInternal(task.native_type(), time);
   lock_.unlock();
-}
-
-void BasicDispatcher::PostPeriodic(Task& task,
-                                   chrono::SystemClock::duration interval) {
-  PostPeriodicAt(task, interval, now());
 }
 
 void BasicDispatcher::PostPeriodicAt(

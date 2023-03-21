@@ -177,6 +177,26 @@ TEST(FakeDispatcher, PeriodicTasks) {
   ASSERT_EQ(count, 3);
 }
 
+TEST(FakeDispatcher, PostPeriodicAfter) {
+  FakeDispatcher dispatcher;
+
+  int count = 0;
+  Task periodic_task([&count]([[maybe_unused]] Context& c, Status status) {
+    ASSERT_OK(status);
+    ++count;
+  });
+  dispatcher.PostPeriodicAfter(periodic_task, /*interval=*/5ms, /*delay=*/20ms);
+
+  dispatcher.RunUntilIdle();
+  ASSERT_EQ(count, 0);
+  dispatcher.RunFor(20ms);
+  ASSERT_EQ(count, 1);
+  dispatcher.RunFor(10ms);
+  ASSERT_EQ(count, 3);
+  dispatcher.RunUntilIdle();
+  ASSERT_EQ(count, 3);
+}
+
 TEST(FakeDispatcher, TasksCancelledByDispatcherDestructor) {
   int count = 0;
   auto inc_count = [&count]([[maybe_unused]] Context& c, Status status) {

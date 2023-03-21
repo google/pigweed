@@ -31,10 +31,12 @@ class Dispatcher : public chrono::VirtualSystemClock {
   ~Dispatcher() override = default;
 
   /// Post caller owned |task|.
-  virtual void Post(Task& task) = 0;
+  virtual void Post(Task& task) { PostAt(task, now()); }
 
   /// Post caller owned |task| to be run after |delay|.
-  virtual void PostAfter(Task& task, chrono::SystemClock::duration delay) = 0;
+  virtual void PostAfter(Task& task, chrono::SystemClock::duration delay) {
+    PostAt(task, now() + delay);
+  }
 
   /// Post caller owned |task| to be run at |time|.
   virtual void PostAt(Task& task, chrono::SystemClock::time_point time) = 0;
@@ -42,7 +44,18 @@ class Dispatcher : public chrono::VirtualSystemClock {
   /// Post caller owned |task| to be run immediately then rerun at a regular
   /// |interval|.
   virtual void PostPeriodic(Task& task,
-                            chrono::SystemClock::duration interval) = 0;
+                            chrono::SystemClock::duration interval) {
+    PostPeriodicAt(task, interval, now());
+  }
+
+  /// Post caller owned |task| to be run after |delay| then rerun at a regular
+  /// |interval|.
+  virtual void PostPeriodicAfter(Task& task,
+                                 chrono::SystemClock::duration interval,
+                                 chrono::SystemClock::duration delay) {
+    PostPeriodicAt(task, interval, now() + delay);
+  }
+
   /// Post caller owned |task| to be run at |time| then rerun at a regular
   /// |interval|. |interval| must not be zero.
   virtual void PostPeriodicAt(Task& task,

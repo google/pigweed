@@ -61,6 +61,11 @@ class FakeDispatcher final : public Dispatcher {
                     chrono::SystemClock::duration interval) override {
     native_dispatcher_.PostPeriodic(task, interval);
   }
+  void PostPeriodicAfter(Task& task,
+                         chrono::SystemClock::duration interval,
+                         chrono::SystemClock::duration delay) override {
+    native_dispatcher_.PostPeriodicAfter(task, interval, delay);
+  }
   void PostPeriodicAt(Task& task,
                       chrono::SystemClock::duration interval,
                       chrono::SystemClock::time_point start_time) override {

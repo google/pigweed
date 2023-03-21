@@ -14,6 +14,7 @@
 #include "pw_async_basic/dispatcher.h"
 
 #include "gtest/gtest.h"
+#include "pw_chrono/system_clock.h"
 #include "pw_log/log.h"
 #include "pw_sync/thread_notification.h"
 #include "pw_thread/thread.h"
@@ -195,6 +196,36 @@ TEST(DispatcherBasic, TasksCancelledByRunFor) {
   dispatcher.RequestStop();
   dispatcher.RunFor(5s);
   ASSERT_EQ(count, 3);
+}
+
+TEST(DispatcherBasic, PostPeriodicAfter) {
+  BasicDispatcher dispatcher;
+  thread::Thread work_thread(thread::stl::Options(), dispatcher);
+
+  TaskPair tp;
+  tp.task_a.set_function([&tp](Context& c, Status status) {
+    if (status.IsCancelled()) {
+      return;
+    }
+    ++tp.count;
+
+    if (tp.count == 3) {
+      static_cast<BasicDispatcher*>(c.dispatcher)->RequestStop();
+    }
+  });
+  tp.task_b.set_function([&tp](Context& /*ctx*/, Status status) {
+    ASSERT_TRUE(status.ok());
+    ASSERT_EQ(tp.count, 0);
+  });
+
+  Task task([&tp](Context& c, Status) {
+    c.dispatcher->PostAfter(tp.task_b, 25ms);
+    c.dispatcher->PostPeriodicAfter(tp.task_a, 10ms, 75ms);
+  });
+  dispatcher.Post(task);
+
+  work_thread.join();
+  ASSERT_EQ(tp.count, 3);
 }
 
 }  // namespace pw::async
