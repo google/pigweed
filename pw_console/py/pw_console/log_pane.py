@@ -183,6 +183,11 @@ class LogContentControl(UIControl):
             """Select next log line."""
             self.log_view.visual_select_down()
 
+        @register('log-pane.visual-select-all', key_bindings)
+        def _select_all_logs(_event: KeyPressEvent) -> None:
+            """Select all log lines."""
+            self.log_pane.log_view.visual_select_all()
+
         @register('log-pane.scroll-page-up', key_bindings)
         def _pageup(_event: KeyPressEvent) -> None:
             """Scroll the logs up by one page."""
@@ -212,11 +217,6 @@ class LogContentControl(UIControl):
         def _previous_search(_event: KeyPressEvent) -> None:
             """Previous search match."""
             self.log_view.search_backwards()
-
-        @register('log-pane.visual-select-all', key_bindings)
-        def _select_all_logs(_event: KeyPressEvent) -> None:
-            """Clear search."""
-            self.log_pane.log_view.visual_select_all()
 
         @register('log-pane.deselect-cancel-search', key_bindings)
         def _clear_search_and_selection(_event: KeyPressEvent) -> None:

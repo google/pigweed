@@ -50,7 +50,7 @@ DEFAULT_KEY_BINDINGS: Dict[str, List[str]] = {
     'log-pane.move-cursor-down': ['down', 'j'],
     'log-pane.visual-select-up': ['s-up'],
     'log-pane.visual-select-down': ['s-down'],
-    'log-pane.visual-select-all': ['N', 'c-r'],
+    'log-pane.visual-select-all': ['c-r'],
     'log-pane.deselect-cancel-search': ['c-c'],
     'log-pane.scroll-page-up': ['pageup'],
     'log-pane.scroll-page-down': ['pagedown'],
