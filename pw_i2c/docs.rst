@@ -23,12 +23,28 @@ Other documentation sources may call this style of interface an I2C "master",
 
 .. inclusive-language: enable
 
+.. note::
+
+   ``Initiator`` uses internal synchronization, so it is safe to
+   initiate transactions from multiple threads. However, write+read transactions
+   may not be atomic with multiple controllers on the bus. Furthermore, devices
+   may require specific sequences of transactions, and application logic must
+   provide the synchronization to execute these sequences correctly.
+
 pw::i2c::Device
 ---------------
 The common interface for interfacing with generic I2C devices. This object
 contains ``pw::i2c::Address`` and wraps the ``pw::i2c::Initiator`` API.
 Common use case includes streaming arbitrary data (Read/Write). Only works
 with devices with a single device address.
+
+.. note::
+
+   ``Device`` is intended to represent ownership of a specific peripheral.
+   Individual transactions are atomic (as described under ``Initiator``), but
+   there is no synchronization for sequences of transactions. Therefore, shared
+   access should be faciliated with higher level application abstractions. To
+   help enforce this, the ``Device`` object is only movable and not copyable.
 
 pw::i2c::RegisterDevice
 -----------------------

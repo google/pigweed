@@ -32,6 +32,7 @@ class Device {
       : initiator_(initiator), device_address_(device_address) {}
 
   Device(const Device&) = delete;
+  Device(Device&&) = default;
   ~Device() = default;
 
   // Write bytes and then read bytes as either one atomic or two independent I2C
