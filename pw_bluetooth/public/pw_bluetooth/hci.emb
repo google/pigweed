@@ -638,6 +638,15 @@ enum LEPeerAddressType:
   ANONYMOUS = 0xFF
 
 
+enum LEPeerAddressTypeNoAnon:
+  -- Possible values that can be used for the address_type parameters in various
+  -- HCI commands
+  [maximum_bits: 8]
+  PUBLIC    = 0x00
+  RANDOM    = 0x01
+  ANONYMOUS = 0xFF
+
+
 enum LEScanType:
   -- Possible values that can be used for the |scan_type| parameter in various LE HCI commands.
   [maximum_bits: 8]
@@ -657,7 +666,7 @@ enum LEScanFilterPolicy:
   EXTENDED_FILTERED   = 0x03
 
 
-bits LEPHYBits:
+bits LEScanPHYBits:
   0     [+1]  Flag  le_1m
     -- Scan advertisements on the LE 1M PHY
 
@@ -785,6 +794,25 @@ enum LEAdvertisingFilterPolicy:
     -- Accept List.
 
 
+enum LEPrimaryAdvertisingPHY:
+  [maximum_bits: 8]
+  LE_1M    = 0x01
+  LE_CODED = 0x03
+
+
+enum LESecondaryAdvertisingPHY:
+  [maximum_bits: 8]
+  LE_1M    = 0x01
+  LE_2M    = 0x02
+  LE_CODED = 0x03
+
+
+enum ScanRequestNotifications:
+  [maximum_bits: 8]
+  DISABLED = 0x00
+  ENABLED = 0x01
+
+
 enum LESetExtendedAdvDataOp:
   -- Potential values for the Operation parameter in a HCI_LE_Set_Extended_Advertising_Data command.
   [maximum_bits: 8]
@@ -813,6 +841,18 @@ enum LEExtendedAdvFragmentPreference:
 
   SHOULD_NOT_FRAGMENT = 0x01
     -- The Controller should not fragment or should minimize fragmentation of Host advertising data
+
+
+bits LEAdvertisingEventProperties:
+  -- The Advertising_Event_Properties bitfield values used in a HCI LE Set Extended Advertising
+  -- Parameters command.
+  0     [+1]  Flag  connectable
+  $next [+1]  Flag  scannable
+  $next [+1]  Flag  directed
+  $next [+1]  Flag  high_duty_cycle_directed_connectable
+  $next [+1]  Flag  use_legacy_pdus
+  $next [+1]  Flag  anonymous_advertising
+  $next [+1]  Flag  include_tx_power
 
 
 enum FlowControlMode:
@@ -1641,7 +1681,7 @@ struct LESetExtendedScanParametersCommand(num_entries: UInt:8):
   0     [+hdr_size]            CommandHeader                                 header
   $next [+1]                   LEOwnAddressType                              own_address_type
   $next [+1]                   LEScanFilterPolicy                            scanning_filter_policy
-  $next [+1]                   LEPHYBits                                     scanning_phys
+  $next [+1]                   LEScanPHYBits                                 scanning_phys
   let single_entry_size = LESetExtendedScanParametersData.$size_in_bytes
   let total_entries_size = num_entries*single_entry_size
   $next [+total_entries_size]  LESetExtendedScanParametersData[num_entries]  data
@@ -1867,16 +1907,16 @@ struct LEWriteRFPathCompensationCommand:
 struct LESetPrivacyModeCommand:
   -- LE Set Privacy Mode command (v5.0) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
-  0     [+hdr_size]               CommandHeader      header
-  $next [+1]                      LEPeerAddressType  peer_identity_address_type
+  0     [+hdr_size]               CommandHeader            header
+  $next [+1]                      LEPeerAddressTypeNoAnon  peer_identity_address_type
     -- The peer identity address type (either Public Identity or Private
     -- Identity).
 
-  $next [+BdAddr.$size_in_bytes]  BdAddr             peer_identity_address
+  $next [+BdAddr.$size_in_bytes]  BdAddr                   peer_identity_address
     -- Public Identity Address or Random (static) Identity Address of the
     -- advertiser.
 
-  $next [+1]                      LEPrivacyMode      privacy_mode
+  $next [+1]                      LEPrivacyMode            privacy_mode
     -- The privacy mode to be used for the given entry on the resolving list.
 
 
@@ -2039,7 +2079,7 @@ struct LESetAdvertisingParametersCommand:
 
   $next [+1]                      LEOwnAddressType           own_address_type
 
-  $next [+1]                      LEPeerAddressType          peer_address_type
+  $next [+1]                      LEPeerAddressTypeNoAnon    peer_address_type
     -- ANONYMOUS address type not allowed.
 
   $next [+BdAddr.$size_in_bytes]  BdAddr                     peer_address
@@ -2324,6 +2364,48 @@ struct LESetAdvertisingSetRandomAddressCommand:
 
   $next [+BdAddr.$size_in_bytes]  BdAddr         random_address
     -- The random address to use in the advertising PDUs.
+
+
+struct LESetExtendedAdvertisingParametersV1Command:
+  -- LE Set Extended Advertising Parameters Command (v5.0) (LE)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]               CommandHeader                 header
+  $next [+1]                      UInt                          advertising_handle
+    -- Handle used to identify an advertising set.
+  $next [+2] bits:
+    0 [+7]                        LEAdvertisingEventProperties  advertising_event_properties
+  $next [+3]                      UInt                          primary_advertising_interval_min
+    -- Time = N * 0.625 s
+    -- Time Range: 20 ms to 10,485.759375 s
+    [requires: 0x000020 <= this]
+  $next [+3]                      UInt                          primary_advertising_interval_max
+    -- Time = N * 0.625 s
+    -- Time Range: 20 ms to 10,485.759375 s
+    [requires: 0x000020 <= this]
+  $next [+1] bits:
+    0 [+3]                        LEAdvertisingChannels         primary_advertising_channel_map
+  $next [+1]                      LEOwnAddressType              own_address_type
+  $next [+1]                      LEPeerAddressTypeNoAnon       peer_address_type
+  $next [+BdAddr.$size_in_bytes]  BdAddr                        peer_address
+    -- Public Device Address, Random Device Address, Public Identity Address, or Random (static)
+    -- Identity Address of the device to be connected.
+  $next [+1]                      LEAdvertisingFilterPolicy     advertising_filter_policy
+  $next [+1]                      Int                           advertising_tx_power
+    -- Range: -127 <= N <= +126
+    -- Units: dBm
+    -- If N = 127: Host has no preference.
+    [requires: -127 <= this]
+  $next [+1]                      LEPrimaryAdvertisingPHY       primary_advertising_phy
+    -- LEPHY::kLE2M and LEPHY::kLECodedS2 are excluded.
+  $next [+1]                      UInt                          secondary_advertising_max_skip
+    -- Maximum advertising events the controller can skip before sending the AUX_ADV_IND packets on
+    -- the secondary advertising physical channel. If this value is zero, AUX_ADV_IND shall be sent
+    -- prior to the next advertising event.
+  $next [+1]                      LESecondaryAdvertisingPHY     secondary_advertising_phy
+  $next [+1]                      UInt                          advertising_sid
+    -- Value of the Advertising SID subfield in the ADI field of the PDU
+    [requires: 0x00 <= this <= 0x0F]
+  $next [+1]                      GenericEnableParam            scan_request_notification_enable
 
 
 struct WriteAuthenticatedPayloadTimeoutCommand:
