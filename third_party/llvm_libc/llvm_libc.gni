@@ -1,0 +1,65 @@
+# Copyright 2023 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_build/target_types.gni")
+import("$dir_pw_unit_test/test.gni")
+
+declare_args() {
+  # This variable is set to the path of llvm-libc. If set, pw_libc.a will
+  # be created using llvm-libc sources.
+  dir_pw_third_party_llvm_libc = ""
+}
+
+template("pw_libc_source_set") {
+  source_set_target_name = target_name
+
+  target_dir = "$dir_pw_third_party_llvm_libc/src/$source_set_target_name"
+
+  pw_source_set(target_name) {
+    dir = target_dir
+
+    include_dirs = [ dir_pw_third_party_llvm_libc ]
+
+    defines = [
+      "LIBC_COPT_PUBLIC_PACKAGING=1",
+      "LLVM_LIBC_FUNCTION_ATTR=[[gnu::visibility(\"default\")]]",
+      "LIBC_INLINE=inline",
+    ]
+
+    public = []
+    sources = []
+
+    foreach(function, invoker.functions) {
+      public += [ "$dir/$function.h" ]
+      sources += [ "$dir/$function.cpp" ]
+    }
+  }
+
+  pw_test("${source_set_target_name}_tests") {
+    dir = "$dir_pw_third_party_llvm_libc/test/src/$source_set_target_name"
+
+    include_dirs = [ dir_pw_third_party_llvm_libc ]
+    defines = [ "LIBC_COPT_TEST_USE_PIGWEED" ]
+
+    sources = []
+
+    foreach(function, invoker.functions) {
+      sources += [ "$dir/${function}_test.cpp" ]
+    }
+
+    deps = [ ":$source_set_target_name" ]
+  }
+}
