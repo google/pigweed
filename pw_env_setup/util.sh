@@ -288,10 +288,10 @@ pw_bootstrap() {
   # Write the directory path at bootstrap time into the directory. This helps
   # us double-check things are still in the same space when calling activate.
   _PW_ENV_ROOT_TXT="$_PW_ACTUAL_ENVIRONMENT_ROOT/env_root.txt"
-  echo "$_PW_ACTUAL_ENVIRONMENT_ROOT" > "$_PW_ENV_ROOT_TXT"
+  echo "$_PW_ACTUAL_ENVIRONMENT_ROOT" > "$_PW_ENV_ROOT_TXT" 2> /dev/null
 
   # Create the environment README file. Use quotes to prevent alias expansion.
-  "cp" "$PW_ROOT/pw_env_setup/destination.md" "$_PW_ACTUAL_ENVIRONMENT_ROOT/README.md"
+  "cp" "$PW_ROOT/pw_env_setup/destination.md" "$_PW_ACTUAL_ENVIRONMENT_ROOT/README.md" &> /dev/null
 }
 
 pw_activate() {
