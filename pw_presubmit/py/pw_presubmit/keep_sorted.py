@@ -377,7 +377,7 @@ def _process_files(
     if not errors:
         return errors
 
-    ctx.fail(f'Found {len(errors)} files with keep-sorted errors:')
+    ctx.fail(f'Found {tools.plural(errors, "file")} with keep-sorted errors:')
 
     with ctx.failure_summary_log.open('w') as outs:
         for path, diffs in errors.items():
