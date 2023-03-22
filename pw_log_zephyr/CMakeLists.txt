@@ -36,6 +36,8 @@ endif()
 
 if(CONFIG_PIGWEED_LOG_TOKENIZED)
   pw_add_library(pw_log_zephyr.tokenized_handler STATIC
+    HEADERS
+      zephyr_public_overrides/zephyr_custom_log.h
     SOURCES
       pw_log_zephyr_tokenized_handler.cc
     PRIVATE_DEPS
@@ -43,5 +45,5 @@ if(CONFIG_PIGWEED_LOG_TOKENIZED)
       pw_tokenizer
   )
   zephyr_link_libraries(pw_log pw_log_zephyr.tokenized_handler)
-  zephyr_include_directories(public_overrides)
+  zephyr_include_directories(zephyr_public_overrides)
 endif()
