@@ -1,4 +1,4 @@
-// Copyright 2022 The Pigweed Authors
+// Copyright 2023 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -24,6 +24,7 @@ Status Client::Read(uint32_t resource_id,
                     stream::Writer& output,
                     CompletionFunc&& on_completion,
                     chrono::SystemClock::duration timeout,
+                    chrono::SystemClock::duration initial_chunk_timeout,
                     ProtocolVersion protocol_version) {
   if (on_completion == nullptr ||
       protocol_version == ProtocolVersion::kUnknown) {
@@ -49,6 +50,7 @@ Status Client::Read(uint32_t resource_id,
                                        max_parameters_,
                                        std::move(on_completion),
                                        timeout,
+                                       initial_chunk_timeout,
                                        max_retries_,
                                        max_lifetime_retries_);
   return OkStatus();
@@ -58,6 +60,7 @@ Status Client::Write(uint32_t resource_id,
                      stream::Reader& input,
                      CompletionFunc&& on_completion,
                      chrono::SystemClock::duration timeout,
+                     chrono::SystemClock::duration initial_chunk_timeout,
                      ProtocolVersion protocol_version) {
   if (on_completion == nullptr ||
       protocol_version == ProtocolVersion::kUnknown) {
@@ -83,6 +86,7 @@ Status Client::Write(uint32_t resource_id,
                                        max_parameters_,
                                        std::move(on_completion),
                                        timeout,
+                                       initial_chunk_timeout,
                                        max_retries_,
                                        max_lifetime_retries_);
 

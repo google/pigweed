@@ -1,4 +1,4 @@
-// Copyright 2022 The Pigweed Authors
+// Copyright 2023 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -1644,6 +1644,7 @@ TEST_F(ReadTransfer, Version2_SingleChunk) {
                 writer,
                 [&transfer_status](Status status) { transfer_status = status; },
                 cfg::kDefaultChunkTimeout,
+                cfg::kDefaultChunkTimeout,
                 ProtocolVersion::kVersionTwo));
 
   transfer_thread_.WaitUntilEventIsProcessed();
@@ -1724,6 +1725,7 @@ TEST_F(ReadTransfer, Version2_ServerRunsLegacy) {
                 writer,
                 [&transfer_status](Status status) { transfer_status = status; },
                 cfg::kDefaultChunkTimeout,
+                cfg::kDefaultChunkTimeout,
                 ProtocolVersion::kVersionTwo));
 
   transfer_thread_.WaitUntilEventIsProcessed();
@@ -1780,6 +1782,7 @@ TEST_F(ReadTransfer, Version2_TimeoutDuringHandshake) {
                 3,
                 writer,
                 [&transfer_status](Status status) { transfer_status = status; },
+                cfg::kDefaultChunkTimeout,
                 cfg::kDefaultChunkTimeout,
                 ProtocolVersion::kVersionTwo));
 
@@ -1869,6 +1872,7 @@ TEST_F(ReadTransfer, Version2_TimeoutAfterHandshake) {
                 3,
                 writer,
                 [&transfer_status](Status status) { transfer_status = status; },
+                cfg::kDefaultChunkTimeout,
                 cfg::kDefaultChunkTimeout,
                 ProtocolVersion::kVersionTwo));
 
@@ -1963,6 +1967,7 @@ TEST_F(ReadTransfer, Version2_ServerErrorDuringHandshake) {
                 writer,
                 [&transfer_status](Status status) { transfer_status = status; },
                 cfg::kDefaultChunkTimeout,
+                cfg::kDefaultChunkTimeout,
                 ProtocolVersion::kVersionTwo));
 
   transfer_thread_.WaitUntilEventIsProcessed();
@@ -2002,6 +2007,7 @@ TEST_F(ReadTransfer, Version2_TimeoutWaitingForCompletionAckRetries) {
                 3,
                 writer,
                 [&transfer_status](Status status) { transfer_status = status; },
+                cfg::kDefaultChunkTimeout,
                 cfg::kDefaultChunkTimeout,
                 ProtocolVersion::kVersionTwo));
 
@@ -2109,6 +2115,7 @@ TEST_F(ReadTransfer,
                 writer,
                 [&transfer_status](Status status) { transfer_status = status; },
                 cfg::kDefaultChunkTimeout,
+                cfg::kDefaultChunkTimeout,
                 ProtocolVersion::kVersionTwo));
 
   transfer_thread_.WaitUntilEventIsProcessed();
@@ -2200,6 +2207,7 @@ TEST_F(WriteTransfer, Version2_SingleChunk) {
                 reader,
                 [&transfer_status](Status status) { transfer_status = status; },
                 cfg::kDefaultChunkTimeout,
+                cfg::kDefaultChunkTimeout,
                 ProtocolVersion::kVersionTwo));
   transfer_thread_.WaitUntilEventIsProcessed();
 
@@ -2290,6 +2298,7 @@ TEST_F(WriteTransfer, Version2_ServerRunsLegacy) {
                 reader,
                 [&transfer_status](Status status) { transfer_status = status; },
                 cfg::kDefaultChunkTimeout,
+                cfg::kDefaultChunkTimeout,
                 ProtocolVersion::kVersionTwo));
   transfer_thread_.WaitUntilEventIsProcessed();
 
@@ -2356,6 +2365,7 @@ TEST_F(WriteTransfer, Version2_RetryDuringHandshake) {
                 3,
                 reader,
                 [&transfer_status](Status status) { transfer_status = status; },
+                cfg::kDefaultChunkTimeout,
                 cfg::kDefaultChunkTimeout,
                 ProtocolVersion::kVersionTwo));
   transfer_thread_.WaitUntilEventIsProcessed();
@@ -2453,6 +2463,7 @@ TEST_F(WriteTransfer, Version2_RetryAfterHandshake) {
                 3,
                 reader,
                 [&transfer_status](Status status) { transfer_status = status; },
+                cfg::kDefaultChunkTimeout,
                 cfg::kDefaultChunkTimeout,
                 ProtocolVersion::kVersionTwo));
   transfer_thread_.WaitUntilEventIsProcessed();
@@ -2553,6 +2564,7 @@ TEST_F(WriteTransfer, Version2_ServerErrorDuringHandshake) {
                 3,
                 reader,
                 [&transfer_status](Status status) { transfer_status = status; },
+                cfg::kDefaultChunkTimeout,
                 cfg::kDefaultChunkTimeout,
                 ProtocolVersion::kVersionTwo));
   transfer_thread_.WaitUntilEventIsProcessed();

@@ -268,6 +268,16 @@ more details.
   The default amount of time, in milliseconds, to wait for a chunk to arrive
   before retrying. This can later be configured per-transfer.
 
+.. c:macro:: PW_TRANSFER_DEFAULT_INITIAL_TIMEOUT_MS
+
+  The default amount of time, in milliseconds, to wait for an initial server
+  response to a transfer before retrying. This can later be configured
+  per-transfer.
+
+  This is set separately to PW_TRANSFER_DEFAULT_TIMEOUT_MS as transfers may
+  require additional time for resource initialization (e.g. erasing a flash
+  region before writing to it).
+
 .. c:macro:: PW_TRANSFER_DEFAULT_EXTEND_WINDOW_DIVISOR
 
   The fractional position within a window at which a receive transfer should

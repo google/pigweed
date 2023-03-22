@@ -1,4 +1,4 @@
-// Copyright 2022 The Pigweed Authors
+// Copyright 2023 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -98,17 +98,19 @@ chrono::SystemClock::time_point TransferThread::GetNextTransferTimeout() const {
   return timeout;
 }
 
-void TransferThread::StartTransfer(TransferType type,
-                                   ProtocolVersion version,
-                                   uint32_t session_id,
-                                   uint32_t resource_id,
-                                   ConstByteSpan raw_chunk,
-                                   stream::Stream* stream,
-                                   const TransferParameters& max_parameters,
-                                   Function<void(Status)>&& on_completion,
-                                   chrono::SystemClock::duration timeout,
-                                   uint8_t max_retries,
-                                   uint32_t max_lifetime_retries) {
+void TransferThread::StartTransfer(
+    TransferType type,
+    ProtocolVersion version,
+    uint32_t session_id,
+    uint32_t resource_id,
+    ConstByteSpan raw_chunk,
+    stream::Stream* stream,
+    const TransferParameters& max_parameters,
+    Function<void(Status)>&& on_completion,
+    chrono::SystemClock::duration timeout,
+    chrono::SystemClock::duration initial_timeout,
+    uint8_t max_retries,
+    uint32_t max_lifetime_retries) {
   // Block until the last event has been processed.
   next_event_ownership_.acquire();
 
@@ -128,6 +130,7 @@ void TransferThread::StartTransfer(TransferType type,
       .resource_id = resource_id,
       .max_parameters = &max_parameters,
       .timeout = timeout,
+      .initial_timeout = initial_timeout,
       .max_retries = max_retries,
       .max_lifetime_retries = max_lifetime_retries,
       .transfer_thread = this,

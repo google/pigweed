@@ -1,4 +1,4 @@
-// Copyright 2021 The Pigweed Authors
+// Copyright 2023 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -54,6 +54,19 @@ static_assert(PW_TRANSFER_DEFAULT_MAX_LIFETIME_RETRIES >
 
 static_assert(PW_TRANSFER_DEFAULT_TIMEOUT_MS > 0);
 
+// The default amount of time, in milliseconds, to wait for an initial server
+// response to a transfer before retrying. This can later be configured
+// per-transfer.
+//
+// This is set separately to PW_TRANSFER_DEFAULT_TIMEOUT_MS as transfers may
+// require additional time for resource initialization (e.g. erasing a flash
+// region before writing to it).
+#ifndef PW_TRANSFER_DEFAULT_INITIAL_TIMEOUT_MS
+#define PW_TRANSFER_DEFAULT_INITIAL_TIMEOUT_MS PW_TRANSFER_DEFAULT_TIMEOUT_MS
+#endif  // PW_TRANSFER_DEFAULT_INITIAL_TIMEOUT_MS
+
+static_assert(PW_TRANSFER_DEFAULT_INITIAL_TIMEOUT_MS > 0);
+
 // The fractional position within a window at which a receive transfer should
 // extend its window size to minimize the amount of time the transmitter
 // spends blocked.
@@ -75,6 +88,8 @@ inline constexpr uint16_t kDefaultMaxLifetimeRetries =
 
 inline constexpr chrono::SystemClock::duration kDefaultChunkTimeout =
     std::chrono::milliseconds(PW_TRANSFER_DEFAULT_TIMEOUT_MS);
+inline constexpr chrono::SystemClock::duration kDefaultInitialChunkTimeout =
+    std::chrono::milliseconds(PW_TRANSFER_DEFAULT_INITIAL_TIMEOUT_MS);
 
 inline constexpr uint32_t kDefaultExtendWindowDivisor =
     PW_TRANSFER_DEFAULT_EXTEND_WINDOW_DIVISOR;

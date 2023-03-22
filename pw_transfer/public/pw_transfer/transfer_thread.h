@@ -1,4 +1,4 @@
-// Copyright 2022 The Pigweed Authors
+// Copyright 2023 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -52,6 +52,7 @@ class TransferThread : public thread::ThreadCore {
                            const TransferParameters& max_parameters,
                            Function<void(Status)>&& on_completion,
                            chrono::SystemClock::duration timeout,
+                           chrono::SystemClock::duration initial_timeout,
                            uint8_t max_retries,
                            uint32_t max_lifetime_retries) {
     uint32_t session_id = version == ProtocolVersion::kLegacy
@@ -66,6 +67,7 @@ class TransferThread : public thread::ThreadCore {
                   max_parameters,
                   std::move(on_completion),
                   timeout,
+                  initial_timeout,
                   max_retries,
                   max_lifetime_retries);
   }
@@ -87,6 +89,7 @@ class TransferThread : public thread::ThreadCore {
                   /*stream=*/nullptr,
                   max_parameters,
                   /*on_completion=*/nullptr,
+                  timeout,
                   timeout,
                   max_retries,
                   max_lifetime_retries);
@@ -253,6 +256,7 @@ class TransferThread : public thread::ThreadCore {
                      const TransferParameters& max_parameters,
                      Function<void(Status)>&& on_completion,
                      chrono::SystemClock::duration timeout,
+                     chrono::SystemClock::duration initial_timeout,
                      uint8_t max_retries,
                      uint32_t max_lifetime_retries);
 

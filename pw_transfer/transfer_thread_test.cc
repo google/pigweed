@@ -280,6 +280,7 @@ TEST_F(TransferThreadTest, StartTransferExhausted_Client) {
       max_parameters_,
       [&status3](Status status) { status3 = status; },
       std::chrono::seconds(2),
+      std::chrono::seconds(4),
       3,
       10);
   transfer_thread_.WaitUntilEventIsProcessed();
@@ -297,6 +298,7 @@ TEST_F(TransferThreadTest, StartTransferExhausted_Client) {
       max_parameters_,
       [&status4](Status status) { status4 = status; },
       std::chrono::seconds(2),
+      std::chrono::seconds(4),
       3,
       10);
   transfer_thread_.WaitUntilEventIsProcessed();

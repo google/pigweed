@@ -1,4 +1,4 @@
-// Copyright 2022 The Pigweed Authors
+// Copyright 2023 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -87,7 +87,7 @@ void Context::HandleEvent(const Event& event) {
 void Context::InitiateTransferAsClient() {
   PW_DCHECK(active());
 
-  SetTimeout(chunk_timeout_);
+  SetTimeout(initial_chunk_timeout_);
 
   PW_LOG_INFO("Starting transfer for resource %u",
               static_cast<unsigned>(resource_id_));
@@ -294,6 +294,7 @@ void Context::Initialize(const NewTransferEvent& new_transfer) {
   last_chunk_sent_ = Chunk::Type::kStart;
   last_chunk_offset_ = 0;
   chunk_timeout_ = new_transfer.timeout;
+  initial_chunk_timeout_ = new_transfer.initial_timeout;
   interchunk_delay_ = chrono::SystemClock::for_at_least(
       std::chrono::microseconds(kDefaultChunkDelayMicroseconds));
   next_timeout_ = kNoTimeout;
@@ -944,7 +945,14 @@ void Context::HandleTimeout() {
       // A timeout occurring in a transfer or handshake state indicates that no
       // chunk has been received from the other side. The transfer should retry
       // its previous operation.
-      SetTimeout(chunk_timeout_);  // Retry() clears the timeout if it fails
+      //
+      // The timeout is set immediately. Retry() will clear it if it fails.
+      if (transfer_state_ == TransferState::kInitiating &&
+          last_chunk_sent_ == Chunk::Type::kStart) {
+        SetTimeout(initial_chunk_timeout_);
+      } else {
+        SetTimeout(chunk_timeout_);
+      }
       Retry();
       break;
 
