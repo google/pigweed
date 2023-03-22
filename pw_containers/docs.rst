@@ -18,6 +18,10 @@ size in a variable. This allows Vectors to be used without having to know
 their maximum size at compile time. It also keeps code size small since
 function implementations are shared for all maximum sizes.
 
+pw::InlineDeque
+===============
+.. doxygentypedef:: pw::InlineDeque
+
 pw::IntrusiveList
 =================
 IntrusiveList provides an embedded-friendly singly-linked intrusive list

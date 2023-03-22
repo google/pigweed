@@ -64,6 +64,19 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "inline_deque",
+    hdrs = [
+        "public/pw_containers/inline_deque.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":raw_storage",
+        "//pw_assert",
+        "//pw_span",
+    ],
+)
+
+pw_cc_library(
     name = "vector",
     hdrs = [
         "public/pw_containers/vector.h",
@@ -89,6 +102,15 @@ pw_cc_library(
     name = "flat_map",
     hdrs = ["public/pw_containers/flat_map.h"],
     includes = ["public"],
+)
+
+pw_cc_library(
+    name = "raw_storage",
+    hdrs = [
+        "public/pw_containers/internal/raw_storage.h",
+    ],
+    includes = ["public"],
+    visibility = [":__subpackages__"],
 )
 
 pw_cc_library(
@@ -141,6 +163,30 @@ pw_cc_test(
     ],
     deps = [
         ":pw_containers",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "inline_deque_test",
+    srcs = [
+        "inline_deque_test.cc",
+    ],
+    deps = [
+        ":algorithm",
+        ":inline_deque",
+        "//pw_compilation_testing:negative_compilation_testing",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "raw_storage_test",
+    srcs = [
+        "raw_storage_test.cc",
+    ],
+    deps = [
+        ":raw_storage",
         "//pw_unit_test",
     ],
 )

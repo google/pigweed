@@ -54,10 +54,26 @@ pw_source_set("flat_map") {
   public = [ "public/pw_containers/flat_map.h" ]
 }
 
+pw_source_set("inline_deque") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    ":raw_storage",
+    dir_pw_assert,
+    dir_pw_span,
+  ]
+  public = [ "public/pw_containers/inline_deque.h" ]
+}
+
 pw_source_set("iterator") {
   public_configs = [ ":public_include_path" ]
   public_deps = [ dir_pw_polyfill ]
   public = [ "public/pw_containers/iterator.h" ]
+}
+
+pw_source_set("raw_storage") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_containers/internal/raw_storage.h" ]
+  visibility = [ ":*" ]
 }
 
 pw_source_set("to_array") {
@@ -94,7 +110,9 @@ pw_test_group("tests") {
     ":algorithm_test",
     ":filtered_view_test",
     ":flat_map_test",
+    ":inline_deque_test",
     ":intrusive_list_test",
+    ":raw_storage_test",
     ":to_array_test",
     ":vector_test",
     ":wrapped_iterator_test",
@@ -123,6 +141,20 @@ pw_test("filtered_view_test") {
 pw_test("flat_map_test") {
   sources = [ "flat_map_test.cc" ]
   deps = [ ":flat_map" ]
+}
+
+pw_test("inline_deque_test") {
+  sources = [ "inline_deque_test.cc" ]
+  deps = [
+    ":algorithm",
+    ":inline_deque",
+  ]
+  negative_compilation_tests = true
+}
+
+pw_test("raw_storage_test") {
+  sources = [ "raw_storage_test.cc" ]
+  deps = [ ":raw_storage" ]
 }
 
 pw_test("to_array_test") {

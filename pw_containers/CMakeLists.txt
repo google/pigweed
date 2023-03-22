@@ -50,9 +50,27 @@ pw_add_library(pw_containers.flat_map INTERFACE
     public
 )
 
+pw_add_library(pw_containers.inline_deque INTERFACE
+  HEADERS
+    public/pw_containers/inline_deque.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_assert.assert
+    pw_containers._raw_storage
+    pw_span
+)
+
 pw_add_library(pw_containers.iterator INTERFACE
   HEADERS
     public/pw_containers/iterator.h
+  PUBLIC_INCLUDES
+    public
+)
+
+pw_add_library(pw_containers._raw_storage INTERFACE
+  HEADERS
+    public/pw_containers/internal/raw_storage.h
   PUBLIC_INCLUDES
     public
 )
@@ -123,6 +141,28 @@ pw_add_test(pw_containers.flat_map_test
     flat_map_test.cc
   PRIVATE_DEPS
     pw_containers.flat_map
+  GROUPS
+    modules
+    pw_containers
+)
+
+pw_add_test(pw_containers.inline_deque_test
+  SOURCES
+    inline_deque_test.cc
+  PRIVATE_DEPS
+    pw_compilation_testing._pigweed_only_negative_compilation
+    pw_containers.algorithm
+    pw_containers.inline_deque
+  GROUPS
+    modules
+    pw_containers
+)
+
+pw_add_test(pw_containers.raw_storage_test
+  SOURCES
+    raw_storage_test.cc
+  PRIVATE_DEPS
+    pw_containers._raw_storage
   GROUPS
     modules
     pw_containers

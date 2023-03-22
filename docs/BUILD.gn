@@ -120,6 +120,7 @@ _doxygen_input_files = [
   "$dir_pw_bluetooth/public/pw_bluetooth/low_energy/central.h",
   "$dir_pw_bluetooth/public/pw_bluetooth/low_energy/connection.h",
   "$dir_pw_bluetooth/public/pw_bluetooth/low_energy/peripheral.h",
+  "$dir_pw_containers/public/pw_containers/inline_deque.h",
   "$dir_pw_chrono/public/pw_chrono/system_clock.h",
   "$dir_pw_chrono/public/pw_chrono/system_timer.h",
   "$dir_pw_function/public/pw_function/scope_guard.h",
