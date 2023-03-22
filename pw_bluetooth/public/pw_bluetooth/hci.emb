@@ -2079,7 +2079,7 @@ struct LESetAdvertisingParametersCommand:
 
   $next [+1]                      LEOwnAddressType           own_address_type
 
-  $next [+1]                      LEPeerAddressTypeNoAnon    peer_address_type
+  $next [+1]                      LEPeerAddressType          peer_address_type
     -- ANONYMOUS address type not allowed.
 
   $next [+BdAddr.$size_in_bytes]  BdAddr                     peer_address
