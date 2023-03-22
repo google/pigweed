@@ -27,16 +27,20 @@ namespace {
 template <typename Lock>
 class BorrowableTest : public ::testing::Test {
  protected:
+  static constexpr int kInitialBaseValue = 24;
   static constexpr int kInitialValue = 42;
 
   BorrowableTest()
-      : foo_{.value = kInitialValue}, borrowable_foo_(foo_, lock_) {}
+      : foo_{{kInitialBaseValue}, kInitialValue},
+        borrowable_foo_(foo_, lock_) {}
 
   void SetUp() override {
     EXPECT_FALSE(lock_.locked());  // Ensure it's not locked on construction.
   }
-
-  struct Foo {
+  struct Base {
+    int base_value;
+  };
+  struct Foo : public Base {
     int value;
   };
   Lock lock_;
@@ -84,6 +88,19 @@ TEST_F(BorrowableBasicLockableTest, Acquire) {
   EXPECT_EQ(foo_.value, 13);
 }
 
+TEST_F(BorrowableBasicLockableTest, ConstAcquire) {
+  const Borrowable<Foo, BasicLockable> const_borrowable_foo(borrowable_foo_);
+  {
+    BorrowedPointer<Foo, BasicLockable> borrowed_foo =
+        const_borrowable_foo.acquire();
+    EXPECT_TRUE(lock_.locked());  // Ensure the lock is held.
+    EXPECT_EQ(borrowed_foo->value, kInitialValue);
+    borrowed_foo->value = 13;
+  }
+  EXPECT_FALSE(lock_.locked());  // Ensure the lock is released.
+  EXPECT_EQ(foo_.value, 13);
+}
+
 TEST_F(BorrowableBasicLockableTest, RepeatedAcquire) {
   {
     BorrowedPointer<Foo, BasicLockable> borrowed_foo =
@@ -123,6 +140,21 @@ TEST_F(BorrowableBasicLockableTest, Copyable) {
     borrowed_foo->value = 13;
   }
   EXPECT_FALSE(lock_.locked());  // Ensure the lock is released.
+  EXPECT_EQ(foo_.value, 13);
+}
+
+TEST_F(BorrowableBasicLockableTest, CopyableCovariant) {
+  const Borrowable<Foo, BasicLockable>& other = borrowable_foo_;
+  Borrowable<Base, BasicLockable> borrowable_base(other);
+  {
+    BorrowedPointer<Base, BasicLockable> borrowed_base =
+        borrowable_base.acquire();
+    EXPECT_TRUE(lock_.locked());  // Ensure the lock is held.
+    EXPECT_EQ(borrowed_base->base_value, kInitialBaseValue);
+    borrowed_base->base_value = 13;
+  }
+  EXPECT_FALSE(lock_.locked());  // Ensure the lock is released.
+  EXPECT_EQ(foo_.base_value, 13);
 }
 
 class Lockable : public BasicLockable {

@@ -871,6 +871,12 @@ into the ACK timeout you'd like to use for the transaction. Borrowable can help
 you do exactly this if you provide access to the I2c bus through a
 ``Borrowable``.
 
+.. note::
+
+   ``Borrowable`` has semantics similar to a pointer and should be passed by
+   value. Furthermore, a ``Borrowable<U>`` can be assigned to a
+   ``Borrowable<T>`` if ``U`` is a subclass of ``T``.
+
 C++
 ---
 .. doxygenclass:: pw::sync::BorrowedPointer
@@ -1008,7 +1014,7 @@ Example in C++
    pw::sync::InlineBorrowable<ExampleI2c> i2c(std::in_place, kBusId, opts);
 
    pw::Result<ConstByteSpan> ReadI2cData(
-     pw::sync::Borrowable<pw::i2c::Initiator>& initiator,
+     pw::sync::Borrowable<pw::i2c::Initiator> initiator,
      ByteSpan buffer);
 
    pw::Result<ConstByteSpan> ReadData(ByteSpan buffer) {
