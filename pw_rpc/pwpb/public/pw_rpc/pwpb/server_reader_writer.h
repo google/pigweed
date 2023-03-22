@@ -228,7 +228,8 @@ class PwpbServerReaderWriter : private internal::BasePwpbServerReader<Request> {
   // Functions for setting RPC event callbacks.
   using internal::Call::set_on_error;
   using internal::BasePwpbServerReader<Request>::set_on_next;
-  using internal::ServerCall::set_on_client_stream_end;
+  using internal::ServerCall::set_on_completion_requested;
+  using internal::ServerCall::set_on_completion_requested_if_enabled;
 
   // Writes a response. Returns the following Status codes:
   //
@@ -303,7 +304,8 @@ class PwpbServerReader : private internal::BasePwpbServerReader<Request> {
   // Functions for setting RPC event callbacks.
   using internal::Call::set_on_error;
   using internal::BasePwpbServerReader<Request>::set_on_next;
-  using internal::ServerCall::set_on_client_stream_end;
+  using internal::ServerCall::set_on_completion_requested;
+  using internal::ServerCall::set_on_completion_requested_if_enabled;
 
   // Sends the response. Returns the following Status codes:
   //
@@ -370,7 +372,8 @@ class PwpbServerWriter : private internal::PwpbServerCall {
 
   // Functions for setting RPC event callbacks.
   using internal::Call::set_on_error;
-  using internal::ServerCall::set_on_client_stream_end;
+  using internal::ServerCall::set_on_completion_requested;
+  using internal::ServerCall::set_on_completion_requested_if_enabled;
 
   // Writes a response. Returns the following Status codes:
   //
@@ -440,7 +443,6 @@ class PwpbUnaryResponder : private internal::PwpbServerCall {
 
   // Functions for setting RPC event callbacks.
   using internal::Call::set_on_error;
-  using internal::ServerCall::set_on_client_stream_end;
 
   // Sends the response. Returns the following Status codes:
   //

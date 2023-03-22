@@ -233,8 +233,9 @@ class NanopbClientReaderWriter
         &request);
   }
 
-  // Notifies the server that no further client stream messages will be sent.
-  using internal::ClientCall::CloseClientStream;
+  // Notifies the server that the client has requested to stop communication by
+  // sending CLIENT_STREAM_END.
+  using internal::ClientCall::RequestCompletion;
 
   // Cancels this RPC. Closes the call locally and sends a CANCELLED error to
   // the server.
@@ -290,6 +291,7 @@ class NanopbClientReader
   using internal::StreamResponseClientCall::set_on_completed;
 
   using internal::Call::Cancel;
+  using internal::Call::RequestCompletion;
   using internal::ClientCall::Abandon;
 
  private:
@@ -335,7 +337,7 @@ class NanopbClientWriter
   }
 
   using internal::Call::Cancel;
-  using internal::Call::CloseClientStream;
+  using internal::Call::RequestCompletion;
   using internal::ClientCall::Abandon;
 
  private:

@@ -48,8 +48,9 @@ class RawClientReaderWriter : private internal::StreamResponseClientCall {
   // Sends a stream request packet with the given raw payload.
   using internal::Call::Write;
 
-  // Notifies the server that no further client stream messages will be sent.
-  using internal::ClientCall::CloseClientStream;
+  // Notifies the server that the client has requested to stop communication by
+  // sending CLIENT_STREAM_END.
+  using internal::ClientCall::RequestCompletion;
 
   // Cancels this RPC. Closes the call locally and sends a CANCELLED error to
   // the server.
@@ -96,6 +97,7 @@ class RawClientReader : private internal::StreamResponseClientCall {
   using internal::StreamResponseClientCall::set_on_next;
 
   using internal::Call::Cancel;
+  using internal::Call::RequestCompletion;
   using internal::ClientCall::Abandon;
 
  private:
@@ -128,7 +130,7 @@ class RawClientWriter : private internal::UnaryResponseClientCall {
   using internal::UnaryResponseClientCall::set_on_error;
 
   using internal::Call::Cancel;
-  using internal::Call::CloseClientStream;
+  using internal::Call::RequestCompletion;
   using internal::Call::Write;
   using internal::ClientCall::Abandon;
 

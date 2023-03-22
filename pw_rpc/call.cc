@@ -83,9 +83,8 @@ Call::Call(LockedEndpoint& endpoint_ref,
       id_(call_id),
       service_id_(service_id),
       method_id_(method_id),
-      state_(kActive | (HasClientStream(properties.method_type())
-                            ? static_cast<uint8_t>(kClientStreamActive)
-                            : 0u)),
+      // Note: Bit kActive set to 1 and kClientRequestedCompletion is set to 0.
+      state_(kActive),
       awaiting_cleanup_(OkStatus().code()),
       callbacks_executing_(0),
       properties_(properties) {

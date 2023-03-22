@@ -93,7 +93,7 @@ Status Server::ProcessPacket(ConstByteSpan packet_data) {
       }
       break;
     case PacketType::CLIENT_STREAM_END:
-      HandleClientStreamPacket(packet, *channel, call);
+      HandleCompletionRequest(packet, *channel, call);
       break;
     case PacketType::REQUEST:  // Handled above
     case PacketType::RESPONSE:
@@ -120,6 +120,35 @@ std::tuple<Service*, const internal::Method*> Server::FindMethod(
   }
 
   return {&(*service), service->FindMethod(packet.method_id())};
+}
+
+void Server::HandleCompletionRequest(
+    const internal::Packet& packet,
+    internal::Channel& channel,
+    IntrusiveList<internal::Call>::iterator call) const {
+  if (call == calls_end()) {
+    channel.Send(Packet::ServerError(packet, Status::FailedPrecondition()))
+        .IgnoreError();  // Errors are logged in Channel::Send.
+    internal::rpc_lock().unlock();
+    PW_LOG_DEBUG(
+        "Received a request completion packet for %u:%08x/%08x, which is not a"
+        "pending call",
+        static_cast<unsigned>(packet.channel_id()),
+        static_cast<unsigned>(packet.service_id()),
+        static_cast<unsigned>(packet.method_id()));
+    return;
+  }
+
+  if (call->client_requested_completion()) {
+    internal::rpc_lock().unlock();
+    PW_LOG_DEBUG("Received multiple completion requests for %u:%08x/%08x",
+                 static_cast<unsigned>(packet.channel_id()),
+                 static_cast<unsigned>(packet.service_id()),
+                 static_cast<unsigned>(packet.method_id()));
+    return;
+  }
+
+  static_cast<internal::ServerCall&>(*call).HandleClientRequestedCompletion();
 }
 
 void Server::HandleClientStreamPacket(
@@ -151,7 +180,7 @@ void Server::HandleClientStreamPacket(
     return;
   }
 
-  if (!call->client_stream_open()) {
+  if (call->client_requested_completion()) {
     channel.Send(Packet::ServerError(packet, Status::FailedPrecondition()))
         .IgnoreError();  // Errors are logged in Channel::Send.
     internal::rpc_lock().unlock();
@@ -164,11 +193,7 @@ void Server::HandleClientStreamPacket(
     return;
   }
 
-  if (packet.type() == PacketType::CLIENT_STREAM) {
-    call->HandlePayload(packet.payload());
-  } else {  // Handle PacketType::CLIENT_STREAM_END.
-    static_cast<internal::ServerCall&>(*call).HandleClientStreamEnd();
-  }
+  call->HandlePayload(packet.payload());
 }
 
 }  // namespace pw::rpc

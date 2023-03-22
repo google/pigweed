@@ -18,18 +18,30 @@
 #include <cstddef>
 #include <type_traits>
 
-/// In client and bidirectional RPCs, pw_rpc clients may signal that they have
-/// finished sending requests with a `CLIENT_STREAM_END` packet. While this can
-/// be useful in some circumstances, it is often not necessary.
+#if defined(PW_RPC_CLIENT_STREAM_END_CALLBACK) && \
+    PW_RPC_CLIENT_STREAM_END_CALLBACK
+#pragma message(                                                \
+    "Warning PW_RPC_CLIENT_STREAM_END_CALLBACK is deprecated! " \
+    "Use PW_RPC_COMPLETION_REQUEST_CALLBACK instead.")
+#define PW_RPC_COMPLETION_REQUEST_CALLBACK 1
+#endif
+
+#undef PW_RPC_CLIENT_STREAM_END_CALLBACK
+
+/// pw_rpc clients may request call completion by sending `CLIENT_STREAM_END`
+/// packet. For client streaming or bi-direction RPCs, this also indicates that
+/// the client is done sending requests. While this can be useful in some
+/// circumstances, it is often not necessary.
 ///
 /// This option controls whether or not include a callback that is called when
-/// the client stream ends. The callback is included in all ServerReader/Writer
-/// objects as a @cpp_type{pw::Function}, so may have a significant cost.
+/// the client stream requests for completion. The callback is included in all
+/// ServerReader/Writer objects as a @cpp_type{pw::Function}, so may have a
+/// significant cost.
 ///
 /// This is disabled by default.
-#ifndef PW_RPC_CLIENT_STREAM_END_CALLBACK
-#define PW_RPC_CLIENT_STREAM_END_CALLBACK 0
-#endif  // PW_RPC_CLIENT_STREAM_END_CALLBACK
+#ifndef PW_RPC_COMPLETION_REQUEST_CALLBACK
+#define PW_RPC_COMPLETION_REQUEST_CALLBACK 0
+#endif  // PW_RPC_COMPLETION_REQUEST_CALLBACK
 
 /// The Nanopb-based pw_rpc implementation allocates memory to use for Nanopb
 /// structs for the request and response protobufs. The template function that
@@ -205,7 +217,7 @@ static_assert(
 namespace pw::rpc::cfg {
 
 template <typename...>
-constexpr std::bool_constant<PW_RPC_CLIENT_STREAM_END_CALLBACK>
+constexpr std::bool_constant<PW_RPC_COMPLETION_REQUEST_CALLBACK>
     kClientStreamEndCallbackEnabled;
 
 template <typename...>

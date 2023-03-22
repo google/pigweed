@@ -579,7 +579,7 @@ TEST_F(RawCodegenClientTest, ClientStream_Move) {
       UnaryOnCompleted(),
       OnError());
 
-  EXPECT_EQ(OkStatus(), call.CloseClientStream());
+  EXPECT_EQ(OkStatus(), call.RequestCompletion());
 
   RawClientWriter call_2;
 

@@ -171,6 +171,11 @@ class Server : public internal::Endpoint {
       const internal::Packet& packet)
       PW_EXCLUSIVE_LOCKS_REQUIRED(internal::rpc_lock());
 
+  void HandleCompletionRequest(const internal::Packet& packet,
+                               internal::Channel& channel,
+                               IntrusiveList<internal::Call>::iterator call)
+      const PW_UNLOCK_FUNCTION(internal::rpc_lock());
+
   void HandleClientStreamPacket(const internal::Packet& packet,
                                 internal::Channel& channel,
                                 IntrusiveList<internal::Call>::iterator call)

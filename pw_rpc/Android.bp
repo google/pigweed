@@ -98,7 +98,7 @@ cc_library_headers {
 //       name: "pw_rpc_cflags_<instance_name>",
 //       cflags: [
 //           "-DPW_RPC_USE_GLOBAL_MUTEX=0",
-//           "-DPW_RPC_CLIENT_STREAM_END_CALLBACK",
+//           "-DPW_RPC_COMPLETION_REQUEST_CALLBACK",
 //           "-DPW_RPC_DYNAMIC_ALLOCATION",
 //       ],
 //   }

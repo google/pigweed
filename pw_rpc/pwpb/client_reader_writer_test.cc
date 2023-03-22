@@ -62,7 +62,7 @@ TEST(PwpbClientWriter, DefaultConstructed) {
 
   EXPECT_EQ(Status::FailedPrecondition(), call.Write({}));
   EXPECT_EQ(Status::FailedPrecondition(), call.Cancel());
-  EXPECT_EQ(Status::FailedPrecondition(), call.CloseClientStream());
+  EXPECT_EQ(Status::FailedPrecondition(), call.RequestCompletion());
 
   call.set_on_completed([](const TestStreamResponse::Message&, Status) {});
   call.set_on_error([](Status) {});
@@ -75,6 +75,7 @@ TEST(PwpbClientReader, DefaultConstructed) {
   EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
 
   EXPECT_EQ(Status::FailedPrecondition(), call.Cancel());
+  EXPECT_EQ(Status::FailedPrecondition(), call.RequestCompletion());
 
   call.set_on_completed([](Status) {});
   call.set_on_next([](const TestStreamResponse::Message&) {});
@@ -90,7 +91,74 @@ TEST(PwpbClientReaderWriter, DefaultConstructed) {
 
   EXPECT_EQ(Status::FailedPrecondition(), call.Write({}));
   EXPECT_EQ(Status::FailedPrecondition(), call.Cancel());
-  EXPECT_EQ(Status::FailedPrecondition(), call.CloseClientStream());
+  EXPECT_EQ(Status::FailedPrecondition(), call.RequestCompletion());
+
+  call.set_on_completed([](Status) {});
+  call.set_on_next([](const TestStreamResponse::Message&) {});
+  call.set_on_error([](Status) {});
+}
+
+TEST(PwpbClientWriter, RequestCompletion) {
+  PwpbClientTestContext ctx;
+  PwpbClientWriter<TestRequest::Message, TestStreamResponse::Message> call =
+      TestService::TestClientStreamRpc(
+          ctx.client(),
+          ctx.channel().id(),
+          FailIfOnCompletedCalled<TestStreamResponse::Message>,
+          FailIfCalled);
+  ASSERT_EQ(OkStatus(), call.RequestCompletion());
+
+  ASSERT_TRUE(call.active());
+  EXPECT_EQ(call.channel_id(), ctx.channel().id());
+
+  EXPECT_EQ(OkStatus(), call.Write({}));
+  EXPECT_EQ(OkStatus(), call.RequestCompletion());
+  EXPECT_EQ(OkStatus(), call.Cancel());
+
+  call.set_on_completed([](const TestStreamResponse::Message&, Status) {});
+  call.set_on_error([](Status) {});
+}
+
+TEST(PwpbClientReader, RequestCompletion) {
+  PwpbClientTestContext ctx;
+  PwpbClientReader<TestStreamResponse::Message> call =
+      TestService::TestServerStreamRpc(
+          ctx.client(),
+          ctx.channel().id(),
+          {},
+          FailIfOnNextCalled<TestStreamResponse::Message>,
+          FailIfCalled,
+          FailIfCalled);
+  ASSERT_EQ(OkStatus(), call.RequestCompletion());
+
+  ASSERT_TRUE(call.active());
+  EXPECT_EQ(call.channel_id(), ctx.channel().id());
+
+  EXPECT_EQ(OkStatus(), call.RequestCompletion());
+  EXPECT_EQ(OkStatus(), call.Cancel());
+
+  call.set_on_completed([](Status) {});
+  call.set_on_next([](const TestStreamResponse::Message&) {});
+  call.set_on_error([](Status) {});
+}
+
+TEST(PwpbClientReaderWriter, RequestCompletion) {
+  PwpbClientTestContext ctx;
+  PwpbClientReaderWriter<TestRequest::Message, TestStreamResponse::Message>
+      call = TestService::TestBidirectionalStreamRpc(
+          ctx.client(),
+          ctx.channel().id(),
+          FailIfOnNextCalled<TestStreamResponse::Message>,
+          FailIfCalled,
+          FailIfCalled);
+  ASSERT_EQ(OkStatus(), call.RequestCompletion());
+
+  ASSERT_TRUE(call.active());
+  EXPECT_EQ(call.channel_id(), ctx.channel().id());
+
+  EXPECT_EQ(OkStatus(), call.Write({}));
+  EXPECT_EQ(OkStatus(), call.RequestCompletion());
+  EXPECT_EQ(OkStatus(), call.Cancel());
 
   call.set_on_completed([](Status) {});
   call.set_on_next([](const TestStreamResponse::Message&) {});
@@ -131,7 +199,7 @@ TEST(PwpbClientWriter, Closed) {
 
   EXPECT_EQ(Status::FailedPrecondition(), call.Write({}));
   EXPECT_EQ(Status::FailedPrecondition(), call.Cancel());
-  EXPECT_EQ(Status::FailedPrecondition(), call.CloseClientStream());
+  EXPECT_EQ(Status::FailedPrecondition(), call.RequestCompletion());
 
   call.set_on_completed([](const TestStreamResponse::Message&, Status) {});
   call.set_on_error([](Status) {});
@@ -153,6 +221,7 @@ TEST(PwpbClientReader, Closed) {
   EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
 
   EXPECT_EQ(Status::FailedPrecondition(), call.Cancel());
+  EXPECT_EQ(Status::FailedPrecondition(), call.RequestCompletion());
 
   call.set_on_completed([](Status) {});
   call.set_on_next([](const TestStreamResponse::Message&) {});
@@ -175,7 +244,7 @@ TEST(PwpbClientReaderWriter, Closed) {
 
   EXPECT_EQ(Status::FailedPrecondition(), call.Write({}));
   EXPECT_EQ(Status::FailedPrecondition(), call.Cancel());
-  EXPECT_EQ(Status::FailedPrecondition(), call.CloseClientStream());
+  EXPECT_EQ(Status::FailedPrecondition(), call.RequestCompletion());
 
   call.set_on_completed([](Status) {});
   call.set_on_next([](const TestStreamResponse::Message&) {});

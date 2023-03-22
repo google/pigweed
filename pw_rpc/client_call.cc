@@ -17,8 +17,14 @@
 namespace pw::rpc::internal {
 
 void ClientCall::CloseClientCall() {
-  if (client_stream_open()) {
-    CloseClientStreamLocked().IgnoreError();
+  // When a client call is closed, for bidirectional and client streaming RPCs,
+  // the server may be waiting for client stream messages, so we need to
+  // notify the server that the client has requested for completion and no
+  // further requests should be expected from the client. For unary and server
+  // streaming RPCs, since the client is not sending messages, server does not
+  // need to be notified.
+  if (has_client_stream() && !client_requested_completion()) {
+    RequestCompletionLocked().IgnoreError();
   }
   UnregisterAndMarkClosed();
 }

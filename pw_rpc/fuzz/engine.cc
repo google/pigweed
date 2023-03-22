@@ -57,7 +57,7 @@ struct CloseClientStreamVisitor final {
   result_type operator()(std::monostate&) {}
   result_type operator()(pw::rpc::RawUnaryReceiver&) {}
   result_type operator()(pw::rpc::RawClientReaderWriter& call) {
-    call.CloseClientStream().IgnoreError();
+    call.RequestCompletion().IgnoreError();
   }
 };
 

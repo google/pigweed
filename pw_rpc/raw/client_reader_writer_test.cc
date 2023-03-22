@@ -50,7 +50,7 @@ TEST(RawClientWriter, DefaultConstructed) {
 
   EXPECT_EQ(Status::FailedPrecondition(), call.Write({}));
   EXPECT_EQ(Status::FailedPrecondition(), call.Cancel());
-  EXPECT_EQ(Status::FailedPrecondition(), call.CloseClientStream());
+  EXPECT_EQ(Status::FailedPrecondition(), call.RequestCompletion());
 
   call.set_on_completed([](ConstByteSpan, Status) {});
   call.set_on_error([](Status) {});
@@ -63,6 +63,7 @@ TEST(RawClientReader, DefaultConstructed) {
   EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
 
   EXPECT_EQ(Status::FailedPrecondition(), call.Cancel());
+  EXPECT_EQ(Status::FailedPrecondition(), call.RequestCompletion());
 
   call.set_on_completed([](Status) {});
   call.set_on_next([](ConstByteSpan) {});
@@ -77,7 +78,67 @@ TEST(RawClientReaderWriter, DefaultConstructed) {
 
   EXPECT_EQ(Status::FailedPrecondition(), call.Write({}));
   EXPECT_EQ(Status::FailedPrecondition(), call.Cancel());
-  EXPECT_EQ(Status::FailedPrecondition(), call.CloseClientStream());
+  EXPECT_EQ(Status::FailedPrecondition(), call.RequestCompletion());
+
+  call.set_on_completed([](Status) {});
+  call.set_on_next([](ConstByteSpan) {});
+  call.set_on_error([](Status) {});
+}
+
+TEST(RawClientWriter, RequestCompletion) {
+  RawClientTestContext ctx;
+  RawClientWriter call = TestService::TestClientStreamRpc(
+      ctx.client(), ctx.channel().id(), FailIfOnCompletedCalled, FailIfCalled);
+  ASSERT_EQ(OkStatus(), call.RequestCompletion());
+
+  ASSERT_TRUE(call.active());
+  EXPECT_EQ(call.channel_id(), ctx.channel().id());
+
+  EXPECT_EQ(OkStatus(), call.Write({}));
+  EXPECT_EQ(OkStatus(), call.RequestCompletion());
+  EXPECT_EQ(OkStatus(), call.Cancel());
+
+  call.set_on_completed([](ConstByteSpan, Status) {});
+  call.set_on_error([](Status) {});
+}
+
+TEST(RawClientReader, RequestCompletion) {
+  RawClientTestContext ctx;
+  RawClientReader call = TestService::TestServerStreamRpc(ctx.client(),
+                                                          ctx.channel().id(),
+                                                          {},
+                                                          FailIfOnNextCalled,
+                                                          FailIfCalled,
+                                                          FailIfCalled);
+  ASSERT_EQ(OkStatus(), call.RequestCompletion());
+
+  ASSERT_TRUE(call.active());
+  EXPECT_EQ(call.channel_id(), ctx.channel().id());
+
+  EXPECT_EQ(OkStatus(), call.RequestCompletion());
+  EXPECT_EQ(OkStatus(), call.Cancel());
+
+  call.set_on_completed([](Status) {});
+  call.set_on_next([](ConstByteSpan) {});
+  call.set_on_error([](Status) {});
+}
+
+TEST(RawClientReaderWriter, RequestCompletion) {
+  RawClientTestContext ctx;
+  RawClientReaderWriter call =
+      TestService::TestBidirectionalStreamRpc(ctx.client(),
+                                              ctx.channel().id(),
+                                              FailIfOnNextCalled,
+                                              FailIfCalled,
+                                              FailIfCalled);
+  ASSERT_EQ(OkStatus(), call.RequestCompletion());
+
+  ASSERT_TRUE(call.active());
+  EXPECT_EQ(call.channel_id(), ctx.channel().id());
+
+  EXPECT_EQ(OkStatus(), call.Write({}));
+  EXPECT_EQ(OkStatus(), call.RequestCompletion());
+  EXPECT_EQ(OkStatus(), call.Cancel());
 
   call.set_on_completed([](Status) {});
   call.set_on_next([](ConstByteSpan) {});
@@ -119,7 +180,7 @@ TEST(RawClientWriter, Cancel) {
 
   EXPECT_EQ(Status::FailedPrecondition(), call.Write({}));
   EXPECT_EQ(Status::FailedPrecondition(), call.Cancel());
-  EXPECT_EQ(Status::FailedPrecondition(), call.CloseClientStream());
+  EXPECT_EQ(Status::FailedPrecondition(), call.RequestCompletion());
 
   call.set_on_completed([](ConstByteSpan, Status) {});
   call.set_on_error([](Status) {});
@@ -141,6 +202,7 @@ TEST(RawClientReader, Cancel) {
   EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
 
   EXPECT_EQ(Status::FailedPrecondition(), call.Cancel());
+  EXPECT_EQ(Status::FailedPrecondition(), call.RequestCompletion());
 
   call.set_on_completed([](Status) {});
   call.set_on_next([](ConstByteSpan) {});
@@ -164,7 +226,7 @@ TEST(RawClientReaderWriter, Cancel) {
 
   EXPECT_EQ(Status::FailedPrecondition(), call.Write({}));
   EXPECT_EQ(Status::FailedPrecondition(), call.Cancel());
-  EXPECT_EQ(Status::FailedPrecondition(), call.CloseClientStream());
+  EXPECT_EQ(Status::FailedPrecondition(), call.RequestCompletion());
 
   call.set_on_completed([](Status) {});
   call.set_on_next([](ConstByteSpan) {});
@@ -201,7 +263,7 @@ TEST(RawClientWriter, Abandon) {
 
   EXPECT_EQ(Status::FailedPrecondition(), call.Write({}));
   EXPECT_EQ(Status::FailedPrecondition(), call.Cancel());
-  EXPECT_EQ(Status::FailedPrecondition(), call.CloseClientStream());
+  EXPECT_EQ(Status::FailedPrecondition(), call.RequestCompletion());
 
   EXPECT_EQ(ctx.output().total_packets(), 2u);  // request & client stream end
 }
@@ -220,6 +282,7 @@ TEST(RawClientReader, Abandon) {
   EXPECT_EQ(call.channel_id(), Channel::kUnassignedChannelId);
 
   EXPECT_EQ(Status::FailedPrecondition(), call.Cancel());
+  EXPECT_EQ(Status::FailedPrecondition(), call.RequestCompletion());
 
   EXPECT_EQ(ctx.output().total_packets(), 1u);  // request only
 }
@@ -239,7 +302,7 @@ TEST(RawClientReaderWriter, Abandon) {
 
   EXPECT_EQ(Status::FailedPrecondition(), call.Write({}));
   EXPECT_EQ(Status::FailedPrecondition(), call.Cancel());
-  EXPECT_EQ(Status::FailedPrecondition(), call.CloseClientStream());
+  EXPECT_EQ(Status::FailedPrecondition(), call.RequestCompletion());
 
   EXPECT_EQ(ctx.output().total_packets(), 2u);  // request & client stream end
 }

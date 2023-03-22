@@ -1088,10 +1088,10 @@ The C++ call objects allow users to set callbacks that are invoked when RPC
     - ``void(const PayloadType&, pw::Status)``
     -
     - ✅
-  * - ``on_client_stream_end``
+  * - ``on_client_requested_completion``
     - ``void()``
     - n/a
-    - ✅ (:c:macro:`optional <PW_RPC_CLIENT_STREAM_END_CALLBACK>`)
+    - ✅ (:c:macro:`optional <PW_RPC_COMPLETION_REQUEST_CALLBACK>`)
     -
 
 Limitations and restrictions

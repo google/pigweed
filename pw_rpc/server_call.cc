@@ -26,9 +26,10 @@ void ServerCall::MoveServerCallFrom(ServerCall& other) {
 
   MoveFrom(other);
 
-#if PW_RPC_CLIENT_STREAM_END_CALLBACK
-  on_client_stream_end_ = std::move(other.on_client_stream_end_);
-#endif  // PW_RPC_CLIENT_STREAM_END_CALLBACK
+#if PW_RPC_COMPLETION_REQUEST_CALLBACK
+  on_client_requested_completion_ =
+      std::move(other.on_client_requested_completion_);
+#endif  // PW_RPC_COMPLETION_REQUEST_CALLBACK
 }
 
 }  // namespace pw::rpc::internal
