@@ -584,7 +584,7 @@ describe('RPC', () => {
         enqueueResponse(1, clientStreaming.method, Status.OK, testResponse);
 
         stream.finishAndWait();
-        expect(lastRequest().getType()).toEqual(PacketType.CLIENT_STREAM_END);
+        expect(lastRequest().getType()).toEqual(PacketType.CLIENT_REQUEST_COMPLETION);
 
         expect(onNext).toHaveBeenCalledWith(testResponse);
         expect(stream.completed).toBe(true);
@@ -633,7 +633,7 @@ describe('RPC', () => {
     it('non-blocking call server error after stream end', async () => {
       for (let i = 0; i < 3; i++) {
         const stream = clientStreaming.invoke();
-        // Error will be sent in response to the CLIENT_STREAM_END packet.
+        // Error will be sent in response to the CLIENT_REQUEST_COMPLETION packet.
         enqueueError(
           1,
           clientStreaming.method,
@@ -858,7 +858,7 @@ describe('RPC', () => {
       for (let i = 0; i < 3; i++) {
         const stream = bidiStreaming.invoke();
 
-        // Error is sent in response to CLIENT_STREAM_END packet.
+        // Error is sent in response to CLIENT_REQUEST_COMPLETION packet.
         enqueueError(
           1,
           bidiStreaming.method,

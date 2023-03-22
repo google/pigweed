@@ -195,7 +195,7 @@ public final class EndpointTest {
                        .build()))
         .isTrue();
     assertThat(endpoint.processClientPacket(call.rpc().method(),
-                   packetBuilder().setType(PacketType.CLIENT_STREAM_END).build()))
+                   packetBuilder().setType(PacketType.CLIENT_REQUEST_COMPLETION).build()))
         .isTrue();
     assertThat(endpoint.processClientPacket(call.rpc().method(),
                    packetBuilder()

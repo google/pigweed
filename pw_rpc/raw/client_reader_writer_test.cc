@@ -323,7 +323,8 @@ TEST(RawClientReaderWriter, Move_InactiveToActive_EndsClientStream) {
 
   active_call = std::move(inactive_call);
 
-  EXPECT_EQ(ctx.output().total_packets(), 2u);  // Sent CLIENT_STREAM_END
+  EXPECT_EQ(ctx.output().total_packets(),
+            2u);  // Sent CLIENT_REQUEST_COMPLETION
   EXPECT_EQ(
       ctx.output()
           .client_stream_end_packets<TestService::TestBidirectionalStreamRpc>(),
@@ -419,7 +420,8 @@ TEST(RawClientWriter, WithClientStream_OutOfScope_SendsClientStreamEnd) {
     ASSERT_EQ(ctx.output().total_packets(), 1u);  // Sent the request
   }
 
-  EXPECT_EQ(ctx.output().total_packets(), 2u);  // Sent CLIENT_STREAM_END
+  EXPECT_EQ(ctx.output().total_packets(),
+            2u);  // Sent CLIENT_REQUEST_COMPLETION
   EXPECT_EQ(ctx.output()
                 .client_stream_end_packets<TestService::TestClientStreamRpc>(),
             1u);

@@ -623,7 +623,8 @@ TEST_F(BidiMethod, ClientRequestedCompletion_CallsCallback) {
   responder_.set_on_completion_requested([&called]() { called = true; });
 #endif
   ASSERT_EQ(OkStatus(),
-            server_.ProcessPacket(PacketForRpc(PacketType::CLIENT_STREAM_END)));
+            server_.ProcessPacket(
+                PacketForRpc(PacketType::CLIENT_REQUEST_COMPLETION)));
 
   EXPECT_EQ(output_.total_packets(), 0u);
   EXPECT_EQ(called, PW_RPC_COMPLETION_REQUEST_CALLBACK);
@@ -635,14 +636,15 @@ TEST_F(BidiMethod, ClientRequestedCompletion_CallsCallbackIfEnabled) {
       [&called]() { called = true; });
 
   ASSERT_EQ(OkStatus(),
-            server_.ProcessPacket(PacketForRpc(PacketType::CLIENT_STREAM_END)));
+            server_.ProcessPacket(
+                PacketForRpc(PacketType::CLIENT_REQUEST_COMPLETION)));
 
   EXPECT_EQ(output_.total_packets(), 0u);
   EXPECT_EQ(called, PW_RPC_COMPLETION_REQUEST_CALLBACK);
 }
 
-TEST_F(BidiMethod, ClientRequestedCompletion_NoErrorWhenAlreadyRequested) {
-  const auto end = PacketForRpc(PacketType::CLIENT_STREAM_END);
+TEST_F(BidiMethod, ClientRequestedCompletion_ErrorWhenClosed) {
+  const auto end = PacketForRpc(PacketType::CLIENT_REQUEST_COMPLETION);
   ASSERT_EQ(OkStatus(), server_.ProcessPacket(end));
   ASSERT_EQ(OkStatus(), server_.ProcessPacket(end));
 
@@ -653,7 +655,7 @@ TEST_F(BidiMethod, ClientRequestedCompletion_ErrorWhenAlreadyClosed) {
   ASSERT_EQ(OkStatus(), server_.ProcessPacket(EncodeCancel()));
   EXPECT_FALSE(responder_.active());
 
-  const auto end = PacketForRpc(PacketType::CLIENT_STREAM_END);
+  const auto end = PacketForRpc(PacketType::CLIENT_REQUEST_COMPLETION);
   ASSERT_EQ(OkStatus(), server_.ProcessPacket(end));
 
   ASSERT_EQ(output_.total_packets(), 1u);
@@ -699,7 +701,8 @@ TEST_F(ServerStreamingMethod, ClientRequestedCompletion_CallsCallback) {
 #endif
 
   ASSERT_EQ(OkStatus(),
-            server_.ProcessPacket(PacketForRpc(PacketType::CLIENT_STREAM_END)));
+            server_.ProcessPacket(
+                PacketForRpc(PacketType::CLIENT_REQUEST_COMPLETION)));
 
   EXPECT_EQ(output_.total_packets(), 0u);
   EXPECT_EQ(called, PW_RPC_COMPLETION_REQUEST_CALLBACK);
@@ -712,15 +715,15 @@ TEST_F(ServerStreamingMethod,
       [&called]() { called = true; });
 
   ASSERT_EQ(OkStatus(),
-            server_.ProcessPacket(PacketForRpc(PacketType::CLIENT_STREAM_END)));
+            server_.ProcessPacket(
+                PacketForRpc(PacketType::CLIENT_REQUEST_COMPLETION)));
 
   EXPECT_EQ(output_.total_packets(), 0u);
   EXPECT_EQ(called, PW_RPC_COMPLETION_REQUEST_CALLBACK);
 }
 
-TEST_F(ServerStreamingMethod,
-       ClientRequestedCompletion_NoErrorWhenAlreadyRequested) {
-  const auto end = PacketForRpc(PacketType::CLIENT_STREAM_END);
+TEST_F(ServerStreamingMethod, ClientRequestedCompletion_ErrorWhenClosed) {
+  const auto end = PacketForRpc(PacketType::CLIENT_REQUEST_COMPLETION);
   ASSERT_EQ(OkStatus(), server_.ProcessPacket(end));
   ASSERT_EQ(OkStatus(), server_.ProcessPacket(end));
 
@@ -732,7 +735,7 @@ TEST_F(ServerStreamingMethod,
   ASSERT_EQ(OkStatus(), server_.ProcessPacket(EncodeCancel()));
   EXPECT_FALSE(responder_.active());
 
-  const auto end = PacketForRpc(PacketType::CLIENT_STREAM_END);
+  const auto end = PacketForRpc(PacketType::CLIENT_REQUEST_COMPLETION);
   ASSERT_EQ(OkStatus(), server_.ProcessPacket(end));
 
   ASSERT_EQ(output_.total_packets(), 1u);

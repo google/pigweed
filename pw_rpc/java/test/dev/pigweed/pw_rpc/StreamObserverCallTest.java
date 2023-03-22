@@ -130,7 +130,7 @@ public final class StreamObserverCallTest {
     streamObserverCall.finish();
 
     verify(mockOutput)
-        .send(packetBuilder().setType(PacketType.CLIENT_STREAM_END).build().toByteArray());
+        .send(packetBuilder().setType(PacketType.CLIENT_REQUEST_COMPLETION).build().toByteArray());
   }
 
   @Test

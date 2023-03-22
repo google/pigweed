@@ -28,10 +28,10 @@
 
 #undef PW_RPC_CLIENT_STREAM_END_CALLBACK
 
-/// pw_rpc clients may request call completion by sending `CLIENT_STREAM_END`
-/// packet. For client streaming or bi-direction RPCs, this also indicates that
-/// the client is done sending requests. While this can be useful in some
-/// circumstances, it is often not necessary.
+/// pw_rpc clients may request call completion by sending
+/// `CLIENT_REQUEST_COMPLETION` packet. For client streaming or bi-direction
+/// RPCs, this also indicates that the client is done sending requests. While
+/// this can be useful in some circumstances, it is often not necessary.
 ///
 /// This option controls whether or not include a callback that is called when
 /// the client stream requests for completion. The callback is included in all

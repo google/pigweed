@@ -69,7 +69,7 @@ import dev.pigweed.pw_rpc.internal.Packet.RpcPacket;
 
   public static byte[] clientStreamEnd(PendingRpc rpc) {
     return RpcPacket.newBuilder()
-        .setType(PacketType.CLIENT_STREAM_END)
+        .setType(PacketType.CLIENT_REQUEST_COMPLETION)
         .setChannelId(rpc.channel().id())
         .setServiceId(rpc.service().id())
         .setMethodId(rpc.method().id())

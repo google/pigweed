@@ -92,7 +92,7 @@ Status Server::ProcessPacket(ConstByteSpan packet_data) {
         internal::rpc_lock().unlock();
       }
       break;
-    case PacketType::CLIENT_STREAM_END:
+    case PacketType::CLIENT_REQUEST_COMPLETION:
       HandleCompletionRequest(packet, *channel, call);
       break;
     case PacketType::REQUEST:  // Handled above

@@ -60,7 +60,7 @@ class ClientCall : public Call {
     CloseClientCall();
   }
 
-  // Sends CLIENT_STREAM_END if applicable and marks the call as closed.
+  // Sends CLIENT_REQUEST_COMPLETION if applicable and marks the call as closed.
   void CloseClientCall() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   void MoveClientCallFrom(ClientCall& other)

@@ -79,7 +79,7 @@ Status FakeChannelOutput::HandlePacket(span<const std::byte> buffer) {
                   packet.status().str());
       return OkStatus();
     case pwpb::PacketType::SERVER_STREAM:
-    case pwpb::PacketType::CLIENT_STREAM_END:
+    case pwpb::PacketType::CLIENT_REQUEST_COMPLETION:
       return OkStatus();
   }
   PW_CRASH("Unhandled PacketType %d", static_cast<int>(result.value().type()));

@@ -27,14 +27,16 @@ enum PacketType {
   REQUEST = 0;
 
   // A message in a client stream. Always sent after a REQUEST and before a
-  // CLIENT_STREAM_END.
+  // CLIENT_REQUEST_COMPLETION.
   CLIENT_STREAM = 2;
 
   // The client received a packet for an RPC it did not request.
   CLIENT_ERROR = 4;
 
-  // A client stream has completed.
-  CLIENT_STREAM_END = 8;
+  // Client has requested for call completion. In client streaming and
+  // bi-directional streaming RPCs, this also indicates that the client is done
+  // with sending requests.
+  CLIENT_REQUEST_COMPLETION = 8;
 
   // Server-to-client packets
 

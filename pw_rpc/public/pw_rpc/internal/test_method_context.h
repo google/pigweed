@@ -135,7 +135,7 @@ class InvocationContext {
 
     std::byte packet[kNoPayloadPacketSizeBytes];
     PW_ASSERT(server_
-                  .ProcessPacket(Packet(PacketType::CLIENT_STREAM_END,
+                  .ProcessPacket(Packet(PacketType::CLIENT_REQUEST_COMPLETION,
                                         channel_.id(),
                                         UnwrapServiceId(service_.service_id()),
                                         kMethodId)

@@ -749,7 +749,7 @@ class ClientStreamingTest(_CallbackClientImplTestBase):
 
             stream.finish_and_wait()
             self.assertIs(
-                packet_pb2.PacketType.CLIENT_STREAM_END,
+                packet_pb2.PacketType.CLIENT_REQUEST_COMPLETION,
                 self.last_request().type,
             )
 
@@ -791,7 +791,8 @@ class ClientStreamingTest(_CallbackClientImplTestBase):
         for _ in range(3):
             stream = self._service.SomeClientStreaming.invoke()
 
-            # Error will be sent in response to the CLIENT_STREAM_END packet.
+            # Error will be sent in response to the CLIENT_REQUEST_COMPLETION
+            # packet.
             self._enqueue_error(
                 1, self.method.service, self.method, Status.INVALID_ARGUMENT
             )
@@ -994,7 +995,8 @@ class BidirectionalStreamingTest(_CallbackClientImplTestBase):
         for _ in range(3):
             stream = self._service.SomeBidiStreaming.invoke()
 
-            # Error will be sent in response to the CLIENT_STREAM_END packet.
+            # Error will be sent in response to the CLIENT_REQUEST_COMPLETION
+            # packet.
             self._enqueue_error(
                 1, self.method.service, self.method, Status.INVALID_ARGUMENT
             )

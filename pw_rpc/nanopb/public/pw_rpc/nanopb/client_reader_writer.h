@@ -234,16 +234,17 @@ class NanopbClientReaderWriter
   }
 
   // Notifies the server that the client has requested to stop communication by
-  // sending CLIENT_STREAM_END.
+  // sending CLIENT_REQUEST_COMPLETION.
   using internal::ClientCall::RequestCompletion;
 
   // Cancels this RPC. Closes the call locally and sends a CANCELLED error to
   // the server.
   using internal::Call::Cancel;
 
-  // Closes this RPC locally. Sends a CLIENT_STREAM_END, but no cancellation
-  // packet. Future packets for this RPC are dropped, and the client sends a
-  // FAILED_PRECONDITION error in response because the call is not active.
+  // Closes this RPC locally. Sends a CLIENT_REQUEST_COMPLETION, but no
+  // cancellation packet. Future packets for this RPC are dropped, and the
+  // client sends a FAILED_PRECONDITION error in response because the call is
+  // not active.
   using internal::ClientCall::Abandon;
 
   // Functions for setting RPC event callbacks.

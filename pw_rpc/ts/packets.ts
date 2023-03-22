@@ -60,7 +60,7 @@ export function encodeClientStream(ids: idSet, message: Message): Uint8Array {
 
 export function encodeClientStreamEnd(ids: idSet): Uint8Array {
   const streamEnd = new packetPb.RpcPacket();
-  streamEnd.setType(packetPb.PacketType.CLIENT_STREAM_END);
+  streamEnd.setType(packetPb.PacketType.CLIENT_REQUEST_COMPLETION);
   streamEnd.setChannelId(ids[0]);
   streamEnd.setServiceId(ids[1]);
   streamEnd.setMethodId(ids[2]);

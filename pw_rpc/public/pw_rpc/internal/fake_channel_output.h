@@ -158,8 +158,8 @@ class FakeChannelOutput : public ChannelOutput {
     return internal::test::PacketsView(
                packets_,
                internal::test::PacketFilter(
-                   internal::pwpb::PacketType::CLIENT_STREAM_END,
-                   internal::pwpb::PacketType::CLIENT_STREAM_END,
+                   internal::pwpb::PacketType::CLIENT_REQUEST_COMPLETION,
+                   internal::pwpb::PacketType::CLIENT_REQUEST_COMPLETION,
                    channel_id,
                    MethodInfo<kMethod>::kServiceId,
                    MethodInfo<kMethod>::kMethodId))

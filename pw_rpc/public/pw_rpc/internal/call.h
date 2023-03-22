@@ -197,10 +197,10 @@ class Call : public IntrusiveList<Call>::Item {
   }
 
   // Internal function that closes the client stream (if applicable) and sends
-  // CLIENT_STREAM_END packet to request call completion.
+  // CLIENT_REQUEST_COMPLETION packet to request call completion.
   Status RequestCompletionLocked() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     MarkStreamCompleted();
-    return SendPacket(pwpb::PacketType::CLIENT_STREAM_END, {}, {});
+    return SendPacket(pwpb::PacketType::CLIENT_REQUEST_COMPLETION, {}, {});
   }
 
   // Sends a payload in either a server or client stream packet.

@@ -99,7 +99,7 @@ def encode_client_stream_end(rpc: tuple) -> bytes:
     channel, service, method = _ids(rpc)
 
     return packet_pb2.RpcPacket(
-        type=packet_pb2.PacketType.CLIENT_STREAM_END,
+        type=packet_pb2.PacketType.CLIENT_REQUEST_COMPLETION,
         channel_id=channel,
         service_id=service,
         method_id=method,
