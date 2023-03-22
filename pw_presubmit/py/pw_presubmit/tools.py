@@ -43,7 +43,17 @@ def plural(
     number: bool = True,
     are: bool = False,
 ) -> str:
-    """Returns the singular or plural form of a word based on a count."""
+    """Returns the singular or plural form of a word based on a count.
+
+    Args:
+        items_or_count: Number of items or a collection of items
+        singular: Singular form of the name of the item
+        count_format: .format()-style specification for items_or_count
+        these: Prefix the string with "this" or "these", depending on number
+        number: Include the number in the return string (e.g., "3 things" vs.
+            "things")
+        are: Suffix the string with "is" or "are", depending on number
+    """
 
     try:
         count = len(items_or_count)
