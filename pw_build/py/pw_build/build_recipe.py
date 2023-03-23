@@ -234,6 +234,29 @@ class BuildRecipeStatus:
         lines.append(line)
         self.error_lines[self.error_count] = lines
 
+    def has_empty_ninja_errors(self) -> bool:
+        for error_lines in self.error_lines.values():
+            # NOTE: There will be at least 2 lines for each ninja failure:
+            # - A starting 'FAILED: target' line
+            # - An ending line with this format:
+            #   'ninja: error: ... cannot make progress due to previous errors'
+
+            # If the total error line count is very short, assume it's an empty
+            # ninja error.
+            if len(error_lines) <= 3:
+                # If there is a failure in the regen step, there will be 3 error
+                # lines: The above two and one more with the regen command.
+                return True
+            # Otherwise, if the line starts with FAILED: build.ninja the failure
+            # is likely in the regen step and there will be extra cmake or gn
+            # error text that was not captured.
+            for line in error_lines:
+                if line.startswith(
+                    '\033[31mFAILED: \033[0mbuild.ninja'
+                ) or line.startswith('FAILED: build.ninja'):
+                    return True
+        return False
+
     def increment_error_count(self, count: int = 1) -> None:
         self.error_count += count
         if self.error_count not in self.error_lines:

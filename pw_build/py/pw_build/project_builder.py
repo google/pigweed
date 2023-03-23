@@ -331,7 +331,7 @@ def log_build_recipe_finish(
     if (
         not BUILDER_CONTEXT.build_stopping()
         and cfg.status.failed()
-        and cfg.status.error_count == 0
+        and (cfg.status.error_count == 0 or cfg.status.has_empty_ninja_errors())
     ):
         cfg.status.log_entire_recipe_logfile()
 
