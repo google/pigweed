@@ -61,9 +61,6 @@ if (pw_arduino_build_CORE_PATH != "") {
              _arduino_selected_core_path + " --arduino-package-name " +
              pw_arduino_build_PACKAGE_NAME + " list-boards")
 
-  _compiler_path_override =
-      rebase_path(pw_env_setup_CIPD_PIGWEED + "/bin", root_build_dir)
-
   arduino_core_library_path = "$_arduino_selected_core_path/hardware/" +
                               "$pw_arduino_build_PACKAGE_NAME/libraries"
 
@@ -72,9 +69,19 @@ if (pw_arduino_build_CORE_PATH != "") {
     _arduino_selected_core_path,
     "--arduino-package-name",
     pw_arduino_build_PACKAGE_NAME,
-    "--compiler-path-override",
-    _compiler_path_override,
+  ]
 
+  if (defined(pw_env_setup_CIPD_PIGWEED)) {
+    _compiler_path_override =
+        rebase_path(pw_env_setup_CIPD_PIGWEED + "/bin", root_build_dir)
+
+    arduino_global_args += [
+      "--compiler-path-override",
+      _compiler_path_override,
+    ]
+  }
+
+  arduino_global_args += [
     # Save config files to "out/arduino_debug/gen/arduino_builder_config.json"
     "--config-file",
     rebase_path(root_gen_dir, root_build_dir) + "/arduino_builder_config.json",

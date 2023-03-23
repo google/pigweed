@@ -107,7 +107,7 @@ config("xcode_sysroot") {
 }
 
 config("linux_sysroot") {
-  if (current_os == "linux") {
+  if (current_os == "linux" && defined(pw_env_setup_CIPD_PIGWEED)) {
     cflags = [ "--sysroot=" +
                rebase_path(pw_env_setup_CIPD_PIGWEED, root_build_dir) +
                "/clang_sysroot/" ]
@@ -122,7 +122,7 @@ config("linux_sysroot") {
 #
 # Pull the appropriate paths from our Pigweed env setup.
 config("no_system_libcpp") {
-  if (current_os == "mac") {
+  if (current_os == "mac" && defined(pw_env_setup_CIPD_PIGWEED)) {
     install_dir = pw_env_setup_CIPD_PIGWEED
     assert(install_dir != "",
            "You forgot to activate the Pigweed environment; " +
