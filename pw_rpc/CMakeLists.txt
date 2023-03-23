@@ -253,10 +253,10 @@ pw_add_library(pw_rpc.test_utils INTERFACE
     public/pw_rpc/internal/fake_channel_output.h
     public/pw_rpc/internal/method_impl_tester.h
     public/pw_rpc/internal/method_info_tester.h
-    public/pw_rpc/internal/test_method.h
     public/pw_rpc/internal/test_method_context.h
     public/pw_rpc/internal/test_utils.h
     pw_rpc_private/fake_server_reader_writer.h
+    pw_rpc_private/test_method.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
