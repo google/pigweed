@@ -793,7 +793,7 @@ def commit_message_format(_: PresubmitContext):
     if (
         'Reland' in lines[0]
         and 'This is a reland of ' in git_repo.commit_message()
-        and "Original change's description: " in git_repo.commit_message()
+        and "Original change's description:" in git_repo.commit_message()
     ):
         _LOG.warning('Ignoring apparent Gerrit-generated reland')
         return
