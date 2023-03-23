@@ -249,14 +249,10 @@ register_gcc_arm_none_toolchain()
 # Rust Support
 #
 
-git_repository(
+http_archive(
     name = "rules_rust",
-    # Pulls in the main branch with https://github.com/bazelbuild/rules_rust/pull/1803
-    # merged.  Once a release is cut with that commit, we should switch to
-    # using a release tarbal.
-    commit = "a5853fd37053b65ee30ba4f8064b9db67c90d53f",
-    remote = "https://github.com/bazelbuild/rules_rust",
-    shallow_since = "1675302817 -0800",
+    sha256 = "dc8d79fe9a5beb79d93e482eb807266a0e066e97a7b8c48d43ecf91f32a3a8f3",
+    urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.19.0/rules_rust-v0.19.0.tar.gz"],
 )
 
 load("@rules_rust//rust:repositories.bzl", "rules_rust_dependencies", "rust_analyzer_toolchain_repository", "rust_repository_set")
