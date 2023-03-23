@@ -33,7 +33,7 @@ class Emboss(pw_package.git_repo.GitRepo):
                     "/third_party/github.com/google/emboss",
                 ]
             ),
-            commit="b8e2750975aa241fb81f5723ecc4c50f71e6bd18",
+            commit="b02439aeecb9cc8621c7aea9fc206f65da45c9be",
             **kwargs,
         )
 

@@ -231,7 +231,7 @@ def install(  # pylint: disable=too-many-arguments,too-many-locals
         # TODO(spang): Pass --upgrade-deps and remove pip & setuptools
         # upgrade below. This can only be done once the minimum python
         # version is at least 3.9.
-        cmd = [python, '-m', 'venv', '--upgrade']
+        cmd = [python, '-m', 'venv', '--upgrade', '--symlinks']
         cmd += ['--system-site-packages'] if system_packages else []
         cmd += [venv_path]
         _check_call(cmd, env=envcopy)

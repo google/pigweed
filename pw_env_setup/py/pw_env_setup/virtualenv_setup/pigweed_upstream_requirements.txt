@@ -20,4 +20,4 @@ myst-parser==0.18.1
 breathe==4.34.0
 # Renode requirements
 psutil==5.9.4
-robotframework==5.0.1
+robotframework==6.0.2

@@ -126,4 +126,4 @@ the `--cxxopt flag <https://bazel.build/docs/user-manual#cxxopt>`_.
 
 Python
 ------
-Pigweed officially supports Python 3.8, 3.9, and 3.10.
+Pigweed officially supports Python 3.8, 3.9, 3.10, and 3.11.

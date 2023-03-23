@@ -10,7 +10,7 @@
         "windows-amd64"
       ],
       "tags": [
-        "version:2@3.10.8.chromium.23"
+        "version:2@3.11.2.chromium.25"
       ],
       "version_file": ".versions/cpython3.cipd_version"
     }
