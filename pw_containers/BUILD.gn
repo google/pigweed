@@ -64,6 +64,12 @@ pw_source_set("inline_deque") {
   public = [ "public/pw_containers/inline_deque.h" ]
 }
 
+pw_source_set("inline_queue") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ ":inline_deque" ]
+  public = [ "public/pw_containers/inline_queue.h" ]
+}
+
 pw_source_set("iterator") {
   public_configs = [ ":public_include_path" ]
   public_deps = [ dir_pw_polyfill ]
@@ -111,6 +117,7 @@ pw_test_group("tests") {
     ":filtered_view_test",
     ":flat_map_test",
     ":inline_deque_test",
+    ":inline_queue_test",
     ":intrusive_list_test",
     ":raw_storage_test",
     ":to_array_test",
@@ -148,6 +155,15 @@ pw_test("inline_deque_test") {
   deps = [
     ":algorithm",
     ":inline_deque",
+  ]
+  negative_compilation_tests = true
+}
+
+pw_test("inline_queue_test") {
+  sources = [ "inline_queue_test.cc" ]
+  deps = [
+    ":algorithm",
+    ":inline_queue",
   ]
   negative_compilation_tests = true
 }

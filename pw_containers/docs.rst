@@ -22,6 +22,10 @@ pw::InlineDeque
 ===============
 .. doxygentypedef:: pw::InlineDeque
 
+pw::InlineQueue
+===============
+.. doxygentypedef:: pw::InlineQueue
+
 pw::IntrusiveList
 =================
 IntrusiveList provides an embedded-friendly singly-linked intrusive list

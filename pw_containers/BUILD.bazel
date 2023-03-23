@@ -77,6 +77,17 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "inline_queue",
+    hdrs = [
+        "public/pw_containers/inline_queue.h",
+    ],
+    includes = ["public"],
+    deps = [
+        ":inline_deque",
+    ],
+)
+
+pw_cc_library(
     name = "vector",
     hdrs = [
         "public/pw_containers/vector.h",
@@ -175,6 +186,19 @@ pw_cc_test(
     deps = [
         ":algorithm",
         ":inline_deque",
+        "//pw_compilation_testing:negative_compilation_testing",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "inline_queue_test",
+    srcs = [
+        "inline_queue_test.cc",
+    ],
+    deps = [
+        ":algorithm",
+        ":inline_queue",
         "//pw_compilation_testing:negative_compilation_testing",
         "//pw_unit_test",
     ],

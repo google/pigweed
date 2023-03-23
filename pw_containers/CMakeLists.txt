@@ -61,6 +61,15 @@ pw_add_library(pw_containers.inline_deque INTERFACE
     pw_span
 )
 
+pw_add_library(pw_containers.inline_queue INTERFACE
+  HEADERS
+    public/pw_containers/inline_queue.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_containers.inline_deque
+)
+
 pw_add_library(pw_containers.iterator INTERFACE
   HEADERS
     public/pw_containers/iterator.h
@@ -153,6 +162,18 @@ pw_add_test(pw_containers.inline_deque_test
     pw_compilation_testing._pigweed_only_negative_compilation
     pw_containers.algorithm
     pw_containers.inline_deque
+  GROUPS
+    modules
+    pw_containers
+)
+
+pw_add_test(pw_containers.inline_queue_test
+  SOURCES
+    inline_queue_test.cc
+  PRIVATE_DEPS
+    pw_compilation_testing._pigweed_only_negative_compilation
+    pw_containers.algorithm
+    pw_containers.inline_queue
   GROUPS
     modules
     pw_containers
