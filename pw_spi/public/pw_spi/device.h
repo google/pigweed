@@ -32,7 +32,7 @@ namespace pw::spi {
 // through the use of the `Borrowable` object.
 class Device {
  public:
-  Device(sync::Borrowable<Initiator>& initiator,
+  Device(sync::Borrowable<Initiator> initiator,
          const Config config,
          ChipSelector& selector)
       : initiator_(initiator), config_(config), selector_(selector) {}
@@ -200,7 +200,7 @@ class Device {
   }
 
  private:
-  sync::Borrowable<Initiator>& initiator_;
+  sync::Borrowable<Initiator> initiator_;
   const Config config_;
   ChipSelector& selector_;
 };

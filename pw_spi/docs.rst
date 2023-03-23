@@ -37,10 +37,11 @@ Example - Constructing a SPI Device:
    };
 
    auto initiator = pw::spi::MyInitator();
+   auto mutex = pw::sync::VirtualMutex();
    auto selector = pw::spi::MyChipSelector();
-   auto borrowable_initiator = pw::sync::Borrowable<Initiator&>(initiator);
 
-   auto device = pw::spi::Device(borrowable_initiator, kConfig, selector);
+   auto device = pw::spi::Device(
+      pw::sync::Borrowable<Initiator>(initiator, mutex), kConfig, selector);
 
 This example demonstrates the construction of a ``pw::spi::Device`` from its
 object dependencies and configuration data; where ``MyDevice`` and
