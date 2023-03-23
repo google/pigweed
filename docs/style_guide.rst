@@ -1134,14 +1134,12 @@ Consider using ``.. list-table::`` syntax, which is more maintainable and
 easier to edit for complex tables (`details
 <https://docutils.sourceforge.io/docs/ref/rst/directives.html#list-table>`_).
 
-Code Blocks
-===========
+Code Snippets
+=============
 Use code blocks from actual source code files wherever possible. This helps keep
 documentation fresh and removes duplicate code examples. There are a few ways to
 do this with Sphinx.
 
-Snippets
---------
 The `literalinclude`_ directive creates a code blocks from source files. Entire
 files can be included or a just a subsection. The best way to do this is with
 the ``:start-after:`` and ``:end-before:`` options.
@@ -1184,6 +1182,12 @@ Example:
       env['PW_DOXYGEN_OUTPUT_DIRECTORY'] = str(output_dir.resolve())
       env['PW_DOXYGEN_INPUT'] = ' '.join(pw_module_list)
       env['PW_DOXYGEN_PROJECT_NAME'] = 'Pigweed'
+
+Generating API documentation from source
+========================================
+Whenever possible, document APIs in the source code and use Sphinx to generate
+documentation for them. This keeps the documentation in sync with the code and
+reduces duplication.
 
 Python
 ------
@@ -1236,19 +1240,51 @@ Doxygen comments into Sphinx. These include the following:
 
 - `doxygenfile
   <https://breathe.readthedocs.io/en/latest/directives.html#doxygenfile>`_ --
-  Documents everything in a source file.
+  Documents a source file. May limit to specific types of symbols with
+  ``:sections:``.
+
+  .. code-block:: rst
+
+     .. doxygenfile:: pw_rpc/internal/config.h
+        :sections: define, func
+
 - `doxygenclass
   <https://breathe.readthedocs.io/en/latest/directives.html#doxygenclass>`_ --
-  Documents a class and its members.
+  Documents a class and optionally its members.
 
   .. code-block:: rst
 
      .. doxygenclass:: pw::sync::BinarySemaphore
         :members:
 
+- `doxygentypedef
+  <https://breathe.readthedocs.io/en/latest/directives.html#doxygentypedef>`_ --
+  Documents an alias (``typedef`` or ``using`` statement).
+
+  .. code-block:: rst
+
+     .. doxygentypedef:: pw::Function
+
+- `doxygenfunction
+  <https://breathe.readthedocs.io/en/latest/directives.html#doxygenfunction>`_ --
+  Documents a source file. Can be filtered to limit to specific types of
+  symbols.
+
+  .. code-block:: rst
+
+     .. doxygenfunction:: pw::tokenizer::EncodeArgs
+
+- `doxygendefine
+  <https://breathe.readthedocs.io/en/latest/directives.html#doxygendefine>`_ --
+  Documents a preprocessor macro.
+
+  .. code-block:: rst
+
+     .. doxygendefine:: PW_TOKENIZE_STRING
+
 .. admonition:: See also
 
-  `Breathe directives to use in RST files <https://breathe.readthedocs.io/en/latest/directives.html>`_
+  `All Breathe directives for use in RST files <https://breathe.readthedocs.io/en/latest/directives.html>`_
 
 Example Doxygen Comment Block
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
