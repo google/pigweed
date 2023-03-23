@@ -138,7 +138,7 @@ class BasicInlineDeque
   // The data() function is defined differently for the generic-sized and
   // known-sized specializations. This data() implementation simply returns the
   // RawStorage's data(). The generic-sized data() function casts *this to a
-  // known zero-sized specialization access this exact function.
+  // known zero-sized specialization to access this exact function.
   pointer data() { return raw_storage_.data(); }
   const_pointer data() const { return raw_storage_.data(); }
 
@@ -217,11 +217,23 @@ class BasicInlineDeque<ValueType, SizeType, containers::internal::kGenericSized>
     return data()[AbsoluteIndex(index)];
   }
 
-  reference front() { return data()[head_]; }
-  const_reference front() const { return data()[head_]; }
+  reference front() {
+    PW_DASSERT(!empty());
+    return data()[head_];
+  }
+  const_reference front() const {
+    PW_DASSERT(!empty());
+    return data()[head_];
+  }
 
-  reference back() { return data()[tail_]; }
-  const_reference back() const { return data()[tail_]; }
+  reference back() {
+    PW_DASSERT(!empty());
+    return data()[AbsoluteIndex(count_ - 1)];
+  }
+  const_reference back() const {
+    PW_DASSERT(!empty());
+    return data()[AbsoluteIndex(count_ - 1)];
+  }
 
   // Provides access to the valid data in a contiguous form.
   std::pair<span<const value_type>, span<const value_type>> contiguous_data()

@@ -331,16 +331,20 @@ TEST(InlineDeque, Modify_WrapForwards) {
 
     ASSERT_EQ(deque.size(), 3u);
     EXPECT_EQ(deque[0].value, 1);
+    EXPECT_EQ(deque.front().value, 1);
     EXPECT_EQ(deque[1].value, 2);
     EXPECT_EQ(deque[2].value, 3);
+    EXPECT_EQ(deque.back().value, 3);
 
     deque.pop_front();
     deque.emplace_back(4);
 
     ASSERT_EQ(deque.size(), 3u);
     EXPECT_EQ(deque[0].value, 2);
+    EXPECT_EQ(deque.front().value, 2);
     EXPECT_EQ(deque[1].value, 3);
     EXPECT_EQ(deque[2].value, 4);
+    EXPECT_EQ(deque.back().value, 4);
   }
 
   EXPECT_EQ(Counter::created, 4);
@@ -358,16 +362,20 @@ TEST(InlineDeque, Modify_WrapBackwards) {
 
     ASSERT_EQ(deque.size(), 3u);
     EXPECT_EQ(deque[0].value, 3);
+    EXPECT_EQ(deque.front().value, 3);
     EXPECT_EQ(deque[1].value, 2);
     EXPECT_EQ(deque[2].value, 1);
+    EXPECT_EQ(deque.back().value, 1);
 
     deque.pop_back();
     deque.emplace_front(4);
 
     ASSERT_EQ(deque.size(), 3u);
     EXPECT_EQ(deque[0].value, 4);
+    EXPECT_EQ(deque.front().value, 4);
     EXPECT_EQ(deque[1].value, 3);
     EXPECT_EQ(deque[2].value, 2);
+    EXPECT_EQ(deque.back().value, 2);
   }
 
   EXPECT_EQ(Counter::created, 4);
