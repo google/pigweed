@@ -82,6 +82,12 @@ pw_source_set("raw_storage") {
   visibility = [ ":*" ]
 }
 
+pw_source_set("test_helpers") {
+  public = [ "pw_containers_private/test_helpers.h" ]
+  sources = [ "test_helpers.cc" ]
+  visibility = [ ":*" ]
+}
+
 pw_source_set("to_array") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_containers/to_array.h" ]
@@ -155,6 +161,7 @@ pw_test("inline_deque_test") {
   deps = [
     ":algorithm",
     ":inline_deque",
+    ":test_helpers",
   ]
   negative_compilation_tests = true
 }
@@ -164,13 +171,17 @@ pw_test("inline_queue_test") {
   deps = [
     ":algorithm",
     ":inline_queue",
+    ":test_helpers",
   ]
   negative_compilation_tests = true
 }
 
 pw_test("raw_storage_test") {
   sources = [ "raw_storage_test.cc" ]
-  deps = [ ":raw_storage" ]
+  deps = [
+    ":raw_storage",
+    ":test_helpers",
+  ]
 }
 
 pw_test("to_array_test") {
@@ -180,7 +191,10 @@ pw_test("to_array_test") {
 
 pw_test("vector_test") {
   sources = [ "vector_test.cc" ]
-  deps = [ ":vector" ]
+  deps = [
+    ":test_helpers",
+    ":vector",
+  ]
 }
 
 pw_test("wrapped_iterator_test") {

@@ -84,6 +84,13 @@ pw_add_library(pw_containers._raw_storage INTERFACE
     public
 )
 
+pw_add_library(pw_containers._test_helpers STATIC
+  HEADERS
+    pw_containers_private/test_helpers.h
+  SOURCES
+    test_helpers.cc
+)
+
 pw_add_library(pw_containers.to_array INTERFACE
   HEADERS
     public/pw_containers/to_array.h
@@ -162,6 +169,7 @@ pw_add_test(pw_containers.inline_deque_test
     pw_compilation_testing._pigweed_only_negative_compilation
     pw_containers.algorithm
     pw_containers.inline_deque
+    pw_containers._test_helpers
   GROUPS
     modules
     pw_containers
@@ -174,6 +182,7 @@ pw_add_test(pw_containers.inline_queue_test
     pw_compilation_testing._pigweed_only_negative_compilation
     pw_containers.algorithm
     pw_containers.inline_queue
+    pw_containers._test_helpers
   GROUPS
     modules
     pw_containers
@@ -184,6 +193,7 @@ pw_add_test(pw_containers.raw_storage_test
     raw_storage_test.cc
   PRIVATE_DEPS
     pw_containers._raw_storage
+    pw_containers._test_helpers
   GROUPS
     modules
     pw_containers
@@ -203,6 +213,7 @@ pw_add_test(pw_containers.vector_test
   SOURCES
     vector_test.cc
   PRIVATE_DEPS
+    pw_containers._test_helpers
     pw_containers.vector
   GROUPS
     modules

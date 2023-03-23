@@ -18,9 +18,14 @@
 #include <cstddef>
 
 #include "gtest/gtest.h"
+#include "pw_containers_private/test_helpers.h"
 
 namespace pw::containers {
 namespace {
+
+using test::CopyOnly;
+using test::Counter;
+using test::MoveOnly;
 
 TEST(RawStorage, Construct_ZeroSized) {
   internal::RawStorage<int, 0> array;
@@ -36,85 +41,16 @@ TEST(RawStorage, Construct_Constexpr) {
   constexpr internal::RawStorage<int, 2> kArray;
   EXPECT_EQ(kArray.max_size(), 2u);
 }
-struct CopyOnly {
-  explicit CopyOnly(int val) : value(val) {}
-
-  CopyOnly(const CopyOnly& other) { value = other.value; }
-
-  CopyOnly& operator=(const CopyOnly& other) {
-    value = other.value;
-    return *this;
-  }
-
-  CopyOnly(CopyOnly&&) = delete;
-
-  int value;
-};
 
 TEST(RawStorage, Construct_CopyOnly) {
   internal::RawStorage<CopyOnly, 2> array;
   EXPECT_EQ(array.max_size(), 2u);
 }
 
-struct MoveOnly {
-  explicit MoveOnly(int val) : value(val) {}
-
-  MoveOnly(const MoveOnly&) = delete;
-
-  MoveOnly(MoveOnly&& other) {
-    value = other.value;
-    other.value = kDeleted;
-  }
-
-  static constexpr int kDeleted = -1138;
-
-  int value;
-};
-
 TEST(RawStorage, Construct_MoveOnly) {
   internal::RawStorage<MoveOnly, 2> array;
   EXPECT_EQ(array.max_size(), 2u);
 }
-
-struct Counter {
-  static int created;
-  static int destroyed;
-  static int moved;
-
-  static void Reset() { created = destroyed = moved = 0; }
-
-  Counter() : value(0) { created += 1; }
-
-  Counter(int val) : value(val) { created += 1; }
-
-  Counter(const Counter& other) : value(other.value) { created += 1; }
-
-  Counter(Counter&& other) : value(other.value) {
-    other.value = 0;
-    moved += 1;
-  }
-
-  Counter& operator=(const Counter& other) {
-    value = other.value;
-    created += 1;
-    return *this;
-  }
-
-  Counter& operator=(Counter&& other) {
-    value = other.value;
-    other.value = 0;
-    moved += 1;
-    return *this;
-  }
-
-  ~Counter() { destroyed += 1; }
-
-  int value;
-};
-
-int Counter::created = 0;
-int Counter::destroyed = 0;
-int Counter::moved = 0;
 
 TEST(RawStorage, Destruct) {
   Counter::Reset();

@@ -125,6 +125,13 @@ pw_cc_library(
 )
 
 pw_cc_library(
+    name = "test_helpers",
+    srcs = ["test_helpers.cc"],
+    hdrs = ["pw_containers_private/test_helpers.h"],
+    visibility = [":__subpackages__"],
+)
+
+pw_cc_library(
     name = "to_array",
     hdrs = ["public/pw_containers/to_array.h"],
     includes = ["public"],
@@ -174,6 +181,7 @@ pw_cc_test(
     ],
     deps = [
         ":pw_containers",
+        ":test_helpers",
         "//pw_unit_test",
     ],
 )
@@ -186,6 +194,7 @@ pw_cc_test(
     deps = [
         ":algorithm",
         ":inline_deque",
+        ":test_helpers",
         "//pw_compilation_testing:negative_compilation_testing",
         "//pw_unit_test",
     ],
@@ -199,6 +208,7 @@ pw_cc_test(
     deps = [
         ":algorithm",
         ":inline_queue",
+        ":test_helpers",
         "//pw_compilation_testing:negative_compilation_testing",
         "//pw_unit_test",
     ],
@@ -211,6 +221,7 @@ pw_cc_test(
     ],
     deps = [
         ":raw_storage",
+        ":test_helpers",
         "//pw_unit_test",
     ],
 )

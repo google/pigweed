@@ -17,86 +17,20 @@
 #include <cstddef>
 
 #include "gtest/gtest.h"
+#include "pw_containers_private/test_helpers.h"
 
 namespace pw {
 namespace {
 
 using namespace std::literals::string_view_literals;
+using containers::test::CopyOnly;
+using containers::test::Counter;
+using containers::test::MoveOnly;
 
 // Since pw::Vector<T, N> downcasts to a pw::Vector<T, 0>, ensure that the
 // alignment doesn't change.
 static_assert(alignof(Vector<std::max_align_t, 0>) ==
               alignof(Vector<std::max_align_t, 1>));
-
-struct CopyOnly {
-  explicit CopyOnly(int val) : value(val) {}
-
-  CopyOnly(const CopyOnly& other) { value = other.value; }
-
-  CopyOnly& operator=(const CopyOnly& other) {
-    value = other.value;
-    return *this;
-  }
-
-  CopyOnly(CopyOnly&&) = delete;
-
-  int value;
-};
-
-struct MoveOnly {
-  explicit MoveOnly(int val) : value(val) {}
-
-  MoveOnly(const MoveOnly&) = delete;
-
-  MoveOnly(MoveOnly&& other) {
-    value = other.value;
-    other.value = kDeleted;
-  }
-
-  static constexpr int kDeleted = -1138;
-
-  int value;
-};
-
-struct Counter {
-  static int created;
-  static int destroyed;
-  static int moved;
-
-  static void Reset() { created = destroyed = moved = 0; }
-
-  Counter() : value(0) { created += 1; }
-
-  Counter(int val) : value(val) { created += 1; }
-
-  Counter(const Counter& other) : value(other.value) { created += 1; }
-
-  Counter(Counter&& other) : value(other.value) {
-    other.value = 0;
-    moved += 1;
-  }
-
-  Counter& operator=(const Counter& other) {
-    value = other.value;
-    created += 1;
-    return *this;
-  }
-
-  Counter& operator=(Counter&& other) {
-    value = other.value;
-    other.value = 0;
-    moved += 1;
-    return *this;
-  }
-
-  ~Counter() { destroyed += 1; }
-
-  int value;
-};
-
-int Counter::created = 0;
-int Counter::destroyed = 0;
-int Counter::moved = 0;
 
 TEST(Vector, Construct_NoArg) {
   Vector<int, 3> vector;
