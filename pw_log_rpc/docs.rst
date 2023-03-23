@@ -103,11 +103,17 @@ out if logs were dropped during transmission.
 RPC log service
 ---------------
 The ``LogService`` class is an RPC service that provides a way to request a log
-stream sent via RPC and configure log filters. Thus, it helps avoid using a
-different protocol for logs and RPCs over the same interface(s).
+stream sent via RPC and configure log filters. Thus, it helps avoid
+using a different protocol for logs and RPCs over the same interface(s).
 It requires a ``RpcLogDrainMap`` to assign stream writers and delegate the
 log stream flushing to the user's preferred method, as well as a ``FilterMap``
-to retrieve and modify filters.
+to retrieve and modify filters. The client may also stop streaming the logs by
+calling ``Cancel()`` or ``RequestCompletion()`` using the ``RawClientReader``
+interface. Note that ``Cancel()`` may lead to dropped logs. To prevent dropped
+logs use ``RequestCompletion()`` and enable :c:macro:`PW_RPC_REQUEST_COMPLETION_CALLBACK`
+e.g. ``-DPW_RPC_REQUEST_COMPLETION_CALLBACK=1``.
+If ``PW_RPC_REQUEST_COMPLETION_CALLBACK`` is not enabled, RequestCompletion()
+call will not stop the logging stream.
 
 RpcLogDrain
 -----------
