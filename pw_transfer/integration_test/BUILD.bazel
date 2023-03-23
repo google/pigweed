@@ -52,9 +52,11 @@ py_test(
         "proxy.py",
         "proxy_test.py",
     ],
+    imports = ["."],
     main = "proxy_test.py",
     deps = [
         ":config_pb2",
+        "//pw_hdlc/py:pw_hdlc",
         "//pw_rpc:internal_packet_proto_pb2",
         "//pw_transfer:transfer_proto_pb2",
         "//pw_transfer/py:pw_transfer",
@@ -110,6 +112,7 @@ py_library(
         ":python_client",
         ":server",
     ],
+    imports = ["."],
     deps = [
         ":config_pb2",
         "//pw_protobuf:status_proto_pb2",
@@ -161,6 +164,7 @@ py_test(
         ":config_pb2",
         ":integration_test_fixture",
         "@com_google_protobuf//:protobuf_python",
+        "@python_packages_parameterized//:pkg",
     ],
 )
 
@@ -175,6 +179,7 @@ py_test(
         ":config_pb2",
         ":integration_test_fixture",
         "@com_google_protobuf//:protobuf_python",
+        "@python_packages_parameterized//:pkg",
     ],
 )
 
@@ -188,6 +193,7 @@ py_test(
     deps = [
         ":config_pb2",
         ":integration_test_fixture",
+        "@python_packages_parameterized//:pkg",
     ],
 )
 
@@ -201,6 +207,7 @@ py_test(
     deps = [
         ":config_pb2",
         ":integration_test_fixture",
+        "@python_packages_parameterized//:pkg",
     ],
 )
 
@@ -214,6 +221,7 @@ py_test(
         ":integration_test_fixture",
         "//pw_protobuf:status_proto_pb2",
         "@com_google_protobuf//:protobuf_python",
+        "@python_packages_parameterized//:pkg",
     ],
 )
 
@@ -229,6 +237,7 @@ py_test(
         ":config_pb2",
         ":integration_test_fixture",
         "//pw_protobuf:status_proto_pb2",
+        "@python_packages_parameterized//:pkg",
         "@rules_python//python/runfiles",
     ],
 )

@@ -421,21 +421,6 @@ proto_plugin(
 )
 
 proto_plugin(
-    name = "nanopb_plugin",
-    options = [
-        "--library-include-format='#include\"%s\"'",
-    ],
-    outputs = [
-        "{protopath}.pb.h",
-        "{protopath}.pb.c",
-    ],
-    separate_options_flag = True,
-    tool = "@com_github_nanopb_nanopb//:bazel_generator",
-    use_built_in_shell_environment = True,
-    visibility = ["//visibility:public"],
-)
-
-proto_plugin(
     name = "pw_cc_plugin_pwpb_rpc",
     outputs = [
         "{protopath}.rpc.pwpb.h",

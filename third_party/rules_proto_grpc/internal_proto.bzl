@@ -182,11 +182,11 @@ def _proto_compiler_rule(plugin_group, aspect):
     )
 
 nanopb_compile_aspect = _proto_compiler_aspect(
-    [Label("//pw_rpc:nanopb_plugin")],
+    [Label("@com_github_nanopb_nanopb//:nanopb_plugin")],
     "nanopb_proto_compile_aspect",
 )
 nanopb_compile = _proto_compiler_rule(
-    [Label("//pw_rpc:nanopb_plugin")],
+    [Label("@com_github_nanopb_nanopb//:nanopb_plugin")],
     nanopb_compile_aspect,
 )
 
@@ -226,14 +226,14 @@ raw_rpc_compile = _proto_compiler_rule(
 nanopb_rpc_compile_aspect = _proto_compiler_aspect(
     [
         Label("@pigweed//pw_rpc:pw_cc_plugin_nanopb_rpc"),
-        Label("//pw_rpc:nanopb_plugin"),
+        Label("@com_github_nanopb_nanopb//:nanopb_plugin"),
     ],
     "nanopb_rpc_proto_compile_aspect",
 )
 nanopb_rpc_compile = _proto_compiler_rule(
     [
         Label("@pigweed//pw_rpc:pw_cc_plugin_nanopb_rpc"),
-        Label("//pw_rpc:nanopb_plugin"),
+        Label("@com_github_nanopb_nanopb//:nanopb_plugin"),
     ],
     nanopb_rpc_compile_aspect,
 )

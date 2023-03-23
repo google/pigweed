@@ -59,10 +59,35 @@ cipd_repository(
 # Used in modules: None.
 http_archive(
     name = "rules_python",
-    sha256 = "a30abdfc7126d497a7698c29c46ea9901c6392d6ed315171a6df5ce433aa4502",
-    strip_prefix = "rules_python-0.6.0",
-    url = "https://github.com/bazelbuild/rules_python/archive/0.6.0.tar.gz",
+    sha256 = "9fcf91dbcc31fde6d1edb15f117246d912c33c36f44cf681976bd886538deba6",
+    strip_prefix = "rules_python-0.8.0",
+    url = "https://github.com/bazelbuild/rules_python/archive/refs/tags/0.8.0.tar.gz",
 )
+
+load("@rules_python//python:repositories.bzl", "python_register_toolchains")
+
+# Use Python 3.10 for bazel Python rules.
+python_register_toolchains(
+    name = "python3_10",
+    python_version = "3.10",
+)
+
+load("@python3_10//:defs.bzl", "interpreter")
+load("@rules_python//python:pip.bzl", "pip_parse")
+
+# Specify third party Python package versions with pip_parse.
+# pip_parse will generate and expose a repository for each package in the
+# requirements_lock file named @python_packages_{PACKAGE}.
+pip_parse(
+    name = "python_packages",
+    python_interpreter_target = interpreter,
+    requirements_lock = "//pw_env_setup/py/pw_env_setup/virtualenv_setup:constraint.list",
+)
+
+load("@python_packages//:requirements.bzl", "install_deps")
+
+# Run pip install for all @python_packages_*//:pkg deps.
+install_deps()
 
 # Set up Starlark library.
 # Required by: io_bazel_rules_go, com_google_protobuf.
@@ -163,20 +188,20 @@ protobuf_deps()
 # Used in modules: pw_protobuf.
 git_repository(
     name = "com_github_nanopb_nanopb",
-    commit = "e601fca6d9ed7fb5c09e2732452753b2989f128b",
+    commit = "ee27d70d329e1718f39eea1f425178e747263173",
     remote = "https://github.com/nanopb/nanopb.git",
     shallow_since = "1641373017 +0800",
 )
 
-load("@com_github_nanopb_nanopb//:nanopb_deps.bzl", "nanopb_deps")
+load("@com_github_nanopb_nanopb//extra/bazel:nanopb_deps.bzl", "nanopb_deps")
 
 nanopb_deps()
 
-load("@com_github_nanopb_nanopb//:python_deps.bzl", "nanopb_python_deps")
+load("@com_github_nanopb_nanopb//extra/bazel:python_deps.bzl", "nanopb_python_deps")
 
-nanopb_python_deps()
+nanopb_python_deps(interpreter)
 
-load("@com_github_nanopb_nanopb//:nanopb_workspace.bzl", "nanopb_workspace")
+load("@com_github_nanopb_nanopb//extra/bazel:nanopb_workspace.bzl", "nanopb_workspace")
 
 nanopb_workspace()
 

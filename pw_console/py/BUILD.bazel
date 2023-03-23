@@ -100,6 +100,12 @@ py_library(
         ":pyserial_wrapper",
         "//pw_cli/py:pw_cli",
         "//pw_log_tokenized/py:pw_log_tokenized",
+        "@python_packages_jinja2//:pkg",
+        "@python_packages_prompt_toolkit//:pkg",
+        "@python_packages_ptpython//:pkg",
+        "@python_packages_pyperclip//:pkg",
+        "@python_packages_pyyaml//:pkg",
+        "@python_packages_websockets//:pkg",
     ],
 )
 
@@ -166,6 +172,7 @@ py_test(
     ],
     deps = [
         ":pw_console",
+        "@python_packages_parameterized//:pkg",
     ],
 )
 
@@ -188,6 +195,7 @@ py_test(
     ],
     deps = [
         ":pw_console",
+        "@python_packages_parameterized//:pkg",
     ],
 )
 
@@ -210,6 +218,7 @@ py_test(
     ],
     deps = [
         ":pw_console",
+        "@python_packages_parameterized//:pkg",
     ],
 )
 
@@ -221,6 +230,7 @@ py_test(
     ],
     deps = [
         ":pw_console",
+        "@python_packages_parameterized//:pkg",
     ],
 )
 

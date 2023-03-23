@@ -30,6 +30,7 @@ py_library(
         "pw_tokenizer/serial_detokenizer.py",
         "pw_tokenizer/tokens.py",
     ],
+    imports = ["."],
     deps = [
         "//pw_cli/py:pw_cli",
     ],

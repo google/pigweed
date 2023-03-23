@@ -34,7 +34,12 @@ filegroup(
 py_library(
     name = "plugin_library",
     srcs = [":pw_protobuf_common_sources"],
-    imports = ["."],
+    imports = [
+        # For importing pw_protobuf
+        ".",
+        # For importing pw_protobuf_codegen_protos and pw_protobuf_protos
+        "..",
+    ],
     deps = [
         "//pw_protobuf:codegen_protos_pb2",
         "//pw_protobuf:field_options_proto_pb2",

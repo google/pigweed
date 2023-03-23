@@ -23,7 +23,12 @@ py_library(
         "pw_cpu_exception_cortex_m/cortex_m_constants.py",
         "pw_cpu_exception_cortex_m/exception_analyzer.py",
     ],
-    imports = ["."],
+    imports = [
+        # For importing pw_cpu_exception_cortex_m
+        ".",
+        # For importing pw_cpu_exception_cortex_m_protos
+        "..",
+    ],
     deps = [
         "//pw_cpu_exception_cortex_m:cpu_state_protos_pb2",
         "//pw_symbolizer/py:pw_symbolizer",

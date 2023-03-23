@@ -343,7 +343,7 @@ class TransferIntegrationTestHarness:
 
 class BasicTransfer(NamedTuple):
     id: int
-    type: config_pb2.TransferAction.TransferType.ValueType
+    type: 'config_pb2.TransferAction.TransferType.ValueType'
     data: bytes
 
 
