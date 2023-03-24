@@ -15,7 +15,7 @@
 
 import collections
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import time
 from typing import Optional
 
@@ -57,11 +57,11 @@ class EventCountHistory:
     interval: float = 1.0  # Number of seconds per sum of events.
     history_limit: int = 20
     scale_characters = ' ▁▂▃▄▅▆▇█'
-    history: collections.deque = collections.deque()
+    history: collections.deque = field(default_factory=collections.deque)
     show_sparkline: bool = False
     _this_count: int = 0
     _last_count: int = 0
-    _last_update_time: float = time.time()
+    _last_update_time: float = field(default_factory=time.time)
 
     def log(self, count: int) -> None:
         self._this_count += count
