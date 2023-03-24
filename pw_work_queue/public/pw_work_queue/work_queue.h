@@ -17,6 +17,7 @@
 #include <array>
 #include <cstdint>
 
+#include "pw_containers/inline_queue.h"
 #include "pw_function/function.h"
 #include "pw_metric/metric.h"
 #include "pw_span/span.h"
@@ -25,7 +26,6 @@
 #include "pw_sync/lock_annotations.h"
 #include "pw_sync/thread_notification.h"
 #include "pw_thread/thread_core.h"
-#include "pw_work_queue/internal/circular_buffer.h"
 
 namespace pw::work_queue {
 
@@ -38,8 +38,10 @@ using WorkItem = Function<void()>;
 class WorkQueue : public thread::ThreadCore {
  public:
   // Note: the ThreadNotification prevents this from being constexpr.
-  explicit WorkQueue(span<WorkItem> queue_storage)
-      : stop_requested_(false), circular_buffer_(queue_storage) {}
+  WorkQueue(InlineQueue<WorkItem>& queue, size_t queue_capacity)
+      : stop_requested_(false), queue_(queue) {
+    min_queue_remaining_.Set(static_cast<uint32_t>(queue_capacity));
+  }
 
   // Enqueues a work_item for execution by the work queue thread.
   //
@@ -78,7 +80,7 @@ class WorkQueue : public thread::ThreadCore {
 
   sync::InterruptSpinLock lock_;
   bool stop_requested_ PW_GUARDED_BY(lock_);
-  internal::CircularBuffer<WorkItem> circular_buffer_ PW_GUARDED_BY(lock_);
+  InlineQueue<WorkItem>& queue_ PW_GUARDED_BY(lock_);
   sync::ThreadNotification work_notification_;
 
   // TODO(ewout): The group and/or its name token should be passed as a ctor
@@ -90,19 +92,16 @@ class WorkQueue : public thread::ThreadCore {
   // metrics work as intended.
   PW_METRIC_GROUP(metrics_, "pw::work_queue::WorkQueue");
   PW_METRIC(metrics_, max_queue_used_, "max_queue_used", 0u);
-  PW_METRIC(metrics_,
-            min_queue_remaining_,
-            "min_queue_remaining",
-            static_cast<uint32_t>(circular_buffer_.capacity()));
+  PW_METRIC(metrics_, min_queue_remaining_, "min_queue_remaining", 0u);
 };
 
 template <size_t kWorkQueueEntries>
 class WorkQueueWithBuffer : public WorkQueue {
  public:
-  constexpr WorkQueueWithBuffer() : WorkQueue(queue_storage_) {}
+  constexpr WorkQueueWithBuffer() : WorkQueue(queue_, kWorkQueueEntries) {}
 
  private:
-  std::array<WorkItem, kWorkQueueEntries> queue_storage_;
+  InlineQueue<WorkItem, kWorkQueueEntries> queue_;
 };
 
 }  // namespace pw::work_queue

@@ -37,8 +37,11 @@ void WorkQueue::Run() {
       std::optional<WorkItem> possible_work_item;
       {
         std::lock_guard lock(lock_);
-        possible_work_item = circular_buffer_.Pop();
-        work_remaining = !circular_buffer_.empty();
+        if (!queue_.empty()) {
+          possible_work_item.emplace(std::move(queue_.front()));
+          queue_.pop();
+        }
+        work_remaining = !queue_.empty();
         stop_requested = stop_requested_;
       }
       if (!possible_work_item.has_value()) {
@@ -69,18 +72,18 @@ Status WorkQueue::InternalPushWork(WorkItem&& work_item) {
     return Status::FailedPrecondition();
   }
 
-  if (circular_buffer_.full()) {
+  if (queue_.full()) {
     return Status::ResourceExhausted();
   }
 
-  circular_buffer_.Push(std::move(work_item));
+  queue_.emplace(std::move(work_item));
 
   // Update the watermarks for the queue.
-  const uint32_t queue_entries = circular_buffer_.size();
+  const uint32_t queue_entries = queue_.size();
   if (queue_entries > max_queue_used_.value()) {
     max_queue_used_.Set(queue_entries);
   }
-  const uint32_t queue_remaining = circular_buffer_.capacity() - queue_entries;
+  const uint32_t queue_remaining = queue_.capacity() - queue_entries;
   if (queue_remaining < min_queue_remaining_.value()) {
     min_queue_remaining_.Set(queue_entries);
   }

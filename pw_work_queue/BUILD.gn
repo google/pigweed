@@ -27,11 +27,9 @@ config("public_include_path") {
 
 pw_source_set("pw_work_queue") {
   public_configs = [ ":public_include_path" ]
-  public = [
-    "public/pw_work_queue/internal/circular_buffer.h",
-    "public/pw_work_queue/work_queue.h",
-  ]
+  public = [ "public/pw_work_queue/work_queue.h" ]
   public_deps = [
+    "$dir_pw_containers:inline_queue",
     "$dir_pw_sync:interrupt_spin_lock",
     "$dir_pw_sync:lock_annotations",
     "$dir_pw_sync:thread_notification",

@@ -16,11 +16,11 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 pw_add_library(pw_work_queue STATIC
   HEADERS
-    public/pw_work_queue/internal/circular_buffer.h
     public/pw_work_queue/work_queue.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS
+    pw_containers.inline_queue
     pw_sync.interrupt_spin_lock
     pw_sync.lock_annotations
     pw_sync.thread_notification

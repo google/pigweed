@@ -112,7 +112,7 @@ class BasicInlineDeque
   template <size_type kOtherCapacity>
   BasicInlineDeque& operator=(
       const BasicInlineDeque<value_type, size_type, kOtherCapacity>& other) {
-    Base::assign<kOtherCapacity>(other);
+    Base::template assign<kOtherCapacity>(other);
     return *this;
   }
 

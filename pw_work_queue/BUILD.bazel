@@ -30,11 +30,11 @@ pw_cc_library(
     name = "pw_work_queue",
     srcs = ["work_queue.cc"],
     hdrs = [
-        "public/pw_work_queue/internal/circular_buffer.h",
         "public/pw_work_queue/work_queue.h",
     ],
     includes = ["public"],
     deps = [
+        "//pw_containers:inline_queue",
         "//pw_function",
         "//pw_metric:metric",
         "//pw_status",
