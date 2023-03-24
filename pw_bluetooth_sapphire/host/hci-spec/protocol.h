@@ -2559,47 +2559,6 @@ constexpr OpCode kLESetAdvertisingSetRandomAddress = LEControllerCommandOpCode(0
 // LE Set Extended Advertising Parameters Command (v5.0) (LE)
 constexpr OpCode kLESetExtendedAdvertisingParameters = LEControllerCommandOpCode(0x0036);
 
-struct LESetExtendedAdvertisingParametersCommandParams {
-  // Handle used to identify an advertising set.
-  AdvertisingHandle adv_handle;
-
-  // See the kLEAdvEventPropBit* constants in hci_constants.h for possible bit
-  // values.
-  uint16_t adv_event_properties;
-
-  // Range: See kLEExtendedAdvertisingInterval[Min|Max] in hci_constants.h
-  // Time = N * 0.625 s
-  // Time Range: 20 ms to 10,485.759375 s
-  uint8_t primary_adv_interval_min[3];
-  uint8_t primary_adv_interval_max[3];
-
-  // (see the constants kLEAdvertisingChannel* in hci_constants.h for possible
-  // values).
-  uint8_t primary_adv_channel_map;
-
-  pw::bluetooth::emboss::LEOwnAddressType own_address_type;
-  LEPeerAddressType peer_address_type;
-
-  // Public Device Address, Random Device Address, Public Identity Address, or
-  // Random (static) Identity Address of the device to be connected.
-  DeviceAddressBytes peer_address;
-
-  LEAdvFilterPolicy adv_filter_policy;
-
-  // Range: -127 <= N <= +126
-  // Units: dBm
-  // If N = 127: Host has no preference.
-  int8_t adv_tx_power;
-
-  // LEPHY::kLE2M and LEPHY::kLECodedS2 are excluded.
-  LEPHY primary_adv_phy;
-
-  uint8_t secondary_adv_max_skip;
-  LEPHY secondary_adv_phy;
-  uint8_t advertising_sid;
-  GenericEnableParam scan_request_notification_enable;
-} __attribute__((packed));
-
 struct LESetExtendedAdvertisingParametersReturnParams {
   // See enum StatusCode in hci_constants.h.
   StatusCode status;

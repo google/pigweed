@@ -62,12 +62,12 @@ std::optional<EmbossCommandPacket> ExtendedLowEnergyAdvertiser::BuildEnablePacke
 CommandChannel::CommandPacketVariant ExtendedLowEnergyAdvertiser::BuildSetAdvertisingParams(
     const DeviceAddress& address, pw::bluetooth::emboss::LEAdvertisingType type,
     pw::bluetooth::emboss::LEOwnAddressType own_address_type, AdvertisingIntervalRange interval) {
-  constexpr size_t kPayloadSize = sizeof(hci_spec::LESetExtendedAdvertisingParametersCommandParams);
-  std::unique_ptr<CommandPacket> packet =
-      CommandPacket::New(hci_spec::kLESetExtendedAdvertisingParameters, kPayloadSize);
-  packet->mutable_view()->mutable_payload_data().SetToZeros();
-  auto payload =
-      packet->mutable_payload<hci_spec::LESetExtendedAdvertisingParametersCommandParams>();
+  constexpr size_t kPacketSize =
+      pw::bluetooth::emboss::LESetExtendedAdvertisingParametersV1CommandView::SizeInBytes();
+  auto packet = hci::EmbossCommandPacket::New<
+      pw::bluetooth::emboss::LESetExtendedAdvertisingParametersV1CommandWriter>(
+      hci_spec::kLESetExtendedAdvertisingParameters, kPacketSize);
+  auto packet_view = packet.view_t();
 
   // advertising handle
   std::optional<hci_spec::AdvertisingHandle> handle = advertising_handle_map_.MapHandle(address);
@@ -77,7 +77,7 @@ CommandChannel::CommandPacketVariant ExtendedLowEnergyAdvertiser::BuildSetAdvert
            bt_str(address));
     return std::unique_ptr<CommandPacket>();
   }
-  payload->adv_handle = handle.value();
+  packet_view.advertising_handle().Write(handle.value());
 
   // advertising event properties
   std::optional<hci_spec::AdvertisingEventBits> bits = hci_spec::AdvertisingTypeToEventBits(type);
@@ -85,26 +85,34 @@ CommandChannel::CommandPacketVariant ExtendedLowEnergyAdvertiser::BuildSetAdvert
     bt_log(WARN, "hci-le", "could not generate event bits for type: %hhu", type);
     return std::unique_ptr<CommandPacket>();
   }
-  payload->adv_event_properties = bits.value();
+  uint16_t properties = bits.value();
+  packet_view.advertising_event_properties().BackingStorage().WriteUInt(properties);
 
   // advertising interval, NOTE: LE advertising parameters allow for up to 3 octets (10 ms to
   // 10428 s) to configure an advertising interval. However, we expose only the recommended
   // advertising interval configurations to users, as specified in the Bluetooth Spec Volume 3, Part
   // C, Appendix A. These values are expressed as uint16_t so we simply copy them (taking care of
   // endianness) into the 3 octets as is.
-  hci_spec::EncodeLegacyAdvertisingInterval(interval.min(), payload->primary_adv_interval_min);
-  hci_spec::EncodeLegacyAdvertisingInterval(interval.max(), payload->primary_adv_interval_max);
+  packet_view.primary_advertising_interval_min().Write(interval.min());
+  packet_view.primary_advertising_interval_max().Write(interval.max());
 
-  // other settings
-  payload->primary_adv_channel_map = hci_spec::kLEAdvertisingChannelAll;
-  payload->own_address_type = own_address_type;
-  payload->adv_filter_policy = hci_spec::LEAdvFilterPolicy::kAllowAll;
-  payload->adv_tx_power = hci_spec::kLEExtendedAdvertisingTxPowerNoPreference;
-  payload->scan_request_notification_enable = pw::bluetooth::emboss::GenericEnableParam::DISABLE;
+  // advertise on all channels
+  packet_view.primary_advertising_channel_map().channel_37().Write(true);
+  packet_view.primary_advertising_channel_map().channel_38().Write(true);
+  packet_view.primary_advertising_channel_map().channel_39().Write(true);
+
+  packet_view.own_address_type().Write(own_address_type);
+  packet_view.advertising_filter_policy().Write(
+      pw::bluetooth::emboss::LEAdvertisingFilterPolicy::ALLOW_ALL);
+  packet_view.advertising_tx_power().Write(hci_spec::kLEExtendedAdvertisingTxPowerNoPreference);
+  packet_view.scan_request_notification_enable().Write(
+      pw::bluetooth::emboss::GenericEnableParam::DISABLE);
 
   // TODO(fxbug.dev/81470): using legacy PDUs requires advertisements on the LE 1M PHY.
-  payload->primary_adv_phy = hci_spec::LEPHY::kLE1M;
-  payload->secondary_adv_phy = hci_spec::LEPHY::kLE1M;
+  packet_view.primary_advertising_phy().Write(
+      pw::bluetooth::emboss::LEPrimaryAdvertisingPHY::LE_1M);
+  packet_view.secondary_advertising_phy().Write(
+      pw::bluetooth::emboss::LESecondaryAdvertisingPHY::LE_1M);
 
   // Payload values were initialized to zero above. By not setting the values for the following
   // fields, we are purposely ignoring them:

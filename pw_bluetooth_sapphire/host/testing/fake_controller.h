@@ -404,9 +404,6 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   }
 
  private:
-  // Convert an extended advertising interval to a legacy advertising interval
-  static uint32_t DecodeExtendedAdvertisingInterval(const uint8_t (&input)[3]);
-
   static bool IsValidAdvertisingHandle(hci_spec::AdvertisingHandle handle) {
     return handle <= hci_spec::kAdvertisingHandleMax;
   }
@@ -606,7 +603,7 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
 
   // Called when a HCI_LE_Set_Extended_Advertising_Data command is received.
   void OnLESetExtendedAdvertisingParameters(
-      const hci_spec::LESetExtendedAdvertisingParametersCommandParams& params);
+      const pw::bluetooth::emboss::LESetExtendedAdvertisingParametersV1CommandView& params);
 
   // Called when a HCI_LE_Set_Extended_Advertising_Data command is received.
   void OnLESetExtendedAdvertisingData(

@@ -26,14 +26,6 @@ std::string LinkTypeToString(hci_spec::LinkType link_type);
 
 std::string ConnectionRoleToString(pw::bluetooth::emboss::ConnectionRole role);
 
-// Encode a legacy advertising interval to an extended advertising 3-octet interval, taking
-// endianness into account.
-void EncodeLegacyAdvertisingInterval(uint16_t input, uint8_t (&result)[3]);
-
-// Decode an extended advertising 3-octet interval into an integer representation, taking endianness
-// into account.
-uint32_t DecodeExtendedAdvertisingInterval(const uint8_t (&input)[3]);
-
 // Convert a LEAdvertisingType's properties (e.g. connectable, scannable, directed, etc) to the
 // appropriate advertising event bits for use in HCI_LE_Set_Extended_Advertising_Parameters (Core
 // Spec, Volume 4, Part E, Section 7.8.53)

@@ -137,36 +137,6 @@ std::string ConnectionRoleToString(pw::bluetooth::emboss::ConnectionRole role) {
   }
 }
 
-// TODO(fxbug.dev/80048): various parts of the spec call for a 3 byte integer. If we need to in the
-// future, we should generalize this logic and make a uint24_t type that makes it easier to work
-// with these types of conversions.
-void EncodeLegacyAdvertisingInterval(uint16_t input, uint8_t (&result)[3]) {
-  MutableBufferView result_view(result, sizeof(result));
-  result_view.SetToZeros();
-
-  // Core spec Volume 6, Part B, Section 1.2: Link layer order is little endian, convert to little
-  // endian if host order is big endian
-  input = htole16(input);
-  BufferView input_view(&input, sizeof(input));
-
-  input_view.Copy(&result_view, 0, sizeof(input));
-}
-
-// TODO(fxbug.dev/80048): various parts of the spec call for a 3 byte integer. If we need to in the
-// future, we should generalize this logic and make a uint24_t type that makes it easier to work
-// with these types of conversions.
-uint32_t DecodeExtendedAdvertisingInterval(const uint8_t (&input)[3]) {
-  uint32_t result = 0;
-  MutableBufferView result_view(&result, sizeof(result));
-
-  BufferView input_view(input, sizeof(input));
-  input_view.Copy(&result_view);
-
-  // Core spec Volume 6, Part B, Section 1.2: Link layer order is little endian, convert to little
-  // endian if host order is big endian
-  return letoh32(result);
-}
-
 std::optional<AdvertisingEventBits> AdvertisingTypeToEventBits(
     pw::bluetooth::emboss::LEAdvertisingType type) {
   // TODO(fxbug.dev/81470): for backwards compatibility and because supporting extended advertising

@@ -1782,8 +1782,8 @@ void FakeController::OnLESetAdvertisingSetRandomAddress(
 }
 
 void FakeController::OnLESetExtendedAdvertisingParameters(
-    const hci_spec::LESetExtendedAdvertisingParametersCommandParams& params) {
-  hci_spec::AdvertisingHandle handle = params.adv_handle;
+    const pw::bluetooth::emboss::LESetExtendedAdvertisingParametersV1CommandView& params) {
+  hci_spec::AdvertisingHandle handle = params.advertising_handle().Read();
 
   if (!IsValidAdvertisingHandle(handle)) {
     bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
@@ -1802,8 +1802,7 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
   }
 
   // for backwards compatibility, we only support legacy pdus
-  constexpr uint16_t legacy_pdu = hci_spec::kLEAdvEventPropBitUseLegacyPDUs;
-  if ((params.adv_event_properties & legacy_pdu) == 0) {
+  if (!params.advertising_event_properties().use_legacy_pdus().Read()) {
     bt_log(INFO, "fake-hci", "only legacy PDUs are supported, extended PDUs are not supported yet");
     RespondWithCommandComplete(hci_spec::kLESetExtendedAdvertisingParameters,
                                pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
@@ -1811,6 +1810,7 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
   }
 
   // ensure we have a valid bit combination in the advertising event properties
+  constexpr uint16_t legacy_pdu = hci_spec::kLEAdvEventPropBitUseLegacyPDUs;
   constexpr uint16_t prop_bits_adv_ind =
       legacy_pdu | hci_spec::kLEAdvEventPropBitConnectable | hci_spec::kLEAdvEventPropBitScannable;
   constexpr uint16_t prop_bits_adv_direct_ind_low_duty_cycle =
@@ -1822,7 +1822,9 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
   constexpr uint16_t prop_bits_adv_nonconn_ind = legacy_pdu;
 
   pw::bluetooth::emboss::LEAdvertisingType adv_type;
-  switch (params.adv_event_properties) {
+  uint16_t advertising_event_properties =
+      params.advertising_event_properties().BackingStorage().ReadUInt();
+  switch (advertising_event_properties) {
     case prop_bits_adv_ind:
       adv_type = pw::bluetooth::emboss::LEAdvertisingType::CONNECTABLE_AND_SCANNABLE_UNDIRECTED;
       break;
@@ -1839,7 +1841,7 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
       adv_type = pw::bluetooth::emboss::LEAdvertisingType::NOT_CONNECTABLE_UNDIRECTED;
       break;
     default:
-      bt_log(INFO, "fake-hci", "invalid bit combination: %d", params.adv_event_properties);
+      bt_log(INFO, "fake-hci", "invalid bit combination: %d", advertising_event_properties);
       RespondWithCommandComplete(hci_spec::kLESetExtendedAdvertisingParameters,
                                  pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
       return;
@@ -1853,10 +1855,8 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
     state = extended_advertising_states_[handle];
   }
 
-  uint32_t interval_min =
-      hci_spec::DecodeExtendedAdvertisingInterval(params.primary_adv_interval_min);
-  uint32_t interval_max =
-      hci_spec::DecodeExtendedAdvertisingInterval(params.primary_adv_interval_max);
+  uint32_t interval_min = params.primary_advertising_interval_min().Read();
+  uint32_t interval_max = params.primary_advertising_interval_max().Read();
 
   if (interval_min >= interval_max) {
     bt_log(INFO, "fake-hci", "advertising interval min (%d) not strictly less than max (%d)",
@@ -1882,17 +1882,20 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
     return;
   }
 
-  if (params.primary_adv_channel_map == 0) {
+  uint8_t advertising_channels =
+      params.primary_advertising_channel_map().BackingStorage().ReadUInt();
+  if (!advertising_channels) {
     bt_log(INFO, "fake-hci", "at least one bit must be set in primary advertising channel map");
     RespondWithCommandComplete(hci_spec::kLESetExtendedAdvertisingParameters,
                                pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
   }
 
-  if (params.adv_tx_power != hci_spec::kLEExtendedAdvertisingTxPowerNoPreference &&
-      (params.adv_tx_power < hci_spec::kLEAdvertisingTxPowerMin ||
-       params.adv_tx_power > hci_spec::kLEAdvertisingTxPowerMax)) {
-    bt_log(INFO, "fake-hci", "advertising tx power out of range: %d", params.adv_tx_power);
+  int8_t advertising_tx_power = params.advertising_tx_power().Read();
+  if (advertising_tx_power != hci_spec::kLEExtendedAdvertisingTxPowerNoPreference &&
+      (advertising_tx_power < hci_spec::kLEAdvertisingTxPowerMin ||
+       advertising_tx_power > hci_spec::kLEAdvertisingTxPowerMax)) {
+    bt_log(INFO, "fake-hci", "advertising tx power out of range: %d", advertising_tx_power);
     RespondWithCommandComplete(hci_spec::kLESetExtendedAdvertisingParameters,
                                pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
     return;
@@ -1900,14 +1903,16 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
 
   // TODO(fxbug.dev/80049): Core spec Volume 4, Part E, Section 7.8.53: if legacy advertising PDUs
   // are being used, the Primary_Advertising_PHY shall indicate the LE 1M PHY.
-  if (params.primary_adv_phy != hci_spec::LEPHY::kLE1M) {
+  if (params.primary_advertising_phy().Read() !=
+      pw::bluetooth::emboss::LEPrimaryAdvertisingPHY::LE_1M) {
     bt_log(INFO, "fake-hci", "only legacy pdus are supported, requires advertising on 1M PHY");
     RespondWithCommandComplete(hci_spec::kLESetExtendedAdvertisingParameters,
                                pw::bluetooth::emboss::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
     return;
   }
 
-  if (params.secondary_adv_phy != hci_spec::LEPHY::kLE1M) {
+  if (params.secondary_advertising_phy().Read() !=
+      pw::bluetooth::emboss::LESecondaryAdvertisingPHY::LE_1M) {
     bt_log(INFO, "fake-hci", "secondary advertising PHY must be selected");
     RespondWithCommandComplete(hci_spec::kLESetExtendedAdvertisingParameters,
                                pw::bluetooth::emboss::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
@@ -1923,7 +1928,7 @@ void FakeController::OnLESetExtendedAdvertisingParameters(
 
   // all errors checked, set parameters that we care about
   state.adv_type = adv_type;
-  state.own_address_type = params.own_address_type;
+  state.own_address_type = params.own_address_type().Read();
   state.interval_min = interval_min;
   state.interval_max = interval_max;
 
@@ -2179,6 +2184,7 @@ void FakeController::OnLEReadMaximumAdvertisingDataLength() {
   RespondWithCommandComplete(hci_spec::kLEReadMaxAdvertisingDataLength,
                              BufferView(&params, sizeof(params)));
 }
+
 void FakeController::OnLEReadNumberOfSupportedAdvertisingSets() {
   hci_spec::LEReadNumSupportedAdvertisingSetsReturnParams params;
   params.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
@@ -2820,12 +2826,6 @@ void FakeController::HandleReceivedCommandPacket(
       OnReadLocalSupportedFeatures();
       break;
     }
-    case hci_spec::kLESetExtendedAdvertisingParameters: {
-      const auto& params =
-          command_packet.payload<hci_spec::LESetExtendedAdvertisingParametersCommandParams>();
-      OnLESetExtendedAdvertisingParameters(params);
-      break;
-    }
     case hci_spec::kLERemoveAdvertisingSet: {
       const auto& params = command_packet.payload<hci_spec::LERemoveAdvertisingSetCommandParams>();
       OnLERemoveAdvertisingSet(params);
@@ -2947,7 +2947,8 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kLEClearAdvertisingSets:
     case hci_spec::kLESetExtendedAdvertisingData:
     case hci_spec::kLESetExtendedScanResponseData:
-    case hci_spec::kLESetAdvertisingSetRandomAddress: {
+    case hci_spec::kLESetAdvertisingSetRandomAddress:
+    case hci_spec::kLESetExtendedAdvertisingParameters: {
       // This case is for packet types that have been migrated to the new Emboss architecture. Their
       // old version can be still be assembled from the HciEmulator channel, so here we repackage
       // and forward them as Emboss packets.
@@ -3253,6 +3254,13 @@ void FakeController::HandleReceivedCommandPacket(const hci::EmbossCommandPacket&
       const auto& params =
           command_packet.view<pw::bluetooth::emboss::LESetAdvertisingSetRandomAddressCommandView>();
       OnLESetAdvertisingSetRandomAddress(params);
+      break;
+    }
+    case hci_spec::kLESetExtendedAdvertisingParameters: {
+      const auto& params =
+          command_packet
+              .view<pw::bluetooth::emboss::LESetExtendedAdvertisingParametersV1CommandView>();
+      OnLESetExtendedAdvertisingParameters(params);
       break;
     }
     default: {
