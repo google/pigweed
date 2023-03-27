@@ -344,7 +344,7 @@ TEST_F(BasicServer, CloseChannel_PendingCall) {
   EXPECT_NE(nullptr, GetChannel(server_, 1));
   EXPECT_EQ(static_cast<internal::Endpoint&>(server_).active_call_count(), 0u);
 
-  internal::TestMethod::FakeServerCall call;
+  internal::test::FakeServerReaderWriter call;
   service_42_.method(100).keep_call_active(call);
 
   EXPECT_EQ(
