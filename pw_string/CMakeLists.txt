@@ -84,6 +84,8 @@ pw_add_library(pw_string.to_string STATIC
     pw_string.format
     pw_string.util
     pw_status
+  PRIVATE_DEPS
+    pw_third_party.fuchsia.stdcompat
   SOURCES
     type_to_string.cc
 )

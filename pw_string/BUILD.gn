@@ -106,6 +106,7 @@ pw_source_set("to_string") {
     dir_pw_span,
     dir_pw_status,
   ]
+  deps = [ "$dir_pw_third_party/fuchsia:stdcompat" ]
 }
 
 pw_source_set("util") {

@@ -92,6 +92,7 @@ pw_cc_library(
         ":format",
         ":util",
         "//pw_status",
+        "//third_party/fuchsia:stdcompat",
     ],
 )
 
