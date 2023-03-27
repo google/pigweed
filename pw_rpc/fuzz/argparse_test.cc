@@ -132,17 +132,17 @@ void CheckArgs(Vector<ArgParserVariant>& parsers,
                bool verbose,
                size_t runs,
                uint16_t port) {
-  bool actual_verbose;
+  bool actual_verbose = false;
   EXPECT_EQ(GetArg(parsers, "--verbose", &actual_verbose), OkStatus());
   EXPECT_EQ(verbose, actual_verbose);
   EXPECT_EQ(ResetArg(parsers, "--verbose"), OkStatus());
 
-  size_t actual_runs;
+  size_t actual_runs = 0u;
   EXPECT_EQ(GetArg(parsers, "--runs", &actual_runs), OkStatus());
   EXPECT_EQ(runs, actual_runs);
   EXPECT_EQ(ResetArg(parsers, "--runs"), OkStatus());
 
-  uint16_t actual_port;
+  uint16_t actual_port = 0u;
   EXPECT_EQ(GetArg(parsers, "port", &actual_port), OkStatus());
   EXPECT_EQ(port, actual_port);
   EXPECT_EQ(ResetArg(parsers, "port"), OkStatus());
