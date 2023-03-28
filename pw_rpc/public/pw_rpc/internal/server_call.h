@@ -47,10 +47,7 @@ class ServerCall : public Call {
 
   ServerCall(ServerCall&& other) { *this = std::move(other); }
 
-  ~ServerCall() PW_LOCKS_EXCLUDED(rpc_lock()) {
-    // Any errors are logged in Channel::Send.
-    CloseAndSendResponse(OkStatus()).IgnoreError();
-  }
+  ~ServerCall() = default;
 
   // Version of operator= used by the raw call classes.
   ServerCall& operator=(ServerCall&& other) PW_LOCKS_EXCLUDED(rpc_lock()) {

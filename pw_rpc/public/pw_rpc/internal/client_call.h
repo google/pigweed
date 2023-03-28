@@ -26,8 +26,6 @@ namespace pw::rpc::internal {
 // A Call object, as used by an RPC client.
 class ClientCall : public Call {
  public:
-  ~ClientCall() PW_LOCKS_EXCLUDED(rpc_lock()) { Abandon(); }
-
   uint32_t id() const PW_LOCKS_EXCLUDED(rpc_lock()) {
     RpcLockGuard lock;
     return Call::id();
@@ -53,15 +51,14 @@ class ClientCall : public Call {
              CallProperties properties) PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock())
       : Call(client, channel_id, service_id, method_id, properties) {}
 
+  ~ClientCall() = default;
+
   // Public function that closes a call client-side without cancelling it on the
   // server.
   void Abandon() PW_LOCKS_EXCLUDED(rpc_lock()) {
     RpcLockGuard lock;
     CloseClientCall();
   }
-
-  // Sends CLIENT_REQUEST_COMPLETION if applicable and marks the call as closed.
-  void CloseClientCall() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   void MoveClientCallFrom(ClientCall& other)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
@@ -152,7 +149,7 @@ class StreamResponseClientCall : public ClientCall {
                         Function<void(ConstByteSpan)>&& on_next,
                         Function<void(Status)>&& on_completed,
                         Function<void(Status)>&& on_error,
-                        ConstByteSpan request) {
+                        ConstByteSpan request) PW_LOCKS_EXCLUDED(rpc_lock()) {
     rpc_lock().lock();
     CallType call(client.ClaimLocked(), channel_id, service_id, method_id);
 

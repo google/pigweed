@@ -40,6 +40,8 @@ class FakeServerReaderWriter : private ServerCall {
  public:
   constexpr FakeServerReaderWriter() = default;
 
+  ~FakeServerReaderWriter() { DestroyServerCall(); }
+
   // On a real reader/writer, this constructor would not be exposed.
   FakeServerReaderWriter(const LockedCallContext& context,
                          MethodType type = MethodType::kBidirectionalStreaming)

@@ -112,8 +112,6 @@ class Call : public IntrusiveList<Call>::Item {
   Call& operator=(const Call&) = delete;
   Call& operator=(Call&&) = delete;
 
-  ~Call() PW_LOCKS_EXCLUDED(rpc_lock());
-
   // True if the Call is active and ready to send responses.
   [[nodiscard]] bool active() const PW_LOCKS_EXCLUDED(rpc_lock()) {
     RpcLockGuard lock;
@@ -300,6 +298,21 @@ class Call : public IntrusiveList<Call>::Item {
        uint32_t method_id,
        CallProperties properties) PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
+  // Calls must be closed and unregistered, and their callbacks must have
+  // completed before reaching the base Call destructor. If this does not
+  // happen, callback objects would be destroyed before their functions finished
+  // and the endpoint call list would be modified without synchronization via
+  // the `IntrusiveList<Call>::Item` superclass destructor.
+  //
+  // Derived class destructors must call DestroyServerCall() or
+  // DestroyClientCall() as appropriate.
+  ~Call() { PW_DASSERT(!active_locked() && !CallbacksAreRunning()); }
+
+  // Closes the call and waits for their callbacks to complete so destructors
+  // can run safely.
+  void DestroyServerCall() PW_LOCKS_EXCLUDED(rpc_lock());
+  void DestroyClientCall() PW_LOCKS_EXCLUDED(rpc_lock());
+
   void CallbackStarted() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     callbacks_executing_ += 1;
   }
@@ -345,6 +358,11 @@ class Call : public IntrusiveList<Call>::Item {
     state_ |= kClientRequestedCompletion;
   }
 
+  // Closes a client call. Sends a CLIENT_REQUEST_COMPLETION for client /
+  // bidirectional streaming RPCs if not sent yet.
+  void CloseClientCall() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
+
+  // Closes a server call.
   Status CloseAndSendResponseLocked(Status status)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     return CloseAndSendFinalPacketLocked(
@@ -507,6 +525,9 @@ class Call : public IntrusiveList<Call>::Item {
   bool CallbacksAreRunning() const PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
     return callbacks_executing_ != 0u;
   }
+
+  // Waits for callbacks to complete so that a call object can be destroyed.
+  void WaitForCallbacksToComplete() PW_UNLOCK_FUNCTION(rpc_lock());
 
   Endpoint* endpoint_ PW_GUARDED_BY(rpc_lock());
   uint32_t channel_id_ PW_GUARDED_BY(rpc_lock());

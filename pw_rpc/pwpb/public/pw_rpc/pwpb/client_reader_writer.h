@@ -91,6 +91,8 @@ class PwpbUnaryResponseClientCall : public UnaryResponseClientCall {
     return *this;
   }
 
+  ~PwpbUnaryResponseClientCall() { DestroyClientCall(); }
+
   // Implement moving by copying the serde pointer and on_completed function.
   void MovePwpbUnaryResponseClientCallFrom(PwpbUnaryResponseClientCall& other)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock()) {
@@ -206,6 +208,8 @@ class PwpbStreamResponseClientCall : public StreamResponseClientCall {
     MovePwpbStreamResponseClientCallFrom(other);
     return *this;
   }
+
+  ~PwpbStreamResponseClientCall() { DestroyClientCall(); }
 
   // Implement moving by copying the serde pointer and on_next function.
   void MovePwpbStreamResponseClientCallFrom(PwpbStreamResponseClientCall& other)

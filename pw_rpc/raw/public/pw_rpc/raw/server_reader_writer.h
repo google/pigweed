@@ -48,6 +48,10 @@ class RawServerReaderWriter : private internal::ServerCall {
  public:
   constexpr RawServerReaderWriter() = default;
 
+  ~RawServerReaderWriter() PW_LOCKS_EXCLUDED(internal::rpc_lock()) {
+    DestroyServerCall();
+  }
+
   RawServerReaderWriter(RawServerReaderWriter&&) = default;
   RawServerReaderWriter& operator=(RawServerReaderWriter&&) = default;
 

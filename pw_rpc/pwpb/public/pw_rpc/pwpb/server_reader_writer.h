@@ -222,6 +222,8 @@ class PwpbServerReaderWriter : private internal::BasePwpbServerReader<Request> {
   PwpbServerReaderWriter(PwpbServerReaderWriter&&) = default;
   PwpbServerReaderWriter& operator=(PwpbServerReaderWriter&&) = default;
 
+  ~PwpbServerReaderWriter() { internal::Call::DestroyServerCall(); }
+
   using internal::Call::active;
   using internal::Call::channel_id;
 
@@ -298,6 +300,8 @@ class PwpbServerReader : private internal::BasePwpbServerReader<Request> {
   PwpbServerReader(PwpbServerReader&&) = default;
   PwpbServerReader& operator=(PwpbServerReader&&) = default;
 
+  ~PwpbServerReader() { internal::Call::DestroyServerCall(); }
+
   using internal::Call::active;
   using internal::Call::channel_id;
 
@@ -366,6 +370,8 @@ class PwpbServerWriter : private internal::PwpbServerCall {
 
   PwpbServerWriter(PwpbServerWriter&&) = default;
   PwpbServerWriter& operator=(PwpbServerWriter&&) = default;
+
+  ~PwpbServerWriter() { DestroyServerCall(); }
 
   using internal::Call::active;
   using internal::Call::channel_id;
@@ -437,6 +443,8 @@ class PwpbUnaryResponder : private internal::PwpbServerCall {
 
   PwpbUnaryResponder(PwpbUnaryResponder&&) = default;
   PwpbUnaryResponder& operator=(PwpbUnaryResponder&&) = default;
+
+  ~PwpbUnaryResponder() { DestroyServerCall(); }
 
   using internal::ServerCall::active;
   using internal::ServerCall::channel_id;

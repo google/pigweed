@@ -55,6 +55,8 @@ class NanopbUnaryResponseClientCall : public UnaryResponseClientCall {
     return call;
   }
 
+  ~NanopbUnaryResponseClientCall() { DestroyClientCall(); }
+
  protected:
   constexpr NanopbUnaryResponseClientCall() = default;
 
@@ -145,6 +147,8 @@ class NanopbStreamResponseClientCall : public StreamResponseClientCall {
     client.CleanUpCalls();
     return call;
   }
+
+  ~NanopbStreamResponseClientCall() { DestroyClientCall(); }
 
  protected:
   constexpr NanopbStreamResponseClientCall() = default;
