@@ -14,8 +14,6 @@
 #include "pw_async/fake_dispatcher.h"
 
 #include "gtest/gtest.h"
-#include "pw_thread/thread.h"
-#include "pw_thread_stl/options.h"
 
 #define ASSERT_OK(status) ASSERT_EQ(OkStatus(), status)
 #define ASSERT_CANCELLED(status) ASSERT_EQ(Status::Cancelled(), status)
