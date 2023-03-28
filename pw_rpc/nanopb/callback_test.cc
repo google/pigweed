@@ -1,4 +1,4 @@
-// Copyright 2022 The Pigweed Authors
+// Copyright 2023 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -13,8 +13,8 @@
 // the License.
 
 #include "gtest/gtest.h"
-#include "pw_rpc/raw/client_testing.h"
-#include "pw_rpc_test_protos/test.raw_rpc.pb.h"
+#include "pw_rpc/nanopb/client_testing.h"
+#include "pw_rpc_test_protos/test.rpc.pb.h"
 #include "pw_sync/binary_semaphore.h"
 #include "pw_thread/sleep.h"
 #include "pw_thread/test_threads.h"
@@ -26,7 +26,11 @@ namespace {
 
 using namespace std::chrono_literals;
 
-using test::pw_rpc::raw::TestService;
+using test::pw_rpc::nanopb::TestService;
+
+using ClientReaderWriter =
+    NanopbClientReaderWriter<pw_rpc_test_TestRequest,
+                             pw_rpc_test_TestStreamResponse>;
 
 // These tests cover interactions between a thread moving or destroying an RPC
 // call object and a thread running callbacks for that call. In order to test
@@ -54,11 +58,11 @@ class CallbacksTest : public ::testing::Test {
     EXPECT_FALSE(callback_thread_.joinable());  // Tests must join the thread!
   }
 
-  void RespondToCall(const RawClientReaderWriter& call) {
+  void RespondToCall(const ClientReaderWriter& call) {
     respond_to_call_ = &call;
   }
 
-  RawClientTestContext<> context_;
+  NanopbClientTestContext<> context_;
   sync::BinarySemaphore callback_thread_sem_;
   sync::BinarySemaphore main_thread_sem_;
 
@@ -71,8 +75,8 @@ class CallbacksTest : public ::testing::Test {
   // only need to capture [this] to access them.
   volatile bool call_is_in_scope_ = false;
 
-  RawClientReaderWriter call_1_;
-  RawClientReaderWriter call_2_;
+  ClientReaderWriter call_1_;
+  ClientReaderWriter call_2_;
 
  private:
   void SendResponseAfterSemaphore() {
@@ -83,7 +87,7 @@ class CallbacksTest : public ::testing::Test {
         {}, respond_to_call_->id());
   }
 
-  const RawClientReaderWriter* respond_to_call_ = &call_1_;
+  const ClientReaderWriter* respond_to_call_ = &call_1_;
 };
 
 TEST_F(CallbacksTest, DestructorWaitsUntilCallbacksComplete) {
@@ -95,13 +99,13 @@ TEST_F(CallbacksTest, DestructorWaitsUntilCallbacksComplete) {
   }
 
   {
-    RawClientReaderWriter local_call = TestService::TestBidirectionalStreamRpc(
+    ClientReaderWriter local_call = TestService::TestBidirectionalStreamRpc(
         context_.client(), context_.channel().id());
     RespondToCall(local_call);
 
     call_is_in_scope_ = true;
 
-    local_call.set_on_next([this](ConstByteSpan) {
+    local_call.set_on_next([this](const pw_rpc_test_TestStreamResponse&) {
       main_thread_sem_.release();
 
       // Wait for a while so the main thread tries to destroy the call.
@@ -140,7 +144,9 @@ TEST_F(CallbacksTest, MoveActiveCall_WaitsForCallbackToComplete) {
   }
 
   call_1_ = TestService::TestBidirectionalStreamRpc(
-      context_.client(), context_.channel().id(), [this](ConstByteSpan) {
+      context_.client(),
+      context_.channel().id(),
+      [this](const pw_rpc_test_TestStreamResponse&) {
         main_thread_sem_.release();  // Confirm that this thread started
 
         YieldToOtherThread();
@@ -170,7 +176,9 @@ TEST_F(CallbacksTest, MoveActiveCall_WaitsForCallbackToComplete) {
 
 TEST_F(CallbacksTest, MoveOtherCallIntoOwnCallInCallback) {
   call_1_ = TestService::TestBidirectionalStreamRpc(
-      context_.client(), context_.channel().id(), [this](ConstByteSpan) {
+      context_.client(),
+      context_.channel().id(),
+      [this](const pw_rpc_test_TestStreamResponse&) {
         main_thread_sem_.release();  // Confirm that this thread started
 
         call_1_ = std::move(call_2_);
@@ -195,7 +203,9 @@ TEST_F(CallbacksTest, MoveOtherCallIntoOwnCallInCallback) {
 
 TEST_F(CallbacksTest, MoveOwnCallInCallback) {
   call_1_ = TestService::TestBidirectionalStreamRpc(
-      context_.client(), context_.channel().id(), [this](ConstByteSpan) {
+      context_.client(),
+      context_.channel().id(),
+      [this](const pw_rpc_test_TestStreamResponse&) {
         main_thread_sem_.release();  // Confirm that this thread started
 
         // Cancel this call first, or the move will deadlock, since the moving
@@ -224,7 +234,9 @@ TEST_F(CallbacksTest, MoveOwnCallInCallback) {
 
 TEST_F(CallbacksTest, PacketDroppedIfOnNextIsBusy) {
   call_1_ = TestService::TestBidirectionalStreamRpc(
-      context_.client(), context_.channel().id(), [this](ConstByteSpan) {
+      context_.client(),
+      context_.channel().id(),
+      [this](const pw_rpc_test_TestStreamResponse&) {
         main_thread_sem_.release();  // Confirm that this thread started
 
         callback_thread_sem_.acquire();  // Wait for the main thread to release

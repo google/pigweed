@@ -224,6 +224,8 @@ class NanopbClientReaderWriter
   using internal::Call::active;
   using internal::Call::channel_id;
 
+  using internal::ClientCall::id;
+
   // Writes a response struct. Returns the following Status codes:
   //
   //   OK - the response was successfully sent
@@ -290,6 +292,8 @@ class NanopbClientReader
   using internal::Call::active;
   using internal::Call::channel_id;
 
+  using internal::ClientCall::id;
+
   // Functions for setting RPC event callbacks.
   using internal::NanopbStreamResponseClientCall<Response>::set_on_next;
   using internal::Call::set_on_error;
@@ -331,6 +335,8 @@ class NanopbClientWriter
 
   using internal::Call::active;
   using internal::Call::channel_id;
+
+  using internal::ClientCall::id;
 
   // Functions for setting RPC event callbacks.
   using internal::NanopbUnaryResponseClientCall<Response>::set_on_completed;
@@ -377,6 +383,8 @@ class NanopbUnaryReceiver
 
   using internal::Call::active;
   using internal::Call::channel_id;
+
+  using internal::ClientCall::id;
 
   // Functions for setting RPC event callbacks.
   using internal::NanopbUnaryResponseClientCall<Response>::set_on_completed;

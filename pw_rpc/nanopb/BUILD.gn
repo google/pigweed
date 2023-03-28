@@ -152,6 +152,7 @@ pw_doc_group("docs") {
 
 pw_test_group("tests") {
   tests = [
+    ":callback_test",
     ":client_call_test",
     ":client_reader_writer_test",
     ":client_server_context_test",
@@ -169,6 +170,23 @@ pw_test_group("tests") {
     ":stub_generation_test",
     ":synchronous_call_test",
   ]
+}
+
+pw_test("callback_test") {
+  enable_if = dir_pw_third_party_nanopb != "" &&
+              pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread"
+  deps = [
+    ":client_testing",
+    "$dir_pw_sync:binary_semaphore",
+    "$dir_pw_thread:sleep",
+    "$dir_pw_thread:test_threads",
+    "$dir_pw_thread:yield",
+    "$dir_pw_thread_stl:test_threads",
+    "..:client",
+    "..:server",
+    "..:test_protos.nanopb_rpc",
+  ]
+  sources = [ "callback_test.cc" ]
 }
 
 pw_test("client_call_test") {
