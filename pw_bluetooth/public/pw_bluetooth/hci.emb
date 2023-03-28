@@ -810,7 +810,7 @@ enum LESecondaryAdvertisingPHY:
 enum ScanRequestNotifications:
   [maximum_bits: 8]
   DISABLED = 0x00
-  ENABLED = 0x01
+  ENABLED  = 0x01
 
 
 enum LESetExtendedAdvDataOp:
@@ -2368,43 +2368,62 @@ struct LESetAdvertisingSetRandomAddressCommand:
 
 struct LESetExtendedAdvertisingParametersV1Command:
   -- LE Set Extended Advertising Parameters Command (v5.0) (LE)
+
   let hdr_size = CommandHeader.$size_in_bytes
+
   0     [+hdr_size]               CommandHeader                 header
+
   $next [+1]                      UInt                          advertising_handle
     -- Handle used to identify an advertising set.
-  $next [+2] bits:
-    0 [+7]                        LEAdvertisingEventProperties  advertising_event_properties
+
+  $next [+2]  bits:
+
+    0     [+7]                    LEAdvertisingEventProperties  advertising_event_properties
+
   $next [+3]                      UInt                          primary_advertising_interval_min
     -- Time = N * 0.625 s
     -- Time Range: 20 ms to 10,485.759375 s
     [requires: 0x000020 <= this]
+
   $next [+3]                      UInt                          primary_advertising_interval_max
     -- Time = N * 0.625 s
     -- Time Range: 20 ms to 10,485.759375 s
     [requires: 0x000020 <= this]
-  $next [+1] bits:
-    0 [+3]                        LEAdvertisingChannels         primary_advertising_channel_map
+
+  $next [+1]  bits:
+
+    0     [+3]                    LEAdvertisingChannels         primary_advertising_channel_map
+
   $next [+1]                      LEOwnAddressType              own_address_type
+
   $next [+1]                      LEPeerAddressTypeNoAnon       peer_address_type
+
   $next [+BdAddr.$size_in_bytes]  BdAddr                        peer_address
     -- Public Device Address, Random Device Address, Public Identity Address, or Random (static)
     -- Identity Address of the device to be connected.
+
   $next [+1]                      LEAdvertisingFilterPolicy     advertising_filter_policy
+
   $next [+1]                      Int                           advertising_tx_power
     -- Range: -127 <= N <= +126
     -- Units: dBm
     -- If N = 127: Host has no preference.
     [requires: -127 <= this]
+
   $next [+1]                      LEPrimaryAdvertisingPHY       primary_advertising_phy
     -- LEPHY::kLE2M and LEPHY::kLECodedS2 are excluded.
+
   $next [+1]                      UInt                          secondary_advertising_max_skip
     -- Maximum advertising events the controller can skip before sending the AUX_ADV_IND packets on
     -- the secondary advertising physical channel. If this value is zero, AUX_ADV_IND shall be sent
     -- prior to the next advertising event.
+
   $next [+1]                      LESecondaryAdvertisingPHY     secondary_advertising_phy
+
   $next [+1]                      UInt                          advertising_sid
     -- Value of the Advertising SID subfield in the ADI field of the PDU
     [requires: 0x00 <= this <= 0x0F]
+
   $next [+1]                      GenericEnableParam            scan_request_notification_enable
 
 
@@ -2480,6 +2499,15 @@ struct CommandCompleteEvent:
   $next [+2]         OpCodeBits   command_opcode
   let event_fixed_size = $size_in_bytes-hdr_size
   let return_parameters_size = header.parameter_total_size-event_fixed_size
+
+
+struct SimpleCommandCompleteEvent:
+  -- A Command Complete event where a StatusCode is the only return parameter.
+  -- Also useful for generically getting to status of a larger command complete
+  -- event.
+  let hdr_size = CommandCompleteEvent.$size_in_bytes
+  0     [+hdr_size]  CommandCompleteEvent  command_complete
+  $next [+1]         StatusCode            status
 
 
 struct ConnectionCompleteEvent:
