@@ -49,6 +49,7 @@ pw_cc_library(
     name = "bit",
     hdrs = ["public/pw_bytes/bit.h"],
     includes = ["public"],
+    deps = ["//third_party/fuchsia:stdcompat"],
 )
 
 pw_cc_test(

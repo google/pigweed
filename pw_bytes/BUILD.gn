@@ -46,7 +46,7 @@ pw_source_set("pw_bytes") {
 pw_source_set("bit") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_bytes/bit.h" ]
-  remove_public_deps = [ "*" ]
+  public_deps = [ "$dir_pw_third_party/fuchsia:stdcompat" ]
 }
 
 pw_test_group("tests") {

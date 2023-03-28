@@ -42,6 +42,8 @@ pw_add_library(pw_bytes.bit INTERFACE
     public/pw_bytes/bit.h
   PUBLIC_INCLUDES
     public
+  PUBLIC_DEPS
+    pw_third_party.fuchsia.stdcompat
 )
 
 pw_add_test(pw_bytes.array_test
