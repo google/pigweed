@@ -11,26 +11,32 @@
 namespace bt::l2cap::testing {
 
 TEST(ChannelTest, UniqueId) {
-  // Same channel and handle on the local side produces the same unique id
-  auto chan = std::make_unique<FakeChannel>(1, 1, 1, bt::LinkType::kACL);
-  auto chan_diffremote = std::make_unique<FakeChannel>(1, 2, 1, bt::LinkType::kACL);
+  // Same handle + Same local id = Same unique id
+  auto channel =
+      std::make_unique<FakeChannel>(/*id=*/1, /*remote_id=*/1, /*handle=*/1, bt::LinkType::kACL);
+  auto chan_diff_remote =
+      std::make_unique<FakeChannel>(/*id=*/1, /*remote_id=*/2, /*handle=*/1, bt::LinkType::kACL);
+  ASSERT_EQ(channel->unique_id(), chan_diff_remote->unique_id());
 
-  ASSERT_EQ(chan->unique_id(), chan_diffremote->unique_id());
+  // Same handle + Different local id = Different unique id
+  auto chan_diff_local =
+      std::make_unique<FakeChannel>(/*id=*/2, /*remote_id=*/1, /*handle=*/1, bt::LinkType::kACL);
+  ASSERT_NE(channel->unique_id(), chan_diff_local->unique_id());
 
-  // Different handle, same local id produces different unique ids
-  auto chan_diffconn = std::make_unique<FakeChannel>(1, 1, 2, bt::LinkType::kACL);
+  // Same handle + Same local id = Same unique id
+  auto chan_same =
+      std::make_unique<FakeChannel>(/*id=*/1, /*remote_id=*/1, /*handle=*/1, bt::LinkType::kACL);
+  ASSERT_EQ(channel->unique_id(), chan_same->unique_id());
 
-  ASSERT_NE(chan->unique_id(), chan_diffconn->unique_id());
+  // Different handle + Same local id = Different unique id
+  auto chan_diff_conn =
+      std::make_unique<FakeChannel>(/*id=*/1, /*remote_id=*/1, /*handle=*/2, bt::LinkType::kACL);
+  ASSERT_NE(channel->unique_id(), chan_diff_conn->unique_id());
 
-  // Same handle, different local id produces different unique ids.
-  auto chan_difflocalid = std::make_unique<FakeChannel>(2, 1, 1, bt::LinkType::kACL);
-
-  ASSERT_NE(chan->unique_id(), chan_difflocalid->unique_id());
-
-  // Same everything produces same unique ids.
-  auto chan_stillsame = std::make_unique<FakeChannel>(1, 1, 1, bt::LinkType::kACL);
-
-  ASSERT_EQ(chan->unique_id(), chan_stillsame->unique_id());
+  // Different handle + Different local id = Different unique id
+  auto chan_diff =
+      std::make_unique<FakeChannel>(/*id=*/1, /*remote_id=*/2, /*handle=*/2, bt::LinkType::kACL);
+  ASSERT_NE(channel->unique_id(), chan_diff->unique_id());
 }
 
 }  // namespace bt::l2cap::testing

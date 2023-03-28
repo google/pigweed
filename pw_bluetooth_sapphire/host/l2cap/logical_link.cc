@@ -60,22 +60,25 @@ LogicalLink::LogicalLink(hci_spec::ConnectionHandle handle, bt::LinkType type,
                          QueryServiceCallback query_service_cb,
                          hci::AclDataChannel* acl_data_channel, hci::CommandChannel* cmd_channel,
                          bool random_channel_ids)
-
     : handle_(handle),
       type_(type),
       role_(role),
+      max_acl_payload_size_(max_acl_payload_size),
       flush_timeout_(zx::duration::infinite(), /*convert=*/[](auto f) { return f.to_msecs(); }),
       closed_(false),
-      fragmenter_(handle, max_acl_payload_size),
       recombiner_(handle),
       acl_data_channel_(acl_data_channel),
       cmd_channel_(cmd_channel),
       query_service_cb_(std::move(query_service_cb)),
+      weak_conn_interface_(this),
       weak_self_(this) {
   BT_ASSERT(type_ == bt::LinkType::kLE || type_ == bt::LinkType::kACL);
   BT_ASSERT(acl_data_channel_);
   BT_ASSERT(cmd_channel_);
   BT_ASSERT(query_service_cb_);
+
+  // Allow packets to be sent on this link immediately.
+  acl_data_channel_->RegisterConnection(weak_conn_interface_.GetWeakPtr());
 
   // Set up the signaling channel and dynamic channels.
   if (type_ == bt::LinkType::kLE) {
@@ -117,8 +120,8 @@ Channel::WeakPtr LogicalLink::OpenFixedChannel(ChannelId id) {
     return Channel::WeakPtr();
   }
 
-  std::unique_ptr<ChannelImpl> chan =
-      ChannelImpl::CreateFixedChannel(id, GetWeakPtr(), cmd_channel_->AsWeakPtr());
+  std::unique_ptr<ChannelImpl> chan = ChannelImpl::CreateFixedChannel(
+      id, GetWeakPtr(), cmd_channel_->AsWeakPtr(), max_acl_payload_size_);
 
   auto pp_iter = pending_pdus_.find(id);
   if (pp_iter != pending_pdus_.end()) {
@@ -135,6 +138,10 @@ Channel::WeakPtr LogicalLink::OpenFixedChannel(ChannelId id) {
   }
 
   channels_[id] = std::move(chan);
+
+  // Reset round robin iterator
+  current_channel_ = channels_.begin();
+
   return channels_[id]->GetWeakPtr();
 }
 
@@ -152,6 +159,9 @@ void LogicalLink::OpenChannel(PSM psm, ChannelParameters params, ChannelCallback
     CompleteDynamicOpen(dyn_chan, std::move(cb));
   };
   dynamic_registry_->OpenOutbound(psm, params, std::move(create_channel));
+
+  // Reset round robin iterator
+  current_channel_ = channels_.begin();
 }
 
 void LogicalLink::HandleRxPacket(hci::ACLDataPacketPtr packet) {
@@ -251,20 +261,54 @@ void LogicalLink::AssignSecurityProperties(const sm::SecurityProperties& securit
   security_ = security;
 }
 
-void LogicalLink::SendFrame(ChannelId id, const ByteBuffer& payload,
-                            FrameCheckSequenceOption fcs_option, bool flushable) {
-  if (closed_) {
-    bt_log(DEBUG, "l2cap", "Drop out-bound packet on closed link");
-    return;
+bool LogicalLink::HasAvailablePacket() const {
+  for (auto& [_, channel] : channels_) {
+    // TODO(fxbug.dev/123616): Check HasSDUs() after transmission engines are refactored
+    if (channel->HasPDUs() || channel->HasFragments()) {
+      return true;
+    }
   }
-
-  // Copy payload into L2CAP frame fragments, sized for the HCI data transport.
-  PDU pdu = fragmenter_.BuildFrame(id, payload, fcs_option, flushable);
-  auto fragments = pdu.ReleaseFragments();
-
-  BT_ASSERT(!fragments.empty());
-  acl_data_channel_->SendPackets(std::move(fragments), id, ChannelPriority(id));
+  return false;
 }
+
+void LogicalLink::RoundRobinChannels() {
+  // Go through all channels in map
+  if (next(current_channel_) == channels_.end()) {
+    current_channel_ = channels_.begin();
+  } else {
+    current_channel_++;
+  }
+}
+
+bool LogicalLink::IsNextPacketContinuingFragment() const {
+  return current_pdus_channel_.is_alive() && current_pdus_channel_->HasFragments();
+}
+
+std::unique_ptr<hci::ACLDataPacket> LogicalLink::GetNextOutboundPacket() {
+  for (size_t i = 0; i < channels_.size(); i++) {
+    if (!IsNextPacketContinuingFragment()) {
+      current_pdus_channel_ = ChannelImpl::WeakPtr();
+
+      // Go to next channel to try and get next packet to send
+      RoundRobinChannels();
+
+      if (current_channel_->second->HasPDUs()) {
+        current_pdus_channel_ = current_channel_->second->GetWeakPtr();
+      }
+    }
+
+    if (current_pdus_channel_.is_alive()) {
+      // Next packet will either be a starting or continuing fragment
+      return current_pdus_channel_->GetNextOutboundPacket();
+    }
+  }
+  // All channels are empty
+  // This should never actually return a nullptr since we only call
+  // LogicalLink::GetNextOutboundPacket() when LogicalLink::HasAvailablePacket() is true
+  return nullptr;
+}
+
+void LogicalLink::OnOutboundPacketAvailable() { acl_data_channel_->OnOutboundPacketAvailable(); }
 
 void LogicalLink::set_error_callback(fit::closure callback) {
   link_error_cb_ = std::move(callback);
@@ -277,11 +321,6 @@ void LogicalLink::set_security_upgrade_callback(SecurityUpgradeCallback callback
 void LogicalLink::set_connection_parameter_update_callback(
     LEConnectionParameterUpdateCallback callback) {
   connection_parameter_update_callback_ = std::move(callback);
-}
-
-LESignalingChannel* LogicalLink::le_signaling_channel() const {
-  return (type_ == bt::LinkType::kLE) ? static_cast<LESignalingChannel*>(signaling_channel_.get())
-                                      : nullptr;
 }
 
 bool LogicalLink::AllowsFixedChannel(ChannelId id) {
@@ -314,12 +353,8 @@ void LogicalLink::RemoveChannel(Channel* chan, fit::closure removed_cb) {
   pending_pdus_.erase(id);
   channels_.erase(iter);
 
-  // Drop stale packets queued for this channel.
-  hci::AclDataChannel::AclPacketPredicate predicate = [this, id](const auto& packet,
-                                                                 l2cap::ChannelId channel_id) {
-    return packet->connection_handle() == handle_ && id == channel_id;
-  };
-  acl_data_channel_->DropQueuedPackets(std::move(predicate));
+  // Reset round robin iterator
+  current_channel_ = channels_.begin();
 
   // Disconnect the channel if it's a dynamic channel. This path is for local-
   // initiated closures and does not invoke callbacks back to the channel user.
@@ -329,6 +364,7 @@ void LogicalLink::RemoveChannel(Channel* chan, fit::closure removed_cb) {
     dynamic_registry_->CloseChannel(id, std::move(removed_cb));
     return;
   }
+
   removed_cb();
 }
 
@@ -385,6 +421,8 @@ void LogicalLink::Close() {
 
   closed_ = true;
 
+  acl_data_channel_->UnregisterConnection(handle_);
+
   for (auto& iter : channels_) {
     iter.second->OnClosed();
   }
@@ -422,15 +460,12 @@ void LogicalLink::OnChannelDisconnectRequest(const DynamicChannel* dyn_chan) {
   ChannelImpl* channel = iter->second.get();
   BT_DEBUG_ASSERT(channel->remote_id() == dyn_chan->remote_cid());
 
-  hci::AclDataChannel::AclPacketPredicate predicate =
-      [this, id = channel->id()](const auto& packet, l2cap::ChannelId channel_id) {
-        return packet->connection_handle() == handle_ && id == channel_id;
-      };
-  acl_data_channel_->DropQueuedPackets(std::move(predicate));
-
   // Signal closure because this is a remote disconnection.
   channel->OnClosed();
   channels_.erase(iter);
+
+  // Reset round robin iterator
+  current_channel_ = channels_.begin();
 }
 
 void LogicalLink::CompleteDynamicOpen(const DynamicChannel* dyn_chan, ChannelCallback open_cb) {
@@ -452,8 +487,9 @@ void LogicalLink::CompleteDynamicOpen(const DynamicChannel* dyn_chan, ChannelCal
   auto preferred_flush_timeout = chan_info.flush_timeout;
   chan_info.flush_timeout.reset();
 
-  std::unique_ptr<ChannelImpl> chan = ChannelImpl::CreateDynamicChannel(
-      local_cid, remote_cid, GetWeakPtr(), chan_info, cmd_channel_->AsWeakPtr());
+  std::unique_ptr<ChannelImpl> chan =
+      ChannelImpl::CreateDynamicChannel(local_cid, remote_cid, GetWeakPtr(), chan_info,
+                                        cmd_channel_->AsWeakPtr(), max_acl_payload_size_);
   auto chan_weak = chan->GetWeakPtr();
   channels_[local_cid] = std::move(chan);
 
@@ -635,18 +671,6 @@ void LogicalLink::AttachInspect(inspect::Node& parent, std::string name) {
   for (auto& [_, chan] : channels_) {
     chan->AttachInspect(inspect_properties_.channels_node,
                         inspect_properties_.channels_node.UniqueName(kInspectChannelNodePrefix));
-  }
-}
-
-hci::AclDataChannel::PacketPriority LogicalLink::ChannelPriority(ChannelId id) {
-  switch (id) {
-    case kSignalingChannelId:
-    case kLESignalingChannelId:
-    case kSMPChannelId:
-    case kLESMPChannelId:
-      return hci::AclDataChannel::PacketPriority::kHigh;
-    default:
-      return hci::AclDataChannel::PacketPriority::kLow;
   }
 }
 

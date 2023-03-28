@@ -18,9 +18,6 @@ BrEdrConnection::BrEdrConnection(hci_spec::ConnectionHandle handle,
   BT_ASSERT(peer_address.type() == DeviceAddress::Type::kBREDR);
   BT_ASSERT(hci.is_alive());
   BT_ASSERT(hci->acl_data_channel());
-
-  // Allow packets to be sent on this link immediately.
-  hci->acl_data_channel()->RegisterLink(handle, bt::LinkType::kACL);
 }
 
 bool BrEdrConnection::StartEncryption() {

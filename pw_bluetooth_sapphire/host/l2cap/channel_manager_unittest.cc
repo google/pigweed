@@ -64,6 +64,7 @@ struct PacketExpectation {
 
 // Helpers to set an outbound packet expectation with the link type and source location
 // boilerplate prefilled.
+// TODO(fxbug.dev/124457): Remove packet priorities from expectations
 #define EXPECT_LE_PACKET_OUT(packet_buffer, priority) \
   ExpectOutboundPacket(bt::LinkType::kLE, (priority), (packet_buffer), __FILE__, __LINE__)
 
@@ -75,12 +76,9 @@ auto MakeExtendedFeaturesInformationRequest(CommandId id, hci_spec::ConnectionHa
   return StaticByteBuffer(
       // ACL data header (handle, length: 10)
       LowerBits(handle), UpperBits(handle), 0x0a, 0x00,
-
       // L2CAP B-frame header (length: 6, chanel-id: 0x0001 (ACL sig))
       0x06, 0x00, 0x01, 0x00,
-
-      // Extended Features Information Request
-      // (ID, length: 2, type)
+      // Extended Features Information Request (ID, length: 2, type)
       0x0a, id, 0x02, 0x00,
       LowerBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported)),
       UpperBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported)));
@@ -93,16 +91,12 @@ auto ConfigurationRequest(CommandId id, ChannelId dst_id, uint16_t mtu = kDefaul
     return DynamicByteBuffer(StaticByteBuffer(
         // ACL data header (handle: 0x0001, length: 27 bytes)
         0x01, 0x00, 0x1b, 0x00,
-
         // L2CAP B-frame header (length: 23 bytes, channel-id: 0x0001 (ACL sig))
         0x17, 0x00, 0x01, 0x00,
-
         // Configuration Request (ID, length: 19, dst cid, flags: 0)
         0x04, id, 0x13, 0x00, LowerBits(dst_id), UpperBits(dst_id), 0x00, 0x00,
-
         // Mtu option (ID, Length, MTU)
         0x01, 0x02, LowerBits(mtu), UpperBits(mtu),
-
         // Retransmission & Flow Control option (type, length: 9, mode, tx_window: 63,
         // max_retransmit: 0, retransmit timeout: 0 ms, monitor timeout: 0 ms, mps: 65535)
         0x04, 0x09, static_cast<uint8_t>(*mode), kErtmMaxUnackedInboundFrames,
@@ -112,13 +106,10 @@ auto ConfigurationRequest(CommandId id, ChannelId dst_id, uint16_t mtu = kDefaul
   return DynamicByteBuffer(StaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 16 bytes)
       0x01, 0x00, 0x10, 0x00,
-
       // L2CAP B-frame header (length: 12 bytes, channel-id: 0x0001 (ACL sig))
       0x0c, 0x00, 0x01, 0x00,
-
       // Configuration Request (ID, length: 8, dst cid, flags: 0)
       0x04, id, 0x08, 0x00, LowerBits(dst_id), UpperBits(dst_id), 0x00, 0x00,
-
       // Mtu option (ID, Length, MTU)
       0x01, 0x02, LowerBits(mtu), UpperBits(mtu)));
 }
@@ -141,12 +132,9 @@ auto InboundConfigurationResponse(CommandId id) {
   return StaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 14 bytes)
       0x01, 0x00, 0x0e, 0x00,
-
       // L2CAP B-frame header (length: 10 bytes, channel-id: 0x0001 (ACL sig))
       0x0a, 0x00, 0x01, 0x00,
-
-      // Configuration Response (ID: 2, length: 6, src cid, flags: 0,
-      // result: success)
+      // Configuration Response (ID: 2, length: 6, src cid, flags: 0, result: success)
       0x05, id, 0x06, 0x00, LowerBits(kLocalId), UpperBits(kLocalId), 0x00, 0x00, 0x00, 0x00);
 }
 
@@ -154,10 +142,8 @@ auto InboundConnectionRequest(CommandId id) {
   return StaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 12 bytes)
       0x01, 0x00, 0x0c, 0x00,
-
       // L2CAP B-frame header (length: 8 bytes, channel-id: 0x0001 (ACL sig))
       0x08, 0x00, 0x01, 0x00,
-
       // Connection Request (ID, length: 4, psm, src cid)
       0x02, id, 0x04, 0x00, LowerBits(kTestPsm), UpperBits(kTestPsm), LowerBits(kRemoteId),
       UpperBits(kRemoteId));
@@ -167,10 +153,8 @@ auto OutboundConnectionRequest(CommandId id) {
   return StaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 12 bytes)
       0x01, 0x00, 0x0c, 0x00,
-
       // L2CAP B-frame header (length: 8 bytes, channel-id: 0x0001 (ACL sig))
       0x08, 0x00, 0x01, 0x00,
-
       // Connection Request (ID, length: 4, psm, src cid)
       0x02, id, 0x04, 0x00, LowerBits(kTestPsm), UpperBits(kTestPsm), LowerBits(kLocalId),
       UpperBits(kLocalId));
@@ -196,17 +180,13 @@ auto OutboundConfigurationResponse(CommandId id, uint16_t mtu = kDefaultMTU,
     return DynamicByteBuffer(StaticByteBuffer(
         // ACL data header (handle: 0x0001, length: 14 bytes)
         0x01, 0x00, LowerBits(kAclLength), UpperBits(kAclLength),
-
         // L2CAP B-frame header (length: 10 bytes, channel-id: 0x0001 (ACL sig))
         LowerBits(kL2capLength), UpperBits(kL2capLength), 0x01, 0x00,
-
         // Configuration Response (ID, length, src cid, flags: 0, result: success)
         0x05, id, kConfigLength, 0x00, LowerBits(kRemoteId), UpperBits(kRemoteId), 0x00, 0x00, 0x00,
         0x00,
-
         // MTU option (ID, Length, MTU)
         0x01, 0x02, LowerBits(mtu), UpperBits(mtu),
-
         // Retransmission & Flow Control option (type, length: 9, mode, TxWindow, MaxTransmit, rtx
         // timeout: 2 secs, monitor timeout: 12 secs, mps)
         0x04, 0x09, static_cast<uint8_t>(*mode), kErtmMaxUnackedInboundFrames, max_transmissions,
@@ -218,14 +198,11 @@ auto OutboundConfigurationResponse(CommandId id, uint16_t mtu = kDefaultMTU,
   return DynamicByteBuffer(StaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 14 bytes)
       0x01, 0x00, LowerBits(kAclLength), UpperBits(kAclLength),
-
       // L2CAP B-frame header (length, channel-id: 0x0001 (ACL sig))
       LowerBits(kL2capLength), UpperBits(kL2capLength), 0x01, 0x00,
-
       // Configuration Response (ID, length, src cid, flags: 0, result: success)
       0x05, id, kConfigLength, 0x00, LowerBits(kRemoteId), UpperBits(kRemoteId), 0x00, 0x00, 0x00,
       0x00,
-
       // MTU option (ID, Length, MTU)
       0x01, 0x02, LowerBits(mtu), UpperBits(mtu)));
 }
@@ -234,14 +211,22 @@ auto OutboundDisconnectionRequest(CommandId id) {
   return StaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 12 bytes)
       0x01, 0x00, 0x0c, 0x00,
-
       // L2CAP B-frame header (length: 8 bytes, channel-id: 0x0001 (ACL sig))
       0x08, 0x00, 0x01, 0x00,
-
-      // Disconnection Request
-      // (ID, length: 4, dst cid, src cid)
+      // Disconnection Request (ID, length: 4, dst cid, src cid)
       0x06, id, 0x04, 0x00, LowerBits(kRemoteId), UpperBits(kRemoteId), LowerBits(kLocalId),
       UpperBits(kLocalId));
+}
+
+auto OutboundDisconnectionResponse(CommandId id) {
+  return StaticByteBuffer(
+      // ACL data header (handle: 0x0001, length: 12 bytes)
+      0x01, 0x00, 0x0c, 0x00,
+      // L2CAP B-frame header (length: 8 bytes, channel-id: 0x0001 (ACL sig))
+      0x08, 0x00, 0x01, 0x00,
+      // Disconnection Response (ID, length: 4, dst cid, src cid)
+      0x07, id, 0x04, 0x00, LowerBits(kLocalId), UpperBits(kLocalId), LowerBits(kRemoteId),
+      UpperBits(kRemoteId));
 }
 
 Channel::A2dpOffloadConfiguration BuildA2dpOffloadConfiguration(
@@ -290,8 +275,8 @@ Channel::A2dpOffloadConfiguration BuildA2dpOffloadConfiguration(
 
 using TestingBase = ControllerTest<MockController>;
 
-// ChannelManager test fixture that uses MockAclDataChannel to inject inbound data and test
-// outbound data. Unexpected outbound packets will cause test failures.
+// ChannelManager test fixture that uses MockAclDataChannel to inject inbound data and test outbound
+// data. Unexpected outbound packets will cause test failures.
 class ChannelManagerMockAclChannelTest : public TestingBase {
  public:
   ChannelManagerMockAclChannelTest() = default;
@@ -392,8 +377,8 @@ class ChannelManagerMockAclChannelTest : public TestingBase {
     return chan;
   }
 
-  // |activated_cb| will be called with opened and activated Channel if
-  // successful and nullptr otherwise.
+  // |activated_cb| will be called with opened and activated Channel if successful and nullptr
+  // otherwise.
   void ActivateOutboundChannel(PSM psm, ChannelParameters chan_params, ChannelCallback activated_cb,
                                hci_spec::ConnectionHandle conn_handle = kTestHandle1,
                                Channel::ClosedCallback closed_cb = DoNothing,
@@ -510,9 +495,8 @@ class ChannelManagerMockAclChannelTest : public TestingBase {
   CommandId NextCommandId() { return next_command_id_++; }
 
  private:
-  bool SendPackets(std::list<hci::ACLDataPacketPtr> packets, ChannelId channel_id,
-                   hci::AclDataChannel::PacketPriority priority) {
-    for (const auto& packet : packets) {
+  bool SendPackets(std::list<hci::ACLDataPacketPtr> packets) {
+    for (auto& packet : packets) {
       const ByteBuffer& data = packet->view().data();
       if (expected_packets_.empty()) {
         ADD_FAILURE() << "Unexpected outbound ACL data";
@@ -526,20 +510,6 @@ class ChannelManagerMockAclChannelTest : public TestingBase {
           ADD_FAILURE_AT(expected.file_name, expected.line_number)
               << "Outbound ACL data doesn't match expected";
         }
-
-        if (expected.priority != priority) {
-          std::cout << "Expected: "
-                    << static_cast<std::underlying_type_t<hci::AclDataChannel::PacketPriority>>(
-                           expected.priority)
-                    << std::endl;
-          std::cout << "Found: "
-                    << static_cast<std::underlying_type_t<hci::AclDataChannel::PacketPriority>>(
-                           priority)
-                    << std::endl;
-          ADD_FAILURE_AT(expected.file_name, expected.line_number)
-              << "Outbound ACL priority doesn't match expected";
-        }
-
         expected_packets_.pop();
       }
     }
@@ -557,29 +527,28 @@ class ChannelManagerMockAclChannelTest : public TestingBase {
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ChannelManagerMockAclChannelTest);
 };
 
-// ChannelManager test fixture that uses a real AclDataChannel and uses MockController
-// for HCI packet expectations.
+// ChannelManager test fixture that uses a real AclDataChannel and uses MockController for HCI
+// packet expectations
 using ChannelManagerRealAclChannelTest = ChannelManagerMockControllerTest;
 
-TEST_F(ChannelManagerMockAclChannelTest, OpenFixedChannelErrorNoConn) {
+TEST_F(ChannelManagerRealAclChannelTest, OpenFixedChannelErrorNoConn) {
   // This should fail as the ChannelManager has no entry for |kTestHandle1|.
   EXPECT_FALSE(ActivateNewFixedChannel(kATTChannelId).is_alive());
 
-  LEFixedChannels fixed_channels =
-      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
+  QueueLEConnection(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   // This should fail as the ChannelManager has no entry for |kTestHandle2|.
   EXPECT_FALSE(ActivateNewFixedChannel(kATTChannelId, kTestHandle2).is_alive());
 }
 
-TEST_F(ChannelManagerMockAclChannelTest, OpenFixedChannelErrorDisallowedId) {
+TEST_F(ChannelManagerRealAclChannelTest, OpenFixedChannelErrorDisallowedId) {
   // LE-U link
-  LEFixedChannels fixed_channels =
-      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
+  QueueLEConnection(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   // ACL-U link
-  QueueRegisterACL(kTestHandle2, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
+  QueueAclConnection(kTestHandle2);
   RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   // This should fail as kSMPChannelId is ACL-U only.
   EXPECT_FALSE(ActivateNewFixedChannel(kSMPChannelId, kTestHandle1).is_alive());
@@ -588,44 +557,43 @@ TEST_F(ChannelManagerMockAclChannelTest, OpenFixedChannelErrorDisallowedId) {
   EXPECT_FALSE(ActivateNewFixedChannel(kATTChannelId, kTestHandle2).is_alive());
 }
 
-TEST_F(ChannelManagerMockAclChannelTest, DeactivateDynamicChannelInvalidatesChannelPointer) {
-  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
+TEST_F(ChannelManagerRealAclChannelTest, DeactivateDynamicChannelInvalidatesChannelPointer) {
+  QueueAclConnection(kTestHandle1);
   RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
-  const auto conn_req_id = NextCommandId();
-  const auto config_req_id = NextCommandId();
-  EXPECT_ACL_PACKET_OUT_(OutboundConnectionRequest(conn_req_id), kHighPriority);
-  EXPECT_ACL_PACKET_OUT_(OutboundConfigurationRequest(config_req_id), kHighPriority);
-  EXPECT_ACL_PACKET_OUT_(OutboundConfigurationResponse(kPeerConfigRequestId), kHighPriority);
   Channel::WeakPtr channel;
-  auto channel_cb = [&channel](l2cap::Channel::WeakPtr activated_chan) {
+  auto chan_cb = [&](l2cap::Channel::WeakPtr activated_chan) {
+    EXPECT_EQ(kTestHandle1, activated_chan->link_handle());
     channel = std::move(activated_chan);
   };
-  ActivateOutboundChannel(kTestPsm, kChannelParams, std::move(channel_cb), kTestHandle1, []() {});
-  ReceiveAclDataPacket(InboundConnectionResponse(conn_req_id));
-  ReceiveAclDataPacket(InboundConfigurationRequest(kPeerConfigRequestId));
-  ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
-  RunLoopUntilIdle();
+  QueueOutboundL2capConnection(kTestHandle1, kTestPsm, kLocalId, kRemoteId, std::move(chan_cb));
 
-  ASSERT_TRUE(channel.is_alive());
-  const auto disconn_req_id = NextCommandId();
-  EXPECT_ACL_PACKET_OUT_(OutboundDisconnectionRequest(disconn_req_id), kHighPriority);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+  EXPECT_TRUE(channel.is_alive());
+  ASSERT_TRUE(channel->Activate(NopRxCallback, DoNothing));
+
+  EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclDisconnectionReq(
+                                           NextCommandId(), kTestHandle1, kLocalId, kRemoteId));
+
   channel->Deactivate();
+  RunLoopUntilIdle();
   ASSERT_FALSE(channel.is_alive());
 }
 
-TEST_F(ChannelManagerMockAclChannelTest, DeactivateAttChannelInvalidatesChannelPointer) {
+TEST_F(ChannelManagerRealAclChannelTest, DeactivateAttChannelInvalidatesChannelPointer) {
   LEFixedChannels fixed_channels =
-      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
+      QueueLEConnection(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   ASSERT_TRUE(fixed_channels.att->Activate(NopRxCallback, DoNothing));
   fixed_channels.att->Deactivate();
   ASSERT_FALSE(fixed_channels.att.is_alive());
 }
 
-TEST_F(ChannelManagerMockAclChannelTest, OpenFixedChannelAndUnregisterLink) {
+TEST_F(ChannelManagerRealAclChannelTest, OpenFixedChannelAndUnregisterLink) {
   // LE-U link
   LEFixedChannels fixed_channels =
-      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
+      QueueLEConnection(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   bool closed_called = false;
   auto closed_cb = [&closed_called] { closed_called = true; };
@@ -638,23 +606,22 @@ TEST_F(ChannelManagerMockAclChannelTest, OpenFixedChannelAndUnregisterLink) {
 
   RunLoopUntilIdle();
 
-  // |closed_cb| will be called synchronously since it was registered using the
-  // current thread's task runner.
+  // |closed_cb| will be called synchronously since it was registered using the current thread's
+  // task runner.
   EXPECT_TRUE(closed_called);
 }
 
-TEST_F(ChannelManagerMockAclChannelTest, OpenFixedChannelAndCloseChannel) {
+TEST_F(ChannelManagerRealAclChannelTest, OpenFixedChannelAndCloseChannel) {
   // LE-U link
   LEFixedChannels fixed_channels =
-      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
+      QueueLEConnection(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   bool closed_called = false;
   auto closed_cb = [&closed_called] { closed_called = true; };
 
   ASSERT_TRUE(fixed_channels.att->Activate(NopRxCallback, closed_cb));
 
-  // Close the channel before unregistering the link. |closed_cb| should not get
-  // called.
+  // Close the channel before unregistering the link. |closed_cb| should not get called.
   fixed_channels.att->Deactivate();
   chanmgr()->RemoveConnection(kTestHandle1);
 
@@ -663,17 +630,17 @@ TEST_F(ChannelManagerMockAclChannelTest, OpenFixedChannelAndCloseChannel) {
   EXPECT_FALSE(closed_called);
 }
 
-TEST_F(ChannelManagerMockAclChannelTest, FixedChannelsUseBasicMode) {
+TEST_F(ChannelManagerRealAclChannelTest, FixedChannelsUseBasicMode) {
   LEFixedChannels fixed_channels =
-      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
+      QueueLEConnection(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   ASSERT_TRUE(fixed_channels.att->Activate(NopRxCallback, DoNothing));
   EXPECT_EQ(ChannelMode::kBasic, fixed_channels.att->mode());
 }
 
-TEST_F(ChannelManagerMockAclChannelTest, OpenAndCloseWithLinkMultipleFixedChannels) {
+TEST_F(ChannelManagerRealAclChannelTest, OpenAndCloseWithLinkMultipleFixedChannels) {
   // LE-U link
   LEFixedChannels fixed_channels =
-      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
+      QueueLEConnection(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   bool att_closed = false;
   auto att_closed_cb = [&att_closed] { att_closed = true; };
@@ -692,11 +659,11 @@ TEST_F(ChannelManagerMockAclChannelTest, OpenAndCloseWithLinkMultipleFixedChanne
   EXPECT_FALSE(smp_closed);
 }
 
-TEST_F(ChannelManagerMockAclChannelTest,
+TEST_F(ChannelManagerRealAclChannelTest,
        SendingPacketsBeforeRemoveConnectionAndVerifyChannelClosed) {
   // LE-U link
   LEFixedChannels fixed_channels =
-      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
+      QueueLEConnection(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   bool closed_called = false;
   auto closed_cb = [&closed_called] { closed_called = true; };
@@ -704,19 +671,16 @@ TEST_F(ChannelManagerMockAclChannelTest,
   ASSERT_TRUE(chan.is_alive());
   ASSERT_TRUE(chan->Activate(NopRxCallback, closed_cb));
 
-  EXPECT_LE_PACKET_OUT(StaticByteBuffer(
-                           // ACL data header (handle: 1, length: 6)
-                           0x01, 0x00, 0x06, 0x00,
+  EXPECT_ACL_PACKET_OUT(
+      test_device(), StaticByteBuffer(
+                         // ACL data header (handle: 1, length: 6)
+                         0x01, 0x00, 0x06, 0x00,
+                         // L2CAP B-frame (length: 2, channel-id: ATT)
+                         0x02, 0x00, LowerBits(kATTChannelId), UpperBits(kATTChannelId), 'h', 'i'));
 
-                           // L2CAP B-frame (length: 2, channel-id: ATT)
-                           0x02, 0x00, LowerBits(kATTChannelId), UpperBits(kATTChannelId),
-
-                           'h', 'i'),
-                       kLowPriority);
-
-  // Send a packet. This should be processed immediately.
   EXPECT_TRUE(chan->Send(NewBuffer('h', 'i')));
-  EXPECT_TRUE(AllExpectedPacketsSent());
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   chanmgr()->RemoveConnection(kTestHandle1);
 
@@ -727,10 +691,10 @@ TEST_F(ChannelManagerMockAclChannelTest,
 }
 
 // Tests that destroying the ChannelManager cleanly shuts down all channels.
-TEST_F(ChannelManagerMockAclChannelTest, DestroyingChannelManagerCleansUpChannels) {
+TEST_F(ChannelManagerRealAclChannelTest, DestroyingChannelManagerCleansUpChannels) {
   // LE-U link
   LEFixedChannels fixed_channels =
-      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
+      QueueLEConnection(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   bool closed_called = false;
   auto closed_cb = [&closed_called] { closed_called = true; };
@@ -738,19 +702,17 @@ TEST_F(ChannelManagerMockAclChannelTest, DestroyingChannelManagerCleansUpChannel
   ASSERT_TRUE(chan.is_alive());
   ASSERT_TRUE(chan->Activate(NopRxCallback, closed_cb));
 
-  EXPECT_LE_PACKET_OUT(StaticByteBuffer(
-                           // ACL data header (handle: 1, length: 6)
-                           0x01, 0x00, 0x06, 0x00,
-
-                           // L2CAP B-frame (length: 2, channel-id: ATT)
-                           0x02, 0x00, LowerBits(kATTChannelId), UpperBits(kATTChannelId),
-
-                           'h', 'i'),
-                       kLowPriority);
+  EXPECT_ACL_PACKET_OUT(
+      test_device(), StaticByteBuffer(
+                         // ACL data header (handle: 1, length: 6)
+                         0x01, 0x00, 0x06, 0x00,
+                         // L2CAP B-frame (length: 2, channel-id: ATT)
+                         0x02, 0x00, LowerBits(kATTChannelId), UpperBits(kATTChannelId), 'h', 'i'));
 
   // Send a packet. This should be processed immediately.
   EXPECT_TRUE(chan->Send(NewBuffer('h', 'i')));
-  EXPECT_TRUE(AllExpectedPacketsSent());
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   TearDown();
 
@@ -760,11 +722,11 @@ TEST_F(ChannelManagerMockAclChannelTest, DestroyingChannelManagerCleansUpChannel
   RunLoopUntilIdle();
 }
 
-TEST_F(ChannelManagerMockAclChannelTest, DeactivateDoesNotCrashOrHang) {
-  // Tests that the clean up task posted to the LogicalLink does not crash when
-  // a dynamic registry is not present (which is the case for LE links).
+TEST_F(ChannelManagerRealAclChannelTest, DeactivateDoesNotCrashOrHang) {
+  // Tests that the clean up task posted to the LogicalLink does not crash when a dynamic registry
+  // is not present (which is the case for LE links).
   LEFixedChannels fixed_channels =
-      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
+      QueueLEConnection(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   ASSERT_TRUE(fixed_channels.att.is_alive());
   ASSERT_TRUE(fixed_channels.att->Activate(NopRxCallback, DoNothing));
   fixed_channels.att->Deactivate();
@@ -773,9 +735,10 @@ TEST_F(ChannelManagerMockAclChannelTest, DeactivateDoesNotCrashOrHang) {
   RunLoopUntilIdle();
 }
 
-TEST_F(ChannelManagerMockAclChannelTest, CallingDeactivateFromClosedCallbackDoesNotCrashOrHang) {
-  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
+TEST_F(ChannelManagerRealAclChannelTest, CallingDeactivateFromClosedCallbackDoesNotCrashOrHang) {
+  QueueAclConnection(kTestHandle1);
   RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   auto chan = chanmgr()->OpenFixedChannel(kTestHandle1, kSMPChannelId);
   chan->Activate(NopRxCallback, [chan] { chan->Deactivate(); });
@@ -790,8 +753,7 @@ TEST_F(ChannelManagerMockAclChannelTest, ReceiveData) {
   ASSERT_TRUE(fixed_channels.att.is_alive());
   ASSERT_TRUE(fixed_channels.smp.is_alive());
 
-  // We use the ATT channel to control incoming packets and the SMP channel to
-  // quit the message loop.
+  // We use the ATT channel to control incoming packets and the SMP channel to quit the message loop
   std::vector<std::string> sdus;
   auto att_rx_cb = [&sdus](ByteBufferPtr sdu) {
     BT_DEBUG_ASSERT(sdu);
@@ -812,19 +774,18 @@ TEST_F(ChannelManagerMockAclChannelTest, ReceiveData) {
   ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (starting fragment)
       0x01, 0x00, 0x09, 0x00,
-
       // L2CAP B-frame
       0x05, 0x00, 0x04, 0x00, 'h', 'e', 'l', 'l', 'o'));
+
   ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (starting fragment)
       0x01, 0x00, 0x09, 0x00,
-
       // L2CAP B-frame (partial)
       0x0C, 0x00, 0x04, 0x00, 'h', 'o', 'w', ' ', 'a'));
+
   ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (continuing fragment)
       0x01, 0x10, 0x07, 0x00,
-
       // L2CAP B-frame (partial)
       'r', 'e', ' ', 'y', 'o', 'u', '?'));
 
@@ -832,7 +793,6 @@ TEST_F(ChannelManagerMockAclChannelTest, ReceiveData) {
   ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (starting fragment)
       0x01, 0x00, 0x04, 0x00,
-
       // L2CAP B-frame (empty)
       0x00, 0x00, 0x06, 0x00));
 
@@ -849,8 +809,7 @@ TEST_F(ChannelManagerMockAclChannelTest, ReceiveDataBeforeRegisteringLink) {
 
   StaticByteBuffer<255> buffer;
 
-  // We use the ATT channel to control incoming packets and the SMP channel to
-  // quit the message loop.
+  // We use the ATT channel to control incoming packets and the SMP channel to quit the message loop
   size_t packet_count = 0;
   auto att_rx_cb = [&packet_count](ByteBufferPtr sdu) { packet_count++; };
 
@@ -866,7 +825,6 @@ TEST_F(ChannelManagerMockAclChannelTest, ReceiveDataBeforeRegisteringLink) {
     ReceiveAclDataPacket(StaticByteBuffer(
         // ACL data header (starting fragment)
         0x01, 0x00, 0x04, 0x00,
-
         // L2CAP B-frame
         0x00, 0x00, 0x04, 0x00));
   }
@@ -875,7 +833,6 @@ TEST_F(ChannelManagerMockAclChannelTest, ReceiveDataBeforeRegisteringLink) {
   ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (starting fragment)
       0x01, 0x00, 0x04, 0x00,
-
       // L2CAP B-frame (empty)
       0x00, 0x00, 0x06, 0x00));
 
@@ -895,11 +852,11 @@ TEST_F(ChannelManagerMockAclChannelTest, ReceiveDataBeforeRegisteringLink) {
 }
 
 // Receive data after registering the link but before creating a fixed channel.
-TEST_F(ChannelManagerMockAclChannelTest, ReceiveDataBeforeCreatingFixedChannel) {
+TEST_F(ChannelManagerRealAclChannelTest, ReceiveDataBeforeCreatingFixedChannel) {
   constexpr size_t kPacketCount = 10;
 
   // Register an ACL connection because LE connections create fixed channels immediately.
-  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
+  QueueAclConnection(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
 
   StaticByteBuffer<255> buffer;
@@ -907,10 +864,9 @@ TEST_F(ChannelManagerMockAclChannelTest, ReceiveDataBeforeCreatingFixedChannel) 
   size_t packet_count = 0;
   auto rx_cb = [&packet_count](ByteBufferPtr sdu) { packet_count++; };
   for (size_t i = 0u; i < kPacketCount; i++) {
-    ReceiveAclDataPacket(StaticByteBuffer(
+    test_device()->SendACLDataChannelPacket(StaticByteBuffer(
         // ACL data header (starting fragment)
         LowerBits(kTestHandle1), UpperBits(kTestHandle1), 0x04, 0x00,
-
         // L2CAP B-frame (empty)
         0x00, 0x00, LowerBits(kSMPChannelId), UpperBits(kSMPChannelId)));
   }
@@ -923,18 +879,17 @@ TEST_F(ChannelManagerMockAclChannelTest, ReceiveDataBeforeCreatingFixedChannel) 
   EXPECT_EQ(kPacketCount, packet_count);
 }
 
-// Receive data after registering the link and creating the channel but before
-// setting the rx handler.
-TEST_F(ChannelManagerMockAclChannelTest, ReceiveDataBeforeSettingRxHandler) {
+// Receive data after registering the link and creating the channel but before setting the rx
+// handler.
+TEST_F(ChannelManagerRealAclChannelTest, ReceiveDataBeforeSettingRxHandler) {
   constexpr size_t kPacketCount = 10;
 
   LEFixedChannels fixed_channels =
-      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
+      QueueLEConnection(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
   StaticByteBuffer<255> buffer;
 
-  // We use the ATT channel to control incoming packets and the SMP channel to
-  // quit the message loop.
+  // We use the ATT channel to control incoming packets and the SMP channel to quit the message loop
   size_t packet_count = 0;
   auto att_rx_cb = [&packet_count](ByteBufferPtr sdu) { packet_count++; };
 
@@ -947,19 +902,17 @@ TEST_F(ChannelManagerMockAclChannelTest, ReceiveDataBeforeSettingRxHandler) {
 
   // ATT channel
   for (size_t i = 0u; i < kPacketCount; i++) {
-    ReceiveAclDataPacket(StaticByteBuffer(
+    test_device()->SendACLDataChannelPacket(StaticByteBuffer(
         // ACL data header (starting fragment)
         0x01, 0x00, 0x04, 0x00,
-
         // L2CAP B-frame
         0x00, 0x00, LowerBits(kATTChannelId), UpperBits(kATTChannelId)));
   }
 
   // SMP channel
-  ReceiveAclDataPacket(StaticByteBuffer(
+  test_device()->SendACLDataChannelPacket(StaticByteBuffer(
       // ACL data header (starting fragment)
       0x01, 0x00, 0x04, 0x00,
-
       // L2CAP B-frame (empty)
       0x00, 0x00, LowerBits(kLESMPChannelId), UpperBits(kLESMPChannelId)));
 
@@ -1004,14 +957,12 @@ TEST_F(ChannelManagerMockAclChannelTest, ActivateChannelProcessesCallbacksSynchr
   ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (starting fragment)
       0x01, 0x00, 0x08, 0x00,
-
       // L2CAP B-frame for SMP fixed channel (4-byte payload: U+1F928 in UTF-8)
       0x04, 0x00, 0x06, 0x00, 0xf0, 0x9f, 0xa4, 0xa8));
 
   ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (starting fragment)
       0x01, 0x00, 0x09, 0x00,
-
       // L2CAP B-frame for ATT fixed channel
       0x05, 0x00, 0x04, 0x00, 'h', 'e', 'l', 'l', 'o'));
 
@@ -1029,144 +980,231 @@ TEST_F(ChannelManagerMockAclChannelTest, ActivateChannelProcessesCallbacksSynchr
   EXPECT_TRUE(smp_closed_called);
 }
 
-TEST_F(ChannelManagerMockAclChannelTest, RemovingLinkInvalidatesChannelPointer) {
+TEST_F(ChannelManagerRealAclChannelTest, RemovingLinkInvalidatesChannelPointer) {
   LEFixedChannels fixed_channels =
-      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
+      QueueLEConnection(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   BT_ASSERT(fixed_channels.att->Activate(NopRxCallback, DoNothing));
   chanmgr()->RemoveConnection(kTestHandle1);
   EXPECT_FALSE(fixed_channels.att.is_alive());
 }
 
-TEST_F(ChannelManagerMockAclChannelTest, SendBasicSdu) {
+TEST_F(ChannelManagerRealAclChannelTest, SendBasicSDU) {
   LEFixedChannels fixed_channels =
-      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
+      QueueLEConnection(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   BT_ASSERT(fixed_channels.att->Activate(NopRxCallback, DoNothing));
 
-  EXPECT_LE_PACKET_OUT(StaticByteBuffer(
-                           // ACL data header (handle: 1, length 7)
-                           0x01, 0x00, 0x08, 0x00,
-
-                           // L2CAP B-frame: (length: 3, channel-id: 4)
-                           0x04, 0x00, 0x04, 0x00, 'T', 'e', 's', 't'),
-                       kLowPriority);
+  EXPECT_ACL_PACKET_OUT(test_device(), StaticByteBuffer(
+                                           // ACL data header (handle: 1, length 7)
+                                           0x01, 0x00, 0x08, 0x00,
+                                           // L2CAP B-frame: (length: 3, channel-id: 4)
+                                           0x04, 0x00, 0x04, 0x00, 'T', 'e', 's', 't'));
 
   EXPECT_TRUE(fixed_channels.att->Send(NewBuffer('T', 'e', 's', 't')));
   RunLoopUntilIdle();
 }
 
-// Tests that fragmentation of BR/EDR packets uses the BR/EDR buffer size.
-TEST_F(ChannelManagerMockAclChannelTest, SendBrEdrFragmentedSdus) {
-  constexpr size_t kMaxBrEdrDataSize = 6;
-  constexpr size_t kMaxLEDataSize = 5;
-
+// Tests that fragmentation of BR/EDR packets uses the BR/EDR buffer size
+TEST_F(ChannelManagerRealAclChannelTest, SendBREDRFragmentedSDUs) {
+  // Customize setup so that ACL payload size is 6 instead of default 1024
   TearDown();
-  SetUp(kMaxBrEdrDataSize, kMaxLEDataSize);
+  SetUp(/*max_acl_payload_size=*/6, /*max_le_payload_size=*/0);
 
   // Send fragmented Extended Features Information Request
-  EXPECT_ACL_PACKET_OUT_(StaticByteBuffer(
-                             // ACL data header (handle: 2, length: 6)
-                             0x02, 0x00, 0x06, 0x00,
-
-                             // L2CAP B-frame (length: 6, channel-id: 1)
-                             0x06, 0x00, 0x01, 0x00,
-
-                             // Extended Features Information Request
-                             // (code = 0x0A, ID)
-                             0x0A, NextCommandId()),
-                         kHighPriority);
-  EXPECT_ACL_PACKET_OUT_(
+  EXPECT_ACL_PACKET_OUT(test_device(), StaticByteBuffer(
+                                           // ACL data header (handle: 1, length: 6)
+                                           0x01, 0x00, 0x06, 0x00,
+                                           // L2CAP B-frame (length: 6, channel-id: 1)
+                                           0x06, 0x00, 0x01, 0x00,
+                                           // Extended Features Information Request
+                                           // (code = 0x0A, ID)
+                                           0x0A, NextCommandId()));
+  EXPECT_ACL_PACKET_OUT(
+      test_device(),
       StaticByteBuffer(
-          // ACL data header (handle: 2, pbf: continuing fr., length: 4)
-          0x02, 0x10, 0x04, 0x00,
-
-          // Extended Features Information Request cont.
-          // (Length: 2, type)
+          // ACL data header (handle: 1, pbf: continuing fr., length: 4)
+          0x01, 0x10, 0x04, 0x00,
+          // Extended Features Information Request cont. (Length: 2, type)
           0x02, 0x00, LowerBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported)),
-          UpperBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported))),
-      kHighPriority);
+          UpperBits(static_cast<uint16_t>(InformationType::kExtendedFeaturesSupported))));
 
   // Send fragmented Fixed Channels Supported Information Request
-  EXPECT_ACL_PACKET_OUT_(StaticByteBuffer(
-                             // ACL data header (handle: 2, length: 6)
-                             0x02, 0x00, 0x06, 0x00,
-
-                             // L2CAP B-frame (length: 6, channel-id: 1)
-                             0x06, 0x00, 0x01, 0x00,
-
-                             // Fixed Channels Supported Information Request
-                             // (command code, command ID)
-                             l2cap::kInformationRequest, NextCommandId()),
-                         kHighPriority);
-  EXPECT_ACL_PACKET_OUT_(
+  EXPECT_ACL_PACKET_OUT(test_device(), StaticByteBuffer(
+                                           // ACL data header (handle: 1, length: 6)
+                                           0x01, 0x00, 0x06, 0x00,
+                                           // L2CAP B-frame (length: 6, channel-id: 1)
+                                           0x06, 0x00, 0x01, 0x00,
+                                           // Fixed Channels Supported Information Request
+                                           // (command code, command ID)
+                                           l2cap::kInformationRequest, NextCommandId()));
+  EXPECT_ACL_PACKET_OUT(
+      test_device(),
       StaticByteBuffer(
-          // ACL data header (handle: 2, pbf: continuing fr., length: 4)
-          0x02, 0x10, 0x04, 0x00,
-
+          // ACL data header (handle: 1, pbf: continuing fr., length: 4)
+          0x01, 0x10, 0x04, 0x00,
           // Fixed Channels Supported Information Request cont.
           // (length: 2, type)
           0x02, 0x00, LowerBits(static_cast<uint16_t>(InformationType::kFixedChannelsSupported)),
-          UpperBits(static_cast<uint16_t>(InformationType::kFixedChannelsSupported))),
-      kHighPriority);
-  RegisterACL(kTestHandle2, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-  auto sm_chan = ActivateNewFixedChannel(kSMPChannelId, kTestHandle2);
+          UpperBits(static_cast<uint16_t>(InformationType::kFixedChannelsSupported))));
+
+  chanmgr()->AddACLConnection(
+      kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL,
+      /*link_error_callback=*/[]() {},
+      /*security_callback=*/[](auto, auto, auto) {});
+  auto sm_chan = ActivateNewFixedChannel(kSMPChannelId, kTestHandle1, DoNothing, NopRxCallback);
   ASSERT_TRUE(sm_chan.is_alive());
 
-  EXPECT_ACL_PACKET_OUT_(StaticByteBuffer(
-                             // ACL data header (handle: 2, length: 6)
-                             0x02, 0x00, 0x06, 0x00,
+  EXPECT_ACL_PACKET_OUT(test_device(),
+                        StaticByteBuffer(
+                            // ACL data header (handle: 1, length: 6)
+                            0x01, 0x00, 0x06, 0x00,
+                            // L2CAP B-frame: (length: 7, channel-id: 7, partial payload)
+                            0x07, 0x00, 0x07, 0x00, 'G', 'o'));
 
-                             // l2cap b-frame: (length: 7, channel-id: 7, partial payload)
-                             0x07, 0x00, 0x07, 0x00, 'G', 'o'),
-                         kHighPriority);
+  EXPECT_ACL_PACKET_OUT(test_device(),
+                        StaticByteBuffer(
+                            // ACL data header (handle: 1, pbf: continuing fr., length: 5)
+                            0x01, 0x10, 0x05, 0x00,
+                            // continuing payload
+                            'o', 'd', 'b', 'y', 'e'));
 
-  EXPECT_ACL_PACKET_OUT_(StaticByteBuffer(
-                             // ACL data header (handle: 2, pbf: continuing fr., length: 5)
-                             0x02, 0x10, 0x05, 0x00,
-
-                             // continuing payload
-                             'o', 'd', 'b', 'y', 'e'),
-                         kHighPriority);
-
-  // SDU of length 7 corresponds to a 11-octet B-frame. Due to the BR/EDR buffer size, this should
-  // be sent over a 6-byte then a 5-byte fragment.
+  // SDU of length 7 corresponds to a 11-octet B-frame
+  // Due to the BR/EDR buffer size, this should be sent over a 6-byte then a 5-byte fragment.
   EXPECT_TRUE(sm_chan->Send(NewBuffer('G', 'o', 'o', 'd', 'b', 'y', 'e')));
 
   RunLoopUntilIdle();
 }
 
-// Tests that fragmentation of LE packets uses the LE buffer size.
-TEST_F(ChannelManagerMockAclChannelTest, SendFragmentedSdus) {
-  constexpr size_t kMaxBrEdrDataSize = 6;
-  constexpr size_t kMaxLEDataSize = 5;
-
+TEST_F(ChannelManagerRealAclChannelTest, SendBREDRFragmentedSDUsOverTwoDynamicChannels) {
+  // Customize setup so that ACL payload size is 18 instead of default 1024
   TearDown();
-  SetUp(kMaxBrEdrDataSize, kMaxLEDataSize);
+  SetUp(/*max_acl_payload_size=*/18, /*max_le_payload_size=*/0);
+
+  constexpr l2cap::PSM kPSM0 = l2cap::kAVCTP;
+  constexpr l2cap::ChannelId kLocalId0 = 0x0040;
+  constexpr l2cap::ChannelId kRemoteId0 = 0x9042;
+
+  constexpr l2cap::PSM kPSM1 = l2cap::kAVDTP;
+  constexpr l2cap::ChannelId kLocalId1 = 0x0041;
+  constexpr l2cap::ChannelId kRemoteId1 = 0x9043;
+
+  // L2CAP connection request/response, config request, config response
+  constexpr size_t kChannelCreationPacketCount = 3;
+
+  QueueAclConnection(kTestHandle1);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+
+  l2cap::Channel::WeakPtr channel0;
+  auto chan_cb0 = [&](auto activated_chan) {
+    EXPECT_EQ(kTestHandle1, activated_chan->link_handle());
+    channel0 = std::move(activated_chan);
+  };
+  QueueOutboundL2capConnection(kTestHandle1, kPSM0, kLocalId0, kRemoteId0, std::move(chan_cb0));
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+  ASSERT_TRUE(channel0.is_alive());
+  ASSERT_TRUE(channel0->Activate(NopRxCallback, DoNothing));
+
+  l2cap::Channel::WeakPtr channel1;
+  auto chan_cb1 = [&](auto activated_chan) {
+    EXPECT_EQ(kTestHandle1, activated_chan->link_handle());
+    channel1 = std::move(activated_chan);
+  };
+  QueueOutboundL2capConnection(kTestHandle1, kPSM1, kLocalId1, kRemoteId1, std::move(chan_cb1));
+
+  // Free up the buffer space from packets sent while creating |channel0|
+  test_device()->SendCommandChannelPacket(
+      NumberOfCompletedPacketsPacket(kTestHandle1, kChannelCreationPacketCount));
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+  EXPECT_TRUE(channel1.is_alive());
+  ASSERT_TRUE(channel1->Activate(NopRxCallback, DoNothing));
+
+  // Free up the buffer space from packets sent while creating |channel1|
+  test_device()->SendCommandChannelPacket(NumberOfCompletedPacketsPacket(
+      kTestHandle1, kConnectionCreationPacketCount + kChannelCreationPacketCount));
+  RunLoopUntilIdle();
+
+  // Queue 14 packets in total, distributed between the two channels
+  // Fill up BR/EDR controller buffer then queue 4 additional packets
+  for (size_t i = 0; i < kBufferMaxNumPackets / 2 + 2; i++) {
+    Channel::WeakPtr channel = (i % 2) ? channel1 : channel0;
+    ChannelId channel_id = (i % 2) ? kRemoteId1 : kRemoteId0;
+
+    const StaticByteBuffer kPacket0(
+        // ACL data header (handle: 1, length: 18)
+        0x01, 0x00, 0x12, 0x00,
+        // L2CAP B-frame: (length: 14, channel-id, partial payload)
+        0x14, 0x00, LowerBits(channel_id), UpperBits(channel_id), 'G', 'o', 'o', 'o', 'o', 'o', 'o',
+        'o', 'o', 'o', 'o', 'o', 'o', 'o');
+    EXPECT_ACL_PACKET_OUT(test_device(), kPacket0);
+
+    const StaticByteBuffer kPacket1(
+        // ACL data header (handle: 1, pbf: continuing fr., length: 6)
+        0x01, 0x10, 0x06, 0x00,
+        // continuing payload
+        'o', 'o', 'd', 'b', 'y', 'e');
+    EXPECT_ACL_PACKET_OUT(test_device(), kPacket1);
+
+    // SDU of length 20 corresponds to a 24-octet B-frame
+    // Due to the BR/EDR buffer size, this should be sent over a 18-byte then a 6-byte fragment.
+    EXPECT_TRUE(channel->Send(NewBuffer('G', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o', 'o',
+                                        'o', 'o', 'o', 'o', 'd', 'b', 'y', 'e')));
+    RunLoopUntilIdle();
+  }
+  EXPECT_FALSE(test_device()->AllExpectedDataPacketsSent());
+
+  // Notify the processed packets with a Number Of Completed Packet HCI event
+  // This should cause the remaining 4 packets to be sent
+  test_device()->SendCommandChannelPacket(NumberOfCompletedPacketsPacket(kTestHandle1, 4));
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+}
+
+// Tests that fragmentation of LE packets uses the LE buffer size
+TEST_F(ChannelManagerRealAclChannelTest, SendLEFragmentedSDUs) {
+  TearDown();
+  SetUp(/*max_acl_payload_size=*/6, /*max_le_payload_size=*/5);
 
   LEFixedChannels fixed_channels =
-      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
+      QueueLEConnection(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   ASSERT_TRUE(fixed_channels.att->Activate(NopRxCallback, DoNothing));
 
-  EXPECT_LE_PACKET_OUT(StaticByteBuffer(
-                           // ACL data header (handle: 1, length: 5)
-                           0x01, 0x00, 0x05, 0x00,
+  EXPECT_ACL_PACKET_OUT(test_device(),
+                        StaticByteBuffer(
+                            // ACL data header (handle: 1, length: 5)
+                            0x01, 0x00, 0x05, 0x00,
+                            // L2CAP B-frame: (length: 5, channel-id: 4, partial payload)
+                            0x05, 0x00, 0x04, 0x00, 'H'));
 
-                           // L2CAP B-frame: (length: 5, channel-id: 4, partial payload)
-                           0x05, 0x00, 0x04, 0x00, 'H'),
-                       kLowPriority);
+  EXPECT_ACL_PACKET_OUT(test_device(),
+                        StaticByteBuffer(
+                            // ACL data header (handle: 1, pbf: continuing fr., length: 4)
+                            0x01, 0x10, 0x04, 0x00,
+                            // Continuing payload
+                            'e', 'l', 'l', 'o'));
 
-  EXPECT_LE_PACKET_OUT(StaticByteBuffer(
-                           // ACL data header (handle: 1, pbf: continuing fr., length: 4)
-                           0x01, 0x10, 0x04, 0x00,
-
-                           // Continuing payload
-                           'e', 'l', 'l', 'o'),
-                       kLowPriority);
-
-  // SDU of length 5 corresponds to a 9-octet B-frame which should be sent over a 5-byte and a 4-
-  // byte fragment.
+  // SDU of length 5 corresponds to a 9-octet B-frame which should be sent over a 5-byte and a
+  // 4-byte fragment.
   EXPECT_TRUE(fixed_channels.att->Send(NewBuffer('H', 'e', 'l', 'l', 'o')));
 
   RunLoopUntilIdle();
+}
+
+TEST_F(ChannelManagerMockAclChannelTest, ACLChannelSignalLinkError) {
+  bool link_error = false;
+  auto link_error_cb = [&link_error] { link_error = true; };
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL, link_error_cb);
+
+  // Activate a new Security Manager channel to signal the error.
+  auto chan = ActivateNewFixedChannel(kSMPChannelId, kTestHandle1);
+  chan->SignalLinkError();
+
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(link_error);
 }
 
 TEST_F(ChannelManagerMockAclChannelTest, LEChannelSignalLinkError) {
@@ -1178,20 +1216,6 @@ TEST_F(ChannelManagerMockAclChannelTest, LEChannelSignalLinkError) {
   // Activate a new Attribute channel to signal the error.
   fixed_channels.att->Activate(NopRxCallback, DoNothing);
   fixed_channels.att->SignalLinkError();
-
-  RunLoopUntilIdle();
-
-  EXPECT_TRUE(link_error);
-}
-
-TEST_F(ChannelManagerMockAclChannelTest, ACLChannelSignalLinkError) {
-  bool link_error = false;
-  auto link_error_cb = [&link_error] { link_error = true; };
-  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL, link_error_cb);
-
-  // Activate a new Security Manager channel to signal the error.
-  auto chan = ActivateNewFixedChannel(kSMPChannelId, kTestHandle1);
-  chan->SignalLinkError();
 
   RunLoopUntilIdle();
 
@@ -1252,7 +1276,7 @@ TEST_F(ChannelManagerMockAclChannelTest, SignalLinkErrorDisconnectsChannels) {
 
   RETURN_IF_FATAL(RunLoopUntilIdle());
 
-  // link_error_cb is not called until Disconnection Response is received for each dynamic channel.
+  // link_error_cb is not called until Disconnection Response is received for each dynamic channel
   EXPECT_FALSE(link_error);
 
   // But channels should be deactivated to prevent any activity.
@@ -1269,49 +1293,36 @@ TEST_F(ChannelManagerMockAclChannelTest, SignalLinkErrorDisconnectsChannels) {
   EXPECT_TRUE(link_error);
 }
 
-TEST_F(ChannelManagerMockAclChannelTest, LEConnectionParameterUpdateRequest) {
-  bool conn_param_cb_called = false;
-  auto conn_param_cb = [&conn_param_cb_called](const auto& params) {
-    // The parameters should match the payload of the HCI packet seen below.
-    EXPECT_EQ(0x0006, params.min_interval());
-    EXPECT_EQ(0x0C80, params.max_interval());
-    EXPECT_EQ(0x01F3, params.max_latency());
-    EXPECT_EQ(0x0C80, params.supervision_timeout());
-    conn_param_cb_called = true;
-  };
+TEST_F(ChannelManagerRealAclChannelTest, LEConnectionParameterUpdateRequest) {
+  EXPECT_ACL_PACKET_OUT(test_device(),
+                        StaticByteBuffer(
+                            // ACL data header (handle: 0x0001, length: 10 bytes)
+                            0x01, 0x00, 0x0a, 0x00,
+                            // L2CAP B-frame header (length: 6 bytes, channel-id: 0x0005 (LEsig))
+                            0x06, 0x00, 0x05, 0x00,
+                            // L2CAP C-frame header
+                            // (LE conn. param. update response, id: 1, length: 2 bytes)
+                            0x13, 0x01, 0x02, 0x00,
+                            // result: accepted
+                            0x00, 0x00));
 
-  EXPECT_ACL_PACKET_OUT_(StaticByteBuffer(
-                             // ACL data header (handle: 0x0001, length: 10 bytes)
-                             0x01, 0x00, 0x0a, 0x00,
+  LEFixedChannels fixed_channels =
+      QueueLEConnection(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
+  ASSERT_TRUE(fixed_channels.att.is_alive());
+  ASSERT_TRUE(fixed_channels.smp.is_alive());
 
-                             // L2CAP B-frame header (length: 6 bytes, channel-id: 0x0005 (LE sig))
-                             0x06, 0x00, 0x05, 0x00,
-
-                             // L2CAP C-frame header
-                             // (LE conn. param. update response, id: 1, length: 2 bytes)
-                             0x13, 0x01, 0x02, 0x00,
-
-                             // result: accepted
-                             0x00, 0x00),
-                         kHighPriority);
-
-  LEFixedChannels fixed_channels = RegisterLE(
-      kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL, DoNothing, conn_param_cb);
+  ASSERT_TRUE(fixed_channels.att->Activate(NopRxCallback, DoNothing));
+  ASSERT_TRUE(fixed_channels.smp->Activate(NopRxCallback, DoNothing));
 
   // clang-format off
-  ReceiveAclDataPacket(StaticByteBuffer(
+  test_device()->SendACLDataChannelPacket(StaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 16 bytes)
       0x01, 0x00, 0x10, 0x00,
-
       // L2CAP B-frame header (length: 12 bytes, channel-id: 0x0005 (LE sig))
       0x0C, 0x00, 0x05, 0x00,
-
-      // L2CAP C-frame header
-      // (LE conn. param. update request, id: 1, length: 8 bytes)
+      // L2CAP C-frame header (LE conn. param. update request, id: 1, length: 8 bytes)
       0x12, 0x01, 0x08, 0x00,
-
-      // Connection parameters (hardcoded to match the expections in
-      // |conn_param_cb|).
+      // Connection parameters (hardcoded to match the expectations in |conn_param_cb|).
       0x06, 0x00,
       0x80, 0x0C,
       0xF3, 0x01,
@@ -1319,21 +1330,6 @@ TEST_F(ChannelManagerMockAclChannelTest, LEConnectionParameterUpdateRequest) {
   // clang-format on
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(conn_param_cb_called);
-}
-
-auto OutboundDisconnectionResponse(CommandId id) {
-  return StaticByteBuffer(
-      // ACL data header (handle: 0x0001, length: 12 bytes)
-      0x01, 0x00, 0x0c, 0x00,
-
-      // L2CAP B-frame header (length: 8 bytes, channel-id: 0x0001 (ACL sig))
-      0x08, 0x00, 0x01, 0x00,
-
-      // Disconnection Response
-      // (ID, length: 4, dst cid, src cid)
-      0x07, id, 0x04, 0x00, LowerBits(kLocalId), UpperBits(kLocalId), LowerBits(kRemoteId),
-      UpperBits(kRemoteId));
 }
 
 TEST_F(ChannelManagerMockAclChannelTest, ACLOutboundDynamicChannelLocalDisconnect) {
@@ -1377,7 +1373,6 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLOutboundDynamicChannelLocalDisconnec
       StaticByteBuffer(
           // ACL data header (handle: 1, length 8)
           0x01, 0x00, 0x08, 0x00,
-
           // L2CAP B-frame: (length: 4, channel-id)
           0x04, 0x00, LowerBits(kRemoteId), UpperBits(kRemoteId), 'T', 'e', 's', 't'),
       kLowPriority);
@@ -1390,33 +1385,11 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLOutboundDynamicChannelLocalDisconnec
   const auto disconn_req_id = NextCommandId();
   EXPECT_ACL_PACKET_OUT_(OutboundDisconnectionRequest(disconn_req_id), kHighPriority);
 
-  // Packets for testing filter against
-  constexpr hci_spec::ConnectionHandle kTestHandle2 = 0x02;
-  constexpr ChannelId kWrongChannelId = 0x02;
-  auto dummy_packet1 =
-      hci::ACLDataPacket::New(kTestHandle1, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
-                              hci_spec::ACLBroadcastFlag::kPointToPoint, 0x00);
-  auto dummy_packet2 =
-      hci::ACLDataPacket::New(kTestHandle2, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
-                              hci_spec::ACLBroadcastFlag::kPointToPoint, 0x00);
-  size_t filter_cb_count = 0;
-  auto filter_cb = [&](hci::AclDataChannel::AclPacketPredicate filter) {
-    // filter out correct closed channel on correct connection handle
-    EXPECT_TRUE(filter(dummy_packet1, kLocalId));
-    // do not filter out other channels
-    EXPECT_FALSE(filter(dummy_packet1, kWrongChannelId));
-    // do not filter out other connections
-    EXPECT_FALSE(filter(dummy_packet2, kLocalId));
-    filter_cb_count++;
-  };
-  acl_data_channel()->set_drop_queued_packets_cb(std::move(filter_cb));
-
   // Explicit deactivation should not result in |closed_cb| being called.
   channel->Deactivate();
 
   RunLoopUntilIdle();
   EXPECT_TRUE(AllExpectedPacketsSent());
-  EXPECT_EQ(1u, filter_cb_count);
 
   // Ensure callback is not called after the channel has disconnected
   acl_data_channel()->set_drop_queued_packets_cb(nullptr);
@@ -1425,10 +1398,8 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLOutboundDynamicChannelLocalDisconnec
   ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 12 bytes)
       0x01, 0x00, 0x0c, 0x00,
-
       // L2CAP B-frame header (length: 8 bytes, channel-id: 0x0001 (ACL sig))
       0x08, 0x00, 0x01, 0x00,
-
       // Disconnection Response
       // (ID, length: 4, dst cid, src cid)
       0x07, disconn_req_id, 0x04, 0x00,
@@ -1440,110 +1411,63 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLOutboundDynamicChannelLocalDisconnec
   EXPECT_FALSE(closed_cb_called);
 }
 
-TEST_F(ChannelManagerMockAclChannelTest, ACLOutboundDynamicChannelRemoteDisconnect) {
-  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
+TEST_F(ChannelManagerRealAclChannelTest, ACLOutboundDynamicChannelRemoteDisconnect) {
+  QueueAclConnection(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   Channel::WeakPtr channel;
-  auto channel_cb = [&channel](l2cap::Channel::WeakPtr activated_chan) {
+  auto chan_cb = [&](l2cap::Channel::WeakPtr activated_chan) {
+    EXPECT_EQ(kTestHandle1, activated_chan->link_handle());
     channel = std::move(activated_chan);
   };
-
-  bool channel_closed = false;
-  auto closed_cb = [&channel_closed] { channel_closed = true; };
-
-  bool sdu_received = false;
-  auto data_rx_cb = [&sdu_received](ByteBufferPtr sdu) {
-    sdu_received = true;
-    BT_DEBUG_ASSERT(sdu);
-    EXPECT_EQ("Test", sdu->AsString());
-  };
-
-  const auto conn_req_id = NextCommandId();
-  const auto config_req_id = NextCommandId();
-
-  EXPECT_ACL_PACKET_OUT_(OutboundConnectionRequest(conn_req_id), kHighPriority);
-  EXPECT_ACL_PACKET_OUT_(OutboundConfigurationRequest(config_req_id), kHighPriority);
-  EXPECT_ACL_PACKET_OUT_(OutboundConfigurationResponse(kPeerConfigRequestId), kHighPriority);
-
-  ActivateOutboundChannel(kTestPsm, kChannelParams, std::move(channel_cb), kTestHandle1,
-                          std::move(closed_cb), std::move(data_rx_cb));
-
-  ReceiveAclDataPacket(InboundConnectionResponse(conn_req_id));
-  ReceiveAclDataPacket(InboundConfigurationRequest(kPeerConfigRequestId));
-  ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
+  QueueOutboundL2capConnection(kTestHandle1, kTestPsm, kLocalId, kRemoteId, std::move(chan_cb));
 
   RunLoopUntilIdle();
-
-  EXPECT_TRUE(AllExpectedPacketsSent());
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
   EXPECT_TRUE(channel.is_alive());
-  EXPECT_FALSE(channel_closed);
+  bool dynamic_channel_closed = false;
+  ASSERT_TRUE(channel->Activate(NopRxCallback, /*closed_callback=*/[&dynamic_channel_closed] {
+    dynamic_channel_closed = true;
+  }));
+  EXPECT_FALSE(dynamic_channel_closed);
+  EXPECT_EQ(kLocalId, channel->id());
+  EXPECT_EQ(kRemoteId, channel->remote_id());
+  EXPECT_EQ(ChannelMode::kBasic, channel->mode());
 
   // Test SDU reception.
-  ReceiveAclDataPacket(StaticByteBuffer(
+  test_device()->SendACLDataChannelPacket(StaticByteBuffer(
       // ACL data header (handle: 1, length 8)
       0x01, 0x00, 0x08, 0x00,
-
       // L2CAP B-frame: (length: 4, channel-id)
       0x04, 0x00, LowerBits(kLocalId), UpperBits(kLocalId), 'T', 'e', 's', 't'));
 
   RunLoopUntilIdle();
-  EXPECT_TRUE(sdu_received);
 
-  EXPECT_ACL_PACKET_OUT_(OutboundDisconnectionResponse(7), kHighPriority);
-
-  // Packets for testing filter against
-  constexpr hci_spec::ConnectionHandle kTestHandle2 = 0x02;
-  constexpr ChannelId kWrongChannelId = 0x02;
-  auto dummy_packet1 =
-      hci::ACLDataPacket::New(kTestHandle1, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
-                              hci_spec::ACLBroadcastFlag::kPointToPoint, 0x00);
-  auto dummy_packet2 =
-      hci::ACLDataPacket::New(kTestHandle2, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
-                              hci_spec::ACLBroadcastFlag::kPointToPoint, 0x00);
-  size_t filter_cb_count = 0;
-  auto filter_cb = [&](hci::AclDataChannel::AclPacketPredicate filter) {
-    // filter out correct closed channel
-    EXPECT_TRUE(filter(dummy_packet1, kLocalId));
-    // do not filter out other channels
-    EXPECT_FALSE(filter(dummy_packet1, kWrongChannelId));
-    // do not filter out other connections
-    EXPECT_FALSE(filter(dummy_packet2, kLocalId));
-    filter_cb_count++;
-  };
-  acl_data_channel()->set_drop_queued_packets_cb(std::move(filter_cb));
+  EXPECT_ACL_PACKET_OUT(test_device(), OutboundDisconnectionResponse(7));
 
   // clang-format off
-  ReceiveAclDataPacket(StaticByteBuffer(
+  test_device()->SendACLDataChannelPacket(StaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 12 bytes)
       0x01, 0x00, 0x0c, 0x00,
-
       // L2CAP B-frame header (length: 8 bytes, channel-id: 0x0001 (ACL sig))
       0x08, 0x00, 0x01, 0x00,
-
-      // Disconnection Request
-      // (ID: 7, length: 4, dst cid, src cid)
+      // Disconnection Request (ID: 7, length: 4, dst cid, src cid)
       0x06, 0x07, 0x04, 0x00,
       LowerBits(kLocalId), UpperBits(kLocalId), LowerBits(kRemoteId), UpperBits(kRemoteId)));
   // clang-format on
 
   // The preceding peer disconnection should have immediately destroyed the route to the channel.
   // L2CAP will process it and this following SDU back-to-back. The latter should be dropped.
-  sdu_received = false;
-  ReceiveAclDataPacket(StaticByteBuffer(
+  test_device()->SendACLDataChannelPacket(StaticByteBuffer(
       // ACL data header (handle: 1, length 5)
       0x01, 0x00, 0x05, 0x00,
-
       // L2CAP B-frame: (length: 1, channel-id: 0x0040)
       0x01, 0x00, 0x40, 0x00, '!'));
 
   RunLoopUntilIdle();
 
-  EXPECT_TRUE(channel_closed);
-  EXPECT_FALSE(sdu_received);
-  EXPECT_EQ(1u, filter_cb_count);
-
-  // Ensure callback is not called after the channel has disconnected
-  acl_data_channel()->set_drop_queued_packets_cb(nullptr);
+  EXPECT_TRUE(dynamic_channel_closed);
 }
 
 TEST_F(ChannelManagerMockAclChannelTest, ACLOutboundDynamicChannelDataNotBuffered) {
@@ -1563,7 +1487,6 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLOutboundDynamicChannelDataNotBuffere
   ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (handle: 1, length 8)
       0x01, 0x00, 0x08, 0x00,
-
       // L2CAP B-frame: (length: 4, channel-id)
       0x04, 0x00, LowerBits(kLocalId), UpperBits(kLocalId), 'T', 'e', 's', 't'));
 
@@ -1579,13 +1502,12 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLOutboundDynamicChannelDataNotBuffere
 
   ReceiveAclDataPacket(InboundConnectionResponse(conn_req_id));
 
-  // The channel is connected but not configured, so no data should flow on the
-  // channel. Test that this received data is also ignored.
+  // The channel is connected but not configured, so no data should flow on the channel.
+  // Test that this received data is also ignored.
   // clang-format off
   ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (handle: 1, length 8)
       0x01, 0x00, 0x08, 0x00,
-
       // L2CAP B-frame: (length: 4, channel-id)
       0x04, 0x00, LowerBits(kLocalId), UpperBits(kLocalId), 'T', 'e', 's', 't'));
   // clang-format on
@@ -1605,10 +1527,8 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLOutboundDynamicChannelDataNotBuffere
   ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 12 bytes)
       0x01, 0x00, 0x0c, 0x00,
-
       // L2CAP B-frame header (length: 8 bytes, channel-id: 0x0001 (ACL sig))
       0x08, 0x00, 0x01, 0x00,
-
       // Disconnection Request
       // (ID: 7, length: 4, dst cid, src cid)
       0x06, 0x07, 0x04, 0x00,
@@ -1636,13 +1556,10 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLOutboundDynamicChannelRemoteRefused)
   ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 16 bytes)
       0x01, 0x00, 0x10, 0x00,
-
       // L2CAP B-frame header (length: 12 bytes, channel-id: 0x0001 (ACL sig))
       0x0c, 0x00, 0x01, 0x00,
-
       // Connection Response (ID, length: 8, dst cid: 0x0000 (invalid),
-      // src cid, result: 0x0004 (Refused; no resources available),
-      // status: none)
+      // src cid, result: 0x0004 (Refused; no resources available), status: none)
       0x03, conn_req_id, 0x08, 0x00,
       0x00, 0x00, LowerBits(kLocalId), UpperBits(kLocalId),
       0x04, 0x00, 0x00, 0x00));
@@ -1679,10 +1596,8 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLOutboundDynamicChannelFailedConfigur
   ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 14 bytes)
       0x01, 0x00, 0x0e, 0x00,
-
       // L2CAP B-frame header (length: 10 bytes, channel-id: 0x0001 (ACL sig))
       0x0a, 0x00, 0x01, 0x00,
-
       // Configuration Response (ID, length: 6, src cid, flags: 0,
       // result: 0x0002 (Rejected; no reason provided))
       0x05, config_req_id, 0x06, 0x00,
@@ -1692,12 +1607,9 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLOutboundDynamicChannelFailedConfigur
   ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 12 bytes)
       0x01, 0x00, 0x0c, 0x00,
-
       // L2CAP B-frame header (length: 8 bytes, channel-id: 0x0001 (ACL sig))
       0x08, 0x00, 0x01, 0x00,
-
-      // Disconnection Response
-      // (ID, length: 4, dst cid, src cid)
+      // Disconnection Response (ID, length: 4, dst cid, src cid)
       0x07, disconn_req_id, 0x04, 0x00,
       LowerBits(kRemoteId), UpperBits(kRemoteId), LowerBits(kLocalId), UpperBits(kLocalId)));
   // clang-format on
@@ -1713,8 +1625,8 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLInboundDynamicChannelLocalDisconnect
 
   QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
 
-  bool closed_cb_called = false;
-  auto closed_cb = [&closed_cb_called] { closed_cb_called = true; };
+  bool dynamic_channel_closed = false;
+  auto closed_cb = [&dynamic_channel_closed] { dynamic_channel_closed = true; };
 
   Channel::WeakPtr channel;
   auto channel_cb = [&channel,
@@ -1740,7 +1652,7 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLInboundDynamicChannelLocalDisconnect
 
   EXPECT_TRUE(AllExpectedPacketsSent());
   ASSERT_TRUE(channel.is_alive());
-  EXPECT_FALSE(closed_cb_called);
+  EXPECT_FALSE(dynamic_channel_closed);
   EXPECT_EQ(kLocalId, channel->id());
   EXPECT_EQ(kRemoteId, channel->remote_id());
 
@@ -1750,7 +1662,6 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLInboundDynamicChannelLocalDisconnect
       StaticByteBuffer(
           // ACL data header (handle: 1, length 7)
           0x01, 0x00, 0x08, 0x00,
-
           // L2CAP B-frame: (length: 3, channel-id)
           0x04, 0x00, LowerBits(kRemoteId), UpperBits(kRemoteId), 'T', 'e', 's', 't'),
       kLowPriority);
@@ -1773,31 +1684,29 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLInboundDynamicChannelLocalDisconnect
   ReceiveAclDataPacket(StaticByteBuffer(
       // ACL data header (handle: 0x0001, length: 12 bytes)
       0x01, 0x00, 0x0c, 0x00,
-
       // L2CAP B-frame header (length: 8 bytes, channel-id: 0x0001 (ACL sig))
       0x08, 0x00, 0x01, 0x00,
-
-      // Disconnection Response
-      // (ID, length: 4, dst cid, src cid)
+      // Disconnection Response (ID, length: 4, dst cid, src cid)
       0x07, disconn_req_id, 0x04, 0x00,
       LowerBits(kRemoteId), UpperBits(kRemoteId), LowerBits(kLocalId), UpperBits(kLocalId)));
   // clang-format on
 
   RunLoopUntilIdle();
 
-  EXPECT_FALSE(closed_cb_called);
+  EXPECT_FALSE(dynamic_channel_closed);
 }
 
-TEST_F(ChannelManagerMockAclChannelTest, LinkSecurityProperties) {
-  sm::SecurityProperties security(sm::SecurityLevel::kEncrypted, 16, /*secure_connections=*/false);
+TEST_F(ChannelManagerRealAclChannelTest, LinkSecurityProperties) {
+  sm::SecurityProperties security(sm::SecurityLevel::kEncrypted, 16,
+                                  /*secure_connections=*/false);
 
   // Has no effect.
   chanmgr()->AssignLinkSecurityProperties(kTestHandle1, security);
 
-  // Register a link and open a channel. The security properties should be
-  // accessible using the channel.
+  // Register a link and open a channel.
+  // The security properties should be accessible using the channel.
   LEFixedChannels fixed_channels =
-      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
+      QueueLEConnection(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   ASSERT_TRUE(fixed_channels.att->Activate(NopRxCallback, DoNothing));
 
   // The channel should start out at the lowest level of security.
@@ -1810,11 +1719,11 @@ TEST_F(ChannelManagerMockAclChannelTest, LinkSecurityProperties) {
   EXPECT_EQ(security, fixed_channels.att->security());
 }
 
-TEST_F(ChannelManagerMockAclChannelTest, AssignLinkSecurityPropertiesOnClosedLinkDoesNothing) {
-  // Register a link and open a channel. The security properties should be
-  // accessible using the channel.
+TEST_F(ChannelManagerRealAclChannelTest, AssignLinkSecurityPropertiesOnClosedLinkDoesNothing) {
+  // Register a link and open a channel.
+  // The security properties should be accessible using the channel.
   LEFixedChannels fixed_channels =
-      RegisterLE(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
+      QueueLEConnection(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   ASSERT_TRUE(fixed_channels.att->Activate(NopRxCallback, DoNothing));
 
   chanmgr()->RemoveConnection(kTestHandle1);
@@ -1822,7 +1731,8 @@ TEST_F(ChannelManagerMockAclChannelTest, AssignLinkSecurityPropertiesOnClosedLin
   EXPECT_FALSE(fixed_channels.att.is_alive());
 
   // Assign a new security level.
-  sm::SecurityProperties security(sm::SecurityLevel::kEncrypted, 16, /*secure_connections=*/false);
+  sm::SecurityProperties security(sm::SecurityLevel::kEncrypted, 16,
+                                  /*secure_connections=*/false);
   chanmgr()->AssignLinkSecurityProperties(kTestHandle1, security);
 }
 
@@ -1854,8 +1764,7 @@ TEST_F(ChannelManagerMockAclChannelTest, UpgradeSecurity) {
   l2cap::Channel::WeakPtr att = std::move(fixed_channels.att);
   ASSERT_TRUE(att->Activate(NopRxCallback, DoNothing));
 
-  // Requesting security at or below the current level should succeed without
-  // doing anything.
+  // Requesting security at or below the current level should succeed without doing anything.
   att->UpgradeSecurity(sm::SecurityLevel::kNoSecurity, status_callback);
   RunLoopUntilIdle();
   EXPECT_EQ(0, security_request_count);
@@ -1876,49 +1785,6 @@ TEST_F(ChannelManagerMockAclChannelTest, UpgradeSecurity) {
   EXPECT_FALSE(att.is_alive());
   EXPECT_EQ(1, security_request_count);
   EXPECT_EQ(2, security_status_count);
-}
-
-TEST_F(ChannelManagerMockAclChannelTest, SignalingChannelDataPrioritizedOverDynamicChannelData) {
-  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-
-  Channel::WeakPtr channel;
-  auto channel_cb = [&channel](l2cap::Channel::WeakPtr activated_chan) {
-    channel = std::move(activated_chan);
-  };
-
-  const auto conn_req_id = NextCommandId();
-  const auto config_req_id = NextCommandId();
-
-  // Signaling channel packets should be sent with high priority.
-  EXPECT_ACL_PACKET_OUT_(OutboundConnectionRequest(conn_req_id), kHighPriority);
-  EXPECT_ACL_PACKET_OUT_(OutboundConfigurationRequest(config_req_id), kHighPriority);
-  EXPECT_ACL_PACKET_OUT_(OutboundConfigurationResponse(kPeerConfigRequestId), kHighPriority);
-
-  ActivateOutboundChannel(kTestPsm, kChannelParams, std::move(channel_cb), kTestHandle1);
-
-  ReceiveAclDataPacket(InboundConnectionResponse(conn_req_id));
-  ReceiveAclDataPacket(InboundConfigurationRequest(kPeerConfigRequestId));
-  ReceiveAclDataPacket(InboundConfigurationResponse(config_req_id));
-
-  RunLoopUntilIdle();
-
-  EXPECT_TRUE(AllExpectedPacketsSent());
-  EXPECT_TRUE(channel.is_alive());
-
-  // Packet sent on dynamic channel should be sent with low priority.
-  EXPECT_ACL_PACKET_OUT_(
-      StaticByteBuffer(
-          // ACL data header (handle: 1, length 8)
-          0x01, 0x00, 0x08, 0x00,
-
-          // L2CAP B-frame: (length: 4, channel-id)
-          0x04, 0x00, LowerBits(kRemoteId), UpperBits(kRemoteId), 'T', 'e', 's', 't'),
-      kLowPriority);
-
-  EXPECT_TRUE(channel->Send(NewBuffer('T', 'e', 's', 't')));
-
-  RunLoopUntilIdle();
-  EXPECT_TRUE(AllExpectedPacketsSent());
 }
 
 TEST_F(ChannelManagerMockAclChannelTest, MtuOutboundChannelConfiguration) {
@@ -2142,10 +2008,8 @@ TEST_F(ChannelManagerMockAclChannelTest,
   StaticByteBuffer kPacket(
       // ACL data header (handle: 0x0001, length: 4 bytes)
       0x01, 0x00, 0x04, 0x00,
-
       // L2CAP B-frame header (length: 0 bytes, channel-id)
       0x00, 0x00, LowerBits(kLocalId), UpperBits(kLocalId));
-
   // Packet for removed channel should be dropped by LogicalLink.
   ReceiveAclDataPacket(kPacket);
 }
@@ -2402,10 +2266,12 @@ TEST_F(ChannelManagerMockAclChannelTest, ConnParamUpdateRequestRejected) {
   EXPECT_FALSE(accepted.value());
 }
 
-TEST_F(ChannelManagerMockAclChannelTest,
+TEST_F(ChannelManagerRealAclChannelTest,
        DestroyingChannelManagerReleasesLogicalLinkAndClosesChannels) {
-  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
+  QueueAclConnection(kTestHandle1);
   RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+
   auto link = chanmgr()->LogicalLinkForTesting(kTestHandle1);
   ASSERT_TRUE(link.is_alive());
 
@@ -2930,10 +2796,9 @@ TEST_F(ChannelManagerMockAclChannelTest,
           // ACL data header (handle: 1, packet boundary flag: kFirstFlushable, length: 6)
           0x01, 0x20, 0x06, 0x00,
           // L2CAP B-frame
-          0x02, 0x00,  // length: 2
-          LowerBits(kRemoteId),
-          UpperBits(kRemoteId),  // remote id
-          'h', 'i'),             // payload
+          0x02, 0x00,                                  // length: 2
+          LowerBits(kRemoteId), UpperBits(kRemoteId),  // remote id
+          'h', 'i'),                                   // payload
       kLowPriority);
   EXPECT_TRUE(channel->Send(NewBuffer('h', 'i')));
 }
@@ -3301,22 +3166,21 @@ TEST_F(ChannelManagerMockAclChannelTest, SignalLinkErrorStopsDeliveryOfBufferedR
 TEST_F(ChannelManagerRealAclChannelTest, InboundRfcommChannelFailsWithPsmNotSupported) {
   constexpr l2cap::PSM kPSM = l2cap::kRFCOMM;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
-  constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
 
-  QueueAclConnection(kLinkHandle);
-
+  QueueAclConnection(kTestHandle1);
   RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   const l2cap::CommandId kPeerConnReqId = 1;
 
   // Incoming connection refused, RFCOMM is not routed.
   EXPECT_ACL_PACKET_OUT(
       test_device(),
-      l2cap::testing::AclConnectionRsp(kPeerConnReqId, kLinkHandle, kRemoteId, 0x0000 /*dest id*/,
+      l2cap::testing::AclConnectionRsp(kPeerConnReqId, kTestHandle1, kRemoteId, /*dst_id=*/0x0000,
                                        l2cap::ConnectionResult::kPSMNotSupported));
 
   test_device()->SendACLDataChannelPacket(
-      l2cap::testing::AclConnectionReq(kPeerConnReqId, kLinkHandle, kRemoteId, kPSM));
+      l2cap::testing::AclConnectionReq(kPeerConnReqId, kTestHandle1, kRemoteId, kPSM));
 
   RunLoopUntilIdle();
 }
@@ -3325,14 +3189,15 @@ TEST_F(ChannelManagerRealAclChannelTest, InboundPacketQueuedAfterChannelOpenIsNo
   constexpr l2cap::PSM kPSM = l2cap::kSDP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
-  constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
 
-  QueueAclConnection(kLinkHandle);
+  QueueAclConnection(kTestHandle1);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
-  l2cap::Channel::WeakPtr chan;
-  auto chan_cb = [&](auto cb_chan) {
-    EXPECT_EQ(kLinkHandle, cb_chan->link_handle());
-    chan = std::move(cb_chan);
+  Channel::WeakPtr channel;
+  auto chan_cb = [&](l2cap::Channel::WeakPtr activated_chan) {
+    EXPECT_EQ(kTestHandle1, activated_chan->link_handle());
+    channel = std::move(activated_chan);
   };
 
   chanmgr()->RegisterService(kPSM, kChannelParameters, std::move(chan_cb));
@@ -3342,26 +3207,26 @@ TEST_F(ChannelManagerRealAclChannelTest, InboundPacketQueuedAfterChannelOpenIsNo
   constexpr l2cap::CommandId kPeerConfigReqId = 6;
   const l2cap::CommandId kConfigReqId = NextCommandId();
   EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclConnectionRsp(
-                                           kConnectionReqId, kLinkHandle, kRemoteId, kLocalId));
-  EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclConfigReq(kConfigReqId, kLinkHandle,
+                                           kConnectionReqId, kTestHandle1, kRemoteId, kLocalId));
+  EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclConfigReq(kConfigReqId, kTestHandle1,
                                                                     kRemoteId, kChannelParameters));
   test_device()->SendACLDataChannelPacket(
-      l2cap::testing::AclConnectionReq(kConnectionReqId, kLinkHandle, kRemoteId, kPSM));
+      l2cap::testing::AclConnectionReq(kConnectionReqId, kTestHandle1, kRemoteId, kPSM));
 
   // Config negotiation will not complete yet.
   RunLoopUntilIdle();
 
   // Remaining config negotiation will be added to dispatch loop.
-  EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclConfigRsp(kPeerConfigReqId, kLinkHandle,
+  EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclConfigRsp(kPeerConfigReqId, kTestHandle1,
                                                                     kRemoteId, kChannelParameters));
   test_device()->SendACLDataChannelPacket(
-      l2cap::testing::AclConfigReq(kPeerConfigReqId, kLinkHandle, kLocalId, kChannelParameters));
+      l2cap::testing::AclConfigReq(kPeerConfigReqId, kTestHandle1, kLocalId, kChannelParameters));
   test_device()->SendACLDataChannelPacket(
-      l2cap::testing::AclConfigRsp(kConfigReqId, kLinkHandle, kLocalId, kChannelParameters));
+      l2cap::testing::AclConfigRsp(kConfigReqId, kTestHandle1, kLocalId, kChannelParameters));
 
   // Queue up a data packet for the new channel before the channel configuration has been
   // processed.
-  ASSERT_FALSE(chan.is_alive());
+  ASSERT_FALSE(channel.is_alive());
   test_device()->SendACLDataChannelPacket(StaticByteBuffer(
       // ACL data header (handle: 1, length 8)
       0x01, 0x00, 0x08, 0x00,
@@ -3371,15 +3236,271 @@ TEST_F(ChannelManagerRealAclChannelTest, InboundPacketQueuedAfterChannelOpenIsNo
 
   // Run until the channel opens and the packet is written to the socket buffer.
   RunLoopUntilIdle();
-  ASSERT_TRUE(chan.is_alive());
+  ASSERT_TRUE(channel.is_alive());
 
   std::vector<ByteBufferPtr> rx_packets;
   auto rx_cb = [&rx_packets](ByteBufferPtr sdu) { rx_packets.push_back(std::move(sdu)); };
-  ASSERT_TRUE(chan->Activate(rx_cb, DoNothing));
+  ASSERT_TRUE(channel->Activate(rx_cb, DoNothing));
   RunLoopUntilIdle();
   ASSERT_EQ(rx_packets.size(), 1u);
   ASSERT_EQ(rx_packets[0]->size(), 4u);
   EXPECT_EQ("🔰", rx_packets[0]->view(0, 4u).AsString());
+}
+
+TEST_F(ChannelManagerRealAclChannelTest, NegotiateChannelParametersOnOutboundL2capChannel) {
+  constexpr l2cap::PSM kPSM = l2cap::kAVDTP;
+  constexpr l2cap::ChannelId kLocalId = 0x0040;
+  constexpr l2cap::ChannelId kRemoteId = 0x9042;
+  constexpr uint16_t kMtu = l2cap::kMinACLMTU;
+
+  l2cap::ChannelParameters chan_params;
+  chan_params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
+  chan_params.max_rx_sdu_size = kMtu;
+
+  QueueAclConnection(kTestHandle1);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+
+  Channel::WeakPtr channel;
+  auto chan_cb = [&](l2cap::Channel::WeakPtr activated_chan) {
+    EXPECT_EQ(kTestHandle1, activated_chan->link_handle());
+    channel = std::move(activated_chan);
+  };
+
+  QueueOutboundL2capConnection(kTestHandle1, kPSM, kLocalId, kRemoteId, chan_cb, chan_params,
+                               chan_params);
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+  ASSERT_TRUE(channel.is_alive());
+  EXPECT_EQ(kTestHandle1, channel->link_handle());
+  EXPECT_EQ(*chan_params.max_rx_sdu_size, channel->max_rx_sdu_size());
+  EXPECT_EQ(*chan_params.mode, channel->mode());
+}
+
+TEST_F(ChannelManagerRealAclChannelTest, NegotiateChannelParametersOnInboundChannel) {
+  constexpr l2cap::PSM kPSM = l2cap::kAVDTP;
+  constexpr l2cap::ChannelId kLocalId = 0x0040;
+  constexpr l2cap::ChannelId kRemoteId = 0x9042;
+
+  l2cap::ChannelParameters chan_params;
+  chan_params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
+  chan_params.max_rx_sdu_size = l2cap::kMinACLMTU;
+
+  QueueAclConnection(kTestHandle1);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+
+  Channel::WeakPtr channel;
+  auto chan_cb = [&](l2cap::Channel::WeakPtr activated_chan) {
+    EXPECT_EQ(kTestHandle1, activated_chan->link_handle());
+    channel = std::move(activated_chan);
+  };
+  chanmgr()->RegisterService(kPSM, chan_params, chan_cb);
+
+  QueueInboundL2capConnection(kTestHandle1, kPSM, kLocalId, kRemoteId, chan_params, chan_params);
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+  ASSERT_TRUE(channel.is_alive());
+  EXPECT_EQ(*chan_params.max_rx_sdu_size, channel->max_rx_sdu_size());
+  EXPECT_EQ(*chan_params.mode, channel->mode());
+}
+
+TEST_F(ChannelManagerRealAclChannelTest, RequestConnectionParameterUpdateAndReceiveResponse) {
+  // Valid parameter values
+  constexpr uint16_t kIntervalMin = 6;
+  constexpr uint16_t kIntervalMax = 7;
+  constexpr uint16_t kPeripheralLatency = 1;
+  constexpr uint16_t kTimeoutMult = 10;
+  const hci_spec::LEPreferredConnectionParameters kParams(kIntervalMin, kIntervalMax,
+                                                          kPeripheralLatency, kTimeoutMult);
+
+  QueueLEConnection(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::PERIPHERAL);
+
+  std::optional<bool> accepted;
+  auto request_cb = [&accepted](bool cb_accepted) { accepted = cb_accepted; };
+
+  // Receive "Accepted" Response:
+  l2cap::CommandId param_update_req_id = NextCommandId();
+  EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclConnectionParameterUpdateReq(
+                                           param_update_req_id, kTestHandle1, kIntervalMin,
+                                           kIntervalMax, kPeripheralLatency, kTimeoutMult));
+  chanmgr()->RequestConnectionParameterUpdate(kTestHandle1, kParams, request_cb);
+  RunLoopUntilIdle();
+  EXPECT_FALSE(accepted.has_value());
+
+  test_device()->SendACLDataChannelPacket(l2cap::testing::AclConnectionParameterUpdateRsp(
+      param_update_req_id, kTestHandle1, l2cap::ConnectionParameterUpdateResult::kAccepted));
+  RunLoopUntilIdle();
+  ASSERT_TRUE(accepted.has_value());
+  EXPECT_TRUE(accepted.value());
+  accepted.reset();
+}
+
+TEST_F(ChannelManagerRealAclChannelTest, AddLEConnectionReturnsFixedChannels) {
+  auto channels =
+      QueueLEConnection(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::PERIPHERAL);
+  ASSERT_TRUE(channels.att.is_alive());
+  EXPECT_EQ(l2cap::kATTChannelId, channels.att->id());
+  ASSERT_TRUE(channels.smp.is_alive());
+  EXPECT_EQ(l2cap::kLESMPChannelId, channels.smp->id());
+}
+
+TEST_F(ChannelManagerRealAclChannelTest, OutboundChannelIsInvalidWhenL2capFailsToOpenChannel) {
+  constexpr l2cap::PSM kPSM = l2cap::kAVCTP;
+
+  // Don't register any links. This should cause outbound channels to fail.
+  bool chan_cb_called = false;
+  auto chan_cb = [&chan_cb_called](auto chan) {
+    chan_cb_called = true;
+    EXPECT_FALSE(chan.is_alive());
+  };
+
+  chanmgr()->OpenL2capChannel(kTestHandle1, kPSM, kChannelParameters, std::move(chan_cb));
+
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(chan_cb_called);
+}
+
+TEST_F(ChannelManagerRealAclChannelTest, SignalingChannelAndOneDynamicChannel) {
+  constexpr l2cap::PSM kPSM = l2cap::kSDP;
+  constexpr l2cap::ChannelId kLocalId = 0x0040;
+  constexpr l2cap::ChannelId kRemoteId = 0x9042;
+
+  // L2CAP connection request/response, config request, config response
+  constexpr size_t kChannelCreationPacketCount = 3;
+
+  QueueAclConnection(kTestHandle1);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+
+  l2cap::Channel::WeakPtr channel;
+  auto chan_cb = [&](auto activated_chan) {
+    EXPECT_EQ(kTestHandle1, activated_chan->link_handle());
+    channel = std::move(activated_chan);
+  };
+  QueueOutboundL2capConnection(kTestHandle1, kPSM, kLocalId, kRemoteId, std::move(chan_cb));
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+  EXPECT_TRUE(channel.is_alive());
+  channel->Activate(NopRxCallback, DoNothing);
+
+  // Free up the buffer space from packets sent while creating |channel|
+  test_device()->SendCommandChannelPacket(NumberOfCompletedPacketsPacket(
+      kTestHandle1, kConnectionCreationPacketCount + kChannelCreationPacketCount));
+
+  // Fill up BR/EDR controller buffer then queue one additional packet
+  for (size_t i = 0; i <= kBufferMaxNumPackets; i++) {
+    // Last packet should remain queued
+    if (i < kBufferMaxNumPackets) {
+      const StaticByteBuffer kPacket(
+          // ACL data header (handle: 0, length 1)
+          0x01, 0x00, 0x05, 0x00,
+          // L2CAP B-frame: (length: 1, channel-id)
+          0x01, 0x00, LowerBits(kRemoteId), UpperBits(kRemoteId),
+          // L2CAP payload
+          0x01);
+      EXPECT_ACL_PACKET_OUT(test_device(), kPacket);
+    }
+    // Create PDU to send on dynamic channel
+    EXPECT_TRUE(channel->Send(NewBuffer(0x01)));
+    RunLoopUntilIdle();
+  }
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+
+  // Send out last packet
+  EXPECT_ACL_PACKET_OUT(test_device(), StaticByteBuffer(
+                                           // ACL data header (handle: 0, length 1)
+                                           0x01, 0x00, 0x05, 0x00,
+                                           // L2CAP B-frame: (length: 4, channel-id)
+                                           0x01, 0x00, LowerBits(kRemoteId), UpperBits(kRemoteId),
+                                           // L2CAP payload
+                                           0x01));
+  test_device()->SendCommandChannelPacket(
+      bt::testing::NumberOfCompletedPacketsPacket(kTestHandle1, 1));
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+}
+
+TEST_F(ChannelManagerRealAclChannelTest, SignalingChannelAndTwoDynamicChannels) {
+  constexpr l2cap::PSM kPSM0 = l2cap::kAVCTP;
+  constexpr l2cap::ChannelId kLocalId0 = 0x0040;
+  constexpr l2cap::ChannelId kRemoteId0 = 0x9042;
+
+  constexpr l2cap::PSM kPSM1 = l2cap::kAVDTP;
+  constexpr l2cap::ChannelId kLocalId1 = 0x0041;
+  constexpr l2cap::ChannelId kRemoteId1 = 0x9043;
+
+  // L2CAP connection request/response, config request, config response
+  constexpr size_t kChannelCreationPacketCount = 3;
+
+  QueueAclConnection(kTestHandle1);
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+
+  l2cap::Channel::WeakPtr channel0;
+  auto chan_cb0 = [&](auto activated_chan) {
+    EXPECT_EQ(kTestHandle1, activated_chan->link_handle());
+    channel0 = std::move(activated_chan);
+  };
+  QueueOutboundL2capConnection(kTestHandle1, kPSM0, kLocalId0, kRemoteId0, std::move(chan_cb0));
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+  ASSERT_TRUE(channel0.is_alive());
+  ASSERT_TRUE(channel0->Activate(NopRxCallback, DoNothing));
+
+  l2cap::Channel::WeakPtr channel1;
+  auto chan_cb1 = [&](auto activated_chan) {
+    EXPECT_EQ(kTestHandle1, activated_chan->link_handle());
+    channel1 = std::move(activated_chan);
+  };
+  QueueOutboundL2capConnection(kTestHandle1, kPSM1, kLocalId1, kRemoteId1, std::move(chan_cb1));
+
+  // Free up the buffer space from packets sent while creating |channel0|
+  test_device()->SendCommandChannelPacket(
+      NumberOfCompletedPacketsPacket(kTestHandle1, kChannelCreationPacketCount));
+  RunLoopUntilIdle();
+
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+  EXPECT_TRUE(channel1.is_alive());
+  ASSERT_TRUE(channel1->Activate(NopRxCallback, DoNothing));
+
+  // Free up the buffer space from packets sent while creating |channel1|
+  test_device()->SendCommandChannelPacket(NumberOfCompletedPacketsPacket(
+      kTestHandle1, kConnectionCreationPacketCount + kChannelCreationPacketCount));
+  RunLoopUntilIdle();
+
+  // Queue 15 packets in total, distributed between the two channels
+  // Fill up BR/EDR controller buffer then queue 5 additional packets
+  for (size_t i = 0; i < kBufferMaxNumPackets + 5; i++) {
+    Channel::WeakPtr channel = (i % 2) ? channel1 : channel0;
+    ChannelId channel_id = (i % 2) ? kRemoteId1 : kRemoteId0;
+
+    const StaticByteBuffer kPacket(
+        // ACL data header (handle: 1, length 5)
+        0x01, 0x00, 0x05, 0x00,
+        // L2CAP B-frame: (length: 1, channel_id)
+        0x01, 0x00, LowerBits(channel_id), UpperBits(channel_id),
+        // L2CAP payload
+        0x01);
+    EXPECT_ACL_PACKET_OUT(test_device(), kPacket);
+
+    // Create PDU to send on dynamic channel
+    EXPECT_TRUE(channel->Send(NewBuffer(0x01)));
+    RunLoopUntilIdle();
+  }
+  EXPECT_FALSE(test_device()->AllExpectedDataPacketsSent());
+
+  // Notify the processed packets with a Number Of Completed Packet HCI event
+  // This should cause the remaining 5 packets to be sent
+  test_device()->SendCommandChannelPacket(NumberOfCompletedPacketsPacket(kTestHandle1, 5));
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 }
 
 class AclPriorityTest : public ChannelManagerRealAclChannelTest,
@@ -3398,7 +3519,6 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
   constexpr l2cap::PSM kPSM = l2cap::kAVCTP;
   constexpr l2cap::ChannelId kLocalId = 0x0040;
   constexpr l2cap::ChannelId kRemoteId = 0x9042;
-  constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
 
   std::optional<hci_spec::ConnectionHandle> connection_handle_from_encode_cb;
   std::optional<AclPriority> priority_from_encode_cb;
@@ -3413,15 +3533,17 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
         callback(kEncodedCommand.subspan());
       });
 
-  QueueAclConnection(kLinkHandle);
+  QueueAclConnection(kTestHandle1);
   RunLoopUntilIdle();
-
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
-  l2cap::Channel::WeakPtr channel;
-  auto chan_cb = [&](auto chan) { channel = std::move(chan); };
+  Channel::WeakPtr channel;
+  auto chan_cb = [&](l2cap::Channel::WeakPtr activated_chan) {
+    EXPECT_EQ(kTestHandle1, activated_chan->link_handle());
+    channel = std::move(activated_chan);
+  };
 
-  QueueOutboundL2capConnection(kLinkHandle, kPSM, kLocalId, kRemoteId, std::move(chan_cb));
+  QueueOutboundL2capConnection(kTestHandle1, kPSM, kLocalId, kRemoteId, std::move(chan_cb));
 
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
@@ -3448,7 +3570,7 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
     EXPECT_FALSE(connection_handle_from_encode_cb);
   } else {
     ASSERT_TRUE(connection_handle_from_encode_cb);
-    EXPECT_EQ(connection_handle_from_encode_cb.value(), kLinkHandle);
+    EXPECT_EQ(connection_handle_from_encode_cb.value(), kTestHandle1);
     ASSERT_TRUE(priority_from_encode_cb);
     EXPECT_EQ(priority_from_encode_cb.value(), kPriority);
   }
@@ -3461,7 +3583,7 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
   }
 
   EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclDisconnectionReq(
-                                           NextCommandId(), kLinkHandle, kLocalId, kRemoteId));
+                                           NextCommandId(), kTestHandle1, kLocalId, kRemoteId));
 
   // Deactivating channel should send priority command to revert priority back to normal if it was
   // changed.
@@ -3471,7 +3593,7 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
 
   if (kPriority != AclPriority::kNormal && kExpectSuccess) {
     ASSERT_TRUE(connection_handle_from_encode_cb);
-    EXPECT_EQ(connection_handle_from_encode_cb.value(), kLinkHandle);
+    EXPECT_EQ(connection_handle_from_encode_cb.value(), kTestHandle1);
     ASSERT_TRUE(priority_from_encode_cb);
     EXPECT_EQ(priority_from_encode_cb.value(), AclPriority::kNormal);
   } else {
@@ -3500,209 +3622,6 @@ TEST_F(ChannelManagerRealAclChannelTest, InspectHierarchy) {
   EXPECT_THAT(hierarchy.value(), AllOf(ChildrenMatch(UnorderedElementsAre(l2cap_matcher))));
 }
 #endif  // NINSPECT
-
-TEST_F(ChannelManagerRealAclChannelTest, NegotiateChannelParametersOnOutboundL2capChannel) {
-  constexpr l2cap::PSM kPSM = l2cap::kAVDTP;
-  constexpr l2cap::ChannelId kLocalId = 0x0040;
-  constexpr l2cap::ChannelId kRemoteId = 0x9042;
-  constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
-  constexpr uint16_t kMtu = l2cap::kMinACLMTU;
-
-  l2cap::ChannelParameters chan_params;
-  chan_params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
-  chan_params.max_rx_sdu_size = kMtu;
-
-  QueueAclConnection(kLinkHandle);
-  RunLoopUntilIdle();
-  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
-
-  l2cap::Channel::WeakPtr chan;
-  auto chan_cb = [&](l2cap::Channel::WeakPtr cb_chan) { chan = std::move(cb_chan); };
-
-  QueueOutboundL2capConnection(kLinkHandle, kPSM, kLocalId, kRemoteId, chan_cb, chan_params,
-                               chan_params);
-
-  RunLoopUntilIdle();
-  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
-  ASSERT_TRUE(chan.is_alive());
-  EXPECT_EQ(kLinkHandle, chan->link_handle());
-  EXPECT_EQ(*chan_params.max_rx_sdu_size, chan->max_rx_sdu_size());
-  EXPECT_EQ(*chan_params.mode, chan->mode());
-}
-
-TEST_F(ChannelManagerRealAclChannelTest, NegotiateChannelParametersOnInboundChannel) {
-  constexpr l2cap::PSM kPSM = l2cap::kAVDTP;
-  constexpr l2cap::ChannelId kLocalId = 0x0040;
-  constexpr l2cap::ChannelId kRemoteId = 0x9042;
-  constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
-
-  l2cap::ChannelParameters chan_params;
-  chan_params.mode = l2cap::ChannelMode::kEnhancedRetransmission;
-  chan_params.max_rx_sdu_size = l2cap::kMinACLMTU;
-
-  QueueAclConnection(kLinkHandle);
-  RunLoopUntilIdle();
-  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
-
-  l2cap::Channel::WeakPtr chan;
-  auto chan_cb = [&](auto cb_chan) { chan = std::move(cb_chan); };
-  chanmgr()->RegisterService(kPSM, chan_params, chan_cb);
-
-  QueueInboundL2capConnection(kLinkHandle, kPSM, kLocalId, kRemoteId, chan_params, chan_params);
-
-  RunLoopUntilIdle();
-  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
-  ASSERT_TRUE(chan.is_alive());
-  EXPECT_EQ(*chan_params.max_rx_sdu_size, chan->max_rx_sdu_size());
-  EXPECT_EQ(*chan_params.mode, chan->mode());
-}
-
-TEST_F(ChannelManagerRealAclChannelTest, RequestConnectionParameterUpdateAndReceiveResponse) {
-  // Valid parameter values
-  constexpr uint16_t kIntervalMin = 6;
-  constexpr uint16_t kIntervalMax = 7;
-  constexpr uint16_t kPeripheralLatency = 1;
-  constexpr uint16_t kTimeoutMult = 10;
-  const hci_spec::LEPreferredConnectionParameters kParams(kIntervalMin, kIntervalMax,
-                                                          kPeripheralLatency, kTimeoutMult);
-
-  constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
-  QueueLEConnection(kLinkHandle, pw::bluetooth::emboss::ConnectionRole::PERIPHERAL);
-
-  std::optional<bool> accepted;
-  auto request_cb = [&accepted](bool cb_accepted) { accepted = cb_accepted; };
-
-  // Receive "Accepted" Response:
-
-  l2cap::CommandId param_update_req_id = NextCommandId();
-  EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclConnectionParameterUpdateReq(
-                                           param_update_req_id, kLinkHandle, kIntervalMin,
-                                           kIntervalMax, kPeripheralLatency, kTimeoutMult));
-  chanmgr()->RequestConnectionParameterUpdate(kLinkHandle, kParams, request_cb);
-  RunLoopUntilIdle();
-  EXPECT_FALSE(accepted.has_value());
-
-  test_device()->SendACLDataChannelPacket(l2cap::testing::AclConnectionParameterUpdateRsp(
-      param_update_req_id, kLinkHandle, l2cap::ConnectionParameterUpdateResult::kAccepted));
-  RunLoopUntilIdle();
-  ASSERT_TRUE(accepted.has_value());
-  EXPECT_TRUE(accepted.value());
-  accepted.reset();
-}
-
-TEST_F(ChannelManagerRealAclChannelTest, AddLEConnectionReturnsFixedChannels) {
-  constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
-  auto channels = QueueLEConnection(kLinkHandle, pw::bluetooth::emboss::ConnectionRole::PERIPHERAL);
-  ASSERT_TRUE(channels.att.is_alive());
-  EXPECT_EQ(l2cap::kATTChannelId, channels.att->id());
-  ASSERT_TRUE(channels.smp.is_alive());
-  EXPECT_EQ(l2cap::kLESMPChannelId, channels.smp->id());
-}
-
-// Queue dynamic channel packets, then open a new dynamic channel.
-// The signaling channel packets should be sent before the queued dynamic channel packets.
-TEST_F(ChannelManagerRealAclChannelTest, ChannelCreationPrioritizedOverDynamicChannelData) {
-  constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
-
-  constexpr l2cap::PSM kPSM0 = l2cap::kAVCTP;
-  constexpr l2cap::ChannelId kLocalId0 = 0x0040;
-  constexpr l2cap::ChannelId kRemoteId0 = 0x9042;
-
-  constexpr l2cap::PSM kPSM1 = l2cap::kAVDTP;
-  constexpr l2cap::ChannelId kLocalId1 = 0x0041;
-  constexpr l2cap::ChannelId kRemoteId1 = 0x9043;
-
-  // l2cap connection request (or response), config request, config response
-  constexpr size_t kChannelCreationPacketCount = 3;
-
-  QueueAclConnection(kLinkHandle);
-
-  l2cap::Channel::WeakPtr chan0;
-  auto chan_cb0 = [&](auto cb_chan) {
-    EXPECT_EQ(kLinkHandle, cb_chan->link_handle());
-    chan0 = std::move(cb_chan);
-  };
-  chanmgr()->RegisterService(kPSM0, kChannelParameters, chan_cb0);
-
-  QueueInboundL2capConnection(kLinkHandle, kPSM0, kLocalId0, kRemoteId0);
-
-  RunLoopUntilIdle();
-  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
-  ASSERT_TRUE(chan0.is_alive());
-  ASSERT_TRUE(chan0->Activate(NopRxCallback, DoNothing));
-
-  test_device()->SendCommandChannelPacket(NumberOfCompletedPacketsPacket(
-      kLinkHandle, kConnectionCreationPacketCount + kChannelCreationPacketCount));
-
-  // Dummy dynamic channel packet
-  const StaticByteBuffer kPacket0(
-      // ACL data header (handle: 1, length 5)
-      0x01, 0x00, 0x05, 0x00,
-
-      // L2CAP B-frame: (length: 1, channel-id: 0x9042 (kRemoteId))
-      0x01, 0x00, 0x42, 0x90,
-
-      // L2CAP payload
-      0x01);
-
-  // |kMaxPacketCount| packets should be sent to the controller,
-  // and 1 packet should be left in the queue
-  const StaticByteBuffer write_data(0x01);
-  for (size_t i = 0; i < kMaxPacketCount + 1; i++) {
-    if (i != kMaxPacketCount) {
-      EXPECT_ACL_PACKET_OUT(test_device(), kPacket0);
-    }
-    chan0->Send(std::make_unique<DynamicByteBuffer>(write_data));
-  }
-
-  EXPECT_FALSE(test_device()->AllExpectedDataPacketsSent());
-  // Run until the data is flushed out to the MockController.
-  RunLoopUntilIdle();
-  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
-
-  l2cap::Channel::WeakPtr chan1;
-  auto chan_cb1 = [&](auto cb_chan) {
-    EXPECT_EQ(kLinkHandle, cb_chan->link_handle());
-    chan1 = std::move(cb_chan);
-  };
-
-  QueueOutboundL2capConnection(kLinkHandle, kPSM1, kLocalId1, kRemoteId1, std::move(chan_cb1));
-
-  for (size_t i = 0; i < kChannelCreationPacketCount; i++) {
-    test_device()->SendCommandChannelPacket(NumberOfCompletedPacketsPacket(kLinkHandle, 1));
-    // Wait for next connection creation packet to be queued (eg. configuration request/response).
-    RunLoopUntilIdle();
-  }
-
-  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
-  EXPECT_TRUE(chan1.is_alive());
-
-  // Make room in buffer for queued dynamic channel packet.
-  test_device()->SendCommandChannelPacket(NumberOfCompletedPacketsPacket(kLinkHandle, 1));
-
-  EXPECT_ACL_PACKET_OUT(test_device(), kPacket0);
-  RunLoopUntilIdle();
-  // 1 Queued dynamic channel data packet should have been sent.
-  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
-}
-
-TEST_F(ChannelManagerRealAclChannelTest, OutboundChannelIsInvalidWhenL2capFailsToOpenChannel) {
-  constexpr l2cap::PSM kPSM = l2cap::kAVCTP;
-  constexpr hci_spec::ConnectionHandle kLinkHandle = 0x0001;
-
-  // Don't register any links. This should cause outbound channels to fail.
-  bool chan_cb_called = false;
-  auto chan_cb = [&chan_cb_called](auto chan) {
-    chan_cb_called = true;
-    EXPECT_FALSE(chan.is_alive());
-  };
-
-  chanmgr()->OpenL2capChannel(kLinkHandle, kPSM, kChannelParameters, std::move(chan_cb));
-
-  RunLoopUntilIdle();
-
-  EXPECT_TRUE(chan_cb_called);
-}
 
 }  // namespace
 }  // namespace bt::l2cap

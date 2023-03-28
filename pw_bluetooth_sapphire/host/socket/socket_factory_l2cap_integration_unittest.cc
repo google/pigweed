@@ -55,35 +55,33 @@ TEST_F(SocketFactoryL2capIntegrationTest, InboundL2capSocket) {
 
   QueueAclConnection(kLinkHandle);
 
-  l2cap::Channel::WeakPtr chan;
+  l2cap::Channel::WeakPtr channel;
   auto chan_cb = [&](auto cb_chan) {
     EXPECT_EQ(kLinkHandle, cb_chan->link_handle());
-    chan = std::move(cb_chan);
+    channel = std::move(cb_chan);
   };
-
   chanmgr()->RegisterService(kPSM, kChannelParameters, std::move(chan_cb));
   RunLoopUntilIdle();
 
   QueueInboundL2capConnection(kLinkHandle, kPSM, kLocalId, kRemoteId);
 
   RunLoopUntilIdle();
-  ASSERT_TRUE(chan.is_alive());
-  zx::socket sock = MakeSocketForChannel(chan);
+  ASSERT_TRUE(channel.is_alive());
+  zx::socket sock = MakeSocketForChannel(channel);
 
-  // Test basic channel<->socket interaction by verifying that an ACL packet
-  // gets routed to the socket.
+  // Test basic channel<->socket interaction by verifying that an ACL packet gets routed to socket
   test_device()->SendACLDataChannelPacket(StaticByteBuffer(
       // ACL data header (handle: 1, length 8)
       0x01, 0x00, 0x08, 0x00,
-
       // L2CAP B-frame: (length: 4, channel-id: 0x0040 (kLocalId))
-      0x04, 0x00, 0x40, 0x00, 't', 'e', 's', 't'));
+      0x04, 0x00, 0x40, 0x00,
+      // L2CAP payload
+      't', 'e', 's', 't'));
 
   // Run until the packet is written to the socket buffer.
   RunLoopUntilIdle();
 
-  // Allocate a larger buffer than the number of SDU bytes we expect (which is
-  // 4).
+  // Allocate a larger buffer than the number of SDU bytes we expect (which is 4).
   StaticByteBuffer<10> socket_bytes;
   size_t bytes_read;
   zx_status_t status = sock.read(0, socket_bytes.mutable_data(), socket_bytes.size(), &bytes_read);
@@ -100,10 +98,8 @@ TEST_F(SocketFactoryL2capIntegrationTest, InboundL2capSocket) {
       kFirstFragment(
           // ACL data header (handle: 1, length 64)
           0x01, 0x00, 0x40, 0x00,
-
           // L2CAP B-frame: (length: 80, channel-id: 0x9042 (kRemoteId))
           0x50, 0x00, 0x42, 0x90,
-
           // L2CAP payload (fragmented)
           0xf0, 0x9f, 0x9a, 0x82, 0xf0, 0x9f, 0x9a, 0x83, 0xf0, 0x9f, 0x9a, 0x84, 0xf0, 0x9f, 0x9a,
           0x85, 0xf0, 0x9f, 0x9a, 0x86, 0xf0, 0x9f, 0x9a, 0x88, 0xf0, 0x9f, 0x9a, 0x87, 0xf0, 0x9f,
@@ -115,7 +111,6 @@ TEST_F(SocketFactoryL2capIntegrationTest, InboundL2capSocket) {
       kSecondFragment(
           // ACL data header (handle: 1, pbf: continuing fr., length: 20)
           0x01, 0x10, 0x14, 0x00,
-
           // L2CAP payload (final fragment)
           0xf0, 0x9f, 0x9a, 0x9f, 0xf0, 0x9f, 0x9a, 0xa0, 0xf0, 0x9f, 0x9a, 0xa1, 0xf0, 0x9f, 0x9b,
           0xa4, 0xf0, 0x9f, 0x9b, 0xb2);
@@ -137,7 +132,7 @@ TEST_F(SocketFactoryL2capIntegrationTest, InboundL2capSocket) {
 
   // Synchronously closes channels & sockets.
   chanmgr()->RemoveConnection(kLinkHandle);
-  acl_data_channel()->UnregisterLink(kLinkHandle);
+  acl_data_channel()->UnregisterConnection(kLinkHandle);
   acl_data_channel()->ClearControllerPacketCount(kLinkHandle);
 
   // try resending data now that connection is closed
@@ -167,7 +162,6 @@ TEST_F(SocketFactoryL2capIntegrationTest, OutboundL2capSocket) {
     EXPECT_EQ(kLinkHandle, cb_chan->link_handle());
     chan = std::move(cb_chan);
   };
-
   QueueOutboundL2capConnection(kLinkHandle, kPSM, kLocalId, kRemoteId, std::move(chan_cb));
 
   RunLoopUntilIdle();
@@ -176,20 +170,19 @@ TEST_F(SocketFactoryL2capIntegrationTest, OutboundL2capSocket) {
   ASSERT_TRUE(chan.is_alive());
   zx::socket sock = MakeSocketForChannel(chan);
 
-  // Test basic channel<->socket interaction by verifying that an ACL packet
-  // gets routed to the socket.
+  // Test basic channel<->socket interaction by verifying that an ACL packet gets routed to socket.
   test_device()->SendACLDataChannelPacket(StaticByteBuffer(
       // ACL data header (handle: 1, length 8)
       0x01, 0x00, 0x08, 0x00,
-
       // L2CAP B-frame: (length: 4, channel-id: 0x0040 (kLocalId))
-      0x04, 0x00, 0x40, 0x00, 't', 'e', 's', 't'));
+      0x04, 0x00, 0x40, 0x00,
+      // L2CAP payload
+      't', 'e', 's', 't'));
 
   // Run until the packet is written to the socket buffer.
   RunLoopUntilIdle();
 
-  // Allocate a larger buffer than the number of SDU bytes we expect (which is
-  // 4).
+  // Allocate a larger buffer than the number of SDU bytes we expect (which is 4).
   StaticByteBuffer<10> socket_bytes;
   size_t bytes_read;
   zx_status_t status = sock.read(0, socket_bytes.mutable_data(), socket_bytes.size(), &bytes_read);

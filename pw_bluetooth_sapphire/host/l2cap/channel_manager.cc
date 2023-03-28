@@ -338,6 +338,7 @@ internal::LogicalLink* ChannelManagerImpl::RegisterInternal(
       handle, ll_type, role, max_payload_size,
       fit::bind_member<&ChannelManagerImpl::QueryService>(this), acl_data_channel_, cmd_channel_,
       random_channel_ids_);
+
   if (ll_node_) {
     ll->AttachInspect(ll_node_, ll_node_.UniqueName(kInspectLogicalLinkNodePrefix));
   }

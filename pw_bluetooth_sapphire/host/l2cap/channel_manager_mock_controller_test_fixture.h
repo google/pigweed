@@ -20,7 +20,7 @@ class ChannelManagerMockControllerTest
  public:
   static constexpr size_t kMaxDataPacketLength = 64;
   // High enough so that most tests don't need to worry about HCI flow control.
-  static constexpr size_t kMaxPacketCount = 10;
+  static constexpr size_t kBufferMaxNumPackets = 10;
 
   static constexpr l2cap::ChannelParameters kChannelParameters{l2cap::ChannelMode::kBasic,
                                                                l2cap::kMaxMTU, std::nullopt};
@@ -28,13 +28,16 @@ class ChannelManagerMockControllerTest
   static constexpr l2cap::ExtendedFeatures kExtendedFeatures =
       l2cap::kExtendedFeaturesBitEnhancedRetransmission;
 
+  static void DoNothing() {}
+  static void NopRxCallback(ByteBufferPtr) {}
+
   ChannelManagerMockControllerTest() = default;
   ~ChannelManagerMockControllerTest() override = default;
 
  protected:
   void SetUp() override {
     bt::testing::ControllerTest<bt::testing::MockController>::SetUp();
-    const auto bredr_buffer_info = hci::DataBufferInfo(kMaxDataPacketLength, kMaxPacketCount);
+    const auto bredr_buffer_info = hci::DataBufferInfo(kMaxDataPacketLength, kBufferMaxNumPackets);
     InitializeACLDataChannel(bredr_buffer_info);
 
     // TODO(63074): Remove assumptions about channel ordering so we can turn random ids on.
@@ -42,7 +45,20 @@ class ChannelManagerMockControllerTest
         ChannelManager::Create(transport()->acl_data_channel(), transport()->command_channel(),
                                /*random_channel_ids=*/false);
 
-    test_device()->set_data_expectations_enabled(true);
+    next_command_id_ = 1;
+  }
+
+  void SetUp(size_t max_acl_payload_size, size_t max_le_payload_size,
+             size_t max_acl_packets = kBufferMaxNumPackets,
+             size_t max_le_packets = kBufferMaxNumPackets) {
+    bt::testing::ControllerTest<bt::testing::MockController>::SetUp();
+
+    InitializeACLDataChannel(hci::DataBufferInfo(max_acl_payload_size, max_acl_packets),
+                             hci::DataBufferInfo(max_le_payload_size, max_le_packets));
+
+    channel_manager_ =
+        ChannelManager::Create(transport()->acl_data_channel(), transport()->command_channel(),
+                               /*random_channel_ids=*/false);
 
     next_command_id_ = 1;
   }
@@ -126,19 +142,30 @@ class ChannelManagerMockControllerTest
     EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclFixedChannelsSupportedInfoReq(
                                              cmd_ids.fixed_channels_supported_id, handle));
 
-    acl_data_channel()->RegisterLink(handle, bt::LinkType::kACL);
     chanmgr()->AddACLConnection(
         handle, role, /*link_error_callback=*/[]() {},
         /*security_callback=*/[](auto, auto, auto) {});
+
     return cmd_ids;
   }
 
   ChannelManager::LEFixedChannels QueueLEConnection(hci_spec::ConnectionHandle handle,
                                                     pw::bluetooth::emboss::ConnectionRole role) {
-    acl_data_channel()->RegisterLink(handle, bt::LinkType::kLE);
     return chanmgr()->AddLEConnection(
         handle, role, /*link_error_callback=*/[] {}, /*conn_param_callback=*/[](auto&) {},
         /*security_callback=*/[](auto, auto, auto) {});
+  }
+
+  Channel::WeakPtr ActivateNewFixedChannel(ChannelId id,
+                                           hci_spec::ConnectionHandle conn_handle = 0x0001,
+                                           Channel::ClosedCallback closed_cb = DoNothing,
+                                           Channel::RxCallback rx_cb = NopRxCallback) {
+    auto chan = chanmgr()->OpenFixedChannel(conn_handle, id);
+    if (!chan.is_alive() || !chan->Activate(std::move(rx_cb), std::move(closed_cb))) {
+      return Channel::WeakPtr();
+    }
+
+    return chan;
   }
 
   ChannelManager* chanmgr() const { return channel_manager_.get(); }

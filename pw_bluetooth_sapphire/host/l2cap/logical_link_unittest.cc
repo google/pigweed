@@ -4,20 +4,23 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/logical_link.h"
 
-#include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
-#include "src/connectivity/bluetooth/core/bt-host/sm/smp.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/test_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/link_type.h"
 
 namespace bt::l2cap::internal {
 namespace {
 using Conn = hci::Connection;
 
 using TestingBase = bt::testing::ControllerTest<bt::testing::MockController>;
+
+const hci_spec::ConnectionHandle kConnHandle = 0x0001;
+
 class LogicalLinkTest : public TestingBase {
  public:
   LogicalLinkTest() = default;
@@ -40,7 +43,6 @@ class LogicalLinkTest : public TestingBase {
     TestingBase::TearDown();
   }
   void NewLogicalLink(bt::LinkType type = bt::LinkType::kLE) {
-    const hci_spec::ConnectionHandle kConnHandle = 0x0001;
     const size_t kMaxPayload = kDefaultMTU;
     auto query_service_cb = [](hci_spec::ConnectionHandle, PSM) { return std::nullopt; };
     link_ = std::make_unique<LogicalLink>(
@@ -49,12 +51,26 @@ class LogicalLinkTest : public TestingBase {
         transport()->command_channel(),
         /*random_channel_ids=*/true);
   }
+  void ResetAndCreateNewLogicalLink(LinkType type = LinkType::kACL) {
+    link()->Close();
+    DeleteLink();
+    NewLogicalLink(type);
+  }
+
   LogicalLink* link() const { return link_.get(); }
   void DeleteLink() { link_ = nullptr; }
 
  private:
   std::unique_ptr<LogicalLink> link_;
 };
+
+struct QueueAclConnectionRetVal {
+  l2cap::CommandId extended_features_id;
+  l2cap::CommandId fixed_channels_supported_id;
+};
+
+static constexpr l2cap::ExtendedFeatures kExtendedFeatures =
+    l2cap::kExtendedFeaturesBitEnhancedRetransmission;
 
 using LogicalLinkDeathTest = LogicalLinkTest;
 
@@ -71,8 +87,21 @@ TEST_F(LogicalLinkTest, FixedChannelHasCorrectMtu) {
 }
 
 TEST_F(LogicalLinkTest, DropsBroadcastPackets) {
-  link()->Close();
-  NewLogicalLink(bt::LinkType::kACL);
+  ResetAndCreateNewLogicalLink();
+
+  QueueAclConnectionRetVal cmd_ids;
+  cmd_ids.extended_features_id = 1;
+  cmd_ids.fixed_channels_supported_id = 2;
+
+  const auto kExtFeaturesRsp = l2cap::testing::AclExtFeaturesInfoRsp(
+      cmd_ids.extended_features_id, kConnHandle, kExtendedFeatures);
+  EXPECT_ACL_PACKET_OUT(
+      test_device(),
+      l2cap::testing::AclExtFeaturesInfoReq(cmd_ids.extended_features_id, kConnHandle),
+      &kExtFeaturesRsp);
+  EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclFixedChannelsSupportedInfoReq(
+                                           cmd_ids.fixed_channels_supported_id, kConnHandle));
+
   Channel::WeakPtr connectionless_chan = link()->OpenFixedChannel(kConnectionlessChannelId);
   ASSERT_TRUE(connectionless_chan.is_alive());
 
@@ -85,9 +114,9 @@ TEST_F(LogicalLinkTest, DropsBroadcastPackets) {
                                0xF0, 0x0F,  // PSM
                                'S', 'a', 'p', 'p', 'h', 'i', 'r', 'e'  // Info Payload
   );
-  auto packet = hci::ACLDataPacket::New(0x0001, hci_spec::ACLPacketBoundaryFlag::kCompletePDU,
-                                        hci_spec::ACLBroadcastFlag::kActivePeripheralBroadcast,
-                                        group_frame.size());
+  hci::ACLDataPacketPtr packet = hci::ACLDataPacket::New(
+      kConnHandle, hci_spec::ACLPacketBoundaryFlag::kCompletePDU,
+      hci_spec::ACLBroadcastFlag::kActivePeripheralBroadcast, group_frame.size());
   ASSERT_TRUE(packet);
   packet->mutable_view()->mutable_payload_data().Write(group_frame);
 
@@ -97,27 +126,10 @@ TEST_F(LogicalLinkTest, DropsBroadcastPackets) {
   EXPECT_EQ(0u, rx_count);
 }
 
-#define EXPECT_HIGH_PRIORITY(channel_id) \
-  EXPECT_EQ(LogicalLink::ChannelPriority((channel_id)), hci::AclDataChannel::PacketPriority::kHigh)
-#define EXPECT_LOW_PRIORITY(channel_id) \
-  EXPECT_EQ(LogicalLink::ChannelPriority((channel_id)), hci::AclDataChannel::PacketPriority::kLow)
-
-TEST_F(LogicalLinkTest, ChannelPriority) {
-  EXPECT_HIGH_PRIORITY(kSignalingChannelId);
-  EXPECT_HIGH_PRIORITY(kLESignalingChannelId);
-  EXPECT_HIGH_PRIORITY(kSMPChannelId);
-  EXPECT_HIGH_PRIORITY(kLESMPChannelId);
-
-  EXPECT_LOW_PRIORITY(kFirstDynamicChannelId);
-  EXPECT_LOW_PRIORITY(kLastACLDynamicChannelId);
-  EXPECT_LOW_PRIORITY(kATTChannelId);
-}
-
 // LE links are unsupported, so result should be an error. No command should be sent.
 TEST_F(LogicalLinkTest, SetBrEdrAutomaticFlushTimeoutFailsForLELink) {
   constexpr zx::duration kTimeout(zx::msec(100));
-  link()->Close();
-  NewLogicalLink(bt::LinkType::kLE);
+  ResetAndCreateNewLogicalLink(LinkType::kLE);
 
   bool cb_called = false;
   link()->SetBrEdrAutomaticFlushTimeout(kTimeout, [&](auto result) {
@@ -130,8 +142,20 @@ TEST_F(LogicalLinkTest, SetBrEdrAutomaticFlushTimeoutFailsForLELink) {
 }
 
 TEST_F(LogicalLinkTest, SetAutomaticFlushTimeoutSuccess) {
-  link()->Close();
-  NewLogicalLink(bt::LinkType::kACL);
+  ResetAndCreateNewLogicalLink();
+
+  QueueAclConnectionRetVal cmd_ids;
+  cmd_ids.extended_features_id = 1;
+  cmd_ids.fixed_channels_supported_id = 2;
+
+  const auto kExtFeaturesRsp = l2cap::testing::AclExtFeaturesInfoRsp(
+      cmd_ids.extended_features_id, kConnHandle, kExtendedFeatures);
+  EXPECT_ACL_PACKET_OUT(
+      test_device(),
+      l2cap::testing::AclExtFeaturesInfoReq(cmd_ids.extended_features_id, kConnHandle),
+      &kExtFeaturesRsp);
+  EXPECT_ACL_PACKET_OUT(test_device(), l2cap::testing::AclFixedChannelsSupportedInfoReq(
+                                           cmd_ids.fixed_channels_supported_id, kConnHandle));
 
   std::optional<hci::Result<>> cb_status;
   auto result_cb = [&](auto status) { cb_status = status; };

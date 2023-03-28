@@ -17,7 +17,7 @@ namespace bt::testing {
 // ACL Buffer Info
 constexpr size_t kMaxDataPacketLength = 64;
 // Ensure outbound ACL packets aren't queued.
-constexpr size_t kMaxPacketCount = 1000;
+constexpr size_t kBufferMaxNumPackets = 1000;
 
 // If the packet size is too large, we consume too much of the fuzzer data per packet without much
 // benefit.
@@ -47,7 +47,7 @@ class DataFuzzTest : public TestingBase {
   DataFuzzTest(const uint8_t* data, size_t size) : data_(data, size), rng_(&data_) {
     set_random_generator(&rng_);
     TestingBase::SetUp();
-    const auto bredr_buffer_info = hci::DataBufferInfo(kMaxDataPacketLength, kMaxPacketCount);
+    const auto bredr_buffer_info = hci::DataBufferInfo(kMaxDataPacketLength, kBufferMaxNumPackets);
     InitializeACLDataChannel(bredr_buffer_info);
 
     channel_manager_ = l2cap::ChannelManager::Create(transport()->acl_data_channel(),
@@ -127,13 +127,11 @@ class DataFuzzTest : public TestingBase {
 
   void ToggleConnection() {
     if (connection_) {
-      acl_data_channel()->UnregisterLink(kHandle);
       channel_manager_->RemoveConnection(kHandle);
       connection_ = false;
       return;
     }
 
-    acl_data_channel()->RegisterLink(kHandle, bt::LinkType::kACL);
     channel_manager_->AddACLConnection(
         kHandle, pw::bluetooth::emboss::ConnectionRole::CENTRAL, /*link_error_callback=*/[] {},
         /*security_callback=*/[](auto, auto, auto) {});

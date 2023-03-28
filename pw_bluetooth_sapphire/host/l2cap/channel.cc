@@ -15,6 +15,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/trace.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/basic_mode_rx_engine.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/basic_mode_tx_engine.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/enhanced_retransmission_mode_engines.h"
@@ -52,30 +53,35 @@ constexpr const char* kInspectPsmPropertyName = "psm";
 }  // namespace
 
 std::unique_ptr<ChannelImpl> ChannelImpl::CreateFixedChannel(
-    ChannelId id, internal::LogicalLinkWeakPtr link, hci::CommandChannel::WeakPtr cmd_channel) {
+    ChannelId id, internal::LogicalLinkWeakPtr link, hci::CommandChannel::WeakPtr cmd_channel,
+    uint16_t max_acl_payload_size) {
   // A fixed channel's endpoints have the same local and remote identifiers.
   // Setting the ChannelInfo MTU to kMaxMTU effectively cancels any L2CAP-level MTU enforcement for
   // services which operate over fixed channels. Such services often define minimum MTU values in
   // their specification, so they are required to respect these MTUs internally by:
   //   1.) never sending packets larger than their spec-defined MTU.
   //   2.) handling inbound PDUs which are larger than their spec-defined MTU appropriately.
-  return std::unique_ptr<ChannelImpl>(new ChannelImpl(
-      id, id, link, ChannelInfo::MakeBasicMode(kMaxMTU, kMaxMTU), std::move(cmd_channel)));
+  return std::unique_ptr<ChannelImpl>(
+      new ChannelImpl(id, id, link, ChannelInfo::MakeBasicMode(kMaxMTU, kMaxMTU),
+                      std::move(cmd_channel), max_acl_payload_size));
 }
 
 std::unique_ptr<ChannelImpl> ChannelImpl::CreateDynamicChannel(
     ChannelId id, ChannelId peer_id, internal::LogicalLinkWeakPtr link, ChannelInfo info,
-    hci::CommandChannel::WeakPtr cmd_channel) {
+    hci::CommandChannel::WeakPtr cmd_channel, uint16_t max_acl_payload_size) {
   return std::unique_ptr<ChannelImpl>(
-      new ChannelImpl(id, peer_id, link, info, std::move(cmd_channel)));
+      new ChannelImpl(id, peer_id, link, info, std::move(cmd_channel), max_acl_payload_size));
 }
 
 ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id, internal::LogicalLinkWeakPtr link,
-                         ChannelInfo info, hci::CommandChannel::WeakPtr cmd_channel)
+                         ChannelInfo info, hci::CommandChannel::WeakPtr cmd_channel,
+                         uint16_t max_acl_payload_size)
     : Channel(id, remote_id, link->type(), link->handle(), info),
       active_(false),
       link_(link),
-      cmd_channel_(std::move(cmd_channel)) {
+      cmd_channel_(std::move(cmd_channel)),
+      fragmenter_(link->handle(), max_acl_payload_size),
+      weak_self_(this) {
   BT_ASSERT(link_.is_alive());
   BT_ASSERT_MSG(
       info_.mode == ChannelMode::kBasic || info_.mode == ChannelMode::kEnhancedRetransmission,
@@ -96,6 +102,15 @@ ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id, internal::LogicalLin
     std::tie(rx_engine_, tx_engine_) = MakeLinkedEnhancedRetransmissionModeEngines(
         id, max_tx_sdu_size(), info_.max_transmissions, info_.n_frames_in_tx_window,
         fit::bind_member<&ChannelImpl::SendFrame>(this), std::move(connection_failure_cb));
+  }
+}
+
+ChannelImpl::~ChannelImpl() {
+  size_t removed_count = this->pending_tx_sdus_.size();
+  if (removed_count > 0) {
+    bt_log(TRACE, "hci",
+           "packets dropped (count: %lu) due to channel destruction (link: %#.4x, id: %#.4x)",
+           removed_count, link_handle(), id());
   }
 }
 
@@ -176,7 +191,30 @@ bool ChannelImpl::Send(ByteBufferPtr sdu) {
   if (!active_)
     return false;
 
-  return tx_engine_->QueueSdu(std::move(sdu));
+  return tx_engine_->QueueSdu(std::move(sdu));  // TODO(fxbug.dev/123081): Refactor to queue PDUs
+}
+
+std::unique_ptr<hci::ACLDataPacket> ChannelImpl::GetNextOutboundPacket() {
+  // Channel's next packet is a starting fragment
+  if (!HasFragments() && HasPDUs()) {
+    // B-frames for Basic Mode contain only an "Information payload" (v5.0 Vol 3, Part A, Sec 3.1)
+    FrameCheckSequenceOption fcs_option = info().mode == ChannelMode::kEnhancedRetransmission
+                                              ? FrameCheckSequenceOption::kIncludeFcs
+                                              : FrameCheckSequenceOption::kNoFcs;
+    // Get new PDU and release fragments
+    auto pdu = fragmenter_.BuildFrame(remote_id(), *pending_tx_pdus_.front(), fcs_option,
+                                      /*flushable=*/info().flush_timeout.has_value());
+    pending_tx_fragments_ = pdu.ReleaseFragments();
+    pending_tx_pdus_.pop();
+  }
+
+  // Send next packet if it exists
+  std::unique_ptr<hci::ACLDataPacket> fragment = nullptr;
+  if (HasFragments()) {
+    fragment = std::move(pending_tx_fragments_.front());
+    pending_tx_fragments_.pop_front();
+  }
+  return fragment;
 }
 
 void ChannelImpl::UpgradeSecurity(sm::SecurityLevel level, sm::ResultFunction<> callback) {
@@ -288,8 +326,8 @@ void ChannelImpl::StartA2dpOffload(const A2dpOffloadConfiguration* config,
     payload->codec_information.ldac.ldac_channel_mode =
         config->codec_information.ldac.ldac_channel_mode;
   } else {
-    // A2dpOffloadCodecInformation does not require little endianness conversion for any other
-    // codec type due to their fields being one byte only.
+    // A2dpOffloadCodecInformation does not require little endianness conversion for any other codec
+    // type due to their fields being one byte only.
     payload->codec_information = config->codec_information;
   }
 
@@ -333,8 +371,8 @@ void ChannelImpl::HandleRxPdu(PDU&& pdu) {
   TRACE_DURATION("bluetooth", "ChannelImpl::HandleRxPdu", "handle", link_->handle(), "channel_id",
                  id_);
 
-  // link_ may be nullptr if a pdu is received after the channel has been deactivated but
-  // before LogicalLink::RemoveChannel has been dispatched
+  // link_ may be nullptr if a pdu is received after the channel has been deactivated but before
+  // LogicalLink::RemoveChannel has been dispatched
   if (!link_.is_alive()) {
     bt_log(TRACE, "l2cap", "ignoring pdu on deactivated channel");
     return;
@@ -387,16 +425,18 @@ void ChannelImpl::CleanUp() {
 
 void ChannelImpl::SendFrame(ByteBufferPtr pdu) {
   if (!link_.is_alive() || !active_) {
+    bt_log(DEBUG, "l2cap", "dropping ACL packet for inactive connection (handle: %#.4x)",
+           link_->handle());
     return;
   }
 
-  // B-frames for Basic Mode contain only an "Information payload" (v5.0 Vol 3, Part A, Sec 3.1)
-  FrameCheckSequenceOption fcs_option = info_.mode == ChannelMode::kEnhancedRetransmission
-                                            ? FrameCheckSequenceOption::kIncludeFcs
-                                            : FrameCheckSequenceOption::kNoFcs;
+  pending_tx_pdus_.emplace(std::move(pdu));
 
-  // |link_| is expected to ignore this call and drop the packet if it has been closed.
-  link_->SendFrame(remote_id_, *pdu, fcs_option, /*flushable=*/info_.flush_timeout.has_value());
+  // Notify LogicalLink that a packet is available. This is only necessary for the first
+  // packet of an empty queue (flow control will poll this connection otherwise).
+  if (pending_tx_pdus_.size() == 1u) {
+    link_->OnOutboundPacketAvailable();
+  }
 }
 
 }  // namespace internal

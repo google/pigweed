@@ -12,11 +12,11 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/mock_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/fake_acl_connection.h"
 
 namespace bt::hci {
 namespace {
 
-constexpr hci_spec::ConnectionHandle kTestHandle = 0x0001;
 const hci_spec::LEConnectionParameters kTestParams(1, 1, 1);
 const DeviceAddress kLEAddress1(DeviceAddress::Type::kLEPublic, {1});
 const DeviceAddress kLEAddress2(DeviceAddress::Type::kLEPublic, {2});
@@ -132,15 +132,18 @@ TEST_P(LinkTypeConnectionTest, Disconnect) {
 
   // HCI_Disconnect (handle: 0x0001, reason: RemoteUserTerminatedConnection)
   StaticByteBuffer req_bytes(
-      0x06, 0x04, 0x03, 0x01, 0x00, pw::bluetooth::emboss::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
+      0x06, 0x04, 0x03, 0x01, 0x00,
+      pw::bluetooth::emboss::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
 
   // Respond with Command Status and Disconnection Complete.
   StaticByteBuffer cmd_status_bytes(
-      hci_spec::kCommandStatusEventCode, 0x04, pw::bluetooth::emboss::StatusCode::SUCCESS, 1, 0x06, 0x04);
+      hci_spec::kCommandStatusEventCode, 0x04, pw::bluetooth::emboss::StatusCode::SUCCESS, 1,
+      0x06, 0x04);
 
   StaticByteBuffer disc_cmpl_bytes(
       hci_spec::kDisconnectionCompleteEventCode, 0x04,
-      pw::bluetooth::emboss::StatusCode::SUCCESS, 0x01, 0x00, pw::bluetooth::emboss::StatusCode::CONNECTION_TERMINATED_BY_LOCAL_HOST);
+      pw::bluetooth::emboss::StatusCode::SUCCESS, 0x01, 0x00,
+      pw::bluetooth::emboss::StatusCode::CONNECTION_TERMINATED_BY_LOCAL_HOST);
 
   // clang-format on
 
@@ -174,69 +177,82 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndLocalDisconnection) {
   const auto& kBufferInfo = ll_type == bt::LinkType::kACL ? kBrEdrBufferInfo : kLeBufferInfo;
 
   // Should register connection with ACL Data Channel.
-  auto conn0 = NewConnection(pw::bluetooth::emboss::ConnectionRole::CENTRAL, kHandle0);
-  auto conn1 = NewConnection(pw::bluetooth::emboss::ConnectionRole::CENTRAL, kHandle1);
+  FakeAclConnection acl_connection_0(acl_data_channel(), kHandle0, ll_type);
+  FakeAclConnection acl_connection_1(acl_data_channel(), kHandle1, ll_type);
 
-  size_t handle0_packet_count = 0;
-  size_t handle1_packet_count = 0;
-  auto data_callback = [&](const ByteBuffer& bytes) {
-    PacketView<hci_spec::ACLDataHeader> packet(&bytes,
-                                               bytes.size() - sizeof(hci_spec::ACLDataHeader));
-    hci_spec::ConnectionHandle connection_handle =
-        le16toh(packet.header().handle_and_flags) & 0xFFF;
+  acl_data_channel()->RegisterConnection(acl_connection_0.GetWeakPtr());
+  acl_data_channel()->RegisterConnection(acl_connection_1.GetWeakPtr());
 
-    if (connection_handle == kHandle0) {
-      handle0_packet_count++;
-    } else {
-      ASSERT_EQ(kHandle1, connection_handle);
-      handle1_packet_count++;
-    }
-  };
-  test_device()->SetDataCallback(data_callback, dispatcher());
+  // HCI Connections corresponding to respective |acl_connection_*|
+  auto hci_connection_0 = NewConnection(pw::bluetooth::emboss::ConnectionRole::CENTRAL, kHandle0);
+  auto hci_connection_1 = NewConnection(pw::bluetooth::emboss::ConnectionRole::CENTRAL, kHandle1);
 
-  // Fill controller buffer.
+  // Fill up BR/EDR controller buffer
   for (size_t i = 0; i < kBufferInfo.max_num_packets(); i++) {
     // Connection handle should have been registered with ACL Data Channel.
-    EXPECT_TRUE(acl_data_channel()->SendPacket(
+    const StaticByteBuffer kPacket(
+        // ACL data header (handle: 0, length 1)
+        LowerBits(kHandle0), UpperBits(kHandle0),
+        // payload length
+        0x01, 0x00,
+        // payload
+        static_cast<uint8_t>(i));
+    EXPECT_ACL_PACKET_OUT(test_device(), kPacket);
+    // Create packet to send on |acl_connection_0|
+    ACLDataPacketPtr packet =
         ACLDataPacket::New(kHandle0, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
-                           hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
-        l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
+                           hci_spec::ACLBroadcastFlag::kPointToPoint,
+                           /*payload_size=*/1);
+    packet->mutable_view()->mutable_payload_data()[0] = static_cast<uint8_t>(i);
+    acl_connection_0.QueuePacket(std::move(packet));
+    RunLoopUntilIdle();
   }
-
-  EXPECT_TRUE(acl_data_channel()->SendPacket(
+  // Create packet to send on |acl_connection_1|
+  ACLDataPacketPtr packet =
       ACLDataPacket::New(kHandle1, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
-                         hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
-      l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
-
+                         hci_spec::ACLBroadcastFlag::kPointToPoint,
+                         /*payload_size=*/1);
+  packet->mutable_view()->mutable_payload_data()[0] = static_cast<uint8_t>(1);
+  acl_connection_1.QueuePacket(std::move(packet));
   RunLoopUntilIdle();
 
-  EXPECT_EQ(handle0_packet_count, kBufferInfo.max_num_packets());
-  EXPECT_EQ(handle1_packet_count, 0u);
+  // Packet for |acl_connection_1| should not have been sent because controller buffer is full
+  EXPECT_EQ(acl_connection_0.queued_packets().size(), 0u);
+  EXPECT_EQ(acl_connection_1.queued_packets().size(), 1u);
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   const auto disconnect_status_rsp = bt::testing::DisconnectStatusResponsePacket();
   EXPECT_CMD_PACKET_OUT(test_device(), bt::testing::DisconnectPacket(kHandle0),
                         &disconnect_status_rsp);
-
-  conn0->Disconnect(pw::bluetooth::emboss::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
+  hci_connection_0->Disconnect(
+      pw::bluetooth::emboss::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
   RunLoopUntilIdle();
 
-  // controller packet counts for |kHandle0| should not have been cleared after disconnect.
-  EXPECT_EQ(handle1_packet_count, 0u);
+  acl_data_channel()->UnregisterConnection(kHandle0);
 
+  // Controller packet counts for |kHandle0| should not have been cleared after disconnect.
   // Disconnection Complete handler should clear controller packet counts, so packet for |kHandle1|
   // should be sent.
   DynamicByteBuffer disconnection_complete(bt::testing::DisconnectionCompletePacket(kHandle0));
   test_device()->SendCommandChannelPacket(disconnection_complete);
+
+  // Send out last packet
+  EXPECT_ACL_PACKET_OUT(test_device(), StaticByteBuffer(
+                                           // ACL data header (handle: 0, length 1)
+                                           LowerBits(kHandle1), UpperBits(kHandle1),
+                                           // payload length
+                                           0x01, 0x00,
+                                           // payload
+                                           1));
   RunLoopUntilIdle();
 
-  EXPECT_EQ(handle1_packet_count, 1u);
+  // Connection handle |kHandle0| should have been unregistered with ACL Data Channel.
+  // Since controller packet count was cleared, packet for |kHandle1| should have been sent.
+  EXPECT_EQ(acl_connection_0.queued_packets().size(), 0u);
+  EXPECT_EQ(acl_connection_1.queued_packets().size(), 0u);
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
-  // Connection handle should have been unregistered with ACL Data Channel.
-  EXPECT_FALSE(acl_data_channel()->SendPacket(
-      ACLDataPacket::New(kHandle0, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
-                         hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
-      l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
-
+  // |acl_connection_1| is destroyed in test destructor
   EXPECT_CMD_PACKET_OUT(test_device(), bt::testing::DisconnectPacket(kHandle1));
 }
 
@@ -250,71 +266,83 @@ TEST_P(LinkTypeConnectionTest, LinkRegistrationAndRemoteDisconnection) {
   const auto& kBufferInfo = ll_type == bt::LinkType::kACL ? kBrEdrBufferInfo : kLeBufferInfo;
 
   // Should register connection with ACL Data Channel.
-  auto conn0 = NewConnection(pw::bluetooth::emboss::ConnectionRole::CENTRAL, kHandle0);
+  FakeAclConnection acl_connection_0(acl_data_channel(), kHandle0, ll_type);
+  FakeAclConnection acl_connection_1(acl_data_channel(), kHandle1, ll_type);
 
-  auto conn1 = NewConnection(pw::bluetooth::emboss::ConnectionRole::CENTRAL, kHandle1);
+  acl_data_channel()->RegisterConnection(acl_connection_0.GetWeakPtr());
+  acl_data_channel()->RegisterConnection(acl_connection_1.GetWeakPtr());
 
-  size_t handle0_packet_count = 0;
-  size_t handle1_packet_count = 0;
-  auto data_callback = [&](const ByteBuffer& bytes) {
-    PacketView<hci_spec::ACLDataHeader> packet(&bytes,
-                                               bytes.size() - sizeof(hci_spec::ACLDataHeader));
-    hci_spec::ConnectionHandle connection_handle =
-        le16toh(packet.header().handle_and_flags) & 0xFFF;
+  // HCI Connections corresponding to respective |acl_connection_*|
+  auto hci_connection_0 = NewConnection(pw::bluetooth::emboss::ConnectionRole::CENTRAL, kHandle0);
+  auto hci_connection_1 = NewConnection(pw::bluetooth::emboss::ConnectionRole::CENTRAL, kHandle1);
 
-    if (connection_handle == kHandle0) {
-      handle0_packet_count++;
-    } else {
-      ASSERT_EQ(kHandle1, connection_handle);
-      handle1_packet_count++;
-    }
-  };
-  test_device()->SetDataCallback(data_callback, dispatcher());
-
-  // Fill controller buffer.
+  // Fill up BR/EDR controller buffer
   for (size_t i = 0; i < kBufferInfo.max_num_packets(); i++) {
     // Connection handle should have been registered with ACL Data Channel.
-    EXPECT_TRUE(acl_data_channel()->SendPacket(
+    const StaticByteBuffer kPacket(
+        // ACL data header (handle: 0, length 1)
+        LowerBits(kHandle0), UpperBits(kHandle0),
+        // payload length
+        0x01, 0x00,
+        // payload
+        static_cast<uint8_t>(i));
+    EXPECT_ACL_PACKET_OUT(test_device(), kPacket);
+    // Create packet to send on |acl_connection_0|
+    ACLDataPacketPtr packet =
         ACLDataPacket::New(kHandle0, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
-                           hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
-        l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
+                           hci_spec::ACLBroadcastFlag::kPointToPoint,
+                           /*payload_size=*/1);
+    packet->mutable_view()->mutable_payload_data()[0] = static_cast<uint8_t>(i);
+    acl_connection_0.QueuePacket(std::move(packet));
+    RunLoopUntilIdle();
   }
-
-  EXPECT_TRUE(acl_data_channel()->SendPacket(
+  // Create packet to send on |acl_connection_1|
+  ACLDataPacketPtr packet =
       ACLDataPacket::New(kHandle1, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
-                         hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
-      l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
-
+                         hci_spec::ACLBroadcastFlag::kPointToPoint,
+                         /*payload_size=*/1);
+  packet->mutable_view()->mutable_payload_data()[0] = static_cast<uint8_t>(1);
+  acl_connection_1.QueuePacket(std::move(packet));
   RunLoopUntilIdle();
 
-  EXPECT_EQ(handle0_packet_count, kBufferInfo.max_num_packets());
-  EXPECT_EQ(handle1_packet_count, 0u);
+  // Packet for |acl_connection_1| should not have been sent because controller buffer is full
+  EXPECT_EQ(acl_connection_0.queued_packets().size(), 0u);
+  EXPECT_EQ(acl_connection_1.queued_packets().size(), 1u);
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
   size_t disconn_cb_count = 0;
   auto disconn_complete_cb = [&](const Connection& cb_conn, auto /*reason*/) {
     EXPECT_EQ(kHandle0, cb_conn.handle());
     disconn_cb_count++;
   };
-  conn0->set_peer_disconnect_callback(disconn_complete_cb);
+  hci_connection_0->set_peer_disconnect_callback(disconn_complete_cb);
+
+  acl_data_channel()->UnregisterConnection(kHandle0);
 
   // Disconnection Complete handler should clear controller packet counts, so packet for |kHandle1|
   // should be sent.
   DynamicByteBuffer disconnection_complete(bt::testing::DisconnectionCompletePacket(kHandle0));
   test_device()->SendCommandChannelPacket(disconnection_complete);
+
+  // Send out last packet
+  EXPECT_ACL_PACKET_OUT(test_device(), StaticByteBuffer(
+                                           // ACL data header (handle: 0, length 1)
+                                           LowerBits(kHandle1), UpperBits(kHandle1),
+                                           // payload length
+                                           0x01, 0x00,
+                                           // payload
+                                           1));
+  test_device()->SendCommandChannelPacket(
+      bt::testing::NumberOfCompletedPacketsPacket(kHandle0, 10));
   RunLoopUntilIdle();
 
-  EXPECT_EQ(1u, disconn_cb_count);
+  // Connection handle |kHandle0| should have been unregistered with ACL Data Channel.
+  // Since controller packet count was cleared, packet for |kHandle1| should have been sent.
+  EXPECT_EQ(acl_connection_0.queued_packets().size(), 0u);
+  EXPECT_EQ(acl_connection_1.queued_packets().size(), 0u);
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
-  // Connection handle should have been unregistered with ACL Data Channel.
-  EXPECT_FALSE(acl_data_channel()->SendPacket(
-      ACLDataPacket::New(kHandle0, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
-                         hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
-      l2cap::kInvalidChannelId, AclDataChannel::PacketPriority::kLow));
-
-  // Since controller packet count was cleared, packet for |kHandle1| should
-  // have been sent.
-  EXPECT_EQ(handle1_packet_count, 1u);
-
+  // |acl_connection_1| is destroyed in test destructor
   EXPECT_CMD_PACKET_OUT(test_device(), bt::testing::DisconnectPacket(kHandle1));
 }
 
@@ -347,15 +375,18 @@ TEST_P(LinkTypeConnectionTest, DisconnectError) {
 
   // HCI_Disconnect (handle: 0x0001, reason: RemoteUserTerminatedConnection)
   StaticByteBuffer req_bytes(
-      0x06, 0x04, 0x03, 0x01, 0x00, pw::bluetooth::emboss::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
+      0x06, 0x04, 0x03, 0x01, 0x00,
+      pw::bluetooth::emboss::StatusCode::REMOTE_USER_TERMINATED_CONNECTION);
 
   // Respond with Command Status and Disconnection Complete.
   StaticByteBuffer cmd_status_bytes(
-      hci_spec::kCommandStatusEventCode, 0x04, pw::bluetooth::emboss::StatusCode::SUCCESS, 1, 0x06, 0x04);
+      hci_spec::kCommandStatusEventCode, 0x04, pw::bluetooth::emboss::StatusCode::SUCCESS, 1,
+      0x06, 0x04);
 
   StaticByteBuffer disc_cmpl_bytes(
       hci_spec::kDisconnectionCompleteEventCode, 0x04,
-      pw::bluetooth::emboss::StatusCode::COMMAND_DISALLOWED, 0x01, 0x00, pw::bluetooth::emboss::StatusCode::CONNECTION_TERMINATED_BY_LOCAL_HOST);
+      pw::bluetooth::emboss::StatusCode::COMMAND_DISALLOWED, 0x01, 0x00,
+      pw::bluetooth::emboss::StatusCode::CONNECTION_TERMINATED_BY_LOCAL_HOST);
 
   // clang-format on
 
@@ -782,8 +813,7 @@ TEST_F(ConnectionTest, LELongTermKeyRequestIgnoredEvent) {
 
   RunLoopUntilIdle();
 
-  // Test will fail if the connection sends a response without ignoring these
-  // events.
+  // Test will fail if the connection sends a response without ignoring these events.
   EXPECT_CMD_PACKET_OUT(test_device(), bt::testing::DisconnectPacket(kTestHandle));
 }
 
@@ -884,70 +914,96 @@ TEST_F(ConnectionTest,
   const hci_spec::ConnectionHandle kHandle = 0x0001;
 
   // Should register connection with ACL Data Channel.
-  auto conn0 = NewACLConnection(pw::bluetooth::emboss::ConnectionRole::CENTRAL, kHandle);
+  FakeAclConnection acl_connection_0(acl_data_channel(), kHandle, bt::LinkType::kACL);
 
-  bt::testing::MockController::DataCallback data_cb = [](const ByteBuffer& packet) {};
-  size_t packet_count = 0;
-  auto data_cb_wrapper = [&data_cb, &packet_count](const ByteBuffer& packet) {
-    packet_count++;
-    ASSERT_EQ(packet.size(), sizeof(hci_spec::ACLDataHeader) + 1);
-    data_cb(packet);
-  };
-  test_device()->SetDataCallback(data_cb_wrapper, dispatcher());
+  acl_data_channel()->RegisterConnection(acl_connection_0.GetWeakPtr());
 
-  const uint8_t payload0 = 0x01;
-  data_cb = [payload0](const ByteBuffer& packet) {
-    EXPECT_EQ(packet[sizeof(hci_spec::ACLDataHeader)], payload0);
-  };
+  // HCI Connection corresponding to |acl_connection_0|
+  auto hci_connection_0 = NewACLConnection(pw::bluetooth::emboss::ConnectionRole::CENTRAL, kHandle);
 
-  // Fill controller buffer, + 1 packet in queue.
+  // Fill up BR/EDR controller buffer then queue one additional packet
   for (size_t i = 0; i < kBrEdrBufferInfo.max_num_packets() + 1; i++) {
-    auto packet = ACLDataPacket::New(kHandle, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                     hci_spec::ACLBroadcastFlag::kPointToPoint, 1);
-    packet->mutable_view()->mutable_payload_bytes()[0] = payload0;
-    EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId,
-                                               AclDataChannel::PacketPriority::kLow));
+    // Last packet should remain queued
+    if (i < kBrEdrBufferInfo.max_num_packets()) {
+      const StaticByteBuffer kPacket(
+          // ACL data header (handle: 0, length 1)
+          LowerBits(kHandle), UpperBits(kHandle),
+          // payload length
+          0x01, 0x00,
+          // payload
+          static_cast<uint8_t>(i));
+      EXPECT_ACL_PACKET_OUT(test_device(), kPacket);
+    }
+    // Create packet to send
+    ACLDataPacketPtr packet =
+        ACLDataPacket::New(kHandle, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                           hci_spec::ACLBroadcastFlag::kPointToPoint,
+                           /*payload_size=*/1);
+    packet->mutable_view()->mutable_payload_data()[0] = static_cast<uint8_t>(i);
+    acl_connection_0.QueuePacket(std::move(packet));
+    RunLoopUntilIdle();
   }
-
   // Run until the data is flushed out to the MockController.
   RunLoopUntilIdle();
 
   // Only packets that fit in buffer should have been received.
-  EXPECT_EQ(packet_count, kBrEdrBufferInfo.max_num_packets());
+  EXPECT_EQ(acl_connection_0.queued_packets().size(), 1u);
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
+
+  acl_data_channel()->UnregisterConnection(kHandle);
 
   // All future packets received should be for the next connection.
-  const uint8_t payload1 = 0x02;
-  data_cb = [payload1](const ByteBuffer& packet) {
-    EXPECT_EQ(packet[sizeof(hci_spec::ACLDataHeader)], payload1);
-  };
-
   const auto disconnect_status_rsp = bt::testing::DisconnectStatusResponsePacket();
   DynamicByteBuffer disconnection_complete(bt::testing::DisconnectionCompletePacket(kHandle));
   EXPECT_CMD_PACKET_OUT(test_device(), bt::testing::DisconnectPacket(kHandle),
                         &disconnect_status_rsp, &disconnection_complete);
 
-  // Disconnect |conn0| by destroying it. The received disconnection complete event will cause the
-  // handler to unregister the link and clear pending packets.
-  conn0.reset();
+  // Disconnect |hci_connection_0| by destroying it. The received disconnection complete event will
+  // cause the handler to clear pending packets.
+  hci_connection_0.reset();
   RunLoopUntilIdle();
 
   // Register connection with same handle.
-  auto conn1 = NewACLConnection(pw::bluetooth::emboss::ConnectionRole::CENTRAL, kHandle);
+  FakeAclConnection acl_connection_1(acl_data_channel(), kHandle, bt::LinkType::kACL);
 
-  // Fill controller buffer, + 1 packet in queue.
-  for (size_t i = 0; i < kBrEdrBufferInfo.max_num_packets(); i++) {
-    auto packet = ACLDataPacket::New(kHandle, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                     hci_spec::ACLBroadcastFlag::kPointToPoint, 1);
-    packet->mutable_view()->mutable_payload_bytes()[0] = payload1;
-    EXPECT_TRUE(acl_data_channel()->SendPacket(std::move(packet), l2cap::kInvalidChannelId,
-                                               AclDataChannel::PacketPriority::kLow));
+  acl_data_channel()->RegisterConnection(acl_connection_1.GetWeakPtr());
+
+  // HCI Connection corresponding to |acl_connection_1|
+  auto hci_connection_1 = NewACLConnection(pw::bluetooth::emboss::ConnectionRole::CENTRAL, kHandle);
+
+  // Fill up BR/EDR controller buffer then queue one additional packet
+  for (size_t i = 0; i < kBrEdrBufferInfo.max_num_packets() + 1; i++) {
+    // Last packet should remain queued
+    if (i < kBrEdrBufferInfo.max_num_packets()) {
+      const StaticByteBuffer kPacket(
+          // ACL data header (handle: 0, length 1)
+          LowerBits(kHandle), UpperBits(kHandle),
+          // payload length
+          0x01, 0x00,
+          // payload
+          static_cast<uint8_t>(i));
+      EXPECT_ACL_PACKET_OUT(test_device(), kPacket);
+    }
+    // Create packet to send
+    ACLDataPacketPtr packet =
+        ACLDataPacket::New(kHandle, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+                           hci_spec::ACLBroadcastFlag::kPointToPoint,
+                           /*payload_size=*/1);
+    packet->mutable_view()->mutable_payload_data()[0] = static_cast<uint8_t>(i);
+    acl_connection_1.QueuePacket(std::move(packet));
+    RunLoopUntilIdle();
   }
-
+  // Run until the data is flushed out to the MockController.
   RunLoopUntilIdle();
 
-  EXPECT_EQ(packet_count, 2 * kBrEdrBufferInfo.max_num_packets());
+  EXPECT_EQ(acl_connection_1.queued_packets().size(), 1u);
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
-  conn1.reset();
+  acl_data_channel()->UnregisterConnection(kHandle);
+
+  // Disconnect |hci_connection_1| by destroying it. The received disconnection complete event will
+  // cause the handler to clear pending packets.
+  hci_connection_1.reset();
   EXPECT_CMD_PACKET_OUT(test_device(), bt::testing::DisconnectPacket(kHandle),
                         &disconnect_status_rsp, &disconnection_complete);
   RunLoopUntilIdle();

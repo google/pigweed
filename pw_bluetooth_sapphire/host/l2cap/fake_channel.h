@@ -80,6 +80,7 @@ class FakeChannel : public Channel {
   void AttachInspect(inspect::Node& parent, std::string name) override {}
   void StartA2dpOffload(const A2dpOffloadConfiguration* configuration,
                         hci::ResultCallback<> callback) override {}
+  std::unique_ptr<hci::ACLDataPacket> GetNextOutboundPacket() override;
 
  private:
   hci_spec::ConnectionHandle handle_;

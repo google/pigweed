@@ -135,8 +135,7 @@ class FakeL2cap final : public ChannelManager {
 
   // Gets the link data for |handle|, creating it if necessary.
   LinkData& GetLinkData(hci_spec::ConnectionHandle handle);
-  // Gets the link data for |handle|. Asserts if the link is not connected
-  // yet.
+  // Gets the link data for |handle|. Asserts if the link is not connected yet.
   LinkData& ConnectedLinkData(hci_spec::ConnectionHandle handle);
 
   std::unordered_map<hci_spec::ConnectionHandle, LinkData> links_;

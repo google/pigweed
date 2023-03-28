@@ -40,7 +40,7 @@ class SignalingChannel;
 // explicitly `Close`d before destruction, and will assert on this behavior in its destructor.
 //
 // Instances are created and owned by a ChannelManager.
-class LogicalLink final {
+class LogicalLink : public hci::AclDataChannel::ConnectionInterface {
  public:
   // Returns a function that accepts opened channels for a registered local service identified by
   // |psm| on a given connection identified by |handle|, or nullptr if there is no service
@@ -56,13 +56,13 @@ class LogicalLink final {
   // If |random_channel_ids| is true, assign dynamic channels randomly instead of
   // starting at the beginning of the dynamic channel range.
   LogicalLink(hci_spec::ConnectionHandle handle, bt::LinkType type,
-              pw::bluetooth::emboss::ConnectionRole role, uint16_t max_payload_size,
+              pw::bluetooth::emboss::ConnectionRole role, uint16_t max_acl_payload_size,
               QueryServiceCallback query_service_cb, hci::AclDataChannel* acl_data_channel,
               hci::CommandChannel* cmd_channel, bool random_channel_ids);
 
   // When a logical link is destroyed it notifies all of its channels to close themselves. Data
   // packets will no longer be routed to the associated channels.
-  ~LogicalLink();
+  ~LogicalLink() override;
 
   // Notifies and closes all open channels on this link. This must be called to
   // cleanly shut down a LogicalLink.
@@ -89,19 +89,8 @@ class LogicalLink final {
   // The link MUST not be closed when this is called.
   void HandleRxPacket(hci::ACLDataPacketPtr packet);
 
-  // Sends a PDU out over the ACL data channel, where |payload| is the contents following the Basic
-  // L2CAP header and preceding the Frame Check Sequence (FCS; if enabled with |fcs_option|). Frame
-  // formats are defined in Core Spec v5.0, Vol 3, Part A, Section 3.
-  //
-  // |remote_id| identifies the peer's L2CAP channel endpoint for this frame. This must be called on
-  // the creation thread.
-  //
-  // |flushable| indicates whether the PDU should be marked as flushable (the controller can
-  // flush the PDU after the automatic flush timeout).
-  //
-  // It is safe to call this function on a closed link; it will have no effect.
-  void SendFrame(ChannelId remote_id, const ByteBuffer& payload,
-                 FrameCheckSequenceOption fcs_option, bool flushable);
+  // Called by l2cap::Channel when a packet is available.
+  void OnOutboundPacketAvailable();
 
   // Requests a security upgrade using the registered security upgrade callback.
   // Invokes the |callback| argument with the result of the operation.
@@ -139,9 +128,6 @@ class LogicalLink final {
   // Attach LogicalLink's inspect node as a child of |parent| with the given |name|.
   void AttachInspect(inspect::Node& parent, std::string name);
 
-  // Returns mapping of ChannelId -> PacketPriority for use with AclDataChannel::SendPacket.
-  static hci::AclDataChannel::PacketPriority ChannelPriority(ChannelId id);
-
   // Assigns the link error callback to be invoked when a channel signals a link
   // error.
   void set_error_callback(fit::closure callback);
@@ -153,18 +139,16 @@ class LogicalLink final {
   // on the signaling channel.
   void set_connection_parameter_update_callback(LEConnectionParameterUpdateCallback callback);
 
-  bt::LinkType type() const { return type_; }
-  pw::bluetooth::emboss::ConnectionRole role() const { return role_; }
-  hci_spec::ConnectionHandle handle() const { return handle_; }
-
   const sm::SecurityProperties security() { return security_; }
 
-  // Returns the LE signaling channel implementation or nullptr if this is not a
-  // LE-U link.
-  LESignalingChannel* le_signaling_channel() const;
-
   using WeakPtr = WeakSelf<LogicalLink>::WeakPtr;
-  LogicalLink::WeakPtr GetWeakPtr() { return weak_self_.GetWeakPtr(); }
+  WeakPtr GetWeakPtr() { return weak_self_.GetWeakPtr(); }
+
+  // ConnectionInterface overrides:
+  hci_spec::ConnectionHandle handle() const override { return handle_; }
+  bt::LinkType type() const override { return type_; }
+  std::unique_ptr<hci::ACLDataPacket> GetNextOutboundPacket() override;
+  bool HasAvailablePacket() const override;
 
  private:
   friend class ChannelImpl;
@@ -227,12 +211,23 @@ class LogicalLink final {
   // no more channels are requesting high priority).
   void HandleNextAclPriorityRequest();
 
+  // Return true if |current_channel_|'s next packet is part of a PDU that is already in the
+  // process of being sent
+  bool IsNextPacketContinuingFragment() const;
+
+  // Round robins through channels in logical link to get next packet to send
+  // Returns nullptr if there are no connections with pending packets
+  void RoundRobinChannels();
+
   sm::SecurityProperties security_;
 
   // Information about the underlying controller logical link.
   hci_spec::ConnectionHandle handle_;
   bt::LinkType type_;
   pw::bluetooth::emboss::ConnectionRole role_;
+
+  // Maximum number of bytes that should be allowed in a ACL data packet, excluding the header
+  uint16_t max_acl_payload_size_;
 
   // The duration after which BR/EDR packets are flushed from the controller.
   // By default, the flush timeout is infinite (no automatic flush).
@@ -247,14 +242,19 @@ class LogicalLink final {
   // No data packets are processed once this gets set to true.
   bool closed_;
 
-  // Fragmenter and Recombiner are always accessed on the L2CAP thread.
-  const Fragmenter fragmenter_;
+  // Recombiner is always accessed on the L2CAP thread.
   Recombiner recombiner_;
 
   // Channels that were created on this link. Channels notify the link for
   // removal when deactivated.
   using ChannelMap = std::unordered_map<ChannelId, std::unique_ptr<ChannelImpl>>;
   ChannelMap channels_;
+
+  // Round robin iterator for sending packets from channels
+  ChannelMap::iterator current_channel_;
+
+  // Channel that Logical Link is currently sending PDUs from
+  ChannelImpl::WeakPtr current_pdus_channel_;
 
   // Manages the L2CAP signaling channel on this logical link. Depending on |type_| this will
   // either implement the LE or BR/EDR signaling commands.
@@ -294,6 +294,7 @@ class LogicalLink final {
   };
   InspectProperties inspect_properties_;
 
+  WeakSelf<hci::AclDataChannel::ConnectionInterface> weak_conn_interface_;
   WeakSelf<LogicalLink> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(LogicalLink);

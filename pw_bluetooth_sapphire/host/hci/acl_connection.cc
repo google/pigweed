@@ -51,8 +51,6 @@ void AclConnection::OnDisconnectionComplete(hci_spec::ConnectionHandle handle,
   if (!hci.is_alive()) {
     return;
   }
-  // Stop data flow and revoke queued packets for this connection.
-  hci->acl_data_channel()->UnregisterLink(handle);
   // Notify ACL data channel that packets have been flushed from controller buffer.
   hci->acl_data_channel()->ClearControllerPacketCount(handle);
 }

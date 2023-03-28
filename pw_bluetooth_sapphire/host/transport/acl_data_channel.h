@@ -35,6 +35,7 @@ namespace bt::hci {
 using UniqueChannelId = uint16_t;
 
 class Transport;
+
 // Represents the Bluetooth ACL Data channel and manages the Host<->Controller
 // ACL data flow control.
 //
@@ -42,12 +43,46 @@ class Transport;
 // Core Spec v5.0, Vol 2, Part E, Section 4.1.1.
 class AclDataChannel {
  public:
+  // This interface will be implemented by l2cap::LogicalLink
+  class ConnectionInterface {
+   public:
+    virtual ~ConnectionInterface() = default;
+
+    virtual hci_spec::ConnectionHandle handle() const = 0;
+
+    virtual bt::LinkType type() const = 0;
+
+    // Returns the next PDU fragment, or nullptr if none is available.
+    virtual std::unique_ptr<ACLDataPacket> GetNextOutboundPacket() = 0;
+
+    // Returns true if link has a queued packet
+    virtual bool HasAvailablePacket() const = 0;
+  };
+
+  // Registers a connection. Failure to register a connection before sending packets will result in
+  // the packets being dropped immediately. A connection must not be registered again until after
+  // |UnregisterConnection| has been called on that connection.
+  virtual void RegisterConnection(WeakPtr<ConnectionInterface> connection) = 0;
+
+  // Unregister a connection when it is disconnected. Cleans up all outgoing data buffering state
+  // related to the logical link with the given |handle|. This must be called upon disconnection of
+  // a link to ensure that stale outbound packets are filtered out of the send queue. All future
+  // packets sent to this link will be dropped.
+  //
+  // |RegisterConnection| must be called before |UnregisterConnection| for the same handle.
+  //
+  // |UnregisterConnection| does not clear the controller packet count, so
+  // |ClearControllerPacketCount| must be called after |UnregisterConnection| and the
+  // HCI_Disconnection_Complete event has been received.
+  virtual void UnregisterConnection(hci_spec::ConnectionHandle handle) = 0;
+
+  // Called by LogicalLink when a packet is available
+  virtual void OnOutboundPacketAvailable() = 0;
+
   enum class PacketPriority { kHigh, kLow };
 
   using AclPacketPredicate =
       fit::function<bool(const ACLDataPacketPtr& packet, UniqueChannelId channel_id)>;
-
-  static constexpr size_t kMaxAclPacketsPerChannel = 32;
 
   // Starts listening on the HCI ACL data channel and starts handling data flow
   // control. |bredr_buffer_info| represents the controller's data buffering
@@ -77,71 +112,10 @@ class AclDataChannel {
   // ownership of each packet received from the controller.
   virtual void SetDataRxHandler(ACLPacketHandler rx_callback) = 0;
 
-  // Queues the given ACL data packet to be sent to the controller. Returns
-  // false if the packet cannot be queued up, e.g. if the size of |data_packet|
-  // exceeds the MTU for the link type set in RegisterLink().
-  //
-  // |data_packet| is passed by value, meaning that ACLDataChannel will take
-  // ownership of it. |data_packet| must represent a valid ACL data packet.
-  //
-  // |channel_id| must match the l2cap channel that the packet is being sent to. It is needed to
-  // determine what channel l2cap packet fragments are being sent to when revoking queued packets
-  // for specific channels that have closed. If the packet does not contain a fragment of an l2cap
-  // packet, |channel_id| should be set to |l2cap::kInvalidChannelId|.
-  //
-  // |priority| indicates the order this packet should be dispatched off of the queue relative to
-  // packets of other priorities. Note that high priority packets may still wait behind low
-  // priority packets that have already been sent to the controller.
-  virtual bool SendPacket(ACLDataPacketPtr data_packet, UniqueChannelId channel_id,
-                          PacketPriority priority) = 0;
-
-  // Queues the given list of ACL data packets to be sent to the controller. The
-  // behavior is identical to that of SendPacket() with the guarantee that all
-  // packets that are in |packets| are queued atomically. The contents of |packets| must comprise
-  // one or more complete PDUs for the same handle in order, due to queue management assumptions.
-  // If any packet's handle is not registered in the allowlist, then none will be queued.
-  //
-  // Takes ownership of the contents of |packets|. Returns false if |packets|
-  // contains an element that exceeds the MTU for its link type or |packets| is empty.
-  //
-  // |channel_id| must match the l2cap channel that all packets is being sent to. It is needed to
-  // determine what channel l2cap packet fragments are being sent to when revoking queued packets
-  // for channels that have closed. If the packets do not contain a fragment of an l2cap
-  // packet, |channel_id| should be set to |l2cap::kInvalidChannelId|.
-  //
-  // |priority| indicates the order this packet should be dispatched off of the queue relative to
-  // packets of other priorities. Note that high priority packets may still wait behind low priority
-  // packets that have already been sent to the controller.
-  virtual bool SendPackets(std::list<ACLDataPacketPtr> packets, UniqueChannelId channel_id,
-                           PacketPriority priority) = 0;
-
-  // Allowlist packets destined for the link identified by |handle| (of link type |ll_type|) for
-  // submission to the controller.
-  //
-  // Failure to register a link before sending packets will result in the packets
-  // being dropped immediately. A handle must not be registered again until after UnregisterLink
-  // has been called on that handle.
-  virtual void RegisterLink(hci_spec::ConnectionHandle handle, bt::LinkType ll_type) = 0;
-
-  // Cleans up all outgoing data buffering state related to the logical link
-  // with the given |handle|. This must be called upon disconnection of a link
-  // to ensure that stale outbound packets are filtered out of the send queue.
-  // All future packets sent to this link will be dropped.
-  //
-  // |RegisterLink| must be called before |UnregisterLink| for the same handle.
-  //
-  // |UnregisterLink| does not clear the controller packet count, so |ClearControllerPacketCount|
-  // must be called after |UnregisterLink| and the HCI Disconnection Complete event has been
-  // received.
-  virtual void UnregisterLink(hci_spec::ConnectionHandle handle) = 0;
-
-  // Removes all queued data packets for which |predicate| returns true.
-  virtual void DropQueuedPackets(AclPacketPredicate predicate) = 0;
-
   // Resets controller packet count for |handle| so that controller buffer credits can be reused.
   // This must be called on the HCI_Disconnection_Complete event to notify ACLDataChannel that
   // packets in the controller's buffer for |handle| have been flushed. See Core Spec v5.1, Vol 2,
-  // Part E, Section 4.3. This must be called after |UnregisterLink|.
+  // Part E, Section 4.3. This must be called after |UnregisterConnection|.
   virtual void ClearControllerPacketCount(hci_spec::ConnectionHandle handle) = 0;
 
   // Returns the BR/EDR buffer information that the channel was initialized

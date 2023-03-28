@@ -19,7 +19,9 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/byte_buffer.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/pipeline_monitor.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/fragmenter.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/pdu.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/rx_engine.h"
@@ -27,6 +29,8 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_channel.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/command_channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/link_type.h"
@@ -221,6 +225,11 @@ class Channel : public WeakSelf<Channel> {
   virtual void StartA2dpOffload(const A2dpOffloadConfiguration* config,
                                 hci::ResultCallback<> callback) = 0;
 
+  // Returns the next PDU fragment, or nullptr if none is available.
+  // Converts pending transmission PDUs to fragments
+  // Fragments of the same PDU must be sent before another channel in the same link can send packets
+  virtual std::unique_ptr<hci::ACLDataPacket> GetNextOutboundPacket() = 0;
+
   // The ACL priority that was both requested and accepted by the controller.
   pw::bluetooth::AclPriority requested_acl_priority() const { return requested_acl_priority_; }
 
@@ -253,13 +262,16 @@ class ChannelImpl : public Channel {
   //   2.) handling inbound PDUs which are larger than their spec-defined MTU appropriately.
   static std::unique_ptr<ChannelImpl> CreateFixedChannel(ChannelId id,
                                                          internal::LogicalLinkWeakPtr link,
-                                                         hci::CommandChannel::WeakPtr cmd_channel);
+                                                         hci::CommandChannel::WeakPtr cmd_channel,
+                                                         uint16_t max_acl_payload_size);
 
-  static std::unique_ptr<ChannelImpl> CreateDynamicChannel(
-      ChannelId id, ChannelId peer_id, internal::LogicalLinkWeakPtr link, ChannelInfo info,
-      hci::CommandChannel::WeakPtr cmd_channel);
+  static std::unique_ptr<ChannelImpl> CreateDynamicChannel(ChannelId id, ChannelId peer_id,
+                                                           internal::LogicalLinkWeakPtr link,
+                                                           ChannelInfo info,
+                                                           hci::CommandChannel::WeakPtr cmd_channel,
+                                                           uint16_t max_acl_payload_size);
 
-  ~ChannelImpl() override = default;
+  ~ChannelImpl() override;
 
   // Called by |link_| to notify us when the channel can no longer process data.
   void OnClosed();
@@ -267,6 +279,12 @@ class ChannelImpl : public Channel {
   // Called by |link_| when a PDU targeting this channel has been received.
   // Contents of |pdu| will be moved.
   void HandleRxPdu(PDU&& pdu);
+
+  bool HasSDUs() const { return !pending_tx_sdus_.empty(); }
+
+  bool HasPDUs() const { return !pending_tx_pdus_.empty(); }
+
+  bool HasFragments() const { return !pending_tx_fragments_.empty(); }
 
   // Channel overrides:
   const sm::SecurityProperties security() override;
@@ -282,10 +300,15 @@ class ChannelImpl : public Channel {
   void AttachInspect(inspect::Node& parent, std::string name) override;
   void StartA2dpOffload(const A2dpOffloadConfiguration* config,
                         hci::ResultCallback<> callback) override;
+  std::unique_ptr<hci::ACLDataPacket> GetNextOutboundPacket() override;
+
+  using WeakPtr = WeakSelf<ChannelImpl>::WeakPtr;
+  WeakPtr GetWeakPtr() { return weak_self_.GetWeakPtr(); }
 
  private:
   ChannelImpl(ChannelId id, ChannelId remote_id, internal::LogicalLinkWeakPtr link,
-              ChannelInfo info, hci::CommandChannel::WeakPtr cmd_channel);
+              ChannelInfo info, hci::CommandChannel::WeakPtr cmd_channel,
+              uint16_t max_acl_payload_size);
 
   // Common channel closure logic. Called on Deactivate/OnClosed.
   void CleanUp();
@@ -323,6 +346,18 @@ class ChannelImpl : public Channel {
   // (especially in the HCI layer).
   std::queue<ByteBufferPtr, std::list<ByteBufferPtr>> pending_rx_sdus_;
 
+  // Contains outbound SDUs
+  std::queue<ByteBufferPtr> pending_tx_sdus_;
+
+  // Contains outbound PDUs
+  std::queue<ByteBufferPtr> pending_tx_pdus_;
+
+  // Contains outbound fragments
+  std::list<hci::ACLDataPacketPtr> pending_tx_fragments_;
+
+  // Fragmenter and Recombiner are always accessed on the L2CAP thread.
+  const Fragmenter fragmenter_;
+
   struct InspectProperties {
     inspect::Node node;
     inspect::StringProperty psm;
@@ -330,6 +365,8 @@ class ChannelImpl : public Channel {
     inspect::StringProperty remote_id;
   };
   InspectProperties inspect_;
+
+  WeakSelf<ChannelImpl> weak_self_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(ChannelImpl);
 };

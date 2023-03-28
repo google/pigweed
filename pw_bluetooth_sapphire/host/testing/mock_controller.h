@@ -164,10 +164,6 @@ class MockController final : public ControllerTestDoubleBase, public WeakSelf<Mo
   // Returns true iff all transactions queued with QueueCommandTransaction() have been received.
   bool AllExpectedCommandPacketsSent() const;
 
-  // TODO(benlawson): remove after all MockController tests have been refactored to use data
-  // expectations
-  void set_data_expectations_enabled(bool enabled) { data_expectations_enabled_ = enabled; }
-
   // Callback to invoke when a packet is received over the data channel. Care
   // should be taken to ensure that a callback with a reference to test case
   // variables is not invoked when tearing down.
@@ -196,7 +192,6 @@ class MockController final : public ControllerTestDoubleBase, public WeakSelf<Mo
   std::queue<CommandTransaction> cmd_transactions_;
   std::queue<DataTransaction> data_transactions_;
   std::queue<ScoTransaction> sco_transactions_;
-  bool data_expectations_enabled_;
   DataCallback data_callback_;
   async_dispatcher_t* data_dispatcher_;
   TransactionCallback transaction_callback_;

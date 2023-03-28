@@ -50,6 +50,7 @@ source_set("testing") {
   sources = [
     "fake_sco_data_channel.cc",
     "fake_sco_data_channel.h",
+    "mock_acl_data_channel.cc",
     "mock_acl_data_channel.h",
   ]
 

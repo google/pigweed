@@ -24,9 +24,6 @@ LowEnergyConnection::LowEnergyConnection(hci_spec::ConnectionHandle handle,
   le_ltk_request_id_ = hci->command_channel()->AddLEMetaEventHandler(
       hci_spec::kLELongTermKeyRequestSubeventCode,
       fit::bind_member<&LowEnergyConnection::OnLELongTermKeyRequestEvent>(this));
-
-  // Allow packets to be sent on this link immediately.
-  hci->acl_data_channel()->RegisterLink(handle, bt::LinkType::kLE);
 }
 
 LowEnergyConnection::~LowEnergyConnection() {

@@ -25,6 +25,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/error.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/fake_acl_connection.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
 namespace bt::gap {
@@ -3238,21 +3239,49 @@ TEST_F(BrEdrConnectionManagerTest,
   size_t packet_count = 0;
   test_device()->SetDataCallback([&](const auto&) { packet_count++; }, dispatcher());
 
-  ASSERT_TRUE(acl_data_channel()->SendPacket(
-      hci::ACLDataPacket::New(kConnectionHandle,
-                              hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
-                              hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
-      l2cap::kInvalidChannelId, hci::AclDataChannel::PacketPriority::kLow));
+  // Should register connection with ACL Data Channel.
+  hci::FakeAclConnection connection_0(acl_data_channel(), kConnectionHandle, LinkType::kACL);
+  hci::FakeAclConnection connection_1(acl_data_channel(), kConnectionHandle2, LinkType::kACL);
 
-  ASSERT_TRUE(acl_data_channel()->SendPacket(
-      hci::ACLDataPacket::New(kConnectionHandle2,
-                              hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
-                              hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
-      l2cap::kInvalidChannelId, hci::AclDataChannel::PacketPriority::kLow));
+  acl_data_channel()->RegisterConnection(connection_0.GetWeakPtr());
+  acl_data_channel()->RegisterConnection(connection_1.GetWeakPtr());
 
+  EXPECT_ACL_PACKET_OUT(test_device(),
+                        StaticByteBuffer(
+                            // ACL data header (handle: 0, length 1)
+                            LowerBits(kConnectionHandle), UpperBits(kConnectionHandle),
+                            // payload length
+                            0x01, 0x00,
+                            // payload
+                            1));
+  // Create packet to send on |acl_connection_0|
+  hci::ACLDataPacketPtr packet_0 = hci::ACLDataPacket::New(
+      kConnectionHandle, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+      hci_spec::ACLBroadcastFlag::kPointToPoint,
+      /*payload_size=*/1);
+  packet_0->mutable_view()->mutable_payload_data()[0] = static_cast<uint8_t>(1);
+  connection_0.QueuePacket(std::move(packet_0));
   RunLoopUntilIdle();
 
-  EXPECT_EQ(1u, packet_count);
+  EXPECT_ACL_PACKET_OUT(test_device(),
+                        StaticByteBuffer(
+                            // ACL data header (handle: 0, length 1)
+                            LowerBits(kConnectionHandle2), UpperBits(kConnectionHandle2),
+                            // payload length
+                            0x01, 0x00,
+                            // payload
+                            1));
+  hci::ACLDataPacketPtr packet_1 = hci::ACLDataPacket::New(
+      kConnectionHandle2, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+      hci_spec::ACLBroadcastFlag::kPointToPoint,
+      /*payload_size=*/1);
+  packet_1->mutable_view()->mutable_payload_data()[0] = static_cast<uint8_t>(1);
+  connection_1.QueuePacket(std::move(packet_1));
+  RunLoopUntilIdle();
+
+  EXPECT_EQ(connection_0.queued_packets().size(), 0u);
+  EXPECT_EQ(connection_1.queued_packets().size(), 1u);
+  EXPECT_FALSE(test_device()->AllExpectedDataPacketsSent());
 
   EXPECT_CMD_PACKET_OUT(test_device(), kDisconnect, &kDisconnectRsp);
 
@@ -3260,24 +3289,24 @@ TEST_F(BrEdrConnectionManagerTest,
   RunLoopUntilIdle();
 
   // Packet for |kConnectionHandle2| should not have been sent before Disconnection Complete event.
-  EXPECT_EQ(1u, packet_count);
+  EXPECT_EQ(connection_0.queued_packets().size(), 0u);
+  EXPECT_EQ(connection_1.queued_packets().size(), 1u);
+  EXPECT_FALSE(test_device()->AllExpectedDataPacketsSent());
+
+  acl_data_channel()->UnregisterConnection(kConnectionHandle);
 
   test_device()->SendCommandChannelPacket(kDisconnectionComplete);
-
   RunLoopUntilIdle();
 
   EXPECT_TRUE(IsNotConnected(peer));
 
-  // Packet for |kConnectionHandle2| should have been sent.
-  EXPECT_EQ(2u, packet_count);
+  // Disconnection Complete handler should clear controller packet counts, so packet for
+  // |kConnectionHandle2| should be sent
+  EXPECT_EQ(connection_0.queued_packets().size(), 0u);
+  EXPECT_EQ(connection_1.queued_packets().size(), 0u);
+  EXPECT_TRUE(test_device()->AllExpectedDataPacketsSent());
 
-  // Link |kConnectionHandle| should have been unregistered.
-  ASSERT_FALSE(acl_data_channel()->SendPacket(
-      hci::ACLDataPacket::New(kConnectionHandle,
-                              hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
-                              hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
-      l2cap::kInvalidChannelId, hci::AclDataChannel::PacketPriority::kLow));
-
+  // Connection handle |kConnectionHandle| should have been unregistered with ACL Data Channel.
   QueueDisconnection(kConnectionHandle2);
 }
 

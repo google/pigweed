@@ -43,10 +43,7 @@ bool CommandTransaction::Match(const ByteBuffer& cmd) {
 }
 
 MockController::MockController()
-    : WeakSelf(this),
-      data_expectations_enabled_(false),
-      data_dispatcher_(nullptr),
-      transaction_dispatcher_(nullptr) {}
+    : WeakSelf(this), data_dispatcher_(nullptr), transaction_dispatcher_(nullptr) {}
 
 MockController::~MockController() {
   while (!cmd_transactions_.empty()) {
@@ -94,7 +91,6 @@ void MockController::QueueCommandTransaction(hci_spec::OpCode expected_opcode,
 }
 
 void MockController::QueueDataTransaction(DataTransaction transaction) {
-  BT_ASSERT(data_expectations_enabled_);
   data_transactions_.push(std::move(transaction));
 }
 
@@ -191,23 +187,21 @@ void MockController::OnCommandReceived(const ByteBuffer& data) {
 }
 
 void MockController::OnACLDataPacketReceived(const ByteBuffer& acl_data_packet) {
-  if (data_expectations_enabled_) {
-    ASSERT_FALSE(data_transactions_.empty()) << "Received unexpected acl data packet: { "
-                                             << ByteContainerToString(acl_data_packet) << "}";
+  ASSERT_FALSE(data_transactions_.empty())
+      << "Received unexpected acl data packet: { " << ByteContainerToString(acl_data_packet) << "}";
 
-    auto& expected = data_transactions_.front();
-    if (!expected.Match(acl_data_packet.view())) {
-      auto meta = expected.expected().meta;
-      GTEST_FAIL_AT(meta.file, meta.line) << "Expected data packet (" << meta.expectation << ")";
-    }
-
-    while (!expected.replies().empty()) {
-      auto& reply = expected.replies().front();
-      ASSERT_TRUE(SendACLDataChannelPacket(reply)) << "Failed to send reply";
-      expected.replies().pop();
-    }
-    data_transactions_.pop();
+  auto& expected = data_transactions_.front();
+  if (!expected.Match(acl_data_packet.view())) {
+    auto meta = expected.expected().meta;
+    GTEST_FAIL_AT(meta.file, meta.line) << "Expected data packet (" << meta.expectation << ")";
   }
+
+  while (!expected.replies().empty()) {
+    auto& reply = expected.replies().front();
+    ASSERT_TRUE(SendACLDataChannelPacket(reply)) << "Failed to send reply";
+    expected.replies().pop();
+  }
+  data_transactions_.pop();
 
   if (data_callback_) {
     DynamicByteBuffer packet_copy(acl_data_packet);

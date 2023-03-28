@@ -45,6 +45,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_peer.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_packets.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/fake_acl_connection.h"
 
 namespace bt::gap {
 namespace {
@@ -3837,50 +3838,9 @@ class PendingPacketsTest : public LowEnergyConnectionManagerTest {
     test_device()->SetDataCallback([&](const auto&) { packet_count_++; }, dispatcher());
     test_device()->set_auto_completed_packets_event_enabled(false);
     test_device()->set_auto_disconnection_complete_event_enabled(false);
-
-    // Fill controller buffer by sending |kMaxNumPackets| packets to peer0.
-    for (size_t i = 0; i < kLEMaxNumPackets; i++) {
-      ASSERT_TRUE(acl_data_channel()->SendPacket(
-          hci::ACLDataPacket::New(conn_handle0_->handle(),
-                                  hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                  hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
-          l2cap::kInvalidChannelId, hci::AclDataChannel::PacketPriority::kLow));
-    }
-
-    // Queue packet for |peer1|.
-    ASSERT_TRUE(acl_data_channel()->SendPacket(
-        hci::ACLDataPacket::New(conn_handle1_->handle(),
-                                hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
-        l2cap::kInvalidChannelId, hci::AclDataChannel::PacketPriority::kLow));
-
-    RunLoopUntilIdle();
-
-    // Packet for |peer1| should not have been sent because controller buffer is full.
-    EXPECT_EQ(kLEMaxNumPackets, packet_count_);
-
-    handle0_ = conn_handle0_->handle();
   }
 
   void TearDown() override {
-    RunLoopUntilIdle();
-
-    // Packet for |peer1| should not have been sent before Disconnection Complete event.
-    EXPECT_EQ(kLEMaxNumPackets, packet_count_);
-
-    // This makes FakeController send us the HCI Disconnection Complete event.
-    test_device()->SendDisconnectionCompleteEvent(handle0_);
-    RunLoopUntilIdle();
-
-    // |peer0|'s link should have been unregistered.
-    ASSERT_FALSE(acl_data_channel()->SendPacket(
-        hci::ACLDataPacket::New(handle0_, hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
-                                hci_spec::ACLBroadcastFlag::kPointToPoint, 1),
-        l2cap::kInvalidChannelId, hci::AclDataChannel::PacketPriority::kLow));
-
-    // Packet for |peer1| should have been sent.
-    EXPECT_EQ(kLEMaxNumPackets + 1, packet_count_);
-
     peer0_ = nullptr;
     peer1_ = nullptr;
     conn_handle0_.reset();
@@ -3892,25 +3852,123 @@ class PendingPacketsTest : public LowEnergyConnectionManagerTest {
   Peer* peer0() { return peer0_; }
   std::unique_ptr<LowEnergyConnectionHandle>& conn_handle0() { return conn_handle0_; }
 
+ protected:
+  hci_spec::ConnectionHandle handle0_;
+  std::unique_ptr<LowEnergyConnectionHandle> conn_handle0_;
+  std::unique_ptr<LowEnergyConnectionHandle> conn_handle1_;
+
  private:
   size_t packet_count_;
   Peer* peer0_;
   Peer* peer1_;
-  hci_spec::ConnectionHandle handle0_;
-  std::unique_ptr<LowEnergyConnectionHandle> conn_handle0_;
-  std::unique_ptr<LowEnergyConnectionHandle> conn_handle1_;
 };
 
 using LowEnergyConnectionManagerPendingPacketsTest = PendingPacketsTest;
 
 TEST_F(LowEnergyConnectionManagerPendingPacketsTest, Disconnect) {
-  // Send HCI Disconnect to controller.
+  hci::FakeAclConnection connection_0(acl_data_channel(), conn_handle0_->handle(),
+                                      bt::LinkType::kLE);
+  hci::FakeAclConnection connection_1(acl_data_channel(), conn_handle1_->handle(),
+                                      bt::LinkType::kLE);
+
+  acl_data_channel()->RegisterConnection(connection_0.GetWeakPtr());
+  acl_data_channel()->RegisterConnection(connection_1.GetWeakPtr());
+
+  // Fill controller buffer by sending |kLEMaxNumPackets| packets to |peer0|
+  for (size_t i = 0; i < kLEMaxNumPackets; i++) {
+    hci::ACLDataPacketPtr packet = hci::ACLDataPacket::New(
+        conn_handle0_->handle(), hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+        hci_spec::ACLBroadcastFlag::kPointToPoint,
+        /*payload_size=*/1);
+    connection_0.QueuePacket(std::move(packet));
+    RunLoopUntilIdle();
+  }
+
+  // Queue packet for |peer1|
+  hci::ACLDataPacketPtr packet = hci::ACLDataPacket::New(
+      conn_handle1_->handle(), hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+      hci_spec::ACLBroadcastFlag::kPointToPoint,
+      /*payload_size=*/1);
+  connection_1.QueuePacket(std::move(packet));
+  RunLoopUntilIdle();
+
+  // Packet for |peer1| should not have been sent because controller buffer is full
+  EXPECT_EQ(connection_0.queued_packets().size(), 0u);
+  EXPECT_EQ(connection_1.queued_packets().size(), 1u);
+
+  handle0_ = conn_handle0_->handle();
+
+  // Send HCI Disconnect to controller
   EXPECT_TRUE(conn_mgr()->Disconnect(peer0()->identifier()));
+
+  RunLoopUntilIdle();
+
+  // Packet for |peer1| should not have been sent before Disconnection Complete event
+  EXPECT_EQ(connection_0.queued_packets().size(), 0u);
+  EXPECT_EQ(connection_1.queued_packets().size(), 1u);
+
+  acl_data_channel()->UnregisterConnection(conn_handle0_->handle());
+
+  // FakeController send us the HCI Disconnection Complete event
+  test_device()->SendDisconnectionCompleteEvent(handle0_);
+  RunLoopUntilIdle();
+
+  // |peer0|'s link should have been unregistered and packet for |peer1| should have been sent
+  EXPECT_EQ(connection_0.queued_packets().size(), 0u);
+  EXPECT_EQ(connection_1.queued_packets().size(), 0u);
 }
 
 TEST_F(LowEnergyConnectionManagerPendingPacketsTest, ReleaseRef) {
-  // Releasing ref should send HCI Disconnect to controller.
+  hci::FakeAclConnection connection_0(acl_data_channel(), conn_handle0_->handle(),
+                                      bt::LinkType::kLE);
+  hci::FakeAclConnection connection_1(acl_data_channel(), conn_handle1_->handle(),
+                                      bt::LinkType::kLE);
+
+  acl_data_channel()->RegisterConnection(connection_0.GetWeakPtr());
+  acl_data_channel()->RegisterConnection(connection_1.GetWeakPtr());
+
+  // Fill controller buffer by sending |kLEMaxNumPackets| packets to |peer0|
+  for (size_t i = 0; i < kLEMaxNumPackets; i++) {
+    hci::ACLDataPacketPtr packet = hci::ACLDataPacket::New(
+        conn_handle0_->handle(), hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+        hci_spec::ACLBroadcastFlag::kPointToPoint,
+        /*payload_size=*/1);
+    connection_0.QueuePacket(std::move(packet));
+    RunLoopUntilIdle();
+  }
+
+  // Queue packet for |peer1|
+  hci::ACLDataPacketPtr packet = hci::ACLDataPacket::New(
+      conn_handle1_->handle(), hci_spec::ACLPacketBoundaryFlag::kFirstNonFlushable,
+      hci_spec::ACLBroadcastFlag::kPointToPoint,
+      /*payload_size=*/1);
+  connection_1.QueuePacket(std::move(packet));
+  RunLoopUntilIdle();
+
+  // Packet for |peer1| should not have been sent before Disconnection Complete event
+  EXPECT_EQ(connection_0.queued_packets().size(), 0u);
+  EXPECT_EQ(connection_1.queued_packets().size(), 1u);
+
+  handle0_ = conn_handle0_->handle();
+
+  // Releasing ref should send HCI Disconnect to controller
   conn_handle0().reset();
+
+  RunLoopUntilIdle();
+
+  // Packet for |peer1| should not have been sent before Disconnection Complete event
+  EXPECT_EQ(connection_0.queued_packets().size(), 0u);
+  EXPECT_EQ(connection_1.queued_packets().size(), 1u);
+
+  acl_data_channel()->UnregisterConnection(handle0_);
+
+  // FakeController send us the HCI Disconnection Complete event
+  test_device()->SendDisconnectionCompleteEvent(handle0_);
+  RunLoopUntilIdle();
+
+  // |peer0|'s link should have been unregistered and packet for |peer1| should have been sent
+  EXPECT_EQ(connection_0.queued_packets().size(), 0u);
+  EXPECT_EQ(connection_1.queued_packets().size(), 0u);
 }
 
 }  // namespace
