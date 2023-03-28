@@ -549,9 +549,11 @@ pw_exec
 ``pw_exec`` allows for execution of arbitrary programs. It is a wrapper around
 ``pw_python_action`` but allows for specifying the program to execute.
 
-.. note:: Prefer to use ``pw_python_action`` instead of calling out to shell
-  scripts, as the python will be more portable. ``pw_exec`` should generally
-  only be used for interacting with legacy/existing scripts.
+.. note::
+
+   Prefer to use ``pw_python_action`` instead of calling out to shell
+   scripts, as the Python will be more portable. ``pw_exec`` should generally
+   only be used for interacting with legacy/existing scripts.
 
 **Arguments**
 
@@ -580,24 +582,26 @@ pw_exec
 * ``working_directory``: The working directory to execute the subprocess with.
   If not specified it will not be set and the subprocess will have whatever
   the parent current working directory is.
+* ``venv``: Python virtualenv to pass along to the underlying
+  :ref:`module-pw_build-pw_python_action`.
 * ``visibility``: GN visibility to apply to the underlying target.
 
 **Example**
 
 .. code-block::
 
-  import("$dir_pw_build/exec.gni")
+   import("$dir_pw_build/exec.gni")
 
-  pw_exec("hello_world") {
-    program = "/bin/sh"
-    args = [
-      "-c",
-      "echo hello \$WORLD",
-    ]
-    env = [
-      "WORLD=world",
-    ]
-  }
+   pw_exec("hello_world") {
+     program = "/bin/sh"
+     args = [
+       "-c",
+       "echo hello \$WORLD",
+     ]
+     env = [
+       "WORLD=world",
+     ]
+   }
 
 pw_input_group
 --------------

@@ -169,8 +169,12 @@ template("pw_python_venv") {
       # typically do this.
       pw_python_action("${target_name}._install_base_3p_deps") {
         module = "pip"
+
+        # Set the venv to run this pip install in.
         _pw_internal_run_in_venv = true
         _skip_installing_external_python_deps = true
+        venv = get_label_info(":${invoker.target_name}", "label_no_toolchain")
+
         args = [
           "install",
           "wheel",
@@ -192,8 +196,12 @@ template("pw_python_venv") {
       # Install all 3rd party Python dependencies.
       pw_python_action("${target_name}._install_3p_deps") {
         module = "pip"
+
+        # Set the venv to run this pip install in.
         _pw_internal_run_in_venv = true
         _skip_installing_external_python_deps = true
+        venv = get_label_info(":${invoker.target_name}", "label_no_toolchain")
+
         args = [ "install" ]
 
         # Note: --no-build-isolation should be avoided for installing 3rd party
