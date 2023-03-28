@@ -57,9 +57,10 @@ class FilePrefixMapTest(unittest.TestCase):
         path_list = [
             '/foo_root/root_subdir/source.cc',
             '/foo_root/root_subdir/out/../gen.cc',
+            'out/../gen.cc',
         ]
         prefix_maps = [('/foo_root/root_subdir/', ''), ('out/../', 'out/')]
-        expected_paths = ['source.cc', 'out/gen.cc']
+        expected_paths = ['source.cc', 'out/../gen.cc', 'out/gen.cc']
         self.assertEqual(
             list(file_prefix_map.remap_paths(path_list, prefix_maps)),
             expected_paths,

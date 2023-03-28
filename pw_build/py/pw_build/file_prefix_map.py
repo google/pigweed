@@ -59,6 +59,7 @@ def remap_paths(paths: List[str], prefix_maps: PrefixMaps) -> Iterator[str]:
         for from_prefix, to_prefix in prefix_maps:
             if path.startswith(from_prefix):
                 path = path.replace(from_prefix, to_prefix, 1)
+                break  # Only the first -ffile-prefix-map option applies.
         yield path
 
 
