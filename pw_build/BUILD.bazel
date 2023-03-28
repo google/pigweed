@@ -12,6 +12,11 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+load(
+    "//pw_build:pigweed.bzl",
+    "pw_cc_test",
+)
+
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
@@ -28,4 +33,17 @@ config_setting(
 filegroup(
     name = "cc_blob_library_test",
     srcs = ["cc_blob_library_test.cc"],
+)
+
+# Bazel produces root-relative file paths without the -ffile-prefix-map option.
+pw_cc_test(
+    name = "file_prefix_map_test",
+    srcs = [
+        "file_prefix_map_test.cc",
+        "pw_build_private/file_prefix_map_test.h",
+    ],
+    defines = [
+        "PW_BUILD_EXPECTED_HEADER_PATH=\\\"pw_build/pw_build_private/file_prefix_map_test.h\\\"",
+        "PW_BUILD_EXPECTED_SOURCE_PATH=\\\"pw_build/file_prefix_map_test.cc\\\"",
+    ],
 )

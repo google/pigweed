@@ -217,25 +217,51 @@ config("toolchain_cpp_standard") {
 }
 
 # Removes system-dependent prefixes from macros like __FILE__ and debug symbols.
+#
+# All compilation is relative to root_build_dir. The root_build_dir path is
+# arbitrary, so it must be removed to make builds reproducible. This config
+# remaps paths as if compilation occurred from the repository root instead of
+# root_build_dir. Paths that include root_build_dir are updated to standardize
+# on out/ as the build directory.
+#
+# If an ELF is built from a directory other than "out/", debuggers will be able
+# to locate in-tree sources, but may have issues finding generated sources in
+# the output directory. This can be worked around in a few ways:
+#
+#   - Use GDB's `set substitute-path <from> <to>` option to remap paths.
+#   - Rebuild from out/.
+#   - Symlink out/ to the build directory.
+#   - Temporarily disable these transformations.
+#
+# If an ELF is built from "out/", debuggers will be able to locate all sources,
+# including generated sources, when run from the repo root.
 config("relative_paths") {
+  # Apply a series of file-prefix-map transformations. Only the first matching
+  # option applies. Clang and GCC apply these in opposite order.
   _transformations = [
-    # Remap absolute paths to the build directory to "out", in case absolute
-    # paths to files in the build directory are created.
-    #
-    # Clang and GCC apply these flags in opposite order. The build directory is
-    # often nested under //. To ensure that both compilers removed it before
-    # removing the absolute path to //, apply the option both first and last.
-    rebase_path(root_build_dir) + "=out",
+    # Remap absolute prefixes for files in the output directory to out/.
+    rebase_path(root_build_dir) + "/=out/",
 
-    # Remove absolute paths to the repo root.
+    # Remove the path to the out directory so the ELF is relative to the root.
+    rebase_path(root_build_dir) + "=",
+
+    # Remove any absolute paths to the repo root.
     rebase_path("//") + "=",
 
-    # Remove relative paths from the build directory to the source tree.
+    # Remove the relative path from the build directory to the root, which is
+    # the prefix of in-tree sources.
     rebase_path("//", root_build_dir) + "=",
 
-    # Repeat option to remap absolute paths to the build directory.
-    rebase_path(root_build_dir) + "=out",
+    # Prepend out/ to any unmatched files, which are in the output directory.
+    "=out/",
+
+    # Repeat the replacements in reverse order since GCC applies them backwards.
+    rebase_path("//", root_build_dir) + "=",
+    rebase_path("//") + "=",
+    rebase_path(root_build_dir) + "=",
+    rebase_path(root_build_dir) + "/=out/",
   ]
+
   cflags = []
 
   foreach(transform, _transformations) {
@@ -301,7 +327,50 @@ if (current_toolchain != default_toolchain) {
     visibility = [ ":*" ]
   }
 
+  # file_prefix_map_test verifies that the -ffile-prefix-map option is applied
+  # correctly.
+
+  # File paths should be relative to the root of the GN build.
+  _test_header = rebase_path("pw_build_private/file_prefix_map_test.h", "//")
+  _path_test_define = [ "PW_BUILD_EXPECTED_HEADER_PATH=\"$_test_header\"" ]
+
+  pw_test("file_prefix_map_test") {
+    _source_path = rebase_path("file_prefix_map_test.cc", "//")
+
+    sources = [ "file_prefix_map_test.cc" ]
+
+    defines = _path_test_define +
+              [ "PW_BUILD_EXPECTED_SOURCE_PATH=\"$_source_path\"" ]
+
+    deps = [ ":file_prefix_map_generated_file" ]
+  }
+
+  # Generated file paths should be relative to the build directory.
+  copy("generate_file_prefix_map_test_source") {
+    sources = [ "file_prefix_map_test.cc" ]
+    outputs = [ get_label_info(":file_prefix_map_test", "target_gen_dir") +
+                "/file_prefix_map_test_generated.cc" ]
+    visibility = [ ":*" ]
+  }
+
+  pw_source_set("file_prefix_map_generated_file") {
+    public = [ "pw_build_private/file_prefix_map_test.h" ]
+    sources = get_target_outputs(":generate_file_prefix_map_test_source")
+    deps = [ ":generate_file_prefix_map_test_source" ]
+
+    _source_path = rebase_path(sources[0], root_build_dir)
+
+    # The source file is prefixed with out/ since it's generated.
+    defines = _path_test_define +
+              [ "PW_BUILD_EXPECTED_SOURCE_PATH=\"out/$_source_path\"" ]
+    include_dirs = [ "." ]  # Allow accessing file_prefix_map_test.h
+    visibility = [ ":*" ]
+  }
+
   pw_test_group("tests") {
-    tests = [ ":cc_blob_library_test" ]
+    tests = [
+      ":cc_blob_library_test",
+      ":file_prefix_map_test",
+    ]
   }
 }
