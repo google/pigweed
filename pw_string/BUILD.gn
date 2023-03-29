@@ -73,6 +73,7 @@ pw_source_set("format") {
   public = [ "public/pw_string/format.h" ]
   sources = [ "format.cc" ]
   public_deps = [
+    ":string",
     dir_pw_preprocessor,
     dir_pw_span,
     dir_pw_status,

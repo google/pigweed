@@ -59,6 +59,7 @@ pw_cc_library(
     hdrs = ["public/pw_string/format.h"],
     includes = ["public"],
     deps = [
+        ":string",
         "//pw_preprocessor",
         "//pw_span",
         "//pw_status",

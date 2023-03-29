@@ -58,6 +58,7 @@ pw_add_library(pw_string.format STATIC
     pw_preprocessor
     pw_span
     pw_status
+    pw_string.string
   SOURCES
     format.cc
 )
