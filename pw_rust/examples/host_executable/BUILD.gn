@@ -16,16 +16,24 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/target_types.gni")
 
-pw_rust_executable("hello") {
-  sources = [
-    "main.rs",
-    "other.rs",
-  ]
+hello_sources = [
+  "main.rs",
+  "other.rs",
+]
 
-  deps = [
-    ":a",
-    ":c",
-  ]
+hello_deps = [
+  ":a",
+  ":c",
+]
+
+pw_rust_executable("hello") {
+  sources = hello_sources
+  deps = hello_deps
+}
+
+pw_rust_test("test_hello") {
+  sources = hello_sources
+  deps = hello_deps
 }
 
 # The dep chain hello->a->b will exercise the functionality of both direct and

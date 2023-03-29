@@ -48,9 +48,13 @@ template("pw_rust_executable") {
     }
     configs += [ "$dir_pw_build:rust_edition_${_edition}" ]
 
+    output_dir = "${target_out_dir}/bin"
+    if (defined(invoker.output_dir)) {
+      output_dir = invoker.output_dir
+    }
+
     underlying_target_type = pw_build_EXECUTABLE_TARGET_TYPE
     target_type_file = pw_build_EXECUTABLE_TARGET_TYPE_FILE
-    output_dir = "${target_out_dir}/bin"
     add_global_link_deps = true
   }
 }

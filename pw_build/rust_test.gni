@@ -1,0 +1,80 @@
+# Copyright 2023 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_build/python_action.gni")
+import("$dir_pw_build/rust_executable.gni")
+
+# Note: In general, prefer to import target_types.gni rather than this file.
+#
+# This template sets up a configurable build of source files containing rust
+# unit tests. This wrapper is analogous to pw_test with additions to support
+# rust specific parameters such as rust edition and cargo config features.
+#
+# For more information on the features provided by this template, see the full
+# docs at https://pigweed.dev/pw_build/?highlight=pw_rust_test.
+template("pw_rust_test") {
+  output_dir = "${target_out_dir}/test"
+  if (defined(invoker.output_dir)) {
+    output_dir = invoker.output_dir
+  }
+
+  _actual_target_name = target_name
+  _is_enabled = !defined(invoker.enable_if) || invoker.enable_if
+  if (!_is_enabled) {
+    _actual_target_name = target_name + ".DISABLED"
+
+    # If the target is disabled, create an empty target in its place. Use an
+    # action with the original target's sources as inputs to ensure that the
+    # source files exist (even if they don't compile).
+    pw_python_action(target_name) {
+      script = "$dir_pw_build/py/pw_build/nop.py"
+      stamp = true
+
+      inputs = []
+      if (defined(invoker.sources)) {
+        inputs += invoker.sources
+      }
+      if (defined(invoker.public)) {
+        inputs += invoker.public
+      }
+    }
+  }
+
+  pw_rust_executable(_actual_target_name) {
+    forward_variables_from(invoker, "*")
+
+    if (!defined(rustflags)) {
+      rustflags = []
+    }
+    rustflags += [ "--test" ]
+
+    _extra_metadata = {
+    }
+    if (defined(invoker.extra_metadata)) {
+      _extra_metadata = invoker.extra_metadata
+    }
+
+    metadata = {
+      tests = [
+        {
+          type = "test"
+          test_name = _actual_target_name
+          test_directory = rebase_path(output_dir, root_build_dir)
+          extra_metadata = _extra_metadata
+        },
+      ]
+    }
+  }
+}
