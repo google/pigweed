@@ -143,7 +143,7 @@ constexpr std::enable_if_t<std::is_unsigned<T>::value, bool> has_single_bit(T va
 }
 
 template <typename T>
-constexpr std::enable_if_t<std::is_unsigned<T>::value, T> bit_width(T value) {
+constexpr std::enable_if_t<std::is_unsigned<T>::value, int> bit_width(T value) {
   return internal::bit_width(value);
 }
 

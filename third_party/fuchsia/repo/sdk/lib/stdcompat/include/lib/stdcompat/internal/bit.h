@@ -183,9 +183,9 @@ popcount(T value) noexcept {
 }
 
 template <typename T>
-constexpr std::enable_if_t<is_bit_type<T>::value, T> bit_width(T value) {
-  const T zeros_left =
-      (value == 0) ? std::numeric_limits<T>::digits : static_cast<T>(count_zeros_from_left(value));
+constexpr std::enable_if_t<is_bit_type<T>::value, int> bit_width(T value) {
+  const int zeros_left = (value == 0) ? std::numeric_limits<T>::digits
+                                      : static_cast<int>(count_zeros_from_left(value));
   return std::numeric_limits<T>::digits - zeros_left;
 }
 
