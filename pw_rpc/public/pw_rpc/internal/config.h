@@ -108,11 +108,13 @@
 
 // When building for a desktop operating system, use a 1ms sleep by default.
 // 1-tick duration sleeps can result in spurious timeouts.
-#if defined(_WIN32) || defined(__APPLE__) || defined(__linux__)
+#if defined(_WIN32) || defined(__APPLE__) || \
+    defined(__linux__) && !defined(__ZEPHYR__)
 #define PW_RPC_YIELD_SLEEP_DURATION std::chrono::milliseconds(1)
 #else
 #define PW_RPC_YIELD_SLEEP_DURATION pw::chrono::SystemClock::duration(1)
 #endif  // defined(_WIN32) || defined(__APPLE__) || defined(__linux__)
+        // && !defined(__ZEPHYR__)
 
 #endif  // PW_RPC_YIELD_SLEEP_DURATION
 
