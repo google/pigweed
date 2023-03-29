@@ -1171,19 +1171,6 @@ enum class SynchronousDataPacketStatusFlag : uint8_t {
   kDataPartiallyLost = 0x03,
 };
 
-// Possible values that can be reported for the Central_Clock_Accuracy and
-// Advertiser_Clock_Accuracy parameters.
-enum class LEClockAccuracy : uint8_t {
-  k500Ppm = 0x00,
-  k250Ppm = 0x01,
-  k150Ppm = 0x02,
-  k100Ppm = 0x03,
-  k75Ppm  = 0x04,
-  k50Ppm  = 0x05,
-  k30Ppm  = 0x06,
-  k20Ppm  = 0x07,
-};
-
 // Possible values that can be reported in a LE Channel Selection Algorithm event.
 enum class LEChannelSelectionAlgorithm : uint8_t {
   kAlgorithm1 = 0x00,

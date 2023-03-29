@@ -253,17 +253,19 @@ TEST_F(LowEnergyConnectorTest, IncomingConnect) {
   EXPECT_TRUE(in_connections().empty());
   EXPECT_FALSE(connector()->request_pending());
 
-  hci_spec::LEConnectionCompleteSubeventParams event;
-  std::memset(&event, 0, sizeof(event));
+  auto packet =
+      hci::EmbossEventPacket::New<pw::bluetooth::emboss::LEConnectionCompleteSubeventWriter>(
+          hci_spec::kLEMetaEventCode);
+  auto view = packet.view_t();
 
-  event.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-  event.peer_address = kTestAddress.value();
-  event.peer_address_type = hci_spec::LEPeerAddressType::kPublic;
-  event.conn_interval = hci_spec::defaults::kLEConnectionIntervalMin;
-  event.connection_handle = 1;
+  view.le_meta_event().subevent_code().Write(hci_spec::kLEConnectionCompleteSubeventCode);
+  view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  view.peer_address().CopyFrom(kTestAddress.value().view());
+  view.peer_address_type().Write(pw::bluetooth::emboss::LEPeerAddressType::PUBLIC);
+  view.connection_interval().Write(hci_spec::defaults::kLEConnectionIntervalMin);
+  view.connection_handle().Write(1);
 
-  test_device()->SendLEMetaEvent(hci_spec::kLEConnectionCompleteSubeventCode,
-                                 BufferView(&event, sizeof(event)));
+  test_device()->SendCommandChannelPacket(packet.data());
 
   RunLoopUntilIdle();
 
@@ -300,17 +302,19 @@ TEST_F(LowEnergyConnectorTest, IncomingConnectDuringConnectionRequest) {
       hci_spec::defaults::kLEScanWindow, kTestParams, callback, kConnectTimeout);
 
   async::PostTask(dispatcher(), [kIncomingAddress, this] {
-    hci_spec::LEConnectionCompleteSubeventParams event;
-    std::memset(&event, 0, sizeof(event));
+    auto packet =
+        hci::EmbossEventPacket::New<pw::bluetooth::emboss::LEConnectionCompleteSubeventWriter>(
+            hci_spec::kLEMetaEventCode);
+    auto view = packet.view_t();
 
-    event.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-    event.peer_address = kIncomingAddress.value();
-    event.peer_address_type = hci_spec::LEPeerAddressType::kPublic;
-    event.conn_interval = hci_spec::defaults::kLEConnectionIntervalMin;
-    event.connection_handle = 2;
+    view.le_meta_event().subevent_code().Write(hci_spec::kLEConnectionCompleteSubeventCode);
+    view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+    view.peer_address().CopyFrom(kIncomingAddress.value().view());
+    view.peer_address_type().Write(pw::bluetooth::emboss::LEPeerAddressType::PUBLIC);
+    view.connection_interval().Write(hci_spec::defaults::kLEConnectionIntervalMin);
+    view.connection_handle().Write(2);
 
-    test_device()->SendLEMetaEvent(hci_spec::kLEConnectionCompleteSubeventCode,
-                                   BufferView(&event, sizeof(event)));
+    test_device()->SendCommandChannelPacket(packet.data());
   });
 
   RunLoopUntilIdle();

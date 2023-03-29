@@ -39,23 +39,6 @@ bool CheckBit(NUM_TYPE num_type, ENUM_TYPE bit) {
   return (num_type & static_cast<NUM_TYPE>(bit));
 }
 
-hci_spec::LEPeerAddressType ToPeerAddrType(DeviceAddress::Type type) {
-  hci_spec::LEPeerAddressType result = hci_spec::LEPeerAddressType::kAnonymous;
-
-  switch (type) {
-    case DeviceAddress::Type::kLEPublic:
-      result = hci_spec::LEPeerAddressType::kPublic;
-      break;
-    case DeviceAddress::Type::kLERandom:
-      result = hci_spec::LEPeerAddressType::kRandom;
-      break;
-    default:
-      break;
-  }
-
-  return result;
-}
-
 }  // namespace
 
 namespace hci_android = hci_spec::vendor::android;
@@ -382,20 +365,20 @@ void FakeController::ConnectLowEnergy(const DeviceAddress& addr,
                                                  0, hci_spec::defaults::kLESupervisionTimeout);
     peer->set_le_params(conn_params);
 
-    hci_spec::LEConnectionCompleteSubeventParams params;
-    std::memset(&params, 0, sizeof(params));
-
-    params.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-    params.peer_address = addr.value();
-    params.peer_address_type = ToPeerAddrType(addr.type());
-    params.conn_latency = htole16(conn_params.latency());
-    params.conn_interval = htole16(conn_params.interval());
-    params.supervision_timeout = htole16(conn_params.supervision_timeout());
-    params.role = role;
-    params.connection_handle = htole16(handle);
-
-    SendLEMetaEvent(hci_spec::kLEConnectionCompleteSubeventCode,
-                    BufferView(&params, sizeof(params)));
+    auto packet =
+        hci::EmbossEventPacket::New<pw::bluetooth::emboss::LEConnectionCompleteSubeventWriter>(
+            hci_spec::kLEMetaEventCode);
+    auto view = packet.view_t();
+    view.le_meta_event().subevent_code().Write(hci_spec::kLEConnectionCompleteSubeventCode);
+    view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+    view.peer_address().CopyFrom(addr.value().view());
+    view.peer_address_type().Write(DeviceAddress::DeviceAddrToLePeerAddr(addr.type()));
+    view.peripheral_latency().Write(conn_params.latency());
+    view.connection_interval().Write(conn_params.interval());
+    view.supervision_timeout().Write(conn_params.supervision_timeout());
+    view.role().Write(role);
+    view.connection_handle().Write(handle);
+    SendCommandChannelPacket(packet.data());
   });
 }
 
@@ -447,15 +430,17 @@ void FakeController::L2CAPConnectionParameterUpdate(
 void FakeController::SendLEConnectionUpdateCompleteSubevent(
     hci_spec::ConnectionHandle handle, const hci_spec::LEConnectionParameters& params,
     pw::bluetooth::emboss::StatusCode status) {
-  hci_spec::LEConnectionUpdateCompleteSubeventParams subevent;
-  subevent.status = status;
-  subevent.connection_handle = htole16(handle);
-  subevent.conn_interval = htole16(params.interval());
-  subevent.conn_latency = htole16(params.latency());
-  subevent.supervision_timeout = htole16(params.supervision_timeout());
-
-  SendLEMetaEvent(hci_spec::kLEConnectionUpdateCompleteSubeventCode,
-                  BufferView(&subevent, sizeof(subevent)));
+  auto packet =
+      hci::EmbossEventPacket::New<pw::bluetooth::emboss::LEConnectionUpdateCompleteSubeventWriter>(
+          hci_spec::kLEMetaEventCode);
+  auto view = packet.view_t();
+  view.le_meta_event().subevent_code().Write(hci_spec::kLEConnectionUpdateCompleteSubeventCode);
+  view.status().Write(status);
+  view.connection_handle().Write(handle);
+  view.connection_interval().UncheckedWrite(params.interval());
+  view.peripheral_latency().Write(params.latency());
+  view.supervision_timeout().UncheckedWrite(params.supervision_timeout());
+  SendCommandChannelPacket(packet.data());
 }
 
 void FakeController::Disconnect(const DeviceAddress& addr,
@@ -752,12 +737,14 @@ void FakeController::OnLECreateConnectionCommandReceived(
     status = peer->connect_response();
   }
 
-  hci_spec::LEConnectionCompleteSubeventParams response;
-  std::memset(&response, 0, sizeof(response));
-
-  response.status = status;
-  response.peer_address = DeviceAddressBytes(params.peer_address());
-  response.peer_address_type = ToPeerAddrType(addr_type);
+  auto packet =
+      hci::EmbossEventPacket::New<pw::bluetooth::emboss::LEConnectionCompleteSubeventWriter>(
+          hci_spec::kLEMetaEventCode);
+  auto view = packet.view_t();
+  view.le_meta_event().subevent_code().Write(hci_spec::kLEConnectionCompleteSubeventCode);
+  view.status().Write(status);
+  view.peer_address().CopyFrom(params.peer_address());
+  view.peer_address_type().Write(DeviceAddress::DeviceAddrToLePeerAddr(addr_type));
 
   if (status == pw::bluetooth::emboss::StatusCode::SUCCESS) {
     uint16_t interval_min = params.connection_interval_min().UncheckedRead();
@@ -768,14 +755,11 @@ void FakeController::OnLECreateConnectionCommandReceived(
                                                  params.supervision_timeout().UncheckedRead());
     peer->set_le_params(conn_params);
 
-    response.conn_latency = htole16(params.max_latency().UncheckedRead());
-    response.conn_interval = htole16(interval);
-    response.supervision_timeout = htole16(params.supervision_timeout().UncheckedRead());
-
-    response.role = pw::bluetooth::emboss::ConnectionRole::CENTRAL;
-
-    hci_spec::ConnectionHandle handle = ++next_conn_handle_;
-    response.connection_handle = htole16(handle);
+    view.peripheral_latency().UncheckedCopyFrom(params.max_latency());
+    view.connection_interval().UncheckedWrite(interval);
+    view.supervision_timeout().UncheckedCopyFrom(params.supervision_timeout());
+    view.role().Write(pw::bluetooth::emboss::ConnectionRole::CENTRAL);
+    view.connection_handle().Write(++next_conn_handle_);
   }
 
   // Don't send a connection event if we were asked to force the request to
@@ -785,7 +769,7 @@ void FakeController::OnLECreateConnectionCommandReceived(
     return;
 
   le_connect_rsp_task_.Cancel();
-  le_connect_rsp_task_.set_handler([response, address = peer_address, this]() {
+  le_connect_rsp_task_.set_handler([packet, address = peer_address, this]() {
     auto peer = FindPeer(address);
     if (!peer) {
       // The peer has been removed; Ignore this response
@@ -794,17 +778,17 @@ void FakeController::OnLECreateConnectionCommandReceived(
 
     le_connect_pending_ = false;
 
-    if (response.status == pw::bluetooth::emboss::StatusCode::SUCCESS) {
+    auto view = packet.view<pw::bluetooth::emboss::LEConnectionCompleteSubeventView>();
+    if (view.status().Read() == pw::bluetooth::emboss::StatusCode::SUCCESS) {
       bool not_previously_connected = !peer->connected();
-      hci_spec::ConnectionHandle handle = le16toh(response.connection_handle);
+      hci_spec::ConnectionHandle handle = view.connection_handle().Read();
       peer->AddLink(handle);
       if (not_previously_connected && peer->connected()) {
         NotifyConnectionState(peer->address(), handle, /*connected=*/true);
       }
     }
 
-    SendLEMetaEvent(hci_spec::kLEConnectionCompleteSubeventCode,
-                    BufferView(&response, sizeof(response)));
+    SendCommandChannelPacket(packet.data());
   });
   le_connect_rsp_task_.PostDelayed(dispatcher(), settings_.le_connection_delay);
 }
@@ -839,23 +823,21 @@ void FakeController::OnLEConnectionUpdateCommandReceived(
                                                max_latency, supv_timeout);
   peer->set_le_params(conn_params);
 
-  hci_spec::LEConnectionUpdateCompleteSubeventParams reply;
+  auto packet =
+      hci::EmbossEventPacket::New<pw::bluetooth::emboss::LEConnectionUpdateCompleteSubeventWriter>(
+          hci_spec::kLEMetaEventCode);
+  auto view = packet.view_t();
+  view.le_meta_event().subevent_code().Write(hci_spec::kLEConnectionUpdateCompleteSubeventCode);
+  view.connection_handle().CopyFrom(params.connection_handle());
   if (peer->supports_ll_conn_update_procedure()) {
-    reply.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-    reply.connection_handle = htole16(params.connection_handle().Read());
-    reply.conn_interval = htole16(conn_params.interval());
-    reply.conn_latency = htole16(params.max_latency().UncheckedRead());
-    reply.supervision_timeout = htole16(params.supervision_timeout().UncheckedRead());
+    view.status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+    view.connection_interval().UncheckedWrite(conn_params.interval());
+    view.peripheral_latency().CopyFrom(params.max_latency());
+    view.supervision_timeout().UncheckedCopyFrom(params.supervision_timeout());
   } else {
-    reply.status = pw::bluetooth::emboss::StatusCode::UNSUPPORTED_REMOTE_FEATURE;
-    reply.connection_handle = htole16(params.connection_handle().Read());
-    reply.conn_interval = 0;
-    reply.conn_latency = 0;
-    reply.supervision_timeout = 0;
+    view.status().Write(pw::bluetooth::emboss::StatusCode::UNSUPPORTED_REMOTE_FEATURE);
   }
-
-  SendLEMetaEvent(hci_spec::kLEConnectionUpdateCompleteSubeventCode,
-                  BufferView(&reply, sizeof(reply)));
+  SendCommandChannelPacket(packet.data());
 
   NotifyLEConnectionParameters(peer->address(), conn_params);
 }
@@ -1057,17 +1039,19 @@ void FakeController::OnLECreateConnectionCancel() {
   NotifyConnectionState(le_connect_params_->peer_address, 0, /*connected=*/false,
                         /*canceled=*/true);
 
-  hci_spec::LEConnectionCompleteSubeventParams response;
-  std::memset(&response, 0, sizeof(response));
-
-  response.status = pw::bluetooth::emboss::StatusCode::UNKNOWN_CONNECTION_ID;
-  response.peer_address = le_connect_params_->peer_address.value();
-  response.peer_address_type = ToPeerAddrType(le_connect_params_->peer_address.type());
+  auto packet =
+      hci::EmbossEventPacket::New<pw::bluetooth::emboss::LEConnectionCompleteSubeventWriter>(
+          hci_spec::kLEMetaEventCode);
+  auto view = packet.view_t();
+  view.le_meta_event().subevent_code().Write(hci_spec::kLEConnectionCompleteSubeventCode);
+  view.status().Write(pw::bluetooth::emboss::StatusCode::UNKNOWN_CONNECTION_ID);
+  view.peer_address().CopyFrom(le_connect_params_->peer_address.value().view());
+  view.peer_address_type().Write(
+      DeviceAddress::DeviceAddrToLePeerAddr(le_connect_params_->peer_address.type()));
 
   RespondWithCommandComplete(hci_spec::kLECreateConnectionCancel,
                              pw::bluetooth::emboss::StatusCode::SUCCESS);
-  SendLEMetaEvent(hci_spec::kLEConnectionCompleteSubeventCode,
-                  BufferView(&response, sizeof(response)));
+  SendCommandChannelPacket(packet.data());
 }
 
 void FakeController::OnWriteExtendedInquiryResponse(

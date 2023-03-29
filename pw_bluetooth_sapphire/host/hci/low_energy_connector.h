@@ -145,7 +145,7 @@ class LowEnergyConnector : public LocalAddressClient {
   void CancelInternal(bool timed_out = false);
 
   // Event handler for the HCI LE Connection Complete event.
-  CommandChannel::EventCallbackResult OnConnectionCompleteEvent(const EventPacket& event);
+  CommandChannel::EventCallbackResult OnConnectionCompleteEvent(const EmbossEventPacket& event);
 
   // Called when a LE Create Connection request has completed.
   void OnCreateConnectionComplete(Result<> result, std::unique_ptr<LowEnergyConnection> link);

@@ -159,7 +159,6 @@ bool EventPacket::ToStatusCode(pw::bluetooth::emboss::StatusCode* out_code) cons
       auto subevent_code = params<hci_spec::LEMetaEventParams>().subevent_code;
       switch (subevent_code) {
         CASE_SUBEVENT_STATUS(LEAdvertisingSetTerminated);
-        CASE_SUBEVENT_STATUS(LEConnectionComplete);
         CASE_SUBEVENT_STATUS(LEReadRemoteFeaturesComplete);
         default:
           BT_PANIC("LE subevent (%#.2x) not implemented!", subevent_code);

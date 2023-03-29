@@ -77,6 +77,44 @@ DeviceAddress::DeviceAddress(Type type, const DeviceAddressBytes& value)
 DeviceAddress::DeviceAddress(Type type, std::array<uint8_t, kDeviceAddressSize> bytes)
     : DeviceAddress(type, DeviceAddressBytes(bytes)) {}
 
+pw::bluetooth::emboss::LEPeerAddressType DeviceAddress::DeviceAddrToLePeerAddr(Type type) {
+  switch (type) {
+    case DeviceAddress::Type::kBREDR: {
+      BT_PANIC("BR/EDR address not convertible to LE address");
+    }
+    case DeviceAddress::Type::kLEPublic: {
+      return pw::bluetooth::emboss::LEPeerAddressType::PUBLIC;
+    }
+    case DeviceAddress::Type::kLERandom: {
+      return pw::bluetooth::emboss::LEPeerAddressType::RANDOM;
+    }
+    case DeviceAddress::Type::kLEAnonymous: {
+      return pw::bluetooth::emboss::LEPeerAddressType::ANONYMOUS;
+    }
+    default: {
+      BT_PANIC("invalid DeviceAddressType");
+    }
+  }
+}
+
+DeviceAddress::Type DeviceAddress::LePeerAddrToDeviceAddr(
+    pw::bluetooth::emboss::LEPeerAddressType type) {
+  switch (type) {
+    case pw::bluetooth::emboss::LEPeerAddressType::PUBLIC: {
+      return DeviceAddress::Type::kLEPublic;
+    }
+    case pw::bluetooth::emboss::LEPeerAddressType::RANDOM: {
+      return DeviceAddress::Type::kLERandom;
+    }
+    case pw::bluetooth::emboss::LEPeerAddressType::ANONYMOUS: {
+      return DeviceAddress::Type::kLEAnonymous;
+    }
+    default: {
+      BT_PANIC("invalid LEPeerAddressType");
+    }
+  }
+}
+
 bool DeviceAddress::IsResolvablePrivate() const {
   // "The two most significant bits of [a RPA] shall be equal to 0 and 1".
   // (Vol 6, Part B, 1.3.2.2).

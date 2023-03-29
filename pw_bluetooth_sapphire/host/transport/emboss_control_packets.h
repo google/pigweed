@@ -103,20 +103,6 @@ class EmbossEventPacket : public DynamicPacket {
 
  protected:
   explicit EmbossEventPacket(size_t packet_size);
-
- private:
-  // From an Emboss view T containing a StatusCode field named "status", returns the status. Returns
-  // std::nullopt on error.
-  template <typename T>
-  std::optional<pw::bluetooth::emboss::StatusCode> StatusCodeFromView() const {
-    auto packet_view = view<T>();
-
-    if (!packet_view.Ok()) {
-      return std::nullopt;
-    }
-
-    return packet_view.status().Read();
-  }
 };
 
 // Helper subclass that remembers the view type it was constructed with. It is safe to slice

@@ -224,14 +224,15 @@ void LowEnergyConnection::StartConnectionPauseTimeout() {
 
 void LowEnergyConnection::RegisterEventHandlers() {
   auto self = GetWeakPtr();
-  conn_update_cmpl_handler_id_ = cmd_->AddLEMetaEventHandler(
-      hci_spec::kLEConnectionUpdateCompleteSubeventCode, [self](const auto& event) {
-        if (self.is_alive()) {
-          self->OnLEConnectionUpdateComplete(event);
-          return hci::CommandChannel::EventCallbackResult::kContinue;
-        }
-        return hci::CommandChannel::EventCallbackResult::kRemove;
-      });
+  conn_update_cmpl_handler_id_ =
+      cmd_->AddLEMetaEventHandler(hci_spec::kLEConnectionUpdateCompleteSubeventCode,
+                                  [self](const hci::EmbossEventPacket& event) {
+                                    if (self.is_alive()) {
+                                      self->OnLEConnectionUpdateComplete(event);
+                                      return hci::CommandChannel::EventCallbackResult::kContinue;
+                                    }
+                                    return hci::CommandChannel::EventCallbackResult::kRemove;
+                                  });
 }
 
 // Connection parameter updates by the peripheral are not allowed until the central has been idle
@@ -442,14 +443,13 @@ void LowEnergyConnection::UpdateConnectionParams(
                     hci_spec::kCommandStatusEventCode);
 }
 
-void LowEnergyConnection::OnLEConnectionUpdateComplete(const hci::EventPacket& event) {
+void LowEnergyConnection::OnLEConnectionUpdateComplete(const hci::EmbossEventPacket& event) {
   BT_ASSERT(event.event_code() == hci_spec::kLEMetaEventCode);
-  BT_ASSERT(event.params<hci_spec::LEMetaEventParams>().subevent_code ==
-            hci_spec::kLEConnectionUpdateCompleteSubeventCode);
+  auto view = event.view<pw::bluetooth::emboss::LEMetaEventView>();
+  BT_ASSERT(view.subevent_code().Read() == hci_spec::kLEConnectionUpdateCompleteSubeventCode);
 
-  auto payload = event.subevent_params<hci_spec::LEConnectionUpdateCompleteSubeventParams>();
-  BT_ASSERT(payload);
-  hci_spec::ConnectionHandle handle = le16toh(payload->connection_handle);
+  auto payload = event.view<pw::bluetooth::emboss::LEConnectionUpdateCompleteSubeventView>();
+  hci_spec::ConnectionHandle handle = payload.connection_handle().Read();
 
   // Ignore events for other connections.
   if (handle != link_->handle()) {
@@ -458,23 +458,23 @@ void LowEnergyConnection::OnLEConnectionUpdateComplete(const hci::EventPacket& e
 
   // This event may be the result of the LE Connection Update command.
   if (le_conn_update_complete_command_callback_) {
-    le_conn_update_complete_command_callback_(payload->status);
+    le_conn_update_complete_command_callback_(payload.status().Read());
   }
 
-  if (payload->status != pw::bluetooth::emboss::StatusCode::SUCCESS) {
+  if (payload.status().Read() != pw::bluetooth::emboss::StatusCode::SUCCESS) {
     bt_log(WARN, "gap-le",
            "HCI LE Connection Update Complete event with error "
            "(peer: %s, status: %#.2hhx, handle: %#.4x)",
-           bt_str(peer_id()), payload->status, handle);
+           bt_str(peer_id()), payload.status().Read(), handle);
 
     return;
   }
 
   bt_log(INFO, "gap-le", "conn. parameters updated (peer: %s)", bt_str(peer_id()));
 
-  hci_spec::LEConnectionParameters params(le16toh(payload->conn_interval),
-                                          le16toh(payload->conn_latency),
-                                          le16toh(payload->supervision_timeout));
+  hci_spec::LEConnectionParameters params(payload.connection_interval().UncheckedRead(),
+                                          payload.peripheral_latency().UncheckedRead(),
+                                          payload.supervision_timeout().UncheckedRead());
   link_->set_low_energy_parameters(params);
 
   BT_ASSERT(peer_.is_alive());

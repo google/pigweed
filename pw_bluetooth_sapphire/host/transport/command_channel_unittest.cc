@@ -1149,7 +1149,7 @@ TEST_F(CommandChannelTest, EventHandlerIdsDontCollide) {
   // across the two methods.
   EXPECT_EQ(1u, cmd_channel()->AddLEMetaEventHandler(
                     hci_spec::kLEConnectionCompleteSubeventCode,
-                    [](const auto&) { return EventCallbackResult::kContinue; }));
+                    [](const EmbossEventPacket&) { return EventCallbackResult::kContinue; }));
   EXPECT_EQ(2u, cmd_channel()->AddEventHandler(
                     hci_spec::kDisconnectionCompleteEventCode,
                     [](const EventPacket&) { return EventCallbackResult::kContinue; }));
@@ -1749,8 +1749,9 @@ TEST_F(
   constexpr hci_spec::EventCode kSubeventCode = hci_spec::kLEReadRemoteFeaturesCompleteSubeventCode;
   constexpr hci_spec::OpCode kOpCode = hci_spec::kLEReadRemoteFeatures;  // LE Read Remote Features
 
-  EXPECT_NE(0u, cmd_channel()->AddLEMetaEventHandler(
-                    kSubeventCode, [](const auto&) { return EventCallbackResult::kContinue; }));
+  EXPECT_NE(0u, cmd_channel()->AddLEMetaEventHandler(kSubeventCode, [](const EmbossEventPacket&) {
+    return EventCallbackResult::kContinue;
+  }));
   EXPECT_EQ(0u, cmd_channel()->SendLeAsyncCommand(
                     CommandPacket::New(kOpCode), [](auto, const auto&) {}, kSubeventCode));
 
@@ -1892,13 +1893,13 @@ TEST_F(
 
   // Async LE command for subevent is already pending, so registering event handler should fail by
   // returning 0.
-  id = cmd_channel()->AddLEMetaEventHandler(kSubeventCode,
-                                            [](auto&) { return EventCallbackResult::kContinue; });
+  id = cmd_channel()->AddLEMetaEventHandler(
+      kSubeventCode, [](const EmbossEventPacket&) { return EventCallbackResult::kContinue; });
   EXPECT_EQ(0u, id);
 
   // Registering event handler for different subevent code should succeed.
-  id = cmd_channel()->AddLEMetaEventHandler(kSubeventCode + 1,
-                                            [](auto&) { return EventCallbackResult::kContinue; });
+  id = cmd_channel()->AddLEMetaEventHandler(
+      kSubeventCode + 1, [](const EmbossEventPacket&) { return EventCallbackResult::kContinue; });
   EXPECT_NE(0u, id);
 }
 

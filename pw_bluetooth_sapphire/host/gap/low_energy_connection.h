@@ -232,7 +232,7 @@ class LowEnergyConnection final : public sm::Delegate {
   // This event may be generated without host interaction by the Link Layer, or as the result of a
   // Connection Update Command sent by either device, which is why it is not simply handled by the
   // command handler. (See Core Spec v5.2, Vol 6, Part B, Sec 5.1.7.1).
-  void OnLEConnectionUpdateComplete(const hci::EventPacket& event);
+  void OnLEConnectionUpdateComplete(const hci::EmbossEventPacket& event);
 
   // Updates or requests an update of the connection parameters, for central and peripheral roles
   // respectively, if interrogation has completed.

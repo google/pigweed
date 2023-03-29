@@ -184,7 +184,7 @@ class CommandChannel final {
   // Event sub-event code namespace. |event_callback| will get invoked whenever the controller sends
   // a LE Meta Event with a matching subevent code.
   EventHandlerId AddLEMetaEventHandler(hci_spec::EventCode le_meta_subevent_code,
-                                       EventCallback event_callback);
+                                       EventCallbackVariant event_callback);
 
   // Works just like AddEventHandler but the passed in event code is only valid for vendor related
   // debugging events. The event_callback will get invoked whenever the controller sends one of

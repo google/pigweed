@@ -1239,38 +1239,6 @@ struct LEMetaEventParams {
 // LE Connection Complete Event (v4.0) (LE)
 constexpr EventCode kLEConnectionCompleteSubeventCode = 0x01;
 
-struct LEConnectionCompleteSubeventParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Connection Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-
-  ConnectionRole role;
-  LEPeerAddressType peer_address_type;
-
-  // Public Device Address or Random Device Address of the peer device.
-  DeviceAddressBytes peer_address;
-
-  // Range: see kLEConnectionInterval[Min|Max] in hci_constants.h
-  // Time: N * 1.25 ms
-  // Time Range: 7.5 ms to 4 s.
-  uint16_t conn_interval;
-
-  // Range: 0x0000 to kLEConnectionLatencyMax in hci_constants.h
-  uint16_t conn_latency;
-
-  // Range: see kLEConnectionSupervisionTimeout[Min|Max] in hci_constants.h
-  // Time: N * 10 ms
-  // Time Range: 100 ms to 32 s
-  uint16_t supervision_timeout;
-
-  // The Central_Clock_Accuracy parameter is only valid for a peripheral. On a central, this
-  // parameter shall be set to 0x00.
-  LEClockAccuracy central_clock_accuracy;
-} __attribute__((packed));
-
 // LE Advertising Report Event (v4.0) (LE)
 constexpr EventCode kLEAdvertisingReportSubeventCode = 0x02;
 
@@ -1322,28 +1290,6 @@ struct LEAdvertisingReportSubeventParams {
 
 // LE Connection Update Complete Event (v4.0) (LE)
 constexpr EventCode kLEConnectionUpdateCompleteSubeventCode = 0x03;
-
-struct LEConnectionUpdateCompleteSubeventParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Connection Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-
-  // Range: see kLEConnectionInterval[Min|Max] in hci_constants.h
-  // Time: N * 1.25 ms
-  // Time Range: 7.5 ms to 4 s.
-  uint16_t conn_interval;
-
-  // Range: 0x0000 to kLEConnectionLatencyMax in hci_constants.h
-  uint16_t conn_latency;
-
-  // Range: see kLEConnectionSupervisionTimeout[Min|Max] in hci_constants.h
-  // Time: N * 10 ms
-  // Time Range: 100 ms to 32 s
-  uint16_t supervision_timeout;
-} __attribute__((packed));
 
 // LE Read Remote Features Complete Event (v4.0) (LE)
 constexpr EventCode kLEReadRemoteFeaturesCompleteSubeventCode = 0x04;
@@ -1478,7 +1424,7 @@ struct LEEnhancedConnectionCompleteSubeventParams {
 
   // The Central_Clock_Accuracy parameter is only valid for a peripheral. On a central, this
   // parameter shall be set to 0x00.
-  LEClockAccuracy central_clock_accuracy;
+  pw::bluetooth::emboss::LEClockAccuracy central_clock_accuracy;
 } __attribute__((packed));
 
 // LE Directed Advertising Report Event (v4.2) (LE)
@@ -1644,7 +1590,7 @@ struct LEPeriodicAdvertisingSyncEstablishedSubeventParams {
   uint16_t periodic_adv_interval;
 
   // Advertiser_Clock_Accuracy.
-  LEClockAccuracy advertiser_clock_accuracy;
+  pw::bluetooth::emboss::LEClockAccuracy advertiser_clock_accuracy;
 } __attribute__((packed));
 
 // LE Periodic Advertising Report Event (v5.0) (LE)

@@ -56,11 +56,35 @@ std::optional<pw::bluetooth::emboss::StatusCode> EmbossEventPacket::StatusCode()
 
       switch (subevent_code) {
         case hci_spec::vendor::android::kLEMultiAdvtStateChangeSubeventCode: {
-          return StatusCodeFromView<pw::bluetooth::emboss::LEMultiAdvtStateChangeSubeventView>();
+          return view<pw::bluetooth::emboss::LEMultiAdvtStateChangeSubeventView>().status().Read();
         }
 
         default: {
           BT_PANIC("Emboss vendor subevent (%#.2x) not implemented", subevent_code);
+          break;
+        }
+      }
+
+      break;
+    }
+
+    case hci_spec::kLEMetaEventCode: {
+      hci_spec::EventCode subevent_code =
+          view<pw::bluetooth::emboss::LEMetaEventView>().subevent_code().Read();
+
+      switch (subevent_code) {
+        case hci_spec::kLEConnectionCompleteSubeventCode: {
+          return view<pw::bluetooth::emboss::LEConnectionCompleteSubeventView>().status().Read();
+        }
+
+        case hci_spec::kLEConnectionUpdateCompleteSubeventCode: {
+          return view<pw::bluetooth::emboss::LEConnectionUpdateCompleteSubeventView>()
+              .status()
+              .Read();
+        }
+
+        default: {
+          BT_PANIC("Emboss LE meta subevent (%#.2x) not implemented", subevent_code);
           break;
         }
       }

@@ -37,7 +37,7 @@ LowEnergyConnector::LowEnergyConnector(Transport::WeakPtr hci,
 
   auto self = weak_self_.GetWeakPtr();
   event_handler_id_ = hci_->command_channel()->AddLEMetaEventHandler(
-      hci_spec::kLEConnectionCompleteSubeventCode, [self](const auto& event) {
+      hci_spec::kLEConnectionCompleteSubeventCode, [self](const EmbossEventPacket& event) {
         if (self.is_alive()) {
           return self->OnConnectionCompleteEvent(event);
         }
@@ -193,17 +193,17 @@ void LowEnergyConnector::CancelInternal(bool timed_out) {
 }
 
 CommandChannel::EventCallbackResult LowEnergyConnector::OnConnectionCompleteEvent(
-    const EventPacket& event) {
+    const EmbossEventPacket& event) {
   BT_DEBUG_ASSERT(event.event_code() == hci_spec::kLEMetaEventCode);
-  BT_DEBUG_ASSERT(event.params<hci_spec::LEMetaEventParams>().subevent_code ==
+  BT_DEBUG_ASSERT(event.view<pw::bluetooth::emboss::LEMetaEventView>().subevent_code().Read() ==
                   hci_spec::kLEConnectionCompleteSubeventCode);
 
-  auto params = event.subevent_params<hci_spec::LEConnectionCompleteSubeventParams>();
-  BT_ASSERT(params);
+  auto params = event.view<pw::bluetooth::emboss::LEConnectionCompleteSubeventView>();
 
   // First check if this event is related to the currently pending request.
   const bool matches_pending_request =
-      pending_request_ && (pending_request_->peer_address.value() == params->peer_address);
+      pending_request_ &&
+      (pending_request_->peer_address.value() == DeviceAddressBytes{params.peer_address()});
 
   if (Result<> result = event.ToResult(); result.is_error()) {
     if (matches_pending_request) {
@@ -212,7 +212,8 @@ CommandChannel::EventCallbackResult LowEnergyConnector::OnConnectionCompleteEven
       // HCI_LE_Create_Connection_Cancel command (sent by Cancel()).
       if (pending_request_->timed_out) {
         result = ToResult(HostError::kTimedOut);
-      } else if (params->status == pw::bluetooth::emboss::StatusCode::UNKNOWN_CONNECTION_ID) {
+      } else if (params.status().Read() ==
+                 pw::bluetooth::emboss::StatusCode::UNKNOWN_CONNECTION_ID) {
         result = ToResult(HostError::kCanceled);
       }
       OnCreateConnectionComplete(result, nullptr);
@@ -223,23 +224,26 @@ CommandChannel::EventCallbackResult LowEnergyConnector::OnConnectionCompleteEven
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
-  hci_spec::ConnectionHandle handle = le16toh(params->connection_handle);
-  DeviceAddress peer_address(AddressTypeFromHCI(params->peer_address_type), params->peer_address);
-  hci_spec::LEConnectionParameters connection_params(le16toh(params->conn_interval),
-                                                     le16toh(params->conn_latency),
-                                                     le16toh(params->supervision_timeout));
+  hci_spec::ConnectionHandle handle = params.connection_handle().Read();
+  DeviceAddress peer_address(
+      DeviceAddress::LePeerAddrToDeviceAddr(params.peer_address_type().Read()),
+      DeviceAddressBytes(params.peer_address()));
+  hci_spec::LEConnectionParameters connection_params(params.connection_interval().UncheckedRead(),
+                                                     params.peripheral_latency().UncheckedRead(),
+                                                     params.supervision_timeout().UncheckedRead());
 
   // If the connection did not match a pending request then we pass the
   // information down to the incoming connection delegate.
   if (!matches_pending_request) {
-    delegate_(handle, params->role, peer_address, connection_params);
+    delegate_(handle, params.role().Read(), peer_address, connection_params);
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
   // A new link layer connection was created. Create an object to track this
   // connection. Destroying this object will disconnect the link.
-  auto connection = std::make_unique<LowEnergyConnection>(
-      handle, pending_request_->local_address, peer_address, connection_params, params->role, hci_);
+  auto connection =
+      std::make_unique<LowEnergyConnection>(handle, pending_request_->local_address, peer_address,
+                                            connection_params, params.role().Read(), hci_);
 
   Result<> result = fit::ok();
   if (pending_request_->timed_out) {

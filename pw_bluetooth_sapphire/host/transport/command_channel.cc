@@ -251,7 +251,7 @@ CommandChannel::EventHandlerId CommandChannel::AddEventHandler(
 }
 
 CommandChannel::EventHandlerId CommandChannel::AddLEMetaEventHandler(
-    hci_spec::EventCode le_meta_subevent_code, EventCallback event_callback) {
+    hci_spec::EventCode le_meta_subevent_code, EventCallbackVariant event_callback) {
   EventHandlerData* handler = FindLEMetaEventHandler(le_meta_subevent_code);
   if (handler && handler->is_async()) {
     bt_log(ERROR, "hci",
