@@ -27,9 +27,10 @@ Activate the Pigweed environment and run the default build.
 
 .. code-block:: sh
 
-  source activate.sh
-  gn gen out
-  ninja -C out
+   . ./activate.sh
+   pw package install nanopb
+   gn gen out --args='dir_pw_third_party_nanopb="//environment/packages/nanopb"'
+   ninja -C out
 
 3. Flash the firmware image
 ===========================
@@ -41,38 +42,22 @@ you can flash the image with `OpenOCD <http://openocd.org>`_.
 
 .. code-block:: sh
 
- openocd -f targets/stm32f429i_disc1/py/stm32f429i_disc1_utils/openocd_stm32f4xx.cfg \
-     -c "program out/stm32f429i_disc1_debug/obj/pw_hdlc/rpc_example/bin/rpc_example.elf"
+   openocd -f \
+     targets/stm32f429i_disc1/py/stm32f429i_disc1_utils/openocd_stm32f4xx.cfg \
+     -c "program \
+     out/stm32f429i_disc1_debug/obj/pw_hdlc/rpc_example/bin/rpc_example.elf \
+     verify reset exit"
 
 4. Invoke RPCs from in an interactive console
 =============================================
-The RPC console uses `IPython <https://ipython.org>`_ to make a rich interactive
+The RPC console uses :ref:`module-pw_console` to make a rich interactive
 console for working with pw_rpc. Run the RPC console with the following command,
 replacing ``/dev/ttyACM0`` with the correct serial device for your board.
 
-.. code-block:: text
+.. code-block:: sh
 
-  $ python -m pw_system.console --device /dev/ttyACM0
-
-  Console for interacting with pw_rpc over HDLC.
-
-  To start the console, provide a serial port as the --device argument and paths
-  or globs for .proto files that define the RPC services to support:
-
-    python -m pw_system.console --device /dev/ttyUSB0 --proto-globs pw_rpc/echo.proto
-
-  This starts an IPython console for communicating with the connected device. A
-  few variables are predefined in the interactive console. These include:
-
-      rpcs   - used to invoke RPCs
-      device - the serial device used for communication
-      client - the pw_rpc.Client
-
-  An example echo RPC command:
-
-    rpcs.pw.rpc.EchoService.Echo(msg="hello!")
-
-  In [1]:
+   pw-system-console --no-rpc-logging --proto-globs pw_rpc/echo.proto \
+     --device /dev/ttyACM0
 
 RPCs may be accessed through the predefined ``rpcs`` variable. RPCs are
 organized by their protocol buffer package and RPC service, as defined in a
@@ -80,10 +65,10 @@ organized by their protocol buffer package and RPC service, as defined in a
 is in the ``pw.rpc`` package. To invoke it synchronously, call
 ``rpcs.pw.rpc.EchoService.Echo``:
 
-.. code-block:: python
+.. code:: pycon
 
-    In [1]: rpcs.pw.rpc.EchoService.Echo(msg="Your message here!")
-    Out[1]: (<Status.OK: 0>, msg: "Your message here!")
+   >>> device.rpcs.pw.rpc.EchoService.Echo(msg='Hello, world!')
+   (Status.OK, pw.rpc.EchoMessage(msg='Hello, world!'))
 
 5. Invoke RPCs with a script
 ============================
@@ -91,13 +76,18 @@ RPCs may also be invoked from Python scripts. Close the RPC console if it is
 running, and execute the example script. Set the --device argument to the
 serial port for your device.
 
+.. code-block:: sh
+
+   python pw_hdlc/rpc_example/example_script.py --device /dev/ttyACM0
+
+You should see this output:
+
 .. code-block:: text
 
-  $ pw_hdlc/rpc_example/example_script.py --device /dev/ttyACM0
-  The status was Status.OK
-  The payload was msg: "Hello"
+   The status was Status.OK
+   The payload was msg: "Hello"
 
-  The device says: Goodbye!
+   The device says: Goodbye!
 
 -------------------------
 Local RPC example project
@@ -112,23 +102,49 @@ Activate the Pigweed environment and build the code.
 
 .. code-block:: sh
 
-  source activate.sh
-  gn gen out
-  pw watch
+   . ./activate.sh
+   pw package install nanopb
+   gn gen out --args='dir_pw_third_party_nanopb="//environment/packages/nanopb"'
+   ninja -C out
 
 2. Start client side and server side
 ====================================
 
-Run pw_rpc client (i.e. use echo.proto)
+Run pw_rpc server in one terminal window.
 
 .. code-block:: sh
 
-  python -m pw_system.console path/to/echo.proto -s localhost:33000
+   ./out/pw_strict_host_clang_debug/obj/pw_hdlc/rpc_example/bin/rpc_example
 
-Run pw_rpc server
+In a separate activated terminal, run the ``pw-system-console`` RPC client with
+``--proto-globs`` set to ``pw_rpc/echo.proto``. Additional protos can be added
+if needed.
 
 .. code-block:: sh
 
-  out/pw_strict_host_clang_debug/obj/pw_hdlc/rpc_example/bin/rpc_example
+   pw-system-console --no-rpc-logging --proto-globs pw_rpc/echo.proto \
+     --socket-addr default
+
+.. tip::
+
+   The ``--socket-addr`` may be replaced with IP and port separated by a colon. For
+   example: ``127.0.0.1:33000``.
 
 Then you can invoke RPCs from the interactive console on the client side.
+
+.. code:: pycon
+
+   >>> device.rpcs.pw.rpc.EchoService.Echo(msg='Hello, world!')
+   (Status.OK, pw.rpc.EchoMessage(msg='Hello, world!'))
+
+.. seealso::
+
+   - The :ref:`module-pw_console`
+     :bdg-ref-primary-line:`module-pw_console-user_guide` for more info on using
+     the the pw_console UI.
+
+   - The target docs for other RPC enabled application examples:
+
+     - :bdg-ref-primary-line:`target-host-device-simulator`
+     - :bdg-ref-primary-line:`target-raspberry-pi-pico-pw-system`
+     - :bdg-ref-primary-line:`target-stm32f429i-disc1-stm32cube`
