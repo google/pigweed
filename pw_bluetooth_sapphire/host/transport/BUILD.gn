@@ -63,6 +63,7 @@ source_set("tests") {
   sources = [
     "acl_data_channel_unittest.cc",
     "command_channel_unittest.cc",
+    "emboss_control_packets_unittest.cc",
     "emboss_packet_unittest.cc",
     "packet_unittest.cc",
     "sco_data_channel_unittest.cc",

@@ -43,6 +43,13 @@ hci_spec::EventCode EmbossEventPacket::event_code() const {
 
 std::optional<pw::bluetooth::emboss::StatusCode> EmbossEventPacket::StatusCode() const {
   switch (event_code()) {
+    case hci_spec::kCommandCompleteEventCode: {
+      pw::bluetooth::emboss::SimpleCommandCompleteEventView event(data().data(), size());
+      if (!event.IsComplete()) {
+        return std::nullopt;
+      }
+      return event.status().Read();
+    }
     case hci_spec::kVendorDebugEventCode: {
       hci_spec::EventCode subevent_code =
           view<pw::bluetooth::emboss::VendorDebugEventView>().subevent_code().Read();

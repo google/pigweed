@@ -729,15 +729,17 @@ void AdapterImpl::InitializeStep1() {
           pw::bluetooth::Controller::FeaturesBits::kAndroidVendorExtensions)) {
     bt_log(INFO, "gap", "controller supports android hci extensions, querying exact feature set");
     init_seq_runner_->QueueCommand(
-        hci::CommandPacket::New(hci_android::kLEGetVendorCapabilities),
-        [this](const hci::EventPacket& event) {
+        hci::EmbossCommandPacket::New<pw::bluetooth::emboss::LEGetVendorCapabilitiesCommandView>(
+            hci_android::kLEGetVendorCapabilities),
+        [this](const hci::EmbossEventPacket& event) {
           if (hci_is_error(event, WARN, "gap",
                            "Failed to query android hci extension capabilities")) {
             return;
           }
 
-          auto params = event.return_params<hci_android::LEGetVendorCapabilitiesReturnParams>();
-          state_.android_vendor_capabilities.Initialize(*params);
+          auto params =
+              event.view<pw::bluetooth::emboss::LEGetVendorCapabilitiesCommandCompleteEventView>();
+          state_.android_vendor_capabilities.Initialize(params);
         });
   }
 
@@ -844,7 +846,7 @@ void AdapterImpl::InitializeStep2() {
             hci_spec::kWriteSimplePairingMode);
     auto write_ssp_params = write_spm.view_t();
     write_ssp_params.simple_pairing_mode().Write(pw::bluetooth::emboss::GenericEnableParam::ENABLE);
-    init_seq_runner_->QueueCommand(std::move(write_spm), [](const auto& event) {
+    init_seq_runner_->QueueCommand(std::move(write_spm), [](const hci::EventPacket& event) {
       // Warn if the command failed
       hci_is_error(event, WARN, "gap", "write simple pairing mode failed");
     });
@@ -920,20 +922,21 @@ void AdapterImpl::InitializeStep3() {
     auto flow_control_params = sync_flow_control.view_t();
     flow_control_params.synchronous_flow_control_enable().Write(
         pw::bluetooth::emboss::GenericEnableParam::ENABLE);
-    init_seq_runner_->QueueCommand(std::move(sync_flow_control), [this](const auto& event) {
-      if (hci_is_error(event, ERROR, "gap",
-                       "Write synchronous flow control enable failed, proceeding without HCI "
-                       "SCO support")) {
-        return;
-      }
+    init_seq_runner_->QueueCommand(
+        std::move(sync_flow_control), [this](const hci::EventPacket& event) {
+          if (hci_is_error(event, ERROR, "gap",
+                           "Write synchronous flow control enable failed, proceeding without HCI "
+                           "SCO support")) {
+            return;
+          }
 
-      if (!hci_->InitializeScoDataChannel(state_.sco_buffer_info)) {
-        bt_log(WARN, "gap",
-               "Failed to initialize ScoDataChannel, proceeding without HCI SCO support");
-        return;
-      }
-      bt_log(DEBUG, "gap", "ScoDataChannel initialized successfully");
-    });
+          if (!hci_->InitializeScoDataChannel(state_.sco_buffer_info)) {
+            bt_log(WARN, "gap",
+                   "Failed to initialize ScoDataChannel, proceeding without HCI SCO support");
+            return;
+          }
+          bt_log(DEBUG, "gap", "ScoDataChannel initialized successfully");
+        });
   } else {
     bt_log(INFO, "gap",
            "HCI SCO not supported (SCO buffer available: %d, SCO flow control supported: %d)",
@@ -960,7 +963,7 @@ void AdapterImpl::InitializeStep3() {
             hci_spec::kSetEventMask);
     auto set_event_params = set_event.view_t();
     set_event_params.event_mask().Write(event_mask);
-    init_seq_runner_->QueueCommand(std::move(set_event), [](const auto& event) {
+    init_seq_runner_->QueueCommand(std::move(set_event), [](const hci::EventPacket& event) {
       hci_is_error(event, WARN, "gap", "set event mask failed");
     });
   }
@@ -972,7 +975,7 @@ void AdapterImpl::InitializeStep3() {
         hci::EmbossCommandPacket::New<pw::bluetooth::emboss::LESetEventMaskCommandWriter>(
             hci_spec::kLESetEventMask);
     cmd_packet.view_t().le_event_mask().BackingStorage().WriteUInt(event_mask);
-    init_seq_runner_->QueueCommand(std::move(cmd_packet), [](const auto& event) {
+    init_seq_runner_->QueueCommand(std::move(cmd_packet), [](const hci::EventPacket& event) {
       hci_is_error(event, WARN, "gap", "LE set event mask failed");
     });
   }
@@ -986,7 +989,7 @@ void AdapterImpl::InitializeStep3() {
             hci_spec::kWriteLEHostSupport);
     auto params = cmd_packet.view_t();
     params.le_supported_host().Write(pw::bluetooth::emboss::GenericEnableParam::ENABLE);
-    init_seq_runner_->QueueCommand(std::move(cmd_packet), [](const auto& event) {
+    init_seq_runner_->QueueCommand(std::move(cmd_packet), [](const hci::EventPacket& event) {
       hci_is_error(event, WARN, "gap", "write LE host support failed");
     });
   }

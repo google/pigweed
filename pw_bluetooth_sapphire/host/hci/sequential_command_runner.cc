@@ -18,7 +18,7 @@ SequentialCommandRunner::SequentialCommandRunner(hci::CommandChannel::WeakPtr cm
 }
 
 void SequentialCommandRunner::QueueCommand(CommandPacketVariant command_packet,
-                                           CommandCompleteCallback callback, bool wait,
+                                           CommandCompleteCallbackVariant callback, bool wait,
                                            hci_spec::EventCode complete_event_code,
                                            std::unordered_set<hci_spec::OpCode> exclusions) {
   if (std::holds_alternative<std::unique_ptr<CommandPacket>>(command_packet)) {
@@ -40,7 +40,8 @@ void SequentialCommandRunner::QueueCommand(CommandPacketVariant command_packet,
 
 void SequentialCommandRunner::QueueLeAsyncCommand(CommandPacketVariant command_packet,
                                                   hci_spec::EventCode le_meta_subevent_code,
-                                                  CommandCompleteCallback callback, bool wait) {
+                                                  CommandCompleteCallbackVariant callback,
+                                                  bool wait) {
   command_queue_.emplace(QueuedCommand{.packet = std::move(command_packet),
                                        .complete_event_code = le_meta_subevent_code,
                                        .is_le_async_command = true,
@@ -109,14 +110,28 @@ void SequentialCommandRunner::TryRunNextQueuedCommand(Result<> status) {
       return;
     }
 
-    if (cmd_cb) {
-      cmd_cb(event_packet);
+    std::visit(
+        [&event_packet](auto& cmd_cb) {
+          using T = std::decay_t<decltype(cmd_cb)>;
+          if constexpr (std::is_same_v<T, CommandCompleteCallback>) {
+            if (cmd_cb) {
+              cmd_cb(event_packet);
+            }
+          } else if constexpr (std::is_same_v<T, EmbossCommandCompleteCallback>) {
+            if (cmd_cb) {
+              EmbossEventPacket emboss_packet = EmbossEventPacket::New(event_packet.view().size());
+              MutableBufferView buffer = emboss_packet.mutable_data();
+              event_packet.view().data().Copy(&buffer);
+              cmd_cb(emboss_packet);
+            }
+          }
+        },
+        cmd_cb);
 
-      // The callback could have destroyed, canceled, or restarted the command runner.  While this
-      // check looks redundant to the above check, the state could have changed in cmd_cb.
-      if (!self.is_alive() || !self->status_callback_ || seq_no != self->sequence_number_) {
-        return;
-      }
+    // The callback could have destroyed, canceled, or restarted the command runner.  While this
+    // check looks redundant to the above check, the state could have changed in cmd_cb.
+    if (!self.is_alive() || !self->status_callback_ || seq_no != self->sequence_number_) {
+      return;
     }
 
     BT_DEBUG_ASSERT(self->running_commands_ > 0);

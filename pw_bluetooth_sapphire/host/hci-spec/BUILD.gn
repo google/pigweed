@@ -22,6 +22,7 @@ static_library("hci-spec") {
   public_deps = [
     "//src/connectivity/bluetooth/core/bt-host/common",
     "//third_party/pigweed/src/pw_bluetooth:emboss_hci",
+    "//third_party/pigweed/src/pw_bluetooth:emboss_vendor",
   ]
 }
 

@@ -60,32 +60,33 @@ hci_spec::LEPeerAddressType ToPeerAddrType(DeviceAddress::Type type) {
 
 namespace hci_android = hci_spec::vendor::android;
 
-FakeController::Settings::Settings() {
-  std::memset(this, 0, sizeof(*this));
-  hci_version = hci_spec::HCIVersion::k5_0;
-  num_hci_command_packets = 250;
-}
-
 void FakeController::Settings::ApplyDualModeDefaults() {
-  std::memset(this, 0, sizeof(*this));
+  le_connection_delay = zx::sec(0);
   hci_version = hci_spec::HCIVersion::k5_0;
   num_hci_command_packets = 250;
-
-  acl_data_packet_length = 512;
-  total_num_acl_data_packets = 1;
-  le_acl_data_packet_length = 512;
-  le_total_num_acl_data_packets = 1;
-
+  event_mask = 0;
+  le_event_mask = 0;
+  bd_addr = DeviceAddress();
+  lmp_features_page0 = 0;
   SetBit(&lmp_features_page0, hci_spec::LMPFeature::kLESupported);
   SetBit(&lmp_features_page0, hci_spec::LMPFeature::kSimultaneousLEAndBREDR);
   SetBit(&lmp_features_page0, hci_spec::LMPFeature::kExtendedFeatures);
   SetBit(&lmp_features_page0, hci_spec::LMPFeature::kRSSIwithInquiryResults);
   SetBit(&lmp_features_page0, hci_spec::LMPFeature::kExtendedInquiryResponse);
-
+  lmp_features_page1 = 0;
+  lmp_features_page2 = 0;
   le_features = 0;
-
+  le_supported_states = 0;
+  std::memset(supported_commands, 0, sizeof(supported_commands));
   AddBREDRSupportedCommands();
   AddLESupportedCommands();
+  acl_data_packet_length = 512;
+  total_num_acl_data_packets = 1;
+  le_acl_data_packet_length = 512;
+  le_total_num_acl_data_packets = 1;
+  synchronous_data_packet_length = 0;
+  total_num_synchronous_data_packets = 0;
+  android_extension_settings.SetToZeros();
 }
 
 void FakeController::Settings::ApplyLEOnlyDefaults() {
@@ -173,8 +174,9 @@ void FakeController::Settings::ApplyAndroidVendorExtensionDefaults() {
   // correspond to the vendor capabilities returned by the controller. See
   // src/connectivity/bluetooth/core/bt-host/hci-spec/vendor_protocol.h and LEGetVendorCapabilities
   // for more information.
-  android_extension_settings.max_advt_instances = 3;
-  android_extension_settings.total_scan_results_storage = htole16(1024);
+  android_extension_settings.view().status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  android_extension_settings.view().max_advt_instances().Write(3);
+  android_extension_settings.view().total_scan_results_storage().Write(1024);
 }
 
 void FakeController::SetDefaultCommandStatus(hci_spec::OpCode opcode,
@@ -2298,11 +2300,8 @@ void FakeController::OnCommandPacketReceived(
 }
 
 void FakeController::OnAndroidLEGetVendorCapabilities() {
-  hci_android::LEGetVendorCapabilitiesReturnParams params;
-  std::memcpy(&params, &settings_.android_extension_settings, sizeof(params));
-  params.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
   RespondWithCommandComplete(hci_android::kLEGetVendorCapabilities,
-                             BufferView(&params, sizeof(params)));
+                             settings_.android_extension_settings.data());
 }
 
 void FakeController::OnAndroidStartA2dpOffload(

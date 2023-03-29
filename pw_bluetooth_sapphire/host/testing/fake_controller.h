@@ -39,7 +39,7 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   struct Settings final {
     // The default constructor initializes all fields to 0, unless another default is specified
     // below.
-    Settings();
+    Settings() = default;
     ~Settings() = default;
 
     void ApplyDualModeDefaults();
@@ -51,46 +51,38 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
     void AddBREDRSupportedCommands();
     void AddLESupportedCommands();
 
-    void AddA2dpOffloadableCodecType(hci_android::A2dpCodecType codec_type) {
-      uint32_t const value = static_cast<uint32_t>(codec_type);
-      android_extension_settings.a2dp_source_offload_capability_mask |= value;
-    }
-
-    void ClearA2dpOffloadableCodecs() {
-      android_extension_settings.a2dp_source_offload_capability_mask = 0;
-    }
-
     // The time elapsed from the receipt of a LE Create Connection command until the resulting LE
     // Connection Complete event.
-    zx::duration le_connection_delay;
+    zx::duration le_connection_delay = zx::sec(0);
 
     // HCI settings.
-    hci_spec::HCIVersion hci_version;  // Default: HCIVersion::k5_0.
-    uint8_t num_hci_command_packets;   // Default: 1
-    uint64_t event_mask;
-    uint64_t le_event_mask;
+    hci_spec::HCIVersion hci_version = hci_spec::HCIVersion::k5_0;
+    uint8_t num_hci_command_packets = 250;
+    uint64_t event_mask = 0;
+    uint64_t le_event_mask = 0;
 
     // BD_ADDR (BR/EDR) or Public Device Address (LE)
     DeviceAddress bd_addr;
 
     // Local supported features and commands.
-    uint64_t lmp_features_page0;
-    uint64_t lmp_features_page1;
-    uint64_t lmp_features_page2;
-    uint64_t le_features;
-    uint64_t le_supported_states;
-    uint8_t supported_commands[64];
+    uint64_t lmp_features_page0 = 0;
+    uint64_t lmp_features_page1 = 0;
+    uint64_t lmp_features_page2 = 0;
+    uint64_t le_features = 0;
+    uint64_t le_supported_states = 0;
+    uint8_t supported_commands[64] = {0};
 
     // Buffer Size.
-    uint16_t acl_data_packet_length;
-    uint8_t total_num_acl_data_packets;
-    uint16_t le_acl_data_packet_length;
-    uint8_t le_total_num_acl_data_packets;
-    uint16_t synchronous_data_packet_length;
-    uint8_t total_num_synchronous_data_packets;
+    uint16_t acl_data_packet_length = 0;
+    uint8_t total_num_acl_data_packets = 0;
+    uint16_t le_acl_data_packet_length = 0;
+    uint8_t le_total_num_acl_data_packets = 0;
+    uint16_t synchronous_data_packet_length = 0;
+    uint8_t total_num_synchronous_data_packets = 0;
 
     // Vendor extensions
-    hci_android::LEGetVendorCapabilitiesReturnParams android_extension_settings;
+    StaticPacket<pw::bluetooth::emboss::LEGetVendorCapabilitiesCommandCompleteEventWriter>
+        android_extension_settings;
   };
 
   // Configuration of an L2CAP channel for A2DP offloading.

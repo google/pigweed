@@ -361,7 +361,7 @@ TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
   EXPECT_CMD_PACKET_OUT(test_device(), command_bytes, &command_cmpl_success_bytes);
 
   int cb_called = 0;
-  auto cb = [&](const auto&) { cb_called++; };
+  auto cb = [&](const hci::EventPacket&) { cb_called++; };
 
   int status_cb_called = 0;
   Result<> status = ToResult(HostError::kFailed);
@@ -376,7 +376,7 @@ TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
   cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode2), cb, /*wait=*/false);
   cmd_runner.QueueCommand(
       CommandPacket::New(kTestOpCode),
-      [&](const auto&) {
+      [&](const hci::EventPacket&) {
         EXPECT_EQ(2, cb_called);
         cb_called++;
       },
@@ -409,11 +409,11 @@ TEST_F(SequentialCommandRunnerTest, ParallelCommands) {
   EXPECT_CMD_PACKET_OUT(test_device(), command2_bytes, );
 
   int cb_0_called = 0;
-  auto cb_0 = [&](const auto&) { cb_0_called++; };
+  auto cb_0 = [&](const hci::EventPacket&) { cb_0_called++; };
   int cb_1_called = 0;
-  auto cb_1 = [&](const auto&) { cb_1_called++; };
+  auto cb_1 = [&](const hci::EventPacket&) { cb_1_called++; };
   int cb_2_called = 0;
-  auto cb_2 = [&](const auto&) { cb_2_called++; };
+  auto cb_2 = [&](const hci::EventPacket&) { cb_2_called++; };
   cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode), cb_0, /*wait=*/false);
   cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode2), cb_1, /*wait=*/false);
   cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode),
@@ -748,6 +748,45 @@ TEST_F(SequentialCommandRunnerTest, QueueCommandsWhileAlreadyRunning) {
   EXPECT_EQ(2, cb_called);
   EXPECT_EQ(1, status_cb_called);
   EXPECT_EQ(fit::ok(), status);
+}
+
+TEST_F(SequentialCommandRunnerTest, EmbossEventHandler) {
+  SequentialCommandRunner cmd_runner(cmd_channel()->AsWeakPtr());
+  EXPECT_FALSE(cmd_runner.HasQueuedCommands());
+
+  // HCI command with custom opcode FFFF.
+  StaticByteBuffer command_bytes(0xFF, 0xFF, 0x00);
+  StaticByteBuffer command_cmpl_success_bytes(hci_spec::kCommandCompleteEventCode,
+                                              0x04,  // parameter_total_size (4 byte payload)
+                                              1, 0xFF, 0xFF,
+                                              pw::bluetooth::emboss::StatusCode::SUCCESS);
+
+  Result<> status = fit::ok();
+  int status_cb_called = 0;
+  auto status_cb = [&](Result<> cb_status) {
+    status = cb_status;
+    status_cb_called++;
+  };
+
+  int cb_called = 0;
+  SequentialCommandRunner::EmbossCommandCompleteCallback cb = [&](const EmbossEventPacket& event) {
+    cb_called++;
+    EXPECT_THAT(event.data(), BufferEq(command_cmpl_success_bytes));
+  };
+
+  cmd_runner.QueueCommand(CommandPacket::New(kTestOpCode), std::move(cb));
+  EXPECT_TRUE(cmd_runner.IsReady());
+  EXPECT_TRUE(cmd_runner.HasQueuedCommands());
+
+  EXPECT_CMD_PACKET_OUT(test_device(), command_bytes, &command_cmpl_success_bytes);
+  cmd_runner.RunCommands(status_cb);
+  EXPECT_FALSE(cmd_runner.IsReady());
+  RunLoopUntilIdle();
+  EXPECT_TRUE(cmd_runner.IsReady());
+  EXPECT_FALSE(cmd_runner.HasQueuedCommands());
+  EXPECT_EQ(1, cb_called);
+  EXPECT_EQ(1, status_cb_called);
+  EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), status);
 }
 
 }  // namespace

@@ -1382,11 +1382,13 @@ TEST_P(AndroidSupportedFeaturesTest, AudioOffloadExtGetSupportedFeatures) {
   if (android_vendor_ext_support) {
     adapter()->mutable_state().controller_features |= FeaturesBits::kAndroidVendorExtensions;
 
-    hci_android::LEGetVendorCapabilitiesReturnParams params;
-    memset(&params, 0, sizeof(params));
-    params.a2dp_source_offload_capability_mask = htole32(a2dp_offload_capabilities);
-    params.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-    adapter()->mutable_state().android_vendor_capabilities.Initialize(params);
+    bt::StaticPacket<pw::bluetooth::emboss::LEGetVendorCapabilitiesCommandCompleteEventWriter>
+        params;
+    params.SetToZeros();
+    params.view().status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+    params.view().a2dp_source_offload_capability_mask().BackingStorage().UncheckedWriteUInt(
+        a2dp_offload_capabilities);
+    adapter()->mutable_state().android_vendor_capabilities.Initialize(params.view());
   }
 
   const bt::PeerId peer_id(1);

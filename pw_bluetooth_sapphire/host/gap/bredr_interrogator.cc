@@ -141,7 +141,7 @@ void BrEdrInterrogator::QueueReadRemoteExtendedFeatures(uint8_t page) {
   params.connection_handle().Write(handle_);
   params.page_number().Write(page);
 
-  auto cmd_cb = [this, page](const auto& event) {
+  auto cmd_cb = [this, page](const hci::EventPacket& event) {
     if (hci_is_error(event, WARN, "gap-bredr", "read remote extended features failed (peer id: %s)",
                      bt_str(peer_id_))) {
       return;
