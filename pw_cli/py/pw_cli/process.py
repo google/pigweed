@@ -200,7 +200,8 @@ async def run_async(
     if process.returncode:
         _LOG.error('%s exited with status %d', program, process.returncode)
     else:
-        _LOG.error('%s exited successfully', program)
+        # process.returncode is 0
+        _LOG.debug('%s exited successfully', program)
 
     return CompletedProcess(process, output)
 
