@@ -122,6 +122,7 @@ def gn_clang_build(ctx: PresubmitContext):
 
     build.gn_gen(ctx, pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS)
     build.ninja(ctx, *build_targets)
+    build.gn_check(ctx)
 
 
 _HOST_COMPILER = 'gcc' if sys.platform == 'win32' else 'clang'
@@ -141,6 +142,7 @@ def gn_full_qemu_check(ctx: PresubmitContext):
         *_at_all_optimization_levels('qemu_gcc'),
         *_at_all_optimization_levels('qemu_clang'),
     )
+    build.gn_check(ctx)
 
 
 def _gn_combined_build_check_targets() -> Sequence[str]:
@@ -194,6 +196,7 @@ gn_combined_build_check = build.GnGenNinja(
 def gn_arm_build(ctx: PresubmitContext):
     build.gn_gen(ctx, pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS)
     build.ninja(ctx, *_at_all_optimization_levels('stm32f429i'))
+    build.gn_check(ctx)
 
 
 stm32f429i = build.GnGenNinja(
@@ -418,6 +421,7 @@ def _run_cmake(ctx: PresubmitContext, toolchain='host_clang') -> None:
 def cmake_clang(ctx: PresubmitContext):
     _run_cmake(ctx, toolchain='host_clang')
     build.ninja(ctx, 'pw_apps', 'pw_run_tests.modules')
+    build.gn_check(ctx)
 
 
 @filter_paths(
@@ -426,6 +430,7 @@ def cmake_clang(ctx: PresubmitContext):
 def cmake_gcc(ctx: PresubmitContext):
     _run_cmake(ctx, toolchain='host_gcc')
     build.ninja(ctx, 'pw_apps', 'pw_run_tests.modules')
+    build.gn_check(ctx)
 
 
 @filter_paths(
@@ -886,6 +891,7 @@ def static_analysis(ctx: PresubmitContext):
     """Runs all available static analysis tools."""
     build.gn_gen(ctx)
     build.ninja(ctx, 'python.lint', 'static_analysis')
+    build.gn_check(ctx)
 
 
 _EXCLUDE_FROM_TODO_CHECK = (

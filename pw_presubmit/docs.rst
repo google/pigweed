@@ -459,11 +459,13 @@ See ``pigweed_presubmit.py`` for a more complex presubmit check script example.
   def release_build(ctx: PresubmitContext):
       build.gn_gen(ctx, build_type='release')
       build.ninja(ctx)
+      build.gn_check(ctx)  # Run after building to check generated files.
 
 
   def host_tests(ctx: PresubmitContext):
       build.gn_gen(ctx, run_host_tests='true')
       build.ninja(ctx)
+      build.gn_check(ctx)
 
 
   # Avoid running some checks on certain paths.
