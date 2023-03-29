@@ -221,7 +221,7 @@ Status ServerSocket::Listen(uint16_t port) {
   socklen_t addr_len = sizeof(addr);
   if (getsockname(socket_fd_, reinterpret_cast<sockaddr*>(&addr), &addr_len) <
           0 ||
-      addr_len > sizeof(addr)) {
+      static_cast<size_t>(addr_len) > sizeof(addr)) {
     close(socket_fd_);
     return Status::Unknown();
   }
