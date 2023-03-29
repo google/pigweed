@@ -19,36 +19,43 @@
 
 namespace pw {
 
-// Helper type to create a function-local static variable of type T when T has a
-// non-trivial destructor. Storing a T in a pw::NoDestructor<T> will prevent
-// ~T() from running, even when the variable goes out of scope.
-//
-// This class is useful when a variable has static storage duration but its type
-// has a non-trivial destructor. Destructor ordering is not defined and can
-// cause issues in multithreaded environments. Additionally, removing destructor
-// calls can save code size.
-//
-// Except in generic code, do not use pw::NoDestructor<T> with trivially
-// destructible types. Use the type directly instead. If the variable can be
-// constexpr, make it constexpr.
-//
-// pw::NoDestructor<T> provides a similar API to std::optional. Use * or -> to
-// access the wrapped type.
-//
-// Example usage:
-//
-//   pw::sync::Mutex& GetMutex() {
-//     // Use NoDestructor to avoid running the mutex destructor when exit-time
-//     // destructors run.
-//     static const pw::NoDestructor<pw::sync::Mutex> global_mutex;
-//     return *global_mutex;
-//   }
-//
-// WARNING: Misuse of NoDestructor can cause memory leaks and other problems.
-// Only skip destructors when you know it is safe to do so.
-//
-// In Clang, pw::NoDestructor can be replaced with the [[clang::no_destroy]]
-// attribute.
+/// Helper type to create a function-local static variable of type `T` when `T`
+/// has a non-trivial destructor. Storing a `T` in a `pw::NoDestructor<T>` will
+/// prevent `~T()` from running, even when the variable goes out of scope.
+///
+/// This class is useful when a variable has static storage duration but its
+/// type has a non-trivial destructor. Destructor ordering is not defined and
+/// can cause issues in multithreaded environments. Additionally, removing
+/// destructor calls can save code size.
+///
+/// Except in generic code, do not use `pw::NoDestructor<T>` with trivially
+/// destructible types. Use the type directly instead. If the variable can be
+/// `constexpr`, make it `constexpr`.
+///
+/// `pw::NoDestructor<T>` provides a similar API to `std::optional`. Use `*` or
+/// `->` to access the wrapped type.
+///
+/// Example usage:
+/// @code{.cpp}
+///
+///   pw::sync::Mutex& GetMutex() {
+///     // Use NoDestructor to avoid running the mutex destructor when exit-time
+///     // destructors run.
+///     static const pw::NoDestructor<pw::sync::Mutex> global_mutex;
+///     return *global_mutex;
+///   }
+///
+/// @endcode
+///
+/// In Clang, `pw::NoDestructor` can be replaced with the
+/// <a href="https://clang.llvm.org/docs/AttributeReference.html#no-destroy">
+/// [[clang::no_destroy]]</a> attribute. `pw::NoDestructor<T>` is similar to
+/// Chromium’s `base::NoDestructor<T>` in <a
+/// href="https://chromium.googlesource.com/chromium/src/base/+/5ea6e31f927aa335bfceb799a2007c7f9007e680/no_destructor.h">
+/// src/base/no_destructor.h</a>.
+///
+/// @warning Misuse of NoDestructor can cause memory leaks and other problems.
+/// Only skip destructors when you know it is safe to do so.
 template <typename T>
 class NoDestructor {
  public:
