@@ -85,6 +85,8 @@ _host_common = {
   pw_thread_YIELD_BACKEND = "$dir_pw_thread_stl:yield"
   pw_thread_SLEEP_BACKEND = "$dir_pw_thread_stl:sleep"
   pw_thread_THREAD_BACKEND = "$dir_pw_thread_stl:thread"
+  pw_thread_TEST_THREAD_CONTEXT_BACKEND =
+      "$dir_pw_thread_stl:test_thread_context"
 
   pw_build_LINK_DEPS = []  # Explicit list overwrite required by GN
   pw_build_LINK_DEPS = [
