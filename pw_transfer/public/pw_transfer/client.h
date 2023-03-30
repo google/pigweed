@@ -127,7 +127,7 @@ class Client {
 
  private:
   static constexpr ProtocolVersion kDefaultProtocolVersion =
-      ProtocolVersion::kLatest;
+      ProtocolVersion::kLegacy;
 
   using Transfer = pw_rpc::raw::Transfer;
 
