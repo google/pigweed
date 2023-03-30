@@ -843,6 +843,166 @@ on without an error.
 
 The templates for build time errors are defined in ``pw_build/error.gni``.
 
+Generate code coverage reports: ``pw_coverage_report``
+------------------------------------------------------
+Pigweed supports generating coverage reports, in a variety of formats, for C/C++
+code using the ``pw_coverage_report`` GN template.
+
+Coverage Caveats
+^^^^^^^^^^^^^^^^
+There are currently two code coverage caveats when enabled:
+
+#. Coverage reports are only populated based on host tests that use a ``clang``
+   toolchain.
+
+#. Coverage reports will only show coverage information for headers included in
+   a test binary.
+
+These two caveats mean that all device-specific code that cannot be compiled for
+and run on the host will not be able to have reports generated for them, and
+that the existence of these files will not appear in any coverage report.
+
+Try to ensure that your code can be written in a way that it can be compiled
+into a host test for the purpose of coverage reporting, although this is
+sometimes impossible due to requiring hardware-specific APIs to be available.
+
+Coverage Instrumentation
+^^^^^^^^^^^^^^^^^^^^^^^^
+For the ``pw_coverage_report`` to generate meaningful output, you must ensure
+that it is invoked by a toolchain that instruments tests for code coverage
+collection and output.
+
+Instrumentation is largely controlled by these GN build arguments:
+
+- ``pw_toolchain_COVERAGE_ENABLED`` being set to ``true``.
+- ``pw_toolchain_SANITIZERS`` including the ``"coverage"`` value.
+
+.. note::
+
+  It is possible to also instrument binaries for UBSAN, ASAN, or TSAN at the
+  same time as coverage. However, TSAN will find issues in the coverage
+  instrumentation code and fail to properly build.
+
+This can most easily be done by using the ``host_clang_coverage`` toolchain
+provided in :ref:`module-pw_toolchain`, but you can also create custom
+toolchains that manually set these GN build arguments as well.
+
+``pw_coverage_report``
+^^^^^^^^^^^^^^^^^^^^^^
+``pw_coverage_report`` is bascially a GN frontend to the ``llvm-cov``
+`tool <https://llvm.org/docs/CommandGuide/llvm-cov.html>`_ that can be
+integrated into the normal build.
+
+It can be found at ``pw_build/coverage_report.gni`` and is available through
+``import("$dir_pw_build/coverage_report.gni")``.
+
+The supported report formats are:
+
+- ``text``: A text representation of the code coverage report. This
+  format is not suitable for further machine manipulation and is instead only
+  useful for cases where a human needs to interpret the report. The text format
+  provides a nice summary, but if you desire to drill down into the coverage
+  details more, please consider using ``html`` instead.
+
+  - This is equivalent to ``llvm-cov show --format text`` and similar to
+    ``llvm-cov report``.
+
+- ``html``: A static HTML site that provides an overall coverage summary and
+  per-file information. This format is not suitable for further machine
+  manipulation and is instead only useful for cases where a human needs to
+  interpret the report.
+
+  - This is equivalent to ``llvm-cov show --format html``.
+
+- ``lcov``: A machine-friendly coverage report format. This format is not human-
+  friendly. If that is necessary, use ``text`` or ``html`` instead.
+
+  - This is equivalent to ``llvm-cov export --format lcov``.
+
+- ``json``: A machine-friendly coverage report format. This format is not human-
+  friendly. If that is necessary, use ``text`` or ``html`` instead.
+
+  - This is equivalent to ``llvm-cov export --format text``.
+
+Arguments
+"""""""""
+There are three classes of ``template`` arguments: build, coverage, and test.
+
+**Build Arguments:**
+
+- ``enable_if``: Conditionally activates coverage report generation when set to
+  a boolean expression that evaluates to ``true``. This can be used to allow
+  project builds to conditionally enable or disable coverage reports to minimize
+  work needed for certain build configurations.
+
+**Coverage Arguments:**
+
+- ``filter_paths`` (optional): List of file paths to include when generating the
+  coverage report. These cannot be regular expressions, but can be concrete file
+  or folder paths. Folder paths will allow all files in that directory or any
+  recursive child directory.
+
+  - These are passed to ``llvm-cov`` by the optional trailing positional
+    ``[SOURCES]`` arguments.
+
+- ``ignore_filename_patterns`` (optional): List of file path regular expressions
+  to ignore when generating the coverage report.
+
+  - These are passed to ``llvm-cov`` via ``--ignore-filename-regex`` named
+    parameters.
+
+**Test Arguments (one of these is required to be provided):**
+
+- ``tests``: A list of ``pw_test`` :ref:`targets<module-pw_unit_test-pw_test>`.
+
+- ``group_deps``: A list of ``pw_test_group``
+  :ref:`targets<module-pw_unit_test-pw_test_group>`.
+
+.. note::
+
+  ``tests`` and ``group_deps`` are treated exactly the same by
+  ``pw_coverage_report``, so it is not that important to ensure they are used
+  properly.
+
+Target Expansion
+""""""""""""""""
+``pw_coverage_report(<target_name>)`` expands to one concrete target for each
+report format.
+
+- ``<target_name>.text``: Generates the ``text`` coverage report.
+
+- ``<target_name>.html``: Generates the ``html`` coverage report.
+
+- ``<target_name>.lcov``: Generates the ``lcov`` coverage report.
+
+- ``<target_name>.json``: Generates the ``json`` coverage report.
+
+To use any of these targets, you need only to add a dependency on the desired
+target somewhere in your build.
+
+There is also a ``<target_name>`` target generated that is a ``group`` that adds
+a dependency on all of the format-specific targets listed above.
+
+.. note::
+  These targets are always available, even when the toolchain executing the
+  target does not support coverage or coverage is not enabled. In these cases,
+  the targets are set to empty groups.
+
+Coverage Output
+^^^^^^^^^^^^^^^
+Coverage reports are currently generated and placed into the build output
+directory associated with the path to the GN file where the
+``pw_coverage_report`` is used in a subfolder named
+``<target_name>.<report_type>``.
+
+.. note::
+
+  Due to limitations with telling GN the entire output of coverage reports
+  (stemming from per-source-file generation for HTML and text representations),
+  it is not as simple as using GN's built-in ``copy`` to be able to move these
+  coverage reports to another output location. However, it seems possible to add
+  a target that can use Python to copy the entire output directory.
+
 Improved Ninja interface
 ------------------------
 Ninja includes a basic progress display, showing in a single line the number of

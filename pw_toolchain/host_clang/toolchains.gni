@@ -26,6 +26,8 @@ declare_args() {
   #
   # For example, the static analysis toolchains that run `clang-tidy` instead
   # of the test binary itself cannot generate coverage reports.
+  #
+  # This is typically set by individual toolchains and not by GN args.
   pw_toolchain_COVERAGE_ENABLED = false
 
   # Indicates if this toolchain supports building fuzzers. This is typically

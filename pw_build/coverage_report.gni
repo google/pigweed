@@ -1,0 +1,248 @@
+# Copyright 2023 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+import("//build_overrides/pigweed_environment.gni")
+
+import("$dir_pw_build/python_action.gni")
+import("$dir_pw_toolchain/host_clang/toolchains.gni")
+
+# Expands to code coverage targets that can be used as dependencies to generate
+# coverage reports at build time.
+#
+# Arguments:
+# - enable_if (optional): Conditionally activates coverage report generation
+#   when set to a boolean expression that evaluates to true.
+# - Coverage Settings
+#   - filter_paths (optional): List of file paths (using GN path helpers like
+#     `//` is supported). These will be translated into absolute paths before
+#     being used. These filter source files so that the coverage report *ONLY*
+#     includes files that match one of these paths. These cannot be regular
+#     expressions, but can be concrete file or folder paths. Folder paths will
+#     allow all files in that directory or any recursive child directory.
+#   - ignore_filename_patterns (optional): List of file path regular expressions
+#     to ignore when generating the coverage report.
+# - pw_test Depedencies (required): These control which test binaries are used
+#   to collect usage data for the coverage report. The following can basically
+#   be used interchangeably with no actual difference in the template expansion.
+#   Only one of these is required to be provided.
+#   - tests: A list of pw_test targets.
+#   - group_deps: A list of pw_test_group targets.
+#
+# Expands To:
+# pw_coverage_report follows the overall Pigweed pattern where targets exist
+# for all build configurations, but are only configured to do meaningful work
+# under the correct build configuration. In this vein, pw_coverage_report
+# ensures that a coverage-enabled toolchain is being used and the provided
+# enable_if evaluates to true (if provided).
+#
+# - If a coverage-enabled toolchain is being used and the provided enable_if
+#   evaluates to true (if provided):
+#   - <target_name>.text: Generates a text representation of the coverage
+#                         report. This is the output of
+#                         `llvm-cov show --format text`.
+#   - <target_name>.html: Generates an HTML representation of the coverage
+#                         report. This is the output of
+#                         `llvm-cov show --format html`.
+#   - <target_name>.lcov: Generates an LCOV representation of the coverage
+#                         report. This is the output of
+#                         `llvm-cov export --format lcov`.
+#   - <target_name>.json: Generates a JSON representation of the coverage
+#                         report. This is the output of
+#                         `llvm-cov export --format text`.
+#
+#   - <target_name>: A group that takes dependencies on <target_name>.text,
+#                    <target_name>.html, <target_name>.lcov, and
+#                    <target_name>.json. This can be used to force generation of
+#                    all coverage artifacts without manually depending on each
+#                    target.
+#
+#   - The other targets this expands to should be considered private and not
+#     used as dependencies.
+# - If a coverage-enabled toolchain is not being used or the provided enable_if
+#   evaluates to false (if provided).
+#   - All of the above target names, but they are empty groups.
+template("pw_coverage_report") {
+  assert(defined(invoker.tests) || defined(invoker.group_deps),
+         "One of `tests` or `group_deps` must be provided.")
+
+  _report_name = target_name
+  _format_types = [
+    "text",
+    "html",
+    "lcov",
+    "json",
+  ]
+  _should_enable = !defined(invoker.enable_if) || invoker.enable_if
+
+  # These two Pigweed build arguments are required to be in these states to
+  # ensure binaries are instrumented for coverage and profraw files are
+  # exported.
+  if (_should_enable && filter_include(pw_toolchain_SANITIZERS,
+                                       [ "coverage" ]) == [ "coverage" ] &&
+      pw_toolchain_COVERAGE_ENABLED) {
+    _test_metadata = "$target_out_dir/$_report_name.test_metadata.json"
+    _profdata_file = "$target_out_dir/merged.profdata"
+    _arguments = {
+      filter_paths = []
+      if (defined(invoker.filter_paths)) {
+        filter_paths += invoker.filter_paths
+      }
+
+      ignore_filename_patterns = []
+      if (defined(invoker.ignore_filename_patterns)) {
+        ignore_filename_patterns += invoker.ignore_filename_patterns
+      }
+
+      # Merge any provided `tests` or `group_deps` to `deps` and `run_deps`.
+      #
+      # `deps` are used to generate the .test_metadata.json file.
+      # `run_deps` are used to block on the test execution to generate a profraw
+      # file.
+      deps = []
+      run_deps = []
+      test_or_group_deps = []
+      if (defined(invoker.tests)) {
+        test_or_group_deps += invoker.tests
+      }
+      if (defined(invoker.group_deps)) {
+        test_or_group_deps += invoker.group_deps
+      }
+      foreach(dep, test_or_group_deps) {
+        deps += [ dep ]
+
+        dep_target = get_label_info(dep, "label_no_toolchain")
+        dep_toolchain = get_label_info(dep, "toolchain")
+        run_deps += [ "$dep_target.run($dep_toolchain)" ]
+      }
+    }
+
+    # Generate a list of all test binaries and their associated profraw files
+    # after executing we can use to generate the coverage report.
+    generated_file("_$_report_name.test_metadata") {
+      outputs = [ _test_metadata ]
+      data_keys = [
+        "tests",
+        "profraws",
+      ]
+      output_conversion = "json"
+      deps = _arguments.deps
+    }
+
+    # Merge the generated profraws from instrumented binaries into a single
+    # profdata.
+    pw_python_action("_$_report_name.merge_profraws") {
+      _depfile_path = "$target_out_dir/$_report_name.merged_profraws.d"
+
+      module = "pw_build.merge_profraws"
+      args = [
+        "--llvm-profdata-path",
+        rebase_path("$pw_env_setup_CIPD_PIGWEED/bin/llvm-profdata",
+                    root_build_dir),
+        "--test-metadata-path",
+        rebase_path(_test_metadata, root_build_dir),
+        "--profdata-path",
+        rebase_path(_profdata_file, root_build_dir),
+        "--depfile-path",
+        rebase_path(_depfile_path, root_build_dir),
+      ]
+
+      inputs = [ _test_metadata ]
+      sources = []
+      depfile = _depfile_path
+
+      outputs = [ _profdata_file ]
+
+      python_deps = [ "$dir_pw_build/py" ]
+      deps = _arguments.run_deps
+      public_deps = [ ":_$_report_name.test_metadata" ]
+    }
+
+    foreach(format, _format_types) {
+      pw_python_action("$_report_name.$format") {
+        _depfile_path = "$target_out_dir/$_report_name.$format.d"
+        _output_dir = "$target_out_dir/$_report_name/$format/"
+
+        module = "pw_build.generate_report"
+        args = [
+          "--llvm-cov-path",
+          rebase_path("$pw_env_setup_CIPD_PIGWEED/bin/llvm-cov",
+                      root_build_dir),
+          "--format",
+          format,
+          "--test-metadata-path",
+          rebase_path(_test_metadata, root_build_dir),
+          "--profdata-path",
+          rebase_path(_profdata_file, root_build_dir),
+          "--root-dir",
+          rebase_path("//", root_build_dir),
+          "--build-dir",
+          ".",
+          "--output-dir",
+          rebase_path(_output_dir, root_build_dir),
+          "--depfile-path",
+          rebase_path(_depfile_path, root_build_dir),
+        ]
+        foreach(filter_path, _arguments.filter_paths) {
+          args += [
+            # We rebase to absolute paths here to resolve any "//" used in the
+            # filter_paths.
+            "--filter-path",
+            rebase_path(filter_path),
+          ]
+        }
+        foreach(ignore_filename_pattern, _arguments.ignore_filename_patterns) {
+          args += [
+            "--ignore-filename-pattern",
+            ignore_filename_pattern,
+          ]
+        }
+
+        inputs = [
+          _test_metadata,
+          _profdata_file,
+        ]
+        sources = []
+        depfile = _depfile_path
+
+        outputs = []
+        if (format == "text") {
+          outputs += [ "$_output_dir/index.txt" ]
+        } else if (format == "html") {
+          outputs += [ "$_output_dir/index.html" ]
+        } else if (format == "lcov") {
+          outputs += [ "$_output_dir/report.lcov" ]
+        } else if (format == "json") {
+          outputs += [ "$_output_dir/report.json" ]
+        }
+
+        python_deps = [ "$dir_pw_build/py" ]
+        deps = [ ":_$_report_name.merge_profraws" ]
+      }
+    }
+  } else {
+    not_needed(invoker, "*")
+    foreach(format, _format_types) {
+      group("$_report_name.$format") {
+      }
+    }
+  }
+
+  group("$_report_name") {
+    deps = []
+    foreach(format, _format_types) {
+      deps += [ ":$_report_name.$format" ]
+    }
+  }
+}

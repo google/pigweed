@@ -212,6 +212,8 @@ test code.
      sources = [ "foo_test.cc" ]
    }
 
+.. _module-pw_unit_test-pw_test:
+
 pw_test template
 ````````````````
 ``pw_test`` defines a single unit test suite. It creates several sub-targets.
@@ -244,6 +246,8 @@ pw_test template
      sources = [ "large_test.cc" ]
      enable_if = device_has_1m_flash
    }
+
+.. _module-pw_unit_test-pw_test_group:
 
 pw_test_group template
 ``````````````````````
