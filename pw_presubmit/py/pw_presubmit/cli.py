@@ -339,4 +339,14 @@ def run(  # pylint: disable=too-many-arguments
     ):
         return 0
 
+    # Check if this failed presumbit was run as a Git hook by looking for GIT_*
+    # environment variables. Mention using --no-verify to skip if so.
+    for env_var in os.environ:
+        if env_var.startswith('GIT'):
+            _LOG.info(
+                'To skip these checks and continue with this push, '
+                'add --no-verify to the git command'
+            )
+            break
+
     return 1
