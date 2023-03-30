@@ -207,6 +207,30 @@ pw_cc_library(
     ],
 )
 
+pw_cc_library(
+    name = "test_thread_context_backend_multiplexer",
+    visibility = ["@pigweed_config//:__pkg__"],
+    deps = select({
+        "//conditions:default": ["//pw_thread_stl:test_thread_context"],
+    }),
+)
+
+pw_cc_facade(
+    name = "test_thread_context_facade",
+    hdrs = [
+        "public/pw_thread/test_thread_context.h",
+    ],
+    includes = ["public"],
+)
+
+pw_cc_library(
+    name = "test_thread_context",
+    deps = [
+        ":test_thread_context_facade",
+        "@pigweed_config//:pw_thread_test_thread_context_backend",
+    ],
+)
+
 pw_cc_facade(
     name = "yield_facade",
     hdrs = [
@@ -283,6 +307,19 @@ pw_cc_library(
         ":test_threads_header",
         ":thread",
         "//pw_chrono:system_clock",
+        "//pw_sync:binary_semaphore",
+        "//pw_unit_test",
+    ],
+)
+
+pw_cc_test(
+    name = "test_thread_context_facade_test",
+    srcs = [
+        "test_thread_context_facade_test.cc",
+    ],
+    deps = [
+        ":test_thread_context",
+        ":thread",
         "//pw_sync:binary_semaphore",
         "//pw_unit_test",
     ],

@@ -155,3 +155,26 @@ pw_cc_library(
         "//pw_thread:yield_facade",
     ],
 )
+
+pw_cc_library(
+    name = "test_thread_context_headers",
+    hdrs = [
+        "public/pw_thread_stl/test_thread_context_native.h",
+        "test_thread_context_public_overrides/pw_thread_backend/test_thread_context_native.h",
+    ],
+    includes = [
+        "public",
+        "test_thread_context_public_overrides",
+    ],
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+)
+
+pw_cc_library(
+    name = "test_thread_context",
+    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
+    deps = [
+        ":test_thread_context_headers",
+        ":thread",
+        "//pw_thread:test_thread_context_facade",
+    ],
+)

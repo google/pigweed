@@ -70,6 +70,19 @@ pw_add_library(pw_thread_stl.yield INTERFACE
     pw_thread.yield.facade
 )
 
+# This target provides the backend for pw::thread::test::TestThreadContext.
+pw_add_library(pw_thread_stl.test_thread_context INTERFACE
+  HEADERS
+    public/pw_thread_stl/test_thread_context_native.h
+    test_thread_context_public_overrides/pw_thread_backend/test_thread_context_native.h
+  PUBLIC_INCLUDES
+    public
+    test_thread_context_public_overrides
+  PUBLIC_DEPS
+    pw_thread_stl.thread
+    pw_thread.test_thread_context.facade
+)
+
 pw_add_library(pw_thread_stl.test_threads STATIC
   PUBLIC_DEPS
     pw_thread.test_threads

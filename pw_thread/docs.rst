@@ -329,7 +329,6 @@ something like:
 
   }  // namespace my_app
 
-
 Detaching & Joining
 ===================
 The ``Thread::detach()`` API is always available, to let you separate the
@@ -451,6 +450,18 @@ function without arguments. For example:
   Because the thread may start after the pw::Thread creation, an object which
   implements the ThreadCore MUST meet or exceed the lifetime of its thread of
   execution!
+
+----------------
+Thread Unit Test
+----------------
+.. doxygenclass:: pw::thread::test::TestThreadContext
+   :members:
+
+The STL backend implementation ``test_thread_context_native.h`` lists below:
+
+.. literalinclude:: ../pw_thread_stl/public/pw_thread_stl/test_thread_context_native.h
+   :language: cpp
+   :lines: 18-36
 
 ----------------
 Thread Iteration

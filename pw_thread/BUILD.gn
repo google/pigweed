@@ -72,6 +72,12 @@ pw_facade("thread") {
   sources = [ "thread.cc" ]
 }
 
+pw_facade("test_thread_context") {
+  backend = pw_thread_TEST_THREAD_CONTEXT_BACKEND
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_thread/test_thread_context.h" ]
+}
+
 pw_source_set("thread_core") {
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_thread/thread_core.h" ]
@@ -151,7 +157,18 @@ pw_test_group("tests") {
     ":sleep_facade_test",
     ":thread_info_test",
     ":yield_facade_test",
+    ":test_thread_context_facade_test",
     ":thread_snapshot_service_test",
+  ]
+}
+
+pw_test("test_thread_context_facade_test") {
+  enable_if = pw_thread_TEST_THREAD_CONTEXT_BACKEND != ""
+  sources = [ "test_thread_context_facade_test.cc" ]
+  deps = [
+    ":test_thread_context",
+    ":thread",
+    "$dir_pw_sync:binary_semaphore",
   ]
 }
 
@@ -242,5 +259,7 @@ pw_proto_library("protos") {
 }
 
 pw_doc_group("docs") {
+  inputs =
+      [ "$dir_pw_thread_stl/public/pw_thread_stl/test_thread_context_native.h" ]
   sources = [ "docs.rst" ]
 }

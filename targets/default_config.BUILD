@@ -137,6 +137,11 @@ label_flag(
 )
 
 label_flag(
+    name = "pw_thread_test_thread_context_backend",
+    build_setting_default = "@pigweed//pw_thread:test_thread_context_backend_multiplexer",
+)
+
+label_flag(
     name = "pw_thread_yield_backend",
     build_setting_default = "@pigweed//pw_thread:yield_backend_multiplexer",
 )
