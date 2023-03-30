@@ -36,6 +36,16 @@ pw_cc_facade(
         "assert_compatibility_public_overrides",
         "public",
     ],
+    linkopts = select({
+        # Disable warnings about backrefs (b/275905282)...
+        "//conditions:default": ["-Wl,--warn-backrefs-exclude=*pigweed/pw_assert*"],
+        # ... but not for any platform that compiles with arm gcc, because arm
+        # gcc doesn't know this flag.
+        "@platforms//cpu:armv7-m": [],
+        "@platforms//cpu:armv7e-m": [],
+        "@platforms//cpu:armv7e-mf": [],
+        "@platforms//cpu:armv8-m": [],
+    }),
     deps = [
         ":config",
         "//pw_preprocessor",
