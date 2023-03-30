@@ -23,7 +23,7 @@ Status DoInit(NativeSha256Context& ctx) {
   // mbedtsl_sha256_init() never fails (returns void).
   mbedtls_sha256_init(&ctx);
 
-  if (mbedtls_sha256_starts_ret(&ctx, /* is224 = */ 0)) {
+  if (mbedtls_sha256_starts(&ctx, /* is224 = */ 0)) {
     return Status::Internal();
   }
 
@@ -31,10 +31,9 @@ Status DoInit(NativeSha256Context& ctx) {
 }
 
 Status DoUpdate(NativeSha256Context& ctx, ConstByteSpan data) {
-  if (mbedtls_sha256_update_ret(
-          &ctx,
-          reinterpret_cast<const unsigned char*>(data.data()),
-          data.size())) {
+  if (mbedtls_sha256_update(&ctx,
+                            reinterpret_cast<const unsigned char*>(data.data()),
+                            data.size())) {
     return Status::Internal();
   }
 
@@ -42,7 +41,7 @@ Status DoUpdate(NativeSha256Context& ctx, ConstByteSpan data) {
 }
 
 Status DoFinal(NativeSha256Context& ctx, ByteSpan out_digest) {
-  if (mbedtls_sha256_finish_ret(
+  if (mbedtls_sha256_finish(
           &ctx, reinterpret_cast<unsigned char*>(out_digest.data()))) {
     return Status::Internal();
   }

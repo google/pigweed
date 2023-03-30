@@ -139,6 +139,19 @@ pw_source_set("sha256_mbedtls") {
   ]
 }
 
+pw_source_set("sha256_mbedtls_v3") {
+  public_configs = [ ":mbedtls_config" ]
+  public = [
+    "public/pw_crypto/sha256_mbedtls.h",
+    "public_overrides/mbedtls/pw_crypto/sha256_backend.h",
+  ]
+  sources = [ "sha256_mbedtls.cc" ]
+  public_deps = [
+    ":sha256.facade",
+    "$dir_pw_third_party/mbedtls:mbedtls_v3",
+  ]
+}
+
 config("boringssl_config") {
   visibility = [ ":*" ]
   include_dirs = [ "public_overrides/boringssl" ]
@@ -173,6 +186,16 @@ pw_source_set("ecdsa_mbedtls") {
     "$dir_pw_function",
     "$dir_pw_log",
     "$dir_pw_third_party/mbedtls",
+  ]
+  public_deps = [ ":ecdsa.facade" ]
+}
+
+pw_source_set("ecdsa_mbedtls_v3") {
+  sources = [ "ecdsa_mbedtls.cc" ]
+  deps = [
+    "$dir_pw_function",
+    "$dir_pw_log",
+    "$dir_pw_third_party/mbedtls:mbedtls_v3",
   ]
   public_deps = [ ":ecdsa.facade" ]
 }

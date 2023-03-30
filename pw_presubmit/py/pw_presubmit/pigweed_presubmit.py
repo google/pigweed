@@ -253,10 +253,10 @@ gn_crypto_mbedtls_build = build.GnGenNinja(
             ctx.package_root / 'mbedtls'
         ),
         'pw_crypto_SHA256_BACKEND': lambda ctx: '"{}"'.format(
-            ctx.root / 'pw_crypto:sha256_mbedtls'
+            ctx.root / 'pw_crypto:sha256_mbedtls_v3'
         ),
         'pw_crypto_ECDSA_BACKEND': lambda ctx: '"{}"'.format(
-            ctx.root / 'pw_crypto:ecdsa_mbedtls'
+            ctx.root / 'pw_crypto:ecdsa_mbedtls_v3'
         ),
         'pw_C_OPTIMIZATION_LEVELS': _OPTIMIZATION_LEVELS,
     },
@@ -361,7 +361,7 @@ gn_software_update_build = build.GnGenNinja(
             ctx.package_root / 'mbedtls'
         ),
         'pw_crypto_SHA256_BACKEND': lambda ctx: '"{}"'.format(
-            ctx.root / 'pw_crypto:sha256_mbedtls'
+            ctx.root / 'pw_crypto:sha256_mbedtls_v3'
         ),
         'pw_C_OPTIMIZATION_LEVELS': _OPTIMIZATION_LEVELS,
     },

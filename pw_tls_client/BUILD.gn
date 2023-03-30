@@ -80,6 +80,7 @@ pw_facade("time") {
     ":*",
     "$dir_pw_third_party/boringssl",
     "$dir_pw_third_party/mbedtls",
+    "$dir_pw_third_party/mbedtls:mbedtls_v3",
   ]
 }
 

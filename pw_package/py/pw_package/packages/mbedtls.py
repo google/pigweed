@@ -33,7 +33,8 @@ class MbedTLS(pw_package.git_repo.GitRepo):
                     "/third_party/github/ARMmbed/mbedtls",
                 ]
             ),
-            commit='e483a77c85e1f9c1dd2eb1c5a8f552d2617fe400',
+            # mbedtls-3.2.1 released 2022-07-12
+            commit='869298bffeea13b205343361b7a7daf2b210e33d',
             **kwargs,
         )
 

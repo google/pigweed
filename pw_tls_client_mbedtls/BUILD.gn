@@ -42,14 +42,13 @@ pw_source_set("pw_tls_client_mbedtls") {
     "$dir_pw_assert",
     "$dir_pw_log",
     "$dir_pw_stream",
-    "$dir_pw_third_party/mbedtls",
+    "$dir_pw_third_party/mbedtls:mbedtls",
     "$dir_pw_tls_client:tls_entropy",
   ]
 }
 
 pw_test("tls_client_mbedtls_test") {
-  enable_if =
-      pw_tls_client_ENTROPY_BACKEND != "" && dir_pw_third_party_mbedtls != ""
+  enable_if = pw_tls_client_BACKEND != "" && dir_pw_third_party_mbedtls != ""
   deps = [ ":pw_tls_client_mbedtls" ]
   sources = [ "tls_client_mbedtls_test.cc" ]
 }

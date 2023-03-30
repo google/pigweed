@@ -14,7 +14,14 @@
 
 #pragma once
 
+#include <mbedtls/version.h>
+
+#if MBEDTLS_VERSION_MAJOR >= 3
+#include <mbedtls/build_info.h>
+#include <mbedtls/mbedtls_config.h>
+#else
 #include <mbedtls/config.h>
+#endif
 
 // override some flags needed by pigweed
 #include "configs/config_pigweed_common.h"
