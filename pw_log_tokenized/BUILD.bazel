@@ -71,18 +71,6 @@ pw_cc_library(
     visibility = ["@pigweed_config//:__pkg__"],
 )
 
-# The compatibility library is not needed in Bazel.
-pw_cc_library(
-    name = "compatibility",
-    srcs = ["compatibility.cc"],
-    visibility = ["//visibility:private"],
-    deps = [
-        ":handler_facade",
-        "//pw_tokenizer",
-        "//pw_tokenizer:global_handler_with_payload",
-    ],
-)
-
 pw_cc_library(
     name = "base64_over_hdlc",
     srcs = ["base64_over_hdlc.cc"],

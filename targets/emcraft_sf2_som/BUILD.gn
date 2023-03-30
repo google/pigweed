@@ -20,7 +20,6 @@ import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_malloc/backend.gni")
 import("$dir_pw_system/system_target.gni")
 import("$dir_pw_third_party/smartfusion_mss/mss.gni")
-import("$dir_pw_tokenizer/backend.gni")
 import("$dir_pw_toolchain/generate_toolchain.gni")
 
 config("pw_malloc_active") {

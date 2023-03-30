@@ -62,14 +62,6 @@ pw_cc_library(
     visibility = ["@pigweed_config//:__pkg__"],
 )
 
-# This header is only provided for backwards compatibility and is not used in
-# the Bazel build.
-pw_cc_library(
-    name = "global_handler_with_payload",
-    hdrs = ["public/pw_tokenizer/tokenize_to_global_handler_with_payload.h"],
-    visibility = ["//pw_log_tokenized:__pkg__"],
-)
-
 pw_cc_library(
     name = "base64",
     srcs = [

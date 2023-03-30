@@ -13,7 +13,7 @@
 // the License.
 
 // Functions to test that the tokenization macro works correctly in C code.
-// These are defined in tokenize_test.c and global_handlers_test.c.
+// These are defined in tokenize_test.c.
 #pragma once
 
 #include <stddef.h>

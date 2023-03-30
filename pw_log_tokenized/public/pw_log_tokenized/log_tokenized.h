@@ -24,12 +24,6 @@
 #include "pw_log_tokenized/metadata.h"
 #endif  // __cplusplus
 
-#ifdef _PW_LOG_TOKENIZED_GLOBAL_HANDLER_BACKWARDS_COMPAT
-#include "pw_tokenizer/tokenize_to_global_handler_with_payload.h"
-#endif  // _PW_LOG_TOKENIZED_GLOBAL_HANDLER_BACKWARDS_COMPAT
-
-#undef _PW_LOG_TOKENIZED_GLOBAL_HANDLER_BACKWARDS_COMPAT
-
 // This macro implements PW_LOG using pw_tokenizer. Users must implement
 // pw_log_tokenized_HandleLog(uint32_t metadata, uint8_t* buffer, size_t size).
 // The log level, module token, and flags are packed into the metadata argument.

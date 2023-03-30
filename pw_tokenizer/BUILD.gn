@@ -22,7 +22,6 @@ import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_fuzzer/fuzzer.gni")
 import("$dir_pw_protobuf_compiler/proto.gni")
 import("$dir_pw_unit_test/test.gni")
-import("backend.gni")
 
 declare_args() {
   # The build target that overrides the default configuration options for this
@@ -114,14 +113,6 @@ pw_source_set("base64") {
     dir_pw_base64,
     dir_pw_preprocessor,
   ]
-}
-
-# TODO(hepler): Remove this backwards compatibility header after projects have
-#     migrated.
-pw_source_set("global_handler_with_payload") {
-  public_configs = [ ":public_include_path" ]
-  public = [ "public/pw_tokenizer/tokenize_to_global_handler_with_payload.h" ]
-  public_deps = [ dir_pw_preprocessor ]
 }
 
 pw_source_set("decoder") {

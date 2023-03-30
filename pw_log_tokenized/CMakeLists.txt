@@ -29,18 +29,26 @@ pw_add_library(pw_log_tokenized.config INTERFACE
 
 pw_add_library(pw_log_tokenized STATIC
   HEADERS
-    public/pw_log_tokenized/log_tokenized.h
     public_overrides/pw_log_backend/log_backend.h
   PUBLIC_INCLUDES
-    public
     public_overrides
   PUBLIC_DEPS
-    pw_log_tokenized.config
     pw_log_tokenized.handler
-    pw_log_tokenized.metadata
-    pw_tokenizer
+    pw_log_tokenized._headers
   SOURCES
     log_tokenized.cc
+)
+
+pw_add_library(pw_log_tokenized._headers INTERFACE
+  HEADERS
+    public/pw_log_tokenized/log_tokenized.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_log_tokenized.config
+    pw_log_tokenized.metadata
+    pw_preprocessor
+    pw_tokenizer
 )
 
 pw_add_library(pw_log_tokenized.metadata INTERFACE
@@ -80,20 +88,18 @@ pw_add_library(pw_log_tokenized.base64_over_hdlc STATIC
     pw_tokenizer.base64
 )
 
-if(NOT "${pw_tokenizer.global_handler_with_payload_BACKEND}" STREQUAL "")
-  pw_add_test(pw_log_tokenized.log_tokenized_test
-    SOURCES
-      log_tokenized_test.cc
-      log_tokenized_test_c.c
-      pw_log_tokenized_private/test_utils.h
-    PRIVATE_DEPS
-      pw_log_tokenized
-      pw_preprocessor
-    GROUPS
-      modules
-      pw_log_tokenized
-  )
-endif()
+pw_add_test(pw_log_tokenized.log_tokenized_test
+  SOURCES
+    log_tokenized_test.cc
+    log_tokenized_test_c.c
+    pw_log_tokenized_private/test_utils.h
+  PRIVATE_DEPS
+    pw_log_tokenized._headers
+    pw_preprocessor
+  GROUPS
+    modules
+    pw_log_tokenized
+)
 
 pw_add_test(pw_log_tokenized.metadata_test
   SOURCES
