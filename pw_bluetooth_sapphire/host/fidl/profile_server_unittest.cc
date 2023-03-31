@@ -432,7 +432,7 @@ class ProfileServerTestConnectedPeer : public ProfileServerTest {
     auto fake_peer = std::make_unique<bt::testing::FakePeer>(kTestDevAddr);
     test_device()->AddPeer(std::move(fake_peer));
 
-    bt::hci::Result<> status = ToResult(bt::HostError::kFailed);
+    std::optional<bt::hci::Result<>> status;
     auto connect_cb = [this, &status](auto cb_status, auto cb_conn_ref) {
       ASSERT_TRUE(cb_conn_ref);
       status = cb_status;
@@ -443,7 +443,8 @@ class ProfileServerTestConnectedPeer : public ProfileServerTest {
     EXPECT_EQ(bt::gap::Peer::ConnectionState::kInitializing, peer_->bredr()->connection_state());
 
     RunLoopUntilIdle();
-    EXPECT_EQ(fit::ok(), status);
+    ASSERT_TRUE(status.has_value());
+    EXPECT_EQ(fit::ok(), status.value());
     ASSERT_TRUE(connection_);
     EXPECT_EQ(peer_->identifier(), connection_->peer_id());
     EXPECT_NE(bt::gap::Peer::ConnectionState::kNotConnected, peer_->bredr()->connection_state());

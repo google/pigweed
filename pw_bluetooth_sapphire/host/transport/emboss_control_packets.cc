@@ -45,10 +45,17 @@ std::optional<pw::bluetooth::emboss::StatusCode> EmbossEventPacket::StatusCode()
   switch (event_code()) {
     case hci_spec::kCommandCompleteEventCode: {
       pw::bluetooth::emboss::SimpleCommandCompleteEventView event(data().data(), size());
-      if (!event.IsComplete()) {
+      if (!event.status().IsComplete()) {
         return std::nullopt;
       }
-      return event.status().Read();
+      return event.status().UncheckedRead();
+    }
+    case hci_spec::kConnectionCompleteEventCode: {
+      auto event = view<pw::bluetooth::emboss::ConnectionCompleteEventView>();
+      if (!event.status().IsComplete()) {
+        return std::nullopt;
+      }
+      return event.status().UncheckedRead();
     }
     case hci_spec::kVendorDebugEventCode: {
       hci_spec::EventCode subevent_code =

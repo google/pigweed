@@ -740,25 +740,6 @@ struct InquiryResultEventParams {
 // Connection Complete Event (v1.1) (BR/EDR)
 constexpr EventCode kConnectionCompleteEventCode = 0x03;
 
-struct ConnectionCompleteEventParams {
-  // See enum StatusCode in hci_constants.h
-  StatusCode status;
-
-  // Connection_handle (12 bits meaningful)
-  // Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-
-  // The address of the connected device
-  DeviceAddressBytes bd_addr;
-
-  // See enum LinkType in hci_constants.h.
-  LinkType link_type;
-
-  // Whether Link level encryption is enabled
-  // Valid values are 0x00 (not enabled) and 0x01 (enabled)
-  uint8_t encryption_enabled;
-} __attribute__((packed));
-
 // ========================================
 // Connection Request Event (v1.1) (BR/EDR)
 constexpr EventCode kConnectionRequestEventCode = 0x04;

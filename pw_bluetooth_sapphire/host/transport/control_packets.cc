@@ -143,7 +143,7 @@ bool EventPacket::ToStatusCode(pw::bluetooth::emboss::StatusCode* out_code) cons
     CASE_EVENT_STATUS(ChangeConnectionLinkKeyComplete);
     CASE_EVENT_STATUS(CommandComplete);
     CASE_EVENT_STATUS(CommandStatus);
-    CASE_EVENT_STATUS(ConnectionComplete);
+    CASE_EMBOSS_EVENT_STATUS(ConnectionComplete);
     CASE_EVENT_STATUS(DisconnectionComplete);
     CASE_EVENT_STATUS(EncryptionChange);
     CASE_EVENT_STATUS(EncryptionKeyRefreshComplete);

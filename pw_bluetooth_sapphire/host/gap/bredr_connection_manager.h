@@ -159,12 +159,12 @@ class BrEdrConnectionManager final {
     DeviceAddress addr;
     hci_spec::ConnectionHandle handle;
     pw::bluetooth::emboss::StatusCode status_code;
-    hci_spec::LinkType link_type;
+    pw::bluetooth::emboss::LinkType link_type;
 
     // Create from an hci ConnectionComplete event
     // It is the duty of the caller to ensure it is called with a packet that contains a
     // ConnectionComplete event; otherwise it will assert
-    explicit ConnectionComplete(const hci::EventPacket& event);
+    explicit ConnectionComplete(const hci::EmbossEventPacket& event);
 
     hci::Result<> ToResult() { return bt::ToResult(status_code); }
   };
@@ -211,7 +211,7 @@ class BrEdrConnectionManager final {
 
   // Helper to register an event handler to run.
   hci::CommandChannel::EventHandlerId AddEventHandler(const hci_spec::EventCode& code,
-                                                      hci::CommandChannel::EventCallback cb);
+                                                      hci::CommandChannel::EventCallbackVariant cb);
 
   // Find the handle for a connection to |peer_id|. Returns nullopt if no BR/EDR
   // |peer_id| is connected.

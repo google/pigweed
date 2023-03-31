@@ -377,7 +377,7 @@ class StaticByteBuffer : public MutableByteBuffer {
   void Fill(uint8_t value) override { buffer_.fill(value); }
 
  private:
-  std::array<uint8_t, BufferSize> buffer_;
+  std::array<uint8_t, BufferSize> buffer_{};
 };
 
 // Template deduction guide for the |BufferSize| class template parameter using the number of

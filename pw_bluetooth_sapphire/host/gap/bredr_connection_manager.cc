@@ -106,13 +106,14 @@ void SetPageScanEnabled(bool enabled, hci::Transport::WeakPtr hci, async_dispatc
 }  // namespace
 
 // An event signifying that a connection was completed by the controller
-BrEdrConnectionManager::ConnectionComplete::ConnectionComplete(const hci::EventPacket& event) {
+BrEdrConnectionManager::ConnectionComplete::ConnectionComplete(
+    const hci::EmbossEventPacket& event) {
   BT_ASSERT(event.event_code() == hci_spec::kConnectionCompleteEventCode);
-  const auto& params = event.params<hci_spec::ConnectionCompleteEventParams>();
-  handle = letoh16(params.connection_handle);
-  addr = DeviceAddress(DeviceAddress::Type::kBREDR, params.bd_addr);
-  status_code = params.status;
-  link_type = params.link_type;
+  auto params = event.view<pw::bluetooth::emboss::ConnectionCompleteEventView>();
+  handle = params.connection_handle().Read();
+  addr = DeviceAddress(DeviceAddress::Type::kBREDR, DeviceAddressBytes(params.bd_addr()));
+  status_code = params.status().Read();
+  link_type = params.link_type().Read();
 }
 
 // An event signifying that an incoming connection is being requested by a peer
@@ -126,15 +127,31 @@ BrEdrConnectionManager::ConnectionRequestEvent::ConnectionRequestEvent(
 }
 
 hci::CommandChannel::EventHandlerId BrEdrConnectionManager::AddEventHandler(
-    const hci_spec::EventCode& code, hci::CommandChannel::EventCallback cb) {
+    const hci_spec::EventCode& code, hci::CommandChannel::EventCallbackVariant cb) {
   auto self = weak_self_.GetWeakPtr();
-  auto event_id = hci_->command_channel()->AddEventHandler(
-      code, [self, callback = std::move(cb)](const hci::EventPacket& event) {
-        if (self.is_alive()) {
-          return callback(event);
+  hci::CommandChannel::EventHandlerId event_id = 0;
+  event_id = std::visit(
+      [hci = hci_, &self, code](auto&& cb) -> hci::CommandChannel::EventHandlerId {
+        using T = std::decay_t<decltype(cb)>;
+        if constexpr (std::is_same_v<T, hci::CommandChannel::EventCallback>) {
+          return hci->command_channel()->AddEventHandler(
+              code, [self, cb = std::move(cb)](const hci::EventPacket& event) {
+                if (!self.is_alive()) {
+                  return hci::CommandChannel::EventCallbackResult::kRemove;
+                }
+                return cb(event);
+              });
+        } else if constexpr (std::is_same_v<T, hci::CommandChannel::EmbossEventCallback>) {
+          return hci->command_channel()->AddEventHandler(
+              code, [self, cb = std::move(cb)](const hci::EmbossEventPacket& event) {
+                if (!self.is_alive()) {
+                  return hci::CommandChannel::EventCallbackResult::kRemove;
+                }
+                return cb(event);
+              });
         }
-        return hci::CommandChannel::EventCallbackResult::kRemove;
-      });
+      },
+      std::move(cb));
   BT_DEBUG_ASSERT(event_id);
   event_handler_ids_.push_back(event_id);
   return event_id;
@@ -165,10 +182,11 @@ BrEdrConnectionManager::BrEdrConnectionManager(hci::Transport::WeakPtr hci, Peer
   // Register event handlers
   AddEventHandler(hci_spec::kAuthenticationCompleteEventCode,
                   fit::bind_member<&BrEdrConnectionManager::OnAuthenticationComplete>(this));
-  AddEventHandler(hci_spec::kConnectionCompleteEventCode, [this](const hci::EventPacket& event) {
-    OnConnectionComplete(ConnectionComplete(event));
-    return hci::CommandChannel::EventCallbackResult::kContinue;
-  });
+  AddEventHandler(hci_spec::kConnectionCompleteEventCode,
+                  [this](const hci::EmbossEventPacket& event) {
+                    OnConnectionComplete(ConnectionComplete(event));
+                    return hci::CommandChannel::EventCallbackResult::kContinue;
+                  });
   AddEventHandler(hci_spec::kConnectionRequestEventCode, [this](const hci::EventPacket& event) {
     OnConnectionRequest(ConnectionRequestEvent(event));
     return hci::CommandChannel::EventCallbackResult::kContinue;
@@ -809,7 +827,7 @@ void BrEdrConnectionManager::OnConnectionRequest(ConnectionRequestEvent event) {
 }
 
 void BrEdrConnectionManager::OnConnectionComplete(ConnectionComplete event) {
-  if (event.link_type != hci_spec::LinkType::kACL) {
+  if (event.link_type != pw::bluetooth::emboss::LinkType::ACL) {
     // Only ACL links are processed
     return;
   }

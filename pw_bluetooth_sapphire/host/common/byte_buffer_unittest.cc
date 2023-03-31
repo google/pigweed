@@ -19,6 +19,9 @@ TEST(ByteBufferTest, StaticByteBuffer) {
   constexpr size_t kBufferSize = 5;
   StaticByteBuffer<kBufferSize> buffer;
 
+  constexpr std::array<uint8_t, kBufferSize> kExpectedDefault{{0x00, 0x00, 0x00, 0x00, 0x00}};
+  EXPECT_TRUE(ContainersEqual(kExpectedDefault, buffer));
+
   EXPECT_EQ(kBufferSize, buffer.size());
   buffer.SetToZeros();
   buffer[3] = 3;

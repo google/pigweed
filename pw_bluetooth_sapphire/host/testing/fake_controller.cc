@@ -620,13 +620,14 @@ void FakeController::OnCreateConnectionCommandReceived(
 
     bredr_connect_rsp_task_.Cancel();
     bredr_connect_rsp_task_.set_handler([this, peer_address] {
-      hci_spec::ConnectionCompleteEventParams response = {};
-
-      response.status = pw::bluetooth::emboss::StatusCode::PAGE_TIMEOUT;
-      response.bd_addr = peer_address.value();
-
       bredr_connect_pending_ = false;
-      SendEvent(hci_spec::kConnectionCompleteEventCode, BufferView(&response, sizeof(response)));
+
+      auto response =
+          hci::EmbossEventPacket::New<pw::bluetooth::emboss::ConnectionCompleteEventWriter>(
+              hci_spec::kConnectionCompleteEventCode);
+      response.view_t().status().Write(pw::bluetooth::emboss::StatusCode::PAGE_TIMEOUT);
+      response.view_t().bd_addr().CopyFrom(peer_address.value().view());
+      SendCommandChannelPacket(response.data());
     });
 
     // Default page timeout of 5.12s
@@ -643,16 +644,16 @@ void FakeController::OnCreateConnectionCommandReceived(
     status = peer->connect_response();
   }
 
-  hci_spec::ConnectionCompleteEventParams response = {};
-
-  response.status = status;
-  response.bd_addr = DeviceAddressBytes(params.bd_addr());
-  response.link_type = hci_spec::LinkType::kACL;
-  response.encryption_enabled = 0x0;
+  auto response = hci::EmbossEventPacket::New<pw::bluetooth::emboss::ConnectionCompleteEventWriter>(
+      hci_spec::kConnectionCompleteEventCode);
+  response.view_t().status().Write(status);
+  response.view_t().bd_addr().CopyFrom(params.bd_addr());
+  response.view_t().link_type().Write(pw::bluetooth::emboss::LinkType::ACL);
+  response.view_t().encryption_enabled().Write(pw::bluetooth::emboss::GenericEnableParam::DISABLE);
 
   if (status == pw::bluetooth::emboss::StatusCode::SUCCESS) {
     hci_spec::ConnectionHandle handle = ++next_conn_handle_;
-    response.connection_handle = htole16(handle);
+    response.view_t().connection_handle().Write(handle);
   }
 
   // Don't send a connection event if we were asked to force the request to
@@ -662,19 +663,19 @@ void FakeController::OnCreateConnectionCommandReceived(
     return;
 
   bredr_connect_rsp_task_.Cancel();
-  bredr_connect_rsp_task_.set_handler([response, peer, this] {
+  bredr_connect_rsp_task_.set_handler([response, peer, this]() mutable {
     bredr_connect_pending_ = false;
 
-    if (response.status == pw::bluetooth::emboss::StatusCode::SUCCESS) {
+    if (response.view_t().status().Read() == pw::bluetooth::emboss::StatusCode::SUCCESS) {
       bool notify = !peer->connected();
-      hci_spec::ConnectionHandle handle = le16toh(response.connection_handle);
+      hci_spec::ConnectionHandle handle = response.view_t().connection_handle().Read();
       peer->AddLink(handle);
       if (notify && peer->connected()) {
         NotifyConnectionState(peer->address(), handle, /*connected=*/true);
       }
     }
 
-    SendEvent(hci_spec::kConnectionCompleteEventCode, BufferView(&response, sizeof(response)));
+    SendCommandChannelPacket(response.data());
   });
   bredr_connect_rsp_task_.Post(dispatcher());
 }
@@ -1203,14 +1204,15 @@ void FakeController::OnCreateConnectionCancel() {
 
   NotifyConnectionState(pending_bredr_connect_addr_, 0, /*connected=*/false, /*canceled=*/true);
 
-  hci_spec::ConnectionCompleteEventParams response = {};
-
-  response.status = pw::bluetooth::emboss::StatusCode::UNKNOWN_CONNECTION_ID;
-  response.bd_addr = pending_bredr_connect_addr_.value();
 
   RespondWithCommandComplete(hci_spec::kCreateConnectionCancel,
                              BufferView(&params, sizeof(params)));
-  SendEvent(hci_spec::kConnectionCompleteEventCode, BufferView(&response, sizeof(response)));
+
+  auto response = hci::EmbossEventPacket::New<pw::bluetooth::emboss::ConnectionCompleteEventWriter>(
+      hci_spec::kConnectionCompleteEventCode);
+  response.view_t().status().Write(pw::bluetooth::emboss::StatusCode::UNKNOWN_CONNECTION_ID);
+  response.view_t().bd_addr().CopyFrom(pending_bredr_connect_addr_.value().view());
+  SendCommandChannelPacket(response.data());
 }
 
 void FakeController::OnReadBufferSize() {
