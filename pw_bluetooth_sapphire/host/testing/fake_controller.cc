@@ -383,18 +383,18 @@ void FakeController::ConnectLowEnergy(const DeviceAddress& addr,
 }
 
 void FakeController::SendConnectionRequest(const DeviceAddress& addr,
-                                           hci_spec::LinkType link_type) {
+                                           pw::bluetooth::emboss::LinkType link_type) {
   FakePeer* peer = FindPeer(addr);
   BT_ASSERT(peer);
-  peer->set_last_connection_request_link_type(link_type);
+  peer->set_last_connection_request_link_type(static_cast<hci_spec::LinkType>(link_type));
 
   bt_log(DEBUG, "fake-hci", "sending connection request (addr: %s, link: %s)", bt_str(addr),
-         hci_spec::LinkTypeToString(link_type).c_str());
-  hci_spec::ConnectionRequestEventParams params;
-  std::memset(&params, 0, sizeof(params));
-  params.bd_addr = addr.value();
-  params.link_type = link_type;
-  SendEvent(hci_spec::kConnectionRequestEventCode, BufferView(&params, sizeof(params)));
+         hci_spec::LinkTypeToString(link_type));
+  auto packet = hci::EmbossEventPacket::New<pw::bluetooth::emboss::ConnectionRequestEventWriter>(
+      hci_spec::kConnectionRequestEventCode);
+  packet.view_t().bd_addr().CopyFrom(addr.value().view());
+  packet.view_t().link_type().Write(link_type);
+  SendCommandChannelPacket(packet.data());
 }
 
 void FakeController::L2CAPConnectionParameterUpdate(
@@ -1203,7 +1203,6 @@ void FakeController::OnCreateConnectionCancel() {
   bredr_connect_rsp_task_.Cancel();
 
   NotifyConnectionState(pending_bredr_connect_addr_, 0, /*connected=*/false, /*canceled=*/true);
-
 
   RespondWithCommandComplete(hci_spec::kCreateConnectionCancel,
                              BufferView(&params, sizeof(params)));

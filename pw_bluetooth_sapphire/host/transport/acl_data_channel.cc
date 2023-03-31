@@ -511,10 +511,10 @@ CommandChannel::EventCallbackResult AclDataChannelImpl::DataBufferOverflowCallba
     const EventPacket& event) {
   BT_DEBUG_ASSERT(event.event_code() == hci_spec::kDataBufferOverflowEventCode);
 
-  const auto& params = event.params<hci_spec::ConnectionRequestEventParams>();
+  const auto& params = event.params<hci_spec::DataBufferOverflowEventParams>();
 
   // Internal buffer state must be invalid and no further transmissions are possible.
-  BT_PANIC("controller data buffer overflow event received (link type: %hhu)", params.link_type);
+  BT_PANIC("controller data buffer overflow event received (link type: %hhu)", params.ll_type);
 
   return CommandChannel::EventCallbackResult::kContinue;
 }

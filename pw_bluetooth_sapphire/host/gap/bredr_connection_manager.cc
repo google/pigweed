@@ -118,12 +118,12 @@ BrEdrConnectionManager::ConnectionComplete::ConnectionComplete(
 
 // An event signifying that an incoming connection is being requested by a peer
 BrEdrConnectionManager::ConnectionRequestEvent::ConnectionRequestEvent(
-    const hci::EventPacket& event) {
+    const hci::EmbossEventPacket& event) {
   BT_ASSERT(event.event_code() == hci_spec::kConnectionRequestEventCode);
-  const auto& params = event.params<hci_spec::ConnectionRequestEventParams>();
-  addr = DeviceAddress(DeviceAddress::Type::kBREDR, params.bd_addr);
-  link_type = params.link_type;
-  class_of_device = params.class_of_device;
+  auto params = event.view<pw::bluetooth::emboss::ConnectionRequestEventView>();
+  addr = DeviceAddress(DeviceAddress::Type::kBREDR, DeviceAddressBytes(params.bd_addr()));
+  link_type = params.link_type().Read();
+  class_of_device = DeviceClass(params.class_of_device().BackingStorage().ReadUInt());
 }
 
 hci::CommandChannel::EventHandlerId BrEdrConnectionManager::AddEventHandler(
@@ -187,10 +187,11 @@ BrEdrConnectionManager::BrEdrConnectionManager(hci::Transport::WeakPtr hci, Peer
                     OnConnectionComplete(ConnectionComplete(event));
                     return hci::CommandChannel::EventCallbackResult::kContinue;
                   });
-  AddEventHandler(hci_spec::kConnectionRequestEventCode, [this](const hci::EventPacket& event) {
-    OnConnectionRequest(ConnectionRequestEvent(event));
-    return hci::CommandChannel::EventCallbackResult::kContinue;
-  });
+  AddEventHandler(hci_spec::kConnectionRequestEventCode,
+                  [this](const hci::EmbossEventPacket& event) {
+                    OnConnectionRequest(ConnectionRequestEvent(event));
+                    return hci::CommandChannel::EventCallbackResult::kContinue;
+                  });
   AddEventHandler(hci_spec::kIOCapabilityRequestEventCode,
                   fit::bind_member<&BrEdrConnectionManager::OnIoCapabilityRequest>(this));
   AddEventHandler(hci_spec::kIOCapabilityResponseEventCode,
@@ -753,14 +754,14 @@ void BrEdrConnectionManager::OnConnectionRequest(ConnectionRequestEvent event) {
     bt_log(WARN, "gap-bredr",
            "rejecting duplicate incoming connection request (peer: %s, addr: %s, link_type: %s, "
            "class: %s)",
-           bt_str(peer_id), bt_str(event.addr), hci_spec::LinkTypeToString(event.link_type).c_str(),
+           bt_str(peer_id), bt_str(event.addr), hci_spec::LinkTypeToString(event.link_type),
            bt_str(event.class_of_device));
     SendRejectConnectionRequest(event.addr,
                                 pw::bluetooth::emboss::StatusCode::CONNECTION_REJECTED_BAD_BD_ADDR);
     return;
   }
 
-  if (event.link_type == hci_spec::LinkType::kACL) {
+  if (event.link_type == pw::bluetooth::emboss::LinkType::ACL) {
     // If we happen to be already connected (for example, if our outgoing raced, or we received
     // duplicate requests), we reject the request with 'ConnectionAlreadyExists'
     if (FindConnectionById(peer_id)) {
@@ -776,7 +777,7 @@ void BrEdrConnectionManager::OnConnectionRequest(ConnectionRequestEvent event) {
     // when the connection is complete, and finish the link then.
     bt_log(INFO, "gap-bredr",
            "accepting incoming connection (peer: %s, addr: %s, link_type: %s, class: %s)",
-           bt_str(peer_id), bt_str(event.addr), hci_spec::LinkTypeToString(event.link_type).c_str(),
+           bt_str(peer_id), bt_str(event.addr), hci_spec::LinkTypeToString(event.link_type),
            bt_str(event.class_of_device));
 
     // Register that we're in the middle of an incoming request for this peer - create a new
@@ -801,8 +802,8 @@ void BrEdrConnectionManager::OnConnectionRequest(ConnectionRequestEvent event) {
     return;
   }
 
-  if (event.link_type == hci_spec::LinkType::kSCO ||
-      event.link_type == hci_spec::LinkType::kExtendedSCO) {
+  if (event.link_type == pw::bluetooth::emboss::LinkType::SCO ||
+      event.link_type == pw::bluetooth::emboss::LinkType::ESCO) {
     auto conn_pair = FindConnectionByAddress(event.addr.value());
     if (conn_pair) {
       // The ScoConnectionManager owned by the BrEdrConnection will respond.

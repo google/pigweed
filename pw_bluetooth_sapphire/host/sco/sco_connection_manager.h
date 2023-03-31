@@ -110,12 +110,12 @@ class ScoConnectionManager final {
   };
 
   hci::CommandChannel::EventHandlerId AddEventHandler(const hci_spec::EventCode& code,
-                                                      hci::CommandChannel::EventCallback cb);
+                                                      hci::CommandChannel::EventCallbackVariant cb);
 
   // Event handlers:
   hci::CommandChannel::EventCallbackResult OnSynchronousConnectionComplete(
       const hci::EventPacket& event);
-  hci::CommandChannel::EventCallbackResult OnConnectionRequest(const hci::EventPacket& event);
+  hci::CommandChannel::EventCallbackResult OnConnectionRequest(const hci::EmbossEventPacket& event);
 
   // Returns true if parameters matching the corresponding transport were found in the current
   // request, or false otherwise. Mutates the current request's parameter index to that of the

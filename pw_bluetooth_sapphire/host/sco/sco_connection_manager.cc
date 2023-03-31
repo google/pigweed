@@ -99,15 +99,31 @@ ScoConnectionManager::RequestHandle ScoConnectionManager::AcceptConnection(
 }
 
 hci::CommandChannel::EventHandlerId ScoConnectionManager::AddEventHandler(
-    const hci_spec::EventCode& code, hci::CommandChannel::EventCallback cb) {
-  auto event_id = transport_->command_channel()->AddEventHandler(
-      code, [self = weak_ptr_factory_.GetWeakPtr(),
-             callback = std::move(cb)](const hci::EventPacket& event) {
-        if (self.is_alive()) {
-          return callback(event);
+    const hci_spec::EventCode& code, hci::CommandChannel::EventCallbackVariant cb) {
+  auto self = weak_ptr_factory_.GetWeakPtr();
+  hci::CommandChannel::EventHandlerId event_id = 0;
+  event_id = std::visit(
+      [this, &self, code](auto&& cb) -> hci::CommandChannel::EventHandlerId {
+        using T = std::decay_t<decltype(cb)>;
+        if constexpr (std::is_same_v<T, hci::CommandChannel::EventCallback>) {
+          return transport_->command_channel()->AddEventHandler(
+              code, [self, cb = std::move(cb)](const hci::EventPacket& event) {
+                if (!self.is_alive()) {
+                  return hci::CommandChannel::EventCallbackResult::kRemove;
+                }
+                return cb(event);
+              });
+        } else if constexpr (std::is_same_v<T, hci::CommandChannel::EmbossEventCallback>) {
+          return transport_->command_channel()->AddEventHandler(
+              code, [self, cb = std::move(cb)](const hci::EmbossEventPacket& event) {
+                if (!self.is_alive()) {
+                  return hci::CommandChannel::EventCallbackResult::kRemove;
+                }
+                return cb(event);
+              });
         }
-        return hci::CommandChannel::EventCallbackResult::kRemove;
-      });
+      },
+      std::move(cb));
   BT_ASSERT(event_id);
   event_handler_ids_.push_back(event_id);
   return event_id;
@@ -172,54 +188,56 @@ hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnSynchronousConn
 }
 
 hci::CommandChannel::EventCallbackResult ScoConnectionManager::OnConnectionRequest(
-    const hci::EventPacket& event) {
+    const hci::EmbossEventPacket& event) {
   BT_ASSERT(event.event_code() == hci_spec::kConnectionRequestEventCode);
-  const auto& params = event.params<hci_spec::ConnectionRequestEventParams>();
+  auto params = event.view<pw::bluetooth::emboss::ConnectionRequestEventView>();
 
   // Ignore requests for other link types.
-  if (params.link_type != hci_spec::LinkType::kSCO &&
-      params.link_type != hci_spec::LinkType::kExtendedSCO) {
+  if (params.link_type().Read() != pw::bluetooth::emboss::LinkType::SCO &&
+      params.link_type().Read() != pw::bluetooth::emboss::LinkType::ESCO) {
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
   // Ignore requests from other peers.
-  DeviceAddress addr(DeviceAddress::Type::kBREDR, params.bd_addr);
+  DeviceAddress addr(DeviceAddress::Type::kBREDR, DeviceAddressBytes(params.bd_addr()));
   if (addr != peer_address_) {
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
   if (!in_progress_request_ || in_progress_request_->initiator) {
     bt_log(INFO, "sco", "reject unexpected %s connection request (peer: %s)",
-           hci_spec::LinkTypeToString(params.link_type).c_str(), bt_str(peer_id_));
-    SendRejectConnectionCommand(params.bd_addr,
+           hci_spec::LinkTypeToString(params.link_type().Read()), bt_str(peer_id_));
+    SendRejectConnectionCommand(DeviceAddressBytes(params.bd_addr()),
                                 pw::bluetooth::emboss::StatusCode::CONNECTION_REJECTED_BAD_BD_ADDR);
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
   // Skip to the next parameters that support the requested link type. The controller rejects
   // parameters that don't include packet types for the requested link type.
-  if ((params.link_type == hci_spec::LinkType::kSCO && !FindNextParametersThatSupportSco()) ||
-      (params.link_type == hci_spec::LinkType::kExtendedSCO &&
+  if ((params.link_type().Read() == pw::bluetooth::emboss::LinkType::SCO &&
+       !FindNextParametersThatSupportSco()) ||
+      (params.link_type().Read() == pw::bluetooth::emboss::LinkType::ESCO &&
        !FindNextParametersThatSupportEsco())) {
     bt_log(DEBUG, "sco",
            "in progress request parameters don't support the requested transport (%s); rejecting",
-           hci_spec::LinkTypeToString(params.link_type).c_str());
+           hci_spec::LinkTypeToString(params.link_type().Read()));
     // The controller will send an HCI Synchronous Connection Complete event, so the request will be
     // completed then.
     SendRejectConnectionCommand(
-        params.bd_addr, pw::bluetooth::emboss::StatusCode::CONNECTION_REJECTED_LIMITED_RESOURCES);
+        DeviceAddressBytes(params.bd_addr()),
+        pw::bluetooth::emboss::StatusCode::CONNECTION_REJECTED_LIMITED_RESOURCES);
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
   bt_log(INFO, "sco", "accepting incoming %s connection from %s (peer: %s)",
-         hci_spec::LinkTypeToString(params.link_type).c_str(), bt_str(params.bd_addr),
-         bt_str(peer_id_));
+         hci_spec::LinkTypeToString(params.link_type().Read()),
+         bt_str(DeviceAddressBytes(params.bd_addr())), bt_str(peer_id_));
 
   auto accept = hci::EmbossCommandPacket::New<
       pw::bluetooth::emboss::EnhancedAcceptSynchronousConnectionRequestCommandWriter>(
       hci_spec::kEnhancedAcceptSynchronousConnectionRequest);
   auto view = accept.view_t();
-  view.bd_addr().CopyFrom(params.bd_addr.view());
+  view.bd_addr().CopyFrom(params.bd_addr());
   view.connection_parameters().CopyFrom(
       in_progress_request_->parameters[in_progress_request_->current_param_index].view());
 

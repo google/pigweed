@@ -279,7 +279,7 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
                             pw::bluetooth::emboss::ConnectionRole::PERIPHERAL);
 
   // Sends an HCI Connection Request event.
-  void SendConnectionRequest(const DeviceAddress& addr, hci_spec::LinkType link_type);
+  void SendConnectionRequest(const DeviceAddress& addr, pw::bluetooth::emboss::LinkType link_type);
 
   // Tells a fake device to initiate the L2CAP Connection Parameter Update
   // procedure using the given |params|. Has no effect if a connected fake

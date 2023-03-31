@@ -173,13 +173,13 @@ class BrEdrConnectionManager final {
   // An event signifying that an incoming connection is being requested by a peer
   struct ConnectionRequestEvent {
     DeviceAddress addr;
-    hci_spec::LinkType link_type;
+    pw::bluetooth::emboss::LinkType link_type;
     DeviceClass class_of_device;
 
     // Create from an hci ConnectionRequest event
     // It is the duty of the caller to ensure it is called with a packet that contains a
     // ConnectionRequest event; otherwise it will assert
-    explicit ConnectionRequestEvent(const hci::EventPacket& event);
+    explicit ConnectionRequestEvent(const hci::EmbossEventPacket& event);
   };
 
   // Callback for hci::Connection. Called when the peer disconnects.

@@ -492,7 +492,7 @@ class ProfileServerTestScoConnected : public ProfileServerTestConnectedPeer {
                          /*initiator=*/false, std::move(sco_params_list),
                          std::move(receiver_handle));
     RunLoopUntilIdle();
-    test_device()->SendConnectionRequest(peer()->address(), bt::hci_spec::LinkType::kSCO);
+    test_device()->SendConnectionRequest(peer()->address(), pw::bluetooth::emboss::LinkType::SCO);
     RunLoopUntilIdle();
     ASSERT_TRUE(receiver.connection().is_bound());
     sco_connection_ = receiver.take_connection();
@@ -1029,7 +1029,7 @@ TEST_F(ProfileServerTestConnectedPeer, ConnectScoResponderSuccess) {
                        /*initiator=*/false, std::move(sco_params_list), std::move(receiver_handle));
   RunLoopUntilIdle();
   // Receive a SCO connection request. The CVSD_D0 parameters will be used to accept the request.
-  test_device()->SendConnectionRequest(peer()->address(), bt::hci_spec::LinkType::kSCO);
+  test_device()->SendConnectionRequest(peer()->address(), pw::bluetooth::emboss::LinkType::SCO);
   RunLoopUntilIdle();
   EXPECT_FALSE(receiver.error().has_value());
   ASSERT_TRUE(receiver.connection().is_bound());

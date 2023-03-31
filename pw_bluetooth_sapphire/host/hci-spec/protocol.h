@@ -744,17 +744,6 @@ constexpr EventCode kConnectionCompleteEventCode = 0x03;
 // Connection Request Event (v1.1) (BR/EDR)
 constexpr EventCode kConnectionRequestEventCode = 0x04;
 
-struct ConnectionRequestEventParams {
-  // The address of the device that's requesting the connection.
-  DeviceAddressBytes bd_addr;
-
-  // The Class of Device of the device which requests the connection.
-  DeviceClass class_of_device;
-
-  // See enum LinkType in hci_constants.h
-  LinkType link_type;
-} __attribute__((packed));
-
 // =================================================
 // Disconnection Complete Event (v1.1) (BR/EDR & LE)
 constexpr EventCode kDisconnectionCompleteEventCode = 0x05;

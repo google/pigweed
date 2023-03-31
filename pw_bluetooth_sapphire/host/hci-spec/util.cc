@@ -126,6 +126,19 @@ std::string LinkTypeToString(hci_spec::LinkType link_type) {
   };
 }
 
+const char* LinkTypeToString(pw::bluetooth::emboss::LinkType link_type) {
+  switch (link_type) {
+    case pw::bluetooth::emboss::LinkType::SCO:
+      return "SCO";
+    case pw::bluetooth::emboss::LinkType::ACL:
+      return "ACL";
+    case pw::bluetooth::emboss::LinkType::ESCO:
+      return "eSCO";
+    default:
+      return "<Unknown LinkType>";
+  };
+}
+
 std::string ConnectionRoleToString(pw::bluetooth::emboss::ConnectionRole role) {
   switch (role) {
     case pw::bluetooth::emboss::ConnectionRole::CENTRAL:
