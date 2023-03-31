@@ -13,8 +13,8 @@
 // the License.
 #pragma once
 
-#include <kernel.h>
-#include <sys/mutex.h>
+#include <zephyr/kernel.h>
+#include <zephyr/sys/mutex.h>
 
 #include "pw_chrono/system_clock.h"
 #include "pw_function/function.h"
