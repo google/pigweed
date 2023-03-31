@@ -7,23 +7,16 @@
 #include <endian.h>
 #include <lib/async/cpp/time.h>
 #include <lib/async/default.h>
-#include <lib/fit/defer.h>
 
 #include <iterator>
-#include <numeric>
 
 #include "lib/fit/function.h"
 #include "pw_bluetooth/vendor.h"
-#include "slab_allocators.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/pipeline_monitor.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/retire_log.h"
-#include "src/connectivity/bluetooth/core/bt-host/common/windowed_inspect_numeric_property.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/acl_data_packet.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/link_type.h"
-#include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 #include "transport.h"
 
 namespace bt::hci {
@@ -34,7 +27,7 @@ class AclDataChannelImpl final : public AclDataChannel {
                      const DataBufferInfo& bredr_buffer_info, const DataBufferInfo& le_buffer_info);
   ~AclDataChannelImpl() override;
 
-  // AclDataChannel overrides
+  // AclDataChannel overrides:
   void RegisterConnection(WeakPtr<ConnectionInterface> connection) override;
   void UnregisterConnection(hci_spec::ConnectionHandle handle) override;
   void OnOutboundPacketAvailable() override;
@@ -47,59 +40,61 @@ class AclDataChannelImpl final : public AclDataChannel {
                           fit::callback<void(fit::result<fit::failed>)> callback) override;
 
  private:
+  using ConnectionMap =
+      std::unordered_map<hci_spec::ConnectionHandle, WeakPtr<ConnectionInterface>>;
+
+  struct PendingPacketData {
+    bt::LinkType ll_type = bt::LinkType::kACL;
+    size_t count = 0;
+  };
+
   // Handler for the HCI Number of Completed Packets Event, used for packet-based data flow control.
   CommandChannel::EventCallbackResult NumberOfCompletedPacketsCallback(const EventPacket& event);
 
-  // Sends next queued packets over the ACL data channel while the controller has free buffer slots
+  // Sends next queued packets over the ACL data channel while the controller has free buffer slots.
   // If controller buffers are free and some links have queued packets, we round-robin iterate
   // through links, sending a packet from each link with queued packets until the controller is full
-  // or we run out of packets
+  // or we run out of packets.
   void TrySendNextPackets();
 
-  // Returns the number of BR/EDR packets for which the controller has available space to buffer.
-  size_t GetNumFreeBREDRPackets() const;
+  // Returns the number of free controller buffer slots for packets of type |link_type|, taking
+  // shared buffers into account.
+  size_t GetNumFreePacketsForLinkType(LinkType link_type) const;
 
-  // Returns the number of LE packets for which controller has available space to buffer.
-  // This will be 0 if the BR/EDR buffer is shared with LE.
-  size_t GetNumFreeLEPackets() const;
+  // Decreases the |link_type| pending packets count by |count|, taking shared buffers into account.
+  void DecrementPendingPacketsForLinkType(LinkType link_type, size_t count);
 
-  // Decreases the total number of sent packets count by the given amount.
-  void DecrementTotalNumPackets(size_t count);
-
-  // Decreases the total number of sent packets count for LE by the given amount.
-  void DecrementLETotalNumPackets(size_t count);
-
-  // Increments the total number of sent packets count by the given amount.
-  void IncrementTotalNumPackets(size_t count);
-
-  // Increments the total number of sent LE packets count by the given amount.
-  void IncrementLETotalNumPackets(size_t count);
+  // Increments the  pending packets count for links of type |link_type|, taking shared buffers into
+  // account.
+  void IncrementPendingPacketsForLinkType(LinkType link_type);
 
   // Returns true if the LE data buffer is not available
   bool IsBrEdrBufferShared() const;
 
+  // Called when a packet is received from the controller. Validates the packet and calls the
+  // client's RX callback.
   void OnRxPacket(pw::span<const std::byte> packet);
 
-  using ConnectionMap =
-      std::unordered_map<hci_spec::ConnectionHandle, WeakPtr<ConnectionInterface>>;
-
-  // Update logical link iterators using round robin scheduling.
-  // If the BR/EDR buffer is shared, we can scan through the map consecutively by simply
-  // incrementing the iterator to the next link in the map (either kACL or kLE type).
-  // If the BR/EDR buffer isn't shared, we need to do extra work to ensure
-  // |current_bredr_link_| is initialized to a link of BR/EDR type.
-  // The same applies for |current_le_link_|.
+  // Increment connection iterators using round robin scheduling.
+  // If the BR/EDR buffer is shared, simply increment the iterator to the next connection.
+  // If the BR/EDR buffer isn't shared, increment the iterator to the next connection of type
+  // |connection_type|.
+  // No-op if |conn_iter| is |registered_connections_.end()|.
   void IncrementRoundRobinIterator(ConnectionMap::iterator& conn_iter,
                                    bt::LinkType connection_type);
 
-  // Increments count of pending packets that have been sent to the controller on connection
+  // Increments count of pending packets that have been sent to the controller on |connection|.
   void IncrementPendingPacketsForLink(WeakPtr<ConnectionInterface>& connection);
 
-  // Returns number of packets sent
-  size_t SendPackets(size_t avail_packets, ConnectionMap::iterator& current_link);
+  // Sends queued packets from links in a round-robin fashion, starting with |current_link|.
+  // |current_link| will be incremented to the next link that should send packets (according to the
+  // round-robin policy).
+  void SendPackets(ConnectionMap::iterator& current_link);
 
   // Handler for HCI_Buffer_Overflow_event.
   CommandChannel::EventCallbackResult DataBufferOverflowCallback(const EventPacket& event);
+
+  void ResetRoundRobinIterators();
 
   // Links this node to the inspect tree. Initialized as needed by AttachInspect.
   inspect::Node node_;
@@ -110,10 +105,10 @@ class AclDataChannelImpl final : public AclDataChannel {
   inspect::Node bredr_subnode_;
 
   // The Transport object that owns this instance.
-  Transport* transport_;  // weak;
+  Transport* const transport_;  // weak;
 
   // Controller is owned by Transport and will outlive this object.
-  pw::bluetooth::Controller* hci_;
+  pw::bluetooth::Controller* const hci_;
 
   // The event handler ID for the Number Of Completed Packets event.
   CommandChannel::EventHandlerId num_completed_packets_event_handler_id_ = 0;
@@ -122,44 +117,35 @@ class AclDataChannelImpl final : public AclDataChannel {
   CommandChannel::EventHandlerId data_buffer_overflow_event_handler_id_ = 0;
 
   // The dispatcher used for posting tasks on the HCI transport I/O thread.
-  async_dispatcher_t* io_dispatcher_;
+  async_dispatcher_t* io_dispatcher_ = async_get_default_dispatcher();
 
   // The current handler for incoming data.
   ACLPacketHandler rx_callback_;
 
   // BR/EDR data buffer information. This buffer will not be available on LE-only controllers.
-  DataBufferInfo bredr_buffer_info_;
+  const DataBufferInfo bredr_buffer_info_;
 
   // LE data buffer information. This buffer will not be available on BR/EDR-only controllers (which
   // we do not support) and MAY be available on dual-mode controllers. We maintain that if this
   // buffer is not available, then the BR/EDR buffer MUST be available.
-  DataBufferInfo le_buffer_info_;
+  const DataBufferInfo le_buffer_info_;
 
   // The current count of the number of ACL data packets that have been sent to the controller.
-  // |le_num_sent_packets_| is ignored if the controller uses one buffer for LE and BR/EDR.
-  UintInspectable<size_t> num_sent_packets_;
-  UintInspectable<size_t> le_num_sent_packets_;
+  // |num_pending_le_packets_| is ignored if the controller uses one buffer for LE and BR/EDR.
+  UintInspectable<size_t> num_pending_bredr_packets_;
+  UintInspectable<size_t> num_pending_le_packets_;
 
   // Stores per-connection information of unacknowledged packets sent to the controller. Entries are
   // updated/removed on the HCI Number Of Completed Packets event and when a connection is
   // unregistered (the controller does not acknowledge packets of disconnected links).
-  struct PendingPacketData {
-    PendingPacketData() = default;
-
-    // We initialize the packet count at 1 since a new entry will only be created once.
-    explicit PendingPacketData(bt::LinkType ll_type) : ll_type(ll_type), count(0u) {}
-
-    bt::LinkType ll_type;
-    size_t count;
-  };
   std::unordered_map<hci_spec::ConnectionHandle, PendingPacketData> pending_links_;
 
-  // Stores connections registered by RegisterConnection.
+  // Stores connections registered by RegisterConnection().
   ConnectionMap registered_connections_;
 
-  // Iterators used to round robin through links for sending packets.
-  // When the BR/EDR buffer is shared, |current_le_link_| is ignored
-  ConnectionMap::iterator current_bredr_link_;
+  // Iterators used to round-robin through links for sending packets. When the BR/EDR buffer is
+  // shared with LE, |current_le_link_| is ignored
+  ConnectionMap::iterator current_bredr_link_ = registered_connections_.end();
   ConnectionMap::iterator current_le_link_ = registered_connections_.end();
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(AclDataChannelImpl);
@@ -177,7 +163,6 @@ AclDataChannelImpl::AclDataChannelImpl(Transport* transport, pw::bluetooth::Cont
                                        const DataBufferInfo& le_buffer_info)
     : transport_(transport),
       hci_(hci),
-      io_dispatcher_(async_get_default_dispatcher()),
       bredr_buffer_info_(bredr_buffer_info),
       le_buffer_info_(le_buffer_info) {
   BT_DEBUG_ASSERT(transport_);
@@ -195,7 +180,7 @@ AclDataChannelImpl::AclDataChannelImpl(Transport* transport, pw::bluetooth::Cont
       fit::bind_member<&AclDataChannelImpl::DataBufferOverflowCallback>(this));
   BT_DEBUG_ASSERT(data_buffer_overflow_event_handler_id_);
 
-  bt_log(DEBUG, "hci", "initialized");
+  bt_log(DEBUG, "hci", "AclDataChannel initialized");
 }
 
 AclDataChannelImpl::~AclDataChannelImpl() {
@@ -212,41 +197,22 @@ void AclDataChannelImpl::RegisterConnection(WeakPtr<ConnectionInterface> connect
   auto [_, inserted] = registered_connections_.emplace(connection->handle(), connection);
   BT_ASSERT_MSG(inserted, "connection with handle %#.4x already registered", connection->handle());
 
-  current_bredr_link_ = registered_connections_.begin();
-
-  // If the BR/EDR buffer isn't shared, we need to do extra work to ensure
-  // |current_bredr_link_| is initialized to a link of BR/EDR type.
-  // The same applies for |current_le_link_|.
-  if (!IsBrEdrBufferShared()) {
-    current_le_link_ = registered_connections_.begin();
-
-    IncrementRoundRobinIterator(current_bredr_link_, bt::LinkType::kACL);
-    IncrementRoundRobinIterator(current_le_link_, bt::LinkType::kLE);
-  }
+  // Reset the round-robin iterators because they have been invalidated.
+  ResetRoundRobinIterators();
 }
 
 void AclDataChannelImpl::UnregisterConnection(hci_spec::ConnectionHandle handle) {
   bt_log(DEBUG, "hci", "ACL unregister link (handle: %#.4x)", handle);
   auto iter = registered_connections_.find(handle);
   if (iter == registered_connections_.end()) {
-    // handle not registered
     bt_log(WARN, "hci", "attempt to unregister link that is not registered (handle: %#.4x)",
            handle);
     return;
   }
   registered_connections_.erase(iter);
 
-  current_bredr_link_ = registered_connections_.begin();
-
-  // If the BR/EDR buffer isn't shared, we need to do extra work to ensure
-  // |current_bredr_link_| is initialized to a link of BR/EDR type.
-  // The same applies for |current_le_link_|.
-  if (!IsBrEdrBufferShared()) {
-    current_le_link_ = registered_connections_.begin();
-
-    IncrementRoundRobinIterator(current_bredr_link_, bt::LinkType::kACL);
-    IncrementRoundRobinIterator(current_le_link_, bt::LinkType::kLE);
-  }
+  // Reset the round-robin iterators because they have been invalidated.
+  ResetRoundRobinIterators();
 }
 
 bool AclDataChannelImpl::IsBrEdrBufferShared() const { return !le_buffer_info_.IsAvailable(); }
@@ -260,46 +226,47 @@ void AclDataChannelImpl::IncrementRoundRobinIterator(ConnectionMap::iterator& co
   }
 
   // Prevent infinite looping by tracking |original_conn_iter|
-  ConnectionMap::iterator original_conn_iter = conn_iter;
+  const ConnectionMap::iterator original_conn_iter = conn_iter;
   do {
-    if (std::next(conn_iter) == registered_connections_.end()) {
+    conn_iter++;
+    if (conn_iter == registered_connections_.end()) {
       conn_iter = registered_connections_.begin();
-    } else {
-      conn_iter++;
     }
   } while (!IsBrEdrBufferShared() && conn_iter->second->type() != connection_type &&
            conn_iter != original_conn_iter);
 
-  // When buffer isn't shared, we must ensure |conn_iter| is assigned to a link of the same type
-  // There are no connections of |connection_type| in |registered_connections_|
+  // When buffer isn't shared, we must ensure |conn_iter| is assigned to a link of the same type.
   if (!IsBrEdrBufferShared() && conn_iter->second->type() != connection_type) {
+    // There are no connections of |connection_type| in |registered_connections_|.
     conn_iter = registered_connections_.end();
   }
 }
 
 void AclDataChannelImpl::IncrementPendingPacketsForLink(WeakPtr<ConnectionInterface>& connection) {
   auto [iter, _] =
-      pending_links_.try_emplace(connection->handle(), PendingPacketData(connection->type()));
+      pending_links_.try_emplace(connection->handle(), PendingPacketData{connection->type()});
   iter->second.count++;
+  IncrementPendingPacketsForLinkType(connection->type());
 }
 
-size_t AclDataChannelImpl::SendPackets(size_t avail_packets,
-                                       ConnectionMap::iterator& current_link) {
+void AclDataChannelImpl::SendPackets(ConnectionMap::iterator& current_link) {
+  BT_DEBUG_ASSERT(current_link != registered_connections_.end());
+  const ConnectionMap::iterator original_link = current_link;
+  const LinkType link_type = original_link->second->type();
+  size_t free_buffer_packets = GetNumFreePacketsForLinkType(link_type);
   bool is_packet_queued = true;
-  size_t num_packets_sent = 0;
-  ConnectionMap::iterator original_link = current_link;
 
-  // Only send packets if there is buffer space available
-  while (avail_packets) {
+  // Send packets as long as a link may have a packet queued and buffer space is available.
+  for (; free_buffer_packets != 0; IncrementRoundRobinIterator(current_link, link_type)) {
     if (current_link == original_link) {
-      if (!is_packet_queued) {  // All links are empty
-        return num_packets_sent;
+      if (!is_packet_queued) {
+        // All links are empty
+        break;
       }
       is_packet_queued = false;
     }
 
     if (!current_link->second->HasAvailablePacket()) {
-      IncrementRoundRobinIterator(current_link, current_link->second->type());
       continue;
     }
 
@@ -309,30 +276,19 @@ size_t AclDataChannelImpl::SendPackets(size_t avail_packets,
     hci_->SendAclData(packet->view().data().subspan());
 
     is_packet_queued = true;
-    avail_packets--;
-    num_packets_sent++;
+    free_buffer_packets--;
     IncrementPendingPacketsForLink(current_link->second);
-    IncrementRoundRobinIterator(current_link, current_link->second->type());
   }
-  return num_packets_sent;
 }
 
 void AclDataChannelImpl::TrySendNextPackets() {
-  size_t avail_bredr_packets = GetNumFreeBREDRPackets();
-
-  // On a dual mode controller that does not implement separate buffers, the BR/EDR buffer is
-  // shared for both technologies, so we must take care not to double count here.
-  size_t num_free_le_packets = GetNumFreeLEPackets();
-  size_t& avail_le_packets = IsBrEdrBufferShared() ? avail_bredr_packets : num_free_le_packets;
-
   if (current_bredr_link_ != registered_connections_.end()) {
-    size_t bredr_packets_sent = SendPackets(avail_bredr_packets, current_bredr_link_);
-    IncrementTotalNumPackets(bredr_packets_sent);
+    // If the BR/EDR buffer is shared, this will also send LE packets.
+    SendPackets(current_bredr_link_);
   }
 
   if (!IsBrEdrBufferShared() && current_le_link_ != registered_connections_.end()) {
-    size_t le_packets_sent = SendPackets(avail_le_packets, current_le_link_);
-    IncrementLETotalNumPackets(le_packets_sent);
+    SendPackets(current_le_link_);
   }
 }
 
@@ -342,10 +298,10 @@ void AclDataChannelImpl::AttachInspect(inspect::Node& parent, const std::string&
   node_ = parent.CreateChild(std::move(name));
 
   bredr_subnode_ = node_.CreateChild("bredr");
-  num_sent_packets_.AttachInspect(bredr_subnode_, "num_sent_packets");
+  num_pending_bredr_packets_.AttachInspect(bredr_subnode_, "num_sent_packets");
 
   le_subnode_ = node_.CreateChild("le");
-  le_num_sent_packets_.AttachInspect(le_subnode_, "num_sent_packets");
+  num_pending_le_packets_.AttachInspect(le_subnode_, "num_sent_packets");
   le_subnode_shared_with_bredr_property_ =
       le_subnode_.CreateBool("independent_from_bredr", !IsBrEdrBufferShared());
 }
@@ -372,11 +328,7 @@ void AclDataChannelImpl::ClearControllerPacketCount(hci_spec::ConnectionHandle h
   }
 
   const PendingPacketData& data = iter->second;
-  if (data.ll_type == bt::LinkType::kLE) {
-    DecrementLETotalNumPackets(data.count);
-  } else {
-    DecrementTotalNumPackets(data.count);
-  }
+  DecrementPendingPacketsForLinkType(data.ll_type, data.count);
 
   pending_links_.erase(iter);
 
@@ -437,12 +389,8 @@ void AclDataChannelImpl::RequestAclPriority(
 
 CommandChannel::EventCallbackResult AclDataChannelImpl::NumberOfCompletedPacketsCallback(
     const EventPacket& event) {
-  BT_DEBUG_ASSERT(async_get_default_dispatcher() == io_dispatcher_);
   BT_DEBUG_ASSERT(event.event_code() == hci_spec::kNumberOfCompletedPacketsEventCode);
-
   const auto& payload = event.params<hci_spec::NumberOfCompletedPacketsEventParams>();
-  size_t total_comp_packets = 0;
-  size_t le_total_comp_packets = 0;
 
   size_t handles_in_packet =
       (event.view().payload_size() - sizeof(hci_spec::NumberOfCompletedPacketsEventParams)) /
@@ -485,67 +433,46 @@ CommandChannel::EventCallbackResult AclDataChannelImpl::NumberOfCompletedPackets
     }
 
     iter->second.count -= comp_packets;
-
-    if (iter->second.ll_type == bt::LinkType::kACL) {
-      total_comp_packets += comp_packets;
-    } else {
-      le_total_comp_packets += comp_packets;
-    }
-
+    DecrementPendingPacketsForLinkType(iter->second.ll_type, comp_packets);
     if (!iter->second.count) {
       pending_links_.erase(iter);
     }
   }
 
-  DecrementTotalNumPackets(total_comp_packets);
-  DecrementLETotalNumPackets(le_total_comp_packets);
   TrySendNextPackets();
 
   return CommandChannel::EventCallbackResult::kContinue;
 }
 
-size_t AclDataChannelImpl::GetNumFreeBREDRPackets() const {
-  BT_DEBUG_ASSERT(bredr_buffer_info_.max_num_packets() >= *num_sent_packets_);
-  return bredr_buffer_info_.max_num_packets() - *num_sent_packets_;
-}
-
-size_t AclDataChannelImpl::GetNumFreeLEPackets() const {
-  if (IsBrEdrBufferShared()) {
-    return 0;
+size_t AclDataChannelImpl::GetNumFreePacketsForLinkType(LinkType link_type) const {
+  if (link_type == LinkType::kACL || IsBrEdrBufferShared()) {
+    BT_DEBUG_ASSERT(bredr_buffer_info_.max_num_packets() >= *num_pending_bredr_packets_);
+    return bredr_buffer_info_.max_num_packets() - *num_pending_bredr_packets_;
+  } else if (link_type == LinkType::kLE) {
+    BT_DEBUG_ASSERT(le_buffer_info_.max_num_packets() >= *num_pending_le_packets_);
+    return le_buffer_info_.max_num_packets() - *num_pending_le_packets_;
   }
-
-  BT_DEBUG_ASSERT(le_buffer_info_.max_num_packets() >= *le_num_sent_packets_);
-  return le_buffer_info_.max_num_packets() - *le_num_sent_packets_;
+  return 0;
 }
 
-void AclDataChannelImpl::DecrementTotalNumPackets(size_t count) {
-  BT_DEBUG_ASSERT(*num_sent_packets_ >= count);
-  *num_sent_packets_.Mutable() -= count;
-}
-
-void AclDataChannelImpl::DecrementLETotalNumPackets(size_t count) {
-  if (IsBrEdrBufferShared()) {
-    DecrementTotalNumPackets(count);
-    return;
+void AclDataChannelImpl::DecrementPendingPacketsForLinkType(LinkType link_type, size_t count) {
+  if (link_type == LinkType::kACL || IsBrEdrBufferShared()) {
+    BT_DEBUG_ASSERT(*num_pending_bredr_packets_ >= count);
+    *num_pending_bredr_packets_.Mutable() -= count;
+  } else if (link_type == LinkType::kLE) {
+    BT_DEBUG_ASSERT(*num_pending_le_packets_ >= count);
+    *num_pending_le_packets_.Mutable() -= count;
   }
-
-  BT_DEBUG_ASSERT(*le_num_sent_packets_ >= count);
-  *le_num_sent_packets_.Mutable() -= count;
 }
 
-void AclDataChannelImpl::IncrementTotalNumPackets(size_t count) {
-  BT_DEBUG_ASSERT(*num_sent_packets_ + count <= bredr_buffer_info_.max_num_packets());
-  *num_sent_packets_.Mutable() += count;
-}
-
-void AclDataChannelImpl::IncrementLETotalNumPackets(size_t count) {
-  if (IsBrEdrBufferShared()) {
-    IncrementTotalNumPackets(count);
-    return;
+void AclDataChannelImpl::IncrementPendingPacketsForLinkType(LinkType link_type) {
+  if (link_type == LinkType::kACL || IsBrEdrBufferShared()) {
+    *num_pending_bredr_packets_.Mutable() += 1;
+    BT_DEBUG_ASSERT(*num_pending_bredr_packets_ <= bredr_buffer_info_.max_num_packets());
+  } else if (link_type == LinkType::kLE) {
+    *num_pending_le_packets_.Mutable() += 1;
+    BT_DEBUG_ASSERT(*num_pending_le_packets_ <= le_buffer_info_.max_num_packets());
   }
-
-  BT_DEBUG_ASSERT(*le_num_sent_packets_ + count <= le_buffer_info_.max_num_packets());
-  *le_num_sent_packets_.Mutable() += count;
 }
 
 void AclDataChannelImpl::OnRxPacket(pw::span<const std::byte> buffer) {
@@ -590,6 +517,19 @@ CommandChannel::EventCallbackResult AclDataChannelImpl::DataBufferOverflowCallba
   BT_PANIC("controller data buffer overflow event received (link type: %hhu)", params.link_type);
 
   return CommandChannel::EventCallbackResult::kContinue;
+}
+
+void AclDataChannelImpl::ResetRoundRobinIterators() {
+  current_bredr_link_ = registered_connections_.begin();
+
+  // If the BR/EDR buffer isn't shared, we need to do extra work to ensure |current_bredr_link_| is
+  // initialized to a link of BR/EDR type. The same applies for |current_le_link_|.
+  if (!IsBrEdrBufferShared()) {
+    current_le_link_ = registered_connections_.begin();
+
+    IncrementRoundRobinIterator(current_bredr_link_, bt::LinkType::kACL);
+    IncrementRoundRobinIterator(current_le_link_, bt::LinkType::kLE);
+  }
 }
 
 }  // namespace bt::hci

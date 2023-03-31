@@ -8,11 +8,7 @@
 #include <lib/async/cpp/wait.h>
 #include <lib/async/dispatcher.h>
 #include <lib/fit/function.h>
-#include <lib/zx/channel.h>
 
-#include <list>
-#include <map>
-#include <queue>
 #include <unordered_map>
 
 #include "pw_bluetooth/controller.h"
