@@ -34,6 +34,16 @@ config("disable_psabi_warning") {
   cflags = [ "-Wno-psabi" ]
 }
 
+# binutils 2.39 introduced new warnings that trigger on embedded ARM GCC builds:
+#
+#   warning: *.elf has a LOAD segment with RWX permissions
+#
+# Disable these warnings --no-warn-rwx-segment. For details see:
+# https://www.redhat.com/en/blog/linkers-warnings-about-executable-stacks-and-segments
+config("disable_rwx_segment_warning") {
+  ldflags = [ "-Wl,--no-warn-rwx-segment" ]
+}
+
 config("cortex_common") {
   asmflags = [
     "-mabi=aapcs",

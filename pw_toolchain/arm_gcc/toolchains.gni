@@ -323,3 +323,8 @@ pw_toolchain_arm_gcc_list = [
   pw_toolchain_arm_gcc.cortex_m33f_speed_optimized,
   pw_toolchain_arm_gcc.cortex_m33f_size_optimized,
 ]
+
+# Configs that require Arm GCC 12 or newer to use. Downstream projects that use
+# older compilers should remove these from default_configs.
+pw_toolchain_arm_gcc_12_configs =
+    [ "$dir_pw_toolchain/arm_gcc:disable_rwx_segment_warning" ]
