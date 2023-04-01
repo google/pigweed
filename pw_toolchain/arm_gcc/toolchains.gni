@@ -47,7 +47,10 @@ arm_gcc_toolchain_tools = {
 }
 
 # Common configs shared by all ARM GCC toolchains.
-_arm_gcc = [ "$dir_pw_toolchain/arm_gcc:disable_psabi_warning" ]
+_arm_gcc = [
+  "$dir_pw_toolchain/arm_gcc:disable_psabi_warning",
+  "$dir_pw_toolchain/arm_gcc:disable_rwx_segment_warning",
+]
 
 _cortex_m0plus = [
   "$dir_pw_toolchain/arm_gcc:cortex_common",
