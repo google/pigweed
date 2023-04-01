@@ -34,7 +34,7 @@ Connection::Connection(hci_spec::ConnectionHandle handle, const DeviceAddress& l
   auto disconn_complete_handler =
       [self = weak_self_.GetWeakPtr(), handle, hci = hci_,
        on_disconnection_complete =
-           std::move(on_disconnection_complete)](const EventPacket& event) mutable {
+           std::move(on_disconnection_complete)](const EmbossEventPacket& event) mutable {
         return Connection::OnDisconnectionComplete(self, handle, event,
                                                    std::move(on_disconnection_complete));
       };
@@ -55,16 +55,16 @@ std::string Connection::ToString() const {
 
 CommandChannel::EventCallbackResult Connection::OnDisconnectionComplete(
     const WeakSelf<Connection>::WeakPtr& self, hci_spec::ConnectionHandle handle,
-    const EventPacket& event, fit::callback<void()> on_disconnection_complete) {
+    const EmbossEventPacket& event, fit::callback<void()> on_disconnection_complete) {
   BT_ASSERT(event.event_code() == hci_spec::kDisconnectionCompleteEventCode);
 
-  if (event.view().payload_size() != sizeof(hci_spec::DisconnectionCompleteEventParams)) {
+  auto view = event.view<pw::bluetooth::emboss::DisconnectionCompleteEventView>();
+  if (!view.Ok()) {
     bt_log(WARN, "hci", "malformed disconnection complete event");
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
-  const auto& params = event.params<hci_spec::DisconnectionCompleteEventParams>();
-  const auto event_handle = le16toh(params.connection_handle);
+  const hci_spec::ConnectionHandle event_handle = view.connection_handle().Read();
 
   // Silently ignore this event as it isn't meant for this connection.
   if (event_handle != handle) {
@@ -72,8 +72,8 @@ CommandChannel::EventCallbackResult Connection::OnDisconnectionComplete(
   }
 
   bt_log(INFO, "hci", "disconnection complete - %s, handle: %#.4x, reason: %#.2hhx (%s)",
-         bt_str(event.ToResult()), handle, params.reason,
-         hci_spec::StatusCodeToString(params.reason).c_str());
+         bt_str(event.ToResult()), handle, view.reason().Read(),
+         hci_spec::StatusCodeToString(view.reason().Read()).c_str());
 
   if (self.is_alive()) {
     self->conn_state_ = State::kDisconnected;
@@ -81,7 +81,7 @@ CommandChannel::EventCallbackResult Connection::OnDisconnectionComplete(
 
   // Peer disconnect. Callback may destroy connection.
   if (self.is_alive() && self->peer_disconnect_callback_) {
-    self->peer_disconnect_callback_(self.get(), params.reason);
+    self->peer_disconnect_callback_(self.get(), view.reason().Read());
   }
 
   // Notify subclasses after peer_disconnect_callback_ has had a chance to clean up higher-level

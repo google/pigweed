@@ -748,18 +748,6 @@ constexpr EventCode kConnectionRequestEventCode = 0x04;
 // Disconnection Complete Event (v1.1) (BR/EDR & LE)
 constexpr EventCode kDisconnectionCompleteEventCode = 0x05;
 
-struct DisconnectionCompleteEventParams {
-  // See enum StatusCode in hci_constants.h
-  StatusCode status;
-
-  // Connection_Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-
-  // Reason for the disconnect.
-  StatusCode reason;
-} __attribute__((packed));
-
 // =============================================
 // Authentication Complete Event (v1.1) (BR/EDR)
 constexpr EventCode kAuthenticationCompleteEventCode = 0x06;

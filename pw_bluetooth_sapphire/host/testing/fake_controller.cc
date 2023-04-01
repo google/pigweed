@@ -465,11 +465,12 @@ void FakeController::Disconnect(const DeviceAddress& addr,
 
 void FakeController::SendDisconnectionCompleteEvent(hci_spec::ConnectionHandle handle,
                                                     pw::bluetooth::emboss::StatusCode reason) {
-  hci_spec::DisconnectionCompleteEventParams params;
-  params.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-  params.connection_handle = htole16(handle);
-  params.reason = reason;
-  SendEvent(hci_spec::kDisconnectionCompleteEventCode, BufferView(&params, sizeof(params)));
+  auto event = hci::EmbossEventPacket::New<pw::bluetooth::emboss::DisconnectionCompleteEventWriter>(
+      hci_spec::kDisconnectionCompleteEventCode);
+  event.view_t().status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+  event.view_t().connection_handle().Write(handle);
+  event.view_t().reason().Write(reason);
+  SendCommandChannelPacket(event.data());
 }
 
 void FakeController::SendEncryptionChangeEvent(hci_spec::ConnectionHandle handle,

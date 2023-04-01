@@ -44,18 +44,13 @@ hci_spec::EventCode EmbossEventPacket::event_code() const {
 std::optional<pw::bluetooth::emboss::StatusCode> EmbossEventPacket::StatusCode() const {
   switch (event_code()) {
     case hci_spec::kCommandCompleteEventCode: {
-      pw::bluetooth::emboss::SimpleCommandCompleteEventView event(data().data(), size());
-      if (!event.status().IsComplete()) {
-        return std::nullopt;
-      }
-      return event.status().UncheckedRead();
+      return StatusCodeFromView<pw::bluetooth::emboss::SimpleCommandCompleteEventView>();
     }
     case hci_spec::kConnectionCompleteEventCode: {
-      auto event = view<pw::bluetooth::emboss::ConnectionCompleteEventView>();
-      if (!event.status().IsComplete()) {
-        return std::nullopt;
-      }
-      return event.status().UncheckedRead();
+      return StatusCodeFromView<pw::bluetooth::emboss::ConnectionCompleteEventView>();
+    }
+    case hci_spec::kDisconnectionCompleteEventCode: {
+      return StatusCodeFromView<pw::bluetooth::emboss::DisconnectionCompleteEventView>();
     }
     case hci_spec::kVendorDebugEventCode: {
       hci_spec::EventCode subevent_code =
@@ -63,7 +58,7 @@ std::optional<pw::bluetooth::emboss::StatusCode> EmbossEventPacket::StatusCode()
 
       switch (subevent_code) {
         case hci_spec::vendor::android::kLEMultiAdvtStateChangeSubeventCode: {
-          return view<pw::bluetooth::emboss::LEMultiAdvtStateChangeSubeventView>().status().Read();
+          return StatusCodeFromView<pw::bluetooth::emboss::LEMultiAdvtStateChangeSubeventView>();
         }
 
         default: {
@@ -81,13 +76,12 @@ std::optional<pw::bluetooth::emboss::StatusCode> EmbossEventPacket::StatusCode()
 
       switch (subevent_code) {
         case hci_spec::kLEConnectionCompleteSubeventCode: {
-          return view<pw::bluetooth::emboss::LEConnectionCompleteSubeventView>().status().Read();
+          return StatusCodeFromView<pw::bluetooth::emboss::LEConnectionCompleteSubeventView>();
         }
 
         case hci_spec::kLEConnectionUpdateCompleteSubeventCode: {
-          return view<pw::bluetooth::emboss::LEConnectionUpdateCompleteSubeventView>()
-              .status()
-              .Read();
+          return StatusCodeFromView<
+              pw::bluetooth::emboss::LEConnectionUpdateCompleteSubeventView>();
         }
 
         default: {

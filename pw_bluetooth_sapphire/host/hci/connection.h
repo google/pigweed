@@ -93,7 +93,7 @@ class Connection {
   // after this object has been destroyed.
   static CommandChannel::EventCallbackResult OnDisconnectionComplete(
       const WeakSelf<Connection>::WeakPtr& self, hci_spec::ConnectionHandle handle,
-      const EventPacket& event, fit::callback<void()> on_disconnection_complete);
+      const EmbossEventPacket& event, fit::callback<void()> on_disconnection_complete);
 
   hci_spec::ConnectionHandle handle_;
 
