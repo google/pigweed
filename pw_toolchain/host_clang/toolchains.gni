@@ -18,7 +18,7 @@ import("$dir_pw_toolchain/clang_tools.gni")
 
 declare_args() {
   # Sets the sanitizer to pass to clang. Valid values are "address", "memory",
-  # "thread", "undefined", "undefined_heuristic", and "coverage".
+  # "thread", "undefined", "undefined_heuristic".
   pw_toolchain_SANITIZERS = []
 
   # Indicates if this toolchain supports generating coverage reports from
@@ -92,9 +92,6 @@ pw_toolchain_host_clang = {
         default_configs +=
             [ "$dir_pw_toolchain/host_clang:sanitize_$sanitizer" ]
       }
-
-      # Allow coverage generation if pw_toolchain_SANITIZERS = ["coverage"].
-      pw_toolchain_COVERAGE_ENABLED = true
     }
   }
 
@@ -108,9 +105,6 @@ pw_toolchain_host_clang = {
         default_configs +=
             [ "$dir_pw_toolchain/host_clang:sanitize_$sanitizer" ]
       }
-
-      # Allow coverage generation if pw_toolchain_SANITIZERS = ["coverage"].
-      pw_toolchain_COVERAGE_ENABLED = true
     }
   }
 
@@ -124,9 +118,6 @@ pw_toolchain_host_clang = {
         default_configs +=
             [ "$dir_pw_toolchain/host_clang:sanitize_$sanitizer" ]
       }
-
-      # Allow coverage generation if pw_toolchain_SANITIZERS = ["coverage"].
-      pw_toolchain_COVERAGE_ENABLED = true
     }
   }
 
@@ -138,9 +129,6 @@ pw_toolchain_host_clang = {
 
       pw_toolchain_FUZZING_ENABLED = true
       default_configs += [ "$dir_pw_fuzzer:instrumentation" ]
-
-      # Always disable coverage generation.
-      pw_toolchain_COVERAGE_ENABLED = false
 
       # Fuzz faster.
       default_configs += [ "$dir_pw_build:optimize_speed" ]
@@ -165,9 +153,6 @@ pw_toolchain_host_clang = {
       # Use debug mode to get proper debug information.
       default_configs += [ "$dir_pw_build:optimize_debugging" ]
       default_configs += [ "$dir_pw_toolchain/host_clang:sanitize_address" ]
-
-      # Allow coverage generation if pw_toolchain_SANITIZERS = ["coverage"].
-      pw_toolchain_COVERAGE_ENABLED = true
     }
   }
 
@@ -180,9 +165,6 @@ pw_toolchain_host_clang = {
       # Use debug mode to get proper debug information.
       default_configs += [ "$dir_pw_build:optimize_debugging" ]
       default_configs += [ "$dir_pw_toolchain/host_clang:sanitize_undefined" ]
-
-      # Allow coverage generation if pw_toolchain_SANITIZERS = ["coverage"].
-      pw_toolchain_COVERAGE_ENABLED = true
     }
   }
 
@@ -196,9 +178,6 @@ pw_toolchain_host_clang = {
       default_configs += [ "$dir_pw_build:optimize_debugging" ]
       default_configs +=
           [ "$dir_pw_toolchain/host_clang:sanitize_undefined_heuristic" ]
-
-      # Allow coverage generation if pw_toolchain_SANITIZERS = ["coverage"].
-      pw_toolchain_COVERAGE_ENABLED = true
     }
   }
 
@@ -211,9 +190,6 @@ pw_toolchain_host_clang = {
       # Use debug mode to get proper debug information.
       default_configs += [ "$dir_pw_build:optimize_debugging" ]
       default_configs += [ "$dir_pw_toolchain/host_clang:sanitize_memory" ]
-
-      # Allow coverage generation if pw_toolchain_SANITIZERS = ["coverage"].
-      pw_toolchain_COVERAGE_ENABLED = true
     }
   }
 
@@ -226,9 +202,6 @@ pw_toolchain_host_clang = {
       # Use debug mode to get proper debug information.
       default_configs += [ "$dir_pw_build:optimize_debugging" ]
       default_configs += [ "$dir_pw_toolchain/host_clang:sanitize_thread" ]
-
-      # Allow coverage generation if pw_toolchain_SANITIZERS = ["coverage"].
-      pw_toolchain_COVERAGE_ENABLED = true
     }
   }
 
@@ -240,14 +213,10 @@ pw_toolchain_host_clang = {
 
       # Use debug mode to get proper debug information.
       default_configs += [ "$dir_pw_build:optimize_debugging" ]
-      default_configs += [ "$dir_pw_toolchain/host_clang:sanitize_coverage" ]
+      default_configs += [ "$dir_pw_toolchain/host_clang:coverage" ]
 
       # Enable PW toolchain arguments for coverage. This will only apply to
       # binaries built using this toolchain.
-      #
-      # "coverage" works with "address", "memory", "thread", "undefined", and
-      # "undefined_heuristic" sanitizers.
-      pw_toolchain_SANITIZERS += [ "coverage" ]
       pw_toolchain_COVERAGE_ENABLED = true
     }
   }

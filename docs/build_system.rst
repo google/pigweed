@@ -376,6 +376,10 @@ with ``pw_module_tests`` per supported sanitizer.
 .. _UndefinedBehaviorSanitizer: https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html
 .. _ThreadSanitizer: https://clang.llvm.org/docs/ThreadSanitizer.html
 
+coverage
+~~~~~~~~~~
+This group defines host-side build target for Clang source-based code coverage.
+
 pw_modules
 ~~~~~~~~~~
 This group lists the main libraries for all of Pigweed's modules.

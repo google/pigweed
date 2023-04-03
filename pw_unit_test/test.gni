@@ -190,10 +190,7 @@ template("pw_test") {
   _test_target_name = target_name
 
   _test_is_enabled = !defined(invoker.enable_if) || invoker.enable_if
-  _is_coverage_run =
-      pw_toolchain_COVERAGE_ENABLED &&
-      filter_include(pw_toolchain_SANITIZERS, [ "coverage" ]) == [ "coverage" ]
-  if (_is_coverage_run) {
+  if (pw_toolchain_COVERAGE_ENABLED) {
     _profraw_path = "$target_out_dir/test/$_test_target_name.profraw"
   }
 
@@ -317,7 +314,7 @@ template("pw_test") {
       # N.B.: This is placed here instead of in $_test_target_name._run because
       # pw_test_group only forwards the metadata from _test_target_name and not
       # _test_target_name._run or _test_target_name.run.
-      if (_is_coverage_run) {
+      if (pw_toolchain_COVERAGE_ENABLED) {
         profraws = [
           {
             type = "profraw"
@@ -402,7 +399,7 @@ template("pw_test") {
           pw_unit_test_AUTOMATIC_RUNNER_TIMEOUT,
         ]
       }
-      if (_is_coverage_run) {
+      if (pw_toolchain_COVERAGE_ENABLED) {
         args += [
           "--coverage-profraw",
           rebase_path(_profraw_path, root_build_dir),
@@ -414,7 +411,7 @@ template("pw_test") {
       }
 
       outputs = []
-      if (_is_coverage_run) {
+      if (pw_toolchain_COVERAGE_ENABLED) {
         outputs += [ _profraw_path ]
       }
       stamp = true

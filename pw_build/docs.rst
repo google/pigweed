@@ -872,10 +872,9 @@ For the ``pw_coverage_report`` to generate meaningful output, you must ensure
 that it is invoked by a toolchain that instruments tests for code coverage
 collection and output.
 
-Instrumentation is largely controlled by these GN build arguments:
+Instrumentation is controlled by a GN build argument:
 
 - ``pw_toolchain_COVERAGE_ENABLED`` being set to ``true``.
-- ``pw_toolchain_SANITIZERS`` including the ``"coverage"`` value.
 
 .. note::
 

@@ -16,6 +16,7 @@ import("//build_overrides/pi_pico.gni")
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_arduino_build/arduino.gni")
+import("$dir_pw_build/coverage_report.gni")
 import("$dir_pw_build/host_tool.gni")
 import("$dir_pw_build/python.gni")
 import("$dir_pw_docgen/docs.gni")
@@ -360,6 +361,12 @@ group("runtime_sanitizers") {
   }
 }
 
+group("coverage") {
+  if (host_os == "linux") {
+    deps = [ ":coverage_report($dir_pigweed/targets/host:host_clang_coverage)" ]
+  }
+}
+
 pw_python_group("python") {
   python_deps = [
     "$dir_pw_env_setup:python($pw_build_PYTHON_TOOLCHAIN)",
@@ -515,5 +522,14 @@ if (current_toolchain != default_toolchain) {
       "$dir_pw_containers:to_array_test",
       "$dir_pw_string:string_test",
     ]
+  }
+
+  pw_coverage_report("coverage_report") {
+    filter_paths = []
+    ignore_filename_patterns = [
+      "third_party",
+      "protocol_buffer/gen",
+    ]
+    group_deps = [ ":pw_module_tests" ]
   }
 }

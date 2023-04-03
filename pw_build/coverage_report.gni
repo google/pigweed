@@ -89,9 +89,7 @@ template("pw_coverage_report") {
   # These two Pigweed build arguments are required to be in these states to
   # ensure binaries are instrumented for coverage and profraw files are
   # exported.
-  if (_should_enable && filter_include(pw_toolchain_SANITIZERS,
-                                       [ "coverage" ]) == [ "coverage" ] &&
-      pw_toolchain_COVERAGE_ENABLED) {
+  if (_should_enable && pw_toolchain_COVERAGE_ENABLED) {
     _test_metadata = "$target_out_dir/$_report_name.test_metadata.json"
     _profdata_file = "$target_out_dir/merged.profdata"
     _arguments = {

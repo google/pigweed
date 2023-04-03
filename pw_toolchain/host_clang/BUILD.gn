@@ -15,10 +15,23 @@
 import("//build_overrides/pigweed.gni")
 import("//build_overrides/pigweed_environment.gni")
 
+config("coverage") {
+  cflags = [
+    "-fprofile-instr-generate",
+    "-fcoverage-mapping",
+  ]
+  ldflags = cflags
+}
+
 # See https://github.com/google/sanitizers
 config("sanitize_address") {
   cflags = [ "-fsanitize=address" ]
   ldflags = cflags
+}
+
+# This is a deprecated config, use "coverage" config instead.
+config("sanitize_coverage") {
+  configs = [ ":coverage" ]
 }
 
 config("sanitize_memory") {
@@ -80,14 +93,6 @@ config("sanitize_undefined_heuristic") {
 
 config("sanitize_thread") {
   cflags = [ "-fsanitize=thread" ]
-  ldflags = cflags
-}
-
-config("sanitize_coverage") {
-  cflags = [
-    "-fprofile-instr-generate",
-    "-fcoverage-mapping",
-  ]
   ldflags = cflags
 }
 
