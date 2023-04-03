@@ -96,6 +96,7 @@ def setup_python_logging(
 
     # Prevent these loggers from propagating to the root logger.
     hidden_host_loggers = [
+        "blib2to3.pgen2.driver",  # spammy and unhelpful
         "pw_console",
         "pw_console.plugins",
         # prompt_toolkit triggered debug log messages
