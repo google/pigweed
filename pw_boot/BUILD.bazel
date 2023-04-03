@@ -44,9 +44,9 @@ pw_cc_library(
 pw_cc_library(
     name = "backend_multiplexer",
     deps = select({
-        "@platforms//cpu:armv7-m": ["//pw_boot_cortex_m:pw_boot_cortex_m"],
-        "@platforms//cpu:armv7e-m": ["//pw_boot_cortex_m:pw_boot_cortex_m"],
-        "@platforms//cpu:armv8-m": ["//pw_boot_cortex_m:pw_boot_cortex_m"],
+        "@platforms//cpu:armv7-m": ["//pw_boot_cortex_m"],
+        "@platforms//cpu:armv7e-m": ["//pw_boot_cortex_m"],
+        "@platforms//cpu:armv8-m": ["//pw_boot_cortex_m"],
         # When building for the host, we don't need a pw_boot implementation.
         "//conditions:default": [],
     }),
