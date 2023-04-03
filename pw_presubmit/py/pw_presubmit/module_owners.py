@@ -17,11 +17,11 @@ import logging
 from pathlib import Path
 from typing import Callable, Optional, Tuple
 
-from pw_presubmit import (
+from pw_presubmit.presubmit import (
     PresubmitContext,
     PresubmitFailure,
-    presubmit,
 )
+from pw_presubmit import presubmit
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

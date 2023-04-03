@@ -35,6 +35,7 @@ from typing import (
     Set,
     Union,
 )
+
 from pw_presubmit import git_repo
 from pw_presubmit.presubmit import PresubmitFailure
 

@@ -18,29 +18,21 @@ These checks assume that they are running in a preconfigured Python environment.
 
 import json
 import logging
-import os
 from pathlib import Path
 import subprocess
 import sys
 from typing import Optional
 
-try:
-    import pw_presubmit
-except ImportError:
-    # Append the pw_presubmit package path to the module search path to allow
-    # running this module without installing the pw_presubmit package.
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    import pw_presubmit
-
 from pw_env_setup import python_packages
-from pw_presubmit import (
-    build,
+
+from pw_presubmit.presubmit import (
     call,
     Check,
     filter_paths,
     PresubmitContext,
     PresubmitFailure,
 )
+from pw_presubmit import build
 
 _LOG = logging.getLogger(__name__)
 
@@ -166,7 +158,7 @@ def gn_python_test_coverage(ctx: PresubmitContext):
 
 
 @filter_paths(endswith=_PYTHON_EXTENSIONS + ('.pylintrc',))
-def gn_python_lint(ctx: pw_presubmit.PresubmitContext) -> None:
+def gn_python_lint(ctx: PresubmitContext) -> None:
     build.gn_gen(ctx)
     build.ninja(ctx, 'python.lint')
 

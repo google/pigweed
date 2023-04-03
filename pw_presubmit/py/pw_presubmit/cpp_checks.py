@@ -15,12 +15,14 @@
 
 import logging
 
-from pw_presubmit import (
-    build,
+from pw_presubmit.presubmit import (
     Check,
-    format_code,
     PresubmitContext,
     filter_paths,
+)
+from pw_presubmit import (
+    build,
+    format_code,
 )
 
 _LOG: logging.Logger = logging.getLogger(__name__)

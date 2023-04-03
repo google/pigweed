@@ -26,14 +26,6 @@ import subprocess
 import sys
 from typing import Callable, Iterable, List, Sequence, TextIO
 
-try:
-    import pw_presubmit
-except ImportError:
-    # Append the pw_presubmit package path to the module search path to allow
-    # running this module without installing the pw_presubmit package.
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    import pw_presubmit
-
 import pw_package.pigweed_packages
 
 from pw_presubmit import (
@@ -43,23 +35,25 @@ from pw_presubmit import (
     format_code,
     git_repo,
     gitmodules,
-    call,
-    filter_paths,
     inclusive_language,
     keep_sorted,
     module_owners,
     npm_presubmit,
     owners_checks,
-    plural,
-    presubmit,
-    PresubmitContext,
-    PresubmitFailure,
-    Programs,
     python_checks,
     shell_checks,
     source_in_build,
     todo_check,
 )
+from pw_presubmit.presubmit import (
+    FileFilter,
+    PresubmitContext,
+    PresubmitFailure,
+    Programs,
+    call,
+    filter_paths,
+)
+from pw_presubmit.tools import plural
 from pw_presubmit.install_hook import install_git_hook
 
 _LOG = logging.getLogger(__name__)
@@ -67,7 +61,7 @@ _LOG = logging.getLogger(__name__)
 pw_package.pigweed_packages.initialize()
 
 # Trigger builds if files with these extensions change.
-_BUILD_FILE_FILTER = presubmit.FileFilter(
+_BUILD_FILE_FILTER = FileFilter(
     suffix=(
         *format_code.C_FORMAT.extensions,
         '.cfg',
@@ -940,7 +934,7 @@ def owners_lint_checks(ctx: PresubmitContext):
     owners_checks.presubmit_check(ctx.paths)
 
 
-SOURCE_FILES_FILTER = presubmit.FileFilter(
+SOURCE_FILES_FILTER = FileFilter(
     endswith=_BUILD_FILE_FILTER.endswith,
     suffix=('.bazel', '.bzl', '.gn', '.gni', *_BUILD_FILE_FILTER.suffix),
     exclude=(
@@ -1031,8 +1025,8 @@ LINTFORMAT = (
     # (https://stackoverflow.com/q/71024130/1224002). These are cached, but
     # after a roll it can be quite slow.
     source_in_build.bazel(SOURCE_FILES_FILTER),
-    pw_presubmit.python_checks.check_python_versions,
-    pw_presubmit.python_checks.gn_python_lint,
+    python_checks.check_python_versions,
+    python_checks.gn_python_lint,
 )
 
 QUICK = (

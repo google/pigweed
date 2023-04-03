@@ -19,12 +19,13 @@ from pathlib import Path
 from typing import Callable, Dict, Optional, Sequence
 import urllib.parse
 
-from pw_presubmit import (
-    git_repo,
+from pw_presubmit.presubmit import (
     PresubmitContext,
     PresubmitFailure,
     filter_paths,
 )
+from pw_presubmit import git_repo
+
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

@@ -31,6 +31,7 @@ from typing import (
     ContextManager,
     Dict,
     Iterable,
+    Iterator,
     List,
     Mapping,
     Optional,
@@ -40,23 +41,26 @@ from typing import (
     Union,
 )
 
-from pw_presubmit import (
-    bazel_parser,
+from pw_presubmit.presubmit import (
     call,
     Check,
     FileFilter,
     filter_paths,
-    format_code,
     install_package,
-    Iterator,
-    log_run,
-    ninja_parser,
-    plural,
     PresubmitContext,
     PresubmitFailure,
     PresubmitResult,
     SubStep,
-    tools,
+)
+from pw_presubmit import (
+    bazel_parser,
+    format_code,
+    ninja_parser,
+)
+from pw_presubmit.tools import (
+    plural,
+    log_run,
+    format_command,
 )
 
 _LOG = logging.getLogger(__name__)
@@ -304,7 +308,7 @@ def _get_paths_from_command(source_dir: Path, *args, **kwargs) -> Set[Path]:
         )
         _LOG.error(
             '[COMMAND] %s\n%s\n%s',
-            *tools.format_command(args, kwargs),
+            *format_command(args, kwargs),
             process.stderr.decode(),
         )
         raise PresubmitFailure

@@ -79,6 +79,7 @@ import pw_cli.color
 import pw_cli.env
 import pw_env_setup.config_file
 from pw_package import package_manager
+
 from pw_presubmit import git_repo, tools
 from pw_presubmit.tools import plural
 

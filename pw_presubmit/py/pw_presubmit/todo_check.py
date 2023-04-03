@@ -18,7 +18,7 @@ from pathlib import Path
 import re
 from typing import Iterable, Pattern, Sequence, Union
 
-from pw_presubmit import PresubmitContext, filter_paths
+from pw_presubmit.presubmit import PresubmitContext, filter_paths
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 

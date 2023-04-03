@@ -44,24 +44,20 @@ from typing import (
     Union,
 )
 
-try:
-    import pw_presubmit
-except ImportError:
-    # Append the pw_presubmit package path to the module search path to allow
-    # running this module without installing the pw_presubmit package.
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    import pw_presubmit
-
 import pw_cli.color
 import pw_cli.env
-from pw_presubmit.presubmit import FileFilter
-from pw_presubmit import (
-    cli,
+from pw_presubmit.presubmit import (
+    FileFilter,
     FormatContext,
     FormatOptions,
+    PresubmitContext,
+    PresubmitFailure,
+    filter_paths,
+)
+from pw_presubmit import (
+    cli,
     git_repo,
     owners_checks,
-    PresubmitContext,
 )
 from pw_presubmit.tools import exclude_paths, file_summary, log_run, plural
 
@@ -591,8 +587,8 @@ def presubmit_check(
     file_filter = FileFilter(**vars(code_format.filter))
     file_filter.exclude += tuple(re.compile(e) for e in exclude)
 
-    @pw_presubmit.filter_paths(file_filter=file_filter)
-    def check_code_format(ctx: pw_presubmit.PresubmitContext):
+    @filter_paths(file_filter=file_filter)
+    def check_code_format(ctx: PresubmitContext):
         errors = code_format.check(ctx)
         print_format_check(
             errors,
@@ -610,7 +606,7 @@ def presubmit_check(
                 file=outs,
             )
 
-        raise pw_presubmit.PresubmitFailure
+        raise PresubmitFailure
 
     language = code_format.language.lower().replace('+', 'p').replace(' ', '_')
     check_code_format.name = f'{language}_format'
