@@ -318,6 +318,33 @@ class Registry(collections.abc.Mapping):
 
         return plugin
 
+    def register_config(
+        self,
+        config: Dict,
+        path: Optional[Path] = None,
+    ) -> None:
+        """Registers plugins from a Pigweed config.
+
+        Any exceptions raised from parsing the file are caught and logged.
+        """
+        plugins = config.get('pw', {}).get('pw_cli', {}).get('plugins', {})
+        for name, location in plugins.items():
+            module = location.pop('module')
+            function = location.pop('function')
+            if location:
+                raise ValueError(f'unrecognized plugin options: {location}')
+
+            try:
+                self.register_by_name(name, module, function, path)
+            except Error as err:
+                self._errors[name].append(err)
+                _LOG.error(
+                    '%s Failed to register plugin "%s": %s',
+                    path,
+                    name,
+                    err,
+                )
+
     def register_file(self, path: Path) -> None:
         """Registers plugins from a plugins file.
 

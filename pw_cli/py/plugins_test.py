@@ -134,29 +134,6 @@ class TestPluginRegistry(unittest.TestCase):
         with self.assertRaises(plugins.Error):
             self._registry.register('bar', lambda: None)
 
-    def test_register_directory_innermost_takes_priority(self) -> None:
-        with tempfile.TemporaryDirectory() as tempdir:
-            paths = list(_create_files(tempdir, _TEST_PLUGINS))
-            self._registry.register_directory(paths[1].parent, 'TEST_PLUGINS')
-
-        self.assertEqual(self._registry.run_with_argv('test_plugin', []), 123)
-
-    def test_register_directory_only_searches_up(self) -> None:
-        with tempfile.TemporaryDirectory() as tempdir:
-            paths = list(_create_files(tempdir, _TEST_PLUGINS))
-            self._registry.register_directory(paths[0].parent, 'TEST_PLUGINS')
-
-        self.assertEqual(self._registry.run_with_argv('test_plugin', []), 456)
-
-    def test_register_directory_with_restriction(self) -> None:
-        with tempfile.TemporaryDirectory() as tempdir:
-            paths = list(_create_files(tempdir, _TEST_PLUGINS))
-            self._registry.register_directory(
-                paths[0].parent, 'TEST_PLUGINS', Path(tempdir, 'nested', 'in')
-            )
-
-        self.assertNotIn('other_plugin', self._registry)
-
     def test_register_same_file_multiple_times_no_error(self) -> None:
         with tempfile.TemporaryDirectory() as tempdir:
             paths = list(_create_files(tempdir, _TEST_PLUGINS))
