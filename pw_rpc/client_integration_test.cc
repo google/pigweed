@@ -14,6 +14,8 @@
 
 #include <sys/socket.h>
 
+#include <algorithm>
+#include <array>
 #include <cstring>
 
 #include "gtest/gtest.h"
@@ -48,27 +50,34 @@ class StringReceiver {
  public:
   const char* Wait() {
     PW_CHECK(sem_.try_acquire_for(1500ms));
-    return buffer_;
+    return reinterpret_cast<const char*>(buffer_.begin());
   }
 
   Function<void(ConstByteSpan, Status)> UnaryOnCompleted() {
-    return [this](ConstByteSpan data, Status) { CopyPayload(data); };
+    return [this](ConstByteSpan data, Status) { CopyStringPayload(data); };
   }
 
   Function<void(ConstByteSpan)> OnNext() {
-    return [this](ConstByteSpan data) { CopyPayload(data); };
+    return [this](ConstByteSpan data) { CopyStringPayload(data); };
   }
 
- private:
-  void CopyPayload(ConstByteSpan data) {
-    std::memset(buffer_, 0, sizeof(buffer_));
-    PW_CHECK_UINT_LE(data.size(), sizeof(buffer_));
-    std::memcpy(buffer_, data.data(), data.size());
+  void CopyStringPayload(ConstByteSpan data) {
+    std::memset(buffer_.data(), 0, buffer_.size());
+    PW_CHECK_UINT_LE(data.size(), buffer_.size());
+    std::copy(data.begin(), data.end(), buffer_.begin());
     sem_.release();
   }
 
+  void ReverseCopyStringPayload(ConstByteSpan data) {
+    std::memset(buffer_.data(), 0, buffer_.size());
+    PW_CHECK_UINT_LE(data.size(), buffer_.size());
+    std::reverse_copy(data.begin(), data.end() - 1, buffer_.begin());
+    sem_.release();
+  }
+
+ private:
   pw::sync::BinarySemaphore sem_;
-  char buffer_[64];
+  std::array<std::byte, 64> buffer_;
 };
 
 TEST(RawRpcIntegrationTest, Unary) {
@@ -93,6 +102,36 @@ TEST(RawRpcIntegrationTest, BidirectionalStreaming) {
     EXPECT_STREQ(receiver.Wait(), "Dello");
 
     ASSERT_EQ(OkStatus(), call.Cancel());
+  }
+}
+
+TEST(RawRpcIntegrationTest, OnNextOverwritesItsOwnCall) {
+  for (int i = 0; i < kIterations; ++i) {
+    struct {
+      StringReceiver receiver;
+      pw::rpc::RawClientReaderWriter call;
+    } ctx;
+
+    // Chain together three calls. The first and third copy the string in normal
+    // order, while the second copies the string in reverse order.
+    ctx.call = kServiceClient.BidirectionalEcho([&ctx](ConstByteSpan data) {
+      ctx.call = kServiceClient.BidirectionalEcho([&ctx](ConstByteSpan data) {
+        ctx.receiver.ReverseCopyStringPayload(data);
+        ctx.call = kServiceClient.BidirectionalEcho(ctx.receiver.OnNext());
+      });
+      ctx.receiver.CopyStringPayload(data);
+    });
+
+    ASSERT_EQ(OkStatus(), ctx.call.Write(pw::as_bytes(pw::span("Window"))));
+    EXPECT_STREQ(ctx.receiver.Wait(), "Window");
+
+    ASSERT_EQ(OkStatus(), ctx.call.Write(pw::as_bytes(pw::span("Door"))));
+    EXPECT_STREQ(ctx.receiver.Wait(), "rooD");
+
+    ASSERT_EQ(OkStatus(), ctx.call.Write(pw::as_bytes(pw::span("Roof"))));
+    EXPECT_STREQ(ctx.receiver.Wait(), "Roof");
+
+    ASSERT_EQ(OkStatus(), ctx.call.Cancel());
   }
 }
 
