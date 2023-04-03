@@ -305,7 +305,7 @@ template <typename Operation>
 constexpr void resize_and_overwrite(Operation operation) {
   const auto new_size = std::move(operation)(data(), max_size());
   PW_ASSERT(static_cast<size_t>(new_size) <= max_size());
-  SetSizeAndTerminate(data(), new_size);
+  SetSizeAndTerminate(data(), static_cast<size_type>(new_size));
 }
 
 // TODO(b/239996007): Implement swap

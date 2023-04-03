@@ -103,7 +103,8 @@ class _PW_STATUS_NO_DISCARD StatusWithSize {
   // std::enable_if is used to prevent enum types (e.g. Status) from being used.
   // TODO(hepler): Add debug-only assert that size <= max_size().
   template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
-  explicit constexpr StatusWithSize(T size) : size_(size) {}
+  explicit constexpr StatusWithSize(T size)
+      : size_(static_cast<size_t>(size)) {}
 
   // Creates a StatusWithSize with the provided status and size.
   explicit constexpr StatusWithSize(Status status, size_t size)

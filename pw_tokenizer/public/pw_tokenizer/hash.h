@@ -57,14 +57,14 @@ inline constexpr uint32_t k65599HashConstant = 65599u;
 constexpr uint32_t Hash(std::string_view string)
     PW_NO_SANITIZE("unsigned-integer-overflow") {
   // The length is hashed as if it were the first character.
-  uint32_t hash = string.size();
+  uint32_t hash = static_cast<uint32_t>(string.size());
   uint32_t coefficient = k65599HashConstant;
 
   // Hash all of the characters in the string as unsigned ints.
   // The coefficient calculation is done modulo 0x100000000, so the unsigned
   // integer overflows are intentional.
-  for (uint8_t ch : string) {
-    hash += coefficient * ch;
+  for (char ch : string) {
+    hash += coefficient * static_cast<uint8_t>(ch);
     coefficient *= k65599HashConstant;
   }
 
@@ -85,11 +85,11 @@ constexpr uint32_t PwTokenizer65599FixedLengthHash(
     std::string_view string,
     size_t hash_length = PW_TOKENIZER_CFG_C_HASH_LENGTH)
     PW_NO_SANITIZE("unsigned-integer-overflow") {
-  uint32_t hash = string.size();
+  uint32_t hash = static_cast<uint32_t>(string.size());
   uint32_t coefficient = k65599HashConstant;
 
-  for (uint8_t ch : string.substr(0, hash_length)) {
-    hash += coefficient * ch;
+  for (char ch : string.substr(0, hash_length)) {
+    hash += coefficient * static_cast<uint8_t>(ch);
     coefficient *= k65599HashConstant;
   }
 

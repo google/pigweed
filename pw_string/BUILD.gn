@@ -66,6 +66,9 @@ pw_source_set("builder") {
     dir_pw_span,
     dir_pw_status,
   ]
+
+  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
 pw_source_set("format") {
@@ -78,6 +81,9 @@ pw_source_set("format") {
     dir_pw_span,
     dir_pw_status,
   ]
+
+  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
 pw_source_set("string") {
@@ -108,6 +114,9 @@ pw_source_set("to_string") {
     dir_pw_status,
   ]
   deps = [ "$dir_pw_third_party/fuchsia:stdcompat" ]
+
+  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
 pw_source_set("util") {
