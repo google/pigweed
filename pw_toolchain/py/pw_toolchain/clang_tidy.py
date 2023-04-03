@@ -31,6 +31,8 @@ import subprocess
 import sys
 from typing import Iterable, List, Optional, Union
 
+import pw_cli.env
+
 _LOG = logging.getLogger(__name__)
 
 
@@ -144,7 +146,10 @@ def run_clang_tidy(
     extra_args: List[str],
 ) -> int:
     """Executes clang_tidy via subprocess. Returns true if no failures."""
-    command: List[Union[str, Path]] = [clang_tidy, source_file, '--use-color']
+    command: List[Union[str, Path]] = [clang_tidy, source_file]
+
+    if pw_cli.env.pigweed_environment().PW_USE_COLOR:
+        command.append('--use-color')
 
     if not verbose:
         command.append('--quiet')
