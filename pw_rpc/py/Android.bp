@@ -45,3 +45,18 @@ python_binary_host {
         "pw_status_py_lib",
     ],
 }
+
+python_binary_host {
+    name: "pw_rpc_plugin_pwpb_py",
+    main: "pw_rpc/plugin_pwpb.py",
+    srcs: [
+        "pw_rpc/**/*.py",
+    ],
+    libs: [
+        "libprotobuf-python",
+        "pw_protobuf_compiler_py_lib",
+        "pw_protobuf_plugin_py_lib",
+        "pw_rpc_internal_packet_py_lib",
+        "pw_status_py_lib",
+    ],
+}

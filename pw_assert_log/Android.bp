@@ -27,3 +27,29 @@ cc_library_headers {
     ],
     host_supported: true,
 }
+
+filegroup {
+    name: "pw_assert_log_src_files",
+    srcs: [
+        "assert_log.cc",
+    ],
+}
+
+cc_defaults {
+   name: "pw_assert_log_defaults",
+    cpp_std: "c++2a",
+    header_libs: [
+      "pw_assert_log_headers",
+      "pw_log_headers",
+      "pw_log_null_headers",
+    ],
+
+    export_header_lib_headers: [
+      "pw_assert_log_headers",
+    ],
+    srcs: [
+        ":pw_assert_log_src_files"
+    ],
+    vendor_available: true,
+    host_supported: true,
+}

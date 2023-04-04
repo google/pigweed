@@ -16,31 +16,25 @@ package {
     default_applicable_licenses: ["external_pigweed_license"],
 }
 
-cc_library_static {
-    name: "pw_varint",
-    cpp_std: "c++2a",
+cc_library_headers {
+    name: "pw_rpc_pwpb_include_dirs",
+    export_include_dirs: [
+        "public",
+    ],
     vendor_available: true,
-    export_include_dirs: ["public"],
-    defaults: [
-        "pw_assert_log_defaults",
-    ],
+    host_supported: true,
+}
+
+cc_defaults {
+   name: "pw_rpc_pwpb_defaults",
+    cpp_std: "c++2a",
     header_libs: [
-        "pw_assert_headers",
-        "pw_log_headers",
-        "pw_log_null_headers",
-        "pw_preprocessor_headers",
-        "pw_polyfill_headers",
-        "pw_span_headers",
-        "pw_result_headers",
+      "pw_rpc_pwpb_include_dirs",
     ],
-    static_libs: [
-        "pw_bytes",
-        "pw_status",
-        "pw_stream",
+
+    export_header_lib_headers: [
+      "pw_rpc_pwpb_include_dirs",
     ],
-    srcs: [
-        "stream.cc",
-        "varint.cc",
-    ],
+    vendor_available: true,
     host_supported: true,
 }

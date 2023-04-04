@@ -409,6 +409,44 @@ cc_library_static {
     static_libs: ["libprotobuf-c-nano"],
 }
 
+// Generate cc and header pwpb files.
+// The output file names are based on the srcs file name with a .pb.c / .pb.h extension.
+genrule_defaults {
+    name: "pw_rpc_generate_pwpb_proto",
+    cmd: "python3 $(location pw_protobuf_compiler_py) " +
+         "--plugin-path=$(location pw_protobuf_plugin_py) " +
+         "--out-dir=$(genDir) " +
+         "--compile-dir=$$(dirname $(in)) " +
+         "--language pwpb " +
+         "--sources $(in) " +
+         "--no-experimental-proto3-optional " +
+         "--protoc=$(location aprotoc)",
+    tools: [
+        "aprotoc",
+        "pw_protobuf_plugin_py",
+        "pw_protobuf_compiler_py",
+    ],
+}
+
+// Generate the header pwpb RPC file.
+// The output file name is based on the srcs file name with a .rpc.pwpb.h extension.
+genrule_defaults {
+    name: "pw_rpc_generate_pwpb_rpc_header",
+    cmd: "python3 $(location pw_protobuf_compiler_py) " +
+         "--plugin-path=$(location pw_rpc_plugin_pwpb_py) " +
+         "--out-dir=$(genDir) " +
+         "--compile-dir=$$(dirname $(in)) " +
+         "--language pwpb_rpc " +
+         "--sources $(in) " +
+         "--no-experimental-proto3-optional " +
+         "--protoc=$(location aprotoc)",
+    tools: [
+        "aprotoc",
+        "pw_protobuf_compiler_py",
+        "pw_rpc_plugin_pwpb_py",
+    ],
+}
+
 python_library_host {
     name: "pw_rpc_internal_packet_py_lib",
     srcs: [

@@ -1,4 +1,4 @@
-// Copyright 2022 The Pigweed Authors
+// Copyright 2023 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -16,31 +16,41 @@ package {
     default_applicable_licenses: ["external_pigweed_license"],
 }
 
-cc_library_static {
-    name: "pw_varint",
-    cpp_std: "c++2a",
-    vendor_available: true,
-    export_include_dirs: ["public"],
-    defaults: [
-        "pw_assert_log_defaults",
+cc_library_headers {
+    name: "pw_thread_include_dirs",
+    export_include_dirs: [
+        "public",
     ],
+    vendor_available: true,
+    host_supported: true,
+}
+
+filegroup {
+    name: "pw_thread_files",
+    srcs: [
+        "sleep.cc",
+        "thread.cc",
+        "yield.cc",
+    ],
+}
+
+cc_defaults {
+   name: "pw_thread_defaults",
+    cpp_std: "c++2a",
     header_libs: [
-        "pw_assert_headers",
-        "pw_log_headers",
-        "pw_log_null_headers",
-        "pw_preprocessor_headers",
-        "pw_polyfill_headers",
-        "pw_span_headers",
-        "pw_result_headers",
+      "pw_thread_include_dirs",
+      "pw_function_headers",
+      "pw_preprocessor_headers",
+    ],
+    export_header_lib_headers: [
+      "pw_thread_include_dirs",
     ],
     static_libs: [
-        "pw_bytes",
-        "pw_status",
-        "pw_stream",
+      "pw_status",
     ],
     srcs: [
-        "stream.cc",
-        "varint.cc",
+        ":pw_thread_files"
     ],
+    vendor_available: true,
     host_supported: true,
 }
