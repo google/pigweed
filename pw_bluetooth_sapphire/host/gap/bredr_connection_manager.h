@@ -236,7 +236,8 @@ class BrEdrConnectionManager final {
   void CompleteConnectionSetup(Peer::WeakPtr peer, hci_spec::ConnectionHandle handle);
 
   // Callbacks for registered events
-  hci::CommandChannel::EventCallbackResult OnAuthenticationComplete(const hci::EventPacket& event);
+  hci::CommandChannel::EventCallbackResult OnAuthenticationComplete(
+      const hci::EmbossEventPacket& event);
   void OnConnectionRequest(ConnectionRequestEvent request);
   void OnConnectionComplete(ConnectionComplete event);
   hci::CommandChannel::EventCallbackResult OnIoCapabilityRequest(const hci::EventPacket& event);

@@ -1493,11 +1493,12 @@ void FakeController::OnLinkKeyRequestReplyCommandReceived(
 
   BT_ASSERT(!peer->logical_links().empty());
   for (auto& conn_handle : peer->logical_links()) {
-    hci_spec::AuthenticationCompleteEventParams auth_complete;
-    auth_complete.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-    auth_complete.connection_handle = htole16(conn_handle);
-    SendEvent(hci_spec::kAuthenticationCompleteEventCode,
-              BufferView(&auth_complete, sizeof(auth_complete)));
+    auto event =
+        hci::EmbossEventPacket::New<pw::bluetooth::emboss::AuthenticationCompleteEventWriter>(
+            hci_spec::kAuthenticationCompleteEventCode);
+    event.view_t().status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+    event.view_t().connection_handle().Write(conn_handle);
+    SendCommandChannelPacket(event.data());
   }
 }
 
@@ -1571,11 +1572,12 @@ void FakeController::OnUserConfirmationRequestReplyCommand(
 
   BT_ASSERT(!peer->logical_links().empty());
   for (auto& conn_handle : peer->logical_links()) {
-    hci_spec::AuthenticationCompleteEventParams auth_complete;
-    auth_complete.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-    auth_complete.connection_handle = htole16(conn_handle);
-    SendEvent(hci_spec::kAuthenticationCompleteEventCode,
-              BufferView(&auth_complete, sizeof(auth_complete)));
+    auto event =
+        hci::EmbossEventPacket::New<pw::bluetooth::emboss::AuthenticationCompleteEventWriter>(
+            hci_spec::kAuthenticationCompleteEventCode);
+    event.view_t().status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+    event.view_t().connection_handle().Write(conn_handle);
+    SendCommandChannelPacket(event.data());
   }
 }
 

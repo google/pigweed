@@ -139,7 +139,7 @@ bool EventPacket::ToStatusCode(pw::bluetooth::emboss::StatusCode* out_code) cons
     return StatusCodeFromSubevent<hci_spec::subevent_name##SubeventParams>(*this, out_code)
 
   switch (event_code()) {
-    CASE_EVENT_STATUS(AuthenticationComplete);
+    CASE_EMBOSS_EVENT_STATUS(AuthenticationComplete);
     CASE_EVENT_STATUS(ChangeConnectionLinkKeyComplete);
     CASE_EVENT_STATUS(CommandComplete);
     CASE_EVENT_STATUS(CommandStatus);

@@ -752,15 +752,6 @@ constexpr EventCode kDisconnectionCompleteEventCode = 0x05;
 // Authentication Complete Event (v1.1) (BR/EDR)
 constexpr EventCode kAuthenticationCompleteEventCode = 0x06;
 
-struct AuthenticationCompleteEventParams {
-  // See enum StatusCode in hci_constants.h
-  StatusCode status;
-
-  // Connection_Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-} __attribute__((packed));
-
 // ==================================================
 // Remote Name Request Complete Event (v1.1) (BR/EDR)
 constexpr EventCode kRemoteNameRequestCompleteEventCode = 0x07;
