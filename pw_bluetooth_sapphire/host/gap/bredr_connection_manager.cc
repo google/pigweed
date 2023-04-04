@@ -105,27 +105,6 @@ void SetPageScanEnabled(bool enabled, hci::Transport::WeakPtr hci, async_dispatc
 
 }  // namespace
 
-// An event signifying that a connection was completed by the controller
-BrEdrConnectionManager::ConnectionComplete::ConnectionComplete(
-    const hci::EmbossEventPacket& event) {
-  BT_ASSERT(event.event_code() == hci_spec::kConnectionCompleteEventCode);
-  auto params = event.view<pw::bluetooth::emboss::ConnectionCompleteEventView>();
-  handle = params.connection_handle().Read();
-  addr = DeviceAddress(DeviceAddress::Type::kBREDR, DeviceAddressBytes(params.bd_addr()));
-  status_code = params.status().Read();
-  link_type = params.link_type().Read();
-}
-
-// An event signifying that an incoming connection is being requested by a peer
-BrEdrConnectionManager::ConnectionRequestEvent::ConnectionRequestEvent(
-    const hci::EmbossEventPacket& event) {
-  BT_ASSERT(event.event_code() == hci_spec::kConnectionRequestEventCode);
-  auto params = event.view<pw::bluetooth::emboss::ConnectionRequestEventView>();
-  addr = DeviceAddress(DeviceAddress::Type::kBREDR, DeviceAddressBytes(params.bd_addr()));
-  link_type = params.link_type().Read();
-  class_of_device = DeviceClass(params.class_of_device().BackingStorage().ReadUInt());
-}
-
 hci::CommandChannel::EventHandlerId BrEdrConnectionManager::AddEventHandler(
     const hci_spec::EventCode& code, hci::CommandChannel::EventCallbackVariant cb) {
   auto self = weak_self_.GetWeakPtr();
@@ -183,15 +162,9 @@ BrEdrConnectionManager::BrEdrConnectionManager(hci::Transport::WeakPtr hci, Peer
   AddEventHandler(hci_spec::kAuthenticationCompleteEventCode,
                   fit::bind_member<&BrEdrConnectionManager::OnAuthenticationComplete>(this));
   AddEventHandler(hci_spec::kConnectionCompleteEventCode,
-                  [this](const hci::EmbossEventPacket& event) {
-                    OnConnectionComplete(ConnectionComplete(event));
-                    return hci::CommandChannel::EventCallbackResult::kContinue;
-                  });
+                  fit::bind_member<&BrEdrConnectionManager::OnConnectionComplete>(this));
   AddEventHandler(hci_spec::kConnectionRequestEventCode,
-                  [this](const hci::EmbossEventPacket& event) {
-                    OnConnectionRequest(ConnectionRequestEvent(event));
-                    return hci::CommandChannel::EventCallbackResult::kContinue;
-                  });
+                  fit::bind_member<&BrEdrConnectionManager::OnConnectionRequest>(this));
   AddEventHandler(hci_spec::kIOCapabilityRequestEventCode,
                   fit::bind_member<&BrEdrConnectionManager::OnIoCapabilityRequest>(this));
   AddEventHandler(hci_spec::kIOCapabilityResponseEventCode,
@@ -736,16 +709,21 @@ bool BrEdrConnectionManager::ExistsIncomingRequest(PeerId id) {
   return (request != connection_requests_.end() && request->second.HasIncoming());
 }
 
-void BrEdrConnectionManager::OnConnectionRequest(ConnectionRequestEvent event) {
-  if (deny_incoming_.contains(event.addr)) {
-    bt_log(INFO, "gap-bredr", "rejecting incoming from peer (addr: %s) on cooldown",
-           bt_str(event.addr));
-    SendRejectConnectionRequest(event.addr,
+hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnConnectionRequest(
+    const hci::EmbossEventPacket& event) {
+  auto params = event.view<pw::bluetooth::emboss::ConnectionRequestEventView>();
+  const DeviceAddress addr(DeviceAddress::Type::kBREDR, DeviceAddressBytes(params.bd_addr()));
+  const pw::bluetooth::emboss::LinkType link_type = params.link_type().Read();
+  const DeviceClass device_class(params.class_of_device().BackingStorage().ReadUInt());
+
+  if (deny_incoming_.contains(addr)) {
+    bt_log(INFO, "gap-bredr", "rejecting incoming from peer (addr: %s) on cooldown", bt_str(addr));
+    SendRejectConnectionRequest(addr,
                                 pw::bluetooth::emboss::StatusCode::CONNECTION_REJECTED_BAD_BD_ADDR);
-    return;
+    return hci::CommandChannel::EventCallbackResult::kContinue;
   }
   // Initialize the peer if it doesn't exist, to ensure we have allocated a PeerId
-  auto peer = FindOrInitPeer(event.addr);
+  auto peer = FindOrInitPeer(addr);
   auto peer_id = peer->identifier();
 
   // In case of concurrent incoming requests from the same peer, reject all but the first
@@ -753,36 +731,36 @@ void BrEdrConnectionManager::OnConnectionRequest(ConnectionRequestEvent event) {
     bt_log(WARN, "gap-bredr",
            "rejecting duplicate incoming connection request (peer: %s, addr: %s, link_type: %s, "
            "class: %s)",
-           bt_str(peer_id), bt_str(event.addr), hci_spec::LinkTypeToString(event.link_type),
-           bt_str(event.class_of_device));
-    SendRejectConnectionRequest(event.addr,
+           bt_str(peer_id), bt_str(addr), hci_spec::LinkTypeToString(params.link_type().Read()),
+           bt_str(device_class));
+    SendRejectConnectionRequest(addr,
                                 pw::bluetooth::emboss::StatusCode::CONNECTION_REJECTED_BAD_BD_ADDR);
-    return;
+    return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
-  if (event.link_type == pw::bluetooth::emboss::LinkType::ACL) {
+  if (link_type == pw::bluetooth::emboss::LinkType::ACL) {
     // If we happen to be already connected (for example, if our outgoing raced, or we received
     // duplicate requests), we reject the request with 'ConnectionAlreadyExists'
     if (FindConnectionById(peer_id)) {
       bt_log(WARN, "gap-bredr",
              "rejecting incoming connection request; already connected (peer: %s, addr: %s)",
-             bt_str(peer_id), bt_str(event.addr));
-      SendRejectConnectionRequest(event.addr,
+             bt_str(peer_id), bt_str(addr));
+      SendRejectConnectionRequest(addr,
                                   pw::bluetooth::emboss::StatusCode::CONNECTION_ALREADY_EXISTS);
-      return;
+      return hci::CommandChannel::EventCallbackResult::kContinue;
     }
 
     // Accept the connection, performing a role switch. We receive a Connection Complete event
     // when the connection is complete, and finish the link then.
     bt_log(INFO, "gap-bredr",
            "accepting incoming connection (peer: %s, addr: %s, link_type: %s, class: %s)",
-           bt_str(peer_id), bt_str(event.addr), hci_spec::LinkTypeToString(event.link_type),
-           bt_str(event.class_of_device));
+           bt_str(peer_id), bt_str(addr), hci_spec::LinkTypeToString(link_type),
+           bt_str(device_class));
 
     // Register that we're in the middle of an incoming request for this peer - create a new
     // request if one doesn't already exist
     auto [request, _ignore] = connection_requests_.try_emplace(
-        peer_id, event.addr, peer_id, peer->MutBrEdr().RegisterInitializingConnection());
+        peer_id, addr, peer_id, peer->MutBrEdr().RegisterInitializingConnection());
 
     inspect_properties_.incoming_.connection_attempts_.Add(1);
 
@@ -791,52 +769,55 @@ void BrEdrConnectionManager::OnConnectionRequest(ConnectionRequestEvent event) {
         inspect_properties_.requests_node_,
         inspect_properties_.requests_node_.UniqueName(kInspectRequestNodeNamePrefix));
 
-    SendAcceptConnectionRequest(
-        event.addr.value(),
-        [addr = event.addr, self = weak_self_.GetWeakPtr(), peer_id](auto status) {
-          if (self.is_alive() && status.is_error())
-            self->CompleteRequest(peer_id, addr, status, /*handle=*/0);
-        });
+    SendAcceptConnectionRequest(addr.value(),
+                                [addr, self = weak_self_.GetWeakPtr(), peer_id](auto status) {
+                                  if (self.is_alive() && status.is_error())
+                                    self->CompleteRequest(peer_id, addr, status, /*handle=*/0);
+                                });
 
-    return;
+    return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
-  if (event.link_type == pw::bluetooth::emboss::LinkType::SCO ||
-      event.link_type == pw::bluetooth::emboss::LinkType::ESCO) {
-    auto conn_pair = FindConnectionByAddress(event.addr.value());
+  if (link_type == pw::bluetooth::emboss::LinkType::SCO ||
+      link_type == pw::bluetooth::emboss::LinkType::ESCO) {
+    auto conn_pair = FindConnectionByAddress(addr.value());
     if (conn_pair) {
       // The ScoConnectionManager owned by the BrEdrConnection will respond.
-      bt_log(INFO, "gap-bredr",
+      bt_log(DEBUG, "gap-bredr",
              "delegating incoming SCO connection to ScoConnectionManager (peer: %s, addr: %s)",
-             bt_str(peer_id), bt_str(event.addr));
-      return;
+             bt_str(peer_id), bt_str(addr));
+      return hci::CommandChannel::EventCallbackResult::kContinue;
     }
     bt_log(
         WARN, "gap-bredr",
         "rejecting (e)SCO connection request for peer that is not connected (peer: %s, addr: %s)",
-        bt_str(peer_id), bt_str(event.addr));
+        bt_str(peer_id), bt_str(addr));
     SendRejectSynchronousRequest(
-        event.addr, pw::bluetooth::emboss::StatusCode::UNACCEPTABLE_CONNECTION_PARAMETERS);
+        addr, pw::bluetooth::emboss::StatusCode::UNACCEPTABLE_CONNECTION_PARAMETERS);
   } else {
-    auto link_type = static_cast<unsigned int>(event.link_type);
-    bt_log(WARN, "gap-bredr", "reject unsupported connection type %u (peer: %s, addr: %s)",
-           link_type, bt_str(peer_id), bt_str(event.addr));
+    bt_log(WARN, "gap-bredr", "reject unsupported connection type %s (peer: %s, addr: %s)",
+           hci_spec::LinkTypeToString(link_type), bt_str(peer_id), bt_str(addr));
     SendRejectConnectionRequest(
-        event.addr, pw::bluetooth::emboss::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
+        addr, pw::bluetooth::emboss::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
   }
+  return hci::CommandChannel::EventCallbackResult::kContinue;
 }
 
-void BrEdrConnectionManager::OnConnectionComplete(ConnectionComplete event) {
-  if (event.link_type != pw::bluetooth::emboss::LinkType::ACL) {
+hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnConnectionComplete(
+    const hci::EmbossEventPacket& event) {
+  auto params = event.view<pw::bluetooth::emboss::ConnectionCompleteEventView>();
+  if (params.link_type().Read() != pw::bluetooth::emboss::LinkType::ACL) {
     // Only ACL links are processed
-    return;
+    return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
   // Initialize the peer if it doesn't exist, to ensure we have allocated a PeerId (we should
   // usually have a peer by this point)
-  auto peer = FindOrInitPeer(event.addr);
+  DeviceAddress addr(DeviceAddress::Type::kBREDR, DeviceAddressBytes(params.bd_addr()));
+  auto peer = FindOrInitPeer(addr);
 
-  CompleteRequest(peer->identifier(), event.addr, event.ToResult(), event.handle);
+  CompleteRequest(peer->identifier(), addr, event.ToResult(), params.connection_handle().Read());
+  return hci::CommandChannel::EventCallbackResult::kContinue;
 }
 
 // A request for a connection - from an upstream client _or_ a remote peer - completed, successfully

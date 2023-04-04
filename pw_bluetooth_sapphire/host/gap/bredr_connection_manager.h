@@ -153,35 +153,6 @@ class BrEdrConnectionManager final {
   void AttachInspect(inspect::Node& parent, std::string name);
 
  private:
-  // TODO(fxbug.dev/58020) - eventually replace these with auto-generated implementations
-  // An event signifying that a connection was completed by the controller
-  struct ConnectionComplete {
-    DeviceAddress addr;
-    hci_spec::ConnectionHandle handle;
-    pw::bluetooth::emboss::StatusCode status_code;
-    pw::bluetooth::emboss::LinkType link_type;
-
-    // Create from an hci ConnectionComplete event
-    // It is the duty of the caller to ensure it is called with a packet that contains a
-    // ConnectionComplete event; otherwise it will assert
-    explicit ConnectionComplete(const hci::EmbossEventPacket& event);
-
-    hci::Result<> ToResult() { return bt::ToResult(status_code); }
-  };
-
-  // TODO(fxbug.dev/58020) - eventually replace these with auto-generated implementations
-  // An event signifying that an incoming connection is being requested by a peer
-  struct ConnectionRequestEvent {
-    DeviceAddress addr;
-    pw::bluetooth::emboss::LinkType link_type;
-    DeviceClass class_of_device;
-
-    // Create from an hci ConnectionRequest event
-    // It is the duty of the caller to ensure it is called with a packet that contains a
-    // ConnectionRequest event; otherwise it will assert
-    explicit ConnectionRequestEvent(const hci::EmbossEventPacket& event);
-  };
-
   // Callback for hci::Connection. Called when the peer disconnects.
   void OnPeerDisconnect(const hci::Connection* connection);
 
@@ -238,8 +209,9 @@ class BrEdrConnectionManager final {
   // Callbacks for registered events
   hci::CommandChannel::EventCallbackResult OnAuthenticationComplete(
       const hci::EmbossEventPacket& event);
-  void OnConnectionRequest(ConnectionRequestEvent request);
-  void OnConnectionComplete(ConnectionComplete event);
+  hci::CommandChannel::EventCallbackResult OnConnectionRequest(const hci::EmbossEventPacket& event);
+  hci::CommandChannel::EventCallbackResult OnConnectionComplete(
+      const hci::EmbossEventPacket& event);
   hci::CommandChannel::EventCallbackResult OnIoCapabilityRequest(const hci::EventPacket& event);
   hci::CommandChannel::EventCallbackResult OnIoCapabilityResponse(const hci::EventPacket& event);
   hci::CommandChannel::EventCallbackResult OnLinkKeyRequest(const hci::EventPacket& event);
