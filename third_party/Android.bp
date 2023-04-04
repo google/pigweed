@@ -17,19 +17,19 @@ package {
 }
 
 cc_library_headers {
-    name: "fuschia_sdk_lib_fit",
+    name: "fuchsia_sdk_lib_fit",
     vendor_available: true,
     export_include_dirs: [
         "fuchsia/repo/sdk/lib/fit/include",
     ],
     header_libs: [
-        "fuschia_sdk_lib_stdcompat",
+        "fuchsia_sdk_lib_stdcompat",
     ],
     host_supported: true,
 }
 
 cc_library_headers {
-    name: "fuschia_sdk_lib_stdcompat",
+    name: "fuchsia_sdk_lib_stdcompat",
     vendor_available: true,
     export_include_dirs: [
         "fuchsia/repo/sdk/lib/stdcompat/include",

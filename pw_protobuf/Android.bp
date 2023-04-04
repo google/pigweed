@@ -21,8 +21,8 @@ cc_library_static {
     vendor_available: true,
     export_include_dirs: ["public"],
     header_libs: [
-        "fuschia_sdk_lib_fit",
-        "fuschia_sdk_lib_stdcompat",
+        "fuchsia_sdk_lib_fit",
+        "fuchsia_sdk_lib_stdcompat",
         "pw_assert_headers",
         "pw_assert_log_headers",
         "pw_function_headers",
