@@ -21,6 +21,7 @@ cc_library_static {
     vendor_available: true,
     export_include_dirs: ["public"],
     header_libs: [
+        "fuschia_sdk_lib_stdcompat",
         "pw_polyfill_headers",
         "pw_preprocessor_headers",
         "pw_span_headers",
