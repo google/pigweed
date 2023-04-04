@@ -22,7 +22,11 @@ pw_doc_group("docs") {
     "doc_resources/pw_watch_on_device_demo.gif",
     "doc_resources/pw_watch_test_demo2.gif",
   ]
-  sources = [ "docs.rst" ]
+  sources = [
+    "cli.rst",
+    "docs.rst",
+    "guide.rst",
+  ]
 }
 
 pw_test_group("tests") {

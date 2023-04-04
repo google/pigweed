@@ -163,6 +163,8 @@ and finally Bazel.
   To avoid confusing the two, we refer to the former as "GN/Bazel targets" and the
   latter as "Pigweed targets".
 
+.. _docs-build-system-gn:
+
 GN
 --
 A perhaps unfamiliar name, `GN (Generate Ninja)`_ is a meta-build system that
@@ -573,6 +575,8 @@ various proprietary projects. Its modular structure makes it a great fit for
 .. note::
   Bazel support is experimental and only for the brave for now. If you are
   looking for stable set of build API's please use GN.
+
+.. _docs-build-system-bazel:
 
 The Bazel build
 ===============
