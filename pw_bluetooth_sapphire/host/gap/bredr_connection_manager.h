@@ -222,6 +222,9 @@ class BrEdrConnectionManager final {
   hci::CommandChannel::EventCallbackResult OnUserPasskeyNotification(const hci::EventPacket& event);
   hci::CommandChannel::EventCallbackResult OnRoleChange(const hci::EventPacket& event);
 
+  void HandleNonAclConnectionRequest(const DeviceAddress& addr,
+                                     pw::bluetooth::emboss::LinkType link_type);
+
   // Called when we complete a pending request. Initiates a new connection
   // attempt for the next peer in the pending list, if any.
   void TryCreateNextConnection();

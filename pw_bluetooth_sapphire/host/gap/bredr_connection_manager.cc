@@ -716,13 +716,20 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnConnectionReq
   const pw::bluetooth::emboss::LinkType link_type = params.link_type().Read();
   const DeviceClass device_class(params.class_of_device().BackingStorage().ReadUInt());
 
+  if (link_type != pw::bluetooth::emboss::LinkType::ACL) {
+    HandleNonAclConnectionRequest(addr, link_type);
+    return hci::CommandChannel::EventCallbackResult::kContinue;
+  }
+
   if (deny_incoming_.contains(addr)) {
     bt_log(INFO, "gap-bredr", "rejecting incoming from peer (addr: %s) on cooldown", bt_str(addr));
     SendRejectConnectionRequest(addr,
                                 pw::bluetooth::emboss::StatusCode::CONNECTION_REJECTED_BAD_BD_ADDR);
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
+
   // Initialize the peer if it doesn't exist, to ensure we have allocated a PeerId
+  // Do this after checking the denylist to avoid adding denied peers to cache.
   auto peer = FindOrInitPeer(addr);
   auto peer_id = peer->identifier();
 
@@ -738,68 +745,40 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnConnectionReq
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
-  if (link_type == pw::bluetooth::emboss::LinkType::ACL) {
-    // If we happen to be already connected (for example, if our outgoing raced, or we received
-    // duplicate requests), we reject the request with 'ConnectionAlreadyExists'
-    if (FindConnectionById(peer_id)) {
-      bt_log(WARN, "gap-bredr",
-             "rejecting incoming connection request; already connected (peer: %s, addr: %s)",
-             bt_str(peer_id), bt_str(addr));
-      SendRejectConnectionRequest(addr,
-                                  pw::bluetooth::emboss::StatusCode::CONNECTION_ALREADY_EXISTS);
-      return hci::CommandChannel::EventCallbackResult::kContinue;
-    }
-
-    // Accept the connection, performing a role switch. We receive a Connection Complete event
-    // when the connection is complete, and finish the link then.
-    bt_log(INFO, "gap-bredr",
-           "accepting incoming connection (peer: %s, addr: %s, link_type: %s, class: %s)",
-           bt_str(peer_id), bt_str(addr), hci_spec::LinkTypeToString(link_type),
-           bt_str(device_class));
-
-    // Register that we're in the middle of an incoming request for this peer - create a new
-    // request if one doesn't already exist
-    auto [request, _ignore] = connection_requests_.try_emplace(
-        peer_id, addr, peer_id, peer->MutBrEdr().RegisterInitializingConnection());
-
-    inspect_properties_.incoming_.connection_attempts_.Add(1);
-
-    request->second.BeginIncoming();
-    request->second.AttachInspect(
-        inspect_properties_.requests_node_,
-        inspect_properties_.requests_node_.UniqueName(kInspectRequestNodeNamePrefix));
-
-    SendAcceptConnectionRequest(addr.value(),
-                                [addr, self = weak_self_.GetWeakPtr(), peer_id](auto status) {
-                                  if (self.is_alive() && status.is_error())
-                                    self->CompleteRequest(peer_id, addr, status, /*handle=*/0);
-                                });
-
+  // If we happen to be already connected (for example, if our outgoing raced, or we received
+  // duplicate requests), we reject the request with 'ConnectionAlreadyExists'
+  if (FindConnectionById(peer_id)) {
+    bt_log(WARN, "gap-bredr",
+           "rejecting incoming connection request; already connected (peer: %s, addr: %s)",
+           bt_str(peer_id), bt_str(addr));
+    SendRejectConnectionRequest(addr, pw::bluetooth::emboss::StatusCode::CONNECTION_ALREADY_EXISTS);
     return hci::CommandChannel::EventCallbackResult::kContinue;
   }
 
-  if (link_type == pw::bluetooth::emboss::LinkType::SCO ||
-      link_type == pw::bluetooth::emboss::LinkType::ESCO) {
-    auto conn_pair = FindConnectionByAddress(addr.value());
-    if (conn_pair) {
-      // The ScoConnectionManager owned by the BrEdrConnection will respond.
-      bt_log(DEBUG, "gap-bredr",
-             "delegating incoming SCO connection to ScoConnectionManager (peer: %s, addr: %s)",
-             bt_str(peer_id), bt_str(addr));
-      return hci::CommandChannel::EventCallbackResult::kContinue;
-    }
-    bt_log(
-        WARN, "gap-bredr",
-        "rejecting (e)SCO connection request for peer that is not connected (peer: %s, addr: %s)",
-        bt_str(peer_id), bt_str(addr));
-    SendRejectSynchronousRequest(
-        addr, pw::bluetooth::emboss::StatusCode::UNACCEPTABLE_CONNECTION_PARAMETERS);
-  } else {
-    bt_log(WARN, "gap-bredr", "reject unsupported connection type %s (peer: %s, addr: %s)",
-           hci_spec::LinkTypeToString(link_type), bt_str(peer_id), bt_str(addr));
-    SendRejectConnectionRequest(
-        addr, pw::bluetooth::emboss::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
-  }
+  // Accept the connection, performing a role switch. We receive a Connection Complete event
+  // when the connection is complete, and finish the link then.
+  bt_log(INFO, "gap-bredr",
+         "accepting incoming connection (peer: %s, addr: %s, link_type: %s, class: %s)",
+         bt_str(peer_id), bt_str(addr), hci_spec::LinkTypeToString(link_type),
+         bt_str(device_class));
+
+  // Register that we're in the middle of an incoming request for this peer - create a new
+  // request if one doesn't already exist
+  auto [request, _] = connection_requests_.try_emplace(
+      peer_id, addr, peer_id, peer->MutBrEdr().RegisterInitializingConnection());
+
+  inspect_properties_.incoming_.connection_attempts_.Add(1);
+
+  request->second.BeginIncoming();
+  request->second.AttachInspect(
+      inspect_properties_.requests_node_,
+      inspect_properties_.requests_node_.UniqueName(kInspectRequestNodeNamePrefix));
+
+  SendAcceptConnectionRequest(addr.value(),
+                              [addr, self = weak_self_.GetWeakPtr(), peer_id](auto status) {
+                                if (self.is_alive() && status.is_error())
+                                  self->CompleteRequest(peer_id, addr, status, /*handle=*/0);
+                              });
   return hci::CommandChannel::EventCallbackResult::kContinue;
 }
 
@@ -1221,6 +1200,40 @@ hci::CommandChannel::EventCallbackResult BrEdrConnectionManager::OnRoleChange(
   conn_pair->second->link().set_role(params.new_role);
 
   return hci::CommandChannel::EventCallbackResult::kContinue;
+}
+
+void BrEdrConnectionManager::HandleNonAclConnectionRequest(
+    const DeviceAddress& addr, pw::bluetooth::emboss::LinkType link_type) {
+  BT_DEBUG_ASSERT(link_type != pw::bluetooth::emboss::LinkType::ACL);
+
+  // Initialize the peer if it doesn't exist, to ensure we have allocated a PeerId
+  auto peer = FindOrInitPeer(addr);
+  auto peer_id = peer->identifier();
+
+  if (link_type != pw::bluetooth::emboss::LinkType::SCO &&
+      link_type != pw::bluetooth::emboss::LinkType::ESCO) {
+    bt_log(WARN, "gap-bredr", "reject unsupported connection type %s (peer: %s, addr: %s)",
+           hci_spec::LinkTypeToString(link_type), bt_str(peer_id), bt_str(addr));
+    SendRejectConnectionRequest(
+        addr, pw::bluetooth::emboss::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER);
+    return;
+  }
+
+  auto conn_pair = FindConnectionByAddress(addr.value());
+  if (!conn_pair) {
+    bt_log(
+        WARN, "gap-bredr",
+        "rejecting (e)SCO connection request for peer that is not connected (peer: %s, addr: %s)",
+        bt_str(peer_id), bt_str(addr));
+    SendRejectSynchronousRequest(
+        addr, pw::bluetooth::emboss::StatusCode::UNACCEPTABLE_CONNECTION_PARAMETERS);
+    return;
+  }
+
+  // The ScoConnectionManager owned by the BrEdrConnection will respond.
+  bt_log(DEBUG, "gap-bredr",
+         "SCO request ignored, handled by ScoConnectionManager (peer: %s, addr: %s)",
+         bt_str(peer_id), bt_str(addr));
 }
 
 bool BrEdrConnectionManager::Connect(PeerId peer_id, ConnectResultCallback on_connection_result) {
