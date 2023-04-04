@@ -36,6 +36,7 @@ from pw_presubmit import (
     git_repo,
     gitmodules,
     inclusive_language,
+    json_check,
     keep_sorted,
     module_owners,
     npm_presubmit,
@@ -1014,6 +1015,7 @@ _LINTFORMAT = (
     source_in_build.gn(SOURCE_FILES_FILTER),
     source_is_in_cmake_build_warn_only,
     shell_checks.shellcheck if shutil.which('shellcheck') else (),
+    json_check.presubmit_check,
     keep_sorted.presubmit_check,
     todo_check_with_exceptions,
 )

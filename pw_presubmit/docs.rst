@@ -298,7 +298,7 @@ by adding ``pw_presubmit.gitmodules.create()`` to a presubmit program. This
 function takes an optional argument of type ``pw_presubmit.gitmodules.Config``.
 ``Config`` objects have several properties.
 
-* ``allow_non_googlesource_hosts: bool = False`` — If false, all submodules URLs
+* ``allow_non_googlesource_hosts: bool = False`` — If false, all submodule URLs
   must be on a Google-managed Gerrit server.
 * ``allowed_googlesource_hosts: Sequence[str] = ()`` — If set, any
   Google-managed Gerrit URLs for submodules most be in this list. Entries
@@ -369,6 +369,11 @@ a callable as an argument that indicates, for a given file, where a controlling
 ``OWNERS`` file should be, or returns None if no ``OWNERS`` file is necessary.
 Formatting of ``OWNERS`` files is handled similary to formatting of other
 source files and is discussed in `Code Formatting`.
+
+JSON
+^^^^
+The JSON check requires all ``*.json`` files to be valid JSON files. It can be
+included by adding ``json_check.presubmit_check()`` to a presubmit program.
 
 Source in Build
 ^^^^^^^^^^^^^^^
