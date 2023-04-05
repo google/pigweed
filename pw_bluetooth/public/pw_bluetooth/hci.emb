@@ -2510,6 +2510,14 @@ struct SimpleCommandCompleteEvent:
   $next [+1]         StatusCode            status
 
 
+struct CommandStatusEvent:
+  let hdr_size = EventHeader.$size_in_bytes
+  0     [+hdr_size]  EventHeader  header
+  $next [+1]         StatusCode   status
+  $next [+1]         UInt         num_hci_command_packets
+  $next [+2]         OpCodeBits   command_opcode
+
+
 struct ConnectionCompleteEvent:
   -- Connection Complete Event (v1.1) (BR/EDR)
   let hdr_size = EventHeader.$size_in_bytes
