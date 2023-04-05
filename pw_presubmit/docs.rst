@@ -201,9 +201,8 @@ or fix code formatting.
   by Pigweed itself) and ``yapf`` (the default).
 * ``black_path``: If ``python_formatter`` is ``black``, use this as the
   executable instead of ``black``.
-
-.. TODO(b/264578594) Add exclude to pigweed.json file.
-.. * ``exclude``: List of path regular expressions to ignore.
+* ``exclude``: List of path regular expressions to ignore. Will be evaluated
+  against paths relative to the checkout root using ``re.search``.
 
 Example section from a ``pigweed.json`` file:
 
@@ -214,7 +213,10 @@ Example section from a ``pigweed.json`` file:
       "pw_presubmit": {
         "format": {
           "python_formatter": "black",
-          "black_path": "black"
+          "black_path": "black",
+          "exclude": [
+            "\\bthird_party/foo/src"
+          ]
         }
       }
     }

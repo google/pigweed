@@ -572,6 +572,18 @@ CODE_FORMATS_WITH_BLACK: Tuple[CodeFormat, ...] = CODE_FORMATS
 CODE_FORMATS_WITH_YAPF: Tuple[CodeFormat, ...] = CODE_FORMATS
 
 
+def _filter_paths(
+    paths: Iterable[Path],
+    filters: Sequence[re.Pattern],
+) -> Tuple[Path, ...]:
+    root = Path(pw_cli.env.pigweed_environment().PW_PROJECT_ROOT)
+    relpaths = [x.relative_to(root) for x in paths]
+
+    for filt in filters:
+        relpaths = [x for x in relpaths if not filt.search(str(x))]
+    return tuple(root / x for x in relpaths)
+
+
 def presubmit_check(
     code_format: CodeFormat,
     *,
@@ -589,6 +601,7 @@ def presubmit_check(
 
     @filter_paths(file_filter=file_filter)
     def check_code_format(ctx: PresubmitContext):
+        ctx.paths = _filter_paths(ctx.paths, ctx.format_options.exclude)
         errors = code_format.check(ctx)
         print_format_check(
             errors,
@@ -642,10 +655,18 @@ class CodeFormatter:
         package_root: Optional[Path] = None,
     ):
         self.root = root
-        self.paths = list(files)
         self._formats: Dict[CodeFormat, List] = collections.defaultdict(list)
         self.root_output_dir = output_dir
         self.package_root = package_root or output_dir / 'packages'
+        self._format_options = FormatOptions.load()
+        raw_paths = files
+        self.paths: Tuple[Path, ...] = _filter_paths(
+            files, self._format_options.exclude
+        )
+
+        filtered_paths = set(raw_paths) - set(self.paths)
+        for path in sorted(filtered_paths):
+            _LOG.debug('filtered out %s', path)
 
         for path in self.paths:
             for code_format in code_formats:
@@ -667,7 +688,7 @@ class CodeFormatter:
             output_dir=outdir,
             paths=tuple(self._formats[code_format]),
             package_root=self.package_root,
-            format_options=FormatOptions.load(),
+            format_options=self._format_options,
         )
 
     def check(self) -> Dict[Path, str]:
@@ -876,19 +897,6 @@ def arguments(git_paths: bool) -> argparse.ArgumentParser:
 def main() -> int:
     """Check and fix formatting for source files."""
     return format_paths_in_repo(**vars(arguments(git_paths=True).parse_args()))
-
-
-def _pigweed_upstream_main() -> int:
-    """Check and fix formatting for source files in upstream Pigweed.
-
-    Excludes third party sources.
-    """
-    args = arguments(git_paths=True).parse_args()
-
-    # Exclude paths with third party code from formatting.
-    args.exclude.append(re.compile('^third_party/fuchsia/repo/'))
-
-    return format_paths_in_repo(**vars(args))
 
 
 if __name__ == '__main__':

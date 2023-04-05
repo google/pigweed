@@ -48,6 +48,7 @@ from pw_presubmit import (
 )
 from pw_presubmit.presubmit import (
     FileFilter,
+    FormatOptions,
     PresubmitContext,
     PresubmitFailure,
     Programs,
@@ -997,7 +998,7 @@ SECURITY = (
 )
 
 # Avoid running all checks on specific paths.
-PATH_EXCLUSIONS = (re.compile(r'\bthird_party/fuchsia/repo/'),)
+PATH_EXCLUSIONS = FormatOptions.load().exclude
 
 _LINTFORMAT = (
     commit_message_format,

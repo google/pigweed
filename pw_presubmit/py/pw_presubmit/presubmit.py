@@ -219,18 +219,16 @@ class Programs(collections.abc.Mapping):
 class FormatOptions:
     python_formatter: Optional[str] = 'yapf'
     black_path: Optional[str] = 'black'
-
-    # TODO(b/264578594) Add exclude to pigweed.json file.
-    # exclude: Sequence[re.Pattern] = dataclasses.field(default_factory=list)
+    exclude: Sequence[re.Pattern] = dataclasses.field(default_factory=list)
 
     @staticmethod
-    def load() -> 'FormatOptions':
-        config = pw_env_setup.config_file.load()
+    def load(env: Optional[Dict[str, str]] = None) -> 'FormatOptions':
+        config = pw_env_setup.config_file.load(env=env)
         fmt = config.get('pw', {}).get('pw_presubmit', {}).get('format', {})
         return FormatOptions(
             python_formatter=fmt.get('python_formatter', 'yapf'),
             black_path=fmt.get('black_path', 'black'),
-            # exclude=tuple(re.compile(x) for x in fmt.get('exclude', ())),
+            exclude=tuple(re.compile(x) for x in fmt.get('exclude', ())),
         )
 
 

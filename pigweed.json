@@ -2,7 +2,10 @@
   "pw": {
     "pw_presubmit": {
       "format": {
-        "python_formatter": "black"
+        "python_formatter": "black",
+        "exclude": [
+          "\\bthird_party/fuchsia/repo"
+        ]
       }
     },
     "pw_cli": {
@@ -13,7 +16,7 @@
         },
         "format": {
           "module": "pw_presubmit.format_code",
-          "function": "_pigweed_upstream_main"
+          "function": "main"
         },
         "heap-viewer": {
           "module": "pw_allocator.heap_viewer",
