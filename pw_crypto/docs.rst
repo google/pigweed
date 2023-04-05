@@ -91,6 +91,15 @@ crypto libraries.
 Mbed TLS
 ^^^^^^^^
 
+The `Mbed TLS project <https://www.trustedfirmware.org/projects/mbed-tls/>`_
+is a mature and full-featured crypto library that implements cryptographic
+primitives, X.509 certificate manipulation and the SSL/TLS and DTLS protocols.
+
+The project also has good support for interfacing to cryptographic accelerators.
+
+The small code footprint makes the project suitable and popular for embedded
+systems.
+
 To select the Mbed TLS backend, the MbedTLS library needs to be installed and
 configured.
 
@@ -102,8 +111,8 @@ configured.
       import("//build_overrides/pigweed_environment.gni")
 
       dir_pw_third_party_mbedtls=pw_env_setup_PACKAGE_ROOT+"/mbedtls"
-      pw_crypto_SHA256_BACKEND="//pw_crypto:sha256_mbedtls"
-      pw_crypto_ECDSA_BACKEND="//pw_crypto:ecdsa_mbedtls"
+      pw_crypto_SHA256_BACKEND="//pw_crypto:sha256_mbedtls_v3"
+      pw_crypto_ECDSA_BACKEND="//pw_crypto:ecdsa_mbedtls_v3"
   '
 
   ninja -C out
