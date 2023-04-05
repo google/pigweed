@@ -60,6 +60,17 @@ class TestGitmodules(unittest.TestCase):
 
             gitmodules.process_gitmodules(self.ctx, config, path)
 
+    def test_ok_no_submodules(self) -> None:
+        self._run(gitmodules.Config(), '')
+        self.ctx.fail.assert_not_called()
+
+    def test_no_submodules_allowed(self) -> None:
+        self._run(
+            gitmodules.Config(allow_submodules=False),
+            dotgitmodules(url='../foo'),
+        )
+        self.ctx.fail.assert_called()
+
     def test_ok_default(self) -> None:
         self._run(gitmodules.Config(), dotgitmodules(url='../foo'))
         self.ctx.fail.assert_not_called()

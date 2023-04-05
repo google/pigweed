@@ -24,7 +24,7 @@ from pw_presubmit.presubmit import (
     PresubmitFailure,
     filter_paths,
 )
-from pw_presubmit import git_repo
+from pw_presubmit import git_repo, plural
 
 
 _LOG: logging.Logger = logging.getLogger(__name__)
@@ -32,6 +32,9 @@ _LOG: logging.Logger = logging.getLogger(__name__)
 
 @dataclasses.dataclass
 class Config:
+    # Allow submodules to exist in any form.
+    allow_submodules: bool = True
+
     # Allow direct references to non-Google hosts.
     allow_non_googlesource_hosts: bool = False
 
@@ -89,6 +92,12 @@ def process_gitmodules(ctx: PresubmitContext, config: Config, path: Path):
     """Check if a specific .gitmodules file passes the options in the config."""
     _LOG.debug('Evaluating path %s', path)
     submodules: Dict[str, Dict[str, str]] = _parse_gitmodules(path)
+
+    if submodules and not config.allow_submodules:
+        ctx.fail(
+            f'submodules are not permitted but '
+            f'{plural(submodules, "submodule", exist=True)} {tuple(submodules)}'
+        )
 
     assert isinstance(config.allowed_googlesource_hosts, (list, tuple))
     for allowed in config.allowed_googlesource_hosts:

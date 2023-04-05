@@ -298,6 +298,7 @@ by adding ``pw_presubmit.gitmodules.create()`` to a presubmit program. This
 function takes an optional argument of type ``pw_presubmit.gitmodules.Config``.
 ``Config`` objects have several properties.
 
+* ``allow_submodules: bool = True`` — If false, don't allow any submodules.
 * ``allow_non_googlesource_hosts: bool = False`` — If false, all submodule URLs
   must be on a Google-managed Gerrit server.
 * ``allowed_googlesource_hosts: Sequence[str] = ()`` — If set, any
@@ -309,7 +310,7 @@ function takes an optional argument of type ``pw_presubmit.gitmodules.Config``.
   URLs are prohibited.
 * ``allow_git_corp_google_com: bool = True`` — If false, ``git.corp.google.com``
   submodule URLs are prohibited.
-* ``require_branch: bool = False`` — If True, all submodules must reference a
+* ``require_branch: bool = False`` — If true, all submodules must reference a
   branch.
 * ``validator: Callable[[PresubmitContext, Path, str, Dict[str, str]], None] = None``
   — A function that can be used for arbitrary submodule validation. It's called

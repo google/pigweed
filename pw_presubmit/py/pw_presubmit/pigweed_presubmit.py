@@ -958,7 +958,7 @@ OTHER_CHECKS = (
     build.gn_gen_check,
     cmake_clang,
     cmake_gcc,
-    gitmodules.create(),
+    gitmodules.create(gitmodules.Config(allow_submodules=False)),
     gn_clang_build,
     gn_combined_build_check,
     module_owners.presubmit_check(),
