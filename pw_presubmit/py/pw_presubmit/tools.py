@@ -42,6 +42,7 @@ def plural(
     these: bool = False,
     number: bool = True,
     are: bool = False,
+    exist: bool = False,
 ) -> str:
     """Returns the singular or plural form of a word based on a count.
 
@@ -53,6 +54,7 @@ def plural(
         number: Include the number in the return string (e.g., "3 things" vs.
             "things")
         are: Suffix the string with "is" or "are", depending on number
+        exist: Suffix the string with "exists" or "exist", depending on number
     """
 
     try:
@@ -62,7 +64,14 @@ def plural(
 
     prefix = ('this ' if count == 1 else 'these ') if these else ''
     num = f'{count:{count_format}} ' if number else ''
-    suffix = (' is' if count == 1 else ' are') if are else ''
+
+    suffix = ''
+    if are and exist:
+        raise ValueError(f'cannot combine are ({are}) and exist ({exist})')
+    if are:
+        suffix = ' is' if count == 1 else ' are'
+    if exist:
+        suffix = ' exists' if count == 1 else ' exist'
 
     if singular.endswith('y'):
         result = f'{singular[:-1]}{"y" if count == 1 else "ies"}'
