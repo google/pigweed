@@ -56,5 +56,57 @@ class FlattenTest(unittest.TestCase):
         )
 
 
+class PluralTest(unittest.TestCase):
+    """Test the plural function, which adds an 's' to nouns."""
+
+    def test_single_list(self):
+        self.assertEqual('1 item', tools.plural([1], 'item'))
+
+    def test_single_count(self):
+        self.assertEqual('1 item', tools.plural(1, 'item'))
+
+    def test_multiple_list(self):
+        self.assertEqual('3 items', tools.plural([1, 2, 3], 'item'))
+
+    def test_multiple_count(self):
+        self.assertEqual('3 items', tools.plural(3, 'item'))
+
+    def test_single_these(self):
+        self.assertEqual('this 1 item', tools.plural(1, 'item', these=True))
+
+    def test_multiple_these(self):
+        self.assertEqual('these 3 items', tools.plural(3, 'item', these=True))
+
+    def test_single_are(self):
+        self.assertEqual('1 item is', tools.plural(1, 'item', are=True))
+
+    def test_multiple_are(self):
+        self.assertEqual('3 items are', tools.plural(3, 'item', are=True))
+
+    def test_single_exist(self):
+        self.assertEqual('1 item exists', tools.plural(1, 'item', exist=True))
+
+    def test_multiple_exist(self):
+        self.assertEqual('3 items exist', tools.plural(3, 'item', exist=True))
+
+    def test_single_y(self):
+        self.assertEqual('1 thingy', tools.plural(1, 'thingy'))
+
+    def test_multiple_y(self):
+        self.assertEqual('3 thingies', tools.plural(3, 'thingy'))
+
+    def test_single_s(self):
+        self.assertEqual('1 bus', tools.plural(1, 'bus'))
+
+    def test_multiple_s(self):
+        self.assertEqual('3 buses', tools.plural(3, 'bus'))
+
+    def test_format_hex(self):
+        self.assertEqual(
+            '14 items',
+            tools.plural(20, 'item', count_format='x'),
+        )
+
+
 if __name__ == '__main__':
     unittest.main()
