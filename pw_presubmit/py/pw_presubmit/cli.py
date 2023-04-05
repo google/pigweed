@@ -14,6 +14,7 @@
 """Argument parsing code for presubmit checks."""
 
 import argparse
+import fnmatch
 import logging
 import os
 from pathlib import Path
@@ -142,21 +143,28 @@ def _add_programs_arguments(
         help='List all the available steps.',
     )
 
-    def presubmit_step(arg: str) -> presubmit.Check:
-        if arg not in all_steps:
+    def presubmit_step(arg: str) -> List[presubmit.Check]:
+        """Return a list of matching presubmit steps."""
+        filtered_step_names = fnmatch.filter(all_steps.keys(), arg)
+
+        if not filtered_step_names:
             all_step_names = ', '.join(sorted(all_steps.keys()))
             raise argparse.ArgumentTypeError(
-                f'{arg} is not the name of a presubmit step\n\n'
+                f'"{arg}" does not match the name of a presubmit step.\n\n'
                 f'Valid Steps:\n{all_step_names}'
             )
-        return all_steps[arg]
+
+        return list(all_steps[name] for name in filtered_step_names)
 
     parser.add_argument(
         '--step',
-        action='append',
-        choices=all_steps.values(),
+        action='extend',
         default=[],
-        help='Run specific steps instead of running a full program.',
+        help=(
+            'Run specific steps instead of running a full program. Include an '
+            'asterix to match more than one step name. For example: --step '
+            "'*_format'"
+        ),
         type=presubmit_step,
     )
 
