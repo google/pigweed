@@ -75,10 +75,6 @@ _LINE_TYPERS: OrderedDict[
 class OwnersError(Exception):
     """Generic level OWNERS file error."""
 
-    def __init__(self, message: str, *args: object) -> None:
-        super().__init__(*args)
-        self.message = message
-
 
 class FormatterError(OwnersError):
     """Errors where formatter doesn't know how to act."""
@@ -127,8 +123,9 @@ class OwnersFile:
 
     def __init__(self, path: pathlib.Path) -> None:
         if not path.exists():
-            error_msg = f"Tried to import {path} but it does not exists"
-            raise OwnersDependencyError(error_msg)
+            raise OwnersDependencyError(
+                f"Tried to import {path} but it does not exist"
+            )
         self.path = path
 
         self.original_lines = self.load_owners_file(self.path)
@@ -394,7 +391,8 @@ def _format_owners_file(owners_obj: OwnersFile) -> None:
 
 
 def _list_unwrapper(
-    func, list_or_path: Union[Iterable[pathlib.Path], pathlib.Path]
+    func: Callable[[OwnersFile], None],
+    list_or_path: Union[Iterable[pathlib.Path], pathlib.Path],
 ) -> Dict[pathlib.Path, str]:
     """Decorator that accepts Paths or list of Paths and iterates as needed."""
     errors: Dict[pathlib.Path, str] = {}
@@ -416,10 +414,8 @@ def _list_unwrapper(
         try:
             func(current_owners)
         except OwnersError as err:
-            errors[current_owners.path] = err.message
-            _LOG.error(
-                "%s: %s", str(current_owners.path.absolute()), err.message
-            )
+            errors[current_owners.path] = str(err)
+            _LOG.error("%s: %s", current_owners.path.absolute(), err)
     return errors
 
 
@@ -453,7 +449,7 @@ def main() -> int:
         owners_obj.look_for_owners_errors()
         owners_obj.check_style()
     except OwnersError as err:
-        _LOG.error("%s %s", err, err.message)
+        _LOG.error("%s", err)
         return 1
     return 0
 
