@@ -14,24 +14,53 @@
 """Crate a venv."""
 
 import argparse
+import os
+import pathlib
+import shutil
+import sys
 import venv
-from pathlib import Path
 
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
+        '--depfile',
+        type=pathlib.Path,
+        required=True,
+        help='Path at which a depfile should be written.',
+    )
+    parser.add_argument(
         '--destination-dir',
-        type=Path,
+        type=pathlib.Path,
         required=True,
         help='Path to venv directory.',
+    )
+    parser.add_argument(
+        '--stampfile',
+        type=pathlib.Path,
+        required=True,
+        help="Path to this target's stamp file.",
     )
     return parser.parse_args()
 
 
-def main(destination_dir: Path) -> None:
-    if not destination_dir.is_dir():
-        venv.create(destination_dir, symlinks=True, with_pip=True)
+def main(
+    depfile: pathlib.Path,
+    destination_dir: pathlib.Path,
+    stampfile: pathlib.Path,
+) -> None:
+    # Create the virtualenv.
+    if destination_dir.exists():
+        shutil.rmtree(destination_dir)
+    venv.create(destination_dir, symlinks=True, with_pip=True)
+
+    # Write out the depfile, making sure the Python path is
+    # relative to the outdir so that this doesn't add user-specific
+    # info to the build.
+    out_dir_path = pathlib.Path(os.getcwd()).resolve()
+    python_path = pathlib.Path(sys.executable).resolve()
+    rel_python_path = os.path.relpath(python_path, start=out_dir_path)
+    depfile.write_text(f'{stampfile}: \\\n  {rel_python_path}')
 
 
 if __name__ == '__main__':

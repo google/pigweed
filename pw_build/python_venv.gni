@@ -115,10 +115,17 @@ template("pw_python_venv") {
     # outputs and must stamp instead.
     stamp = true
 
+    # The virtualenv should depend on the version of Python currently in use.
+    stampfile = "$target_gen_dir/$target_name.pw_pystamp"
+    depfile = "$target_gen_dir/$target_name.d"
     script = "$dir_pw_build/py/pw_build/create_gn_venv.py"
     args = [
+      "--depfile",
+      rebase_path(depfile, root_build_dir),
       "--destination-dir",
       rebase_path(_path, root_build_dir),
+      "--stampfile",
+      rebase_path(stampfile, root_build_dir),
     ]
   }
 
