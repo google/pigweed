@@ -22,3 +22,13 @@ cc_library_headers {
     export_include_dirs: ["public"],
     host_supported: true,
 }
+
+cc_library_headers {
+    name: "pw_sync_binary_semaphore_thread_notification_backend_headers",
+    vendor_available: true,
+    export_include_dirs: [
+      "public",
+      "public_overrides",
+    ],
+    host_supported: true,
+}
