@@ -222,6 +222,27 @@ TEST_F(FlashStreamTest, Read_Multiple_Seeks) {
   }
 }
 
+TEST_F(FlashStreamTest, Read_Seeks_With_Limit) {
+  static const size_t kSeekReadSizeBytes = 512;
+  ASSERT_GE(flash_.buffer().size_bytes(), (2 * kSeekReadSizeBytes));
+
+  InitBufferToRandom(flash_.buffer(), 0xffde176);
+  FlashPartition::Reader reader(partition_, kSeekReadSizeBytes);
+
+  ASSERT_EQ(reader.ConservativeReadLimit(), kSeekReadSizeBytes);
+
+  ASSERT_EQ(reader.Seek(1u), OkStatus());
+  ASSERT_EQ(1u, reader.Tell());
+  ASSERT_EQ(reader.ConservativeReadLimit(), (kSeekReadSizeBytes - 1));
+
+  ASSERT_EQ(reader.Seek(kSeekReadSizeBytes), OkStatus());
+  ASSERT_EQ(kSeekReadSizeBytes, reader.Tell());
+  ASSERT_EQ(reader.ConservativeReadLimit(), 0u);
+
+  ASSERT_EQ(reader.Seek(kSeekReadSizeBytes + 1), Status::OutOfRange());
+  ASSERT_EQ(reader.Seek(2 * kSeekReadSizeBytes), Status::OutOfRange());
+}
+
 TEST_F(FlashStreamTest, Read_Seek_Forward_and_Back) {
   static const size_t kSeekReadSizeBytes = 256;
   static const size_t kTotalIterations = 3;
@@ -291,6 +312,76 @@ TEST_F(FlashStreamTest, Read_Past_End) {
   ASSERT_EQ(reader.ConservativeReadLimit(), 0U);
   ASSERT_EQ(result.value().data(), read_chunk.data());
   VerifyFlashContent(result.value(), read_chunk.size_bytes());
+}
+
+TEST_F(FlashStreamTest, Read_Past_End_of_Limit) {
+  static const size_t kBytesForReadLimit = 128;
+  static const size_t kBytesForFinalRead = 50;
+
+  InitBufferToRandom(flash_.buffer(), 0xcccde176);
+  FlashPartition::Reader reader(partition_, kBytesForReadLimit);
+
+  ASSERT_GE(source_buffer_.size(), kBytesForReadLimit);
+  ASSERT_GT(kBytesForReadLimit, 2 * kBytesForFinalRead);
+
+  ByteSpan read_chunk =
+      span(source_buffer_).first(kBytesForReadLimit - kBytesForFinalRead);
+
+  auto result = reader.Read(read_chunk);
+  ASSERT_EQ(result.status(), OkStatus());
+  ASSERT_EQ(result.value().size_bytes(), read_chunk.size_bytes());
+  ASSERT_EQ(reader.Tell(), read_chunk.size_bytes());
+  ASSERT_EQ(reader.ConservativeReadLimit(), kBytesForFinalRead);
+  ASSERT_EQ(result.value().data(), read_chunk.data());
+  VerifyFlashContent(read_chunk);
+
+  result = reader.Read(read_chunk);
+  ASSERT_EQ(result.status(), OkStatus());
+  ASSERT_EQ(result.value().size_bytes(), kBytesForFinalRead);
+  ASSERT_EQ(reader.Tell(), kBytesForReadLimit);
+  ASSERT_EQ(reader.ConservativeReadLimit(), 0U);
+  ASSERT_EQ(result.value().data(), read_chunk.data());
+  VerifyFlashContent(result.value(), read_chunk.size_bytes());
+
+  ASSERT_EQ(reader.Read(read_chunk).status(), Status::OutOfRange());
+}
+
+TEST_F(FlashStreamTest, Read_With_Zero_Byte_Limit) {
+  static const size_t kBytesForReadLimit = 128;
+  static const size_t kBytesForFinalRead = 50;
+
+  InitBufferToRandom(flash_.buffer(), 0xcccde176);
+  FlashPartition::Reader reader(partition_, 0u);
+
+  ASSERT_GE(source_buffer_.size(), kBytesForReadLimit);
+  ASSERT_GT(kBytesForReadLimit, 2 * kBytesForFinalRead);
+
+  ByteSpan read_chunk = span(source_buffer_);
+
+  ASSERT_EQ(reader.ConservativeReadLimit(), 0u);
+  ASSERT_EQ(reader.Tell(), 0u);
+
+  auto result = reader.Read(read_chunk);
+  ASSERT_EQ(result.status(), Status::OutOfRange());
+  ASSERT_EQ(reader.Tell(), 0u);
+  ASSERT_EQ(reader.ConservativeReadLimit(), 0u);
+
+  ASSERT_EQ(reader.Seek(0), OkStatus());
+  ASSERT_EQ(reader.Tell(), 0u);
+  ASSERT_EQ(reader.ConservativeReadLimit(), 0u);
+
+  ASSERT_EQ(reader.Seek(1), Status::OutOfRange());
+  ASSERT_EQ(reader.Tell(), 0u);
+  ASSERT_EQ(reader.ConservativeReadLimit(), 0u);
+
+  ASSERT_EQ(reader.Seek(5), Status::OutOfRange());
+  ASSERT_EQ(reader.Tell(), 0u);
+  ASSERT_EQ(reader.ConservativeReadLimit(), 0u);
+
+  result = reader.Read(read_chunk);
+  ASSERT_EQ(result.status(), Status::OutOfRange());
+  ASSERT_EQ(reader.Tell(), 0u);
+  ASSERT_EQ(reader.ConservativeReadLimit(), 0u);
 }
 
 TEST_F(FlashStreamTest, Read_Past_End_After_Seek) {

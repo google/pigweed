@@ -52,12 +52,11 @@ Status FlashPartition::Writer::DoWrite(ConstByteSpan data) {
 }
 
 StatusWithSize FlashPartition::Reader::DoRead(ByteSpan data) {
-  if (position_ >= partition_.size_bytes()) {
+  if (position_ >= read_limit_) {
     return StatusWithSize::OutOfRange();
   }
 
-  size_t bytes_to_read =
-      std::min(data.size_bytes(), partition_.size_bytes() - position_);
+  size_t bytes_to_read = std::min(data.size_bytes(), read_limit_ - position_);
 
   const StatusWithSize sws =
       partition_.Read(position_, data.first(bytes_to_read));
