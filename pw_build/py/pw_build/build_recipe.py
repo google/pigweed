@@ -101,8 +101,6 @@ class BuildCommand:
         """Return flags that appear immediately after the build command."""
         assert self.build_system_command
         assert self.build_dir
-        if self.build_system_command.endswith('bazel'):
-            return ['--output_base', str(self.build_dir)]
         return []
 
     def _get_build_system_args(self) -> List[str]:
@@ -110,15 +108,18 @@ class BuildCommand:
         assert self.build_dir
 
         # Both make and ninja use -C for a build directory.
-        if self.build_system_command.endswith(
-            'make'
-        ) or self.build_system_command.endswith('ninja'):
+        if self.make_command() or self.ninja_command():
             return ['-C', str(self.build_dir), *self.targets]
 
-        # Bazel relies on --output_base which is handled by the
-        # _get_starting_build_system_args() function.
-        if self.build_system_command.endswith('bazel'):
-            return [*self.targets]
+        if self.bazel_command():
+            # Bazel doesn't use -C for the out directory. Instead we use
+            # --symlink_prefix to save some outputs to the desired
+            # location. This is the same pattern used by pw_presubmit.
+            bazel_args = ['--symlink_prefix', str(self.build_dir / 'bazel-')]
+            if self.bazel_clean_command():
+                # Targets are unrecognized args for bazel clean
+                return bazel_args
+            return bazel_args + [*self.targets]
 
         raise UnknownBuildSystem(
             f'\n\nUnknown build system command "{self.build_system_command}" '
@@ -144,29 +145,32 @@ class BuildCommand:
                 resolved_args.append(arg)
         return resolved_args
 
+    def make_command(self) -> bool:
+        return (
+            self.build_system_command is not None
+            and self.build_system_command.endswith('make')
+        )
+
     def ninja_command(self) -> bool:
-        if self.build_system_command and self.build_system_command.endswith(
-            'ninja'
-        ):
-            return True
-        return False
+        return (
+            self.build_system_command is not None
+            and self.build_system_command.endswith('ninja')
+        )
 
     def bazel_command(self) -> bool:
-        if self.build_system_command and self.build_system_command.endswith(
-            'bazel'
-        ):
-            return True
-        return False
+        return (
+            self.build_system_command is not None
+            and self.build_system_command.endswith('bazel')
+        )
 
     def bazel_build_command(self) -> bool:
-        if self.bazel_command() and 'build' in self.build_system_extra_args:
-            return True
-        return False
+        return self.bazel_command() and 'build' in self.build_system_extra_args
+
+    def bazel_test_command(self) -> bool:
+        return self.bazel_command() and 'test' in self.build_system_extra_args
 
     def bazel_clean_command(self) -> bool:
-        if self.bazel_command() and 'clean' in self.build_system_extra_args:
-            return True
-        return False
+        return self.bazel_command() and 'clean' in self.build_system_extra_args
 
     def get_args(
         self,
@@ -191,9 +195,7 @@ class BuildCommand:
         if additional_bazel_args and self.bazel_command():
             extra_args.extend(additional_bazel_args)
 
-        build_system_target_args = []
-        if not self.bazel_clean_command():
-            build_system_target_args = self._get_build_system_args()
+        build_system_target_args = self._get_build_system_args()
 
         # Construct the build system command args.
         command = [

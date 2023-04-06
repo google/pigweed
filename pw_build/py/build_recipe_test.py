@@ -47,17 +47,50 @@ class TestBuildRecipe(unittest.TestCase):
                 BuildCommand(
                     build_dir=Path('outbazel'),
                     build_system_command='bazel',
-                    build_system_extra_args=[],
-                    targets=['build', '//pw_analog/...', '//pw_assert/...'],
+                    build_system_extra_args=['build'],
+                    targets=['//pw_analog/...', '//pw_assert/...'],
                 ),
                 # result
                 [
                     'bazel',
-                    '--output_base',
-                    'outbazel',
                     'build',
+                    '--symlink_prefix',
+                    str(Path('outbazel') / 'bazel-'),
                     '//pw_analog/...',
                     '//pw_assert/...',
+                ],
+            ),
+            (
+                'test command using bazel',
+                BuildCommand(
+                    build_dir=Path('outbazel'),
+                    build_system_command='bazel',
+                    build_system_extra_args=['test'],
+                    targets=['//...:all'],
+                ),
+                # result
+                [
+                    'bazel',
+                    'test',
+                    '--symlink_prefix',
+                    str(Path('outbazel') / 'bazel-'),
+                    '//...:all',
+                ],
+            ),
+            (
+                'clean command using bazel',
+                BuildCommand(
+                    build_dir=Path('outbazel'),
+                    build_system_command='bazel',
+                    build_system_extra_args=['clean'],
+                    targets=['//...:all'],
+                ),
+                # result
+                [
+                    'bazel',
+                    'clean',
+                    '--symlink_prefix',
+                    str(Path('outbazel') / 'bazel-'),
                 ],
             ),
             (
