@@ -26,7 +26,7 @@ cc_library_headers {
 }
 
 filegroup {
-    name: "pw_thread_files",
+    name: "pw_thread_src_files",
     srcs: [
         "sleep.cc",
         "thread.cc",
@@ -49,7 +49,7 @@ cc_defaults {
       "pw_status",
     ],
     srcs: [
-        ":pw_thread_files"
+        ":pw_thread_src_files"
     ],
     vendor_available: true,
     host_supported: true,
