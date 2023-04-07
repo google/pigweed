@@ -207,8 +207,8 @@ DynamicByteBuffer RemoteNameRequestPacket(DeviceAddress address) {
 
 DynamicByteBuffer RemoteNameRequestCompletePacket(DeviceAddress address, const std::string& name) {
   auto addr = address.value().bytes();
-  auto event = DynamicByteBuffer(sizeof(hci_spec::EventHeader) +
-                                 sizeof(hci_spec::RemoteNameRequestCompleteEventParams));
+  auto event = DynamicByteBuffer(
+      pw::bluetooth::emboss::RemoteNameRequestCompleteEventView::IntrinsicSizeInBytes().Read());
   event.SetToZeros();
   const StaticByteBuffer header(hci_spec::kRemoteNameRequestCompleteEventCode,
                                 0xff,  // parameter_total_size (255)

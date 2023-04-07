@@ -473,14 +473,15 @@ void FakeController::SendDisconnectionCompleteEvent(hci_spec::ConnectionHandle h
   SendCommandChannelPacket(event.data());
 }
 
-void FakeController::SendEncryptionChangeEvent(hci_spec::ConnectionHandle handle,
-                                               pw::bluetooth::emboss::StatusCode status,
-                                               hci_spec::EncryptionStatus encryption_enabled) {
-  hci_spec::EncryptionChangeEventParams params;
-  params.status = status;
-  params.connection_handle = htole16(handle);
-  params.encryption_enabled = encryption_enabled;
-  SendEvent(hci_spec::kEncryptionChangeEventCode, BufferView(&params, sizeof(params)));
+void FakeController::SendEncryptionChangeEvent(
+    hci_spec::ConnectionHandle handle, pw::bluetooth::emboss::StatusCode status,
+    pw::bluetooth::emboss::EncryptionStatus encryption_enabled) {
+  auto response = hci::EmbossEventPacket::New<pw::bluetooth::emboss::EncryptionChangeEventV1Writer>(
+      hci_spec::kEncryptionChangeEventCode);
+  response.view_t().status().Write(status);
+  response.view_t().connection_handle().Write(handle);
+  response.view_t().encryption_enabled().Write(encryption_enabled);
+  SendCommandChannelPacket(response.data());
 }
 
 bool FakeController::MaybeRespondWithDefaultCommandStatus(hci_spec::OpCode opcode) {
@@ -1607,12 +1608,9 @@ void FakeController::OnSetConnectionEncryptionCommand(
     const pw::bluetooth::emboss::SetConnectionEncryptionCommandView& params) {
   RespondWithCommandStatus(hci_spec::kSetConnectionEncryption,
                            pw::bluetooth::emboss::StatusCode::SUCCESS);
-
-  hci_spec::EncryptionChangeEventParams response;
-  response.connection_handle = htole16(params.connection_handle().Read());
-  response.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
-  response.encryption_enabled = hci_spec::EncryptionStatus::kOn;
-  SendEvent(hci_spec::kEncryptionChangeEventCode, BufferView(&response, sizeof(response)));
+  SendEncryptionChangeEvent(
+      params.connection_handle().Read(), pw::bluetooth::emboss::StatusCode::SUCCESS,
+      pw::bluetooth::emboss::EncryptionStatus::ON_WITH_E0_FOR_BREDR_OR_AES_FOR_LE);
 }
 
 void FakeController::OnReadEncryptionKeySizeCommand(
@@ -1716,9 +1714,9 @@ void FakeController::OnLEStartEncryptionCommand(
     const pw::bluetooth::emboss::LEEnableEncryptionCommandView& params) {
   RespondWithCommandStatus(hci_spec::kLEStartEncryption,
                            pw::bluetooth::emboss::StatusCode::SUCCESS);
-  SendEncryptionChangeEvent(params.connection_handle().Read(),
-                            pw::bluetooth::emboss::StatusCode::SUCCESS,
-                            hci_spec::EncryptionStatus::kOn);
+  SendEncryptionChangeEvent(
+      params.connection_handle().Read(), pw::bluetooth::emboss::StatusCode::SUCCESS,
+      pw::bluetooth::emboss::EncryptionStatus::ON_WITH_E0_FOR_BREDR_OR_AES_FOR_LE);
 }
 
 void FakeController::OnWriteSynchronousFlowControlEnableCommand(

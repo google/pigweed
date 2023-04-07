@@ -4,6 +4,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/transport/emboss_control_packets.h"
 
+#include "src/connectivity/bluetooth/core/bt-host/common/packet_view.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/vendor_protocol.h"
 
 #include <pw_bluetooth/vendor.emb.h>
@@ -43,15 +44,25 @@ hci_spec::EventCode EmbossEventPacket::event_code() const {
 
 std::optional<pw::bluetooth::emboss::StatusCode> EmbossEventPacket::StatusCode() const {
   switch (event_code()) {
-    case hci_spec::kCommandCompleteEventCode: {
+    case hci_spec::kCommandCompleteEventCode:
       return StatusCodeFromView<pw::bluetooth::emboss::SimpleCommandCompleteEventView>();
-    }
-    case hci_spec::kConnectionCompleteEventCode: {
+    case hci_spec ::kCommandStatusEventCode:
+      return StatusCodeFromView<pw::bluetooth::emboss::CommandStatusEventView>();
+    case hci_spec::kConnectionCompleteEventCode:
       return StatusCodeFromView<pw::bluetooth::emboss::ConnectionCompleteEventView>();
-    }
-    case hci_spec::kDisconnectionCompleteEventCode: {
+    case hci_spec::kDisconnectionCompleteEventCode:
       return StatusCodeFromView<pw::bluetooth::emboss::DisconnectionCompleteEventView>();
+    case hci_spec::kRemoteNameRequestCompleteEventCode: {
+      // Tests expect that a kPacketMalformed status is returned for incomplete events, even if they
+      // contain the status field.
+      pw::bluetooth::emboss::RemoteNameRequestCompleteEventView event_view(data().data(), size());
+      if (!event_view.IsComplete()) {
+        return std::nullopt;
+      }
+      return event_view.status().UncheckedRead();
     }
+    case hci_spec::kEncryptionChangeEventCode:
+      return StatusCodeFromView<pw::bluetooth::emboss::EncryptionChangeEventV1View>();
     case hci_spec::kVendorDebugEventCode: {
       hci_spec::EventCode subevent_code =
           view<pw::bluetooth::emboss::VendorDebugEventView>().subevent_code().Read();

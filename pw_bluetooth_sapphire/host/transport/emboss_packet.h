@@ -109,6 +109,11 @@ class DynamicPacket {
     return view;
   }
 
+  template <typename T>
+  T unchecked_view() const {
+    return T(buffer_.data(), size());
+  }
+
   // Returns the size of the packet, i.e. payload size + header size.
   size_t size() const { return buffer_.size(); }
   BufferView data() const { return {buffer_.data(), size()}; }

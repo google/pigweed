@@ -145,9 +145,8 @@ bool EventPacket::ToStatusCode(pw::bluetooth::emboss::StatusCode* out_code) cons
     CASE_EVENT_STATUS(CommandStatus);
     CASE_EMBOSS_EVENT_STATUS(ConnectionComplete);
     CASE_EMBOSS_EVENT_STATUS(DisconnectionComplete);
-    CASE_EVENT_STATUS(EncryptionChange);
     CASE_EVENT_STATUS(EncryptionKeyRefreshComplete);
-    CASE_EVENT_STATUS(RemoteNameRequestComplete);
+    CASE_EMBOSS_EVENT_STATUS(RemoteNameRequestComplete);
     CASE_EVENT_STATUS(ReadRemoteVersionInfoComplete);
     CASE_EVENT_STATUS(ReadRemoteSupportedFeaturesComplete);
     CASE_EVENT_STATUS(ReadRemoteExtendedFeaturesComplete);
@@ -155,6 +154,9 @@ bool EventPacket::ToStatusCode(pw::bluetooth::emboss::StatusCode* out_code) cons
     CASE_EVENT_STATUS(SimplePairingComplete);
     CASE_EVENT_STATUS(SynchronousConnectionComplete);
     CASE_EMBOSS_EVENT_STATUS(InquiryComplete);
+    case hci_spec::kEncryptionChangeEventCode:
+      return StatusCodeFromEmbossEvent<pw::bluetooth::emboss::EncryptionChangeEventV1View>(
+          *this, out_code);
     case hci_spec::kLEMetaEventCode: {
       auto subevent_code = params<hci_spec::LEMetaEventParams>().subevent_code;
       switch (subevent_code) {

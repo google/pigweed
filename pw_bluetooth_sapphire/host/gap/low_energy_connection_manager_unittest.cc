@@ -2257,7 +2257,7 @@ TEST_F(LowEnergyConnectionManagerTest, ConnectionCleanUpFollowingEncryptionFailu
 
   test_device()->SendEncryptionChangeEvent(
       handle, pw::bluetooth::emboss::StatusCode::CONNECTION_TERMINATED_MIC_FAILURE,
-      hci_spec::EncryptionStatus::kOff);
+      pw::bluetooth::emboss::EncryptionStatus::OFF);
   test_device()->SendDisconnectionCompleteEvent(handle);
   RunLoopUntilIdle();
 

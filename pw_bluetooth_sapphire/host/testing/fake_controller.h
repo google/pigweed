@@ -308,7 +308,7 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   // Send HCI encryption change event for |handle| with the given parameters.
   void SendEncryptionChangeEvent(hci_spec::ConnectionHandle handle,
                                  pw::bluetooth::emboss::StatusCode status,
-                                 hci_spec::EncryptionStatus encryption_enabled);
+                                 pw::bluetooth::emboss::EncryptionStatus encryption_enabled);
 
   // Callback to invoke when a packet is received over the data channel. Care
   // should be taken to ensure that a callback with a reference to test case

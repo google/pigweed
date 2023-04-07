@@ -756,34 +756,9 @@ constexpr EventCode kAuthenticationCompleteEventCode = 0x06;
 // Remote Name Request Complete Event (v1.1) (BR/EDR)
 constexpr EventCode kRemoteNameRequestCompleteEventCode = 0x07;
 
-struct RemoteNameRequestCompleteEventParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Address of the device
-  DeviceAddressBytes bd_addr;
-
-  // Remote Name - UTF-8 encoded friendly name.
-  // If the name is less than 248 characters, it is null terminated and
-  // the remaining bytes are not valid.
-  uint8_t remote_name[kMaxNameLength];
-} __attribute__((packed));
-
 // ============================================
 // Encryption Change Event (v1.1) (BR/EDR & LE)
 constexpr EventCode kEncryptionChangeEventCode = 0x08;
-
-struct EncryptionChangeEventParams {
-  // See enum StatusCode in hci_constants.h.
-  StatusCode status;
-
-  // Connection_Handle (only the lower 12-bits are meaningful).
-  //   Range: 0x0000 to kConnectionHandleMax in hci_constants.h
-  ConnectionHandle connection_handle;
-
-  // Current Link Level Encryption status.
-  EncryptionStatus encryption_enabled;
-} __attribute__((packed));
 
 // =========================================================
 // Change Connection Link Key Complete Event (v1.1) (BR/EDR)

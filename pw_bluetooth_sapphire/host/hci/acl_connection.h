@@ -60,7 +60,7 @@ class AclConnection : public Connection {
                                       const Transport::WeakPtr& hci);
 
   // HCI event handlers.
-  CommandChannel::EventCallbackResult OnEncryptionChangeEvent(const EventPacket& event);
+  CommandChannel::EventCallbackResult OnEncryptionChangeEvent(const EmbossEventPacket& event);
   CommandChannel::EventCallbackResult OnEncryptionKeyRefreshCompleteEvent(const EventPacket& event);
 
   // IDs for encryption related HCI event handlers.

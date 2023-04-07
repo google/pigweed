@@ -91,15 +91,18 @@ void BrEdrInterrogator::QueueRemoteNameRequest() {
     params.clock_offset().clock_offset().Write(offset);
   }
 
-  auto cmd_cb = [this](const hci::EventPacket& event) {
+  auto cmd_cb = [this](const hci::EmbossEventPacket& event) {
     if (hci_is_error(event, WARN, "gap-bredr", "remote name request failed")) {
       return;
     }
     bt_log(TRACE, "gap-bredr", "name request complete (peer id: %s)", bt_str(peer_id_));
-    const auto& params = event.params<hci_spec::RemoteNameRequestCompleteEventParams>();
-    const auto remote_name_end = std::find(params.remote_name, std::end(params.remote_name), '\0');
-    peer_->RegisterName(std::string(params.remote_name, remote_name_end),
-                        Peer::NameSource::kNameDiscoveryProcedure);
+
+    auto params = event.view<pw::bluetooth::emboss::RemoteNameRequestCompleteEventView>();
+    emboss::support::ReadOnlyContiguousBuffer name = params.remote_name().BackingStorage();
+    const unsigned char* name_end = std::find(name.begin(), name.end(), '\0');
+    std::string name_string(reinterpret_cast<const char*>(name.begin()),
+                            reinterpret_cast<const char*>(name_end));
+    peer_->RegisterName(std::move(name_string), Peer::NameSource::kNameDiscoveryProcedure);
   };
 
   bt_log(TRACE, "gap-bredr", "sending name request (peer id: %s)", bt_str(peer_->identifier()));

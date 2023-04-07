@@ -91,6 +91,9 @@ class CommandChannel final {
   // See Bluetooth Core Spec v5.0, Volume 2, Part E, Section 4.4 "Command Flow Control" for more
   // information about the HCI command flow control.
   using CommandCallback = fit::function<void(TransactionId id, const EventPacket& event)>;
+  using EmbossCommandCallback =
+      fit::function<void(TransactionId id, const EmbossEventPacket& event_packet)>;
+  using CommandCallbackVariant = std::variant<CommandCallback, EmbossCommandCallback>;
   TransactionId SendCommand(
       CommandPacketVariant command_packet, CommandCallback callback,
       hci_spec::EventCode complete_event_code = hci_spec::kCommandCompleteEventCode);
@@ -108,7 +111,7 @@ class CommandChannel final {
   // that cannot run concurrently (i.e. Inquiry and Connect). Two commands with the same opcode will
   // never run simultaneously.
   TransactionId SendExclusiveCommand(
-      CommandPacketVariant command_packet, CommandCallback callback,
+      CommandPacketVariant command_packet, CommandCallbackVariant callback,
       hci_spec::EventCode complete_event_code = hci_spec::kCommandCompleteEventCode,
       std::unordered_set<hci_spec::OpCode> exclusions = {});
 
@@ -211,7 +214,7 @@ class CommandChannel final {
 
  private:
   TransactionId SendExclusiveCommandInternal(
-      CommandPacketVariant command_packet, CommandCallback callback,
+      CommandPacketVariant command_packet, CommandCallbackVariant callback,
       hci_spec::EventCode complete_event_code,
       std::optional<hci_spec::EventCode> le_meta_subevent_code = std::nullopt,
       std::unordered_set<hci_spec::OpCode> exclusions = {});
@@ -234,7 +237,8 @@ class CommandChannel final {
     TransactionData(CommandChannel* channel, TransactionId id, hci_spec::OpCode opcode,
                     hci_spec::EventCode complete_event_code,
                     std::optional<hci_spec::EventCode> le_meta_subevent_code,
-                    std::unordered_set<hci_spec::OpCode> exclusions, CommandCallback callback);
+                    std::unordered_set<hci_spec::OpCode> exclusions,
+                    CommandCallbackVariant callback);
     ~TransactionData();
 
     // Starts the transaction timer, which will call CommandChannel::OnCommandTimeout if it's not
@@ -249,7 +253,7 @@ class CommandChannel final {
     void Cancel();
 
     // Makes an EventCallback that calls |callback_| correctly.
-    EventCallback MakeCallback();
+    EventCallbackVariant MakeCallback();
 
     hci_spec::EventCode complete_event_code() const { return complete_event_code_; }
     std::optional<hci_spec::EventCode> le_meta_subevent_code() const {
@@ -271,7 +275,7 @@ class CommandChannel final {
     hci_spec::EventCode complete_event_code_;
     std::optional<hci_spec::EventCode> le_meta_subevent_code_;
     std::unordered_set<hci_spec::OpCode> exclusions_;
-    CommandCallback callback_;
+    CommandCallbackVariant callback_;
     async::TaskClosure timeout_task_;
 
     // If non-zero, the id of the handler registered for this transaction.

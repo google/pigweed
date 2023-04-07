@@ -177,7 +177,7 @@ void BrEdrDiscoveryManager::MaybeStartInquiry() {
 
   cmd_->SendExclusiveCommand(
       std::move(inquiry),
-      [self](auto, const auto& event) {
+      [self](auto, const hci::EventPacket& event) {
         if (!self.is_alive()) {
           return;
         }
@@ -428,7 +428,7 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
     params.clock_offset().clock_offset().Write(offset);
   }
 
-  auto cb = [id, self = weak_self_.GetWeakPtr()](auto, const auto& event) {
+  auto cb = [id, self = weak_self_.GetWeakPtr()](auto, const hci::EmbossEventPacket& event) {
     if (!self.is_alive()) {
       return;
     }
@@ -444,15 +444,17 @@ void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {
     BT_DEBUG_ASSERT(event.event_code() == hci_spec::kRemoteNameRequestCompleteEventCode);
 
     self->requesting_names_.erase(id);
-    const auto& params =
-        event.view().template payload<hci_spec::RemoteNameRequestCompleteEventParams>();
     Peer* const peer = self->cache_->FindById(id);
     if (!peer) {
       return;
     }
-    const auto remote_name_end = std::find(params.remote_name, std::end(params.remote_name), '\0');
-    peer->RegisterName(std::string(params.remote_name, remote_name_end),
-                       Peer::NameSource::kNameDiscoveryProcedure);
+
+    auto params = event.view<pw::bluetooth::emboss::RemoteNameRequestCompleteEventView>();
+    emboss::support::ReadOnlyContiguousBuffer name = params.remote_name().BackingStorage();
+    const unsigned char* name_end = std::find(name.begin(), name.end(), '\0');
+    std::string name_string(reinterpret_cast<const char*>(name.begin()),
+                            reinterpret_cast<const char*>(name_end));
+    peer->RegisterName(std::move(name_string), Peer::NameSource::kNameDiscoveryProcedure);
   };
 
   auto cmd_id = cmd_->SendExclusiveCommand(std::move(packet), std::move(cb),

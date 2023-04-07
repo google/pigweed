@@ -54,7 +54,7 @@ CommandChannel::TransactionData::TransactionData(
     CommandChannel* channel, TransactionId transaction_id, hci_spec::OpCode opcode,
     hci_spec::EventCode complete_event_code,
     std::optional<hci_spec::EventCode> le_meta_subevent_code,
-    std::unordered_set<hci_spec::OpCode> exclusions, CommandCallback callback)
+    std::unordered_set<hci_spec::OpCode> exclusions, CommandCallbackVariant callback)
     : channel_(channel),
       transaction_id_(transaction_id),
       opcode_(opcode),
@@ -68,9 +68,13 @@ CommandChannel::TransactionData::TransactionData(
 }
 
 CommandChannel::TransactionData::~TransactionData() {
-  if (callback_) {
-    bt_log(DEBUG, "hci", "destroying unfinished transaction: %zu", transaction_id_);
-  }
+  std::visit(
+      [this](auto& cb) {
+        if (cb) {
+          bt_log(DEBUG, "hci", "destroying unfinished transaction: %zu", transaction_id_);
+        }
+      },
+      callback_);
 }
 
 void CommandChannel::TransactionData::StartTimer() {
@@ -82,30 +86,55 @@ void CommandChannel::TransactionData::StartTimer() {
 
 void CommandChannel::TransactionData::Complete(std::unique_ptr<EventPacket> event) {
   timeout_task_.Cancel();
-  if (!callback_) {
-    return;
-  }
 
-  // Call callback_ synchronously to ensure that asynchronous status & complete events are not
-  // handled out of order if they are dispatched from the HCI API simultaneously.
-  callback_(transaction_id_, *event);
+  std::visit(
+      [this, &event](auto& cb) {
+        using T = std::decay_t<decltype(cb)>;
 
-  // Asynchronous commands will have an additional reference to callback_ in the event
-  // map. Clear this reference to ensure that destruction or unexpected command complete events or
-  // status events do not call this reference to callback_ twice.
-  callback_ = nullptr;
+        if (!cb) {
+          return;
+        }
+
+        // Call callback_ synchronously to ensure that asynchronous status & complete events are not
+        // handled out of order if they are dispatched from the HCI API simultaneously.
+        if constexpr (std::is_same_v<T, CommandCallback>) {
+          cb(transaction_id_, *event);
+        } else {
+          EmbossEventPacket packet = EmbossEventPacket::New(event->view().size());
+          MutableBufferView view = packet.mutable_data();
+          event->view().data().Copy(&view);
+          cb(transaction_id_, packet);
+        }
+
+        // Asynchronous commands will have an additional reference to callback_ in the event
+        // map. Clear this reference to ensure that destruction or unexpected command complete
+        // events or status events do not call this reference to callback_ twice.
+        cb = nullptr;
+      },
+      callback_);
 }
 
 void CommandChannel::TransactionData::Cancel() {
   timeout_task_.Cancel();
-  callback_ = nullptr;
+  std::visit([](auto& cb) { cb = nullptr; }, callback_);
 }
 
-CommandChannel::EventCallback CommandChannel::TransactionData::MakeCallback() {
-  return [transaction_id = transaction_id_, cb = callback_.share()](const EventPacket& event) {
-    cb(transaction_id, event);
-    return EventCallbackResult::kContinue;
-  };
+CommandChannel::EventCallbackVariant CommandChannel::TransactionData::MakeCallback() {
+  return std::visit(overloaded{[this](CommandCallback& cb) -> EventCallbackVariant {
+                                 return [transaction_id = transaction_id_,
+                                         cb = cb.share()](const EventPacket& event) {
+                                   cb(transaction_id, event);
+                                   return EventCallbackResult::kContinue;
+                                 };
+                               },
+                               [this](EmbossCommandCallback& cb) -> EventCallbackVariant {
+                                 return [transaction_id = transaction_id_,
+                                         cb = cb.share()](const EmbossEventPacket& event) {
+                                   cb(transaction_id, event);
+                                   return EventCallbackResult::kContinue;
+                                 };
+                               }},
+                    callback_);
 }
 
 CommandChannel::CommandChannel(pw::bluetooth::Controller* hci)
@@ -138,7 +167,7 @@ CommandChannel::TransactionId CommandChannel::SendLeAsyncCommand(
 }
 
 CommandChannel::TransactionId CommandChannel::SendExclusiveCommand(
-    CommandPacketVariant command_packet, CommandCallback callback,
+    CommandPacketVariant command_packet, CommandCallbackVariant callback,
     const hci_spec::EventCode complete_event_code,
     std::unordered_set<hci_spec::OpCode> exclusions) {
   return SendExclusiveCommandInternal(std::move(command_packet), std::move(callback),
@@ -155,7 +184,7 @@ CommandChannel::TransactionId CommandChannel::SendLeAsyncExclusiveCommand(
 }
 
 CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
-    CommandPacketVariant command_packet, CommandCallback callback,
+    CommandPacketVariant command_packet, CommandCallbackVariant callback,
     hci_spec::EventCode complete_event_code,
     std::optional<hci_spec::EventCode> le_meta_subevent_code,
     std::unordered_set<hci_spec::OpCode> exclusions) {
@@ -194,6 +223,7 @@ CommandChannel::TransactionId CommandChannel::SendExclusiveCommandInternal(
                  command_packet);
   const TransactionId transaction_id = next_transaction_id_.value();
   next_transaction_id_.Set(transaction_id + 1);
+
   std::unique_ptr<CommandChannel::TransactionData> data = std::make_unique<TransactionData>(
       this, transaction_id, opcode, complete_event_code, le_meta_subevent_code,
       std::move(exclusions), std::move(callback));

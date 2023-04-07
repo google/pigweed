@@ -13,7 +13,18 @@ namespace {
 template <
     CommandChannel::EventCallbackResult (AclConnection::*EventHandlerMethod)(const EventPacket&)>
 CommandChannel::EventCallback BindEventHandler(const WeakSelf<AclConnection>::WeakPtr& conn) {
-  return [conn](const auto& event) {
+  return [conn](const EventPacket& event) {
+    if (conn.is_alive()) {
+      return (conn.get().*EventHandlerMethod)(event);
+    }
+    return CommandChannel::EventCallbackResult::kRemove;
+  };
+}
+
+template <CommandChannel::EventCallbackResult (AclConnection::*EventHandlerMethod)(
+    const EmbossEventPacket&)>
+CommandChannel::EmbossEventCallback BindEventHandler(const WeakPtr<AclConnection>& conn) {
+  return [conn](const EmbossEventPacket& event) {
     if (conn.is_alive()) {
       return (conn.get().*EventHandlerMethod)(event);
     }
@@ -56,16 +67,16 @@ void AclConnection::OnDisconnectionComplete(hci_spec::ConnectionHandle handle,
 }
 
 CommandChannel::EventCallbackResult AclConnection::OnEncryptionChangeEvent(
-    const EventPacket& event) {
+    const EmbossEventPacket& event) {
   BT_ASSERT(event.event_code() == hci_spec::kEncryptionChangeEventCode);
 
-  if (event.view().payload_size() != sizeof(hci_spec::EncryptionChangeEventParams)) {
+  auto params = event.unchecked_view<pw::bluetooth::emboss::EncryptionChangeEventV1View>();
+  if (!params.Ok()) {
     bt_log(WARN, "hci", "malformed encryption change event");
     return CommandChannel::EventCallbackResult::kContinue;
   }
 
-  const auto& params = event.params<hci_spec::EncryptionChangeEventParams>();
-  hci_spec::ConnectionHandle handle = le16toh(params.connection_handle);
+  hci_spec::ConnectionHandle handle = params.connection_handle().Read();
 
   // Silently ignore the event as it isn't meant for this connection.
   if (handle != this->handle()) {
@@ -78,7 +89,7 @@ CommandChannel::EventCallbackResult AclConnection::OnEncryptionChangeEvent(
   }
 
   Result<> result = event.ToResult();
-  bool enabled = params.encryption_enabled != hci_spec::EncryptionStatus::kOff;
+  bool enabled = params.encryption_enabled().Read() != pw::bluetooth::emboss::EncryptionStatus::OFF;
 
   bt_log(DEBUG, "hci", "encryption change (%s) %s", enabled ? "enabled" : "disabled",
          bt_str(result));
