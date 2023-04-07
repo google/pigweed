@@ -33,6 +33,7 @@ pw_python_package("py") {
     "pw_ide/exceptions.py",
     "pw_ide/python.py",
     "pw_ide/settings.py",
+    "pw_ide/status_reporter.py",
     "pw_ide/symlinks.py",
     "pw_ide/vscode.py",
   ]

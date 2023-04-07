@@ -17,8 +17,9 @@ import logging
 import os
 import unittest
 
-from pw_ide.commands import _make_working_dir, LoggingStatusReporter
+from pw_ide.commands import _make_working_dir
 from pw_ide.settings import PW_IDE_DIR_NAME
+from pw_ide.status_reporter import LoggingStatusReporter
 
 from test_cases import PwIdeTestCase
 
