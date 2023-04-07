@@ -33,7 +33,7 @@ pw_cc_library(
         "public_overrides",
     ],
     deps = [
-        ":handler",
+        ":handler_facade",
         "//pw_preprocessor",
     ],
 )
