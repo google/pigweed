@@ -26,6 +26,7 @@ from pw_ide.commands import (
     cmd_python,
     cmd_reset,
     cmd_setup,
+    cmd_sync,
     cmd_vscode,
 )
 
@@ -267,6 +268,7 @@ def _build_argument_parser() -> argparse.ArgumentParser:
     subcommand_parser = parser_root.add_subparsers(help='Subcommands')
     add_parser = _parser_adder(subcommand_parser)
 
+    add_parser(cmd_sync, 'sync')
     add_parser(cmd_setup, 'setup')
 
     parser_reset = add_parser(cmd_reset, 'reset')

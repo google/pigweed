@@ -302,7 +302,7 @@ def cmd_reset(
     reporter.wrn('Pigweed IDE settings were reset!')
 
 
-def cmd_setup(
+def cmd_sync(
     reporter: StatusReporter = StatusReporter(),
     pw_ide_settings: PigweedIdeSettings = PigweedIdeSettings(),
 ) -> None:
@@ -326,6 +326,17 @@ def cmd_setup(
 
     for command in pw_ide_settings.setup:
         subprocess.run(shlex.split(command))
+
+
+def cmd_setup(
+    reporter: StatusReporter = StatusReporter(),
+    pw_ide_settings: PigweedIdeSettings = PigweedIdeSettings(),
+) -> None:
+    """Deprecated! Please use `pw ide sync`."""
+    reporter.wrn(
+        "The `setup` command is now `sync`. Next time, run `pw ide sync`."
+    )
+    cmd_sync(reporter, pw_ide_settings)
 
 
 def cmd_vscode(
