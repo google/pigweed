@@ -101,7 +101,7 @@ The small code footprint makes the project suitable and popular for embedded
 systems.
 
 To select the Mbed TLS backend, the MbedTLS library needs to be installed and
-configured.
+configured. If using GN, do,
 
 .. code-block:: sh
 
@@ -116,6 +116,21 @@ configured.
   '
 
   ninja -C out
+
+If using Bazel, add the Mbed TLS repository to your WORKSPACE and select
+appropriate backends by adding them to your project's `platform
+<https://bazel.build/extending/platforms>`_:
+
+.. code-block:: python
+
+  platform(
+    name = "my_platform",
+     constraint_values = [
+       "@pigweed//pw_crypto:sha256_mbedtls_backend",
+       "@pigweed//pw_crypto:ecdsa_mbedtls_backend",
+       # ... other constraint_values
+     ],
+  )
 
 For optimal code size and/or performance, the Mbed TLS library can be configured
 per product. Mbed TLS configuration is achieved by turning on and off MBEDTLS_*
@@ -149,7 +164,7 @@ BoringSSL
 ^^^^^^^^^
 
 To select the BoringSSL backend, the BoringSSL library needs to be installed and
-configured.
+configured. If using GN, do,
 
 .. code-block:: sh
 
@@ -164,6 +179,21 @@ configured.
   '
 
   ninja -C out
+
+If using Bazel, add the BoringSSL repository to your WORKSPACE and select
+appropriate backends by adding them to your project's `platform
+<https://bazel.build/extending/platforms>`_:
+
+.. code-block:: python
+
+  platform(
+    name = "my_platform",
+     constraint_values = [
+       "@pigweed//pw_crypto:sha256_boringssl_backend",
+       "@pigweed//pw_crypto:ecdsa_boringssl_backend",
+       # ... other constraint_values
+     ],
+  )
 
 BoringSSL does not provide a public configuration interface to reduce the code
 size.

@@ -1,0 +1,114 @@
+# Copyright 2023 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+package(
+  default_visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "mbedtls",
+    srcs = [
+        "library/aes.c",
+        "library/aesni.c",
+        "library/aria.c",
+        "library/asn1parse.c",
+        "library/asn1write.c",
+        "library/base64.c",
+        "library/bignum.c",
+        "library/camellia.c",
+        "library/ccm.c",
+        "library/chacha20.c",
+        "library/chachapoly.c",
+        "library/cipher.c",
+        "library/cipher_wrap.c",
+        "library/cmac.c",
+        "library/constant_time.c",
+        "library/ctr_drbg.c",
+        "library/des.c",
+        "library/dhm.c",
+        "library/ecdh.c",
+        "library/ecdsa.c",
+        "library/ecjpake.c",
+        "library/ecp.c",
+        "library/ecp_curves.c",
+        "library/entropy.c",
+        "library/entropy_poll.c",
+        "library/error.c",
+        "library/gcm.c",
+        "library/hkdf.c",
+        "library/hmac_drbg.c",
+        "library/md.c",
+        "library/md5.c",
+        "library/memory_buffer_alloc.c",
+        "library/mps_reader.c",
+        "library/mps_trace.c",
+        "library/nist_kw.c",
+        "library/oid.c",
+        "library/padlock.c",
+        "library/pem.c",
+        "library/pk.c",
+        "library/pk_wrap.c",
+        "library/pkcs12.c",
+        "library/pkcs5.c",
+        "library/pkparse.c",
+        "library/pkwrite.c",
+        "library/platform.c",
+        "library/platform_util.c",
+        "library/poly1305.c",
+        "library/ripemd160.c",
+        "library/rsa.c",
+        "library/rsa_alt_helpers.c",
+        "library/sha1.c",
+        "library/sha256.c",
+        "library/sha512.c",
+        "library/ssl_debug_helpers_generated.c",
+        "library/threading.c",
+        "library/timing.c",
+        "library/version.c",
+        "library/version_features.c",
+    ],
+    includes = ["include/"],
+    textual_hdrs = [
+        "library/aesni.h",
+        "library/bignum_internal.h",
+        "library/bn_mul.h",
+        "library/cipher_wrap.h",
+        "library/common.h",
+        "library/constant_time_internal.h",
+        "library/constant_time_invasive.h",
+        "library/ecp_internal_alt.h",
+        "library/ecp_invasive.h",
+        "library/entropy_poll.h",
+        "library/md_wrap.h",
+        "library/pk_wrap.h",
+        "library/padlock.h",
+        "library/pkwrite.h",
+        "library/rsa_alt_helpers.h",
+        "library/ssl_debug_helpers.h",
+        "library/ssl_misc.h",
+    ] + glob(
+        include = ["include/**/*.h"],
+        exclude = ["include/psa/**"],
+    ),
+    deps = [
+        ":mbedtls_config",
+    ],
+)
+
+# Library containing project-specific mbedtls config header file.
+label_flag(
+    name = "mbedtls_config",
+    build_setting_default = ":empty_config",
+)
+
+cc_library(name = "empty_config")

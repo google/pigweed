@@ -396,6 +396,15 @@ git_repository(
     shallow_since = "1637714942 +0000",
 )
 
+git_repository(
+    name = "mbedtls",
+    build_file = "//:third_party/mbedtls/BUILD.mbedtls",
+    # mbedtls-3.2.1 released 2022-07-12
+    commit = "869298bffeea13b205343361b7a7daf2b210e33d",
+    remote = "https://pigweed.googlesource.com/third_party/github/ARMmbed/mbedtls",
+    shallow_since = "1648504566 -0700",
+)
+
 http_archive(
     name = "freertos",
     build_file = "//:third_party/freertos/BUILD.bazel",

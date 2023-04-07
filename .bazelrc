@@ -52,6 +52,8 @@ build --cxxopt="-Wno-register"
 # TODO(pwbug/437): Remove this once pwbug/437 is completely resolved.
 build --action_env=PATH
 
+build --@mbedtls//:mbedtls_config=//third_party/mbedtls:default_config
+
 # Define the --config=asan-libfuzzer configuration.
 build:asan-libfuzzer \
     --@rules_fuzzing//fuzzing:cc_engine=@rules_fuzzing//fuzzing/engines:libfuzzer

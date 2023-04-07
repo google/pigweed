@@ -17,6 +17,10 @@ load(
     "pw_cc_library",
 )
 
+package(
+    default_visibility = ["//visibility:public"],
+)
+
 # Ready-made configurations
 mbedtls_configs = [
     ("default", "configs/config_default.h"),
@@ -30,10 +34,8 @@ mbedtls_configs = [
             config_header,
             "configs/config_pigweed_common.h",
         ],
-        copts = ["-DMBEDTLS_CONFIG_FILE=\"%s\"" % config_header],
+        defines = ['MBEDTLS_CONFIG_FILE=\\"%s\\"' % config_header],
         includes = ["."],
     )
     for config_name, config_header in mbedtls_configs
 ]
-
-# TODO(zyecheng): Add build recipe for the library.

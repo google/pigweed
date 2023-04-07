@@ -14,16 +14,14 @@
 
 package(default_visibility = ["//visibility:public"])
 
-# TODO(b/236321905): Support backends other than boringSSL.
 label_flag(
     name = "pw_crypto_sha256_backend",
-    build_setting_default = "@pigweed//pw_crypto:sha256_boringssl",
+    build_setting_default = "@pigweed//pw_crypto:sha256_backend_multiplexer",
 )
 
-# TODO(b/236321905): Support backends other than boringSSL.
 label_flag(
     name = "pw_crypto_ecdsa_backend",
-    build_setting_default = "@pigweed//pw_crypto:ecdsa_boringssl",
+    build_setting_default = "@pigweed//pw_crypto:ecdsa_backend_multiplexer",
 )
 
 label_flag(
