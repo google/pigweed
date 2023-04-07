@@ -57,8 +57,10 @@ from typing import (
     Literal,
     Optional,
     OrderedDict,
+    Type,
     TypeVar,
 )
+import yaml
 
 import json5  # type: ignore
 
@@ -70,7 +72,17 @@ class _StructuredFileFormat:
 
     @property
     def ext(self) -> str:
+        """The file extension for this file format."""
         return 'null'
+
+    @property
+    def unserializable_error(self) -> Type[Exception]:
+        """The error class that will be raised when writing unserializable data.
+
+        This allows us to generically catch serialization errors without needing
+        to know which file format we're using.
+        """
+        return TypeError
 
     def load(self, *args, **kwargs) -> OrderedDict:
         raise ValueError(
@@ -90,11 +102,13 @@ class JsonFileFormat(_StructuredFileFormat):
 
     def load(self, *args, **kwargs) -> OrderedDict:
         """Load JSON into an ordered dict."""
+        # Load into an OrderedDict instead of a plain dict
         kwargs['object_pairs_hook'] = OrderedDict
         return json.load(*args, **kwargs)
 
     def dump(self, data: OrderedDict, *args, **kwargs) -> None:
         """Dump JSON in a readable format."""
+        # Ensure the output is human-readable
         kwargs['indent'] = 2
         json.dump(data, *args, **kwargs)
 
@@ -111,19 +125,54 @@ class Json5FileFormat(_StructuredFileFormat):
 
     def load(self, *args, **kwargs) -> OrderedDict:
         """Load JSON into an ordered dict."""
+        # Load into an OrderedDict instead of a plain dict
         kwargs['object_pairs_hook'] = OrderedDict
         return json5.load(*args, **kwargs)
 
     def dump(self, data: OrderedDict, *args, **kwargs) -> None:
         """Dump JSON in a readable format."""
+        # Ensure the output is human-readable
         kwargs['indent'] = 2
+        # Prevent unquoting keys that don't strictly need to be quoted
         kwargs['quote_keys'] = True
         json5.dump(data, *args, **kwargs)
+
+
+class YamlFileFormat(_StructuredFileFormat):
+    """YAML file format."""
+
+    @property
+    def ext(self) -> str:
+        return 'yaml'
+
+    @property
+    def unserializable_error(self) -> Type[Exception]:
+        return yaml.representer.RepresenterError
+
+    def load(self, *args, **kwargs) -> OrderedDict:
+        """Load YAML into an ordered dict."""
+        return OrderedDict(yaml.safe_load(*args, **kwargs))
+
+    def dump(self, data: OrderedDict, *args, **kwargs) -> None:
+        """Dump YAML in a readable format."""
+        # Ensure the output is human-readable
+        kwargs['indent'] = 2
+        # Always use the "block" style (i.e. the dict-like style)
+        kwargs['default_flow_style'] = False
+        # Don't infere with ordering
+        kwargs['sort_keys'] = False
+        # The yaml module doesn't understand OrderedDicts
+        data_to_dump = dict_swap_type(data, dict)
+        yaml.safe_dump(data_to_dump, *args, **kwargs)
 
 
 # Allows constraining to dicts and dict subclasses, while also constraining to
 # the *same* dict subclass.
 _DictLike = TypeVar('_DictLike', bound=Dict)
+
+# Likewise, constrain to a specific dict subclass, but one that can be different
+# from that of _DictLike.
+_AnotherDictLike = TypeVar('_AnotherDictLike', bound=Dict)
 
 
 def dict_deep_merge(
@@ -186,6 +235,27 @@ def dict_deep_merge(
         # The value is something else; copy it over.
         # TODO(chadnorvell): This doesn't deep merge other data structures, e.g.
         # lists, lists of dicts, dicts of lists, etc.
+        else:
+            dest[key] = value
+
+    return dest
+
+
+def dict_swap_type(
+    src: _DictLike,
+    ctor: Callable[[], _AnotherDictLike],
+) -> _AnotherDictLike:
+    """Change the dict subclass of all dicts in a nested dict-like structure.
+
+    This returns new data and does not mutate the original data structure.
+    """
+    dest = ctor()
+
+    for key, value in src.items():
+        # The value is a nested dict; recursively construct.
+        if isinstance(value, src.__class__):
+            dest[key] = dict_swap_type(value, ctor)
+        # The value is something else; copy it over.
         else:
             dest[key] = value
 
@@ -381,9 +451,9 @@ class EditorSettingsFile(EditorSettingsDefinition):
 
         try:
             self._format.dump(settings, file)
-        except TypeError:
+        except self._format.unserializable_error:
             # We'll get this error if we try to sneak something in that's
-            # not JSON-serializable. Unless we handle this, we'll end up
+            # not serializable. Unless we handle this, we may end up
             # with a partially-written file that can't be parsed. So we
             # delete that and restore the backup.
             file.close()

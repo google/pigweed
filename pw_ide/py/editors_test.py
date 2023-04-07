@@ -19,9 +19,13 @@ import unittest
 
 from pw_ide.editors import (
     dict_deep_merge,
+    dict_swap_type,
     EditorSettingsFile,
     EditorSettingsManager,
     JsonFileFormat,
+    Json5FileFormat,
+    YamlFileFormat,
+    _StructuredFileFormat,
 )
 
 from test_cases import PwIdeTestCase
@@ -30,8 +34,8 @@ from test_cases import PwIdeTestCase
 class TestDictDeepMerge(unittest.TestCase):
     """Tests dict_deep_merge"""
 
+    # pylint: disable=unnecessary-lambda
     def test_invariants_with_dict_success(self):
-        # pylint: disable=unnecessary-lambda
         dict_a = {'hello': 'world'}
         dict_b = {'foo': 'bar'}
 
@@ -44,7 +48,6 @@ class TestDictDeepMerge(unittest.TestCase):
         self.assertEqual(result, expected)
 
     def test_invariants_with_dict_implicit_ctor_success(self):
-        # pylint: disable=unnecessary-lambda
         dict_a = {'hello': 'world'}
         dict_b = {'foo': 'bar'}
 
@@ -57,7 +60,6 @@ class TestDictDeepMerge(unittest.TestCase):
         self.assertEqual(result, expected)
 
     def test_invariants_with_dict_fails_wrong_ctor_type(self):
-        # pylint: disable=unnecessary-lambda
         dict_a = {'hello': 'world'}
         dict_b = {'foo': 'bar'}
 
@@ -65,7 +67,6 @@ class TestDictDeepMerge(unittest.TestCase):
             dict_deep_merge(dict_b, dict_a, lambda: OrderedDict())
 
     def test_invariants_with_ordered_dict_success(self):
-        # pylint: disable=unnecessary-lambda
         dict_a = OrderedDict({'hello': 'world'})
         dict_b = OrderedDict({'foo': 'bar'})
 
@@ -80,7 +81,6 @@ class TestDictDeepMerge(unittest.TestCase):
         self.assertEqual(result, expected)
 
     def test_invariants_with_ordered_dict_implicit_ctor_success(self):
-        # pylint: disable=unnecessary-lambda
         dict_a = OrderedDict({'hello': 'world'})
         dict_b = OrderedDict({'foo': 'bar'})
 
@@ -95,247 +95,372 @@ class TestDictDeepMerge(unittest.TestCase):
         self.assertEqual(result, expected)
 
     def test_invariants_with_ordered_dict_fails_wrong_ctor_type(self):
-        # pylint: disable=unnecessary-lambda
         dict_a = OrderedDict({'hello': 'world'})
         dict_b = OrderedDict({'foo': 'bar'})
 
         with self.assertRaises(TypeError):
             dict_deep_merge(dict_b, dict_a, lambda: dict())
 
+    # pylint: enable=unnecessary-lambda
 
-class TestEditorSettingsFile(PwIdeTestCase):
-    """Tests EditorSettingsFile"""
 
-    def test_open_new_file_and_write(self):
-        name = 'settings'
-        json_fmt = JsonFileFormat()
-        settings_file = EditorSettingsFile(self.temp_dir_path, name, json_fmt)
+class TestDictSwapType(unittest.TestCase):
+    """Tests dict_swap_type"""
 
-        with settings_file.modify() as settings:
-            settings['hello'] = 'world'
+    def test_ordereddict_to_dict(self):
+        """Test converting an OrderedDict to a plain dict"""
 
-        with open(self.temp_dir_path / f'{name}.{json_fmt.ext}') as file:
-            settings_dict = json_fmt.load(file)
+        ordered_dict = OrderedDict(
+            {
+                'hello': 'world',
+                'foo': 'bar',
+                'nested': OrderedDict(
+                    {
+                        'lorem': 'ipsum',
+                        'dolor': 'sit amet',
+                    }
+                ),
+            }
+        )
 
-        self.assertEqual(settings_dict['hello'], 'world')
+        plain_dict = dict_swap_type(ordered_dict, dict)
 
-    def test_open_new_file_and_get(self):
-        name = 'settings'
-        json_fmt = JsonFileFormat()
-        settings_file = EditorSettingsFile(self.temp_dir_path, name, json_fmt)
+        expected_plain_dict = {
+            'hello': 'world',
+            'foo': 'bar',
+            'nested': {
+                'lorem': 'ipsum',
+                'dolor': 'sit amet',
+            },
+        }
 
-        with settings_file.modify() as settings:
-            settings['hello'] = 'world'
+        # The returned dict has the content and type we expect
+        self.assertDictEqual(plain_dict, expected_plain_dict)
+        self.assertIsInstance(plain_dict, dict)
+        self.assertIsInstance(plain_dict['nested'], dict)
 
-        settings_dict = settings_file.get()
-        self.assertEqual(settings_dict['hello'], 'world')
-
-    def test_open_new_file_no_backup(self):
-        name = 'settings'
-        json_fmt = JsonFileFormat()
-        settings_file = EditorSettingsFile(self.temp_dir_path, name, json_fmt)
-
-        with settings_file.modify() as settings:
-            settings['hello'] = 'world'
-
-        backup_files = [
-            path
-            for path in self.temp_dir_path.iterdir()
-            if path.name != f'{name}.{json_fmt.ext}'
-        ]
-
-        self.assertEqual(len(backup_files), 0)
-
-    def test_open_existing_file_and_backup(self):
-        name = 'settings'
-        json_fmt = JsonFileFormat()
-        settings_file = EditorSettingsFile(self.temp_dir_path, name, json_fmt)
-
-        with settings_file.modify() as settings:
-            settings['hello'] = 'world'
-
-        with settings_file.modify() as settings:
-            settings['hello'] = 'mundo'
-
-        settings_dict = settings_file.get()
-        self.assertEqual(settings_dict['hello'], 'mundo')
-
-        backup_files = [
-            path
-            for path in self.temp_dir_path.iterdir()
-            if path.name != f'{name}.{json_fmt.ext}'
-        ]
-
-        self.assertEqual(len(backup_files), 1)
-
-        with open(backup_files[0]) as file:
-            settings_dict = json_fmt.load(file)
-
-        self.assertEqual(settings_dict['hello'], 'world')
-
-    def test_open_existing_file_with_reinit_and_backup(self):
-        name = 'settings'
-        json_fmt = JsonFileFormat()
-        settings_file = EditorSettingsFile(self.temp_dir_path, name, json_fmt)
-
-        with settings_file.modify() as settings:
-            settings['hello'] = 'world'
-
-        with settings_file.modify(reinit=True) as settings:
-            settings['hello'] = 'mundo'
-
-        settings_dict = settings_file.get()
-        self.assertEqual(settings_dict['hello'], 'mundo')
-
-        backup_files = [
-            path
-            for path in self.temp_dir_path.iterdir()
-            if path.name != f'{name}.{json_fmt.ext}'
-        ]
-
-        self.assertEqual(len(backup_files), 1)
-
-        with open(backup_files[0]) as file:
-            settings_dict = json_fmt.load(file)
-
-        self.assertEqual(settings_dict['hello'], 'world')
-
-    def open_existing_file_no_change_no_backup(self):
-        name = 'settings'
-        json_fmt = JsonFileFormat()
-        settings_file = EditorSettingsFile(self.temp_dir_path, name, json_fmt)
-
-        with settings_file.modify() as settings:
-            settings['hello'] = 'world'
-
-        with settings_file.modify() as settings:
-            settings['hello'] = 'world'
-
-        settings_dict = settings_file.get()
-        self.assertEqual(settings_dict['hello'], 'world')
-
-        backup_files = [
-            path
-            for path in self.temp_dir_path.iterdir()
-            if path.name != f'{name}.{json_fmt.ext}'
-        ]
-
-        self.assertEqual(len(backup_files), 0)
-
-        with open(backup_files[0]) as file:
-            settings_dict = json_fmt.load(file)
-
-        self.assertEqual(settings_dict['hello'], 'world')
-
-    def test_write_bad_file_restore_backup(self):
-        name = 'settings'
-        json_fmt = JsonFileFormat()
-        settings_file = EditorSettingsFile(self.temp_dir_path, name, json_fmt)
-
-        with settings_file.modify() as settings:
-            settings['hello'] = 'world'
-
-        with self.assertRaises(TypeError):
-            with settings_file.modify() as settings:
-                settings['hello'] = object()
-
-        settings_dict = settings_file.get()
-        self.assertEqual(settings_dict['hello'], 'world')
-
-        backup_files = [
-            path
-            for path in self.temp_dir_path.iterdir()
-            if path.name != f'{name}.{json_fmt.ext}'
-        ]
-
-        self.assertEqual(len(backup_files), 0)
+        # The original OrderedDict is unchanged
+        self.assertIsInstance(ordered_dict, OrderedDict)
+        self.assertIsInstance(ordered_dict['nested'], OrderedDict)
 
 
 class EditorSettingsTestType(Enum):
     SETTINGS = 'settings'
 
 
-class TestEditorSettingsManager(PwIdeTestCase):
-    """Tests EditorSettingsManager"""
+class TestCasesGenericOnFileFormat:
+    """Container for tests generic on FileFormat.
 
-    def test_settings_merge(self):
-        """Test that settings merge as expected in isolation."""
-        default_settings = OrderedDict(
-            {
-                'foo': 'bar',
-                'baz': 'qux',
-                'lorem': OrderedDict(
-                    {
-                        'ipsum': 'dolor',
-                    }
-                ),
+    This misdirection is needed to prevent the base test class cases from being
+    run as actual tests.
+    """
+
+    class EditorSettingsFileTestCase(PwIdeTestCase):
+        """Test case for EditorSettingsFile with a provided FileFormat"""
+
+        def setUp(self):
+            if not hasattr(self, 'file_format'):
+                self.file_format = _StructuredFileFormat()
+            return super().setUp()
+
+        def test_open_new_file_and_write(self):
+            name = 'settings'
+            settings_file = EditorSettingsFile(
+                self.temp_dir_path, name, self.file_format
+            )
+
+            with settings_file.modify() as settings:
+                settings['hello'] = 'world'
+
+            with open(
+                self.temp_dir_path / f'{name}.{self.file_format.ext}'
+            ) as file:
+                settings_dict = self.file_format.load(file)
+
+            self.assertEqual(settings_dict['hello'], 'world')
+
+        def test_open_new_file_and_get(self):
+            name = 'settings'
+            settings_file = EditorSettingsFile(
+                self.temp_dir_path, name, self.file_format
+            )
+
+            with settings_file.modify() as settings:
+                settings['hello'] = 'world'
+
+            settings_dict = settings_file.get()
+            self.assertEqual(settings_dict['hello'], 'world')
+
+        def test_open_new_file_no_backup(self):
+            name = 'settings'
+            settings_file = EditorSettingsFile(
+                self.temp_dir_path, name, self.file_format
+            )
+
+            with settings_file.modify() as settings:
+                settings['hello'] = 'world'
+
+            backup_files = [
+                path
+                for path in self.temp_dir_path.iterdir()
+                if path.name != f'{name}.{self.file_format.ext}'
+            ]
+
+            self.assertEqual(len(backup_files), 0)
+
+        def test_open_existing_file_and_backup(self):
+            name = 'settings'
+            settings_file = EditorSettingsFile(
+                self.temp_dir_path, name, self.file_format
+            )
+
+            with settings_file.modify() as settings:
+                settings['hello'] = 'world'
+
+            with settings_file.modify() as settings:
+                settings['hello'] = 'mundo'
+
+            settings_dict = settings_file.get()
+            self.assertEqual(settings_dict['hello'], 'mundo')
+
+            backup_files = [
+                path
+                for path in self.temp_dir_path.iterdir()
+                if path.name != f'{name}.{self.file_format.ext}'
+            ]
+
+            self.assertEqual(len(backup_files), 1)
+
+            with open(backup_files[0]) as file:
+                settings_dict = self.file_format.load(file)
+
+            self.assertEqual(settings_dict['hello'], 'world')
+
+        def test_open_existing_file_with_reinit_and_backup(self):
+            name = 'settings'
+            settings_file = EditorSettingsFile(
+                self.temp_dir_path, name, self.file_format
+            )
+
+            with settings_file.modify() as settings:
+                settings['hello'] = 'world'
+
+            with settings_file.modify(reinit=True) as settings:
+                settings['hello'] = 'mundo'
+
+            settings_dict = settings_file.get()
+            self.assertEqual(settings_dict['hello'], 'mundo')
+
+            backup_files = [
+                path
+                for path in self.temp_dir_path.iterdir()
+                if path.name != f'{name}.{self.file_format.ext}'
+            ]
+
+            self.assertEqual(len(backup_files), 1)
+
+            with open(backup_files[0]) as file:
+                settings_dict = self.file_format.load(file)
+
+            self.assertEqual(settings_dict['hello'], 'world')
+
+        def test_open_existing_file_no_change_no_backup(self):
+            name = 'settings'
+            settings_file = EditorSettingsFile(
+                self.temp_dir_path, name, self.file_format
+            )
+
+            with settings_file.modify() as settings:
+                settings['hello'] = 'world'
+
+            with settings_file.modify() as settings:
+                settings['hello'] = 'world'
+
+            settings_dict = settings_file.get()
+            self.assertEqual(settings_dict['hello'], 'world')
+
+            backup_files = [
+                path
+                for path in self.temp_dir_path.iterdir()
+                if path.name != f'{name}.{self.file_format.ext}'
+            ]
+
+            self.assertEqual(len(backup_files), 0)
+
+        def test_write_bad_file_restore_backup(self):
+            name = 'settings'
+            settings_file = EditorSettingsFile(
+                self.temp_dir_path, name, self.file_format
+            )
+
+            with settings_file.modify() as settings:
+                settings['hello'] = 'world'
+
+            with self.assertRaises(self.file_format.unserializable_error):
+                with settings_file.modify() as settings:
+                    settings['hello'] = object()
+
+            settings_dict = settings_file.get()
+            self.assertEqual(settings_dict['hello'], 'world')
+
+            backup_files = [
+                path
+                for path in self.temp_dir_path.iterdir()
+                if path.name != f'{name}.{self.file_format.ext}'
+            ]
+
+            self.assertEqual(len(backup_files), 0)
+
+    class EditorSettingsManagerTestCase(PwIdeTestCase):
+        """Test case for EditorSettingsManager with a provided FileFormat"""
+
+        def setUp(self):
+            if not hasattr(self, 'file_format'):
+                self.file_format = _StructuredFileFormat()
+            return super().setUp()
+
+        def test_settings_merge(self):
+            """Test that settings merge as expected in isolation."""
+            default_settings = OrderedDict(
+                {
+                    'foo': 'bar',
+                    'baz': 'qux',
+                    'lorem': OrderedDict(
+                        {
+                            'ipsum': 'dolor',
+                        }
+                    ),
+                }
+            )
+
+            types_with_defaults = {
+                EditorSettingsTestType.SETTINGS: lambda _: default_settings
             }
-        )
 
-        types_with_defaults = {
-            EditorSettingsTestType.SETTINGS: lambda _: default_settings
-        }
+            ide_settings = self.make_ide_settings()
+            manager = EditorSettingsManager(
+                ide_settings,
+                self.temp_dir_path,
+                self.file_format,
+                types_with_defaults,
+            )
 
-        ide_settings = self.make_ide_settings()
-        json_fmt = JsonFileFormat()
-        manager = EditorSettingsManager(
-            ide_settings, self.temp_dir_path, json_fmt, types_with_defaults
-        )
+            project_settings = OrderedDict(
+                {
+                    'alpha': 'beta',
+                    'baz': 'xuq',
+                    'foo': 'rab',
+                }
+            )
 
-        project_settings = OrderedDict(
-            {
+            with manager.project(
+                EditorSettingsTestType.SETTINGS
+            ).modify() as settings:
+                dict_deep_merge(project_settings, settings)
+
+            user_settings = OrderedDict(
+                {
+                    'baz': 'xqu',
+                    'lorem': OrderedDict(
+                        {
+                            'ipsum': 'sit amet',
+                            'consectetur': 'adipiscing',
+                        }
+                    ),
+                }
+            )
+
+            with manager.user(
+                EditorSettingsTestType.SETTINGS
+            ).modify() as settings:
+                dict_deep_merge(user_settings, settings)
+
+            expected = {
                 'alpha': 'beta',
-                'baz': 'xuq',
                 'foo': 'rab',
-            }
-        )
-
-        with manager.project(
-            EditorSettingsTestType.SETTINGS
-        ).modify() as settings:
-            dict_deep_merge(project_settings, settings)
-
-        user_settings = OrderedDict(
-            {
                 'baz': 'xqu',
-                'lorem': OrderedDict(
-                    {
-                        'ipsum': 'sit amet',
-                        'consectetur': 'adipiscing',
-                    }
-                ),
+                'lorem': {
+                    'ipsum': 'sit amet',
+                    'consectetur': 'adipiscing',
+                },
             }
-        )
 
-        with manager.user(EditorSettingsTestType.SETTINGS).modify() as settings:
-            dict_deep_merge(user_settings, settings)
+            with manager.active(
+                EditorSettingsTestType.SETTINGS
+            ).modify() as active_settings:
+                manager.default(EditorSettingsTestType.SETTINGS).sync_to(
+                    active_settings
+                )
+                manager.project(EditorSettingsTestType.SETTINGS).sync_to(
+                    active_settings
+                )
+                manager.user(EditorSettingsTestType.SETTINGS).sync_to(
+                    active_settings
+                )
 
-        expected = {
-            'alpha': 'beta',
-            'foo': 'rab',
-            'baz': 'xqu',
-            'lorem': {
-                'ipsum': 'sit amet',
-                'consectetur': 'adipiscing',
-            },
-        }
-
-        with manager.active(
-            EditorSettingsTestType.SETTINGS
-        ).modify() as active_settings:
-            manager.default(EditorSettingsTestType.SETTINGS).sync_to(
-                active_settings
-            )
-            manager.project(EditorSettingsTestType.SETTINGS).sync_to(
-                active_settings
-            )
-            manager.user(EditorSettingsTestType.SETTINGS).sync_to(
-                active_settings
+            self.assertCountEqual(
+                manager.active(EditorSettingsTestType.SETTINGS).get(), expected
             )
 
-        self.assertCountEqual(
-            manager.active(EditorSettingsTestType.SETTINGS).get(), expected
-        )
+
+class TestEditorSettingsFileJsonFormat(
+    TestCasesGenericOnFileFormat.EditorSettingsFileTestCase
+):
+    """Test EditorSettingsFile with JsonFormat"""
+
+    def setUp(self):
+        self.file_format = JsonFileFormat()
+        return super().setUp()
+
+
+class TestEditorSettingsManagerJsonFormat(
+    TestCasesGenericOnFileFormat.EditorSettingsManagerTestCase
+):
+    """Test EditorSettingsManager with JsonFormat"""
+
+    def setUp(self):
+        self.file_format = JsonFileFormat()
+        return super().setUp()
+
+
+class TestEditorSettingsFileJson5Format(
+    TestCasesGenericOnFileFormat.EditorSettingsFileTestCase
+):
+    """Test EditorSettingsFile with Json5Format"""
+
+    def setUp(self):
+        self.file_format = Json5FileFormat()
+        return super().setUp()
+
+
+class TestEditorSettingsManagerJson5Format(
+    TestCasesGenericOnFileFormat.EditorSettingsManagerTestCase
+):
+    """Test EditorSettingsManager with Json5Format"""
+
+    def setUp(self):
+        self.file_format = Json5FileFormat()
+        return super().setUp()
+
+
+class TestEditorSettingsFileYamlFormat(
+    TestCasesGenericOnFileFormat.EditorSettingsFileTestCase
+):
+    """Test EditorSettingsFile with YamlFormat"""
+
+    def setUp(self):
+        self.file_format = YamlFileFormat()
+        return super().setUp()
+
+
+class TestEditorSettingsManagerYamlFormat(
+    TestCasesGenericOnFileFormat.EditorSettingsManagerTestCase
+):
+    """Test EditorSettingsManager with YamlFormat"""
+
+    def setUp(self):
+        self.file_format = YamlFileFormat()
+        return super().setUp()
 
 
 if __name__ == '__main__':
