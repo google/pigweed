@@ -66,6 +66,9 @@ TEST(PigweedTest, ExpectStringEquality) {
 
   EXPECT_STRNE("NO", "no");
   ASSERT_STRNE("yes", no);
+
+  EXPECT_STREQ(nullptr, nullptr);
+  EXPECT_STRNE("abc", nullptr);
 }
 
 TEST(PigweedTest, SucceedAndFailMacros) {

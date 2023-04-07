@@ -559,7 +559,13 @@ inline void SetTestSuitesToRun(span<std::string_view> test_suites) {
 #define _PW_TEST_C_STR(lhs, rhs, op)                             \
   ::pw::unit_test::internal::Framework::Get().CurrentTestExpect( \
       [](const auto& _pw_lhs, const auto& _pw_rhs) {             \
-        return std::strcmp(_pw_lhs.c_str, _pw_rhs.c_str) op 0;   \
+        auto cmp = [](const char* l, const char* r) -> int {     \
+          if (!l || !r) {                                        \
+            return l != r;                                       \
+          }                                                      \
+          return std::strcmp(l, r);                              \
+        };                                                       \
+        return cmp(_pw_lhs.c_str, _pw_rhs.c_str) op 0;           \
       },                                                         \
       ::pw::unit_test::internal::CStringArg{lhs},                \
       ::pw::unit_test::internal::CStringArg{rhs},                \
