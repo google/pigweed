@@ -535,8 +535,8 @@ class InlineDequeIterator {
   }
 
  private:
-  const pointer data_begin_;
-  const pointer data_end_;
+  pointer data_begin_;
+  pointer data_end_;
   pointer current_;
   size_type count_;
 };

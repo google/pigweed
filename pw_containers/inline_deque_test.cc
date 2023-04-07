@@ -501,6 +501,62 @@ TEST(InlineDeque, ConstexprMaxSize) {
 #endif  // PW_NC_TEST
 }
 
+TEST(InlineDeque, StdMaxElement) {
+  // Content = {1, 2, 3, 4}, Storage = [1, 2, 3, 4]
+  InlineDeque<int, 4> deque = {1, 2, 3, 4};
+
+  auto max_element_it = std::max_element(deque.begin(), deque.end());
+  ASSERT_NE(max_element_it, deque.end());
+  EXPECT_EQ(*max_element_it, 4);
+
+  // Content = {2, 3, 4}, Storage = [x, 2, 3, 4]
+  deque.pop_front();
+
+  max_element_it = std::max_element(deque.begin(), deque.end());
+  ASSERT_NE(max_element_it, deque.end());
+  EXPECT_EQ(*max_element_it, 4);
+
+  // Content = {2, 3, 4, 5}, Storage = [5, 2, 3, 4]
+  deque.push_back(5);
+  max_element_it = std::max_element(deque.begin(), deque.end());
+  ASSERT_NE(max_element_it, deque.end());
+  EXPECT_EQ(*max_element_it, 5);
+
+  // Content = {}, Storage = [x, x, x, x]
+  deque.clear();
+
+  max_element_it = std::max_element(deque.begin(), deque.end());
+  ASSERT_EQ(max_element_it, deque.end());
+}
+
+TEST(InlineDeque, StdMaxElementConst) {
+  // Content = {1, 2, 3, 4}, Storage = [1, 2, 3, 4]
+  InlineDeque<int, 4> deque = {1, 2, 3, 4};
+
+  auto max_element_it = std::max_element(deque.cbegin(), deque.cend());
+  ASSERT_NE(max_element_it, deque.cend());
+  EXPECT_EQ(*max_element_it, 4);
+
+  // Content = {2, 3, 4}, Storage = [x, 2, 3, 4]
+  deque.pop_front();
+
+  max_element_it = std::max_element(deque.cbegin(), deque.cend());
+  ASSERT_NE(max_element_it, deque.cend());
+  EXPECT_EQ(*max_element_it, 4);
+
+  // Content = {2, 3, 4, 5}, Storage = [5, 2, 3, 4]
+  deque.push_back(5);
+  max_element_it = std::max_element(deque.cbegin(), deque.cend());
+  ASSERT_NE(max_element_it, deque.cend());
+  EXPECT_EQ(*max_element_it, 5);
+
+  // Content = {}, Storage = [x, x, x, x]
+  deque.clear();
+
+  max_element_it = std::max_element(deque.cbegin(), deque.cend());
+  ASSERT_EQ(max_element_it, deque.cend());
+}
+
 // Test that InlineDeque<T> is trivially destructible when its type is.
 static_assert(std::is_trivially_destructible_v<InlineDeque<int>>);
 static_assert(std::is_trivially_destructible_v<InlineDeque<int, 4>>);
@@ -531,6 +587,10 @@ static_assert(sizeof(InlineDeque<uint32_t, 1>) ==
               sizeof(InlineDeque<uint32_t>::size_type) * 4 + sizeof(uint32_t));
 static_assert(sizeof(InlineDeque<uint64_t, 1>) ==
               sizeof(InlineDeque<uint64_t>::size_type) * 4 + sizeof(uint64_t));
+
+// Test that InlineDeque<T> is copy assignable
+static_assert(std::is_copy_assignable_v<InlineDeque<int>::iterator>);
+static_assert(std::is_copy_assignable_v<InlineDeque<int, 4>::iterator>);
 
 }  // namespace
 }  // namespace pw::containers

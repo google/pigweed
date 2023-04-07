@@ -364,6 +364,64 @@ TEST(InlineQueue, ConstexprMaxSize) {
 #endif  // PW_NC_TEST
 }
 
+TEST(InlineQueue, StdMaxElement) {
+  // Content = {1, 2, 3, 4}, Storage = [1, 2, 3, 4]
+  InlineQueue<int, 4> queue = {1, 2, 3, 4};
+
+  auto max_element_it = std::max_element(queue.begin(), queue.end());
+  ASSERT_NE(max_element_it, queue.end());
+  EXPECT_EQ(*max_element_it, 4);
+
+  // Content = {2, 3, 4, 5}, Storage = [5, 2, 3, 4]
+  queue.push_overwrite(5);
+
+  max_element_it = std::max_element(queue.begin(), queue.end());
+  ASSERT_NE(max_element_it, queue.end());
+  EXPECT_EQ(*max_element_it, 5);
+
+  // Content = {3, 4, 5}, Storage = [5, x, 3, 4]
+  queue.pop();
+
+  max_element_it = std::max_element(queue.begin(), queue.end());
+  ASSERT_NE(max_element_it, queue.end());
+  EXPECT_EQ(*max_element_it, 5);
+
+  // Content = {}, Storage = [x, x, x, x]
+  queue.clear();
+
+  max_element_it = std::max_element(queue.begin(), queue.end());
+  ASSERT_EQ(max_element_it, queue.end());
+}
+
+TEST(InlineQueue, StdMaxElementConst) {
+  // Content = {1, 2, 3, 4}, Storage = [1, 2, 3, 4]
+  InlineQueue<int, 4> queue = {1, 2, 3, 4};
+
+  auto max_element_it = std::max_element(queue.cbegin(), queue.cend());
+  ASSERT_NE(max_element_it, queue.cend());
+  EXPECT_EQ(*max_element_it, 4);
+
+  // Content = {2, 3, 4, 5}, Storage = [5, 2, 3, 4]
+  queue.push_overwrite(5);
+
+  max_element_it = std::max_element(queue.cbegin(), queue.cend());
+  ASSERT_NE(max_element_it, queue.cend());
+  EXPECT_EQ(*max_element_it, 5);
+
+  // Content = {3, 4, 5}, Storage = [5, x, 3, 4]
+  queue.pop();
+
+  max_element_it = std::max_element(queue.cbegin(), queue.cend());
+  ASSERT_NE(max_element_it, queue.cend());
+  EXPECT_EQ(*max_element_it, 5);
+
+  // Content = {}, Storage = [x, x, x, x]
+  queue.clear();
+
+  max_element_it = std::max_element(queue.cbegin(), queue.cend());
+  ASSERT_EQ(max_element_it, queue.cend());
+}
+
 // Test that InlineQueue<T> is trivially destructible when its type is.
 static_assert(std::is_trivially_destructible_v<InlineQueue<int>>);
 static_assert(std::is_trivially_destructible_v<InlineQueue<int, 4>>);
@@ -394,6 +452,10 @@ static_assert(sizeof(InlineQueue<uint32_t, 1>) ==
               sizeof(InlineQueue<uint32_t>::size_type) * 4 + sizeof(uint32_t));
 static_assert(sizeof(InlineQueue<uint64_t, 1>) ==
               sizeof(InlineQueue<uint64_t>::size_type) * 4 + sizeof(uint64_t));
+
+// Test that InlineQueue<T> is copy assignable
+static_assert(std::is_copy_assignable_v<InlineQueue<int>::iterator>);
+static_assert(std::is_copy_assignable_v<InlineQueue<int, 4>::iterator>);
 
 }  // namespace
 }  // namespace pw::containers
