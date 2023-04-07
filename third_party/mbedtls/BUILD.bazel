@@ -21,21 +21,13 @@ package(
     default_visibility = ["//visibility:public"],
 )
 
-# Ready-made configurations
-mbedtls_configs = [
-    ("default", "configs/config_default.h"),
-]
-
 # Config targets.
-[
-    pw_cc_library(
-        name = "%s_config" % config_name,
-        hdrs = [
-            config_header,
-            "configs/config_pigweed_common.h",
-        ],
-        defines = ['MBEDTLS_CONFIG_FILE=\\"%s\\"' % config_header],
-        includes = ["."],
-    )
-    for config_name, config_header in mbedtls_configs
-]
+pw_cc_library(
+    name = "default_config",
+    hdrs = [
+        "configs/config_default.h",
+        "configs/config_pigweed_common.h",
+    ],
+    defines = ['MBEDTLS_CONFIG_FILE=\\"configs/config_default.h\\"'],
+    includes = ["."],
+)

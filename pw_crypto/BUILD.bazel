@@ -77,7 +77,6 @@ pw_cc_library(
         "public_overrides/mbedtls/pw_crypto/sha256_backend.h",
     ],
     includes = ["public_overrides/mbedtls"],
-    tags = ["manual"],
     deps = [
         ":sha256_facade",
         "@mbedtls",
@@ -128,8 +127,6 @@ pw_cc_library(
 pw_cc_test(
     name = "sha256_mock_test",
     srcs = ["sha256_mock_test.cc"],
-    # TODO(b/236321905): Requires BUILD.bazel files for mbedtls
-    tags = ["manual"],
     deps = [
         ":sha256_mock",
         "//pw_unit_test",
