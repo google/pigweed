@@ -35,14 +35,13 @@
 // Die with a message with several attributes included. This assert frontend
 // funnels everything into the logger, which is responsible for displaying the
 // log, then crashing/rebooting the device.
-#define PW_HANDLE_ASSERT_FAILURE(condition_string, message, ...) \
-  do {                                                           \
-    PW_LOG(PW_LOG_LEVEL_FATAL,                                   \
-           PW_LOG_MODULE_NAME,                                   \
-           PW_LOG_FLAGS,                                         \
-           "Check failed: " condition_string ". " message,       \
-           __VA_ARGS__);                                         \
-    PW_UNREACHABLE;                                              \
+#define PW_HANDLE_ASSERT_FAILURE(condition_string, ...)         \
+  do {                                                          \
+    PW_LOG(PW_LOG_LEVEL_FATAL,                                  \
+           PW_LOG_MODULE_NAME,                                  \
+           PW_LOG_FLAGS,                                        \
+           "Check failed: " condition_string ". " __VA_ARGS__); \
+    PW_UNREACHABLE;                                             \
   } while (0)
 
 // Sample assert failure message produced by the below implementation:
@@ -53,23 +52,23 @@
 
 // clang-format off
 // This is too hairy for clang format to handle and retain readability.
-#define PW_HANDLE_ASSERT_BINARY_COMPARE_FAILURE(arg_a_str,                \
-                                                arg_a_val,                \
-                                                comparison_op_str,        \
-                                                arg_b_str,                \
-                                                arg_b_val,                \
-                                                type_fmt,                 \
-                                                message, ...)             \
-  do {                                                                    \
-    PW_LOG(PW_LOG_LEVEL_FATAL,                                            \
-           PW_LOG_MODULE_NAME,                                         \
-           PW_LOG_FLAGS,                                                  \
-           "Check failed: "                                               \
-                 arg_a_str " (=" type_fmt ") "                            \
-                 comparison_op_str " "                                    \
-                 arg_b_str " (=" type_fmt ")"                             \
-                 ". " message,                                            \
-              arg_a_val, arg_b_val, __VA_ARGS__);                         \
-    PW_UNREACHABLE;                                                       \
+#define PW_HANDLE_ASSERT_BINARY_COMPARE_FAILURE(arg_a_str,                    \
+                                                arg_a_val,                    \
+                                                comparison_op_str,            \
+                                                arg_b_str,                    \
+                                                arg_b_val,                    \
+                                                type_fmt,                     \
+                                                message, ...)                 \
+  do {                                                                        \
+    PW_LOG(PW_LOG_LEVEL_FATAL,                                                \
+           PW_LOG_MODULE_NAME,                                                \
+           PW_LOG_FLAGS,                                                      \
+           "Check failed: "                                                   \
+                 arg_a_str " (=" type_fmt ") "                                \
+                 comparison_op_str " "                                        \
+                 arg_b_str " (=" type_fmt ")"                                 \
+                 ". " message,                                                \
+              PW_DROP_LAST_ARG_IF_EMPTY(arg_a_val, arg_b_val, __VA_ARGS__));  \
+    PW_UNREACHABLE;                                                           \
   } while(0)
 // clang-format on
