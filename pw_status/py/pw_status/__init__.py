@@ -17,6 +17,13 @@ import enum
 
 
 class Status(enum.Enum):
+    """Pigweed status codes.
+
+    The status codes are described at
+    https://pigweed.dev/pw_status#status-codes. Consult that guide when deciding
+    which status code to use.
+    """
+
     OK = 0
     CANCELLED = 1
     UNKNOWN = 2

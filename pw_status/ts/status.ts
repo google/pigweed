@@ -12,8 +12,12 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-/** Pigweed Status class; mirrors pw::Status. */
-
+/** Pigweed Status class; mirrors pw::Status.
+ *
+ * The status codes are described at
+ * https://pigweed.dev/pw_status#status-codes. Consult that guide when
+ * deciding which status code to use.
+ */
 export enum Status {
   OK = 0,
   CANCELLED = 1,
