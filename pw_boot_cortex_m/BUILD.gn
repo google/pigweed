@@ -15,19 +15,11 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_boot/backend.gni")
+import("$dir_pw_boot_cortex_m/toolchain.gni")
 import("$dir_pw_build/linker_script.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
-
-declare_args() {
-  # This list should contain the necessary defines for setting pw_boot linker
-  # script memory regions.
-  pw_boot_cortex_m_LINK_CONFIG_DEFINES = []
-
-  # The pw_linker_script that should be used for the target.
-  pw_boot_cortex_m_LINKER_SCRIPT = ":cortex_m_linker_script"
-}
 
 if (pw_boot_BACKEND != "$dir_pw_boot_cortex_m" &&
     pw_boot_BACKEND != "$dir_pw_boot_cortex_m:armv7m" &&
