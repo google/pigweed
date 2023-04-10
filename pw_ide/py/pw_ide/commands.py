@@ -13,22 +13,24 @@
 # the License.
 """pw_ide CLI command handlers."""
 
+import logging
 from pathlib import Path
 import shlex
-import shutil
 import subprocess
 import sys
-from typing import cast, List, Optional, Set
+from typing import cast, Dict, List, Optional, Set
+
+from pw_cli.env import pigweed_environment
 
 from pw_ide.cpp import (
+    COMPDB_FILE_NAME,
     ClangdSettings,
-    compdb_generate_file_path,
     CppCompilationDatabase,
+    CppCompilationDatabaseFileHashes,
+    CppCompilationDatabaseFileTargets,
     CppCompilationDatabasesMap,
     CppIdeFeaturesState,
-    delete_compilation_databases,
-    delete_compilation_database_caches,
-    MAX_COMMANDS_TARGET_FILENAME,
+    CppIdeFeaturesTarget,
 )
 
 from pw_ide.exceptions import (
@@ -42,7 +44,6 @@ from pw_ide.python import PythonPaths
 from pw_ide.settings import (
     PigweedIdeSettings,
     SupportedEditor,
-    SupportedEditorName,
 )
 
 from pw_ide.status_reporter import StatusReporter
@@ -50,20 +51,18 @@ from pw_ide.status_reporter import StatusReporter
 from pw_ide import vscode
 from pw_ide.vscode import VscSettingsManager, VscSettingsType
 
+_LOG = logging.getLogger(__package__)
+env = pigweed_environment()
+
 
 def _make_working_dir(
     reporter: StatusReporter, settings: PigweedIdeSettings, quiet: bool = False
 ) -> None:
     if not settings.working_dir.exists():
         settings.working_dir.mkdir()
-        reporter.new(
-            'Initialized the Pigweed IDE working directory at '
-            f'{settings.working_dir}'
-        )
-    else:
         if not quiet:
-            reporter.ok(
-                'Pigweed IDE working directory already present at '
+            reporter.new(
+                'Initialized the Pigweed IDE working directory at '
                 f'{settings.working_dir}'
             )
 
@@ -75,101 +74,11 @@ def _report_unrecognized_editor(reporter: StatusReporter, editor: str) -> None:
     reporter.wrn(f'Automatically-supported editors: {supported_editors}')
 
 
-def cmd_clear(
-    compdb: bool,
-    cache: bool,
-    editor: Optional[SupportedEditorName],
-    editor_backups: Optional[SupportedEditorName],
-    silent: bool = False,
-    reporter: StatusReporter = StatusReporter(),
-    pw_ide_settings: PigweedIdeSettings = PigweedIdeSettings(),
-) -> None:
-    """Clear components of the IDE features.
-
-    In contrast to the ``reset`` subcommand, ``clear`` allows you to specify
-    components to delete. You will not need this command under normal
-    circumstances.
-    """
-    if compdb:
-        delete_compilation_databases(pw_ide_settings)
-        reporter.wrn('Cleared compilation databases', silent)
-
-    if cache:
-        delete_compilation_database_caches(pw_ide_settings)
-        reporter.wrn('Cleared compilation database caches', silent)
-
-    if editor is not None:
-        try:
-            validated_editor = SupportedEditor(editor)
-        except ValueError:
-            _report_unrecognized_editor(reporter, cast(str, editor))
-            sys.exit(1)
-
-        if validated_editor == SupportedEditor.VSCODE:
-            vsc_settings_manager = VscSettingsManager(pw_ide_settings)
-            vsc_settings_manager.delete_all_active_settings()
-
-        reporter.wrn(
-            f'Cleared active settings for {validated_editor.value}', silent
-        )
-
-    if editor_backups is not None:
-        try:
-            validated_editor = SupportedEditor(editor_backups)
-        except ValueError:
-            _report_unrecognized_editor(reporter, cast(str, editor))
-            sys.exit(1)
-
-        if validated_editor == SupportedEditor.VSCODE:
-            vsc_settings_manager = VscSettingsManager(pw_ide_settings)
-            vsc_settings_manager.delete_all_backups()
-
-        reporter.wrn(
-            f'Cleared backup settings for {validated_editor.value}',
-            silent=silent,
-        )
-
-
-def cmd_reset(
-    hard: bool = False,
-    reporter: StatusReporter = StatusReporter(),
-    pw_ide_settings: PigweedIdeSettings = PigweedIdeSettings(),
-) -> None:
-    """Reset IDE settings.
-
-    This will clear your .pw_ide working directory and active settings for
-    supported editors, restoring your repository to a pre-"pw ide setup" state.
-    Any clangd caches in the working directory will not be removed, so that they
-    don't need to be generated again later. All backed up supported editor
-    settings will also be left in place.
-
-    Adding the --hard flag will completely delete the .pw_ide directory and all
-    supported editor backup settings, restoring your repository to a
-    pre-`pw ide setup` state.
-
-    This command does not affect this project's pw_ide and editor settings or
-    your own pw_ide and editor override settings.
-    """
-    delete_compilation_databases(pw_ide_settings)
-    vsc_settings_manager = VscSettingsManager(pw_ide_settings)
-    vsc_settings_manager.delete_all_active_settings()
-
-    if hard:
-        try:
-            shutil.rmtree(pw_ide_settings.working_dir)
-        except FileNotFoundError:
-            pass
-
-        vsc_settings_manager.delete_all_backups()
-
-    reporter.wrn('Pigweed IDE settings were reset!')
-
-
 def cmd_sync(
     reporter: StatusReporter = StatusReporter(),
     pw_ide_settings: PigweedIdeSettings = PigweedIdeSettings(),
 ) -> None:
-    """Set up or update your Pigweed project IDE features.
+    """Setup or sync your Pigweed project IDE features.
 
     This will automatically set up your development environment with all the
     features that Pigweed IDE supports, with sensible defaults.
@@ -182,13 +91,17 @@ def cmd_sync(
     your downstream project), you can re-run this command to set up the new
     features. It will not overwrite or break any of your existing configuration.
     """
+    reporter.info('Syncing pw_ide...')
     _make_working_dir(reporter, pw_ide_settings)
+
+    for command in pw_ide_settings.sync:
+        _LOG.debug("Running: %s", command)
+        subprocess.run(shlex.split(command), check=True)
 
     if pw_ide_settings.editor_enabled('vscode'):
         cmd_vscode()
 
-    for command in pw_ide_settings.setup:
-        subprocess.run(shlex.split(command))
+    reporter.info('Done')
 
 
 def cmd_setup(
@@ -205,7 +118,6 @@ def cmd_setup(
 def cmd_vscode(
     include: Optional[List[VscSettingsType]] = None,
     exclude: Optional[List[VscSettingsType]] = None,
-    no_override: bool = False,
     reporter: StatusReporter = StatusReporter(),
     pw_ide_settings: PigweedIdeSettings = PigweedIdeSettings(),
 ) -> None:
@@ -273,55 +185,275 @@ def cmd_vscode(
 
     vsc_manager = VscSettingsManager(pw_ide_settings)
 
-    if include is None:
+    if include is None and exclude is None:
         include_set = set(VscSettingsType.all())
-    else:
-        include_set = set(include)
-
-    if exclude is None:
         exclude_set: Set[VscSettingsType] = set()
+
+    elif include is None:
+        include_set = set(VscSettingsType.all())
+        exclude_set = set(exclude if exclude is not None else [])
+
+    elif exclude is None:
+        include_set = set(include if include is not None else [])
+        exclude_set = set()
+
     else:
-        exclude_set = set(exclude)
+        include_set = set(include if include is not None else [])
+        exclude_set = set(exclude if exclude is not None else [])
 
     types_to_update = cast(
         List[VscSettingsType], tuple(include_set - exclude_set)
     )
 
     for settings_type in types_to_update:
+        prev_settings_hash = ''
         active_settings_existed = vsc_manager.active(settings_type).is_present()
 
-        if no_override and active_settings_existed:
-            reporter.ok(
-                f'Visual Studio Code active {settings_type.value} '
-                'already present; will not overwrite'
-            )
+        if active_settings_existed:
+            prev_settings_hash = vsc_manager.active(settings_type).hash()
 
-        else:
-            with vsc_manager.active(settings_type).modify(
-                reinit=True
-            ) as active_settings:
-                vsc_manager.default(settings_type).sync_to(active_settings)
-                vsc_manager.project(settings_type).sync_to(active_settings)
-                vsc_manager.user(settings_type).sync_to(active_settings)
+        with vsc_manager.active(settings_type).build() as active_settings:
+            vsc_manager.default(settings_type).sync_to(active_settings)
+            vsc_manager.project(settings_type).sync_to(active_settings)
+            vsc_manager.user(settings_type).sync_to(active_settings)
 
+        new_settings_hash = vsc_manager.active(settings_type).hash()
+        settings_changed = new_settings_hash != prev_settings_hash
+
+        _LOG.debug(
+            'VS Code %s prev hash: %s',
+            settings_type.name.lower(),
+            prev_settings_hash,
+        )
+        _LOG.debug(
+            'VS Code %s curr hash: %s',
+            settings_type.name.lower(),
+            new_settings_hash,
+        )
+
+        if settings_changed:
             verb = 'Updated' if active_settings_existed else 'Created'
             reporter.new(
                 f'{verb} Visual Studio Code active ' f'{settings_type.value}'
             )
 
 
-# TODO(chadnorvell): Break up this function.
-# The linting errors are a nuisance but they're beginning to have a point.
+def _process_compdbs(  # pylint: disable=too-many-locals
+    reporter: StatusReporter,
+    pw_ide_settings: PigweedIdeSettings,
+    always_output_new: bool = False,
+):
+    """Find and process compilation databases in the project.
+
+    This essentially does four things:
+    - Find all the compilation databases it can in the build directory
+    - For any databases we've seen before and are unchanged, skip them
+    - For any we haven't seed before or are changed, process them
+    - Save the state to disk so that other commands can examine/change targets
+    """
+
+    state = CppIdeFeaturesState(pw_ide_settings)
+
+    # If a compilation database was seen before and is unchanged, or if it's new
+    # and we process it, it will end up in the new hashes dict. If we saw it
+    # in the past but it no longer exists, it will not move over to the new
+    # hashes dict.
+    prev_compdb_hashes = state.compdb_hashes
+    new_compdb_hashes: CppCompilationDatabaseFileHashes = {}
+    prev_compdb_targets = state.compdb_targets
+    new_compdb_targets: CppCompilationDatabaseFileTargets = {}
+
+    targets: List[CppIdeFeaturesTarget] = []
+    num_new_unprocessed_targets = 0
+    num_new_processed_targets = 0
+    num_carried_over_targets = 0
+    num_removed_targets = len(state.targets.values())
+
+    unprocessed_compdb_files: List[Path] = []
+    processed_compdb_files: List[Path] = []
+
+    # Associate processed compilation databases with their original sources
+    all_processed_compdbs: Dict[Path, CppCompilationDatabasesMap] = {}
+
+    build_dir: Path = pw_ide_settings.build_dir
+    compdb_file_paths = list(build_dir.rglob(str(COMPDB_FILE_NAME)))
+
+    for compdb_file_path in compdb_file_paths:
+        # Load the compilation database
+        try:
+            compdb = CppCompilationDatabase.load(compdb_file_path, build_dir)
+        except MissingCompDbException:
+            reporter.err(f'File not found: {str(compdb_file_path)}')
+            sys.exit(1)
+        # TODO(chadnorvell): Recover more gracefully from errors.
+        except BadCompDbException:
+            reporter.err(
+                'File does not match compilation database format: '
+                f'{str(compdb_file_path)}'
+            )
+            sys.exit(1)
+
+        # Check the hash of the compilation database against our cache of
+        # database hashes. Have we see this before and is the hash the same?
+        # Then we can skip this database.
+        if (
+            compdb_file_path in prev_compdb_hashes
+            and compdb.file_hash == prev_compdb_hashes[compdb_file_path]
+        ):
+            # Store this hash in the new hash registry.
+            new_compdb_hashes[compdb_file_path] = compdb.file_hash
+            # Copy the targets associated with this file...
+            new_compdb_targets[compdb_file_path] = prev_compdb_targets[
+                compdb_file_path
+            ]
+            # ... and add them to the targets list.
+            targets.extend(new_compdb_targets[compdb_file_path])
+            num_carried_over_targets += len(
+                new_compdb_targets[compdb_file_path]
+            )
+            num_removed_targets -= len(new_compdb_targets[compdb_file_path])
+            continue
+
+        # We haven't seen this database before. Process it.
+        processed_compdbs = compdb.process(
+            settings=pw_ide_settings,
+            path_globs=pw_ide_settings.clangd_query_drivers(),
+            always_output_new=always_output_new,
+        )
+
+        # The source database doesn't actually need processing, so use it as is.
+        if processed_compdbs is None:
+            # Infer the name of the target from the path
+            name = '_'.join(
+                compdb_file_path.relative_to(build_dir).parent.parts
+            )
+
+            target = CppIdeFeaturesTarget(
+                name=name,
+                compdb_file_path=compdb_file_path,
+                num_commands=len(
+                    CppCompilationDatabase.load(compdb_file_path, build_dir)
+                ),
+            )
+
+            # An unprocessed database will have only one target.
+            new_compdb_targets[compdb_file_path] = [target]
+            unprocessed_compdb_files.append(compdb_file_path)
+            targets.append(target)
+            num_new_unprocessed_targets += 1
+
+            # Remember that we've seen this database.
+            new_compdb_hashes[compdb_file_path] = compdb.file_hash
+
+        else:
+            # We need to use the processed databases, so store them for writing.
+            # We'll add the targets associated with the processed databases
+            # later.
+            all_processed_compdbs[compdb_file_path] = processed_compdbs
+            processed_compdb_files.append(compdb_file_path)
+
+    if len(all_processed_compdbs) > 0:
+        # Merge into one map of target names to compilation database.
+        merged_compdbs = CppCompilationDatabasesMap.merge(
+            *all_processed_compdbs.values()
+        )
+
+        # Write processed databases to files.
+        try:
+            merged_compdbs.write()
+        except TypeError:
+            reporter.err('Could not serialize file to JSON!')
+            reporter.wrn('pw_ide state will not be persisted.')
+            return False
+
+        # Grab the target and file info from the processed databases.
+        for target_name, compdb in merged_compdbs.items():
+            target = CppIdeFeaturesTarget(
+                name=target_name,
+                compdb_file_path=cast(Path, compdb.file_path),
+                num_commands=len(compdb),
+            )
+
+            targets.append(target)
+            num_new_processed_targets += 1
+
+            if (
+                source := cast(Path, compdb.source_file_path)
+            ) not in new_compdb_targets:
+                new_compdb_targets[source] = [target]
+                new_compdb_hashes[source] = cast(str, compdb.source_file_hash)
+            else:
+                new_compdb_targets[source].append(target)
+
+    # Write out state.
+    targets_dict = {target_data.name: target_data for target_data in targets}
+    state.targets = targets_dict
+    state.compdb_hashes = new_compdb_hashes
+    state.compdb_targets = new_compdb_targets
+
+    # If the current target is no longer valid, unset it.
+    if (
+        state.current_target is not None
+        and state.current_target.name not in targets_dict
+    ):
+        state.current_target = None
+
+    num_total_targets = len(targets)
+    num_new_targets = num_new_processed_targets + num_new_unprocessed_targets
+
+    # Report the results.
+    # Return True if anything meaningful changed as a result of the processing.
+    # If the new state is essentially identical to the old state, return False
+    # so the caller can avoid needlessly updating anything else.
+    if num_new_targets > 0 or num_removed_targets > 0:
+        found_compdb_text = (
+            f'Found {len(compdb_file_paths)} compilation database'
+        )
+
+        if len(compdb_file_paths) > 1:
+            found_compdb_text += 's'
+
+        reporter.ok(found_compdb_text)
+
+        reporter_lines = []
+
+        if len(unprocessed_compdb_files) > 0:
+            reporter_lines.append(
+                f'Linked {len(unprocessed_compdb_files)} '
+                'unmodified compilation databases'
+            )
+
+        if len(processed_compdb_files) > 0:
+            working_dir_path = pw_ide_settings.working_dir.relative_to(
+                Path(env.PW_PROJECT_ROOT)
+            )
+            reporter_lines.append(
+                f'Processed {len(processed_compdb_files)} to working dir at '
+                f'${working_dir_path}'
+            )
+
+        if len(reporter_lines) > 0:
+            reporter_lines.extend(
+                [
+                    f'{num_total_targets} targets are now available '
+                    f'({num_new_targets} are new, '
+                    f'{num_removed_targets} were removed)',
+                ]
+            )
+
+            reporter.new(reporter_lines)
+
+        return True
+    return False
+
+
 def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements
     should_list_targets: bool,
     should_get_target: bool,
     target_to_set: Optional[str],
-    compdb_file_paths: Optional[List[Path]],
     build_dir: Optional[Path],
+    process: bool = True,
     use_default_target: bool = False,
-    should_run_ninja: bool = False,
-    should_run_gn: bool = False,
-    override_current_target: bool = True,
     clangd_command: bool = False,
     clangd_command_system: Optional[str] = None,
     reporter: StatusReporter = StatusReporter(),
@@ -416,244 +548,76 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
     # If true, no arguments were provided so we do the default behavior.
     default = True
 
+    state = CppIdeFeaturesState(pw_ide_settings)
+    should_update_ides = False
+
     build_dir = (
         build_dir if build_dir is not None else pw_ide_settings.build_dir
     )
 
-    if compdb_file_paths is not None:
-        should_process = True
-
-        if len(compdb_file_paths) == 0:
-            compdb_file_paths = pw_ide_settings.compdb_paths_expanded
-    else:
-        should_process = False
-        # This simplifies typing in the rest of this method. We rely on
-        # `should_process` instead of the status of this variable.
-        compdb_file_paths = []
-
-    # Order of operations matters from here on. It should be possible to run
-    # a build system command to generate a compilation database, then process
-    # the compilation database, then successfully set the target in a single
-    # command.
-
-    # Use Ninja to generate the initial compile_commands.json
-    if should_run_ninja:
+    if process:
         default = False
+        should_update_ides = _process_compdbs(reporter, pw_ide_settings)
 
-        ninja_commands = ['ninja', '-t', 'compdb']
-        reporter.info(f'Running Ninja: {" ".join(ninja_commands)}')
-
-        output_compdb_file_path = build_dir / compdb_generate_file_path()
-
-        try:
-            # Ninja writes to STDOUT, so we capture to a file.
-            with open(output_compdb_file_path, 'w') as compdb_file:
-                result = subprocess.run(
-                    ninja_commands,
-                    cwd=build_dir,
-                    stdout=compdb_file,
-                    stderr=subprocess.PIPE,
-                )
-        except FileNotFoundError:
-            reporter.err(f'Could not open path! {str(output_compdb_file_path)}')
-
-        if result.returncode == 0:
-            reporter.info('Ran Ninja successfully!')
-            should_process = True
-            compdb_file_paths.append(output_compdb_file_path)
-        else:
-            reporter.err('Something went wrong!')
-            # Convert from bytes and remove trailing newline
-            err = result.stderr.decode().split('\n')[:-1]
-
-            for line in err:
-                reporter.err(line)
-
-            sys.exit(1)
-
-    # Use GN to generate the initial compile_commands.json
-    if should_run_gn:
-        default = False
-
-        gn_commands = ['gn', 'gen', str(build_dir), '--export-compile-commands']
-
-        try:
-            with open(build_dir / 'args.gn') as args_file:
-                gn_args = [
-                    line
-                    for line in args_file.readlines()
-                    if not line.startswith('#')
-                ]
-        except FileNotFoundError:
-            gn_args = []
-
-        gn_args_string = 'none' if len(gn_args) == 0 else ', '.join(gn_args)
-
-        reporter.info(
-            [f'Running GN: {" ".join(gn_commands)} (args: {gn_args_string})']
-        )
-
-        result = subprocess.run(gn_commands, capture_output=True)
-        gn_status_lines = ['Ran GN successfully!']
-
-        if result.returncode == 0:
-            # Convert from bytes and remove trailing newline
-            out = result.stdout.decode().split('\n')[:-1]
-
-            for line in out:
-                gn_status_lines.append(line)
-
-            reporter.info(gn_status_lines)
-            should_process = True
-            output_compdb_file_path = build_dir / compdb_generate_file_path()
-            compdb_file_paths.append(output_compdb_file_path)
-        else:
-            reporter.err('Something went wrong!')
-            # Convert from bytes and remove trailing newline
-            err = result.stderr.decode().split('\n')[:-1]
-
-            for line in err:
-                reporter.err(line)
-
-            sys.exit(1)
-
-    if should_process:
-        default = False
-        prev_targets = len(CppIdeFeaturesState(pw_ide_settings))
-        compdb_databases: List[CppCompilationDatabasesMap] = []
-        last_processed_path = Path()
-
-        for compdb_file_path in compdb_file_paths:
-            # If the path is a dir, append the default compile commands
-            # file name.
-            if compdb_file_path.is_dir():
-                compdb_file_path /= compdb_generate_file_path()
-
-            try:
-                compdb_databases.append(
-                    CppCompilationDatabase.load(
-                        Path(compdb_file_path), build_dir
-                    ).process(
-                        settings=pw_ide_settings,
-                        path_globs=pw_ide_settings.clangd_query_drivers(),
-                    )
-                )
-            except MissingCompDbException:
-                reporter.err(f'File not found: {str(compdb_file_path)}')
-
-                if '*' in str(compdb_file_path):
-                    reporter.wrn(
-                        'It looks like you provided a glob that '
-                        'did not match any files.'
-                    )
-
-                sys.exit(1)
-            # TODO(chadnorvell): Recover more gracefully from errors.
-            except BadCompDbException:
-                reporter.err(
-                    'File does not match compilation database format: '
-                    f'{str(compdb_file_path)}'
-                )
-                sys.exit(1)
-
-            last_processed_path = compdb_file_path
-
-        if len(compdb_databases) == 0:
-            reporter.err(
-                'No compilation databases found in: '
-                f'{str(compdb_file_paths)}'
-            )
-            sys.exit(1)
-
-        try:
-            CppCompilationDatabasesMap.merge(*compdb_databases).write()
-        except TypeError:
-            reporter.err('Could not serialize file to JSON!')
-
-        total_targets = len(CppIdeFeaturesState(pw_ide_settings))
-        new_targets = total_targets - prev_targets
-
-        if len(compdb_file_paths) == 1:
-            processed_text = str(last_processed_path)
-        else:
-            processed_text = f'{len(compdb_file_paths)} compilation databases'
-
-        reporter.new(
-            [
-                f'Processed {processed_text} '
-                f'to {pw_ide_settings.working_dir}',
-                f'{total_targets} targets are now available '
-                f'({new_targets} are new)',
-            ]
-        )
+    if state.current_target is None:
+        use_default_target = True
 
     if use_default_target:
         defined_default = pw_ide_settings.default_target
-        max_commands_target: Optional[str] = None
 
-        try:
-            with open(
-                pw_ide_settings.working_dir / MAX_COMMANDS_TARGET_FILENAME
-            ) as max_commands_target_file:
-                max_commands_target = max_commands_target_file.readline()
-        except FileNotFoundError:
-            pass
-
-        if defined_default is None and max_commands_target is None:
+        if defined_default is None and state.max_commands_target is None:
             reporter.err('Can\'t use default target because none is defined!')
             reporter.wrn('Have you processed a compilation database yet?')
             sys.exit(1)
+        else:
+            max_commands_target = cast(
+                CppIdeFeaturesTarget, state.max_commands_target
+            )
 
-        target_to_set = (
+        default_target = (
             defined_default
             if defined_default is not None
-            else max_commands_target
+            else max_commands_target.name
         )
+
+        if state.current_target != default:
+            target_to_set = default_target
 
     if target_to_set is not None:
         default = False
 
-        # Always set the target if it's not already set, but if it is,
-        # respect the --no-override flag.
-        should_set_target = (
-            CppIdeFeaturesState(pw_ide_settings).current_target is None
-            or override_current_target
+        try:
+            CppIdeFeaturesState(pw_ide_settings).current_target = state.targets[
+                target_to_set
+            ]
+            should_update_ides = True
+        except InvalidTargetException:
+            reporter.err(
+                [
+                    f'Invalid target! {target_to_set} not among the '
+                    'defined targets.',
+                    'Check .pw_ide.yaml or .pw_ide.user.yaml for defined '
+                    'targets.',
+                ]
+            )
+            sys.exit(1)
+        except MissingCompDbException:
+            reporter.err(
+                [
+                    f'File not found for target! {target_to_set}',
+                    'Did you run pw ide cpp --process '
+                    '{path to compile_commands.json}?',
+                ]
+            )
+            sys.exit(1)
+
+        reporter.new(
+            'Set C/C++ language server analysis target to: ' f'{target_to_set}'
         )
 
-        if should_set_target:
-            try:
-                CppIdeFeaturesState(
-                    pw_ide_settings
-                ).current_target = target_to_set
-            except InvalidTargetException:
-                reporter.err(
-                    [
-                        f'Invalid target! {target_to_set} not among the '
-                        'defined targets.',
-                        'Check .pw_ide.yaml or .pw_ide.user.yaml for defined '
-                        'targets.',
-                    ]
-                )
-                sys.exit(1)
-            except MissingCompDbException:
-                reporter.err(
-                    [
-                        f'File not found for target! {target_to_set}',
-                        'Did you run pw ide cpp --process '
-                        '{path to compile_commands.json}?',
-                    ]
-                )
-                sys.exit(1)
-
-            reporter.new(
-                'Set C/C++ language server analysis target to: '
-                f'{target_to_set}'
-            )
-        else:
-            reporter.ok(
-                'Target already is set and will not be overridden: '
-                f'{CppIdeFeaturesState(pw_ide_settings).current_target}'
-            )
+    if should_update_ides:
+        if pw_ide_settings.editor_enabled('vscode'):
+            cmd_vscode()
 
     if clangd_command:
         default = False
@@ -680,18 +644,16 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
             'C/C++ targets available for language server analysis:'
         ]
 
-        for target in sorted(
-            CppIdeFeaturesState(pw_ide_settings).enabled_available_targets
-        ):
+        for target in sorted(CppIdeFeaturesState(pw_ide_settings).targets):
             targets_list_status.append(f'\t{target}')
 
         reporter.info(targets_list_status)
 
     if should_get_target or default:
-        reporter.info(
-            'Current C/C++ language server analysis target: '
-            f'{CppIdeFeaturesState(pw_ide_settings).current_target}'
-        )
+        current_target = CppIdeFeaturesState(pw_ide_settings).current_target
+        name = 'None' if current_target is None else current_target.name
+
+        reporter.info(f'Current C/C++ language server analysis target: {name}')
 
 
 def cmd_python(

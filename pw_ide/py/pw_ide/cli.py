@@ -21,10 +21,8 @@ import re
 from typing import Any, Callable, Dict, List, Optional, Protocol
 
 from pw_ide.commands import (
-    cmd_clear,
     cmd_cpp,
     cmd_python,
-    cmd_reset,
     cmd_setup,
     cmd_sync,
     cmd_vscode,
@@ -271,14 +269,6 @@ def _build_argument_parser() -> argparse.ArgumentParser:
     add_parser(cmd_sync, 'sync')
     add_parser(cmd_setup, 'setup')
 
-    parser_reset = add_parser(cmd_reset, 'reset')
-    parser_reset.add_argument(
-        '--hard',
-        action='store_true',
-        help='completely remove the .pw_ide working '
-        'dir and supported editor files',
-    )
-
     parser_cpp = add_parser(cmd_cpp, 'cpp')
     parser_cpp.add_argument(
         '-l',
@@ -309,34 +299,9 @@ def _build_argument_parser() -> argparse.ArgumentParser:
         'defined in pw_ide settings',
     )
     parser_cpp.add_argument(
-        '--no-override',
-        dest='override_current_target',
-        action='store_const',
-        const=False,
-        default=True,
-        help='if called with --set, don\'t override the '
-        'current target if one is already set',
-    )
-    parser_cpp.add_argument(
-        '--ninja',
-        dest='should_run_ninja',
-        action='store_true',
-        help='use Ninja to generate a compilation database',
-    )
-    parser_cpp.add_argument(
-        '--gn',
-        dest='should_run_gn',
-        action='store_true',
-        help='run gn gen {out} --export-compile-commands, '
-        'along with any other arguments defined in args.gn',
-    )
-    parser_cpp.add_argument(
         '-p',
         '--process',
-        dest='compdb_file_paths',
-        metavar='COMPILATION_DATABASE_FILES',
-        type=Path,
-        nargs='*',
+        action='store_true',
         help='process a file or several files matching '
         'the clang compilation database format',
     )
@@ -382,36 +347,6 @@ def _build_argument_parser() -> argparse.ArgumentParser:
         type=VscSettingsType,
         metavar='SETTINGS_TYPE',
         help='do not update these settings types',
-    )
-    parser_vscode.add_argument(
-        '--no-override',
-        action='store_true',
-        help='don\'t overwrite existing active ' 'settings files',
-    )
-
-    parser_clear = add_parser(cmd_clear, 'clear')
-    parser_clear.add_argument(
-        '--compdb',
-        action='store_true',
-        help='delete all compilation database from ' 'the working directory',
-    )
-    parser_clear.add_argument(
-        '--cache',
-        action='store_true',
-        help='delete all compilation database caches '
-        'from the working directory',
-    )
-    parser_clear.add_argument(
-        '--editor',
-        metavar='EDITOR',
-        help='delete the active settings file for '
-        'the provided supported editor',
-    )
-    parser_clear.add_argument(
-        '--editor-backups',
-        metavar='EDITOR',
-        help='delete backup settings files for '
-        'the provided supported editor',
     )
 
     return parser_root

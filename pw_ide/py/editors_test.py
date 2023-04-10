@@ -169,7 +169,7 @@ class TestCasesGenericOnFileFormat:
                 self.temp_dir_path, name, self.file_format
             )
 
-            with settings_file.modify() as settings:
+            with settings_file.build() as settings:
                 settings['hello'] = 'world'
 
             with open(
@@ -185,131 +185,11 @@ class TestCasesGenericOnFileFormat:
                 self.temp_dir_path, name, self.file_format
             )
 
-            with settings_file.modify() as settings:
+            with settings_file.build() as settings:
                 settings['hello'] = 'world'
 
             settings_dict = settings_file.get()
             self.assertEqual(settings_dict['hello'], 'world')
-
-        def test_open_new_file_no_backup(self):
-            name = 'settings'
-            settings_file = EditorSettingsFile(
-                self.temp_dir_path, name, self.file_format
-            )
-
-            with settings_file.modify() as settings:
-                settings['hello'] = 'world'
-
-            backup_files = [
-                path
-                for path in self.temp_dir_path.iterdir()
-                if path.name != f'{name}.{self.file_format.ext}'
-            ]
-
-            self.assertEqual(len(backup_files), 0)
-
-        def test_open_existing_file_and_backup(self):
-            name = 'settings'
-            settings_file = EditorSettingsFile(
-                self.temp_dir_path, name, self.file_format
-            )
-
-            with settings_file.modify() as settings:
-                settings['hello'] = 'world'
-
-            with settings_file.modify() as settings:
-                settings['hello'] = 'mundo'
-
-            settings_dict = settings_file.get()
-            self.assertEqual(settings_dict['hello'], 'mundo')
-
-            backup_files = [
-                path
-                for path in self.temp_dir_path.iterdir()
-                if path.name != f'{name}.{self.file_format.ext}'
-            ]
-
-            self.assertEqual(len(backup_files), 1)
-
-            with open(backup_files[0]) as file:
-                settings_dict = self.file_format.load(file)
-
-            self.assertEqual(settings_dict['hello'], 'world')
-
-        def test_open_existing_file_with_reinit_and_backup(self):
-            name = 'settings'
-            settings_file = EditorSettingsFile(
-                self.temp_dir_path, name, self.file_format
-            )
-
-            with settings_file.modify() as settings:
-                settings['hello'] = 'world'
-
-            with settings_file.modify(reinit=True) as settings:
-                settings['hello'] = 'mundo'
-
-            settings_dict = settings_file.get()
-            self.assertEqual(settings_dict['hello'], 'mundo')
-
-            backup_files = [
-                path
-                for path in self.temp_dir_path.iterdir()
-                if path.name != f'{name}.{self.file_format.ext}'
-            ]
-
-            self.assertEqual(len(backup_files), 1)
-
-            with open(backup_files[0]) as file:
-                settings_dict = self.file_format.load(file)
-
-            self.assertEqual(settings_dict['hello'], 'world')
-
-        def test_open_existing_file_no_change_no_backup(self):
-            name = 'settings'
-            settings_file = EditorSettingsFile(
-                self.temp_dir_path, name, self.file_format
-            )
-
-            with settings_file.modify() as settings:
-                settings['hello'] = 'world'
-
-            with settings_file.modify() as settings:
-                settings['hello'] = 'world'
-
-            settings_dict = settings_file.get()
-            self.assertEqual(settings_dict['hello'], 'world')
-
-            backup_files = [
-                path
-                for path in self.temp_dir_path.iterdir()
-                if path.name != f'{name}.{self.file_format.ext}'
-            ]
-
-            self.assertEqual(len(backup_files), 0)
-
-        def test_write_bad_file_restore_backup(self):
-            name = 'settings'
-            settings_file = EditorSettingsFile(
-                self.temp_dir_path, name, self.file_format
-            )
-
-            with settings_file.modify() as settings:
-                settings['hello'] = 'world'
-
-            with self.assertRaises(self.file_format.unserializable_error):
-                with settings_file.modify() as settings:
-                    settings['hello'] = object()
-
-            settings_dict = settings_file.get()
-            self.assertEqual(settings_dict['hello'], 'world')
-
-            backup_files = [
-                path
-                for path in self.temp_dir_path.iterdir()
-                if path.name != f'{name}.{self.file_format.ext}'
-            ]
-
-            self.assertEqual(len(backup_files), 0)
 
     class EditorSettingsManagerTestCase(PwIdeTestCase):
         """Test case for EditorSettingsManager with a provided FileFormat"""
@@ -355,7 +235,7 @@ class TestCasesGenericOnFileFormat:
 
             with manager.project(
                 EditorSettingsTestType.SETTINGS
-            ).modify() as settings:
+            ).build() as settings:
                 dict_deep_merge(project_settings, settings)
 
             user_settings = OrderedDict(
@@ -372,7 +252,7 @@ class TestCasesGenericOnFileFormat:
 
             with manager.user(
                 EditorSettingsTestType.SETTINGS
-            ).modify() as settings:
+            ).build() as settings:
                 dict_deep_merge(user_settings, settings)
 
             expected = {
@@ -387,7 +267,7 @@ class TestCasesGenericOnFileFormat:
 
             with manager.active(
                 EditorSettingsTestType.SETTINGS
-            ).modify() as active_settings:
+            ).build() as active_settings:
                 manager.default(EditorSettingsTestType.SETTINGS).sync_to(
                     active_settings
                 )

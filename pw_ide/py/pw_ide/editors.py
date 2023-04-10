@@ -45,9 +45,9 @@ from collections import defaultdict
 from contextlib import contextmanager
 from dataclasses import dataclass
 import enum
+from hashlib import sha1
 import json
 from pathlib import Path
-import time
 from typing import (
     Any,
     Callable,
@@ -312,15 +312,27 @@ class EditorSettingsDefinition:
         """Return the settings as an ordered dict."""
         return self._data
 
+    def hash(self) -> str:
+        return sha1(json.dumps(self.get()).encode('utf-8')).hexdigest()
+
     @contextmanager
-    def modify(self, reinit: bool = False):
-        """Modify a settings file via an ordered dict."""
-        if reinit:
-            new_data: OrderedDict[str, Any] = OrderedDict()
-            yield new_data
-            self._data = new_data
-        else:
-            yield self._data
+    def build(self) -> Generator[OrderedDict[str, Any], None, None]:
+        """Expose a settings file builder.
+
+        You get an empty dict when entering the content, then you can build
+        up settings by using ``sync_to`` to merge other settings dicts into this
+        one, as long as everything is JSON-serializable. Example:
+
+        .. code-block:: python
+
+            with settings_definition.modify() as settings:
+                some_other_settings.sync_to(settings)
+
+        This data is not persisted to disk.
+        """
+        new_data: OrderedDict[str, Any] = OrderedDict()
+        yield new_data
+        self._data = new_data
 
     def sync_to(self, settings: EditorSettingsDict) -> None:
         """Merge this set of settings on top of the provided settings."""
@@ -360,18 +372,6 @@ class EditorSettingsFile(EditorSettingsDefinition):
     def __repr__(self) -> str:
         return f'<{self.__class__.__name__}: {str(self._path)}>'
 
-    def _backup_filename(self, glob=False):
-        timestamp = time.strftime('%Y%m%d_%H%M%S')
-        timestamp = '*' if glob else timestamp
-        backup_str = f'.{timestamp}.bak'
-        return f'{self._name}{backup_str}.{self._format.ext}'
-
-    def _make_backup(self) -> Path:
-        return self._path.replace(self._path.with_name(self._backup_filename()))
-
-    def _restore_backup(self, backup: Path) -> Path:
-        return backup.replace(self._path)
-
     def get(self) -> EditorSettingsDict:
         """Read a settings file into an ordered dict.
 
@@ -387,70 +387,28 @@ class EditorSettingsFile(EditorSettingsDefinition):
         return settings
 
     @contextmanager
-    def modify(self, reinit: bool = False):
-        """Modify a settings file via an ordered dict.
+    def build(self) -> Generator[OrderedDict[str, Any], None, None]:
+        """Expose a settings file builder.
 
-        Get the dict when entering the context, then modify it like any
-        other dict, with the caveat that whatever goes into it needs to be
-        JSON-serializable. Example:
+        You get an empty dict when entering the content, then you can build
+        up settings by using ``sync_to`` to merge other settings dicts into this
+        one, as long as everything is JSON-serializable. Example:
 
         .. code-block:: python
 
             with settings_file.modify() as settings:
-                settings[foo] = bar
+                some_other_settings.sync_to(settings)
 
         After modifying the settings and leaving this context, the file will
-        be written. If the file already exists, a backup will be made. If a
-        failure occurs while writing the new file, it will be deleted and the
-        backup will be restored.
-
-        If the ``reinit`` argument is set, a new, empty file will be created
-        instead of modifying any existing file. If there is an existing file,
-        it will still be backed up.
+        be written. If a failure occurs while writing the new file, it will be
+        deleted.
         """
-        if self._path.exists():
-            should_load_existing = True
-            should_backup = True
-        else:
-            should_load_existing = False
-            should_backup = False
-
-        if reinit:
-            should_load_existing = False
-
-        if should_load_existing:
-            with self._path.open() as file:
-                settings: OrderedDict = self._format.load(file)
-        else:
-            settings = OrderedDict()
-
-        prev_settings = settings.copy()
-
-        # TODO(chadnorvell): There's a subtle bug here where you can't assign
-        # to this var and have it take effect. You have to modify it in place.
-        # But you won't notice until things don't get written to disk.
-        yield settings
-
-        # If the settings haven't changed, don't create a backup.
-        if should_load_existing:
-            if settings == prev_settings:
-                should_backup = False
-
-        if should_backup:
-            # Move the current file to a new backup file. This frees the main
-            # file for open('x').
-            backup = self._make_backup()
-        else:
-            backup = None
-            # If the file exists and we didn't move it to a backup file, delete
-            # it so we can open('x') it again.
-            if self._path.exists():
-                self._path.unlink()
-
-        file = self._path.open('x')
+        new_data: OrderedDict[str, Any] = OrderedDict()
+        yield new_data
+        file = self._path.open('w')
 
         try:
-            self._format.dump(settings, file)
+            self._format.dump(new_data, file)
         except self._format.unserializable_error:
             # We'll get this error if we try to sneak something in that's
             # not serializable. Unless we handle this, we may end up
@@ -458,9 +416,6 @@ class EditorSettingsFile(EditorSettingsDefinition):
             # delete that and restore the backup.
             file.close()
             self._path.unlink()
-
-            if backup is not None:
-                self._restore_backup(backup)
 
             raise
         finally:
@@ -475,12 +430,6 @@ class EditorSettingsFile(EditorSettingsDefinition):
             self._path.unlink()
         except FileNotFoundError:
             pass
-
-    def delete_backups(self) -> None:
-        glob = self._backup_filename(glob=True)
-
-        for path in self._path.glob(glob):
-            path.unlink()
 
 
 _SettingsLevelName = Literal['default', 'active', 'project', 'user']

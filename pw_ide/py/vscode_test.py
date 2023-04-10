@@ -30,19 +30,19 @@ class TestVscSettingsManager(PwIdeTestCase):
 
         with manager.active(
             VscSettingsType.SETTINGS
-        ).modify() as active_settings:
+        ).build() as active_settings:
             manager.default(VscSettingsType.SETTINGS).sync_to(active_settings)
             manager.project(VscSettingsType.SETTINGS).sync_to(active_settings)
             manager.user(VscSettingsType.SETTINGS).sync_to(active_settings)
 
-        with manager.active(VscSettingsType.TASKS).modify() as active_settings:
+        with manager.active(VscSettingsType.TASKS).build() as active_settings:
             manager.default(VscSettingsType.TASKS).sync_to(active_settings)
             manager.project(VscSettingsType.TASKS).sync_to(active_settings)
             manager.user(VscSettingsType.TASKS).sync_to(active_settings)
 
         with manager.active(
             VscSettingsType.EXTENSIONS
-        ).modify() as active_settings:
+        ).build() as active_settings:
             manager.default(VscSettingsType.EXTENSIONS).sync_to(active_settings)
             manager.project(VscSettingsType.EXTENSIONS).sync_to(active_settings)
             manager.user(VscSettingsType.EXTENSIONS).sync_to(active_settings)
@@ -65,7 +65,7 @@ class TestVscSettingsManager(PwIdeTestCase):
 
         with manager.active(
             VscSettingsType.SETTINGS
-        ).modify() as active_settings:
+        ).build() as active_settings:
             manager.default(VscSettingsType.SETTINGS).sync_to(active_settings)
             manager.project(VscSettingsType.SETTINGS).sync_to(active_settings)
             manager.user(VscSettingsType.SETTINGS).sync_to(active_settings)

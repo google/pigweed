@@ -21,25 +21,17 @@ from pathlib import Path
 from typing import Any, cast, Dict, List, Literal, Optional, Union
 import yaml
 
+from pw_cli.env import pigweed_environment
 from pw_cli.yaml_config_loader_mixin import YamlConfigLoaderMixin
 
+env = pigweed_environment()
+
 PW_IDE_DIR_NAME = '.pw_ide'
-PW_IDE_DEFAULT_DIR = (
-    Path(os.path.expandvars('$PW_PROJECT_ROOT')) / PW_IDE_DIR_NAME
-)
-
-PW_PIGWEED_CIPD_INSTALL_DIR = Path(
-    os.path.expandvars('$PW_PIGWEED_CIPD_INSTALL_DIR')
-)
-
-PW_ARM_CIPD_INSTALL_DIR = Path(os.path.expandvars('$PW_ARM_CIPD_INSTALL_DIR'))
+PW_IDE_DEFAULT_DIR = Path(env.PW_PROJECT_ROOT) / PW_IDE_DIR_NAME
 
 _DEFAULT_BUILD_DIR_NAME = 'out'
-_DEFAULT_BUILD_DIR = (
-    Path(os.path.expandvars('$PW_PROJECT_ROOT')) / _DEFAULT_BUILD_DIR_NAME
-)
+_DEFAULT_BUILD_DIR = env.PW_PROJECT_ROOT / _DEFAULT_BUILD_DIR_NAME
 
-_DEFAULT_COMPDB_PATHS = [_DEFAULT_BUILD_DIR]
 _DEFAULT_TARGET_INFERENCE = '?'
 
 SupportedEditorName = Literal['vscode']
@@ -59,7 +51,7 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
     'compdb_paths': _DEFAULT_BUILD_DIR_NAME,
     'default_target': None,
     'editors': _DEFAULT_SUPPORTED_EDITORS,
-    'setup': ['pw --no-banner ide cpp --gn --set-default --no-override'],
+    'sync': ['pw --no-banner ide cpp --process'],
     'targets': [],
     'target_inference': _DEFAULT_TARGET_INFERENCE,
     'working_dir': PW_IDE_DEFAULT_DIR,
@@ -68,6 +60,33 @@ _DEFAULT_CONFIG: Dict[str, Any] = {
 _DEFAULT_PROJECT_FILE = Path('$PW_PROJECT_ROOT/.pw_ide.yaml')
 _DEFAULT_PROJECT_USER_FILE = Path('$PW_PROJECT_ROOT/.pw_ide.user.yaml')
 _DEFAULT_USER_FILE = Path('$HOME/.pw_ide.yaml')
+
+
+def _expand_any_vars(input_path: Path) -> Path:
+    """Expand any environment variables in a path.
+
+    Python's ``os.path.expandvars`` will only work on an isolated environment
+    variable name. In shell, you can expand variables within a larger command
+    or path. We replicate that functionality here.
+    """
+    outputs = []
+
+    for token in input_path.parts:
+        expanded_var = os.path.expandvars(token)
+
+        if expanded_var == token:
+            outputs.append(token)
+        else:
+            outputs.append(expanded_var)
+
+    # pylint: disable=no-value-for-parameter
+    return Path(os.path.join(*outputs))
+    # pylint: enable=no-value-for-parameter
+
+
+def _expand_any_vars_str(input_path: str) -> str:
+    """`_expand_any_vars`, except takes and returns a string instead of path."""
+    return str(_expand_any_vars(Path(input_path)))
 
 
 class PigweedIdeSettings(YamlConfigLoaderMixin):
@@ -200,10 +219,10 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
         return self._config.get('default_target', None)
 
     @property
-    def setup(self) -> List[str]:
+    def sync(self) -> List[str]:
         """A sequence of commands to automate IDE features setup.
 
-        ``pw ide setup`` should do everything necessary to get the project from
+        ``pw ide sync`` should do everything necessary to get the project from
         a fresh checkout to a working default IDE experience. This defines the
         list of commands that makes that happen, which will be executed
         sequentially in subprocesses. These commands should be idempotent, so
@@ -211,7 +230,7 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
         configuration without the risk of putting those features in a bad or
         unexpected state.
         """
-        return self._config.get('setup', list())
+        return self._config.get('sync', list())
 
     @property
     def clangd_additional_query_drivers(self) -> List[str]:
@@ -225,11 +244,22 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
         return self._config.get('clangd_additional_query_drivers', list())
 
     def clangd_query_drivers(self) -> List[str]:
-        return [
-            *[str(Path(p)) for p in self.clangd_additional_query_drivers],
-            str(PW_PIGWEED_CIPD_INSTALL_DIR / 'bin' / '*'),
-            str(PW_ARM_CIPD_INSTALL_DIR / 'bin' / '*'),
+        drivers = [
+            *[
+                _expand_any_vars_str(p)
+                for p in self.clangd_additional_query_drivers
+            ],
         ]
+
+        if env.PW_PIGWEED_CIPD_INSTALL_DIR is not None:
+            drivers.append(
+                str(Path(env.PW_PIGWEED_CIPD_INSTALL_DIR) / 'bin' / '*')
+            )
+
+        if env.PW_ARM_CIPD_INSTALL_DIR is not None:
+            drivers.append(str(Path(env.PW_ARM_CIPD_INSTALL_DIR) / 'bin' / '*'))
+
+        return drivers
 
     def clangd_query_driver_str(self) -> str:
         return ','.join(self.clangd_query_drivers())
@@ -309,7 +339,7 @@ _docstring_set_default(
     literal=True,
 )
 _docstring_set_default(
-    PigweedIdeSettings.setup, _DEFAULT_CONFIG['setup'], literal=True
+    PigweedIdeSettings.sync, _DEFAULT_CONFIG['sync'], literal=True
 )
 _docstring_set_default(
     PigweedIdeSettings.clangd_additional_query_drivers,
