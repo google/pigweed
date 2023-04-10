@@ -193,6 +193,20 @@ for code editors, where default settings can be defined within ``pw_ide``,
 which can be overridden by project settings, which in turn can be overridden
 by individual user settings.
 
+Visual Studio Code
+^^^^^^^^^^^^^^^^^^
+Running ``pw ide sync`` will automatically generate settings for Visual Studio
+Code. ``pw_ide`` comes with sensible defaults for Pigweed projects, but those
+can be augmented or overridden at the project level or the user level using
+``pw_project_settings.json`` and ``pw_user_settings.json`` respectively. The
+generated ``settings.json`` file is essentially a build artifact and shouldn't
+be committed to source control.
+
+The same pattern applies to ``tasks.json``, which provides Visual Studio Code
+tasks for ``pw_ide`` commands. Access these by opening the command palette
+(Ctrl/Cmd-Shift-P), selecting ``Tasks: Run Task``, then selecting the desired
+task.
+
 Selected API Reference
 ^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: pw_ide.editors

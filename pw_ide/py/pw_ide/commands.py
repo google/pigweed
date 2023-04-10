@@ -429,7 +429,7 @@ def _process_compdbs(  # pylint: disable=too-many-locals
             )
             reporter_lines.append(
                 f'Processed {len(processed_compdb_files)} to working dir at '
-                f'${working_dir_path}'
+                f'{working_dir_path}'
             )
 
         if len(reporter_lines) > 0:

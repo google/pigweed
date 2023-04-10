@@ -65,10 +65,10 @@ import json
 import os
 from pathlib import Path
 import platform
-from typing import Any, Dict, List, OrderedDict
+from typing import Any, Dict, List, Optional, OrderedDict
 
 from pw_ide.activate import BashShellModifier
-from pw_ide.cpp import ClangdSettings
+from pw_ide.cpp import ClangdSettings, CppIdeFeaturesState
 
 from pw_ide.editors import (
     EditorSettingsDict,
@@ -187,21 +187,36 @@ _DEFAULT_SETTINGS: EditorSettingsDict = OrderedDict(
     }
 )
 
-# pylint: disable=line-too-long
 _DEFAULT_TASKS: EditorSettingsDict = OrderedDict(
     {
         "version": "2.0.0",
         "tasks": [
             {
-                "type": "shell",
+                "type": "process",
                 "label": "Pigweed IDE: Format",
-                "command": "${workspaceFolder}/.pw_ide/python ${workspaceFolder}/pw_ide/py/pw_ide/activate.py -x 'pw format --fix'",
+                "command": "${config:python.defaultInterpreterPath}",
+                "args": [
+                    "-m",
+                    "pw_ide.activate",
+                    "-x 'pw format --fix'",
+                ],
+                "presentation": {
+                    "focus": True,
+                },
                 "problemMatcher": [],
             },
             {
-                "type": "shell",
+                "type": "process",
                 "label": "Pigweed IDE: Presubmit",
-                "command": "${workspaceFolder}/.pw_ide/python ${workspaceFolder}/pw_ide/py/pw_ide/activate.py -x 'pw presubmit'",
+                "command": "${config:python.defaultInterpreterPath}",
+                "args": [
+                    "-m",
+                    "pw_ide.activate",
+                    "-x 'pw presubmit'",
+                ],
+                "presentation": {
+                    "focus": True,
+                },
                 "problemMatcher": [],
             },
             {
@@ -220,46 +235,64 @@ _DEFAULT_TASKS: EditorSettingsDict = OrderedDict(
                 "problemMatcher": [],
             },
             {
-                "type": "shell",
-                "label": "Pigweed IDE: Process C++ Compilation Database from GN",
-                "command": "${workspaceFolder}/.pw_ide/python ${workspaceFolder}/pw_ide/py/pw_ide/activate.py -x 'pw ide cpp --gn --process out/compile_commands.json'",
+                "type": "process",
+                "label": "Pigweed IDE: Sync",
+                "command": "${config:python.defaultInterpreterPath}",
+                "args": [
+                    "-m",
+                    "pw_ide.activate",
+                    "-x 'pw ide sync'",
+                ],
+                "presentation": {
+                    "focus": True,
+                },
                 "problemMatcher": [],
             },
             {
-                "type": "shell",
-                "label": "Pigweed IDE: Setup",
-                "command": "python3 ${workspaceFolder}/pw_ide/py/pw_ide/activate.py -x 'pw ide setup'",
-                "problemMatcher": [],
-            },
-            {
-                "type": "shell",
+                "type": "process",
                 "label": "Pigweed IDE: Current C++ Code Analysis Target",
-                "command": "${workspaceFolder}/.pw_ide/python ${workspaceFolder}/pw_ide/py/pw_ide/activate.py -x 'pw ide cpp'",
+                "command": "${config:python.defaultInterpreterPath}",
+                "args": [
+                    "-m",
+                    "pw_ide.activate",
+                    "-x 'pw ide cpp'",
+                ],
+                "presentation": {
+                    "focus": True,
+                },
                 "problemMatcher": [],
             },
             {
-                "type": "shell",
+                "type": "process",
                 "label": "Pigweed IDE: List C++ Code Analysis Targets",
-                "command": "${workspaceFolder}/.pw_ide/python ${workspaceFolder}/pw_ide/py/pw_ide/activate.py -x 'pw ide cpp --list'",
+                "command": "${config:python.defaultInterpreterPath}",
+                "args": [
+                    "-m",
+                    "pw_ide.activate",
+                    "-x 'pw ide cpp --list'",
+                ],
+                "presentation": {
+                    "focus": True,
+                },
                 "problemMatcher": [],
             },
             {
-                "type": "shell",
+                "type": "process",
                 "label": "Pigweed IDE: Set C++ Code Analysis Target",
-                "command": "${workspaceFolder}/.pw_ide/python ${workspaceFolder}/pw_ide/py/pw_ide/activate.py -x 'pw ide cpp --set ${input:target}'",
+                "command": "${config:python.defaultInterpreterPath}",
+                "args": [
+                    "-m",
+                    "pw_ide.activate",
+                    "-x 'pw ide cpp --set ${input:availableTargets}'",
+                ],
+                "presentation": {
+                    "focus": True,
+                },
                 "problemMatcher": [],
             },
-        ],
-        "inputs": [
-            {
-                "id": "target",
-                "type": "promptString",
-                "description": "C++ code analysis target",
-            }
         ],
     }
 )
-# pylint: enable=line-too-long
 
 _DEFAULT_EXTENSIONS: EditorSettingsDict = OrderedDict(
     {
@@ -295,8 +328,23 @@ def _default_settings(
     )
 
 
-def _default_tasks(_pw_ide_settings: PigweedIdeSettings) -> EditorSettingsDict:
-    return _DEFAULT_TASKS
+def _default_tasks(
+    pw_ide_settings: PigweedIdeSettings,
+    state: Optional[CppIdeFeaturesState] = None,
+) -> EditorSettingsDict:
+    if state is None:
+        state = CppIdeFeaturesState(pw_ide_settings)
+
+    inputs = [
+        {
+            "type": "pickString",
+            "id": "availableTargets",
+            "description": "Available targets",
+            "options": list(state.targets),
+        }
+    ]
+
+    return OrderedDict(**_DEFAULT_TASKS, inputs=inputs)
 
 
 def _default_extensions(

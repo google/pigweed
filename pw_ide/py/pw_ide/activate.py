@@ -458,9 +458,15 @@ def main() -> int:
         return 0
 
     if args.exec is not None:
+        # Ensure that the command is always dequoted.
+        # When executed directly from the shell, this is already done by
+        # default. But in other contexts, the command may be passed more
+        # literally with whitespace and quotes, which won't work.
+        exec_cmd = args.exec.strip(" '")
+
         # We're executing a command in a subprocess with the modified env.
         return subprocess.run(
-            args.exec, env=modified_env.env, shell=True
+            exec_cmd, env=modified_env.env, shell=True
         ).returncode
 
     # If we got here, we're trying to modify the current shell's env.

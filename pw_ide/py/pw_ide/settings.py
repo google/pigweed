@@ -25,6 +25,7 @@ from pw_cli.env import pigweed_environment
 from pw_cli.yaml_config_loader_mixin import YamlConfigLoaderMixin
 
 env = pigweed_environment()
+env_vars = vars(env)
 
 PW_IDE_DIR_NAME = '.pw_ide'
 PW_IDE_DEFAULT_DIR = Path(env.PW_PROJECT_ROOT) / PW_IDE_DIR_NAME
@@ -251,13 +252,11 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
             ],
         ]
 
-        if env.PW_PIGWEED_CIPD_INSTALL_DIR is not None:
-            drivers.append(
-                str(Path(env.PW_PIGWEED_CIPD_INSTALL_DIR) / 'bin' / '*')
-            )
+        if (env_var := env_vars.get('PW_PIGWEED_CIPD_INSTALL_DIR')) is not None:
+            drivers.append(str(Path(env_var) / 'bin' / '*'))
 
-        if env.PW_ARM_CIPD_INSTALL_DIR is not None:
-            drivers.append(str(Path(env.PW_ARM_CIPD_INSTALL_DIR) / 'bin' / '*'))
+        if (env_var := env_vars.get('PW_ARM_CIPD_INSTALL_DIR')) is not None:
+            drivers.append(str(Path(env_var) / 'bin' / '*'))
 
         return drivers
 
