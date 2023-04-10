@@ -106,6 +106,7 @@ pw_add_library(pw_rpc.synchronous_client_api INTERFACE
   HEADERS
     public/pw_rpc/synchronous_call.h
     public/pw_rpc/synchronous_call_result.h
+    public/pw_rpc/internal/synchronous_call_impl.h
   PUBLIC_INCLUDES
     public
   PUBLIC_DEPS

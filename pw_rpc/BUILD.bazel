@@ -131,6 +131,7 @@ pw_cc_library(
 
 pw_cc_library(
     name = "synchronous_client_api",
+    srcs = ["public/pw_rpc/internal/synchronous_call_impl.h"],
     hdrs = [
         "public/pw_rpc/synchronous_call.h",
         "public/pw_rpc/synchronous_call_result.h",

@@ -128,6 +128,7 @@ _doxygen_input_files = [
   "$dir_pw_log_tokenized/public/pw_log_tokenized/handler.h",
   "$dir_pw_log_tokenized/public/pw_log_tokenized/metadata.h",
   "$dir_pw_rpc/public/pw_rpc/internal/config.h",
+  "$dir_pw_rpc/public/pw_rpc/synchronous_call.h",
   "$dir_pw_string/public/pw_string/format.h",
   "$dir_pw_string/public/pw_string/string.h",
   "$dir_pw_function/public/pw_function/function.h",

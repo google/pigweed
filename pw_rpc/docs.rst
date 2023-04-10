@@ -1196,25 +1196,10 @@ instantiate as:
   implementation that copies the bytes under the span instead of copying just
   the span.
 
-Client Synchronous Call wrappers
+Client synchronous call wrappers
 ================================
-If synchronous behavior is desired when making client calls, users can use one
-of the ``SynchronousCall<RpcMethod>`` wrapper functions to make their RPC call.
-These wrappers effectively wrap the asynchronous Client RPC call with a timed
-thread notification and return once a result is known or a timeout has occurred.
-These return a ``SynchronousCallResult<Response>`` object, which can be queried
-to determine whether any error scenarios occurred and, if not, access the
-response.
-
-``SynchronousCall<RpcMethod>`` will block indefinitely, whereas
-``SynchronousCallFor<RpcMethod>`` and ``SynchronousCallUntil<RpcMethod>`` will
-block for a given timeout or until a deadline, respectively. All wrappers work
-with both the standalone static RPC functions and the generated Client member
-methods.
-
-.. note:: Use of the SynchronousCall wrappers requires a TimedThreadNotification
-   backend.
-.. note:: Only nanopb and pw_protobuf Unary RPC methods are supported.
+.. doxygenfile:: pw_rpc/synchronous_call.h
+   :sections: detaileddescription
 
 Example
 -------
@@ -1256,10 +1241,10 @@ Example
     }
   }
 
-The ``SynchronousCallResult<Response>`` is also compatible with the PW_TRY
-family of macros, but users should be aware that their use will lose information
-about the type of error. This should only be used if the caller will handle all
-error scenarios the same.
+The ``SynchronousCallResult<Response>`` is also compatible with the
+:c:macro:`PW_TRY` family of macros, but users should be aware that their use
+will lose information about the type of error. This should only be used if the
+caller will handle all error scenarios the same.
 
 .. code-block:: c++
 
