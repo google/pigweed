@@ -50,56 +50,6 @@ void ConfigureSocket([[maybe_unused]] int socket) {
 
 // TODO(b/240982565): Implement SocketStream for Windows.
 
-// Listen to the port and return after a client is connected
-Status SocketStream::Serve(uint16_t port) {
-  listen_port_ = port;
-  socket_fd_ = socket(AF_INET, SOCK_STREAM, 0);
-  if (socket_fd_ == kInvalidFd) {
-    PW_LOG_ERROR("Failed to create socket: %s", std::strerror(errno));
-    return Status::Unknown();
-  }
-
-  struct sockaddr_in addr = {};
-  addr.sin_family = AF_INET;
-  addr.sin_port = htons(listen_port_);
-  addr.sin_addr.s_addr = INADDR_ANY;
-
-  // Configure the socket to allow reusing the address. Closing a socket does
-  // not immediately close it. Instead, the socket waits for some period of time
-  // before it is actually closed. Setting SO_REUSEADDR allows this socket to
-  // bind to an address that may still be in use by a recently closed socket.
-  // Without this option, running a program multiple times in series may fail
-  // unexpectedly.
-  constexpr int value = 1;
-
-  if (setsockopt(socket_fd_, SOL_SOCKET, SO_REUSEADDR, &value, sizeof(int)) <
-      0) {
-    PW_LOG_WARN("Failed to set SO_REUSEADDR: %s", std::strerror(errno));
-  }
-
-  if (bind(socket_fd_, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
-    PW_LOG_ERROR("Failed to bind socket to localhost:%hu: %s",
-                 listen_port_,
-                 std::strerror(errno));
-    return Status::Unknown();
-  }
-
-  if (listen(socket_fd_, kServerBacklogLength) < 0) {
-    PW_LOG_ERROR("Failed to listen to socket: %s", std::strerror(errno));
-    return Status::Unknown();
-  }
-
-  socklen_t len = sizeof(sockaddr_client_);
-
-  connection_fd_ =
-      accept(socket_fd_, reinterpret_cast<sockaddr*>(&sockaddr_client_), &len);
-  if (connection_fd_ < 0) {
-    return Status::Unknown();
-  }
-  ConfigureSocket(connection_fd_);
-  return OkStatus();
-}
-
 Status SocketStream::SocketStream::Connect(const char* host, uint16_t port) {
   if (host == nullptr || std::strcmp(host, "localhost") == 0) {
     host = kLocalhostAddress;
@@ -135,11 +85,6 @@ Status SocketStream::SocketStream::Connect(const char* host, uint16_t port) {
 }
 
 void SocketStream::Close() {
-  if (socket_fd_ != kInvalidFd) {
-    close(socket_fd_);
-    socket_fd_ = kInvalidFd;
-  }
-
   if (connection_fd_ != kInvalidFd) {
     close(connection_fd_);
     connection_fd_ = kInvalidFd;

@@ -29,32 +29,18 @@ class SocketStream : public NonSeekableReaderWriter {
 
   // SocketStream objects are moveable but not copyable.
   SocketStream& operator=(SocketStream&& other) {
-    listen_port_ = other.listen_port_;
-    socket_fd_ = other.socket_fd_;
-    other.socket_fd_ = kInvalidFd;
     connection_fd_ = other.connection_fd_;
     other.connection_fd_ = kInvalidFd;
-    sockaddr_client_ = other.sockaddr_client_;
     return *this;
   }
   SocketStream(SocketStream&& other) noexcept
-      : listen_port_(other.listen_port_),
-        socket_fd_(other.socket_fd_),
-        connection_fd_(other.connection_fd_),
-        sockaddr_client_(other.sockaddr_client_) {
-    other.socket_fd_ = kInvalidFd;
+      : connection_fd_(other.connection_fd_) {
     other.connection_fd_ = kInvalidFd;
   }
   SocketStream(const SocketStream&) = delete;
   SocketStream& operator=(const SocketStream&) = delete;
 
   ~SocketStream() override { Close(); }
-
-  // Listen to the port and return after a client is connected
-  //
-  // DEPRECATED: Use the ServerSocket class instead.
-  // TODO(b/271323032): Remove when this method is no longer used.
-  Status Serve(uint16_t port);
 
   // Connect to a local or remote endpoint. Host may be either an IPv4 or IPv6
   // address. If host is nullptr then the IPv4 localhost address is used
@@ -80,10 +66,7 @@ class SocketStream : public NonSeekableReaderWriter {
 
   StatusWithSize DoRead(ByteSpan dest) override;
 
-  uint16_t listen_port_ = 0;
-  int socket_fd_ = kInvalidFd;
   int connection_fd_ = kInvalidFd;
-  struct sockaddr_in sockaddr_client_ = {};
 };
 
 /// `ServerSocket` wraps a POSIX-style server socket, producing a `SocketStream`
