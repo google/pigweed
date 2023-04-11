@@ -128,9 +128,9 @@ TEST(CommaVarargs, EmptyFinalArgument) {
 #define BAD_DEMO(fmt, ...) _BAD_DEMO_ADD_123(fmt PW_COMMA_ARGS(__VA_ARGS__))
 
 #define _BAD_DEMO_ADD_123(fmt, ...) \
-  _BAD_DEMO_CAPTURE_ARGS("%d: " fmt, 123 PW_COMMA_ARGS(__VA_ARGS__))
+  _CAPTURE_ARGS_AS_TUPLE("%d: " fmt, 123 PW_COMMA_ARGS(__VA_ARGS__))
 
-#define _BAD_DEMO_CAPTURE_ARGS(...) std::make_tuple(__VA_ARGS__)
+#define _CAPTURE_ARGS_AS_TUPLE(...) std::make_tuple(__VA_ARGS__)
 
 TEST(CommaVarargs, MisbehavesWithMacroToMacroUse_NoArgs_ArgsAreOkay) {
   auto [a1, a2] = BAD_DEMO("Hello world");
@@ -253,6 +253,72 @@ TEST(DropLastArgIfEmpty, EmptyLastArg) {
   static_assert(FunctionArgCount(PW_DROP_LAST_ARG_IF_EMPTY(1, )) == 1);
   static_assert(FunctionArgCount(PW_DROP_LAST_ARG_IF_EMPTY(1, 2, )) == 2);
   static_assert(FunctionArgCount(PW_DROP_LAST_ARG_IF_EMPTY(1, 2, 3, )) == 3);
+}
+
+// This test demonstrates that PW_DROP_LAST_ARG_IF_EMPTY behaves unexpectedly
+// when it is used when invoking another macro. DO NOT use
+// PW_DROP_LAST_ARG_IF_EMPTY when invoking another macro!
+#define BAD_DROP_LAST_DEMO(fmt, ...) \
+  _BAD_DROP_LAST_DEMO_ADD_123(PW_DROP_LAST_ARG_IF_EMPTY(fmt, __VA_ARGS__))
+
+#define _BAD_DROP_LAST_DEMO_ADD_123(fmt, ...) \
+  _CAPTURE_ARGS_AS_TUPLE("%d: " fmt,          \
+                         PW_DROP_LAST_ARG_IF_EMPTY(123, __VA_ARGS__))
+
+TEST(DropLastArgIfEmpty, EmptyLastArgArgsLoseOrder) {
+  // If there are any additional arguments, the order is incorrect! The 123
+  // argument should go before the 3, 2, 1 arguments, but it is inserted after.
+  // This would be a compilation error if these arguments were passed to printf.
+  // What's worse is that this can silently fail if the arguments happen to be
+  // compatible types.
+  auto [a1, a2, a3, a4, a5] =
+      BAD_DROP_LAST_DEMO("Countdown in %d %d %d", 3, 2, 1, );
+  EXPECT_STREQ(a1, "%d: Countdown in %d %d %d");
+  EXPECT_EQ(a2, 3);
+  EXPECT_EQ(a3, 2);
+  EXPECT_EQ(a4, 1);
+  EXPECT_EQ(a5, 123);
+}
+
+TEST(DropLastArgIfEmpty, NonEmptyLastArgArgsLoseOrder) {
+  // If there are any additional arguments, the order is incorrect! The 123
+  // argument should go before the 3, 2, 1 arguments, but it is inserted after.
+  // This would be a compilation error if these arguments were passed to printf.
+  // What's worse is that this can silently fail if the arguments happen to be
+  // compatible types.
+  auto [a1, a2, a3, a4, a5] =
+      BAD_DROP_LAST_DEMO("Countdown in %d %d %d", 3, 2, 1);
+  EXPECT_STREQ(a1, "%d: Countdown in %d %d %d");
+  EXPECT_EQ(a2, 3);
+  EXPECT_EQ(a3, 2);
+  EXPECT_EQ(a4, 1);
+  EXPECT_EQ(a5, 123);
+}
+
+// When PW_DROP_LAST_ARG_IF_EMPTY is used once, and there are no other
+// modifications to __VA_ARGS__, then the order is kept.
+#define DROP_LAST_DEMO(fmt, arg_a, arg_b, ...) \
+  _CAPTURE_ARGS_AS_TUPLE(                      \
+      "%d: " fmt, PW_DROP_LAST_ARG_IF_EMPTY(123, arg_a, arg_b, __VA_ARGS__))
+
+TEST(DropLastArgIfEmpty, EmptyLastArgAllArgsInOrder) {
+  const auto [a1, a2, a3, a4, a5] =
+      DROP_LAST_DEMO("Countdown in %d %d %d", 3, 2, 1, );
+  EXPECT_STREQ(a1, "%d: Countdown in %d %d %d");
+  EXPECT_EQ(a2, 123);
+  EXPECT_EQ(a3, 3);
+  EXPECT_EQ(a4, 2);
+  EXPECT_EQ(a5, 1);
+}
+
+TEST(DropLastArgIfEmpty, NonEmptyLastArgAllArgsInOrder) {
+  const auto [a1, a2, a3, a4, a5] =
+      DROP_LAST_DEMO("Countdown in %d %d %d", 3, 2, 1);
+  EXPECT_STREQ(a1, "%d: Countdown in %d %d %d");
+  EXPECT_EQ(a2, 123);
+  EXPECT_EQ(a3, 3);
+  EXPECT_EQ(a4, 2);
+  EXPECT_EQ(a5, 1);
 }
 
 #define SOME_VARIADIC_MACRO(...) PW_MACRO_ARG_COUNT(__VA_ARGS__)
