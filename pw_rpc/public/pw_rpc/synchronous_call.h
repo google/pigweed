@@ -25,25 +25,28 @@
 ///
 /// `pw_rpc` provides wrappers that convert the asynchronous client API to a
 /// synchronous API. The `SynchronousCall<RpcMethod>` functions wrap the
-/// asynchronous client RPC call with a timed thread notification and return
-/// once a result is known or a timeout has occurred. These return a
-/// `SynchronousCallResult<Response>` object, which can be queried to determine
-/// whether any error scenarios occurred and, if not, access the response.
+/// asynchronous client RPC call with a timed thread notification and returns
+/// once a result is known or a timeout has occurred. Only unary methods are
+/// supported.
+///
+/// The Nanopb and pwpb APIs return a `SynchronousCallResult<Response>` object,
+/// which can be queried to determine whether any error scenarios occurred and,
+/// if not, access the response. The raw API executes a function when the call
+/// completes or returns a `pw::Status` if it does not.
 ///
 /// `SynchronousCall<RpcMethod>` blocks indefinitely, whereas
 /// `SynchronousCallFor<RpcMethod>` and `SynchronousCallUntil<RpcMethod>` block
 /// for a given timeout or until a deadline, respectively. All wrappers work
-/// with both the standalone static RPC functions and the generated Client
-/// member methods.
+/// with either the standalone static RPC functions or the generated service
+/// client member methods.
 ///
 /// @note Use of the SynchronousCall wrappers requires a
 /// @cpp_class{pw::sync::TimedThreadNotification} backend.
 ///
-/// @note Only nanopb and pw_protobuf unary RPC methods are supported.
-///
-/// The following example blocks indefinitely. If you'd like to include a
-/// timeout for how long the call should block for, use the
-/// `SynchronousCallFor()` or `SynchronousCallUntil()` variants.
+/// The following examples use the Nanopb API to make a call that blocks
+/// indefinitely. If you'd like to include a timeout for how long the call
+/// should block for, use the `SynchronousCallFor()` or `SynchronousCallUntil()`
+/// variants.
 ///
 /// @code{.cpp}
 ///   pw_rpc_EchoMessage request{.msg = "hello" };
@@ -58,7 +61,7 @@
 ///
 /// Additionally, the use of a generated `Client` object is supported:
 ///
-/// @code
+/// @code{.cpp}
 ///   pw_rpc::nanopb::EchoService::Client client(rpc_client, channel_id);
 ///   pw_rpc_EchoMessage request{.msg = "hello" };
 ///   pw::rpc::SynchronousCallResult<pw_rpc_EchoMessage> result =
@@ -67,6 +70,22 @@
 ///   if (result.ok()) {
 ///     PW_LOG_INFO("%s", result.response().msg);
 ///   }
+/// @endcode
+///
+/// The raw API works similarly to the Nanopb API, but takes a
+/// @cpp_type{pw::Function} and returns a @cpp_class{pw::Status}. If the RPC
+/// completes, the @cpp_type{pw::Function} is called with the response and
+/// returned status, and the `SynchronousCall` invocation returns
+/// @pw_status{OK}. If the RPC fails, `SynchronousCall` returns an error.
+///
+/// @code{.cpp}
+///   pw::Status rpc_status = pw::rpc::SynchronousCall<EchoService::Echo>(
+///       rpc_client, channel_id, encoded_request,
+///       [](pw::ConstByteSpan reply, pw::Status status) {
+///         PW_LOG_INFO("Received %zu bytes with status %s",
+///                     reply.size(),
+///                     status.str());
+///       });
 /// @endcode
 ///
 /// @warning These wrappers should not be used from any context that cannot be
@@ -134,6 +153,30 @@ SynchronousCall(
   return std::move(call_state.result);
 }
 
+/// Invokes a unary RPC synchronously using the raw API. Blocks until a
+/// response is received.
+template <auto kRpcMethod>
+Status SynchronousCall(Client& client,
+                       uint32_t channel_id,
+                       ConstByteSpan request,
+                       Function<void(ConstByteSpan, Status)>&& on_completed) {
+  return internal::RawSynchronousCall<kRpcMethod>(
+      std::move(on_completed),
+      internal::CallFreeFunction<kRpcMethod>(client, channel_id, request));
+}
+
+/// Invokes a unary RPC synchronously using the raw API. Blocks until a
+/// response is received.
+template <auto kRpcMethod>
+Status SynchronousCall(
+    const typename internal::MethodInfo<kRpcMethod>::GeneratedClient& client,
+    ConstByteSpan request,
+    Function<void(ConstByteSpan, Status)>&& on_completed) {
+  return internal::RawSynchronousCall<kRpcMethod>(
+      std::move(on_completed),
+      internal::CallGeneratedClient<kRpcMethod>(client, request));
+}
+
 /// Invokes a unary RPC synchronously using Nanopb or pwpb. Blocks until a
 /// response is received or the provided timeout passes.
 ///
@@ -199,6 +242,35 @@ SynchronousCallFor(
   }
 
   return std::move(call_state.result);
+}
+
+/// Invokes a unary RPC synchronously using the raw API. Blocks until a
+/// response is received or the provided timeout passes.
+template <auto kRpcMethod>
+Status SynchronousCallFor(
+    Client& client,
+    uint32_t channel_id,
+    ConstByteSpan request,
+    chrono::SystemClock::duration timeout,
+    Function<void(ConstByteSpan, Status)>&& on_completed) {
+  return internal::RawSynchronousCall<kRpcMethod>(
+      std::move(on_completed),
+      internal::CallFreeFunction<kRpcMethod>(client, channel_id, request),
+      timeout);
+}
+
+/// Invokes a unary RPC synchronously using the raw API. Blocks until a
+/// response is received or the provided timeout passes.
+template <auto kRpcMethod>
+Status SynchronousCallFor(
+    const typename internal::MethodInfo<kRpcMethod>::GeneratedClient& client,
+    ConstByteSpan request,
+    chrono::SystemClock::duration timeout,
+    Function<void(ConstByteSpan, Status)>&& on_completed) {
+  return internal::RawSynchronousCall<kRpcMethod>(
+      std::move(on_completed),
+      internal::CallGeneratedClient<kRpcMethod>(client, request),
+      timeout);
 }
 
 /// Invokes a unary RPC synchronously using Nanopb or pwpb. Blocks until a
@@ -267,4 +339,34 @@ SynchronousCallUntil(
 
   return std::move(call_state.result);
 }
+
+/// Invokes a unary RPC synchronously using the raw API. Blocks until a
+/// response is received or the provided deadline arrives.
+template <auto kRpcMethod>
+Status SynchronousCallUntil(
+    Client& client,
+    uint32_t channel_id,
+    ConstByteSpan request,
+    chrono::SystemClock::time_point deadline,
+    Function<void(ConstByteSpan, Status)>&& on_completed) {
+  return internal::RawSynchronousCall<kRpcMethod>(
+      std::move(on_completed),
+      internal::CallFreeFunction<kRpcMethod>(client, channel_id, request),
+      deadline);
+}
+
+/// Invokes a unary RPC synchronously using the raw API. Blocks until a
+/// response is received or the provided deadline arrives.
+template <auto kRpcMethod>
+Status SynchronousCallUntil(
+    const typename internal::MethodInfo<kRpcMethod>::GeneratedClient& client,
+    ConstByteSpan request,
+    chrono::SystemClock::time_point deadline,
+    Function<void(ConstByteSpan, Status)>&& on_completed) {
+  return internal::RawSynchronousCall<kRpcMethod>(
+      std::move(on_completed),
+      internal::CallGeneratedClient<kRpcMethod>(client, request),
+      deadline);
+}
+
 }  // namespace pw::rpc

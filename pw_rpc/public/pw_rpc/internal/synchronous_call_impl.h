@@ -13,6 +13,9 @@
 // the License.
 #pragma once
 
+#include <utility>
+
+#include "pw_rpc/internal/method_info.h"
 #include "pw_rpc/synchronous_call_result.h"
 #include "pw_sync/timed_thread_notification.h"
 
@@ -37,5 +40,97 @@ struct SynchronousCallState {
   SynchronousCallResult<Response> result;
   sync::TimedThreadNotification notify;
 };
+
+class RawSynchronousCallState {
+ public:
+  RawSynchronousCallState(Function<void(ConstByteSpan, Status)> on_completed)
+      : on_completed_(std::move(on_completed)) {}
+
+  auto OnCompletedCallback() {
+    return [this](ConstByteSpan response, Status status) {
+      if (on_completed_) {
+        on_completed_(response, status);
+      }
+      notify.release();
+    };
+  }
+
+  auto OnRpcErrorCallback() {
+    return [this](Status status) {
+      error = status;
+      notify.release();
+    };
+  }
+
+  Status error;
+  sync::TimedThreadNotification notify;
+
+ private:
+  Function<void(ConstByteSpan, Status)> on_completed_;
+};
+
+// Overloaded function to choose detween timeout and deadline APIs.
+inline bool AcquireNotification(sync::TimedThreadNotification& notification,
+                                chrono::SystemClock::duration timeout) {
+  return notification.try_acquire_for(timeout);
+}
+
+inline bool AcquireNotification(sync::TimedThreadNotification& notification,
+                                chrono::SystemClock::time_point timeout) {
+  return notification.try_acquire_until(timeout);
+}
+
+// Template for a raw synchronous call. Used for SynchronousCall,
+// SynchronousCallFor, and SynchronousCallUntil. The type of the timeout
+// argument is used to determine the behavior.
+template <auto kRpcMethod, typename DoCall, typename... TimeoutArg>
+Status RawSynchronousCall(Function<void(ConstByteSpan, Status)>&& on_completed,
+                          DoCall&& do_call,
+                          TimeoutArg... timeout_arg) {
+  static_assert(MethodInfo<kRpcMethod>::kType == MethodType::kUnary,
+                "Only unary methods can be used with synchronous calls");
+
+  RawSynchronousCallState call_state{std::move(on_completed)};
+
+  auto call = std::forward<DoCall>(do_call)(call_state);
+
+  // Wait for the notification based on the type of the timeout argument.
+  if constexpr (sizeof...(TimeoutArg) == 0) {
+    call_state.notify.acquire();  // Wait forever, since no timeout was given.
+  } else if (!AcquireNotification(call_state.notify, timeout_arg...)) {
+    return Status::DeadlineExceeded();
+  }
+
+  return call_state.error;
+}
+
+// Invokes the RPC method free function using a call_state.
+template <auto kRpcMethod>
+constexpr auto CallFreeFunction(Client& client,
+                                uint32_t channel_id,
+                                const ConstByteSpan& request) {
+  return [&client, channel_id, &request](
+             internal::RawSynchronousCallState& call_state) {
+    return kRpcMethod(client,
+                      channel_id,
+                      request,
+                      call_state.OnCompletedCallback(),
+                      call_state.OnRpcErrorCallback());
+  };
+}
+
+// Invokes the RPC function on the generated service client using a call_state.
+template <auto kRpcMethod>
+constexpr auto CallGeneratedClient(
+    const typename MethodInfo<kRpcMethod>::GeneratedClient& client,
+    const ConstByteSpan& request) {
+  return [&client, &request](internal::RawSynchronousCallState& call_state) {
+    constexpr auto kMemberFunction = MethodInfo<kRpcMethod>::template Function<
+        typename MethodInfo<kRpcMethod>::GeneratedClient>();
+    return (client.*kMemberFunction)(request,
+                                     call_state.OnCompletedCallback(),
+                                     call_state.OnRpcErrorCallback());
+  };
+}
 
 }  // namespace pw::rpc::internal

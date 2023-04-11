@@ -195,3 +195,16 @@ pw_cc_test(
         "//pw_rpc:pw_rpc_test_cc.raw_rpc",
     ],
 )
+
+pw_cc_test(
+    name = "synchronous_call_test",
+    srcs = ["synchronous_call_test.cc"],
+    deps = [
+        ":test_method_context",
+        "//pw_rpc:pw_rpc_test_cc.raw_rpc",
+        "//pw_rpc:synchronous_client_api",
+        "//pw_work_queue",
+        "//pw_work_queue:stl_test_thread",
+        "//pw_work_queue:test_thread_header",
+    ],
+)
