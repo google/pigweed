@@ -204,20 +204,20 @@ process. To check for this add the following.
 Downstream Projects Using Different Packages
 ********************************************
 Projects depending on Pigweed but using additional or different packages should
-copy the Pigweed `sample project`'s ``bootstrap.sh`` and ``config.json`` and
+copy the Pigweed `sample project`'s ``bootstrap.sh`` and ``pigweed.json`` and
 update the call to ``pw_bootstrap``. Search for "downstream" for other places
 that may require changes, like setting the ``PW_ROOT`` and ``PW_PROJECT_ROOT``
-environment variables. Explanations of parts of ``config.json`` are described
+environment variables. Explanations of parts of ``pigweed.json`` are described
 here.
 
 .. _sample project: https://pigweed.googlesource.com/pigweed/sample_project/+/HEAD
 
-``root_variable``
+``pw.pw_env_setup.root_variable``
   Variable used to point to the root of the source tree. Optional, can always
   use ``PW_PROJECT_ROOT`` instead. (That variable will be set regardless of
   whether this is provided.)
 
-``cipd_package_files``
+``pw.pw_env_setup.cipd_package_files``
   CIPD package file. JSON file consisting of a list of additional CIPD package
   files to import and a list of dictionaries with "path", "platforms", "subdir",
   "tags", and "version_file" keys. Both top-level lists are optional. An
@@ -250,60 +250,60 @@ here.
      ]
    }
 
-``virtualenv.gn_args``
+``pw.pw_env_setup.virtualenv.gn_args``
   Any necessary GN args to be used when installing Python packages.
 
-``virtualenv.gn_targets``
+``pw.pw_env_setup.virtualenv.gn_targets``
   Target for installing Python packages. Downstream projects will need to
   create targets to install their packages or only use Pigweed Python packages.
 
-``virtualenv.gn_root``
+``pw.pw_env_setup.virtualenv.gn_root``
   The root directory of your GN build tree, relative to ``PW_PROJECT_ROOT``.
   This is the directory your project's ``.gn`` file is located in. If you're
   only installing Pigweed Python packages, use the location of the Pigweed
   submodule.
 
-``virtualenv.requirements``
+``pw.pw_env_setup.virtualenv.requirements``
   A list of Python Pip requirements files for installing into the Pigweed
   virtualenv. Each file will be passed as additional ``--requirement`` argument
   to a single ```pip install`` at the beginning of bootstrap's ``Python
   environment`` setup stage. See the `Requirements Files documentation`_ for
   details on what can be specified using requirements files.
 
-``virtualenv.constraints``
+``pw.pw_env_setup.virtualenv.constraints``
   A list of Python Pip constraints files. These constraints will be passed to
   every ``pip`` invocation as an additional ``--constraint`` argument during
   bootstrap.  virtualenv. See the `Constraints Files documentation`_ for details
   on formatting.
 
-``virtualenv.system_packages``
+``pw.pw_env_setup.virtualenv.system_packages``
   A boolean value that can be used the give the Python virtual environment
   access to the system site packages. Defaults to ``false``.
 
-``optional_submodules``
+``pw.pw_env_setup.optional_submodules``
   By default environment setup will check that all submodules are present in
   the checkout. Any submodules in this list are excluded from that check.
 
-``required_submodules``
+``pw.pw_env_setup.required_submodules``
   If this is specified instead of ``optional_submodules`` bootstrap will only
   complain if one of the required submodules is not present. Combining this
   with ``optional_submodules`` is not supported.
 
-``pw_packages``
+``pw.pw_env_setup.pw_packages``
   A list of packages to install using :ref:`pw_package <module-pw_package>`
   after the rest of bootstrap completes.
 
-``gni_file``
+``pw.pw_env_setup.gni_file``
   Location to write a ``.gni`` file containing paths to many things within the
   environment directory. Defaults to
   ``build_overrides/pigweed_environment.gni``.
 
-``json_file``
+``pw.pw_env_setup.json_file``
   Location to write a ``.json`` file containing step-by-step modifications to
   the environment, for reading by tools that don't inherit an environment from
   a sourced ``bootstrap.sh``.
 
-``rosetta``
+``pw.pw_env_setup.rosetta``
   Whether to use Rosetta to use amd64 packages on arm64 Macs. Accepted values
   are  ``never``, ``allow``, and ``force``. For now, ``allow`` means ``force``.
   At some point in the future ``allow`` will be changed to mean ``never``.
@@ -313,33 +313,37 @@ An example of a config file is below.
 .. code-block:: json
 
    {
-     "root_variable": "EXAMPLE_ROOT",
-     "cipd_package_files": [
-       "pigweed/pw_env_setup/py/pw_env_setup/cipd_setup/pigweed.json",
-       "pigweed/pw_env_setup/py/pw_env_setup/cipd_setup/luci.json"
-       "tools/myprojectname.json"
-     ],
-     "virtualenv": {
-       "gn_root": ".",
-       "gn_targets": [
-         ":python.install",
-       ],
-       "system_packages": false
-     },
-     "pw_packages": [],
-     "optional_submodules": [
-       "optional/submodule/one",
-       "optional/submodule/two"
-     ],
-     "gni_file": "tools/environment.gni",
-     "json_file": "tools/environment.json",
-     "rosetta": "allow"
+     "pw": {
+       "pw_env_setup": {
+         "root_variable": "EXAMPLE_ROOT",
+         "cipd_package_files": [
+           "pigweed/pw_env_setup/py/pw_env_setup/cipd_setup/pigweed.json",
+           "pigweed/pw_env_setup/py/pw_env_setup/cipd_setup/luci.json"
+           "tools/myprojectname.json"
+         ],
+         "virtualenv": {
+           "gn_root": ".",
+           "gn_targets": [
+             ":python.install",
+           ],
+           "system_packages": false
+         },
+         "pw_packages": [],
+         "optional_submodules": [
+           "optional/submodule/one",
+           "optional/submodule/two"
+         ],
+         "gni_file": "tools/environment.gni",
+         "json_file": "tools/environment.json",
+         "rosetta": "allow"
+       }
+     }
    }
 
 Only the packages necessary for almost all projects based on Pigweed are
-included in the ``pigweed.json`` file. A number of other files are present in
-that directory for projects that need more than the minimum. Internal-Google
-projects using LUCI should at least include ``luci.json``.
+included in the ``cipd_setup/pigweed.json`` file. A number of other files are
+present in that directory for projects that need more than the minimum.
+Internal-Google projects using LUCI should at least include ``luci.json``.
 
 In case the CIPD packages need to be referenced from other scripts, variables
 like ``PW_${BASENAME}_CIPD_INSTALL_DIR`` point to the CIPD install directories,
@@ -367,8 +371,20 @@ last topologically takes priority. For example, with the file contents below,
 ``d.json``'s entries will appear in ``PATH`` before ``c.json``'s, which will
 appear before ``b.json``'s, which will appear before ``a.json``'s.
 
-``config.json``
-  ``{"cipd_package_files": ["a.json", "b.json", "d.json"], ...}``
+``pigweed.json``
+  .. code-block:: json
+
+     {
+       "pw": {
+         "pw_env_setup": {
+           "cipd_package_files": [
+             "a.json",
+             "b.json",
+             "d.json"
+           ]
+         }
+       }
+     }
 
 ``a.json``
   ``{"package_files": [...]}``

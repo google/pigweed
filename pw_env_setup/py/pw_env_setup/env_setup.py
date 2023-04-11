@@ -160,6 +160,11 @@ class MissingSubmodulesError(Exception):
     pass
 
 
+def _assert_sequence(value):
+    assert isinstance(value, (list, tuple))
+    return value
+
+
 # TODO(mohrr) remove disable=useless-object-inheritance once in Python 3.
 # pylint: disable=useless-object-inheritance
 # pylint: disable=too-many-instance-attributes
@@ -224,8 +229,10 @@ class EnvSetup(object):
         self._json_file = json_file
         self._gni_file = None
 
-        self._config_file_name = getattr(config_file, 'name', 'config file')
-        self._env.set('_PW_ENVIRONMENT_CONFIG_FILE', self._config_file_name)
+        self._config_file_name = config_file
+        self._env.set(
+            '_PW_ENVIRONMENT_CONFIG_FILE', os.path.abspath(config_file)
+        )
         if config_file:
             self._parse_config_file(config_file)
 
@@ -269,7 +276,13 @@ class EnvSetup(object):
         return files, warnings
 
     def _parse_config_file(self, config_file):
-        config = json.load(config_file)
+        with open(config_file, 'rb') as ins:
+            config = json.load(ins)
+
+            # While transitioning, allow environment config to be at the top of
+            # the JSON file or at '.["pw"]["pw_env_setup"]'.
+            config = config.get('pw', config)
+            config = config.get('pw_env_setup', config)
 
         self._root_variable = config.pop('root_variable', None)
 
@@ -284,8 +297,12 @@ class EnvSetup(object):
 
         self._gni_file = config.pop('gni_file', None)
 
-        self._optional_submodules.extend(config.pop('optional_submodules', ()))
-        self._required_submodules.extend(config.pop('required_submodules', ()))
+        self._optional_submodules.extend(
+            _assert_sequence(config.pop('optional_submodules', ()))
+        )
+        self._required_submodules.extend(
+            _assert_sequence(config.pop('required_submodules', ()))
+        )
 
         if self._optional_submodules and self._required_submodules:
             raise ValueError(
@@ -296,10 +313,10 @@ class EnvSetup(object):
 
         self._cipd_package_file.extend(
             os.path.join(self._project_root, x)
-            for x in config.pop('cipd_package_files', ())
+            for x in _assert_sequence(config.pop('cipd_package_files', ()))
         )
 
-        for pkg in config.pop('pw_packages', ()):
+        for pkg in _assert_sequence(config.pop('pw_packages', ())):
             self._pw_packages.append(pkg)
 
         virtualenv = config.pop('virtualenv', {})
@@ -309,23 +326,27 @@ class EnvSetup(object):
         else:
             root = self._project_root
 
-        for target in virtualenv.pop('gn_targets', ()):
+        for target in _assert_sequence(virtualenv.pop('gn_targets', ())):
             self._virtualenv_gn_targets.append(
                 virtualenv_setup.GnTarget('{}#{}'.format(root, target))
             )
 
-        self._virtualenv_gn_args = virtualenv.pop('gn_args', ())
+        self._virtualenv_gn_args = _assert_sequence(
+            virtualenv.pop('gn_args', ())
+        )
 
         self._virtualenv_system_packages = virtualenv.pop(
             'system_packages', False
         )
 
-        for req_txt in virtualenv.pop('requirements', ()):
+        for req_txt in _assert_sequence(virtualenv.pop('requirements', ())):
             self._virtualenv_requirements.append(
                 os.path.join(self._project_root, req_txt)
             )
 
-        for constraint_txt in virtualenv.pop('constraints', ()):
+        for constraint_txt in _assert_sequence(
+            virtualenv.pop('constraints', ())
+        ):
             self._virtualenv_constraints.append(
                 os.path.join(self._project_root, constraint_txt)
             )
@@ -791,9 +812,8 @@ def parse(argv=None):
 
     parser.add_argument(
         '--config-file',
-        help='JSON file describing CIPD and virtualenv requirements.',
-        type=argparse.FileType('r'),
-        required=True,
+        help='Path to pigweed.json file.',
+        default=os.path.join(project_root, 'pigweed.json'),
     )
 
     parser.add_argument(

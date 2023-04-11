@@ -110,7 +110,6 @@ call "%python%" "%PW_ROOT%\pw_env_setup\py\pw_env_setup\env_setup.py" ^
     --pw-root "%PW_ROOT%" ^
     --shell-file "%shell_file%" ^
     --install-dir "%_PW_ACTUAL_ENVIRONMENT_ROOT%" ^
-    --config-file "%PW_ROOT%/pw_env_setup/config.json" ^
     --project-root "%PW_PROJECT_ROOT%"
 goto activate_shell
 
