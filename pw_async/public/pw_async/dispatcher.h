@@ -62,9 +62,11 @@ class Dispatcher : public chrono::VirtualSystemClock {
                               chrono::SystemClock::duration interval,
                               chrono::SystemClock::time_point time) = 0;
 
-  /// Returns true if |task| is succesfully canceled.
-  /// If cancelation fails, the task may be running or completed.
-  /// Periodic tasks may be posted once more after they are canceled.
+  /// Periodic tasks may be posted once more after they are canceled. Tasks may
+  /// be canceled from within a `TaskFunction` by calling
+  /// `context.dispatcher.Cancel(context.task)`.
+  /// @return true if `task` successfully canceled, false otherwise. If
+  /// cancelation fails, the task may be running or completed.
   virtual bool Cancel(Task& task) = 0;
 };
 

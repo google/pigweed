@@ -17,6 +17,7 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_async/async.gni")
 import("$dir_pw_async/fake_dispatcher_fixture.gni")
 import("$dir_pw_async/fake_dispatcher_test.gni")
+import("$dir_pw_async/heap_dispatcher.gni")
 import("$dir_pw_bloat/bloat.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
@@ -122,11 +123,27 @@ pw_test("dispatcher_test") {
   sources = [ "dispatcher_test.cc" ]
 }
 
+pw_async_heap_dispatcher_source_set("heap_dispatcher") {
+  task_backend = ":task"
+  visibility = [ ":*" ] + pw_async_EXPERIMENTAL_MODULE_VISIBILITY
+}
+
+pw_test("heap_dispatcher_test") {
+  enable_if = pw_chrono_SYSTEM_CLOCK_BACKEND != "" &&
+              pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread"
+  sources = [ "heap_dispatcher_test.cc" ]
+  deps = [
+    ":fake_dispatcher_fixture",
+    ":heap_dispatcher",
+  ]
+}
+
 pw_test_group("tests") {
   tests = [
     ":dispatcher_test",
     ":fake_dispatcher_test",
     ":fake_dispatcher_fixture_test",
+    ":heap_dispatcher_test",
   ]
 }
 

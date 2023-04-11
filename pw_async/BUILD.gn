@@ -18,6 +18,7 @@ import("$dir_pw_async/async.gni")
 import("$dir_pw_async/backend.gni")
 import("$dir_pw_async/fake_dispatcher_fixture.gni")
 import("$dir_pw_async/fake_dispatcher_test.gni")
+import("$dir_pw_async/heap_dispatcher.gni")
 import("$dir_pw_build/facade.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_chrono/backend.gni")
@@ -30,10 +31,15 @@ config("public_include_path") {
 pw_source_set("dispatcher") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
+    ":types",
     "$dir_pw_chrono:system_clock",
     dir_pw_function,
+    dir_pw_status,
   ]
-  public = [ "public/pw_async/dispatcher.h" ]
+  public = [
+    "public/pw_async/dispatcher.h",
+    "public/pw_async/function_dispatcher.h",
+  ]
   visibility = [
                  ":*",
                  "$dir_pw_async_basic:*",
@@ -44,14 +50,25 @@ pw_facade("task") {
   backend = pw_async_TASK_BACKEND
   public_configs = [ ":public_include_path" ]
   public_deps = [
+    ":types",
     "$dir_pw_chrono:system_clock",
     dir_pw_function,
     dir_pw_status,
   ]
-  public = [
-    "public/pw_async/internal/types.h",
-    "public/pw_async/task.h",
+  public = [ "public/pw_async/task.h" ]
+  visibility = [
+                 ":*",
+                 "$dir_pw_async_basic:*",
+               ] + pw_async_EXPERIMENTAL_MODULE_VISIBILITY
+}
+
+pw_source_set("types") {
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    dir_pw_function,
+    dir_pw_status,
   ]
+  public = [ "public/pw_async/internal/types.h" ]
   visibility = [
                  ":*",
                  "$dir_pw_async_basic:*",
@@ -77,6 +94,14 @@ fake_dispatcher_fixture("fake_dispatcher_fixture") {
                ] + pw_async_EXPERIMENTAL_MODULE_VISIBILITY
 }
 
+pw_async_heap_dispatcher_source_set("heap_dispatcher") {
+  task_backend = ":task"
+  visibility = [
+                 ":*",
+                 "$dir_pw_async_basic:*",
+               ] + pw_async_EXPERIMENTAL_MODULE_VISIBILITY
+}
+
 pw_test_group("tests") {
 }
 
@@ -85,10 +110,12 @@ pw_doc_group("docs") {
 }
 
 # Satisfy source_is_in_build_files presubmit step
-pw_source_set("fake_dispatcher_test") {
+pw_source_set("satisfy_presubmit") {
   sources = [
     "fake_dispatcher_test.cc",
+    "heap_dispatcher.cc",
     "public/pw_async/fake_dispatcher_fixture.h",
+    "public/pw_async/heap_dispatcher.h",
   ]
   visibility = []
 }

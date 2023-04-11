@@ -72,6 +72,16 @@ creates a test target that tests a FakeDispatcher backend. This enables
 one test suite to be shared across FakeDispatcher backends and ensures
 conformance.
 
+FunctionDispatcher
+------------------
+.. doxygenclass:: pw::async::FunctionDispatcher
+   :members:
+
+HeapDispatcher
+--------------
+.. doxygenclass:: pw::async::HeapDispatcher
+   :members:
+
 Design
 ======
 

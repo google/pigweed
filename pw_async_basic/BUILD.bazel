@@ -19,6 +19,7 @@ filegroup(
         "dispatcher_test.cc",
         "fake_dispatcher.cc",
         "fake_dispatcher_fixture_test.cc",
+        "heap_dispatcher_test.cc",
         "public/pw_async_basic/dispatcher.h",
         "public/pw_async_basic/fake_dispatcher.h",
         "public/pw_async_basic/task.h",
