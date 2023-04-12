@@ -123,7 +123,7 @@ TEST(ToString, Float) {
   if (string::internal::config::kEnableDecimalFloatExpansion) {
     EXPECT_EQ(5u, ToString(0.0f, buffer).size());
     EXPECT_STREQ("0.000", buffer);
-    EXPECT_EQ(6u, ToString(33.444, buffer).size());
+    EXPECT_EQ(6u, ToString(33.444f, buffer).size());
     EXPECT_STREQ("33.444", buffer);
     EXPECT_EQ(3u, ToString(INFINITY, buffer).size());
     EXPECT_STREQ("inf", buffer);
@@ -141,10 +141,11 @@ TEST(ToString, Float) {
 
 TEST(ToString, Pointer_NonNull_WritesValue) {
   CustomType custom;
-  const size_t length = std::snprintf(expected,
-                                      sizeof(expected),
-                                      "%" PRIxPTR,
-                                      reinterpret_cast<intptr_t>(&custom));
+  const size_t length =
+      static_cast<size_t>(std::snprintf(expected,
+                                        sizeof(expected),
+                                        "%" PRIxPTR,
+                                        reinterpret_cast<intptr_t>(&custom)));
 
   EXPECT_EQ(length, ToString(&custom, buffer).size());
   EXPECT_STREQ(expected, buffer);

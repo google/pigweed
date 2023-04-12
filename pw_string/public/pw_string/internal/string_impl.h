@@ -13,6 +13,7 @@
 // the License.
 #pragma once
 
+#include <limits>
 #include <string>  // for std::char_traits
 #include <type_traits>
 
@@ -102,6 +103,16 @@ constexpr bool NullTerminatedArrayFitsInString(
   return null_terminated_array_size > 0u &&
          null_terminated_array_size - 1 <= capacity &&
          null_terminated_array_size - 1 < kGeneric;
+}
+
+// Used to safely convert various numeric types to `size_type`.
+template <typename T>
+constexpr size_type CheckedCastToSize(T num) {
+  static_assert(std::is_unsigned<T>::value,
+                "Attempted to convert signed value to string length, but only "
+                "unsigned types are allowed.");
+  PW_ASSERT(num < std::numeric_limits<size_type>::max());
+  return static_cast<size_type>(num);
 }
 
 // Constexpr utility functions for pw::InlineString. These are NOT intended for

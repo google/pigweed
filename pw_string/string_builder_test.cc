@@ -192,26 +192,30 @@ TEST(StringBuilder, Append_NonTerminatedString) {
 TEST(StringBuilder, Append_Chars) {
   StringBuffer<8> sb;
 
-  EXPECT_TRUE(sb.append(7, '?').ok());
+  size_t count = 7;
+  EXPECT_TRUE(sb.append(count, '?').ok());
   EXPECT_STREQ("???????", sb.data());
 }
 
 TEST(StringBuilder, Append_Chars_Full) {
   StringBuffer<8> sb;
 
-  EXPECT_EQ(Status::ResourceExhausted(), sb.append(8, '?').last_status());
+  size_t count = 8;
+  EXPECT_EQ(Status::ResourceExhausted(), sb.append(count, '?').last_status());
   EXPECT_STREQ("???????", sb.data());
 }
 
 TEST(StringBuilder, Append_Chars_ToEmpty) {
   StringBuilder sb(span<char>{});
 
-  EXPECT_EQ(Status::ResourceExhausted(), sb.append(1, '?').last_status());
+  size_t count = 1;
+  EXPECT_EQ(Status::ResourceExhausted(), sb.append(count, '?').last_status());
 }
 
 TEST(StringBuilder, Append_PartialCString) {
   StringBuffer<12> sb;
-  EXPECT_TRUE(sb.append("123456", 4).ok());
+  size_t count = 4;
+  EXPECT_TRUE(sb.append("123456", count).ok());
   EXPECT_EQ(4u, sb.size());
   EXPECT_STREQ("1234", sb.data());
 }
@@ -225,7 +229,9 @@ TEST(StringBuilder, Append_CString) {
 
 TEST(StringBuilder, Append_CString_Full) {
   auto sb = MakeString<6>("hello");
-  EXPECT_EQ(Status::ResourceExhausted(), sb.append("890123", 1).last_status());
+  size_t count = 1;
+  EXPECT_EQ(Status::ResourceExhausted(),
+            sb.append("890123", count).last_status());
   EXPECT_EQ(Status::ResourceExhausted(), sb.status());
   EXPECT_EQ(sb.max_size(), sb.size());
   EXPECT_STREQ("hello", sb.data());
@@ -239,13 +245,16 @@ TEST(StringBuilder, Append_StringView) {
 
 TEST(StringBuilder, Append_StringView_Substring) {
   auto sb = MakeString<32>("I like ");
-  EXPECT_TRUE(sb.append("your shoes!!!"sv, 5, 5).ok());
+  size_t position = 5;
+  size_t count = 5;
+  EXPECT_TRUE(sb.append("your shoes!!!"sv, position, count).ok());
   EXPECT_EQ("I like shoes"sv, sb);
 }
 
 TEST(StringBuilder, Append_StringView_RemainingSubstring) {
   auto sb = MakeString<32>("I like ");
-  EXPECT_TRUE(sb.append("your shoes!!!"sv, 5).ok());
+  size_t count = 5;
+  EXPECT_TRUE(sb.append("your shoes!!!"sv, count).ok());
   EXPECT_EQ("I like shoes!!!"sv, sb);
 }
 

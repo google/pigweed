@@ -86,7 +86,8 @@ constexpr InlineBasicString& assign(InputIterator start, InputIterator finish) {
 }
 
 constexpr InlineBasicString& assign(std::initializer_list<T> list) {
-  return assign(list.begin(), list.size());
+  return assign(list.begin(),
+                static_cast<pw::string_impl::size_type>(list.size()));
 }
 
 #if PW_CXX_STANDARD_IS_SUPPORTED(17)  // std::string_view is a C++17 feature
@@ -96,7 +97,8 @@ template <typename StringView,
 constexpr InlineBasicString& assign(const StringView& string) {
   const std::basic_string_view<T> view = string;
   PW_ASSERT(view.size() < npos);
-  return assign(view.data(), view.size());
+  return assign(view.data(),
+                static_cast<pw::string_impl::size_type>(view.size()));
 }
 
 template <typename StringView,
@@ -106,8 +108,12 @@ constexpr InlineBasicString& assign(const StringView& string,
                                     size_type count = npos) {
   const std::basic_string_view<T> view = string;
   PW_ASSERT(view.size() < npos);
-  return static_cast<InlineBasicString&>(CopySubstr(
-      data(), view.data(), static_cast<size_type>(view.size()), index, count));
+  return static_cast<InlineBasicString&>(
+      CopySubstr(data(),
+                 view.data(),
+                 static_cast<pw::string_impl::size_type>(view.size()),
+                 index,
+                 count));
 }
 
 #endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
@@ -243,7 +249,7 @@ constexpr InlineBasicString& append(InputIterator first, InputIterator last) {
 }
 
 constexpr InlineBasicString& append(std::initializer_list<T> list) {
-  return append(list.begin(), list.size());
+  return append(list.begin(), pw::string_impl::CheckedCastToSize(list.size()));
 }
 
 #if PW_CXX_STANDARD_IS_SUPPORTED(17)  // std::string_view is a C++17 feature
@@ -253,7 +259,8 @@ template <typename StringView,
 constexpr InlineBasicString& append(const StringView& string) {
   const std::basic_string_view<T> view = string;
   PW_ASSERT(view.size() < npos);
-  return append(view.data(), view.size());
+  return append(view.data(),
+                static_cast<pw::string_impl::size_type>(view.size()));
 }
 
 template <typename StringView,

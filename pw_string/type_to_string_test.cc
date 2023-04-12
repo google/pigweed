@@ -346,12 +346,12 @@ TEST_F(FloatAsIntToStringTest, NegativeNan) {
 }
 
 TEST_F(FloatAsIntToStringTest, RoundDown_PrintsNearestInt) {
-  EXPECT_EQ(1u, FloatAsIntToString(1.23, buffer_).size());
+  EXPECT_EQ(1u, FloatAsIntToString(1.23f, buffer_).size());
   EXPECT_STREQ("1", buffer_);
 }
 
 TEST_F(FloatAsIntToStringTest, RoundUp_PrintsNearestInt) {
-  EXPECT_EQ(4u, FloatAsIntToString(1234.5, buffer_).size());
+  EXPECT_EQ(4u, FloatAsIntToString(1234.5f, buffer_).size());
   EXPECT_STREQ("1235", buffer_);
 }
 
@@ -366,13 +366,13 @@ TEST_F(FloatAsIntToStringTest, RoundsToPositiveZero_PrintsZero) {
 }
 
 TEST_F(FloatAsIntToStringTest, RoundDownNegative_PrintsNearestInt) {
-  volatile float x = -5.9;
+  volatile float x = -5.9f;
   EXPECT_EQ(2u, FloatAsIntToString(x, buffer_).size());
   EXPECT_STREQ("-6", buffer_);
 }
 
 TEST_F(FloatAsIntToStringTest, RoundUpNegative_PrintsNearestInt) {
-  EXPECT_EQ(9u, FloatAsIntToString(-50000000.1, buffer_).size());
+  EXPECT_EQ(9u, FloatAsIntToString(-50000000.1f, buffer_).size());
   EXPECT_STREQ("-50000000", buffer_);
 }
 
