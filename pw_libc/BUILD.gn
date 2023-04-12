@@ -17,6 +17,7 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_third_party/llvm_libc/llvm_libc.gni")
+import("$dir_pw_toolchain/generate_toolchain.gni")
 import("$dir_pw_unit_test/test.gni")
 
 config("default_config") {
@@ -35,6 +36,19 @@ pw_test("memset_test") {
   deps = [ "$dir_pw_containers" ]
 }
 
+# Clang has __attribute__(("no-builtin")), but gcc doesn't support it so we
+# need this flag instead.
+config("no-builtin") {
+  cflags = [ "-fno-builtin" ]
+}
+
+# Downstream projects sometimes build with -Wshadow, which on gcc also warns
+# about constructor arguments shadowing struct members. This is too pedantic
+# and not reasonable to change upstream llvm-libc.
+config("no-shadow") {
+  cflags = [ "-Wno-shadow" ]
+}
+
 # If dir_pw_third_party_llvm_libc is defined, use that directory to create a
 # pw_libc.a from llvm-libc. Otherwise, we create an empty pw_libc.a.
 if (dir_pw_third_party_llvm_libc != "") {
@@ -42,13 +56,40 @@ if (dir_pw_third_party_llvm_libc != "") {
     functions = [ "abs" ]
   }
 
+  pw_libc_source_set("string") {
+    defines = [ "LIBC_COPT_MEMCPY_USE_EMBEDDED_TINY" ]
+    functions = [
+      "strcmp",
+      "strcpy",
+      "strstr",
+      "strnlen",
+      "memcpy",
+      "memset",
+      "memmove",
+    ]
+
+    # memmove tests use gtest matchers which pw_unit_test doesn't support.
+    no_test_functions = [ "memmove" ]
+
+    configs = [
+      ":no-builtin",
+      ":no-shadow",
+    ]
+  }
+
   pw_static_library("pw_libc") {
     complete_static_lib = true
-    deps = [ ":stdlib" ]
+    deps = [
+      ":stdlib",
+      ":string",
+    ]
   }
 
   pw_test_group("llvm_libc_tests") {
-    tests = [ ":stdlib_tests" ]
+    tests = [
+      ":stdlib_tests",
+      ":string_tests",
+    ]
   }
 } else {
   pw_static_library("pw_libc") {
