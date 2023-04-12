@@ -1660,3 +1660,154 @@ removes it.
 There is a workflow for manually removing the copy-to-clipboard button for a
 particular code block but it has not been implemented yet. See
 `Remove copybuttons using a CSS selector`_.
+
+Grouping related content with tabs
+==================================
+Use the ``tabs`` directive to group related content together. This feature is
+powered by `sphinx-tabs <https://sphinx-tabs.readthedocs.io>`_.
+
+Tabs for code-only content
+--------------------------
+Use the ``tabs`` and ``code-tab`` directives together. Example:
+
+.. code:: none
+
+   .. tabs::
+
+      .. code-tab:: c++
+
+         // C++ code...
+
+      .. code-tab:: py
+
+         # Python code...
+
+Rendered output:
+
+.. tabs::
+
+   .. code-tab:: c++
+
+      // C++ code...
+
+   .. code-tab:: py
+
+      # Python code...
+
+Tabs for all other content
+--------------------------
+Use the ``tabs`` and ``group-tab`` directives together. Example:
+
+.. code:: none
+
+   .. tabs::
+
+      .. group-tab:: Linux
+
+         Linux instructions...
+
+      .. group-tab:: Windows
+
+         Windows instructions...
+
+Rendered output:
+
+.. tabs::
+
+   .. group-tab:: Linux
+
+      Linux instructions...
+
+   .. group-tab:: Windows
+
+      Windows instructions...
+
+Tab synchronization
+-------------------
+Tabs are synchronized based on ``group-tab`` and ``code-tab`` values. Example:
+
+.. code:: none
+
+   .. tabs::
+
+      .. code-tab:: c++
+
+         // C++ code...
+
+      .. code-tab:: py
+
+         # Python code...
+
+   .. tabs::
+
+      .. code-tab:: c++
+
+         // More C++ code...
+
+      .. code-tab:: py
+
+         # More Python code...
+
+   .. tabs::
+
+      .. group-tab:: Linux
+
+         Linux instructions...
+
+      .. group-tab:: Windows
+
+         Windows instructions...
+
+   .. tabs::
+
+      .. group-tab:: Linux
+
+         More Linux instructions...
+
+      .. group-tab:: Windows
+
+         More Windows instructions...
+
+Rendered output:
+
+.. tabs::
+
+   .. code-tab:: c++
+
+      // C++ code...
+
+   .. code-tab:: py
+
+      # Python code...
+
+.. tabs::
+
+   .. code-tab:: c++
+
+      // More C++ code...
+
+   .. code-tab:: py
+
+      # More Python code...
+
+.. tabs::
+
+   .. group-tab:: Linux
+
+      Linux instructions...
+
+   .. group-tab:: Windows
+
+      Windows instructions...
+
+.. tabs::
+
+   .. group-tab:: Linux
+
+      More Linux instructions...
+
+   .. group-tab:: Windows
+
+      More Windows instructions...
+
+

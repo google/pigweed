@@ -50,6 +50,7 @@ extensions = [
     'myst_parser',
     'breathe',
     'sphinx_copybutton',  # Copy-to-clipboard button on code blocks
+    'sphinx_tabs.tabs',
 ]
 
 myst_enable_extensions = [
