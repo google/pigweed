@@ -276,7 +276,7 @@ class EnvSetup(object):
         return files, warnings
 
     def _parse_config_file(self, config_file):
-        with open(config_file, 'rb') as ins:
+        with open(config_file, 'r') as ins:
             config = json.load(ins)
 
             # While transitioning, allow environment config to be at the top of
