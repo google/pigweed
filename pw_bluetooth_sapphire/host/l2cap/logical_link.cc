@@ -59,7 +59,7 @@ LogicalLink::LogicalLink(hci_spec::ConnectionHandle handle, bt::LinkType type,
                          pw::bluetooth::emboss::ConnectionRole role, uint16_t max_acl_payload_size,
                          QueryServiceCallback query_service_cb,
                          hci::AclDataChannel* acl_data_channel, hci::CommandChannel* cmd_channel,
-                         bool random_channel_ids)
+                         bool random_channel_ids, A2dpOffloadManager& a2dp_offload_manager)
     : handle_(handle),
       type_(type),
       role_(role),
@@ -70,6 +70,7 @@ LogicalLink::LogicalLink(hci_spec::ConnectionHandle handle, bt::LinkType type,
       acl_data_channel_(acl_data_channel),
       cmd_channel_(cmd_channel),
       query_service_cb_(std::move(query_service_cb)),
+      a2dp_offload_manager_(a2dp_offload_manager),
       weak_conn_interface_(this),
       weak_self_(this) {
   BT_ASSERT(type_ == bt::LinkType::kLE || type_ == bt::LinkType::kACL);
@@ -121,7 +122,7 @@ Channel::WeakPtr LogicalLink::OpenFixedChannel(ChannelId id) {
   }
 
   std::unique_ptr<ChannelImpl> chan = ChannelImpl::CreateFixedChannel(
-      id, GetWeakPtr(), cmd_channel_->AsWeakPtr(), max_acl_payload_size_);
+      id, GetWeakPtr(), cmd_channel_->AsWeakPtr(), max_acl_payload_size_, a2dp_offload_manager_);
 
   auto pp_iter = pending_pdus_.find(id);
   if (pp_iter != pending_pdus_.end()) {
@@ -487,9 +488,9 @@ void LogicalLink::CompleteDynamicOpen(const DynamicChannel* dyn_chan, ChannelCal
   auto preferred_flush_timeout = chan_info.flush_timeout;
   chan_info.flush_timeout.reset();
 
-  std::unique_ptr<ChannelImpl> chan =
-      ChannelImpl::CreateDynamicChannel(local_cid, remote_cid, GetWeakPtr(), chan_info,
-                                        cmd_channel_->AsWeakPtr(), max_acl_payload_size_);
+  std::unique_ptr<ChannelImpl> chan = ChannelImpl::CreateDynamicChannel(
+      local_cid, remote_cid, GetWeakPtr(), chan_info, cmd_channel_->AsWeakPtr(),
+      max_acl_payload_size_, a2dp_offload_manager_);
   auto chan_weak = chan->GetWeakPtr();
   channels_[local_cid] = std::move(chan);
 

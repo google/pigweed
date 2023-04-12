@@ -9,6 +9,7 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager_mock_controller_test_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/test_packets.h"
@@ -134,7 +135,7 @@ auto InboundConfigurationResponse(CommandId id) {
       0x01, 0x00, 0x0e, 0x00,
       // L2CAP B-frame header (length: 10 bytes, channel-id: 0x0001 (ACL sig))
       0x0a, 0x00, 0x01, 0x00,
-      // Configuration Response (ID: 2, length: 6, src cid, flags: 0, result: success)
+      // Configuration Response (ID: 2, length: 6, src cid, flags: 0, res: success)
       0x05, id, 0x06, 0x00, LowerBits(kLocalId), UpperBits(kLocalId), 0x00, 0x00, 0x00, 0x00);
 }
 
@@ -182,7 +183,7 @@ auto OutboundConfigurationResponse(CommandId id, uint16_t mtu = kDefaultMTU,
         0x01, 0x00, LowerBits(kAclLength), UpperBits(kAclLength),
         // L2CAP B-frame header (length: 10 bytes, channel-id: 0x0001 (ACL sig))
         LowerBits(kL2capLength), UpperBits(kL2capLength), 0x01, 0x00,
-        // Configuration Response (ID, length, src cid, flags: 0, result: success)
+        // Configuration Response (ID, length, src cid, flags: 0, res: success)
         0x05, id, kConfigLength, 0x00, LowerBits(kRemoteId), UpperBits(kRemoteId), 0x00, 0x00, 0x00,
         0x00,
         // MTU option (ID, Length, MTU)
@@ -200,7 +201,7 @@ auto OutboundConfigurationResponse(CommandId id, uint16_t mtu = kDefaultMTU,
       0x01, 0x00, LowerBits(kAclLength), UpperBits(kAclLength),
       // L2CAP B-frame header (length, channel-id: 0x0001 (ACL sig))
       LowerBits(kL2capLength), UpperBits(kL2capLength), 0x01, 0x00,
-      // Configuration Response (ID, length, src cid, flags: 0, result: success)
+      // Configuration Response (ID, length, src cid, flags: 0, res: success)
       0x05, id, kConfigLength, 0x00, LowerBits(kRemoteId), UpperBits(kRemoteId), 0x00, 0x00, 0x00,
       0x00,
       // MTU option (ID, Length, MTU)
@@ -229,7 +230,7 @@ auto OutboundDisconnectionResponse(CommandId id) {
       UpperBits(kRemoteId));
 }
 
-Channel::A2dpOffloadConfiguration BuildA2dpOffloadConfiguration(
+A2dpOffloadManager::Configuration BuildConfiguration(
     hci_android::A2dpCodecType codec = hci_android::A2dpCodecType::kSbc) {
   hci_android::A2dpScmsTEnable scms_t_enable;
   scms_t_enable.enabled = pw::bluetooth::emboss::GenericEnableParam::DISABLE;
@@ -260,7 +261,7 @@ Channel::A2dpOffloadConfiguration BuildA2dpOffloadConfiguration(
       break;
   }
 
-  Channel::A2dpOffloadConfiguration config;
+  A2dpOffloadManager::Configuration config;
   config.codec = codec;
   config.max_latency = 0xFFFF;
   config.scms_t_enable = scms_t_enable;
@@ -297,6 +298,7 @@ class ChannelManagerMockAclChannelTest : public TestingBase {
     // TODO(63074): Make these tests not depend on strict channel ID ordering.
     chanmgr_ = ChannelManager::Create(&acl_data_channel_, transport()->command_channel(),
                                       /*random_channel_ids=*/false);
+
     packet_rx_handler_ = [this](std::unique_ptr<hci::ACLDataPacket> packet) {
       acl_data_channel_.ReceivePacket(std::move(packet));
     };
@@ -311,8 +313,8 @@ class ChannelManagerMockAclChannelTest : public TestingBase {
           << "Didn't receive expected outbound " << expected.data.size() << "-byte packet";
       expected_packets_.pop();
     }
-    packet_rx_handler_ = nullptr;
     chanmgr_ = nullptr;
+    packet_rx_handler_ = nullptr;
     TestingBase::TearDown();
   }
 
@@ -1303,7 +1305,7 @@ TEST_F(ChannelManagerRealAclChannelTest, LEConnectionParameterUpdateRequest) {
                             // L2CAP C-frame header
                             // (LE conn. param. update response, id: 1, length: 2 bytes)
                             0x13, 0x01, 0x02, 0x00,
-                            // result: accepted
+                            // res: accepted
                             0x00, 0x00));
 
   LEFixedChannels fixed_channels =
@@ -1385,7 +1387,7 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLOutboundDynamicChannelLocalDisconnec
   const auto disconn_req_id = NextCommandId();
   EXPECT_ACL_PACKET_OUT_(OutboundDisconnectionRequest(disconn_req_id), kHighPriority);
 
-  // Explicit deactivation should not result in |closed_cb| being called.
+  // Explicit deactivation should not res in |closed_cb| being called.
   channel->Deactivate();
 
   RunLoopUntilIdle();
@@ -1559,7 +1561,7 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLOutboundDynamicChannelRemoteRefused)
       // L2CAP B-frame header (length: 12 bytes, channel-id: 0x0001 (ACL sig))
       0x0c, 0x00, 0x01, 0x00,
       // Connection Response (ID, length: 8, dst cid: 0x0000 (invalid),
-      // src cid, result: 0x0004 (Refused; no resources available), status: none)
+      // src cid, res: 0x0004 (Refused; no resources available), status: none)
       0x03, conn_req_id, 0x08, 0x00,
       0x00, 0x00, LowerBits(kLocalId), UpperBits(kLocalId),
       0x04, 0x00, 0x00, 0x00));
@@ -1599,7 +1601,7 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLOutboundDynamicChannelFailedConfigur
       // L2CAP B-frame header (length: 10 bytes, channel-id: 0x0001 (ACL sig))
       0x0a, 0x00, 0x01, 0x00,
       // Configuration Response (ID, length: 6, src cid, flags: 0,
-      // result: 0x0002 (Rejected; no reason provided))
+      // res: 0x0002 (Rejected; no reason provided))
       0x05, config_req_id, 0x06, 0x00,
       LowerBits(kLocalId), UpperBits(kLocalId), 0x00, 0x00,
       0x02, 0x00));
@@ -1674,7 +1676,7 @@ TEST_F(ChannelManagerMockAclChannelTest, ACLInboundDynamicChannelLocalDisconnect
   const auto disconn_req_id = NextCommandId();
   EXPECT_ACL_PACKET_OUT_(OutboundDisconnectionRequest(disconn_req_id), kHighPriority);
 
-  // Explicit deactivation should not result in |closed_cb| being called.
+  // Explicit deactivation should not res in |closed_cb| being called.
   channel->Deactivate();
 
   RunLoopUntilIdle();
@@ -2018,7 +2020,7 @@ TEST_F(ChannelManagerMockAclChannelTest,
        ReceiveFixedChannelsInformationResponseWithNotSupportedResult) {
   const auto cmd_ids =
       QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-  // Handler should check for result and not crash from reading mask or type.
+  // Handler should check for res and not crash from reading mask or type.
   ReceiveAclDataPacket(testing::AclNotSupportedInformationResponse(
       cmd_ids.fixed_channels_supported_id, kTestHandle1));
   RunLoopUntilIdle();
@@ -2027,7 +2029,7 @@ TEST_F(ChannelManagerMockAclChannelTest,
 TEST_F(ChannelManagerMockAclChannelTest, ReceiveFixedChannelsInformationResponseWithInvalidResult) {
   const auto cmd_ids =
       QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-  // Handler should check for result and not crash from reading mask or type.
+  // Handler should check for res and not crash from reading mask or type.
   StaticByteBuffer kPacket(
       // ACL data header (handle: |link_handle|, length: 12 bytes)
       LowerBits(kTestHandle1), UpperBits(kTestHandle1), 0x0c, 0x00,
@@ -2310,8 +2312,8 @@ TEST_F(ChannelManagerMockAclChannelTest, RequestAclPriorityNormal) {
       });
 
   size_t result_cb_count = 0;
-  channel->RequestAclPriority(AclPriority::kNormal, [&](auto result) {
-    EXPECT_EQ(fit::ok(), result);
+  channel->RequestAclPriority(AclPriority::kNormal, [&](auto res) {
+    EXPECT_EQ(fit::ok(), res);
     result_cb_count++;
   });
 
@@ -2340,8 +2342,8 @@ TEST_F(ChannelManagerMockAclChannelTest, RequestAclPrioritySinkThenNormal) {
       });
 
   size_t result_cb_count = 0;
-  channel->RequestAclPriority(AclPriority::kSink, [&](auto result) {
-    EXPECT_EQ(fit::ok(), result);
+  channel->RequestAclPriority(AclPriority::kSink, [&](auto res) {
+    EXPECT_EQ(fit::ok(), res);
     result_cb_count++;
   });
 
@@ -2350,8 +2352,8 @@ TEST_F(ChannelManagerMockAclChannelTest, RequestAclPrioritySinkThenNormal) {
   ASSERT_TRUE(requested_priority.has_value());
   EXPECT_EQ(*requested_priority, AclPriority::kSink);
 
-  channel->RequestAclPriority(AclPriority::kNormal, [&](auto result) {
-    EXPECT_EQ(fit::ok(), result);
+  channel->RequestAclPriority(AclPriority::kNormal, [&](auto res) {
+    EXPECT_EQ(fit::ok(), res);
     result_cb_count++;
   });
 
@@ -2383,8 +2385,8 @@ TEST_F(ChannelManagerMockAclChannelTest, RequestAclPrioritySinkThenDeactivateCha
       });
 
   size_t result_cb_count = 0;
-  channel->RequestAclPriority(AclPriority::kSink, [&](auto result) {
-    EXPECT_EQ(fit::ok(), result);
+  channel->RequestAclPriority(AclPriority::kSink, [&](auto res) {
+    EXPECT_EQ(fit::ok(), res);
     result_cb_count++;
   });
 
@@ -2415,8 +2417,8 @@ TEST_F(ChannelManagerMockAclChannelTest, RequestAclPrioritySinkThenReceiveDiscon
       });
 
   size_t result_cb_count = 0;
-  channel->RequestAclPriority(AclPriority::kSink, [&](auto result) {
-    EXPECT_EQ(fit::ok(), result);
+  channel->RequestAclPriority(AclPriority::kSink, [&](auto res) {
+    EXPECT_EQ(fit::ok(), res);
     result_cb_count++;
   });
 
@@ -2450,8 +2452,8 @@ TEST_F(ChannelManagerMockAclChannelTest,
   });
 
   size_t result_cb_count = 0;
-  channel->RequestAclPriority(AclPriority::kSink, [&](auto result) {
-    EXPECT_EQ(fit::ok(), result);
+  channel->RequestAclPriority(AclPriority::kSink, [&](auto res) {
+    EXPECT_EQ(fit::ok(), res);
     result_cb_count++;
   });
   EXPECT_EQ(channel->requested_acl_priority(), AclPriority::kNormal);
@@ -2483,8 +2485,8 @@ TEST_F(ChannelManagerMockAclChannelTest, RequestAclPrioritySinkFails) {
   });
 
   size_t result_cb_count = 0;
-  channel->RequestAclPriority(AclPriority::kSink, [&](auto result) {
-    EXPECT_TRUE(result.is_error());
+  channel->RequestAclPriority(AclPriority::kSink, [&](auto res) {
+    EXPECT_TRUE(res.is_error());
     result_cb_count++;
   });
 
@@ -2513,8 +2515,8 @@ TEST_F(ChannelManagerMockAclChannelTest, TwoChannelsRequestAclPrioritySinkAndDea
   });
 
   size_t result_cb_count = 0;
-  channel_0->RequestAclPriority(AclPriority::kSink, [&](auto result) {
-    EXPECT_EQ(fit::ok(), result);
+  channel_0->RequestAclPriority(AclPriority::kSink, [&](auto res) {
+    EXPECT_EQ(fit::ok(), res);
     result_cb_count++;
   });
   ASSERT_TRUE(requested_priority);
@@ -2523,8 +2525,8 @@ TEST_F(ChannelManagerMockAclChannelTest, TwoChannelsRequestAclPrioritySinkAndDea
   EXPECT_EQ(channel_0->requested_acl_priority(), AclPriority::kSink);
   requested_priority.reset();
 
-  channel_1->RequestAclPriority(AclPriority::kSink, [&](auto result) {
-    EXPECT_EQ(fit::ok(), result);
+  channel_1->RequestAclPriority(AclPriority::kSink, [&](auto res) {
+    EXPECT_EQ(fit::ok(), res);
     result_cb_count++;
   });
   // Priority is already sink. No additional request should be sent.
@@ -2565,8 +2567,8 @@ TEST_F(ChannelManagerMockAclChannelTest, TwoChannelsRequestConflictingAclPriorit
   });
 
   size_t result_cb_count = 0;
-  channel_0->RequestAclPriority(AclPriority::kSink, [&](auto result) {
-    EXPECT_EQ(fit::ok(), result);
+  channel_0->RequestAclPriority(AclPriority::kSink, [&](auto res) {
+    EXPECT_EQ(fit::ok(), res);
     result_cb_count++;
   });
   ASSERT_TRUE(requested_priority);
@@ -2574,8 +2576,8 @@ TEST_F(ChannelManagerMockAclChannelTest, TwoChannelsRequestConflictingAclPriorit
   EXPECT_EQ(result_cb_count, 1u);
   requested_priority.reset();
 
-  channel_1->RequestAclPriority(AclPriority::kSource, [&](auto result) {
-    EXPECT_TRUE(result.is_error());
+  channel_1->RequestAclPriority(AclPriority::kSource, [&](auto res) {
+    EXPECT_TRUE(res.is_error());
     result_cb_count++;
   });
   // Priority conflict should prevent priority request.
@@ -2615,12 +2617,12 @@ TEST_F(ChannelManagerMockAclChannelTest, TwoChannelsRequestAclPrioritiesAtSameTi
       [&](auto priority, auto handle, auto cb) { command_callbacks.push_back(std::move(cb)); });
 
   size_t result_cb_count_0 = 0;
-  channel_0->RequestAclPriority(AclPriority::kSink, [&](auto result) { result_cb_count_0++; });
+  channel_0->RequestAclPriority(AclPriority::kSink, [&](auto res) { result_cb_count_0++; });
   EXPECT_EQ(command_callbacks.size(), 1u);
   EXPECT_EQ(result_cb_count_0, 0u);
 
   size_t result_cb_count_1 = 0;
-  channel_1->RequestAclPriority(AclPriority::kSource, [&](auto result) { result_cb_count_1++; });
+  channel_1->RequestAclPriority(AclPriority::kSource, [&](auto res) { result_cb_count_1++; });
   EXPECT_EQ(result_cb_count_1, 0u);
   ASSERT_EQ(command_callbacks.size(), 1u);
 
@@ -2658,8 +2660,8 @@ TEST_F(ChannelManagerMockAclChannelTest, QueuedSinkAclPriorityForClosedChannelIs
   });
 
   size_t result_cb_count = 0;
-  channel->RequestAclPriority(AclPriority::kSink, [&](auto result) {
-    EXPECT_EQ(fit::ok(), result);
+  channel->RequestAclPriority(AclPriority::kSink, [&](auto res) {
+    EXPECT_EQ(fit::ok(), res);
     result_cb_count++;
   });
   ASSERT_EQ(requests.size(), 1u);
@@ -2667,8 +2669,8 @@ TEST_F(ChannelManagerMockAclChannelTest, QueuedSinkAclPriorityForClosedChannelIs
   EXPECT_EQ(channel->requested_acl_priority(), AclPriority::kSink);
 
   // Source request is queued and request is sent.
-  channel->RequestAclPriority(AclPriority::kSource, [&](auto result) {
-    EXPECT_EQ(fit::ok(), result);
+  channel->RequestAclPriority(AclPriority::kSource, [&](auto res) {
+    EXPECT_EQ(fit::ok(), res);
     result_cb_count++;
   });
   ASSERT_EQ(requests.size(), 2u);
@@ -2677,8 +2679,8 @@ TEST_F(ChannelManagerMockAclChannelTest, QueuedSinkAclPriorityForClosedChannelIs
 
   // Sink request is queued. It should receive an error since it is handled after the channel is
   // closed.
-  channel->RequestAclPriority(AclPriority::kSink, [&](auto result) {
-    EXPECT_TRUE(result.is_error());
+  channel->RequestAclPriority(AclPriority::kSink, [&](auto res) {
+    EXPECT_TRUE(res.is_error());
     result_cb_count++;
   });
   ASSERT_EQ(requests.size(), 2u);
@@ -2690,7 +2692,7 @@ TEST_F(ChannelManagerMockAclChannelTest, QueuedSinkAclPriorityForClosedChannelIs
   channel->Deactivate();
   EXPECT_FALSE(channel.is_alive());
 
-  // Send result to source request. Second sink request should receive error result too.
+  // Send res to source request. Second sink request should receive error res too.
   requests[1].second(fit::ok());
   EXPECT_EQ(result_cb_count, 3u);
   ASSERT_EQ(requests.size(), 3u);
@@ -2900,8 +2902,8 @@ TEST_F(ChannelManagerMockAclChannelTest, FlushableChannelAndNonFlushableChannelO
                         WriteAutomaticFlushTimeoutPacket(kTestHandle1, kExpectedFlushTimeoutParam),
                         &kCommandComplete);
 
-  flushable_channel->SetBrEdrAutomaticFlushTimeout(
-      kFlushTimeout, [](auto result) { EXPECT_EQ(fit::ok(), result); });
+  flushable_channel->SetBrEdrAutomaticFlushTimeout(kFlushTimeout,
+                                                   [](auto res) { EXPECT_EQ(fit::ok(), res); });
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
   EXPECT_FALSE(nonflushable_channel->info().flush_timeout.has_value());
@@ -2945,8 +2947,8 @@ TEST_F(ChannelManagerMockAclChannelTest, SettingFlushTimeoutFails) {
                         WriteAutomaticFlushTimeoutPacket(kTestHandle1, kExpectedFlushTimeoutParam),
                         &kCommandComplete);
 
-  channel->SetBrEdrAutomaticFlushTimeout(kFlushTimeout, [](auto result) {
-    EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::UNKNOWN_CONNECTION_ID), result);
+  channel->SetBrEdrAutomaticFlushTimeout(kFlushTimeout, [](auto res) {
+    EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::UNKNOWN_CONNECTION_ID), res);
   });
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
@@ -2963,16 +2965,11 @@ TEST_F(ChannelManagerMockAclChannelTest, SettingFlushTimeoutFails) {
   EXPECT_TRUE(channel->Send(NewBuffer('h', 'i')));
 }
 
-class StartA2dpOffloadTest : public ChannelManagerMockAclChannelTest,
-                             public ::testing::WithParamInterface<hci_android::A2dpCodecType> {};
-
-TEST_P(StartA2dpOffloadTest, StartA2dpOffloadSuccess) {
+TEST_F(ChannelManagerMockAclChannelTest, StartAndStopA2dpOffloadSuccess) {
   QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
 
-  const hci_android::A2dpCodecType codec = GetParam();
-  Channel::A2dpOffloadConfiguration config = BuildA2dpOffloadConfiguration(codec);
-
+  A2dpOffloadManager::Configuration config = BuildConfiguration();
   Channel::WeakPtr channel = SetUpOutboundChannel();
 
   const auto command_complete = CommandCompletePacket(hci_android::kA2dpOffloadCommand,
@@ -2982,77 +2979,52 @@ TEST_P(StartA2dpOffloadTest, StartA2dpOffloadSuccess) {
                                                 channel->remote_id(), channel->max_tx_sdu_size()),
                         &command_complete);
 
-  std::optional<hci::Result<>> result_;
-  channel->StartA2dpOffload(&config, [&result_](auto result) { result_ = result; });
+  std::optional<hci::Result<>> result;
+  channel->StartA2dpOffload(config, [&result](auto res) {
+    EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
+    result = res;
+  });
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
-  ASSERT_TRUE(result_.has_value());
-  EXPECT_TRUE(result_->is_ok());
-}
+  ASSERT_TRUE(result.has_value());
+  EXPECT_TRUE(result->is_ok());
 
-const std::vector<hci_android::A2dpCodecType> kA2dpCodecTypeParams = {
-    hci_android::A2dpCodecType::kSbc, hci_android::A2dpCodecType::kAac,
-    hci_android::A2dpCodecType::kLdac, hci_android::A2dpCodecType::kAptx};
-INSTANTIATE_TEST_SUITE_P(ChannelManagerTest, StartA2dpOffloadTest,
-                         ::testing::ValuesIn(kA2dpCodecTypeParams));
+  EXPECT_CMD_PACKET_OUT(test_device(), StopA2dpOffloadRequest(), &command_complete);
 
-TEST_F(ChannelManagerMockAclChannelTest, StartA2dpOffloadInvalidConfiguration) {
-  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
+  result.reset();
+  channel->StopA2dpOffload([&result](auto res) {
+    EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
+    result = res;
+  });
   RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
+  ASSERT_TRUE(result.has_value());
+  EXPECT_TRUE(result->is_ok());
 
-  Channel::A2dpOffloadConfiguration config = BuildA2dpOffloadConfiguration();
-  Channel::WeakPtr channel = SetUpOutboundChannel();
-
-  const auto command_complete =
-      CommandCompletePacket(hci_android::kA2dpOffloadCommand,
-                            pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS);
   EXPECT_CMD_PACKET_OUT(test_device(),
                         StartA2dpOffloadRequest(config, channel->link_handle(),
                                                 channel->remote_id(), channel->max_tx_sdu_size()),
                         &command_complete);
 
-  std::optional<hci::Result<>> result_;
-  channel->StartA2dpOffload(&config, [&result_](auto result) {
-    EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS), result);
-    result_ = result;
+  result.reset();
+  channel->StartA2dpOffload(config, [&result](auto res) {
+    EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
+    result = res;
   });
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
-  ASSERT_TRUE(result_.has_value());
-  EXPECT_TRUE(result_->is_error());
+  ASSERT_TRUE(result.has_value());
+  EXPECT_TRUE(result->is_ok());
+
+  // Stop A2DP offload command sent on channel destruction
+  EXPECT_CMD_PACKET_OUT(test_device(), StopA2dpOffloadRequest(), &command_complete);
 }
 
-TEST_F(ChannelManagerMockAclChannelTest, StartA2dpOffloadAlreadyStarted) {
+TEST_F(ChannelManagerMockAclChannelTest, DisconnectChannelAfterA2dpOffloadStarted) {
   QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
   RunLoopUntilIdle();
 
-  Channel::A2dpOffloadConfiguration config = BuildA2dpOffloadConfiguration();
-  Channel::WeakPtr channel = SetUpOutboundChannel();
-
-  const auto command_complete =
-      CommandCompletePacket(hci_android::kA2dpOffloadCommand,
-                            pw::bluetooth::emboss::StatusCode::CONNECTION_ALREADY_EXISTS);
-  EXPECT_CMD_PACKET_OUT(test_device(),
-                        StartA2dpOffloadRequest(config, channel->link_handle(),
-                                                channel->remote_id(), channel->max_tx_sdu_size()),
-                        &command_complete);
-
-  std::optional<hci::Result<>> result_;
-  channel->StartA2dpOffload(&config, [&result_](auto result) {
-    EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::CONNECTION_ALREADY_EXISTS), result);
-    result_ = result;
-  });
-  RunLoopUntilIdle();
-  EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
-  EXPECT_TRUE(result_.has_value());
-  EXPECT_TRUE(result_->is_error());
-}
-
-TEST_F(ChannelManagerMockAclChannelTest, StartA2dpOffloadStatusStarted) {
-  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-  RunLoopUntilIdle();
-
-  Channel::A2dpOffloadConfiguration config = BuildA2dpOffloadConfiguration();
+  A2dpOffloadManager::Configuration config = BuildConfiguration();
   Channel::WeakPtr channel = SetUpOutboundChannel();
 
   const auto command_complete = CommandCompletePacket(hci_android::kA2dpOffloadCommand,
@@ -3062,55 +3034,59 @@ TEST_F(ChannelManagerMockAclChannelTest, StartA2dpOffloadStatusStarted) {
                                                 channel->remote_id(), channel->max_tx_sdu_size()),
                         &command_complete);
 
-  std::optional<hci::Result<>> result_;
-  channel->StartA2dpOffload(&config, [&result_](auto result) {
-    EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), result);
-    result_ = result;
+  std::optional<hci::Result<>> result;
+  channel->StartA2dpOffload(config, [&result](auto res) {
+    EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
+    result = res;
   });
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
-  EXPECT_TRUE(result_->is_ok());
-
-  Channel::A2dpOffloadConfiguration new_config = BuildA2dpOffloadConfiguration();
-
-  channel->StartA2dpOffload(&new_config, [&result_](auto result) {
-    EXPECT_EQ(ToResult(HostError::kInProgress), result);
-    result_ = result;
-  });
-  RunLoopUntilIdle();
-  ASSERT_TRUE(result_.has_value());
-  EXPECT_TRUE(result_->is_error());
-}
-
-TEST_F(ChannelManagerMockAclChannelTest, StartA2dpOffloadChannelDisconnected) {
-  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
-  RunLoopUntilIdle();
-
-  Channel::A2dpOffloadConfiguration config = BuildA2dpOffloadConfiguration();
-  Channel::WeakPtr channel = SetUpOutboundChannel();
-
-  const auto command_complete = CommandCompletePacket(hci_android::kA2dpOffloadCommand,
-                                                      pw::bluetooth::emboss::StatusCode::SUCCESS);
-  EXPECT_CMD_PACKET_OUT(test_device(),
-                        StartA2dpOffloadRequest(config, channel->link_handle(),
-                                                channel->remote_id(), channel->max_tx_sdu_size()),
-                        &command_complete);
-
-  std::optional<hci::Result<>> result_;
-  channel->StartA2dpOffload(&config, [&result_](auto result) {
-    EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), result);
-    result_ = result;
-  });
+  ASSERT_TRUE(result.has_value());
+  EXPECT_TRUE(result->is_ok());
 
   ASSERT_TRUE(channel.is_alive());
   const auto disconn_req_id = NextCommandId();
   EXPECT_ACL_PACKET_OUT_(OutboundDisconnectionRequest(disconn_req_id), kHighPriority);
+  // Stop A2DP offload command sent on channel close
+  EXPECT_CMD_PACKET_OUT(test_device(), StopA2dpOffloadRequest(), &command_complete);
   channel->Deactivate();
   ASSERT_FALSE(channel.is_alive());
 
   RunLoopUntilIdle();
   EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
-  EXPECT_FALSE(result_.has_value());
+}
+
+TEST_F(ChannelManagerMockAclChannelTest, DisconnectChannelWhileA2dpOffloadStarting) {
+  QueueRegisterACL(kTestHandle1, pw::bluetooth::emboss::ConnectionRole::CENTRAL);
+  RunLoopUntilIdle();
+
+  A2dpOffloadManager::Configuration config = BuildConfiguration();
+  Channel::WeakPtr channel = SetUpOutboundChannel();
+
+  const auto command_complete = CommandCompletePacket(hci_android::kA2dpOffloadCommand,
+                                                      pw::bluetooth::emboss::StatusCode::SUCCESS);
+  EXPECT_CMD_PACKET_OUT(test_device(),
+                        StartA2dpOffloadRequest(config, channel->link_handle(),
+                                                channel->remote_id(), channel->max_tx_sdu_size()),
+                        &command_complete);
+
+  std::optional<hci::Result<>> result;
+  channel->StartA2dpOffload(config, [&result](auto res) {
+    EXPECT_EQ(ToResult(pw::bluetooth::emboss::StatusCode::SUCCESS), res);
+    result = res;
+  });
+  EXPECT_FALSE(result.has_value());
+  ASSERT_TRUE(channel.is_alive());
+
+  const auto disconn_req_id = NextCommandId();
+  EXPECT_ACL_PACKET_OUT_(OutboundDisconnectionRequest(disconn_req_id), kHighPriority);
+  // Stop A2DP offload command sent on channel close
+  EXPECT_CMD_PACKET_OUT(test_device(), StopA2dpOffloadRequest(), &command_complete);
+  channel->Deactivate();
+  ASSERT_FALSE(channel.is_alive());
+
+  RunLoopUntilIdle();
+  EXPECT_TRUE(test_device()->AllExpectedCommandPacketsSent());
 }
 
 TEST_F(ChannelManagerMockAclChannelTest, SignalLinkErrorStopsDeliveryOfBufferedRxPackets) {
@@ -3559,9 +3535,9 @@ TEST_P(AclPriorityTest, OutboundConnectAndSetPriority) {
   }
 
   size_t request_cb_count = 0;
-  channel->RequestAclPriority(kPriority, [&](auto result) {
+  channel->RequestAclPriority(kPriority, [&](auto res) {
     request_cb_count++;
-    EXPECT_EQ(kExpectSuccess, result.is_ok());
+    EXPECT_EQ(kExpectSuccess, res.is_ok());
   });
 
   RunLoopUntilIdle();

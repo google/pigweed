@@ -36,8 +36,7 @@ Channel::Channel(ChannelId id, ChannelId remote_id, bt::LinkType link_type,
       link_type_(link_type),
       link_handle_(link_handle),
       info_(info),
-      requested_acl_priority_(AclPriority::kNormal),
-      a2dp_offload_status_(A2dpOffloadStatus::kStopped) {
+      requested_acl_priority_(AclPriority::kNormal) {
   BT_DEBUG_ASSERT(id_);
   BT_DEBUG_ASSERT(link_type_ == bt::LinkType::kLE || link_type_ == bt::LinkType::kACL);
 }
@@ -54,7 +53,7 @@ constexpr const char* kInspectPsmPropertyName = "psm";
 
 std::unique_ptr<ChannelImpl> ChannelImpl::CreateFixedChannel(
     ChannelId id, internal::LogicalLinkWeakPtr link, hci::CommandChannel::WeakPtr cmd_channel,
-    uint16_t max_acl_payload_size) {
+    uint16_t max_acl_payload_size, A2dpOffloadManager& a2dp_offload_manager) {
   // A fixed channel's endpoints have the same local and remote identifiers.
   // Setting the ChannelInfo MTU to kMaxMTU effectively cancels any L2CAP-level MTU enforcement for
   // services which operate over fixed channels. Such services often define minimum MTU values in
@@ -63,24 +62,26 @@ std::unique_ptr<ChannelImpl> ChannelImpl::CreateFixedChannel(
   //   2.) handling inbound PDUs which are larger than their spec-defined MTU appropriately.
   return std::unique_ptr<ChannelImpl>(
       new ChannelImpl(id, id, link, ChannelInfo::MakeBasicMode(kMaxMTU, kMaxMTU),
-                      std::move(cmd_channel), max_acl_payload_size));
+                      std::move(cmd_channel), max_acl_payload_size, a2dp_offload_manager));
 }
 
 std::unique_ptr<ChannelImpl> ChannelImpl::CreateDynamicChannel(
     ChannelId id, ChannelId peer_id, internal::LogicalLinkWeakPtr link, ChannelInfo info,
-    hci::CommandChannel::WeakPtr cmd_channel, uint16_t max_acl_payload_size) {
-  return std::unique_ptr<ChannelImpl>(
-      new ChannelImpl(id, peer_id, link, info, std::move(cmd_channel), max_acl_payload_size));
+    hci::CommandChannel::WeakPtr cmd_channel, uint16_t max_acl_payload_size,
+    A2dpOffloadManager& a2dp_offload_manager) {
+  return std::unique_ptr<ChannelImpl>(new ChannelImpl(
+      id, peer_id, link, info, std::move(cmd_channel), max_acl_payload_size, a2dp_offload_manager));
 }
 
 ChannelImpl::ChannelImpl(ChannelId id, ChannelId remote_id, internal::LogicalLinkWeakPtr link,
                          ChannelInfo info, hci::CommandChannel::WeakPtr cmd_channel,
-                         uint16_t max_acl_payload_size)
+                         uint16_t max_acl_payload_size, A2dpOffloadManager& a2dp_offload_manager)
     : Channel(id, remote_id, link->type(), link->handle(), info),
       active_(false),
       link_(link),
       cmd_channel_(std::move(cmd_channel)),
       fragmenter_(link->handle(), max_acl_payload_size),
+      a2dp_offload_manager_(a2dp_offload_manager),
       weak_self_(this) {
   BT_ASSERT(link_.is_alive());
   BT_ASSERT_MSG(
@@ -288,67 +289,14 @@ void ChannelImpl::AttachInspect(inspect::Node& parent, std::string name) {
       kInspectRemoteIdPropertyName, bt_lib_cpp_string::StringPrintf("%#.4x", remote_id()));
 }
 
-void ChannelImpl::StartA2dpOffload(const A2dpOffloadConfiguration* config,
+void ChannelImpl::StartA2dpOffload(const A2dpOffloadManager::Configuration& config,
                                    hci::ResultCallback<> callback) {
-  if (!cmd_channel_.is_alive()) {
-    bt_log(INFO, "hci", "A2DP Offload requested without command channel");
-    callback(ToResult(HostError::kFailed));
-    return;
-  }
-  if (a2dp_offload_status_ == A2dpOffloadStatus::kStarted ||
-      a2dp_offload_status_ == A2dpOffloadStatus::kPending) {
-    bt_log(WARN, "hci", "A2DP offload already started (status: %hhu)", a2dp_offload_status_);
-    callback(ToResult(HostError::kInProgress));
-    return;
-  }
+  a2dp_offload_manager_.StartA2dpOffload(config, id(), remote_id(), link_handle(),
+                                         max_tx_sdu_size(), std::move(callback));
+}
 
-  std::unique_ptr<hci::CommandPacket> packet = hci::CommandPacket::New(
-      hci_android::kA2dpOffloadCommand, sizeof(hci_android::StartA2dpOffloadCommandParams));
-  packet->mutable_view()->mutable_payload_data().SetToZeros();
-  auto payload = packet->mutable_payload<hci_android::StartA2dpOffloadCommandParams>();
-  payload->opcode = hci_android::kStartA2dpOffloadCommandSubopcode;
-  payload->codec_type = static_cast<hci_android::A2dpCodecType>(htole32(config->codec));
-  payload->max_latency = htole16(config->max_latency);
-  payload->scms_t_enable = config->scms_t_enable;
-  payload->sampling_frequency =
-      static_cast<hci_android::A2dpSamplingFrequency>(htole32(config->sampling_frequency));
-  payload->bits_per_sample = config->bits_per_sample;
-  payload->channel_mode = config->channel_mode;
-  payload->encoded_audio_bitrate = htole32(config->encoded_audio_bit_rate);
-  payload->connection_handle = htole16(link_handle());
-  payload->l2cap_channel_id = htole16(remote_id());
-  payload->l2cap_mtu_size = htole16(max_tx_sdu_size());
-
-  if (config->codec == hci_android::A2dpCodecType::kLdac) {
-    payload->codec_information.ldac.vendor_id = htole32(config->codec_information.ldac.vendor_id);
-    payload->codec_information.ldac.codec_id = htole16(config->codec_information.ldac.codec_id);
-    payload->codec_information.ldac.bitrate_index = config->codec_information.ldac.bitrate_index;
-    payload->codec_information.ldac.ldac_channel_mode =
-        config->codec_information.ldac.ldac_channel_mode;
-  } else {
-    // A2dpOffloadCodecInformation does not require little endianness conversion for any other codec
-    // type due to their fields being one byte only.
-    payload->codec_information = config->codec_information;
-  }
-
-  a2dp_offload_status_ = A2dpOffloadStatus::kPending;
-  cmd_channel_->SendCommand(
-      std::move(packet), [cb = std::move(callback), handle = link_handle_, channel = GetWeakPtr(),
-                          this](auto /*transaction_id*/, const hci::EventPacket& event) mutable {
-        if (!channel.is_alive()) {
-          return;
-        }
-
-        if (event.ToResult().is_error()) {
-          bt_log(WARN, "hci", "StartA2dpOffload command failed (result: %s, handle: %#.4x)",
-                 bt_str(event.ToResult()), handle);
-          a2dp_offload_status_ = A2dpOffloadStatus::kStopped;
-        } else {
-          bt_log(INFO, "hci", "A2DP offload started (handle: %#.4x", handle);
-          a2dp_offload_status_ = A2dpOffloadStatus::kStarted;
-        }
-        cb(event.ToResult());
-      });
+void ChannelImpl::StopA2dpOffload(hci::ResultCallback<> callback) {
+  a2dp_offload_manager_.RequestStopA2dpOffload(id(), link_handle(), std::move(callback));
 }
 
 void ChannelImpl::OnClosed() {
@@ -412,6 +360,13 @@ void ChannelImpl::CleanUp() {
   RequestAclPriority(AclPriority::kNormal, [](auto result) {
     if (result.is_error()) {
       bt_log(WARN, "l2cap", "Resetting ACL priority on channel closed failed");
+    }
+  });
+
+  a2dp_offload_manager_.RequestStopA2dpOffload(id(), link_handle(), [](auto result) {
+    if (result.is_error()) {
+      bt_log(WARN, "l2cap", "Stopping A2DP offloading on channel closed failed: %s",
+             bt_str(result));
     }
   });
 

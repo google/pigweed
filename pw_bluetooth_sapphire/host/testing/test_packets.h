@@ -115,10 +115,12 @@ DynamicByteBuffer ScoDataPacket(hci_spec::ConnectionHandle conn,
                                 const BufferView& payload,
                                 std::optional<uint8_t> payload_length_override = std::nullopt);
 
-DynamicByteBuffer StartA2dpOffloadRequest(const l2cap::Channel::A2dpOffloadConfiguration& config,
+DynamicByteBuffer StartA2dpOffloadRequest(const l2cap::A2dpOffloadManager::Configuration& config,
                                           hci_spec::ConnectionHandle connection_handle,
                                           l2cap::ChannelId l2cap_channel_id,
                                           uint16_t l2cap_mtu_size);
+
+DynamicByteBuffer StopA2dpOffloadRequest();
 
 }  // namespace bt::testing
 

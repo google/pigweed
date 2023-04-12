@@ -433,7 +433,7 @@ DynamicByteBuffer ScoDataPacket(hci_spec::ConnectionHandle conn,
   return out;
 }
 
-DynamicByteBuffer StartA2dpOffloadRequest(const l2cap::Channel::A2dpOffloadConfiguration& config,
+DynamicByteBuffer StartA2dpOffloadRequest(const l2cap::A2dpOffloadManager::Configuration& config,
                                           hci_spec::ConnectionHandle connection_handle,
                                           l2cap::ChannelId l2cap_channel_id,
                                           uint16_t l2cap_mtu_size) {
@@ -497,6 +497,15 @@ DynamicByteBuffer StartA2dpOffloadRequest(const l2cap::Channel::A2dpOffloadConfi
       codec_information_bytes[24], codec_information_bytes[25], codec_information_bytes[26],
       codec_information_bytes[27], codec_information_bytes[28], codec_information_bytes[29],
       codec_information_bytes[30], codec_information_bytes[31]));
+  // clang-format on
+}
+
+DynamicByteBuffer StopA2dpOffloadRequest() {
+  return DynamicByteBuffer(StaticByteBuffer(
+      // clang-format off
+      LowerBits(hci_android::kA2dpOffloadCommand), UpperBits(hci_android::kA2dpOffloadCommand),
+      0x01,  // parameter_total_size (1 byte)
+      hci_android::kStopA2dpOffloadCommandSubopcode));
   // clang-format on
 }
 

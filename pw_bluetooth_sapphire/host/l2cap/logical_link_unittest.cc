@@ -4,8 +4,11 @@
 
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/logical_link.h"
 
+#include <memory>
+
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci/connection.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/test_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/controller_test.h"
@@ -40,16 +43,20 @@ class LogicalLinkTest : public TestingBase {
       link_ = nullptr;
     }
 
+    a2dp_offload_manager_ = nullptr;
+
     TestingBase::TearDown();
   }
   void NewLogicalLink(bt::LinkType type = bt::LinkType::kLE) {
     const size_t kMaxPayload = kDefaultMTU;
     auto query_service_cb = [](hci_spec::ConnectionHandle, PSM) { return std::nullopt; };
+    a2dp_offload_manager_ =
+        std::make_unique<A2dpOffloadManager>(transport()->command_channel()->AsWeakPtr());
     link_ = std::make_unique<LogicalLink>(
         kConnHandle, type, pw::bluetooth::emboss::ConnectionRole::CENTRAL, kMaxPayload,
         std::move(query_service_cb), transport()->acl_data_channel(),
         transport()->command_channel(),
-        /*random_channel_ids=*/true);
+        /*random_channel_ids=*/true, *a2dp_offload_manager_);
   }
   void ResetAndCreateNewLogicalLink(LinkType type = LinkType::kACL) {
     link()->Close();
@@ -62,6 +69,7 @@ class LogicalLinkTest : public TestingBase {
 
  private:
   std::unique_ptr<LogicalLink> link_;
+  std::unique_ptr<A2dpOffloadManager> a2dp_offload_manager_;
 };
 
 struct QueueAclConnectionRetVal {

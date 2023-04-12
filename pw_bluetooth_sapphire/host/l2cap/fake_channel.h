@@ -78,9 +78,9 @@ class FakeChannel : public Channel {
   void SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
                                      hci::ResultCallback<> callback) override;
   void AttachInspect(inspect::Node& parent, std::string name) override {}
-  void StartA2dpOffload(const A2dpOffloadConfiguration* configuration,
+  void StartA2dpOffload(const A2dpOffloadManager::Configuration& config,
                         hci::ResultCallback<> callback) override {}
-  std::unique_ptr<hci::ACLDataPacket> GetNextOutboundPacket() override;
+  void StopA2dpOffload(hci::ResultCallback<> callback) override {}
 
  private:
   hci_spec::ConnectionHandle handle_;

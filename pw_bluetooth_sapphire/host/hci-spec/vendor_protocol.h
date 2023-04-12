@@ -227,6 +227,11 @@ struct StartA2dpOffloadCommandParams {
   A2dpOffloadCodecInformation codec_information;
 } __attribute__((packed));
 
+struct StopA2dpOffloadCommandParams {
+  // Must always be set to kStopA2dpOffloadCommandSubopcode
+  uint8_t opcode;
+} __attribute__((packed));
+
 struct StartA2dpOffloadCommandReturnParams {
   StatusCode status;
 

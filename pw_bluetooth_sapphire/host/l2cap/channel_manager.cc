@@ -9,6 +9,8 @@
 #include "logical_link.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/assert.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/a2dp_offload_manager.h"
 
 namespace bt::l2cap {
 
@@ -90,6 +92,8 @@ class ChannelManagerImpl final : public ChannelManager {
   hci::AclDataChannel* acl_data_channel_;
   hci::CommandChannel* cmd_channel_;
 
+  std::unique_ptr<A2dpOffloadManager> a2dp_offload_manager_;
+
   using LinkMap =
       std::unordered_map<hci_spec::ConnectionHandle, std::unique_ptr<internal::LogicalLink>>;
   LinkMap ll_map_;
@@ -127,12 +131,14 @@ ChannelManagerImpl::ChannelManagerImpl(hci::AclDataChannel* acl_data_channel,
                                        hci::CommandChannel* cmd_channel, bool random_channel_ids)
     : acl_data_channel_(acl_data_channel),
       cmd_channel_(cmd_channel),
+      a2dp_offload_manager_(std::make_unique<A2dpOffloadManager>(cmd_channel_->AsWeakPtr())),
       random_channel_ids_(random_channel_ids),
       weak_self_(this) {
   BT_ASSERT(acl_data_channel_);
   max_acl_payload_size_ = acl_data_channel_->GetBufferInfo().max_data_length();
   max_le_payload_size_ = acl_data_channel_->GetLeBufferInfo().max_data_length();
   acl_data_channel_->SetDataRxHandler(MakeInboundDataHandler());
+
   bt_log(DEBUG, "l2cap", "initialized");
 }
 
@@ -337,7 +343,7 @@ internal::LogicalLink* ChannelManagerImpl::RegisterInternal(
   auto ll = std::make_unique<internal::LogicalLink>(
       handle, ll_type, role, max_payload_size,
       fit::bind_member<&ChannelManagerImpl::QueryService>(this), acl_data_channel_, cmd_channel_,
-      random_channel_ids_);
+      random_channel_ids_, *a2dp_offload_manager_);
 
   if (ll_node_) {
     ll->AttachInspect(ll_node_, ll_node_.UniqueName(kInspectLogicalLinkNodePrefix));

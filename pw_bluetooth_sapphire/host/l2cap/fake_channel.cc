@@ -139,7 +139,4 @@ void FakeChannel::SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
   info_.flush_timeout = flush_timeout;
   callback(fit::ok());
 }
-
-std::unique_ptr<hci::ACLDataPacket> FakeChannel::GetNextOutboundPacket() { return nullptr; }
-
 }  // namespace bt::l2cap::testing

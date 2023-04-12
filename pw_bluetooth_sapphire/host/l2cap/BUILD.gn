@@ -21,6 +21,8 @@ source_set("definitions") {
 
 static_library("l2cap") {
   sources = [
+    "a2dp_offload_manager.cc",
+    "a2dp_offload_manager.h",
     "basic_mode_rx_engine.cc",
     "basic_mode_rx_engine.h",
     "basic_mode_tx_engine.cc",
@@ -127,6 +129,7 @@ source_set("tests") {
   testonly = true
 
   sources = [
+    "a2dp_offload_manager_unittest.cc",
     "basic_mode_rx_engine_unittest.cc",
     "basic_mode_tx_engine_unittest.cc",
     "bredr_command_handler_unittest.cc",

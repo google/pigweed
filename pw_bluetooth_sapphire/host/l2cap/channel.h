@@ -21,6 +21,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/pipeline_monitor.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/a2dp_offload_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fragmenter.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/pdu.h"
@@ -65,29 +66,6 @@ namespace bt::l2cap {
 // Activate().
 class Channel : public WeakSelf<Channel> {
  public:
-  // Defines the state of A2DP offloading to the controller.
-  enum class A2dpOffloadStatus : uint8_t {
-    // The A2DP offload command was received and successfully started.
-    kStarted,
-    // The A2DP offload command was sent and the L2CAP channel is waiting for a response.
-    kPending,
-    // Either an error or an A2DP offload command stopped offloading to the controller.
-    kStopped,
-  };
-
-  // Configuration received from the profile server that needs to be converted to a command packet
-  // in order to send the StartA2dpOffload command
-  struct A2dpOffloadConfiguration {
-    hci_spec::vendor::android::A2dpCodecType codec;
-    uint16_t max_latency;
-    hci_spec::vendor::android::A2dpScmsTEnable scms_t_enable;
-    hci_spec::vendor::android::A2dpSamplingFrequency sampling_frequency;
-    hci_spec::vendor::android::A2dpBitsPerSample bits_per_sample;
-    hci_spec::vendor::android::A2dpChannelMode channel_mode;
-    uint32_t encoded_audio_bit_rate;
-    hci_spec::vendor::android::A2dpOffloadCodecInformation codec_information;
-  };
-
   // TODO(fxbug.dev/1022): define a preferred MTU somewhere
   Channel(ChannelId id, ChannelId remote_id, bt::LinkType link_type,
           hci_spec::ConnectionHandle link_handle, ChannelInfo info);
@@ -222,13 +200,12 @@ class Channel : public WeakSelf<Channel> {
   // Request the start of A2DP source offloading. |callback| will be called with the result of the
   // request. If offloading is already started or is pending, the request will fail and an error
   // will be reported synchronously.
-  virtual void StartA2dpOffload(const A2dpOffloadConfiguration* config,
+  virtual void StartA2dpOffload(const A2dpOffloadManager::Configuration& config,
                                 hci::ResultCallback<> callback) = 0;
 
-  // Returns the next PDU fragment, or nullptr if none is available.
-  // Converts pending transmission PDUs to fragments
-  // Fragments of the same PDU must be sent before another channel in the same link can send packets
-  virtual std::unique_ptr<hci::ACLDataPacket> GetNextOutboundPacket() = 0;
+  // Request the stop of A2DP source offloading. |callback| will be called with the result of the
+  // request. If offloading is already stopped, report success.
+  virtual void StopA2dpOffload(hci::ResultCallback<> callback) = 0;
 
   // The ACL priority that was both requested and accepted by the controller.
   pw::bluetooth::AclPriority requested_acl_priority() const { return requested_acl_priority_; }
@@ -241,7 +218,6 @@ class Channel : public WeakSelf<Channel> {
   ChannelInfo info_;
   // The ACL priority that was requested by a client and accepted by the controller.
   pw::bluetooth::AclPriority requested_acl_priority_;
-  A2dpOffloadStatus a2dp_offload_status_;
 
   BT_DISALLOW_COPY_AND_ASSIGN_ALLOW_MOVE(Channel);
 };
@@ -263,15 +239,20 @@ class ChannelImpl : public Channel {
   static std::unique_ptr<ChannelImpl> CreateFixedChannel(ChannelId id,
                                                          internal::LogicalLinkWeakPtr link,
                                                          hci::CommandChannel::WeakPtr cmd_channel,
-                                                         uint16_t max_acl_payload_size);
+                                                         uint16_t max_acl_payload_size,
+                                                         A2dpOffloadManager& a2dp_offload_manager);
 
-  static std::unique_ptr<ChannelImpl> CreateDynamicChannel(ChannelId id, ChannelId peer_id,
-                                                           internal::LogicalLinkWeakPtr link,
-                                                           ChannelInfo info,
-                                                           hci::CommandChannel::WeakPtr cmd_channel,
-                                                           uint16_t max_acl_payload_size);
+  static std::unique_ptr<ChannelImpl> CreateDynamicChannel(
+      ChannelId id, ChannelId peer_id, internal::LogicalLinkWeakPtr link, ChannelInfo info,
+      hci::CommandChannel::WeakPtr cmd_channel, uint16_t max_acl_payload_size,
+      A2dpOffloadManager& a2dp_offload_manager);
 
   ~ChannelImpl() override;
+
+  // Returns the next PDU fragment, or nullptr if none is available.
+  // Converts pending transmission PDUs to fragments
+  // Fragments of the same PDU must be sent before another channel in the same link can send packets
+  std::unique_ptr<hci::ACLDataPacket> GetNextOutboundPacket();
 
   // Called by |link_| to notify us when the channel can no longer process data.
   void OnClosed();
@@ -298,9 +279,9 @@ class ChannelImpl : public Channel {
   void SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
                                      hci::ResultCallback<> callback) override;
   void AttachInspect(inspect::Node& parent, std::string name) override;
-  void StartA2dpOffload(const A2dpOffloadConfiguration* config,
+  void StartA2dpOffload(const A2dpOffloadManager::Configuration& config,
                         hci::ResultCallback<> callback) override;
-  std::unique_ptr<hci::ACLDataPacket> GetNextOutboundPacket() override;
+  void StopA2dpOffload(hci::ResultCallback<> callback) override;
 
   using WeakPtr = WeakSelf<ChannelImpl>::WeakPtr;
   WeakPtr GetWeakPtr() { return weak_self_.GetWeakPtr(); }
@@ -308,7 +289,7 @@ class ChannelImpl : public Channel {
  private:
   ChannelImpl(ChannelId id, ChannelId remote_id, internal::LogicalLinkWeakPtr link,
               ChannelInfo info, hci::CommandChannel::WeakPtr cmd_channel,
-              uint16_t max_acl_payload_size);
+              uint16_t max_acl_payload_size, A2dpOffloadManager& a2dp_offload_manager);
 
   // Common channel closure logic. Called on Deactivate/OnClosed.
   void CleanUp();
@@ -365,6 +346,8 @@ class ChannelImpl : public Channel {
     inspect::StringProperty remote_id;
   };
   InspectProperties inspect_;
+
+  A2dpOffloadManager& a2dp_offload_manager_;
 
   WeakSelf<ChannelImpl> weak_self_;
 

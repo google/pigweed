@@ -17,6 +17,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/inspectable.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
+#include "src/connectivity/bluetooth/core/bt-host/l2cap/a2dp_offload_manager.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/bredr_command_handler.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel_manager.h"
@@ -55,10 +56,12 @@ class LogicalLink : public hci::AclDataChannel::ConnectionInterface {
   // executed on this object's creation thread.
   // If |random_channel_ids| is true, assign dynamic channels randomly instead of
   // starting at the beginning of the dynamic channel range.
+  // |a2dp_offload_manager| is a reference to A2dpOffloadManager that is passed to channels to use
   LogicalLink(hci_spec::ConnectionHandle handle, bt::LinkType type,
               pw::bluetooth::emboss::ConnectionRole role, uint16_t max_acl_payload_size,
               QueryServiceCallback query_service_cb, hci::AclDataChannel* acl_data_channel,
-              hci::CommandChannel* cmd_channel, bool random_channel_ids);
+              hci::CommandChannel* cmd_channel, bool random_channel_ids,
+              A2dpOffloadManager& a2dp_offload_manager);
 
   // When a logical link is destroyed it notifies all of its channels to close themselves. Data
   // packets will no longer be routed to the associated channels.
@@ -293,6 +296,8 @@ class LogicalLink : public hci::AclDataChannel::ConnectionInterface {
     inspect::StringProperty link_type;
   };
   InspectProperties inspect_properties_;
+
+  A2dpOffloadManager& a2dp_offload_manager_;
 
   WeakSelf<hci::AclDataChannel::ConnectionInterface> weak_conn_interface_;
   WeakSelf<LogicalLink> weak_self_;
