@@ -77,9 +77,14 @@ if (dir_pw_third_party_llvm_libc != "") {
     ]
   }
 
+  pw_libc_source_set("ctype") {
+    functions = [ "isprint" ]
+  }
+
   pw_static_library("pw_libc") {
     complete_static_lib = true
     deps = [
+      ":ctype",
       ":stdlib",
       ":string",
     ]
@@ -87,6 +92,7 @@ if (dir_pw_third_party_llvm_libc != "") {
 
   pw_test_group("llvm_libc_tests") {
     tests = [
+      ":ctype_tests",
       ":stdlib_tests",
       ":string_tests",
     ]
