@@ -955,6 +955,9 @@ that can hold the set of values encoded by it, following these rules.
       pw::protobuf::Callback<Store::StreamEncoder, Store::StreamDecoder> employees;
     };
 
+  A Callback object can be converted to a ``bool`` indicating whether a callback
+  is set.
+
 Message structures can be copied, but doing so will clear any assigned
 callbacks. To preserve functions applied to callbacks, ensure that the message
 structure is moved.

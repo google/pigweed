@@ -321,6 +321,35 @@ TEST(CodegenMessage, FixReservedIdentifiers) {
 
 PW_MODIFY_DIAGNOSTICS_POP();
 
+TEST(CodegenMessage, SetEncoder) {
+  Pigweed::Message msg{};
+
+  EXPECT_FALSE(msg.id);
+  msg.id.SetEncoder(
+      [](Pigweed::StreamEncoder&) -> Status { return OkStatus(); });
+  EXPECT_TRUE(msg.id);
+}
+
+TEST(CodegenMessage, SetDecoder) {
+  Pigweed::Message msg{};
+
+  EXPECT_FALSE(msg.id);
+  msg.id.SetDecoder(
+      [](Pigweed::StreamDecoder&) -> Status { return OkStatus(); });
+  EXPECT_TRUE(msg.id);
+}
+
+TEST(CodegenMessage, SetEncoderAndDecoder) {
+  Pigweed::Message msg{};
+
+  EXPECT_FALSE(msg.id);
+  msg.id.SetEncoder(
+      [](Pigweed::StreamEncoder&) -> Status { return OkStatus(); });
+  msg.id.SetDecoder(
+      [](Pigweed::StreamDecoder&) -> Status { return OkStatus(); });
+  EXPECT_TRUE(msg.id);
+}
+
 TEST(CodegenMessage, Read) {
   // clang-format off
   constexpr uint8_t proto_data[] = {

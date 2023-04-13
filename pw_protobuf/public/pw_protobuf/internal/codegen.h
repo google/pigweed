@@ -205,6 +205,9 @@ union Callback {
     return *this;
   }
 
+  // Evaluate to true if the encoder or decoder callback is set.
+  explicit operator bool() const { return encode_ || decode_; }
+
  private:
   friend StreamDecoder;
   friend StreamEncoder;
