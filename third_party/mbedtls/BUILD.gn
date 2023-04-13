@@ -225,6 +225,10 @@ if (dir_pw_third_party_mbedtls != "") {
   }
 
   pw_source_set("mbedtls") {
+    # Skip gn check because downstream users may choose either but not
+    # both ":mbedtls" and ":mbedtls_v3" depending on if the underlying
+    # mbedtls git is 2.x or 3.x.
+    check_includes = false
     sources = []
     foreach(source, mbedtls_v2_sources) {
       sources += [ "$dir_pw_third_party_mbedtls/" + source ]
@@ -241,6 +245,10 @@ if (dir_pw_third_party_mbedtls != "") {
   }
 
   pw_source_set("mbedtls_v3") {
+    # Skip gn check because downstream users may choose either but not
+    # both ":mbedtls" and ":mbedtls_v3" depending on if the underlying
+    # mbedtls git is 2.x or 3.x.
+    check_includes = false
     sources = []
     foreach(source, mbedtls_v3_sources) {
       sources += [ "$dir_pw_third_party_mbedtls/" + source ]
