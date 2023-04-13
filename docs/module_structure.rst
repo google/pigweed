@@ -64,6 +64,14 @@ Example module structure
     py/pw_foo/bar.py
     py/pw_foo/py.typed  # Indicates that this package has type annotations
 
+    # Rust crates go into 'rust/...'
+    rust/BUILD.bazel
+    rust/crate_one.rs          # Single file crates are in rust/
+    rust/crate_two.rs          # Multi-file crate's top level source in rust/
+    rust/crate_two/mod_one.rs  # Multi-file crate's modules in:
+    rust/crate_two/mod_two.rs  #   rust/<crate>/<module.rs>
+                               # Prefer not using lib.rs and mod.rs files.
+
     # Go files go into 'go/...'
     go/...
 
