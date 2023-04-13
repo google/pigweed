@@ -47,6 +47,7 @@ from typing import (
     Iterator,
     List,
     Optional,
+    Tuple,
     Union,
 )
 import socket
@@ -77,6 +78,7 @@ _ROOT_LOG = logging.getLogger()
 
 PW_RPC_MAX_PACKET_SIZE = 256
 SOCKET_SERVER = 'localhost'
+SOCKET_FILE = 'file'
 SOCKET_PORT = 33000
 MKFIFO_MODE = 0o666
 
@@ -157,8 +159,12 @@ def _parse_args():
         '-s',
         '--socket-addr',
         type=str,
-        help='use socket to connect to server, type default for\
-            localhost:33000, or manually input the server address:port',
+        help=(
+            'Socket address used to connect to server. Type "default" to use '
+            'localhost:33000, pass the server address and port as '
+            'address:port, or prefix the path to a forwarded socket with '
+            '"file:" as file:path_to_file.'
+        ),
     )
     parser.add_argument(
         "--token-databases",
@@ -308,18 +314,32 @@ def _start_python_terminal(  # pylint: disable=too-many-arguments
 
 
 class SocketClientImpl:
-    def __init__(self, config: str):
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        socket_server = ''
-        socket_port = 0
+    """Socket transport implementation."""
 
+    def __init__(self, config: str):
+        connection_type: int
+        interface: Union[str, Tuple[str, int]]
         if config == 'default':
-            socket_server = SOCKET_SERVER
-            socket_port = SOCKET_PORT
+            connection_type = socket.AF_INET
+            interface = (SOCKET_SERVER, SOCKET_PORT)
         else:
-            socket_server, socket_port_str = config.split(':')
-            socket_port = int(socket_port_str)
-        self.socket.connect((socket_server, socket_port))
+            socket_server, socket_port_or_file = config.split(':')
+            if socket_server == SOCKET_FILE:
+                # Unix socket support is available on Windows 10 since April
+                # 2018. However, there is no Python support on Windows yet.
+                # See https://bugs.python.org/issue33408 for more information.
+                if not hasattr(socket, 'AF_UNIX'):
+                    raise TypeError(
+                        'Unix sockets are not supported in this environment.'
+                    )
+                connection_type = socket.AF_UNIX  # pylint: disable=no-member
+                interface = socket_port_or_file
+            else:
+                connection_type = socket.AF_INET
+                interface = (socket_server, int(socket_port_or_file))
+
+        self.socket = socket.socket(connection_type, socket.SOCK_STREAM)
+        self.socket.connect(interface)
 
     def write(self, data: bytes):
         self.socket.sendall(data)

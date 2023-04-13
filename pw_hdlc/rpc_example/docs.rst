@@ -127,8 +127,10 @@ if needed.
 
 .. tip::
 
-   The ``--socket-addr`` may be replaced with IP and port separated by a colon. For
-   example: ``127.0.0.1:33000``.
+   The ``--socket-addr`` may be replaced with IP and port separated by a colon,
+   for example: ``127.0.0.1:33000``; or, if using a unix socket, the path to the
+   file follows "file:", for example ``file:/path/to/unix/socket``. Unix socket
+   Python support is pending `<https://bugs.python.org/issue33408>`_.
 
 Then you can invoke RPCs from the interactive console on the client side.
 
