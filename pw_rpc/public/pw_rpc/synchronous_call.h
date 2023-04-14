@@ -106,22 +106,8 @@ SynchronousCall(
     Client& client,
     uint32_t channel_id,
     const typename internal::MethodInfo<kRpcMethod>::Request& request) {
-  using Info = internal::MethodInfo<kRpcMethod>;
-  using Response = typename Info::Response;
-  static_assert(Info::kType == MethodType::kUnary,
-                "Only unary methods can be used with synchronous calls");
-
-  internal::SynchronousCallState<Response> call_state;
-
-  auto call = kRpcMethod(client,
-                         channel_id,
-                         request,
-                         call_state.OnCompletedCallback(),
-                         call_state.OnRpcErrorCallback());
-
-  call_state.notify.acquire();
-
-  return std::move(call_state.result);
+  return internal::StructSynchronousCall<kRpcMethod>(
+      internal::CallFreeFunction<kRpcMethod>(client, channel_id, request));
 }
 
 /// Invokes a unary RPC synchronously using Nanopb or pwpb. Blocks indefinitely
@@ -134,23 +120,8 @@ SynchronousCallResult<typename internal::MethodInfo<kRpcMethod>::Response>
 SynchronousCall(
     const typename internal::MethodInfo<kRpcMethod>::GeneratedClient& client,
     const typename internal::MethodInfo<kRpcMethod>::Request& request) {
-  using Info = internal::MethodInfo<kRpcMethod>;
-  using Response = typename Info::Response;
-  static_assert(Info::kType == MethodType::kUnary,
-                "Only unary methods can be used with synchronous calls");
-
-  constexpr auto Function =
-      Info::template Function<typename Info::GeneratedClient>();
-
-  internal::SynchronousCallState<Response> call_state;
-
-  auto call = (client.*Function)(request,
-                                 call_state.OnCompletedCallback(),
-                                 call_state.OnRpcErrorCallback());
-
-  call_state.notify.acquire();
-
-  return std::move(call_state.result);
+  return internal::StructSynchronousCall<kRpcMethod>(
+      internal::CallGeneratedClient<kRpcMethod>(client, request));
 }
 
 /// Invokes a unary RPC synchronously using the raw API. Blocks until a
@@ -191,24 +162,9 @@ SynchronousCallFor(
     uint32_t channel_id,
     const typename internal::MethodInfo<kRpcMethod>::Request& request,
     chrono::SystemClock::duration timeout) {
-  using Info = internal::MethodInfo<kRpcMethod>;
-  using Response = typename Info::Response;
-  static_assert(Info::kType == MethodType::kUnary,
-                "Only unary methods can be used with synchronous calls");
-
-  internal::SynchronousCallState<Response> call_state;
-
-  auto call = kRpcMethod(client,
-                         channel_id,
-                         request,
-                         call_state.OnCompletedCallback(),
-                         call_state.OnRpcErrorCallback());
-
-  if (!call_state.notify.try_acquire_for(timeout)) {
-    return SynchronousCallResult<Response>::Timeout();
-  }
-
-  return std::move(call_state.result);
+  return internal::StructSynchronousCall<kRpcMethod>(
+      internal::CallFreeFunction<kRpcMethod>(client, channel_id, request),
+      timeout);
 }
 
 /// Invokes a unary RPC synchronously using Nanopb or pwpb. Blocks until a
@@ -223,25 +179,8 @@ SynchronousCallFor(
     const typename internal::MethodInfo<kRpcMethod>::GeneratedClient& client,
     const typename internal::MethodInfo<kRpcMethod>::Request& request,
     chrono::SystemClock::duration timeout) {
-  using Info = internal::MethodInfo<kRpcMethod>;
-  using Response = typename Info::Response;
-  static_assert(Info::kType == MethodType::kUnary,
-                "Only unary methods can be used with synchronous calls");
-
-  constexpr auto Function =
-      Info::template Function<typename Info::GeneratedClient>();
-
-  internal::SynchronousCallState<Response> call_state;
-
-  auto call = (client.*Function)(request,
-                                 call_state.OnCompletedCallback(),
-                                 call_state.OnRpcErrorCallback());
-
-  if (!call_state.notify.try_acquire_for(timeout)) {
-    return SynchronousCallResult<Response>::Timeout();
-  }
-
-  return std::move(call_state.result);
+  return internal::StructSynchronousCall<kRpcMethod>(
+      internal::CallGeneratedClient<kRpcMethod>(client, request), timeout);
 }
 
 /// Invokes a unary RPC synchronously using the raw API. Blocks until a
@@ -287,24 +226,9 @@ SynchronousCallUntil(
     uint32_t channel_id,
     const typename internal::MethodInfo<kRpcMethod>::Request& request,
     chrono::SystemClock::time_point deadline) {
-  using Info = internal::MethodInfo<kRpcMethod>;
-  using Response = typename Info::Response;
-  static_assert(Info::kType == MethodType::kUnary,
-                "Only unary methods can be used with synchronous calls");
-
-  internal::SynchronousCallState<Response> call_state;
-
-  auto call = kRpcMethod(client,
-                         channel_id,
-                         request,
-                         call_state.OnCompletedCallback(),
-                         call_state.OnRpcErrorCallback());
-
-  if (!call_state.notify.try_acquire_until(deadline)) {
-    return SynchronousCallResult<Response>::Timeout();
-  }
-
-  return std::move(call_state.result);
+  return internal::StructSynchronousCall<kRpcMethod>(
+      internal::CallFreeFunction<kRpcMethod>(client, channel_id, request),
+      deadline);
 }
 
 /// Invokes a unary RPC synchronously using Nanopb or pwpb. Blocks until a
@@ -319,25 +243,8 @@ SynchronousCallUntil(
     const typename internal::MethodInfo<kRpcMethod>::GeneratedClient& client,
     const typename internal::MethodInfo<kRpcMethod>::Request& request,
     chrono::SystemClock::time_point deadline) {
-  using Info = internal::MethodInfo<kRpcMethod>;
-  using Response = typename Info::Response;
-  static_assert(Info::kType == MethodType::kUnary,
-                "Only unary methods can be used with synchronous calls");
-
-  constexpr auto Function =
-      Info::template Function<typename Info::GeneratedClient>();
-
-  internal::SynchronousCallState<Response> call_state;
-
-  auto call = (client.*Function)(request,
-                                 call_state.OnCompletedCallback(),
-                                 call_state.OnRpcErrorCallback());
-
-  if (!call_state.notify.try_acquire_until(deadline)) {
-    return SynchronousCallResult<Response>::Timeout();
-  }
-
-  return std::move(call_state.result);
+  return internal::StructSynchronousCall<kRpcMethod>(
+      internal::CallGeneratedClient<kRpcMethod>(client, request), deadline);
 }
 
 /// Invokes a unary RPC synchronously using the raw API. Blocks until a

@@ -80,6 +80,27 @@ inline bool AcquireNotification(sync::TimedThreadNotification& notification,
   return notification.try_acquire_until(timeout);
 }
 
+template <auto kRpcMethod, typename DoCall, typename... TimeoutArg>
+SynchronousCallResult<typename MethodInfo<kRpcMethod>::Response>
+StructSynchronousCall(DoCall&& do_call, TimeoutArg... timeout_arg) {
+  static_assert(MethodInfo<kRpcMethod>::kType == MethodType::kUnary,
+                "Only unary methods can be used with synchronous calls");
+  using Response = typename MethodInfo<kRpcMethod>::Response;
+
+  SynchronousCallState<Response> call_state;
+
+  auto call = std::forward<DoCall>(do_call)(call_state);
+
+  // Wait for the notification based on the type of the timeout argument.
+  if constexpr (sizeof...(TimeoutArg) == 0) {
+    call_state.notify.acquire();  // Wait forever, since no timeout was given.
+  } else if (!AcquireNotification(call_state.notify, timeout_arg...)) {
+    return SynchronousCallResult<Response>::Timeout();
+  }
+
+  return std::move(call_state.result);
+}
+
 // Template for a raw synchronous call. Used for SynchronousCall,
 // SynchronousCallFor, and SynchronousCallUntil. The type of the timeout
 // argument is used to determine the behavior.
@@ -104,13 +125,19 @@ Status RawSynchronousCall(Function<void(ConstByteSpan, Status)>&& on_completed,
   return call_state.error;
 }
 
-// Invokes the RPC method free function using a call_state.
+// Choose which call state object to use (raw or struct).
 template <auto kRpcMethod>
+using CallState = std::conditional_t<
+    std::is_same_v<typename MethodInfo<kRpcMethod>::Request, void>,
+    RawSynchronousCallState,
+    SynchronousCallState<typename MethodInfo<kRpcMethod>::Response>>;
+
+// Invokes the RPC method free function using a call_state.
+template <auto kRpcMethod, typename Request>
 constexpr auto CallFreeFunction(Client& client,
                                 uint32_t channel_id,
-                                const ConstByteSpan& request) {
-  return [&client, channel_id, &request](
-             internal::RawSynchronousCallState& call_state) {
+                                const Request& request) {
+  return [&client, channel_id, &request](CallState<kRpcMethod>& call_state) {
     return kRpcMethod(client,
                       channel_id,
                       request,
@@ -120,11 +147,11 @@ constexpr auto CallFreeFunction(Client& client,
 }
 
 // Invokes the RPC function on the generated service client using a call_state.
-template <auto kRpcMethod>
+template <auto kRpcMethod, typename Request>
 constexpr auto CallGeneratedClient(
     const typename MethodInfo<kRpcMethod>::GeneratedClient& client,
-    const ConstByteSpan& request) {
-  return [&client, &request](internal::RawSynchronousCallState& call_state) {
+    const Request& request) {
+  return [&client, &request](CallState<kRpcMethod>& call_state) {
     constexpr auto kMemberFunction = MethodInfo<kRpcMethod>::template Function<
         typename MethodInfo<kRpcMethod>::GeneratedClient>();
     return (client.*kMemberFunction)(request,
