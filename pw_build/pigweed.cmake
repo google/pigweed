@@ -737,6 +737,16 @@ function(pw_set_zephyr_backend_ifdef COND FACADE BACKEND BACKEND_DECL)
   endif()
 endfunction()
 
+# Zephyr specific wrapper to convert a pw library to a Zephyr library
+function(pw_zephyrize_library_ifdef COND NAME)
+  if(DEFINED Zephyr_FOUND)
+    if(${${COND}})
+      zephyr_append_cmake_library(${NAME})
+      target_link_libraries(${NAME} PUBLIC zephyr_interface)
+    endif()
+  endif()
+endfunction()
+
 # Set up the default pw_build_DEFAULT_MODULE_CONFIG.
 set("pw_build_DEFAULT_MODULE_CONFIG" pw_build.empty CACHE STRING
     "Default implementation for all Pigweed module configurations.")

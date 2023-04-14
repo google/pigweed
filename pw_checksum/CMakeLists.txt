@@ -27,9 +27,6 @@ pw_add_library(pw_checksum STATIC
     crc16_ccitt.cc
     crc32.cc
 )
-if(Zephyr_FOUND AND CONFIG_PIGWEED_CHECKSUM)
-  zephyr_link_libraries(pw_checksum)
-endif()
 
 pw_add_test(pw_checksum.crc16_ccitt_test
   SOURCES

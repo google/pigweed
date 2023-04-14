@@ -47,6 +47,8 @@ if(CONFIG_ZEPHYR_PIGWEED_MODULE)
   if(CONFIG_NANOPB AND "${dir_pw_third_party_nanopb}" STREQUAL "")
     set(dir_pw_third_party_nanopb "${ZEPHYR_NANOPB_MODULE_DIR}" CACHE PATH "" FORCE)
   endif()
+
+  add_subdirectory(zephyr)
 endif()
 
 add_subdirectory(pw_allocator EXCLUDE_FROM_ALL)
