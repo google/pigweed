@@ -42,7 +42,9 @@ if(CONFIG_PIGWEED_LOG_TOKENIZED)
       pw_log_zephyr_tokenized_handler.cc
     PRIVATE_DEPS
       pw_log_tokenized.handler
+      pw_span
       pw_tokenizer
+      pw_tokenizer.base64
   )
   zephyr_link_libraries(pw_log pw_log_zephyr.tokenized_handler)
   zephyr_include_directories(zephyr_public_overrides)

@@ -12,20 +12,30 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-#include <zephyr/logging/log_backend.h>
-#include <zephyr/logging/log_msg.h>
-
-#include "pw_log_tokenized/handler.h"
+#include <pw_log_tokenized/handler.h>
+#include <pw_log_tokenized/metadata.h>
+#include <pw_span/span.h>
+#include <pw_tokenizer/base64.h>
+#include <zephyr/logging/log_core.h>
 
 namespace pw::log_tokenized {
 
 extern "C" void pw_log_tokenized_HandleLog(uint32_t metadata,
                                            const uint8_t log_buffer[],
                                            size_t size_bytes) {
-  ARG_UNUSED(metadata);
-  ARG_UNUSED(log_buffer);
-  ARG_UNUSED(size_bytes);
-  // TODO(asemjonovs): implement this function
+  pw::log_tokenized::Metadata meta(metadata);
+
+  // Encode the tokenized message as Base64.
+  char base64_buffer[tokenizer::kDefaultBase64EncodedBufferSize];
+
+  const size_t bytes = tokenizer::PrefixedBase64Encode(
+      span(log_buffer, size_bytes), base64_buffer);
+
+  if (bytes == 0) {
+    return;
+  }
+
+  Z_LOG_PRINTK(/*_is_raw=*/1, base64_buffer);
 }
 
 }  // namespace pw::log_tokenized

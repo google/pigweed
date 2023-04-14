@@ -23,7 +23,7 @@ Using Pigweed tokenized logging
 -------------------------------
 Using the pigweed logging can be done by enabling
 ``CONFIG_PIGWEED_LOG_TOKENIZED=y``. At that point ``pw_log_tokenized`` is set
-as the backedn for ``pw_log`` and all Zephyr logs are routed to Pigweed's
+as the backend for ``pw_log`` and all Zephyr logs are routed to Pigweed's
 logging facade. This means that any logging statements made in Zephyr itself
 are also tokenized.
 
