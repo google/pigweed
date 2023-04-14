@@ -24,6 +24,14 @@ import("$dir_pw_toolchain/host_clang/toolchains.gni")
 # Arguments:
 # - enable_if (optional): Conditionally activates coverage report generation
 #   when set to a boolean expression that evaluates to true.
+# - failure_mode (optional/unstable): Specify the failure mode for llvm-profdata
+#   (used to merge inidividual profraw files from pw_test runs). Available
+#   options are "any" (default) or "all". This should be considered an
+#   unstable/deprecated argument that should only be used as a last resort to
+#   get a build working again. Using failure_mode = "all" usually indicates that
+#   there are underlying problems in the build or test infrastructure that
+#   should be independently resolved. Please reach out to the Pigweed team for
+#   assistance.
 # - Coverage Settings
 #   - filter_paths (optional): List of file paths (using GN path helpers like
 #     `//` is supported). These will be translated into absolute paths before
@@ -76,6 +84,9 @@ import("$dir_pw_toolchain/host_clang/toolchains.gni")
 template("pw_coverage_report") {
   assert(defined(invoker.tests) || defined(invoker.group_deps),
          "One of `tests` or `group_deps` must be provided.")
+  assert(!defined(invoker.failure_mode) ||
+             (invoker.failure_mode == "any" || invoker.failure_mode == "all"),
+         "failure_mode only supports \"any\" or \"all\".")
 
   _report_name = target_name
   _format_types = [
@@ -155,6 +166,21 @@ template("pw_coverage_report") {
         "--depfile-path",
         rebase_path(_depfile_path, root_build_dir),
       ]
+
+      # TODO(b/256651964): We really want `--failure-mode any` always to guarantee
+      # we don't silently ignore any profraw report. However, there are downstream
+      # projects that currently break when using `--failure-mode any`.
+      #
+      # See the task for examples of what is currently going wrong.
+      #
+      # Invalid profraw files will be ignored so coverage reports might have a
+      # slight variance between runs depending on if something failed or not.
+      if (defined(invoker.failure_mode)) {
+        args += [
+          "--failure-mode",
+          invoker.failure_mode,
+        ]
+      }
 
       inputs = [ _test_metadata ]
       sources = []

@@ -14,6 +14,7 @@
 """Merge multiple profraws together using llvm-profdata."""
 
 import argparse
+import enum
 import json
 import logging
 import subprocess
@@ -22,6 +23,14 @@ from pathlib import Path
 from typing import Dict, Any
 
 _LOG = logging.getLogger(__name__)
+
+
+class FailureMode(enum.Enum):
+    ANY = 'any'
+    ALL = 'all'
+
+    def __str__(self):
+        return self.value
 
 
 def _parse_args() -> Dict[str, Any]:
@@ -53,6 +62,14 @@ def _parse_args() -> Dict[str, Any]:
         help='Path for the output depfile to convey the extra input '
         'requirements from parsing --test-metadata.',
     )
+    parser.add_argument(
+        '--failure-mode',
+        type=FailureMode,
+        choices=list(FailureMode),
+        required=False,
+        default=FailureMode.ANY,
+        help='Sets the llvm-profdata --failure-mode option.',
+    )
     return vars(parser.parse_args())
 
 
@@ -61,6 +78,7 @@ def merge_profraws(
     test_metadata_path: Path,
     profdata_path: Path,
     depfile_path: Path,
+    failure_mode: FailureMode,
 ) -> int:
     """Merge multiple profraws together using llvm-profdata."""
 
@@ -78,15 +96,8 @@ def merge_profraws(
         str(llvm_profdata_path),
         'merge',
         '--sparse',
-        # TODO(b/256651964): We really want `--failure-mode any` here to
-        # guarantee we don't silently ignore any profraw report. See the task
-        # for examples of what is currently going wrong.
-        #
-        # Invalid profraw files will be ignored so coverage reports might have
-        # a slight variance between runs depending on if something failed or
-        # not.
         '--failure-mode',
-        'all',
+        str(failure_mode),
         '-o',
         str(profdata_path),
     ] + profraw_paths

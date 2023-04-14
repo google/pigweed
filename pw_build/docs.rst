@@ -929,10 +929,20 @@ There are three classes of ``template`` arguments: build, coverage, and test.
 
 **Build Arguments:**
 
-- ``enable_if``: Conditionally activates coverage report generation when set to
+- ``enable_if`` (optional): Conditionally activates coverage report generation when set to
   a boolean expression that evaluates to ``true``. This can be used to allow
   project builds to conditionally enable or disable coverage reports to minimize
   work needed for certain build configurations.
+
+- ``failure_mode`` (optional/unstable): Specify the failure mode for
+  ``llvm-profdata`` (used to merge inidividual profraw files from ``pw_test``
+  runs). Available options are ``"any"`` (default) or ``"all"``.
+
+  - This should be considered an unstable/deprecated argument that should only
+    be used as a last resort to get a build working again. Using
+    ``failure_mode = "all"`` usually indicates that there are underlying
+    problems in the build or test infrastructure that should be independently
+    resolved. Please reach out to the Pigweed team for assistance.
 
 **Coverage Arguments:**
 
