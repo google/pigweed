@@ -15,11 +15,28 @@
 import("//build_overrides/pigweed.gni")
 import("//build_overrides/pigweed_environment.gni")
 
+import("toolchains.gni")
+
 config("coverage") {
   cflags = [
     "-fprofile-instr-generate",
     "-fcoverage-mapping",
   ]
+
+  if (pw_toolchain_PROFILE_SOURCE_FILES != []) {
+    _profile_source_files = []
+    foreach(file, pw_toolchain_PROFILE_SOURCE_FILES) {
+      file = rebase_path(file, root_build_dir)
+      file = string_replace(file, "/", "\/")
+      file = string_replace(file, ".", "\.")
+      _profile_source_files += [ "src:$file" ]
+    }
+
+    _profile_file = "$root_build_dir/profile-source-files.list"
+    write_file(_profile_file, _profile_source_files)
+    cflags += [ "-fprofile-list=" + rebase_path(_profile_file, root_build_dir) ]
+  }
+
   ldflags = cflags
 }
 

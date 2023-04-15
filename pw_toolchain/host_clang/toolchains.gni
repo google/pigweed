@@ -30,6 +30,9 @@ declare_args() {
   # This is typically set by individual toolchains and not by GN args.
   pw_toolchain_COVERAGE_ENABLED = false
 
+  # List of source files to selectively collect coverage.
+  pw_toolchain_PROFILE_SOURCE_FILES = []
+
   # Indicates if this toolchain supports building fuzzers. This is typically
   # set by individual toolchains and not by GN args.
   pw_toolchain_FUZZING_ENABLED = false
