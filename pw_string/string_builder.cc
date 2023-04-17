@@ -64,7 +64,9 @@ StringBuilder& StringBuilder::append(const std::string_view& str,
 
 size_t StringBuilder::ResizeAndTerminate(size_t chars_to_append) {
   const size_t copied = std::min(chars_to_append, max_size() - size());
-  *size_ += static_cast<InlineString<>::size_type>(copied);
+  // NOTE: `+=` is not used in order to avoid implicit integer conversion which
+  // results in an error on some compilers.
+  *size_ = static_cast<InlineString<>::size_type>(copied + *size_);
   NullTerminate();
 
   if (buffer_.empty() || chars_to_append != copied) {
@@ -123,7 +125,9 @@ void StringBuilder::HandleStatusWithSize(StatusWithSize written) {
     status_ = StatusCode(status);
   }
 
-  *size_ += static_cast<InlineString<>::size_type>(written.size());
+  // NOTE: `+=` is not used in order to avoid implicit integer conversion which
+  // results in an error on some compilers.
+  *size_ = static_cast<InlineString<>::size_type>(written.size() + *size_);
 }
 
 void StringBuilder::SetErrorStatus(Status status) {

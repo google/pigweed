@@ -444,8 +444,9 @@ class InlineBasicString<T, string_impl::kGeneric> {
 //   InlineString my_string = "abc";  // deduces capacity of 3.
 //
 template <typename T, size_t kCharArraySize>
-InlineBasicString(const T (&)[kCharArraySize])
-    -> InlineBasicString<T, kCharArraySize - 1>;
+InlineBasicString(const T (&)[kCharArraySize]) -> InlineBasicString<
+    T,
+    static_cast<pw::string_impl::size_type>(kCharArraySize - 1)>;
 
 #endif  // __cpp_deduction_guides
 
@@ -640,7 +641,7 @@ InlineBasicString<T, string_impl::kGeneric>::CopyExtend(T* data,
                                                         size_type count) {
   PW_ASSERT(count <= max_size() - size());
   string_impl::char_traits<T>::copy(data + size(), source, count);
-  SetSizeAndTerminate(data, size() + count);
+  SetSizeAndTerminate(data, static_cast<size_type>(size() + count));
   return *this;
 }
 
