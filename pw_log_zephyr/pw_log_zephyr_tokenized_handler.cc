@@ -35,7 +35,9 @@ extern "C" void pw_log_tokenized_HandleLog(uint32_t metadata,
     return;
   }
 
-  Z_LOG_PRINTK(/*_is_raw=*/1, base64_buffer);
+  // _is_raw is set to 0 here because the print string is required to be a
+  // string literal if _is_raw is set to 1.
+  Z_LOG_PRINTK(/*_is_raw=*/0, "%s", base64_buffer);
 }
 
 }  // namespace pw::log_tokenized
