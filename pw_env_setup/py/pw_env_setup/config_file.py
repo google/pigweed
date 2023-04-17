@@ -20,24 +20,51 @@ import json
 import os
 
 
-def _get_project_root(env=None):
-    if not env:
-        env = os.environ
+def _resolve_env(env):
+    if env:
+        return env
+    return os.environ
+
+
+def _get_project_root(env):
     for var in ('PW_PROJECT_ROOT', 'PW_ROOT'):
         if var in env:
             return env[var]
     raise ValueError('environment variable PW_PROJECT_ROOT not set')
 
 
+def _pw_env_substitute(env, string):
+    if not isinstance(string, str):
+        return string
+
+    # Substitute in environment variables based on $pw_env{VAR_NAME} tokens.
+    for key, value in env.items():
+        string = string.replace('$pw_env{' + key + '}', value)
+
+    if '$pw_env{' in string:
+        raise ValueError(f'Unresolved $pw_env\\{...} in JSON string: {string}')
+
+    return string
+
+
 def path(env=None):
     """Return the path where pigweed.json should reside."""
+    env = _resolve_env(env)
     return os.path.join(_get_project_root(env=env), 'pigweed.json')
 
 
 def load(env=None):
     """Load pigweed.json if it exists and return the contents."""
+    env = _resolve_env(env)
     config_path = path(env=env)
     if not os.path.isfile(config_path):
         return {}
-    with open(config_path, 'r') as ins:
-        return json.load(ins)
+
+    def hook(obj):
+        out = {}
+        for key, val in obj.items():
+            out[key] = _pw_env_substitute(env, val)
+        return out
+
+    with open(config_path, 'r') as file:
+        return json.load(file, object_hook=hook)

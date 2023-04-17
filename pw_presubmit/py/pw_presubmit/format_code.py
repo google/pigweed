@@ -46,6 +46,7 @@ from typing import (
 
 import pw_cli.color
 import pw_cli.env
+import pw_env_setup.config_file
 from pw_presubmit.presubmit import (
     FileFilter,
     FormatContext,
@@ -264,6 +265,20 @@ def fix_py_format_yapf(ctx: _Context) -> Dict[Path, str]:
 
 
 def _enumerate_black_configs() -> Iterable[Path]:
+    config = pw_env_setup.config_file.load()
+    black_config_file = (
+        config.get('pw', {})
+        .get('pw_presubmit', {})
+        .get('format', {})
+        .get('black_config_file', {})
+    )
+    if black_config_file:
+        explicit_path = Path(black_config_file)
+        if not explicit_path.is_file():
+            raise ValueError(f'Black config file not found: {explicit_path}')
+        yield explicit_path
+        return  # If an explicit path is provided, don't try implicit paths.
+
     if directory := os.environ.get('PW_PROJECT_ROOT'):
         yield Path(directory, '.black.toml')
         yield Path(directory, 'pyproject.toml')

@@ -3,6 +3,7 @@
     "pw_presubmit": {
       "format": {
         "python_formatter": "black",
+        "black_config_file": "$pw_env{PW_ROOT}/.black.toml",
         "exclude": [
           "\\bthird_party/fuchsia/repo"
         ]
