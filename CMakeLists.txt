@@ -47,8 +47,6 @@ if(CONFIG_ZEPHYR_PIGWEED_MODULE)
   if(CONFIG_NANOPB AND "${dir_pw_third_party_nanopb}" STREQUAL "")
     set(dir_pw_third_party_nanopb "${ZEPHYR_NANOPB_MODULE_DIR}" CACHE PATH "" FORCE)
   endif()
-
-  add_subdirectory(zephyr)
 endif()
 
 add_subdirectory(pw_allocator EXCLUDE_FROM_ALL)
@@ -133,7 +131,9 @@ add_subdirectory(third_party/freertos EXCLUDE_FROM_ALL)
 add_subdirectory(third_party/fuchsia EXCLUDE_FROM_ALL)
 add_subdirectory(third_party/googletest EXCLUDE_FROM_ALL)
 
-if(NOT ZEPHYR_PIGWEED_MODULE_DIR)
+if(CONFIG_ZEPHYR_PIGWEED_MODULE)
+  add_subdirectory(zephyr)
+else()
   add_subdirectory(targets/host EXCLUDE_FROM_ALL)
 
   add_custom_target(pw_apps)
