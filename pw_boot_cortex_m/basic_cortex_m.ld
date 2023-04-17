@@ -168,6 +168,14 @@ SECTIONS
     PROVIDE_HIDDEN(__fini_array_end = .);
   } >FLASH
 
+  /* GNU build ID section. Used by pw_build_info. */
+  .note.gnu.build-id :
+  {
+    . = ALIGN(4);
+    gnu_build_id_begin = .;
+    *(.note.gnu.build-id);
+  } >FLASH
+
   /* Used by unwind-arm/ */
   .ARM : ALIGN(4) {
     __exidx_start = .;
