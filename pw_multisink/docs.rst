@@ -186,3 +186,12 @@ The `PeekEntry` and `PopEntry` return two different drop counts, one for the
 number of entries a drain was skipped forward for providing a small buffer or
 draining too slow, and the other for entries that failed to be added to the
 MultiSink.
+
+Zephyr
+======
+To enable `pw_multisink` with Zephyr use the following Kconfigs:
+- `CONFIG_PIGWEED_MULTISINK` to link `pw_multisink` into your Zephyr build
+- `CONFIG_PIGWEED_MULTISINK_UTIL` to link `pw_multisink.util`
+
+To enable the Pigweed config value `PW_MULTISINK_CONFIG_LOCK_INTERRUPT_SAFE`, use
+`CONFIG_PIGWEED_MULTISINK_LOCK_INTERRUPT_SAFE`.

@@ -12,12 +12,19 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+config PIGWEED_MULTISINK
+    bool "Multisink module used for forwarding multiple attached sinks"
 
-# Add library linkage for Zephyr
-pw_zephyrize_library_ifdef(CONFIG_PIGWEED_CHECKSUM pw_checksum)
-pw_zephyrize_library_ifdef(CONFIG_PIGWEED_MULTISINK pw_multisink)
-pw_zephyrize_library_ifdef(CONFIG_PIGWEED_MULTISINK_UTIL pw_multisink.util)
+if PIGWEED_MULTISINK
 
-# Set Pigweed configs from Kconfig
-pw_set_config_from_zephyr(CONFIG_PIGWEED_MULTISINK_LOCK_INTERRUPT_SAFE PW_MULTISINK_CONFIG_LOCK_INTERRUPT_SAFE)
+config PIGWEED_MULTISINK_LOCK_INTERRUPT_SAFE
+    bool "Use an interrupt safe lock"
+    default y
+    help
+      When reading and writing from the underlying ring-buffer. The multisink
+      module will use an interrupt safe lock instead of a mutex.
+
+config PIGWEED_MULTISINK_UTIL
+    bool "Utility library for the multisink module"
+
+endif # PIGWEED_MULTISINK
