@@ -747,6 +747,13 @@ function(pw_zephyrize_library_ifdef COND NAME)
   endif()
 endfunction()
 
+# Zephyr function allowing conversion of Kconfig values to Pigweed configs
+function(pw_set_config_from_zephyr ZEPHYR_CONFIG PW_CONFIG)
+  if(${ZEPHYR_CONFIG})
+    add_compile_definitions(${PW_CONFIG}=${${ZEPHYR_CONFIG}})
+  endif()
+endfunction()
+
 # Set up the default pw_build_DEFAULT_MODULE_CONFIG.
 set("pw_build_DEFAULT_MODULE_CONFIG" pw_build.empty CACHE STRING
     "Default implementation for all Pigweed module configurations.")

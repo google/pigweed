@@ -49,3 +49,9 @@ if(CONFIG_PIGWEED_LOG_TOKENIZED)
   zephyr_link_libraries(pw_log pw_log_zephyr.tokenized_handler)
   zephyr_include_directories(zephyr_public_overrides)
 endif()
+
+# Map tokenized configuration options
+pw_set_config_from_zephyr(CONFIG_PIGWEED_LOG_TOKENIZED_LEVEL_BITS PW_LOG_TOKENIZED_LEVEL_BITS)
+pw_set_config_from_zephyr(CONFIG_PIGWEED_LOG_TOKENIZED_LINE_BITS PW_LOG_TOKENIZED_LINE_BITS)
+pw_set_config_from_zephyr(CONFIG_PIGWEED_LOG_TOKENIZED_FLAG_BITS PW_LOG_TOKENIZED_FLAG_BITS)
+pw_set_config_from_zephyr(CONFIG_PIGWEED_LOG_TOKENIZED_MODULE_BITS PW_LOG_TOKENIZED_MODULE_BITS)

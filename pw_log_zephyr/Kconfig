@@ -30,7 +30,7 @@ config PIGWEED_LOG_ZEPHYR
       - PW_LOG_LEVEL_CRITICAL maps to Zephyr's LOG_LEVEL_ERR
       - PW_LOG_LEVEL_FATAL maps to Zephyr's LOG_LEVEL_ERR
 
-config PIGWEED_LOG_TOKENIZED
+menuconfig PIGWEED_LOG_TOKENIZED
     bool "Maps all Zephyr log macros to tokenized PW_LOG_* macros"
     select PIGWEED_PREPROCESSOR
     select PIGWEED_SYS_IO
@@ -52,3 +52,7 @@ module-str = "pigweed"
 source "subsys/logging/Kconfig.template.log_config"
 
 endif # PIGWEED_LOG_ZEPHYR || PIGWEED_LOG_TOKENIZED
+
+if PIGWEED_LOG_TOKENIZED
+rsource "Kconfig.tokenized"
+endif # PIGWEED_LOG_TOKENIZED
