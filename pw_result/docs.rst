@@ -229,6 +229,17 @@ should be aware that if they provide a function that returns a ``pw::Result`` to
   Result<int> x = ConvertStringToInteger("42")
                     .transform(MultiplyByTwo);
 
+-------------
+pw::expected
+-------------
+This module also includes the ``pw::expected`` type, which is either an alias
+for ``std::expected`` or a polyfill for that type if it is not available. This
+type has a similar use case to ``pw::Result``, in that it either returns a type
+``T`` or an error, but the error may be any type ``E``, not just ``pw::Status``.
+The ``PW_TRY`` and ``PW_TRY_ASSIGN`` macros do not work with ``pw::expected``
+but it should be usable in any place that ``std::expected`` from the ``C++23``
+standard could be used.
+
 -----------
 Size report
 -----------

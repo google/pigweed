@@ -97,6 +97,12 @@ Backported features
     - pw_polyfill
     - ``<cstdlib>``
     - ``std::byte``
+  * - ``<expected>``
+    - ``std::expected``
+    - ``__cpp_lib_expected``
+    - :ref:`module-pw_result`
+    - ``pw_result/expected.h``
+    - ``pw::expected``
   * - ``<iterator>``
     - ``std::data``, ``std::size``
     - ``__cpp_lib_nonmember_container_access``

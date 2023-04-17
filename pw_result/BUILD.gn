@@ -35,7 +35,10 @@ pw_source_set("pw_result") {
 }
 
 pw_test_group("tests") {
-  tests = [ ":result_test" ]
+  tests = [
+    ":result_test",
+    ":expected_test",
+  ]
 }
 
 pw_test("result_test") {
@@ -47,6 +50,17 @@ pw_test("result_test") {
     "result_test.cc",
     "statusor_test.cc",
   ]
+}
+
+pw_source_set("expected") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_result/expected.h" ]
+  sources = [ "public/pw_result/internal/expected_impl.h" ]
+}
+
+pw_test("expected_test") {
+  deps = [ ":expected" ]
+  sources = [ "expected_test.cc" ]
 }
 
 pw_doc_group("docs") {
