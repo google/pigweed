@@ -263,29 +263,6 @@ gn_crypto_mbedtls_build = build.GnGenNinja(
     ),
 )
 
-gn_crypto_boringssl_build = build.GnGenNinja(
-    name='gn_crypto_boringssl_build',
-    path_filter=_BUILD_FILE_FILTER,
-    packages=('boringssl',),
-    gn_args={
-        'dir_pw_third_party_boringssl': lambda ctx: '"{}"'.format(
-            ctx.package_root / 'boringssl'
-        ),
-        'pw_crypto_SHA256_BACKEND': lambda ctx: '"{}"'.format(
-            ctx.root / 'pw_crypto:sha256_boringssl'
-        ),
-        'pw_crypto_ECDSA_BACKEND': lambda ctx: '"{}"'.format(
-            ctx.root / 'pw_crypto:ecdsa_boringssl'
-        ),
-        'pw_C_OPTIMIZATION_LEVELS': _OPTIMIZATION_LEVELS,
-    },
-    ninja_targets=(
-        *_at_all_optimization_levels(f'host_{_HOST_COMPILER}'),
-        # TODO(b/240982565): SocketStream currently requires Linux.
-        *(('integration_tests',) if sys.platform.startswith('linux') else ()),
-    ),
-)
-
 gn_crypto_micro_ecc_build = build.GnGenNinja(
     name='gn_crypto_micro_ecc_build',
     path_filter=_BUILD_FILE_FILTER,
@@ -990,7 +967,6 @@ SANITIZERS = (cpp_checks.all_sanitizers(),)
 
 SECURITY = (
     # keep-sorted: start
-    gn_crypto_boringssl_build,
     gn_crypto_mbedtls_build,
     gn_crypto_micro_ecc_build,
     gn_software_update_build,

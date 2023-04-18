@@ -51,11 +51,6 @@ constraint_setting(
 )
 
 constraint_value(
-    name = "sha256_boringssl_backend",
-    constraint_setting = ":sha256_backend_constraint_setting",
-)
-
-constraint_value(
     name = "sha256_mbedtls_backend",
     constraint_setting = ":sha256_backend_constraint_setting",
 )
@@ -63,7 +58,6 @@ constraint_value(
 alias(
     name = "sha256_backend_multiplexer",
     actual = select({
-        ":sha256_boringssl_backend": ":sha256_boringssl",
         ":sha256_mbedtls_backend": ":sha256_mbedtls",
         "//conditions:default": ":sha256_mbedtls",
     }),
@@ -80,24 +74,6 @@ pw_cc_library(
     deps = [
         ":sha256_facade",
         "@mbedtls",
-    ],
-)
-
-pw_cc_library(
-    name = "sha256_boringssl",
-    srcs = ["sha256_boringssl.cc"],
-    hdrs = [
-        "public/pw_crypto/sha256_boringssl.h",
-        "public_overrides/boringssl/pw_crypto/sha256_backend.h",
-    ],
-    includes = [
-        "public",
-        "public_overrides/boringssl",
-    ],
-    deps = [
-        ":sha256_facade",
-        "//pw_log",
-        "@boringssl//:ssl",
     ],
 )
 
@@ -158,11 +134,6 @@ constraint_setting(
 )
 
 constraint_value(
-    name = "ecdsa_boringssl_backend",
-    constraint_setting = ":ecdsa_backend_constraint_setting",
-)
-
-constraint_value(
     name = "ecdsa_mbedtls_backend",
     constraint_setting = ":ecdsa_backend_constraint_setting",
 )
@@ -175,7 +146,6 @@ constraint_value(
 alias(
     name = "ecdsa_backend_multiplexer",
     actual = select({
-        ":ecdsa_boringssl_backend": ":ecdsa_boringssl",
         ":ecdsa_mbedtls_backend": ":ecdsa_mbedtls",
         ":ecdsa_uecc_backend": ":ecdsa_uecc",
         "//conditions:default": ":ecdsa_mbedtls",
@@ -190,16 +160,6 @@ pw_cc_library(
         "//pw_function",
         "//pw_log",
         "@mbedtls",
-    ],
-)
-
-pw_cc_library(
-    name = "ecdsa_boringssl",
-    srcs = ["ecdsa_boringssl.cc"],
-    deps = [
-        ":ecdsa_facade",
-        "//pw_log",
-        "@boringssl//:ssl",
     ],
 )
 

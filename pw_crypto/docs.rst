@@ -160,44 +160,6 @@ a code size of ~12KiB.
    #define MBEDTLS_ECP_NO_INTERNAL_RNG
    #define MBEDTLS_ECP_DP_SECP256R1_ENABLED
 
-BoringSSL
-^^^^^^^^^
-
-To select the BoringSSL backend, the BoringSSL library needs to be installed and
-configured. If using GN, do,
-
-.. code-block:: sh
-
-  # Install and configure BoringSSL
-  pw package install boringssl
-  gn gen out --args='
-      import("//build_overrides/pigweed_environment.gni")
-
-      dir_pw_third_party_boringssl=pw_env_setup_PACKAGE_ROOT+"/boringssl"
-      pw_crypto_SHA256_BACKEND="//pw_crypto:sha256_boringssl"
-      pw_crypto_ECDSA_BACKEND="//pw_crypto:ecdsa_boringssl"
-  '
-
-  ninja -C out
-
-If using Bazel, add the BoringSSL repository to your WORKSPACE and select
-appropriate backends by adding them to your project's `platform
-<https://bazel.build/extending/platforms>`_:
-
-.. code-block:: python
-
-  platform(
-    name = "my_platform",
-     constraint_values = [
-       "@pigweed//pw_crypto:sha256_boringssl_backend",
-       "@pigweed//pw_crypto:ecdsa_boringssl_backend",
-       # ... other constraint_values
-     ],
-  )
-
-BoringSSL does not provide a public configuration interface to reduce the code
-size.
-
 Micro ECC
 ^^^^^^^^^
 
