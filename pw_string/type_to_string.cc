@@ -65,7 +65,8 @@ uint_fast8_t DecimalDigitCount(uint64_t integer) {
       (64 - cpp20::countl_zero(integer | 1)) * 1233 >> 12);
 
   // Adjust the estimated log base 10 by comparing against the power of 10.
-  return log_10 + (integer < kPowersOf10[log_10] ? 0u : 1u);
+  return static_cast<uint_fast8_t>(log_10 +
+                                   (integer < kPowersOf10[log_10] ? 0u : 1u));
 }
 
 // std::to_chars is available for integers in recent versions of GCC. I looked
