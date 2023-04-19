@@ -14,39 +14,58 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-if(CONFIG_PIGWEED_SYNC_MUTEX)
-  pw_add_library(pw_sync_zephyr.mutex_backend INTERFACE
-    HEADERS
-      public/pw_sync_zephyr/mutex_inline.h
-      public/pw_sync_zephyr/mutex_native.h
-      public_overrides/pw_sync_backend/mutex_inline.h
-      public_overrides/pw_sync_backend/mutex_native.h
-    PUBLIC_INCLUDES
-      public
-      public_overrides
-    PUBLIC_DEPS
-      pw_sync.mutex.facade
-  )
-  zephyr_link_libraries(pw_sync_zephyr.mutex_backend)
-  zephyr_link_interface(pw_sync_zephyr.mutex_backend)
-endif()
+pw_add_library(pw_sync_zephyr.mutex_backend INTERFACE
+  HEADERS
+    public/pw_sync_zephyr/mutex_inline.h
+    public/pw_sync_zephyr/mutex_native.h
+    public_overrides/pw_sync_backend/mutex_inline.h
+    public_overrides/pw_sync_backend/mutex_native.h
+  PUBLIC_INCLUDES
+    public
+    public_overrides
+  PUBLIC_DEPS
+    pw_sync.mutex.facade
+)
+pw_zephyrize_library_ifdef(
+    CONFIG_PIGWEED_SYNC_MUTEX
+    pw_sync_zephyr.mutex_backend
+)
 
-if(CONFIG_PIGWEED_SYNC_BINARY_SEMAPHORE)
-  pw_add_library(pw_sync_zephyr.binary_semaphore_backend STATIC
-    HEADERS
-      public/pw_sync_zephyr/binary_semaphore_native.h
-      public/pw_sync_zephyr/binary_semaphore_inline.h
-      public_overrides/pw_sync_backend/binary_semaphore_native.h
-      public_overrides/pw_sync_backend/binary_semaphore_inline.h
-    PUBLIC_INCLUDES
-      public
-      public_overrides
-    PUBLIC_DEPS
-      pw_chrono.system_clock
-      pw_sync.binary_semaphore.facade
-    SOURCES
-      binary_semaphore.cc
-  )
-  zephyr_link_libraries(pw_sync_zephyr.binary_semaphore_backend)
-  zephyr_link_interface(pw_sync_zephyr.binary_semaphore_backend)
-endif()
+pw_add_library(pw_sync_zephyr.binary_semaphore_backend STATIC
+  HEADERS
+    public/pw_sync_zephyr/binary_semaphore_native.h
+    public/pw_sync_zephyr/binary_semaphore_inline.h
+    public_overrides/pw_sync_backend/binary_semaphore_native.h
+    public_overrides/pw_sync_backend/binary_semaphore_inline.h
+  PUBLIC_INCLUDES
+    public
+    public_overrides
+  PUBLIC_DEPS
+    pw_chrono.system_clock
+    pw_sync.binary_semaphore.facade
+  SOURCES
+    binary_semaphore.cc
+)
+pw_zephyrize_library_ifdef(
+    CONFIG_PIGWEED_SYNC_BINARY_SEMAPHORE
+    pw_sync_zephyr.binary_semaphore_backend
+)
+
+pw_add_library(pw_sync_zephyr.interrupt_spin_lock_backend STATIC
+  HEADERS
+    public/pw_sync_zephyr/interrupt_spin_lock_inline.h
+    public/pw_sync_zephyr/interrupt_spin_lock_native.h
+    public_overrides/pw_sync_backend/interrupt_spin_lock_inline.h
+    public_overrides/pw_sync_backend/interrupt_spin_lock_native.h
+  PUBLIC_INCLUDES
+    public
+    public_overrides
+  PUBLIC_DEPS
+    pw_sync.interrupt_spin_lock.facade
+  SOURCES
+    interrupt_spin_lock.cc
+)
+pw_zephyrize_library_ifdef(
+    CONFIG_PIGWEED_SYNC_INTERRUPT_SPIN_LOCK
+    pw_sync_zephyr.interrupt_spin_lock_backend
+)

@@ -26,3 +26,6 @@ config PIGWEED_SYNC_MUTEX
 config PIGWEED_SYNC_BINARY_SEMAPHORE
     bool "Enable Pigweed binary semaphore library (pw_sync.binary_semaphore)"
     select PIGWEED_SYNC
+
+config PIGWEED_SYNC_INTERRUPT_SPIN_LOCK
+    bool "Link pw_sync.interrupt_spin_lock and set the Zephyr backend"
