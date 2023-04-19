@@ -23,14 +23,21 @@ package(default_visibility = ["//visibility:public"])
 licenses(["notice"])
 
 pw_cc_library(
-    name = "build_id",
-    srcs = [
-        "build_id.cc",
-    ],
+    name = "build_id_header",
     hdrs = [
         "public/pw_build_info/build_id.h",
     ],
     includes = ["public"],
+    deps = [
+        "//pw_span",
+    ],
+)
+
+pw_cc_library(
+    name = "build_id",
+    srcs = [
+        "build_id.cc",
+    ],
     linkopts = [
         "-Lpw_build_info",
         "-T$(location add_build_id_to_default_linker_script.ld)",
@@ -38,10 +45,32 @@ pw_cc_library(
     ],
     deps = [
         ":add_build_id_to_default_linker_script.ld",
+        ":build_id_header",
         ":build_id_linker_snippet.ld",
         "//pw_preprocessor",
         "//pw_span",
     ],
+)
+
+pw_cc_library(
+    name = "build_id_noop",
+    srcs = [
+        "build_id_noop.cc",
+    ],
+    deps = [
+        ":build_id_header",
+        "//pw_span",
+    ],
+)
+
+pw_cc_library(
+    name = "build_id_or_noop",
+    deps = select({
+        "@platforms//os:windows": [":build_id_noop"],
+        "@platforms//os:ios": [":build_id_noop"],
+        "@platforms//os:macos": [":build_id_noop"],
+        "//conditions:default": [":build_id"],
+    }),
 )
 
 pw_cc_test(

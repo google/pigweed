@@ -50,7 +50,18 @@ config("public_include_path") {
 }
 
 # GNU build IDs aren't supported by Windows and macOS.
-if (current_os != "mac" && current_os != "win") {
+if (current_os == "mac" || current_os == "win") {
+  # noop version of the package that allows build_id users to still be built
+  # for unsupported platforms and avoids amplifying downstream complexity. It
+  # provides a noop version of pw::build_info::BuildId() which just returns an
+  # empty span.
+  pw_source_set("build_id_or_noop") {
+    public_configs = [ ":public_include_path" ]
+    public = [ "public/pw_build_info/build_id.h" ]
+    sources = [ "build_id_noop.cc" ]
+    deps = [ dir_pw_span ]
+  }
+} else {
   pw_source_set("build_id") {
     all_dependent_configs = [
       ":gnu_build_id",
@@ -63,6 +74,10 @@ if (current_os != "mac" && current_os != "win") {
       dir_pw_preprocessor,
       dir_pw_span,
     ]
+  }
+
+  pw_source_set("build_id_or_noop") {
+    public_deps = [ ":build_id" ]
   }
 }
 

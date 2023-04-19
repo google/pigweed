@@ -28,6 +28,10 @@ Linux executables that depend on the ``build_id`` GN target will automatically
 generate GNU build IDs. Windows and macOS binaries cannot use this target as
 the implementation of GNU build IDs depends on the ELF file format.
 
+A separate GN target ``build_id_or_noop`` is available which provides an empty
+build ID on platforms where GNU build ID is not available while still providing
+a real GNU build ID where supported.
+
 Getting started
 ===============
 To generate GNU build IDs as part of your firmware image, you'll need to update
