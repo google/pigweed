@@ -53,6 +53,7 @@ import logging
 from pathlib import Path
 import platform
 import random
+import re
 from typing import (
     Any,
     cast,
@@ -81,9 +82,8 @@ env = pigweed_environment()
 
 COMPDB_FILE_NAME = 'compile_commands.json'
 _CPP_IDE_FEATURES_DATA_FILE = 'pw_ide_state.json'
-
-# TODO(chadnorvell): Change from allowlist to banlist.
-_SUPPORTED_TOOLCHAIN_EXECUTABLES = ('clang', 'gcc', 'g++')
+_UNSUPPORTED_TOOLCHAIN_EXECUTABLES = ('_pw_invalid', 'python')
+_SUPPORTED_WRAPPER_EXECUTABLES = ('ccache',)
 
 
 @dataclass(frozen=True)
@@ -355,12 +355,12 @@ def path_to_executable(
         _LOG.debug("Invalid executable path. The path was an empty string.")
         return None
 
-    # Determine if the executable name matches supported drivers.
-    is_supported_driver = False
+    # Determine if the executable name matches unsupported drivers.
+    is_supported_driver = True
 
-    for supported_executable in _SUPPORTED_TOOLCHAIN_EXECUTABLES:
-        if supported_executable in maybe_path.name:
-            is_supported_driver = True
+    for unsupported_executable in _UNSUPPORTED_TOOLCHAIN_EXECUTABLES:
+        if unsupported_executable in maybe_path.name:
+            is_supported_driver = False
 
     if not is_supported_driver:
         _LOG.debug(
@@ -402,16 +402,40 @@ def path_to_executable(
     return maybe_path
 
 
-def command_parts(command: str) -> Tuple[str, List[str]]:
-    """Return the executable string and the rest of the command tokens."""
+def command_parts(command: str) -> Tuple[Optional[str], str, List[str]]:
+    """Return the executable string and the rest of the command tokens.
+
+    If the command contains a prefixed wrapper like `ccache`, it will be
+    extracted separately. So the return value contains:
+        (wrapper, compiler executable, all other tokens)
+    """
     parts = command.split()
-    head = parts[0] if len(parts) > 0 else ''
-    tail = parts[1:] if len(parts) > 1 else []
-    return head, tail
+    curr = ''
+    wrapper = None
+
+    try:
+        curr = parts.pop(0)
+    except IndexError:
+        return (None, curr, [])
+
+    if curr in _SUPPORTED_WRAPPER_EXECUTABLES:
+        wrapper = curr
+
+        while curr := parts.pop(0):
+            # This is very `ccache`-centric. It will work for other wrappers
+            # that use KEY=VALUE-style options or no options at all, but will
+            # not work for other cases.
+            if re.fullmatch(r'(.*)=(.*)', curr):
+                wrapper = f'{wrapper} {curr}'
+            else:
+                break
+
+    return (wrapper, curr, parts)
 
 
 # This is a clumsy way to express optional keys, which is not directly
 # supported in TypedDicts right now.
+# TODO(chadnorvell): Use `NotRequired` when we support Python 3.11.
 class BaseCppCompileCommandDict(TypedDict):
     file: str
     directory: str
@@ -463,7 +487,7 @@ class CppCompileCommand:
         self._file = file
         self._directory = directory
 
-        executable, tokens = command_parts(command)
+        _, executable, tokens = command_parts(command)
         self._executable_path = Path(executable)
         self._inferred_output: Optional[str] = None
 
@@ -574,7 +598,7 @@ class CppCompileCommand:
                 'Compile commands without \'command\' ' 'are not supported yet.'
             )
 
-        executable_str, tokens = command_parts(self.command)
+        wrapper, executable_str, tokens = command_parts(self.command)
         executable_path = path_to_executable(
             executable_str,
             default_path=default_path,
@@ -599,6 +623,9 @@ class CppCompileCommand:
         # TODO(chadnorvell): Some commands include the executable multiple
         # times. It's not clear if that affects clangd.
         new_command = f'{str(executable_path)} {" ".join(tokens)}'
+
+        if wrapper is not None:
+            new_command = f'{wrapper} {new_command}'
 
         return self.__class__(
             file=self.file,

@@ -181,6 +181,11 @@ the compiler to ``clangd_additional_query_drivers`` in your project's
 use the query driver globs to find your compiler and configure ``clangd`` to
 use it.
 
+Compiler wrappers
+^^^^^^^^^^^^^^^^^
+If you're using ``ccache`` or any other wrapper command that is configured
+using ``ccache``'s' ``KEY=VALUE`` pattern, it will work out of the box.
+
 Selected API Reference
 ^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: pw_ide.cpp
