@@ -81,7 +81,7 @@ genrule {
         "pw_protobuf_protos/common.proto",
         "pw_protobuf_protos/field_options.proto",
         "pw_protobuf_protos/status.proto",
-        ":libprotobuf-internal-descriptor-proto",
+        ":libprotobuf-internal-protos",
     ],
     cmd: "$(location aprotoc) " +
          "-I$$(dirname $(location pw_protobuf_protos/common.proto)) " +
