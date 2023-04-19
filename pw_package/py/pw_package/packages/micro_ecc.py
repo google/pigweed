@@ -33,7 +33,8 @@ class MicroECC(pw_package.git_repo.GitRepo):
                     "/third_party/github/kmackay/micro-ecc.git",
                 ]
             ),
-            commit='24c60e243580c7868f4334a1ba3123481fe1aa48',
+            # pigweed branch with Google-internal fixes.
+            commit='df3398e0c550f323afc00afd8faa3e08869f8874',
             **kwargs,
         )
 
