@@ -120,6 +120,8 @@ such as a quick program for local use and a full program for automated use. The
 * ``num_jobs``: Number of jobs to run in parallel
 * ``continue_after_build_error``: For steps that compile, don't exit on the
   first compilation error
+* ``rng_seed``: Seed from ``--rng-seed`` or 1, for the few steps that need to
+  seed a random number generator
 
 The ``luci`` member is of type ``LuciContext`` and has the following members:
 

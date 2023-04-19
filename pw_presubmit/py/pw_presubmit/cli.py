@@ -202,12 +202,14 @@ def add_arguments(
     """Adds common presubmit check options to an argument parser."""
 
     add_path_arguments(parser)
+
     parser.add_argument(
         '-k',
         '--keep-going',
         action='store_true',
         help='Continue running presubmit steps after a failure.',
     )
+
     parser.add_argument(
         '--continue-after-build-error',
         action='store_true',
@@ -216,11 +218,20 @@ def add_arguments(
             'failure.'
         ),
     )
+
+    parser.add_argument(
+        '--rng-seed',
+        type=int,
+        default=1,
+        help='Seed for random number generators.',
+    )
+
     parser.add_argument(
         '--output-directory',
         type=Path,
         help=f'Output directory (default: {"<repo root>" / DEFAULT_PATH})',
     )
+
     parser.add_argument(
         '--package-root',
         type=Path,
