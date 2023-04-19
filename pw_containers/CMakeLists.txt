@@ -21,9 +21,6 @@ pw_add_library(pw_containers INTERFACE
     pw_containers.intrusive_list
     pw_containers.vector
 )
-if(Zephyr_FOUND AND CONFIG_PIGWEED_CONTAINERS)
-  zephyr_link_libraries(pw_containers)
-endif()
 
 pw_add_library(pw_containers.algorithm INTERFACE
   HEADERS

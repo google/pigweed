@@ -21,9 +21,6 @@ pw_add_library(pw_polyfill INTERFACE
   PUBLIC_INCLUDES
     public
 )
-if(Zephyr_FOUND AND CONFIG_PIGWEED_POLYFILL)
-  zephyr_link_libraries(pw_polyfill)
-endif()
 
 pw_add_library(pw_polyfill.standard_library INTERFACE
   HEADERS

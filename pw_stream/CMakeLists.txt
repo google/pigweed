@@ -32,9 +32,6 @@ pw_add_library(pw_stream STATIC
     pw_span
     pw_status
 )
-if(Zephyr_FOUND AND CONFIG_PIGWEED_STREAM)
-  zephyr_link_libraries(pw_stream)
-endif()
 
 pw_add_library(pw_stream.socket_stream STATIC
   HEADERS

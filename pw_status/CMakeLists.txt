@@ -37,9 +37,6 @@ pw_add_library(pw_status STATIC
   SOURCES
     status.cc
 )
-if(Zephyr_FOUND AND CONFIG_PIGWEED_STATUS)
-  zephyr_link_libraries(pw_status)
-endif()
 
 # Use this for pw_status_CONFIG to require pw::Status objects to be used.
 pw_add_library(pw_status.check_if_used INTERFACE

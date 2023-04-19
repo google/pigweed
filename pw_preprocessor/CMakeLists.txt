@@ -32,7 +32,3 @@ pw_add_library(pw_preprocessor.arch INTERFACE
   PUBLIC_INCLUDES
     public
 )
-
-if(Zephyr_FOUND AND CONFIG_PIGWEED_PREPROCESSOR)
-  zephyr_link_libraries(pw_preprocessor)
-endif()

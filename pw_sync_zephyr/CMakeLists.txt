@@ -26,7 +26,7 @@ pw_add_library(pw_sync_zephyr.mutex_backend INTERFACE
   PUBLIC_DEPS
     pw_sync.mutex.facade
 )
-pw_zephyrize_library_ifdef(
+pw_zephyrize_libraries_ifdef(
     CONFIG_PIGWEED_SYNC_MUTEX
     pw_sync_zephyr.mutex_backend
 )
@@ -46,7 +46,7 @@ pw_add_library(pw_sync_zephyr.binary_semaphore_backend STATIC
   SOURCES
     binary_semaphore.cc
 )
-pw_zephyrize_library_ifdef(
+pw_zephyrize_libraries_ifdef(
     CONFIG_PIGWEED_SYNC_BINARY_SEMAPHORE
     pw_sync_zephyr.binary_semaphore_backend
 )
@@ -65,7 +65,7 @@ pw_add_library(pw_sync_zephyr.interrupt_spin_lock_backend STATIC
   SOURCES
     interrupt_spin_lock.cc
 )
-pw_zephyrize_library_ifdef(
+pw_zephyrize_libraries_ifdef(
     CONFIG_PIGWEED_SYNC_INTERRUPT_SPIN_LOCK
     pw_sync_zephyr.interrupt_spin_lock_backend
 )

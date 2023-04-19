@@ -36,9 +36,6 @@ pw_add_library(pw_function INTERFACE
     pw_preprocessor
     pw_third_party.fuchsia.fit
 )
-if(Zephyr_FOUND AND CONFIG_PIGWEED_FUNCTION)
-  zephyr_link_libraries(pw_function)
-endif()
 
 pw_add_test(pw_function.function_test
   SOURCES

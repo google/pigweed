@@ -24,9 +24,6 @@ pw_add_library(pw_result INTERFACE
     pw_status
     pw_preprocessor
 )
-if(Zephyr_FOUND AND CONFIG_PIGWEED_RESULT)
-  zephyr_link_libraries(pw_result)
-endif()
 
 pw_add_library(pw_result.expected INTERFACE
   HEADERS

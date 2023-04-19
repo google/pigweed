@@ -33,9 +33,6 @@ pw_add_library(pw_bytes STATIC
   SOURCES
     byte_builder.cc
 )
-if(Zephyr_FOUND AND CONFIG_PIGWEED_BYTES)
-  zephyr_link_libraries(pw_bytes)
-endif()
 
 pw_add_library(pw_bytes.bit INTERFACE
   HEADERS

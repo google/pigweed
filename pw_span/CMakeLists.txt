@@ -37,7 +37,3 @@ pw_add_test(pw_span.pw_span_test
     modules
     pw_span
 )
-
-if(Zephyr_FOUND AND CONFIG_PIGWEED_SPAN)
-  zephyr_link_libraries(pw_span)
-endif()

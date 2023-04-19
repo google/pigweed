@@ -29,9 +29,6 @@ pw_add_library(pw_router.static_router STATIC
   PRIVATE_DEPS
     pw_log
 )
-if(Zephyr_FOUND AND CONFIG_PIGWEED_ROUTER_STATIC_ROUTER)
-  zephyr_link_libraries(pw_router.static_router)
-endif()
 
 pw_add_library(pw_router.egress INTERFACE
   HEADERS
@@ -43,9 +40,6 @@ pw_add_library(pw_router.egress INTERFACE
     pw_router.packet_parser
     pw_span
 )
-if(Zephyr_FOUND AND CONFIG_PIGWEED_ROUTER_EGRESS)
-  zephyr_link_libraries(pw_router.egress)
-endif()
 
 pw_add_library(pw_router.packet_parser INTERFACE
   HEADERS
@@ -56,9 +50,6 @@ pw_add_library(pw_router.packet_parser INTERFACE
     pw_bytes
     pw_span
 )
-if(Zephyr_FOUND AND CONFIG_PIGWEED_ROUTER_PACKET_PARSER)
-  zephyr_link_libraries(pw_router.packet_parser)
-endif()
 
 pw_add_library(pw_router.egress_function INTERFACE
   HEADERS
@@ -70,9 +61,6 @@ pw_add_library(pw_router.egress_function INTERFACE
     pw_router.egress
     pw_span
 )
-if(Zephyr_FOUND AND CONFIG_PIGWEED_ROUTER_EGRESS_FUNCTION)
-  zephyr_link_libraries(pw_router.egress_function)
-endif()
 
 pw_add_test(pw_router.static_router_test
   SOURCES

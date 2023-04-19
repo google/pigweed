@@ -28,9 +28,6 @@ pw_add_library(pw_digital_io STATIC
     pw_result
     pw_status
 )
-if(Zephyr_FOUND AND CONFIG_PIGWEED_DIGITAL_IO)
-  zephyr_link_libraries(pw_digital_io)
-endif()
 
 pw_add_test(pw_digital_io.stream_test
   SOURCES

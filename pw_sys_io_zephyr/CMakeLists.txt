@@ -26,4 +26,4 @@ pw_add_library(pw_sys_io_zephyr STATIC
     pw_sys_io.facade
     zephyr_interface
 )
-zephyr_link_libraries(pw_sys_io_zephyr)
+pw_zephyrize_libraries_ifdef(CONFIG_PIGWEED_SYS_IO pw_sys_io_zephyr)

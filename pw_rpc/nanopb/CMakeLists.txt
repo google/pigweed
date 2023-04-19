@@ -35,18 +35,12 @@ pw_add_library(pw_rpc.nanopb.server_api STATIC
     pw_log
     pw_rpc.log_config
 )
-if(Zephyr_FOUND AND CONFIG_PIGWEED_RPC_NANOPB_METHOD)
-  zephyr_link_libraries(pw_rpc.nanopb.method)
-endif()
 
 # TODO(hepler): Deprecate this once no one depends on it.
 pw_add_library(pw_rpc.nanopb.method_union INTERFACE
   PUBLIC_DEPS
     pw_rpc.nanopb.server_api
 )
-if(Zephyr_FOUND AND CONFIG_PIGWEED_RPC_NANOPB_METHOD_UNION)
-  zephyr_link_libraries(pw_rpc.nanopb.method_union)
-endif()
 
 pw_add_library(pw_rpc.nanopb.client_api INTERFACE
   HEADERS
@@ -58,9 +52,6 @@ pw_add_library(pw_rpc.nanopb.client_api INTERFACE
     pw_rpc.client
     pw_rpc.nanopb.common
 )
-if(Zephyr_FOUND AND CONFIG_PIGWEED_RPC_NANOPB_CLIENT)
-  zephyr_link_libraries(pw_rpc.nanopb.client_api)
-endif()
 
 pw_add_library(pw_rpc.nanopb.common STATIC
   HEADERS
@@ -78,9 +69,6 @@ pw_add_library(pw_rpc.nanopb.common STATIC
     pw_rpc.client
     pw_rpc.log_config
 )
-if(Zephyr_FOUND AND CONFIG_PIGWEED_RPC_NANOPB_COMMON)
-  zephyr_link_libraries(pw_rpc.nanopb.common)
-endif()
 
 pw_add_library(pw_rpc.nanopb.test_method_context INTERFACE
   HEADERS
@@ -142,9 +130,6 @@ pw_add_library(pw_rpc.nanopb.echo_service INTERFACE
   PUBLIC_DEPS
     pw_rpc.protos.nanopb_rpc
 )
-if(Zephyr_FOUND AND CONFIG_PIGWEED_RPC_NANOPB_ECHO_SERVICE)
-  zephyr_link_libraries(pw_rpc.nanopb.echo_service)
-endif()
 
 pw_add_library(pw_rpc.nanopb.client_integration_test STATIC
   SOURCES

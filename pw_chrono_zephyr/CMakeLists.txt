@@ -30,7 +30,4 @@ pw_add_library(pw_chrono_zephyr.system_clock INTERFACE
     pw_chrono.system_clock.facade
 )
 
-if(CONFIG_PIGWEED_CHRONO_SYSTEM_CLOCK)
-  zephyr_link_interface(pw_chrono_zephyr.system_clock)
-  zephyr_link_libraries(pw_chrono_zephyr.system_clock)
-endif()
+pw_zephyrize_libraries_ifdef(CONFIG_PIGWEED_CHRONO_SYSTEM_CLOCK pw_chrono_zephyr.system_clock)

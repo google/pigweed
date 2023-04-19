@@ -167,7 +167,3 @@ pw_add_test(pw_string.util_test
     modules
     pw_string
 )
-
-if(Zephyr_FOUND AND CONFIG_PIGWEED_STRING)
-  zephyr_link_libraries(pw_string)
-endif()
