@@ -27,7 +27,12 @@ class Protobuf(pw_package.git_repo.GitRepo):
         super().__init__(
             *args,
             name='protobuf',
-            url="https://github.com/protocolbuffers/protobuf.git",
+            url="".join(
+                [
+                    "https://pigweed.googlesource.com",
+                    "/third_party/github/protocolbuffers/protobuf.git",
+                ]
+            ),
             commit='15c40c6cdac2f816a56640d24a5c4c3ec0f84b00',
             **kwargs,
         )

@@ -29,8 +29,8 @@ class MicroECC(pw_package.git_repo.GitRepo):
             name='micro-ecc',
             url="".join(
                 [
-                    "https://github.com",
-                    "/kmackay/micro-ecc.git",
+                    "https://pigweed.googlesource.com",
+                    "/third_party/github/kmackay/micro-ecc.git",
                 ]
             ),
             commit='24c60e243580c7868f4334a1ba3123481fe1aa48',
