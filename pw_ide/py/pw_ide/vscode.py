@@ -325,6 +325,13 @@ _DEFAULT_EXTENSIONS: EditorSettingsDict = OrderedDict(
     }
 )
 
+_DEFAULT_LAUNCH: EditorSettingsDict = OrderedDict(
+    {
+        "version": "0.2.0",
+        "configurations": [],
+    }
+)
+
 
 def _default_settings(
     pw_ide_settings: PigweedIdeSettings,
@@ -364,6 +371,12 @@ def _default_extensions(
     return _DEFAULT_EXTENSIONS
 
 
+def _default_launch(
+    _pw_ide_settings: PigweedIdeSettings,
+) -> EditorSettingsDict:
+    return _DEFAULT_LAUNCH
+
+
 DEFAULT_SETTINGS_PATH = Path(os.path.expandvars('$PW_PROJECT_ROOT')) / '.vscode'
 
 
@@ -371,12 +384,14 @@ class VscSettingsType(Enum):
     """Visual Studio Code settings files.
 
     VSC supports editor settings (``settings.json``), recommended
-    extensions (``extensions.json``), and tasks (``tasks.json``).
+    extensions (``extensions.json``), tasks (``tasks.json``), and
+    launch/debug configurations (``launch.json``).
     """
 
     SETTINGS = 'settings'
     TASKS = 'tasks'
     EXTENSIONS = 'extensions'
+    LAUNCH = 'launch'
 
     @classmethod
     def all(cls) -> List['VscSettingsType']:
@@ -393,4 +408,5 @@ class VscSettingsManager(EditorSettingsManager[VscSettingsType]):
         VscSettingsType.SETTINGS: _default_settings,
         VscSettingsType.TASKS: _default_tasks,
         VscSettingsType.EXTENSIONS: _default_extensions,
+        VscSettingsType.LAUNCH: _default_launch,
     }

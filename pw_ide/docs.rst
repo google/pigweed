@@ -212,6 +212,11 @@ tasks for ``pw_ide`` commands. Access these by opening the command palette
 (Ctrl/Cmd-Shift-P), selecting ``Tasks: Run Task``, then selecting the desired
 task.
 
+The same pattern also applies to ``launch.json``, which is used to define
+configurations for running and debugging your project. Create a
+``pw_project_launch.json`` with configurations that conform to the Visual Studio
+Code `debugger configuration format <https://code.visualstudio.com/docs/editor/debugging>`_.
+
 Selected API Reference
 ^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: pw_ide.editors
