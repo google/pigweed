@@ -11,6 +11,34 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations under
 # the License.
+include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
+
+pw_add_module_config(pw_thread_zephyr_CONFIG)
+
+pw_add_library(pw_thread_zephyr.config INTERFACE
+  HEADERS
+    public/pw_thread_zephyr/config.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    "${pw_thread_zephyr_CONFIG}"
+)
+
+# This target provides the backend for pw::thread::Id & pw::this_thread::get_id.
+pw_add_library(pw_thread_zephyr.id INTERFACE
+  HEADERS
+    public/pw_thread_zephyr/id_inline.h
+    public/pw_thread_zephyr/id_native.h
+    id_public_overrides/pw_thread_backend/id_inline.h
+    id_public_overrides/pw_thread_backend/id_native.h
+  PUBLIC_INCLUDES
+    public
+    id_public_overrides
+  PUBLIC_DEPS
+    pw_assert
+    pw_interrupt.context
+    pw_thread.id.facade
+)
 
 pw_add_library(pw_thread_zephyr.sleep STATIC
   HEADERS
@@ -27,4 +55,28 @@ pw_add_library(pw_thread_zephyr.sleep STATIC
   PRIVATE_DEPS
     pw_chrono_zephyr.system_clock
     pw_assert.check
+)
+
+# This target provides the backend for pw::thread::Thread and the headers needed
+# for thread creation.
+pw_add_library(pw_thread_zephyr.thread STATIC
+  HEADERS
+    public/pw_thread_zephyr/context.h
+    public/pw_thread_zephyr/options.h
+    public/pw_thread_zephyr/thread_inline.h
+    public/pw_thread_zephyr/thread_native.h
+    thread_public_overrides/pw_thread_backend/thread_inline.h
+    thread_public_overrides/pw_thread_backend/thread_native.h
+  PUBLIC_INCLUDES
+    public
+    thread_public_overrides
+  PUBLIC_DEPS
+    pw_assert
+    pw_span
+    pw_string
+    pw_thread.id
+    pw_thread.thread.facade
+    pw_thread_zephyr.config
+  SOURCES
+    thread.cc
 )

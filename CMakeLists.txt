@@ -37,6 +37,10 @@ if(CONFIG_ZEPHYR_PIGWEED_MODULE)
       pw_log pw_log_tokenized pw_log/backend.cmake)
   pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_THREAD_SLEEP
       pw_thread.sleep pw_thread_zephyr.sleep pw_thread/backend.cmake)
+  pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_THREAD
+      pw_thread.id pw_thread_zephyr.id pw_thread/backend.cmake)
+  pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_THREAD
+      pw_thread.thread pw_thread_zephyr.thread pw_thread/backend.cmake)
   pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_SYNC_BINARY_SEMAPHORE
       pw_sync.mutex pw_sync_zephyr.binary_semaphore_backend pw_sync/backend.cmake)
   pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_SYNC_INTERRUPT_SPIN_LOCK
