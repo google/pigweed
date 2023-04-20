@@ -20,16 +20,6 @@ interface Props {
   onUpload: (db: string) => void
 }
 
-function testTokenDB(tokenCsv: string) {
-  const lines = tokenCsv.trim().split(/\r?\n/).map(line => line.split(/,/));
-  lines.forEach((line) => {
-    // CSV has no columns or has malformed number.
-    if (line.length < 2 || !/^[a-fA-F0-9]+$/.test(line[0])) {
-      throw new Error("Not a valid token database.")
-    }
-  });
-}
-
 export default function BtnUploadDB({onUpload}: Props) {
   const [uploaded, setUploaded] = useState(false);
   const [error, setError] = useState("");
@@ -46,7 +36,6 @@ export default function BtnUploadDB({onUpload}: Props) {
         onChange={async e => {
           const tokenCsv = await readFile(e.target.files![0]);
           try {
-            testTokenDB(tokenCsv);
             onUpload(tokenCsv);
             setUploaded(true);
             setError("");
