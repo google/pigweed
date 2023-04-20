@@ -228,9 +228,20 @@ Run GN as seen below:
 
   $ gn gen out
 
-Note that ``out`` is simply the directory the build files are saved to. Unless
-this directory is deleted or you desire to do a clean build, there's no need to
-run GN again; just rebuild using Ninja directly.
+.. note::
+  ``out`` is simply the directory the build files are saved to. Unless
+  this directory is deleted or you desire to do a clean build, there's no need
+  to run GN again; just rebuild using Ninja directly.
+
+.. warning::
+  Unless your build directory (the ``out`` in ``gn gen out``) is exactly one
+  directory away from the project root directory (the Pigweed repo root in this
+  case), there will be issues finding source files while debugging and while
+  generating coverage reports. This is due an issue in upstream LLVM reordering
+  debug and coverage path mappings (tracked by
+  `b/278898014 <https://issuetracker.google.com/278898014>`_ and
+  `b/278906020 <https://issuetracker.google.com/278906020>`_). **We recommend
+  sticking to simple, single directory build directories for the time being.**
 
 Now that we have build files, it's time to build Pigweed!
 

@@ -237,7 +237,25 @@ config("toolchain_cpp_standard") {
 # including generated sources, when run from the repo root.
 config("relative_paths") {
   # Apply a series of file-prefix-map transformations. Only the first matching
-  # option applies. Clang and GCC apply these in opposite order.
+  # option applies.
+  #
+  # GCC applies these in reverse order due to building iterating through a
+  # recursively constructed linked list:
+  # inclusive-language: disable
+  # https://github.com/gcc-mirror/gcc/blob/master/gcc/file-prefix-map.cc#L41.
+  # inclusive-language: enable
+  #
+  # Clang currently does not have a set forwards or backwards application order
+  # due to storing them in a std::map (that reorders lexicogrpahically by key):
+  # https://github.com/llvm/llvm-project/blob/main/clang/include/clang/Basic/CodeGenOptions.h#L209.
+  #
+  # TODO(b/278906020): Tracks merging in an upstream change to LLVM to that will
+  # enforce clang applying these transformations in order. Until then, there
+  # will be issues with the debug and coverage information while using build
+  # directories that are more than a single directory from the root project
+  # directory. This is due to "=out/" always being applied first due to the
+  # left-hand side of the = being "", which is always ordered first in the
+  # std::map.
   _transformations = [
     # Remap absolute prefixes for files in the output directory to out/.
     rebase_path(root_build_dir) + "/=out/",
