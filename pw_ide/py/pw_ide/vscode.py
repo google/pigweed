@@ -177,7 +177,18 @@ _DEFAULT_SETTINGS: EditorSettingsDict = OrderedDict(
         "[cpp]": OrderedDict(
             {"editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"}
         ),
+        "python.analysis.diagnosticSeverityOverrides": OrderedDict(
+            # Due to our project structure, the linter spuriously thinks we're
+            # shadowing system modules any time we import them. This disables
+            # that check.
+            {"reportShadowedImports": "none"}
+        ),
+        # The "strict" mode is much more strict than what we currently enforce.
+        "python.analysis.typeCheckingMode": "basic",
         "python.formatting.provider": "yapf",
+        "python.linting.pylintEnabled": True,
+        "python.linting.mypyEnabled": True,
+        "python.testing.unittestEnabled": True,
         "[python]": OrderedDict({"editor.tabSize": 4}),
         "typescript.tsc.autoDetect": "off",
         "[gn]": OrderedDict({"editor.defaultFormatter": "msedge-dev.gnls"}),
