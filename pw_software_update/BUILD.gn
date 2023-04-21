@@ -65,7 +65,13 @@ pw_proto_library("protos") {
 }
 
 pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
+  sources = [
+    "cli.rst",
+    "design.rst",
+    "docs.rst",
+    "get_started.rst",
+    "guides.rst",
+  ]
 }
 
 if (pw_crypto_SHA256_BACKEND != "" && pw_crypto_ECDSA_BACKEND != "") {
