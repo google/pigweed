@@ -1,4 +1,4 @@
-// Copyright 2022 The Pigweed Authors
+// Copyright 2023 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -27,9 +27,12 @@ Result<Chunk::Identifier> Chunk::ExtractIdentifier(ConstByteSpan message) {
   protobuf::Decoder decoder(message);
 
   uint32_t session_id = 0;
-  uint32_t resource_id = 0;
+  uint32_t desired_session_id = 0;
+  bool legacy = true;
 
-  while (decoder.Next().ok()) {
+  Status status;
+
+  while ((status = decoder.Next()).ok()) {
     ProtoChunk::Fields field =
         static_cast<ProtoChunk::Fields>(decoder.FieldNumber());
 
@@ -42,19 +45,27 @@ Result<Chunk::Identifier> Chunk::ExtractIdentifier(ConstByteSpan message) {
     } else if (field == ProtoChunk::Fields::kSessionId) {
       // A session_id field always takes precedence over transfer_id.
       PW_TRY(decoder.ReadUint32(&session_id));
-    } else if (field == ProtoChunk::Fields::kResourceId) {
-      PW_TRY(decoder.ReadUint32(&resource_id));
+      legacy = false;
+    } else if (field == ProtoChunk::Fields::kDesiredSessionId) {
+      PW_TRY(decoder.ReadUint32(&desired_session_id));
     }
   }
 
-  // Always prioritize a resource_id if one is set. Resource IDs should only be
-  // set in cases where the transfer session ID has not yet been negotiated.
-  if (resource_id != 0) {
-    return Identifier::Resource(resource_id);
+  if (!status.IsOutOfRange()) {
+    return Status::DataLoss();
+  }
+
+  if (desired_session_id != 0) {
+    // Can't have both a desired and regular session_id.
+    if (!legacy && session_id != 0) {
+      return Status::DataLoss();
+    }
+    return Identifier::Desired(desired_session_id);
   }
 
   if (session_id != 0) {
-    return Identifier::Session(session_id);
+    return legacy ? Identifier::Legacy(session_id)
+                  : Identifier::Session(session_id);
   }
 
   return Status::DataLoss();
@@ -78,6 +89,8 @@ Result<Chunk> Chunk::Parse(ConstByteSpan message) {
   // window_end_offset from it once parsing is complete.
   uint32_t pending_bytes = 0;
 
+  bool has_session_id = false;
+
   while ((status = decoder.Next()).ok()) {
     ProtoChunk::Fields field =
         static_cast<ProtoChunk::Fields>(decoder.FieldNumber());
@@ -99,7 +112,7 @@ Result<Chunk> Chunk::Parse(ConstByteSpan message) {
         if (chunk.protocol_version_ == ProtocolVersion::kUnknown) {
           chunk.protocol_version_ = ProtocolVersion::kVersionTwo;
         }
-
+        has_session_id = true;
         PW_TRY(decoder.ReadUint32(&chunk.session_id_));
         break;
 
@@ -164,8 +177,18 @@ Result<Chunk> Chunk::Parse(ConstByteSpan message) {
         chunk.protocol_version_ = static_cast<ProtocolVersion>(value);
         break;
 
+      case ProtoChunk::Fields::kDesiredSessionId:
+        PW_TRY(decoder.ReadUint32(&value));
+        chunk.desired_session_id_ = value;
+        break;
+
         // Silently ignore any unrecognized fields.
     }
+  }
+
+  if (chunk.desired_session_id_.has_value() && has_session_id) {
+    // Setting both session_id and desired_session_id is not permitted.
+    return Status::DataLoss();
   }
 
   if (chunk.protocol_version_ == ProtocolVersion::kUnknown) {
@@ -201,7 +224,13 @@ Result<ConstByteSpan> Chunk::Encode(ByteSpan buffer) const {
 
   if (protocol_version_ >= ProtocolVersion::kVersionTwo) {
     if (session_id_ != 0) {
+      PW_CHECK(!desired_session_id_.has_value(),
+               "A chunk cannot set both a desired and regular session ID");
       encoder.WriteSessionId(session_id_).IgnoreError();
+    }
+
+    if (desired_session_id_.has_value()) {
+      encoder.WriteDesiredSessionId(desired_session_id_.value()).IgnoreError();
     }
 
     if (resource_id_.has_value()) {
@@ -296,6 +325,10 @@ size_t Chunk::EncodedSize() const {
     if (resource_id_.has_value()) {
       size += protobuf::SizeOfVarintField(ProtoChunk::Fields::kResourceId,
                                           resource_id_.value());
+    }
+    if (desired_session_id_.has_value()) {
+      size += protobuf::SizeOfVarintField(ProtoChunk::Fields::kDesiredSessionId,
+                                          desired_session_id_.value());
     }
   }
 

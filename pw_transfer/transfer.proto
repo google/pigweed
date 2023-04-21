@@ -164,14 +164,13 @@ message Chunk {
     // TODO(konkers): Implement this behavior.
     COMPLETION_ACK = 5;
 
-    // Acknowledges a transfer start request, assigning a session ID for the
+    // Acknowledges a transfer start request, accepting the session ID for the
     // transfer and optionally negotiating the protocol version. Sent from
     // server to client.
     START_ACK = 6;
 
-    // Confirmation of a START_ACK's assigned session ID and negotiated
-    // parameters, sent by the client to the server. Initiates the data transfer
-    // proper.
+    // Confirmation of a START_ACK's negotiated parameters, sent by the client
+    // to the server. Initiates the data transfer proper.
     START_ACK_CONFIRMATION = 7;
   };
 
@@ -195,8 +194,8 @@ message Chunk {
   // Write ← ID of transferable resource
   optional uint32 resource_id = 11;
 
-  // Unique identifier for a specific transfer session. Assigned by a transfer
-  // service during the initial handshake phase, and persists for the remainder
+  // Unique identifier for a specific transfer session. Chosen by the transfer
+  // client during the initial handshake phase, and persists for the remainder
   // of that transfer operation.
   //
   //  Read → ID of transfer session
@@ -214,4 +213,15 @@ message Chunk {
   // Write → Desired (START) or configured (START_ACK_CONFIRMATION) version.
   // Write ← Configured protocol version (START_ACK).
   optional uint32 protocol_version = 13;
+
+  // Unique identifier for a specific transfer session. Chosen by the transfer
+  // client during the initial handshake phase. This field is used to request a
+  // session during the handshake, after which the regular session_id field is
+  // used.
+  //
+  //  Read → Requested ID of transfer session
+  //  Read ← N/A
+  // Write → Requested ID of transfer session
+  // Write ← N/A
+  optional uint32 desired_session_id = 14;
 }

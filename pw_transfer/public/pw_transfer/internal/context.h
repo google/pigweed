@@ -277,8 +277,8 @@ class Context {
   // Processes a data chunk in a received while in the kWaiting state.
   void HandleReceivedData(const Chunk& chunk);
 
-  // Sends the first chunk in a transmit transfer.
-  void SendInitialTransmitChunk();
+  // Sends the first chunk in a legacy transmit transfer.
+  void SendInitialLegacyTransmitChunk();
 
   // Updates the current receive transfer parameters based on the context's
   // configuration.

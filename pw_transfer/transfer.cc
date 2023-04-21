@@ -30,10 +30,22 @@ void TransferService::HandleChunk(ConstByteSpan message,
   }
 
   if (chunk->IsInitialChunk()) {
-    uint32_t session_id =
-        chunk->is_legacy() ? chunk->session_id() : GenerateNewSessionId();
     uint32_t resource_id =
         chunk->is_legacy() ? chunk->session_id() : chunk->resource_id().value();
+
+    uint32_t session_id;
+    if (chunk->is_legacy()) {
+      session_id = chunk->session_id();
+    } else if (chunk->desired_session_id().has_value()) {
+      session_id = chunk->desired_session_id().value();
+    } else {
+      // Non-legacy start chunks are required to use desired_session_id.
+      thread_.SendServerStatus(type,
+                               chunk->session_id(),
+                               chunk->protocol_version(),
+                               Status::DataLoss());
+      return;
+    }
 
     thread_.StartServerTransfer(type,
                                 chunk->protocol_version(),

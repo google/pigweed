@@ -116,6 +116,14 @@ void TransferThread::StartTransfer(
 
   bool is_client_transfer = stream != nullptr;
 
+  if (is_client_transfer) {
+    if (version == ProtocolVersion::kLegacy) {
+      session_id = resource_id;
+    } else if (session_id == Context::kUnassignedSessionId) {
+      session_id = AssignSessionId();
+    }
+  }
+
   next_event_.type = is_client_transfer ? EventType::kNewClientTransfer
                                         : EventType::kNewServerTransfer;
 
@@ -161,11 +169,7 @@ void TransferThread::StartTransfer(
       // No handler exists for the transfer: return a NOT_FOUND.
       next_event_.type = EventType::kSendStatusChunk;
       next_event_.send_status_chunk = {
-          // Identify the status chunk using the requested resource ID rather
-          // than the session ID. In legacy, the two are the same, whereas in
-          // v2+ the client has not yet been assigned a session.
-          .session_id = resource_id,
-          .set_resource_id = version == ProtocolVersion::kVersionTwo,
+          .session_id = session_id,
           .protocol_version = version,
           .status = Status::NotFound().code(),
           .stream = type == TransferType::kTransmit
@@ -199,9 +203,27 @@ void TransferThread::ProcessChunk(EventType type, ConstByteSpan chunk) {
   next_event_.type = type;
   next_event_.chunk = {
       .context_identifier = identifier->value(),
-      .match_resource_id = identifier->is_resource(),
+      .match_resource_id = identifier->is_legacy(),
       .data = chunk_buffer_.data(),
       .size = chunk.size(),
+  };
+
+  event_notification_.release();
+}
+
+void TransferThread::SendStatus(TransferStream stream,
+                                uint32_t session_id,
+                                ProtocolVersion version,
+                                Status status) {
+  // Block until the last event has been processed.
+  next_event_ownership_.acquire();
+
+  next_event_.type = EventType::kSendStatusChunk;
+  next_event_.send_status_chunk = {
+      .session_id = session_id,
+      .protocol_version = version,
+      .status = status.code(),
+      .stream = stream,
   };
 
   event_notification_.release();
@@ -322,9 +344,7 @@ void TransferThread::HandleEvent(const internal::Event& event) {
     } else if (event.type == EventType::kNewServerTransfer) {
       // On the server, send a status chunk back to the client.
       SendStatusChunk(
-          {.session_id = event.new_transfer.resource_id,
-           .set_resource_id = event.new_transfer.protocol_version ==
-                              ProtocolVersion::kVersionTwo,
+          {.session_id = event.new_transfer.session_id,
            .protocol_version = event.new_transfer.protocol_version,
            .status = Status::ResourceExhausted().code(),
            .stream = event.new_transfer.type == TransferType::kTransmit
@@ -397,10 +417,6 @@ void TransferThread::SendStatusChunk(
   Chunk chunk =
       Chunk::Final(event.protocol_version, event.session_id, event.status);
 
-  if (event.set_resource_id) {
-    chunk.set_resource_id(event.session_id);
-  }
-
   Result<ConstByteSpan> result = chunk.Encode(chunk_buffer_);
   if (!result.ok()) {
     PW_LOG_ERROR("Failed to encode final chunk for transfer %u",
@@ -413,6 +429,15 @@ void TransferThread::SendStatusChunk(
                  static_cast<unsigned>(event.session_id));
     return;
   }
+}
+
+// Should only be called with the `next_event_ownership_` lock held.
+uint32_t TransferThread::AssignSessionId() {
+  uint32_t session_id = next_session_id_++;
+  if (session_id == 0) {
+    session_id = next_session_id_++;
+  }
+  return session_id;
 }
 
 }  // namespace pw::transfer::internal

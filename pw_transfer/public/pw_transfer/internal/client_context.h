@@ -27,13 +27,6 @@ class ClientContext final : public Context {
     on_completion_ = std::move(on_completion);
   }
 
-  // In client-side transfer contexts, a session ID may not yet have been
-  // assigned by the server, in which case resource_id is used as the context
-  // identifier.
-  constexpr uint32_t id() const {
-    return session_id() == kUnassignedSessionId ? resource_id() : session_id();
-  }
-
  private:
   Status FinalCleanup(Status status) override;
 

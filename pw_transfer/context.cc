@@ -33,6 +33,15 @@ void Context::HandleEvent(const Event& event) {
     case EventType::kNewClientTransfer:
     case EventType::kNewServerTransfer: {
       if (active()) {
+        if (event.type == EventType::kNewServerTransfer &&
+            event.new_transfer.session_id == session_id_ &&
+            last_chunk_sent_ == Chunk::Type::kStartAck) {
+          // The client is retrying its initial chunk as the response may not
+          // have made it back. Re-send the handshake response without going
+          // through handler reinitialization.
+          RetryHandshake();
+          return;
+        }
         Abort(Status::Aborted());
       }
 
@@ -104,7 +113,7 @@ void Context::InitiateTransferAsClient() {
     if (type() == TransferType::kReceive) {
       SendTransferParameters(TransmitAction::kBegin);
     } else {
-      SendInitialTransmitChunk();
+      SendInitialLegacyTransmitChunk();
     }
 
     LogTransferConfiguration();
@@ -113,6 +122,7 @@ void Context::InitiateTransferAsClient() {
 
   // In newer protocol versions, begin the initial transfer handshake.
   Chunk start_chunk(desired_protocol_version_, Chunk::Type::kStart);
+  start_chunk.set_desired_session_id(session_id_);
   start_chunk.set_resource_id(resource_id_);
 
   if (type() == TransferType::kReceive) {
@@ -159,11 +169,11 @@ bool Context::StartTransferAsServer(const NewTransferEvent& new_transfer) {
   return true;
 }
 
-void Context::SendInitialTransmitChunk() {
+void Context::SendInitialLegacyTransmitChunk() {
   // A transmitter begins a transfer by sending the ID of the resource to which
   // it wishes to write.
   Chunk chunk(ProtocolVersion::kLegacy, Chunk::Type::kStart);
-  chunk.set_session_id(session_id_);
+  chunk.set_session_id(resource_id_);
 
   EncodeAndSendChunk(chunk);
 }
@@ -349,17 +359,10 @@ void Context::PerformInitialHandshake(const Chunk& chunk) {
       break;
     }
 
-    // Response packet sent from a server to a client. Contains the assigned
-    // session_id of the transfer.
+    // Response packet sent from a server to a client, confirming the protocol
+    // version and session_id of the transfer.
     case Chunk::Type::kStartAck: {
       UpdateLocalProtocolConfigurationFromPeer(chunk);
-
-      // Accept the assigned session_id and tell the server that the transfer
-      // can begin.
-      session_id_ = chunk.session_id();
-      PW_LOG_DEBUG("Transfer for resource %u was assigned session ID %u",
-                   static_cast<unsigned>(resource_id_),
-                   static_cast<unsigned>(session_id_));
 
       Chunk start_ack_confirmation(configured_protocol_version_,
                                    Chunk::Type::kStartAckConfirmation);
@@ -399,8 +402,8 @@ void Context::PerformInitialHandshake(const Chunk& chunk) {
     case Chunk::Type::kData:
     case Chunk::Type::kParametersRetransmit:
     case Chunk::Type::kParametersContinue:
-      // Update the local context's session ID in case it was expecting one to
-      // be assigned by the server.
+      // Update the local session_id, which will map to the transfer_id of the
+      // legacy chunk.
       session_id_ = chunk.session_id();
 
       configured_protocol_version_ = ProtocolVersion::kLegacy;
@@ -1012,7 +1015,7 @@ void Context::Retry() {
     PW_LOG_DEBUG(
         "Transmit transfer %u timed out waiting for initial parameters",
         static_cast<unsigned>(session_id_));
-    SendInitialTransmitChunk();
+    SendInitialLegacyTransmitChunk();
     return;
   }
 
@@ -1040,6 +1043,7 @@ void Context::RetryHandshake() {
       // No protocol version is yet configured at the time of sending the start
       // chunk, so we use the client's desired version instead.
       retry_chunk.set_protocol_version(desired_protocol_version_)
+          .set_desired_session_id(session_id_)
           .set_resource_id(resource_id_);
       if (type() == TransferType::kReceive) {
         SetTransferParameters(retry_chunk);

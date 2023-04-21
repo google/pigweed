@@ -407,8 +407,9 @@ defined by the implementers of the server-side transfer node.
 The series of chunks exchanged in an individual transfer operation for a
 resource constitute a transfer *session*. The session runs from its opening
 chunk until either a terminating chunk is received or the transfer times out.
-Sessions are assigned unique IDs by the transfer server in response to an
-initiating chunk from the client.
+Sessions are assigned IDs by the client that starts them, which are unique over
+the RPC channel between the client and server, allowing the server to identify
+transfers across multiple clients.
 
 Reliability
 ===========
@@ -431,15 +432,16 @@ resource being transferred, assign a session ID, and synchronize the protocol
 version to use.
 
 A read or write transfer for a resource is initiated by a transfer client. The
-client sends the ID of the resource to the server in a ``START`` chunk,
-indicating that it wishes to begin a new transfer. This chunk additionally
-encodes the protocol version which the client is configured to use.
+client sends the ID of the resource to the server alongside a unique session ID
+in a ``START`` chunk, indicating that it wishes to begin a new transfer. This
+chunk additionally encodes the protocol version which the client is configured
+to use.
 
 Upon receiving a ``START`` chunk, the transfer server checks whether the
 requested resource is available. If so, it prepares the resource for the
 operation, which typically involves opening a data stream, alongside any
-additional user-specified setup. The server generates a session ID, then
-responds to the client with a ``START_ACK`` chunk containing the resource,
+additional user-specified setup. The server accepts the client's session ID,
+then responds to the client with a ``START_ACK`` chunk containing the resource,
 session, and configured protocol version for the transfer.
 
 Transfer completion

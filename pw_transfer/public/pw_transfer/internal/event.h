@@ -110,7 +110,6 @@ struct EndTransferEvent {
 
 struct SendStatusChunkEvent {
   uint32_t session_id;
-  bool set_resource_id;
   ProtocolVersion protocol_version;
   Status::Code status;
   TransferStream stream;

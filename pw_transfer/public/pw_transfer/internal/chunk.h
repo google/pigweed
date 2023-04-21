@@ -1,4 +1,4 @@
-// Copyright 2022 The Pigweed Authors
+// Copyright 2023 The Pigweed Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"); you may not
 // use this file except in compliance with the License. You may obtain a copy of
@@ -29,7 +29,8 @@ class Chunk {
   class Identifier {
    public:
     constexpr bool is_session() const { return type_ == kSession; }
-    constexpr bool is_resource() const { return !is_session(); }
+    constexpr bool is_desired_session() const { return type_ == kDesired; }
+    constexpr bool is_legacy() const { return type_ == kLegacy; }
 
     constexpr uint32_t value() const { return value_; }
 
@@ -39,13 +40,17 @@ class Chunk {
     static constexpr Identifier Session(uint32_t value) {
       return Identifier(kSession, value);
     }
-    static constexpr Identifier Resource(uint32_t value) {
-      return Identifier(kResource, value);
+    static constexpr Identifier Desired(uint32_t value) {
+      return Identifier(kDesired, value);
+    }
+    static constexpr Identifier Legacy(uint32_t value) {
+      return Identifier(kLegacy, value);
     }
 
     enum IdType {
       kSession,
-      kResource,
+      kDesired,
+      kLegacy,
     };
 
     constexpr Identifier(IdType type, uint32_t value)
@@ -87,6 +92,11 @@ class Chunk {
 
   constexpr Chunk& set_session_id(uint32_t session_id) {
     session_id_ = session_id;
+    return *this;
+  }
+
+  constexpr Chunk& set_desired_session_id(uint32_t session_id) {
+    desired_session_id_ = session_id;
     return *this;
   }
 
@@ -138,7 +148,16 @@ class Chunk {
     return *this;
   }
 
-  constexpr uint32_t session_id() const { return session_id_; }
+  constexpr uint32_t session_id() const {
+    if (desired_session_id_.has_value()) {
+      return desired_session_id_.value();
+    }
+    return session_id_;
+  }
+
+  constexpr std::optional<uint32_t> desired_session_id() const {
+    return desired_session_id_;
+  }
 
   constexpr std::optional<uint32_t> resource_id() const {
     if (is_legacy()) {
@@ -237,6 +256,7 @@ class Chunk {
  private:
   constexpr Chunk(ProtocolVersion version, std::optional<Type> type)
       : session_id_(0),
+        desired_session_id_(std::nullopt),
         resource_id_(std::nullopt),
         window_end_offset_(0),
         max_chunk_size_bytes_(std::nullopt),
@@ -263,6 +283,7 @@ class Chunk {
   }
 
   uint32_t session_id_;
+  std::optional<uint32_t> desired_session_id_;
   std::optional<uint32_t> resource_id_;
   uint32_t window_end_offset_;
   std::optional<uint32_t> max_chunk_size_bytes_;
