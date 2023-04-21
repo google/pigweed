@@ -217,6 +217,13 @@ configurations for running and debugging your project. Create a
 ``pw_project_launch.json`` with configurations that conform to the Visual Studio
 Code `debugger configuration format <https://code.visualstudio.com/docs/editor/debugging>`_.
 
+.. tip::
+
+   What's the difference between "Change C++ Code Analysis Target" and "Set C++
+   Code Analyis Target"? "Set" will automatically restart the ``clangd``
+   language server for you to pick up the changed target immediately, while
+   "Change" will not.
+
 Selected API Reference
 ^^^^^^^^^^^^^^^^^^^^^^
 .. automodule:: pw_ide.editors

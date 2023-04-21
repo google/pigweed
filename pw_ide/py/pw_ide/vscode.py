@@ -289,12 +289,24 @@ _DEFAULT_TASKS: EditorSettingsDict = OrderedDict(
             },
             {
                 "type": "process",
-                "label": "Pigweed IDE: Set C++ Code Analysis Target",
+                "label": "Pigweed IDE: Change C++ Code Analysis Target",
                 "command": "${config:python.defaultInterpreterPath}",
                 "args": [
                     "-m",
                     "pw_ide.activate",
                     "-x 'pw ide cpp --set ${input:availableTargets}'",
+                ],
+                "presentation": {
+                    "focus": True,
+                },
+                "problemMatcher": [],
+            },
+            {
+                "label": "Pigweed IDE: Set C++ Code Analysis Target",
+                "dependsOrder": "sequence",
+                "dependsOn": [
+                    "Pigweed IDE: Change C++ Code Analysis Target",
+                    "Pigweed IDE: Restart C++ Language Server",
                 ],
                 "presentation": {
                     "focus": True,
