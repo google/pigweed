@@ -2328,6 +2328,15 @@ struct LEEnableEncryptionCommand:
   $next [+LinkKey.$size_in_bytes]  LinkKey        long_term_key
 
 
+struct LELongTermKeyRequestReplyCommand:
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]                CommandHeader  header
+  $next [+2]                       UInt           connection_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next [+LinkKey.$size_in_bytes]  LinkKey        long_term_key
+
+
 struct LELongTermKeyRequestNegativeReplyCommand:
   -- LE Long Term Key Request Negative Reply Command (v4.0) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
