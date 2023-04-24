@@ -46,7 +46,7 @@ from pw_rpc import ids
 @dataclass(frozen=True)
 class Channel:
     id: int
-    output: Callable[[bytes], Any]
+    output: Optional[Callable[[bytes], Any]]
 
     def __repr__(self) -> str:
         return f'Channel({self.id})'
@@ -88,7 +88,7 @@ class ChannelManipulator(abc.ABC):
       client = HdlcRpcClient(socket.read, protos, channels, stdout)
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.send_packet: Callable[[bytes], Any] = lambda _: None
 
     @abc.abstractmethod
@@ -388,21 +388,29 @@ class ServiceAccessor(Collection[T]):
         if not isinstance(members, dict):
             members = {m: m for m in members}
 
-        by_name = {_name(k): v for k, v in members.items()}
+        by_name: Dict[str, Any] = {_name(k): v for k, v in members.items()}
         self._by_id = {k.id: v for k, v in members.items()}
+        # Note: a dictionary is used rather than `setattr` in order to
+        # (1) Hint to the type checker that there will be extra fields
+        # (2) Ensure that built-in attributes such as `_by_id`` are not
+        #     overwritten.
+        self._attrs: Dict[str, Any] = {}
 
         if as_attrs == 'members':
             for name, member in by_name.items():
-                setattr(self, name, member)
+                self._attrs[name] = member
         elif as_attrs == 'packages':
             for package in python_protos.as_packages(
                 (m.package, _AccessByName(m.name, members[m])) for m in members
             ).packages:
-                setattr(self, str(package), package)
+                self._attrs[str(package)] = package
         elif as_attrs:
             raise ValueError(f'Unexpected value {as_attrs!r} for as_attrs')
 
-    def __getitem__(self, name_or_id: Union[str, int]):
+    def __getattr__(self, name: str) -> Any:
+        return self._attrs[name]
+
+    def __getitem__(self, name_or_id: Union[str, int]) -> Any:
         """Accesses a service/method by the string name or ID."""
         try:
             return self._by_id[_id(name_or_id)]

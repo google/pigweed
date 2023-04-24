@@ -68,6 +68,7 @@ In ``pw_rpc``, an RPC begins when the client sends an initial packet. The server
 receives the packet, looks up the relevant service method, then calls into the
 RPC function. The RPC is considered active until the server sends a status to
 finish the RPC. The client may terminate an ongoing RPC by cancelling it.
+Multiple RPC requests to the same method may be made simultaneously.
 
 Depending the type of RPC, the client and server exchange zero or more protobuf
 request or response payloads. There are four RPC types:

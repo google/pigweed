@@ -57,20 +57,21 @@ class _MethodClient:
     ) -> None:
         self._impl = client_impl
         self._rpcs = rpcs
-        self._rpc = PendingRpc(channel, method.service, method)
+        self._channel = channel
+        self._method = method
         self.default_timeout_s: Optional[float] = default_timeout_s
 
     @property
     def channel(self) -> Channel:
-        return self._rpc.channel
+        return self._channel
 
     @property
     def method(self) -> Method:
-        return self._rpc.method
+        return self._method
 
     @property
     def service(self) -> Service:
-        return self._rpc.service
+        return self._method.service
 
     @property
     def request(self) -> type:
@@ -118,8 +119,14 @@ class _MethodClient:
         if timeout_s is UseDefault.VALUE:
             timeout_s = self.default_timeout_s
 
+        rpc = PendingRpc(
+            self._channel,
+            self.service,
+            self.method,
+            self._rpcs.allocate_call_id(),
+        )
         call = call_type(
-            self._rpcs, self._rpc, timeout_s, on_next, on_completed, on_error
+            self._rpcs, rpc, timeout_s, on_next, on_completed, on_error
         )
         call._invoke(request, ignore_errors)  # pylint: disable=protected-access
         return call

@@ -23,7 +23,6 @@ from typing import (
     Dict,
     Iterable,
     Iterator,
-    NamedTuple,
     Optional,
 )
 
@@ -36,20 +35,41 @@ from pw_rpc.internal.packet_pb2 import PacketType, RpcPacket
 
 _LOG = logging.getLogger(__package__)
 
+# Calls with ID of `kOpenCallId` were unrequested, and are updated to have the
+# call ID of the first matching request.
+OPEN_CALL_ID: int = (2**32) - 1
+
+_MAX_CALL_ID: int = 1 << 14
+
 
 class Error(Exception):
     """Error from incorrectly using the RPC client classes."""
 
 
-class PendingRpc(NamedTuple):
-    """Uniquely identifies an RPC call."""
+class PendingRpc(packets.RpcIds):
+    """Uniquely identifies an RPC call.
 
-    channel: Channel
-    service: Service
-    method: Method
+    Attributes:
+      channel: Channel
+      service: Service
+      method: Method
+      channel_id: int
+      service_id: int
+      method_id: int
+      call_id: int
+    """
 
-    def __str__(self) -> str:
-        return f'PendingRpc(channel={self.channel.id}, method={self.method})'
+    def __init__(
+        self,
+        channel: Channel,
+        service: Service,
+        method: Method,
+        call_id: int,
+    ) -> None:
+        super().__init__(channel.id, service.id, method.id, call_id)
+        self.channel = channel
+        self.service = service
+        self.method = method
 
 
 class _PendingRpcMetadata:
@@ -60,8 +80,14 @@ class _PendingRpcMetadata:
 class PendingRpcs:
     """Tracks pending RPCs and encodes outgoing RPC packets."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._pending: Dict[PendingRpc, _PendingRpcMetadata] = {}
+        self._next_call_id: int = 0
+
+    def allocate_call_id(self) -> int:
+        call_id = self._next_call_id
+        self._next_call_id = (self._next_call_id + 1) % _MAX_CALL_ID
+        return call_id
 
     def request(
         self,
@@ -179,6 +205,17 @@ class PendingRpcs:
 
     def get_pending(self, rpc: PendingRpc, status: Optional[Status]):
         """Gets the pending RPC's context. If status is set, clears the RPC."""
+        if rpc.call_id == OPEN_CALL_ID:
+            # Calls with ID `OPEN_CALL_ID` were unrequested, and are updated to
+            # have the call ID of the first matching request.
+            for pending in self._pending:
+                if (
+                    pending.channel == rpc.channel
+                    and pending.service == rpc.service
+                    and pending.method == rpc.method
+                ):
+                    rpc = pending
+
         if status is None:
             return self._pending[rpc].context
 
@@ -193,7 +230,7 @@ class ClientImpl(abc.ABC):
     client.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.client: Optional['Client'] = None
         self.rpcs: Optional[PendingRpcs] = None
 
@@ -611,7 +648,9 @@ class Client:
                 f'No method ID {method_id} in service {service.name}'
             )
 
-        return PendingRpc(channel_client.channel, service, method)
+        return PendingRpc(
+            channel_client.channel, service, method, packet.call_id
+        )
 
     def __repr__(self) -> str:
         return (

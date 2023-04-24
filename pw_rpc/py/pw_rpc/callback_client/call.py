@@ -141,6 +141,10 @@ class Call:
         _LOG.warning('%s terminated due to an error: %s', self._rpc, error)
 
     @property
+    def call_id(self) -> int:
+        return self._rpc.call_id
+
+    @property
     def method(self) -> Method:
         return self._rpc.method
 

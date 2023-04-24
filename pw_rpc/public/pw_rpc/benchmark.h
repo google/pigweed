@@ -13,12 +13,17 @@
 // the License.
 #pragma once
 
+#include <cstdint>
+#include <unordered_map>
+
 #include "pw_rpc/benchmark.raw_rpc.pb.h"
 
 namespace pw::rpc {
 
 // RPC service with low-level RPCs for transmitting data. Used for benchmarking
 // and testing.
+//
+// NOTE: the implementation of `BidirectionalEcho` is *not* thread-safe.
 class BenchmarkService
     : public pw_rpc::raw::Benchmark::Service<BenchmarkService> {
  public:
@@ -27,7 +32,11 @@ class BenchmarkService
   void BidirectionalEcho(RawServerReaderWriter& reader_writer);
 
  private:
-  RawServerReaderWriter reader_writer_;
+  using ReaderWriterId = uint64_t;
+  ReaderWriterId AllocateReaderWriterId();
+
+  ReaderWriterId next_reader_writer_id_ = 0;
+  std::unordered_map<ReaderWriterId, RawServerReaderWriter> reader_writers_;
 };
 
 }  // namespace pw::rpc
