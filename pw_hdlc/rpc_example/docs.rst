@@ -132,6 +132,10 @@ if needed.
    file follows "file:", for example ``file:/path/to/unix/socket``. Unix socket
    Python support is pending `<https://bugs.python.org/issue33408>`_.
 
+.. tip::
+
+   The default RPC Channel ID (1) can be overriden with ``--channel-id``.
+
 Then you can invoke RPCs from the interactive console on the client side.
 
 .. code:: pycon

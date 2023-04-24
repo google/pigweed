@@ -61,6 +61,7 @@ from pw_console.log_store import LogStore
 from pw_console.plugins.bandwidth_toolbar import BandwidthToolbar
 from pw_console.pyserial_wrapper import SerialWithLogging
 from pw_console.python_logging import create_temp_log_file, JsonLogFormatter
+from pw_hdlc import rpc
 from pw_rpc.console_tools.console import flattened_rpc_completions
 from pw_system.device import Device
 from pw_tokenizer.detokenize import AutoUpdatingDetokenizer
@@ -211,6 +212,13 @@ def _parse_args():
         action='store_false',
         dest='rpc_logging',
         help="Don't use pw_rpc based logging.",
+    )
+
+    parser.add_argument(
+        '--channel-id',
+        type=int,
+        default=rpc.DEFAULT_CHANNEL_ID,
+        help="Channel ID used in RPC communications.",
     )
 
     return parser.parse_args()
@@ -367,6 +375,7 @@ def console(
     merge_device_and_host_logs: bool = False,
     rpc_logging: bool = True,
     use_ipython: bool = False,
+    channel_id: int = rpc.DEFAULT_CHANNEL_ID,
 ) -> int:
     """Starts an interactive RPC console for HDLC."""
     # argparse.FileType doesn't correctly handle '-' for binary files.
@@ -503,7 +512,7 @@ def console(
             return 1
 
     device_client = Device(
-        1,
+        channel_id,
         read,
         write,
         protos,

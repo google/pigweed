@@ -46,6 +46,7 @@ _LOG = logging.getLogger(__name__)
 
 STDOUT_ADDRESS = 1
 DEFAULT_ADDRESS = ord('R')
+DEFAULT_CHANNEL_ID = 1
 _VERBOSE = logging.DEBUG - 1
 
 
@@ -136,7 +137,7 @@ def write_to_file(data: bytes, output: BinaryIO = sys.stdout.buffer):
 
 
 def default_channels(write: Callable[[bytes], Any]) -> List[pw_rpc.Channel]:
-    return [pw_rpc.Channel(1, channel_output(write))]
+    return [pw_rpc.Channel(DEFAULT_CHANNEL_ID, channel_output(write))]
 
 
 PathsModulesOrProtoLibrary = Union[
