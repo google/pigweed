@@ -1,14 +1,15 @@
 .. _module-pw_software_update-cli:
 
---------------------------------
-pw_software_update CLI reference
---------------------------------
+---------------------------------
+pw_software_update: CLI reference
+---------------------------------
 
 Overview
 ---------
 
-Use the ``pw_software_update`` CLI to quickly learn and prototype a software update system on your development PC before productionizing
-one. In the future you will be able to use the CLI to update a reference
+Use the ``pw_software_update`` CLI to quickly learn and prototype a software
+update system on your development PC before productionizing one. In the future
+you will be able to use the CLI to update a reference
 target.
 
 .. code-block:: bash

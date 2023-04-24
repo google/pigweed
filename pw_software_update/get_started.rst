@@ -48,7 +48,7 @@ and verified using ``pw update ...`` commands.
         ├── targets_key
         └── targets_key.pub
 
-3. Now that we have the keys, let's find them a owner by creating the root
+3. Now that we have the keys, let's find them an owner by creating the root
    metadata.
 
 .. code:: bash

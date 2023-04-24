@@ -1,10 +1,11 @@
 .. _module-pw_software_update-design:
 
--------------------------
-pw_software_update design
--------------------------
+--------------------------
+pw_software_update: Design
+--------------------------
 
-This page explains the security framing, bundle format, update workflows etc.
+This page explains the security framing, bundle format and update workflows of
+``pw_software_update``.
 
 Embedded TUF
 ------------
@@ -14,8 +15,8 @@ At the heart, the ``pw_software_update`` module leverages
 an industry-leading software update security framework that is open, flexible,
 and offers a balanced security and privacy treatment.
 
-The ``pw_software_update`` module implements the following building blocks around
-"TUF".
+The ``pw_software_update`` module implements the following building blocks
+around TUF.
 
 .. mermaid::
 
@@ -46,7 +47,7 @@ Key structure
 ^^^^^^^^^^^^^
 
 As an optimization and trade-off for embedded projects, ``pw_software_update``
-only support the "root" and "targets" roles, as represented by
+only supports the "root" and "targets" roles, as represented by
 ``root_metadata`` and ``targets_metadata``.
 
 .. mermaid::
@@ -63,7 +64,7 @@ The "root" role can regularly rotate the "targets" role, in effect revoking
 older versions once a new release is available.
 
 The "root" role is the "root of trust" for software update and tied into
-verified boot. Due to security risks, ``pw_software_update`` do not use
+verified boot. Due to security risks, ``pw_software_update`` does not use
 persistent metadata caches that are not covered by verified boot.
 
 Signing service
@@ -160,7 +161,11 @@ incoming bundle is staged via :ref:`module-pw_transfer`.
 Tooling
 ^^^^^^^
 
-#. The ``pw_software_update`` python package
+``pw_software_update`` provides the following tooling support for development
+and integration.
+
+The python package
+~~~~~~~~~~~~~~~~~~
 
 ``pw_software_update`` comes with a python package of the same name, providing
 the following functionalities.
@@ -194,7 +199,8 @@ A typical use of the package is for build system integration.
               verify
 
 
-#. The command line utility
+The command line utility
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 The ``pw update ...`` CLI (Command Line Interface) is a user-friendly interface
 to the ``pw_software_update`` python package.

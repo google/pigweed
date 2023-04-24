@@ -27,7 +27,7 @@ pw_software_update
      can be regularly rotated by the ``root`` key. The ``root`` keys are in
      turn rotated by verified boot. No provisioning is required.
    - **Frameworked client**: An update client that takes care of all the logic
-     of checking, staging, verifying, installing an incoming update. The
+     of checking, staging, verifying, and installing an incoming update. The
      framework calls into the downstream backend only when needed.
    - **Signing service**: Integration support for your favorite production
      signing service.
@@ -41,16 +41,16 @@ pw_software_update
 Who is it for
 -------------
 
-The ``pw_software_update`` module is still in early stages, it works best if
+The ``pw_software_update`` module is still in early stages. It works best if
 your software update needs checks the following boxes.
 
 ✅ **I want security-by-design**!
 
 The ``pw_software_update`` module is built with security in mind from
-day 0. It leverages the the state-of-the-art and widely used
-TUF_ framework. With relatively little expertise, you can set up and
-operate a software building, release and delivery pipeline that is
-resiliently secure and private.
+day 0. It leverages the state-of-the-art and widely used TUF_ framework.
+With relatively little expertise, you can set up and operate a software
+building, release, and delivery pipeline that is resiliently secure and
+private.
 
 ✅ **My project has verified boot.**
 
@@ -67,7 +67,7 @@ Software update is an extension of verified boot. Security measures in
 ✅ **My project DOES NOT require delta updates.**
 
 ``pw_software_update`` packages every new software release in a single opaque
-bundle. The bundle is the smallest granularity transffered between endpoints.
+bundle. The bundle is the smallest granularity transferred between endpoints.
 
 ✅ **I can manage signing keys myself.**
 
@@ -77,10 +77,9 @@ We don't yet have a public-facing signing service.
 
 We don't yet have a public-facing end-to-end software delivery solution.
 
-If your project don't check all the boxes above and still wish to use
-``pw_software_update``. please please
-`email <https://groups.google.com/g/pigweed>`_ or
-`chat <https://discord.gg/M9NSeTA>`_ with us for potential workarounds.
+If your project doesn't check all the boxes above but you still wish to use
+``pw_software_update``. Please `email <https://groups.google.com/g/pigweed>`_
+or `chat <https://discord.gg/M9NSeTA>`_ with us for potential workarounds.
 
 .. _TUF: https://theupdateframework.io/
 

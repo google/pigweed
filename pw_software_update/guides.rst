@@ -8,7 +8,7 @@ How you update software on an embedded system is specific to the project.
 However, there are common patterns. This section provides suggestions for
 each scenario, which you can then adjust to fit your specific needs.
 
-High level steps
+High-level steps
 ----------------
 
 Setting up an end-to-end software delivery system can seem overwhelming, but
@@ -23,10 +23,11 @@ generally involves the following high-level steps.
 1. Get familiar with ``pw_software_update``.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-``pw_software_update`` is not yet a fully managed service like Google Playstore.
-To use it effectively, you need to have at least a basic understanding of how
-it works. The :ref:`Getting started <module-pw_software_update-get-started>`
-and :ref:`Design <module-pw_software_update-design>` sections can help you with
+``pw_software_update`` is not yet a fully managed service like Google Play
+Store. To use it effectively, you need to have at least a basic understanding
+of how it works. The
+:ref:`Getting started <module-pw_software_update-get-started>` and
+:ref:`Design <module-pw_software_update-design>` sections can help you with
 this.
 
 2. Enable local updates for development.
@@ -41,7 +42,7 @@ so they can see the results of their changes quickly.
   :widths: 20, 20, 60
   :align: left
 
-  *Build System*, Produce update bundles, "Use ``pw_software_update``'s' CLI and
+  *Build System*, Produce update bundles, "Use ``pw_software_update``'s CLI and
   Python APIs to generate and check in dev keys, assemble build artifacts into
   a bundle, and locally sign the bundle."
 
@@ -81,6 +82,7 @@ the latest software and fixes.
   Request test-key remote signing. Publish internal releases."
 
 4. Prepare for launching.
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The goal of this step is not to add new features for users, but to improve
 security at key points in the development process in preparation for launch.
@@ -106,6 +108,7 @@ security at key points in the development process in preparation for launch.
   a build after all other qualifications have passed."
 
 5. Ensure smooth rollout.
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This step ensures updates are delivered to users reliably and with speed in
 cases of recoverable security bugs, over the supported lifetime of a product.
@@ -125,4 +128,4 @@ cases of recoverable security bugs, over the supported lifetime of a product.
   * How to do A/B updates
   * How to manage delta updates
   * How to revoke a bad release
-  * How to do stepstone releases
+  * How to do stepping-stone releases
