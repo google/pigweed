@@ -20,9 +20,8 @@ namespace pw::perf_test {
 namespace {
 
 void SimpleTestingFunction(pw::perf_test::State& state) {
-  [[maybe_unused]] int p = 0;
   while (state.KeepRunning()) {
-    ++p;
+    // Intentionally empty.
   }
 }
 
