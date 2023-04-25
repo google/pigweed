@@ -16,6 +16,7 @@
 #include <cstdint>
 
 #include "pw_rpc/internal/packet.h"
+#include "pw_rpc/internal/packet.pwpb.h"
 #include "pw_rpc/method_id.h"
 #include "pw_rpc/service_id.h"
 #include "pw_span/span.h"
@@ -40,6 +41,12 @@ class PacketMeta {
   constexpr bool destination_is_server() const {
     return destination_ == internal::Packet::kServer;
   }
+  constexpr bool type_is_client_error() const {
+    return type_ == internal::pwpb::PacketType::CLIENT_ERROR;
+  }
+  constexpr bool type_is_server_error() const {
+    return type_ == internal::pwpb::PacketType::SERVER_ERROR;
+  }
   // Note: this `payload` is only valid so long as the original `data` buffer
   // passed to `PacketMeta::FromBuffer` remains valid.
   constexpr ConstByteSpan payload() const { return payload_; }
@@ -50,11 +57,13 @@ class PacketMeta {
         service_id_(internal::WrapServiceId(packet.service_id())),
         method_id_(internal::WrapMethodId(packet.method_id())),
         destination_(packet.destination()),
+        type_(packet.type()),
         payload_(packet.payload()) {}
   uint32_t channel_id_;
   ServiceId service_id_;
   MethodId method_id_;
   internal::Packet::Destination destination_;
+  internal::pwpb::PacketType type_;
   ConstByteSpan payload_;
 };
 
