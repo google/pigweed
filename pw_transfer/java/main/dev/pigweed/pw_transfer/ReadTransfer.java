@@ -52,6 +52,7 @@ class ReadTransfer extends Transfer<byte[]> {
   private int lastReceivedOffset = 0;
 
   ReadTransfer(int resourceId,
+      int sessionId,
       ProtocolVersion desiredProtocolVersion,
       TransferInterface transferManager,
       TransferTimeoutSettings timeoutSettings,
@@ -59,6 +60,7 @@ class ReadTransfer extends Transfer<byte[]> {
       Consumer<TransferProgress> progressCallback,
       BooleanSupplier shouldAbortCallback) {
     super(resourceId,
+        sessionId,
         desiredProtocolVersion,
         transferManager,
         timeoutSettings,
@@ -66,6 +68,10 @@ class ReadTransfer extends Transfer<byte[]> {
         shouldAbortCallback);
     this.parameters = transferParameters;
     this.windowEndOffset = parameters.maxPendingBytes();
+  }
+
+  final TransferParameters getParametersForTest() {
+    return parameters;
   }
 
   @Override
@@ -183,7 +189,7 @@ class ReadTransfer extends Transfer<byte[]> {
 
     ByteBuffer result = ByteBuffer.allocate(totalDataSize);
     dataChunks.forEach(result::put);
-    getFuture().set(result.array());
+    set(result.array());
   }
 
   private VersionedChunk prepareTransferParameters(boolean extend) {

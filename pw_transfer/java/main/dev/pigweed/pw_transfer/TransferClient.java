@@ -153,7 +153,22 @@ public class TransferClient {
     transferEventHandlerThread.join();
   }
 
-  void waitUntilEventsAreProcessedForTest() {
+  // Functions for test use only.
+  // TODO(b/279808806): These could be annotated with test-only visibility.
+
+  final void waitUntilEventsAreProcessedForTest() {
     transferEventHandler.waitUntilEventsAreProcessedForTest();
+  }
+
+  final int getNextSessionIdForTest() {
+    return transferEventHandler.getNextSessionIdForTest();
+  }
+
+  final WriteTransfer getWriteTransferForTest(ListenableFuture<?> transferFuture) {
+    return (WriteTransfer) transferFuture;
+  }
+
+  final ReadTransfer getReadTransferForTest(ListenableFuture<?> transferFuture) {
+    return (ReadTransfer) transferFuture;
   }
 }

@@ -38,6 +38,7 @@ class WriteTransfer extends Transfer<Void> {
   private final byte[] data;
 
   protected WriteTransfer(int resourceId,
+      int sessionId,
       ProtocolVersion desiredProtocolVersion,
       TransferInterface transferManager,
       TransferTimeoutSettings timeoutSettings,
@@ -45,6 +46,7 @@ class WriteTransfer extends Transfer<Void> {
       Consumer<TransferProgress> progressCallback,
       BooleanSupplier shouldAbortCallback) {
     super(resourceId,
+        sessionId,
         desiredProtocolVersion,
         transferManager,
         timeoutSettings,
@@ -124,7 +126,7 @@ class WriteTransfer extends Transfer<Void> {
   @Override
   void setFutureResult() {
     updateProgress(data.length, data.length, data.length);
-    getFuture().set(null);
+    set(null);
   }
 
   private void updateTransferParameters(VersionedChunk chunk) throws TransferAbortedException {

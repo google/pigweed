@@ -17,6 +17,7 @@ package dev.pigweed.pw_transfer;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static dev.pigweed.pw_transfer.TransferProgress.UNKNOWN_TRANSFER_SIZE;
 
+import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import dev.pigweed.pw_log.Logger;
 import dev.pigweed.pw_rpc.Status;
@@ -28,7 +29,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 /** Base class for tracking the state of a read or write transfer. */
-abstract class Transfer<T> {
+abstract class Transfer<T> extends AbstractFuture<T> {
   private static final Logger logger = Logger.forClass(Transfer.class);
 
   // Largest nanosecond instant. Used to block indefinitely when no transfers are pending.
@@ -38,15 +39,14 @@ abstract class Transfer<T> {
   static final boolean VERBOSE_LOGGING = false;
 
   private final int resourceId;
+  private final int sessionId;
   private final ProtocolVersion desiredProtocolVersion;
   private final TransferEventHandler.TransferInterface eventHandler;
-  private final SettableFuture<T> future;
   private final TransferTimeoutSettings timeoutSettings;
   private final Consumer<TransferProgress> progressCallback;
   private final BooleanSupplier shouldAbortCallback;
   private final Instant startTime;
 
-  private int sessionId = VersionedChunk.UNASSIGNED_SESSION_ID;
   private ProtocolVersion configuredProtocolVersion = ProtocolVersion.UNKNOWN;
   private Instant deadline = NO_TIMEOUT;
   private State state;
@@ -68,23 +68,24 @@ abstract class Transfer<T> {
    * @param shouldAbortCallback BooleanSupplier that returns true if a transfer should be aborted.
    */
   Transfer(int resourceId,
+      int sessionId,
       ProtocolVersion desiredProtocolVersion,
       TransferInterface eventHandler,
       TransferTimeoutSettings timeoutSettings,
       Consumer<TransferProgress> progressCallback,
       BooleanSupplier shouldAbortCallback) {
     this.resourceId = resourceId;
+    this.sessionId = sessionId;
     this.desiredProtocolVersion = desiredProtocolVersion;
     this.eventHandler = eventHandler;
 
-    this.future = SettableFuture.create();
     this.timeoutSettings = timeoutSettings;
     this.progressCallback = progressCallback;
     this.shouldAbortCallback = shouldAbortCallback;
 
     // If the future is cancelled, tell the TransferEventHandler to cancel the transfer.
-    future.addListener(() -> {
-      if (future.isCancelled()) {
+    addListener(() -> {
+      if (isCancelled()) {
         eventHandler.cancelTransfer(this);
       }
     }, directExecutor());
@@ -92,7 +93,6 @@ abstract class Transfer<T> {
     if (desiredProtocolVersion == ProtocolVersion.LEGACY) {
       // Legacy transfers skip protocol negotiation stage and use the resource ID as the session ID.
       configuredProtocolVersion = ProtocolVersion.LEGACY;
-      assignSessionId(resourceId);
       state = getWaitingForDataState();
     } else {
       state = new Initiating();
@@ -119,9 +119,8 @@ abstract class Transfer<T> {
     return sessionId;
   }
 
-  private void assignSessionId(int newSessionId) {
-    sessionId = newSessionId;
-    eventHandler.assignSessionId(this);
+  final ProtocolVersion getDesiredProtocolVersionForTest() {
+    return desiredProtocolVersion;
   }
 
   /** Terminates the transfer without sending any packets. */
@@ -145,10 +144,6 @@ abstract class Transfer<T> {
     deadline = Instant.now().plusNanos((long) timeoutMicros * 1000);
   }
 
-  final SettableFuture<T> getFuture() {
-    return future;
-  }
-
   final void start() {
     logger.atInfo().log(
         "%s starting with parameters: default timeout %d ms, initial timeout %d ms, %d max retires",
@@ -157,7 +152,7 @@ abstract class Transfer<T> {
         timeoutSettings.initialTimeoutMillis(),
         timeoutSettings.maxRetries());
     VersionedChunk.Builder chunk =
-        VersionedChunk.createInitialChunk(desiredProtocolVersion, resourceId);
+        VersionedChunk.createInitialChunk(desiredProtocolVersion, resourceId, sessionId);
     prepareInitialChunk(chunk);
     try {
       sendChunk(chunk.build());
@@ -244,7 +239,8 @@ abstract class Transfer<T> {
         .setVersion(configuredProtocolVersion != ProtocolVersion.UNKNOWN ? configuredProtocolVersion
                                                                          : desiredProtocolVersion)
         .setType(type)
-        .setSessionId(sessionId);
+        .setSessionId(sessionId)
+        .setResourceId(resourceId);
   }
 
   final VersionedChunk getLastChunkSent() {
@@ -393,8 +389,6 @@ abstract class Transfer<T> {
   private class Initiating extends ActiveState {
     @Override
     public void handleDataChunk(VersionedChunk chunk) throws TransferAbortedException {
-      assignSessionId(chunk.sessionId());
-
       if (chunk.version() == ProtocolVersion.UNKNOWN) {
         logger.atWarning().log(
             "%s aborting due to unsupported protocol version: %s", Transfer.this, chunk);
@@ -495,7 +489,7 @@ abstract class Transfer<T> {
       if (status.ok()) {
         setFutureResult();
       } else {
-        future.setException(new TransferError(Transfer.this, status));
+        setException(new TransferError(Transfer.this, status));
       }
     }
 
@@ -503,7 +497,7 @@ abstract class Transfer<T> {
     Completed(TransferError exception) {
       cleanUp();
       logger.atWarning().withCause(exception).log("%s terminated with exception", Transfer.this);
-      future.setException(exception);
+      setException(exception);
     }
 
     private void cleanUp() {

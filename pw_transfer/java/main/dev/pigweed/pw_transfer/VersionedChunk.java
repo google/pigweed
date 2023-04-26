@@ -17,6 +17,7 @@ package dev.pigweed.pw_transfer;
 import com.google.auto.value.AutoValue;
 import com.google.protobuf.ByteString;
 import dev.pigweed.pw_rpc.Status;
+import java.util.Map;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 
@@ -25,7 +26,8 @@ import java.util.OptionalLong;
  */
 @AutoValue
 abstract class VersionedChunk {
-  public static final int UNASSIGNED_SESSION_ID = 0;
+  // Invalid session ID used for legacy chunks that do not map to a known session ID.
+  public static final int UNKNOWN_SESSION_ID = 0;
 
   public abstract ProtocolVersion version();
 
@@ -49,9 +51,11 @@ abstract class VersionedChunk {
 
   public abstract OptionalInt status();
 
+  public abstract OptionalInt desiredSessionId();
+
   public static Builder builder() {
     return new AutoValue_VersionedChunk.Builder()
-        .setSessionId(UNASSIGNED_SESSION_ID)
+        .setSessionId(UNKNOWN_SESSION_ID)
         .setOffset(0)
         .setWindowEndOffset(0)
         .setData(ByteString.EMPTY);
@@ -85,10 +89,12 @@ abstract class VersionedChunk {
 
     abstract Builder setStatus(int statusCode);
 
+    abstract Builder setDesiredSessionId(int desiredSessionId);
+
     public abstract VersionedChunk build();
   }
 
-  public static VersionedChunk fromMessage(Chunk chunk) {
+  public static VersionedChunk fromMessage(Chunk chunk, Map<Integer, Integer> legacyIdToSessionId) {
     Builder builder = builder();
 
     ProtocolVersion version;
@@ -119,13 +125,18 @@ abstract class VersionedChunk {
 
     // For legacy chunks, use the transfer ID as both the resource and session IDs.
     if (version == ProtocolVersion.LEGACY) {
-      builder.setSessionId(chunk.getTransferId());
+      builder.setSessionId(
+          legacyIdToSessionId.getOrDefault(chunk.getTransferId(), UNKNOWN_SESSION_ID));
       builder.setResourceId(chunk.getTransferId());
       if (chunk.hasStatus()) {
         builder.setType(Chunk.Type.COMPLETION);
       }
     } else {
       builder.setSessionId(chunk.getSessionId());
+    }
+
+    if (chunk.hasDesiredSessionId()) {
+      builder.setDesiredSessionId(chunk.getDesiredSessionId());
     }
 
     builder.setOffset((int) chunk.getOffset()).setData(chunk.getData());
@@ -154,8 +165,15 @@ abstract class VersionedChunk {
   }
 
   public static VersionedChunk.Builder createInitialChunk(
-      ProtocolVersion desiredVersion, int resourceId) {
-    return builder().setVersion(desiredVersion).setType(Chunk.Type.START).setResourceId(resourceId);
+      ProtocolVersion desiredVersion, int resourceId, int sessionId) {
+    VersionedChunk.Builder builder =
+        builder().setVersion(desiredVersion).setType(Chunk.Type.START).setResourceId(resourceId);
+
+    if (desiredVersion != ProtocolVersion.LEGACY) {
+      builder.setDesiredSessionId(sessionId);
+    }
+
+    return builder;
   }
 
   public Chunk toMessage() {
@@ -165,19 +183,24 @@ abstract class VersionedChunk {
                               .setWindowEndOffset(windowEndOffset())
                               .setData(data());
 
-    resourceId().ifPresent(chunk::setResourceId);
     remainingBytes().ifPresent(chunk::setRemainingBytes);
     maxChunkSizeBytes().ifPresent(chunk::setMaxChunkSizeBytes);
     minDelayMicroseconds().ifPresent(chunk::setMinDelayMicroseconds);
     status().ifPresent(chunk::setStatus);
+    desiredSessionId().ifPresent(chunk::setDesiredSessionId);
+
+    // The resourceId is only needed for START chunks.
+    if (type() == Chunk.Type.START) {
+      chunk.setResourceId(resourceId().getAsInt()); // resourceId must be set for start chunks
+    }
 
     // session_id did not exist in the legacy protocol, so don't send it.
-    if (version() != ProtocolVersion.LEGACY && sessionId() != UNASSIGNED_SESSION_ID) {
+    if (version() != ProtocolVersion.LEGACY && sessionId() != UNKNOWN_SESSION_ID) {
       chunk.setSessionId(sessionId());
     }
 
     if (shouldEncodeLegacyFields()) {
-      chunk.setTransferId(resourceId().orElse(sessionId()));
+      chunk.setTransferId(resourceId().getAsInt()); // resourceId must be set for legacy transfers
 
       if (chunk.getWindowEndOffset() != 0) {
         chunk.setPendingBytes(chunk.getWindowEndOffset() - offset());
