@@ -134,28 +134,38 @@ template("pw_internal_disableable_target") {
       if (defined(invoker.public)) {
         inputs += invoker.public
       }
+
+      if (defined(invoker.source_gen_deps)) {
+        deps = invoker.source_gen_deps
+      }
     }
   }
 
   target(invoker.target_type, _actual_target_name) {
+    sources = []
+    public_deps = []
+    deps = []
     forward_variables_from(invoker,
                            "*",
                            [
-                             "negative_compilation_tests",
                              "enable_if",
+                             "negative_compilation_tests",
+                             "source_gen_deps",
                              "target_type",
                              "test_automatic_runner_args",
                            ])
 
     # Remove "" from dependencies. This allows disabling targets if a variable
     # (e.g. a backend) is empty.
-    if (defined(public_deps)) {
-      public_deps += [ "" ]
-      public_deps -= [ "" ]
-    }
-    if (defined(deps)) {
-      deps += [ "" ]
-      deps -= [ "" ]
+    public_deps += [ "" ]
+    public_deps -= [ "" ]
+    deps += [ "" ]
+    deps -= [ "" ]
+    if (defined(invoker.source_gen_deps)) {
+      deps += invoker.source_gen_deps
+      foreach(source_gen_dep, invoker.source_gen_deps) {
+        sources += get_target_outputs(source_gen_dep)
+      }
     }
   }
 }
@@ -180,6 +190,11 @@ template("pw_internal_disableable_target") {
 #   - extra_metadata: (optional) Extra metadata to include in test group
 #         metadata output. This can be used to pass information about this test
 #         to later build tasks.
+#   - source_gen_deps: (optional) List of targets which generate `sources` for
+#         this test. These `deps` will be included even if the test is disabled.
+#         `get_target_outputs` is used to add the generated `sources` to the
+#         test's `sources` list, so these targets must appear earlier in the
+#         same build file.
 #   - All of the regular "executable" target args are accepted.
 #
 template("pw_test") {
@@ -190,6 +205,7 @@ template("pw_test") {
   _test_target_name = target_name
 
   _test_is_enabled = !defined(invoker.enable_if) || invoker.enable_if
+
   if (pw_toolchain_COVERAGE_ENABLED) {
     _profraw_path = "$target_out_dir/test/$_test_target_name.profraw"
   }
@@ -261,6 +277,7 @@ template("pw_test") {
       "output_name",
       "public",
       "sources",
+      "source_gen_deps",
       "testonly",
       "visibility",
 
@@ -297,6 +314,7 @@ template("pw_test") {
                              "extra_metadata",
                              "metadata",
                              "sources",
+                             "source_gen_deps",
                              "public",
                            ])
 

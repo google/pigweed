@@ -179,11 +179,9 @@ pw_python_action("generate_decoder_test") {
 }
 
 pw_test("decoder_test") {
-  deps = [
-    ":generate_decoder_test",
-    ":pw_hdlc",
-  ]
-  sources = [ "decoder_test.cc" ] + get_target_outputs(":generate_decoder_test")
+  deps = [ ":pw_hdlc" ]
+  source_gen_deps = [ ":generate_decoder_test" ]
+  sources = [ "decoder_test.cc" ]
 }
 
 pw_test("rpc_channel_test") {

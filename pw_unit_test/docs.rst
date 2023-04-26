@@ -230,6 +230,11 @@ pw_test template
   ``pw_executable``.
 * ``enable_if``: Boolean indicating whether the test should be built. If false,
   replaces the test with an empty target. Default true.
+* ``source_gen_deps``: List of target labels that generate source files used by
+  this test. The labels must meet the constraints of GN's `get_target_outputs`,
+  namely they must have been previously defined in the current file. This
+  argument is required if a test uses generated source files and `enable_if` can
+  evaluate to false.
 * ``test_main``: Target label to add to the tests's dependencies to provide the
   ``main()`` function. Defaults to ``pw_unit_test_MAIN``. Set to ``""`` if
   ``main()`` is implemented in the test's ``sources``.

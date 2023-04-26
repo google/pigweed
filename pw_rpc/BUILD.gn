@@ -516,11 +516,8 @@ pw_python_action("generate_ids_test") {
 }
 
 pw_test("ids_test") {
-  deps = [
-    ":generate_ids_test",
-    ":server",
-  ]
-  sources = get_target_outputs(":generate_ids_test")
+  deps = [ ":server" ]
+  source_gen_deps = [ ":generate_ids_test" ]
 }
 
 pw_test("packet_test") {
