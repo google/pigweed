@@ -14,7 +14,7 @@
 
 #include "pw_sync/binary_semaphore.h"
 
-#include <kernel.h>
+#include <zephyr/kernel.h>
 
 namespace pw::sync {
 
