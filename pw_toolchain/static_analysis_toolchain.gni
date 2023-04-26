@@ -15,6 +15,9 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_compilation_testing/negative_compilation_test.gni")
+import("$dir_pw_third_party/boringssl/boringssl.gni")
+import("$dir_pw_third_party/googletest/googletest.gni")
+import("$dir_pw_third_party/mbedtls/mbedtls.gni")
 import("$dir_pw_toolchain/universal_tools.gni")
 
 declare_args() {
@@ -33,9 +36,9 @@ declare_args() {
   # are switched from -I to -isystem, which causes clang-tidy to ignore them.
   # Unfortunately, clang-tidy provides no other way to filter header files.
   #
-  # For example, the following ignores header files in "mbedtls/include":
+  # For example, the following ignores header files in "repo/include":
   #
-  #   pw_toolchain_STATIC_ANALYSIS_SKIP_INCLUDE_PATHS = ["mbedtls/include"]
+  #   pw_toolchain_STATIC_ANALYSIS_SKIP_INCLUDE_PATHS = ["repo/include"]
   #
   # While the following ignores all third-party header files:
   #
@@ -43,6 +46,14 @@ declare_args() {
   #
   pw_toolchain_STATIC_ANALYSIS_SKIP_INCLUDE_PATHS = []
 }
+
+# Third-party software with Pigweed-supported build files that do not pass all
+# clang-tidy checks.
+_excluded_third_party_dirs = [
+  dir_pw_third_party_mbedtls,
+  dir_pw_third_party_boringssl,
+  dir_pw_third_party_googletest,
+]
 
 # Creates a toolchain target for static analysis.
 #
@@ -76,6 +87,19 @@ template("pw_static_analysis_toolchain") {
   assert(_static_analysis_args.enabled,
          "static_analysis.enabled must be true to use this toolchain.")
 
+  _skipped_regexps = []
+  _skipped_include_paths = []
+  foreach(third_party_dir, _excluded_third_party_dirs) {
+    if (third_party_dir != "") {
+      _skipped_include_paths += [
+        third_party_dir + "/include",
+        third_party_dir,
+      ]
+    }
+  }
+  _skipped_regexps += pw_toolchain_STATIC_ANALYSIS_SKIP_SOURCES_RES
+  _skipped_include_paths += pw_toolchain_STATIC_ANALYSIS_SKIP_INCLUDE_PATHS
+
   # Clang tidy is invoked by a wrapper script which implements the missing
   # option --source-filter.
   _clang_tidy_py_path =
@@ -84,11 +108,11 @@ template("pw_static_analysis_toolchain") {
   _clang_tidy_py = "${python_path} ${_clang_tidy_py_path}"
   _source_root = rebase_path("//", root_build_dir)
   _source_exclude = ""
-  foreach(pattern, pw_toolchain_STATIC_ANALYSIS_SKIP_SOURCES_RES) {
+  foreach(pattern, _skipped_regexps) {
     _source_exclude = _source_exclude + " --source-exclude '${pattern}'"
   }
   _skip_include_path = ""
-  foreach(pattern, pw_toolchain_STATIC_ANALYSIS_SKIP_INCLUDE_PATHS) {
+  foreach(pattern, _skipped_include_paths) {
     _skip_include_path =
         _skip_include_path + " --skip-include-path '${pattern}'"
   }
