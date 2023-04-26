@@ -23,21 +23,18 @@ pw_toolchain_android = {
     name = "android_debug"
     defaults = {
       default_configs = _android + [ "$dir_pw_build:optimize_debugging" ]
-      remove_default_configs = [ "$dir_pw_build:relative_paths" ]
     }
   }
   speed_optimized = {
     name = "android_speed_optimized"
     defaults = {
       default_configs = _android + [ "$dir_pw_build:optimize_speed" ]
-      remove_default_configs = [ "$dir_pw_build:relative_paths" ]
     }
   }
   size_optimized = {
     name = "android_size_optimized"
     defaults = {
       default_configs = _android + [ "$dir_pw_build:optimize_size" ]
-      remove_default_configs = [ "$dir_pw_build:relative_paths" ]
     }
   }
 }
