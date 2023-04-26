@@ -92,6 +92,8 @@ class RpcFuzzTestingTest : public testing::Test {
     fuzzer.Run(actions_);
   }
 
+  void TearDown() override { context_.server().UnregisterService(service_); }
+
  private:
   FuzzerContext context_;
   BenchmarkService service_;
