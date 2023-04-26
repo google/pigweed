@@ -27,7 +27,10 @@ class Googletest(pw_package.git_repo.GitRepo):
         super().__init__(
             *args,
             name='googletest',
-            url='https://github.com/google/googletest',
+            url=(
+                'https://pigweed.googlesource.com/'
+                'third_party/github/google/googletest'
+            ),
             commit='073293463e1733c5e931313da1c3f1de044e1db3',
             **kwargs,
         )
