@@ -153,7 +153,10 @@ pw_test("filtered_view_test") {
 
 pw_test("flat_map_test") {
   sources = [ "flat_map_test.cc" ]
-  deps = [ ":flat_map" ]
+  deps = [
+    ":flat_map",
+    dir_pw_polyfill,
+  ]
 }
 
 pw_test("inline_deque_test") {

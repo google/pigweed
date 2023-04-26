@@ -157,6 +157,7 @@ pw_add_test(pw_containers.flat_map_test
   GROUPS
     modules
     pw_containers
+    pw_polyfill
 )
 
 pw_add_test(pw_containers.inline_deque_test

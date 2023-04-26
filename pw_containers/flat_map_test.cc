@@ -17,6 +17,7 @@
 #include <limits>
 
 #include "gtest/gtest.h"
+#include "pw_polyfill/language_feature_macros.h"
 
 namespace pw::containers {
 namespace {
@@ -32,37 +33,37 @@ constexpr FlatMap<int, char, 5> kOddMap({{
 TEST(FlatMap, Size) { EXPECT_EQ(kOddMap.size(), static_cast<uint32_t>(5)); }
 
 TEST(FlatMap, EmptyFlatMapSize) {
-  constexpr FlatMap<int, char, 0> kEmpty({{}});
+  PW_CONSTEXPR_CPP20 FlatMap<int, char, 0> kEmpty({{}});
   EXPECT_EQ(kEmpty.size(), static_cast<uint32_t>(0));
 }
 
 TEST(FlatMap, Empty) {
-  constexpr FlatMap<int, char, 0> kEmpty({{}});
+  PW_CONSTEXPR_CPP20 FlatMap<int, char, 0> kEmpty({{}});
   EXPECT_TRUE(kEmpty.empty());
 }
 
 TEST(FlatMap, NotEmpty) {
-  constexpr FlatMap<int, char, 1> kNotEmpty({{}});
+  PW_CONSTEXPR_CPP20 FlatMap<int, char, 1> kNotEmpty({{}});
   EXPECT_FALSE(kNotEmpty.empty());
 }
 
 TEST(FlatMap, EmptyFlatMapFind) {
-  constexpr FlatMap<int, char, 0> kEmpty({{}});
+  PW_CONSTEXPR_CPP20 FlatMap<int, char, 0> kEmpty({{}});
   EXPECT_EQ(kEmpty.find(0), kEmpty.end());
 }
 
 TEST(FlatMap, EmptyFlatMapLowerBound) {
-  constexpr FlatMap<int, char, 0> kEmpty({{}});
+  PW_CONSTEXPR_CPP20 FlatMap<int, char, 0> kEmpty({{}});
   EXPECT_EQ(kEmpty.lower_bound(0), kEmpty.end());
 }
 
 TEST(FlatMap, EmptyFlatMapUpperBound) {
-  constexpr FlatMap<int, char, 0> kEmpty({{}});
+  PW_CONSTEXPR_CPP20 FlatMap<int, char, 0> kEmpty({{}});
   EXPECT_EQ(kEmpty.upper_bound(0), kEmpty.end());
 }
 
 TEST(FlatMap, EmptyEqualRange) {
-  constexpr FlatMap<int, char, 0> kEmpty({{}});
+  PW_CONSTEXPR_CPP20 FlatMap<int, char, 0> kEmpty({{}});
   EXPECT_EQ(kEmpty.equal_range(0).first, kEmpty.end());
   EXPECT_EQ(kEmpty.equal_range(0).second, kEmpty.end());
 }

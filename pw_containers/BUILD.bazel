@@ -170,6 +170,7 @@ pw_cc_test(
     ],
     deps = [
         ":pw_containers",
+        "//pw_polyfill",
         "//pw_unit_test",
     ],
 )
