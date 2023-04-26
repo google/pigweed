@@ -33,6 +33,9 @@ cc_library_static {
         "pw_span_headers",
         "pw_result_headers",
     ],
+    export_header_lib_headers: [
+      "pw_polyfill_headers",
+    ],
     static_libs: [
         "pw_bytes",
         "pw_status",
