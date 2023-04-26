@@ -18,6 +18,7 @@
 #include <limits>
 
 #include "gtest/gtest.h"
+#include "pw_string/string_builder.h"
 
 namespace pw::rpc::fuzz {
 namespace {

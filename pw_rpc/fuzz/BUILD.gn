@@ -65,7 +65,10 @@ pw_source_set("argparse") {
 
 pw_test("argparse_test") {
   sources = [ "argparse_test.cc" ]
-  deps = [ ":argparse" ]
+  deps = [
+    ":argparse",
+    "$dir_pw_string:builder",
+  ]
 }
 
 pw_source_set("engine") {
