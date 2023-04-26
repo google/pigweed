@@ -24,6 +24,7 @@ pw_python_package("py") {
   ]
   sources = [
     "pw_build/__init__.py",
+    "pw_build/bazel_query.py",
     "pw_build/build_recipe.py",
     "pw_build/collect_wheels.py",
     "pw_build/copy_from_cipd.py",
@@ -56,6 +57,7 @@ pw_python_package("py") {
     "pw_build/zip.py",
   ]
   tests = [
+    "bazel_query_test.py",
     "build_recipe_test.py",
     "create_python_tree_test.py",
     "file_prefix_map_test.py",
