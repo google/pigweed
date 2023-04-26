@@ -42,6 +42,12 @@ bits AudioCodecSupportMask:
 # ============ Commands ============
 
 
+struct StopA2dpOffloadCommand:
+  let hdr_size = hci.CommandHeader.$size_in_bytes
+  0      [+hdr_size]  hci.CommandHeader       header
+  $next  [+1]         UInt                    opcode
+
+
 struct LEMultiAdvtEnableCommand:
   -- LE multi-advertising enable command.
   let hdr_size = hci.CommandHeader.$size_in_bytes
