@@ -14,6 +14,7 @@
 """Client for the pw_transfer service, which transmits data over pw_rpc."""
 
 import asyncio
+import ctypes
 import logging
 import threading
 from typing import Any, Dict, Optional, Union
@@ -83,6 +84,7 @@ class Manager:  # pylint: disable=too-many-instance-attributes
         # Ongoing transfers in the service by resource ID.
         self._read_transfers: _TransferDict = {}
         self._write_transfers: _TransferDict = {}
+        self._next_session_id = ctypes.c_uint32(1)
 
         # RPC streams for read and write transfers. These are shareable by
         # multiple transfers of the same type.
@@ -139,7 +141,14 @@ class Manager:  # pylint: disable=too-many-instance-attributes
         if protocol_version is None:
             protocol_version = self._default_protocol_version
 
+        session_id = (
+            resource_id
+            if protocol_version is ProtocolVersion.LEGACY
+            else self.assign_session_id()
+        )
+
         transfer = ReadTransfer(
+            session_id,
             resource_id,
             self._send_read_chunk,
             self._end_read_transfer,
@@ -190,7 +199,14 @@ class Manager:  # pylint: disable=too-many-instance-attributes
         if protocol_version is None:
             protocol_version = self._default_protocol_version
 
+        session_id = (
+            resource_id
+            if protocol_version is ProtocolVersion.LEGACY
+            else self.assign_session_id()
+        )
+
         transfer = WriteTransfer(
+            session_id,
             resource_id,
             data,
             self._send_write_chunk,
@@ -216,6 +232,15 @@ class Manager:  # pylint: disable=too-many-instance-attributes
     def _send_write_chunk(self, chunk: Chunk) -> None:
         assert self._write_stream is not None
         self._write_stream.send(chunk.to_message())
+
+    def assign_session_id(self) -> int:
+        new_id = self._next_session_id.value
+
+        self._next_session_id = ctypes.c_uint32(self._next_session_id.value + 1)
+        if self._next_session_id.value == 0:
+            self._next_session_id = ctypes.c_uint32(1)
+
+        return new_id
 
     def _start_event_loop_thread(self):
         """Entry point for event loop thread that starts an asyncio context."""
@@ -291,15 +316,17 @@ class Manager:  # pylint: disable=too-many-instance-attributes
 
         # Find a transfer for the chunk in the list of active transfers.
         try:
-            if chunk.resource_id is not None:
-                # Prioritize a resource_id if one is set.
-                transfer = transfers[chunk.resource_id]
+            if chunk.protocol_version is ProtocolVersion.LEGACY:
+                transfer = next(
+                    t
+                    for t in transfers.values()
+                    if t.resource_id == chunk.session_id
+                )
             else:
-                # Otherwise, match against either resource or session ID.
                 transfer = next(
                     t for t in transfers.values() if t.id == chunk.id()
                 )
-        except (KeyError, StopIteration):
+        except StopIteration:
             _LOG.error(
                 'TransferManager received chunk for unknown transfer %d',
                 chunk.id(),

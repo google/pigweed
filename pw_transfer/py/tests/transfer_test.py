@@ -34,6 +34,7 @@ except ImportError:
     from pigweed.pw_transfer import transfer_pb2  # type: ignore
 
 _TRANSFER_SERVICE_ID = ids.calculate('pw.transfer.Transfer')
+_FIRST_SESSION_ID = 1
 
 # If the default timeout is too short, some tests become flaky on Windows.
 DEFAULT_TIMEOUT_S = 0.3
@@ -788,14 +789,14 @@ class TransferManagerTest(unittest.TestCase):
                 (
                     transfer_pb2.Chunk(
                         resource_id=39,
-                        session_id=280,
+                        session_id=_FIRST_SESSION_ID,
                         type=transfer_pb2.Chunk.Type.START_ACK,
                         protocol_version=ProtocolVersion.VERSION_TWO.value,
                     ),
                 ),
                 (
                     transfer_pb2.Chunk(
-                        session_id=280,
+                        session_id=_FIRST_SESSION_ID,
                         type=transfer_pb2.Chunk.Type.DATA,
                         offset=0,
                         data=b'version two',
@@ -804,7 +805,7 @@ class TransferManagerTest(unittest.TestCase):
                 ),
                 (
                     transfer_pb2.Chunk(
-                        session_id=280,
+                        session_id=_FIRST_SESSION_ID,
                         type=transfer_pb2.Chunk.Type.COMPLETION_ACK,
                     ),
                 ),
@@ -819,6 +820,7 @@ class TransferManagerTest(unittest.TestCase):
                 transfer_pb2.Chunk(
                     transfer_id=39,
                     resource_id=39,
+                    desired_session_id=_FIRST_SESSION_ID,
                     pending_bytes=8192,
                     max_chunk_size_bytes=1024,
                     window_end_offset=8192,
@@ -826,7 +828,7 @@ class TransferManagerTest(unittest.TestCase):
                     protocol_version=ProtocolVersion.VERSION_TWO.value,
                 ),
                 transfer_pb2.Chunk(
-                    session_id=280,
+                    session_id=_FIRST_SESSION_ID,
                     type=transfer_pb2.Chunk.Type.START_ACK_CONFIRMATION,
                     max_chunk_size_bytes=1024,
                     window_end_offset=8192,
@@ -835,7 +837,7 @@ class TransferManagerTest(unittest.TestCase):
                     protocol_version=ProtocolVersion.VERSION_TWO.value,
                 ),
                 transfer_pb2.Chunk(
-                    session_id=280,
+                    session_id=_FIRST_SESSION_ID,
                     type=transfer_pb2.Chunk.Type.COMPLETION,
                     status=Status.OK.value,
                 ),
@@ -877,6 +879,7 @@ class TransferManagerTest(unittest.TestCase):
                 transfer_pb2.Chunk(
                     transfer_id=40,
                     resource_id=40,
+                    desired_session_id=_FIRST_SESSION_ID,
                     pending_bytes=8192,
                     max_chunk_size_bytes=1024,
                     window_end_offset=8192,
@@ -907,14 +910,14 @@ class TransferManagerTest(unittest.TestCase):
                 (
                     transfer_pb2.Chunk(
                         resource_id=72,
-                        session_id=880,
+                        session_id=_FIRST_SESSION_ID,
                         type=transfer_pb2.Chunk.Type.START_ACK,
                         protocol_version=ProtocolVersion.VERSION_TWO.value,
                     ),
                 ),
                 (
                     transfer_pb2.Chunk(
-                        session_id=880,
+                        session_id=_FIRST_SESSION_ID,
                         type=transfer_pb2.Chunk.Type.PARAMETERS_RETRANSMIT,
                         offset=0,
                         window_end_offset=32,
@@ -924,7 +927,7 @@ class TransferManagerTest(unittest.TestCase):
                 (),  # In response to the first data chunk.
                 (
                     transfer_pb2.Chunk(
-                        session_id=880,
+                        session_id=_FIRST_SESSION_ID,
                         type=transfer_pb2.Chunk.Type.COMPLETION,
                         status=Status.OK.value,
                     ),
@@ -940,29 +943,31 @@ class TransferManagerTest(unittest.TestCase):
                 transfer_pb2.Chunk(
                     transfer_id=72,
                     resource_id=72,
+                    desired_session_id=_FIRST_SESSION_ID,
                     type=transfer_pb2.Chunk.Type.START,
                     protocol_version=ProtocolVersion.VERSION_TWO.value,
                 ),
                 transfer_pb2.Chunk(
-                    session_id=880,
+                    session_id=_FIRST_SESSION_ID,
                     type=transfer_pb2.Chunk.Type.START_ACK_CONFIRMATION,
                     protocol_version=ProtocolVersion.VERSION_TWO.value,
                 ),
                 transfer_pb2.Chunk(
-                    session_id=880,
+                    session_id=_FIRST_SESSION_ID,
                     type=transfer_pb2.Chunk.Type.DATA,
                     offset=0,
                     data=b'write ve',
                 ),
                 transfer_pb2.Chunk(
-                    session_id=880,
+                    session_id=_FIRST_SESSION_ID,
                     type=transfer_pb2.Chunk.Type.DATA,
                     offset=8,
                     data=b'rsion 2',
                     remaining_bytes=0,
                 ),
                 transfer_pb2.Chunk(
-                    session_id=880, type=transfer_pb2.Chunk.Type.COMPLETION_ACK
+                    session_id=_FIRST_SESSION_ID,
+                    type=transfer_pb2.Chunk.Type.COMPLETION_ACK,
                 ),
             ],
         )
@@ -1010,6 +1015,7 @@ class TransferManagerTest(unittest.TestCase):
                 transfer_pb2.Chunk(
                     transfer_id=76,
                     resource_id=76,
+                    desired_session_id=_FIRST_SESSION_ID,
                     type=transfer_pb2.Chunk.Type.START,
                     protocol_version=ProtocolVersion.VERSION_TWO.value,
                 ),
@@ -1032,7 +1038,7 @@ class TransferManagerTest(unittest.TestCase):
         self.assertEqual(self._received_data(), b'write v... NOPE')
 
     def test_v2_server_error(self) -> None:
-        """Tests a timeout occurring during the opening handshake."""
+        """Tests a server error occurring during the opening handshake."""
 
         manager = pw_transfer.Manager(
             self._service,
@@ -1046,14 +1052,14 @@ class TransferManagerTest(unittest.TestCase):
                 (
                     transfer_pb2.Chunk(
                         resource_id=43,
-                        session_id=680,
+                        session_id=_FIRST_SESSION_ID,
                         type=transfer_pb2.Chunk.Type.START_ACK,
                         protocol_version=ProtocolVersion.VERSION_TWO.value,
                     ),
                 ),
                 (
                     transfer_pb2.Chunk(
-                        session_id=680,
+                        session_id=_FIRST_SESSION_ID,
                         type=transfer_pb2.Chunk.Type.COMPLETION,
                         status=Status.DATA_LOSS.value,
                     ),
@@ -1069,6 +1075,7 @@ class TransferManagerTest(unittest.TestCase):
             [
                 transfer_pb2.Chunk(
                     transfer_id=43,
+                    desired_session_id=_FIRST_SESSION_ID,
                     resource_id=43,
                     pending_bytes=8192,
                     max_chunk_size_bytes=1024,
@@ -1077,7 +1084,7 @@ class TransferManagerTest(unittest.TestCase):
                     protocol_version=ProtocolVersion.VERSION_TWO.value,
                 ),
                 transfer_pb2.Chunk(
-                    session_id=680,
+                    session_id=_FIRST_SESSION_ID,
                     type=transfer_pb2.Chunk.Type.START_ACK_CONFIRMATION,
                     max_chunk_size_bytes=1024,
                     window_end_offset=8192,
@@ -1085,7 +1092,8 @@ class TransferManagerTest(unittest.TestCase):
                 ),
                 # Client sends a COMPLETION_ACK in response to the server.
                 transfer_pb2.Chunk(
-                    session_id=680, type=transfer_pb2.Chunk.Type.COMPLETION_ACK
+                    session_id=_FIRST_SESSION_ID,
+                    type=transfer_pb2.Chunk.Type.COMPLETION_ACK,
                 ),
             ],
         )
@@ -1110,6 +1118,7 @@ class TransferManagerTest(unittest.TestCase):
         start_chunk = transfer_pb2.Chunk(
             transfer_id=41,
             resource_id=41,
+            desired_session_id=_FIRST_SESSION_ID,
             pending_bytes=8192,
             max_chunk_size_bytes=1024,
             window_end_offset=8192,
@@ -1138,7 +1147,7 @@ class TransferManagerTest(unittest.TestCase):
                 (
                     transfer_pb2.Chunk(
                         resource_id=73,
-                        session_id=101,
+                        session_id=_FIRST_SESSION_ID,
                         type=transfer_pb2.Chunk.Type.START_ACK,
                         protocol_version=ProtocolVersion.VERSION_TWO.value,
                     ),
@@ -1147,7 +1156,7 @@ class TransferManagerTest(unittest.TestCase):
                 (),  # Don't respond to the first START_ACK_CONFIRMATION retry.
                 (
                     transfer_pb2.Chunk(
-                        session_id=101,
+                        session_id=_FIRST_SESSION_ID,
                         type=transfer_pb2.Chunk.Type.PARAMETERS_RETRANSMIT,
                         offset=0,
                         window_end_offset=32,
@@ -1157,7 +1166,7 @@ class TransferManagerTest(unittest.TestCase):
                 (),  # In response to the first data chunk.
                 (
                     transfer_pb2.Chunk(
-                        session_id=101,
+                        session_id=_FIRST_SESSION_ID,
                         type=transfer_pb2.Chunk.Type.COMPLETION,
                         status=Status.OK.value,
                     ),
@@ -1168,7 +1177,7 @@ class TransferManagerTest(unittest.TestCase):
         manager.write(73, b'write timeout 2')
 
         start_ack_confirmation = transfer_pb2.Chunk(
-            session_id=101,
+            session_id=_FIRST_SESSION_ID,
             type=transfer_pb2.Chunk.Type.START_ACK_CONFIRMATION,
             protocol_version=ProtocolVersion.VERSION_TWO.value,
         )
@@ -1179,6 +1188,7 @@ class TransferManagerTest(unittest.TestCase):
                 transfer_pb2.Chunk(
                     transfer_id=73,
                     resource_id=73,
+                    desired_session_id=_FIRST_SESSION_ID,
                     type=transfer_pb2.Chunk.Type.START,
                     protocol_version=ProtocolVersion.VERSION_TWO.value,
                 ),
@@ -1186,20 +1196,21 @@ class TransferManagerTest(unittest.TestCase):
                 start_ack_confirmation,  # Retry 1
                 start_ack_confirmation,  # Retry 2
                 transfer_pb2.Chunk(
-                    session_id=101,
+                    session_id=_FIRST_SESSION_ID,
                     type=transfer_pb2.Chunk.Type.DATA,
                     offset=0,
                     data=b'write ti',
                 ),
                 transfer_pb2.Chunk(
-                    session_id=101,
+                    session_id=_FIRST_SESSION_ID,
                     type=transfer_pb2.Chunk.Type.DATA,
                     offset=8,
                     data=b'meout 2',
                     remaining_bytes=0,
                 ),
                 transfer_pb2.Chunk(
-                    session_id=101, type=transfer_pb2.Chunk.Type.COMPLETION_ACK
+                    session_id=_FIRST_SESSION_ID,
+                    type=transfer_pb2.Chunk.Type.COMPLETION_ACK,
                 ),
             ],
         )
@@ -1220,14 +1231,14 @@ class TransferManagerTest(unittest.TestCase):
                 (
                     transfer_pb2.Chunk(
                         resource_id=47,
-                        session_id=580,
+                        session_id=_FIRST_SESSION_ID,
                         type=transfer_pb2.Chunk.Type.START_ACK,
                         protocol_version=ProtocolVersion.VERSION_TWO.value,
                     ),
                 ),
                 (
                     transfer_pb2.Chunk(
-                        session_id=580,
+                        session_id=_FIRST_SESSION_ID,
                         type=transfer_pb2.Chunk.Type.DATA,
                         offset=0,
                         data=b'version two',
@@ -1238,7 +1249,7 @@ class TransferManagerTest(unittest.TestCase):
                 # of a COMPLETION_ACK.
                 (
                     transfer_pb2.Chunk(
-                        session_id=580,
+                        session_id=_FIRST_SESSION_ID,
                         type=transfer_pb2.Chunk.Type.DATA,
                         offset=0,
                         data=b'version two',
@@ -1247,7 +1258,7 @@ class TransferManagerTest(unittest.TestCase):
                 ),
                 (
                     transfer_pb2.Chunk(
-                        session_id=580,
+                        session_id=_FIRST_SESSION_ID,
                         type=transfer_pb2.Chunk.Type.COMPLETION_ACK,
                     ),
                 ),
@@ -1262,6 +1273,7 @@ class TransferManagerTest(unittest.TestCase):
                 transfer_pb2.Chunk(
                     transfer_id=47,
                     resource_id=47,
+                    desired_session_id=_FIRST_SESSION_ID,
                     pending_bytes=8192,
                     max_chunk_size_bytes=1024,
                     window_end_offset=8192,
@@ -1269,20 +1281,20 @@ class TransferManagerTest(unittest.TestCase):
                     protocol_version=ProtocolVersion.VERSION_TWO.value,
                 ),
                 transfer_pb2.Chunk(
-                    session_id=580,
+                    session_id=_FIRST_SESSION_ID,
                     type=transfer_pb2.Chunk.Type.START_ACK_CONFIRMATION,
                     max_chunk_size_bytes=1024,
                     window_end_offset=8192,
                     protocol_version=ProtocolVersion.VERSION_TWO.value,
                 ),
                 transfer_pb2.Chunk(
-                    session_id=580,
+                    session_id=_FIRST_SESSION_ID,
                     type=transfer_pb2.Chunk.Type.COMPLETION,
                     status=Status.OK.value,
                 ),
                 # Completion should be re-sent following the repeated chunk.
                 transfer_pb2.Chunk(
-                    session_id=580,
+                    session_id=_FIRST_SESSION_ID,
                     type=transfer_pb2.Chunk.Type.COMPLETION,
                     status=Status.OK.value,
                 ),
@@ -1305,14 +1317,14 @@ class TransferManagerTest(unittest.TestCase):
                 (
                     transfer_pb2.Chunk(
                         resource_id=47,
-                        session_id=980,
+                        session_id=_FIRST_SESSION_ID,
                         type=transfer_pb2.Chunk.Type.START_ACK,
                         protocol_version=ProtocolVersion.VERSION_TWO.value,
                     ),
                 ),
                 (
                     transfer_pb2.Chunk(
-                        session_id=980,
+                        session_id=_FIRST_SESSION_ID,
                         type=transfer_pb2.Chunk.Type.DATA,
                         offset=0,
                         data=b'dropped completion',
@@ -1331,6 +1343,7 @@ class TransferManagerTest(unittest.TestCase):
                 transfer_pb2.Chunk(
                     transfer_id=47,
                     resource_id=47,
+                    desired_session_id=_FIRST_SESSION_ID,
                     pending_bytes=8192,
                     max_chunk_size_bytes=1024,
                     window_end_offset=8192,
@@ -1338,30 +1351,30 @@ class TransferManagerTest(unittest.TestCase):
                     protocol_version=ProtocolVersion.VERSION_TWO.value,
                 ),
                 transfer_pb2.Chunk(
-                    session_id=980,
+                    session_id=_FIRST_SESSION_ID,
                     type=transfer_pb2.Chunk.Type.START_ACK_CONFIRMATION,
                     max_chunk_size_bytes=1024,
                     window_end_offset=8192,
                     protocol_version=ProtocolVersion.VERSION_TWO.value,
                 ),
                 transfer_pb2.Chunk(
-                    session_id=980,
+                    session_id=_FIRST_SESSION_ID,
                     type=transfer_pb2.Chunk.Type.COMPLETION,
                     status=Status.OK.value,
                 ),
                 # The completion should be retried per the usual retry flow.
                 transfer_pb2.Chunk(
-                    session_id=980,
+                    session_id=_FIRST_SESSION_ID,
                     type=transfer_pb2.Chunk.Type.COMPLETION,
                     status=Status.OK.value,
                 ),
                 transfer_pb2.Chunk(
-                    session_id=980,
+                    session_id=_FIRST_SESSION_ID,
                     type=transfer_pb2.Chunk.Type.COMPLETION,
                     status=Status.OK.value,
                 ),
                 transfer_pb2.Chunk(
-                    session_id=980,
+                    session_id=_FIRST_SESSION_ID,
                     type=transfer_pb2.Chunk.Type.COMPLETION,
                     status=Status.OK.value,
                 ),

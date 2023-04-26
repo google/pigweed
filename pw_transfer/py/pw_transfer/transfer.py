@@ -1,4 +1,4 @@
-# Copyright 2022 The Pigweed Authors
+# Copyright 2023 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -119,10 +119,9 @@ class Transfer(abc.ABC):
         # A transfer has fully completed.
         COMPLETE = 5
 
-    _UNASSIGNED_SESSION_ID = 0
-
     def __init__(  # pylint: disable=too-many-arguments
         self,
+        session_id: int,
         resource_id: int,
         send_chunk: Callable[[Chunk], None],
         end_transfer: Callable[['Transfer'], None],
@@ -136,7 +135,7 @@ class Transfer(abc.ABC):
         self.status = Status.OK
         self.done = threading.Event()
 
-        self._session_id = self._UNASSIGNED_SESSION_ID
+        self._session_id = session_id
         self._resource_id = resource_id
 
         self._send_chunk_fn = send_chunk
@@ -187,6 +186,9 @@ class Transfer(abc.ABC):
             resource_id=self._resource_id,
         )
 
+        if self._desired_protocol_version is ProtocolVersion.VERSION_TWO:
+            initial_chunk.desired_session_id = self._session_id
+
         # Regardless of the desired protocol version, set any additional fields
         # on the opening chunk, in case the server only runs legacy.
         self._set_initial_chunk_fields(initial_chunk)
@@ -197,9 +199,7 @@ class Transfer(abc.ABC):
     @property
     def id(self) -> int:
         """Returns the identifier for the active transfer."""
-        if self._session_id != self._UNASSIGNED_SESSION_ID:
-            return self._session_id
-        return self._resource_id
+        return self._session_id
 
     @property
     def resource_id(self) -> int:
@@ -278,14 +278,12 @@ class Transfer(abc.ABC):
             self._configured_protocol_version = ProtocolVersion.LEGACY
             self._state = Transfer._State.WAITING
 
-            # Update the transfer's session ID in case it was expecting one to
-            # be assigned by the server.
+            # Update the transfer's session ID, which will map to the
+            # transfer_id of the legacy chunk.
             self._session_id = chunk.session_id
 
             await self._handle_data_chunk(chunk)
             return
-
-        self._session_id = chunk.session_id
 
         self._configured_protocol_version = ProtocolVersion(
             min(
@@ -426,6 +424,7 @@ class WriteTransfer(Transfer):
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
+        session_id: int,
         resource_id: int,
         data: bytes,
         send_chunk: Callable[[Chunk], None],
@@ -438,6 +437,7 @@ class WriteTransfer(Transfer):
         progress_callback: Optional[ProgressCallback] = None,
     ):
         super().__init__(
+            session_id,
             resource_id,
             send_chunk,
             end_transfer,
@@ -621,6 +621,7 @@ class ReadTransfer(Transfer):
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
+        session_id: int,
         resource_id: int,
         send_chunk: Callable[[Chunk], None],
         end_transfer: Callable[[Transfer], None],
@@ -635,6 +636,7 @@ class ReadTransfer(Transfer):
         progress_callback: Optional[ProgressCallback] = None,
     ):
         super().__init__(
+            session_id,
             resource_id,
             send_chunk,
             end_transfer,
