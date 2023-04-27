@@ -34,13 +34,14 @@ cc_library_static {
         "pw_span_headers",
     ],
     export_header_lib_headers: [
-      "pw_assert_headers",
-      "pw_assert_log_headers",
-      "pw_log_headers",
-      "pw_log_null_headers",
-      "pw_preprocessor_headers",
-      "pw_result_headers",
-      "pw_span_headers",
+        "pw_assert_headers",
+        "pw_assert_log_headers",
+        "pw_function_headers",
+        "pw_log_headers",
+        "pw_log_null_headers",
+        "pw_preprocessor_headers",
+        "pw_result_headers",
+        "pw_span_headers",
     ],
     host_supported: true,
     srcs: [
@@ -60,11 +61,11 @@ cc_library_static {
         "pw_varint",
     ],
     export_static_lib_headers: [
-      "pw_bytes",
-      "pw_containers",
-      "pw_status",
-      "pw_stream",
-      "pw_varint",
+        "pw_bytes",
+        "pw_containers",
+        "pw_status",
+        "pw_stream",
+        "pw_varint",
     ],
 }
 
