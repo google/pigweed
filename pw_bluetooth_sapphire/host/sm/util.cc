@@ -244,8 +244,10 @@ void C1(const UInt128& tk, const UInt128& rand, const ByteBuffer& preq, const By
   UInt128 p1, p2;
 
   // Calculate p1 = pres || preq || rat’ || iat’
-  hci_spec::LEAddressType iat = hci::AddressTypeToHCI(initiator_addr.type());
-  hci_spec::LEAddressType rat = hci::AddressTypeToHCI(responder_addr.type());
+  pw::bluetooth::emboss::LEAddressType iat =
+      DeviceAddress::DeviceAddrToLeAddr(initiator_addr.type());
+  pw::bluetooth::emboss::LEAddressType rat =
+      DeviceAddress::DeviceAddrToLeAddr(responder_addr.type());
   p1[0] = static_cast<uint8_t>(iat);
   p1[1] = static_cast<uint8_t>(rat);
   std::memcpy(p1.data() + 2, preq.data(), preq.size());                // Bytes [2-8]

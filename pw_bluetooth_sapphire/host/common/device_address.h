@@ -85,6 +85,8 @@ class DeviceAddress {
   // Utilities to convert between DeviceAddress::Type and the LE peer address type.
   static pw::bluetooth::emboss::LEPeerAddressType DeviceAddrToLePeerAddr(Type type);
   static Type LePeerAddrToDeviceAddr(pw::bluetooth::emboss::LEPeerAddressType type);
+  static pw::bluetooth::emboss::LEAddressType DeviceAddrToLeAddr(Type type);
+  static Type LeAddrToDeviceAddr(pw::bluetooth::emboss::LEAddressType type);
 
   // The default constructor initializes the address to 00:00:00:00:00:00 and
   // the type to Type::kBREDR.

@@ -115,6 +115,42 @@ DeviceAddress::Type DeviceAddress::LePeerAddrToDeviceAddr(
   }
 }
 
+pw::bluetooth::emboss::LEAddressType DeviceAddress::DeviceAddrToLeAddr(DeviceAddress::Type type) {
+  switch (type) {
+    case DeviceAddress::Type::kLEPublic: {
+      return pw::bluetooth::emboss::LEAddressType::PUBLIC;
+    }
+    case DeviceAddress::Type::kLERandom: {
+      return pw::bluetooth::emboss::LEAddressType::RANDOM;
+    }
+    case DeviceAddress::Type::kLEAnonymous: {
+      return pw::bluetooth::emboss::LEAddressType::ANONYMOUS;
+    }
+    default: {
+      BT_PANIC("invalid DeviceAddressType");
+    }
+  }
+}
+
+DeviceAddress::Type DeviceAddress::LeAddrToDeviceAddr(pw::bluetooth::emboss::LEAddressType type) {
+  switch (type) {
+    case pw::bluetooth::emboss::LEAddressType::PUBLIC:
+    case pw::bluetooth::emboss::LEAddressType::PUBLIC_IDENTITY: {
+      return DeviceAddress::Type::kLEPublic;
+    }
+    case pw::bluetooth::emboss::LEAddressType::RANDOM:
+    case pw::bluetooth::emboss::LEAddressType::RANDOM_IDENTITY: {
+      return DeviceAddress::Type::kLERandom;
+    }
+    case pw::bluetooth::emboss::LEAddressType::ANONYMOUS: {
+      return DeviceAddress::Type::kLEAnonymous;
+    }
+    default: {
+      BT_PANIC("invalid LEAddressType");
+    }
+  }
+}
+
 bool DeviceAddress::IsResolvablePrivate() const {
   // "The two most significant bits of [a RPA] shall be equal to 0 and 1".
   // (Vol 6, Part B, 1.3.2.2).
