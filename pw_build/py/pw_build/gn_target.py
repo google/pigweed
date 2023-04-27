@@ -115,7 +115,7 @@ class GnTarget:  # pylint: disable=too-many-instance-attributes
         rule_label = rule.label()
         if rule_label.startswith('//'):
             rule_label = rule_label[2:]
-        self._label = GnLabel(self._base_label.joinlabel(rule_label))
+        self._label = self._base_label.joinlabel(rule_label)
 
         # Translate Bazel kind to GN target type.
         if kind == 'cc_library':

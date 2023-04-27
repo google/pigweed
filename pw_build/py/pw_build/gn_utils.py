@@ -140,6 +140,9 @@ class GnLabel:
             parts = str(base_path).split(':')
             self._path = PurePosixPath(':'.join(parts[:-1]))
             self._name = parts[-1]
+        elif isinstance(base, GnLabel):
+            self._path = base._path
+            self._name = base._name
         else:
             self._path = base_path
             self._name = self._path.name
@@ -266,7 +269,7 @@ class GnVisibility:
         elif gn:
             self._from_gn(label_path, gn)
         else:
-            self._scope = GnLabel(label_path)
+            self._scope = GnLabel(label)
 
     def __str__(self):
         return str(self._scope)

@@ -26,6 +26,12 @@ class TestGnTarget(unittest.TestCase):
     def setUp(self):
         self.rule = BazelRule('//my-package:my-target', 'cc_library')
 
+    def test_from_bazel_rule_label(self):
+        """Tests the GN target name and package derived from a Bazel rule."""
+        target = GnTarget('$build', '$src', bazel=self.rule)
+        self.assertEqual(target.name(), 'my-target')
+        self.assertEqual(target.package(), 'my-package')
+
     def test_from_bazel_rule_type_source_set(self):
         """Tests creating a `pw_source_set` from a Bazel rule."""
         target = GnTarget('$build', '$src', bazel=self.rule)
