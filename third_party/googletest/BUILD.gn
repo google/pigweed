@@ -35,6 +35,7 @@ if (dir_pw_third_party_googletest != "") {
     cflags = [
       "-Wno-undef",
       "-Wno-conversion",
+      "-Wno-switch-enum",
     ]
   }
 

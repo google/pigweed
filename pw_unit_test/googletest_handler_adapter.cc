@@ -18,6 +18,22 @@
 
 namespace pw::unit_test {
 
+void RegisterEventHandler(EventHandler* event_handler) {
+  static testing::TestEventListener* gTestListener = nullptr;
+  auto& listeners = testing::UnitTest::GetInstance()->listeners();
+  if (!gTestListener) {
+    gTestListener = listeners.default_result_printer();
+  }
+  if (gTestListener) {
+    listeners.Release(gTestListener);
+    delete gTestListener;
+  }
+  if (event_handler) {
+    gTestListener = new pw::unit_test::GoogleTestHandlerAdapter(*event_handler);
+    listeners.Append(gTestListener);
+  }
+}
+
 void GoogleTestHandlerAdapter::OnTestProgramStart(
     const testing::UnitTest& unit_test) {
   handler_.TestProgramStart(

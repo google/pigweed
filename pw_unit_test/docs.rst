@@ -175,6 +175,10 @@ The following example shows how to write a main function that runs
    }
 
    int main() {
+     // The following line has no effect with pw_unit_test_light, but makes this
+     // test compatible with upstream GoogleTest.
+     testing::InitGoogleTest();
+
      // Since we are using pw_unit_test:light, set up an event handler.
      pw::unit_test::SimplePrintingEventHandler handler(WriteString);
      pw::unit_test::RegisterEventHandler(&handler);
@@ -641,19 +645,22 @@ for details.
 When using upstream `GoogleTest`_ as the backend, the
 :cpp:class:`pw::unit_test::GoogleTestHandlerAdapter` can be used in conjunction
 with the above mentioned `EventHandler Interface <#the-eventhandler-interface>`_
-and `Predefined event handlers`_. An example of how you can use the adapter in
-conjunction with an ``EventHandler`` is shown below.
+and `Predefined event handlers`_. Included with this class is an implementation
+of `RegisterEventHandler` that wraps event handlers in an adapter. This allows
+the `main` functions written for `pw_unit_test:light` to work with upstream
+GoogleTest without modification, as shown below.
 
   .. code-block:: c++
 
-    testing::InitGoogleTest();
-    auto* unit_test = testing::UnitTest::GetInstance();
+    #include "gtest/gtest.h"
+    #include "pw_unit_test/logging_event_handler.h"
 
-    pw::unit_test::LoggingEventHandler logger;
-    pw::unit_test::GoogleTestHandlerAdapter listener_adapter(logger);
-    unit_test->listeners().Append(&listener_adapter);
-
-    const auto status = RUN_ALL_TESTS();
+    int main() {
+      testing::InitGoogleTest();
+      pw::unit_test::LoggingEventHandler logger;
+      pw::unit_test::RegisterEventHandler(&logger);
+      return RUN_ALL_TESTS();
+    }
 
 .. cpp:namespace-push:: pw::unit_test
 

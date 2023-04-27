@@ -163,9 +163,18 @@ pw_source_set("logging_event_handler") {
   sources = [ "logging_event_handler.cc" ]
 }
 
+# Provides logging to either the light framework or an external GoogleTest.
+group("logging") {
+  public_deps = [ ":logging_event_handler" ]
+  deps = []
+  if (pw_unit_test_GOOGLETEST_BACKEND != "$dir_pw_unit_test:light") {
+    deps += [ ":googletest_handler_adapter" ]
+  }
+}
+
 pw_source_set("logging_main") {
   deps = [
-    ":logging_event_handler",
+    ":logging",
     ":pw_unit_test",
   ]
   sources = [ "logging_main.cc" ]
@@ -264,6 +273,7 @@ pw_python_script("test_group_metadata_test") {
 }
 
 pw_test("framework_test") {
+  enable_if = pw_unit_test_GOOGLETEST_BACKEND == "$dir_pw_unit_test:light"
   sources = [ "framework_test.cc" ]
   deps = [ dir_pw_assert ]
 }
@@ -278,6 +288,7 @@ pw_static_library("tests_in_archive") {
 }
 
 pw_test("static_library_support_test") {
+  enable_if = pw_unit_test_GOOGLETEST_BACKEND == "$dir_pw_unit_test:light"
   sources = [ "static_library_support_test.cc" ]
   deps = [
     ":static_library_support",

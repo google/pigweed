@@ -17,6 +17,7 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/python_action.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_compilation_testing/negative_compilation_test.gni")
+import("$dir_pw_toolchain/generate_toolchain.gni")
 import("$dir_pw_toolchain/host_clang/toolchains.gni")
 
 declare_args() {

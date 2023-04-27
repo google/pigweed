@@ -159,39 +159,37 @@ pw_proto_library("proto") {
 }
 
 pw_test_group("tests") {
-  tests = []
-
-  # pw_transfer requires threading.
-  if (pw_thread_THREAD_BACKEND != "") {
-    tests += [
-      ":chunk_test",
-      ":client_test",
-      ":transfer_thread_test",
-    ]
-
-    # TODO(b/235345886): Fix transfer tests on Windows and non-host builds.
-    if (defined(pw_toolchain_SCOPE.is_host_toolchain) &&
-        pw_toolchain_SCOPE.is_host_toolchain && host_os != "win") {
-      tests += [
-        ":handler_test",
-        ":atomic_file_transfer_handler_test",
-        ":transfer_test",
-      ]
-    }
-  }
+  tests = [
+    ":chunk_test",
+    ":client_test",
+    ":transfer_thread_test",
+    ":handler_test",
+    ":atomic_file_transfer_handler_test",
+    ":transfer_test",
+  ]
 }
 
+# TODO(b/235345886): Fix transfer tests on Windows and non-host builds.
+_is_host_toolchain = defined(pw_toolchain_SCOPE.is_host_toolchain) &&
+                     pw_toolchain_SCOPE.is_host_toolchain
+not_needed([ "_is_host_toolchain" ])
+
 pw_test("chunk_test") {
+  enable_if = pw_thread_THREAD_BACKEND != ""
   sources = [ "chunk_test.cc" ]
   deps = [ ":core" ]
 }
 
 pw_test("handler_test") {
+  enable_if =
+      pw_thread_THREAD_BACKEND != "" && _is_host_toolchain && host_os != "win"
   sources = [ "handler_test.cc" ]
   deps = [ ":pw_transfer" ]
 }
 
 pw_test("atomic_file_transfer_handler_test") {
+  enable_if =
+      pw_thread_THREAD_BACKEND != "" && _is_host_toolchain && host_os != "win"
   sources = [ "atomic_file_transfer_handler_test.cc" ]
   deps = [
     ":atomic_file_transfer_handler",
@@ -203,7 +201,8 @@ pw_test("atomic_file_transfer_handler_test") {
 }
 
 pw_test("transfer_test") {
-  enable_if = pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread"
+  enable_if = pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread" &&
+              _is_host_toolchain && host_os != "win"
   sources = [ "transfer_test.cc" ]
   deps = [
     ":proto.pwpb",
@@ -218,7 +217,8 @@ pw_test("transfer_test") {
 }
 
 pw_test("transfer_thread_test") {
-  enable_if = pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread"
+  enable_if = pw_thread_THREAD_BACKEND == "$dir_pw_thread_stl:thread" &&
+              pw_unit_test_GOOGLETEST_BACKEND == "$dir_pw_unit_test:light"
   sources = [ "transfer_thread_test.cc" ]
   deps = [
     ":core",

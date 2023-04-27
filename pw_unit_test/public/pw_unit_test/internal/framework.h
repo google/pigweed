@@ -107,7 +107,8 @@
 // In order to receive test output, an event handler must be registered before
 // this is called:
 //
-//   int main() {
+//   int main(int argc, char** argv) {
+//     testing::InitGoogleTest(&argc, argv);
 //     MyEventHandler handler;
 //     pw::unit_test::RegisterEventHandler(&handler);
 //     return RUN_ALL_TESTS();
@@ -183,11 +184,6 @@ StatusWithSize UnknownTypeToString(const T& value, span<char> buffer) {
 #endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
 namespace unit_test {
-
-// Sets the event handler for a test run. Must be called before RUN_ALL_TESTS()
-// to receive test output.
-void RegisterEventHandler(EventHandler* event_handler);
-
 namespace internal {
 
 class Test;
@@ -223,7 +219,7 @@ class Framework {
 
   // Sets the handler to which the framework dispatches test events. During a
   // test run, the framework owns the event handler.
-  void RegisterEventHandler(EventHandler* event_handler) {
+  inline void RegisterEventHandler(EventHandler* event_handler) {
     event_handler_ = event_handler;
   }
 
@@ -593,9 +589,12 @@ inline void SetTestSuitesToRun(span<std::string_view> test_suites) {
   PW_MODIFY_DIAGNOSTICS_POP()
 #endif  // GCC8 or older.
 
-// Alias Test as ::testing::Test for GoogleTest compatibility.
 namespace testing {
 
+// Alias Test as ::testing::Test for GoogleTest compatibility.
 using Test = ::pw::unit_test::internal::Test;
+
+// Provide a no-op init routine for GoogleTest compatibility.
+inline void InitGoogleTest(int*, char**) {}
 
 }  // namespace testing

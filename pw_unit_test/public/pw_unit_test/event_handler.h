@@ -160,5 +160,10 @@ class EventHandler {
                               const TestExpectation& expectation) = 0;
 };
 
+// Sets the event handler for a test run. Must be called before RUN_ALL_TESTS()
+// to receive test output. If `event_handler` is null, this will disable event
+// handling. This method is not thread-safe.
+void RegisterEventHandler(EventHandler* event_handler);
+
 }  // namespace unit_test
 }  // namespace pw
