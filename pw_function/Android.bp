@@ -23,5 +23,11 @@ cc_library_headers {
     export_include_dirs: [
         "public",
     ],
+    header_libs: [
+        "fuchsia_sdk_lib_fit",
+    ],
+    export_header_lib_headers: [
+        "fuchsia_sdk_lib_fit",
+    ],
     host_supported: true,
 }
