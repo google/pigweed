@@ -41,6 +41,8 @@ Status codes
         - ``PW_STATUS_OK``
       * - Python / Java / TypeScript
         - ``Status.OK``
+      * - Rust
+        - ``Ok(val)``
 
 .. c:enumerator:: CANCELLED = 1
 
@@ -54,6 +56,8 @@ Status codes
         - ``PW_STATUS_CANCELLED``
       * - Python / Java / TypeScript
         - ``Status.CANCELLED``
+      * - Rust
+        - ``Error::Cancelled``
 
 .. c:enumerator:: UNKNOWN = 2
 
@@ -69,6 +73,8 @@ Status codes
         - ``PW_STATUS_UNKNOWN``
       * - Python / Java / TypeScript
         - ``Status.UNKNOWN``
+      * - Rust
+        - ``Error::Unknown``
 
 .. c:enumerator:: INVALID_ARGUMENT = 3
 
@@ -87,6 +93,8 @@ Status codes
         - ``PW_STATUS_INVALID_ARGUMENT``
       * - Python / Java / TypeScript
         - ``Status.INVALID_ARGUMENT``
+      * - Rust
+        - ``Error::InvalidArgument``
 
 .. c:enumerator:: DEADLINE_EXCEEDED = 4
 
@@ -104,6 +112,8 @@ Status codes
         - ``PW_STATUS_DEADLINE_EXCEEDED``
       * - Python / Java / TypeScript
         - ``Status.DEADLINE_EXCEEDED``
+      * - Rust
+        - ``Error::DeadlineExceeded``
 
 .. c:enumerator:: NOT_FOUND = 5
 
@@ -124,6 +134,8 @@ Status codes
         - ``PW_STATUS_NOT_FOUND``
       * - Python / Java / TypeScript
         - ``Status.NOT_FOUND``
+      * - Rust
+        - ``Error::NotFound``
 
 .. c:enumerator:: ALREADY_EXISTS = 6
 
@@ -138,6 +150,8 @@ Status codes
         - ``PW_STATUS_ALREADY_EXISTS``
       * - Python / Java / TypeScript
         - ``Status.ALREADY_EXISTS``
+      * - Rust
+        - ``Error::AlreadyExists``
 
 .. c:enumerator:: PERMISSION_DENIED = 7
 
@@ -161,6 +175,8 @@ Status codes
         - ``PW_STATUS_PERMISSION_DENIED``
       * - Python / Java / TypeScript
         - ``Status.PERMISSION_DENIED``
+      * - Rust
+        - ``Error::PermissionDenied``
 
 .. c:enumerator:: RESOURCE_EXHAUSTED = 8
 
@@ -175,6 +191,8 @@ Status codes
         - ``PW_STATUS_RESOURCE_EXHAUSTED``
       * - Python / Java / TypeScript
         - ``Status.RESOURCE_EXHAUSTED``
+      * - Rust
+        - ``Error::ResourceExhausted``
 
 .. c:enumerator:: FAILED_PRECONDITION = 9
 
@@ -208,6 +226,8 @@ Status codes
         - ``PW_STATUS_FAILED_PRECONDITION``
       * - Python / Java / TypeScript
         - ``Status.FAILED_PRECONDITION``
+      * - Rust
+        - ``Error::FailedPrecondition``
 
 .. c:enumerator:: ABORTED = 10
 
@@ -226,6 +246,8 @@ Status codes
         - ``PW_STATUS_ABORTED``
       * - Python / Java / TypeScript
         - ``Status.ABORTED``
+      * - Rust
+        - ``Error::Aborted``
 
 .. c:enumerator:: OUT_OF_RANGE = 11
 
@@ -253,6 +275,8 @@ Status codes
         - ``PW_STATUS_OUT_OF_RANGE``
       * - Python / Java / TypeScript
         - ``Status.OUT_OF_RANGE``
+      * - Rust
+        - ``Error::OutOfRange``
 
 .. c:enumerator:: UNIMPLEMENTED = 12
 
@@ -267,6 +291,8 @@ Status codes
         - ``PW_STATUS_UNIMPLEMENTED``
       * - Python / Java / TypeScript
         - ``Status.UNIMPLEMENTED``
+      * - Rust
+        - ``Error::Unimplemented``
 
 .. c:enumerator:: INTERNAL = 13
 
@@ -282,6 +308,8 @@ Status codes
         - ``PW_STATUS_INTERNAL``
       * - Python / Java / TypeScript
         - ``Status.INTERNAL``
+      * - Rust
+        - ``Error::Internal``
 
 .. c:enumerator:: UNAVAILABLE = 14
 
@@ -302,6 +330,8 @@ Status codes
         - ``PW_STATUS_UNAVAILABLE``
       * - Python / Java / TypeScript
         - ``Status.UNAVAILABLE``
+      * - Rust
+        - ``Error::Unavailable``
 
 .. c:enumerator:: DATA_LOSS = 15
 
@@ -317,6 +347,8 @@ Status codes
         - ``PW_STATUS_DATA_LOSS``
       * - Python / Java / TypeScript
         - ``Status.DATA_LOSS``
+      * - Rust
+        - ``Error::DataLoss``
 
 .. c:enumerator:: UNAUTHENTICATED = 16
 
@@ -332,6 +364,8 @@ Status codes
         - ``PW_STATUS_UNAUTHENTICATED``
       * - Python / Java / TypeScript
         - ``Status.UNAUTHENTICATED``
+      * - Rust
+        - ``Error::Unauthenticated``
 
 C++ API
 =======
