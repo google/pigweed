@@ -26,6 +26,9 @@ cc_library_static {
         "pw_preprocessor_headers",
         "pw_span_headers",
     ],
+    export_header_lib_headers: [
+        "fuchsia_sdk_lib_stdcompat",
+    ],
     host_supported: true,
     srcs: [
         "byte_builder.cc"
