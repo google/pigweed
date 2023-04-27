@@ -30,6 +30,9 @@ GN
 * Set the GN var
   ``pw_unit_test_GOOGLETEST_BACKEND = "//third_party/googletest"``.
 
+Pigweed unit tests that do not work with upstream GoogleTest are disabled using
+``enable_if = pw_unit_test_GOOGLETEST_BACKEND == "$dir_pw_unit_test:light"``
+
 CMake
 =====
 * Set the ``dir_pw_third_party_googletest`` to the location of the
@@ -40,5 +43,5 @@ CMake
 
 .. note::
 
-  Not all unit tests build properly with upstream GoogleTest yet. This is a
+  Not all unit tests build properly with upstream GoogleTest yet. Thos is a
   work in progress.

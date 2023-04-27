@@ -362,6 +362,25 @@ gn_pw_system_demo_build = build.GnGenNinja(
     ninja_targets=('pw_system_demo',),
 )
 
+gn_googletest_build = build.GnGenNinja(
+    name='gn_googletest_build',
+    path_filter=_BUILD_FILE_FILTER,
+    packages=('googletest',),
+    gn_args={
+        'dir_pw_third_party_googletest': lambda ctx: '"{}"'.format(
+            ctx.package_root / 'googletest'
+        ),
+        'pw_unit_test_MAIN': lambda ctx: '"{}"'.format(
+            ctx.root / 'third_party/googletest:gmock_main'
+        ),
+        'pw_unit_test_GOOGLETEST_BACKEND': lambda ctx: '"{}"'.format(
+            ctx.root / 'third_party/googletest'
+        ),
+        'pw_C_OPTIMIZATION_LEVELS': _OPTIMIZATION_LEVELS,
+    },
+    ninja_targets=_at_all_optimization_levels(f'host_{_HOST_COMPILER}'),
+)
+
 gn_docs_build = build.GnGenNinja(name='gn_docs_build', ninja_targets=('docs',))
 
 gn_host_tools = build.GnGenNinja(
@@ -956,6 +975,7 @@ OTHER_CHECKS = (
 MISC = (
     # keep-sorted: start
     gn_emboss_build,
+    gn_googletest_build,
     gn_nanopb_build,
     gn_pico_build,
     gn_pw_system_demo_build,
