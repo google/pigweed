@@ -581,35 +581,27 @@ bits LEPeriodicAdvertisingSyncCTEType:
 
 
 enum LEAddressType:
-  -- Possible values that can be reported for the |address_type| parameter in a LE
-  -- Advertising Report event.
-
+  -- Possible values that can be reported for various |*_address_type| parameters in various LE packets.
   [maximum_bits: 8]
+  PUBLIC          = 0x00
+    -- Public Device Address (default)
 
-  PUBLIC            = 0x00
-    -- Public device address (default)
+  RANDOM          = 0x01
+    -- Random Device Address
 
-  RANDOM            = 0x01
-    -- Random device address
+  PUBLIC_IDENTITY = 0x02
+    -- Public Identity Address (corresponds to Resolved Private Address)
 
-  PUBLIC_IDENTITY   = 0x02
-    -- Public Identity Address (Corresponds to Resolved Private Address)
+  RANDOM_IDENTITY = 0x03
+    -- Random (static) Identity Address (corresponds to Resolved Private Address)
 
-  RANDOM_IDENTITY   = 0x03
-    -- Random (static) Identity Address (Corresponds to Resolved Private Address)
-
-  RANDOM_UNRESOLVED = 0xFE
-    -- This is a special value used in LE Extended Advertising Report events to
-    -- indicate a random address that the controller was unable to resolve.
-
-  ANONYMOUS         = 0xFF
-    -- This is a special value that is only used in LE Directed Advertising Report
-    -- events.
-    -- Meaning: No address provided (anonymous advertisement)
+  ANONYMOUS       = 0xFF
+    -- No address provided (anonymous advertisement)
+    -- This is a special value that is only used in LE Advertising Report events.
 
 
 enum LEOwnAddressType:
-  -- Possible values that can be used for the |own_address_type| parameter in various HCI commands
+  -- Possible values that can be used for the |own_address_type| parameter in various LE packets.
 
   [maximum_bits: 8]
 
@@ -627,6 +619,25 @@ enum LEOwnAddressType:
     -- Controller generates the Resolvable Private Address based on the local IRK from the resolving
     -- list. If the resolving list contains no matching entry, then use the random address from
     -- LE_Set_Random_Address.
+
+
+enum LEDirectAddressType:
+  -- Possible values that can be reported for the |direct_address_type| parameter in LE Advertising Report events.
+  [maximum_bits: 8]
+  PUBLIC                                = 0x00
+    -- Public Device Address
+
+  PRIVATE                               = 0x01
+    -- Non-resolvable Private Address or Static Device Address
+
+  RESOLVABLE_PRIVATE_OWN_ADDRESS_PUBLIC = 0x02
+    -- Resolvable Private Address (resolved by Controller; Own_Address_Type was 0x00 or 0x02)
+
+  RESOLVABLE_PRIVATE_OWN_ADDRESS_RANDOM = 0x03
+    -- Resolvable Private Address (resolved by Controller; Own_Address_Type was 0x01 or 0x03)
+
+  RESOLVABLE_PRIVATE                    = 0xFE
+    -- Resolvable Private Address (Controller unable to resolve)
 
 
 enum LEPeerAddressType:
@@ -796,15 +807,34 @@ enum LEAdvertisingFilterPolicy:
 
 enum LEPrimaryAdvertisingPHY:
   [maximum_bits: 8]
-  LE_1M    = 0x01
-  LE_CODED = 0x03
+  LE_1M       = 0x01
+  LE_CODED    = 0x03
+  LE_CODED_S2 = 0x04
 
 
 enum LESecondaryAdvertisingPHY:
   [maximum_bits: 8]
-  LE_1M    = 0x01
-  LE_2M    = 0x02
-  LE_CODED = 0x03
+  NONE        = 0x00
+  LE_1M       = 0x01
+  LE_2M       = 0x02
+  LE_CODED    = 0x03
+  LE_CODED_S2 = 0x04
+
+
+enum LEAdvertisingDataStatus:
+  [maximum_bits: 2]
+  COMPLETE             = 0b00
+  INCOMPLETE           = 0b01
+  INCOMPLETE_TRUNCATED = 0b10
+
+
+bits LEExtendedAdvertisingEventType:
+  0     [+1]  Flag                     connectable
+  $next [+1]  Flag                     scannable
+  $next [+1]  Flag                     directed
+  $next [+1]  Flag                     scan_response
+  $next [+1]  Flag                     legacy
+  $next [+2]  LEAdvertisingDataStatus  data_status
 
 
 enum ScanRequestNotifications:
@@ -1202,7 +1232,7 @@ struct RemoteNameRequestCommand:
     [requires: this == 0]
 
   $next [+2]                      ClockOffset             clock_offset
-    -- Clock offset.  The lower 15 bits of this represent bits 14-2
+    -- Clock offset.  The lower 15 bits of this represent bits 16-2
     -- of CLKNPeripheral-CLK, and the highest bit is set when the other
     -- bits are valid.
 
@@ -2499,6 +2529,32 @@ struct InquiryCompleteEvent:
   $next [+1]         StatusCode   status
 
 
+struct InquiryResult:
+  0     [+BdAddr.$size_in_bytes]  BdAddr                  bd_addr
+    -- BD_ADDR for a device which responded.
+
+  $next [+1]                      PageScanRepetitionMode  page_scan_repetition_mode
+  $next [+2]                      UInt                    reserved
+    -- Reserved for future use.
+
+  $next [+3]                      ClassOfDevice           class_of_device
+    -- Class of Device for the device.
+
+  $next [+2]                      ClockOffset             clock_offset
+    -- The lower 15 bits represent bits 16-2 of CLKNPeripheral-CLK.
+
+
+struct InquiryResultEvent:
+  -- Inquiry Result Event (v1.1) (BR/EDR)
+  let hdr_size = EventHeader.$size_in_bytes
+  0     [+hdr_size]                     EventHeader      header
+  $next [+1]                            UInt             num_responses
+    -- Number of responses from the Inquiry.
+
+  let response_size = InquiryResult.$size_in_bytes
+  $next [+num_responses*response_size]  InquiryResult[]  responses
+
+
 struct CommandCompleteEvent:
   -- Core Spec v5.3 Vol 4, Part E, Section 7.7.14
   -- EventHeader.opcode == 0xe
@@ -2680,6 +2736,72 @@ struct LEConnectionUpdateCompleteSubevent:
     -- Range: 100 ms to 32 s
     [requires: 0x000A <= this <= 0x0C80]
 
+
+struct LEExtendedAdvertisingReportData:
+  0     [+2]  bits:
+
+    0     [+7]                    LEExtendedAdvertisingEventType  event_type
+
+  $next [+1]                      LEAddressType                   address_type
+    -- Address type of the advertiser.
+
+  $next [+BdAddr.$size_in_bytes]  BdAddr                          address
+    -- Public Device Address, Random Device Address, Public Identity Address or
+    -- Random (static) Identity Address of the advertising device.
+
+  $next [+1]                      LEPrimaryAdvertisingPHY         primary_phy
+    -- Indicates the PHY used to send the advertising PDU on the primary advertising
+    -- channel. Legacy PDUs always use LE_1M. NONE, LE_2M, and LE_CODED_S2 are excluded.
+
+  $next [+1]                      LESecondaryAdvertisingPHY       secondary_phy
+    -- Indicates the PHY used to send the advertising PDU(s), if any, on the secondary
+    -- advertising channel. A value of NONE means that no packets were received on the
+    -- secondary advertising channel.
+
+  $next [+1]                      UInt                            advertising_sid
+    -- Value of the Advertising SID subfield in the ADI field of the PDU. A value of
+    -- 0xFF means no ADI field provided.
+    [requires: 0x00 <= this <= 0x0F || this == 0xFF]
+
+  $next [+1]                      UInt                            tx_power
+    -- Units: dBm. A value of 0x7F means Tx Power information is not available.
+    [requires: -127 <= this <= 20 || this == 0x7F]
+
+  $next [+1]                      UInt                            rssi
+    -- Units: dBm. A value of 0x7F means RSSI is not available.
+    [requires: -127 <= this <= 20 || this == 0x7F]
+
+  $next [+2]                      UInt                            periodic_advertising_interval
+    -- 0x0000: No periodic advertising.
+    -- 0xXXXX:
+    --   Time = N * 1.25 ms
+    --   Time Range: 7.5 ms to 81,918.75 s
+    [requires: 0x0006 <= this <= 0xFFFF || this == 0x0000]
+
+  $next [+1]                      LEDirectAddressType             direct_address_type
+
+  $next [+BdAddr.$size_in_bytes]  BdAddr                          direct_address
+    -- TargetA field in the advertisement or either Public Identity Address or Random (static)
+    -- Identity Address of the target device.
+
+  $next [+1]                      UInt                            data_length
+    -- Length of the |data| field.
+
+  $next [+data_length]            UInt:8[data_length]             data
+    -- |data_length| octets of advertising or scan response data formatted as defined in
+    -- [Vol 3] Part C, Section 11. Note: Each element of this array has a variable length.
+
+
+struct LEExtendedAdvertisingReportSubevent(reports_size: UInt:8):
+  -- LE Extended Advertising Report Event (v5.0) (LE)
+  0     [+LEMetaEvent.$size_in_bytes]  LEMetaEvent           le_meta_event
+  $next [+1]                           UInt                  num_reports
+    -- Number of separate reports in the event.
+    [requires: 0x01 <= this <= 0x0A]
+
+  $next [+reports_size]                UInt:8[reports_size]  reports
+    -- Since each report has a variable length, they are stored in a UInt:8 array.
+
 # ============================ Test packets =============================
 
 
@@ -2695,3 +2817,8 @@ struct TestEventPacket:
   let hdr_size = EventHeader.$size_in_bytes
   0     [+hdr_size]  EventHeader  header
   $next [+1]         UInt         payload
+
+
+struct TestMultipleParameters(arg1: GenericEnableParam, arg2: UInt:8):
+  [requires: arg1 == GenericEnableParam.ENABLE && arg2 == 7]
+  0 [+1]  UInt  padding
