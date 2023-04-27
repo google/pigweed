@@ -187,7 +187,12 @@ inline size_t Decode(span<const std::byte> input,
       input.data(), input.size(), value, static_cast<pw_varint_Format>(format));
 }
 
-// Returns a size of an integer when encoded as a varint.
+/// @brief Computes the size of an integer when encoded as a varint.
+///
+/// @param integer The integer whose encoded size is to be computed. `integer`
+/// can be signed or unsigned.
+///
+/// @returns The size of `integer` when encoded as a varint.
 constexpr size_t EncodedSize(uint64_t integer) {
   return integer == 0 ? 1 : (64 - __builtin_clzll(integer) + 6) / 7;
 }
