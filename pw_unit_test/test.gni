@@ -188,6 +188,8 @@ template("pw_internal_disableable_target") {
 #         disabled test can still be built and run with the
 #         <target_name>.DISABLED and <target_name>.DISABLED.run targets.
 #         Defaults to true (enable_if).
+#   - envvars: (optional) A list of `var_name=value` strings to set as
+#         environment variables when running the target exectuable.
 #   - extra_metadata: (optional) Extra metadata to include in test group
 #         metadata output. This can be used to pass information about this test
 #         to later build tasks.
@@ -412,6 +414,14 @@ template("pw_test") {
         "--test",
         "<TARGET_FILE(:$_test_to_run)>",
       ]
+      if (defined(invoker.envvars)) {
+        foreach(envvars, envvars) {
+          args += [
+            "--env",
+            envvar,
+          ]
+        }
+      }
       if (pw_unit_test_AUTOMATIC_RUNNER_TIMEOUT != "") {
         args += [
           "--timeout",
@@ -419,9 +429,10 @@ template("pw_test") {
         ]
       }
       if (pw_toolchain_COVERAGE_ENABLED) {
+        _llvm_profile_file = rebase_path(_profraw_path, root_build_dir)
         args += [
-          "--coverage-profraw",
-          rebase_path(_profraw_path, root_build_dir),
+          "--env",
+          "LLVM_PROFILE_FILE=" + _llvm_profile_file,
         ]
       }
 

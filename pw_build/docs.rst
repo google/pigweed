@@ -179,6 +179,27 @@ The ``pw_build_LINK_DEPS`` build arg is a list of dependencies to add to all
 This should only be used as a last resort when dependencies cannot be properly
 expressed in the build.
 
+Third party libraries
+---------------------
+
+Pigweed includes build files for a selection of third-party libraries. For a
+given library, these include:
+
+* ``third_party/<library>/library.gni``: Declares build arguments like
+  ``dir_pw_third_party_<library>`` that default to ``""`` but can be set to the
+  absolute path of the library in order to use it.
+
+* ``third_party/<library>/BUILD.gn``: Describes how to build the library. This
+  should import ``third_party/<library>/library.gni`` and refer to source paths
+  relative to ``dir_pw_third_party_<library>``.
+
+To add or update GN build files for libraries that only offer Bazel build files,
+the Python script at ``pw_build/py/pw_build/generate_3p_gn.py`` may be used.
+
+  .. note::
+    The ``generate_3p_gn.py`` script is experimental, and may not work on an
+    arbitrary Bazel library.
+
 Python packages
 ---------------
 GN templates for :ref:`Python build automation <docs-python-build>` are

@@ -244,6 +244,8 @@ pw_test template
   ``main()`` is implemented in the test's ``sources``.
 * ``test_automatic_runner_args``: Array of args to pass to automatic test
   runner. Defaults to ``pw_unit_test_AUTOMATIC_RUNNER_ARGS``.
+* ``envvars``: Array of ``"key=value"`` strings representing environment
+  variables to set when invoking the automatic test runner.
 
 **Example**
 

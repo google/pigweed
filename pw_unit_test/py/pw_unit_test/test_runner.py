@@ -65,12 +65,13 @@ def register_arguments(parser: argparse.ArgumentParser) -> None:
         '-m', '--timeout', type=float, help='Timeout for test runner in seconds'
     )
     parser.add_argument(
-        '--coverage-profraw',
-        type=str,
-        help='The name of the coverage profraw file to produce with the'
-        ' coverage information from this test. Only provide this if the test'
-        ' should be run for coverage and is properly instrumented.',
+        '-e',
+        '--env',
+        nargs='*',
+        help='Environment variables to set for the test. These should be of the'
+        ' form `var_name=value`.',
     )
+
     parser.add_argument(
         'runner_args', nargs="*", help='Arguments to forward to the test runner'
     )
@@ -160,13 +161,13 @@ class TestRunner:
         executable: str,
         args: Sequence[str],
         tests: Iterable[Test],
-        coverage_profraw: Optional[str] = None,
+        env: Optional[Dict[str, str]] = None,
         timeout: Optional[float] = None,
     ) -> None:
         self._executable: str = executable
         self._args: Sequence[str] = args
         self._tests: List[Test] = list(tests)
-        self._coverage_profraw = coverage_profraw
+        self._env: Dict[str, str] = env or {}
         self._timeout = timeout
         self._result_sink: Optional[Dict[str, str]] = None
 
@@ -201,11 +202,8 @@ class TestRunner:
             test.start_time = datetime.datetime.now(datetime.timezone.utc)
             start_time = time.monotonic()
             try:
-                env = {}
-                if self._coverage_profraw is not None:
-                    env['LLVM_PROFILE_FILE'] = str(Path(self._coverage_profraw))
                 process = await pw_cli.process.run_async(
-                    *command, env=env, timeout=self._timeout
+                    *command, env=self._env, timeout=self._timeout
                 )
             except subprocess.CalledProcessError as err:
                 _LOG.error(err)
@@ -462,11 +460,30 @@ def tests_from_paths(paths: Sequence[str]) -> List[Test]:
     return tests
 
 
+def parse_env(env: Sequence[str]) -> Dict[str, str]:
+    """Returns a dictionary of environment names and values.
+
+    Args:
+        env: List of strings of the form "key=val".
+
+    Raises:
+        ValueError if `env` is malformed.
+    """
+    envvars = {}
+    if env:
+        for envvar in env:
+            parts = envvar.split('=')
+            if len(parts) != 2:
+                raise ValueError(f'malformed environment variable: {envvar}')
+            envvars[parts[0]] = parts[1]
+    return envvars
+
+
 async def find_and_run_tests(
     root: str,
     runner: str,
     runner_args: Sequence[str] = (),
-    coverage_profraw: Optional[str] = None,
+    env: Sequence[str] = (),
     timeout: Optional[float] = None,
     group: Optional[Sequence[str]] = None,
     test: Optional[Sequence[str]] = None,
@@ -478,9 +495,9 @@ async def find_and_run_tests(
     else:
         tests = tests_from_groups(group, root)
 
-    test_runner = TestRunner(
-        runner, runner_args, tests, coverage_profraw, timeout
-    )
+    envvars = parse_env(env)
+
+    test_runner = TestRunner(runner, runner_args, tests, envvars, timeout)
     await test_runner.run_tests()
 
     return 0 if test_runner.all_passed() else 1
