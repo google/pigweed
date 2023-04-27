@@ -73,16 +73,21 @@ def event_has_trace_id(event_type):
 def decode_struct_fmt_args(event):
     """Decodes the trace's event data for struct-formatted data"""
     args = {}
-    # we assume all data is packed, little-endian ordering if not specified
+    # We assume all data is packed, little-endian ordering if not specified.
     struct_fmt = event.data_fmt[len("@pw_py_struct_fmt:") :]
     if not struct_fmt.startswith(_ORDERING_CHARS):
         struct_fmt = "<" + struct_fmt
     try:
-        # needed in case the buffer is larger than expected
+        # Assert is needed in case the buffer is larger than expected.
         assert struct.calcsize(struct_fmt) == len(event.data)
         items = struct.unpack_from(struct_fmt, event.data)
         for i, item in enumerate(items):
-            args["data_" + str(i)] = item
+            # Try to decode the item in case it is a byte array (string) since
+            # the JSON lib cannot serialize byte arrays.
+            try:
+                args["data_" + str(i)] = item.decode()
+            except (UnicodeDecodeError, AttributeError):
+                args["data_" + str(i)] = item
     except (AssertionError, struct.error):
         args["error"] = (
             f"Mismatched struct/data format {event.data_fmt} "
@@ -98,7 +103,7 @@ def decode_map_fmt_args(event):
     args = {}
     fmt = event.data_fmt[len("@pw_py_map_fmt:") :]
 
-    # we assume all data is packed, little-endian ordering if not specified
+    # We assume all data is packed, little-endian ordering if not specified.
     if not fmt.startswith(_ORDERING_CHARS):
         fmt = '<' + fmt
 
@@ -115,11 +120,16 @@ def decode_map_fmt_args(event):
         args["error"] = f"Invalid map format {event.data_fmt}"
     else:
         try:
-            # needed in case the buffer is larger than expected
+            # Assert is needed in case the buffer is larger than expected.
             assert struct.calcsize(fmt_bytes) == len(event.data)
             items = struct.unpack_from(fmt_bytes, event.data)
             for i, item in enumerate(items):
-                args[names[i]] = item
+                # Try to decode the item in case it is a byte array (string)
+                # since the JSON lib cannot serialize byte arrays.
+                try:
+                    args[names[i]] = item.decode()
+                except (UnicodeDecodeError, AttributeError):
+                    args[names[i]] = item
         except (AssertionError, struct.error):
             args["error"] = (
                 f"Mismatched map/data format {event.data_fmt} "

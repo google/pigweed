@@ -194,8 +194,8 @@ class TestTraceGenerateJson(unittest.TestCase):
             label="counter",
             timestamp_us=10,
             has_data=True,
-            data_fmt="@pw_py_struct_fmt:Hl",
-            data=struct.pack("<Hl", 5, 2),
+            data_fmt="@pw_py_struct_fmt:Hl3s",
+            data=struct.pack("<Hl3s", 5, 2, b'abc'),
         )
         json_lines = trace.generate_trace_json([event])
         self.assertEqual(1, len(json_lines))
@@ -207,7 +207,7 @@ class TestTraceGenerateJson(unittest.TestCase):
                 "name": "counter",
                 "ts": 10,
                 "s": "p",
-                "args": {"data_0": 5, "data_1": 2},
+                "args": {"data_0": 5, "data_1": 2, "data_2": 'abc'},
             },
         )
 
@@ -298,8 +298,8 @@ class TestTraceGenerateJson(unittest.TestCase):
             label="label",
             timestamp_us=10,
             has_data=True,
-            data_fmt="@pw_py_map_fmt:{Field: l, Field2: l }",
-            data=struct.pack("<ll", 20, 40),
+            data_fmt="@pw_py_map_fmt:{Field: l, Field2: l , Field3: 3s}",
+            data=struct.pack("<ll3s", 20, 40, b'abc'),
         )
         json_lines = trace.generate_trace_json([event])
         self.assertEqual(1, len(json_lines))
@@ -311,7 +311,7 @@ class TestTraceGenerateJson(unittest.TestCase):
                 "name": "label",
                 "ts": 10,
                 "s": "p",
-                "args": {"Field": 20, "Field2": 40},
+                "args": {"Field": 20, "Field2": 40, "Field3": 'abc'},
             },
         )
 
