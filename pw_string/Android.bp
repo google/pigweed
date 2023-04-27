@@ -31,6 +31,9 @@ cc_library_static {
         "pw_result_headers",
         "pw_span_headers",
     ],
+    export_header_lib_headers: [
+        "pw_polyfill_headers",
+    ],
     host_supported: true,
     srcs: [
         "format.cc",
