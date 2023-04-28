@@ -68,7 +68,6 @@ class BazelRule:
             self._package = str(label)[2:]
             self._target = PurePosixPath(label).name
         self._kind = kind
-        self._visibility: List[str] = []
 
         self._attrs: Dict[str, BazelValue] = {}
 
@@ -83,16 +82,6 @@ class BazelRule:
     def kind(self) -> str:
         """Returns this rule's target type."""
         return self._kind
-
-    def add_visibility(self, scope: str):
-        """Adds a Bazel visibility scope to this rule."""
-        if scope == '//visibility:public':
-            self._visibility.clear()
-        self._visibility.append(scope)
-
-    def get_visibility(self) -> List[str]:
-        """Returns this rule's visibility scope."""
-        return self._visibility
 
     def parse(self, attrs: Iterable[Dict[str, Any]]) -> None:
         """Maps JSON data from a bazel query into this object.
@@ -231,7 +220,8 @@ class BazelWorkspace:
             rule_data = result['target']['rule']
             target = rule_data['name']
             rule = BazelRule(target, kind)
-            rule.add_visibility(self.packages[rule.package()])
+            default_visibility = self.packages[rule.package()]
+            rule.set_attr('visibility', [default_visibility])
             rule.parse(rule_data['attribute'])
             yield rule
 

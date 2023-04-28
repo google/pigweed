@@ -126,9 +126,8 @@ class GnWriter:
             f'Generated from //{target.package()}:{target.name()}'
         )
         self.write_target_start(target.type(), target.name())
-        visibility = [
-            target.make_relative(scope) for scope in target.visibility
-        ]
+        scopes = filter(lambda s: str(s) != '//*', target.visibility)
+        visibility = [target.make_relative(scope) for scope in scopes]
         self.write_list('visibility', visibility)
         self.write_list('public', [str(path) for path in target.public])
         self.write_list('sources', [str(path) for path in target.sources])

@@ -96,7 +96,7 @@ class GnTarget:  # pylint: disable=too-many-instance-attributes
         """
         kind = rule.kind()
         linkstatic = rule.get_bool('linkstatic')
-        visibility = set(rule.get_visibility())
+        visibility = rule.get_list('visibility')
 
         self.testonly = rule.get_bool('testonly')
         public = rule.get_list('hdrs')
@@ -128,11 +128,10 @@ class GnTarget:  # pylint: disable=too-many-instance-attributes
 
         # Bazel treats no `visibility` (and no package default) as private,
         # whereas GN treats no `visibility` as public.
-        visibility.add('//visibility:private')
+        if not visibility:
+            visibility.append('//visibility:private')
         for scope in visibility:
             self.add_visibility(bazel=scope)
-        if any(str(scope) == '//*' for scope in self.visibility):
-            self.visibility = []
 
         # Add includer directories. Bazel implicitly includes the project root.
         include_dirs.append('//')
@@ -293,11 +292,21 @@ class GnTarget:  # pylint: disable=too-many-instance-attributes
     def add_visibility(self, **kwargs) -> None:
         """Adds a GN visibility scope using this target's base label.
 
+        This removes redundant scopes:
+        * If the scope to be added is already within an existing scope, it is
+          ignored.
+        * If existing scopes are within the scope being added, they are removed.
+
         Keyword Args:
             Same as `GnVisibility.__init__`.
         """
-        visibility = GnVisibility(self._base_label, self._label, **kwargs)
-        self.visibility.append(visibility)
+        new_scope = GnVisibility(self._base_label, self._label, **kwargs)
+        if any(new_scope.within(scope) for scope in self.visibility):
+            return
+        self.visibility = list(
+            filter(lambda scope: not scope.within(new_scope), self.visibility)
+        )
+        self.visibility.append(new_scope)
 
     def make_relative(self, item: Union[GnLabel, GnVisibility]) -> str:
         """Returns a label relative to this target.

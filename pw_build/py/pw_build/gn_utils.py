@@ -299,6 +299,20 @@ class GnVisibility:
         """Returns a label string relative to the given starting label."""
         return self._scope.relative_to(start)
 
+    def within(self, other: GnVisibility) -> bool:
+        """Returns whether this scope is a subset of another."""
+        as_label = GnLabel(str(other))
+        if as_label.name() == '*':
+            _path = self._scope.dir()
+            other_path = as_label.dir()
+            if other_path == '//*':
+                return True
+            if other_path.endswith('*'):
+                parent = PurePosixPath(other_path).parent
+                return _is_relative_to(_path, parent)
+            return _path == other_path
+        return str(self) == str(other)
+
 
 def _as_path(item: Union[str, GnPath, GnLabel, PurePosixPath]) -> PurePosixPath:
     """Converts an argument to be a PurePosixPath.
@@ -315,6 +329,19 @@ def _as_path(item: Union[str, GnPath, GnLabel, PurePosixPath]) -> PurePosixPath:
     return item
 
 
+def _is_relative_to(
+    path: Union[str, PurePosixPath], start: Union[str, PurePosixPath]
+) -> bool:
+    """Returns whether `path` is a subdirectory of `start`."""
+    _path = PurePosixPath(path)
+    _start = PurePosixPath(start)
+    try:
+        _path.relative_to(_start)
+        return True
+    except ValueError:
+        return False
+
+
 def _relative_to(
     path: Union[str, PurePosixPath], start: Union[str, PurePosixPath]
 ) -> PurePosixPath:
@@ -326,11 +353,9 @@ def _relative_to(
     if _path.parts[0] != _start.parts[0]:
         return _path
     ascend = PurePosixPath()
-    while True:
-        try:
-            return ascend.joinpath(_path.relative_to(_start))
-        except ValueError:
-            if _start.parent == PurePosixPath():
-                raise
-            _start = _start.parent
-            ascend = ascend.joinpath('..')
+    while not _is_relative_to(_path, _start):
+        if _start.parent == PurePosixPath():
+            break
+        _start = _start.parent
+        ascend = ascend.joinpath('..')
+    return ascend.joinpath(_path.relative_to(_start))

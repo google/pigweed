@@ -51,29 +51,40 @@ class TestGnTarget(unittest.TestCase):
 
     def test_from_bazel_rule_visibility(self):
         """Tests getting the GN visibility from a Bazel rule."""
-        self.rule.add_visibility('//visibility:private')
-        self.rule.add_visibility('//foo:__subpackages__')
-        self.rule.add_visibility('//foo/bar:__pkg__')
+        self.rule.set_attr(
+            'visibility',
+            [
+                '//visibility:private',
+                '//foo:__subpackages__',
+                '//foo/bar:__pkg__',
+                '//baz:__pkg__',
+            ],
+        )
         target = GnTarget('$build', '$src', bazel=self.rule)
         self.assertEqual(
             {str(scope) for scope in target.visibility},
             {
                 '$build/my-package:*',
                 '$build/foo/*',
-                '$build/foo/bar:*',
+                '$build/baz:*',
             },
         )
 
     def test_from_bazel_rule_visibility_public(self):
         """Tests that 'public' overrides any other visibility"""
-        self.rule.add_visibility('//visibility:private')
-        self.rule.add_visibility('//visibility:public')
+        self.rule.set_attr(
+            'visibility',
+            [
+                '//visibility:private',
+                '//visibility:public',
+            ],
+        )
         target = GnTarget('$build', '$src', bazel=self.rule)
-        self.assertEqual(target.visibility, [])
+        self.assertEqual({str(scope) for scope in target.visibility}, {'//*'})
 
     def test_from_bazel_rule_visibility_invalid(self):
         """Tests that and invalid visibility raises an error."""
-        self.rule.add_visibility('invalid')
+        self.rule.set_attr('visibility', ['invalid'])
         with self.assertRaises(MalformedGnError):
             GnTarget('$build', '$src', bazel=self.rule)
 

@@ -169,6 +169,35 @@ custom_type("my-target") {
 '''.lstrip(),
         )
 
+    def test_write_target_public_visibility(self):
+        """Tests writing a globbaly visible target using a GnWriter."""
+        target = GnTarget(
+            '$build',
+            '$src',
+            json='''{
+              "target_type": "custom_type",
+              "target_name": "my-target",
+              "package": "my-package"
+            }''',
+        )
+        target.add_visibility(bazel='//visibility:private')
+        target.add_visibility(bazel='//visibility:public')
+
+        output = StringIO()
+        writer = GnWriter(output)
+        writer.repos = {'com_corp_repo': 'repo'}
+        writer.aliases = {'$build/other-pkg/baz': '$build/another-pkg/baz'}
+        writer.write_target(target)
+
+        self.assertEqual(
+            output.getvalue(),
+            '''
+# Generated from //my-package:my-target
+custom_type("my-target") {
+}
+'''.lstrip(),
+        )
+
     def test_write_list(self):
         """Writes a GN list assigned to a variable."""
         self.writer.write_list('empty', [])

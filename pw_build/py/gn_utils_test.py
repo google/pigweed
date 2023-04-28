@@ -255,6 +255,97 @@ class TestGnVisibility(unittest.TestCase):
         scope = GnVisibility('$dir_3p/test', '$dir_3p/test/foo/bar:*')
         self.assertEqual(str(scope), '$dir_3p/test/foo/bar:*')
 
+    def test_within_equal_discrete(self):
+        """Tests that two equal, discrete visibilities are within each other."""
+        scope1 = GnVisibility('$dir_3p/test', '$dir_3p/test/foo/bar:baz')
+        scope2 = GnVisibility('$dir_3p/test', '$dir_3p/test/foo/bar:baz')
+        self.assertTrue(scope1.within(scope2))
+        self.assertTrue(scope2.within(scope1))
+
+    def test_within_equal_globbed(self):
+        """Tests that two equal, globbed visibilities are within each other."""
+        scope1 = GnVisibility('$dir_3p/test', '$dir_3p/test/foo/bar:*')
+        scope2 = GnVisibility('$dir_3p/test', '$dir_3p/test/foo/bar:*')
+        self.assertTrue(scope1.within(scope2))
+        self.assertTrue(scope2.within(scope1))
+
+    def test_within_equal_subtree(self):
+        """Tests that two equal, subtree visibilities are within each other."""
+        scope1 = GnVisibility('$dir_3p/test', '$dir_3p/test/foo/bar/*')
+        scope2 = GnVisibility('$dir_3p/test', '$dir_3p/test/foo/bar/*')
+        self.assertTrue(scope1.within(scope2))
+        self.assertTrue(scope2.within(scope1))
+
+    def test_within_not_equal_both_discrete(self):
+        """Tests that two unrelated visibilities are not within each other."""
+        scope1 = GnVisibility('$dir_3p/test', '$dir_3p/test/foo/bar:baz')
+        scope2 = GnVisibility('$dir_3p/test', '$dir_3p/test/foo/bar:qux')
+        self.assertFalse(scope1.within(scope2))
+        self.assertFalse(scope2.within(scope1))
+
+    def test_within_not_equal_both_globbed(self):
+        """Tests that two unrelated visibilities are not within each other."""
+        scope1 = GnVisibility('$dir_3p/test', '$dir_3p/test/foo/bar:*')
+        scope2 = GnVisibility('$dir_3p/test', '$dir_3p/test/foo/baz:*')
+        self.assertFalse(scope1.within(scope2))
+        self.assertFalse(scope2.within(scope1))
+
+    def test_within_not_equal_both_subtree(self):
+        """Tests that two unrelated visibilities are not within each other."""
+        scope1 = GnVisibility('$dir_3p/test', '$dir_3p/test/foo/bar/*')
+        scope2 = GnVisibility('$dir_3p/test', '$dir_3p/test/foo/baz/*')
+        self.assertFalse(scope1.within(scope2))
+        self.assertFalse(scope2.within(scope1))
+
+    def test_within_subset_discrete_in_globbed(self):
+        """Tests a discrete visibility that is within a globbed one."""
+        scope1 = GnVisibility('$dir_3p/test', '$dir_3p/test/foo/bar:baz')
+        scope2 = GnVisibility('$dir_3p/test', '$dir_3p/test/foo/bar:*')
+        self.assertTrue(scope1.within(scope2))
+        self.assertFalse(scope2.within(scope1))
+
+    def test_within_subset_discrete_in_subtree(self):
+        """Tests a discrete visibility that is within a subtree."""
+        scope1 = GnVisibility('$dir_3p/test', '$dir_3p/test/foo/bar:baz')
+        scope2 = GnVisibility('$dir_3p/test', '$dir_3p/test/foo/*')
+        public_scope = GnVisibility('$dir_3p/test', '//*')
+        self.assertTrue(scope1.within(scope2))
+        self.assertTrue(scope1.within(public_scope))
+        self.assertFalse(scope2.within(scope1))
+        self.assertFalse(public_scope.within(scope1))
+
+    def test_within_subset_globbed_in_subtree(self):
+        """Tests a globbed visibility that is within a subtree."""
+        scope1 = GnVisibility('$dir_3p/test', '$dir_3p/test/foo/bar:*')
+        scope2 = GnVisibility('$dir_3p/test', '$dir_3p/test/foo/*')
+        public_scope = GnVisibility('$dir_3p/test', '//*')
+        self.assertTrue(scope1.within(scope2))
+        self.assertTrue(scope1.within(public_scope))
+        self.assertFalse(scope2.within(scope1))
+        self.assertFalse(public_scope.within(scope1))
+
+    def test_within_subset_subtree_in_subtree(self):
+        """Tests a subtree visibility that is within a subtree."""
+        scope1 = GnVisibility('$dir_3p/test', '$dir_3p/test/foo/bar/*')
+        scope2 = GnVisibility('$dir_3p/test', '$dir_3p/test/foo/*')
+        public_scope = GnVisibility('$dir_3p/test', '//*')
+        self.assertTrue(scope1.within(scope2))
+        self.assertTrue(scope1.within(public_scope))
+        self.assertFalse(scope2.within(scope1))
+        self.assertFalse(public_scope.within(scope1))
+
+    def test_within_disjoint(self):
+        """Tests that disjoint visibilities are not within each other."""
+        scope1 = GnVisibility('$dir_3p/test', '$dir_3p/test/foo:bar')
+        scope2 = GnVisibility('$dir_3p/test', '$dir_3p/test/foo/baz:*')
+        scope3 = GnVisibility('$dir_3p/test', '$dir_3p/test/foo/qux/*')
+        self.assertFalse(scope1.within(scope2))
+        self.assertFalse(scope1.within(scope3))
+        self.assertFalse(scope2.within(scope1))
+        self.assertFalse(scope2.within(scope3))
+        self.assertFalse(scope3.within(scope1))
+        self.assertFalse(scope3.within(scope2))
+
 
 if __name__ == '__main__':
     unittest.main()
