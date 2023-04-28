@@ -21,9 +21,7 @@ API
 
 .. doxygenfunction:: pw::varint::EncodedSize(uint64_t integer)
 
-.. cpp:function:: size_t ZigZagEncodedSize(int64_t integer)
-
-Returns the size of a signed integer when ZigZag encoded as a varint.
+.. doxygenfunction:: pw::varint::ZigZagEncodedSize(int64_t integer)
 
 .. cpp:function:: uint64_t MaxValueInBytes(size_t bytes)
 

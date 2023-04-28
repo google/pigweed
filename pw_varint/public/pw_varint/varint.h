@@ -197,7 +197,13 @@ constexpr size_t EncodedSize(uint64_t integer) {
   return integer == 0 ? 1 : (64 - __builtin_clzll(integer) + 6) / 7;
 }
 
-// Returns a size of an signed integer when ZigZag encoded as a varint.
+/// @brief Returns the size of a signed integer when
+/// [ZigZag](https://protobuf.dev/programming-guides/encoding/#signed-ints)-encoded
+/// as a variable-length integer (varint).
+///
+/// @param integer The signed integer that will be ZigZag-encoded as a varint.
+///
+/// @returns The size of `integer` when ZigZag-encoded as a varint.
 constexpr size_t ZigZagEncodedSize(int64_t integer) {
   return EncodedSize(ZigZagEncode(integer));
 }
