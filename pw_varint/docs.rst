@@ -52,3 +52,11 @@ Zephyr
 ======
 To enable ``pw_varint`` for Zephyr add ``CONFIG_PIGWEED_VARINT=y`` to the
 project's configuration.
+
+Rust
+====
+The Rust implementation is documented in
+`//pw_varint/rust/pw_varint.rs <https://pigweed.googlesource.com/pigweed/pigweed/+/refs/heads/main/pw_varint/rust/pw_varint.rs>`_
+
+..
+  TODO(b/280102965): Update above to point to rustdoc API docs
