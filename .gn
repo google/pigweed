@@ -14,6 +14,9 @@
 
 buildconfig = "//BUILDCONFIG.gn"
 
+# Generate a compilation database for all targets.
+export_compile_commands = [ ":*" ]
+
 default_args = {
   # Default all upstream Pigweed toolchains to enable pw::span asserts.
   pw_span_ENABLE_ASSERTS = true
