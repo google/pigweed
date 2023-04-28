@@ -66,7 +66,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
   constexpr char kDefaultHeader[] = "TOKENS\0\0\0\0\0\0\0\0\0";
   static uint8_t buffer[kBufferSizeMax];
 
-  if (size > kFuzzDataSizeMax) {
+  if (!data || size == 0 || size > kFuzzDataSizeMax) {
     return 0;
   }
 
