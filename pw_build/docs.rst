@@ -181,14 +181,12 @@ expressed in the build.
 
 Third party libraries
 ---------------------
-
 Pigweed includes build files for a selection of third-party libraries. For a
 given library, these include:
 
 * ``third_party/<library>/library.gni``: Declares build arguments like
   ``dir_pw_third_party_<library>`` that default to ``""`` but can be set to the
   absolute path of the library in order to use it.
-
 * ``third_party/<library>/BUILD.gn``: Describes how to build the library. This
   should import ``third_party/<library>/library.gni`` and refer to source paths
   relative to ``dir_pw_third_party_<library>``.
