@@ -31,6 +31,11 @@ template("pw_libc_source_set") {
   pw_source_set(target_name) {
     dir = target_dir
 
+    additional_srcs = []
+    if (defined(invoker.additional_srcs)) {
+      additional_srcs = invoker.additional_srcs
+    }
+
     include_dirs = [ dir_pw_third_party_llvm_libc ]
 
     defines = [
@@ -48,6 +53,7 @@ template("pw_libc_source_set") {
                              "defines",
                              "functions",
                              "no_test_functions",
+                             "additional_srcs",
                            ])
 
     public = []
@@ -56,6 +62,10 @@ template("pw_libc_source_set") {
     foreach(function, invoker.functions) {
       public += [ "$dir/$function.h" ]
       sources += [ "$dir/$function.cpp" ]
+    }
+
+    foreach(src, additional_srcs) {
+      sources += [ "$dir/$src" ]
     }
   }
 
@@ -75,6 +85,7 @@ template("pw_libc_source_set") {
                              "defines",
                              "functions",
                              "no_test_functions",
+                             "additional_srcs",
                            ])
 
     sources = []

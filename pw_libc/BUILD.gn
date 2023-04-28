@@ -53,7 +53,15 @@ config("no-shadow") {
 # pw_libc.a from llvm-libc. Otherwise, we create an empty pw_libc.a.
 if (dir_pw_third_party_llvm_libc != "") {
   pw_libc_source_set("stdlib") {
-    functions = [ "abs" ]
+    functions = [
+      "abs",
+      "rand",
+      "srand",
+    ]
+    additional_srcs = [ "rand_util.cpp" ]
+
+    # srand and rand are both tested in rand_test.cpp.
+    no_test_functions = [ "srand" ]
   }
 
   pw_libc_source_set("string") {
