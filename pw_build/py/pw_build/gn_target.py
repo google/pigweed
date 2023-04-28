@@ -126,10 +126,8 @@ class GnTarget:  # pylint: disable=too-many-instance-attributes
         else:
             raise MalformedGnError(f'unsupported Bazel kind: {kind}')
 
-        # Bazel treats no `visibility` (and no package default) as private,
-        # whereas GN treats no `visibility` as public.
-        if not visibility:
-            visibility.append('//visibility:private')
+        # Bazel always implicitly includes private visibility.
+        visibility.append('//visibility:private')
         for scope in visibility:
             self.add_visibility(bazel=scope)
 

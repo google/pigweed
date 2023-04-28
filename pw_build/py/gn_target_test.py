@@ -54,7 +54,6 @@ class TestGnTarget(unittest.TestCase):
         self.rule.set_attr(
             'visibility',
             [
-                '//visibility:private',
                 '//foo:__subpackages__',
                 '//foo/bar:__pkg__',
                 '//baz:__pkg__',

@@ -126,17 +126,22 @@ class GnWriter:
             f'Generated from //{target.package()}:{target.name()}'
         )
         self.write_target_start(target.type(), target.name())
+
+        # GN use no `visibility` to indicate publicly visibile.
         scopes = filter(lambda s: str(s) != '//*', target.visibility)
         visibility = [target.make_relative(scope) for scope in scopes]
         self.write_list('visibility', visibility)
+
         self.write_list('public', [str(path) for path in target.public])
         self.write_list('sources', [str(path) for path in target.sources])
         self.write_list('inputs', [str(path) for path in target.inputs])
+
         for flag in GN_CONFIG_FLAGS:
             self.write_list(flag, target.config.get(flag))
         self._write_relative('public_configs', target, target.public_configs)
         self._write_relative('configs', target, target.configs)
         self._write_relative('remove_configs', target, target.remove_configs)
+
         self._write_relative('public_deps', target, target.public_deps)
         self._write_relative('deps', target, target.deps)
         self.write_end()
