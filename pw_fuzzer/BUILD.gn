@@ -52,6 +52,10 @@ config("engine") {
   }
 }
 
+config("public_overrides_include_path") {
+  include_dirs = [ "public_overrides" ]
+}
+
 pw_source_set("pw_fuzzer") {
   public_configs = [ ":public_include_path" ]
   public = [
@@ -59,6 +63,11 @@ pw_source_set("pw_fuzzer") {
     "public/pw_fuzzer/fuzzed_data_provider.h",
   ]
   public_deps = [ "$dir_pw_log" ]
+}
+
+pw_source_set("mock_fuzz_test") {
+  public = [ "public_overrides/fuzztest/fuzztest.h" ]
+  public_configs = [ ":public_overrides_include_path" ]
 }
 
 pw_source_set("run_as_unit_test") {

@@ -73,3 +73,51 @@ template("pw_fuzzer") {
     enable_if = !defined(enable_test_if) || enable_test_if
   }
 }
+
+# Creates a FuzzTest-based fuzzer.
+#
+# FuzzTest integrates directly with GoogleTest, so the resulting executables can
+# be used as either fuzzers or unit tests. Fuzz tests are declared for test
+# suites by using the `FUZZ_TEST` macro with a function, e.g.:
+#
+#   #include "fuzztest/fuzztest.h"
+#
+#   using namespace fuzztest;
+#
+#   void MyTargetFunction(int a, std::string b) { ... }
+#
+#   FUZZ_TEST(MyTestSuite, MyTargetFunction)
+#     .WithDomains(NonZero<int>(), PrintableAsciiString())
+#     .WithSeeds({42, "life, the universe and everything"});
+#
+# For more details on this macro and the `WithDomains` and `WithSeeds` methods,
+# see:
+#   https://github.com/google/fuzztest/blob/main/doc/fuzz-test-macro.md
+#
+# FuzzTest is not available if `dir_pw_third_party_fuzztest` is not set, if the
+# toolchain does not have fuzzing instrumentation enabled, or if the toolchain
+# does not have any sanitizers enabled. In this case, the `FUZZ_TEST` macro and
+# its associated methods are ignored and this template acts exaclt like
+# `pw_test`.
+#
+# Arguments are exactly the same as `pw_test`.
+template("pw_fuzz_test") {
+  pw_test(target_name) {
+    deps = []
+    configs = []
+    forward_variables_from(invoker, "*")
+    if (dir_pw_third_party_fuzztest != "" && pw_toolchain_FUZZING_ENABLED &&
+        pw_toolchain_SANITIZERS != []) {
+      test_main = ""
+      test_main = "$dir_pw_third_party/fuzztest/fuzztest:fuzztest_gtest_main"
+      deps += [ "$dir_pw_third_party/fuzztest/fuzztest" ]
+      configs += [
+        "$dir_pw_third_party/abseil-cpp/configs:disabled_warnings",
+        "$dir_pw_third_party/re2/configs:disabled_warnings",
+        "$dir_pw_third_party/fuzztest/configs:disabled_warnings",
+      ]
+    } else {
+      deps += [ "$dir_pw_fuzzer:mock_fuzz_test" ]
+    }
+  }
+}
