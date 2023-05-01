@@ -95,7 +95,10 @@ platform(
 
 platform(
     name = "lm3s6965evb",
-    constraint_values = ["//pw_build/constraints/chipset:lm3s6965evb"],
+    constraint_values = [
+        "//pw_build/constraints/chipset:lm3s6965evb",
+        "@rust_crates//:no_std",
+    ],
     parents = [":cortex_m3"],
 )
 
@@ -114,7 +117,10 @@ platform(
 
 platform(
     name = "microbit",
-    constraint_values = ["//pw_build/constraints/board:microbit"],
+    constraint_values = [
+        "//pw_build/constraints/board:microbit",
+        "@rust_crates//:no_std",
+    ],
     parents = [":nrf52833"],
 )
 

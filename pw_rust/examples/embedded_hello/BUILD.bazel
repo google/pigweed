@@ -31,9 +31,9 @@ rust_binary(
         "//pw_build/constraints/chipset:lm3s6965evb": [],
     }),
     deps = [
-        "@rust_crates//crates:cortex-m",
-        "@rust_crates//crates:cortex-m-rt",
-        "@rust_crates//crates:cortex-m-semihosting",
-        "@rust_crates//crates:panic-halt",
+        "@rust_crates//:cortex-m",
+        "@rust_crates//:cortex-m-rt",
+        "@rust_crates//:cortex-m-semihosting",
+        "@rust_crates//:panic-halt",
     ],
 )
