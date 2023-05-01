@@ -1,0 +1,26 @@
+{
+    "name": "FuzzTest",
+    "repos": {
+        "com_google_absl": "abseil-cpp",
+        "com_google_googletest": "googletest",
+        "com_google_protobuf": "protobuf",
+        "com_googlesource_code_re2": "re2"
+    },
+    "aliases": {
+        "$dir_pw_third_party/googletest:gtest": "$dir_pw_third_party/googletest"
+    },
+    "add": [
+        "$dir_pw_third_party/fuzztest/configs:internal_disabled_warnings",
+        "$dir_pw_third_party/abseil-cpp/configs:disabled_warnings",
+        "$dir_pw_third_party/re2/configs:disabled_warnings"
+    ],
+    "remove": [
+        "$dir_pw_fuzzer:instrumentation",
+        "$dir_pw_toolchain/host_clang:sanitize_address",
+        "$dir_pw_toolchain/host_clang:sanitize_memory",
+        "$dir_pw_toolchain/host_clang:sanitize_undefined",
+        "$dir_pw_toolchain/host_clang:sanitize_undefined_heuristic",
+        "$dir_pw_toolchain/host_clang:sanitize_thread"
+    ],
+    "allow_testonly": true
+}
