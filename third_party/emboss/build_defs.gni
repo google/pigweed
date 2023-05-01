@@ -89,7 +89,7 @@ template("emboss_cc_library") {
       foreach(dir, invoker.import_dirs) {
         args += [
           "--import-dir",
-          dir,
+          rebase_path(dir, root_build_dir),
         ]
       }
     }
