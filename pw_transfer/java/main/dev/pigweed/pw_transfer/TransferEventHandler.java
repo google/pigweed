@@ -254,6 +254,9 @@ class TransferEventHandler {
      *
      *  Must be called on the transfer thread.
      */
+    // TODO(frolv): Investigate why this is occurring -- there shouldn't be any
+    // futures here.
+    @SuppressWarnings("FutureReturnValueIgnored")
     void unregisterTransfer(Transfer<?> transfer) {
       sessionIdToTransfer.remove(transfer.getSessionId());
       legacyIdToSessionId.remove(transfer.getResourceId());
