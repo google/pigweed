@@ -40,6 +40,7 @@ pw_python_package("py") {
     "pw_package/packages/nanopb.py",
     "pw_package/packages/pico_sdk.py",
     "pw_package/packages/protobuf.py",
+    "pw_package/packages/re2.py",
     "pw_package/packages/smartfusion_mss.py",
     "pw_package/packages/stm32cube.py",
     "pw_package/pigweed_packages.py",

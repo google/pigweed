@@ -1,0 +1,5 @@
+{
+    "name": "RE2",
+    "add": [ "$dir_pw_third_party/re2/configs:internal_disabled_warnings" ],
+    "remove": [ "$dir_pw_fuzzer:instrumentation" ]
+}

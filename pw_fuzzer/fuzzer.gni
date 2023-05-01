@@ -16,6 +16,7 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/error.gni")
 import("$dir_pw_third_party/abseil-cpp/abseil-cpp.gni")
+import("$dir_pw_third_party/re2/re2.gni")
 import("$dir_pw_toolchain/host_clang/toolchains.gni")
 import("$dir_pw_unit_test/test.gni")
 
