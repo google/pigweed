@@ -98,7 +98,27 @@ commit messages should look.
 
 Documentation
 -------------
-All Pigweed changes must either
+Most changes to Pigweed should have an associated documentation change.
+
+Building
+^^^^^^^^
+To build the documentation, follow the :ref:`getting
+started<docs-getting-started>` guide so you can build Pigweed. Then:
+
+#. Change to your checkout directory and ``. activate.sh`` if necessary
+#. Run ``pw watch out`` to build the code, run tests, and build docs
+#. Wait for the build to finish (see a ``PASS``)
+#. Navigate to  ``<CHECKOUT>/out/docs/gen/docs/html/index.html``
+#. Edit the relevant ``.rst`` file. Save when ready
+#. Refresh your browser after the build completes
+
+Alternately, you can use the local webserver in watch; this works better for
+some pages that have external resources: ``pw watch --serve-docs`` then
+navigate to `http://localhost:8000 <http://localhost:8000>`_ in your browser.
+
+Submission checklist
+^^^^^^^^^^^^^^^^^^^^
+All Pigweed changes must either:
 
 #. Include updates to documentation, or
 #. Include ``No-Docs-Update-Reason: <reason>`` in a Gerrit comment on the CL.
