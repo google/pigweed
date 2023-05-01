@@ -1,0 +1,7 @@
+{
+    "name": "Abseil C++",
+    "add": [
+        "$dir_pw_third_party/abseil-cpp/configs:internal_disabled_warnings"
+    ],
+    "remove": [ "$dir_pw_fuzzer:instrumentation" ]
+}

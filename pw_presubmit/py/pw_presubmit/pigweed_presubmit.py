@@ -384,6 +384,12 @@ gn_googletest_build = build.GnGenNinja(
 gn_fuzz_build = build.GnGenNinja(
     name='gn_fuzz_build',
     path_filter=_BUILD_FILE_FILTER,
+    packages=('abseil-cpp',),
+    gn_args={
+        'dir_pw_third_party_abseil_cpp': lambda ctx: '"{}"'.format(
+            ctx.package_root / 'abseil-cpp'
+        ),
+    },
     ninja_targets=('host_clang_fuzz',),
 )
 

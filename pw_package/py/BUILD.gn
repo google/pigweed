@@ -27,6 +27,7 @@ pw_python_package("py") {
     "pw_package/git_repo.py",
     "pw_package/package_manager.py",
     "pw_package/packages/__init__.py",
+    "pw_package/packages/abseil_cpp.py",
     "pw_package/packages/arduino_core.py",
     "pw_package/packages/boringssl.py",
     "pw_package/packages/chromium_verifier.py",

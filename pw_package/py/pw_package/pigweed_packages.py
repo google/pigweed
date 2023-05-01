@@ -18,6 +18,7 @@ import sys
 from pw_package import package_manager
 
 # pylint: disable=unused-import
+from pw_package.packages import abseil_cpp
 from pw_package.packages import arduino_core
 from pw_package.packages import boringssl
 from pw_package.packages import chromium_verifier
