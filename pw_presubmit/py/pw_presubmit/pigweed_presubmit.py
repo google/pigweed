@@ -381,6 +381,12 @@ gn_googletest_build = build.GnGenNinja(
     ninja_targets=_at_all_optimization_levels(f'host_{_HOST_COMPILER}'),
 )
 
+gn_fuzz_build = build.GnGenNinja(
+    name='gn_fuzz_build',
+    path_filter=_BUILD_FILE_FILTER,
+    ninja_targets=('host_clang_fuzz',),
+)
+
 gn_docs_build = build.GnGenNinja(name='gn_docs_build', ninja_targets=('docs',))
 
 gn_host_tools = build.GnGenNinja(
@@ -989,6 +995,7 @@ SECURITY = (
     # keep-sorted: start
     gn_crypto_mbedtls_build,
     gn_crypto_micro_ecc_build,
+    gn_fuzz_build,
     gn_software_update_build,
     # keep-sorted: end
 )

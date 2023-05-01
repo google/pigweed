@@ -374,6 +374,18 @@ pw_internal_host_toolchains = [
     }
   },
   {
+    name = "pw_strict_host_clang_fuzz"
+    _toolchain_base = pw_toolchain_host_clang.fuzz
+    forward_variables_from(_toolchain_base, "*", _excluded_members)
+    defaults = {
+      forward_variables_from(_toolchain_base.defaults, "*")
+      forward_variables_from(_host_common, "*")
+      forward_variables_from(_pigweed_internal, "*")
+      forward_variables_from(_os_specific_config, "*")
+      default_configs += _internal_clang_default_configs
+    }
+  },
+  {
     name = "pw_strict_host_gcc_debug"
     _toolchain_base = pw_toolchain_host_gcc.debug
     forward_variables_from(_toolchain_base, "*", _excluded_members)

@@ -207,6 +207,10 @@ _build_pigweed_default_at_all_optimization_levels("host_clang") {
   toolchain_prefix = "$_internal_toolchains:pw_strict_host_clang_"
 }
 
+group("host_clang_fuzz") {
+  deps = [ ":pigweed_default($_internal_toolchains:pw_strict_host_clang_fuzz)" ]
+}
+
 # GCC is only supported for Windows. Pigweed doesn't yet provide a Windows
 # clang toolchain, and Pigweed does not provide gcc toolchains for macOS and
 # Linux.
