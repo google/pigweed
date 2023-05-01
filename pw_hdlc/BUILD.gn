@@ -219,7 +219,10 @@ pw_size_diff("size_report") {
 
 pw_doc_group("docs") {
   sources = [
+    "api.rst",
+    "design.rst",
     "docs.rst",
+    "guide.rst",
     "rpc_example/docs.rst",
   ]
   inputs = [
