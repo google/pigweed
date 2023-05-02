@@ -66,11 +66,12 @@ Example module structure
 
     # Rust crates go into 'rust/...'
     rust/BUILD.bazel
-    rust/crate_one.rs          # Single file crates are in rust/
-    rust/crate_two.rs          # Multi-file crate's top level source in rust/
+    rust/crate_one.rs          # Single file crates are in rust/<crate_name>.rs
+    rust/crate_two/lib.rs      # Multi-file crate's top level source in:
+                               #   rust/<crate>/lib.rs
     rust/crate_two/mod_one.rs  # Multi-file crate's modules in:
-    rust/crate_two/mod_two.rs  #   rust/<crate>/<module.rs>
-                               # Prefer not using lib.rs and mod.rs files.
+    rust/crate_two/mod_two.rs  #   rust/<crate>/<module_name>.rs
+                               # Prefer not using mod.rs files.
 
     # Go files go into 'go/...'
     go/...
