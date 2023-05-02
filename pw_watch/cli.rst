@@ -1,8 +1,8 @@
 .. _module-pw_watch-cli:
 
-=======================
-pw_string CLI reference
-=======================
+======================
+pw_watch CLI reference
+======================
 .. argparse::
    :module: pw_watch.watch
    :func: get_parser
