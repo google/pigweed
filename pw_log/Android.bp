@@ -24,6 +24,73 @@ cc_library_headers {
     host_supported: true,
 }
 
+cc_library_headers {
+    name: "pw_log_pwpb_headers",
+    cpp_std: "c++2a",
+    vendor_available: true,
+    host_supported: true,
+    generated_headers: [
+        "google_protobuf_descriptor_pwpb_h",
+        "pw_log_log_proto_pwpb_h",
+        "pw_protobuf_protos_common_pwpb_h",
+        "pw_tokenizer_proto_options_pwpb_h",
+    ],
+    export_generated_headers: [
+        "google_protobuf_descriptor_pwpb_h",
+        "pw_log_log_proto_pwpb_h",
+        "pw_protobuf_protos_common_pwpb_h",
+        "pw_tokenizer_proto_options_pwpb_h",
+    ],
+}
+
+// Copies the proto files to a prefix directory to add the prefix to the
+// compiled proto. The prefix is taken from the directory name of the first
+// item listen in out.
+genrule_defaults {
+    name: "pw_log_add_prefix_to_proto",
+    cmd: "out_files=($(out)); prefix=$$(dirname $${out_files[0]}); " +
+         "mkdir -p $${prefix}; cp -t $${prefix} $(in);"
+}
+
+genrule {
+    name: "pw_log_log_proto_with_prefix",
+    defaults: ["pw_log_add_prefix_to_proto"],
+    srcs: [
+        "log.proto",
+    ],
+    out: [
+        "pw_log/proto/log.proto",
+    ],
+}
+
+genrule {
+    name: "pw_log_log_proto_pwpb_h",
+    srcs: [":pw_log_log_proto_with_prefix",],
+    cmd: "python3 $(location pw_protobuf_compiler_py) " +
+         "--proto-path=external/pigweed/pw_protobuf/ " +
+         // Requires the generated pw_tokenizer/proto/options.proto filepath.
+         "--proto-path=$$(dirname $$(dirname $$(dirname $(location :pw_tokenizer_proto_options_proto)))) " +
+         "--proto-path=external/protobuf/src/ " +
+         "--out-dir=$$(dirname $(location pw_log/proto/log.pwpb.h)) " +
+         "--plugin-path=$(location pw_protobuf_plugin_py) " +
+         "--compile-dir=$$(dirname $(in)) " +
+         "--sources $(in) " +
+         "--language pwpb " +
+         "--no-experimental-proto3-optional " +
+         "--protoc=$(location aprotoc) ",
+    out: [
+        "pw_log/proto/log.pwpb.h",
+    ],
+    tool_files: [
+      ":pw_tokenizer_proto_options_proto",
+    ],
+    tools: [
+        "aprotoc",
+        "pw_protobuf_plugin_py",
+        "pw_protobuf_compiler_py",
+    ],
+}
+
 android_library {
     name: "pw_log_android_java",
     srcs: ["java/android_main/dev/pigweed/pw_log/*.java"],
