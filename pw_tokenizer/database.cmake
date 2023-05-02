@@ -57,13 +57,6 @@ function(pw_tokenizer_database NAME)
             "variable, unless 'CREATE' is specified")
   endif()
 
-  set(_database "")
-  if(DEFINED arg_DATABASE)
-    set(_database ${arg_DATABASE})
-  else()
-    set(_database ${NAME})
-  endif()
-
   set(_create "")
   if(DEFINED arg_CREATE)
     if (NOT (${arg_CREATE} STREQUAL "csv" OR ${arg_CREATE} STREQUAL "binary"))
@@ -71,9 +64,14 @@ function(pw_tokenizer_database NAME)
     endif()
     set(_create ${arg_CREATE})
     set(_create_new_database TRUE)
+  endif()
+
+  set(_database "")
+  if(DEFINED arg_DATABASE)
+    set(_database ${arg_DATABASE})
   else()
-    # Get existing database extension. Note, this includes the '.'
-    get_filename_component(_create ${_database} LAST_EXT)
+    # Default to appending the create type as the extension.
+    set(_database ${NAME}.${_create})
   endif()
 
   set(_domain "")
@@ -90,14 +88,14 @@ function(pw_tokenizer_database NAME)
         COMMAND
           ${Python3_EXECUTABLE}
           "$ENV{PW_ROOT}/pw_tokenizer/py/pw_tokenizer/database.py" create
-          --database ${_database}.${_create}
+          --database ${_database}
           --type ${_create}
           "$<TARGET_FILE:${arg_TARGET}>${_domain}"
           --force
         DEPENDS
           ${arg_DEPS}
           ${arg_TARGET}
-        OUTPUT ${NAME}.${_create} POST_BUILD
+        OUTPUT ${_database} POST_BUILD
     )
   else()
     set(_discard_temporary "")
@@ -116,11 +114,11 @@ function(pw_tokenizer_database NAME)
         DEPENDS
           ${arg_DEPS}
           ${arg_TARGET}
-        OUTPUT ${NAME}${_create} POST_BUILD
+        OUTPUT ${_database} POST_BUILD
     )
   endif()
 
   add_custom_target(${NAME}_generated_token_db
-    DEPENDS ${NAME}.${_create}
+    DEPENDS ${_database}
   )
 endfunction()
