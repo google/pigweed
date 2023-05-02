@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
+import("//third_party/pigweed/src/third_party/emboss/build_defs.gni")
 
 static_library("transport") {
   sources = [
@@ -57,6 +58,14 @@ source_set("testing") {
   public_deps = [ ":transport" ]
 }
 
+emboss_cc_library("emboss_testing") {
+  source = "test_packets.emb"
+  import_dirs = [ "//third_party/pigweed/src/pw_bluetooth/public" ]
+  imports =
+      [ "//third_party/pigweed/src/pw_bluetooth/public/pw_bluetooth/hci.emb" ]
+  deps = [ "//third_party/pigweed/src/pw_bluetooth:emboss_hci" ]
+}
+
 source_set("tests") {
   testonly = true
 
@@ -73,6 +82,7 @@ source_set("tests") {
   ]
 
   deps = [
+    ":emboss_testing",
     ":transport",
     "//src/connectivity/bluetooth/core/bt-host/testing",
     "//third_party/googletest:gtest",

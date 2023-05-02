@@ -431,9 +431,9 @@ TEST_F(PeerTest, SettingInquiryDataUpdatesLastUpdated) {
   });
 
   RunLoopFor(zx::duration(2));
-  hci_spec::InquiryResult ir;
-  ir.bd_addr = kAddrLeAlias.value();
-  peer().MutBrEdr().SetInquiryData(ir);
+  StaticPacket<pw::bluetooth::emboss::InquiryResultWriter> ir;
+  ir.view().bd_addr().CopyFrom(kAddrLeAlias.value().view());
+  peer().MutBrEdr().SetInquiryData(ir.view());
   EXPECT_EQ(peer().last_updated(), zx::time(2));
   EXPECT_GE(notify_count, 1);
 }

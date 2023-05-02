@@ -68,42 +68,37 @@ DynamicByteBuffer FakePeer::CreateInquiryResponseEvent(
     pw::bluetooth::emboss::InquiryMode mode) const {
   BT_DEBUG_ASSERT(address_.type() == DeviceAddress::Type::kBREDR);
 
-  size_t param_size;
   if (mode == pw::bluetooth::emboss::InquiryMode::STANDARD) {
-    param_size = sizeof(hci_spec::InquiryResultEventParams) + sizeof(hci_spec::InquiryResult);
-  } else {
-    param_size =
-        sizeof(hci_spec::InquiryResultWithRSSIEventParams) + sizeof(hci_spec::InquiryResultRSSI);
+    size_t packet_size = pw::bluetooth::emboss::InquiryResultEvent::MinSizeInBytes() +
+                         pw::bluetooth::emboss::InquiryResult::IntrinsicSizeInBytes();
+    auto packet = hci::EmbossEventPacket::New<pw::bluetooth::emboss::InquiryResultEventWriter>(
+        hci_spec::kInquiryResultEventCode, packet_size);
+    auto view = packet.view_t();
+    view.num_responses().Write(1);
+    view.responses()[0].bd_addr().CopyFrom(address_.value().view());
+    view.responses()[0].page_scan_repetition_mode().Write(
+        pw::bluetooth::emboss::PageScanRepetitionMode::R0_);
+    view.responses()[0].class_of_device().BackingStorage().WriteUInt(class_of_device_.to_int());
+    return DynamicByteBuffer{packet.data()};
   }
 
+  size_t param_size =
+      sizeof(hci_spec::InquiryResultWithRSSIEventParams) + sizeof(hci_spec::InquiryResultRSSI);
   DynamicByteBuffer buffer(sizeof(hci_spec::EventHeader) + param_size);
   MutablePacketView<hci_spec::EventHeader> event(&buffer, param_size);
   event.mutable_header()->parameter_total_size = param_size;
 
-  // TODO(jamuraa): simultate clock offset and RSSI
-  if (mode == pw::bluetooth::emboss::InquiryMode::STANDARD) {
-    event.mutable_header()->event_code = hci_spec::kInquiryResultEventCode;
-    auto payload = event.mutable_payload<hci_spec::InquiryResultEventParams>();
-    payload->num_responses = 1u;
+  // TODO(jamuraa): simulate clock offset and RSSI
+  event.mutable_header()->event_code = hci_spec::kInquiryResultWithRSSIEventCode;
+  auto payload = event.mutable_payload<hci_spec::InquiryResultWithRSSIEventParams>();
+  payload->num_responses = 1u;
 
-    auto inq_result = reinterpret_cast<hci_spec::InquiryResult*>(payload->responses);
-    inq_result->bd_addr = address_.value();
-    inq_result->page_scan_repetition_mode = pw::bluetooth::emboss::PageScanRepetitionMode::R0_;
-    inq_result->class_of_device = class_of_device_;
-    inq_result->clock_offset = 0;
-  } else {
-    event.mutable_header()->event_code = hci_spec::kInquiryResultWithRSSIEventCode;
-    auto payload = event.mutable_payload<hci_spec::InquiryResultWithRSSIEventParams>();
-    payload->num_responses = 1u;
-
-    auto inq_result = reinterpret_cast<hci_spec::InquiryResultRSSI*>(payload->responses);
-    inq_result->bd_addr = address_.value();
-    inq_result->page_scan_repetition_mode = pw::bluetooth::emboss::PageScanRepetitionMode::R0_;
-    inq_result->class_of_device = class_of_device_;
-    inq_result->clock_offset = 0;
-    inq_result->rssi = -30;
-  }
-
+  auto inq_result = reinterpret_cast<hci_spec::InquiryResultRSSI*>(payload->responses);
+  inq_result->bd_addr = address_.value();
+  inq_result->page_scan_repetition_mode = pw::bluetooth::emboss::PageScanRepetitionMode::R0_;
+  inq_result->class_of_device = class_of_device_;
+  inq_result->clock_offset = 0;
+  inq_result->rssi = -30;
   return buffer;
 }
 

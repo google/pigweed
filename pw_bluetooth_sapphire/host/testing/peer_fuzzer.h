@@ -53,7 +53,7 @@ class PeerFuzzer final {
         &PeerFuzzer::LEDataSetFeatures,
         &PeerFuzzer::LEDataSetServiceChangedGattData,
         &PeerFuzzer::LEDataSetAutoConnectBehavior,
-        &PeerFuzzer::BrEdrDataSetInquiryData<hci_spec::InquiryResult>,
+        &PeerFuzzer::BrEdrDataSetInquiryData,
         &PeerFuzzer::BrEdrDataSetInquiryData<hci_spec::InquiryResultRSSI>,
         &PeerFuzzer::BrEdrDataSetInquiryData<hci_spec::ExtendedInquiryResultEventParams>,
         &PeerFuzzer::BrEdrDataRegisterInitializingConnection,
@@ -156,6 +156,16 @@ class PeerFuzzer final {
   void LEDataSetAutoConnectBehavior() {
     peer_.MutLe().set_auto_connect_behavior(fdp().PickValueInArray(
         {Peer::AutoConnectBehavior::kAlways, Peer::AutoConnectBehavior::kSkipUntilNextConnection}));
+  }
+
+  void BrEdrDataSetInquiryData() {
+    if (!peer_.identity_known()) {
+      return;
+    }
+    StaticPacket<pw::bluetooth::emboss::InquiryResultWriter> inquiry_data;
+    fdp().ConsumeData(inquiry_data.mutable_data().mutable_data(), sizeof(inquiry_data));
+    inquiry_data.view().bd_addr().CopyFrom(peer_.address().value().view());
+    peer_.MutBrEdr().SetInquiryData(inquiry_data.view());
   }
 
   template <typename T>

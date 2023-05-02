@@ -704,38 +704,6 @@ constexpr EventCode kInquiryCompleteEventCode = 0x01;
 // Inquiry Result Event (v1.1) (BR/EDR)
 constexpr EventCode kInquiryResultEventCode = 0x02;
 
-struct InquiryResult {
-  // The address for the device which responded.
-  DeviceAddressBytes bd_addr;
-
-  // The Page Scan Repetition Mode being used by the remote device.
-  pw::bluetooth::emboss::PageScanRepetitionMode page_scan_repetition_mode;
-
-  // Reserved (no meaning as of v1.2)
-  uint8_t page_scan_period_mode;
-
-  // Reserved (no meaning as of v1.2)
-  uint8_t page_scan_mode;
-
-  // Class of device
-  DeviceClass class_of_device;
-
-  // Clock Offset
-  // the 15 lower bits represent bits 16-2 of CLKNPeripheral-CLK
-  // the most significant bit is reserved
-  uint16_t clock_offset;
-} __attribute__((packed));
-
-struct InquiryResultEventParams {
-  InquiryResultEventParams() = default;
-  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(InquiryResultEventParams);
-
-  // The number of responses included.
-  uint8_t num_responses;
-
-  InquiryResult responses[];
-} __attribute__((packed));
-
 // =========================================
 // Connection Complete Event (v1.1) (BR/EDR)
 constexpr EventCode kConnectionCompleteEventCode = 0x03;
@@ -1409,80 +1377,6 @@ struct LEPHYUpdateCompleteSubeventParams {
 
 // LE Extended Advertising Report Event (v5.0) (LE)
 constexpr EventCode kLEExtendedAdvertisingReportSubeventCode = 0x0D;
-
-struct LEExtendedAdvertisingReportData {
-  LEExtendedAdvertisingReportData() = delete;
-  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(LEExtendedAdvertisingReportData);
-
-  // The advertising event type bitfield. For more information on how to
-  // interpret this see kLEExtendedAdvEventType* constants in hci_constants.h
-  // and Core Spec v5.0, Vol 2, Part E, Section 7.7.65.13.
-  uint16_t event_type;
-
-  // Address type of the advertiser.
-  LEAddressType address_type;
-
-  // Public Device Address, Random Device Address, Public Identity Address or
-  // Random (static) Identity Address of the advertising device.
-  DeviceAddressBytes address;
-
-  // Indicates the PHY used to send the advertising PDU on the primary
-  // advertising channel. Legacy PDUs always use LEPHY::kLE1M
-  //
-  // LEPHY::kNone, LEPHY::kLE2M, and LEPHY::kLECodedS2 are excluded.
-  LEPHY primary_phy;
-
-  // Indicates the PHY used to send the advertising PDU(s), if any, on the
-  // secondary advertising channel. A value of LEPHY::kNone means that no
-  // packets were received on the secondary advertising channel.
-  LEPHY secondary_phy;
-
-  // Value of the Advertising SID subfield in the ADI field of the PDU. A value
-  // of 0x00 means no ADI field in the PDU.
-  uint8_t advertising_sid;
-
-  // Range: -127 <= N <= +126
-  // Units: dBm
-  int8_t tx_power;
-
-  // Range: -127 <= N <= +20
-  // Units: dBm
-  // If N == 127: RSSI is not available.
-  int8_t rssi;
-
-  // 0x0000: No periodic advertising.
-  // 0xXXXX:
-  //   Range: See kLEPeriodicAdvertisingInterval[Min|Max] in hci_constants.h
-  //   Time = N * 1.25 ms
-  //   Time Range: 7.5ms to 81.91875 s
-  uint16_t periodic_adv_interval;
-
-  LEAddressType direct_address_type;
-
-  // Public Device Address, Random Device Address, Public Identity Address or
-  // Random (static) Identity Address of the target device.
-  DeviceAddressBytes direct_address;
-
-  // Length of the data field.
-  uint8_t data_length;
-
-  // The beginning of |data_length| octets of advertising or scan response data
-  // formatted as defined in Core Spec v5.0, Vol 3, Part C, Section 11.
-  uint8_t data[];
-} __attribute__((packed));
-
-struct LEExtendedAdvertisingReportSubeventParams {
-  LEExtendedAdvertisingReportSubeventParams() = delete;
-  BT_DISALLOW_COPY_ASSIGN_AND_MOVE(LEExtendedAdvertisingReportSubeventParams);
-
-  // Number of separate reports in the event.
-  uint8_t num_reports;
-
-  // Beginning of LEExtendedAdvertisingReportData array. Since each report data
-  // has a variable length, the contents of |reports| this is declared as an
-  // array of uint8_t.
-  uint8_t reports[];
-} __attribute__((packed));
 
 // LE Periodic Advertising Sync Established Event (v5.0) (LE)
 constexpr EventCode kLEPeriodicAdvertisingSyncEstablishedSubeventCode = 0x0E;

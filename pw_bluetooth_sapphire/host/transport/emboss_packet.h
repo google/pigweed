@@ -60,13 +60,15 @@ class StaticPacket {
 
   // Returns an Emboss view over the buffer. Emboss views consist of two pointers and a length, so
   // they are cheap to construct on-demand.
-  T view() {
-    T view(buffer_.mutable_data(), buffer_.size());
+  template <typename... Args>
+  T view(Args... args) {
+    T view(args..., buffer_.mutable_data(), buffer_.size());
     BT_ASSERT(view.IsComplete());
     return view;
   }
 
-  BufferView data() const { return BufferView{buffer_, buffer_.size()}; }
+  BufferView data() const { return {buffer_.data(), buffer_.size()}; }
+  MutableBufferView mutable_data() { return {buffer_.mutable_data(), buffer_.size()}; }
   void SetToZeros() { buffer_.SetToZeros(); }
 
  private:
@@ -93,25 +95,25 @@ class DynamicPacket {
   // Returns an Emboss view over the buffer. Unlike StaticPacket, which ensures type security as a
   // struct parameterized over a particular Emboss view type, DynamicPacket is a generic type for
   // all packets, so view() is to be parameterized over an Emboss view type on each call.
-  template <typename T>
-  T view() {
-    T view(buffer_.mutable_data(), size());
+  template <typename T, typename... Args>
+  T view(Args... args) {
+    T view(args..., buffer_.mutable_data(), size());
     BT_ASSERT_MSG(view.IsComplete(),
                   "emboss packet buffer not large enough to hold requested view");
     return view;
   }
 
-  template <typename T>
-  T view() const {
-    T view(buffer_.data(), size());
+  template <typename T, typename... Args>
+  T view(Args... args) const {
+    T view(args..., buffer_.data(), size());
     BT_ASSERT_MSG(view.IsComplete(),
                   "emboss packet buffer not large enough to hold requested view");
     return view;
   }
 
-  template <typename T>
-  T unchecked_view() const {
-    return T(buffer_.data(), size());
+  template <typename T, typename... Args>
+  T unchecked_view(Args... args) const {
+    return T(args..., buffer_.data(), size());
   }
 
   // Returns the size of the packet, i.e. payload size + header size.

@@ -358,7 +358,7 @@ class Peer final {
     // methods expect HCI inquiry result structures as they are obtained from
     // the Bluetooth controller. Each field should be encoded in little-endian
     // byte order.
-    void SetInquiryData(const hci_spec::InquiryResult& value);
+    void SetInquiryData(const pw::bluetooth::emboss::InquiryResultView& view);
     void SetInquiryData(const hci_spec::InquiryResultRSSI& value);
     void SetInquiryData(const hci_spec::ExtendedInquiryResultEventParams& value);
 

@@ -98,7 +98,7 @@ BrEdrDiscoveryManager::BrEdrDiscoveryManager(hci::CommandChannel::WeakPtr cmd,
   BT_DEBUG_ASSERT(result_handler_id_);
   rssi_handler_id_ =
       cmd_->AddEventHandler(hci_spec::kInquiryResultWithRSSIEventCode,
-                            cpp20::bind_front(&BrEdrDiscoveryManager::InquiryResult, this));
+                            cpp20::bind_front(&BrEdrDiscoveryManager::InquiryResultWithRSSI, this));
   BT_DEBUG_ASSERT(rssi_handler_id_);
   eir_handler_id_ =
       cmd_->AddEventHandler(hci_spec::kExtendedInquiryResultEventCode,
@@ -233,27 +233,37 @@ void BrEdrDiscoveryManager::StopInquiry() {
 }
 
 hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::InquiryResult(
-    const hci::EventPacket& event) {
+    const hci::EmbossEventPacket& event) {
+  BT_DEBUG_ASSERT(event.event_code() == hci_spec::kInquiryResultEventCode);
   std::unordered_set<Peer*> peers;
-  if (event.event_code() == hci_spec::kInquiryResultEventCode) {
-    peers = ProcessInquiryResult<hci_spec::InquiryResultEventParams, hci_spec::InquiryResult>(
-        cache_, event);
-  } else if (event.event_code() == hci_spec::kInquiryResultWithRSSIEventCode) {
-    peers = ProcessInquiryResult<hci_spec::InquiryResultWithRSSIEventParams,
-                                 hci_spec::InquiryResultRSSI>(cache_, event);
-  } else {
-    bt_log(ERROR, "gap-bredr", "unsupported inquiry result type");
-    return hci::CommandChannel::EventCallbackResult::kContinue;
+
+  auto view = event.view<pw::bluetooth::emboss::InquiryResultEventView>();
+  for (int i = 0; i < view.num_responses().Read(); i++) {
+    const auto response = view.responses()[i];
+    DeviceAddress addr(DeviceAddress::Type::kBREDR, DeviceAddressBytes{response.bd_addr()});
+    Peer* peer = cache_->FindByAddress(addr);
+    if (!peer) {
+      peer = cache_->NewPeer(addr, /*connectable=*/true);
+    }
+    BT_ASSERT(peer);
+
+    peer->MutBrEdr().SetInquiryData(response);
+    peers.insert(peer);
   }
 
-  for (Peer* peer : peers) {
-    if (!peer->name()) {
-      RequestPeerName(peer->identifier());
-    }
-    for (const auto& session : discovering_) {
-      session->NotifyDiscoveryResult(*peer);
-    }
-  }
+  NotifyPeersUpdated(peers);
+
+  return hci::CommandChannel::EventCallbackResult::kContinue;
+}
+
+hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::InquiryResultWithRSSI(
+    const hci::EventPacket& event) {
+  BT_DEBUG_ASSERT(event.event_code() == hci_spec::kInquiryResultWithRSSIEventCode);
+  std::unordered_set<Peer*> peers =
+      ProcessInquiryResult<hci_spec::InquiryResultWithRSSIEventParams, hci_spec::InquiryResultRSSI>(
+          cache_, event);
+
+  NotifyPeersUpdated(peers);
   return hci::CommandChannel::EventCallbackResult::kContinue;
 }
 
@@ -277,12 +287,7 @@ hci::CommandChannel::EventCallbackResult BrEdrDiscoveryManager::ExtendedInquiryR
 
   peer->MutBrEdr().SetInquiryData(result);
 
-  if (!peer->name()) {
-    RequestPeerName(peer->identifier());
-  }
-  for (const auto& session : discovering_) {
-    session->NotifyDiscoveryResult(*peer);
-  }
+  NotifyPeersUpdated({peer});
   return hci::CommandChannel::EventCallbackResult::kContinue;
 }
 
@@ -402,6 +407,17 @@ void BrEdrDiscoveryManager::InspectProperties::Update(size_t discoverable_count,
 void BrEdrDiscoveryManager::UpdateInspectProperties() {
   inspect_properties_.Update(discoverable_.size(), pending_discoverable_.size(),
                              discovering_.size(), async_now(dispatcher_));
+}
+
+void BrEdrDiscoveryManager::NotifyPeersUpdated(const std::unordered_set<Peer*>& peers) {
+  for (Peer* peer : peers) {
+    if (!peer->name()) {
+      RequestPeerName(peer->identifier());
+    }
+    for (const auto& session : discovering_) {
+      session->NotifyDiscoveryResult(*peer);
+    }
+  }
 }
 
 void BrEdrDiscoveryManager::RequestPeerName(PeerId id) {

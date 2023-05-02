@@ -11,6 +11,7 @@
 
 #include <pw_bluetooth/hci.emb.h>
 #include <pw_bluetooth/vendor.emb.h>
+#include <src/connectivity/bluetooth/core/bt-host/transport/test_packets.emb.h>
 
 namespace bt::hci {
 namespace {
@@ -25,6 +26,12 @@ TEST(StaticPacketTest, StaticPacketBasic) {
 
   packet.SetToZeros();
   EXPECT_EQ(packet.data(), BufferView({0, 0, 0, 0}));
+}
+
+TEST(StaticPacketTest, CreateViewWithMultipleParameters) {
+  StaticPacket<bt::testing::TestMultipleParametersWriter> packet;
+  auto view = packet.view(pw::bluetooth::emboss::GenericEnableParam::ENABLE, 7);
+  EXPECT_TRUE(view.Ok());
 }
 
 TEST(EmbossCommandPacketTest, EmbossCommandPacketBasic) {

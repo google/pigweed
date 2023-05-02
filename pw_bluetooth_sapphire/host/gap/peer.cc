@@ -264,9 +264,11 @@ void Peer::BrEdrData::AttachInspect(inspect::Node& parent, std::string name) {
   services_.AttachInspect(node_, BrEdrData::kInspectServicesName);
 }
 
-void Peer::BrEdrData::SetInquiryData(const hci_spec::InquiryResult& value) {
-  BT_DEBUG_ASSERT(peer_->address().value() == value.bd_addr);
-  SetInquiryData(value.class_of_device, value.clock_offset, value.page_scan_repetition_mode);
+void Peer::BrEdrData::SetInquiryData(const pw::bluetooth::emboss::InquiryResultView& view) {
+  BT_DEBUG_ASSERT(peer_->address().value() == DeviceAddressBytes{view.bd_addr()});
+  SetInquiryData(DeviceClass(view.class_of_device().BackingStorage().ReadUInt()),
+                 view.clock_offset().BackingStorage().ReadUInt(),
+                 view.page_scan_repetition_mode().Read());
 }
 
 void Peer::BrEdrData::SetInquiryData(const hci_spec::InquiryResultRSSI& value) {

@@ -717,10 +717,13 @@ TEST(HelpersTest, PeerToFidlOptionalFields) {
   bt::DeviceAddress addr(bt::DeviceAddress::Type::kLEPublic, {0, 1, 2, 3, 4, 5});
   auto* peer = cache.NewPeer(addr, /*connectable=*/true);
   peer->MutLe().SetAdvertisingData(kRssi, kAdv, zx::time());
-  peer->MutBrEdr().SetInquiryData(
-      bt::hci_spec::InquiryResult{bt::DeviceAddressBytes{{0, 1, 2, 3, 4, 5}},
-                                  pw::bluetooth::emboss::PageScanRepetitionMode::R0_, 0, 0,
-                                  bt::DeviceClass(bt::DeviceClass::MajorClass::kPeripheral), 0});
+  bt::StaticPacket<pw::bluetooth::emboss::InquiryResultWriter> inquiry_result;
+  auto view = inquiry_result.view();
+  view.bd_addr().CopyFrom(bt::DeviceAddressBytes{{0, 1, 2, 3, 4, 5}}.view());
+  view.page_scan_repetition_mode().Write(pw::bluetooth::emboss::PageScanRepetitionMode::R0_);
+  view.class_of_device().major_device_class().Write(
+      pw::bluetooth::emboss::MajorDeviceClass::PERIPHERAL);
+  peer->MutBrEdr().SetInquiryData(inquiry_result.view());
   for (auto& service : kBrEdrServices) {
     peer->MutBrEdr().AddService(service);
   }

@@ -89,7 +89,10 @@ class BrEdrDiscoveryManager final {
   void StopInquiry();
 
   // Used to receive Inquiry Results.
-  hci::CommandChannel::EventCallbackResult InquiryResult(const hci::EventPacket& event);
+  hci::CommandChannel::EventCallbackResult InquiryResult(const hci::EmbossEventPacket& event);
+
+  // Used to receive Inquiry Results.
+  hci::CommandChannel::EventCallbackResult InquiryResultWithRSSI(const hci::EventPacket& event);
 
   // Used to receive Inquiry Results.
   hci::CommandChannel::EventCallbackResult ExtendedInquiryResult(const hci::EventPacket& event);
@@ -117,6 +120,9 @@ class BrEdrDiscoveryManager final {
 
   // Removes |session_| from the active sessions.
   void RemoveDiscoverableSession(BrEdrDiscoverableSession* session);
+
+  // Called when |peers| have been updated with new inquiry data.
+  void NotifyPeersUpdated(const std::unordered_set<Peer*>& peers);
 
   // Sends a RemoteNameRequest to the peer with |id|.
   void RequestPeerName(PeerId id);

@@ -86,6 +86,20 @@ class EmbossEventPacket : public DynamicPacket {
     return packet;
   }
 
+  // Construct an HCI Event packet from an Emboss view T of |packet_size| total bytes (header +
+  // payload) and initialize its header with the |event_code| and size. This constructor is meant
+  // for variable size packets, for which clients must calculate packet size manually.
+  template <typename T>
+  // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+  static EmbossEventPacketT<T> New(hci_spec::EventCode event_code, size_t packet_size) {
+    EmbossEventPacketT<T> packet(packet_size);
+    auto header = packet.template view<pw::bluetooth::emboss::EventHeaderWriter>();
+    header.event_code().Write(event_code);
+    header.parameter_total_size().Write(packet_size -
+                                        pw::bluetooth::emboss::EventHeader::IntrinsicSizeInBytes());
+    return packet;
+  }
+
   hci_spec::EventCode event_code() const;
 
   // If this event packet contains a StatusCode field, this method returns the status. Not all
@@ -123,7 +137,10 @@ class EmbossEventPacket : public DynamicPacket {
 template <class ViewT>
 class EmbossEventPacketT : public EmbossEventPacket {
  public:
-  ViewT view_t() { return view<ViewT>(); }
+  template <typename... Args>
+  ViewT view_t(Args... args) {
+    return view<ViewT>(args...);
+  }
 
  private:
   friend class EmbossEventPacket;
