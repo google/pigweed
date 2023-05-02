@@ -117,7 +117,7 @@ template("pw_fuzz_test") {
         "$dir_pw_third_party/fuzztest/configs:disabled_warnings",
       ]
     } else {
-      deps += [ "$dir_pw_fuzzer:mock_fuzz_test" ]
+      deps += [ "$dir_pw_fuzzer:fuzz_test_stub" ]
     }
   }
 }

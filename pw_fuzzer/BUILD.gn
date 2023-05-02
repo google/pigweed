@@ -65,7 +65,7 @@ pw_source_set("pw_fuzzer") {
   public_deps = [ "$dir_pw_log" ]
 }
 
-pw_source_set("mock_fuzz_test") {
+pw_source_set("fuzz_test_stub") {
   public = [ "public_overrides/fuzztest/fuzztest.h" ]
   public_configs = [ ":public_overrides_include_path" ]
 }
