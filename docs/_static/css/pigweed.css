@@ -145,7 +145,7 @@ section.with-subtitle {
 }
 
 .section-subtitle {
-  display: inline;
+  display: inline-block;
   font-size: larger;
   font-weight: bold;
 }
