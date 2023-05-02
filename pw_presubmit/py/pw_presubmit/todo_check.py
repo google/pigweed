@@ -39,9 +39,37 @@ EXCLUDE: Sequence[str] = (
 )
 
 # todo-check: disable
-BUGS_ONLY = re.compile(r'\bTODO\(b/\d+(?:, ?b/\d+)*\).*\w')
+BUGS_ONLY = re.compile(
+    r'(?:\bTODO\(b/\d+(?:, ?b/\d+)*\).*\w)|'
+    r'(?:\bTODO: b/\d+(?:, ?b/\d+)* - )'
+)
 BUGS_OR_USERNAMES = re.compile(
-    r'\bTODO\((?:b/\d+|[a-z]+)(?:, ?(?:b/\d+|[a-z]+))*\).*\w'
+    r"""
+(?:  # Legacy style.
+    \bTODO\(
+        (?:b/\d+|[a-z]+)  # Username or bug.
+        (?:,[ ]?(?:b/\d+|[a-z]+))*  # Additional usernames or bugs.
+    \)
+.*\w  # Explanation.
+)|
+(?:  # New style.
+    \bTODO:[ ]
+    (?:
+        b/\d+|  # Bug.
+        # Username@ with optional domain.
+        [a-z]+@(?:[a-z][-a-z0-9]*(?:\.[a-z][-a-z0-9]*)+)?
+    )
+    (?:,[ ]?  # Additional.
+        (?:
+            b/\d+|  # Bug.
+            # Username@ with optional domain.
+            [a-z]+@(?:[a-z][-a-z0-9]*(?:\.[a-z][-a-z0-9]*)+)?
+        )
+    )*
+[ ]-[ ].*\w  # Explanation.
+)
+    """,
+    re.VERBOSE,
 )
 _TODO = re.compile(r'\bTODO\b')
 # todo-check: enable

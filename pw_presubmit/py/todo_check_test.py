@@ -25,6 +25,7 @@ from pw_presubmit import todo_check
 # todo-check: disable
 
 
+# pylint: disable-next=too-many-public-methods
 class TestTodoCheck(unittest.TestCase):
     """Test TODO checker."""
 
@@ -48,104 +49,225 @@ class TestTodoCheck(unittest.TestCase):
     def _run_bugs(self, contents: str) -> None:
         self._run(todo_check.BUGS_ONLY, contents)
 
-    def test_one_bug(self) -> None:
+    def test_one_bug_legacy(self) -> None:
         contents = 'TODO(b/123): foo\n'
         self._run_bugs_users(contents)
         self.ctx.fail.assert_not_called()
         self._run_bugs(contents)
         self.ctx.fail.assert_not_called()
 
-    def test_two_bugs(self) -> None:
+    def test_one_bug_new(self) -> None:
+        contents = 'TODO: b/123 - foo\n'
+        self._run_bugs_users(contents)
+        self.ctx.fail.assert_not_called()
+        self._run_bugs(contents)
+        self.ctx.fail.assert_not_called()
+
+    def test_two_bugs_legacy(self) -> None:
         contents = 'TODO(b/123, b/456): foo\n'
         self._run_bugs_users(contents)
         self.ctx.fail.assert_not_called()
         self._run_bugs(contents)
         self.ctx.fail.assert_not_called()
 
-    def test_three_bugs(self) -> None:
+    def test_two_bugs_new(self) -> None:
+        contents = 'TODO: b/123, b/456 - foo\n'
+        self._run_bugs_users(contents)
+        self.ctx.fail.assert_not_called()
+        self._run_bugs(contents)
+        self.ctx.fail.assert_not_called()
+
+    def test_three_bugs_legacy(self) -> None:
         contents = 'TODO(b/123,b/456,b/789): foo\n'
         self._run_bugs_users(contents)
         self.ctx.fail.assert_not_called()
         self._run_bugs(contents)
         self.ctx.fail.assert_not_called()
 
-    def test_one_username(self) -> None:
+    def test_three_bugs_new(self) -> None:
+        contents = 'TODO: b/123,b/456,b/789 - foo\n'
+        self._run_bugs_users(contents)
+        self.ctx.fail.assert_not_called()
+        self._run_bugs(contents)
+        self.ctx.fail.assert_not_called()
+
+    def test_one_username_legacy(self) -> None:
         self._run_bugs_users('TODO(usera): foo\n')
         self.ctx.fail.assert_not_called()
 
-    def test_two_usernames(self) -> None:
+    def test_one_username_new(self) -> None:
+        self._run_bugs_users('TODO: usera@ - foo\n')
+        self.ctx.fail.assert_not_called()
+
+    def test_one_username_new_noat(self) -> None:
+        self._run_bugs_users('TODO: usera - foo\n')
+        self.ctx.fail.assert_called()
+
+    def test_one_username_new_short_domain(self) -> None:
+        self._run_bugs_users('TODO: usera@com - foo\n')
+        self.ctx.fail.assert_called()
+
+    def test_one_username_new_medium_domain(self) -> None:
+        self._run_bugs_users('TODO: usera@example.com - foo\n')
+        self.ctx.fail.assert_not_called()
+
+    def test_one_username_new_long_domain(self) -> None:
+        self._run_bugs_users('TODO: usera@a.b.c.d.example.com - foo\n')
+        self.ctx.fail.assert_not_called()
+
+    def test_two_usernames_legacy(self) -> None:
         self._run_bugs_users('TODO(usera, userb): foo\n')
         self.ctx.fail.assert_not_called()
 
-    def test_three_usernames(self) -> None:
+    def test_two_usernames_new(self) -> None:
+        self._run_bugs_users('TODO: usera@, userb@ - foo\n')
+        self.ctx.fail.assert_not_called()
+
+    def test_three_usernames_legacy(self) -> None:
         self._run_bugs_users('TODO(usera,userb,userc): foo\n')
         self.ctx.fail.assert_not_called()
 
-    def test_username_not_allowed(self) -> None:
+    def test_three_usernames_new(self) -> None:
+        self._run_bugs_users('TODO: usera@,userb@example.com,userc@ - foo\n')
+        self.ctx.fail.assert_not_called()
+
+    def test_username_not_allowed_legacy(self) -> None:
         self._run_bugs('TODO(usera): foo\n')
         self.ctx.fail.assert_called()
 
-    def test_space_after_todo_bugsonly(self) -> None:
+    def test_username_not_allowed_new(self) -> None:
+        self._run_bugs('TODO: usera@ - foo\n')
+        self.ctx.fail.assert_called()
+
+    def test_space_after_todo_bugsonly_legacy(self) -> None:
         self._run_bugs('TODO (b/123): foo\n')
         self.ctx.fail.assert_called()
 
-    def test_space_after_todo_bugsusers(self) -> None:
+    def test_space_after_todo_bugsonly_new(self) -> None:
+        self._run_bugs('TODO : b/123 - foo\n')
+        self.ctx.fail.assert_called()
+
+    def test_space_after_todo_bugsusers_legacy(self) -> None:
         self._run_bugs_users('TODO (b/123): foo\n')
         self.ctx.fail.assert_called()
 
-    def test_space_before_bug_bugsonly(self) -> None:
+    def test_space_after_todo_bugsusers_new(self) -> None:
+        self._run_bugs_users('TODO : b/123 - foo\n')
+        self.ctx.fail.assert_called()
+
+    def test_space_before_bug_bugsonly_legacy(self) -> None:
         self._run_bugs('TODO( b/123): foo\n')
         self.ctx.fail.assert_called()
 
-    def test_space_before_bug_bugsusers(self) -> None:
+    def test_no_space_before_bug_bugsonly_new(self) -> None:
+        self._run_bugs('TODO:b/123 - foo\n')
+        self.ctx.fail.assert_called()
+
+    def test_space_before_bug_bugsusers_legacy(self) -> None:
         self._run_bugs_users('TODO( b/123): foo\n')
         self.ctx.fail.assert_called()
 
-    def test_space_after_bug_bugsonly(self) -> None:
+    def test_no_space_before_bug_bugsusers_new(self) -> None:
+        self._run_bugs_users('TODO:b/123 - foo\n')
+        self.ctx.fail.assert_called()
+
+    def test_space_after_bug_bugsonly_legacy(self) -> None:
         self._run_bugs('TODO(b/123 ): foo\n')
         self.ctx.fail.assert_called()
 
-    def test_space_after_bug_bugsusers(self) -> None:
+    def test_no_space_after_bug_bugsonly_new(self) -> None:
+        self._run_bugs('TODO: b/123- foo\n')
+        self.ctx.fail.assert_called()
+
+    def test_no_space_before_explanation_bugsonly_new(self) -> None:
+        self._run_bugs('TODO: b/123 -foo\n')
+        self.ctx.fail.assert_called()
+
+    def test_space_after_bug_bugsusers_legacy(self) -> None:
         self._run_bugs_users('TODO(b/123 ): foo\n')
         self.ctx.fail.assert_called()
 
-    def test_missing_explanation_bugsonly(self) -> None:
+    def test_no_space_before_explanation_bugsusers_new(self) -> None:
+        self._run_bugs_users('TODO: b/123 -foo\n')
+        self.ctx.fail.assert_called()
+
+    def test_missing_explanation_bugsonly_legacy(self) -> None:
         self._run_bugs('TODO(b/123)\n')
         self.ctx.fail.assert_called()
 
-    def test_missing_explanation_bugsusers(self) -> None:
+    def test_missing_explanation_bugsonly_new(self) -> None:
+        self._run_bugs('TODO: b/123\n')
+        self.ctx.fail.assert_called()
+
+    def test_missing_explanation_bugsusers_legacy(self) -> None:
         self._run_bugs_users('TODO(b/123)\n')
         self.ctx.fail.assert_called()
 
-    def test_not_a_bug_bugsonly(self) -> None:
+    def test_missing_explanation_bugsusers_new(self) -> None:
+        self._run_bugs_users('TODO: b/123\n')
+        self.ctx.fail.assert_called()
+
+    def test_not_a_bug_bugsonly_legacy(self) -> None:
         self._run_bugs('TODO(cl/123): foo\n')
         self.ctx.fail.assert_called()
 
-    def test_not_a_bug_bugsusers(self) -> None:
+    def test_not_a_bug_bugsonly_new(self) -> None:
+        self._run_bugs('TODO: cl/123 - foo\n')
+        self.ctx.fail.assert_called()
+
+    def test_not_a_bug_bugsusers_legacy(self) -> None:
         self._run_bugs_users('TODO(cl/123): foo\n')
         self.ctx.fail.assert_called()
 
-    def test_but_not_bug_bugsonly(self) -> None:
+    def test_not_a_bug_bugsusers_new(self) -> None:
+        self._run_bugs_users('TODO: cl/123 - foo\n')
+        self.ctx.fail.assert_called()
+
+    def test_but_not_bug_bugsonly_legacy(self) -> None:
         self._run_bugs('TODO(b/123, cl/123): foo\n')
         self.ctx.fail.assert_called()
 
-    def test_bug_not_bug_bugsusers(self) -> None:
+    def test_but_not_bug_bugsonly_new(self) -> None:
+        self._run_bugs('TODO: b/123, cl/123 - foo\n')
+        self.ctx.fail.assert_called()
+
+    def test_bug_not_bug_bugsusers_legacy(self) -> None:
         self._run_bugs_users('TODO(b/123, cl/123): foo\n')
         self.ctx.fail.assert_called()
 
-    def test_empty_bugsonly(self) -> None:
+    def test_bug_not_bug_bugsusers_new(self) -> None:
+        self._run_bugs_users('TODO: b/123, cl/123 - foo\n')
+        self.ctx.fail.assert_called()
+
+    def test_empty_bugsonly_legacy(self) -> None:
         self._run_bugs('TODO(): foo\n')
         self.ctx.fail.assert_called()
 
-    def test_empty_bugsusers(self) -> None:
+    def test_empty_bugsonly_new(self) -> None:
+        self._run_bugs('TODO: - foo\n')
+        self.ctx.fail.assert_called()
+
+    def test_empty_bugsusers_legacy(self) -> None:
         self._run_bugs_users('TODO(): foo\n')
         self.ctx.fail.assert_called()
 
-    def test_bare_bugsonly(self) -> None:
+    def test_empty_bugsusers_new(self) -> None:
+        self._run_bugs_users('TODO: - foo\n')
+        self.ctx.fail.assert_called()
+
+    def test_bare_bugsonly_legacy(self) -> None:
         self._run_bugs('TODO: foo\n')
         self.ctx.fail.assert_called()
 
-    def test_bare_bugsusers(self) -> None:
+    def test_bare_bugsonly_new(self) -> None:
+        self._run_bugs('TODO: foo\n')
+        self.ctx.fail.assert_called()
+
+    def test_bare_bugsusers_legacy(self) -> None:
+        self._run_bugs_users('TODO: foo\n')
+        self.ctx.fail.assert_called()
+
+    def test_bare_bugsusers_new(self) -> None:
         self._run_bugs_users('TODO: foo\n')
         self.ctx.fail.assert_called()
 
