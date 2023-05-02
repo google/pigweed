@@ -803,6 +803,38 @@ with the ``paths`` option.
    when the database is updated. Provide ``targets`` or ``deps`` or build other
    GN targets first if this is a concern.
 
+CMake integration
+-----------------
+Token databases may be updated or created as part of a CMake build. The
+``pw_tokenizer_database`` template provided by
+``$dir_pw_tokenizer/database.cmake`` automatically updates an in-source tokenized
+strings database or creates a new database with artifacts from a CMake target.
+
+To create a new database, set the ``CREATE`` variable to the desired database
+type (``"csv"`` or ``"binary"``). The database will be created in the output
+directory.
+
+.. code-block::
+
+   include("$dir_pw_tokenizer/database.cmake")
+
+   pw_tokenizer_database("my_database") {
+     CREATE binary
+     TARGET my_target.ext
+     DEPS ${deps_list}
+   }
+
+To update an existing database, provide the path to the database with
+the ``database`` variable.
+
+.. code-block::
+
+   pw_tokenizer_database("my_database") {
+     DATABASE database_in_the_source_tree.csv
+     TARGET my_target.ext
+     DEPS ${deps_list}
+   }
+
 --------------
 Detokenization
 --------------
