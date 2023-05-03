@@ -31,6 +31,9 @@ config("default_config") {
 }
 
 source_set("cpp_utils") {
+  # emboss depends on a separate checkout not included in pigweed, so
+  # ignore gn check for this module.
+  check_includes = false
   public_configs = [ pw_third_party_emboss_CONFIG ]
   sources = [
     "$dir_pw_third_party_emboss/runtime/cpp/emboss_arithmetic.h",
