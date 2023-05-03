@@ -20,10 +20,11 @@ from types import ModuleType
 from typing import Any, Callable, List, Union, Optional
 
 from pw_hdlc.rpc import HdlcRpcClient, default_channels
+from pw_hdlc.rpc import NoEncodingSingleChannelRpcClient, RpcClient
 from pw_log_tokenized import FormatStringWithMetadata
 from pw_log.proto import log_pb2
 from pw_metric import metric_parser
-from pw_rpc import callback_client, console_tools
+from pw_rpc import callback_client, Channel, console_tools
 from pw_status import Status
 from pw_thread.thread_analyzer import ThreadSnapshotAnalyzer
 from pw_thread_protos import thread_pb2
@@ -53,6 +54,7 @@ class Device:
         timestamp_decoder: Optional[Callable[[int], str]],
         rpc_timeout_s: float = 5,
         use_rpc_logging: bool = True,
+        use_hdlc_encoding: bool = True,
     ):
         self.channel_id = channel_id
         self.protos = proto_library
@@ -82,13 +84,30 @@ class Device:
             for line in log_messages.splitlines():
                 self.logger.info(line)
 
-        self.client = HdlcRpcClient(
-            read,
-            self.protos,
-            default_channels(write),
-            detokenize_and_log_output,
-            client_impl=callback_client_impl,
-        )
+        self.client: RpcClient
+        if use_hdlc_encoding:
+            channels = default_channels(write)
+            self.client = HdlcRpcClient(
+                read,
+                self.protos,
+                channels,
+                detokenize_and_log_output,
+                client_impl=callback_client_impl,
+            )
+        else:
+
+            def write_without_encoding(data: bytes) -> None:
+                _LOG.debug(
+                    'Write %2d B: %s',
+                    len(data),
+                    ' '.join(format(x, '02x') for x in data),
+                )
+                write(data)
+
+            channel = Channel(self.channel_id, write_without_encoding)
+            self.client = NoEncodingSingleChannelRpcClient(
+                read, self.protos, channel, client_impl=callback_client_impl
+            )
 
         if use_rpc_logging:
             # Start listening to logs as soon as possible.

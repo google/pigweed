@@ -84,8 +84,9 @@ SOCKET_PORT = 33000
 MKFIFO_MODE = 0o666
 
 
-def _parse_args():
-    """Parses and returns the command line arguments."""
+def get_parser() -> argparse.ArgumentParser:
+    """Gets argument parser with console arguments."""
+
     parser = argparse.ArgumentParser(
         prog="python -m pw_system.console", description=__doc__
     )
@@ -214,6 +215,22 @@ def _parse_args():
         help="Don't use pw_rpc based logging.",
     )
 
+    # TODO(b/248257406) Use argparse.BooleanOptionalAction when Python 3.8 is
+    # no longer supported.
+    parser.add_argument(
+        '--hdlc-encoding',
+        action='store_true',
+        default=True,
+        help='Use HDLC encoding on transfer interfaces.',
+    )
+
+    parser.add_argument(
+        '--no-hdlc-encoding',
+        action='store_false',
+        dest='hdlc_encoding',
+        help="Don't use HDLC encoding on transfer interface.",
+    )
+
     parser.add_argument(
         '--channel-id',
         type=int,
@@ -221,6 +238,12 @@ def _parse_args():
         help="Channel ID used in RPC communications.",
     )
 
+    return parser
+
+
+def _parse_args():
+    """Parses and returns the command line arguments."""
+    parser = get_parser()
     return parser.parse_args()
 
 
@@ -376,6 +399,7 @@ def console(
     rpc_logging: bool = True,
     use_ipython: bool = False,
     channel_id: int = rpc.DEFAULT_CHANNEL_ID,
+    hdlc_encoding: bool = True,
 ) -> int:
     """Starts an interactive RPC console for HDLC."""
     # argparse.FileType doesn't correctly handle '-' for binary files.
@@ -520,6 +544,7 @@ def console(
         timestamp_decoder=timestamp_decoder,
         rpc_timeout_s=5,
         use_rpc_logging=rpc_logging,
+        use_hdlc_encoding=hdlc_encoding,
     )
 
     _start_python_terminal(

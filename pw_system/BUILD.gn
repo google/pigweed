@@ -258,7 +258,10 @@ group("system_examples") {
 }
 
 pw_doc_group("docs") {
-  sources = [ "docs.rst" ]
+  sources = [
+    "cli.rst",
+    "docs.rst",
+  ]
 }
 
 pw_test_group("tests") {

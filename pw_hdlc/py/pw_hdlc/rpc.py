@@ -32,6 +32,7 @@ from typing import (
     NoReturn,
     Optional,
     Sequence,
+    TypeVar,
     Union,
 )
 
@@ -75,60 +76,61 @@ def channel_output(
     return write_hdlc
 
 
-def _handle_error(frame: Frame) -> None:
-    _LOG.error('Failed to parse frame: %s', frame.status.value)
-    _LOG.debug('%s', frame.data)
-
-
 FrameHandlers = Dict[int, Callable[[Frame], Any]]
+FrameTypeT = TypeVar('FrameTypeT')
 
 
-def read_and_process_data(
-    read: Callable[[], bytes],
-    on_read_error: Callable[[Exception], Any],
-    frame_handlers: FrameHandlers,
-    error_handler: Callable[[Frame], Any] = _handle_error,
-    handler_threads: Optional[int] = 1,
-) -> NoReturn:
-    """Continuously reads and handles HDLC frames.
+class DataReaderAndExecutor:
+    """Reads incoming bytes, data processor that delegates frame handling.
 
-    Passes frames to an executor that calls frame handler functions in other
-    threads.
+    Executing callbacks in a ThreadPoolExecutor decouples reading the input
+    stream from handling the data. That way, if a handler function takes a
+    long time or crashes, this reading thread is not interrupted.
     """
 
-    def handle_frame(frame: Frame):
-        try:
-            if not frame.ok():
-                error_handler(frame)
-                return
+    def __init__(
+        self,
+        read: Callable[[], bytes],
+        on_read_error: Callable[[Exception], None],
+        data_processor: Callable[[bytes], Iterable[FrameTypeT]],
+        frame_handler: Callable[[FrameTypeT], None],
+        handler_threads: Optional[int] = 1,
+    ):
+        """Creates the data reader and frame delegator.
 
-            try:
-                frame_handlers[frame.address](frame)
-            except KeyError:
-                _LOG.warning(
-                    'Unhandled frame for address %d: %s', frame.address, frame
-                )
-        except:  # pylint: disable=bare-except
-            _LOG.exception('Exception in HDLC frame handler thread')
+        Args:
+            read: Reads incoming bytes from the given transport, blocking until
+              data is available or an exception is raised. Otherwise the reader
+              will busy-loop.
+            on_read_error: Called when there is an error reading incoming bytes.
+            data_processor: Processes read bytes and returns a frame-like object
+              that the frame_handler can process.
+            frame_handler: Handles a received frame.
+            handler_threads: The number of threads in the executor pool.
+        """
+        self._read = read
+        self._on_read_error = on_read_error
+        self._data_processor = data_processor
+        self._frame_handler = frame_handler
+        self._handler_threads = handler_threads
 
-    decoder = FrameDecoder()
+    def run(self) -> NoReturn:
+        """Starts the reading process."""
+        with ThreadPoolExecutor(max_workers=self._handler_threads) as executor:
+            while True:
+                try:
+                    data = self._read()
+                except Exception as exc:  # pylint: disable=broad-except
+                    self._on_read_error(exc)
+                    continue
 
-    # Execute callbacks in a ThreadPoolExecutor to decouple reading the input
-    # stream from handling the data. That way, if a handler function takes a
-    # long time or crashes, this reading thread is not interrupted.
-    with ThreadPoolExecutor(max_workers=handler_threads) as executor:
-        while True:
-            try:
-                data = read()
-            except Exception as exc:  # pylint: disable=broad-except
-                on_read_error(exc)
-                continue
+                if not data:
+                    continue
 
-            if data:
                 _LOG.log(_VERBOSE, 'Read %2d B: %s', len(data), data)
 
-                for frame in decoder.process_valid_frames(data):
-                    executor.submit(handle_frame, frame)
+                for frame in self._data_processor(data):
+                    executor.submit(self._frame_handler, frame)
 
 
 def write_to_file(data: bytes, output: BinaryIO = sys.stdout.buffer):
@@ -145,7 +147,59 @@ PathsModulesOrProtoLibrary = Union[
 ]
 
 
-class HdlcRpcClient:
+class RpcClient:
+    """An RPC client with configurable incoming data processing."""
+
+    def __init__(
+        self,
+        reader: DataReaderAndExecutor,
+        paths_or_modules: PathsModulesOrProtoLibrary,
+        channels: Iterable[pw_rpc.Channel],
+        client_impl: Optional[pw_rpc.client.ClientImpl] = None,
+    ):
+        """Creates an RPC client.
+
+        Args:
+          read: Function that reads bytes; e.g serial_device.read.
+          paths_or_modules: paths to .proto files or proto modules.
+          channels: RPC channels to use for output.
+        """
+        if isinstance(paths_or_modules, python_protos.Library):
+            self.protos = paths_or_modules
+        else:
+            self.protos = python_protos.Library.from_paths(paths_or_modules)
+
+        if client_impl is None:
+            client_impl = callback_client.Impl()
+
+        self.client = pw_rpc.Client.from_modules(
+            client_impl, channels, self.protos.modules()
+        )
+
+        # Start background thread that reads and processes RPC packets.
+        threading.Thread(
+            target=reader.run,
+            daemon=True,
+        ).start()
+
+    def rpcs(self, channel_id: Optional[int] = None) -> Any:
+        """Returns object for accessing services on the specified channel.
+
+        This skips some intermediate layers to make it simpler to invoke RPCs
+        from an HdlcRpcClient. If only one channel is in use, the channel ID is
+        not necessary.
+        """
+        if channel_id is None:
+            return next(iter(self.client.channels())).rpcs
+
+        return self.client.channel(channel_id).rpcs
+
+    def handle_rpc_packet(self, packet: bytes) -> None:
+        if not self.client.process_packet(packet):
+            _LOG.error('Packet not handled by RPC client: %s', packet)
+
+
+class HdlcRpcClient(RpcClient):
     """An RPC client configured to run over HDLC."""
 
     def __init__(
@@ -164,23 +218,12 @@ class HdlcRpcClient:
 
         Args:
           read: Function that reads bytes; e.g serial_device.read.
-          paths_or_modules: paths to .proto files or proto modules
-          channel: RPC channels to use for output
-          output: where to write "stdout" output from the device
+          paths_or_modules: paths to .proto files or proto modules.
+          channels: RPC channels to use for output.
+          output: where to write "stdout" output from the device.
         """
-        if isinstance(paths_or_modules, python_protos.Library):
-            self.protos = paths_or_modules
-        else:
-            self.protos = python_protos.Library.from_paths(paths_or_modules)
-
-        if client_impl is None:
-            client_impl = callback_client.Impl()
-
-        self.client = pw_rpc.Client.from_modules(
-            client_impl, channels, self.protos.modules()
-        )
-
-        rpc_output: Callable[[bytes], Any] = self._handle_rpc_packet
+        # Set up frame handling.
+        rpc_output: Callable[[bytes], Any] = self.handle_rpc_packet
         if _incoming_packet_filter_for_testing is not None:
             _incoming_packet_filter_for_testing.send_packet = rpc_output
             rpc_output = _incoming_packet_filter_for_testing
@@ -190,28 +233,61 @@ class HdlcRpcClient:
             STDOUT_ADDRESS: lambda frame: output(frame.data),
         }
 
-        # Start background thread that reads and processes RPC packets.
-        threading.Thread(
-            target=read_and_process_data,
-            daemon=True,
-            args=(read, lambda exc: None, frame_handlers),
-        ).start()
+        def handle_frame(frame: Frame) -> None:
+            # Suppress raising any frame errors to avoid crashes on data
+            # processing, which may hide or drop other data.
+            try:
+                if not frame.ok():
+                    _LOG.error('Failed to parse frame: %s', frame.status.value)
+                    _LOG.debug('%s', frame.data)
+                    return
 
-    def rpcs(self, channel_id: Optional[int] = None) -> Any:
-        """Returns object for accessing services on the specified channel.
+                try:
+                    frame_handlers[frame.address](frame)
+                except KeyError:
+                    _LOG.warning(
+                        'Unhandled frame for address %d: %s',
+                        frame.address,
+                        frame,
+                    )
+            except:  # pylint: disable=bare-except
+                _LOG.exception('Exception in HDLC frame handler thread')
 
-        This skips some intermediate layers to make it simpler to invoke RPCs
-        from an HdlcRpcClient. If only one channel is in use, the channel ID is
-        not necessary.
+        decoder = FrameDecoder()
+        reader = DataReaderAndExecutor(
+            read, lambda exc: None, decoder.process_valid_frames, handle_frame
+        )
+        super().__init__(reader, paths_or_modules, channels, client_impl)
+
+
+class NoEncodingSingleChannelRpcClient(RpcClient):
+    """An RPC client without any frame encoding with a single channel output.
+
+    The caveat is that the provided read function must read entire frames.
+    """
+
+    def __init__(
+        self,
+        read: Callable[[], bytes],
+        paths_or_modules: PathsModulesOrProtoLibrary,
+        channel: pw_rpc.Channel,
+        client_impl: Optional[pw_rpc.client.ClientImpl] = None,
+    ):
+        """Creates an RPC client over a single channel with no frame encoding.
+
+        Args:
+          read: Function that reads bytes; e.g serial_device.read.
+          paths_or_modules: paths to .proto files or proto modules.
+          channel: RPC channel to use for output.
         """
-        if channel_id is None:
-            return next(iter(self.client.channels())).rpcs
 
-        return self.client.channel(channel_id).rpcs
+        def process_data(data: bytes):
+            yield data
 
-    def _handle_rpc_packet(self, packet: bytes) -> None:
-        if not self.client.process_packet(packet):
-            _LOG.error('Packet not handled by RPC client: %s', packet)
+        reader = DataReaderAndExecutor(
+            read, lambda exc: None, process_data, self.handle_rpc_packet
+        )
+        super().__init__(reader, paths_or_modules, [channel], client_impl)
 
 
 def _try_connect(port: int, attempts: int = 10) -> socket.socket:

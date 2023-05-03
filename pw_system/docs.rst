@@ -15,8 +15,9 @@ of starting a new project using Pigweed by drastically reducing the required
 configuration space required to go from first signs of on-device life to a more
 sophisticated production-ready system.
 
+--------------------
 Trying out pw_system
-====================
+--------------------
 If you'd like to give pw_system a spin and have a STM32F429I Discovery board,
 refer to the board's
 :ref:`target documentation<target-stm32f429i-disc1-stm32cube>` for instructions
@@ -26,8 +27,9 @@ If you don't have a discovery board, there's a simulated device variation that
 you can run on your local machine with no additional hardware. Check out the
 steps for trying this out :ref:`here<target-host-device-simulator>`.
 
+--------------
 Target Bringup
-==============
+--------------
 Bringing up a new device is as easy as 1-2-3! (Kidding, this is a work in
 progress)
 
@@ -150,8 +152,20 @@ being foundational infrastructure.
     }
   }
 
-
+-------
 Metrics
-=======
+-------
 The log backend is tracking metrics to illustrate how to use pw_metric and
 retrieve them using `Device.get_and_log_metrics()`.
+
+-------
+Console
+-------
+The ``pw-system-console`` can be used to interact with the targets.
+See :ref:`module-pw_system-cli` for detailed CLI usage information.
+
+.. toctree::
+   :hidden:
+   :maxdepth: 1
+
+   cli
