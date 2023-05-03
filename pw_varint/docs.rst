@@ -23,11 +23,7 @@ API
 
 .. doxygenfunction:: pw::varint::ZigZagEncodedSize(int64_t integer)
 
-.. cpp:function:: uint64_t MaxValueInBytes(size_t bytes)
-
-Returns the maximum integer value that can be encoded as a varint into the
-specified number of bytes.
-
+.. doxygenfunction:: pw::varint::MaxValueInBytes(size_t bytes)
 
 Stream API
 ----------
