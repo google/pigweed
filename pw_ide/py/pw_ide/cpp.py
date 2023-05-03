@@ -59,6 +59,7 @@ from typing import (
     cast,
     Dict,
     Generator,
+    Iterator,
     List,
     Optional,
     Tuple,
@@ -949,6 +950,10 @@ class CppCompilationDatabasesMap:
         self._default(key)
         self._dbs[key] = item
 
+    def __iter__(self) -> Iterator[str]:
+        for target, _ in self.items():
+            yield target
+
     @property
     def targets(self) -> List[str]:
         return list(self._dbs.keys())
@@ -957,6 +962,53 @@ class CppCompilationDatabasesMap:
         self,
     ) -> Generator[Tuple[str, CppCompilationDatabase], None, None]:
         return ((key, value) for (key, value) in self._dbs.items())
+
+    def _sort_by_commands(self) -> List[str]:
+        """Sort targets by the number of compile commands they have."""
+        enumerated_targets = sorted(
+            [(len(db), target) for target, db in self._dbs.items()],
+            key=lambda x: x[0],
+            reverse=True,
+        )
+
+        return [target for (_, target) in enumerated_targets]
+
+    def _sort_with_target_priority(self, target: str) -> List[str]:
+        """Sorted targets, but with the provided target first."""
+        sorted_targets = self._sort_by_commands()
+        # This will raise a ValueError if the target is not in the list, but
+        # we have ensured that that will never happen by the time we get here.
+        sorted_targets.remove(target)
+        return [target, *sorted_targets]
+
+    def _targets_to_write(self, target: str) -> List[str]:
+        """Return the list of targets whose comp. commands should be written.
+
+        Under most conditions, this will return a list with just the provided
+        target; essentially it's a no-op. But if ``cascade_targets`` is
+        enabled, this returns a list of all targets with the provided target
+        at the head of the list.
+        """
+        if not self.settings.cascade_targets:
+            return [target]
+
+        return self._sort_with_target_priority(target)
+
+    def _compdb_to_write(self, target: str) -> CppCompilationDatabase:
+        """The compilation database to write to file for this target.
+
+        Under most conditions, this will return the compilation database
+        associated with the provided target. But if ``cascade_targets`` is
+        enabled, this returns a compilation database with commands from all
+        targets, ordered per ``_sort_with_target_priority``.
+        """
+        targets = self._targets_to_write(target)
+        compdb = CppCompilationDatabase()
+
+        for iter_target in targets:
+            compdb.add(*self[iter_target])
+
+        return compdb
 
     def test_write(self) -> None:
         """Test writing to file.
@@ -967,9 +1019,9 @@ class CppCompilationDatabasesMap:
 
     def write(self) -> None:
         """Write compilation databases to target-specific JSON files."""
-        for target, compdb in self.items():
+        for target in self:
             path = self.settings.working_dir / target / COMPDB_FILE_NAME
-            compdb.to_file(path)
+            self._compdb_to_write(target).to_file(path)
 
     @classmethod
     def merge(

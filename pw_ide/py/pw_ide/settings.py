@@ -47,6 +47,7 @@ _DEFAULT_SUPPORTED_EDITORS: Dict[SupportedEditorName, bool] = {
 }
 
 _DEFAULT_CONFIG: Dict[str, Any] = {
+    'cascade_targets': False,
     'clangd_additional_query_drivers': [],
     'build_dir': _DEFAULT_BUILD_DIR,
     'compdb_paths': _DEFAULT_BUILD_DIR_NAME,
@@ -283,6 +284,37 @@ class PigweedIdeSettings(YamlConfigLoaderMixin):
         """
         return self._config.get('editors', {}).get(editor, False)
 
+    @property
+    def cascade_targets(self) -> bool:
+        """Mix compile commands for multiple targets to maximize code coverage.
+
+        By default (with this set to ``False``), the compilation database for
+        each target is consistent in the sense that it only contains compile
+        commands for one build target, so the code intelligence that database
+        provides is related to a single, known compilation artifact. However,
+        this means that code intelligence may not be provided for every source
+        file in a project, because some source files may be relevant to targets
+        other than the one you have currently set. Those source files won't
+        have compile commands for the current target, and no code intelligence
+        will appear in your editor.
+
+        If this is set to ``True``, compilation databases will still be
+        separated by target, but compile commands for *all other targets* will
+        be appended to the list of compile commands for *that* target. This
+        will maximize code coverage, ensuring that you have code intelligence
+        for every file that is built for any target, at the cost of
+        consistency—the code intelligence for some files may show information
+        that is incorrect or irrelevant to the currently selected build target.
+
+        The currently set target's compile commands will take priority at the
+        top of the combined file, then all other targets' commands will come
+        after in order of the number of commands they have (i.e. in the order of
+        their code coverage). This relies on the fact that ``clangd`` parses the
+        compilation database from the top down, using the first compile command
+        it encounters for each compilation unit.
+        """
+        return self._config.get('cascade_targets', False)
+
 
 def _docstring_set_default(
     obj: Any, default: Any, literal: bool = False
@@ -330,6 +362,11 @@ _docstring_set_default(
 _docstring_set_default(
     PigweedIdeSettings.default_target,
     _DEFAULT_CONFIG['default_target'],
+    literal=True,
+)
+_docstring_set_default(
+    PigweedIdeSettings.cascade_targets,
+    _DEFAULT_CONFIG['cascade_targets'],
     literal=True,
 )
 _docstring_set_default(

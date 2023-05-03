@@ -1256,6 +1256,30 @@ class TestCppCompilationDatabasesMap(PwIdeTestCase):
         self.assertEqual(len(result), 2)
         self.assertCountEqual(result._dbs, {**db_set1._dbs, **db_set2._dbs})
 
+    def test_cascade_disabled(self):
+        settings = self.make_ide_settings(
+            cascade_targets=False, targets=['test_target_1', 'test_target_2']
+        )
+        target1 = 'test_target_1'
+        target2 = 'test_target_2'
+        db_set = CppCompilationDatabasesMap(settings)
+        db_set[target1] = self.fixture_1(target1)
+        db_set[target2] = self.fixture_2(target2)
+        result = db_set._compdb_to_write(target1)
+        self.assertCountEqual(result._db, [*db_set[target1]])
+
+    def test_cascade_enabled(self):
+        settings = self.make_ide_settings(
+            cascade_targets=True, targets=['test_target_1', 'test_target_2']
+        )
+        target1 = 'test_target_1'
+        target2 = 'test_target_2'
+        db_set = CppCompilationDatabasesMap(settings)
+        db_set[target1] = self.fixture_1(target1)
+        db_set[target2] = self.fixture_2(target2)
+        result = db_set._compdb_to_write(target1)
+        self.assertCountEqual(result._db, [*db_set[target1], *db_set[target2]])
+
 
 if __name__ == '__main__':
     unittest.main()

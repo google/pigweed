@@ -153,6 +153,7 @@ class PwIdeTestCase(TempDirTestCase):
         self,
         working_dir: Optional[Union[str, Path]] = None,
         targets: Optional[List[str]] = None,
+        cascade_targets: bool = False,
     ) -> PigweedIdeSettings:
         """Make settings that wrap provided paths in the temp path."""
 
@@ -171,5 +172,6 @@ class PwIdeTestCase(TempDirTestCase):
             default_config={
                 'working_dir': str(working_dir_path),
                 'targets': targets,
+                'cascade_targets': cascade_targets,
             },
         )
