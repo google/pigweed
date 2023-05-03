@@ -26,10 +26,16 @@ import subprocess
 import sys
 import stat
 import tempfile
+import typing
+from typing import Tuple
 
 # Grabbing datetime string once so it will always be the same for all GnTarget
 # objects.
 _DATETIME_STRING = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+
+
+def _is_windows() -> bool:
+    return platform.system().lower() == 'windows'
 
 
 class GnTarget(object):  # pylint: disable=useless-object-inheritance
@@ -110,7 +116,7 @@ def _find_files_by_name(roots, name, allow_nesting=False):
 
 
 def _check_venv(python, version, venv_path, pyvenv_cfg):
-    if platform.system().lower() == 'windows':
+    if _is_windows():
         return
 
     # Check if the python location and version used for the existing virtualenv
@@ -126,14 +132,14 @@ def _check_venv(python, version, venv_path, pyvenv_cfg):
         home = pyvenv_values.get('home')
         if pydir != home and not pydir.startswith(venv_path):
             shutil.rmtree(venv_path)
-        elif pyvenv_values.get('version') not in version:
+        elif pyvenv_values.get('version') not in '.'.join(map(str, version)):
             shutil.rmtree(venv_path)
 
 
 def _check_python_install_permissions(python):
     # These pickle files are not included on windows.
     # The path on windows is environment/cipd/packages/python/bin/Lib/lib2to3/
-    if platform.system().lower() == 'windows':
+    if _is_windows():
         return
 
     # Make any existing lib2to3 pickle files read+write. This is needed for
@@ -169,6 +175,24 @@ def _flatten(*items):
             yield item
 
 
+def _python_version(python_path: str) -> Tuple[int, int, int]:
+    """Returns the version (major, minor, rev) of the `python_path` binary."""
+    # Prints values like "3.10.0"
+    command = (
+        python_path,
+        '-c',
+        'import sys; print(".".join(map(str, sys.version_info[:3])))',
+    )
+    version_str = (
+        subprocess.check_output(command, stderr=subprocess.STDOUT)
+        .strip()
+        .decode()
+    )
+    return typing.cast(
+        Tuple[int, int, int], tuple(map(int, version_str.split('.')))
+    )
+
+
 def install(  # pylint: disable=too-many-arguments,too-many-locals
     project_root,
     venv_path,
@@ -185,12 +209,8 @@ def install(  # pylint: disable=too-many-arguments,too-many-locals
 ):
     """Creates a venv and installs all packages in this Git repo."""
 
-    version = (
-        subprocess.check_output((python, '--version'), stderr=subprocess.STDOUT)
-        .strip()
-        .decode()
-    )
-    if ' 3.' not in version:
+    version = _python_version(python)
+    if version[0] != 3:
         print('=' * 60, file=sys.stderr)
         print('Unexpected Python version:', version, file=sys.stderr)
         print('=' * 60, file=sys.stderr)
@@ -231,7 +251,20 @@ def install(  # pylint: disable=too-many-arguments,too-many-locals
         # TODO(spang): Pass --upgrade-deps and remove pip & setuptools
         # upgrade below. This can only be done once the minimum python
         # version is at least 3.9.
-        cmd = [python, '-m', 'venv', '--upgrade', '--symlinks']
+        cmd = [python, '-m', 'venv', '--upgrade']
+
+        # Windows requires strange wizardry, and must follow symlinks
+        # starting with 3.11.
+        #
+        # Without this, windows fails bootstrap trying to copy
+        # "environment\cipd\packages\python\bin\venvlauncher.exe"
+        #
+        # This file doesn't exist in Python 3.11 on Windows and may be a bug
+        # in venv. Pigweed already uses symlinks on Windows for the GN build,
+        # so adding this option is not an issue.
+        if _is_windows() and version >= (3, 11):
+            cmd += ['--symlinks']
+
         cmd += ['--system-site-packages'] if system_packages else []
         cmd += [venv_path]
         _check_call(cmd, env=envcopy)

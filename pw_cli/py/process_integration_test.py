@@ -21,8 +21,9 @@ from pw_cli import process
 
 import psutil  # type: ignore
 
-
-FAST_TIMEOUT_SECONDS = 0.1
+# This timeout must be long enough to wait for the subprocess output, but
+# fast enough that the test doesn't take terribly long in the success case.
+FAST_TIMEOUT_SECONDS = 0.5
 KILL_SIGNALS = set({-9, 137})
 PYTHON = sys.executable
 
@@ -44,8 +45,8 @@ class RunTest(unittest.TestCase):
         self.assertIn(result.returncode, KILL_SIGNALS)
 
     def test_timeout_kills_subprocess(self) -> None:
-        # Spawn a subprocess which waits for 100 seconds, print its pid,
-        # then wait for 100 seconds.
+        # Spawn a subprocess which prints its pid and then waits for 100
+        # seconds.
         sleep_in_subprocess = textwrap.dedent(
             f"""
         import subprocess
@@ -62,7 +63,7 @@ class RunTest(unittest.TestCase):
             PYTHON, '-c', sleep_in_subprocess, timeout=FAST_TIMEOUT_SECONDS
         )
         self.assertIn(result.returncode, KILL_SIGNALS)
-        # THe first line of the output is the PID of the child sleep process.
+        # The first line of the output is the PID of the child sleep process.
         child_pid_str, sep, remainder = result.output.partition(b'\n')
         del sep, remainder
         child_pid = int(child_pid_str)

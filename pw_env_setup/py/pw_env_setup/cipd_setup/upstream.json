@@ -8,6 +8,7 @@
     "host_tools.json",
     "kythe.json",
     "luci.json",
+    "msrv_python.json",
     "rbe.json",
     "testing.json",
     "web.json"
