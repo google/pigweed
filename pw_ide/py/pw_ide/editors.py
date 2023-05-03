@@ -151,7 +151,10 @@ class YamlFileFormat(_StructuredFileFormat):
 
     def load(self, *args, **kwargs) -> OrderedDict:
         """Load YAML into an ordered dict."""
-        return OrderedDict(yaml.safe_load(*args, **kwargs))
+        # This relies on the fact that in Python 3.6+, dicts are stored in
+        # order, as an implementation detail rather than by design contract.
+        data = yaml.safe_load(*args, **kwargs)
+        return dict_swap_type(data, OrderedDict)
 
     def dump(self, data: OrderedDict, *args, **kwargs) -> None:
         """Dump YAML in a readable format."""
@@ -187,6 +190,10 @@ def dict_deep_merge(
     `src` and `dest` need to be the same subclass of dict. If they're anything
     other than basic dicts, you need to also provide a constructor that returns
     an empty dict of the same subclass.
+
+    This is only intended to support dicts of JSON-serializable values, i.e.,
+    numbers, booleans, strings, lists, and dicts, all of which will be copied.
+    All other object types will be rejected with an exception.
     """
     # Ensure that src and dest are the same type of dict.
     # These kinds of direct class comparisons are un-Pythonic, but the invariant
@@ -232,11 +239,22 @@ def dict_deep_merge(
         if isinstance(value, src.__class__):
             node = dest.setdefault(key, empty_dict)
             dict_deep_merge(value, node, ctor)
-        # The value is something else; copy it over.
-        # TODO(chadnorvell): This doesn't deep merge other data structures, e.g.
-        # lists, lists of dicts, dicts of lists, etc.
-        else:
+        # The value is a list; merge if the corresponding dest value is a list.
+        elif isinstance(value, list) and isinstance(dest.get(key, []), list):
+            # Disallow duplicates arising from the same value appearing in both.
+            try:
+                dest[key] += [x for x in value if x not in dest[key]]
+            except KeyError:
+                dest[key] = list(value)
+        # The value is a string; copy the value.
+        elif isinstance(value, str):
+            dest[key] = f'{value}'
+        # The value is scalar (int, float, bool); copy it over.
+        elif isinstance(value, (int, float, bool)):
             dest[key] = value
+        # The value is some other object type; it's not supported.
+        else:
+            raise TypeError(f'Cannot merge value of type {type(value)}')
 
     return dest
 

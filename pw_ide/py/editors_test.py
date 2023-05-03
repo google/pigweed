@@ -103,6 +103,66 @@ class TestDictDeepMerge(unittest.TestCase):
 
     # pylint: enable=unnecessary-lambda
 
+    def test_merge_basic(self):
+        dict_a = {'hello': 'world'}
+        dict_b = {'hello': 'bar'}
+
+        expected = {'hello': 'bar'}
+        result = dict_deep_merge(dict_b, dict_a)
+        self.assertEqual(result, expected)
+
+    def test_merge_nested_dict(self):
+        dict_a = {'hello': {'a': 'foo'}}
+        dict_b = {'hello': {'b': 'bar'}}
+
+        expected = {'hello': {'a': 'foo', 'b': 'bar'}}
+        result = dict_deep_merge(dict_b, dict_a)
+        self.assertEqual(result, expected)
+
+    def test_merge_list(self):
+        dict_a = {'hello': ['world']}
+        dict_b = {'hello': ['bar']}
+
+        expected = {'hello': ['world', 'bar']}
+        result = dict_deep_merge(dict_b, dict_a)
+        self.assertEqual(result, expected)
+
+    def test_merge_list_no_duplicates(self):
+        dict_a = {'hello': ['world']}
+        dict_b = {'hello': ['world']}
+
+        expected = {'hello': ['world']}
+        result = dict_deep_merge(dict_b, dict_a)
+        self.assertEqual(result, expected)
+
+    def test_merge_nested_dict_with_lists(self):
+        dict_a = {'hello': {'a': 'foo', 'c': ['lorem']}}
+        dict_b = {'hello': {'b': 'bar', 'c': ['ipsum']}}
+
+        expected = {'hello': {'a': 'foo', 'b': 'bar', 'c': ['lorem', 'ipsum']}}
+        result = dict_deep_merge(dict_b, dict_a)
+        self.assertEqual(result, expected)
+
+    def test_merge_object_fails(self):
+        class Strawman:
+            pass
+
+        dict_a = {'hello': 'world'}
+        dict_b = {'foo': Strawman()}
+
+        with self.assertRaises(TypeError):
+            dict_deep_merge(dict_b, dict_a)
+
+    def test_merge_copies_string(self):
+        test_str = 'bar'
+        dict_a = {'hello': {'a': 'foo'}}
+        dict_b = {'hello': {'b': test_str}}
+
+        result = dict_deep_merge(dict_b, dict_a)
+        test_str = 'something else'
+
+        self.assertEqual(result['hello']['b'], 'bar')
+
 
 class TestDictSwapType(unittest.TestCase):
     """Tests dict_swap_type"""
