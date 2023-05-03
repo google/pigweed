@@ -1,0 +1,28 @@
+From a6e43874ce6de22c4ddf568c339e5b8b923533d9 Mon Sep 17 00:00:00 2001
+From: Erik Gilling <konkers@google.com>
+Date: Tue, 2 May 2023 21:54:55 +0000
+Subject: [PATCH] rustdoc_test: Apply prefix stripping to proc_macro
+ dependencies.
+
+Without stripping the prefix, rustdoc can not find the proc macro
+shared library.
+---
+ rust/private/rustdoc_test.bzl | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/rust/private/rustdoc_test.bzl b/rust/private/rustdoc_test.bzl
+index 10be63eb..39ad4657 100644
+--- a/rust/private/rustdoc_test.bzl
++++ b/rust/private/rustdoc_test.bzl
+@@ -67,7 +67,7 @@ def _construct_writer_arguments(ctx, test_runner, opt_test_params, action, crate
+     root = crate_info.output.root.path
+     if not root in roots:
+         roots.append(root)
+-    for dep in crate_info.deps.to_list():
++    for dep in crate_info.deps.to_list() + crate_info.proc_macro_deps.to_list():
+         dep_crate_info = getattr(dep, "crate_info", None)
+         dep_dep_info = getattr(dep, "dep_info", None)
+         if dep_crate_info:
+-- 
+2.40.1.495.gc816e09b53d-goog
+

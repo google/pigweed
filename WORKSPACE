@@ -251,6 +251,12 @@ register_gcc_arm_none_toolchain()
 
 http_archive(
     name = "rules_rust",
+    patch_args = ["-p1"],
+    patches = [
+        # Fix rustdoc test w/ proc macros
+        # https://github.com/bazelbuild/rules_rust/pull/1952
+        "//pw_rust/bazel_patches:0001-rustdoc_test-Apply-prefix-stripping-to-proc_macro-de.patch",
+    ],
     sha256 = "dc8d79fe9a5beb79d93e482eb807266a0e066e97a7b8c48d43ecf91f32a3a8f3",
     urls = ["https://github.com/bazelbuild/rules_rust/releases/download/0.19.0/rules_rust-v0.19.0.tar.gz"],
 )
