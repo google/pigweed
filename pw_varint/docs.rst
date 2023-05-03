@@ -32,17 +32,9 @@ specified number of bytes.
 Stream API
 ----------
 
-.. cpp:function:: StatusWithSize Read(stream::Reader& reader, int64_t* output)
-.. cpp:function:: StatusWithSize Read(stream::Reader& reader, uint64_t* output)
+.. doxygenfunction:: pw::varint::Read(stream::Reader& reader, uint64_t* output, size_t max_size)
 
-Decoders a varint from the current position of a stream. If reading into a
-signed integer, the value is ZigZag decoded.
-
-Returns the number of bytes read from the stream, places the value in `output`,
-if successful. Returns `OutOfRange` if the varint does not fit in to the type,
-or if the input is exhausted before the number terminates.
-
-Reads a maximum of 10 bytes.
+.. doxygenfunction:: pw::varint::Read(stream::Reader& reader, int64_t* output, size_t max_size)
 
 Dependencies
 ============
