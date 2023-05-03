@@ -245,6 +245,10 @@ class LogStreamDecoder:
           attempted on a log message.
     """
 
+    DROP_REASON_LOSS_AT_TRANSPORT = 'loss at transport'
+    DROP_REASON_SOURCE_NOT_CONNECTED = 'source not connected'
+    DROP_REASON_SOURCE_ENQUEUE_FAILURE = 'enqueue failure at source'
+
     def __init__(
         self,
         decoded_log_handler: Callable[[Log], None],
@@ -274,9 +278,9 @@ class LogStreamDecoder:
         dropped_log_count = self._calculate_dropped_logs(log_entries_proto)
         if dropped_log_count > 0:
             reason = (
-                'loss at transport'
+                self.DROP_REASON_LOSS_AT_TRANSPORT
                 if has_received_logs
-                else 'device not connected'
+                else self.DROP_REASON_SOURCE_NOT_CONNECTED
             )
             self.decoded_log_handler(
                 self._handle_log_drop_count(dropped_log_count, reason)
@@ -309,7 +313,7 @@ class LogStreamDecoder:
         )
         # Handle dropped count first.
         if log_entry_proto.dropped:
-            drop_reason = 'enqueue failure on device'
+            drop_reason = self.DROP_REASON_SOURCE_ENQUEUE_FAILURE
             if detokenized_message:
                 drop_reason = detokenized_message.lower()
             return self._handle_log_drop_count(

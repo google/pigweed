@@ -14,13 +14,16 @@
 
 """Log decoder tests."""
 
+from dataclasses import dataclass
 import logging
-from typing import List
+from random import randint
+from typing import Any, List
 from unittest import TestCase, main
 
 from pw_log.log_decoder import (
     Log,
     LogStreamDecoder,
+    log_decoded_log,
     pw_status_code_to_name,
     timestamp_parser_ns_since_boot,
 )
@@ -89,8 +92,28 @@ def _create_log_entry_with_tokenized_fields(
     )
 
 
-class TestLogStreamDecoder(TestCase):
-    """Tests LogStreamDecoder functionality."""
+def _create_random_log_entry() -> log_pb2.LogEntry:
+    return log_pb2.LogEntry(
+        message=bytes(f'message {randint(1,100)}'.encode('utf-8')),
+        line_level=Log.pack_line_level(
+            randint(0, 2000), randint(logging.DEBUG, logging.CRITICAL)
+        ),
+        file=b'main.cc',
+        thread=bytes(f'thread {randint(1,5)}'.encode('utf-8')),
+    )
+
+
+def _create_drop_count_message_log_entry(
+    drop_count: int, reason: str = ''
+) -> log_pb2.LogEntry:
+    log_entry = log_pb2.LogEntry(dropped=drop_count)
+    if reason:
+        log_entry.message = bytes(reason.encode('utf-8'))
+    return log_entry
+
+
+class TestLogStreamDecoderBase(TestCase):
+    """Base Test class for LogStreamDecoder."""
 
     def setUp(self) -> None:
         """Set up logs decoder."""
@@ -98,10 +121,10 @@ class TestLogStreamDecoder(TestCase):
         def parse_pw_status(msg: str) -> str:
             return pw_status_code_to_name(msg)
 
-        self._logs: List[Log] = []
+        self.captured_logs: List[Log] = []
 
         def decoded_log_handler(log: Log) -> None:
-            self._logs.append(log)
+            self.captured_logs.append(log)
 
         self.decoder = LogStreamDecoder(
             decoded_log_handler=decoded_log_handler,
@@ -110,6 +133,13 @@ class TestLogStreamDecoder(TestCase):
             timestamp_parser=timestamp_parser_ns_since_boot,
             message_parser=parse_pw_status,
         )
+
+    def _captured_logs_as_str(self) -> str:
+        return '\n'.join(map(str, self.captured_logs))
+
+
+class TestLogStreamDecoderDecodingFunctionality(TestLogStreamDecoderBase):
+    """Tests LogStreamDecoder decoding functionality."""
 
     def test_parse_log_entry_valid_non_tokenized(self) -> None:
         """Test that valid LogEntry protos are parsed correctly."""
@@ -637,6 +667,202 @@ class TestLogStreamDecoder(TestCase):
         )
         result = self.decoder.parse_log_entry_proto(log_entry)
         self.assertEqual(result, expected_log)
+
+    def test_log_decoded_log(self):
+        """Test that the logger correctly formats a decoded log."""
+        test_log = Log(
+            message="SampleMessage",
+            level=logging.DEBUG,
+            timestamp='1:30',
+            module_name="MyModule",
+            source_name="MySource",
+            thread_name="MyThread",
+            file_and_line='my_file.cc:123',
+            metadata_fields={'field1': 432, 'field2': 'value'},
+        )
+
+        class CapturingLogger(logging.Logger):
+            """Captures values passed to log().
+
+            Tests that calls to log() have the correct level, extra arguments
+            and the message format string and arguments match.
+            """
+
+            @dataclass(frozen=True)
+            class LoggerLog:
+                """Represents a process log() call."""
+
+                level: int
+                message: str
+                kwargs: Any
+
+            def __init__(self):
+                super().__init__(name="CapturingLogger")
+                self.log_calls: List[CapturingLogger.LoggerLog] = []
+
+            def log(self, level, msg, *args, **kwargs) -> None:
+                log = CapturingLogger.LoggerLog(
+                    level=level, message=msg % args, kwargs=kwargs
+                )
+                self.log_calls.append(log)
+
+        test_logger = CapturingLogger()
+        log_decoded_log(test_log, test_logger)
+        self.assertEqual(len(test_logger.log_calls), 1)
+        self.assertEqual(test_logger.log_calls[0].level, test_log.level)
+        self.assertEqual(
+            test_logger.log_calls[0].message,
+            '[%s] %s %s %s %s'
+            % (
+                test_log.source_name,
+                test_log.module_name,
+                test_log.timestamp,
+                test_log.message,
+                test_log.file_and_line,
+            ),
+        )
+        self.assertEqual(
+            test_logger.log_calls[0].kwargs['extra']['extra_metadata_fields'],
+            test_log.metadata_fields,
+        )
+
+
+class TestLogStreamDecoderLogDropDetectionFunctionality(
+    TestLogStreamDecoderBase
+):
+    """Tests LogStreamDecoder log drop detection functionality."""
+
+    def test_log_drops_transport_error(self):
+        """Tests log drops at transport."""
+        log_entry_in_log_entries_1 = 3
+        log_entries_1 = log_pb2.LogEntries(
+            first_entry_sequence_id=0,
+            entries=[
+                _create_random_log_entry()
+                for _ in range(log_entry_in_log_entries_1)
+            ],
+        )
+        self.decoder.parse_log_entries_proto(log_entries_1)
+        # Assume a second LogEntries was dropped with 5 log entries. I.e. a
+        # log_entries_2 with sequence_ie = 4 and 5 log entries.
+        log_entry_in_log_entries_2 = 5
+        log_entry_in_log_entries_3 = 3
+        log_entries_3 = log_pb2.LogEntries(
+            first_entry_sequence_id=log_entry_in_log_entries_2
+            + log_entry_in_log_entries_3,
+            entries=[
+                _create_random_log_entry()
+                for _ in range(log_entry_in_log_entries_3)
+            ],
+        )
+        self.decoder.parse_log_entries_proto(log_entries_3)
+
+        # The drop message is placed where the dropped logs were detected.
+        self.assertEqual(
+            len(self.captured_logs),
+            log_entry_in_log_entries_1 + 1 + log_entry_in_log_entries_3,
+            msg=(
+                'Unexpected number of messages received: '
+                f'{self._captured_logs_as_str()}'
+            ),
+        )
+        self.assertEqual(
+            (
+                f'Dropped {log_entry_in_log_entries_2} logs due to '
+                f'{LogStreamDecoder.DROP_REASON_LOSS_AT_TRANSPORT}'
+            ),
+            self.captured_logs[log_entry_in_log_entries_1].message,
+        )
+
+    def test_log_drops_source_not_connected(self):
+        """Tests log drops when source of the logs was not connected."""
+        log_entry_in_log_entries = 4
+        drop_count = 7
+        log_entries = log_pb2.LogEntries(
+            first_entry_sequence_id=drop_count,
+            entries=[
+                _create_random_log_entry()
+                for _ in range(log_entry_in_log_entries)
+            ],
+        )
+        self.decoder.parse_log_entries_proto(log_entries)
+
+        # The drop message is placed where the log drops was detected.
+        self.assertEqual(
+            len(self.captured_logs),
+            1 + log_entry_in_log_entries,
+            msg=(
+                'Unexpected number of messages received: '
+                f'{self._captured_logs_as_str()}'
+            ),
+        )
+        self.assertEqual(
+            (
+                f'Dropped {drop_count} logs due to '
+                f'{LogStreamDecoder.DROP_REASON_SOURCE_NOT_CONNECTED}'
+            ),
+            self.captured_logs[0].message,
+        )
+
+    def test_log_drops_source_enqueue_failure_no_message(self):
+        """Tests log drops when source reports log drops."""
+        drop_count = 5
+        log_entries = log_pb2.LogEntries(
+            first_entry_sequence_id=0,
+            entries=[
+                _create_random_log_entry(),
+                _create_random_log_entry(),
+                _create_drop_count_message_log_entry(drop_count),
+                _create_random_log_entry(),
+            ],
+        )
+        self.decoder.parse_log_entries_proto(log_entries)
+
+        # The drop message is placed where the log drops was detected.
+        self.assertEqual(
+            len(self.captured_logs),
+            4,
+            msg=(
+                'Unexpected number of messages received: '
+                f'{self._captured_logs_as_str()}'
+            ),
+        )
+        self.assertEqual(
+            (
+                f'Dropped {drop_count} logs due to '
+                f'{LogStreamDecoder.DROP_REASON_SOURCE_ENQUEUE_FAILURE}'
+            ),
+            self.captured_logs[2].message,
+        )
+
+    def test_log_drops_source_enqueue_failure_with_message(self):
+        """Tests log drops when source reports log drops."""
+        drop_count = 8
+        reason = 'Flux Capacitor exploded'
+        log_entries = log_pb2.LogEntries(
+            first_entry_sequence_id=0,
+            entries=[
+                _create_random_log_entry(),
+                _create_random_log_entry(),
+                _create_drop_count_message_log_entry(drop_count, reason),
+                _create_random_log_entry(),
+            ],
+        )
+        self.decoder.parse_log_entries_proto(log_entries)
+
+        # The drop message is placed where the log drops was detected.
+        self.assertEqual(
+            len(self.captured_logs),
+            4,
+            msg=(
+                'Unexpected number of messages received: '
+                f'{self._captured_logs_as_str()}'
+            ),
+        )
+        self.assertEqual(
+            f'Dropped {drop_count} logs due to {reason.lower()}',
+            self.captured_logs[2].message,
+        )
 
 
 if __name__ == '__main__':
