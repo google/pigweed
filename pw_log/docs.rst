@@ -1,5 +1,7 @@
 .. _module-pw_log:
 
+:tocdepth: 4
+
 ======
 pw_log
 ======
@@ -426,3 +428,35 @@ implementation in ``pw_log/java/main`` simply wraps a
 ``com.google.common.flogger.FluentLogger``. An implementation that logs to
 Android's ``android.util.Log`` instead is provided in
 ``pw_log/java/android_main``.
+
+----------------
+pw_log in Python
+----------------
+``pw_log`` provides utilities to decode ``LogEntries`` and the encapsulated
+``LogEntry`` proto messages.
+
+The ``Log`` class represents a decoded ``LogEntry`` in a human-readable and
+consumable fashion.
+
+The ``LogStreamDecoder`` offers APIs to decode ``LogEntries`` and ``LogEntry``
+while tracking and logging log drops. It requires a ``decoded_log_handler`` to
+pass decoded logs to. This class can also be customized to use an optional token
+database if the message, module and thread names are tokenized; a custom
+timestamp parser; and optional message parser for any extra message parsing.
+``pw_log`` includes examples for customizing the ``LogStreamDecoder``:
+``timestamp_parser_ns_since_boot`` parses the timestamp number from nanoseconds
+since boot to an HH:MM::SS string, ``log_decoded_log`` emits a decoded ``Log``
+to the provided logger in a format known to ``pw console``, and
+``pw_status_code_to_name`` searches the decoded log message for a matching
+pattern encapsulating the status code number and replaces it with the status
+name.
+
+Python API
+==========
+
+pw_log.log_decoder
+------------------
+.. automodule:: pw_log.log_decoder
+    :members: Log, LogStreamDecoder
+    :undoc-members:
+    :show-inheritance:

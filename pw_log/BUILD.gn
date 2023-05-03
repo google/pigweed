@@ -162,6 +162,7 @@ pw_proto_library("protos") {
     "$dir_pw_protobuf:common_protos",
     "$dir_pw_tokenizer:proto",
   ]
+  python_package = "py"
 }
 
 pw_doc_group("docs") {

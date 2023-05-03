@@ -32,6 +32,7 @@ pw_python_package("py") {
     "$dir_pw_console/py",
     "$dir_pw_hdlc/py",
     "$dir_pw_log:protos.python",
+    "$dir_pw_log/py",
     "$dir_pw_metric:metric_service_proto.python",
     "$dir_pw_metric/py",
     "$dir_pw_protobuf_compiler/py",

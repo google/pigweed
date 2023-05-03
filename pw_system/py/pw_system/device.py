@@ -13,7 +13,6 @@
 # the License.
 """Device classes to interact with targets via RPC."""
 
-import datetime
 import logging
 from pathlib import Path
 from types import ModuleType
@@ -21,8 +20,13 @@ from typing import Any, Callable, List, Union, Optional
 
 from pw_hdlc.rpc import HdlcRpcClient, default_channels
 from pw_hdlc.rpc import NoEncodingSingleChannelRpcClient, RpcClient
-from pw_log_tokenized import FormatStringWithMetadata
 from pw_log.proto import log_pb2
+from pw_log.log_decoder import (
+    Log,
+    LogStreamDecoder,
+    log_decoded_log,
+    timestamp_parser_ns_since_boot,
+)
 from pw_metric import metric_parser
 from pw_rpc import callback_client, Channel, console_tools
 from pw_status import Status
@@ -63,8 +67,20 @@ class Device:
 
         self.logger = DEFAULT_DEVICE_LOGGER
         self.logger.setLevel(logging.DEBUG)  # Allow all device logs through.
-        self.timestamp_decoder = timestamp_decoder
-        self._expected_log_sequence_id = 0
+
+        def decoded_log_handler(log: Log) -> None:
+            log_decoded_log(log, self.logger)
+
+        self._log_decoder = LogStreamDecoder(
+            decoded_log_handler=decoded_log_handler,
+            detokenizer=self.detokenizer,
+            source_name='SamplelRpcDevice',
+            timestamp_parser=(
+                timestamp_decoder
+                if timestamp_decoder
+                else timestamp_parser_ns_since_boot
+            ),
+        )
 
         callback_client_impl = callback_client.Impl(
             default_unary_timeout_s=self.rpc_timeout_s,
@@ -131,10 +147,12 @@ class Device:
         The RPCs remain open until the server cancels or closes them, either
         with a response or error packet.
         """
+
+        def on_log_entries(_, log_entries_proto: log_pb2.LogEntries) -> None:
+            self._log_decoder.parse_log_entries_proto(log_entries_proto)
+
         self.rpcs.pw.log.Logs.Listen.open(
-            on_next=lambda _, log_entries_proto: self._log_entries_proto_parser(
-                log_entries_proto
-            ),
+            on_next=on_log_entries,
             on_completed=lambda _, status: _LOG.info(
                 'Log stream completed with status: %s', status
             ),
@@ -148,96 +166,6 @@ class Device:
         # Only re-request logs if the RPC was not cancelled by the client.
         if error != Status.CANCELLED:
             self.listen_to_log_stream()
-
-    def _handle_log_drop_count(self, drop_count: int, reason: str):
-        log_text = 'log' if drop_count == 1 else 'logs'
-        message = f'Dropped {drop_count} {log_text} due to {reason}'
-        self._emit_device_log(logging.WARNING, '', '', message)
-
-    def _check_for_dropped_logs(self, log_entries_proto: log_pb2.LogEntries):
-        # Count log messages received that don't use the dropped field.
-        messages_received = sum(
-            1 if not log_proto.dropped else 0
-            for log_proto in log_entries_proto.entries
-        )
-        dropped_log_count = (
-            log_entries_proto.first_entry_sequence_id
-            - self._expected_log_sequence_id
-        )
-        self._expected_log_sequence_id = (
-            log_entries_proto.first_entry_sequence_id + messages_received
-        )
-        if dropped_log_count > 0:
-            self._handle_log_drop_count(dropped_log_count, 'loss at transport')
-        elif dropped_log_count < 0:
-            _LOG.error('Log sequence ID is smaller than expected')
-
-    def _log_entries_proto_parser(self, log_entries_proto: log_pb2.LogEntries):
-        self._check_for_dropped_logs(log_entries_proto)
-        for log_proto in log_entries_proto.entries:
-            decoded_timestamp = self.decode_timestamp(log_proto.timestamp)
-            # Parse level and convert to logging module level number.
-            level = (log_proto.line_level & 0x7) * 10
-            if self.detokenizer:
-                message = str(
-                    decode_optionally_tokenized(
-                        self.detokenizer, log_proto.message
-                    )
-                )
-            else:
-                message = log_proto.message.decode('utf-8')
-            log = FormatStringWithMetadata(message)
-
-            # Handle dropped count.
-            if log_proto.dropped:
-                drop_reason = (
-                    log_proto.message.decode('utf-8').lower()
-                    if log_proto.message
-                    else 'enqueue failure on device'
-                )
-                self._handle_log_drop_count(log_proto.dropped, drop_reason)
-                continue
-            self._emit_device_log(
-                level,
-                decoded_timestamp,
-                log.module,
-                log.message,
-                **dict(log.fields),
-            )
-
-    def _emit_device_log(
-        self,
-        level: int,
-        timestamp: str,
-        module_name: str,
-        message: str,
-        **metadata_fields,
-    ):
-        # Fields used for console table view
-        fields = metadata_fields
-        fields['timestamp'] = timestamp
-        fields['msg'] = message
-        fields['module'] = module_name
-
-        # Format used for file or stdout logging.
-        self.logger.log(
-            level,
-            '%s %s%s',
-            timestamp,
-            f'{module_name} '.lstrip(),
-            message,
-            extra=dict(extra_metadata_fields=fields),
-        )
-
-    def decode_timestamp(self, timestamp: int) -> str:
-        """Decodes timestamp to a human-readable value.
-
-        Defaults to interpreting the input timestamp as nanoseconds since boot.
-        Devices can override this to match their timestamp units.
-        """
-        if self.timestamp_decoder:
-            return self.timestamp_decoder(timestamp)
-        return str(datetime.timedelta(seconds=timestamp / 1e9))[:-3]
 
     def get_and_log_metrics(self) -> dict:
         """Retrieves the parsed metrics and logs them to the console."""
