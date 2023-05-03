@@ -39,9 +39,7 @@ from test_fixture import TransferIntegrationTestHarness
 _ALL_LANGUAGES = ("cpp", "java", "python")
 _ALL_VERSIONS = (
     config_pb2.TransferAction.ProtocolVersion.V1,
-    # TODO(b/279179889): Re-enable V2 testing following opening handshake
-    # updates.
-    # config_pb2.TransferAction.ProtocolVersion.V2,
+    config_pb2.TransferAction.ProtocolVersion.V2,
 )
 _ALL_LANGUAGES_AND_VERSIONS = tuple(
     itertools.product(_ALL_LANGUAGES, _ALL_VERSIONS)

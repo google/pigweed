@@ -198,34 +198,32 @@ py_test(
 )
 
 # Uses ports 3308 and 3309.
-# TODO(b/279179889): Re-enable when new v2 handshake is stabilized.
-# py_test(
-#     name = "multi_transfer_test",
-#     timeout = "moderate",
-#     srcs = [
-#         "multi_transfer_test.py",
-#     ],
-#     deps = [
-#         ":config_pb2",
-#         ":integration_test_fixture",
-#         "@python_packages_parameterized//:pkg",
-#     ],
-# )
+py_test(
+    name = "multi_transfer_test",
+    timeout = "moderate",
+    srcs = [
+        "multi_transfer_test.py",
+    ],
+    deps = [
+        ":config_pb2",
+        ":integration_test_fixture",
+        "@python_packages_parameterized//:pkg",
+    ],
+)
 
 # Uses ports 3312 and 3313.
-# TODO(b/279179889): Re-enable when new v2 handshake is stabilized.
-# py_test(
-#     name = "expected_errors_test",
-#     timeout = "moderate",
-#     srcs = ["expected_errors_test.py"],
-#     deps = [
-#         ":config_pb2",
-#         ":integration_test_fixture",
-#         "//pw_protobuf:status_proto_pb2",
-#         "@com_google_protobuf//:protobuf_python",
-#         "@python_packages_parameterized//:pkg",
-#     ],
-# )
+py_test(
+    name = "expected_errors_test",
+    timeout = "moderate",
+    srcs = ["expected_errors_test.py"],
+    deps = [
+        ":config_pb2",
+        ":integration_test_fixture",
+        "//pw_protobuf:status_proto_pb2",
+        "@com_google_protobuf//:protobuf_python",
+        "@python_packages_parameterized//:pkg",
+    ],
+)
 
 # Uses ports 3314 and 3315.
 py_test(
