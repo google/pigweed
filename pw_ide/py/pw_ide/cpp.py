@@ -96,6 +96,9 @@ class CppIdeFeaturesTarget:
     num_commands: int
     is_enabled: bool = True
 
+    def __str__(self) -> str:
+        return self.name
+
     def serialized(self) -> Dict[str, Any]:
         return {
             **asdict(self),

@@ -96,7 +96,7 @@ def cmd_sync(
 
     for command in pw_ide_settings.sync:
         _LOG.debug("Running: %s", command)
-        subprocess.run(shlex.split(command), check=True)
+        subprocess.run(shlex.split(command))
 
     if pw_ide_settings.editor_enabled('vscode'):
         cmd_vscode()
@@ -177,7 +177,12 @@ def cmd_vscode(
     default.
     """
     if not pw_ide_settings.editor_enabled('vscode'):
-        reporter.wrn('Visual Studio Code support is disabled in settings!')
+        reporter.wrn(
+            'Visual Studio Code support is disabled in settings! If this is '
+            'unexpected, see this page for information on enabling support: '
+            'https://pigweed.dev/pw_ide/'
+            '#pw_ide.settings.PigweedIdeSettings.editors'
+        )
         sys.exit(1)
 
     if not vscode.DEFAULT_SETTINGS_PATH.exists():
@@ -559,8 +564,8 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
         default = False
         should_update_ides = _process_compdbs(reporter, pw_ide_settings)
 
-    if state.current_target is None:
-        use_default_target = True
+        if state.current_target is None:
+            use_default_target = True
 
     if use_default_target:
         defined_default = pw_ide_settings.default_target
@@ -585,34 +590,42 @@ def cmd_cpp(  # pylint: disable=too-many-arguments, too-many-locals, too-many-br
 
     if target_to_set is not None:
         default = False
+        reporter.info(f'Setting C/C++ analysis target to: {target_to_set}')
 
         try:
-            CppIdeFeaturesState(pw_ide_settings).current_target = state.targets[
+            CppIdeFeaturesState(
+                pw_ide_settings
+            ).current_target = state.targets.get(target_to_set, None)
+
+            if str(CppIdeFeaturesState(pw_ide_settings).current_target) != str(
                 target_to_set
-            ]
+            ):
+                reporter.err(f'Failed to set target to {target_to_set}!')
+                reporter.wrn(
+                    [
+                        'You have tried to set a target that is not available.',
+                        'Run `pw ide cpp --list` to show available targets.',
+                        f'If you expected {target_to_set} to be in that list',
+                        'and it is not, you may need to use your build system',
+                        'generate a compilation database.',
+                    ]
+                )
+                sys.exit(1)
+
             should_update_ides = True
         except InvalidTargetException:
             reporter.err(
-                [
-                    f'Invalid target! {target_to_set} not among the '
-                    'defined targets.',
-                    'Check .pw_ide.yaml or .pw_ide.user.yaml for defined '
-                    'targets.',
-                ]
+                f'Invalid target! {target_to_set} not among the '
+                'defined targets.'
             )
             sys.exit(1)
         except MissingCompDbException:
-            reporter.err(
-                [
-                    f'File not found for target! {target_to_set}',
-                    'Did you run pw ide cpp --process '
-                    '{path to compile_commands.json}?',
-                ]
-            )
+            reporter.err(f'File not found for target! {target_to_set}')
             sys.exit(1)
 
         reporter.new(
-            'Set C/C++ language server analysis target to: ' f'{target_to_set}'
+            'Set C/C++ language server analysis target to: '
+            f'{CppIdeFeaturesState(pw_ide_settings).current_target}'
         )
 
     if should_update_ides:
