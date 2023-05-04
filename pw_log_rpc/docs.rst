@@ -1,5 +1,7 @@
 .. _module-pw_log_rpc:
 
+:tocdepth: 4
+
 ==========
 pw_log_rpc
 ==========
@@ -455,3 +457,23 @@ Logging in other source files
 To defer logging, other source files must simply include ``pw_log/log.h`` and
 use the :ref:`module-pw_log` APIs, as long as the source set that includes
 ``foo/log.cc`` is setup as the log backend.
+
+--------------------
+pw_log_rpc in Python
+--------------------
+``pw_log_rpc`` provides client utilities for dealing with RPC logging.
+
+The ``LogStreamHandler`` offers APIs to start a log stream:``listen_to_logs``,
+to handle RPC stream errors: ``handle_log_stream_error``, and RPC stream
+completed events: ``handle_log_stream_completed``. It uses a provided
+``LogStreamDecoder`` to delegate log parsing to.
+
+Python API
+==========
+
+pw_log_rpc.rpc_log_stream
+-------------------------
+.. automodule:: pw_log_rpc.rpc_log_stream
+    :members: LogStreamHandler
+    :undoc-members:
+    :show-inheritance:

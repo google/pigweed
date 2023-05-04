@@ -1,4 +1,4 @@
-# Copyright 2021 The Pigweed Authors
+# Copyright 2023 The Pigweed Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not
 # use this file except in compliance with the License. You may obtain a copy of
@@ -15,37 +15,38 @@
 import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/python.gni")
+import("$dir_pw_protobuf_compiler/proto.gni")
 
 pw_python_package("py") {
-  setup = [
-    "pyproject.toml",
-    "setup.cfg",
-    "setup.py",
-  ]
+  generate_setup = {
+    metadata = {
+      name = "pw_log_rpc"
+      version = "0.0.1"
+    }
+  }
   sources = [
-    "pw_system/__init__.py",
-    "pw_system/console.py",
-    "pw_system/device.py",
+    "pw_log_rpc/__init__.py",
+    "pw_log_rpc/rpc_log_stream.py",
   ]
-  python_deps = [
-    "$dir_pw_cli/py",
-    "$dir_pw_console/py",
-    "$dir_pw_hdlc/py",
-    "$dir_pw_log:protos.python",
-    "$dir_pw_log/py",
-    "$dir_pw_log_rpc/py",
-    "$dir_pw_metric:metric_service_proto.python",
-    "$dir_pw_metric/py",
-    "$dir_pw_protobuf_compiler/py",
-    "$dir_pw_rpc/py",
-    "$dir_pw_thread:protos.python",
-    "$dir_pw_thread/py",
-    "$dir_pw_tokenizer/py",
-    "$dir_pw_unit_test:unit_test_proto.python",
-    "$dir_pw_unit_test/py",
-  ]
-  inputs = []
-
+  tests = [ "rpc_log_stream_test.py" ]
+  python_test_deps = []
   pylintrc = "$dir_pigweed/.pylintrc"
   mypy_ini = "$dir_pigweed/.mypy.ini"
+  python_deps = [
+    "$dir_pw_log:protos.python",
+    "$dir_pw_log/py",
+    "$dir_pw_rpc/py",
+    "$dir_pw_status/py",
+  ]
+}
+
+# This setup.py may be used to install pw_tokenizer without GN. It does not
+# include the pw_tokenizer.proto subpackage, since it contains a generated
+# protobuf module.
+pw_python_script("setup") {
+  sources = [ "setup.py" ]
+  inputs = [
+    "setup.cfg",
+    "pyproject.toml",
+  ]
 }

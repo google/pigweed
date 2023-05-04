@@ -20,16 +20,15 @@ from typing import Any, Callable, List, Union, Optional
 
 from pw_hdlc.rpc import HdlcRpcClient, default_channels
 from pw_hdlc.rpc import NoEncodingSingleChannelRpcClient, RpcClient
-from pw_log.proto import log_pb2
 from pw_log.log_decoder import (
     Log,
     LogStreamDecoder,
     log_decoded_log,
     timestamp_parser_ns_since_boot,
 )
+from pw_log_rpc.rpc_log_stream import LogStreamHandler
 from pw_metric import metric_parser
 from pw_rpc import callback_client, Channel, console_tools
-from pw_status import Status
 from pw_thread.thread_analyzer import ThreadSnapshotAnalyzer
 from pw_thread_protos import thread_pb2
 from pw_tokenizer import detokenize
@@ -67,20 +66,6 @@ class Device:
 
         self.logger = DEFAULT_DEVICE_LOGGER
         self.logger.setLevel(logging.DEBUG)  # Allow all device logs through.
-
-        def decoded_log_handler(log: Log) -> None:
-            log_decoded_log(log, self.logger)
-
-        self._log_decoder = LogStreamDecoder(
-            decoded_log_handler=decoded_log_handler,
-            detokenizer=self.detokenizer,
-            source_name='SamplelRpcDevice',
-            timestamp_parser=(
-                timestamp_decoder
-                if timestamp_decoder
-                else timestamp_parser_ns_since_boot
-            ),
-        )
 
         callback_client_impl = callback_client.Impl(
             default_unary_timeout_s=self.rpc_timeout_s,
@@ -126,8 +111,27 @@ class Device:
             )
 
         if use_rpc_logging:
+            # Create the log decoder used by the LogStreamHandler.
+
+            def decoded_log_handler(log: Log) -> None:
+                log_decoded_log(log, self.logger)
+
+            self._log_decoder = LogStreamDecoder(
+                decoded_log_handler=decoded_log_handler,
+                detokenizer=self.detokenizer,
+                source_name='SamplelRpcDevice',
+                timestamp_parser=(
+                    timestamp_decoder
+                    if timestamp_decoder
+                    else timestamp_parser_ns_since_boot
+                ),
+            )
+
             # Start listening to logs as soon as possible.
-            self.listen_to_log_stream()
+            self.log_stream_handler = LogStreamHandler(
+                self.rpcs, self._log_decoder
+            )
+            self.log_stream_handler.listen_to_logs()
 
     def info(self) -> console_tools.ClientInfo:
         return console_tools.ClientInfo('device', self.rpcs, self.client.client)
@@ -140,32 +144,6 @@ class Device:
     def run_tests(self, timeout_s: Optional[float] = 5) -> bool:
         """Runs the unit tests on this device."""
         return pw_unit_test_run_tests(self.rpcs, timeout_s=timeout_s)
-
-    def listen_to_log_stream(self):
-        """Opens a log RPC for the device's unrequested log stream.
-
-        The RPCs remain open until the server cancels or closes them, either
-        with a response or error packet.
-        """
-
-        def on_log_entries(_, log_entries_proto: log_pb2.LogEntries) -> None:
-            self._log_decoder.parse_log_entries_proto(log_entries_proto)
-
-        self.rpcs.pw.log.Logs.Listen.open(
-            on_next=on_log_entries,
-            on_completed=lambda _, status: _LOG.info(
-                'Log stream completed with status: %s', status
-            ),
-            on_error=lambda _, error: self._handle_log_stream_error(error),
-        )
-
-    def _handle_log_stream_error(self, error: Status):
-        """Resets the log stream RPC on error to avoid losing logs."""
-        _LOG.error('Log stream error: %s', error)
-
-        # Only re-request logs if the RPC was not cancelled by the client.
-        if error != Status.CANCELLED:
-            self.listen_to_log_stream()
 
     def get_and_log_metrics(self) -> dict:
         """Retrieves the parsed metrics and logs them to the console."""
