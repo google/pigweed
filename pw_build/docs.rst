@@ -909,7 +909,7 @@ toolchains that manually set these GN build arguments as well.
 
 ``pw_coverage_report``
 ^^^^^^^^^^^^^^^^^^^^^^
-``pw_coverage_report`` is bascially a GN frontend to the ``llvm-cov``
+``pw_coverage_report`` is basically a GN frontend to the ``llvm-cov``
 `tool <https://llvm.org/docs/CommandGuide/llvm-cov.html>`_ that can be
 integrated into the normal build.
 
@@ -942,7 +942,7 @@ The supported report formats are:
 - ``json``: A machine-friendly coverage report format. This format is not human-
   friendly. If that is necessary, use ``text`` or ``html`` instead.
 
-  - This is equivalent to ``llvm-cov export --format text``.
+  - This is equivalent to ``llvm-cov export --format json``.
 
 Arguments
 """""""""

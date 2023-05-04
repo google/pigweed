@@ -188,6 +188,15 @@ gn_combined_build_check = build.GnGenNinja(
 )
 
 
+coverage = build.GnGenNinja(
+    name='coverage',
+    doc='Run coverage for the host build.',
+    path_filter=_BUILD_FILE_FILTER,
+    ninja_targets=('coverage',),
+    coverage=True,
+)
+
+
 @_BUILD_FILE_FILTER.apply_to_check()
 def gn_arm_build(ctx: PresubmitContext):
     build.gn_gen(ctx, pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS)
@@ -982,6 +991,7 @@ OTHER_CHECKS = (
     build.gn_gen_check,
     cmake_clang,
     cmake_gcc,
+    coverage,
     gitmodules.create(gitmodules.Config(allow_submodules=False)),
     gn_clang_build,
     gn_combined_build_check,

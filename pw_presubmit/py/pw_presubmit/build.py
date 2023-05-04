@@ -23,6 +23,7 @@ import re
 import subprocess
 from shutil import which
 import sys
+import tarfile
 from typing import (
     Any,
     Callable,
@@ -581,6 +582,7 @@ class GnGenNinja(Check):
         ] = None,
         ninja_contexts: Sequence[_CtxMgrOrLambda] = (),
         ninja_targets: Union[str, Sequence[str], Sequence[Sequence[str]]] = (),
+        coverage: bool = False,
         **kwargs,
     ):
         """Initializes a GnGenNinja object.
@@ -594,12 +596,16 @@ class GnGenNinja(Check):
             ninja_targets: Single ninja target, list of Ninja targets, or list
                 of list of ninja targets. If a list of a list, ninja will be
                 called multiple times with the same build directory.
+            coverage: Whether to collect coverage data.
             **kwargs: Passed on to superclass.
         """
         super().__init__(self._substeps(), *args, **kwargs)
-        self.packages: Sequence[str] = packages
-        self.gn_args: Dict[str, Any] = gn_args or {}
-        self.ninja_contexts: Tuple[_CtxMgrOrLambda, ...] = tuple(ninja_contexts)
+        self._packages: Sequence[str] = packages
+        self._gn_args: Dict[str, Any] = gn_args or {}
+        self._ninja_contexts: Tuple[_CtxMgrOrLambda, ...] = tuple(
+            ninja_contexts
+        )
+        self._collect_coverage = coverage
 
         if isinstance(ninja_targets, str):
             ninja_targets = (ninja_targets,)
@@ -655,25 +661,56 @@ class GnGenNinja(Check):
                     result.extend(item)
             return result
 
-        args = {k: value(v) for k, v in self.gn_args.items()}
+        args: Dict[str, Any] = {}
+        if self._collect_coverage:
+            args['pw_toolchain_COVERAGE_ENABLED'] = True
+            args['pw_build_PYTHON_TEST_COVERAGE'] = True
+            args['pw_C_OPTIMIZATION_LEVELS'] = ('debug',)
+
+            if ctx.incremental:
+                args['pw_toolchain_PROFILE_SOURCE_FILES'] = [
+                    f'//{x.relative_to(ctx.root)}' for x in ctx.paths
+                ]
+
+        args.update({k: value(v) for k, v in self._gn_args.items()})
         gn_gen(ctx, gn_check=False, **args)  # type: ignore
         return PresubmitResult.PASS
 
-    def _ninja(
-        self, ctx: PresubmitContext, targets: Sequence[str]
-    ) -> PresubmitResult:
+    @contextlib.contextmanager
+    def _context(self, ctx: PresubmitContext):
+        """Apply any context managers necessary for building."""
         with contextlib.ExitStack() as stack:
-            for mgr in self.ninja_contexts:
+            for mgr in self._ninja_contexts:
                 if isinstance(mgr, contextlib.AbstractContextManager):
                     stack.enter_context(mgr)
                 else:
                     stack.enter_context(mgr(ctx))  # type: ignore
+            yield
+
+    def _ninja(
+        self, ctx: PresubmitContext, targets: Sequence[str]
+    ) -> PresubmitResult:
+        with self._context(ctx):
             ninja(ctx, *targets)
+        return PresubmitResult.PASS
+
+    def _coverage(self, ctx: PresubmitContext) -> PresubmitResult:
+        """Archive and (on LUCI) upload coverage reports."""
+        reports = ctx.output_dir / 'coverage_reports'
+        os.makedirs(reports, exist_ok=True)
+        for path in ctx.output_dir.rglob('coverage_report'):
+            name = str(path).replace('_', '').replace('/', '_')
+            with tarfile.open(reports / f'{name}.tar.gz', 'w:gz') as tar:
+                tar.add(path, arcname=name, recursive=True)
+
+        if ctx.luci:
+            with self._context(ctx):
+                _LOG.warning('TODO(b/279161371) Add upload.')
 
         return PresubmitResult.PASS
 
     def _substeps(self) -> Iterator[SubStep]:
-        for package in self.packages:
+        for package in self._packages:
             yield SubStep(
                 f'install {package} package',
                 self._install_package,
@@ -694,3 +731,6 @@ class GnGenNinja(Check):
 
         # Run gn check after building so it can check generated files.
         yield SubStep('gn check', gn_check)
+
+        if self._collect_coverage:
+            yield SubStep('coverage', self._coverage)

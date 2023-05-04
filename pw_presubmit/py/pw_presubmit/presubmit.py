@@ -556,6 +556,7 @@ class PresubmitContext:  # pylint: disable=too-many-instance-attributes
             first compilation error
         rng_seed: Seed for a random number generator, for the few steps that
             need one
+        full: Whether this is a full or incremental presubmit run
     """
 
     root: Path
@@ -571,11 +572,16 @@ class PresubmitContext:  # pylint: disable=too-many-instance-attributes
     num_jobs: Optional[int] = None
     continue_after_build_error: bool = False
     rng_seed: int = 1
+    full: bool = False
     _failed: bool = False
 
     @property
     def failed(self) -> bool:
         return self._failed
+
+    @property
+    def incremental(self) -> bool:
+        return not self.full
 
     def fail(
         self,
@@ -709,7 +715,7 @@ class FilteredCheck:
 class Presubmit:
     """Runs a series of presubmit checks on a list of files."""
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         root: Path,
         repos: Sequence[Path],
@@ -720,6 +726,7 @@ class Presubmit:
         override_gn_args: Dict[str, str],
         continue_after_build_error: bool,
         rng_seed: int,
+        full: bool,
     ):
         self._root = root.resolve()
         self._repos = tuple(repos)
@@ -733,6 +740,7 @@ class Presubmit:
         self._override_gn_args = override_gn_args
         self._continue_after_build_error = continue_after_build_error
         self._rng_seed = rng_seed
+        self._full = full
 
     def run(
         self,
@@ -887,6 +895,7 @@ class Presubmit:
                 override_gn_args=self._override_gn_args,
                 continue_after_build_error=self._continue_after_build_error,
                 rng_seed=self._rng_seed,
+                full=self._full,
                 luci=LuciContext.create_from_environment(),
                 format_options=FormatOptions.load(),
             )
@@ -1075,6 +1084,7 @@ def run(  # pylint: disable=too-many-arguments,too-many-locals
         override_gn_args=dict(override_gn_args or {}),
         continue_after_build_error=continue_after_build_error,
         rng_seed=rng_seed,
+        full=bool(base is None),
     )
 
     if only_list_steps:
