@@ -26,8 +26,6 @@ import subprocess
 import sys
 import stat
 import tempfile
-import typing
-from typing import Tuple
 
 # Grabbing datetime string once so it will always be the same for all GnTarget
 # objects.
@@ -175,7 +173,7 @@ def _flatten(*items):
             yield item
 
 
-def _python_version(python_path: str) -> Tuple[int, int, int]:
+def _python_version(python_path: str):
     """Returns the version (major, minor, rev) of the `python_path` binary."""
     # Prints values like "3.10.0"
     command = (
@@ -188,9 +186,7 @@ def _python_version(python_path: str) -> Tuple[int, int, int]:
         .strip()
         .decode()
     )
-    return typing.cast(
-        Tuple[int, int, int], tuple(map(int, version_str.split('.')))
-    )
+    return tuple(map(int, version_str.split('.')))
 
 
 def install(  # pylint: disable=too-many-arguments,too-many-locals
