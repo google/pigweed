@@ -209,7 +209,14 @@ template("pw_python_venv") {
         _skip_installing_external_python_deps = true
         venv = get_label_info(":${invoker.target_name}", "label_no_toolchain")
 
-        args = [ "install" ]
+        _pip_install_log_file =
+            "$target_gen_dir/$target_name/pip_install_log.txt"
+
+        args = [
+          "--log",
+          rebase_path(_pip_install_log_file, root_build_dir),
+          "install",
+        ]
 
         # Note: --no-build-isolation should be avoided for installing 3rd party
         # Python packages that use C/C++ extension modules.

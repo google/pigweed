@@ -471,6 +471,8 @@ template("pw_python_pip_install") {
         _pkg_gn_labels += [ get_label_info(pkg, "label_no_toolchain") ]
       }
 
+      _pip_install_log_file = "$target_gen_dir/$target_name/pip_install_log.txt"
+
       args = [
         "--gn-packages",
         string_join(",", _pkg_gn_labels),
@@ -481,6 +483,8 @@ template("pw_python_pip_install") {
       }
 
       args += [
+        "--log",
+        rebase_path(_pip_install_log_file, root_build_dir),
         "install",
         "--no-build-isolation",
       ]
