@@ -22,7 +22,7 @@ declare_args() {
   pw_docgen_BUILD_DOCS = false
 
   # Set to enable Google Analytics tracking of generated docs.
-  pw_docs_google_analytics_id = ""
+  pw_docgen_GOOGLE_ANALYTICS_ID = ""
 }
 
 # Defines a group of documentation files and assets.
@@ -115,10 +115,10 @@ template("pw_doc_gen") {
   ]
 
   # Enable Google Analytics if a measurement ID is provided
-  if (pw_docs_google_analytics_id != "") {
+  if (pw_docgen_GOOGLE_ANALYTICS_ID != "") {
     _script_args += [
       "--google-analytics-id",
-      pw_docs_google_analytics_id,
+      pw_docgen_GOOGLE_ANALYTICS_ID,
     ]
   }
 
