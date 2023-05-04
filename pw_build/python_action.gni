@@ -50,6 +50,11 @@ import("$dir_pw_build/python_gn_args.gni")
 #
 #   python_deps     Dependencies on pw_python_package or related Python targets.
 #
+#   python_metadata_deps  Python-related dependencies that are only used as deps
+#                         for generating Python package metadata list, not the
+#                         overall Python script action. This should rarely be
+#                         used by non-Pigweed code.
+#
 #   working_directory  Switch to the provided working directory before running
 #                      the Python script or action.
 #

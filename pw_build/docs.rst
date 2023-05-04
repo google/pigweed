@@ -382,6 +382,12 @@ target. Additionally, it has some of its own arguments:
   fakeroot environment.
 * ``venv``: Optional gn target of the pw_python_venv that should be used to run
   this action.
+* ``python_deps``: Extra dependencies that are required for running the Python
+  script for the ``action``. This must be used with ``module`` to specify the
+  build dependency of the ``module`` if it is user-defined code.
+* ``python_metadata_deps``: Extra dependencies that are ensured completed before
+  generating a Python package metadata manifest, not the overall Python script
+  ``action``. This should rarely be used by non-Pigweed code.
 
 .. _module-pw_build-python-action-expressions:
 

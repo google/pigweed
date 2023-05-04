@@ -100,6 +100,9 @@ to tie everything together.
 * ``index``: Path to the top-level ``index.rst`` file.
 * ``output_directory``: Directory in which to render HTML output.
 * ``deps``: List of all ``pw_doc_group`` targets required for the documentation.
+* ``python_metadata_deps``: Python-related dependencies that are only used as
+  deps for generating Python package metadata list, not the overall
+  documentation generation. This should rarely be used by non-Pigweed code.
 
 **Example**
 

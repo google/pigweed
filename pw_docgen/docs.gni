@@ -76,6 +76,10 @@ template("pw_doc_group") {
 #
 # Args:
 #   deps: List of pw_doc_group targets.
+#   python_metadata_deps: Python-related dependencies that are only used as deps
+#                         for generating Python package metadata list, not the
+#                         overall documentation generation. This should rarely
+#                         be used by non-Pigweed code.
 #   sources: Top-level documentation .rst source files.
 #   conf: Configuration script (conf.py) for Sphinx.
 #   output_directory: Path to directory to which HTML output is rendered.
