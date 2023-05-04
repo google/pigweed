@@ -1,8 +1,14 @@
-.. _docs-os_abstraction_layers:
+.. _docs-os:
 
-=====================
-OS Abstraction Layers
-=====================
+==========
+OS Support
+==========
+
+.. toctree::
+   :hidden:
+
+   zephyr
+
 Pigweed’s operating system abstraction layers are portable and configurable
 building blocks, giving users full control while maintaining high performance
 and low overhead.
@@ -30,8 +36,8 @@ Pigweed has ports for the following systems:
     - **✔ Supported**
   * - Baremetal
     - *In Progress*
-  * - `Zephyr <https://www.zephyrproject.org/>`_
-    - Planned
+  * - :ref:`Zephyr <docs-os-zephyr>`
+    - *In Progress*
   * - `CMSIS-RTOS API v2 & RTX5 <https://www.keil.com/pack/doc/CMSIS/RTOS2/html/index.html>`_
     - Planned
 

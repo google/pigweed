@@ -92,8 +92,8 @@ this configuration, which correctly sets ``configASSERT`` to use ``PW_CHECK` and
 -----------------------------
 OS Abstraction Layers Support
 -----------------------------
-Support for Pigweed's :ref:`docs-os_abstraction_layers` are provided for
-FreeRTOS via the following modules:
+Support for Pigweed's :ref:`docs-os` are provided for FreeRTOS via the following
+modules:
 
 * :ref:`module-pw_chrono_freertos`
 * :ref:`module-pw_sync_freertos`

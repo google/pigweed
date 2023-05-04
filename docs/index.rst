@@ -14,7 +14,7 @@
   docs/release_notes/index
   Mailing List <https://groups.google.com/forum/#!forum/pigweed>
   Chat Room <https://discord.gg/M9NSeTA>
-  docs/os_abstraction_layers
+  docs/os/index
   docs/size_optimizations
   FAQ <docs/faq>
   third_party_support

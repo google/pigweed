@@ -51,7 +51,7 @@ and development environment that does three key things:
 
 * Takes care of difficult but unproductive project plumbing issues like setting
   up a target toolchain and providing support for
-  :ref:`OS abstractions<docs-os_abstraction_layers>`.
+  :ref:`OS abstractions<docs-os>`.
 
 * Configures Pigweed module backends that give you logging, asserts, threads,
   dynamic memory allocation, and more, that work transparently both on host and

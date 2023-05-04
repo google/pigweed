@@ -48,7 +48,8 @@ pw_doc_group("core_docs") {
     "faq.rst",
     "getting_started.rst",
     "module_structure.rst",
-    "os_abstraction_layers.rst",
+    "os/index.rst",
+    "os/zephyr.rst",
     "size_optimizations.rst",
     "style_guide.rst",
   ]
