@@ -71,6 +71,9 @@ groups, causing them to be built with it.
 * ``group_deps``: Other ``pw_doc_group`` targets required by this one.
 * ``report_deps``: Report card generating targets (e.g. ``pw_size_diff``) on
   which the docs depend.
+* ``other_deps``: Any other GN targets that should be run before this
+  ``pw_doc_group`` runs that is not included in one of the above ``dep``
+  categories.
 
 **Example**
 
