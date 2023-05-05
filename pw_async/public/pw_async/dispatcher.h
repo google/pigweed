@@ -19,18 +19,38 @@ namespace pw::async {
 
 class Task;
 
-/// Asynchronous Dispatcher abstract class. A default implementation is provided
-/// in pw_async_basic.
+/// Abstract base class for an asynchronous dispatcher loop.
 ///
-/// Dispatcher implements VirtualSystemClock so the Dispatcher's time can be
-/// injected into other modules under test. This is useful for consistently
-/// simulating time when using FakeDispatcher (rather than using
-/// chrono::SimulatedSystemClock separately).
+/// `Dispatcher`s run many short, non-blocking units of work on a single thread.
+/// This approach has a number of advantages compared with executing concurrent
+/// tasks on separate threads:
+///
+/// - `Dispatcher`s can make more efficient use of system resources, since they
+///   don't need to maintain separate thread stacks.
+/// - `Dispatcher`s can run on systems without thread support, such as no-RTOS
+///   embedded environments.
+/// - `Dispatcher`s allow tasks to communicate with one another without the
+///   synchronization overhead of locks, atomics, fences, or `volatile`.
+///
+/// Thread support: `Dispatcher` methods may be safely invoked from any thread,
+/// but the resulting tasks will always execute on a single thread. Whether
+/// or not methods may be invoked from interrupt context is
+/// implementation-defined.
+///
+/// `VirtualSystemClock`: `Dispatcher` implements `VirtualSystemClock` in order
+/// to provide a consistent source of (possibly mocked) time information to
+/// tasks.
+///
+/// A simple default dispatcher implementation is provided by `pw_async_basic`.
 class Dispatcher : public chrono::VirtualSystemClock {
  public:
   ~Dispatcher() override = default;
 
-  /// Post caller owned |task|.
+  /// Post caller-owned |task| to be run on the dispatch loop.
+  ///
+  /// Posted tasks execute in the order they are posted. This ensures that
+  /// tasks can re-post themselves and yield in order to allow other tasks the
+  /// opportunity to execute.
   virtual void Post(Task& task) { PostAt(task, now()); }
 
   /// Post caller owned |task| to be run after |delay|.
@@ -62,6 +82,8 @@ class Dispatcher : public chrono::VirtualSystemClock {
                               chrono::SystemClock::duration interval,
                               chrono::SystemClock::time_point time) = 0;
 
+  /// Request that a task not be invoked again.
+  ///
   /// Periodic tasks may be posted once more after they are canceled. Tasks may
   /// be canceled from within a `TaskFunction` by calling
   /// `context.dispatcher.Cancel(context.task)`.

@@ -128,10 +128,19 @@ bool NativeFakeDispatcher::Cancel(Task& task) {
 void NativeFakeDispatcher::PostTaskInternal(
     ::pw::async::backend::NativeTask& task,
     chrono::SystemClock::time_point time_due) {
+  if (!task.unlisted()) {
+    if (task.due_time() <= time_due) {
+      // No need to repost a task that was already queued to run.
+      return;
+    }
+    // The task needs its time updated, so we have to move it to
+    // a different part of the list.
+    task.unlist();
+  }
   task.set_due_time(time_due);
   auto it_front = task_queue_.begin();
   auto it_behind = task_queue_.before_begin();
-  while (it_front != task_queue_.end() && time_due > it_front->due_time()) {
+  while (it_front != task_queue_.end() && time_due >= it_front->due_time()) {
     ++it_front;
     ++it_behind;
   }

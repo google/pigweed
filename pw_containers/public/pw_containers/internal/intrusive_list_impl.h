@@ -80,8 +80,13 @@ class List {
   class Item {
    protected:
     constexpr Item() : Item(this) {}
-
     ~Item() { unlist(); }
+
+    bool unlisted() const { return this == next_; }
+
+    // Unlink this from the list it is apart of, if any. Specifying prev saves
+    // calling previous(), which requires looping around the cycle.
+    void unlist(Item* prev = nullptr);
 
    private:
     friend class List;
@@ -90,12 +95,6 @@ class List {
     friend class Iterator;
 
     constexpr Item(Item* next) : next_(next) {}
-
-    bool unlisted() const { return this == next_; }
-
-    // Unlink this from the list it is apart of, if any. Specifying prev saves
-    // calling previous(), which requires looping around the cycle.
-    void unlist(Item* prev = nullptr);
 
     Item* previous();  // Note: O(n) since it loops around the cycle.
 
