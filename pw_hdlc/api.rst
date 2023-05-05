@@ -87,29 +87,13 @@ unnumbered information frame.
 Decoder
 =======
 
+
 .. tabs::
 
    .. group-tab:: C++
 
-      .. cpp:class:: pw::hdlc::Decoder
-
-        .. cpp:function:: pw::Result<Frame> Process(std::byte b)
-
-           Parses a single byte of an HDLC stream. Returns a Result with the complete
-           frame if the byte completes a frame. The status is the following:
-
-           - OK - A frame was successfully decoded. The Result contains the Frame,
-             which is invalidated by the next Process call.
-           - UNAVAILABLE - No frame is available.
-           - RESOURCE_EXHAUSTED - A frame completed, but it was too large to fit in
-             the decoder's buffer.
-           - DATA_LOSS - A frame completed, but it was invalid. The frame was
-             incomplete or the frame check sequence verification failed.
-
-        .. cpp:function:: void Process(pw::ConstByteSpan data, F&& callback, Args&&... args)
-
-           Processes a span of data and calls the provided callback with each frame or
-           error.
+      .. doxygenclass:: pw::hdlc::Decoder
+         :members:
 
       Example:
 

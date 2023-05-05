@@ -75,17 +75,17 @@ class Decoder {
   Decoder(const Decoder&) = delete;
   Decoder& operator=(const Decoder&) = delete;
 
-  // Parses a single byte of an HDLC stream. Returns a Result with the complete
-  // frame if the byte completes a frame. The status is the following:
-  //
-  //     OK - A frame was successfully decoded. The Result contains the Frame,
-  //         which is invalidated by the next Process call.
-  //     UNAVAILABLE - No frame is available.
-  //     RESOURCE_EXHAUSTED - A frame completed, but it was too large to fit in
-  //         the decoder's buffer.
-  //     DATA_LOSS - A frame completed, but it was invalid. The frame was
-  //         incomplete or the frame check sequence verification failed.
-  //
+  /// @brief Parses a single byte of an HDLC stream.
+  ///
+  /// @returns A `pw::Result` with the complete frame if the byte completes a
+  /// frame. The status can be one of the following:
+  /// * `OK` - A frame was successfully decoded. The `Result` contains the
+  /// `Frame`, which is invalidated by the next `Process()` call.
+  /// * `UNAVAILABLE` - No frame is available.
+  /// * `RESOURCE_EXHAUSTED` - A frame completed, but it was too large to fit in
+  ///   the decoder's buffer.
+  /// * `DATA_LOSS` - A frame completed, but it was invalid. The frame was
+  ///   incomplete or the frame check sequence verification failed.
   Result<Frame> Process(std::byte new_byte);
 
   // Returns the buffer space required for a `Decoder` to successfully decode a
@@ -99,8 +99,8 @@ class Decoder {
                : max_frame_size - 2;
   }
 
-  // Processes a span of data and calls the provided callback with each frame or
-  // error.
+  /// @brief Processes a span of data and calls the provided callback with each
+  /// frame or error.
   template <typename F, typename... Args>
   void Process(ConstByteSpan data, F&& callback, Args&&... args) {
     for (std::byte b : data) {
