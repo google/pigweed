@@ -91,61 +91,60 @@ template("pw_doc_gen") {
   assert(defined(invoker.output_directory),
          "pw_doc_gen requires an 'output_directory' argument")
 
-  # Collects all dependency metadata into a single JSON file.
-  _metadata_file_target = "${target_name}_metadata"
-  generated_file(_metadata_file_target) {
-    outputs = [ "$target_gen_dir/$target_name.json" ]
-    data_keys = [
-      "pw_doc_sources",
-      "pw_doc_inputs",
-    ]
-    output_conversion = "json"
-    deps = invoker.deps
-  }
-
-  _script_args = [
-    "--gn-root",
-    rebase_path("//", root_build_dir),
-    "--gn-gen-root",
-    rebase_path(root_gen_dir, root_build_dir) + "/",
-    "--sphinx-build-dir",
-    rebase_path("$target_gen_dir/pw_docgen_tree", root_build_dir),
-    "--conf",
-    rebase_path(invoker.conf, root_build_dir),
-    "--out-dir",
-    rebase_path(invoker.output_directory, root_build_dir),
-  ]
-
-  # Enable Google Analytics if a measurement ID is provided
-  if (pw_docgen_GOOGLE_ANALYTICS_ID != "") {
-    _script_args += [
-      "--google-analytics-id",
-      pw_docgen_GOOGLE_ANALYTICS_ID,
-    ]
-  }
-
-  # Metadata JSON file path.
-  _script_args += [ "--metadata" ]
-  _script_args +=
-      rebase_path(get_target_outputs(":$_metadata_file_target"), root_build_dir)
-
-  _script_args += rebase_path(invoker.sources, root_build_dir)
-
-  # Required to set the PYTHONPATH for any automodule/class/function RST
-  # directives.
-  _python_metadata_deps = [ "$dir_pw_docgen/py" ]
-  if (defined(invoker.python_metadata_deps)) {
-    _python_metadata_deps += invoker.python_metadata_deps
-  }
-
   if (pw_docgen_BUILD_DOCS) {
+    # Collects all dependency metadata into a single JSON file.
+    _metadata_file_target = "${target_name}_metadata"
+    generated_file(_metadata_file_target) {
+      outputs = [ "$target_gen_dir/$target_name.json" ]
+      data_keys = [
+        "pw_doc_sources",
+        "pw_doc_inputs",
+      ]
+      output_conversion = "json"
+      deps = invoker.deps
+    }
+
     pw_python_action(target_name) {
-      script = "$dir_pw_docgen/py/pw_docgen/docgen.py"
-      args = _script_args
+      module = "pw_docgen.docgen"
+      args = [
+        "--gn-root",
+        rebase_path("//", root_build_dir),
+        "--gn-gen-root",
+        rebase_path(root_gen_dir, root_build_dir) + "/",
+        "--sphinx-build-dir",
+        rebase_path("$target_gen_dir/pw_docgen_tree", root_build_dir),
+        "--conf",
+        rebase_path(invoker.conf, root_build_dir),
+        "--out-dir",
+        rebase_path(invoker.output_directory, root_build_dir),
+      ]
+
+      # Enable Google Analytics if a measurement ID is provided
+      if (pw_docgen_GOOGLE_ANALYTICS_ID != "") {
+        args += [
+          "--google-analytics-id",
+          pw_docgen_GOOGLE_ANALYTICS_ID,
+        ]
+      }
+
+      # Metadata JSON file path.
+      args += [ "--metadata" ] +
+              rebase_path(get_target_outputs(":$_metadata_file_target"),
+                          root_build_dir)
+
+      args += rebase_path(invoker.sources, root_build_dir)
+
+      python_deps = [ "$dir_pw_docgen/py" ]
       deps = [ ":$_metadata_file_target" ]
-      python_metadata_deps = _python_metadata_deps
-      inputs = [ invoker.conf ]
-      inputs += invoker.sources
+
+      # Required to set the PYTHONPATH for any automodule/class/function RST
+      # directives.
+      python_metadata_deps = [ "$dir_pw_docgen/py" ]
+      if (defined(invoker.python_metadata_deps)) {
+        python_metadata_deps += invoker.python_metadata_deps
+      }
+
+      inputs = [ invoker.conf ] + invoker.sources
       stamp = true
     }
   } else {
