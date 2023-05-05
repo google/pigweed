@@ -222,42 +222,6 @@ TEST(FakeDispatcher, RequestStopInsideOtherTaskCancelsOtherTask) {
   EXPECT_EQ(task_counter.counts, CallCounts{.cancelled = 1});
 }
 
-TEST(FakeDispatcher, PeriodicTasks) {
-  FakeDispatcher dispatcher;
-
-  CallCounter periodic_counter;
-  Task periodic_task(periodic_counter.fn());
-  dispatcher.PostPeriodicAt(periodic_task, 20ms, dispatcher.now() + 50ms);
-
-  // Cancel periodic task after it has run thrice, at +50ms, +70ms, and +90ms.
-  Task cancel_task([&periodic_task](Context& c, Status status) {
-    ASSERT_OK(status);
-    c.dispatcher->Cancel(periodic_task);
-  });
-  dispatcher.PostAfter(cancel_task, 100ms);
-
-  dispatcher.RunFor(300ms);
-  dispatcher.RequestStop();
-  dispatcher.RunUntilIdle();
-  EXPECT_EQ(periodic_counter.counts, CallCounts{.ok = 3});
-}
-
-TEST(FakeDispatcher, PostPeriodicAfter) {
-  FakeDispatcher dispatcher;
-  CallCounter counter;
-  Task periodic_task(counter.fn());
-  dispatcher.PostPeriodicAfter(periodic_task, /*interval=*/5ms, /*delay=*/20ms);
-
-  dispatcher.RunUntilIdle();
-  EXPECT_EQ(counter.counts, CallCounts{});
-  dispatcher.RunFor(20ms);
-  EXPECT_EQ(counter.counts, CallCounts{.ok = 1});
-  dispatcher.RunFor(10ms);
-  EXPECT_EQ(counter.counts, CallCounts{.ok = 3});
-  dispatcher.RunUntilIdle();
-  EXPECT_EQ(counter.counts, CallCounts{.ok = 3});
-}
-
 TEST(FakeDispatcher, TasksCancelledByDispatcherDestructor) {
   CallCounter counter;
   Task task0(counter.fn()), task1(counter.fn()), task2(counter.fn());

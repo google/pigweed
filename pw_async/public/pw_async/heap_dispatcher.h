@@ -34,11 +34,6 @@ class HeapDispatcher final : public FunctionDispatcher {
                      chrono::SystemClock::time_point time) override {
     return dispatcher_.PostAt(task, time);
   }
-  inline void PostPeriodicAt(Task& task,
-                             chrono::SystemClock::duration interval,
-                             chrono::SystemClock::time_point time) override {
-    return dispatcher_.PostPeriodicAt(task, interval, time);
-  }
   inline bool Cancel(Task& task) override { return dispatcher_.Cancel(task); }
 
   // VirtualSystemClock overrides:

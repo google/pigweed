@@ -54,9 +54,6 @@ class BasicDispatcher final : public Dispatcher, public thread::ThreadCore {
 
   // Dispatcher overrides:
   void PostAt(Task& task, chrono::SystemClock::time_point time) override;
-  void PostPeriodicAt(Task& task,
-                      chrono::SystemClock::duration interval,
-                      chrono::SystemClock::time_point start_time) override;
   bool Cancel(Task& task) override PW_LOCKS_EXCLUDED(lock_);
 
   // VirtualSystemClock overrides:

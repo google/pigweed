@@ -61,27 +61,6 @@ class Dispatcher : public chrono::VirtualSystemClock {
   /// Post caller owned |task| to be run at |time|.
   virtual void PostAt(Task& task, chrono::SystemClock::time_point time) = 0;
 
-  /// Post caller owned |task| to be run immediately then rerun at a regular
-  /// |interval|.
-  virtual void PostPeriodic(Task& task,
-                            chrono::SystemClock::duration interval) {
-    PostPeriodicAt(task, interval, now());
-  }
-
-  /// Post caller owned |task| to be run after |delay| then rerun at a regular
-  /// |interval|.
-  virtual void PostPeriodicAfter(Task& task,
-                                 chrono::SystemClock::duration interval,
-                                 chrono::SystemClock::duration delay) {
-    PostPeriodicAt(task, interval, now() + delay);
-  }
-
-  /// Post caller owned |task| to be run at |time| then rerun at a regular
-  /// |interval|. |interval| must not be zero.
-  virtual void PostPeriodicAt(Task& task,
-                              chrono::SystemClock::duration interval,
-                              chrono::SystemClock::time_point time) = 0;
-
   /// Request that a task not be invoked again.
   ///
   /// Periodic tasks may be posted once more after they are canceled. Tasks may

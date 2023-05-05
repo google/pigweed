@@ -63,10 +63,6 @@ void NativeFakeDispatcher::ExecuteDueTasks() {
     ::pw::async::backend::NativeTask& task = task_queue_.front();
     task_queue_.pop_front();
 
-    if (task.interval().has_value()) {
-      PostTaskInternal(task, task.due_time() + task.interval().value());
-    }
-
     Context ctx{&dispatcher_, &task.task_};
     task(ctx, OkStatus());
   }
@@ -99,26 +95,6 @@ void NativeFakeDispatcher::PostAt(Task& task,
                                   chrono::SystemClock::time_point time) {
   PW_LOG_DEBUG("posting task");
   PostTaskInternal(task.native_type(), time);
-}
-
-void NativeFakeDispatcher::PostPeriodic(
-    Task& task, chrono::SystemClock::duration interval) {
-  PostPeriodicAt(task, interval, now());
-}
-
-void NativeFakeDispatcher::PostPeriodicAfter(
-    Task& task,
-    chrono::SystemClock::duration interval,
-    chrono::SystemClock::duration delay) {
-  PostPeriodicAt(task, interval, now() + delay);
-}
-
-void NativeFakeDispatcher::PostPeriodicAt(
-    Task& task,
-    chrono::SystemClock::duration interval,
-    chrono::SystemClock::time_point start_time) {
-  task.native_type().set_interval(interval);
-  PostAt(task, start_time);
 }
 
 bool NativeFakeDispatcher::Cancel(Task& task) {

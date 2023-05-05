@@ -43,19 +43,6 @@ class NativeTask final : public IntrusiveList<NativeTask>::Item {
   void set_due_time(chrono::SystemClock::time_point due_time) {
     due_time_ = due_time;
   }
-  std::optional<chrono::SystemClock::duration> interval() const {
-    if (interval_ == chrono::SystemClock::duration::zero()) {
-      return std::nullopt;
-    }
-    return interval_;
-  }
-  void set_interval(std::optional<chrono::SystemClock::duration> interval) {
-    if (!interval.has_value()) {
-      interval_ = chrono::SystemClock::duration::zero();
-      return;
-    }
-    interval_ = *interval;
-  }
 
   TaskFunction func_ = nullptr;
   // task_ is placed after func_ to take advantage of the padding that would
@@ -64,9 +51,6 @@ class NativeTask final : public IntrusiveList<NativeTask>::Item {
   // padding would be added here, which is just enough for a pointer.
   Task& task_;
   pw::chrono::SystemClock::time_point due_time_;
-  // A duration of 0 indicates that the task is not periodic.
-  chrono::SystemClock::duration interval_ =
-      chrono::SystemClock::duration::zero();
 };
 
 using NativeTaskHandle = NativeTask&;
