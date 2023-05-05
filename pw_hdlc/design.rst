@@ -3,6 +3,14 @@
 ===============
 pw_hdlc: Design
 ===============
+.. pigweed-module-subpage::
+   :name: pw_hdlc
+   :tagline: Lightweight, simple, and easy serial communication
+   :nav:
+     getting started: module-pw_hdlc-get-started
+     design: module-pw_hdlc-design
+     guides: module-pw_hdlc-guide
+     api: module-pw_hdlc-api
 
 ``pw_hdlc`` implements a subset of the
 `HDLC <https://en.wikipedia.org/wiki/High-Level_Data_Link_Control>`_

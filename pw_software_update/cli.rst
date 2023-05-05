@@ -3,6 +3,14 @@
 ---------------------------------
 pw_software_update: CLI reference
 ---------------------------------
+.. pigweed-module-subpage::
+   :name: pw_software_update
+   :tagline: Secure software delivery
+   :nav:
+    getting started: module-pw_software_update-get-started
+    design: module-pw_software_update-design
+    guides: module-pw_software_update-guides
+    cli: module-pw_software_update-cli
 
 Overview
 ---------

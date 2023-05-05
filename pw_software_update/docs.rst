@@ -5,15 +5,16 @@
 ==================
 pw_software_update
 ==================
-
 .. pigweed-module::
    :name: pw_software_update
    :tagline: Secure software delivery
    :status: experimental
    :languages: Python, C++14, C++17
-   :get-started: module-pw_software_update-get-started
-   :design: module-pw_software_update-design
-   :guides: module-pw_software_update-guides
+   :nav:
+    getting started: module-pw_software_update-get-started
+    design: module-pw_software_update-design
+    guides: module-pw_software_update-guides
+    cli: module-pw_software_update-cli
 
    The ``pw_software_update`` module offers the following building blocks for
    setting up your own end-to-end software delivery system.

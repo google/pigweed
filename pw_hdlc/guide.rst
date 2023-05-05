@@ -3,6 +3,15 @@
 =====================
 pw_hdlc: How-to guide
 =====================
+.. pigweed-module-subpage::
+   :name: pw_hdlc
+   :tagline: Lightweight, simple, and easy serial communication
+   :nav:
+     getting started: module-pw_hdlc-get-started
+     design: module-pw_hdlc-design
+     guides: module-pw_hdlc-guide
+     api: module-pw_hdlc-api
+
 This page shows you how to use the :ref:`module-pw_hdlc-api-encoder` and
 :ref:`module-pw_hdlc-api-decoder` APIs of :ref:`module-pw_hdlc`.
 

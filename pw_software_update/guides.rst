@@ -3,6 +3,14 @@
 -------------------------
 pw_software_update: Guide
 -------------------------
+.. pigweed-module-subpage::
+   :name: pw_software_update
+   :tagline: Secure software delivery
+   :nav:
+    getting started: module-pw_software_update-get-started
+    design: module-pw_software_update-design
+    guides: module-pw_software_update-guides
+    cli: module-pw_software_update-cli
 
 How you update software on an embedded system is specific to the project.
 However, there are common patterns. This section provides suggestions for

@@ -5,17 +5,17 @@
 =========
 pw_string
 =========
-
 .. pigweed-module::
    :name: pw_string
    :tagline: Efficient, easy, and safe string manipulation
    :status: stable
    :languages: C++14, C++17
    :code-size-impact: 500 to 1500 bytes
-   :get-started: module-pw_string-get-started
-   :design: module-pw_string-design
-   :guides: module-pw_string-guide
-   :api: module-pw_string-api
+   :nav:
+    getting started: module-pw_string-get-started
+    design: module-pw_string-design
+    guides: module-pw_string-guide
+    api: module-pw_string-api
 
    - **Efficient**: No memory allocation, no pointer indirection.
    - **Easy**: Use the string API you already know.

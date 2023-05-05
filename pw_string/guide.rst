@@ -3,6 +3,14 @@
 ================
 pw_string: Guide
 ================
+.. pigweed-module-subpage::
+   :name: pw_string
+   :tagline: Efficient, easy, and safe string manipulation
+   :nav:
+    getting started: module-pw_string-get-started
+    design: module-pw_string-design
+    guides: module-pw_string-guide
+    api: module-pw_string-api
 
 InlineString and StringBuilder?
 ===============================

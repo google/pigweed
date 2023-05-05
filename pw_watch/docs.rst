@@ -9,9 +9,10 @@ pw_watch
    :name: pw_watch
    :tagline: Embedded development file system watcher
    :status: stable
-   :get-started: module-pw_watch-get-started
-   :design: module-pw_watch-design
-   :guides: module-pw_watch-guide
+   :nav:
+    getting started: module-pw_watch-get-started
+    design: module-pw_watch-design
+    guides: module-pw_watch-guide
 
    * **Automatically trigger build actions when source files change**
 
