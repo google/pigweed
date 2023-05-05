@@ -330,7 +330,7 @@ def install(  # pylint: disable=too-many-arguments,too-many-locals
 
     def install_packages(gn_target):
         if gn_out_dir is None:
-            build_dir = os.path.join(venv_path, 'gn-install-dir')
+            build_dir = os.path.join(venv_path, 'gn')
         else:
             build_dir = gn_out_dir
 
