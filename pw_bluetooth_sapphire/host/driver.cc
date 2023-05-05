@@ -2,10 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include <lib/ddk/binding_driver.h>
+
 #include <memory>
 
 #include "host_device.h"
-#include "src/connectivity/bluetooth/core/bt-host/bt_host_bind.h"
 
 zx_status_t bt_host_bind(void* ctx, zx_device_t* device) {
   auto dev = std::make_unique<bthost::HostDevice>(device);
