@@ -12,7 +12,14 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-load("//pw_build:pigweed.bzl", "pw_cc_library")
+load("//pw_build:pigweed.bzl", "pw_cc_library", "pw_cc_test")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load(
+    "//pw_protobuf_compiler:pw_proto_library.bzl",
+    "pw_proto_filegroup",
+    "pwpb_proto_library",
+    "pwpb_rpc_proto_library",
+)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -27,4 +34,110 @@ pw_cc_library(
         "//pw_function",
         "//pw_status",
     ],
+)
+
+pw_cc_library(
+    name = "service_registry",
+    hdrs = ["public/pw_rpc_transport/service_registry.h"],
+    includes = ["public"],
+    deps = [
+        ":rpc_transport",
+        "//pw_rpc:client_server",
+        "//pw_span",
+        "//pw_status",
+    ],
+)
+
+pw_cc_library(
+    name = "packet_buffer_queue",
+    hdrs = ["public/pw_rpc_transport/internal/packet_buffer_queue.h"],
+    includes = ["public"],
+    deps = [
+        "//pw_assert",
+        "//pw_bytes",
+        "//pw_containers",
+        "//pw_log",
+        "//pw_result",
+        "//pw_status",
+        "//pw_sync:lock_annotations",
+        "//pw_sync:mutex",
+    ],
+)
+
+pw_cc_test(
+    name = "packet_buffer_queue_test",
+    srcs = [
+        "internal/packet_buffer_queue_test.cc",
+    ],
+    deps = [
+        ":packet_buffer_queue",
+        "//pw_bytes",
+        "//pw_containers",
+        "//pw_result",
+        "//pw_status",
+        "//pw_sync:lock_annotations",
+        "//pw_sync:mutex",
+    ],
+)
+
+pw_cc_library(
+    name = "local_rpc_egress",
+    srcs = ["local_rpc_egress.cc"],
+    hdrs = ["public/pw_rpc_transport/local_rpc_egress.h"],
+    includes = ["public"],
+    deps = [
+        ":packet_buffer_queue",
+        ":rpc_transport",
+        ":test_protos_pwpb_rpc",
+        "//pw_bytes",
+        "//pw_log",
+        "//pw_result",
+        "//pw_rpc:client_server",
+        "//pw_status",
+        "//pw_sync:thread_notification",
+        "//pw_thread:thread_core",
+    ],
+)
+
+pw_cc_test(
+    name = "local_rpc_egress_test",
+    srcs = [
+        "local_rpc_egress_test.cc",
+    ],
+    deps = [
+        ":local_rpc_egress",
+        ":rpc_transport",
+        ":service_registry",
+        ":test_protos_pwpb_rpc",
+        "//pw_bytes",
+        "//pw_chrono:system_clock",
+        "//pw_rpc:client_server",
+        "//pw_status",
+        "//pw_sync:counting_semaphore",
+        "//pw_sync:thread_notification",
+        "//pw_thread:sleep",
+        "//pw_thread:thread",
+    ],
+)
+
+pw_proto_filegroup(
+    name = "test_protos_and_options",
+    srcs = ["internal/test.proto"],
+    options_files = ["internal/test.options"],
+)
+
+proto_library(
+    name = "test_protos",
+    srcs = [":test_protos_and_options"],
+)
+
+pwpb_proto_library(
+    name = "test_protos_pwpb",
+    deps = [":test_protos"],
+)
+
+pwpb_rpc_proto_library(
+    name = "test_protos_pwpb_rpc",
+    pwpb_proto_library_deps = [":test_protos_pwpb"],
+    deps = [":test_protos"],
 )

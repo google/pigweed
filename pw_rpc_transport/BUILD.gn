@@ -31,7 +31,11 @@ pw_doc_group("docs") {
 }
 
 pw_test_group("tests") {
-  tests = []
+  tests = [ ":packet_buffer_queue_test" ]
+
+  if (pw_thread_THREAD_BACKEND != "") {
+    tests += [ ":local_rpc_egress_test" ]
+  }
 }
 
 pw_source_set("rpc_transport") {
@@ -42,4 +46,85 @@ pw_source_set("rpc_transport") {
     "$dir_pw_function",
     "$dir_pw_status",
   ]
+}
+
+pw_source_set("service_registry") {
+  public = [ "public/pw_rpc_transport/service_registry.h" ]
+  public_deps = [
+    ":rpc_transport",
+    "$dir_pw_rpc:client_server",
+    "$dir_pw_span",
+    "$dir_pw_status",
+  ]
+}
+
+pw_source_set("packet_buffer_queue") {
+  public = [ "public/pw_rpc_transport/internal/packet_buffer_queue.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    "$dir_pw_bytes",
+    "$dir_pw_containers",
+    "$dir_pw_result",
+    "$dir_pw_status",
+    "$dir_pw_sync:lock_annotations",
+    "$dir_pw_sync:mutex",
+  ]
+  deps = [
+    "$dir_pw_assert:check",
+    "$dir_pw_log",
+  ]
+  visibility = [ ":*" ]
+}
+
+pw_test("packet_buffer_queue_test") {
+  sources = [ "internal/packet_buffer_queue_test.cc" ]
+  deps = [
+    ":packet_buffer_queue",
+    "$dir_pw_bytes",
+    "$dir_pw_containers",
+    "$dir_pw_result",
+    "$dir_pw_status",
+    "$dir_pw_sync:lock_annotations",
+    "$dir_pw_sync:mutex",
+  ]
+}
+
+pw_source_set("local_rpc_egress") {
+  public = [ "public/pw_rpc_transport/local_rpc_egress.h" ]
+  sources = [ "local_rpc_egress.cc" ]
+  public_deps = [
+    ":packet_buffer_queue",
+    ":rpc_transport",
+    "$dir_pw_bytes",
+    "$dir_pw_result",
+    "$dir_pw_rpc:client",
+    "$dir_pw_status",
+    "$dir_pw_sync:thread_notification",
+    "$dir_pw_thread:thread_core",
+  ]
+  deps = [ "$dir_pw_log" ]
+}
+
+pw_test("local_rpc_egress_test") {
+  sources = [ "local_rpc_egress_test.cc" ]
+  deps = [
+    ":local_rpc_egress",
+    ":rpc_transport",
+    ":service_registry",
+    ":test_protos.pwpb_rpc",
+    "$dir_pw_bytes",
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_rpc:client_server",
+    "$dir_pw_status",
+    "$dir_pw_sync:counting_semaphore",
+    "$dir_pw_sync:thread_notification",
+    "$dir_pw_thread:sleep",
+    "$dir_pw_thread:thread",
+  ]
+}
+
+pw_proto_library("test_protos") {
+  sources = [ "internal/test.proto" ]
+  inputs = [ "internal/test.options" ]
+  prefix = "pw_rpc_transport"
 }
