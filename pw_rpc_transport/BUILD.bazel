@@ -120,6 +120,33 @@ pw_cc_test(
     ],
 )
 
+pw_cc_library(
+    name = "hdlc_framing",
+    hdrs = [
+        "public/pw_rpc_transport/hdlc_framing.h",
+    ],
+    deps = [
+        ":rpc_transport",
+        "//pw_bytes",
+        "//pw_hdlc",
+        "//pw_result",
+        "//pw_status",
+        "//pw_stream",
+    ],
+)
+
+pw_cc_test(
+    name = "hdlc_framing_test",
+    srcs = [
+        "hdlc_framing_test.cc",
+    ],
+    deps = [
+        ":hdlc_framing",
+        "//pw_bytes",
+        "//pw_status",
+    ],
+)
+
 pw_proto_filegroup(
     name = "test_protos_and_options",
     srcs = ["internal/test.proto"],

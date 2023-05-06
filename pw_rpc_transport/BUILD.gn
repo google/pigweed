@@ -31,7 +31,10 @@ pw_doc_group("docs") {
 }
 
 pw_test_group("tests") {
-  tests = [ ":packet_buffer_queue_test" ]
+  tests = [
+    ":hdlc_framing_test",
+    ":packet_buffer_queue_test",
+  ]
 
   if (pw_thread_THREAD_BACKEND != "") {
     tests += [ ":local_rpc_egress_test" ]
@@ -120,6 +123,29 @@ pw_test("local_rpc_egress_test") {
     "$dir_pw_sync:thread_notification",
     "$dir_pw_thread:sleep",
     "$dir_pw_thread:thread",
+  ]
+}
+
+pw_source_set("hdlc_framing") {
+  public = [ "public/pw_rpc_transport/hdlc_framing.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    ":rpc_transport",
+    "$dir_pw_bytes",
+    "$dir_pw_hdlc:decoder",
+    "$dir_pw_hdlc:encoder",
+    "$dir_pw_result",
+    "$dir_pw_status",
+    "$dir_pw_stream:pw_stream",
+  ]
+}
+
+pw_test("hdlc_framing_test") {
+  sources = [ "hdlc_framing_test.cc" ]
+  deps = [
+    ":hdlc_framing",
+    "$dir_pw_bytes",
+    "$dir_pw_status",
   ]
 }
 
