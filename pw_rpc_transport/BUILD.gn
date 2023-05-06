@@ -34,6 +34,7 @@ pw_test_group("tests") {
   tests = [
     ":hdlc_framing_test",
     ":packet_buffer_queue_test",
+    ":simple_framing_test",
   ]
 
   if (pw_thread_THREAD_BACKEND != "") {
@@ -145,6 +146,29 @@ pw_test("hdlc_framing_test") {
   deps = [
     ":hdlc_framing",
     "$dir_pw_bytes",
+    "$dir_pw_status",
+  ]
+}
+
+pw_source_set("simple_framing") {
+  public = [ "public/pw_rpc_transport/simple_framing.h" ]
+  public_configs = [ ":public_include_path" ]
+  sources = [ "simple_framing.cc" ]
+  public_deps = [
+    ":rpc_transport",
+    "$dir_pw_assert",
+    "$dir_pw_bytes",
+    "$dir_pw_status",
+  ]
+  deps = [ "$dir_pw_log" ]
+}
+
+pw_test("simple_framing_test") {
+  sources = [ "simple_framing_test.cc" ]
+  deps = [
+    ":simple_framing",
+    "$dir_pw_bytes",
+    "$dir_pw_log",
     "$dir_pw_status",
   ]
 }

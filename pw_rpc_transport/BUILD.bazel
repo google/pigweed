@@ -147,6 +147,32 @@ pw_cc_test(
     ],
 )
 
+pw_cc_library(
+    name = "simple_framing",
+    srcs = [
+        "simple_framing.cc",
+    ],
+    hdrs = ["public/pw_rpc_transport/simple_framing.h"],
+    deps = [
+        ":rpc_transport",
+        "//pw_assert",
+        "//pw_bytes",
+        "//pw_log",
+        "//pw_status",
+    ],
+)
+
+pw_cc_test(
+    name = "simple_framing_test",
+    srcs = ["simple_framing_test.cc"],
+    deps = [
+        ":simple_framing",
+        "//pw_bytes",
+        "//pw_log",
+        "//pw_status",
+    ],
+)
+
 pw_proto_filegroup(
     name = "test_protos_and_options",
     srcs = ["internal/test.proto"],
