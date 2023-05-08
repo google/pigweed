@@ -105,9 +105,21 @@ class Device:
                 )
                 write(data)
 
+            def read_without_encoding() -> bytes:
+                data = read()
+                _LOG.debug(
+                    'Read %2d B: %s',
+                    len(data),
+                    ' '.join(format(x, '02x') for x in data),
+                )
+                return data
+
             channel = Channel(self.channel_id, write_without_encoding)
             self.client = NoEncodingSingleChannelRpcClient(
-                read, self.protos, channel, client_impl=callback_client_impl
+                read_without_encoding,
+                self.protos,
+                channel,
+                client_impl=callback_client_impl,
             )
 
         if use_rpc_logging:
