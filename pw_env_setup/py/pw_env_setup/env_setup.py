@@ -246,6 +246,7 @@ class EnvSetup(object):
         self._env.set('PW_PROJECT_ROOT', project_root, deactivate=False)
         self._env.set('PW_ROOT', pw_root, deactivate=False)
         self._env.set('_PW_ACTUAL_ENVIRONMENT_ROOT', install_dir)
+        self._env.set('VIRTUAL_ENV', self._virtualenv_root)
         self._env.add_replacement('_PW_ACTUAL_ENVIRONMENT_ROOT', install_dir)
         self._env.add_replacement('PW_ROOT', pw_root)
 
