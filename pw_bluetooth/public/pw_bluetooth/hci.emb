@@ -2817,8 +2817,3 @@ struct TestEventPacket:
   let hdr_size = EventHeader.$size_in_bytes
   0     [+hdr_size]  EventHeader  header
   $next [+1]         UInt         payload
-
-
-struct TestMultipleParameters(arg1: GenericEnableParam, arg2: UInt:8):
-  [requires: arg1 == GenericEnableParam.ENABLE && arg2 == 7]
-  0 [+1]  UInt  padding
