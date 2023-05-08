@@ -47,10 +47,8 @@ from typing import (
     Iterator,
     List,
     Optional,
-    Tuple,
     Union,
 )
-import socket
 
 import serial
 import IPython  # type: ignore
@@ -61,6 +59,7 @@ from pw_console.log_store import LogStore
 from pw_console.plugins.bandwidth_toolbar import BandwidthToolbar
 from pw_console.pyserial_wrapper import SerialWithLogging
 from pw_console.python_logging import create_temp_log_file, JsonLogFormatter
+from pw_console.socket_client import SocketClient, SocketClientWithLogging
 from pw_hdlc import rpc
 from pw_rpc.console_tools.console import flattened_rpc_completions
 from pw_system.device import Device
@@ -77,10 +76,6 @@ _DEVICE_LOG = logging.getLogger('rpc_device')
 _SERIAL_DEBUG = logging.getLogger('pw_console.serial_debug_logger')
 _ROOT_LOG = logging.getLogger()
 
-PW_RPC_MAX_PACKET_SIZE = 256
-SOCKET_SERVER = 'localhost'
-SOCKET_FILE = 'file'
-SOCKET_PORT = 33000
 MKFIFO_MODE = 0o666
 
 
@@ -165,7 +160,8 @@ def get_parser() -> argparse.ArgumentParser:
             'Socket address used to connect to server. Type "default" to use '
             'localhost:33000, pass the server address and port as '
             'address:port, or prefix the path to a forwarded socket with '
-            '"file:" as file:path_to_file.'
+            f'"{SocketClient.FILE_SOCKET_SERVER}:" as '
+            f'{SocketClient.FILE_SOCKET_SERVER}:path_to_file.'
         ),
     )
     parser.add_argument(
@@ -344,41 +340,6 @@ def _start_python_terminal(  # pylint: disable=too-many-arguments
     interactive_console.embed()
 
 
-class SocketClientImpl:
-    """Socket transport implementation."""
-
-    def __init__(self, config: str):
-        connection_type: int
-        interface: Union[str, Tuple[str, int]]
-        if config == 'default':
-            connection_type = socket.AF_INET
-            interface = (SOCKET_SERVER, SOCKET_PORT)
-        else:
-            socket_server, socket_port_or_file = config.split(':')
-            if socket_server == SOCKET_FILE:
-                # Unix socket support is available on Windows 10 since April
-                # 2018. However, there is no Python support on Windows yet.
-                # See https://bugs.python.org/issue33408 for more information.
-                if not hasattr(socket, 'AF_UNIX'):
-                    raise TypeError(
-                        'Unix sockets are not supported in this environment.'
-                    )
-                connection_type = socket.AF_UNIX  # pylint: disable=no-member
-                interface = socket_port_or_file
-            else:
-                connection_type = socket.AF_INET
-                interface = (socket_server, int(socket_port_or_file))
-
-        self.socket = socket.socket(connection_type, socket.SOCK_STREAM)
-        self.socket.connect(interface)
-
-    def write(self, data: bytes):
-        self.socket.sendall(data)
-
-    def read(self, num_bytes: int = PW_RPC_MAX_PACKET_SIZE):
-        return self.socket.recv(num_bytes)
-
-
 # pylint: disable=too-many-arguments,too-many-locals
 def console(
     device: str,
@@ -503,8 +464,10 @@ def console(
     )
 
     serial_impl = serial.Serial
+    socket_impl = SocketClient
     if serial_debug:
         serial_impl = SerialWithLogging
+        socket_impl = SocketClientWithLogging
 
     timestamp_decoder = None
     if socket_addr is None:
@@ -528,7 +491,7 @@ def console(
         timestamp_decoder = milliseconds_to_string
     else:
         try:
-            socket_device = SocketClientImpl(socket_addr)
+            socket_device = socket_impl(socket_addr)
             read = socket_device.read
             write = socket_device.write
         except ValueError:

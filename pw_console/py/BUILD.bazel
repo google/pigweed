@@ -71,6 +71,7 @@ py_library(
         "pw_console/quit_dialog.py",
         "pw_console/repl_pane.py",
         "pw_console/search_toolbar.py",
+        "pw_console/socket_client.py",
         "pw_console/style.py",
         "pw_console/templates/__init__.py",
         "pw_console/test_mode.py",

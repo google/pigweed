@@ -78,6 +78,13 @@ Pigweed Console will provide a few sample plugins to serve as templates for
 creating your own plugins. These are a work in progress at the moment and not
 available at this time.
 
+Bandwidth Toolbar
+=================
+Tracks and logs the data sent and received over a serial transport like a socket
+or PySerial device. To use in a custom transport interface instantiate the
+``SerialBandwidthTracker`` and call ``track_read_data`` on incoming data bytes
+and ``track_write_data`` on outoing data bytes.
+
 Calculator
 ==========
 This plugin is similar to the full-screen `calculator.py example`_ provided in

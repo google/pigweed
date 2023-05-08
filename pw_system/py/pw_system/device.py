@@ -96,27 +96,9 @@ class Device:
                 client_impl=callback_client_impl,
             )
         else:
-
-            def write_without_encoding(data: bytes) -> None:
-                _LOG.debug(
-                    'Write %2d B: %s',
-                    len(data),
-                    ' '.join(format(x, '02x') for x in data),
-                )
-                write(data)
-
-            def read_without_encoding() -> bytes:
-                data = read()
-                _LOG.debug(
-                    'Read %2d B: %s',
-                    len(data),
-                    ' '.join(format(x, '02x') for x in data),
-                )
-                return data
-
-            channel = Channel(self.channel_id, write_without_encoding)
+            channel = Channel(self.channel_id, write)
             self.client = NoEncodingSingleChannelRpcClient(
-                read_without_encoding,
+                read,
                 self.protos,
                 channel,
                 client_impl=callback_client_impl,
