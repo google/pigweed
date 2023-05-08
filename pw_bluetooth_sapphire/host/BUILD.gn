@@ -10,7 +10,6 @@ import("//src/connectivity/bluetooth/core/bt-host/build/bt_gtest_package.gni")
 
 driver_bind_rules("bt_host_bind") {
   rules = "bt_host.bind"
-  header_output = "bt_host_bind.h"
   tests = "tests.json"
   deps = [ "//src/devices/bind/fuchsia.bluetooth" ]
 }
