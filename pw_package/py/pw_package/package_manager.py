@@ -21,6 +21,8 @@ import pathlib
 import shutil
 from typing import Dict, List, Optional, Sequence, Tuple
 
+from pw_env_setup import config_file
+
 _LOG: logging.Logger = logging.getLogger(__name__)
 
 
@@ -94,10 +96,10 @@ class Packages:
     available: Tuple[str, ...]
 
 
-class UpstreamOnlyPackageError(Exception):
+class MiddlewareOnlyPackageError(Exception):
     def __init__(self, pkg_name):
         super().__init__(
-            f'Package {pkg_name} is an upstream-only package--it should be '
+            f'Package {pkg_name} is a middleware-only package--it should be '
             'imported as a submodule and not a package'
         )
 
@@ -108,6 +110,12 @@ class PackageManager:
     def __init__(self, root: pathlib.Path):
         self._pkg_root = root
         os.makedirs(root, exist_ok=True)
+
+        config = config_file.load().get('pw', {}).get('pw_package', {})
+        self._allow_middleware_only_packages = config.get(
+            'allow_middleware_only_packages',
+            False,
+        )
 
     def install(self, package: str, force: bool = False) -> None:
         """Install the named package.
@@ -121,11 +129,11 @@ class PackageManager:
 
         pkg = _PACKAGES[package]
         if not pkg.allow_use_in_downstream:
-            if os.environ.get('PW_ROOT') != os.environ.get('PW_PROJECT_ROOT'):
+            if not self._allow_middleware_only_packages:
                 if force:
-                    _LOG.warning(str(UpstreamOnlyPackageError(pkg.name)))
+                    _LOG.warning(str(MiddlewareOnlyPackageError(pkg.name)))
                 else:
-                    raise UpstreamOnlyPackageError(pkg.name)
+                    raise MiddlewareOnlyPackageError(pkg.name)
 
         if force:
             self.remove(package)

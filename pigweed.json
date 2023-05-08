@@ -66,6 +66,9 @@
           "pw_env_setup/py/pw_env_setup/virtualenv_setup/constraint.list"
         ]
       }
+    },
+    "pw_package": {
+      "allow_middleware_only_packages": true
     }
   }
 }

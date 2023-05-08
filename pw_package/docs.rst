@@ -16,14 +16,6 @@ this module instead are listed below.
 * The dependency needs to be "installed" into the system in some manner beyond
   just extraction and thus isn't a good match for distribution with CIPD.
 
-Pigweed itself includes a number of packages that simply clone git repositories.
-In general, these should not be used by projects using Pigweed. Pigweed uses
-these packages to avoid using submodules so downstream projects don't have
-multiple copies of a given repository in their source tree. Projects using
-Pigweed should use submodules instead of packages because submodules are
-supported by much more mature tooling: git. To install these packages anyway,
-use ``--force`` on the command line or ``force=True`` in Python code.
-
 -----
 Usage
 -----
@@ -47,6 +39,18 @@ has several subcommands.
 
 By default ``pw package`` operates on the directory referenced by
 ``PW_PACKAGE_ROOT``.
+
+.. _module-pw_package-middleware-only-packages:
+
+Middleware-Only Packages
+~~~~~~~~~~~~~~~~~~~~~~~~
+Pigweed itself includes a number of packages that simply clone git repositories.
+In general, these should not be used by projects using Pigweed. Pigweed uses
+these packages to avoid using submodules so downstream projects don't have
+multiple copies of a given repository in their source tree. Projects using
+Pigweed should use submodules instead of packages because submodules are
+supported by much more mature tooling: git. To install these packages anyway,
+use ``--force`` on the command line or ``force=True`` in Python code.
 
 -----------
 Configuring
@@ -119,3 +123,22 @@ file is based off of ``pw_package/pigweed_packages.py``.
 
   def main(argv=None) -> int:
       return package_manager.run(**vars(package_manager.parse_args(argv)))
+
+Options
+~~~~~~~
+Options for code formatting can be specified in the ``pigweed.json`` file
+(see also :ref:`SEED-0101 <seed-0101>`). This is currently limited to one
+option.
+
+* ``allow_middleware_only_packages``: Allow middleware-only packages to be
+  installed. See :ref:`module-pw_package-middleware-only-packages` for more.
+
+.. code-block::
+
+   {
+     "pw": {
+       "pw_package": {
+         "allow_middleware_only_packages": true
+       }
+     }
+   }
