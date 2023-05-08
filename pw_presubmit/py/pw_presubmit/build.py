@@ -563,34 +563,64 @@ def gn_gen_check(ctx: PresubmitContext):
     gn_gen(ctx, gn_check=True)
 
 
+Item = Union[int, str]
+Value = Union[Item, Sequence[Item]]
+ValueCallable = Callable[[PresubmitContext], Value]
+InputItem = Union[Item, ValueCallable]
+InputValue = Union[InputItem, Sequence[InputItem]]
+
+
+def _value(ctx: PresubmitContext, val: InputValue) -> Value:
+    """Process any lambdas inside val
+
+    val is a single value or a list of values, any of which might be a lambda
+    that needs to be resolved. Call each of these lambdas with ctx and replace
+    the lambda with the result. Return the updated top-level structure.
+    """
+
+    # TODO(mohrr) Use typing.TypeGuard instead of "type: ignore"
+
+    if isinstance(val, (str, int)):
+        return val
+    if callable(val):
+        return val(ctx)
+
+    result: List[Item] = []
+    for item in val:
+        if callable(item):
+            call_result = item(ctx)
+            if isinstance(item, (int, str)):
+                result.append(call_result)
+            else:  # Sequence.
+                result.extend(call_result)  # type: ignore
+        elif isinstance(item, (int, str)):
+            result.append(item)
+        else:  # Sequence.
+            result.extend(item)
+    return result
+
+
 _CtxMgrLambda = Callable[[PresubmitContext], ContextManager]
 _CtxMgrOrLambda = Union[ContextManager, _CtxMgrLambda]
 
 
-class GnGenNinja(Check):
-    """Thin wrapper of Check for steps that just call gn/ninja.
-
-    Runs gn gen, ninja, then gn check.
-    """
+class _NinjaBase(Check):
+    """Thin wrapper of Check for steps that call ninja."""
 
     def __init__(
         self,
         *args,
         packages: Sequence[str] = (),
-        gn_args: Optional[  # pylint: disable=redefined-outer-name
-            Dict[str, Any]
-        ] = None,
         ninja_contexts: Sequence[_CtxMgrOrLambda] = (),
         ninja_targets: Union[str, Sequence[str], Sequence[Sequence[str]]] = (),
         coverage: bool = False,
         **kwargs,
     ):
-        """Initializes a GnGenNinja object.
+        """Initializes a _NinjaBase object.
 
         Args:
             *args: Passed on to superclass.
             packages: List of 'pw package' packages to install.
-            gn_args: Dict of GN args.
             ninja_contexts: List of context managers to apply around ninja
                 calls.
             ninja_targets: Single ninja target, list of Ninja targets, or list
@@ -599,9 +629,8 @@ class GnGenNinja(Check):
             coverage: Whether to collect coverage data.
             **kwargs: Passed on to superclass.
         """
-        super().__init__(self._substeps(), *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._packages: Sequence[str] = packages
-        self._gn_args: Dict[str, Any] = gn_args or {}
         self._ninja_contexts: Tuple[_CtxMgrOrLambda, ...] = tuple(
             ninja_contexts
         )
@@ -615,14 +644,14 @@ class GnGenNinja(Check):
         if ninja_targets and all_strings != any_strings:
             raise ValueError(repr(ninja_targets))
 
-        self.ninja_target_lists: Tuple[Tuple[str, ...], ...]
+        self._ninja_target_lists: Tuple[Tuple[str, ...], ...]
         if all_strings:
             targets: List[str] = []
             for target in ninja_targets:
                 targets.append(target)  # type: ignore
-            self.ninja_target_lists = (tuple(targets),)
+            self._ninja_target_lists = (tuple(targets),)
         else:
-            self.ninja_target_lists = tuple(tuple(x) for x in ninja_targets)
+            self._ninja_target_lists = tuple(tuple(x) for x in ninja_targets)
 
     def _install_package(  # pylint: disable=no-self-use
         self,
@@ -630,50 +659,6 @@ class GnGenNinja(Check):
         package: str,
     ) -> PresubmitResult:
         install_package(ctx, package)
-        return PresubmitResult.PASS
-
-    def _gn_gen(self, ctx: PresubmitContext) -> PresubmitResult:
-        Item = Union[int, str]
-        Value = Union[Item, Sequence[Item]]
-        ValueCallable = Callable[[PresubmitContext], Value]
-        InputItem = Union[Item, ValueCallable]
-        InputValue = Union[InputItem, Sequence[InputItem]]
-
-        # TODO(mohrr) Use typing.TypeGuard instead of "type: ignore"
-
-        def value(val: InputValue) -> Value:
-            if isinstance(val, (str, int)):
-                return val
-            if callable(val):
-                return val(ctx)
-
-            result: List[Item] = []
-            for item in val:
-                if callable(item):
-                    call_result = item(ctx)
-                    if isinstance(item, (int, str)):
-                        result.append(call_result)
-                    else:  # Sequence.
-                        result.extend(call_result)  # type: ignore
-                elif isinstance(item, (int, str)):
-                    result.append(item)
-                else:  # Sequence.
-                    result.extend(item)
-            return result
-
-        args: Dict[str, Any] = {}
-        if self._collect_coverage:
-            args['pw_toolchain_COVERAGE_ENABLED'] = True
-            args['pw_build_PYTHON_TEST_COVERAGE'] = True
-            args['pw_C_OPTIMIZATION_LEVELS'] = ('debug',)
-
-            if ctx.incremental:
-                args['pw_toolchain_PROFILE_SOURCE_FILES'] = [
-                    f'//{x.relative_to(ctx.root)}' for x in ctx.paths
-                ]
-
-        args.update({k: value(v) for k, v in self._gn_args.items()})
-        gn_gen(ctx, gn_check=False, **args)  # type: ignore
         return PresubmitResult.PASS
 
     @contextlib.contextmanager
@@ -709,7 +694,7 @@ class GnGenNinja(Check):
 
         return PresubmitResult.PASS
 
-    def _substeps(self) -> Iterator[SubStep]:
+    def _package_substeps(self) -> Iterator[SubStep]:
         for package in self._packages:
             yield SubStep(
                 f'install {package} package',
@@ -717,10 +702,9 @@ class GnGenNinja(Check):
                 (package,),
             )
 
-        yield SubStep('gn gen', self._gn_gen)
-
+    def _ninja_substeps(self) -> Iterator[SubStep]:
         targets_parts = set()
-        for targets in self.ninja_target_lists:
+        for targets in self._ninja_target_lists:
             targets_part = " ".join(targets)
             maxlen = 70
             if len(targets_part) > maxlen:
@@ -729,8 +713,59 @@ class GnGenNinja(Check):
             targets_parts.add(targets_part)
             yield SubStep(f'ninja {targets_part}', self._ninja, (targets,))
 
+    def _coverage_substeps(self) -> Iterator[SubStep]:
+        if self._collect_coverage:
+            yield SubStep('coverage', self._coverage)
+
+
+class GnGenNinja(_NinjaBase):
+    """Thin wrapper of Check for steps that just call gn/ninja.
+
+    Runs gn gen, ninja, then gn check.
+    """
+
+    def __init__(
+        self,
+        *args,
+        gn_args: Optional[  # pylint: disable=redefined-outer-name
+            Dict[str, Any]
+        ] = None,
+        **kwargs,
+    ):
+        """Initializes a GnGenNinja object.
+
+        Args:
+            *args: Passed on to superclass.
+            gn_args: Dict of GN args.
+            **kwargs: Passed on to superclass.
+        """
+        super().__init__(self._substeps(), *args, **kwargs)
+        self._gn_args: Dict[str, Any] = gn_args or {}
+
+    def _gn_gen(self, ctx: PresubmitContext) -> PresubmitResult:
+        args: Dict[str, Any] = {}
+        if self._collect_coverage:
+            args['pw_toolchain_COVERAGE_ENABLED'] = True
+            args['pw_build_PYTHON_TEST_COVERAGE'] = True
+            args['pw_C_OPTIMIZATION_LEVELS'] = ('debug',)
+
+            if ctx.incremental:
+                args['pw_toolchain_PROFILE_SOURCE_FILES'] = [
+                    f'//{x.relative_to(ctx.root)}' for x in ctx.paths
+                ]
+
+        args.update({k: _value(ctx, v) for k, v in self._gn_args.items()})
+        gn_gen(ctx, gn_check=False, **args)  # type: ignore
+        return PresubmitResult.PASS
+
+    def _substeps(self) -> Iterator[SubStep]:
+        yield from self._package_substeps()
+
+        yield SubStep('gn gen', self._gn_gen)
+
+        yield from self._ninja_substeps()
+
         # Run gn check after building so it can check generated files.
         yield SubStep('gn check', gn_check)
 
-        if self._collect_coverage:
-            yield SubStep('coverage', self._coverage)
+        yield from self._coverage_substeps()
