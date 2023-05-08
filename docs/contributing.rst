@@ -4,11 +4,7 @@
 Contributing
 ============
 We'd love to accept your patches and contributions to Pigweed. There are just a
-few small guidelines you need to follow. Before making or sending major
-changes, please reach out on the `mailing list
-<https://groups.google.com/forum/#!forum/pigweed>`_ first to ensure the changes
-make sense for upstream. We generally go through a design phase before making
-large changes.
+few small guidelines you need to follow.
 
 Before participating in our community, please take a moment to review our
 :ref:`docs-code-of-conduct`. We expect everyone who interacts with the project
@@ -36,8 +32,34 @@ One-time contributor setup
 #. Install the Pigweed presubmit check hook with ``pw presubmit --install``.
    Remember to :ref:`activate-pigweed-environment` first!
 
+Presubmission process
+^^^^^^^^^^^^^^^^^^^^^
+Before making or sending major changes or SEEDs, please reach out in our
+`chat room <https://discord.gg/M9NSeTA>`_ or on the `mailing list
+<https://groups.google.com/forum/#!forum/pigweed>`_ first to ensure the changes
+make sense for upstream. We generally go through a design phase before making
+large changes. See :ref:`SEED-0001` for a description of this process; but
+please discuss with us before writing a full SEED. Let us know of any
+priorities, timelines, requirements, and limitations ahead of time.
+
+For minor changes that don't fit the SEED process, follow the `Small changes`_
+guidance and the `Change submission process`_.
+
+.. warning::
+   Skipping communicating with us before doing large amounts of work risks
+   accepting your contribution. Communication is key!
+
 Change submission process
 ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. note::
+   A change is a single git commit, and is also known as Change List or CL for
+   short.
+
+.. tip::
+   Follow `Small changes`_ for a smooth submission process.
+
+#. Go through the `Presubmission process`_ and review this document's guidance.
 #. Ensure all files include the correct copyright and license headers.
 #. Include any necessary changes to the documentation.
 #. Run :ref:`module-pw_presubmit` to detect style or compilation issues before
@@ -147,6 +169,53 @@ have Gerrit automatically choose an appropriate person to review your change.
 In the future we may support GitHub pull requests, but until that time we will
 close GitHub pull requests and ask that the changes be uploaded to Gerrit
 instead.
+
+Small changes
+^^^^^^^^^^^^^
+Small changes are encouraged because they:
+
+* Get reviewed more quickly, easily, and thoroughly.
+* Are less likely to introduce bugs.
+* Create less wasted work if they are rejected.
+* Are easier to merge.
+* Are easier to design well.
+* Block work less since work can continued while the change is reviewed.
+* Are simpler to roll back.
+
+A small change can be defined as one self-contained change, which means it
+makes a mininimal change addressing one thing, without breaking other users. It
+is not necessarily defined by the number of lines changed. However, as a rule of
+thumb, 100 changed lines is considered a small change while 1000 lines is too
+large.
+
+A small change includes related tests, sample usage, and documentation where
+applicable. It includes everything the reviewer needs to understand the change
+except for future development.
+
+While reviewers have the discretion to reject a large change, you can work with
+your reviewer to figure out how to proceed breaking changes apart.
+
+Large changes aren't bad when deleting or moving files, moving large contents
+without modifications, adding generated code, or an agreement is reached with
+the reviewer in advance.
+
+.. tip::
+   One way to split up a large change is to split it up by groupings of files
+   in smaller but self-contained changes. See `Splitting by Files
+   <https://google.github.io/eng-practices/review/developer/small-cls.html#splitting-files>`_
+   for examples.
+
+.. tip::
+   Separating functional changes from formatting cleanup changes helps create
+   small changes.
+
+.. tip::
+   Separating refactoring from features and bug fixes also helps create small
+   changes.
+
+Read `Google's Eng-Practices Small CLs
+<https://google.github.io/eng-practices/review/developer/small-cls.html>`_ for
+more details.
 
 Instructions for reviewers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
