@@ -1800,15 +1800,33 @@ TEST(InlineString, ComparisonOperators_NullTerminatedString) {
 #define PW_STRING_WRAP_TEST_EXPANSION(expr)
 #endif  // __cpp_constexpr >= 201603L
 
-#define TEST_FOR_TYPES(test_macro, ...)                                  \
+#define TEST_FOR_TYPES_BASE(test_macro, ...)                             \
   PW_STRING_WRAP_TEST_EXPANSION(test_macro(char, __VA_ARGS__));          \
   PW_STRING_WRAP_TEST_EXPANSION(test_macro(unsigned char, __VA_ARGS__)); \
   PW_STRING_WRAP_TEST_EXPANSION(test_macro(signed char, __VA_ARGS__));   \
-  PW_STRING_WRAP_TEST_EXPANSION(test_macro(short, __VA_ARGS__));         \
-  PW_STRING_WRAP_TEST_EXPANSION(test_macro(int, __VA_ARGS__));           \
-  PW_STRING_WRAP_TEST_EXPANSION(test_macro(unsigned, __VA_ARGS__));      \
-  PW_STRING_WRAP_TEST_EXPANSION(test_macro(long, __VA_ARGS__));          \
-  PW_STRING_WRAP_TEST_EXPANSION(test_macro(long long, __VA_ARGS__))
+  PW_STRING_WRAP_TEST_EXPANSION(test_macro(wchar_t, __VA_ARGS__));
+
+#if PW_CXX_STANDARD_IS_SUPPORTED(11)
+#define TEST_FOR_TYPES_CXX11(test_macro, ...)                       \
+  TEST_FOR_TYPES_BASE(test_macro, __VA_ARGS__)                      \
+  PW_STRING_WRAP_TEST_EXPANSION(test_macro(char16_t, __VA_ARGS__)); \
+  PW_STRING_WRAP_TEST_EXPANSION(test_macro(char32_t, __VA_ARGS__));
+#else
+#define TEST_FOR_TYPES_CXX11(test_macro, ...) \
+  TEST_FOR_TYPES_BASE(test_macro, __VA_ARGS__)
+#endif  // PW_CXX_STANDARD_IS_SUPPORTED(11)
+
+#if PW_CXX_STANDARD_IS_SUPPORTED(20)
+#define TEST_FOR_TYPES_CXX20(test_macro, ...)   \
+  TEST_FOR_TYPES_CXX11(test_macro, __VA_ARGS__) \
+  PW_STRING_WRAP_TEST_EXPANSION(test_macro(char8_t, __VA_ARGS__));
+#else
+#define TEST_FOR_TYPES_CXX20(test_macro, ...) \
+  TEST_FOR_TYPES_CXX11(test_macro, __VA_ARGS__)
+#endif  // PW_CXX_STANDARD_IS_SUPPORTED(20)
+
+#define TEST_FOR_TYPES(test_macro, ...) \
+  TEST_FOR_TYPES_CXX20(test_macro, __VA_ARGS__)
 
 TEST(BasicStrings, Empty) {
 #define BASIC_STRINGS_EMPTY(type, capacity)                         \
