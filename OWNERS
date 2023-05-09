@@ -1,6 +1,7 @@
 # OWNERS for all modules. Please see individual modules for their OWNERS files.
 #
 # Note: a Pigweed core team member should be among the OWNERS for each module.
+aarongreen@google.com
 alizhang@google.com
 amontanez@google.com
 cachinchilla@google.com
