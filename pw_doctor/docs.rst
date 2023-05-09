@@ -28,3 +28,24 @@ Checks carried out by pw_doctor include:
 
 .. note::
   The documentation for this module is currently incomplete.
+
+Configuration
+=============
+Options for ``pw doctor`` can be specified in the ``pigweed.json`` file
+(see also :ref:`SEED-0101 <seed-0101>`). This is currently limited to one
+option.
+
+* ``new_bug_url``: What link is given to users be given for filing bugs. By
+  default this is to the `Pigweed Bug Tracker_`.
+
+.. _Pigweed Bug Tracker: https://issues.pigweed.dev/new
+
+.. code-block::
+
+   {
+     "pw": {
+       "pw_doctor": {
+         "new_bug_url": "https://example.com/bugs/new"
+       }
+     }
+   }

@@ -28,6 +28,7 @@ from typing import Callable, Iterable, List, Optional, Set
 
 import pw_cli.pw_command_plugins
 import pw_env_setup.cipd_setup.update as cipd_update
+from pw_env_setup import config_file
 
 
 def call_stdout(*args, **kwargs):
@@ -483,6 +484,9 @@ def symlinks(ctx: DoctorContext):
 def run_doctor(strict=False, checks=None):
     """Run all the Check subclasses defined in this file."""
 
+    config = config_file.load().get('pw', {}).get('pw_doctor', {})
+    new_bug_url = config.get('new_bug_url', 'https://issues.pigweed.dev/new')
+
     if checks is None:
         checks = tuple(CHECKS)
 
@@ -496,8 +500,8 @@ def run_doctor(strict=False, checks=None):
         doctor.log.info(
             "Your environment setup has completed, but something isn't right "
             'and some things may not work correctly. You may continue with '
-            'development, but please seek support at '
-            'https://issues.pigweed.dev/new or by reaching out to your team.'
+            f'development, but please seek support at {new_bug_url} or by '
+            'reaching out to your team.'
         )
     else:
         doctor.log.info('Environment passes all checks!')
