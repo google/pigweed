@@ -34,11 +34,12 @@ void LogEgressThreadNotRunningError() {
 }
 
 void LogFailedToProcessPacket(pw::Status status) {
-  PW_LOG_ERROR("LocalRpcEgress: failed to process packet: %s", status.str());
+  PW_LOG_ERROR("LocalRpcEgress: failed to process packet. Status %d",
+               static_cast<int>(status.code()));
 }
 
 void LogFailedToAccessPacket(pw::Status status) {
-  PW_LOG_ERROR("LocalRpcEgress: failed to access packet buffer: %s",
-               status.str());
+  PW_LOG_ERROR("LocalRpcEgress: failed to access packet buffer. Status %d",
+               static_cast<int>(status.code()));
 }
 }  // namespace pw::rpc::internal
