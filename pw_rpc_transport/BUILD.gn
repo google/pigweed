@@ -38,7 +38,10 @@ pw_test_group("tests") {
   ]
 
   if (pw_thread_THREAD_BACKEND != "") {
-    tests += [ ":local_rpc_egress_test" ]
+    tests += [
+      ":egress_ingress_test",
+      ":local_rpc_egress_test",
+    ]
   }
 }
 
@@ -170,6 +173,34 @@ pw_test("simple_framing_test") {
     "$dir_pw_bytes",
     "$dir_pw_log",
     "$dir_pw_status",
+  ]
+}
+
+pw_source_set("egress_ingress") {
+  public = [ "public/pw_rpc_transport/egress_ingress.h" ]
+  sources = [ "egress_ingress.cc" ]
+  public_deps = [
+    ":hdlc_framing",
+    ":rpc_transport",
+    ":simple_framing",
+    "$dir_pw_bytes",
+    "$dir_pw_metric",
+    "$dir_pw_rpc:client",
+    "$dir_pw_status",
+  ]
+  deps = [ "$dir_pw_log" ]
+}
+
+pw_test("egress_ingress_test") {
+  sources = [ "egress_ingress_test.cc" ]
+  deps = [
+    ":egress_ingress",
+    ":service_registry",
+    ":test_protos.pwpb_rpc",
+    "$dir_pw_bytes",
+    "$dir_pw_metric",
+    "$dir_pw_status",
+    "$dir_pw_sync:thread_notification",
   ]
 }
 

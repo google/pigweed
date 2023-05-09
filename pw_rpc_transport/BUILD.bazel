@@ -173,6 +173,38 @@ pw_cc_test(
     ],
 )
 
+pw_cc_library(
+    name = "egress_ingress",
+    srcs = [
+        "egress_ingress.cc",
+    ],
+    hdrs = ["public/pw_rpc_transport/egress_ingress.h"],
+    deps = [
+        ":hdlc_framing",
+        ":rpc_transport",
+        ":simple_framing",
+        "//pw_bytes",
+        "//pw_log",
+        "//pw_metric:metric",
+        "//pw_rpc:client_server",
+        "//pw_status",
+    ],
+)
+
+pw_cc_test(
+    name = "egress_ingress_test",
+    srcs = ["egress_ingress_test.cc"],
+    deps = [
+        ":egress_ingress",
+        ":service_registry",
+        ":test_protos_pwpb_rpc",
+        "//pw_bytes",
+        "//pw_metric:metric",
+        "//pw_status",
+        "//pw_sync:thread_notification",
+    ],
+)
+
 pw_proto_filegroup(
     name = "test_protos_and_options",
     srcs = ["internal/test.proto"],
