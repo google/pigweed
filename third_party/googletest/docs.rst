@@ -4,8 +4,10 @@
 GoogleTest
 ==========
 The ``$dir_pw_third_party/googletest/`` module provides various helpers to
-optionally use full upstream GoogleTest/GoogleMock with
+optionally use full upstream `GoogleTest/GoogleMock`__ with
 :ref:`module-pw_unit_test`.
+
+.. __: https://github.com/google/googletest
 
 ----------------------------------------
 Using upstream GoogleTest and GoogleMock
@@ -13,35 +15,59 @@ Using upstream GoogleTest and GoogleMock
 If you want to use the full upstream GoogleTest/GoogleMock, you must do the
 following:
 
-Submodule
-=========
 Add GoogleTest to your workspace with the following command.
 
 .. code-block:: sh
 
-  git submodule add https://github.com/google/googletest third_party/googletest
+   git submodule add https://github.com/google/googletest third_party/googletest
 
-GN
-==
-* Set the GN var ``dir_pw_third_party_googletest`` to the location of the
-  GoogleTest source. If you used the command above this will be
-  ``//third_party/googletest``.
-* Set the GN var ``pw_unit_test_MAIN = dir_pigweed + "/third_party/googletest:gmock_main"``.
-* Set the GN var
-  ``pw_unit_test_GOOGLETEST_BACKEND = "//third_party/googletest"``.
+Configure ``pw_unit_test`` to use upstream GoogleTest/GoogleMock.
 
-Pigweed unit tests that do not work with upstream GoogleTest are disabled using
-``enable_if = pw_unit_test_GOOGLETEST_BACKEND == "$dir_pw_unit_test:light"``
+.. tab-set::
 
-CMake
-=====
-* Set the ``dir_pw_third_party_googletest`` to the location of the
-  GoogleTest source.
-* Set the var ``pw_unit_test_MAIN`` to ``pw_third_party.googletest.gmock_main``.
-* Set the var ``pw_unit_test_GOOGLETEST_BACKEND`` to
-  ``pw_third_party.googletest``.
+   .. tab-item:: GN
+
+      * Set the GN var ``dir_pw_third_party_googletest`` to the location of the
+        GoogleTest source. If you used the command above this will be
+        ``//third_party/googletest``.
+      * Set the GN var ``pw_unit_test_MAIN`` to
+        ``dir_pigweed + "/third_party/googletest:gmock_main"``.
+      * Set the GN var ``pw_unit_test_GOOGLETEST_BACKEND`` to
+        ``"//third_party/googletest"``.
+
+      Pigweed unit tests that do not work with upstream GoogleTest can be
+      disabled by setting ``enable_if`` to
+      ``pw_unit_test_GOOGLETEST_BACKEND == "$dir_pw_unit_test:light"``.
+
+   .. tab-item:: CMake
+
+      * Set the ``dir_pw_third_party_googletest`` to the location of the
+        GoogleTest source.
+      * Set the var
+        ``pw_unit_test_MAIN`` to ``pw_third_party.googletest.gmock_main``.
+      * Set the var ``pw_unit_test_GOOGLETEST_BACKEND`` to
+        ``pw_third_party.googletest``.
+
+   .. tab-item:: Bazel
+      Set the following `label flags`_, either in your `target config`_ or on
+      the command line:
+
+      * ``pw_unit_test_googletest_backend`` to
+        ``@com_google_googletest//:gtest``.
+      * ``pw_unit_test_main`` to ``@com_google_googletest//:gtest_main``.
+
+      For example:
+
+      .. code-block:: sh
+
+         bazel test //... \
+            --@pigweed_config//:pw_unit_test_googletest_backend=@com_google_googletest//:gtest \
+            --@pigweed_config//:pw_unit_test_main=@com_google_googletest//:gtest_main
 
 .. note::
 
-  Not all unit tests build properly with upstream GoogleTest yet. Thos is a
+  Not all unit tests build properly with upstream GoogleTest yet. This is a
   work in progress.
+
+.. _target config: :ref:`_docs-build_system-bazel_configuration`
+.. _label flags: :ref:`_docs-build_system-bazel_flags`

@@ -722,6 +722,8 @@ affecting your ability build your entire repo for a given Pigweed target.
 For more detailed information on how to use the target_compatible_with attribute
 please see `Bazel target_compatible_with reference`_.
 
+.. _docs-build_system-bazel_flags:
+
 Flags/build settings
 ^^^^^^^^^^^^^^^^^^^^
 Flags/build settings are particularly useful in scenarios where you may want to

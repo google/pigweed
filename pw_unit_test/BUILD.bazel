@@ -61,6 +61,21 @@ pw_cc_library(
     ],
 )
 
+# Identifies when the light framework is being used.
+config_setting(
+    name = "light_setting",
+    flag_values = {
+        "@pigweed_config//:pw_unit_test_googletest_backend": "@pigweed//pw_unit_test:light",
+    },
+)
+
+config_setting(
+    name = "gtest_setting",
+    flag_values = {
+        "@pigweed_config//:pw_unit_test_googletest_backend": "@com_google_googletest//:gtest",
+    },
+)
+
 pw_cc_library(
     name = "event_handler",
     hdrs = ["public/pw_unit_test/event_handler.h"],
@@ -74,6 +89,18 @@ pw_cc_library(
     deps = [
         ":event_handler",
         "//pw_preprocessor",
+    ],
+)
+
+pw_cc_library(
+    name = "googletest_handler_adapter",
+    srcs = ["googletest_handler_adapter.cc"],
+    hdrs = ["public/pw_unit_test/googletest_handler_adapter.h"],
+    includes = ["public"],
+    deps = [
+        ":event_handler",
+        "//pw_preprocessor",
+        "@com_google_googletest//:gtest",
     ],
 )
 
@@ -140,13 +167,22 @@ pw_cc_library(
     ],
 )
 
+# Provides logging to either the light framework or an external GoogleTest.
+pw_cc_library(
+    name = "logging",
+    deps = [":logging_event_handler"] + select({
+        ":gtest_setting": [":googletest_handler_adapter"],
+        "//conditions:default": [],
+    }),
+)
+
 pw_cc_binary(
     name = "logging_main",
     srcs = [
         "logging_main.cc",
     ],
     deps = [
-        ":logging_event_handler",
+        ":logging",
         "//pw_unit_test",
     ],
 )
@@ -169,16 +205,27 @@ pw_proto_library(
 
 pw_cc_library(
     name = "rpc_service",
-    srcs = [
-        "rpc_light_event_handler.cc",
-        "unit_test_service.cc",
-    ],
+    srcs = ["unit_test_service.cc"] + select({
+        ":light_setting": ["rpc_light_event_handler.cc"],
+        "//conditions:default": [":rpc_gtest_event_handler.cc"],
+    }),
     hdrs = [
+        "public/pw_unit_test/config.h",
         "public/pw_unit_test/unit_test_service.h",
-        "rpc_light_public/pw_unit_test/internal/rpc_event_handler.h",
-    ],
-    includes = ["rpc_light_public"],
+    ] + select({
+        ":light_setting": [
+            "rpc_light_public/pw_unit_test/internal/rpc_event_handler.h",
+        ],
+        "//conditions:default": [
+            "rpc_gtest_public/pw_unit_test/internal/rpc_event_handler.h",
+        ],
+    }),
+    includes = ["public"] + select({
+        ":light_setting": ["rpc_light_public"],
+        "//conditions:default": ["rpc_gtest_public"],
+    }),
     deps = [
+        ":event_handler",
         ":pw_unit_test",
         ":unit_test_cc.pwpb",
         ":unit_test_cc.raw_rpc",
@@ -223,6 +270,10 @@ pw_cc_library(
 pw_cc_test(
     name = "static_library_support_test",
     srcs = ["static_library_support_test.cc"],
+    target_compatible_with = select({
+        "//pw_unit_test:light_setting": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         ":static_library_support",
         ":tests_in_archive",
@@ -233,6 +284,10 @@ pw_cc_test(
 pw_cc_test(
     name = "framework_test",
     srcs = ["framework_test.cc"],
+    target_compatible_with = select({
+        "//pw_unit_test:light_setting": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         ":pw_unit_test",
         "//pw_assert",
@@ -249,16 +304,4 @@ filegroup(
     #     "//pw_log",
     #     "//pw_rpc/system_server",
     # ],
-)
-
-# GTest is not yet supported in the Bazel build. This filegroup silences
-# warnings about these files not being included in the Bazel build.
-filegroup(
-    name = "gtest_support",
-    srcs = [
-        "googletest_handler_adapter.cc",
-        "public/pw_unit_test/googletest_handler_adapter.h",
-        "rpc_gtest_event_handler.cc",
-        "rpc_gtest_public/pw_unit_test/internal/rpc_event_handler.h",
-    ],
 )

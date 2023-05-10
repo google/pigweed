@@ -568,6 +568,66 @@ Build arguments
    Type: string (path to a .cmake file)
    Usage: toolchain-controlled only
 
+Bazel
+-----
+To define simple unit tests, set the ``pw_unit_test_MAIN`` build variable to a
+target which configures the test framework as described in the
+:ref:`running-tests` section, and use the ``pw_cc_test`` rule to register your
+test code.
+
+.. code-block::
+
+   load("//pw_build:pigweed.bzl", "pw_cc_test")
+
+   pw_cc_test(
+       name = "foo_test",
+       srcs = ["foo_test.cc"],
+   }
+
+.. _module-pw_unit_test-pw_cc_test:
+
+
+pw_cc_test rule
+```````````````
+``pw_cc_test`` is a wrapper for `cc_test`_ that provides some defaults,
+such as a dep on ``@pigweed_config//:pw_unit_test_main``. It supports and passes
+through all the arguments recognized by ``cc_test``. Notably, tests can be
+enabled or disabled using ``target_compatible_with``. For example, the following
+test is skipped when `using upstream GoogleTest`_:
+
+.. code-block::
+
+   load("//pw_build:pigweed.bzl", "pw_cc_test")
+
+   pw_cc_test(
+       name = "no_upstream_test",
+       srcs = ["no_upstream_test.cc"],
+        target_compatible_with = select({
+            "//pw_unit_test:light_setting": [],
+            "//conditions:default": ["@platforms//:incompatible"],
+        }),
+   }
+
+.. _cc_test: https://bazel.build/reference/be/c-cpp#cc_test
+
+
+Build arguments
+```````````````
+.. option:: pw_unit_test_googletest_backend <target>
+
+   The GoogleTest implementation to use for Pigweed unit tests. This library
+   provides "gtest/gtest.h" and related headers. Defaults to
+   ``"@pigweed//pw_unit_test:light"``, which implements a subset of GoogleTest.
+
+   Type: string (Bazel target label)
+   Usage: toolchain-controlled only
+
+.. option:: pw_unit_test_main <target>
+
+   Implementation of a main function for ``pw_cc_test`` unit test binaries.
+
+   Type: string (Bazel target label)
+   Usage: toolchain-controlled only
 
 RPC service
 ===========

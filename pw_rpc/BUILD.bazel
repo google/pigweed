@@ -243,7 +243,7 @@ pw_cc_library(
         "//pw_log",
         "//pw_stream:socket_stream",
         "//pw_unit_test",
-        "//pw_unit_test:logging_event_handler",
+        "//pw_unit_test:logging",
     ],
 )
 

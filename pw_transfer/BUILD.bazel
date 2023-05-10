@@ -183,6 +183,10 @@ pw_cc_test(
 pw_cc_test(
     name = "transfer_thread_test",
     srcs = ["transfer_thread_test.cc"],
+    target_compatible_with = select({
+        "//pw_unit_test:light_setting": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
     deps = [
         ":pw_transfer",
         ":test_helpers",
