@@ -1007,16 +1007,20 @@ OTHER_CHECKS = (
     # keep-sorted: end
 )
 
+ARDUINO_PICO = (
+    gn_teensy_build,
+    gn_pico_build,
+    gn_pw_system_demo_build,
+)
+
 # The misc program differs from other_checks in that checks in the misc
 # program block CQ on Linux.
 MISC = (
     # keep-sorted: start
+    ARDUINO_PICO,
     gn_emboss_build,
     gn_googletest_build,
     gn_nanopb_build,
-    gn_pico_build,
-    gn_pw_system_demo_build,
-    gn_teensy_build,
     # keep-sorted: end
 )
 
@@ -1091,6 +1095,7 @@ FULL = (
 
 PROGRAMS = Programs(
     # keep-sorted: start
+    arduino_pico=ARDUINO_PICO,
     full=FULL,
     lintformat=LINTFORMAT,
     misc=MISC,
