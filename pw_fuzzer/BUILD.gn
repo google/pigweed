@@ -14,6 +14,7 @@
 
 import("//build_overrides/pigweed.gni")
 
+import("$dir_pw_build/error.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_fuzzer/fuzzer.gni")
@@ -65,11 +66,6 @@ pw_source_set("pw_fuzzer") {
   public_deps = [ "$dir_pw_log" ]
 }
 
-pw_source_set("fuzz_test_stub") {
-  public = [ "public_overrides/fuzztest/fuzztest.h" ]
-  public_configs = [ ":public_overrides_include_path" ]
-}
-
 pw_source_set("run_as_unit_test") {
   configs = [ ":public_include_path" ]
   sources = [ "pw_fuzzer_disabled.cc" ]
@@ -77,6 +73,51 @@ pw_source_set("run_as_unit_test") {
     dir_pw_log,
     dir_pw_unit_test,
   ]
+}
+
+# Unit tests with a dep on this target can include FuzzTest-style fuzzers.
+pw_source_set("fuzztest") {
+  if (dir_pw_third_party_fuzztest != "" && pw_toolchain_FUZZING_ENABLED) {
+    public_deps = [ "$dir_pw_third_party/fuzztest/fuzztest" ]
+    public_configs = [
+      "$dir_pw_third_party/abseil-cpp/configs:disabled_warnings",
+      "$dir_pw_third_party/re2/configs:disabled_warnings",
+      "$dir_pw_third_party/fuzztest/configs:disabled_warnings",
+    ]
+  } else {
+    public = [ "public_overrides/fuzztest/fuzztest.h" ]
+    public_configs = [ ":public_overrides_include_path" ]
+  }
+}
+
+# This target should only be when defining a fuzzing toolchain, e.g. to set
+# `pw_unit_test_GOOGLETEST_BACKEND = "$dir_pw_fuzzer:gtest"
+if (dir_pw_third_party_googletest != "") {
+  group("gtest") {
+    public_deps = [ "$dir_pw_third_party/googletest" ]
+  }
+} else {
+  pw_error("gtest") {
+    message_lines = [
+      "pw_unit_test_GOOGLETEST_BACKEND is set to dir_pw_fuzzer:gtest, ",
+      "but dir_pw_third_party_googletest is not set.",
+    ]
+  }
+}
+
+# This target should only be when defining a fuzzing toolchain, e.g. to set
+# `pw_unit_test_MAIN = "$dir_pw_fuzzer:fuzztest_main"
+if (dir_pw_third_party_fuzztest != "") {
+  group("fuzztest_main") {
+    deps = [ "$dir_pw_third_party/fuzztest/fuzztest:fuzztest_gtest_main" ]
+  }
+} else {
+  pw_error("fuzztest_main") {
+    message_lines = [
+      "pw_unit_test_MAIN is set to dir_pw_fuzzer:fuzztest_main, ",
+      "but dir_pw_third_party_fuzztest is not set.",
+    ]
+  }
 }
 
 # See https://llvm.org/docs/LibFuzzer.html#fuzzer-friendly-build-mode

@@ -403,6 +403,7 @@ pw_source_set("meta") {
 
 # Generated from //fuzztest:regexp_dfa
 pw_source_set("regexp_dfa") {
+  check_includes = false
   public =
       [ "$dir_pw_third_party_fuzztest/fuzztest/internal/domains/regexp_dfa.h" ]
   sources =

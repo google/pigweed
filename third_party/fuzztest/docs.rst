@@ -20,16 +20,25 @@ Add FuzzTest to your workspace with the following command.
   git submodule add git@github.com:nopsledder/fuzztest.git \
     third_party/fuzztest/src
 
-GN
-==
-* Set the GN var ``dir_pw_third_party_fuzztest`` to the location of the
-  FuzzTest source.
+.. tab-set::
 
-  If you used the command above, this will be
-  ``//third_party/fuzztest/src``
+   .. tab-item:: GN
 
-  This can be set in your args.gn or .gn file like:
-  ``dir_pw_third_party_fuzztest = "//third_party/fuzztest/src"``
+      Set the GN var ``dir_pw_third_party_fuzztest`` to the location of the
+      FuzzTest source.
+
+      If you used the command above, this will be ``//third_party/fuzztest``.
+
+      This can be set in your args.gn or .gn file:
+      ``dir_pw_third_party_fuzztest = "//third_party/fuzztest"``
+
+   .. tab-item:: CMake
+
+      CMake support is in development.
+
+   .. tab-item:: Bazel
+
+      Bazel support is in development.
 
 Updating
 ========

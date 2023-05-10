@@ -136,8 +136,8 @@ pw_toolchain_host_clang = {
       # Fuzz faster.
       default_configs += [ "$dir_pw_build:optimize_speed" ]
 
+      # Default to ASan for fuzzing, which is what we typically care about.
       if (pw_toolchain_SANITIZERS == []) {
-        # Default to ASan for fuzzing, which is what we typically care about.
         pw_toolchain_SANITIZERS = [ "address" ]
       }
       foreach(sanitizer, pw_toolchain_SANITIZERS) {
