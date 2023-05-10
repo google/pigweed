@@ -85,9 +85,9 @@ class BundledUpdateBackend {
   // handed over to update backend.
   virtual int64_t GetStatus() { return 0; }
 
-  // Update the specific target file on the device.
+  // Update the specific target file on the device, using seekable reader.
   virtual Status ApplyTargetFile(std::string_view target_file_name,
-                                 stream::Reader& target_payload,
+                                 stream::SeekableReader& target_payload,
                                  size_t update_bundle_offset) = 0;
 
   // Backend to probe the device manifest and prepare a ready-to-go reader
