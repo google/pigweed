@@ -106,7 +106,7 @@ pw_source_set("googletest_style_event_handler") {
 pw_source_set("googletest_handler_adapter") {
   public_configs = [ ":public_include_path" ]
   public_deps = [
-    ":logging_event_handler",
+    ":event_handler",
     "$dir_pw_third_party/googletest",
     dir_pw_preprocessor,
   ]
