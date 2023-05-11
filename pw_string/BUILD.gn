@@ -31,6 +31,11 @@ config("public_include_path") {
   include_dirs = [ "public" ]
 }
 
+# TODO(b/282027225): Enable deprecation warnings after fixing string_test.cc.
+config("clang_disable_deprecation_warnings") {
+  defines = [ "_LIBCPP_DISABLE_DEPRECATION_WARNINGS=1" ]
+}
+
 config("enable_decimal_float_expansion_config") {
   defines = [ "PW_STRING_ENABLE_DECIMAL_FLOAT_EXPANSION=1" ]
 }
@@ -41,7 +46,10 @@ pw_source_set("enable_decimal_float_expansion") {
 
 pw_source_set("config") {
   public = [ "public/pw_string/internal/config.h" ]
-  public_configs = [ ":public_include_path" ]
+  public_configs = [
+    ":public_include_path",
+    ":clang_disable_deprecation_warnings",
+  ]
   public_deps = [ pw_string_CONFIG ]
 }
 
