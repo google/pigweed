@@ -1017,7 +1017,6 @@ ARDUINO_PICO = (
 # program block CQ on Linux.
 MISC = (
     # keep-sorted: start
-    ARDUINO_PICO,
     gn_emboss_build,
     gn_googletest_build,
     gn_nanopb_build,
