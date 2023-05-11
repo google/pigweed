@@ -27,6 +27,8 @@ pw_python_package("py") {
     "pw_arduino_build/__main__.py",
     "pw_arduino_build/builder.py",
     "pw_arduino_build/core_installer.py",
+    "pw_arduino_build/core_patches/__init__.py",
+    "pw_arduino_build/core_patches/teensy/__init__.py",
     "pw_arduino_build/file_operations.py",
     "pw_arduino_build/log.py",
     "pw_arduino_build/teensy_detector.py",

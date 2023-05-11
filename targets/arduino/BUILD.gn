@@ -77,14 +77,20 @@ if (pw_arduino_build_CORE_PATH != "") {
                            "{object_files}",
                          ])
 
-      # TODO(tonymd): Determine if libs are needed.
-      #   Teensy4 core recipe uses: '-larm_cortexM7lfsp_math -lm -lstdc++'
+      # Teensy4 core recipe uses: '-larm_cortexM7lfsp_math -lm -lstdc++'
       libs = filter_exclude(
               exec_script(arduino_builder_script,
                           arduino_show_command_args + [ "--ld-lib-names" ],
                           "list lines"),
-              # Exclude stdc++ which causes linking errors for teensy cores.
-              [ "\bstdc++\b" ])
+              [
+                # Exclude stdc++ and precompiled math libraries which causes
+                # linking errors for teensy cores.
+                "\bstdc++\b",
+                "\barm_cortexM0l_math\b",
+                "\barm_cortexM4lf_math\b",
+                "\barm_cortexM4l_math\b",
+                "\barm_cortexM7lfsp_math\b",
+              ])
     }
 
     pw_source_set("pre_init") {

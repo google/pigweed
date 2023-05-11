@@ -264,6 +264,7 @@ pw_proto_library("codegen_test_protos") {
 _small_executable_target_types = [
   "stm32f429i_executable",
   "lm3s6965evb_executable",
+  "arduino_executable",  # Fails for Teensy 3.2
 ]
 _supports_large_tests =
     _small_executable_target_types + [ pw_build_EXECUTABLE_TARGET_TYPE ] -

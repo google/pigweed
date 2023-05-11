@@ -329,7 +329,7 @@ class ArduinoBuilder:
 
             # Set the {build.core.path} variable that pointing to a sub-core
             # folder. For Teensys this is:
-            # 'teensy/hardware/teensy/avr/cores/teensy{3,4}'. For other cores
+            # 'teensy/hardware/avr/1.58.1/cores/teensy{3,4}'. For other cores
             # it's typically just the 'arduino' folder. For example:
             # 'arduino-samd/hardware/samd/1.8.8/cores/arduino'
             core_path = Path(self.package_path) / "cores"

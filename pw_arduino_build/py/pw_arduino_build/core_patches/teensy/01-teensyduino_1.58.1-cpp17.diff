@@ -1,0 +1,38 @@
+diff --git a/teensy3/avr_functions.h b/teensy3/avr_functions.h
+index a03ee53..55ac283 100644
+--- a/teensy3/avr_functions.h
++++ b/teensy3/avr_functions.h
+@@ -97,12 +97,12 @@ char * ltoa(long val, char *buf, int radix);
+ char * ulltoa(unsigned long long val, char *buf, int radix);
+ char * lltoa(long long val, char *buf, int radix);
+ 
+-/* #if defined(__STRICT_ANSI__) || (defined(_NEWLIB_VERSION) && (__NEWLIB__ < 2 || __NEWLIB__ == 2 && __NEWLIB_MINOR__ < 2))
++#if defined(__STRICT_ANSI__) || (defined(_NEWLIB_VERSION) && (__NEWLIB__ < 2 || __NEWLIB__ == 2 && __NEWLIB_MINOR__ < 2))
+ static inline char * utoa(unsigned int val, char *buf, int radix) __attribute__((always_inline, unused));
+ static inline char * utoa(unsigned int val, char *buf, int radix) { return ultoa(val, buf, radix); }
+ static inline char * itoa(int val, char *buf, int radix) __attribute__((always_inline, unused));
+ static inline char * itoa(int val, char *buf, int radix) { return ltoa(val, buf, radix); }
+-#endif */
++#endif
+ 
+ char * dtostrf(float val, int width, unsigned int precision, char *buf);
+ 
+diff --git a/teensy4/avr_functions.h b/teensy4/avr_functions.h
+index 6d692ff..4524614 100644
+--- a/teensy4/avr_functions.h
++++ b/teensy4/avr_functions.h
+@@ -99,12 +99,12 @@ char * ltoa(long val, char *buf, int radix);
+ char * ulltoa(unsigned long long val, char *buf, int radix);
+ char * lltoa(long long val, char *buf, int radix);
+ 
+-/* #if defined(__STRICT_ANSI__) || (defined(_NEWLIB_VERSION) && (__NEWLIB__ < 2 || __NEWLIB__ == 2 && __NEWLIB_MINOR__ < 2))
++#if defined(__STRICT_ANSI__) || (defined(_NEWLIB_VERSION) && (__NEWLIB__ < 2 || __NEWLIB__ == 2 && __NEWLIB_MINOR__ < 2))
+ static inline char * utoa(unsigned int val, char *buf, int radix) __attribute__((always_inline, unused));
+ static inline char * utoa(unsigned int val, char *buf, int radix) { return ultoa(val, buf, radix); }
+ static inline char * itoa(int val, char *buf, int radix) __attribute__((always_inline, unused));
+ static inline char * itoa(int val, char *buf, int radix) { return ltoa(val, buf, radix); }
+-#endif */
++#endif
+ 
+ char * dtostrf(float val, int width, unsigned int precision, char *buf);
+ 

@@ -82,7 +82,7 @@ def detect_boards(arduino_package_path=False) -> list:
 
     boards = []
     detect_command = [
-        (teensy_core / "hardware" / "tools" / "teensy_ports")
+        (teensy_core / "tools" / "teensy-tools" / "1.58.0" / "teensy_ports")
         .absolute()
         .as_posix(),
         "-L",

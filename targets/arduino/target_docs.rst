@@ -53,10 +53,10 @@ recommended to install them to into ``third_party/arduino/cores/``.
 
 .. code:: sh
 
-  # Setup pigweed environment.
-  source activate.sh
-  # Install an arduino core
-  arduino_builder install-core --prefix ./third_party/arduino/cores/ --core-name teensy
+   # Setup pigweed environment.
+   . ./activate.sh
+   # Install an arduino core, only teensy is supported
+   pw package install teensy
 
 Building
 ========
@@ -65,28 +65,28 @@ target. You can set Arduino build options using ``gn args out`` or by running:
 
 .. code:: sh
 
-  gn gen out --args='
-    pw_arduino_build_CORE_PATH="//third_party/arduino/cores"
-    pw_arduino_build_CORE_NAME="teensy"
-    pw_arduino_build_PACKAGE_NAME="teensy/avr"
-    pw_arduino_build_BOARD="teensy40"
-    pw_arduino_build_MENU_OPTIONS=["menu.usb.serial", "menu.keys.en-us"]'
+   gn gen out --args='
+     pw_arduino_build_CORE_PATH = "//environment/packages"
+     pw_arduino_build_CORE_NAME = "teensy"
+     pw_arduino_build_PACKAGE_NAME = "avr/1.58.1"
+     pw_arduino_build_BOARD = "teensy40"
+     pw_arduino_build_MENU_OPTIONS=["menu.usb.serial", "menu.keys.en-us"]'
 
 On a Windows machine it's easier to run:
 
 .. code:: sh
 
-  gn args out
+   gn args out
 
 That will open a text file where you can paste the args in:
 
 .. code:: text
 
-  pw_arduino_build_CORE_PATH = "//third_party/arduino/cores"
-  pw_arduino_build_CORE_NAME = "teensy"
-  pw_arduino_build_PACKAGE_NAME="teensy/avr"
-  pw_arduino_build_BOARD = "teensy40"
-  pw_arduino_build_MENU_OPTIONS = ["menu.usb.serial", "menu.keys.en-us"]
+   pw_arduino_build_CORE_PATH = "//environment/packages"
+   pw_arduino_build_CORE_NAME = "teensy"
+   pw_arduino_build_PACKAGE_NAME = "avr/1.58.1"
+   pw_arduino_build_BOARD = "teensy40"
+   pw_arduino_build_MENU_OPTIONS = ["menu.usb.serial", "menu.keys.en-us"]
 
 Save the file and close the text editor.
 
@@ -100,51 +100,52 @@ To see supported boards and Arduino menu options for a given core:
 
 .. code:: sh
 
-  arduino_builder --arduino-package-path ./third_party/arduino/cores/teensy \
-                  --arduino-package-name teensy/avr \
-                  list-boards
+   arduino_builder --arduino-package-path ./environment/packages/teensy \
+                   --arduino-package-name avr/1.58.1 \
+                   list-boards
 
 .. code:: text
 
-  Board Name  Description
-  teensy41    Teensy 4.1
-  teensy40    Teensy 4.0
-  teensy36    Teensy 3.6
-  teensy35    Teensy 3.5
-  teensy31    Teensy 3.2 / 3.1
+   Board Name  Description
+   teensy41    Teensy 4.1
+   teensy40    Teensy 4.0
+   teensy36    Teensy 3.6
+   teensy35    Teensy 3.5
+   teensy31    Teensy 3.2 / 3.1
 
 You may wish to set different arduino build options in
 ``pw_arduino_build_MENU_OPTIONS``. Run this to see what's available for your core:
 
 .. code:: sh
 
-  arduino_builder --arduino-package-path ./third_party/arduino/cores/teensy \
-                  --arduino-package-name teensy/avr \
-                  list-menu-options --board teensy40
+   arduino_builder --arduino-package-path ./environment/packages/teensy \
+                   --arduino-package-name avr/1.58.1 \
+                   list-menu-options \
+                   --board teensy40
 
 That will show all menu options that can be added to ``gn args out``.
 
 .. code:: text
 
-  All Options
-  ----------------------------------------------------------------
-  menu.usb.serial             Serial
-  menu.usb.serial2            Dual Serial
-  menu.usb.serial3            Triple Serial
-  menu.usb.keyboard           Keyboard
-  menu.usb.touch              Keyboard + Touch Screen
-  menu.usb.hidtouch           Keyboard + Mouse + Touch Screen
-  menu.usb.hid                Keyboard + Mouse + Joystick
-  menu.usb.serialhid          Serial + Keyboard + Mouse + Joystick
-  menu.usb.midi               MIDI
-  ...
+   All Options
+   ----------------------------------------------------------------
+   menu.usb.serial             Serial
+   menu.usb.serial2            Dual Serial
+   menu.usb.serial3            Triple Serial
+   menu.usb.keyboard           Keyboard
+   menu.usb.touch              Keyboard + Touch Screen
+   menu.usb.hidtouch           Keyboard + Mouse + Touch Screen
+   menu.usb.hid                Keyboard + Mouse + Joystick
+   menu.usb.serialhid          Serial + Keyboard + Mouse + Joystick
+   menu.usb.midi               MIDI
+   ...
 
-  Default Options
-  --------------------------------------
-  menu.usb.serial             Serial
-  menu.speed.600              600 MHz
-  menu.opt.o2std              Faster
-  menu.keys.en-us             US English
+   Default Options
+   --------------------------------------
+   menu.usb.serial             Serial
+   menu.speed.600              600 MHz
+   menu.opt.o2std              Faster
+   menu.keys.en-us             US English
 
 Testing
 =======
@@ -161,21 +162,21 @@ a sample bash script to run all tests on a Linux machine.
 
 .. code:: sh
 
-  #!/bin/bash
-  gn gen out --export-compile-commands \
-      --args='pw_arduino_build_CORE_PATH="//third_party/arduino/cores"
-              pw_arduino_build_CORE_NAME="teensy"
-              pw_arduino_build_PACKAGE_NAME="teensy/avr"
-              pw_arduino_build_BOARD="teensy40"
-              pw_arduino_build_MENU_OPTIONS=["menu.usb.serial", "menu.keys.en-us"]' && \
-    ninja -C out arduino
+   #!/bin/bash
+   gn gen out --export-compile-commands \
+       --args='pw_arduino_build_CORE_PATH="environment/packages"
+               pw_arduino_build_CORE_NAME="teensy"
+               pw_arduino_build_PACKAGE_NAME="avr/1.58.1"
+               pw_arduino_build_BOARD="teensy40"
+               pw_arduino_build_MENU_OPTIONS=["menu.usb.serial", "menu.keys.en-us"]' && \
+     ninja -C out arduino
 
-  for f in $(find out/arduino_debug/obj/ -iname "*.elf"); do
-      arduino_unit_test_runner --verbose \
-          --config-file ./out/arduino_debug/gen/arduino_builder_config.json \
-          --upload-tool teensyloader \
-          out/arduino_debug/obj/pw_string/test/format_test.elf
-  done
+   for f in $(find out/arduino_debug/obj/ -iname "*.elf"); do
+       arduino_unit_test_runner --verbose \
+           --config-file ./out/arduino_debug/gen/arduino_builder_config.json \
+           --upload-tool teensyloader \
+           $f
+   done
 
 Using the test server
 ---------------------

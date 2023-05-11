@@ -301,7 +301,7 @@ gn_teensy_build = build.GnGenNinja(
             str(ctx.package_root)
         ),
         'pw_arduino_build_CORE_NAME': 'teensy',
-        'pw_arduino_build_PACKAGE_NAME': 'teensy/avr',
+        'pw_arduino_build_PACKAGE_NAME': 'avr/1.58.1',
         'pw_arduino_build_BOARD': 'teensy40',
         'pw_C_OPTIMIZATION_LEVELS': _OPTIMIZATION_LEVELS,
     },

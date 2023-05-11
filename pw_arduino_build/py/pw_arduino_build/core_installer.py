@@ -15,17 +15,13 @@
 """Arduino Core Installer."""
 
 import argparse
+import importlib.resources
 import logging
-import operator
 import os
+from pathlib import Path
 import platform
 import shutil
-import stat
-import subprocess
-import sys
-import time
-from pathlib import Path
-from typing import Dict, List
+from typing import Dict
 
 from pw_arduino_build import file_operations
 
@@ -36,79 +32,70 @@ class ArduinoCoreNotSupported(Exception):
     """Exception raised when a given core can not be installed."""
 
 
+class ArduinoCoreInstallationFailed(Exception):
+    """Exception raised when a given core failed to be installed."""
+
+
 _ARDUINO_CORE_ARTIFACTS: Dict[str, Dict] = {
     # pylint: disable=line-too-long
     "teensy": {
+        "all": {
+            "core": {
+                "version": "1.58.1",
+                "url": "https://www.pjrc.com/teensy/td_158-1/teensy-package.tar.bz2",
+                "file_name": "teensy-package.tar.bz2",
+                "sha256": "3a3f3728045621d25068c5b5dfc24bf171550127e9fae4d0e8be2574c6636cff",
+            }
+        },
         "Linux": {
-            "arduino-ide": {
-                "url": "https://downloads.arduino.cc/arduino-1.8.13-linux64.tar.xz",
-                "file_name": "arduino-1.8.13-linux64.tar.xz",
-                "sha256": "1b20d0ec850a2a63488009518725f058668bb6cb48c321f82dcf47dc4299b4ad",
-            },
-            "teensyduino": {
-                "url": "https://www.pjrc.com/teensy/td_153/TeensyduinoInstall.linux64",
-                "sha256": "2e6cd99a757bc80593ea3de006de4cc934bcb0a6ec74cad8ec327f0289d40f0b",
-                "file_name": "TeensyduinoInstall.linux64",
+            "teensy-tools": {
+                "url": "https://www.pjrc.com/teensy/td_158/teensy-tools-linux64.tar.bz2",
+                "file_name": "teensy-tools-linux64.tar.bz2",
+                "sha256": "0a272575ca42b4532ab89516df160e1d68e449fe1538c0bd71dbb768f1b3c0b6",
+                "version": "1.58.0",
             },
         },
         # TODO(tonymd): Handle 32-bit Linux Install?
         "Linux32": {
-            "arduino-ide": {
-                "url": "https://downloads.arduino.cc/arduino-1.8.13-linux32.tar.xz",
-                "file_name": "arduino-1.8.13-linux32.tar.xz",
-                "sha256": "",
-            },
-            "teensyduino": {
-                "url": "https://www.pjrc.com/teensy/td_153/TeensyduinoInstall.linux32",
-                "file_name": "TeensyduinoInstall.linux32",
-                "sha256": "",
+            "teensy-tools": {
+                "url": "https://www.pjrc.com/teensy/td_158/teensy-tools-linux32.tar.bz2",
+                "file_name": "teensy-tools-linux32.tar.bz2",
+                "sha256": "995d974935c8118ad6d4c191206453dd8f57c1e299264bb4cffcc62c96c6d077",
+                "version": "1.58.0",
             },
         },
         # TODO(tonymd): Handle ARM32 (Raspberry Pi) Install?
         "LinuxARM32": {
-            "arduino-ide": {
-                "url": "https://downloads.arduino.cc/arduino-1.8.13-linuxarm.tar.xz",
-                "file_name": "arduino-1.8.13-linuxarm.tar.xz",
-                "sha256": "",
-            },
-            "teensyduino": {
-                "url": "https://www.pjrc.com/teensy/td_153/TeensyduinoInstall.linuxarm",
-                "file_name": "TeensyduinoInstall.linuxarm",
-                "sha256": "",
+            "teensy-tools": {
+                "url": "https://www.pjrc.com/teensy/td_158/teensy-tools-linuxarm.tar.bz2",
+                "file_name": "teensy-tools-linuxarm.tar.bz2",
+                "sha256": "88cf8e55549f5d5937fa7dbc763cad49bd3680d4e5185b318c667f541035e633",
+                "version": "1.58.0",
             },
         },
         # TODO(tonymd): Handle ARM64 Install?
         "LinuxARM64": {
-            "arduino-ide": {
-                "url": "https://downloads.arduino.cc/arduino-1.8.13-linuxaarch64.tar.xz",
-                "file_name": "arduino-1.8.13-linuxaarch64.tar.xz",
-                "sha256": "",
-            },
-            "teensyduino": {
-                "url": "https://www.pjrc.com/teensy/td_153/TeensyduinoInstall.linuxaarch64",
-                "file_name": "TeensyduinoInstall.linuxaarch64",
-                "sha256": "",
+            "teensy-tools": {
+                "url": "https://www.pjrc.com/teensy/td_158/teensy-tools-linuxaarch64.tar.bz2",
+                "file_name": "teensy-tools-linuxaarch64.tar.bz2",
+                "sha256": "a20b1c5e91fe51c3b6591e4cfcf711d4a4c0a0bb5120c59d1c8dd8d32ae44e31",
+                "version": "1.58.0",
             },
         },
         "Darwin": {
-            "teensyduino": {
-                "url": "https://www.pjrc.com/teensy/td_153/Teensyduino_MacOS_Catalina.zip",
-                "file_name": "Teensyduino_MacOS_Catalina.zip",
-                "sha256": "401ef42c6e83e621cdda20191a4ef9b7db8a214bede5a94a9e26b45f79c64fe2",
+            "teensy-tools": {
+                "url": "https://www.pjrc.com/teensy/td_158/teensy-tools-macos.tar.bz2",
+                "file_name": "teensy-tools-macos.tar.bz2",
+                "sha256": "d386412e38fe6dd6c5d849c2b1f8eea00cbf7bc3659fb6ba9f83cebfb736924b",
+                "version": "1.58.0",
             },
         },
         "Windows": {
-            "arduino-ide": {
-                "url": "https://downloads.arduino.cc/arduino-1.8.13-windows.zip",
-                "file_name": "arduino-1.8.13-windows.zip",
-                "sha256": "78d3e96827b9e9b31b43e516e601c38d670d29f12483e88cbf6d91a0f89ef524",
-            },
-            "teensyduino": {
-                "url": "https://www.pjrc.com/teensy/td_153/TeensyduinoInstall.exe",
-                # The installer should be named 'Teensyduino.exe' instead of
-                # 'TeensyduinoInstall.exe' to trigger a non-admin installation.
-                "file_name": "Teensyduino.exe",
-                "sha256": "88f58681e5c4772c54e462bc88280320e4276e5b316dcab592fe38d96db990a1",
+            "teensy-tools": {
+                "url": "https://www.pjrc.com/teensy/td_158/teensy-tools-windows.tar.bz2",
+                "file_name": "teensy-tools-windows.tar.bz2",
+                "sha256": "206315ddc82381d2da92da9f633a1719e00c0e8f5432acfed434573409a48de1",
+                "version": "1.58.0",
             },
         },
     },
@@ -171,12 +158,7 @@ def install_core(prefix, core_name):
         os.makedirs(cache_dir, exist_ok=True)
 
     if core_name == "teensy":
-        if platform.system() == "Linux":
-            install_teensy_core_linux(install_prefix, install_dir, cache_dir)
-        elif platform.system() == "Darwin":
-            install_teensy_core_mac(install_prefix, install_dir, cache_dir)
-        elif platform.system() == "Windows":
-            install_teensy_core_windows(install_prefix, install_dir, cache_dir)
+        install_teensy_core(install_prefix, install_dir, cache_dir)
         apply_teensy_patches(install_dir)
     elif core_name == "adafruit-samd":
         install_adafruit_samd_core(install_prefix, install_dir, cache_dir)
@@ -196,158 +178,59 @@ def supported_cores():
     return _ARDUINO_CORE_ARTIFACTS.keys()
 
 
-def get_windows_process_names() -> List[str]:
-    result = subprocess.run("wmic process get description", capture_output=True)
-    output = result.stdout.decode().splitlines()
-    return [line.strip() for line in output if line]
-
-
-def install_teensy_core_windows(install_prefix, install_dir, cache_dir):
-    """Download and install Teensyduino artifacts for Windows."""
-    teensy_artifacts = _ARDUINO_CORE_ARTIFACTS["teensy"][platform.system()]
-
-    arduino_artifact = teensy_artifacts["arduino-ide"]
-    arduino_zipfile = file_operations.download_to_cache(
-        url=arduino_artifact["url"],
-        expected_sha256sum=arduino_artifact["sha256"],
+def install_teensy_core(_install_prefix: str, install_dir: str, cache_dir: str):
+    """Install teensy core files and tools."""
+    # Install the Teensy core source files
+    artifacts = _ARDUINO_CORE_ARTIFACTS["teensy"]["all"]["core"]
+    core_tarfile = file_operations.download_to_cache(
+        url=artifacts["url"],
+        expected_sha256sum=artifacts["sha256"],
         cache_directory=cache_dir,
-        downloaded_file_name=arduino_artifact["file_name"],
+        downloaded_file_name=artifacts["file_name"],
     )
 
-    teensyduino_artifact = teensy_artifacts["teensyduino"]
-    teensyduino_installer = file_operations.download_to_cache(
-        url=teensyduino_artifact["url"],
-        expected_sha256sum=teensyduino_artifact["sha256"],
-        cache_directory=cache_dir,
-        downloaded_file_name=teensyduino_artifact["file_name"],
+    package_path = os.path.join(
+        install_dir, "hardware", "avr", artifacts["version"]
     )
+    os.makedirs(package_path, exist_ok=True)
+    file_operations.extract_archive(core_tarfile, package_path, cache_dir)
 
-    file_operations.extract_archive(arduino_zipfile, install_dir, cache_dir)
+    expected_files = [
+        Path(package_path) / 'boards.txt',
+        Path(package_path) / 'platform.txt',
+    ]
 
-    # "teensy" here should match args.core_name
-    teensy_core_dir = os.path.join(install_prefix, "teensy")
-
-    # Change working directory for installation
-    original_working_dir = os.getcwd()
-    os.chdir(install_prefix)
-
-    install_command = [teensyduino_installer, "--dir=teensy"]
-    _LOG.info("  Running: %s", " ".join(install_command))
-    _LOG.info(
-        "    Please click yes on the Windows 'User Account Control' " "dialog."
-    )
-    _LOG.info("    You should see: 'Verified publisher: PRJC.COM LLC'")
-
-    def wait_for_process(
-        process_name, timeout=30, result_operator=operator.truth
-    ):
-        start_time = time.time()
-        while result_operator(process_name in get_windows_process_names()):
-            time.sleep(1)
-            if time.time() > start_time + timeout:
-                _LOG.error(
-                    "Error: Installation Failed.\n"
-                    "Please click yes on the Windows 'User Account Control' "
-                    "dialog."
-                )
-                sys.exit(1)
-
-    # Run Teensyduino installer with admin rights (non-blocking)
-    # User Account Control (UAC) will prompt the user for consent
-    import ctypes  # pylint: disable=import-outside-toplevel
-
-    ctypes.windll.shell32.ShellExecuteW(
-        None,  # parent window handle
-        "runas",  # operation
-        teensyduino_installer,  # file to run
-        subprocess.list2cmdline(install_command),  # command parameters
-        install_prefix,  # working directory
-        1,
-    )  # Display mode (SW_SHOWNORMAL: Activates and displays a window)
-
-    # Wait for teensyduino_installer to start running
-    wait_for_process("TeensyduinoInstall.exe", result_operator=operator.not_)
-
-    _LOG.info("Waiting for TeensyduinoInstall.exe to finish.")
-    # Wait till teensyduino_installer is finished
-    wait_for_process("TeensyduinoInstall.exe", timeout=360)
-
-    if not os.path.exists(os.path.join(teensy_core_dir, "hardware", "teensy")):
-        _LOG.error(
-            "Error: Installation Failed.\n"
-            "Please try again and ensure Teensyduino is installed in "
-            "the folder:\n"
-            "%s",
-            teensy_core_dir,
+    if any(not expected_file.is_file() for expected_file in expected_files):
+        expected_files_str = "".join(
+            list(f"  {expected_file}\n" for expected_file in expected_files)
         )
-        sys.exit(1)
-    else:
-        _LOG.info("Install complete!")
 
-    file_operations.remove_empty_directories(install_dir)
-    os.chdir(original_working_dir)
+        raise ArduinoCoreInstallationFailed(
+            "\n\nError: Installation Failed.\n"
+            "Please remove the package:\n\n"
+            "  pw package remove teensy\n\n"
+            "Try again and ensure the following files exist:\n\n"
+            + expected_files_str
+        )
 
+    teensy_tools = _ARDUINO_CORE_ARTIFACTS["teensy"][platform.system()]
 
-def install_teensy_core_mac(unused_install_prefix, install_dir, cache_dir):
-    """Download and install Teensyduino artifacts for Mac."""
-    teensy_artifacts = _ARDUINO_CORE_ARTIFACTS["teensy"][platform.system()]
+    for tool_name, artifacts in teensy_tools.items():
+        tool_tarfile = file_operations.download_to_cache(
+            url=artifacts["url"],
+            expected_sha256sum=artifacts["sha256"],
+            cache_directory=cache_dir,
+            downloaded_file_name=artifacts["file_name"],
+        )
 
-    teensyduino_artifact = teensy_artifacts["teensyduino"]
-    teensyduino_zip = file_operations.download_to_cache(
-        url=teensyduino_artifact["url"],
-        expected_sha256sum=teensyduino_artifact["sha256"],
-        cache_directory=cache_dir,
-        downloaded_file_name=teensyduino_artifact["file_name"],
-    )
+        tool_path = os.path.join(
+            install_dir, "tools", tool_name, artifacts["version"]
+        )
 
-    extracted_files = file_operations.extract_archive(
-        teensyduino_zip,
-        install_dir,
-        cache_dir,
-        remove_single_toplevel_folder=False,
-    )
-    toplevel_folder = sorted(extracted_files)[0]
-    os.symlink(
-        os.path.join(toplevel_folder, "Contents", "Java", "hardware"),
-        os.path.join(install_dir, "hardware"),
-        target_is_directory=True,
-    )
+        os.makedirs(tool_path, exist_ok=True)
+        file_operations.extract_archive(tool_tarfile, tool_path, cache_dir)
 
-
-def install_teensy_core_linux(install_prefix, install_dir, cache_dir):
-    """Download and install Teensyduino artifacts for Windows."""
-    teensy_artifacts = _ARDUINO_CORE_ARTIFACTS["teensy"][platform.system()]
-
-    arduino_artifact = teensy_artifacts["arduino-ide"]
-    arduino_tarfile = file_operations.download_to_cache(
-        url=arduino_artifact["url"],
-        expected_sha256sum=arduino_artifact["sha256"],
-        cache_directory=cache_dir,
-        downloaded_file_name=arduino_artifact["file_name"],
-    )
-
-    teensyduino_artifact = teensy_artifacts["teensyduino"]
-    teensyduino_installer = file_operations.download_to_cache(
-        url=teensyduino_artifact["url"],
-        expected_sha256sum=teensyduino_artifact["sha256"],
-        cache_directory=cache_dir,
-        downloaded_file_name=teensyduino_artifact["file_name"],
-    )
-
-    file_operations.extract_archive(arduino_tarfile, install_dir, cache_dir)
-    os.chmod(
-        teensyduino_installer,
-        os.stat(teensyduino_installer).st_mode | stat.S_IEXEC,
-    )
-
-    original_working_dir = os.getcwd()
-    os.chdir(install_prefix)
-    # "teensy" here should match args.core_name
-    install_command = [teensyduino_installer, "--dir=teensy"]
-    subprocess.run(install_command)
-
-    file_operations.remove_empty_directories(install_dir)
-    os.chdir(original_working_dir)
+    return True
 
 
 def apply_teensy_patches(install_dir):
@@ -357,19 +240,28 @@ def apply_teensy_patches(install_dir):
     # Resolve paths since `git apply` doesn't work if a path is beyond a
     # symbolic link.
     patch_root_path = (
-        Path(install_dir) / "hardware/teensy/avr/cores"
+        Path(install_dir) / "hardware/avr/1.58.1/cores"
     ).resolve()
 
-    # Get all *.diff files relative to this python file's parent directory.
-    patch_file_paths = sorted(
-        (Path(__file__).parent / "core_patches/teensy").glob("*.diff")
+    # Get all *.diff files for the teensy core.
+    patches_python_package = 'pw_arduino_build.core_patches.teensy'
+
+    patch_file_names = sorted(
+        patch
+        for patch in importlib.resources.contents(patches_python_package)
+        if Path(patch).suffix in ['.diff']
     )
 
     # Apply each patch file.
-    for diff_path in patch_file_paths:
-        file_operations.git_apply_patch(
-            patch_root_path.as_posix(), diff_path.as_posix(), unsafe_paths=True
-        )
+    for diff_name in patch_file_names:
+        with importlib.resources.path(
+            patches_python_package, diff_name
+        ) as diff_path:
+            file_operations.git_apply_patch(
+                patch_root_path.as_posix(),
+                diff_path.as_posix(),
+                unsafe_paths=True,
+            )
 
 
 def install_arduino_samd_core(
