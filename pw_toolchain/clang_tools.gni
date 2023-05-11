@@ -21,17 +21,9 @@ declare_args() {
   # This is useful for debugging toolchain-related issues by building with an
   # externally-provided toolchain.
   pw_toolchain_CLANG_PREFIX = ""
-  if (defined(pw_env_setup_CIPD_PIGWEED)) {
-    pw_toolchain_CLANG_PREFIX =
-        rebase_path(pw_env_setup_CIPD_PIGWEED + "/bin/", root_build_dir)
-  }
 
   # This flag allows you to specify the root directory of the rustc binary.
   pw_toolchain_RUST_PREFIX = ""
-  if (defined(pw_env_setup_CIPD_PIGWEED)) {
-    pw_toolchain_RUST_PREFIX =
-        rebase_path(pw_env_setup_CIPD_PIGWEED + "/rust/bin/", root_build_dir)
-  }
 }
 
 pw_toolchain_clang_tools = {
