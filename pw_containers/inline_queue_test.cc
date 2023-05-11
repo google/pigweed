@@ -422,6 +422,244 @@ TEST(InlineQueue, StdMaxElementConst) {
   ASSERT_EQ(max_element_it, queue.cend());
 }
 
+TEST(InlineQueue, OperatorPlus) {
+  // Content = {0, 0, 1, 2}, Storage = [0, 0, 1, 2]
+  InlineQueue<int, 4> queue = {0, 0, 1, 2};
+  // Content = {0, 1, 2, 3}, Storage = [3, 0, 1, 2]
+  queue.push_overwrite(3);
+  // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
+  queue.push_overwrite(4);
+
+  for (size_t i = 0; i < 4; i++) {
+    ASSERT_EQ(*(queue.begin() + i), static_cast<int>(i + 1));
+    ASSERT_EQ(*(i + queue.begin()), static_cast<int>(i + 1));
+  }
+
+  ASSERT_EQ(queue.begin() + queue.size(), queue.end());
+}
+
+TEST(InlineQueue, OperatorPlusPlus) {
+  // Content = {0, 0, 1, 2}, Storage = [0, 0, 1, 2]
+  InlineQueue<int, 4> queue = {0, 0, 1, 2};
+  // Content = {0, 1, 2, 3}, Storage = [3, 0, 1, 2]
+  queue.push_overwrite(3);
+  // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
+  queue.push_overwrite(4);
+
+  auto it = queue.begin();
+
+  ASSERT_EQ(*it, 1);
+  it++;
+  ASSERT_EQ(*it, 2);
+  it++;
+  ASSERT_EQ(*it, 3);
+  it++;
+  ASSERT_EQ(*it, 4);
+  it++;
+
+  ASSERT_EQ(it, queue.end());
+}
+
+TEST(InlineQueue, OperatorPlusEquals) {
+  // Content = {0, 0, 1, 2}, Storage = [0, 0, 1, 2]
+  InlineQueue<int, 4> queue = {0, 0, 1, 2};
+  // Content = {0, 1, 2, 3}, Storage = [3, 0, 1, 2]
+  queue.push_overwrite(3);
+  // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
+  queue.push_overwrite(4);
+
+  auto it = queue.begin();
+
+  ASSERT_EQ(*it, 1);
+  it += 1;
+  ASSERT_EQ(*it, 2);
+  it += 1;
+  ASSERT_EQ(*it, 3);
+  it += 1;
+  ASSERT_EQ(*it, 4);
+  it += 1;
+  ASSERT_EQ(it, queue.end());
+
+  it = queue.begin();
+  ASSERT_EQ(*it, 1);
+  it += 2;
+  ASSERT_EQ(*it, 3);
+  it += 2;
+  ASSERT_EQ(it, queue.end());
+
+  it = queue.begin();
+  it += queue.size();
+
+  ASSERT_EQ(it, queue.end());
+}
+
+TEST(InlineQueue, OpeartorMinus) {
+  // Content = {0, 0, 1, 2}, Storage = [0, 0, 1, 2]
+  InlineQueue<int, 4> queue = {0, 0, 1, 2};
+  // Content = {0, 1, 2, 3}, Storage = [3, 0, 1, 2]
+  queue.push_overwrite(3);
+  // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
+  queue.push_overwrite(4);
+
+  for (size_t i = 1; i <= 4; i++) {
+    ASSERT_EQ(*(queue.end() - i), static_cast<int>(5 - i));
+  }
+
+  ASSERT_EQ(queue.end() - queue.size(), queue.begin());
+}
+TEST(InlineQueue, OperatorMinusMinus) {
+  // Content = {0, 0, 1, 2}, Storage = [0, 0, 1, 2]
+  InlineQueue<int, 4> queue = {0, 0, 1, 2};
+  // Content = {0, 1, 2, 3}, Storage = [3, 0, 1, 2]
+  queue.push_overwrite(3);
+  // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
+  queue.push_overwrite(4);
+
+  auto it = queue.end();
+
+  it--;
+  ASSERT_EQ(*it, 4);
+  it--;
+  ASSERT_EQ(*it, 3);
+  it--;
+  ASSERT_EQ(*it, 2);
+  it--;
+  ASSERT_EQ(*it, 1);
+
+  ASSERT_EQ(it, queue.begin());
+}
+
+TEST(InlineQueue, OperatorMinusEquals) {
+  // Content = {0, 0, 1, 2}, Storage = [0, 0, 1, 2]
+  InlineQueue<int, 4> queue = {0, 0, 1, 2};
+  // Content = {0, 1, 2, 3}, Storage = [3, 0, 1, 2]
+  queue.push_overwrite(3);
+  // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
+  queue.push_overwrite(4);
+
+  auto it = queue.end();
+
+  it -= 1;
+  ASSERT_EQ(*it, 4);
+  it -= 1;
+  ASSERT_EQ(*it, 3);
+  it -= 1;
+  ASSERT_EQ(*it, 2);
+  it -= 1;
+  ASSERT_EQ(*it, 1);
+
+  ASSERT_EQ(it, queue.begin());
+
+  it = queue.end();
+
+  it -= 2;
+  ASSERT_EQ(*it, 3);
+  it -= 2;
+  ASSERT_EQ(*it, 1);
+
+  ASSERT_EQ(it, queue.begin());
+
+  it = queue.end();
+  it -= queue.size();
+
+  ASSERT_EQ(it, queue.begin());
+}
+
+TEST(InlineQueue, OperatorSquareBracket) {
+  // Content = {0, 0, 1, 2}, Storage = [0, 0, 1, 2]
+  InlineQueue<int, 4> queue = {0, 0, 1, 2};
+  // Content = {0, 1, 2, 3}, Storage = [3, 0, 1, 2]
+  queue.push_overwrite(3);
+  // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
+  queue.push_overwrite(4);
+
+  for (size_t i = 0; i < queue.size(); i++) {
+    ASSERT_EQ(queue.begin()[i], static_cast<int>(i + 1));
+  }
+}
+
+TEST(InlineQueue, OperatorLessThan) {
+  // Content = {0, 0, 1, 2}, Storage = [0, 0, 1, 2]
+  InlineQueue<int, 4> queue = {0, 0, 1, 2};
+  // Content = {0, 1, 2, 3}, Storage = [3, 0, 1, 2]
+  queue.push_overwrite(3);
+  // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
+  queue.push_overwrite(4);
+
+  for (size_t i = 0; i < queue.size(); i++) {
+    for (size_t j = 0; j < i; j++) {
+      ASSERT_TRUE((queue.begin() + j) < (queue.begin() + i));
+    }
+
+    ASSERT_TRUE((queue.begin() + i) < queue.end());
+  }
+}
+
+TEST(InlineQueue, OperatorLessThanEqual) {
+  // Content = {0, 0, 1, 2}, Storage = [0, 0, 1, 2]
+  InlineQueue<int, 4> queue = {0, 0, 1, 2};
+  // Content = {0, 1, 2, 3}, Storage = [3, 0, 1, 2]
+  queue.push_overwrite(3);
+  // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
+  queue.push_overwrite(4);
+
+  for (size_t i = 0; i < queue.size(); i++) {
+    for (size_t j = 0; j <= i; j++) {
+      ASSERT_TRUE((queue.begin() + j) <= (queue.begin() + i));
+    }
+
+    ASSERT_TRUE((queue.begin() + i) <= queue.end());
+  }
+}
+
+TEST(InlineQueue, OperatorGreater) {
+  // Content = {0, 0, 1, 2}, Storage = [0, 0, 1, 2]
+  InlineQueue<int, 4> queue = {0, 0, 1, 2};
+  // Content = {0, 1, 2, 3}, Storage = [3, 0, 1, 2]
+  queue.push_overwrite(3);
+  // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
+  queue.push_overwrite(4);
+
+  for (size_t i = 0; i < queue.size(); i++) {
+    for (size_t j = i + 1; j < queue.size(); j++) {
+      ASSERT_TRUE((queue.begin() + j) > (queue.begin() + i));
+    }
+
+    ASSERT_TRUE(queue.end() > (queue.begin() + i));
+  }
+}
+
+TEST(InlineQueue, OperatorGreaterThanEqual) {
+  // Content = {0, 0, 1, 2}, Storage = [0, 0, 1, 2]
+  InlineQueue<int, 4> queue = {0, 0, 1, 2};
+  // Content = {0, 1, 2, 3}, Storage = [3, 0, 1, 2]
+  queue.push_overwrite(3);
+  // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
+  queue.push_overwrite(4);
+
+  for (size_t i = 0; i < queue.size(); i++) {
+    for (size_t j = i; j < queue.size(); j++) {
+      ASSERT_TRUE((queue.begin() + j) >= (queue.begin() + i));
+    }
+
+    ASSERT_TRUE(queue.end() >= (queue.begin() + i));
+  }
+}
+
+TEST(InlineQueue, DereferenceOperator) {
+  // Content = {0, 0, 1, 2}, Storage = [0, 0, 1, 2]
+  InlineQueue<int, 4> queue = {0, 0, 1, 2};
+  // Content = {0, 1, 2, 3}, Storage = [3, 0, 1, 2]
+  queue.push_overwrite(3);
+  // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
+  queue.push_overwrite(4);
+
+  for (size_t i = 0; i < queue.size(); i++) {
+    const auto it = queue.begin() + i;
+    ASSERT_EQ(*(it.operator->()), static_cast<int>(i + 1));
+  }
+}
+
 // Test that InlineQueue<T> is trivially destructible when its type is.
 static_assert(std::is_trivially_destructible_v<InlineQueue<int>>);
 static_assert(std::is_trivially_destructible_v<InlineQueue<int, 4>>);
@@ -456,6 +694,18 @@ static_assert(sizeof(InlineQueue<uint64_t, 1>) ==
 // Test that InlineQueue<T> is copy assignable
 static_assert(std::is_copy_assignable_v<InlineQueue<int>::iterator>);
 static_assert(std::is_copy_assignable_v<InlineQueue<int, 4>::iterator>);
+
+// Test that InlineQueue<T>::iterator can be converted to a const_iterator
+static_assert(std::is_convertible<InlineQueue<int>::iterator,
+                                  InlineQueue<int>::const_iterator>::value);
+static_assert(std::is_convertible<InlineQueue<int, 4>::iterator,
+                                  InlineQueue<int, 4>::const_iterator>::value);
+
+// Test that InlineQueue<T>::const_iterator can NOT be converted to a iterator
+static_assert(!std::is_convertible<InlineQueue<int>::const_iterator,
+                                   InlineQueue<int>::iterator>::value);
+static_assert(!std::is_convertible<InlineQueue<int, 4>::const_iterator,
+                                   InlineQueue<int, 4>::iterator>::value);
 
 }  // namespace
 }  // namespace pw::containers

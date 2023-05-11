@@ -557,6 +557,292 @@ TEST(InlineDeque, StdMaxElementConst) {
   ASSERT_EQ(max_element_it, deque.cend());
 }
 
+TEST(InlineDeque, OperatorPlus) {
+  // Content = {0, 0, 1, 2}, Storage = [0, 0, 1, 2]
+  InlineDeque<int, 4> deque = {0, 0, 1, 2};
+  // Content = {0, 1, 2}, Storage = [x, 0, 1, 2]
+  deque.pop_front();
+  // Content = {0, 1, 2, 3}, Storage = [3, 0, 1, 2]
+  deque.push_back(3);
+  // Content = {1, 2, 3}, Storage = [3, x, 1, 2]
+  deque.pop_front();
+  // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
+  deque.push_back(4);
+
+  for (size_t i = 0; i < 4; i++) {
+    ASSERT_EQ(*(deque.begin() + i), static_cast<int>(i + 1));
+    ASSERT_EQ(*(i + deque.begin()), static_cast<int>(i + 1));
+  }
+
+  ASSERT_EQ(deque.begin() + deque.size(), deque.end());
+}
+
+TEST(InlineDeque, OperatorPlusPlus) {
+  // Content = {0, 0, 1, 2}, Storage = [0, 0, 1, 2]
+  InlineDeque<int, 4> deque = {0, 0, 1, 2};
+  // Content = {0, 1, 2}, Storage = [x, 0, 1, 2]
+  deque.pop_front();
+  // Content = {0, 1, 2, 3}, Storage = [3, 0, 1, 2]
+  deque.push_back(3);
+  // Content = {1, 2, 3}, Storage = [3, x, 1, 2]
+  deque.pop_front();
+  // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
+  deque.push_back(4);
+
+  auto it = deque.begin();
+
+  ASSERT_EQ(*it, 1);
+  it++;
+  ASSERT_EQ(*it, 2);
+  it++;
+  ASSERT_EQ(*it, 3);
+  it++;
+  ASSERT_EQ(*it, 4);
+  it++;
+
+  ASSERT_EQ(it, deque.end());
+}
+
+TEST(InlineDeque, OperatorPlusEquals) {
+  // Content = {0, 0, 1, 2}, Storage = [0, 0, 1, 2]
+  InlineDeque<int, 4> deque = {0, 0, 1, 2};
+  // Content = {0, 1, 2}, Storage = [x, 0, 1, 2]
+  deque.pop_front();
+  // Content = {0, 1, 2, 3}, Storage = [3, 0, 1, 2]
+  deque.push_back(3);
+  // Content = {1, 2, 3}, Storage = [3, x, 1, 2]
+  deque.pop_front();
+  // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
+  deque.push_back(4);
+
+  auto it = deque.begin();
+
+  ASSERT_EQ(*it, 1);
+  it += 1;
+  ASSERT_EQ(*it, 2);
+  it += 1;
+  ASSERT_EQ(*it, 3);
+  it += 1;
+  ASSERT_EQ(*it, 4);
+  it += 1;
+  ASSERT_EQ(it, deque.end());
+
+  it = deque.begin();
+  ASSERT_EQ(*it, 1);
+  it += 2;
+  ASSERT_EQ(*it, 3);
+  it += 2;
+  ASSERT_EQ(it, deque.end());
+
+  it = deque.begin();
+  it += deque.size();
+
+  ASSERT_EQ(it, deque.end());
+}
+
+TEST(InlineDeque, OpeartorMinus) {
+  // Content = {0, 0, 1, 2}, Storage = [0, 0, 1, 2]
+  InlineDeque<int, 4> deque = {0, 0, 1, 2};
+  // Content = {0, 1, 2}, Storage = [x, 0, 1, 2]
+  deque.pop_front();
+  // Content = {0, 1, 2, 3}, Storage = [3, 0, 1, 2]
+  deque.push_back(3);
+  // Content = {1, 2, 3}, Storage = [3, x, 1, 2]
+  deque.pop_front();
+  // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
+  deque.push_back(4);
+
+  for (size_t i = 1; i <= 4; i++) {
+    ASSERT_EQ(*(deque.end() - i), static_cast<int>(5 - i));
+  }
+
+  ASSERT_EQ(deque.end() - deque.size(), deque.begin());
+}
+TEST(InlineDeque, OperatorMinusMinus) {
+  // Content = {0, 0, 1, 2}, Storage = [0, 0, 1, 2]
+  InlineDeque<int, 4> deque = {0, 0, 1, 2};
+  // Content = {0, 1, 2}, Storage = [x, 0, 1, 2]
+  deque.pop_front();
+  // Content = {0, 1, 2, 3}, Storage = [3, 0, 1, 2]
+  deque.push_back(3);
+  // Content = {1, 2, 3}, Storage = [3, x, 1, 2]
+  deque.pop_front();
+  // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
+  deque.push_back(4);
+
+  auto it = deque.end();
+
+  it--;
+  ASSERT_EQ(*it, 4);
+  it--;
+  ASSERT_EQ(*it, 3);
+  it--;
+  ASSERT_EQ(*it, 2);
+  it--;
+  ASSERT_EQ(*it, 1);
+
+  ASSERT_EQ(it, deque.begin());
+}
+
+TEST(InlineDeque, OperatorMinusEquals) {
+  // Content = {0, 0, 1, 2}, Storage = [0, 0, 1, 2]
+  InlineDeque<int, 4> deque = {0, 0, 1, 2};
+  // Content = {0, 1, 2}, Storage = [x, 0, 1, 2]
+  deque.pop_front();
+  // Content = {0, 1, 2, 3}, Storage = [3, 0, 1, 2]
+  deque.push_back(3);
+  // Content = {1, 2, 3}, Storage = [3, x, 1, 2]
+  deque.pop_front();
+  // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
+  deque.push_back(4);
+
+  auto it = deque.end();
+
+  it -= 1;
+  ASSERT_EQ(*it, 4);
+  it -= 1;
+  ASSERT_EQ(*it, 3);
+  it -= 1;
+  ASSERT_EQ(*it, 2);
+  it -= 1;
+  ASSERT_EQ(*it, 1);
+
+  ASSERT_EQ(it, deque.begin());
+
+  it = deque.end();
+
+  it -= 2;
+  ASSERT_EQ(*it, 3);
+  it -= 2;
+  ASSERT_EQ(*it, 1);
+
+  ASSERT_EQ(it, deque.begin());
+
+  it = deque.end();
+  it -= deque.size();
+
+  ASSERT_EQ(it, deque.begin());
+}
+
+TEST(InlineDeque, OperatorSquareBracket) {
+  // Content = {0, 0, 1, 2}, Storage = [0, 0, 1, 2]
+  InlineDeque<int, 4> deque = {0, 0, 1, 2};
+  // Content = {0, 1, 2}, Storage = [x, 0, 1, 2]
+  deque.pop_front();
+  // Content = {0, 1, 2, 3}, Storage = [3, 0, 1, 2]
+  deque.push_back(3);
+  // Content = {1, 2, 3}, Storage = [3, x, 1, 2]
+  deque.pop_front();
+  // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
+  deque.push_back(4);
+
+  for (size_t i = 0; i < deque.size(); i++) {
+    ASSERT_EQ(deque.begin()[i], static_cast<int>(i + 1));
+  }
+}
+
+TEST(InlineDeque, OperatorLessThan) {
+  // Content = {0, 0, 1, 2}, Storage = [0, 0, 1, 2]
+  InlineDeque<int, 4> deque = {0, 0, 1, 2};
+  // Content = {0, 1, 2}, Storage = [x, 0, 1, 2]
+  deque.pop_front();
+  // Content = {0, 1, 2, 3}, Storage = [3, 0, 1, 2]
+  deque.push_back(3);
+  // Content = {1, 2, 3}, Storage = [3, x, 1, 2]
+  deque.pop_front();
+  // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
+  deque.push_back(4);
+
+  for (size_t i = 0; i < deque.size(); i++) {
+    for (size_t j = 0; j < i; j++) {
+      ASSERT_TRUE((deque.begin() + j) < (deque.begin() + i));
+    }
+
+    ASSERT_TRUE((deque.begin() + i) < deque.end());
+  }
+}
+
+TEST(InlineDeque, OperatorLessThanEqual) {
+  // Content = {0, 0, 1, 2}, Storage = [0, 0, 1, 2]
+  InlineDeque<int, 4> deque = {0, 0, 1, 2};
+  // Content = {0, 1, 2}, Storage = [x, 0, 1, 2]
+  deque.pop_front();
+  // Content = {0, 1, 2, 3}, Storage = [3, 0, 1, 2]
+  deque.push_back(3);
+  // Content = {1, 2, 3}, Storage = [3, x, 1, 2]
+  deque.pop_front();
+  // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
+  deque.push_back(4);
+
+  for (size_t i = 0; i < deque.size(); i++) {
+    for (size_t j = 0; j <= i; j++) {
+      ASSERT_TRUE((deque.begin() + j) <= (deque.begin() + i));
+    }
+
+    ASSERT_TRUE((deque.begin() + i) <= deque.end());
+  }
+}
+
+TEST(InlineDeque, OperatorGreater) {
+  // Content = {0, 0, 1, 2}, Storage = [0, 0, 1, 2]
+  InlineDeque<int, 4> deque = {0, 0, 1, 2};
+  // Content = {0, 1, 2}, Storage = [x, 0, 1, 2]
+  deque.pop_front();
+  // Content = {0, 1, 2, 3}, Storage = [3, 0, 1, 2]
+  deque.push_back(3);
+  // Content = {1, 2, 3}, Storage = [3, x, 1, 2]
+  deque.pop_front();
+  // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
+  deque.push_back(4);
+
+  for (size_t i = 0; i < deque.size(); i++) {
+    for (size_t j = i + 1; j < deque.size(); j++) {
+      ASSERT_TRUE((deque.begin() + j) > (deque.begin() + i));
+    }
+
+    ASSERT_TRUE(deque.end() > (deque.begin() + i));
+  }
+}
+
+TEST(InlineDeque, OperatorGreaterThanEqual) {
+  // Content = {0, 0, 1, 2}, Storage = [0, 0, 1, 2]
+  InlineDeque<int, 4> deque = {0, 0, 1, 2};
+  // Content = {0, 1, 2}, Storage = [x, 0, 1, 2]
+  deque.pop_front();
+  // Content = {0, 1, 2, 3}, Storage = [3, 0, 1, 2]
+  deque.push_back(3);
+  // Content = {1, 2, 3}, Storage = [3, x, 1, 2]
+  deque.pop_front();
+  // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
+  deque.push_back(4);
+
+  for (size_t i = 0; i < deque.size(); i++) {
+    for (size_t j = i; j < deque.size(); j++) {
+      ASSERT_TRUE((deque.begin() + j) >= (deque.begin() + i));
+    }
+
+    ASSERT_TRUE(deque.end() >= (deque.begin() + i));
+  }
+}
+
+TEST(InlineDeque, DereferenceOperator) {
+  // Content = {0, 0, 1, 2}, Storage = [0, 0, 1, 2]
+  InlineDeque<int, 4> deque = {0, 0, 1, 2};
+  // Content = {0, 1, 2}, Storage = [x, 0, 1, 2]
+  deque.pop_front();
+  // Content = {0, 1, 2, 3}, Storage = [3, 0, 1, 2]
+  deque.push_back(3);
+  // Content = {1, 2, 3}, Storage = [3, x, 1, 2]
+  deque.pop_front();
+  // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
+  deque.push_back(4);
+
+  for (size_t i = 0; i < deque.size(); i++) {
+    const auto it = deque.begin() + i;
+    ASSERT_EQ(*(it.operator->()), static_cast<int>(i + 1));
+  }
+}
+
 // Test that InlineDeque<T> is trivially destructible when its type is.
 static_assert(std::is_trivially_destructible_v<InlineDeque<int>>);
 static_assert(std::is_trivially_destructible_v<InlineDeque<int, 4>>);
@@ -591,6 +877,18 @@ static_assert(sizeof(InlineDeque<uint64_t, 1>) ==
 // Test that InlineDeque<T> is copy assignable
 static_assert(std::is_copy_assignable_v<InlineDeque<int>::iterator>);
 static_assert(std::is_copy_assignable_v<InlineDeque<int, 4>::iterator>);
+
+// Test that InlineDeque<T>::iterator can be converted to a const_iterator
+static_assert(std::is_convertible<InlineDeque<int>::iterator,
+                                  InlineDeque<int>::const_iterator>::value);
+static_assert(std::is_convertible<InlineDeque<int, 4>::iterator,
+                                  InlineDeque<int, 4>::const_iterator>::value);
+
+// Test that InlineDeque<T>::const_iterator can NOT be converted to a iterator
+static_assert(!std::is_convertible<InlineDeque<int>::const_iterator,
+                                   InlineDeque<int>::iterator>::value);
+static_assert(!std::is_convertible<InlineDeque<int, 4>::const_iterator,
+                                   InlineDeque<int, 4>::iterator>::value);
 
 }  // namespace
 }  // namespace pw::containers

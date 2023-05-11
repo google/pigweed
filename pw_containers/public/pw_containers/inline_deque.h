@@ -29,7 +29,9 @@
 namespace pw {
 namespace inline_circular_buffer_impl {
 
-template <typename ValueType, typename SizeType>
+enum Constness : bool { kMutable = false, kConst = true };
+
+template <typename ValueType, typename SizeType, Constness kIsConst>
 class InlineDequeIterator;
 
 }  // namespace inline_circular_buffer_impl
@@ -167,11 +169,14 @@ class BasicInlineDeque<ValueType, SizeType, containers::internal::kGenericSized>
   using const_reference = const value_type&;
   using pointer = value_type*;
   using const_pointer = const value_type*;
-  using iterator =
-      inline_circular_buffer_impl::InlineDequeIterator<value_type, size_type>;
-  using const_iterator =
-      inline_circular_buffer_impl::InlineDequeIterator<const value_type,
-                                                       size_type>;
+  using iterator = inline_circular_buffer_impl::InlineDequeIterator<
+      value_type,
+      size_type,
+      inline_circular_buffer_impl::Constness::kMutable>;
+  using const_iterator = inline_circular_buffer_impl::InlineDequeIterator<
+      value_type,
+      size_type,
+      inline_circular_buffer_impl::Constness::kConst>;
 
   // Assignment
 
@@ -252,23 +257,20 @@ class BasicInlineDeque<ValueType, SizeType, containers::internal::kGenericSized>
     if (empty()) {
       return end();
     }
-    return iterator(data(), capacity(), data() + head_, count_);
+
+    return iterator(this, 0);
   }
   const_iterator begin() const noexcept { return cbegin(); }
   const_iterator cbegin() const noexcept {
     if (empty()) {
       return cend();
     }
-    return const_iterator(data(), capacity(), data() + head_, count_);
+    return const_iterator(this, 0);
   }
 
-  iterator end() noexcept {
-    return iterator(data(), capacity(), data() + capacity(), count_);
-  }
+  iterator end() noexcept { return iterator(this, -1); }
   const_iterator end() const noexcept { return cend(); }
-  const_iterator cend() const noexcept {
-    return const_iterator(data(), capacity(), data() + capacity(), count_);
-  }
+  const_iterator cend() const noexcept { return const_iterator(this, -1); }
 
   // Size
 
@@ -313,6 +315,15 @@ class BasicInlineDeque<ValueType, SizeType, containers::internal::kGenericSized>
       : capacity_(capacity), head_(0), tail_(0), count_(0) {}
 
  private:
+  friend class inline_circular_buffer_impl::InlineDequeIterator<
+      ValueType,
+      SizeType,
+      inline_circular_buffer_impl::Constness::kMutable>;
+  friend class inline_circular_buffer_impl::InlineDequeIterator<
+      ValueType,
+      SizeType,
+      inline_circular_buffer_impl::Constness::kConst>;
+
   // The underlying RawStorage is not part of the generic-sized class. It is
   // provided in the derived class from which this instance was constructed. To
   // access the data, down-cast this to a known max size specialization, and
@@ -477,68 +488,141 @@ void BasicInlineDeque<ValueType, SizeType>::Append(size_type count,
 
 namespace inline_circular_buffer_impl {
 
-template <typename ValueType, typename SizeType>
+// InlineDequeIterator meets the named requirements for
+// LegacyRandomAccessIterator
+template <typename ValueType, typename SizeType, Constness kIsConst>
 class InlineDequeIterator {
  public:
+  using container_type =
+      typename std::conditional<kIsConst,
+                                const BasicInlineDeque<ValueType, SizeType>,
+                                BasicInlineDeque<ValueType, SizeType>>::type;
   using value_type = ValueType;
   using size_type = SizeType;
-  using reference = value_type&;
-  using pointer = value_type*;
+  typedef typename std::conditional<kIsConst,
+                                    typename container_type::const_reference,
+                                    typename container_type::reference>::type
+      reference;
+  typedef
+      typename std::conditional<kIsConst,
+                                typename container_type::const_pointer,
+                                typename container_type::pointer>::type pointer;
   using difference_type = std::ptrdiff_t;
   using iterator_category = std::forward_iterator_tag;
 
   constexpr InlineDequeIterator() = default;
-  constexpr InlineDequeIterator(pointer data,
-                                size_type capacity,
-                                pointer current,
-                                size_type count)
-      : data_begin_(data),
-        data_end_(data + capacity),
-        current_(current),
-        count_(count) {}
+  constexpr InlineDequeIterator(container_type* container, size_type pos)
+      : container_(container), pos_(pos) {}
 
-  InlineDequeIterator(const InlineDequeIterator& other) = default;
-  InlineDequeIterator& operator=(const InlineDequeIterator& other) = default;
+  constexpr InlineDequeIterator(const InlineDequeIterator& other) = default;
+  constexpr InlineDequeIterator& operator=(const InlineDequeIterator& other) =
+      default;
 
-  InlineDequeIterator& operator++() {
-    PW_DASSERT(count_ != 0);
-    --count_;
-    if (count_ == 0) {
-      current_ = data_end_;  // Jump to end() to stop iteration.
-      return *this;
-    }
-    ++current_;
-    if (current_ == data_end_) {
-      current_ = data_begin_;  // We just wrapped.
-    }
+  operator InlineDequeIterator<ValueType, SizeType, Constness::kConst>() const {
+    return {container_, pos_};
+  }
+
+  constexpr InlineDequeIterator& Incr(difference_type n) {
+    const size_type new_pos = n + (pos_ == kEnd ? container_->size() : pos_);
+
+    PW_DASSERT(new_pos >= 0);
+    PW_DASSERT(new_pos <= container_->size());
+
+    pos_ = new_pos == container_->size() ? kEnd : new_pos;
+
     return *this;
   }
 
-  InlineDequeIterator operator++(int) {
+  constexpr InlineDequeIterator& operator+=(difference_type n) {
+    return Incr(n);
+  }
+  constexpr InlineDequeIterator& operator-=(difference_type n) {
+    return Incr(-n);
+  }
+  constexpr InlineDequeIterator& operator++() { return Incr(1); }
+  constexpr InlineDequeIterator operator++(int) {
     InlineDequeIterator it(*this);
     operator++();
     return it;
   }
 
-  constexpr const value_type& operator*() const { return *current_; }
-  constexpr value_type& operator*() { return *current_; }
-
-  constexpr const value_type* operator->() const { return current_; }
-  constexpr value_type* operator->() { return current_; }
-
-  bool operator==(const InlineDequeIterator& other) const {
-    return (current_ == other.current_);
+  constexpr InlineDequeIterator& operator--() { return Incr(-1); }
+  constexpr InlineDequeIterator operator--(int) {
+    InlineDequeIterator it = *this;
+    operator--();
+    return it;
   }
 
-  bool operator!=(const InlineDequeIterator& other) const {
-    return (current_ != other.current_);
+  constexpr friend InlineDequeIterator operator+(InlineDequeIterator it,
+                                                 difference_type n) {
+    return it += n;
+  }
+  constexpr friend InlineDequeIterator operator+(difference_type n,
+                                                 InlineDequeIterator it) {
+    return it += n;
+  }
+
+  constexpr friend InlineDequeIterator operator-(InlineDequeIterator it,
+                                                 difference_type n) {
+    return it -= n;
+  }
+
+  constexpr friend difference_type operator-(const InlineDequeIterator& a,
+                                             const InlineDequeIterator& b) {
+    return static_cast<difference_type>(a.pos_ == kEnd ? a.container_->size()
+                                                       : a.pos_) -
+           static_cast<difference_type>(b.pos_ == kEnd ? b.container_->size()
+                                                       : b.pos_);
+  }
+
+  constexpr reference operator*() const {
+    PW_DASSERT(pos_ != kEnd);
+    PW_DASSERT(pos_ < container_->count_);
+
+    return container_->at(pos_);
+  }
+
+  constexpr pointer operator->() const {
+    PW_DASSERT(pos_ != kEnd);
+    PW_DASSERT(pos_ < container_->count_);
+
+    return &**this;
+  }
+
+  constexpr reference operator[](size_type n) { return *(*this + n); }
+
+  constexpr bool operator==(const InlineDequeIterator& other) const {
+    return container_ == other.container_ && pos_ == other.pos_;
+  }
+
+  constexpr bool operator!=(const InlineDequeIterator& other) const {
+    return !(*this == other);
+  }
+
+  constexpr friend bool operator<(InlineDequeIterator a,
+                                  InlineDequeIterator b) {
+    return b - a > 0;
+  }
+
+  constexpr friend bool operator>(InlineDequeIterator a,
+                                  InlineDequeIterator b) {
+    return b < a;
+  }
+
+  constexpr friend bool operator<=(InlineDequeIterator a,
+                                   InlineDequeIterator b) {
+    return !(a > b);
+  }
+
+  constexpr friend bool operator>=(InlineDequeIterator a,
+                                   InlineDequeIterator b) {
+    return !(a < b);
   }
 
  private:
-  pointer data_begin_;
-  pointer data_end_;
-  pointer current_;
-  size_type count_;
+  static constexpr size_type kEnd = -1;
+  container_type* container_;  // pointer to container this iterator is from
+  size_type pos_;              // logical index of iterator
 };
 
 }  // namespace inline_circular_buffer_impl
