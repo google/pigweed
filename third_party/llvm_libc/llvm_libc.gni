@@ -30,6 +30,10 @@ template("pw_libc_source_set") {
 
   pw_source_set(target_name) {
     dir = target_dir
+    src_dir = dir
+    if (defined(invoker.non_cpu_dir)) {
+      src_dir += "/${invoker.non_cpu_dir}"
+    }
 
     additional_srcs = []
     if (defined(invoker.additional_srcs)) {
@@ -54,6 +58,7 @@ template("pw_libc_source_set") {
                              "functions",
                              "no_test_functions",
                              "additional_srcs",
+                             "non_cpu_dir",
                            ])
 
     public = []
@@ -61,7 +66,7 @@ template("pw_libc_source_set") {
 
     foreach(function, invoker.functions) {
       public += [ "$dir/$function.h" ]
-      sources += [ "$dir/$function.cpp" ]
+      sources += [ "$src_dir/$function.cpp" ]
     }
 
     foreach(src, additional_srcs) {
@@ -71,6 +76,9 @@ template("pw_libc_source_set") {
 
   pw_test("${source_set_target_name}_tests") {
     dir = "$dir_pw_third_party_llvm_libc/test/src/$source_set_target_name"
+
+    # This might not be used if all test functions are in no_test_functions
+    not_needed([ dir ])
 
     include_dirs = [ dir_pw_third_party_llvm_libc ]
     defines = [ "LIBC_COPT_TEST_USE_PIGWEED" ]
@@ -86,6 +94,7 @@ template("pw_libc_source_set") {
                              "functions",
                              "no_test_functions",
                              "additional_srcs",
+                             "non_cpu_dir",
                            ])
 
     sources = []

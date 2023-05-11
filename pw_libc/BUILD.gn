@@ -89,10 +89,23 @@ if (dir_pw_third_party_llvm_libc != "") {
     functions = [ "isprint" ]
   }
 
+  pw_libc_source_set("math") {
+    non_cpu_dir = "generic"
+
+    functions = [
+      "modff",
+      "roundf",
+    ]
+
+    # Math tests require the MPFR library, which is not available.
+    no_test_functions = functions
+  }
+
   pw_static_library("pw_libc") {
     complete_static_lib = true
     deps = [
       ":ctype",
+      ":math",
       ":stdlib",
       ":string",
     ]
@@ -101,6 +114,7 @@ if (dir_pw_third_party_llvm_libc != "") {
   pw_test_group("llvm_libc_tests") {
     tests = [
       ":ctype_tests",
+      ":math_tests",
       ":stdlib_tests",
       ":string_tests",
     ]
