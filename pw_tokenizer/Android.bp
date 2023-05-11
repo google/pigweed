@@ -20,20 +20,42 @@ cc_library_static {
     name: "pw_detokenizer",
     cpp_std: "c++2a",
     vendor_available: true,
+    host_supported: true,
     export_include_dirs: ["public"],
-    srcs: [
-        "detokenize.cc",
-        "decode.cc",
-    ],
     header_libs: [
         "fuchsia_sdk_lib_stdcompat",
+        "pw_assert_headers",
+        "pw_log_headers",
+        "pw_log_null_headers",
         "pw_polyfill_headers",
         "pw_preprocessor_headers",
         "pw_span_headers",
     ],
+    export_header_lib_headers: [
+        "fuchsia_sdk_lib_stdcompat",
+        "pw_assert_headers",
+        "pw_log_headers",
+        "pw_log_null_headers",
+        "pw_polyfill_headers",
+        "pw_preprocessor_headers",
+        "pw_span_headers",
+    ],
+    srcs: [
+        "base64.cc",
+        "detokenize.cc",
+        "decode.cc",
+    ],
     static_libs: [
+        "pw_base64",
         "pw_bytes",
+        "pw_containers",
         "pw_varint"
+    ],
+    export_static_lib_headers: [
+        "pw_base64",
+        "pw_bytes",
+        "pw_containers",
+        "pw_varint",
     ],
 }
 
