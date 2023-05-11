@@ -13,6 +13,7 @@
 // the License.
 #pragma once
 
+#include <cstdarg>
 #include <cstdio>
 
 #include "pw_unit_test/googletest_style_event_handler.h"
@@ -31,7 +32,7 @@ class PrintfEventHandler final : public GoogleTestStyleEventHandler {
   void Write(const char* content) override { std::printf("%s", content); }
 
   void WriteLine(const char* format, ...) override {
-    va_list args;
+    std::va_list args;
 
     va_start(args, format);
     std::vprintf(format, args);
