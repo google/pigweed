@@ -1177,7 +1177,7 @@ T copy(T t) {
 TEST_F(HelpersAdapterTest, FidlToScoParameters) {
   fbredr::ScoConnectionParameters params;
   EXPECT_TRUE(FidlToScoParameters(params).is_error());
-  params.set_parameter_set(fbredr::HfpParameterSet::MSBC_T2);
+  params.set_parameter_set(fbredr::HfpParameterSet::T2);
   EXPECT_TRUE(FidlToScoParameters(params).is_error());
   params.set_air_coding_format(fbredr::CodingFormat::MSBC);
   EXPECT_TRUE(FidlToScoParameters(params).is_error());
@@ -1245,13 +1245,12 @@ TEST_F(HelpersAdapterTest, FidlToScoParameters) {
   EXPECT_EQ(view.input_transport_unit_size_bits().Read(), 0u);
   EXPECT_EQ(view.output_transport_unit_size_bits().Read(), 0u);
 
-  EXPECT_EQ(view.max_latency_ms().Read(), bt::sco::kParameterSetMsbcT2.max_latency_ms);
-  EXPECT_EQ(view.packet_types().BackingStorage().ReadUInt(),
-            bt::sco::kParameterSetMsbcT2.packet_types);
+  EXPECT_EQ(view.max_latency_ms().Read(), bt::sco::kParameterSetT2.max_latency_ms);
+  EXPECT_EQ(view.packet_types().BackingStorage().ReadUInt(), bt::sco::kParameterSetT2.packet_types);
   EXPECT_EQ(
       view.retransmission_effort().Read(),
       static_cast<pw::bluetooth::emboss::SynchronousConnectionParameters::ScoRetransmissionEffort>(
-          bt::sco::kParameterSetMsbcT2.retransmission_effort));
+          bt::sco::kParameterSetT2.retransmission_effort));
 
   // When the IO coding format is Linear PCM, the PCM data format is required.
   params.clear_io_pcm_data_format();

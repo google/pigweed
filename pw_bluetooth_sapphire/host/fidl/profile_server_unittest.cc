@@ -45,7 +45,7 @@ constexpr uint16_t kSynchronousDataPacketLength = 64;
 constexpr uint8_t kTotalNumSynchronousDataPackets = 1;
 
 fidlbredr::ScoConnectionParameters CreateScoConnectionParameters(
-    fidlbredr::HfpParameterSet param_set = fidlbredr::HfpParameterSet::MSBC_T2) {
+    fidlbredr::HfpParameterSet param_set = fidlbredr::HfpParameterSet::T2) {
   fidlbredr::ScoConnectionParameters params;
   params.set_parameter_set(param_set);
   params.set_air_coding_format(fidlbredr::CodingFormat::MSBC);
@@ -472,7 +472,7 @@ class ProfileServerTestScoConnected : public ProfileServerTestConnectedPeer {
  public:
   void SetUp() override {
     fidlbredr::ScoConnectionParameters params =
-        CreateScoConnectionParameters(fidlbredr::HfpParameterSet::CVSD_D0);
+        CreateScoConnectionParameters(fidlbredr::HfpParameterSet::D0);
     params.set_path(fidlbredr::DataPath::HOST);
     SetUp(std::move(params));
   }
@@ -530,7 +530,7 @@ class ProfileServerTestOffloadedScoConnected : public ProfileServerTestScoConnec
  public:
   void SetUp() override {
     fidlbredr::ScoConnectionParameters params =
-        CreateScoConnectionParameters(fidlbredr::HfpParameterSet::CVSD_D0);
+        CreateScoConnectionParameters(fidlbredr::HfpParameterSet::D0);
     params.set_path(fidlbredr::DataPath::OFFLOAD);
     ProfileServerTestScoConnected::SetUp(std::move(params));
   }
@@ -996,7 +996,7 @@ TEST_F(ProfileServerTest, ConnectScoWithUnconnectedPeerReturnsError) {
 
 TEST_F(ProfileServerTestConnectedPeer, ConnectScoInitiatorSuccess) {
   fidlbredr::ScoConnectionParameters sco_params =
-      CreateScoConnectionParameters(fidlbredr::HfpParameterSet::MSBC_T1);
+      CreateScoConnectionParameters(fidlbredr::HfpParameterSet::T1);
   EXPECT_TRUE(fidl_helpers::FidlToScoParameters(sco_params).is_ok());
   std::vector<fidlbredr::ScoConnectionParameters> sco_params_list;
   sco_params_list.emplace_back(std::move(sco_params));
@@ -1010,32 +1010,32 @@ TEST_F(ProfileServerTestConnectedPeer, ConnectScoInitiatorSuccess) {
   ASSERT_TRUE(receiver.connection().is_bound());
   ASSERT_TRUE(receiver.parameters().has_value());
   ASSERT_TRUE(receiver.parameters()->has_parameter_set());
-  EXPECT_EQ(receiver.parameters()->parameter_set(), fidlbredr::HfpParameterSet::MSBC_T1);
+  EXPECT_EQ(receiver.parameters()->parameter_set(), fidlbredr::HfpParameterSet::T1);
   ASSERT_TRUE(receiver.parameters()->has_max_tx_data_size());
   EXPECT_EQ(receiver.parameters()->max_tx_data_size(), kSynchronousDataPacketLength);
 }
 
 TEST_F(ProfileServerTestConnectedPeer, ConnectScoResponderSuccess) {
   // Use 2 parameter sets to test that the profile server returns the second set when a SCO
-  // connection request is received (MSBC_T2 is ESCO only and CVSD_D0 is SCO only, so CVSD_D0 will
+  // connection request is received (T2 is ESCO only and D0 is SCO only, so D0 will
   // be used to accept the connection).
   std::vector<fidlbredr::ScoConnectionParameters> sco_params_list;
-  sco_params_list.emplace_back(CreateScoConnectionParameters(fidlbredr::HfpParameterSet::MSBC_T2));
-  sco_params_list.emplace_back(CreateScoConnectionParameters(fidlbredr::HfpParameterSet::CVSD_D0));
+  sco_params_list.emplace_back(CreateScoConnectionParameters(fidlbredr::HfpParameterSet::T2));
+  sco_params_list.emplace_back(CreateScoConnectionParameters(fidlbredr::HfpParameterSet::D0));
 
   fidl::InterfaceHandle<fidlbredr::ScoConnectionReceiver> receiver_handle;
   FakeScoConnectionReceiver receiver(receiver_handle.NewRequest(), dispatcher());
   client()->ConnectSco(fuchsia::bluetooth::PeerId{peer()->identifier().value()},
                        /*initiator=*/false, std::move(sco_params_list), std::move(receiver_handle));
   RunLoopUntilIdle();
-  // Receive a SCO connection request. The CVSD_D0 parameters will be used to accept the request.
+  // Receive a SCO connection request. The D0 parameters will be used to accept the request.
   test_device()->SendConnectionRequest(peer()->address(), pw::bluetooth::emboss::LinkType::SCO);
   RunLoopUntilIdle();
   EXPECT_FALSE(receiver.error().has_value());
   ASSERT_TRUE(receiver.connection().is_bound());
   ASSERT_TRUE(receiver.parameters().has_value());
   ASSERT_TRUE(receiver.parameters()->has_parameter_set());
-  EXPECT_EQ(receiver.parameters()->parameter_set(), fidlbredr::HfpParameterSet::CVSD_D0);
+  EXPECT_EQ(receiver.parameters()->parameter_set(), fidlbredr::HfpParameterSet::D0);
 }
 
 TEST_F(ProfileServerTestConnectedPeer, ConnectScoResponderUnconnectedPeerReturnsError) {

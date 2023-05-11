@@ -1231,22 +1231,22 @@ bt::gap::BrEdrSecurityRequirements FidlToBrEdrSecurityRequirements(
 
 bt::sco::ParameterSet FidlToScoParameterSet(const fbredr::HfpParameterSet param_set) {
   switch (param_set) {
-    case fbredr::HfpParameterSet::MSBC_T1:
-      return bt::sco::kParameterSetMsbcT1;
-    case fbredr::HfpParameterSet::MSBC_T2:
-      return bt::sco::kParameterSetMsbcT2;
-    case fbredr::HfpParameterSet::CVSD_S1:
-      return bt::sco::kParameterSetCvsdS1;
-    case fbredr::HfpParameterSet::CVSD_S2:
-      return bt::sco::kParameterSetCvsdS2;
-    case fbredr::HfpParameterSet::CVSD_S3:
-      return bt::sco::kParameterSetCvsdS3;
-    case fbredr::HfpParameterSet::CVSD_S4:
-      return bt::sco::kParameterSetCvsdS4;
-    case fbredr::HfpParameterSet::CVSD_D0:
-      return bt::sco::kParameterSetCvsdD0;
-    case fbredr::HfpParameterSet::CVSD_D1:
-      return bt::sco::kParameterSetCvsdD1;
+    case fbredr::HfpParameterSet::T1:
+      return bt::sco::kParameterSetT1;
+    case fbredr::HfpParameterSet::T2:
+      return bt::sco::kParameterSetT2;
+    case fbredr::HfpParameterSet::S1:
+      return bt::sco::kParameterSetS1;
+    case fbredr::HfpParameterSet::S2:
+      return bt::sco::kParameterSetS2;
+    case fbredr::HfpParameterSet::S3:
+      return bt::sco::kParameterSetS3;
+    case fbredr::HfpParameterSet::S4:
+      return bt::sco::kParameterSetS4;
+    case fbredr::HfpParameterSet::D0:
+      return bt::sco::kParameterSetD0;
+    case fbredr::HfpParameterSet::D1:
+      return bt::sco::kParameterSetD1;
   }
 }
 
@@ -1268,14 +1268,20 @@ FidlToScoCodingFormat(const fbredr::CodingFormat format) {
     case fbredr::CodingFormat::CVSD:
       view.coding_format().Write(pw::bluetooth::emboss::CodingFormat::CVSD);
       break;
+    case fbredr::CodingFormat::TRANSPARENT:
+      view.coding_format().Write(pw::bluetooth::emboss::CodingFormat::TRANSPARENT);
+      break;
     case fbredr::CodingFormat::LINEAR_PCM:
       view.coding_format().Write(pw::bluetooth::emboss::CodingFormat::LINEAR_PCM);
       break;
     case fbredr::CodingFormat::MSBC:
       view.coding_format().Write(pw::bluetooth::emboss::CodingFormat::MSBC);
       break;
-    case fbredr::CodingFormat::TRANSPARENT:
-      view.coding_format().Write(pw::bluetooth::emboss::CodingFormat::TRANSPARENT);
+    case fbredr::CodingFormat::LC3:
+      view.coding_format().Write(pw::bluetooth::emboss::CodingFormat::LC3);
+      break;
+    case fbredr::CodingFormat::G729A:
+      view.coding_format().Write(pw::bluetooth::emboss::CodingFormat::G729A);
       break;
   }
   return out;
