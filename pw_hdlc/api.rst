@@ -26,8 +26,7 @@ unnumbered information frame.
 
    .. group-tab:: C++
 
-      .. cpp:namespace:: pw
-      .. cpp:function:: Status hdlc::WriteUIFrame(uint64_t address, ConstByteSpan data, stream::Writer& writer)
+      .. doxygenfunction:: pw::hdlc::WriteUIFrame(uint64_t address, ConstByteSpan data, stream::Writer &writer)
 
       Example:
 
