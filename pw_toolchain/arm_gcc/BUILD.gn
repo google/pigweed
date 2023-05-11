@@ -95,6 +95,12 @@ config("cortex_m33") {
   ldflags = cflags
 }
 
+config("cortex_a32") {
+  cflags = [ "-mcpu=cortex-a32" ]
+  asmflags = cflags
+  ldflags = cflags
+}
+
 config("cortex_software_fpu") {
   cflags = [ "-mfloat-abi=soft" ]
   asmflags = cflags

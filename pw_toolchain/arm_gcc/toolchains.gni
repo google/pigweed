@@ -101,6 +101,11 @@ _cortex_m33f = [
   "$dir_pw_toolchain/arm_gcc:cortex_hardware_fpu_v5_sp",
 ]
 
+_cortex_a32 = [
+  "$dir_pw_toolchain/arm_gcc:cortex_common",
+  "$dir_pw_toolchain/arm_gcc:cortex_a32",
+]
+
 # Describes ARM GCC toolchains for specific targets.
 pw_toolchain_arm_gcc = {
   cortex_m0plus_debug = {
@@ -295,6 +300,31 @@ pw_toolchain_arm_gcc = {
           _arm_gcc + _cortex_m33f + [ "$dir_pw_build:optimize_size" ]
     }
   }
+
+  cortex_a32_debug = {
+    name = "arm_gcc_cortex_a32_debug"
+    forward_variables_from(arm_gcc_toolchain_tools, "*")
+    defaults = {
+      default_configs =
+          _arm_gcc + _cortex_a32 + [ "$dir_pw_build:optimize_debugging" ]
+    }
+  }
+  cortex_a32_speed_optimized = {
+    name = "arm_gcc_cortex_a32_speed_optimized"
+    forward_variables_from(arm_gcc_toolchain_tools, "*")
+    defaults = {
+      default_configs =
+          _arm_gcc + _cortex_a32 + [ "$dir_pw_build:optimize_speed" ]
+    }
+  }
+  cortex_a32_size_optimized = {
+    name = "arm_gcc_cortex_a32_size_optimized"
+    forward_variables_from(arm_gcc_toolchain_tools, "*")
+    defaults = {
+      default_configs =
+          _arm_gcc + _cortex_a32 + [ "$dir_pw_build:optimize_size" ]
+    }
+  }
 }
 
 # This list just contains the members of the above scope for convenience to make
@@ -325,6 +355,9 @@ pw_toolchain_arm_gcc_list = [
   pw_toolchain_arm_gcc.cortex_m33f_debug,
   pw_toolchain_arm_gcc.cortex_m33f_speed_optimized,
   pw_toolchain_arm_gcc.cortex_m33f_size_optimized,
+  pw_toolchain_arm_gcc.cortex_a32_debug,
+  pw_toolchain_arm_gcc.cortex_a32_speed_optimized,
+  pw_toolchain_arm_gcc.cortex_a32_size_optimized,
 ]
 
 # Configs that require Arm GCC 12 or newer to use. Downstream projects that use
