@@ -154,6 +154,7 @@ pw_add_test(pw_containers.flat_map_test
     flat_map_test.cc
   PRIVATE_DEPS
     pw_containers.flat_map
+    pw_polyfill
   GROUPS
     modules
     pw_containers

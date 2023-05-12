@@ -131,6 +131,7 @@ if(NOT "${pw_perf_test.TIMER_INTERFACE_BACKEND}" STREQUAL "")
     SOURCES
       state_test.cc
     PRIVATE_DEPS
+      pw_assert.assert
       pw_perf_test
     GROUPS
       modules
@@ -143,6 +144,7 @@ if(NOT "${pw_perf_test.TIMER_INTERFACE_BACKEND}" STREQUAL "")
     SOURCES
       perf_test_test.cc
     PRIVATE_DEPS
+      pw_assert.assert
       pw_perf_test
     GROUPS
       modules

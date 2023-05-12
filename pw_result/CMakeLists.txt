@@ -46,6 +46,8 @@ pw_add_test(pw_result.result_test
 pw_add_test(pw_result.expected_test
   SOURCES
     expected_test.cc
+  PRIVATE_DEPS
+    pw_result.expected
   GROUPS
     modules
     pw_result

@@ -36,6 +36,7 @@ pw_add_test(pw_toolchain.no_destructor_test
   SOURCES
     no_destructor_test.cc
   PRIVATE_DEPS
+    pw_assert.check
     pw_toolchain.no_destructor
   GROUPS
     modules
