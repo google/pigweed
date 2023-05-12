@@ -34,7 +34,15 @@ Add FuzzTest to your workspace with the following command.
 
    .. tab-item:: CMake
 
-      CMake support is in development.
+      Set the following CMake variables:
+
+      * Set ``dir_pw_third_party_fuzztest`` to the location of the
+        FuzzTest source.
+
+      * Set ``dir_pw_third_party_googletest`` to the location of the
+        GoogleTest source.
+
+      * Set ``pw_unit_test_GOOGLETEST_BACKEND`` to ``pw_third_party.fuzztest``.
 
    .. tab-item:: Bazel
 

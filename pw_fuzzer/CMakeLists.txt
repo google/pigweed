@@ -14,9 +14,19 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-pw_add_library(pw_fuzzer.fuzz_test_stub INTERFACE
-  HEADERS
-    public_overrides/fuzztest/fuzztest.h
-  PUBLIC_INCLUDES
-    public_overrides
-)
+# If a project configure `pw_unit_test_GOOGLETEST_BACKEND` to use FuzzTest, this
+# target pulls in the "real" FuzzTest. Otherwise, it uses a "stub" which
+# converts invocations of `FUZZ_TEST` to disabled empty unit tests.
+if(pw_unit_test_GOOGLETEST_BACKEND STREQUAL "pw_third_party.fuzztest")
+  pw_add_library(pw_fuzzer.fuzztest INTERFACE
+    PUBLIC_DEPS
+      pw_third_party.fuzztest
+  )
+else()
+  pw_add_library(pw_fuzzer.fuzztest INTERFACE
+    HEADERS
+      public_overrides/fuzztest/fuzztest.h
+    PUBLIC_INCLUDES
+      public_overrides
+  )
+endif()

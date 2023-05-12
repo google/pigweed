@@ -41,6 +41,8 @@ function(pw_add_test_executable NAME TEST_DEP)
     set(main pw_unit_test.logging_main)
   elseif("${test_backend}" STREQUAL "pw_third_party.googletest")
     set(main pw_third_party.googletest.gmock_main)
+  elseif("${test_backend}" STREQUAL "pw_third_party.fuzztest")
+    set(main pw_third_party.fuzztest_gtest_main)
   else()
     message(FATAL_ERROR
             "Unsupported test backend selected for host test executables")

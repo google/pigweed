@@ -136,6 +136,7 @@ add_subdirectory(pw_work_queue EXCLUDE_FROM_ALL)
 add_subdirectory(third_party/nanopb EXCLUDE_FROM_ALL)
 add_subdirectory(third_party/freertos EXCLUDE_FROM_ALL)
 add_subdirectory(third_party/fuchsia EXCLUDE_FROM_ALL)
+add_subdirectory(third_party/fuzztest EXCLUDE_FROM_ALL)
 add_subdirectory(third_party/googletest EXCLUDE_FROM_ALL)
 
 if(CONFIG_ZEPHYR_PIGWEED_MODULE)
