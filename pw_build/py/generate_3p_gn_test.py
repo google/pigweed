@@ -13,16 +13,53 @@
 # the License.
 """Tests for the pw_build.generate_3p_gn module."""
 
-import os
 import unittest
 
+from contextlib import AbstractContextManager
 from io import StringIO
+from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest import mock
+from types import TracebackType
+from typing import Iterator, Optional, Type
 
 from pw_build.generate_3p_gn import GnGenerator, write_owners
 from pw_build.gn_config import GnConfig
 from pw_build.gn_writer import GnWriter
+
+
+class GnGeneratorForTest(AbstractContextManager):
+    """Test fixture that creates a generator for a temporary directory."""
+
+    def __init__(self):
+        self._tmp = TemporaryDirectory()
+
+    def __enter__(self) -> GnGenerator:
+        """Creates a temporary directory and uses it to create a generator."""
+        tmp = self._tmp.__enter__()
+        generator = GnGenerator()
+        path = Path(tmp) / 'repo'
+        path.mkdir(parents=True)
+        generator.load_workspace(path)
+        return generator
+
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
+        """Removes the temporary directory."""
+        self._tmp.__exit__(exc_type, exc_val, exc_tb)
+
+
+def mock_return_values(mock_run, retvals: Iterator[str]) -> None:
+    """Mocks the return values of several calls to subprocess.run."""
+    side_effects = []
+    for retval in retvals:
+        attr = {'stdout.decode.return_value': retval}
+        side_effects.append(mock.MagicMock(**attr))
+    mock_run.side_effect = side_effects
 
 
 class TestGenerator(unittest.TestCase):
@@ -466,17 +503,13 @@ pw_source_set("target3") {
 
     def test_write_repo_gni(self):
         """Tests writing the GN import file for a repo."""
-        generator = GnGenerator()
-        with TemporaryDirectory() as tmp:
-            path = os.path.join(tmp, 'repo')
-            os.makedirs(path)
-            generator.load_workspace(path)
-
-            output = StringIO()
+        output = StringIO()
+        with GnGeneratorForTest() as generator:
             generator.write_repo_gni(GnWriter(output), 'Repo')
-            self.assertEqual(
-                output.getvalue(),
-                '''
+
+        self.assertEqual(
+            output.getvalue(),
+            '''
 declare_args() {
   # If compiling tests with Repo, this variable is set to the path to the Repo
   # installation. When set, a pw_source_set for the Repo library is created at
@@ -484,29 +517,26 @@ declare_args() {
   dir_pw_third_party_repo = ""
 }
 '''.lstrip(),
-            )
+        )
 
     @mock.patch('subprocess.run')
     def test_write_docs_rst(self, mock_run):
         """Tests writing the reStructuredText docs for a repo."""
-        attrs1 = {'stdout.decode.return_value': 'https://host/repo.git'}
-        attrs2 = {'stdout.decode.return_value': 'deadbeeffeedface'}
-        mock_run.side_effect = [
-            mock.MagicMock(**attrs1),
-            mock.MagicMock(**attrs2),
-        ]
+        mock_return_values(
+            mock_run,
+            [
+                'https://host/repo.git',
+                'https://host/repo.git',
+                'deadbeeffeedface',
+            ],
+        )
+        output = StringIO()
+        with GnGeneratorForTest() as generator:
+            generator.write_docs_rst(output, 'Repo')
 
-        generator = GnGenerator()
-        with TemporaryDirectory() as tmp:
-            path = os.path.join(tmp, 'repo')
-            os.makedirs(path)
-            generator.load_workspace(path)
-
-            output = StringIO()
-            generator.write_docs_rst(GnWriter(output), 'Repo')
-            self.assertEqual(
-                output.getvalue(),
-                '''
+        self.assertEqual(
+            output.getvalue(),
+            '''
 .. _module-pw_third_party_repo:
 
 ====
@@ -556,13 +586,97 @@ the ``-w`` option, e.g.
   python pw_build/py/pw_build/generate_3p_gn.py \\
     -w third_party/repo/src
 
+.. DO NOT EDIT BELOW THIS LINE. Generated section.
+
 Version
 =======
-The update script was last run for revision:
-deadbeeffeedface
+The update script was last run for revision `deadbeef`_.
 
+.. _deadbeef: https://host/repo/tree/deadbeeffeedface
 '''.lstrip(),
-            )
+        )
+
+    @mock.patch('subprocess.run')
+    def test_update_docs_rst_same_rev(self, mock_run):
+        """Tests updating the docs with the same revision."""
+        mock_return_values(
+            mock_run,
+            [
+                'https://host/repo.git',
+                'https://host/repo.git',
+                'deadbeeffeedface',
+                'https://host/repo.git',
+                'deadbeeffeedface',
+            ],
+        )
+        output = StringIO()
+        with GnGeneratorForTest() as generator:
+            generator.write_docs_rst(output, 'Repo')
+            original = output.getvalue().split('\n')
+            updated = list(generator.update_version(original))
+
+        self.assertEqual(original, updated)
+
+    @mock.patch('subprocess.run')
+    def test_update_docs_rst_new_rev(self, mock_run):
+        """Tests updating the docs with the different revision."""
+        mock_return_values(
+            mock_run,
+            [
+                'https://host/repo.git',
+                'https://host/repo.git',
+                'deadbeeffeedface',
+                'https://host/repo.git',
+                '0123456789abcdef',
+            ],
+        )
+        output = StringIO()
+        with GnGeneratorForTest() as generator:
+            generator.write_docs_rst(output, 'Repo')
+            contents = output.getvalue()
+            original = contents.split('\n')
+            updated = list(generator.update_version(original))
+
+        self.assertEqual(original[:-6], updated[:-6])
+        self.assertEqual(
+            '\n'.join(updated[-6:]),
+            '''
+Version
+=======
+The update script was last run for revision `01234567`_.
+
+.. _01234567: https://host/repo/tree/0123456789abcdef
+'''.lstrip(),
+        )
+
+    @mock.patch('subprocess.run')
+    def test_update_docs_rst_no_rev(self, mock_run):
+        """Tests updating docs that do not have a revision."""
+        mock_return_values(
+            mock_run,
+            [
+                'https://host/repo.git',
+                '0123456789abcdef',
+            ],
+        )
+        with GnGeneratorForTest() as generator:
+            updated = list(generator.update_version(['foo', 'bar', '']))
+
+        self.assertEqual(
+            '\n'.join(updated),
+            '''
+foo
+bar
+
+.. DO NOT EDIT BELOW THIS LINE. Generated section.
+
+Version
+=======
+The update script was last run for revision `01234567`_.
+
+.. _01234567: https://host/repo/tree/0123456789abcdef
+'''.lstrip(),
+        )
 
     @mock.patch('subprocess.run')
     def test_write_owners(self, mock_run):
