@@ -669,6 +669,10 @@ _EXCLUDE_FROM_COPYRIGHT_NOTICE: Sequence[str] = (
     r'\.pb\.h$',
     r'\_pb2.pyi?$',
     # keep-sorted: end
+    # Generated third-party files
+    # keep-sorted: start
+    r'\bthird_party/.*\.bazelrc$',
+    # keep-sorted: end
     # Diff/Patch files
     # keep-sorted: start
     r'\.diff$',

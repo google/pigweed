@@ -108,7 +108,7 @@ bazel_skylib_workspace()
 
 # Set up upstream googletest and googlemock.
 # Required by: Pigweed.
-# Used in modules: //pw_analog, //pw_i2c.
+# Used in modules: //pw_analog, //pw_fuzzer, //pw_i2c.
 http_archive(
     name = "com_google_googletest",
     sha256 = "ad7fdba11ea011c1d925b3289cf4af2c66a352e18d4c7264392fead75e919363",
@@ -325,7 +325,7 @@ pigweed_config(
     build_file = "//targets:default_config.BUILD",
 )
 
-# Required by: rules_fuzzing.
+# Required by: rules_fuzzing, fuzztest
 #
 # Provided here explicitly to override an old version of absl that
 # rules_fuzzing_dependencies attempts to pull in. That version has
@@ -354,6 +354,24 @@ rules_fuzzing_dependencies()
 load("@rules_fuzzing//fuzzing:init.bzl", "rules_fuzzing_init")
 
 rules_fuzzing_init()
+
+# Required by: fuzztest
+http_archive(
+    name = "com_googlesource_code_re2",
+    sha256 = "f89c61410a072e5cbcf8c27e3a778da7d6fd2f2b5b1445cd4f4508bee946ab0f",
+    strip_prefix = "re2-2022-06-01",
+    url = "https://github.com/google/re2/archive/refs/tags/2022-06-01.tar.gz",
+)
+
+# Required by: pigweed.
+# Used in modules: //pw_fuzzer.
+FUZZTEST_COMMIT = "f2e9e2a19a7b16101d1e6f01a87e639687517a1c"
+
+http_archive(
+    name = "com_google_fuzztest",
+    strip_prefix = "fuzztest-" + FUZZTEST_COMMIT,
+    url = "https://github.com/google/fuzztest/archive/" + FUZZTEST_COMMIT + ".zip",
+)
 
 RULES_JVM_EXTERNAL_TAG = "2.8"
 

@@ -29,3 +29,26 @@ pw_cc_library(
     ],
     includes = ["public"],
 )
+
+pw_cc_library(
+    name = "fuzztest",
+    testonly = True,
+    deps = ["@pigweed_config//:pw_fuzzer_fuzztest_backend"],
+)
+
+# Identifies when upstream FuzzTest is being used.
+config_setting(
+    name = "use_fuzztest",
+    testonly = True,
+    flag_values = {
+        "@pigweed_config//:pw_fuzzer_fuzztest_backend": "@com_google_fuzztest//fuzztest",
+    },
+)
+
+pw_cc_library(
+    name = "fuzztest_stub",
+    testonly = True,
+    hdrs = ["public_overrides/fuzztest/fuzztest.h"],
+    includes = ["public_overrides"],
+    deps = ["//pw_unit_test"],
+)

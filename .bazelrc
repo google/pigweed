@@ -61,6 +61,13 @@ build:asan-libfuzzer \
     --@rules_fuzzing//fuzzing:cc_engine_instrumentation=libfuzzer
 build:asan-libfuzzer --@rules_fuzzing//fuzzing:cc_engine_sanitizer=asan
 
+# Include FuzzTest build configurations.
+try-import %workspace%/third_party/fuzztest/fuzztest.bazelrc
+build:fuzztest \
+    --@pigweed_config//:pw_fuzzer_fuzztest_backend=@com_google_fuzztest//fuzztest
+build:fuzztest \
+    --@pigweed_config//:pw_unit_test_main=@com_google_fuzztest//fuzztest:fuzztest_gtest_main
+
 # Specifies desired output mode for running tests.
 # Valid values are
 #   'summary' to output only test status summary

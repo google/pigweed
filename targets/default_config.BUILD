@@ -59,6 +59,11 @@ label_flag(
 )
 
 label_flag(
+    name = "pw_fuzzer_fuzztest_backend",
+    build_setting_default = "@pigweed//pw_fuzzer:fuzztest_stub",
+)
+
+label_flag(
     name = "pw_interrupt_backend",
     build_setting_default = "@pigweed//pw_interrupt:backend_multiplexer",
 )

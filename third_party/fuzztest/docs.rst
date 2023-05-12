@@ -17,8 +17,8 @@ Add FuzzTest to your workspace with the following command.
 
 .. code-block:: sh
 
-  git submodule add git@github.com:nopsledder/fuzztest.git \
-    third_party/fuzztest/src
+  git submodule add https://github.com/google/fuzztest.git \
+    third_party/fuzztest
 
 .. tab-set::
 
@@ -38,7 +38,20 @@ Add FuzzTest to your workspace with the following command.
 
    .. tab-item:: Bazel
 
-      Bazel support is in development.
+      Set the following `label flags`_, either in your `target config`_ or on
+      the command line:
+
+      * ``pw_fuzzer_fuzztest_backend`` to ``@com_google_fuzztest//fuzztest``.
+
+      For example:
+
+      .. code-block:: sh
+
+         bazel test //... \
+            --@pigweed_config//:pw_fuzzer_fuzztest_backend=@com_google_fuzztest//fuzztest
+
+.. _target config: :ref:`_docs-build_system-bazel_configuration`
+.. _label flags: :ref:`_docs-build_system-bazel_flags`
 
 Updating
 ========
