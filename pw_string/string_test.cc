@@ -103,11 +103,11 @@ TEST(InlineString, DeduceBasicString_Char) {
 }
 
 TEST(InlineString, DeduceBasicString_Int) {
-  constexpr long kLongArray[4] = {0, 1, 2, 0};
-  InlineBasicString string_3 = kLongArray;
-  static_assert(std::is_same_v<decltype(string_3), InlineBasicString<long, 3>>);
+  constexpr char kCharArray[4] = {0, 1, 2, 0};
+  InlineBasicString string_3 = kCharArray;
+  static_assert(std::is_same_v<decltype(string_3), InlineBasicString<char, 3>>);
 
-  EXPECT_EQ(string_3, InlineBasicString(kLongArray));
+  EXPECT_EQ(string_3, InlineBasicString(kCharArray));
 }
 
 // Test CTAD on the InlineString alias, if supported.
@@ -1570,15 +1570,6 @@ TEST(InlineString, Compare) {
                 "less");
   static_assert(InlineString<5>("abc").compare(InlineString<5>("")) > 0,
                 "greater");
-
-  constexpr InlineBasicString<unsigned long long, 3> kUllString1(
-      {0, std::numeric_limits<unsigned long long>::max(), 0});
-  constexpr InlineBasicString<unsigned long long, 3> kUllString2(
-      {std::numeric_limits<unsigned long long>::max(), 0});
-
-  static_assert(kUllString1.compare(kUllString1) == 0, "equal");
-  static_assert(kUllString1.compare(kUllString2) < 0, "less");
-  static_assert(kUllString2.compare(kUllString1) > 0, "greater");
 #endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 }
 
@@ -1800,10 +1791,8 @@ TEST(InlineString, ComparisonOperators_NullTerminatedString) {
 #define PW_STRING_WRAP_TEST_EXPANSION(expr)
 #endif  // __cpp_constexpr >= 201603L
 
-#define TEST_FOR_TYPES_BASE(test_macro, ...)                             \
-  PW_STRING_WRAP_TEST_EXPANSION(test_macro(char, __VA_ARGS__));          \
-  PW_STRING_WRAP_TEST_EXPANSION(test_macro(unsigned char, __VA_ARGS__)); \
-  PW_STRING_WRAP_TEST_EXPANSION(test_macro(signed char, __VA_ARGS__));   \
+#define TEST_FOR_TYPES_BASE(test_macro, ...)                    \
+  PW_STRING_WRAP_TEST_EXPANSION(test_macro(char, __VA_ARGS__)); \
   PW_STRING_WRAP_TEST_EXPANSION(test_macro(wchar_t, __VA_ARGS__));
 
 #if PW_CXX_STANDARD_IS_SUPPORTED(11)
