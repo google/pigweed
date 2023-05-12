@@ -55,7 +55,10 @@ pw_test_group("tests") {
 }
 
 pw_test("varint_test") {
-  deps = [ ":pw_varint" ]
+  deps = [
+    ":pw_varint",
+    "$dir_pw_fuzzer:fuzztest",
+  ]
   sources = [
     "varint_test.cc",
     "varint_test_c.c",

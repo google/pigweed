@@ -63,7 +63,7 @@ pw_cc_test(
     ],
     deps = [
         ":pw_varint",
-        "//pw_unit_test",
+        "//pw_fuzzer:fuzztest",
     ],
 )
 

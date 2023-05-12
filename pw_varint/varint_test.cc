@@ -19,10 +19,13 @@
 #include <cstring>
 #include <limits>
 
+#include "fuzztest/fuzztest.h"
 #include "gtest/gtest.h"
 
 namespace pw::varint {
 namespace {
+
+using namespace fuzztest;
 
 extern "C" {
 
@@ -430,16 +433,26 @@ TEST_F(VarintWithBuffer, EncodeSizeSigned64_MultiByte_C) {
 // tests. Set the increment to 1 to test every number (this is slow).
 constexpr int kIncrement = 100'000'009;
 
-TEST_F(VarintWithBuffer, EncodeDecodeSigned32) {
+template <typename T, typename U = T>
+void EncodeDecode(T value) {
+  std::byte buffer[10];
+  size_t encoded = Encode(value, buffer);
+
+  U result;
+  size_t decoded = Decode(buffer, &result);
+
+  EXPECT_EQ(encoded, decoded);
+  ASSERT_EQ(value, result);
+}
+
+void EncodeDecodeSigned32(int32_t value) {
+  EncodeDecode<int32_t, int64_t>(value);
+}
+
+TEST(Varint, EncodeDecodeSigned32Incremental) {
   int32_t i = std::numeric_limits<int32_t>::min();
   while (true) {
-    size_t encoded = Encode(i, buffer_);
-
-    int64_t result;
-    size_t decoded = Decode(buffer_, &result);
-
-    EXPECT_EQ(encoded, decoded);
-    ASSERT_EQ(i, result);
+    EncodeDecodeSigned32(i);
 
     if (i > std::numeric_limits<int32_t>::max() - kIncrement) {
       break;
@@ -449,17 +462,42 @@ TEST_F(VarintWithBuffer, EncodeDecodeSigned32) {
   }
 }
 
-TEST_F(VarintWithBuffer, EncodeDecodeSigned32_C) {
+FUZZ_TEST(Varint, EncodeDecodeSigned32);
+
+void EncodeDecodeUnsigned32(uint32_t value) {
+  EncodeDecode<uint32_t, uint64_t>(value);
+}
+
+TEST(Varint, EncodeDecodeUnsigned32Incremental) {
+  uint32_t i = 0;
+  while (true) {
+    EncodeDecodeUnsigned32(i);
+
+    if (i > std::numeric_limits<uint32_t>::max() - kIncrement) {
+      break;
+    }
+
+    i += kIncrement;
+  }
+}
+
+FUZZ_TEST(Varint, EncodeDecodeUnsigned32);
+
+void EncodeDecode_C(uint64_t value) {
+  std::byte buffer[10];
+  size_t encoded = pw_varint_CallEncode(value, buffer, sizeof(buffer));
+
+  uint64_t result;
+  size_t decoded = pw_varint_CallDecode(buffer, sizeof(buffer), &result);
+
+  EXPECT_EQ(encoded, decoded);
+  ASSERT_EQ(value, result);
+}
+
+TEST(Varint, EncodeDecodeSigned32Incremental_C) {
   int32_t i = std::numeric_limits<int32_t>::min();
   while (true) {
-    size_t encoded = pw_varint_CallZigZagEncode(i, buffer_, sizeof(buffer_));
-
-    int64_t result;
-    size_t decoded =
-        pw_varint_CallZigZagDecode(buffer_, sizeof(buffer_), &result);
-
-    EXPECT_EQ(encoded, decoded);
-    ASSERT_EQ(i, result);
+    EncodeDecode_C(i);
 
     if (i > std::numeric_limits<int32_t>::max() - kIncrement) {
       break;
@@ -469,16 +507,10 @@ TEST_F(VarintWithBuffer, EncodeDecodeSigned32_C) {
   }
 }
 
-TEST_F(VarintWithBuffer, EncodeDecodeUnsigned32) {
+TEST(Varint, EncodeDecodeUnsigned32Incremental_C) {
   uint32_t i = 0;
   while (true) {
-    size_t encoded = Encode(i, buffer_);
-
-    uint64_t result;
-    size_t decoded = Decode(buffer_, &result);
-
-    EXPECT_EQ(encoded, decoded);
-    ASSERT_EQ(i, result);
+    EncodeDecode_C(i);
 
     if (i > std::numeric_limits<uint32_t>::max() - kIncrement) {
       break;
@@ -488,24 +520,7 @@ TEST_F(VarintWithBuffer, EncodeDecodeUnsigned32) {
   }
 }
 
-TEST_F(VarintWithBuffer, EncodeDecodeUnsigned32_C) {
-  uint32_t i = 0;
-  while (true) {
-    size_t encoded = pw_varint_CallEncode(i, buffer_, sizeof(buffer_));
-
-    uint64_t result;
-    size_t decoded = pw_varint_CallDecode(buffer_, sizeof(buffer_), &result);
-
-    EXPECT_EQ(encoded, decoded);
-    ASSERT_EQ(i, result);
-
-    if (i > std::numeric_limits<uint32_t>::max() - kIncrement) {
-      break;
-    }
-
-    i += kIncrement;
-  }
-}
+FUZZ_TEST(Varint, EncodeDecode_C);
 
 template <size_t kStringSize>
 auto MakeBuffer(const char (&data)[kStringSize]) {
