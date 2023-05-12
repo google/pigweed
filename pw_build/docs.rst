@@ -179,6 +179,8 @@ The ``pw_build_LINK_DEPS`` build arg is a list of dependencies to add to all
 This should only be used as a last resort when dependencies cannot be properly
 expressed in the build.
 
+.. _module-pw_build-third-party:
+
 Third party libraries
 ---------------------
 Pigweed includes build files for a selection of third-party libraries. For a
@@ -197,6 +199,54 @@ the Python script at ``pw_build/py/pw_build/generate_3p_gn.py`` may be used.
   .. note::
     The ``generate_3p_gn.py`` script is experimental, and may not work on an
     arbitrary Bazel library.
+
+To generate or update the GN offered by Pigweed from an Bazel upstream project,
+first create a ``third_party/<library>/repo.json`` file. This file should
+describe a single JSON object, with the following fields:
+
+* ``name``: String containg the project name.
+
+  .. code-block::
+
+     "name": "FuzzTest"
+
+* ``repos``: Object mapping Bazel repositories to library names.
+
+  .. code-block::
+
+     "repos": { "com_google_absl": "abseil-cpp" }
+
+* ``aliases``: Object mapping GN labels to other GN labels. In some cases, a
+  third party library may have a dependency on another library already supported
+  by Pigweed, but with a label that differs from what the script would generate.
+  This field allows those labels to be rewritten.
+
+  .. code-block::
+
+     "aliases": {
+       "$dir_pw_third_party/googletest:gtest": "$dir_pw_third_party/googletest"
+     }
+
+* ``add``: List of labels to existing GN configs. These will be added to every
+  target in the library.
+
+  .. code-block::
+
+     "add": [ "$dir_pw_third_party/re2/configs:disabled_warnings" ]
+
+* ``remove``: List of labels to default GN configs. These will be removed from
+  every target.
+
+  .. code-block::
+
+     "remove" = [ "$dir_pw_fuzzer:instrumentation" ]
+
+* ``allow_testonly``: Boolean indicating whether to generate GN for Bazel
+  targets marked test-only. Defaults to false.
+
+  .. code-block::
+
+     "allow_testonly": true
 
 Python packages
 ---------------

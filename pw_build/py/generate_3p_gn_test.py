@@ -576,6 +576,7 @@ The GN build files are generated from the third-party Bazel build files using
 $dir_pw_build/py/pw_build/generate_3p_gn.py.
 
 The script uses data taken from ``$dir_pw_third_party/repo/repo.json``.
+The schema of ``repo.json`` is described in :ref:`module-pw_build-third-party`.
 
 The script should be re-run whenever the submodule is updated or the JSON file
 is modified. Specify the location of the Bazel repository can be specified using
