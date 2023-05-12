@@ -167,6 +167,105 @@ TEST(FakeDispatcher, PostAfterRunsTasksInSequence) {
   EXPECT_EQ(task_run_order, expected_run_order);
 }
 
+TEST(FakeDispatcher, PostAfterWithEarlierTimeRunsSooner) {
+  FakeDispatcher dispatcher;
+  CallCounter counter;
+  Task task(counter.fn());
+  dispatcher.PostAfter(task, 100ms);
+  dispatcher.PostAfter(task, 50ms);
+  dispatcher.RunFor(60ms);
+  EXPECT_EQ(counter.counts, CallCounts{.ok = 1});
+}
+
+TEST(FakeDispatcher, PostAfterWithLaterTimeRunsSooner) {
+  FakeDispatcher dispatcher;
+  CallCounter counter;
+  Task task(counter.fn());
+  dispatcher.PostAfter(task, 50ms);
+  dispatcher.PostAfter(task, 100ms);
+  dispatcher.RunFor(60ms);
+  EXPECT_EQ(counter.counts, CallCounts{.ok = 1});
+}
+
+TEST(FakeDispatcher, PostThenPostAfterRunsImmediately) {
+  FakeDispatcher dispatcher;
+  CallCounter counter;
+  Task task(counter.fn());
+  dispatcher.Post(task);
+  dispatcher.PostAfter(task, 50ms);
+  dispatcher.RunUntilIdle();
+  EXPECT_EQ(counter.counts, CallCounts{.ok = 1});
+}
+
+TEST(FakeDispatcher, PostAfterThenPostRunsImmediately) {
+  FakeDispatcher dispatcher;
+  CallCounter counter;
+  Task task(counter.fn());
+  dispatcher.PostAfter(task, 50ms);
+  dispatcher.Post(task);
+  dispatcher.RunUntilIdle();
+  EXPECT_EQ(counter.counts, CallCounts{.ok = 1});
+}
+
+TEST(FakeDispatcher, CancelAfterPostStopsTaskFromRunning) {
+  FakeDispatcher dispatcher;
+  CallCounter counter;
+  Task task(counter.fn());
+  dispatcher.Post(task);
+  EXPECT_TRUE(dispatcher.Cancel(task));
+  dispatcher.RunUntilIdle();
+  EXPECT_EQ(counter.counts, CallCounts{});
+}
+
+TEST(FakeDispatcher, CancelAfterPostAfterStopsTaskFromRunning) {
+  FakeDispatcher dispatcher;
+  CallCounter counter;
+  Task task(counter.fn());
+  dispatcher.PostAfter(task, 50ms);
+  EXPECT_TRUE(dispatcher.Cancel(task));
+  dispatcher.RunFor(60ms);
+  EXPECT_EQ(counter.counts, CallCounts{});
+}
+
+TEST(FakeDispatcher, CancelAfterPostAndPostAfterStopsTaskFromRunning) {
+  FakeDispatcher dispatcher;
+  CallCounter counter;
+  Task task(counter.fn());
+  dispatcher.Post(task);
+  dispatcher.PostAfter(task, 50ms);
+  EXPECT_TRUE(dispatcher.Cancel(task));
+  dispatcher.RunFor(60ms);
+  EXPECT_EQ(counter.counts, CallCounts{});
+}
+
+TEST(FakeDispatcher, PostAgainAfterCancelRuns) {
+  FakeDispatcher dispatcher;
+  CallCounter counter;
+  Task task(counter.fn());
+  dispatcher.Post(task);
+  EXPECT_TRUE(dispatcher.Cancel(task));
+  dispatcher.Post(task);
+  dispatcher.RunUntilIdle();
+  EXPECT_EQ(counter.counts, CallCounts{.ok = 1});
+}
+
+TEST(FakeDispatcher, CancelWithoutPostReturnsFalse) {
+  FakeDispatcher dispatcher;
+  CallCounter counter;
+  Task task(counter.fn());
+  EXPECT_FALSE(dispatcher.Cancel(task));
+}
+
+TEST(FakeDispatcher, CancelAfterRunningReturnsFalse) {
+  FakeDispatcher dispatcher;
+  CallCounter counter;
+  Task task(counter.fn());
+  dispatcher.Post(task);
+  dispatcher.RunUntilIdle();
+  EXPECT_EQ(counter.counts, CallCounts{.ok = 1});
+  EXPECT_FALSE(dispatcher.Cancel(task));
+}
+
 TEST(FakeDispatcher, CancelInsideOtherTaskCancelsTaskWithoutRunningIt) {
   FakeDispatcher dispatcher;
 

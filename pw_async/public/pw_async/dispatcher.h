@@ -51,23 +51,34 @@ class Dispatcher : public chrono::VirtualSystemClock {
   /// Posted tasks execute in the order they are posted. This ensures that
   /// tasks can re-post themselves and yield in order to allow other tasks the
   /// opportunity to execute.
+  ///
+  /// A given |task| must only be posted to a single `Dispatcher`.
   virtual void Post(Task& task) { PostAt(task, now()); }
 
   /// Post caller owned |task| to be run after |delay|.
+  ///
+  /// If |task| was already posted to run at an earlier time (before |delay|
+  /// would expire), |task| must be run at the earlier time, and |task|
+  /// *may* also be run at the later time.
   virtual void PostAfter(Task& task, chrono::SystemClock::duration delay) {
     PostAt(task, now() + delay);
   }
 
   /// Post caller owned |task| to be run at |time|.
+  ///
+  /// If |task| was already posted to run before |time|,
+  /// |task| must be run at the earlier time, and |task| *may* also be run at
+  /// the later time.
   virtual void PostAt(Task& task, chrono::SystemClock::time_point time) = 0;
 
-  /// Request that a task not be invoked again.
+  /// Prevent a `Post`ed task from starting.
   ///
-  /// Periodic tasks may be posted once more after they are canceled. Tasks may
-  /// be canceled from within a `TaskFunction` by calling
-  /// `context.dispatcher.Cancel(context.task)`.
-  /// @return true if `task` successfully canceled, false otherwise. If
-  /// cancelation fails, the task may be running or completed.
+  /// Returns:
+  ///   true: the task was successfully canceled and will not be run by the
+  ///     dispatcher until `Post`ed again.
+  ///   false: the task could not be cancelled because it either was not
+  ///     posted, already ran, or is currently running on the `Dispatcher`
+  ///     thread.
   virtual bool Cancel(Task& task) = 0;
 };
 
