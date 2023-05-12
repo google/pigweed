@@ -47,7 +47,7 @@ TEST(FilteredView, Array_MatchAll) {
 
   std::array<bool, 6> found = {};
   for (int value : view) {
-    found[value] = true;
+    found[static_cast<size_t>(value)] = true;
   }
   EXPECT_TRUE(
       std::all_of(found.begin(), found.end(), [](bool b) { return b; }));
@@ -102,7 +102,7 @@ TEST(FilteredView, IntrusiveList_MatchAll) {
 
   for (const Item& item :
        FilteredView(intrusive_list, [](const Item&) { return true; })) {
-    found[item.value] = true;
+    found[static_cast<size_t>(item.value)] = true;
   }
   EXPECT_TRUE(
       std::all_of(found.begin(), found.end(), [](bool b) { return b; }));

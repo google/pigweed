@@ -479,7 +479,10 @@ template <typename T>
 void Vector<T, vector_impl::kGeneric>::resize(size_type new_size,
                                               const T& value) {
   if (size() < new_size) {
-    Append(std::min(max_size(), size_t(new_size)) - size(), value);
+    // Note: max_size() & size() always return a value that fits in size_type.
+    Append(std::min(static_cast<size_type>(max_size()), new_size) -
+               static_cast<size_type>(size()),
+           value);
   } else {
     while (size() > new_size) {
       pop_back();
@@ -519,7 +522,8 @@ typename Vector<T>::iterator Vector<T>::insert(Vector<T>::const_iterator index,
 
   iterator insertion_point = begin() + std::distance(cbegin(), index);
 
-  const size_t insertion_count = std::distance(first, last);
+  const size_t insertion_count =
+      static_cast<size_t>(std::distance(first, last));
   if (insertion_count == 0) {
     return insertion_point;
   }
@@ -536,7 +540,7 @@ typename Vector<T>::iterator Vector<T>::insert(Vector<T>::const_iterator index,
     ++first;
     ++insertion_point;
   }
-  size_ += insertion_count;
+  size_ += static_cast<size_type>(insertion_count);
 
   // Return an iterator pointing to the first element inserted.
   return return_value;
@@ -585,7 +589,7 @@ typename Vector<T>::iterator Vector<T>::erase(Vector<T>::const_iterator first,
   iterator destination = begin() + std::distance(cbegin(), first);
   iterator new_end = std::move(source, end(), destination);
 
-  size_ = std::distance(begin(), new_end);
+  size_ = static_cast<size_type>(std::distance(begin(), new_end));
 
   // Return an iterator following the last removed element.
   return new_end;

@@ -336,7 +336,7 @@ TEST(InlineQueue, Generic) {
   EXPECT_EQ(generic_queue.size(), queue.size());
   EXPECT_EQ(generic_queue.max_size(), queue.max_size());
 
-  int i = 0;
+  uint16_t i = 0;
   for (int value : queue) {
     EXPECT_EQ(value, generic_queue[i]);
     i += 1;
@@ -430,7 +430,7 @@ TEST(InlineQueue, OperatorPlus) {
   // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
   queue.push_overwrite(4);
 
-  for (size_t i = 0; i < 4; i++) {
+  for (int i = 0; i < 4; i++) {
     ASSERT_EQ(*(queue.begin() + i), static_cast<int>(i + 1));
     ASSERT_EQ(*(i + queue.begin()), static_cast<int>(i + 1));
   }
@@ -501,7 +501,7 @@ TEST(InlineQueue, OpeartorMinus) {
   // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
   queue.push_overwrite(4);
 
-  for (size_t i = 1; i <= 4; i++) {
+  for (int i = 1; i <= 4; i++) {
     ASSERT_EQ(*(queue.end() - i), static_cast<int>(5 - i));
   }
 
@@ -573,7 +573,7 @@ TEST(InlineQueue, OperatorSquareBracket) {
   // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
   queue.push_overwrite(4);
 
-  for (size_t i = 0; i < queue.size(); i++) {
+  for (unsigned short i = 0; i < queue.size(); i++) {
     ASSERT_EQ(queue.begin()[i], static_cast<int>(i + 1));
   }
 }
@@ -586,8 +586,8 @@ TEST(InlineQueue, OperatorLessThan) {
   // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
   queue.push_overwrite(4);
 
-  for (size_t i = 0; i < queue.size(); i++) {
-    for (size_t j = 0; j < i; j++) {
+  for (int i = 0; i < queue.size(); i++) {
+    for (int j = 0; j < i; j++) {
       ASSERT_TRUE((queue.begin() + j) < (queue.begin() + i));
     }
 
@@ -603,8 +603,8 @@ TEST(InlineQueue, OperatorLessThanEqual) {
   // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
   queue.push_overwrite(4);
 
-  for (size_t i = 0; i < queue.size(); i++) {
-    for (size_t j = 0; j <= i; j++) {
+  for (int i = 0; i < queue.size(); i++) {
+    for (int j = 0; j <= i; j++) {
       ASSERT_TRUE((queue.begin() + j) <= (queue.begin() + i));
     }
 
@@ -620,8 +620,8 @@ TEST(InlineQueue, OperatorGreater) {
   // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
   queue.push_overwrite(4);
 
-  for (size_t i = 0; i < queue.size(); i++) {
-    for (size_t j = i + 1; j < queue.size(); j++) {
+  for (int i = 0; i < queue.size(); i++) {
+    for (int j = i + 1; j < queue.size(); j++) {
       ASSERT_TRUE((queue.begin() + j) > (queue.begin() + i));
     }
 
@@ -637,8 +637,8 @@ TEST(InlineQueue, OperatorGreaterThanEqual) {
   // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
   queue.push_overwrite(4);
 
-  for (size_t i = 0; i < queue.size(); i++) {
-    for (size_t j = i; j < queue.size(); j++) {
+  for (int i = 0; i < queue.size(); i++) {
+    for (int j = i; j < queue.size(); j++) {
       ASSERT_TRUE((queue.begin() + j) >= (queue.begin() + i));
     }
 
@@ -654,7 +654,7 @@ TEST(InlineQueue, DereferenceOperator) {
   // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
   queue.push_overwrite(4);
 
-  for (size_t i = 0; i < queue.size(); i++) {
+  for (int i = 0; i < queue.size(); i++) {
     const auto it = queue.begin() + i;
     ASSERT_EQ(*(it.operator->()), static_cast<int>(i + 1));
   }

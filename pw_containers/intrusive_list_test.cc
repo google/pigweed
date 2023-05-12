@@ -376,7 +376,7 @@ TEST(IntrusiveList, IteratorIncrement) {
   TestItem item_array[20];
   IntrusiveList<TestItem> list;
   for (size_t i = 0; i < PW_ARRAY_SIZE(item_array); ++i) {
-    item_array[i].SetNumber(i);
+    item_array[i].SetNumber(static_cast<int>(i));
     list.push_back(item_array[i]);
   }
 

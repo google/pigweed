@@ -268,9 +268,13 @@ class BasicInlineDeque<ValueType, SizeType, containers::internal::kGenericSized>
     return const_iterator(this, 0);
   }
 
-  iterator end() noexcept { return iterator(this, -1); }
+  iterator end() noexcept {
+    return iterator(this, std::numeric_limits<size_type>::max());
+  }
   const_iterator end() const noexcept { return cend(); }
-  const_iterator cend() const noexcept { return const_iterator(this, -1); }
+  const_iterator cend() const noexcept {
+    return const_iterator(this, std::numeric_limits<size_type>::max());
+  }
 
   // Size
 
@@ -458,10 +462,7 @@ template <typename ValueType, typename SizeType>
 void BasicInlineDeque<ValueType, SizeType>::resize(size_type new_size,
                                                    const value_type& value) {
   if (size() < new_size) {
-    Append(std::min(static_cast<size_t>(max_size()),
-                    static_cast<size_t>(new_size)) -
-               size(),
-           value);
+    Append(std::min(max_size(), new_size) - size(), value);
   } else {
     while (size() > new_size) {
       pop_back();
@@ -523,12 +524,14 @@ class InlineDequeIterator {
   }
 
   constexpr InlineDequeIterator& Incr(difference_type n) {
-    const size_type new_pos = n + (pos_ == kEnd ? container_->size() : pos_);
+    const difference_type new_pos =
+        n + (pos_ == kEnd ? container_->size() : pos_);
 
     PW_DASSERT(new_pos >= 0);
     PW_DASSERT(new_pos <= container_->size());
 
-    pos_ = new_pos == container_->size() ? kEnd : new_pos;
+    pos_ =
+        new_pos == container_->size() ? kEnd : static_cast<size_type>(new_pos);
 
     return *this;
   }
@@ -620,7 +623,7 @@ class InlineDequeIterator {
   }
 
  private:
-  static constexpr size_type kEnd = -1;
+  static constexpr size_type kEnd = std::numeric_limits<size_type>::max();
   container_type* container_;  // pointer to container this iterator is from
   size_type pos_;              // logical index of iterator
 };

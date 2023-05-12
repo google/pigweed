@@ -117,7 +117,9 @@ class FilteredView {
   const auto& back() const { return *std::prev(end()); }
 
   // The number of elements in the container that match the filter.
-  size_t size() const { return std::distance(begin(), end()); }
+  size_t size() const {
+    return static_cast<size_t>(std::distance(begin(), end()));
+  }
 
   bool empty() const { return begin() == end(); }
 

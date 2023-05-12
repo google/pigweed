@@ -473,7 +473,7 @@ TEST(InlineDeque, Generic) {
   EXPECT_EQ(generic_deque.size(), deque.size());
   EXPECT_EQ(generic_deque.max_size(), deque.max_size());
 
-  int i = 0;
+  unsigned short i = 0;
   for (int value : deque) {
     EXPECT_EQ(value, generic_deque[i]);
     i += 1;
@@ -569,7 +569,7 @@ TEST(InlineDeque, OperatorPlus) {
   // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
   deque.push_back(4);
 
-  for (size_t i = 0; i < 4; i++) {
+  for (int i = 0; i < 4; i++) {
     ASSERT_EQ(*(deque.begin() + i), static_cast<int>(i + 1));
     ASSERT_EQ(*(i + deque.begin()), static_cast<int>(i + 1));
   }
@@ -652,7 +652,7 @@ TEST(InlineDeque, OpeartorMinus) {
   // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
   deque.push_back(4);
 
-  for (size_t i = 1; i <= 4; i++) {
+  for (int i = 1; i <= 4; i++) {
     ASSERT_EQ(*(deque.end() - i), static_cast<int>(5 - i));
   }
 
@@ -736,7 +736,7 @@ TEST(InlineDeque, OperatorSquareBracket) {
   // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
   deque.push_back(4);
 
-  for (size_t i = 0; i < deque.size(); i++) {
+  for (unsigned short i = 0; i < deque.size(); i++) {
     ASSERT_EQ(deque.begin()[i], static_cast<int>(i + 1));
   }
 }
@@ -753,8 +753,8 @@ TEST(InlineDeque, OperatorLessThan) {
   // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
   deque.push_back(4);
 
-  for (size_t i = 0; i < deque.size(); i++) {
-    for (size_t j = 0; j < i; j++) {
+  for (int i = 0; i < deque.size(); i++) {
+    for (int j = 0; j < i; j++) {
       ASSERT_TRUE((deque.begin() + j) < (deque.begin() + i));
     }
 
@@ -774,8 +774,8 @@ TEST(InlineDeque, OperatorLessThanEqual) {
   // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
   deque.push_back(4);
 
-  for (size_t i = 0; i < deque.size(); i++) {
-    for (size_t j = 0; j <= i; j++) {
+  for (int i = 0; i < deque.size(); i++) {
+    for (int j = 0; j <= i; j++) {
       ASSERT_TRUE((deque.begin() + j) <= (deque.begin() + i));
     }
 
@@ -795,8 +795,8 @@ TEST(InlineDeque, OperatorGreater) {
   // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
   deque.push_back(4);
 
-  for (size_t i = 0; i < deque.size(); i++) {
-    for (size_t j = i + 1; j < deque.size(); j++) {
+  for (int i = 0; i < deque.size(); i++) {
+    for (int j = i + 1; j < deque.size(); j++) {
       ASSERT_TRUE((deque.begin() + j) > (deque.begin() + i));
     }
 
@@ -816,8 +816,8 @@ TEST(InlineDeque, OperatorGreaterThanEqual) {
   // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
   deque.push_back(4);
 
-  for (size_t i = 0; i < deque.size(); i++) {
-    for (size_t j = i; j < deque.size(); j++) {
+  for (int i = 0; i < deque.size(); i++) {
+    for (int j = i; j < deque.size(); j++) {
       ASSERT_TRUE((deque.begin() + j) >= (deque.begin() + i));
     }
 
@@ -837,7 +837,7 @@ TEST(InlineDeque, DereferenceOperator) {
   // Content = {1, 2, 3, 4}, Storage = [3, 4, 1, 2]
   deque.push_back(4);
 
-  for (size_t i = 0; i < deque.size(); i++) {
+  for (int i = 0; i < deque.size(); i++) {
     const auto it = deque.begin() + i;
     ASSERT_EQ(*(it.operator->()), static_cast<int>(i + 1));
   }
