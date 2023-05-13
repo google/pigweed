@@ -47,14 +47,14 @@ void pw_log_tokenized_Test_LogMetadata_LevelTooLarge_Clamps(void) {
 }
 
 void pw_log_tokenized_Test_LogMetadata_TooManyFlags_Truncates(void) {
-// clang-format off
+  // clang-format off
 #line 1100
   PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(1, PW_LOG_MODULE_NAME, 0xFFFFFFFF, "hello");
   // clang-format on
 }
 
 void pw_log_tokenized_Test_LogMetadata_LogMetadata_VariousValues(void) {
-// clang-format off
+  // clang-format off
 #line 1200
   PW_LOG_TOKENIZED_TO_GLOBAL_HANDLER_WITH_PAYLOAD(6, PW_LOG_MODULE_NAME, 3, "hello%s", "?");
   // clang-format on

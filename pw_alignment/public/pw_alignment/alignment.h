@@ -56,14 +56,15 @@ constexpr size_t bit_ceil(size_t x) noexcept {
 // The NaturallyAligned class is a wrapper class for ensuring the object is
 // aligned to a power of 2 bytes greater than or equal to its size.
 template <typename T>
-struct [[gnu::aligned(bit_ceil(sizeof(T)))]] NaturallyAligned
-    : public T{NaturallyAligned() : T(){} NaturallyAligned(const T& t) :
-                   T(t){} template <class U>
-                   NaturallyAligned(const U& u) : T(u){} NaturallyAligned
-                   operator=(T other){return T::operator=(other);
-}  // namespace pw
-}
-;
+struct [[gnu::aligned(bit_ceil(sizeof(T)))]] NaturallyAligned : public T {
+  NaturallyAligned() : T() {}
+  NaturallyAligned(const T& t) : T(t) {}
+  template <class U>
+  NaturallyAligned(const U& u) : T(u) {}
+  NaturallyAligned operator=(T other) {
+    return T::operator=(other);
+  }  // namespace pw
+};
 
 // This is a convenience wrapper for ensuring the object held by std::atomic is
 // naturally aligned. Ensuring the underlying objects's alignment is natural

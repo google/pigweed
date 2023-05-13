@@ -21,7 +21,7 @@ _PW_POLYFILL_BEGIN_NAMESPACE_STD
 
 template <typename T>
 constexpr remove_reference_t<T>&& move(T&& object) {
-  return (remove_reference_t<T> &&) object;
+  return (remove_reference_t<T>&&)object;
 }
 
 // Forward declare these classes, which are specialized in other headers.

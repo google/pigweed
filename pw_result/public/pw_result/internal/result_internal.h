@@ -349,8 +349,8 @@ struct MoveCtorBase<T, false> {
 };
 
 template <typename T,
-          bool = std::is_copy_constructible<T>::value&&
-              std::is_copy_assignable<T>::value>
+          bool = std::is_copy_constructible<T>::value &&
+                 std::is_copy_assignable<T>::value>
 struct CopyAssignBase {
   CopyAssignBase() = default;
   CopyAssignBase(const CopyAssignBase&) = default;
@@ -369,8 +369,8 @@ struct CopyAssignBase<T, false> {
 };
 
 template <typename T,
-          bool = std::is_move_constructible<T>::value&&
-              std::is_move_assignable<T>::value>
+          bool = std::is_move_constructible<T>::value &&
+                 std::is_move_assignable<T>::value>
 struct MoveAssignBase {
   MoveAssignBase() = default;
   MoveAssignBase(const MoveAssignBase&) = default;
