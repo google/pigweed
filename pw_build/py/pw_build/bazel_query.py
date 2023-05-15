@@ -18,14 +18,17 @@ import logging
 import os
 import subprocess
 
+from io import StringIO
 from pathlib import Path, PurePosixPath
 from typing import (
     Any,
     Callable,
     Dict,
+    IO,
     Iterable,
     Iterator,
     List,
+    Optional,
     Union,
 )
 from xml.etree import ElementTree
@@ -212,7 +215,7 @@ class BazelWorkspace:
     def get_rules(self, kind: str) -> Iterator[BazelRule]:
         """Returns rules matching the given kind, e.g. 'cc_library'."""
         self._load_packages()
-        results = self._run(
+        results = self._query(
             'cquery', f'kind({kind}, //...)', '--output=jsonproto'
         )
         json_data = json.loads(results)
@@ -229,9 +232,9 @@ class BazelWorkspace:
         """Scans the workspace for packages and their default visibilities."""
         if self.packages:
             return
-        packages = self._run('query', '//...', '--output=package').split('\n')
+        packages = self._query('query', '//...', '--output=package').split('\n')
         for package in packages:
-            results = self._run(
+            results = self._query(
                 'query', f'buildfiles(//{package}:*)', '--output=xml'
             )
             xml_data = ElementTree.fromstring(results)
@@ -242,13 +245,15 @@ class BazelWorkspace:
                     if elem.tag == 'visibility-label':
                         self.packages[package] = elem.attrib['name']
 
-    def _run(self, *args: str) -> str:
-        """Run a query command in the Bazel workspace."""
+    def _query(self, *args: str) -> str:
+        """Invokes `bazel cquery` with the given selector."""
+        output = StringIO()
+        self._exec(*args, '--noshow_progress', output=output)
+        return output.getvalue()
+
+    def _exec(self, *args: str, output: Optional[IO] = None) -> None:
+        """Execute a Bazel command in the workspace."""
         cmdline = ['bazel'] + list(args) + ['--noshow_progress']
-        debug_cmdline = [
-            f"'{s}'" if any(c in s for c in r' ()') else s for s in cmdline
-        ]
-        _LOG.debug('[+] cd %s && %s', self.root, ' '.join(debug_cmdline))
         result = subprocess.run(
             cmdline,
             cwd=self.root,
@@ -257,7 +262,18 @@ class BazelWorkspace:
         if not result.stdout:
             _LOG.error(result.stderr.decode('utf-8'))
             raise ParseError(f'Failed to query Bazel workspace: {self.root}')
-        return result.stdout.decode('utf-8').strip()
+        if output:
+            output.write(result.stdout.decode('utf-8').strip())
+
+    def run(self, label: str, *args, output: Optional[IO] = None) -> None:
+        """Invokes `bazel run` on the given label.
+
+        Args:
+            label: A Bazel target, e.g. "@repo//package:target".
+            args: Additional options to pass to `bazel`.
+            output: Optional destination for the output of the command.
+        """
+        self._exec('run', label, *args, output=output)
 
     def revision(self) -> str:
         try:

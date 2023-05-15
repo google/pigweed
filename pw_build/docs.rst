@@ -255,6 +255,16 @@ describe a single JSON object, with the following fields:
 
      "no_gn_check": [ "//fuzztest:regexp_dfa" ]
 
+* ``extra_files``: Object mapping additional files to create to Bazel targets
+  that create them. These targets will be passed to ``bazel run`` and their
+  output saved to the named file within ``third_party/<library>``. For example:
+
+  .. code-block::
+
+     "extra_files": {
+       "fuzztest.bazelrc": "@com_google_fuzztest//bazel:setup_configs"
+     }
+
 .. __: https://gn.googlesource.com/gn/+/main/docs/reference.md#cmd_check
 
 Python packages

@@ -682,10 +682,21 @@ The update script was last run for revision `01234567`_.
         )
 
     @mock.patch('subprocess.run')
+    def test_write_extra(self, mock_run):
+        """Tests extra files produced via `bazel run`."""
+        attr = {'stdout.decode.return_value': 'hello, world!'}
+        mock_run.return_value = mock.MagicMock(**attr)
+
+        output = StringIO()
+        with GnGeneratorForTest() as generator:
+            generator.write_extra(output, 'some_label')
+        self.assertEqual(output.getvalue(), 'hello, world!')
+
+    @mock.patch('subprocess.run')
     def test_write_owners(self, mock_run):
         """Tests writing an OWNERS file."""
-        attrs = {'stdout.decode.return_value': 'someone@pigweed.dev'}
-        mock_run.return_value = mock.MagicMock(**attrs)
+        attr = {'stdout.decode.return_value': 'someone@pigweed.dev'}
+        mock_run.return_value = mock.MagicMock(**attr)
 
         output = StringIO()
         write_owners(output)

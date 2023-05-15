@@ -350,6 +350,10 @@ class GnGenerator:
         yield f'.. _{short}: {url}/tree/{revision}'
         yield ''
 
+    def write_extra(self, extra: IO, label: str) -> None:
+        """Runs a Bazel target to generate an extra file."""
+        self._workspace.run(label, output=extra)
+
 
 def write_owners(owners: IO) -> None:
     """Write an OWNERS file, but only if it does not already exist.
@@ -405,6 +409,7 @@ def _generate_gn(workspace_path: Path) -> None:
         removeconfigs = obj.get('remove', [])
         allow_testonly = obj.get('allow_testonly', False)
         no_gn_check = obj.get('no_gn_check', [])
+        extra_files = obj.get('extra_files', {})
 
     for exclusion in no_gn_check:
         generator.exclude_from_gn_check(bazel=exclusion)
@@ -435,6 +440,10 @@ def _generate_gn(workspace_path: Path) -> None:
             write_owners(owners)
     except OSError:
         pass  # OWNERS file already exists.
+
+    for filename, label in extra_files.items():
+        with open(Path(output, filename), 'w') as extra:
+            generator.write_extra(extra, label)
 
 
 if __name__ == '__main__':

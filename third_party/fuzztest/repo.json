@@ -23,5 +23,8 @@
         "$dir_pw_toolchain/host_clang:sanitize_thread"
     ],
     "allow_testonly": true,
-    "no_gn_check": [ "//fuzztest:regexp_dfa" ]
+    "no_gn_check": [ "//fuzztest:regexp_dfa" ],
+    "extra_files": {
+        "fuzztest.bazelrc": "@com_google_fuzztest//bazel:setup_configs"
+    }
 }

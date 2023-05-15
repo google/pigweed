@@ -303,26 +303,48 @@ class TestBazelRule(unittest.TestCase):
 class TestWorkspace(unittest.TestCase):
     """Test for bazel_query.Workspace."""
 
-    @mock.patch('pw_build.bazel_query.BazelWorkspace._run')
+    @mock.patch('subprocess.run')
     def test_workspace_get_rules(self, mock_run):
         """Tests querying a workspace for Bazel rules."""
-        packages = '\n'.join(['foo/pkg1', 'bar/pkg2'])
+        attrs = []
 
-        foo_default_visibility = '''
+        # `bazel query //... --output=package
+        attrs.append(
+            {
+                'stdout.decode.return_value': '''
+foo/pkg1
+bar/pkg2'''
+            }
+        )
+
+        # bazel query buildfiles(//foo:*) --output=xml
+        attrs.append(
+            {
+                'stdout.decode.return_value': '''
 <query version="2">
     <source-file name="//foo/pkg1:BUILD.bazel">
         <visibility-label name="//visibility:public"/>
     </source-file>
 </query>'''
+            }
+        )
 
-        bar_default_visibility = '''
+        # bazel query buildfiles(//bar:*) --output=xml
+        attrs.append(
+            {
+                'stdout.decode.return_value': '''
 <query version="2">
     <source-file name="//bar/pkg2:BUILD.bazel">
         <visibility-label name="//visibility:private"/>
     </source-file>
 </query>'''
+            }
+        )
 
-        some_kind_rules = '''
+        # bazel cquery kind(some_kind, //...) --output=jsonproto
+        attrs.append(
+            {
+                'stdout.decode.return_value': '''
 {
   "results": [
     {
@@ -347,13 +369,9 @@ class TestWorkspace(unittest.TestCase):
     }
   ]
 }'''
-        mock_run.side_effect = [
-            packages,
-            foo_default_visibility,
-            bar_default_visibility,
-            some_kind_rules,
-        ]
-
+            }
+        )
+        mock_run.side_effect = [mock.MagicMock(**attr) for attr in attrs]
         with TemporaryDirectory() as tmp:
             workspace = BazelWorkspace(tmp)
             rules = list(workspace.get_rules('some_kind'))
