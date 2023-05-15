@@ -713,7 +713,7 @@ Then use `set +x` to go back to normal.
 
         for pkg in self._pw_packages:
             print('installing {}'.format(pkg))
-            cmd = ['pw', 'package', 'install', '--force', pkg]
+            cmd = ['pw', 'package', 'install', pkg]
 
             log = os.path.join(pkg_dir, '{}.log'.format(pkg))
             try:
