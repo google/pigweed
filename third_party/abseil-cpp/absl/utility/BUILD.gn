@@ -21,6 +21,19 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_third_party/abseil-cpp/abseil-cpp.gni")
 
+# Generated from //absl/utility:if_constexpr
+pw_source_set("if_constexpr") {
+  public =
+      [ "$dir_pw_third_party_abseil_cpp/absl/utility/internal/if_constexpr.h" ]
+  public_configs = [ "../..:abseil_cpp_public_config1" ]
+  configs = [
+    "../../configs:internal_disabled_warnings",
+    "../..:abseil_cpp_config1",
+  ]
+  remove_configs = [ "$dir_pw_fuzzer:instrumentation" ]
+  public_deps = [ "../base:config" ]
+}
+
 # Generated from //absl/utility:utility
 pw_source_set("utility") {
   public = [ "$dir_pw_third_party_abseil_cpp/absl/utility/utility.h" ]

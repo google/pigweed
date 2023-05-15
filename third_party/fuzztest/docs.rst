@@ -79,5 +79,6 @@ the ``-w`` option, e.g.
 
 Version
 =======
-The update script was last run for revision:
-f2e9e2a19a7b16101d1e6f01a87e639687517a1c
+The update script was last run for revision `3c77f97`_.
+
+.. _3c77f97: https://github.com/google/fuzztest/tree/3c77f97183a1270796d25db1a8956706a25af238

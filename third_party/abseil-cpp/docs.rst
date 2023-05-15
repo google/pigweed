@@ -49,5 +49,6 @@ the ``-w`` option, e.g.
 
 Version
 =======
-The update script was last run for revision:
-8518869eb9a8ef098a9dd7780b9e55d5b43b5873
+The update script was last run for revision `67f9650`_.
+
+.. _67f9650: https://github.com/abseil/abseil-cpp/tree/67f9650c93a4fa04728a5b754ae8297d2c55d898

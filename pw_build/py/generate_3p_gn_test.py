@@ -377,24 +377,26 @@ import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_third_party/test/test.gni")
 
-config("test_config1") {
-  cflags = [
-    "common",
-  ]
-}
+if (dir_pw_third_party_test != "") {
+  config("test_config1") {
+    cflags = [
+      "common",
+    ]
+  }
 
-# Generated from //:target0
-pw_executable("target0") {
-  sources = [
-    "$dir_pw_third_party_test/target0.cc",
-  ]
-  configs = [
-    ":test_config1",
-  ]
-  deps = [
-    "foo:target1",
-    "foo:target2",
-  ]
+  # Generated from //:target0
+  pw_executable("target0") {
+    sources = [
+      "$dir_pw_third_party_test/target0.cc",
+    ]
+    configs = [
+      ":test_config1",
+    ]
+    deps = [
+      "foo:target1",
+      "foo:target2",
+    ]
+  }
 }
 
 pw_doc_group("docs") {
@@ -680,6 +682,36 @@ The update script was last run for revision `01234567`_.
 .. _01234567: https://host/repo/tree/0123456789abcdef
 '''.lstrip(),
         )
+
+    def test_update_third_party_docs(self):
+        """Tests adding docs to //docs::third_party_docs."""
+        with GnGeneratorForTest() as generator:
+            contents = generator.update_third_party_docs(
+                '''
+group("third_party_docs") {
+  deps = [
+    "$dir_pigweed/third_party/existing:docs",
+  ]
+}
+'''
+            )
+        # Formatting is performed separately.
+        self.assertEqual(
+            contents,
+            '''
+group("third_party_docs") {
+deps = ["$dir_pigweed/third_party/repo:docs",
+    "$dir_pigweed/third_party/existing:docs",
+  ]
+}
+''',
+        )
+
+    def test_update_third_party_docs_no_target(self):
+        """Tests adding docs to a file without a "third_party_docs" target."""
+        with GnGeneratorForTest() as generator:
+            with self.assertRaises(ValueError):
+                generator.update_third_party_docs('')
 
     @mock.patch('subprocess.run')
     def test_write_extra(self, mock_run):

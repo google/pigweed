@@ -162,6 +162,7 @@ pw_source_set("stacktrace") {
     ":debugging_internal",
     "../base:config",
     "../base:core_headers",
+    "../base:dynamic_annotations",
     "../base:raw_logging_internal",
   ]
 }

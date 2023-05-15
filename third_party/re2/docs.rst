@@ -49,5 +49,6 @@ the ``-w`` option, e.g.
 
 Version
 =======
-The update script was last run for revision:
-11073deb73b3d01018308863c0bcdfd0d51d3e70
+The update script was last run for revision `c9cba76`_.
+
+.. _c9cba76: https://github.com/google/re2/tree/c9cba76063cf4235c1a15dd14a24a4ef8d623761

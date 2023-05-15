@@ -181,6 +181,7 @@ pw_source_set("callstack") {
     "$dir_pw_toolchain/host_clang:sanitize_undefined",
     "$dir_pw_toolchain/host_clang:sanitize_undefined_heuristic",
   ]
+  public_deps = [ ":int_utils" ]
 }
 
 # Generated from //centipede:centipede_callbacks
@@ -319,6 +320,7 @@ pw_source_set("centipede_lib") {
     ":environment",
     ":execution_result",
     ":feature",
+    ":feature_set",
     ":logging",
     ":remote_file",
     ":rusage_profiler",
@@ -340,6 +342,7 @@ pw_source_set("centipede_runner") {
   sources = [
     "$dir_pw_third_party_fuzztest/centipede/byte_array_mutator.cc",
     "$dir_pw_third_party_fuzztest/centipede/byte_array_mutator.h",
+    "$dir_pw_third_party_fuzztest/centipede/callstack.h",
     "$dir_pw_third_party_fuzztest/centipede/concurrent_bitset.h",
     "$dir_pw_third_party_fuzztest/centipede/concurrent_byteset.h",
     "$dir_pw_third_party_fuzztest/centipede/defs.h",
@@ -350,8 +353,10 @@ pw_source_set("centipede_runner") {
     "$dir_pw_third_party_fuzztest/centipede/feature.cc",
     "$dir_pw_third_party_fuzztest/centipede/feature.h",
     "$dir_pw_third_party_fuzztest/centipede/foreach_nonzero.h",
+    "$dir_pw_third_party_fuzztest/centipede/int_utils.h",
     "$dir_pw_third_party_fuzztest/centipede/knobs.cc",
     "$dir_pw_third_party_fuzztest/centipede/knobs.h",
+    "$dir_pw_third_party_fuzztest/centipede/pc_info.h",
     "$dir_pw_third_party_fuzztest/centipede/reverse_pc_table.h",
     "$dir_pw_third_party_fuzztest/centipede/runner.cc",
     "$dir_pw_third_party_fuzztest/centipede/runner.h",
@@ -395,6 +400,7 @@ pw_source_set("centipede_runner") {
   sources = [
     "$dir_pw_third_party_fuzztest/centipede/byte_array_mutator.cc",
     "$dir_pw_third_party_fuzztest/centipede/byte_array_mutator.h",
+    "$dir_pw_third_party_fuzztest/centipede/callstack.h",
     "$dir_pw_third_party_fuzztest/centipede/concurrent_bitset.h",
     "$dir_pw_third_party_fuzztest/centipede/concurrent_byteset.h",
     "$dir_pw_third_party_fuzztest/centipede/defs.h",
@@ -405,8 +411,10 @@ pw_source_set("centipede_runner") {
     "$dir_pw_third_party_fuzztest/centipede/feature.cc",
     "$dir_pw_third_party_fuzztest/centipede/feature.h",
     "$dir_pw_third_party_fuzztest/centipede/foreach_nonzero.h",
+    "$dir_pw_third_party_fuzztest/centipede/int_utils.h",
     "$dir_pw_third_party_fuzztest/centipede/knobs.cc",
     "$dir_pw_third_party_fuzztest/centipede/knobs.h",
+    "$dir_pw_third_party_fuzztest/centipede/pc_info.h",
     "$dir_pw_third_party_fuzztest/centipede/reverse_pc_table.h",
     "$dir_pw_third_party_fuzztest/centipede/runner.cc",
     "$dir_pw_third_party_fuzztest/centipede/runner.h",
@@ -450,6 +458,7 @@ pw_source_set("centipede_runner") {
   sources = [
     "$dir_pw_third_party_fuzztest/centipede/byte_array_mutator.cc",
     "$dir_pw_third_party_fuzztest/centipede/byte_array_mutator.h",
+    "$dir_pw_third_party_fuzztest/centipede/callstack.h",
     "$dir_pw_third_party_fuzztest/centipede/concurrent_bitset.h",
     "$dir_pw_third_party_fuzztest/centipede/concurrent_byteset.h",
     "$dir_pw_third_party_fuzztest/centipede/defs.h",
@@ -460,8 +469,10 @@ pw_source_set("centipede_runner") {
     "$dir_pw_third_party_fuzztest/centipede/feature.cc",
     "$dir_pw_third_party_fuzztest/centipede/feature.h",
     "$dir_pw_third_party_fuzztest/centipede/foreach_nonzero.h",
+    "$dir_pw_third_party_fuzztest/centipede/int_utils.h",
     "$dir_pw_third_party_fuzztest/centipede/knobs.cc",
     "$dir_pw_third_party_fuzztest/centipede/knobs.h",
+    "$dir_pw_third_party_fuzztest/centipede/pc_info.h",
     "$dir_pw_third_party_fuzztest/centipede/reverse_pc_table.h",
     "$dir_pw_third_party_fuzztest/centipede/runner.cc",
     "$dir_pw_third_party_fuzztest/centipede/runner.h",
@@ -505,6 +516,7 @@ pw_source_set("centipede_runner") {
   sources = [
     "$dir_pw_third_party_fuzztest/centipede/byte_array_mutator.cc",
     "$dir_pw_third_party_fuzztest/centipede/byte_array_mutator.h",
+    "$dir_pw_third_party_fuzztest/centipede/callstack.h",
     "$dir_pw_third_party_fuzztest/centipede/concurrent_bitset.h",
     "$dir_pw_third_party_fuzztest/centipede/concurrent_byteset.h",
     "$dir_pw_third_party_fuzztest/centipede/defs.h",
@@ -515,8 +527,10 @@ pw_source_set("centipede_runner") {
     "$dir_pw_third_party_fuzztest/centipede/feature.cc",
     "$dir_pw_third_party_fuzztest/centipede/feature.h",
     "$dir_pw_third_party_fuzztest/centipede/foreach_nonzero.h",
+    "$dir_pw_third_party_fuzztest/centipede/int_utils.h",
     "$dir_pw_third_party_fuzztest/centipede/knobs.cc",
     "$dir_pw_third_party_fuzztest/centipede/knobs.h",
+    "$dir_pw_third_party_fuzztest/centipede/pc_info.h",
     "$dir_pw_third_party_fuzztest/centipede/reverse_pc_table.h",
     "$dir_pw_third_party_fuzztest/centipede/runner.cc",
     "$dir_pw_third_party_fuzztest/centipede/runner.h",
@@ -560,6 +574,7 @@ pw_source_set("centipede_runner_no_main") {
   sources = [
     "$dir_pw_third_party_fuzztest/centipede/byte_array_mutator.cc",
     "$dir_pw_third_party_fuzztest/centipede/byte_array_mutator.h",
+    "$dir_pw_third_party_fuzztest/centipede/callstack.h",
     "$dir_pw_third_party_fuzztest/centipede/concurrent_bitset.h",
     "$dir_pw_third_party_fuzztest/centipede/concurrent_byteset.h",
     "$dir_pw_third_party_fuzztest/centipede/defs.h",
@@ -570,8 +585,10 @@ pw_source_set("centipede_runner_no_main") {
     "$dir_pw_third_party_fuzztest/centipede/feature.cc",
     "$dir_pw_third_party_fuzztest/centipede/feature.h",
     "$dir_pw_third_party_fuzztest/centipede/foreach_nonzero.h",
+    "$dir_pw_third_party_fuzztest/centipede/int_utils.h",
     "$dir_pw_third_party_fuzztest/centipede/knobs.cc",
     "$dir_pw_third_party_fuzztest/centipede/knobs.h",
+    "$dir_pw_third_party_fuzztest/centipede/pc_info.h",
     "$dir_pw_third_party_fuzztest/centipede/reverse_pc_table.h",
     "$dir_pw_third_party_fuzztest/centipede/runner.cc",
     "$dir_pw_third_party_fuzztest/centipede/runner.h",
@@ -631,7 +648,9 @@ pw_source_set("command") {
     ":logging",
     ":util",
     "../../abseil-cpp/absl/log:check",
+    "../../abseil-cpp/absl/status",
     "../../abseil-cpp/absl/strings",
+    "../../abseil-cpp/absl/strings:str_format",
     "../../abseil-cpp/absl/time",
   ]
 }
@@ -719,6 +738,7 @@ pw_source_set("control_flow") {
     ":command",
     ":defs",
     ":logging",
+    ":pc_info",
     ":util",
     "../../abseil-cpp/absl/container:flat_hash_map",
     "../../abseil-cpp/absl/container:flat_hash_set",
@@ -750,9 +770,8 @@ pw_source_set("corpus") {
     ":coverage",
     ":defs",
     ":feature",
-    ":logging",
+    ":feature_set",
     ":util",
-    "../../abseil-cpp/absl/container:flat_hash_set",
     "../../abseil-cpp/absl/strings",
   ]
 }
@@ -919,7 +938,56 @@ pw_source_set("feature") {
     "$dir_pw_toolchain/host_clang:sanitize_undefined",
     "$dir_pw_toolchain/host_clang:sanitize_undefined_heuristic",
   ]
-  public_deps = [ "../../abseil-cpp/absl/base:core_headers" ]
+  public_deps = [
+    ":int_utils",
+    "../../abseil-cpp/absl/base:core_headers",
+  ]
+}
+
+# Generated from //centipede:feature_set
+pw_source_set("feature_set") {
+  public = [ "$dir_pw_third_party_fuzztest/centipede/feature_set.h" ]
+  sources = [ "$dir_pw_third_party_fuzztest/centipede/feature_set.cc" ]
+  public_configs = [ "..:fuzztest_public_config1" ]
+  configs = [
+    "../../abseil-cpp/configs:disabled_warnings",
+    "../../re2/configs:disabled_warnings",
+    "../configs:internal_disabled_warnings",
+  ]
+  remove_configs = [
+    "$dir_pw_fuzzer:instrumentation",
+    "$dir_pw_toolchain/host_clang:sanitize_address",
+    "$dir_pw_toolchain/host_clang:sanitize_memory",
+    "$dir_pw_toolchain/host_clang:sanitize_thread",
+    "$dir_pw_toolchain/host_clang:sanitize_undefined",
+    "$dir_pw_toolchain/host_clang:sanitize_undefined_heuristic",
+  ]
+  public_deps = [
+    ":coverage",
+    ":defs",
+    ":feature",
+    ":util",
+    "../../abseil-cpp/absl/container:flat_hash_set",
+  ]
+}
+
+# Generated from //centipede:int_utils
+pw_source_set("int_utils") {
+  public = [ "$dir_pw_third_party_fuzztest/centipede/int_utils.h" ]
+  public_configs = [ "..:fuzztest_public_config1" ]
+  configs = [
+    "../../abseil-cpp/configs:disabled_warnings",
+    "../../re2/configs:disabled_warnings",
+    "../configs:internal_disabled_warnings",
+  ]
+  remove_configs = [
+    "$dir_pw_fuzzer:instrumentation",
+    "$dir_pw_toolchain/host_clang:sanitize_address",
+    "$dir_pw_toolchain/host_clang:sanitize_memory",
+    "$dir_pw_toolchain/host_clang:sanitize_thread",
+    "$dir_pw_toolchain/host_clang:sanitize_undefined",
+    "$dir_pw_toolchain/host_clang:sanitize_undefined_heuristic",
+  ]
 }
 
 # Generated from //centipede:knobs
@@ -999,10 +1067,9 @@ pw_source_set("minimize_crash") {
   ]
 }
 
-# Generated from //centipede:pagemap
-pw_source_set("pagemap") {
-  public = [ "$dir_pw_third_party_fuzztest/centipede/pagemap.h" ]
-  sources = [ "$dir_pw_third_party_fuzztest/centipede/pagemap.cc" ]
+# Generated from //centipede:pc_info
+pw_source_set("pc_info") {
+  public = [ "$dir_pw_third_party_fuzztest/centipede/pc_info.h" ]
   public_configs = [ "..:fuzztest_public_config1" ]
   configs = [
     "../../abseil-cpp/configs:disabled_warnings",
@@ -1016,10 +1083,6 @@ pw_source_set("pagemap") {
     "$dir_pw_toolchain/host_clang:sanitize_thread",
     "$dir_pw_toolchain/host_clang:sanitize_undefined",
     "$dir_pw_toolchain/host_clang:sanitize_undefined_heuristic",
-  ]
-  public_deps = [
-    ":defs",
-    "../../abseil-cpp/absl/types:span",
   ]
 }
 
@@ -1065,7 +1128,10 @@ pw_source_set("reverse_pc_table") {
     "$dir_pw_toolchain/host_clang:sanitize_undefined",
     "$dir_pw_toolchain/host_clang:sanitize_undefined_heuristic",
   ]
-  public_deps = [ "../../abseil-cpp/absl/types:span" ]
+  public_deps = [
+    ":pc_info",
+    "../../abseil-cpp/absl/types:span",
+  ]
 }
 
 # Generated from //centipede:runner_cmp_trace
