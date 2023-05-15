@@ -362,6 +362,7 @@ class LuciTrigger:
 
     number: int
     remote: str
+    project: str
     branch: str
     ref: str
     gerrit_name: str
@@ -398,6 +399,7 @@ class LuciTrigger:
                 keys = {
                     'number',
                     'remote',
+                    'project',
                     'branch',
                     'ref',
                     'gerrit_name',
@@ -413,6 +415,7 @@ class LuciTrigger:
         change = {
             'number': 123456,
             'remote': 'https://pigweed.googlesource.com/pigweed/pigweed',
+            'project': 'pigweed/pigweed',
             'branch': 'main',
             'ref': 'refs/changes/56/123456/1',
             'gerrit_name': 'pigweed',

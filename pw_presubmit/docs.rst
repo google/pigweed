@@ -152,6 +152,7 @@ following members:
 * ``number``: The number of the change in Gerrit.
 * ``patchset``: The number of the patchset of the change.
 * ``remote``: The full URL of the remote.
+* ``project``: The name of the project in Gerrit.
 * ``branch``: The name of the branch on which this change is being/was
   submitted.
 * ``ref``: The ``refs/changes/..`` path that can be used to reference the
