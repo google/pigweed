@@ -358,9 +358,9 @@ class Vector<T, vector_impl::kGeneric>
 
   void pop_back();
 
-  void resize(size_type new_size) { resize(new_size, T()); }
+  void resize(size_t new_size) { resize(new_size, T()); }
 
-  void resize(size_type new_size, const T& value);
+  void resize(size_t new_size, const T& value);
 
  protected:
   // Vectors without an explicit size cannot be constructed directly. Instead,
@@ -476,13 +476,12 @@ void Vector<T, vector_impl::kGeneric>::pop_back() {
 }
 
 template <typename T>
-void Vector<T, vector_impl::kGeneric>::resize(size_type new_size,
-                                              const T& value) {
+void Vector<T, vector_impl::kGeneric>::resize(size_t new_size, const T& value) {
+  PW_DASSERT(new_size <= std::numeric_limits<size_type>::max());
   if (size() < new_size) {
-    // Note: max_size() & size() always return a value that fits in size_type.
-    Append(std::min(static_cast<size_type>(max_size()), new_size) -
-               static_cast<size_type>(size()),
-           value);
+    size_type count =
+        static_cast<size_type>(std::min(max_size(), new_size) - size());
+    Append(count, value);
   } else {
     while (size() > new_size) {
       pop_back();
