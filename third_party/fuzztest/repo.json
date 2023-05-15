@@ -22,5 +22,6 @@
         "$dir_pw_toolchain/host_clang:sanitize_undefined_heuristic",
         "$dir_pw_toolchain/host_clang:sanitize_thread"
     ],
-    "allow_testonly": true
+    "allow_testonly": true,
+    "no_gn_check": [ "//fuzztest:regexp_dfa" ]
 }

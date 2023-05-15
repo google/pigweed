@@ -248,6 +248,15 @@ describe a single JSON object, with the following fields:
 
      "allow_testonly": true
 
+* ``no_gn_check``: List of Bazel targets that violate ``gn check``'s
+  `rules`__. Third-party targets that do not conform can be excluded.
+
+  .. code-block::
+
+     "no_gn_check": [ "//fuzztest:regexp_dfa" ]
+
+.. __: https://gn.googlesource.com/gn/+/main/docs/reference.md#cmd_check
+
 Python packages
 ---------------
 GN templates for :ref:`Python build automation <docs-python-build>` are

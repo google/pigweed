@@ -57,6 +57,7 @@ class GnTarget:  # pylint: disable=too-many-instance-attributes
         base_path: Union[str, PurePosixPath, GnPath],
         bazel: Optional[BazelRule] = None,
         json: Optional[str] = None,
+        check_includes: bool = True,
     ) -> None:
         """Creates a GN target
 
@@ -70,6 +71,7 @@ class GnTarget:  # pylint: disable=too-many-instance-attributes
         self._repos: Set[str] = set()
         self.visibility: List[GnVisibility] = []
         self.testonly: bool = False
+        self.check_includes = check_includes
         self.public: List[GnPath] = []
         self.sources: List[GnPath] = []
         self.inputs: List[GnPath] = []
@@ -167,6 +169,7 @@ class GnTarget:  # pylint: disable=too-many-instance-attributes
             for scope in obj.get('visibility', [])
         ]
         self.testonly = bool(obj.get('testonly', False))
+        self.testonly = bool(obj.get('check_includes', False))
         self.public = [GnPath(path) for path in obj.get('public', [])]
         self.sources = [GnPath(path) for path in obj.get('sources', [])]
         self.inputs = [GnPath(path) for path in obj.get('inputs', [])]
@@ -193,6 +196,8 @@ class GnTarget:  # pylint: disable=too-many-instance-attributes
             obj['visibility'] = [str(scope) for scope in self.visibility]
         if self.testonly:
             obj['testonly'] = self.testonly
+        if not self.check_includes:
+            obj['check_includes'] = self.check_includes
         if self.public:
             obj['public'] = [str(path) for path in self.public]
         if self.sources:
@@ -221,6 +226,10 @@ class GnTarget:  # pylint: disable=too-many-instance-attributes
     def name(self) -> str:
         """Returns the target name."""
         return self._label.name()
+
+    def label(self) -> GnLabel:
+        """Returns the target label."""
+        return self._label
 
     def type(self) -> str:
         """Returns the target type."""

@@ -132,6 +132,8 @@ class GnWriter:
         visibility = [target.make_relative(scope) for scope in scopes]
         self.write_list('visibility', visibility)
 
+        if not target.check_includes:
+            self.write('check_includes = false')
         self.write_list('public', [str(path) for path in target.public])
         self.write_list('sources', [str(path) for path in target.sources])
         self.write_list('inputs', [str(path) for path in target.inputs])

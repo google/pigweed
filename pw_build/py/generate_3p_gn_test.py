@@ -264,6 +264,7 @@ class TestGenerator(unittest.TestCase):
         """Tests writing a complete BUILD.gn file."""
         generator = GnGenerator()
         generator.set_repo('test')
+        generator.exclude_from_gn_check(bazel='//bar:target3')
 
         generator.add_configs(
             '',
@@ -485,6 +486,7 @@ config("bar_public_config1") {
 
 # Generated from //bar:target3
 pw_source_set("target3") {
+  check_includes = false
   cflags = [
     "bar-flag",
   ]

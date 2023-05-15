@@ -106,6 +106,7 @@ class GnGenerator:
         self._repo: str
         self._repo_var: str
         self._repos: Dict[str, Set[str]] = defaultdict(set)
+        self._no_gn_check: List[GnLabel] = []
         self.configs: Dict[str, List[GnConfig]] = defaultdict(list)
         self.targets: Dict[str, List[GnTarget]] = defaultdict(list)
 
@@ -127,6 +128,16 @@ class GnGenerator:
         self._base_label = GnLabel(f'$dir_pw_third_party/{repo}')
         self._base_path = GnPath(f'$dir_pw_third_party_{self._repo_var}')
 
+    def exclude_from_gn_check(self, **kwargs) -> None:
+        """Mark a target as being excluding from `gn check`.
+
+        This should be called before loading or adding targets.
+
+        Args:
+            kwargs: Same as `GnLabel`.
+        """
+        self._no_gn_check.append(GnLabel(self._base_label, **kwargs))
+
     def load_workspace(self, workspace_path: Path) -> str:
         """Loads a Bazel workspace.
 
@@ -137,7 +148,7 @@ class GnGenerator:
         self.set_repo(self._workspace.repo)
         return self._repo
 
-    def loadtargets(self, kind: str, allow_testonly: bool) -> None:
+    def load_targets(self, kind: str, allow_testonly: bool) -> None:
         """Analyzes a Bazel workspace and loads target info from it.
 
         Target info will only be added for `kind` rules. Additionally,
@@ -161,6 +172,7 @@ class GnGenerator:
             Same as `GnTarget`.
         """
         target = GnTarget(self._base_label.dir(), self._base_path, **kwargs)
+        target.check_includes = target.label() not in self._no_gn_check
         if allow_testonly or not target.testonly:
             package = target.package()
             self.packages.add(package)
@@ -262,6 +274,7 @@ class GnGenerator:
         Args:
             package: The name of the package to write a BUILD.gn for.
             build_gn: The output writer object.
+            no_gn_check: List of targets with `check_includes = false`.
         """
         build_gn.write_imports(['//build_overrides/pigweed.gni'])
         build_gn.write_blank()
@@ -391,8 +404,11 @@ def _generate_gn(workspace_path: Path) -> None:
         add_configs = obj.get('add', [])
         removeconfigs = obj.get('remove', [])
         allow_testonly = obj.get('allow_testonly', False)
+        no_gn_check = obj.get('no_gn_check', [])
 
-    generator.loadtargets('cc_library', allow_testonly)
+    for exclusion in no_gn_check:
+        generator.exclude_from_gn_check(bazel=exclusion)
+    generator.load_targets('cc_library', allow_testonly)
     generator.generate_configs(add_configs, removeconfigs)
 
     with GnFile(Path(output, f'{repo}.gni')) as repo_gni:
