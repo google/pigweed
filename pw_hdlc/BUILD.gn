@@ -179,7 +179,10 @@ pw_python_action("generate_decoder_test") {
 }
 
 pw_test("decoder_test") {
-  deps = [ ":pw_hdlc" ]
+  deps = [
+    ":pw_hdlc",
+    "$dir_pw_fuzzer:fuzztest",
+  ]
   source_gen_deps = [ ":generate_decoder_test" ]
   sources = [ "decoder_test.cc" ]
 }

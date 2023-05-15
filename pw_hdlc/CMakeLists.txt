@@ -136,6 +136,7 @@ pw_add_test(pw_hdlc.decoder_test
     decoder_test.cc
   PRIVATE_DEPS
     pw_bytes
+    pw_fuzzer.fuzztest
     pw_hdlc
   GROUPS
     modules

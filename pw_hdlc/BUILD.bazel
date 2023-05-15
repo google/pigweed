@@ -119,9 +119,9 @@ pw_cc_test(
     srcs = ["decoder_test.cc"],
     deps = [
         ":pw_hdlc",
+        "//pw_fuzzer:fuzztest",
         "//pw_result",
         "//pw_stream",
-        "//pw_unit_test",
     ],
 )
 

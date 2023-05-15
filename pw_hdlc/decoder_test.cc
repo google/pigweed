@@ -17,6 +17,7 @@
 #include <array>
 #include <cstddef>
 
+#include "fuzztest/fuzztest.h"
 #include "gtest/gtest.h"
 #include "pw_bytes/array.h"
 #include "pw_hdlc/internal/protocol.h"
@@ -25,6 +26,7 @@ namespace pw::hdlc {
 namespace {
 
 using std::byte;
+using namespace fuzztest;
 
 TEST(Frame, Fields) {
   static constexpr auto kFrameData =
@@ -151,6 +153,18 @@ TEST(Decoder, TooLargeForBuffer_DecodesNextFrame) {
   }
   EXPECT_EQ(OkStatus(), decoder.Process(kFlag).status());
 }
+
+void ProcessNeverCrashes(ConstByteSpan data) {
+  DecoderBuffer<1024> decoder;
+  for (byte b : data) {
+    if (decoder.Process(b).status() != Status::Unavailable()) {
+      decoder.Clear();
+    }
+  }
+}
+
+FUZZ_TEST(Decoder, ProcessNeverCrashes)
+    .WithDomains(Arbitrary<std::vector<std::byte>>());
 
 }  // namespace
 }  // namespace pw::hdlc
