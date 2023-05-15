@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIB_FIT_INCLUDE_LIB_FIT_RESULT_H_
-#define LIB_FIT_INCLUDE_LIB_FIT_RESULT_H_
+#ifndef LIB_FIT_RESULT_H_
+#define LIB_FIT_RESULT_H_
 
 #include <lib/fit/internal/compiler.h>
 #include <lib/fit/internal/result.h>
@@ -192,7 +192,7 @@ class success<> {
 #if __cplusplus >= 201703L
 
 // Deduction guides to simplify zero and single argument success expressions in C++17.
-success()->success<>;
+success() -> success<>;
 
 template <typename T>
 success(T) -> success<T>;
@@ -797,4 +797,4 @@ constexpr bool operator>=(const T& lhs, const result<F, U>& rhs) {
 
 }  // namespace fit
 
-#endif  // LIB_FIT_INCLUDE_LIB_FIT_RESULT_H_
+#endif  // LIB_FIT_RESULT_H_

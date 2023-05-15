@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_FUNCTIONAL_H_
-#define LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_FUNCTIONAL_H_
+#ifndef LIB_STDCOMPAT_FUNCTIONAL_H_
+#define LIB_STDCOMPAT_FUNCTIONAL_H_
 
 #include "internal/functional.h"
 
@@ -47,4 +47,4 @@ constexpr ::cpp20::internal::front_binder_t<F, Args...> bind_front(F&& f, Args&&
 
 }  // namespace cpp20
 
-#endif  // LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_FUNCTIONAL_H_
+#endif  // LIB_STDCOMPAT_FUNCTIONAL_H_

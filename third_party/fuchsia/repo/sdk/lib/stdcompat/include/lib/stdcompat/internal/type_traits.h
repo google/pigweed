@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_INTERNAL_TYPE_TRAITS_H_
-#define LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_INTERNAL_TYPE_TRAITS_H_
+#ifndef LIB_STDCOMPAT_INTERNAL_TYPE_TRAITS_H_
+#define LIB_STDCOMPAT_INTERNAL_TYPE_TRAITS_H_
 
 #include <type_traits>
 
@@ -17,11 +17,12 @@ static constexpr bool is_reference_wrapper<std::reference_wrapper<T>> = true;
 
 // These are from [func.require] ¶ 1.1-7
 template <typename MemFn, typename Class, typename T>
-static constexpr bool invoke_pmf_base = std::is_member_function_pointer<MemFn Class::*>::value&&
-    std::is_base_of<Class, std::remove_reference_t<T>>::value;
+static constexpr bool invoke_pmf_base = std::is_member_function_pointer<MemFn Class::*>::value &&
+                                        std::is_base_of<Class, std::remove_reference_t<T>>::value;
 
 template <typename MemFn, typename Class, typename T>
-static constexpr bool invoke_pmf_refwrap = std::is_member_function_pointer<MemFn Class::*>::value&&
+static constexpr bool invoke_pmf_refwrap =
+    std::is_member_function_pointer<MemFn Class::*>::value &&
     is_reference_wrapper<std::remove_cv_t<std::remove_reference_t<T>>>;
 
 template <typename MemFn, typename Class, typename T>
@@ -30,11 +31,12 @@ static constexpr bool invoke_pmf_other =
     !invoke_pmf_refwrap<MemFn, Class, T>;
 
 template <typename MemObj, typename Class, typename T>
-static constexpr bool invoke_pmd_base = std::is_member_object_pointer<MemObj Class::*>::value&&
-    std::is_base_of<Class, std::remove_reference_t<T>>::value;
+static constexpr bool invoke_pmd_base = std::is_member_object_pointer<MemObj Class::*>::value &&
+                                        std::is_base_of<Class, std::remove_reference_t<T>>::value;
 
 template <typename MemObj, typename Class, typename T>
-static constexpr bool invoke_pmd_refwrap = std::is_member_object_pointer<MemObj Class::*>::value&&
+static constexpr bool invoke_pmd_refwrap =
+    std::is_member_object_pointer<MemObj Class::*>::value &&
     is_reference_wrapper<std::remove_cv_t<std::remove_reference_t<T>>>;
 
 template <typename MemObj, typename Class, typename T>
@@ -109,4 +111,4 @@ struct invoke_result<true, F, Args...> {
 }  // namespace internal
 }  // namespace cpp17
 
-#endif  // LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_INTERNAL_TYPE_TRAITS_H_
+#endif  // LIB_STDCOMPAT_INTERNAL_TYPE_TRAITS_H_

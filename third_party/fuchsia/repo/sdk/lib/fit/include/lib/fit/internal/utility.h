@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIB_FIT_INCLUDE_LIB_FIT_INTERNAL_UTILITY_H_
-#define LIB_FIT_INCLUDE_LIB_FIT_INTERNAL_UTILITY_H_
+#ifndef LIB_FIT_INTERNAL_UTILITY_H_
+#define LIB_FIT_INTERNAL_UTILITY_H_
 
 #include <lib/stdcompat/type_traits.h>
 
@@ -135,4 +135,4 @@ struct is_nothrow_swappable<T,
 }  // namespace internal
 }  // namespace fit
 
-#endif  // LIB_FIT_INCLUDE_LIB_FIT_INTERNAL_UTILITY_H_
+#endif  // LIB_FIT_INTERNAL_UTILITY_H_

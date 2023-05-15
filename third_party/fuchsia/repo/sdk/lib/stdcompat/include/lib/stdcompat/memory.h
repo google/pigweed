@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_MEMORY_H_
-#define LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_MEMORY_H_
+#ifndef LIB_STDCOMPAT_MEMORY_H_
+#define LIB_STDCOMPAT_MEMORY_H_
 
 #include <memory>
 
@@ -63,4 +63,4 @@ constexpr typename std::pointer_traits<T>::element_type* to_address(const T& poi
 
 }  // namespace cpp20
 
-#endif  // LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_MEMORY_H_
+#endif  // LIB_STDCOMPAT_MEMORY_H_

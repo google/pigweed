@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIB_FIT_INCLUDE_LIB_FIT_INTERNAL_RESULT_H_
-#define LIB_FIT_INCLUDE_LIB_FIT_INTERNAL_RESULT_H_
+#ifndef LIB_FIT_INTERNAL_RESULT_H_
+#define LIB_FIT_INTERNAL_RESULT_H_
 
 #include <lib/fit/internal/compiler.h>
 #include <lib/stdcompat/type_traits.h>
@@ -259,11 +259,12 @@ struct storage_type<storage_class_e::non_trivial, E, T> {
   }
 
   constexpr storage_type(storage_type&& other) noexcept(
-      std::is_nothrow_move_constructible<E>::value&& std::is_nothrow_move_constructible<T>::value) {
+      std::is_nothrow_move_constructible<E>::value &&
+      std::is_nothrow_move_constructible<T>::value) {
     move_from(std::move(other));
   }
   constexpr storage_type& operator=(storage_type&& other) noexcept(
-      std::is_nothrow_move_assignable<E>::value&& std::is_nothrow_move_assignable<T>::value) {
+      std::is_nothrow_move_assignable<E>::value && std::is_nothrow_move_assignable<T>::value) {
     destroy();
     move_from(std::move(other));
     return *this;
@@ -442,4 +443,4 @@ using storage = storage_type<storage_class_trait<E, Ts...>, E, Ts...>;
 }  // namespace internal
 }  // namespace fit
 
-#endif  // LIB_FIT_INCLUDE_LIB_FIT_INTERNAL_RESULT_H_
+#endif  // LIB_FIT_INTERNAL_RESULT_H_

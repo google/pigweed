@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_VERSION_H_
-#define LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_VERSION_H_
+#ifndef LIB_STDCOMPAT_VERSION_H_
+#define LIB_STDCOMPAT_VERSION_H_
 
 // This <version> polyfills is meant to provide the feature testing macros for the rest of
 // the stdcompat library. It is not meant to be a full polyfill of <version>.
@@ -76,4 +76,4 @@
 
 #endif  // __has_include(<version>) && !defined(LIB_STDCOMPAT_USE_POLYFILLS)
 
-#endif  // LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_VERSION_H_
+#endif  // LIB_STDCOMPAT_VERSION_H_

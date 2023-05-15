@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_INTERNAL_BIT_H_
-#define LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_INTERNAL_BIT_H_
+#ifndef LIB_STDCOMPAT_INTERNAL_BIT_H_
+#define LIB_STDCOMPAT_INTERNAL_BIT_H_
 
 #include <limits>
 #include <type_traits>
@@ -209,7 +209,7 @@ bit_ceil(T value) {
 
 template <typename T>
 constexpr std::enable_if_t<is_bit_type<T>::value, T> bit_floor(T value) {
-  return static_cast<T>(T(1) << (bit_width(value) - T(1)));
+  return value == 0 ? 0 : static_cast<T>(T(1) << (static_cast<T>(bit_width(value)) - T(1)));
 }
 
 template <unsigned little, unsigned big>
@@ -227,4 +227,4 @@ constexpr unsigned native_endianess() {
 }  // namespace internal
 }  // namespace cpp20
 
-#endif  // LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_INTERNAL_BIT_H_
+#endif  // LIB_STDCOMPAT_INTERNAL_BIT_H_

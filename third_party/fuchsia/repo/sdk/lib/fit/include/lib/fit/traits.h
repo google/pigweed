@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIB_FIT_INCLUDE_LIB_FIT_TRAITS_H_
-#define LIB_FIT_INCLUDE_LIB_FIT_TRAITS_H_
+#ifndef LIB_FIT_TRAITS_H_
+#define LIB_FIT_TRAITS_H_
 
 #include <lib/stdcompat/type_traits.h>
 
@@ -178,4 +178,4 @@ constexpr bool is_detected_convertible_v = is_detected_convertible<To, Op, Args.
 
 }  // namespace fit
 
-#endif  // LIB_FIT_INCLUDE_LIB_FIT_TRAITS_H_
+#endif  // LIB_FIT_TRAITS_H_

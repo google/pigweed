@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_INTERNAL_STORAGE_H_
-#define LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_INTERNAL_STORAGE_H_
+#ifndef LIB_STDCOMPAT_INTERNAL_STORAGE_H_
+#define LIB_STDCOMPAT_INTERNAL_STORAGE_H_
 
 #include <cstddef>
 #include <cstdint>
@@ -844,4 +844,4 @@ using storage_type = decltype(make_storage<Ts...>(std::index_sequence_for<Ts...>
 }  // namespace internal
 }  // namespace cpp17
 
-#endif  // LIB_STDCOMPAT_INCLUDE_LIB_STDCOMPAT_INTERNAL_STORAGE_H_
+#endif  // LIB_STDCOMPAT_INTERNAL_STORAGE_H_

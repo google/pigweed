@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef LIB_FIT_INCLUDE_LIB_FIT_INTERNAL_COMPILER_H_
-#define LIB_FIT_INCLUDE_LIB_FIT_INTERNAL_COMPILER_H_
+#ifndef LIB_FIT_INTERNAL_COMPILER_H_
+#define LIB_FIT_INTERNAL_COMPILER_H_
 
 // Annotate a class or function with C++17's [[nodiscard]] or similar where supported by the
 // compiler.
@@ -18,4 +18,4 @@
 #define LIB_FIT_NODISCARD /* nothing */
 #endif
 
-#endif  // LIB_FIT_INCLUDE_LIB_FIT_INTERNAL_COMPILER_H_
+#endif  // LIB_FIT_INTERNAL_COMPILER_H_
