@@ -37,6 +37,7 @@ def git_stdout(
             stdout=subprocess.PIPE,
             stderr=None if show_stderr else subprocess.DEVNULL,
             check=True,
+            ignore_dry_run=True,
         )
         .stdout.decode()
         .strip()
@@ -164,6 +165,7 @@ def has_uncommitted_changes(repo: Optional[Path] = None) -> bool:
                 ['git', '-C', repo, 'update-index', '-q', '--refresh'],
                 capture_output=True,
                 check=True,
+                ignore_dry_run=True,
             )
         except subprocess.CalledProcessError as err:
             if err.stderr or i == retries - 1:
@@ -172,7 +174,8 @@ def has_uncommitted_changes(repo: Optional[Path] = None) -> bool:
     # diff-index exits with 1 if there are uncommitted changes.
     return (
         log_run(
-            ['git', '-C', repo, 'diff-index', '--quiet', 'HEAD', '--']
+            ['git', '-C', repo, 'diff-index', '--quiet', 'HEAD', '--'],
+            ignore_dry_run=True,
         ).returncode
         == 1
     )

@@ -60,10 +60,22 @@ The ``pw_presubmit.cli`` module sets up the command-line interface for a
 presubmit script. This defines a standard set of arguments for invoking
 presubmit checks. Its use is optional, but recommended.
 
-pw_presubmit.cli
-----------------
+Common ``pw presubmit`` command line arguments
+----------------------------------------------
+.. argparse::
+   :module: pw_presubmit.cli
+   :func: _get_default_parser
+   :prog: pw presubmit
+   :nodefaultconst:
+   :nodescription:
+   :noepilog:
+
+
+``pw_presubmit.cli`` Python API
+-------------------------------
 .. automodule:: pw_presubmit.cli
    :members: add_arguments, run
+
 
 Presubmit output directory
 --------------------------
@@ -86,16 +98,16 @@ Either of these functions could be used as presubmit checks:
 
 .. code-block:: python
 
-  @pw_presubmit.filter_paths(endswith='.py')
-  def file_contains_ni(ctx: PresubmitContext):
-      for path in ctx.paths:
-          with open(path) as file:
-              contents = file.read()
-              if 'ni' not in contents and 'nee' not in contents:
-                  raise PresumitFailure('Files must say "ni"!', path=path)
+   @pw_presubmit.filter_paths(endswith='.py')
+   def file_contains_ni(ctx: PresubmitContext):
+       for path in ctx.paths:
+           with open(path) as file:
+               contents = file.read()
+               if 'ni' not in contents and 'nee' not in contents:
+                   raise PresumitFailure('Files must say "ni"!', path=path)
 
-  def run_the_build(_):
-      subprocess.run(['make', 'release'], check=True)
+   def run_the_build(_):
+       subprocess.run(['make', 'release'], check=True)
 
 Presubmit checks functions are grouped into "programs" -- a named series of
 checks. Projects may find it helpful to have programs for different purposes,
@@ -210,35 +222,35 @@ or fix code formatting.
 
 Example section from a ``pigweed.json`` file:
 
-.. code-block::
+.. code-block:: json
 
-  {
-    "pw": {
-      "pw_presubmit": {
-        "format": {
-          "python_formatter": "black",
-          "black_config_file": "$pw_env{PW_PROJECT_ROOT}/config/.black.toml"
-          "black_path": "black",
-          "exclude": [
-            "\\bthird_party/foo/src"
-          ]
-        }
-      }
-    }
-  }
+   {
+     "pw": {
+       "pw_presubmit": {
+         "format": {
+           "python_formatter": "black",
+           "black_config_file": "$pw_env{PW_PROJECT_ROOT}/config/.black.toml"
+           "black_path": "black",
+           "exclude": [
+             "\\bthird_party/foo/src"
+           ]
+         }
+       }
+     }
+   }
 
 Sorted Blocks
 ^^^^^^^^^^^^^
 Blocks of code can be required to be kept in sorted order using comments like
 the following:
 
-.. code-block::
+.. code-block:: python
 
-  # keep-sorted: start
-  bar
-  baz
-  foo
-  # keep-sorted: end
+   # keep-sorted: start
+   bar
+   baz
+   foo
+   # keep-sorted: end
 
 This can be included by adding ``pw_presubmit.keep_sorted.presubmit_check`` to a
 presubmit program. Adding ``ignore-case`` to the start line will use
@@ -252,13 +264,13 @@ Prefixes can be ignored by adding ``ignore-prefix=`` followed by a
 comma-separated list of prefixes. The list below will be kept in this order.
 Neither commas nor whitespace are supported in prefixes.
 
-.. code-block::
+.. code-block:: python
 
-  # keep-sorted: start ignore-prefix=',"
-  'bar',
-  "baz",
-  'foo',
-  # keep-sorted: end
+   # keep-sorted: start ignore-prefix=',"
+   'bar',
+   "baz",
+   'foo',
+   # keep-sorted: end
 
 Inline comments are assumed to be associated with the following line. For
 example, the following is already sorted. This can be disabled with
@@ -266,14 +278,14 @@ example, the following is already sorted. This can be disabled with
 
 .. todo-check: disable
 
-.. code-block::
+.. code-block:: python
 
-  # keep-sorted: start
-  # TODO(b/1234) Fix this.
-  bar,
-  # TODO(b/5678) Also fix this.
-  foo,
-  # keep-sorted: end
+   # keep-sorted: start
+   # TODO(b/1234) Fix this.
+   bar,
+   # TODO(b/5678) Also fix this.
+   foo,
+   # keep-sorted: end
 
 .. todo-check: enable
 
@@ -287,12 +299,12 @@ nested, so there's no ability to add a keep-sorted block for the sub-items.
 
 .. code-block::
 
-  # keep-sorted: start
-  * abc
-    * xyz
-    * uvw
-  * def
-  # keep-sorted: end
+   # keep-sorted: start
+   * abc
+     * xyz
+     * uvw
+   * def
+   # keep-sorted: end
 
 The presubmit check will suggest fixes using ``pw keep-sorted --fix``.
 
@@ -345,11 +357,11 @@ allow the following formats by default.
 
 .. code-block::
 
-  # TODO: b/1234 - Explanation.
-  # TODO: username@ - Explanation.
-  # TODO: username@example.com - Explanation.
-  # TODO(b/1234): Explanation.
-  # TODO(username) Explanation.
+   # TODO: b/1234 - Explanation.
+   # TODO: username@ - Explanation.
+   # TODO: username@example.com - Explanation.
+   # TODO(b/1234): Explanation.
+   # TODO(username) Explanation.
 
 .. todo-check: enable
 
@@ -440,165 +452,176 @@ See ``pigweed_presubmit.py`` for a more complex presubmit check script example.
 
 .. code-block:: python
 
-  """Example presubmit check script."""
+   """Example presubmit check script."""
 
-  import argparse
-  import logging
-  import os
-  from pathlib import Path
-  import re
-  import sys
-  from typing import List, Optional, Pattern
+   import argparse
+   import logging
+   import os
+   from pathlib import Path
+   import re
+   import sys
+   from typing import Optional
 
-  try:
-      import pw_cli.log
-  except ImportError:
-      print('ERROR: Activate the environment before running presubmits!',
-            file=sys.stderr)
-      sys.exit(2)
+   try:
+       import pw_cli.log
+   except ImportError:
+       print("ERROR: Activate the environment before running presubmits!", file=sys.stderr)
+       sys.exit(2)
 
-  import pw_presubmit
-  from pw_presubmit import (
-      build,
-      cli,
-      cpp_checks,
-      environment,
-      format_code,
-      git_repo,
-      inclusive_language,
-      filter_paths,
-      python_checks,
-      PresubmitContext,
-  )
-  from pw_presubmit.install_hook import install_hook
+   import pw_presubmit
+   from pw_presubmit import (
+       build,
+       cli,
+       cpp_checks,
+       format_code,
+       inclusive_language,
+       python_checks,
+   )
+   from pw_presubmit.presubmit import (
+       PresubmitContext,
+       filter_paths,
+   )
+   from pw_presubmit.install_hook import install_git_hook
 
-  # Set up variables for key project paths.
-  PROJECT_ROOT = Path(os.environ['MY_PROJECT_ROOT'])
-  PIGWEED_ROOT = PROJECT_ROOT / 'pigweed'
+   # Set up variables for key project paths.
+   PROJECT_ROOT = Path(os.environ["MY_PROJECT_ROOT"])
+   PIGWEED_ROOT = PROJECT_ROOT / "pigweed"
 
-  # Rerun the build if files with these extensions change.
-  _BUILD_EXTENSIONS = frozenset(
-      ['.rst', '.gn', '.gni', *format_code.C_FORMAT.extensions])
-
-
-  #
-  # Presubmit checks
-  #
-  def release_build(ctx: PresubmitContext):
-      build.gn_gen(ctx, build_type='release')
-      build.ninja(ctx)
-      build.gn_check(ctx)  # Run after building to check generated files.
+   # Rerun the build if files with these extensions change.
+   _BUILD_EXTENSIONS = frozenset(
+       [".rst", ".gn", ".gni", *format_code.C_FORMAT.extensions]
+   )
 
 
-  def host_tests(ctx: PresubmitContext):
-      build.gn_gen(ctx, run_host_tests='true')
-      build.ninja(ctx)
-      build.gn_check(ctx)
+   #
+   # Presubmit checks
+   #
+   def release_build(ctx: PresubmitContext):
+       build.gn_gen(ctx, build_type="release")
+       build.ninja(ctx)
+       build.gn_check(ctx)  # Run after building to check generated files.
 
 
-  # Avoid running some checks on certain paths.
-  PATH_EXCLUSIONS = (
-      re.compile(r'^external/'),
-      re.compile(r'^vendor/'),
-  )
+   def host_tests(ctx: PresubmitContext):
+       build.gn_gen(ctx, run_host_tests="true")
+       build.ninja(ctx)
+       build.gn_check(ctx)
 
 
-  # Use the upstream pragma_once check, but apply a different set of path
-  # filters with @filter_paths.
-  @filter_paths(endswith='.h', exclude=PATH_EXCLUSIONS)
-  def pragma_once(ctx: PresubmitContext):
-      cpp_checks.pragma_once(ctx)
+   # Avoid running some checks on certain paths.
+   PATH_EXCLUSIONS = (
+       re.compile(r"^external/"),
+       re.compile(r"^vendor/"),
+   )
 
 
-  #
-  # Presubmit check programs
-  #
-  OTHER = (
-      # Checks not ran by default but that should be available. These might
-      # include tests that are expensive to run or that don't yet pass.
-      build.gn_quick_check,
-  )
-
-  QUICK = (
-      # List some presubmit checks to run
-      pragma_once,
-      host_tests,
-      # Use the upstream formatting checks, with custom path filters applied.
-      format_code.presubmit_checks(exclude=PATH_EXCLUSIONS),
-      # Include the upstream inclusive language check.
-      inclusive_language.presubmit_check,
-      # Include just the lint-related Python checks.
-      python_checks.gn_pylint.with_filter(exclude=PATH_EXCLUSIONS),
-  )
-
-  FULL = (
-      QUICK,  # Add all checks from the 'quick' program
-      release_build,
-      # Use the upstream Python checks, with custom path filters applied.
-      # Checks listed multiple times are only run once.
-      python_checks.gn_python_check.with_filter(exclude=PATH_EXCLUSIONS),
-  )
-
-  PROGRAMS = pw_presubmit.Programs(other=OTHER, quick=QUICK, full=FULL)
+   # Use the upstream pragma_once check, but apply a different set of path
+   # filters with @filter_paths.
+   @filter_paths(endswith=".h", exclude=PATH_EXCLUSIONS)
+   def pragma_once(ctx: PresubmitContext):
+       cpp_checks.pragma_once(ctx)
 
 
-  #
-  # Allowlist of remote refs for presubmit. If the remote ref being pushed to
-  # matches any of these values (with regex matching), then the presubmits
-  # checks will be run before pushing.
-  #
-  PRE_PUSH_REMOTE_REF_ALLOWLIST = (
-      'refs/for/main',
-  )
+   #
+   # Presubmit check programs
+   #
+   OTHER = (
+       # Checks not ran by default but that should be available. These might
+       # include tests that are expensive to run or that don't yet pass.
+       build.gn_gen_check,
+   )
+
+   QUICK = (
+       # List some presubmit checks to run
+       pragma_once,
+       host_tests,
+       # Use the upstream formatting checks, with custom path filters applied.
+       format_code.presubmit_checks(exclude=PATH_EXCLUSIONS),
+       # Include the upstream inclusive language check.
+       inclusive_language.presubmit_check,
+       # Include just the lint-related Python checks.
+       python_checks.gn_python_lint.with_filter(exclude=PATH_EXCLUSIONS),
+   )
+
+   FULL = (
+       QUICK,  # Add all checks from the 'quick' program
+       release_build,
+       # Use the upstream Python checks, with custom path filters applied.
+       # Checks listed multiple times are only run once.
+       python_checks.gn_python_check.with_filter(exclude=PATH_EXCLUSIONS),
+   )
+
+   PROGRAMS = pw_presubmit.Programs(other=OTHER, quick=QUICK, full=FULL)
 
 
-  def run(install: bool, remote_ref: Optional[str],  **presubmit_args) -> int:
-      """Process the --install argument then invoke pw_presubmit."""
-
-      # Install the presubmit Git pre-push hook, if requested.
-      if install:
-          # '$remote_ref' will be replaced by the actual value of the remote ref
-          # at runtime.
-          install_git_hook('pre-push', [
-              'python', '-m', 'tools.presubmit_check', '--base', 'HEAD~',
-              '--remote-ref', '$remote_ref'
-          ])
-          return 0
-
-      # Run the checks if either no remote_ref was passed, or if the remote ref
-      # matches anything in the allowlist.
-      if remote_ref is None or any(
-              re.search(pattern, remote_ref)
-              for pattern in PRE_PUSH_REMOTE_REF_ALLOWLIST):
-          return cli.run(root=PROJECT_ROOT, **presubmit_args)
+   #
+   # Allowlist of remote refs for presubmit. If the remote ref being pushed to
+   # matches any of these values (with regex matching), then the presubmits
+   # checks will be run before pushing.
+   #
+   PRE_PUSH_REMOTE_REF_ALLOWLIST = ("refs/for/main",)
 
 
-  def main() -> int:
-      """Run the presubmit checks for this repository."""
-      parser = argparse.ArgumentParser(description=__doc__)
-      cli.add_arguments(parser, PROGRAMS, 'quick')
+   def run(install: bool, remote_ref: Optional[str], **presubmit_args) -> int:
+       """Process the --install argument then invoke pw_presubmit."""
 
-      # Define an option for installing a Git pre-push hook for this script.
-      parser.add_argument(
-          '--install',
-          action='store_true',
-          help='Install the presubmit as a Git pre-push hook and exit.')
+       # Install the presubmit Git pre-push hook, if requested.
+       if install:
+           # '$remote_ref' will be replaced by the actual value of the remote ref
+           # at runtime.
+           install_git_hook(
+               "pre-push",
+               [
+                   "python",
+                   "-m",
+                   "tools.presubmit_check",
+                   "--base",
+                   "HEAD~",
+                   "--remote-ref",
+                   "$remote_ref",
+               ],
+           )
+           return 0
 
-      # Define an optional flag to pass the remote ref into this script, if it
-      # is run as a pre-push hook. The destination variable in the parsed args
-      # will be `remote_ref`, as dashes are replaced with underscores to make
-      # valid variable names.
-      parser.add_argument(
-          '--remote-ref',
-          default=None,
-          nargs='?',  # Make optional.
-          help='Remote ref of the push command, for use by the pre-push hook.')
+       # Run the checks if either no remote_ref was passed, or if the remote ref
+       # matches anything in the allowlist.
+       if remote_ref is None or any(
+           re.search(pattern, remote_ref)
+           for pattern in PRE_PUSH_REMOTE_REF_ALLOWLIST
+       ):
+           return cli.run(root=PROJECT_ROOT, **presubmit_args)
+       return 0
 
-      return run(**vars(parser.parse_args()))
 
-  if __name__ == '__main__':
-      pw_cli.log.install(logging.INFO)
-      sys.exit(main())
+   def main() -> int:
+       """Run the presubmit checks for this repository."""
+       parser = argparse.ArgumentParser(description=__doc__)
+       cli.add_arguments(parser, PROGRAMS, "quick")
+
+       # Define an option for installing a Git pre-push hook for this script.
+       parser.add_argument(
+           "--install",
+           action="store_true",
+           help="Install the presubmit as a Git pre-push hook and exit.",
+       )
+
+       # Define an optional flag to pass the remote ref into this script, if it
+       # is run as a pre-push hook. The destination variable in the parsed args
+       # will be `remote_ref`, as dashes are replaced with underscores to make
+       # valid variable names.
+       parser.add_argument(
+           "--remote-ref",
+           default=None,
+           nargs="?",  # Make optional.
+           help="Remote ref of the push command, for use by the pre-push hook.",
+       )
+
+       return run(**vars(parser.parse_args()))
+
+
+   if __name__ == "__main__":
+       pw_cli.log.install(logging.INFO)
+       sys.exit(main())
 
 ---------------------
 Code formatting tools
@@ -615,35 +638,35 @@ a formatter or remove/disable a PigWeed supplied one.
 
 .. code-block:: python
 
-  #!/usr/bin/env python
-  """Formats files in repository. """
+   #!/usr/bin/env python
+   """Formats files in repository. """
 
-  import logging
-  import sys
+   import logging
+   import sys
 
-  import pw_cli.log
-  from pw_presubmit import format_code
-  from your_project import presubmit_checks
-  from your_project import your_check
+   import pw_cli.log
+   from pw_presubmit import format_code
+   from your_project import presubmit_checks
+   from your_project import your_check
 
-  YOUR_CODE_FORMAT = CodeFormat('YourFormat',
-                                filter=FileFilter(suffix=('.your', )),
-                                check=your_check.check,
-                                fix=your_check.fix)
+   YOUR_CODE_FORMAT = CodeFormat('YourFormat',
+                                 filter=FileFilter(suffix=('.your', )),
+                                 check=your_check.check,
+                                 fix=your_check.fix)
 
-  CODE_FORMATS = (*format_code.CODE_FORMATS, YOUR_CODE_FORMAT)
+   CODE_FORMATS = (*format_code.CODE_FORMATS, YOUR_CODE_FORMAT)
 
-  def _run(exclude, **kwargs) -> int:
-      """Check and fix formatting for source files in the repo."""
-      return format_code.format_paths_in_repo(exclude=exclude,
-                                              code_formats=CODE_FORMATS,
-                                              **kwargs)
-
-
-  def main():
-      return _run(**vars(format_code.arguments(git_paths=True).parse_args()))
+   def _run(exclude, **kwargs) -> int:
+       """Check and fix formatting for source files in the repo."""
+       return format_code.format_paths_in_repo(exclude=exclude,
+                                               code_formats=CODE_FORMATS,
+                                               **kwargs)
 
 
-  if __name__ == '__main__':
-      pw_cli.log.install(logging.INFO)
-      sys.exit(main())
+   def main():
+       return _run(**vars(format_code.arguments(git_paths=True).parse_args()))
+
+
+   if __name__ == '__main__':
+       pw_cli.log.install(logging.INFO)
+       sys.exit(main())

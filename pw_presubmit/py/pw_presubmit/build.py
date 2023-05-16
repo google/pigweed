@@ -82,6 +82,7 @@ def bazel(ctx: PresubmitContext, cmd: str, *args: str) -> None:
         keep_going.append('--keep_going')
 
     bazel_stdout = ctx.output_dir / 'bazel.stdout'
+    ctx.output_dir.mkdir(exist_ok=True, parents=True)
     try:
         with bazel_stdout.open('w') as outs:
             call(
@@ -97,6 +98,7 @@ def bazel(ctx: PresubmitContext, cmd: str, *args: str) -> None:
                 cwd=ctx.root,
                 env=env_with_clang_vars(),
                 tee=outs,
+                call_annotation={'build_system': 'bazel'},
             )
 
     except PresubmitFailure as exc:
@@ -189,6 +191,10 @@ def gn_gen(
         *args,
         *([args_option] if all_gn_args else []),
         cwd=ctx.root,
+        call_annotation={
+            'gn_gen_args': all_gn_args,
+            'gn_gen_args_option': args_option,
+        },
     )
 
 
@@ -219,22 +225,25 @@ def ninja(
         keep_going.extend(('-k', '0'))
 
     if save_compdb:
-        proc = subprocess.run(
+        proc = log_run(
             ['ninja', '-C', ctx.output_dir, '-t', 'compdb', *args],
             capture_output=True,
             **kwargs,
         )
-        (ctx.output_dir / 'ninja.compdb').write_bytes(proc.stdout)
+        if not ctx.dry_run:
+            (ctx.output_dir / 'ninja.compdb').write_bytes(proc.stdout)
 
     if save_graph:
-        proc = subprocess.run(
+        proc = log_run(
             ['ninja', '-C', ctx.output_dir, '-t', 'graph', *args],
             capture_output=True,
             **kwargs,
         )
-        (ctx.output_dir / 'ninja.graph').write_bytes(proc.stdout)
+        if not ctx.dry_run:
+            (ctx.output_dir / 'ninja.graph').write_bytes(proc.stdout)
 
     ninja_stdout = ctx.output_dir / 'ninja.stdout'
+    ctx.output_dir.mkdir(exist_ok=True, parents=True)
     try:
         with ninja_stdout.open('w') as outs:
             if sys.platform == 'win32':
@@ -252,6 +261,7 @@ def ninja(
                 *args,
                 tee=outs,
                 propagate_sigterm=True,
+                call_annotation={'build_system': 'ninja'},
                 **kwargs,
             )
 
@@ -266,7 +276,7 @@ def ninja(
 
 def get_gn_args(directory: Path) -> List[Dict[str, Dict[str, str]]]:
     """Dumps GN variables to JSON."""
-    proc = subprocess.run(
+    proc = log_run(
         ['gn', 'args', directory, '--list', '--json'], stdout=subprocess.PIPE
     )
     return json.loads(proc.stdout)

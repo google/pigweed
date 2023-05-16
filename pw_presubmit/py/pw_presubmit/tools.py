@@ -32,6 +32,8 @@ from typing import (
     Tuple,
 )
 
+from pw_presubmit.presubmit_context import PRESUBMIT_CONTEXT
+
 _LOG: logging.Logger = logging.getLogger(__name__)
 
 
@@ -200,11 +202,26 @@ def format_command(args: Sequence, kwargs: dict) -> Tuple[str, str]:
     return attr, ' '.join(shlex.quote(str(arg)) for arg in args)
 
 
-def log_run(args, **kwargs) -> subprocess.CompletedProcess:
+def log_run(
+    args, ignore_dry_run: bool = False, **kwargs
+) -> subprocess.CompletedProcess:
     """Logs a command then runs it with subprocess.run.
 
-    Takes the same arguments as subprocess.run.
+    Takes the same arguments as subprocess.run. The command is only executed if
+    dry-run is not enabled.
     """
+    ctx = PRESUBMIT_CONTEXT.get()
+    if ctx:
+        if not ignore_dry_run:
+            ctx.append_check_command(*args, **kwargs)
+        if ctx.dry_run and not ignore_dry_run:
+            # Return an empty CompletedProcess
+            empty_proc: subprocess.CompletedProcess = (
+                subprocess.CompletedProcess('', 0)
+            )
+            empty_proc.stdout = b''
+            empty_proc.stderr = b''
+            return empty_proc
     _LOG.debug('[COMMAND] %s\n%s', *format_command(args, kwargs))
     return subprocess.run(args, **kwargs)
 

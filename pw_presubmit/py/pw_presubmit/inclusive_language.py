@@ -112,6 +112,11 @@ def presubmit_check(
 ):
     """Presubmit check that ensures files do not contain banned words."""
 
+    # No subprocesses are run for inclusive_language so don't perform this check
+    # if dry_run is on.
+    if ctx.dry_run:
+        return
+
     found_words: Dict[Path, List[Union[PathMatch, LineMatch]]] = {}
 
     for path in ctx.paths:

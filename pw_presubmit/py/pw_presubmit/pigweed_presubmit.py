@@ -55,7 +55,8 @@ from pw_presubmit.presubmit import (
     call,
     filter_paths,
 )
-from pw_presubmit.tools import plural
+from pw_presubmit.tools import log_run, plural
+
 from pw_presubmit.install_hook import install_git_hook
 
 _LOG = logging.getLogger(__name__)
@@ -589,7 +590,7 @@ def _clang_system_include_paths(lang: str) -> List[str]:
         f'{os.devnull}',
         '-fsyntax-only',
     ]
-    process = subprocess.run(
+    process = log_run(
         command, check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
     )
 

@@ -100,24 +100,31 @@ def _diff(path, original: bytes, formatted: bytes) -> str:
     )
 
 
-Formatter = Callable[[str, bytes], bytes]
+FormatterT = Callable[[str, bytes], bytes]
 
 
-def _diff_formatted(path, formatter: Formatter) -> Optional[str]:
+def _diff_formatted(
+    path, formatter: FormatterT, dry_run: bool = False
+) -> Optional[str]:
     """Returns a diff comparing a file to its formatted version."""
     with open(path, 'rb') as fd:
         original = fd.read()
 
     formatted = formatter(path, original)
 
+    if dry_run:
+        return None
+
     return None if formatted == original else _diff(path, original, formatted)
 
 
-def _check_files(files, formatter: Formatter) -> Dict[Path, str]:
+def _check_files(
+    files, formatter: FormatterT, dry_run: bool = False
+) -> Dict[Path, str]:
     errors = {}
 
     for path in files:
-        difference = _diff_formatted(path, formatter)
+        difference = _diff_formatted(path, formatter, dry_run)
         if difference:
             errors[path] = difference
 
@@ -135,7 +142,11 @@ def _clang_format(*args: Union[Path, str], **kwargs) -> bytes:
 
 def clang_format_check(ctx: _Context) -> Dict[Path, str]:
     """Checks formatting; returns {path: diff} for files with bad formatting."""
-    return _check_files(ctx.paths, lambda path, _: _clang_format(path))
+    return _check_files(
+        ctx.paths,
+        lambda path, _: _clang_format(path),
+        ctx.dry_run,
+    )
 
 
 def clang_format_fix(ctx: _Context) -> Dict[Path, str]:
@@ -154,6 +165,7 @@ def check_gn_format(ctx: _Context) -> Dict[Path, str]:
             stdout=subprocess.PIPE,
             check=True,
         ).stdout,
+        ctx.dry_run,
     )
 
 
@@ -182,7 +194,7 @@ def check_bazel_format(ctx: _Context) -> Dict[Path, str]:
                 errors[Path(path)] = stderr
             return build.read_bytes()
 
-    result = _check_files(ctx.paths, _format_temp)
+    result = _check_files(ctx.paths, _format_temp, ctx.dry_run)
     result.update(errors)
     return result
 
@@ -212,6 +224,7 @@ def check_go_format(ctx: _Context) -> Dict[Path, str]:
         lambda path, _: log_run(
             ['gofmt', path], stdout=subprocess.PIPE, check=True
         ).stdout,
+        ctx.dry_run,
     )
 
 
@@ -346,6 +359,7 @@ def check_py_format_black(ctx: _Context) -> Dict[Path, str]:
     result = _check_files(
         [x for x in ctx.paths if str(x).endswith(paths)],
         _format_temp,
+        ctx.dry_run,
     )
     result.update(errors)
     return result

@@ -204,6 +204,14 @@ def add_arguments(
     add_path_arguments(parser)
 
     parser.add_argument(
+        '--dry-run',
+        action='store_true',
+        help=(
+            'Execute the presubits with in dry-run mode. System commands that'
+            'pw_presubmit would run are instead printed to the terminal.'
+        ),
+    )
+    parser.add_argument(
         '-k',
         '--keep-going',
         action='store_true',
@@ -261,6 +269,13 @@ def add_arguments(
         )
 
 
+def _get_default_parser() -> argparse.ArgumentParser:
+    """Return all common pw presubmit args for sphinx documentation."""
+    parser = argparse.ArgumentParser(description="Runs local presubmit checks.")
+    add_arguments(parser)
+    return parser
+
+
 def run(  # pylint: disable=too-many-arguments
     default_program: Optional[presubmit.Program],
     program: Sequence[presubmit.Program],
@@ -273,6 +288,7 @@ def run(  # pylint: disable=too-many-arguments
     repositories: Collection[Path] = (),
     only_list_steps=False,
     list_steps: Optional[Callable[[], None]] = None,
+    dry_run: bool = False,
     **other_args,
 ) -> int:
     """Processes arguments from add_arguments and runs the presubmit.
@@ -354,6 +370,7 @@ def run(  # pylint: disable=too-many-arguments
         output_directory=output_directory,
         package_root=package_root,
         substep=substep,
+        dry_run=dry_run,
         **other_args,
     ):
         return 0

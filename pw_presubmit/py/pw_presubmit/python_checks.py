@@ -19,7 +19,6 @@ These checks assume that they are running in a preconfigured Python environment.
 import json
 import logging
 from pathlib import Path
-import subprocess
 import sys
 from typing import Optional
 
@@ -33,6 +32,7 @@ from pw_presubmit.presubmit import (
     PresubmitFailure,
 )
 from pw_presubmit import build
+from pw_presubmit.tools import log_run
 
 _LOG = logging.getLogger(__name__)
 
@@ -141,7 +141,7 @@ def gn_python_test_coverage(ctx: PresubmitContext):
         coverage_omit_patterns,
     ]
     report_args += changed_python_files
-    subprocess.run(report_args, check=False, cwd=ctx.output_dir)
+    log_run(report_args, check=False, cwd=ctx.output_dir)
 
     # Generate a json report
     call('coverage', 'lcov', coverage_omit_patterns, cwd=ctx.output_dir)

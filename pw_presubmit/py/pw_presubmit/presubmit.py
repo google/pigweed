@@ -44,6 +44,7 @@ import contextlib
 import copy
 import dataclasses
 import enum
+import inspect
 from inspect import Parameter, signature
 import itertools
 import json
@@ -82,6 +83,12 @@ from pw_package import package_manager
 
 from pw_presubmit import git_repo, tools
 from pw_presubmit.tools import plural
+from pw_presubmit.presubmit_context import (
+    PRESUBMIT_CONTEXT,
+    PresubmitCheckTrace,
+    log_check_traces,
+    save_check_trace,
+)
 
 _LOG: logging.Logger = logging.getLogger(__name__)
 
@@ -532,6 +539,10 @@ class FormatContext:
     paths: Tuple[Path, ...]
     package_root: Path
     format_options: FormatOptions
+    dry_run: bool = False
+
+    def append_check_command(self, *command_args, **command_kwargs) -> None:
+        """Empty append_check_command."""
 
 
 @dataclasses.dataclass
@@ -577,6 +588,7 @@ class PresubmitContext:  # pylint: disable=too-many-instance-attributes
     rng_seed: int = 1
     full: bool = False
     _failed: bool = False
+    dry_run: bool = False
 
     @property
     def failed(self) -> bool:
@@ -616,6 +628,75 @@ class PresubmitContext:  # pylint: disable=too-many-instance-attributes
             luci=None,
             override_gn_args={},
             format_options=FormatOptions(),
+        )
+
+    def append_check_command(
+        self,
+        *command_args,
+        call_annotation: Optional[Dict[Any, Any]] = None,
+        **command_kwargs,
+    ) -> None:
+        """Save a subprocess command annotation to this presubmit context.
+
+        This is used to capture commands that will be run for display in ``pw
+        presubmit --dry-run.``
+
+        Args:
+
+            command_args: All args that would normally be passed to
+                subprocess.run
+
+            call_annotation: Optional key value pairs of data to save for this
+                command. Examples:
+
+                ::
+
+                   call_annotation={'pw_package_install': 'teensy'}
+                   call_annotation={'build_system': 'bazel'}
+                   call_annotation={'build_system': 'ninja'}
+
+            command_kwargs: keyword args that would normally be passed to
+                subprocess.run.
+        """
+        call_annotation = call_annotation if call_annotation else {}
+        calling_func: Optional[str] = None
+        calling_check = None
+        # Loop through the current call stack looking for `self`, and stopping
+        # when self is a Check() instance and if the __call__ or _try_call
+        # functions are in the stack.
+        for frame_info in inspect.getouterframes(inspect.currentframe()):
+            self_obj = frame_info.frame.f_locals.get('self', None)
+            if (
+                self_obj
+                and isinstance(self_obj, Check)
+                and frame_info.function in ['_try_call', '__call__']
+            ):
+                calling_func = frame_info.function
+                calling_check = self_obj
+
+        save_check_trace(
+            self.output_dir,
+            PresubmitCheckTrace(
+                self,
+                calling_check,
+                calling_func,
+                command_args,
+                command_kwargs,
+                call_annotation,
+            ),
+        )
+
+    def __post_init__(self) -> None:
+        PRESUBMIT_CONTEXT.set(self)
+
+    def __hash__(self):
+        return hash(
+            tuple(
+                tuple(attribute.items())
+                if isinstance(attribute, dict)
+                else attribute
+                for attribute in dataclasses.astuple(self)
+            )
         )
 
 
@@ -750,6 +831,7 @@ class Presubmit:
         program: Program,
         keep_going: bool = False,
         substep: Optional[str] = None,
+        dry_run: bool = False,
     ) -> bool:
         """Executes a series of presubmit checks on the paths."""
 
@@ -782,7 +864,9 @@ class Presubmit:
         _LOG.debug('Checks:\n%s', '\n'.join(c.name for c in checks))
 
         start_time: float = time.time()
-        passed, failed, skipped = self._execute_checks(checks, keep_going)
+        passed, failed, skipped = self._execute_checks(
+            checks, keep_going, dry_run
+        )
         self._log_summary(time.time() - start_time, passed, failed, skipped)
 
         return not failed and not skipped
@@ -868,7 +952,7 @@ class Presubmit:
         return PresubmitContext(**kwargs)
 
     @contextlib.contextmanager
-    def _context(self, filtered_check: FilteredCheck):
+    def _context(self, filtered_check: FilteredCheck, dry_run: bool = False):
         # There are many characters banned from filenames on Windows. To
         # simplify things, just strip everything that's not a letter, digit,
         # or underscore.
@@ -901,19 +985,23 @@ class Presubmit:
                 full=self._full,
                 luci=LuciContext.create_from_environment(),
                 format_options=FormatOptions.load(),
+                dry_run=dry_run,
             )
 
         finally:
             _LOG.removeHandler(handler)
 
     def _execute_checks(
-        self, program: List[FilteredCheck], keep_going: bool
+        self,
+        program: List[FilteredCheck],
+        keep_going: bool,
+        dry_run: bool = False,
     ) -> Tuple[int, int, int]:
         """Runs presubmit checks; returns (passed, failed, skipped) lists."""
         passed = failed = 0
 
         for i, filtered_check in enumerate(program, 1):
-            with self._context(filtered_check) as ctx:
+            with self._context(filtered_check, dry_run) as ctx:
                 result = filtered_check.run(ctx, i, len(program))
 
             if result is PresubmitResult.PASS:
@@ -978,6 +1066,7 @@ def run(  # pylint: disable=too-many-arguments,too-many-locals
     presubmit_class: type = Presubmit,
     list_steps_file: Optional[Path] = None,
     substep: Optional[str] = None,
+    dry_run: bool = False,
 ) -> bool:
     """Lists files in the current Git repo and runs a Presubmit with them.
 
@@ -1113,7 +1202,7 @@ def run(  # pylint: disable=too-many-arguments,too-many-locals
     if not isinstance(program, Program):
         program = Program('', program)
 
-    return presubmit.run(program, keep_going, substep=substep)
+    return presubmit.run(program, keep_going, substep=substep, dry_run=dry_run)
 
 
 def _make_str_tuple(value: Union[Iterable[str], str]) -> Tuple[str, ...]:
@@ -1316,6 +1405,9 @@ class Check:
         time_str = _format_time(time.time() - start_time_s)
         _LOG.debug('%s %s', self.name, result.value)
 
+        if ctx.dry_run:
+            log_check_traces(ctx)
+
         _print_ui(
             _box(_CHECK_LOWER, result.colorized(_LEFT), self.name, time_str)
         )
@@ -1449,8 +1541,19 @@ def filter_paths(
     return filter_paths_for_function
 
 
-def call(*args, **kwargs) -> None:
+def call(
+    *args, call_annotation: Optional[Dict[Any, Any]] = None, **kwargs
+) -> None:
     """Optional subprocess wrapper that causes a PresubmitFailure on errors."""
+    ctx = PRESUBMIT_CONTEXT.get()
+    if ctx:
+        call_annotation = call_annotation if call_annotation else {}
+        ctx.append_check_command(
+            *args, call_annotation=call_annotation, **kwargs
+        )
+        if ctx.dry_run:
+            return
+
     attributes, command = tools.format_command(args, kwargs)
     _LOG.debug('[RUN] %s\n%s', attributes, command)
 
@@ -1516,6 +1619,16 @@ def install_package(
     """Install package with given name in given path."""
     root = ctx.package_root
     mgr = package_manager.PackageManager(root)
+
+    ctx.append_check_command(
+        'pw',
+        'package',
+        'install',
+        name,
+        call_annotation={'pw_package_install': name},
+    )
+    if ctx.dry_run:
+        return
 
     if not mgr.list():
         raise PresubmitFailure(
