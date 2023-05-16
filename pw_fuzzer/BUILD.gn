@@ -17,62 +17,30 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/error.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
-import("$dir_pw_fuzzer/fuzzer.gni")
+import("$dir_pw_third_party/fuzztest/fuzztest.gni")
+import("$dir_pw_unit_test/test.gni")
 
-config("public_include_path") {
-  include_dirs = [ "public" ]
-  visibility = [ ":*" ]
+# See https://llvm.org/docs/LibFuzzer.html#fuzzer-friendly-build-mode
+config("fuzzing_build_mode_unsafe_for_production") {
+  defines = [ "FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION" ]
 }
 
-# Add flags for adding LLVM sanitizer coverage for fuzzing. This is added by
-# the host_clang_fuzz toolchains.
-config("instrumentation") {
-  if (pw_toolchain_OSS_FUZZ_ENABLED) {
-    # OSS-Fuzz manipulates compiler flags directly. See
-    # google.github.io/oss-fuzz/getting-started/new-project-guide/#Requirements.
-    cflags_c = string_split(getenv("CFLAGS"))
-    cflags_cc = string_split(getenv("CXXFLAGS"))
-
-    # OSS-Fuzz sets "-stdlib=libc++", which conflicts with the "-nostdinc++" set
-    # by `pw_minimal_cpp_stdlib`.
-    cflags_cc += [ "-Wno-unused-command-line-argument" ]
-  } else {
-    cflags = [ "-fsanitize=fuzzer-no-link" ]
-  }
+pw_doc_group("docs") {
+  inputs = [ "doc_resources/pw_fuzzer_coverage_guided.png" ]
+  sources = [ "docs.rst" ]
 }
 
-# Add flags for linking against compiler-rt's libFuzzer. This is added
-# automatically by `pw_fuzzer`.
-config("engine") {
-  if (pw_toolchain_OSS_FUZZ_ENABLED) {
-    # OSS-Fuzz manipulates linker flags directly. See
-    # google.github.io/oss-fuzz/getting-started/new-project-guide/#Requirements.
-    ldflags = string_split(getenv("LDFLAGS")) + [ getenv("LIB_FUZZING_ENGINE") ]
-  } else {
-    ldflags = [ "-fsanitize=fuzzer" ]
-  }
+pw_test_group("tests") {
+  group_deps = [ "examples/libfuzzer:tests" ]
 }
+
+################################################################################
+# FuzzTest support
+#
+# Create FuzzTest-style fuzzers by adding a dep on dir_pw_fuzzer:fuzztest
 
 config("public_overrides_include_path") {
   include_dirs = [ "public_overrides" ]
-}
-
-pw_source_set("pw_fuzzer") {
-  public_configs = [ ":public_include_path" ]
-  public = [
-    "public/pw_fuzzer/asan_interface.h",
-    "public/pw_fuzzer/fuzzed_data_provider.h",
-  ]
-  public_deps = [ "$dir_pw_log" ]
-}
-
-pw_source_set("run_as_unit_test") {
-  configs = [ ":public_include_path" ]
-  sources = [ "pw_fuzzer_disabled.cc" ]
-  deps = [
-    dir_pw_log,
-    dir_pw_unit_test,
-  ]
 }
 
 # Unit tests with a dep on this target can include FuzzTest-style fuzzers.
@@ -120,33 +88,65 @@ if (dir_pw_third_party_fuzztest != "") {
   }
 }
 
-# See https://llvm.org/docs/LibFuzzer.html#fuzzer-friendly-build-mode
-config("fuzzing_build_mode_unsafe_for_production") {
-  defines = [ "FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION" ]
+################################################################################
+# libFuzzer support
+#
+# Create libFuzzer-style fuzzers by using the `pw_fuzzer` template from
+# fuzzer.gni.
+
+# Add flags for adding LLVM sanitizer coverage for fuzzing. This is added by
+# the host_clang_fuzz toolchains.
+config("instrumentation") {
+  if (pw_toolchain_OSS_FUZZ_ENABLED) {
+    # OSS-Fuzz manipulates compiler flags directly. See
+    # google.github.io/oss-fuzz/getting-started/new-project-guide/#Requirements.
+    cflags_c = string_split(getenv("CFLAGS"))
+    cflags_cc = string_split(getenv("CXXFLAGS"))
+
+    # OSS-Fuzz sets "-stdlib=libc++", which conflicts with the "-nostdinc++" set
+    # by `pw_minimal_cpp_stdlib`.
+    cflags_cc += [ "-Wno-unused-command-line-argument" ]
+  } else {
+    cflags = [ "-fsanitize=fuzzer-no-link" ]
+  }
 }
 
-config("fuzzing_verbose_logging") {
-  defines = [ "FUZZING_VERBOSE_LOGGING" ]
+# Add flags for linking against compiler-rt's libFuzzer. This is added
+# automatically by `pw_fuzzer`.
+config("libfuzzer_config") {
+  if (pw_toolchain_OSS_FUZZ_ENABLED) {
+    # OSS-Fuzz manipulates linker flags directly. See
+    # google.github.io/oss-fuzz/getting-started/new-project-guide/#Requirements.
+    ldflags = string_split(getenv("LDFLAGS")) + [ getenv("LIB_FUZZING_ENGINE") ]
+  } else {
+    ldflags = [ "-fsanitize=fuzzer" ]
+  }
 }
 
-pw_doc_group("docs") {
-  inputs = [ "doc_resources/pw_fuzzer_coverage_guided.png" ]
-  sources = [ "docs.rst" ]
+config("public_include_path") {
+  include_dirs = [ "public" ]
+  visibility = [ ":*" ]
 }
 
-# Sample fuzzer
-pw_fuzzer("toy_fuzzer") {
-  sources = [ "examples/toy_fuzzer.cc" ]
-  deps = [
-    ":pw_fuzzer",
-    dir_pw_status,
+# Includes wrapper's for LLVM's libFuzzer compiler runtime library.
+pw_source_set("libfuzzer") {
+  public = [
+    "public/pw_fuzzer/asan_interface.h",
+    "public/pw_fuzzer/fuzzed_data_provider.h",
   ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ dir_pw_log ]
 }
 
-pw_test_group("tests") {
-  tests = [ ":toy_fuzzer_test" ]
+# This can be linked against fuzz target functions to create unit tests for
+# them.
+pw_source_set("libfuzzer_test") {
+  sources = [ "pw_fuzzer_disabled.cc" ]
+  public_deps = [ ":libfuzzer" ]
+  deps = [ dir_pw_unit_test ]
 }
 
+# libFuzzer-based fuzzers have a distinct dep graph.
 group("fuzzers") {
-  deps = [ ":toy_fuzzer" ]
+  deps = [ "examples/libfuzzer:fuzzers" ]
 }

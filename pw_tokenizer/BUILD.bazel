@@ -200,7 +200,6 @@ pw_cc_fuzz_test(
     deps = [
         ":decoder",
         ":pw_tokenizer",
-        "//pw_fuzzer",
     ],
 )
 
