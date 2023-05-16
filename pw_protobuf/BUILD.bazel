@@ -114,6 +114,7 @@ pw_cc_fuzz_test(
         "fuzz.h",
     ],
     deps = [
+        "//pw_fuzzer",
         "//pw_protobuf",
         "//pw_span",
     ],
@@ -126,6 +127,7 @@ pw_cc_fuzz_test(
         "fuzz.h",
     ],
     deps = [
+        "//pw_fuzzer",
         "//pw_protobuf",
         "//pw_span",
     ],

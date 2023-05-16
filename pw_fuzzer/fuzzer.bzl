@@ -20,8 +20,6 @@ load(
 )
 
 def pw_cc_fuzz_test(**kwargs):
-    kwargs["deps"].append("//pw_fuzzer:libfuzzer")
-
     # TODO(b/234877642): Remove this implicit dependency once we have a better
     # way to handle the facades without introducing a circular dependency into
     # the build.

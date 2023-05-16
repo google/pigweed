@@ -277,6 +277,7 @@ pw_fuzzer("encoder_fuzzer") {
   ]
   deps = [
     ":pw_protobuf",
+    dir_pw_fuzzer,
     dir_pw_span,
   ]
   enable_test_if = _supports_large_tests
@@ -289,6 +290,7 @@ pw_fuzzer("decoder_fuzzer") {
   ]
   deps = [
     ":pw_protobuf",
+    dir_pw_fuzzer,
     dir_pw_span,
     dir_pw_status,
     dir_pw_stream,

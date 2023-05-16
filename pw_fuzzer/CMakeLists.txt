@@ -14,11 +14,6 @@
 
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
-################################################################################
-# FuzzTest support
-#
-# Create FuzzTest-style fuzzers by adding a dep on pw_fuzzer.fuzztest
-
 # If a project configure `pw_unit_test_GOOGLETEST_BACKEND` to use FuzzTest, this
 # target pulls in the "real" FuzzTest. Otherwise, it uses a "stub" which
 # converts invocations of `FUZZ_TEST` to disabled empty unit tests.

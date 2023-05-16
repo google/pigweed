@@ -21,10 +21,20 @@ package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
-################################################################################
-# FuzzTest support
-#
-# Create FuzzTest-style fuzzers by adding a dep on //pw_fuzzer:fuzztest
+pw_cc_library(
+    name = "pw_fuzzer",
+    hdrs = [
+        "public/pw_fuzzer/asan_interface.h",
+        "public/pw_fuzzer/fuzzed_data_provider.h",
+    ],
+    includes = ["public"],
+)
+
+pw_cc_library(
+    name = "fuzztest",
+    testonly = True,
+    deps = ["@pigweed_config//:pw_fuzzer_fuzztest_backend"],
+)
 
 # Identifies when upstream FuzzTest is being used.
 config_setting(
@@ -36,30 +46,9 @@ config_setting(
 )
 
 pw_cc_library(
-    name = "fuzztest",
-    testonly = True,
-    deps = ["@pigweed_config//:pw_fuzzer_fuzztest_backend"],
-)
-
-pw_cc_library(
     name = "fuzztest_stub",
     testonly = True,
     hdrs = ["public_overrides/fuzztest/fuzztest.h"],
     includes = ["public_overrides"],
     deps = ["//pw_unit_test"],
-)
-
-################################################################################
-# libFuzzer support
-#
-# Create libFuzzer-style fuzzers by using the `pw_fuzzer` template from
-# fuzzer.gni.
-
-pw_cc_library(
-    name = "libfuzzer",
-    hdrs = [
-        "public/pw_fuzzer/asan_interface.h",
-        "public/pw_fuzzer/fuzzed_data_provider.h",
-    ],
-    includes = ["public"],
 )

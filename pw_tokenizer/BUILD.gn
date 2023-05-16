@@ -267,7 +267,8 @@ pw_fuzzer("token_database_fuzzer") {
   sources = [ "token_database_fuzzer.cc" ]
   deps = [
     ":decoder",
-    dir_pw_preprocessor,
+    "$dir_pw_fuzzer",
+    "$dir_pw_preprocessor",
     dir_pw_span,
   ]
 }
@@ -276,7 +277,8 @@ pw_fuzzer("detokenize_fuzzer") {
   sources = [ "detokenize_fuzzer.cc" ]
   deps = [
     ":decoder",
-    dir_pw_preprocessor,
+    "$dir_pw_fuzzer",
+    "$dir_pw_preprocessor",
   ]
 }
 
