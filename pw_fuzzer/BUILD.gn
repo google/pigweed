@@ -31,7 +31,10 @@ pw_doc_group("docs") {
 }
 
 pw_test_group("tests") {
-  group_deps = [ "examples/libfuzzer:tests" ]
+  group_deps = [
+    "examples/fuzztest:tests",
+    "examples/libfuzzer:tests",
+  ]
 }
 
 ################################################################################

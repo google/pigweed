@@ -35,3 +35,5 @@ else()
       public_overrides
   )
 endif()
+
+add_subdirectory("examples/fuzztest")
