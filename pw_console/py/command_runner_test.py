@@ -16,7 +16,7 @@
 import logging
 import re
 import unittest
-from typing import Callable, List, Tuple
+from typing import List
 
 from unittest.mock import MagicMock
 
@@ -26,6 +26,7 @@ from prompt_toolkit.output import ColorDepth
 # inclusive-language: ignore
 from prompt_toolkit.output import DummyOutput as FakeOutput
 
+from pw_console.command_runner import CommandRunnerItem
 from pw_console.console_app import ConsoleApp
 from pw_console.console_prefs import ConsolePrefs
 from pw_console.text_formatting import (
@@ -89,10 +90,8 @@ class TestCommandRunner(unittest.TestCase):
         with create_app_session(output=FakeOutput()):
             console_app = _create_console_app(log_pane_count=2)
             flattened_menu_items = [
-                text
-                # pylint: disable=line-too-long
-                for text, handler in console_app.command_runner.load_menu_items()
-                # pylint: enable=line-too-long
+                item.title
+                for item in console_app.command_runner.load_menu_items()
             ]
 
             # Check some common menu items exist.
@@ -126,12 +125,16 @@ class TestCommandRunner(unittest.TestCase):
             def empty_handler() -> None:
                 return None
 
-            def get_completions() -> List[Tuple[str, Callable]]:
+            def get_completions() -> List[CommandRunnerItem]:
                 return [
-                    ('[File] > Open Logger', empty_handler),
-                    ('[Windows] > 1: Host Logs > Show/Hide', empty_handler),
-                    ('[Windows] > 2: Device Logs > Show/Hide', empty_handler),
-                    ('[Help] > User Guide', empty_handler),
+                    CommandRunnerItem('[File] > Open Logger', empty_handler),
+                    CommandRunnerItem(
+                        '[Windows] > 1: Host Logs > Show/Hide', empty_handler
+                    ),
+                    CommandRunnerItem(
+                        '[Windows] > 2: Device Logs > Show/Hide', empty_handler
+                    ),
+                    CommandRunnerItem('[Help] > User Guide', empty_handler),
                 ]
 
             command_runner.filter_completions.assert_not_called()
@@ -301,7 +304,7 @@ class TestCommandRunner(unittest.TestCase):
             command_runner._make_regexes.assert_called_once()  # pylint: disable=protected-access
 
             self.assertIn(
-                '[View] > Move Window Right', command_runner.selected_item_text
+                '[View] > Move Window Right', command_runner.selected_item_title
             )
             # Run the Move Window Right action
             command_runner._run_selected_item()  # pylint: disable=protected-access

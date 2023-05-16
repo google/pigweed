@@ -23,12 +23,14 @@ from prompt_toolkit.layout import (
     Window,
 )
 
+from prompt_toolkit.formatted_text import StyleAndTextTuples
+
 
 def create_border(
     # pylint: disable=too-many-arguments
     content: AnyContainer,
     content_height: Optional[int] = None,
-    title: Union[Callable[[], str], str] = '',
+    title: Union[Callable[[], Union[str, StyleAndTextTuples]], str] = '',
     border_style: Union[Callable[[], str], str] = '',
     base_style: Union[Callable[[], str], str] = '',
     top: bool = True,

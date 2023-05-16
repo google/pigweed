@@ -58,7 +58,7 @@ from ptpython.key_bindings import (  # type: ignore
     load_sidebar_bindings,
 )
 
-from pw_console.command_runner import CommandRunner
+from pw_console.command_runner import CommandRunner, CommandRunnerItem
 from pw_console.console_log_server import (
     ConsoleLogHTTPRequestHandler,
     pw_console_http_server,
@@ -521,11 +521,11 @@ class ConsoleApp:
         if not self.command_runner_is_open():
             self.command_runner.open_dialog()
 
-    def _create_logger_completions(self) -> List[Tuple[str, Callable]]:
-        completions: List[Tuple[str, Callable]] = [
-            (
-                'root',
-                functools.partial(
+    def _create_logger_completions(self) -> List[CommandRunnerItem]:
+        completions: List[CommandRunnerItem] = [
+            CommandRunnerItem(
+                title='root',
+                handler=functools.partial(
                     self.open_new_log_pane_for_logger, '', window_title='root'
                 ),
             ),
@@ -535,9 +535,9 @@ class ConsoleApp:
 
         for logger_name in all_logger_names:
             completions.append(
-                (
-                    logger_name,
-                    functools.partial(
+                CommandRunnerItem(
+                    title=logger_name,
+                    handler=functools.partial(
                         self.open_new_log_pane_for_logger, logger_name
                     ),
                 )
@@ -552,15 +552,15 @@ class ConsoleApp:
         if not self.command_runner_is_open():
             self.command_runner.open_dialog()
 
-    def _create_history_completions(self) -> List[Tuple[str, Callable]]:
+    def _create_history_completions(self) -> List[CommandRunnerItem]:
         return [
-            (
-                description,
-                functools.partial(
+            CommandRunnerItem(
+                title=title,
+                handler=functools.partial(
                     self.repl_pane.insert_text_into_input_buffer, text
                 ),
             )
-            for description, text in self.repl_pane.history_completions()
+            for title, text in self.repl_pane.history_completions()
         ]
 
     def open_command_runner_snippets(self) -> None:
@@ -593,16 +593,24 @@ class ConsoleApp:
         )
         server_thread.start()
 
-    def _create_snippet_completions(self) -> List[Tuple[str, Callable]]:
-        completions: List[Tuple[str, Callable]] = [
-            (
-                description,
-                functools.partial(
-                    self.repl_pane.insert_text_into_input_buffer, text
-                ),
+    def _create_snippet_completions(self) -> List[CommandRunnerItem]:
+        completions: List[CommandRunnerItem] = []
+
+        for snippet in self.prefs.snippet_completions():
+            fenced_code = f'```python\n{snippet.code.strip()}\n```'
+            description = '\n' + fenced_code + '\n'
+            if snippet.description:
+                description += '\n' + snippet.description.strip() + '\n'
+            completions.append(
+                CommandRunnerItem(
+                    title=snippet.title,
+                    handler=functools.partial(
+                        self.repl_pane.insert_text_into_input_buffer,
+                        snippet.code,
+                    ),
+                    description=description,
+                )
             )
-            for description, text in self.prefs.snippet_completions()
-        ]
 
         return completions
 

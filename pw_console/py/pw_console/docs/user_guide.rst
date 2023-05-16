@@ -785,21 +785,140 @@ Example Config
      log-pane.shift-line-to-center:
      - z z
 
+   # Project and User defined Python snippets
+   # Press Ctrl-t the Python Repl to select which snippet to insert.
+
    # Python Repl Snippets (Project owned)
    snippets:
-     Count Ten Times: |
-       for i in range(10):
-           print(i)
-     Local Variables: |
-       locals()
+     Count Ten Times:
+       code: |
+         for i in range(10):
+             print(i)
+       description: |
+         Print out 1 through 10 each on a separate line
+
+     Local Variables:
+       code: |
+         locals()
+       description: |
+         Return all local Python variables.
 
    # Python Repl Snippets (User owned)
    user_snippets:
-     Pretty print format function: |
-       import pprint
-       _pretty_format = pprint.PrettyPrinter(indent=1, width=120).pformat
-     Global variables: |
-       globals()
+     Pretty print format function:
+       code: |
+         import pprint
+         _pretty_format = pprint.PrettyPrinter(indent=1, width=120).pformat
+       description: |
+         Create a function named `_pretty_format` which returns a pretty
+         formatted string for a Python object.
+
+         Example:
+
+         ```python
+         from dataclasses import dataclass
+
+         @dataclass
+         class CodeSnippet:
+             title: str
+             code: str
+             description: str = ''
+
+         _pretty_format(CodeSnippet('one', '1'))
+         ```
+
+         The last line will return the string:
+
+         ```
+         "CodeSnippet(title='one', code='1', description='')"
+         ```
+
+     Global variables:
+       code: |
+         globals()
+       description: |
+         Return all global Python variables.
+
+
+Python Repl Snippets
+--------------------
+Python code snippets can be defined under the ``snippets:`` or
+``user_snippets:`` section. We suggest reserving ``user_snippets:`` for the user
+based config files (``$HOME/.pw_console.yaml`` or
+``$PW_PROJECT_ROOT/.pw_console.user.yaml``). ``snippets:`` is best suited for a
+project specific config file shared by all team members:
+``$PW_PROJECT_ROOT/.pw_console.yaml``
+
+Snippets consist of a title followed by ``code: |`` and optionally
+``description: |``. The YAML operator ``|`` will concatenate the following lines
+into a string and strip leading whitespace.
+
+
+.. code-block:: yaml
+
+   snippets:
+     Count Ten Times:
+       code: |
+         for i in range(10):
+             print(i)
+       description: |
+         Print out 1 through 10 each on a separate line
+
+Inserting this snippet will paste the for loop above into the Python Repl input
+window.
+
+Descriptions are markdown formatted and displayed below the selected snippet
+window. Fenced code blocks will have the correct syntax highlighting
+applied. For example the following will apply Python syntax highlighting to the
+code block below ``Example:``.
+
+.. code-block:: yaml
+
+   snippets:
+     Pretty print format function:
+       code: |
+         import pprint
+         _pretty_format = pprint.PrettyPrinter(indent=1, width=120).pformat
+       description: |
+         Create a function named `_pretty_format` which returns a pretty
+         formatted string for a Python object.
+
+         Example:
+
+         ```python
+         from dataclasses import dataclass
+
+         @dataclass
+         class CodeSnippet:
+             title: str
+             code: str
+             description: str = ''
+
+         _pretty_format(CodeSnippet('one', '1'))
+         ```
+
+If identical description text needs to be repeated for multiple snippets in a
+row you can set ``description: USE_PREVIOUS``. For example these two snippets
+will have the same description text:
+``Helper functions for pretty printing Python objects.``
+
+
+.. code-block:: yaml
+
+   snippets:
+     Pretty print format function:
+       code: |
+         import pprint
+         _pretty_format = pprint.PrettyPrinter(indent=1, width=120).pformat
+       description: |
+         Helper functions for pretty printing Python objects.
+
+     Pretty print function:
+       code: |
+         import pprint
+         _pretty_print = pprint.PrettyPrinter(indent=1, width=120).pprint
+       description: USE_PREVIOUS
+
 
 
 Changing Keyboard Shortcuts

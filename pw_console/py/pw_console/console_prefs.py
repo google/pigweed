@@ -13,9 +13,10 @@
 # the License.
 """pw_console preferences"""
 
+import dataclasses
 import os
 from pathlib import Path
-from typing import Dict, Callable, List, Tuple, Union
+from typing import Dict, Callable, List, Optional, Union
 
 from prompt_toolkit.key_binding import KeyBindings
 import yaml
@@ -68,6 +69,50 @@ class UnknownWindowTitle(Exception):
 
 class EmptyWindowList(Exception):
     """Exception for window lists with no content."""
+
+
+class EmptyPreviousPreviousDescription(Exception):
+    """Previous snippet description is empty for 'description: USE_PREVIOUS'."""
+
+
+@dataclasses.dataclass
+class CodeSnippet:
+    """Stores a single code snippet for inserting into the Python Repl.
+
+    Attributes:
+
+        title: The displayed title in the command runner window.
+        code: Python code text to be inserted.
+        description: Optional help text to be displayed below the snippet
+            selection window.
+    """
+
+    title: str
+    code: str
+    description: Optional[str] = None
+
+    @staticmethod
+    def from_yaml(
+        title: str,
+        value: Union[str, Dict],
+        previous_description: Optional[str] = None,
+    ) -> 'CodeSnippet':
+        if isinstance(value, str):
+            return CodeSnippet(title=title, code=value)
+
+        assert isinstance(value, dict)
+
+        code = value.get('code', None)
+        description = value.get('description', None)
+        if description == 'USE_PREVIOUS':
+            if not previous_description:
+                raise EmptyPreviousPreviousDescription(
+                    f'\nERROR: pw_console.yaml snippet "{title}" has '
+                    '"description: USE_PREVIOUS" but the previous snippet '
+                    'description is empty.'
+                )
+            description = previous_description
+        return CodeSnippet(title=title, code=code, description=description)
 
 
 def error_unknown_window(
@@ -127,7 +172,7 @@ class ConsolePrefs(YamlConfigLoaderMixin):
             environment_var='PW_CONSOLE_CONFIG_FILE',
         )
 
-        self._snippet_completions: List[Tuple[str, str]] = []
+        self._snippet_completions: List[CodeSnippet] = []
         self.registered_commands = DEFAULT_KEY_BINDINGS
         self.registered_commands.update(self.user_key_bindings)
 
@@ -329,32 +374,26 @@ class ConsolePrefs(YamlConfigLoaderMixin):
     def user_snippets(self) -> Dict:
         return self._config.get('user_snippets', {})
 
-    def snippet_completions(self) -> List[Tuple[str, str]]:
+    def snippet_completions(self) -> List[CodeSnippet]:
         if self._snippet_completions:
             return self._snippet_completions
 
-        all_descriptions: List[str] = []
-        all_descriptions.extend(self.user_snippets.keys())
-        all_descriptions.extend(self.snippets.keys())
-        if not all_descriptions:
-            return []
-        max_description_width = max(
-            len(description) for description in all_descriptions
-        )
+        all_snippets: List[CodeSnippet] = []
 
-        all_snippets: List[Tuple[str, str]] = []
-        all_snippets.extend(self.user_snippets.items())
-        all_snippets.extend(self.snippets.items())
+        def previous_description() -> Optional[str]:
+            if not all_snippets:
+                return None
+            return all_snippets[-1].description
 
-        self._snippet_completions = [
-            (
-                description.ljust(max_description_width) + ' : ' +
-                # Flatten linebreaks in the text.
-                ' '.join([line.lstrip() for line in text.splitlines()]),
-                # Pass original text as the completion result.
-                text,
+        for title, value in self.user_snippets.items():
+            all_snippets.append(
+                CodeSnippet.from_yaml(title, value, previous_description())
             )
-            for description, text in all_snippets
-        ]
+        for title, value in self.snippets.items():
+            all_snippets.append(
+                CodeSnippet.from_yaml(title, value, previous_description())
+            )
+
+        self._snippet_completions = all_snippets
 
         return self._snippet_completions
