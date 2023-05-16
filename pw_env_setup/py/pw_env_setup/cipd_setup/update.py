@@ -384,7 +384,8 @@ def update(  # pylint: disable=too-many-locals
                 if os.path.isdir(bin_dir):
                     env_vars.prepend('PATH', bin_dir)
             env_vars.set(
-                'PW_{}_CIPD_INSTALL_DIR'.format(name.upper()), file_install_dir
+                'PW_{}_CIPD_INSTALL_DIR'.format(name.upper().replace('-', '_')),
+                file_install_dir,
             )
 
             # Windows has its own special toolchain.
