@@ -98,7 +98,6 @@ pw_cc_fuzz_test(
         ":packet",
         ":uart_transport",
         "//pw_bytes",
-        "//pw_fuzzer",
         "//pw_status",
         "//pw_stream",
     ],

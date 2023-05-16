@@ -41,7 +41,7 @@ pw_source_set("fuzzer_generator") {
   public = [ "public/pw_random/fuzzer.h" ]
   public_deps = [
     ":pw_random",
-    dir_pw_fuzzer,
+    "$dir_pw_fuzzer:libfuzzer",
   ]
 }
 
