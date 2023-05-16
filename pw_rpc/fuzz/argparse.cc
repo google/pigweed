@@ -183,7 +183,7 @@ ParseStatus UnsignedParserBase::Parse(std::string_view arg0,
     result = kParsedTwo;
   }
   char* endptr;
-  auto value = strtoull(arg0.data(), &endptr, 0);
+  unsigned long long value = strtoull(arg0.data(), &endptr, 0);
   if (*endptr) {
     PW_LOG_ERROR("Failed to parse number from '%s'", arg0.data());
     return kParseFailure;
@@ -192,7 +192,7 @@ ParseStatus UnsignedParserBase::Parse(std::string_view arg0,
     PW_LOG_ERROR("Parsed value is too large: %llu", value);
     return kParseFailure;
   }
-  set_value(value);
+  set_value(static_cast<uint64_t>(value));
   return result;
 }
 
