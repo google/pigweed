@@ -71,7 +71,7 @@ FILE_FOOTER = """
 """
 
 _TEST_CASE = """{{
-  std::string_view("{str}", {string_length}u),
+  std::string_view("{str}", {string_length}u),  // NOLINT(bugprone-string-constructor)
   {hash_length}u,  // fixed hash length
   UINT32_C({hash}),  // Python-calculated hash
   {macro}("{str}"),  // macro-calculated hash
