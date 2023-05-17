@@ -250,6 +250,25 @@ gn_nanopb_build = build.GnGenNinja(
     ),
 )
 
+gn_emboss_nanopb_build = build.GnGenNinja(
+    name='gn_emboss_nanopb_build',
+    path_filter=_BUILD_FILE_FILTER,
+    packages=('emboss', 'nanopb'),
+    gn_args=dict(
+        dir_pw_third_party_emboss=lambda ctx: '"{}"'.format(
+            ctx.package_root / 'emboss'
+        ),
+        dir_pw_third_party_nanopb=lambda ctx: '"{}"'.format(
+            ctx.package_root / 'nanopb'
+        ),
+        pw_C_OPTIMIZATION_LEVELS=_OPTIMIZATION_LEVELS,
+    ),
+    ninja_targets=(
+        *_at_all_optimization_levels('stm32f429i'),
+        *_at_all_optimization_levels('host_clang'),
+    ),
+)
+
 gn_crypto_mbedtls_build = build.GnGenNinja(
     name='gn_crypto_mbedtls_build',
     path_filter=_BUILD_FILE_FILTER,
@@ -1022,9 +1041,8 @@ ARDUINO_PICO = (
 # program block CQ on Linux.
 MISC = (
     # keep-sorted: start
-    gn_emboss_build,
+    gn_emboss_nanopb_build,
     gn_googletest_build,
-    gn_nanopb_build,
     # keep-sorted: end
 )
 
