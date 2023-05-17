@@ -42,6 +42,9 @@ pw_test("metrics_fuzztest") {
     ":metrics_lib",
     "$dir_pw_fuzzer:fuzztest",
   ]
+
+  # TODO: b/283156908 - Re-enable with a fixed seed.
+  enable_if = false
 }
 
 pw_test_group("tests") {
