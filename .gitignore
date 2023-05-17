@@ -1,5 +1,6 @@
 # Build
 compile_commands.json
+rust-project.json
 out/
 bazel-*
 outbazel/
