@@ -1044,9 +1044,11 @@ struct EventHeader:
 # ========================= HCI Command packets =========================
 # Core Spec v5.3 Vol 4, Part E, Section 7
 
+# ========== 7.1 Link Control Commands ==========
 
 struct InquiryCommand:
-  -- Inquiry Command (v1.1) (BR/EDR)
+  -- 7.1.1 Inquiry command (v1.1) (BR/EDR)
+  -- HCI_Inquiry
   --
   -- Note: NO Command Complete; Sends Inquiry Complete at the end of the
   -- inquiry to indicate it's completion. No Inquiry Complete event is sent if
@@ -1071,14 +1073,27 @@ struct InquiryCommand:
 
 
 struct InquiryCancelCommand:
-  -- Inquiry Cancel Command (v1.1) (BR/EDR)
+  -- 7.1.2 Inquiry Cancel command (v1.1) (BR/EDR)
+  -- HCI_Inquiry_Cancel
+  --
   -- No command parameters
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
+# 7.1.3 Periodic Inquiry Mode command
+# HCI_Periodic_Inquiry_Mode
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.1.4 Exit Periodic Inquiry Mode command
+# HCI_Exit_Periodic_Inquiry_Mode
+# TODO: b/265052417 - Definition needs to be added
+
+
 struct CreateConnectionCommand:
-  -- Create Connection (v1.1) (BR/EDR)
+  -- 7.1.5 Create Connection (v1.1) (BR/EDR)
+  -- HCI_Create_Connection
   --
   -- NOTE on ReturnParams: No Command Complete event will be sent by the
   -- Controller to indicate that this command has been completed. Instead, the
@@ -1112,7 +1127,8 @@ struct CreateConnectionCommand:
 
 
 struct DisconnectCommand:
-  -- Disconnect Command (v1.1) (BR/EDR & LE)
+  -- 7.1.6 Disconnect command (v1.1) (BR/EDR & LE)
+  -- HCI_Disconnect
   --
   -- NOTE on ReturnParams: No Command Complete event will be sent by the
   -- Controller to indicate that this command has been completed. Instead, the
@@ -1129,7 +1145,8 @@ struct DisconnectCommand:
 
 
 struct CreateConnectionCancelCommand:
-  -- Create Connection Cancel (v1.1) (BR/EDR)
+  -- 7.1.7 Create Connection Cancel command (v1.1) (BR/EDR)
+  -- HCI_Create_Connection_Cancel
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]               CommandHeader  header
   $next [+BdAddr.$size_in_bytes]  BdAddr         bd_addr
@@ -1137,7 +1154,8 @@ struct CreateConnectionCancelCommand:
 
 
 struct AcceptConnectionRequestCommand:
-  -- Accept Connection Request (v1.1) (BR/EDR)
+  -- 7.1.8 Accept Connection Request command (v1.1) (BR/EDR)
+  -- HCI_Accept_Connection_Request
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]               CommandHeader   header
   $next [+BdAddr.$size_in_bytes]  BdAddr          bd_addr
@@ -1147,7 +1165,8 @@ struct AcceptConnectionRequestCommand:
 
 
 struct RejectConnectionRequestCommand:
-  -- Reject Connection Request (v1.1) (BR/EDR)
+  -- 7.1.9 Reject Connection Request command (v1.1) (BR/EDR)
+  -- HCI_Reject_Connection_Request
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]               CommandHeader  header
   $next [+BdAddr.$size_in_bytes]  BdAddr         bd_addr
@@ -1162,7 +1181,8 @@ struct LinkKey:
 
 
 struct LinkKeyRequestReplyCommand:
-  -- Link Key Request Reply Command (v1.1) (BR/EDR)
+  -- 7.1.10 Link Key Request Reply command (v1.1) (BR/EDR)
+  -- HCI_Link_Key_Request_Reply
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]               CommandHeader  header
   $next [+BdAddr.$size_in_bytes]  BdAddr         bd_addr
@@ -1174,15 +1194,32 @@ struct LinkKeyRequestReplyCommand:
 
 
 struct LinkKeyRequestNegativeReplyCommand:
-  -- Link Key Request Negative Reply Command (v1.1) (BR/EDR)
+  -- 7.1.11 Link Key Request Negative Reply command (v1.1) (BR/EDR)
+  -- HCI_Link_Key_Request_Negative_Reply
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]               CommandHeader  header
   $next [+BdAddr.$size_in_bytes]  BdAddr         bd_addr
     -- BD_ADDR of the peer device that the host does not have a link key for.
 
 
+# 7.1.12 PIN Code Request Reply command
+# HCI_PIN_Code_Request_Reply
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.1.13 PIN Code Request Negative Reply command
+# HCI_PIN_Code_Request_Negative_Reply
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.1.14 Change Connection Packet Type command
+# HCI_Change_Connection_Packet_Type
+# TODO: b/265052417 - Definition needs to be added
+
+
 struct AuthenticationRequestedCommand:
-  -- Authentication Requested Command (v1.1) (BR/EDR)
+  -- 7.1.15 Authentication Requested command (v1.1) (BR/EDR)
+  -- HCI_Authentication_Requested
   --
   -- NOTE on ReturnParams: No Command Complete event will be sent by the
   -- Controller to indicate that this command has been completed. Instead, the
@@ -1197,7 +1234,8 @@ struct AuthenticationRequestedCommand:
 
 
 struct SetConnectionEncryptionCommand:
-  -- Set Connection Encryption Command (v1.1) (BR/EDR)
+  -- 7.1.16 Set Connection Encryption command (v1.1) (BR/EDR)
+  -- HCI_Set_Connection_Encryption
   --
   -- NOTE on ReturnParams: No Command Complete event will be sent by the
   -- Controller to indicate that this command has been completed. Instead, the
@@ -1213,8 +1251,19 @@ struct SetConnectionEncryptionCommand:
     -- Whether link level encryption should be turned on or off.
 
 
+# 7.1.17 Change Connection Link Key command
+# HCI_Change_Connection_Link_Key
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.1.18 Link Key Selection command
+# HCI_Link_Key_Selection
+# TODO: b/265052417 - Definition needs to be added
+
+
 struct RemoteNameRequestCommand:
-  -- Remote Name Request Command (v1.1) (BR/EDR)
+  -- 7.1.19 Remote Name Request command (v1.1) (BR/EDR)
+  -- HCI_Remote_Name_Request
   --
   -- NOTE on ReturnParams: No Command Complete event will be sent by the
   -- Controller to indicate that this command has been completed. Instead, the
@@ -1237,8 +1286,13 @@ struct RemoteNameRequestCommand:
     -- bits are valid.
 
 
+# 7.1.20 Remote Name Request Cancel command
+# HCI_Remote_Name_Request_Cancel
+
+
 struct ReadRemoteSupportedFeaturesCommand:
-  -- Read Remote Supported Features Command (v1.1) (BR/EDR)
+  -- 7.1.21 Read Remote Supported Features command (v1.1) (BR/EDR)
+  -- HCI_Read_Remote_Supported_Features
   --
   -- NOTE on ReturnParams: No Command Complete event will be sent by the
   -- Controller to indicate that this command has been completed. Instead, the
@@ -1253,7 +1307,8 @@ struct ReadRemoteSupportedFeaturesCommand:
 
 
 struct ReadRemoteExtendedFeaturesCommand:
-  -- Read Remote Extended Features Command (v1.2) (BR/EDR)
+  -- 7.1.22 Read Remote Extended Features command (v1.2) (BR/EDR)
+  -- HCI_Read_Remote_Extended_Features
   --
   -- NOTE on ReturnParams: No Command Complete event will be sent by the
   -- Controller to indicate that this command has been completed. Instead, the
@@ -1274,7 +1329,8 @@ struct ReadRemoteExtendedFeaturesCommand:
 
 
 struct ReadRemoteVersionInfoCommand:
-  -- Read Remote Version Information Command (v1.1) (BR/EDR & LE)
+  -- 7.1.23 Read Remote Version Information command (v1.1) (BR/EDR & LE)
+  -- HCI_Read_Remote_Version_Information
   --
   -- NOTE on ReturnParams: No Command Complete event will be sent by the
   -- Controller to indicate that this command has been completed. Instead, the
@@ -1287,8 +1343,29 @@ struct ReadRemoteVersionInfoCommand:
     --   Range: 0x0000 to 0x0EFF
 
 
+# 7.1.24 Read Clock Offset command
+# HCI_Read_Clock_Offset
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.1.25 Read LMP Handle command
+# HCI_Read_LMP_Handle
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.1.26 Setup Synchronous Connection command
+# HCI_Setup_Synchronous_Connection
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.1.27 Accept Synchronous Connection Request command
+# HCI_Accept_Synchronous_Connection_Request
+# TODO: b/265052417 - Definition needs to be added
+
+
 struct RejectSynchronousConnectionRequestCommand:
-  -- Reject Synchronous Connection Command (BR/EDR)
+  -- 7.1.28 Reject Synchronous Connection command (BR/EDR)
+  -- HCI_Reject_Synchronous_Connection_Request
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]               CommandHeader  header
   $next [+BdAddr.$size_in_bytes]  BdAddr         bd_addr
@@ -1299,7 +1376,8 @@ struct RejectSynchronousConnectionRequestCommand:
 
 
 struct IoCapabilityRequestReplyCommand:
-  -- IO Capability Request Reply Command (v2.1 + EDR) (BR/EDR)
+  -- 7.1.29 IO Capability Request Reply command (v2.1 + EDR) (BR/EDR)
+  -- HCI_IO_Capability_Request_Reply
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]               CommandHeader               header
   $next [+BdAddr.$size_in_bytes]  BdAddr                      bd_addr
@@ -1316,7 +1394,8 @@ struct IoCapabilityRequestReplyCommand:
 
 
 struct UserConfirmationRequestReplyCommand:
-  -- User Confirmation Request Reply Command (v2.1 + EDR) (BR/EDR)
+  -- 7.1.30 User Confirmation Request Reply command (v2.1 + EDR) (BR/EDR)
+  -- HCI_User_Confirmation_Request_Reply
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]               CommandHeader  header
   $next [+BdAddr.$size_in_bytes]  BdAddr         bd_addr
@@ -1324,7 +1403,8 @@ struct UserConfirmationRequestReplyCommand:
 
 
 struct UserConfirmationRequestNegativeReplyCommand:
-  -- User Confirmation Request Negative Reply Command (v2.1 + EDR) (BR/EDR)
+  -- 7.1.31 User Confirmation Request Negative Reply command (v2.1 + EDR) (BR/EDR)
+  -- HCI_User_Confirmation_Request_Negative_Reply
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]               CommandHeader  header
   $next [+BdAddr.$size_in_bytes]  BdAddr         bd_addr
@@ -1332,7 +1412,8 @@ struct UserConfirmationRequestNegativeReplyCommand:
 
 
 struct UserPasskeyRequestReplyCommand:
-  -- User Passkey Request Reply Command (v2.1 + EDR) (BR/EDR)
+  -- 7.1.32 User Passkey Request Reply command (v2.1 + EDR) (BR/EDR)
+  -- HCI_User_Passkey_Request_Reply
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]               CommandHeader  header
   $next [+BdAddr.$size_in_bytes]  BdAddr         bd_addr
@@ -1341,6 +1422,37 @@ struct UserPasskeyRequestReplyCommand:
   $next [+4]                      UInt           numeric_value
     -- Numeric value (passkey) entered by user.
     [requires: 0 <= this <= 999999]
+
+
+struct UserPasskeyRequestNegativeReplyCommand:
+  -- 7.1.33 User Passkey Request Negative Reply command (v2.1 + EDR) (BR/EDR)
+  -- HCI_User_Passkey_Request_Negative_Reply
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]               CommandHeader  header
+  $next [+BdAddr.$size_in_bytes]  BdAddr         bd_addr
+    -- The BD_ADDR of the remote device involved in the simple pairing process.
+
+
+# 7.1.34 Remote OOB Data Request Reply command
+# HCI_Remote_OOB_Data_Request_Reply
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.1.35 Remote OOB Data Request Negative Reply command
+# HCI_Remote_OOB_Data_Request_Negative_Reply
+# TODO: b/265052417 - Definition needs to be added
+
+
+struct IoCapabilityRequestNegativeReplyCommand:
+  -- 7.1.36 IO Capability Request Negative Reply command (v2.1 + EDR) (BR/EDR)
+  -- HCI_IO_Capability_Request_Negative_Reply
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]               CommandHeader  header
+  $next [+BdAddr.$size_in_bytes]  BdAddr         bd_addr
+    -- The BD_ADDR of the remote device involved in the simple pairing process.
+
+  $next [+1]                      StatusCode     reason
+    -- Reason that Simple Pairing was rejected. See 7.1.36 for valid error codes.
 
 
 struct SynchronousConnectionParameters:
@@ -1442,6 +1554,8 @@ struct SynchronousConnectionParameters:
 
 
 struct EnhancedSetupSynchronousConnectionCommand:
+  -- 7.1.45 Enhanced Setup Synchronous Connection command
+  -- HCI_Enhanced_Setup_Synchronous_Connection
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader                    header
   $next [+2]         UInt                             connection_handle
@@ -1453,7 +1567,8 @@ struct EnhancedSetupSynchronousConnectionCommand:
 
 
 struct EnhancedAcceptSynchronousConnectionRequestCommand:
-  -- Enhanced Accept Synchronous Connection Request Command (CSA2) (BR/EDR)
+  -- 7.1.46 Enhanced Accept Synchronous Connection Request command (CSA2) (BR/EDR)
+  -- HCI_Enhanced_Accept_Synchronous_Connection_Request
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]               CommandHeader                    header
   $next [+BdAddr.$size_in_bytes]  BdAddr                           bd_addr
@@ -1463,8 +1578,43 @@ struct EnhancedAcceptSynchronousConnectionRequestCommand:
   $next [+scp_size]               SynchronousConnectionParameters  connection_parameters
 
 
+# 7.1.47 Truncated Page command
+# HCI_Truncated_Page
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.1.48 Truncated Page Cancel command
+# HCI_Truncated_Page_Cancel
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.1.49 Set Connectionless Peripheral Broadcast command
+# HCI_Set_Connectionless_Peripheral_Broadcast
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.1.50 Set Connectionless Peripheral Broadcast Receive command
+# HCI_Set_Connectionless_Peripheral_Broadcast_Receive
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.1.51 Start Synchronization Train command
+# HCI_Start_Synchronization_Train
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.1.52 Receive Synchronization Train command
+# HCI_Receive_Synchronization_Train
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.1.53 Remote OOB Extended Data Request Reply command
+# HCI_Remote_OOB_Extended_Data_Request_Reply
+# TODO: b/265052417 - Definition needs to be added
+
+
 struct SetEventMaskCommand:
-  -- Set Event Mask Command (v1.1)
+  -- Set Event Mask command (v1.1)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
   $next [+8]         UInt           event_mask
@@ -1473,7 +1623,7 @@ struct SetEventMaskCommand:
 
 
 struct WriteLocalNameCommand:
-  -- Write Local Name Command (v1.1) (BR/EDR)
+  -- Write Local Name command (v1.1) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]         CommandHeader  header
   let local_name_size = LocalName.$size_in_bytes
@@ -1486,7 +1636,7 @@ struct WriteLocalNameCommand:
 
 
 struct WritePageTimeoutCommand:
-  -- Write Page Timeout Command (v1.1) (BR/EDR)
+  -- Write Page Timeout command (v1.1) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
   $next [+2]         UInt           page_timeout
@@ -1496,7 +1646,7 @@ struct WritePageTimeoutCommand:
 
 
 struct WriteScanEnableCommand:
-  -- Write Scan Enable Command (v1.1) (BR/EDR)
+  -- Write Scan Enable command (v1.1) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader   header
   $next [+1]         ScanEnableBits  scan_enable
@@ -1505,7 +1655,7 @@ struct WriteScanEnableCommand:
 
 
 struct WritePageScanActivityCommand:
-  -- Write Page Scan Activity Command (v1.1) (BR/EDR)
+  -- Write Page Scan Activity command (v1.1) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
   $next [+2]         UInt           page_scan_interval
@@ -1520,7 +1670,7 @@ struct WritePageScanActivityCommand:
 
 
 struct WriteInquiryScanActivityCommand:
-  -- Write Inquiry Scan Activity Command (v1.1) (BR/EDR)
+  -- Write Inquiry Scan Activity command (v1.1) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
   $next [+2]         UInt           inquiry_scan_interval
@@ -1535,7 +1685,7 @@ struct WriteInquiryScanActivityCommand:
 
 
 struct WriteAutomaticFlushTimeoutCommand:
-  -- Write Automatic Flush Timeout Command (v1.1) (BR/EDR)
+  -- Write Automatic Flush Timeout command (v1.1) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
   $next [+2]         UInt           connection_handle
@@ -1552,7 +1702,7 @@ struct WriteAutomaticFlushTimeoutCommand:
 
 
 struct WriteSynchronousFlowControlEnableCommand:
-  -- Write Synchonous Flow Control Enable Command (BR/EDR)
+  -- Write Synchonous Flow Control Enable command (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader       header
   $next [+1]         GenericEnableParam  synchronous_flow_control_enable
@@ -1602,7 +1752,7 @@ struct LESetExtendedAdvertisingEnableData:
 
 
 struct LESetExtendedAdvertisingDataCommand:
-  -- LE Set Extended Advertising Data Command (v5.0) (LE)
+  -- LE Set Extended Advertising Data command (v5.0) (LE)
 
   let hdr_size = CommandHeader.$size_in_bytes
 
@@ -1628,7 +1778,7 @@ struct LESetExtendedAdvertisingDataCommand:
 
 
 struct LESetExtendedScanResponseDataCommand:
-  -- LE Set Extended Scan Response Data Command (v5.0) (LE)
+  -- LE Set Extended Scan Response Data command (v5.0) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader                    header
   $next [+1]         UInt                             advertising_handle
@@ -1658,14 +1808,14 @@ struct LESetExtendedAdvertisingEnableCommand:
 
 
 struct LEReadMaxAdvertisingDataLengthCommand:
-  -- LE Read Maximum Advertising Data Length Command (v5.0) (LE)
+  -- LE Read Maximum Advertising Data Length command (v5.0) (LE)
   -- This command has no parameters
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
 struct LEReadNumSupportedAdvertisingSetsCommand:
-  -- LE Read Number of Supported Advertising Sets Command (v5.0) (LE)
+  -- LE Read Number of Supported Advertising Sets command (v5.0) (LE)
   -- This command has no parameters
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
@@ -1679,7 +1829,7 @@ struct LERemoveAdvertisingSetCommand:
 
 
 struct LEClearAdvertisingSetsCommand:
-  -- LE Clear Advertising Sets Command (v5.0) (LE)
+  -- LE Clear Advertising Sets command (v5.0) (LE)
   -- This command has no parameters
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
@@ -1705,7 +1855,7 @@ struct LESetExtendedScanParametersData:
 
 
 struct LESetExtendedScanParametersCommand(num_entries: UInt:8):
-  -- LE Set Extended Scan Parameters Command (v5.0) (LE)
+  -- LE Set Extended Scan Parameters command (v5.0) (LE)
   -- num_entries corresponds to the number of bits set in the |scanning_phys| field
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]            CommandHeader                                 header
@@ -1719,7 +1869,7 @@ struct LESetExtendedScanParametersCommand(num_entries: UInt:8):
 
 
 struct LESetExtendedScanEnableCommand:
-  -- LE Set Extended Scan Enable Command (v5.0) (LE)
+  -- LE Set Extended Scan Enable command (v5.0) (LE)
 
   let hdr_size = CommandHeader.$size_in_bytes
 
@@ -1746,70 +1896,51 @@ struct LESetExtendedScanEnableCommand:
     --     Time Range: 1.28 s to 83,884.8 s
 
 
-struct UserPasskeyRequestNegativeReplyCommand:
-  -- User Passkey Request Negative Reply Command (v2.1 + EDR) (BR/EDR)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0     [+hdr_size]               CommandHeader  header
-  $next [+BdAddr.$size_in_bytes]  BdAddr         bd_addr
-    -- The BD_ADDR of the remote device involved in the simple pairing process.
-
-
-struct IoCapabilityRequestNegativeReplyCommand:
-  -- IO Capability Request Negative Reply Command (v2.1 + EDR) (BR/EDR)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0     [+hdr_size]               CommandHeader  header
-  $next [+BdAddr.$size_in_bytes]  BdAddr         bd_addr
-    -- The BD_ADDR of the remote device involved in the simple pairing process.
-
-  $next [+1]                      StatusCode     reason
-    -- Reason that Simple Pairing was rejected. See 7.1.36 for valid error codes.
-
-
 struct ResetCommand:
-  -- Reset Command (v1.1)
+  -- Reset command (v1.1)
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
 struct ReadLocalNameCommand:
-  -- Read Local Name Command (v1.1) (BR/EDR)
+  -- Read Local Name command (v1.1) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
 struct ReadScanEnableCommand:
-  -- Read Scan Enable Command (v1.1) (BR/EDR)
+  -- Read Scan Enable command (v1.1) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
 struct ReadPageScanActivityCommand:
-  -- Read Page Scan Activity Command (v1.1) (BR/EDR)
+  -- Read Page Scan Activity command (v1.1) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
 struct ReadInquiryScanActivityCommand:
-  -- Read Inquiry Scan Activity Command (v1.1) (BR/EDR)
+  -- Read Inquiry Scan Activity command (v1.1) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
 struct ReadClassOfDeviceCommand:
-  -- Read Class of Device Command (v1.1) (BR/EDR)
+  -- Read Class of Device command (v1.1) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
 struct WriteClassOfDeviceCommand:
-  -- Write Class Of Device Command (v1.1) (BR/EDR)
+  -- Write Class Of Device command (v1.1) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
   $next [+3]         ClassOfDevice  class_of_device
 
 
 struct LEPeriodicAdvertisingCreateSyncCommand:
-  -- LE Periodic Advertising Create Sync Command (v5.0) (LE)
+  -- LE Periodic Advertising Create Sync command (v5.0) (LE)
 
   let hdr_size = CommandHeader.$size_in_bytes
 
@@ -1843,14 +1974,14 @@ struct LEPeriodicAdvertisingCreateSyncCommand:
 
 
 struct LEPeriodicAdvertisingCreateSyncCancel:
-  -- LE Periodic Advertising Create Sync Cancel Command (v5.0) (LE)
+  -- LE Periodic Advertising Create Sync Cancel command (v5.0) (LE)
   -- Note that this command has no arguments
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
 struct LEPeriodicAdvertisingTerminateSyncCommand:
-  -- LE Periodic Advertising Terminate Sync Command (v5.0) (LE)
+  -- LE Periodic Advertising Terminate Sync command (v5.0) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
   $next [+2]         UInt           sync_handle
@@ -1983,7 +2114,7 @@ struct ReadSimplePairingModeCommand:
 
 
 struct WriteLEHostSupportCommand:
-  -- Write LE Host Support Command (v4.0) (BR/EDR)
+  -- Write LE Host Support command (v4.0) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader       header
   $next [+1]         GenericEnableParam  le_supported_host
@@ -1998,37 +2129,37 @@ struct WriteLEHostSupportCommand:
 
 
 struct ReadLocalVersionInformationCommand:
-  -- Read Local Version Information Command (v1.1)
+  -- Read Local Version Information command (v1.1)
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
 struct ReadLocalSupportedCommandsCommand:
-  -- Read Local Supported Commands Command (v1.2)
+  -- Read Local Supported Commands command (v1.2)
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
 struct ReadBufferSizeCommand:
-  -- Read Buffer Size Command (v1.1)
+  -- Read Buffer Size command (v1.1)
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
 struct ReadBdAddrCommand:
-  -- Read BD_ADDR Command (v1.1) (BR/EDR, LE)
+  -- Read BD_ADDR command (v1.1) (BR/EDR, LE)
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
 struct ReadLocalSupportedFeaturesCommand:
-  -- Read Local Supported Features Command (v1.1)
+  -- Read Local Supported Features command (v1.1)
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
 struct ReadLocalExtendedFeaturesCommand:
-  -- Read Local Extended Features Command (v1.2) (BR/EDR)
+  -- Read Local Extended Features command (v1.2) (BR/EDR)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
   $next [+1]         UInt           page_number
@@ -2047,7 +2178,7 @@ struct ReadEncryptionKeySizeCommand:
 
 
 struct LESetEventMaskCommand:
-  -- LE Set Event Mask Command (v4.0) (LE)
+  -- LE Set Event Mask command (v4.0) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
   $next [+8]  bits:
@@ -2056,13 +2187,13 @@ struct LESetEventMaskCommand:
 
 
 struct LEReadBufferSizeCommandV1:
-  -- LE Read Buffer Size Command (v4.0) (LE)
+  -- LE Read Buffer Size command (v4.0) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
 struct LEReadBufferSizeCommandV2:
-  -- LE Read Buffer Size Command (v5.2) (LE)
+  -- LE Read Buffer Size command (v5.2) (LE)
   -- Version 2 of this command changed the opcode and added ISO return
   -- parameters.
   let hdr_size = CommandHeader.$size_in_bytes
@@ -2070,20 +2201,20 @@ struct LEReadBufferSizeCommandV2:
 
 
 struct LEReadLocalSupportedFeaturesCommand:
-  -- LE Read Local Supported Features Command (v4.0) (LE)
+  -- LE Read Local Supported Features command (v4.0) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
 struct LESetRandomAddressCommand:
-  -- LE Set Random Address Command (v4.0) (LE)
+  -- LE Set Random Address command (v4.0) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]               CommandHeader  header
   $next [+BdAddr.$size_in_bytes]  BdAddr         random_address
 
 
 struct LESetAdvertisingParametersCommand:
-  -- LE Set Advertising Parameters Command (v4.0) (LE)
+  -- LE Set Advertising Parameters command (v4.0) (LE)
 
   [requires: advertising_interval_min <= advertising_interval_max]
 
@@ -2128,13 +2259,13 @@ struct LESetAdvertisingParametersCommand:
 
 
 struct LEReadAdvertisingChannelTxPowerCommand:
-  -- LE Read Advertising Channel Tx Power Command (v4.0) (LE)
+  -- LE Read Advertising Channel Tx Power command (v4.0) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
 struct LESetAdvertisingDataCommand:
-  -- LE Set Advertising Data Command (v4.0) (LE)
+  -- LE Set Advertising Data command (v4.0) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
   $next [+1]         UInt           advertising_data_length
@@ -2148,7 +2279,7 @@ struct LESetAdvertisingDataCommand:
 
 
 struct LESetScanResponseDataCommand:
-  -- LE Set Scan Response Data Command (v4.0) (LE)
+  -- LE Set Scan Response Data command (v4.0) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
   $next [+1]         UInt           scan_response_data_length
@@ -2162,7 +2293,7 @@ struct LESetScanResponseDataCommand:
 
 
 struct LESetScanParametersCommand:
-  -- LE Set Scan Parameters Command (v4.0) (LE)
+  -- LE Set Scan Parameters command (v4.0) (LE)
 
   [requires: le_scan_window <= le_scan_interval]
 
@@ -2192,7 +2323,7 @@ struct LESetScanParametersCommand:
 
 
 struct LESetScanEnableCommand:
-  -- LE Set Scan Enable Command (v4.0) (LE)
+  -- LE Set Scan Enable command (v4.0) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader       header
   $next [+1]         GenericEnableParam  le_scan_enable
@@ -2205,7 +2336,7 @@ struct LESetScanEnableCommand:
 
 
 struct LECreateConnectionCommand:
-  -- LE Create Connection Command (v4.0) (LE)
+  -- LE Create Connection command (v4.0) (LE)
 
   [requires: le_scan_window <= le_scan_interval && connection_interval_min <= connection_interval_max]
 
@@ -2263,19 +2394,19 @@ struct LECreateConnectionCommand:
 
 
 struct LECreateConnectionCancelCommand:
-  -- LE Create Connection Cancel Command (v4.0) (LE)
+  -- LE Create Connection Cancel command (v4.0) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
 struct LEClearFilterAcceptListCommand:
-  -- LE Clear Filter Accept List Command (v4.0) (LE)
+  -- LE Clear Filter Accept List command (v4.0) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
 struct LEAddDeviceToFilterAcceptListCommand:
-  -- LE Add Device To Filter Accept List Command (v4.0) (LE)
+  -- LE Add Device To Filter Accept List command (v4.0) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]               CommandHeader      header
   $next [+1]                      LEPeerAddressType  address_type
@@ -2287,7 +2418,7 @@ struct LEAddDeviceToFilterAcceptListCommand:
 
 
 struct LERemoveDeviceFromFilterAcceptListCommand:
-  -- LE Remove Device From Filter Accept List Command (v4.0) (LE)
+  -- LE Remove Device From Filter Accept List command (v4.0) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]               CommandHeader      header
   $next [+1]                      LEPeerAddressType  address_type
@@ -2299,7 +2430,7 @@ struct LERemoveDeviceFromFilterAcceptListCommand:
 
 
 struct LEConnectionUpdateCommand:
-  -- LE Connection Update Command (v4.0) (LE)
+  -- LE Connection Update command (v4.0) (LE)
 
   [requires: connection_interval_min <= connection_interval_max && min_connection_event_length <= max_connection_event_length]
 
@@ -2339,7 +2470,7 @@ struct LEConnectionUpdateCommand:
 
 
 struct LEReadRemoteFeaturesCommand:
-  -- LE Read Remote Features Command (v4.0) (LE)
+  -- LE Read Remote Features command (v4.0) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
   $next [+2]         UInt           connection_handle
@@ -2347,7 +2478,7 @@ struct LEReadRemoteFeaturesCommand:
 
 
 struct LEEnableEncryptionCommand:
-  -- LE Enable Encryption Command (v4.0) (LE)
+  -- LE Enable Encryption command (v4.0) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]                CommandHeader  header
   $next [+2]                       UInt           connection_handle
@@ -2368,7 +2499,7 @@ struct LELongTermKeyRequestReplyCommand:
 
 
 struct LELongTermKeyRequestNegativeReplyCommand:
-  -- LE Long Term Key Request Negative Reply Command (v4.0) (LE)
+  -- LE Long Term Key Request Negative Reply command (v4.0) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
   $next [+2]         UInt           connection_handle
@@ -2376,26 +2507,26 @@ struct LELongTermKeyRequestNegativeReplyCommand:
 
 
 struct LEReadSupportedStatesCommand:
-  -- LE Read Supported States Command (v4.0) (LE)
+  -- LE Read Supported States command (v4.0) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
 struct LEClearResolvingListCommand:
-  -- LE Clear Resolving List Command (v4.2) (LE)
+  -- LE Clear Resolving List command (v4.2) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
 struct LESetAddressResolutionEnableCommand:
-  -- LE Set Address Resolution Enable Command (v4.2) (LE)
+  -- LE Set Address Resolution Enable command (v4.2) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader       header
   $next [+1]         GenericEnableParam  address_resolution_enable
 
 
 struct LESetAdvertisingSetRandomAddressCommand:
-  -- LE Set Advertising Set Random Address Command (v5.0) (LE)
+  -- LE Set Advertising Set Random Address command (v5.0) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]               CommandHeader  header
   $next [+1]                      UInt           advertising_handle
@@ -2406,7 +2537,7 @@ struct LESetAdvertisingSetRandomAddressCommand:
 
 
 struct LESetExtendedAdvertisingParametersV1Command:
-  -- LE Set Extended Advertising Parameters Command (v5.0) (LE)
+  -- LE Set Extended Advertising Parameters command (v5.0) (LE)
 
   let hdr_size = CommandHeader.$size_in_bytes
 
@@ -2467,7 +2598,7 @@ struct LESetExtendedAdvertisingParametersV1Command:
 
 
 struct WriteAuthenticatedPayloadTimeoutCommand:
-  -- Write Authenticated Payload Timeout Command (v4.1) (BR/EDR & LE)
+  -- Write Authenticated Payload Timeout command (v4.1) (BR/EDR & LE)
   0     [+CommandHeader.$size_in_bytes]  CommandHeader  header
   $next [+2]                             UInt           connection_handle
     [requires: 0x0000 <= this <= 0x0EFF]
@@ -2480,30 +2611,30 @@ struct WriteAuthenticatedPayloadTimeoutCommand:
 
 
 struct ReadAuthenticatedPayloadTimeoutCommand:
-  -- Read Authenticated Payload Timeout Command (v4.1) (BR/EDR & LE)
+  -- Read Authenticated Payload Timeout command (v4.1) (BR/EDR & LE)
   0     [+CommandHeader.$size_in_bytes]  CommandHeader  header
   $next [+2]                             UInt           connection_handle
     [requires: 0x0000 <= this <= 0x0EFF]
 
 
 struct ReadLEHostSupportCommand:
-  -- Read LE Host Support Command (v4.0) (BR/EDR)
+  -- Read LE Host Support command (v4.0) (BR/EDR)
   0 [+CommandHeader.$size_in_bytes]  CommandHeader  header
 
 
 struct ReadFlowControlModeCommand:
-  -- Read Flow Control Mode Command (v3.0 + HS) (BR/EDR)
+  -- Read Flow Control Mode command (v3.0 + HS) (BR/EDR)
   0 [+CommandHeader.$size_in_bytes]  CommandHeader  header
 
 
 struct WriteFlowControlModeCommand:
-  -- Write Flow Control Mode Command (v3.0 + HS) (BR/EDR)
+  -- Write Flow Control Mode command (v3.0 + HS) (BR/EDR)
   0     [+CommandHeader.$size_in_bytes]  CommandHeader    header
   $next [+1]                             FlowControlMode  flow_control_mode
 
 
 struct SetEventMaskPage2Command:
-  -- Set Event Mask Page 2 Command (v3.0 + HS)
+  -- Set Event Mask Page 2 command (v3.0 + HS)
   0     [+CommandHeader.$size_in_bytes]  CommandHeader   header
   $next [+8]  bits:
     0     [+26]                          EventMaskPage2  event_mask_page_2
