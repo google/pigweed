@@ -211,11 +211,19 @@ def pw_root(ctx: DoctorContext):
     )
     git_root = git_root.resolve()
     if root != git_root:
-        ctx.error(
-            'PW_ROOT (%s) != `git rev-parse --show-toplevel` (%s)',
-            root,
-            git_root,
-        )
+        if str(root).lower() != str(git_root).lower():
+            ctx.error(
+                'PW_ROOT (%s) != `git rev-parse --show-toplevel` (%s)',
+                root,
+                git_root,
+            )
+        else:
+            ctx.warning(
+                'PW_ROOT (%s) differs in case from '
+                '`git rev-parse --show-toplevel` (%s)',
+                root,
+                git_root,
+            )
 
 
 @register_into(CHECKS)
