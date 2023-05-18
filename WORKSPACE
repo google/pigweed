@@ -309,7 +309,7 @@ rust_analyzer_dependencies()
 # Vendored third party rust crates.
 git_repository(
     name = "rust_crates",
-    commit = "3d5b3a9260cbf98746f0e77be5a8251e1fc77af0",
+    commit = "b26fcc9191af9f4c5d2be5983b8f916f9ecb5e99",
     remote = "https://pigweed.googlesource.com/third_party/rust_crates",
     shallow_since = "1675359057 +0000",
 )
