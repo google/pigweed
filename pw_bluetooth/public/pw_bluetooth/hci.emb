@@ -1613,8 +1613,11 @@ struct EnhancedAcceptSynchronousConnectionRequestCommand:
 # TODO: b/265052417 - Definition needs to be added
 
 
+# ========== 7.3 Controller & Baseband Commands ==========
+
 struct SetEventMaskCommand:
-  -- Set Event Mask command (v1.1)
+  -- 7.3.1 Set Event Mask command (v1.1)
+  -- HCI_Set_Event_Mask
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
   $next [+8]         UInt           event_mask
@@ -1622,8 +1625,51 @@ struct SetEventMaskCommand:
     -- Host. See enum class EventMask in hci_constants.h
 
 
+struct ResetCommand:
+  -- 7.3.2 Reset command (v1.1)
+  -- HCI_Reset
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
+# 7.3.3 Set Event Filter command
+# HCI_Set_Event_Filter
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.4 Flush command
+# HCI_Flush
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.5 Read PIN Type command
+# HCI_Read_PIN_Type
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.6 Write PIN Type command
+# HCI_Write_PIN_Type
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.8 Read Stored Link Key command
+# HCI_Read_Stored_Link_Key
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.9 Write Stored Link Key command
+# HCI_Write_Stored_Link_Key
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.10 Delete Stored Link Key command
+# HCI_Delete_Stored_Link_Key
+# TODO: b/265052417 - Definition needs to be added
+
+
 struct WriteLocalNameCommand:
-  -- Write Local Name command (v1.1) (BR/EDR)
+  -- 7.3.11 Write Local Name command (v1.1) (BR/EDR)
+  -- HCI_Write_Local_Name
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]         CommandHeader  header
   let local_name_size = LocalName.$size_in_bytes
@@ -1635,8 +1681,31 @@ struct WriteLocalNameCommand:
     -- valid values.
 
 
+struct ReadLocalNameCommand:
+  -- 7.3.12 Read Local Name command (v1.1) (BR/EDR)
+  -- HCI_Read_Local_Name
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
+# 7.3.13 Read Connection Accept Timeout command
+# HCI_Read_Connection_Accept_Timeout
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.14 Write Connection Accept Timeout command
+# HCI_Write_Connection_Accept_Timeout
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.15 Read Page Timeout command
+# HCI_Read_Page_Timeout
+# TODO: b/265052417 - Definition needs to be added
+
+
 struct WritePageTimeoutCommand:
-  -- Write Page Timeout command (v1.1) (BR/EDR)
+  -- 7.3.16 Write Page Timeout command (v1.1) (BR/EDR)
+  -- HCI_Write_Page_Timeout
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
   $next [+2]         UInt           page_timeout
@@ -1645,8 +1714,16 @@ struct WritePageTimeoutCommand:
     [requires: 0x0001 <= this <= 0xFFFF]
 
 
+struct ReadScanEnableCommand:
+  -- 7.3.17 Read Scan Enable command (v1.1) (BR/EDR)
+  -- HCI_Read_Scan_Enable
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
 struct WriteScanEnableCommand:
-  -- Write Scan Enable command (v1.1) (BR/EDR)
+  -- 7.3.18 Write Scan Enable command (v1.1) (BR/EDR)
+  -- HCI_Write_Scan_Enable
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader   header
   $next [+1]         ScanEnableBits  scan_enable
@@ -1654,8 +1731,16 @@ struct WriteScanEnableCommand:
     -- for how to construct this bitfield.
 
 
+struct ReadPageScanActivityCommand:
+  -- 7.3.19 Read Page Scan Activity command (v1.1) (BR/EDR)
+  -- HCI_Read_Page_Scan_Activity
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
 struct WritePageScanActivityCommand:
-  -- Write Page Scan Activity command (v1.1) (BR/EDR)
+  -- 7.3.20 Write Page Scan Activity command (v1.1) (BR/EDR)
+  -- HCI_Write_Page_Scan_Activity
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
   $next [+2]         UInt           page_scan_interval
@@ -1669,8 +1754,16 @@ struct WritePageScanActivityCommand:
     [requires: 0x0011 <= this <= 0x1000]
 
 
+struct ReadInquiryScanActivityCommand:
+  -- 7.3.21 Read Inquiry Scan Activity command (v1.1) (BR/EDR)
+  -- HCI_Read_Inquiry_Scan_Activity
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
 struct WriteInquiryScanActivityCommand:
-  -- Write Inquiry Scan Activity command (v1.1) (BR/EDR)
+  -- 7.3.22 Write Inquiry Scan Activity command (v1.1) (BR/EDR)
+  -- HCI_Write_Inquiry_Scan_Activity
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
   $next [+2]         UInt           inquiry_scan_interval
@@ -1684,8 +1777,49 @@ struct WriteInquiryScanActivityCommand:
     [requires: 0x0011 <= this <= 0x1000]
 
 
+# 7.3.23 Read Authentication Enable command
+# HCI_Read_Authentication_Enable
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.24 Write Authentication Enable command
+# HCI_Write_Authentication_Enable
+# TODO: b/265052417 - Definition needs to be added
+
+
+struct ReadClassOfDeviceCommand:
+  -- 7.3.25 Read Class of Device command (v1.1) (BR/EDR)
+  -- HCI_Read_Class_Of_Device
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
+struct WriteClassOfDeviceCommand:
+  -- 7.3.26 Write Class Of Device command (v1.1) (BR/EDR)
+  -- HCI_Write_Class_Of_Device
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader  header
+  $next [+3]         ClassOfDevice  class_of_device
+
+
+# 7.3.27 Read Voice Setting command
+# HCI_Read_Voice_Setting
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.28 Write Voice Setting command
+# HCI_Write_Voice_Setting
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.29 Read Automatic Flush Timeout command
+# HCI_Read_Automatic_Flush_Timeout
+# TODO: b/265052417 - Definition needs to be added
+
+
 struct WriteAutomaticFlushTimeoutCommand:
-  -- Write Automatic Flush Timeout command (v1.1) (BR/EDR)
+  -- 7.3.30 Write Automatic Flush Timeout command (v1.1) (BR/EDR)
+  -- HCI_Write_Automatic_Flush_Timeout
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
   $next [+2]         UInt           connection_handle
@@ -1701,8 +1835,39 @@ struct WriteAutomaticFlushTimeoutCommand:
     [requires: 0x0000 <= this <= 0x07FF]
 
 
+# 7.3.31 Read Num Broadcast Retransmissions command
+# HCI_Read_Num_Broadcast_Retransmissions
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.32 Write Num Broadcast Retransmissions command
+# HCI_Write_Num_Broadcast_Retransmissions
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.33 Read Hold Mode Activity command
+# HCI_Read_Hold_Mode_Activity
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.34 Write Hold Mode Activity command
+# HCI_Write_Hold_Mode_Activity
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.35 Read Transmit Power Level command
+# HCI_Read_Transmit_Power_Level
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.36 Read Synchronous Flow Control Enable command
+# HCI_Read_Synchronous_Flow_Control_Enable
+# TODO: b/265052417 - Definition needs to be added
+
+
 struct WriteSynchronousFlowControlEnableCommand:
-  -- Write Synchonous Flow Control Enable command (BR/EDR)
+  -- 7.3.37 Write Synchonous Flow Control Enable command (BR/EDR)
+  -- HCI_Write_Synchronous_Flow_Control_Enable
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader       header
   $next [+1]         GenericEnableParam  synchronous_flow_control_enable
@@ -1710,16 +1875,113 @@ struct WriteSynchronousFlowControlEnableCommand:
     -- for synchronous connection handles.
 
 
+# 7.3.38 Set Controller To Host Flow Control command
+# HCI_Set_Controller_To_Host_Flow_Control
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.39 Host Buffer Size command
+# HCI_Host_Buffer_Size
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.40 Host Number Of Completed Packets command
+# HCI_Host_Number_Of_Completed_Packets
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.41 Read Link Supervision Timeout command
+# HCI_Read_Link_Supervision_Timeout
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.42 Write Link Supervision Timeout command
+# HCI_Write_Link_Supervision_Timeout
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.43 Read Number Of Supported IAC command
+# HCI_Read_Number_Of_Supported_IAC
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.44 Read Current IAC LAP command
+# HCI_Read_Current_IAC_LAP
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.45 Write Current IAC LAP command
+# HCI_Write_Current_IAC_LAP
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.46 Set AFH Host Channel Classification command
+# HCI_Set_AFH_Host_Channel_Classification
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.47 Read Inquiry Scan Type command
+# HCI_Read_Inquiry_Scan_Type
+# TODO: b/265052417 - Definition needs to be added
+
+
 struct WriteInquiryScanTypeCommand:
-  -- Write Inquiry Scan Type (v1.2) (BR/EDR)
+  -- 7.3.48 Write Inquiry Scan Type (v1.2) (BR/EDR)
+  -- HCI_Write_Inquiry_Scan_Type
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader    header
   $next [+1]         InquiryScanType  inquiry_scan_type
     -- See enum class InquiryScanType in this file for possible values
 
 
+struct ReadInquiryModeCommand:
+  -- 7.3.49 Read Inquiry Mode (v1.2) (BR/EDR)
+  -- HCI_Read_Inquiry_Mode
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
+struct WriteInquiryModeCommand:
+  -- 7.3.50 Write Inquiry Mode (v1.2) (BR/EDR)
+  -- HCI_Write_Inquiry_Mode
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader  header
+  $next [+1]         InquiryMode    inquiry_mode
+
+
+struct ReadPageScanTypeCommand:
+  -- 7.3.51 Read Page Scan Type (v1.2) (BR/EDR)
+  -- HCI_Read_Page_Scan_Type
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
+struct WritePageScanTypeCommand:
+  -- 7.3.52 Write Page Scan Type (v1.2) (BR/EDR)
+  -- HCI_Write_Page_Scan_Type
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader  header
+  $next [+1]         PageScanType   page_scan_type
+
+
+# 7.3.53 Read AFH Channel Assessment Mode command
+# HCI_Read_AFH_Channel_Assessment_Mode
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.54 Write AFH Channel Assessment Mode command
+# HCI_Write_AFH_Channel_Assessment_Mode
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.55 Read Extended Inquiry Response command
+# HCI_Read_Extended_Inquiry_Response
+# TODO: b/265052417 - Definition needs to be added
+
+
 struct WriteExtendedInquiryResponseCommand:
-  -- Write Extended Inquiry Response (v1.2) (BR/EDR)
+  -- 7.3.56 Write Extended Inquiry Response (v1.2) (BR/EDR)
+  -- HCI_Write_Extended_Inquiry_Response
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader            header
   $next [+1]         UInt                     fec_required
@@ -1730,11 +1992,235 @@ struct WriteExtendedInquiryResponseCommand:
     -- Extended inquiry response data as defined in Vol 3, Part C, Sec 8
 
 
+# 7.3.57 Refresh Encryption Key command
+# HCI_Refresh_Encryption_Key
+# TODO: b/265052417 - Definition needs to be added
+
+
+struct ReadSimplePairingModeCommand:
+  -- 7.3.58 Read Simple Pairing Mode (v2.1 + EDR) (BR/EDR)
+  -- HCI_Read_Simple_Pairing_Mode
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
 struct WriteSimplePairingModeCommand:
-  -- Write Simple Pairing Mode (v2.1 + EDR) (BR/EDR)
+  -- 7.3.59 Write Simple Pairing Mode (v2.1 + EDR) (BR/EDR)
+  -- HCI_Write_Simple_Pairing_Mode
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader       header
   $next [+1]         GenericEnableParam  simple_pairing_mode
+
+
+# 7.3.60 Read Local OOB Data command
+# HCI_Read_Local_OOB_Data
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.61 Read Inquiry Response Transmit Power Level command
+# HCI_Read_Inquiry_Response_Transmit_Power_Level
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.62 Write Inquiry Transmit Power Level command
+# HCI_Write_Inquiry_Transmit_Power_Level
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.63 Send Keypress Notification command
+# HCI_Send_Keypress_Notification
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.64 Read Default Erroneous Data Reporting command
+# HCI_Read_Default_Erroneous_Data_Reporting
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.65 Write Default Erroneous Data Reporting command
+# HCI_Write_Default_Erroneous_Data_Reporting
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.66 Enhanced Flush command
+# HCI_Enhanced_Flush
+# TODO: b/265052417 - Definition needs to be added
+
+
+struct SetEventMaskPage2Command:
+  -- 7.3.69 Set Event Mask Page 2 command (v3.0 + HS)
+  -- HCI_Set_Event_Mask_Page_2
+  0     [+CommandHeader.$size_in_bytes]  CommandHeader   header
+  $next [+8]  bits:
+    0     [+26]                          EventMaskPage2  event_mask_page_2
+      -- Bit mask used to control which HCI events are generated by the HCI for the Host.
+
+
+struct ReadFlowControlModeCommand:
+  -- 7.3.72 Read Flow Control Mode command (v3.0 + HS) (BR/EDR)
+  -- HCI_Read_Flow_Control_Mode
+  0 [+CommandHeader.$size_in_bytes]  CommandHeader  header
+
+
+struct WriteFlowControlModeCommand:
+  -- 7.3.73 Write Flow Control Mode command (v3.0 + HS) (BR/EDR)
+  -- HCI_Write_Flow_Control_Mode
+  0     [+CommandHeader.$size_in_bytes]  CommandHeader    header
+  $next [+1]                             FlowControlMode  flow_control_mode
+
+
+# 7.3.74 Read Enhanced Transmit Power Level command
+# HCI_Read_Enhanced_Transmit_Power_Level
+# TODO: b/265052417 - Definition needs to be added
+
+
+struct ReadLEHostSupportCommand:
+  -- 7.3.78 Read LE Host Support command (v4.0) (BR/EDR)
+  -- HCI_Read_LE_Host_Support
+  0 [+CommandHeader.$size_in_bytes]  CommandHeader  header
+
+
+struct WriteLEHostSupportCommand:
+  -- 7.3.79 Write LE Host Support command (v4.0) (BR/EDR)
+  -- HCI_Write_LE_Host_Support
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader       header
+  $next [+1]         GenericEnableParam  le_supported_host
+    -- Sets the LE Supported (Host) Link Manager Protocol feature bit.
+
+  $next [+1]         UInt                unused
+    -- Core Spec v5.0, Vol 2, Part E, Section 6.35: This parameter was named
+    -- "Simultaneous_LE_Host" and the value is set to "disabled(0x00)" and
+    -- "shall be ignored".
+    -- Core Spec v5.3, Vol 4, Part E, Section 7.3.79: This parameter was renamed
+    -- to "Unused" and "shall be ignored by the controller".
+
+
+# 7.3.80 Set MWS Channel Parameters command
+# HCI_Set_MWS_Channel_Parameters
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.81 Set External Frame Configuration command
+# HCI_Set_External_Frame_Configuration
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.82 Set MWS Signaling command
+# HCI_Set_MWS_Signaling
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.83 Set MWS Transport Layer command
+# HCI_Set_MWS_Transport_Layer
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.84 Set MWS Scan Frequency Table command
+# HCI_Set_MWS_Scan_Frequency_Table
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.85 Set MWS_PATTERN Configuration command
+# HCI_Set_MWS_PATTERN_Configuration
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.86 Set Reserved LT_ADDR command
+# HCI_Set_Reserved_LT_ADDR
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.87 Delete Reserved LT_ADDR command
+# HCI_Delete_Reserved_LT_ADDR
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.88 Set Connectionless Peripheral Broadcast Data command
+# HCI_Set_Connectionless_Peripheral_Broadcast_Data
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.89 Read Synchronization Train Parameters command
+# HCI_Read_Synchronization_Train_Parameters
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.90 Write Synchronization Train Parameters command
+# HCI_Write_Synchronization_Train_Parameters
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.91 Read Secure Connections Host Support command
+# HCI_Read_Secure_Connections_Host_Support
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.92 Write Secure Connections Host Support command
+# HCI_Write_Secure_Connections_Host_Support
+# TODO: b/265052417 - Definition needs to be added
+
+
+struct ReadAuthenticatedPayloadTimeoutCommand:
+  -- 7.3.93 Read Authenticated Payload Timeout command (v4.1) (BR/EDR & LE)
+  -- HCI_Read_Authenticated_Payload_Timeout
+  0     [+CommandHeader.$size_in_bytes]  CommandHeader  header
+  $next [+2]                             UInt           connection_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+
+struct WriteAuthenticatedPayloadTimeoutCommand:
+  -- 7.3.94 Write Authenticated Payload Timeout command (v4.1) (BR/EDR & LE)
+  -- HCI_Write_Authenticated_Payload_Timeout
+  0     [+CommandHeader.$size_in_bytes]  CommandHeader  header
+  $next [+2]                             UInt           connection_handle
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next [+2]                             UInt           authenticated_payload_timeout
+    -- Default = 0x0BB8 (30 s)
+    -- Time = N * 10 ms
+    -- Time Range: 10 ms to 655,350 ms
+    [requires: 0x0001 <= this <= 0xFFFF]
+
+
+# 7.3.95 Read Local OOB Extended Data command
+# HCI_Read_Local_OOB_Extended_Data
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.96 Read Extended Page Timeout command
+# HCI_Read_Extended_Page_Timeout
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.97 Write Extended Page Timeout command
+# HCI_Write_Extended_Page_Timeout
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.98 Read Extended Inquiry Length command
+# HCI_Read_Extended_Inquiry_Length
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.99 Write Extended Inquiry Length command
+# HCI_Write_Extended_Inquiry_Length
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.100 Set Ecosystem Base Interval command
+# HCI_Set_Ecosystem_Base_Interval
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.101 Configure Data Path command
+# HCI_Configure_Data_Path
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.3.102 Set Min Encryption Key Size command
+# HCI_Set_Min_Encryption_Key_size
+# TODO: b/265052417 - Definition needs to be added
 
 
 struct LESetAdvertisingEnableCommand:
@@ -1896,49 +2382,6 @@ struct LESetExtendedScanEnableCommand:
     --     Time Range: 1.28 s to 83,884.8 s
 
 
-struct ResetCommand:
-  -- Reset command (v1.1)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0 [+hdr_size]  CommandHeader  header
-
-
-struct ReadLocalNameCommand:
-  -- Read Local Name command (v1.1) (BR/EDR)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0 [+hdr_size]  CommandHeader  header
-
-
-struct ReadScanEnableCommand:
-  -- Read Scan Enable command (v1.1) (BR/EDR)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0 [+hdr_size]  CommandHeader  header
-
-
-struct ReadPageScanActivityCommand:
-  -- Read Page Scan Activity command (v1.1) (BR/EDR)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0 [+hdr_size]  CommandHeader  header
-
-
-struct ReadInquiryScanActivityCommand:
-  -- Read Inquiry Scan Activity command (v1.1) (BR/EDR)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0 [+hdr_size]  CommandHeader  header
-
-
-struct ReadClassOfDeviceCommand:
-  -- Read Class of Device command (v1.1) (BR/EDR)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0 [+hdr_size]  CommandHeader  header
-
-
-struct WriteClassOfDeviceCommand:
-  -- Write Class Of Device command (v1.1) (BR/EDR)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0     [+hdr_size]  CommandHeader  header
-  $next [+3]         ClassOfDevice  class_of_device
-
-
 struct LEPeriodicAdvertisingCreateSyncCommand:
   -- LE Periodic Advertising Create Sync command (v5.0) (LE)
 
@@ -2079,53 +2522,6 @@ struct LESetPrivacyModeCommand:
 
   $next [+1]                      LEPrivacyMode            privacy_mode
     -- The privacy mode to be used for the given entry on the resolving list.
-
-
-struct ReadInquiryModeCommand:
-  -- Read Inquiry Mode (v1.2) (BR/EDR)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0 [+hdr_size]  CommandHeader  header
-
-
-struct WriteInquiryModeCommand:
-  -- Write Inquiry Mode (v1.2) (BR/EDR)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0     [+hdr_size]  CommandHeader  header
-  $next [+1]         InquiryMode    inquiry_mode
-
-
-struct ReadPageScanTypeCommand:
-  -- Read Page Scan Type (v1.2) (BR/EDR)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0 [+hdr_size]  CommandHeader  header
-
-
-struct WritePageScanTypeCommand:
-  -- Write Page Scan Type (v1.2) (BR/EDR)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0     [+hdr_size]  CommandHeader  header
-  $next [+1]         PageScanType   page_scan_type
-
-
-struct ReadSimplePairingModeCommand:
-  -- Read Simple Pairing Mode (v2.1 + EDR) (BR/EDR)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0 [+hdr_size]  CommandHeader  header
-
-
-struct WriteLEHostSupportCommand:
-  -- Write LE Host Support command (v4.0) (BR/EDR)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0     [+hdr_size]  CommandHeader       header
-  $next [+1]         GenericEnableParam  le_supported_host
-    -- Sets the LE Supported (Host) Link Manager Protocol feature bit.
-
-  $next [+1]         UInt                unused
-    -- Core Spec v5.0, Vol 2, Part E, Section 6.35: This parameter was named
-    -- "Simultaneous_LE_Host" and the value is set to "disabled(0x00)" and
-    -- "shall be ignored".
-    -- Core Spec v5.3, Vol 4, Part E, Section 7.3.79: This parameter was renamed
-    -- to "Unused" and "shall be ignored by the controller".
 
 
 struct ReadLocalVersionInformationCommand:
@@ -2596,49 +2992,6 @@ struct LESetExtendedAdvertisingParametersV1Command:
 
   $next [+1]                      GenericEnableParam            scan_request_notification_enable
 
-
-struct WriteAuthenticatedPayloadTimeoutCommand:
-  -- Write Authenticated Payload Timeout command (v4.1) (BR/EDR & LE)
-  0     [+CommandHeader.$size_in_bytes]  CommandHeader  header
-  $next [+2]                             UInt           connection_handle
-    [requires: 0x0000 <= this <= 0x0EFF]
-
-  $next [+2]                             UInt           authenticated_payload_timeout
-    -- Default = 0x0BB8 (30 s)
-    -- Time = N * 10 ms
-    -- Time Range: 10 ms to 655,350 ms
-    [requires: 0x0001 <= this <= 0xFFFF]
-
-
-struct ReadAuthenticatedPayloadTimeoutCommand:
-  -- Read Authenticated Payload Timeout command (v4.1) (BR/EDR & LE)
-  0     [+CommandHeader.$size_in_bytes]  CommandHeader  header
-  $next [+2]                             UInt           connection_handle
-    [requires: 0x0000 <= this <= 0x0EFF]
-
-
-struct ReadLEHostSupportCommand:
-  -- Read LE Host Support command (v4.0) (BR/EDR)
-  0 [+CommandHeader.$size_in_bytes]  CommandHeader  header
-
-
-struct ReadFlowControlModeCommand:
-  -- Read Flow Control Mode command (v3.0 + HS) (BR/EDR)
-  0 [+CommandHeader.$size_in_bytes]  CommandHeader  header
-
-
-struct WriteFlowControlModeCommand:
-  -- Write Flow Control Mode command (v3.0 + HS) (BR/EDR)
-  0     [+CommandHeader.$size_in_bytes]  CommandHeader    header
-  $next [+1]                             FlowControlMode  flow_control_mode
-
-
-struct SetEventMaskPage2Command:
-  -- Set Event Mask Page 2 command (v3.0 + HS)
-  0     [+CommandHeader.$size_in_bytes]  CommandHeader   header
-  $next [+8]  bits:
-    0     [+26]                          EventMaskPage2  event_mask_page_2
-      -- Bit mask used to control which HCI events are generated by the HCI for the Host.
 
 # ========================= HCI Event packets ===========================
 # Core Spec v5.3 Vol 4, Part E, Section 7.7
