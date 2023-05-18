@@ -168,7 +168,7 @@ def gn_gen(
     _LOG.debug('%r', all_gn_args)
     args_option = gn_args(**all_gn_args)
 
-    if not preserve_args_gn:
+    if not ctx.dry_run and not preserve_args_gn:
         # Delete args.gn to ensure this is a clean build.
         args_gn = ctx.output_dir / 'args.gn'
         if args_gn.is_file():
@@ -663,6 +663,12 @@ class _NinjaBase(Check):
         else:
             self._ninja_target_lists = tuple(tuple(x) for x in ninja_targets)
 
+    @property
+    def ninja_targets(self) -> List[str]:
+        return list(
+            target for target in itertools.chain(*self._ninja_target_lists)
+        )
+
     def _install_package(  # pylint: disable=no-self-use
         self,
         ctx: PresubmitContext,
@@ -751,6 +757,10 @@ class GnGenNinja(_NinjaBase):
         """
         super().__init__(self._substeps(), *args, **kwargs)
         self._gn_args: Dict[str, Any] = gn_args or {}
+
+    @property
+    def gn_args(self) -> Dict[str, Any]:
+        return self._gn_args
 
     def _gn_gen(self, ctx: PresubmitContext) -> PresubmitResult:
         args: Dict[str, Any] = {}

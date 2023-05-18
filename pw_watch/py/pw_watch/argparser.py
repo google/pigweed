@@ -84,7 +84,7 @@ def add_parser_arguments(
         '--no-restart',
         dest='restart',
         action='store_false',
-        help='do not restart ongoing builds if files change',
+        help='Do not restart ongoing builds if files change.',
     )
 
     watch_group.add_argument(
@@ -110,8 +110,10 @@ def add_parser_arguments(
         dest='serve_docs_path',
         type=Path,
         default='docs/gen/docs',
-        help='Set the path for the docs to serve. Default: docs/gen/docs'
-        ' in the build directory.',
+        help=(
+            'Set the path for the docs to serve. Default: docs/gen/docs '
+            'in the build directory.'
+        ),
     )
 
     watch_group.add_argument(

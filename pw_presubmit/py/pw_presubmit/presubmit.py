@@ -834,7 +834,6 @@ class Presubmit:
         dry_run: bool = False,
     ) -> bool:
         """Executes a series of presubmit checks on the paths."""
-
         checks = self.apply_filters(program)
         if substep:
             assert (
@@ -1049,6 +1048,48 @@ def _process_pathspecs(
     return pathspecs_by_repo
 
 
+def fetch_file_lists(
+    root: Path,
+    repo: Path,
+    pathspecs: List[str],
+    exclude: Sequence[Pattern] = (),
+    base: Optional[str] = None,
+) -> Tuple[List[Path], List[Path]]:
+    """Returns lists of all files and modified files for the given repo.
+
+    Args:
+        root: root path of the project
+        repo: path to the roots of Git repository to check
+        base: optional base Git commit to list files against
+        pathspecs: optional list of Git pathspecs to run the checks against
+        exclude: regular expressions for Posix-style paths to exclude
+    """
+
+    all_files: List[Path] = []
+    modified_files: List[Path] = []
+
+    all_files_repo = tuple(
+        tools.exclude_paths(
+            exclude, git_repo.list_files(None, pathspecs, repo), root
+        )
+    )
+    all_files += all_files_repo
+
+    if base is None:
+        modified_files += all_files_repo
+    else:
+        modified_files += tools.exclude_paths(
+            exclude, git_repo.list_files(base, pathspecs, repo), root
+        )
+
+    _LOG.info(
+        'Checking %s',
+        git_repo.describe_files(repo, repo, base, pathspecs, exclude, root),
+    )
+
+    return all_files, modified_files
+
+
 def run(  # pylint: disable=too-many-arguments,too-many-locals
     program: Sequence[Check],
     root: Path,
@@ -1139,26 +1180,11 @@ def run(  # pylint: disable=too-many-arguments,too-many-locals
 
     else:
         for repo, pathspecs in pathspecs_by_repo.items():
-            all_files_repo = tuple(
-                tools.exclude_paths(
-                    exclude, git_repo.list_files(None, pathspecs, repo), root
-                )
+            new_all_files_items, new_modified_file_items = fetch_file_lists(
+                root, repo, pathspecs, exclude, base
             )
-            all_files += all_files_repo
-
-            if base is None:
-                modified_files += all_files_repo
-            else:
-                modified_files += tools.exclude_paths(
-                    exclude, git_repo.list_files(base, pathspecs, repo), root
-                )
-
-            _LOG.info(
-                'Checking %s',
-                git_repo.describe_files(
-                    repo, repo, base, pathspecs, exclude, root
-                ),
-            )
+            all_files.extend(new_all_files_items)
+            modified_files.extend(new_modified_file_items)
 
     if output_directory is None:
         output_directory = root / '.presubmit'

@@ -70,8 +70,8 @@ def add_project_builder_arguments(
         help=(
             'Additional commands to run. These are run before any -C '
             'arguments and may be repeated. For example: '
-            "--run-command 'bazel build //pw_cli/...'"
-            "--run-command 'bazel test //pw_cli/...'"
+            "--run-command 'bazel build //pw_cli/...' "
+            "--run-command 'bazel test //pw_cli/...' "
             "-C out python.lint python.test"
         ),
     )
@@ -84,7 +84,7 @@ def add_project_builder_arguments(
         '--jobs',
         type=int,
         help=(
-            'Specify the number of cores to use for each build system.'
+            'Specify the number of cores to use for each build system. '
             'This is passed to ninja, bazel and make as "-j"'
         ),
     )

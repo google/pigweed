@@ -57,7 +57,8 @@ def add_path_arguments(parser) -> None:
         default=git_repo.TRACKING_BRANCH_ALIAS,
         help=(
             'Git revision against which to diff for changed files. '
-            'Default is the tracking branch of the current branch.'
+            'Default is the tracking branch of the current branch: '
+            f'{git_repo.TRACKING_BRANCH_ALIAS}'
         ),
     )
 
