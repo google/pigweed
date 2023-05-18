@@ -64,7 +64,7 @@ class LogStreamHandler:
         _LOG.error(
             'Log stream error: %s from source %s',
             error,
-            self._decoder.source_name,
+            self.source_name,
         )
         # Only re-request logs if the RPC was not cancelled by the client.
         if error != pw_status.Status.CANCELLED:
@@ -78,6 +78,10 @@ class LogStreamHandler:
         _LOG.debug(
             'Log stream completed with status: %s for source: %s',
             status,
-            self._decoder.source_name,
+            self.source_name,
         )
         self.listen_to_logs()
+
+    @property
+    def source_name(self) -> str:
+        return self._decoder.source_name
