@@ -43,6 +43,41 @@ pw_add_library(pw_metric.global STATIC
     global.cc
 )
 
+pw_proto_library(pw_metric.metric_service_proto
+  SOURCES
+    pw_metric_proto/metric_service.proto
+  INPUTS
+    pw_metric_proto/metric_service.options
+)
+
+pw_add_library(pw_metric.metric_walker INTERFACE
+  HEADERS
+    pw_metric_private/metric_walker.h
+  PUBLIC_DEPS
+    pw_metric
+    pw_assert
+    pw_containers
+    pw_status
+    pw_tokenizer
+)
+
+pw_add_library(pw_metric.metric_service_pwpb STATIC
+  HEADERS
+    public/pw_metric/metric_service_pwpb.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_metric.metric_service_proto.pwpb_rpc
+    pw_metric.metric_service_proto.raw_rpc
+    pw_metric.metric_walker
+    pw_metric
+    pw_bytes
+    pw_containers
+    pw_rpc.raw.server_api
+  SOURCES
+    metric_service_pwpb.cc
+)
+
 pw_add_test(pw_metric.metric_test
   SOURCES
     metric_test.cc

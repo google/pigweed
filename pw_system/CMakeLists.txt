@@ -28,15 +28,13 @@ pw_add_library(pw_system.config INTERFACE
 
 pw_add_library(pw_system.log STATIC
   PUBLIC_DEPS
-    # TODO(b/246101669): Add CMake support.
-    # pw_log_rpc.log_service
-    # pw_log_rpc.rpc_log_drain_thread
+    pw_log_rpc.log_service
+    pw_log_rpc.rpc_log_drain_thread
     pw_multisink
   PRIVATE_DEPS
     pw_system.config
     pw_system.rpc_server
-    # TODO(b/246101669): Add CMake support.
-    # pw_log_rpc.rpc_log_drain
+    pw_log_rpc.rpc_log_drain
     pw_sync.lock_annotations
     pw_sync.mutex
   HEADERS
@@ -92,6 +90,17 @@ pw_add_library(pw_system.hdlc_rpc_server STATIC
     hdlc_rpc_server.cc
 )
 
+pw_add_library(pw_system.thread_snapshot_service STATIC
+  HEADERS
+    public/pw_system/thread_snapshot_service.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_thread.thread_snapshot_service
+  SOURCES
+    thread_snapshot_service.cc
+)
+
 pw_add_library(pw_system.io INTERFACE
   HEADERS
     public/pw_system/io.h
@@ -109,10 +118,14 @@ pw_add_library(pw_system.init STATIC
   SOURCES
     init.cc
   PRIVATE_DEPS
-        pw_system.log
-        pw_system.rpc_server
-        pw_rpc.pwpb.echo_service
-        pw_thread.thread
+    pw_system.log
+    pw_system.rpc_server
+    pw_system.target_hooks
+    pw_system.thread_snapshot_service
+    pw_system.work_queue
+    pw_rpc.pwpb.echo_service
+    pw_metric.metric_service_pwpb
+    pw_thread.thread
 )
 
 pw_add_library(pw_system.work_queue STATIC
@@ -122,8 +135,10 @@ pw_add_library(pw_system.work_queue STATIC
     public
   SOURCES
     work_queue.cc
-  PRIVATE_DEPS
+  PUBLIC_DEPS
     pw_work_queue
+  PRIVATE_DEPS
+    pw_system.config
 )
 
 pw_add_library(pw_system.target_io STATIC
