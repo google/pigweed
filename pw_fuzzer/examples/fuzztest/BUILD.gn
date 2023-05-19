@@ -36,16 +36,19 @@ pw_test("metrics_unittest") {
   deps = [ ":metrics_lib" ]
 }
 
+# DOCSTAG: [pwfuzzer_examples_fuzztest-gn]
 pw_test("metrics_fuzztest") {
   sources = [ "metrics_fuzztest.cc" ]
   deps = [
     ":metrics_lib",
-    "$dir_pw_fuzzer:fuzztest",
+    "$dir_pw_fuzzer:fuzztest",  # <- Added!
   ]
 
   # TODO: b/283156908 - Re-enable with a fixed seed.
   enable_if = false
 }
+
+# DOCSTAG: [pwfuzzer_examples_fuzztest-gn]
 
 pw_test_group("tests") {
   tests = [

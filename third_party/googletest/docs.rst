@@ -9,6 +9,8 @@ optionally use full upstream `GoogleTest/GoogleMock`__ with
 
 .. __: https://github.com/google/googletest
 
+.. _module-pw_third_party_googletest-using_upstream:
+
 ----------------------------------------
 Using upstream GoogleTest and GoogleMock
 ----------------------------------------

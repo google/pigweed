@@ -6,6 +6,8 @@ FuzzTest
 The ``$dir_pw_third_party/fuzztest/`` module provides build files to allow
 optionally including upstream FuzzTest.
 
+.. _module-pw_third_party_fuzztest-using_upstream:
+
 -----------------------
 Using upstream FuzzTest
 -----------------------
@@ -24,13 +26,30 @@ Add FuzzTest to your workspace with the following command.
 
    .. tab-item:: GN
 
-      Set the GN var ``dir_pw_third_party_fuzztest`` to the location of the
-      FuzzTest source.
+      Set the GN following GN bauild args:
 
-      If you used the command above, this will be ``//third_party/fuzztest``.
+      * Set ``dir_pw_third_party_fuzztest`` to the location of the FuzzTest
+        source. If you used the command above, this will be
+        ``//third_party/fuzztest``.
 
-      This can be set in your args.gn or .gn file:
-      ``dir_pw_third_party_fuzztest = "//third_party/fuzztest"``
+      * Set ``dir_pw_third_party_abseil_cpp`` to the location of the
+        :ref:`module-pw_third_party_abseil_cpp` source.
+
+      * Set ``dir_pw_third_party_googletest`` to the location of the
+        :ref:`module-pw_third_party_googletest` source.
+
+      * Set ``dir_pw_third_party_re2`` to the location of the
+        :ref:`module-pw_third_party_re2` source.
+
+      This can be set in your ``args.gn`` or ``.gn`` file. For example:
+
+      .. code-block::
+
+         # Set build arguments here. See `gn help buildargs`.
+         dir_pw_third_party_abseil_cpp="//third_party/abseil-cpp"
+         dir_pw_third_party_fuzztest="//third_party/fuzztest"
+         dir_pw_third_party_googletest="//third_party/googletest"
+         dir_pw_third_party_re2="//third_party/re2"
 
    .. tab-item:: CMake
 
@@ -40,7 +59,7 @@ Add FuzzTest to your workspace with the following command.
         FuzzTest source.
 
       * Set ``dir_pw_third_party_googletest`` to the location of the
-        GoogleTest source.
+        :ref:`module-pw_third_party_googletest` source.
 
       * Set ``pw_unit_test_GOOGLETEST_BACKEND`` to ``pw_third_party.fuzztest``.
 

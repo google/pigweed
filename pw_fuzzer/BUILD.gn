@@ -26,8 +26,23 @@ config("fuzzing_build_mode_unsafe_for_production") {
 }
 
 pw_doc_group("docs") {
-  inputs = [ "doc_resources/pw_fuzzer_coverage_guided.png" ]
-  sources = [ "docs.rst" ]
+  sources = [
+    "concepts.rst",
+    "docs.rst",
+    "guides/fuzztest.rst",
+    "guides/index.rst",
+    "guides/libfuzzer.rst",
+    "guides/reproducing_oss_fuzz_bugs.rst",
+  ]
+  inputs = [
+    "doc_resources/pw_fuzzer_coverage_guided.png",
+    "examples/fuzztest/BUILD.gn",
+    "examples/fuzztest/BUILD.bazel",
+    "examples/fuzztest/CMakeLists.txt",
+    "examples/fuzztest/metrics.h",
+    "examples/fuzztest/metrics_unittest.cc",
+    "examples/fuzztest/metrics_fuzztest.cc",
+  ]
 }
 
 pw_test_group("tests") {

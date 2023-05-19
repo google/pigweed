@@ -1,322 +1,150 @@
 .. _module-pw_fuzzer:
 
----------
+=========
 pw_fuzzer
----------
-``pw_fuzzer`` provides developers with tools to write `libFuzzer`_ based
-fuzzers.
-
-Fuzzing or fuzz testing is style of testing that stochastically generates inputs
-to targeted interfaces in order to automatically find defects and/or
-vulnerabilities. In other words, fuzzing is simply an automated way of testing
-APIs with generated data.
-
-A fuzzer is a program that is used to fuzz a interface. It typically has three
-steps that it executes repeatedly:
-
-#. Generate a new, context-free input. This is the *fuzzing engine*. For
-   ``pw_fuzzer``, this is `libFuzzer`_.
-#. Use the input to exercise the targeted interface, or code being tested. This
-   is the *fuzz target function*. For ``pw_fuzzer``, these are the GN
-   ``sources`` and/or ``deps`` that define `LLVMFuzzerTestOneInput`_.
-#. Monitor the code being tested for any abnormal conditions. This is the
-   *instrumentation*. For ``pw_fuzzer``, these are sanitizer runtimes from
-   LLVM's `compiler_rt`_.
-
-.. note::
-
-  ``pw_fuzzer`` is currently only supported on Linux and MacOS using clang.
-
-.. image:: doc_resources/pw_fuzzer_coverage_guided.png
-   :alt: Coverage Guided Fuzzing with libFuzzer
-   :align: left
-
-Writing fuzzers
-===============
-
-To write a fuzzer, a developer needs to write a fuzz target function follwing
-the `fuzz target function`__ guidelines given by libFuzzer:
-
-.. code:: cpp
-
-  extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
-    DoSomethingInterestingWithMyAPI(data, size);
-    return 0;  // Non-zero return values are reserved for future use.
-  }
-
-.. __: LLVMFuzzerTestOneInput_
-
-When writing you fuzz target function, you may want to consider:
-
-- It is acceptable to return early if the input doesn't meet some constraints,
-  e.g. it is too short.
-- If your fuzzer accepts data with a well-defined format, you can bootstrap
-  coverage by crafting examples and adding them to a `corpus`_.
-- There are tools to `split a fuzzing input`_ into multiple fields if needed;
-  the `FuzzedDataProvider`_ is particularly easy to use.
-- If your code acts on "transformed" inputs, such as encoded or compressed
-  inputs, you may want to try `structure aware fuzzing`.
-- You can do `startup initialization`_ if you need to.
-- If your code is non-deterministic or uses checksums, you may want to disable
-  those **only** when fuzzing by using LLVM's
-  `FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION`_
-
-.. _build:
-
-Building fuzzers with GN
-========================
-
-To build a fuzzer, do the following:
-
-1. Add the GN target to the module using ``pw_fuzzer`` GN template. If you wish
-   to limit when the generated unit test is run, you can set `enable_test_if` in
-   the same manner as `enable_if` for `pw_test`:
-
-.. code::
-
-  # In $dir_my_module/BUILD.gn
-  import("$dir_pw_fuzzer/fuzzer.gni")
-
-  pw_fuzzer("my_fuzzer") {
-    sources = [ "my_fuzzer.cc" ]
-    deps = [ ":my_lib" ]
-    enable_test_if = device_has_1m_flash
-  }
-
-2. Add the generated unit test to the module's test group. This test verifies
-   the fuzzer can build and run, even when not being built in a fuzzing
-   toolchain.
-
-.. code::
-
-  # In $dir_my_module/BUILD.gn
-  pw_test_group("tests") {
-    tests = [
-      ...
-      ":my_fuzzer_test",
-    ]
-  }
-
-3. If your module does not already have a group of fuzzers, add it and include
-   it in the top level fuzzers target. Depending on your project, the specific
-   toolchain may differ. Fuzzer toolchains are those with
-   ``pw_toolchain_FUZZING_ENABLED`` set to true. Examples include
-   ``host_clang_fuzz`` and any toolchains that extend it.
-
-.. code::
-
-  # In //BUILD.gn
-  group("fuzzers") {
-    deps = [
-      ...
-      "$dir_my_module:fuzzers($dir_pigweed/targets/host:host_clang_fuzz)",
-    ]
-  }
-
-4. Add your fuzzer to the module's group of fuzzers.
-
-.. code::
-
-  group("fuzzers") {
-    deps = [
-      ...
-      ":my_fuzzer",
-    ]
-  }
-
-5. If desired, select a sanitizer runtime. By default,
-   `//targets/host:host_clang_fuzz` uses "address" if no sanitizer is specified.
-   See LLVM for `valid options`_.
-
-.. code:: sh
-
-  $ gn gen out --args='pw_toolchain_SANITIZERS=["address"]'
-
-6. Build the fuzzers!
-
-.. code:: sh
-
-  $ ninja -C out fuzzers
-
-.. _bazel:
-
-Building and running fuzzers with Bazel
-=======================================
-To build a fuzzer, do the following:
-
-1. Add the Bazel target using ``pw_cc_fuzz_test`` macro.
-
-.. code:: py
-
-  load("@pigweed//pw_fuzzer:fuzzer.bzl", "pw_cc_fuzz_test")
-
-  pw_cc_fuzz_test(
-    name = "my_fuzz_test",
-    srcs = ["my_fuzzer.cc"],
-    deps = [
-      "@pigweed//pw_fuzzer",
-      ":my_lib",
-    ],
-  )
-
-2. Build and run the fuzzer.
-
-.. code:: sh
-
-  bazel test //my_module:my_fuzz_test
-
-3. Swap fuzzer backend to use ASAN fuzzing engine.
-
-.. code::
-
-  # .bazelrc
-  # Define the --config=asan-libfuzzer configuration.
-  build:asan-libfuzzer \
-    --@rules_fuzzing//fuzzing:cc_engine=@rules_fuzzing//fuzzing/engines:libfuzzer
-  build:asan-libfuzzer \
-    --@rules_fuzzing//fuzzing:cc_engine_instrumentation=libfuzzer
-  build:asan-libfuzzer --@rules_fuzzing//fuzzing:cc_engine_sanitizer=asan
-
-4. Re-run fuzz tests.
-
-.. code::
-
-  bazel test //my_module:my_fuzz_test --config asan-libfuzzer
-
-.. _run:
-
-Running fuzzers locally
-=======================
-
-Based on the example above, the fuzzer output will be at
-``out/host/obj/my_module/my_fuzzer``. It can be invoked using the normal
-`libFuzzer options`_ and `sanitizer runtime flags`_. For even more details, see
-the libFuzzer section on `running a fuzzer`_.
-
-For example, the following invocation disables "one definition rule" detection,
-saves failing inputs to ``artifacts/``, treats any input that takes longer than
-10 seconds as a failure, and stores the working corpus in ``corpus/``.
-
-.. code::
-
-  $ mkdir -p corpus
-  $ ASAN_OPTIONS=detect_odr_violation=0 \
-      out/host_clang_fuzz/obj/pw_fuzzer/bin/toy_fuzzer \
-      -artifact_prefix=artifacts/ \
-      -timeout=10 \
-      corpus
-  INFO: Seed: 305325345
-  INFO: Loaded 1 modules   (46 inline 8-bit counters): 46 [0x38dfc0, 0x38dfee),
-  INFO: Loaded 1 PC tables (46 PCs): 46 [0x23aaf0,0x23add0),
-  INFO:        0 files found in corpus
-  INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
-  INFO: A corpus is not provided, starting from an empty corpus
-  #2      INITED cov: 2 ft: 3 corp: 1/1b exec/s: 0 rss: 27Mb
-  #4      NEW    cov: 3 ft: 4 corp: 2/3b lim: 4 exec/s: 0 rss: 27Mb L: 2/2 MS: 2 ShuffleBytes-InsertByte-
-  #11     NEW    cov: 7 ft: 8 corp: 3/7b lim: 4 exec/s: 0 rss: 27Mb L: 4/4 MS: 2 EraseBytes-CrossOver-
-  #27     REDUCE cov: 7 ft: 8 corp: 3/6b lim: 4 exec/s: 0 rss: 27Mb L: 3/3 MS: 1 EraseBytes-
-  #29     REDUCE cov: 7 ft: 8 corp: 3/5b lim: 4 exec/s: 0 rss: 27Mb L: 2/2 MS: 2 ChangeBit-EraseBytes-
-  #445    REDUCE cov: 9 ft: 10 corp: 4/13b lim: 8 exec/s: 0 rss: 27Mb L: 8/8 MS: 1 InsertRepeatedBytes-
-  #12104  NEW    cov: 11 ft: 12 corp: 5/24b lim: 122 exec/s: 0 rss: 28Mb L: 11/11 MS: 4 CMP-InsertByte-ShuffleBytes-ChangeByte- DE: "\xff\xff"-
-  #12321  NEW    cov: 12 ft: 13 corp: 6/31b lim: 122 exec/s: 0 rss: 28Mb L: 7/11 MS: 2 CopyPart-EraseBytes-
-  #12459  REDUCE cov: 12 ft: 13 corp: 6/28b lim: 122 exec/s: 0 rss: 28Mb L: 8/8 MS: 3 CMP-InsertByte-EraseBytes- DE: "\x00\x00"-
-  #12826  REDUCE cov: 12 ft: 13 corp: 6/26b lim: 122 exec/s: 0 rss: 28Mb L: 5/8 MS: 2 ShuffleBytes-EraseBytes-
-  #14824  REDUCE cov: 12 ft: 13 corp: 6/25b lim: 135 exec/s: 0 rss: 28Mb L: 4/8 MS: 3 PersAutoDict-ShuffleBytes-EraseBytes- DE: "\x00\x00"-
-  #15106  REDUCE cov: 12 ft: 13 corp: 6/24b lim: 135 exec/s: 0 rss: 28Mb L: 3/8 MS: 2 ChangeByte-EraseBytes-
-  ...
-  #197809 REDUCE cov: 35 ft: 36 corp: 22/129b lim: 1800 exec/s: 0 rss: 79Mb L: 9/9 MS: 1 InsertByte-
-  #216250 REDUCE cov: 35 ft: 36 corp: 22/128b lim: 1980 exec/s: 0 rss: 87Mb L: 8/8 MS: 1 EraseBytes-
-  #242761 REDUCE cov: 35 ft: 36 corp: 22/127b lim: 2237 exec/s: 0 rss: 101Mb L: 7/8 MS: 1 EraseBytes-
-  ==126148== ERROR: libFuzzer: deadly signal
-      #0 0x35b981 in __sanitizer_print_stack_trace ../recipe_cleanup/clangFu99hg/llvm_build_dir/tools/clang/stage2-bins/runtimes/runtimes-x86_64-unknown-linux-gnu-bins/compiler-rt/lib/asan/asan_stack.cpp:86:3
-      #1 0x2bcdb5 in fuzzer::PrintStackTrace() (/home/aarongreen/src/pigweed/out/host/obj/pw_fuzzer/toy_fuzzer+0x2bcdb5)
-      #2 0x2a2ac9 in fuzzer::Fuzzer::CrashCallback() (/home/aarongreen/src/pigweed/out/host/obj/pw_fuzzer/toy_fuzzer+0x2a2ac9)
-      #3 0x7f866684151f  (/lib/x86_64-linux-gnu/libpthread.so.0+0x1351f)
-      #4 0x3831df in (anonymous namespace)::toy_example(char const*, char const*) /home/aarongreen/src/pigweed/out/host/../../pw_fuzzer/examples/toy_fuzzer.cc:49:15
-      #5 0x3831df in LLVMFuzzerTestOneInput /home/aarongreen/src/pigweed/out/host/../../pw_fuzzer/examples/toy_fuzzer.cc:80:3
-      #6 0x2a4025 in fuzzer::Fuzzer::ExecuteCallback(unsigned char const*, unsigned long) (/home/aarongreen/src/pigweed/out/host/obj/pw_fuzzer/toy_fuzzer+0x2a4025)
-      #7 0x2a3774 in fuzzer::Fuzzer::RunOne(unsigned char const*, unsigned long, bool, fuzzer::InputInfo*, bool*) (/home/aarongreen/src/pigweed/out/host/obj/pw_fuzzer/toy_fuzzer+0x2a3774)
-      #8 0x2a5769 in fuzzer::Fuzzer::MutateAndTestOne() (/home/aarongreen/src/pigweed/out/host/obj/pw_fuzzer/toy_fuzzer+0x2a5769)
-      #9 0x2a6185 in fuzzer::Fuzzer::Loop(std::__Fuzzer::vector<fuzzer::SizedFile, fuzzer::fuzzer_allocator<fuzzer::SizedFile> >&) (/home/aarongreen/src/pigweed/out/host/obj/pw_fuzzer/toy_fuzzer+0x2a6185)
-      #10 0x294c8a in fuzzer::FuzzerDriver(int*, char***, int (*)(unsigned char const*, unsigned long)) (/home/aarongreen/src/pigweed/out/host/obj/pw_fuzzer/toy_fuzzer+0x294c8a)
-      #11 0x2bd422 in main ../recipe_cleanup/clangFu99hg/llvm_build_dir/tools/clang/stage2-bins/runtimes/runtimes-x86_64-unknown-linux-gnu-bins/compiler-rt/lib/fuzzer/FuzzerMain.cpp:19:10
-      #12 0x7f8666684bba in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x26bba)
-      #13 0x26ae19 in _start (/home/aarongreen/src/pigweed/out/host/obj/pw_fuzzer/toy_fuzzer+0x26ae19)
-
-  NOTE: libFuzzer has rudimentary signal handlers.
-        Combine libFuzzer with AddressSanitizer or similar for better crash reports.
-  SUMMARY: libFuzzer: deadly signal
-  MS: 1 CrossOver-; base unit: 9f479f7a6e3a21363397a25da3168218ba182a16
-  0x68,0x65,0x6c,0x6c,0x6f,0x0,0x77,0x6f,0x72,0x6c,0x64,0x0,0x0,0x0,
-  hello\x00world\x00\x00\x00
-  artifact_prefix='artifacts'; Test unit written to artifacts/crash-6e4fdc7ffd04131ea15dd243a0890b1b606f4831
-  Base64: aGVsbG8Ad29ybGQAAAA=
-
-Running fuzzers on OSS-Fuzz
-===========================
-
-Pigweed is integrated with `OSS-Fuzz`_, a continuous fuzzing infrastructure for
-open source software. Fuzzers listed in in ``pw_test_groups`` will automatically
-start being run within a day or so of appearing in the git repository.
-
-Bugs produced by OSS-Fuzz can be found in its `Monorail instance`_. These bugs
-include:
-
-* A detailed report, including a symbolized backtrace.
-* A revision range indicating when the bug has been detected.
-* A minimized testcase, which is a fuzzer input that can be used to reproduce
-  the bug.
-
-To reproduce a bug:
-
-#. Build_ the fuzzers as described above.
-#. Download the minimized testcase.
-#. Run_ the fuzzer with the testcase as an argument.
-
-For example, if the testcase is saved as "~/Downloads/testcase"
-and the fuzzer is the same as in the examples above, you could run:
-
-.. code::
-
-  $ ./out/host/obj/pw_fuzzer/toy_fuzzer ~/Downloads/testcase
-
-If you need to recreate the OSS-Fuzz environment locally, you can use its
-documentation on `reproducing`_ issues.
-
-In particular, you can recreate the OSS-Fuzz environment using:
-
-.. code::
-
-  $ python infra/helper.py pull_images
-  $ python infra/helper.py build_image pigweed
-  $ python infra/helper.py build_fuzzers --sanitizer <address/undefined> pigweed
-
-With that environment, you can run the reproduce bugs using:
-
-.. code::
-
-  python infra/helper.py reproduce pigweed <pw_module>_<fuzzer_name> ~/Downloads/testcase
-
-You can even verify fixes in your local source checkout:
-
-.. code::
-
-  $ python infra/helper.py build_fuzzers --sanitizer <address/undefined> pigweed $PW_ROOT
-  $ python infra/helper.py reproduce pigweed <pw_module>_<fuzzer_name> ~/Downloads/testcase
-
-.. _compiler_rt: https://compiler-rt.llvm.org/
-.. _corpus: https://llvm.org/docs/LibFuzzer.html#corpus
-.. _FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION: https://llvm.org/docs/LibFuzzer.html#fuzzer-friendly-build-mode
-.. _FuzzedDataProvider: https://github.com/llvm/llvm-project/blob/HEAD/compiler-rt/include/fuzzer/FuzzedDataProvider.h
+=========
+.. pigweed-module::
+   :name: pw_fuzzer
+   :tagline: Better C++ code through easier fuzzing
+   :status: unstable
+   :languages: C++14, C++17, C++20
+   :nav:
+     getting started: module-pw_fuzzer-get-started
+     concepts: module-pw_fuzzer-concepts
+     guides: module-pw_fuzzer-guides
+
+Use state of the art tools to automatically find bugs in your C++ code with 5
+lines of code or less!
+
+
+.. code-block:: cpp
+
+   FUZZ_TEST(MyTestSuite, TestMyInterestingFunction)
+     .WithDomains(Arbitrary<size_t>(), AsciiString());
+
+----------
+Background
+----------
+You've written some code. You've written unit tests for that code. The unit
+tests pass. But could there be bugs in inputs or code paths the unit tests do
+not cover? `Fuzzing`_ can help!
+
+However, fuzzing requires some complex interactions between compiler-added
+`instrumentation`_, `compiler runtimes`_, code under test, and the fuzzer code
+itself. And to be reliably useful, fuzzers need to be part of a continuous
+fuzzing infrastructure, adding even more complexity.
+
+See :ref:`module-pw_fuzzer-concepts` to learn more about the different
+components of a fuzzer and how they work together to discover hard-to-find bugs.
+
+------------
+Our solution
+------------
+``pw_fuzzer`` makes it easier to write, build, run, and deploy fuzzers. It
+provides convenient integration with two fuzzing `engines`_:
+
+* `libFuzzer`_, allowing integration of legacy fuzzers.
+
+* `FuzzTest`_, allowing easy creation of fuzzers from unit tests in around 5
+  lines of code.
+
+Additionally, it produces artifacts for continuous fuzzing infrastructures such
+as `ClusterFuzz`_ and `OSS-Fuzz`_, and provides the artifacts those systems need.
+
+---------------
+Who this is for
+---------------
+``pw_fuzzer`` is useful for authors of `wide range`_ of C++ code who have
+written unit tests and are interested in finding actionable bugs in their code.
+
+In particular, coverage-guided is effective for testing and finding bugs in code
+that:
+
+* Receives inputs from **untrusted sources** and must be secure.
+
+* Has **complex algorithms** with some equivalence, e.g. compress and
+  decompress, and must be correct.
+
+* Handles **high volumes** of inputs and/or unreliable dependencies and must be
+  stable.
+
+Fuzzing works best when code handles inputs deterministically, that is, given
+the same input it behaves the same way. Fuzzing will be less effective with code
+that modifies global state or has some randomness, e.g. depends on how multiple
+threads are scheduled. Simply put, good fuzzers typically resemble unit tests in
+terms of scope and isolation.
+
+--------------------
+Is it right for you?
+--------------------
+Currently, ``pw_fuzzer`` only provides support for fuzzers that:
+
+* Run on **host**. Sanitizer runtimes such as `AddressSanitizer`_ add
+  significant memory overhead and are not suitable for running on device.
+  Additionally, the currently supported engines assume the presence of certain
+  POSIX features.
+
+* Are built with **Clang**. The `instrumentation`_ used in fuzzing is added by
+  ``clang``.
+
+.. _module-pw_fuzzer-get-started:
+
+---------------
+Getting started
+---------------
+The first step in adding a fuzzer is to determine what fuzzing engine should you
+use. Pigweed currently supports two fuzzing engines:
+
+* **FuzzTest** is the recommended engine. It makes it easy to create fuzzers
+  from your existing unit tests, but it does requires additional third party
+  dependencies and at least C++17. See
+  :ref:`module-pw_fuzzer-guides-using_fuzztest` for details on how to set up a
+  project to use FuzzTest and on how to create and run fuzzers with it.
+
+* **libFuzzer** is a mature, proven engine. It is a part of LLVM and requires
+  code authors to implement a specific function, ``LLVMFuzzerTestOneInput``. See
+  :ref:`module-pw_fuzzer-guides-using_libfuzzer` for details on how to write
+  fuzzers with it.
+
+-------
+Roadmap
+-------
+``pw_fuzzer`` is under active development. There are a number of improvements we
+would like to add, including:
+
+* `b/282560789`_ - Document workflows for analyzing coverage and improving
+  fuzzers.
+
+* `b/280457542`_ - Add CMake support for FuzzTest.
+
+* `b/281138993`_ - Add a ``pw_cli`` plugin for fuzzing.
+
+* `b/281139237`_ - Develop OSS-Fuzz and ClusterFuzz workflow templates for
+  downtream projects.
+
+.. _b/282560789: https://issues.pigweed.dev/issues/282560789
+.. _b/280457542: https://issues.pigweed.dev/issues/280457542
+.. _b/281138993: https://issues.pigweed.dev/issues/281138993
+.. _b/281139237: https://issues.pigweed.dev/issues/281139237
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   concepts
+   guides/fuzztest
+   guides/libfuzzer
+   guides/reproducing_oss_fuzz_bugs
+
+.. inclusive-language: disable
+.. _AddressSanitizer: https://github.com/google/sanitizers/wiki/AddressSanitizer
+.. _ClusterFuzz: https://github.com/google/clusterfuzz/
+.. _compiler runtimes: https://compiler-rt.llvm.org/
+.. _engines: https://github.com/google/fuzzing/blob/master/docs/glossary.md#fuzzing-engine
+.. _Fuzzing: https://github.com/google/fuzzing/blob/master/docs/intro-to-fuzzing.md
+.. _FuzzTest: https://github.com/google/fuzztest
+.. _instrumentation: https://clang.llvm.org/docs/SanitizerCoverage.html#instrumentation-points
 .. _libFuzzer: https://llvm.org/docs/LibFuzzer.html
-.. _libFuzzer options: https://llvm.org/docs/LibFuzzer.html#options
-.. _LLVMFuzzerTestOneInput: https://llvm.org/docs/LibFuzzer.html#fuzz-target
-.. _monorail instance: https://bugs.chromium.org/p/oss-fuzz
-.. _oss-fuzz: https://github.com/google/oss-fuzz
-.. _reproducing: https://google.github.io/oss-fuzz/advanced-topics/reproducing/
-.. _running a fuzzer: https://llvm.org/docs/LibFuzzer.html#running
-.. _sanitizer runtime flags: https://github.com/google/sanitizers/wiki/SanitizerCommonFlags
-.. _split a fuzzing input: https://github.com/google/fuzzing/blob/HEAD/docs/split-inputs.md
-.. _startup initialization: https://llvm.org/docs/LibFuzzer.html#startup-initialization
-.. _structure aware fuzzing: https://github.com/google/fuzzing/blob/HEAD/docs/structure-aware-fuzzing.md
-.. _valid options: https://gcc.gnu.org/onlinedocs/gcc/Instrumentation-Options.html
+.. _OSS-Fuzz: https://github.com/google/oss-fuzz
+.. _wide range: https://github.com/google/fuzzing/blob/master/docs/why-fuzz.md
+.. inclusive-language: enable

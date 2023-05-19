@@ -20,31 +20,33 @@
 
 namespace pw_fuzzer::examples {
 
-TEST(MetricsTest, MarshalAndUnmarshal) {
+// DOCSTAG: [pwfuzzer_examples_fuzztest-metrics_unittest]
+TEST(MetricsTest, SerializeAndDeserialize) {
   std::array<std::byte, 100> buffer;
 
   Metrics src;
   src.SetValue("one", 1);
   src.SetValue("two", 2);
   src.SetValue("three", 3);
-  size_t num = src.Marshal(buffer);
+  size_t num = src.Serialize(buffer);
   EXPECT_LE(num, buffer.size());
 
   Metrics dst;
   dst.SetKeys(src.GetKeys());
-  EXPECT_TRUE(dst.Unmarshal(buffer));
+  EXPECT_TRUE(dst.Deserialize(buffer));
   EXPECT_EQ(dst.GetValue("one").value_or(0), 1U);
   EXPECT_EQ(dst.GetValue("two").value_or(0), 2U);
   EXPECT_EQ(dst.GetValue("three").value_or(0), 3U);
 }
 
-TEST(MetricsTest, UnmarshalDoesNotCrash) {
+TEST(MetricsTest, DeserializeDoesNotCrash) {
   std::array<std::byte, 100> buffer;
   std::fill(buffer.begin(), buffer.end(), std::byte(0x5C));
 
   // Just make sure this does not crash.
   Metrics dst;
-  dst.Unmarshal(buffer);
+  dst.Deserialize(buffer);
 }
+// DOCSTAG: [pwfuzzer_examples_fuzztest-metrics_unittest]
 
 }  // namespace pw_fuzzer::examples

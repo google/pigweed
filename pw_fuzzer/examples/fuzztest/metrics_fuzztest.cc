@@ -23,21 +23,22 @@ namespace pw_fuzzer::examples {
 using namespace fuzztest;
 using ValueMap = std::unordered_map<std::string, Metrics::Value>;
 
-void ArbitraryMarshalAndUnmarshal(const ValueMap& values) {
+// DOCSTAG: [pwfuzzer_examples_fuzztest-metrics_fuzztest1]
+void ArbitrarySerializeAndDeserialize(const ValueMap& values) {
   std::array<std::byte, 100> buffer;
 
   Metrics src;
   for (const auto& [name, value] : values) {
     src.SetValue(name, value);
   }
-  size_t num = src.Marshal(buffer);
+  size_t num = src.Serialize(buffer);
   if (num > buffer.size()) {
     return;
   }
 
   Metrics dst;
   dst.SetKeys(src.GetKeys());
-  EXPECT_TRUE(dst.Unmarshal(buffer));
+  EXPECT_TRUE(dst.Deserialize(buffer));
   for (const auto& [name, expected] : values) {
     auto actual = dst.GetValue(name);
     EXPECT_TRUE(actual);
@@ -46,33 +47,40 @@ void ArbitraryMarshalAndUnmarshal(const ValueMap& values) {
 }
 
 // This unit test will run on host and may run on target devices (if supported).
-TEST(MetricsTest, MarshalAndUnmarshal) {
+TEST(MetricsTest, SerializeAndDeserialize) {
   ValueMap values;
   values["one"] = 1;
   values["two"] = 2;
   values["three"] = 3;
-  ArbitraryMarshalAndUnmarshal(values);
+  ArbitrarySerializeAndDeserialize(values);
 }
+// DOCSTAG: [pwfuzzer_examples_fuzztest-metrics_fuzztest1]
 
+// DOCSTAG: [pwfuzzer_examples_fuzztest-metrics_fuzztest2]
 // This fuzz test will only run on host.
-FUZZ_TEST(MetricsTest, ArbitraryMarshalAndUnmarshal)
+FUZZ_TEST(MetricsTest, ArbitrarySerializeAndDeserialize)
     .WithDomains(UnorderedMapOf(PrintableAsciiString(),
                                 Arbitrary<Metrics::Value>())
                      .WithMaxSize(15));
+// DOCSTAG: [pwfuzzer_examples_fuzztest-metrics_fuzztest2]
 
-void ArbitraryUnmarshal(pw::ConstByteSpan buffer) {
+// DOCSTAG: [pwfuzzer_examples_fuzztest-metrics_fuzztest3]
+void ArbitraryDeserialize(pw::ConstByteSpan buffer) {
   // Just make sure this does not crash.
   Metrics dst;
-  dst.Unmarshal(buffer);
+  dst.Deserialize(buffer);
 }
 
 // This unit test will run on host and may run on target devices (if supported).
-TEST(MetricsTest, UnmarshalDoesNotCrash) {
-  ArbitraryUnmarshal(std::vector<std::byte>(100, std::byte(0x5C)));
+TEST(MetricsTest, DeserializeDoesNotCrash) {
+  ArbitraryDeserialize(std::vector<std::byte>(100, std::byte(0x5C)));
 }
+// DOCSTAG: [pwfuzzer_examples_fuzztest-metrics_fuzztest3]
 
+// DOCSTAG: [pwfuzzer_examples_fuzztest-metrics_fuzztest4]
 // This fuzz test will only run on host.
-FUZZ_TEST(MetricsTest, ArbitraryUnmarshal)
+FUZZ_TEST(MetricsTest, ArbitraryDeserialize)
     .WithDomains(VectorOf(Arbitrary<std::byte>()));
+// DOCSTAG: [pwfuzzer_examples_fuzztest-metrics_fuzztest4]
 
 }  // namespace pw_fuzzer::examples

@@ -79,7 +79,7 @@ void Metrics::SetKeys(const Metrics::KeyMap& keys) {
   }
 }
 
-size_t Metrics::Marshal(pw::ByteSpan buffer) const {
+size_t Metrics::Serialize(pw::ByteSpan buffer) const {
   size_t offset = 0;
   CopyTo(buffer, offset, values_.size());
   for (const auto& [name, key] : keys_) {
@@ -89,7 +89,7 @@ size_t Metrics::Marshal(pw::ByteSpan buffer) const {
   return offset;
 }
 
-bool Metrics::Unmarshal(pw::ConstByteSpan buffer) {
+bool Metrics::Deserialize(pw::ConstByteSpan buffer) {
   size_t offset = 0;
   size_t num_values = 0;
   CopyFrom(buffer, offset, num_values);

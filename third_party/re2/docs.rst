@@ -6,6 +6,8 @@ RE2
 The ``$dir_pw_third_party/re2/`` module provides build files to allow
 optionally including upstream RE2.
 
+.. _module-pw_third_party_re2-using_upstream:
+
 ------------------
 Using upstream RE2
 ------------------

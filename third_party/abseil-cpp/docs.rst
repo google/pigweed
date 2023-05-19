@@ -1,10 +1,12 @@
-.. _module-pw_third_party_abseil-cpp:
+.. _module-pw_third_party_abseil_cpp:
 
 ==========
 Abseil C++
 ==========
 The ``$dir_pw_third_party/abseil-cpp/`` module provides build files to allow
 optionally including upstream Abseil C++.
+
+.. _module-pw_third_party_abseil_cpp-using_upstream:
 
 -------------------------
 Using upstream Abseil C++

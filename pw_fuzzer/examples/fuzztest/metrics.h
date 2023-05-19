@@ -26,12 +26,13 @@
 
 namespace pw_fuzzer::examples {
 
+// DOCSTAG: [pwfuzzer_examples_fuzztest-metrics_h]
 // Represents a set of measurements from a particular source.
 //
 // In order to transmit metrics efficiently, the names of metrics are hashed
 // internally into fixed length keys. The names can be shared once via `GetKeys`
-// and `SetKeys`, after which metrics can be efficiently shared via `Marshal`
-// and `Unmarshal`.
+// and `SetKeys`, after which metrics can be efficiently shared via `Serialize`
+// and `Deserialize`.
 class Metrics {
  public:
   using Key = uint16_t;
@@ -57,11 +58,11 @@ class Metrics {
   // than `buffer.size()`. Returns the number of number of bytes written if the
   // buffer is large enough, or the number that would have been if the `buffer`
   // had been large enough.
-  size_t Marshal(pw::ByteSpan buffer) const;
+  size_t Serialize(pw::ByteSpan buffer) const;
 
   // Populates this object from the data in the given `buffer`.
   // Returns whether this buffer could be deserialized.
-  bool Unmarshal(pw::ConstByteSpan buffer);
+  bool Deserialize(pw::ConstByteSpan buffer);
 
  private:
   using NameMap = std::unordered_map<Key, std::string>;
@@ -78,5 +79,6 @@ class Metrics {
   KeyMap keys_;
   ValueMap values_;
 };
+// DOCSTAG: [pwfuzzer_examples_fuzztest-metrics_h]
 
 }  // namespace pw_fuzzer::examples

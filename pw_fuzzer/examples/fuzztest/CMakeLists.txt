@@ -37,13 +37,15 @@ pw_add_test(pw_fuzzer.examples.fuzztest.metrics_unittest
     pw_fuzzer
 )
 
+# DOCSTAG: [pwfuzzer_examples_fuzztest-cmake]
 pw_add_test(pw_fuzzer.examples.fuzztest.metrics_fuzztest
   SOURCES
     metrics_fuzztest.cc
   PRIVATE_DEPS
-    pw_fuzzer.fuzztest
+    pw_fuzzer.fuzztest  # <- Added!
     pw_fuzzer.examples.fuzztest.metrics_lib
   GROUPS
     modules
     pw_fuzzer
 )
+# DOCSTAG: [pwfuzzer_examples_fuzztest-cmake]

@@ -39,11 +39,13 @@ pw_cc_test(
     deps = [":metrics_lib"],
 )
 
+# DOCSTAG: [pwfuzzer_examples_fuzztest-bazel]
 pw_cc_test(
     name = "metrics_fuzztest",
     srcs = ["metrics_fuzztest.cc"],
     deps = [
         ":metrics_lib",
-        "//pw_fuzzer:fuzztest",
+        "//pw_fuzzer:fuzztest",  # <- Added!
     ],
 )
+# DOCSTAG: [pwfuzzer_examples_fuzztest-bazel]
