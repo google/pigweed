@@ -21,6 +21,11 @@ config PIGWEED_THREAD
     bool "Enables the Zephyr pw_thread.thread and pw_thread.id backends"
     select PIGWEED_ASSERT
 
+config PIGWEED_THREAD_ITERATION
+    bool "Enables the Zephyr pw_thread.thread_iteration backend"
+    select PIGWEED_ASSERT
+    select PIGWEED_THREAD
+
 if PIGWEED_THREAD
 
 config PIGWEED_THREAD_DEFAULT_PRIORITY

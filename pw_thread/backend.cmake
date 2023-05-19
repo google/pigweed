@@ -24,6 +24,9 @@ pw_add_backend_variable(pw_thread.sleep_BACKEND)
 # Backend for the pw_thread module's pw::thread::Thread to create threads.
 pw_add_backend_variable(pw_thread.thread_BACKEND)
 
+# Backend for the pw_thread module's pw::thread::thread_iteration.
+pw_add_backend_variable(pw_thread.thread_iteration_BACKEND)
+
 # Backend for the pw_thread module's pw::thread::yield.
 pw_add_backend_variable(pw_thread.yield_BACKEND)
 

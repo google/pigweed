@@ -80,3 +80,15 @@ pw_add_library(pw_thread_zephyr.thread STATIC
   SOURCES
     thread.cc
 )
+
+pw_add_library(pw_thread_zephyr.thread_iteration STATIC
+  PUBLIC_INCLUDES
+    public
+    thread_public_overrides
+  PUBLIC_DEPS
+    pw_thread.thread_info
+    pw_thread.thread_iteration.facade
+  SOURCES
+    pw_thread_zephyr_private/thread_iteration.h
+    thread_iteration.cc
+)
