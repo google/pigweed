@@ -21,9 +21,13 @@ endif()
 pw_add_library(pw_sys_io_zephyr STATIC
   SOURCES
     sys_io.cc
-  PRIVATE_DEPS
-    pw_sys_io.default_putget_bytes
+  PUBLIC_DEPS
     pw_sys_io.facade
+    pw_sys_io.default_putget_bytes
     zephyr_interface
 )
-pw_zephyrize_libraries_ifdef(CONFIG_PIGWEED_SYS_IO pw_sys_io_zephyr)
+
+pw_zephyrize_libraries_ifdef(CONFIG_PIGWEED_SYS_IO
+  pw_sys_io.default_putget_bytes
+  pw_sys_io_zephyr
+)
