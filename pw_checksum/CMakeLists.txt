@@ -28,6 +28,18 @@ pw_add_library(pw_checksum STATIC
     crc32.cc
 )
 
+pw_add_library(pw_checksum.crc32 STATIC
+  HEADERS
+    public/pw_checksum/crc32.h
+  PUBLIC_INCLUDES
+    public
+  PUBLIC_DEPS
+    pw_bytes
+    pw_span
+  SOURCES
+    crc32.cc
+)
+
 pw_add_test(pw_checksum.crc16_ccitt_test
   SOURCES
     crc16_ccitt_test.cc
