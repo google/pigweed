@@ -13,6 +13,7 @@
 # the License.
 """Tests for pw_symbolizer's llvm-symbolizer based symbolization."""
 
+import os
 import subprocess
 import tempfile
 import unittest
@@ -43,6 +44,10 @@ class TestSymbolizer(unittest.TestCase):
 
     def test_symbolization(self):
         """Tests that the symbolizer can symbolize addresses properly."""
+        self.assertTrue('PW_PIGWEED_CIPD_INSTALL_DIR' in os.environ)
+        sysroot = Path(os.environ['PW_PIGWEED_CIPD_INSTALL_DIR']).joinpath(
+            "clang_sysroot"
+        )
         with tempfile.TemporaryDirectory() as exe_dir:
             exe_file = Path(exe_dir) / 'print_expected_symbols'
 
@@ -53,6 +58,7 @@ class TestSymbolizer(unittest.TestCase):
                 _CPP_TEST_FILE_NAME,
                 '-gfull',
                 f'-ffile-prefix-map={_MODULE_PY_DIR}=',
+                '--sysroot=%s' % sysroot,
                 '-std=c++17',
                 '-fno-pic',
                 '-fno-pie',

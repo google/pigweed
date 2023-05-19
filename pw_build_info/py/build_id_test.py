@@ -13,6 +13,7 @@
 # the License.
 """Tests for pw_build_info's GNU build ID support."""
 
+import os
 import subprocess
 import tempfile
 import unittest
@@ -32,6 +33,10 @@ class TestGnuBuildId(unittest.TestCase):
 
     def test_build_id_correctness(self):
         """Tests to ensure GNU build IDs are read/written correctly."""
+        self.assertTrue('PW_PIGWEED_CIPD_INSTALL_DIR' in os.environ)
+        sysroot = Path(os.environ['PW_PIGWEED_CIPD_INSTALL_DIR']).joinpath(
+            "clang_sysroot"
+        )
         with tempfile.TemporaryDirectory() as exe_dir:
             exe_file = Path(exe_dir) / 'print_build_id.elf'
 
@@ -44,6 +49,7 @@ class TestGnuBuildId(unittest.TestCase):
                 '-I../pw_polyfill/public',
                 '-I../pw_preprocessor/public',
                 '-I../pw_span/public',
+                '--sysroot=%s' % sysroot,
                 '-std=c++17',
                 '-fuse-ld=lld',
                 '-Wl,-Tadd_build_id_to_default_linker_script.ld',
