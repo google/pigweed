@@ -37,3 +37,31 @@ rust_doc(
     name = "pw_tokenizer_core_doc",
     crate = ":pw_tokenizer_core",
 )
+
+rust_library(
+    name = "pw_tokenizer_printf",
+    srcs = [
+        "pw_tokenizer_printf/lib.rs",
+        "pw_tokenizer_printf/tests.rs",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//pw_status/rust:pw_status",
+        "@rust_crates//:nom",
+    ],
+)
+
+rust_test(
+    name = "pw_tokenizer_printf_test",
+    crate = ":pw_tokenizer_printf",
+)
+
+rust_doc_test(
+    name = "pw_tokenizer_printf_doc_test",
+    crate = ":pw_tokenizer_printf",
+)
+
+rust_doc(
+    name = "pw_tokenizer_printf_doc",
+    crate = ":pw_tokenizer_printf",
+)
