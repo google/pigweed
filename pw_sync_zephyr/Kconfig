@@ -29,3 +29,11 @@ config PIGWEED_SYNC_BINARY_SEMAPHORE
 
 config PIGWEED_SYNC_INTERRUPT_SPIN_LOCK
     bool "Link pw_sync.interrupt_spin_lock and set the Zephyr backend"
+
+config PIGWEED_SYNC_THREAD_NOTIFICATION
+    bool "Link pw_sync.thread_notification and set the Zephyr backend"
+    select PIGWEED_SYNC_BINARY_SEMAPHORE
+
+config PIGWEED_SYNC_TIMED_THREAD_NOTIFICATION
+    bool "Link pw_sync.timed_thread_notification and set the Zephyr backend"
+    select PIGWEED_SYNC_BINARY_SEMAPHORE

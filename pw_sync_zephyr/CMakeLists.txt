@@ -69,3 +69,38 @@ pw_zephyrize_libraries_ifdef(
     CONFIG_PIGWEED_SYNC_INTERRUPT_SPIN_LOCK
     pw_sync_zephyr.interrupt_spin_lock_backend
 )
+
+pw_add_library(pw_sync_zephyr.thread_notification_backend INTERFACE
+  HEADERS
+    public/pw_sync_zephyr/thread_notification_inline.h
+    public/pw_sync_zephyr/thread_notification_native.h
+    public_overrides/thread_notification/pw_sync_backend/thread_notification_inline.h
+    public_overrides/thread_notification/pw_sync_backend/thread_notification_native.h
+  PUBLIC_INCLUDES
+    public
+    public_overrides/thread_notification
+  PUBLIC_DEPS
+    pw_sync.binary_semaphore.facade
+    pw_sync.thread_notification.facade
+)
+pw_zephyrize_libraries_ifdef(
+    CONFIG_PIGWEED_SYNC_THREAD_NOTIFICATION
+    pw_sync_zephyr.thread_notification_backend
+)
+
+pw_add_library(pw_sync_zephyr.timed_thread_notification_backend INTERFACE
+  HEADERS
+    public/pw_sync_zephyr/timed_thread_notification_inline.h
+    public_overrides/timed_thread_notification/pw_sync_backend/timed_thread_notification_inline.h
+  PUBLIC_INCLUDES
+    public
+    public_overrides/timed_thread_notification
+  PUBLIC_DEPS
+    pw_sync.binary_semaphore.facade
+    pw_sync.timed_thread_notification.facade
+)
+
+pw_zephyrize_libraries_ifdef(
+    CONFIG_PIGWEED_SYNC_TIMED_THREAD_NOTIFICATION
+    pw_sync_zephyr.timed_thread_notification_backend
+)
