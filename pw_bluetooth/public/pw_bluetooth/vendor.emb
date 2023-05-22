@@ -24,6 +24,15 @@ import "hci.emb" as hci
 [$default byte_order: "LittleEndian"]
 # TODO(b/280839425) - Use different namespace
 [(cpp) namespace: "pw::bluetooth::emboss"]
+# ========================= HCI packet headers ==========================
+
+
+struct AndroidCommandHeader:
+  -- HCI Vendor Command packet header.
+  let hdr_size = hci.CommandHeader.$size_in_bytes
+  0     [+hdr_size]  hci.CommandHeader  header
+  $next [+1]         UInt               sub_opcode
+
 
 # ======================= Android HCI extensions ========================
 # Documentation: https://source.android.com/devices/bluetooth/hci_requirements
@@ -157,11 +166,11 @@ struct LdacCodecInformation:
 
 
 struct StartA2dpOffloadCommand:
-  let hdr_size = hci.CommandHeader.$size_in_bytes
-  0      [+hdr_size]  hci.CommandHeader       header
+  let vendor_size = AndroidCommandHeader.$size_in_bytes
+  0      [+vendor_size]  AndroidCommandHeader  vendor_command
 
   $next  [+4] bits:
-    0    [+8]         A2dpCodecType   codec_type
+    0    [+8]         A2dpCodecType           codec_type
       -- See enum class A2dpCodecType in this file for possible values
 
   $next  [+2]         UInt                    max_latency
@@ -207,8 +216,8 @@ struct StartA2dpOffloadCommand:
     $next  [+32]      UInt:8[32]              reserved
 
 struct StopA2dpOffloadCommand:
-  let hdr_size = hci.CommandHeader.$size_in_bytes
-  0      [+hdr_size]  hci.CommandHeader       header
+  let vendor_size = AndroidCommandHeader.$size_in_bytes
+  0      [+vendor_size]  AndroidCommandHeader  vendor_command
 
 struct LEMultiAdvtEnableCommand:
   -- LE multi-advertising enable command.
@@ -217,6 +226,13 @@ struct LEMultiAdvtEnableCommand:
   $next  [+1]         UInt                    opcode
   $next  [+1]         hci.GenericEnableParam  enable
   $next  [+1]         UInt                    advertising_handle
+
+struct LEMultiAdvtEnableCommand2:
+  -- LE multi-advertising enable command.
+  let vendor_size = AndroidCommandHeader.$size_in_bytes
+  0      [+vendor_size]  AndroidCommandHeader    vendor_command
+  $next  [+1]            hci.GenericEnableParam  enable
+  $next  [+1]            UInt                    advertising_handle
 
 struct LEGetVendorCapabilitiesCommand:
   let hdr_size = hci.CommandHeader.$size_in_bytes
