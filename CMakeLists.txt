@@ -12,9 +12,8 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-project(Pigweed)
-
 cmake_minimum_required(VERSION 3.16)
+project(Pigweed)
 
 # Do not rely on the PW_ROOT environment variable being set through bootstrap.
 # Regardless of whether it's set or not the following include will ensure it is.
