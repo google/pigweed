@@ -43,6 +43,9 @@ menuconfig PIGWEED_LOG_TOKENIZED
       automatically tokenize all the logging strings. This means that Pigweed
       will also tokenize all of Zephyr's logging statements.
 
+config PIGWEED_LOG_NONE
+    bool "Do not use pigweed logging"
+
 endchoice
 
 if PIGWEED_LOG_ZEPHYR || PIGWEED_LOG_TOKENIZED
