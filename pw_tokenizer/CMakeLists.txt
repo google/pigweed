@@ -54,8 +54,8 @@ pw_add_library(pw_tokenizer STATIC
     pw_varint
 )
 
-if(Zephyr_FOUND)
-  zephyr_linker_sources(SECTIONS "${CMAKE_CURRENT_SOURCE_DIR}/pw_tokenizer_linker_rules.ld")
+if(Zephyr_FOUND AND CONFIG_PIGWEED_TOKENIZER)
+  zephyr_linker_sources(SECTIONS "${CMAKE_CURRENT_SOURCE_DIR}/pw_tokenizer_zephyr.ld")
 elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "")
   target_link_options(pw_tokenizer
     PUBLIC

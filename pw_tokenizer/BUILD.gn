@@ -36,10 +36,7 @@ config("public_include_path") {
 }
 
 config("linker_script") {
-  inputs = [
-    "pw_tokenizer_linker_sections.ld",
-    "pw_tokenizer_linker_rules.ld",
-  ]
+  inputs = [ "pw_tokenizer_linker_sections.ld" ]
   lib_dirs = [ "." ]
 
   # Automatically add the tokenizer linker sections when cross-compiling or
