@@ -15,6 +15,7 @@
 include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 # Add library linkage for Zephyr
+pw_zephyrize_libraries_ifdef(CONFIG_PIGWEED_BASE64                  pw_base64)
 pw_zephyrize_libraries_ifdef(CONFIG_PIGWEED_BYTES                   pw_bytes)
 pw_zephyrize_libraries_ifdef(CONFIG_PIGWEED_CHECKSUM                pw_checksum)
 pw_zephyrize_libraries_ifdef(CONFIG_PIGWEED_CONTAINERS              pw_containers)
