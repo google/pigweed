@@ -34,6 +34,14 @@ if(CONFIG_ZEPHYR_PIGWEED_MODULE)
       pw_log_tokenized.handler pw_log_zephyr.tokenized_handler pw_log_tokenized/backend.cmake)
   pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_LOG_TOKENIZED
       pw_log pw_log_tokenized pw_log/backend.cmake)
+  pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_SYSTEM_HDLC_RPC_SERVER
+    pw_system.rpc_server pw_system.hdlc_rpc_server  pw_system/backend.cmake)
+  pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_SYSTEM_LOG_BACKEND
+    pw_log pw_system.log_backend pw_log/backend.cmake)
+  pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_SYSTEM_LOG_BACKEND
+    pw_log_tokenized.handler pw_system.log_backend pw_log_tokenized/backend.cmake)
+  pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_SYSTEM_TARGET_HOOKS
+    pw_system.target_hooks pw_system.zephyr_target_hooks  pw_system/backend.cmake)
   pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_THREAD_ITERATION
       pw_thread.thread_iteration pw_thread_zephyr.thread_iteration pw_thread/backend.cmake)
   pw_set_zephyr_backend_ifdef(CONFIG_PIGWEED_THREAD_SLEEP

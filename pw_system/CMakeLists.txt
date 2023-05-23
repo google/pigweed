@@ -150,7 +150,9 @@ pw_add_library(pw_system.target_io STATIC
     target_io.cc
 )
 
-pw_add_library(pw_system.target_hooks INTERFACE
+pw_add_facade(pw_system.target_hooks INTERFACE
+  BACKEND
+    pw_system.target_hooks_BACKEND
   HEADERS
     public/pw_system/target_hooks.h
   PUBLIC_INCLUDES
@@ -177,6 +179,15 @@ pw_add_library(pw_system.freertos_target_hooks STATIC
     pw_thread_freertos.thread
     # TODO(b/234876414): This should depend on FreeRTOS but our third parties
     # currently do not have CMake support.
+)
+
+pw_add_library(pw_system.zephyr_target_hooks STATIC
+  SOURCES
+    zephyr_target_hooks.cc
+  PRIVATE_DEPS
+    pw_system.target_hooks.facade
+    pw_thread.thread
+    pw_thread_zephyr.thread
 )
 
 pw_add_library(pw_system.system_example STATIC

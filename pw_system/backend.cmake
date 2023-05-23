@@ -17,3 +17,6 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 
 # The pw_system backend that provides the system RPC server.
 pw_add_backend_variable(pw_system.rpc_server_BACKEND)
+
+# The pw_system backend that provides the system target hooks.
+pw_add_backend_variable(pw_system.target_hooks_BACKEND)
