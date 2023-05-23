@@ -52,3 +52,8 @@ pw_zephyrize_libraries_ifdef(CONFIG_PIGWEED_VARINT                  pw_varint)
 
 # Set Pigweed configs from Kconfig
 pw_set_config_from_zephyr(CONFIG_PIGWEED_MULTISINK_LOCK_INTERRUPT_SAFE PW_MULTISINK_CONFIG_LOCK_INTERRUPT_SAFE)
+
+# Add test libraries
+if(CONFIG_TEST)
+target_link_libraries_ifdef(CONFIG_PIGWEED_BASE64 app PRIVATE pw_base64.base64_test.lib)
+endif(CONFIG_TEST)
