@@ -46,9 +46,25 @@ menuconfig PIGWEED_LOG_TOKENIZED
 config PIGWEED_LOG_NONE
     bool "Do not use pigweed logging"
 
+menuconfig PIGWEED_LOG_TOKENIZED_RPC
+    bool "Enables RPC tokenized logging"
+    select PIGWEED_SYNC_INTERRUPT_SPIN_LOCK
+    select PIGWEED_SYNC_THREAD_NOTIFICATION
+    select PIGWEED_SYNC_TIMED_THREAD_NOTIFICATION
+    select PIGWEED_SYSTEM_HDLC_RPC_SERVER
+    select PIGWEED_SYSTEM_LOG_BACKEND
+    select PIGWEED_SYSTEM_TARGET_HOOKS
+    select PIGWEED_THREAD
+    select PIGWEED_THREAD_ITERATION
+    select PIGWEED_TOKENIZER
+    select LOG_CUSTOM_HEADER
+    depends on CONSOLE_GETCHAR
+    help
+      Enable tokenized logging over RPC
+
 endchoice
 
-if PIGWEED_LOG_ZEPHYR || PIGWEED_LOG_TOKENIZED
+if PIGWEED_LOG_ZEPHYR || PIGWEED_LOG_TOKENIZED || PIGWEED_LOG_TOKENIZED_RPC
 
 module = PIGWEED
 module-str = "pigweed"

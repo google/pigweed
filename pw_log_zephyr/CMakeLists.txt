@@ -54,6 +54,26 @@ if(CONFIG_PIGWEED_LOG_TOKENIZED)
   zephyr_include_directories(zephyr_public_overrides)
 endif()
 
+pw_add_library(pw_log_zephyr.tokenized_rpc_handler INTERFACE
+  PUBLIC_DEPS
+    pw_checksum
+    pw_sys_io
+    pw_system.init
+    pw_metric.global
+    pw_system.log_backend
+  HEADERS
+    zephyr_public_overrides/zephyr_custom_log.h
+)
+
+pw_zephyrize_libraries_ifdef(CONFIG_PIGWEED_LOG_TOKENIZED_RPC
+    pw_log.facade
+    pw_log_tokenized
+    pw_log_zephyr.tokenized_rpc_handler
+)
+if(CONFIG_PIGWEED_LOG_TOKENIZED_RPC)
+  zephyr_include_directories(zephyr_public_overrides)
+endif()
+
 # Map tokenized configuration options
 pw_set_config_from_zephyr(CONFIG_PIGWEED_LOG_TOKENIZED_LEVEL_BITS PW_LOG_TOKENIZED_LEVEL_BITS)
 pw_set_config_from_zephyr(CONFIG_PIGWEED_LOG_TOKENIZED_LINE_BITS PW_LOG_TOKENIZED_LINE_BITS)
