@@ -157,11 +157,10 @@ void A2dpOffloadManager::RequestStopA2dpOffload(ChannelId local_id,
 
   a2dp_offload_status_ = A2dpOffloadStatus::kStopping;
 
-  std::unique_ptr<hci::CommandPacket> packet = hci::CommandPacket::New(
-      hci_android::kA2dpOffloadCommand, sizeof(hci_android::StopA2dpOffloadCommandParams));
-  packet->mutable_view()->mutable_payload_data().SetToZeros();
-  auto payload = packet->mutable_payload<hci_android::StopA2dpOffloadCommandParams>();
-  payload->opcode = hci_android::kStopA2dpOffloadCommandSubopcode;
+  auto packet = hci::EmbossCommandPacket::New<pw::bluetooth::emboss::StopA2dpOffloadCommandWriter>(
+      hci_android::kA2dpOffloadCommand);
+  auto packet_view = packet.view_t();
+  packet_view.vendor_command().sub_opcode().Write(hci_android::kStopA2dpOffloadCommandSubopcode);
 
   cmd_channel_->SendCommand(
       std::move(packet),
