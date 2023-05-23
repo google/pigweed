@@ -42,6 +42,10 @@ pw_test_group("tests") {
       ":egress_ingress_test",
       ":local_rpc_egress_test",
     ]
+
+    if (host_os != "win") {
+      tests += [ ":socket_rpc_transport_test" ]
+    }
   }
 }
 
@@ -201,6 +205,39 @@ pw_test("egress_ingress_test") {
     "$dir_pw_metric",
     "$dir_pw_status",
     "$dir_pw_sync:thread_notification",
+  ]
+}
+
+pw_source_set("socket_rpc_transport") {
+  public = [ "public/pw_rpc_transport/socket_rpc_transport.h" ]
+  sources = [ "socket_rpc_transport.cc" ]
+  public_deps = [
+    ":rpc_transport",
+    "$dir_pw_assert",
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_status",
+    "$dir_pw_stream:pw_stream",
+    "$dir_pw_stream:socket_stream",
+    "$dir_pw_sync:condition_variable",
+    "$dir_pw_sync:lock_annotations",
+    "$dir_pw_sync:mutex",
+    "$dir_pw_sync:thread_notification",
+    "$dir_pw_thread:sleep",
+    "$dir_pw_thread:thread_core",
+  ]
+  deps = [ "$dir_pw_log" ]
+}
+
+pw_test("socket_rpc_transport_test") {
+  sources = [ "socket_rpc_transport_test.cc" ]
+  deps = [
+    ":socket_rpc_transport",
+    "$dir_pw_bytes",
+    "$dir_pw_log",
+    "$dir_pw_status",
+    "$dir_pw_sync:thread_notification",
+    "$dir_pw_thread:sleep",
+    "$dir_pw_thread:thread",
   ]
 }
 
