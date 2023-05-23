@@ -2693,8 +2693,8 @@ void FakeController::OnAndroidLEMultiAdvtSetRandomAddr(
 }
 
 void FakeController::OnAndroidLEMultiAdvtEnable(
-    const hci_android::LEMultiAdvtEnableCommandParams& params) {
-  hci_spec::AdvertisingHandle handle = params.adv_handle;
+    const pw::bluetooth::emboss::LEMultiAdvtEnableCommand2View& params) {
+  hci_spec::AdvertisingHandle handle = params.advertising_handle().Read();
 
   if (!IsValidAdvertisingHandle(handle)) {
     bt_log(ERROR, "fake-hci", "advertising handle outside range: %d", handle);
@@ -2707,7 +2707,7 @@ void FakeController::OnAndroidLEMultiAdvtEnable(
   }
 
   bool enabled = false;
-  if (params.enable == pw::bluetooth::emboss::GenericEnableParam::ENABLE) {
+  if (params.enable().Read() == pw::bluetooth::emboss::GenericEnableParam::ENABLE) {
     enabled = true;
   }
 
@@ -2747,8 +2747,10 @@ void FakeController::OnAndroidLEMultiAdvt(
       break;
     }
     case hci_android::kLEMultiAdvtEnableSubopcode: {
-      auto params = payload.To<hci_android::LEMultiAdvtEnableCommandParams>();
-      OnAndroidLEMultiAdvtEnable(params);
+      auto view = pw::bluetooth::emboss::MakeLEMultiAdvtEnableCommand2View(
+          command_packet.data().data(),
+          pw::bluetooth::emboss::LEMultiAdvtEnableCommand2::MaxSizeInBytes());
+      OnAndroidLEMultiAdvtEnable(view);
       break;
     }
     default: {
@@ -2935,9 +2937,9 @@ void FakeController::HandleReceivedCommandPacket(
     case hci_spec::kLESetExtendedScanResponseData:
     case hci_spec::kLESetAdvertisingSetRandomAddress:
     case hci_spec::kLESetExtendedAdvertisingParameters: {
-      // This case is for packet types that have been migrated to the new Emboss architecture. Their
-      // old version can be still be assembled from the HciEmulator channel, so here we repackage
-      // and forward them as Emboss packets.
+      // This case is for packet types that have been migrated to the new Emboss architecture.
+      // Their old version can be still be assembled from the HciEmulator channel, so here we
+      // repackage and forward them as Emboss packets.
       auto emboss_packet =
           bt::hci::EmbossCommandPacket::New<pw::bluetooth::emboss::CommandHeaderView>(
               opcode, command_packet.size());
@@ -2968,7 +2970,7 @@ void FakeController::HandleReceivedCommandPacket(const hci::EmbossCommandPacket&
   auto ogf = command_packet.ogf();
   if (ogf == hci_spec::kVendorOGF) {
     bt_log(WARN, "fake-hci",
-           "vendor commands not yet migrated to Emboss, yet received Emboss vendor command with "
+           "vendor commands not yet migrated to Emboss; received Emboss vendor command with "
            "opcode: %#.4x",
            opcode);
     RespondWithCommandComplete(opcode, pw::bluetooth::emboss::StatusCode::UNKNOWN_COMMAND);

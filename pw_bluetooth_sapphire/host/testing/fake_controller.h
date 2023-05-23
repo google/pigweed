@@ -723,7 +723,8 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   void OnAndroidLEMultiAdvtSetRandomAddr(
       const hci_android::LEMultiAdvtSetRandomAddrCommandParams& params);
 
-  void OnAndroidLEMultiAdvtEnable(const hci_android::LEMultiAdvtEnableCommandParams& params);
+  void OnAndroidLEMultiAdvtEnable(
+      const pw::bluetooth::emboss::LEMultiAdvtEnableCommand2View& params);
 
   // Called when a command with an OGF of hci_spec::kVendorOGF is received.
   void OnVendorCommand(const PacketView<hci_spec::CommandHeader>& command_packet);

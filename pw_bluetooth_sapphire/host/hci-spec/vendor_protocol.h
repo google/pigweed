@@ -387,16 +387,6 @@ struct LEMultiAdvtSetRandomAddrReturnParams {
 // LE Multiple Advertising Set Advertising Enable
 constexpr uint8_t kLEMultiAdvtEnableSubopcode = 0x5;
 
-struct LEMultiAdvtEnableCommandParams {
-  // Must always be set to kLEMultiAdvtEnableSubopcode
-  uint8_t opcode;
-
-  GenericEnableParam enable;
-
-  // Handle used to identify an advertising set.
-  AdvertisingHandle adv_handle;
-} __attribute__((packed));
-
 struct LEMultiAdvtEnableReturnParams {
   StatusCode status;
 
