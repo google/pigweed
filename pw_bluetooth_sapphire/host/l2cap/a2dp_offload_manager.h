@@ -31,26 +31,21 @@ class A2dpOffloadManager {
       : cmd_channel_(std::move(cmd_channel)) {}
 
   // Request the start of A2DP source offloading. |callback| will be called with the result of the
-  // request. If offloading is already started or is starting, the request will fail and an error
-  // will be reported synchronously.
+  // request. If offloading is already started or still starting/stopping, the request will fail
+  // and |kInProgress| error will be reported synchronously.
   void StartA2dpOffload(const Configuration& config, ChannelId local_id, ChannelId remote_id,
                         hci_spec::ConnectionHandle link_handle, uint16_t max_tx_sdu_size,
                         hci::ResultCallback<> callback);
 
   // Request the stop of A2DP source offloading. |callback| will be called with the result of the
-  // request. If offloading is already stopped, report success.
+  // request. If offloading is already stopped, report success. The possible host errors are:
+  //    kFailed - No channels are offloaded or the |local_id| does not match |offloaded_channel_id_|
+  //    kInProgress - Channel offloading is still stopping
   void RequestStopA2dpOffload(ChannelId local_id, hci_spec::ConnectionHandle link_handle,
                               hci::ResultCallback<> callback);
 
   // Returns true if channel with |id| and |link_handle| is starting/has started A2DP offloading
-  bool IsChannelOffloaded(ChannelId id, hci_spec::ConnectionHandle link_handle) const {
-    if (!offloaded_channel_id_.has_value() || !offloaded_link_handle_.has_value()) {
-      return false;
-    }
-    return id == *offloaded_channel_id_ && link_handle == *offloaded_link_handle_ &&
-           (a2dp_offload_status_ == A2dpOffloadStatus::kStarted ||
-            a2dp_offload_status_ == A2dpOffloadStatus::kStarting);
-  }
+  bool IsChannelOffloaded(ChannelId id, hci_spec::ConnectionHandle link_handle) const;
 
   WeakPtr<A2dpOffloadManager> GetWeakPtr() { return weak_self_.GetWeakPtr(); }
 

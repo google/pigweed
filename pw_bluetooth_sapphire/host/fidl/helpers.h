@@ -5,6 +5,7 @@
 #ifndef SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_HELPERS_H_
 #define SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_FIDL_HELPERS_H_
 
+#include <fuchsia/bluetooth/bredr/cpp/fidl.h>
 #include <fuchsia/bluetooth/cpp/fidl.h>
 #include <fuchsia/bluetooth/gatt/cpp/fidl.h>
 #include <fuchsia/bluetooth/gatt2/cpp/fidl.h>
@@ -211,6 +212,25 @@ std::unique_ptr<bt::gatt::Descriptor> Gatt2DescriptorFromFidl(
 // Returns the bt-host representation of the FIDL characteristc, or nullptr if the conversion fails.
 std::unique_ptr<bt::gatt::Characteristic> Gatt2CharacteristicFromFidl(
     const fuchsia::bluetooth::gatt2::Characteristic& fidl_chrc);
+
+std::optional<bt::hci_spec::vendor::android::A2dpCodecType> FidlToCodecType(
+    const fuchsia::bluetooth::bredr::AudioOffloadFeatures& codec);
+
+bt::hci_spec::vendor::android::A2dpScmsTEnable FidlToScmsTEnable(bool scms_t_enable);
+
+bt::hci_spec::vendor::android::A2dpSamplingFrequency FidlToSamplingFrequency(
+    fuchsia::bluetooth::bredr::AudioSamplingFrequency sampling_frequency);
+
+bt::hci_spec::vendor::android::A2dpBitsPerSample FidlToBitsPerSample(
+    fuchsia::bluetooth::bredr::AudioBitsPerSample bits_per_sample);
+
+bt::hci_spec::vendor::android::A2dpChannelMode FidlToChannelMode(
+    fuchsia::bluetooth::bredr::AudioChannelMode channel_mode);
+
+bt::hci_spec::vendor::android::A2dpOffloadCodecInformation FidlToEncoderSettings(
+    const fuchsia::bluetooth::bredr::AudioEncoderSettings& encoder_settings,
+    fuchsia::bluetooth::bredr::AudioSamplingFrequency sampling_frequency,
+    fuchsia::bluetooth::bredr::AudioChannelMode channel_mode);
 
 std::optional<bt::sdp::DataElement> FidlToDataElement(
     const fuchsia::bluetooth::bredr::DataElement& fidl);

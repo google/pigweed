@@ -66,6 +66,9 @@ class FakeChannel : public Channel {
 
   void set_flush_timeout_succeeds(bool succeed) { flush_timeout_succeeds_ = succeed; }
 
+  // StartA2dpOffload() and StopA2dpOffload() fail with given |error_code|.
+  void set_a2dp_offload_fails(HostError error_code) { a2dp_offload_error_ = error_code; }
+
   // Channel overrides:
   const sm::SecurityProperties security() override { return security_; }
   bool Activate(RxCallback rx_callback, ClosedCallback closed_callback) override;
@@ -79,8 +82,8 @@ class FakeChannel : public Channel {
                                      hci::ResultCallback<> callback) override;
   void AttachInspect(inspect::Node& parent, std::string name) override {}
   void StartA2dpOffload(const A2dpOffloadManager::Configuration& config,
-                        hci::ResultCallback<> callback) override {}
-  void StopA2dpOffload(hci::ResultCallback<> callback) override {}
+                        hci::ResultCallback<> callback) override;
+  void StopA2dpOffload(hci::ResultCallback<> callback) override;
 
  private:
   hci_spec::ConnectionHandle handle_;
@@ -103,6 +106,8 @@ class FakeChannel : public Channel {
 
   bool acl_priority_fails_;
   bool flush_timeout_succeeds_ = true;
+
+  std::optional<HostError> a2dp_offload_error_;
 
   // The pending SDUs on this channel. Received PDUs are buffered if |rx_cb_| is
   // currently not set.

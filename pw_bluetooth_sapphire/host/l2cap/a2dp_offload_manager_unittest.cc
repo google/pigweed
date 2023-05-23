@@ -200,7 +200,7 @@ TEST_F(A2dpOffloadTest, StartA2dpOffloadAlreadyStarted) {
   start_result.reset();
   offload_mgr()->StartA2dpOffload(config, kLocalId, kRemoteId, kTestHandle1, kMaxMTU,
                                   [&start_result](auto res) {
-                                    EXPECT_EQ(ToResult(HostError::kFailed), res);
+                                    EXPECT_EQ(ToResult(HostError::kInProgress), res);
                                     start_result = res;
                                   });
   RunLoopUntilIdle();
@@ -271,7 +271,7 @@ TEST_F(A2dpOffloadTest, StartA2dpOffloadStillStopping) {
   start_result.reset();
   offload_mgr()->StartA2dpOffload(config, kLocalId, kRemoteId, kTestHandle1, kMaxMTU,
                                   [&start_result](auto res) {
-                                    EXPECT_EQ(ToResult(HostError::kNotReady), res);
+                                    EXPECT_EQ(ToResult(HostError::kInProgress), res);
                                     start_result = res;
                                   });
   RunLoopUntilIdle();
@@ -393,7 +393,7 @@ TEST_F(A2dpOffloadTest, A2dpOffloadOnlyOneChannel) {
   std::optional<hci::Result<>> start_result_1;
   offload_mgr()->StartA2dpOffload(config, kLocalId + 1, kRemoteId + 1, kTestHandle1, kMaxMTU,
                                   [&start_result_1](auto res) {
-                                    EXPECT_EQ(ToResult(HostError::kFailed), res);
+                                    EXPECT_EQ(ToResult(HostError::kInProgress), res);
                                     start_result_1 = res;
                                   });
   RunLoopUntilIdle();

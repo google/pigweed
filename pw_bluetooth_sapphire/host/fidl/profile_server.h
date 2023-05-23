@@ -9,6 +9,7 @@
 
 #include <fbl/ref_counted.h>
 
+#include "lib/fidl/cpp/binding.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/macros.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/server_base.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/bredr_connection_manager.h"
@@ -49,19 +50,52 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
 
   class AudioOffloadExt final : public ServerBase<fuchsia::bluetooth::bredr::AudioOffloadExt> {
    public:
-    AudioOffloadExt(fidl::InterfaceRequest<fuchsia::bluetooth::bredr::AudioOffloadExt> request,
+    AudioOffloadExt(ProfileServer& profile_server,
+                    fidl::InterfaceRequest<fuchsia::bluetooth::bredr::AudioOffloadExt> request,
                     bt::l2cap::Channel::WeakPtr channel, bt::gap::Adapter::WeakPtr adapter)
         : ServerBase(this, std::move(request)),
+          profile_server_(profile_server),
           channel_(std::move(channel)),
           adapter_(std::move(adapter)) {}
     void GetSupportedFeatures(GetSupportedFeaturesCallback callback) override;
-    void StartAudioOffload(fuchsia::bluetooth::bredr::AudioOffloadConfiguration configuration,
-                           fidl::InterfaceRequest<fuchsia::bluetooth::bredr::AudioOffloadController>
-                               controller) override {}
+    void StartAudioOffload(
+        fuchsia::bluetooth::bredr::AudioOffloadConfiguration audio_offload_configuration,
+        fidl::InterfaceRequest<fuchsia::bluetooth::bredr::AudioOffloadController> controller)
+        override;
 
    private:
+    std::unique_ptr<bt::l2cap::A2dpOffloadManager::Configuration> AudioOffloadConfigFromFidl(
+        fuchsia::bluetooth::bredr::AudioOffloadConfiguration& audio_offload_configuration);
+
+    ProfileServer& profile_server_;
     bt::l2cap::Channel::WeakPtr channel_;
     bt::gap::Adapter::WeakPtr adapter_;
+  };
+
+  class AudioOffloadController
+      : public ServerBase<fuchsia::bluetooth::bredr::AudioOffloadController> {
+   public:
+    explicit AudioOffloadController(
+        fidl::InterfaceRequest<fuchsia::bluetooth::bredr::AudioOffloadController> request,
+        bt::l2cap::Channel::WeakPtr channel)
+        : ServerBase(this, std::move(request)),
+          unique_id_(channel->unique_id()),
+          channel_(std::move(channel)) {}
+
+    bt::l2cap::Channel::UniqueId unique_id() const { return unique_id_; }
+
+    void Stop(StopCallback callback) override {}
+
+    void SendOnStartedEvent() { binding()->events().OnStarted(); }
+
+    void Close(zx_status_t epitaph) { binding()->Close(epitaph); }
+
+    WeakPtr<AudioOffloadController> GetWeakPtr() { return weak_self_.GetWeakPtr(); }
+
+   private:
+    bt::l2cap::Channel::UniqueId unique_id_;
+    bt::l2cap::Channel::WeakPtr channel_;
+    WeakSelf<AudioOffloadController> weak_self_{this};
   };
 
   class ScoConnectionServer final : public ServerBase<fuchsia::bluetooth::bredr::ScoConnection> {
@@ -199,13 +233,15 @@ class ProfileServer : public ServerBase<fuchsia::bluetooth::bredr::Profile> {
     bt::l2cap::Channel::UniqueId unique_id_;
     bt::l2cap::Channel::WeakPtr channel_;
   };
-  std::unordered_map<bt::l2cap::Channel::UniqueId, std::unique_ptr<AudioDirectionExt>>
-      audio_direction_ext_servers_;
-
   std::unordered_map<bt::l2cap::Channel::UniqueId, std::unique_ptr<L2capParametersExt>>
       l2cap_parameters_ext_servers_;
 
+  std::unordered_map<bt::l2cap::Channel::UniqueId, std::unique_ptr<AudioDirectionExt>>
+      audio_direction_ext_servers_;
+
   std::unordered_map<AudioOffloadExt*, std::unique_ptr<AudioOffloadExt>> audio_offload_ext_servers_;
+
+  std::unique_ptr<AudioOffloadController> audio_offload_controller_server_;
 
   bt::gap::Adapter::WeakPtr adapter_;
 

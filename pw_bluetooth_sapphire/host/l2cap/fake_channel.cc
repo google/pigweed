@@ -6,6 +6,7 @@
 
 #include <lib/async/cpp/task.h>
 
+#include "src/connectivity/bluetooth/core/bt-host/common/host_error.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 
 namespace bt::l2cap::testing {
@@ -139,4 +140,22 @@ void FakeChannel::SetBrEdrAutomaticFlushTimeout(zx::duration flush_timeout,
   info_.flush_timeout = flush_timeout;
   callback(fit::ok());
 }
+
+void FakeChannel::StartA2dpOffload(const A2dpOffloadManager::Configuration& config,
+                                   hci::ResultCallback<> callback) {
+  if (a2dp_offload_error_.has_value()) {
+    callback(ToResult(a2dp_offload_error_.value()));
+    return;
+  }
+  callback(fit::ok());
+}
+
+void FakeChannel::StopA2dpOffload(hci::ResultCallback<> callback) {
+  if (a2dp_offload_error_.has_value()) {
+    callback(ToResult(a2dp_offload_error_.value()));
+    return;
+  }
+  callback(fit::ok());
+}
+
 }  // namespace bt::l2cap::testing

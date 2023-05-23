@@ -9,15 +9,18 @@
 #include <algorithm>
 #include <charconv>
 #include <iterator>
+#include <optional>
 #include <unordered_set>
 
 #include "fuchsia/bluetooth/sys/cpp/fidl.h"
+#include "fuchsia/media/cpp/fidl.h"
 #include "src/connectivity/bluetooth/core/bt-host/att/att.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/advertising_data.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/discovery_filter.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/gap.h"
 #include "src/connectivity/bluetooth/core/bt-host/gatt/gatt.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/vendor_protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/sco/sco.h"
 #include "src/connectivity/bluetooth/core/bt-host/sm/types.h"
 
@@ -34,7 +37,154 @@ namespace fgatt2 = fuchsia::bluetooth::gatt2;
 namespace fsys = fuchsia::bluetooth::sys;
 namespace faudio = fuchsia::hardware::audio;
 
+const uint8_t BIT_SHIFT_4 = 4;
+const uint8_t BIT_SHIFT_8 = 8;
+const uint8_t BIT_SHIFT_16 = 16;
+
+const uint8_t TOP_TWO_BITS = 0x0C;
+const uint8_t BOTTOM_TWO_BITS = 0x03;
+
 namespace bthost::fidl_helpers {
+// TODO(fxbug.dev/125641): Add remaining codecs
+std::optional<bt::hci_spec::vendor::android::A2dpCodecType> FidlToCodecType(
+    const fbredr::AudioOffloadFeatures& codec) {
+  switch (codec.Which()) {
+    case fuchsia::bluetooth::bredr::AudioOffloadFeatures::kSbc:
+      return bt::hci_spec::vendor::android::A2dpCodecType::kSbc;
+    case fuchsia::bluetooth::bredr::AudioOffloadFeatures::kAac:
+      return bt::hci_spec::vendor::android::A2dpCodecType::kAac;
+    default:
+      bt_log(WARN, "fidl", "Codec type not yet handled: %u",
+             static_cast<unsigned int>(codec.Which()));
+      return std::nullopt;
+  }
+}
+
+bt::hci_spec::vendor::android::A2dpScmsTEnable FidlToScmsTEnable(bool scms_t_enable) {
+  bt::hci_spec::vendor::android::A2dpScmsTEnable scms_t_enable_struct;
+  if (scms_t_enable) {
+    scms_t_enable_struct.enabled = pw::bluetooth::emboss::GenericEnableParam::ENABLE;
+  } else {
+    scms_t_enable_struct.enabled = pw::bluetooth::emboss::GenericEnableParam::DISABLE;
+  }
+  scms_t_enable_struct.header = 0x0;
+  return scms_t_enable_struct;
+}
+
+bt::hci_spec::vendor::android::A2dpSamplingFrequency FidlToSamplingFrequency(
+    fbredr::AudioSamplingFrequency sampling_frequency) {
+  switch (sampling_frequency) {
+    case fbredr::AudioSamplingFrequency::HZ_44100:
+      return bt::hci_spec::vendor::android::A2dpSamplingFrequency::k44100Hz;
+    case fbredr::AudioSamplingFrequency::HZ_48000:
+      return bt::hci_spec::vendor::android::A2dpSamplingFrequency::k48000Hz;
+    case fbredr::AudioSamplingFrequency::HZ_88200:
+      return bt::hci_spec::vendor::android::A2dpSamplingFrequency::k88200Hz;
+    case fbredr::AudioSamplingFrequency::HZ_96000:
+      return bt::hci_spec::vendor::android::A2dpSamplingFrequency::k96000Hz;
+  }
+}
+
+bt::hci_spec::vendor::android::A2dpBitsPerSample FidlToBitsPerSample(
+    fbredr::AudioBitsPerSample bits_per_sample) {
+  switch (bits_per_sample) {
+    case fbredr::AudioBitsPerSample::BPS_16:
+      return bt::hci_spec::vendor::android::A2dpBitsPerSample::k16BitsPerSample;
+    case fbredr::AudioBitsPerSample::BPS_24:
+      return bt::hci_spec::vendor::android::A2dpBitsPerSample::k24BitsPerSample;
+    case fbredr::AudioBitsPerSample::BPS_32:
+      return bt::hci_spec::vendor::android::A2dpBitsPerSample::k32BitsPerSample;
+  }
+}
+
+bt::hci_spec::vendor::android::A2dpChannelMode FidlToChannelMode(
+    fbredr::AudioChannelMode channel_mode) {
+  switch (channel_mode) {
+    case fbredr::AudioChannelMode::MONO:
+      return bt::hci_spec::vendor::android::A2dpChannelMode::kMono;
+    case fbredr::AudioChannelMode::STEREO:
+      return bt::hci_spec::vendor::android::A2dpChannelMode::kStereo;
+  }
+}
+
+bt::hci_spec::vendor::android::A2dpOffloadCodecInformation FidlToEncoderSettings(
+    const fbredr::AudioEncoderSettings& encoder_settings,
+    fbredr::AudioSamplingFrequency sampling_frequency, fbredr::AudioChannelMode channel_mode) {
+  bt::hci_spec::vendor::android::A2dpOffloadCodecInformation codec_information;
+  if (encoder_settings.is_sbc()) {
+    bt::hci_spec::vendor::android::SbcCodecInformation sbc;
+
+    // Bitmask: block length | subbands | allocation method
+    // Block length: bits 7-4
+    // Subbands: bits 3-2
+    // Allocation method: bits 1-0
+    if (encoder_settings.sbc().allocation == fuchsia::media::SbcAllocation::ALLOC_LOUDNESS) {
+      sbc.blocklen_subbands_alloc_method =
+          static_cast<uint8_t>(fuchsia::media::SbcAllocation::ALLOC_LOUDNESS) & BOTTOM_TWO_BITS;
+    }
+    if (encoder_settings.sbc().allocation == fuchsia::media::SbcAllocation::ALLOC_SNR) {
+      sbc.blocklen_subbands_alloc_method =
+          static_cast<uint8_t>(fuchsia::media::SbcAllocation::ALLOC_SNR) & BOTTOM_TWO_BITS;
+    }
+
+    if (encoder_settings.sbc().sub_bands == fuchsia::media::SbcSubBands::SUB_BANDS_4) {
+      sbc.blocklen_subbands_alloc_method |=
+          static_cast<uint8_t>(fuchsia::media::SbcSubBands::SUB_BANDS_4) & TOP_TWO_BITS;
+    }
+    if (encoder_settings.sbc().sub_bands == fuchsia::media::SbcSubBands::SUB_BANDS_8) {
+      sbc.blocklen_subbands_alloc_method |=
+          static_cast<uint8_t>(fuchsia::media::SbcSubBands::SUB_BANDS_8) & TOP_TWO_BITS;
+    }
+
+    if (encoder_settings.sbc().block_count == fuchsia::media::SbcBlockCount::BLOCK_COUNT_4) {
+      sbc.blocklen_subbands_alloc_method |=
+          static_cast<uint8_t>(fuchsia::media::SbcBlockCount::BLOCK_COUNT_4) << BIT_SHIFT_4;
+    }
+    if (encoder_settings.sbc().block_count == fuchsia::media::SbcBlockCount::BLOCK_COUNT_8) {
+      sbc.blocklen_subbands_alloc_method |=
+          static_cast<uint8_t>(fuchsia::media::SbcBlockCount::BLOCK_COUNT_8) << BIT_SHIFT_4;
+    }
+    if (encoder_settings.sbc().block_count == fuchsia::media::SbcBlockCount::BLOCK_COUNT_12) {
+      sbc.blocklen_subbands_alloc_method |=
+          static_cast<uint8_t>(fuchsia::media::SbcBlockCount::BLOCK_COUNT_12) << BIT_SHIFT_4;
+    }
+    if (encoder_settings.sbc().block_count == fuchsia::media::SbcBlockCount::BLOCK_COUNT_16) {
+      sbc.blocklen_subbands_alloc_method |=
+          static_cast<uint8_t>(fuchsia::media::SbcBlockCount::BLOCK_COUNT_16) << BIT_SHIFT_4;
+    }
+
+    sbc.min_bitpool_value = encoder_settings.sbc().bit_pool;
+    sbc.max_bitpool_value = encoder_settings.sbc().bit_pool;
+
+    // Bitmask: sampling frequency | channel mode
+    // Sampling frequency: bits 7-4
+    // Channel mode: bits 3-0
+    sbc.sampling_freq_channel_mode = static_cast<uint8_t>(channel_mode);
+    sbc.sampling_freq_channel_mode |= static_cast<uint8_t>(sampling_frequency) << BIT_SHIFT_4;
+
+    memset(sbc.reserved, 0, sizeof(sbc.reserved));
+
+    codec_information.sbc = sbc;
+  }
+  if (encoder_settings.is_aac()) {
+    bt::hci_spec::vendor::android::AacCodecInformation aac;
+
+    aac.object_type = static_cast<uint8_t>(encoder_settings.aac().aot);
+
+    if (encoder_settings.aac().bit_rate.is_variable()) {
+      aac.variable_bit_rate = bt::hci_spec::vendor::android::A2dpAacEnableVariableBitRate::kEnable;
+    }
+    if (encoder_settings.aac().bit_rate.is_constant()) {
+      aac.variable_bit_rate = bt::hci_spec::vendor::android::A2dpAacEnableVariableBitRate::kDisable;
+    }
+
+    memset(aac.reserved, 0, sizeof(aac.reserved));
+
+    codec_information.aac = aac;
+  }
+  return codec_information;
+}
+
 std::optional<bt::sdp::DataElement> FidlToDataElement(const fbredr::DataElement& fidl) {
   bt::sdp::DataElement out;
   switch (fidl.Which()) {
@@ -179,7 +329,8 @@ fsys::PeerKey PeerKeyToFidl(const bt::sm::Key& key) {
 
 fbt::DeviceClass DeviceClassToFidl(bt::DeviceClass input) {
   auto bytes = input.bytes();
-  fbt::DeviceClass output{static_cast<uint32_t>(bytes[0] | (bytes[1] << 8) | (bytes[2] << 16))};
+  fbt::DeviceClass output{
+      static_cast<uint32_t>(bytes[0] | (bytes[1] << BIT_SHIFT_8) | (bytes[2] << BIT_SHIFT_16))};
   return output;
 }
 

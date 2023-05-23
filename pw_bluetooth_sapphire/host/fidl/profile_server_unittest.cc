@@ -5,6 +5,7 @@
 #include "profile_server.h"
 
 #include <fuchsia/bluetooth/bredr/cpp/fidl_test_base.h>
+#include <zircon/errors.h>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -12,6 +13,7 @@
 #include "fuchsia/bluetooth/bredr/cpp/fidl.h"
 #include "lib/fidl/cpp/vector.h"
 #include "lib/zx/socket.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/host_error.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/adapter_test_fixture.h"
 #include "src/connectivity/bluetooth/core/bt-host/fidl/helpers.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/fake_adapter_test_fixture.h"
@@ -274,7 +276,7 @@ class FakeSearchResults : public fidlbredr::testing::SearchResults_TestBase {
 };
 
 TEST_F(ProfileServerTest, ErrorOnInvalidDefinition) {
-  fidl::InterfaceHandle<fuchsia::bluetooth::bredr::ConnectionReceiver> receiver_handle;
+  fidl::InterfaceHandle<fidlbredr::ConnectionReceiver> receiver_handle;
   auto request = receiver_handle.NewRequest();
 
   std::vector<fidlbredr::ServiceDefinition> services;
@@ -300,7 +302,7 @@ TEST_F(ProfileServerTest, ErrorOnInvalidDefinition) {
 }
 
 TEST_F(ProfileServerTest, ErrorOnMultipleAdvertiseRequests) {
-  fidl::InterfaceHandle<fuchsia::bluetooth::bredr::ConnectionReceiver> receiver_handle1;
+  fidl::InterfaceHandle<fidlbredr::ConnectionReceiver> receiver_handle1;
   auto request1 = receiver_handle1.NewRequest();
 
   std::vector<fidlbredr::ServiceDefinition> services1;
@@ -317,7 +319,7 @@ TEST_F(ProfileServerTest, ErrorOnMultipleAdvertiseRequests) {
 
   ASSERT_EQ(cb1_count, 0u);
 
-  fidl::InterfaceHandle<fuchsia::bluetooth::bredr::ConnectionReceiver> receiver_handle2;
+  fidl::InterfaceHandle<fidlbredr::ConnectionReceiver> receiver_handle2;
   auto request2 = receiver_handle2.NewRequest();
 
   std::vector<fidlbredr::ServiceDefinition> services2;
@@ -392,7 +394,7 @@ TEST_F(ProfileServerTest, ErrorOnInvalidConnectParametersRfcomm) {
 }
 
 TEST_F(ProfileServerTest, UnregisterAdvertisementTriggersCallback) {
-  fidl::InterfaceHandle<fuchsia::bluetooth::bredr::ConnectionReceiver> receiver_handle;
+  fidl::InterfaceHandle<fidlbredr::ConnectionReceiver> receiver_handle;
   auto request = receiver_handle.NewRequest();
 
   std::vector<fidlbredr::ServiceDefinition> services;
@@ -1419,9 +1421,9 @@ TEST_P(AndroidSupportedFeaturesTest, AudioOffloadExtGetSupportedFeatures) {
   ASSERT_TRUE(response_channel->has_ext_audio_offload());
 
   std::optional<fidlbredr::AudioOffloadExtGetSupportedFeaturesResponse> result_features;
-  fidl::InterfacePtr<fuchsia::bluetooth::bredr::AudioOffloadExt> audio_offload_client =
+  fidl::InterfacePtr<fidlbredr::AudioOffloadExt> audio_offload_ext_client =
       response_channel->mutable_ext_audio_offload()->Bind();
-  audio_offload_client->GetSupportedFeatures(
+  audio_offload_ext_client->GetSupportedFeatures(
       [&result_features](fidlbredr::AudioOffloadExtGetSupportedFeaturesResponse features) {
         result_features = std::move(features);
       });
@@ -1446,6 +1448,379 @@ TEST_P(AndroidSupportedFeaturesTest, AudioOffloadExtGetSupportedFeatures) {
     }
   }
   EXPECT_EQ(capabilities, a2dp_offload_capabilities);
+}
+
+TEST_P(AndroidSupportedFeaturesTest, AudioOffloadExtStartAudioOffloadSuccess) {
+  const bool android_vendor_ext_support = GetParam().first;
+  const uint32_t a2dp_offload_capabilities = GetParam().second;
+
+  if (android_vendor_ext_support) {
+    adapter()->mutable_state().controller_features |= FeaturesBits::kAndroidVendorExtensions;
+
+    bt::StaticPacket<pw::bluetooth::emboss::LEGetVendorCapabilitiesCommandCompleteEventWriter>
+        params;
+    params.SetToZeros();
+    params.view().status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+    params.view().a2dp_source_offload_capability_mask().BackingStorage().UncheckedWriteUInt(
+        a2dp_offload_capabilities);
+    adapter()->mutable_state().android_vendor_capabilities.Initialize(params.view());
+  }
+
+  const bt::PeerId peer_id(1);
+  const fuchsia::bluetooth::PeerId fidl_peer_id{peer_id.value()};
+
+  fidlbredr::L2capParameters l2cap_params;
+  l2cap_params.set_psm(fidlbredr::PSM_AVDTP);
+
+  fidlbredr::ChannelParameters chan_params;
+  l2cap_params.set_parameters(std::move(chan_params));
+
+  fidlbredr::ConnectParameters conn_params;
+  conn_params.set_l2cap(std::move(l2cap_params));
+
+  std::optional<fidlbredr::Channel> response_channel;
+  client()->Connect(fidl_peer_id, std::move(conn_params),
+                    [&response_channel](fidlbredr::Profile_Connect_Result result) {
+                      ASSERT_TRUE(result.is_response());
+                      response_channel = std::move(result.response().channel);
+                    });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(response_channel.has_value());
+  if (!android_vendor_ext_support || !a2dp_offload_capabilities) {
+    EXPECT_FALSE(response_channel->has_ext_audio_offload());
+    return;
+  }
+  ASSERT_TRUE(response_channel->has_ext_audio_offload());
+
+  std::unique_ptr<fidlbredr::AudioOffloadFeatures> codec = fidlbredr::AudioOffloadFeatures::New();
+  std::unique_ptr<fidlbredr::AudioSbcSupport> codec_value = fidlbredr::AudioSbcSupport::New();
+  codec->set_sbc(std::move(*codec_value));
+
+  std::unique_ptr<fidlbredr::AudioEncoderSettings> encoder_settings =
+      std::make_unique<fidlbredr::AudioEncoderSettings>();
+  std::unique_ptr<fuchsia::media::SbcEncoderSettings> encoder_settings_value =
+      fuchsia::media::SbcEncoderSettings::New();
+  encoder_settings->set_sbc(*encoder_settings_value);
+
+  std::unique_ptr<fidlbredr::AudioOffloadConfiguration> config =
+      std::make_unique<fidlbredr::AudioOffloadConfiguration>();
+  config->set_codec(std::move(*codec));
+  config->set_max_latency(10);
+  config->set_scms_t_enable(true);
+  config->set_sampling_frequency(fidlbredr::AudioSamplingFrequency::HZ_44100);
+  config->set_bits_per_sample(fidlbredr::AudioBitsPerSample::BPS_16);
+  config->set_channel_mode(fidlbredr::AudioChannelMode::MONO);
+  config->set_encoded_bit_rate(10);
+  config->set_encoder_settings(std::move(*encoder_settings));
+
+  fidl::InterfacePtr<fidlbredr::AudioOffloadExt> audio_offload_ext_client =
+      response_channel->mutable_ext_audio_offload()->Bind();
+  fidl::InterfaceHandle<fidlbredr::AudioOffloadController> controller_handle;
+  fidl::InterfaceRequest<fidlbredr::AudioOffloadController> controller_request =
+      controller_handle.NewRequest();
+  audio_offload_ext_client->StartAudioOffload(std::move(*config), std::move(controller_request));
+
+  fidl::InterfacePtr<fidlbredr::AudioOffloadController> audio_offload_controller_client;
+  audio_offload_controller_client.Bind(std::move(controller_handle));
+
+  std::optional<zx_status_t> audio_offload_controller_epitaph;
+  audio_offload_controller_client.set_error_handler(
+      [&](zx_status_t status) { audio_offload_controller_epitaph = status; });
+
+  size_t on_started_count = 0;
+  audio_offload_controller_client.events().OnStarted = [&]() { on_started_count++; };
+
+  RunLoopUntilIdle();
+
+  // Verify that OnStarted event was sent successfully
+  EXPECT_EQ(on_started_count, 1u);
+
+  // Verify that |audio_offload_controller_client| was not closed with an epitaph
+  ASSERT_FALSE(audio_offload_controller_epitaph.has_value());
+}
+
+TEST_P(AndroidSupportedFeaturesTest, AudioOffloadExtStartAudioOffloadFail) {
+  FakeChannel::WeakPtr fake_channel;
+  adapter()->fake_bredr()->set_l2cap_channel_callback(
+      [&](auto chan) { fake_channel = std::move(chan); });
+
+  const bool android_vendor_ext_support = GetParam().first;
+  const uint32_t a2dp_offload_capabilities = GetParam().second;
+
+  if (android_vendor_ext_support) {
+    adapter()->mutable_state().controller_features |= FeaturesBits::kAndroidVendorExtensions;
+
+    bt::StaticPacket<pw::bluetooth::emboss::LEGetVendorCapabilitiesCommandCompleteEventWriter>
+        params;
+    params.SetToZeros();
+    params.view().status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+    params.view().a2dp_source_offload_capability_mask().BackingStorage().UncheckedWriteUInt(
+        a2dp_offload_capabilities);
+    adapter()->mutable_state().android_vendor_capabilities.Initialize(params.view());
+  }
+
+  const bt::PeerId peer_id(1);
+  const fuchsia::bluetooth::PeerId fidl_peer_id{peer_id.value()};
+
+  fidlbredr::L2capParameters l2cap_params;
+  l2cap_params.set_psm(fidlbredr::PSM_AVDTP);
+
+  fidlbredr::ChannelParameters chan_params;
+  l2cap_params.set_parameters(std::move(chan_params));
+
+  fidlbredr::ConnectParameters conn_params;
+  conn_params.set_l2cap(std::move(l2cap_params));
+
+  std::optional<fidlbredr::Channel> response_channel;
+  client()->Connect(fidl_peer_id, std::move(conn_params),
+                    [&response_channel](fidlbredr::Profile_Connect_Result result) {
+                      ASSERT_TRUE(result.is_response());
+                      response_channel = std::move(result.response().channel);
+                    });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(response_channel.has_value());
+  if (!android_vendor_ext_support || !a2dp_offload_capabilities) {
+    EXPECT_FALSE(response_channel->has_ext_audio_offload());
+    return;
+  }
+  ASSERT_TRUE(response_channel->has_ext_audio_offload());
+
+  // Make A2DP offloading fail, resulting in |ZX_ERR_INTERNAL| epitaph
+  ASSERT_TRUE(fake_channel.is_alive());
+  fake_channel->set_a2dp_offload_fails(bt::HostError::kFailed);
+
+  std::unique_ptr<fidlbredr::AudioOffloadFeatures> codec = fidlbredr::AudioOffloadFeatures::New();
+  std::unique_ptr<fidlbredr::AudioSbcSupport> codec_value = fidlbredr::AudioSbcSupport::New();
+  codec->set_sbc(std::move(*codec_value));
+
+  std::unique_ptr<fidlbredr::AudioEncoderSettings> encoder_settings =
+      std::make_unique<fidlbredr::AudioEncoderSettings>();
+  std::unique_ptr<fuchsia::media::SbcEncoderSettings> encoder_settings_value =
+      fuchsia::media::SbcEncoderSettings::New();
+  encoder_settings->set_sbc(*encoder_settings_value);
+
+  std::unique_ptr<fidlbredr::AudioOffloadConfiguration> config =
+      std::make_unique<fidlbredr::AudioOffloadConfiguration>();
+  config->set_codec(std::move(*codec));
+  config->set_max_latency(10);
+  config->set_scms_t_enable(true);
+  config->set_sampling_frequency(fidlbredr::AudioSamplingFrequency::HZ_44100);
+  config->set_bits_per_sample(fidlbredr::AudioBitsPerSample::BPS_16);
+  config->set_channel_mode(fidlbredr::AudioChannelMode::MONO);
+  config->set_encoded_bit_rate(10);
+  config->set_encoder_settings(std::move(*encoder_settings));
+
+  fidl::InterfacePtr<fidlbredr::AudioOffloadExt> audio_offload_ext_client =
+      response_channel->mutable_ext_audio_offload()->Bind();
+  fidl::InterfaceHandle<fidlbredr::AudioOffloadController> controller_handle;
+  fidl::InterfaceRequest<fidlbredr::AudioOffloadController> controller_request =
+      controller_handle.NewRequest();
+  audio_offload_ext_client->StartAudioOffload(std::move(*config), std::move(controller_request));
+
+  fidl::InterfacePtr<fidlbredr::AudioOffloadController> audio_offload_controller_client;
+  audio_offload_controller_client.Bind(std::move(controller_handle));
+
+  std::optional<zx_status_t> audio_offload_controller_epitaph;
+  audio_offload_controller_client.set_error_handler(
+      [&](zx_status_t status) { audio_offload_controller_epitaph = status; });
+
+  size_t cb_count = 0;
+  audio_offload_controller_client.events().OnStarted = [&]() { cb_count++; };
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(cb_count, 0u);
+
+  // Verify that |audio_offload_controller_client| was closed with |ZX_ERR_INTERNAL| epitaph
+  ASSERT_TRUE(audio_offload_controller_epitaph.has_value());
+  EXPECT_EQ(audio_offload_controller_epitaph.value(), ZX_ERR_INTERNAL);
+}
+
+TEST_P(AndroidSupportedFeaturesTest, AudioOffloadExtStartAudioOffloadInProgress) {
+  FakeChannel::WeakPtr fake_channel;
+  adapter()->fake_bredr()->set_l2cap_channel_callback(
+      [&](auto chan) { fake_channel = std::move(chan); });
+
+  const bool android_vendor_ext_support = GetParam().first;
+  const uint32_t a2dp_offload_capabilities = GetParam().second;
+
+  if (android_vendor_ext_support) {
+    adapter()->mutable_state().controller_features |= FeaturesBits::kAndroidVendorExtensions;
+
+    bt::StaticPacket<pw::bluetooth::emboss::LEGetVendorCapabilitiesCommandCompleteEventWriter>
+        params;
+    params.SetToZeros();
+    params.view().status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+    params.view().a2dp_source_offload_capability_mask().BackingStorage().UncheckedWriteUInt(
+        a2dp_offload_capabilities);
+    adapter()->mutable_state().android_vendor_capabilities.Initialize(params.view());
+  }
+
+  const bt::PeerId peer_id(1);
+  const fuchsia::bluetooth::PeerId fidl_peer_id{peer_id.value()};
+
+  fidlbredr::L2capParameters l2cap_params;
+  l2cap_params.set_psm(fidlbredr::PSM_AVDTP);
+
+  fidlbredr::ChannelParameters chan_params;
+  l2cap_params.set_parameters(std::move(chan_params));
+
+  fidlbredr::ConnectParameters conn_params;
+  conn_params.set_l2cap(std::move(l2cap_params));
+
+  std::optional<fidlbredr::Channel> response_channel;
+  client()->Connect(fidl_peer_id, std::move(conn_params),
+                    [&response_channel](fidlbredr::Profile_Connect_Result result) {
+                      ASSERT_TRUE(result.is_response());
+                      response_channel = std::move(result.response().channel);
+                    });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(response_channel.has_value());
+  if (!android_vendor_ext_support || !a2dp_offload_capabilities) {
+    EXPECT_FALSE(response_channel->has_ext_audio_offload());
+    return;
+  }
+  ASSERT_TRUE(response_channel->has_ext_audio_offload());
+
+  // Make A2DP offloading fail, resulting in |ZX_ERR_ALREADY_BOUND| epitaph
+  ASSERT_TRUE(fake_channel.is_alive());
+  fake_channel->set_a2dp_offload_fails(bt::HostError::kInProgress);
+
+  std::unique_ptr<fidlbredr::AudioOffloadFeatures> codec = fidlbredr::AudioOffloadFeatures::New();
+  std::unique_ptr<fidlbredr::AudioSbcSupport> codec_value = fidlbredr::AudioSbcSupport::New();
+  codec->set_sbc(std::move(*codec_value));
+
+  std::unique_ptr<fidlbredr::AudioEncoderSettings> encoder_settings =
+      std::make_unique<fidlbredr::AudioEncoderSettings>();
+  std::unique_ptr<fuchsia::media::SbcEncoderSettings> encoder_settings_value =
+      fuchsia::media::SbcEncoderSettings::New();
+  encoder_settings->set_sbc(*encoder_settings_value);
+
+  std::unique_ptr<fidlbredr::AudioOffloadConfiguration> config =
+      std::make_unique<fidlbredr::AudioOffloadConfiguration>();
+  config->set_codec(std::move(*codec));
+  config->set_max_latency(10);
+  config->set_scms_t_enable(true);
+  config->set_sampling_frequency(fidlbredr::AudioSamplingFrequency::HZ_44100);
+  config->set_bits_per_sample(fidlbredr::AudioBitsPerSample::BPS_16);
+  config->set_channel_mode(fidlbredr::AudioChannelMode::MONO);
+  config->set_encoded_bit_rate(10);
+  config->set_encoder_settings(std::move(*encoder_settings));
+
+  fidl::InterfacePtr<fidlbredr::AudioOffloadExt> audio_offload_ext_client =
+      response_channel->mutable_ext_audio_offload()->Bind();
+  fidl::InterfaceHandle<fidlbredr::AudioOffloadController> controller_handle;
+  fidl::InterfaceRequest<fidlbredr::AudioOffloadController> controller_request =
+      controller_handle.NewRequest();
+  audio_offload_ext_client->StartAudioOffload(std::move(*config), std::move(controller_request));
+
+  fidl::InterfacePtr<fidlbredr::AudioOffloadController> audio_offload_controller_client;
+  audio_offload_controller_client.Bind(std::move(controller_handle));
+
+  std::optional<zx_status_t> audio_offload_controller_epitaph;
+  audio_offload_controller_client.set_error_handler(
+      [&](zx_status_t status) { audio_offload_controller_epitaph = status; });
+
+  size_t cb_count = 0;
+  audio_offload_controller_client.events().OnStarted = [&]() { cb_count++; };
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(cb_count, 0u);
+
+  // Verify that |audio_offload_controller_client| was closed with |ZX_ERR_ALREADY_BOUND| epitaph
+  ASSERT_TRUE(audio_offload_controller_epitaph.has_value());
+  EXPECT_EQ(audio_offload_controller_epitaph.value(), ZX_ERR_ALREADY_BOUND);
+}
+
+TEST_P(AndroidSupportedFeaturesTest, AudioOffloadExtStartAudioOffloadControllerError) {
+  FakeChannel::WeakPtr fake_channel;
+  adapter()->fake_bredr()->set_l2cap_channel_callback(
+      [&](auto chan) { fake_channel = std::move(chan); });
+
+  const bool android_vendor_ext_support = GetParam().first;
+  const uint32_t a2dp_offload_capabilities = GetParam().second;
+
+  if (android_vendor_ext_support) {
+    adapter()->mutable_state().controller_features |= FeaturesBits::kAndroidVendorExtensions;
+
+    bt::StaticPacket<pw::bluetooth::emboss::LEGetVendorCapabilitiesCommandCompleteEventWriter>
+        params;
+    params.SetToZeros();
+    params.view().status().Write(pw::bluetooth::emboss::StatusCode::SUCCESS);
+    params.view().a2dp_source_offload_capability_mask().BackingStorage().UncheckedWriteUInt(
+        a2dp_offload_capabilities);
+    adapter()->mutable_state().android_vendor_capabilities.Initialize(params.view());
+  }
+
+  const bt::PeerId peer_id(1);
+  const fuchsia::bluetooth::PeerId fidl_peer_id{peer_id.value()};
+
+  fidlbredr::L2capParameters l2cap_params;
+  l2cap_params.set_psm(fidlbredr::PSM_AVDTP);
+
+  fidlbredr::ChannelParameters chan_params;
+  l2cap_params.set_parameters(std::move(chan_params));
+
+  fidlbredr::ConnectParameters conn_params;
+  conn_params.set_l2cap(std::move(l2cap_params));
+
+  std::optional<fidlbredr::Channel> response_channel;
+  client()->Connect(fidl_peer_id, std::move(conn_params),
+                    [&response_channel](fidlbredr::Profile_Connect_Result result) {
+                      ASSERT_TRUE(result.is_response());
+                      response_channel = std::move(result.response().channel);
+                    });
+  RunLoopUntilIdle();
+  ASSERT_TRUE(response_channel.has_value());
+  if (!android_vendor_ext_support || !a2dp_offload_capabilities) {
+    EXPECT_FALSE(response_channel->has_ext_audio_offload());
+    return;
+  }
+  ASSERT_TRUE(response_channel->has_ext_audio_offload());
+
+  std::unique_ptr<fidlbredr::AudioOffloadFeatures> codec = fidlbredr::AudioOffloadFeatures::New();
+  std::unique_ptr<fidlbredr::AudioSbcSupport> codec_value = fidlbredr::AudioSbcSupport::New();
+  codec->set_sbc(std::move(*codec_value));
+
+  std::unique_ptr<fidlbredr::AudioEncoderSettings> encoder_settings =
+      std::make_unique<fidlbredr::AudioEncoderSettings>();
+  std::unique_ptr<fuchsia::media::SbcEncoderSettings> encoder_settings_value =
+      fuchsia::media::SbcEncoderSettings::New();
+  encoder_settings->set_sbc(*encoder_settings_value);
+
+  std::unique_ptr<fidlbredr::AudioOffloadConfiguration> config =
+      std::make_unique<fidlbredr::AudioOffloadConfiguration>();
+  config->set_codec(std::move(*codec));
+  config->set_max_latency(10);
+  config->set_scms_t_enable(true);
+  config->set_sampling_frequency(fidlbredr::AudioSamplingFrequency::HZ_44100);
+  config->set_bits_per_sample(fidlbredr::AudioBitsPerSample::BPS_16);
+  config->set_channel_mode(fidlbredr::AudioChannelMode::MONO);
+  config->set_encoded_bit_rate(10);
+  config->set_encoder_settings(std::move(*encoder_settings));
+
+  fidl::InterfacePtr<fidlbredr::AudioOffloadExt> audio_offload_ext_client =
+      response_channel->mutable_ext_audio_offload()->Bind();
+  fidl::InterfaceHandle<fidlbredr::AudioOffloadController> controller_handle;
+  fidl::InterfaceRequest<fidlbredr::AudioOffloadController> controller_request =
+      controller_handle.NewRequest();
+  audio_offload_ext_client->StartAudioOffload(std::move(*config), std::move(controller_request));
+
+  fidl::InterfacePtr<fidlbredr::AudioOffloadController> audio_offload_controller_client;
+  audio_offload_controller_client.Bind(std::move(controller_handle));
+
+  std::optional<zx_status_t> audio_offload_controller_epitaph;
+  audio_offload_controller_client.set_error_handler(
+      [&](zx_status_t status) { audio_offload_controller_epitaph = status; });
+
+  size_t cb_count = 0;
+  audio_offload_controller_client.events().OnStarted = [&]() { cb_count++; };
+
+  // Close client end of protocol to trigger audio offload error handler
+  audio_offload_controller_client.Unbind();
+
+  RunLoopUntilIdle();
+  EXPECT_EQ(cb_count, 0u);
+  ASSERT_FALSE(audio_offload_controller_epitaph.has_value());
 }
 
 const std::vector<std::pair<bool, uint32_t>> kVendorCapabilitiesParams = {
@@ -1498,7 +1873,7 @@ TEST_F(ProfileServerTestFakeAdapter, ServiceFoundRelayedToFidlClient) {
 
 TEST_F(ProfileServerTestScoConnected, ScoConnectionRead2Packets) {
   // Queue a read request before the packet is received.
-  std::optional<fuchsia::bluetooth::bredr::RxPacketStatus> packet_status;
+  std::optional<fidlbredr::RxPacketStatus> packet_status;
   std::optional<std::vector<uint8_t>> packet;
   sco_connection()->Read([&](fidlbredr::RxPacketStatus status, std::vector<uint8_t> cb_packet) {
     packet_status = status;
@@ -1549,7 +1924,7 @@ TEST_F(ProfileServerTestScoConnected, ScoConnectionRead2Packets) {
 }
 
 TEST_F(ProfileServerTestScoConnected, ScoConnectionReadWhileReadPendingClosesConnection) {
-  std::optional<fuchsia::bluetooth::bredr::RxPacketStatus> packet_status_0;
+  std::optional<fidlbredr::RxPacketStatus> packet_status_0;
   std::optional<std::vector<uint8_t>> packet_0;
   sco_connection()->Read([&](fidlbredr::RxPacketStatus status, std::vector<uint8_t> cb_packet) {
     packet_status_0 = status;
@@ -1560,7 +1935,7 @@ TEST_F(ProfileServerTestScoConnected, ScoConnectionReadWhileReadPendingClosesCon
   EXPECT_FALSE(packet_status_0);
   EXPECT_FALSE(packet_0);
 
-  std::optional<fuchsia::bluetooth::bredr::RxPacketStatus> packet_status_1;
+  std::optional<fidlbredr::RxPacketStatus> packet_status_1;
   std::optional<std::vector<uint8_t>> packet_1;
   sco_connection()->Read([&](fidlbredr::RxPacketStatus status, std::vector<uint8_t> cb_packet) {
     packet_status_1 = status;
@@ -1578,7 +1953,7 @@ TEST_F(ProfileServerTestScoConnected, ScoConnectionReadWhileReadPendingClosesCon
 }
 
 TEST_F(ProfileServerTestOffloadedScoConnected, ScoConnectionReadFails) {
-  std::optional<fuchsia::bluetooth::bredr::RxPacketStatus> packet_status;
+  std::optional<fidlbredr::RxPacketStatus> packet_status;
   std::optional<std::vector<uint8_t>> packet;
   sco_connection()->Read([&](fidlbredr::RxPacketStatus status, std::vector<uint8_t> cb_packet) {
     packet_status = status;

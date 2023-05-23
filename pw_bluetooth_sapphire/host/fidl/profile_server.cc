@@ -6,13 +6,23 @@
 
 #include <string.h>
 #include <zircon/status.h>
+#include <zircon/syscalls/clock.h>
 
+#include <cstddef>
+#include <memory>
+
+#include "fuchsia/bluetooth/bredr/cpp/fidl.h"
 #include "helpers.h"
+#include "lib/fidl/cpp/binding.h"
+#include "lib/fidl/cpp/interface_ptr.h"
 #include "lib/fpromise/result.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/host_error.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/common/uuid.h"
+#include "src/connectivity/bluetooth/core/bt-host/common/weak_self.h"
 #include "src/connectivity/bluetooth/core/bt-host/gap/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
+#include "zircon/errors.h"
 
 namespace fidlbredr = fuchsia::bluetooth::bredr;
 namespace hci_android = bt::hci_spec::vendor::android;
@@ -271,6 +281,105 @@ void ProfileServer::AudioOffloadExt::GetSupportedFeatures(GetSupportedFeaturesCa
   }
 
   callback(std::move(response));
+}
+
+void ProfileServer::AudioOffloadExt::StartAudioOffload(
+    fidlbredr::AudioOffloadConfiguration audio_offload_configuration,
+    fidl::InterfaceRequest<fidlbredr::AudioOffloadController> controller) {
+  auto audio_offload_controller_server =
+      std::make_unique<AudioOffloadController>(std::move(controller), channel_);
+  WeakPtr<AudioOffloadController> server_ptr = audio_offload_controller_server->GetWeakPtr();
+
+  std::unique_ptr<bt::l2cap::A2dpOffloadManager::Configuration> config =
+      AudioOffloadConfigFromFidl(audio_offload_configuration);
+  if (!config) {
+    bt_log(ERROR, "fidl", "%s: invalid config received", __FUNCTION__);
+    server_ptr->Close(/*epitaph_value=*/ZX_ERR_NOT_SUPPORTED);
+    return;
+  }
+
+  auto error_handler = [this, server_ptr](zx_status_t status) {
+    if (!server_ptr.is_alive()) {
+      bt_log(ERROR, "fidl", "audio offload controller server was destroyed");
+      return;
+    }
+
+    bt_log(DEBUG, "fidl", "audio offload controller server closed (reason: %s)",
+           zx_status_get_string(status));
+    if (!profile_server_.audio_offload_controller_server_) {
+      bt_log(WARN, "fidl",
+             "could not find controller server in audio offload controller error callback");
+    }
+
+    bt::hci::ResultCallback<> stop_cb =
+        [server_ptr](fit::result<bt::Error<pw::bluetooth::emboss::StatusCode>> result) {
+          if (result.is_error()) {
+            bt_log(ERROR, "fidl", "stopping audio offload failed in error handler: %s",
+                   bt_str(result));
+            server_ptr->Close(/*epitaph_value=*/ZX_ERR_UNAVAILABLE);
+            return;
+          }
+          bt_log(ERROR, "fidl", "stopping audio offload complete: %s", bt_str(result));
+        };
+    channel_->StopA2dpOffload(std::move(stop_cb));
+  };
+  audio_offload_controller_server->set_error_handler(error_handler);
+  profile_server_.audio_offload_controller_server_ = std::move(audio_offload_controller_server);
+
+  auto callback = [this,
+                   server_ptr](fit::result<bt::Error<pw::bluetooth::emboss::StatusCode>> result) {
+    if (!server_ptr.is_alive()) {
+      bt_log(ERROR, "fidl", "audio offload controller server was destroyed");
+      return;
+    }
+    if (result.is_error()) {
+      bt_log(ERROR, "fidl", "StartAudioOffload failed: %s", bt_str(result));
+
+      auto host_error = result.error_value().host_error();
+      if (host_error == bt::HostError::kInProgress) {
+        server_ptr->Close(/*epitaph_value=*/ZX_ERR_ALREADY_BOUND);
+      } else if (host_error == bt::HostError::kFailed) {
+        server_ptr->Close(/*epitaph_value=*/ZX_ERR_INTERNAL);
+      } else {
+        server_ptr->Close(/*epitaph_value=*/ZX_ERR_UNAVAILABLE);
+      }
+      profile_server_.audio_offload_controller_server_ = nullptr;
+      return;
+    }
+    // Send OnStarted event to tell Rust Profiles that we've finished offloading
+    server_ptr->SendOnStartedEvent();
+  };
+  channel_->StartA2dpOffload(*config, std::move(callback));
+}
+
+std::unique_ptr<bt::l2cap::A2dpOffloadManager::Configuration>
+ProfileServer::AudioOffloadExt::AudioOffloadConfigFromFidl(
+    fidlbredr::AudioOffloadConfiguration& audio_offload_configuration) {
+  auto codec = fidl_helpers::FidlToCodecType(audio_offload_configuration.codec());
+  if (!codec.has_value()) {
+    bt_log(WARN, "fidl", "%s: invalid codec", __FUNCTION__);
+    return nullptr;
+  }
+
+  std::unique_ptr<bt::l2cap::A2dpOffloadManager::Configuration> config =
+      std::make_unique<bt::l2cap::A2dpOffloadManager::Configuration>();
+
+  config->codec = codec.value();
+  config->max_latency = audio_offload_configuration.max_latency();
+  config->scms_t_enable =
+      fidl_helpers::FidlToScmsTEnable(audio_offload_configuration.scms_t_enable());
+  config->sampling_frequency =
+      fidl_helpers::FidlToSamplingFrequency(audio_offload_configuration.sampling_frequency());
+  config->bits_per_sample =
+      fidl_helpers::FidlToBitsPerSample(audio_offload_configuration.bits_per_sample());
+  config->channel_mode =
+      fidl_helpers::FidlToChannelMode(audio_offload_configuration.channel_mode());
+  config->encoded_audio_bit_rate = audio_offload_configuration.encoded_bit_rate();
+  config->codec_information = fidl_helpers::FidlToEncoderSettings(
+      audio_offload_configuration.encoder_settings(),
+      audio_offload_configuration.sampling_frequency(), audio_offload_configuration.channel_mode());
+
+  return config;
 }
 
 ProfileServer::ScoConnectionServer::ScoConnectionServer(
@@ -780,12 +889,13 @@ fidl::InterfaceHandle<fidlbredr::AudioOffloadExt> ProfileServer::BindAudioOffloa
   fidl::InterfaceHandle<fidlbredr::AudioOffloadExt> client;
 
   std::unique_ptr<bthost::ProfileServer::AudioOffloadExt> audio_offload_ext_server =
-      std::make_unique<AudioOffloadExt>(client.NewRequest(), std::move(channel), adapter_);
+      std::make_unique<AudioOffloadExt>(*this, client.NewRequest(), std::move(channel), adapter_);
   AudioOffloadExt* server_ptr = audio_offload_ext_server.get();
 
   audio_offload_ext_server->set_error_handler(
       [this, server_ptr](zx_status_t status) { OnAudioOffloadExtError(server_ptr, status); });
 
+  // TODO(fxbug.dev/126635): Use unique channel id instead of server_ptr
   audio_offload_ext_servers_[server_ptr] = std::move(audio_offload_ext_server);
   return client;
 }
@@ -814,6 +924,7 @@ fuchsia::bluetooth::bredr::Channel ProfileServer::ChannelToFidl(
   auto closed_cb = [this, unique_id = channel->unique_id()]() {
     l2cap_parameters_ext_servers_.erase(unique_id);
     audio_direction_ext_servers_.erase(unique_id);
+    audio_offload_controller_server_ = nullptr;
     // TODO(fxbug.dev/113355): Erase other channel extension servers.
   };
 

@@ -28,7 +28,7 @@ void A2dpOffloadManager::StartA2dpOffload(const Configuration& config, ChannelId
           WARN, "l2cap",
           "Only one channel can offload A2DP at a time; already offloaded (handle: %#.4x, local id: %#.4x",
           *offloaded_link_handle_, *offloaded_channel_id_);
-      callback(ToResult(HostError::kFailed));
+      callback(ToResult(HostError::kInProgress));
       return;
     }
     case A2dpOffloadStatus::kStarting: {
@@ -41,7 +41,7 @@ void A2dpOffloadManager::StartA2dpOffload(const Configuration& config, ChannelId
       bt_log(WARN, "l2cap",
              "A2DP offload is stopping... wait until stopped before starting (status: %hhu)",
              a2dp_offload_status_);
-      callback(ToResult(HostError::kNotReady));
+      callback(ToResult(HostError::kInProgress));
       return;
     }
     case A2dpOffloadStatus::kStopped:
@@ -117,7 +117,8 @@ void A2dpOffloadManager::RequestStopA2dpOffload(ChannelId local_id,
 
   switch (a2dp_offload_status_) {
     case A2dpOffloadStatus::kStopped: {
-      bt_log(WARN, "l2cap", "No channels are offloading A2DP (status: %hhu)", a2dp_offload_status_);
+      bt_log(DEBUG, "l2cap", "No channels are offloading A2DP (status: %hhu)",
+             a2dp_offload_status_);
       callback(ToResult(HostError::kFailed));
       return;
     }
@@ -133,18 +134,6 @@ void A2dpOffloadManager::RequestStopA2dpOffload(ChannelId local_id,
   }
 
   if (!IsChannelOffloaded(local_id, link_handle)) {
-    bt_log(WARN, "l2cap", "Channel is not offloaded (handle: %#.4x, local id: %#.4x",
-           *offloaded_link_handle_, *offloaded_channel_id_);
-    callback(ToResult(HostError::kFailed));
-    return;
-  }
-
-  // Same channel that requested start A2DP offloading must request to stop offloading
-  if (local_id != offloaded_channel_id_ || link_handle != offloaded_link_handle_) {
-    bt_log(
-        WARN, "l2cap",
-        "Offloaded channel must request to stop A2DP offloading; offloaded channel (handle: %#.4x, local id: %#.4x",
-        *offloaded_link_handle_, *offloaded_channel_id_);
     callback(ToResult(HostError::kFailed));
     return;
   }
@@ -181,6 +170,28 @@ void A2dpOffloadManager::RequestStopA2dpOffload(ChannelId local_id,
 
         a2dp_offload_status_ = A2dpOffloadStatus::kStopped;
       });
+}
+
+bool A2dpOffloadManager::IsChannelOffloaded(ChannelId id,
+                                            hci_spec::ConnectionHandle link_handle) const {
+  if (!offloaded_channel_id_.has_value() || !offloaded_link_handle_.has_value()) {
+    bt_log(DEBUG, "l2cap", "Channel is not offloaded (handle: %#.4x, local id: %#.4x) ",
+           link_handle, id);
+    return false;
+  }
+
+  // Same channel that requested start A2DP offloading must request stop offloading
+  if (id != offloaded_channel_id_ || link_handle != offloaded_link_handle_) {
+    bt_log(
+        WARN, "l2cap",
+        "Offloaded channel must request stop offloading; offloaded channel (handle: %#.4x, local id: %#.4x)",
+        *offloaded_link_handle_, *offloaded_channel_id_);
+    return false;
+  }
+
+  return id == *offloaded_channel_id_ && link_handle == *offloaded_link_handle_ &&
+         (a2dp_offload_status_ == A2dpOffloadStatus::kStarted ||
+          a2dp_offload_status_ == A2dpOffloadStatus::kStarting);
 }
 
 }  // namespace bt::l2cap
