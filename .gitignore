@@ -6,6 +6,7 @@ bazel-*
 outbazel/
 .presubmit/
 docs/_build
+twister-out*/
 
 # Editors
 .pw_ide/
