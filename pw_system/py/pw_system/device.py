@@ -18,7 +18,7 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any, Callable, List, Union, Optional
 
-from pw_hdlc.rpc import HdlcRpcClient, default_channels
+from pw_hdlc.rpc import HdlcRpcClient, channel_output
 from pw_hdlc.rpc import NoEncodingSingleChannelRpcClient, RpcClient
 from pw_log.log_decoder import (
     Log,
@@ -87,7 +87,7 @@ class Device:
 
         self.client: RpcClient
         if use_hdlc_encoding:
-            channels = default_channels(write)
+            channels = [Channel(self.channel_id, channel_output(write))]
             self.client = HdlcRpcClient(
                 read,
                 self.protos,
