@@ -43,9 +43,10 @@ cc_defaults {
       "pw_log_headers",
       "pw_log_null_headers",
     ],
-
     export_header_lib_headers: [
       "pw_assert_log_headers",
+      "pw_log_headers",
+      "pw_log_null_headers",
     ],
     srcs: [
         ":pw_assert_log_src_files"
