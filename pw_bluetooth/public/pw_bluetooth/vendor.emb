@@ -226,13 +226,6 @@ struct LEMultiAdvtEnableCommand:
   $next  [+1]            hci.GenericEnableParam  enable
   $next  [+1]            UInt                    advertising_handle
 
-struct LEMultiAdvtEnableCommand2:
-  -- LE multi-advertising enable command.
-  let vendor_size = AndroidCommandHeader.$size_in_bytes
-  0      [+vendor_size]  AndroidCommandHeader    vendor_command
-  $next  [+1]            hci.GenericEnableParam  enable
-  $next  [+1]            UInt                    advertising_handle
-
 struct LEGetVendorCapabilitiesCommand:
   let hdr_size = hci.CommandHeader.$size_in_bytes
   0      [+hdr_size]  hci.CommandHeader       header
