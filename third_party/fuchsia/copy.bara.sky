@@ -38,11 +38,15 @@ fuchsia_repo_files = [
     "sdk/lib/stdcompat/include/lib/stdcompat/internal/storage.h",
     "sdk/lib/stdcompat/include/lib/stdcompat/internal/type_traits.h",
     "sdk/lib/stdcompat/include/lib/stdcompat/internal/utility.h",
+    # lazy_init
+    "zircon/system/ulib/lazy_init/include/lib/lazy_init/internal/storage.h",
+    "zircon/system/ulib/lazy_init/include/lib/lazy_init/lazy_init.h",
+    "zircon/system/ulib/lazy_init/include/lib/lazy_init/options.h",
 ]
 
 core.workflow(
     name = "default",
-    description = "Imports files from Fuchsia's fit library",
+    description = "Imports files from Fuchsia's fit, stdcompat and lazy_init libraries",
     origin = git.origin(
         url = "https://fuchsia.googlesource.com/fuchsia",
         ref = "main",
