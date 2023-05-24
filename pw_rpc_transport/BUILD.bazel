@@ -20,10 +20,6 @@ load(
     "pwpb_proto_library",
     "pwpb_rpc_proto_library",
 )
-load(
-    "//pw_build:selects.bzl",
-    "TARGET_COMPATIBLE_WITH_HOST_SELECT",
-)
 
 package(default_visibility = ["//visibility:public"])
 
@@ -206,43 +202,6 @@ pw_cc_test(
         "//pw_metric:metric",
         "//pw_status",
         "//pw_sync:thread_notification",
-    ],
-)
-
-pw_cc_library(
-    name = "socket_rpc_transport",
-    srcs = ["socket_rpc_transport.cc"],
-    hdrs = ["public/pw_rpc_transport/socket_rpc_transport.h"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
-    deps = [
-        ":rpc_transport",
-        "//pw_assert",
-        "//pw_chrono:system_clock",
-        "//pw_log",
-        "//pw_status",
-        "//pw_stream",
-        "//pw_stream:socket_stream",
-        "//pw_sync:lock_annotations",
-        "//pw_sync:mutex",
-        "//pw_sync:thread_notification",
-        "//pw_sync_stl:condition_variable",
-        "//pw_thread:sleep",
-        "//pw_thread:thread_core",
-    ],
-)
-
-pw_cc_test(
-    name = "socket_rpc_transport_test",
-    srcs = ["socket_rpc_transport_test.cc"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
-    deps = [
-        ":socket_rpc_transport",
-        "//pw_bytes",
-        "//pw_log",
-        "//pw_status",
-        "//pw_sync:thread_notification",
-        "//pw_thread:sleep",
-        "//pw_thread:thread",
     ],
 )
 
