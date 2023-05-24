@@ -2693,7 +2693,7 @@ void FakeController::OnAndroidLEMultiAdvtSetRandomAddr(
 }
 
 void FakeController::OnAndroidLEMultiAdvtEnable(
-    const pw::bluetooth::emboss::LEMultiAdvtEnableCommand2View& params) {
+    const pw::bluetooth::emboss::LEMultiAdvtEnableCommandView& params) {
   hci_spec::AdvertisingHandle handle = params.advertising_handle().Read();
 
   if (!IsValidAdvertisingHandle(handle)) {
@@ -2747,9 +2747,9 @@ void FakeController::OnAndroidLEMultiAdvt(
       break;
     }
     case hci_android::kLEMultiAdvtEnableSubopcode: {
-      auto view = pw::bluetooth::emboss::MakeLEMultiAdvtEnableCommand2View(
+      auto view = pw::bluetooth::emboss::MakeLEMultiAdvtEnableCommandView(
           command_packet.data().data(),
-          pw::bluetooth::emboss::LEMultiAdvtEnableCommand2::MaxSizeInBytes());
+          pw::bluetooth::emboss::LEMultiAdvtEnableCommand::MaxSizeInBytes());
       OnAndroidLEMultiAdvtEnable(view);
       break;
     }
