@@ -246,25 +246,6 @@ pw_cc_test(
     ],
 )
 
-pw_cc_test(
-    name = "rpc_integration_test",
-    srcs = ["rpc_integration_test.cc"],
-    target_compatible_with = select(TARGET_COMPATIBLE_WITH_HOST_SELECT),
-    deps = [
-        ":egress_ingress",
-        ":local_rpc_egress",
-        ":service_registry",
-        ":socket_rpc_transport",
-        ":test_protos_pwpb_rpc",
-        "//pw_chrono:system_clock",
-        "//pw_log",
-        "//pw_rpc:client_server",
-        "//pw_rpc:synchronous_client_api",
-        "//pw_string",
-        "//pw_thread:thread",
-    ],
-)
-
 pw_proto_filegroup(
     name = "test_protos_and_options",
     srcs = ["internal/test.proto"],

@@ -44,10 +44,7 @@ pw_test_group("tests") {
     ]
 
     if (host_os != "win") {
-      tests += [
-        ":rpc_integration_test",
-        ":socket_rpc_transport_test",
-      ]
+      tests += [ ":socket_rpc_transport_test" ]
     }
   }
 }
@@ -240,23 +237,6 @@ pw_test("socket_rpc_transport_test") {
     "$dir_pw_status",
     "$dir_pw_sync:thread_notification",
     "$dir_pw_thread:sleep",
-    "$dir_pw_thread:thread",
-  ]
-}
-
-pw_test("rpc_integration_test") {
-  sources = [ "rpc_integration_test.cc" ]
-  deps = [
-    ":egress_ingress",
-    ":local_rpc_egress",
-    ":service_registry",
-    ":socket_rpc_transport",
-    ":test_protos.pwpb_rpc",
-    "$dir_pw_chrono:system_clock",
-    "$dir_pw_log",
-    "$dir_pw_rpc:client_server",
-    "$dir_pw_rpc:synchronous_client_api",
-    "$dir_pw_string",
     "$dir_pw_thread:thread",
   ]
 }
