@@ -15,8 +15,11 @@
 
 namespace pw::interrupt {
 
-// Returns true if currently executing within an interrupt service routine
-// handling an IRQ or NMI.
+/// @brief Checks if the currently executing code is within an interrupt service
+/// routine handling an interrupt request (IRQ) or non-maskable interrupt (NMI).
+///
+/// @returns `true` if the the currently executing code is in an interrupt
+/// context. `false` if not.
 bool InInterruptContext();
 
 }  // namespace pw::interrupt
