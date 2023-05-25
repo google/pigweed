@@ -23,6 +23,7 @@ fuchsia_driver("fuchsia_driver") {
     ":bt_host_bind",
     ":sources",
     "//sdk/lib/syslog/cpp:backend",
+    "//third_party/pigweed/backends/pw_log:dfv1",
   ]
 }
 
