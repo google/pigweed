@@ -2223,6 +2223,92 @@ struct WriteAuthenticatedPayloadTimeoutCommand:
 # TODO: b/265052417 - Definition needs to be added
 
 
+# ========== 7.4 Informational Parameters ==========
+
+struct ReadLocalVersionInformationCommand:
+  -- 7.4.1 Read Local Version Information command (v1.1)
+  -- HCI_Read_Local_Version_Information
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
+struct ReadLocalSupportedCommandsCommand:
+  -- 7.4.2 Read Local Supported Commands command (v1.2)
+  -- HCI_Read_Local_Supported_Commands
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
+struct ReadLocalSupportedFeaturesCommand:
+  -- 7.4.3 Read Local Supported Features command (v1.1)
+  -- HCI_Read_Local_Supported_Features
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
+struct ReadLocalExtendedFeaturesCommand:
+  -- 7.4.4 Read Local Extended Features command (v1.2) (BR/EDR)
+  -- HCI_Read_Local_Extended_Features
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader  header
+  $next [+1]         UInt           page_number
+    -- 0x00: Requests the normal LMP features as returned by
+    -- Read_Local_Supported_Features.
+    -- 0x01-0xFF: Return the corresponding page of features.
+
+
+struct ReadBufferSizeCommand:
+  -- 7.4.5 Read Buffer Size command (v1.1)
+  -- HCI_Read_Buffer_Size
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
+struct ReadBdAddrCommand:
+  -- 7.4.6 Read BD_ADDR command (v1.1) (BR/EDR, LE)
+  -- HCI_Read_BD_ADDR
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
+# 7.4.7 Read Data Block Size command
+# HCI_Read_Data_Block_Size
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.4.8 Read Local Supported Codecs command
+# HCI_Read_Local_Supported_Codecs [v1][v2]
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.4.9 Read Local Simple Pairing Options command
+# HCI_Read_Local_Simple_Pairing_Options
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.4.10 Read Local Supported Codec Capabilities command
+# HCI_Read_Local_Supported_Codec_Capabilities
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.4.11 Read Local Supported Controller Delay command
+# HCI_Read_Local_Supported_Controller_Delay
+# TODO: b/265052417 - Definition needs to be added
+
+
+# ========== 7.5 Status Parameters ==========
+
+struct ReadEncryptionKeySizeCommand:
+  -- Read Encryption Key Size (v1.1) (BR/EDR)
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader  header
+  $next [+2]         UInt           connection_handle
+    -- Identifies an active ACL link (only the lower 12 bits are meaningful).
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+
+# ========== 7.8 LE Controller Commands ==========
+
 struct LESetAdvertisingEnableCommand:
   -- LE Set Advertising Enable command (v4.0) (LE)
   let hdr_size = CommandHeader.$size_in_bytes
@@ -2522,55 +2608,6 @@ struct LESetPrivacyModeCommand:
 
   $next [+1]                      LEPrivacyMode            privacy_mode
     -- The privacy mode to be used for the given entry on the resolving list.
-
-
-struct ReadLocalVersionInformationCommand:
-  -- Read Local Version Information command (v1.1)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0 [+hdr_size]  CommandHeader  header
-
-
-struct ReadLocalSupportedCommandsCommand:
-  -- Read Local Supported Commands command (v1.2)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0 [+hdr_size]  CommandHeader  header
-
-
-struct ReadBufferSizeCommand:
-  -- Read Buffer Size command (v1.1)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0 [+hdr_size]  CommandHeader  header
-
-
-struct ReadBdAddrCommand:
-  -- Read BD_ADDR command (v1.1) (BR/EDR, LE)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0 [+hdr_size]  CommandHeader  header
-
-
-struct ReadLocalSupportedFeaturesCommand:
-  -- Read Local Supported Features command (v1.1)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0 [+hdr_size]  CommandHeader  header
-
-
-struct ReadLocalExtendedFeaturesCommand:
-  -- Read Local Extended Features command (v1.2) (BR/EDR)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0     [+hdr_size]  CommandHeader  header
-  $next [+1]         UInt           page_number
-    -- 0x00: Requests the normal LMP features as returned by
-    -- Read_Local_Supported_Features.
-    -- 0x01-0xFF: Return the corresponding page of features.
-
-
-struct ReadEncryptionKeySizeCommand:
-  -- Read Encryption Key Size (v1.1) (BR/EDR)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0     [+hdr_size]  CommandHeader  header
-  $next [+2]         UInt           connection_handle
-    -- Identifies an active ACL link (only the lower 12 bits are meaningful).
-    [requires: 0x0000 <= this <= 0x0EFF]
 
 
 struct LESetEventMaskCommand:
