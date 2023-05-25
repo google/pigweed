@@ -23,6 +23,7 @@
  * See detailed section info at pw_tokenizer_linker_sections.ld
  */
 
+#ifdef CONFIG_ARCH_POSIX
 .pw_tokenizer.info (INFO) :
 {
   KEEP(*(.pw_tokenizer.info))
@@ -32,3 +33,14 @@
 {
   KEEP(*(.pw_tokenizer.entries.*))
 }
+#else
+.pw_tokenizer.info 0x0 (INFO) :
+{
+  KEEP(*(.pw_tokenizer.info))
+}
+
+.pw_tokenizer.entries 0x0 (INFO) :
+{
+  KEEP(*(.pw_tokenizer.entries.*))
+}
+#endif /* CONFIG_ARCH_POSIX */
