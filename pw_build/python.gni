@@ -33,6 +33,9 @@ declare_args() {
   # coverage data file for each test will be saved. To generate reports from
   # this information run: pw presubmit --step gn_python_test_coverage
   pw_build_PYTHON_TEST_COVERAGE = false
+
+  # Output format for pylint. Options include "text" and "colorized".
+  pw_build_PYLINT_OUTPUT_FORMAT = "colorized"
 }
 
 # Python packages provide the following targets as $target_name.$subtarget.
@@ -125,7 +128,7 @@ template("_pw_python_static_analysis_pylint") {
     args = [
       rebase_path(".", root_build_dir) + "/{{source_target_relative}}",
       "--jobs=1",
-      "--output-format=colorized",
+      "--output-format=$pw_build_PYLINT_OUTPUT_FORMAT",
     ]
 
     if (defined(invoker.pylintrc)) {
