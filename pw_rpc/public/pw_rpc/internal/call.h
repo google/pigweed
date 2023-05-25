@@ -100,8 +100,20 @@ inline constexpr uint32_t kOpenCallId = std::numeric_limits<uint32_t>::max();
 //
 // Private inheritance is used in place of composition or more complex
 // inheritance hierarchy so that these objects all inherit from a common
-// IntrusiveList::Item object. Private inheritance also gives the derived classs
+// IntrusiveList::Item object. Private inheritance also gives the derived class
 // full control over their interfaces.
+//
+// IMPLEMENTATION NOTE:
+//
+// Subclasses of `Call` must include a destructor which calls
+// `DestroyServerCall` or `DestroyClientCall` (as appropriate) if the subclass
+// contains any fields which might be referenced by the call's callbacks. This
+// ensures that the callbacks do not reference fields which may have already
+// been destroyed.
+//
+// At the top level, `ServerCall` and `ClientCall` invoke `DestroyServerCall`
+// `DestroyClientCall` respectively to perform cleanup in the case where no
+// subclass carries additional state.
 class Call : public IntrusiveList<Call>::Item {
  public:
   Call(const Call&) = delete;
@@ -111,6 +123,13 @@ class Call : public IntrusiveList<Call>::Item {
 
   Call& operator=(const Call&) = delete;
   Call& operator=(Call&&) = delete;
+
+  ~Call() {
+    // Ensure that calls have already been closed and unregistered.
+    // See class IMPLEMENTATION NOTE for further details.
+    PW_DASSERT((state_ & kHasBeenDestroyed) != 0);
+    PW_DASSERT(!active_locked() && !CallbacksAreRunning());
+  }
 
   // True if the Call is active and ready to send responses.
   [[nodiscard]] bool active() const PW_LOCKS_EXCLUDED(rpc_lock()) {
@@ -298,16 +317,6 @@ class Call : public IntrusiveList<Call>::Item {
        uint32_t method_id,
        CallProperties properties) PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
-  // Calls must be closed and unregistered, and their callbacks must have
-  // completed before reaching the base Call destructor. If this does not
-  // happen, callback objects would be destroyed before their functions finished
-  // and the endpoint call list would be modified without synchronization via
-  // the `IntrusiveList<Call>::Item` superclass destructor.
-  //
-  // Derived class destructors must call DestroyServerCall() or
-  // DestroyClientCall() as appropriate.
-  ~Call() { PW_DASSERT(!active_locked() && !CallbacksAreRunning()); }
-
   // Closes the call and waits for their callbacks to complete so destructors
   // can run safely.
   void DestroyServerCall() PW_LOCKS_EXCLUDED(rpc_lock());
@@ -466,8 +475,9 @@ class Call : public IntrusiveList<Call>::Item {
 
  private:
   enum State : uint8_t {
-    kActive = 0b01,
-    kClientRequestedCompletion = 0b10,
+    kActive = 0b001,
+    kClientRequestedCompletion = 0b010,
+    kHasBeenDestroyed = 0b100,
   };
 
   // Common constructor for server & client calls.
@@ -527,7 +537,7 @@ class Call : public IntrusiveList<Call>::Item {
   }
 
   // Waits for callbacks to complete so that a call object can be destroyed.
-  void WaitForCallbacksToComplete() PW_UNLOCK_FUNCTION(rpc_lock());
+  void WaitForCallbacksToComplete() PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
   Endpoint* endpoint_ PW_GUARDED_BY(rpc_lock());
   uint32_t channel_id_ PW_GUARDED_BY(rpc_lock());
@@ -539,7 +549,7 @@ class Call : public IntrusiveList<Call>::Item {
   //
   //   bit 0: call is active
   //   bit 1: client stream is active
-  //
+  //   bit 2:
   uint8_t state_ PW_GUARDED_BY(rpc_lock());
 
   // If non-OK, indicates that the call was closed and needs to have its

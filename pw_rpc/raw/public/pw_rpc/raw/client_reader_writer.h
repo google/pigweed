@@ -35,10 +35,6 @@ class RawClientReaderWriter : private internal::StreamResponseClientCall {
   RawClientReaderWriter(RawClientReaderWriter&&) = default;
   RawClientReaderWriter& operator=(RawClientReaderWriter&&) = default;
 
-  ~RawClientReaderWriter() PW_LOCKS_EXCLUDED(internal::rpc_lock()) {
-    DestroyClientCall();
-  }
-
   using internal::Call::active;
   using internal::Call::channel_id;
 
@@ -93,10 +89,6 @@ class RawClientReader : private internal::StreamResponseClientCall {
 
   RawClientReader(RawClientReader&&) = default;
   RawClientReader& operator=(RawClientReader&&) = default;
-
-  ~RawClientReader() PW_LOCKS_EXCLUDED(internal::rpc_lock()) {
-    DestroyClientCall();
-  }
 
   using internal::StreamResponseClientCall::active;
   using internal::StreamResponseClientCall::channel_id;

@@ -48,6 +48,8 @@ class PwpbServerCall : public ServerCall {
   PwpbServerCall(const LockedCallContext& context, MethodType type)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
+  ~PwpbServerCall() { DestroyServerCall(); }
+
   // Sends a unary response.
   // Returns the following Status codes:
   //
@@ -133,6 +135,8 @@ class BasePwpbServerReader : public PwpbServerCall {
   BasePwpbServerReader(const LockedCallContext& context, MethodType type)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock())
       : PwpbServerCall(context, type) {}
+
+  ~BasePwpbServerReader() { DestroyServerCall(); }
 
  protected:
   // Allow default construction so that users can declare a variable into
@@ -222,8 +226,6 @@ class PwpbServerReaderWriter : private internal::BasePwpbServerReader<Request> {
   PwpbServerReaderWriter(PwpbServerReaderWriter&&) = default;
   PwpbServerReaderWriter& operator=(PwpbServerReaderWriter&&) = default;
 
-  ~PwpbServerReaderWriter() { internal::Call::DestroyServerCall(); }
-
   using internal::Call::active;
   using internal::Call::channel_id;
 
@@ -300,8 +302,6 @@ class PwpbServerReader : private internal::BasePwpbServerReader<Request> {
   PwpbServerReader(PwpbServerReader&&) = default;
   PwpbServerReader& operator=(PwpbServerReader&&) = default;
 
-  ~PwpbServerReader() { internal::Call::DestroyServerCall(); }
-
   using internal::Call::active;
   using internal::Call::channel_id;
 
@@ -370,8 +370,6 @@ class PwpbServerWriter : private internal::PwpbServerCall {
 
   PwpbServerWriter(PwpbServerWriter&&) = default;
   PwpbServerWriter& operator=(PwpbServerWriter&&) = default;
-
-  ~PwpbServerWriter() { DestroyServerCall(); }
 
   using internal::Call::active;
   using internal::Call::channel_id;
@@ -443,8 +441,6 @@ class PwpbUnaryResponder : private internal::PwpbServerCall {
 
   PwpbUnaryResponder(PwpbUnaryResponder&&) = default;
   PwpbUnaryResponder& operator=(PwpbUnaryResponder&&) = default;
-
-  ~PwpbUnaryResponder() { DestroyServerCall(); }
 
   using internal::ServerCall::active;
   using internal::ServerCall::channel_id;

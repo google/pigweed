@@ -51,7 +51,7 @@ class ClientCall : public Call {
              CallProperties properties) PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock())
       : Call(client, channel_id, service_id, method_id, properties) {}
 
-  ~ClientCall() = default;
+  ~ClientCall() { DestroyClientCall(); }
 
   // Public function that closes a call client-side without cancelling it on the
   // server.
@@ -68,6 +68,8 @@ class ClientCall : public Call {
 // on_completed callback. The on_next callback is not used.
 class UnaryResponseClientCall : public ClientCall {
  public:
+  ~UnaryResponseClientCall() { DestroyClientCall(); }
+
   // Start call for raw unary response RPCs.
   template <typename CallType>
   static CallType Start(Endpoint& client,
@@ -140,6 +142,8 @@ class UnaryResponseClientCall : public ClientCall {
 // callback. Payloads are sent through the on_next callback.
 class StreamResponseClientCall : public ClientCall {
  public:
+  ~StreamResponseClientCall() { DestroyClientCall(); }
+
   // Start call for raw stream response RPCs.
   template <typename CallType>
   static CallType Start(Endpoint& client,

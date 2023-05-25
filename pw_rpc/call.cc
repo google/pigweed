@@ -96,16 +96,18 @@ Call::Call(LockedEndpoint& endpoint_ref,
 }
 
 void Call::DestroyServerCall() {
-  rpc_lock().lock();
+  RpcLockGuard lock;
   // Any errors are logged in Channel::Send.
   CloseAndSendResponseLocked(OkStatus()).IgnoreError();
   WaitForCallbacksToComplete();
+  state_ |= kHasBeenDestroyed;
 }
 
 void Call::DestroyClientCall() {
-  rpc_lock().lock();
+  RpcLockGuard lock;
   CloseClientCall();
   WaitForCallbacksToComplete();
+  state_ |= kHasBeenDestroyed;
 }
 
 void Call::WaitForCallbacksToComplete() {
@@ -117,8 +119,6 @@ void Call::WaitForCallbacksToComplete() {
     }
 
   } while (CleanUpIfRequired());
-
-  rpc_lock().unlock();
 }
 
 void Call::MoveFrom(Call& other) {

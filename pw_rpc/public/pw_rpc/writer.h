@@ -20,7 +20,7 @@ namespace pw::rpc {
 // The Writer class allows writing requests or responses to a streaming RPC.
 // ClientWriter, ClientReaderWriter, ServerWriter, and ServerReaderWriter
 // classes can be used as a generic Writer.
-class Writer : private internal::Call {
+class Writer final : private internal::Call {
  public:
   // Writers cannot be created directly. They may only be used as a reference to
   // an existing call object.

@@ -46,6 +46,8 @@ class NanopbServerCall : public ServerCall {
   NanopbServerCall(const LockedCallContext& context, MethodType type)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock());
 
+  ~NanopbServerCall() { DestroyServerCall(); }
+
   Status SendUnaryResponse(const void* payload, Status status)
       PW_LOCKS_EXCLUDED(rpc_lock()) {
     return SendFinalResponse(*this, payload, status);
@@ -92,6 +94,8 @@ class BaseNanopbServerReader : public NanopbServerCall {
   BaseNanopbServerReader(const LockedCallContext& context, MethodType type)
       PW_EXCLUSIVE_LOCKS_REQUIRED(rpc_lock())
       : NanopbServerCall(context, type) {}
+
+  ~BaseNanopbServerReader() { DestroyServerCall(); }
 
  protected:
   constexpr BaseNanopbServerReader() = default;
@@ -171,8 +175,6 @@ class NanopbServerReaderWriter
   NanopbServerReaderWriter(NanopbServerReaderWriter&&) = default;
   NanopbServerReaderWriter& operator=(NanopbServerReaderWriter&&) = default;
 
-  ~NanopbServerReaderWriter() { internal::Call::DestroyServerCall(); }
-
   using internal::Call::active;
   using internal::Call::channel_id;
 
@@ -247,8 +249,6 @@ class NanopbServerReader : private internal::BaseNanopbServerReader<Request> {
   NanopbServerReader(NanopbServerReader&&) = default;
   NanopbServerReader& operator=(NanopbServerReader&&) = default;
 
-  ~NanopbServerReader() { internal::Call::DestroyServerCall(); }
-
   using internal::Call::active;
   using internal::Call::channel_id;
 
@@ -307,8 +307,6 @@ class NanopbServerWriter : private internal::NanopbServerCall {
 
   NanopbServerWriter(NanopbServerWriter&&) = default;
   NanopbServerWriter& operator=(NanopbServerWriter&&) = default;
-
-  ~NanopbServerWriter() { DestroyServerCall(); }
 
   using internal::Call::active;
   using internal::Call::channel_id;
@@ -374,8 +372,6 @@ class NanopbUnaryResponder : private internal::NanopbServerCall {
 
   NanopbUnaryResponder(NanopbUnaryResponder&&) = default;
   NanopbUnaryResponder& operator=(NanopbUnaryResponder&&) = default;
-
-  ~NanopbUnaryResponder() { DestroyServerCall(); }
 
   using internal::Call::active;
   using internal::Call::channel_id;

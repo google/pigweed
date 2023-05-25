@@ -47,7 +47,7 @@ class ServerCall : public Call {
 
   ServerCall(ServerCall&& other) { *this = std::move(other); }
 
-  ~ServerCall() = default;
+  ~ServerCall() { DestroyServerCall(); }
 
   // Version of operator= used by the raw call classes.
   ServerCall& operator=(ServerCall&& other) PW_LOCKS_EXCLUDED(rpc_lock()) {
