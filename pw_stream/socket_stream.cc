@@ -26,13 +26,14 @@
 
 #include "pw_assert/check.h"
 #include "pw_log/log.h"
+#include "pw_status/status.h"
 #include "pw_string/to_string.h"
 
 namespace pw::stream {
 namespace {
 
 constexpr uint32_t kServerBacklogLength = 1;
-constexpr const char* kLocalhostAddress = "127.0.0.1";
+constexpr const char* kLocalhostAddress = "localhost";
 
 // Set necessary options on a socket file descriptor.
 void ConfigureSocket([[maybe_unused]] int socket) {
@@ -51,7 +52,7 @@ void ConfigureSocket([[maybe_unused]] int socket) {
 // TODO(b/240982565): Implement SocketStream for Windows.
 
 Status SocketStream::SocketStream::Connect(const char* host, uint16_t port) {
-  if (host == nullptr || std::strcmp(host, "localhost") == 0) {
+  if (host == nullptr) {
     host = kLocalhostAddress;
   }
 
@@ -61,26 +62,37 @@ Status SocketStream::SocketStream::Connect(const char* host, uint16_t port) {
   PW_CHECK(ToString(port, port_buffer).ok());
   hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = SOCK_STREAM;
-  hints.ai_flags = AI_NUMERICHOST | AI_NUMERICSERV | AI_PASSIVE;
+  hints.ai_flags = AI_NUMERICSERV;
   if (getaddrinfo(host, port_buffer, &hints, &res) != 0) {
     PW_LOG_ERROR("Failed to configure connection address for socket");
     return Status::InvalidArgument();
   }
 
-  connection_fd_ = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-  ConfigureSocket(connection_fd_);
-  if (connect(connection_fd_, res->ai_addr, res->ai_addrlen) < 0) {
-    close(connection_fd_);
-    connection_fd_ = kInvalidFd;
+  struct addrinfo* rp;
+  for (rp = res; rp != nullptr; rp = rp->ai_next) {
+    connection_fd_ = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+    if (connection_fd_ != kInvalidFd) {
+      break;
+    }
   }
-  freeaddrinfo(res);
 
   if (connection_fd_ == kInvalidFd) {
-    PW_LOG_ERROR(
-        "Failed to connect to %s:%d: %s", host, port, std::strerror(errno));
+    PW_LOG_ERROR("Failed to create a socket: %s", std::strerror(errno));
+    freeaddrinfo(res);
     return Status::Unknown();
   }
 
+  ConfigureSocket(connection_fd_);
+  if (connect(connection_fd_, rp->ai_addr, rp->ai_addrlen) == -1) {
+    close(connection_fd_);
+    connection_fd_ = kInvalidFd;
+    PW_LOG_ERROR(
+        "Failed to connect to %s:%d: %s", host, port, std::strerror(errno));
+    freeaddrinfo(res);
+    return Status::Unknown();
+  }
+
+  freeaddrinfo(res);
   return OkStatus();
 }
 

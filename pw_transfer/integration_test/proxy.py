@@ -612,11 +612,11 @@ async def _main(server_port: int, client_port: int) -> None:
     config = text_format.Parse(text_config, config_pb2.ProxyConfig())
 
     # Instantiate the TCP server.
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
     server_socket.setsockopt(
         socket.SOL_SOCKET, socket.SO_RCVBUF, _RECEIVE_BUFFER_SIZE
     )
-    server_socket.bind(('localhost', client_port))
+    server_socket.bind(('', client_port))
     server = await asyncio.start_server(
         lambda reader, writer: _handle_connection(
             server_port, config, reader, writer
