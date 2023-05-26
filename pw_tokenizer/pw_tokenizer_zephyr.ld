@@ -24,23 +24,17 @@
  */
 
 #ifdef CONFIG_ARCH_POSIX
-.pw_tokenizer.info (INFO) :
-{
-  KEEP(*(.pw_tokenizer.info))
-}
-
-.pw_tokenizer.entries (INFO) :
-{
-  KEEP(*(.pw_tokenizer.entries.*))
-}
+#define ADDR
 #else
-.pw_tokenizer.info 0x0 (INFO) :
+#define ADDR 0x0
+#endif
+
+.pw_tokenizer.info ADDR (INFO) :
 {
   KEEP(*(.pw_tokenizer.info))
 }
 
-.pw_tokenizer.entries 0x0 (INFO) :
+.pw_tokenizer.entries ADDR (INFO) :
 {
   KEEP(*(.pw_tokenizer.entries.*))
 }
-#endif /* CONFIG_ARCH_POSIX */
