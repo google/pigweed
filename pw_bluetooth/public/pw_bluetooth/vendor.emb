@@ -207,13 +207,13 @@ struct StartA2dpOffloadCommand:
     -- Maximum size of L2CAP MTU containing encoded audio packets
 
   if codec_type == A2dpCodecType.SBC:
-    $next  [+32]      SbcCodecInformation     sbc_codec_information
+    28   [+32]      SbcCodecInformation     sbc_codec_information
   if codec_type == A2dpCodecType.AAC:
-    $next  [+32]      AacCodecInformation     aac_codec_information
+    28   [+32]      AacCodecInformation     aac_codec_information
   if codec_type == A2dpCodecType.LDAC:
-    $next  [+32]      LdacCodecInformation    ldac_codec_information
+    28   [+32]      LdacCodecInformation    ldac_codec_information
   if codec_type == A2dpCodecType.APTX || codec_type == A2dpCodecType.APTX_HD:
-    $next  [+32]      UInt:8[32]              reserved
+    28   [+32]      UInt:8[32]              reserved
 
 struct StopA2dpOffloadCommand:
   let vendor_size = AndroidCommandHeader.$size_in_bytes
