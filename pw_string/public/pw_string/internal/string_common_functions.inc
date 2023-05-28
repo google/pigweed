@@ -35,12 +35,12 @@ PW_MODIFY_DIAGNOSTIC_GCC(ignored, "-Wtype-limits");
 
 // Assignment functions
 
-constexpr InlineBasicString& assign(size_type count, T ch) {
+constexpr InlineBasicString& assign(size_t count, T ch) {
   return static_cast<InlineBasicString&>(Fill(data(), ch, count));
 }
 
 // Checks capacity rather than current size.
-template <size_type kOtherCapacity>
+template <size_t kOtherCapacity>
 constexpr InlineBasicString& assign(
     const InlineBasicString<T, kOtherCapacity>& other) {
   static_assert(
@@ -51,13 +51,13 @@ constexpr InlineBasicString& assign(
 }
 
 constexpr InlineBasicString& assign(const InlineBasicString& other,
-                                    size_type index,
-                                    size_type count = npos) {
+                                    size_t index,
+                                    size_t count = npos) {
   return static_cast<InlineBasicString&>(
       CopySubstr(data(), other.data(), other.size(), index, count));
 }
 
-constexpr InlineBasicString& assign(const T* string, size_type count) {
+constexpr InlineBasicString& assign(const T* string, size_t count) {
   return static_cast<InlineBasicString&>(Copy(data(), string, count));
 }
 
@@ -86,8 +86,7 @@ constexpr InlineBasicString& assign(InputIterator start, InputIterator finish) {
 }
 
 constexpr InlineBasicString& assign(std::initializer_list<T> list) {
-  return assign(list.begin(),
-                static_cast<pw::string_impl::size_type>(list.size()));
+  return assign(list.begin(), list.size());
 }
 
 #if PW_CXX_STANDARD_IS_SUPPORTED(17)  // std::string_view is a C++17 feature
@@ -97,23 +96,18 @@ template <typename StringView,
 constexpr InlineBasicString& assign(const StringView& string) {
   const std::basic_string_view<T> view = string;
   PW_ASSERT(view.size() < npos);
-  return assign(view.data(),
-                static_cast<pw::string_impl::size_type>(view.size()));
+  return assign(view.data(), view.size());
 }
 
 template <typename StringView,
           typename = string_impl::EnableIfStringViewLike<T, StringView>>
 constexpr InlineBasicString& assign(const StringView& string,
-                                    size_type index,
-                                    size_type count = npos) {
+                                    size_t index,
+                                    size_t count = npos) {
   const std::basic_string_view<T> view = string;
   PW_ASSERT(view.size() < npos);
   return static_cast<InlineBasicString&>(
-      CopySubstr(data(),
-                 view.data(),
-                 static_cast<pw::string_impl::size_type>(view.size()),
-                 index,
-                 count));
+      CopySubstr(data(), view.data(), view.size(), index, count));
 }
 
 #endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
@@ -122,17 +116,17 @@ constexpr InlineBasicString& assign(std::nullptr_t) = delete;
 
 // Element access
 
-constexpr reference at(size_type index) {
+constexpr reference at(size_t index) {
   PW_ASSERT(index < length());
   return data()[index];
 }
-constexpr const_reference at(size_type index) const {
+constexpr const_reference at(size_t index) const {
   PW_ASSERT(index < length());
   return data()[index];
 }
 
-constexpr reference operator[](size_type index) { return data()[index]; }
-constexpr const_reference operator[](size_type index) const {
+constexpr reference operator[](size_t index) { return data()[index]; }
+constexpr const_reference operator[](size_t index) const {
   return data()[index];
 }
 
@@ -179,9 +173,9 @@ constexpr const_reverse_iterator crend() const noexcept {
 [[nodiscard]] constexpr bool empty() const noexcept { return size() == 0u; }
 
 // The number of characters in the string.
-constexpr size_type length() const noexcept { return size(); }
+constexpr size_t length() const noexcept { return size(); }
 
-constexpr size_type capacity() const noexcept { return max_size(); }
+constexpr size_t capacity() const noexcept { return max_size(); }
 
 // Operations
 
@@ -201,11 +195,11 @@ constexpr void pop_back() {
   PopBack(data());
 }
 
-constexpr InlineBasicString& append(size_type count, T ch) {
+constexpr InlineBasicString& append(size_t count, T ch) {
   return static_cast<InlineBasicString&>(FillExtend(data(), ch, count));
 }
 
-template <size_type kOtherCapacity>
+template <size_t kOtherCapacity>
 constexpr InlineBasicString& append(
     const InlineBasicString<T, kOtherCapacity>& string) {
   static_assert(
@@ -214,16 +208,16 @@ constexpr InlineBasicString& append(
   return append(string.data(), string.size());
 }
 
-template <size_type kOtherCapacity>
+template <size_t kOtherCapacity>
 constexpr InlineBasicString& append(
     const InlineBasicString<T, kOtherCapacity>& other,
-    size_type index,
-    size_type count = npos) {
+    size_t index,
+    size_t count = npos) {
   return static_cast<InlineBasicString&>(
       CopyExtendSubstr(data(), other.data(), other.size(), index, count));
 }
 
-constexpr InlineBasicString& append(const T* string, size_type count) {
+constexpr InlineBasicString& append(const T* string, size_t count) {
   return static_cast<InlineBasicString&>(CopyExtend(data(), string, count));
 }
 
@@ -259,24 +253,23 @@ template <typename StringView,
 constexpr InlineBasicString& append(const StringView& string) {
   const std::basic_string_view<T> view = string;
   PW_ASSERT(view.size() < npos);
-  return append(view.data(),
-                static_cast<pw::string_impl::size_type>(view.size()));
+  return append(view.data(), view.size());
 }
 
 template <typename StringView,
           typename = string_impl::EnableIfStringViewLike<T, StringView>>
 constexpr InlineBasicString& append(const StringView& string,
-                                    size_type index,
-                                    size_type count = npos) {
+                                    size_t index,
+                                    size_t count = npos) {
   const std::basic_string_view<T> view = string;
   PW_ASSERT(view.size() < npos);
-  return static_cast<InlineBasicString&>(CopyExtendSubstr(
-      data(), view.data(), static_cast<size_type>(view.size()), index, count));
+  return static_cast<InlineBasicString&>(
+      CopyExtendSubstr(data(), view.data(), view.size(), index, count));
 }
 
 #endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
-template <size_type kOtherCapacity>
+template <size_t kOtherCapacity>
 constexpr int compare(
     const InlineBasicString<T, kOtherCapacity>& other) const noexcept {
   return string_impl::Compare(data(), size(), other.data(), other.size());
@@ -300,9 +293,9 @@ constexpr int compare(const T* other) const {
 //   - substr
 //   - copy
 
-constexpr void resize(size_type new_size) { resize(new_size, T()); }
+constexpr void resize(size_t new_size) { resize(new_size, T()); }
 
-constexpr void resize(size_type new_size, T ch) {
+constexpr void resize(size_t new_size, T ch) {
   return Resize(data(), new_size, ch);
 }
 
@@ -310,9 +303,10 @@ constexpr void resize(size_type new_size, T ch) {
 // buffer has a fixed size.
 template <typename Operation>
 constexpr void resize_and_overwrite(Operation operation) {
-  const auto new_size = std::move(operation)(data(), max_size());
-  PW_ASSERT(static_cast<size_t>(new_size) <= max_size());
-  SetSizeAndTerminate(data(), static_cast<size_type>(new_size));
+  const auto new_size =
+      static_cast<size_t>(std::move(operation)(data(), max_size()));
+  PW_ASSERT(new_size <= max_size());
+  SetSizeAndTerminate(data(), new_size);
 }
 
 // TODO(b/239996007): Implement swap

@@ -1628,14 +1628,14 @@ TEST(InlineString, ResizeAndOverwrite) {
               "A?CDE5678");
 
 #if PW_NC_TEST(ResizeAndOverwrite_LargerThanCapacity)
-  PW_NC_EXPECT("PW_ASSERT\(static_cast<size_t>\(new_size\) <= max_size\(\)\)");
+  PW_NC_EXPECT("PW_ASSERT\(new_size <= max_size\(\)\)");
   [[maybe_unused]] constexpr auto fail = [] {
     InlineString<4> str("123");
     str.resize_and_overwrite([](char*, size_t) { return 5; });
     return str;
   }();
 #elif PW_NC_TEST(ResizeAndOverwrite_NegativeSize)
-  PW_NC_EXPECT("PW_ASSERT\(static_cast<size_t>\(new_size\) <= max_size\(\)\)");
+  PW_NC_EXPECT("PW_ASSERT\(new_size <= max_size\(\)\)");
   [[maybe_unused]] constexpr auto fail = [] {
     InlineString<4> str("123");
     str.resize_and_overwrite([](char*, size_t) { return -1; });

@@ -27,7 +27,7 @@
 namespace pw {
 namespace string_impl {
 
-// pw::InlineString<>::size_type is unsigned short so the capacity and current
+// pw::InlineString<>::size_t is unsigned short so the capacity and current
 // size fit into a single word.
 using size_type = unsigned short;
 
@@ -56,7 +56,7 @@ using EnableIfStringViewLikeButNotStringView = std::enable_if_t<
 
 // Reserved capacity that is used to represent a generic-length
 // pw::InlineString.
-PW_INLINE_VARIABLE constexpr size_type kGeneric = size_type(-1);
+PW_INLINE_VARIABLE constexpr size_t kGeneric = size_type(-1);
 
 #if defined(__cpp_lib_constexpr_string) && __cpp_lib_constexpr_string >= 201907L
 
@@ -86,7 +86,7 @@ class char_traits : private std::char_traits<T> {
   using std::char_traits<T>::eq;
 
   static constexpr T* copy(T* dest, const T* source, size_t count) {
-    for (size_type i = 0; i < count; ++i) {
+    for (size_t i = 0; i < count; ++i) {
       char_traits<T>::assign(dest[i], source[i]);
     }
     return dest;
@@ -99,7 +99,7 @@ class char_traits : private std::char_traits<T> {
 
 // Used in static_asserts to check that a C array fits in an InlineString.
 constexpr bool NullTerminatedArrayFitsInString(
-    size_t null_terminated_array_size, size_type capacity) {
+    size_t null_terminated_array_size, size_t capacity) {
   return null_terminated_array_size > 0u &&
          null_terminated_array_size - 1 <= capacity &&
          null_terminated_array_size - 1 < kGeneric;
@@ -124,8 +124,8 @@ constexpr size_type CheckedCastToSize(T num) {
 // std::char_traits<T>::length, which is unbounded. The string must contain at
 // least one character.
 template <typename T>
-constexpr size_type BoundedStringLength(const T* string, size_type capacity) {
-  size_type length = 0;
+constexpr size_t BoundedStringLength(const T* string, size_t capacity) {
+  size_t length = 0;
   for (; length <= capacity; ++length) {
     if (char_traits<T>::eq(string[length], T())) {
       break;
@@ -136,49 +136,48 @@ constexpr size_type BoundedStringLength(const T* string, size_type capacity) {
 
 // As with std::string, InlineString treats literals and character arrays as
 // null-terminated strings. ArrayStringLength checks that the array size fits
-// within size_type and asserts if no null terminator was found in the array.
+// within size_t and asserts if no null terminator was found in the array.
 template <typename T>
-constexpr size_type ArrayStringLength(const T* array,
-                                      size_type max_string_length,
-                                      size_type capacity) {
-  const size_type max_length = std::min(max_string_length, capacity);
-  const size_type length = BoundedStringLength(array, max_length);
+constexpr size_t ArrayStringLength(const T* array,
+                                   size_t max_string_length,
+                                   size_t capacity) {
+  const size_t max_length = std::min(max_string_length, capacity);
+  const size_t length = BoundedStringLength(array, max_length);
   PW_ASSERT(length <= max_string_length);  // The array is not null terminated
   return length;
 }
 
 template <typename T, size_t kCharArraySize>
-constexpr size_type ArrayStringLength(const T (&array)[kCharArraySize],
-                                      size_type capacity) {
+constexpr size_t ArrayStringLength(const T (&array)[kCharArraySize],
+                                   size_t capacity) {
   static_assert(kCharArraySize > 0u, "C arrays cannot have a length of 0");
   static_assert(kCharArraySize - 1 < kGeneric,
                 "The size of this literal or character array is too large "
-                "for pw::InlineString<>::size_type");
-  return ArrayStringLength(
-      array, static_cast<size_type>(kCharArraySize - 1), capacity);
+                "for pw::InlineString<>::size_t");
+  return ArrayStringLength(array, kCharArraySize - 1, capacity);
 }
 
 // Constexpr version of std::copy that returns the number of copied characters.
 template <typename InputIterator, typename T>
-constexpr size_type IteratorCopyAndTerminate(InputIterator begin,
-                                             InputIterator end,
-                                             T* const string_begin,
-                                             const T* const string_end) {
+constexpr size_t IteratorCopyAndTerminate(InputIterator begin,
+                                          InputIterator end,
+                                          T* const string_begin,
+                                          const T* const string_end) {
   T* current_position = string_begin;
   for (InputIterator it = begin; it != end; ++it) {
     PW_ASSERT(current_position != string_end);
     char_traits<T>::assign(*current_position++, *it);
   }
   char_traits<T>::assign(*current_position, T());  // Null terminate
-  return static_cast<size_type>(current_position - string_begin);
+  return static_cast<size_t>(current_position - string_begin);
 }
 
 // Constexpr lexicographical comparison.
 template <typename T>
 constexpr int Compare(const T* lhs,
-                      size_type lhs_size,
+                      size_t lhs_size,
                       const T* rhs,
-                      size_type rhs_size) noexcept {
+                      size_t rhs_size) noexcept {
   int result = char_traits<T>::compare(lhs, rhs, std::min(lhs_size, rhs_size));
   if (result != 0 || lhs_size == rhs_size) {
     return result;
