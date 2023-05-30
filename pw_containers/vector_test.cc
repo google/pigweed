@@ -592,6 +592,14 @@ TEST(Vector, Modify_Insert_IteratorRange) {
   }
 }
 
+TEST(Vector, Modify_Insert_IteratorEmptyRange) {
+  Vector<int, 10> src;
+  Vector<int, 10> dst(10, 1);
+  dst.insert(dst.end(), src.begin(), src.end());
+  EXPECT_EQ(dst.size(), 10U);
+  EXPECT_EQ(dst.back(), 1);
+}
+
 TEST(Vector, Modify_Insert_InitializerListRange) {
   std::array array_to_insert_first{0, 1, 2, 8, 9};
   Vector<int, 10> vector(array_to_insert_first.begin(),
