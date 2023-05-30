@@ -113,7 +113,7 @@ class Device:
             self._log_decoder = LogStreamDecoder(
                 decoded_log_handler=decoded_log_handler,
                 detokenizer=self.detokenizer,
-                source_name='SamplelRpcDevice',
+                source_name='RpcDevice',
                 timestamp_parser=(
                     timestamp_decoder
                     if timestamp_decoder
