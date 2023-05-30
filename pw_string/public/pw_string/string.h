@@ -120,7 +120,7 @@ class InlineBasicString final
             typename = string_impl::EnableIfInputIterator<InputIterator>>
   constexpr InlineBasicString(InputIterator start, InputIterator finish)
       : InlineBasicString() {
-    IteratorCopy(start, finish, data(), data() + max_size());
+    CopyIterator(data(), start, finish);
   }
 
   // Use the default copy for InlineBasicString with the same capacity.
@@ -164,8 +164,7 @@ class InlineBasicString final
                 std::is_same<StringView, std::basic_string_view<T>>::value>* =
                 nullptr>
   constexpr InlineBasicString(const StringView& view)
-      : InlineBasicString(view.data(),
-                          pw::string_impl::CheckedCastToSize(view.size())) {}
+      : InlineBasicString(view.data(), view.size()) {}
 
   template <typename StringView,
             typename = string_impl::EnableIfStringViewLike<T, StringView>>
@@ -174,11 +173,7 @@ class InlineBasicString final
                               size_t count)
       : InlineBasicString() {
     const std::basic_string_view<T> view = string;
-    CopySubstr(data(),
-               view.data(),
-               pw::string_impl::CheckedCastToSize(view.size()),
-               index,
-               count);
+    CopySubstr(data(), view.data(), view.size(), index, count);
   }
 #endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
@@ -287,11 +282,12 @@ class InlineBasicString final
   using InlineBasicString<T, string_impl::kGeneric>::Copy;
   using InlineBasicString<T, string_impl::kGeneric>::CopySubstr;
   using InlineBasicString<T, string_impl::kGeneric>::Fill;
-  using InlineBasicString<T, string_impl::kGeneric>::IteratorCopy;
+  using InlineBasicString<T, string_impl::kGeneric>::CopyIterator;
   using InlineBasicString<T, string_impl::kGeneric>::CopyExtend;
   using InlineBasicString<T, string_impl::kGeneric>::CopyExtendSubstr;
   using InlineBasicString<T, string_impl::kGeneric>::FillExtend;
-  using InlineBasicString<T, string_impl::kGeneric>::IteratorExtend;
+  using InlineBasicString<T, string_impl::kGeneric>::MoveExtend;
+  using InlineBasicString<T, string_impl::kGeneric>::CopyIteratorExtend;
   using InlineBasicString<T, string_impl::kGeneric>::Resize;
   using InlineBasicString<T, string_impl::kGeneric>::SetSizeAndTerminate;
 
@@ -366,34 +362,36 @@ class InlineBasicString<T, string_impl::kGeneric> {
   constexpr InlineBasicString& Fill(T* data, T fill_char, size_t new_size);
 
   template <typename InputIterator>
-  constexpr InlineBasicString& IteratorCopy(InputIterator start,
-                                            InputIterator finish,
-                                            T* data_start,
-                                            const T* data_finish) {
-    set_size(string_impl::IteratorCopyAndTerminate(
-        start, finish, data_start, data_finish));
-    return *this;
-  }
+  constexpr InlineBasicString& CopyIterator(T* data_start,
+                                            InputIterator begin,
+                                            InputIterator end);
 
   constexpr InlineBasicString& CopyExtend(T* data,
+                                          size_t index,
                                           const T* source,
                                           size_t count);
 
-  constexpr InlineBasicString& CopyExtendSubstr(
-      T* data, const T* source, size_t source_size, size_t index, size_t count);
+  constexpr InlineBasicString& CopyExtendSubstr(T* data,
+                                                size_t index,
+                                                const T* source,
+                                                size_t source_size,
+                                                size_t source_index,
+                                                size_t count);
 
-  constexpr InlineBasicString& FillExtend(T* data, T fill_char, size_t count);
+  constexpr InlineBasicString& FillExtend(T* data,
+                                          size_t index,
+                                          T fill_char,
+                                          size_t count);
 
   template <typename InputIterator>
-  constexpr InlineBasicString& IteratorExtend(InputIterator start,
-                                              InputIterator finish,
-                                              T* data_start,
-                                              const T* data_finish) {
-    set_size(string_impl::IteratorCopyAndTerminate(
-                 start, finish, data_start, data_finish) +
-             size());
-    return *this;
-  }
+  constexpr InlineBasicString& CopyIteratorExtend(T* data,
+                                                  size_t index,
+                                                  InputIterator begin,
+                                                  InputIterator end);
+
+  constexpr InlineBasicString& MoveExtend(T* data,
+                                          size_t index,
+                                          size_t new_index);
 
   constexpr void Resize(T* data, size_t new_size, T ch);
 
@@ -401,6 +399,7 @@ class InlineBasicString<T, string_impl::kGeneric> {
     length_ = string_impl::CheckedCastToSize(length);
   }
   constexpr void SetSizeAndTerminate(T* data, size_t length) {
+    PW_ASSERT(length <= max_size());
     string_impl::char_traits<T>::assign(data[length], T());
     set_size(length);
   }
@@ -597,6 +596,59 @@ InlineBasicString<T, string_impl::kGeneric>::CopySubstr(
 
 template <typename T>
 constexpr InlineBasicString<T, string_impl::kGeneric>&
+InlineBasicString<T, string_impl::kGeneric>::CopyExtend(T* data,
+                                                        size_t index,
+                                                        const T* source,
+                                                        size_t count) {
+  PW_ASSERT(index <= size());
+  PW_ASSERT(count <= max_size() - index);
+  string_impl::char_traits<T>::copy(data + index, source, count);
+  SetSizeAndTerminate(data, std::max(size(), index + count));
+  return *this;
+}
+
+template <typename T>
+constexpr InlineBasicString<T, string_impl::kGeneric>&
+InlineBasicString<T, string_impl::kGeneric>::CopyExtendSubstr(
+    T* data,
+    size_t index,
+    const T* source,
+    size_t source_size,
+    size_t source_index,
+    size_t count) {
+  PW_ASSERT(source_index <= source_size);
+  return CopyExtend(data,
+                    index,
+                    source + source_index,
+                    std::min(count, source_size - source_index));
+  return *this;
+}
+
+template <typename T>
+template <typename InputIterator>
+constexpr InlineBasicString<T, string_impl::kGeneric>&
+InlineBasicString<T, string_impl::kGeneric>::CopyIterator(T* data,
+                                                          InputIterator begin,
+                                                          InputIterator end) {
+  size_t length =
+      string_impl::IteratorCopy(begin, end, data, data + max_size());
+  SetSizeAndTerminate(data, length);
+  return *this;
+}
+
+template <typename T>
+template <typename InputIterator>
+constexpr InlineBasicString<T, string_impl::kGeneric>&
+InlineBasicString<T, string_impl::kGeneric>::CopyIteratorExtend(
+    T* data, size_t index, InputIterator begin, InputIterator end) {
+  size_t length =
+      string_impl::IteratorCopy(begin, end, data + index, data + max_size());
+  SetSizeAndTerminate(data, std::max(size(), index + length));
+  return *this;
+}
+
+template <typename T>
+constexpr InlineBasicString<T, string_impl::kGeneric>&
 InlineBasicString<T, string_impl::kGeneric>::Fill(T* data,
                                                   T fill_char,
                                                   size_t new_size) {
@@ -608,32 +660,28 @@ InlineBasicString<T, string_impl::kGeneric>::Fill(T* data,
 
 template <typename T>
 constexpr InlineBasicString<T, string_impl::kGeneric>&
-InlineBasicString<T, string_impl::kGeneric>::CopyExtend(T* data,
-                                                        const T* source,
-                                                        size_t count) {
-  PW_ASSERT(count <= max_size() - size());
-  string_impl::char_traits<T>::copy(data + size(), source, count);
-  SetSizeAndTerminate(data, size() + count);
-  return *this;
-}
-
-template <typename T>
-constexpr InlineBasicString<T, string_impl::kGeneric>&
-InlineBasicString<T, string_impl::kGeneric>::CopyExtendSubstr(
-    T* data, const T* source, size_t source_size, size_t index, size_t count) {
-  PW_ASSERT(index <= source_size);
-  return CopyExtend(data, source + index, std::min(count, source_size - index));
-  return *this;
-}
-
-template <typename T>
-constexpr InlineBasicString<T, string_impl::kGeneric>&
 InlineBasicString<T, string_impl::kGeneric>::FillExtend(T* data,
+                                                        size_t index,
                                                         T fill_char,
                                                         size_t count) {
-  PW_ASSERT(count <= max_size() - size());
-  string_impl::char_traits<T>::assign(data + size(), count, fill_char);
-  SetSizeAndTerminate(data, size() + count);
+  PW_ASSERT(index <= size());
+  PW_ASSERT(count <= max_size() - index);
+  string_impl::char_traits<T>::assign(data + index, count, fill_char);
+  SetSizeAndTerminate(data, std::max(size(), index + count));
+  return *this;
+}
+
+template <typename T>
+constexpr InlineBasicString<T, string_impl::kGeneric>&
+InlineBasicString<T, string_impl::kGeneric>::MoveExtend(T* data,
+                                                        size_t index,
+                                                        size_t new_index) {
+  PW_ASSERT(index <= size());
+  PW_ASSERT(new_index <= max_size());
+  PW_ASSERT(size() - index <= max_size() - new_index);
+  string_impl::char_traits<T>::move(
+      data + new_index, data + index, size() - index);
+  SetSizeAndTerminate(data, size() - index + new_index);
   return *this;
 }
 

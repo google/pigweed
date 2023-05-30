@@ -27,7 +27,7 @@
 namespace pw {
 namespace string_impl {
 
-// pw::InlineString<>::size_t is unsigned short so the capacity and current
+// pw::InlineString<>::size_type is unsigned short so the capacity and current
 // size fit into a single word.
 using size_type = unsigned short;
 
@@ -84,6 +84,17 @@ class char_traits : private std::char_traits<T> {
   }
 
   using std::char_traits<T>::eq;
+
+  static constexpr T* move(T* dest, const T* source, size_t count) {
+    if (dest < source) {
+      char_traits<T>::copy(dest, source, count);
+    } else if (source < dest) {
+      for (size_t i = count; i != 0; --i) {
+        char_traits<T>::assign(dest[i - 1], source[i - 1]);
+      }
+    }
+    return dest;
+  }
 
   static constexpr T* copy(T* dest, const T* source, size_t count) {
     for (size_t i = 0; i < count; ++i) {
@@ -154,21 +165,40 @@ constexpr size_t ArrayStringLength(const T (&array)[kCharArraySize],
   static_assert(kCharArraySize - 1 < kGeneric,
                 "The size of this literal or character array is too large "
                 "for pw::InlineString<>::size_t");
-  return ArrayStringLength(array, kCharArraySize - 1, capacity);
+  return ArrayStringLength(
+      array, static_cast<size_t>(kCharArraySize - 1), capacity);
 }
 
 // Constexpr version of std::copy that returns the number of copied characters.
+// Does NOT null-terminate the string.
 template <typename InputIterator, typename T>
-constexpr size_t IteratorCopyAndTerminate(InputIterator begin,
-                                          InputIterator end,
-                                          T* const string_begin,
-                                          const T* const string_end) {
+constexpr size_t IteratorCopy(InputIterator begin,
+                              InputIterator end,
+                              T* const string_begin,
+                              const T* const string_end) {
   T* current_position = string_begin;
-  for (InputIterator it = begin; it != end; ++it) {
-    PW_ASSERT(current_position != string_end);
-    char_traits<T>::assign(*current_position++, *it);
+
+  // If `InputIterator` is a `LegacyRandomAccessIterator`, the bounds check can
+  // be done up front, allowing the compiler more flexibility in optimizing the
+  // loop.
+#if PW_CXX_STANDARD_IS_SUPPORTED(17)  // constexpr-if is a C++17 feature
+  using category =
+      typename std::iterator_traits<InputIterator>::iterator_category;
+  if constexpr (std::is_same_v<category, std::random_access_iterator_tag>) {
+    PW_ASSERT(begin <= end);
+    PW_ASSERT(end - begin <= string_end - string_begin);
+    for (InputIterator it = begin; it != end; ++it) {
+      char_traits<T>::assign(*current_position++, *it);
+    }
+  } else {
+#else
+  {
+#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
+    for (InputIterator it = begin; it != end; ++it) {
+      PW_ASSERT(current_position != string_end);
+      char_traits<T>::assign(*current_position++, *it);
+    }
   }
-  char_traits<T>::assign(*current_position, T());  // Null terminate
   return static_cast<size_t>(current_position - string_begin);
 }
 
