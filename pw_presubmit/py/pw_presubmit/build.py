@@ -13,6 +13,7 @@
 # the License.
 """Functions for building code during presubmit checks."""
 
+import base64
 import contextlib
 import itertools
 import json
@@ -544,6 +545,37 @@ def test_server(executable: str, output_dir: Path):
 
         finally:
             proc.terminate()  # pylint: disable=used-before-assignment
+
+
+@contextlib.contextmanager
+def modified_env(**envvars):
+    """Context manager that sets environment variables.
+
+    Use by assigning values to variable names in the argument list, e.g.:
+        `modified_env(MY_FLAG="some value")`
+
+    Args:
+        envvars: Keyword arguments
+    """
+    saved_env = os.environ.copy()
+    os.environ.update(envvars)
+    try:
+        yield
+    finally:
+        os.environ = saved_env
+
+
+def fuzztest_prng_seed(ctx: PresubmitContext) -> str:
+    """Convert the RNG seed to the format expected by FuzzTest.
+
+    FuzzTest can be configured to use the seed by setting the
+    `FUZZTEST_PRNG_SEED` environment variable to this value.
+
+    Args:
+        ctx: The context that includes a pseudorandom number generator seed.
+    """
+    rng_bytes = ctx.rng_seed.to_bytes(32, sys.byteorder)
+    return base64.urlsafe_b64encode(rng_bytes).decode('ascii').rstrip('=')
 
 
 @filter_paths(

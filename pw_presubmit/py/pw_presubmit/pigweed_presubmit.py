@@ -435,6 +435,11 @@ gn_fuzz_build = build.GnGenNinja(
         ),
     },
     ninja_targets=('host_clang_fuzz',),
+    ninja_contexts=(
+        lambda ctx: build.modified_env(
+            FUZZTEST_PRNG_SEED=build.fuzztest_prng_seed(ctx),
+        ),
+    ),
 )
 
 gn_docs_build = build.GnGenNinja(name='gn_docs_build', ninja_targets=('docs',))
