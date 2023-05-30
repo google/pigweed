@@ -2299,7 +2299,8 @@ struct ReadBdAddrCommand:
 # ========== 7.5 Status Parameters ==========
 
 struct ReadEncryptionKeySizeCommand:
-  -- Read Encryption Key Size (v1.1) (BR/EDR)
+  -- 7.5.6 Read Encryption Key Size (v1.1) (BR/EDR)
+  -- HCI_Read_Encryption_Key_Size
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
   $next [+2]         UInt           connection_handle
@@ -2309,309 +2310,9 @@ struct ReadEncryptionKeySizeCommand:
 
 # ========== 7.8 LE Controller Commands ==========
 
-struct LESetAdvertisingEnableCommand:
-  -- LE Set Advertising Enable command (v4.0) (LE)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0     [+hdr_size]  CommandHeader       header
-  $next [+1]         GenericEnableParam  advertising_enable
-
-
-struct LESetExtendedAdvertisingEnableData:
-  -- Data fields for variable-length portion of an LE Set Extended Advertising Enable command
-  0     [+1]  UInt  advertising_handle
-  $next [+2]  UInt  duration
-  $next [+1]  UInt  max_extended_advertising_events
-
-
-struct LESetExtendedAdvertisingDataCommand:
-  -- LE Set Extended Advertising Data command (v5.0) (LE)
-
-  let hdr_size = CommandHeader.$size_in_bytes
-
-  0     [+hdr_size]  CommandHeader                    header
-
-  $next [+1]         UInt                             advertising_handle
-    -- Handle used to identify an advertising set.
-
-  $next [+1]         LESetExtendedAdvDataOp           operation
-
-  $next [+1]         LEExtendedAdvFragmentPreference  fragment_preference
-    -- Provides a hint to the Controller as to whether advertising data should be fragmented.
-
-  $next [+1]         UInt                             advertising_data_length (sz)
-    -- Length of the advertising data included in this command packet, up to
-    -- kMaxLEExtendedAdvertisingDataLength bytes. If the advertising set uses legacy advertising
-    -- PDUs that support advertising data then this shall not exceed kMaxLEAdvertisingDataLength
-    -- bytes.
-    [requires: 0 <= this <= 251]
-
-  $next [+sz]        UInt:8[sz]                       advertising_data
-    -- Variable length advertising data.
-
-
-struct LESetExtendedScanResponseDataCommand:
-  -- LE Set Extended Scan Response Data command (v5.0) (LE)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0     [+hdr_size]  CommandHeader                    header
-  $next [+1]         UInt                             advertising_handle
-    -- Used to identify an advertising set
-    [requires: 0x00 <= this <= 0xEF]
-
-  $next [+1]         LESetExtendedAdvDataOp           operation
-  $next [+1]         LEExtendedAdvFragmentPreference  fragment_preference
-    -- Provides a hint to the controller as to whether advertising data should be fragmented
-
-  $next [+1]         UInt                             scan_response_data_length (sz)
-    -- The number of octets in the scan_response_data parameter
-    [requires: 0 <= this <= 251]
-
-  $next [+sz]        UInt:8[sz]                       scan_response_data
-    -- Scan response data formatted as defined in Core Spec v5.4, Vol 3, Part C, Section 11
-
-
-struct LESetExtendedAdvertisingEnableCommand:
-  -- LE Set Extended Advertising Enable command (v5.0) (LE)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0     [+hdr_size]                   CommandHeader                         header
-  $next [+1]                          GenericEnableParam                    enable
-  $next [+1]                          UInt                                  num_sets
-  let single_data_size = LESetExtendedAdvertisingEnableData.$size_in_bytes
-  $next [+single_data_size*num_sets]  LESetExtendedAdvertisingEnableData[]  data
-
-
-struct LEReadMaxAdvertisingDataLengthCommand:
-  -- LE Read Maximum Advertising Data Length command (v5.0) (LE)
-  -- This command has no parameters
-  let hdr_size = CommandHeader.$size_in_bytes
-  0 [+hdr_size]  CommandHeader  header
-
-
-struct LEReadNumSupportedAdvertisingSetsCommand:
-  -- LE Read Number of Supported Advertising Sets command (v5.0) (LE)
-  -- This command has no parameters
-  let hdr_size = CommandHeader.$size_in_bytes
-  0 [+hdr_size]  CommandHeader  header
-
-
-struct LERemoveAdvertisingSetCommand:
-  -- LE Remove Advertising Set command (v5.0) (LE)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0     [+hdr_size]  CommandHeader  header
-  $next [+1]         UInt           advertising_handle
-
-
-struct LEClearAdvertisingSetsCommand:
-  -- LE Clear Advertising Sets command (v5.0) (LE)
-  -- This command has no parameters
-  let hdr_size = CommandHeader.$size_in_bytes
-  0 [+hdr_size]  CommandHeader  header
-
-
-struct LESetExtendedScanParametersData:
-  -- Data fields for variable-length portion of an LE Set Extneded Scan Parameters command
-
-  0     [+1]  LEScanType  scan_type
-
-  $next [+2]  UInt        scan_interval
-    -- Time interval from when the Controller started its last scan until it begins the subsequent
-    -- scan on the primary advertising physical channel.
-    -- Time = N × 0.625 ms
-    -- Time Range: 2.5 ms to 40.959375 s
-    [requires: 0x0004 <= this]
-
-  $next [+2]  UInt        scan_window
-    -- Duration of the scan on the primary advertising physical channel.
-    -- Time = N × 0.625 ms
-    -- Time Range: 2.5 ms to 40.959375 s
-    [requires: 0x0004 <= this]
-
-
-struct LESetExtendedScanParametersCommand(num_entries: UInt:8):
-  -- LE Set Extended Scan Parameters command (v5.0) (LE)
-  -- num_entries corresponds to the number of bits set in the |scanning_phys| field
-  let hdr_size = CommandHeader.$size_in_bytes
-  0     [+hdr_size]            CommandHeader                                 header
-  $next [+1]                   LEOwnAddressType                              own_address_type
-  $next [+1]                   LEScanFilterPolicy                            scanning_filter_policy
-  $next [+1]                   LEScanPHYBits                                 scanning_phys
-  let single_entry_size = LESetExtendedScanParametersData.$size_in_bytes
-  let total_entries_size = num_entries*single_entry_size
-  $next [+total_entries_size]  LESetExtendedScanParametersData[num_entries]  data
-    -- Indicates the type of address being used in the scan request packets (for active scanning).
-
-
-struct LESetExtendedScanEnableCommand:
-  -- LE Set Extended Scan Enable command (v5.0) (LE)
-
-  let hdr_size = CommandHeader.$size_in_bytes
-
-  0     [+hdr_size]  CommandHeader                       header
-
-  $next [+1]         GenericEnableParam                  scanning_enabled
-
-  $next [+1]         LEExtendedDuplicateFilteringOption  filter_duplicates
-    -- See enum class LEExtendedDuplicateFilteringOption in this file for possible values
-
-  $next [+2]         UInt                                duration
-    -- Possible values:
-    --   0x0000: Scan continuously until explicitly disabled
-    --   0x0001-0xFFFF: Scan duration, where:
-    --     Time = N * 10 ms
-    --     Time Range: 10 ms to 655.35 s
-
-  $next [+2]         UInt                                period
-    -- Possible values:
-    --   0x0000: Periodic scanning disabled (scan continuously)
-    --   0x0001-0xFFFF: Time interval from when the Controller started its last
-    --   Scan_Duration until it begins the subsequent Scan_Duration, where:
-    --     Time = N * 1.28 sec
-    --     Time Range: 1.28 s to 83,884.8 s
-
-
-struct LEPeriodicAdvertisingCreateSyncCommand:
-  -- LE Periodic Advertising Create Sync command (v5.0) (LE)
-
-  let hdr_size = CommandHeader.$size_in_bytes
-
-  0     [+hdr_size]               CommandHeader                           header
-
-  $next [+1]                      LEPeriodicAdvertisingCreateSyncOptions  options
-
-  $next [+1]                      UInt                                    advertising_sid
-    -- Advertising SID subfield in the ADI field used to identify the Periodic Advertising
-    [requires: 0x00 <= this <= 0x0F]
-
-  $next [+1]                      LEPeriodicAdvertisingAddressType        advertiser_address_type
-
-  $next [+BdAddr.$size_in_bytes]  BdAddr                                  advertiser_address
-    -- Public Device Address, Random Device Address, Public Identity Address, or Random (static)
-    -- Identity Address of the advertiser
-
-  $next [+2]                      UInt                                    skip
-    -- The maximum number of periodic advertising events that can be skipped after a successful
-    -- receive
-    [requires: 0x0000 <= this <= 0x01F3]
-
-  $next [+2]                      UInt                                    sync_timeout
-    -- Synchronization timeout for the periodic advertising.
-    -- Time = N * 10 ms
-    -- Time Range: 100 ms to 163.84 s
-    [requires: 0x000A <= this <= 0x4000]
-
-  $next [+1]                      LEPeriodicAdvertisingSyncCTEType        sync_cte_type
-    -- Constant Tone Extension sync options
-
-
-struct LEPeriodicAdvertisingCreateSyncCancel:
-  -- LE Periodic Advertising Create Sync Cancel command (v5.0) (LE)
-  -- Note that this command has no arguments
-  let hdr_size = CommandHeader.$size_in_bytes
-  0 [+hdr_size]  CommandHeader  header
-
-
-struct LEPeriodicAdvertisingTerminateSyncCommand:
-  -- LE Periodic Advertising Terminate Sync command (v5.0) (LE)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0     [+hdr_size]  CommandHeader  header
-  $next [+2]         UInt           sync_handle
-    -- Identifies the periodic advertising train
-    [requires: 0x0000 <= this <= 0x0EFF]
-
-
-struct LEAddDeviceToPeriodicAdvertiserListCommand:
-  -- LE Add Device To Periodic Advertiser List command (v5.0) (LE)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0     [+hdr_size]               CommandHeader  header
-  $next [+1]                      LEAddressType  advertiser_address_type
-    -- Address type of the advertiser. The LEAddressType::kPublicIdentity and
-    -- LEAddressType::kRandomIdentity values are excluded for this command.
-
-  $next [+BdAddr.$size_in_bytes]  BdAddr         advertiser_address
-    -- Public Device Address, Random Device Address, Public Identity Address, or
-    -- Random (static) Identity Address of the advertiser.
-
-  $next [+1]                      UInt           advertising_sid
-    -- Advertising SID subfield in the ADI field used to identify the Periodic
-    -- Advertising.
-
-
-struct LERemoveDeviceFromPeriodicAdvertiserListCommand:
-  -- LE Remove Device From Periodic Advertiser List command (v5.0) (LE)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0     [+hdr_size]               CommandHeader  header
-  $next [+1]                      UInt           advertiser_address_type
-    -- Address type of the advertiser. The LEAddressType::kPublicIdentity and
-    -- LEAddressType::kRandomIdentity values are excluded for this command.
-
-  $next [+BdAddr.$size_in_bytes]  BdAddr         advertiser_address
-    -- Public Device Address, Random Device Address, Public Identity Address, or
-    -- Random (static) Identity Address of the advertiser.
-
-  $next [+1]                      UInt           advertising_sid
-    -- Advertising SID subfield in the ADI field used to identify the Periodic
-    -- Advertising.
-
-
-struct LEClearPeriodicAdvertiserListCommand:
-  -- LE Clear Periodic Advertiser List command (v5.0) (LE)
-  -- Note that this command has no arguments
-  let hdr_size = CommandHeader.$size_in_bytes
-  0 [+hdr_size]  CommandHeader  header
-
-
-struct LEReadPeriodicAdvertiserListSizeCommand:
-  -- LE Read Periodic Advertiser List Size command (v5.0) (LE)
-  -- Note that this command has no arguments
-  let hdr_size = CommandHeader.$size_in_bytes
-  0 [+hdr_size]  CommandHeader  header
-
-
-struct LEReadTransmitPowerCommand:
-  -- LE Read Transmit Power command (v5.0) (LE)
-  -- Note that this command has no arguments
-  let hdr_size = CommandHeader.$size_in_bytes
-  0 [+hdr_size]  CommandHeader  header
-
-
-struct LEReadRFPathCompensationCommand:
-  -- LE Read RF Path Compensation command (v5.0) (LE)
-  -- Note that this command has no arguments
-  let hdr_size = CommandHeader.$size_in_bytes
-  0 [+hdr_size]  CommandHeader  header
-
-
-struct LEWriteRFPathCompensationCommand:
-  -- LE Write RF Path Compensation command (v5.0) (LE)
-  -- Values provided are used in the Tx Power Level and RSSI calculation.
-  --   Range: -128.0 dB (0xFB00) ≤ N ≤ 128.0 dB (0x0500)
-  --   Units: 0.1 dB
-  let hdr_size = CommandHeader.$size_in_bytes
-  0     [+hdr_size]  CommandHeader  header
-  $next [+2]         Int            rf_tx_path_compensation_value
-    [requires: -1280 <= this <= 1280]
-
-  $next [+2]         Int            rf_rx_path_compensation_value
-    [requires: -1280 <= this <= 1280]
-
-
-struct LESetPrivacyModeCommand:
-  -- LE Set Privacy Mode command (v5.0) (LE)
-  let hdr_size = CommandHeader.$size_in_bytes
-  0     [+hdr_size]               CommandHeader            header
-  $next [+1]                      LEPeerAddressTypeNoAnon  peer_identity_address_type
-    -- The peer identity address type (either Public Identity or Private
-    -- Identity).
-
-  $next [+BdAddr.$size_in_bytes]  BdAddr                   peer_identity_address
-    -- Public Identity Address or Random (static) Identity Address of the
-    -- advertiser.
-
-  $next [+1]                      LEPrivacyMode            privacy_mode
-    -- The privacy mode to be used for the given entry on the resolving list.
-
-
 struct LESetEventMaskCommand:
-  -- LE Set Event Mask command (v4.0) (LE)
+  -- 7.8.1 LE Set Event Mask command (v4.0) (LE)
+  -- HCI_LE_Set_Event_Mask
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
   $next [+8]  bits:
@@ -2620,13 +2321,15 @@ struct LESetEventMaskCommand:
 
 
 struct LEReadBufferSizeCommandV1:
-  -- LE Read Buffer Size command (v4.0) (LE)
+  -- 7.8.2 LE Read Buffer Size command [v1] (v4.0) (LE)
+  -- HCI_LE_Read_Buffer_Size [v1]
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
 struct LEReadBufferSizeCommandV2:
-  -- LE Read Buffer Size command (v5.2) (LE)
+  -- 7.8.2 LE Read Buffer Size command [v2] (v5.2) (LE)
+  -- HCI_LE_Read_Buffer_Size [v2]
   -- Version 2 of this command changed the opcode and added ISO return
   -- parameters.
   let hdr_size = CommandHeader.$size_in_bytes
@@ -2634,20 +2337,23 @@ struct LEReadBufferSizeCommandV2:
 
 
 struct LEReadLocalSupportedFeaturesCommand:
-  -- LE Read Local Supported Features command (v4.0) (LE)
+  -- 7.8.3 LE Read Local Supported Features command (v4.0) (LE)
+  -- HCI_LE_Read_Local_Supported_Features
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
 struct LESetRandomAddressCommand:
-  -- LE Set Random Address command (v4.0) (LE)
+  -- 7.8.4 LE Set Random Address command (v4.0) (LE)
+  -- HCI_LE_Set_Random_Address
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]               CommandHeader  header
   $next [+BdAddr.$size_in_bytes]  BdAddr         random_address
 
 
 struct LESetAdvertisingParametersCommand:
-  -- LE Set Advertising Parameters command (v4.0) (LE)
+  -- 7.8.5 LE Set Advertising Parameters command (v4.0) (LE)
+  -- HCI_LE_Set_Advertising_Parameters
 
   [requires: advertising_interval_min <= advertising_interval_max]
 
@@ -2692,13 +2398,15 @@ struct LESetAdvertisingParametersCommand:
 
 
 struct LEReadAdvertisingChannelTxPowerCommand:
-  -- LE Read Advertising Channel Tx Power command (v4.0) (LE)
+  -- 7.8.6 LE Read Advertising Channel Tx Power command (v4.0) (LE)
+  -- HCI_LE_Read_Advertising_Channel_Tx_Power
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
 struct LESetAdvertisingDataCommand:
-  -- LE Set Advertising Data command (v4.0) (LE)
+  -- 7.8.7 LE Set Advertising Data command (v4.0) (LE)
+  -- HCI_LE_Set_Advertising_Data
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
   $next [+1]         UInt           advertising_data_length
@@ -2712,7 +2420,8 @@ struct LESetAdvertisingDataCommand:
 
 
 struct LESetScanResponseDataCommand:
-  -- LE Set Scan Response Data command (v4.0) (LE)
+  -- 7.8.8 LE Set Scan Response Data command (v4.0) (LE)
+  -- HCI_LE_Set_Scan_Response_Data
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
   $next [+1]         UInt           scan_response_data_length
@@ -2725,8 +2434,17 @@ struct LESetScanResponseDataCommand:
     -- Default: All octets zero
 
 
+struct LESetAdvertisingEnableCommand:
+  -- 7.8.9 LE Set Advertising Enable command (v4.0) (LE)
+  -- HCI_LE_Set_Advertising_Enable
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader       header
+  $next [+1]         GenericEnableParam  advertising_enable
+
+
 struct LESetScanParametersCommand:
-  -- LE Set Scan Parameters command (v4.0) (LE)
+  -- 7.8.10 LE Set Scan Parameters command (v4.0) (LE)
+  -- HCI_LE_Set_Scan_Parameters
 
   [requires: le_scan_window <= le_scan_interval]
 
@@ -2756,7 +2474,8 @@ struct LESetScanParametersCommand:
 
 
 struct LESetScanEnableCommand:
-  -- LE Set Scan Enable command (v4.0) (LE)
+  -- 7.8.11 LE Set Scan Enable command (v4.0) (LE)
+  -- HCI_LE_Set_Scan_Enable
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader       header
   $next [+1]         GenericEnableParam  le_scan_enable
@@ -2769,7 +2488,8 @@ struct LESetScanEnableCommand:
 
 
 struct LECreateConnectionCommand:
-  -- LE Create Connection command (v4.0) (LE)
+  -- 7.8.12 LE Create Connection command (v4.0) (LE)
+  -- HCI_LE_Create_Connection
 
   [requires: le_scan_window <= le_scan_interval && connection_interval_min <= connection_interval_max]
 
@@ -2827,19 +2547,27 @@ struct LECreateConnectionCommand:
 
 
 struct LECreateConnectionCancelCommand:
-  -- LE Create Connection Cancel command (v4.0) (LE)
+  -- 7.8.13 LE Create Connection Cancel command (v4.0) (LE)
+  -- HCI_LE_Create_Connection_Cancel
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
+# 7.8.14 LE Read Filter Accept List Size command
+# HCI_LE_Read_Filter_Accept_List_Size
+# TODO: b/265052417 - Definition needs to be added
+
+
 struct LEClearFilterAcceptListCommand:
-  -- LE Clear Filter Accept List command (v4.0) (LE)
+  -- 7.8.15 LE Clear Filter Accept List command (v4.0) (LE)
+  -- HCI_LE_Clear_Filter_Accept_List
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
 struct LEAddDeviceToFilterAcceptListCommand:
-  -- LE Add Device To Filter Accept List command (v4.0) (LE)
+  -- 7.8.16 LE Add Device To Filter Accept List command (v4.0) (LE)
+  -- HCI_LE_Add_Device_To_Filter_Accept_List
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]               CommandHeader      header
   $next [+1]                      LEPeerAddressType  address_type
@@ -2851,7 +2579,8 @@ struct LEAddDeviceToFilterAcceptListCommand:
 
 
 struct LERemoveDeviceFromFilterAcceptListCommand:
-  -- LE Remove Device From Filter Accept List command (v4.0) (LE)
+  -- 7.8.17 LE Remove Device From Filter Accept List command (v4.0) (LE)
+  -- HCI_LE_Remove_Device_From_Filter_Accept_List
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]               CommandHeader      header
   $next [+1]                      LEPeerAddressType  address_type
@@ -2863,7 +2592,8 @@ struct LERemoveDeviceFromFilterAcceptListCommand:
 
 
 struct LEConnectionUpdateCommand:
-  -- LE Connection Update command (v4.0) (LE)
+  -- 7.8.18 LE Connection Update command (v4.0) (LE)
+  -- HCI_LE_Connection_Update
 
   [requires: connection_interval_min <= connection_interval_max && min_connection_event_length <= max_connection_event_length]
 
@@ -2902,16 +2632,38 @@ struct LEConnectionUpdateCommand:
     -- Time: N * 0.625 ms
 
 
+# 7.8.19 LE Set Host Channel Classification command
+# HCI_LE_Set_Host_Channel_Classification
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.8.20 LE Read Channel Map command
+# HCI_LE_Read_Channel_Map
+# TODO: b/265052417 - Definition needs to be added
+
+
 struct LEReadRemoteFeaturesCommand:
-  -- LE Read Remote Features command (v4.0) (LE)
+  -- 7.8.21 LE Read Remote Features command (v4.0) (LE)
+  -- HCI_LE_Read_Remote_Features
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
   $next [+2]         UInt           connection_handle
     [requires: 0x0000 <= this <= 0x0EFF]
 
 
+# 7.8.22 LE Encrypt command
+# HCI_LE_Encrypt
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.8.23 LE Rand command
+# HCI_LE_Rand
+# TODO: b/265052417 - Definition needs to be added
+
+
 struct LEEnableEncryptionCommand:
-  -- LE Enable Encryption command (v4.0) (LE)
+  -- 7.8.24 LE Enable Encryption command (v4.0) (LE)
+  -- HCI_LE_Enable_Encryption
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]                CommandHeader  header
   $next [+2]                       UInt           connection_handle
@@ -2923,6 +2675,8 @@ struct LEEnableEncryptionCommand:
 
 
 struct LELongTermKeyRequestReplyCommand:
+  -- 7.8.25 LE Long Term Key Request Reply command (v4.0) (LE)
+  -- HCI_LE_Long_Term_Key_Request_Reply
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]                CommandHeader  header
   $next [+2]                       UInt           connection_handle
@@ -2932,7 +2686,8 @@ struct LELongTermKeyRequestReplyCommand:
 
 
 struct LELongTermKeyRequestNegativeReplyCommand:
-  -- LE Long Term Key Request Negative Reply command (v4.0) (LE)
+  -- 7.8.26 LE Long Term Key Request Negative Reply command (v4.0) (LE)
+  -- HCI_LE_Long_Term_Key_Request_Negative_Reply
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader  header
   $next [+2]         UInt           connection_handle
@@ -2940,26 +2695,130 @@ struct LELongTermKeyRequestNegativeReplyCommand:
 
 
 struct LEReadSupportedStatesCommand:
-  -- LE Read Supported States command (v4.0) (LE)
+  -- 7.8.27 LE Read Supported States command (v4.0) (LE)
+  -- HCI_LE_Read_Supported_States
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
+
+
+# 7.8.28 LE Receiver Test command
+# HCI_LE_Receiver_Test [v1] [v2] [v3]
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.8.29 LE Transmitter Test command
+# HCI_LE_Transmitter_Test [v1] [v2] [v3] [v4]
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.8.30 LE Test End command
+# HCI_LE_Test_End
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.8.31 LE Remote Connection Parameter Request Reply command
+# HCI_LE_Remote_Connection_Parameter_Request_Reply
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.8.32 LE Remote Connection Parameter Request Negative Reply command
+# HCI_LE_Remote_Connection_Parameter_Request_Negative_Reply
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.8.33 LE Set Data Length command
+# HCI_LE_Set_Data_Length
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.8.34 LE Read Suggested Default Data Length command
+# HCI_LE_Read_Suggested_Default_Data_Length
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.8.35 LE Write Suggested Default Data Length command
+# HCI_LE_Write_Suggested_Default_Data_Length
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.8.36 LE Read Local P-256 Public Key command
+# HCI_LE_Read_Local_P-256_Public_Key
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.8.37 LE Generate DHKey command
+# HCI_LE_Generate_DHKey [v1] [v2]
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.8.38 LE Add Device To Resolving List command
+# HCI_LE_Add_Device_To_Resolving_List
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.8.39 LE Remove Device From Resolving List command
+# HCI_LE_Remove_Device_From_Resolving_List
+# TODO: b/265052417 - Definition needs to be added
 
 
 struct LEClearResolvingListCommand:
-  -- LE Clear Resolving List command (v4.2) (LE)
+  -- 7.8.40 LE Clear Resolving List command (v4.2) (LE)
+  -- HCI_LE_Clear_Resolving_List
   let hdr_size = CommandHeader.$size_in_bytes
   0 [+hdr_size]  CommandHeader  header
 
 
+# 7.8.41 LE Read Resolving List Size command
+# HCI_LE_Read_Resolving_List_Size
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.8.42 LE Read Peer Resolvable Address command
+# HCI_LE_Read_Peer_Resolvable_Address
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.8.43 LE Read Local Resolvable Address command
+# HCI_LE_Read_Local_Resolvable_Address
+# TODO: b/265052417 - Definition needs to be added
+
+
 struct LESetAddressResolutionEnableCommand:
-  -- LE Set Address Resolution Enable command (v4.2) (LE)
+  -- 7.8.44 LE Set Address Resolution Enable command (v4.2) (LE)
+  -- HCI_LE_Set_Address_Resolution_Enable
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]  CommandHeader       header
   $next [+1]         GenericEnableParam  address_resolution_enable
 
 
+# 7.8.45 LE Set Resolvable Private Address Timeout command
+# HCI_LE_Set_Resolvable_Private_Address_Timeout
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.8.46 LE Read Maximum Data Length command
+# HCI_LE_Read_Maximum_Data_Length
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.8.47 LE Read PHY command
+# HCI_LE_Read_PHY
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.8.48 LE Set Default PHY command
+# HCI_LE_Set_Default_PHY
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.8.49 LE Set PHY command
+# HCI_LE_Set_PHY
+# TODO: b/265052417 - Definition needs to be added
+
+
 struct LESetAdvertisingSetRandomAddressCommand:
-  -- LE Set Advertising Set Random Address command (v5.0) (LE)
+  -- 7.8.52 LE Set Advertising Set Random Address command (v5.0) (LE)
+  -- HCI_LE_Set_Advertising_Set_Random_Address
   let hdr_size = CommandHeader.$size_in_bytes
   0     [+hdr_size]               CommandHeader  header
   $next [+1]                      UInt           advertising_handle
@@ -2970,7 +2829,8 @@ struct LESetAdvertisingSetRandomAddressCommand:
 
 
 struct LESetExtendedAdvertisingParametersV1Command:
-  -- LE Set Extended Advertising Parameters command (v5.0) (LE)
+  -- 7.8.53 LE Set Extended Advertising Parameters [v1] command (v5.0) (LE)
+  -- HCI_LE_Set_Extended_Advertising_Parameters [v1]
 
   let hdr_size = CommandHeader.$size_in_bytes
 
@@ -3028,6 +2888,342 @@ struct LESetExtendedAdvertisingParametersV1Command:
     [requires: 0x00 <= this <= 0x0F]
 
   $next [+1]                      GenericEnableParam            scan_request_notification_enable
+
+# TODO: b/265052417 - LE Set Extended Advertising Parameters [v2] definition needs to be added
+
+
+struct LESetExtendedAdvertisingDataCommand:
+  -- 7.8.54 LE Set Extended Advertising Data command (v5.0) (LE)
+  -- HCI_LE_Set_Extended_Advertising_Data
+
+  let hdr_size = CommandHeader.$size_in_bytes
+
+  0     [+hdr_size]  CommandHeader                    header
+
+  $next [+1]         UInt                             advertising_handle
+    -- Handle used to identify an advertising set.
+
+  $next [+1]         LESetExtendedAdvDataOp           operation
+
+  $next [+1]         LEExtendedAdvFragmentPreference  fragment_preference
+    -- Provides a hint to the Controller as to whether advertising data should be fragmented.
+
+  $next [+1]         UInt                             advertising_data_length (sz)
+    -- Length of the advertising data included in this command packet, up to
+    -- kMaxLEExtendedAdvertisingDataLength bytes. If the advertising set uses legacy advertising
+    -- PDUs that support advertising data then this shall not exceed kMaxLEAdvertisingDataLength
+    -- bytes.
+    [requires: 0 <= this <= 251]
+
+  $next [+sz]        UInt:8[sz]                       advertising_data
+    -- Variable length advertising data.
+
+
+struct LESetExtendedScanResponseDataCommand:
+  -- 7.8.55 LE Set Extended Scan Response Data command (v5.0) (LE)
+  -- HCI_LE_Set_Extended_Scan_Response_Data
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader                    header
+  $next [+1]         UInt                             advertising_handle
+    -- Used to identify an advertising set
+    [requires: 0x00 <= this <= 0xEF]
+
+  $next [+1]         LESetExtendedAdvDataOp           operation
+  $next [+1]         LEExtendedAdvFragmentPreference  fragment_preference
+    -- Provides a hint to the controller as to whether advertising data should be fragmented
+
+  $next [+1]         UInt                             scan_response_data_length (sz)
+    -- The number of octets in the scan_response_data parameter
+    [requires: 0 <= this <= 251]
+
+  $next [+sz]        UInt:8[sz]                       scan_response_data
+    -- Scan response data formatted as defined in Core Spec v5.4, Vol 3, Part C, Section 11
+
+
+struct LESetExtendedAdvertisingEnableData:
+  -- Data fields for variable-length portion of an LE Set Extended Advertising Enable command
+  0     [+1]  UInt  advertising_handle
+  $next [+2]  UInt  duration
+  $next [+1]  UInt  max_extended_advertising_events
+
+
+struct LESetExtendedAdvertisingEnableCommand:
+  -- 7.8.56 LE Set Extended Advertising Enable command (v5.0) (LE)
+  -- HCI_LE_Set_Extended_Advertising_Enable
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]                   CommandHeader                         header
+  $next [+1]                          GenericEnableParam                    enable
+  $next [+1]                          UInt                                  num_sets
+  let single_data_size = LESetExtendedAdvertisingEnableData.$size_in_bytes
+  $next [+single_data_size*num_sets]  LESetExtendedAdvertisingEnableData[]  data
+
+
+struct LEReadMaxAdvertisingDataLengthCommand:
+  -- 7.8.57 LE Read Maximum Advertising Data Length command (v5.0) (LE)
+  -- HCI_LE_Read_Maximum_Advertising_Data_Length
+  -- This command has no parameters
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
+struct LEReadNumSupportedAdvertisingSetsCommand:
+  -- 7.8.58 LE Read Number of Supported Advertising Sets command (v5.0) (LE)
+  -- HCI_LE_Read_Number_of_Supported_Advertising_Sets
+  -- This command has no parameters
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
+struct LERemoveAdvertisingSetCommand:
+  -- 7.8.59 LE Remove Advertising Set command (v5.0) (LE)
+  -- HCI_LE_Remove_Advertising_Set
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader  header
+  $next [+1]         UInt           advertising_handle
+
+
+struct LEClearAdvertisingSetsCommand:
+  -- 7.8.60 LE Clear Advertising Sets command (v5.0) (LE)
+  -- HCI_LE_Clear_Advertising_Sets
+  -- This command has no parameters
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
+# 7.8.61 LE Set Periodic Advertising Parameters command
+# HCI_LE_Set_Periodic_Advertising_Parameters [v1] [v2]
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.8.62 LE Set Periodic Advertising Data command
+# HCI_LE_Set_Periodic_Advertising_Data
+# TODO: b/265052417 - Definition needs to be added
+
+
+# 7.8.63 LE Set Periodic Advertising Enable command
+# HCI_LE_Set_Periodic_Advertising_Enable
+# TODO: b/265052417 - Definition needs to be added
+
+
+struct LESetExtendedScanParametersData:
+  -- Data fields for variable-length portion of an LE Set Extneded Scan Parameters command
+
+  0     [+1]  LEScanType  scan_type
+
+  $next [+2]  UInt        scan_interval
+    -- Time interval from when the Controller started its last scan until it begins the subsequent
+    -- scan on the primary advertising physical channel.
+    -- Time = N × 0.625 ms
+    -- Time Range: 2.5 ms to 40.959375 s
+    [requires: 0x0004 <= this]
+
+  $next [+2]  UInt        scan_window
+    -- Duration of the scan on the primary advertising physical channel.
+    -- Time = N × 0.625 ms
+    -- Time Range: 2.5 ms to 40.959375 s
+    [requires: 0x0004 <= this]
+
+
+struct LESetExtendedScanParametersCommand(num_entries: UInt:8):
+  -- 7.8.64 LE Set Extended Scan Parameters command (v5.0) (LE)
+  -- HCI_LE_Set_Extended_Scan_Parameters
+  -- num_entries corresponds to the number of bits set in the |scanning_phys| field
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]            CommandHeader                                 header
+  $next [+1]                   LEOwnAddressType                              own_address_type
+  $next [+1]                   LEScanFilterPolicy                            scanning_filter_policy
+  $next [+1]                   LEScanPHYBits                                 scanning_phys
+  let single_entry_size = LESetExtendedScanParametersData.$size_in_bytes
+  let total_entries_size = num_entries*single_entry_size
+  $next [+total_entries_size]  LESetExtendedScanParametersData[num_entries]  data
+    -- Indicates the type of address being used in the scan request packets (for active scanning).
+
+
+struct LESetExtendedScanEnableCommand:
+  -- 7.8.65 LE Set Extended Scan Enable command (v5.0) (LE)
+  -- HCI_LE_Set_Extended_Scan_Enable
+
+  let hdr_size = CommandHeader.$size_in_bytes
+
+  0     [+hdr_size]  CommandHeader                       header
+
+  $next [+1]         GenericEnableParam                  scanning_enabled
+
+  $next [+1]         LEExtendedDuplicateFilteringOption  filter_duplicates
+    -- See enum class LEExtendedDuplicateFilteringOption in this file for possible values
+
+  $next [+2]         UInt                                duration
+    -- Possible values:
+    --   0x0000: Scan continuously until explicitly disabled
+    --   0x0001-0xFFFF: Scan duration, where:
+    --     Time = N * 10 ms
+    --     Time Range: 10 ms to 655.35 s
+
+  $next [+2]         UInt                                period
+    -- Possible values:
+    --   0x0000: Periodic scanning disabled (scan continuously)
+    --   0x0001-0xFFFF: Time interval from when the Controller started its last
+    --   Scan_Duration until it begins the subsequent Scan_Duration, where:
+    --     Time = N * 1.28 sec
+    --     Time Range: 1.28 s to 83,884.8 s
+
+
+# 7.8.66 LE Extended Create Connection command
+# HCI_LE_Extended_Create_Connection [v1] [v2]
+# TODO: b/265052417 - Definition needs to be added
+
+
+struct LEPeriodicAdvertisingCreateSyncCommand:
+  -- 7.8.67 LE Periodic Advertising Create Sync command (v5.0) (LE)
+  -- HCI_LE_Periodic_Advertising_Create_Sync
+
+  let hdr_size = CommandHeader.$size_in_bytes
+
+  0     [+hdr_size]               CommandHeader                           header
+
+  $next [+1]                      LEPeriodicAdvertisingCreateSyncOptions  options
+
+  $next [+1]                      UInt                                    advertising_sid
+    -- Advertising SID subfield in the ADI field used to identify the Periodic Advertising
+    [requires: 0x00 <= this <= 0x0F]
+
+  $next [+1]                      LEPeriodicAdvertisingAddressType        advertiser_address_type
+
+  $next [+BdAddr.$size_in_bytes]  BdAddr                                  advertiser_address
+    -- Public Device Address, Random Device Address, Public Identity Address, or Random (static)
+    -- Identity Address of the advertiser
+
+  $next [+2]                      UInt                                    skip
+    -- The maximum number of periodic advertising events that can be skipped after a successful
+    -- receive
+    [requires: 0x0000 <= this <= 0x01F3]
+
+  $next [+2]                      UInt                                    sync_timeout
+    -- Synchronization timeout for the periodic advertising.
+    -- Time = N * 10 ms
+    -- Time Range: 100 ms to 163.84 s
+    [requires: 0x000A <= this <= 0x4000]
+
+  $next [+1]                      LEPeriodicAdvertisingSyncCTEType        sync_cte_type
+    -- Constant Tone Extension sync options
+
+
+struct LEPeriodicAdvertisingCreateSyncCancel:
+  -- 7.8.68 LE Periodic Advertising Create Sync Cancel command (v5.0) (LE)
+  -- HCI_LE_Periodic_Advertising_Create_Sync_Cancel
+  -- Note that this command has no arguments
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
+struct LEPeriodicAdvertisingTerminateSyncCommand:
+  -- 7.8.69 LE Periodic Advertising Terminate Sync command (v5.0) (LE)
+  -- HCI_LE_Periodic_Advertising_Terminate_Sync
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader  header
+  $next [+2]         UInt           sync_handle
+    -- Identifies the periodic advertising train
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+
+struct LEAddDeviceToPeriodicAdvertiserListCommand:
+  -- 7.8.70 LE Add Device To Periodic Advertiser List command (v5.0) (LE)
+  -- HCI_LE_Add_Device_To_Periodic_Advertiser_List
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]               CommandHeader  header
+  $next [+1]                      LEAddressType  advertiser_address_type
+    -- Address type of the advertiser. The LEAddressType::kPublicIdentity and
+    -- LEAddressType::kRandomIdentity values are excluded for this command.
+
+  $next [+BdAddr.$size_in_bytes]  BdAddr         advertiser_address
+    -- Public Device Address, Random Device Address, Public Identity Address, or
+    -- Random (static) Identity Address of the advertiser.
+
+  $next [+1]                      UInt           advertising_sid
+    -- Advertising SID subfield in the ADI field used to identify the Periodic
+    -- Advertising.
+
+
+struct LERemoveDeviceFromPeriodicAdvertiserListCommand:
+  -- 7.8.71 LE Remove Device From Periodic Advertiser List command (v5.0) (LE)
+  -- HCI_LE_Remove_Device_From_Periodic_Advertiser_List
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]               CommandHeader  header
+  $next [+1]                      UInt           advertiser_address_type
+    -- Address type of the advertiser. The LEAddressType::kPublicIdentity and
+    -- LEAddressType::kRandomIdentity values are excluded for this command.
+
+  $next [+BdAddr.$size_in_bytes]  BdAddr         advertiser_address
+    -- Public Device Address, Random Device Address, Public Identity Address, or
+    -- Random (static) Identity Address of the advertiser.
+
+  $next [+1]                      UInt           advertising_sid
+    -- Advertising SID subfield in the ADI field used to identify the Periodic
+    -- Advertising.
+
+
+struct LEClearPeriodicAdvertiserListCommand:
+  -- 7.8.72 LE Clear Periodic Advertiser List command (v5.0) (LE)
+  -- HCI_LE_Clear_Periodic_Advertiser_List
+  -- Note that this command has no arguments
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
+struct LEReadPeriodicAdvertiserListSizeCommand:
+  -- 7.8.73 LE Read Periodic Advertiser List Size command (v5.0) (LE)
+  -- HCI_LE_Read_Periodic_Advertiser_List_Size
+  -- Note that this command has no arguments
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
+struct LEReadTransmitPowerCommand:
+  -- 7.8.74 LE Read Transmit Power command (v5.0) (LE)
+  -- HCI_LE_Read_Transmit_Power
+  -- Note that this command has no arguments
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
+struct LEReadRFPathCompensationCommand:
+  -- 7.8.75 LE Read RF Path Compensation command (v5.0) (LE)
+  -- HCI_LE_Read_RF_Path_Compensation
+  -- Note that this command has no arguments
+  let hdr_size = CommandHeader.$size_in_bytes
+  0 [+hdr_size]  CommandHeader  header
+
+
+struct LEWriteRFPathCompensationCommand:
+  -- 7.8.76 LE Write RF Path Compensation command (v5.0) (LE)
+  -- HCI_LE_Write_RF_Path_Compensation
+  -- Values provided are used in the Tx Power Level and RSSI calculation.
+  --   Range: -128.0 dB (0xFB00) ≤ N ≤ 128.0 dB (0x0500)
+  --   Units: 0.1 dB
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]  CommandHeader  header
+  $next [+2]         Int            rf_tx_path_compensation_value
+    [requires: -1280 <= this <= 1280]
+
+  $next [+2]         Int            rf_rx_path_compensation_value
+    [requires: -1280 <= this <= 1280]
+
+
+struct LESetPrivacyModeCommand:
+  -- 7.8.77 LE Set Privacy Mode command (v5.0) (LE)
+  -- HCI_LE_Set_Privacy_Mode
+  let hdr_size = CommandHeader.$size_in_bytes
+  0     [+hdr_size]               CommandHeader            header
+  $next [+1]                      LEPeerAddressTypeNoAnon  peer_identity_address_type
+    -- The peer identity address type (either Public Identity or Private
+    -- Identity).
+
+  $next [+BdAddr.$size_in_bytes]  BdAddr                   peer_identity_address
+    -- Public Identity Address or Random (static) Identity Address of the
+    -- advertiser.
+
+  $next [+1]                      LEPrivacyMode            privacy_mode
+    -- The privacy mode to be used for the given entry on the resolving list.
 
 
 # ========================= HCI Event packets ===========================
