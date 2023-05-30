@@ -46,6 +46,39 @@ TEST(InlineDeque, Construct_GenericSized) {
   EXPECT_EQ(deque.max_size(), 3u);
 }
 
+TEST(InlineDeque, Construct_CopySameCapacity) {
+  InlineDeque<CopyOnly, 4> deque(4, CopyOnly(123));
+  InlineDeque<CopyOnly, 4> copied(deque);
+
+  EXPECT_EQ(4u, deque.size());
+  EXPECT_EQ(123, deque[3].value);
+
+  EXPECT_EQ(4u, copied.size());
+  EXPECT_EQ(123, copied[3].value);
+}
+
+TEST(InlineDeque, Construct_CopyLargerCapacity) {
+  InlineDeque<CopyOnly, 4> deque(4, CopyOnly(123));
+  InlineDeque<CopyOnly, 5> copied(deque);
+
+  EXPECT_EQ(4u, deque.size());
+  EXPECT_EQ(123, deque[3].value);
+
+  EXPECT_EQ(4u, copied.size());
+  EXPECT_EQ(123, copied[3].value);
+}
+
+TEST(InlineDeque, Construct_CopySmallerCapacity) {
+  InlineDeque<CopyOnly, 4> deque(3, CopyOnly(123));
+  InlineDeque<CopyOnly, 3> copied(deque);
+
+  EXPECT_EQ(3u, deque.size());
+  EXPECT_EQ(123, deque[2].value);
+
+  EXPECT_EQ(3u, copied.size());
+  EXPECT_EQ(123, copied[2].value);
+}
+
 TEST(InlineDeque, Destruct_ZeroLength) {
   Counter::Reset();
   {
@@ -67,7 +100,7 @@ TEST(InlineDeque, Destruct_Empty) {
   EXPECT_EQ(Counter::destroyed, 0);
 }
 
-TEST(InlineDeque, Destruct_MultpileEntries) {
+TEST(InlineDeque, Destruct_MultipleEntries) {
   Counter value;
   Counter::Reset();
 
@@ -86,6 +119,39 @@ TEST(InlineDeque, Assign_InitializerList) {
   EXPECT_EQ(3, deque[1]);
   EXPECT_EQ(5, deque[2]);
   EXPECT_EQ(7, deque[3]);
+}
+
+TEST(InlineDeque, Assign_CopySameCapacity) {
+  InlineDeque<CopyOnly, 4> deque(4, CopyOnly(123));
+  InlineDeque<CopyOnly, 4> copied = deque;
+
+  EXPECT_EQ(4u, deque.size());
+  EXPECT_EQ(123, deque[3].value);
+
+  EXPECT_EQ(4u, copied.size());
+  EXPECT_EQ(123, copied[3].value);
+}
+
+TEST(InlineDeque, Assign_CopyLargerCapacity) {
+  InlineDeque<CopyOnly, 4> deque(4, CopyOnly(123));
+  InlineDeque<CopyOnly, 5> copied = deque;
+
+  EXPECT_EQ(4u, deque.size());
+  EXPECT_EQ(123, deque[3].value);
+
+  EXPECT_EQ(4u, copied.size());
+  EXPECT_EQ(123, copied[3].value);
+}
+
+TEST(InlineDeque, Assign_CopySmallerCapacity) {
+  InlineDeque<CopyOnly, 4> deque(3, CopyOnly(123));
+  InlineDeque<CopyOnly, 3> copied = deque;
+
+  EXPECT_EQ(3u, deque.size());
+  EXPECT_EQ(123, deque[2].value);
+
+  EXPECT_EQ(3u, copied.size());
+  EXPECT_EQ(123, copied[2].value);
 }
 
 TEST(InlineDeque, Access_Iterator) {

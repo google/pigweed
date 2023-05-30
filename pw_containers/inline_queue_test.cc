@@ -46,6 +46,39 @@ TEST(InlineQueue, Construct_GenericSized) {
   EXPECT_EQ(queue.max_size(), 3u);
 }
 
+TEST(InlineQueue, Construct_CopySameCapacity) {
+  InlineQueue<CopyOnly, 4> queue(4, CopyOnly(123));
+  InlineQueue<CopyOnly, 4> copied(queue);
+
+  EXPECT_EQ(4u, queue.size());
+  EXPECT_EQ(123, queue[3].value);
+
+  EXPECT_EQ(4u, copied.size());
+  EXPECT_EQ(123, copied[3].value);
+}
+
+TEST(InlineQueue, Construct_CopyLargerCapacity) {
+  InlineQueue<CopyOnly, 4> queue(4, CopyOnly(123));
+  InlineQueue<CopyOnly, 5> copied(queue);
+
+  EXPECT_EQ(4u, queue.size());
+  EXPECT_EQ(123, queue[3].value);
+
+  EXPECT_EQ(4u, copied.size());
+  EXPECT_EQ(123, copied[3].value);
+}
+
+TEST(InlineQueue, Construct_CopySmallerCapacity) {
+  InlineQueue<CopyOnly, 4> queue(3, CopyOnly(123));
+  InlineQueue<CopyOnly, 3> copied(queue);
+
+  EXPECT_EQ(3u, queue.size());
+  EXPECT_EQ(123, queue[2].value);
+
+  EXPECT_EQ(3u, copied.size());
+  EXPECT_EQ(123, copied[2].value);
+}
+
 TEST(InlineQueue, Destruct_ZeroLength) {
   Counter::Reset();
   {
@@ -67,7 +100,7 @@ TEST(InlineQueue, Destruct_Empty) {
   EXPECT_EQ(Counter::destroyed, 0);
 }
 
-TEST(InlineQueue, Destruct_MultpileEntries) {
+TEST(InlineQueue, Destruct_MultipleEntries) {
   Counter value;
   Counter::Reset();
 
@@ -78,7 +111,7 @@ TEST(InlineQueue, Destruct_MultpileEntries) {
 }
 
 TEST(InlineQueue, Assign_InitializerList) {
-  InlineQueue<int, 4> queue({1, 3, 5, 7});
+  InlineQueue<int, 4> queue = {1, 3, 5, 7};
 
   EXPECT_EQ(4u, queue.size());
 
@@ -86,6 +119,39 @@ TEST(InlineQueue, Assign_InitializerList) {
   EXPECT_EQ(3, queue[1]);
   EXPECT_EQ(5, queue[2]);
   EXPECT_EQ(7, queue[3]);
+}
+
+TEST(InlineQueue, Assign_CopySameCapacity) {
+  InlineQueue<CopyOnly, 4> queue(4, CopyOnly(123));
+  InlineQueue<CopyOnly, 4> copied = queue;
+
+  EXPECT_EQ(4u, queue.size());
+  EXPECT_EQ(123, queue[3].value);
+
+  EXPECT_EQ(4u, copied.size());
+  EXPECT_EQ(123, copied[3].value);
+}
+
+TEST(InlineQueue, Assign_CopyLargerCapacity) {
+  InlineQueue<CopyOnly, 4> queue(4, CopyOnly(123));
+  InlineQueue<CopyOnly, 5> copied = queue;
+
+  EXPECT_EQ(4u, queue.size());
+  EXPECT_EQ(123, queue[3].value);
+
+  EXPECT_EQ(4u, copied.size());
+  EXPECT_EQ(123, copied[3].value);
+}
+
+TEST(InlineQueue, Assign_CopySmallerCapacity) {
+  InlineQueue<CopyOnly, 4> queue(3, CopyOnly(123));
+  InlineQueue<CopyOnly, 3> copied = queue;
+
+  EXPECT_EQ(3u, queue.size());
+  EXPECT_EQ(123, queue[2].value);
+
+  EXPECT_EQ(3u, copied.size());
+  EXPECT_EQ(123, copied[2].value);
 }
 
 TEST(InlineQueue, Access_Iterator) {

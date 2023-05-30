@@ -72,25 +72,31 @@ class BasicInlineQueue
   BasicInlineQueue(InputIterator start, InputIterator finish)
       : deque_(start, finish) {}
 
-  template <size_type kOtherCapacity>
-  BasicInlineQueue(
-      const BasicInlineQueue<value_type, size_type, kOtherCapacity>& other)
-      : deque_(other) {}
+  BasicInlineQueue(std::initializer_list<value_type> list) { *this = list; }
 
-  BasicInlineQueue(std::initializer_list<value_type> list)
-      : BasicInlineQueue(list.begin(), list.end()) {}
+  BasicInlineQueue(const BasicInlineQueue& other) { *this = other; }
+
+  template <typename T, typename = containers::internal::EnableIfIterable<T>>
+  BasicInlineQueue(const T& other) {
+    *this = other;
+  }
 
   // Assignment
 
-  BasicInlineQueue& operator=(const BasicInlineQueue& other) = default;
+  BasicInlineQueue& operator=(std::initializer_list<value_type> list) {
+    deque_ = std::move(list);
+    return *this;
+  }
 
-  // Checks capacity rather than current size.
-  template <size_type kOtherCapacity>
-  BasicInlineQueue& operator=(
-      const BasicInlineQueue<value_type, size_type, kOtherCapacity>& other) {
-    deque_ =
-        static_cast<BasicInlineDeque<value_type, size_type, kOtherCapacity>>(
-            other);
+  BasicInlineQueue& operator=(const BasicInlineQueue& other) {
+    deque_ = other.deque_;
+    return *this;
+  }
+
+  template <typename T, typename = containers::internal::EnableIfIterable<T>>
+  BasicInlineQueue& operator=(const T& other) {
+    deque_ = BasicInlineDeque<ValueType, SizeType, kCapacity>(other.begin(),
+                                                              other.end());
     return *this;
   }
 

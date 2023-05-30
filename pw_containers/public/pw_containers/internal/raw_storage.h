@@ -28,6 +28,10 @@ using EnableIfInputIterator = std::enable_if_t<std::is_convertible<
     typename std::iterator_traits<InputIterator>::iterator_category,
     std::input_iterator_tag>::value>;
 
+template <typename T>
+using EnableIfIterable =
+    std::enable_if_t<true, decltype(T().begin(), T().end())>;
+
 // The DestructorHelper is used to make a Container<T> trivially destructible if
 // T is. This could be replaced with a C++20 constraint.
 template <typename Container, bool kIsTriviallyDestructible>

@@ -18,6 +18,8 @@ pw_add_library(pw_containers INTERFACE
   PUBLIC_DEPS
     pw_containers.algorithm
     pw_containers.flat_map
+    pw_containers.inline_deque
+    pw_containers.inline_queue
     pw_containers.intrusive_list
     pw_containers.vector
 )

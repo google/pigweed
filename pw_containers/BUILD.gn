@@ -28,6 +28,8 @@ group("pw_containers") {
   public_deps = [
     ":algorithm",
     ":flat_map",
+    ":inline_deque",
+    ":inline_queue",
     ":intrusive_list",
     ":vector",
   ]

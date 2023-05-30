@@ -27,6 +27,8 @@ pw_cc_library(
     deps = [
         ":algorithm",
         ":flat_map",
+        ":inline_deque",
+        ":inline_queue",
         ":intrusive_list",
         ":vector",
     ],
@@ -246,6 +248,7 @@ pw_cc_test(
     ],
     deps = [
         ":intrusive_list",
+        ":vector",
         "//pw_unit_test",
     ],
 )

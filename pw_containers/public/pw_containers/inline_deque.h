@@ -96,30 +96,37 @@ class BasicInlineDeque
     Base::assign(start, finish);
   }
 
-  template <size_type kOtherCapacity>
-  BasicInlineDeque(
-      const BasicInlineDeque<value_type, size_type, kOtherCapacity>& other)
-      : BasicInlineDeque(other.start(), other.end()) {
-    static_assert(kCapacity >= kOtherCapacity);
+  BasicInlineDeque(std::initializer_list<value_type> list)
+      : BasicInlineDeque() {
+    *this = list;
   }
 
-  BasicInlineDeque(std::initializer_list<value_type> list)
-      : BasicInlineDeque(list.begin(), list.end()) {}
+  BasicInlineDeque(const BasicInlineDeque& other) : BasicInlineDeque() {
+    *this = other;
+  }
+
+  template <typename T, typename = containers::internal::EnableIfIterable<T>>
+  BasicInlineDeque(const T& other) : BasicInlineDeque() {
+    *this = other;
+  }
 
   // Assignment
+  // Use the operators from the base class, but return the correct type of
+  // reference.
 
-  BasicInlineDeque& operator=(const BasicInlineDeque& other) = default;
-
-  // Checks capacity rather than current size.
-  template <size_type kOtherCapacity>
-  BasicInlineDeque& operator=(
-      const BasicInlineDeque<value_type, size_type, kOtherCapacity>& other) {
-    Base::template assign<kOtherCapacity>(other);
+  BasicInlineDeque& operator=(std::initializer_list<value_type> list) {
+    Base::operator=(list);
     return *this;
   }
 
-  BasicInlineDeque& operator=(std::initializer_list<value_type> list) {
-    Base::assign(list);
+  BasicInlineDeque& operator=(const BasicInlineDeque& other) {
+    Base::operator=(other);
+    return *this;
+  }
+
+  template <typename T, typename = containers::internal::EnableIfIterable<T>>
+  BasicInlineDeque& operator=(const T& other) {
+    Base::operator=(other);
     return *this;
   }
 
@@ -182,6 +189,17 @@ class BasicInlineDeque<ValueType, SizeType, containers::internal::kGenericSized>
 
   BasicInlineDeque& operator=(std::initializer_list<value_type> list) {
     assign(list);
+    return *this;
+  }
+
+  BasicInlineDeque& operator=(const BasicInlineDeque& other) {
+    assign(other.begin(), other.end());
+    return *this;
+  }
+
+  template <typename T, typename = containers::internal::EnableIfIterable<T>>
+  BasicInlineDeque& operator=(const T& other) {
+    assign(other.begin(), other.end());
     return *this;
   }
 
