@@ -549,7 +549,7 @@ class Call : public IntrusiveList<Call>::Item {
   //
   //   bit 0: call is active
   //   bit 1: client stream is active
-  //   bit 2:
+  //   bit 2: call has been destroyed
   uint8_t state_ PW_GUARDED_BY(rpc_lock());
 
   // If non-OK, indicates that the call was closed and needs to have its
