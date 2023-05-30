@@ -9,6 +9,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/common/log.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/types.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/pdu.h"
+#include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
 
 namespace bt::sdp {
 
@@ -63,7 +64,7 @@ l2cap::PSM FindProtocolListPSM(const DataElement& protocol_list) {
   return l2cap::kInvalidPSM;
 }
 
-l2cap::PSM PSMFromProtocolList(ServiceRecord* record, const DataElement* protocol_list) {
+l2cap::PSM PSMFromProtocolList(const ServiceRecord* record, const DataElement* protocol_list) {
   const auto* primary_protocol = protocol_list->At(0);
   if (!primary_protocol) {
     bt_log(TRACE, "sdp", "ProtocolDescriptorList is not a sequence");
@@ -193,23 +194,30 @@ bool Server::AddConnection(l2cap::Channel::WeakPtr channel) {
   return true;
 }
 
-bool Server::QueueService(ServiceRecord* record, ProtocolQueue* protocols_to_register) {
+bool Server::AddPsmToProtocol(ProtocolQueue* protocols_to_register, l2cap::PSM psm,
+                              ServiceHandle handle) {
+  if (psm == l2cap::kInvalidPSM) {
+    return false;
+  }
+
+  if (psm_to_service_.count(psm)) {
+    bt_log(TRACE, "sdp", "L2CAP PSM %#.4x is already allocated", psm);
+    return false;
+  }
+
+  auto data = std::make_pair(psm, handle);
+  protocols_to_register->emplace_back(std::move(data));
+  return true;
+}
+
+bool Server::QueueService(const ServiceRecord* record, ProtocolQueue* protocols_to_register) {
   // ProtocolDescriptorList handling:
   if (record->HasAttribute(kProtocolDescriptorList)) {
     const auto& primary_list = record->GetAttribute(kProtocolDescriptorList);
     auto psm = PSMFromProtocolList(record, &primary_list);
-
-    if (psm == l2cap::kInvalidPSM) {
+    if (!AddPsmToProtocol(protocols_to_register, psm, record->handle())) {
       return false;
     }
-
-    if (psm_to_service_.count(psm)) {
-      bt_log(TRACE, "sdp", "L2CAP PSM %#.4x is already allocated", psm);
-      return false;
-    }
-
-    auto data = std::make_pair(psm, record->handle());
-    protocols_to_register->emplace_back(std::move(data));
   }
 
   // AdditionalProtocolDescriptorList handling:
@@ -229,21 +237,25 @@ bool Server::QueueService(ServiceRecord* record, ProtocolQueue* protocols_to_reg
     // Add valid additional PSMs to the register queue.
     while (additional) {
       auto psm = PSMFromProtocolList(record, additional);
-
-      if (psm == l2cap::kInvalidPSM) {
+      if (!AddPsmToProtocol(protocols_to_register, psm, record->handle())) {
         return false;
       }
-
-      if (psm_to_service_.count(psm)) {
-        bt_log(TRACE, "sdp", "L2CAP PSM %#.4x is already allocated", psm);
-        return false;
-      }
-
-      auto data = std::make_pair(psm, record->handle());
-      protocols_to_register->emplace_back(std::move(data));
 
       attribute_id++;
       additional = additional_list.At(attribute_id);
+    }
+  }
+
+  // For some services that depend on OBEX, the L2CAP PSM is specified in the GoepL2capPsm
+  // attribute.
+  bool has_obex = record->FindUUID(std::unordered_set<UUID>({protocol::kOBEX}));
+  if (has_obex && record->HasAttribute(kGoepL2capPsm)) {
+    const auto& attribute = record->GetAttribute(kGoepL2capPsm);
+    if (attribute.Get<uint16_t>()) {
+      auto psm = *attribute.Get<uint16_t>();
+      if (!AddPsmToProtocol(protocols_to_register, psm, record->handle())) {
+        return false;
+      }
     }
   }
 

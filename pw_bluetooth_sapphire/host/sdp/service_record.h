@@ -72,7 +72,7 @@ class ServiceRecord {
   constexpr static ProtocolListId kPrimaryProtocolList = 0x00;
 
   // Adds a protocol to a protocol descriptor list.
-  // Convenience function for adding protocol discriptor list attributes.
+  // Convenience function for adding protocol descriptor list attributes.
   // |id| identifies the list to be added to.
   // |uuid| must be a protocol UUID.
   // |params| is either:
@@ -80,10 +80,10 @@ class ServiceRecord {
   //   - a null DataElement, for which nothing will be appended
   //   - a single DataElement parameter
   // kPrimaryProtocolList is presented as the primary protocol.
-  // Other protocol will be added to the addiitonal protocol lists,
+  // Other protocol will be added to the additional protocol lists,
   void AddProtocolDescriptor(const ProtocolListId id, const UUID& uuid, DataElement params);
 
-  // Adds a profile to the bluetooth profile descrpitor list attribute.
+  // Adds a profile to the bluetooth profile descriptor list attribute.
   // |uuid| is the UUID of the profile. |major| and |minor| are the major and
   // minor versions of the profile supported.
   void AddProfile(const UUID& uuid, uint8_t major, uint8_t minor);

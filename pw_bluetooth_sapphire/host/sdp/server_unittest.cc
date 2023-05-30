@@ -10,7 +10,9 @@
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_channel_test.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/fake_l2cap.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
+#include "src/connectivity/bluetooth/core/bt-host/sdp/data_element.h"
 #include "src/connectivity/bluetooth/core/bt-host/sdp/pdu.h"
+#include "src/connectivity/bluetooth/core/bt-host/sdp/sdp.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/fake_controller.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/inspect.h"
 #include "src/connectivity/bluetooth/core/bt-host/testing/test_helpers.h"
@@ -618,6 +620,91 @@ TEST_F(ServerTest, RegisterServiceMultipleRecordsSamePSM) {
   EXPECT_FALSE(
       server()->RegisterService(std::move(invalid_records), kChannelParams, NopConnectCallback));
 
+  EXPECT_TRUE(server()->UnregisterService(handle));
+}
+
+TEST_F(ServerTest, RegisterObexService) {
+  ServiceRecord record;
+  record.SetServiceClassUUIDs({profile::kAVRemoteControlTarget});
+  // The AVRCP Target primary protocol has format: L2CAP: uint16_t, AVCTP: uint16_t.
+  record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
+                               DataElement(uint16_t{l2cap::kAVCTP}));
+  record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kAVCTP,
+                               DataElement(uint16_t{0x0104}));
+  // It also has additional L2CAP protocols for Browsing & OBEX.
+  record.AddProtocolDescriptor(1, protocol::kL2CAP, DataElement(uint16_t{l2cap::kAVCTP_Browse}));
+  record.AddProtocolDescriptor(1, protocol::kAVCTP, DataElement(uint16_t{0x0104}));
+  record.AddProtocolDescriptor(2, protocol::kL2CAP, DataElement(uint16_t{57}));
+  record.AddProtocolDescriptor(2, protocol::kOBEX, DataElement());
+
+  std::vector<ServiceRecord> records;
+  records.emplace_back(std::move(record));
+
+  size_t cb_count = 0;
+  auto cb = [&](auto /*channel*/, auto& protocol_list) { cb_count++; };
+
+  auto handle = server()->RegisterService(std::move(records), kChannelParams, std::move(cb));
+  EXPECT_TRUE(handle);
+
+  EXPECT_TRUE(l2cap()->TriggerInboundL2capChannel(kTestHandle1, l2cap::kAVCTP, 0x40, 0x41));
+  EXPECT_TRUE(l2cap()->TriggerInboundL2capChannel(kTestHandle1, l2cap::kAVCTP_Browse, 0x44, 0x44));
+  EXPECT_TRUE(l2cap()->TriggerInboundL2capChannel(kTestHandle1, 57, 0x42, 0x43));
+  RunLoopUntilIdle();
+  // Expect all 3 PSMs to be registered and connectable.
+  EXPECT_EQ(3u, cb_count);
+  EXPECT_TRUE(server()->UnregisterService(handle));
+}
+
+TEST_F(ServerTest, RegisterObexServiceWithAttribute) {
+  ServiceRecord record;
+  record.SetServiceClassUUIDs({profile::kMessageNotificationServer});
+  // The MNS primary protocol has format: L2CAP, RFCOMM: uint8_t, OBEX
+  record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
+                               DataElement());
+  record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kRFCOMM,
+                               DataElement(uint8_t{8}));
+  record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kOBEX, DataElement());
+  // The MNS protocol also specifies an L2CAP protocol in the attributes section.
+  record.SetAttribute(kGoepL2capPsm, DataElement(uint16_t(55)));
+
+  std::vector<ServiceRecord> records;
+  records.emplace_back(std::move(record));
+
+  size_t cb_count = 0;
+  auto cb = [&](auto /*channel*/, auto& protocol_list) { cb_count++; };
+
+  auto handle = server()->RegisterService(std::move(records), kChannelParams, std::move(cb));
+  EXPECT_TRUE(handle);
+
+  EXPECT_TRUE(l2cap()->TriggerInboundL2capChannel(kTestHandle1, l2cap::kRFCOMM, 0x40, 0x41));
+  EXPECT_TRUE(l2cap()->TriggerInboundL2capChannel(kTestHandle1, 55, 0x42, 0x43));
+  RunLoopUntilIdle();
+  EXPECT_EQ(2u, cb_count);
+  EXPECT_TRUE(server()->UnregisterService(handle));
+}
+
+TEST_F(ServerTest, RegisterNonObexServiceWithAttributeIsIgnored) {
+  ServiceRecord record;
+  // The AVRCP Controller service does not require OBEX.
+  record.SetServiceClassUUIDs({profile::kAVRemoteControlController});
+  record.AddProtocolDescriptor(ServiceRecord::kPrimaryProtocolList, protocol::kL2CAP,
+                               DataElement(uint16_t{l2cap::kAVCTP}));
+  // The OBEX attribute should be ignored during registration.
+  record.SetAttribute(kGoepL2capPsm, DataElement(uint16_t(55)));
+
+  std::vector<ServiceRecord> records;
+  records.emplace_back(std::move(record));
+
+  size_t cb_count = 0;
+  auto cb = [&](auto /*channel*/, auto& protocol_list) { cb_count++; };
+
+  auto handle = server()->RegisterService(std::move(records), kChannelParams, std::move(cb));
+  EXPECT_TRUE(handle);
+
+  EXPECT_TRUE(l2cap()->TriggerInboundL2capChannel(kTestHandle1, l2cap::kAVCTP, 0x40, 0x41));
+  EXPECT_FALSE(l2cap()->TriggerInboundL2capChannel(kTestHandle1, 55, 0x42, 0x43));
+  RunLoopUntilIdle();
+  EXPECT_EQ(1u, cb_count);
   EXPECT_TRUE(server()->UnregisterService(handle));
 }
 

@@ -295,6 +295,12 @@ constexpr AttributeId kSDP_ServiceDatabaseState = 0x0201;
 // https://www.bluetooth.com/specifications/assigned-numbers/service-discovery
 constexpr AttributeId kA2DP_SupportedFeatures = 0x0311;
 
+// ===== OBEX Protocol Attribute Definitions =====
+// This attribute is defined on a per-profile basis, and is the same for all relevant profiles that
+// require OBEX.
+// See https://www.bluetooth.com/specifications/assigned-numbers/service-discovery
+constexpr AttributeId kGoepL2capPsm = 0x0200;
+
 }  // namespace bt::sdp
 
 #endif  // SRC_CONNECTIVITY_BLUETOOTH_CORE_BT_HOST_SDP_SDP_H_

@@ -101,13 +101,17 @@ class Server final {
   // the services that need to be registered in Server::QueueService.
   using ProtocolQueue = std::vector<std::pair<l2cap::PSM, ServiceHandle>>;
 
+  // Attempts to add the |psm| to the queue of protocols to be registered.
+  // Returns true if the PSM was successfully added to the queue, false otherwise.
+  bool AddPsmToProtocol(ProtocolQueue* protocols_to_register, l2cap::PSM psm, ServiceHandle handle);
+
   // Given a complete ServiceRecord, extracts the PSM, ProtocolDescriptorList, and
-  // any AditionalProtocolDescriptorList information.
+  // any AdditionalProtocolDescriptorList information.
   // Inserts the extracted info into |psm_to_register|.
   //
   // Returns |true| if the protocols are successfully validated and queued,
   // |false| otherwise.
-  bool QueueService(ServiceRecord* record, ProtocolQueue* protocols_to_register);
+  bool QueueService(const ServiceRecord* record, ProtocolQueue* protocols_to_register);
 
   // l2cap::Channel callbacks
   void OnChannelClosed(l2cap::Channel::UniqueId channel_id);
