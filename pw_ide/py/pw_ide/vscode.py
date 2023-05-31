@@ -159,7 +159,6 @@ _DEFAULT_SETTINGS: EditorSettingsDict = OrderedDict(
                 "bazel-out": True,
                 "bazel-pigweed": True,
                 "bazel-testlogs": True,
-                "build": True,
                 "environment": True,
                 "node_modules": True,
                 "out": True,
