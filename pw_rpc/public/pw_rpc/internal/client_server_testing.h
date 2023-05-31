@@ -16,14 +16,19 @@
 #include <cinttypes>
 #include <mutex>
 
+#include "pw_function/function.h"
 #include "pw_rpc/channel.h"
 #include "pw_rpc/client_server.h"
 #include "pw_rpc/internal/fake_channel_output.h"
 #include "pw_rpc/internal/lock.h"
+#include "pw_rpc/packet_meta.h"
 #include "pw_span/span.h"
 #include "pw_status/status.h"
 
 namespace pw::rpc {
+using TestPacketProcessor =
+    pw::Function<pw::Status(ClientServer&, pw::ConstByteSpan)>;
+
 namespace internal {
 
 // Expands on a Fake Channel Output implementation to allow for forwarding of
@@ -50,14 +55,29 @@ class ForwardingChannelOutput : public ChannelOutput {
       return false;
     }
     ++sent_packets_;
-    const auto process_result = client_server.ProcessPacket(*result);
+
+    Result<PacketMeta> meta = pw::rpc::PacketMeta::FromBuffer(*result);
+    PW_ASSERT(meta.ok());
+
+    pw::Status process_result = pw::Status::Internal();
+    if (meta->destination_is_server() && server_packet_processor_) {
+      process_result = server_packet_processor_(client_server, *result);
+    } else if (meta->destination_is_client() && client_packet_processor_) {
+      process_result = client_packet_processor_(client_server, *result);
+    } else {
+      process_result = client_server.ProcessPacket(*result);
+    }
     PW_ASSERT(process_result.ok());
     return true;
   }
 
  protected:
-  constexpr ForwardingChannelOutput()
-      : ChannelOutput("testing::FakeChannelOutput") {}
+  explicit ForwardingChannelOutput(
+      TestPacketProcessor&& server_packet_processor = nullptr,
+      TestPacketProcessor&& client_packet_processor = nullptr)
+      : ChannelOutput("testing::FakeChannelOutput"),
+        server_packet_processor_(std::move(server_packet_processor)),
+        client_packet_processor_(std::move(client_packet_processor)) {}
 
   FakeChannelOutputImpl output_;
 
@@ -76,6 +96,9 @@ class ForwardingChannelOutput : public ChannelOutput {
   }
 
   uint16_t sent_packets_ = 0;
+
+  const TestPacketProcessor server_packet_processor_;
+  const TestPacketProcessor client_packet_processor_;
 };
 
 // Provides a testing context with a real client and server
@@ -97,8 +120,20 @@ class ClientServerTestContext {
   }
 
  protected:
+  // Temporary constructor. Will be removed when all implementations are moved
+  // to processor usage.
+  //
+  // TODO(denk): remove after processors are used everywhere.
   explicit ClientServerTestContext()
       : channel_(Channel::Create<1>(&channel_output_)),
+        client_server_({&channel_, 1}) {}
+
+  explicit ClientServerTestContext(
+      TestPacketProcessor&& server_packet_processor,
+      TestPacketProcessor&& client_packet_processor = nullptr)
+      : channel_output_(std::move(server_packet_processor),
+                        std::move(client_packet_processor)),
+        channel_(Channel::Create<1>(&channel_output_)),
         client_server_({&channel_, 1}) {}
 
   ~ClientServerTestContext() = default;

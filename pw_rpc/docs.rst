@@ -1448,7 +1448,7 @@ to with a test service implemenation.
     }
   };
 
-  TEST(TestServiceTest, ReceivesUnaryRpcReponse) {
+  TEST(TestServiceTest, ReceivesUnaryRpcResponse) {
     NanopbClientServerTestContext<> ctx();
     TestService service;
     ctx.server().RegisterService(service);
@@ -1467,6 +1467,40 @@ to with a test service implemenation.
     EXPECT_EQ(request.value, value);
     EXPECT_EQ(response.value, value + 1);
   }
+
+Custom packet processing for ClientServerTestContext
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Optional constructor arguments for nanopb/pwpb ``*ClientServerTestContext`` and
+``*ClientServerTestContextThreaded`` allow allow customized packet processing.
+By default the only thing is done is ``ProcessPacket()`` call on the
+``ClientServer`` instance.
+
+For cases when additional instrumentation or offloading to separate thread is
+needed, separate client and server processors can be passed to context
+constructors. A packet processor is a function that returns ``pw::Status`` and
+accepts two arguments: ``pw::rpc::ClientServer&`` and ``pw::ConstByteSpan``.
+Default packet processing is equivalent to the next processor:
+
+.. code-block:: cpp
+
+    [](ClientServer& client_server, pw::ConstByteSpan packet) -> pw::Status {
+      return client_server.ProcessPacket(packet);
+    };
+
+The Server processor will be applied to all packets sent to the server (i.e.
+requests) and client processor will be applied to all packets sent to the client
+(i.e. responses).
+
+.. note::
+
+  The packet processor MUST call ``ClientServer::ProcessPacket()`` method.
+  Otherwise the packet won't be processed.
+
+.. note::
+
+  If the packet processor offloads processing to the separate thread, it MUST
+  copy the ``packet``. After the packet processor returns, the underlying array
+  can go out of scope or be reused for other purposes.
 
 SendResponseIfCalled() helper
 -----------------------------
