@@ -224,6 +224,7 @@ TEST_F(FlashStreamTest, Read_Multiple_Seeks) {
 
 TEST_F(FlashStreamTest, Read_Seeks_With_Limit) {
   static const size_t kSeekReadSizeBytes = 512;
+  const size_t kPartitionSize = flash_.buffer().size_bytes();
   ASSERT_GE(flash_.buffer().size_bytes(), (2 * kSeekReadSizeBytes));
 
   InitBufferToRandom(flash_.buffer(), 0xffde176);
@@ -231,16 +232,37 @@ TEST_F(FlashStreamTest, Read_Seeks_With_Limit) {
 
   ASSERT_EQ(reader.ConservativeReadLimit(), kSeekReadSizeBytes);
 
+  reader.SetReadLimit(5u);
+  ASSERT_EQ(reader.ConservativeReadLimit(), 5u);
+  ASSERT_EQ(0u, reader.Tell());
+
+  reader.SetReadLimit(kPartitionSize + 5);
+  ASSERT_EQ(reader.ConservativeReadLimit(), kPartitionSize);
+  ASSERT_EQ(0u, reader.Tell());
+
+  reader.SetReadLimit(kSeekReadSizeBytes);
+  ASSERT_EQ(reader.ConservativeReadLimit(), kSeekReadSizeBytes);
+  ASSERT_EQ(0u, reader.Tell());
+
   ASSERT_EQ(reader.Seek(1u), OkStatus());
-  ASSERT_EQ(1u, reader.Tell());
   ASSERT_EQ(reader.ConservativeReadLimit(), (kSeekReadSizeBytes - 1));
+  ASSERT_EQ(1u, reader.Tell());
 
   ASSERT_EQ(reader.Seek(kSeekReadSizeBytes), OkStatus());
-  ASSERT_EQ(kSeekReadSizeBytes, reader.Tell());
   ASSERT_EQ(reader.ConservativeReadLimit(), 0u);
+  ASSERT_EQ(kSeekReadSizeBytes, reader.Tell());
 
   ASSERT_EQ(reader.Seek(kSeekReadSizeBytes + 1), Status::OutOfRange());
   ASSERT_EQ(reader.Seek(2 * kSeekReadSizeBytes), Status::OutOfRange());
+
+  reader.SetReadLimit(kPartitionSize + 5);
+  ASSERT_EQ(reader.ConservativeReadLimit(),
+            (kPartitionSize - kSeekReadSizeBytes));
+  ASSERT_EQ(kSeekReadSizeBytes, reader.Tell());
+
+  reader.SetReadLimit(5);
+  ASSERT_EQ(reader.ConservativeReadLimit(), 0u);
+  ASSERT_EQ(5u, reader.Tell());
 }
 
 TEST_F(FlashStreamTest, Read_Seek_Forward_and_Back) {

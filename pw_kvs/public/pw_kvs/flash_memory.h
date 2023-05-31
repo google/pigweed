@@ -184,6 +184,11 @@ class FlashPartition {
     Reader(const Reader&) = delete;
     Reader& operator=(const Reader&) = delete;
 
+    void SetReadLimit(size_t read_limit_bytes) {
+      read_limit_ = std::min(read_limit_bytes, partition_.size_bytes());
+      position_ = std::min(position_, read_limit_);
+    }
+
    private:
     StatusWithSize DoRead(ByteSpan data) override;
 
