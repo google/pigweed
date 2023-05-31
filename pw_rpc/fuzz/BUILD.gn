@@ -98,6 +98,7 @@ pw_test("engine_test") {
   sources = [ "engine_test.cc" ]
   deps = [
     ":engine",
+    "$dir_pw_rpc:client_server_testing",
     "$dir_pw_rpc:client_server_testing_threaded",
     "$dir_pw_thread:test_threads",
     "$dir_pw_thread_stl:test_threads",

@@ -20,6 +20,7 @@
 #include "pw_containers/vector.h"
 #include "pw_log/log.h"
 #include "pw_rpc/benchmark.h"
+#include "pw_rpc/internal/client_server_testing.h"
 #include "pw_rpc/internal/client_server_testing_threaded.h"
 #include "pw_rpc/internal/fake_channel_output.h"
 #include "pw_thread/test_threads.h"
@@ -56,7 +57,11 @@ using FuzzerChannelOutputBase =
 /// Channel output that can be waited on by the server.
 class FuzzerChannelOutput : public FuzzerChannelOutputBase {
  public:
-  FuzzerChannelOutput() : FuzzerChannelOutputBase() {}
+  explicit FuzzerChannelOutput(
+      TestPacketProcessor&& server_packet_processor = nullptr,
+      TestPacketProcessor&& client_packet_processor = nullptr)
+      : FuzzerChannelOutputBase(std::move(server_packet_processor),
+                                std::move(client_packet_processor)) {}
 };
 
 using FuzzerContextBase =
@@ -68,7 +73,12 @@ class FuzzerContext : public FuzzerContextBase {
  public:
   static constexpr uint32_t kChannelId = 1;
 
-  FuzzerContext() : FuzzerContextBase(thread::test::TestOptionsThread0()) {}
+  explicit FuzzerContext(
+      TestPacketProcessor&& server_packet_processor = nullptr,
+      TestPacketProcessor&& client_packet_processor = nullptr)
+      : FuzzerContextBase(thread::test::TestOptionsThread0(),
+                          std::move(server_packet_processor),
+                          std::move(client_packet_processor)) {}
 };
 
 class RpcFuzzTestingTest : public testing::Test {
