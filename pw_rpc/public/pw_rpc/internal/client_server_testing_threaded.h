@@ -124,16 +124,9 @@ class ClientServerTestContextThreaded
   }
 
  protected:
-  // Temporary constructor. Will be removed when all implementations are moved
-  // to processor usage.
-  //
-  // TODO(denk): remove after processors are used everywhere.
-  explicit ClientServerTestContextThreaded(const thread::Options& options)
-      : thread_(options, Instance::Run, this) {}
-
   explicit ClientServerTestContextThreaded(
       const thread::Options& options,
-      TestPacketProcessor&& server_packet_processor,
+      TestPacketProcessor&& server_packet_processor = nullptr,
       TestPacketProcessor&& client_packet_processor = nullptr)
       : Base(std::move(server_packet_processor),
              std::move(client_packet_processor)),

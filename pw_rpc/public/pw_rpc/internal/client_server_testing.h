@@ -120,16 +120,8 @@ class ClientServerTestContext {
   }
 
  protected:
-  // Temporary constructor. Will be removed when all implementations are moved
-  // to processor usage.
-  //
-  // TODO(denk): remove after processors are used everywhere.
-  explicit ClientServerTestContext()
-      : channel_(Channel::Create<1>(&channel_output_)),
-        client_server_({&channel_, 1}) {}
-
   explicit ClientServerTestContext(
-      TestPacketProcessor&& server_packet_processor,
+      TestPacketProcessor&& server_packet_processor = nullptr,
       TestPacketProcessor&& client_packet_processor = nullptr)
       : channel_output_(std::move(server_packet_processor),
                         std::move(client_packet_processor)),
