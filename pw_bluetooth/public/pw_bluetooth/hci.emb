@@ -1017,6 +1017,72 @@ enum LEClockAccuracy:
   PPM_30  = 0x06
   PPM_20  = 0x07
 
+
+bits LECISPHYOptions:
+  -- Identifies PHYs that can be used for transmission
+  0      [+1]  Flag  le_1m
+  $next  [+1]  Flag  le_2m
+  $next  [+1]  Flag  le_coded
+  $next  [+5]  UInt  padding
+
+
+struct LESetCIGParametersCISOptions:
+  -- Parameters for the CISes defined in a LESetCIGParametersCommand
+
+  0      [+1]  UInt            cis_id
+    -- Used to identify a CIS
+    [requires: 0x00 <= this <= 0xEF]
+
+  $next  [+2]  UInt            max_sdu_c_to_p
+    -- Maximum size, in octets, of the payload from the Central's Host
+    [requires: 0x0000 <= this <= 0x0FFF]
+
+  $next  [+2]  UInt            max_sdu_p_to_c
+    -- Maximum size, in octets, of the payload from the Peripheral's Host
+    [requires: 0x0000 <= this <= 0x0FFF]
+
+  $next  [+1]  LECISPHYOptions  phy_c_to_p
+    -- Identifies which PHY to use for transmission from the Central to the Peripheral
+
+  $next  [+1]  LECISPHYOptions  phy_p_to_c
+    -- Identifies which PHY to use for transmission from the Peripheral to the Central
+
+  $next  [+1]  UInt            rtn_c_to_p
+    -- Number of times every CIS Data PDU should be retransmitted from the Central to the
+    -- Peripheral
+
+  $next  [+1]  UInt            rtn_p_to_c
+    -- Number of times every CIS Data PDU should be retransmitted from the Peripheral to the
+    -- Central
+
+
+enum LESleepClockAccuracyRange:
+  -- Accuracy of the sleep clock, provided as a range
+  [maximum_bits: 8]
+  PPM_251_TO_500 = 0x00
+  PPM_151_TO_250 = 0x01
+  PPM_101_TO_150 = 0x02
+  PPM_76_TO_100  = 0x03
+  PPM_51_TO_75   = 0x04
+  PPM_31_TO_50   = 0x05
+  PPM_21_TO_30   = 0x06
+  PPM_0_TO_20    = 0x07
+
+
+enum LECISPacking:
+  -- Preferred method of arranging subevents of multiple CISes
+  [maximum_bits: 8]
+  SEQUENTIAL  = 0x00
+  INTERLEAVED = 0x01
+
+
+enum LECISFraming:
+  -- Format of CIS Data PDUs
+  [maximum_bits: 8]
+  UNFRAMED = 0x00
+  FRAMED   = 0x01
+
+
 # ========================= HCI packet headers ==========================
 
 
@@ -3224,6 +3290,54 @@ struct LESetPrivacyModeCommand:
 
   $next [+1]                      LEPrivacyMode            privacy_mode
     -- The privacy mode to be used for the given entry on the resolving list.
+
+
+struct LESetCIGParametersCommand:
+  -- 7.8.97 LE Set CIG Parameters command (v5.2) (LE)
+  -- HCI_LE_Set_CIG_Parameters
+  let hdr_size = CommandHeader.$size_in_bytes
+  0      [+hdr_size]  CommandHeader               header
+
+  $next  [+1]         UInt                        cig_id
+    -- Used to identify the CIG
+    [requires: 0x00 <= this <= 0xEF]
+
+  $next  [+3]         UInt                        sdu_interval_c_to_p
+    -- The interval, in microseconds, of periodic SDUs (Central => Peripheral)
+    [requires: 0x0000FF <= this <= 0x0FFFFF]
+
+  $next  [+3]         UInt                        sdu_interval_p_to_c
+    -- The interval, in microseconds, of periodic SDUs (Peripheral => Central)
+    [requires: 0x0000FF <= this <= 0x0FFFFF]
+
+  $next  [+1]          LESleepClockAccuracyRange  worst_case_sca
+    -- Worst-case sleep clock accuracy of all Peripherals that will participate in the CIG
+
+  $next  [+1]          LECISPacking                packing
+    -- Preferred method of arranging subevents of multiple CISes
+
+  $next  [+1]          LECISFraming                framing
+    -- Format of the CIS Data PDUs
+
+  $next  [+2]          UInt                        max_transport_latency_c_to_p
+    -- Maximum transport latency, in milliseconds, from the Central's Controller to the
+    -- Peripheral's Controller
+    [requires: 0x0005 <= this <= 0x0FA0]
+
+  $next  [+2]          UInt                        max_transport_latency_p_to_c
+    -- Maximum transport latency, in milliseconds, from the Peripheral's Controller to the
+    -- Central's Controller
+    [requires: 0x0005 <= this <= 0x0FA0]
+
+  $next  [+1]          UInt                        cis_count
+    -- Total number of CIS configurations in the CIG being added or modified
+    [requires: 0x00 <= this <= 0x1F]
+
+  let single_cis_options_size = LESetCIGParametersCISOptions.$size_in_bytes
+  let total_cis_options_size = cis_count * single_cis_options_size
+
+  $next  [+total_cis_options_size]  LESetCIGParametersCISOptions[cis_count]  cis_options
+    -- Array of parameters, one for each of the CISes in this CIG
 
 
 # ========================= HCI Event packets ===========================
