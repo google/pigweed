@@ -15,6 +15,7 @@
 
 #include <cinttypes>
 
+#include "pw_rpc/internal/client_server_testing.h"
 #include "pw_rpc/internal/client_server_testing_threaded.h"
 #include "pw_rpc/pwpb/fake_channel_output.h"
 
@@ -45,7 +46,11 @@ class PwpbWatchableChannelOutput final
       kPayloadsBufferSizeBytes>;
 
  public:
-  constexpr PwpbWatchableChannelOutput() = default;
+  explicit PwpbWatchableChannelOutput(
+      TestPacketProcessor&& server_packet_processor = nullptr,
+      TestPacketProcessor&& client_packet_processor = nullptr)
+      : Base(std::move(server_packet_processor),
+             std::move(client_packet_processor)) {}
 
   template <auto kMethod>
   Response<kMethod> response(uint32_t channel_id, uint32_t index)
@@ -94,8 +99,13 @@ class PwpbClientServerTestContextThreaded final
       kPayloadsBufferSizeBytes>;
 
  public:
-  PwpbClientServerTestContextThreaded(const thread::Options& options)
-      : Base(options) {}
+  PwpbClientServerTestContextThreaded(
+      const thread::Options& options,
+      TestPacketProcessor&& server_packet_processor = nullptr,
+      TestPacketProcessor&& client_packet_processor = nullptr)
+      : Base(options,
+             std::move(server_packet_processor),
+             std::move(client_packet_processor)) {}
 
   // Retrieve copy of request indexed by order of occurance
   template <auto kMethod>

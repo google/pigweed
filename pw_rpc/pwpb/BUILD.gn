@@ -182,8 +182,10 @@ pw_test("client_reader_writer_test") {
   deps = [
     ":client_api",
     ":client_testing",
+    "$dir_pw_sync:mutex",
     "..:test_protos.pwpb_rpc",
   ]
+  enable_if = pw_sync_MUTEX_BACKEND != ""
   sources = [ "client_reader_writer_test.cc" ]
 }
 
@@ -205,6 +207,7 @@ pw_test("client_server_context_threaded_test") {
     ":client_api",
     ":client_server_testing_threaded",
     "$dir_pw_sync:binary_semaphore",
+    "$dir_pw_sync:mutex",
     "$dir_pw_thread:test_threads",
     "$dir_pw_thread_stl:test_threads",
     "..:test_protos.pwpb_rpc",

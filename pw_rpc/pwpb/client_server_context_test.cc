@@ -12,9 +12,13 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include <mutex>
+#include <utility>
+
 #include "gtest/gtest.h"
 #include "pw_rpc/pwpb/client_server_testing.h"
 #include "pw_rpc_test_protos/test.rpc.pwpb.h"
+#include "pw_sync/mutex.h"
 
 namespace pw::rpc {
 namespace {
@@ -54,7 +58,7 @@ class TestService final : public GeneratedService::Service<TestService> {
 
 namespace {
 
-TEST(PwpbClientServerTestContext, ReceivesUnaryRpcReponse) {
+TEST(PwpbClientServerTestContext, ReceivesUnaryRpcResponse) {
   PwpbClientServerTestContext<> ctx;
   test::TestService service;
   ctx.server().RegisterService(service);
@@ -79,7 +83,7 @@ TEST(PwpbClientServerTestContext, ReceivesUnaryRpcReponse) {
   EXPECT_EQ(request.integer, sent_request.integer);
 }
 
-TEST(PwpbClientServerTestContext, ReceivesMultipleReponses) {
+TEST(PwpbClientServerTestContext, ReceivesMultipleResponses) {
   PwpbClientServerTestContext<> ctx;
   test::TestService service;
   ctx.server().RegisterService(service);
@@ -117,6 +121,79 @@ TEST(PwpbClientServerTestContext, ReceivesMultipleReponses) {
   EXPECT_EQ(response2.value, sent_response2.value);
   EXPECT_EQ(request1.integer, sent_request1.integer);
   EXPECT_EQ(request2.integer, sent_request2.integer);
+}
+
+TEST(PwpbClientServerTestContext,
+     ReceivesMultipleResponsesWithPacketProcessor) {
+  using ProtectedInt = std::pair<int, pw::sync::Mutex>;
+  ProtectedInt server_counter{};
+  auto server_processor = [&server_counter](
+                              ClientServer& client_server,
+                              pw::ConstByteSpan packet) -> pw::Status {
+    server_counter.second.lock();
+    ++server_counter.first;
+    server_counter.second.unlock();
+    return client_server.ProcessPacket(packet);
+  };
+
+  ProtectedInt client_counter{};
+  auto client_processor = [&client_counter](
+                              ClientServer& client_server,
+                              pw::ConstByteSpan packet) -> pw::Status {
+    client_counter.second.lock();
+    ++client_counter.first;
+    client_counter.second.unlock();
+    return client_server.ProcessPacket(packet);
+  };
+
+  PwpbClientServerTestContext<> ctx(server_processor, client_processor);
+  test::TestService service;
+  ctx.server().RegisterService(service);
+
+  test::TestResponse::Message response1 = {};
+  test::TestResponse::Message response2 = {};
+  auto handler1 = [&response1](
+                      const test::TestResponse::Message& server_response,
+                      pw::Status) { response1 = server_response; };
+  auto handler2 = [&response2](
+                      const test::TestResponse::Message& server_response,
+                      pw::Status) { response2 = server_response; };
+
+  test::TestRequest::Message request1{.integer = 1,
+                                      .status_code = OkStatus().code()};
+  test::TestRequest::Message request2{.integer = 2,
+                                      .status_code = OkStatus().code()};
+  const auto call1 = test::GeneratedService::TestUnaryRpc(
+      ctx.client(), ctx.channel().id(), request1, handler1);
+  // Force manual forwarding of packets as context is not threaded
+  ctx.ForwardNewPackets();
+  const auto call2 = test::GeneratedService::TestUnaryRpc(
+      ctx.client(), ctx.channel().id(), request2, handler2);
+  // Force manual forwarding of packets as context is not threaded
+  ctx.ForwardNewPackets();
+
+  const auto sent_request1 =
+      ctx.request<test::pw_rpc::pwpb::TestService::TestUnaryRpc>(0);
+  const auto sent_request2 =
+      ctx.request<test::pw_rpc::pwpb::TestService::TestUnaryRpc>(1);
+  const auto sent_response1 =
+      ctx.response<test::pw_rpc::pwpb::TestService::TestUnaryRpc>(0);
+  const auto sent_response2 =
+      ctx.response<test::pw_rpc::pwpb::TestService::TestUnaryRpc>(1);
+
+  EXPECT_EQ(response1.value, request1.integer + 1);
+  EXPECT_EQ(response2.value, request2.integer + 1);
+  EXPECT_EQ(response1.value, sent_response1.value);
+  EXPECT_EQ(response2.value, sent_response2.value);
+  EXPECT_EQ(request1.integer, sent_request1.integer);
+  EXPECT_EQ(request2.integer, sent_request2.integer);
+
+  server_counter.second.lock();
+  EXPECT_EQ(server_counter.first, 2);
+  server_counter.second.unlock();
+  client_counter.second.lock();
+  EXPECT_EQ(client_counter.first, 2);
+  client_counter.second.unlock();
 }
 
 }  // namespace

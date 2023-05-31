@@ -45,7 +45,11 @@ class PwpbForwardingChannelOutput final
       kPayloadsBufferSizeBytes>;
 
  public:
-  constexpr PwpbForwardingChannelOutput() = default;
+  explicit PwpbForwardingChannelOutput(
+      TestPacketProcessor&& server_packet_processor = nullptr,
+      TestPacketProcessor&& client_packet_processor = nullptr)
+      : Base(std::move(server_packet_processor),
+             std::move(client_packet_processor)) {}
 
   template <auto kMethod>
   Response<kMethod> response(uint32_t channel_id, uint32_t index) {
@@ -90,7 +94,11 @@ class PwpbClientServerTestContext final
       kPayloadsBufferSizeBytes>;
 
  public:
-  PwpbClientServerTestContext() = default;
+  PwpbClientServerTestContext(
+      TestPacketProcessor&& server_packet_processor = nullptr,
+      TestPacketProcessor&& client_packet_processor = nullptr)
+      : Base(std::move(server_packet_processor),
+             std::move(client_packet_processor)) {}
 
   // Retrieve copy of request indexed by order of occurance
   template <auto kMethod>
