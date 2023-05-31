@@ -40,7 +40,7 @@ class Request {
 
   // Returns a view with the current continuation state.
   // In a response packet with more than one packet, this contains the most
-  // recent continuaton state (so it can be read to request a continuation).
+  // recent continuation state (so it can be read to request a continuation).
   const BufferView ContinuationState() const { return cont_state_.view(1, cont_info_size()); }
 
   // Sets the continuation state for this request.
@@ -52,7 +52,7 @@ class Request {
   bool ParseContinuationState(const ByteBuffer& buf);
 
   // Writes the continuation state to |buf|, which must have at least
-  // cont_info_size() + 1 bytes avaiable.
+  // cont_info_size() + 1 bytes available.
   size_t WriteContinuationState(MutableByteBuffer* buf) const;
 
   uint8_t cont_info_size() const { return cont_state_.data()[0]; }

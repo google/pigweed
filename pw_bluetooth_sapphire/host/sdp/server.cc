@@ -298,7 +298,7 @@ RegistrationHandle Server::RegisterService(std::vector<ServiceRecord> records,
     // Note: Since the validation & queueing operations for ALL the records
     // occur before registration, multiple ServiceRecords can share the same PSM.
     //
-    // If any |record| is not parseable, exit the registration process early.
+    // If any |record| is not parsable, exit the registration process early.
     if (!QueueService(&record, &protocols_to_register)) {
       return 0;
     }

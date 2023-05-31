@@ -285,7 +285,7 @@ TEST_F(ServerTest, RegisterProtocolOnlyService) {
 
   // By asking for everything L2CAP with all attributes
   const auto kServiceSearchAttributeRequest =
-      StaticByteBuffer(0x06,        // SDP_ServiceAttritbuteRequest
+      StaticByteBuffer(0x06,        // SDP_ServiceAttributeRequest
                        0x10, 0x01,  // Transaction ID (0x1001)
                        0x00, 0x12,  // Parameter length (18 bytes)
                        // ServiceSearchPattern
@@ -323,7 +323,7 @@ TEST_F(ServerTest, RegisterProtocolOnlyService) {
 
   // Asking for the service handle directly will also not work, and gives an InvalidRecordHandle
   const auto kServiceAttributeRequest =
-      StaticByteBuffer(0x04,                        // SDP_ServiceAttritbuteRequest
+      StaticByteBuffer(0x04,                        // SDP_ServiceAttributeRequest
                        0x10, 0x01,                  // Transaction ID (0x1001)
                        0x00, 0x11,                  // Parameter length (17 bytes)
                        UINT32_AS_BE_BYTES(handle),  // ServiceRecordHandle
@@ -911,7 +911,7 @@ TEST_F(ServerTest, ServiceSearchContinuationState) {
       auto continuation = rsp.ContinuationState();
       uint8_t cont_size = continuation.size();
       EXPECT_NE(0u, cont_size);
-      // Make another request with the continutation data.
+      // Make another request with the continuation data.
       size_t param_size = 8 + cont_size;
       StaticByteBuffer kContinuedRequestStart(0x02,        // SDP_ServiceSearchRequest
                                               0x10, 0xC1,  // Transaction ID (0x10C1)
@@ -972,7 +972,7 @@ TEST_F(ServerTest, ServiceAttributeRequest) {
   RunLoopUntilIdle();
 
   const auto kRequestAttr =
-      StaticByteBuffer(0x04,                        // SDP_ServiceAttritbuteRequest
+      StaticByteBuffer(0x04,                        // SDP_ServiceAttributeRequest
                        0x10, 0x01,                  // Transaction ID (0x1001)
                        0x00, 0x11,                  // Parameter length (17 bytes)
                        UINT32_AS_BE_BYTES(handle),  // ServiceRecordHandle
@@ -1015,7 +1015,7 @@ TEST_F(ServerTest, ServiceAttributeRequest) {
       auto continuation = rsp.ContinuationState();
       uint8_t cont_size = continuation.size();
       EXPECT_NE(0u, cont_size);
-      // Make another request with the continutation data.
+      // Make another request with the continuation data.
       size_t param_size = 17 + cont_size;
       auto kContinuedRequestAttrStart =
           StaticByteBuffer(0x04,        // SDP_ServiceAttributeRequest
@@ -1052,7 +1052,7 @@ TEST_F(ServerTest, ServiceAttributeRequest) {
   EXPECT_NE(attrs.end(), attrs.find(0xf000));
 
   const auto kInvalidRangeOrder =
-      StaticByteBuffer(0x04,                        // SDP_ServiceAttritbuteRequest
+      StaticByteBuffer(0x04,                        // SDP_ServiceAttributeRequest
                        0xE0, 0x01,                  // Transaction ID (0xE001)
                        0x00, 0x11,                  // Parameter length (17 bytes)
                        UINT32_AS_BE_BYTES(handle),  // ServiceRecordHandle
@@ -1072,7 +1072,7 @@ TEST_F(ServerTest, ServiceAttributeRequest) {
   EXPECT_TRUE(ReceiveAndExpect(kInvalidRangeOrder, kRspErrSyntax));
 
   const auto kInvalidMaxBytes =
-      StaticByteBuffer(0x04,                        // SDP_ServiceAttritbuteRequest
+      StaticByteBuffer(0x04,                        // SDP_ServiceAttributeRequest
                        0xE0, 0x02,                  // Transaction ID (0xE001)
                        0x00, 0x0C,                  // Parameter length (12 bytes)
                        UINT32_AS_BE_BYTES(handle),  // ServiceRecordHandle
@@ -1125,7 +1125,7 @@ TEST_F(ServerTest, SearchAttributeRequest) {
   RunLoopUntilIdle();
 
   const auto kRequestAttr =
-      StaticByteBuffer(0x06,        // SDP_ServiceAttritbuteRequest
+      StaticByteBuffer(0x06,        // SDP_ServiceAttributeRequest
                        0x10, 0x01,  // Transaction ID (0x1001)
                        0x00, 0x12,  // Parameter length (18 bytes)
                        // ServiceSearchPattern
@@ -1170,7 +1170,7 @@ TEST_F(ServerTest, SearchAttributeRequest) {
       auto continuation = rsp.ContinuationState();
       uint8_t cont_size = continuation.size();
       EXPECT_NE(0u, cont_size);
-      // Make another request with the continutation data.
+      // Make another request with the continuation data.
       size_t param_size = 18 + cont_size;
       auto kContinuedRequestAttrStart =
           StaticByteBuffer(0x06,                                      // SDP_ServiceAttributeRequest
@@ -1218,7 +1218,7 @@ TEST_F(ServerTest, SearchAttributeRequest) {
   }
 
   const auto kInvalidRangeOrder =
-      StaticByteBuffer(0x06,                          // SDP_ServiceAttritbuteRequest
+      StaticByteBuffer(0x06,                          // SDP_ServiceAttributeRequest
                        0xE0, 0x01,                    // Transaction ID (0xE001)
                        0x00, 0x12,                    // Parameter length (18 bytes)
                        0x35, 0x03, 0x19, 0x01, 0x00,  // SearchPattern: L2CAP
@@ -1238,7 +1238,7 @@ TEST_F(ServerTest, SearchAttributeRequest) {
   EXPECT_TRUE(ReceiveAndExpect(kInvalidRangeOrder, kRspErrSyntax));
 
   const auto kInvalidMaxBytes =
-      StaticByteBuffer(0x04,                          // SDP_ServiceAttritbuteRequest
+      StaticByteBuffer(0x04,                          // SDP_ServiceAttributeRequest
                        0xE0, 0x02,                    // Transaction ID (0xE002)
                        0x00, 0x0D,                    // Parameter length (13 bytes)
                        0x35, 0x03, 0x19, 0x01, 0x00,  // SearchPattern: L2CAP
@@ -1305,7 +1305,7 @@ TEST_F(ServerTest, BrowseGroup) {
   EXPECT_TRUE(l2cap()->TriggerInboundL2capChannel(kTestHandle1, l2cap::kSDP, kSdpChannel, 0x0bad));
   RunLoopUntilIdle();
 
-  const auto kRequestAttr = StaticByteBuffer(0x06,        // SDP_ServiceAttritbuteRequest
+  const auto kRequestAttr = StaticByteBuffer(0x06,        // SDP_ServiceAttributeRequest
                                              0x10, 0x01,  // Transaction ID (0x1001)
                                              0x00, 0x0D,  // Parameter length (12 bytes)
                                              // ServiceSearchPattern

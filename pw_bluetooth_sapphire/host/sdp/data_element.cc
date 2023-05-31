@@ -445,7 +445,7 @@ size_t DataElement::Read(DataElement* elem, const ByteBuffer& buffer) {
       } else if (size_desc == Size::kEightBytes) {
         elem->Set(betoh64(cursor.To<uint64_t>()));
       } else {
-        // TODO(jamuraa): support 128-bit uints
+        // TODO(fxbug.dev/128187): support 128-bit uints
         // Invalid size.
         return 0;
       }
@@ -461,7 +461,7 @@ size_t DataElement::Read(DataElement* elem, const ByteBuffer& buffer) {
       } else if (size_desc == Size::kEightBytes) {
         elem->Set(betoh64(cursor.To<int64_t>()));
       } else {
-        // TODO(jamuraa): support 128-bit uints
+        // TODO(fxbug.dev/128187): support 128-bit uints
         // Invalid size.
         return 0;
       }

@@ -231,7 +231,7 @@ TEST(DataElementTest, ReadSequence) {
   EXPECT_EQ(2u, *it->Get<uint32_t>());
 }
 
-TEST(DataElementTest, ReadNestedSeqeunce) {
+TEST(DataElementTest, ReadNestedSequence) {
   StaticByteBuffer buf(0x35, 0x1C,                    // Sequence uint8 28 bytes
                                                       // Sequence 0
                        0x35, 0x08,                    // Sequence uint8 8 bytes

@@ -97,7 +97,7 @@ TEST_F(ClientTest, ConnectAndQuery) {
         },
         dispatcher());
 
-    // Seartch for all A2DP sinks, get the:
+    // Search for all A2DP sinks, get the:
     //  - Service Class ID list
     //  - Descriptor List
     //  - Bluetooth Profile Descriptor List
@@ -354,7 +354,7 @@ TEST_F(ClientTest, ContinuingResponseRequested) {
       },
       dispatcher());
 
-  // Seartch for all A2DP sinks, get the:
+  // Search for all A2DP sinks, get the:
   //  - Service Class ID list
   //  - Descriptor List
   //  - Bluetooth Profile Descriptor List
@@ -407,7 +407,7 @@ TEST_F(ClientTest, NoResults) {
       },
       dispatcher());
 
-  // Seartch for all A2DP sinks, get the:
+  // Search for all A2DP sinks, get the:
   //  - Service Class ID list
   //  - Descriptor List
   //  - Bluetooth Profile Descriptor List
@@ -467,7 +467,7 @@ TEST_F(ClientTest, Disconnected) {
       },
       dispatcher());
 
-  // Seartch for all A2DP sinks, get the:
+  // Search for all A2DP sinks, get the:
   //  - Service Class ID list
   //  - Descriptor List
   //  - Bluetooth Profile Descriptor List
@@ -527,7 +527,7 @@ TEST_F(ClientTest, InvalidResponse) {
       },
       dispatcher());
 
-  // Seartch for all A2DP sinks, get the:
+  // Search for all A2DP sinks, get the:
   //  - Service Class ID list
   //  - Descriptor List
   //  - Bluetooth Profile Descriptor List
@@ -584,7 +584,7 @@ TEST_F(ClientTest, Timeout) {
       },
       dispatcher());
 
-  // Seartch for all A2DP sinks, get the:
+  // Search for all A2DP sinks, get the:
   //  - Service Class ID list
   //  - Descriptor List
   //  - Bluetooth Profile Descriptor List

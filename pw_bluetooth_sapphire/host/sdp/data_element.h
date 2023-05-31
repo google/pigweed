@@ -74,7 +74,7 @@ class DataElement {
   DataElement();
   ~DataElement() = default;
 
-  // Default move constructor and move-assigment
+  // Default move constructor and move-assignment
   DataElement(DataElement&&) = default;
   DataElement& operator=(DataElement&&) = default;
 

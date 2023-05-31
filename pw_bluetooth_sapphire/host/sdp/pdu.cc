@@ -563,7 +563,7 @@ fit::result<Error<>> ServiceAttributeResponse::Parse(const ByteBuffer& buf) {
   // Check to see if there's continuation.
   BufferView cont_state_view;
   if (!ValidContinuationState(buf.view(read_size + attribute_list_byte_count), &cont_state_view)) {
-    bt_log(TRACE, "sdp", "Continutation state is not valid");
+    bt_log(TRACE, "sdp", "Continuation state is not valid");
     return ToResult(HostError::kPacketMalformed);
   }
 
@@ -606,7 +606,7 @@ fit::result<Error<>> ServiceAttributeResponse::Parse(const ByteBuffer& buf) {
     partial_response_ = std::move(new_partial);
     if (continuation_state_) {
       // This is incomplete, we can't parse it yet.
-      bt_log(TRACE, "sdp", "Continutation state, returning in progress");
+      bt_log(TRACE, "sdp", "Continuation state, returning in progress");
       return ToResult(HostError::kInProgress);
     }
     attribute_list_bytes = partial_response_->view();
@@ -620,8 +620,8 @@ fit::result<Error<>> ServiceAttributeResponse::Parse(const ByteBuffer& buf) {
   }
 
   // Data Element sequence containing alternating attribute id and attribute
-  // value pairs.  Only the requested attributes that are present are included.
-  // They are sorted in ascenting attribute ID order.
+  // value pairs. Only the requested attributes that are present are included.
+  // They are sorted in ascending attribute ID order.
   AttributeId last_id = 0;
   size_t idx = 0;
   for (auto* it = attribute_list.At(0); it != nullptr; it = attribute_list.At(idx)) {
@@ -881,8 +881,7 @@ fit::result<Error<>> ServiceSearchAttributeResponse::Parse(const ByteBuffer& buf
   }
 
   // Minimum size is an AttributeListsByteCount, an empty AttributeLists
-  // (two bytes) and an empty continutation state (1 byte)
-  // of AttributeLists
+  // (two bytes) and an empty continuation state (1 byte) of AttributeLists
   if (buf.size() < sizeof(uint16_t) + 3) {
     bt_log(TRACE, "sdp", "packet too small to parse");
     return ToResult(HostError::kPacketMalformed);
@@ -897,7 +896,7 @@ fit::result<Error<>> ServiceSearchAttributeResponse::Parse(const ByteBuffer& buf
   // Check to see if there's continuation.
   BufferView cont_state_view;
   if (!ValidContinuationState(buf.view(read_size + attribute_lists_byte_count), &cont_state_view)) {
-    bt_log(TRACE, "sdp", "continutation state is not valid");
+    bt_log(TRACE, "sdp", "continuation state is not valid");
     return ToResult(HostError::kPacketMalformed);
   }
 
@@ -932,7 +931,7 @@ fit::result<Error<>> ServiceSearchAttributeResponse::Parse(const ByteBuffer& buf
     partial_response_ = std::move(new_partial);
     if (continuation_state_) {
       // This is incomplete, we can't parse it yet.
-      bt_log(TRACE, "sdp", "continutation state found, returning in progress");
+      bt_log(TRACE, "sdp", "continuation state found, returning in progress");
       return ToResult(HostError::kInProgress);
     }
     attribute_lists_bytes = partial_response_->view();
@@ -947,7 +946,7 @@ fit::result<Error<>> ServiceSearchAttributeResponse::Parse(const ByteBuffer& buf
   bt_log(TRACE, "sdp", "parsed AttributeLists: %s", attribute_lists.ToString().c_str());
 
   // Data Element sequence containing alternating attribute id and attribute value pairs. Only the
-  // requested attributes that are present are included. They are sorted in ascenting attribute ID
+  // requested attributes that are present are included. They are sorted in ascending attribute ID
   // order.
   size_t list_idx = 0;
   for (auto* src_list_it = attribute_lists.At(0); src_list_it != nullptr;

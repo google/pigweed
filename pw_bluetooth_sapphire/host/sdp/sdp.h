@@ -177,7 +177,7 @@ using ServiceRecordHandleValueType = uint32_t;
 // Service Class ID List
 constexpr AttributeId kServiceClassIdList = 0x0001;
 
-// A seqeunce of UUIDs.
+// A sequence of UUIDs.
 // Must contain at least one UUID.
 using ServiceClassIdListValueType = std::vector<DataElement>;
 
@@ -196,8 +196,8 @@ using ServiceIdValueType = UUID;
 // Protocol Descriptor List
 constexpr AttributeId kProtocolDescriptorList = 0x0004;
 
-// This is a list of DataElementSequences, of which each has as it's first
-// element a Protocol UUID, followed by prtoocol-specific parameters.
+// This is a list of DataElementSequences, of which each has as its first
+// element a Protocol UUID, followed by protocol-specific parameters.
 // See v5.0, Vol 3, Part B, Sec 5.1.5
 using ProtocolDescriptorListValueType = std::vector<DataElement>;
 
@@ -253,7 +253,7 @@ constexpr AttributeId kBluetoothProfileDescriptorList = 0x0009;
 //     - 8 LSbits minor version
 using BluetoothProfileDescriptorListValueType = std::vector<DataElement>;
 
-// TODO(jamuraa): Documentation URL, ClientExecutalbleURL, IconURL
+// TODO(fxbug.dev/128186): Documentation URL, ClientExecutableURL, IconURL
 // When we support the URL type.
 
 // ##### Language Attribute Offsets #####

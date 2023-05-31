@@ -34,7 +34,7 @@ TEST(ServiceRecordTest, BasicFunctionality) {
 
   // This isn't a valid service class ID list:
   //  - ServiceDiscoveryServerServiceClassID
-  //  - BrowseGroupDesciptorServiceClassID
+  //  - BrowseGroupDescriptorServiceClassID
   UUID sdp_id(uint16_t{0x1000});
   UUID group_id(uint16_t{0x1001});
   std::vector<UUID> service_class;

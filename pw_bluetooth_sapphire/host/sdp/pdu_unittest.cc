@@ -72,7 +72,7 @@ TEST(PDUTest, ServiceSearchRequestParse) {
       0x35, 0x03,        // Sequence uint8 3 bytes
       0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
       0x00, 0x10,        // MaximumServiceRecordCount: 16
-      0x00               // Contunuation State: none
+      0x00               // Continuation State: none
   );
 
   ServiceSearchRequest req(kL2capSearch);
@@ -87,7 +87,7 @@ TEST(PDUTest, ServiceSearchRequestParse) {
       0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
       0x19, 0xED, 0xFE,  // UUID: 0xEDFE (unknown, doesn't need to be found)
       0x00, 0x01,        // MaximumServiceRecordCount: 1
-      0x00               // Contunuation State: none
+      0x00               // Continuation State: none
   );
 
   ServiceSearchRequest req_one(kL2capSearchOne);
@@ -99,7 +99,7 @@ TEST(PDUTest, ServiceSearchRequestParse) {
       // ServiceSearchPattern
       0x35, 0x00,  // Sequence uint8 0 bytes
       0xFF, 0xFF,  // MaximumServiceRecordCount: (none)
-      0x00         // Contunuation State: none
+      0x00         // Continuation State: none
   );
 
   ServiceSearchRequest req2(kInvalidNoItems);
@@ -112,7 +112,7 @@ TEST(PDUTest, ServiceSearchRequestParse) {
       0x19, 0x30, 0x02, 0x19, 0x30, 0x03, 0x19, 0x30, 0x04, 0x19, 0x30, 0x05, 0x19, 0x30, 0x06,
       0x19, 0x30, 0x07, 0x19, 0x30, 0x08, 0x19, 0x30, 0x09, 0x19, 0x30, 0x10, 0x19, 0x30, 0x11,
       0x19, 0x30, 0x12, 0x19, 0x30, 0x13, 0xFF, 0xFF,  // MaximumServiceRecordCount: (none)
-      0x00                                             // Contunuation State: none
+      0x00                                             // Continuation State: none
   );
 
   ServiceSearchRequest req3(kInvalidTooManyItems);
@@ -124,7 +124,7 @@ TEST(PDUTest, ServiceSearchRequestParse) {
       0x19, 0x01, 0x00,  // UUID: Protocol: L2CAP
       0x19, 0xED, 0xFE,  // UUID: 0xEDFE (unknown, doesn't need to be found)
       0x00, 0x00,        // MaximumServiceRecordCount: 0
-      0x00               // Contunuation State: none
+      0x00               // Continuation State: none
   );
 
   ServiceSearchRequest req4(kInvalidMaxSizeZero);
@@ -411,7 +411,7 @@ TEST(PDUTest, ServiceAttributeRequestValidity) {
   EXPECT_TRUE(req.valid());
 }
 
-TEST(PDUTest, ServiceAttriuteRequestAddRange) {
+TEST(PDUTest, ServiceAttributeRequestAddRange) {
   ServiceAttributeRequest req;
 
   req.AddAttributeRange(0x0010, 0xFFF0);
@@ -746,7 +746,7 @@ TEST(PDUTest, ServiceAttributeResponseGetPDU_MaxSize) {
       0x9f, 0x92, 0x96,              // Remaining 3 bytes of String: '💖'
       0x09, 0x40, 0x05,              // uint16_t (handle) = 0x4005
       0x0A, 0xc0, 0xde, 0xb4, 0xbe,  // value: uint32_t (0xC0DEB4BE)
-      0x00                           // Continutation state (none)
+      0x00                           // Continuation state (none)
   );
 
   pdu = resp.GetPDU(0xFFFF /* no max */, kTransactionID, kMinMaxSize,
@@ -1141,7 +1141,7 @@ TEST(PDUTest, ServiceSearchAttributeResponseParseContinuationWrongOrder) {
       0x09, 0x00, 0x09,                                // Attribute 0x09
       0x35, 0x08, 0x35, 0x06, 0x19, 0x11, 0x0e, 0x01,  // Start of Attribute 0x09 data
                                                        // (continued in next packet)
-      0x01                                             // Continutation state (yes, one byte, 0x01)
+      0x01                                             // Continuation state (yes, one byte, 0x01)
   );
 
   ServiceSearchAttributeResponse resp;
@@ -1190,7 +1190,7 @@ TEST(PDUTest, ServiceSearchAttributeResponseGetPDU) {
                                    0x35, 0x08,                    // Sequence uint8 8 bytes
                                    0x09, 0x00, 0x00,  // uint16_t (handle) = kServiceRecordHandle
                                    0x0A, 0x10, 0x00, 0x20, 0x00,  // value: uint32_t (0x10002000)
-                                   0x00                           // Continutation state (none)
+                                   0x00                           // Continuation state (none)
   );
 
   auto pdu = resp.GetPDU(0xFFFF /* no max */, kTransactionID, kDefaultMaxSize, BufferView());
@@ -1249,7 +1249,7 @@ TEST(PDUTest, ServiceSearchAttributeResponseGetPDU_MaxSize) {
       0x35, 0x08,                    // Sequence uint8 8 bytes
       0x09, 0x00, 0x00,              // uint16_t (handle) = kServiceRecordHandle
       0x0A, 0x10, 0x00, 0x20, 0x00,  // value: uint32_t (0x10002000)
-      0x00                           // Continutation state (none)
+      0x00                           // Continuation state (none)
   );
 
   pdu = resp.GetPDU(0xFFFF /* no max */, kTransactionID, kMinMaxSize,
