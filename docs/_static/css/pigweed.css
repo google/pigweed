@@ -78,7 +78,7 @@ dl.describe>dt {
 }
 
 /* Diagram backgrounds should always be light */
-div>svg {
+div.mermaid > svg {
   background: #ffffff;
 }
 

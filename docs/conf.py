@@ -187,13 +187,13 @@ html_theme_options = {
     },
 }
 
-mermaid_version = '9.4.0'
-# TODO(tonymd): Investigate if ESM only v10 Mermaid can be used.
-# This does not work:
-# mermaid_init_js = '''
-#   import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-#   mermaid.initialize({ startOnLoad: true });
-# '''
+mermaid_init_js = '''
+mermaid.initialize({
+  startOnLoad: true,
+  // sequenceDiagram Note text alignment
+  noteAlign: "left"
+});
+'''
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = 'Pigweeddoc'
