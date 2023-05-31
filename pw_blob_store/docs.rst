@@ -98,11 +98,11 @@ readers/writers may be open/active if a ``BlobWriter`` is opened on a blob
 store.
 
   0) Create BlobReader instance
-  1) BlobReader::Open().
+  1) BlobReader::Open()
   2) Read data using BlobReader::Read() or
      BlobReader::GetMemoryMappedBlob(). BlobReader is seekable. Use
      BlobReader::Seek() to read from a desired offset.
-  3) BlobReader::Close().
+  3) BlobReader::Close()
 
 --------------------------
 FileSystem RPC integration
