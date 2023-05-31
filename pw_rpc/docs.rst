@@ -11,20 +11,20 @@ This document discusses the ``pw_rpc`` protocol and its C++ implementation.
 documents:
 
 .. toctree::
-  :maxdepth: 1
+   :maxdepth: 1
 
-  py/docs
-  ts/docs
+   py/docs
+   ts/docs
 
 .. admonition:: Try it out!
 
-  For a quick intro to ``pw_rpc``, see the
-  :ref:`module-pw_hdlc-rpc-example` in the :ref:`module-pw_hdlc` module.
+   For a quick intro to ``pw_rpc``, see the
+   :ref:`module-pw_hdlc-rpc-example` in the :ref:`module-pw_hdlc` module.
 
 .. warning::
 
-  This documentation is under construction. Many sections are outdated or
-  incomplete. The content needs to be reorgnanized.
+   This documentation is under construction. Many sections are outdated or
+   incomplete. The content needs to be reorgnanized.
 
 ---------------
 Implementations
@@ -162,65 +162,65 @@ Pigweed RPCs are declared in a protocol buffer service definition.
 
 .. code-block:: protobuf
 
-  syntax = "proto3";
+   syntax = "proto3";
 
-  package foo.bar;
+   package foo.bar;
 
-  message Request {}
+   message Request {}
 
-  message Response {
-    int32 number = 1;
-  }
+   message Response {
+     int32 number = 1;
+   }
 
-  service TheService {
-    rpc MethodOne(Request) returns (Response) {}
-    rpc MethodTwo(Request) returns (stream Response) {}
-  }
+   service TheService {
+     rpc MethodOne(Request) returns (Response) {}
+     rpc MethodTwo(Request) returns (stream Response) {}
+   }
 
 This protocol buffer is declared in a ``BUILD.gn`` file as follows:
 
 .. code-block:: python
 
-  import("//build_overrides/pigweed.gni")
-  import("$dir_pw_protobuf_compiler/proto.gni")
+   import("//build_overrides/pigweed.gni")
+   import("$dir_pw_protobuf_compiler/proto.gni")
 
-  pw_proto_library("the_service_proto") {
-    sources = [ "foo_bar/the_service.proto" ]
-  }
+   pw_proto_library("the_service_proto") {
+     sources = [ "foo_bar/the_service.proto" ]
+   }
 
 .. admonition:: proto2 or proto3 syntax?
 
-  Always use proto3 syntax rather than proto2 for new protocol buffers. Proto2
-  protobufs can be compiled for ``pw_rpc``, but they are not as well supported
-  as proto3. Specifically, ``pw_rpc`` lacks support for non-zero default values
-  in proto2. When using Nanopb with ``pw_rpc``, proto2 response protobufs with
-  non-zero field defaults should be manually initialized to the default struct.
+   Always use proto3 syntax rather than proto2 for new protocol buffers. Proto2
+   protobufs can be compiled for ``pw_rpc``, but they are not as well supported
+   as proto3. Specifically, ``pw_rpc`` lacks support for non-zero default values
+   in proto2. When using Nanopb with ``pw_rpc``, proto2 response protobufs with
+   non-zero field defaults should be manually initialized to the default struct.
 
-  In the past, proto3 was sometimes avoided because it lacked support for field
-  presence detection. Fortunately, this has been fixed: proto3 now supports
-  ``optional`` fields, which are equivalent to proto2 ``optional`` fields.
+   In the past, proto3 was sometimes avoided because it lacked support for field
+   presence detection. Fortunately, this has been fixed: proto3 now supports
+   ``optional`` fields, which are equivalent to proto2 ``optional`` fields.
 
-  If you need to distinguish between a default-valued field and a missing field,
-  mark the field as ``optional``. The presence of the field can be detected
-  with ``std::optional``, a ``HasField(name)``, or ``has_<field>`` member,
-  depending on the library.
+   If you need to distinguish between a default-valued field and a missing field,
+   mark the field as ``optional``. The presence of the field can be detected
+   with ``std::optional``, a ``HasField(name)``, or ``has_<field>`` member,
+   depending on the library.
 
-  Optional fields have some overhead --- if using Nanopb, default-valued fields
-  are included in the encoded proto, and the proto structs have a
-  ``has_<field>`` flag for each optional field. Use plain fields if field
-  presence detection is not needed.
+   Optional fields have some overhead --- if using Nanopb, default-valued fields
+   are included in the encoded proto, and the proto structs have a
+   ``has_<field>`` flag for each optional field. Use plain fields if field
+   presence detection is not needed.
 
-  .. code-block:: protobuf
+   .. code-block:: protobuf
 
-    syntax = "proto3";
+      syntax = "proto3";
 
-    message MyMessage {
-      // Leaving this field unset is equivalent to setting it to 0.
-      int32 number = 1;
+      message MyMessage {
+        // Leaving this field unset is equivalent to setting it to 0.
+        int32 number = 1;
 
-      // Setting this field to 0 is different from leaving it unset.
-      optional int32 other_number = 2;
-    }
+        // Setting this field to 0 is different from leaving it unset.
+        optional int32 other_number = 2;
+      }
 
 2. RPC code generation
 ======================
@@ -257,64 +257,64 @@ Services may mix and match protobuf implementations within one service.
 
 .. tip::
 
-  The generated code includes RPC service implementation stubs. You can
-  reference or copy and paste these to get started with implementing a service.
-  These stub classes are generated at the bottom of the pw_rpc proto header.
+   The generated code includes RPC service implementation stubs. You can
+   reference or copy and paste these to get started with implementing a service.
+   These stub classes are generated at the bottom of the pw_rpc proto header.
 
-  To use the stubs, do the following:
+   To use the stubs, do the following:
 
-  #. Locate the generated RPC header in the build directory. For example:
+   #. Locate the generated RPC header in the build directory. For example:
 
-     .. code-block:: sh
+      .. code-block:: sh
 
-       find out/ -name <proto_name>.rpc.pwpb.h
+         find out/ -name <proto_name>.rpc.pwpb.h
 
-  #. Scroll to the bottom of the generated RPC header.
-  #. Copy the stub class declaration to a header file.
-  #. Copy the member function definitions to a source file.
-  #. Rename the class or change the namespace, if desired.
-  #. List these files in a build target with a dependency on the
-     ``pw_proto_library``.
+   #. Scroll to the bottom of the generated RPC header.
+   #. Copy the stub class declaration to a header file.
+   #. Copy the member function definitions to a source file.
+   #. Rename the class or change the namespace, if desired.
+   #. List these files in a build target with a dependency on the
+      ``pw_proto_library``.
 
 A pw_protobuf implementation of this service would be as follows:
 
 .. code-block:: cpp
 
-  #include "foo_bar/the_service.rpc.pwpb.h"
+   #include "foo_bar/the_service.rpc.pwpb.h"
 
-  namespace foo::bar {
+   namespace foo::bar {
 
-  class TheService : public pw_rpc::pwpb::TheService::Service<TheService> {
-   public:
-    pw::Status MethodOne(const Request::Message& request,
-                         Response::Message& response) {
-      // implementation
-      response.number = 123;
-      return pw::OkStatus();
-    }
+   class TheService : public pw_rpc::pwpb::TheService::Service<TheService> {
+    public:
+     pw::Status MethodOne(const Request::Message& request,
+                          Response::Message& response) {
+       // implementation
+       response.number = 123;
+       return pw::OkStatus();
+     }
 
-    void MethodTwo(const Request::Message& request,
-                   ServerWriter<Response::Message>& response) {
-      // implementation
-      response.Write({.number = 123});
-    }
-  };
+     void MethodTwo(const Request::Message& request,
+                    ServerWriter<Response::Message>& response) {
+       // implementation
+       response.Write({.number = 123});
+     }
+   };
 
-  }  // namespace foo::bar
+   }  // namespace foo::bar
 
 The pw_protobuf implementation would be declared in a ``BUILD.gn``:
 
 .. code-block:: python
 
-  import("//build_overrides/pigweed.gni")
+   import("//build_overrides/pigweed.gni")
 
-  import("$dir_pw_build/target_types.gni")
+   import("$dir_pw_build/target_types.gni")
 
-  pw_source_set("the_service") {
-    public_configs = [ ":public" ]
-    public = [ "public/foo_bar/service.h" ]
-    public_deps = [ ":the_service_proto.pwpb_rpc" ]
-  }
+   pw_source_set("the_service") {
+     public_configs = [ ":public" ]
+     public = [ "public/foo_bar/service.h" ]
+     public_deps = [ ":the_service_proto.pwpb_rpc" ]
+   }
 
 4. Register the service with a server
 =====================================
@@ -323,40 +323,40 @@ channel output and the example service.
 
 .. code-block:: cpp
 
-  // Set up the output channel for the pw_rpc server to use. This configures the
-  // pw_rpc server to use HDLC over UART; projects not using UART and HDLC must
-  // adapt this as necessary.
-  pw::stream::SysIoWriter writer;
-  pw::rpc::FixedMtuChannelOutput<kMaxTransmissionUnit> hdlc_channel_output(
-      writer, pw::hdlc::kDefaultRpcAddress, "HDLC output");
+   // Set up the output channel for the pw_rpc server to use. This configures the
+   // pw_rpc server to use HDLC over UART; projects not using UART and HDLC must
+   // adapt this as necessary.
+   pw::stream::SysIoWriter writer;
+   pw::rpc::FixedMtuChannelOutput<kMaxTransmissionUnit> hdlc_channel_output(
+       writer, pw::hdlc::kDefaultRpcAddress, "HDLC output");
 
-  // Allocate an array of channels for the server to use. If dynamic allocation
-  // is enabled (PW_RPC_DYNAMIC_ALLOCATION=1), the server can be initialized
-  // without any channels, and they can be added later.
-  pw::rpc::Channel channels[] = {
-      pw::rpc::Channel::Create<1>(&hdlc_channel_output)};
+   // Allocate an array of channels for the server to use. If dynamic allocation
+   // is enabled (PW_RPC_DYNAMIC_ALLOCATION=1), the server can be initialized
+   // without any channels, and they can be added later.
+   pw::rpc::Channel channels[] = {
+       pw::rpc::Channel::Create<1>(&hdlc_channel_output)};
 
-  // Declare the pw_rpc server with the HDLC channel.
-  pw::rpc::Server server(channels);
+   // Declare the pw_rpc server with the HDLC channel.
+   pw::rpc::Server server(channels);
 
-  foo::bar::TheService the_service;
-  pw::rpc::SomeOtherService some_other_service;
+   foo::bar::TheService the_service;
+   pw::rpc::SomeOtherService some_other_service;
 
-  void RegisterServices() {
-    // Register the foo.bar.TheService example service and another service.
-    server.RegisterService(the_service, some_other_service);
-  }
+   void RegisterServices() {
+     // Register the foo.bar.TheService example service and another service.
+     server.RegisterService(the_service, some_other_service);
+   }
 
-  int main() {
-    // Set up the server.
-    RegisterServices();
+   int main() {
+     // Set up the server.
+     RegisterServices();
 
-    // Declare a buffer for decoding incoming HDLC frames.
-    std::array<std::byte, kMaxTransmissionUnit> input_buffer;
+     // Declare a buffer for decoding incoming HDLC frames.
+     std::array<std::byte, kMaxTransmissionUnit> input_buffer;
 
-    PW_LOG_INFO("Starting pw_rpc server");
-    pw::hdlc::ReadAndProcessPackets(server, input_buffer);
-  }
+     PW_LOG_INFO("Starting pw_rpc server");
+     pw::hdlc::ReadAndProcessPackets(server, input_buffer);
+   }
 
 --------
 Channels
@@ -369,22 +369,22 @@ assigned statically at compile time or dynamically.
 
 .. code-block:: cpp
 
-  // Creating a channel with the static ID 3.
-  pw::rpc::Channel static_channel = pw::rpc::Channel::Create<3>(&output);
+   // Creating a channel with the static ID 3.
+   pw::rpc::Channel static_channel = pw::rpc::Channel::Create<3>(&output);
 
-  // Grouping channel IDs within an enum can lead to clearer code.
-  enum ChannelId {
-    kUartChannel = 1,
-    kSpiChannel = 2,
-  };
+   // Grouping channel IDs within an enum can lead to clearer code.
+   enum ChannelId {
+     kUartChannel = 1,
+     kSpiChannel = 2,
+   };
 
-  // Creating a channel with a static ID defined within an enum.
-  pw::rpc::Channel another_static_channel =
-      pw::rpc::Channel::Create<ChannelId::kUartChannel>(&output);
+   // Creating a channel with a static ID defined within an enum.
+   pw::rpc::Channel another_static_channel =
+       pw::rpc::Channel::Create<ChannelId::kUartChannel>(&output);
 
-  // Creating a channel with a dynamic ID (note that no output is provided; it
-  // will be set when the channel is used.
-  pw::rpc::Channel dynamic_channel;
+   // Creating a channel with a dynamic ID (note that no output is provided; it
+   // will be set when the channel is used.
+   pw::rpc::Channel dynamic_channel;
 
 Sometimes, the ID and output of a channel are not known at compile time as they
 depend on information stored on the physical device. To support this use case, a
@@ -393,13 +393,13 @@ output.
 
 .. code-block:: cpp
 
-  // Create a dynamic channel without a compile-time ID or output.
-  pw::rpc::Channel dynamic_channel;
+   // Create a dynamic channel without a compile-time ID or output.
+   pw::rpc::Channel dynamic_channel;
 
-  void Init() {
-    // Called during boot to pull the channel configuration from the system.
-    dynamic_channel.Configure(GetChannelId(), some_output);
-  }
+   void Init() {
+     // Called during boot to pull the channel configuration from the system.
+     dynamic_channel.Configure(GetChannelId(), some_output);
+   }
 
 Adding and removing channels
 ============================
@@ -416,9 +416,9 @@ with the ``ABORTED`` status.
 
 .. code-block:: cpp
 
-  // When a channel is closed, any pending calls will receive
-  // on_error callbacks with ABORTED status.
-  client->CloseChannel(1);
+   // When a channel is closed, any pending calls will receive
+   // on_error callbacks with ABORTED status.
+   client->CloseChannel(1);
 
 --------
 Services
@@ -441,10 +441,10 @@ Protobuf library APIs
 ---------------------
 
 .. toctree::
-  :maxdepth: 1
+   :maxdepth: 1
 
-  pwpb/docs
-  nanopb/docs
+   pwpb/docs
+   nanopb/docs
 
 ----------------------------
 Testing a pw_rpc integration
@@ -454,35 +454,35 @@ working as intended by registering the provided ``EchoService``, defined in
 ``echo.proto``, which echoes back a message that it receives.
 
 .. literalinclude:: echo.proto
-  :language: protobuf
-  :lines: 14-
+   :language: protobuf
+   :lines: 14-
 
 For example, in C++ with pw_protobuf:
 
 .. code:: c++
 
-  #include "pw_rpc/server.h"
+   #include "pw_rpc/server.h"
 
-  // Include the apporpriate header for your protobuf library.
-  #include "pw_rpc/echo_service_pwpb.h"
+   // Include the apporpriate header for your protobuf library.
+   #include "pw_rpc/echo_service_pwpb.h"
 
-  constexpr pw::rpc::Channel kChannels[] = { /* ... */ };
-  static pw::rpc::Server server(kChannels);
+   constexpr pw::rpc::Channel kChannels[] = { /* ... */ };
+   static pw::rpc::Server server(kChannels);
 
-  static pw::rpc::EchoService echo_service;
+   static pw::rpc::EchoService echo_service;
 
-  void Init() {
-    server.RegisterService(echo_service);
-  }
+   void Init() {
+     server.RegisterService(echo_service);
+   }
 
 Benchmarking and stress testing
 ===============================
 
 .. toctree::
-  :maxdepth: 1
-  :hidden:
+   :maxdepth: 1
+   :hidden:
 
-  benchmark
+   benchmark
 
 ``pw_rpc`` provides an RPC service and Python module for stress testing and
 benchmarking a ``pw_rpc`` deployment. See :ref:`module-pw_rpc-benchmark`.
@@ -516,27 +516,27 @@ For example, a service for accessing a file system should simply be named
 
 .. code-block:: protobuf
 
-  // file.proto
-  package pw.file;
+   // file.proto
+   package pw.file;
 
-  service FileSystem {
-      rpc List(ListRequest) returns (stream ListResponse);
-  }
+   service FileSystem {
+       rpc List(ListRequest) returns (stream ListResponse);
+   }
 
 The C++ service implementation class may append "Service" to the name.
 
 .. code-block:: cpp
 
-  // file_system_service.h
-  #include "pw_file/file.raw_rpc.pb.h"
+   // file_system_service.h
+   #include "pw_file/file.raw_rpc.pb.h"
 
-  namespace pw::file {
+   namespace pw::file {
 
-  class FileSystemService : public pw_rpc::raw::FileSystem::Service<FileSystemService> {
-    void List(ConstByteSpan request, RawServerWriter& writer);
-  };
+   class FileSystemService : public pw_rpc::raw::FileSystem::Service<FileSystemService> {
+     void List(ConstByteSpan request, RawServerWriter& writer);
+   };
 
-  }  // namespace pw::file
+   }  // namespace pw::file
 
 For upstream Pigweed services, this naming style is a requirement. Note that
 some services created before this was established may use non-compliant
@@ -562,22 +562,22 @@ message payload size.
 
 .. code-block:: cpp
 
-  #include "pw_file/file.raw_rpc.pb.h"
-  #include "pw_rpc/channel.h"
+   #include "pw_file/file.raw_rpc.pb.h"
+   #include "pw_rpc/channel.h"
 
-  namespace pw::file {
+   namespace pw::file {
 
-  class FileSystemService : public pw_rpc::raw::FileSystem::Service<FileSystemService> {
-   public:
-    void List(ConstByteSpan request, RawServerWriter& writer);
+   class FileSystemService : public pw_rpc::raw::FileSystem::Service<FileSystemService> {
+    public:
+     void List(ConstByteSpan request, RawServerWriter& writer);
 
-   private:
-    // Allocate a buffer for building proto responses.
-    static constexpr size_t kEncodeBufferSize = pw::rpc::MaxSafePayloadSize();
-    std::array<std::byte, kEncodeBufferSize> encode_buffer_;
-  };
+    private:
+     // Allocate a buffer for building proto responses.
+     static constexpr size_t kEncodeBufferSize = pw::rpc::MaxSafePayloadSize();
+     std::array<std::byte, kEncodeBufferSize> encode_buffer_;
+   };
 
-  }  // namespace pw::file
+   }  // namespace pw::file
 
 --------------------
 Protocol description
@@ -593,8 +593,8 @@ encoded as protocol buffers. The full packet format is described in
 ``pw_rpc/pw_rpc/internal/packet.proto``.
 
 .. literalinclude:: internal/packet.proto
-  :language: protobuf
-  :lines: 14-
+   :language: protobuf
+   :lines: 14-
 
 The packet type and RPC type determine which fields are present in a Pigweed RPC
 packet. Each packet type is only sent by either the client or the server.
@@ -739,14 +739,14 @@ client streaming, and bidirectional streaming.
 
 The basic flow for all RPC invocations is as follows:
 
-  * Client sends a ``REQUEST`` packet. Includes a payload for unary & server
-    streaming RPCs.
-  * For client and bidirectional streaming RPCs, the client may send any number
-    of ``CLIENT_STREAM`` packets with payloads.
-  * For server and bidirectional streaming RPCs, the server may send any number
-    of ``SERVER_STREAM`` packets.
-  * The server sends a ``RESPONSE`` packet. Includes a payload for unary &
-    client streaming RPCs. The RPC is complete.
+* Client sends a ``REQUEST`` packet. Includes a payload for unary & server
+  streaming RPCs.
+* For client and bidirectional streaming RPCs, the client may send any number of
+  ``CLIENT_STREAM`` packets with payloads.
+* For server and bidirectional streaming RPCs, the server may send any number of
+  ``SERVER_STREAM`` packets.
+* The server sends a ``RESPONSE`` packet. Includes a payload for unary & client
+  streaming RPCs. The RPC is complete.
 
 The client may cancel an ongoing RPC at any time by sending a ``CLIENT_ERROR``
 packet with status ``CANCELLED``. The server may finish an ongoing RPC at any
@@ -757,26 +757,79 @@ Unary RPC
 In a unary RPC, the client sends a single request and the server sends a single
 response.
 
-.. image:: unary_rpc.svg
+.. mermaid::
+   :alt: Unary RPC
+   :align: center
+
+   sequenceDiagram
+       participant C as Client
+       participant S as Server
+       C->>+S: request
+       Note left of C: PacketType.REQUEST<br>channel ID<br>service ID<br>method ID<br>payload
+
+       S->>-C: response
+       Note right of S: PacketType.RESPONSE<br>channel ID<br>service ID<br>method ID<br>payload<br>status
 
 The client may attempt to cancel a unary RPC by sending a ``CLIENT_ERROR``
 packet with status ``CANCELLED``. The server sends no response to a cancelled
 RPC. If the server processes the unary RPC synchronously (the handling thread
 sends the response), it may not be possible to cancel the RPC.
 
-.. image:: unary_rpc_cancelled.svg
+.. mermaid::
+   :alt: Cancelled Unary RPC
+   :align: center
+
+   sequenceDiagram
+       participant C as Client
+       participant S as Server
+       C->>+S: request
+       Note left of C: PacketType.REQUEST<br>channel ID<br>service ID<br>method ID<br>payload
+
+       C->>S: cancel
+       Note left of C: PacketType.CLIENT_ERROR<br>channel ID<br>service ID<br>method ID<br>status=CANCELLED
+
 
 Server streaming RPC
 --------------------
 In a server streaming RPC, the client sends a single request and the server
 sends any number of ``SERVER_STREAM`` packets followed by a ``RESPONSE`` packet.
 
-.. image:: server_streaming_rpc.svg
+.. mermaid::
+   :alt: Server Streaming RPC
+   :align: center
+
+   sequenceDiagram
+       participant C as Client
+       participant S as Server
+       C->>+S: request
+       Note left of C: PacketType.REQUEST<br>channel ID<br>service ID<br>method ID<br>payload
+
+       S-->>C: messages (zero or more)
+       Note right of S: PacketType.SERVER_STREAM<br>channel ID<br>service ID<br>method ID<br>payload
+
+       S->>-C: done
+       Note right of S: PacketType.RESPONSE<br>channel ID<br>service ID<br>method ID<br>status
+
 
 The client may terminate a server streaming RPC by sending a ``CLIENT_STREAM``
 packet with status ``CANCELLED``. The server sends no response.
 
-.. image:: server_streaming_rpc_cancelled.svg
+.. mermaid::
+   :alt: Cancelled Server Streaming RPC
+   :align: center
+
+   sequenceDiagram
+       participant C as Client
+       participant S as Server
+       C->>S: request
+       Note left of C: PacketType.REQUEST<br>channel ID<br>service ID<br>method ID<br>payload
+
+       S-->>C: messages (zero or more)
+       Note right of S: PacketType.SERVER_STREAM<br>channel ID<br>service ID<br>method ID<br>payload
+
+       C->>S: cancel
+       Note left of C: PacketType.CLIENT_ERROR<br>channel ID<br>service ID<br>method ID<br>status=CANCELLED
+
 
 Client streaming RPC
 --------------------
@@ -785,31 +838,102 @@ packet with no payload. It then sends any number of messages in
 ``CLIENT_STREAM`` packets, followed by a ``CLIENT_REQUEST_COMPLETION``. The server sends
 a single ``RESPONSE`` to finish the RPC.
 
-.. image:: client_streaming_rpc.svg
+.. mermaid::
+   :alt: Client Streaming RPC
+   :align: center
+
+   sequenceDiagram
+       participant C as Client
+       participant S as Server
+       C->>S: start
+       Note left of C: PacketType.REQUEST<br>channel ID<br>service ID<br>method ID<br>payload
+
+       C-->>S: messages (zero or more)
+       Note left of C: PacketType.CLIENT_STREAM<br>channel ID<br>service ID<br>method ID<br>payload
+
+       C->>S: done
+       Note left of C: PacketType.CLIENT_REQUEST_COMPLETION<br>channel ID<br>service ID<br>method ID
+
+       S->>C: response
+       Note right of S: PacketType.RESPONSE<br>channel ID<br>service ID<br>method ID<br>payload<br>status
 
 The server may finish the RPC at any time by sending its ``RESPONSE`` packet,
 even if it has not yet received the ``CLIENT_REQUEST_COMPLETION`` packet. The client may
 terminate the RPC at any time by sending a ``CLIENT_ERROR`` packet with status
 ``CANCELLED``.
 
-.. image:: client_streaming_rpc_cancelled.svg
+.. mermaid::
+   :alt: Cancelled Client Streaming RPC
+   :align: center
+
+   sequenceDiagram
+       participant C as Client
+       participant S as Server
+       C->>S: start
+       Note left of C: PacketType.REQUEST<br>channel ID<br>service ID<br>method ID
+
+       C-->>S: messages (zero or more)
+       Note left of C: PacketType.CLIENT_STREAM<br>channel ID<br>service ID<br>method ID<br>payload
+
+       C->>S: cancel
+       Note right of S: PacketType.CLIENT_ERROR<br>channel ID<br>service ID<br>method ID<br>status=CANCELLED
 
 Bidirectional streaming RPC
---------------------^^^^^^^
+---------------------------
 In a bidirectional streaming RPC, the client sends any number of requests and
 the server sends any number of responses. The client invokes the RPC by sending
 a ``REQUEST`` with no payload. It sends a ``CLIENT_REQUEST_COMPLETION`` packet when it
 has finished sending requests. The server sends a ``RESPONSE`` packet to finish
 the RPC.
 
-.. image:: bidirectional_streaming_rpc.svg
+.. mermaid::
+   :alt: Bidirectional Streaming RPC
+   :align: center
+
+   sequenceDiagram
+       participant C as Client
+       participant S as Server
+       C->>S: start
+       Note left of C: PacketType.REQUEST<br>channel ID<br>service ID<br>method ID<br>payload
+
+       C-->>S: messages (zero or more)
+       Note left of C: PacketType.CLIENT_STREAM<br>channel ID<br>service ID<br>method ID<br>payload
+
+       C-->S: (messages in any order)
+
+       S-->>C: messages (zero or more)
+       Note right of S: PacketType.SERVER_STREAM<br>channel ID<br>service ID<br>method ID<br>payload
+
+       C->>S: done
+       Note left of C: PacketType.CLIENT_REQUEST_COMPLETION<br>channel ID<br>service ID<br>method ID
+
+       S->>C: done
+       Note right of S: PacketType.RESPONSE<br>channel ID<br>service ID<br>method ID<br>status
+
 
 The server may finish the RPC at any time by sending the ``RESPONSE`` packet,
 even if it has not received the ``CLIENT_REQUEST_COMPLETION`` packet. The client may
 terminate the RPC at any time by sending a ``CLIENT_ERROR`` packet with status
 ``CANCELLED``.
 
-.. image:: bidirectional_streaming_rpc_cancelled.svg
+.. mermaid::
+   :alt: Client Streaming RPC
+   :align: center
+
+   sequenceDiagram
+       participant C as Client
+       participant S as Server
+       C->>S: start
+       Note left of C: PacketType.REQUEST<br>channel ID<br>service ID<br>method ID<br>payload
+
+       C-->>S: messages (zero or more)
+       Note left of C: PacketType.CLIENT_STREAM<br>channel ID<br>service ID<br>method ID<br>payload
+
+       C->>S: done
+       Note left of C: PacketType.CLIENT_REQUEST_COMPLETION<br>channel ID<br>service ID<br>method ID
+
+       S->>C: response
+       Note right of S: PacketType.RESPONSE<br>channel ID<br>service ID<br>method ID<br>payload<br>status
 
 -------
 C++ API
@@ -821,7 +945,7 @@ Declare an instance of ``rpc::Server`` and register services with it.
 
 .. admonition:: TODO
 
-  Document the public interface
+   Document the public interface
 
 Size report
 -----------
@@ -860,12 +984,47 @@ Packet flow
 Requests
 ........
 
-.. image:: request_packets.svg
+.. mermaid::
+   :alt: Request Packet Flow
+
+   flowchart LR
+       packets[Packets]
+
+       subgraph pw_rpc [pw_rpc Library]
+           direction TB
+           internalMethod[[internal::Method]]
+           Server --> Service --> internalMethod
+       end
+
+       packets --> Server
+
+       generatedServices{{generated services}}
+       userDefinedRPCs(user-defined RPCs)
+
+       generatedServices --> userDefinedRPCs
+       internalMethod --> generatedServices
 
 Responses
 .........
 
-.. image:: response_packets.svg
+.. mermaid::
+   :alt: Request Packet Flow
+
+   flowchart LR
+       generatedServices{{generated services}}
+       userDefinedRPCs(user-defined RPCs)
+
+       subgraph pw_rpc [pw_rpc Library]
+           direction TB
+           internalMethod[[internal::Method]]
+           internalMethod --> Server --> Channel
+       end
+
+       packets[Packets]
+       Channel --> packets
+
+       userDefinedRPCs --> generatedServices
+       generatedServices --> internalMethod
 
 RPC client
 ==========
@@ -883,20 +1042,20 @@ client, the client's ``ProcessPacket`` function is called with the packet data.
 
 .. code:: c++
 
-  #include "pw_rpc/client.h"
+   #include "pw_rpc/client.h"
 
-  namespace {
+   namespace {
 
-  pw::rpc::Channel my_channels[] = {
-      pw::rpc::Channel::Create<1>(&my_channel_output)};
-  pw::rpc::Client my_client(my_channels);
+   pw::rpc::Channel my_channels[] = {
+       pw::rpc::Channel::Create<1>(&my_channel_output)};
+   pw::rpc::Client my_client(my_channels);
 
-  }  // namespace
+   }  // namespace
 
-  // Called when the transport layer receives an RPC packet.
-  void ProcessRpcPacket(ConstByteSpan packet) {
-    my_client.ProcessPacket(packet);
-  }
+   // Called when the transport layer receives an RPC packet.
+   void ProcessRpcPacket(ConstByteSpan packet) {
+     my_client.ProcessPacket(packet);
+   }
 
 Note that client processing such as callbacks will be invoked within
 the body of ``ProcessPacket``.
@@ -924,54 +1083,55 @@ the ongoing RPC call, and can be used to manage it. An RPC call is only active
 as long as its call object is alive.
 
 .. tip::
-  Use ``std::move`` when passing around call objects to keep RPCs alive.
+
+   Use ``std::move`` when passing around call objects to keep RPCs alive.
 
 Example
 ^^^^^^^
 .. code-block:: c++
 
-  #include "pw_rpc/echo_service_nanopb.h"
+   #include "pw_rpc/echo_service_nanopb.h"
 
-  namespace {
-  // Generated clients are namespaced with their proto library.
-  using EchoClient = pw_rpc::nanopb::EchoService::Client;
+   namespace {
+   // Generated clients are namespaced with their proto library.
+   using EchoClient = pw_rpc::nanopb::EchoService::Client;
 
-  // RPC channel ID on which to make client calls. RPC calls cannot be made on
-  // channel 0 (Channel::kUnassignedChannelId).
-  constexpr uint32_t kDefaultChannelId = 1;
+   // RPC channel ID on which to make client calls. RPC calls cannot be made on
+   // channel 0 (Channel::kUnassignedChannelId).
+   constexpr uint32_t kDefaultChannelId = 1;
 
-  pw::rpc::NanopbUnaryReceiver<pw_rpc_EchoMessage> echo_call;
+   pw::rpc::NanopbUnaryReceiver<pw_rpc_EchoMessage> echo_call;
 
-  // Callback invoked when a response is received. This is called synchronously
-  // from Client::ProcessPacket.
-  void EchoResponse(const pw_rpc_EchoMessage& response,
-                    pw::Status status) {
-    if (status.ok()) {
-      PW_LOG_INFO("Received echo response: %s", response.msg);
-    } else {
-      PW_LOG_ERROR("Echo failed with status %d",
-                   static_cast<int>(status.code()));
-    }
-  }
+   // Callback invoked when a response is received. This is called synchronously
+   // from Client::ProcessPacket.
+   void EchoResponse(const pw_rpc_EchoMessage& response,
+                     pw::Status status) {
+     if (status.ok()) {
+       PW_LOG_INFO("Received echo response: %s", response.msg);
+     } else {
+       PW_LOG_ERROR("Echo failed with status %d",
+                    static_cast<int>(status.code()));
+     }
+   }
 
-  }  // namespace
+   }  // namespace
 
-  void CallEcho(const char* message) {
-    // Create a client to call the EchoService.
-    EchoClient echo_client(my_rpc_client, kDefaultChannelId);
+   void CallEcho(const char* message) {
+     // Create a client to call the EchoService.
+     EchoClient echo_client(my_rpc_client, kDefaultChannelId);
 
-    pw_rpc_EchoMessage request{};
-    pw::string::Copy(message, request.msg);
+     pw_rpc_EchoMessage request{};
+     pw::string::Copy(message, request.msg);
 
-    // By assigning the returned call to the global echo_call, the RPC
-    // call is kept alive until it completes. When a response is received, it
-    // will be logged by the handler function and the call will complete.
-    echo_call = echo_client.Echo(request, EchoResponse);
-    if (!echo_call.active()) {
-      // The RPC call was not sent. This could occur due to, for example, an
-      // invalid channel ID. Handle if necessary.
-    }
-  }
+     // By assigning the returned call to the global echo_call, the RPC
+     // call is kept alive until it completes. When a response is received, it
+     // will be logged by the handler function and the call will complete.
+     echo_call = echo_client.Echo(request, EchoResponse);
+     if (!echo_call.active()) {
+       // The RPC call was not sent. This could occur due to, for example, an
+       // invalid channel ID. Handle if necessary.
+     }
+   }
 
 Call objects
 ============
@@ -983,23 +1143,23 @@ server or client.
 The public call types are as follows:
 
 .. list-table::
-  :header-rows: 1
+   :header-rows: 1
 
-  * - RPC Type
-    - Server call
-    - Client call
-  * - Unary
-    - ``(Raw|Nanopb|Pwpb)UnaryResponder``
-    - ``(Raw|Nanopb|Pwpb)UnaryReceiver``
-  * - Server streaming
-    - ``(Raw|Nanopb|Pwpb)ServerWriter``
-    - ``(Raw|Nanopb|Pwpb)ClientReader``
-  * - Client streaming
-    - ``(Raw|Nanopb|Pwpb)ServerReader``
-    - ``(Raw|Nanopb|Pwpb)ClientWriter``
-  * - Bidirectional streaming
-    - ``(Raw|Nanopb|Pwpb)ServerReaderWriter``
-    - ``(Raw|Nanopb|Pwpb)ClientReaderWriter``
+   * - RPC Type
+     - Server call
+     - Client call
+   * - Unary
+     - ``(Raw|Nanopb|Pwpb)UnaryResponder``
+     - ``(Raw|Nanopb|Pwpb)UnaryReceiver``
+   * - Server streaming
+     - ``(Raw|Nanopb|Pwpb)ServerWriter``
+     - ``(Raw|Nanopb|Pwpb)ClientReader``
+   * - Client streaming
+     - ``(Raw|Nanopb|Pwpb)ServerReader``
+     - ``(Raw|Nanopb|Pwpb)ClientWriter``
+   * - Bidirectional streaming
+     - ``(Raw|Nanopb|Pwpb)ServerReaderWriter``
+     - ``(Raw|Nanopb|Pwpb)ClientReaderWriter``
 
 Client call API
 ---------------
@@ -1007,68 +1167,68 @@ Client call objects provide a few common methods.
 
 .. cpp:class:: pw::rpc::ClientCallType
 
-  The ``ClientCallType`` will be one of the following types:
+   The ``ClientCallType`` will be one of the following types:
 
-  - ``(Raw|Nanopb|Pwpb)UnaryReceiver`` for unary
-  - ``(Raw|Nanopb|Pwpb)ClientReader`` for server streaming
-  - ``(Raw|Nanopb|Pwpb)ClientWriter`` for client streaming
-  - ``(Raw|Nanopb|Pwpb)ClientReaderWriter`` for bidirectional streaming
+   - ``(Raw|Nanopb|Pwpb)UnaryReceiver`` for unary
+   - ``(Raw|Nanopb|Pwpb)ClientReader`` for server streaming
+   - ``(Raw|Nanopb|Pwpb)ClientWriter`` for client streaming
+   - ``(Raw|Nanopb|Pwpb)ClientReaderWriter`` for bidirectional streaming
 
-  .. cpp:function:: bool active() const
+   .. cpp:function:: bool active() const
 
-    Returns true if the call is active.
+      Returns true if the call is active.
 
-  .. cpp:function:: uint32_t channel_id() const
+   .. cpp:function:: uint32_t channel_id() const
 
-    Returns the channel ID of this call, which is 0 if the call is inactive.
+      Returns the channel ID of this call, which is 0 if the call is inactive.
 
-  .. cpp:function:: uint32_t id() const
+   .. cpp:function:: uint32_t id() const
 
-    Returns the call ID, a unique identifier for this call.
+      Returns the call ID, a unique identifier for this call.
 
-  .. cpp:function:: void Write(RequestType)
+   .. cpp:function:: void Write(RequestType)
 
-    Only available on client and bidirectional streaming calls. Sends a stream
-    request. Returns:
+      Only available on client and bidirectional streaming calls. Sends a stream
+      request. Returns:
 
-    - ``OK`` - the request was successfully sent
-    - ``FAILED_PRECONDITION`` - the writer is closed
-    - ``INTERNAL`` - pw_rpc was unable to encode message; does not apply to raw
-      calls
-    - other errors - the :cpp:class:`ChannelOutput` failed to send the packet;
-      the error codes are determined by the :cpp:class:`ChannelOutput`
-      implementation
+      - ``OK`` - the request was successfully sent
+      - ``FAILED_PRECONDITION`` - the writer is closed
+      - ``INTERNAL`` - pw_rpc was unable to encode message; does not apply to
+        raw calls
+      - other errors - the :cpp:class:`ChannelOutput` failed to send the packet;
+        the error codes are determined by the :cpp:class:`ChannelOutput`
+        implementation
 
-  .. cpp:function:: pw::Status RequestCompletion()
+   .. cpp:function:: pw::Status RequestCompletion()
 
-    Notifies the server that client has requested for call completion. On
-    client and bidirectional streaming calls no further client stream messages
-    will be sent.
+      Notifies the server that client has requested for call completion. On
+      client and bidirectional streaming calls no further client stream messages
+      will be sent.
 
-  .. cpp:function:: pw::Status Cancel()
+   .. cpp:function:: pw::Status Cancel()
 
-    Cancels this RPC. Closes the call and sends a ``CANCELLED`` error to the
-    server. Return statuses are the same as :cpp:func:`Write`.
+      Cancels this RPC. Closes the call and sends a ``CANCELLED`` error to the
+      server. Return statuses are the same as :cpp:func:`Write`.
 
-  .. cpp:function:: void Abandon()
+   .. cpp:function:: void Abandon()
 
-    Closes this RPC locally. Sends a ``CLIENT_REQUEST_COMPLETION``, but no cancellation
-    packet. Future packets for this RPC are dropped, and the client sends a
-    ``FAILED_PRECONDITION`` error in response because the call is not active.
+      Closes this RPC locally. Sends a ``CLIENT_REQUEST_COMPLETION``, but no cancellation
+      packet. Future packets for this RPC are dropped, and the client sends a
+      ``FAILED_PRECONDITION`` error in response because the call is not active.
 
-  .. cpp:function:: void set_on_completed(pw::Function<void(ResponseTypeIfUnaryOnly, pw::Status)>)
+   .. cpp:function:: void set_on_completed(pw::Function<void(ResponseTypeIfUnaryOnly, pw::Status)>)
 
-    Sets the callback that is called when the RPC completes normally. The
-    signature depends on whether the call has a unary or stream response.
+      Sets the callback that is called when the RPC completes normally. The
+      signature depends on whether the call has a unary or stream response.
 
-  .. cpp:function:: void set_on_error(pw::Function<void(pw::Status)>)
+   .. cpp:function:: void set_on_error(pw::Function<void(pw::Status)>)
 
-    Sets the callback that is called when the RPC is terminated due to an error.
+      Sets the callback that is called when the RPC is terminated due to an error.
 
-  .. cpp:function:: void set_on_next(pw::Function<void(ResponseType)>)
+   .. cpp:function:: void set_on_next(pw::Function<void(ResponseType)>)
 
-    Only available on server and bidirectional streaming calls. Sets the callback
-    that is called for each stream response.
+      Only available on server and bidirectional streaming calls. Sets the callback
+      that is called for each stream response.
 
 Callbacks
 ---------
@@ -1076,33 +1236,33 @@ The C++ call objects allow users to set callbacks that are invoked when RPC
 `events`_ occur.
 
 .. list-table::
-  :header-rows: 1
+   :header-rows: 1
 
-  * - Name
-    - Stream signature
-    - Non-stream signature
-    - Server
-    - Client
-  * - ``on_error``
-    - ``void(pw::Status)``
-    - ``void(pw::Status)``
-    - ✅
-    - ✅
-  * - ``on_next``
-    - n/a
-    - ``void(const PayloadType&)``
-    - ✅
-    - ✅
-  * - ``on_completed``
-    - ``void(pw::Status)``
-    - ``void(const PayloadType&, pw::Status)``
-    -
-    - ✅
-  * - ``on_client_requested_completion``
-    - ``void()``
-    - n/a
-    - ✅ (:c:macro:`optional <PW_RPC_COMPLETION_REQUEST_CALLBACK>`)
-    -
+   * - Name
+     - Stream signature
+     - Non-stream signature
+     - Server
+     - Client
+   * - ``on_error``
+     - ``void(pw::Status)``
+     - ``void(pw::Status)``
+     - ✅
+     - ✅
+   * - ``on_next``
+     - n/a
+     - ``void(const PayloadType&)``
+     - ✅
+     - ✅
+   * - ``on_completed``
+     - ``void(pw::Status)``
+     - ``void(const PayloadType&, pw::Status)``
+     -
+     - ✅
+   * - ``on_client_requested_completion``
+     - ``void()``
+     - n/a
+     - ✅ (:c:macro:`optional <PW_RPC_COMPLETION_REQUEST_CALLBACK>`)
+     -
 
 Limitations and restrictions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1156,9 +1316,9 @@ Example warning for a dropped stream packet:
 
 .. code-block:: text
 
-  WRN  Received stream packet for 1:cc0f6de0/31e616ce before the callback for
-       a previous packet completed! This packet will be dropped. This can be
-       avoided by handling packets for a particular RPC on only one thread.
+   WRN  Received stream packet for 1:cc0f6de0/31e616ce before the callback for
+        a previous packet completed! This packet will be dropped. This can be
+        avoided by handling packets for a particular RPC on only one thread.
 
 RPC calls introspection
 =======================
@@ -1175,35 +1335,35 @@ We have an RPC service ``SpecialService`` with ``MyMethod`` method:
 
 .. code-block:: protobuf
 
-  package some.package;
-  service SpecialService {
-    rpc MyMethod(MyMethodRequest) returns (MyMethodResponse) {}
-  }
+   package some.package;
+   service SpecialService {
+     rpc MyMethod(MyMethodRequest) returns (MyMethodResponse) {}
+   }
 
 We also have a templated Storage type alias:
 
 .. code-block:: c++
 
-  template <auto kMethod>
-  using Storage =
-     std::pair<MethodRequestType<kMethod>, MethodResponseType<kMethod>>;
+   template <auto kMethod>
+   using Storage =
+      std::pair<MethodRequestType<kMethod>, MethodResponseType<kMethod>>;
 
 ``Storage<some::package::pw_rpc::pwpb::SpecialService::MyMethod>`` will
 instantiate as:
 
 .. code-block:: c++
 
-  std::pair<some::package::MyMethodRequest::Message,
-            some::package::MyMethodResponse::Message>;
+   std::pair<some::package::MyMethodRequest::Message,
+             some::package::MyMethodResponse::Message>;
 
 .. note::
 
-  Only nanopb and pw_protobuf have real types as
-  ``MethodRequestType<RpcMethod>``/``MethodResponseType<RpcMethod>``. Raw has
-  them both set as ``void``. In reality, they are ``pw::ConstByteSpan``. Any
-  helper/trait that wants to use this types for raw methods should do a custom
-  implementation that copies the bytes under the span instead of copying just
-  the span.
+   Only nanopb and pw_protobuf have real types as
+   ``MethodRequestType<RpcMethod>``/``MethodResponseType<RpcMethod>``. Raw has
+   them both set as ``void``. In reality, they are ``pw::ConstByteSpan``. Any
+   helper/trait that wants to use this types for raw methods should do a custom
+   implementation that copies the bytes under the span instead of copying just
+   the span.
 
 Client synchronous call wrappers
 ================================
@@ -1214,41 +1374,41 @@ Example
 -------
 .. code-block:: c++
 
-  #include "pw_rpc/synchronous_call.h"
+   #include "pw_rpc/synchronous_call.h"
 
-  void InvokeUnaryRpc() {
-    pw::rpc::Client client;
-    pw::rpc::Channel channel;
+   void InvokeUnaryRpc() {
+     pw::rpc::Client client;
+     pw::rpc::Channel channel;
 
-    RoomInfoRequest request;
-    SynchronousCallResult<RoomInfoResponse> result =
-      SynchronousCall<Chat::GetRoomInformation>(client, channel.id(), request);
+     RoomInfoRequest request;
+     SynchronousCallResult<RoomInfoResponse> result =
+       SynchronousCall<Chat::GetRoomInformation>(client, channel.id(), request);
 
-    if (result.is_rpc_error()) {
-      ShutdownClient(client);
-    } else if (result.is_server_error()) {
-      HandleServerError(result.status());
-    } else if (result.is_timeout()) {
-      // SynchronousCall will block indefinitely, so we should never get here.
-      PW_UNREACHABLE();
-    }
-    HandleRoomInformation(std::move(result).response());
-  }
+     if (result.is_rpc_error()) {
+       ShutdownClient(client);
+     } else if (result.is_server_error()) {
+       HandleServerError(result.status());
+     } else if (result.is_timeout()) {
+       // SynchronousCall will block indefinitely, so we should never get here.
+       PW_UNREACHABLE();
+     }
+     HandleRoomInformation(std::move(result).response());
+   }
 
-  void AnotherExample() {
-    pw_rpc::nanopb::Chat::Client chat_client(client, channel);
-    constexpr auto kTimeout = pw::chrono::SystemClock::for_at_least(500ms);
+   void AnotherExample() {
+     pw_rpc::nanopb::Chat::Client chat_client(client, channel);
+     constexpr auto kTimeout = pw::chrono::SystemClock::for_at_least(500ms);
 
-    RoomInfoRequest request;
-    auto result = SynchronousCallFor<Chat::GetRoomInformation>(
-        chat_client, request, kTimeout);
+     RoomInfoRequest request;
+     auto result = SynchronousCallFor<Chat::GetRoomInformation>(
+         chat_client, request, kTimeout);
 
-    if (result.is_timeout()) {
-      RetryRoomRequest();
-    } else {
-    ...
-    }
-  }
+     if (result.is_timeout()) {
+       RetryRoomRequest();
+     } else {
+     ...
+     }
+   }
 
 The ``SynchronousCallResult<Response>`` is also compatible with the
 :c:macro:`PW_TRY` family of macros, but users should be aware that their use
@@ -1257,13 +1417,13 @@ caller will handle all error scenarios the same.
 
 .. code-block:: c++
 
-  pw::Status SyncRpc() {
-    const RoomInfoRequest request;
-    PW_TRY_ASSIGN(const RoomInfoResponse& response,
-                  SynchronousCall<Chat::GetRoomInformation>(client, request));
-    HandleRoomInformation(response);
-    return pw::OkStatus();
-  }
+   pw::Status SyncRpc() {
+     const RoomInfoRequest request;
+     PW_TRY_ASSIGN(const RoomInfoResponse& response,
+                   SynchronousCall<Chat::GetRoomInformation>(client, request));
+     HandleRoomInformation(response);
+     return pw::OkStatus();
+   }
 
 ClientServer
 ============
@@ -1276,17 +1436,17 @@ an RPC client and server with the same set of channels.
 
 .. code-block:: cpp
 
-  pw::rpc::Channel channels[] = {
-      pw::rpc::Channel::Create<1>(&channel_output)};
+   pw::rpc::Channel channels[] = {
+       pw::rpc::Channel::Create<1>(&channel_output)};
 
-  // Creates both a client and a server.
-  pw::rpc::ClientServer client_server(channels);
+   // Creates both a client and a server.
+   pw::rpc::ClientServer client_server(channels);
 
-  void ProcessRpcData(pw::ConstByteSpan packet) {
-    // Calls into both the client and the server, sending the packet to the
-    // appropriate one.
-    client_server.ProcessPacket(packet);
-  }
+   void ProcessRpcData(pw::ConstByteSpan packet) {
+     // Calls into both the client and the server, sending the packet to the
+     // appropriate one.
+     client_server.ProcessPacket(packet);
+   }
 
 Testing
 =======
@@ -1317,42 +1477,42 @@ the expected data was sent and then simulates a response from the server.
 
 .. code-block:: cpp
 
-  #include "pw_rpc/raw/client_testing.h"
+   #include "pw_rpc/raw/client_testing.h"
 
-  class ClientUnderTest {
-   public:
-    // To support injecting an RPC client for testing, classes that make RPC
-    // calls should take an RPC client and channel ID or an RPC service client
-    // (e.g. pw_rpc::raw::MyService::Client).
-    ClientUnderTest(pw::rpc::Client& client, uint32_t channel_id);
+   class ClientUnderTest {
+    public:
+     // To support injecting an RPC client for testing, classes that make RPC
+     // calls should take an RPC client and channel ID or an RPC service client
+     // (e.g. pw_rpc::raw::MyService::Client).
+     ClientUnderTest(pw::rpc::Client& client, uint32_t channel_id);
 
-    void DoSomethingThatInvokesAnRpc();
+     void DoSomethingThatInvokesAnRpc();
 
-    bool SetToTrueWhenRpcCompletes();
-  };
+     bool SetToTrueWhenRpcCompletes();
+   };
 
-  TEST(TestAThing, InvokesRpcAndHandlesResponse) {
-    RawClientTestContext context;
-    ClientUnderTest thing(context.client(), context.channel().id());
+   TEST(TestAThing, InvokesRpcAndHandlesResponse) {
+     RawClientTestContext context;
+     ClientUnderTest thing(context.client(), context.channel().id());
 
-    // Execute the code that invokes the MyService.TheMethod RPC.
-    things.DoSomethingThatInvokesAnRpc();
+     // Execute the code that invokes the MyService.TheMethod RPC.
+     things.DoSomethingThatInvokesAnRpc();
 
-    // Find and verify the payloads sent for the MyService.TheMethod RPC.
-    auto msgs = context.output().payloads<pw_rpc::raw::MyService::TheMethod>();
-    ASSERT_EQ(msgs.size(), 1u);
+     // Find and verify the payloads sent for the MyService.TheMethod RPC.
+     auto msgs = context.output().payloads<pw_rpc::raw::MyService::TheMethod>();
+     ASSERT_EQ(msgs.size(), 1u);
 
-    VerifyThatTheExpectedMessageWasSent(msgs.back());
+     VerifyThatTheExpectedMessageWasSent(msgs.back());
 
-    // Send the response packet from the server and verify that the class reacts
-    // accordingly.
-    EXPECT_FALSE(thing.SetToTrueWhenRpcCompletes());
+     // Send the response packet from the server and verify that the class reacts
+     // accordingly.
+     EXPECT_FALSE(thing.SetToTrueWhenRpcCompletes());
 
-    context_.server().SendResponse<pw_rpc::raw::MyService::TheMethod>(
-        final_message, OkStatus());
+     context_.server().SendResponse<pw_rpc::raw::MyService::TheMethod>(
+         final_message, OkStatus());
 
-    EXPECT_TRUE(thing.SetToTrueWhenRpcCompletes());
-  }
+     EXPECT_TRUE(thing.SetToTrueWhenRpcCompletes());
+   }
 
 To test client code that uses asynchronous responses, encapsulates multiple
 rpc calls to one or more services, or uses a custom service implemenation,
@@ -1374,47 +1534,47 @@ response is received. It verifies that expected data was both sent and received.
 
 .. code-block:: cpp
 
-  #include "my_library_protos/my_service.rpc.pb.h"
-  #include "pw_rpc/nanopb/client_server_testing_threaded.h"
-  #include "pw_thread_stl/options.h"
+   #include "my_library_protos/my_service.rpc.pb.h"
+   #include "pw_rpc/nanopb/client_server_testing_threaded.h"
+   #include "pw_thread_stl/options.h"
 
-  class ClientUnderTest {
-   public:
-    // To support injecting an RPC client for testing, classes that make RPC
-    // calls should take an RPC client and channel ID or an RPC service client
-    // (e.g. pw_rpc::raw::MyService::Client).
-    ClientUnderTest(pw::rpc::Client& client, uint32_t channel_id);
+   class ClientUnderTest {
+    public:
+     // To support injecting an RPC client for testing, classes that make RPC
+     // calls should take an RPC client and channel ID or an RPC service client
+     // (e.g. pw_rpc::raw::MyService::Client).
+     ClientUnderTest(pw::rpc::Client& client, uint32_t channel_id);
 
-    Status BlockOnResponse(uint32_t value);
-  };
+     Status BlockOnResponse(uint32_t value);
+   };
 
 
-  class TestService final : public MyService<TestService> {
-   public:
-    Status TheMethod(const pw_rpc_test_TheMethod& request,
-                        pw_rpc_test_TheMethod& response) {
-      response.value = request.integer + 1;
-      return pw::OkStatus();
-    }
-  };
+   class TestService final : public MyService<TestService> {
+    public:
+     Status TheMethod(const pw_rpc_test_TheMethod& request,
+                         pw_rpc_test_TheMethod& response) {
+       response.value = request.integer + 1;
+       return pw::OkStatus();
+     }
+   };
 
-  TEST(TestServiceTest, ReceivesUnaryRpcReponse) {
-    NanopbClientServerTestContextThreaded<> ctx(pw::thread::stl::Options{});
-    TestService service;
-    ctx.server().RegisterService(service);
-    ClientUnderTest client(ctx.client(), ctx.channel().id());
+   TEST(TestServiceTest, ReceivesUnaryRpcReponse) {
+     NanopbClientServerTestContextThreaded<> ctx(pw::thread::stl::Options{});
+     TestService service;
+     ctx.server().RegisterService(service);
+     ClientUnderTest client(ctx.client(), ctx.channel().id());
 
-    // Execute the code that invokes the MyService.TheMethod RPC.
-    constexpr uint32_t value = 1;
-    const auto result = client.BlockOnResponse(value);
-    const auto request = ctx.request<MyService::TheMethod>(0);
-    const auto response = ctx.resonse<MyService::TheMethod>(0);
+     // Execute the code that invokes the MyService.TheMethod RPC.
+     constexpr uint32_t value = 1;
+     const auto result = client.BlockOnResponse(value);
+     const auto request = ctx.request<MyService::TheMethod>(0);
+     const auto response = ctx.resonse<MyService::TheMethod>(0);
 
-    // Verify content of messages
-    EXPECT_EQ(result, pw::OkStatus());
-    EXPECT_EQ(request.value, value);
-    EXPECT_EQ(response.value, value + 1);
-  }
+     // Verify content of messages
+     EXPECT_EQ(result, pw::OkStatus());
+     EXPECT_EQ(request.value, value);
+     EXPECT_EQ(response.value, value + 1);
+   }
 
 Synchronous versions of these test contexts also exist that may be used on
 non-threaded systems ``NanopbClientServerTestContext`` and
@@ -1428,45 +1588,45 @@ to with a test service implemenation.
 
 .. code-block:: cpp
 
-  #include "my_library_protos/my_service.rpc.pb.h"
-  #include "pw_rpc/nanopb/client_server_testing.h"
+   #include "my_library_protos/my_service.rpc.pb.h"
+   #include "pw_rpc/nanopb/client_server_testing.h"
 
-  class ClientUnderTest {
-   public:
-    ClientUnderTest(pw::rpc::Client& client, uint32_t channel_id);
+   class ClientUnderTest {
+    public:
+     ClientUnderTest(pw::rpc::Client& client, uint32_t channel_id);
 
-    Status SendRpcCall(uint32_t value);
-  };
+     Status SendRpcCall(uint32_t value);
+   };
 
 
-  class TestService final : public MyService<TestService> {
-   public:
-    Status TheMethod(const pw_rpc_test_TheMethod& request,
-                        pw_rpc_test_TheMethod& response) {
-      response.value = request.integer + 1;
-      return pw::OkStatus();
-    }
-  };
+   class TestService final : public MyService<TestService> {
+    public:
+     Status TheMethod(const pw_rpc_test_TheMethod& request,
+                         pw_rpc_test_TheMethod& response) {
+       response.value = request.integer + 1;
+       return pw::OkStatus();
+     }
+   };
 
-  TEST(TestServiceTest, ReceivesUnaryRpcResponse) {
-    NanopbClientServerTestContext<> ctx();
-    TestService service;
-    ctx.server().RegisterService(service);
-    ClientUnderTest client(ctx.client(), ctx.channel().id());
+   TEST(TestServiceTest, ReceivesUnaryRpcResponse) {
+     NanopbClientServerTestContext<> ctx();
+     TestService service;
+     ctx.server().RegisterService(service);
+     ClientUnderTest client(ctx.client(), ctx.channel().id());
 
-    // Execute the code that invokes the MyService.TheMethod RPC.
-    constexpr uint32_t value = 1;
-    const auto result = client.SendRpcCall(value);
-    // Needed after ever RPC call to trigger forward of packets
-    ctx.ForwardNewPackets();
-    const auto request = ctx.request<MyService::TheMethod>(0);
-    const auto response = ctx.resonse<MyService::TheMethod>(0);
+     // Execute the code that invokes the MyService.TheMethod RPC.
+     constexpr uint32_t value = 1;
+     const auto result = client.SendRpcCall(value);
+     // Needed after ever RPC call to trigger forward of packets
+     ctx.ForwardNewPackets();
+     const auto request = ctx.request<MyService::TheMethod>(0);
+     const auto response = ctx.resonse<MyService::TheMethod>(0);
 
-    // Verify content of messages
-    EXPECT_EQ(result, pw::OkStatus());
-    EXPECT_EQ(request.value, value);
-    EXPECT_EQ(response.value, value + 1);
-  }
+     // Verify content of messages
+     EXPECT_EQ(result, pw::OkStatus());
+     EXPECT_EQ(request.value, value);
+     EXPECT_EQ(response.value, value + 1);
+   }
 
 Custom packet processing for ClientServerTestContext
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1510,21 +1670,21 @@ timeout for the waiting part (default timeout is 100ms).
 
 .. code:: c++
 
-  #include "pw_rpc/test_helpers.h"
+   #include "pw_rpc/test_helpers.h"
 
-  pw::rpc::PwpbClientTestContext client_context;
-  other::pw_rpc::pwpb::OtherService::Client other_service_client(
-      client_context.client(), client_context.channel().id());
+   pw::rpc::PwpbClientTestContext client_context;
+   other::pw_rpc::pwpb::OtherService::Client other_service_client(
+       client_context.client(), client_context.channel().id());
 
-  PW_PWPB_TEST_METHOD_CONTEXT(MyService, GetData)
-  context(other_service_client);
-  context.call({});
+   PW_PWPB_TEST_METHOD_CONTEXT(MyService, GetData)
+   context(other_service_client);
+   context.call({});
 
-  ASSERT_OK(pw::rpc::test::SendResponseIfCalled<
-            other::pw_rpc::pwpb::OtherService::GetPart>(
-      client_context, {.value = 42}));
+   ASSERT_OK(pw::rpc::test::SendResponseIfCalled<
+             other::pw_rpc::pwpb::OtherService::GetPart>(
+       client_context, {.value = 42}));
 
-  // At this point MyService::GetData handler received the GetPartResponse.
+   // At this point MyService::GetData handler received the GetPartResponse.
 
 Integration testing with ``pw_rpc``
 -----------------------------------
@@ -1538,16 +1698,16 @@ defined in ``pw_rpc/integration_testing.h``:
 
 .. cpp:var:: constexpr uint32_t kChannelId
 
-  The RPC channel for integration test RPCs.
+   The RPC channel for integration test RPCs.
 
 .. cpp:function:: pw::rpc::Client& pw::rpc::integration_test::Client()
 
- Returns the global RPC client for integration test use.
+   Returns the global RPC client for integration test use.
 
 .. cpp:function:: pw::Status pw::rpc::integration_test::InitializeClient(int argc, char* argv[], const char* usage_args = "PORT")
 
-  Initializes logging and the global RPC client for integration testing. Starts
-  a background thread that processes incoming.
+   Initializes logging and the global RPC client for integration testing. Starts
+   a background thread that processes incoming.
 
 Module Configuration Options
 ============================
@@ -1557,7 +1717,7 @@ this module, see the
 more details.
 
 .. doxygenfile:: pw_rpc/public/pw_rpc/internal/config.h
-  :sections: define
+   :sections: define
 
 Sharing server and client code
 ==============================
@@ -1599,43 +1759,44 @@ interface.
 .. _module-pw_rpc-ChannelOutput:
 .. cpp:class:: pw::rpc::ChannelOutput
 
-  ``pw_rpc`` endpoints use :cpp:class:`ChannelOutput` instances to send packets.
-  Systems that integrate pw_rpc must use one or more :cpp:class:`ChannelOutput`
-  instances.
+   ``pw_rpc`` endpoints use :cpp:class:`ChannelOutput` instances to send
+   packets.  Systems that integrate pw_rpc must use one or more
+   :cpp:class:`ChannelOutput` instances.
 
-  .. cpp:member:: static constexpr size_t kUnlimited = std::numeric_limits<size_t>::max()
+   .. cpp:member:: static constexpr size_t kUnlimited = std::numeric_limits<size_t>::max()
 
-    Value returned from :cpp:func:`MaximumTransmissionUnit` to indicate an
-    unlimited MTU.
+      Value returned from :cpp:func:`MaximumTransmissionUnit` to indicate an
+      unlimited MTU.
 
-  .. cpp:function:: virtual size_t MaximumTransmissionUnit()
+   .. cpp:function:: virtual size_t MaximumTransmissionUnit()
 
-    Returns the size of the largest packet the :cpp:class:`ChannelOutput` can
-    send. :cpp:class:`ChannelOutput` implementations should only override this
-    function if they impose a limit on the MTU. The default implementation
-    returns :cpp:member:`kUnlimited`, which indicates that there is no MTU
-    limit.
+      Returns the size of the largest packet the :cpp:class:`ChannelOutput` can
+      send. :cpp:class:`ChannelOutput` implementations should only override this
+      function if they impose a limit on the MTU. The default implementation
+      returns :cpp:member:`kUnlimited`, which indicates that there is no MTU
+      limit.
 
-  .. cpp:function:: virtual pw::Status Send(span<std::byte> packet)
+   .. cpp:function:: virtual pw::Status Send(span<std::byte> packet)
 
-    Sends an encoded RPC packet. Returns OK if further packets may be sent, even
-    if the current packet could not be sent. Returns any other status if the
-    Channel is no longer able to send packets.
+      Sends an encoded RPC packet. Returns OK if further packets may be sent,
+      even if the current packet could not be sent. Returns any other status if
+      the Channel is no longer able to send packets.
 
-    The RPC system's internal lock is held while this function is called. Avoid
-    long-running operations, since these will delay any other users of the RPC
-    system.
+      The RPC system's internal lock is held while this function is
+      called. Avoid long-running operations, since these will delay any other
+      users of the RPC system.
 
-    .. danger::
+      .. danger::
 
-      No ``pw_rpc`` APIs may be accessed in this function! Implementations MUST
-      NOT access any RPC endpoints (:cpp:class:`pw::rpc::Client`,
-      :cpp:class:`pw::rpc::Server`) or call objects
-      (:cpp:class:`pw::rpc::ServerReaderWriter`,
-      :cpp:class:`pw::rpc::ClientReaderWriter`, etc.) inside the :cpp:func:`Send`
-      function or any descendent calls. Doing so will result in deadlock! RPC APIs
-      may be used by other threads, just not within :cpp:func:`Send`.
+         No ``pw_rpc`` APIs may be accessed in this function! Implementations
+         MUST NOT access any RPC endpoints (:cpp:class:`pw::rpc::Client`,
+         :cpp:class:`pw::rpc::Server`) or call objects
+         (:cpp:class:`pw::rpc::ServerReaderWriter`,
+         :cpp:class:`pw::rpc::ClientReaderWriter`, etc.) inside the
+         :cpp:func:`Send` function or any descendent calls. Doing so will result
+         in deadlock! RPC APIs may be used by other threads, just not within
+         :cpp:func:`Send`.
 
-      The buffer provided in ``packet`` must NOT be accessed outside of this
-      function. It must be sent immediately or copied elsewhere before the
-      function returns.
+         The buffer provided in ``packet`` must NOT be accessed outside of this
+         function. It must be sent immediately or copied elsewhere before the
+         function returns.

@@ -398,16 +398,6 @@ pw_doc_group("docs") {
     "benchmark.proto",
     "echo.proto",
     "internal/packet.proto",
-    "unary_rpc.svg",
-    "unary_rpc_cancelled.svg",
-    "server_streaming_rpc.svg",
-    "server_streaming_rpc_cancelled.svg",
-    "client_streaming_rpc.svg",
-    "client_streaming_rpc_cancelled.svg",
-    "bidirectional_streaming_rpc.svg",
-    "bidirectional_streaming_rpc_cancelled.svg",
-    "request_packets.svg",
-    "response_packets.svg",
   ]
   group_deps = [
     "nanopb:docs",
