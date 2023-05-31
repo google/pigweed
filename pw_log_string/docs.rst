@@ -29,6 +29,9 @@ This module is extremely minimal to set up:
 2. Set ``pw_log_BACKEND`` to ``"$dir_pw_log_string"``
 3. Set ``pw_log_string_HANDLER_BACKEND`` to point to the source set that
    implements ``pw_log_string_HandleMessageVaList()``
+4. Optionally provide your own implementation of
+   ``PW_LOG_STRING_HANDLE_MESSAGE`` which invokes
+   ``pw_log_string_HANDLER_BACKEND`` with your selected arguments.
 
 What exactly ``pw_log_string_HandleMessageVaList()`` should do is entirely up to
 the implementation. ``pw_log_basic``'s log handler is one example, but it's also

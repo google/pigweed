@@ -16,10 +16,15 @@ import("//build_overrides/pigweed.gni")
 
 import("$dir_pw_build/error.gni")
 import("$dir_pw_build/facade.gni")
+import("$dir_pw_build/module_config.gni")
 import("$dir_pw_build/target_types.gni")
 import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_unit_test/test.gni")
 import("backend.gni")
+
+declare_args() {
+  pw_log_string_CONFIG = pw_build_DEFAULT_MODULE_CONFIG
+}
 
 config("public_include_path") {
   include_dirs = [ "public" ]
@@ -29,21 +34,18 @@ config("backend_config") {
   include_dirs = [ "public_overrides" ]
 }
 
+pw_source_set("config") {
+  public = [ "public/pw_log_string/config.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [ pw_log_string_CONFIG ]
+}
+
 # This source set only provides pw_log's backend interface by invoking the
 # :handler facade.
 pw_source_set("pw_log_string") {
-  public_configs = [
-    ":backend_config",
-    ":public_include_path",
-  ]
-  public = [
-    "public/pw_log_string/log_string.h",
-    "public_overrides/pw_log_backend/log_backend.h",
-  ]
-  public_deps = [
-    ":handler",
-    "$dir_pw_preprocessor",
-  ]
+  public_configs = [ ":backend_config" ]
+  public = [ "public_overrides/pw_log_backend/log_backend.h" ]
+  public_deps = [ ":handler" ]
 }
 
 pw_source_set("pw_log_string.impl") {
@@ -56,7 +58,10 @@ pw_facade("handler") {
   backend = pw_log_string_HANDLER_BACKEND
   public_configs = [ ":public_include_path" ]
   public = [ "public/pw_log_string/handler.h" ]
-  public_deps = [ "$dir_pw_preprocessor" ]
+  public_deps = [
+    ":config",
+    "$dir_pw_preprocessor",
+  ]
   sources = [ "handler.cc" ]
 
   require_link_deps = [ ":handler.impl" ]

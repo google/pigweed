@@ -13,4 +13,15 @@
 // the License.
 #pragma once
 
-#include "pw_log_string/log_string.h"
+#include "pw_log_string/handler.h"
+
+// Log a message with many attributes included. This is a backend implementation
+// for the logging facade in pw_log/log.h.
+//
+// This is the log macro frontend that funnels everything into the C-based
+// message hangler facade, i.e. pw_log_string_HandleMessage. It's not efficient
+// at the callsite, since it passes many arguments.
+//
+// Users can configure exactly what is passed to pw_log_string_HandleMessage by
+// providing their own PW_LOG_STRING_HANDLE_MESSAGE implementation.
+#define PW_HANDLE_LOG PW_LOG_STRING_HANDLE_MESSAGE

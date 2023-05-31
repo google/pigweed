@@ -25,11 +25,9 @@ licenses(["notice"])
 pw_cc_library(
     name = "pw_log_string",
     hdrs = [
-        "public/pw_log_string/log_string.h",
         "public_overrides/pw_log_backend/log_backend.h",
     ],
     includes = [
-        "public",
         "public_overrides",
     ],
     deps = [
@@ -40,7 +38,10 @@ pw_cc_library(
 
 pw_cc_facade(
     name = "handler_facade",
-    hdrs = ["public/pw_log_string/handler.h"],
+    hdrs = [
+        "public/pw_log_string/config.h",
+        "public/pw_log_string/handler.h",
+    ],
     includes = ["public"],
     deps = ["//pw_preprocessor"],
 )
