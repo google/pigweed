@@ -56,6 +56,14 @@ Pigweed provides several client and server implementations of ``pw_rpc``.
     -
     - in development
 
+.. warning::
+
+  ``pw_protobuf`` and ``nanopb`` RPC services cannot currently coexist within the
+  same RPC server. Unless you are running multiple RPC servers, you cannot
+  incrementally migrate services from one protobuf implementation to another,
+  or otherwise mix and match. See
+  `Issue 234874320 <https://issues.pigweed.dev/issues/234874320>`_.
+
 -------------
 RPC semantics
 -------------
