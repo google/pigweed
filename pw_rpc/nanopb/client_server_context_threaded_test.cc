@@ -12,10 +12,13 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
+#include <atomic>
+
 #include "gtest/gtest.h"
 #include "pw_rpc/nanopb/client_server_testing_threaded.h"
 #include "pw_rpc_test_protos/test.rpc.pb.h"
 #include "pw_sync/binary_semaphore.h"
+#include "pw_sync/mutex.h"
 #include "pw_thread/test_threads.h"
 
 namespace pw::rpc {
@@ -67,7 +70,7 @@ class RpcCaller {
   pw::sync::BinarySemaphore semaphore_;
 };
 
-TEST(NanopbClientServerTestContextThreaded, ReceivesUnaryRpcReponseThreaded) {
+TEST(NanopbClientServerTestContextThreaded, ReceivesUnaryRpcResponseThreaded) {
   NanopbClientServerTestContextThreaded<> ctx(
       thread::test::TestOptionsThread0());
   TestService service;
@@ -86,7 +89,7 @@ TEST(NanopbClientServerTestContextThreaded, ReceivesUnaryRpcReponseThreaded) {
   EXPECT_EQ(value + 1, response.value);
 }
 
-TEST(NanopbClientServerTestContextThreaded, ReceivesMultipleReponsesThreaded) {
+TEST(NanopbClientServerTestContextThreaded, ReceivesMultipleResponsesThreaded) {
   NanopbClientServerTestContextThreaded<> ctx(
       thread::test::TestOptionsThread0());
   TestService service;
@@ -111,6 +114,62 @@ TEST(NanopbClientServerTestContextThreaded, ReceivesMultipleReponsesThreaded) {
   EXPECT_EQ(value2, request2.integer);
   EXPECT_EQ(value1 + 1, response1.value);
   EXPECT_EQ(value2 + 1, response2.value);
+}
+
+TEST(NanopbClientServerTestContextThreaded,
+     ReceivesMultipleResponsesThreadedWithPacketProcessor) {
+  using ProtectedInt = std::pair<int, pw::sync::Mutex>;
+  ProtectedInt server_counter{};
+  auto server_processor = [&server_counter](
+                              ClientServer& client_server,
+                              pw::ConstByteSpan packet) -> pw::Status {
+    server_counter.second.lock();
+    ++server_counter.first;
+    server_counter.second.unlock();
+    return client_server.ProcessPacket(packet);
+  };
+
+  ProtectedInt client_counter{};
+  auto client_processor = [&client_counter](
+                              ClientServer& client_server,
+                              pw::ConstByteSpan packet) -> pw::Status {
+    client_counter.second.lock();
+    ++client_counter.first;
+    client_counter.second.unlock();
+    return client_server.ProcessPacket(packet);
+  };
+
+  NanopbClientServerTestContextThreaded<> ctx(
+      thread::test::TestOptionsThread0(), server_processor, client_processor);
+  TestService service;
+  ctx.server().RegisterService(service);
+
+  RpcCaller caller;
+  constexpr auto value1 = 1;
+  constexpr auto value2 = 2;
+  caller.BlockOnResponse(value1, ctx.client(), ctx.channel().id());
+  caller.BlockOnResponse(value2, ctx.client(), ctx.channel().id());
+
+  const auto request1 =
+      ctx.request<test::pw_rpc::nanopb::TestService::TestUnaryRpc>(0);
+  const auto request2 =
+      ctx.request<test::pw_rpc::nanopb::TestService::TestUnaryRpc>(1);
+  const auto response1 =
+      ctx.response<test::pw_rpc::nanopb::TestService::TestUnaryRpc>(0);
+  const auto response2 =
+      ctx.response<test::pw_rpc::nanopb::TestService::TestUnaryRpc>(1);
+
+  EXPECT_EQ(value1, request1.integer);
+  EXPECT_EQ(value2, request2.integer);
+  EXPECT_EQ(value1 + 1, response1.value);
+  EXPECT_EQ(value2 + 1, response2.value);
+
+  server_counter.second.lock();
+  EXPECT_EQ(server_counter.first, 2);
+  server_counter.second.unlock();
+  client_counter.second.lock();
+  EXPECT_EQ(client_counter.first, 2);
+  client_counter.second.unlock();
 }
 
 }  // namespace

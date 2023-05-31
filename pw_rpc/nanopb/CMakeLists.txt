@@ -167,17 +167,20 @@ pw_add_test(pw_rpc.nanopb.client_reader_writer_test
     pw_rpc.nanopb
 )
 
-pw_add_test(pw_rpc.nanopb.client_server_context_test
-  SOURCES
-    client_server_context_test.cc
-  PRIVATE_DEPS
-    pw_rpc.nanopb.client_api
-    pw_rpc.nanopb.client_server_testing
-    pw_rpc.test_protos.nanopb_rpc
-  GROUPS
-    modules
-    pw_rpc.nanopb
-)
+if(NOT "${pw_sync.mutex_BACKEND}" STREQUAL "")
+  pw_add_test(pw_rpc.nanopb.client_server_context_test
+    SOURCES
+      client_server_context_test.cc
+    PRIVATE_DEPS
+      pw_rpc.nanopb.client_api
+      pw_rpc.nanopb.client_server_testing
+      pw_rpc.test_protos.nanopb_rpc
+      pw_sync.mutex
+      GROUPS
+      modules
+      pw_rpc.nanopb
+  )
+endif()
 
 if(("${pw_thread.thread_BACKEND}" STREQUAL "pw_thread_stl.thread") AND
    (NOT "${pw_sync.binary_semaphore_BACKEND}" STREQUAL "") AND
@@ -190,6 +193,7 @@ if(("${pw_thread.thread_BACKEND}" STREQUAL "pw_thread_stl.thread") AND
       pw_rpc.nanopb.client_server_testing_threaded
       pw_rpc.test_protos.nanopb_rpc
       pw_sync.binary_semaphore
+      pw_sync.mutex
       pw_thread.test_threads
       pw_thread.thread
       pw_thread_stl.test_threads

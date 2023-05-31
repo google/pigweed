@@ -214,10 +214,11 @@ pw_test("client_server_context_test") {
   deps = [
     ":client_api",
     ":client_server_testing",
+    "$dir_pw_sync:mutex",
     "..:test_protos.nanopb_rpc",
   ]
   sources = [ "client_server_context_test.cc" ]
-  enable_if = dir_pw_third_party_nanopb != ""
+  enable_if = dir_pw_third_party_nanopb != "" && pw_sync_MUTEX_BACKEND != ""
 }
 
 _stl_threading_and_nanopb_enabled =
@@ -230,6 +231,7 @@ pw_test("client_server_context_threaded_test") {
     ":client_api",
     ":client_server_testing_threaded",
     "$dir_pw_sync:binary_semaphore",
+    "$dir_pw_sync:mutex",
     "$dir_pw_thread:test_threads",
     "$dir_pw_thread_stl:test_threads",
     "..:test_protos.nanopb_rpc",

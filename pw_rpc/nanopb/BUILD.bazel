@@ -193,6 +193,7 @@ pw_cc_test(
         ":client_api",
         ":client_server_testing",
         "//pw_rpc:pw_rpc_test_cc.nanopb_rpc",
+        "//pw_sync:mutex",
     ],
 )
 
@@ -207,6 +208,7 @@ pw_cc_test(
         ":client_server_testing_threaded",
         "//pw_rpc:pw_rpc_test_cc.nanopb_rpc",
         "//pw_sync:binary_semaphore",
+        "//pw_sync:mutex",
         "//pw_thread:test_threads_header",
         "//pw_thread_stl:test_threads",
     ],

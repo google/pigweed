@@ -45,7 +45,11 @@ class NanopbWatchableChannelOutput final
       kPayloadsBufferSizeBytes>;
 
  public:
-  constexpr NanopbWatchableChannelOutput() = default;
+  constexpr NanopbWatchableChannelOutput(
+      TestPacketProcessor&& server_packet_processor = nullptr,
+      TestPacketProcessor&& client_packet_processor = nullptr)
+      : Base(std::move(server_packet_processor),
+             std::move(client_packet_processor)) {}
 
   template <auto kMethod>
   Response<kMethod> response(uint32_t channel_id, uint32_t index)
@@ -94,8 +98,13 @@ class NanopbClientServerTestContextThreaded final
       kPayloadsBufferSizeBytes>;
 
  public:
-  NanopbClientServerTestContextThreaded(const thread::Options& options)
-      : Base(options) {}
+  NanopbClientServerTestContextThreaded(
+      const thread::Options& options,
+      TestPacketProcessor&& server_packet_processor = nullptr,
+      TestPacketProcessor&& client_packet_processor = nullptr)
+      : Base(options,
+             std::move(server_packet_processor),
+             std::move(client_packet_processor)) {}
 
   // Retrieve copy of request indexed by order of occurance
   template <auto kMethod>
