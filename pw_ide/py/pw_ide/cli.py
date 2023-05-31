@@ -275,28 +275,36 @@ def _build_argument_parser() -> argparse.ArgumentParser:
         '--list',
         dest='should_list_targets',
         action='store_true',
-        help='list the targets available for C/C++ ' 'language analysis',
+        help='list the target toolchains available for C/C++ language analysis',
     )
     parser_cpp.add_argument(
         '-g',
         '--get',
         dest='should_get_target',
         action='store_true',
-        help='print the current target used for C/C++ ' 'language analysis',
+        help=(
+            'print the current target toolchain '
+            'used for C/C++ language analysis'
+        ),
     )
     parser_cpp.add_argument(
         '-s',
         '--set',
         dest='target_to_set',
         metavar='TARGET',
-        help='set the target to use for C/C++ language ' 'server analysis',
+        help=(
+            'set the target toolchain to '
+            'use for C/C++ language server analysis'
+        ),
     )
     parser_cpp.add_argument(
         '--set-default',
         dest='use_default_target',
         action='store_true',
-        help='set the C/C++ analysis target to the default '
-        'defined in pw_ide settings',
+        help=(
+            'set the C/C++ analysis target toolchain to the default '
+            'defined in pw_ide settings'
+        ),
     )
     parser_cpp.add_argument(
         '-p',
@@ -308,7 +316,7 @@ def _build_argument_parser() -> argparse.ArgumentParser:
     parser_cpp.add_argument(
         '--build-dir',
         type=Path,
-        help='override the build directory defined in ' 'pw_ide settings',
+        help='override the build directory defined in pw_ide settings',
     )
     parser_cpp.add_argument(
         '--clangd-command',
@@ -330,7 +338,7 @@ def _build_argument_parser() -> argparse.ArgumentParser:
         '--venv',
         dest='should_print_venv',
         action='store_true',
-        help='print the path to the Pigweed Python ' 'virtual environment',
+        help='print the path to the Pigweed Python virtual environment',
     )
 
     parser_vscode = add_parser(cmd_vscode, 'vscode')
