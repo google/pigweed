@@ -9,3 +9,5 @@ data as specified by `RFC 3548 <https://tools.ietf.org/html/rfc3548>`_ and
 
 .. note::
   The documentation for this module is currently incomplete.
+
+.. doxygenfunction:: pw::base64::EncodedSize(size_t binary_size_bytes)

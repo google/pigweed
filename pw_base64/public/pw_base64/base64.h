@@ -71,9 +71,9 @@ bool pw_Base64IsValid(const char* base64_data, size_t base64_size);
 
 namespace pw::base64 {
 
-// Returns the size of the given number of bytes when encoded as Base64. Base64
-// encodes 3-byte groups into 4-character strings. The final group is padded to
-// be 3-bytes if it only has 1 or 2.
+/// @returns The size of the given number of bytes when encoded as Base64.
+/// Base64 encodes 3-byte groups into 4-character strings. The final group
+/// is padded to be 3 bytes if it only has 1 or 2.
 constexpr size_t EncodedSize(size_t binary_size_bytes) {
   return PW_BASE64_ENCODED_SIZE(binary_size_bytes);
 }
