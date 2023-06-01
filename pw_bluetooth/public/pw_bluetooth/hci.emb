@@ -3340,6 +3340,70 @@ struct LESetCIGParametersCommand:
     -- Array of parameters, one for each of the CISes in this CIG
 
 
+struct LECreateCISCommand:
+  -- 7.8.99 LE Create CIS command (v5.2) (LE)
+  -- HCI_LE_Create_CIS
+
+  struct ConnectionInfo:
+    -- Handles for each stream being created
+    0      [+2]  UInt  cis_connection_handle
+      -- Connection handle of a CIS
+      [requires: 0x0000 <= this <= 0xEFFF]
+
+    $next  [+2]  UInt  acl_connection_handle
+      -- Connection handle of an ACL connection
+      [requires: 0x0000 <= this <= 0xEFFF]
+
+  let hdr_size = CommandHeader.$size_in_bytes
+  0      [+hdr_size]  CommandHeader  header
+
+  $next  [+1]         UInt           cis_count
+    -- Total number of CISes to be created
+    [requires: 0x01 <= this <= 0x1F]
+
+  let single_cis_params_size = ConnectionInfo.$size_in_bytes
+  let total_cis_params_size = cis_count * single_cis_params_size
+
+  $next  [+total_cis_params_size]    ConnectionInfo[cis_count]  cis_connection_info
+    -- Connection handle information for the CIS(es) being created
+
+
+struct LERemoveCIGCommand:
+  -- 7.8.100 LE Remove CIG command (v5.2) (LE)
+  -- HCI_LE_Remove_CIG
+  let hdr_size = CommandHeader.$size_in_bytes
+  0      [+hdr_size]  CommandHeader  header
+
+  $next  [+1]         UInt           cig_id
+    -- Identifier of a CIG
+    [requires: 0x00 <= this <= 0xEF]
+
+
+struct LEAcceptCISRequestCommand:
+  -- 7.8.101 LE Accept CIS Request command (v5.2) (LE)
+  -- HCI_LE_Accept_CIS_Request
+  let hdr_size = CommandHeader.$size_in_bytes
+  0      [+hdr_size]  CommandHeader  header
+
+  $next  [+2]         UInt           connection_handle
+    -- Connection handle of the CIS
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+
+struct LERejectCISRequestCommand:
+  -- 7.8.102 LE Reject CIS Request command (v5.2) (LE)
+  -- HCI_LE_Reject_CIS_Request
+  let hdr_size = CommandHeader.$size_in_bytes
+  0      [+hdr_size]  CommandHeader  header
+
+  $next  [+2]         UInt           connection_handle
+    -- Connection handle of the CIS
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next  [+1]         StatusCode     reason
+    -- Reason the CIS request was rejected
+
+
 # ========================= HCI Event packets ===========================
 # Core Spec v5.3 Vol 4, Part E, Section 7.7
 
