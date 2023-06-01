@@ -15,7 +15,7 @@
 
 load("@rules_rust//rust:toolchain.bzl", "rust_toolchain")
 
-def pw_rust_toolchain(name, exec_cpu, exec_os, target_cpu, rust_target_triple, exec_triple):
+def pw_rust_toolchain(name, exec_cpu, exec_os, target_cpu, rust_target_triple, exec_triple, target_constraints):
     proxy_toolchain = "@rust_{}_{}__{}__stable_tools".format(exec_os, exec_cpu, rust_target_triple)
 
     rust_toolchain(
@@ -41,8 +41,7 @@ def pw_rust_toolchain(name, exec_cpu, exec_os, target_cpu, rust_target_triple, e
         ],
         target_compatible_with = [
             "@platforms//cpu:{}".format(target_cpu),
-            "@bazel_embedded//constraints/fpu:none",
-        ],
+        ] + target_constraints,
         toolchain = ":{}_impl".format(name),
         toolchain_type = "@rules_rust//rust:toolchain",
     )

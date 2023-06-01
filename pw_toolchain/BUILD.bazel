@@ -52,6 +52,7 @@ pw_rust_toolchain(
     exec_os = "linux",
     exec_triple = "x86_64-unknown-linux-gnu",
     rust_target_triple = "thumbv7m-none-eabi",
+    target_constraints = ["@bazel_embedded//constraints/fpu:none"],
     target_cpu = "armv7-m",
 )
 
@@ -61,5 +62,6 @@ pw_rust_toolchain(
     exec_os = "linux",
     exec_triple = "x86_64-unknown-linux-gnu",
     rust_target_triple = "thumbv6m-none-eabi",
+    target_constraints = ["@bazel_embedded//constraints/fpu:none"],
     target_cpu = "armv6-m",
 )
