@@ -125,6 +125,9 @@ html_css_files = [
     "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css",
 ]
 
+# Furo color theme variables based on:
+# https://github.com/pradyunsg/furo/blob/main/src/furo/assets/styles/variables/_colors.scss
+# Colors with unchanged defaults are left commented out for easy updating.
 html_theme_options = {
     'light_css_variables': {
         # Make the logo text more amaranth-like
@@ -161,8 +164,8 @@ html_theme_options = {
         'color-sidebar-search-border': '#e815a5',
         'color-sidebar-link-text--top-level': '#ff79c6',
         'color-sidebar-link-text': '#8be9fd',
-        'color-sidebar-item-background--current': '#575757',
-        'color-sidebar-item-background--hover': '#4c333f',
+        'color-sidebar-item-background--current': '#2a3037',
+        'color-sidebar-item-background--hover': '#30353d',
         'color-sidebar-item-expander-background--hover': '#4c333f',
         # Function signature colors
         'color-api-function-border': '#575757',
@@ -174,7 +177,8 @@ html_theme_options = {
         'color-api-pre-name': '#87c1e5',
         # Function name
         'color-api-name': '#87c1e5',
-        'color-inline-code-background': '#2b2b2b',
+        'color-code-background': '#2d333b',
+        'color-inline-code-background': '#2d333b',
         'color-inline-code-border': '#575757',
         'color-text-selection-background': '#2674bf',
         'color-text-selection-foreground': '#ffffff',
@@ -184,6 +188,42 @@ html_theme_options = {
         'color-code-hll-background': '#ffc55140',
         'color-section-button': '#fb71fe',
         'color-section-button-hover': '#b529aa',
+        # The following color changes modify Furo's default dark mode colors for
+        # slightly less high-contrast.
+        # Base Colors
+        # 'color-foreground-primary': '#ffffffcc', # Main text and headings
+        # 'color-foreground-secondary': '#9ca0a5', # Secondary text
+        # 'color-foreground-muted': '#81868d', # Muted text
+        # 'color-foreground-border': '#666666', # Content borders
+        'color-background-primary': '#1c2128',  # Content
+        'color-background-secondary': '#22272e',  # Navigation and TOC
+        'color-background-hover': '#30353dff',  # Navigation-item hover
+        'color-background-hover--transparent': '#30353d00',
+        'color-background-border': '#444c56',  # UI borders
+        'color-background-item': '#373e47',  # "background" items (eg: copybutton)
+        # Announcements
+        # 'color-announcement-background': '#000000dd',
+        # 'color-announcement-text': '#eeebee',
+        # Brand colors
+        # 'color-brand-primary': '#2b8cee',
+        # 'color-brand-content': '#368ce2',
+        # Highlighted text (search)
+        # 'color-highlighted-background': '#083563',
+        # GUI Labels
+        # 'color-guilabel-background': '#08356380',
+        # 'color-guilabel-border': '#13395f80',
+        # API documentation
+        # 'color-api-keyword': 'var(--color-foreground-secondary)',
+        # 'color-highlight-on-target': '#333300',
+        # Admonitions
+        'color-admonition-background': 'var(--color-background-secondary)',
+        # Cards
+        'color-card-border': 'var(--color-background-border)',
+        'color-card-background': 'var(--color-background-secondary)',
+        # 'color-card-marginals-background': 'var(--color-background-hover)',
+        # Sphinx Design cards
+        'sd-color-card-background': 'var(--color-background-secondary)',
+        'sd-color-card-border': 'var(--color-background-border)',
     },
 }
 

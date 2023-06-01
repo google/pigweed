@@ -98,6 +98,11 @@ body[data-theme="light"] .highlight .hll {
   background-color: var(--color-code-hll-background);
 }
 
+/* Override pygments.css code block background color */
+body[data-theme="dark"] .highlight {
+  background-color: var(--color-code-background) !important;
+}
+
 /* Use normal mixed-case for h4, h5, and h6 */
 h4, h5, h6 {
     text-transform: none;
