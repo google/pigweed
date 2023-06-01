@@ -191,7 +191,9 @@ mermaid_init_js = '''
 mermaid.initialize({
   startOnLoad: true,
   // sequenceDiagram Note text alignment
-  noteAlign: "left"
+  noteAlign: "left",
+  // Set mermaid theme to the current furo theme
+  theme: localStorage.getItem("theme") == "dark" ? "dark" : "default"
 });
 '''
 

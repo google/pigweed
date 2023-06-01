@@ -77,11 +77,6 @@ dl.describe>dt {
     text-indent: 0em;
 }
 
-/* Diagram backgrounds should always be light */
-div.mermaid > svg {
-  background: #ffffff;
-}
-
 /* Make inline code standout more */
 code.literal {
   border: 1px solid var(--color-inline-code-border);
