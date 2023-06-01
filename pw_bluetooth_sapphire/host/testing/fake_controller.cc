@@ -2292,7 +2292,7 @@ void FakeController::OnAndroidLEGetVendorCapabilities() {
 }
 
 void FakeController::OnAndroidStartA2dpOffload(
-    const hci_android::StartA2dpOffloadCommandParams& params) {
+    const pw::bluetooth::emboss::StartA2dpOffloadCommandView& params) {
   hci_android::StartA2dpOffloadCommandReturnParams ret;
   ret.opcode = hci_android::kStartA2dpOffloadCommandSubopcode;
 
@@ -2304,7 +2304,9 @@ void FakeController::OnAndroidStartA2dpOffload(
   }
 
   // SCMS-T is not currently supported
-  hci_android::A2dpScmsTEnable const scms_t_enable = params.scms_t_enable;
+  hci_android::A2dpScmsTEnable scms_t_enable;
+  scms_t_enable.enabled = params.scms_t_enable().enabled().Read();
+  scms_t_enable.header = params.scms_t_enable().header().Read();
   if (scms_t_enable.enabled == pw::bluetooth::emboss::GenericEnableParam::ENABLE) {
     ret.status = pw::bluetooth::emboss::StatusCode::UNSUPPORTED_FEATURE_OR_PARAMETER;
     RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, BufferView(&ret, sizeof(ret)));
@@ -2315,7 +2317,7 @@ void FakeController::OnAndroidStartA2dpOffload(
   ret.status = pw::bluetooth::emboss::StatusCode::INVALID_HCI_COMMAND_PARAMETERS;
 
   hci_android::A2dpCodecType const codec_type =
-      static_cast<hci_android::A2dpCodecType>(le32toh(params.codec_type));
+      static_cast<hci_android::A2dpCodecType>(le32toh(params.codec_type().Read()));
   switch (codec_type) {
     case hci_android::A2dpCodecType::kSbc:
     case hci_android::A2dpCodecType::kAac:
@@ -2329,7 +2331,7 @@ void FakeController::OnAndroidStartA2dpOffload(
   }
 
   hci_android::A2dpSamplingFrequency const sampling_frequency =
-      static_cast<hci_android::A2dpSamplingFrequency>(le32toh(params.sampling_frequency));
+      static_cast<hci_android::A2dpSamplingFrequency>(le32toh(params.sampling_frequency().Read()));
   switch (sampling_frequency) {
     case hci_android::A2dpSamplingFrequency::k44100Hz:
     case hci_android::A2dpSamplingFrequency::k48000Hz:
@@ -2342,7 +2344,7 @@ void FakeController::OnAndroidStartA2dpOffload(
   }
 
   hci_android::A2dpBitsPerSample const bits_per_sample =
-      static_cast<hci_android::A2dpBitsPerSample>(params.bits_per_sample);
+      static_cast<hci_android::A2dpBitsPerSample>(params.bits_per_sample().Read());
   switch (bits_per_sample) {
     case hci_android::A2dpBitsPerSample::k16BitsPerSample:
     case hci_android::A2dpBitsPerSample::k24BitsPerSample:
@@ -2354,7 +2356,7 @@ void FakeController::OnAndroidStartA2dpOffload(
   }
 
   hci_android::A2dpChannelMode const channel_mode =
-      static_cast<hci_android::A2dpChannelMode>(params.channel_mode);
+      static_cast<hci_android::A2dpChannelMode>(params.channel_mode().Read());
   switch (channel_mode) {
     case hci_android::A2dpChannelMode::kMono:
     case hci_android::A2dpChannelMode::kStereo:
@@ -2364,7 +2366,7 @@ void FakeController::OnAndroidStartA2dpOffload(
       return;
   }
 
-  uint32_t const encoded_audio_bitrate = le32toh(params.encoded_audio_bitrate);
+  uint32_t const encoded_audio_bitrate = le32toh(params.encoded_audio_bitrate().Read());
   // Bits 0x01000000 to 0xFFFFFFFF are reserved
   if (encoded_audio_bitrate >= 0x01000000) {
     RespondWithCommandComplete(hci_android::kA2dpOffloadCommand, BufferView(&ret, sizeof(ret)));
@@ -2373,15 +2375,15 @@ void FakeController::OnAndroidStartA2dpOffload(
 
   OffloadedA2dpChannel state;
   state.codec_type = codec_type;
-  state.max_latency = le16toh(params.max_latency);
+  state.max_latency = le16toh(params.max_latency().Read());
   state.scms_t_enable = scms_t_enable;
   state.sampling_frequency = sampling_frequency;
   state.bits_per_sample = bits_per_sample;
   state.channel_mode = channel_mode;
   state.encoded_audio_bitrate = encoded_audio_bitrate;
-  state.connection_handle = le16toh(params.connection_handle);
-  state.l2cap_channel_id = le16toh(params.l2cap_channel_id);
-  state.l2cap_mtu_size = le16toh(params.l2cap_mtu_size);
+  state.connection_handle = le16toh(params.connection_handle().Read());
+  state.l2cap_channel_id = le16toh(params.l2cap_channel_id().Read());
+  state.l2cap_mtu_size = le16toh(params.l2cap_mtu_size().Read());
   offloaded_a2dp_channel_state_ = state;
 
   ret.status = pw::bluetooth::emboss::StatusCode::SUCCESS;
@@ -2411,8 +2413,10 @@ void FakeController::OnAndroidA2dpOffloadCommand(
   uint8_t subopcode = payload.To<uint8_t>();
   switch (subopcode) {
     case hci_android::kStartA2dpOffloadCommandSubopcode: {
-      auto params = payload.To<hci_android::StartA2dpOffloadCommandParams>();
-      OnAndroidStartA2dpOffload(params);
+      auto view = pw::bluetooth::emboss::MakeStartA2dpOffloadCommandView(
+          command_packet.data().data(),
+          pw::bluetooth::emboss::StartA2dpOffloadCommand::MaxSizeInBytes());
+      OnAndroidStartA2dpOffload(view);
       break;
     }
     case hci_android::kStopA2dpOffloadCommandSubopcode:

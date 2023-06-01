@@ -4,13 +4,19 @@
 
 #include "a2dp_offload_manager.h"
 
+#include <cstdint>
 #include <utility>
 
 #include "src/connectivity/bluetooth/core/bt-host/common/host_error.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/constants.h"
 #include "src/connectivity/bluetooth/core/bt-host/hci-spec/protocol.h"
+#include "src/connectivity/bluetooth/core/bt-host/hci-spec/vendor_protocol.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/channel.h"
 #include "src/connectivity/bluetooth/core/bt-host/l2cap/l2cap_defs.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
+#include "src/connectivity/bluetooth/core/bt-host/transport/emboss_control_packets.h"
+
+#include <pw_bluetooth/vendor.emb.h>
 
 namespace bt::l2cap {
 namespace hci_android = bt::hci_spec::vendor::android;
@@ -52,33 +58,48 @@ void A2dpOffloadManager::StartA2dpOffload(const Configuration& config, ChannelId
   offloaded_channel_id_ = local_id;
   a2dp_offload_status_ = A2dpOffloadStatus::kStarting;
 
-  std::unique_ptr<hci::CommandPacket> packet = hci::CommandPacket::New(
-      hci_android::kA2dpOffloadCommand, sizeof(hci_android::StartA2dpOffloadCommandParams));
-  packet->mutable_view()->mutable_payload_data().SetToZeros();
-  auto payload = packet->mutable_payload<hci_android::StartA2dpOffloadCommandParams>();
-  payload->opcode = hci_android::kStartA2dpOffloadCommandSubopcode;
-  payload->codec_type = static_cast<hci_android::A2dpCodecType>(htole32(config.codec));
-  payload->max_latency = htole16(config.max_latency);
-  payload->scms_t_enable = config.scms_t_enable;
-  payload->sampling_frequency =
-      static_cast<hci_android::A2dpSamplingFrequency>(htole32(config.sampling_frequency));
-  payload->bits_per_sample = config.bits_per_sample;
-  payload->channel_mode = config.channel_mode;
-  payload->encoded_audio_bitrate = htole32(config.encoded_audio_bit_rate);
-  payload->connection_handle = htole16(link_handle);
-  payload->l2cap_channel_id = htole16(remote_id);
-  payload->l2cap_mtu_size = htole16(max_tx_sdu_size);
+  constexpr size_t kPacketSize = pw::bluetooth::emboss::StartA2dpOffloadCommand::MaxSizeInBytes();
+  auto packet = hci::EmbossCommandPacket::New<pw::bluetooth::emboss::StartA2dpOffloadCommandWriter>(
+      hci_android::kA2dpOffloadCommand, kPacketSize);
+  auto packet_view = packet.view_t();
 
-  if (config.codec == hci_android::A2dpCodecType::kLdac) {
-    payload->codec_information.ldac.vendor_id = htole32(config.codec_information.ldac.vendor_id);
-    payload->codec_information.ldac.codec_id = htole16(config.codec_information.ldac.codec_id);
-    payload->codec_information.ldac.bitrate_index = config.codec_information.ldac.bitrate_index;
-    payload->codec_information.ldac.ldac_channel_mode =
-        config.codec_information.ldac.ldac_channel_mode;
-  } else {
-    // A2dpOffloadCodecInformation does not require little endianness conversion for any other
-    // codec type due to their fields being one byte only.
-    payload->codec_information = config.codec_information;
+  packet_view.vendor_command().sub_opcode().Write(hci_android::kStartA2dpOffloadCommandSubopcode);
+  packet_view.codec_type().Write(static_cast<pw::bluetooth::emboss::A2dpCodecType>(config.codec));
+  packet_view.max_latency().Write(config.max_latency);
+
+  packet_view.scms_t_enable().enabled().Write(config.scms_t_enable.enabled);
+  packet_view.scms_t_enable().header().Write(config.scms_t_enable.header);
+
+  packet_view.sampling_frequency().Write(
+      static_cast<pw::bluetooth::emboss::A2dpSamplingFrequency>(config.sampling_frequency));
+  packet_view.bits_per_sample().Write(
+      static_cast<pw::bluetooth::emboss::A2dpBitsPerSample>(config.bits_per_sample));
+  packet_view.channel_mode().Write(
+      static_cast<pw::bluetooth::emboss::A2dpChannelMode>(config.channel_mode));
+  packet_view.encoded_audio_bitrate().Write(config.encoded_audio_bit_rate);
+  packet_view.connection_handle().Write(link_handle);
+  packet_view.l2cap_channel_id().Write(remote_id);
+  packet_view.l2cap_mtu_size().Write(max_tx_sdu_size);
+
+  // kAptx and kAptxhd codecs not yet handled
+  if (config.codec == hci_android::A2dpCodecType::kSbc) {
+    auto sbc_codec_information = packet_view.sbc_codec_information().BackingStorage();
+    MutableBufferView sbc_codec_information_buf =
+        MutableBufferView(sbc_codec_information.data(), sbc_codec_information.SizeInBytes());
+    sbc_codec_information_buf.Fill(0);
+    sbc_codec_information_buf.WriteObj(config.codec_information.sbc);
+  } else if (config.codec == hci_android::A2dpCodecType::kLdac) {
+    auto ldac_codec_information = packet_view.ldac_codec_information().BackingStorage();
+    MutableBufferView ldac_codec_information_buf =
+        MutableBufferView(ldac_codec_information.data(), ldac_codec_information.SizeInBytes());
+    ldac_codec_information_buf.Fill(0);
+    ldac_codec_information_buf.WriteObj(config.codec_information.ldac);
+  } else if (config.codec == hci_android::A2dpCodecType::kAac) {
+    auto aac_codec_information = packet_view.aac_codec_information().BackingStorage();
+    MutableBufferView aac_codec_information_buf =
+        MutableBufferView(aac_codec_information.data(), aac_codec_information.SizeInBytes());
+    aac_codec_information_buf.Fill(0);
+    aac_codec_information_buf.WriteObj(config.codec_information.aac);
   }
 
   cmd_channel_->SendCommand(
@@ -149,6 +170,7 @@ void A2dpOffloadManager::RequestStopA2dpOffload(ChannelId local_id,
   auto packet = hci::EmbossCommandPacket::New<pw::bluetooth::emboss::StopA2dpOffloadCommandWriter>(
       hci_android::kA2dpOffloadCommand);
   auto packet_view = packet.view_t();
+
   packet_view.vendor_command().sub_opcode().Write(hci_android::kStopA2dpOffloadCommandSubopcode);
 
   cmd_channel_->SendCommand(

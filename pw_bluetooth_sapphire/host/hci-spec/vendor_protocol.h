@@ -177,6 +177,7 @@ struct AptxCodecInformation {
 static_assert(sizeof(AptxCodecInformation) == 32,
               "AptxCodecInformation must take up exactly 32 bytes");
 
+// TODO(fxbug.dev/128280): Migrate A2dpOffloadCodecInformation to Emboss
 union A2dpOffloadCodecInformation {
   SbcCodecInformation sbc;
   AacCodecInformation aac;
@@ -186,46 +187,6 @@ union A2dpOffloadCodecInformation {
 
 static_assert(sizeof(A2dpOffloadCodecInformation) == 32,
               "A2dpOffloadCodecInformation must take up exactly 32 bytes");
-
-struct StartA2dpOffloadCommandParams {
-  // Must always be set to kStartA2dpOffloadCommandSubopcode
-  uint8_t opcode;
-
-  // Bitmask: codec types supported (see A2dpCodecType for bitmask values)
-  A2dpCodecType codec_type;
-
-  // Max latency allowed in ms. A value of zero disables flush.
-  uint16_t max_latency;
-
-  A2dpScmsTEnable scms_t_enable;
-
-  // Bitmask: sampling frequency (see SamplingFrequency for bitmask values)
-  A2dpSamplingFrequency sampling_frequency;
-
-  // Bitmask: bits per sample (see BitsPerSample for bitmask values)
-  A2dpBitsPerSample bits_per_sample;
-
-  // Bitmask: channel mode (see ChannelMode for bitmask values)
-  A2dpChannelMode channel_mode;
-
-  // The encoded audio bitrate in bits per second
-  // 0x00000000 - The audio bitrate is not specified / unused
-  // 0x00000001 - 0x00FFFFFF - Encoded audio bitrate in bits per second
-  // 0x01000000 - 0xFFFFFFFF - Reserved
-  uint32_t encoded_audio_bitrate;
-
-  // Connection handle of A2DP connection being configured
-  ConnectionHandle connection_handle;
-
-  // L2CAP channel ID to be used for this A2DP connection
-  l2cap::ChannelId l2cap_channel_id;
-
-  // Maximum size of L2CAP MTY containing encoded audio packets
-  uint16_t l2cap_mtu_size;
-
-  // Codec-specific information
-  A2dpOffloadCodecInformation codec_information;
-} __attribute__((packed));
 
 struct StartA2dpOffloadCommandReturnParams {
   StatusCode status;

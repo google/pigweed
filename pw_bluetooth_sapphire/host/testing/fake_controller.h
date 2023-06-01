@@ -705,7 +705,7 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
 
   void OnAndroidA2dpOffloadCommand(const PacketView<hci_spec::CommandHeader>& command_packet);
 
-  void OnAndroidStartA2dpOffload(const hci_android::StartA2dpOffloadCommandParams& params);
+  void OnAndroidStartA2dpOffload(const pw::bluetooth::emboss::StartA2dpOffloadCommandView& params);
 
   void OnAndroidStopA2dpOffload();
 
@@ -814,8 +814,8 @@ class FakeController final : public ControllerTestDoubleBase, public WeakSelf<Fa
   LEConnectionParametersCallback le_conn_params_cb_;
   fit::closure le_read_remote_features_cb_;
 
-  // Associates opcodes with client-supplied pause listeners. Commands with these opcodes will hang
-  // with no response until the client invokes the passed-out closure.
+  // Associates opcodes with client-supplied pause listeners. Commands with these opcodes will
+  // hang with no response until the client invokes the passed-out closure.
   std::unordered_map<hci_spec::OpCode, fit::function<void(fit::closure)>> paused_opcode_listeners_;
 
   // Called when ACL data packets received.
