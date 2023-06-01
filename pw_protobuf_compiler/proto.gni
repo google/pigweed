@@ -31,6 +31,14 @@ _forwarded_vars = [
   "visibility",
 ]
 
+declare_args() {
+  # To override the protobuf compiler used set this to the GN target that builds the protobuf compiler.
+  pw_protobuf_compiler_PROTOC_TARGET = ""
+
+  # To override the protobuf compiler used set this to the path, relative to the root_build_dir, to the protoc binary.
+  pw_protobuf_compiler_PROTOC_BINARY = ""
+}
+
 # Internal template that invokes protoc with a pw_python_action. This should not
 # be used outside of this file; use pw_proto_library instead.
 #
@@ -88,6 +96,21 @@ template("_pw_invoke_protoc") {
       args = []
       if (!pw_protobuf_compiler_GENERATE_LEGACY_ENUM_SNAKE_CASE_NAMES) {
         args += [ "--exclude-pwpb-legacy-snake-case-field-name-enums" ]
+      }
+      if (pw_protobuf_compiler_PROTOC_TARGET != "") {
+        assert(
+            pw_protobuf_compiler_PROTOC_BINARY != "",
+            "if pw_protobuf_compiler_PROTOC_TARGET is set then pw_protobuf_compiler_PROTOC_BINARY must be set to the path to protoc, relative to the root_build_dir.")
+        _protoc_src_dir =
+            get_label_info(pw_protobuf_compiler_PROTOC_TARGET, "dir") + "/src"
+
+        args += [
+          "--protoc",
+          pw_protobuf_compiler_PROTOC_BINARY,
+          "--proto-path",
+          rebase_path(_protoc_src_dir, root_build_dir),
+        ]
+        deps += [ pw_protobuf_compiler_PROTOC_TARGET ]
       }
       args += [
                 "--language",

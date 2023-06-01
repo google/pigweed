@@ -270,6 +270,17 @@ The ``python_module_as_package`` feature should only be used when absolutely
 necessary --- for example, to support proto files that include
 ``import "nanopb.proto"``.
 
+Specifying a custom ``protoc``
+------------------------------
+If your build needs to use a custom build of ``protoc`` rather than the one
+supplied by pigweed it can be specified by setting
+``pw_protobuf_compiler_PROTOC_TARGET`` to a GN target that produces a ``protoc``
+executable and ``pw_protobuf_compiler_PROTOC_BINARY`` to the path, relative to
+``root_build_dir``, of the ``protoc`` executable.
+
+For all ``protoc`` invocations, the build will add a dependency on that target
+and will invoke that executable.
+
 CMake
 =====
 CMake provides a ``pw_proto_library`` function with similar features as the
