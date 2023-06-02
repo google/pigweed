@@ -184,6 +184,14 @@ implements the backend for the ``pw_log`` facade. ``pw_log_tokenized`` invokes
 the ``pw_log_tokenized:handler`` facade, which must be implemented by the user
 of ``pw_log_tokenized``.
 
+GCC has a bug resulting in section attributes of templated functions being
+ignored. This in turn means that log tokenization cannot work for templated
+functions, because the token database entries are lost at build time.
+For more information see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=70435.
+If you are using GCC, the ``gcc_partially_tokenized`` target can be used as a
+backend for the ``pw_log`` facade instead which tokenizes as much as possible
+and uses the ``pw_log_string:handler`` for the rest using string logging.
+
 Python package
 ==============
 ``pw_log_tokenized`` includes a Python package for decoding tokenized logs.

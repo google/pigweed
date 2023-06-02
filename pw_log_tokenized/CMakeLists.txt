@@ -51,6 +51,21 @@ pw_add_library(pw_log_tokenized._headers INTERFACE
     pw_tokenizer
 )
 
+pw_add_library(pw_log_tokenized.gcc_partially_tokenized STATIC
+  HEADERS
+    public/pw_log_tokenized/gcc_partially_tokenized.h
+    gcc_partially_tokenized_public_overrides/pw_log_backend/log_backend.h
+  PUBLIC_INCLUDES
+    public
+    gcc_partially_tokenized_public_overrides
+  PUBLIC_DEPS
+    pw_log_string.handler
+    pw_log_tokenized.handler
+    pw_log_tokenized._headers
+  SOURCES
+    log_tokenized.cc
+)
+
 pw_add_library(pw_log_tokenized.metadata INTERFACE
   HEADERS
     public/pw_log_tokenized/metadata.h

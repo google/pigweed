@@ -39,6 +39,11 @@ config("backend_config") {
   visibility = [ ":*" ]
 }
 
+config("gcc_partially_tokenized_backend_config") {
+  include_dirs = [ "public_overrides" ]
+  visibility = [ ":*" ]
+}
+
 # This target provides the backend for pw_log.
 pw_source_set("pw_log_tokenized") {
   public_configs = [ ":backend_config" ]
@@ -61,6 +66,25 @@ pw_source_set("headers") {
     dir_pw_tokenizer,
   ]
   public = [ "public/pw_log_tokenized/log_tokenized.h" ]
+}
+
+# This target provides the backend for pw_log for GCC which tokenizes as much as
+# it can and uses pw_log_string:handler for the rest.
+pw_source_set("gcc_partially_tokenized") {
+  public_configs = [
+    ":gcc_partially_tokenized_backend_config",
+    ":public_include_path",
+  ]
+  public_deps = [
+    ":handler.facade",  # Depend on the facade to avoid circular dependencies.
+    ":headers",
+    "$dir_pw_log_string:handler",
+  ]
+  public = [
+    "gcc_partially_tokenized_public_overrides/pw_log_backend/log_backend.h",
+    "public/pw_log_tokenized/gcc_partially_tokenized.h",
+  ]
+  sources = [ "log_tokenized.cc" ]
 }
 
 pw_facade("handler") {

@@ -28,11 +28,9 @@ pw_cc_library(
         "public/pw_log_tokenized/config.h",
         "public/pw_log_tokenized/log_tokenized.h",
         "public/pw_log_tokenized/metadata.h",
-        "public_overrides/pw_log_backend/log_backend.h",
     ],
     includes = [
         "public",
-        "public_overrides",
     ],
     deps = [
         "//pw_log:facade",
@@ -43,10 +41,36 @@ pw_cc_library(
 pw_cc_library(
     name = "pw_log_tokenized",
     srcs = ["log_tokenized.cc"],
+    hdrs = [
+        "public_overrides/pw_log_backend/log_backend.h",
+    ],
+    includes = [
+        "public",
+        "public_overrides",
+    ],
     deps = [
         ":handler",
         ":headers",
         "//pw_log:facade",
+    ],
+)
+
+pw_cc_library(
+    name = "gcc_partially_tokenized",
+    srcs = ["log_tokenized.cc"],
+    hdrs = [
+        "gcc_partially_tokenized_public_overrides/pw_log_backend/log_backend.h",
+        "public/pw_log_tokenized/gcc_partially_tokenized.h",
+    ],
+    includes = [
+        "gcc_partially_tokenized_public_overrides",
+        "public",
+    ],
+    deps = [
+        ":handler",
+        ":headers",
+        "//pw_log:facade",
+        "//pw_log_string:handler",
     ],
 )
 
