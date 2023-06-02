@@ -239,6 +239,7 @@ pw_test("intrusive_list_test") {
   sources = [ "intrusive_list_test.cc" ]
   deps = [
     ":intrusive_list",
+    ":vector",
     "$dir_pw_preprocessor",
   ]
   negative_compilation_tests = true

@@ -53,10 +53,6 @@ template <typename T>
 class IntrusiveList {
  public:
   class Item : public intrusive_list_impl::List::Item {
-   public:
-    Item(const Item&) = delete;
-    Item& operator=(const Item&) = delete;
-
    protected:
     constexpr Item() = default;
 

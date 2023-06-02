@@ -78,14 +78,51 @@ class Iterator {
 class List {
  public:
   class Item {
+   public:
+    /// Items are not copyable.
+    Item(const Item&) = delete;
+
+    /// Items are not copyable.
+    Item& operator=(const Item&) = delete;
+
    protected:
+    /// Default constructor.
+    ///
+    /// All other constructors must call this to preserve the invariant that an
+    /// item is always part of a cycle.
     constexpr Item() : Item(this) {}
+
+    /// Destructor.
+    ///
+    /// This is O(n), where "n" is the number of items in this object's list.
     ~Item() { unlist(); }
 
+    /// Move constructor.
+    ///
+    /// This uses the move assignment operator. See the note on that method.
+    ///
+    /// This should NOT typically be used, except for testing.
+    Item(Item&& other);
+
+    /// Move assignment operators.
+    ///
+    /// This will unlist the current object, and replace other with this object
+    /// in the list that contained it. As a result, this O(m + n), where "m" is
+    /// the number of items in this object's list, and "n" is the number of
+    /// objects in the `other` object's list.
+    ///
+    /// As such, it should NOT typically be used, except for testing.
+    Item& operator=(Item&& other);
+
+    /// Returns whether this object is not part of a list.
+    ///
+    /// This is O(1) whether the object is in a list or not.
     bool unlisted() const { return this == next_; }
 
-    // Unlink this from the list it is apart of, if any. Specifying prev saves
-    // calling previous(), which requires looping around the cycle.
+    /// Unlink this from the list it is apart of, if any.
+    ///
+    /// Specifying prev saves calling previous(), which requires looping around
+    /// the cycle. This is O(1) with `previous`, and O(n) without.
     void unlist(Item* prev = nullptr);
 
    private:
@@ -94,9 +131,16 @@ class List {
     template <typename T, typename I>
     friend class Iterator;
 
-    constexpr Item(Item* next) : next_(next) {}
+    /// Explicit constructor.
+    ///
+    /// In addition to the default constructor for Item, this is used by the
+    /// default constructor for List to create its sentinel value.
+    explicit constexpr Item(Item* next) : next_(next) {}
 
-    Item* previous();  // Note: O(n) since it loops around the cycle.
+    /// Return the previous item in the list by looping around the cycle.
+    ///
+    /// This is O(n), where "n" is the number of items in this object's list.
+    Item* previous();
 
     // The next pointer. Unlisted items must be self-cycles (next_ == this).
     Item* next_;
@@ -121,28 +165,51 @@ class List {
 
   bool empty() const noexcept { return begin() == end(); }
 
+  /// Inserts an item into a list.
+  ///
+  /// The item given by `pos` is updated to point to the item as being next in
+  /// the list, while the item itself points to what `pos` previously pointed to
+  /// as next.
+  ///
+  /// This is O(1). The ownership of the item is not changed.
   static void insert_after(Item* pos, Item& item);
 
+  /// Removes an item from a list.
+  ///
+  /// The item that `pos` points to as being next in the list is unlisted, while
+  /// `pos` is updated to point to the item following it as next.
+  ///
+  /// This is O(1). The item is not destroyed..
   static void erase_after(Item* pos);
 
   void clear();
 
   bool remove(const Item& item_to_remove);
 
+  /// Returns a pointer to the sentinel item.
   constexpr Item* before_begin() noexcept { return &head_; }
   constexpr const Item* before_begin() const noexcept { return &head_; }
 
+  /// Returns a pointer to the first item.
   constexpr Item* begin() noexcept { return head_.next_; }
   constexpr const Item* begin() const noexcept { return head_.next_; }
 
+  /// Returns a pointer to the last item.
   Item* before_end() noexcept;
 
+  /// Returns a pointer to the sentinel item.
   constexpr Item* end() noexcept { return &head_; }
   constexpr const Item* end() const noexcept { return &head_; }
 
+  /// Returns the number of items in the list by looping around the cycle.
+  ///
+  /// This is O(n), where "n" is the number of items in the list.
   size_t size() const;
 
  private:
+  /// Adds items to the list from the provided range.
+  ///
+  /// This is O(n), where "n" is the number of items in the range.
   template <typename Iterator>
   void AssignFromIterator(Iterator first, Iterator last);
 

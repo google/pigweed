@@ -20,6 +20,7 @@
 
 #include "gtest/gtest.h"
 #include "pw_compilation_testing/negative_compilation.h"
+#include "pw_containers/vector.h"
 #include "pw_preprocessor/util.h"
 
 namespace pw {
@@ -703,6 +704,25 @@ struct NotAnItem {};
 [[maybe_unused]] IntrusiveList<NotAnItem> list;
 
 #endif  // PW_NC_TEST
+
+TEST(IntrusiveList, MoveListedItems) {
+  TestItem item1(1);
+  TestItem item2(2);
+  TestItem item3(3);
+
+  IntrusiveList<TestItem> list = {&item1, &item2, &item3};
+
+  Vector<TestItem, 3> vector;
+  vector.emplace_back(std::move(item1));
+  vector.emplace_back(std::move(item2));
+  vector.emplace_back(std::move(item3));
+
+  auto iter = list.begin();
+  EXPECT_EQ((*iter++).GetNumber(), 1);
+  EXPECT_EQ((*iter++).GetNumber(), 2);
+  EXPECT_EQ((*iter++).GetNumber(), 3);
+  EXPECT_EQ(iter, list.end());
+}
 
 }  // namespace
 }  // namespace pw
