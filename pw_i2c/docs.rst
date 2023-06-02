@@ -17,19 +17,10 @@ pw::i2c::Initiator
 ------------------
 .. inclusive-language: disable
 
-The common interface for initiating transactions with devices on an I2C bus.
-Other documentation sources may call this style of interface an I2C "master",
-"central" or "controller".
+.. doxygenclass:: pw::i2c::Initiator
+   :members:
 
 .. inclusive-language: enable
-
-.. note::
-
-   ``Initiator`` uses internal synchronization, so it is safe to
-   initiate transactions from multiple threads. However, write+read transactions
-   may not be atomic with multiple controllers on the bus. Furthermore, devices
-   may require specific sequences of transactions, and application logic must
-   provide the synchronization to execute these sequences correctly.
 
 pw::i2c::Device
 ---------------

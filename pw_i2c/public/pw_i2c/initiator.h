@@ -22,18 +22,26 @@
 
 namespace pw::i2c {
 
-// Base driver interface for I2C initiating I2C transactions in a thread safe
-// manner. Other documentation sources may call this style of interface an I2C
-// "master", "central" or "controller".  // inclusive-language: ignore
-//
-// The Initiator is not required to support 10bit addressing. If only 7bit
-// addressing is supported, the Initiator will assert when given an address
-// which is out of 7bit address range.
-//
-// The implementer of this pure virtual interface is responsible for ensuring
-// thread safety and enabling functionality such as initialization,
-// configuration, enabling/disabling, unsticking SDA, and detecting device
-// address registration collisions.
+/// @brief The common, base driver interface for initiating thread-safe
+/// transactions with devices on an I2C bus. Other documentation may call this
+/// style of interface an I2C "master", <!-- inclusive-language: disable -->
+/// "central", or "controller".
+///
+/// `Initiator` isn't required to support 10-bit addressing. If only 7-bit
+/// addressing is supported, `Initiator` asserts when given an address
+/// that is out of 7-bit address range.
+///
+/// The implementer of this pure virtual interface is responsible for ensuring
+/// thread safety and enabling functionality such as initialization,
+/// configuration, enabling/disabling, unsticking SDA, and detecting device
+/// address registration collisions.
+///
+/// @note `Initiator` uses internal synchronization, so it's safe to
+/// initiate transactions from multiple threads. However, write+read
+/// transactions may not be atomic with multiple controllers on the bus.
+/// Furthermore, devices may require specific sequences of transactions, and
+/// application logic must provide the synchronization to execute these
+/// sequences correctly.
 class Initiator {
  public:
   virtual ~Initiator() = default;

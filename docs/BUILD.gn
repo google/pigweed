@@ -136,6 +136,7 @@ _doxygen_input_files = [
   "$dir_pw_hdlc/public/pw_hdlc/decoder.h",
   "$dir_pw_hdlc/public/pw_hdlc/encoder.h",
   "$dir_pw_interrupt/public/pw_interrupt/context.h",
+  "$dir_pw_i2c/public/pw_i2c/initiator.h",
   "$dir_pw_log_tokenized/public/pw_log_tokenized/handler.h",
   "$dir_pw_log_tokenized/public/pw_log_tokenized/metadata.h",
   "$dir_pw_rpc/public/pw_rpc/internal/config.h",
