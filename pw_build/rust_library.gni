@@ -56,7 +56,10 @@ template("pw_rust_library") {
       }
     }
 
-    underlying_target_type = "rust_library"
+    if (!defined(underlying_target_type)) {
+      underlying_target_type = "rust_library"
+    }
+
     crate_name = string_replace(crate_name, "-", "_")
     output_name = crate_name
     output_dir = "${target_out_dir}/lib"

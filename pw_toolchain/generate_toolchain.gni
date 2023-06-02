@@ -378,6 +378,14 @@ template("generate_toolchain") {
 
       _generate_rust_tools = defined(invoker.rustc)
       if (_generate_rust_tools) {
+        if (toolchain_os == "mac") {
+          _dylib_extension = ".dylib"
+        } else if (toolchain_os == "win") {
+          _dylib_extension = ".dll"
+        } else {
+          _dylib_extension = ".so"
+        }
+
         _rustc_command = string_join(
                 " ",
                 [
@@ -413,6 +421,16 @@ template("generate_toolchain") {
           depfile = "{{output}}.d"
           output_prefix = "lib"
           default_output_extension = ".rlib"
+          command = _rustc_command
+          outputs = [ _output ]
+        }
+
+        tool("rust_macro") {
+          description = "rustc {{output}}"
+          default_output_dir = "{{target_out_dir}}/lib"
+          depfile = "{{output}}.d"
+          output_prefix = "lib"
+          default_output_extension = _dylib_extension
           command = _rustc_command
           outputs = [ _output ]
         }

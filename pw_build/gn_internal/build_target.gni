@@ -85,6 +85,7 @@ template("pw_internal_build_target") {
   _builtin_target_types = [
     "executable",
     "rust_library",
+    "rust_proc_macro",
     "shared_library",
     "source_set",
     "static_library",
