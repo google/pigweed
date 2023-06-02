@@ -667,7 +667,7 @@ def _simple_docs_server(
 ) -> Callable[[], None]:
     class Handler(http.server.SimpleHTTPRequestHandler):
         def __init__(self, *args, **kwargs):
-            super().__init__(*args, directory=path, **kwargs)
+            super().__init__(*args, directory=str(path), **kwargs)
 
         # Disable logs to stdout
         def log_message(
