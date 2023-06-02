@@ -20,6 +20,24 @@ import("$dir_pw_docgen/docs.gni")
 import("$dir_pw_third_party/fuzztest/fuzztest.gni")
 import("$dir_pw_unit_test/test.gni")
 
+config("public_include_path") {
+  include_dirs = [ "public" ]
+  visibility = [ ":*" ]
+}
+
+config("private_include_path") {
+  include_dirs = [ "private" ]
+  visibility = [ ":*" ]
+}
+
+config("overrides_include_path") {
+  include_dirs = [
+    "public_overrides",
+    "private_overrides",
+  ]
+  visibility = [ ":*" ]
+}
+
 # See https://llvm.org/docs/LibFuzzer.html#fuzzer-friendly-build-mode
 config("fuzzing_build_mode_unsafe_for_production") {
   defines = [ "FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION" ]
@@ -57,22 +75,37 @@ pw_test_group("tests") {
 #
 # Create FuzzTest-style fuzzers by adding a dep on dir_pw_fuzzer:fuzztest
 
-config("public_overrides_include_path") {
-  include_dirs = [ "public_overrides" ]
-}
-
 # Unit tests with a dep on this target can include FuzzTest-style fuzzers.
 pw_source_set("fuzztest") {
+  # Include headers that extend FuzzTest's interface with support for common
+  # Pigweed types.
+  public = [ "public/pw_fuzzer/fuzztest.h" ]
+  public_configs = [ ":public_include_path" ]
+  public_deps = [
+    dir_pw_containers,
+    dir_pw_result,
+    dir_pw_status,
+    dir_pw_string,
+  ]
   if (dir_pw_third_party_fuzztest != "" && pw_toolchain_FUZZING_ENABLED) {
-    public_deps = [ "$dir_pw_third_party/fuzztest/fuzztest" ]
-    public_configs = [
+    # Include headers and deps that provide a Pigweed-compatible subset of
+    # FuzzTest.
+    public += [ "private/pw_fuzzer/internal/fuzztest.h" ]
+    public_configs += [
       "$dir_pw_third_party/abseil-cpp/configs:disabled_warnings",
       "$dir_pw_third_party/re2/configs:disabled_warnings",
       "$dir_pw_third_party/fuzztest/configs:disabled_warnings",
+      ":private_include_path",
     ]
+    public_deps += [ "$dir_pw_third_party/fuzztest/fuzztest" ]
   } else {
-    public = [ "public_overrides/fuzztest/fuzztest.h" ]
-    public_configs = [ ":public_overrides_include_path" ]
+    # Include headers that provide stubs of the Pigweed-compatible subset of
+    # FuzzTest's interface.
+    public += [
+      "private_overrides/pw_fuzzer/internal/fuzztest.h",
+      "public_overrides/fuzztest/fuzztest.h",
+    ]
+    public_configs += [ ":overrides_include_path" ]
   }
 }
 
@@ -139,11 +172,6 @@ config("libfuzzer_config") {
   } else {
     ldflags = [ "-fsanitize=fuzzer" ]
   }
-}
-
-config("public_include_path") {
-  include_dirs = [ "public" ]
-  visibility = [ ":*" ]
 }
 
 # Includes wrapper's for LLVM's libFuzzer compiler runtime library.

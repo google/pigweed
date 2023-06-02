@@ -38,14 +38,34 @@ config_setting(
 pw_cc_library(
     name = "fuzztest",
     testonly = True,
-    deps = ["@pigweed_config//:pw_fuzzer_fuzztest_backend"],
+    hdrs = ["public/pw_fuzzer/fuzztest.h"] + select({
+        ":use_fuzztest": ["private/pw_fuzzer/internal/fuzztest.h"],
+        "//conditions:default": [],
+    }),
+    includes = ["public"] + select({
+        ":use_fuzztest": ["private"],
+        "//conditions:default": [],
+    }),
+    deps = [
+        "//pw_containers",
+        "//pw_result",
+        "//pw_status",
+        "//pw_string",
+        "@pigweed_config//:pw_fuzzer_fuzztest_backend",
+    ],
 )
 
 pw_cc_library(
     name = "fuzztest_stub",
     testonly = True,
-    hdrs = ["public_overrides/fuzztest/fuzztest.h"],
-    includes = ["public_overrides"],
+    hdrs = [
+        "private_overrides/pw_fuzzer/internal/fuzztest.h",
+        "public_overrides/fuzztest/fuzztest.h",
+    ],
+    includes = [
+        "private_overrides",
+        "public_overrides",
+    ],
     deps = ["//pw_unit_test"],
 )
 

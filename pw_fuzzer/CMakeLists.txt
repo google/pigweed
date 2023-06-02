@@ -24,15 +24,33 @@ include($ENV{PW_ROOT}/pw_build/pigweed.cmake)
 # converts invocations of `FUZZ_TEST` to disabled empty unit tests.
 if(pw_unit_test_GOOGLETEST_BACKEND STREQUAL "pw_third_party.fuzztest")
   pw_add_library(pw_fuzzer.fuzztest INTERFACE
+    HEADERS
+      public/pw_fuzzer/fuzztest.h
+      private/pw_fuzzer/internal/fuzztest.h
     PUBLIC_DEPS
+      pw_containers
+      pw_result
+      pw_status
+      pw_string
       pw_third_party.fuzztest
+    PUBLIC_INCLUDES
+      public
+      private
   )
 else()
   pw_add_library(pw_fuzzer.fuzztest INTERFACE
     HEADERS
       public_overrides/fuzztest/fuzztest.h
+      private_overrides/pw_fuzzer/internal/fuzztest.h
+    PUBLIC_DEPS
+      pw_containers
+      pw_result
+      pw_status
+      pw_string
     PUBLIC_INCLUDES
+      public
       public_overrides
+      private_overrides
   )
 endif()
 
