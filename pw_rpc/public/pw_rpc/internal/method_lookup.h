@@ -52,8 +52,14 @@ class MethodLookup {
   template <typename Service, uint32_t kMethodId>
   static constexpr const auto& GetMethodUnion() {
     constexpr auto method = GetMethodUnionPointer<Service>(kMethodId);
+// TODO(b/285367496): Remove this #ifndef guard when the static assert
+// compiles correctly when using the Andestech RISC-V GCC 10.3.0 toolchain.
+#if !(defined(__riscv) && defined(__ANDESTECH_GCC__) && (__GNUC__ == 10) && \
+      (__GNUC_MINOR__ == 3) && (__GNUC_PATCHLEVEL__ == 0))
     static_assert(method != nullptr,
                   "The selected function is not an RPC service method");
+#endif  // !(defined(__riscv) && defined(__ANDESTECH_GCC__) && (__GNUC__ == 10)
+        // && (__GNUC_MINOR__ == 3) && (__GNUC_PATCHLEVEL__ == 0))
     return *method;
   }
 
