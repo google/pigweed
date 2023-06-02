@@ -13,6 +13,7 @@
 # the License.
 
 import sys
+import importlib.machinery
 import importlib.util
 
 loader = importlib.machinery.SourceFileLoader("embossc", sys.argv[1])
