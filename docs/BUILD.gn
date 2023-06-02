@@ -114,6 +114,7 @@ group("third_party_docs") {
 
 _doxygen_input_files = [
   # All sources with doxygen comment blocks.
+  "$dir_pw_allocator/public/pw_allocator/block.h",
   "$dir_pw_async/public/pw_async/dispatcher.h",
   "$dir_pw_async/public/pw_async/heap_dispatcher.h",
   "$dir_pw_async/public/pw_async/fake_dispatcher_fixture.h",

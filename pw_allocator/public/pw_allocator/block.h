@@ -206,13 +206,17 @@ class Block final {
   // if this is the "first" block.
   Block* Prev() const { return prev_; }
 
-  // Return true if the block is aligned, the prev/next field matches with the
-  // previous and next block, and the poisoned bytes is not damaged. Otherwise,
-  // return false to indicate this block is corrupted.
+  /// @brief Checks if a block is valid.
+  ///
+  /// @returns `false` if a block is corrupted. Returns `true` if the following
+  /// conditions are all true:
+  /// * The block is aligned
+  /// * The prev/next fields match with the previous and next blocks
+  /// * The poisoned bytes are not damaged
   bool IsValid() const { return CheckStatus() == BlockStatus::VALID; }
 
-  // Uses PW_DCHECK to log information about the reason if a block is invalid.
-  // This function will do nothing if the block is valid.
+  /// @brief Crashes if a block is invalid. Uses `PW_DCHECK` to log information
+  /// about why the block is invalid. Does nothing if the block is valid.
   void CrashIfInvalid();
 
  private:

@@ -16,10 +16,8 @@ Heap Integrity Check
 ====================
 The ``Block`` class provides two check functions:
 
-- ``bool Block::IsValid()``: Returns ``true`` is the given block is valid and
-  ``false`` otherwise.
-- ``void Block::CrashIfInvalid()``: Crash the program and output the reason why
-  the check fails using ``PW_DCHECK``.
+.. doxygenclass:: pw::allocator::Block
+   :members:
 
 Heap Poisoning
 ==============
