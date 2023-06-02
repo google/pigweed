@@ -442,7 +442,9 @@ gn_fuzz_build = build.GnGenNinja(
     ),
 )
 
-gn_docs_build = build.GnGenNinja(name='gn_docs_build', ninja_targets=('docs',))
+gn_docs_build = build.GnGenNinja(
+    name='gn_docs_build', packages=('nanopb',), ninja_targets=('docs',)
+)
 
 gn_host_tools = build.GnGenNinja(
     name='gn_host_tools',
@@ -1024,6 +1026,7 @@ OTHER_CHECKS = (
     gitmodules.create(gitmodules.Config(allow_submodules=False)),
     gn_clang_build,
     gn_combined_build_check,
+    gn_docs_build,
     module_owners.presubmit_check(),
     npm_presubmit.npm_test,
     pw_transfer_integration_test,
