@@ -150,19 +150,15 @@ TEST(PwpbClientServerTestContext,
   test::TestService service;
   ctx.server().RegisterService(service);
 
-  test::TestResponse::Message response1 = {};
-  test::TestResponse::Message response2 = {};
-  auto handler1 = [&response1](
-                      const test::TestResponse::Message& server_response,
-                      pw::Status) { response1 = server_response; };
-  auto handler2 = [&response2](
-                      const test::TestResponse::Message& server_response,
-                      pw::Status) { response2 = server_response; };
+  TestResponse::Message response1 = {};
+  TestResponse::Message response2 = {};
+  auto handler1 = [&response1](const TestResponse::Message& server_response,
+                               pw::Status) { response1 = server_response; };
+  auto handler2 = [&response2](const TestResponse::Message& server_response,
+                               pw::Status) { response2 = server_response; };
 
-  test::TestRequest::Message request1{.integer = 1,
-                                      .status_code = OkStatus().code()};
-  test::TestRequest::Message request2{.integer = 2,
-                                      .status_code = OkStatus().code()};
+  TestRequest::Message request1{.integer = 1, .status_code = OkStatus().code()};
+  TestRequest::Message request2{.integer = 2, .status_code = OkStatus().code()};
   const auto call1 = test::GeneratedService::TestUnaryRpc(
       ctx.client(), ctx.channel().id(), request1, handler1);
   // Force manual forwarding of packets as context is not threaded
