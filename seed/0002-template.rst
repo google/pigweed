@@ -18,7 +18,7 @@
 
    :octicon:`calendar` Proposal Date: 2022-11-30
 
-   :octicon:`code-review` CL: `pwrev/123090 <https://pigweed-review.git.corp.google.com/c/pigweed/pigweed/+/123090>`_
+   :octicon:`code-review` CL: `pwrev/123090 <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/123090>`_
 
 -------
 Summary

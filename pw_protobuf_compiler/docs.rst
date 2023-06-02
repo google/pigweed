@@ -493,7 +493,7 @@ The ``pw_proto_library`` target has a number of disadvantages:
    the ``pw_proto_library`` macro, and bazel will attempt to build them when
    you run ``bazel build //...``. This may cause build breakages, and has
    forced us to implement `awkward workarounds
-   <https://pigweed-review.git.corp.google.com/c/pigweed/pigweed/+/96980>`_.
+   <https://pigweed-review.googlesource.com/c/pigweed/pigweed/+/96980>`_.
 
 ----------------------
 Python proto libraries
