@@ -409,12 +409,7 @@ group("host_tools") {
   ]
 
   if (pw_rust_ENABLE_EXPERIMENTAL_BUILD) {
-    deps += [
-      "$dir_pw_rust/examples/host_executable:hello($dir_pigweed/targets/host:host_clang_debug)",
-      "$dir_pw_rust/examples/host_executable:proc_macro($dir_pigweed/targets/host:host_clang_debug)",
-      "$dir_pw_rust/examples/host_executable:test_hello($dir_pigweed/targets/host:host_clang_debug)",
-      "$dir_pw_rust/examples/host_executable:test_proc_macro($dir_pigweed/targets/host:host_clang_debug)",
-    ]
+    deps += [ "$dir_pw_rust/examples/host_executable:host_executable($dir_pigweed/targets/host:host_clang_debug)" ]
   }
 }
 
