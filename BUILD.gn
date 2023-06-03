@@ -236,18 +236,23 @@ if (pw_arduino_build_CORE_PATH != "") {
   }
 }
 
-_build_pigweed_default_at_all_optimization_levels("qemu_gcc") {
-  toolchain_prefix =
-      "$dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_gcc_"
-}
-
 # TODO(b/244604080): Inline string tests are too big to fit in the QEMU firmware
 # except under a size-optimized build. For now, only build size-optimized.
 #
+# _build_pigweed_default_at_all_optimization_levels("qemu_gcc") {
+#   toolchain_prefix =
+#       "$dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_gcc_"
+# }
 # _build_pigweed_default_at_all_optimization_levels("qemu_clang") {
 #   toolchain_prefix =
 #       "$dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_clang_"
 # }
+group("qemu_gcc_size_optimized") {
+  deps = [ ":pigweed_default($dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_gcc_size_optimized)" ]
+}
+group("qemu_gcc") {
+  deps = [ ":qemu_gcc_size_optimized" ]
+}
 group("qemu_clang_size_optimized") {
   deps = [ ":pigweed_default($dir_pigweed/targets/lm3s6965evb_qemu:lm3s6965evb_qemu_clang_size_optimized)" ]
 }

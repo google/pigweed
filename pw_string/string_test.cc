@@ -1238,289 +1238,285 @@ TEST(InlineString, Clear) {
   TEST_STRING(InlineString<8>("!!"), str.clear(); str.assign("?"), "?");
 }
 
-// // insert
+// insert
 
-// TEST(InlineString, Insert_CharactersAtIndex) {
-//   TEST_STRING(InlineString<1>(), str.insert(0, 0, 'b'), "");
-//   TEST_STRING(InlineString<1>("a"), str.insert(0, 0, 'b'), "a");
-//   TEST_STRING(InlineString<10>("a"), str.insert(0, 2, 'b'), "bba");
-//   TEST_STRING(InlineString<10>("a"), str.insert(1, 2, 'b'), "abb");
-//   TEST_STRING(InlineString<10>(), str.insert(0, 10, 'b'), "bbbbbbbbbb");
-// }
-// #if PW_NC_TEST(Insert_CharactersAtIndex_DoesNotFit)
-// PW_NC_EXPECT("PW_ASSERT\(size\(\) - index <= max_size\(\) - new_index\)");
-// [[maybe_unused]] constexpr auto fail = [] {
-//   InlineString<3> str({0, 1});
-//   return str.insert(1, 2, '?');
-// }();
-// #endif  // PW_NC_TEST
+TEST(InlineString, Insert_CharactersAtIndex) {
+  TEST_STRING(InlineString<1>(), str.insert(0, 0, 'b'), "");
+  TEST_STRING(InlineString<1>("a"), str.insert(0, 0, 'b'), "a");
+  TEST_STRING(InlineString<10>("a"), str.insert(0, 2, 'b'), "bba");
+  TEST_STRING(InlineString<10>("a"), str.insert(1, 2, 'b'), "abb");
+  TEST_STRING(InlineString<10>(), str.insert(0, 10, 'b'), "bbbbbbbbbb");
+}
+#if PW_NC_TEST(Insert_CharactersAtIndex_DoesNotFit)
+PW_NC_EXPECT("PW_ASSERT\(size\(\) - index <= max_size\(\) - new_index\)");
+[[maybe_unused]] constexpr auto fail = [] {
+  InlineString<3> str({0, 1});
+  return str.insert(1, 2, '?');
+}();
+#endif  // PW_NC_TEST
 
-// TEST(InlineString, Insert_PointerSizeAtIndex) {
-//   TEST_STRING(InlineString<1>(), str.insert(0, "", 0), "");
-//   TEST_STRING(InlineString<1>("a"), str.insert(0, "b", 0), "a");
-//   TEST_STRING(InlineString<10>("a"), str.insert(0, "bb", 2), "bba");
-//   TEST_STRING(InlineString<10>("a"), str.insert(1, "bb", 2), "abb");
-//   TEST_STRING(
-//       InlineString<10>(), str.insert(0, "bbbbbbbbbb", 10), "bbbbbbbbbb");
-// }
-// #if PW_NC_TEST(Insert_PointerSizeAtIndex_DoesNotFit)
-// PW_NC_EXPECT("PW_ASSERT\(size\(\) - index <= max_size\(\) - new_index\)");
-// [[maybe_unused]] constexpr auto fail = [] {
-//   InlineString<3> str({0, 1});
-//   return str.insert(1, "23", 2);
-// }();
-// #endif  // PW_NC_TEST
+TEST(InlineString, Insert_PointerSizeAtIndex) {
+  TEST_STRING(InlineString<1>(), str.insert(0, "", 0), "");
+  TEST_STRING(InlineString<1>("a"), str.insert(0, "b", 0), "a");
+  TEST_STRING(InlineString<10>("a"), str.insert(0, "bb", 2), "bba");
+  TEST_STRING(InlineString<10>("a"), str.insert(1, "bb", 2), "abb");
+  TEST_STRING(
+      InlineString<10>(), str.insert(0, "bbbbbbbbbb", 10), "bbbbbbbbbb");
+}
+#if PW_NC_TEST(Insert_PointerSizeAtIndex_DoesNotFit)
+PW_NC_EXPECT("PW_ASSERT\(size\(\) - index <= max_size\(\) - new_index\)");
+[[maybe_unused]] constexpr auto fail = [] {
+  InlineString<3> str({0, 1});
+  return str.insert(1, "23", 2);
+}();
+#endif  // PW_NC_TEST
 
-// TEST(InlineString, Insert_ArrayAtIndex) {
-//   TEST_STRING(InlineString<1>(), fixed_str.insert(0, ""), "");
-//   TEST_STRING(InlineString<2>(), fixed_str.insert(0, "a"), "a");
-//   TEST_STRING(InlineString<6>(), fixed_str.insert(0, "12345"), "12345");
+TEST(InlineString, Insert_ArrayAtIndex) {
+  TEST_STRING(InlineString<1>(), fixed_str.insert(0, ""), "");
+  TEST_STRING(InlineString<2>(), fixed_str.insert(0, "a"), "a");
+  TEST_STRING(InlineString<6>(), fixed_str.insert(0, "12345"), "12345");
 
-//   TEST_STRING(InlineString<1>({'a'}), fixed_str.insert(1, ""), "a");
-//   TEST_STRING(InlineString<2>("a"), fixed_str.insert(1, "a"), "aa");
-//   TEST_STRING(InlineString<6>("a"), fixed_str.insert(1, "12345"), "a12345");
-// }
-// #if PW_NC_TEST(Insert_ArrayAtIndex_DoesNotFit)
-// PW_NC_EXPECT("PW_ASSERT\(size\(\) - index <= max_size\(\) - new_index\)");
-// [[maybe_unused]] constexpr auto fail = [] {
-//   InlineString<4> str({0, 1});
-//   return str.insert(1, "123");
-// }();
-// #endif  // PW_NC_TEST
+  TEST_STRING(InlineString<1>({'a'}), fixed_str.insert(1, ""), "a");
+  TEST_STRING(InlineString<2>("a"), fixed_str.insert(1, "a"), "aa");
+  TEST_STRING(InlineString<6>("a"), fixed_str.insert(1, "12345"), "a12345");
+}
+#if PW_NC_TEST(Insert_ArrayAtIndex_DoesNotFit)
+PW_NC_EXPECT("PW_ASSERT\(size\(\) - index <= max_size\(\) - new_index\)");
+[[maybe_unused]] constexpr auto fail = [] {
+  InlineString<4> str({0, 1});
+  return str.insert(1, "123");
+}();
+#endif  // PW_NC_TEST
 
-// TEST(InlineString, Insert_PointerAtIndex) {
-//   TEST_STRING(InlineString<0>(), str.insert(0, kPointer0), "");
-//   TEST_STRING(InlineString<10>(), str.insert(0, kPointer10), "9876543210");
-//   TEST_STRING(
-//       InlineString<10>("abc"), str.insert(1, kPointer10 + 5), "a43210bc");
-//   TEST_STRING(
-//       InlineString<13>("abc"), str.insert(3, kPointer10), "abc9876543210");
-// }
-// #if PW_NC_TEST(Insert_PointerAtIndex_DoesNotFit)
-// PW_NC_EXPECT("PW_ASSERT\(size\(\) - index <= max_size\(\) - new_index\)");
-// [[maybe_unused]] constexpr auto fail = [] {
-//   InlineString<3> str({0, 1});
-//   return str.insert(1, kPointer10 + 8);
-// }();
-// #endif  // PW_NC_TEST
+TEST(InlineString, Insert_PointerAtIndex) {
+  TEST_STRING(InlineString<0>(), str.insert(0, kPointer0), "");
+  TEST_STRING(InlineString<10>(), str.insert(0, kPointer10), "9876543210");
+  TEST_STRING(
+      InlineString<10>("abc"), str.insert(1, kPointer10 + 5), "a43210bc");
+  TEST_STRING(
+      InlineString<13>("abc"), str.insert(3, kPointer10), "abc9876543210");
+}
+#if PW_NC_TEST(Insert_PointerAtIndex_DoesNotFit)
+PW_NC_EXPECT("PW_ASSERT\(size\(\) - index <= max_size\(\) - new_index\)");
+[[maybe_unused]] constexpr auto fail = [] {
+  InlineString<3> str({0, 1});
+  return str.insert(1, kPointer10 + 8);
+}();
+#endif  // PW_NC_TEST
 
-// TEST(InlineString, Insert_BasicStringAtIndex) {
-//   TEST_STRING(InlineString<0>(), str.insert(0, kEmptyCapacity0), "");
-//   TEST_STRING(InlineString<10>(), str.insert(0, kEmptyCapacity10), "");
-//   TEST_STRING(InlineString<10>(), str.insert(0, kSize5Capacity10), "12345");
-//   TEST_STRING(
-//       InlineString<10>(), str.insert(0, kSize10Capacity10), "1234567890");
+TEST(InlineString, Insert_BasicStringAtIndex) {
+  TEST_STRING(InlineString<0>(), str.insert(0, kEmptyCapacity0), "");
+  TEST_STRING(InlineString<10>(), str.insert(0, kEmptyCapacity10), "");
+  TEST_STRING(InlineString<10>(), str.insert(0, kSize5Capacity10), "12345");
+  TEST_STRING(
+      InlineString<10>(), str.insert(0, kSize10Capacity10), "1234567890");
 
-//   TEST_STRING(InlineString<1>({'a'}), str.insert(0, kEmptyCapacity0), "a");
-//   TEST_STRING(InlineString<11>("a"), str.insert(1, kEmptyCapacity10), "a");
-//   TEST_STRING(
-//       InlineString<12>("aa"), str.insert(1, kSize5Capacity10), "a12345a");
-//   TEST_STRING(
-//       InlineString<12>("aa"), str.insert(2, kSize10Capacity10),
-//       "aa1234567890");
-// }
+  TEST_STRING(InlineString<1>({'a'}), str.insert(0, kEmptyCapacity0), "a");
+  TEST_STRING(InlineString<11>("a"), str.insert(1, kEmptyCapacity10), "a");
+  TEST_STRING(
+      InlineString<12>("aa"), str.insert(1, kSize5Capacity10), "a12345a");
+  TEST_STRING(
+      InlineString<12>("aa"), str.insert(2, kSize10Capacity10), "aa1234567890");
+}
 
-// #if PW_NC_TEST(Insert_BasicStringAtIndex_DoesNotFit)
-// PW_NC_EXPECT("PW_ASSERT\(new_index <= max_size\(\)\)");
-// [[maybe_unused]] constexpr auto fail = [] {
-//   InlineString<3> str({0, 1});
-//   return str.insert(1, kSize5Capacity10);
-// }();
-// #endif  // PW_NC_TEST
+#if PW_NC_TEST(Insert_BasicStringAtIndex_DoesNotFit)
+PW_NC_EXPECT("PW_ASSERT\(new_index <= max_size\(\)\)");
+[[maybe_unused]] constexpr auto fail = [] {
+  InlineString<3> str({0, 1});
+  return str.insert(1, kSize5Capacity10);
+}();
+#endif  // PW_NC_TEST
 
-// TEST(InlineString, Insert_BasicStringSubstrAtIndex) {
-//   TEST_STRING(
-//       InlineString<1>({'a'}), str.insert(0, kEmptyCapacity0, 0, 0), "a");
-//   TEST_STRING(
-//       InlineString<11>("a"), str.insert(1, kSize10Capacity10, 10, 0), "a");
-//   TEST_STRING(InlineString<12>("aa"),
-//               str.insert(1, kSize10Capacity10, 3, 5),
-//               "a45678a");
-//   TEST_STRING(InlineString<12>("aa"),
-//               str.insert(2, kSize10Capacity10, 0, 10),
-//               "aa1234567890");
-// }
-// #if PW_NC_TEST(Insert_BasicStringSubstrAtIndex_DoesNotFit)
-// PW_NC_EXPECT("PW_ASSERT\(size\(\) - index <= max_size\(\) - new_index\)");
-// [[maybe_unused]] constexpr auto fail = [] {
-//   InlineString<3> str({0, 1});
-//   return str.insert(1, kSize5Capacity10, 1, 2);
-// }();
-// #endif  // PW_NC_TEST
+TEST(InlineString, Insert_BasicStringSubstrAtIndex) {
+  TEST_STRING(
+      InlineString<1>({'a'}), str.insert(0, kEmptyCapacity0, 0, 0), "a");
+  TEST_STRING(
+      InlineString<11>("a"), str.insert(1, kSize10Capacity10, 10, 0), "a");
+  TEST_STRING(InlineString<12>("aa"),
+              str.insert(1, kSize10Capacity10, 3, 5),
+              "a45678a");
+  TEST_STRING(InlineString<12>("aa"),
+              str.insert(2, kSize10Capacity10, 0, 10),
+              "aa1234567890");
+}
+#if PW_NC_TEST(Insert_BasicStringSubstrAtIndex_DoesNotFit)
+PW_NC_EXPECT("PW_ASSERT\(size\(\) - index <= max_size\(\) - new_index\)");
+[[maybe_unused]] constexpr auto fail = [] {
+  InlineString<3> str({0, 1});
+  return str.insert(1, kSize5Capacity10, 1, 2);
+}();
+#endif  // PW_NC_TEST
 
-// TEST(InlineString, Insert_CharactersAtPosition) {
-//   TEST_STRING(InlineString<1>(), str.insert(str.begin(), 0, 'b'), "");
-//   TEST_STRING(InlineString<1>("a"), str.insert(str.begin(), 0, 'b'), "a");
-//   TEST_STRING(InlineString<10>("a"), str.insert(str.begin(), 2, 'b'), "bba");
-//   TEST_STRING(
-//       InlineString<10>("a"), str.insert(str.begin() + 1, 2, 'b'), "abb");
-//   TEST_STRING(InlineString<10>(), str.insert(str.end(), 10, 'b'),
-//   "bbbbbbbbbb");
-// }
+TEST(InlineString, Insert_CharactersAtPosition) {
+  TEST_STRING(InlineString<1>(), str.insert(str.begin(), 0, 'b'), "");
+  TEST_STRING(InlineString<1>("a"), str.insert(str.begin(), 0, 'b'), "a");
+  TEST_STRING(InlineString<10>("a"), str.insert(str.begin(), 2, 'b'), "bba");
+  TEST_STRING(
+      InlineString<10>("a"), str.insert(str.begin() + 1, 2, 'b'), "abb");
+  TEST_STRING(InlineString<10>(), str.insert(str.end(), 10, 'b'), "bbbbbbbbbb");
+}
 
-// #if PW_NC_TEST(Insert_CharactersAtPosition_DoesNotFit)
-// PW_NC_EXPECT("PW_ASSERT\(size\(\) - index <= max_size\(\) - new_index\)");
-// [[maybe_unused]] constexpr auto fail = [] {
-//   InlineString<3> str({0, 1});
-//   return str.insert(str.begin() + 1, 2, '?');
-// }();
-// #endif  // PW_NC_TEST
+#if PW_NC_TEST(Insert_CharactersAtPosition_DoesNotFit)
+PW_NC_EXPECT("PW_ASSERT\(size\(\) - index <= max_size\(\) - new_index\)");
+[[maybe_unused]] constexpr auto fail = [] {
+  InlineString<3> str({0, 1});
+  return str.insert(str.begin() + 1, 2, '?');
+}();
+#endif  // PW_NC_TEST
 
-// TEST(InlineString, Insert_CharacterAtPosition) {
-//   TEST_STRING(InlineString<1>(), str.insert(str.begin(), 'b'), "b");
-//   TEST_STRING(InlineString<10>("aa"), str.insert(str.begin(), 'b'), "baa");
-//   TEST_STRING(InlineString<10>("aa"), str.insert(str.begin() + 1, 'b'),
-//   "aba"); TEST_STRING(InlineString<10>("aa"), str.insert(str.begin() + 2,
-//   'b'), "aab"); TEST_STRING(InlineString<10>("aa"), str.insert(str.end(),
-//   'b'), "aab");
-// }
-// #if PW_NC_TEST(Insert_CharacterAtPosition_DoesNotFit)
-// PW_NC_EXPECT("PW_ASSERT\(size\(\) - index <= max_size\(\) - new_index\)");
-// [[maybe_unused]] constexpr auto fail = [] {
-//   InlineString<2> str({0, 1});
-//   return str.insert(str.begin() + 1, '?');
-// }();
-// #endif  // PW_NC_TEST
+TEST(InlineString, Insert_CharacterAtPosition) {
+  TEST_STRING(InlineString<1>(), str.insert(str.begin(), 'b'), "b");
+  TEST_STRING(InlineString<10>("aa"), str.insert(str.begin(), 'b'), "baa");
+  TEST_STRING(InlineString<10>("aa"), str.insert(str.begin() + 1, 'b'), "aba");
+  TEST_STRING(InlineString<10>("aa"), str.insert(str.begin() + 2, 'b'), "aab");
+  TEST_STRING(InlineString<10>("aa"), str.insert(str.end(), 'b'), "aab");
+}
+#if PW_NC_TEST(Insert_CharacterAtPosition_DoesNotFit)
+PW_NC_EXPECT("PW_ASSERT\(size\(\) - index <= max_size\(\) - new_index\)");
+[[maybe_unused]] constexpr auto fail = [] {
+  InlineString<2> str({0, 1});
+  return str.insert(str.begin() + 1, '?');
+}();
+#endif  // PW_NC_TEST
 
-// TEST(InlineString, Insert_IteratorsAtPosition) {
-//   TEST_STRING(InlineString<0>(),
-//               str.insert(str.begin(), kEvenNumbers0, kEvenNumbers0),
-//               "");
-//   TEST_STRING(InlineString<10>(),
-//               str.insert(str.end(), kEvenNumbers0, kEvenNumbers0),
-//               "");
-//   TEST_STRING(InlineString<10>(),
-//               str.insert(str.end(), kEvenNumbers0, kEvenNumbers0),
-//               "");
-//   TEST_STRING(InlineString<10>(),
-//               str.insert(str.begin(), kEvenNumbers0, kEvenNumbers8),
-//               "\0\2\4\6");
-//   TEST_STRING(InlineString<10>(),
-//               str.insert(str.end(), kEvenNumbers0, kEvenNumbers8),
-//               "\0\2\4\6");
-//   TEST_STRING(InlineString<10>("aa"),
-//               str.insert(str.begin(), kEvenNumbers0, kEvenNumbers8),
-//               "\0\2\4\6aa");
-//   TEST_STRING(InlineString<10>("aa"),
-//               str.insert(str.begin() + 1, kEvenNumbers0, kEvenNumbers8),
-//               "a\0\2\4\6a");
-//   TEST_STRING(InlineString<10>("aa"),
-//               str.insert(str.begin() + 2, kEvenNumbers0, kEvenNumbers8),
-//               "aa\0\2\4\6");
-//   TEST_STRING(InlineString<10>("aa"),
-//               str.insert(str.end(), kEvenNumbers0, kEvenNumbers8),
-//               "aa\0\2\4\6");
-// }
-// #if PW_NC_TEST(Insert_IteratorsAtPosition_DoesNotFit)
-// PW_NC_EXPECT("PW_ASSERT\(count < max_size\(\)\)");
-// [[maybe_unused]] constexpr auto fail = [] {
-//   InlineString<3> str({0, 1});
-//   return str.insert(str.begin() + 1, kEvenNumbers0, kEvenNumbers8);
-// }();
-// #endif  // PW_NC_TEST
+TEST(InlineString, Insert_IteratorsAtPosition) {
+  TEST_STRING(InlineString<0>(),
+              str.insert(str.begin(), kEvenNumbers0, kEvenNumbers0),
+              "");
+  TEST_STRING(InlineString<10>(),
+              str.insert(str.end(), kEvenNumbers0, kEvenNumbers0),
+              "");
+  TEST_STRING(InlineString<10>(),
+              str.insert(str.end(), kEvenNumbers0, kEvenNumbers0),
+              "");
+  TEST_STRING(InlineString<10>(),
+              str.insert(str.begin(), kEvenNumbers0, kEvenNumbers8),
+              "\0\2\4\6");
+  TEST_STRING(InlineString<10>(),
+              str.insert(str.end(), kEvenNumbers0, kEvenNumbers8),
+              "\0\2\4\6");
+  TEST_STRING(InlineString<10>("aa"),
+              str.insert(str.begin(), kEvenNumbers0, kEvenNumbers8),
+              "\0\2\4\6aa");
+  TEST_STRING(InlineString<10>("aa"),
+              str.insert(str.begin() + 1, kEvenNumbers0, kEvenNumbers8),
+              "a\0\2\4\6a");
+  TEST_STRING(InlineString<10>("aa"),
+              str.insert(str.begin() + 2, kEvenNumbers0, kEvenNumbers8),
+              "aa\0\2\4\6");
+  TEST_STRING(InlineString<10>("aa"),
+              str.insert(str.end(), kEvenNumbers0, kEvenNumbers8),
+              "aa\0\2\4\6");
+}
+#if PW_NC_TEST(Insert_IteratorsAtPosition_DoesNotFit)
+PW_NC_EXPECT("PW_ASSERT\(count < max_size\(\)\)");
+[[maybe_unused]] constexpr auto fail = [] {
+  InlineString<3> str({0, 1});
+  return str.insert(str.begin() + 1, kEvenNumbers0, kEvenNumbers8);
+}();
+#endif  // PW_NC_TEST
 
-// TEST(InlineString, Insert_InitializerListAtPosition) {
-//   TEST_STRING(InlineString<0>(), str.insert(str.begin(), {}), "");
-//   TEST_STRING(InlineString<10>(), str.insert(str.end(), {1, 2, 3}),
-//   "\1\2\3"); TEST_STRING(
-//       InlineString<10>("abc"), str.insert(str.begin(), {1, 2, 3}),
-//       "\1\2\3abc");
-//   TEST_STRING(InlineString<10>("abc"),
-//               str.insert(str.begin() + 1, {1, 2, 3}),
-//               "a\1\2\3bc");
-//   TEST_STRING(InlineString<10>("abc"),
-//               str.insert(str.begin() + 3, {1, 2, 3}),
-//               "abc\1\2\3");
-//   TEST_STRING(
-//       InlineString<5>("abc"), str.insert(str.end(), {'4', '5'}), "abc45");
-// }
-// #if PW_NC_TEST(Insert_InitializerListAtPosition_DoesNotFit)
-// PW_NC_EXPECT("PW_ASSERT\(size\(\) - index <= max_size\(\) - new_index\)");
-// [[maybe_unused]] constexpr auto fail = [] {
-//   InlineString<3> str({0, 1, 2});
-//   return str.insert(str.begin() + 1, {3});
-// }();
-// #endif  // PW_NC_TEST
+TEST(InlineString, Insert_InitializerListAtPosition) {
+  TEST_STRING(InlineString<0>(), str.insert(str.begin(), {}), "");
+  TEST_STRING(InlineString<10>(), str.insert(str.end(), {1, 2, 3}), "\1\2\3");
+  TEST_STRING(
+      InlineString<10>("abc"), str.insert(str.begin(), {1, 2, 3}), "\1\2\3abc");
+  TEST_STRING(InlineString<10>("abc"),
+              str.insert(str.begin() + 1, {1, 2, 3}),
+              "a\1\2\3bc");
+  TEST_STRING(InlineString<10>("abc"),
+              str.insert(str.begin() + 3, {1, 2, 3}),
+              "abc\1\2\3");
+  TEST_STRING(
+      InlineString<5>("abc"), str.insert(str.end(), {'4', '5'}), "abc45");
+}
+#if PW_NC_TEST(Insert_InitializerListAtPosition_DoesNotFit)
+PW_NC_EXPECT("PW_ASSERT\(size\(\) - index <= max_size\(\) - new_index\)");
+[[maybe_unused]] constexpr auto fail = [] {
+  InlineString<3> str({0, 1, 2});
+  return str.insert(str.begin() + 1, {3});
+}();
+#endif  // PW_NC_TEST
 
-// #if PW_CXX_STANDARD_IS_SUPPORTED(17)
-// TEST(InlineString, Insert_StringViewAtIndex) {
-//   TEST_STRING(InlineString<0>(), str.insert(0, ""sv), "");
-//   TEST_STRING(InlineString<10>("a"), str.insert(0, ""sv), "a");
-//   TEST_STRING(InlineString<10>("abc"), str.insert(0, "123"sv), "123abc");
-//   TEST_STRING(InlineString<10>("abc"), str.insert(1, "123"sv), "a123bc");
-//   TEST_STRING(InlineString<5>("abc"), str.insert(3, "45"sv), "abc45");
-// }
-// #if PW_NC_TEST(Insert_StringViewAtIndex_DoesNotFit)
-// PW_NC_EXPECT("PW_ASSERT\(size\(\) - index <= max_size\(\) - new_index\)");
-// [[maybe_unused]] constexpr auto fail = [] {
-//   InlineString<3> str({0, 1, 2});
-//   return str.insert(1, "3"sv);
-// }();
-// #endif  // PW_NC_TEST
+#if PW_CXX_STANDARD_IS_SUPPORTED(17)
+TEST(InlineString, Insert_StringViewAtIndex) {
+  TEST_STRING(InlineString<0>(), str.insert(0, ""sv), "");
+  TEST_STRING(InlineString<10>("a"), str.insert(0, ""sv), "a");
+  TEST_STRING(InlineString<10>("abc"), str.insert(0, "123"sv), "123abc");
+  TEST_STRING(InlineString<10>("abc"), str.insert(1, "123"sv), "a123bc");
+  TEST_STRING(InlineString<5>("abc"), str.insert(3, "45"sv), "abc45");
+}
+#if PW_NC_TEST(Insert_StringViewAtIndex_DoesNotFit)
+PW_NC_EXPECT("PW_ASSERT\(size\(\) - index <= max_size\(\) - new_index\)");
+[[maybe_unused]] constexpr auto fail = [] {
+  InlineString<3> str({0, 1, 2});
+  return str.insert(1, "3"sv);
+}();
+#endif  // PW_NC_TEST
 
-// TEST(InlineString, Insert_StringViewSubstrAtIndex) {
-//   TEST_STRING(InlineString<0>(), str.insert(0, ""sv, 0), "");
-//   TEST_STRING(InlineString<0>(), str.insert(0, ""sv, 0, 0), "");
-//   TEST_RUNTIME_STRING(
-//       InlineString<5>("aa"), str.insert(0, "123"sv, 0), "123aa");
-//   TEST_RUNTIME_STRING(
-//       InlineString<10>("aa"), str.insert(1, "123"sv, 1, 0), "aa");
-//   TEST_RUNTIME_STRING(
-//       InlineString<10>("aa"), str.insert(1, "123"sv, 1, 1), "a2a");
-//   TEST_RUNTIME_STRING(
-//       InlineString<10>("aa"), str.insert(1, "123"sv, 1, 99), "a23a");
-//   TEST_RUNTIME_STRING(
-//       InlineString<10>("aa"), str.insert(2, "123"sv, 1, 99), "aa23");
-//   TEST_RUNTIME_STRING(
-//       InlineString<10>("aa"), str.insert(2, "123"sv, 3, 99), "aa");
-// }
-// #if PW_NC_TEST(Insert_StringViewSubstrAtIndex_DoesNotFit)
-// PW_NC_EXPECT("PW_ASSERT\(size\(\) - index <= max_size\(\) - new_index\)");
-// [[maybe_unused]] constexpr auto fail = [] {
-//   InlineString<3> str({0, 1, 2});
-//   return str.insert(1, "34"sv, 1);
-// }();
-// #endif  // PW_NC_TEST
-// #endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
+TEST(InlineString, Insert_StringViewSubstrAtIndex) {
+  TEST_STRING(InlineString<0>(), str.insert(0, ""sv, 0), "");
+  TEST_STRING(InlineString<0>(), str.insert(0, ""sv, 0, 0), "");
+  TEST_RUNTIME_STRING(
+      InlineString<5>("aa"), str.insert(0, "123"sv, 0), "123aa");
+  TEST_RUNTIME_STRING(
+      InlineString<10>("aa"), str.insert(1, "123"sv, 1, 0), "aa");
+  TEST_RUNTIME_STRING(
+      InlineString<10>("aa"), str.insert(1, "123"sv, 1, 1), "a2a");
+  TEST_RUNTIME_STRING(
+      InlineString<10>("aa"), str.insert(1, "123"sv, 1, 99), "a23a");
+  TEST_RUNTIME_STRING(
+      InlineString<10>("aa"), str.insert(2, "123"sv, 1, 99), "aa23");
+  TEST_RUNTIME_STRING(
+      InlineString<10>("aa"), str.insert(2, "123"sv, 3, 99), "aa");
+}
+#if PW_NC_TEST(Insert_StringViewSubstrAtIndex_DoesNotFit)
+PW_NC_EXPECT("PW_ASSERT\(size\(\) - index <= max_size\(\) - new_index\)");
+[[maybe_unused]] constexpr auto fail = [] {
+  InlineString<3> str({0, 1, 2});
+  return str.insert(1, "34"sv, 1);
+}();
+#endif  // PW_NC_TEST
+#endif  // PW_CXX_STANDARD_IS_SUPPORTED(17)
 
-// // erase.
+// erase.
 
-// TEST(InlineString, Erase_CharactersAtIndex) {
-//   TEST_STRING(InlineString<0>(), str.erase(), "");
-//   TEST_STRING(InlineString<10>("abc"), str.erase(), "");
-//   TEST_STRING(InlineString<10>("abc"), str.erase(0), "");
-//   TEST_STRING(InlineString<10>("abc"), str.erase(1), "a");
-//   TEST_STRING(InlineString<10>("abc"), str.erase(1, 1), "ac");
-//   TEST_STRING(InlineString<10>("abc"), str.erase(1, 10), "a");
-//   TEST_STRING(InlineString<10>("abc"), str.erase(3, 10), "abc");
-// }
-// #if PW_NC_TEST(Erase_IndexOutOfRange)
-// PW_NC_EXPECT("PW_ASSERT\(index <= size\(\)\)");
-// [[maybe_unused]] constexpr auto fail = [] {
-//   InlineString<3> str("abc");
-//   return str.erase(4, 2);
-// }();
-// #endif  // PW_NC_TEST
+TEST(InlineString, Erase_CharactersAtIndex) {
+  TEST_STRING(InlineString<0>(), str.erase(), "");
+  TEST_STRING(InlineString<10>("abc"), str.erase(), "");
+  TEST_STRING(InlineString<10>("abc"), str.erase(0), "");
+  TEST_STRING(InlineString<10>("abc"), str.erase(1), "a");
+  TEST_STRING(InlineString<10>("abc"), str.erase(1, 1), "ac");
+  TEST_STRING(InlineString<10>("abc"), str.erase(1, 10), "a");
+  TEST_STRING(InlineString<10>("abc"), str.erase(3, 10), "abc");
+}
+#if PW_NC_TEST(Erase_IndexOutOfRange)
+PW_NC_EXPECT("PW_ASSERT\(index <= size\(\)\)");
+[[maybe_unused]] constexpr auto fail = [] {
+  InlineString<3> str("abc");
+  return str.erase(4, 2);
+}();
+#endif  // PW_NC_TEST
 
-// TEST(InlineString, Erase_CharacterAtPosition) {
-//   TEST_STRING(InlineString<3>(), str.erase(str.begin()), "");
-//   TEST_STRING(InlineString<3>(), str.erase(str.end()), "");
-//   TEST_STRING(InlineString<3>("abc"), str.erase(str.begin()), "bc");
-//   TEST_STRING(InlineString<3>("abc"), str.erase(str.begin() + 1), "ac");
-//   TEST_STRING(InlineString<3>("abc"), str.erase(str.begin() + 2), "ab");
-//   TEST_STRING(InlineString<3>("abc"), str.erase(str.end()), "abc");
-// }
+TEST(InlineString, Erase_CharacterAtPosition) {
+  TEST_STRING(InlineString<3>(), str.erase(str.begin()), "");
+  TEST_STRING(InlineString<3>(), str.erase(str.end()), "");
+  TEST_STRING(InlineString<3>("abc"), str.erase(str.begin()), "bc");
+  TEST_STRING(InlineString<3>("abc"), str.erase(str.begin() + 1), "ac");
+  TEST_STRING(InlineString<3>("abc"), str.erase(str.begin() + 2), "ab");
+  TEST_STRING(InlineString<3>("abc"), str.erase(str.end()), "abc");
+}
 
-// TEST(InlineString, Erase_CharactersInRange) {
-//   TEST_STRING(
-//       InlineString<3>("abc"), str.erase(str.begin(), str.begin()), "abc");
-//   TEST_STRING(InlineString<3>("abc"), str.erase(str.end(), str.end()),
-//   "abc"); TEST_STRING(InlineString<3>("abc"), str.erase(str.begin(),
-//   str.end()), ""); TEST_STRING(
-//       InlineString<3>("abc"), str.erase(str.begin(), str.begin() + 1), "bc");
-//   TEST_STRING(
-//       InlineString<3>("abc"), str.erase(str.begin() + 1, str.end()), "a");
-// }
+TEST(InlineString, Erase_CharactersInRange) {
+  TEST_STRING(
+      InlineString<3>("abc"), str.erase(str.begin(), str.begin()), "abc");
+  TEST_STRING(InlineString<3>("abc"), str.erase(str.end(), str.end()), "abc");
+  TEST_STRING(InlineString<3>("abc"), str.erase(str.begin(), str.end()), "");
+  TEST_STRING(
+      InlineString<3>("abc"), str.erase(str.begin(), str.begin() + 1), "bc");
+  TEST_STRING(
+      InlineString<3>("abc"), str.erase(str.begin() + 1, str.end()), "a");
+}
 
 TEST(InlineString, PushBack) {
   TEST_STRING(InlineString<1>(), str.push_back('#'), "#");
