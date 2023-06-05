@@ -29,6 +29,6 @@ pw_cc_library(
     tags = ["manual"],
     deps = [
         "//pw_preprocessor",
-        "//pw_sys_io",
+        "//pw_sys_io:facade",
     ],
 )
