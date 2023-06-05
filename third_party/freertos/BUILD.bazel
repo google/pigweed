@@ -36,13 +36,19 @@ constraint_setting(
     name = "port",
 )
 
+# Cortex-M33 with No TrustZone
 constraint_value(
-    name = "port_ARM_CM7",
+    name = "port_ARM_CM33_NTZ",
     constraint_setting = ":port",
 )
 
 constraint_value(
     name = "port_ARM_CM4F",
+    constraint_setting = ":port",
+)
+
+constraint_value(
+    name = "port_ARM_CM7",
     constraint_setting = ":port",
 )
 
@@ -56,11 +62,16 @@ pw_cc_library(
         "stream_buffer.c",
         "timers.c",
     ] + select({
+        ":port_ARM_CM33_NTZ": [
+            "portable/GCC/ARM_CM33_NTZ/non_secure/port.c",
+            "portable/GCC/ARM_CM33_NTZ/non_secure/portasm.c",
+        ],
         ":port_ARM_CM4F": ["portable/GCC/ARM_CM4F/port.c"],
         ":port_ARM_CM7": ["portable/GCC/ARM_CM7/r0p1/port.c"],
         "//conditions:default": [],
     }),
     includes = ["include/"] + select({
+        ":port_ARM_CM33_NTZ": ["portable/GCC/ARM_CM33_NTZ/non_secure"],
         ":port_ARM_CM4F": ["portable/GCC/ARM_CM4F"],
         ":port_ARM_CM7": ["portable/GCC/ARM_CM7/r0p1"],
         "//conditions:default": [],
@@ -83,6 +94,10 @@ pw_cc_library(
         "include/task.h",
         "include/timers.h",
     ] + select({
+        ":port_ARM_CM33_NTZ": [
+            "portable/GCC/ARM_CM33_NTZ/non_secure/portasm.h",
+            "portable/GCC/ARM_CM33_NTZ/non_secure/portmacro.h",
+        ],
         ":port_ARM_CM4F": ["portable/GCC/ARM_CM4F/portmacro.h"],
         ":port_ARM_CM7": ["portable/GCC/ARM_CM7/r0p1/portmacro.h"],
         "//conditions:default": [],
@@ -125,6 +140,7 @@ pw_cc_library(
     includes = [
         "include/",
     ] + select({
+        ":port_ARM_CM33_NTZ": ["portable/GCC/ARM_CM33_NTZ/non_secure"],
         ":port_ARM_CM4F": ["portable/GCC/ARM_CM4F/"],
         ":port_ARM_CM7": ["portable/GCC/ARM_CM7/r0p1/"],
         "//conditions:default": [],
@@ -147,6 +163,7 @@ pw_cc_library(
         "include/task.h",
         "include/timers.h",
     ] + select({
+        ":port_ARM_CM33_NTZ": ["portable/GCC/ARM_CM33_NTZ/non_secure/portmacro.h"],
         ":port_ARM_CM4F": ["portable/GCC/ARM_CM4F/portmacro.h"],
         ":port_ARM_CM7": ["portable/GCC/ARM_CM7/r0p1/portmacro.h"],
         "//conditions:default": [],
