@@ -1,8 +1,8 @@
 .. _docs-targets:
 
-=======
-Targets
-=======
+================
+Hardware targets
+================
 Pigweed is designed to be portable to many different hardware platforms.
 Pigweed's GN build comes with an extensible target system that allows it to be
 configured to build for any number of platforms, which all build simultaneously.

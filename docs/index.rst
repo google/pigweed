@@ -10,6 +10,7 @@
   Home <self>
   docs/getting_started
   docs/concepts/index
+  targets
   module_guides
   docs/release_notes/index
   Mailing List <https://groups.google.com/forum/#!forum/pigweed>
@@ -26,7 +27,6 @@
   docs/embedded_cpp_guide
   Style Guide <docs/style_guide>
   Automated Analysis <automated_analysis>
-  targets
   Build System <build_system>
   SEEDs <seed/0000-index>
   docs/module_structure
