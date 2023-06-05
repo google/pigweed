@@ -54,6 +54,7 @@ pw_cc_library(
     name = "backend_multiplexer",
     visibility = ["@pigweed_config//:__pkg__"],
     deps = select({
+        "//pw_build/constraints/board:mimxrt595_evk": ["@pigweed//pw_sys_io_mcuxpresso"],
         "//pw_build/constraints/chipset:stm32f429": ["@pigweed//pw_sys_io_baremetal_stm32f429"],
         "//pw_build/constraints/chipset:lm3s6965evb": ["@pigweed//pw_sys_io_baremetal_lm3s6965evb"],
         "//conditions:default": ["@pigweed//pw_sys_io_stdio"],
