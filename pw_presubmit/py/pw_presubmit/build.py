@@ -732,7 +732,8 @@ class _NinjaBase(Check):
         reports = ctx.output_dir / 'coverage_reports'
         os.makedirs(reports, exist_ok=True)
         for path in ctx.output_dir.rglob('coverage_report'):
-            name = str(path).replace('_', '').replace('/', '_')
+            name = str(path.relative_to(ctx.output_dir))
+            name = name.replace('_', '').replace('/', '_')
             with tarfile.open(reports / f'{name}.tar.gz', 'w:gz') as tar:
                 tar.add(path, arcname=name, recursive=True)
 
