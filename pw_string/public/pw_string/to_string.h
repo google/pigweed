@@ -82,7 +82,7 @@ StatusWithSize ToString(const T& value, span<char> buffer) {
       // it is available.
       return string::Format(buffer, "%.3f", value);
     } else {
-      return string::FloatAsIntToString(value, buffer);
+      return string::FloatAsIntToString(static_cast<float>(value), buffer);
     }
   } else if constexpr (std::is_convertible_v<T, std::string_view>) {
     return string::CopyStringOrNull(value, buffer);

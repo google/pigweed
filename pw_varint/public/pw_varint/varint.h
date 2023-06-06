@@ -97,7 +97,8 @@ template <typename T>
 constexpr std::make_unsigned_t<T> ZigZagEncode(T n) {
   static_assert(std::is_signed<T>(), "Zig-zag encoding is for signed integers");
   using U = std::make_unsigned_t<T>;
-  return (static_cast<U>(n) << 1) ^ static_cast<U>(n >> (sizeof(T) * 8 - 1));
+  return static_cast<U>(static_cast<U>(n) << 1) ^
+         static_cast<U>(n >> (sizeof(T) * 8 - 1));
 }
 
 // ZigZag decodes a signed integer.
@@ -130,9 +131,15 @@ inline size_t EncodeLittleEndianBase128(uint64_t integer,
 template <typename T>
 size_t Encode(T integer, const span<std::byte>& output) {
   if (std::is_signed<T>()) {
-    return pw_varint_ZigZagEncode(integer, output.data(), output.size());
+    using Signed =
+        std::conditional_t<std::is_signed<T>::value, T, std::make_signed_t<T>>;
+    return pw_varint_ZigZagEncode(
+        static_cast<Signed>(integer), output.data(), output.size());
   } else {
-    return pw_varint_Encode(integer, output.data(), output.size());
+    using Unsigned = std::
+        conditional_t<std::is_signed<T>::value, std::make_unsigned_t<T>, T>;
+    return pw_varint_Encode(
+        static_cast<Unsigned>(integer), output.data(), output.size());
   }
 }
 
@@ -193,8 +200,31 @@ inline size_t Decode(span<const std::byte> input,
 /// can be signed or unsigned.
 ///
 /// @returns The size of `integer` when encoded as a varint.
+template <typename T,
+          typename = std::enable_if_t<std::is_integral<T>::value ||
+                                      std::is_convertible<T, uint64_t>::value>>
+constexpr size_t EncodedSize(T integer) {
+  return integer == 0 ? 1
+                      : (64 -
+                         static_cast<size_t>(
+                             __builtin_clzll(static_cast<uint64_t>(integer))) +
+                         6) /
+                            7;
+}
+
+/// @brief Computes the size of an integer when encoded as a varint.
+///
+/// @param integer The integer whose encoded size is to be computed. `integer`
+/// can be signed or unsigned.
+///
+/// @returns The size of `integer` when encoded as a varint.
 constexpr size_t EncodedSize(uint64_t integer) {
-  return integer == 0 ? 1 : (64 - __builtin_clzll(integer) + 6) / 7;
+  return integer == 0 ? 1
+                      : (64 -
+                         static_cast<size_t>(
+                             __builtin_clzll(static_cast<uint64_t>(integer))) +
+                         6) /
+                            7;
 }
 
 /// @brief Returns the size of a signed integer when

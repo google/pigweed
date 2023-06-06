@@ -63,6 +63,9 @@ pw_test("varint_test") {
     "varint_test.cc",
     "varint_test_c.c",
   ]
+
+  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
 pw_test("stream_test") {
@@ -72,6 +75,9 @@ pw_test("stream_test") {
     dir_pw_stream,
   ]
   sources = [ "stream_test.cc" ]
+
+  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
 pw_doc_group("docs") {

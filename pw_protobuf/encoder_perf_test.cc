@@ -22,7 +22,7 @@
 namespace pw::protobuf {
 namespace {
 
-void BasicIntegerPerformance(pw::perf_test::State& state, int64_t value) {
+void BasicIntegerPerformance(pw::perf_test::State& state, uint32_t value) {
   std::byte encode_buffer[30];
 
   while (state.KeepRunning()) {

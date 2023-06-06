@@ -27,7 +27,8 @@ namespace pw::hdlc {
 Result<Frame> Frame::Parse(ConstByteSpan frame) {
   uint64_t address;
   size_t address_size = varint::Decode(frame, &address, kAddressFormat);
-  int data_size = frame.size() - address_size - kControlSize - kFcsSize;
+  int data_size =
+      static_cast<int>(frame.size() - address_size - kControlSize - kFcsSize);
 
   if (address_size == 0 || data_size < 0) {
     return Status::DataLoss();

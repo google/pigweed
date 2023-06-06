@@ -417,12 +417,12 @@ TEST(CodegenMessage, ReadNonPackedScalar) {
   ASSERT_EQ(status, OkStatus());
 
   ASSERT_EQ(message.uint32s.size(), 4u);
-  for (int i = 0; i < 4; ++i) {
+  for (unsigned short i = 0; i < 4; ++i) {
     EXPECT_EQ(message.uint32s[i], i * 16u);
   }
 
   ASSERT_EQ(message.fixed32s.size(), 4u);
-  for (int i = 0; i < 4; ++i) {
+  for (unsigned short i = 0; i < 4; ++i) {
     EXPECT_EQ(message.fixed32s[i], i * 16u);
   }
 }
@@ -453,12 +453,12 @@ TEST(CodegenMessage, ReadPackedScalar) {
   ASSERT_EQ(status, OkStatus());
 
   ASSERT_EQ(message.uint32s.size(), 4u);
-  for (int i = 0; i < 4; ++i) {
+  for (unsigned short i = 0; i < 4; ++i) {
     EXPECT_EQ(message.uint32s[i], i * 16u);
   }
 
   ASSERT_EQ(message.fixed32s.size(), 4u);
-  for (int i = 0; i < 4; ++i) {
+  for (unsigned short i = 0; i < 4; ++i) {
     EXPECT_EQ(message.fixed32s[i], i * 16u);
   }
 }
@@ -501,12 +501,12 @@ TEST(CodegenMessage, ReadPackedScalarRepeated) {
   ASSERT_EQ(status, OkStatus());
 
   ASSERT_EQ(message.uint32s.size(), 8u);
-  for (int i = 0; i < 8; ++i) {
+  for (unsigned short i = 0; i < 8; ++i) {
     EXPECT_EQ(message.uint32s[i], i * 16u);
   }
 
   ASSERT_EQ(message.fixed32s.size(), 8u);
-  for (int i = 0; i < 8; ++i) {
+  for (unsigned short i = 0; i < 8; ++i) {
     EXPECT_EQ(message.fixed32s[i], i * 16u);
   }
 }
@@ -684,7 +684,7 @@ TEST(CodegenMessage, ReadPackedEnum) {
   ASSERT_EQ(status, OkStatus());
 
   ASSERT_EQ(message.enums.size(), 4u);
-  for (int i = 0; i < 4; ++i) {
+  for (unsigned short i = 0; i < 4; ++i) {
     EXPECT_TRUE(IsValidEnum(message.enums[i]));
   }
 
@@ -1049,7 +1049,7 @@ TEST(CodegenMessage, ReadNestedRepeated) {
   // Repeated nested messages require a callback since there would otherwise be
   // no way to set callbacks on the nested message.
   RepeatedTest::Message message{};
-  int i = 0;
+  unsigned i = 0;
   message.structs.SetDecoder([&i](RepeatedTest::StreamDecoder& decoder) {
     EXPECT_EQ(decoder.Field().value(), RepeatedTest::Fields::kStructs);
 
@@ -1058,7 +1058,7 @@ TEST(CodegenMessage, ReadNestedRepeated) {
     const auto status = structs_decoder.Read(structs_message);
     EXPECT_EQ(status, OkStatus());
 
-    EXPECT_LT(i, 2);
+    EXPECT_LT(i, 2u);
     EXPECT_EQ(structs_message.one, i * 32 + 16u);
     EXPECT_EQ(structs_message.two, i * 32 + 32u);
     ++i;
@@ -1414,7 +1414,7 @@ TEST(CodegenMessage, WriteDefaults) {
 
 TEST(CodegenMessage, WritePackedScalar) {
   RepeatedTest::Message message{};
-  for (int i = 0; i < 4; ++i) {
+  for (unsigned i = 0; i < 4; ++i) {
     message.uint32s.push_back(i * 16u);
     message.fixed32s.push_back(i * 16u);
   }
@@ -1452,7 +1452,7 @@ TEST(CodegenMessage, WritePackedScalar) {
 
 TEST(CodegenMessage, WritePackedScalarFixedLength) {
   RepeatedTest::Message message{};
-  for (int i = 0; i < 4; ++i) {
+  for (unsigned i = 0; i < 4; ++i) {
     message.uint64s[i] = (i + 1) * 1000u;
   }
   message.doubles[0] = 3.14159;
@@ -1651,7 +1651,7 @@ TEST(CodegenMessage, WriteNestedRepeated) {
   // Repeated nested messages require a callback since there would otherwise be
   // no way to set callbacks on the nested message.
   message.structs.SetEncoder([](RepeatedTest::StreamEncoder& encoder) {
-    for (int i = 0; i < 2; ++i) {
+    for (uint32_t i = 0; i < 2; ++i) {
       Struct::Message struct_message{};
       struct_message.one = i * 32 + 16u;
       struct_message.two = i * 32 + 32u;
@@ -2043,7 +2043,7 @@ TEST(CodegenMessage, CallbackInSubclass) {
       {"the appetite may sicken, and so die"}};
 
   EXPECT_EQ(message.all_strings.size(), 3u);
-  for (int i = 0; i < 3; ++i) {
+  for (unsigned short i = 0; i < 3; ++i) {
     EXPECT_EQ(std::memcmp(message.all_strings[i].data(),
                           kExpectedStrings[i].data(),
                           kExpectedStrings[i].size()),

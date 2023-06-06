@@ -69,7 +69,8 @@ constexpr size_t TagSizeBytes(T field_number) {
 // Calculates the size of a varint field (uint32/64, int32/64, sint32/64, enum).
 template <typename T, typename U>
 constexpr size_t SizeOfVarintField(T field_number, U value) {
-  return TagSizeBytes(field_number) + varint::EncodedSize(value);
+  return TagSizeBytes(field_number) +
+         varint::EncodedSize(static_cast<uint64_t>(value));
 }
 
 // Calculates the size of a delimited field (string, bytes, nested message,
@@ -111,7 +112,9 @@ constexpr size_t SizeOfField(T field_number,
                              WireType type,
                              size_t data_size_bytes) {
   if (type == WireType::kDelimited) {
-    return SizeOfDelimitedField(field_number, data_size_bytes);
+    PW_DASSERT(data_size_bytes <= std::numeric_limits<uint32_t>::max());
+    return SizeOfDelimitedField(field_number,
+                                static_cast<uint32_t>(data_size_bytes));
   }
   return TagSizeBytes(field_number) + data_size_bytes;
 }

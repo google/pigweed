@@ -16,6 +16,7 @@
 
 #include <cstring>
 
+#include "pw_assert/check.h"
 #include "pw_varint/varint.h"
 
 namespace pw::protobuf {
@@ -53,7 +54,8 @@ uint32_t Decoder::FieldNumber() const {
   if (!FieldKey::IsValidKey(key)) {
     return 0;
   }
-  return FieldKey(key).field_number();
+  PW_DCHECK(key <= std::numeric_limits<uint32_t>::max());
+  return FieldKey(static_cast<uint32_t>(key)).field_number();
 }
 
 Status Decoder::ReadUint32(uint32_t* out) {
@@ -65,7 +67,7 @@ Status Decoder::ReadUint32(uint32_t* out) {
   if (value > std::numeric_limits<uint32_t>::max()) {
     return Status::OutOfRange();
   }
-  *out = value;
+  *out = static_cast<uint32_t>(value);
   return OkStatus();
 }
 
@@ -78,7 +80,7 @@ Status Decoder::ReadSint32(int32_t* out) {
   if (value > std::numeric_limits<int32_t>::max()) {
     return Status::OutOfRange();
   }
-  *out = value;
+  *out = static_cast<uint32_t>(value);
   return OkStatus();
 }
 
@@ -124,7 +126,8 @@ size_t Decoder::FieldSize() const {
   uint64_t value = 0;
   size_t expected_size = 0;
 
-  switch (FieldKey(key).wire_type()) {
+  PW_DCHECK(key <= std::numeric_limits<uint32_t>::max());
+  switch (FieldKey(static_cast<uint32_t>(key)).wire_type()) {
     case WireType::kVarint:
       expected_size = varint::Decode(remainder, &value);
       if (expected_size == 0) {
@@ -168,7 +171,8 @@ Status Decoder::ConsumeKey(WireType expected_type) {
     return Status::DataLoss();
   }
 
-  if (FieldKey(key).wire_type() != expected_type) {
+  PW_DCHECK(key <= std::numeric_limits<uint32_t>::max());
+  if (FieldKey(static_cast<uint32_t>(key)).wire_type() != expected_type) {
     return Status::FailedPrecondition();
   }
 

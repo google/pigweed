@@ -702,7 +702,9 @@ class StreamDecoder {
     }
     container.resize(container.capacity());
     const auto sws = ReadDelimitedField(as_writable_bytes(span(container)));
-    container.resize(sws.size());
+    size_t size = sws.size();
+    PW_DASSERT(size <= std::numeric_limits<uint16_t>::max());
+    container.resize(static_cast<uint16_t>(size));
     return sws.status();
   }
 

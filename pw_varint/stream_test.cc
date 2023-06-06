@@ -185,7 +185,7 @@ TEST(VarintRead, Unsigned64_SingleByte) {
 }
 
 TEST(VarintRead, Unsigned64_MultiByte) {
-  uint64_t value = -1234;
+  uint64_t value;
 
   {
     const auto buffer = MakeBuffer("\x80\x01");
@@ -243,7 +243,7 @@ TEST(VarintRead, Unsigned64_MultiByte) {
 }
 
 TEST(VarintRead, Errors) {
-  uint64_t value = -1234;
+  uint64_t value;
 
   {
     std::array<std::byte, 0> buffer{};
@@ -275,7 +275,7 @@ TEST(VarintRead, Errors) {
 }
 
 TEST(VarintRead, SizeLimit) {
-  uint64_t value = -1234;
+  uint64_t value;
 
   {
     // buffer contains a valid varint, but we limit the read length to ensure

@@ -153,6 +153,9 @@ pw_test_group("tests") {
 pw_test("format_test") {
   deps = [ ":format" ]
   sources = [ "format_test.cc" ]
+
+  # TODO(b/259746255): Remove this when everything compiles with -Wconversion.
+  configs = [ "$dir_pw_build:conversion_warnings" ]
 }
 
 pw_test("string_test") {

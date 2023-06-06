@@ -221,7 +221,7 @@ class StreamEncoder {
   // Writes a repeated uint64 using packed encoding.
   //
   // Precondition: Encoder has no active child encoder.
-  Status WritePackedUint64(uint64_t field_number, span<const uint64_t> values) {
+  Status WritePackedUint64(uint32_t field_number, span<const uint64_t> values) {
     return WritePackedVarints(
         field_number, values, internal::VarintType::kNormal);
   }
@@ -240,7 +240,8 @@ class StreamEncoder {
   //
   // Precondition: Encoder has no active child encoder.
   Status WriteInt32(uint32_t field_number, int32_t value) {
-    return WriteUint64(field_number, value);
+    // Signed numbers are sent as 2's complement so this cast is correct.
+    return WriteUint64(field_number, static_cast<uint64_t>(value));
   }
 
   // Writes a repeated int32 using packed encoding.
@@ -268,7 +269,8 @@ class StreamEncoder {
   //
   // Precondition: Encoder has no active child encoder.
   Status WriteInt64(uint32_t field_number, int64_t value) {
-    return WriteUint64(field_number, value);
+    // Signed numbers are sent as 2's complement so this cast is correct.
+    return WriteUint64(field_number, static_cast<uint64_t>(value));
   }
 
   // Writes a repeated int64 using packed encoding.

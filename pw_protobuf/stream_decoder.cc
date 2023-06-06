@@ -225,7 +225,8 @@ Status StreamDecoder::ReadFieldKey() {
     return Status::DataLoss();
   }
 
-  current_field_ = FieldKey(varint);
+  PW_DCHECK(varint <= std::numeric_limits<uint32_t>::max());
+  current_field_ = FieldKey(static_cast<uint32_t>(varint));
 
   if (current_field_.wire_type() == WireType::kDelimited) {
     // Read the length varint of length-delimited fields immediately to simplify

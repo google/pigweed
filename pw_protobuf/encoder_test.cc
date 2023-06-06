@@ -103,7 +103,7 @@ TEST(StreamEncoder, EncodePrimitives) {
   EXPECT_EQ(encoder.WriteSint32(kTestProtoZiggyField, -13), OkStatus());
   EXPECT_EQ(encoder.WriteFixed64(kTestProtoCyclesField, 0xdeadbeef8badf00d),
             OkStatus());
-  EXPECT_EQ(encoder.WriteFloat(kTestProtoRatioField, 1.618034), OkStatus());
+  EXPECT_EQ(encoder.WriteFloat(kTestProtoRatioField, 1.618034f), OkStatus());
   EXPECT_EQ(encoder.WriteString(kTestProtoErrorMessageField, "broken 💩"),
             OkStatus());
 
@@ -136,7 +136,7 @@ TEST(StreamEncoder, EncodeInsufficientSpace) {
   EXPECT_EQ(encoder.WriteFixed64(kTestProtoCyclesField, 0xdeadbeef8badf00d),
             Status::ResourceExhausted());
   // Any further write operations should fail.
-  EXPECT_EQ(encoder.WriteFloat(kTestProtoRatioField, 1.618034),
+  EXPECT_EQ(encoder.WriteFloat(kTestProtoRatioField, 1.618034f),
             Status::ResourceExhausted());
 
   ASSERT_EQ(encoder.status(), Status::ResourceExhausted());

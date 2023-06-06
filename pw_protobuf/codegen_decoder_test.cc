@@ -354,7 +354,7 @@ TEST(Codegen, StreamDecoder) {
     EXPECT_EQ(proto.Next(), Status::OutOfRange());
   }
 
-  for (int i = 0; i < 5; ++i) {
+  for (unsigned i = 0; i < 5; ++i) {
     EXPECT_EQ(pigweed.Next(), OkStatus());
     EXPECT_EQ(pigweed.Field().value(), Pigweed::Fields::kId);
 
@@ -519,7 +519,7 @@ TEST(CodegenRepeated, NonPackedScalar) {
   stream::MemoryReader reader(as_bytes(span(proto_data)));
   RepeatedTest::StreamDecoder repeated_test(reader);
 
-  for (int i = 0; i < 4; ++i) {
+  for (uint32_t i = 0; i < 4; ++i) {
     EXPECT_EQ(repeated_test.Next(), OkStatus());
     EXPECT_EQ(repeated_test.Field().value(), RepeatedTest::Fields::kUint32s);
 
@@ -528,7 +528,7 @@ TEST(CodegenRepeated, NonPackedScalar) {
     EXPECT_EQ(result.value(), i * 16u);
   }
 
-  for (int i = 0; i < 4; ++i) {
+  for (unsigned i = 0; i < 4; ++i) {
     EXPECT_EQ(repeated_test.Next(), OkStatus());
     EXPECT_EQ(repeated_test.Field().value(), RepeatedTest::Fields::kFixed32s);
 
@@ -561,7 +561,7 @@ TEST(CodegenRepeated, NonPackedScalarVector) {
 
   pw::Vector<uint32_t, 8> uint32s{};
 
-  for (int i = 0; i < 4; ++i) {
+  for (unsigned i = 0; i < 4; ++i) {
     EXPECT_EQ(repeated_test.Next(), OkStatus());
     EXPECT_EQ(repeated_test.Field().value(), RepeatedTest::Fields::kUint32s);
 
@@ -570,13 +570,13 @@ TEST(CodegenRepeated, NonPackedScalarVector) {
     EXPECT_EQ(uint32s.size(), i + 1u);
   }
 
-  for (int i = 0; i < 4; ++i) {
+  for (unsigned short i = 0; i < 4; ++i) {
     EXPECT_EQ(uint32s[i], i * 16u);
   }
 
   pw::Vector<uint32_t, 8> fixed32s{};
 
-  for (int i = 0; i < 4; ++i) {
+  for (unsigned i = 0; i < 4; ++i) {
     EXPECT_EQ(repeated_test.Next(), OkStatus());
     EXPECT_EQ(repeated_test.Field().value(), RepeatedTest::Fields::kFixed32s);
 
@@ -585,7 +585,7 @@ TEST(CodegenRepeated, NonPackedScalarVector) {
     EXPECT_EQ(fixed32s.size(), i + 1u);
   }
 
-  for (int i = 0; i < 4; ++i) {
+  for (unsigned short i = 0; i < 4; ++i) {
     EXPECT_EQ(fixed32s[i], i * 16u);
   }
 
@@ -626,7 +626,7 @@ TEST(CodegenRepeated, NonPackedVarintScalarVectorFull) {
   EXPECT_EQ(status, Status::ResourceExhausted());
   EXPECT_EQ(uint32s.size(), 2u);
 
-  for (int i = 0; i < 2; ++i) {
+  for (unsigned short i = 0; i < 2; ++i) {
     EXPECT_EQ(uint32s[i], i * 16u);
   }
 }
@@ -665,7 +665,7 @@ TEST(CodegenRepeated, NonPackedFixedScalarVectorFull) {
   EXPECT_EQ(status, Status::ResourceExhausted());
   EXPECT_EQ(fixed32s.size(), 2u);
 
-  for (int i = 0; i < 2; ++i) {
+  for (unsigned short i = 0; i < 2; ++i) {
     EXPECT_EQ(fixed32s[i], i * 16u);
   }
 }
@@ -698,7 +698,7 @@ TEST(CodegenRepeated, PackedScalar) {
   EXPECT_EQ(sws.status(), OkStatus());
   EXPECT_EQ(sws.size(), 4u);
 
-  for (int i = 0; i < 4; ++i) {
+  for (unsigned short i = 0; i < 4; ++i) {
     EXPECT_EQ(uint32s[i], i * 16u);
   }
 
@@ -709,7 +709,7 @@ TEST(CodegenRepeated, PackedScalar) {
   EXPECT_EQ(sws.status(), OkStatus());
   EXPECT_EQ(sws.size(), 4u);
 
-  for (int i = 0; i < 4; ++i) {
+  for (unsigned short i = 0; i < 4; ++i) {
     EXPECT_EQ(fixed32s[i], i * 16u);
   }
 
@@ -738,7 +738,7 @@ TEST(CodegenRepeated, PackedVarintScalarExhausted) {
   EXPECT_EQ(sws.status(), Status::ResourceExhausted());
   EXPECT_EQ(sws.size(), 2u);
 
-  for (int i = 0; i < 2; ++i) {
+  for (unsigned short i = 0; i < 2; ++i) {
     EXPECT_EQ(uint32s[i], i * 16u);
   }
 }
@@ -794,7 +794,7 @@ TEST(CodegenRepeated, PackedScalarVector) {
   EXPECT_EQ(status, OkStatus());
   EXPECT_EQ(uint32s.size(), 4u);
 
-  for (int i = 0; i < 4; ++i) {
+  for (unsigned short i = 0; i < 4; ++i) {
     EXPECT_EQ(uint32s[i], i * 16u);
   }
 
@@ -805,7 +805,7 @@ TEST(CodegenRepeated, PackedScalarVector) {
   EXPECT_EQ(status, OkStatus());
   EXPECT_EQ(fixed32s.size(), 4u);
 
-  for (int i = 0; i < 4; ++i) {
+  for (unsigned short i = 0; i < 4; ++i) {
     EXPECT_EQ(fixed32s[i], i * 16u);
   }
 
@@ -834,7 +834,7 @@ TEST(CodegenRepeated, PackedVarintScalarVectorFull) {
   EXPECT_EQ(status, Status::ResourceExhausted());
   EXPECT_EQ(uint32s.size(), 2u);
 
-  for (int i = 0; i < 2; ++i) {
+  for (unsigned short i = 0; i < 2; ++i) {
     EXPECT_EQ(uint32s[i], i * 16u);
   }
 }
@@ -908,7 +908,7 @@ TEST(CodegenRepeated, PackedScalarVectorRepeated) {
   EXPECT_EQ(status, OkStatus());
   EXPECT_EQ(uint32s.size(), 8u);
 
-  for (int i = 0; i < 8; ++i) {
+  for (unsigned short i = 0; i < 8; ++i) {
     EXPECT_EQ(uint32s[i], i * 16u);
   }
 
@@ -925,7 +925,7 @@ TEST(CodegenRepeated, PackedScalarVectorRepeated) {
   EXPECT_EQ(status, OkStatus());
   EXPECT_EQ(fixed32s.size(), 8u);
 
-  for (int i = 0; i < 8; ++i) {
+  for (unsigned short i = 0; i < 8; ++i) {
     EXPECT_EQ(fixed32s[i], i * 16u);
   }
 
@@ -949,7 +949,7 @@ TEST(CodegenRepeated, NonScalar) {
   constexpr std::array<std::string_view, 4> kExpectedString{
       {{"the"}, {"quick"}, {"brown"}, {"fox"}}};
 
-  for (int i = 0; i < 4; ++i) {
+  for (unsigned short i = 0; i < 4; ++i) {
     EXPECT_EQ(repeated_test.Next(), OkStatus());
     EXPECT_EQ(repeated_test.Field().value(), RepeatedTest::Fields::kStrings);
     std::array<char, 32> string{};
@@ -983,7 +983,7 @@ TEST(CodegenRepeated, PackedEnum) {
   EXPECT_EQ(sws.status(), OkStatus());
   ASSERT_EQ(sws.size(), 4u);
 
-  for (int i = 0; i < 4; ++i) {
+  for (unsigned short i = 0; i < 4; ++i) {
     EXPECT_TRUE(IsValidEnum(enums[i]));
   }
 
@@ -1013,7 +1013,7 @@ TEST(CodegenRepeated, PackedEnumVector) {
   EXPECT_EQ(status, OkStatus());
   ASSERT_EQ(enums.size(), 4u);
 
-  for (int i = 0; i < 4; ++i) {
+  for (unsigned short i = 0; i < 4; ++i) {
     EXPECT_TRUE(IsValidEnum(enums[i]));
   }
 

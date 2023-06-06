@@ -64,9 +64,10 @@ class CallProperties {
   constexpr CallProperties(MethodType method_type,
                            CallType call_type,
                            CallbackProtoType callback_proto_type)
-      : bits_((static_cast<uint8_t>(method_type) << 0) |
-              (static_cast<uint8_t>(call_type) << 2) |
-              (static_cast<uint8_t>(callback_proto_type) << 3)) {}
+      : bits_(static_cast<uint8_t>(
+            (static_cast<uint8_t>(method_type) << 0) |
+            (static_cast<uint8_t>(call_type) << 2) |
+            (static_cast<uint8_t>(callback_proto_type) << 3))) {}
 
   constexpr CallProperties(const CallProperties&) = default;
 

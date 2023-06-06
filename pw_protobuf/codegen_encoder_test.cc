@@ -118,7 +118,7 @@ TEST(Codegen, Codegen) {
     }
   }
 
-  for (int i = 0; i < 5; ++i) {
+  for (unsigned i = 0; i < 5; ++i) {
     Proto::ID::StreamEncoder id = pigweed.GetIdEncoder();
     ASSERT_EQ(OkStatus(), id.WriteId(5 * i * i + 3 * i + 49));
   }
@@ -257,11 +257,11 @@ TEST(CodegenRepeated, NonPackedScalar) {
 
   stream::MemoryWriter writer(encode_buffer);
   RepeatedTest::StreamEncoder repeated_test(writer, ByteSpan());
-  for (int i = 0; i < 4; ++i) {
+  for (uint32_t i = 0; i < 4; ++i) {
     ASSERT_EQ(OkStatus(), repeated_test.WriteUint32s(i * 16));
   }
 
-  for (int i = 0; i < 4; ++i) {
+  for (uint32_t i = 0; i < 4; ++i) {
     ASSERT_EQ(OkStatus(), repeated_test.WriteFixed32s(i * 16));
   }
 
@@ -444,7 +444,7 @@ TEST(CodegenRepeated, Message) {
   std::byte encode_buffer[RepeatedTest::kMaxEncodedSizeBytes];
 
   RepeatedTest::MemoryEncoder repeated_test(encode_buffer);
-  for (int i = 0; i < 3; ++i) {
+  for (uint32_t i = 0; i < 3; ++i) {
     auto structs = repeated_test.GetStructsEncoder();
     ASSERT_EQ(OkStatus(), structs.WriteOne(i * 1));
     ASSERT_EQ(OkStatus(), structs.WriteTwo(i * 2));
