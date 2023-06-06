@@ -12,18 +12,8 @@
 // License for the specific language governing permissions and limitations under
 // the License.
 
-import { MockLogSource } from "./custom/mock-log-source";
-import {createLogViewer} from "./components/createLogViewer";
-
-const logSource = new MockLogSource();
-const unsubscribe = createLogViewer(logSource, document.querySelector('#log-viewer-container')!);
-
-const TIMEOUT_DURATION = 5000; // ms
-// Start reading log data
-logSource.start();
-
-// Stop reading log data once timeout duration has elapsed
-setTimeout(() => {
-    logSource.stop();
-  unsubscribe();
-}, TIMEOUT_DURATION);
+export {LogSource} from "../pw_web/log-viewer/src/log-source";
+export {MockLogSource} from "../pw_web/log-viewer/src/custom/mock-log-source";
+export {LogViewer} from "../pw_web/log-viewer/src/components/log-viewer";
+export {createLogViewer} from "../pw_web/log-viewer/src/components/createLogViewer";
+export {LogEntry, FieldData} from "../pw_web/log-viewer/src/shared/interfaces";

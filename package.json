@@ -8,7 +8,8 @@
   "exports": {
     ".": "./dist/index.mjs",
     "./protos": "./dist/protos/collection.umd.js",
-    "./protos/*": "./dist/protos/*"
+    "./protos/*": "./dist/protos/*",
+    "./logging": "./dist/logging.mjs"
   },
   "bin": {
     "pw_protobuf_compiler": "./dist/bin/pw_protobuf_compiler.js"

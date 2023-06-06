@@ -86,6 +86,33 @@ export default [
         [{file: path.join('dist', 'protos', 'collection.d.ts'), format: 'es'}],
     plugins: [dts({compilerOptions: tsConfig.compilerOptions})]
   },
+  // Bundle Pigweed log component and modules
+  {
+    input: path.join('ts', 'logging.ts'),
+    output: [
+      {
+        file: path.join('dist', 'logging.umd.js'),
+        format: 'umd',
+        sourcemap: true,
+        name: 'PigweedLogging',
+      },
+      {
+        file: path.join('dist', 'logging.mjs'),
+        format: 'esm',
+        sourcemap: true,
+      }
+    ],
+    plugins: [
+      pluginTypescript(
+          {tsconfig: './tsconfig.json', exclude: ['**/*_test.ts']}),
+      nodePolyfills(),
+      resolve(),
+      commonjs(),
+
+      // Resolve source maps to the original source
+      sourceMaps()
+    ]
+  },
   // Bundle Pigweed modules
   {
     input: path.join('ts', 'index.ts'),
