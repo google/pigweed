@@ -1,7 +1,5 @@
 .. _module-pw_string:
 
-.. rst-class:: with-subtitle
-
 =========
 pw_string
 =========

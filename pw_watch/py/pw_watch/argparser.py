@@ -36,6 +36,8 @@ WATCH_PATTERNS = (
     '*.go',
     '*.h',
     '*.hpp',
+    '*.html',
+    '*.js',
     '*.ld',
     '*.md',
     '*.options',
@@ -46,6 +48,7 @@ WATCH_PATTERNS = (
     '*.s',
     '*.S',
     '*.toml',
+    '*.ts',
 )
 
 

@@ -259,6 +259,7 @@ texinfo_documents = [
     ),
 ]
 
+templates_path = ['docs/layout']
 exclude_patterns = ['docs/templates/**']
 
 breathe_projects = {
