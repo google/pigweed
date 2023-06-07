@@ -17,6 +17,9 @@ import("//build_overrides/pigweed.gni")
 import("$dir_pw_build/target_types.gni")
 
 declare_args() {
+  # Location of MCUXpresso SDK directory
+  dir_pw_third_party_mcuxpresso = ""
+
   # If compiling a project against an MCUXpresso SDK, this variable can be set
   # to the name of the pw_source_set you create using `pw_mcuxpresso_sdk` to
   # enable additional Pigweed support.

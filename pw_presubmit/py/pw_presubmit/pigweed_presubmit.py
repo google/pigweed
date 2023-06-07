@@ -340,6 +340,21 @@ gn_pico_build = build.GnGenNinja(
     ninja_targets=('pi_pico',),
 )
 
+gn_mimxrt595_build = build.GnGenNinja(
+    name='gn_mimxrt595_build',
+    path_filter=_BUILD_FILE_FILTER,
+    packages=('mcuxpresso',),
+    gn_args={
+        'dir_pw_third_party_mcuxpresso': lambda ctx: '"{}"'.format(
+            str(ctx.package_root / 'mcuxpresso')
+        ),
+        'pw_target_mimxrt595_evk_MANIFEST': '$dir_pw_third_party_mcuxpresso'
+        + '/EVK-MIMXRT595_manifest_v3_8.xml',
+        'pw_third_party_mcuxpresso_SDK': '//targets/mimxrt595_evk:sample_sdk',
+        'pw_C_OPTIMIZATION_LEVELS': _OPTIMIZATION_LEVELS,
+    },
+    ninja_targets=('mimxrt595',),
+)
 
 gn_software_update_build = build.GnGenNinja(
     name='gn_software_update_build',
@@ -1026,6 +1041,7 @@ OTHER_CHECKS = (
     gn_clang_build,
     gn_combined_build_check,
     gn_docs_build,
+    gn_mimxrt595_build,
     module_owners.presubmit_check(),
     npm_presubmit.npm_test,
     pw_transfer_integration_test,
