@@ -1083,6 +1083,14 @@ enum LECISFraming:
   FRAMED   = 0x01
 
 
+enum DataPathDirection:
+  [maximum_bits:8]
+  INPUT = 0x00
+    -- Host to Controller
+
+  OUTPUT = 0x01
+    -- Controller to Host
+
 # ========================= HCI packet headers ==========================
 
 
@@ -1519,6 +1527,15 @@ struct IoCapabilityRequestNegativeReplyCommand:
 
   $next [+1]                      StatusCode     reason
     -- Reason that Simple Pairing was rejected. See 7.1.36 for valid error codes.
+
+
+struct CodecId:
+  0     [+1]  CodingFormat  coding_format
+  $next [+2]  UInt          company_id
+    -- See assigned numbers.
+
+  $next [+2]  UInt          vendor_codec_id
+    -- Shall be ignored if |coding_format| is not VENDOR_SPECIFIC.
 
 
 struct SynchronousConnectionParameters:
@@ -3292,6 +3309,22 @@ struct LESetPrivacyModeCommand:
     -- The privacy mode to be used for the given entry on the resolving list.
 
 
+# 7.8.93 [No longer used]
+# 7.8.94 LE Modify Sleep Clock Accuracy command
+# 7.8.95 [No longer used]
+
+
+struct LEReadISOTXSyncCommand:
+  -- 7.8.96 LE Read ISO TX Sync command (v5.2) (LE)
+  -- HCI_LE_Read_ISO_TX_Sync
+  let hdr_size = CommandHeader.$size_in_bytes
+  0      [+hdr_size]  CommandHeader               header
+
+  $next  [+2]         UInt                        connection_handle
+    -- Connection handle of the CIS or BIS
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+
 struct LESetCIGParametersCommand:
   -- 7.8.97 LE Set CIG Parameters command (v5.2) (LE)
   -- HCI_LE_Set_CIG_Parameters
@@ -3338,6 +3371,9 @@ struct LESetCIGParametersCommand:
 
   $next  [+total_cis_options_size]  LESetCIGParametersCISOptions[cis_count]  cis_options
     -- Array of parameters, one for each of the CISes in this CIG
+
+
+# 7.8.98 LE Set CIG Parameters Test command
 
 
 struct LECreateCISCommand:
@@ -3402,6 +3438,78 @@ struct LERejectCISRequestCommand:
 
   $next  [+1]         StatusCode     reason
     -- Reason the CIS request was rejected
+
+
+# 7.8.103 LE Create BIG command
+# 7.8.104 LE Create BIG Test command
+# 7.8.105 LE Terminate BIG command
+# 7.8.106 LE BIG Create Sync command
+# 7.8.107 LE BIG Terminate Sync command
+
+
+struct LERequestPeerSCACommand:
+  -- 7.8.108 LE Request Peer SCA command
+  -- HCI_LE_Request_Peer_SCA
+  let hdr_size = CommandHeader.$size_in_bytes
+  0      [+hdr_size]  CommandHeader  header
+
+  $next [+2]          UInt           connection_handle
+    -- Connection handle of the ACL
+    [requires: 0x0000 <= this <= 0xEFF]
+
+
+struct LESetupISODataPathCommand:
+  -- 7.8.109 LE Setup ISO Data Path command
+  -- HCI_LE_Setup_ISO_Data_Path
+  let hdr_size = CommandHeader.$size_in_bytes
+  0      [+hdr_size]  CommandHeader  header
+
+  $next  [+2]  UInt                       connection_handle
+    -- Connection handle of the CIS or BIS
+    [requires: 0x0000 <= this <= 0x0EFF]
+
+  $next  [+1]  DataPathDirection          data_path_direction
+    -- Specifies the direction for which the data path is being configured
+
+  $next  [+1]  UInt                       data_path_id
+    -- Data transport path used (0x00 for HCI).
+    [requires: 0x00 <= this <= 0xFE]
+
+  let vcf_size = CodecId.$size_in_bytes
+  $next  [+vcf_size]  CodecId  codec_id
+    -- Codec to be used
+
+  $next  [+3]  UInt                       controller_delay
+    -- Controller delay in microseconds (0s to 4s)
+    [requires: 0x000000 <= this <= 0x3D0900]
+
+  $next  [+1]  UInt                       codec_configuration_length
+    -- Length of codec configuration
+
+  $next  [+codec_configuration_length]  UInt:8[codec_configuration_length]  codec_configuration
+    -- Codec-specific configuration data
+
+
+struct LERemoveISODataPathCommand:
+  -- 7.8.110 LE Remove ISO Data Path command
+  -- HCI_LE_Remove_ISO_Data_Path
+  let hdr_size = CommandHeader.$size_in_bytes
+  0      [+hdr_size]  CommandHeader  header
+
+  $next  [+2]  UInt                  connection_handle
+    -- Connection handle of the CIS or BIS
+    [requires: 0x0000 <= this <= 0x0EFFF]
+
+  $next  [+1]  bits:
+    0      [+1]  Flag  remove_input_data_path
+    $next  [+1]  Flag  remove_output_data_path
+    $next  [+6]  UInt  padding
+
+
+# 7.8.111 LE ISO Transmit Test command
+# 7.8.112 LE ISO Receive Test command
+# 7.8.113 LE ISO Read Test Counters command
+# 7.8.114 LE ISO Test End command
 
 
 # ========================= HCI Event packets ===========================
