@@ -47,6 +47,7 @@ pw_fuzzer
 pw_hdlc
 pw_hex_dump
 pw_i2c
+pw_i2c_linux
 pw_i2c_mcuxpresso
 pw_ide
 pw_interrupt

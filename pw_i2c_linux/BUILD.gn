@@ -1,0 +1,61 @@
+# Copyright 2023 The Pigweed Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License. You may obtain a copy of
+# the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations under
+# the License.
+
+import("//build_overrides/pigweed.gni")
+
+import("$dir_pw_build/target_types.gni")
+import("$dir_pw_chrono/backend.gni")
+import("$dir_pw_docgen/docs.gni")
+import("$dir_pw_unit_test/test.gni")
+
+config("public_include_path") {
+  include_dirs = [ "public" ]
+}
+
+pw_source_set("initiator") {
+  public_configs = [ ":public_include_path" ]
+  public = [ "public/pw_i2c_linux/initiator.h" ]
+  public_deps = [
+    "$dir_pw_bytes",
+    "$dir_pw_chrono:system_clock",
+    "$dir_pw_i2c:address",
+    "$dir_pw_i2c:initiator",
+    "$dir_pw_result",
+    "$dir_pw_status",
+    "$dir_pw_sync:lock_annotations",
+    "$dir_pw_sync:timed_mutex",
+  ]
+  sources = [ "initiator.cc" ]
+  deps = [
+    "$dir_pw_assert",
+    "$dir_pw_log",
+  ]
+}
+
+pw_test_group("tests") {
+  tests = [ ":initiator_test" ]
+}
+
+pw_test("initiator_test") {
+  enable_if = current_os == "linux"
+  sources = [ "initiator_test.cc" ]
+  deps = [
+    ":initiator",
+    "$dir_pw_i2c:initiator",
+  ]
+}
+
+pw_doc_group("docs") {
+  sources = [ "docs.rst" ]
+}
