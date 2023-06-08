@@ -19,7 +19,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/hci/util.h"
 #include "src/connectivity/bluetooth/lib/cpp-string/string_printf.h"
 
-#include <pw_bluetooth/vendor.emb.h>
+#include <pw_bluetooth/vendor2.emb.h>
 
 namespace bt::testing {
 namespace {

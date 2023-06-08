@@ -16,7 +16,7 @@
 #include "src/connectivity/bluetooth/core/bt-host/transport/control_packets.h"
 #include "src/connectivity/bluetooth/core/bt-host/transport/emboss_control_packets.h"
 
-#include <pw_bluetooth/vendor.emb.h>
+#include <pw_bluetooth/vendor2.emb.h>
 
 namespace bt::l2cap {
 namespace hci_android = bt::hci_spec::vendor::android;

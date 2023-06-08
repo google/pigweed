@@ -47,6 +47,7 @@ static_library("hci") {
     "//sdk/lib/fit",
     "//src/connectivity/bluetooth/core/bt-host/transport",
     "//third_party/pigweed/src/pw_bluetooth:emboss_vendor",
+    "//third_party/pigweed/src/pw_bluetooth:emboss_vendor2",
   ]
 }
 
