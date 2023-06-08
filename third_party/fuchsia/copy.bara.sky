@@ -14,6 +14,7 @@
 
 fuchsia_repo_files = [
     ".clang-format",
+    "LICENSE",
     # fit
     "sdk/lib/fit/include/lib/fit/function.h",
     "sdk/lib/fit/include/lib/fit/internal/compiler.h",
