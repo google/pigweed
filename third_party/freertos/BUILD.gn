@@ -120,6 +120,30 @@ if (dir_pw_third_party_freertos == "") {
     ]
   }
 
+  # ARM CM33 port of FreeRTOS
+  config("arm_cm33_includes") {
+    include_dirs =
+        [ "$dir_pw_third_party_freertos/portable/GCC/ARM_CM33_NTZ/non_secure" ]
+    visibility = [ ":arm_cm33" ]
+  }
+
+  pw_source_set("arm_cm33") {
+    public_configs = [
+      ":arm_cm33_includes",
+      ":public_includes",
+    ]
+    public_deps = [ pw_third_party_freertos_CONFIG ]
+    public = [
+      "$dir_pw_third_party_freertos/portable/GCC/ARM_CM33_NTZ/non_secure/portasm.h",
+      "$dir_pw_third_party_freertos/portable/GCC/ARM_CM33_NTZ/non_secure/portmacro.h",
+    ]
+    sources = [
+      "$dir_pw_third_party_freertos/portable/GCC/ARM_CM33_NTZ/non_secure/port.c",
+      "$dir_pw_third_party_freertos/portable/GCC/ARM_CM33_NTZ/non_secure/portasm.c",
+    ]
+    configs = [ ":disable_warnings" ]
+  }
+
   # ARM CM7 port of FreeRTOS
   config("arm_cm7_includes") {
     include_dirs = [ "$dir_pw_third_party_freertos/portable/GCC/ARM_CM7/r0p1" ]
